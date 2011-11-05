@@ -43,6 +43,9 @@ public:
   /** Constructor from size */
   FastVector(size_t size) : Base(size) {}
 
+  /** Constructor from size and initial values */
+  FastVector(size_t size, const VALUE& initial) : Base(size, initial) {}
+
   /** Constructor from a range, passes through to base class */
   template<typename INPUTITERATOR>
   FastVector(INPUTITERATOR first, INPUTITERATOR last) : Base(first, last) {}

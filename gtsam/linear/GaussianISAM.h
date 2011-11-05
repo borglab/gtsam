@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <boost/optional.hpp>
+
 #include <gtsam/inference/ISAM.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
@@ -31,6 +33,8 @@ class GaussianISAM : public ISAM<GaussianConditional> {
   std::deque<size_t, boost::fast_pool_allocator<size_t> > dims_;
 
 public:
+
+  typedef std::deque<size_t, boost::fast_pool_allocator<size_t> > Dims;
 
   /** Create an empty Bayes Tree */
   GaussianISAM() : Super() {}
@@ -84,20 +88,21 @@ public:
 	/** return the conditional P(S|Root) on the separator given the root */
 	static BayesNet<GaussianConditional> shortcut(sharedClique clique, sharedClique root);
 
-	/** load a VectorValues with the RHS of the system for backsubstitution */
-	static VectorValues rhs(const GaussianISAM& bayesTree);
-
-protected:
-
-	/** recursively load RHS for system */
-	static void treeRHS(const GaussianISAM::sharedClique& clique, VectorValues& result);
-
 }; // \class GaussianISAM
 
+/** load a VectorValues with the RHS of the system for backsubstitution */
+VectorValues rhs(const BayesTree<GaussianConditional>& bayesTree, boost::optional<const GaussianISAM::Dims&> dims = boost::none);
+
+/** recursively load RHS for system */
+void treeRHS(const BayesTree<GaussianConditional>::sharedClique& clique, VectorValues& result);
+
 // recursively optimize this conditional and all subtrees
-void optimize(const GaussianISAM::sharedClique& clique, VectorValues& result);
+void optimize(const BayesTree<GaussianConditional>::sharedClique& clique, VectorValues& result);
 
 // optimize the BayesTree, starting from the root
-VectorValues optimize(const GaussianISAM& bayesTree);
+VectorValues optimize(const GaussianISAM& isam);
+
+// optimize the BayesTree, starting from the root
+VectorValues optimize(const BayesTree<GaussianConditional>& bayesTree);
 
 } // \namespace gtsam

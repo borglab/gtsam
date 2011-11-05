@@ -72,6 +72,11 @@ namespace gtsam {
      */
     GaussianFactorGraph(const GaussianBayesNet& CBN);
 
+    /**
+     * Constructor that receives a BayesTree and returns a GaussianFactorGraph
+     */
+    GaussianFactorGraph(const BayesTree<GaussianConditional>& GBT);
+
     /** Constructor from a factor graph of GaussianFactor or a derived type */
     template<class DERIVEDFACTOR>
     GaussianFactorGraph(const FactorGraph<DERIVEDFACTOR>& fg) {

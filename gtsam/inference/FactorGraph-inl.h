@@ -24,6 +24,7 @@
 
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/graph-inl.h>
+#include <gtsam/inference/BayesTree-inl.h>
 #include <gtsam/base/DSF.h>
 
 #include <boost/foreach.hpp>
@@ -123,6 +124,31 @@ namespace gtsam {
 		IndexIterator keysEnd(variableSlots.end(), firstGetter);
 		return typename DERIVED::shared_ptr(new DERIVED(keysBegin, keysEnd));
 	}
+
+  /* ************************************************************************* */
+	template<class FACTOR, class CONDITIONAL>
+	void _FactorGraph_BayesTree_adder(
+	    vector<typename FactorGraph<FACTOR>::sharedFactor>& factors,
+	    const typename BayesTree<CONDITIONAL>::sharedClique& clique) {
+
+	  if(clique) {
+	    // Add factor from this clique
+	    factors.push_back((*clique)->toFactor());
+
+	    // Traverse children
+	    BOOST_FOREACH(const typename BayesTree<CONDITIONAL>::sharedClique& child, clique->children()) {
+	      _FactorGraph_BayesTree_adder<FACTOR,CONDITIONAL>(factors, child);
+	    }
+	  }
+	}
+
+  /* ************************************************************************* */
+  template<class FACTOR>
+  template<class CONDITIONAL>
+  FactorGraph<FACTOR>::FactorGraph(const BayesTree<CONDITIONAL>& bayesTree) {
+    factors_.reserve(bayesTree.size());
+    _FactorGraph_BayesTree_adder<FACTOR,CONDITIONAL>(factors_, bayesTree.root());
+  }
 
 	/* ************************************************************************* */
 } // namespace gtsam

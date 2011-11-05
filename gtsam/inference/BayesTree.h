@@ -22,10 +22,14 @@
 #include <vector>
 #include <stdexcept>
 #include <deque>
+#include <boost/function.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include <gtsam/base/types.h>
+#include <gtsam/base/FastVector.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/BayesNet.h>
+#include <gtsam/linear/VectorValues.h>
 
 namespace gtsam {
 
@@ -350,5 +354,32 @@ namespace gtsam {
     }
 
 	}; // BayesTree
+
+
+  /* ************************************************************************* */
+  template<class CONDITIONAL>
+  void _BayesTree_dim_adder(
+      std::vector<size_t>& dims,
+      const typename BayesTree<CONDITIONAL>::sharedClique& clique) {
+
+    if(clique) {
+      // Add dims from this clique
+      for(typename CONDITIONAL::const_iterator it = (*clique)->beginFrontals(); it != (*clique)->endFrontals(); ++it)
+        dims[*it] = (*clique)->dim(it);
+
+      // Traverse children
+      BOOST_FOREACH(const typename BayesTree<CONDITIONAL>::sharedClique& child, clique->children()) {
+        _BayesTree_dim_adder<CONDITIONAL>(dims, child);
+      }
+    }
+  }
+
+	/* ************************************************************************* */
+	template<class CONDITIONAL>
+	boost::shared_ptr<VectorValues> allocateVectorValues(const BayesTree<CONDITIONAL>& bt) {
+	  std::vector<size_t> dimensions(bt.nodes().size(), 0);
+	  _BayesTree_dim_adder<CONDITIONAL>(dimensions, bt.root());
+	  return boost::shared_ptr<VectorValues>(new VectorValues(dimensions));
+	}
 
 } /// namespace gtsam

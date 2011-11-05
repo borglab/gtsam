@@ -51,32 +51,44 @@ Matrix GaussianISAM::marginalCovariance(Index j) const {
 }
 
 /* ************************************************************************* */
-void optimize(const GaussianISAM::sharedClique& clique, VectorValues& result) {
+void optimize(const BayesTree<GaussianConditional>::sharedClique& clique, VectorValues& result) {
 	// parents are assumed to already be solved and available in result
 	// RHS for current conditional should already be in place in result
   clique->conditional()->solveInPlace(result);
 
-	BOOST_FOREACH(const GaussianISAM::sharedClique& child, clique->children_)
+	BOOST_FOREACH(const BayesTree<GaussianConditional>::sharedClique& child, clique->children_)
 		optimize(child, result);
 }
 
 /* ************************************************************************* */
-void GaussianISAM::treeRHS(const GaussianISAM::sharedClique& clique, VectorValues& result) {
+void treeRHS(const BayesTree<GaussianConditional>::sharedClique& clique, VectorValues& result) {
   clique->conditional()->rhs(result);
-	BOOST_FOREACH(const GaussianISAM::sharedClique& child, clique->children_)
+	BOOST_FOREACH(const BayesTree<GaussianConditional>::sharedClique& child, clique->children_)
 		treeRHS(child, result);
 }
 
 /* ************************************************************************* */
-VectorValues GaussianISAM::rhs(const GaussianISAM& bayesTree) {
-	VectorValues result(bayesTree.dims_); // allocate
+VectorValues rhs(const BayesTree<GaussianConditional>& bayesTree, boost::optional<const GaussianISAM::Dims&> dims) {
+	VectorValues result;
+	if(dims)
+	  result = VectorValues(*dims);
+	else
+	  result = *allocateVectorValues(bayesTree); // allocate
 	treeRHS(bayesTree.root(), result);    // recursively fill
 	return result;
 }
 
 /* ************************************************************************* */
-VectorValues optimize(const GaussianISAM& bayesTree) {
-	VectorValues result = GaussianISAM::rhs(bayesTree);
+VectorValues optimize(const GaussianISAM& isam) {
+  VectorValues result = rhs(isam, isam.dims_);
+  // starting from the root, call optimize on each conditional
+  optimize(isam.root(), result);
+  return result;
+}
+
+/* ************************************************************************* */
+VectorValues optimize(const BayesTree<GaussianConditional>& bayesTree) {
+	VectorValues result = rhs(bayesTree);
 	// starting from the root, call optimize on each conditional
 	optimize(bayesTree.root(), result);
 	return result;

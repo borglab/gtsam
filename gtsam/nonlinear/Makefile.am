@@ -17,14 +17,15 @@ check_PROGRAMS =
 
 # Lie Groups
 headers += LieValues.h LieValues-inl.h TupleValues.h TupleValues-inl.h 
-check_PROGRAMS += tests/testLieValues
+check_PROGRAMS += tests/testLieValues tests/testKey tests/testOrdering
 
 # Nonlinear nonlinear
 headers += Key.h 
 headers += NonlinearFactorGraph.h NonlinearFactorGraph-inl.h
 headers += NonlinearOptimizer-inl.h NonlinearOptimization.h NonlinearOptimization-inl.h NonlinearOptimizationParameters.h
 headers += NonlinearFactor.h
-sources += NonlinearOptimizer.cpp Ordering.cpp
+sources += NonlinearOptimizer.cpp Ordering.cpp DoglegOptimizerImpl.cpp
+headers += DoglegOptimizer.h DoglegOptimizer-inl.h
 
 # Nonlinear iSAM(2)
 headers += NonlinearISAM.h NonlinearISAM-inl.h

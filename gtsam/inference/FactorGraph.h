@@ -32,6 +32,9 @@
 
 namespace gtsam {
 
+// Forward declarations
+template<class CONDITIONAL> class BayesTree;
+
 	/**
 	 * A factor graph is a bipartite graph with factor nodes connected to variable nodes.
 	 * In this class, however, only factor nodes are kept around.
@@ -73,6 +76,10 @@ namespace gtsam {
 		/** convert from Bayes net */
 		template<class CONDITIONAL>
 		FactorGraph(const BayesNet<CONDITIONAL>& bayesNet);
+
+    /** convert from Bayes net */
+		template<class CONDITIONAL>
+    FactorGraph(const BayesTree<CONDITIONAL>& bayesTree);
 
 		/** convert from a derived type */
 		template<class DERIVEDFACTOR>
@@ -205,7 +212,7 @@ namespace gtsam {
 	template<class FACTORGRAPH>
 	FACTORGRAPH combine(const FACTORGRAPH& fg1, const FACTORGRAPH& fg2);
 
-	/**
+	/*
 	 * These functions are defined here because they are templated on an
 	 * additional parameter.  Putting them in the -inl.h file would mean these
 	 * would have to be explicitly instantiated for any possible derived factor
