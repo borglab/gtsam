@@ -118,7 +118,7 @@ int main() {
 
   // Extract the current estimate of x1,P1 from the Bayes Network
   VectorValues result = optimize(*linearBayesNet);
-  Point2 x1_predict = linearizationPoints[x1].expmap(result[ordering->at(x1)]);
+  Point2 x1_predict = linearizationPoints[x1].retract(result[ordering->at(x1)]);
   x1_predict.print("X1 Predict");
 
   // Update the new linearization point to the new estimate
@@ -190,7 +190,7 @@ int main() {
 
   // Extract the current estimate of x1 from the Bayes Network
   result = optimize(*linearBayesNet);
-  Point2 x1_update = linearizationPoints[x1].expmap(result[ordering->at(x1)]);
+  Point2 x1_update = linearizationPoints[x1].retract(result[ordering->at(x1)]);
   x1_update.print("X1 Update");
 
   // Update the linearization point to the new estimate
@@ -237,7 +237,7 @@ int main() {
 
   // Extract the current estimate of x2 from the Bayes Network
   result = optimize(*linearBayesNet);
-  Point2 x2_predict = linearizationPoints[x2].expmap(result[ordering->at(x2)]);
+  Point2 x2_predict = linearizationPoints[x2].retract(result[ordering->at(x2)]);
   x2_predict.print("X2 Predict");
 
   // Update the linearization point to the new estimate
@@ -281,7 +281,7 @@ int main() {
 
   // Extract the current estimate of x2 from the Bayes Network
   result = optimize(*linearBayesNet);
-  Point2 x2_update = linearizationPoints[x2].expmap(result[ordering->at(x2)]);
+  Point2 x2_update = linearizationPoints[x2].retract(result[ordering->at(x2)]);
   x2_update.print("X2 Update");
 
   // Update the linearization point to the new estimate
@@ -326,7 +326,7 @@ int main() {
 
   // Extract the current estimate of x3 from the Bayes Network
   result = optimize(*linearBayesNet);
-  Point2 x3_predict = linearizationPoints[x3].expmap(result[ordering->at(x3)]);
+  Point2 x3_predict = linearizationPoints[x3].retract(result[ordering->at(x3)]);
   x3_predict.print("X3 Predict");
 
   // Update the linearization point to the new estimate
@@ -370,7 +370,7 @@ int main() {
 
   // Extract the current estimate of x2 from the Bayes Network
   result = optimize(*linearBayesNet);
-  Point2 x3_update = linearizationPoints[x3].expmap(result[ordering->at(x3)]);
+  Point2 x3_update = linearizationPoints[x3].retract(result[ordering->at(x3)]);
   x3_update.print("X3 Update");
 
   // Update the linearization point to the new estimate
