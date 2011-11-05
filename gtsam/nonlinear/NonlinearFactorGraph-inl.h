@@ -19,11 +19,11 @@
 
 #pragma once
 
-#include <cmath>
-#include <boost/foreach.hpp>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/inference/FactorGraph-inl.h>
 #include <gtsam/inference/inference.h>
+#include <boost/foreach.hpp>
+#include <cmath>
 
 #define INSTANTIATE_NONLINEAR_FACTOR_GRAPH(C) \
   INSTANTIATE_FACTOR_GRAPH(NonlinearFactor<C>); \
@@ -57,7 +57,6 @@ namespace gtsam {
 		return total_error;
 	}
 
-	/* ************************************************************************* */
 	/* ************************************************************************* */
 	template<class VALUES>
 	std::set<Symbol> NonlinearFactorGraph<VALUES>::keys() const {
