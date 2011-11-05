@@ -157,18 +157,18 @@ class PlanarSLAMGraph {
 
 	void print(string s) const;
 
-	double error(const PlanarSLAMValues& c) const;
-	Ordering* orderingCOLAMD(const PlanarSLAMValues& config) const;
-	GaussianFactorGraph* linearize(const PlanarSLAMValues& config,
+	double error(const PlanarSLAMValues& values) const;
+	Ordering* orderingCOLAMD(const PlanarSLAMValues& values) const;
+	GaussianFactorGraph* linearize(const PlanarSLAMValues& values,
 			const Ordering& ordering) const;
 
-	void addPrior(int i, const Pose2& p, const SharedNoiseModel& model);
-	void addPoseConstraint(int i, const Pose2& p);
-	void addOdometry(int i, int j, const Pose2& z, const SharedNoiseModel& model);
-	void addBearing(int i, int j, const Rot2& z, const SharedNoiseModel& model);
-	void addRange(int i, int j, double z, const SharedNoiseModel& model);
-	void addBearingRange(int i, int j, const Rot2& z1, double z2,
-			const SharedNoiseModel& model);
+	void addPrior(int key, const Pose2& pose, const SharedNoiseModel& noiseModel);
+	void addPoseConstraint(int key, const Pose2& pose);
+	void addOdometry(int key1, int key2, const Pose2& odometry, const SharedNoiseModel& noiseModel);
+	void addBearing(int poseKey, int pointKey, const Rot2& bearing, const SharedNoiseModel& noiseModel);
+	void addRange(int poseKey, int pointKey, double range, const SharedNoiseModel& noiseModel);
+	void addBearingRange(int poseKey, int pointKey, const Rot2& bearing, double range,
+			const SharedNoiseModel& noiseModel);
 	PlanarSLAMValues* optimize_(const PlanarSLAMValues& initialEstimate);
 };
 
@@ -176,5 +176,5 @@ class PlanarSLAMOdometry {
 	PlanarSLAMOdometry(int key1, int key2, const Pose2& measured,
 			const SharedNoiseModel& model);
 	void print(string s) const;
-	GaussianFactor* linearize(const PlanarSLAMValues& c, const Ordering& ordering) const;
+	GaussianFactor* linearize(const PlanarSLAMValues& center, const Ordering& ordering) const;
 };
