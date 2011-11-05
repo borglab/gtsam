@@ -15,8 +15,8 @@
  **/
 #pragma once
 
-#include <gtsam/base/Testable.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/base/Testable.h>
 
 namespace gtsam {
 
@@ -63,7 +63,7 @@ namespace gtsam {
 
 		/** print */
 		virtual void print(const std::string& s) const {
-			std::cout << s << ": PriorFactor(" << (std::string) this->key_ << ")\n";
+			std::cout << s << "PriorFactor(" << (std::string) this->key_ << ")\n";
 			prior_.print("  prior");
 			this->noiseModel_->print("  noise model");
 		}

@@ -22,11 +22,9 @@
 
 #pragma once
 
-#include <stdio.h>
-#include <list>
-#include <sstream>
-#include <stdexcept>
-#include <functional>
+#include <gtsam/inference/FactorGraph.h>
+#include <gtsam/inference/graph-inl.h>
+#include <gtsam/base/DSF.h>
 
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -36,9 +34,11 @@
 #include <boost/graph/prim_minimum_spanning_tree.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 
-#include <gtsam/inference/FactorGraph.h>
-#include <gtsam/inference/graph-inl.h>
-#include <gtsam/base/DSF.h>
+#include <stdio.h>
+#include <list>
+#include <sstream>
+#include <stdexcept>
+#include <functional>
 
 #define INSTANTIATE_FACTOR_GRAPH(F) \
   template class FactorGraph<F>; \
@@ -55,7 +55,7 @@ namespace gtsam {
 		cout << "size: " << size() << endl;
 		for (size_t i = 0; i < factors_.size(); i++) {
 			stringstream ss;
-			ss << "factor " << i;
+			ss << "factor " << i << ": ";
 			if (factors_[i] != NULL) factors_[i]->print(ss.str());
 		}
 	}
