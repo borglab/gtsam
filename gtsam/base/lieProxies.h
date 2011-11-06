@@ -47,6 +47,7 @@ namespace testing {
 	template<class T, class P>
 	P unrotate(const T& r, const P& pt) { return r.unrotate(pt); }
 
-}
-}
+} // \namespace testing
+} // \namespace gtsam
+
 

@@ -79,28 +79,32 @@ public:
 		*this = Expmap(v);
 	}
 
+	// Testable requirements
+
 	/** print with optional string */
 	void print(const std::string& s = "") const;
 
 	/** assert equality up to a tolerance */
 	bool equals(const Pose2& pose, double tol = 1e-9) const;
 
-	/** compose syntactic sugar */
-	inline Pose2 operator*(const Pose2& p2) const {
-		return Pose2(r_*p2.r(), t_ + r_*p2.t());
-	}
+	// Manifold requirements
 
 	/** dimension of the variable - used to autodetect sizes */
 	inline static size_t Dim() { return dimension; }
 
-	/** Lie requirements */
 
 	/** return DOF, dimensionality of tangent space = 3 */
 	inline size_t dim() const { return dimension; }
 
-	/**
-	 * inverse transformation with derivatives
-	 */
+	/** Apply tangent space update to an object */
+	Pose2 retract(const Vector& v) const;
+
+	/** @return local coordinates of p2 centered at *this */
+	Vector localCoordinates(const Pose2& p2) const;
+
+	// Group Requirements
+
+	/** inverse transformation with derivatives */
 	Pose2 inverse(boost::optional<Matrix&> H1=boost::none) const;
 
 	/**
@@ -116,21 +120,10 @@ public:
 		return boost::shared_ptr<Pose2>(new Pose2(compose(p2)));
 	}
 
-	/** syntactic sugar for transform_from */
-	inline Point2 operator*(const Point2& point) const { return transform_from(point);}
-
-	/** identity */
-	inline static Pose2 identity() {
-		return Pose2();
+	/** compose syntactic sugar */
+	inline Pose2 operator*(const Pose2& p2) const {
+		return Pose2(r_*p2.r(), t_ + r_*p2.t());
 	}
-
-	/** Real versions of Expmap/Logmap */
-	static Pose2 Expmap(const Vector& xi);
-	static Vector Logmap(const Pose2& p);
-
-	/** default implementations of binary functions */
-	Pose2 retract(const Vector& v) const;
-	Vector localCoordinates(const Pose2& p2) const;
 
 	/**
 	 * Return relative pose between p1 and p2, in p1 coordinate frame
@@ -143,6 +136,19 @@ public:
 	boost::shared_ptr<Pose2> between_(const Pose2& p2) {
 		return boost::shared_ptr<Pose2>(new Pose2(between(p2)));
 	}
+
+	/** identity */
+	inline static Pose2 identity() {
+		return Pose2();
+	}
+
+	// Lie Group requirements
+
+	/** Exponential map using canonical coordinates */
+	static Pose2 Expmap(const Vector& xi);
+
+	/** Log map returning local coordinates */
+	static Vector Logmap(const Pose2& p);
 
 	/** return transformation matrix */
 	Matrix matrix() const;
@@ -160,6 +166,9 @@ public:
 	Point2 transform_from(const Point2& point,
 			boost::optional<Matrix&> H1=boost::none,
 			boost::optional<Matrix&> H2=boost::none) const;
+
+	/** syntactic sugar for transform_from */
+	inline Point2 operator*(const Point2& point) const { return transform_from(point);}
 
 	/**
 	 * Calculate bearing to a landmark

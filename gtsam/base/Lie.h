@@ -96,24 +96,6 @@ namespace gtsam {
 
 	};
 
-	/** Call print on the object */
-	template<class T>
-	inline void print(const T& object, const std::string& s = "") {
-		object.print(s);
-	}
-
-	/** Call equal on the object */
-	template<class T>
-	inline bool equal(const T& obj1, const T& obj2, double tol) {
-		return obj1.equals(obj2, tol);
-	}
-
-	/** Call equal on the object without tolerance (use default tolerance) */
-	template<class T>
-	inline bool equal(const T& obj1, const T& obj2) {
-		return obj1.equals(obj2);
-	}
-
 	/**
 	 *  Three term approximation of the Baker�Campbell�Hausdorff formula
 	 *  In non-commutative Lie groups, when composing exp(Z) = exp(X)exp(Y)

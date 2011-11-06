@@ -18,8 +18,8 @@
  *  Detailed story:
  *  A values structure is a map from keys to values. It is used to specify the value of a bunch
  *  of variables in a factor graph. A LieValues is a values structure which can hold variables that
- *  are elements of Lie groups, not just vectors. It then, as a whole, implements a aggregate type
- *  which is also a Lie group, and hence supports operations dim, expmap, and logmap.
+ *  are elements on manifolds, not just vectors. It then, as a whole, implements a aggregate type
+ *  which is also a manifold element, and hence supports operations dim, retract, and localCoordinates.
  */
 
 #pragma once
@@ -66,6 +66,7 @@ namespace gtsam {
 
     /** concept check */
     GTSAM_CONCEPT_TESTABLE_TYPE(Value)
+    GTSAM_CONCEPT_MANIFOLD_TYPE(Value)
 
     KeyValueMap values_;
 
@@ -105,9 +106,6 @@ namespace gtsam {
     /** whether the config is empty */
     bool empty() const { return values_.empty(); }
 
-    /** The dimensionality of the tangent space */
-    size_t dim() const;
-
     /** Get a zero VectorValues of the correct structure */
     VectorValues zero(const Ordering& ordering) const;
 
@@ -116,7 +114,10 @@ namespace gtsam {
     iterator begin() { return values_.begin(); }
     iterator end() { return values_.end(); }
 
-    // Lie operations
+    // Manifold operations
+
+    /** The dimensionality of the tangent space */
+    size_t dim() const;
 
     /** Add a delta config to current config and returns a new config */
     LieValues retract(const VectorValues& delta, const Ordering& ordering) const;
