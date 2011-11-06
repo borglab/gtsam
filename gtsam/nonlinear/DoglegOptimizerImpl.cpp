@@ -9,33 +9,33 @@
 namespace gtsam {
 /* ************************************************************************* */
 VectorValues DoglegOptimizerImpl::ComputeDoglegPoint(
-    double Delta, const VectorValues& x_u, const VectorValues& x_n) {
+    double Delta, const VectorValues& x_u, const VectorValues& x_n, const bool verbose) {
 
   // Get magnitude of each update and find out which segment Delta falls in
   assert(Delta >= 0.0);
   double DeltaSq = Delta*Delta;
   double x_u_norm_sq = x_u.vector().squaredNorm();
   double x_n_norm_sq = x_n.vector().squaredNorm();
-  cout << "Steepest descent magnitude " << sqrt(x_u_norm_sq) << ", Newton's method magnitude " << sqrt(x_n_norm_sq) << endl;
+  if(verbose) cout << "Steepest descent magnitude " << sqrt(x_u_norm_sq) << ", Newton's method magnitude " << sqrt(x_n_norm_sq) << endl;
   if(DeltaSq < x_u_norm_sq) {
     // Trust region is smaller than steepest descent update
     VectorValues x_d = VectorValues::SameStructure(x_u);
     x_d.vector() = x_u.vector() * sqrt(DeltaSq / x_u_norm_sq);
-    cout << "In steepest descent region with fraction " << sqrt(DeltaSq / x_u_norm_sq) << " of steepest descent magnitude" << endl;
+    if(verbose) cout << "In steepest descent region with fraction " << sqrt(DeltaSq / x_u_norm_sq) << " of steepest descent magnitude" << endl;
     return x_d;
   } else if(DeltaSq < x_n_norm_sq) {
     // Trust region boundary is between steepest descent point and Newton's method point
     return ComputeBlend(Delta, x_u, x_n);
   } else {
     assert(DeltaSq >= x_n_norm_sq);
-    cout << "In pure Newton's method region" << endl;
+    if(verbose) cout << "In pure Newton's method region" << endl;
     // Trust region is larger than Newton's method point
     return x_n;
   }
 }
 
 /* ************************************************************************* */
-VectorValues DoglegOptimizerImpl::ComputeBlend(double Delta, const VectorValues& x_u, const VectorValues& x_n) {
+VectorValues DoglegOptimizerImpl::ComputeBlend(double Delta, const VectorValues& x_u, const VectorValues& x_n, const bool verbose) {
 
   // See doc/trustregion.lyx or doc/trustregion.pdf
 
@@ -64,7 +64,7 @@ VectorValues DoglegOptimizerImpl::ComputeBlend(double Delta, const VectorValues&
   }
 
   // Compute blended point
-  cout << "In blend region with fraction " << tau << " of Newton's method point" << endl;
+  if(verbose) cout << "In blend region with fraction " << tau << " of Newton's method point" << endl;
   VectorValues blend = VectorValues::SameStructure(x_u);
   blend.vector() = (1. - tau) * x_u.vector() + tau * x_n.vector();
   return blend;
