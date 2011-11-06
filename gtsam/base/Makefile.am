@@ -37,7 +37,7 @@ sources += DSFVector.cpp
 check_PROGRAMS += tests/testBTree tests/testDSF tests/testDSFVector
 
 # Timing tests
-noinst_PROGRAMS = tests/timeMatrix tests/timeVirtual tests/timeTest
+noinst_PROGRAMS = tests/timeMatrix tests/timeVirtual tests/timeVirtual2 tests/timeTest
 noinst_PROGRAMS += tests/timeMatrixOps 
 
 #----------------------------------------------------------------------------------------------------

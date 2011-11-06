@@ -75,7 +75,7 @@ struct DoglegOptimizerImpl {
   template<class M, class F, class VALUES>
   static IterationResult Iterate(
       double Delta, TrustRegionAdaptationMode mode, const M& Rd,
-      const F& f, const VALUES& x0, const Ordering& ordering, double f_error);
+      const F& f, const VALUES& x0, const Ordering& ordering, const double f_error, const bool verbose=false);
 
   /**
    * Compute the dogleg point given a trust region radius \f$ \Delta \f$.  The
@@ -98,7 +98,7 @@ struct DoglegOptimizerImpl {
    * @param bayesNet The Bayes' net \f$ (R,d) \f$ as described above.
    * @return The dogleg point \f$ \delta x_d \f$
    */
-  static VectorValues ComputeDoglegPoint(double Delta, const VectorValues& x_u, const VectorValues& x_n);
+  static VectorValues ComputeDoglegPoint(double Delta, const VectorValues& x_u, const VectorValues& x_n, const bool verbose=false);
 
   /** Compute the minimizer \f$ \delta x_u \f$ of the line search along the gradient direction \f$ g \f$ of
    * the function
@@ -132,7 +132,7 @@ struct DoglegOptimizerImpl {
    * @param xu Steepest descent minimizer
    * @param xn Newton's method minimizer
    */
-  static VectorValues ComputeBlend(double Delta, const VectorValues& x_u, const VectorValues& x_n);
+  static VectorValues ComputeBlend(double Delta, const VectorValues& x_u, const VectorValues& x_n, const bool verbose=false);
 };
 
 
@@ -140,7 +140,7 @@ struct DoglegOptimizerImpl {
 template<class M, class F, class VALUES>
 typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
     double Delta, TrustRegionAdaptationMode mode, const M& Rd,
-    const F& f, const VALUES& x0, const Ordering& ordering, double f_error) {
+    const F& f, const VALUES& x0, const Ordering& ordering, const double f_error, const bool verbose) {
 
   // Compute steepest descent and Newton's method points
   VectorValues dx_u = ComputeSteepestDescentPoint(Rd);
@@ -156,7 +156,7 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
     // Compute dog leg point
     result.dx_d = ComputeDoglegPoint(Delta, dx_u, dx_n);
 
-    cout << "Delta = " << Delta << ", dx_d_norm = " << result.dx_d.vector().norm() << endl;
+    if(verbose) cout << "Delta = " << Delta << ", dx_d_norm = " << result.dx_d.vector().norm() << endl;
 
     // Compute expmapped solution
     const VALUES x_d(x0.retract(result.dx_d, ordering));
@@ -167,8 +167,8 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
     // Compute decrease in M
     const double new_M_error = jfg.error(result.dx_d);
 
-    cout << "f error: " << f_error << " -> " << result.f_error << endl;
-    cout << "M error: " << M_error << " -> " << new_M_error << endl;
+    if(verbose) cout << "f error: " << f_error << " -> " << result.f_error << endl;
+    if(verbose) cout << "M error: " << M_error << " -> " << new_M_error << endl;
 
     // Compute gain ratio.  Here we take advantage of the invariant that the
     // Bayes' net error at zero is equal to the nonlinear error
@@ -176,7 +176,7 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
         0.5 :
         (f_error - result.f_error) / (M_error - new_M_error);
 
-    cout << "rho = " << rho << endl;
+    if(verbose) cout << "rho = " << rho << endl;
 
     if(rho >= 0.75) {
       // M agrees very well with f, so try to increase lambda
