@@ -43,12 +43,12 @@
 // Main typedefs
 typedef gtsam::TypedSymbol<gtsam::Pose2, 'x'> PoseKey;       // Key for poses, with type included
 typedef gtsam::TypedSymbol<gtsam::Point2,'l'> PointKey;      // Key for points, with type included
-typedef gtsam::LieValues<PoseKey> PoseValues;                // config type for poses
-typedef gtsam::LieValues<PointKey> PointValues;              // config type for points
-typedef gtsam::TupleValues2<PoseValues, PointValues> Values; // main config with two variable classes
-typedef gtsam::NonlinearFactorGraph<Values> Graph;			 // graph structure
-typedef gtsam::NonlinearOptimizer<Graph,Values,gtsam::GaussianFactorGraph,gtsam::GaussianSequentialSolver> OptimizerSeqential;   // optimization engine for this domain
-typedef gtsam::NonlinearOptimizer<Graph,Values,gtsam::GaussianFactorGraph,gtsam::GaussianMultifrontalSolver> OptimizerMultifrontal;   // optimization engine for this domain
+typedef gtsam::Values<PoseKey> PoseValues;                // config type for poses
+typedef gtsam::Values<PointKey> PointValues;              // config type for points
+typedef gtsam::TupleValues2<PoseValues, PointValues> PlanarValues; // main config with two variable classes
+typedef gtsam::NonlinearFactorGraph<PlanarValues> Graph;			 // graph structure
+typedef gtsam::NonlinearOptimizer<Graph,PlanarValues,gtsam::GaussianFactorGraph,gtsam::GaussianSequentialSolver> OptimizerSeqential;   // optimization engine for this domain
+typedef gtsam::NonlinearOptimizer<Graph,PlanarValues,gtsam::GaussianFactorGraph,gtsam::GaussianMultifrontalSolver> OptimizerMultifrontal;   // optimization engine for this domain
 
 using namespace std;
 using namespace gtsam;
@@ -74,7 +74,7 @@ int main(int argc, char** argv) {
 	// gaussian for prior
 	SharedDiagonal prior_model = noiseModel::Diagonal::Sigmas(Vector_(3, 0.3, 0.3, 0.1));
 	Pose2 prior_measurement(0.0, 0.0, 0.0); // prior at origin
-	PriorFactor<Values, PoseKey> posePrior(x1, prior_measurement, prior_model); // create the factor
+	PriorFactor<PlanarValues, PoseKey> posePrior(x1, prior_measurement, prior_model); // create the factor
 	graph->add(posePrior);  // add the factor to the graph
 
 	/* add odometry */
@@ -82,8 +82,8 @@ int main(int argc, char** argv) {
 	SharedDiagonal odom_model = noiseModel::Diagonal::Sigmas(Vector_(3, 0.2, 0.2, 0.1));
 	Pose2 odom_measurement(2.0, 0.0, 0.0); // create a measurement for both factors (the same in this case)
 	// create between factors to represent odometry
-	BetweenFactor<Values,PoseKey> odom12(x1, x2, odom_measurement, odom_model);
-	BetweenFactor<Values,PoseKey> odom23(x2, x3, odom_measurement, odom_model);
+	BetweenFactor<PlanarValues,PoseKey> odom12(x1, x2, odom_measurement, odom_model);
+	BetweenFactor<PlanarValues,PoseKey> odom23(x2, x3, odom_measurement, odom_model);
 	graph->add(odom12); // add both to graph
 	graph->add(odom23);
 
@@ -100,9 +100,9 @@ int main(int argc, char** argv) {
 		   range32 = 2.0;
 
 	// create bearing/range factors
-	BearingRangeFactor<Values, PoseKey, PointKey> meas11(x1, l1, bearing11, range11, meas_model);
-	BearingRangeFactor<Values, PoseKey, PointKey> meas21(x2, l1, bearing21, range21, meas_model);
-	BearingRangeFactor<Values, PoseKey, PointKey> meas32(x3, l2, bearing32, range32, meas_model);
+	BearingRangeFactor<PlanarValues, PoseKey, PointKey> meas11(x1, l1, bearing11, range11, meas_model);
+	BearingRangeFactor<PlanarValues, PoseKey, PointKey> meas21(x2, l1, bearing21, range21, meas_model);
+	BearingRangeFactor<PlanarValues, PoseKey, PointKey> meas32(x3, l2, bearing32, range32, meas_model);
 
 	// add the factors
 	graph->add(meas11);
@@ -112,7 +112,7 @@ int main(int argc, char** argv) {
 	graph->print("Full Graph");
 
 	// initialize to noisy points
-	boost::shared_ptr<Values> initial(new Values);
+	boost::shared_ptr<PlanarValues> initial(new PlanarValues);
 	initial->insert(x1, Pose2(0.5, 0.0, 0.2));
 	initial->insert(x2, Pose2(2.3, 0.1,-0.2));
 	initial->insert(x3, Pose2(4.1, 0.1, 0.1));

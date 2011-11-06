@@ -24,7 +24,7 @@ namespace gtsam {
  * GaussianConditional, and the values on which that GaussianISAM2 is
  * templated.
  *
- * @tparam VALUES The LieValues or TupleValues\Emph{N} that contains the
+ * @tparam VALUES The Values or TupleValues\Emph{N} that contains the
  * variables.
  */
 template <class VALUES>

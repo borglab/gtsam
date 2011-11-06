@@ -39,8 +39,8 @@ namespace gtsam {
    */
   typedef TypedSymbol<Pose3,'x'> PoseKey;									///< The key type used for poses
   typedef TypedSymbol<Point3,'l'> PointKey;								///< The key type used for points
-  typedef LieValues<PoseKey> PoseValues;									///< Values used for poses
-  typedef LieValues<PointKey> PointValues;								///< Values used for points
+  typedef Values<PoseKey> PoseValues;									///< Values used for poses
+  typedef Values<PointKey> PointValues;								///< Values used for points
   typedef TupleValues2<PoseValues, PointValues> Values;		///< Values data structure
   typedef boost::shared_ptr<Values> shared_values;				///< shared pointer to values data structure
 

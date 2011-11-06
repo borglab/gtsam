@@ -41,11 +41,11 @@ namespace gtsam {
 		/// Typedef for a PointKey with Point2 data and 'l' symbol
 		typedef TypedSymbol<Point2, 'l'> PointKey;
 
-		/// Typedef for LieValues structure with PoseKey type
-		typedef LieValues<PoseKey> PoseValues;
+		/// Typedef for Values structure with PoseKey type
+		typedef Values<PoseKey> PoseValues;
 
-		/// Typedef for LieValues structure with PointKey type
-		typedef LieValues<PointKey> PointValues;
+		/// Typedef for Values structure with PointKey type
+		typedef Values<PointKey> PointValues;
 
 		/// Values class, inherited from TupleValues2, using PoseKeys and PointKeys
 		struct Values: public TupleValues2<PoseValues, PointValues> {

@@ -19,7 +19,7 @@
 
 #include <gtsam/base/LieVector.h>
 #include <gtsam/geometry/Pose2.h>
-#include <gtsam/nonlinear/LieValues.h>
+#include <gtsam/nonlinear/Values.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/Key.h>
@@ -37,8 +37,8 @@ namespace gtsam {
 		/// Keys with Pose2 and symbol 'x'
 		typedef TypedSymbol<Pose2, 'x'> Key;
 
-		/// LieValues with type 'Key'
-		typedef LieValues<Key> Values;
+		/// Values with type 'Key'
+		typedef Values<Key> Values;
 
 		/**
 		 * Create a circle of n 2D poses tangent to circle of radius R, first pose at (R,0)

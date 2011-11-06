@@ -24,7 +24,7 @@ namespace gtsam {
 	 * A class for a soft prior on any Lie type
 	 * It takes two template parameters:
 	 *   Key (typically TypedSymbol) is used to look up T's in a Values
-	 *   Values where the T's are stored, typically LieValues<Key> or a TupleValues<...>
+	 *   Values where the T's are stored, typically Values<Key> or a TupleValues<...>
 	 * The Key type is not arbitrary: we need to cast to a Symbol at linearize, so
 	 * a simple type like int will not work
 	 */

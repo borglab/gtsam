@@ -27,8 +27,7 @@ using namespace gtsam;
 using namespace pose2SLAM;
 
 Graph graph;
-Values initial;
-Values result;
+pose2SLAM::Values initial, result;
 
 /* ************************************************************************* */
 int main(void) {

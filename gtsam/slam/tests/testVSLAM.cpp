@@ -32,7 +32,6 @@ using namespace boost;
 
 using namespace std;
 using namespace gtsam;
-using namespace gtsam::visualSLAM;
 using namespace boost;
 
 static SharedNoiseModel sigma(noiseModel::Unit::Create(1));
@@ -58,7 +57,7 @@ Pose3 camera2(Matrix_(3,3,
 	      Point3(0,0,5.00));
 
 /* ************************************************************************* */
-Graph testGraph() {
+visualSLAM::Graph testGraph() {
   Point2 z11(-100, 100);
 	Point2 z12(-100,-100);
 	Point2 z13( 100,-100);
@@ -69,7 +68,7 @@ Graph testGraph() {
 	Point2 z24( 125, 125);
 
   shared_ptrK sK(new Cal3_S2(625, 625, 0, 0, 0));
-  Graph g;
+  visualSLAM::Graph g;
   g.addMeasurement(z11, sigma, 1, 1, sK);
   g.addMeasurement(z12, sigma, 1, 2, sK);
   g.addMeasurement(z13, sigma, 1, 3, sK);
@@ -85,14 +84,14 @@ Graph testGraph() {
 TEST( Graph, optimizeLM)
 {
   // build a graph
-  shared_ptr<Graph> graph(new Graph(testGraph()));
+  shared_ptr<visualSLAM::Graph> graph(new visualSLAM::Graph(testGraph()));
 	// add 3 landmark constraints
   graph->addPointConstraint(1, landmark1);
   graph->addPointConstraint(2, landmark2);
   graph->addPointConstraint(3, landmark3);
 
   // Create an initial values structure corresponding to the ground truth
-  boost::shared_ptr<Values> initialEstimate(new Values);
+  boost::shared_ptr<visualSLAM::Values> initialEstimate(new visualSLAM::Values);
   initialEstimate->insert(1, camera1);
   initialEstimate->insert(2, camera2);
   initialEstimate->insert(1, landmark1);
@@ -106,12 +105,12 @@ TEST( Graph, optimizeLM)
 
   // Create an optimizer and check its error
   // We expect the initial to be zero because config is the ground truth
-  Optimizer optimizer(graph, initialEstimate, ordering);
+  visualSLAM::Optimizer optimizer(graph, initialEstimate, ordering);
   DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
 
   // Iterate once, and the config should not have changed because we started
   // with the ground truth
-  Optimizer afterOneIteration = optimizer.iterate();
+  visualSLAM::Optimizer afterOneIteration = optimizer.iterate();
   DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
 
   // check if correct
@@ -123,13 +122,13 @@ TEST( Graph, optimizeLM)
 TEST( Graph, optimizeLM2)
 {
   // build a graph
-  shared_ptr<Graph> graph(new Graph(testGraph()));
+  shared_ptr<visualSLAM::Graph> graph(new visualSLAM::Graph(testGraph()));
 	// add 2 camera constraints
   graph->addPoseConstraint(1, camera1);
   graph->addPoseConstraint(2, camera2);
 
   // Create an initial values structure corresponding to the ground truth
-  boost::shared_ptr<Values> initialEstimate(new Values);
+  boost::shared_ptr<visualSLAM::Values> initialEstimate(new visualSLAM::Values);
   initialEstimate->insert(1, camera1);
   initialEstimate->insert(2, camera2);
   initialEstimate->insert(1, landmark1);
@@ -143,12 +142,12 @@ TEST( Graph, optimizeLM2)
 
   // Create an optimizer and check its error
   // We expect the initial to be zero because config is the ground truth
-  Optimizer optimizer(graph, initialEstimate, ordering);
+  visualSLAM::Optimizer optimizer(graph, initialEstimate, ordering);
   DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
 
   // Iterate once, and the config should not have changed because we started
   // with the ground truth
-  Optimizer afterOneIteration = optimizer.iterate();
+  visualSLAM::Optimizer afterOneIteration = optimizer.iterate();
   DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
 
   // check if correct
@@ -160,13 +159,13 @@ TEST( Graph, optimizeLM2)
 TEST( Graph, CHECK_ORDERING)
 {
   // build a graph
-  shared_ptr<Graph> graph(new Graph(testGraph()));
+  shared_ptr<visualSLAM::Graph> graph(new visualSLAM::Graph(testGraph()));
   // add 2 camera constraints
   graph->addPoseConstraint(1, camera1);
   graph->addPoseConstraint(2, camera2);
 
   // Create an initial values structure corresponding to the ground truth
-  boost::shared_ptr<Values> initialEstimate(new Values);
+  boost::shared_ptr<visualSLAM::Values> initialEstimate(new visualSLAM::Values);
   initialEstimate->insert(1, camera1);
   initialEstimate->insert(2, camera2);
   initialEstimate->insert(1, landmark1);
@@ -178,12 +177,12 @@ TEST( Graph, CHECK_ORDERING)
 
   // Create an optimizer and check its error
   // We expect the initial to be zero because config is the ground truth
-  Optimizer optimizer(graph, initialEstimate, ordering);
+  visualSLAM::Optimizer optimizer(graph, initialEstimate, ordering);
   DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
 
   // Iterate once, and the config should not have changed because we started
   // with the ground truth
-  Optimizer afterOneIteration = optimizer.iterate();
+  visualSLAM::Optimizer afterOneIteration = optimizer.iterate();
   DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
 
   // check if correct
@@ -194,23 +193,23 @@ TEST( Graph, CHECK_ORDERING)
 TEST( Values, update_with_large_delta) {
 	// this test ensures that if the update for delta is larger than
 	// the size of the config, it only updates existing variables
-	Values init;
+	visualSLAM::Values init;
 	init.insert(1, Pose3());
 	init.insert(1, Point3(1.0, 2.0, 3.0));
 
-	Values expected;
+	visualSLAM::Values expected;
 	expected.insert(1, Pose3(Rot3(), Point3(0.1, 0.1, 0.1)));
 	expected.insert(1, Point3(1.1, 2.1, 3.1));
 
 	Ordering largeOrdering;
-	Values largeValues = init;
+	visualSLAM::Values largeValues = init;
 	largeValues.insert(2, Pose3());
 	largeOrdering += "x1","l1","x2";
 	VectorValues delta(largeValues.dims(largeOrdering));
 	delta[largeOrdering["x1"]] = Vector_(6, 0.0, 0.0, 0.0, 0.1, 0.1, 0.1);
 	delta[largeOrdering["l1"]] = Vector_(3, 0.1, 0.1, 0.1);
 	delta[largeOrdering["x2"]] = Vector_(6, 0.0, 0.0, 0.0, 100.1, 4.1, 9.1);
-	Values actual = init.retract(delta, largeOrdering);
+	visualSLAM::Values actual = init.retract(delta, largeOrdering);
 
 	CHECK(assert_equal(expected,actual));
 }

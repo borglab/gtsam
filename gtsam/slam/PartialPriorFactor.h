@@ -33,7 +33,7 @@ namespace gtsam {
 	 *
 	 * It takes two template parameters:
 	 *   Key (typically TypedSymbol) is used to look up T's in a Values
-	 *   Values where the T's are stored, typically LieValues<Key> or a TupleValues<...>
+	 *   Values where the T's are stored, typically Values<Key> or a TupleValues<...>
 	 *
 	 * For practical use, it would be good to subclass this factor and have the class type
 	 * construct the mask.

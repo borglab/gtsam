@@ -103,9 +103,9 @@ Graph setupGraph(std::vector<Feature2D>& measurements, SharedNoiseModel measurem
  * Create a structure of initial estimates for all nodes (landmarks and poses) in the graph.
  * The returned Values structure contains all initial values for all nodes.
  */
-Values initialize(std::map<int, Point3> landmarks, std::map<int, Pose3> poses) {
+visualSLAM::Values initialize(std::map<int, Point3> landmarks, std::map<int, Pose3> poses) {
 
-  Values initValues;
+	visualSLAM::Values initValues;
 
   // Initialize landmarks 3D positions.
   for (map<int, Point3>::iterator lmit = landmarks.begin(); lmit != landmarks.end(); lmit++)
@@ -136,7 +136,7 @@ int main(int argc, char* argv[]) {
   boost::shared_ptr<Graph> graph(new Graph(setupGraph(g_measurements, measurementSigma, g_calib)));
 
   // Create an initial Values structure using groundtruth values as the initial estimates
-  boost::shared_ptr<Values> initialEstimates(new Values(initialize(g_landmarks, g_poses)));
+  boost::shared_ptr<visualSLAM::Values> initialEstimates(new visualSLAM::Values(initialize(g_landmarks, g_poses)));
   cout << "*******************************************************" << endl;
   initialEstimates->print("INITIAL ESTIMATES: ");
 
@@ -148,7 +148,7 @@ int main(int argc, char* argv[]) {
   // Optimize the graph
   cout << "*******************************************************" << endl;
   NonlinearOptimizationParameters::sharedThis params = NonlinearOptimizationParameters::newVerbosity(Optimizer::Parameters::DAMPED);
-  Optimizer::shared_values result = Optimizer::optimizeGN(graph, initialEstimates, params);
+  visualSLAM::Optimizer::shared_values result = visualSLAM::Optimizer::optimizeGN(graph, initialEstimates, params);
 
   // Print final results
   cout << "*******************************************************" << endl;

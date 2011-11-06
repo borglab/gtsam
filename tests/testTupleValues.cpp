@@ -39,9 +39,9 @@ static const double tol = 1e-5;
 
 typedef TypedSymbol<Pose2, 'x'> PoseKey;
 typedef TypedSymbol<Point2, 'l'> PointKey;
-typedef LieValues<PoseKey> PoseValues;
-typedef LieValues<PointKey> PointValues;
-typedef TupleValues2<PoseValues, PointValues> Values;
+typedef Values<PoseKey> PoseValues;
+typedef Values<PointKey> PointValues;
+typedef TupleValues2<PoseValues, PointValues> TestValues;
 
 /* ************************************************************************* */
 TEST( TupleValues, constructors )
@@ -49,14 +49,14 @@ TEST( TupleValues, constructors )
 	Pose2 x1(1,2,3), x2(6,7,8);
 	Point2 l1(4,5), l2(9,10);
 
-	Values::Values1 cfg1;
+	TestValues::Values1 cfg1;
 	cfg1.insert(PoseKey(1), x1);
 	cfg1.insert(PoseKey(2), x2);
-	Values::Values2 cfg2;
+	TestValues::Values2 cfg2;
 	cfg2.insert(PointKey(1), l1);
 	cfg2.insert(PointKey(2), l2);
 
-	Values actual(cfg1, cfg2), expected;
+	TestValues actual(cfg1, cfg2), expected;
 	expected.insert(PoseKey(1), x1);
 	expected.insert(PoseKey(2), x2);
 	expected.insert(PointKey(1), l1);
@@ -71,13 +71,13 @@ TEST( TupleValues, insert_equals1 )
 	Pose2 x1(1,2,3), x2(6,7,8);
 	Point2 l1(4,5), l2(9,10);
 
-  Values expected;
+  TestValues expected;
   expected.insert(PoseKey(1), x1);
   expected.insert(PoseKey(2), x2);
   expected.insert(PointKey(1), l1);
   expected.insert(PointKey(2), l2);
 
-  Values actual;
+  TestValues actual;
   actual.insert(PoseKey(1), x1);
   actual.insert(PoseKey(2), x2);
   actual.insert(PointKey(1), l1);
@@ -92,13 +92,13 @@ TEST( TupleValues, insert_equals2 )
   Pose2 x1(1,2,3), x2(6,7,8);
   Point2 l1(4,5), l2(9,10);
 
-  Values values1;
+  TestValues values1;
   values1.insert(PoseKey(1), x1);
   values1.insert(PoseKey(2), x2);
   values1.insert(PointKey(1), l1);
   values1.insert(PointKey(2), l2);
 
-  Values values2;
+  TestValues values2;
   values2.insert(PoseKey(1), x1);
   values2.insert(PoseKey(2), x2);
   values2.insert(PointKey(1), l1);
@@ -116,7 +116,7 @@ TEST( TupleValues, insert_duplicate )
   Pose2 x1(1,2,3), x2(6,7,8);
   Point2 l1(4,5), l2(9,10);
 
-  Values values1;
+  TestValues values1;
   values1.insert(1, x1); // 3
   values1.insert(2, x2); // 6
   values1.insert(1, l1); // 8
@@ -134,7 +134,7 @@ TEST( TupleValues, size_dim )
   Pose2 x1(1,2,3), x2(6,7,8);
   Point2 l1(4,5), l2(9,10);
 
-  Values values1;
+  TestValues values1;
   values1.insert(PoseKey(1), x1);
   values1.insert(PoseKey(2), x2);
   values1.insert(PointKey(1), l1);
@@ -150,7 +150,7 @@ TEST(TupleValues, at)
   Pose2 x1(1,2,3), x2(6,7,8);
   Point2 l1(4,5), l2(9,10);
 
-  Values values1;
+  TestValues values1;
   values1.insert(PoseKey(1), x1);
   values1.insert(PoseKey(2), x2);
   values1.insert(PointKey(1), l1);
@@ -171,7 +171,7 @@ TEST(TupleValues, zero_expmap_logmap)
   Pose2 x1(1,2,3), x2(6,7,8);
   Point2 l1(4,5), l2(9,10);
 
-  Values values1;
+  TestValues values1;
   values1.insert(PoseKey(1), x1);
   values1.insert(PoseKey(2), x2);
   values1.insert(PointKey(1), l1);
@@ -192,13 +192,13 @@ TEST(TupleValues, zero_expmap_logmap)
   delta[o["l1"]] = Vector_(2, 1.0, 1.1);
   delta[o["l2"]] = Vector_(2, 1.3, 1.4);
 
-  Values expected;
+  TestValues expected;
   expected.insert(PoseKey(1), x1.retract(Vector_(3, 1.0, 1.1, 1.2)));
   expected.insert(PoseKey(2), x2.retract(Vector_(3, 1.3, 1.4, 1.5)));
   expected.insert(PointKey(1), Point2(5.0, 6.1));
   expected.insert(PointKey(2), Point2(10.3, 11.4));
 
-  Values actual = values1.retract(delta, o);
+  TestValues actual = values1.retract(delta, o);
   CHECK(assert_equal(expected, actual));
 
   // Check log
@@ -216,12 +216,12 @@ typedef TypedSymbol<Point3, 'b'> Point3Key;
 typedef TypedSymbol<Point3, 'c'> Point3Key2;
 
 // some values types
-typedef LieValues<PoseKey> PoseValues;
-typedef LieValues<PointKey> PointValues;
-typedef LieValues<LamKey> LamValues;
-typedef LieValues<Pose3Key> Pose3Values;
-typedef LieValues<Point3Key> Point3Values;
-typedef LieValues<Point3Key2> Point3Values2;
+typedef Values<PoseKey> PoseValues;
+typedef Values<PointKey> PointValues;
+typedef Values<LamKey> LamValues;
+typedef Values<Pose3Key> Pose3Values;
+typedef Values<Point3Key> Point3Values;
+typedef Values<Point3Key2> Point3Values2;
 
 // some TupleValues types
 typedef TupleValues<PoseValues, TupleValuesEnd<PointValues> > ValuesA;

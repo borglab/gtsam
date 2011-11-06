@@ -109,8 +109,8 @@ TEST( GaussianJunctionTree, optimizeMultiFrontal )
 TEST( GaussianJunctionTree, optimizeMultiFrontal2)
 {
 	// create a graph
-	Graph nlfg = createNonlinearFactorGraph();
-	Values noisy = createNoisyValues();
+	example::Graph nlfg = createNonlinearFactorGraph();
+	example::Values noisy = createNoisyValues();
   Ordering ordering; ordering += "x1","x2","l1";
 	GaussianFactorGraph fg = *nlfg.linearize(noisy, ordering);
 

@@ -16,7 +16,7 @@
  * @author Alex Cunningham
  */
 
-#include <gtsam/nonlinear/LieValues.h>
+#include <gtsam/nonlinear/Values.h>
 #include <gtsam/linear/VectorValues.h>
 
 #pragma once
@@ -24,11 +24,11 @@
 namespace gtsam {
 
  /**
-   *  TupleValues are a structure to manage heterogenous LieValues, so as to
+   *  TupleValues are a structure to manage heterogenous Values, so as to
    *  enable different types of variables/keys to be used simultaneously.  We
    *  do this with recursive templates (instead of blind pointer casting) to
    *  reduce run-time overhead and keep static type checking.  The interface
-   *  mimics that of a single LieValues.
+   *  mimics that of a single Values.
    *
    *  This uses a recursive structure of values pairs to form a lisp-like
    *  list, with a special case (TupleValuesEnd) that contains only one values

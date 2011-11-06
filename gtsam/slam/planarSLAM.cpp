@@ -24,11 +24,10 @@
 // Use planarSLAM namespace for specific SLAM instance
 namespace gtsam {
 
-	using namespace planarSLAM;
-	INSTANTIATE_LIE_VALUES(PointKey)
-	INSTANTIATE_TUPLE_VALUES2(PoseValues, PointValues)
-	INSTANTIATE_NONLINEAR_FACTOR_GRAPH(Values)
-	INSTANTIATE_NONLINEAR_OPTIMIZER(Graph, Values)
+	INSTANTIATE_VALUES(planarSLAM::PointKey)
+	INSTANTIATE_TUPLE_VALUES2(planarSLAM::PoseValues, planarSLAM::PointValues)
+	INSTANTIATE_NONLINEAR_FACTOR_GRAPH(planarSLAM::Values)
+	INSTANTIATE_NONLINEAR_OPTIMIZER(planarSLAM::Graph, planarSLAM::Values)
 
 	namespace planarSLAM {
 

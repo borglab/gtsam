@@ -16,14 +16,15 @@
 **/
 
 #include <gtsam/slam/Simulated3D.h>
-#include <gtsam/nonlinear/LieValues-inl.h>
+#include <gtsam/nonlinear/Values-inl.h>
 #include <gtsam/nonlinear/TupleValues-inl.h>
 
 namespace gtsam {
 
+INSTANTIATE_VALUES(simulated3D::PointKey)
+INSTANTIATE_VALUES(simulated3D::PoseKey)
+
 using namespace simulated3D;
-INSTANTIATE_LIE_VALUES(PointKey)
-INSTANTIATE_LIE_VALUES(PoseKey)
 INSTANTIATE_TUPLE_VALUES2(PoseValues, PointValues)
 
 namespace simulated3D {
