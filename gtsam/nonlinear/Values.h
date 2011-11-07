@@ -13,7 +13,7 @@
  * @file Values.h
  * @author Richard Roberts
  *
- * @brief A templated config for Lie-group elements
+ * @brief A templated config for Manifold-group elements
  *
  *  Detailed story:
  *  A values structure is a map from keys to values. It is used to specify the value of a bunch
@@ -29,6 +29,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/FastMap.h>
 #include <gtsam/base/Vector.h>
+#include <gtsam/base/Manifold.h>
 #include <gtsam/nonlinear/Ordering.h>
 
 namespace boost { template<class T> class optional; }
@@ -37,7 +38,7 @@ namespace gtsam { class VectorValues; class Ordering; }
 namespace gtsam {
 
 	/**
-	 * Lie type values structure
+	 * Manifold type values structure
 	 * Takes two template types
 	 *  J: a key type to look up values in the values structure (need to be sortable)
 	 *
