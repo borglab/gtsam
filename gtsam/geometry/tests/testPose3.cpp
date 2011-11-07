@@ -148,7 +148,7 @@ TEST(Pose3, expmaps_galore)
 	actual = Pose3::Retract(xi);
   EXPECT(assert_equal(expm<Pose3>(xi), actual,1e-6));
   EXPECT(assert_equal(Agrawal06iros(xi), actual,1e-6));
-  EXPECT(assert_equal(xi, logmap(actual),1e-6));
+  EXPECT(assert_equal(xi, localCoordinates(actual),1e-6));
 
 	xi = Vector_(6,0.1,-0.2,0.3,-0.4,0.5,-0.6);
 	for (double theta=1.0;0.3*theta<=M_PI;theta*=2) {
@@ -156,7 +156,7 @@ TEST(Pose3, expmaps_galore)
 		actual = Pose3::Retract(txi);
 		EXPECT(assert_equal(expm<Pose3>(txi,30), actual,1e-6));
 		EXPECT(assert_equal(Agrawal06iros(txi), actual,1e-6));
-		Vector log = logmap(actual);
+		Vector log = localCoordinates(actual);
 		EXPECT(assert_equal(actual, Pose3::Retract(log),1e-6));
 		EXPECT(assert_equal(txi,log,1e-6)); // not true once wraps
 	}
@@ -166,7 +166,7 @@ TEST(Pose3, expmaps_galore)
 	actual = Pose3::Retract(xi);
   EXPECT(assert_equal(expm<Pose3>(xi,10), actual,1e-5));
   EXPECT(assert_equal(Agrawal06iros(xi), actual,1e-6));
-  EXPECT(assert_equal(xi, logmap(actual),1e-6));
+  EXPECT(assert_equal(xi, localCoordinates(actual),1e-6));
 }
 
 /* ************************************************************************* */

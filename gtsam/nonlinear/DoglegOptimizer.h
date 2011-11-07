@@ -15,7 +15,7 @@ namespace gtsam {
  * This class is functional, meaning every method is \c const, and returns a new
  * copy of the class.
  *
- * \tparam VALUES The LieValues or TupleValues type to hold the values to be
+ * \tparam VALUES The Values or TupleValues type to hold the values to be
  * estimated.
  *
  * \tparam GAUSSIAN_SOLVER The linear solver to use at each iteration,

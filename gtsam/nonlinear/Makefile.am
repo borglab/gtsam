@@ -16,8 +16,8 @@ check_PROGRAMS =
 #----------------------------------------------------------------------------------------------------
 
 # Lie Groups
-headers += LieValues.h LieValues-inl.h TupleValues.h TupleValues-inl.h 
-check_PROGRAMS += tests/testLieValues tests/testKey tests/testOrdering
+headers += Values.h Values-inl.h TupleValues.h TupleValues-inl.h 
+check_PROGRAMS += tests/testValues tests/testKey tests/testOrdering
 
 # Nonlinear nonlinear
 headers += Key.h 

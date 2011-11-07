@@ -18,7 +18,7 @@ namespace gtsam {
  * here matches that in "trustregion.pdf" in gtsam_experimental/doc, see this
  * file for further explanation of the computations performed by this class.
  *
- * \tparam VALUES The LieValues or TupleValues type to hold the values to be
+ * \tparam VALUES The Values or TupleValues type to hold the values to be
  * estimated.
  *
  * \tparam GAUSSIAN_SOLVER The linear solver to use at each iteration,
@@ -60,7 +60,7 @@ struct DoglegOptimizerImpl {
    * @tparam M The type of the Bayes' net or tree, currently
    * either BayesNet<GaussianConditional> (or GaussianBayesNet) or BayesTree<GaussianConditional>.
    * @tparam F For normal usage this will be NonlinearFactorGraph<VALUES>.
-   * @tparam VALUES The LieValues or TupleValues to pass to F::error() to evaluate
+   * @tparam VALUES The Values or TupleValues to pass to F::error() to evaluate
    * the error function.
    * @param initialDelta The initial trust region radius.
    * @param Rd The Bayes' net or tree as described above.
@@ -159,7 +159,7 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
     if(verbose) cout << "Delta = " << Delta << ", dx_d_norm = " << result.dx_d.vector().norm() << endl;
 
     // Compute expmapped solution
-    const VALUES x_d(x0.expmap(result.dx_d, ordering));
+    const VALUES x_d(x0.retract(result.dx_d, ordering));
 
     // Compute decrease in f
     result.f_error = f.error(x_d);

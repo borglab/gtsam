@@ -40,7 +40,7 @@ class Pose2 {
 	int dim() const;
 	Pose2* compose_(const Pose2& p2);
 	Pose2* between_(const Pose2& p2);
-	Vector logmap(const Pose2& p);
+	Vector localCoordinates(const Pose2& p);
 };
 
 class SharedGaussian {
