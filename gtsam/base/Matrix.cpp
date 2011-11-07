@@ -616,7 +616,7 @@ Matrix inverse_square_root(const Matrix& A) {
 	Matrix R = RtR(A);
 	Matrix inv = eye(A.rows());
 	R.triangularView<Eigen::Upper>().solveInPlace<Eigen::OnTheRight>(inv);
-	return inv;
+	return inv.transpose();
 }
 
 /* ************************************************************************* */
