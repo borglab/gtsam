@@ -237,7 +237,7 @@ struct _SelectiveExpmapAndClear {
     assert(delta[var].size() == (int)it_x->second.dim());
     assert(delta[var].unaryExpr(&isfinite<double>).all());
     if(mask[var]) {
-      it_x->second = it_x->second.expmap(delta[var]);
+      it_x->second = it_x->second.retract(delta[var]);
       if(invalidate)
         (*invalidate)[var].operator=(Vector::Constant(delta[var].rows(), numeric_limits<double>::infinity())); // Strange syntax to work with clang++ (bug in clang?)
     }

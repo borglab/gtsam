@@ -25,7 +25,7 @@ namespace gtsam {
 /**
  * LieVector is a wrapper around vector to allow it to be a Lie type
  */
-struct LieVector : public Vector, public Lie<LieVector> {
+struct LieVector : public Vector {
 
 	/** default constructor - should be unnecessary */
 	LieVector() {}
@@ -57,30 +57,24 @@ struct LieVector : public Vector, public Lie<LieVector> {
 		return gtsam::equal(vector(), expected.vector(), tol);
 	}
 
-	/**
-	 * Returns dimensionality of the tangent space
-	 */
+	// Manifold requirements
+
+	/** Returns dimensionality of the tangent space */
 	inline size_t dim() const { return this->size(); }
 
-	/**
-	 * Returns Exponential map update of T
-	 * Default implementation calls global binary function
-	 */
-	inline LieVector expmap(const Vector& v) const { return LieVector(vector() + v); }
+	/** Update the LieVector with a tangent space update */
+	inline LieVector retract(const Vector& v) const { return LieVector(vector() + v); }
 
-	/** expmap around identity */
-	static inline LieVector Expmap(const Vector& v) { return LieVector(v); }
+	/** @return the local coordinates of another object */
+	inline Vector localCoordinates(const LieVector& t2) const { return LieVector(t2 - vector()); }
 
-	/**
-	 * Returns Log map
-	 * Default Implementation calls global binary function
-	 */
-	inline Vector logmap(const LieVector& lp) const {
-		return lp.vector() - vector();
+	// Group requirements
+
+	/** identity - NOTE: no known size at compile time - so zero length */
+	inline static LieVector identity() {
+		throw std::runtime_error("LieVector::identity(): Don't use this function");
+		return LieVector();
 	}
-
-	/** Logmap around identity - just returns with default cast back */
-	static inline Vector Logmap(const LieVector& p) { return p; }
 
 	/** compose with another object */
 	inline LieVector compose(const LieVector& p) const {
@@ -100,5 +94,14 @@ struct LieVector : public Vector, public Lie<LieVector> {
 	inline LieVector inverse() const {
 		return LieVector(-1.0 * vector());
 	}
+
+	// Lie functions
+
+	/** Expmap around identity */
+	static inline LieVector Expmap(const Vector& v) { return LieVector(v); }
+
+	/** Logmap around identity - just returns with default cast back */
+	static inline Vector Logmap(const LieVector& p) { return p; }
+
 };
 } // \namespace gtsam

@@ -25,6 +25,9 @@
 
 using namespace gtsam;
 
+GTSAM_CONCEPT_TESTABLE_INST(Rot3)
+GTSAM_CONCEPT_LIE_INST(Rot3)
+
 Rot3 R = Rot3::rodriguez(0.1, 0.4, 0.2);
 Point3 P(0.2, 0.7, -2.0);
 double error = 1e-9, epsilon = 0.001;
@@ -138,7 +141,7 @@ TEST( Rot3, rodriguez4)
 TEST( Rot3, expmap)
 {
 	Vector v = zero(3);
-	CHECK(assert_equal(R.expmap(v), R));
+	CHECK(assert_equal(R.retract(v), R));
 }
 
 /* ************************************************************************* */
@@ -185,11 +188,11 @@ TEST(Rot3, manifold)
 	Rot3 origin;
 
 	// log behaves correctly
-	Vector d12 = gR1.logmap(gR2);
-	CHECK(assert_equal(gR2, gR1.expmap(d12)));
+	Vector d12 = gR1.localCoordinates(gR2);
+	CHECK(assert_equal(gR2, gR1.retract(d12)));
 	CHECK(assert_equal(gR2, gR1*Rot3::Expmap(d12)));
-	Vector d21 = gR2.logmap(gR1);
-	CHECK(assert_equal(gR1, gR2.expmap(d21)));
+	Vector d21 = gR2.localCoordinates(gR1);
+	CHECK(assert_equal(gR1, gR2.retract(d21)));
 	CHECK(assert_equal(gR1, gR2*Rot3::Expmap(d21)));
 
 	// Check that log(t1,t2)=-log(t2,t1)

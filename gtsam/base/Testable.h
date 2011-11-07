@@ -63,6 +63,24 @@ namespace gtsam {
 	  }
 	};
 
+	/** Call print on the object */
+	template<class T>
+	inline void print(const T& object, const std::string& s = "") {
+		object.print(s);
+	}
+
+	/** Call equal on the object */
+	template<class T>
+	inline bool equal(const T& obj1, const T& obj2, double tol) {
+		return obj1.equals(obj2, tol);
+	}
+
+	/** Call equal on the object without tolerance (use default tolerance) */
+	template<class T>
+	inline bool equal(const T& obj1, const T& obj2) {
+		return obj1.equals(obj2);
+	}
+
 	/**
 	 * This template works for any type with equals
 	 */
@@ -111,6 +129,5 @@ namespace gtsam {
  * NOTE: intentionally not in the gtsam namespace to allow for classes not in
  * the gtsam namespace to be more easily enforced as testable
  */
-/// TODO: find better name for "INST" macro, something like "UNIT" or similar
 #define GTSAM_CONCEPT_TESTABLE_INST(T) template class gtsam::TestableConcept<T>;
 #define GTSAM_CONCEPT_TESTABLE_TYPE(T) typedef gtsam::TestableConcept<T> _gtsam_TestableConcept_##T;

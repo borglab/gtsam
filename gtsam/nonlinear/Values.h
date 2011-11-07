@@ -10,16 +10,16 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file LieValues.h
+ * @file Values.h
  * @author Richard Roberts
  *
- * @brief A templated config for Lie-group elements
+ * @brief A templated config for Manifold-group elements
  *
  *  Detailed story:
  *  A values structure is a map from keys to values. It is used to specify the value of a bunch
- *  of variables in a factor graph. A LieValues is a values structure which can hold variables that
- *  are elements of Lie groups, not just vectors. It then, as a whole, implements a aggregate type
- *  which is also a Lie group, and hence supports operations dim, expmap, and logmap.
+ *  of variables in a factor graph. A Values is a values structure which can hold variables that
+ *  are elements on manifolds, not just vectors. It then, as a whole, implements a aggregate type
+ *  which is also a manifold element, and hence supports operations dim, retract, and localCoordinates.
  */
 
 #pragma once
@@ -29,6 +29,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/FastMap.h>
 #include <gtsam/base/Vector.h>
+#include <gtsam/base/Manifold.h>
 #include <gtsam/nonlinear/Ordering.h>
 
 namespace boost { template<class T> class optional; }
@@ -37,7 +38,7 @@ namespace gtsam { class VectorValues; class Ordering; }
 namespace gtsam {
 
 	/**
-	 * Lie type values structure
+	 * Manifold type values structure
 	 * Takes two template types
 	 *  J: a key type to look up values in the values structure (need to be sortable)
 	 *
@@ -47,7 +48,7 @@ namespace gtsam {
 	 *  labels (example: Pose2, Point2, etc)
 	 */
   template<class J>
-  class LieValues {
+  class Values {
 
   public:
 
@@ -66,23 +67,24 @@ namespace gtsam {
 
     /** concept check */
     GTSAM_CONCEPT_TESTABLE_TYPE(Value)
+    GTSAM_CONCEPT_MANIFOLD_TYPE(Value)
 
     KeyValueMap values_;
 
   public:
 
-    LieValues() {}
-    LieValues(const LieValues& config) :
+    Values() {}
+    Values(const Values& config) :
       values_(config.values_) {}
     template<class J_ALT>
-    LieValues(const LieValues<J_ALT>& other) {} // do nothing when initializing with wrong type
-    virtual ~LieValues() {}
+    Values(const Values<J_ALT>& other) {} // do nothing when initializing with wrong type
+    virtual ~Values() {}
 
     /** print */
     void print(const std::string &s="") const;
 
     /** Test whether configs are identical in keys and values */
-    bool equals(const LieValues& expected, double tol=1e-9) const;
+    bool equals(const Values& expected, double tol=1e-9) const;
 
     /** Retrieve a variable by j, throws std::invalid_argument if not found */
     const Value& at(const J& j) const;
@@ -105,9 +107,6 @@ namespace gtsam {
     /** whether the config is empty */
     bool empty() const { return values_.empty(); }
 
-    /** The dimensionality of the tangent space */
-    size_t dim() const;
-
     /** Get a zero VectorValues of the correct structure */
     VectorValues zero(const Ordering& ordering) const;
 
@@ -116,16 +115,19 @@ namespace gtsam {
     iterator begin() { return values_.begin(); }
     iterator end() { return values_.end(); }
 
-    // Lie operations
+    // Manifold operations
+
+    /** The dimensionality of the tangent space */
+    size_t dim() const;
 
     /** Add a delta config to current config and returns a new config */
-    LieValues expmap(const VectorValues& delta, const Ordering& ordering) const;
+    Values retract(const VectorValues& delta, const Ordering& ordering) const;
 
     /** Get a delta config about a linearization point c0 (*this) */
-    VectorValues logmap(const LieValues& cp, const Ordering& ordering) const;
+    VectorValues localCoordinates(const Values& cp, const Ordering& ordering) const;
 
     /** Get a delta config about a linearization point c0 (*this) */
-    void logmap(const LieValues& cp, const Ordering& ordering, VectorValues& delta) const;
+    void localCoordinates(const Values& cp, const Ordering& ordering, VectorValues& delta) const;
 
     // imperative methods:
 
@@ -133,10 +135,10 @@ namespace gtsam {
     void insert(const J& j, const Value& val);
 
     /** Add a set of variables - does note replace existing values */
-    void insert(const LieValues& cfg);
+    void insert(const Values& cfg);
 
     /** update the current available values without adding new ones */
-    void update(const LieValues& cfg);
+    void update(const Values& cfg);
 
     /** single element change of existing element */
     void update(const J& j, const Value& val);
@@ -156,7 +158,7 @@ namespace gtsam {
     std::list<J> keys() const;
 
     /** Replace all keys and variables */
-    LieValues& operator=(const LieValues& rhs) {
+    Values& operator=(const Values& rhs) {
       values_ = rhs.values_;
       return (*this);
     }

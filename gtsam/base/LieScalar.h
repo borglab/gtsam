@@ -24,10 +24,10 @@ namespace gtsam {
 	/**
 	 * LieScalar is a wrapper around double to allow it to be a Lie type
 	 */
-	struct LieScalar : public Lie<LieScalar> {
+	struct LieScalar {
 
-		/** default constructor - should be unnecessary */
-		LieScalar() {}
+		/** default constructor */
+		LieScalar() : d_(0.0) {}
 
 		/** wrap a double */
 		LieScalar(double d) : d_(d) {}
@@ -45,33 +45,51 @@ namespace gtsam {
 			return fabs(expected.d_ - d_) <= tol;
 		}
 
-		/**
-		 * Returns dimensionality of the tangent space
-		 * with member and static versions
-		 */
+		// Manifold requirements
+
+		/** Returns dimensionality of the tangent space */
 		inline size_t dim() const { return 1; }
 		inline static size_t Dim() { return 1; }
 
-		/**
-		 * Returns Exponential map update of T
-		 * Default implementation calls global binary function
-		 */
-		inline LieScalar expmap(const Vector& v) const { return LieScalar(d_ + v(0)); }
+		/** Update the LieScalar with a tangent space update */
+		inline LieScalar retract(const Vector& v) const { return LieScalar(value() + v(0)); }
 
-		/** expmap around identity */
-		static inline LieScalar Expmap(const Vector& v) { return LieScalar(v(0)); }
+		/** @return the local coordinates of another object */
+		inline Vector localCoordinates(const LieScalar& t2) const { return Vector_(1,(t2.value() - value())); }
 
-		/**
-		 * Returns Log map
-		 * Default Implementation calls global binary function
-		 */
-		inline Vector logmap(const LieScalar& lp) const {
-			return Vector_(1, lp.d_ - d_);
+		// Group requirements
+
+		/** identity */
+		inline static LieScalar identity() {
+			return LieScalar();
 		}
 
-		/** Logmap around identity - just returns with default cast back */
-		static inline Vector Logmap(const LieScalar& p) { return Vector_(1, p.d_); }
+		/** compose with another object */
+		inline LieScalar compose(const LieScalar& p) const {
+			return LieScalar(d_ + p.d_);
+		}
 
+		/** between operation */
+		inline LieScalar between(const LieScalar& l2,
+				boost::optional<Matrix&> H1=boost::none,
+				boost::optional<Matrix&> H2=boost::none) const {
+			if(H1) *H1 = -eye(1);
+			if(H2) *H2 = eye(1);
+			return LieScalar(l2.value() - value());
+		}
+
+		/** invert the object and yield a new one */
+		inline LieScalar inverse() const {
+			return LieScalar(-1.0 * value());
+		}
+
+		// Lie functions
+
+		/** Expmap around identity */
+		static inline LieScalar Expmap(const Vector& v) { return LieScalar(v(0)); }
+
+		/** Logmap around identity - just returns with default cast back */
+		static inline Vector Logmap(const LieScalar& p) { return Vector_(1,p.value()); }
 
 	private:
 	    double d_;

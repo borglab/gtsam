@@ -67,8 +67,8 @@ namespace gtsam {
 		const size_t n = x.dim();
 		Vector d = zero(n), g = zero(n);
 		for (size_t j=0;j<n;j++) {
-			d(j) +=   delta; double hxplus = h(x.expmap(d));
-			d(j) -= 2*delta; double hxmin  = h(x.expmap(d));
+			d(j) +=   delta; double hxplus = h(x.retract(d));
+			d(j) -= 2*delta; double hxmin  = h(x.retract(d));
 			d(j) +=   delta; g(j) = (hxplus-hxmin)*factor;
 		}
 		return g;
@@ -97,8 +97,8 @@ namespace gtsam {
 		Vector d = zero(n);
 		Matrix H = zeros(m,n);
 		for (size_t j=0;j<n;j++) {
-			d(j) +=   delta; Vector hxplus = hx.logmap(h(x.expmap(d)));
-			d(j) -= 2*delta; Vector hxmin  = hx.logmap(h(x.expmap(d)));
+			d(j) +=   delta; Vector hxplus = hx.localCoordinates(h(x.retract(d)));
+			d(j) -= 2*delta; Vector hxmin  = hx.localCoordinates(h(x.retract(d)));
 			d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
 			for (size_t i=0;i<m;i++) H(i,j) = dh(i);
 		}
@@ -151,8 +151,8 @@ namespace gtsam {
 		Vector d = zero(n);
 		Matrix H = zeros(m,n);
 		for (size_t j=0;j<n;j++) {
-			d(j) +=   delta; Vector hxplus = hx.logmap(h(x1.expmap(d),x2));
-			d(j) -= 2*delta; Vector hxmin  = hx.logmap(h(x1.expmap(d),x2));
+			d(j) +=   delta; Vector hxplus = hx.localCoordinates(h(x1.retract(d),x2));
+			d(j) -= 2*delta; Vector hxmin  = hx.localCoordinates(h(x1.retract(d),x2));
 			d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
 			for (size_t i=0;i<m;i++) H(i,j) = dh(i);
 		}
@@ -215,8 +215,8 @@ namespace gtsam {
 		Vector d = zero(n);
 		Matrix H = zeros(m,n);
 		for (size_t j=0;j<n;j++) {
-			d(j) +=   delta; Vector hxplus = hx.logmap(h(x1,x2.expmap(d)));
-			d(j) -= 2*delta; Vector hxmin  = hx.logmap(h(x1,x2.expmap(d)));
+			d(j) +=   delta; Vector hxplus = hx.localCoordinates(h(x1,x2.retract(d)));
+			d(j) -= 2*delta; Vector hxmin  = hx.localCoordinates(h(x1,x2.retract(d)));
 			d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
 			for (size_t i=0;i<m;i++) H(i,j) = dh(i);
 		}
@@ -281,8 +281,8 @@ namespace gtsam {
 		Vector d = zero(n);
 		Matrix H = zeros(m,n);
 		for (size_t j=0;j<n;j++) {
-			d(j) +=   delta; Vector hxplus = hx.logmap(h(x1.expmap(d),x2,x3));
-			d(j) -= 2*delta; Vector hxmin  = hx.logmap(h(x1.expmap(d),x2,x3));
+			d(j) +=   delta; Vector hxplus = hx.localCoordinates(h(x1.retract(d),x2,x3));
+			d(j) -= 2*delta; Vector hxmin  = hx.localCoordinates(h(x1.retract(d),x2,x3));
 			d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
 			for (size_t i=0;i<m;i++) H(i,j) = dh(i);
 		}
@@ -346,8 +346,8 @@ namespace gtsam {
 		Vector d = zero(n);
 		Matrix H = zeros(m,n);
 		for (size_t j=0;j<n;j++) {
-			d(j) +=   delta; Vector hxplus = hx.logmap(h(x1, x2.expmap(d),x3));
-			d(j) -= 2*delta; Vector hxmin  = hx.logmap(h(x1, x2.expmap(d),x3));
+			d(j) +=   delta; Vector hxplus = hx.localCoordinates(h(x1, x2.retract(d),x3));
+			d(j) -= 2*delta; Vector hxmin  = hx.localCoordinates(h(x1, x2.retract(d),x3));
 			d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
 			for (size_t i=0;i<m;i++) H(i,j) = dh(i);
 		}
@@ -411,8 +411,8 @@ namespace gtsam {
 		Vector d = zero(n);
 		Matrix H = zeros(m,n);
 		for (size_t j=0;j<n;j++) {
-			d(j) +=   delta; Vector hxplus = hx.logmap(h(x1, x2, x3.expmap(d)));
-			d(j) -= 2*delta; Vector hxmin  = hx.logmap(h(x1, x2, x3.expmap(d)));
+			d(j) +=   delta; Vector hxplus = hx.localCoordinates(h(x1, x2, x3.retract(d)));
+			d(j) -= 2*delta; Vector hxmin  = hx.localCoordinates(h(x1, x2, x3.retract(d)));
 			d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
 			for (size_t i=0;i<m;i++) H(i,j) = dh(i);
 		}

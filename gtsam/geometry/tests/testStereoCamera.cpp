@@ -24,6 +24,9 @@
 using namespace std;
 using namespace gtsam;
 
+GTSAM_CONCEPT_TESTABLE_INST(StereoCamera)
+GTSAM_CONCEPT_MANIFOLD_INST(StereoCamera)
+
 /* ************************************************************************* */
 TEST( StereoCamera, operators)
 {

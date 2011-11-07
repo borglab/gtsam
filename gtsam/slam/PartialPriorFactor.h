@@ -33,7 +33,7 @@ namespace gtsam {
 	 *
 	 * It takes two template parameters:
 	 *   Key (typically TypedSymbol) is used to look up T's in a Values
-	 *   Values where the T's are stored, typically LieValues<Key> or a TupleValues<...>
+	 *   Values where the T's are stored, typically Values<Key> or a TupleValues<...>
 	 *
 	 * For practical use, it would be good to subclass this factor and have the class type
 	 * construct the mask.
@@ -118,6 +118,7 @@ namespace gtsam {
 		/** vector of errors */
 		Vector evaluateError(const T& p, boost::optional<Matrix&> H = boost::none) const {
 			if (H) (*H) = zeros(this->dim(), p.dim());
+			// FIXME: this was originally the generic retraction - may not produce same results
 			Vector full_logmap = T::Logmap(p);
 			Vector masked_logmap = zero(this->dim());
 			size_t masked_idx=0;

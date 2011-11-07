@@ -124,7 +124,7 @@ namespace gtsam {
 		Index<3, 'C'> I; // contravariant 2D camera
 		return toVector(H(I,_T));
 	}
-	Vector logmap(const tensors::Tensor2<3, 3>& A, const tensors::Tensor2<3, 3>& B) {
+	Vector localCoordinates(const tensors::Tensor2<3, 3>& A, const tensors::Tensor2<3, 3>& B) {
 		return toVector(A)-toVector(B); // TODO correct order ?
 	}
 }

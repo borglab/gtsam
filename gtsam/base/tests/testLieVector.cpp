@@ -17,11 +17,13 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/Manifold.h>
 #include <gtsam/base/LieVector.h>
 
 using namespace gtsam;
 
 GTSAM_CONCEPT_TESTABLE_INST(LieVector)
+GTSAM_CONCEPT_LIE_INST(LieVector)
 
 /* ************************************************************************* */
 TEST( testLieVector, construction ) {

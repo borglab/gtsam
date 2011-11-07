@@ -25,7 +25,6 @@
 
 using namespace std;
 using namespace gtsam;
-using namespace gtsam::visualSLAM;
 
 // make cube
 static Point3
@@ -48,11 +47,11 @@ TEST( ProjectionFactor, error )
 	// Create the factor with a measurement that is 3 pixels off in x
 	Point2 z(323.,240.);
 	int cameraFrameNumber=1, landmarkNumber=1;
-	boost::shared_ptr<ProjectionFactor>
-	factor(new ProjectionFactor(z, sigma, cameraFrameNumber, landmarkNumber, sK));
+	boost::shared_ptr<visualSLAM::ProjectionFactor>
+	factor(new visualSLAM::ProjectionFactor(z, sigma, cameraFrameNumber, landmarkNumber, sK));
 
 	// For the following values structure, the factor predicts 320,240
-	Values config;
+	visualSLAM::Values config;
 	Rot3 R;Point3 t1(0,0,-6); Pose3 x1(R,t1); config.insert(1, x1);
 	Point3 l1;  config.insert(1, l1);
 	// Point should project to Point2(320.,240.)
@@ -73,7 +72,7 @@ TEST( ProjectionFactor, error )
 	CHECK(assert_equal(expected,*actual,1e-3));
 
 	// linearize graph
-	Graph graph;
+	visualSLAM::Graph graph;
 	graph.push_back(factor);
 	FactorGraph<GaussianFactor> expected_lfg;
 	expected_lfg.push_back(actual);
@@ -81,13 +80,13 @@ TEST( ProjectionFactor, error )
 	CHECK(assert_equal(expected_lfg,*actual_lfg));
 
 	// expmap on a config
-  Values expected_config;
+	visualSLAM::Values expected_config;
   Point3 t2(1,1,-5); Pose3 x2(R,t2); expected_config.insert(1, x2);
   Point3 l2(1,2,3); expected_config.insert(1, l2);
 	VectorValues delta(expected_config.dims(ordering));
 	delta[ordering["x1"]] = Vector_(6, 0.,0.,0., 1.,1.,1.);
 	delta[ordering["l1"]] = Vector_(3, 1.,2.,3.);
-	Values actual_config = config.expmap(delta, ordering);
+	visualSLAM::Values actual_config = config.retract(delta, ordering);
 	CHECK(assert_equal(expected_config,actual_config,1e-9));
 }
 
@@ -97,11 +96,11 @@ TEST( ProjectionFactor, equals )
 	// Create two identical factors and make sure they're equal
 	Vector z = Vector_(2,323.,240.);
 	int cameraFrameNumber=1, landmarkNumber=1;
-	boost::shared_ptr<ProjectionFactor>
-	  factor1(new ProjectionFactor(z, sigma, cameraFrameNumber, landmarkNumber, sK));
+	boost::shared_ptr<visualSLAM::ProjectionFactor>
+	  factor1(new visualSLAM::ProjectionFactor(z, sigma, cameraFrameNumber, landmarkNumber, sK));
 
-	boost::shared_ptr<ProjectionFactor>
-		factor2(new ProjectionFactor(z, sigma, cameraFrameNumber, landmarkNumber, sK));
+	boost::shared_ptr<visualSLAM::ProjectionFactor>
+		factor2(new visualSLAM::ProjectionFactor(z, sigma, cameraFrameNumber, landmarkNumber, sK));
 
 	CHECK(assert_equal(*factor1, *factor2));
 }

@@ -23,20 +23,30 @@
 
 namespace gtsam {
 
+/* ************************************************************************* */
 Cal3DS2::Cal3DS2():fx_(1), fy_(1), s_(0), u0_(0), v0_(0), k1_(0), k2_(0), k3_(0), k4_(0){}
 
-// Construction
+/* ************************************************************************* */
 Cal3DS2::Cal3DS2(double fx, double fy, double s, double u0, double v0, double k1, double k2, double k3, double k4) :
 		fx_(fx), fy_(fy), s_(s), u0_(u0), v0_(v0), k1_(k1), k2_(k2), k3_(k3), k4_(k4) {}
 
+/* ************************************************************************* */
 Cal3DS2::Cal3DS2(const Vector &v):
 		fx_(v[0]), fy_(v[1]), s_(v[2]), u0_(v[3]), v0_(v[4]), k1_(v[5]), k2_(v[6]), k3_(v[7]), k4_(v[8]){}
 
+/* ************************************************************************* */
 Matrix Cal3DS2::K() const { return Matrix_(3,3, fx_, s_, u0_, 0.0, fy_, v0_, 0.0, 0.0, 1.0); }
+
+/* ************************************************************************* */
 Vector Cal3DS2::k() const { return Vector_(4, k1_, k2_, k3_, k4_); }
+
+/* ************************************************************************* */
 Vector Cal3DS2::vector() const { return Vector_(9, fx_, fy_, s_, u0_, v0_, k1_, k2_, k3_, k4_) ; }
+
+/* ************************************************************************* */
 void Cal3DS2::print(const std::string& s) const { gtsam::print(K(), s + ".K") ; gtsam::print(k(), s + ".k") ; }
 
+/* ************************************************************************* */
 bool Cal3DS2::equals(const Cal3DS2& K, double tol) const {
 	if (fabs(fx_ - K.fx_) > tol || fabs(fy_ - K.fy_) > tol || fabs(s_ - K.s_) > tol ||
 	    fabs(u0_ - K.u0_) > tol || fabs(v0_ - K.v0_) > tol || fabs(k1_ - K.k1_) > tol ||
@@ -45,6 +55,7 @@ bool Cal3DS2::equals(const Cal3DS2& K, double tol) const {
 	return true ;
 }
 
+/* ************************************************************************* */
 Point2 Cal3DS2::uncalibrate(const Point2& p,
 		   boost::optional<Matrix&> H1,
 		   boost::optional<Matrix&> H2) const {
@@ -67,6 +78,7 @@ Point2 Cal3DS2::uncalibrate(const Point2& p,
 	return Point2(fx_* x2 + s_ * y2 + u0_, fy_ * y2 + v0_) ;
 }
 
+/* ************************************************************************* */
 Matrix Cal3DS2::D2d_intrinsic(const Point2& p) const {
 	//const double fx = fx_, fy = fy_, s = s_ ;
 	const double k1 = k1_, k2 = k2_, k3 = k3_, k4 = k4_;
@@ -94,7 +106,7 @@ Matrix Cal3DS2::D2d_intrinsic(const Point2& p) const {
 	return DK * DR;
 }
 
-
+/* ************************************************************************* */
 Matrix Cal3DS2::D2d_calibration(const Point2& p) const {
 	const double x = p.x(), y = p.y(), xx = x*x, yy = y*y, xy = x*y ;
 	const double r = xx + yy ;
@@ -111,10 +123,11 @@ Matrix Cal3DS2::D2d_calibration(const Point2& p) const {
 	0.0, pny, 0.0, 0.0, 1.0, fy*y*r 		 , fy*y*r2         , fy*(r+2*yy)         , fy*(2*xy)	);
 }
 
-Cal3DS2 Cal3DS2::expmap(const Vector& d) const { return Cal3DS2(vector() + d) ; }
-Vector Cal3DS2::logmap(const Cal3DS2& T2) const { return vector() - T2.vector(); }
-Cal3DS2 Cal3DS2::Expmap(const Vector& v) { return Cal3DS2(v) ; }
-Vector Cal3DS2::Logmap(const Cal3DS2& p) { return p.vector(); }
+/* ************************************************************************* */
+Cal3DS2 Cal3DS2::retract(const Vector& d) const { return Cal3DS2(vector() + d) ; }
+
+/* ************************************************************************* */
+Vector Cal3DS2::localCoordinates(const Cal3DS2& T2) const { return vector() - T2.vector(); }
 
 }
 /* ************************************************************************* */

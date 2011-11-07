@@ -60,6 +60,11 @@ namespace gtsam {
     /** return DOF, dimensionality of tangent space */
     inline size_t dim() const { return dimension; }
 
+		/** identity */
+		inline static Point3 identity() {
+			return Point3();
+		}
+
     /** "Inverse" - negates the coordinates such that compose(p, inverse(p)) = Point3() */
     inline Point3 inverse() const { return Point3(-x_, -y_, -z_); }
 
@@ -78,9 +83,14 @@ namespace gtsam {
     /** Log map at identity - return the x,y,z of this point */
     static inline Vector Logmap(const Point3& dp) { return Vector_(3, dp.x(), dp.y(), dp.z()); }
 
-    /** default implementations of binary functions */
-    inline Point3 expmap(const Vector& v) const { return gtsam::expmap_default(*this, v); }
-    inline Vector logmap(const Point3& p2) const { return gtsam::logmap_default(*this, p2);}
+  	// Manifold requirements
+
+  	inline Point3 retract(const Vector& v) const { return compose(Expmap(v)); }
+
+  	/**
+  	 * Returns inverse retraction
+  	 */
+  	inline Vector localCoordinates(const Point3& t2) const { return Logmap(t2) - Logmap(*this); }
 
     /** Between using the default implementation */
     inline Point3 between(const Point3& p2,

@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/LieValues-inl.h>
+#include <gtsam/nonlinear/Values-inl.h>
 #include <gtsam/nonlinear/TupleValues.h>
 
 // TupleValues instantiations for N = 1-6

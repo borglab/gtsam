@@ -186,7 +186,7 @@ bool isam_check(const planarSLAM::Graph& fullgraph, const planarSLAM::Values& fu
   GaussianBayesNet gbn = *GaussianSequentialSolver(linearized).eliminate();
 //  gbn.print("Expected bayesnet: ");
   VectorValues delta = optimize(gbn);
-  planarSLAM::Values expected = fullinit.expmap(delta, ordering);
+  planarSLAM::Values expected = fullinit.retract(delta, ordering);
 
   return assert_equal(expected, actual);
 }

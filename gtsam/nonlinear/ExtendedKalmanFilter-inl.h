@@ -43,7 +43,7 @@ namespace gtsam {
 
 		// Extract the current estimate of x1,P1 from the Bayes Network
 		VectorValues result = optimize(*linearBayesNet);
-		T x = linearizationPoints[lastKey].expmap(result[lastIndex]);
+		T x = linearizationPoints[lastKey].retract(result[lastIndex]);
 
 		// Create a Jacobian Factor from the root node of the produced Bayes Net.
 		// This will act as a prior for the next iteration.

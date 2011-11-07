@@ -34,10 +34,10 @@ namespace gtsam {
 		Pose3 pose_; // 6DOF pose
 
 	public:
-		CalibratedCamera();                  ///< default constructor
+		CalibratedCamera() {}                ///< default constructor
 		CalibratedCamera(const Pose3& pose); ///< construct with pose
 		CalibratedCamera(const Vector &v) ;  ///< construct from vector
-		virtual ~CalibratedCamera();         ///< destructor
+		virtual ~CalibratedCamera() {}       ///< destructor
 
 		/// return pose
 		inline const Pose3& pose() const {	return pose_; }
@@ -58,16 +58,10 @@ namespace gtsam {
 		}
 
 		/// move a cameras pose according to d
-		CalibratedCamera expmap(const Vector& d) const;
+		CalibratedCamera retract(const Vector& d) const;
 
 		/// Return canonical coordinate
-	  Vector logmap(const CalibratedCamera& T2) const;
-
-		/// move a cameras pose according to d
-		static CalibratedCamera Expmap(const Vector& v);
-
-		/// Return canonical coordinate
-	  static Vector Logmap(const CalibratedCamera& p);
+	  Vector localCoordinates(const CalibratedCamera& T2) const;
 
 	  /// Lie group dimensionality
 		inline size_t dim() const { return 6 ; }

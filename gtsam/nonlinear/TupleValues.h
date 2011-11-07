@@ -16,7 +16,7 @@
  * @author Alex Cunningham
  */
 
-#include <gtsam/nonlinear/LieValues.h>
+#include <gtsam/nonlinear/Values.h>
 #include <gtsam/linear/VectorValues.h>
 
 #pragma once
@@ -24,11 +24,11 @@
 namespace gtsam {
 
  /**
-   *  TupleValues are a structure to manage heterogenous LieValues, so as to
+   *  TupleValues are a structure to manage heterogenous Values, so as to
    *  enable different types of variables/keys to be used simultaneously.  We
    *  do this with recursive templates (instead of blind pointer casting) to
    *  reduce run-time overhead and keep static type checking.  The interface
-   *  mimics that of a single LieValues.
+   *  mimics that of a single Values.
    *
    *  This uses a recursive structure of values pairs to form a lisp-like
    *  list, with a special case (TupleValuesEnd) that contains only one values
@@ -205,21 +205,21 @@ namespace gtsam {
     }
 
 	  /** Expmap */
-	  TupleValues<VALUES1, VALUES2> expmap(const VectorValues& delta, const Ordering& ordering) const {
-	    return TupleValues(first_.expmap(delta, ordering), second_.expmap(delta, ordering));
+	  TupleValues<VALUES1, VALUES2> retract(const VectorValues& delta, const Ordering& ordering) const {
+	    return TupleValues(first_.retract(delta, ordering), second_.retract(delta, ordering));
 	  }
 
 	  /** logmap each element */
-	  VectorValues logmap(const TupleValues<VALUES1, VALUES2>& cp, const Ordering& ordering) const {
+	  VectorValues localCoordinates(const TupleValues<VALUES1, VALUES2>& cp, const Ordering& ordering) const {
 		  VectorValues delta(this->dims(ordering));
-		  logmap(cp, ordering, delta);
+		  localCoordinates(cp, ordering, delta);
 		  return delta;
 	  }
 
     /** logmap each element */
-    void logmap(const TupleValues<VALUES1, VALUES2>& cp, const Ordering& ordering, VectorValues& delta) const {
-      first_.logmap(cp.first_, ordering, delta);
-      second_.logmap(cp.second_, ordering, delta);
+    void localCoordinates(const TupleValues<VALUES1, VALUES2>& cp, const Ordering& ordering, VectorValues& delta) const {
+      first_.localCoordinates(cp.first_, ordering, delta);
+      second_.localCoordinates(cp.second_, ordering, delta);
     }
 
 	  /**
@@ -318,18 +318,18 @@ namespace gtsam {
 
 	  size_t dim() const { return first_.dim(); }
 
-	  TupleValuesEnd<VALUES> expmap(const VectorValues& delta, const Ordering& ordering) const {
-	        return TupleValuesEnd(first_.expmap(delta, ordering));
+	  TupleValuesEnd<VALUES> retract(const VectorValues& delta, const Ordering& ordering) const {
+	        return TupleValuesEnd(first_.retract(delta, ordering));
 	  }
 
-    VectorValues logmap(const TupleValuesEnd<VALUES>& cp, const Ordering& ordering) const {
+    VectorValues localCoordinates(const TupleValuesEnd<VALUES>& cp, const Ordering& ordering) const {
       VectorValues delta(this->dims(ordering));
-      logmap(cp, ordering, delta);
+      localCoordinates(cp, ordering, delta);
       return delta;
     }
 
-    void logmap(const TupleValuesEnd<VALUES>& cp, const Ordering& ordering, VectorValues& delta) const {
-      first_.logmap(cp.first_, ordering, delta);
+    void localCoordinates(const TupleValuesEnd<VALUES>& cp, const Ordering& ordering, VectorValues& delta) const {
+      first_.localCoordinates(cp.first_, ordering, delta);
     }
 
     /**

@@ -15,26 +15,18 @@
  * @author Richard Roberts
  * @author Alex Cunningham
  *
+ * This concept check provides a specialization on the Manifold type,
+ * in which the Manifolds represented require an algebra and group structure.
+ * All Lie types must also be a Manifold.
+ *
  * The necessary functions to implement for Lie are defined
  * below with additional details as to the interface.  The
  * concept checking function in class Lie will check whether or not
  * the function exists and throw compile-time errors.
  *
- * Returns dimensionality of the tangent space
- * 		inline size_t dim() const;
- *
- * Returns Exponential map update of T
- * A default implementation of expmap(*this, lp) is available:
- * expmap_default()
- * 		T expmap(const Vector& v) const;
- *
- * expmap around identity
+ * Expmap around identity
  * 		static T Expmap(const Vector& v);
  *
- * Returns Log map
- * A default implementation of logmap(*this, lp) is available:
- * logmap_default()
- * 		Vector logmap(const T& lp) const;
  *
  * Logmap around identity
  * 		static Vector Logmap(const T& p);
@@ -44,19 +36,13 @@
  * between_default()
  * 		T between(const T& l2) const;
  *
- * compose with another object
- * 		T compose(const T& p) const;
- *
- * invert the object and yield a new one
- * 		T inverse() const;
- *
  */
 
 
 #pragma once
 
-#include <string>
-#include <gtsam/base/Matrix.h>
+#include <gtsam/base/Manifold.h>
+#include <gtsam/base/Group.h>
 
 namespace gtsam {
 
@@ -78,18 +64,15 @@ namespace gtsam {
 	inline T expmap_default(const T& t, const Vector& d) {return t.compose(T::Expmap(d));}
 
 	/**
-	 * Base class for Lie group type
-	 * This class uses the Curiously Recurring Template design pattern to allow for
-	 * concept checking using a private function.
+	 * Concept check class for Lie group type
 	 *
-	 * T is the derived Lie type, like Point2, Pose3, etc.
+	 * T is the Lie type, like Point2, Pose3, etc.
 	 *
 	 * By convention, we use capital letters to designate a static function
 	 */
 	template <class T>
-	class Lie {
+	class LieConcept {
 	private:
-
 		/** concept checking function - implement the functions this demands */
 		static void concept_check(const T& t) {
 
@@ -101,53 +84,17 @@ namespace gtsam {
 			 */
 			size_t dim_ret = t.dim();
 
-			/**
-			 * Returns Exponential map update of T
-			 * Default implementation calls global binary function
-			 */
-			T expmap_ret = t.expmap(gtsam::zero(dim_ret));
-
 			/** expmap around identity */
 			T expmap_identity_ret = T::Expmap(gtsam::zero(dim_ret));
-
-			/**
-			 * Returns Log map
-			 * Default Implementation calls global binary function
-			 */
-			Vector logmap_ret = t.logmap(t2);
 
 			/** Logmap around identity */
 			Vector logmap_identity_ret = T::Logmap(t);
 
 			/** Compute l0 s.t. l2=l1*l0, where (*this) is l1 */
 			T between_ret = t.between(t2);
-
-			/** compose with another object */
-			T compose_ret = t.compose(t2);
-
-			/** invert the object and yield a new one */
-			T inverse_ret = t.inverse();
 		}
 
 	};
-
-	/** Call print on the object */
-	template<class T>
-	inline void print(const T& object, const std::string& s = "") {
-		object.print(s);
-	}
-
-	/** Call equal on the object */
-	template<class T>
-	inline bool equal(const T& obj1, const T& obj2, double tol) {
-		return obj1.equals(obj2, tol);
-	}
-
-	/** Call equal on the object without tolerance (use default tolerance) */
-	template<class T>
-	inline bool equal(const T& obj1, const T& obj2) {
-		return obj1.equals(obj2);
-	}
 
 	/**
 	 *  Three term approximation of the Baker�Campbell�Hausdorff formula
@@ -156,6 +103,7 @@ namespace gtsam {
 	 *  formula: Z = X + Y + [X,Y]/2 + [X-Y,[X,Y]]/12 - [Y,[X,[X,Y]]]/24
 	 *  http://en.wikipedia.org/wiki/Baker�Campbell�Hausdorff_formula
 	 */
+	/// AGC: bracket() only appears in Rot3 tests, should this be used elsewhere?
 	template<class T>
 	T BCH(const T& X, const T& Y) {
 		static const double _2 = 1. / 2., _12 = 1. / 12., _24 = 1. / 24.;
@@ -182,25 +130,22 @@ namespace gtsam {
 		return expm(xhat,K);
 	}
 
-	/**
-	 * function wrappers for full versions of expmap/logmap
-	 * these will default simple types to using the existing expmap/logmap,
-	 * but more complex ones can be specialized to use improved versions
-	 *
-	 * TODO: replace this approach with a naming scheme that doesn't call
-	 * non-expmap operations "expmap" - use same approach, but with "update"
-	 */
-
-  /** unary versions */
-	template<class T>
-	T ExpmapFull(const Vector& xi) { return T::Expmap(xi); }
-	template<class T>
-  Vector LogmapFull(const T& p) { return T::Logmap(p); }
-
-  /** binary versions */
-	template<class T>
-  T expmapFull(const T& t, const Vector& v) { return t.expmap(v); }
-	template<class T>
-  Vector logmapFull(const T& t, const T& p2) { return t.logmap(p2); }
-
 } // namespace gtsam
+
+/**
+ * Macros for using the LieConcept
+ *  - An instantiation for use inside unit tests
+ *  - A typedef for use inside generic algorithms
+ *
+ * NOTE: intentionally not in the gtsam namespace to allow for classes not in
+ * the gtsam namespace to be more easily enforced as testable
+ */
+#define GTSAM_CONCEPT_LIE_INST(T) \
+	template class gtsam::ManifoldConcept<T>; \
+	template class gtsam::GroupConcept<T>; \
+	template class gtsam::LieConcept<T>;
+
+#define GTSAM_CONCEPT_LIE_TYPE(T) \
+	typedef gtsam::ManifoldConcept<T> _gtsam_ManifoldConcept_##T; \
+	typedef gtsam::GroupConcept<T> _gtsam_GroupConcept_##T; \
+	typedef gtsam::LieConcept<T> _gtsam_LieConcept_##T;

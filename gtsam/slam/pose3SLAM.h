@@ -18,7 +18,7 @@
 #pragma once
 
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/nonlinear/LieValues.h>
+#include <gtsam/nonlinear/Values.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/Key.h>
@@ -33,8 +33,8 @@ namespace gtsam {
 
 		/// Creates a Key with data Pose3 and symbol 'x'
 		typedef TypedSymbol<Pose3, 'x'> Key;
-		/// Creates a LieValues structure with type 'Key'
-		typedef LieValues<Key> Values;
+		/// Creates a Values structure with type 'Key'
+		typedef Values<Key> Values;
 
 		/**
 		 * Create a circle of n 3D poses tangent to circle of radius R, first pose at (R,0)

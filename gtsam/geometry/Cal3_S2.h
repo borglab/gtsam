@@ -129,12 +129,12 @@ namespace gtsam {
 		}
 
 		/// Given 5-dim tangent vector, create new calibration
-		inline Cal3_S2 expmap(const Vector& d) const {
+		inline Cal3_S2 retract(const Vector& d) const {
 			return Cal3_S2(fx_ + d(0), fy_ + d(1), s_ + d(2), u0_ + d(3), v0_ + d(4));
 		}
 
-		/// logmap for the calibration
-		Vector logmap(const Cal3_S2& T2) const {
+		/// Unretraction for the calibration
+		Vector localCoordinates(const Cal3_S2& T2) const {
 			return vector() - T2.vector();
 		}
 

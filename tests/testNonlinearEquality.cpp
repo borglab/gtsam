@@ -22,13 +22,13 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
 
-#include <gtsam/nonlinear/LieValues-inl.h>
+#include <gtsam/nonlinear/Values-inl.h>
 
 using namespace std;
 using namespace gtsam;
 
 typedef TypedSymbol<Pose2, 'x'> PoseKey;
-typedef LieValues<PoseKey> PoseValues;
+typedef Values<PoseKey> PoseValues;
 typedef PriorFactor<PoseValues, PoseKey> PosePrior;
 typedef NonlinearEquality<PoseValues, PoseKey> PoseNLE;
 typedef boost::shared_ptr<PoseNLE> shared_poseNLE;

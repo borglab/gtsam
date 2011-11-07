@@ -17,6 +17,7 @@ namespace gtsam {
    * A Calibrated camera class [R|-R't], calibration K.
    * If calibration is known, it is more computationally efficient
    * to calibrate the measurements rather than try to predict in pixels.
+   * AGC: Is this used or tested anywhere?
    * @ingroup geometry
    */
   template <typename Calibration>
@@ -49,11 +50,11 @@ namespace gtsam {
       return CalibratedCameraT( pose_.inverse(), k_ ) ;
     }
 
-    CalibratedCameraT expmap(const Vector& d) const {
-      return CalibratedCameraT(pose().expmap(d), k_) ;
+    CalibratedCameraT retract(const Vector& d) const {
+      return CalibratedCameraT(pose().retract(d), k_) ;
     }
-    Vector logmap(const CalibratedCameraT& T2) const {
-      return pose().logmap(T2.pose()) ;
+    Vector localCoordinates(const CalibratedCameraT& T2) const {
+      return pose().localCoordinates(T2.pose()) ;
     }
 
     void print(const std::string& s = "") const {

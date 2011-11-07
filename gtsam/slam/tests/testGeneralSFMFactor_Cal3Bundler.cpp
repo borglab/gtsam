@@ -32,14 +32,15 @@ using namespace gtsam;
 typedef Cal3BundlerCamera GeneralCamera;
 typedef TypedSymbol<GeneralCamera, 'x'> CameraKey;
 typedef TypedSymbol<Point3, 'l'> PointKey;
-typedef LieValues<CameraKey> CameraConfig;
-typedef LieValues<PointKey> PointConfig;
-typedef TupleValues2<CameraConfig, PointConfig> Values;
-typedef GeneralSFMFactor<Values, CameraKey, PointKey> Projection;
-typedef NonlinearEquality<Values, CameraKey> CameraConstraint;
-typedef NonlinearEquality<Values, PointKey> Point3Constraint;
+typedef Values<CameraKey> CameraConfig;
+typedef Values<PointKey> PointConfig;
+typedef TupleValues2<CameraConfig, PointConfig> VisualValues;
+typedef GeneralSFMFactor<VisualValues, CameraKey, PointKey> Projection;
+typedef NonlinearEquality<VisualValues, CameraKey> CameraConstraint;
+typedef NonlinearEquality<VisualValues, PointKey> Point3Constraint;
 
-class Graph: public NonlinearFactorGraph<Values> {
+/* ************************************************************************* */
+class Graph: public NonlinearFactorGraph<VisualValues> {
 public:
   void addMeasurement(const CameraKey& i, const PointKey& j, const Point2& z, const SharedNoiseModel& model) {
     push_back(boost::make_shared<Projection>(z, model, i, j));
@@ -72,7 +73,7 @@ double getGaussian()
     return sqrt(-2.0f * (double)log(S) / S) * V1;
 }
 
-typedef NonlinearOptimizer<Graph,Values> Optimizer;
+typedef NonlinearOptimizer<Graph,VisualValues> Optimizer;
 
 const SharedNoiseModel sigma1(noiseModel::Unit::Create(1));
 
@@ -89,7 +90,7 @@ TEST( GeneralSFMFactor, equals )
   boost::shared_ptr<Projection>
     factor2(new Projection(z, sigma, cameraFrameNumber, landmarkNumber));
 
-  CHECK(assert_equal(*factor1, *factor2));
+  EXPECT(assert_equal(*factor1, *factor2));
 }
 
 /* ************************************************************************* */
@@ -100,18 +101,19 @@ TEST( GeneralSFMFactor, error ) {
   boost::shared_ptr<Projection>
   factor(new Projection(z, sigma, cameraFrameNumber, landmarkNumber));
   // For the following configuration, the factor predicts 320,240
-  Values values;
+  VisualValues values;
   Rot3 R;
   Point3 t1(0,0,-6);
   Pose3 x1(R,t1);
   values.insert(1, GeneralCamera(x1));
   Point3 l1;  values.insert(1, l1);
-  CHECK(assert_equal(Vector_(2, -3.0, 0.0), factor->unwhitenedError(values)));
+  EXPECT(assert_equal(Vector_(2, -3.0, 0.0), factor->unwhitenedError(values)));
 }
 
 
 static const double baseline = 5.0 ;
 
+/* ************************************************************************* */
 vector<Point3> genPoint3() {
   const double z = 5;
   vector<Point3> L ;
@@ -172,7 +174,7 @@ TEST( GeneralSFMFactor, optimize_defaultK ) {
 
   // add initial
   const double noise = baseline*0.1;
-  boost::shared_ptr<Values> values(new Values);
+  boost::shared_ptr<VisualValues> values(new VisualValues);
   for ( size_t i = 0 ; i < X.size() ; ++i )
     values->insert((int)i, X[i]) ;
 
@@ -187,19 +189,12 @@ TEST( GeneralSFMFactor, optimize_defaultK ) {
 
   // Create an ordering of the variables
   shared_ptr<Ordering> ordering = getOrdering(X,L);
-  //graph->print("graph") ; values->print("values") ;
   NonlinearOptimizationParameters::sharedThis params (
       new NonlinearOptimizationParameters(1e-5, 1e-5, 0.0, 100, 1e-5, 10, NonlinearOptimizationParameters::SILENT));
   Optimizer optimizer(graph, values, ordering, params);
-  //cout << "optimize_defaultK::" << endl ;
-  //cout << "before optimization, error is " << optimizer.error() << endl;
   Optimizer optimizer2 = optimizer.levenbergMarquardt();
-  //cout << "after optimization, error is " << optimizer2.error() << endl;
-  //optimizer2.values()->print("optimized") ;
-  CHECK(optimizer2.error() < 0.5 * 1e-5 * nMeasurements);
+  EXPECT(optimizer2.error() < 0.5 * 1e-5 * nMeasurements);
 }
-
-
 
 /* ************************************************************************* */
 TEST( GeneralSFMFactor, optimize_varK_SingleMeasurementError ) {
@@ -218,7 +213,7 @@ TEST( GeneralSFMFactor, optimize_varK_SingleMeasurementError ) {
 
   // add initial
   const double noise = baseline*0.1;
-  boost::shared_ptr<Values> values(new Values);
+  boost::shared_ptr<VisualValues> values(new VisualValues);
   for ( size_t i = 0 ; i < X.size() ; ++i )
     values->insert((int)i, X[i]) ;
 
@@ -242,13 +237,11 @@ TEST( GeneralSFMFactor, optimize_varK_SingleMeasurementError ) {
   NonlinearOptimizationParameters::sharedThis params (
       new NonlinearOptimizationParameters(1e-5, 1e-5, 0.0, 100, 1e-5, 10, NonlinearOptimizationParameters::SILENT));
   Optimizer optimizer(graph, values, ordering, params);
-  //cout << "optimize_varK_SingleMeasurementError::" << endl ;
-  //cout << "before optimization, error is " << optimizer.error() << endl;
   Optimizer optimizer2 = optimizer.levenbergMarquardt();
-  //cout << "after optimization, error is " << optimizer2.error() << endl;
-  CHECK(optimizer2.error() < 0.5 * reproj_error * nMeasurements);
+  EXPECT(optimizer2.error() < 0.5 * reproj_error * nMeasurements);
 }
 
+/* ************************************************************************* */
 TEST( GeneralSFMFactor, optimize_varK_FixCameras ) {
 
   vector<Point3> L = genPoint3();
@@ -266,7 +259,7 @@ TEST( GeneralSFMFactor, optimize_varK_FixCameras ) {
 
   const size_t nMeasurements = L.size()*X.size();
 
-  boost::shared_ptr<Values> values(new Values);
+  boost::shared_ptr<VisualValues> values(new VisualValues);
   for ( size_t i = 0 ; i < X.size() ; ++i )
     values->insert((int)i, X[i]) ;
 
@@ -288,14 +281,11 @@ TEST( GeneralSFMFactor, optimize_varK_FixCameras ) {
       new NonlinearOptimizationParameters(1e-5, 1e-5, 0.0, 100, 1e-3, 10, NonlinearOptimizationParameters::SILENT));
   Optimizer optimizer(graph, values, ordering, params);
 
-  //cout << "optimize_varK_FixCameras::" << endl ;
-  //cout << "before optimization, error is " << optimizer.error() << endl;
   Optimizer optimizer2 = optimizer.levenbergMarquardt();
-  //cout << "after optimization, error is " << optimizer2.error() << endl;
-  CHECK(optimizer2.error() < 0.5 * reproj_error * nMeasurements);
+  EXPECT(optimizer2.error() < 0.5 * reproj_error * nMeasurements);
 }
 
-
+/* ************************************************************************* */
 TEST( GeneralSFMFactor, optimize_varK_FixLandmarks ) {
 
   vector<Point3> L = genPoint3();
@@ -312,7 +302,7 @@ TEST( GeneralSFMFactor, optimize_varK_FixLandmarks ) {
 
   const size_t nMeasurements = L.size()*X.size();
 
-  boost::shared_ptr<Values> values(new Values);
+  boost::shared_ptr<VisualValues> values(new VisualValues);
   for ( size_t i = 0 ; i < X.size() ; ++i ) {
     const double
       rot_noise = 1e-5, trans_noise = 1e-3,
@@ -327,7 +317,7 @@ TEST( GeneralSFMFactor, optimize_varK_FixLandmarks ) {
           trans_noise, trans_noise, trans_noise, // translation
           focal_noise, distort_noise, distort_noise // f, k1, k2
           ) ;
-      values->insert((int)i, X[i].expmap(delta)) ;
+      values->insert((int)i, X[i].retract(delta)) ;
     }
   }
 
@@ -345,14 +335,10 @@ TEST( GeneralSFMFactor, optimize_varK_FixLandmarks ) {
   shared_ptr<Ordering> ordering = getOrdering(X,L);
   NonlinearOptimizationParameters::sharedThis params (
       new NonlinearOptimizationParameters(1e-5, 1e-5, 0.0, 100, 1e-3, 10, NonlinearOptimizationParameters::SILENT));
-//      new NonlinearOptimizationParameters(1e-7, 1e-7, 0.0, 100, 1e-5, 10, NonlinearOptimizationParameters::TRYDELTA));
   Optimizer optimizer(graph, values, ordering, params);
 
-  //cout << "optimize_varK_FixLandmarks::" << endl ;
-  //cout << "before optimization, error is " << optimizer.error() << endl;
   Optimizer optimizer2 = optimizer.levenbergMarquardt();
-  //cout << "after optimization, error is " << optimizer2.error() << endl;
-  CHECK(optimizer2.error() < 0.5 * reproj_error * nMeasurements);
+  EXPECT(optimizer2.error() < 0.5 * reproj_error * nMeasurements);
 }
 
 /* ************************************************************************* */
@@ -373,7 +359,7 @@ TEST( GeneralSFMFactor, optimize_varK_BA ) {
 
   // add initial
   const double noise = baseline*0.1;
-  boost::shared_ptr<Values> values(new Values);
+  boost::shared_ptr<VisualValues> values(new VisualValues);
   for ( size_t i = 0 ; i < X.size() ; ++i )
     values->insert((int)i, X[i]) ;
 
@@ -393,13 +379,9 @@ TEST( GeneralSFMFactor, optimize_varK_BA ) {
       new NonlinearOptimizationParameters(1e-5, 1e-5, 0.0, 100, 1e-5, 10, NonlinearOptimizationParameters::SILENT));
   Optimizer optimizer(graph, values, ordering, params);
 
-  //cout << "optimize_varK_BA::" << endl ;
-  //cout << "before optimization, error is " << optimizer.error() << endl;
   Optimizer optimizer2 = optimizer.levenbergMarquardt();
-  //cout << "after optimization, error is " << optimizer2.error() << endl;
-  CHECK(optimizer2.error() < 0.5 * reproj_error * nMeasurements);
+  EXPECT(optimizer2.error() < 0.5 * reproj_error * nMeasurements);
 }
-
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

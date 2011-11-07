@@ -81,7 +81,7 @@ void readAllDataISAM() {
 /**
  * Setup newFactors and initialValues for each new pose and set of measurements at each frame.
  */
-void createNewFactors(shared_ptr<Graph>& newFactors, boost::shared_ptr<Values>& initialValues,
+void createNewFactors(shared_ptr<Graph>& newFactors, boost::shared_ptr<visualSLAM::Values>& initialValues,
     int pose_id, Pose3& pose, std::vector<Feature2D>& measurements, SharedNoiseModel measurementSigma, shared_ptrK calib) {
 
   // Create a graph of newFactors with new measurements
@@ -102,7 +102,7 @@ void createNewFactors(shared_ptr<Graph>& newFactors, boost::shared_ptr<Values>& 
   }
 
   // Create initial values for all nodes in the newFactors
-  initialValues = shared_ptr<Values> (new Values());
+  initialValues = shared_ptr<visualSLAM::Values> (new visualSLAM::Values());
   initialValues->insert(pose_id, pose);
   for (size_t i = 0; i < measurements.size(); i++) {
     initialValues->insert(measurements[i].m_idLandmark, g_landmarks[measurements[i].m_idLandmark]);
@@ -125,17 +125,17 @@ int main(int argc, char* argv[]) {
 
   // Create an NonlinearISAM which will be relinearized and reordered after every "relinearizeInterval" updates
   int relinearizeInterval = 3;
-  NonlinearISAM<Values> isam(relinearizeInterval);
+  NonlinearISAM<visualSLAM::Values> isam(relinearizeInterval);
 
   // At each frame i with new camera pose and new set of measurements associated with it,
   // create a graph of new factors and update ISAM
   for (size_t i = 0; i < g_measurements.size(); i++) {
     shared_ptr<Graph> newFactors;
-    shared_ptr<Values> initialValues;
+    shared_ptr<visualSLAM::Values> initialValues;
     createNewFactors(newFactors, initialValues, i, g_poses[i], g_measurements[i], measurementSigma, g_calib);
 
     isam.update(*newFactors, *initialValues);
-    Values currentEstimate = isam.estimate();
+    visualSLAM::Values currentEstimate = isam.estimate();
     cout << "****************************************************" << endl;
     currentEstimate.print("Current estimate: ");
   }

@@ -60,7 +60,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   /** Modified from Murray94book version (which assumes w and v normalized?) */
-  Pose3 Pose3::ExpmapFull(const Vector& xi) {
+  Pose3 Pose3::Expmap(const Vector& xi) {
 
   	// get angular velocity omega and translational velocity v from twist xi
   	Point3 w(xi(0),xi(1),xi(2)), v(xi(3),xi(4),xi(5));
@@ -81,7 +81,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Vector Pose3::LogmapFull(const Pose3& p) {
+  Vector Pose3::Logmap(const Pose3& p) {
     Vector w = Rot3::Logmap(p.rotation()), T = p.translation().vector();
   	double t = w.norm();
 		if (t < 1e-10)
@@ -95,59 +95,59 @@ namespace gtsam {
   }
 
 #ifdef CORRECT_POSE3_EXMAP
+//  /* ************************************************************************* */
+//  // Changes default to use the full verions of expmap/logmap
+//  /* ************************************************************************* */
+//  Pose3 Retract(const Vector& xi) {
+//  	return Pose3::Expmap(xi);
+//  }
+//
+//  /* ************************************************************************* */
+//  Vector Unretract(const Pose3& p) {
+//  	return Pose3::Logmap(p);
+//  }
+
   /* ************************************************************************* */
-  // Changes default to use the full verions of expmap/logmap
-  /* ************************************************************************* */
-  Pose3 Expmap(const Vector& xi) {
-  	return Pose3::ExpmapFull(xi);
+  Pose3 retract(const Vector& d) {
+  	return retract(d);
   }
 
   /* ************************************************************************* */
-  Vector Logmap(const Pose3& p) {
-  	return Pose3::LogmapFull(p);
-  }
-
-  /* ************************************************************************* */
-  Pose3 expmap(const Vector& d) {
-  	return expmapFull(d);
-  }
-
-  /* ************************************************************************* */
-  Vector logmap(const Pose3& T1, const Pose3& T2) {
-  	return logmapFull(T2);
+  Vector localCoordinates(const Pose3& T1, const Pose3& T2) {
+  	return localCoordinates(T2);
   }
 
 #else
 
-  /* ************************************************************************* */
-  /* incorrect versions for which we know how to compute derivatives */
-  Pose3 Pose3::Expmap(const Vector& d) {
-    Vector w = sub(d, 0,3);
-    Vector u = sub(d, 3,6);
-    return Pose3(Rot3::Expmap(w), Point3::Expmap(u));
-  }
-
-  /* ************************************************************************* */
-  // Log map at identity - return the translation and canonical rotation
-  // coordinates of a pose.
-  Vector Pose3::Logmap(const Pose3& p) {
-    const Vector w = Rot3::Logmap(p.rotation()), u = Point3::Logmap(p.translation());
-    return concatVectors(2, &w, &u);
-  }
+//  /* ************************************************************************* */
+//  /* incorrect versions for which we know how to compute derivatives */
+//  Pose3 Pose3::Retract(const Vector& d) {
+//    Vector w = sub(d, 0,3);
+//    Vector u = sub(d, 3,6);
+//    return Pose3(Rot3::Retract(w), Point3::Retract(u));
+//  }
+//
+//  /* ************************************************************************* */
+//  // Log map at identity - return the translation and canonical rotation
+//  // coordinates of a pose.
+//  Vector Pose3::Unretract(const Pose3& p) {
+//    const Vector w = Rot3::Unretract(p.rotation()), u = Point3::Unretract(p.translation());
+//    return concatVectors(2, &w, &u);
+//  }
 
   /** These are the "old-style" expmap and logmap about the specified
    * pose. Increments the offset and rotation independently given a translation and
    * canonical rotation coordinates. Created to match ML derivatives, but
    * superseded by the correct exponential map story in .cpp */
-  Pose3 Pose3::expmap(const Vector& d) const {
-    return Pose3(R_.expmap(sub(d, 0, 3)),
-    		t_.expmap(sub(d, 3, 6)));
+  Pose3 Pose3::retract(const Vector& d) const {
+    return Pose3(R_.retract(sub(d, 0, 3)),
+    		         t_.retract(sub(d, 3, 6)));
   }
 
   /** Independently computes the logmap of the translation and rotation. */
-  Vector Pose3::logmap(const Pose3& pp) const {
-    const Vector r(R_.logmap(pp.rotation())),
-        t(t_.logmap(pp.translation()));
+  Vector Pose3::localCoordinates(const Pose3& pp) const {
+    const Vector r(R_.localCoordinates(pp.rotation())),
+                 t(t_.localCoordinates(pp.translation()));
     return concatVectors(2, &r, &t);
   }
 

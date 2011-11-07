@@ -50,29 +50,27 @@ TEST( Inference, marginals )
 /* ************************************************************************* */
 TEST( Inference, marginals2)
 {
-  using namespace gtsam::planarSLAM;
-
-  Graph fg;
+	planarSLAM::Graph fg;
   SharedDiagonal poseModel(sharedSigma(3, 0.1));
   SharedDiagonal pointModel(sharedSigma(3, 0.1));
 
-  fg.addPrior(PoseKey(0), Pose2(), poseModel);
-  fg.addOdometry(PoseKey(0), PoseKey(1), Pose2(1.0,0.0,0.0), poseModel);
-  fg.addOdometry(PoseKey(1), PoseKey(2), Pose2(1.0,0.0,0.0), poseModel);
-  fg.addBearingRange(PoseKey(0), PointKey(0), Rot2(), 1.0, pointModel);
-  fg.addBearingRange(PoseKey(1), PointKey(0), Rot2(), 1.0, pointModel);
-  fg.addBearingRange(PoseKey(2), PointKey(0), Rot2(), 1.0, pointModel);
+  fg.addPrior(planarSLAM::PoseKey(0), Pose2(), poseModel);
+  fg.addOdometry(planarSLAM::PoseKey(0), planarSLAM::PoseKey(1), Pose2(1.0,0.0,0.0), poseModel);
+  fg.addOdometry(planarSLAM::PoseKey(1), planarSLAM::PoseKey(2), Pose2(1.0,0.0,0.0), poseModel);
+  fg.addBearingRange(planarSLAM::PoseKey(0), planarSLAM::PointKey(0), Rot2(), 1.0, pointModel);
+  fg.addBearingRange(planarSLAM::PoseKey(1), planarSLAM::PointKey(0), Rot2(), 1.0, pointModel);
+  fg.addBearingRange(planarSLAM::PoseKey(2), planarSLAM::PointKey(0), Rot2(), 1.0, pointModel);
 
-  Values init;
-  init.insert(PoseKey(0), Pose2(0.0,0.0,0.0));
-  init.insert(PoseKey(1), Pose2(1.0,0.0,0.0));
-  init.insert(PoseKey(2), Pose2(2.0,0.0,0.0));
-  init.insert(PointKey(0), Point2(1.0,1.0));
+  planarSLAM::Values init;
+  init.insert(planarSLAM::PoseKey(0), Pose2(0.0,0.0,0.0));
+  init.insert(planarSLAM::PoseKey(1), Pose2(1.0,0.0,0.0));
+  init.insert(planarSLAM::PoseKey(2), Pose2(2.0,0.0,0.0));
+  init.insert(planarSLAM::PointKey(0), Point2(1.0,1.0));
 
   Ordering ordering(*fg.orderingCOLAMD(init));
   FactorGraph<GaussianFactor>::shared_ptr gfg(fg.linearize(init, ordering));
   GaussianMultifrontalSolver solver(*gfg);
-  solver.marginalFactor(ordering[PointKey(0)]);
+  solver.marginalFactor(ordering[planarSLAM::PointKey(0)]);
 }
 
 /* ************************************************************************* */

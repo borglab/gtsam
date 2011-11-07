@@ -40,7 +40,7 @@ TEST(testPose2SLAMwSPCG, example1) {
 	graph.addConstraint(x6,x9,Pose2(2,0,0),sigma) ;
 	graph.addPrior(x1, Pose2(0,0,0), sigma) ;
 
-	Values initial;
+	pose2SLAM::Values initial;
 	initial.insert(x1, Pose2(  0,  0,   0));
 	initial.insert(x2, Pose2(  0, 2.1, 0.01));
 	initial.insert(x3, Pose2(  0, 3.9,-0.01));
@@ -51,7 +51,7 @@ TEST(testPose2SLAMwSPCG, example1) {
 	initial.insert(x8, Pose2(3.9, 2.1, 0.01));
 	initial.insert(x9, Pose2(4.1, 3.9,-0.01));
 
-	Values expected;
+	pose2SLAM::Values expected;
 	expected.insert(x1, Pose2(0.0, 0.0, 0.0));
 	expected.insert(x2, Pose2(0.0, 2.0, 0.0));
 	expected.insert(x3, Pose2(0.0, 4.0, 0.0));
@@ -62,7 +62,7 @@ TEST(testPose2SLAMwSPCG, example1) {
 	expected.insert(x8, Pose2(4.0, 2.0, 0.0));
 	expected.insert(x9, Pose2(4.0, 4.0, 0.0));
 
-	Values actual = optimizeSPCG(graph, initial);
+	pose2SLAM::Values actual = optimizeSPCG(graph, initial);
 
 	EXPECT(assert_equal(expected, actual, tol));
 }

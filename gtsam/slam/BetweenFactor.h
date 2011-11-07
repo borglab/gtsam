@@ -83,7 +83,7 @@ namespace gtsam {
 						boost::none) const {
 			T hx = p1.between(p2, H1, H2); // h(x)
 			// manifold equivalent of h(x)-z -> log(z,h(x))
-			return measured_.logmap(hx);
+			return measured_.localCoordinates(hx);
 		}
 
 		/** return the measured */

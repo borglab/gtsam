@@ -23,27 +23,26 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/slam/simulated2D.h>
 
-using namespace gtsam;
 using namespace std;
-using namespace simulated2D;
+using namespace gtsam;
 
 /* ************************************************************************* */
 TEST( simulated2D, Simulated2DValues )
 {
-	Values actual;
+	simulated2D::Values actual;
 	actual.insertPose(1,Point2(1,1));
 	actual.insertPoint(2,Point2(2,2));
-  CHECK(assert_equal(actual,actual,1e-9));
+  EXPECT(assert_equal(actual,actual,1e-9));
 }
 
 /* ************************************************************************* */
 TEST( simulated2D, Dprior )
 {
   Point2 x(1,-9);
-  Matrix numerical = numericalDerivative11(prior,x);
+  Matrix numerical = numericalDerivative11(simulated2D::prior,x);
   Matrix computed;
-  prior(x,computed);
-  CHECK(assert_equal(numerical,computed,1e-9));
+  simulated2D::prior(x,computed);
+  EXPECT(assert_equal(numerical,computed,1e-9));
 }
 
 /* ************************************************************************* */
@@ -51,11 +50,11 @@ TEST( simulated2D, Dprior )
 {
   Point2 x1(1,-9),x2(-5,6);
   Matrix H1,H2;
-  odo(x1,x2,H1,H2);
-  Matrix A1 = numericalDerivative21(odo,x1,x2);
-  CHECK(assert_equal(A1,H1,1e-9));
-  Matrix A2 = numericalDerivative22(odo,x1,x2);
-  CHECK(assert_equal(A2,H2,1e-9));
+  simulated2D::odo(x1,x2,H1,H2);
+  Matrix A1 = numericalDerivative21(simulated2D::odo,x1,x2);
+  EXPECT(assert_equal(A1,H1,1e-9));
+  Matrix A2 = numericalDerivative22(simulated2D::odo,x1,x2);
+  EXPECT(assert_equal(A2,H2,1e-9));
 }
 
 /* ************************************************************************* */

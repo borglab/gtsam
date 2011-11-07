@@ -51,11 +51,11 @@ TEST( Graph, equals )
 TEST( Graph, error )
 {
 	Graph fg = createNonlinearFactorGraph();
-	Values c1 = createValues();
+	example::Values c1 = createValues();
 	double actual1 = fg.error(c1);
 	DOUBLES_EQUAL( 0.0, actual1, 1e-9 );
 
-	Values c2 = createNoisyValues();
+	example::Values c2 = createNoisyValues();
 	double actual2 = fg.error(c2);
 	DOUBLES_EQUAL( 5.625, actual2, 1e-9 );
 }
@@ -85,7 +85,7 @@ TEST( Graph, GET_ORDERING)
 TEST( Graph, probPrime )
 {
 	Graph fg = createNonlinearFactorGraph();
-	Values cfg = createValues();
+	example::Values cfg = createValues();
 
 	// evaluate the probability of the factor graph
 	double actual = fg.probPrime(cfg);
@@ -97,7 +97,7 @@ TEST( Graph, probPrime )
 TEST( Graph, linearize )
 {
 	Graph fg = createNonlinearFactorGraph();
-	Values initial = createNoisyValues();
+	example::Values initial = createNoisyValues();
 	boost::shared_ptr<FactorGraph<GaussianFactor> > linearized = fg.linearize(initial, *initial.orderingArbitrary());
 	FactorGraph<GaussianFactor> expected = createGaussianFactorGraph(*initial.orderingArbitrary());
 	CHECK(assert_equal(expected,*linearized)); // Needs correct linearizations

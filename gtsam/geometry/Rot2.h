@@ -28,7 +28,7 @@ namespace gtsam {
 	 * NOTE: the angle theta is in radians unless explicitly stated
 	 * @ingroup geometry
 	 */
-	class Rot2: public Lie<Rot2> {
+	class Rot2 {
 
 	public:
 		/** get the dimension by the type */
@@ -127,6 +127,11 @@ namespace gtsam {
 			return dimension;
 		}
 
+		/** identity */
+		inline static Rot2 identity() {
+			return Rot2();
+		}
+
 		/** Compose - make a new rotation by adding angles */
 		inline Rot2 compose(const Rot2& R1, boost::optional<Matrix&> H1 =
 				boost::none, boost::optional<Matrix&> H2 = boost::none) const {
@@ -148,15 +153,14 @@ namespace gtsam {
 			return Vector_(1, r.theta());
 		}
 
-		/** Binary expmap  */
-		inline Rot2 expmap(const Vector& v) const {
-			return *this * Expmap(v);
-		}
+  	// Manifold requirements
 
-		/** Binary Logmap  */
-		inline Vector logmap(const Rot2& p2) const {
-			return Logmap(between(p2));
-		}
+  	inline Rot2 retract(const Vector& v) const { return *this * Expmap(v); }
+
+  	/**
+  	 * Returns inverse retraction
+  	 */
+  	inline Vector localCoordinates(const Rot2& t2) const { return Logmap(between(t2)); }
 
 		/** Between using the default implementation */
 		inline Rot2 between(const Rot2& p2, boost::optional<Matrix&> H1 =

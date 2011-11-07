@@ -24,7 +24,7 @@
 #include <gtsam/nonlinear/ExtendedKalmanFilter-inl.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/LieValues-inl.h>
+#include <gtsam/nonlinear/Values-inl.h>
 #include <gtsam/geometry/Point2.h>
 
 using namespace std;
@@ -32,7 +32,7 @@ using namespace gtsam;
 
 // Define Types for Linear System Test
 typedef TypedSymbol<Point2, 'x'> LinearKey;
-typedef LieValues<LinearKey> LinearValues;
+typedef Values<LinearKey> LinearValues;
 typedef Point2 LinearMeasurement;
 
 int main() {

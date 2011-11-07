@@ -130,7 +130,7 @@ pair<sharedPose2Graph, sharedPose2Values> load2D(const string& filename,
 			}
 
 			if (addNoise)
-				l1Xl2 = l1Xl2.expmap((*model)->sample());
+				l1Xl2 = l1Xl2.retract((*model)->sample());
 
 			// Insert vertices if pure odometry file
 			if (!poses->exists(id1)) poses->insert(id1, Pose2());

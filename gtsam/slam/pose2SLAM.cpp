@@ -16,18 +16,17 @@
  **/
 
 #include <gtsam/slam/pose2SLAM.h>
-#include <gtsam/nonlinear/LieValues-inl.h>
+#include <gtsam/nonlinear/Values-inl.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
 #include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
 
 // Use pose2SLAM namespace for specific SLAM instance
 namespace gtsam {
 
-	using namespace pose2SLAM;
-	INSTANTIATE_LIE_VALUES(Key)
-	INSTANTIATE_NONLINEAR_FACTOR_GRAPH(Values)
-	INSTANTIATE_NONLINEAR_OPTIMIZER(Graph, Values)
-	template class NonlinearOptimizer<Graph, Values, GaussianFactorGraph, GaussianSequentialSolver>;
+	INSTANTIATE_VALUES(pose2SLAM::Key)
+	INSTANTIATE_NONLINEAR_FACTOR_GRAPH(pose2SLAM::Values)
+	INSTANTIATE_NONLINEAR_OPTIMIZER(pose2SLAM::Graph, pose2SLAM::Values)
+	template class NonlinearOptimizer<pose2SLAM::Graph, pose2SLAM::Values, GaussianFactorGraph, GaussianSequentialSolver>;
 
 	namespace pose2SLAM {
 

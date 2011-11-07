@@ -40,8 +40,8 @@ namespace simulated3D {
 typedef gtsam::TypedSymbol<Point3, 'x'> PoseKey;
 typedef gtsam::TypedSymbol<Point3, 'l'> PointKey;
 
-typedef LieValues<PoseKey> PoseValues;
-typedef LieValues<PointKey> PointValues;
+typedef Values<PoseKey> PoseValues;
+typedef Values<PointKey> PointValues;
 typedef TupleValues2<PoseValues, PointValues> Values;
 
 /**

@@ -22,6 +22,9 @@
 
 using namespace gtsam;
 
+GTSAM_CONCEPT_TESTABLE_INST(Cal3Bundler)
+GTSAM_CONCEPT_MANIFOLD_INST(Cal3Bundler)
+
 Cal3Bundler K(500, 1e-3, 1e-3);
 Point2 p(2,3);
 

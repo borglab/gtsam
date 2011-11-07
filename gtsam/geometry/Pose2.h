@@ -27,148 +27,155 @@
 
 namespace gtsam {
 
-  /**
-   * A 2D pose (Point2,Rot2)
-   * @ingroup geometry
-   */
-  class Pose2: public Lie<Pose2>  {
+/**
+ * A 2D pose (Point2,Rot2)
+ * @ingroup geometry
+ */
+class Pose2 {
 
-  public:
-	  static const size_t dimension = 3;
+public:
+	static const size_t dimension = 3;
 
-    /** Pose Concept requirements */
-    typedef Rot2 Rotation;
-    typedef Point2 Translation;
+	/** Pose Concept requirements */
+	typedef Rot2 Rotation;
+	typedef Point2 Translation;
 
-  private:
-    Rot2 r_;
-    Point2 t_;
+private:
+	Rot2 r_;
+	Point2 t_;
 
-  public:
+public:
 
-    /** default constructor = origin */
-    Pose2() {} // default is origin
+	/** default constructor = origin */
+	Pose2() {} // default is origin
 
-    /** copy constructor */
-    Pose2(const Pose2& pose) : r_(pose.r_), t_(pose.t_) {}
+	/** copy constructor */
+	Pose2(const Pose2& pose) : r_(pose.r_), t_(pose.t_) {}
 
-    /**
-     * construct from (x,y,theta)
-     * @param x x coordinate
-     * @param y y coordinate
-     * @param theta angle with positive X-axis
-     */
-    Pose2(double x, double y, double theta) :
-    	r_(Rot2::fromAngle(theta)), t_(x, y) {
-		}
+	/**
+	 * construct from (x,y,theta)
+	 * @param x x coordinate
+	 * @param y y coordinate
+	 * @param theta angle with positive X-axis
+	 */
+	Pose2(double x, double y, double theta) :
+		r_(Rot2::fromAngle(theta)), t_(x, y) {
+	}
 
-    /** construct from rotation and translation */
-    Pose2(double theta, const Point2& t) :
-    	r_(Rot2::fromAngle(theta)), t_(t) {
-		}
-    Pose2(const Rot2& r, const Point2& t) : r_(r), t_(t) {}
+	/** construct from rotation and translation */
+	Pose2(double theta, const Point2& t) :
+		r_(Rot2::fromAngle(theta)), t_(t) {
+	}
+	Pose2(const Rot2& r, const Point2& t) : r_(r), t_(t) {}
 
-    /** Constructor from 3*3 matrix */
-    Pose2(const Matrix &T) :
-				r_(Rot2::atan2(T(1, 0), T(0, 0))), t_(T(0, 2), T(1, 2)) {
-			assert(T.rows() == 3 && T.cols() == 3);
-		}
+	/** Constructor from 3*3 matrix */
+	Pose2(const Matrix &T) :
+		r_(Rot2::atan2(T(1, 0), T(0, 0))), t_(T(0, 2), T(1, 2)) {
+		assert(T.rows() == 3 && T.cols() == 3);
+	}
 
-    /** Construct from canonical coordinates (Lie algebra) */
-    Pose2(const Vector& v) {
-    	*this = Expmap(v);
-    }
+	/** Construct from canonical coordinates (Lie algebra) */
+	Pose2(const Vector& v) {
+		*this = Expmap(v);
+	}
 
-    /** print with optional string */
-    void print(const std::string& s = "") const;
 
-    /** assert equality up to a tolerance */
-    bool equals(const Pose2& pose, double tol = 1e-9) const;
+  /// @name Testable
+  /// @{
 
-    /** compose syntactic sugar */
-    inline Pose2 operator*(const Pose2& p2) const {
-    	return Pose2(r_*p2.r(), t_ + r_*p2.t());
-    }
+	/** print with optional string */
+	void print(const std::string& s = "") const;
 
-    /** dimension of the variable - used to autodetect sizes */
-    inline static size_t Dim() { return dimension; }
+	/** assert equality up to a tolerance */
+	bool equals(const Pose2& pose, double tol = 1e-9) const;
 
-    /** Lie requirements */
+  /// @}
+  /// @name Group
+  /// @{
 
-    /** return DOF, dimensionality of tangent space = 3 */
-    inline size_t dim() const { return dimension; }
+  /// identity for group operation
+	inline static Pose2 identity() {
+		return Pose2();
+	}
 
-    /**
-     * inverse transformation with derivatives
-     */
-    Pose2 inverse(boost::optional<Matrix&> H1=boost::none) const;
+  /// inverse transformation with derivatives
+	Pose2 inverse(boost::optional<Matrix&> H1=boost::none) const;
 
-    /**
-     * compose this transformation onto another (first *this and then p2)
-     * With optional derivatives
-     */
-    Pose2 compose(const Pose2& p2,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const;
+  /// compose this transformation onto another (first *this and then p2)
+	Pose2 compose(const Pose2& p2,
+			boost::optional<Matrix&> H1 = boost::none,
+			boost::optional<Matrix&> H2 = boost::none) const;
 
-    /// MATLAB version returns shared pointer
-    boost::shared_ptr<Pose2> compose_(const Pose2& p2) {
-    	return boost::shared_ptr<Pose2>(new Pose2(compose(p2)));
-    }
+	/// MATLAB version returns shared pointer
+	boost::shared_ptr<Pose2> compose_(const Pose2& p2) {
+		return boost::shared_ptr<Pose2>(new Pose2(compose(p2)));
+	}
 
-    /** syntactic sugar for transform_from */
-    inline Point2 operator*(const Point2& point) const { return transform_from(point);}
+  /// compose syntactic sugar
+	inline Pose2 operator*(const Pose2& p2) const {
+		return Pose2(r_*p2.r(), t_ + r_*p2.t());
+	}
 
-    /**
-     * Exponential map from se(2) to SE(2)
-     */
-    static Pose2 Expmap(const Vector& v);
+  /// @}
+  /// @name Manifold
+  /// @{
 
-    /**
-     * Inverse of exponential map, from SE(2) to se(2)
-     */
-    static Vector Logmap(const Pose2& p);
+  /// Dimensionality of tangent space = 3 DOF - used to autodetect sizes
+	inline static size_t Dim() { return dimension; }
 
-    /** non-approximated versions of Expmap/Logmap */
-  	static Pose2 ExpmapFull(const Vector& xi);
-    static Vector LogmapFull(const Pose2& p);
 
-    /** default implementations of binary functions */
-    inline Pose2 expmap(const Vector& v) const { return gtsam::expmap_default(*this, v); }
-    inline Vector logmap(const Pose2& p2) const { return gtsam::logmap_default(*this, p2);}
+  /// Dimensionality of tangent space = 3 DOF
+	inline size_t dim() const { return dimension; }
 
-    /** non-approximated versions of expmap/logmap */
-    inline Pose2 expmapFull(const Vector& v) const { return compose(ExpmapFull(v)); }
-    inline Vector logmapFull(const Pose2& p2) const { return LogmapFull(between(p2));}
+  /// Retraction from R^3 to Pose2 manifold neighborhood around current pose
+	Pose2 retract(const Vector& v) const;
 
-    /**
-     * Return relative pose between p1 and p2, in p1 coordinate frame
-     */
-    Pose2 between(const Pose2& p2,
-    	boost::optional<Matrix&> H1=boost::none,
-    	boost::optional<Matrix&> H2=boost::none) const;
+  /// Local 3D coordinates of Pose2 manifold neighborhood around current pose
+	Vector localCoordinates(const Pose2& p2) const;
 
-    /// MATLAB version returns shared pointer
-    boost::shared_ptr<Pose2> between_(const Pose2& p2) {
-    	return boost::shared_ptr<Pose2>(new Pose2(between(p2)));
-    }
+  /// @}
+  /// @name Lie Group
+  /// @{
 
-    /** return transformation matrix */
-    Matrix matrix() const;
+  /// Exponential map from Lie algebra se(2) to SE(2)
+	static Pose2 Expmap(const Vector& xi);
 
-    /**
-     * Return point coordinates in pose coordinate frame
-     */
-    Point2 transform_to(const Point2& point,
-    		boost::optional<Matrix&> H1=boost::none,
-    		boost::optional<Matrix&> H2=boost::none) const;
+  /// Exponential map from SE(2) to Lie algebra se(2)
+	static Vector Logmap(const Pose2& p);
 
-    /**
-     * Return point coordinates in global frame
-     */
-    Point2 transform_from(const Point2& point,
-    	boost::optional<Matrix&> H1=boost::none,
-    	boost::optional<Matrix&> H2=boost::none) const;
+  /// @}
+
+	/** return transformation matrix */
+	Matrix matrix() const;
+
+	/**
+	 * Return relative pose between p1 and p2, in p1 coordinate frame
+	 */
+	Pose2 between(const Pose2& p2,
+			boost::optional<Matrix&> H1=boost::none,
+			boost::optional<Matrix&> H2=boost::none) const;
+
+	/// MATLAB version returns shared pointer
+	boost::shared_ptr<Pose2> between_(const Pose2& p2) {
+		return boost::shared_ptr<Pose2>(new Pose2(between(p2)));
+	}
+
+	/**
+	 * Return point coordinates in pose coordinate frame
+	 */
+	Point2 transform_to(const Point2& point,
+			boost::optional<Matrix&> H1=boost::none,
+			boost::optional<Matrix&> H2=boost::none) const;
+
+	/**
+	 * Return point coordinates in global frame
+	 */
+	Point2 transform_from(const Point2& point,
+			boost::optional<Matrix&> H1=boost::none,
+			boost::optional<Matrix&> H2=boost::none) const;
+
+	/** syntactic sugar for transform_from */
+	inline Point2 operator*(const Point2& point) const { return transform_from(point);}
 
 	/**
 	 * Calculate bearing to a landmark
@@ -212,7 +219,7 @@ namespace gtsam {
 	 */
 	Matrix AdjointMap() const;
 	inline Vector Adjoint(const Vector& xi) const {
-	  assert(xi.size() == 3);
+		assert(xi.size() == 3);
 		return AdjointMap()*xi;
 	}
 
@@ -230,59 +237,41 @@ namespace gtsam {
 				0., 0.,  0.);
 	}
 
-    /** get functions for x, y, theta */
-    inline double x()     const { return t_.x(); }
-    inline double y()     const { return t_.y(); }
-    inline double theta() const { return r_.theta(); }
+	/** get functions for x, y, theta */
+	inline double x()     const { return t_.x(); }
+	inline double y()     const { return t_.y(); }
+	inline double theta() const { return r_.theta(); }
 
-    /** shorthand access functions */
-    inline const Point2& t() const { return t_; }
-    inline const Rot2&   r() const { return r_; }
+	/** shorthand access functions */
+	inline const Point2& t() const { return t_; }
+	inline const Rot2&   r() const { return r_; }
 
-    /** full access functions required by Pose concept */
-    inline const Point2& translation() const { return t_; }
-    inline const Rot2&   rotation() const { return r_; }
+	/** full access functions required by Pose concept */
+	inline const Point2& translation() const { return t_; }
+	inline const Rot2&   rotation() const { return r_; }
 
-  private:
-    // Serialization function
-    friend class boost::serialization::access;
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version) {
+private:
+	// Serialization function
+	friend class boost::serialization::access;
+	template<class Archive>
+	void serialize(Archive & ar, const unsigned int version) {
 		ar & BOOST_SERIALIZATION_NVP(t_);
 		ar & BOOST_SERIALIZATION_NVP(r_);
-    }
-  }; // Pose2
+	}
+}; // Pose2
 
-  /** specialization for pose2 wedge function (generic template in Lie.h) */
-  template <>
-  inline Matrix wedge<Pose2>(const Vector& xi) {
-  	return Pose2::wedge(xi(0),xi(1),xi(2));
-  }
+/** specialization for pose2 wedge function (generic template in Lie.h) */
+template <>
+inline Matrix wedge<Pose2>(const Vector& xi) {
+	return Pose2::wedge(xi(0),xi(1),xi(2));
+}
 
-  /**
-   * Calculate pose between a vector of 2D point correspondences (p,q)
-   * where q = Pose2::transform_from(p) = t + R*p
-   */
-  typedef std::pair<Point2,Point2> Point2Pair;
-  boost::optional<Pose2> align(const std::vector<Point2Pair>& pairs);
-
-  /**
-   * Specializations for access to full expmap/logmap in templated functions
-   *
-   * NOTE: apparently, these *must* be indicated as inline to prevent compile error
-   */
-
-  /** unary versions */
-	template<>
-	inline Pose2 ExpmapFull<Pose2>(const Vector& xi) { return Pose2::ExpmapFull(xi); }
-	template<>
-	inline Vector LogmapFull<Pose2>(const Pose2& p) { return Pose2::LogmapFull(p); }
-
-  /** binary versions */
-	template<>
-  inline Pose2 expmapFull<Pose2>(const Pose2& t, const Vector& v) { return t.expmapFull(v); }
-	template<>
-	inline Vector logmapFull<Pose2>(const Pose2& t, const Pose2& p2) { return t.logmapFull(p2); }
+/**
+ * Calculate pose between a vector of 2D point correspondences (p,q)
+ * where q = Pose2::transform_from(p) = t + R*p
+ */
+typedef std::pair<Point2,Point2> Point2Pair;
+boost::optional<Pose2> align(const std::vector<Point2Pair>& pairs);
 
 } // namespace gtsam
 

@@ -20,7 +20,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/SimpleCamera.h>
-#include <gtsam/nonlinear/LieValues.h>
+#include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearOptimization-inl.h>
@@ -28,7 +28,7 @@
 using namespace gtsam;
 
 typedef TypedSymbol<Pose3, 'x'> PoseKey;
-typedef LieValues<PoseKey> PoseValues;
+typedef Values<PoseKey> PoseValues;
 
 /**
  * Unary factor for the pose.

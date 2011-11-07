@@ -31,8 +31,8 @@ namespace gtsam {
 		// The types that take an oriented pose2 rather than point2
 		typedef TypedSymbol<Point2, 'l'> PointKey;
 		typedef TypedSymbol<Pose2, 'x'> PoseKey;
-		typedef LieValues<PoseKey> PoseValues;
-		typedef LieValues<PointKey> PointValues;
+		typedef Values<PoseKey> PoseValues;
+		typedef Values<PointKey> PointValues;
 		typedef TupleValues2<PoseValues, PointValues> Values;
 
 		//TODO:: point prior is not implemented right now
@@ -69,7 +69,7 @@ namespace gtsam {
 			/// Evaluate error and optionally derivative
 			Vector evaluateError(const Pose2& x, boost::optional<Matrix&> H =
 					boost::none) const {
-				return z_.logmap(prior(x, H));
+				return z_.localCoordinates(prior(x, H));
 			}
 
 		};
@@ -93,7 +93,7 @@ namespace gtsam {
 			Vector evaluateError(const Pose2& x1, const Pose2& x2,
 					boost::optional<Matrix&> H1 = boost::none,
 					boost::optional<Matrix&> H2 = boost::none) const {
-				return z_.logmap(odo(x1, x2, H1, H2));
+				return z_.localCoordinates(odo(x1, x2, H1, H2));
 			}
 
 		};

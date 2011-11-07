@@ -573,7 +573,7 @@ public:
 	Vector evaluateError(const X& x1, boost::optional<Matrix&> H1 = boost::none) const {
 		const size_t p = X::Dim();
 		if (H1) *H1 = eye(p);
-		return value_.logmap(x1);
+		return value_.localCoordinates(x1);
 	}
 
 	/** Print */
@@ -628,7 +628,7 @@ public:
 		const size_t p = X::Dim();
 		if (H1) *H1 = -eye(p);
 		if (H2) *H2 = eye(p);
-		return x1.logmap(x2);
+		return x1.localCoordinates(x2);
 	}
 
 private:

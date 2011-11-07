@@ -20,14 +20,14 @@
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/ExtendedKalmanFilter-inl.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/nonlinear/LieValues-inl.h>
+#include <gtsam/nonlinear/Values-inl.h>
 #include <gtsam/geometry/Point2.h>
 
 using namespace gtsam;
 
 // Define Types for System Test
 typedef TypedSymbol<Point2, 'x'> TestKey;
-typedef LieValues<TestKey> TestValues;
+typedef Values<TestKey> TestValues;
 
 /* ************************************************************************* */
 TEST( ExtendedKalmanFilter, linear ) {
@@ -232,7 +232,7 @@ public:
     }
 
     // Return the error between the prediction and the supplied value of p2
-    return prediction.logmap(p2);
+    return prediction.localCoordinates(p2);
   }
 
 };

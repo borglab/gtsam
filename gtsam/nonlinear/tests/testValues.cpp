@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file testLieValues.cpp
+ * @file testValues.cpp
  * @author Richard Roberts
  */
 
@@ -22,32 +22,32 @@ using namespace boost::assign;
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/LieVector.h>
-#include <gtsam/nonlinear/LieValues-inl.h>
+#include <gtsam/nonlinear/Values-inl.h>
 
 using namespace gtsam;
 using namespace std;
 static double inf = std::numeric_limits<double>::infinity();
 
 typedef TypedSymbol<LieVector, 'v'> VecKey;
-typedef LieValues<VecKey> Values;
+typedef Values<VecKey> TestValues;
 
 VecKey key1(1), key2(2), key3(3), key4(4);
 
 /* ************************************************************************* */
-TEST( LieValues, equals1 )
+TEST( TestValues, equals1 )
 {
-  Values expected;
+  TestValues expected;
   Vector v = Vector_(3, 5.0, 6.0, 7.0);
   expected.insert(key1,v);
-  Values actual;
+  TestValues actual;
   actual.insert(key1,v);
   CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
-TEST( LieValues, equals2 )
+TEST( TestValues, equals2 )
 {
-  Values cfg1, cfg2;
+  TestValues cfg1, cfg2;
   Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
   Vector v2 = Vector_(3, 5.0, 6.0, 8.0);
   cfg1.insert(key1, v1);
@@ -57,9 +57,9 @@ TEST( LieValues, equals2 )
 }
 
 /* ************************************************************************* */
-TEST( LieValues, equals_nan )
+TEST( TestValues, equals_nan )
 {
-  Values cfg1, cfg2;
+  TestValues cfg1, cfg2;
   Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
   Vector v2 = Vector_(3, inf, inf, inf);
   cfg1.insert(key1, v1);
@@ -69,9 +69,9 @@ TEST( LieValues, equals_nan )
 }
 
 /* ************************************************************************* */
-TEST( LieValues, insert_config )
+TEST( TestValues, insert_config )
 {
-  Values cfg1, cfg2, expected;
+  TestValues cfg1, cfg2, expected;
   Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
   Vector v2 = Vector_(3, 8.0, 9.0, 1.0);
   Vector v3 = Vector_(3, 2.0, 4.0, 3.0);
@@ -92,9 +92,9 @@ TEST( LieValues, insert_config )
 }
 
 /* ************************************************************************* */
-TEST( LieValues, update_element )
+TEST( TestValues, update_element )
 {
-  Values cfg;
+  TestValues cfg;
   Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
   Vector v2 = Vector_(3, 8.0, 9.0, 1.0);
 
@@ -108,9 +108,9 @@ TEST( LieValues, update_element )
 }
 
 ///* ************************************************************************* */
-//TEST(LieValues, dim_zero)
+//TEST(TestValues, dim_zero)
 //{
-//  Values config0;
+//  TestValues config0;
 //  config0.insert(key1, Vector_(2, 2.0, 3.0));
 //  config0.insert(key2, Vector_(3, 5.0, 6.0, 7.0));
 //  LONGS_EQUAL(5,config0.dim());
@@ -122,9 +122,9 @@ TEST( LieValues, update_element )
 //}
 
 /* ************************************************************************* */
-TEST(LieValues, expmap_a)
+TEST(TestValues, expmap_a)
 {
-  Values config0;
+  TestValues config0;
   config0.insert(key1, Vector_(3, 1.0, 2.0, 3.0));
   config0.insert(key2, Vector_(3, 5.0, 6.0, 7.0));
 
@@ -133,17 +133,17 @@ TEST(LieValues, expmap_a)
   increment[ordering[key1]] = Vector_(3, 1.0, 1.1, 1.2);
   increment[ordering[key2]] = Vector_(3, 1.3, 1.4, 1.5);
 
-  Values expected;
+  TestValues expected;
   expected.insert(key1, Vector_(3, 2.0, 3.1, 4.2));
   expected.insert(key2, Vector_(3, 6.3, 7.4, 8.5));
 
-  CHECK(assert_equal(expected, config0.expmap(increment, ordering)));
+  CHECK(assert_equal(expected, config0.retract(increment, ordering)));
 }
 
 ///* ************************************************************************* */
-//TEST(LieValues, expmap_b)
+//TEST(TestValues, expmap_b)
 //{
-//  Values config0;
+//  TestValues config0;
 //  config0.insert(key1, Vector_(3, 1.0, 2.0, 3.0));
 //  config0.insert(key2, Vector_(3, 5.0, 6.0, 7.0));
 //
@@ -151,17 +151,17 @@ TEST(LieValues, expmap_a)
 //  VectorValues increment(config0.dims(ordering));
 //  increment[ordering[key2]] = Vector_(3, 1.3, 1.4, 1.5);
 //
-//  Values expected;
+//  TestValues expected;
 //  expected.insert(key1, Vector_(3, 1.0, 2.0, 3.0));
 //  expected.insert(key2, Vector_(3, 6.3, 7.4, 8.5));
 //
-//  CHECK(assert_equal(expected, config0.expmap(increment, ordering)));
+//  CHECK(assert_equal(expected, config0.retract(increment, ordering)));
 //}
 
 ///* ************************************************************************* */
-//TEST(LieValues, expmap_c)
+//TEST(TestValues, expmap_c)
 //{
-//  Values config0;
+//  TestValues config0;
 //  config0.insert(key1, Vector_(3, 1.0, 2.0, 3.0));
 //  config0.insert(key2, Vector_(3, 5.0, 6.0, 7.0));
 //
@@ -169,24 +169,24 @@ TEST(LieValues, expmap_a)
 //      1.0, 1.1, 1.2,
 //      1.3, 1.4, 1.5);
 //
-//  Values expected;
+//  TestValues expected;
 //  expected.insert(key1, Vector_(3, 2.0, 3.1, 4.2));
 //  expected.insert(key2, Vector_(3, 6.3, 7.4, 8.5));
 //
-//  CHECK(assert_equal(expected, config0.expmap(increment)));
+//  CHECK(assert_equal(expected, config0.retract(increment)));
 //}
 
 /* ************************************************************************* */
-/*TEST(LieValues, expmap_d)
+/*TEST(TestValues, expmap_d)
 {
-  Values config0;
+  TestValues config0;
   config0.insert(key1, Vector_(3, 1.0, 2.0, 3.0));
   config0.insert(key2, Vector_(3, 5.0, 6.0, 7.0));
   //config0.print("config0");
   CHECK(equal(config0, config0));
   CHECK(config0.equals(config0));
 
-  LieValues<string,Pose2> poseconfig;
+  TestValues<string,Pose2> poseconfig;
   poseconfig.insert("p1", Pose2(1,2,3));
   poseconfig.insert("p2", Pose2(0.3, 0.4, 0.5));
   //poseconfig.print("poseconfig");
@@ -195,10 +195,10 @@ TEST(LieValues, expmap_a)
 }*/
 
 /* ************************************************************************* */
-/*TEST(LieValues, extract_keys)
+/*TEST(TestValues, extract_keys)
 {
 	typedef TypedSymbol<Pose2, 'x'> PoseKey;
-	LieValues<PoseKey, Pose2> config;
+	TestValues<PoseKey, Pose2> config;
 
 	config.insert(PoseKey(1), Pose2());
 	config.insert(PoseKey(2), Pose2());
@@ -217,9 +217,9 @@ TEST(LieValues, expmap_a)
 }*/
 
 /* ************************************************************************* */
-TEST(LieValues, exists_)
+TEST(TestValues, exists_)
 {
-	Values config0;
+	TestValues config0;
 	config0.insert(key1, Vector_(1, 1.));
 	config0.insert(key2, Vector_(1, 2.));
 
@@ -228,40 +228,40 @@ TEST(LieValues, exists_)
 }
 
 /* ************************************************************************* */
-TEST(LieValues, update)
+TEST(TestValues, update)
 {
-	Values config0;
+	TestValues config0;
 	config0.insert(key1, Vector_(1, 1.));
 	config0.insert(key2, Vector_(1, 2.));
 
-	Values superset;
+	TestValues superset;
 	superset.insert(key1, Vector_(1, -1.));
 	superset.insert(key2, Vector_(1, -2.));
 	superset.insert(key3, Vector_(1, -3.));
 	config0.update(superset);
 
-	Values expected;
+	TestValues expected;
 	expected.insert(key1, Vector_(1, -1.));
 	expected.insert(key2, Vector_(1, -2.));
 	CHECK(assert_equal(expected,config0));
 }
 
 /* ************************************************************************* */
-TEST(LieValues, dummy_initialization)
+TEST(TestValues, dummy_initialization)
 {
 	typedef TypedSymbol<LieVector, 'z'> Key;
-	typedef LieValues<Key> Values1;
+	typedef Values<Key> Values1;
 
 	Values1 init1;
 	init1.insert(Key(1), Vector_(2, 1.0, 2.0));
 	init1.insert(Key(2), Vector_(2, 4.0, 3.0));
 
-	Values init2;
+	TestValues init2;
 	init2.insert(key1, Vector_(2, 1.0, 2.0));
 	init2.insert(key2, Vector_(2, 4.0, 3.0));
 
 	Values1 actual1(init2);
-	Values actual2(init1);
+	TestValues actual2(init1);
 
 	EXPECT(actual1.empty());
 	EXPECT(actual2.empty());
