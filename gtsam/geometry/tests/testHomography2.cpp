@@ -96,7 +96,7 @@ TEST( Homography2, TestCase)
 Homography2 patchH(const Pose3& tEc) {
 	Pose3 cEt = tEc.inverse();
 	Rot3 cRt = cEt.rotation();
-	Point3 r1 = cRt.column(1), r2 = cRt.column(2), t = cEt.translation();
+	Point3 r1 = cRt.r1(), r2 = cRt.r2(), t = cEt.translation();
 
 	// TODO cleanup !!!!
 	// column 1

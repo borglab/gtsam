@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    Rot3.cpp
+ * @file    Rot3M.cpp
  * @brief   Rotation (internal: 3*3 matrix representation*)
  * @author  Alireza Fathi
  * @author  Christian Potthast
@@ -18,7 +18,7 @@
  */
 
 #include <boost/math/constants/constants.hpp>
-#include <gtsam/geometry/Rot3.h>
+#include <gtsam/geometry/Rot3M.h>
 #include <gtsam/base/Lie-inl.h>
 
 using namespace std;
@@ -26,39 +26,39 @@ using namespace std;
 namespace gtsam {
 
   /** Explicit instantiation of base class to export members */
-  INSTANTIATE_LIE(Rot3);
+  INSTANTIATE_LIE(Rot3M);
 
 	static const Matrix I3 = eye(3);
 
   /* ************************************************************************* */
 	// static member functions to construct rotations
 
-  Rot3 Rot3::Rx(double t) {
+  Rot3M Rot3M::Rx(double t) {
   	double st = sin(t), ct = cos(t);
-  	return Rot3(
+  	return Rot3M(
   			1,  0,  0,
   			0, ct,-st,
   			0, st, ct);
   }
 
-  Rot3 Rot3::Ry(double t) {
+  Rot3M Rot3M::Ry(double t) {
   	double st = sin(t), ct = cos(t);
-  	return Rot3(
+  	return Rot3M(
   			 ct, 0, st,
   			  0, 1,  0,
   			-st, 0, ct);
   }
 
-  Rot3 Rot3::Rz(double t) {
+  Rot3M Rot3M::Rz(double t) {
   	double st = sin(t), ct = cos(t);
-  	return Rot3(
+  	return Rot3M(
   			ct,-st, 0,
   			st, ct, 0,
   			 0,  0, 1);
   }
 
   // Considerably faster than composing matrices above !
-  Rot3 Rot3::RzRyRx(double x, double y, double z) {
+  Rot3M Rot3M::RzRyRx(double x, double y, double z) {
   	double cx=cos(x),sx=sin(x);
   	double cy=cos(y),sy=sin(y);
   	double cz=cos(z),sz=sin(z);
@@ -73,7 +73,7 @@ namespace gtsam {
 		double s_c = sx * cz;
 		double c_c = cx * cz;
 		double ssc = ss_ * cz, csc = cs_ * cz, sss = ss_ * sz, css = cs_ * sz;
-  	return Rot3(
+  	return Rot3M(
   			_cc,- c_s + ssc,  s_s + csc,
   			_cs,  c_c + sss, -s_c + css,
 				-sy,        sc_,        cc_
@@ -81,7 +81,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Rot3 Rot3::rodriguez(const Vector& w, double theta) {
+  Rot3M Rot3M::rodriguez(const Vector& w, double theta) {
   	// get components of axis \omega
     double wx = w(0), wy=w(1), wz=w(2);
     double wwTxx = wx*wx, wwTyy = wy*wy, wwTzz = wz*wz;
@@ -97,25 +97,25 @@ namespace gtsam {
     double                  C11 = c_1*wwTyy, C12 = c_1*wy*wz;
     double                                   C22 = c_1*wwTzz;
 
-    return Rot3(   c + C00, -swz + C01,  swy + C02,
+    return Rot3M(   c + C00, -swz + C01,  swy + C02,
     		         swz + C01,    c + C11, -swx + C12,
 				        -swy + C02,  swx + C12,    c + C22);
   }
 
   /* ************************************************************************* */
-  Rot3 Rot3::rodriguez(const Vector& w) {
+  Rot3M Rot3M::rodriguez(const Vector& w) {
     double t = w.norm();
-    if (t < 1e-10) return Rot3();
+    if (t < 1e-10) return Rot3M();
     return rodriguez(w/t, t);
   }
 
   /* ************************************************************************* */
-  bool Rot3::equals(const Rot3 & R, double tol) const {
+  bool Rot3M::equals(const Rot3M & R, double tol) const {
     return equal_with_abs_tol(matrix(), R.matrix(), tol);
   }
 
   /* ************************************************************************* */
-  Matrix Rot3::matrix() const {
+  Matrix Rot3M::matrix() const {
     double r[] = { r1_.x(), r2_.x(), r3_.x(),
         r1_.y(), r2_.y(), r3_.y(),
         r1_.z(), r2_.z(), r3_.z() };
@@ -123,7 +123,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Matrix Rot3::transpose() const {
+  Matrix Rot3M::transpose() const {
     double r[] = { r1_.x(), r1_.y(), r1_.z(),
         r2_.x(), r2_.y(), r2_.z(),
         r3_.x(), r3_.y(), r3_.z()};
@@ -131,7 +131,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Point3 Rot3::column(int index) const{
+  Point3 Rot3M::column(int index) const{
     if(index == 3)
       return r3_;
     else if (index == 2)
@@ -141,25 +141,25 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Vector Rot3::xyz() const {
+  Vector Rot3M::xyz() const {
     Matrix I;Vector q;
     boost::tie(I,q)=RQ(matrix());
     return q;
   }
 
-  Vector Rot3::ypr() const {
+  Vector Rot3M::ypr() const {
   	Vector q = xyz();
     return Vector_(3,q(2),q(1),q(0));
   }
 
-  Vector Rot3::rpy() const {
+  Vector Rot3M::rpy() const {
   	Vector q = xyz();
     return Vector_(3,q(0),q(1),q(2));
   }
 
   /* ************************************************************************* */
   // Log map at identity - return the canonical coordinates of this rotation
-  Vector Rot3::Logmap(const Rot3& R) {
+  Vector Rot3M::Logmap(const Rot3M& R) {
 		double tr = R.r1().x()+R.r2().y()+R.r3().z();
 		if (tr > 3.0 - 1e-17) {   // when theta = 0, +-2pi, +-4pi, etc. (or tr > 3 + 1E-10)
 		    return zero(3);
@@ -170,7 +170,7 @@ namespace gtsam {
             R.r2().z()-R.r3().y(),
             R.r3().x()-R.r1().z(),
             R.r1().y()-R.r2().x());
-		} else if (fabs(tr - -1.0) < 1e-10) { // when theta = +-pi, +-3pi, +-5pi, etc.
+		} else if (fabs(tr) - -1.0 < 1e-10) { // when theta = +-pi, +-3pi, +-5pi, etc.
       if(fabs(R.r3().z() - -1.0) > 1e-10)
         return (boost::math::constants::pi<double>() / sqrt(2.0+2.0*R.r3().z())) *
         Vector_(3, R.r3().x(), R.r3().y(), 1.0+R.r3().z());
@@ -190,7 +190,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Point3 Rot3::rotate(const Point3& p,
+  Point3 Rot3M::rotate(const Point3& p,
   		  boost::optional<Matrix&> H1,  boost::optional<Matrix&> H2) const {
 	  if (H1) *H1 = matrix() * skewSymmetric(-p.x(), -p.y(), -p.z());
 	  if (H2) *H2 = matrix();
@@ -199,7 +199,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   // see doc/math.lyx, SO(3) section
-  Point3 Rot3::unrotate(const Point3& p,
+  Point3 Rot3M::unrotate(const Point3& p,
   		boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
     const Matrix Rt(transpose());
     Point3 q(Rt*p.vector()); // q = Rt*p
@@ -209,7 +209,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Rot3 Rot3::compose (const Rot3& R2,
+  Rot3M Rot3M::compose (const Rot3M& R2,
 	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
 		if (H1) *H1 = R2.transpose();
 	  if (H2) *H2 = I3;
@@ -217,7 +217,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Rot3 Rot3::between (const Rot3& R2,
+  Rot3M Rot3M::between (const Rot3M& R2,
 	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
 	  if (H1) *H1 = -(R2.transpose()*matrix());
 	  if (H2) *H2 = I3;
@@ -228,15 +228,15 @@ namespace gtsam {
   pair<Matrix, Vector> RQ(const Matrix& A) {
 
 		double x = -atan2(-A(2, 1), A(2, 2));
-		Rot3 Qx = Rot3::Rx(-x);
+		Rot3M Qx = Rot3M::Rx(-x);
 		Matrix B = A * Qx.matrix();
 
 		double y = -atan2(B(2, 0), B(2, 2));
-		Rot3 Qy = Rot3::Ry(-y);
+		Rot3M Qy = Rot3M::Ry(-y);
 		Matrix C = B * Qy.matrix();
 
 		double z = -atan2(-C(1, 0), C(1, 1));
-		Rot3 Qz = Rot3::Rz(-z);
+		Rot3M Qz = Rot3M::Rz(-z);
 		Matrix R = C * Qz.matrix();
 
 		Vector xyz = Vector_(3, x, y, z);

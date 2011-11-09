@@ -278,7 +278,7 @@ TEST( Pose3, compose )
 	EXPECT(assert_equal(numericalH1,actualDcompose1,5e-3));
 
 	Matrix numericalH2 = numericalDerivative22(testing::compose<Pose3>, T2, T2);
-	EXPECT(assert_equal(numericalH2,actualDcompose2));
+	EXPECT(assert_equal(numericalH2,actualDcompose2,1e-4));
 }
 
 /* ************************************************************************* */
@@ -296,7 +296,7 @@ TEST( Pose3, compose2 )
 	EXPECT(assert_equal(numericalH1,actualDcompose1,5e-3));
 
 	Matrix numericalH2 = numericalDerivative22(testing::compose<Pose3>, T1, T2);
-	EXPECT(assert_equal(numericalH2,actualDcompose2));
+	EXPECT(assert_equal(numericalH2,actualDcompose2,1e-5));
 }
 
 /* ************************************************************************* */
@@ -567,7 +567,7 @@ TEST( Pose3, between )
 	EXPECT(assert_equal(numericalH1,actualDBetween1,5e-3));
 
 	Matrix numericalH2 = numericalDerivative22(testing::between<Pose3> , T2, T3);
-	EXPECT(assert_equal(numericalH2,actualDBetween2));
+	EXPECT(assert_equal(numericalH2,actualDBetween2,1e-5));
 }
 
 /* ************************************************************************* */
