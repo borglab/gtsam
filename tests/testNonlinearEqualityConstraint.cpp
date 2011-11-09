@@ -311,7 +311,7 @@ TEST (testNonlinearEqualityConstraint, stereo_constrained ) {
 	Rot3 faceDownY(Matrix_(3,3,
 			1.0, 0.0, 0.0,
 			0.0, 0.0, 1.0,
-			0.0, 1.0, 0.0));
+			0.0, -1.0, 0.0));
 	Pose3 pose1(faceDownY, Point3()); // origin, left camera
 	SimpleCamera camera1(K, pose1);
 	Pose3 pose2(faceDownY, Point3(2.0, 0.0, 0.0)); // 2 units to the left
