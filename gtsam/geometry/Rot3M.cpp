@@ -170,7 +170,7 @@ namespace gtsam {
             R.r2().z()-R.r3().y(),
             R.r3().x()-R.r1().z(),
             R.r1().y()-R.r2().x());
-		} else if (fabs(tr) - -1.0 < 1e-10) { // when theta = +-pi, +-3pi, +-5pi, etc.
+		} else if (fabs(tr - -1.0) < 1e-10) { // when theta = +-pi, +-3pi, +-5pi, etc.
       if(fabs(R.r3().z() - -1.0) > 1e-10)
         return (boost::math::constants::pi<double>() / sqrt(2.0+2.0*R.r3().z())) *
         Vector_(3, R.r3().x(), R.r3().y(), 1.0+R.r3().z());
