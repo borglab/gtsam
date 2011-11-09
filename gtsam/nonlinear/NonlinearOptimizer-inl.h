@@ -289,6 +289,7 @@ namespace gtsam {
 
 			if(iterations_ >= parameters_->maxIterations_ || converged == true) {
 				if (verbosity >= Parameters::VALUES) values_->print("final values");
+				if (verbosity >= Parameters::ERROR && iterations_ >= parameters_->maxIterations_) cout << "Terminating because reached maximum iterations" << endl;
 				if (verbosity >= Parameters::ERROR) cout << "final error: " << error_ << endl;
 				if (verbosity >= Parameters::LAMBDA) cout << "final lambda = " << lambda() << endl;
 				return *this;
