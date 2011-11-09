@@ -79,9 +79,9 @@ inline void toc(size_t id) { toc_(id); }
 inline void toc(size_t id, const std::string& label) { toc_(id, label); }
 inline void tictoc_finishedIteration() { tictoc_finishedIteration_(); }
 #else
-inline void tic(size_t id, const std::string& label) {}
-inline void toc(size_t id) {}
-inline void toc(size_t id, const std::string& label) {}
+inline void tic(size_t, const char*) {}
+inline void toc(size_t) {}
+inline void toc(size_t, const char*) {}
 inline void tictoc_finishedIteration() {}
 #endif
 
@@ -183,10 +183,10 @@ inline void ticPop(const std::string& prefix, const std::string& id) { ticPop_(p
 inline void tictoc_print() { tictoc_print_(); }
 #else
 inline double _tic() {return 0.;}
-inline double _toc(double t) {return 0.;}
-inline double tic(const std::string& id) {return 0.;}
-inline double toc(const std::string& id) {return 0.;}
-inline void ticPush(const std::string& prefix, const std::string& id) {}
-inline void ticPop(const std::string& prefix, const std::string& id) {}
+inline double _toc(double) {return 0.;}
+inline double tic(const std::string&) {return 0.;}
+inline double toc(const std::string&) {return 0.;}
+inline void ticPush(const std::string&, const std::string&) {}
+inline void ticPop(const std::string&, const std::string&) {}
 inline void tictoc_print() {}
 #endif
