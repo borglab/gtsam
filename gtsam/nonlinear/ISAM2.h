@@ -50,15 +50,69 @@ struct ISAM2Params {
   double relinearizeThreshold; ///< Only relinearize variables whose linear delta magnitude is greater than this threshold (default: 0.1)
   int relinearizeSkip; ///< Only relinearize any variables every relinearizeSkip calls to ISAM2::update (default: 10)
   bool enableRelinearization; ///< Controls whether ISAM2 will ever relinearize any variables (default: true)
+  bool evaluateNonlinearError; ///< Whether to evaluate the nonlinear error before and after the update, to return in ISAM2Result from update()
 
   /** Specify parameters as constructor arguments */
   ISAM2Params(
       double _wildfireThreshold = 0.001, ///< ISAM2Params::wildfireThreshold
       double _relinearizeThreshold = 0.1, ///< ISAM2Params::relinearizeThreshold
       int _relinearizeSkip = 10, ///< ISAM2Params::relinearizeSkip
-      bool _enableRelinearization = true ///< ISAM2Params::enableRelinearization
+      bool _enableRelinearization = true, ///< ISAM2Params::enableRelinearization
+      bool _evaluateNonlinearError = false ///< ISAM2Params::evaluateNonlinearError
   ) : wildfireThreshold(_wildfireThreshold), relinearizeThreshold(_relinearizeThreshold),
-      relinearizeSkip(_relinearizeSkip), enableRelinearization(_enableRelinearization) {}
+      relinearizeSkip(_relinearizeSkip), enableRelinearization(_enableRelinearization),
+      evaluateNonlinearError(_evaluateNonlinearError) {}
+};
+
+/**
+ * @ingroup ISAM2
+ * This struct is returned from ISAM2::update() and contains information about
+ * the update that is useful for determining whether the solution is
+ * converging, and about how much work was required for the update.  See member
+ * variables for details and information about each entry.
+ */
+struct ISAM2Result {
+  /** The nonlinear error of all of the factors, \a including new factors and
+   * variables added during the current call to ISAM2::update().  This error is
+   * calculated using the following variable values:
+   * \li Pre-existing variables will be evaluated by combining their
+   * linearization point before this call to update, with their partial linear
+   * delta, as computed by ISAM2::calculateEstimate().
+   * \li New variables will be evaluated at their initialization points passed
+   * into the current call to update.
+   * \par Note: This will only be computed if ISAM2Params::evaluateNonlinearError
+   * is set to \c true, because there is some cost to this computation.
+   */
+  boost::optional<double> errorBefore;
+
+  /** The nonlinear error of all of the factors computed after the current
+   * update, meaning that variables above the relinearization threshold
+   * (ISAM2Params::relinearizeThreshold) have been relinearized and new
+   * variables have undergone one linear update.  Variable values are
+   * again computed by combining their linearization points with their
+   * partial linear deltas, by ISAM2::calculateEstimate().
+   * \par Note: This will only be computed if ISAM2Params::evaluateNonlinearError
+   * is set to \c true, because there is some cost to this computation.
+   */
+  boost::optional<double> errorAfter;
+
+  /** The number of variables that were relinearized because their linear
+   * deltas exceeded the reslinearization threshold
+   * (ISAM2Params::relinearizeThreshold), combined with any additional
+   * variables that had to be relinearized because they were involved in
+   * the same factor as a variable above the relinearization threshold.
+   * On steps where no relinearization is considered
+   * (see ISAM2Params::relinearizeSkip), this count will be zero.
+   */
+  size_t variablesRelinearized;
+
+  /** The number of variables that were reeliminated as parts of the Bayes'
+   * Tree were recalculated, due to new factors.  When loop closures occur,
+   * this count will be large as the new loop-closing factors will tend to
+   * involve variables far away from the root, and everything up to the root
+   * will be reeliminated.
+   */
+  size_t variablesReeliminated;
 };
 
 /**
@@ -142,8 +196,9 @@ public:
    * @param force_relinearize Relinearize any variables whose delta magnitude is sufficiently
    * large (Params::relinearizeThreshold), regardless of the relinearization interval
    * (Params::relinearizeSkip).
+   * @return An ISAM2Result struct containing information about the update
    */
-  void update(const NonlinearFactorGraph<VALUES>& newFactors, const VALUES& newTheta,
+  ISAM2Result update(const NonlinearFactorGraph<VALUES>& newFactors, const VALUES& newTheta,
       bool force_relinearize = false);
 
   /** Access the current linearization point */
@@ -189,7 +244,7 @@ private:
   FactorGraph<CacheFactor> getCachedBoundaryFactors(Cliques& orphans);
 
   boost::shared_ptr<FastSet<Index> > recalculate(const FastSet<Index>& markedKeys, const FastSet<Index>& structuralKeys,
-      const FastVector<Index>& newKeys, const FactorGraph<GaussianFactor>::shared_ptr newFactors = FactorGraph<GaussianFactor>::shared_ptr());
+      const FastVector<Index>& newKeys, const FactorGraph<GaussianFactor>::shared_ptr newFactors, ISAM2Result& result);
   //	void linear_update(const GaussianFactorGraph& newFactors);
 
 }; // ISAM2

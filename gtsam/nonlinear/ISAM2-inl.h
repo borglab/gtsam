@@ -156,7 +156,7 @@ ISAM2<Conditional, Values>::getCachedBoundaryFactors(Cliques& orphans) {
 
 template<class Conditional, class Values>
 boost::shared_ptr<FastSet<Index> > ISAM2<Conditional, Values>::recalculate(
-    const FastSet<Index>& markedKeys, const FastSet<Index>& structuralKeys, const FastVector<Index>& newKeys, const FactorGraph<GaussianFactor>::shared_ptr newFactors) {
+    const FastSet<Index>& markedKeys, const FastSet<Index>& structuralKeys, const FastVector<Index>& newKeys, const FactorGraph<GaussianFactor>::shared_ptr newFactors, ISAM2Result& result) {
 
   // TODO:  new factors are linearized twice, the newFactors passed in are not used.
 
@@ -298,6 +298,8 @@ boost::shared_ptr<FastSet<Index> > ISAM2<Conditional, Values>::recalculate(
 
     toc(3,"batch");
 
+    result.variablesReeliminated = affectedKeysSet->size();
+
     lastAffectedMarkedCount = markedKeys.size();
     lastAffectedVariableCount = affectedKeysSet->size();
     lastAffectedFactorCount = factors.size();
@@ -318,6 +320,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2<Conditional, Values>::recalculate(
 
     if(debug) { cout << "Affected keys: "; BOOST_FOREACH(const Index key, affectedKeys) { cout << key << " "; } cout << endl; }
 
+    result.variablesReeliminated = affectedAndNewKeys.size();
     lastAffectedMarkedCount = markedKeys.size();
     lastAffectedVariableCount = affectedKeys.size();
     lastAffectedFactorCount = factors.size();
@@ -416,7 +419,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2<Conditional, Values>::recalculate(
 
 /* ************************************************************************* */
 template<class Conditional, class Values>
-void ISAM2<Conditional, Values>::update(
+ISAM2Result ISAM2<Conditional, Values>::update(
     const NonlinearFactorGraph<Values>& newFactors, const Values& newTheta, bool force_relinearize) {
 
   static const bool debug = ISDEBUG("ISAM2 update");
@@ -431,22 +434,28 @@ void ISAM2<Conditional, Values>::update(
   lastAffectedMarkedCount = 0;
   lastBacksubVariableCount = 0;
   lastNnzTop = 0;
+  ISAM2Result result;
 
   if(verbose) {
     cout << "ISAM2::update\n";
     this->print("ISAM2: ");
   }
 
-  tic(1,"push_back factors");
+  tic(0,"push_back factors");
   // 1. Add any new factors \Factors:=\Factors\cup\Factors'.
   if(debug || verbose) newFactors.print("The new factors are: ");
   nonlinearFactors_.push_back(newFactors);
-  toc(1,"push_back factors");
+  toc(0,"push_back factors");
 
-  tic(2,"add new variables");
+  tic(1,"add new variables");
   // 2. Initialize any new variables \Theta_{new} and add \Theta:=\Theta\cup\Theta_{new}.
   Impl::AddVariables(newTheta, theta_, delta_, ordering_, Base::nodes_);
-  toc(2,"add new variables");
+  toc(1,"add new variables");
+
+  tic(2,"evaluate error before");
+  if(params_.evaluateNonlinearError)
+    result.errorBefore.reset(nonlinearFactors_.error(calculateEstimate()));
+  toc(2,"evaluate error before");
 
   tic(3,"gather involved keys");
   // 3. Mark linear update
@@ -481,11 +490,14 @@ void ISAM2<Conditional, Values>::update(
       Impl::ExpmapMasked(theta_, delta_, ordering_, markedRelinMask, delta_);
     toc(6,"expmap");
 
+    result.variablesRelinearized = markedRelinMask.size();
+
 #ifndef NDEBUG
     lastRelinVariables_ = markedRelinMask;
 #endif
   } else {
 #ifndef NDEBUG
+    result.variablesRelinearized = 0;
     lastRelinVariables_ = vector<bool>(ordering_.nVars(), false);
 #endif
   }
@@ -506,7 +518,7 @@ void ISAM2<Conditional, Values>::update(
   // 8. Redo top of Bayes tree
   boost::shared_ptr<FastSet<Index> > replacedKeys;
   if(!markedKeys.empty() || !newKeys.empty())
-    replacedKeys = recalculate(markedKeys, structuralKeys, newKeys, linearFactors);
+    replacedKeys = recalculate(markedKeys, structuralKeys, newKeys, linearFactors, result);
   toc(8,"recalculate");
 
   tic(9,"solve");
@@ -532,6 +544,13 @@ void ISAM2<Conditional, Values>::update(
 #endif
   }
   toc(9,"solve");
+
+  tic(10,"evaluate error after");
+  if(params_.evaluateNonlinearError)
+    result.errorAfter.reset(nonlinearFactors_.error(calculateEstimate()));
+  toc(10,"evaluate error after");
+
+  return result;
 }
 
 /* ************************************************************************* */
