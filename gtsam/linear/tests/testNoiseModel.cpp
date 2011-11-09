@@ -41,10 +41,6 @@ static Matrix Sigma = Matrix_(3, 3,
 		var, 0.0, 0.0,
 		0.0, var, 0.0,
 		0.0, 0.0, var);
-//static Matrix Q = Matrix_(3, 3,
-//		prc, 0.0, 0.0,
-//		0.0, prc, 0.0,
-//		0.0, 0.0, prc);
 
 static double inf = std::numeric_limits<double>::infinity();
 
@@ -108,7 +104,8 @@ TEST(NoiseModel, constructors)
 }
 
 /* ************************************************************************* */
-TEST(NoiseModel, Unit) {
+TEST(NoiseModel, Unit)
+{
 	Vector v = Vector_(3,5.0,10.0,15.0);
 	Gaussian::shared_ptr u(Unit::Create(3));
 	EXPECT(assert_equal(v,u->whiten(v)));
@@ -135,11 +132,53 @@ TEST(NoiseModel, equals)
 }
 
 /* ************************************************************************* */
-TEST(NoiseModel, sample) {
+TEST(NoiseModel, sample)
+{
 	Vector s = Vector_(3,1.0,2.0,3.0);
 	SharedDiagonal model = sharedSigmas(s);
 	Vector v = model->sample();
 	// no check as no way yet to set random seed
+}
+
+// TODO enable test once a mechanism for smart constraints exists
+///* ************************************************************************* */
+//TEST(NoiseModel, ConstrainedSmart )
+//{
+//	Gaussian::shared_ptr nonconstrained = Constrained::MixedSigmas(Vector_(3, sigma, 0.0, sigma), true);
+//	Diagonal::shared_ptr n1 = boost::shared_dynamic_cast<Diagonal>(nonconstrained);
+//	Constrained::shared_ptr n2 = boost::shared_dynamic_cast<Constrained>(nonconstrained);
+//	EXPECT(n1);
+//	EXPECT(!n2);
+//
+//	Gaussian::shared_ptr constrained = Constrained::MixedSigmas(zero(3), true);
+//	Diagonal::shared_ptr c1 = boost::shared_dynamic_cast<Diagonal>(constrained);
+//	Constrained::shared_ptr c2 = boost::shared_dynamic_cast<Constrained>(constrained);
+//	EXPECT(c1);
+//	EXPECT(c2);
+//}
+
+/* ************************************************************************* */
+TEST(NoiseModel, ConstrainedConstructors )
+{
+	Constrained::shared_ptr actual;
+	size_t d = 3;
+	double m = 100.0;
+	Vector sigmas = Vector_(3, sigma, 0.0, 0.0);
+	Vector mu = Vector_(3, 200.0, 300.0, 400.0);
+	actual = Constrained::All(d);
+	EXPECT(assert_equal(gtsam::repeat(d, 1000.0), actual->mu()));
+
+	actual = Constrained::All(d, m);
+	EXPECT(assert_equal(gtsam::repeat(d, m), actual->mu()));
+
+	actual = Constrained::All(d, mu);
+	EXPECT(assert_equal(mu, actual->mu()));
+
+	actual = Constrained::MixedSigmas(mu, sigmas);
+	EXPECT(assert_equal(mu, actual->mu()));
+
+	actual = Constrained::MixedSigmas(m, sigmas);
+	EXPECT(assert_equal( gtsam::repeat(d, m), actual->mu()));
 }
 
 /* ************************************************************************* */
@@ -147,24 +186,26 @@ TEST(NoiseModel, ConstrainedMixed )
 {
 	Vector feasible = Vector_(3, 1.0, 0.0, 1.0),
 			infeasible = Vector_(3, 1.0, 1.0, 1.0);
-	Constrained::shared_ptr d = Constrained::MixedSigmas(Vector_(3, sigma, 0.0, sigma));
+	Diagonal::shared_ptr d = Constrained::MixedSigmas(Vector_(3, sigma, 0.0, sigma));
 	EXPECT(assert_equal(Vector_(3, 0.5, inf, 0.5),d->whiten(infeasible)));
 	EXPECT(assert_equal(Vector_(3, 0.5, 0.0, 0.5),d->whiten(feasible)));
-	DOUBLES_EQUAL(inf,d->Mahalanobis(infeasible),1e-9);
-	DOUBLES_EQUAL(0.5,d->Mahalanobis(feasible),1e-9);
+
+	DOUBLES_EQUAL(1000.0 + 0.25 + 0.25,d->distance(infeasible),1e-9);
+	DOUBLES_EQUAL(0.5,d->distance(feasible),1e-9);
 }
 
 /* ************************************************************************* */
 TEST(NoiseModel, ConstrainedAll )
 {
 	Vector feasible = Vector_(3, 0.0, 0.0, 0.0),
-			infeasible = Vector_(3, 1.0, 1.0, 1.0);
+			 infeasible = Vector_(3, 1.0, 1.0, 1.0);
 
 	Constrained::shared_ptr i = Constrained::All(3);
 	EXPECT(assert_equal(Vector_(3, inf, inf, inf),i->whiten(infeasible)));
 	EXPECT(assert_equal(Vector_(3, 0.0, 0.0, 0.0),i->whiten(feasible)));
-	DOUBLES_EQUAL(inf,i->Mahalanobis(infeasible),1e-9);
-	DOUBLES_EQUAL(0.0,i->Mahalanobis(feasible),1e-9);
+
+	DOUBLES_EQUAL(1000.0 * 3.0,i->distance(infeasible),1e-9);
+	DOUBLES_EQUAL(0.0,i->distance(feasible),1e-9);
 }
 
 /* ************************************************************************* */

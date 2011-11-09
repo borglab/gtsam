@@ -276,6 +276,19 @@ Vector Diagonal::sample() const {
 /* ************************************************************************* */
 // Constrained
 /* ************************************************************************* */
+Constrained::shared_ptr Constrained::MixedSigmas(const Vector& mu, const Vector& sigmas, bool smart) {
+	// FIXME: can't return a diagonal shared_ptr due to conversion
+//	if (smart) {
+//		// look for zeros to make a constraint
+//		for (size_t i=0; i< (size_t) sigmas.size(); ++i)
+//			if (sigmas(i)<1e-8)
+//				return MixedSigmas(mu, sigmas);
+//		return Diagonal::Sigmas(sigmas);
+//	}
+	return shared_ptr(new Constrained(mu, sigmas));
+}
+
+/* ************************************************************************* */
 void Constrained::print(const std::string& name) const {
 	gtsam::print(sigmas_, name + ": constrained sigmas");
 }
@@ -283,16 +296,28 @@ void Constrained::print(const std::string& name) const {
 /* ************************************************************************* */
 Vector Constrained::whiten(const Vector& v) const {
 	// ediv_ does the right thing with the errors
+	// FIXME: solve this more effectively
 	return ediv_(v, sigmas_);
 }
 
 /* ************************************************************************* */
+double Constrained::distance(const Vector& v) const {
+	Vector w = whiten(v); // get noisemodel for constrained elements
+	for (size_t i=0; i<dim_; ++i) // add mu weights on constrained variables
+		if (isinf(w[i])) // whiten makes constrained variables infinite
+			w[i] = v[i] * sqrt(mu_[i]); // FIXME: may want to store sqrt rather than rebuild
+	return w.dot(w);
+}
+
+/* ************************************************************************* */
 Matrix Constrained::Whiten(const Matrix& H) const {
+	// FIXME: replace with pass-through
 	throw logic_error("noiseModel::Constrained cannot Whiten");
 }
 
 /* ************************************************************************* */
 void Constrained::WhitenInPlace(Matrix& H) const {
+	// FIXME: replace with pass-through
 	throw logic_error("noiseModel::Constrained cannot Whiten");
 }
 

@@ -212,6 +212,7 @@ namespace gtsam {
 
 			/**
 			 * Simple check for constrained-ness
+			 * FIXME Find a better way of handling this
 			 */
 			virtual bool isConstrained() const {return false;}
 
@@ -327,17 +328,28 @@ namespace gtsam {
 		 * information matrix, but this class is specifically equipped to deal with
 		 * singular noise models, specifically: whiten will return zero on those
 		 * components that have zero sigma *and* zero error, infinity otherwise.
+		 * FIXME: the "otherwise return infinity" does not solve anything
+		 *
+		 * The distance function in this function provides an error model
+		 * for a penalty function with a scaling function, assuming a mask of
 		 */
 		class Constrained : public Diagonal {
 		protected:
 
-			// Constrained does not have member variables
-			// Instead (possibly zero) sigmas are stored in Diagonal Base class
+			// Sigmas are contained in the base class
+
+			// Penalty function parameters
+			Vector mu_;
 
 			/** protected constructor takes sigmas */
 			// Keeps only sigmas and calculates invsigmas when necessary
 			Constrained(const Vector& sigmas = zero(1)) :
-				Diagonal(sigmas, false) {}
+				Diagonal(sigmas, false), mu_(repeat(sigmas.size(), 1000.0)) {}
+
+			// Keeps only sigmas and calculates invsigmas when necessary
+			// allows for specifying mu
+			Constrained(const Vector& mu, const Vector& sigmas) :
+				Diagonal(sigmas, false), mu_(mu) {}
 
 		public:
 
@@ -345,18 +357,37 @@ namespace gtsam {
 
 			virtual ~Constrained() {}
 
+			/// Access mu as a vector
+			const Vector& mu() const { return mu_; }
+
 			/**
 			 * A diagonal noise model created by specifying a Vector of
 			 * standard devations, some of which might be zero
-			 * TODO: make smart - check for zeros
+			 */
+			static shared_ptr MixedSigmas(const Vector& mu, const Vector& sigmas,
+					bool smart = false);
+
+			/**
+			 * A diagonal noise model created by specifying a Vector of
+			 * standard devations, some of which might be zero
 			 */
 			static shared_ptr MixedSigmas(const Vector& sigmas, bool smart = false) {
-				return shared_ptr(new Constrained(sigmas));
+				return MixedSigmas(repeat(sigmas.size(), 1000.0), sigmas, smart);
 			}
 
 			/**
 			 * A diagonal noise model created by specifying a Vector of
 			 * standard devations, some of which might be zero
+			 */
+			static shared_ptr MixedSigmas(double m, const Vector& sigmas,
+					bool smart = false) {
+				return MixedSigmas(repeat(sigmas.size(), m), sigmas, smart);
+			}
+
+			/**
+			 * A diagonal noise model created by specifying a Vector of
+			 * standard devations, some of which might be zero
+			 * TODO: allow for mu
 			 */
 			static shared_ptr MixedVariances(const Vector& variances) {
 				return shared_ptr(new Constrained(esqrt(variances)));
@@ -365,24 +396,42 @@ namespace gtsam {
 			/**
 			 * A diagonal noise model created by specifying a Vector of
 			 * precisions, some of which might be inf
+			 * TODO: allow for mu
 			 */
 			static shared_ptr MixedPrecisions(const Vector& precisions) {
 				return MixedVariances(reciprocal(precisions));
 			}
 
 			/**
-			 * Fully constrained. TODO: subclass ?
+			 * The distance function for a constrained noisemodel,
+			 * for non-constrained versions, uses sigmas, otherwise
+			 * uses the penalty function with mu
 			 */
+      virtual double distance(const Vector& v) const;
+
+			/** Fully constrained variations */
 			static shared_ptr All(size_t dim) {
-				return MixedSigmas(repeat(dim,0));
+				return shared_ptr(new Constrained(repeat(dim, 1000.0), repeat(dim,0)));
+			}
+
+			/** Fully constrained variations */
+			static shared_ptr All(size_t dim, const Vector& mu) {
+				return shared_ptr(new Constrained(mu, repeat(dim,0)));
+			}
+
+			/** Fully constrained variations */
+			static shared_ptr All(size_t dim, double m) {
+				return shared_ptr(new Constrained(repeat(dim, m), repeat(dim,0)));
 			}
 
 			virtual void print(const std::string& name) const;
+
+			/// Calculates error vector with weights applied
 			virtual Vector whiten(const Vector& v) const;
 
 			// Whitening Jacobians does not make sense for possibly constrained
 			// noise model and will throw an exception.
-
+			// FIXME: change to allow for use a normal linearization function
 			virtual Matrix Whiten(const Matrix& H) const;
 			virtual void WhitenInPlace(Matrix& H) const;
 
@@ -393,6 +442,7 @@ namespace gtsam {
 
 			/**
 			 * Check constrained is always true
+			 * FIXME Find a better way of handling this
 			 */
 			virtual bool isConstrained() const {return true;}
 
@@ -402,6 +452,7 @@ namespace gtsam {
 			template<class ARCHIVE>
 			void serialize(ARCHIVE & ar, const unsigned int version) {
 				ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Diagonal);
+				ar & BOOST_SERIALIZATION_NVP(mu_);
 			}
 
 		}; // Constrained
