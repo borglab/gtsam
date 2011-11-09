@@ -60,7 +60,7 @@ namespace gtsam {
 			/// Dimensionality
 			inline size_t dim() const { return dim_;}
 
-      virtual void print(const std::string& name) const = 0;
+      virtual void print(const std::string& name = "") const = 0;
 
       virtual bool equals(const Base& expected, double tol=1e-9) const = 0;
 
@@ -327,8 +327,11 @@ namespace gtsam {
 		 * All other Gaussian models are guaranteed to have a non-singular square-root
 		 * information matrix, but this class is specifically equipped to deal with
 		 * singular noise models, specifically: whiten will return zero on those
-		 * components that have zero sigma *and* zero error, infinity otherwise.
-		 * FIXME: the "otherwise return infinity" does not solve anything
+		 * components that have zero sigma *and* zero error, unchanged otherwise.
+		 *
+		 * While a hard constraint may seem to be a case in which there is infinite error,
+		 * we do not ever produce an error value of infinity to allow for constraints
+		 * to actually be optimized rather than self-destructing if not initialized correctly.
 		 *
 		 * The distance function in this function provides an error model
 		 * for a penalty function with a scaling function, assuming a mask of
@@ -387,8 +390,10 @@ namespace gtsam {
 			/**
 			 * A diagonal noise model created by specifying a Vector of
 			 * standard devations, some of which might be zero
-			 * TODO: allow for mu
 			 */
+			static shared_ptr MixedVariances(const Vector& mu, const Vector& variances) {
+				return shared_ptr(new Constrained(mu, esqrt(variances)));
+			}
 			static shared_ptr MixedVariances(const Vector& variances) {
 				return shared_ptr(new Constrained(esqrt(variances)));
 			}
@@ -398,6 +403,9 @@ namespace gtsam {
 			 * precisions, some of which might be inf
 			 * TODO: allow for mu
 			 */
+			static shared_ptr MixedPrecisions(const Vector& mu, const Vector& precisions) {
+				return MixedVariances(mu, reciprocal(precisions));
+			}
 			static shared_ptr MixedPrecisions(const Vector& precisions) {
 				return MixedVariances(reciprocal(precisions));
 			}
@@ -429,9 +437,8 @@ namespace gtsam {
 			/// Calculates error vector with weights applied
 			virtual Vector whiten(const Vector& v) const;
 
-			// Whitening Jacobians does not make sense for possibly constrained
-			// noise model and will throw an exception.
-			// FIXME: change to allow for use a normal linearization function
+			/// Whitening functions will perform partial whitening on rows
+			/// with a non-zero sigma.  Other rows remain untouched.
 			virtual Matrix Whiten(const Matrix& H) const;
 			virtual void WhitenInPlace(Matrix& H) const;
 
@@ -445,6 +452,12 @@ namespace gtsam {
 			 * FIXME Find a better way of handling this
 			 */
 			virtual bool isConstrained() const {return true;}
+
+			/**
+			 * Returns a Unit version of a constrained noisemodel in which
+			 * constrained sigmas remain constrained and the rest are unit scaled
+			 */
+			shared_ptr unit() const;
 
 		private:
 			/** Serialization function */

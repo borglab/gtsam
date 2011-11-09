@@ -22,7 +22,7 @@
 #include <gtsam/base/numericalDerivative.h>
 
 #include <gtsam/nonlinear/NonlinearConstraint.h>
-#include <gtsam/slam/BetweenConstraint.h>
+#include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/BoundingConstraint.h>
 #include <gtsam/slam/simulated2D.h>
 

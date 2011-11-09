@@ -40,6 +40,7 @@ namespace gtsam {
 		T measured_; /** The measurement */
 
 		/** concept check by type */
+		GTSAM_CONCEPT_LIE_TYPE(T)
 		GTSAM_CONCEPT_TESTABLE_TYPE(T)
 
 	public:
@@ -106,6 +107,33 @@ namespace gtsam {
 					boost::serialization::base_object<Base>(*this));
 			ar & BOOST_SERIALIZATION_NVP(measured_);
 		}
-	};
+	}; // \class BetweenFactor
+
+	/**
+	 * Binary between constraint - forces between to a given value
+	 * This constraint requires the underlying type to a Lie type
+	 *
+	 */
+	template<class VALUES, class KEY>
+	class BetweenConstraint : public BetweenFactor<VALUES, KEY> {
+	public:
+		typedef boost::shared_ptr<BetweenConstraint<VALUES, KEY> > shared_ptr;
+
+		/** Syntactic sugar for constrained version */
+		BetweenConstraint(const typename KEY::Value& measured,
+				const KEY& key1, const KEY& key2, double mu = 1000.0)
+			: BetweenFactor<VALUES, KEY>(key1, key2, measured,
+					noiseModel::Constrained::All(KEY::Value::Dim(), fabs(mu))) {}
+
+	private:
+
+		/** Serialization function */
+		friend class boost::serialization::access;
+		template<class ARCHIVE>
+		void serialize(ARCHIVE & ar, const unsigned int version) {
+			ar & boost::serialization::make_nvp("BetweenFactor",
+					boost::serialization::base_object<BetweenFactor<VALUES, KEY> >(*this));
+		}
+	}; // \class BetweenConstraint
 
 } /// namespace gtsam

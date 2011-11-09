@@ -209,7 +209,7 @@ TEST( NonlinearFactor, linearize_constraint1 )
 	// create expected
 	Ordering ord(*config.orderingArbitrary());
 	Vector b = Vector_(2, 0., -3.);
-	JacobianFactor expected(ord["x1"], eye(2), b, constraint);
+	JacobianFactor expected(ord["x1"], Matrix_(2,2, 5.0, 0.0, 0.0, 1.0), b, constraint);
 	CHECK(assert_equal((const GaussianFactor&)expected, *actual));
 }
 
@@ -229,8 +229,9 @@ TEST( NonlinearFactor, linearize_constraint2 )
 
 	// create expected
 	Ordering ord(*config.orderingArbitrary());
-	Vector b = Vector_(2, -3., -3.);
-	JacobianFactor expected(ord["x1"], -1*eye(2), ord["l1"], eye(2), b, constraint);
+	Matrix A = Matrix_(2,2, 5.0, 0.0, 0.0, 1.0);
+	Vector b = Vector_(2, -15., -3.);
+	JacobianFactor expected(ord["x1"], -1*A, ord["l1"], A, b, constraint);
 	CHECK(assert_equal((const GaussianFactor&)expected, *actual));
 }
 

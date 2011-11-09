@@ -101,7 +101,8 @@ namespace gtsam {
 		/** Check if two factors are equal */
 		bool equals(const NonlinearEquality<VALUES,KEY>& f, double tol = 1e-9) const {
 			if (!Base::equals(f)) return false;
-			return compare_(feasible_, f.feasible_);
+			return feasible_.equals(f.feasible_, tol) &&
+					fabs(error_gain_ - f.error_gain_) < tol;
 		}
 
 		/** actual error function calculation */

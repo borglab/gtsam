@@ -272,8 +272,8 @@ Vector ediv_(const Vector &a, const Vector &b) {
 	assert (b.size()==a.size());
 	Vector c(n);
 	for( size_t i = 0; i < n; i++ ) {
-		double ai = a(i), bi = b(i);
-		c(i) = (bi==0.0 && ai==0.0) ? 0.0 : a(i)/b(i);
+		const double &ai = a(i), &bi = b(i);
+		c(i) = (bi==0.0 && ai==0.0) ? 0.0 : ai/bi;
 	}
 	return c;
 }

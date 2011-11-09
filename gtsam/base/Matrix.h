@@ -377,10 +377,11 @@ Matrix collect(size_t nrMatrices, ...);
  * scales a matrix row or column by the values in a vector
  * Arguments (Matrix, Vector) scales the columns,
  * (Vector, Matrix) scales the rows
+ * @param inf_mask when true, will not scale with a NaN or inf value
  */
-void vector_scale_inplace(const Vector& v, Matrix& A); // row
-Matrix vector_scale(const Vector& v, const Matrix& A); // row
-Matrix vector_scale(const Matrix& A, const Vector& v); // column
+void vector_scale_inplace(const Vector& v, Matrix& A, bool inf_mask = false); // row
+Matrix vector_scale(const Vector& v, const Matrix& A, bool inf_mask = false); // row
+Matrix vector_scale(const Matrix& A, const Vector& v, bool inf_mask = false); // column
 
 /**
  * skew symmetric matrix returns this:

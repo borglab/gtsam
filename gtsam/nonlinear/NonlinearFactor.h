@@ -112,6 +112,18 @@ public:
   /** get the dimension of the factor (number of rows on linearization) */
   virtual size_t dim() const = 0;
 
+	/**
+	 * Checks whether a factor should be used based on a set of values.
+	 * This is primarily used to implment inequality constraints that
+	 * require a variable active set. For all others, the default implementation
+	 * returning true solves this problem.
+	 *
+	 * In an inequality/bounding constraint, this active() returns true
+	 * when the constraint is *NOT* fulfilled.
+	 * @return true if the constraint is active
+	 */
+	virtual bool active(const VALUES& c) const { return true; }
+
   /** linearize to a GaussianFactor */
   virtual boost::shared_ptr<GaussianFactor>
   linearize(const VALUES& c, const Ordering& ordering) const = 0;
@@ -138,7 +150,7 @@ public:
  * the derived class implements \f$ \mathtt{error\_vector}(x) = h(x)-z \approx A \delta x - b \f$
  * This allows a graph to have factors with measurements of mixed type.
 
- * The noise model is typically Gaussian, but robust error models are also supported.
+ * The noise model is typically Gaussian, but robust and constrained error models are also supported.
  */
 template<class VALUES>
 class NoiseModelFactor: public NonlinearFactor<VALUES> {
@@ -237,7 +249,10 @@ public:
    * to transform it to \f$ (h(x)-z)^2/\sigma^2 \f$, and then multiply by 0.5.
    */
   virtual double error(const VALUES& c) const {
-    return 0.5 * noiseModel_->distance(unwhitenedError(c));
+  	if (active(c))
+  		return 0.5 * noiseModel_->distance(unwhitenedError(c));
+  	else
+  		return 0.0;
   }
 
   /**
@@ -246,6 +261,9 @@ public:
    * Hence \f$ b = z - h(x) = - \mathtt{error\_vector}(x) \f$
    */
   boost::shared_ptr<GaussianFactor> linearize(const VALUES& x, const Ordering& ordering) const {
+  	// Only linearize if the factor is active
+		if (!active(x))
+			return boost::shared_ptr<JacobianFactor>();
 
     // Create the set of terms - Jacobians for each index
     Vector b;
@@ -253,11 +271,7 @@ public:
     std::vector<Matrix> A(this->size());
     b = -unwhitenedError(x, A);
 
-    // TODO pass unwhitened + noise model to Gaussian factor
-    SharedDiagonal constrained =
-        boost::shared_dynamic_cast<noiseModel::Constrained>(this->noiseModel_);
-    if(!constrained)
-      this->noiseModel_->WhitenSystem(A,b);
+    this->noiseModel_->WhitenSystem(A,b);
 
     std::vector<std::pair<Index, Matrix> > terms(this->size());
     // Fill in terms
@@ -266,9 +280,12 @@ public:
       terms[j].second.swap(A[j]);
     }
 
+    // TODO pass unwhitened + noise model to Gaussian factor
+    noiseModel::Constrained::shared_ptr constrained =
+        boost::shared_dynamic_cast<noiseModel::Constrained>(this->noiseModel_);
     if(constrained)
       return GaussianFactor::shared_ptr(
-          new JacobianFactor(terms, b, constrained));
+          new JacobianFactor(terms, b, constrained->unit()));
     else
       return GaussianFactor::shared_ptr(
           new JacobianFactor(terms, b, noiseModel::Unit::Create(b.size())));
@@ -328,10 +345,16 @@ public:
   /** Calls the 1-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
   virtual Vector unwhitenedError(const VALUES& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
-    if(H)
-      return evaluateError(x[key_], (*H)[0]);
-    else
-      return evaluateError(x[key_]);
+    if(this->active(x)) {
+      const X& x1 = x[key_];
+      if(H) {
+        return evaluateError(x1, (*H)[0]);
+      } else {
+        return evaluateError(x1);
+      }
+    } else {
+      return zero(this->dim());
+    }
   }
 
   /** Print */
@@ -406,10 +429,17 @@ public:
   /** Calls the 2-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
   virtual Vector unwhitenedError(const VALUES& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
-    if(H)
-      return evaluateError(x[key1_], x[key2_], (*H)[0], (*H)[1]);
-    else
-      return evaluateError(x[key1_], x[key2_]);
+    if(this->active(x)) {
+      const X1& x1 = x[key1_];
+      const X2& x2 = x[key2_];
+      if(H) {
+        return evaluateError(x1, x2, (*H)[0], (*H)[1]);
+      } else {
+        return evaluateError(x1, x2);
+      }
+    } else {
+      return zero(this->dim());
+    }
   }
 
   /** Print */
@@ -491,10 +521,14 @@ public:
   /** Calls the 3-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
   virtual Vector unwhitenedError(const VALUES& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
-    if(H)
-      return evaluateError(x[key1_], x[key2_], x[key3_], (*H)[0], (*H)[1], (*H)[2]);
-    else
-      return evaluateError(x[key1_], x[key2_], x[key3_]);
+    if(this->active(x)) {
+      if(H)
+        return evaluateError(x[key1_], x[key2_], x[key3_], (*H)[0], (*H)[1], (*H)[2]);
+      else
+        return evaluateError(x[key1_], x[key2_], x[key3_]);
+    } else {
+      return zero(this->dim());
+    }
   }
 
   /** Print */
@@ -585,10 +619,14 @@ public:
   /** Calls the 4-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
   virtual Vector unwhitenedError(const VALUES& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
-    if(H)
-      return evaluateError(x[key1_], x[key2_], x[key3_], x[key4_], (*H)[0], (*H)[1], (*H)[2], (*H)[3]);
-    else
-      return evaluateError(x[key1_], x[key2_], x[key3_], x[key4_]);
+  	if(this->active(x)) {
+  		if(H)
+  			return evaluateError(x[key1_], x[key2_], x[key3_], x[key4_], (*H)[0], (*H)[1], (*H)[2], (*H)[3]);
+  		else
+  			return evaluateError(x[key1_], x[key2_], x[key3_], x[key4_]);
+  	} else {
+  		return zero(this->dim());
+  	}
   }
 
   /** Print */
@@ -685,10 +723,14 @@ public:
   /** Calls the 5-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
   virtual Vector unwhitenedError(const VALUES& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
-    if(H)
-      return evaluateError(x[key1_], x[key2_], x[key3_], x[key4_], x[key5_], (*H)[0], (*H)[1], (*H)[2], (*H)[3], (*H)[4]);
-    else
-      return evaluateError(x[key1_], x[key2_], x[key3_], x[key4_], x[key5_]);
+  	if(this->active(x)) {
+      if(H)
+        return evaluateError(x[key1_], x[key2_], x[key3_], x[key4_], x[key5_], (*H)[0], (*H)[1], (*H)[2], (*H)[3], (*H)[4]);
+      else
+        return evaluateError(x[key1_], x[key2_], x[key3_], x[key4_], x[key5_]);
+  	} else {
+  		return zero(this->dim());
+  	}
   }
 
   /** Print */
@@ -792,10 +834,14 @@ public:
   /** Calls the 6-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
   virtual Vector unwhitenedError(const VALUES& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
-    if(H)
-      return evaluateError(x[key1_], x[key2_], x[key3_], x[key4_], x[key5_], x[key6_], (*H)[0], (*H)[1], (*H)[2], (*H)[3], (*H)[4], (*H)[5]);
-    else
-      return evaluateError(x[key1_], x[key2_], x[key3_], x[key4_], x[key5_], x[key6_]);
+  	if(this->active(x)) {
+      if(H)
+        return evaluateError(x[key1_], x[key2_], x[key3_], x[key4_], x[key5_], x[key6_], (*H)[0], (*H)[1], (*H)[2], (*H)[3], (*H)[4], (*H)[5]);
+      else
+        return evaluateError(x[key1_], x[key2_], x[key3_], x[key4_], x[key5_], x[key6_]);
+  	} else {
+  		return zero(this->dim());
+  	}
   }
 
   /** Print */

@@ -187,7 +187,8 @@ TEST(NoiseModel, ConstrainedMixed )
 	Vector feasible = Vector_(3, 1.0, 0.0, 1.0),
 			infeasible = Vector_(3, 1.0, 1.0, 1.0);
 	Diagonal::shared_ptr d = Constrained::MixedSigmas(Vector_(3, sigma, 0.0, sigma));
-	EXPECT(assert_equal(Vector_(3, 0.5, inf, 0.5),d->whiten(infeasible)));
+	// NOTE: we catch constrained variables elsewhere, so whitening does nothing
+	EXPECT(assert_equal(Vector_(3, 0.5, 1.0, 0.5),d->whiten(infeasible)));
 	EXPECT(assert_equal(Vector_(3, 0.5, 0.0, 0.5),d->whiten(feasible)));
 
 	DOUBLES_EQUAL(1000.0 + 0.25 + 0.25,d->distance(infeasible),1e-9);
@@ -201,7 +202,8 @@ TEST(NoiseModel, ConstrainedAll )
 			 infeasible = Vector_(3, 1.0, 1.0, 1.0);
 
 	Constrained::shared_ptr i = Constrained::All(3);
-	EXPECT(assert_equal(Vector_(3, inf, inf, inf),i->whiten(infeasible)));
+	// NOTE: we catch constrained variables elsewhere, so whitening does nothing
+	EXPECT(assert_equal(Vector_(3, 1.0, 1.0, 1.0),i->whiten(infeasible)));
 	EXPECT(assert_equal(Vector_(3, 0.0, 0.0, 0.0),i->whiten(feasible)));
 
 	DOUBLES_EQUAL(1000.0 * 3.0,i->distance(infeasible),1e-9);

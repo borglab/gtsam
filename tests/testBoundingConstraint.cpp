@@ -96,8 +96,8 @@ TEST( testBoundingConstraint, unary_basics_active1 ) {
 	EXPECT(assert_equal(repeat(1,-5.0), constraint2.evaluateError(pt2), tol));
 	EXPECT(assert_equal(repeat(1,-3.0), constraint1.unwhitenedError(config), tol));
 	EXPECT(assert_equal(repeat(1,-5.0), constraint2.unwhitenedError(config), tol));
-	EXPECT_DOUBLES_EQUAL(90.0, constraint1.error(config), tol);
-	EXPECT_DOUBLES_EQUAL(250.0, constraint2.error(config), tol);
+	EXPECT_DOUBLES_EQUAL(45.0, constraint1.error(config), tol);
+	EXPECT_DOUBLES_EQUAL(125.0, constraint2.error(config), tol);
 }
 
 /* ************************************************************************* */
@@ -111,8 +111,8 @@ TEST( testBoundingConstraint, unary_basics_active2 ) {
 	EXPECT(assert_equal(-1.0 * ones(1), constraint4.evaluateError(pt1), tol));
 	EXPECT(assert_equal(-1.0 * ones(1), constraint3.unwhitenedError(config), tol));
 	EXPECT(assert_equal(-1.0 * ones(1), constraint4.unwhitenedError(config), tol));
-	EXPECT_DOUBLES_EQUAL(10.0, constraint3.error(config), tol);
-	EXPECT_DOUBLES_EQUAL(10.0, constraint4.error(config), tol);
+	EXPECT_DOUBLES_EQUAL(5.0, constraint3.error(config), tol);
+	EXPECT_DOUBLES_EQUAL(5.0, constraint4.error(config), tol);
 }
 
 /* ************************************************************************* */
@@ -224,7 +224,7 @@ TEST( testBoundingConstraint, MaxDistance_basics) {
 	config1.update(key2, pt4);
 	EXPECT(rangeBound.active(config1));
 	EXPECT(assert_equal(-1.0*ones(1), rangeBound.unwhitenedError(config1)));
-	EXPECT_DOUBLES_EQUAL(1.0*mu, rangeBound.error(config1), tol);
+	EXPECT_DOUBLES_EQUAL(0.5*mu, rangeBound.error(config1), tol);
 }
 
 /* ************************************************************************* */

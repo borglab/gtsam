@@ -291,13 +291,35 @@ Constrained::shared_ptr Constrained::MixedSigmas(const Vector& mu, const Vector&
 /* ************************************************************************* */
 void Constrained::print(const std::string& name) const {
 	gtsam::print(sigmas_, name + ": constrained sigmas");
+	gtsam::print(mu_, name + ": constrained mu");
 }
 
 /* ************************************************************************* */
 Vector Constrained::whiten(const Vector& v) const {
 	// ediv_ does the right thing with the errors
-	// FIXME: solve this more effectively
-	return ediv_(v, sigmas_);
+//	return ediv_(v, sigmas_);
+	const Vector& a = v;
+	const Vector& b = sigmas_;
+	size_t n = a.size();
+	assert (b.size()==a.size());
+	Vector c(n);
+	for( size_t i = 0; i < n; i++ ) {
+		const double& ai = a(i), &bi = b(i);
+		c(i) = (bi==0.0) ? ai : ai/bi;
+	}
+	return c;
+}
+
+/* ************************************************************************* */
+double Constrained::distance(const Vector& v) const {
+	Vector w = Diagonal::whiten(v); // get noisemodel for constrained elements
+	for (size_t i=0; i<dim_; ++i) { // add mu weights on constrained variables
+		if (isinf(w[i])) // whiten makes constrained variables infinite
+			w[i] = v[i] * sqrt(mu_[i]); // TODO: may want to store sqrt rather than rebuild
+		if (isnan(w[i])) // ensure no other invalid values make it through
+			w[i] = v[i];
+	}
+	return w.dot(w);
 }
 
 /* ************************************************************************* */
@@ -311,14 +333,23 @@ double Constrained::distance(const Vector& v) const {
 
 /* ************************************************************************* */
 Matrix Constrained::Whiten(const Matrix& H) const {
-	// FIXME: replace with pass-through
-	throw logic_error("noiseModel::Constrained cannot Whiten");
+	// selective scaling
+	return vector_scale(invsigmas(), H, true);
 }
 
 /* ************************************************************************* */
 void Constrained::WhitenInPlace(Matrix& H) const {
-	// FIXME: replace with pass-through
-	throw logic_error("noiseModel::Constrained cannot Whiten");
+	// selective scaling
+	vector_scale_inplace(invsigmas(), H, true);
+}
+
+/* ************************************************************************* */
+Constrained::shared_ptr Constrained::unit() const {
+	Vector sigmas = ones(dim());
+	for (size_t i=0; i<dim(); ++i)
+		if (this->sigmas_(i) == 0.0)
+			sigmas(i) = 0.0;
+	return MixedSigmas(mu_, sigmas);
 }
 
 /* ************************************************************************* */
@@ -401,7 +432,8 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
 	}
 	toc(4, "constrained_QR write back into Ab");
 
-	return mixed ? Constrained::MixedPrecisions(precisions) : Diagonal::Precisions(precisions);
+	// Must include mus, as the defaults might be higher, resulting in non-convergence
+	return mixed ? Constrained::MixedPrecisions(mu_, precisions) : Diagonal::Precisions(precisions);
 }
 
 /* ************************************************************************* */

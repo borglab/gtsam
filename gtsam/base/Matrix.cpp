@@ -500,27 +500,43 @@ Matrix collect(size_t nrMatrices, ...)
 
 /* ************************************************************************* */
 // row scaling, in-place
-void vector_scale_inplace(const Vector& v, Matrix& A) {
+void vector_scale_inplace(const Vector& v, Matrix& A, bool inf_mask) {
 	const size_t m = A.rows();
-	for (size_t i=0; i<m; ++i)
-		A.row(i) *= v(i);
+	if (inf_mask) {
+		for (size_t i=0; i<m; ++i) {
+			const double& vi = v(i);
+			if (!isnan(vi) && !isinf(vi))
+				A.row(i) *= vi;
+		}
+	} else {
+		for (size_t i=0; i<m; ++i)
+			A.row(i) *= v(i);
+	}
 }
 
 /* ************************************************************************* */
 // row scaling
-Matrix vector_scale(const Vector& v, const Matrix& A) {
+Matrix vector_scale(const Vector& v, const Matrix& A, bool inf_mask) {
 	Matrix M(A);
-	vector_scale_inplace(v, M);
+	vector_scale_inplace(v, M, inf_mask);
 	return M;
 }
 
 /* ************************************************************************* */
 // column scaling
-Matrix vector_scale(const Matrix& A, const Vector& v) {
+Matrix vector_scale(const Matrix& A, const Vector& v, bool inf_mask) {
 	Matrix M(A);
 	const size_t n = A.cols();
-	for (size_t j=0; j<n; ++j)
-		M.col(j) *= v(j);
+	if (inf_mask) {
+		for (size_t j=0; j<n; ++j) {
+			const double& vj = v(j);
+			if (!isnan(vj) && !isinf(vj))
+				M.col(j) *= vj;
+		}
+	} else {
+		for (size_t j=0; j<n; ++j)
+			M.col(j) *= v(j);
+	}
 	return M;
 }
 

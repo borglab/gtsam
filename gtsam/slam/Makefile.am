@@ -40,7 +40,7 @@ headers += BetweenFactor.h PriorFactor.h PartialPriorFactor.h
 headers += BearingFactor.h RangeFactor.h BearingRangeFactor.h
 
 # Generic constraint headers
-headers += BetweenConstraint.h BoundingConstraint.h
+headers += BoundingConstraint.h
 
 # 2D Pose SLAM
 sources += pose2SLAM.cpp dataset.cpp

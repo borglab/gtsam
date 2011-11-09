@@ -56,7 +56,7 @@ TEST( testNonlinearEqualityConstraint, unary_basics ) {
 	EXPECT(constraint.active(config2));
 	EXPECT(assert_equal(Vector_(2, 1.0, 0.0), constraint.evaluateError(ptBad1), tol));
 	EXPECT(assert_equal(Vector_(2, 1.0, 0.0), constraint.unwhitenedError(config2), tol));
-	EXPECT_DOUBLES_EQUAL(1000.0, constraint.error(config2), tol);
+	EXPECT_DOUBLES_EQUAL(500.0, constraint.error(config2), tol);
 }
 
 /* ************************************************************************* */
@@ -88,7 +88,7 @@ TEST( testNonlinearEqualityConstraint, unary_simple_optimization ) {
 	// ensure that the hard constraint overrides the soft constraint
 	Point2 truth_pt(1.0, 2.0);
 	simulated2D::PoseKey key(1);
-	double mu = 1000.0;
+	double mu = 10.0;
 	eq2D::UnaryEqualityConstraint::shared_ptr constraint(
 			new eq2D::UnaryEqualityConstraint(truth_pt, key, mu));
 
@@ -103,10 +103,16 @@ TEST( testNonlinearEqualityConstraint, unary_simple_optimization ) {
 	shared_values initValues(new simulated2D::Values());
 	initValues->insert(key, badPt);
 
-	Optimizer::shared_values actual = Optimizer::optimizeLM(graph, initValues);
+	// verify error values
+	EXPECT(constraint->active(*initValues));
+
 	simulated2D::Values expected;
 	expected.insert(key, truth_pt);
-	CHECK(assert_equal(expected, *actual, tol));
+	EXPECT(constraint->active(expected));
+	EXPECT_DOUBLES_EQUAL(0.0, constraint->error(expected), tol);
+
+	Optimizer::shared_values actual = Optimizer::optimizeLM(graph, initValues);
+	EXPECT(assert_equal(expected, *actual, tol));
 }
 
 /* ************************************************************************* */
@@ -132,7 +138,7 @@ TEST( testNonlinearEqualityConstraint, odo_basics ) {
 	EXPECT(constraint.active(config2));
 	EXPECT(assert_equal(Vector_(2, -1.0, -1.0), constraint.evaluateError(x1bad, x2bad), tol));
 	EXPECT(assert_equal(Vector_(2, -1.0, -1.0), constraint.unwhitenedError(config2), tol));
-	EXPECT_DOUBLES_EQUAL(2000.0, constraint.error(config2), tol);
+	EXPECT_DOUBLES_EQUAL(1000.0, constraint.error(config2), tol);
 }
 
 /* ************************************************************************* */
