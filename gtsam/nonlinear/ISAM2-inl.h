@@ -15,6 +15,8 @@
  * @author  Michael Kaess, Richard Roberts
  */
 
+#pragma once
+
 #include <boost/foreach.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
