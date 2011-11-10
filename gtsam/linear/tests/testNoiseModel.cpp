@@ -42,7 +42,7 @@ static Matrix Sigma = Matrix_(3, 3,
 		0.0, var, 0.0,
 		0.0, 0.0, var);
 
-static double inf = std::numeric_limits<double>::infinity();
+//static double inf = std::numeric_limits<double>::infinity();
 
 /* ************************************************************************* */
 TEST(NoiseModel, constructors)
