@@ -296,8 +296,6 @@ void Constrained::print(const std::string& name) const {
 
 /* ************************************************************************* */
 Vector Constrained::whiten(const Vector& v) const {
-	// ediv_ does the right thing with the errors
-//	return ediv_(v, sigmas_);
 	const Vector& a = v;
 	const Vector& b = sigmas_;
 	size_t n = a.size();
@@ -305,7 +303,7 @@ Vector Constrained::whiten(const Vector& v) const {
 	Vector c(n);
 	for( size_t i = 0; i < n; i++ ) {
 		const double& ai = a(i), &bi = b(i);
-		c(i) = (bi==0.0) ? ai : ai/bi;
+		c(i) = (bi==0.0) ? ai : ai/bi; // NOTE: not ediv_()
 	}
 	return c;
 }
@@ -313,21 +311,13 @@ Vector Constrained::whiten(const Vector& v) const {
 /* ************************************************************************* */
 double Constrained::distance(const Vector& v) const {
 	Vector w = Diagonal::whiten(v); // get noisemodel for constrained elements
+	// TODO Find a better way of doing these checks
 	for (size_t i=0; i<dim_; ++i) { // add mu weights on constrained variables
 		if (isinf(w[i])) // whiten makes constrained variables infinite
 			w[i] = v[i] * sqrt(mu_[i]); // TODO: may want to store sqrt rather than rebuild
 		if (isnan(w[i])) // ensure no other invalid values make it through
 			w[i] = v[i];
 	}
-	return w.dot(w);
-}
-
-/* ************************************************************************* */
-double Constrained::distance(const Vector& v) const {
-	Vector w = whiten(v); // get noisemodel for constrained elements
-	for (size_t i=0; i<dim_; ++i) // add mu weights on constrained variables
-		if (isinf(w[i])) // whiten makes constrained variables infinite
-			w[i] = v[i] * sqrt(mu_[i]); // FIXME: may want to store sqrt rather than rebuild
 	return w.dot(w);
 }
 
@@ -432,7 +422,7 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
 	}
 	toc(4, "constrained_QR write back into Ab");
 
-	// Must include mus, as the defaults might be higher, resulting in non-convergence
+	// Must include mu, as the defaults might be higher, resulting in non-convergence
 	return mixed ? Constrained::MixedPrecisions(mu_, precisions) : Diagonal::Precisions(precisions);
 }
 

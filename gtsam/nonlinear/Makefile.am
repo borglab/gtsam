@@ -33,7 +33,7 @@ headers += ISAM2.h ISAM2-inl.h ISAM2-impl-inl.h
 sources += GaussianISAM2.cpp
 
 # Nonlinear constraints 
-headers += NonlinearEquality.h NonlinearConstraint.h
+headers += NonlinearEquality.h 
 
 # White noise factor
 headers += WhiteNoiseFactor.h

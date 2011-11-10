@@ -19,7 +19,6 @@ check_PROGRAMS += testSymbolicBayesNet testSymbolicFactorGraph
 check_PROGRAMS += testTupleValues
 check_PROGRAMS += testNonlinearISAM
 check_PROGRAMS += testBoundingConstraint
-check_PROGRAMS += testNonlinearEqualityConstraint
 check_PROGRAMS += testPose2SLAMwSPCG
 check_PROGRAMS += testGaussianISAM2
 check_PROGRAMS += testExtendedKalmanFilter
