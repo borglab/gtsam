@@ -197,6 +197,12 @@ namespace gtsam {
 			const VariableSlots& variableSlots);
 
 	/**
+	 * Evaluates whether linear factors have any constrained noise models
+	 * @return true if any factor is constrained.
+	 */
+	bool hasConstraints(const FactorGraph<GaussianFactor>& factors);
+
+	/**
 	 * Densely combine and partially eliminate JacobianFactors to produce a
 	 * single conditional with nrFrontals frontal variables and a remaining
 	 * factor.

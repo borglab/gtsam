@@ -774,6 +774,8 @@ TEST( GaussianFactorGraph, constrained_simple )
 {
 	// get a graph with a constraint in it
 	GaussianFactorGraph fg = createSimpleConstraintGraph();
+	EXPECT(hasConstraints(fg));
+
 
 	// eliminate and solve
 	VectorValues actual = *GaussianSequentialSolver(fg).optimize();
@@ -788,6 +790,7 @@ TEST( GaussianFactorGraph, constrained_single )
 {
 	// get a graph with a constraint in it
 	GaussianFactorGraph fg = createSingleConstraintGraph();
+	EXPECT(hasConstraints(fg));
 
 	// eliminate and solve
 	VectorValues actual = *GaussianSequentialSolver(fg).optimize();
@@ -818,6 +821,7 @@ TEST( GaussianFactorGraph, constrained_multi1 )
 {
 	// get a graph with a constraint in it
 	GaussianFactorGraph fg = createMultiConstraintGraph();
+	EXPECT(hasConstraints(fg));
 
 	// eliminate and solve
   VectorValues actual = *GaussianSequentialSolver(fg).optimize();
@@ -1009,6 +1013,20 @@ TEST(GaussianFactorGraph, createSmoother2)
   GaussianBayesNet p_x1 = *GaussianSequentialSolver(
       *GaussianSequentialSolver(fg2).jointFactorGraph(x1var)).eliminate();
   CHECK(assert_equal(*p_x1.back(),*p_x3.front())); // should be the same because of symmetry
+}
+
+/* ************************************************************************* */
+TEST(GaussianFactorGraph, hasConstraints)
+{
+	FactorGraph<GaussianFactor> fgc1 = createMultiConstraintGraph();
+	EXPECT(hasConstraints(fgc1));
+
+	FactorGraph<GaussianFactor> fgc2 = createSimpleConstraintGraph() ;
+	EXPECT(hasConstraints(fgc2));
+
+	Ordering ordering; ordering += "x1", "x2", "l1";
+	FactorGraph<GaussianFactor> fg = createGaussianFactorGraph(ordering);
+	EXPECT(!hasConstraints(fg));
 }
 
 /* ************************************************************************* */

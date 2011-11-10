@@ -624,6 +624,18 @@ namespace gtsam {
 	} // \EliminateLDL
 
 	/* ************************************************************************* */
+	bool hasConstraints(const FactorGraph<GaussianFactor>& factors) {
+		typedef JacobianFactor J;
+		BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors) {
+			J::shared_ptr jacobian(boost::dynamic_pointer_cast<J>(factor));
+			if (jacobian && jacobian->get_model()->isConstrained()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/* ************************************************************************* */
 	GaussianFactorGraph::EliminationResult EliminatePreferLDL(
 			const FactorGraph<GaussianFactor>& factors, size_t nrFrontals) {
 
@@ -637,18 +649,8 @@ namespace gtsam {
 
 		// Decide whether to use QR or LDL
 		// Check if any JacobianFactors have constrained noise models.
-		bool useQR = false;
-		BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors) {
-			J::shared_ptr jacobian(boost::dynamic_pointer_cast<J>(factor));
-			if (jacobian && jacobian->get_model()->isConstrained()) {
-				useQR = true;
-				break;
-			}
-		}
-
-		// Convert all factors to the appropriate type
-		// and call the type-specific EliminateGaussian.
-		if (useQR) return EliminateQR(factors, nrFrontals);
+		if (hasConstraints(factors))
+			EliminateQR(factors, nrFrontals);
 
 		GaussianFactorGraph::EliminationResult ret;
 #ifdef NDEBUG
