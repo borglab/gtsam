@@ -150,8 +150,8 @@ namespace screw {
 TEST(Pose3, expmap_c)
 {
   EXPECT(assert_equal(screw::expected, expm<Pose2>(screw::xi),1e-6));
-  EXPECT(assert_equal(screw::expected, Pose2::Retract(screw::xi),1e-6));
-  EXPECT(assert_equal(screw::xi, Pose2::Unretract(screw::expected),1e-6));
+  EXPECT(assert_equal(screw::expected, Pose2::Expmap(screw::xi),1e-6));
+  EXPECT(assert_equal(screw::xi, Pose2::Logmap(screw::expected),1e-6));
 }
 #endif
 

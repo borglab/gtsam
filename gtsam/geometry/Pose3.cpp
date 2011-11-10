@@ -95,46 +95,23 @@ namespace gtsam {
   }
 
 #ifdef CORRECT_POSE3_EXMAP
-//  /* ************************************************************************* */
-//  // Changes default to use the full verions of expmap/logmap
-//  /* ************************************************************************* */
-//  Pose3 Retract(const Vector& xi) {
-//  	return Pose3::Expmap(xi);
-//  }
-//
-//  /* ************************************************************************* */
-//  Vector Unretract(const Pose3& p) {
-//  	return Pose3::Logmap(p);
-//  }
+  /* ************************************************************************* */
+  // Changes default to use the full verions of expmap/logmap
+  /* ************************************************************************* */
 
   /* ************************************************************************* */
-  Pose3 retract(const Vector& d) {
-  	return retract(d);
+  Pose3 Pose3::retract(const Vector& d) {
+  	return compose(Expmap(d));
   }
 
   /* ************************************************************************* */
-  Vector localCoordinates(const Pose3& T1, const Pose3& T2) {
-  	return localCoordinates(T2);
+  Vector Pose3::localCoordinates(const Pose3& T1, const Pose3& T2) {
+  	return Logmap(T1.between(T2));
   }
 
 #else
 
-//  /* ************************************************************************* */
-//  /* incorrect versions for which we know how to compute derivatives */
-//  Pose3 Pose3::Retract(const Vector& d) {
-//    Vector w = sub(d, 0,3);
-//    Vector u = sub(d, 3,6);
-//    return Pose3(Rot3::Retract(w), Point3::Retract(u));
-//  }
-//
-//  /* ************************************************************************* */
-//  // Log map at identity - return the translation and canonical rotation
-//  // coordinates of a pose.
-//  Vector Pose3::Unretract(const Pose3& p) {
-//    const Vector w = Rot3::Unretract(p.rotation()), u = Point3::Unretract(p.translation());
-//    return concatVectors(2, &w, &u);
-//  }
-
+  /* ************************************************************************* */
   /** These are the "old-style" expmap and logmap about the specified
    * pose. Increments the offset and rotation independently given a translation and
    * canonical rotation coordinates. Created to match ML derivatives, but
@@ -144,6 +121,7 @@ namespace gtsam {
     		         t_.retract(sub(d, 3, 6)));
   }
 
+  /* ************************************************************************* */
   /** Independently computes the logmap of the translation and rotation. */
   Vector Pose3::localCoordinates(const Pose3& pp) const {
     const Vector r(R_.localCoordinates(pp.rotation())),
