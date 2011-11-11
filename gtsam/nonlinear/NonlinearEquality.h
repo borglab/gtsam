@@ -21,6 +21,8 @@
 #include <iostream>
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/Manifold.h>
 
 namespace gtsam {
 
