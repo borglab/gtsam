@@ -21,6 +21,11 @@ noinst_PROGRAMS += Pose2SLAMwSPCG_advanced  		# Solves a simple Pose2 SLAM examp
 noinst_PROGRAMS += elaboratePoint2KalmanFilter 		# simple linear Kalman filter on a moving 2D point, but done using factor graphs
 noinst_PROGRAMS += easyPoint2KalmanFilter 		    # uses the cool generic templated Kalman filter class to do the same
 noinst_PROGRAMS += CameraResectioning
+
+EXTRA_DIST = Data
+dist-hook:
+	rm -rf $(distdir)/Data/.svn
+
 SUBDIRS = vSLAMexample # visual SLAM examples with 3D point landmarks and 6D camera poses
 #----------------------------------------------------------------------------------------------------
 # rules to build local programs
