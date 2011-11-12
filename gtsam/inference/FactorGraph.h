@@ -33,7 +33,7 @@
 namespace gtsam {
 
 // Forward declarations
-template<class CONDITIONAL> class BayesTree;
+template<class CONDITIONAL, class CLIQUE> class BayesTree;
 
 	/**
 	 * A factor graph is a bipartite graph with factor nodes connected to variable nodes.
@@ -78,8 +78,8 @@ template<class CONDITIONAL> class BayesTree;
 		FactorGraph(const BayesNet<CONDITIONAL>& bayesNet);
 
     /** convert from Bayes net */
-		template<class CONDITIONAL>
-    FactorGraph(const BayesTree<CONDITIONAL>& bayesTree);
+		template<class CONDITIONAL, class CLIQUE>
+    FactorGraph(const BayesTree<CONDITIONAL, CLIQUE>& bayesTree);
 
 		/** convert from a derived type */
 		template<class DERIVEDFACTOR>

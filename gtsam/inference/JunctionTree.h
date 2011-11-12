@@ -45,7 +45,7 @@ namespace gtsam {
 	 *
 	 * \ingroup Multifrontal
 	 */
-	template<class FG>
+	template<class FG, class BTCLIQUE=typename BayesTree<typename FG::FactorType::ConditionalType>::Clique>
 	class JunctionTree: public ClusterTree<FG> {
 
 	public:
@@ -55,7 +55,7 @@ namespace gtsam {
 		typedef typename Clique::shared_ptr sharedClique; ///< Shared pointer to a clique
 
 		/// The BayesTree type produced by elimination
-		typedef class BayesTree<typename FG::FactorType::ConditionalType> BayesTree;
+		typedef BTCLIQUE BTClique;
 
 		/// Shared pointer to this class
 		typedef boost::shared_ptr<JunctionTree<FG> > shared_ptr;
@@ -73,9 +73,9 @@ namespace gtsam {
         const SymbolicBayesTree::sharedClique& clique);
 
 		// recursive elimination function
-		std::pair<typename BayesTree::sharedClique, typename FG::sharedFactor>
+		std::pair<typename BTClique::shared_ptr, typename FG::sharedFactor>
 		eliminateOneClique(typename FG::Eliminate function,
-				const boost::shared_ptr<const Clique>& clique, bool cache = false) const;
+				const boost::shared_ptr<const Clique>& clique) const;
 
 		// internal constructor
 		void construct(const FG& fg, const VariableIndex& variableIndex);
@@ -103,12 +103,9 @@ namespace gtsam {
 		/** Eliminate the factors in the subgraphs to produce a BayesTree.
 		 * @param function The function used to eliminate, see the namespace functions
 		 * in GaussianFactorGraph.h
-		 * @param cache Whether to cache the intermediate elimination factors for use in ISAM2 - this
-		 * should always be false when called outside of ISAM2 (this will be fixed in the future).
 		 * @return The BayesTree resulting from elimination
 		 */
-		typename BayesTree::sharedClique eliminate(typename FG::Eliminate function,
-				bool cache = false) const;
+		typename BTClique::shared_ptr eliminate(typename FG::Eliminate function) const;
 
 	}; // JunctionTree
 

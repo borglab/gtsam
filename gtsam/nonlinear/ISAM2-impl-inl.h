@@ -85,7 +85,7 @@ struct ISAM2<CONDITIONAL, VALUES>::Impl {
    *
    * Alternatively could we trace up towards the root for each variable here?
    */
-  static void FindAll(ISAM2Type::sharedClique clique, FastSet<Index>& keys, const vector<bool>& markedMask);
+  static void FindAll(typename BayesTreeClique<CONDITIONAL>::shared_ptr clique, FastSet<Index>& keys, const vector<bool>& markedMask);
 
   /**
    * Apply expmap to the given values, but only for indices appearing in
@@ -191,8 +191,8 @@ FastSet<Index> ISAM2<CONDITIONAL,VALUES>::Impl::CheckRelinearization(Permuted<Ve
 }
 
 /* ************************************************************************* */
-template<class Conditional, class Values>
-void ISAM2<Conditional, Values>::Impl::FindAll(ISAM2Type::sharedClique clique, FastSet<Index>& keys, const vector<bool>& markedMask) {
+template<class CONDITIONAL, class VALUES>
+void ISAM2<CONDITIONAL, VALUES>::Impl::FindAll(typename BayesTreeClique<CONDITIONAL>::shared_ptr clique, FastSet<Index>& keys, const vector<bool>& markedMask) {
   static const bool debug = false;
   // does the separator contain any of the variables?
   bool found = false;
@@ -206,7 +206,7 @@ void ISAM2<Conditional, Values>::Impl::FindAll(ISAM2Type::sharedClique clique, F
     if(debug) clique->print("Key(s) marked in clique ");
     if(debug) cout << "so marking key " << (*clique)->keys().front() << endl;
   }
-  BOOST_FOREACH(const sharedClique& child, clique->children_) {
+  BOOST_FOREACH(const typename BayesTreeClique<CONDITIONAL>::shared_ptr& child, clique->children_) {
     FindAll(child, keys, markedMask);
   }
 }
@@ -338,8 +338,8 @@ ISAM2<CONDITIONAL, VALUES>::Impl::PartialSolve(GaussianFactorGraph& factors,
 
   // eliminate into a Bayes net
   tic(7,"eliminate");
-  GaussianJunctionTree jt(factors, affectedFactorsIndex);
-  result.bayesTree = jt.eliminate(EliminatePreferLDL, true);
+  JunctionTree<GaussianFactorGraph, typename ISAM2Type::Clique> jt(factors, affectedFactorsIndex);
+  result.bayesTree = jt.eliminate(EliminatePreferLDL);
   if(debug && result.bayesTree) {
     cout << "Re-eliminated BT:\n";
     result.bayesTree->printTree("");

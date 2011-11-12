@@ -43,10 +43,10 @@ namespace gtsam {
 
 	protected:
 		// back-substitute in topological sort order (parents first)
-		void btreeBackSubstitute(const boost::shared_ptr<const BayesTree::Clique>& current, VectorValues& config) const;
+		void btreeBackSubstitute(const BTClique::shared_ptr& current, VectorValues& config) const;
 
 		// find the RHS for the system in order to perform backsubstitution
-		void btreeRHS(const boost::shared_ptr<const BayesTree::Clique>& current, VectorValues& config) const;
+		void btreeRHS(const BTClique::shared_ptr& current, VectorValues& config) const;
 
 	public :
 
@@ -64,22 +64,22 @@ namespace gtsam {
 		VectorValues optimize(Eliminate function) const;
 
 		// convenient function to return dimensions of all variables in the BayesTree<GaussianConditional>
-		template<class DIM_CONTAINER>
-		static void countDims(const BayesTree& bayesTree, DIM_CONTAINER& dims) {
+		template<class DIM_CONTAINER, class CLIQUE>
+		static void countDims(const BayesTree<GaussianConditional,CLIQUE>& bayesTree, DIM_CONTAINER& dims) {
 		  dims = DIM_CONTAINER(bayesTree.root()->conditional()->back()+1, 0);
 		  countDims(bayesTree.root(), dims);
 	  }
 
 	private:
-    template<class DIM_CONTAINER>
-		static void countDims(const boost::shared_ptr<const BayesTree::Clique>& clique, DIM_CONTAINER& dims) {
+    template<class DIM_CONTAINER, class CLIQUE>
+		static void countDims(const boost::shared_ptr<CLIQUE>& clique, DIM_CONTAINER& dims) {
       GaussianConditional::const_iterator it = clique->conditional()->beginFrontals();
       for (; it != clique->conditional()->endFrontals(); ++it) {
         assert(dims.at(*it) == 0);
         dims.at(*it) = clique->conditional()->dim(it);
       }
 
-      BOOST_FOREACH(const boost::shared_ptr<const BayesTree::Clique>& child, clique->children()) {
+      BOOST_FOREACH(const typename CLIQUE::shared_ptr& child, clique->children()) {
         countDims(child, dims);
       }
     }

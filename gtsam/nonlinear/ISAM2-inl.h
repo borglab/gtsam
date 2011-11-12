@@ -192,7 +192,11 @@ boost::shared_ptr<FastSet<Index> > ISAM2<Conditional, Values>::recalculate(
       sharedClique clique = this->nodes_[key];
       while(clique) {
         affectedStructuralKeys.insert((*clique)->beginFrontals(), (*clique)->endFrontals());
-        clique = clique->parent_.lock();
+#ifndef NDEBUG // This is because BayesTreeClique stores pointers to BayesTreeClique but we actually have the derived type ISAM2Clique
+        clique = boost::dynamic_pointer_cast<Clique>(clique->parent_.lock());
+#else
+        clique = boost::static_pointer_cast<Clique>(clique->parent_.lock());
+#endif
       }
     }
     toc(0, "affectedStructuralKeys");
@@ -286,13 +290,13 @@ boost::shared_ptr<FastSet<Index> > ISAM2<Conditional, Values>::recalculate(
     toc(2,"linearize");
 
     tic(5,"eliminate");
-    GaussianJunctionTree jt(factors, variableIndex_);
-    sharedClique newRoot = jt.eliminate(EliminatePreferLDL, true);
+    JunctionTree<GaussianFactorGraph, typename Base::Clique> jt(factors, variableIndex_);
+    sharedClique newRoot = jt.eliminate(EliminatePreferLDL);
     if(debug) newRoot->print("Eliminated: ");
     toc(5,"eliminate");
 
     tic(6,"insert");
-    BayesTree<Conditional>::clear();
+    Base::clear();
     this->insert(newRoot);
     toc(6,"insert");
 
@@ -549,6 +553,8 @@ ISAM2Result ISAM2<Conditional, Values>::update(
   if(params_.evaluateNonlinearError)
     result.errorAfter.reset(nonlinearFactors_.error(calculateEstimate()));
   toc(10,"evaluate error after");
+
+  result.cliques = this->nodes().size();
 
   return result;
 }

@@ -43,9 +43,6 @@ namespace gtsam {
 	GaussianFactorGraph::GaussianFactorGraph(const GaussianBayesNet& CBN) : Base(CBN) {}
 
 	/* ************************************************************************* */
-	GaussianFactorGraph::GaussianFactorGraph(const BayesTree<GaussianConditional>& GBT) : Base(GBT) {}
-
-	/* ************************************************************************* */
 	GaussianFactorGraph::Keys GaussianFactorGraph::keys() const {
 		FastSet<Index> keys;
 		BOOST_FOREACH(const sharedFactor& factor, *this)

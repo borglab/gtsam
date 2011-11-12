@@ -113,6 +113,87 @@ struct ISAM2Result {
    * will be reeliminated.
    */
   size_t variablesReeliminated;
+
+  /** The number of cliques in the Bayes' Tree */
+  size_t cliques;
+};
+
+template<class CONDITIONAL>
+struct ISAM2Clique : public BayesTreeClique<CONDITIONAL> {
+
+  typedef ISAM2Clique<CONDITIONAL> This;
+  typedef BayesTreeClique<CONDITIONAL> Base;
+
+  typedef boost::shared_ptr<This> shared_ptr;
+
+  typename Base::FactorType::shared_ptr cachedFactor_;
+
+  /** Access the cached factor */
+  typename Base::FactorType::shared_ptr& cachedFactor() { return cachedFactor_; }
+
+  /** Construct from an elimination result, caches the eliminated factor */
+  template<class RESULT>
+  ISAM2Clique(const RESULT& result) : Base(result), cachedFactor_(result.second) {}
+
+  /** Construct from a conditional */
+  ISAM2Clique(const typename Base::sharedConditional& conditional) : Base(conditional) {}
+
+  /** Create from an elimination result, overrides BayesTreeClique<CONDITIONAL>::Create(const RESULT&) to cache the eliminated factor */
+  template<class RESULT>
+  static shared_ptr Create(const RESULT& result) { return shared_ptr(new This(result)); }
+
+  static shared_ptr Create(const typename Base::sharedConditional& conditional) { return shared_ptr(new This(conditional)); }
+
+  void permuteWithInverse(const Permutation& inversePermutation) {
+    Base::conditional_->permuteWithInverse(inversePermutation);
+    if(cachedFactor_) cachedFactor_->permuteWithInverse(inversePermutation);
+    BOOST_FOREACH(const typename Base::shared_ptr& child, Base::children_) {
+      shared_ptr _child;
+#ifndef NDEBUG // This is because BayesTreeClique stores pointers to BayesTreeClique but we actually have the derived type ISAM2Clique
+      _child = boost::dynamic_pointer_cast<This>(child);
+#else
+      _child = boost::static_pointer_cast<This>(child);
+#endif
+      _child->permuteWithInverse(inversePermutation);
+    }
+    Base::assertInvariants();
+  }
+
+  bool permuteSeparatorWithInverse(const Permutation& inversePermutation) {
+    bool changed = Base::conditional_->permuteSeparatorWithInverse(inversePermutation);
+#ifndef NDEBUG
+    if(!changed) {
+      BOOST_FOREACH(Index& separatorKey, Base::conditional_->parents()) {
+        assert(separatorKey == inversePermutation[separatorKey]); }
+      BOOST_FOREACH(const typename Base::shared_ptr& child, Base::children_) {
+        shared_ptr _child = boost::dynamic_pointer_cast<This>(child); // This is because BayesTreeClique stores pointers to BayesTreeClique but we actually have the derived type ISAM2Clique
+        assert(_child->permuteSeparatorWithInverse(inversePermutation) == false); }
+    }
+#endif
+    if(changed) {
+      if(cachedFactor_) cachedFactor_->permuteWithInverse(inversePermutation);
+      BOOST_FOREACH(const typename Base::shared_ptr& child, Base::children_) {
+        shared_ptr _child;
+  #ifndef NDEBUG // This is because BayesTreeClique stores pointers to BayesTreeClique but we actually have the derived type ISAM2Clique
+        _child = boost::dynamic_pointer_cast<This>(child);
+  #else
+        _child = boost::static_pointer_cast<Clique>(child);
+  #endif
+        (void)_child->permuteSeparatorWithInverse(inversePermutation);
+      }
+    }
+    Base::assertInvariants();
+    return changed;
+  }
+
+private:
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int version) {
+    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar & BOOST_SERIALIZATION_NVP(cachedFactor_);
+  }
 };
 
 /**
@@ -125,7 +206,7 @@ struct ISAM2Result {
  * estimate of all variables.
  */
 template<class CONDITIONAL, class VALUES>
-class ISAM2: public BayesTree<CONDITIONAL> {
+class ISAM2: public BayesTree<CONDITIONAL, ISAM2Clique<CONDITIONAL> > {
 
 protected:
 
@@ -168,7 +249,7 @@ private:
 
 public:
 
-  typedef BayesTree<CONDITIONAL> Base; ///< The BayesTree base class
+  typedef BayesTree<CONDITIONAL,ISAM2Clique<CONDITIONAL> > Base; ///< The BayesTree base class
   typedef ISAM2<CONDITIONAL, VALUES> This; ///< This class
 
   /** Create an empty ISAM2 instance */
@@ -177,8 +258,9 @@ public:
   /** Create an empty ISAM2 instance using the default set of parameters (see ISAM2Params) */
   ISAM2();
 
-  typedef typename BayesTree<CONDITIONAL>::sharedClique sharedClique; ///< Shared pointer to a clique
-  typedef typename BayesTree<CONDITIONAL>::Cliques Cliques; ///< List of Clique typedef from base class
+  typedef typename Base::Clique Clique; ///< A clique
+  typedef typename Base::sharedClique sharedClique; ///< Shared pointer to a clique
+  typedef typename Base::Cliques Cliques; ///< List of Clique typedef from base class
 
   /**
    * Add new factors, updating the solution and relinearizing as needed.

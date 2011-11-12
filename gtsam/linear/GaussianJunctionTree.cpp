@@ -34,7 +34,7 @@ namespace gtsam {
 	using namespace std;
 
 	/* ************************************************************************* */
-	void GaussianJunctionTree::btreeBackSubstitute(const boost::shared_ptr<const BayesTree::Clique>& current, VectorValues& config) const {
+	void GaussianJunctionTree::btreeBackSubstitute(const BTClique::shared_ptr& current, VectorValues& config) const {
 		// solve the bayes net in the current node
 	  current->conditional()->solveInPlace(config);
 
@@ -47,15 +47,15 @@ namespace gtsam {
 //		}
 
 		// solve the bayes nets in the child nodes
-		BOOST_FOREACH(const BayesTree::sharedClique& child, current->children()) {
+		BOOST_FOREACH(const BTClique::shared_ptr& child, current->children()) {
 			btreeBackSubstitute(child, config);
 		}
 	}
 
 	/* ************************************************************************* */
-	void GaussianJunctionTree::btreeRHS(const boost::shared_ptr<const BayesTree::Clique>& current, VectorValues& config) const {
+	void GaussianJunctionTree::btreeRHS(const BTClique::shared_ptr& current, VectorValues& config) const {
 		current->conditional()->rhs(config);
-		BOOST_FOREACH(const BayesTree::sharedClique& child, current->children())
+		BOOST_FOREACH(const BTClique::shared_ptr& child, current->children())
 			btreeRHS(child, config);
 	}
 
@@ -63,7 +63,7 @@ namespace gtsam {
 	VectorValues GaussianJunctionTree::optimize(Eliminate function) const {
 	  tic(1, "GJT eliminate");
 		// eliminate from leaves to the root
-		boost::shared_ptr<const BayesTree::Clique> rootClique(this->eliminate(function));
+		BTClique::shared_ptr rootClique(this->eliminate(function));
     toc(1, "GJT eliminate");
 
 		// Allocate solution vector and copy RHS

@@ -167,7 +167,7 @@ TEST(ISAM2, optimize2) {
   conditional->solveInPlace(expected);
 
   // Clique
-  GaussianISAM2<planarSLAM::Values>::sharedClique clique(new GaussianISAM2<planarSLAM::Values>::Clique(conditional));
+  GaussianISAM2<planarSLAM::Values>::sharedClique clique(GaussianISAM2<planarSLAM::Values>::Clique::Create(conditional));
   VectorValues actual(theta.dims(ordering));
   conditional->rhs(actual);
   optimize2(clique, actual);
