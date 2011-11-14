@@ -490,14 +490,14 @@ ISAM2Result ISAM2<Conditional, Values>::update(
       Impl::ExpmapMasked(theta_, delta_, ordering_, markedRelinMask, delta_);
     toc(6,"expmap");
 
-    result.variablesRelinearized = markedRelinMask.size();
+    result.variablesRelinearized = markedKeys.size();
 
 #ifndef NDEBUG
     lastRelinVariables_ = markedRelinMask;
 #endif
   } else {
-#ifndef NDEBUG
     result.variablesRelinearized = 0;
+#ifndef NDEBUG
     lastRelinVariables_ = vector<bool>(ordering_.nVars(), false);
 #endif
   }
