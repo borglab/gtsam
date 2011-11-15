@@ -565,6 +565,15 @@ Values ISAM2<Conditional, Values>::calculateEstimate() const {
 }
 
 /* ************************************************************************* */
+template<class CONDITIONAL, class VALUES>
+template<class KEY>
+typename KEY::Value ISAM2<CONDITIONAL, VALUES>::calculateEstimate(const KEY& key) const {
+  const Index index = getOrdering()[key];
+  const SubVector delta = getDelta()[index];
+  return getLinearizationPoint()[key].retract(delta);
+}
+
+/* ************************************************************************* */
 template<class Conditional, class Values>
 Values ISAM2<Conditional, Values>::calculateBestEstimate() const {
   VectorValues delta(theta_.dims(ordering_));

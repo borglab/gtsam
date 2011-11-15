@@ -205,9 +205,19 @@ public:
   const VALUES& getLinearizationPoint() const {return theta_;}
 
   /** Compute an estimate from the incomplete linear delta computed during the last update.
-   * This delta is incomplete because it was not updated below wildfire_threshold.
+   * This delta is incomplete because it was not updated below wildfire_threshold.  If only
+   * a single variable is needed, it is faster to call calculateEstimate(const KEY&).
    */
   VALUES calculateEstimate() const;
+
+  /** Compute an estimate for a single variable using its incomplete linear delta computed
+   * during the last update.  This is faster than calling the no-argument version of
+   * calculateEstimate, which operates on all variables.
+   * @param key
+   * @return
+   */
+  template<class KEY>
+  typename KEY::Value calculateEstimate(const KEY& key) const;
 
   /// @name Public members for non-typical usage
   //@{
