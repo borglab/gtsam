@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/linear/GaussianISAM.h>
 
@@ -102,3 +101,5 @@ public:
 };
 
 } // \namespace gtsam
+
+#include <gtsam/nonlinear/NonlinearISAM-inl.h>

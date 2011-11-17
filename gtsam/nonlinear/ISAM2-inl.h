@@ -27,7 +27,6 @@ using namespace boost::assign;
 #include <gtsam/inference/BayesTree-inl.h>
 #include <gtsam/linear/HessianFactor.h>
 
-#include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/ISAM2-impl-inl.h>
 
 

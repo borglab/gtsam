@@ -250,3 +250,5 @@ private:
 }; // ISAM2
 
 } /// namespace gtsam
+
+#include <gtsam/nonlinear/ISAM2-inl.h>

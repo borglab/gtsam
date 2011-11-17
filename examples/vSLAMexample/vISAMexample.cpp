@@ -27,9 +27,7 @@ using namespace boost;
 #include <gtsam/inference/graph-inl.h>
 #include <gtsam/slam/visualSLAM.h>
 #include <gtsam/slam/PriorFactor.h>
-#include <gtsam/inference/ISAM-inl.h>
-#include <gtsam/linear/GaussianISAM.h>
-#include <gtsam/nonlinear/NonlinearISAM-inl.h>
+#include <gtsam/nonlinear/NonlinearISAM.h>
 
 #include "vSLAMutils.h"
 #include "Feature2D.h"

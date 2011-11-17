@@ -24,7 +24,6 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/inference/ISAM-inl.h>
 #include <gtsam/nonlinear/Ordering.h>
-#include <gtsam/nonlinear/NonlinearISAM.h>
 
 using namespace std;
 using namespace gtsam;
