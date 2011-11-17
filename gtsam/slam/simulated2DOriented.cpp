@@ -16,12 +16,8 @@
  */
 
 #include <gtsam/slam/simulated2DOriented.h>
-#include <gtsam/nonlinear/TupleValues-inl.h>
 
 namespace gtsam {
-
-	using namespace simulated2DOriented;
-
 
 	namespace simulated2DOriented {
 

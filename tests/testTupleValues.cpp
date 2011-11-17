@@ -30,7 +30,7 @@
 
 #include <gtsam/base/Vector.h>
 #include <gtsam/nonlinear/Key.h>
-#include <gtsam/nonlinear/TupleValues-inl.h>
+#include <gtsam/nonlinear/TupleValues.h>
 
 using namespace gtsam;
 using namespace std;

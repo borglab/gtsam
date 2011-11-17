@@ -520,3 +520,5 @@ namespace gtsam {
   };
 
 }
+
+#include <gtsam/nonlinear/TupleValues-inl.h>

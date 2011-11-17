@@ -34,7 +34,6 @@ using namespace std;
 // template definitions
 #include <gtsam/inference/FactorGraph-inl.h>
 #include <gtsam/nonlinear/Ordering.h>
-#include <gtsam/nonlinear/TupleValues-inl.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
 
 namespace gtsam {

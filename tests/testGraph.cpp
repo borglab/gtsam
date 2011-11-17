@@ -27,7 +27,6 @@ using namespace boost::assign;
 #define GTSAM_MAGIC_GAUSSIAN 3
 
 #include <gtsam/slam/pose2SLAM.h>
-#include <gtsam/nonlinear/TupleValues-inl.h>
 #include <gtsam/inference/graph-inl.h>
 #include <gtsam/inference/FactorGraph-inl.h>
 

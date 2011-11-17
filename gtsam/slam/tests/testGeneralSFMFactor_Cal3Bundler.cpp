@@ -20,7 +20,7 @@ using namespace boost;
 #include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
 #include <gtsam/inference/graph-inl.h>
 #include <gtsam/linear/VectorValues.h>
-#include <gtsam/nonlinear/TupleValues-inl.h>
+#include <gtsam/nonlinear/TupleValues.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 
 #include <gtsam/geometry/GeneralCameraT.h>

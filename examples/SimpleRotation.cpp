@@ -23,7 +23,7 @@
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/nonlinear/Key.h>
-#include <gtsam/nonlinear/Values-inl.h>
+#include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
 #include <gtsam/nonlinear/NonlinearOptimization-inl.h>
 

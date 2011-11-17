@@ -22,7 +22,7 @@
 
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/Values-inl.h>
+#include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/Key.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>

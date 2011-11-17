@@ -23,7 +23,7 @@
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Rot3Q.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
-#include <gtsam/nonlinear/Values-inl.h>
+#include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearOptimization-inl.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/PriorFactor.h>

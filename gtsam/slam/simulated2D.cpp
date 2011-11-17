@@ -16,16 +16,8 @@
  */
 
 #include <gtsam/slam/simulated2D.h>
-#include <gtsam/nonlinear/Values-inl.h>
-#include <gtsam/nonlinear/TupleValues-inl.h>
 
 namespace gtsam {
-
-	INSTANTIATE_VALUES(simulated2D::PoseKey)
-
-	using namespace simulated2D;
-
-	INSTANTIATE_TUPLE_VALUES2(PoseValues, PointValues)
 
 	namespace simulated2D {
 
