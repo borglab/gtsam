@@ -65,65 +65,78 @@ namespace gtsam {
     /** convert to 4*4 matrix */
     Matrix matrix() const;
 
-    /** print with optional string */
+    /// @name Testable
+    /// @{
+
+    /// print with optional string
     void print(const std::string& s = "") const;
 
-    /** assert equality up to a tolerance */
+    /// assert equality up to a tolerance
     bool equals(const Pose3& pose, double tol = 1e-9) const;
 
-    /** Compose two poses */
+    /// @}
+    /// @name Group
+    /// @{
+
+    /// identity for group operation
+    static Pose3 identity() { return Pose3(); }
+
+    /// inverse transformation with derivatives
+    Pose3 inverse(boost::optional<Matrix&> H1=boost::none) const;
+
+    ///compose this transformation onto another (first *this and then p2)
+    Pose3 compose(const Pose3& p2,
+        boost::optional<Matrix&> H1=boost::none,
+        boost::optional<Matrix&> H2=boost::none) const;
+
+    /// compose syntactic sugar
     Pose3 operator*(const Pose3& T) const {
       return Pose3(R_*T.R_, t_ + R_*T.t_);
     }
 
-    Pose3 transform_to(const Pose3& pose) const;
+    /// @}
+    /// @name Manifold
+    /// @{
 
-    /** dimension of the variable - used to autodetect sizes */
-    static size_t Dim() { return dimension; }
+    /// Dimensionality of tangent space = 6 DOF - used to autodetect sizes
+        static size_t Dim() { return dimension; }
 
-    /** Lie requirements */
-
-    /** Dimensionality of the tangent space */
+    /// Dimensionality of the tangent space = 6 DOF
     size_t dim() const { return dimension; }
 
-    /** identity */
-    static Pose3 identity() {
-      return Pose3();
-    }
 
-    /**
-     * Derivative of inverse
-     */
-    Pose3 inverse(boost::optional<Matrix&> H1=boost::none) const;
+    /** Exponential map around another pose */    /// Retraction from R^6 to Pose3 manifold neighborhood around current pose
+    Pose3 retract(const Vector& d) const;
 
-    /**
-     * composes two poses (first (*this) then p2)
-     * with optional derivatives
-     */
-    Pose3 compose(const Pose3& p2,
-        boost::optional<Matrix&> H1=boost::none,
-        boost::optional<Matrix&> H2=boost::none) const;
+    /// Logarithm map around another pose T1			/// Local 6D coordinates of Pose3 manifold neighborhood around current pose
+    Vector localCoordinates(const Pose3& T2) const;
+
+    /// @}
+    /// @name Lie Group
+    /// @{
+
+    /// Exponential map from Lie algebra se(3) to SE(3)
+    static Pose3 Expmap(const Vector& xi);
+
+    /// Exponential map from SE(3) to Lie algebra se(3)
+    static Vector Logmap(const Pose3& p);
+
+    /// @}
+
+    /** syntactic sugar for transform_from */
+    inline Point3 operator*(const Point3& p) const { return transform_from(p); }
+
+    Pose3 transform_to(const Pose3& pose) const;
+
+    /** Lie requirements */
 
     /** receives the point in Pose coordinates and transforms it to world coordinates */
     Point3 transform_from(const Point3& p,
         boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
 
-    /** syntactic sugar for transform */
-    inline Point3 operator*(const Point3& p) const { return transform_from(p); }
-
     /** receives the point in world coordinates and transforms it to Pose coordinates */
     Point3 transform_to(const Point3& p,
         boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
-
-    /** Exponential map around another pose */
-    Pose3 retract(const Vector& d) const;
-
-    /** Logarithm map around another pose T1 */
-    Vector localCoordinates(const Pose3& T2) const;
-
-    /** non-approximated versions of Expmap/Logmap */
-    static Pose3 Expmap(const Vector& xi);
-    static Vector Logmap(const Pose3& p);
 
     /**
      * Return relative pose between p1 and p2, in p1 coordinate frame
