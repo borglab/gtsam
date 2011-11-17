@@ -15,13 +15,9 @@
  * @author  Michael Kaess, Richard Roberts
  */
 
-#include <gtsam/base/FastSet.h>
-
-#include <boost/foreach.hpp>
-
-#include <vector>
-
 namespace gtsam {
+
+using namespace std;
 
 template<class CONDITIONAL, class VALUES, class GRAPH>
 struct ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl {
@@ -85,7 +81,7 @@ struct ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl {
    *
    * Alternatively could we trace up towards the root for each variable here?
    */
-  static void FindAll(ISAM2Type::sharedClique clique, FastSet<Index>& keys, const vector<bool>& markedMask);
+  static void FindAll(ISAM2Type::sharedClique clique, FastSet<Index>& keys, const std::vector<bool>& markedMask);
 
   /**
    * Apply expmap to the given values, but only for indices appearing in
@@ -100,7 +96,7 @@ struct ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl {
    * recalculate its delta.
    */
   static void ExpmapMasked(VALUES& values, const Permuted<VectorValues>& delta,
-      const Ordering& ordering, const vector<bool>& mask,
+      const Ordering& ordering, const std::vector<bool>& mask,
       boost::optional<Permuted<VectorValues>&> invalidateIfDebug = boost::optional<Permuted<VectorValues>&>());
 
   /**
@@ -146,7 +142,7 @@ void ISAM2<CONDITIONAL,VALUES,GRAPH>::Impl::AddVariables(
   theta.insert(newTheta);
   if(debug) newTheta.print("The new variables are: ");
   // Add the new keys onto the ordering, add zeros to the delta for the new variables
-  vector<Index> dims(newTheta.dims(*newTheta.orderingArbitrary()));
+  std::vector<Index> dims(newTheta.dims(*newTheta.orderingArbitrary()));
   if(debug) cout << "New variables have total dimensionality " << accumulate(dims.begin(), dims.end(), 0) << endl;
   const size_t newDim = accumulate(dims.begin(), dims.end(), 0);
   const size_t originalDim = delta->dim();
@@ -192,7 +188,7 @@ FastSet<Index> ISAM2<CONDITIONAL,VALUES,GRAPH>::Impl::CheckRelinearization(Permu
 
 /* ************************************************************************* */
 template<class CONDITIONAL, class VALUES, class GRAPH>
-void ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl::FindAll(ISAM2Type::sharedClique clique, FastSet<Index>& keys, const vector<bool>& markedMask) {
+void ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl::FindAll(ISAM2Type::sharedClique clique, FastSet<Index>& keys, const std::vector<bool>& markedMask) {
   static const bool debug = false;
   // does the separator contain any of the variables?
   bool found = false;

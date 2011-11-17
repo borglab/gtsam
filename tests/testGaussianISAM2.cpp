@@ -18,6 +18,7 @@ using namespace boost::assign;
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/nonlinear/GaussianISAM2.h>
+#include <gtsam/nonlinear/ISAM2-inl.h>
 #include <gtsam/slam/smallExample.h>
 #include <gtsam/slam/planarSLAM.h>
 

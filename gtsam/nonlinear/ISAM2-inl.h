@@ -21,20 +21,11 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 
-#include <set>
-#include <limits>
-#include <numeric>
-
 #include <gtsam/base/timing.h>
 #include <gtsam/base/debug.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
-#include <gtsam/linear/GaussianFactor.h>
-#include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
-
 #include <gtsam/inference/BayesTree-inl.h>
-
-#include <gtsam/inference/GenericSequentialSolver-inl.h>
+#include <gtsam/linear/HessianFactor.h>
 
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/ISAM2-impl-inl.h>

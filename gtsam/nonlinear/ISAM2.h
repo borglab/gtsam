@@ -19,21 +19,8 @@
 
 #pragma once
 
-#include <map>
-#include <list>
-#include <vector>
-#include <stdexcept>
-
-#include <gtsam/base/types.h>
-#include <gtsam/base/FastSet.h>
-#include <gtsam/base/FastList.h>
-#include <gtsam/inference/FactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/Ordering.h>
-#include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/BayesTree.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/HessianFactor.h>
 
 namespace gtsam {
 

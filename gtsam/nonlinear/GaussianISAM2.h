@@ -9,10 +9,7 @@
 #pragma once
 
 #include <gtsam/linear/GaussianConditional.h>
-#include <gtsam/linear/GaussianFactor.h>
-#include <gtsam/slam/simulated2D.h>
-#include <gtsam/slam/planarSLAM.h>
-#include <gtsam/nonlinear/ISAM2-inl.h>
+#include <gtsam/nonlinear/ISAM2.h>
 
 namespace gtsam {
 
