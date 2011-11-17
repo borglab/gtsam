@@ -26,15 +26,16 @@ namespace gtsam {
  *
  * @tparam VALUES The Values or TupleValues\Emph{N} that contains the
  * variables.
+ * @tparam GRAPH The NonlinearFactorGraph structure to store factors.  Defaults to standard NonlinearFactorGraph<VALUES>
  */
-template <class VALUES>
-class GaussianISAM2 : public ISAM2<GaussianConditional, VALUES> {
+template <class VALUES, class GRAPH = NonlinearFactorGraph<VALUES> >
+class GaussianISAM2 : public ISAM2<GaussianConditional, VALUES, GRAPH> {
 public:
   /** Create an empty ISAM2 instance */
-  GaussianISAM2(const ISAM2Params& params) : ISAM2<GaussianConditional, VALUES>(params) {}
+  GaussianISAM2(const ISAM2Params& params) : ISAM2<GaussianConditional, VALUES, GRAPH>(params) {}
 
   /** Create an empty ISAM2 instance using the default set of parameters (see ISAM2Params) */
-  GaussianISAM2() : ISAM2<GaussianConditional, VALUES>() {}
+  GaussianISAM2() : ISAM2<GaussianConditional, VALUES, GRAPH>() {}
 };
 
 // optimize the BayesTree, starting from the root

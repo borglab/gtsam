@@ -23,10 +23,10 @@
 
 namespace gtsam {
 
-template<class CONDITIONAL, class VALUES>
-struct ISAM2<CONDITIONAL, VALUES>::Impl {
+template<class CONDITIONAL, class VALUES, class GRAPH>
+struct ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl {
 
-  typedef ISAM2<CONDITIONAL, VALUES> ISAM2Type;
+  typedef ISAM2<CONDITIONAL, VALUES, GRAPH> ISAM2Type;
 
   struct PartialSolveResult {
     typename ISAM2Type::sharedClique bayesTree;
@@ -58,7 +58,7 @@ struct ISAM2<CONDITIONAL, VALUES>::Impl {
    * @param factors The factors from which to extract the variables
    * @return The set of variables indices from the factors
    */
-  static FastSet<Index> IndicesFromFactors(const Ordering& ordering, const NonlinearFactorGraph<VALUES>& factors);
+  static FastSet<Index> IndicesFromFactors(const Ordering& ordering, const GRAPH& factors);
 
   /**
    * Find the set of variables to be relinearized according to relinearizeThreshold.
@@ -138,8 +138,8 @@ struct _VariableAdder {
 };
 
 /* ************************************************************************* */
-template<class CONDITIONAL, class VALUES>
-void ISAM2<CONDITIONAL,VALUES>::Impl::AddVariables(
+template<class CONDITIONAL, class VALUES, class GRAPH>
+void ISAM2<CONDITIONAL,VALUES,GRAPH>::Impl::AddVariables(
     const VALUES& newTheta, VALUES& theta, Permuted<VectorValues>& delta, Ordering& ordering, typename Base::Nodes& nodes) {
   const bool debug = ISDEBUG("ISAM2 AddVariables");
 
@@ -166,8 +166,8 @@ void ISAM2<CONDITIONAL,VALUES>::Impl::AddVariables(
 }
 
 /* ************************************************************************* */
-template<class CONDITIONAL, class VALUES>
-FastSet<Index> ISAM2<CONDITIONAL,VALUES>::Impl::IndicesFromFactors(const Ordering& ordering, const NonlinearFactorGraph<VALUES>& factors) {
+template<class CONDITIONAL, class VALUES, class GRAPH>
+FastSet<Index> ISAM2<CONDITIONAL,VALUES,GRAPH>::Impl::IndicesFromFactors(const Ordering& ordering, const GRAPH& factors) {
   FastSet<Index> indices;
   BOOST_FOREACH(const typename NonlinearFactor<VALUES>::shared_ptr& factor, factors) {
     BOOST_FOREACH(const Symbol& key, factor->keys()) {
@@ -178,8 +178,8 @@ FastSet<Index> ISAM2<CONDITIONAL,VALUES>::Impl::IndicesFromFactors(const Orderin
 }
 
 /* ************************************************************************* */
-template<class CONDITIONAL, class VALUES>
-FastSet<Index> ISAM2<CONDITIONAL,VALUES>::Impl::CheckRelinearization(Permuted<VectorValues>& delta, double relinearizeThreshold) {
+template<class CONDITIONAL, class VALUES, class GRAPH>
+FastSet<Index> ISAM2<CONDITIONAL,VALUES,GRAPH>::Impl::CheckRelinearization(Permuted<VectorValues>& delta, double relinearizeThreshold) {
   FastSet<Index> relinKeys;
   for(Index var=0; var<delta.size(); ++var) {
     double maxDelta = delta[var].lpNorm<Eigen::Infinity>();
@@ -191,8 +191,8 @@ FastSet<Index> ISAM2<CONDITIONAL,VALUES>::Impl::CheckRelinearization(Permuted<Ve
 }
 
 /* ************************************************************************* */
-template<class Conditional, class Values>
-void ISAM2<Conditional, Values>::Impl::FindAll(ISAM2Type::sharedClique clique, FastSet<Index>& keys, const vector<bool>& markedMask) {
+template<class CONDITIONAL, class VALUES, class GRAPH>
+void ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl::FindAll(ISAM2Type::sharedClique clique, FastSet<Index>& keys, const vector<bool>& markedMask) {
   static const bool debug = false;
   // does the separator contain any of the variables?
   bool found = false;
@@ -245,8 +245,8 @@ struct _SelectiveExpmapAndClear {
 };
 
 /* ************************************************************************* */
-template<class CONDITIONAL, class VALUES>
-void ISAM2<CONDITIONAL, VALUES>::Impl::ExpmapMasked(VALUES& values, const Permuted<VectorValues>& delta,
+template<class CONDITIONAL, class VALUES, class GRAPH>
+void ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl::ExpmapMasked(VALUES& values, const Permuted<VectorValues>& delta,
     const Ordering& ordering, const vector<bool>& mask, boost::optional<Permuted<VectorValues>&> invalidateIfDebug) {
   // If debugging, invalidate if requested, otherwise do not invalidate.
   // Invalidating means setting expmapped entries to Inf, to trigger assertions
@@ -260,9 +260,9 @@ void ISAM2<CONDITIONAL, VALUES>::Impl::ExpmapMasked(VALUES& values, const Permut
 }
 
 /* ************************************************************************* */
-template<class CONDITIONAL, class VALUES>
-typename ISAM2<CONDITIONAL, VALUES>::Impl::PartialSolveResult
-ISAM2<CONDITIONAL, VALUES>::Impl::PartialSolve(GaussianFactorGraph& factors,
+template<class CONDITIONAL, class VALUES, class GRAPH>
+typename ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl::PartialSolveResult
+ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl::PartialSolve(GaussianFactorGraph& factors,
     const FastSet<Index>& keys, const ReorderingMode& reorderingMode) {
 
   static const bool debug = ISDEBUG("ISAM2 recalculate");

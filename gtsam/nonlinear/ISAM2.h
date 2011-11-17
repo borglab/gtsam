@@ -123,8 +123,9 @@ struct ISAM2Result {
  * to the constructor, then add measurements and variables as they arrive using the update()
  * method.  At any time, calculateEstimate() may be called to obtain the current
  * estimate of all variables.
+ *
  */
-template<class CONDITIONAL, class VALUES>
+template<class CONDITIONAL, class VALUES, class GRAPH = NonlinearFactorGraph<VALUES> >
 class ISAM2: public BayesTree<CONDITIONAL> {
 
 protected:
@@ -148,7 +149,7 @@ protected:
   Permuted<VectorValues> delta_;
 
   /** All original nonlinear factors are stored here to use during relinearization */
-  NonlinearFactorGraph<VALUES> nonlinearFactors_;
+  GRAPH nonlinearFactors_;
 
   /** @brief The current elimination ordering Symbols to Index (integer) keys.
    *
@@ -170,6 +171,8 @@ public:
 
   typedef BayesTree<CONDITIONAL> Base; ///< The BayesTree base class
   typedef ISAM2<CONDITIONAL, VALUES> This; ///< This class
+  typedef VALUES Values;
+  typedef GRAPH Graph;
 
   /** Create an empty ISAM2 instance */
   ISAM2(const ISAM2Params& params);
@@ -198,7 +201,7 @@ public:
    * (Params::relinearizeSkip).
    * @return An ISAM2Result struct containing information about the update
    */
-  ISAM2Result update(const NonlinearFactorGraph<VALUES>& newFactors, const VALUES& newTheta,
+  ISAM2Result update(const GRAPH& newFactors, const VALUES& newTheta,
       bool force_relinearize = false);
 
   /** Access the current linearization point */
@@ -233,7 +236,7 @@ public:
   const Permuted<VectorValues>& getDelta() const { return delta_; }
 
   /** Access the set of nonlinear factors */
-  const NonlinearFactorGraph<VALUES>& getFactorsUnsafe() const { return nonlinearFactors_; }
+  const GRAPH& getFactorsUnsafe() const { return nonlinearFactors_; }
 
   /** Access the current ordering */
   const Ordering& getOrdering() const { return ordering_; }
