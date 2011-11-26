@@ -188,7 +188,7 @@ namespace gtsam {
 		  	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
 	  if (H1) {
 #ifdef CORRECT_POSE3_EXMAP
-		*H1 = AdjointMap(inverse(p2));
+		*H1 = AdjointMap(inverse(p2)); // FIXME: this function doesn't exist with this interface
 #else
 		const Rot3& R2 = p2.rotation();
 		const Point3& t2 = p2.translation();
@@ -216,7 +216,7 @@ namespace gtsam {
   Pose3 Pose3::inverse(boost::optional<Matrix&> H1) const {
 	  if (H1)
 #ifdef CORRECT_POSE3_EXMAP
-		{ *H1 = - AdjointMap(p); }
+		{ *H1 = - AdjointMap(p); } // FIXME: this function doesn't exist with this interface - should this be "*H1 = -AdjointMap();" ?
 #else
 	  {
 		Matrix Rt = R_.transpose();
