@@ -79,7 +79,6 @@ public:
 		*this = Expmap(v);
 	}
 
-
   /// @name Testable
   /// @{
 
@@ -94,9 +93,7 @@ public:
   /// @{
 
   /// identity for group operation
-	inline static Pose2 identity() {
-		return Pose2();
-	}
+	inline static Pose2 identity() { return Pose2(); }
 
   /// inverse transformation with derivatives
 	Pose2 inverse(boost::optional<Matrix&> H1=boost::none) const;
@@ -122,7 +119,6 @@ public:
 
   /// Dimensionality of tangent space = 3 DOF - used to autodetect sizes
 	inline static size_t Dim() { return dimension; }
-
 
   /// Dimensionality of tangent space = 3 DOF
 	inline size_t dim() const { return dimension; }

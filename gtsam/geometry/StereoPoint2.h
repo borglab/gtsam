@@ -44,6 +44,9 @@ namespace gtsam {
 			uL_(uL), uR_(uR), v_(v) {
 		}
 
+    /// @name Testable
+    /// @{
+
 		/** print */
 		void print(const std::string& s="") const;
 
@@ -53,48 +56,52 @@ namespace gtsam {
 					- q.v_) < tol);
 		}
 
-	    /** dimension of the variable - used to autodetect sizes */
-	    inline static size_t Dim() { return dimension; }
+    /// @}
+    /// @name Group
+    /// @{
 
-		/** Lie requirements */
-		inline size_t dim() const { return dimension; }
+		/// identity
+		inline static StereoPoint2 identity() { return StereoPoint2(); }
 
-		/** convert to vector */
-		Vector vector() const {
-			return Vector_(3, uL_, uR_, v_);
+		/// inverse
+		inline StereoPoint2 inverse() const {
+			return StereoPoint2()- (*this);
 		}
 
-		/** add two stereo points */
-		StereoPoint2 operator+(const StereoPoint2& b) const {
-			return StereoPoint2(uL_ + b.uL_, uR_ + b.uR_, v_ + b.v_);
-		}
-
-		/** subtract two stereo points */
-		StereoPoint2 operator-(const StereoPoint2& b) const {
-			return StereoPoint2(uL_ - b.uL_, uR_ - b.uR_, v_ - b.v_);
-		}
-
-		/*
-		 * convenient function to get a Point2 from the left image
-		 */
-		inline Point2 point2(){
-			return Point2(uL_, v_);
-		}
-
-		/** "Compose", just adds the coordinates of two points. */
+		/// "Compose", just adds the coordinates of two points.
 		inline StereoPoint2 compose(const StereoPoint2& p1) const {
 			return *this + p1;
 		}
 
-		/** identity */
-		inline static StereoPoint2 identity() {
-			return StereoPoint2();
+		/// add two stereo points
+		StereoPoint2 operator+(const StereoPoint2& b) const {
+			return StereoPoint2(uL_ + b.uL_, uR_ + b.uR_, v_ + b.v_);
 		}
 
-		/** inverse */
-		inline StereoPoint2 inverse() const {
-			return StereoPoint2()- (*this);
+		/// subtract two stereo points
+		StereoPoint2 operator-(const StereoPoint2& b) const {
+			return StereoPoint2(uL_ - b.uL_, uR_ - b.uR_, v_ - b.v_);
 		}
+
+    /// @}
+    /// @name Manifold
+    /// @{
+
+    /// dimension of the variable - used to autodetect sizes */
+    inline static size_t Dim() { return dimension; }
+
+    /// return dimensionality of tangent space, DOF = 3
+    inline size_t dim() const { return dimension; }
+
+  	/// Updates a with tangent space delta
+		inline StereoPoint2 retract(const Vector& v) const { return compose(Expmap(v)); }
+
+		/// Returns inverse retraction
+		inline Vector localCoordinates(const StereoPoint2& t2) const { return Logmap(between(t2)); }
+
+    /// @}
+    /// @name Lie Group
+    /// @{
 
 		/** Exponential map around identity - just create a Point2 from a vector */
 		static inline StereoPoint2 Expmap(const Vector& d) {
@@ -106,14 +113,17 @@ namespace gtsam {
 			return p.vector();
 		}
 
-		// Manifold requirements
+		/// @}}
 
-		inline StereoPoint2 retract(const Vector& v) const { return compose(Expmap(v)); }
+		/** convert to vector */
+		Vector vector() const {
+			return Vector_(3, uL_, uR_, v_);
+		}
 
-		/**
-		 * Returns inverse retraction
-		 */
-		inline Vector localCoordinates(const StereoPoint2& t2) const { return Logmap(between(t2)); }
+		/** convenient function to get a Point2 from the left image */
+		inline Point2 point2(){
+			return Point2(uL_, v_);
+		}
 
 		inline StereoPoint2 between(const StereoPoint2& p2) const {
 			return gtsam::between_default(*this, p2);

@@ -128,8 +128,6 @@ namespace gtsam {
 
     Pose3 transform_to(const Pose3& pose) const;
 
-    /** Lie requirements */
-
     /** receives the point in Pose coordinates and transforms it to world coordinates */
     Point3 transform_from(const Point3& p,
         boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;

@@ -42,18 +42,28 @@ public:
 	Point2(double x, double y): x_(x), y_(y) {}
 	Point2(const Vector& v) : x_(v(0)), y_(v(1)) { assert(v.size() == 2); }
 
-	/** dimension of the variable - used to autodetect sizes */
-	inline static size_t Dim() { return dimension; }
+  /// @name Testable
+  /// @{
 
-	/** print with optional string */
+	/// print with optional string
 	void print(const std::string& s = "") const;
 
-	/** equals with an tolerance, prints out message if unequal*/
+	/// equals with an tolerance, prints out message if unequal
 	bool equals(const Point2& q, double tol = 1e-9) const;
 
-	// Group requirements
+  /// @}
+  /// @name Group
+  /// @{
 
-	/** "Compose", just adds the coordinates of two points. With optional derivatives */
+	/// identity
+	inline static Point2 identity() {
+		return Point2();
+	}
+
+	/// "Inverse" - negates each coordinate such that compose(p,inverse(p))=Point2()
+	inline Point2 inverse() const { return Point2(-x_, -y_); }
+
+	/// "Compose", just adds the coordinates of two points. With optional derivatives
 	inline Point2 compose(const Point2& p2,
 			boost::optional<Matrix&> H1=boost::none,
 			boost::optional<Matrix&> H2=boost::none) const {
@@ -62,33 +72,60 @@ public:
 		return *this + p2;
 	}
 
-	/** identity */
-	inline static Point2 identity() {
-		return Point2();
-	}
+	/** operators */
+	inline Point2 operator- () const {return Point2(-x_,-y_);}
+	inline Point2 operator + (const Point2& q) const {return Point2(x_+q.x_,y_+q.y_);}
+	inline Point2 operator - (const Point2& q) const {return Point2(x_-q.x_,y_-q.y_);}
+	inline Point2 operator * (double s) const {return Point2(x_*s,y_*s);}
+	inline Point2 operator / (double q) const {return Point2(x_/q,y_/q);}
 
-	/** "Inverse" - negates each coordinate such that compose(p,inverse(p))=Point2() */
-	inline Point2 inverse() const { return Point2(-x_, -y_); }
+  /// @}
+  /// @name Manifold
+  /// @{
 
-	// Manifold requirements
+	/// dimension of the variable - used to autodetect sizes
+	inline static size_t Dim() { return dimension; }
 
-	/** Size of the tangent space */
+  /// Dimensionality of tangent space = 2 DOF
 	inline size_t dim() const { return dimension; }
 
-	/** Updates a with tangent space delta */
+	/// Updates a with tangent space delta
 	inline Point2 retract(const Vector& v) const { return *this + Point2(v); }
 
 	/// Local coordinates of manifold neighborhood around current value
 	inline Vector localCoordinates(const Point2& t2) const { return Logmap(between(t2)); }
 
-	/** Lie requirements */
+  /// @}
+  /// @name Lie Group
+  /// @{
 
-	/** Exponential map around identity - just create a Point2 from a vector */
+	/// Exponential map around identity - just create a Point2 from a vector
 	static inline Point2 Expmap(const Vector& v) { return Point2(v); }
 
-	/** Log map around identity - just return the Point2 as a vector */
+	/// Log map around identity - just return the Point2 as a vector
 	static inline Vector Logmap(const Point2& dp) { return Vector_(2, dp.x(), dp.y()); }
 
+  /// @}
+  /// @name Vector Operators
+  /// @{
+
+	/** norm of point */
+	double norm() const;
+
+	/** creates a unit vector */
+	Point2 unit() const { return *this/norm(); }
+
+	/** distance between two points */
+	inline double dist(const Point2& p2) const {
+		return (p2 - *this).norm();
+	}
+
+	/** operators */
+	inline void operator += (const Point2& q) {x_+=q.x_;y_+=q.y_;}
+	inline void operator *= (double s) {x_*=s;y_*=s;}
+	inline bool operator ==(const Point2& q) const {return x_==q.x_ && q.y_==q.y_;}
+
+  /// @}
 
 	/** "Between", subtracts point coordinates */
 	inline Point2 between(const Point2& p2,
@@ -105,27 +142,6 @@ public:
 
 	/** return vectorized form (column-wise) */
 	Vector vector() const { return Vector_(2, x_, y_); }
-
-	/** operators */
-	inline void operator += (const Point2& q) {x_+=q.x_;y_+=q.y_;}
-	inline void operator *= (double s) {x_*=s;y_*=s;}
-	inline bool operator ==(const Point2& q) const {return x_==q.x_ && q.y_==q.y_;}
-	inline Point2 operator- () const {return Point2(-x_,-y_);}
-	inline Point2 operator + (const Point2& q) const {return Point2(x_+q.x_,y_+q.y_);}
-	inline Point2 operator - (const Point2& q) const {return Point2(x_-q.x_,y_-q.y_);}
-	inline Point2 operator * (double s) const {return Point2(x_*s,y_*s);}
-	inline Point2 operator / (double q) const {return Point2(x_/q,y_/q);}
-
-	/** norm of point */
-	double norm() const;
-
-	/** creates a unit vector */
-	Point2 unit() const { return *this/norm(); }
-
-	/** distance between two points */
-	inline double dist(const Point2& p2) const {
-		return (p2 - *this).norm();
-	}
 
 private:
 	/** Serialization function */

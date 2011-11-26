@@ -127,11 +127,75 @@ namespace gtsam {
     static Rot3Q rodriguez(double wx, double wy, double wz)
   		{ return rodriguez(Vector_(3,wx,wy,wz));}
 
+    /// @name Testable
+    /// @{
+
     /** print */
     void print(const std::string& s="R") const { gtsam::print(matrix(), s);}
 
     /** equals with an tolerance */
     bool equals(const Rot3Q& p, double tol = 1e-9) const;
+
+    /// @}
+    /// @name Group
+    /// @{
+
+    /// identity for group operation
+    inline static Rot3Q identity() {
+      return Rot3Q();
+    }
+
+    /// derivative of inverse rotation R^T s.t. inverse(R)*R = Rot3Q()
+    Rot3Q inverse(boost::optional<Matrix&> H1=boost::none) const {
+    	if (H1) *H1 = -matrix();
+    	return Rot3Q(quaternion_.inverse());
+    }
+
+    /// Compose two rotations i.e., R= (*this) * R2
+    Rot3Q compose(const Rot3Q& R2,
+  	boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
+
+    /// rotate point from rotated coordinate frame to world = R*p
+    inline Point3 operator*(const Point3& p) const {
+      Eigen::Vector3d r = quaternion_ * Eigen::Vector3d(p.x(), p.y(), p.z());
+      return Point3(r(0), r(1), r(2));
+    }
+
+    /// @}
+    /// @name Manifold
+    /// @{
+
+    /// dimension of the variable - used to autodetect sizes
+    static size_t Dim() { return dimension; }
+
+    /// return dimensionality of tangent space, DOF = 3
+    size_t dim() const { return dimension; }
+
+    /// Retraction from R^3 to Pose2 manifold neighborhood around current pose
+    Rot3Q retract(const Vector& v) const { return compose(Expmap(v)); }
+
+    /// Returns inverse retraction
+    Vector localCoordinates(const Rot3Q& t2) const { return Logmap(between(t2)); }
+
+    /// @}
+    /// @name Lie Group
+    /// @{
+
+    /**
+     * Exponential map at identity - create a rotation from canonical coordinates
+     * using Rodriguez' formula
+     */
+		static Rot3Q Expmap(const Vector& v)  {
+    	if(zero(v)) return Rot3Q();
+    	else return rodriguez(v);
+    }
+
+    /**
+     * Log map at identity - return the canonical coordinates of this rotation
+     */
+    static Vector Logmap(const Rot3Q& R);
+
+    /// @}
 
     /** return 3*3 rotation matrix */
     Matrix matrix() const;
@@ -167,51 +231,6 @@ namespace gtsam {
      */
     Quaternion toQuaternion() const { return quaternion_; }
 
-    /** dimension of the variable - used to autodetect sizes */
-    static size_t Dim() { return dimension; }
-
-    /** Lie requirements */
-
-    /** return DOF, dimensionality of tangent space */
-    size_t dim() const { return dimension; }
-
-    /** Compose two rotations i.e., R= (*this) * R2
-     */
-    Rot3Q compose(const Rot3Q& R2,
-  	boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
-
-    /** Exponential map at identity - create a rotation from canonical coordinates
-     * using Rodriguez' formula
-     */
-		static Rot3Q Expmap(const Vector& v)  {
-    	if(zero(v)) return Rot3Q();
-    	else return rodriguez(v);
-    }
-
-  /** identity */
-  inline static Rot3Q identity() {
-    return Rot3Q();
-  }
-
-    // Log map at identity - return the canonical coordinates of this rotation
-    static Vector Logmap(const Rot3Q& R);
-  
-  // Manifold requirements
-
-  Rot3Q retract(const Vector& v) const { return compose(Expmap(v)); }
-
-  /**
-   * Returns inverse retraction
-   */
-  Vector localCoordinates(const Rot3Q& t2) const { return Logmap(between(t2)); }
-
-
-    // derivative of inverse rotation R^T s.t. inverse(R)*R = Rot3Q()
-    Rot3Q inverse(boost::optional<Matrix&> H1=boost::none) const {
-    	if (H1) *H1 = -matrix();
-    	return Rot3Q(quaternion_.inverse());
-    }
-
     /**
      * Return relative rotation D s.t. R2=D*R1, i.e. D=R2*R1'
      */
@@ -221,15 +240,6 @@ namespace gtsam {
 
     /** compose two rotations */
     Rot3Q operator*(const Rot3Q& R2) const { return Rot3Q(quaternion_ * R2.quaternion_); }
-
-    /**
-     * rotate point from rotated coordinate frame to
-     * world = R*p
-     */
-    inline Point3 operator*(const Point3& p) const {
-      Eigen::Vector3d r = quaternion_ * Eigen::Vector3d(p.x(), p.y(), p.z());
-      return Point3(r(0), r(1), r(2));
-    }
 
     /**
      * rotate point from rotated coordinate frame to
