@@ -69,8 +69,12 @@ bool check_convergence(
 	}
 	bool converged = (relativeErrorTreshold && (relativeDecrease < relativeErrorTreshold))
 			|| (absoluteDecrease < absoluteErrorTreshold);
-	if (verbosity >= 1 && converged)
-		cout << "converged" << endl;
+	if (verbosity >= 1 && converged) {
+		if(absoluteDecrease >= 0.0)
+		  cout << "converged" << endl;
+		else
+		  cout << "Warning:  stopping nonlinear iterations because error increased" << endl;
+	}
 	return converged;
 }
 
