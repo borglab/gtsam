@@ -229,5 +229,7 @@ namespace gtsam {
     }
   };
 
-}
+} // \namespace gtsam
+
+#include <gtsam/nonlinear/Values-inl.h>
 

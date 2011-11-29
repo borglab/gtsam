@@ -107,8 +107,7 @@ TEST(Pose3Graph, partial_prior_height) {
 	EXPECT(assert_equal(expA, actA));
 
 	pose3SLAM::Graph graph;
-//	graph.add(height); // FAIL - on compile, can't initialize a reference?
-	graph.push_back(boost::shared_ptr<Partial>(new Partial(height)));
+	graph.add(height);
 
 	pose3SLAM::Values values;
 	values.insert(key, init);
@@ -163,7 +162,7 @@ TEST(Pose3Graph, partial_prior_xy) {
 	EXPECT(assert_equal(expA, actA));
 
 	pose3SLAM::Graph graph;
-	graph.push_back(Partial::shared_ptr(new Partial(priorXY)));
+	graph.add(priorXY);
 
 	pose3SLAM::Values values;
 	values.insert(key, init);

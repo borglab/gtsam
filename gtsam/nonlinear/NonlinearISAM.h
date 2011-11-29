@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/linear/GaussianISAM.h>
 
@@ -25,11 +24,12 @@ namespace gtsam {
 /**
  * Wrapper class to manage ISAM in a nonlinear context
  */
-template<class Values>
+template<class VALUES, class GRAPH = gtsam::NonlinearFactorGraph<VALUES> >
 class NonlinearISAM {
 public:
 
-	typedef gtsam::NonlinearFactorGraph<Values> Factors;
+	typedef VALUES Values;
+	typedef GRAPH Factors;
 
 protected:
 
@@ -101,3 +101,5 @@ public:
 };
 
 } // \namespace gtsam
+
+#include <gtsam/nonlinear/NonlinearISAM-inl.h>

@@ -1,0 +1,1 @@
+../configure --build=i686-pc-linux-gnu --host=arm-none-linux-gnueabi -prefix=/usr CFLAGS="-fno-inline -g -Wall" CXXFLAGS="-fno-inline -g -Wall" LDFLAGS="-fno-inline -g -Wall" --disable-static 

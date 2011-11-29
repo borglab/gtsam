@@ -5,7 +5,6 @@
  */
 
 #include <gtsam/nonlinear/GaussianISAM2.h>
-#include <gtsam/nonlinear/TupleValues-inl.h>
 
 using namespace std;
 using namespace gtsam;

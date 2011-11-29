@@ -87,6 +87,11 @@ namespace gtsam {
 			return reprojectionError.vector();
 		}
 
+    /** return the measurement */
+    inline const Point2 measured() const {
+      return z_;
+    }
+
 	private:
 
 		/// Serialization function

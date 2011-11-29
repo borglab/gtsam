@@ -428,9 +428,12 @@ namespace gtsam {
 	  typedef C2 Values2;
 	  typedef C3 Values3;
 
+	  typedef TupleValues<C1, TupleValues<C2, TupleValuesEnd<C3> > > Base;
+	  typedef TupleValues3<C1, C2, C3> This;
+
 	  TupleValues3() {}
-	  TupleValues3(const TupleValues<C1, TupleValues<C2, TupleValuesEnd<C3> > >& values);
-	  TupleValues3(const TupleValues3<C1, C2, C3>& values);
+	  TupleValues3(const Base& values);
+	  TupleValues3(const This& values);
 	  TupleValues3(const Values1& cfg1, const Values2& cfg2, const Values3& cfg3);
 
 	  // access functions
@@ -466,16 +469,18 @@ namespace gtsam {
   template<class C1, class C2, class C3, class C4, class C5>
   class TupleValues5 : public TupleValues<C1, TupleValues<C2, TupleValues<C3, TupleValues<C4, TupleValuesEnd<C5> > > > > {
   public:
-	  // typedefs
 	  typedef C1 Values1;
 	  typedef C2 Values2;
 	  typedef C3 Values3;
 	  typedef C4 Values4;
 	  typedef C5 Values5;
 
+	  typedef TupleValues<C1, TupleValues<C2, TupleValues<C3, TupleValues<C4, TupleValuesEnd<C5> > > > > Base;
+	  typedef TupleValues5<C1, C2, C3, C4, C5> This;
+
 	  TupleValues5() {}
-	  TupleValues5(const TupleValues5<C1, C2, C3, C4, C5>& values);
-	  TupleValues5(const TupleValues<C1, TupleValues<C2, TupleValues<C3, TupleValues<C4, TupleValuesEnd<C5> > > > >& values);
+	  TupleValues5(const This& values);
+	  TupleValues5(const Base& values);
 	  TupleValues5(const Values1& cfg1, const Values2& cfg2, const Values3& cfg3,
 				   const Values4& cfg4, const Values5& cfg5);
 
@@ -490,7 +495,6 @@ namespace gtsam {
   template<class C1, class C2, class C3, class C4, class C5, class C6>
   class TupleValues6 : public TupleValues<C1, TupleValues<C2, TupleValues<C3, TupleValues<C4, TupleValues<C5, TupleValuesEnd<C6> > > > > > {
   public:
-	  // typedefs
 	  typedef C1 Values1;
 	  typedef C2 Values2;
 	  typedef C3 Values3;
@@ -498,9 +502,12 @@ namespace gtsam {
 	  typedef C5 Values5;
 	  typedef C6 Values6;
 
+	  typedef TupleValues<C1, TupleValues<C2, TupleValues<C3, TupleValues<C4, TupleValues<C5, TupleValuesEnd<C6> > > > > > Base;
+	  typedef TupleValues6<C1, C2, C3, C4, C5, C6> This;
+
 	  TupleValues6() {}
-	  TupleValues6(const TupleValues6<C1, C2, C3, C4, C5, C6>& values);
-	  TupleValues6(const TupleValues<C1, TupleValues<C2, TupleValues<C3, TupleValues<C4, TupleValues<C5, TupleValuesEnd<C6> > > > > >& values);
+	  TupleValues6(const This& values);
+	  TupleValues6(const Base& values);
 	  TupleValues6(const Values1& cfg1, const Values2& cfg2, const Values3& cfg3,
 				   const Values4& cfg4, const Values5& cfg5, const Values6& cfg6);
 	  // access functions
@@ -513,3 +520,5 @@ namespace gtsam {
   };
 
 }
+
+#include <gtsam/nonlinear/TupleValues-inl.h>

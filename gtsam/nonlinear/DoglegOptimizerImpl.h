@@ -183,7 +183,6 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
       const double dx_d_norm = result.dx_d.vector().norm();
       const double newDelta = std::max(Delta, 3.0 * dx_d_norm); // Compute new Delta
 
-
       if(mode == ONE_STEP_PER_ITERATION)
         stay = false;   // If not searching, just return with the new Delta
       else if(mode == SEARCH_EACH_ITERATION) {
@@ -217,8 +216,10 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
       Delta *= 0.5;
       if(Delta > 1e-5)
         stay = true;
-      else
+      else {
+        if(verbose) cout << "Warning:  Dog leg stopping because cannot decrease error with minimum Delta" << endl;
         stay = false;
+      }
     }
   }
 

@@ -19,21 +19,8 @@
 
 #pragma once
 
-#include <map>
-#include <list>
-#include <vector>
-#include <stdexcept>
-
-#include <gtsam/base/types.h>
-#include <gtsam/base/FastSet.h>
-#include <gtsam/base/FastList.h>
-#include <gtsam/inference/FactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/Ordering.h>
-#include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/BayesTree.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/HessianFactor.h>
 
 namespace gtsam {
 
@@ -204,8 +191,9 @@ private:
  * to the constructor, then add measurements and variables as they arrive using the update()
  * method.  At any time, calculateEstimate() may be called to obtain the current
  * estimate of all variables.
+ *
  */
-template<class CONDITIONAL, class VALUES>
+template<class CONDITIONAL, class VALUES, class GRAPH = NonlinearFactorGraph<VALUES> >
 class ISAM2: public BayesTree<CONDITIONAL, ISAM2Clique<CONDITIONAL> > {
 
 protected:
@@ -229,7 +217,7 @@ protected:
   Permuted<VectorValues> delta_;
 
   /** All original nonlinear factors are stored here to use during relinearization */
-  NonlinearFactorGraph<VALUES> nonlinearFactors_;
+  GRAPH nonlinearFactors_;
 
   /** @brief The current elimination ordering Symbols to Index (integer) keys.
    *
@@ -251,6 +239,8 @@ public:
 
   typedef BayesTree<CONDITIONAL,ISAM2Clique<CONDITIONAL> > Base; ///< The BayesTree base class
   typedef ISAM2<CONDITIONAL, VALUES> This; ///< This class
+  typedef VALUES Values;
+  typedef GRAPH Graph;
 
   /** Create an empty ISAM2 instance */
   ISAM2(const ISAM2Params& params);
@@ -280,16 +270,26 @@ public:
    * (Params::relinearizeSkip).
    * @return An ISAM2Result struct containing information about the update
    */
-  ISAM2Result update(const NonlinearFactorGraph<VALUES>& newFactors, const VALUES& newTheta,
+  ISAM2Result update(const GRAPH& newFactors, const VALUES& newTheta,
       bool force_relinearize = false);
 
   /** Access the current linearization point */
   const VALUES& getLinearizationPoint() const {return theta_;}
 
   /** Compute an estimate from the incomplete linear delta computed during the last update.
-   * This delta is incomplete because it was not updated below wildfire_threshold.
+   * This delta is incomplete because it was not updated below wildfire_threshold.  If only
+   * a single variable is needed, it is faster to call calculateEstimate(const KEY&).
    */
   VALUES calculateEstimate() const;
+
+  /** Compute an estimate for a single variable using its incomplete linear delta computed
+   * during the last update.  This is faster than calling the no-argument version of
+   * calculateEstimate, which operates on all variables.
+   * @param key
+   * @return
+   */
+  template<class KEY>
+  typename KEY::Value calculateEstimate(const KEY& key) const;
 
   /// @name Public members for non-typical usage
   //@{
@@ -305,7 +305,7 @@ public:
   const Permuted<VectorValues>& getDelta() const { return delta_; }
 
   /** Access the set of nonlinear factors */
-  const NonlinearFactorGraph<VALUES>& getFactorsUnsafe() const { return nonlinearFactors_; }
+  const GRAPH& getFactorsUnsafe() const { return nonlinearFactors_; }
 
   /** Access the current ordering */
   const Ordering& getOrdering() const { return ordering_; }
@@ -332,3 +332,5 @@ private:
 }; // ISAM2
 
 } /// namespace gtsam
+
+#include <gtsam/nonlinear/ISAM2-inl.h>

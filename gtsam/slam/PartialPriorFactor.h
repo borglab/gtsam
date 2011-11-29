@@ -49,8 +49,9 @@ namespace gtsam {
 		typedef NonlinearFactor1<VALUES, KEY> Base;
 		typedef PartialPriorFactor<VALUES, KEY> This;
 
-		Vector prior_;            /// measurement on logmap parameters, in compressed form
-		std::vector<bool> mask_;  /// flags to mask all parameters not measured
+		Vector prior_;             ///< measurement on logmap parameters, in compressed form
+		std::vector<size_t> mask_; ///< indices of values to constrain in compressed prior vector
+		Matrix H_; 								 ///< Constant jacobian - computed at creation
 
 		/** default constructor - only use for serialization */
 		PartialPriorFactor() {}
@@ -58,10 +59,9 @@ namespace gtsam {
 		/**
 		 * constructor with just minimum requirements for a factor - allows more
 		 * computation in the constructor.  This should only be used by subclasses
-		 * Sets the size of the mask with all values off
 		 */
 		PartialPriorFactor(const KEY& key, const SharedNoiseModel& model)
-		  : Base(model, key), mask_(T::Dim(), false) {}
+		  : Base(model, key) {}
 
 	public:
 
@@ -70,31 +70,20 @@ namespace gtsam {
 
 		virtual ~PartialPriorFactor() {}
 
-		/** Full Constructor: requires mask and vector - not for typical use */
-		PartialPriorFactor(const KEY& key, const std::vector<bool>& mask,
-				const Vector& prior, const SharedNoiseModel& model) :
-			Base(model, key), prior_(prior), mask_(mask) {
-			assert(mask_.size() == T::Dim()); // NOTE: assumes constant size variable
-			assert(nrTrue() == model->dim());
-			assert(nrTrue() == prior_.size());
-		}
-
 		/** Single Element Constructor: acts on a single parameter specified by idx */
 		PartialPriorFactor(const KEY& key, size_t idx, double prior, const SharedNoiseModel& model) :
-			Base(model, key), prior_(Vector_(1, prior)), mask_(T::Dim(), false) {
+			Base(model, key), prior_(Vector_(1, prior)), mask_(1, idx), H_(zeros(1, T::Dim())) {
 			assert(model->dim() == 1);
-			mask_[idx] = true;
-			assert(nrTrue() == 1);
+			this->fillH();
 		}
 
 		/** Indices Constructor: specify the mask with a set of indices */
 		PartialPriorFactor(const KEY& key, const std::vector<size_t>& mask, const Vector& prior,
 				const SharedNoiseModel& model) :
-			Base(model, key), prior_(prior), mask_(T::Dim(), false) {
+			Base(model, key), prior_(prior), mask_(mask), H_(zeros(mask.size(), T::Dim())) {
 			assert((size_t)prior_.size() == mask.size());
 			assert(model->dim() == (size_t) prior.size());
-			setMask(mask);
-			assert(nrTrue() == this->dim());
+			this->fillH();
 		}
 
 		/** implement functions needed for Testable */
@@ -117,40 +106,26 @@ namespace gtsam {
 
 		/** vector of errors */
 		Vector evaluateError(const T& p, boost::optional<Matrix&> H = boost::none) const {
-			if (H) (*H) = zeros(this->dim(), p.dim());
+			if (H) (*H) = H_;
 			// FIXME: this was originally the generic retraction - may not produce same results
 			Vector full_logmap = T::Logmap(p);
 			Vector masked_logmap = zero(this->dim());
-			size_t masked_idx=0;
-			for (size_t i=0;i<mask_.size();++i)
-				if (mask_[i]) {
-					masked_logmap(masked_idx) = full_logmap(i);
-					if (H) (*H)(masked_idx, i) = 1.0;
-					++masked_idx;
-				}
+			for (size_t i=0; i<mask_.size(); ++i)
+				masked_logmap(i) = full_logmap(mask_[i]);
 			return masked_logmap - prior_;
 		}
 
 		// access
 		const Vector& prior() const { return prior_; }
 		const std::vector<bool>& mask() const { return  mask_; }
+		const Matrix& H() const { return H_; }
 
 	protected:
 
-		/** counts true elements in the mask */
-		size_t nrTrue() const {
-			size_t result=0;
+		/** Constructs the jacobian matrix in place */
+		void fillH() {
 			for (size_t i=0; i<mask_.size(); ++i)
-				if (mask_[i])	++result;
-			return result;
-		}
-
-		/** sets the mask using a set of indices */
-		void setMask(const std::vector<size_t>& mask) {
-			for (size_t i=0; i<mask.size(); ++i) {
-				assert(mask[i] < mask_.size());
-				mask_[mask[i]] = true;
-			}
+				H_(i, mask_[i]) = 1.0;
 		}
 
 	private:
@@ -162,6 +137,7 @@ namespace gtsam {
 					boost::serialization::base_object<Base>(*this));
 			ar & BOOST_SERIALIZATION_NVP(prior_);
 			ar & BOOST_SERIALIZATION_NVP(mask_);
+			ar & BOOST_SERIALIZATION_NVP(H_);
 		}
 	}; // \class PartialPriorFactor
 

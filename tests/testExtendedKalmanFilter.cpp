@@ -20,7 +20,7 @@
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/ExtendedKalmanFilter-inl.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/nonlinear/Values-inl.h>
+#include <gtsam/nonlinear/Values.h>
 #include <gtsam/geometry/Point2.h>
 
 using namespace gtsam;

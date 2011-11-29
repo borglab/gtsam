@@ -58,7 +58,7 @@ namespace gtsam {
 
 		template<class F>
 		void add(const F& factor) {
-			push_back(boost::shared_ptr<F>(new F(factor)));
+			this->push_back(boost::shared_ptr<F>(new F(factor)));
 		}
 
 		/**

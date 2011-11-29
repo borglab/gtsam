@@ -18,7 +18,7 @@
 #pragma once
 
 #include <gtsam/slam/planarSLAM.h>
-#include <gtsam/slam/planarSLAMValues.h>
+#include <gtsam/slam/PlanarSLAMValues.h>
 
 namespace gtsam {
 

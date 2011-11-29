@@ -6,7 +6,7 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <gtsam/linear/Sampler.h>
-#include <gtsam/nonlinear/NonlinearISAM-inl.h>
+#include <gtsam/nonlinear/NonlinearISAM.h>
 #include <gtsam/slam/planarSLAM.h>
 
 using namespace gtsam;

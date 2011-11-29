@@ -21,22 +21,12 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 
-#include <set>
-#include <limits>
-#include <numeric>
-
 #include <gtsam/base/timing.h>
 #include <gtsam/base/debug.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
-#include <gtsam/linear/GaussianFactor.h>
-#include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
-
 #include <gtsam/inference/BayesTree-inl.h>
+#include <gtsam/linear/HessianFactor.h>
 
-#include <gtsam/inference/GenericSequentialSolver-inl.h>
-
-#include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/ISAM2-impl-inl.h>
 
 
@@ -50,24 +40,24 @@ static const bool latestLast = true;
 static const bool structuralLast = false;
 
 /* ************************************************************************* */
-template<class Conditional, class Values>
-ISAM2<Conditional, Values>::ISAM2(const ISAM2Params& params):
+template<class CONDITIONAL, class VALUES, class GRAPH>
+ISAM2<CONDITIONAL, VALUES, GRAPH>::ISAM2(const ISAM2Params& params):
     delta_(Permutation(), deltaUnpermuted_), params_(params) {}
 
 /* ************************************************************************* */
-template<class Conditional, class Values>
-ISAM2<Conditional, Values>::ISAM2():
+template<class CONDITIONAL, class VALUES, class GRAPH>
+ISAM2<CONDITIONAL, VALUES, GRAPH>::ISAM2():
     delta_(Permutation(), deltaUnpermuted_) {}
 
 /* ************************************************************************* */
-template<class Conditional, class Values>
-FastList<size_t> ISAM2<Conditional, Values>::getAffectedFactors(const FastList<Index>& keys) const {
+template<class CONDITIONAL, class VALUES, class GRAPH>
+FastList<size_t> ISAM2<CONDITIONAL, VALUES, GRAPH>::getAffectedFactors(const FastList<Index>& keys) const {
   static const bool debug = false;
   if(debug) cout << "Getting affected factors for ";
   if(debug) { BOOST_FOREACH(const Index key, keys) { cout << key << " "; } }
   if(debug) cout << endl;
 
-  FactorGraph<NonlinearFactor<Values> > allAffected;
+  FactorGraph<NonlinearFactor<VALUES> > allAffected;
   FastList<size_t> indices;
   BOOST_FOREACH(const Index key, keys) {
 //    const list<size_t> l = nonlinearFactors_.factors(key);
@@ -89,15 +79,15 @@ FastList<size_t> ISAM2<Conditional, Values>::getAffectedFactors(const FastList<I
 /* ************************************************************************* */
 // retrieve all factors that ONLY contain the affected variables
 // (note that the remaining stuff is summarized in the cached factors)
-template<class Conditional, class Values>
+template<class CONDITIONAL, class VALUES, class GRAPH>
 FactorGraph<GaussianFactor>::shared_ptr
-ISAM2<Conditional, Values>::relinearizeAffectedFactors(const FastList<Index>& affectedKeys) const {
+ISAM2<CONDITIONAL, VALUES, GRAPH>::relinearizeAffectedFactors(const FastList<Index>& affectedKeys) const {
 
   tic(1,"getAffectedFactors");
   FastList<size_t> candidates = getAffectedFactors(affectedKeys);
   toc(1,"getAffectedFactors");
 
-  NonlinearFactorGraph<Values> nonlinearAffectedFactors;
+  GRAPH nonlinearAffectedFactors;
 
   tic(2,"affectedKeysSet");
   // for fast lookup below
@@ -128,9 +118,9 @@ ISAM2<Conditional, Values>::relinearizeAffectedFactors(const FastList<Index>& af
 
 /* ************************************************************************* */
 // find intermediate (linearized) factors from cache that are passed into the affected area
-template<class Conditional, class Values>
-FactorGraph<typename ISAM2<Conditional, Values>::CacheFactor>
-ISAM2<Conditional, Values>::getCachedBoundaryFactors(Cliques& orphans) {
+template<class CONDITIONAL, class VALUES, class GRAPH>
+FactorGraph<typename ISAM2<CONDITIONAL, VALUES, GRAPH>::CacheFactor>
+ISAM2<CONDITIONAL, VALUES, GRAPH>::getCachedBoundaryFactors(Cliques& orphans) {
 
   static const bool debug = false;
 
@@ -140,9 +130,9 @@ ISAM2<Conditional, Values>::getCachedBoundaryFactors(Cliques& orphans) {
     // find the last variable that was eliminated
     Index key = (*orphan)->frontals().back();
 #ifndef NDEBUG
-//    typename BayesNet<Conditional>::const_iterator it = orphan->end();
-//    const Conditional& lastConditional = **(--it);
-//    typename Conditional::const_iterator keyit = lastConditional.endParents();
+//    typename BayesNet<CONDITIONAL>::const_iterator it = orphan->end();
+//    const CONDITIONAL& lastCONDITIONAL = **(--it);
+//    typename CONDITIONAL::const_iterator keyit = lastCONDITIONAL.endParents();
 //    const Index lastKey = *(--keyit);
 //    assert(key == lastKey);
 #endif
@@ -154,8 +144,8 @@ ISAM2<Conditional, Values>::getCachedBoundaryFactors(Cliques& orphans) {
   return cachedBoundary;
 }
 
-template<class Conditional, class Values>
-boost::shared_ptr<FastSet<Index> > ISAM2<Conditional, Values>::recalculate(
+template<class CONDITIONAL, class VALUES, class GRAPH>
+boost::shared_ptr<FastSet<Index> > ISAM2<CONDITIONAL, VALUES, GRAPH>::recalculate(
     const FastSet<Index>& markedKeys, const FastSet<Index>& structuralKeys, const FastVector<Index>& newKeys, const FactorGraph<GaussianFactor>::shared_ptr newFactors, ISAM2Result& result) {
 
   // TODO:  new factors are linearized twice, the newFactors passed in are not used.
@@ -174,8 +164,8 @@ boost::shared_ptr<FastSet<Index> > ISAM2<Conditional, Values>::recalculate(
   if (counter>0) { // cannot call on empty tree
     GaussianISAM2_P::CliqueData cdata =  this->getCliqueData();
     GaussianISAM2_P::CliqueStats cstats = cdata.getStats();
-    maxClique = cstats.maxConditionalSize;
-    avgClique = cstats.avgConditionalSize;
+    maxClique = cstats.maxCONDITIONALSize;
+    avgClique = cstats.avgCONDITIONALSize;
     numCliques = cdata.conditionalSizes.size();
     nnzR = calculate_nnz(this->root());
   }
@@ -296,7 +286,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2<Conditional, Values>::recalculate(
     toc(5,"eliminate");
 
     tic(6,"insert");
-    Base::clear();
+    BayesTree<CONDITIONAL>::clear();
     this->insert(newRoot);
     toc(6,"insert");
 
@@ -422,9 +412,9 @@ boost::shared_ptr<FastSet<Index> > ISAM2<Conditional, Values>::recalculate(
 }
 
 /* ************************************************************************* */
-template<class Conditional, class Values>
-ISAM2Result ISAM2<Conditional, Values>::update(
-    const NonlinearFactorGraph<Values>& newFactors, const Values& newTheta, bool force_relinearize) {
+template<class CONDITIONAL, class VALUES, class GRAPH>
+ISAM2Result ISAM2<CONDITIONAL, VALUES, GRAPH>::update(
+    const GRAPH& newFactors, const Values& newTheta, bool force_relinearize) {
 
   static const bool debug = ISDEBUG("ISAM2 update");
   static const bool verbose = ISDEBUG("ISAM2 update verbose");
@@ -494,14 +484,14 @@ ISAM2Result ISAM2<Conditional, Values>::update(
       Impl::ExpmapMasked(theta_, delta_, ordering_, markedRelinMask, delta_);
     toc(6,"expmap");
 
-    result.variablesRelinearized = markedRelinMask.size();
+    result.variablesRelinearized = markedKeys.size();
 
 #ifndef NDEBUG
     lastRelinVariables_ = markedRelinMask;
 #endif
   } else {
-#ifndef NDEBUG
     result.variablesRelinearized = 0;
+#ifndef NDEBUG
     lastRelinVariables_ = vector<bool>(ordering_.nVars(), false);
 #endif
   }
@@ -560,19 +550,28 @@ ISAM2Result ISAM2<Conditional, Values>::update(
 }
 
 /* ************************************************************************* */
-template<class Conditional, class Values>
-Values ISAM2<Conditional, Values>::calculateEstimate() const {
+template<class CONDITIONAL, class VALUES, class GRAPH>
+VALUES ISAM2<CONDITIONAL, VALUES, GRAPH>::calculateEstimate() const {
   // We use ExpmapMasked here instead of regular expmap because the former
   // handles Permuted<VectorValues>
-  Values ret(theta_);
+	VALUES ret(theta_);
   vector<bool> mask(ordering_.nVars(), true);
   Impl::ExpmapMasked(ret, delta_, ordering_, mask);
   return ret;
 }
 
 /* ************************************************************************* */
-template<class Conditional, class Values>
-Values ISAM2<Conditional, Values>::calculateBestEstimate() const {
+template<class CONDITIONAL, class VALUES, class GRAPH>
+template<class KEY>
+typename KEY::Value ISAM2<CONDITIONAL, VALUES, GRAPH>::calculateEstimate(const KEY& key) const {
+  const Index index = getOrdering()[key];
+  const SubVector delta = getDelta()[index];
+  return getLinearizationPoint()[key].retract(delta);
+}
+
+/* ************************************************************************* */
+template<class CONDITIONAL, class VALUES, class GRAPH>
+VALUES ISAM2<CONDITIONAL, VALUES, GRAPH>::calculateBestEstimate() const {
   VectorValues delta(theta_.dims(ordering_));
   optimize2(this->root(), delta);
   return theta_.retract(delta, ordering_);

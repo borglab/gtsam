@@ -24,8 +24,6 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
 
-#include <gtsam/nonlinear/Values-inl.h>
-
 using namespace std;
 using namespace gtsam;
 

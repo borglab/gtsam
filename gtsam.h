@@ -178,3 +178,9 @@ class PlanarSLAMOdometry {
 	void print(string s) const;
 	GaussianFactor* linearize(const PlanarSLAMValues& center, const Ordering& ordering) const;
 };
+
+class GaussianSequentialSolver {
+  GaussianSequentialSolver(const GaussianFactorGraph& graph, bool useQR);
+  GaussianBayesNet* eliminate();
+  VectorValues* optimize();
+};

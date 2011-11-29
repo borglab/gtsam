@@ -24,14 +24,13 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/inference/ISAM-inl.h>
 #include <gtsam/nonlinear/Ordering.h>
-#include <gtsam/nonlinear/NonlinearISAM.h>
 
 using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
-template<class Values>
-void NonlinearISAM<Values>::update(const Factors& newFactors,
+template<class VALUES, class GRAPH>
+void NonlinearISAM<VALUES,GRAPH>::update(const Factors& newFactors,
 		const Values& initialValues) {
 
   if(newFactors.size() > 0) {
@@ -63,8 +62,8 @@ void NonlinearISAM<Values>::update(const Factors& newFactors,
 }
 
 /* ************************************************************************* */
-template<class Values>
-void NonlinearISAM<Values>::reorder_relinearize() {
+template<class VALUES, class GRAPH>
+void NonlinearISAM<VALUES,GRAPH>::reorder_relinearize() {
 
 //  cout << "Reordering, relinearizing..." << endl;
 
@@ -90,8 +89,8 @@ void NonlinearISAM<Values>::reorder_relinearize() {
 }
 
 /* ************************************************************************* */
-template<class Values>
-Values NonlinearISAM<Values>::estimate() const {
+template<class VALUES, class GRAPH>
+VALUES NonlinearISAM<VALUES,GRAPH>::estimate() const {
   if(isam_.size() > 0)
     return linPoint_.retract(optimize(isam_), ordering_);
   else
@@ -99,14 +98,14 @@ Values NonlinearISAM<Values>::estimate() const {
 }
 
 /* ************************************************************************* */
-template<class Values>
-Matrix NonlinearISAM<Values>::marginalCovariance(const Symbol& key) const {
+template<class VALUES, class GRAPH>
+Matrix NonlinearISAM<VALUES,GRAPH>::marginalCovariance(const Symbol& key) const {
 	return isam_.marginalCovariance(ordering_[key]);
 }
 
 /* ************************************************************************* */
-template<class Values>
-void NonlinearISAM<Values>::print(const std::string& s) const {
+template<class VALUES, class GRAPH>
+void NonlinearISAM<VALUES,GRAPH>::print(const std::string& s) const {
 	cout << "ISAM - " << s << ":" << endl;
 	cout << "  ReorderInterval: " << reorderInterval_ << " Current Count: " << reorderCounter_ << endl;
 	isam_.print("GaussianISAM");

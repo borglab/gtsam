@@ -109,27 +109,25 @@ namespace gtsam {
 			return s_;
 		}
 
+    /// @name Testable
+    /// @{
+
 		/** print */
 		void print(const std::string& s = "theta") const;
 
 		/** equals with an tolerance */
 		bool equals(const Rot2& R, double tol = 1e-9) const;
 
-		/** dimension of the variable - used to autodetect sizes */
-		inline static size_t Dim() {
-			return dimension;
-		}
-
-		/** Lie requirements */
-
-		/** Dimensionality of the tangent space */
-		inline size_t dim() const {
-			return dimension;
-		}
+	  /// @}
+	  /// @name Group
+	  /// @{
 
 		/** identity */
-		inline static Rot2 identity() {
-			return Rot2();
+		inline static Rot2 identity() {	return Rot2(); }
+
+		/** The inverse rotation - negative angle */
+		Rot2 inverse() const {
+			return Rot2(c_, -s_);
 		}
 
 		/** Compose - make a new rotation by adding angles */
@@ -140,7 +138,41 @@ namespace gtsam {
 			return *this * R1;
 		}
 
-		/** Expmap around identity - create a rotation from an angle */
+		/** Compose - make a new rotation by adding angles */
+		Rot2 operator*(const Rot2& R) const {
+			return fromCosSin(c_ * R.c_ - s_ * R.s_, s_ * R.c_ + c_ * R.s_);
+		}
+
+		/** syntactic sugar for rotate */
+		inline Point2 operator*(const Point2& p) const {
+			return rotate(p);
+		}
+
+	  /// @}
+	  /// @name Manifold
+	  /// @{
+
+		/// dimension of the variable - used to autodetect sizes
+		inline static size_t Dim() {
+			return dimension;
+		}
+
+		/// Dimensionality of the tangent space, DOF = 1
+		inline size_t dim() const {
+			return dimension;
+		}
+
+  	/// Updates a with tangent space delta
+  	inline Rot2 retract(const Vector& v) const { return *this * Expmap(v); }
+
+  	/// Returns inverse retraction
+  	inline Vector localCoordinates(const Rot2& t2) const { return Logmap(between(t2)); }
+
+	  /// @}
+	  /// @name Lie Group
+	  /// @{
+
+		/// Expmap around identity - create a rotation from an angle
 		static Rot2 Expmap(const Vector& v) {
 			if (zero(v))
 				return (Rot2());
@@ -148,19 +180,23 @@ namespace gtsam {
 				return Rot2::fromAngle(v(0));
 		}
 
-		/** Logmap around identity - return the angle of the rotation */
+		/// Logmap around identity - return the angle of the rotation
 		static inline Vector Logmap(const Rot2& r) {
 			return Vector_(1, r.theta());
 		}
 
-  	// Manifold requirements
+		/// @}
+	  /// @name Vector Operators
+		/// @{
 
-  	inline Rot2 retract(const Vector& v) const { return *this * Expmap(v); }
+		/**
+		 * Creates a unit vector as a Point2
+		 */
+		inline Point2 unit() const {
+			return Point2(c_, s_);
+		}
 
-  	/**
-  	 * Returns inverse retraction
-  	 */
-  	inline Vector localCoordinates(const Rot2& t2) const { return Logmap(between(t2)); }
+		/// @}
 
 		/** Between using the default implementation */
 		inline Rot2 between(const Rot2& p2, boost::optional<Matrix&> H1 =
@@ -176,27 +212,12 @@ namespace gtsam {
 		/** return 2*2 transpose (inverse) rotation matrix   */
 		Matrix transpose() const;
 
-		/** The inverse rotation - negative angle */
-		Rot2 inverse() const {
-			return Rot2(c_, -s_);
-		}
-
-		/** Compose - make a new rotation by adding angles */
-		Rot2 operator*(const Rot2& R) const {
-			return fromCosSin(c_ * R.c_ - s_ * R.s_, s_ * R.c_ + c_ * R.s_);
-		}
-
 		/**
 		 * rotate point from rotated coordinate frame to
 		 * world = R*p
 		 */
 		Point2 rotate(const Point2& p, boost::optional<Matrix&> H1 = boost::none,
 				boost::optional<Matrix&> H2 = boost::none) const;
-
-		/** syntactic sugar for rotate */
-		inline Point2 operator*(const Point2& p) const {
-			return rotate(p);
-		}
 
 		/**
 		 * rotate point from world to rotated
@@ -205,12 +226,6 @@ namespace gtsam {
 		Point2 unrotate(const Point2& p, boost::optional<Matrix&> H1 = boost::none,
 				boost::optional<Matrix&> H2 = boost::none) const;
 
-		/**
-		 * Creates a unit vector as a Point2
-		 */
-		inline Point2 unit() const {
-			return Point2(c_, s_);
-		}
 
 	private:
 		/** Serialization function */

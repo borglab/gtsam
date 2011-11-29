@@ -2,8 +2,6 @@
  * @file Group.h
  *
  * @brief Concept check class for variable types with Group properties
- * A Group concept extends a Manifold
- *
  * @date Nov 5, 2011
  * @author Alex Cunningham
  */
@@ -13,7 +11,8 @@
 namespace gtsam {
 
 /**
- * Concept check for general Group structure
+ * This concept check enforces a Group structure on a variable type,
+ * in which we require the existence of basic algebraic operations.
  */
 template<class T>
 class GroupConcept {

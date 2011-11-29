@@ -22,7 +22,7 @@ using namespace boost::assign;
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/LieVector.h>
-#include <gtsam/nonlinear/Values-inl.h>
+#include <gtsam/nonlinear/Values.h>
 
 using namespace gtsam;
 using namespace std;

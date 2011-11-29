@@ -46,29 +46,28 @@ namespace gtsam {
     Point3(double x, double y, double z): x_(x), y_(y), z_(z) {}
     Point3(const Vector& v) : x_(v(0)), y_(v(1)), z_(v(2)) {}
 
+    /// @name Testable
+    /// @{
+
     /** print with optional string */
     void print(const std::string& s = "") const;
 
     /** equals with an tolerance */
     bool equals(const Point3& p, double tol = 1e-9) const;
 
-    /** dimension of the variable - used to autodetect sizes */
-    inline static size_t Dim() { return dimension; }
+    /// @}
+    /// @name Group
+    /// @{
 
-    /** Lie requirements */
-
-    /** return DOF, dimensionality of tangent space */
-    inline size_t dim() const { return dimension; }
-
-		/** identity */
+    /// identity for group operation
 		inline static Point3 identity() {
 			return Point3();
 		}
 
-    /** "Inverse" - negates the coordinates such that compose(p, inverse(p)) = Point3() */
+    /// "Inverse" - negates the coordinates such that compose(p, inverse(p)) = Point3()
     inline Point3 inverse() const { return Point3(-x_, -y_, -z_); }
 
-    /** "Compose" - just adds coordinates of two points */
+    /// "Compose" - just adds coordinates of two points
     inline Point3 compose(const Point3& p2,
     		boost::optional<Matrix&> H1=boost::none,
     		boost::optional<Matrix&> H2=boost::none) const {
@@ -77,20 +76,58 @@ namespace gtsam {
   	  return *this + p2;
     }
 
+    /// @}
+    /// @name Manifold
+    /// @{
+
+    /// dimension of the variable - used to autodetect sizes
+    inline static size_t Dim() { return dimension; }
+
+    /// return dimensionality of tangent space, DOF = 3
+    inline size_t dim() const { return dimension; }
+
+  	/// Updates a with tangent space delta
+  	inline Point3 retract(const Vector& v) const { return compose(Expmap(v)); }
+
+  	/// Returns inverse retraction
+  	inline Vector localCoordinates(const Point3& t2) const { return Logmap(t2) - Logmap(*this); }
+
+    /// @}
+    /// @name Lie Group
+    /// @{
+
     /** Exponential map at identity - just create a Point3 from x,y,z */
     static inline Point3 Expmap(const Vector& v) { return Point3(v); }
 
     /** Log map at identity - return the x,y,z of this point */
     static inline Vector Logmap(const Point3& dp) { return Vector_(3, dp.x(), dp.y(), dp.z()); }
 
-  	// Manifold requirements
+    /// @}
+    /// @name Vector Operators
+    /// @{
 
-  	inline Point3 retract(const Vector& v) const { return compose(Expmap(v)); }
+    Point3 operator - () const { return Point3(-x_,-y_,-z_);}
+    bool   operator ==(const Point3& q) const;
+    Point3 operator + (const Point3& q) const;
+    Point3 operator - (const Point3& q) const;
+    Point3 operator * (double s) const;
+    Point3 operator / (double s) const;
 
-  	/**
-  	 * Returns inverse retraction
-  	 */
-  	inline Vector localCoordinates(const Point3& t2) const { return Logmap(t2) - Logmap(*this); }
+    /** distance between two points */
+    double dist(const Point3& p2) const {
+      return sqrt(pow(x()-p2.x(),2.0) + pow(y()-p2.y(),2.0) + pow(z()-p2.z(),2.0));
+    }
+
+    /** dot product */
+    double norm() const;
+
+    /** cross product @return this x q */
+    Point3 cross(const Point3 &q) const;
+
+    /** dot product @return this * q*/
+    double dot(const Point3 &q) const;
+
+    /// @}
 
     /** Between using the default implementation */
     inline Point3 between(const Point3& p2,
@@ -112,19 +149,6 @@ namespace gtsam {
     inline double y() const {return y_;}
     inline double z() const {return z_;}
 
-    /** operators */
-    Point3 operator - () const { return Point3(-x_,-y_,-z_);}
-    bool   operator ==(const Point3& q) const;
-    Point3 operator + (const Point3& q) const;
-    Point3 operator - (const Point3& q) const;
-    Point3 operator * (double s) const;
-    Point3 operator / (double s) const;
-
-    /** distance between two points */
-    double dist(const Point3& p2) const {
-      return sqrt(pow(x()-p2.x(),2.0) + pow(y()-p2.y(),2.0) + pow(z()-p2.z(),2.0));
-    }
-
     /** add two points, add(this,q) is same as this + q */
     Point3 add (const Point3 &q,
   	      boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
@@ -132,15 +156,6 @@ namespace gtsam {
     /** subtract two points, sub(this,q) is same as this - q */
     Point3 sub (const Point3 &q,
   	      boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
-
-    /** cross product @return this x q */
-    Point3 cross(const Point3 &q) const;
-
-    /** dot product @return this * q*/
-    double dot(const Point3 &q) const;
-
-    /** dot product */
-    double norm() const;
 
   private:
     /** Serialization function */
@@ -154,7 +169,7 @@ namespace gtsam {
     }
   };
 
-  /** Syntactic sugar for multiplying coordinates by a scalar s*p */
+  /// Syntactic sugar for multiplying coordinates by a scalar s*p
   inline Point3 operator*(double s, const Point3& p) { return p*s;}
 
 }

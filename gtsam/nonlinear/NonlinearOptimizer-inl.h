@@ -200,6 +200,8 @@ namespace gtsam {
 		      // The more adventurous lambda was worse too, so make lambda more conservative
 		      // and keep the same values.
 		      if(lambdaMode >= Parameters::BOUNDED && lambda >= 1.0e5) {
+	          if(verbosity >= Parameters::ERROR)
+	            cout << "Warning:  Levenberg-Marquardt giving up because cannot decrease error with maximum lambda" << endl;
 		        break;
 		      } else {
 		        lambda *= factor;
@@ -212,6 +214,8 @@ namespace gtsam {
 		    // The more adventurous lambda was worse too, so make lambda more conservative
 		    // and keep the same values.
 		    if(lambdaMode >= Parameters::BOUNDED && lambda >= 1.0e5) {
+		      if(verbosity >= Parameters::ERROR)
+		        cout << "Warning:  Levenberg-Marquardt giving up because cannot decrease error with maximum lambda" << endl;
 		      break;
 		    } else {
 		      lambda *= factor;
@@ -306,7 +310,7 @@ namespace gtsam {
     S solver(*graph_->linearize(*values_, *ordering_));
     DoglegOptimizerImpl::IterationResult result = DoglegOptimizerImpl::Iterate(
         parameters_->lambda_, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, *solver.eliminate(),
-        *graph_, *values_, *ordering_, error_);
+        *graph_, *values_, *ordering_, error_, parameters_->verbosity_ > Parameters::ERROR);
     shared_values newValues(new T(values_->retract(result.dx_d, *ordering_)));
     cout << "newValues: " << newValues.get() << endl;
     return newValuesErrorLambda_(newValues, result.f_error, result.Delta);

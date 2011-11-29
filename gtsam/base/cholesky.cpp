@@ -179,14 +179,14 @@ Eigen::LDLT<Matrix>::TranspositionType ldlPartial(Matrix& ABC, size_t nFrontal) 
       throw NegativeMatrixException();
   }
 
-  Vector sqrtD = ldlt.vectorD().cwiseSqrt();
+  Vector sqrtD = ldlt.vectorD().cwiseSqrt(); // FIXME: we shouldn't do sqrt in LDL
   if (debug) cout << "Dsqrt: " << sqrtD << endl;
 
   // U = sqrtD * L^
   Matrix U = ldlt.matrixU();
 
   // we store the permuted upper triangular matrix
-  ABC.block(0,0,nFrontal,nFrontal)  = sqrtD.asDiagonal() * U;
+  ABC.block(0,0,nFrontal,nFrontal)  = sqrtD.asDiagonal() * U; // FIXME: this isn't actually LDL', it's Cholesky
   if(debug) cout << "R:\n" << ABC.topLeftCorner(nFrontal,nFrontal) << endl;
   //  toc(1, "ldl");
 

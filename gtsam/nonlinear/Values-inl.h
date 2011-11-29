@@ -28,10 +28,6 @@
 #include <gtsam/base/Lie-inl.h>
 #include <gtsam/nonlinear/Ordering.h>
 
-#include <gtsam/nonlinear/Values.h>
-
-#define INSTANTIATE_VALUES(J) template class Values<J>;
-
 using namespace std;
 
 namespace gtsam {

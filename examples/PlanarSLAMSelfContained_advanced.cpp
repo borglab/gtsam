@@ -34,7 +34,7 @@
 #include <gtsam/slam/BearingRangeFactor.h>
 
 // implementations for structures - needed if self-contained, and these should be included last
-#include <gtsam/nonlinear/TupleValues-inl.h>
+#include <gtsam/nonlinear/TupleValues.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
 #include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
