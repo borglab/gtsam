@@ -304,35 +304,52 @@ namespace gtsam {
    *
    * Since our Conditional class already handles multiple frontal variables,
    * this Clique contains exactly 1 conditional.
+   *
+   * This is the default clique type in a BayesTree, but some algorithms, like
+   * iSAM2 (see ISAM2Clique), use a different clique type in order to store
+   * extra data along with the clique.
    */
-	template<class CONDITIONAL>
+  template<class CONDITIONAL>
   struct BayesTreeClique {
+
+  };
+
+
+	/* ************************************************************************* */
+	/**
+   * This is the base class for BayesTree cliques.  The default and standard
+   * derived type is BayesTreeClique, but some algorithms, like iSAM2, use a
+   * different clique type in order to store extra data along with the clique.
+   */
+	template<class DERIVED>
+  struct BayesTreeCliqueBase {
 
   protected:
     void assertInvariants() const;
 
   public:
-    typedef BayesTreeClique<CONDITIONAL> This;
-    typedef CONDITIONAL ConditionalType;
-    typedef boost::shared_ptr<CONDITIONAL> sharedConditional;
+    typedef BayesTreeClique<DERIVED> This;
+    typedef DERIVED DerivedType;
+    typedef typename DERIVED::ConditionalType ConditionalType;
+    typedef boost::shared_ptr<ConditionalType> sharedConditional;
     typedef typename boost::shared_ptr<This> shared_ptr;
     typedef typename boost::weak_ptr<This> weak_ptr;
-    typedef typename CONDITIONAL::FactorType FactorType;
+    typedef typename ConditionalType::FactorType FactorType;
     typedef typename FactorGraph<FactorType>::Eliminate Eliminate;
 
     sharedConditional conditional_;
     weak_ptr parent_;
     std::list<shared_ptr> children_;
 
-    friend class BayesTree<CONDITIONAL>;
+    friend class BayesTree<ConditionalType>;
 
     /** Default constructor */
-    BayesTreeClique() {}
+    BayesTreeCliqueBase() {}
 
     /** Construct from a conditional, leaving parent and child pointers uninitialized */
-    BayesTreeClique(const sharedConditional& conditional);
+    BayesTreeCliqueBase(const sharedConditional& conditional);
 
-    virtual ~BayesTreeClique() {}
+    virtual ~BayesTreeCliqueBase() {}
 
     /** Construct shared_ptr from a conditional, leaving parent and child pointers uninitialized */
     static shared_ptr Create(const sharedConditional& conditional) { return shared_ptr(new BayesTreeClique(conditional)); }
@@ -349,10 +366,10 @@ namespace gtsam {
     void print(const std::string& s = "") const;
 
     /** The arrow operator accesses the conditional */
-    const CONDITIONAL* operator->() const { return conditional_.get(); }
+    const ConditionalType* operator->() const { return conditional_.get(); }
 
     /** The arrow operator accesses the conditional */
-    CONDITIONAL* operator->() { return conditional_.get(); }
+    ConditionalType* operator->() { return conditional_.get(); }
 
     /** Access the conditional */
     const sharedConditional& conditional() const { return conditional_; }
@@ -382,7 +399,7 @@ namespace gtsam {
 
     /** return the conditional P(S|Root) on the separator given the root */
     // TODO: create a cached version
-    BayesNet<CONDITIONAL> shortcut(shared_ptr root, Eliminate function);
+    BayesNet<ConditionalType> shortcut(shared_ptr root, Eliminate function);
 
     /** return the marginal P(C) of the clique */
     FactorGraph<FactorType> marginal(shared_ptr root, Eliminate function);

@@ -730,7 +730,7 @@ namespace gtsam {
 			this->removeClique(clique);
 
 			// remove path above me
-			this->removePath(sharedClique(clique->parent_.lock()), bn, orphans);
+			this->removePath(typename BayesTreeClique<CONDITIONAL>::shared_ptr(clique->parent_.lock()), bn, orphans);
 
 			// add children to list of orphans (splice also removed them from clique->children_)
 			orphans.splice (orphans.begin(), clique->children_);
