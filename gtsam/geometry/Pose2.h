@@ -126,6 +126,11 @@ public:
   /// Retraction from R^3 to Pose2 manifold neighborhood around current pose
 	Pose2 retract(const Vector& v) const;
 
+  /// MATLAB version returns shared pointer
+  boost::shared_ptr<Pose2> retract_(const Vector& v) {
+    return boost::shared_ptr<Pose2>(new Pose2(retract(v)));
+  }
+
   /// Local 3D coordinates of Pose2 manifold neighborhood around current pose
 	Vector localCoordinates(const Pose2& p2) const;
 

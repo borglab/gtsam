@@ -41,6 +41,7 @@ class Pose2 {
 	Pose2* compose_(const Pose2& p2);
 	Pose2* between_(const Pose2& p2);
 	Vector localCoordinates(const Pose2& p);
+	Pose2* retract_(Vector v);
 };
 
 class SharedGaussian {
@@ -181,6 +182,8 @@ class PlanarSLAMOdometry {
 
 class GaussianSequentialSolver {
   GaussianSequentialSolver(const GaussianFactorGraph& graph, bool useQR);
-  GaussianBayesNet* eliminate();
-  VectorValues* optimize();
+  GaussianBayesNet* eliminate() const;
+  VectorValues* optimize() const;
+  GaussianFactor* marginalFactor(int j) const;
+  Matrix marginalCovariance(int j) const;
 };
