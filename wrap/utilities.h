@@ -63,8 +63,3 @@ bool assert_equal(const std::string& expected, const std::string& actual);
  * emit a header at the top of generated files
  */
 void emit_header_comment(std::ofstream& ofs, const std::string& delimiter);
-
-/**
- * Removes comments denoted with '//' from a string
- */
-std::string strip_comments(const std::string& full_string);

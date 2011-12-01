@@ -170,15 +170,8 @@ Module::Module(const string& interfacePath,
   string interfaceFile = interfacePath + "/" + moduleName + ".h";
   string contents = file_contents(interfaceFile);
 
-  // FIXME: Comment parser does not work for some reason - see confix parsers
-//  rule<> comment_p = str_p("/*") >> +anychar_p >> "*/";
-//  rule<> skip_p = space_p | comment_p;
-//  rule<> skip_p = space_p | comment_p("//"); // FIXME: also doesn't work
-//  rule<> skip_p = space_p | comment_p("/*", "*/"); // FIXME: Doesn't compile
-  rule<> skip_p = space_p;
-
   // and parse contents
-  parse_info<const char*> info = parse(contents.c_str(), module_p, skip_p); 
+  parse_info<const char*> info = parse(contents.c_str(), module_p, space_p);
   if(!info.full) {
     printf("parsing stopped at \n%.20s\n",info.stop);
     throw ParseFailed(info.length);

@@ -76,8 +76,3 @@ void emit_header_comment(ofstream& ofs, const string& delimiter) {
 }
 
 /* ************************************************************************* */
-std::string strip_comments(const std::string& full_string) {
-	return full_string; /// PLACEHOLDER
-}
-
-/* ************************************************************************* */

@@ -10,6 +10,7 @@
  *   Comments can use either C++ or C style
  *   Static methods are not supported
  *   Methods must start with a lowercase letter
+ *   Classes must start with an uppercase letter
  */
 
 class Point2 {

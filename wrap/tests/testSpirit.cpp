@@ -17,7 +17,6 @@
 
 #include <boost/spirit/include/classic_core.hpp>
 #include <boost/spirit/include/classic_push_back_actor.hpp>
-#include <boost/spirit/include/classic_confix.hpp>
 #include <CppUnitLite/TestHarness.h>
 #include <wrap/utilities.h>
 
@@ -101,31 +100,6 @@ TEST( spirit, classRef_p ) {
 /* ************************************************************************* */
 TEST( spirit, constMethod_p ) {
   EXPECT(parse("double norm() const;", constMethod_p, space_p).full);
-}
-
-/* ************************************************************************* */
-TEST( spirit, comments ) {
-//  Rule name_p = lexeme_d[alpha_p >> *(alnum_p | '_')];
-//
-//  Rule argument_p =
-//    ((basisType_p[assign_a(arg.type)] | eigenType | classPtr_p | classRef_p) >> name_p[assign_a(arg.name)])
-//    [push_back_a(args, arg)]
-//    [assign_a(arg,arg0)];
-//
-//  Rule void_p = str_p("void")[assign_a(method.returns_)];
-
-	vector<string> all_strings;
-	string actual;
-//	Rule slash_comment_p = str_p("//");
-//	Rule comments_p = anychar_p[assign_a(actual)]
-//	Rule comments_p = lexeme_d[*(anychar_p)[assign_a(actual)]
-
-//	Rule line_p = (*anychar_p - comment_p("//"))[assign_a(actual)] >> !(comment_p("//") >> *anychar_p); // FAIL: matches everything
-//	Rule line_p = *anychar_p[assign_a(actual)] >> !(comment_p("//") >> *anychar_p); // FAIL: matches last letter
-//		Rule line_p = (*anychar_p - comment_p("//"))[assign_a(actual)] >> !(comment_p("//") >> *anychar_p);
-//
-//  EXPECT(parse("not commentq // comment", line_p, eol_p).full);
-//  EXPECT(assert_equal(string("not comments "), actual));
 }
 
 /* ************************************************************************* */
