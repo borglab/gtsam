@@ -56,12 +56,12 @@ namespace gtsam {
           T(2, 1), T(2, 2)), t_(T(0, 3), T(1, 3), T(2, 3)) {}
 
     const Rot3& rotation() const { return R_; }
-    boost::shared_ptr<Rot3> _rotation() const {
+    boost::shared_ptr<Rot3> rotation_() const {
     	return boost::shared_ptr<Rot3>(new Rot3(R_));
     }
 
     const Point3& translation() const { return t_; }
-    boost::shared_ptr<Point3> _translation() const {
+    boost::shared_ptr<Point3> translation_() const {
     	return boost::shared_ptr<Point3>(new Point3(t_));
     }
 

@@ -105,20 +105,13 @@ TEST( wrap, matlab_code ) {
 	EXPECT(files_equal(path + "/tests/expected/@Test/return_pair.cpp"   , "actual/@Test/return_pair.cpp"   ));
 	EXPECT(files_equal(path + "/tests/expected/@Test/return_field.cpp"  , "actual/@Test/return_field.cpp"  ));
 	EXPECT(files_equal(path + "/tests/expected/@Test/return_TestPtr.cpp", "actual/@Test/return_TestPtr.cpp"));
+	EXPECT(files_equal(path + "/tests/expected/@Test/return_Point2Ptr.cpp", "actual/@Test/return_Point2Ptr.cpp"));
 	EXPECT(files_equal(path + "/tests/expected/@Test/return_ptrs.cpp"   , "actual/@Test/return_ptrs.cpp"   ));
 	EXPECT(files_equal(path + "/tests/expected/@Test/print.m"           , "actual/@Test/print.m"           ));
 	EXPECT(files_equal(path + "/tests/expected/@Test/print.cpp"         , "actual/@Test/print.cpp"         ));
 
 	EXPECT(files_equal(path + "/tests/expected/make_geometry.m"   , "actual/make_geometry.m"   ));
 }
-
-///* ************************************************************************* */
-//TEST( wrap, strip_comments ) {
-//	string full_string  = "This is the first line // comments\n// comments at beginning of line\n";
-//	string act_string = strip_comments(full_string);
-//	string exp_string = "This is the first line \n\n";
-//	EXPECT(assert_equal(exp_string, act_string));
-//}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

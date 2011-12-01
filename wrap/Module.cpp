@@ -19,6 +19,7 @@
 
 //#define BOOST_SPIRIT_DEBUG
 #include <boost/spirit/include/classic_core.hpp>
+#include <boost/spirit/include/classic_confix.hpp>
 #include <boost/foreach.hpp>
 
 #include <iostream>
@@ -59,6 +60,8 @@ Module::Module(const string& interfacePath,
   // - The types unsigned int and bool should be specified as int.
   // ----------------------------------------------------------------------------
 
+  Rule comments_p =  comment_p("/*", "*/") |	comment_p("//");
+
   // lexeme_d turns off white space skipping
   // http://www.boost.org/doc/libs/1_37_0/libs/spirit/classic/doc/directives.html
 
@@ -90,7 +93,7 @@ Module::Module(const string& interfacePath,
   Rule argumentList_p = !argument_p >> * (',' >> argument_p);
 
   Rule constructor_p = 
-    (className_p >> '(' >> argumentList_p >> ')' >> ';')
+    (className_p >> '(' >> argumentList_p >> ')' >> ';' >> !comments_p)
     [assign_a(constructor.args,args)]
     [assign_a(args,args0)]
     [push_back_a(cls.constructors, constructor)]
@@ -119,20 +122,25 @@ Module::Module(const string& interfacePath,
   Rule method_p = 
     (returnType_p >> methodName_p[assign_a(method.name_)] >>
      '(' >> argumentList_p >> ')' >> 
-     !str_p("const")[assign_a(method.is_const_,true)] >> ';')
+     !str_p("const")[assign_a(method.is_const_,true)] >> ';' >> *comments_p)
     [assign_a(method.args_,args)]
     [assign_a(args,args0)]
     [push_back_a(cls.methods, method)]
     [assign_a(method,method0)];
 
-  Rule class_p = str_p("class") >> className_p[assign_a(cls.name)] >> '{' >> 
-    *constructor_p >> 
-    *method_p >> 
+  Rule class_p = str_p("class") >> className_p[assign_a(cls.name)] >> '{' >>
+ 		*comments_p >>
+    *constructor_p >>
+ 		*comments_p >>
+    *method_p >>
+ 		*comments_p >>
     '}' >> ";";
 
-  Rule module_p = +class_p
+  Rule module_p = *comments_p >> +(class_p
     [push_back_a(classes,cls)]
-    [assign_a(cls,cls0)] 
+    [assign_a(cls,cls0)]
+     >> *comments_p)
+     >> *comments_p
     >> !end_p;
 
   //----------------------------------------------------------------------------
@@ -162,9 +170,12 @@ Module::Module(const string& interfacePath,
   string interfaceFile = interfacePath + "/" + moduleName + ".h";
   string contents = file_contents(interfaceFile);
 
-  // Comment parser : does not work for some reason
-  rule<> comment_p = str_p("/*") >> +anychar_p >> "*/";
-  rule<> skip_p = space_p; // | comment_p;
+  // FIXME: Comment parser does not work for some reason - see confix parsers
+//  rule<> comment_p = str_p("/*") >> +anychar_p >> "*/";
+//  rule<> skip_p = space_p | comment_p;
+//  rule<> skip_p = space_p | comment_p("//"); // FIXME: also doesn't work
+//  rule<> skip_p = space_p | comment_p("/*", "*/"); // FIXME: Doesn't compile
+  rule<> skip_p = space_p;
 
   // and parse contents
   parse_info<const char*> info = parse(contents.c_str(), module_p, skip_p); 

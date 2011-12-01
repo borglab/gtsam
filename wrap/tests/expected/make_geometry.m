@@ -41,6 +41,7 @@ mex -O5 return_matrix2.cpp
 mex -O5 return_pair.cpp
 mex -O5 return_field.cpp
 mex -O5 return_TestPtr.cpp
+mex -O5 return_Point2Ptr.cpp
 mex -O5 create_ptrs.cpp
 mex -O5 return_ptrs.cpp
 mex -O5 print.cpp
