@@ -11,6 +11,7 @@ class Point3 {
 	Point3(double x, double y, double z);
 	Point3(Vector v);
 	void print(string s) const;
+	bool equals(const Point3& p, double tol);
 	Vector vector() const;
 	double x();
 	double y();
@@ -21,9 +22,16 @@ class Rot2 {
 	Rot2();
 	Rot2(double theta);
 	void print(string s) const;
-	bool equals(const Rot2& pose, double tol) const;
+	bool equals(const Rot2& rot, double tol) const;
 	double c() const;
 	double s() const;
+};
+
+class Rot3 {
+	Rot3();
+	Rot3(Matrix R);
+	void print(string s) const;
+	bool equals(const Rot3& rot, double tol) const;
 };
 
 class Pose2 {
@@ -42,6 +50,21 @@ class Pose2 {
 	Pose2* between_(const Pose2& p2);
 	Vector localCoordinates(const Pose2& p);
 	Pose2* retract_(Vector v);
+};
+
+class Pose3 {
+	Pose3();
+	Pose3(const Rot3& r, const Point3& t);
+	Pose3(Vector v);
+	void print(string s) const;
+	bool equals(const Pose3& pose, double tol) const;
+	double x() const;
+	double y() const;
+	double z() const;
+	int dim() const;
+	Pose3* compose_(const Pose3& p2);
+	Pose3* between_(const Pose3& p2);
+	Vector localCoordinates(const Pose3& p);
 };
 
 class SharedGaussian {

@@ -89,6 +89,11 @@ namespace gtsam {
         boost::optional<Matrix&> H1=boost::none,
         boost::optional<Matrix&> H2=boost::none) const;
 
+  	/// MATLAB version returns shared pointer
+  	boost::shared_ptr<Pose3> compose_(const Pose3& p2) {
+  		return boost::shared_ptr<Pose3>(new Pose3(compose(p2)));
+  	}
+
     /// compose syntactic sugar
     Pose3 operator*(const Pose3& T) const {
       return Pose3(R_*T.R_, t_ + R_*T.t_);
@@ -144,12 +149,17 @@ namespace gtsam {
         boost::optional<Matrix&> H1=boost::none,
         boost::optional<Matrix&> H2=boost::none) const;
 
+  	/// MATLAB version returns shared pointer
+  	boost::shared_ptr<Pose3> between_(const Pose3& p2) {
+  		return boost::shared_ptr<Pose3>(new Pose3(between(p2)));
+  	}
+
     /**
      * Calculate Adjoint map
      * Ad_pose is 6*6 matrix that when applied to twist xi, returns Ad_pose(xi)
      */
-    Matrix AdjointMap() const;
-    Vector Adjoint(const Vector& xi) const {return AdjointMap()*xi; }
+    Matrix AdjointMap() const; /// FIXME Not tested - marked as incorrect
+    Vector Adjoint(const Vector& xi) const {return AdjointMap()*xi; } /// FIXME Not tested - marked as incorrect
 
     /**
      * wedge for Pose3:

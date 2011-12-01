@@ -214,22 +214,23 @@ namespace gtsam {
 
   /* ************************************************************************* */
   Pose3 Pose3::inverse(boost::optional<Matrix&> H1) const {
-	  if (H1)
+  	if (H1)
 #ifdef CORRECT_POSE3_EXMAP
-		{ *H1 = - AdjointMap(p); } // FIXME: this function doesn't exist with this interface - should this be "*H1 = -AdjointMap();" ?
+  		// FIXME: this function doesn't exist with this interface - should this be "*H1 = -AdjointMap();" ?
+  	{ *H1 = - AdjointMap(p); }
 #else
-	  {
-		Matrix Rt = R_.transpose();
-		Matrix DR_R1 = -R_.matrix(), DR_t1 = Z3;
-		Matrix Dt_R1 = -skewSymmetric(R_.unrotate(t_).vector()), Dt_t1 = -Rt;
-		Matrix DR = collect(2, &DR_R1, &DR_t1);
-		Matrix Dt = collect(2, &Dt_R1, &Dt_t1);
-		*H1 = gtsam::stack(2, &DR, &Dt);
-	  }
+  	{
+  		Matrix Rt = R_.transpose();
+  		Matrix DR_R1 = -R_.matrix(), DR_t1 = Z3;
+  		Matrix Dt_R1 = -skewSymmetric(R_.unrotate(t_).vector()), Dt_t1 = -Rt;
+  		Matrix DR = collect(2, &DR_R1, &DR_t1);
+  		Matrix Dt = collect(2, &Dt_R1, &Dt_t1);
+  		*H1 = gtsam::stack(2, &DR, &Dt);
+  	}
 #endif
-      Rot3 Rt = R_.inverse();
-      return Pose3(Rt, Rt*(-t_));
-	}
+  	Rot3 Rt = R_.inverse();
+  	return Pose3(Rt, Rt*(-t_));
+  }
 
   /* ************************************************************************* */
   // between = compose(p2,inverse(p1));
