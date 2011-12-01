@@ -126,6 +126,17 @@ AC_ARG_ENABLE([build_toolbox],
 
 AM_CONDITIONAL([ENABLE_BUILD_TOOLBOX], [test x$build_toolbox = xtrue])
 
+# enable installation of matlab tests
+AC_ARG_ENABLE([install_matlab_tests],
+     [  --enable-install-matlab-tests    Enable installation of tests for the Matlab toolbox],
+     [case "${enableval}" in
+       yes) install_matlab_tests=true ;;
+       no)  install_matlab_tests=false ;;
+       *) AC_MSG_ERROR([bad value ${enableval} for --enable-install-matlab-tests]) ;;
+     esac],[install_matlab_tests=true])
+
+AM_CONDITIONAL([ENABLE_INSTALL_MATLAB_TESTS], [test x$install_matlab_tests = xtrue])
+
 # Matlab toolbox: optional flag to change location of toolbox, defaults to install prefix
 AC_ARG_WITH([toolbox],
             [AS_HELP_STRING([--with-toolbox],

@@ -57,9 +57,17 @@ all:
 	./wrap ${interfacePath} ${moduleName} ${toolboxpath} ${nameSpace} ${mexFlags}
 	
 # install the headers and matlab toolbox
+if ENABLE_INSTALL_MATLAB_TESTS
 install-exec-hook: all
 	install -d ${toolbox}/gtsam && \
-	cp -rf ../toolbox/* ${toolbox}/gtsam
+	cp -rf ../toolbox/* ${toolbox}/gtsam && \
+	mkdir -p ${toolbox}/gtsam/tests && \
+	cp -rf ../../tests/matlab/*.m ${toolbox}/gtsam/tests
+else
+install-exec-hook: all
+	install -d ${toolbox}/gtsam && \
+	cp -rf ../toolbox/* ${toolbox}/gtsam/tests
+endif
 
 # clean local toolbox dir
 clean:
