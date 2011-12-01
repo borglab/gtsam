@@ -152,6 +152,11 @@ namespace gtsam {
     Rot3M compose(const Rot3M& R2,
   	boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
 
+  	/// MATLAB version returns shared pointer
+  	boost::shared_ptr<Rot3M> compose_(const Rot3M& p2) {
+  		return boost::shared_ptr<Rot3M>(new Rot3M(compose(p2)));
+  	}
+
     /// rotate point from rotated coordinate frame to world = R*p
     inline Point3 operator*(const Point3& p) const { return rotate(p);}
 
@@ -176,6 +181,11 @@ namespace gtsam {
 
   	/// Updates a with tangent space delta
     Rot3M retract(const Vector& v) const { return compose(Expmap(v)); }
+
+    /// MATLAB version returns shared pointer
+    boost::shared_ptr<Rot3M> retract_(const Vector& v) {
+      return boost::shared_ptr<Rot3M>(new Rot3M(retract(v)));
+    }
 
     /// Returns inverse retraction
     Vector localCoordinates(const Rot3M& t2) const { return Logmap(between(t2)); }
@@ -246,6 +256,11 @@ namespace gtsam {
     Rot3M between(const Rot3M& R2,
     		boost::optional<Matrix&> H1=boost::none,
     		boost::optional<Matrix&> H2=boost::none) const;
+
+  	/// MATLAB version returns shared pointer
+  	boost::shared_ptr<Rot3M> between_(const Rot3M& p2) {
+  		return boost::shared_ptr<Rot3M>(new Rot3M(between(p2)));
+  	}
 
     /** compose two rotations */
     Rot3M operator*(const Rot3M& R2) const {

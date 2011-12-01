@@ -110,10 +110,15 @@ namespace gtsam {
     size_t dim() const { return dimension; }
 
 
-    /** Exponential map around another pose */    /// Retraction from R^6 to Pose3 manifold neighborhood around current pose
+    /// Retraction from R^6 to Pose3 manifold neighborhood around current pose
     Pose3 retract(const Vector& d) const;
 
-    /// Logarithm map around another pose T1			/// Local 6D coordinates of Pose3 manifold neighborhood around current pose
+    /// MATLAB version returns shared pointer
+    boost::shared_ptr<Pose3> retract_(const Vector& v) {
+      return boost::shared_ptr<Pose3>(new Pose3(retract(v)));
+    }
+
+    /// Local 6D coordinates of Pose3 manifold neighborhood around current pose
     Vector localCoordinates(const Pose3& T2) const;
 
     /// @}

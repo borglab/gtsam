@@ -76,6 +76,11 @@ namespace gtsam {
   	  return *this + p2;
     }
 
+  	/// MATLAB version returns shared pointer
+  	boost::shared_ptr<Point3> compose_(const Point3& p2) {
+  		return boost::shared_ptr<Point3>(new Point3(compose(p2)));
+  	}
+
     /// @}
     /// @name Manifold
     /// @{
@@ -88,6 +93,11 @@ namespace gtsam {
 
   	/// Updates a with tangent space delta
   	inline Point3 retract(const Vector& v) const { return compose(Expmap(v)); }
+
+    /// MATLAB version returns shared pointer
+    boost::shared_ptr<Point3> retract_(const Vector& v) {
+      return boost::shared_ptr<Point3>(new Point3(retract(v)));
+    }
 
   	/// Returns inverse retraction
   	inline Vector localCoordinates(const Point3& t2) const { return Logmap(t2) - Logmap(*this); }
@@ -137,6 +147,11 @@ namespace gtsam {
       if(H2) *H2 = eye(3);
       return p2 - *this;
     }
+
+  	/// MATLAB version returns shared pointer
+  	boost::shared_ptr<Point3> between_(const Point3& p2) {
+  		return boost::shared_ptr<Point3>(new Point3(between(p2)));
+  	}
 
     /** return vectorized form (column-wise)*/
     Vector vector() const {
