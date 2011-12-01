@@ -38,7 +38,8 @@ class ParseFailed : public std::exception {
   ~ParseFailed() throw() {}
   virtual const char* what() const throw() { 
     std::stringstream buf;
-    buf << "Parse failed at character " << (length_+1);
+    int len = length_+1;
+    buf << "Parse failed at character [" << len << "]";
     return buf.str().c_str(); 
   }
 };
@@ -55,6 +56,15 @@ std::string file_contents(const std::string& filename, bool skipheader=false);
 bool files_equal(const std::string& expected, const std::string& actual, bool skipheader=true);
 
 /**
+ * Compare strings for unit tests
+ */
+bool assert_equal(const std::string& expected, const std::string& actual);
+/**
  * emit a header at the top of generated files
  */
 void emit_header_comment(std::ofstream& ofs, const std::string& delimiter);
+
+/**
+ * Removes comments denoted with '//' from a string
+ */
+std::string strip_comments(const std::string& full_string);

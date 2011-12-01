@@ -195,15 +195,15 @@ TEST(Pose3, expmap_c_full)
 TEST(Pose3, Adjoint_full)
 {
 	Pose3 expected = T * Pose3::Expmap(screw::xi) * T.inverse();
-	Vector xiprime = T.Adjoint(screw::xi);
+	Vector xiprime = T.adjoint(screw::xi);
 	EXPECT(assert_equal(expected, Pose3::Expmap(xiprime), 1e-6));
 
 	Pose3 expected2 = T2 * Pose3::Expmap(screw::xi) * T2.inverse();
-	Vector xiprime2 = T2.Adjoint(screw::xi);
+	Vector xiprime2 = T2.adjoint(screw::xi);
 	EXPECT(assert_equal(expected2, Pose3::Expmap(xiprime2), 1e-6));
 
 	Pose3 expected3 = T3 * Pose3::Expmap(screw::xi) * T3.inverse();
-	Vector xiprime3 = T3.Adjoint(screw::xi);
+	Vector xiprime3 = T3.adjoint(screw::xi);
 	EXPECT(assert_equal(expected3, Pose3::Expmap(xiprime3), 1e-6));
 }
 
@@ -259,7 +259,7 @@ TEST(Pose3, Adjoint_compose_full)
 	const Pose3& T1 = T;
 	Vector x = Vector_(6,0.1,0.1,0.1,0.4,0.2,0.8);
 	Pose3 expected = T1 * Pose3::Expmap(x) * T2;
-	Vector y = T2.inverse().Adjoint(x);
+	Vector y = T2.inverse().adjoint(x);
 	Pose3 actual = T1 * T2 * Pose3::Expmap(y);
 	EXPECT(assert_equal(expected, actual, 1e-6));
 }

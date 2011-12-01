@@ -54,7 +54,7 @@ TEST( spirit, sequence ) {
   CHECK(parse("int --- - -- -", str_p("int") >> *ch_p('-'), space_p).full);
   CHECK(parse("const \t string", str_p("const") >> str_p("string"), space_p).full);
 
-  // not that (see spirit FAQ) the vanilla rule<> does not deal with whitespace
+  // note that (see spirit FAQ) the vanilla rule<> does not deal with whitespace
   rule<>vanilla_p = str_p("const") >> str_p("string");
   CHECK(!parse("const \t string", vanilla_p, space_p).full);
 

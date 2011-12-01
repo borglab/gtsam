@@ -38,7 +38,7 @@ namespace gtsam {
   // Calculate Adjoint map
   // Ad_pose is 6*6 matrix that when applied to twist xi, returns Ad_pose(xi)
   // Experimental - unit tests of derivatives based on it do not check out yet
-  Matrix Pose3::AdjointMap() const {
+  Matrix Pose3::adjointMap() const {
 		const Matrix R = R_.matrix();
 		const Vector t = t_.vector();
 		Matrix A = skewSymmetric(t)*R;
@@ -188,7 +188,7 @@ namespace gtsam {
 		  	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
 	  if (H1) {
 #ifdef CORRECT_POSE3_EXMAP
-		*H1 = AdjointMap(inverse(p2)); // FIXME: this function doesn't exist with this interface
+		*H1 = adjointMap(inverse(p2)); // FIXME: this function doesn't exist with this interface
 #else
 		const Rot3& R2 = p2.rotation();
 		const Point3& t2 = p2.translation();
@@ -216,8 +216,8 @@ namespace gtsam {
   Pose3 Pose3::inverse(boost::optional<Matrix&> H1) const {
   	if (H1)
 #ifdef CORRECT_POSE3_EXMAP
-  		// FIXME: this function doesn't exist with this interface - should this be "*H1 = -AdjointMap();" ?
-  	{ *H1 = - AdjointMap(p); }
+  		// FIXME: this function doesn't exist with this interface - should this be "*H1 = -adjointMap();" ?
+  	{ *H1 = - adjointMap(p); }
 #else
   	{
   		Matrix Rt = R_.transpose();

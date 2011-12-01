@@ -1,6 +1,11 @@
 // These are considered to be broken and will be added back as they start working
 // It's assumed that there have been interface changes that might break this
 
+class Pose3 {
+	Point3* _translation() const;
+	Rot3* _rotation() const;
+};
+
 class Ordering{
 	Ordering(string key);
   void print(string s) const;

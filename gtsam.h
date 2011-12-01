@@ -42,6 +42,10 @@ class Rot2 {
 class Rot3 {
 	Rot3();
 	Rot3(Matrix R);
+	Matrix matrix() const;
+	Matrix transpose() const;
+	Vector xyz() const;
+	Vector ypr() const;
 	void print(string s) const;
 	bool equals(const Rot3& rot, double tol) const;
 	Rot3* compose_(const Rot3& p2);
@@ -72,12 +76,14 @@ class Pose3 {
 	Pose3();
 	Pose3(const Rot3& r, const Point3& t);
 	Pose3(Vector v);
+	Pose3(Matrix t);
 	void print(string s) const;
 	bool equals(const Pose3& pose, double tol) const;
 	double x() const;
 	double y() const;
 	double z() const;
-	int dim() const;
+	Matrix matrix() const;
+	Matrix adjointMap() const;
 	Pose3* compose_(const Pose3& p2);
 	Pose3* between_(const Pose3& p2);
 	Vector localCoordinates(const Pose3& p);

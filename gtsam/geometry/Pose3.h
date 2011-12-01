@@ -56,7 +56,14 @@ namespace gtsam {
           T(2, 1), T(2, 2)), t_(T(0, 3), T(1, 3), T(2, 3)) {}
 
     const Rot3& rotation() const { return R_; }
+    boost::shared_ptr<Rot3> _rotation() const {
+    	return boost::shared_ptr<Rot3>(new Rot3(R_));
+    }
+
     const Point3& translation() const { return t_; }
+    boost::shared_ptr<Point3> _translation() const {
+    	return boost::shared_ptr<Point3>(new Point3(t_));
+    }
 
     double x() const { return t_.x(); }
     double y() const { return t_.y(); }
@@ -104,7 +111,7 @@ namespace gtsam {
     /// @{
 
     /// Dimensionality of tangent space = 6 DOF - used to autodetect sizes
-        static size_t Dim() { return dimension; }
+    static size_t Dim() { return dimension; }
 
     /// Dimensionality of the tangent space = 6 DOF
     size_t dim() const { return dimension; }
@@ -163,8 +170,8 @@ namespace gtsam {
      * Calculate Adjoint map
      * Ad_pose is 6*6 matrix that when applied to twist xi, returns Ad_pose(xi)
      */
-    Matrix AdjointMap() const; /// FIXME Not tested - marked as incorrect
-    Vector Adjoint(const Vector& xi) const {return AdjointMap()*xi; } /// FIXME Not tested - marked as incorrect
+    Matrix adjointMap() const; /// FIXME Not tested - marked as incorrect
+    Vector adjoint(const Vector& xi) const {return adjointMap()*xi; } /// FIXME Not tested - marked as incorrect
 
     /**
      * wedge for Pose3:

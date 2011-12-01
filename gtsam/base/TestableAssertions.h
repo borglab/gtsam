@@ -278,6 +278,18 @@ bool assert_container_equality(const V& expected, const V& actual) {
 }
 
 /**
+ * Compare strings for unit tests
+ */
+bool assert_equal(const std::string& expected, const std::string& actual) {
+	if (expected == actual)
+		return true;
+	printf("Not equal:\n");
+	std::cout << "expected: [" << expected << "]\n";
+	std::cout << "actual: [" << actual << "]" << std::endl;
+	return false;
+}
+
+/**
  * Allow for testing inequality
  */
 template<class V>

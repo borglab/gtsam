@@ -76,14 +76,14 @@ Module::Module(const string& interfacePath,
   Rule basisType_p = 
     (str_p("string") | "bool" | "size_t" | "int" | "double");
 
-  Rule ublasType = 
+  Rule eigenType =
     (str_p("Vector") | "Matrix")[assign_a(arg.type)] >>
     !ch_p('*')[assign_a(arg.is_ptr,true)];
 
   Rule name_p = lexeme_d[alpha_p >> *(alnum_p | '_')];
 
   Rule argument_p = 
-    ((basisType_p[assign_a(arg.type)] | ublasType | classPtr_p | classRef_p) >> name_p[assign_a(arg.name)])
+    ((basisType_p[assign_a(arg.type)] | eigenType | classPtr_p | classRef_p) >> name_p[assign_a(arg.name)])
     [push_back_a(args, arg)]
     [assign_a(arg,arg0)];
 

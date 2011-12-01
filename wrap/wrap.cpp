@@ -46,7 +46,7 @@ void generate_matlab_toolbox(const string& interfacePath,
 
 /**
  * main parses arguments and calls generate_matlab_toolbox above
- * Typyically called from "make all" using appropriate arguments
+ * Typically called from "make all" using appropriate arguments
  */
 int main(int argc, const char* argv[]) {
   if (argc<5 || argc>6) {
