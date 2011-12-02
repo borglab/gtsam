@@ -3,8 +3,7 @@
 #include <Point3.h>
 void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  checkArguments("norm",nargout,nargin-1,0);
-  shared_ptr<const Point3> self = unwrap_shared_ptr< Point3 >(in[0],"Point3");
-  double result = self->norm();
+  checkArguments("Point3_StaticFunction",nargout,nargin,0);
+  double result = Point3::StaticFunction();
   out[0] = wrap< double >(result);
 }

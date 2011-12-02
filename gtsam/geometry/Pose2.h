@@ -140,6 +140,9 @@ public:
 
   /// Exponential map from Lie algebra se(2) to SE(2)
 	static Pose2 Expmap(const Vector& xi);
+	static inline boost::shared_ptr<Pose2> Expmap_(const Vector& v) {
+		return boost::shared_ptr<Pose2>(new Pose2(Expmap(v)));
+	}
 
   /// Exponential map from SE(2) to Lie algebra se(2)
 	static Vector Logmap(const Pose2& p);

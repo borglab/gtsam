@@ -10,9 +10,10 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file Method.h
- * @brief describes and generates code for methods
+ * @file StaticMethod.h
+ * @brief describes and generates code for static methods
  * @author Frank Dellaert
+ * @author Alex Cunningham
  **/
 
 #pragma once
@@ -23,27 +24,26 @@
 #include "Argument.h"
 #include "ReturnValue.h"
 
-/// Method class
-struct Method {
+/// StaticMethod class
+struct StaticMethod {
 
 	/// Constructor creates empty object
-	Method(bool verbose = true) :
+	StaticMethod(bool verbose = true) :
 			verbose_(verbose) {}
 
 	// Then the instance variables are set directly by the Module constructor
 	bool verbose_;
-	bool is_const_;
 	std::string name_;
 	ArgumentList args_;
 	ReturnValue returnVal_;
 
-//	std::string return_type(bool add_ptr, pairing p);
-
 	// MATLAB code generation
-	// classPath is class directory, e.g., ../matlab/@Point2
+	// toolboxPath is the core toolbox directory, e.g., ../matlab
+	// NOTE: static functions are not inside the class, and
+	// are created with [ClassName]_[FunctionName]() format
 
-	void matlab_mfile(const std::string& classPath); ///< m-file
-	void matlab_wrapper(const std::string& classPath,
+	void matlab_mfile(const std::string& toolboxPath, const std::string& className); ///< m-file
+	void matlab_wrapper(const std::string& toolboxPath,
 			const std::string& className, const std::string& nameSpace); ///< wrapper
 };
 

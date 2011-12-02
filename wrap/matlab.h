@@ -36,9 +36,6 @@ using namespace std;
 using namespace boost; // not usual, but for conciseness of generated code
 
 // start GTSAM Specifics /////////////////////////////////////////////////
-//typedef gtsam::Vector Vector;  // NOTE: outside of gtsam namespace
-//typedef gtsam::Matrix Matrix;
-
 // to make keys be constructed from strings:
 #define GTSAM_MAGIC_KEY
 // to enable Matrix and Vector constructor for SharedGaussian:

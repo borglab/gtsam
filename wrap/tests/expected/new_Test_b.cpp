@@ -3,7 +3,8 @@
 #include <Test.h>
 void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  checkArguments("print",nargout,nargin-1,0);
-  shared_ptr<const Test> self = unwrap_shared_ptr< Test >(in[0],"Test");
-  self->print();
+  checkArguments("new_Test_b",nargout,nargin,1);
+  bool value = unwrap< bool >(in[0]);
+  Test* self = new Test(value);
+  out[0] = wrap_constructed(self,"Test");
 }

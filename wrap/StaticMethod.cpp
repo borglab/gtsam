@@ -19,27 +19,28 @@
 
 #include <boost/foreach.hpp>
 
-#include "Method.h"
+#include "StaticMethod.h"
 #include "utilities.h"
 
 using namespace std;
 
 /* ************************************************************************* */
-void Method::matlab_mfile(const string& classPath) {
+void StaticMethod::matlab_mfile(const string& toolboxPath, const string& className) {
 
   // open destination m-file
-  string wrapperFile = classPath + "/" + name_ + ".m";
+	string full_name = className + "_" + name_;
+  string wrapperFile = toolboxPath + "/" + full_name + ".m";
   ofstream ofs(wrapperFile.c_str());
   if(!ofs) throw CantOpenFile(wrapperFile);
   if(verbose_) cerr << "generating " << wrapperFile << endl;
 
   // generate code
   string returnType = returnVal_.matlab_returnType();
-  ofs << "function " << returnType << " = " << name_ << "(obj";
+  ofs << "function " << returnType << " = " << full_name << "(";
   if (args_.size()) ofs << "," << args_.names();
   ofs << ")" << endl;
-  ofs << "% usage: obj." << name_ << "(" << args_.names() << ")" << endl;
-  ofs << "  error('need to compile " << name_ << ".cpp');" << endl;
+  ofs << "% usage: obj." << full_name << "(" << args_.names() << ")" << endl;
+  ofs << "  error('need to compile " << full_name << ".cpp');" << endl;
   ofs << "end" << endl;
 
   // close file
@@ -47,12 +48,12 @@ void Method::matlab_mfile(const string& classPath) {
 }
 
 /* ************************************************************************* */
-void Method::matlab_wrapper(const string& classPath, 
-			    const string& className,
-			    const string& nameSpace) 
+void StaticMethod::matlab_wrapper(const string& toolboxPath,
+			    const string& className, const string& nameSpace)
 {
   // open destination wrapperFile
-  string wrapperFile = classPath + "/" + name_ + ".cpp";
+	string full_name = className + "_" + name_;
+  string wrapperFile = toolboxPath + "/" + full_name + ".cpp";
   ofstream ofs(wrapperFile.c_str());
   if(!ofs) throw CantOpenFile(wrapperFile);
   if(verbose_) cerr << "generating " << wrapperFile << endl;
@@ -73,22 +74,17 @@ void Method::matlab_wrapper(const string& classPath,
   // check arguments
   // extra argument obj -> nargin-1 is passed !
   // example: checkArguments("equals",nargout,nargin-1,2);
-  ofs << "  checkArguments(\"" << name_ << "\",nargout,nargin-1," << args_.size() << ");\n";
-
-  // get class pointer
-  // example: shared_ptr<Test> = unwrap_shared_ptr< Test >(in[0], "Test");
-  ofs << "  shared_ptr<" << ((is_const_) ? "const " : "") << className << "> self = unwrap_shared_ptr< " << className
-      << " >(in[0],\"" << className << "\");" << endl;
+  ofs << "  checkArguments(\"" << full_name << "\",nargout,nargin," << args_.size() << ");\n";
 
   // unwrap arguments, see Argument.cpp
   args_.matlab_unwrap(ofs,1);
 
   // call method
-  // example: bool result = self->return_field(t);
+  // example: bool result = Point2::return_field(t);
   ofs << "  ";
   if (returnVal_.returns_!="void")
     ofs << returnVal_.return_type(true,ReturnValue::pair) << " result = ";
-  ofs << "self->" << name_ << "(" << args_.names() << ");\n";
+  ofs << className  << "::" << name_ << "(" << args_.names() << ");\n";
 
   // wrap result
   // example: out[0]=wrap<bool>(result);

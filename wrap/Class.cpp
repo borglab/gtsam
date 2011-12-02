@@ -68,6 +68,14 @@ void Class::matlab_methods(const string& classPath, const string& nameSpace) {
 }
 
 /* ************************************************************************* */
+void Class::matlab_static_methods(const string& toolboxPath, const string& nameSpace) {
+  BOOST_FOREACH(StaticMethod& m, static_methods) {
+    m.matlab_mfile  (toolboxPath, name);
+    m.matlab_wrapper(toolboxPath, name, nameSpace);
+  }
+}
+
+/* ************************************************************************* */
 void Class::matlab_make_fragment(ofstream& ofs, 
 				 const string& toolboxPath,
 				 const string& mexFlags) 
@@ -75,6 +83,8 @@ void Class::matlab_make_fragment(ofstream& ofs,
   string mex = "mex " + mexFlags + " ";
   BOOST_FOREACH(Constructor c, constructors)
     ofs << mex << c.matlab_wrapper_name(name) << ".cpp" << endl;
+  BOOST_FOREACH(StaticMethod sm, static_methods)
+    ofs << mex << name + "_" + sm.name_ << ".cpp" << endl;
   ofs << endl << "cd @" << name << endl;
   BOOST_FOREACH(Method m, methods)
     ofs << mex << m.name_ << ".cpp" << endl;

@@ -43,10 +43,12 @@ Module::Module(const string& interfacePath,
 {
   // these variables will be imperatively updated to gradually build [cls]
   // The one with postfix 0 are used to reset the variables after parse.
+	ReturnValue retVal0, retVal;
   Argument arg0, arg;
   ArgumentList args0, args;
   Constructor constructor0(verbose), constructor(verbose);
   Method method0(verbose), method(verbose);
+  StaticMethod static_method0(verbose), static_method(verbose);
   Class cls0(verbose),cls(verbose);
 
   //----------------------------------------------------------------------------
@@ -100,20 +102,20 @@ Module::Module(const string& interfacePath,
     [assign_a(constructor,constructor0)];
 
   Rule returnType1_p =
-    basisType_p[assign_a(method.returns_)] |
-    ((className_p | "Vector" | "Matrix")[assign_a(method.returns_)] >>
-     !ch_p('*')  [assign_a(method.returns_ptr_,true)]);
+    basisType_p[assign_a(retVal.returns_)] |
+    ((className_p | "Vector" | "Matrix")[assign_a(retVal.returns_)] >>
+     !ch_p('*')  [assign_a(retVal.returns_ptr_,true)]);
 
   Rule returnType2_p =
-    basisType_p[assign_a(method.returns2_)] |
-    ((className_p | "Vector" | "Matrix")[assign_a(method.returns2_)] >>
-     !ch_p('*')  [assign_a(method.returns_ptr2_,true)]);
+    basisType_p[assign_a(retVal.returns2_)] |
+    ((className_p | "Vector" | "Matrix")[assign_a(retVal.returns2_)] >>
+     !ch_p('*')  [assign_a(retVal.returns_ptr2_,true)]);
 
   Rule pair_p = 
     (str_p("pair") >> '<' >> returnType1_p >> ',' >> returnType2_p >> '>')
-    [assign_a(method.returns_pair_,true)];
+    [assign_a(retVal.returns_pair_,true)];
 
-  Rule void_p = str_p("void")[assign_a(method.returns_)];
+  Rule void_p = str_p("void")[assign_a(retVal.returns_)];
 
   Rule returnType_p = void_p | returnType1_p | pair_p;
 
@@ -125,14 +127,30 @@ Module::Module(const string& interfacePath,
      !str_p("const")[assign_a(method.is_const_,true)] >> ';' >> *comments_p)
     [assign_a(method.args_,args)]
     [assign_a(args,args0)]
+    [assign_a(method.returnVal_,retVal)]
+    [assign_a(retVal,retVal0)]
     [push_back_a(cls.methods, method)]
     [assign_a(method,method0)];
+
+  Rule staticMethodName_p = lexeme_d[upper_p >> *(alnum_p | '_')];
+
+  Rule static_method_p =
+    (str_p("static") >> returnType_p >> staticMethodName_p[assign_a(static_method.name_)] >>
+     '(' >> argumentList_p >> ')' >> ';' >> *comments_p)
+    [assign_a(static_method.args_,args)]
+    [assign_a(args,args0)]
+    [assign_a(static_method.returnVal_,retVal)]
+    [assign_a(retVal,retVal0)]
+    [push_back_a(cls.static_methods, static_method)]
+    [assign_a(static_method,static_method0)];
+
+  Rule methods_p = method_p | static_method_p;
 
   Rule class_p = str_p("class") >> className_p[assign_a(cls.name)] >> '{' >>
  		*comments_p >>
     *constructor_p >>
  		*comments_p >>
-    *method_p >>
+    *methods_p >>
  		*comments_p >>
     '}' >> ";";
 
@@ -214,6 +232,7 @@ void Module::matlab_code(const string& toolboxPath,
 
       // create constructor and method wrappers
       cls.matlab_constructors(toolboxPath,nameSpace);
+      cls.matlab_static_methods(toolboxPath,nameSpace);
       cls.matlab_methods(classPath,nameSpace);
 
       // add lines to make m-file

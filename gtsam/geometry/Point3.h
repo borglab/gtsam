@@ -108,6 +108,9 @@ namespace gtsam {
 
     /** Exponential map at identity - just create a Point3 from x,y,z */
     static inline Point3 Expmap(const Vector& v) { return Point3(v); }
+  	static inline boost::shared_ptr<Point3> Expmap_(const Vector& v) {
+  		return boost::shared_ptr<Point3>(new Point3(Expmap(v)));
+  	}
 
     /** Log map at identity - return the x,y,z of this point */
     static inline Vector Logmap(const Point3& dp) { return Vector_(3, dp.x(), dp.y(), dp.z()); }

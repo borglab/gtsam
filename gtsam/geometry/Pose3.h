@@ -134,6 +134,9 @@ namespace gtsam {
 
     /// Exponential map from Lie algebra se(3) to SE(3)
     static Pose3 Expmap(const Vector& xi);
+  	static inline boost::shared_ptr<Pose3> Expmap_(const Vector& v) {
+  		return boost::shared_ptr<Pose3>(new Pose3(Expmap(v)));
+  	}
 
     /// Exponential map from SE(3) to Lie algebra se(3)
     static Vector Logmap(const Pose3& p);

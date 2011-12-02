@@ -76,3 +76,11 @@ void emit_header_comment(ofstream& ofs, const string& delimiter) {
 }
 
 /* ************************************************************************* */
+std::string maybe_shared_ptr(bool add, const std::string& type) {
+  string str = add? "shared_ptr<" : "";
+  str += type;
+  if (add) str += ">";
+  return str;
+}
+
+/* ************************************************************************* */

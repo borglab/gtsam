@@ -189,6 +189,9 @@ namespace gtsam {
 			else
 				return Rot2::fromAngle(v(0));
 		}
+		static inline boost::shared_ptr<Rot2> Expmap_(const Vector& v) {
+			return boost::shared_ptr<Rot2>(new Rot2(Expmap(v)));
+		}
 
 		/// Logmap around identity - return the angle of the rotation
 		static inline Vector Logmap(const Rot2& r) {

@@ -61,6 +61,7 @@ TEST( wrap, parse ) {
 	EXPECT(cls.name=="Point3");
 	EXPECT(cls.constructors.size()==1);
 	EXPECT(cls.methods.size()==1);
+	EXPECT(cls.static_methods.size()==1);
 
 	// first constructor takes 3 doubles
 	Constructor c1 = cls.constructors.front();
@@ -75,7 +76,7 @@ TEST( wrap, parse ) {
 
 	// check method
 	Method m1 = cls.methods.front();
-	EXPECT(m1.returns_=="double");
+	EXPECT(m1.returnVal_.returns_=="double");
 	EXPECT(m1.name_=="norm");
 	EXPECT(m1.args_.size()==0);
 	EXPECT(m1.is_const_);
@@ -96,6 +97,8 @@ TEST( wrap, matlab_code ) {
 	EXPECT(files_equal(path + "/tests/expected/@Point3/Point3.m"  , "actual/@Point3/Point3.m"  ));
 	EXPECT(files_equal(path + "/tests/expected/new_Point3_ddd.m"  , "actual/new_Point3_ddd.m"  ));
 	EXPECT(files_equal(path + "/tests/expected/new_Point3_ddd.cpp", "actual/new_Point3_ddd.cpp"));
+	EXPECT(files_equal(path + "/tests/expected/Point3_StaticFunction.m"  , "actual/Point3_StaticFunction.m"  ));
+	EXPECT(files_equal(path + "/tests/expected/Point3_StaticFunction.cpp", "actual/Point3_StaticFunction.cpp"));
 	EXPECT(files_equal(path + "/tests/expected/@Point3/norm.m"    , "actual/@Point3/norm.m"    ));
 	EXPECT(files_equal(path + "/tests/expected/@Point3/norm.cpp"  , "actual/@Point3/norm.cpp"  ));
 

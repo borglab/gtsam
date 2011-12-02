@@ -111,6 +111,9 @@ public:
 
 	/// Exponential map around identity - just create a Point2 from a vector
 	static inline Point2 Expmap(const Vector& v) { return Point2(v); }
+	static inline boost::shared_ptr<Point2> Expmap_(const Vector& v) {
+		return boost::shared_ptr<Point2>(new Point2(Expmap(v)));
+	}
 
 	/// Log map around identity - just return the Point2 as a vector
 	static inline Vector Logmap(const Point2& dp) { return Vector_(2, dp.x(), dp.y()); }

@@ -202,6 +202,9 @@ namespace gtsam {
     	if(zero(v)) return Rot3M();
     	else return rodriguez(v);
     }
+		static inline boost::shared_ptr<Rot3M> Expmap_(const Vector& v) {
+			return boost::shared_ptr<Rot3M>(new Rot3M(Expmap(v)));
+		}
 
     /**
      * Log map at identity - return the canonical coordinates of this rotation

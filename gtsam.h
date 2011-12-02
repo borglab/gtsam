@@ -8,14 +8,17 @@
  *   Constructors must appear in a class before any methods
  *   Methods can only return Matrix, Vector, double, int, void, and a shared_ptr to any other object
  *   Comments can use either C++ or C style
- *   Static methods are not supported
+ *   Static methods are not supported - FIXED
  *   Methods must start with a lowercase letter
+ *   Static methods must start with an uppercase letter
  *   Classes must start with an uppercase letter
  */
 
 class Point2 {
 	Point2();
 	Point2(double x, double y);
+	static Point2* Expmap_(Vector v);
+	static Vector Logmap(const Point2& p);
 	void print(string s) const;
 	double x();
 	double y();
@@ -29,6 +32,8 @@ class Point3 {
 	Point3();
 	Point3(double x, double y, double z);
 	Point3(Vector v);
+	static Point3* Expmap_(Vector v);
+	static Vector Logmap(const Point3& p);
 	void print(string s) const;
 	bool equals(const Point3& p, double tol);
 	Vector vector() const;
@@ -44,6 +49,8 @@ class Point3 {
 class Rot2 {
 	Rot2();
 	Rot2(double theta);
+	static Rot2* Expmap_(Vector v);
+	static Vector Logmap(const Rot2& p);
 	void print(string s) const;
 	bool equals(const Rot2& rot, double tol) const;
 	double c() const;
@@ -57,6 +64,8 @@ class Rot2 {
 class Rot3 {
 	Rot3();
 	Rot3(Matrix R);
+	static Rot3* Expmap_(Vector v);
+	static Vector Logmap(const Rot3& p);
 	Matrix matrix() const;
 	Matrix transpose() const;
 	Vector xyz() const;
@@ -75,6 +84,8 @@ class Pose2 {
 	Pose2(double theta, const Point2& t);
 	Pose2(const Rot2& r, const Point2& t);
 	Pose2(Vector v);
+	static Pose2* Expmap_(Vector v);
+	static Vector Logmap(const Pose2& p);
 	void print(string s) const;
 	bool equals(const Pose2& pose, double tol) const;
 	double x() const;
@@ -92,6 +103,8 @@ class Pose3 {
 	Pose3(const Rot3& r, const Point3& t);
 	Pose3(Vector v);
 	Pose3(Matrix t);
+	static Pose3* Expmap_(Vector v);
+	static Vector Logmap(const Pose3& p);
 	void print(string s) const;
 	bool equals(const Pose3& pose, double tol) const;
 	double x() const;

@@ -63,3 +63,6 @@ bool assert_equal(const std::string& expected, const std::string& actual);
  * emit a header at the top of generated files
  */
 void emit_header_comment(std::ofstream& ofs, const std::string& delimiter);
+
+// auxiliary function to wrap an argument into a shared_ptr template
+std::string maybe_shared_ptr(bool add, const std::string& type);
