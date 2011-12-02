@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file wrap.ccp
+ * @file wrap.cpp
  * @brief wraps functions
  * @author Frank Dellaert
  **/
@@ -38,7 +38,7 @@ void generate_matlab_toolbox(const string& interfacePath,
 {
   // Parse interface file into class object
 	// This recursively creates Class objects, Method objects, etc...
-  Module module(interfacePath, moduleName, true);
+  wrap::Module module(interfacePath, moduleName, true);
 
   // Then emit MATLAB code
   module.matlab_code(toolboxPath,nameSpace,mexFlags);

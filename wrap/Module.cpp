@@ -26,6 +26,7 @@
 #include <fstream>
 
 using namespace std;
+using namespace wrap;
 using namespace BOOST_SPIRIT_CLASSIC_NS;
 
 typedef rule<BOOST_SPIRIT_CLASSIC_NS::phrase_scanner_t> Rule;
@@ -186,7 +187,7 @@ Module::Module(const string& interfacePath,
 
   // read interface file
   string interfaceFile = interfacePath + "/" + moduleName + ".h";
-  string contents = file_contents(interfaceFile);
+  string contents = wrap::file_contents(interfaceFile);
 
   // and parse contents
   parse_info<const char*> info = parse(contents.c_str(), module_p, space_p);
@@ -211,7 +212,7 @@ void Module::matlab_code(const string& toolboxPath,
     if(!ofs) throw CantOpenFile(makeFile);
 
     if (verbose_) cerr << "generating " << makeFile << endl;
-    emit_header_comment(ofs,"%");
+    wrap::emit_header_comment(ofs,"%");
     ofs << "echo on" << endl << endl;
     ofs << "toolboxpath = mfilename('fullpath');" << endl;
     ofs << "delims = find(toolboxpath == '/');" << endl;

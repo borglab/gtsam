@@ -24,6 +24,8 @@
 #include "Method.h"
 #include "StaticMethod.h"
 
+namespace wrap {
+
 /// Class has name, constructors, methods
 struct Class {
   /// Constructor creates an empty class
@@ -48,4 +50,6 @@ struct Class {
 			    const std::string& toolboxPath,
 			    const std::string& mexFlags);   ///< emit make fragment for global make script
 };
+
+} // \namespace wrap
 

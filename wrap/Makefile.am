@@ -9,15 +9,22 @@ AM_DEFAULT_SOURCE_EXT = .cpp
 
 headers =
 sources = 
-check_PROGRAMS = 
+check_PROGRAMS =
+noinst_PROGRAMS =  
+wrap_PROGRAMS = 
+wrapdir = $(pkgincludedir)/wrap
 
 # disable all of matlab toolbox build by default
 if ENABLE_BUILD_TOOLBOX
 
 # Build a library from the core sources
 sources += utilities.cpp Argument.cpp ReturnValue.cpp Constructor.cpp Method.cpp StaticMethod.cpp Class.cpp Module.cpp
-check_PROGRAMS += tests/testSpirit tests/testWrap 
-noinst_PROGRAMS = wrap
+check_PROGRAMS += tests/testSpirit tests/testWrap
+if ENABLE_INSTALL_WRAP
+wrap_PROGRAMS += wrap
+else 
+noinst_PROGRAMS += wrap
+endif
 
 #----------------------------------------------------------------------------------------------------
 # Create a libtool library that is not installed
@@ -25,7 +32,6 @@ noinst_PROGRAMS = wrap
 #----------------------------------------------------------------------------------------------------
 # Only install the header necessary for wrap interfaces to build with mex
 headers += matlab.h 
-wrapdir = $(pkgincludedir)/wrap
 wrap_HEADERS = $(headers)
 noinst_LTLIBRARIES = libwrap.la
 libwrap_la_SOURCES = $(sources)
@@ -55,18 +61,36 @@ nameSpace = "gtsam"
 mexFlags = "${BOOST_CPPFLAGS} -DUNSAFE_WRAP -I${prefix}/include -I${prefix}/include/gtsam -I${prefix}/include/gtsam/base -I${prefix}/include/gtsam/geometry -I${prefix}/include/gtsam/linear -I${prefix}/include/gtsam/nonlinear -I${prefix}/include/gtsam/slam -L${exec_prefix}/lib -lgtsam"
 all:
 	./wrap ${interfacePath} ${moduleName} ${toolboxpath} ${nameSpace} ${mexFlags}
-	
-# install the headers and matlab toolbox
-if ENABLE_INSTALL_MATLAB_TESTS
-install-exec-hook: all
-	install -d ${toolbox}/gtsam && \
-	cp -rf ../toolbox/* ${toolbox}/gtsam && \
-	mkdir -p ${toolbox}/gtsam/tests && \
+
+wrap-install-bin: all
+	install -d ${wrap} && \
+	install ./wrap ${wrap}
+
+wrap-install-matlab-tests: all
+	install -d ${toolbox}/gtsam/tests && \
 	cp -rf ../../tests/matlab/*.m ${toolbox}/gtsam/tests
+
+# install the headers and matlab toolbox
+if ENABLE_INSTALL_WRAP
+if ENABLE_INSTALL_MATLAB_TESTS
+install-exec-hook: wrap-install-bin wrap-install-matlab-tests
+	install -d ${toolbox}/gtsam && \
+	cp -rf ../toolbox/* ${toolbox}/gtsam 
+else
+install-exec-hook: wrap-install-bin
+	install -d ${toolbox}/gtsam && \
+	cp -rf ../toolbox/* ${toolbox}/gtsam/tests
+endif
+else
+if ENABLE_INSTALL_MATLAB_TESTS
+install-exec-hook: wrap-install-matlab-tests
+	install -d ${toolbox}/gtsam && \
+	cp -rf ../toolbox/* ${toolbox}/gtsam
 else
 install-exec-hook: all
 	install -d ${toolbox}/gtsam && \
 	cp -rf ../toolbox/* ${toolbox}/gtsam/tests
+endif
 endif
 
 # clean local toolbox dir

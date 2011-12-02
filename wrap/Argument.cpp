@@ -22,6 +22,7 @@
 #include "Argument.h"
 
 using namespace std;
+using namespace wrap;
 
 /* ************************************************************************* */
 void Argument::matlab_unwrap(ofstream& ofs, 

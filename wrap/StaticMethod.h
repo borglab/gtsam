@@ -24,6 +24,8 @@
 #include "Argument.h"
 #include "ReturnValue.h"
 
+namespace wrap {
+
 /// StaticMethod class
 struct StaticMethod {
 
@@ -46,4 +48,6 @@ struct StaticMethod {
 	void matlab_wrapper(const std::string& toolboxPath,
 			const std::string& className, const std::string& nameSpace); ///< wrapper
 };
+
+} // \namespace wrap
 

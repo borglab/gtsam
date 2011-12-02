@@ -22,6 +22,8 @@
 
 #include "Class.h"
 
+namespace wrap {
+
 /**
  * A module just has a name and a list of classes
  */
@@ -41,3 +43,4 @@ struct Module {
 		   const std::string& mexFlags);
 };
 
+} // \namespace wrap

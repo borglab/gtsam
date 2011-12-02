@@ -11,6 +11,8 @@
 
 #pragma once
 
+namespace wrap {
+
 struct ReturnValue {
 
 	ReturnValue(bool verbose = true)
@@ -32,3 +34,5 @@ struct ReturnValue {
 	void wrap_result(std::ostream& ofs);
 
 };
+
+} // \namespace wrap

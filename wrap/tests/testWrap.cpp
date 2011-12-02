@@ -24,6 +24,7 @@
 #include <wrap/Module.h>
 
 using namespace std;
+using namespace wrap;
 static bool verbose = false;
 #ifdef TOPSRCDIR
 static string topdir = TOPSRCDIR;

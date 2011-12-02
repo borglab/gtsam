@@ -23,6 +23,7 @@
 #include "Constructor.h"
 
 using namespace std;
+using namespace wrap;
 
 /* ************************************************************************* */
 string Constructor::matlab_wrapper_name(const string& className) {
@@ -55,7 +56,7 @@ void Constructor::matlab_mfile(const string& toolboxPath, const string& classNam
   if(verbose_) cerr << "generating " << wrapperFile << endl;
 
   // generate code
-  emit_header_comment(ofs, "%");
+  wrap::emit_header_comment(ofs, "%");
   ofs << "function result = " << name << "(obj";
   if (args.size()) ofs << "," << args.names();
   ofs << ")" << endl;
@@ -81,7 +82,7 @@ void Constructor::matlab_wrapper(const string& toolboxPath,
   if(verbose_) cerr << "generating " << wrapperFile << endl;
 
   // generate code
-  emit_header_comment(ofs, "//");
+  wrap::emit_header_comment(ofs, "//");
   ofs << "#include <wrap/matlab.h>" << endl;
   ofs << "#include <" << className << ".h>" << endl;
   if (!nameSpace.empty()) ofs << "using namespace " << nameSpace << ";" << endl;

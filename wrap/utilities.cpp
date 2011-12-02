@@ -21,6 +21,8 @@
 
 #include "utilities.h"
 
+namespace wrap {
+
 using namespace std;
 using namespace boost::gregorian;
 
@@ -52,8 +54,8 @@ bool assert_equal(const std::string& expected, const std::string& actual) {
 /* ************************************************************************* */
 bool files_equal(const string& expected, const string& actual, bool skipheader) {
   try {
-    string expected_contents = file_contents(expected, skipheader);
-    string actual_contents   = file_contents(actual, skipheader);
+    string expected_contents = wrap::file_contents(expected, skipheader);
+    string actual_contents   = wrap::file_contents(actual, skipheader);
     bool equal = actual_contents == expected_contents;
     if (!equal) {
       stringstream command;
@@ -84,3 +86,5 @@ std::string maybe_shared_ptr(bool add, const std::string& type) {
 }
 
 /* ************************************************************************* */
+
+} // \namespace wrap

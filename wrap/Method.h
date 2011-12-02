@@ -23,6 +23,8 @@
 #include "Argument.h"
 #include "ReturnValue.h"
 
+namespace wrap {
+
 /// Method class
 struct Method {
 
@@ -46,4 +48,6 @@ struct Method {
 	void matlab_wrapper(const std::string& classPath,
 			const std::string& className, const std::string& nameSpace); ///< wrapper
 };
+
+} // \namespace wrap
 

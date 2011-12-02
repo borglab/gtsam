@@ -145,6 +145,25 @@ AC_ARG_WITH([toolbox],
             [toolbox=$prefix])
 AC_SUBST([toolbox])
 
+# enable installation of the wrap utility
+AC_ARG_ENABLE([install_wrap],
+     [  --enable-install-wrap    Enable installation of the wrap tool for generating matlab interfaces],
+     [case "${enableval}" in
+       yes) install_wrap=true ;;
+       no)  install_wrap=false ;;
+       *) AC_MSG_ERROR([bad value ${enableval} for --enable-install-wrap]) ;;
+     esac],[install_wrap=false])
+
+AM_CONDITIONAL([ENABLE_INSTALL_WRAP], [test x$install_wrap = xtrue])
+
+# wrap install path: optional flag to change location of wrap, defaults to install prefix/bin
+AC_ARG_WITH([wrap],
+            [AS_HELP_STRING([--with-wrap],
+              [specify the wrap directory for installation])],
+            [wrap=$withval],
+            [wrap=$prefix/bin])
+AC_SUBST([wrap])
+
 AC_CONFIG_FILES([CppUnitLite/Makefile \
 wrap/Makefile \
 gtsam/3rdparty/Makefile \

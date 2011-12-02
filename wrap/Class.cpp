@@ -23,6 +23,7 @@
 #include "utilities.h"
 
 using namespace std;
+using namespace wrap;
 
 /* ************************************************************************* */
 void Class::matlab_proxy(const string& classFile) {

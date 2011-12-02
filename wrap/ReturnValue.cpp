@@ -9,16 +9,17 @@
 #include "utilities.h"
 
 using namespace std;
+using namespace wrap;
 
 /* ************************************************************************* */
 string ReturnValue::return_type(bool add_ptr, pairing p) {
   if (p==pair && returns_pair_) {
     string str = "pair< " +
-      maybe_shared_ptr(add_ptr && returns_ptr_, returns_) + ", " +
-      maybe_shared_ptr(add_ptr && returns_ptr_, returns2_) + " >";
+    		wrap::maybe_shared_ptr(add_ptr && returns_ptr_, returns_) + ", " +
+      wrap::maybe_shared_ptr(add_ptr && returns_ptr_, returns2_) + " >";
     return str;
   } else
-    return maybe_shared_ptr(add_ptr && returns_ptr_, (p==arg2)? returns2_ : returns_);
+    return wrap::maybe_shared_ptr(add_ptr && returns_ptr_, (p==arg2)? returns2_ : returns_);
 }
 
 /* ************************************************************************* */

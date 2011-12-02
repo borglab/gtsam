@@ -20,6 +20,8 @@
 #include <string>
 #include <list>
 
+namespace wrap {
+
 /// Argument class
 struct Argument {
 	bool is_const, is_ref, is_ptr;
@@ -49,4 +51,6 @@ struct ArgumentList: public std::list<Argument> {
 	 */
 	void matlab_unwrap(std::ofstream& ofs, int start = 0); // MATLAB to C++
 };
+
+} // \namespace wrap
 

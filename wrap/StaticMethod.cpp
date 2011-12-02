@@ -23,6 +23,7 @@
 #include "utilities.h"
 
 using namespace std;
+using namespace wrap;
 
 /* ************************************************************************* */
 void StaticMethod::matlab_mfile(const string& toolboxPath, const string& className) {
@@ -61,7 +62,7 @@ void StaticMethod::matlab_wrapper(const string& toolboxPath,
   // generate code
 
   // header
-  emit_header_comment(ofs, "//");
+  wrap::emit_header_comment(ofs, "//");
   ofs << "#include <wrap/matlab.h>\n";
   ofs << "#include <" << className << ".h>\n";
   if (!nameSpace.empty()) ofs << "using namespace " << nameSpace << ";" << endl;

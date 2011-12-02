@@ -22,6 +22,8 @@
 
 #include "Argument.h"
 
+namespace wrap {
+
 // Constructor class
 struct Constructor {
 
@@ -52,4 +54,6 @@ struct Constructor {
 	void matlab_wrapper(const std::string& toolboxPath,
 			const std::string& className, const std::string& nameSpace);
 };
+
+} // \namespace wrap
 
