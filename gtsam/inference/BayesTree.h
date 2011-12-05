@@ -24,11 +24,13 @@
 #include <deque>
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 
 #include <gtsam/base/types.h>
 #include <gtsam/base/FastVector.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/BayesNet.h>
+#include <gtsam/inference/BayesTreeCliqueBase.h>
 #include <gtsam/linear/VectorValues.h>
 
 namespace gtsam {
@@ -196,6 +198,8 @@ namespace gtsam {
 
 		/** return root clique */
 		const sharedClique& root() const { return root_;	}
+
+		/** Access the root clique (non-const version) */
 		sharedClique& root() { return root_; }
 
 		/** find the clique to which key belongs */
@@ -207,24 +211,20 @@ namespace gtsam {
 		CliqueData getCliqueData() const;
 
 		/** return marginal on any variable */
-		typename FactorType::shared_ptr marginalFactor(Index key,
-				Eliminate function) const;
+		typename FactorType::shared_ptr marginalFactor(Index key, Eliminate function) const;
 
 		/**
 		 * return marginal on any variable, as a Bayes Net
 		 * NOTE: this function calls marginal, and then eliminates it into a Bayes Net
 		 * This is more expensive than the above function
 		 */
-		typename BayesNet<CONDITIONAL>::shared_ptr marginalBayesNet(Index key,
-				Eliminate function) const;
+		typename BayesNet<CONDITIONAL>::shared_ptr marginalBayesNet(Index key, Eliminate function) const;
 
 		/** return joint on two variables */
-		typename FactorGraph<FactorType>::shared_ptr joint(Index key1, Index key2,
-				Eliminate function) const;
+		typename FactorGraph<FactorType>::shared_ptr joint(Index key1, Index key2, Eliminate function) const;
 
 		/** return joint on two variables as a BayesNet */
-		typename BayesNet<CONDITIONAL>::shared_ptr jointBayesNet(Index key1,
-				Index key2, Eliminate function) const;
+		typename BayesNet<CONDITIONAL>::shared_ptr jointBayesNet(Index key1, Index key2, Eliminate function) const;
 
 		/**
 		 * Read only with side effects
@@ -310,120 +310,24 @@ namespace gtsam {
    * extra data along with the clique.
    */
   template<class CONDITIONAL>
-  struct BayesTreeClique {
-
-  };
-
-
-	/* ************************************************************************* */
-	/**
-   * This is the base class for BayesTree cliques.  The default and standard
-   * derived type is BayesTreeClique, but some algorithms, like iSAM2, use a
-   * different clique type in order to store extra data along with the clique.
-   */
-	template<class DERIVED>
-  struct BayesTreeCliqueBase {
-
-  protected:
-    void assertInvariants() const;
-
+  struct BayesTreeClique : public BayesTreeCliqueBase<BayesTreeClique<CONDITIONAL> > {
   public:
-    typedef BayesTreeClique<DERIVED> This;
-    typedef DERIVED DerivedType;
-    typedef typename DERIVED::ConditionalType ConditionalType;
-    typedef boost::shared_ptr<ConditionalType> sharedConditional;
-    typedef typename boost::shared_ptr<This> shared_ptr;
-    typedef typename boost::weak_ptr<This> weak_ptr;
-    typedef typename ConditionalType::FactorType FactorType;
-    typedef typename FactorGraph<FactorType>::Eliminate Eliminate;
-
-    sharedConditional conditional_;
-    weak_ptr parent_;
-    std::list<shared_ptr> children_;
-
-    friend class BayesTree<ConditionalType>;
-
-    /** Default constructor */
-    BayesTreeCliqueBase() {}
-
-    /** Construct from a conditional, leaving parent and child pointers uninitialized */
-    BayesTreeCliqueBase(const sharedConditional& conditional);
-
-    virtual ~BayesTreeCliqueBase() {}
-
-    /** Construct shared_ptr from a conditional, leaving parent and child pointers uninitialized */
-    static shared_ptr Create(const sharedConditional& conditional) { return shared_ptr(new BayesTreeClique(conditional)); }
-
-    /** Construct shared_ptr from a FactorGraph<FACTOR>::EliminationResult.  In this class
-     * the conditional part is kept and the factor part is ignored, but in derived clique
-     * types, such as ISAM2Clique, the factor part is kept as a cached factor.
-     * @param
-     */
-    template<class RESULT>
-    static shared_ptr Create(const RESULT& result) { return Create(result.first); }
-
-    /** print this node */
-    void print(const std::string& s = "") const;
-
-    /** The arrow operator accesses the conditional */
-    const ConditionalType* operator->() const { return conditional_.get(); }
-
-    /** The arrow operator accesses the conditional */
-    ConditionalType* operator->() { return conditional_.get(); }
-
-    /** Access the conditional */
-    const sharedConditional& conditional() const { return conditional_; }
-
-    /** is this the root of a Bayes tree ? */
-    inline bool isRoot() const { return parent_.expired(); }
-
-    /** return the const reference of children */
-    std::list<shared_ptr>& children() { return children_; }
-    const std::list<shared_ptr>& children() const { return children_; }
-
-    /** The size of subtree rooted at this clique, i.e., nr of Cliques */
-    size_t treeSize() const;
-
-    /** print this node and entire subtree below it */
-    void printTree(const std::string& indent="") const;
-
-    /** Permute the variables in the whole subtree rooted at this clique */
-    void permuteWithInverse(const Permutation& inversePermutation);
-
-    /** Permute variables when they only appear in the separators.  In this
-     * case the running intersection property will be used to prevent always
-     * traversing the whole tree.  Returns whether any separator variables in
-     * this subtree were reordered.
-     */
-    bool permuteSeparatorWithInverse(const Permutation& inversePermutation);
-
-    /** return the conditional P(S|Root) on the separator given the root */
-    // TODO: create a cached version
-    BayesNet<ConditionalType> shortcut(shared_ptr root, Eliminate function);
-
-    /** return the marginal P(C) of the clique */
-    FactorGraph<FactorType> marginal(shared_ptr root, Eliminate function);
-
-    /** return the joint P(C1,C2), where C1==this. TODO: not a method? */
-    FactorGraph<FactorType> joint(shared_ptr C2, shared_ptr root, Eliminate function);
-
-    bool equals(const This& other, double tol=1e-9) const {
-      return (!conditional_ && !other.conditional()) ||
-          conditional_->equals(*(other.conditional()), tol);
-    }
+    typedef CONDITIONAL ConditionalType;
+    typedef BayesTreeClique<CONDITIONAL> This;
+    typedef BayesTreeCliqueBase<This> Base;
+    typedef boost::shared_ptr<This> shared_ptr;
+    BayesTreeClique() {}
+    BayesTreeClique(const sharedConditional& conditional) : Base(conditional) {}
 
   private:
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
-      ar & BOOST_SERIALIZATION_NVP(conditional_);
-      ar & BOOST_SERIALIZATION_NVP(parent_);
-      ar & BOOST_SERIALIZATION_NVP(children_);
+      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     }
+  };
 
-  }; // \struct Clique
-
-
+#include <gtsam/inference/BayesTree-inl.h>
 
 } /// namespace gtsam

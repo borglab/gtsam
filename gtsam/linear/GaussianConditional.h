@@ -52,8 +52,8 @@ public:
 	typedef boost::shared_ptr<GaussianConditional> shared_ptr;
 
 	/** Store the conditional matrix as upper-triangular column-major */
-	typedef Matrix AbMatrix;
-	typedef VerticalBlockView<AbMatrix> rsd_type;
+	typedef Matrix RdMatrix;
+	typedef VerticalBlockView<RdMatrix> rsd_type;
 
 	typedef rsd_type::Block r_type;
   typedef rsd_type::constBlock const_r_type;
@@ -72,7 +72,7 @@ protected:
 	 * Use R*permutation_ to get back the correct non-permuted order,
 	 * for example when converting to the Jacobian
 	 * */
-	AbMatrix matrix_;
+	RdMatrix matrix_;
 	rsd_type rsd_;
 
 	/** vector of standard deviations */
@@ -169,7 +169,7 @@ public:
 
 protected:
 
-	const AbMatrix& matrix() const { return matrix_; }
+	const RdMatrix& matrix() const { return matrix_; }
 	const rsd_type& rsd() const { return rsd_; }
 
 public:

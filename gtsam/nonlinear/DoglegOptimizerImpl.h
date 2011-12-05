@@ -95,10 +95,11 @@ struct DoglegOptimizerImpl {
    * GaussianBayesNet, containing GaussianConditional s.
    *
    * @param Delta The trust region radius
-   * @param bayesNet The Bayes' net \f$ (R,d) \f$ as described above.
+   * @param dx_u The steepest descent point, i.e. the Cauchy point
+   * @param dx_n The Gauss-Newton point
    * @return The dogleg point \f$ \delta x_d \f$
    */
-  static VectorValues ComputeDoglegPoint(double Delta, const VectorValues& x_u, const VectorValues& x_n, const bool verbose=false);
+  static VectorValues ComputeDoglegPoint(double Delta, const VectorValues& dx_u, const VectorValues& dx_n, const bool verbose=false);
 
   /** Compute the minimizer \f$ \delta x_u \f$ of the line search along the gradient direction \f$ g \f$ of
    * the function

@@ -9,28 +9,28 @@
 namespace gtsam {
 /* ************************************************************************* */
 VectorValues DoglegOptimizerImpl::ComputeDoglegPoint(
-    double Delta, const VectorValues& x_u, const VectorValues& x_n, const bool verbose) {
+    double Delta, const VectorValues& dx_u, const VectorValues& dx_n, const bool verbose) {
 
   // Get magnitude of each update and find out which segment Delta falls in
   assert(Delta >= 0.0);
   double DeltaSq = Delta*Delta;
-  double x_u_norm_sq = x_u.vector().squaredNorm();
-  double x_n_norm_sq = x_n.vector().squaredNorm();
+  double x_u_norm_sq = dx_u.vector().squaredNorm();
+  double x_n_norm_sq = dx_n.vector().squaredNorm();
   if(verbose) cout << "Steepest descent magnitude " << sqrt(x_u_norm_sq) << ", Newton's method magnitude " << sqrt(x_n_norm_sq) << endl;
   if(DeltaSq < x_u_norm_sq) {
     // Trust region is smaller than steepest descent update
-    VectorValues x_d = VectorValues::SameStructure(x_u);
-    x_d.vector() = x_u.vector() * sqrt(DeltaSq / x_u_norm_sq);
+    VectorValues x_d = VectorValues::SameStructure(dx_u);
+    x_d.vector() = dx_u.vector() * sqrt(DeltaSq / x_u_norm_sq);
     if(verbose) cout << "In steepest descent region with fraction " << sqrt(DeltaSq / x_u_norm_sq) << " of steepest descent magnitude" << endl;
     return x_d;
   } else if(DeltaSq < x_n_norm_sq) {
     // Trust region boundary is between steepest descent point and Newton's method point
-    return ComputeBlend(Delta, x_u, x_n);
+    return ComputeBlend(Delta, dx_u, dx_n);
   } else {
     assert(DeltaSq >= x_n_norm_sq);
     if(verbose) cout << "In pure Newton's method region" << endl;
     // Trust region is larger than Newton's method point
-    return x_n;
+    return dx_n;
   }
 }
 

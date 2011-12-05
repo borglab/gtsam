@@ -106,71 +106,32 @@ struct ISAM2Result {
 };
 
 template<class CONDITIONAL>
-struct ISAM2Clique : public BayesTreeClique<CONDITIONAL> {
+struct ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique<CONDITIONAL> > {
 
   typedef ISAM2Clique<CONDITIONAL> This;
-  typedef BayesTreeClique<CONDITIONAL> Base;
-
+  typedef BayesTreeCliqueBase<This> Base;
   typedef boost::shared_ptr<This> shared_ptr;
 
   typename Base::FactorType::shared_ptr cachedFactor_;
+  Vector gradientContribution_;
 
   /** Access the cached factor */
   typename Base::FactorType::shared_ptr& cachedFactor() { return cachedFactor_; }
 
-  /** Construct from an elimination result, caches the eliminated factor */
-  template<class RESULT>
-  ISAM2Clique(const RESULT& result) : Base(result), cachedFactor_(result.second) {}
+  /** Access the gradient contribution */
+  const Vector& gradientContribution() const { return gradientContribution_; }
 
   /** Construct from a conditional */
-  ISAM2Clique(const typename Base::sharedConditional& conditional) : Base(conditional) {}
+  ISAM2Clique(const sharedConditional& conditional) : Base(conditional) {
+    throw runtime_error("ISAM2Clique should always be constructed with the elimination result constructor"); }
 
-  /** Create from an elimination result, overrides BayesTreeClique<CONDITIONAL>::Create(const RESULT&) to cache the eliminated factor */
-  template<class RESULT>
-  static shared_ptr Create(const RESULT& result) { return shared_ptr(new This(result)); }
-
-  static shared_ptr Create(const typename Base::sharedConditional& conditional) { return shared_ptr(new This(conditional)); }
-
-  void permuteWithInverse(const Permutation& inversePermutation) {
-    Base::conditional_->permuteWithInverse(inversePermutation);
-    if(cachedFactor_) cachedFactor_->permuteWithInverse(inversePermutation);
-    BOOST_FOREACH(const typename Base::shared_ptr& child, Base::children_) {
-      shared_ptr _child;
-#ifndef NDEBUG // This is because BayesTreeClique stores pointers to BayesTreeClique but we actually have the derived type ISAM2Clique
-      _child = boost::dynamic_pointer_cast<This>(child);
-#else
-      _child = boost::static_pointer_cast<This>(child);
-#endif
-      _child->permuteWithInverse(inversePermutation);
-    }
-    Base::assertInvariants();
-  }
-
-  bool permuteSeparatorWithInverse(const Permutation& inversePermutation) {
-    bool changed = Base::conditional_->permuteSeparatorWithInverse(inversePermutation);
-#ifndef NDEBUG
-    if(!changed) {
-      BOOST_FOREACH(Index& separatorKey, Base::conditional_->parents()) {
-        assert(separatorKey == inversePermutation[separatorKey]); }
-      BOOST_FOREACH(const typename Base::shared_ptr& child, Base::children_) {
-        shared_ptr _child = boost::dynamic_pointer_cast<This>(child); // This is because BayesTreeClique stores pointers to BayesTreeClique but we actually have the derived type ISAM2Clique
-        assert(_child->permuteSeparatorWithInverse(inversePermutation) == false); }
-    }
-#endif
-    if(changed) {
-      if(cachedFactor_) cachedFactor_->permuteWithInverse(inversePermutation);
-      BOOST_FOREACH(const typename Base::shared_ptr& child, Base::children_) {
-        shared_ptr _child;
-  #ifndef NDEBUG // This is because BayesTreeClique stores pointers to BayesTreeClique but we actually have the derived type ISAM2Clique
-        _child = boost::dynamic_pointer_cast<This>(child);
-  #else
-        _child = boost::static_pointer_cast<Clique>(child);
-  #endif
-        (void)_child->permuteSeparatorWithInverse(inversePermutation);
-      }
-    }
-    Base::assertInvariants();
-    return changed;
+  /** Construct from an elimination result */
+  ISAM2Clique(const std::pair<sharedConditional, boost::shared_ptr<typename ConditionalType::FactorType> >& result) :
+    Base(result.first), cachedFactor_(result.second), gradientContribution_(result.first->get_R().cols() + result.first->get_S().cols()) {
+    // Compute gradient contribution
+    const ConditionalType& conditional(*result.first);
+    gradient << -(conditional.get_R() * conditional.permutation().transpose()).transpose * conditional.get_d(),
+        -conditional.get_S() * conditional.get_d();
   }
 
 private:
@@ -180,6 +141,7 @@ private:
   void serialize(ARCHIVE & ar, const unsigned int version) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar & BOOST_SERIALIZATION_NVP(cachedFactor_);
+    ar & BOOST_SERIALIZATION_NVP(gradientContribution_);
   }
 };
 
