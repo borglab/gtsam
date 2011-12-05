@@ -115,6 +115,7 @@ TEST( wrap, matlab_code ) {
 	EXPECT(files_equal(path + "/tests/expected/@Test/print.cpp"         , "actual/@Test/print.cpp"         ));
 
 	EXPECT(files_equal(path + "/tests/expected/make_geometry.m"   , "actual/make_geometry.m"   ));
+	EXPECT(files_equal(path + "/tests/expected/Makefile"   , "actual/Makefile"   ));
 }
 
 /* ************************************************************************* */

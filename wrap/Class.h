@@ -49,6 +49,7 @@ struct Class {
   void matlab_make_fragment(std::ofstream& ofs,
 			    const std::string& toolboxPath,
 			    const std::string& mexFlags);   ///< emit make fragment for global make script
+  void makefile_fragment(std::ofstream& ofs); ///< emit makefile fragment
 };
 
 } // \namespace wrap

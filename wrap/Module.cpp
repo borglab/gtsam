@@ -207,18 +207,29 @@ void Module::matlab_code(const string& toolboxPath,
     system(installCmd.c_str());
 
     // create make m-file
-    string makeFile = toolboxPath + "/make_" + name + ".m";
-    ofstream ofs(makeFile.c_str());
-    if(!ofs) throw CantOpenFile(makeFile);
+    string matlabMakeFile = toolboxPath + "/make_" + name + ".m";
+    ofstream ofs(matlabMakeFile.c_str());
+    if(!ofs) throw CantOpenFile(matlabMakeFile);
 
-    if (verbose_) cerr << "generating " << makeFile << endl;
-    wrap::emit_header_comment(ofs,"%");
+    // create the (actual) make file
+    string makeFile = toolboxPath + "/Makefile";
+    ofstream make_ofs(makeFile.c_str());
+    if(!make_ofs) throw CantOpenFile(makeFile);
+
+    if (verbose_) cerr << "generating " << matlabMakeFile << endl;
+    emit_header_comment(ofs,"%");
     ofs << "echo on" << endl << endl;
     ofs << "toolboxpath = mfilename('fullpath');" << endl;
     ofs << "delims = find(toolboxpath == '/');" << endl;
     ofs << "toolboxpath = toolboxpath(1:(delims(end)-1));" << endl;
     ofs << "clear delims" << endl;
     ofs << "addpath(toolboxpath);" << endl << endl;
+
+    if (verbose_) cerr << "generating " << makeFile << endl;
+    emit_header_comment(make_ofs,"#");
+    make_ofs << "\nMEX = mex\n";
+    make_ofs << "MEXENDING = mexa64\n";
+    make_ofs << "mex_flags = " << mexFlags << "\n\n";
 
     // generate proxy classes and wrappers
     BOOST_FOREACH(Class cls, classes) {
@@ -240,12 +251,30 @@ void Module::matlab_code(const string& toolboxPath,
       ofs << "%% " << cls.name << endl;
       ofs << "cd(toolboxpath)" << endl;
       cls.matlab_make_fragment(ofs, toolboxPath, mexFlags);
+
+      // add section to the (actual) make file
+      make_ofs << "# " << cls.name << endl;
+      cls.makefile_fragment(make_ofs);
     }  
 
     // finish make m-file
     ofs << "cd(toolboxpath)" << endl << endl;
     ofs << "echo off" << endl;
     ofs.close();
+
+    // add 'all' and 'clean' to Makefile
+    make_ofs << "\nall: ";
+    BOOST_FOREACH(Class cls, classes)
+    	make_ofs << cls.name << " ";
+
+    make_ofs << "\n\nclean: \n";
+    make_ofs << "\trm -rf *.$(MEXENDING)\n";
+    BOOST_FOREACH(Class cls, classes)
+    	make_ofs << "\trm -rf @" << cls.name << "/*.$(MEXENDING)\n";
+
+    // finish Makefile
+    make_ofs << "\n" << endl;
+    make_ofs.close();
   }
   catch(exception &e) {
     cerr << "generate_matlab_toolbox failed because " << e.what() << endl;

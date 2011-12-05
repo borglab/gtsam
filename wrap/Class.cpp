@@ -14,6 +14,7 @@
  * @author Frank Dellaert
  **/
 
+#include <vector>
 #include <iostream>
 #include <fstream>
 
@@ -90,6 +91,49 @@ void Class::matlab_make_fragment(ofstream& ofs,
   BOOST_FOREACH(Method m, methods)
     ofs << mex << m.name_ << ".cpp" << endl;
   ofs << endl;
+}
+
+/* ************************************************************************* */
+void Class::makefile_fragment(ofstream& ofs) {
+//	new_Point2_.$(MEXENDING): new_Point2_.cpp
+//		$(MEX) $(mex_flags) new_Point2_.cpp
+//	new_Point2_dd.$(MEXENDING): new_Point2_dd.cpp
+//		$(MEX) $(mex_flags) new_Point2_dd.cpp
+//	@Point2/x.$(MEXENDING): @Point2/x.cpp
+//		$(MEX) $(mex_flags) @Point2/x.cpp -output @Point2/x
+//	@Point2/y.$(MEXENDING): @Point2/y.cpp
+//		$(MEX) $(mex_flags) @Point2/y.cpp -output @Point2/y
+//	@Point2/dim.$(MEXENDING): @Point2/dim.cpp
+//		$(MEX) $(mex_flags) @Point2/dim.cpp -output @Point2/dim
+//
+//	Point2: new_Point2_.$(MEXENDING) new_Point2_dd.$(MEXENDING) @Point2/x.$(MEXENDING) @Point2/y.$(MEXENDING) @Point2/dim.$(MEXENDING)
+
+	// collect names
+	vector<string> file_names;
+  BOOST_FOREACH(Constructor c, constructors) {
+  	string file_base = c.matlab_wrapper_name(name);
+  	file_names.push_back(file_base);
+  }
+  BOOST_FOREACH(StaticMethod c, static_methods) {
+  	string file_base = name + "_" + c.name_;
+  	file_names.push_back(file_base);
+  }
+  BOOST_FOREACH(Method c, methods) {
+  	string file_base = "@" + name + "/" + c.name_;
+  	file_names.push_back(file_base);
+  }
+
+  BOOST_FOREACH(const string& file_base, file_names) {
+  	ofs << file_base << ".$(MEXENDING): " << file_base << ".cpp" << endl;
+  	ofs << "\t$(MEX) $(mex_flags) " << file_base << ".cpp  -output " << file_base << endl;
+  }
+
+	// class target
+  ofs << "\n" << name << ": ";
+  BOOST_FOREACH(const string& file_base, file_names) {
+    	ofs << file_base << ".$(MEXENDING) ";
+  }
+  ofs << "\n" << endl;
 }
 
 /* ************************************************************************* */
