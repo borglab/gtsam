@@ -33,13 +33,14 @@ struct Module {
   bool verbose_;            ///< verbose flag
 
   /// constructor that parses interface file
-  Module(const std::string& interfacePath, 
+  Module(const std::string& interfacePath,
 	 const std::string& moduleName,
 	 bool verbose=true);
 
   /// MATLAB code generation:
   void matlab_code(const std::string& path, 
 		   const std::string& nameSpace, 
+		   const std::string& mexExt,
 		   const std::string& mexFlags);
 };
 

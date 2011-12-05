@@ -30,8 +30,11 @@ DX_PS_FEATURE(OFF)
 DX_INIT_DOXYGEN(gtsam)
 
 # Check for OS
-AC_CANONICAL_HOST    # needs to be called at some point earlier
-AM_CONDITIONAL([DARWIN], [case $host_os in darwin*) true;; *) false;; esac]) 
+# needs to be called at some point earlier
+AC_CANONICAL_HOST    
+AM_CONDITIONAL([DARWIN], [case $host_os in darwin*) true;; *) false;; esac])
+AM_CONDITIONAL([LINUX], [case $host_os in linux*) true;; *) false;; esac])
+AM_CONDITIONAL([IS_64BIT], [case $host_cpu in *x86_64*) true;; *) false;; esac])
 
 # enable debug variable
 AC_ARG_ENABLE([debug],
@@ -45,18 +48,19 @@ AC_ARG_ENABLE([debug],
 AM_CONDITIONAL([DEBUG], [test x$debug = xtrue])
 
 
-AC_CANONICAL_HOST
+# AGC: isn't this redundant?
+#AC_CANONICAL_HOST # why was this called twice?
 # We need to determine what os we are on to determine if we need to do 
 # special things because we are on a mac
-case $host_os in
-  darwin* )
-        # Do something specific for mac
-        ISMAC=true
-        ;;
-  *)
-        ISMAC=false
-        ;;
-esac
+# case $host_os in
+#   darwin* )
+#         # Do something specific for mac
+#         ISMAC=true
+#         ;;
+#   *)
+#         ISMAC=false
+#         ;;
+# esac
 
 # enable profiling
 AC_ARG_ENABLE([profiling],
@@ -155,6 +159,17 @@ AC_ARG_ENABLE([install_wrap],
      esac],[install_wrap=false])
 
 AM_CONDITIONAL([ENABLE_INSTALL_WRAP], [test x$install_wrap = xtrue])
+
+# enable unsafe mode for wrap
+AC_ARG_ENABLE([unsafe_wrap],
+     [  --enable-unsafe-wrap    Enable using unsafe mode in wrap],
+     [case "${enableval}" in
+       yes) unsafe_wrap=true ;;
+       no)  unsafe_wrap=false ;;
+       *) AC_MSG_ERROR([bad value ${enableval} for --enable-unsafe-wrap]) ;;
+     esac],[unsafe_wrap=false])
+
+AM_CONDITIONAL([ENABLE_UNSAFE_WRAP], [test x$unsafe_wrap = xtrue])
 
 # wrap install path: optional flag to change location of wrap, defaults to install prefix/bin
 AC_ARG_WITH([wrap],

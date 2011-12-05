@@ -200,6 +200,7 @@ Module::Module(const string& interfacePath,
 /* ************************************************************************* */
 void Module::matlab_code(const string& toolboxPath, 
 			 const string& nameSpace, 
+			 const string& mexExt,
 			 const string& mexFlags)
 {
   try {
@@ -228,7 +229,7 @@ void Module::matlab_code(const string& toolboxPath,
     if (verbose_) cerr << "generating " << makeFile << endl;
     emit_header_comment(make_ofs,"#");
     make_ofs << "\nMEX = mex\n";
-    make_ofs << "MEXENDING = mexa64\n";
+    make_ofs << "MEXENDING = " << mexExt << "\n";
     make_ofs << "mex_flags = " << mexFlags << "\n\n";
 
     // generate proxy classes and wrappers

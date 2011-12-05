@@ -91,7 +91,7 @@ TEST( wrap, matlab_code ) {
 
 	// emit MATLAB code
 	// make_geometry will not compile, use make testwrap to generate real make
-	module.matlab_code("actual", "", "-O5");
+	module.matlab_code("mexa64", "actual", "", "-O5");
 
 	EXPECT(files_equal(path + "/tests/expected/@Point2/Point2.m"  , "actual/@Point2/Point2.m"  ));
 	EXPECT(files_equal(path + "/tests/expected/@Point2/x.cpp"     , "actual/@Point2/x.cpp"     ));

@@ -52,15 +52,38 @@ LDADD = libwrap.la ../CppUnitLite/libCppUnitLite.a
 # rule to run executable with valgrind
 %.valgrind: % $(LDADD)
 	valgrind ./$^
-	
+
 # generate local toolbox dir
 interfacePath = $(top_srcdir)
 moduleName = gtsam
 toolboxpath = ../toolbox  
 nameSpace = "gtsam"
-mexFlags = "${BOOST_CPPFLAGS} -DUNSAFE_WRAP -I${prefix}/include -I${prefix}/include/gtsam -I${prefix}/include/gtsam/base -I${prefix}/include/gtsam/geometry -I${prefix}/include/gtsam/linear -I${prefix}/include/gtsam/nonlinear -I${prefix}/include/gtsam/slam -L${exec_prefix}/lib -lgtsam"
+mexFlags = 
+mexFlags += "${BOOST_CPPFLAGS} -DUNSAFE_WRAP -I${prefix}/include -I${prefix}/include/gtsam -I${prefix}/include/gtsam/base -I${prefix}/include/gtsam/geometry -I${prefix}/include/gtsam/linear -I${prefix}/include/gtsam/nonlinear -I${prefix}/include/gtsam/slam -L${exec_prefix}/lib -lgtsam"
+if ENABLE_UNSAFE_WRAP
+	mexFlags += "${BOOST_CPPFLAGS} -DUNSAFE_WRAP -I${prefix}/include -I${prefix}/include/gtsam -I${prefix}/include/gtsam/base -I${prefix}/include/gtsam/geometry -I${prefix}/include/gtsam/linear -I${prefix}/include/gtsam/nonlinear -I${prefix}/include/gtsam/slam -L${exec_prefix}/lib -lgtsam"
+else
+	mexFlags += "${BOOST_CPPFLAGS} -I${prefix}/include -I${prefix}/include/gtsam -I${prefix}/include/gtsam/base -I${prefix}/include/gtsam/geometry -I${prefix}/include/gtsam/linear -I${prefix}/include/gtsam/nonlinear -I${prefix}/include/gtsam/slam -L${exec_prefix}/lib -lgtsam"
+endif
+
+# Find the extension for mex binaries - FIXME: this should be done with mexext with matlab
+mexextension = mexa64
+if LINUX
+if IS_64BIT
+	mexextension += mexa64
+else
+	mexextension += mexglx
+endif
+else # Linux
+if DARWIN
+	mexextension += mexmaci64
+else
+	mexextension += mex_bin   	
+endif
+endif # Linux
+
 all:
-	./wrap ${interfacePath} ${moduleName} ${toolboxpath} ${nameSpace} ${mexFlags}
+	./wrap ${mexextension} ${interfacePath} ${moduleName} ${toolboxpath} ${nameSpace} ${mexFlags}
 
 wrap-install-bin: all
 	install -d ${wrap} && \
