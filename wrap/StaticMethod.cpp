@@ -73,12 +73,11 @@ void StaticMethod::matlab_wrapper(const string& toolboxPath,
   ofs << "{\n";
 
   // check arguments
-  // extra argument obj -> nargin-1 is passed !
-  // example: checkArguments("equals",nargout,nargin-1,2);
+  // NOTE: for static functions, there is no object passed
   ofs << "  checkArguments(\"" << full_name << "\",nargout,nargin," << args_.size() << ");\n";
 
   // unwrap arguments, see Argument.cpp
-  args_.matlab_unwrap(ofs,1);
+  args_.matlab_unwrap(ofs,0); // We start at 0 because there is no self object
 
   // call method
   // example: bool result = Point2::return_field(t);
