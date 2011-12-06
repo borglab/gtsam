@@ -191,6 +191,12 @@ namespace gtsam {
     /** Destructor */
 		virtual ~HessianFactor() {}
 
+		/** Clone this JacobianFactor */
+		virtual GaussianFactor::shared_ptr clone() const {
+		  return boost::static_pointer_cast<GaussianFactor>(
+		      shared_ptr(new HessianFactor(*this)));
+		}
+
     /** Print the factor for debugging and testing (implementing Testable) */
     virtual void print(const std::string& s = "") const;
 

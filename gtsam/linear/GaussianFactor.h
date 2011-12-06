@@ -88,6 +88,9 @@ namespace gtsam {
     /** Return the dimension of the variable pointed to by the given key iterator */
     virtual size_t getDim(const_iterator variable) const = 0;
 
+    /** Clone a factor (make a deep copy) */
+    virtual GaussianFactor::shared_ptr clone() const = 0;
+
     /**
      * Permutes the GaussianFactor, but for efficiency requires the permutation
      * to already be inverted.  This acts just as a change-of-name for each

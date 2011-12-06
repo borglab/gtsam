@@ -81,6 +81,20 @@ namespace gtsam {
 
 			Clique(const sharedConditional& conditional);
 
+			void cloneToBayesTree(BayesTree& newTree, shared_ptr parent_clique = shared_ptr()) const {
+			  sharedConditional newConditional = sharedConditional(new CONDITIONAL(*conditional_));
+			  sharedClique newClique = newTree.addClique(newConditional, parent_clique);
+			  if (cachedFactor_)
+			    newClique->cachedFactor_ = cachedFactor_->clone();
+			  else newClique->cachedFactor_ = typename FactorType::shared_ptr();
+			  if (!parent_clique) {
+			    newTree.root_ = newClique;
+			  }
+			  BOOST_FOREACH(const shared_ptr& childClique, children_) {
+			    childClique->cloneToBayesTree(newTree, newClique);
+			  }
+			}
+
 			/** print this node */
 			void print(const std::string& s = "") const;
 
@@ -263,6 +277,11 @@ namespace gtsam {
 
 		/** check equality */
 		bool equals(const BayesTree<CONDITIONAL>& other, double tol = 1e-9) const;
+
+		/** deep copy from another tree */
+		void cloneTo(shared_ptr& newTree) const {
+		  root_->cloneToBayesTree(*newTree);
+		}
 
 		/**
 		 * Find parent clique of a conditional.  It will look at all parents and
