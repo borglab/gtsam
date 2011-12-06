@@ -232,6 +232,12 @@ void Module::matlab_code(const string& toolboxPath,
     make_ofs << "MEXENDING = " << mexExt << "\n";
     make_ofs << "mex_flags = " << mexFlags << "\n\n";
 
+    // add 'all' to Makefile
+    make_ofs << "all: ";
+    BOOST_FOREACH(Class cls, classes)
+    	make_ofs << cls.name << " ";
+    make_ofs << "\n\n";
+
     // generate proxy classes and wrappers
     BOOST_FOREACH(Class cls, classes) {
       // create directory if needed
@@ -263,11 +269,7 @@ void Module::matlab_code(const string& toolboxPath,
     ofs << "echo off" << endl;
     ofs.close();
 
-    // add 'all' and 'clean' to Makefile
-    make_ofs << "\nall: ";
-    BOOST_FOREACH(Class cls, classes)
-    	make_ofs << cls.name << " ";
-
+    // make clean at end of Makefile
     make_ofs << "\n\nclean: \n";
     make_ofs << "\trm -rf *.$(MEXENDING)\n";
     BOOST_FOREACH(Class cls, classes)
