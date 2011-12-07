@@ -72,11 +72,6 @@ public:
 		return *this + p2;
 	}
 
-	/// MATLAB version returns shared pointer
-	boost::shared_ptr<Point2> compose_(const Point2& p2) {
-		return boost::shared_ptr<Point2>(new Point2(compose(p2)));
-	}
-
 	/** operators */
 	inline Point2 operator- () const {return Point2(-x_,-y_);}
 	inline Point2 operator + (const Point2& q) const {return Point2(x_+q.x_,y_+q.y_);}
@@ -97,11 +92,6 @@ public:
 	/// Updates a with tangent space delta
 	inline Point2 retract(const Vector& v) const { return *this + Point2(v); }
 
-  /// MATLAB version returns shared pointer
-  boost::shared_ptr<Point2> retract_(const Vector& v) {
-    return boost::shared_ptr<Point2>(new Point2(retract(v)));
-  }
-
 	/// Local coordinates of manifold neighborhood around current value
 	inline Vector localCoordinates(const Point2& t2) const { return Logmap(between(t2)); }
 
@@ -111,9 +101,6 @@ public:
 
 	/// Exponential map around identity - just create a Point2 from a vector
 	static inline Point2 Expmap(const Vector& v) { return Point2(v); }
-	static inline boost::shared_ptr<Point2> Expmap_(const Vector& v) {
-		return boost::shared_ptr<Point2>(new Point2(Expmap(v)));
-	}
 
 	/// Log map around identity - just return the Point2 as a vector
 	static inline Vector Logmap(const Point2& dp) { return Vector_(2, dp.x(), dp.y()); }
@@ -147,11 +134,6 @@ public:
 		if(H1) *H1 = -eye(2);
 		if(H2) *H2 = eye(2);
 		return p2 - (*this);
-	}
-
-	/// MATLAB version returns shared pointer
-	boost::shared_ptr<Point2> between_(const Point2& p2) {
-		return boost::shared_ptr<Point2>(new Point2(between(p2)));
 	}
 
 	/** get functions for x, y */

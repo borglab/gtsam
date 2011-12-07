@@ -96,11 +96,6 @@ namespace gtsam {
         boost::optional<Matrix&> H1=boost::none,
         boost::optional<Matrix&> H2=boost::none) const;
 
-  	/// MATLAB version returns shared pointer
-  	boost::shared_ptr<Pose3> compose_(const Pose3& p2) {
-  		return boost::shared_ptr<Pose3>(new Pose3(compose(p2)));
-  	}
-
     /// compose syntactic sugar
     Pose3 operator*(const Pose3& T) const {
       return Pose3(R_*T.R_, t_ + R_*T.t_);
@@ -120,11 +115,6 @@ namespace gtsam {
     /// Retraction from R^6 to Pose3 manifold neighborhood around current pose
     Pose3 retract(const Vector& d) const;
 
-    /// MATLAB version returns shared pointer
-    boost::shared_ptr<Pose3> retract_(const Vector& v) {
-      return boost::shared_ptr<Pose3>(new Pose3(retract(v)));
-    }
-
     /// Local 6D coordinates of Pose3 manifold neighborhood around current pose
     Vector localCoordinates(const Pose3& T2) const;
 
@@ -134,9 +124,6 @@ namespace gtsam {
 
     /// Exponential map from Lie algebra se(3) to SE(3)
     static Pose3 Expmap(const Vector& xi);
-  	static inline boost::shared_ptr<Pose3> Expmap_(const Vector& v) {
-  		return boost::shared_ptr<Pose3>(new Pose3(Expmap(v)));
-  	}
 
     /// Exponential map from SE(3) to Lie algebra se(3)
     static Vector Logmap(const Pose3& p);
@@ -163,11 +150,6 @@ namespace gtsam {
     Pose3 between(const Pose3& p2,
         boost::optional<Matrix&> H1=boost::none,
         boost::optional<Matrix&> H2=boost::none) const;
-
-  	/// MATLAB version returns shared pointer
-  	boost::shared_ptr<Pose3> between_(const Pose3& p2) {
-  		return boost::shared_ptr<Pose3>(new Pose3(between(p2)));
-  	}
 
     /**
      * Calculate Adjoint map

@@ -138,11 +138,6 @@ namespace gtsam {
 			return *this * R1;
 		}
 
-		/// MATLAB version returns shared pointer
-		boost::shared_ptr<Rot2> compose_(const Rot2& p2) {
-			return boost::shared_ptr<Rot2>(new Rot2(compose(p2)));
-		}
-
 		/** Compose - make a new rotation by adding angles */
 		Rot2 operator*(const Rot2& R) const {
 			return fromCosSin(c_ * R.c_ - s_ * R.s_, s_ * R.c_ + c_ * R.s_);
@@ -170,11 +165,6 @@ namespace gtsam {
   	/// Updates a with tangent space delta
   	inline Rot2 retract(const Vector& v) const { return *this * Expmap(v); }
 
-    /// MATLAB version returns shared pointer
-    boost::shared_ptr<Rot2> retract_(const Vector& v) {
-      return boost::shared_ptr<Rot2>(new Rot2(retract(v)));
-    }
-
   	/// Returns inverse retraction
   	inline Vector localCoordinates(const Rot2& t2) const { return Logmap(between(t2)); }
 
@@ -188,9 +178,6 @@ namespace gtsam {
 				return (Rot2());
 			else
 				return Rot2::fromAngle(v(0));
-		}
-		static inline boost::shared_ptr<Rot2> Expmap_(const Vector& v) {
-			return boost::shared_ptr<Rot2>(new Rot2(Expmap(v)));
 		}
 
 		/// Logmap around identity - return the angle of the rotation
@@ -217,11 +204,6 @@ namespace gtsam {
 			if (H1) *H1 = -eye(1);
 			if (H2) *H2 = eye(1);
 			return between_default(*this, p2);
-		}
-
-		/// MATLAB version returns shared pointer
-		boost::shared_ptr<Rot2> between_(const Rot2& p2) {
-			return boost::shared_ptr<Rot2>(new Rot2(between(p2)));
 		}
 
 		/** return 2*2 rotation matrix */

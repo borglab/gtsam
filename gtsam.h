@@ -26,8 +26,10 @@
 
 /**
  * Status:
- *  - Depreciated versions of functions that return a shared_ptr unnecessarily are still present
  *  - TODO: global functions
+ *  - TODO: default values for arguments
+ *  - TODO: overloaded functions
+ *  - TODO: Handle Rot3M conversions to quaternions
  *  - TODO: namespace detection to handle nested namespaces
  */
 
@@ -43,12 +45,6 @@ class Point2 {
 	Point2 compose(const Point2& p2);
 	Point2 between(const Point2& p2);
 	Point2 retract(Vector v);
-
-	// Depreciated interface
-	Point2* compose_(const Point2& p2);
-	Point2* between_(const Point2& p2);
-	Point2* retract_(Vector v);
-	static Point2* Expmap_(Vector v);
 };
 
 class Point3 {
@@ -67,12 +63,6 @@ class Point3 {
 	Point3 retract(Vector v);
 	Point3 compose(const Point3& p2);
 	Point3 between(const Point3& p2);
-
-	// Depreciated interface
-	static Point3* Expmap_(Vector v);
-	Point3* compose_(const Point3& p2);
-	Point3* between_(const Point3& p2);
-	Point3* retract_(Vector v);
 };
 
 class Rot2 {
@@ -80,20 +70,21 @@ class Rot2 {
 	Rot2(double theta);
 	static Rot2 Expmap(Vector v);
 	static Vector Logmap(const Rot2& p);
+	static Rot2 fromAngle(double theta);
+	static Rot2 fromDegrees(double theta);
+	static Rot2 fromCosSin(double c, double s);
+	static Rot2 relativeBearing(const Point2& d); // Ignoring derivative
+	static Rot2 atan2(double y, double x);
 	void print(string s) const;
 	bool equals(const Rot2& rot, double tol) const;
+	double theta() const;
+	double degrees() const;
 	double c() const;
 	double s() const;
 	Vector localCoordinates(const Rot2& p);
 	Rot2 retract(Vector v);
 	Rot2 compose(const Rot2& p2);
 	Rot2 between(const Rot2& p2);
-
-	// Depreciated interface
-	Rot2* compose_(const Rot2& p2);
-	Rot2* between_(const Rot2& p2);
-	Rot2* retract_(Vector v);
-	static Rot2* Expmap_(Vector v);
 };
 
 class Rot3 {
@@ -102,22 +93,27 @@ class Rot3 {
 	static Rot3 Expmap(Vector v);
 	static Vector Logmap(const Rot3& p);
   static Rot3 ypr(double y, double p, double r);
+  static Rot3 Rx(double t);
+  static Rot3 Ry(double t);
+  static Rot3 Rz(double t);
+  static Rot3 RzRyRx(double x, double y, double z);
+  static Rot3 RzRyRx(const Vector& xyz);
+  static Rot3 yaw  (double t); // positive yaw is to right (as in aircraft heading)
+  static Rot3 pitch(double t); // positive pitch is up (increasing aircraft altitude)
+  static Rot3 roll (double t); // positive roll is to right (increasing yaw in aircraft)
+  static Rot3 quaternion(double w, double x, double y, double z);
+  static Rot3 rodriguez(const Vector& v);
 	Matrix matrix() const;
 	Matrix transpose() const;
 	Vector xyz() const;
 	Vector ypr() const;
+//  Vector toQuaternion() const;  // FIXME: Can't cast to Vector properly
 	void print(string s) const;
 	bool equals(const Rot3& rot, double tol) const;
 	Vector localCoordinates(const Rot3& p);
 	Rot3 retract(Vector v);
 	Rot3 compose(const Rot3& p2);
 	Rot3 between(const Rot3& p2);
-
-	// Depreciated interface
-	Rot3* compose_(const Rot3& p2);
-	Rot3* between_(const Rot3& p2);
-	Rot3* retract_(Vector v);
-	static Rot3* Expmap_(Vector v);
 };
 
 class Pose2 {
@@ -138,12 +134,6 @@ class Pose2 {
 	Pose2 retract(Vector v);
 	Pose2 compose(const Pose2& p2);
 	Pose2 between(const Pose2& p2);
-
-	// Depreciated interface
-	Pose2* compose_(const Pose2& p2);
-	Pose2* between_(const Pose2& p2);
-	Pose2* retract_(Vector v);
-	static Pose2* Expmap_(Vector v);
 };
 
 class Pose3 {
@@ -165,14 +155,6 @@ class Pose3 {
 	Pose3 retract(Vector v);
 	Point3 translation() const;
 	Rot3 rotation() const;
-
-	// Depreciated interface
-	static Pose3* Expmap_(Vector v);
-	Pose3* compose_(const Pose3& p2);
-	Pose3* between_(const Pose3& p2);
-	Pose3* retract_(Vector v);
-	Point3* translation_() const;
-	Rot3* rotation_() const;
 };
 
 class SharedGaussian {
@@ -314,7 +296,7 @@ class PlanarSLAMOdometry {
 class GaussianSequentialSolver {
   GaussianSequentialSolver(const GaussianFactorGraph& graph, bool useQR);
   GaussianBayesNet* eliminate() const;
-  VectorValues* optimize() const; // FAIL: parse error here
+  VectorValues* optimize() const;
   GaussianFactor* marginalFactor(int j) const;
   Matrix marginalCovariance(int j) const;
 };
