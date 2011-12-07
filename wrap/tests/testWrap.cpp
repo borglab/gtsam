@@ -29,7 +29,7 @@ static bool verbose = false;
 #ifdef TOPSRCDIR
 static string topdir = TOPSRCDIR;
 #else
-static string topdir = "notarealdirectory"; // If TOPSRCDIR is not defined, we error
+static string topdir = "TOPSRCDIR_NOT_CONFIGURED"; // If TOPSRCDIR is not defined, we error
 #endif
 
 /* ************************************************************************* */
@@ -62,7 +62,7 @@ TEST( wrap, parse ) {
 	EXPECT(cls.name=="Point3");
 	EXPECT(cls.constructors.size()==1);
 	EXPECT(cls.methods.size()==1);
-	EXPECT(cls.static_methods.size()==1);
+	EXPECT(cls.static_methods.size()==2);
 
 	// first constructor takes 3 doubles
 	Constructor c1 = cls.constructors.front();
@@ -91,15 +91,15 @@ TEST( wrap, matlab_code ) {
 
 	// emit MATLAB code
 	// make_geometry will not compile, use make testwrap to generate real make
-	module.matlab_code("mexa64", "actual", "", "-O5");
+	module.matlab_code("actual", "", "mexa64", "-O5");
 
 	EXPECT(files_equal(path + "/tests/expected/@Point2/Point2.m"  , "actual/@Point2/Point2.m"  ));
 	EXPECT(files_equal(path + "/tests/expected/@Point2/x.cpp"     , "actual/@Point2/x.cpp"     ));
 	EXPECT(files_equal(path + "/tests/expected/@Point3/Point3.m"  , "actual/@Point3/Point3.m"  ));
 	EXPECT(files_equal(path + "/tests/expected/new_Point3_ddd.m"  , "actual/new_Point3_ddd.m"  ));
 	EXPECT(files_equal(path + "/tests/expected/new_Point3_ddd.cpp", "actual/new_Point3_ddd.cpp"));
-	EXPECT(files_equal(path + "/tests/expected/Point3_StaticFunction.m"  , "actual/Point3_StaticFunction.m"  ));
-	EXPECT(files_equal(path + "/tests/expected/Point3_StaticFunction.cpp", "actual/Point3_StaticFunction.cpp"));
+	EXPECT(files_equal(path + "/tests/expected/Point3_staticFunction.m"  , "actual/Point3_staticFunction.m"  ));
+	EXPECT(files_equal(path + "/tests/expected/Point3_staticFunction.cpp", "actual/Point3_staticFunction.cpp"));
 	EXPECT(files_equal(path + "/tests/expected/@Point3/norm.m"    , "actual/@Point3/norm.m"    ));
 	EXPECT(files_equal(path + "/tests/expected/@Point3/norm.cpp"  , "actual/@Point3/norm.cpp"  ));
 

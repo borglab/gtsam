@@ -16,12 +16,13 @@ namespace wrap {
 struct ReturnValue {
 
 	ReturnValue(bool verbose = true)
-	: verbose_(verbose), returns_ptr_(false), returns_ptr2_(false), returns_pair_(false)
+	: verbose_(verbose), returns_ptr_(false), returns_ptr2_(false),
+	  returns_pair_(false), returns_class_(false)
 	{}
 
 	bool verbose_;
 	std::string returns_, returns2_;
-	bool returns_ptr_, returns_ptr2_, returns_pair_;
+	bool returns_ptr_, returns_ptr2_, returns_pair_, returns_class_, returns_class2_;
 
 	typedef enum {
 		arg1, arg2, pair

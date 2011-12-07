@@ -8,9 +8,8 @@
  *   Constructors must appear in a class before any methods
  *   Methods can only return Matrix, Vector, double, int, void, and a shared_ptr to any other object
  *   Comments can use either C++ or C style
- *   Static methods are not supported - FIXED
  *   Methods must start with a lowercase letter
- *   Static methods must start with an uppercase letter
+ *   Static methods must start with a letter (upper or lowercase) and use the "static" keyword
  *   Classes must start with an uppercase letter
  */
 
@@ -66,6 +65,7 @@ class Rot3 {
 	Rot3(Matrix R);
 	static Rot3* Expmap_(Vector v);
 	static Vector Logmap(const Rot3& p);
+  static Rot3 ypr(double y, double p, double r);
 	Matrix matrix() const;
 	Matrix transpose() const;
 	Vector xyz() const;

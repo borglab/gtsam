@@ -12,8 +12,9 @@ class Point3 {
   Point3(double x, double y, double z);
   double norm() const;
 
-  // Testing: static functions - use static keyword and uppercase
-  static double StaticFunction();
+  // static functions - use static keyword and uppercase
+  static double staticFunction();
+  static Point3 StaticFunctionRet(double z);
 };
 
 // another comment

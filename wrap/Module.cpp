@@ -102,14 +102,18 @@ Module::Module(const string& interfacePath,
     [push_back_a(cls.constructors, constructor)]
     [assign_a(constructor,constructor0)];
 
+  Rule returnClass1_p = className_p [assign_a(retVal.returns_class_, true)];
+
+  Rule returnClass2_p = className_p [assign_a(retVal.returns_class2_, true)];
+
   Rule returnType1_p =
     basisType_p[assign_a(retVal.returns_)] |
-    ((className_p | "Vector" | "Matrix")[assign_a(retVal.returns_)] >>
+    ((returnClass1_p | "Vector" | "Matrix")[assign_a(retVal.returns_)] >>
      !ch_p('*')  [assign_a(retVal.returns_ptr_,true)]);
 
   Rule returnType2_p =
     basisType_p[assign_a(retVal.returns2_)] |
-    ((className_p | "Vector" | "Matrix")[assign_a(retVal.returns2_)] >>
+    ((returnClass2_p | "Vector" | "Matrix")[assign_a(retVal.returns2_)] >>
      !ch_p('*')  [assign_a(retVal.returns_ptr2_,true)]);
 
   Rule pair_p = 
@@ -133,7 +137,7 @@ Module::Module(const string& interfacePath,
     [push_back_a(cls.methods, method)]
     [assign_a(method,method0)];
 
-  Rule staticMethodName_p = lexeme_d[upper_p >> *(alnum_p | '_')];
+  Rule staticMethodName_p = lexeme_d[(upper_p | lower_p) >> *(alnum_p | '_')];
 
   Rule static_method_p =
     (str_p("static") >> returnType_p >> staticMethodName_p[assign_a(static_method.name_)] >>

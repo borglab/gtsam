@@ -38,9 +38,9 @@ void StaticMethod::matlab_mfile(const string& toolboxPath, const string& classNa
   // generate code
   string returnType = returnVal_.matlab_returnType();
   ofs << "function " << returnType << " = " << full_name << "(";
-  if (args_.size()) ofs << "," << args_.names();
+  if (args_.size()) ofs << args_.names();
   ofs << ")" << endl;
-  ofs << "% usage: obj." << full_name << "(" << args_.names() << ")" << endl;
+  ofs << "% usage: x = " << full_name << "(" << args_.names() << ")" << endl;
   ofs << "  error('need to compile " << full_name << ".cpp');" << endl;
   ofs << "end" << endl;
 
@@ -79,9 +79,9 @@ void StaticMethod::matlab_wrapper(const string& toolboxPath,
   // unwrap arguments, see Argument.cpp
   args_.matlab_unwrap(ofs,0); // We start at 0 because there is no self object
 
-  // call method
-  // example: bool result = Point2::return_field(t);
   ofs << "  ";
+
+  // call method with default type
   if (returnVal_.returns_!="void")
     ofs << returnVal_.return_type(true,ReturnValue::pair) << " result = ";
   ofs << className  << "::" << name_ << "(" << args_.names() << ");\n";
