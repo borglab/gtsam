@@ -107,6 +107,9 @@ class Rot3 {
 	Matrix transpose() const;
 	Vector xyz() const;
 	Vector ypr() const;
+  double roll() const;
+  double pitch() const;
+  double yaw() const;
 //  Vector toQuaternion() const;  // FIXME: Can't cast to Vector properly
 	void print(string s) const;
 	bool equals(const Rot3& rot, double tol) const;
@@ -134,6 +137,8 @@ class Pose2 {
 	Pose2 retract(Vector v);
 	Pose2 compose(const Pose2& p2);
 	Pose2 between(const Pose2& p2);
+	Rot2 bearing(const Point2& point);
+	double range(const Point2& point);
 };
 
 class Pose3 {
