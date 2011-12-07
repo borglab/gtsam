@@ -48,14 +48,22 @@ TEST( wrap, ArgumentList ) {
 TEST( wrap, check_exception ) {
 	THROWS_EXCEPTION(Module("/notarealpath", "geometry",enable_verbose));
 	CHECK_EXCEPTION(Module("/alsonotarealpath", "geometry",enable_verbose), CantOpenFile);
+    
+    string path = topdir + "/wrap/tests";
+    Module module(path.c_str(), "testWrap1",enable_verbose);
+	THROWS_EXCEPTION(throw DependencyMissing("a", "b"));
+	CHECK_EXCEPTION(module.matlab_code("actual", "", "mexa64", "-O5"), DependencyMissing);
+
 }
 
 /* ************************************************************************* */
 TEST( wrap, parse ) {
-	string path = topdir + "/wrap";
+	string path = topdir + "/wrap/tests";
 
 	Module module(path.c_str(), "geometry",enable_verbose);
 	CHECK(module.classes.size()==3);
+	//Hack to solve issues with instantiating Modules
+	path = topdir + "/wrap";
 
 	// check second class, Point3
 	Class cls = *(++module.classes.begin());
@@ -98,8 +106,9 @@ TEST( wrap, parse ) {
 /* ************************************************************************* */
 TEST( wrap, matlab_code ) {
 	// Parse into class object
-	string path = topdir + "/wrap";
+	string path = topdir + "/wrap/tests";
 	Module module(path,"geometry",enable_verbose);
+	path = topdir + "/wrap";
 
 	// emit MATLAB code
 	// make_geometry will not compile, use make testwrap to generate real make

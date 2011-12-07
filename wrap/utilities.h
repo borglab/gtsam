@@ -46,6 +46,22 @@ class ParseFailed : public std::exception {
   }
 };
 
+class DependencyMissing : public std::exception {
+    private:
+        std::string dependency_;
+        std::string location_;
+    public:
+        DependencyMissing(const std::string& dep, const std::string& loc) {
+            dependency_ = dep;
+            location_ = loc;
+        }
+        ~DependencyMissing() throw() {}
+        virtual const char* what() const throw() {
+            return ("Missing dependency " + dependency_ + " in " + location_).c_str();
+        }
+};
+
+
 /**
  * read contents of a file into a std::string
  */

@@ -209,7 +209,6 @@ void Module::matlab_code(const string& toolboxPath,
 			 const string& mexExt,
 			 const string& mexFlags)
 {
-  try {
     string installCmd = "install -d " + toolboxPath;
     system(installCmd.c_str());
 
@@ -238,11 +237,26 @@ void Module::matlab_code(const string& toolboxPath,
     make_ofs << "MEXENDING = " << mexExt << "\n";
     make_ofs << "mex_flags = " << mexFlags << "\n\n";
 
+    //Dependency check list
+    std::vector<string> validArgs;
+    validArgs.push_back("string");
+    validArgs.push_back("int");
+    validArgs.push_back("bool");
+    validArgs.push_back("size_t");
+    validArgs.push_back("double");
+    validArgs.push_back("Vector");
+    validArgs.push_back("Matrix");
+
     // add 'all' to Makefile
     make_ofs << "all: ";
-    BOOST_FOREACH(Class cls, classes)
+    BOOST_FOREACH(Class cls, classes) {
     	make_ofs << cls.name << " ";
+        //Create a list of parsed classes for dependency checking
+        validArgs.push_back(cls.name);
+    }
     make_ofs << "\n\n";
+
+
 
     // generate proxy classes and wrappers
     BOOST_FOREACH(Class cls, classes) {
@@ -256,8 +270,31 @@ void Module::matlab_code(const string& toolboxPath,
       cls.matlab_proxy(classFile);
 
       // create constructor and method wrappers
+      BOOST_FOREACH(Constructor con, cls.constructors) {
+          BOOST_FOREACH(Argument arg, con.args) {
+             if(std::find(validArgs.begin(), validArgs.end(), arg.type) 
+                     == validArgs.end())
+                 throw DependencyMissing(arg.type, cls.name);
+          }
+      }
       cls.matlab_constructors(toolboxPath,nameSpace);
+      
+      BOOST_FOREACH(StaticMethod stMth, cls.static_methods) {
+          BOOST_FOREACH(Argument arg, stMth.args) {
+             if(std::find(validArgs.begin(), validArgs.end(), arg.type) 
+                     == validArgs.end())
+                 throw DependencyMissing(arg.type, stMth.name);
+          }
+      }
       cls.matlab_static_methods(toolboxPath,nameSpace);
+
+      BOOST_FOREACH(Method mth, cls.methods) {
+          BOOST_FOREACH(Argument arg, mth.args_) {
+             if(std::find(validArgs.begin(), validArgs.end(), arg.type) 
+                     == validArgs.end())
+                 throw DependencyMissing(arg.type, mth.name_);
+          }
+      }
       cls.matlab_methods(classPath,nameSpace);
 
       // add lines to make m-file
@@ -285,10 +322,5 @@ void Module::matlab_code(const string& toolboxPath,
     make_ofs << "\n" << endl;
     make_ofs.close();
   }
-  catch(exception &e) {
-    cerr << "generate_matlab_toolbox failed because " << e.what() << endl;
-  }
-
-}
 
 /* ************************************************************************* */
