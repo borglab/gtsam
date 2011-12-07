@@ -40,17 +40,17 @@ typedef rule<BOOST_SPIRIT_CLASSIC_NS::phrase_scanner_t> Rule;
 /* ************************************************************************* */
 
 Module::Module(const string& interfacePath,
-	       const string& moduleName, bool verbose) : name(moduleName), verbose_(verbose)
+	       const string& moduleName, bool enable_verbose) : name(moduleName), verbose(enable_verbose)
 {
   // these variables will be imperatively updated to gradually build [cls]
   // The one with postfix 0 are used to reset the variables after parse.
 	ReturnValue retVal0, retVal;
   Argument arg0, arg;
   ArgumentList args0, args;
-  Constructor constructor0(verbose), constructor(verbose);
-  Method method0(verbose), method(verbose);
-  StaticMethod static_method0(verbose), static_method(verbose);
-  Class cls0(verbose),cls(verbose);
+  Constructor constructor0(enable_verbose), constructor(enable_verbose);
+  Method method0(enable_verbose), method(enable_verbose);
+  StaticMethod static_method0(enable_verbose), static_method(enable_verbose);
+  Class cls0(enable_verbose),cls(enable_verbose);
 
   //----------------------------------------------------------------------------
   // Grammar with actions that build the Class object. Actions are
@@ -68,7 +68,13 @@ Module::Module(const string& interfacePath,
   // lexeme_d turns off white space skipping
   // http://www.boost.org/doc/libs/1_37_0/libs/spirit/classic/doc/directives.html
 
-  Rule className_p  = lexeme_d[upper_p >> *(alnum_p | '_')];
+  Rule basisType_p =
+    (str_p("string") | "bool" | "size_t" | "int" | "double");
+
+  Rule eigenType_p =
+    (str_p("Vector") | "Matrix");
+
+  Rule className_p  = lexeme_d[upper_p >> *(alnum_p | '_')] - eigenType_p - basisType_p;
 
   Rule classPtr_p =
     className_p     [assign_a(arg.type)] >> 
@@ -79,21 +85,19 @@ Module::Module(const string& interfacePath,
     className_p     [assign_a(arg.type)] >> 
     ch_p('&')       [assign_a(arg.is_ref,true)];
 
-  Rule basisType_p = 
-    (str_p("string") | "bool" | "size_t" | "int" | "double");
-
-  // FAIL: this will match against VectorValues in returntype
-  Rule eigenType_p =
-    (str_p("Vector") | "Matrix");
-
-  Rule argEigenType =
+  Rule argEigenType_p =
   	eigenType_p[assign_a(arg.type)] >>
   	!ch_p('*')[assign_a(arg.is_ptr,true)];
+
+  Rule eigenRef_p =
+      !str_p("const") [assign_a(arg.is_const,true)] >>
+      eigenType_p     [assign_a(arg.type)] >>
+      ch_p('&')       [assign_a(arg.is_ref,true)];
 
   Rule name_p = lexeme_d[alpha_p >> *(alnum_p | '_')];
 
   Rule argument_p = 
-    ((basisType_p[assign_a(arg.type)] | argEigenType | classPtr_p | classRef_p) >> name_p[assign_a(arg.name)])
+    ((basisType_p[assign_a(arg.type)] | argEigenType_p | classRef_p | eigenRef_p | classPtr_p) >> name_p[assign_a(arg.name)])
     [push_back_a(args, arg)]
     [assign_a(arg,arg0)];
 
@@ -107,22 +111,22 @@ Module::Module(const string& interfacePath,
     [assign_a(constructor,constructor0)];
 
   Rule returnType1_p =
-    (basisType_p[assign_a(retVal.returns_)][assign_a(retVal.return1, ReturnValue::BASIS)]) |
-    (eigenType_p[assign_a(retVal.returns_)][assign_a(retVal.return1, ReturnValue::EIGEN)]) |
-    (className_p[assign_a(retVal.returns_)][assign_a(retVal.return1, ReturnValue::CLASS)]) >>
-     !ch_p('*')  [assign_a(retVal.returns_ptr_,true)];
+		(basisType_p[assign_a(retVal.type1)][assign_a(retVal.category1, ReturnValue::BASIS)]) |
+		((className_p[assign_a(retVal.type1)][assign_a(retVal.category1, ReturnValue::CLASS)]) >>
+				!ch_p('*')[assign_a(retVal.isPtr1,true)]) |
+		(eigenType_p[assign_a(retVal.type1)][assign_a(retVal.category1, ReturnValue::EIGEN)]);
 
   Rule returnType2_p =
-      (basisType_p[assign_a(retVal.returns2_)][assign_a(retVal.return2, ReturnValue::BASIS)]) |
-      (eigenType_p[assign_a(retVal.returns2_)][assign_a(retVal.return2, ReturnValue::EIGEN)]) |
-      (className_p[assign_a(retVal.returns2_)][assign_a(retVal.return2, ReturnValue::CLASS)]) >>
-     !ch_p('*')  [assign_a(retVal.returns_ptr2_,true)];
+		(basisType_p[assign_a(retVal.type2)][assign_a(retVal.category2, ReturnValue::BASIS)]) |
+		((className_p[assign_a(retVal.type2)][assign_a(retVal.category2, ReturnValue::CLASS)]) >>
+				!ch_p('*')  [assign_a(retVal.isPtr2,true)]) |
+		(eigenType_p[assign_a(retVal.type2)][assign_a(retVal.category2, ReturnValue::EIGEN)]);
 
   Rule pair_p = 
     (str_p("pair") >> '<' >> returnType1_p >> ',' >> returnType2_p >> '>')
-    [assign_a(retVal.returns_pair_,true)];
+    [assign_a(retVal.isPair,true)];
 
-  Rule void_p = str_p("void")[assign_a(retVal.returns_)];
+  Rule void_p = str_p("void")[assign_a(retVal.type1)];
 
   Rule returnType_p = void_p | returnType1_p | pair_p;
 
@@ -142,23 +146,19 @@ Module::Module(const string& interfacePath,
   Rule staticMethodName_p = lexeme_d[(upper_p | lower_p) >> *(alnum_p | '_')];
 
   Rule static_method_p =
-    (str_p("static") >> returnType_p >> staticMethodName_p[assign_a(static_method.name_)] >>
+    (str_p("static") >> returnType_p >> staticMethodName_p[assign_a(static_method.name)] >>
      '(' >> argumentList_p >> ')' >> ';' >> *comments_p)
-    [assign_a(static_method.args_,args)]
+    [assign_a(static_method.args,args)]
     [assign_a(args,args0)]
-    [assign_a(static_method.returnVal_,retVal)]
+    [assign_a(static_method.returnVal,retVal)]
     [assign_a(retVal,retVal0)]
     [push_back_a(cls.static_methods, static_method)]
     [assign_a(static_method,static_method0)];
 
-  Rule methods_p = method_p | static_method_p;
+  Rule functions_p = constructor_p | method_p | static_method_p;
 
   Rule class_p = str_p("class") >> className_p[assign_a(cls.name)] >> '{' >>
- 		*comments_p >>
-    *constructor_p >>
- 		*comments_p >>
-    *methods_p >>
- 		*comments_p >>
+    *(functions_p | comments_p) >>
     '}' >> ";";
 
   Rule module_p = *comments_p >> +(class_p
@@ -223,7 +223,7 @@ void Module::matlab_code(const string& toolboxPath,
     ofstream make_ofs(makeFile.c_str());
     if(!make_ofs) throw CantOpenFile(makeFile);
 
-    if (verbose_) cerr << "generating " << matlabMakeFile << endl;
+    if (verbose) cerr << "generating " << matlabMakeFile << endl;
     emit_header_comment(ofs,"%");
     ofs << "echo on" << endl << endl;
     ofs << "toolboxpath = mfilename('fullpath');" << endl;
@@ -232,7 +232,7 @@ void Module::matlab_code(const string& toolboxPath,
     ofs << "clear delims" << endl;
     ofs << "addpath(toolboxpath);" << endl << endl;
 
-    if (verbose_) cerr << "generating " << makeFile << endl;
+    if (verbose) cerr << "generating " << makeFile << endl;
     emit_header_comment(make_ofs,"#");
     make_ofs << "\nMEX = mex\n";
     make_ofs << "MEXENDING = " << mexExt << "\n";

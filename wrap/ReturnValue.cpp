@@ -13,39 +13,39 @@ using namespace wrap;
 
 /* ************************************************************************* */
 string ReturnValue::return_type(bool add_ptr, pairing p) {
-  if (p==pair && returns_pair_) {
+  if (p==pair && isPair) {
     string str = "pair< " +
-    		wrap::maybe_shared_ptr(add_ptr && returns_ptr_, returns_) + ", " +
-      wrap::maybe_shared_ptr(add_ptr && returns_ptr2_, returns2_) + " >";
+    		wrap::maybe_shared_ptr(add_ptr && isPtr1, type1) + ", " +
+      wrap::maybe_shared_ptr(add_ptr && isPtr2, type2) + " >";
     return str;
   } else
-    return wrap::maybe_shared_ptr(add_ptr && returns_ptr_, (p==arg2)? returns2_ : returns_);
+    return wrap::maybe_shared_ptr(add_ptr && isPtr1, (p==arg2)? type2 : type1);
 }
 
 /* ************************************************************************* */
 void ReturnValue::wrap_result(std::ostream& ofs) {
-  if (returns_pair_) {
+  if (isPair) {
   	// first return value in pair
-    if (returns_ptr_) // if we already have a pointer
-      ofs << "  out[0] = wrap_shared_ptr(result.first,\"" << returns_ << "\");\n";
-    else if (return1 == ReturnValue::CLASS) // if we are going to make one
-    	ofs << "  out[0] = wrap_shared_ptr(make_shared< " << returns_ << " >(result.first),\"" << returns_ << "\");\n";
+    if (isPtr1) // if we already have a pointer
+      ofs << "  out[0] = wrap_shared_ptr(result.first,\"" << type1 << "\");\n";
+    else if (category1 == ReturnValue::CLASS) // if we are going to make one
+    	ofs << "  out[0] = wrap_shared_ptr(make_shared< " << type1 << " >(result.first),\"" << type1 << "\");\n";
     else // if basis type
       ofs << "  out[0] = wrap< " << return_type(true,arg1) << " >(result.first);\n";
 
     // second return value in pair
-    if (returns_ptr2_) // if we already have a pointer
-      ofs << "  out[1] = wrap_shared_ptr(result.second,\"" << returns2_ << "\");\n";
-    else if (return2 == ReturnValue::CLASS) // if we are going to make one
-    	ofs << "  out[1] = wrap_shared_ptr(make_shared< " << returns2_ << " >(result.second),\"" << returns2_ << "\");\n";
+    if (isPtr2) // if we already have a pointer
+      ofs << "  out[1] = wrap_shared_ptr(result.second,\"" << type2 << "\");\n";
+    else if (category2 == ReturnValue::CLASS) // if we are going to make one
+    	ofs << "  out[1] = wrap_shared_ptr(make_shared< " << type2 << " >(result.second),\"" << type2 << "\");\n";
     else
       ofs << "  out[1] = wrap< " << return_type(true,arg2) << " >(result.second);\n";
   }
-  else if (returns_ptr_)
-    ofs << "  out[0] = wrap_shared_ptr(result,\"" << returns_ << "\");\n";
-  else if (return1 == ReturnValue::CLASS)
-  	ofs << "  out[0] = wrap_shared_ptr(make_shared< " << returns_ << " >(result),\"" << returns_ << "\");\n";
-  else if (returns_!="void")
+  else if (isPtr1)
+    ofs << "  out[0] = wrap_shared_ptr(result,\"" << type1 << "\");\n";
+  else if (category1 == ReturnValue::CLASS)
+  	ofs << "  out[0] = wrap_shared_ptr(make_shared< " << type1 << " >(result),\"" << type1 << "\");\n";
+  else if (type1!="void")
     ofs << "  out[0] = wrap< " << return_type(true,arg1) << " >(result);\n";
 }
 

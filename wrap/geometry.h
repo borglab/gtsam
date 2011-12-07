@@ -6,6 +6,7 @@ class Point2 {
  double x() const;
  double y() const;
  int dim() const;
+ VectorNotEigen vectorConfusion();
 };
 
 class Point3 {
@@ -19,6 +20,10 @@ class Point3 {
 
 // another comment
 
+/**
+ * A multi-line comment!
+ */
+
 class Test {
 	/* a comment! */
 	// another comment
@@ -31,6 +36,8 @@ class Test {
   int    return_int    (int    value) const;
   double return_double (double value) const;
 
+  Test(double a, Matrix b); // a constructor in the middle of a class
+
   // comments in the middle!
 
   // (more) comments in the middle!
@@ -40,6 +47,7 @@ class Test {
   Matrix return_matrix1(Matrix value) const;
   Vector return_vector2(Vector value) const;
   Matrix return_matrix2(Matrix value) const;
+  void arg_EigenConstRef(const Matrix& value) const;
 
   bool return_field(const Test& t) const;
 

@@ -25,7 +25,7 @@
 
 using namespace std;
 using namespace wrap;
-static bool verbose = false;
+static bool enable_verbose = false;
 #ifdef TOPSRCDIR
 static string topdir = TOPSRCDIR;
 #else
@@ -46,15 +46,15 @@ TEST( wrap, ArgumentList ) {
 
 /* ************************************************************************* */
 TEST( wrap, check_exception ) {
-	THROWS_EXCEPTION(Module("/notarealpath", "geometry",verbose));
-	CHECK_EXCEPTION(Module("/alsonotarealpath", "geometry",verbose), CantOpenFile);
+	THROWS_EXCEPTION(Module("/notarealpath", "geometry",enable_verbose));
+	CHECK_EXCEPTION(Module("/alsonotarealpath", "geometry",enable_verbose), CantOpenFile);
 }
 
 /* ************************************************************************* */
 TEST( wrap, parse ) {
 	string path = topdir + "/wrap";
 
-	Module module(path.c_str(), "geometry",verbose);
+	Module module(path.c_str(), "geometry",enable_verbose);
 	CHECK(module.classes.size()==3);
 
 	// check second class, Point3
@@ -77,29 +77,29 @@ TEST( wrap, parse ) {
 
 	// check method
 	Method m1 = cls.methods.front();
-	EXPECT(m1.returnVal_.returns_=="double");
+	EXPECT(m1.returnVal_.type1=="double");
 	EXPECT(m1.name_=="norm");
 	EXPECT(m1.args_.size()==0);
 	EXPECT(m1.is_const_);
 
 	// Test class is the third one
 	Class testCls = module.classes.at(2);
-	EXPECT_LONGS_EQUAL( 1, testCls.constructors.size());
-	EXPECT_LONGS_EQUAL(18, testCls.methods.size());
+	EXPECT_LONGS_EQUAL( 2, testCls.constructors.size());
+	EXPECT_LONGS_EQUAL(19, testCls.methods.size());
 	EXPECT_LONGS_EQUAL( 0, testCls.static_methods.size());
 
-//  pair<Vector,Matrix> return_pair (Vector v, Matrix A) const;
+  // function to parse: pair<Vector,Matrix> return_pair (Vector v, Matrix A) const;
 	Method m2 = testCls.methods.front();
-	EXPECT(m2.returnVal_.returns_pair_);
-	EXPECT(m2.returnVal_.return1 == ReturnValue::EIGEN);
-	EXPECT(m2.returnVal_.return2 == ReturnValue::EIGEN);
+	EXPECT(m2.returnVal_.isPair);
+	EXPECT(m2.returnVal_.category1 == ReturnValue::EIGEN);
+	EXPECT(m2.returnVal_.category2 == ReturnValue::EIGEN);
 }
 
 /* ************************************************************************* */
 TEST( wrap, matlab_code ) {
 	// Parse into class object
 	string path = topdir + "/wrap";
-	Module module(path,"geometry",verbose);
+	Module module(path,"geometry",enable_verbose);
 
 	// emit MATLAB code
 	// make_geometry will not compile, use make testwrap to generate real make

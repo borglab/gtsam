@@ -86,7 +86,7 @@ void Class::matlab_make_fragment(ofstream& ofs,
   BOOST_FOREACH(Constructor c, constructors)
     ofs << mex << c.matlab_wrapper_name(name) << ".cpp" << endl;
   BOOST_FOREACH(StaticMethod sm, static_methods)
-    ofs << mex << name + "_" + sm.name_ << ".cpp" << endl;
+    ofs << mex << name + "_" + sm.name << ".cpp" << endl;
   ofs << endl << "cd @" << name << endl;
   BOOST_FOREACH(Method m, methods)
     ofs << mex << m.name_ << ".cpp" << endl;
@@ -115,7 +115,7 @@ void Class::makefile_fragment(ofstream& ofs) {
   	file_names.push_back(file_base);
   }
   BOOST_FOREACH(StaticMethod c, static_methods) {
-  	string file_base = name + "_" + c.name_;
+  	string file_base = name + "_" + c.name;
   	file_names.push_back(file_base);
   }
   BOOST_FOREACH(Method c, methods) {

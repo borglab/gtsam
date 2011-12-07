@@ -1,37 +1,61 @@
 /**
- * GTSAM Wrap Module definition
+ * GTSAM Wrap Module Definition
  *
  * These are the current classes available through the matlab toolbox interface,
  * add more functions/classes as they are available.
  *
  * Requirements:
- *   Constructors must appear in a class before any methods
- *   Methods can only return Matrix, Vector, double, int, void, and a shared_ptr to any other object
- *   Comments can use either C++ or C style
+ *   Classes must start with an uppercase letter
+ *   Only one Method/Constructor per line
+ *   Methods can return
+ *     - Eigen types:       Matrix, Vector
+ *     - C/C++ basic types: string, bool, size_t, int, double
+ *     - void
+ *     - Any class with which be copied with boost::make_shared()
+ *     - boost::shared_ptr of any object type
+ *   Arguments to functions any of
+ *   	 - Eigen types:       Matrix, Vector
+ *   	 - Eigen types and classes as an optionally const reference
+ *     - C/C++ basic types: string, bool, size_t, int, double
+ *     - Any class with which be copied with boost::make_shared() (except Eigen)
+ *     - boost::shared_ptr of any object type (except Eigen)
+ *   Comments can use either C++ or C style, with multiple lines
  *   Methods must start with a lowercase letter
  *   Static methods must start with a letter (upper or lowercase) and use the "static" keyword
- *   Classes must start with an uppercase letter
+ */
+
+/**
+ * Status:
+ *  - Depreciated versions of functions that return a shared_ptr unnecessarily are still present
+ *  - TODO: global functions
+ *  - TODO: namespace detection to handle nested namespaces
  */
 
 class Point2 {
 	Point2();
 	Point2(double x, double y);
-	static Point2* Expmap_(Vector v);
+	static Point2 Expmap(Vector v);
 	static Vector Logmap(const Point2& p);
 	void print(string s) const;
 	double x();
 	double y();
+	Vector localCoordinates(const Point2& p);
+	Point2 compose(const Point2& p2);
+	Point2 between(const Point2& p2);
+	Point2 retract(Vector v);
+
+	// Depreciated interface
 	Point2* compose_(const Point2& p2);
 	Point2* between_(const Point2& p2);
-	Vector localCoordinates(const Point2& p);
 	Point2* retract_(Vector v);
+	static Point2* Expmap_(Vector v);
 };
 
 class Point3 {
 	Point3();
 	Point3(double x, double y, double z);
 	Point3(Vector v);
-	static Point3* Expmap_(Vector v);
+	static Point3 Expmap(Vector v);
 	static Vector Logmap(const Point3& p);
 	void print(string s) const;
 	bool equals(const Point3& p, double tol);
@@ -39,31 +63,43 @@ class Point3 {
 	double x();
 	double y();
 	double z();
+	Vector localCoordinates(const Point3& p);
+	Point3 retract(Vector v);
+	Point3 compose(const Point3& p2);
+	Point3 between(const Point3& p2);
+
+	// Depreciated interface
+	static Point3* Expmap_(Vector v);
 	Point3* compose_(const Point3& p2);
 	Point3* between_(const Point3& p2);
-	Vector localCoordinates(const Point3& p);
 	Point3* retract_(Vector v);
 };
 
 class Rot2 {
 	Rot2();
 	Rot2(double theta);
-	static Rot2* Expmap_(Vector v);
+	static Rot2 Expmap(Vector v);
 	static Vector Logmap(const Rot2& p);
 	void print(string s) const;
 	bool equals(const Rot2& rot, double tol) const;
 	double c() const;
 	double s() const;
+	Vector localCoordinates(const Rot2& p);
+	Rot2 retract(Vector v);
+	Rot2 compose(const Rot2& p2);
+	Rot2 between(const Rot2& p2);
+
+	// Depreciated interface
 	Rot2* compose_(const Rot2& p2);
 	Rot2* between_(const Rot2& p2);
-	Vector localCoordinates(const Rot2& p);
 	Rot2* retract_(Vector v);
+	static Rot2* Expmap_(Vector v);
 };
 
 class Rot3 {
 	Rot3();
 	Rot3(Matrix R);
-	static Rot3* Expmap_(Vector v);
+	static Rot3 Expmap(Vector v);
 	static Vector Logmap(const Rot3& p);
   static Rot3 ypr(double y, double p, double r);
 	Matrix matrix() const;
@@ -72,10 +108,16 @@ class Rot3 {
 	Vector ypr() const;
 	void print(string s) const;
 	bool equals(const Rot3& rot, double tol) const;
+	Vector localCoordinates(const Rot3& p);
+	Rot3 retract(Vector v);
+	Rot3 compose(const Rot3& p2);
+	Rot3 between(const Rot3& p2);
+
+	// Depreciated interface
 	Rot3* compose_(const Rot3& p2);
 	Rot3* between_(const Rot3& p2);
-	Vector localCoordinates(const Rot3& p);
 	Rot3* retract_(Vector v);
+	static Rot3* Expmap_(Vector v);
 };
 
 class Pose2 {
@@ -84,7 +126,7 @@ class Pose2 {
 	Pose2(double theta, const Point2& t);
 	Pose2(const Rot2& r, const Point2& t);
 	Pose2(Vector v);
-	static Pose2* Expmap_(Vector v);
+	static Pose2 Expmap(Vector v);
 	static Vector Logmap(const Pose2& p);
 	void print(string s) const;
 	bool equals(const Pose2& pose, double tol) const;
@@ -92,10 +134,16 @@ class Pose2 {
 	double y() const;
 	double theta() const;
 	int dim() const;
+	Vector localCoordinates(const Pose2& p);
+	Pose2 retract(Vector v);
+	Pose2 compose(const Pose2& p2);
+	Pose2 between(const Pose2& p2);
+
+	// Depreciated interface
 	Pose2* compose_(const Pose2& p2);
 	Pose2* between_(const Pose2& p2);
-	Vector localCoordinates(const Pose2& p);
 	Pose2* retract_(Vector v);
+	static Pose2* Expmap_(Vector v);
 };
 
 class Pose3 {
@@ -103,7 +151,7 @@ class Pose3 {
 	Pose3(const Rot3& r, const Point3& t);
 	Pose3(Vector v);
 	Pose3(Matrix t);
-	static Pose3* Expmap_(Vector v);
+	static Pose3 Expmap(Vector v);
 	static Vector Logmap(const Pose3& p);
 	void print(string s) const;
 	bool equals(const Pose3& pose, double tol) const;
@@ -112,9 +160,16 @@ class Pose3 {
 	double z() const;
 	Matrix matrix() const;
 	Matrix adjointMap() const;
+	Pose3 compose(const Pose3& p2);
+	Pose3 between(const Pose3& p2);
+	Pose3 retract(Vector v);
+	Point3 translation() const;
+	Rot3 rotation() const;
+
+	// Depreciated interface
+	static Pose3* Expmap_(Vector v);
 	Pose3* compose_(const Pose3& p2);
 	Pose3* between_(const Pose3& p2);
-	Vector localCoordinates(const Pose3& p);
 	Pose3* retract_(Vector v);
 	Point3* translation_() const;
 	Rot3* rotation_() const;
@@ -259,15 +314,10 @@ class PlanarSLAMOdometry {
 class GaussianSequentialSolver {
   GaussianSequentialSolver(const GaussianFactorGraph& graph, bool useQR);
   GaussianBayesNet* eliminate() const;
-//  VectorValues* optimize() const; // FAIL: parse error here
+  VectorValues* optimize() const; // FAIL: parse error here
   GaussianFactor* marginalFactor(int j) const;
   Matrix marginalCovariance(int j) const;
 };
-
-
-
-
-
 
 
 //// These are considered to be broken and will be added back as they start working

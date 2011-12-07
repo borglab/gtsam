@@ -29,18 +29,18 @@ using namespace wrap;
 void StaticMethod::matlab_mfile(const string& toolboxPath, const string& className) {
 
   // open destination m-file
-	string full_name = className + "_" + name_;
+	string full_name = className + "_" + name;
   string wrapperFile = toolboxPath + "/" + full_name + ".m";
   ofstream ofs(wrapperFile.c_str());
   if(!ofs) throw CantOpenFile(wrapperFile);
-  if(verbose_) cerr << "generating " << wrapperFile << endl;
+  if(verbose) cerr << "generating " << wrapperFile << endl;
 
   // generate code
-  string returnType = returnVal_.matlab_returnType();
+  string returnType = returnVal.matlab_returnType();
   ofs << "function " << returnType << " = " << full_name << "(";
-  if (args_.size()) ofs << args_.names();
+  if (args.size()) ofs << args.names();
   ofs << ")" << endl;
-  ofs << "% usage: x = " << full_name << "(" << args_.names() << ")" << endl;
+  ofs << "% usage: x = " << full_name << "(" << args.names() << ")" << endl;
   ofs << "  error('need to compile " << full_name << ".cpp');" << endl;
   ofs << "end" << endl;
 
@@ -53,11 +53,11 @@ void StaticMethod::matlab_wrapper(const string& toolboxPath,
 			    const string& className, const string& nameSpace)
 {
   // open destination wrapperFile
-	string full_name = className + "_" + name_;
+	string full_name = className + "_" + name;
   string wrapperFile = toolboxPath + "/" + full_name + ".cpp";
   ofstream ofs(wrapperFile.c_str());
   if(!ofs) throw CantOpenFile(wrapperFile);
-  if(verbose_) cerr << "generating " << wrapperFile << endl;
+  if(verbose) cerr << "generating " << wrapperFile << endl;
 
   // generate code
 
@@ -74,21 +74,21 @@ void StaticMethod::matlab_wrapper(const string& toolboxPath,
 
   // check arguments
   // NOTE: for static functions, there is no object passed
-  ofs << "  checkArguments(\"" << full_name << "\",nargout,nargin," << args_.size() << ");\n";
+  ofs << "  checkArguments(\"" << full_name << "\",nargout,nargin," << args.size() << ");\n";
 
   // unwrap arguments, see Argument.cpp
-  args_.matlab_unwrap(ofs,0); // We start at 0 because there is no self object
+  args.matlab_unwrap(ofs,0); // We start at 0 because there is no self object
 
   ofs << "  ";
 
   // call method with default type
-  if (returnVal_.returns_!="void")
-    ofs << returnVal_.return_type(true,ReturnValue::pair) << " result = ";
-  ofs << className  << "::" << name_ << "(" << args_.names() << ");\n";
+  if (returnVal.type1!="void")
+    ofs << returnVal.return_type(true,ReturnValue::pair) << " result = ";
+  ofs << className  << "::" << name << "(" << args.names() << ");\n";
 
   // wrap result
   // example: out[0]=wrap<bool>(result);
-  returnVal_.wrap_result(ofs);
+  returnVal.wrap_result(ofs);
 
   // finish
   ofs << "}\n";

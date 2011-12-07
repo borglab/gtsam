@@ -30,12 +30,12 @@ namespace wrap {
 struct Module {
   std::string name;         ///< module name
   std::vector<Class> classes; ///< list of classes
-  bool verbose_;            ///< verbose flag
+  bool verbose;            ///< verbose flag
 
   /// constructor that parses interface file
   Module(const std::string& interfacePath,
 	 const std::string& moduleName,
-	 bool verbose=true);
+	 bool enable_verbose=true);
 
   /// MATLAB code generation:
   void matlab_code(const std::string& path, 

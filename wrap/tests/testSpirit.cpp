@@ -103,5 +103,39 @@ TEST( spirit, constMethod_p ) {
 }
 
 /* ************************************************************************* */
+TEST( spirit, return_value_p ) {
+	bool isEigen = true;
+	string actual_return_type;
+	string actual_function_name;
+
+	Rule basisType_p =
+	  (str_p("string") | "bool" | "size_t" | "int" | "double");
+
+	Rule eigenType_p =
+	  (str_p("Vector") | "Matrix");
+
+	Rule className_p  = lexeme_d[upper_p >> *(alnum_p | '_')] - eigenType_p - basisType_p;
+
+	Rule funcName_p  = lexeme_d[lower_p >> *(alnum_p | '_')];
+
+	Rule returnType_p =
+	    (basisType_p[assign_a(actual_return_type)][assign_a(isEigen, true)]) |
+			(className_p[assign_a(actual_return_type)][assign_a(isEigen,false)]) |
+	    (eigenType_p[assign_a(actual_return_type)][assign_a(isEigen, true)]);
+
+	Rule testFunc_p = returnType_p >> funcName_p[assign_a(actual_function_name)] >> str_p("();");
+
+  EXPECT(parse("VectorNotEigen doesNotReturnAnEigenVector();", testFunc_p, space_p).full);
+  EXPECT(!isEigen);
+  EXPECT(actual_return_type == "VectorNotEigen");
+  EXPECT(actual_function_name == "doesNotReturnAnEigenVector");
+
+  EXPECT(parse("Vector actuallyAVector();", testFunc_p, space_p).full);
+  EXPECT(isEigen);
+  EXPECT(actual_return_type == "Vector");
+  EXPECT(actual_function_name == "actuallyAVector");
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

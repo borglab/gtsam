@@ -39,8 +39,6 @@ struct Method {
 	ArgumentList args_;
 	ReturnValue returnVal_;
 
-//	std::string return_type(bool add_ptr, pairing p);
-
 	// MATLAB code generation
 	// classPath is class directory, e.g., ../matlab/@Point2
 

@@ -30,14 +30,14 @@ namespace wrap {
 struct StaticMethod {
 
 	/// Constructor creates empty object
-	StaticMethod(bool verbose = true) :
-			verbose_(verbose) {}
+	StaticMethod(bool verbosity = true) :
+			verbose(verbosity) {}
 
 	// Then the instance variables are set directly by the Module constructor
-	bool verbose_;
-	std::string name_;
-	ArgumentList args_;
-	ReturnValue returnVal_;
+	bool verbose;
+	std::string name;
+	ArgumentList args;
+	ReturnValue returnVal;
 
 	// MATLAB code generation
 	// toolboxPath is the core toolbox directory, e.g., ../matlab

@@ -87,7 +87,7 @@ void Method::matlab_wrapper(const string& classPath,
   // call method
   // example: bool result = self->return_field(t);
   ofs << "  ";
-  if (returnVal_.returns_!="void")
+  if (returnVal_.type1!="void")
     ofs << returnVal_.return_type(true,ReturnValue::pair) << " result = ";
   ofs << "self->" << name_ << "(" << args_.names() << ");\n";
 

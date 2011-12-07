@@ -17,8 +17,10 @@ new_Point2_dd.$(MEXENDING): new_Point2_dd.cpp
 	$(MEX) $(mex_flags) @Point2/y.cpp  -output @Point2/y
 @Point2/dim.$(MEXENDING): @Point2/dim.cpp
 	$(MEX) $(mex_flags) @Point2/dim.cpp  -output @Point2/dim
+@Point2/vectorConfusion.$(MEXENDING): @Point2/vectorConfusion.cpp
+	$(MEX) $(mex_flags) @Point2/vectorConfusion.cpp  -output @Point2/vectorConfusion
 
-Point2: new_Point2_.$(MEXENDING) new_Point2_dd.$(MEXENDING) @Point2/x.$(MEXENDING) @Point2/y.$(MEXENDING) @Point2/dim.$(MEXENDING) 
+Point2: new_Point2_.$(MEXENDING) new_Point2_dd.$(MEXENDING) @Point2/x.$(MEXENDING) @Point2/y.$(MEXENDING) @Point2/dim.$(MEXENDING) @Point2/vectorConfusion.$(MEXENDING) 
 
 # Point3
 new_Point3_ddd.$(MEXENDING): new_Point3_ddd.cpp
@@ -35,6 +37,8 @@ Point3: new_Point3_ddd.$(MEXENDING) Point3_staticFunction.$(MEXENDING) Point3_St
 # Test
 new_Test_.$(MEXENDING): new_Test_.cpp
 	$(MEX) $(mex_flags) new_Test_.cpp  -output new_Test_
+new_Test_dM.$(MEXENDING): new_Test_dM.cpp
+	$(MEX) $(mex_flags) new_Test_dM.cpp  -output new_Test_dM
 @Test/return_pair.$(MEXENDING): @Test/return_pair.cpp
 	$(MEX) $(mex_flags) @Test/return_pair.cpp  -output @Test/return_pair
 @Test/return_bool.$(MEXENDING): @Test/return_bool.cpp
@@ -55,6 +59,8 @@ new_Test_.$(MEXENDING): new_Test_.cpp
 	$(MEX) $(mex_flags) @Test/return_vector2.cpp  -output @Test/return_vector2
 @Test/return_matrix2.$(MEXENDING): @Test/return_matrix2.cpp
 	$(MEX) $(mex_flags) @Test/return_matrix2.cpp  -output @Test/return_matrix2
+@Test/arg_EigenConstRef.$(MEXENDING): @Test/arg_EigenConstRef.cpp
+	$(MEX) $(mex_flags) @Test/arg_EigenConstRef.cpp  -output @Test/arg_EigenConstRef
 @Test/return_field.$(MEXENDING): @Test/return_field.cpp
 	$(MEX) $(mex_flags) @Test/return_field.cpp  -output @Test/return_field
 @Test/return_TestPtr.$(MEXENDING): @Test/return_TestPtr.cpp
@@ -72,7 +78,7 @@ new_Test_.$(MEXENDING): new_Test_.cpp
 @Test/print.$(MEXENDING): @Test/print.cpp
 	$(MEX) $(mex_flags) @Test/print.cpp  -output @Test/print
 
-Test: new_Test_.$(MEXENDING) @Test/return_pair.$(MEXENDING) @Test/return_bool.$(MEXENDING) @Test/return_size_t.$(MEXENDING) @Test/return_int.$(MEXENDING) @Test/return_double.$(MEXENDING) @Test/return_string.$(MEXENDING) @Test/return_vector1.$(MEXENDING) @Test/return_matrix1.$(MEXENDING) @Test/return_vector2.$(MEXENDING) @Test/return_matrix2.$(MEXENDING) @Test/return_field.$(MEXENDING) @Test/return_TestPtr.$(MEXENDING) @Test/return_Test.$(MEXENDING) @Test/return_Point2Ptr.$(MEXENDING) @Test/create_ptrs.$(MEXENDING) @Test/create_MixedPtrs.$(MEXENDING) @Test/return_ptrs.$(MEXENDING) @Test/print.$(MEXENDING) 
+Test: new_Test_.$(MEXENDING) new_Test_dM.$(MEXENDING) @Test/return_pair.$(MEXENDING) @Test/return_bool.$(MEXENDING) @Test/return_size_t.$(MEXENDING) @Test/return_int.$(MEXENDING) @Test/return_double.$(MEXENDING) @Test/return_string.$(MEXENDING) @Test/return_vector1.$(MEXENDING) @Test/return_matrix1.$(MEXENDING) @Test/return_vector2.$(MEXENDING) @Test/return_matrix2.$(MEXENDING) @Test/arg_EigenConstRef.$(MEXENDING) @Test/return_field.$(MEXENDING) @Test/return_TestPtr.$(MEXENDING) @Test/return_Test.$(MEXENDING) @Test/return_Point2Ptr.$(MEXENDING) @Test/create_ptrs.$(MEXENDING) @Test/create_MixedPtrs.$(MEXENDING) @Test/return_ptrs.$(MEXENDING) @Test/print.$(MEXENDING) 
 
 
 
