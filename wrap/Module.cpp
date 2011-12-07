@@ -82,14 +82,17 @@ Module::Module(const string& interfacePath,
   Rule basisType_p = 
     (str_p("string") | "bool" | "size_t" | "int" | "double");
 
-  Rule eigenType =
-    (str_p("Vector") | "Matrix")[assign_a(arg.type)] >>
-    !ch_p('*')[assign_a(arg.is_ptr,true)];
+  Rule eigenType_p =
+    (str_p("Vector") | "Matrix");
+
+  Rule argEigenType =
+  	eigenType_p[assign_a(arg.type)] >>
+  	!ch_p('*')[assign_a(arg.is_ptr,true)];
 
   Rule name_p = lexeme_d[alpha_p >> *(alnum_p | '_')];
 
   Rule argument_p = 
-    ((basisType_p[assign_a(arg.type)] | eigenType | classPtr_p | classRef_p) >> name_p[assign_a(arg.name)])
+    ((basisType_p[assign_a(arg.type)] | argEigenType | classPtr_p | classRef_p) >> name_p[assign_a(arg.name)])
     [push_back_a(args, arg)]
     [assign_a(arg,arg0)];
 
@@ -102,19 +105,17 @@ Module::Module(const string& interfacePath,
     [push_back_a(cls.constructors, constructor)]
     [assign_a(constructor,constructor0)];
 
-  Rule returnClass1_p = className_p [assign_a(retVal.returns_class_, true)];
-
-  Rule returnClass2_p = className_p [assign_a(retVal.returns_class2_, true)];
-
   Rule returnType1_p =
-    basisType_p[assign_a(retVal.returns_)] |
-    ((returnClass1_p | "Vector" | "Matrix")[assign_a(retVal.returns_)] >>
-     !ch_p('*')  [assign_a(retVal.returns_ptr_,true)]);
+    (basisType_p[assign_a(retVal.returns_)][assign_a(retVal.return1, ReturnValue::BASIS)]) |
+    (eigenType_p[assign_a(retVal.returns_)][assign_a(retVal.return1, ReturnValue::EIGEN)]) |
+    (className_p[assign_a(retVal.returns_)][assign_a(retVal.return1, ReturnValue::CLASS)]) >>
+     !ch_p('*')  [assign_a(retVal.returns_ptr_,true)];
 
   Rule returnType2_p =
-    basisType_p[assign_a(retVal.returns2_)] |
-    ((returnClass2_p | "Vector" | "Matrix")[assign_a(retVal.returns2_)] >>
-     !ch_p('*')  [assign_a(retVal.returns_ptr2_,true)]);
+      (basisType_p[assign_a(retVal.returns2_)][assign_a(retVal.return2, ReturnValue::BASIS)]) |
+      (eigenType_p[assign_a(retVal.returns2_)][assign_a(retVal.return2, ReturnValue::EIGEN)]) |
+      (className_p[assign_a(retVal.returns2_)][assign_a(retVal.return2, ReturnValue::CLASS)]) >>
+     !ch_p('*')  [assign_a(retVal.returns_ptr2_,true)];
 
   Rule pair_p = 
     (str_p("pair") >> '<' >> returnType1_p >> ',' >> returnType2_p >> '>')

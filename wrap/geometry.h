@@ -24,6 +24,8 @@ class Test {
 	// another comment
   Test();
 
+  pair<Vector,Matrix> return_pair (Vector v, Matrix A) const; // intentionally the first method
+
   bool   return_bool   (bool   value) const; // comment after a line!
   size_t return_size_t (size_t value) const;
   int    return_int    (int    value) const;
@@ -39,15 +41,15 @@ class Test {
   Vector return_vector2(Vector value) const;
   Matrix return_matrix2(Matrix value) const;
 
-  pair<Vector,Matrix> return_pair (Vector v, Matrix A) const;
-
   bool return_field(const Test& t) const;
 
   Test* return_TestPtr(Test* value) const;
+  Test  return_Test(Test* value) const;
 
   Point2* return_Point2Ptr(bool value) const;
 
   pair<Test*,Test*> create_ptrs () const;
+  pair<Test ,Test*> create_MixedPtrs () const;
   pair<Test*,Test*> return_ptrs (Test* p1, Test* p2) const;
 
   void print() const;

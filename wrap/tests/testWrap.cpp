@@ -55,7 +55,7 @@ TEST( wrap, parse ) {
 	string path = topdir + "/wrap";
 
 	Module module(path.c_str(), "geometry",verbose);
-	EXPECT(module.classes.size()==3);
+	CHECK(module.classes.size()==3);
 
 	// check second class, Point3
 	Class cls = *(++module.classes.begin());
@@ -81,6 +81,18 @@ TEST( wrap, parse ) {
 	EXPECT(m1.name_=="norm");
 	EXPECT(m1.args_.size()==0);
 	EXPECT(m1.is_const_);
+
+	// Test class is the third one
+	Class testCls = module.classes.at(2);
+	EXPECT_LONGS_EQUAL( 1, testCls.constructors.size());
+	EXPECT_LONGS_EQUAL(18, testCls.methods.size());
+	EXPECT_LONGS_EQUAL( 0, testCls.static_methods.size());
+
+//  pair<Vector,Matrix> return_pair (Vector v, Matrix A) const;
+	Method m2 = testCls.methods.front();
+	EXPECT(m2.returnVal_.returns_pair_);
+	EXPECT(m2.returnVal_.return1 == ReturnValue::EIGEN);
+	EXPECT(m2.returnVal_.return2 == ReturnValue::EIGEN);
 }
 
 /* ************************************************************************* */
@@ -107,8 +119,10 @@ TEST( wrap, matlab_code ) {
 	EXPECT(files_equal(path + "/tests/expected/@Test/Test.m"            , "actual/@Test/Test.m"            ));
 	EXPECT(files_equal(path + "/tests/expected/@Test/return_string.cpp" , "actual/@Test/return_string.cpp" ));
 	EXPECT(files_equal(path + "/tests/expected/@Test/return_pair.cpp"   , "actual/@Test/return_pair.cpp"   ));
+	EXPECT(files_equal(path + "/tests/expected/@Test/create_MixedPtrs.cpp", "actual/@Test/create_MixedPtrs.cpp"));
 	EXPECT(files_equal(path + "/tests/expected/@Test/return_field.cpp"  , "actual/@Test/return_field.cpp"  ));
 	EXPECT(files_equal(path + "/tests/expected/@Test/return_TestPtr.cpp", "actual/@Test/return_TestPtr.cpp"));
+	EXPECT(files_equal(path + "/tests/expected/@Test/return_Test.cpp"   , "actual/@Test/return_Test.cpp"   ));
 	EXPECT(files_equal(path + "/tests/expected/@Test/return_Point2Ptr.cpp", "actual/@Test/return_Point2Ptr.cpp"));
 	EXPECT(files_equal(path + "/tests/expected/@Test/return_ptrs.cpp"   , "actual/@Test/return_ptrs.cpp"   ));
 	EXPECT(files_equal(path + "/tests/expected/@Test/print.m"           , "actual/@Test/print.m"           ));

@@ -35,6 +35,8 @@ Point3: new_Point3_ddd.$(MEXENDING) Point3_staticFunction.$(MEXENDING) Point3_St
 # Test
 new_Test_.$(MEXENDING): new_Test_.cpp
 	$(MEX) $(mex_flags) new_Test_.cpp  -output new_Test_
+@Test/return_pair.$(MEXENDING): @Test/return_pair.cpp
+	$(MEX) $(mex_flags) @Test/return_pair.cpp  -output @Test/return_pair
 @Test/return_bool.$(MEXENDING): @Test/return_bool.cpp
 	$(MEX) $(mex_flags) @Test/return_bool.cpp  -output @Test/return_bool
 @Test/return_size_t.$(MEXENDING): @Test/return_size_t.cpp
@@ -53,22 +55,24 @@ new_Test_.$(MEXENDING): new_Test_.cpp
 	$(MEX) $(mex_flags) @Test/return_vector2.cpp  -output @Test/return_vector2
 @Test/return_matrix2.$(MEXENDING): @Test/return_matrix2.cpp
 	$(MEX) $(mex_flags) @Test/return_matrix2.cpp  -output @Test/return_matrix2
-@Test/return_pair.$(MEXENDING): @Test/return_pair.cpp
-	$(MEX) $(mex_flags) @Test/return_pair.cpp  -output @Test/return_pair
 @Test/return_field.$(MEXENDING): @Test/return_field.cpp
 	$(MEX) $(mex_flags) @Test/return_field.cpp  -output @Test/return_field
 @Test/return_TestPtr.$(MEXENDING): @Test/return_TestPtr.cpp
 	$(MEX) $(mex_flags) @Test/return_TestPtr.cpp  -output @Test/return_TestPtr
+@Test/return_Test.$(MEXENDING): @Test/return_Test.cpp
+	$(MEX) $(mex_flags) @Test/return_Test.cpp  -output @Test/return_Test
 @Test/return_Point2Ptr.$(MEXENDING): @Test/return_Point2Ptr.cpp
 	$(MEX) $(mex_flags) @Test/return_Point2Ptr.cpp  -output @Test/return_Point2Ptr
 @Test/create_ptrs.$(MEXENDING): @Test/create_ptrs.cpp
 	$(MEX) $(mex_flags) @Test/create_ptrs.cpp  -output @Test/create_ptrs
+@Test/create_MixedPtrs.$(MEXENDING): @Test/create_MixedPtrs.cpp
+	$(MEX) $(mex_flags) @Test/create_MixedPtrs.cpp  -output @Test/create_MixedPtrs
 @Test/return_ptrs.$(MEXENDING): @Test/return_ptrs.cpp
 	$(MEX) $(mex_flags) @Test/return_ptrs.cpp  -output @Test/return_ptrs
 @Test/print.$(MEXENDING): @Test/print.cpp
 	$(MEX) $(mex_flags) @Test/print.cpp  -output @Test/print
 
-Test: new_Test_.$(MEXENDING) @Test/return_bool.$(MEXENDING) @Test/return_size_t.$(MEXENDING) @Test/return_int.$(MEXENDING) @Test/return_double.$(MEXENDING) @Test/return_string.$(MEXENDING) @Test/return_vector1.$(MEXENDING) @Test/return_matrix1.$(MEXENDING) @Test/return_vector2.$(MEXENDING) @Test/return_matrix2.$(MEXENDING) @Test/return_pair.$(MEXENDING) @Test/return_field.$(MEXENDING) @Test/return_TestPtr.$(MEXENDING) @Test/return_Point2Ptr.$(MEXENDING) @Test/create_ptrs.$(MEXENDING) @Test/return_ptrs.$(MEXENDING) @Test/print.$(MEXENDING) 
+Test: new_Test_.$(MEXENDING) @Test/return_pair.$(MEXENDING) @Test/return_bool.$(MEXENDING) @Test/return_size_t.$(MEXENDING) @Test/return_int.$(MEXENDING) @Test/return_double.$(MEXENDING) @Test/return_string.$(MEXENDING) @Test/return_vector1.$(MEXENDING) @Test/return_matrix1.$(MEXENDING) @Test/return_vector2.$(MEXENDING) @Test/return_matrix2.$(MEXENDING) @Test/return_field.$(MEXENDING) @Test/return_TestPtr.$(MEXENDING) @Test/return_Test.$(MEXENDING) @Test/return_Point2Ptr.$(MEXENDING) @Test/create_ptrs.$(MEXENDING) @Test/create_MixedPtrs.$(MEXENDING) @Test/return_ptrs.$(MEXENDING) @Test/print.$(MEXENDING) 
 
 
 

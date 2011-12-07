@@ -15,14 +15,23 @@ namespace wrap {
 
 struct ReturnValue {
 
+	typedef enum {
+		CLASS,
+		EIGEN,
+		BASIS,
+		VOID
+	} return_category;
+
 	ReturnValue(bool verbose = true)
 	: verbose_(verbose), returns_ptr_(false), returns_ptr2_(false),
-	  returns_pair_(false), returns_class_(false)
+	  returns_pair_(false), return1(VOID), return2(VOID)
 	{}
 
 	bool verbose_;
 	std::string returns_, returns2_;
-	bool returns_ptr_, returns_ptr2_, returns_pair_, returns_class_, returns_class2_;
+	bool returns_ptr_, returns_ptr2_, returns_pair_;
+
+	return_category return1, return2;
 
 	typedef enum {
 		arg1, arg2, pair

@@ -18,7 +18,7 @@
 #pragma once
 
 #include <string>
-#include <list>
+#include <vector>
 
 #include "Class.h"
 
@@ -29,7 +29,7 @@ namespace wrap {
  */
 struct Module {
   std::string name;         ///< module name
-  std::list<Class> classes; ///< list of classes
+  std::vector<Class> classes; ///< list of classes
   bool verbose_;            ///< verbose flag
 
   /// constructor that parses interface file
