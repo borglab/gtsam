@@ -259,10 +259,16 @@ class PlanarSLAMOdometry {
 class GaussianSequentialSolver {
   GaussianSequentialSolver(const GaussianFactorGraph& graph, bool useQR);
   GaussianBayesNet* eliminate() const;
-  VectorValues* optimize() const;
+//  VectorValues* optimize() const; // FAIL: parse error here
   GaussianFactor* marginalFactor(int j) const;
   Matrix marginalCovariance(int j) const;
 };
+
+
+
+
+
+
 
 //// These are considered to be broken and will be added back as they start working
 //// It's assumed that there have been interface changes that might break this

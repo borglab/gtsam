@@ -82,6 +82,7 @@ Module::Module(const string& interfacePath,
   Rule basisType_p = 
     (str_p("string") | "bool" | "size_t" | "int" | "double");
 
+  // FAIL: this will match against VectorValues in returntype
   Rule eigenType_p =
     (str_p("Vector") | "Matrix");
 
