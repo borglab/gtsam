@@ -123,7 +123,7 @@ TEST( wrap, parse ) {
 TEST( wrap, parse_namespaces ) {
 	string header_path = topdir + "/wrap/tests";
 	Module module(header_path.c_str(), "testNamespaces",enable_verbose);
-	EXPECT_LONGS_EQUAL(4, module.classes.size());
+	EXPECT_LONGS_EQUAL(6, module.classes.size());
 
 	Class cls1 = module.classes.at(0);
 	EXPECT(assert_equal("ClassA", cls1.name));
@@ -145,6 +145,17 @@ TEST( wrap, parse_namespaces ) {
 	EXPECT_LONGS_EQUAL(2, cls4.namespaces.size());
 	EXPECT(assert_equal("ns2", cls4.namespaces.front()));
 	EXPECT(assert_equal("ns3", cls4.namespaces.back()));
+
+	Class cls5 = module.classes.at(4);
+	EXPECT(assert_equal("ClassC", cls5.name));
+	EXPECT_LONGS_EQUAL(1, cls5.namespaces.size());
+	EXPECT(assert_equal("ns2", cls5.namespaces.front()));
+
+	Class cls6 = module.classes.at(5);
+	EXPECT(assert_equal("ClassD", cls6.name));
+	EXPECT_LONGS_EQUAL(0, cls6.namespaces.size());
+	if (!cls6.namespaces.empty())
+		cout << "Extraneous namespace: " << cls6.namespaces.front() << endl;
 }
 
 /* ************************************************************************* */

@@ -26,6 +26,12 @@ class ClassB {
 
 }///\namespace
 
+class ClassC {
+};
+
 }///\namespace
+
+class ClassD {
+};
 
 

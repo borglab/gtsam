@@ -16,6 +16,7 @@
 
 #include "Module.h"
 #include "utilities.h"
+#include "pop_actor.h"
 
 //#define BOOST_SPIRIT_DEBUG
 #include <boost/spirit/include/classic_core.hpp>
@@ -51,7 +52,7 @@ Module::Module(const string& interfacePath,
   Method method0(enable_verbose), method(enable_verbose);
   StaticMethod static_method0(enable_verbose), static_method(enable_verbose);
   Class cls0(enable_verbose),cls(enable_verbose);
-  vector<string> namespaces, namespaces_parent;
+  vector<string> namespaces, namespaces_parent, namespaces_temp;
 
   //----------------------------------------------------------------------------
   // Grammar with actions that build the Class object. Actions are
@@ -161,11 +162,11 @@ Module::Module(const string& interfacePath,
   Rule namespace_name_p = lexeme_d[(upper_p | lower_p) >> *(alnum_p | '_')];
 
 	Rule namespace_p = str_p("namespace") >>
-			namespace_name_p[assign_a(namespaces_parent, namespaces)][push_back_a(namespaces)] // save previous state
+			namespace_name_p[push_back_a(namespaces)]
 			>> ch_p('{') >>
 					*(class_p | namespace_p | comments_p) >>
 					str_p("}///\\namespace") // end namespace, avoid confusion with classes
-					[assign_a(namespaces, namespaces_parent)]; // switch back to parent namespace
+					[pop_a(namespaces)];
 
   Rule module_content_p =	 comments_p | class_p | namespace_p ;
 
@@ -204,16 +205,6 @@ Module::Module(const string& interfacePath,
     printf("parsing stopped at \n%.20s\n",info.stop);
     throw ParseFailed(info.length);
   }
-
-//  if (!namespaces.empty()) {
-//  	cout << "Namespaces not closed, remaining: ";
-//  	BOOST_FOREACH(const string& ns, namespaces)
-//  		cout << ns << " ";
-//  	cout << endl;
-//  }
-//
-//  if (!cls.name.empty())
-//  	cout << "\nClass name: " << cls.name << endl;
 }
 
 /* ************************************************************************* */
