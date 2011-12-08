@@ -51,7 +51,6 @@ TEST( Pose3, expmap_a)
   v(0) = 0.3;
   EXPECT(assert_equal(id.retract(v), Pose3(R, Point3())));
 #ifdef CORRECT_POSE3_EXMAP
-
   v(3)=0.2;v(4)=0.394742;v(5)=-2.08998;
 #else
   v(3)=0.2;v(4)=0.7;v(5)=-2;
@@ -99,89 +98,6 @@ namespace screw {
 	Point3 expectedT(0.29552, 0.0446635, 1);
 	Pose3 expected(expectedR, expectedT);
 }
-
-#ifdef CORRECT_POSE3_EXMAP
-/* ************************************************************************* */
-TEST(Pose3, expmap_c)
-{
-  EXPECT(assert_equal(screw::expected, expm<Pose3>(screw::xi),1e-6));
-  EXPECT(assert_equal(screw::expected, Pose3::Expmap(screw::xi),1e-6));
-}
-
-/* ************************************************************************* */
-// assert that T*exp(xi)*T^-1 is equal to exp(Ad_T(xi))
-TEST(Pose3, Adjoint)
-{
-	Pose3 expected = T * Pose3::Expmap(screw::xi) * inverse(T);
-	Vector xiprime = Adjoint(T, screw::xi);
-	EXPECT(assert_equal(expected, Pose3::Expmap(xiprime), 1e-6));
-
-	Pose3 expected2 = T2 * Pose3::Expmap(screw::xi) * inverse(T2);
-	Vector xiprime2 = Adjoint(T2, screw::xi);
-	EXPECT(assert_equal(expected2, Pose3::Expmap(xiprime2), 1e-6));
-
-	Pose3 expected3 = T3 * Pose3::Expmap(screw::xi) * inverse(T3);
-	Vector xiprime3 = Adjoint(T3, screw::xi);
-	EXPECT(assert_equal(expected3, Pose3::Expmap(xiprime3), 1e-6));
-}
-
-/* ************************************************************************* */
-/** Agrawal06iros version */
-Pose3 Agrawal06iros(const Vector& xi) {
-	Vector w = vector_range<const Vector>(xi, range(0,3));
-	Vector v = vector_range<const Vector>(xi, range(3,6));
-	double t = norm_2(w);
-	if (t < 1e-5)
-		return Pose3(Rot3(), expmap<Point3> (v));
-	else {
-		Matrix W = skewSymmetric(w/t);
-		Matrix A = eye(3) + ((1 - cos(t)) / t) * W + ((t - sin(t)) / t) * (W * W);
-		return Pose3(Rot3::Expmap (w), expmap<Point3> (A * v));
-	}
-}
-
-/* ************************************************************************* */
-TEST(Pose3, expmaps_galore)
-{
-	Vector xi; Pose3 actual;
-	xi = Vector_(6,0.1,0.2,0.3,0.4,0.5,0.6);
-	actual = Pose3::Expmap(xi);
-  EXPECT(assert_equal(expm<Pose3>(xi), actual,1e-6));
-  EXPECT(assert_equal(Agrawal06iros(xi), actual,1e-6));
-  EXPECT(assert_equal(xi, localCoordinates(actual),1e-6));
-
-	xi = Vector_(6,0.1,-0.2,0.3,-0.4,0.5,-0.6);
-	for (double theta=1.0;0.3*theta<=M_PI;theta*=2) {
-		Vector txi = xi*theta;
-		actual = Pose3::Expmap(txi);
-		EXPECT(assert_equal(expm<Pose3>(txi,30), actual,1e-6));
-		EXPECT(assert_equal(Agrawal06iros(txi), actual,1e-6));
-		Vector log = localCoordinates(actual);
-		EXPECT(assert_equal(actual, Pose3::Expmap(log),1e-6));
-		EXPECT(assert_equal(txi,log,1e-6)); // not true once wraps
-	}
-
-  // Works with large v as well, but expm needs 10 iterations!
-	xi = Vector_(6,0.2,0.3,-0.8,100.0,120.0,-60.0);
-	actual = Pose3::Expmap(xi);
-  EXPECT(assert_equal(expm<Pose3>(xi,10), actual,1e-5));
-  EXPECT(assert_equal(Agrawal06iros(xi), actual,1e-6));
-  EXPECT(assert_equal(xi, localCoordinates(actual),1e-6));
-}
-
-/* ************************************************************************* */
-TEST(Pose3, Adjoint_compose)
-{
-	// To debug derivatives of compose, assert that
-	// T1*T2*exp(Adjoint(inv(T2),x) = T1*exp(x)*T2
-	const Pose3& T1 = T;
-	Vector x = Vector_(6,0.1,0.1,0.1,0.4,0.2,0.8);
-	Pose3 expected = T1 * Pose3::Expmap(x) * T2;
-	Vector y = Adjoint(inverse(T2), x);
-	Pose3 actual = T1 * T2 * Pose3::Expmap(y);
-	EXPECT(assert_equal(expected, actual, 1e-6));
-}
-#endif // SLOW_BUT_CORRECT_EXMAP
 
 /* ************************************************************************* */
 TEST(Pose3, expmap_c_full)
