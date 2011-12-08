@@ -20,6 +20,15 @@
  *     - Any class with which be copied with boost::make_shared() (except Eigen)
  *     - boost::shared_ptr of any object type (except Eigen)
  *   Comments can use either C++ or C style, with multiple lines
+ *   Namespace definitions
+ *     - Names of namespaces must start with a lowercase letter
+ *   	 - start a namespace with "namespace {"
+ *   	 - end a namespace with exactly "}///\namespace [namespace_name]", optionally adding the name of the namespace
+ *   	 - This ending is not C++ standard, and must contain "}///\namespace" to parse
+ *   	 - Namespaces can be nested
+ *   Namespace usage
+ *   	 - Namespaces can be specified for classes in arguments and return values
+ *   	 - In each case, the namespace must be fully specified, e.g., "namespace1::namespace2::ClassName"
  *   Methods must start with a lowercase letter
  *   Static methods must start with a letter (upper or lowercase) and use the "static" keyword
  */
@@ -30,7 +39,6 @@
  *  - TODO: default values for arguments
  *  - TODO: overloaded functions
  *  - TODO: Handle Rot3M conversions to quaternions
- *  - TODO: namespace detection to handle nested namespaces
  */
 
 class Point2 {
