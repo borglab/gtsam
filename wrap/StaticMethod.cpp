@@ -49,11 +49,11 @@ void StaticMethod::matlab_mfile(const string& toolboxPath, const string& classNa
 }
 
 /* ************************************************************************* */
-void StaticMethod::matlab_wrapper(const string& toolboxPath,
-			    const string& className, const string& nameSpace)
+void StaticMethod::matlab_wrapper(const string& toolboxPath, const string& className,
+		const string& matlabClassName, const string& cppClassName, const string& nameSpace)
 {
   // open destination wrapperFile
-	string full_name = className + "_" + name;
+	string full_name = matlabClassName + "_" + name;
   string wrapperFile = toolboxPath + "/" + full_name + ".cpp";
   ofstream ofs(wrapperFile.c_str());
   if(!ofs) throw CantOpenFile(wrapperFile);
@@ -84,7 +84,7 @@ void StaticMethod::matlab_wrapper(const string& toolboxPath,
   // call method with default type
   if (returnVal.type1!="void")
     ofs << returnVal.return_type(true,ReturnValue::pair) << " result = ";
-  ofs << className  << "::" << name << "(" << args.names() << ");\n";
+  ofs << cppClassName  << "::" << name << "(" << args.names() << ");\n";
 
   // wrap result
   // example: out[0]=wrap<bool>(result);

@@ -5,33 +5,39 @@
 namespace ns1 {
 
 class ClassA {
-
+	ClassA();
 };
 
 class ClassB {
-
+	ClassB();
 };
 
-}///\namespace
+}///\namespace ns1
 
 namespace ns2 {
 
 class ClassA {
+	ClassA();
+	static double afunction();
+	double memberFunction();
 };
 
 namespace ns3 {
 
 class ClassB {
+	ClassB();
 };
 
-}///\namespace
+}///\namespace ns3
 
 class ClassC {
+	ClassC();
 };
 
-}///\namespace
+}///\namespace ns2
 
 class ClassD {
+	ClassD();
 };
 
 

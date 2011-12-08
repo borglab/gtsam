@@ -29,18 +29,18 @@ using namespace wrap;
 void Method::matlab_mfile(const string& classPath) {
 
   // open destination m-file
-  string wrapperFile = classPath + "/" + name_ + ".m";
+  string wrapperFile = classPath + "/" + name + ".m";
   ofstream ofs(wrapperFile.c_str());
   if(!ofs) throw CantOpenFile(wrapperFile);
   if(verbose_) cerr << "generating " << wrapperFile << endl;
 
   // generate code
-  string returnType = returnVal_.matlab_returnType();
-  ofs << "function " << returnType << " = " << name_ << "(obj";
-  if (args_.size()) ofs << "," << args_.names();
+  string returnType = returnVal.matlab_returnType();
+  ofs << "function " << returnType << " = " << name << "(obj";
+  if (args.size()) ofs << "," << args.names();
   ofs << ")" << endl;
-  ofs << "% usage: obj." << name_ << "(" << args_.names() << ")" << endl;
-  ofs << "  error('need to compile " << name_ << ".cpp');" << endl;
+  ofs << "% usage: obj." << name << "(" << args.names() << ")" << endl;
+  ofs << "  error('need to compile " << name << ".cpp');" << endl;
   ofs << "end" << endl;
 
   // close file
@@ -50,10 +50,12 @@ void Method::matlab_mfile(const string& classPath) {
 /* ************************************************************************* */
 void Method::matlab_wrapper(const string& classPath, 
 			    const string& className,
+			    const string& cppClassName,
+			    const string& matlabClassName,
 			    const string& nameSpace) 
 {
   // open destination wrapperFile
-  string wrapperFile = classPath + "/" + name_ + ".cpp";
+  string wrapperFile = classPath + "/" + name + ".cpp";
   ofstream ofs(wrapperFile.c_str());
   if(!ofs) throw CantOpenFile(wrapperFile);
   if(verbose_) cerr << "generating " << wrapperFile << endl;
@@ -74,26 +76,26 @@ void Method::matlab_wrapper(const string& classPath,
   // check arguments
   // extra argument obj -> nargin-1 is passed !
   // example: checkArguments("equals",nargout,nargin-1,2);
-  ofs << "  checkArguments(\"" << name_ << "\",nargout,nargin-1," << args_.size() << ");\n";
+  ofs << "  checkArguments(\"" << name << "\",nargout,nargin-1," << args.size() << ");\n";
 
   // get class pointer
   // example: shared_ptr<Test> = unwrap_shared_ptr< Test >(in[0], "Test");
-  ofs << "  shared_ptr<" << className << "> self = unwrap_shared_ptr< " << className
-      << " >(in[0],\"" << className << "\");" << endl;
+  ofs << "  shared_ptr<" << cppClassName << "> self = unwrap_shared_ptr< " << cppClassName
+      << " >(in[0],\"" << matlabClassName << "\");" << endl;
 
   // unwrap arguments, see Argument.cpp
-  args_.matlab_unwrap(ofs,1);
+  args.matlab_unwrap(ofs,1);
 
   // call method
   // example: bool result = self->return_field(t);
   ofs << "  ";
-  if (returnVal_.type1!="void")
-    ofs << returnVal_.return_type(true,ReturnValue::pair) << " result = ";
-  ofs << "self->" << name_ << "(" << args_.names() << ");\n";
+  if (returnVal.type1!="void")
+    ofs << returnVal.return_type(true,ReturnValue::pair) << " result = ";
+  ofs << "self->" << name << "(" << args.names() << ");\n";
 
   // wrap result
   // example: out[0]=wrap<bool>(result);
-  returnVal_.wrap_result(ofs);
+  returnVal.wrap_result(ofs);
 
   // finish
   ofs << "}\n";

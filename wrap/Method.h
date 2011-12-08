@@ -35,16 +35,18 @@ struct Method {
 	// Then the instance variables are set directly by the Module constructor
 	bool verbose_;
 	bool is_const_;
-	std::string name_;
-	ArgumentList args_;
-	ReturnValue returnVal_;
+	std::string name;
+	ArgumentList args;
+	ReturnValue returnVal;
 
 	// MATLAB code generation
 	// classPath is class directory, e.g., ../matlab/@Point2
 
 	void matlab_mfile(const std::string& classPath); ///< m-file
 	void matlab_wrapper(const std::string& classPath,
-			const std::string& className, const std::string& nameSpace); ///< wrapper
+			const std::string& className,
+	    const std::string& cppClassName,
+	    const std::string& matlabClassname,const std::string& nameSpace); ///< wrapper
 };
 
 } // \namespace wrap

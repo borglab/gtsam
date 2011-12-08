@@ -34,6 +34,7 @@ struct Constructor {
 
 	// Then the instance variables are set directly by the Module constructor
 	ArgumentList args;
+	std::string name;
 	bool verbose_;
 
 	// MATLAB code generation
@@ -48,11 +49,13 @@ struct Constructor {
 
 	/// m-file
 	void matlab_mfile(const std::string& toolboxPath,
-			const std::string& className);
+			const std::string& qualifiedMatlabName);
 
 	/// wrapper
 	void matlab_wrapper(const std::string& toolboxPath,
-			const std::string& className, const std::string& nameSpace);
+			 const std::string& cppClassName,
+			 const std::string& matlabClassName,
+			 const std::string& nameSpace);
 };
 
 } // \namespace wrap

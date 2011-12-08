@@ -104,6 +104,7 @@ Module::Module(const string& interfacePath,
   Rule constructor_p = 
     (className_p >> '(' >> argumentList_p >> ')' >> ';' >> !comments_p)
     [assign_a(constructor.args,args)]
+    [assign_a(constructor.name,cls.name)]
     [assign_a(args,args0)]
     [push_back_a(cls.constructors, constructor)]
     [assign_a(constructor,constructor0)];
@@ -131,12 +132,12 @@ Module::Module(const string& interfacePath,
   Rule methodName_p = lexeme_d[lower_p >> *(alnum_p | '_')];
 
   Rule method_p = 
-    (returnType_p >> methodName_p[assign_a(method.name_)] >>
+    (returnType_p >> methodName_p[assign_a(method.name)] >>
      '(' >> argumentList_p >> ')' >> 
      !str_p("const")[assign_a(method.is_const_,true)] >> ';' >> *comments_p)
-    [assign_a(method.args_,args)]
+    [assign_a(method.args,args)]
     [assign_a(args,args0)]
-    [assign_a(method.returnVal_,retVal)]
+    [assign_a(method.returnVal,retVal)]
     [assign_a(retVal,retVal0)]
     [push_back_a(cls.methods, method)]
     [assign_a(method,method0)];
@@ -165,7 +166,7 @@ Module::Module(const string& interfacePath,
 			namespace_name_p[push_back_a(namespaces)]
 			>> ch_p('{') >>
 					*(class_p | namespace_p | comments_p) >>
-					str_p("}///\\namespace") // end namespace, avoid confusion with classes
+					str_p("}///\\namespace") >> !namespace_name_p // end namespace, avoid confusion with classes
 					[pop_a(namespaces)];
 
   Rule module_content_p =	 comments_p | class_p | namespace_p ;
@@ -206,6 +207,18 @@ Module::Module(const string& interfacePath,
     throw ParseFailed(info.length);
   }
 }
+
+template<class T>
+void verifyArguments(const vector<string>& validArgs, const vector<T>& vt) {
+	BOOST_FOREACH(const T& t, vt) {
+		BOOST_FOREACH(Argument arg, t.args) {
+			if(std::find(validArgs.begin(), validArgs.end(), arg.type)
+			== validArgs.end())
+				throw DependencyMissing(arg.type, t.name);
+		}
+	}
+}
+
 
 /* ************************************************************************* */
 void Module::matlab_code(const string& toolboxPath, 
@@ -254,60 +267,40 @@ void Module::matlab_code(const string& toolboxPath,
     // add 'all' to Makefile
     make_ofs << "all: ";
     BOOST_FOREACH(Class cls, classes) {
-    	make_ofs << cls.name << " ";
-        //Create a list of parsed classes for dependency checking
-        validArgs.push_back(cls.name);
+    	make_ofs << cls.qualifiedName() << " ";
+			//Create a list of parsed classes for dependency checking
+			validArgs.push_back(cls.name);
     }
     make_ofs << "\n\n";
-
-
 
     // generate proxy classes and wrappers
     BOOST_FOREACH(Class cls, classes) {
       // create directory if needed
-      string classPath = toolboxPath + "/@" + cls.name;
+      string classPath = toolboxPath + "/@" + cls.qualifiedName();
       string installCmd = "install -d " + classPath;
       system(installCmd.c_str());
 
       // create proxy class
-      string classFile = classPath + "/" + cls.name + ".m";
+      string classFile = classPath + "/" + cls.qualifiedName() + ".m";
       cls.matlab_proxy(classFile);
 
-      // create constructor and method wrappers
-      BOOST_FOREACH(Constructor con, cls.constructors) {
-          BOOST_FOREACH(Argument arg, con.args) {
-             if(std::find(validArgs.begin(), validArgs.end(), arg.type) 
-                     == validArgs.end())
-                 throw DependencyMissing(arg.type, cls.name);
-          }
-      }
-      cls.matlab_constructors(toolboxPath,nameSpace);
-      
-      BOOST_FOREACH(StaticMethod stMth, cls.static_methods) {
-          BOOST_FOREACH(Argument arg, stMth.args) {
-             if(std::find(validArgs.begin(), validArgs.end(), arg.type) 
-                     == validArgs.end())
-                 throw DependencyMissing(arg.type, stMth.name);
-          }
-      }
-      cls.matlab_static_methods(toolboxPath,nameSpace);
+      // verify all of the function arguments
+      verifyArguments<Constructor>(validArgs, cls.constructors);
+      verifyArguments<StaticMethod>(validArgs, cls.static_methods);
+      verifyArguments<Method>(validArgs, cls.methods);
 
-      BOOST_FOREACH(Method mth, cls.methods) {
-          BOOST_FOREACH(Argument arg, mth.args_) {
-             if(std::find(validArgs.begin(), validArgs.end(), arg.type) 
-                     == validArgs.end())
-                 throw DependencyMissing(arg.type, mth.name_);
-          }
-      }
+      // create constructor and method wrappers
+      cls.matlab_constructors(toolboxPath,nameSpace);
+      cls.matlab_static_methods(toolboxPath,nameSpace);
       cls.matlab_methods(classPath,nameSpace);
 
       // add lines to make m-file
-      ofs << "%% " << cls.name << endl;
+      ofs << "%% " << cls.qualifiedName() << endl;
       ofs << "cd(toolboxpath)" << endl;
       cls.matlab_make_fragment(ofs, toolboxPath, mexFlags);
 
       // add section to the (actual) make file
-      make_ofs << "# " << cls.name << endl;
+      make_ofs << "# " << cls.qualifiedName() << endl;
       cls.makefile_fragment(make_ofs);
     }  
 
@@ -320,7 +313,7 @@ void Module::matlab_code(const string& toolboxPath,
     make_ofs << "\n\nclean: \n";
     make_ofs << "\trm -rf *.$(MEXENDING)\n";
     BOOST_FOREACH(Class cls, classes)
-    	make_ofs << "\trm -rf @" << cls.name << "/*.$(MEXENDING)\n";
+    	make_ofs << "\trm -rf @" << cls.qualifiedName() << "/*.$(MEXENDING)\n";
 
     // finish Makefile
     make_ofs << "\n" << endl;

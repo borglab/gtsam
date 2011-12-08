@@ -50,6 +50,10 @@ TEST( wrap, check_exception ) {
 	THROWS_EXCEPTION(Module("/notarealpath", "geometry",enable_verbose));
 	CHECK_EXCEPTION(Module("/alsonotarealpath", "geometry",enable_verbose), CantOpenFile);
 
+	// clean out previous generated code
+  string cleanCmd = "rm -rf actual";
+  system(cleanCmd.c_str());
+
 	string path = topdir + "/wrap/tests";
 	Module module(path.c_str(), "testWrap1",enable_verbose);
 	CHECK_EXCEPTION(module.matlab_code("actual", "", "mexa64", "-O5"), DependencyMissing);
@@ -78,9 +82,7 @@ TEST( wrap, parse ) {
 		EXPECT_LONGS_EQUAL(1, cls.constructors.size());
 		EXPECT_LONGS_EQUAL(1, cls.methods.size());
 		EXPECT_LONGS_EQUAL(2, cls.static_methods.size());
-		EXPECT_LONGS_EQUAL(2, cls.namespaces.size());
-		EXPECT(assert_equal("ns_outer", cls.namespaces.front()));
-		EXPECT(assert_equal("ns_inner", cls.namespaces.back()));
+		EXPECT_LONGS_EQUAL(0, cls.namespaces.size());
 
 		// first constructor takes 3 doubles
 		Constructor c1 = cls.constructors.front();
@@ -95,9 +97,9 @@ TEST( wrap, parse ) {
 
 		// check method
 		Method m1 = cls.methods.front();
-		EXPECT(assert_equal("double", m1.returnVal_.type1));
-		EXPECT(assert_equal("norm", m1.name_));
-		EXPECT_LONGS_EQUAL(0, m1.args_.size());
+		EXPECT(assert_equal("double", m1.returnVal.type1));
+		EXPECT(assert_equal("norm", m1.name));
+		EXPECT_LONGS_EQUAL(0, m1.args.size());
 		EXPECT(m1.is_const_);
 	}
 
@@ -108,14 +110,13 @@ TEST( wrap, parse ) {
 		EXPECT_LONGS_EQUAL( 2, testCls.constructors.size());
 		EXPECT_LONGS_EQUAL(19, testCls.methods.size());
 		EXPECT_LONGS_EQUAL( 0, testCls.static_methods.size());
-		EXPECT_LONGS_EQUAL( 1, testCls.namespaces.size());
-		EXPECT(assert_equal("ns_outer", testCls.namespaces.front()));
+		EXPECT_LONGS_EQUAL( 0, testCls.namespaces.size());
 
 		// function to parse: pair<Vector,Matrix> return_pair (Vector v, Matrix A) const;
 		Method m2 = testCls.methods.front();
-		EXPECT(m2.returnVal_.isPair);
-		EXPECT(m2.returnVal_.category1 == ReturnValue::EIGEN);
-		EXPECT(m2.returnVal_.category2 == ReturnValue::EIGEN);
+		EXPECT(m2.returnVal.isPair);
+		EXPECT(m2.returnVal.category1 == ReturnValue::EIGEN);
+		EXPECT(m2.returnVal.category2 == ReturnValue::EIGEN);
 	}
 }
 
@@ -154,8 +155,26 @@ TEST( wrap, parse_namespaces ) {
 	Class cls6 = module.classes.at(5);
 	EXPECT(assert_equal("ClassD", cls6.name));
 	EXPECT_LONGS_EQUAL(0, cls6.namespaces.size());
-	if (!cls6.namespaces.empty())
-		cout << "Extraneous namespace: " << cls6.namespaces.front() << endl;
+}
+
+/* ************************************************************************* */
+TEST( wrap, matlab_code_namespaces ) {
+	string header_path = topdir + "/wrap/tests";
+	Module module(header_path.c_str(), "testNamespaces",enable_verbose);
+	EXPECT_LONGS_EQUAL(6, module.classes.size());
+	string path = topdir + "/wrap";
+
+	// clean out previous generated code
+  string cleanCmd = "rm -rf actual_namespaces";
+  system(cleanCmd.c_str());
+
+	// emit MATLAB code
+  string exp_path = path + "/tests/expected_namespaces/";
+  string act_path = "actual_namespaces/";
+	module.matlab_code("actual_namespaces", "", "mexa64", "-O5");
+
+	EXPECT(files_equal(exp_path + "make_testNamespaces.m", act_path + "make_testNamespaces.m"));
+	EXPECT(files_equal(exp_path + "Makefile"       , act_path + "Makefile"       ));
 }
 
 /* ************************************************************************* */

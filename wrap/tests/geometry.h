@@ -9,10 +9,6 @@ class Point2 {
  VectorNotEigen vectorConfusion();
 };
 
-namespace ns_outer {
-
-namespace ns_inner {
-
 class Point3 {
   Point3(double x, double y, double z);
   double norm() const;
@@ -23,9 +19,6 @@ class Point3 {
 };
 
 // another comment
-
-// NOTE: you *must* end namespaces as follows:
-}///\namespace
 
 // another comment
 
@@ -75,8 +68,6 @@ class Test {
 
   // even more comments at the end!
 };
-
-}///\namespace
 
 // comments at the end!
 

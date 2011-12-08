@@ -45,22 +45,22 @@ void Constructor::matlab_proxy_fragment(ofstream& ofs, const string& className) 
 }
 
 /* ************************************************************************* */
-void Constructor::matlab_mfile(const string& toolboxPath, const string& className) {
+void Constructor::matlab_mfile(const string& toolboxPath, const string& qualifiedMatlabName) {
 
-  string name = matlab_wrapper_name(className);
+  string matlabName = matlab_wrapper_name(qualifiedMatlabName);
 
   // open destination m-file
-  string wrapperFile = toolboxPath + "/" + name + ".m";
+  string wrapperFile = toolboxPath + "/" + matlabName + ".m";
   ofstream ofs(wrapperFile.c_str());
   if(!ofs) throw CantOpenFile(wrapperFile);
   if(verbose_) cerr << "generating " << wrapperFile << endl;
 
   // generate code
   wrap::emit_header_comment(ofs, "%");
-  ofs << "function result = " << name << "(obj";
+  ofs << "function result = " << matlabName << "(obj";
   if (args.size()) ofs << "," << args.names();
   ofs << ")" << endl;
-  ofs << "  error('need to compile " << name << ".cpp');" << endl;
+  ofs << "  error('need to compile " << matlabName << ".cpp');" << endl;
   ofs << "end" << endl;
 
   // close file
@@ -68,15 +68,16 @@ void Constructor::matlab_mfile(const string& toolboxPath, const string& classNam
 }
 
 /* ************************************************************************* */
-void Constructor::matlab_wrapper(const string& toolboxPath, 
-				 const string& className,
+void Constructor::matlab_wrapper(const string& toolboxPath,
+				 const string& cppClassName,
+				 const string& matlabClassName,
 				 const string& nameSpace) 
 {
 
-  string name = matlab_wrapper_name(className);
+  string matlabName = matlab_wrapper_name(matlabClassName);
 
   // open destination wrapperFile
-  string wrapperFile = toolboxPath + "/" + name + ".cpp";
+  string wrapperFile = toolboxPath + "/" + matlabName + ".cpp";
   ofstream ofs(wrapperFile.c_str());
   if(!ofs) throw CantOpenFile(wrapperFile);
   if(verbose_) cerr << "generating " << wrapperFile << endl;
@@ -84,14 +85,14 @@ void Constructor::matlab_wrapper(const string& toolboxPath,
   // generate code
   wrap::emit_header_comment(ofs, "//");
   ofs << "#include <wrap/matlab.h>" << endl;
-  ofs << "#include <" << className << ".h>" << endl;
+  ofs << "#include <" << name << ".h>" << endl;
   if (!nameSpace.empty()) ofs << "using namespace " << nameSpace << ";" << endl;
   ofs << "void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])" << endl;
   ofs << "{" << endl;
-  ofs << "  checkArguments(\"" << name << "\",nargout,nargin," << args.size() << ");" << endl;
+  ofs << "  checkArguments(\"" << matlabName << "\",nargout,nargin," << args.size() << ");" << endl;
   args.matlab_unwrap(ofs); // unwrap arguments
-  ofs << "  " << className << "* self = new " << className << "(" << args.names() << ");" << endl;
-  ofs << "  out[0] = wrap_constructed(self,\"" << className << "\");" << endl;
+  ofs << "  " << cppClassName << "* self = new " << cppClassName << "(" << args.names() << ");" << endl; // need qualified name, delim: "::"
+  ofs << "  out[0] = wrap_constructed(self,\"" << matlabClassName << "\");" << endl; // need matlab qualified name
   ofs << "}" << endl;
 
   // close file

@@ -18,7 +18,6 @@
 #pragma once
 
 #include <string>
-#include <list>
 
 #include "Constructor.h"
 #include "Method.h"
@@ -33,9 +32,9 @@ struct Class {
 
 	// Then the instance variables are set directly by the Module constructor
   std::string name;                       ///< Class name
-  std::list<Constructor> constructors;    ///< Class constructors
-  std::list<Method> methods;              ///< Class methods
-  std::list<StaticMethod> static_methods; ///< Static methods
+  std::vector<Constructor> constructors;    ///< Class constructors
+  std::vector<Method> methods;              ///< Class methods
+  std::vector<StaticMethod> static_methods; ///< Static methods
   std::vector<std::string> namespaces;    ///< Stack of namespaces
   bool verbose_;                          ///< verbose flag
 
@@ -51,6 +50,7 @@ struct Class {
 			    const std::string& toolboxPath,
 			    const std::string& mexFlags);   ///< emit make fragment for global make script
   void makefile_fragment(std::ofstream& ofs); ///< emit makefile fragment
+  std::string qualifiedName(const std::string& delim = "") const; ///< creates a namespace-qualified name, optional delimiter
 };
 
 } // \namespace wrap
