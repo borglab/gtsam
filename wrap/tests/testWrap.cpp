@@ -52,16 +52,14 @@ TEST( wrap, check_exception ) {
 
 	string path = topdir + "/wrap/tests";
 	Module module(path.c_str(), "testWrap1",enable_verbose);
-//	CHECK_EXCEPTION(module.matlab_code("actual", "", "mexa64", "-O5"), DependencyMissing);
+	CHECK_EXCEPTION(module.matlab_code("actual", "", "mexa64", "-O5"), DependencyMissing);
 }
 
 /* ************************************************************************* */
 TEST( wrap, parse ) {
 	string header_path = topdir + "/wrap/tests";
-
 	Module module(header_path.c_str(), "geometry",enable_verbose);
 	EXPECT_LONGS_EQUAL(3, module.classes.size());
-	string path = topdir + "/wrap";
 
 	// check first class, Point2
 	{
@@ -80,8 +78,9 @@ TEST( wrap, parse ) {
 		EXPECT_LONGS_EQUAL(1, cls.constructors.size());
 		EXPECT_LONGS_EQUAL(1, cls.methods.size());
 		EXPECT_LONGS_EQUAL(2, cls.static_methods.size());
-		EXPECT_LONGS_EQUAL(1, cls.namespaces.size());
-		EXPECT(assert_equal("ns_inner", cls.namespaces.front()));
+		EXPECT_LONGS_EQUAL(2, cls.namespaces.size());
+		EXPECT(assert_equal("ns_outer", cls.namespaces.front()));
+		EXPECT(assert_equal("ns_inner", cls.namespaces.back()));
 
 		// first constructor takes 3 doubles
 		Constructor c1 = cls.constructors.front();
@@ -109,6 +108,8 @@ TEST( wrap, parse ) {
 		EXPECT_LONGS_EQUAL( 2, testCls.constructors.size());
 		EXPECT_LONGS_EQUAL(19, testCls.methods.size());
 		EXPECT_LONGS_EQUAL( 0, testCls.static_methods.size());
+		EXPECT_LONGS_EQUAL( 1, testCls.namespaces.size());
+		EXPECT(assert_equal("ns_outer", testCls.namespaces.front()));
 
 		// function to parse: pair<Vector,Matrix> return_pair (Vector v, Matrix A) const;
 		Method m2 = testCls.methods.front();
@@ -116,6 +117,34 @@ TEST( wrap, parse ) {
 		EXPECT(m2.returnVal_.category1 == ReturnValue::EIGEN);
 		EXPECT(m2.returnVal_.category2 == ReturnValue::EIGEN);
 	}
+}
+
+/* ************************************************************************* */
+TEST( wrap, parse_namespaces ) {
+	string header_path = topdir + "/wrap/tests";
+	Module module(header_path.c_str(), "testNamespaces",enable_verbose);
+	EXPECT_LONGS_EQUAL(4, module.classes.size());
+
+	Class cls1 = module.classes.at(0);
+	EXPECT(assert_equal("ClassA", cls1.name));
+	EXPECT_LONGS_EQUAL(1, cls1.namespaces.size());
+	EXPECT(assert_equal("ns1", cls1.namespaces.front()));
+
+	Class cls2 = module.classes.at(1);
+	EXPECT(assert_equal("ClassB", cls2.name));
+	EXPECT_LONGS_EQUAL(1, cls2.namespaces.size());
+	EXPECT(assert_equal("ns1", cls2.namespaces.front()));
+
+	Class cls3 = module.classes.at(2);
+	EXPECT(assert_equal("ClassA", cls3.name));
+	EXPECT_LONGS_EQUAL(1, cls3.namespaces.size());
+	EXPECT(assert_equal("ns2", cls3.namespaces.front()));
+
+	Class cls4 = module.classes.at(3);
+	EXPECT(assert_equal("ClassB", cls4.name));
+	EXPECT_LONGS_EQUAL(2, cls4.namespaces.size());
+	EXPECT(assert_equal("ns2", cls4.namespaces.front()));
+	EXPECT(assert_equal("ns3", cls4.namespaces.back()));
 }
 
 /* ************************************************************************* */

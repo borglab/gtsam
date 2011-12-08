@@ -164,7 +164,7 @@ Module::Module(const string& interfacePath,
 			namespace_name_p[assign_a(namespaces_parent, namespaces)][push_back_a(namespaces)] // save previous state
 			>> ch_p('{') >>
 					*(class_p | namespace_p | comments_p) >>
-					str_p("}//\\namespace") // end namespace, avoid confusion with classes
+					str_p("}///\\namespace") // end namespace, avoid confusion with classes
 					[assign_a(namespaces, namespaces_parent)]; // switch back to parent namespace
 
   Rule module_content_p =	 comments_p | class_p | namespace_p ;
@@ -205,15 +205,15 @@ Module::Module(const string& interfacePath,
     throw ParseFailed(info.length);
   }
 
-  if (!namespaces.empty()) {
-  	cout << "Namespaces not closed, remaining: ";
-  	BOOST_FOREACH(const string& ns, namespaces)
-  		cout << ns << " ";
-  	cout << endl;
-  }
-
-  if (!cls.name.empty())
-  	cout << "\nClass name: " << cls.name << endl;
+//  if (!namespaces.empty()) {
+//  	cout << "Namespaces not closed, remaining: ";
+//  	BOOST_FOREACH(const string& ns, namespaces)
+//  		cout << ns << " ";
+//  	cout << endl;
+//  }
+//
+//  if (!cls.name.empty())
+//  	cout << "\nClass name: " << cls.name << endl;
 }
 
 /* ************************************************************************* */
