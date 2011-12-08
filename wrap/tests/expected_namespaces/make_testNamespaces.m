@@ -26,6 +26,7 @@ mex -O5 ns2ClassA_afunction.cpp
 
 cd @ns2ClassA
 mex -O5 memberFunction.cpp
+mex -O5 nsArg.cpp
 
 %% ns2ns3ClassB
 cd(toolboxpath)

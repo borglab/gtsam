@@ -18,7 +18,7 @@
 #pragma once
 
 #include <string>
-#include <list>
+#include <vector>
 
 namespace wrap {
 
@@ -27,17 +27,20 @@ struct Argument {
 	bool is_const, is_ref, is_ptr;
 	std::string type;
 	std::string name;
+	std::vector<std::string> namespaces;
 	Argument() :
 			is_const(false), is_ref(false), is_ptr(false) {
 	}
+
+	std::string qualifiedType(const std::string& delim = ""); // adds namespaces to type
 
 	/// MATLAB code generation, MATLAB to C++
 	void matlab_unwrap(std::ofstream& ofs, const std::string& matlabName);
 };
 
 /// Argument list
-struct ArgumentList: public std::list<Argument> {
-	std::list<Argument> args;
+struct ArgumentList: public std::vector<Argument> {
+	std::vector<Argument> args; // why does it contain this?
 	std::string types();
 	std::string signature();
 	std::string names();

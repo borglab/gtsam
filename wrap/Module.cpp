@@ -74,12 +74,18 @@ Module::Module(const string& interfacePath,
 
   Rule className_p  = lexeme_d[upper_p >> *(alnum_p | '_')] - eigenType_p - basisType_p;
 
+  Rule namespace_name_p = lexeme_d[lower_p >> *(alnum_p | '_')];
+
+  Rule namespace_arg_p = namespace_name_p[push_back_a(arg.namespaces)] >> str_p("::");
+
   Rule classPtr_p =
+  	*namespace_arg_p >>
     className_p     [assign_a(arg.type)] >> 
     ch_p('*')       [assign_a(arg.is_ptr,true)];
 
   Rule classRef_p =
     !str_p("const") [assign_a(arg.is_const,true)] >> 
+  	*namespace_arg_p >>
     className_p     [assign_a(arg.type)] >> 
     ch_p('&')       [assign_a(arg.is_ref,true)];
 
@@ -95,7 +101,8 @@ Module::Module(const string& interfacePath,
   Rule name_p = lexeme_d[alpha_p >> *(alnum_p | '_')];
 
   Rule argument_p = 
-    ((basisType_p[assign_a(arg.type)] | argEigenType_p | classRef_p | eigenRef_p | classPtr_p) >> name_p[assign_a(arg.name)])
+    ((basisType_p[assign_a(arg.type)] | argEigenType_p | classRef_p | eigenRef_p | classPtr_p)
+    		>> name_p[assign_a(arg.name)])
     [push_back_a(args, arg)]
     [assign_a(arg,arg0)];
 
@@ -160,16 +167,14 @@ Module::Module(const string& interfacePath,
     *(functions_p | comments_p) >>
     str_p("};"))[assign_a(cls.namespaces, namespaces)][push_back_a(classes,cls)][assign_a(cls,cls0)];
 
-  Rule namespace_name_p = lexeme_d[(upper_p | lower_p) >> *(alnum_p | '_')];
-
-	Rule namespace_p = str_p("namespace") >>
+	Rule namespace_def_p = str_p("namespace") >>
 			namespace_name_p[push_back_a(namespaces)]
 			>> ch_p('{') >>
-					*(class_p | namespace_p | comments_p) >>
+					*(class_p | namespace_def_p | comments_p) >>
 					str_p("}///\\namespace") >> !namespace_name_p // end namespace, avoid confusion with classes
 					[pop_a(namespaces)];
 
-  Rule module_content_p =	 comments_p | class_p | namespace_p ;
+  Rule module_content_p =	 comments_p | class_p | namespace_def_p ;
 
   Rule module_p = *module_content_p >> !end_p;
 
@@ -208,17 +213,18 @@ Module::Module(const string& interfacePath,
   }
 }
 
+/* ************************************************************************* */
 template<class T>
 void verifyArguments(const vector<string>& validArgs, const vector<T>& vt) {
 	BOOST_FOREACH(const T& t, vt) {
 		BOOST_FOREACH(Argument arg, t.args) {
-			if(std::find(validArgs.begin(), validArgs.end(), arg.type)
+			string fullType = arg.qualifiedType("::");
+			if(std::find(validArgs.begin(), validArgs.end(), fullType)
 			== validArgs.end())
-				throw DependencyMissing(arg.type, t.name);
+				throw DependencyMissing(fullType, t.name);
 		}
 	}
 }
-
 
 /* ************************************************************************* */
 void Module::matlab_code(const string& toolboxPath, 
@@ -269,7 +275,7 @@ void Module::matlab_code(const string& toolboxPath,
     BOOST_FOREACH(Class cls, classes) {
     	make_ofs << cls.qualifiedName() << " ";
 			//Create a list of parsed classes for dependency checking
-			validArgs.push_back(cls.name);
+			validArgs.push_back(cls.qualifiedName("::"));
     }
     make_ofs << "\n\n";
 

@@ -20,6 +20,7 @@ class ClassA {
 	ClassA();
 	static double afunction();
 	double memberFunction();
+	int nsArg(const ns1::ClassB& arg);
 };
 
 namespace ns3 {
