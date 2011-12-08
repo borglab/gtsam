@@ -15,6 +15,7 @@
  * @author Frank Dellaert
  **/
 
+#include <stdlib.h>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -56,12 +57,11 @@ TEST( wrap, check_exception ) {
 
 /* ************************************************************************* */
 TEST( wrap, parse ) {
-	string path = topdir + "/wrap/tests";
+	string header_path = topdir + "/wrap/tests";
 
-	Module module(path.c_str(), "geometry",enable_verbose);
+	Module module(header_path.c_str(), "geometry",enable_verbose);
 	EXPECT_LONGS_EQUAL(3, module.classes.size());
-	//Hack to solve issues with instantiating Modules
-	path = topdir + "/wrap";
+	string path = topdir + "/wrap";
 
 	// check first class, Point2
 	{
@@ -102,26 +102,32 @@ TEST( wrap, parse ) {
 		EXPECT(m1.is_const_);
 	}
 
-	//	// Test class is the third one
-	//	LONGS_EQUAL(3, module.classes.size());
-	//	Class testCls = module.classes.at(2);
-	//	EXPECT_LONGS_EQUAL( 2, testCls.constructors.size());
-	//	EXPECT_LONGS_EQUAL(19, testCls.methods.size());
-	//	EXPECT_LONGS_EQUAL( 0, testCls.static_methods.size());
-	//
-	//  // function to parse: pair<Vector,Matrix> return_pair (Vector v, Matrix A) const;
-	//	Method m2 = testCls.methods.front();
-	//	EXPECT(m2.returnVal_.isPair);
-	//	EXPECT(m2.returnVal_.category1 == ReturnValue::EIGEN);
-	//	EXPECT(m2.returnVal_.category2 == ReturnValue::EIGEN);
+	// Test class is the third one
+	{
+		LONGS_EQUAL(3, module.classes.size());
+		Class testCls = module.classes.at(2);
+		EXPECT_LONGS_EQUAL( 2, testCls.constructors.size());
+		EXPECT_LONGS_EQUAL(19, testCls.methods.size());
+		EXPECT_LONGS_EQUAL( 0, testCls.static_methods.size());
+
+		// function to parse: pair<Vector,Matrix> return_pair (Vector v, Matrix A) const;
+		Method m2 = testCls.methods.front();
+		EXPECT(m2.returnVal_.isPair);
+		EXPECT(m2.returnVal_.category1 == ReturnValue::EIGEN);
+		EXPECT(m2.returnVal_.category2 == ReturnValue::EIGEN);
+	}
 }
 
 /* ************************************************************************* */
 TEST( wrap, matlab_code ) {
 	// Parse into class object
-	string path = topdir + "/wrap/tests";
-	Module module(path,"geometry",enable_verbose);
-	path = topdir + "/wrap";
+	string header_path = topdir + "/wrap/tests";
+	Module module(header_path,"geometry",enable_verbose);
+	string path = topdir + "/wrap";
+
+	// clean out previous generated code
+  string cleanCmd = "rm -rf actual";
+  system(cleanCmd.c_str());
 
 	// emit MATLAB code
 	// make_geometry will not compile, use make testwrap to generate real make

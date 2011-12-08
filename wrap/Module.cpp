@@ -160,14 +160,14 @@ Module::Module(const string& interfacePath,
 
   Rule namespace_name_p = lexeme_d[(upper_p | lower_p) >> *(alnum_p | '_')];
 
-  Rule namespace_p = str_p("namespace") >>
-  		namespace_name_p[assign_a(namespaces_parent, namespaces)][push_back_a(namespaces)] // save previous state
-      >> confix_p('{', // start namespace
-      		+(comments_p | class_p | namespace_p),
-      		('}' >> (*anychar_p - ch_p(';'))) // end namespace, avoid confusion with classes
-      		)[assign_a(namespaces, namespaces_parent)]; // switch back to parent namespace
+	Rule namespace_p = str_p("namespace") >>
+			namespace_name_p[assign_a(namespaces_parent, namespaces)][push_back_a(namespaces)] // save previous state
+			>> ch_p('{') >>
+					*(class_p | namespace_p | comments_p) >>
+					str_p("}//\\namespace") // end namespace, avoid confusion with classes
+					[assign_a(namespaces, namespaces_parent)]; // switch back to parent namespace
 
-  Rule module_content_p =	 comments_p | namespace_p | class_p;
+  Rule module_content_p =	 comments_p | class_p | namespace_p ;
 
   Rule module_p = *module_content_p >> !end_p;
 

@@ -22,6 +22,9 @@ class Point3 {
 
 // another comment
 
+// NOTE: you *must* end namespaces as follows:
+}//\namespace
+
 // another comment
 
 /**
@@ -70,8 +73,6 @@ class Test {
 
   // even more comments at the end!
 };
-
-} // \ns_inner
 
 // comments at the end!
 
