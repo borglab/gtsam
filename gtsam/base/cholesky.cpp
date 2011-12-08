@@ -164,13 +164,14 @@ Eigen::LDLT<Matrix>::TranspositionType ldlPartial(Matrix& ABC, size_t nFrontal) 
 
   if(debug) {
     cout << "Partial LDL with " << nFrontal << " frontal scalars, ";
-    print(ABC, "ABC: ");
+    print(ABC, "LDL ABC: ");
   }
 
   // Compute Cholesky factorization of A, overwrites A = sqrt(D)*R
   //  tic(1, "ldl");
   Eigen::LDLT<Matrix> ldlt;
   ldlt.compute(ABC.block(0,0,nFrontal,nFrontal).selfadjointView<Eigen::Upper>());
+  if (debug) ldlt.isNegative() ? cout << "Matrix is negative" << endl : cout << "Matrix is not negative" << endl;
 
   if(ldlt.vectorD().unaryExpr(boost::bind(less<double>(), _1, 0.0)).any()) {
     if(ISDEBUG("detailed_exceptions"))
@@ -180,14 +181,15 @@ Eigen::LDLT<Matrix>::TranspositionType ldlPartial(Matrix& ABC, size_t nFrontal) 
   }
 
   Vector sqrtD = ldlt.vectorD().cwiseSqrt(); // FIXME: we shouldn't do sqrt in LDL
-  if (debug) cout << "Dsqrt: " << sqrtD << endl;
+  if (debug) cout << "LDL Dsqrt:\n" << sqrtD << endl;
 
   // U = sqrtD * L^
   Matrix U = ldlt.matrixU();
+  if(debug) cout << "LDL U:\n" << U << endl;
 
   // we store the permuted upper triangular matrix
   ABC.block(0,0,nFrontal,nFrontal)  = sqrtD.asDiagonal() * U; // FIXME: this isn't actually LDL', it's Cholesky
-  if(debug) cout << "R:\n" << ABC.topLeftCorner(nFrontal,nFrontal) << endl;
+  if(debug) cout << "LDL R:\n" << ABC.topLeftCorner(nFrontal,nFrontal) << endl;
   //  toc(1, "ldl");
 
   // Compute S = inv(R') * B = inv(P'U')*B = inv(U')*P*B
@@ -196,20 +198,19 @@ Eigen::LDLT<Matrix>::TranspositionType ldlPartial(Matrix& ABC, size_t nFrontal) 
     ABC.topRightCorner(nFrontal, n-nFrontal) = ldlt.transpositionsP() * ABC.topRightCorner(nFrontal, n-nFrontal);
     ABC.block(0,0,nFrontal,nFrontal).triangularView<Eigen::Upper>().transpose().solveInPlace(ABC.topRightCorner(nFrontal, n-nFrontal));
   }
-  if(debug) cout << "S:\n" << ABC.topRightCorner(nFrontal, n-nFrontal) << endl;
+  if(debug) cout << "LDL S:\n" << ABC.topRightCorner(nFrontal, n-nFrontal) << endl;
   //  toc(2, "compute S");
 
   // Compute L = C - S' * S
   //  tic(3, "compute L");
-  if(debug) cout << "C:\n" << Eigen::MatrixXd(ABC.bottomRightCorner(n-nFrontal,n-nFrontal).selfadjointView<Eigen::Upper>()) << endl;
+  if(debug) cout << "LDL C:\n" << Eigen::MatrixXd(ABC.bottomRightCorner(n-nFrontal,n-nFrontal).selfadjointView<Eigen::Upper>()) << endl;
   if(n - nFrontal > 0)
     ABC.bottomRightCorner(n-nFrontal,n-nFrontal).selfadjointView<Eigen::Upper>().rankUpdate(
         ABC.topRightCorner(nFrontal, n-nFrontal).transpose(), -1.0);
-  if(debug) cout << "L:\n" << Eigen::MatrixXd(ABC.bottomRightCorner(n-nFrontal,n-nFrontal).selfadjointView<Eigen::Upper>()) << endl;
+  if(debug) cout << "LDL L:\n" << Eigen::MatrixXd(ABC.bottomRightCorner(n-nFrontal,n-nFrontal).selfadjointView<Eigen::Upper>()) << endl;
   //  toc(3, "compute L");
 
-  if(debug) cout << "P: " << ldlt.transpositionsP().indices() << endl;
-
+  if(debug) cout << "LDL P: " << ldlt.transpositionsP().indices() << endl;
   return ldlt.transpositionsP();
 }
 
