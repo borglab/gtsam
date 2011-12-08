@@ -263,6 +263,11 @@ class Ordering {
 	void push_back(string key);
 };
 
+class SharedNoiseModel {
+	SharedNoiseModel();
+	// FIXME: this needs actual constructors
+};
+
 class PlanarSLAMValues {
 	PlanarSLAMValues();
 	void print(string s) const;
