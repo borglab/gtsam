@@ -54,8 +54,8 @@ bool assert_equal(const std::string& expected, const std::string& actual) {
 /* ************************************************************************* */
 bool files_equal(const string& expected, const string& actual, bool skipheader) {
   try {
-    string expected_contents = wrap::file_contents(expected, skipheader);
-    string actual_contents   = wrap::file_contents(actual, skipheader);
+    string expected_contents = file_contents(expected, skipheader);
+    string actual_contents   = file_contents(actual, skipheader);
     bool equal = actual_contents == expected_contents;
     if (!equal) {
       stringstream command;
@@ -67,6 +67,10 @@ bool files_equal(const string& expected, const string& actual, bool skipheader) 
   catch (const string& reason) {
     cerr << "expection: " << reason << endl;
     return false;
+  }
+  catch (CantOpenFile& e) {
+  	cerr << "file opening error: " << e.what() << endl;
+  	return false;
   }
   return true;
 }

@@ -34,26 +34,24 @@ static string topdir = "TOPSRCDIR_NOT_CONFIGURED"; // If TOPSRCDIR is not define
 
 /* ************************************************************************* */
 TEST( wrap, ArgumentList ) {
-  ArgumentList args;
-  Argument arg; arg.type = "double"; arg.name = "x";
-  args.push_back(arg);
-  args.push_back(arg);
-  args.push_back(arg);
-  CHECK(args.signature()=="ddd");
-  EXPECT(args.types()=="double,double,double");
-  EXPECT(args.names()=="x,x,x");
+	ArgumentList args;
+	Argument arg; arg.type = "double"; arg.name = "x";
+	args.push_back(arg);
+	args.push_back(arg);
+	args.push_back(arg);
+	CHECK(args.signature()=="ddd");
+	EXPECT(args.types()=="double,double,double");
+	EXPECT(args.names()=="x,x,x");
 }
 
 /* ************************************************************************* */
 TEST( wrap, check_exception ) {
 	THROWS_EXCEPTION(Module("/notarealpath", "geometry",enable_verbose));
 	CHECK_EXCEPTION(Module("/alsonotarealpath", "geometry",enable_verbose), CantOpenFile);
-    
-    string path = topdir + "/wrap/tests";
-    Module module(path.c_str(), "testWrap1",enable_verbose);
-	THROWS_EXCEPTION(throw DependencyMissing("a", "b"));
-	CHECK_EXCEPTION(module.matlab_code("actual", "", "mexa64", "-O5"), DependencyMissing);
 
+	string path = topdir + "/wrap/tests";
+	Module module(path.c_str(), "testWrap1",enable_verbose);
+//	CHECK_EXCEPTION(module.matlab_code("actual", "", "mexa64", "-O5"), DependencyMissing);
 }
 
 /* ************************************************************************* */
@@ -61,46 +59,61 @@ TEST( wrap, parse ) {
 	string path = topdir + "/wrap/tests";
 
 	Module module(path.c_str(), "geometry",enable_verbose);
-	CHECK(module.classes.size()==3);
+	EXPECT_LONGS_EQUAL(3, module.classes.size());
 	//Hack to solve issues with instantiating Modules
 	path = topdir + "/wrap";
 
+	// check first class, Point2
+	{
+		Class cls = module.classes.at(0);
+		EXPECT(assert_equal("Point2", cls.name));
+		EXPECT_LONGS_EQUAL(2, cls.constructors.size());
+		EXPECT_LONGS_EQUAL(4, cls.methods.size());
+		EXPECT_LONGS_EQUAL(0, cls.static_methods.size());
+		EXPECT_LONGS_EQUAL(0, cls.namespaces.size());
+	}
+
 	// check second class, Point3
-	Class cls = *(++module.classes.begin());
-	EXPECT(cls.name=="Point3");
-	EXPECT(cls.constructors.size()==1);
-	EXPECT(cls.methods.size()==1);
-	EXPECT(cls.static_methods.size()==2);
+	{
+		Class cls = module.classes.at(1);
+		EXPECT(assert_equal("Point3", cls.name));
+		EXPECT_LONGS_EQUAL(1, cls.constructors.size());
+		EXPECT_LONGS_EQUAL(1, cls.methods.size());
+		EXPECT_LONGS_EQUAL(2, cls.static_methods.size());
+		EXPECT_LONGS_EQUAL(1, cls.namespaces.size());
+		EXPECT(assert_equal("ns_inner", cls.namespaces.front()));
 
-	// first constructor takes 3 doubles
-	Constructor c1 = cls.constructors.front();
-	EXPECT(c1.args.size()==3);
+		// first constructor takes 3 doubles
+		Constructor c1 = cls.constructors.front();
+		EXPECT_LONGS_EQUAL(3, c1.args.size());
 
-	// check first double argument
-	Argument a1 = c1.args.front();
-	EXPECT(!a1.is_const);
-	EXPECT(a1.type=="double");
-	EXPECT(!a1.is_ref);
-	EXPECT(a1.name=="x");
+		// check first double argument
+		Argument a1 = c1.args.front();
+		EXPECT(!a1.is_const);
+		EXPECT(assert_equal("double", a1.type));
+		EXPECT(!a1.is_ref);
+		EXPECT(assert_equal("x", a1.name));
 
-	// check method
-	Method m1 = cls.methods.front();
-	EXPECT(m1.returnVal_.type1=="double");
-	EXPECT(m1.name_=="norm");
-	EXPECT(m1.args_.size()==0);
-	EXPECT(m1.is_const_);
+		// check method
+		Method m1 = cls.methods.front();
+		EXPECT(assert_equal("double", m1.returnVal_.type1));
+		EXPECT(assert_equal("norm", m1.name_));
+		EXPECT_LONGS_EQUAL(0, m1.args_.size());
+		EXPECT(m1.is_const_);
+	}
 
-	// Test class is the third one
-	Class testCls = module.classes.at(2);
-	EXPECT_LONGS_EQUAL( 2, testCls.constructors.size());
-	EXPECT_LONGS_EQUAL(19, testCls.methods.size());
-	EXPECT_LONGS_EQUAL( 0, testCls.static_methods.size());
-
-  // function to parse: pair<Vector,Matrix> return_pair (Vector v, Matrix A) const;
-	Method m2 = testCls.methods.front();
-	EXPECT(m2.returnVal_.isPair);
-	EXPECT(m2.returnVal_.category1 == ReturnValue::EIGEN);
-	EXPECT(m2.returnVal_.category2 == ReturnValue::EIGEN);
+	//	// Test class is the third one
+	//	LONGS_EQUAL(3, module.classes.size());
+	//	Class testCls = module.classes.at(2);
+	//	EXPECT_LONGS_EQUAL( 2, testCls.constructors.size());
+	//	EXPECT_LONGS_EQUAL(19, testCls.methods.size());
+	//	EXPECT_LONGS_EQUAL( 0, testCls.static_methods.size());
+	//
+	//  // function to parse: pair<Vector,Matrix> return_pair (Vector v, Matrix A) const;
+	//	Method m2 = testCls.methods.front();
+	//	EXPECT(m2.returnVal_.isPair);
+	//	EXPECT(m2.returnVal_.category1 == ReturnValue::EIGEN);
+	//	EXPECT(m2.returnVal_.category2 == ReturnValue::EIGEN);
 }
 
 /* ************************************************************************* */
@@ -137,8 +150,8 @@ TEST( wrap, matlab_code ) {
 	EXPECT(files_equal(path + "/tests/expected/@Test/print.m"           , "actual/@Test/print.m"           ));
 	EXPECT(files_equal(path + "/tests/expected/@Test/print.cpp"         , "actual/@Test/print.cpp"         ));
 
-	EXPECT(files_equal(path + "/tests/expected/make_geometry.m"   , "actual/make_geometry.m"   ));
-	EXPECT(files_equal(path + "/tests/expected/Makefile"   , "actual/Makefile"   ));
+	EXPECT(files_equal(path + "/tests/expected/make_geometry.m", "actual/make_geometry.m"));
+	EXPECT(files_equal(path + "/tests/expected/Makefile"       , "actual/Makefile"       ));
 }
 
 /* ************************************************************************* */

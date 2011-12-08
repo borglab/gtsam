@@ -36,6 +36,7 @@ struct Class {
   std::list<Constructor> constructors;    ///< Class constructors
   std::list<Method> methods;              ///< Class methods
   std::list<StaticMethod> static_methods; ///< Static methods
+  std::vector<std::string> namespaces;    ///< Stack of namespaces
   bool verbose_;                          ///< verbose flag
 
   // And finally MATLAB code is emitted, methods below called by Module::matlab_code

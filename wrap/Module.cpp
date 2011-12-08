@@ -51,19 +51,16 @@ Module::Module(const string& interfacePath,
   Method method0(enable_verbose), method(enable_verbose);
   StaticMethod static_method0(enable_verbose), static_method(enable_verbose);
   Class cls0(enable_verbose),cls(enable_verbose);
+  vector<string> namespaces, namespaces_parent;
 
   //----------------------------------------------------------------------------
   // Grammar with actions that build the Class object. Actions are
   // defined within the square brackets [] and are executed whenever a
   // rule is successfully parsed. Define BOOST_SPIRIT_DEBUG to debug.
-  // The grammar is allows a very restricted C++ header:
-  // - No comments allowed.
-  //  -Only types allowed are string, bool, size_t int, double, Vector, and Matrix
-  //   as well as class names that start with an uppercase letter
-  // - The types unsigned int and bool should be specified as int.
+  // The grammar is allows a very restricted C++ header
   // ----------------------------------------------------------------------------
 
-  Rule comments_p =  comment_p("/*", "*/") |	comment_p("//");
+  Rule comments_p =  comment_p("/*", "*/") |	comment_p("//", eol_p);
 
   // lexeme_d turns off white space skipping
   // http://www.boost.org/doc/libs/1_37_0/libs/spirit/classic/doc/directives.html
@@ -157,16 +154,22 @@ Module::Module(const string& interfacePath,
 
   Rule functions_p = constructor_p | method_p | static_method_p;
 
-  Rule class_p = str_p("class") >> className_p[assign_a(cls.name)] >> '{' >>
+  Rule class_p = (str_p("class") >> className_p[assign_a(cls.name)] >> '{' >>
     *(functions_p | comments_p) >>
-    '}' >> ";";
+    str_p("};"))[assign_a(cls.namespaces, namespaces)][push_back_a(classes,cls)][assign_a(cls,cls0)];
 
-  Rule module_p = *comments_p >> +(class_p
-    [push_back_a(classes,cls)]
-    [assign_a(cls,cls0)]
-     >> *comments_p)
-     >> *comments_p
-    >> !end_p;
+  Rule namespace_name_p = lexeme_d[(upper_p | lower_p) >> *(alnum_p | '_')];
+
+  Rule namespace_p = str_p("namespace") >>
+  		namespace_name_p[assign_a(namespaces_parent, namespaces)][push_back_a(namespaces)] // save previous state
+      >> confix_p('{', // start namespace
+      		+(comments_p | class_p | namespace_p),
+      		('}' >> (*anychar_p - ch_p(';'))) // end namespace, avoid confusion with classes
+      		)[assign_a(namespaces, namespaces_parent)]; // switch back to parent namespace
+
+  Rule module_content_p =	 comments_p | namespace_p | class_p;
+
+  Rule module_p = *module_content_p >> !end_p;
 
   //----------------------------------------------------------------------------
   // for debugging, define BOOST_SPIRIT_DEBUG
@@ -193,7 +196,7 @@ Module::Module(const string& interfacePath,
 
   // read interface file
   string interfaceFile = interfacePath + "/" + moduleName + ".h";
-  string contents = wrap::file_contents(interfaceFile);
+  string contents = file_contents(interfaceFile);
 
   // and parse contents
   parse_info<const char*> info = parse(contents.c_str(), module_p, space_p);
@@ -201,6 +204,16 @@ Module::Module(const string& interfacePath,
     printf("parsing stopped at \n%.20s\n",info.stop);
     throw ParseFailed(info.length);
   }
+
+  if (!namespaces.empty()) {
+  	cout << "Namespaces not closed, remaining: ";
+  	BOOST_FOREACH(const string& ns, namespaces)
+  		cout << ns << " ";
+  	cout << endl;
+  }
+
+  if (!cls.name.empty())
+  	cout << "\nClass name: " << cls.name << endl;
 }
 
 /* ************************************************************************* */

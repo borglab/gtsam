@@ -9,6 +9,8 @@ class Point2 {
  VectorNotEigen vectorConfusion();
 };
 
+namespace ns_inner {
+
 class Point3 {
   Point3(double x, double y, double z);
   double norm() const;
@@ -17,6 +19,8 @@ class Point3 {
   static double staticFunction();
   static Point3 StaticFunctionRet(double z);
 };
+
+// another comment
 
 // another comment
 
@@ -66,6 +70,8 @@ class Test {
 
   // even more comments at the end!
 };
+
+} // \ns_inner
 
 // comments at the end!
 
