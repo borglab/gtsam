@@ -21,6 +21,7 @@
 //#define BOOST_SPIRIT_DEBUG
 #include <boost/spirit/include/classic_core.hpp>
 #include <boost/spirit/include/classic_confix.hpp>
+#include <boost/spirit/include/classic_clear_actor.hpp>
 #include <boost/foreach.hpp>
 
 #include <iostream>
@@ -52,7 +53,7 @@ Module::Module(const string& interfacePath,
   Method method0(enable_verbose), method(enable_verbose);
   StaticMethod static_method0(enable_verbose), static_method(enable_verbose);
   Class cls0(enable_verbose),cls(enable_verbose);
-  vector<string> namespaces, namespaces_parent, namespaces_temp;
+  vector<string> namespaces, namespaces_return;
 
   //----------------------------------------------------------------------------
   // Grammar with actions that build the Class object. Actions are
@@ -69,12 +70,15 @@ Module::Module(const string& interfacePath,
   Rule basisType_p =
     (str_p("string") | "bool" | "size_t" | "int" | "double");
 
+  Rule keywords_p =
+  	(str_p("const") | "static" | "namespace" | basisType_p);
+
   Rule eigenType_p =
     (str_p("Vector") | "Matrix");
 
-  Rule className_p  = lexeme_d[upper_p >> *(alnum_p | '_')] - eigenType_p - basisType_p;
+  Rule className_p  = lexeme_d[upper_p >> *(alnum_p | '_')] - eigenType_p - keywords_p;
 
-  Rule namespace_name_p = lexeme_d[lower_p >> *(alnum_p | '_')];
+  Rule namespace_name_p = lexeme_d[lower_p >> *(alnum_p | '_')] - keywords_p;
 
   Rule namespace_arg_p = namespace_name_p[push_back_a(arg.namespaces)] >> str_p("::");
 
@@ -116,15 +120,19 @@ Module::Module(const string& interfacePath,
     [push_back_a(cls.constructors, constructor)]
     [assign_a(constructor,constructor0)];
 
+  Rule namespace_ret_p = namespace_name_p[push_back_a(namespaces_return)] >> str_p("::");
+
   Rule returnType1_p =
 		(basisType_p[assign_a(retVal.type1)][assign_a(retVal.category1, ReturnValue::BASIS)]) |
-		((className_p[assign_a(retVal.type1)][assign_a(retVal.category1, ReturnValue::CLASS)]) >>
+		((*namespace_ret_p)[assign_a(retVal.namespaces1, namespaces_return)][clear_a(namespaces_return)]
+				>> (className_p[assign_a(retVal.type1)][assign_a(retVal.category1, ReturnValue::CLASS)]) >>
 				!ch_p('*')[assign_a(retVal.isPtr1,true)]) |
 		(eigenType_p[assign_a(retVal.type1)][assign_a(retVal.category1, ReturnValue::EIGEN)]);
 
   Rule returnType2_p =
 		(basisType_p[assign_a(retVal.type2)][assign_a(retVal.category2, ReturnValue::BASIS)]) |
-		((className_p[assign_a(retVal.type2)][assign_a(retVal.category2, ReturnValue::CLASS)]) >>
+		((*namespace_ret_p)[assign_a(retVal.namespaces2, namespaces_return)][clear_a(namespaces_return)]
+				>> (className_p[assign_a(retVal.type2)][assign_a(retVal.category2, ReturnValue::CLASS)]) >>
 				!ch_p('*')  [assign_a(retVal.isPtr2,true)]) |
 		(eigenType_p[assign_a(retVal.type2)][assign_a(retVal.category2, ReturnValue::EIGEN)]);
 

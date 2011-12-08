@@ -7,6 +7,7 @@
  * @author Alex Cunningham
  */
 
+#include <vector>
 #include <ostream>
 
 #pragma once
@@ -30,6 +31,7 @@ struct ReturnValue {
 	bool verbose;
 	std::string type1, type2;
 	bool isPtr1, isPtr2, isPair;
+	std::vector<std::string> namespaces1, namespaces2;
 
 	return_category category1, category2;
 
@@ -39,7 +41,10 @@ struct ReturnValue {
 
 	std::string return_type(bool add_ptr, pairing p);
 
-	std::string matlab_returnType() const { return isPair? "[first,second]" : "result"; }
+	std::string qualifiedType1(const std::string& delim = "");
+	std::string qualifiedType2(const std::string& delim = "");
+
+	std::string matlab_returnType() const;
 
 	void wrap_result(std::ostream& ofs);
 

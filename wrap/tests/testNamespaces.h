@@ -21,6 +21,7 @@ class ClassA {
 	static double afunction();
 	double memberFunction();
 	int nsArg(const ns1::ClassB& arg);
+	ns2::ns3::ClassB nsReturn(double q);
 };
 
 namespace ns3 {

@@ -27,8 +27,10 @@ ns2ClassA_afunction.$(MEXENDING): ns2ClassA_afunction.cpp
 	$(MEX) $(mex_flags) @ns2ClassA/memberFunction.cpp  -output @ns2ClassA/memberFunction
 @ns2ClassA/nsArg.$(MEXENDING): @ns2ClassA/nsArg.cpp
 	$(MEX) $(mex_flags) @ns2ClassA/nsArg.cpp  -output @ns2ClassA/nsArg
+@ns2ClassA/nsReturn.$(MEXENDING): @ns2ClassA/nsReturn.cpp
+	$(MEX) $(mex_flags) @ns2ClassA/nsReturn.cpp  -output @ns2ClassA/nsReturn
 
-ns2ClassA: new_ns2ClassA_.$(MEXENDING) ns2ClassA_afunction.$(MEXENDING) @ns2ClassA/memberFunction.$(MEXENDING) @ns2ClassA/nsArg.$(MEXENDING) 
+ns2ClassA: new_ns2ClassA_.$(MEXENDING) ns2ClassA_afunction.$(MEXENDING) @ns2ClassA/memberFunction.$(MEXENDING) @ns2ClassA/nsArg.$(MEXENDING) @ns2ClassA/nsReturn.$(MEXENDING) 
 
 # ns2ns3ClassB
 new_ns2ns3ClassB_.$(MEXENDING): new_ns2ns3ClassB_.cpp
