@@ -13,6 +13,9 @@
  *     - void
  *     - Any class with which be copied with boost::make_shared()
  *     - boost::shared_ptr of any object type
+ *   Limitations on methods
+ *     - Parsing does not support overloading
+ *     - There can only be one method with a given name
  *   Arguments to functions any of
  *   	 - Eigen types:       Matrix, Vector
  *   	 - Eigen types and classes as an optionally const reference
@@ -31,6 +34,9 @@
  *   	 - In each case, the namespace must be fully specified, e.g., "namespace1::namespace2::ClassName"
  *   Methods must start with a lowercase letter
  *   Static methods must start with a letter (upper or lowercase) and use the "static" keyword
+ *   Includes in C++ wrappers
+ *   	 - By default, the include will be <[classname].h>
+ *   	 - To override, add a full include statement inside the class definition
  */
 
 /**
@@ -181,6 +187,12 @@ class SharedDiagonal {
 	Vector sample() const;
 };
 
+class SharedNoiseModel {
+#include <gtsam/linear/SharedGaussian.h>
+	SharedNoiseModel(const SharedDiagonal& model);
+	SharedNoiseModel(const SharedGaussian& model);
+};
+
 class VectorValues {
 	VectorValues();
 	VectorValues(int nVars, int varDim);
@@ -245,6 +257,14 @@ class GaussianFactorGraph {
 	Matrix sparseJacobian_() const;
 };
 
+class GaussianSequentialSolver {
+  GaussianSequentialSolver(const GaussianFactorGraph& graph, bool useQR);
+  GaussianBayesNet* eliminate() const;
+  VectorValues* optimize() const;
+  GaussianFactor* marginalFactor(int j) const;
+  Matrix marginalCovariance(int j) const;
+};
+
 class KalmanFilter {
 	KalmanFilter(Vector x, const SharedDiagonal& model);
 	void print(string s) const;
@@ -261,11 +281,6 @@ class Ordering {
 	void print(string s) const;
 	bool equals(const Ordering& ord, double tol) const;
 	void push_back(string key);
-};
-
-class SharedNoiseModel {
-	SharedNoiseModel();
-	// FIXME: this needs actual constructors
 };
 
 // Planar SLAM example domain
@@ -312,14 +327,51 @@ class Odometry {
 
 }///\namespace planarSLAM
 
-class GaussianSequentialSolver {
-  GaussianSequentialSolver(const GaussianFactorGraph& graph, bool useQR);
-  GaussianBayesNet* eliminate() const;
-  VectorValues* optimize() const;
-  GaussianFactor* marginalFactor(int j) const;
-  Matrix marginalCovariance(int j) const;
+// Simulated2D Example Domain
+namespace simulated2D {
+
+class Values {
+#include <gtsam/slam/simulated2D.h>
+	Values();
+	void insertPose(int i, const Point2& p);
+	void insertPoint(int j, const Point2& p);
+	int nrPoses() const;
+	int nrPoints() const;
+	Point2 pose(int i);
+	Point2 point(int j);
 };
 
+class Graph {
+#include <gtsam/slam/simulated2D.h>
+	Graph();
+};
+
+// TODO: add factors, etc.
+
+}///\namespace simulated2D
+
+// Simulated2DOriented Example Domain
+namespace simulated2DOriented {
+
+class Values {
+#include <gtsam/slam/simulated2DOriented.h>
+	Values();
+	void insertPose(int i, const Pose2& p);
+	void insertPoint(int j, const Point2& p);
+	int nrPoses() const;
+	int nrPoints() const;
+	Pose2 pose(int i);
+	Point2 point(int j);
+};
+
+class Graph {
+#include <gtsam/slam/simulated2DOriented.h>
+	Graph();
+};
+
+// TODO: add factors, etc.
+
+}///\namespace simulated2DOriented
 
 //// These are considered to be broken and will be added back as they start working
 //// It's assumed that there have been interface changes that might break this
@@ -337,28 +389,6 @@ class GaussianSequentialSolver {
 //class GaussianFactorSet {
 //  GaussianFactorSet();
 //  void push_back(GaussianFactor* factor);
-//};
-//
-//class Simulated2DValues {
-//	Simulated2DValues();
-//  void print(string s) const;
-//	void insertPose(int i, const Point2& p);
-//	void insertPoint(int j, const Point2& p);
-//	int nrPoses() const;
-//	int nrPoints() const;
-//	Point2* pose(int i);
-//	Point2* point(int j);
-//};
-//
-//class Simulated2DOrientedValues {
-//	Simulated2DOrientedValues();
-//  void print(string s) const;
-//	void insertPose(int i, const Pose2& p);
-//	void insertPoint(int j, const Point2& p);
-//	int nrPoses() const;
-//	int nrPoints() const;
-//	Pose2* pose(int i);
-//	Point2* point(int j);
 //};
 //
 //class Simulated2DPosePrior {
@@ -397,10 +427,6 @@ class GaussianSequentialSolver {
 //  double error(const Simulated2DValues& c) const;
 //};
 //
-//// These are currently broken
-//// Solve by parsing a namespace pose2SLAM::Values and making a Pose2SLAMValues class
-//// We also have to solve the shared pointer mess to avoid duplicate methods
-//
 //class GaussianFactor {
 //	GaussianFactor(string key1,
 //			Matrix A1,
@@ -434,7 +460,6 @@ class GaussianSequentialSolver {
 //	VectorValues* steepestDescent_(const VectorValues& x0) const;
 //	VectorValues* conjugateGradientDescent_(const VectorValues& x0) const;
 //};
-//
 //
 //class Pose2Values{
 //	Pose2Values();

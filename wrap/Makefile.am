@@ -91,16 +91,16 @@ generate_toolbox: $(top_srcdir)/gtsam.h
 
 source_mode = -m 644
 
-wrap-install-matlab-toolbox: 
+wrap-install-matlab-toolbox: generate_toolbox
 	install -d ${toolbox}/gtsam
 	install ${source_mode} -c ../toolbox/*.m ${toolbox}/gtsam
 	install ${source_mode} -c ../toolbox/*.cpp ${toolbox}/gtsam
 	install ${source_mode} -c ../toolbox/Makefile ${toolbox}/gtsam
 	cp -ru ../toolbox/@* ${toolbox}/gtsam
 
-wrap-install-bin: 
+wrap-install-bin: wrap
 	install -d ${wrap} 
-	install ./wrap ${wrap}
+	install -c ./wrap ${wrap}
 
 wrap-install-matlab-tests: 
 	install -d ${toolbox}/gtsam/tests

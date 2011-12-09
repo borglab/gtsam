@@ -21,6 +21,7 @@
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/nonlinear/TupleValues.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 // \namespace
 
@@ -72,13 +73,13 @@ namespace gtsam {
 			}
 
 			/// Return pose i
-			sharedPoint pose(const simulated2D::PoseKey& i) {
-				return sharedPoint(new Point2((*this)[i]));
+			Point2 pose(const simulated2D::PoseKey& i) const {
+				return (*this)[i];
 			}
 
 			/// Return point j
-			sharedPoint point(const simulated2D::PointKey& j) {
-				return sharedPoint(new Point2((*this)[j]));
+			Point2 point(const simulated2D::PointKey& j) const {
+				return (*this)[j];
 			}
 		};
 
@@ -231,6 +232,13 @@ namespace gtsam {
 		typedef GenericPrior<Values, PoseKey> Prior;
 		typedef GenericOdometry<Values, PoseKey> Odometry;
 		typedef GenericMeasurement<Values, PoseKey, PointKey> Measurement;
+
+		// Specialization of a graph for this example domain
+		// TODO: add functions to add factor types
+		class Graph : public NonlinearFactorGraph<Values> {
+		public:
+			Graph() {}
+		};
 
 	} // namespace simulated2D
 } // namespace gtsam
