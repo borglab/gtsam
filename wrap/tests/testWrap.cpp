@@ -111,6 +111,8 @@ TEST( wrap, parse ) {
 		EXPECT_LONGS_EQUAL(19, testCls.methods.size());
 		EXPECT_LONGS_EQUAL( 0, testCls.static_methods.size());
 		EXPECT_LONGS_EQUAL( 0, testCls.namespaces.size());
+		EXPECT_LONGS_EQUAL( 1, testCls.includes.size());
+		EXPECT(assert_equal("folder/path/to/Test.h", testCls.includes.front()));
 
 		// function to parse: pair<Vector,Matrix> return_pair (Vector v, Matrix A) const;
 		Method m2 = testCls.methods.front();

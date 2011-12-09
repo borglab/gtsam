@@ -18,7 +18,7 @@
 #pragma once
 
 #include <string>
-#include <list>
+#include <vector>
 
 #include "Argument.h"
 
@@ -51,11 +51,11 @@ struct Constructor {
 	void matlab_mfile(const std::string& toolboxPath,
 			const std::string& qualifiedMatlabName);
 
-	/// wrapper
+	/// cpp wrapper
 	void matlab_wrapper(const std::string& toolboxPath,
 			 const std::string& cppClassName,
 			 const std::string& matlabClassName,
-			 const std::string& nameSpace);
+			 const std::string& nameSpace, const std::vector<std::string>& includes);
 };
 
 } // \namespace wrap

@@ -27,6 +27,8 @@ class Point3 {
  */
 
 class Test {
+#include <folder/path/to/Test.h>
+
 	/* a comment! */
 	// another comment
   Test();

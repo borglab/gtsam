@@ -46,7 +46,8 @@ struct Method {
 	void matlab_wrapper(const std::string& classPath,
 			const std::string& className,
 	    const std::string& cppClassName,
-	    const std::string& matlabClassname,const std::string& nameSpace); ///< wrapper
+	    const std::string& matlabClassname,const std::string& nameSpace,
+	    const std::vector<std::string>& includes); ///< cpp wrapper
 };
 
 } // \namespace wrap

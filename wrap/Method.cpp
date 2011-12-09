@@ -52,7 +52,7 @@ void Method::matlab_wrapper(const string& classPath,
 			    const string& className,
 			    const string& cppClassName,
 			    const string& matlabClassName,
-			    const string& nameSpace) 
+			    const string& nameSpace, const std::vector<std::string>& includes)
 {
   // open destination wrapperFile
   string wrapperFile = classPath + "/" + name + ".cpp";
@@ -65,7 +65,12 @@ void Method::matlab_wrapper(const string& classPath,
   // header
   wrap::emit_header_comment(ofs, "//");
   ofs << "#include <wrap/matlab.h>\n";
-  ofs << "#include <" << className << ".h>\n";
+  if (includes.empty()) // add a default include
+  	ofs << "#include <" << className << ".h>" << endl;
+  else {
+  	BOOST_FOREACH(const string& s, includes)
+		  ofs << "#include <" << s << ">" << endl;
+  }
   if (!nameSpace.empty()) ofs << "using namespace " << nameSpace << ";" << endl;
 
   // call

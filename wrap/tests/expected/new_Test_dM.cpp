@@ -3,7 +3,9 @@
 #include <folder/path/to/Test.h>
 void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  checkArguments("new_Test_",nargout,nargin,0);
-  Test* self = new Test();
+  checkArguments("new_Test_dM",nargout,nargin,2);
+  double a = unwrap< double >(in[0]);
+  Matrix b = unwrap< Matrix >(in[1]);
+  Test* self = new Test(a,b);
   out[0] = wrap_constructed(self,"Test");
 }

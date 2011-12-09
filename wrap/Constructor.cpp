@@ -56,7 +56,7 @@ void Constructor::matlab_mfile(const string& toolboxPath, const string& qualifie
   if(verbose_) cerr << "generating " << wrapperFile << endl;
 
   // generate code
-  wrap::emit_header_comment(ofs, "%");
+  emit_header_comment(ofs, "%");
   ofs << "function result = " << matlabName << "(obj";
   if (args.size()) ofs << "," << args.names();
   ofs << ")" << endl;
@@ -71,7 +71,7 @@ void Constructor::matlab_mfile(const string& toolboxPath, const string& qualifie
 void Constructor::matlab_wrapper(const string& toolboxPath,
 				 const string& cppClassName,
 				 const string& matlabClassName,
-				 const string& nameSpace) 
+				 const string& nameSpace, const vector<string>& includes)
 {
 
   string matlabName = matlab_wrapper_name(matlabClassName);
@@ -83,9 +83,14 @@ void Constructor::matlab_wrapper(const string& toolboxPath,
   if(verbose_) cerr << "generating " << wrapperFile << endl;
 
   // generate code
-  wrap::emit_header_comment(ofs, "//");
+  emit_header_comment(ofs, "//");
   ofs << "#include <wrap/matlab.h>" << endl;
-  ofs << "#include <" << name << ".h>" << endl;
+  if (includes.empty()) // add a default include
+  	ofs << "#include <" << name << ".h>" << endl;
+  else {
+  	BOOST_FOREACH(const string& s, includes)
+		  ofs << "#include <" << s << ">" << endl;
+  }
   if (!nameSpace.empty()) ofs << "using namespace " << nameSpace << ";" << endl;
   ofs << "void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])" << endl;
   ofs << "{" << endl;

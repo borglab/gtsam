@@ -169,7 +169,9 @@ Module::Module(const string& interfacePath,
     [push_back_a(cls.static_methods, static_method)]
     [assign_a(static_method,static_method0)];
 
-  Rule functions_p = constructor_p | method_p | static_method_p;
+  Rule includes_p = str_p("#include") >> ch_p('<') >> (*(anychar_p - '>'))[push_back_a(cls.includes)] >> ch_p('>');
+
+  Rule functions_p = includes_p | constructor_p | method_p | static_method_p;
 
   Rule class_p = (str_p("class") >> className_p[assign_a(cls.name)] >> '{' >>
     *(functions_p | comments_p) >>

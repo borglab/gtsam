@@ -47,7 +47,8 @@ struct StaticMethod {
 	void matlab_mfile(const std::string& toolboxPath, const std::string& className); ///< m-file
 	void matlab_wrapper(const std::string& toolboxPath,
 			const std::string& className, const std::string& matlabClassName,
-			const std::string& cppClassName, const std::string& nameSpace); ///< cpp wrapper
+			const std::string& cppClassName, const std::string& nameSpace,
+			const std::vector<std::string>& includes); ///< cpp wrapper
 };
 
 } // \namespace wrap

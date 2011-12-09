@@ -31,12 +31,13 @@ struct Class {
   Class(bool verbose=true) : verbose_(verbose) {}
 
 	// Then the instance variables are set directly by the Module constructor
-  std::string name;                       ///< Class name
+  std::string name;                         ///< Class name
   std::vector<Constructor> constructors;    ///< Class constructors
   std::vector<Method> methods;              ///< Class methods
   std::vector<StaticMethod> static_methods; ///< Static methods
-  std::vector<std::string> namespaces;    ///< Stack of namespaces
-  bool verbose_;                          ///< verbose flag
+  std::vector<std::string> namespaces;      ///< Stack of namespaces
+  std::vector<std::string> includes;        ///< header include overrides
+  bool verbose_;                            ///< verbose flag
 
   // And finally MATLAB code is emitted, methods below called by Module::matlab_code
   void matlab_proxy(const std::string& classFile);          ///< emit proxy class

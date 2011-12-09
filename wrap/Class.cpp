@@ -60,7 +60,7 @@ void Class::matlab_proxy(const string& classFile) {
 void Class::matlab_constructors(const string& toolboxPath,const string& nameSpace) {
   BOOST_FOREACH(Constructor c, constructors) {
     c.matlab_mfile  (toolboxPath, qualifiedName());
-    c.matlab_wrapper(toolboxPath, qualifiedName("::"), qualifiedName(), nameSpace);
+    c.matlab_wrapper(toolboxPath, qualifiedName("::"), qualifiedName(), nameSpace, includes);
   }
 }
 
@@ -69,7 +69,7 @@ void Class::matlab_methods(const string& classPath, const string& nameSpace) {
 	string matlabName = qualifiedName(), cppName = qualifiedName("::");
   BOOST_FOREACH(Method m, methods) {
     m.matlab_mfile  (classPath);
-    m.matlab_wrapper(classPath, name, cppName, matlabName, nameSpace);
+    m.matlab_wrapper(classPath, name, cppName, matlabName, nameSpace, includes);
   }
 }
 
@@ -78,7 +78,7 @@ void Class::matlab_static_methods(const string& toolboxPath, const string& nameS
 	string matlabName = qualifiedName(), cppName = qualifiedName("::");
   BOOST_FOREACH(StaticMethod& m, static_methods) {
     m.matlab_mfile  (toolboxPath, qualifiedName());
-    m.matlab_wrapper(toolboxPath, name, matlabName, cppName, nameSpace);
+    m.matlab_wrapper(toolboxPath, name, matlabName, cppName, nameSpace, includes);
   }
 }
 

@@ -50,7 +50,8 @@ void StaticMethod::matlab_mfile(const string& toolboxPath, const string& classNa
 
 /* ************************************************************************* */
 void StaticMethod::matlab_wrapper(const string& toolboxPath, const string& className,
-		const string& matlabClassName, const string& cppClassName, const string& nameSpace)
+		const string& matlabClassName, const string& cppClassName, const string& nameSpace,
+		const std::vector<std::string>& includes)
 {
   // open destination wrapperFile
 	string full_name = matlabClassName + "_" + name;
@@ -64,7 +65,12 @@ void StaticMethod::matlab_wrapper(const string& toolboxPath, const string& class
   // header
   wrap::emit_header_comment(ofs, "//");
   ofs << "#include <wrap/matlab.h>\n";
-  ofs << "#include <" << className << ".h>\n";
+  if (includes.empty()) // add a default include
+  	ofs << "#include <" << className << ".h>" << endl;
+  else {
+  	BOOST_FOREACH(const string& s, includes)
+		  ofs << "#include <" << s << ">" << endl;
+  }
   if (!nameSpace.empty()) ofs << "using namespace " << nameSpace << ";" << endl;
 
   // call
