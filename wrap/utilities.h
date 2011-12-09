@@ -16,7 +16,9 @@
 
 #pragma once
 
+#include <vector>
 #include <exception>
+#include <fstream>
 #include <sstream>
 
 namespace wrap {
@@ -84,5 +86,16 @@ void emit_header_comment(std::ofstream& ofs, const std::string& delimiter);
 
 // auxiliary function to wrap an argument into a shared_ptr template
 std::string maybe_shared_ptr(bool add, const std::string& type);
+
+/**
+ * Creates the "using namespace [name];" declarations
+ */
+void generateUsingNamespace(std::ofstream& ofs, const std::vector<std::string>& using_namespaces);
+
+/**
+ * Creates the #include statements
+ */
+void generateIncludes(std::ofstream& ofs, const std::string& class_name,
+		const std::vector<std::string>& includes);
 
 } // \namespace wrap

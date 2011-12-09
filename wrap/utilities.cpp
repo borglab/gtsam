@@ -15,8 +15,8 @@
  **/
 
 #include <iostream>
-#include <fstream>
 
+#include <boost/foreach.hpp>
 #include <boost/date_time/gregorian/gregorian.hpp>
 
 #include "utilities.h"
@@ -42,12 +42,12 @@ string file_contents(const string& filename, bool skipheader) {
 }
 
 /* ************************************************************************* */
-bool assert_equal(const std::string& expected, const std::string& actual) {
+bool assert_equal(const string& expected, const string& actual) {
 	if (expected == actual)
 		return true;
 	printf("Not equal:\n");
-	std::cout << "expected: [" << expected << "]\n";
-	std::cout << "actual: [" << actual << "]" << std::endl;
+	cout << "expected: [" << expected << "]\n";
+	cout << "actual: [" << actual << "]" << endl;
 	return false;
 }
 
@@ -82,11 +82,30 @@ void emit_header_comment(ofstream& ofs, const string& delimiter) {
 }
 
 /* ************************************************************************* */
-std::string maybe_shared_ptr(bool add, const std::string& type) {
+string maybe_shared_ptr(bool add, const string& type) {
   string str = add? "shared_ptr<" : "";
   str += type;
   if (add) str += ">";
   return str;
+}
+
+/* ************************************************************************* */
+void generateUsingNamespace(ofstream& ofs, const vector<string>& using_namespaces) {
+	if (using_namespaces.empty()) return;
+	BOOST_FOREACH(const string& s, using_namespaces)
+		ofs << "using namespace " << s << ";" << endl;
+}
+
+/* ************************************************************************* */
+void generateIncludes(std::ofstream& ofs, const std::string& class_name,
+		const std::vector<std::string>& includes) {
+	ofs << "#include <wrap/matlab.h>" << endl;
+	if (includes.empty()) // add a default include
+		ofs << "#include <" << class_name << ".h>" << endl;
+	else {
+		BOOST_FOREACH(const string& s, includes)
+	  		ofs << "#include <" << s << ">" << endl;
+	}
 }
 
 /* ************************************************************************* */

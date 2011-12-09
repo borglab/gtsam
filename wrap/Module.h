@@ -31,6 +31,7 @@ struct Module {
   std::string name;         ///< module name
   std::vector<Class> classes; ///< list of classes
   bool verbose;            ///< verbose flag
+  std::vector<std::string> using_namespaces; ///< all default namespaces
 
   /// constructor that parses interface file
   Module(const std::string& interfacePath,
@@ -39,7 +40,6 @@ struct Module {
 
   /// MATLAB code generation:
   void matlab_code(const std::string& path, 
-		   const std::string& nameSpace, 
 		   const std::string& mexExt,
 		   const std::string& mexFlags);
 };

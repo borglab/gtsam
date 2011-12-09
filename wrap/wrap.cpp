@@ -35,7 +35,6 @@ void generate_matlab_toolbox(const string& mexExt,
 					 const string& interfacePath,
 			     const string& moduleName,
 			     const string& toolboxPath,
-			     const string& nameSpace,
 			     const string& mexFlags) 
 {
   // Parse interface file into class object
@@ -43,7 +42,7 @@ void generate_matlab_toolbox(const string& mexExt,
   wrap::Module module(interfacePath, moduleName, true);
 
   // Then emit MATLAB code
-  module.matlab_code(toolboxPath,nameSpace,mexExt,mexFlags);
+  module.matlab_code(toolboxPath,mexExt,mexFlags);
 }
 
 /**
@@ -58,10 +57,9 @@ int main(int argc, const char* argv[]) {
     cerr << "  interfacePath : *absolute* path to directory of module interface file" << endl;
     cerr << "  moduleName    : the name of the module, interface file must be called moduleName.h" << endl;
     cerr << "  toolboxPath   : the directory in which to generate the wrappers" << endl;
-    cerr << "  nameSpace     : namespace to use, pass empty string if none" << endl;
     cerr << "  [mexFlags]    : extra flags for the mex command" << endl;
   }
   else
-    generate_matlab_toolbox(argv[1],argv[2],argv[3],argv[4],argv[5],argc==6 ? " " : argv[6]);
+    generate_matlab_toolbox(argv[1],argv[2],argv[3],argv[4],argc==5 ? " " : argv[5]);
   return 0;
 }

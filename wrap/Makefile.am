@@ -57,7 +57,6 @@ LDADD = libwrap.la ../CppUnitLite/libCppUnitLite.a
 interfacePath = $(top_srcdir)
 moduleName = gtsam
 toolboxpath = ../toolbox  
-nameSpace = "gtsam"
 
 # Set flags to pass to mex
 mexFlags = 
@@ -87,7 +86,7 @@ endif # Linux
 all: generate_toolbox
 
 generate_toolbox: $(top_srcdir)/gtsam.h
-	./wrap ${mexextension} ${interfacePath} ${moduleName} ${toolboxpath} ${nameSpace} ${mexFlags}
+	./wrap ${mexextension} ${interfacePath} ${moduleName} ${toolboxpath} ${mexFlags}
 
 source_mode = -m 644
 

@@ -47,6 +47,9 @@
  *  - TODO: Handle Rot3M conversions to quaternions
  */
 
+// Everything is in the gtsam namespace, so we avoid copying everything in
+using namespace gtsam;
+
 class Point2 {
 	Point2();
 	Point2(double x, double y);

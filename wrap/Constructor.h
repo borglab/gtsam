@@ -55,7 +55,8 @@ struct Constructor {
 	void matlab_wrapper(const std::string& toolboxPath,
 			 const std::string& cppClassName,
 			 const std::string& matlabClassName,
-			 const std::string& nameSpace, const std::vector<std::string>& includes);
+			 const std::vector<std::string>& using_namespaces,
+			 const std::vector<std::string>& includes);
 };
 
 } // \namespace wrap

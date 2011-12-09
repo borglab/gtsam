@@ -184,7 +184,10 @@ Module::Module(const string& interfacePath,
 					str_p("}///\\namespace") >> !namespace_name_p // end namespace, avoid confusion with classes
 					[pop_a(namespaces)];
 
-  Rule module_content_p =	 comments_p | class_p | namespace_def_p ;
+	Rule using_namespace_p = str_p("using") >> str_p("namespace")
+			>> namespace_name_p[push_back_a(using_namespaces)] >> ch_p(';');
+
+  Rule module_content_p =	comments_p | using_namespace_p | class_p | namespace_def_p ;
 
   Rule module_p = *module_content_p >> !end_p;
 
@@ -238,7 +241,6 @@ void verifyArguments(const vector<string>& validArgs, const vector<T>& vt) {
 
 /* ************************************************************************* */
 void Module::matlab_code(const string& toolboxPath, 
-			 const string& nameSpace, 
 			 const string& mexExt,
 			 const string& mexFlags)
 {
@@ -306,9 +308,9 @@ void Module::matlab_code(const string& toolboxPath,
       verifyArguments<Method>(validArgs, cls.methods);
 
       // create constructor and method wrappers
-      cls.matlab_constructors(toolboxPath,nameSpace);
-      cls.matlab_static_methods(toolboxPath,nameSpace);
-      cls.matlab_methods(classPath,nameSpace);
+      cls.matlab_constructors(toolboxPath,using_namespaces);
+      cls.matlab_static_methods(toolboxPath,using_namespaces);
+      cls.matlab_methods(classPath,using_namespaces);
 
       // add lines to make m-file
       ofs << "%% " << cls.qualifiedName() << endl;

@@ -57,28 +57,28 @@ void Class::matlab_proxy(const string& classFile) {
 }
 
 /* ************************************************************************* */
-void Class::matlab_constructors(const string& toolboxPath,const string& nameSpace) {
+void Class::matlab_constructors(const string& toolboxPath, const vector<string>& using_namespaces) {
   BOOST_FOREACH(Constructor c, constructors) {
     c.matlab_mfile  (toolboxPath, qualifiedName());
-    c.matlab_wrapper(toolboxPath, qualifiedName("::"), qualifiedName(), nameSpace, includes);
+    c.matlab_wrapper(toolboxPath, qualifiedName("::"), qualifiedName(), using_namespaces, includes);
   }
 }
 
 /* ************************************************************************* */
-void Class::matlab_methods(const string& classPath, const string& nameSpace) {
+void Class::matlab_methods(const string& classPath, const vector<string>& using_namespaces) {
 	string matlabName = qualifiedName(), cppName = qualifiedName("::");
   BOOST_FOREACH(Method m, methods) {
     m.matlab_mfile  (classPath);
-    m.matlab_wrapper(classPath, name, cppName, matlabName, nameSpace, includes);
+    m.matlab_wrapper(classPath, name, cppName, matlabName, using_namespaces, includes);
   }
 }
 
 /* ************************************************************************* */
-void Class::matlab_static_methods(const string& toolboxPath, const string& nameSpace) {
+void Class::matlab_static_methods(const string& toolboxPath, const vector<string>& using_namespaces) {
 	string matlabName = qualifiedName(), cppName = qualifiedName("::");
   BOOST_FOREACH(StaticMethod& m, static_methods) {
     m.matlab_mfile  (toolboxPath, qualifiedName());
-    m.matlab_wrapper(toolboxPath, name, matlabName, cppName, nameSpace, includes);
+    m.matlab_wrapper(toolboxPath, name, matlabName, cppName, using_namespaces, includes);
   }
 }
 

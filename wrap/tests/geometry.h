@@ -1,5 +1,9 @@
 	// comments!
 
+// set the default namespace
+// location of namespace isn't significant
+using namespace geometry;
+
 class Point2 {
  Point2();
  Point2(double x, double y);
