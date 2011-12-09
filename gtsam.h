@@ -256,14 +256,6 @@ class KalmanFilter {
 	void update(Matrix H, Vector z, const SharedDiagonal& model);
 };
 
-class Landmark2 {
-	Landmark2();
-	Landmark2(double x, double y);
-	void print(string s) const;
-	double x();
-	double y();
-};
-
 class Ordering {
 	Ordering();
 	void print(string s) const;
@@ -276,22 +268,28 @@ class SharedNoiseModel {
 	// FIXME: this needs actual constructors
 };
 
-class PlanarSLAMValues {
-	PlanarSLAMValues();
+// Planar SLAM example domain
+namespace planarSLAM {
+
+class Values {
+#include <gtsam/slam/planarSLAM.h>
+	Values();
 	void print(string s) const;
-	Pose2* pose(int key);
+	Pose2 pose(int key) const;
+	Point2 point(int key) const;
 	void insertPose(int key, const Pose2& pose);
 	void insertPoint(int key, const Point2& point);
 };
 
-class PlanarSLAMGraph {
-	PlanarSLAMGraph();
+class Graph {
+#include <gtsam/slam/planarSLAM.h>
+	Graph();
 
 	void print(string s) const;
 
-	double error(const PlanarSLAMValues& values) const;
-	Ordering* orderingCOLAMD(const PlanarSLAMValues& values) const;
-	GaussianFactorGraph* linearize(const PlanarSLAMValues& values,
+	double error(const planarSLAM::Values& values) const;
+	Ordering* orderingCOLAMD(const planarSLAM::Values& values) const;
+	GaussianFactorGraph* linearize(const planarSLAM::Values& values,
 			const Ordering& ordering) const;
 
 	void addPrior(int key, const Pose2& pose, const SharedNoiseModel& noiseModel);
@@ -301,15 +299,18 @@ class PlanarSLAMGraph {
 	void addRange(int poseKey, int pointKey, double range, const SharedNoiseModel& noiseModel);
 	void addBearingRange(int poseKey, int pointKey, const Rot2& bearing, double range,
 			const SharedNoiseModel& noiseModel);
-	PlanarSLAMValues* optimize_(const PlanarSLAMValues& initialEstimate);
+	planarSLAM::Values optimize(const planarSLAM::Values& initialEstimate);
 };
 
-class PlanarSLAMOdometry {
-	PlanarSLAMOdometry(int key1, int key2, const Pose2& measured,
+class Odometry {
+#include <gtsam/slam/planarSLAM.h>
+	Odometry(int key1, int key2, const Pose2& measured,
 			const SharedNoiseModel& model);
 	void print(string s) const;
-	GaussianFactor* linearize(const PlanarSLAMValues& center, const Ordering& ordering) const;
+	GaussianFactor* linearize(const planarSLAM::Values& center, const Ordering& ordering) const;
 };
+
+}///\namespace planarSLAM
 
 class GaussianSequentialSolver {
   GaussianSequentialSolver(const GaussianFactorGraph& graph, bool useQR);

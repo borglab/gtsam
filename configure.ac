@@ -47,21 +47,6 @@ AC_ARG_ENABLE([debug],
 
 AM_CONDITIONAL([DEBUG], [test x$debug = xtrue])
 
-
-# AGC: isn't this redundant?
-#AC_CANONICAL_HOST # why was this called twice?
-# We need to determine what os we are on to determine if we need to do 
-# special things because we are on a mac
-# case $host_os in
-#   darwin* )
-#         # Do something specific for mac
-#         ISMAC=true
-#         ;;
-#   *)
-#         ISMAC=false
-#         ;;
-# esac
-
 # enable profiling
 AC_ARG_ENABLE([profiling],
      [  --enable-profiling    Enable profiling],
@@ -95,30 +80,6 @@ AC_ARG_ENABLE([install_cppunitlite],
 
 AM_CONDITIONAL([ENABLE_INSTALL_CPPUNITLITE], [test x$install_cppunitlite = xtrue])
 
-# Checks for programs.
-AC_PROG_CXX
-AC_PROG_CC
-
-# Checks for libraries.
-LT_INIT
-
-# Checks for header files.
-AC_HEADER_STDC
-AC_CHECK_HEADERS([string.h])
-
-# Checks for typedefs, structures, and compiler characteristics.
-AC_HEADER_STDBOOL
-AC_C_CONST
-AC_C_INLINE
-AC_TYPE_SIZE_T
-
-# Checks for library functions.
-AC_FUNC_ERROR_AT_LINE
-AC_CHECK_FUNCS([pow sqrt])
-
-# Check for boost
-AX_BOOST_BASE([1.40])
-
 # enable matlab toolbox generation
 AC_ARG_ENABLE([build_toolbox],
      [  --enable-build-toolbox    Enable building of the Matlab toolbox],
@@ -140,6 +101,17 @@ AC_ARG_ENABLE([install_matlab_tests],
      esac],[install_matlab_tests=true])
 
 AM_CONDITIONAL([ENABLE_INSTALL_MATLAB_TESTS], [test x$install_matlab_tests = xtrue])
+
+# enable installation of matlab examples
+AC_ARG_ENABLE([install_matlab_examples],
+     [  --enable-install-matlab-examples    Enable installation of examples for the Matlab toolbox],
+     [case "${enableval}" in
+       yes) install_matlab_examples=true ;;
+       no)  install_matlab_examples=false ;;
+       *) AC_MSG_ERROR([bad value ${enableval} for --enable-install-matlab-examples]) ;;
+     esac],[install_matlab_examples=true])
+
+AM_CONDITIONAL([ENABLE_INSTALL_MATLAB_EXAMPLES], [test x$install_matlab_examples = xtrue])
 
 # Matlab toolbox: optional flag to change location of toolbox, defaults to install prefix
 AC_ARG_WITH([toolbox],
@@ -178,6 +150,30 @@ AC_ARG_WITH([wrap],
             [wrap=$withval],
             [wrap=$prefix/bin])
 AC_SUBST([wrap])
+
+# Checks for programs.
+AC_PROG_CXX
+AC_PROG_CC
+
+# Checks for libraries.
+LT_INIT
+
+# Checks for header files.
+AC_HEADER_STDC
+AC_CHECK_HEADERS([string.h])
+
+# Checks for typedefs, structures, and compiler characteristics.
+AC_HEADER_STDBOOL
+AC_C_CONST
+AC_C_INLINE
+AC_TYPE_SIZE_T
+
+# Checks for library functions.
+AC_FUNC_ERROR_AT_LINE
+AC_CHECK_FUNCS([pow sqrt])
+
+# Check for boost
+AX_BOOST_BASE([1.40])
 
 AC_CONFIG_FILES([CppUnitLite/Makefile \
 wrap/Makefile \

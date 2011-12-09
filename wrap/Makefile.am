@@ -58,63 +58,74 @@ interfacePath = $(top_srcdir)
 moduleName = gtsam
 toolboxpath = ../toolbox  
 nameSpace = "gtsam"
+
+# Set flags to pass to mex
 mexFlags = 
-mexFlags += "${BOOST_CPPFLAGS} -DUNSAFE_WRAP -I${prefix}/include -I${prefix}/include/gtsam -I${prefix}/include/gtsam/base -I${prefix}/include/gtsam/geometry -I${prefix}/include/gtsam/linear -I${prefix}/include/gtsam/nonlinear -I${prefix}/include/gtsam/slam -L${exec_prefix}/lib -lgtsam"
 if ENABLE_UNSAFE_WRAP
-	mexFlags += "${BOOST_CPPFLAGS} -DUNSAFE_WRAP -I${prefix}/include -I${prefix}/include/gtsam -I${prefix}/include/gtsam/base -I${prefix}/include/gtsam/geometry -I${prefix}/include/gtsam/linear -I${prefix}/include/gtsam/nonlinear -I${prefix}/include/gtsam/slam -L${exec_prefix}/lib -lgtsam"
+mexFlags += "${BOOST_CPPFLAGS} -DUNSAFE_WRAP -I${prefix}/include -I${prefix}/include/gtsam -I${prefix}/include/gtsam/base -I${prefix}/include/gtsam/geometry -I${prefix}/include/gtsam/linear -I${prefix}/include/gtsam/nonlinear -I${prefix}/include/gtsam/slam -L${exec_prefix}/lib -lgtsam"
 else
-	mexFlags += "${BOOST_CPPFLAGS} -I${prefix}/include -I${prefix}/include/gtsam -I${prefix}/include/gtsam/base -I${prefix}/include/gtsam/geometry -I${prefix}/include/gtsam/linear -I${prefix}/include/gtsam/nonlinear -I${prefix}/include/gtsam/slam -L${exec_prefix}/lib -lgtsam"
+mexFlags += "${BOOST_CPPFLAGS} -I${prefix}/include -I${prefix}/include/gtsam -I${prefix}/include/gtsam/base -I${prefix}/include/gtsam/geometry -I${prefix}/include/gtsam/linear -I${prefix}/include/gtsam/nonlinear -I${prefix}/include/gtsam/slam -L${exec_prefix}/lib -lgtsam"
 endif
 
-# Find the extension for mex binaries - FIXME: this should be done with mexext with matlab
-mexextension = mexa64
+# Find the extension for mex binaries 
+# this should be done with mexext with matlab
+mexextension = 
 if LINUX
 if IS_64BIT
-	mexextension += mexa64
+mexextension += mexa64
 else
-	mexextension += mexglx
+mexextension += mexglx
 endif
 else # Linux
 if DARWIN
-	mexextension += mexmaci64
+mexextension += mexmaci64
 else
-	mexextension += mex_bin   	
+mexextension += mex_bin   	
 endif
 endif # Linux
 
-all:
+all: generate_toolbox
+
+generate_toolbox: $(top_srcdir)/gtsam.h
 	./wrap ${mexextension} ${interfacePath} ${moduleName} ${toolboxpath} ${nameSpace} ${mexFlags}
 
-wrap-install-bin: all
-	install -d ${wrap} && \
+source_mode = -m 644
+
+wrap-install-matlab-toolbox: 
+	install -d ${toolbox}/gtsam
+	install ${source_mode} -c ../toolbox/*.m ${toolbox}/gtsam
+	install ${source_mode} -c ../toolbox/*.cpp ${toolbox}/gtsam
+	install ${source_mode} -c ../toolbox/Makefile ${toolbox}/gtsam
+	cp -ru ../toolbox/@* ${toolbox}/gtsam
+
+wrap-install-bin: 
+	install -d ${wrap} 
 	install ./wrap ${wrap}
 
-wrap-install-matlab-tests: all
-	install -d ${toolbox}/gtsam/tests && \
-	cp -rf ../../tests/matlab/*.m ${toolbox}/gtsam/tests
+wrap-install-matlab-tests: 
+	install -d ${toolbox}/gtsam/tests
+	install ${source_mode} -c ../../tests/matlab/*.m ${toolbox}/gtsam/tests
 
-# install the headers and matlab toolbox
+wrap-install-matlab-examples: 
+	install -d ${toolbox}/gtsam/examples 
+	install ${source_mode} -c ../../examples/matlab/*.m ${toolbox}/gtsam/examples
+
+wrap_install_targets =
+wrap_install_targets += wrap-install-matlab-toolbox 
+
 if ENABLE_INSTALL_WRAP
+wrap_install_targets += wrap-install-bin
+endif
+
 if ENABLE_INSTALL_MATLAB_TESTS
-install-exec-hook: wrap-install-bin wrap-install-matlab-tests
-	install -d ${toolbox}/gtsam && \
-	cp -rf ../toolbox/* ${toolbox}/gtsam 
-else
-install-exec-hook: wrap-install-bin
-	install -d ${toolbox}/gtsam && \
-	cp -rf ../toolbox/* ${toolbox}/gtsam/tests
+wrap_install_targets += wrap-install-matlab-tests
 endif
-else
-if ENABLE_INSTALL_MATLAB_TESTS
-install-exec-hook: wrap-install-matlab-tests
-	install -d ${toolbox}/gtsam && \
-	cp -rf ../toolbox/* ${toolbox}/gtsam
-else
-install-exec-hook: all
-	install -d ${toolbox}/gtsam && \
-	cp -rf ../toolbox/* ${toolbox}/gtsam/tests
+
+if ENABLE_INSTALL_MATLAB_EXAMPLES
+wrap_install_targets += wrap-install-matlab-examples
 endif
-endif
+
+install-exec-hook: ${wrap_install_targets}
 
 # clean local toolbox dir
 clean:

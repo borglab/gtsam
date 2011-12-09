@@ -51,10 +51,10 @@ sources += planarSLAM.cpp
 check_PROGRAMS += tests/testPlanarSLAM
 
 # MATLAB Wrap headers for planarSLAM
-headers += Landmark2.h
-headers += PlanarSLAMGraph.h
-headers += PlanarSLAMValues.h
-headers += PlanarSLAMOdometry.h
+# headers += Landmark2.h
+# headers += PlanarSLAMGraph.h
+# headers += PlanarSLAMValues.h
+# headers += PlanarSLAMOdometry.h
 
 # 3D Pose constraints
 sources += pose3SLAM.cpp 
