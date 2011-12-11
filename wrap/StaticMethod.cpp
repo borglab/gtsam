@@ -26,7 +26,7 @@ using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
-void StaticMethod::matlab_mfile(const string& toolboxPath, const string& className) {
+void StaticMethod::matlab_mfile(const string& toolboxPath, const string& className) const {
 
   // open destination m-file
 	string full_name = className + "_" + name;
@@ -52,8 +52,7 @@ void StaticMethod::matlab_mfile(const string& toolboxPath, const string& classNa
 void StaticMethod::matlab_wrapper(const string& toolboxPath, const string& className,
 		const string& matlabClassName, const string& cppClassName,
 		const vector<string>& using_namespaces,
-		const std::vector<std::string>& includes)
-{
+		const vector<string>& includes) const {
   // open destination wrapperFile
 	string full_name = matlabClassName + "_" + name;
   string wrapperFile = toolboxPath + "/" + full_name + ".cpp";
@@ -64,7 +63,7 @@ void StaticMethod::matlab_wrapper(const string& toolboxPath, const string& class
   // generate code
 
   // header
-  wrap::emit_header_comment(ofs, "//");
+  generateHeaderComment(ofs, "//");
   generateIncludes(ofs, className, includes);
   generateUsingNamespace(ofs, using_namespaces);
 

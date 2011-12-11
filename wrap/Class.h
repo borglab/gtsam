@@ -40,17 +40,17 @@ struct Class {
   bool verbose_;                            ///< verbose flag
 
   // And finally MATLAB code is emitted, methods below called by Module::matlab_code
-  void matlab_proxy(const std::string& classFile);          ///< emit proxy class
+  void matlab_proxy(const std::string& classFile) const;          ///< emit proxy class
   void matlab_constructors(const std::string& toolboxPath,
-			   const std::vector<std::string>& using_namespaces);   ///< emit constructor wrappers
+			   const std::vector<std::string>& using_namespaces) const;   ///< emit constructor wrappers
   void matlab_methods(const std::string& classPath,
-			   const std::vector<std::string>& using_namespaces);   ///< emit method wrappers
+			   const std::vector<std::string>& using_namespaces) const;   ///< emit method wrappers
   void matlab_static_methods(const std::string& classPath,
-  			   const std::vector<std::string>& using_namespaces);   ///< emit static method wrappers
+  			   const std::vector<std::string>& using_namespaces) const;   ///< emit static method wrappers
   void matlab_make_fragment(std::ofstream& ofs,
 			    const std::string& toolboxPath,
-			    const std::string& mexFlags);   ///< emit make fragment for global make script
-  void makefile_fragment(std::ofstream& ofs); ///< emit makefile fragment
+			    const std::string& mexFlags) const;   ///< emit make fragment for global make script
+  void makefile_fragment(std::ofstream& ofs) const; ///< emit makefile fragment
   std::string qualifiedName(const std::string& delim = "") const; ///< creates a namespace-qualified name, optional delimiter
 };
 

@@ -25,9 +25,7 @@ using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
-void Argument::matlab_unwrap(ofstream& ofs, 
-			     const string& matlabName) 
-{ 
+void Argument::matlab_unwrap(ofstream& ofs, const string& matlabName) const {
   ofs << "  ";
 
   string cppType = qualifiedType("::");
@@ -53,14 +51,14 @@ void Argument::matlab_unwrap(ofstream& ofs,
 }
 
 /* ************************************************************************* */
-string Argument::qualifiedType(const string& delim) {
+string Argument::qualifiedType(const string& delim) const {
 	string result;
 	BOOST_FOREACH(const string& ns, namespaces) result += ns + delim;
 	return result + type;
 }
 
 /* ************************************************************************* */
-string ArgumentList::types() { 
+string ArgumentList::types() const {
   string str;
   bool first=true;
   BOOST_FOREACH(Argument arg, *this)  {
@@ -70,7 +68,7 @@ string ArgumentList::types() {
 }
 
 /* ************************************************************************* */
-string ArgumentList::signature() { 
+string ArgumentList::signature() const {
   string str;
   BOOST_FOREACH(Argument arg, *this)
     str += arg.type[0];
@@ -78,7 +76,7 @@ string ArgumentList::signature() {
 }
 
 /* ************************************************************************* */
-string ArgumentList::names() { 
+string ArgumentList::names() const {
   string str;
   bool first=true;
   BOOST_FOREACH(Argument arg, *this) {
@@ -88,7 +86,7 @@ string ArgumentList::names() {
 }
 
 /* ************************************************************************* */
-void ArgumentList::matlab_unwrap(ofstream& ofs, int start) { 
+void ArgumentList::matlab_unwrap(ofstream& ofs, int start) const {
   int index = start;
   BOOST_FOREACH(Argument arg, *this) {
     stringstream buf;

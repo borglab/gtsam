@@ -42,21 +42,21 @@ struct Constructor {
 	// classFile is class proxy file, e.g., ../matlab/@Point2/Point2.m
 
 	/// wrapper name
-	std::string matlab_wrapper_name(const std::string& className);
+	std::string matlab_wrapper_name(const std::string& className) const;
 
 	/// proxy class fragment
-	void matlab_proxy_fragment(std::ofstream& ofs, const std::string& className);
+	void matlab_proxy_fragment(std::ofstream& ofs, const std::string& className) const;
 
 	/// m-file
 	void matlab_mfile(const std::string& toolboxPath,
-			const std::string& qualifiedMatlabName);
+			const std::string& qualifiedMatlabName) const;
 
 	/// cpp wrapper
 	void matlab_wrapper(const std::string& toolboxPath,
 			 const std::string& cppClassName,
 			 const std::string& matlabClassName,
 			 const std::vector<std::string>& using_namespaces,
-			 const std::vector<std::string>& includes);
+			 const std::vector<std::string>& includes) const;
 };
 
 } // \namespace wrap

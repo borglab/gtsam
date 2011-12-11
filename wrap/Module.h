@@ -41,7 +41,7 @@ struct Module {
   /// MATLAB code generation:
   void matlab_code(const std::string& path, 
 		   const std::string& mexExt,
-		   const std::string& mexFlags);
+		   const std::string& mexFlags) const;
 };
 
 } // \namespace wrap

@@ -39,14 +39,14 @@ struct ReturnValue {
 		arg1, arg2, pair
 	} pairing;
 
-	std::string return_type(bool add_ptr, pairing p);
+	std::string return_type(bool add_ptr, pairing p) const;
 
-	std::string qualifiedType1(const std::string& delim = "");
-	std::string qualifiedType2(const std::string& delim = "");
+	std::string qualifiedType1(const std::string& delim = "") const;
+	std::string qualifiedType2(const std::string& delim = "") const;
 
 	std::string matlab_returnType() const;
 
-	void wrap_result(std::ostream& ofs);
+	void wrap_result(std::ostream& ofs) const;
 
 };
 

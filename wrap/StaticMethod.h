@@ -44,12 +44,12 @@ struct StaticMethod {
 	// NOTE: static functions are not inside the class, and
 	// are created with [ClassName]_[FunctionName]() format
 
-	void matlab_mfile(const std::string& toolboxPath, const std::string& className); ///< m-file
+	void matlab_mfile(const std::string& toolboxPath, const std::string& className) const; ///< m-file
 	void matlab_wrapper(const std::string& toolboxPath,
 			const std::string& className, const std::string& matlabClassName,
 			const std::string& cppClassName,
 			const std::vector<std::string>& using_namespaces,
-			const std::vector<std::string>& includes); ///< cpp wrapper
+			const std::vector<std::string>& includes) const; ///< cpp wrapper
 };
 
 } // \namespace wrap

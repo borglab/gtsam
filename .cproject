@@ -36,6 +36,9 @@
 							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.macosx.base.1629258328" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.macosx.base">
 								<option id="gnu.cpp.compiler.option.include.paths.1552452888" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/gtsam}&quot;"/>
+									<listOptionValue builtIn="false" value="/usr/include/c++/4.6.1"/>
+									<listOptionValue builtIn="false" value="/usr/include/c++/4.6"/>
+									<listOptionValue builtIn="false" value="/usr/include/c++/4.6/backward"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1833545667" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>

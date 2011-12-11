@@ -26,7 +26,7 @@ using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
-void Method::matlab_mfile(const string& classPath) {
+void Method::matlab_mfile(const string& classPath) const {
 
   // open destination m-file
   string wrapperFile = classPath + "/" + name + ".m";
@@ -52,8 +52,7 @@ void Method::matlab_wrapper(const string& classPath,
 			    const string& className,
 			    const string& cppClassName,
 			    const string& matlabClassName,
-			    const vector<string>& using_namespaces, const std::vector<std::string>& includes)
-{
+			    const vector<string>& using_namespaces, const std::vector<std::string>& includes) const {
   // open destination wrapperFile
   string wrapperFile = classPath + "/" + name + ".cpp";
   ofstream ofs(wrapperFile.c_str());
@@ -63,7 +62,7 @@ void Method::matlab_wrapper(const string& classPath,
   // generate code
 
   // header
-  wrap::emit_header_comment(ofs, "//");
+  generateHeaderComment(ofs, "//");
   generateIncludes(ofs, className, includes);
   generateUsingNamespace(ofs, using_namespaces);
 

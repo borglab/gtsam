@@ -14,7 +14,7 @@ using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
-string ReturnValue::return_type(bool add_ptr, pairing p) {
+string ReturnValue::return_type(bool add_ptr, pairing p) const {
   if (p==pair && isPair) {
     string str = "pair< " +
     		maybe_shared_ptr(add_ptr && isPtr1, qualifiedType1("::")) + ", " +
@@ -30,21 +30,21 @@ string ReturnValue::matlab_returnType() const {
 }
 
 /* ************************************************************************* */
-string ReturnValue::qualifiedType1(const string& delim) {
+string ReturnValue::qualifiedType1(const string& delim) const {
 	string result;
 	BOOST_FOREACH(const string& ns, namespaces1) result += ns + delim;
 	return result + type1;
 }
 
 /* ************************************************************************* */
-string ReturnValue::qualifiedType2(const string& delim) {
+string ReturnValue::qualifiedType2(const string& delim) const {
 	string result;
 	BOOST_FOREACH(const string& ns, namespaces2) result += ns + delim;
 	return result + type2;
 }
 
 /* ************************************************************************* */
-void ReturnValue::wrap_result(std::ostream& ofs) {
+void ReturnValue::wrap_result(ostream& ofs) const {
 	string cppType1 = qualifiedType1("::"), matlabType1 = qualifiedType1();
 	string cppType2 = qualifiedType2("::"), matlabType2 = qualifiedType2();
 

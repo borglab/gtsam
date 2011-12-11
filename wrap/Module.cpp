@@ -232,7 +232,7 @@ void verifyArguments(const vector<string>& validArgs, const vector<T>& vt) {
 	BOOST_FOREACH(const T& t, vt) {
 		BOOST_FOREACH(Argument arg, t.args) {
 			string fullType = arg.qualifiedType("::");
-			if(std::find(validArgs.begin(), validArgs.end(), fullType)
+			if(find(validArgs.begin(), validArgs.end(), fullType)
 			== validArgs.end())
 				throw DependencyMissing(fullType, t.name);
 		}
@@ -241,9 +241,7 @@ void verifyArguments(const vector<string>& validArgs, const vector<T>& vt) {
 
 /* ************************************************************************* */
 void Module::matlab_code(const string& toolboxPath, 
-			 const string& mexExt,
-			 const string& mexFlags)
-{
+			 const string& mexExt, const string& mexFlags) const {
     string installCmd = "install -d " + toolboxPath;
     system(installCmd.c_str());
 
@@ -258,7 +256,7 @@ void Module::matlab_code(const string& toolboxPath,
     if(!make_ofs) throw CantOpenFile(makeFile);
 
     if (verbose) cerr << "generating " << matlabMakeFile << endl;
-    emit_header_comment(ofs,"%");
+    generateHeaderComment(ofs,"%");
     ofs << "echo on" << endl << endl;
     ofs << "toolboxpath = mfilename('fullpath');" << endl;
     ofs << "delims = find(toolboxpath == '/');" << endl;
@@ -267,13 +265,13 @@ void Module::matlab_code(const string& toolboxPath,
     ofs << "addpath(toolboxpath);" << endl << endl;
 
     if (verbose) cerr << "generating " << makeFile << endl;
-    emit_header_comment(make_ofs,"#");
+    generateHeaderComment(make_ofs,"#");
     make_ofs << "\nMEX = mex\n";
     make_ofs << "MEXENDING = " << mexExt << "\n";
     make_ofs << "mex_flags = " << mexFlags << "\n\n";
 
     //Dependency check list
-    std::vector<string> validArgs;
+    vector<string> validArgs;
     validArgs.push_back("string");
     validArgs.push_back("int");
     validArgs.push_back("bool");

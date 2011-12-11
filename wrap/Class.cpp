@@ -27,7 +27,7 @@ using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
-void Class::matlab_proxy(const string& classFile) {
+void Class::matlab_proxy(const string& classFile) const {
   // open destination classFile
   ofstream ofs(classFile.c_str());
   if(!ofs) throw CantOpenFile(classFile);
@@ -57,7 +57,7 @@ void Class::matlab_proxy(const string& classFile) {
 }
 
 /* ************************************************************************* */
-void Class::matlab_constructors(const string& toolboxPath, const vector<string>& using_namespaces) {
+void Class::matlab_constructors(const string& toolboxPath, const vector<string>& using_namespaces) const {
   BOOST_FOREACH(Constructor c, constructors) {
     c.matlab_mfile  (toolboxPath, qualifiedName());
     c.matlab_wrapper(toolboxPath, qualifiedName("::"), qualifiedName(), using_namespaces, includes);
@@ -65,7 +65,7 @@ void Class::matlab_constructors(const string& toolboxPath, const vector<string>&
 }
 
 /* ************************************************************************* */
-void Class::matlab_methods(const string& classPath, const vector<string>& using_namespaces) {
+void Class::matlab_methods(const string& classPath, const vector<string>& using_namespaces) const {
 	string matlabName = qualifiedName(), cppName = qualifiedName("::");
   BOOST_FOREACH(Method m, methods) {
     m.matlab_mfile  (classPath);
@@ -74,9 +74,9 @@ void Class::matlab_methods(const string& classPath, const vector<string>& using_
 }
 
 /* ************************************************************************* */
-void Class::matlab_static_methods(const string& toolboxPath, const vector<string>& using_namespaces) {
+void Class::matlab_static_methods(const string& toolboxPath, const vector<string>& using_namespaces) const {
 	string matlabName = qualifiedName(), cppName = qualifiedName("::");
-  BOOST_FOREACH(StaticMethod& m, static_methods) {
+  BOOST_FOREACH(const StaticMethod& m, static_methods) {
     m.matlab_mfile  (toolboxPath, qualifiedName());
     m.matlab_wrapper(toolboxPath, name, matlabName, cppName, using_namespaces, includes);
   }
@@ -85,8 +85,7 @@ void Class::matlab_static_methods(const string& toolboxPath, const vector<string
 /* ************************************************************************* */
 void Class::matlab_make_fragment(ofstream& ofs, 
 				 const string& toolboxPath,
-				 const string& mexFlags) 
-{
+				 const string& mexFlags) const {
   string mex = "mex " + mexFlags + " ";
   string matlabClassName = qualifiedName();
   BOOST_FOREACH(Constructor c, constructors)
@@ -100,7 +99,7 @@ void Class::matlab_make_fragment(ofstream& ofs,
 }
 
 /* ************************************************************************* */
-void Class::makefile_fragment(ofstream& ofs) {
+void Class::makefile_fragment(ofstream& ofs) const {
 //	new_Point2_.$(MEXENDING): new_Point2_.cpp
 //		$(MEX) $(mex_flags) new_Point2_.cpp
 //	new_Point2_dd.$(MEXENDING): new_Point2_dd.cpp

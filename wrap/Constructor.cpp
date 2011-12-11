@@ -26,13 +26,13 @@ using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
-string Constructor::matlab_wrapper_name(const string& className) {
+string Constructor::matlab_wrapper_name(const string& className) const {
   string str = "new_" + className + "_" + args.signature();
   return str;
 }
 
 /* ************************************************************************* */
-void Constructor::matlab_proxy_fragment(ofstream& ofs, const string& className) {
+void Constructor::matlab_proxy_fragment(ofstream& ofs, const string& className) const {
   ofs << "      if nargin == " << args.size() << ", obj.self = " 
       << matlab_wrapper_name(className) << "(";
   bool first = true;
@@ -45,7 +45,7 @@ void Constructor::matlab_proxy_fragment(ofstream& ofs, const string& className) 
 }
 
 /* ************************************************************************* */
-void Constructor::matlab_mfile(const string& toolboxPath, const string& qualifiedMatlabName) {
+void Constructor::matlab_mfile(const string& toolboxPath, const string& qualifiedMatlabName) const {
 
   string matlabName = matlab_wrapper_name(qualifiedMatlabName);
 
@@ -56,7 +56,7 @@ void Constructor::matlab_mfile(const string& toolboxPath, const string& qualifie
   if(verbose_) cerr << "generating " << wrapperFile << endl;
 
   // generate code
-  emit_header_comment(ofs, "%");
+  generateHeaderComment(ofs, "%");
   ofs << "function result = " << matlabName << "(obj";
   if (args.size()) ofs << "," << args.names();
   ofs << ")" << endl;
@@ -71,8 +71,7 @@ void Constructor::matlab_mfile(const string& toolboxPath, const string& qualifie
 void Constructor::matlab_wrapper(const string& toolboxPath,
 				 const string& cppClassName,
 				 const string& matlabClassName,
-				 const vector<string>& using_namespaces, const vector<string>& includes)
-{
+				 const vector<string>& using_namespaces, const vector<string>& includes) const {
   string matlabName = matlab_wrapper_name(matlabClassName);
 
   // open destination wrapperFile
@@ -82,7 +81,7 @@ void Constructor::matlab_wrapper(const string& toolboxPath,
   if(verbose_) cerr << "generating " << wrapperFile << endl;
 
   // generate code
-  emit_header_comment(ofs, "//");
+  generateHeaderComment(ofs, "//");
   generateIncludes(ofs, name, includes);
   generateUsingNamespace(ofs, using_namespaces);
 
