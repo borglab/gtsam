@@ -27,7 +27,7 @@ using namespace boost::assign;
 using namespace gtsam;
 
 // explicit instantiation and typedef
-template class ClusterTree<SymbolicFactorGraph>;
+namespace gtsam { template class ClusterTree<SymbolicFactorGraph>; }
 typedef ClusterTree<SymbolicFactorGraph> SymbolicClusterTree;
 
 /* ************************************************************************* */

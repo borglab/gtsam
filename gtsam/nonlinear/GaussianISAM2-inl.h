@@ -14,7 +14,8 @@ using namespace gtsam;
 namespace gtsam {
 
 /* ************************************************************************* */
-void optimize2(const BayesTree<GaussianConditional>::sharedClique& clique, double threshold,
+  template<class CLIQUE>
+void optimize2(const boost::shared_ptr<CLIQUE>& clique, double threshold,
 		vector<bool>& changed, const vector<bool>& replaced, Permuted<VectorValues>& delta, int& count) {
 	// if none of the variables in this clique (frontal and separator!) changed
 	// significantly, then by the running intersection property, none of the
@@ -84,7 +85,7 @@ void optimize2(const BayesTree<GaussianConditional>::sharedClique& clique, doubl
     }
 
     // Recurse to children
-    BOOST_FOREACH(const BayesTree<GaussianConditional>::sharedClique& child, clique->children_) {
+    BOOST_FOREACH(const typename CLIQUE::shared_ptr& child, clique->children_) {
       optimize2(child, threshold, changed, replaced, delta, count);
     }
 	}
@@ -92,14 +93,15 @@ void optimize2(const BayesTree<GaussianConditional>::sharedClique& clique, doubl
 
 /* ************************************************************************* */
 // fast full version without threshold
-void optimize2(const BayesTree<GaussianConditional>::sharedClique& clique, VectorValues& delta) {
+  template<class CLIQUE>
+void optimize2(const boost::shared_ptr<CLIQUE>& clique, VectorValues& delta) {
 
 	// parents are assumed to already be solved and available in result
   (*clique)->rhs(delta);
   (*clique)->solveInPlace(delta);
 
   // Solve chilren recursively
-  BOOST_FOREACH(const BayesTree<GaussianConditional>::sharedClique& child, clique->children_) {
+  BOOST_FOREACH(const typename CLIQUE::shared_ptr& child, clique->children_) {
 		optimize2(child, delta);
 	}
 }
@@ -114,7 +116,8 @@ void optimize2(const BayesTree<GaussianConditional>::sharedClique& clique, Vecto
 //}
 
 /* ************************************************************************* */
-int optimize2(const BayesTree<GaussianConditional>::sharedClique& root, double threshold, const vector<bool>& keys, Permuted<VectorValues>& delta) {
+  template<class CLIQUE>
+int optimize2(const boost::shared_ptr<CLIQUE>& root, double threshold, const vector<bool>& keys, Permuted<VectorValues>& delta) {
 	vector<bool> changed(keys.size(), false);
 	int count = 0;
 	// starting from the root, call optimize on each conditional
@@ -123,18 +126,20 @@ int optimize2(const BayesTree<GaussianConditional>::sharedClique& root, double t
 }
 
 /* ************************************************************************* */
-void nnz_internal(const BayesTree<GaussianConditional>::sharedClique& clique, int& result) {
+  template<class CLIQUE>
+void nnz_internal(const boost::shared_ptr<CLIQUE>& clique, int& result) {
   int dimR = (*clique)->dim();
   int dimSep = (*clique)->get_S().cols() - dimR;
   result += ((dimR+1)*dimR)/2 + dimSep*dimR;
 	// traverse the children
-	BOOST_FOREACH(const BayesTree<GaussianConditional>::sharedClique& child, clique->children_) {
+	BOOST_FOREACH(const typename CLIQUE::shared_ptr& child, clique->children_) {
 		nnz_internal(child, result);
 	}
 }
 
 /* ************************************************************************* */
-int calculate_nnz(const BayesTree<GaussianConditional>::sharedClique& clique) {
+  template<class CLIQUE>
+int calculate_nnz(const boost::shared_ptr<CLIQUE>& clique) {
 	int result = 0;
 	// starting from the root, add up entries of frontal and conditional matrices of each conditional
 	nnz_internal(clique, result);

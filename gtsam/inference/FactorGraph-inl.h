@@ -24,7 +24,7 @@
 
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/graph-inl.h>
-#include <gtsam/inference/BayesTree-inl.h>
+#include <gtsam/inference/BayesTree.h>
 #include <gtsam/base/DSF.h>
 
 #include <boost/foreach.hpp>

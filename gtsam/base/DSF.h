@@ -59,7 +59,7 @@ namespace gtsam {
 		DSF(const std::set<KEY>& keys) : Tree() { BOOST_FOREACH(const KEY& key, keys) *this = this->add(key, key); }
 
 		// create a new singleton, does nothing if already exists
-		Self makeSet(const KEY& key) const { if (mem(key)) return *this; else return this->add(key, key); }
+		Self makeSet(const KEY& key) const { if (this->mem(key)) return *this; else return this->add(key, key); }
 
 		// find the label of the set in which {key} lives
 		Label findSet(const KEY& key) const {

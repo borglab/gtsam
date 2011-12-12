@@ -16,7 +16,7 @@
  */
 
 #include <gtsam/inference/SymbolicMultifrontalSolver.h>
-#include <gtsam/inference/JunctionTree-inl.h>
+#include <gtsam/inference/JunctionTree.h>
 
 namespace gtsam {
 

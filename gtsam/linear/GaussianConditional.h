@@ -24,7 +24,6 @@
 #include <gtsam/base/types.h>
 #include <gtsam/base/blockMatrices.h>
 #include <gtsam/inference/IndexConditional.h>
-#include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/VectorValues.h>
 
 // Forward declaration to friend unit tests
@@ -39,6 +38,7 @@ namespace gtsam {
 
 // Forward declarations
 class GaussianFactor;
+class JacobianFactor;
 
 /**
  * A conditional Gaussian functions as the node in a Bayes network

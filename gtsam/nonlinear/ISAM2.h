@@ -106,20 +106,17 @@ struct ISAM2Result {
 };
 
 template<class CONDITIONAL>
-struct ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique<CONDITIONAL> > {
+struct ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique<CONDITIONAL>, CONDITIONAL> {
 
   typedef ISAM2Clique<CONDITIONAL> This;
-  typedef BayesTreeCliqueBase<This> Base;
+  typedef BayesTreeCliqueBase<This,CONDITIONAL> Base;
   typedef boost::shared_ptr<This> shared_ptr;
+  typedef boost::weak_ptr<This> weak_ptr;
+  typedef CONDITIONAL ConditionalType;
+  typedef typename ConditionalType::shared_ptr sharedConditional;
 
   typename Base::FactorType::shared_ptr cachedFactor_;
   Vector gradientContribution_;
-
-  /** Access the cached factor */
-  typename Base::FactorType::shared_ptr& cachedFactor() { return cachedFactor_; }
-
-  /** Access the gradient contribution */
-  const Vector& gradientContribution() const { return gradientContribution_; }
 
   /** Construct from a conditional */
   ISAM2Clique(const sharedConditional& conditional) : Base(conditional) {
@@ -130,8 +127,33 @@ struct ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique<CONDITIONAL> > {
     Base(result.first), cachedFactor_(result.second), gradientContribution_(result.first->get_R().cols() + result.first->get_S().cols()) {
     // Compute gradient contribution
     const ConditionalType& conditional(*result.first);
-    gradient << -(conditional.get_R() * conditional.permutation().transpose()).transpose * conditional.get_d(),
-        -conditional.get_S() * conditional.get_d();
+    gradientContribution_ << -(conditional.get_R() * conditional.permutation().transpose()).transpose() * conditional.get_d(),
+        -conditional.get_S().transpose() * conditional.get_d();
+  }
+
+  /** Produce a deep copy, copying the cached factor and gradient contribution */
+  shared_ptr clone() const {
+    shared_ptr copy(new ISAM2Clique(make_pair(
+        sharedConditional(new ConditionalType(*Base::conditional_)),
+        cachedFactor_ ? cachedFactor_->clone() : typename Base::FactorType::shared_ptr())));
+    copy->gradientContribution_ = gradientContribution_;
+    return copy;
+  }
+
+  /** Access the cached factor */
+  typename Base::FactorType::shared_ptr& cachedFactor() { return cachedFactor_; }
+
+  /** Access the gradient contribution */
+  const Vector& gradientContribution() const { return gradientContribution_; }
+
+  void permuteWithInverse(const Permutation& inversePermutation) {
+    if(cachedFactor_) cachedFactor_->permuteWithInverse(inversePermutation);
+    Base::permuteWithInverse(inversePermutation);
+  }
+
+  bool permuteSeparatorWithInverse(const Permutation& inversePermutation) {
+    if(cachedFactor_) cachedFactor_->permuteWithInverse(inversePermutation);
+    return Base::permuteSeparatorWithInverse(inversePermutation);
   }
 
 private:
@@ -214,7 +236,7 @@ public:
   typedef typename Base::sharedClique sharedClique; ///< Shared pointer to a clique
   typedef typename Base::Cliques Cliques; ///< List of Clique typedef from base class
 
-  void cloneTo(boost::shared_ptr<ISAM2>& newISAM2) const {
+  void cloneTo(boost::shared_ptr<This>& newISAM2) const {
     boost::shared_ptr<Base> bayesTree = boost::static_pointer_cast<Base>(newISAM2);
     Base::cloneTo(bayesTree);
     newISAM2->theta_ = theta_;

@@ -206,4 +206,6 @@ private:
   }
 }; // BayesNet
 
-} /// namespace gtsam
+} // namespace gtsam
+
+#include <gtsam/inference/BayesNet-inl.h>

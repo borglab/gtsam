@@ -239,3 +239,4 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 
 } // namespace gtsam
 
+#include <gtsam/inference/FactorGraph-inl.h>

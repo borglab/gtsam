@@ -30,7 +30,7 @@ headers += DoglegOptimizer.h DoglegOptimizer-inl.h
 # Nonlinear iSAM(2)
 headers += NonlinearISAM.h NonlinearISAM-inl.h
 headers += ISAM2.h ISAM2-inl.h ISAM2-impl-inl.h
-sources += GaussianISAM2.cpp
+headers += GaussianISAM2.h GaussianISAM2-inl.h
 
 # Nonlinear constraints 
 headers += NonlinearEquality.h 

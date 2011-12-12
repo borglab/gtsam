@@ -9,7 +9,6 @@
 #include <gtsam/base/FastSet.h>
 #include <gtsam/inference/EliminationTree.h>
 #include <gtsam/inference/VariableSlots.h>
-#include <gtsam/inference/FactorGraph-inl.h>
 #include <gtsam/inference/IndexFactor.h>
 #include <gtsam/inference/IndexConditional.h>
 

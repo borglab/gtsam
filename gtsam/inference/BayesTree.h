@@ -52,7 +52,7 @@ namespace gtsam {
 
 	public:
 
-	  typedef boost::shared_ptr<BayesTree<CONDITIONAL> > shared_ptr;
+	  typedef boost::shared_ptr<BayesTree<CONDITIONAL, CLIQUE> > shared_ptr;
 		typedef boost::shared_ptr<CONDITIONAL> sharedConditional;
 		typedef boost::shared_ptr<BayesNet<CONDITIONAL> > sharedBayesNet;
 		typedef CONDITIONAL ConditionalType;
@@ -178,10 +178,22 @@ namespace gtsam {
 		/** check equality */
 		bool equals(const BayesTree<CONDITIONAL,CLIQUE>& other, double tol = 1e-9) const;
 
-		/** deep copy from another tree */
 		void cloneTo(shared_ptr& newTree) const {
-		  root_->cloneToBayesTree(*newTree);
+		  cloneTo(newTree, root());
 		}
+
+	private:
+		/** deep copy from another tree */
+		void cloneTo(shared_ptr& newTree, const sharedClique& root) const {
+		  if(root) {
+		    sharedClique newClique = root->clone();
+		    newTree->insert(newClique);
+		    BOOST_FOREACH(const sharedClique& childClique, root->children()) {
+		      cloneTo(newTree, childClique);
+		    }
+		  }
+		}
+	public:
 
 		/**
 		 * Find parent clique of a conditional.  It will look at all parents and
@@ -315,14 +327,16 @@ namespace gtsam {
    * extra data along with the clique.
    */
   template<class CONDITIONAL>
-  struct BayesTreeClique : public BayesTreeCliqueBase<BayesTreeClique<CONDITIONAL> > {
+  struct BayesTreeClique : public BayesTreeCliqueBase<BayesTreeClique<CONDITIONAL>, CONDITIONAL> {
   public:
     typedef CONDITIONAL ConditionalType;
     typedef BayesTreeClique<CONDITIONAL> This;
-    typedef BayesTreeCliqueBase<This> Base;
+    typedef BayesTreeCliqueBase<This, CONDITIONAL> Base;
     typedef boost::shared_ptr<This> shared_ptr;
+    typedef boost::weak_ptr<This> weak_ptr;
     BayesTreeClique() {}
-    BayesTreeClique(const sharedConditional& conditional) : Base(conditional) {}
+    BayesTreeClique(const typename ConditionalType::shared_ptr& conditional) : Base(conditional) {}
+    BayesTreeClique(const std::pair<typename ConditionalType::shared_ptr, typename ConditionalType::FactorType::shared_ptr>& result) : Base(result) {}
 
   private:
     /** Serialization function */
@@ -333,6 +347,7 @@ namespace gtsam {
     }
   };
 
-#include <gtsam/inference/BayesTree-inl.h>
-
 } /// namespace gtsam
+
+#include <gtsam/inference/BayesTree-inl.h>
+#include <gtsam/inference/BayesTreeCliqueBase-inl.h>

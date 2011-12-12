@@ -18,18 +18,13 @@
 #include <boost/make_shared.hpp>
 
 #include <gtsam/inference/SymbolicFactorGraph.h>
-#include <gtsam/inference/FactorGraph-inl.h>
-#include <gtsam/inference/BayesNet-inl.h>
-#include <gtsam/inference/EliminationTree-inl.h>
+#include <gtsam/inference/BayesNet.h>
+#include <gtsam/inference/EliminationTree.h>
+#include <gtsam/inference/IndexConditional.h>
 
 namespace gtsam {
 
 	using namespace std;
-
-	// Explicitly instantiate so we don't have to include everywhere
-	template class FactorGraph<IndexFactor>;
-	template class BayesNet<IndexConditional>;
-	template class EliminationTree<IndexFactor>;
 
   /* ************************************************************************* */
 	SymbolicFactorGraph::SymbolicFactorGraph(const BayesNet<IndexConditional>& bayesNet) :

@@ -167,7 +167,8 @@ TEST(ISAM2, optimize2) {
   conditional->solveInPlace(expected);
 
   // Clique
-  GaussianISAM2<planarSLAM::Values>::sharedClique clique(GaussianISAM2<planarSLAM::Values>::Clique::Create(conditional));
+  GaussianISAM2<planarSLAM::Values>::sharedClique clique(
+      GaussianISAM2<planarSLAM::Values>::Clique::Create(make_pair(conditional,GaussianFactor::shared_ptr())));
   VectorValues actual(theta.dims(ordering));
   conditional->rhs(actual);
   optimize2(clique, actual);
@@ -192,8 +193,12 @@ bool isam_check(const planarSLAM::Graph& fullgraph, const planarSLAM::Values& fu
 }
 
 /* ************************************************************************* */
-TEST(ISAM2, slamlike_solution)
+TEST_UNSAFE(ISAM2, slamlike_solution)
 {
+
+//  SETDEBUG("ISAM2 update", true);
+//  SETDEBUG("ISAM2 update verbose", true);
+//  SETDEBUG("ISAM2 recalculate", true);
 
   // Pose and landmark key types from planarSLAM
   typedef planarSLAM::PoseKey PoseKey;

@@ -286,7 +286,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2<CONDITIONAL, VALUES, GRAPH>::recalculat
     toc(5,"eliminate");
 
     tic(6,"insert");
-    BayesTree<CONDITIONAL>::clear();
+    this->clear();
     this->insert(newRoot);
     toc(6,"insert");
 
@@ -310,6 +310,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2<CONDITIONAL, VALUES, GRAPH>::recalculat
     affectedAndNewKeys.insert(affectedAndNewKeys.end(), newKeys.begin(), newKeys.end());
     tic(1,"relinearizeAffected");
     GaussianFactorGraph factors(*relinearizeAffectedFactors(affectedAndNewKeys));
+    if(debug) factors.print("Relinearized factors: ");
     toc(1,"relinearizeAffected");
 
     if(debug) { cout << "Affected keys: "; BOOST_FOREACH(const Index key, affectedKeys) { cout << key << " "; } cout << endl; }

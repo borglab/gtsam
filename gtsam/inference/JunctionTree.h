@@ -110,3 +110,5 @@ namespace gtsam {
 	}; // JunctionTree
 
 } // namespace gtsam
+
+#include <gtsam/inference/JunctionTree-inl.h>

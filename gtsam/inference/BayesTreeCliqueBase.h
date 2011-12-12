@@ -24,6 +24,8 @@
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/BayesNet.h>
 
+namespace gtsam { template<class CONDITIONAL, class CLIQUE> class BayesTree; }
+
 namespace gtsam {
 
   /**
@@ -39,8 +41,20 @@ namespace gtsam {
    *
    * @tparam The derived clique type.
    */
-  template<class DERIVED>
+  template<class DERIVED, class CONDITIONAL>
   struct BayesTreeCliqueBase {
+
+  public:
+    typedef BayesTreeCliqueBase<DERIVED,CONDITIONAL> This;
+    typedef DERIVED DerivedType;
+    typedef CONDITIONAL ConditionalType;
+    typedef boost::shared_ptr<ConditionalType> sharedConditional;
+    typedef boost::shared_ptr<This> shared_ptr;
+    typedef boost::weak_ptr<This> weak_ptr;
+    typedef boost::shared_ptr<DerivedType> derived_ptr;
+    typedef boost::weak_ptr<DerivedType> derived_weak_ptr;
+    typedef typename ConditionalType::FactorType FactorType;
+    typedef typename FactorGraph<FactorType>::Eliminate Eliminate;
 
   protected:
     void assertInvariants() const;
@@ -51,18 +65,10 @@ namespace gtsam {
     /** Construct from a conditional, leaving parent and child pointers uninitialized */
     BayesTreeCliqueBase(const sharedConditional& conditional);
 
-  public:
-    typedef BayesTreeClique<DERIVED> This;
-    typedef DERIVED DerivedType;
-    typedef typename DERIVED::ConditionalType ConditionalType;
-    typedef boost::shared_ptr<ConditionalType> sharedConditional;
-    typedef typename boost::shared_ptr<This> shared_ptr;
-    typedef typename boost::weak_ptr<This> weak_ptr;
-    typedef typename boost::shared_ptr<DerivedType> derived_ptr;
-    typedef typename boost::weak_ptr<DerivedType> derived_weak_ptr;
-    typedef typename ConditionalType::FactorType FactorType;
-    typedef typename FactorGraph<FactorType>::Eliminate Eliminate;
+    /** Construct from an elimination result, which is a pair<CONDITIONAL,FACTOR> */
+    BayesTreeCliqueBase(const std::pair<sharedConditional, boost::shared_ptr<typename ConditionalType::FactorType> >& result);
 
+  public:
     sharedConditional conditional_;
     derived_weak_ptr parent_;
     std::list<derived_ptr> children_;
@@ -77,19 +83,7 @@ namespace gtsam {
      */
     static derived_ptr Create(const std::pair<sharedConditional, boost::shared_ptr<typename ConditionalType::FactorType> >& result) { return boost::make_shared<DerivedType>(result); }
 
-    void cloneToBayesTree(BayesTree& newTree, shared_ptr parent_clique = shared_ptr()) const {
-      sharedConditional newConditional = sharedConditional(new CONDITIONAL(*conditional_));
-      sharedClique newClique = newTree.addClique(newConditional, parent_clique);
-      if (cachedFactor_)
-        newClique->cachedFactor_ = cachedFactor_->clone();
-      else newClique->cachedFactor_ = typename FactorType::shared_ptr();
-      if (!parent_clique) {
-        newTree.root_ = newClique;
-      }
-      BOOST_FOREACH(const shared_ptr& childClique, children_) {
-        childClique->cloneToBayesTree(newTree, newClique);
-      }
-    }
+    derived_ptr clone() const { return Create(sharedConditional(new ConditionalType(*conditional_))); }
 
     /** print this node */
     void print(const std::string& s = "") const;
@@ -128,18 +122,20 @@ namespace gtsam {
 
     /** return the conditional P(S|Root) on the separator given the root */
     // TODO: create a cached version
-    BayesNet<ConditionalType> shortcut(shared_ptr root, Eliminate function);
+    BayesNet<ConditionalType> shortcut(derived_ptr root, Eliminate function);
 
     /** return the marginal P(C) of the clique */
-    FactorGraph<FactorType> marginal(shared_ptr root, Eliminate function);
+    FactorGraph<FactorType> marginal(derived_ptr root, Eliminate function);
 
     /** return the joint P(C1,C2), where C1==this. TODO: not a method? */
-    FactorGraph<FactorType> joint(shared_ptr C2, shared_ptr root, Eliminate function);
+    FactorGraph<FactorType> joint(derived_ptr C2, derived_ptr root, Eliminate function);
 
     bool equals(const This& other, double tol=1e-9) const {
       return (!conditional_ && !other.conditional()) ||
           conditional_->equals(*(other.conditional()), tol);
     }
+
+    friend class BayesTree<ConditionalType, DerivedType>;
 
   private:
     /** Serialization function */
@@ -153,15 +149,13 @@ namespace gtsam {
 
   }; // \struct Clique
 
-  template<class DERIVED>
-  typename BayesTreeCliqueBase<DERIVED>::derived_ptr asDerived(const BayesTreeCliqueBase<DERIVED>& base) {
+  template<class DERIVED, class CONDITIONAL>
+  typename BayesTreeCliqueBase<DERIVED,CONDITIONAL>::derived_ptr asDerived(const BayesTreeCliqueBase<DERIVED,CONDITIONAL>& base) {
 #ifndef NDEBUG
     return boost::dynamic_pointer_cast<DERIVED>(base);
 #else
     return boost::static_pointer_cast<DERIVED>(base);
 #endif
   }
-
-#include <gtsam/inference/BayesTreeCliqueBase-inl.h>
 
 }

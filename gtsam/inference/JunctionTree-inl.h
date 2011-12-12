@@ -21,11 +21,9 @@
 
 #include <gtsam/base/timing.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
-#include <gtsam/inference/BayesTree-inl.h>
 #include <gtsam/inference/JunctionTree.h>
 #include <gtsam/inference/VariableSlots.h>
-#include <gtsam/inference/EliminationTree-inl.h>
-#include <gtsam/inference/ClusterTree-inl.h>
+#include <gtsam/inference/EliminationTree.h>
 
 #include <boost/foreach.hpp>
 #include <boost/lambda/bind.hpp>

@@ -42,7 +42,8 @@ public:
 };
 
 // optimize the BayesTree, starting from the root
-void optimize2(const BayesTree<GaussianConditional>::sharedClique& root, VectorValues& delta);
+template<class CLIQUE>
+void optimize2(const boost::shared_ptr<CLIQUE>& root, VectorValues& delta);
 
 // optimize the BayesTree, starting from the root; "replaced" needs to contain
 // all variables that are contained in the top of the Bayes tree that has been
@@ -52,10 +53,14 @@ void optimize2(const BayesTree<GaussianConditional>::sharedClique& root, VectorV
 // and recursive backsubstitution might eventually stop if none of the changed
 // variables are contained in the subtree.
 // returns the number of variables that were solved for
-int optimize2(const BayesTree<GaussianConditional>::sharedClique& root,
+template<class CLIQUE>
+int optimize2(const boost::shared_ptr<CLIQUE>& root,
     double threshold, const std::vector<bool>& replaced, Permuted<VectorValues>& delta);
 
 // calculate the number of non-zero entries for the tree starting at clique (use root for complete matrix)
-int calculate_nnz(const BayesTree<GaussianConditional>::sharedClique& clique);
+template<class CLIQUE>
+int calculate_nnz(const boost::shared_ptr<CLIQUE>& clique);
 
 }/// namespace gtsam
+
+#include <gtsam/nonlinear/GaussianISAM2-inl.h>

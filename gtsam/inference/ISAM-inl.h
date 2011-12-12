@@ -41,7 +41,7 @@ namespace gtsam {
 
     // Remove the contaminated part of the Bayes tree
     BayesNet<CONDITIONAL> bn;
-    removeTop(newFactors.keys(), bn, orphans);
+    this->removeTop(newFactors.keys(), bn, orphans);
     FG factors(bn);
 
     // add the factors themselves

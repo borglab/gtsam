@@ -24,7 +24,7 @@
 #include <gtsam/base/FastVector.h>
 #include <gtsam/inference/BayesTree.h>
 #include <gtsam/inference/inference.h>
-#include <gtsam/inference/GenericSequentialSolver-inl.h>
+#include <gtsam/inference/GenericSequentialSolver.h>
 
 #include <iostream>
 #include <algorithm>
@@ -501,7 +501,7 @@ namespace gtsam {
 			this->removeClique(clique);
 
 			// remove path above me
-			this->removePath(typename BayesTreeClique<CONDITIONAL>::shared_ptr(clique->parent_.lock()), bn, orphans);
+			this->removePath(typename Clique::shared_ptr(clique->parent_.lock()), bn, orphans);
 
 			// add children to list of orphans (splice also removed them from clique->children_)
 			orphans.splice (orphans.begin(), clique->children_);

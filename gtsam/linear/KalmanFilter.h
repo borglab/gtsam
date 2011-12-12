@@ -22,6 +22,8 @@
 
 #include <gtsam/linear/GaussianConditional.h>
 
+namespace gtsam { class SharedDiagonal; }
+
 namespace gtsam {
 
 	class KalmanFilter {

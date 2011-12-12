@@ -15,6 +15,7 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/TestableAssertions.h>
 #include <gtsam/nonlinear/Ordering.h>
 
 using namespace gtsam;

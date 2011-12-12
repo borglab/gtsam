@@ -18,7 +18,6 @@
 #pragma once
 
 #include <gtsam/base/Testable.h>
-#include <gtsam/inference/BayesNet.h>
 
 #include <iostream>
 #include <fstream>

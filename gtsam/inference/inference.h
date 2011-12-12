@@ -18,7 +18,6 @@
 
 #pragma once
 
-#include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/VariableIndex.h>
 #include <gtsam/inference/Permutation.h>
 
@@ -77,4 +76,4 @@ namespace gtsam {
 	  return PermutationCOLAMD_(variableIndex, cmember);
 	}
 
-} /// namespace gtsam
+} // namespace gtsam
