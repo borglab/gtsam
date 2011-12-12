@@ -136,6 +136,12 @@ namespace gtsam {
 
     virtual ~JacobianFactor() {}
 
+    /** Clone this JacobianFactor */
+    virtual GaussianFactor::shared_ptr clone() const {
+      return boost::static_pointer_cast<GaussianFactor>(
+          shared_ptr(new JacobianFactor(*this)));
+    }
+
     // Implementing Testable interface
     virtual void print(const std::string& s = "") const;
     virtual bool equals(const GaussianFactor& lf, double tol = 1e-9) const;

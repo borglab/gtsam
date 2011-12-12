@@ -226,9 +226,19 @@ namespace gtsam {
 
     /**
      * Use RQ to calculate roll-pitch-yaw angle representation
-     * @return a vector containing ypr s.t. R = Rot3M::ypr(y,p,r)
+     * @return a vector containing rpy s.t. R = Rot3M::ypr(y,p,r)
      */
     Vector rpy() const;
+
+    /**
+     * Accessors to get to components of angle representations
+     * NOTE: these are not efficient to get to multiple separate parts,
+     * you should instead use xyz() or ypr()
+     * TODO: make this more efficient
+     */
+    inline double roll() const  { return ypr()(2); }
+    inline double pitch() const { return ypr()(1); }
+    inline double yaw() const   { return ypr()(0); }
 
     /** Compute the quaternion representation of this rotation.
      * @return The quaternion

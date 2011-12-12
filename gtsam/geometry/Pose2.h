@@ -103,11 +103,6 @@ public:
 			boost::optional<Matrix&> H1 = boost::none,
 			boost::optional<Matrix&> H2 = boost::none) const;
 
-	/// MATLAB version returns shared pointer
-	boost::shared_ptr<Pose2> compose_(const Pose2& p2) {
-		return boost::shared_ptr<Pose2>(new Pose2(compose(p2)));
-	}
-
   /// compose syntactic sugar
 	inline Pose2 operator*(const Pose2& p2) const {
 		return Pose2(r_*p2.r(), t_ + r_*p2.t());
@@ -150,11 +145,6 @@ public:
 	Pose2 between(const Pose2& p2,
 			boost::optional<Matrix&> H1=boost::none,
 			boost::optional<Matrix&> H2=boost::none) const;
-
-	/// MATLAB version returns shared pointer
-	boost::shared_ptr<Pose2> between_(const Pose2& p2) {
-		return boost::shared_ptr<Pose2>(new Pose2(between(p2)));
-	}
 
 	/**
 	 * Return point coordinates in pose coordinate frame

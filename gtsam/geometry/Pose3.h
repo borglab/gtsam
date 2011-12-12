@@ -99,16 +99,16 @@ namespace gtsam {
     /// @{
 
     /// Dimensionality of tangent space = 6 DOF - used to autodetect sizes
-        static size_t Dim() { return dimension; }
+    static size_t Dim() { return dimension; }
 
     /// Dimensionality of the tangent space = 6 DOF
     size_t dim() const { return dimension; }
 
 
-    /** Exponential map around another pose */    /// Retraction from R^6 to Pose3 manifold neighborhood around current pose
+    /// Retraction from R^6 to Pose3 manifold neighborhood around current pose
     Pose3 retract(const Vector& d) const;
 
-    /// Logarithm map around another pose T1			/// Local 6D coordinates of Pose3 manifold neighborhood around current pose
+    /// Local 6D coordinates of Pose3 manifold neighborhood around current pose
     Vector localCoordinates(const Pose3& T2) const;
 
     /// @}
@@ -148,8 +148,8 @@ namespace gtsam {
      * Calculate Adjoint map
      * Ad_pose is 6*6 matrix that when applied to twist xi, returns Ad_pose(xi)
      */
-    Matrix AdjointMap() const;
-    Vector Adjoint(const Vector& xi) const {return AdjointMap()*xi; }
+    Matrix adjointMap() const; /// FIXME Not tested - marked as incorrect
+    Vector adjoint(const Vector& xi) const {return adjointMap()*xi; } /// FIXME Not tested - marked as incorrect
 
     /**
      * wedge for Pose3:

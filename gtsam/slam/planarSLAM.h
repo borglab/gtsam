@@ -71,10 +71,10 @@ namespace gtsam {
 			// Convenience for MATLAB wrapper, which does not allow for identically named methods
 
 			/// get a pose
-	    boost::shared_ptr<Pose2> pose(int key) {
-	    	Pose2 pose = (*this)[PoseKey(key)];
-	    	return boost::shared_ptr<Pose2>(new Pose2(pose));
-	    }
+	    Pose2 pose(int key) const {	return (*this)[PoseKey(key)]; }
+
+	    /// get a point
+	    Point2 point(int key) const {	return (*this)[PointKey(key)]; }
 
 			/// insert a pose
 		  void insertPose(int key, const Pose2& pose) {insert(PoseKey(key), pose); }
@@ -131,14 +131,11 @@ namespace gtsam {
 			void addBearingRange(const PoseKey& poseKey, const PointKey& pointKey,
 					const Rot2& bearing, double range, const SharedNoiseModel& model);
 
-			/// Optimize_ for MATLAB
-			boost::shared_ptr<Values> optimize_(const Values& initialEstimate) {
+			/// Optimize
+			Values optimize(const Values& initialEstimate) {
 				typedef NonlinearOptimizer<Graph, Values> Optimizer;
-				boost::shared_ptr<Values> result(
-						new Values(
-								*Optimizer::optimizeLM(*this, initialEstimate,
-										NonlinearOptimizationParameters::LAMBDA)));
-				return result;
+				return *Optimizer::optimizeLM(*this, initialEstimate,
+										NonlinearOptimizationParameters::LAMBDA);
 			}
 		};
 

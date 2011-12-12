@@ -30,8 +30,11 @@ DX_PS_FEATURE(OFF)
 DX_INIT_DOXYGEN(gtsam)
 
 # Check for OS
-AC_CANONICAL_HOST    # needs to be called at some point earlier
-AM_CONDITIONAL([DARWIN], [case $host_os in darwin*) true;; *) false;; esac]) 
+# needs to be called at some point earlier
+AC_CANONICAL_HOST    
+AM_CONDITIONAL([DARWIN], [case $host_os in darwin*) true;; *) false;; esac])
+AM_CONDITIONAL([LINUX], [case $host_os in linux*) true;; *) false;; esac])
+AM_CONDITIONAL([IS_64BIT], [case $host_cpu in *x86_64*) true;; *) false;; esac])
 
 # enable debug variable
 AC_ARG_ENABLE([debug],
@@ -43,20 +46,6 @@ AC_ARG_ENABLE([debug],
      esac],[debug=false])
 
 AM_CONDITIONAL([DEBUG], [test x$debug = xtrue])
-
-
-AC_CANONICAL_HOST
-# We need to determine what os we are on to determine if we need to do 
-# special things because we are on a mac
-case $host_os in
-  darwin* )
-        # Do something specific for mac
-        ISMAC=true
-        ;;
-  *)
-        ISMAC=false
-        ;;
-esac
 
 # enable profiling
 AC_ARG_ENABLE([profiling],
@@ -91,6 +80,77 @@ AC_ARG_ENABLE([install_cppunitlite],
 
 AM_CONDITIONAL([ENABLE_INSTALL_CPPUNITLITE], [test x$install_cppunitlite = xtrue])
 
+# enable matlab toolbox generation
+AC_ARG_ENABLE([build_toolbox],
+     [  --enable-build-toolbox    Enable building of the Matlab toolbox],
+     [case "${enableval}" in
+       yes) build_toolbox=true ;;
+       no)  build_toolbox=false ;;
+       *) AC_MSG_ERROR([bad value ${enableval} for --enable-build-toolbox]) ;;
+     esac],[build_toolbox=false])
+
+AM_CONDITIONAL([ENABLE_BUILD_TOOLBOX], [test x$build_toolbox = xtrue])
+
+# enable installation of matlab tests
+AC_ARG_ENABLE([install_matlab_tests],
+     [  --enable-install-matlab-tests    Enable installation of tests for the Matlab toolbox],
+     [case "${enableval}" in
+       yes) install_matlab_tests=true ;;
+       no)  install_matlab_tests=false ;;
+       *) AC_MSG_ERROR([bad value ${enableval} for --enable-install-matlab-tests]) ;;
+     esac],[install_matlab_tests=true])
+
+AM_CONDITIONAL([ENABLE_INSTALL_MATLAB_TESTS], [test x$install_matlab_tests = xtrue])
+
+# enable installation of matlab examples
+AC_ARG_ENABLE([install_matlab_examples],
+     [  --enable-install-matlab-examples    Enable installation of examples for the Matlab toolbox],
+     [case "${enableval}" in
+       yes) install_matlab_examples=true ;;
+       no)  install_matlab_examples=false ;;
+       *) AC_MSG_ERROR([bad value ${enableval} for --enable-install-matlab-examples]) ;;
+     esac],[install_matlab_examples=true])
+
+AM_CONDITIONAL([ENABLE_INSTALL_MATLAB_EXAMPLES], [test x$install_matlab_examples = xtrue])
+
+# Matlab toolbox: optional flag to change location of toolbox, defaults to install prefix
+AC_ARG_WITH([toolbox],
+            [AS_HELP_STRING([--with-toolbox],
+              [specify the matlab toolbox directory for installation])],
+            [toolbox=$withval],
+            [toolbox=$prefix])
+AC_SUBST([toolbox])
+
+# enable installation of the wrap utility
+AC_ARG_ENABLE([install_wrap],
+     [  --enable-install-wrap    Enable installation of the wrap tool for generating matlab interfaces],
+     [case "${enableval}" in
+       yes) install_wrap=true ;;
+       no)  install_wrap=false ;;
+       *) AC_MSG_ERROR([bad value ${enableval} for --enable-install-wrap]) ;;
+     esac],[install_wrap=false])
+
+AM_CONDITIONAL([ENABLE_INSTALL_WRAP], [test x$install_wrap = xtrue])
+
+# enable unsafe mode for wrap
+AC_ARG_ENABLE([unsafe_wrap],
+     [  --enable-unsafe-wrap    Enable using unsafe mode in wrap],
+     [case "${enableval}" in
+       yes) unsafe_wrap=true ;;
+       no)  unsafe_wrap=false ;;
+       *) AC_MSG_ERROR([bad value ${enableval} for --enable-unsafe-wrap]) ;;
+     esac],[unsafe_wrap=false])
+
+AM_CONDITIONAL([ENABLE_UNSAFE_WRAP], [test x$unsafe_wrap = xtrue])
+
+# wrap install path: optional flag to change location of wrap, defaults to install prefix/bin
+AC_ARG_WITH([wrap],
+            [AS_HELP_STRING([--with-wrap],
+              [specify the wrap directory for installation])],
+            [wrap=$withval],
+            [wrap=$prefix/bin])
+AC_SUBST([wrap])
+
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_CC
@@ -114,25 +174,6 @@ AC_CHECK_FUNCS([pow sqrt])
 
 # Check for boost
 AX_BOOST_BASE([1.40])
-
-# enable matlab toolbox generation
-AC_ARG_ENABLE([build_toolbox],
-     [  --enable-build-toolbox    Enable building of the Matlab toolbox],
-     [case "${enableval}" in
-       yes) build_toolbox=true ;;
-       no)  build_toolbox=false ;;
-       *) AC_MSG_ERROR([bad value ${enableval} for --enable-build-toolbox]) ;;
-     esac],[build_toolbox=false])
-
-AM_CONDITIONAL([ENABLE_BUILD_TOOLBOX], [test x$build_toolbox = xtrue])
-
-# Matlab toolbox: optional flag to change location of toolbox, defaults to install prefix
-AC_ARG_WITH([toolbox],
-            [AS_HELP_STRING([--with-toolbox],
-              [specify the matlab toolbox directory for installation])],
-            [toolbox=$withval],
-            [toolbox=$prefix])
-AC_SUBST([toolbox])
 
 AC_CONFIG_FILES([CppUnitLite/Makefile \
 wrap/Makefile \

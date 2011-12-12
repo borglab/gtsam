@@ -46,10 +46,6 @@ std::map<int, Point3> readLandMarks(const std::string& landmarkFile) {
 }
 
 /* ************************************************************************* */
-/**
- * Read pose from file, output by Panda3D.
- * Warning: row major!!!
- */
 gtsam::Pose3 readPose(const char* Fn) {
   ifstream poseFile(Fn);
   if (!poseFile) {
@@ -62,18 +58,7 @@ gtsam::Pose3 readPose(const char* Fn) {
     poseFile >> v[i];
   poseFile.close();
 
-  // Because panda3d's camera is z-up, y-view,
-  // we swap z and y to have y-up, z-view, then negate z to stick with the right-hand rule
-  //... similar to OpenGL's camera
-  for (int i = 0; i<3; i++) {
-    float t = v[4+i];
-    v[4+i] = v[8+i];
-    v[8+i] = -t;
-  }
-
-  ::Vector vec = Vector_(16, v);
-
-  Matrix T = Matrix_(4,4, vec);   // column order !!!
+  Matrix T = Matrix_(4,4, v);   // row order !!!
 
   Pose3 pose(T);
   return pose;
@@ -166,28 +151,7 @@ std::vector<Feature2D> readAllMeasurements(const std::string& baseFolder, const 
 }
 
 /* ************************************************************************* */
-std::vector<gtsam::Pose3> readPosesISAM(const std::string& baseFolder, const std::string& posesFn) {
-  ifstream posesFile((baseFolder+posesFn).c_str());
-  if (!posesFile) {
-    cout << "Cannot read all pose ISAM file: " << posesFn << endl;
-    exit(0);
-  }
-  int numPoses;
-  posesFile >> numPoses;
-  vector<Pose3> poses;
-  for (int i = 0; i<numPoses; i++) {
-    string poseFileName;
-    posesFile >> poseFileName;
-
-    Pose3 pose = readPose((baseFolder+poseFileName).c_str());
-    poses.push_back(pose);
-  }
-
-  return poses;
-}
-
-/* ************************************************************************* */
-std::vector<std::vector<Feature2D> > readAllMeasurementsISAM(const std::string& baseFolder, const std::string& measurementsFn) {
+std::map<int, std::vector<Feature2D> > readAllMeasurementsISAM(const std::string& baseFolder, const std::string& measurementsFn) {
   ifstream measurementsFile((baseFolder+measurementsFn).c_str());
   if (!measurementsFile) {
     cout << "Cannot read all pose file: " << baseFolder+measurementsFn << endl;
@@ -196,13 +160,16 @@ std::vector<std::vector<Feature2D> > readAllMeasurementsISAM(const std::string& 
   int numPoses;
   measurementsFile >> numPoses;
 
-  std::vector<std::vector<Feature2D> > allFeatures;
+  std::map<int, std::vector<Feature2D> > allFeatures;
 
   for (int i = 0; i<numPoses; i++) {
+    int poseId;
+    measurementsFile >> poseId;
+
     string featureFileName;
     measurementsFile >> featureFileName;
-    vector<Feature2D> features = readFeatures(-1, (baseFolder+featureFileName).c_str());    // we don't care about pose id in ISAM
-    allFeatures.push_back(features);
+    vector<Feature2D> features = readFeatures(poseId, (baseFolder+featureFileName).c_str());
+    allFeatures[poseId] = features;
   }
 
   return allFeatures;

@@ -21,7 +21,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/slam/Simulated3D.h>
+#include <gtsam/slam/simulated3D.h>
 
 using namespace gtsam;
 

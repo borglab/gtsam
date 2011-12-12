@@ -21,6 +21,7 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/nonlinear/TupleValues.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 // \namespace
 
@@ -33,7 +34,27 @@ namespace gtsam {
 		typedef TypedSymbol<Pose2, 'x'> PoseKey;
 		typedef Values<PoseKey> PoseValues;
 		typedef Values<PointKey> PointValues;
-		typedef TupleValues2<PoseValues, PointValues> Values;
+
+		/// Specialized Values structure with syntactic sugar for
+		/// compatibility with matlab
+		class Values: public TupleValues2<PoseValues, PointValues> {
+		public:
+			Values() {}
+
+			void insertPose(const PoseKey& i, const Pose2& p) {
+				insert(i, p);
+			}
+
+			void insertPoint(const PointKey& j, const Point2& p) {
+				insert(j, p);
+			}
+
+			int nrPoses() const {	return this->first_.size();	}
+			int nrPoints() const { return this->second_.size();	}
+
+			Pose2 pose(const PoseKey& i) const { return (*this)[i];	}
+			Point2 point(const PointKey& j) const { return (*this)[j]; }
+		};
 
 		//TODO:: point prior is not implemented right now
 
@@ -99,6 +120,13 @@ namespace gtsam {
 		};
 
 		typedef GenericOdometry<Values, PoseKey> Odometry;
+
+		/// Graph specialization for syntactic sugar use with matlab
+		class Graph : public NonlinearFactorGraph<Values> {
+		public:
+			Graph() {}
+			// TODO: add functions to add factors
+		};
 
 	} // namespace simulated2DOriented
 } // namespace gtsam

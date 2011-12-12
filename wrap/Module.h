@@ -18,26 +18,30 @@
 #pragma once
 
 #include <string>
-#include <list>
+#include <vector>
 
 #include "Class.h"
+
+namespace wrap {
 
 /**
  * A module just has a name and a list of classes
  */
 struct Module {
   std::string name;         ///< module name
-  std::list<Class> classes; ///< list of classes
-  bool verbose_;            ///< verbose flag
+  std::vector<Class> classes; ///< list of classes
+  bool verbose;            ///< verbose flag
+  std::vector<std::string> using_namespaces; ///< all default namespaces
 
   /// constructor that parses interface file
-  Module(const std::string& interfacePath, 
+  Module(const std::string& interfacePath,
 	 const std::string& moduleName,
-	 bool verbose=true);
+	 bool enable_verbose=true);
 
   /// MATLAB code generation:
   void matlab_code(const std::string& path, 
-		   const std::string& nameSpace, 
-		   const std::string& mexFlags);
+		   const std::string& mexExt,
+		   const std::string& mexFlags) const;
 };
 
+} // \namespace wrap

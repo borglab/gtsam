@@ -174,6 +174,13 @@ public:
   /** Access the container through the permutation (const version) */
   const value_type& operator[](size_t index) const { return container_[permutation_[index]]; }
 
+	/** Assignment operator for cloning in ISAM2 */
+  Permuted<CONTAINER> operator=(const Permuted<CONTAINER>& other) {
+    permutation_ = other.permutation_;
+    container_ = other.container_;
+    return *this;
+  }
+
   /** Permute this view by applying a permutation to the underlying permutation */
   void permute(const Permutation& permutation) { assert(permutation.size() == this->size()); permutation_ = *permutation_.permute(permutation); }
 

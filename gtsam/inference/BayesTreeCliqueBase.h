@@ -77,6 +77,20 @@ namespace gtsam {
      */
     static derived_ptr Create(const std::pair<sharedConditional, boost::shared_ptr<typename ConditionalType::FactorType> >& result) { return boost::make_shared<DerivedType>(result); }
 
+    void cloneToBayesTree(BayesTree& newTree, shared_ptr parent_clique = shared_ptr()) const {
+      sharedConditional newConditional = sharedConditional(new CONDITIONAL(*conditional_));
+      sharedClique newClique = newTree.addClique(newConditional, parent_clique);
+      if (cachedFactor_)
+        newClique->cachedFactor_ = cachedFactor_->clone();
+      else newClique->cachedFactor_ = typename FactorType::shared_ptr();
+      if (!parent_clique) {
+        newTree.root_ = newClique;
+      }
+      BOOST_FOREACH(const shared_ptr& childClique, children_) {
+        childClique->cloneToBayesTree(newTree, newClique);
+      }
+    }
+
     /** print this node */
     void print(const std::string& s = "") const;
 

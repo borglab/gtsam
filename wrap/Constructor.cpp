@@ -23,15 +23,16 @@
 #include "Constructor.h"
 
 using namespace std;
+using namespace wrap;
 
 /* ************************************************************************* */
-string Constructor::matlab_wrapper_name(const string& className) {
+string Constructor::matlab_wrapper_name(const string& className) const {
   string str = "new_" + className + "_" + args.signature();
   return str;
 }
 
 /* ************************************************************************* */
-void Constructor::matlab_proxy_fragment(ofstream& ofs, const string& className) {
+void Constructor::matlab_proxy_fragment(ofstream& ofs, const string& className) const {
   ofs << "      if nargin == " << args.size() << ", obj.self = " 
       << matlab_wrapper_name(className) << "(";
   bool first = true;
@@ -44,22 +45,22 @@ void Constructor::matlab_proxy_fragment(ofstream& ofs, const string& className) 
 }
 
 /* ************************************************************************* */
-void Constructor::matlab_mfile(const string& toolboxPath, const string& className) {
+void Constructor::matlab_mfile(const string& toolboxPath, const string& qualifiedMatlabName) const {
 
-  string name = matlab_wrapper_name(className);
+  string matlabName = matlab_wrapper_name(qualifiedMatlabName);
 
   // open destination m-file
-  string wrapperFile = toolboxPath + "/" + name + ".m";
+  string wrapperFile = toolboxPath + "/" + matlabName + ".m";
   ofstream ofs(wrapperFile.c_str());
   if(!ofs) throw CantOpenFile(wrapperFile);
   if(verbose_) cerr << "generating " << wrapperFile << endl;
 
   // generate code
-  emit_header_comment(ofs, "%");
-  ofs << "function result = " << name << "(obj";
+  generateHeaderComment(ofs, "%");
+  ofs << "function result = " << matlabName << "(obj";
   if (args.size()) ofs << "," << args.names();
   ofs << ")" << endl;
-  ofs << "  error('need to compile " << name << ".cpp');" << endl;
+  ofs << "  error('need to compile " << matlabName << ".cpp');" << endl;
   ofs << "end" << endl;
 
   // close file
@@ -67,30 +68,29 @@ void Constructor::matlab_mfile(const string& toolboxPath, const string& classNam
 }
 
 /* ************************************************************************* */
-void Constructor::matlab_wrapper(const string& toolboxPath, 
-				 const string& className,
-				 const string& nameSpace) 
-{
-
-  string name = matlab_wrapper_name(className);
+void Constructor::matlab_wrapper(const string& toolboxPath,
+				 const string& cppClassName,
+				 const string& matlabClassName,
+				 const vector<string>& using_namespaces, const vector<string>& includes) const {
+  string matlabName = matlab_wrapper_name(matlabClassName);
 
   // open destination wrapperFile
-  string wrapperFile = toolboxPath + "/" + name + ".cpp";
+  string wrapperFile = toolboxPath + "/" + matlabName + ".cpp";
   ofstream ofs(wrapperFile.c_str());
   if(!ofs) throw CantOpenFile(wrapperFile);
   if(verbose_) cerr << "generating " << wrapperFile << endl;
 
   // generate code
-  emit_header_comment(ofs, "//");
-  ofs << "#include <wrap/matlab.h>" << endl;
-  ofs << "#include <" << className << ".h>" << endl;
-  if (!nameSpace.empty()) ofs << "using namespace " << nameSpace << ";" << endl;
+  generateHeaderComment(ofs, "//");
+  generateIncludes(ofs, name, includes);
+  generateUsingNamespace(ofs, using_namespaces);
+
   ofs << "void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])" << endl;
   ofs << "{" << endl;
-  ofs << "  checkArguments(\"" << name << "\",nargout,nargin," << args.size() << ");" << endl;
+  ofs << "  checkArguments(\"" << matlabName << "\",nargout,nargin," << args.size() << ");" << endl;
   args.matlab_unwrap(ofs); // unwrap arguments
-  ofs << "  " << className << "* self = new " << className << "(" << args.names() << ");" << endl;
-  ofs << "  out[0] = wrap_constructed(self,\"" << className << "\");" << endl;
+  ofs << "  " << cppClassName << "* self = new " << cppClassName << "(" << args.names() << ");" << endl; // need qualified name, delim: "::"
+  ofs << "  out[0] = wrap_constructed(self,\"" << matlabClassName << "\");" << endl; // need matlab qualified name
   ofs << "}" << endl;
 
   // close file

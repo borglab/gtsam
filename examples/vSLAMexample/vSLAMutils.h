@@ -29,11 +29,9 @@ std::map<int, gtsam::Point3> readLandMarks(const std::string& landmarkFile);
 
 gtsam::Pose3 readPose(const char* poseFn);
 std::map<int, gtsam::Pose3> readPoses(const std::string& baseFolder, const std::string& posesFN);
-std::vector<gtsam::Pose3> readPosesISAM(const std::string& baseFolder, const std::string& posesFN);
-
 
 gtsam::shared_ptrK readCalibData(const std::string& calibFn);
 
 std::vector<Feature2D> readFeatureFile(const char* filename);
 std::vector<Feature2D> readAllMeasurements(const std::string& baseFolder, const std::string& measurementsFn);
-std::vector< std::vector<Feature2D> > readAllMeasurementsISAM(const std::string& baseFolder, const std::string& measurementsFn);
+std::map<int, std::vector<Feature2D> > readAllMeasurementsISAM(const std::string& baseFolder, const std::string& measurementsFn);

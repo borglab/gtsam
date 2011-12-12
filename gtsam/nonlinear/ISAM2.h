@@ -214,6 +214,27 @@ public:
   typedef typename Base::sharedClique sharedClique; ///< Shared pointer to a clique
   typedef typename Base::Cliques Cliques; ///< List of Clique typedef from base class
 
+  void cloneTo(boost::shared_ptr<ISAM2>& newISAM2) const {
+    boost::shared_ptr<Base> bayesTree = boost::static_pointer_cast<Base>(newISAM2);
+    Base::cloneTo(bayesTree);
+    newISAM2->theta_ = theta_;
+    newISAM2->variableIndex_ = variableIndex_;
+    newISAM2->deltaUnpermuted_ = deltaUnpermuted_;
+    newISAM2->delta_ = delta_;
+    newISAM2->nonlinearFactors_ = nonlinearFactors_;
+    newISAM2->ordering_ = ordering_;
+    newISAM2->params_ = params_;
+#ifndef NDEBUG
+    newISAM2->lastRelinVariables_ = lastRelinVariables_;
+#endif
+    newISAM2->lastAffectedVariableCount = lastAffectedVariableCount;
+    newISAM2->lastAffectedFactorCount = lastAffectedFactorCount;
+    newISAM2->lastAffectedCliqueCount = lastAffectedCliqueCount;
+    newISAM2->lastAffectedMarkedCount = lastAffectedMarkedCount;
+    newISAM2->lastBacksubVariableCount = lastBacksubVariableCount;
+    newISAM2->lastNnzTop = lastNnzTop;
+  }
+
   /**
    * Add new factors, updating the solution and relinearizing as needed.
    *
@@ -278,6 +299,8 @@ public:
   size_t lastAffectedMarkedCount;
   size_t lastBacksubVariableCount;
   size_t lastNnzTop;
+
+  ISAM2Params params() const { return params_; }
 
   //@}
 

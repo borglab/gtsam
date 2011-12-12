@@ -178,6 +178,11 @@ namespace gtsam {
 		/** check equality */
 		bool equals(const BayesTree<CONDITIONAL,CLIQUE>& other, double tol = 1e-9) const;
 
+		/** deep copy from another tree */
+		void cloneTo(shared_ptr& newTree) const {
+		  root_->cloneToBayesTree(*newTree);
+		}
+
 		/**
 		 * Find parent clique of a conditional.  It will look at all parents and
 		 * return the one with the lowest index in the ordering.

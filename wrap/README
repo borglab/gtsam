@@ -17,10 +17,10 @@ OBJECT CREATION
 	new_GaussianFactorGraph_ calls wrap_constructed in matlab.h, see documentation there
 	
 METHOD (AND CONSTRUCTOR) ARGUMENTS
-- simple argument types of methods, such as "double", will be converted in the
+- Simple argument types of methods, such as "double", will be converted in the
   mex warppers by calling unwrap<double>, defined in matlab.h
-- Vector and Matric arguments are normally passed by reference in GTSAM, but
-  in gtsam.h you need to pretedn they are passed by value, to trigger the 
+- Vector and Matrix arguments are normally passed by reference in GTSAM, but
+  in gtsam.h you need to pretend they are passed by value, to trigger the 
   generation of the correct conversion routines unwrap<Vector> and unwrap<Matrix>
 - passing classes as arguments works, provided they are passed by reference.
 	This triggers a call to unwrap_shared_ptr

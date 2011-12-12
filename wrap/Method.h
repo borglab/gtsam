@@ -21,33 +21,35 @@
 #include <list>
 
 #include "Argument.h"
+#include "ReturnValue.h"
+
+namespace wrap {
 
 /// Method class
 struct Method {
 
 	/// Constructor creates empty object
 	Method(bool verbose = true) :
-			returns_ptr_(false), returns_ptr2_(false), returns_pair_(false), verbose_(
-					verbose) {
-	}
+			verbose_(verbose) {}
 
 	// Then the instance variables are set directly by the Module constructor
-	bool is_const_;
-	ArgumentList args_;
-	std::string returns_, returns2_, name_;
-	bool returns_ptr_, returns_ptr2_, returns_pair_;
 	bool verbose_;
-
-	enum pairing {
-		arg1, arg2, pair
-	};
-	std::string return_type(bool add_ptr, pairing p);
+	bool is_const_;
+	std::string name;
+	ArgumentList args;
+	ReturnValue returnVal;
 
 	// MATLAB code generation
 	// classPath is class directory, e.g., ../matlab/@Point2
 
-	void matlab_mfile(const std::string& classPath); ///< m-file
+	void matlab_mfile(const std::string& classPath) const; ///< m-file
 	void matlab_wrapper(const std::string& classPath,
-			const std::string& className, const std::string& nameSpace); ///< wrapper
+			const std::string& className,
+	    const std::string& cppClassName,
+	    const std::string& matlabClassname,
+	    const std::vector<std::string>& using_namespaces,
+	    const std::vector<std::string>& includes) const; ///< cpp wrapper
 };
+
+} // \namespace wrap
 

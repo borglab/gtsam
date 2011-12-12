@@ -17,6 +17,7 @@
  */
 
 #include <boost/shared_ptr.hpp>
+#include <boost/foreach.hpp>
 using namespace boost;
 
 // Magically casts strings like "x3" to a Symbol('x',3) key, see Key.h
@@ -40,8 +41,8 @@ using namespace boost;
 /* ************************************************************************* */
 #define CALIB_FILE          "calib.txt"
 #define LANDMARKS_FILE      "landmarks.txt"
-#define POSES_FILE          "posesISAM.txt"
-#define MEASUREMENTS_FILE    "measurementsISAM.txt"
+#define POSES_FILE          "poses.txt"
+#define MEASUREMENTS_FILE    "measurements.txt"
 
 // Base data folder
 string g_dataFolder;
@@ -49,8 +50,8 @@ string g_dataFolder;
 // Store groundtruth values, read from files
 shared_ptrK g_calib;
 map<int, Point3> g_landmarks;        // map: <landmark_id, landmark_position>
-std::vector<Pose3> g_poses;          // prior camera poses at each frame
-std::vector<std::vector<Feature2D> > g_measurements;    // feature sets detected at each frame
+map<int, Pose3> g_poses;            // map: <camera_id, pose>
+std::map<int, std::vector<Feature2D> > g_measurements;    // feature sets detected at each frame
 
 // Noise models
 SharedNoiseModel measurementSigma(noiseModel::Isotropic::Sigma(2, 5.0f));
@@ -69,7 +70,7 @@ void readAllDataISAM() {
   g_landmarks = readLandMarks(g_dataFolder + LANDMARKS_FILE);
 
   // Read groundtruth camera poses. These will be used later as intial estimates for pose nodes.
-  g_poses = readPosesISAM(g_dataFolder, POSES_FILE);
+  g_poses = readPoses(g_dataFolder, POSES_FILE);
 
   // Read all 2d measurements. Those will become factors linking their associating pose and the corresponding landmark.
   g_measurements = readAllMeasurementsISAM(g_dataFolder, MEASUREMENTS_FILE);
@@ -80,7 +81,7 @@ void readAllDataISAM() {
  * Setup newFactors and initialValues for each new pose and set of measurements at each frame.
  */
 void createNewFactors(shared_ptr<Graph>& newFactors, boost::shared_ptr<visualSLAM::Values>& initialValues,
-    int pose_id, Pose3& pose, std::vector<Feature2D>& measurements, SharedNoiseModel measurementSigma, shared_ptrK calib) {
+    int pose_id, const Pose3& pose, const std::vector<Feature2D>& measurements, SharedNoiseModel measurementSigma, shared_ptrK calib) {
 
   // Create a graph of newFactors with new measurements
   newFactors = shared_ptr<Graph> (new Graph());
@@ -121,16 +122,19 @@ int main(int argc, char* argv[]) {
   g_dataFolder = string(argv[1]) + "/";
   readAllDataISAM();
 
-  // Create an NonlinearISAM which will be relinearized and reordered after every "relinearizeInterval" updates
+  // Create a NonlinearISAM which will be relinearized and reordered after every "relinearizeInterval" updates
   int relinearizeInterval = 3;
   NonlinearISAM<visualSLAM::Values> isam(relinearizeInterval);
 
-  // At each frame i with new camera pose and new set of measurements associated with it,
+  // At each frame (poseId) with new camera pose and set of associated measurements,
   // create a graph of new factors and update ISAM
-  for (size_t i = 0; i < g_measurements.size(); i++) {
+  typedef std::map<int, std::vector<Feature2D> > FeatureMap;
+  BOOST_FOREACH(const FeatureMap::value_type& features, g_measurements) {
+    const int poseId = features.first;
     shared_ptr<Graph> newFactors;
     shared_ptr<visualSLAM::Values> initialValues;
-    createNewFactors(newFactors, initialValues, i, g_poses[i], g_measurements[i], measurementSigma, g_calib);
+    createNewFactors(newFactors, initialValues, poseId, g_poses[poseId],
+            features.second, measurementSigma, g_calib);
 
     isam.update(*newFactors, *initialValues);
     visualSLAM::Values currentEstimate = isam.estimate();
