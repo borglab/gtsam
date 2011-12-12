@@ -182,10 +182,9 @@ public:
   template<typename NewScalarType>
   inline typename internal::cast_return_type<Derived,Quaternion<NewScalarType> >::type cast() const
   {
-    return typename internal::cast_return_type<Derived,Quaternion<NewScalarType> >::type(
-      coeffs().template cast<NewScalarType>());
+    return typename internal::cast_return_type<Derived,Quaternion<NewScalarType> >::type(derived());
   }
-  
+
 #ifdef EIGEN_QUATERNIONBASE_PLUGIN
 # include EIGEN_QUATERNIONBASE_PLUGIN
 #endif
@@ -225,22 +224,25 @@ struct traits<Quaternion<_Scalar,_Options> >
   typedef _Scalar Scalar;
   typedef Matrix<_Scalar,4,1,_Options> Coefficients;
   enum{
-    IsAligned = bool(EIGEN_ALIGN) && ((int(_Options)&Aligned)==Aligned),
+    IsAligned = internal::traits<Coefficients>::Flags & AlignedBit,
     Flags = IsAligned ? (AlignedBit | LvalueBit) : LvalueBit
   };
 };
 }
 
 template<typename _Scalar, int _Options>
-class Quaternion : public QuaternionBase<Quaternion<_Scalar,_Options> >{
+class Quaternion : public QuaternionBase<Quaternion<_Scalar,_Options> >
+{
   typedef QuaternionBase<Quaternion<_Scalar,_Options> > Base;
+  enum { IsAligned = internal::traits<Quaternion>::IsAligned };
+
 public:
   typedef _Scalar Scalar;
 
   EIGEN_INHERIT_ASSIGNMENT_EQUAL_OPERATOR(Quaternion)
   using Base::operator*=;
 
-  typedef typename internal::traits<Quaternion<Scalar,_Options> >::Coefficients Coefficients;
+  typedef typename internal::traits<Quaternion>::Coefficients Coefficients;
   typedef typename Base::AngleAxisType AngleAxisType;
 
   /** Default constructor leaving the quaternion uninitialized. */
@@ -271,8 +273,15 @@ public:
   template<typename Derived>
   explicit inline Quaternion(const MatrixBase<Derived>& other) { *this = other; }
 
+  /** Explicit copy constructor with scalar conversion */
+  template<typename OtherScalar, int OtherOptions>
+  explicit inline Quaternion(const Quaternion<OtherScalar, OtherOptions>& other)
+  { m_coeffs = other.coeffs().template cast<Scalar>(); }
+
   inline Coefficients& coeffs() { return m_coeffs;}
   inline const Coefficients& coeffs() const { return m_coeffs;}
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(IsAligned)
 
 protected:
   Coefficients m_coeffs;

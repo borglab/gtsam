@@ -118,14 +118,14 @@ inline void computeProductBlockingSizes(std::ptrdiff_t& k, std::ptrdiff_t& m, st
   // FIXME (a bit overkill maybe ?)
 
   template<typename CJ, typename A, typename B, typename C, typename T> struct gebp_madd_selector {
-    EIGEN_STRONG_INLINE EIGEN_ALWAYS_INLINE_ATTRIB static void run(const CJ& cj, A& a, B& b, C& c, T& /*t*/)
+    EIGEN_ALWAYS_INLINE static void run(const CJ& cj, A& a, B& b, C& c, T& /*t*/)
     {
       c = cj.pmadd(a,b,c);
     }
   };
 
   template<typename CJ, typename T> struct gebp_madd_selector<CJ,T,T,T,T> {
-    EIGEN_STRONG_INLINE EIGEN_ALWAYS_INLINE_ATTRIB static void run(const CJ& cj, T& a, T& b, T& c, T& t)
+    EIGEN_ALWAYS_INLINE static void run(const CJ& cj, T& a, T& b, T& c, T& t)
     {
       t = b; t = cj.pmul(a,t); c = padd(c,t);
     }

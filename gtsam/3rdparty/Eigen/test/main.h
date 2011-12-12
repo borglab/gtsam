@@ -118,7 +118,7 @@ namespace Eigen
       }                                     \
       else if (Eigen::internal::push_assert)       \
       {                                     \
-        eigen_assert_list.push_back(std::string(EI_PP_MAKE_STRING(__FILE__)" ("EI_PP_MAKE_STRING(__LINE__)") : "#a) ); \
+        eigen_assert_list.push_back(std::string(EI_PP_MAKE_STRING(__FILE__) " (" EI_PP_MAKE_STRING(__LINE__) ") : " #a) ); \
       }
 
     #define VERIFY_RAISES_ASSERT(a)                                                   \

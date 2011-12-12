@@ -283,11 +283,17 @@ if(EIGEN_BUILD_PKGCONFIG)
     STRING(REPLACE ${path_separator} ";" pkg_config_libdir_search "$ENV{PKG_CONFIG_LIBDIR}")
     message(STATUS "searching for 'pkgconfig' directory in PKG_CONFIG_LIBDIR ( $ENV{PKG_CONFIG_LIBDIR} ), ${CMAKE_INSTALL_PREFIX}/share, and ${CMAKE_INSTALL_PREFIX}/lib")
     FIND_PATH(pkg_config_libdir pkgconfig ${pkg_config_libdir_search} ${CMAKE_INSTALL_PREFIX}/share ${CMAKE_INSTALL_PREFIX}/lib ${pkg_config_libdir_search})
-    message(STATUS "found ${pkg_config_libdir}/pkgconfig" )
+    if(pkg_config_libdir)
+        SET(pkg_config_install_dir ${pkg_config_libdir})
+        message(STATUS "found ${pkg_config_libdir}/pkgconfig" )
+    else(pkg_config_libdir)
+        SET(pkg_config_install_dir ${CMAKE_INSTALL_PREFIX}/share)
+        message(STATUS "pkgconfig not found; installing in ${pkg_config_install_dir}" )
+    endif(pkg_config_libdir)
 
     configure_file(eigen3.pc.in eigen3.pc)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/eigen3.pc
-        DESTINATION ${pkg_config_libdir}/pkgconfig
+        DESTINATION ${pkg_config_install_dir}/pkgconfig
         )
 endif(EIGEN_BUILD_PKGCONFIG)
 
