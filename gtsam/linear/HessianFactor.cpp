@@ -23,6 +23,7 @@
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/tuple/tuple.hpp>
+#include <boost/bind.hpp>
 
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
@@ -193,6 +194,9 @@ HessianFactor::HessianFactor(const FactorGraph<GaussianFactor>& factors,
 	// Form Ab' * Ab
 	tic(1, "allocate");
 	info_.resize(dimensions.begin(), dimensions.end(), false);
+	// Fill in keys
+	keys_.resize(scatter.size());
+	std::transform(scatter.begin(), scatter.end(), keys_.begin(), boost::bind(&Scatter::value_type::first, ::_1));
 	toc(1, "allocate");
 	tic(2, "zero");
 	matrix_.noalias() = Matrix::Zero(matrix_.rows(),matrix_.cols());
@@ -406,7 +410,7 @@ Eigen::LDLT<Matrix>::TranspositionType HessianFactor::partialLDL(size_t nrFronta
 
 /* ************************************************************************* */
 GaussianConditional::shared_ptr
-HessianFactor::splitEliminatedFactor(size_t nrFrontals, const vector<Index>& keys, const Eigen::LDLT<Matrix>::TranspositionType& permutation) {
+HessianFactor::splitEliminatedFactor(size_t nrFrontals, const Eigen::LDLT<Matrix>::TranspositionType& permutation) {
 
   static const bool debug = false;
 
@@ -423,7 +427,7 @@ HessianFactor::splitEliminatedFactor(size_t nrFrontals, const vector<Index>& key
   // Because of the pivoting permutation when using LDL, treating each variable separately doesn't make sense.
   tic(2, "construct cond");
   Vector sigmas = Vector::Ones(varDim);
-  conditionals = boost::make_shared<ConditionalType>(keys.begin(), keys.end(), nrFrontals, Ab, sigmas, permutation);
+  conditionals = boost::make_shared<ConditionalType>(keys_.begin(), keys_.end(), nrFrontals, Ab, sigmas, permutation);
   toc(2, "construct cond");
   if(debug) conditionals->print("Extracted conditional: ");
 
@@ -433,7 +437,9 @@ HessianFactor::splitEliminatedFactor(size_t nrFrontals, const vector<Index>& key
   tic(2, "remaining factor");
   info_.blockStart() = nrFrontals;
   // Assign the keys
-  keys_.assign(keys.begin() + nrFrontals, keys.end());
+  vector<Index> remainingKeys(keys_.size() - nrFrontals);
+  remainingKeys.assign(keys_.begin() + nrFrontals, keys_.end());
+  keys_.swap(remainingKeys);
   toc(2, "remaining factor");
 
   return conditionals;
