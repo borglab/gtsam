@@ -337,6 +337,8 @@ ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl::PartialSolve(GaussianFactorGraph& facto
   JunctionTree<GaussianFactorGraph, typename ISAM2Type::Clique> jt(factors, affectedFactorsIndex);
   result.bayesTree = jt.eliminate(EliminatePreferLDL);
   if(debug && result.bayesTree) {
+    if(boost::dynamic_pointer_cast<ISAM2Clique<CONDITIONAL> >(result.bayesTree))
+      cout << "Is an ISAM2 clique" << endl;
     cout << "Re-eliminated BT:\n";
     result.bayesTree->printTree("");
   }

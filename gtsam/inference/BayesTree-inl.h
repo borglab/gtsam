@@ -284,7 +284,7 @@ namespace gtsam {
 			const typename BayesTree<CONDITIONAL,CLIQUE>::sharedClique& v1,
 			const typename BayesTree<CONDITIONAL,CLIQUE>::sharedClique& v2
 	) {
-		return v1->equals(*v2);
+		return (!v1 && !v2) || (v1 && v2 && v1->equals(*v2));
 	}
 
 	/* ************************************************************************* */

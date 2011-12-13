@@ -146,14 +146,26 @@ struct ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique<CONDITIONAL>, CONDIT
   /** Access the gradient contribution */
   const Vector& gradientContribution() const { return gradientContribution_; }
 
+  bool equals(const This& other, double tol=1e-9) const {
+    return Base::equals(other) && ((!cachedFactor_ && !other.cachedFactor_) || (cachedFactor_ && other.cachedFactor_ && cachedFactor_->equals(*other.cachedFactor_, tol)));
+  }
+
+  /** print this node */
+  void print(const std::string& s = "") const {
+    Base::print(s);
+    if(cachedFactor_) cachedFactor_->print(s + "Cached: ");
+    else cout << s << "Cached empty" << endl;
+  }
+
   void permuteWithInverse(const Permutation& inversePermutation) {
     if(cachedFactor_) cachedFactor_->permuteWithInverse(inversePermutation);
     Base::permuteWithInverse(inversePermutation);
   }
 
   bool permuteSeparatorWithInverse(const Permutation& inversePermutation) {
-    if(cachedFactor_) cachedFactor_->permuteWithInverse(inversePermutation);
-    return Base::permuteSeparatorWithInverse(inversePermutation);
+    bool changed = Base::permuteSeparatorWithInverse(inversePermutation);
+    if(changed) if(cachedFactor_) cachedFactor_->permuteWithInverse(inversePermutation);
+    return changed;
   }
 
 private:

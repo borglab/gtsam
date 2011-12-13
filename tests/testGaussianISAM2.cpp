@@ -6,6 +6,7 @@
 
 #include <boost/foreach.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
+#include <boost/assign.hpp>
 using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
@@ -399,6 +400,67 @@ TEST_UNSAFE(ISAM2, clone) {
   isam.cloneTo(isam2);
 
   CHECK(assert_equal(isam, *isam2));
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, permute_cached) {
+  typedef ISAM2Clique<GaussianConditional> Clique;
+  typedef boost::shared_ptr<ISAM2Clique<GaussianConditional> > sharedClique;
+
+  // Construct expected permuted BayesTree (variable 2 has been changed to 1)
+  BayesTree<GaussianConditional, Clique> expected;
+  expected.insert(sharedClique(new Clique(make_pair(
+      boost::make_shared<GaussianConditional>(pair_list_of
+          (3, Matrix_(1,1,1.0))
+          (4, Matrix_(1,1,2.0)),
+          2, Vector_(1,1.0), Vector_(1,1.0)),   // p(3,4)
+      HessianFactor::shared_ptr()))));          // Cached: empty
+  expected.insert(sharedClique(new Clique(make_pair(
+      boost::make_shared<GaussianConditional>(pair_list_of
+          (2, Matrix_(1,1,1.0))
+          (3, Matrix_(1,1,2.0)),
+          1, Vector_(1,1.0), Vector_(1,1.0)),     // p(2|3)
+      boost::make_shared<HessianFactor>(3, Matrix_(1,1,1.0), Vector_(1,1.0), 0.0))))); // Cached: p(3)
+  expected.insert(sharedClique(new Clique(make_pair(
+      boost::make_shared<GaussianConditional>(pair_list_of
+          (0, Matrix_(1,1,1.0))
+          (2, Matrix_(1,1,2.0)),
+          1, Vector_(1,1.0), Vector_(1,1.0)),     // p(0|2)
+      boost::make_shared<HessianFactor>(1, Matrix_(1,1,1.0), Vector_(1,1.0), 0.0))))); // Cached: p(1)
+  // Change variable 2 to 1
+  expected.root()->children().front()->conditional()->keys()[0] = 1;
+  expected.root()->children().front()->children().front()->conditional()->keys()[1] = 1;
+
+  // Construct unpermuted BayesTree
+  BayesTree<GaussianConditional, Clique> actual;
+  actual.insert(sharedClique(new Clique(make_pair(
+      boost::make_shared<GaussianConditional>(pair_list_of
+          (3, Matrix_(1,1,1.0))
+          (4, Matrix_(1,1,2.0)),
+          2, Vector_(1,1.0), Vector_(1,1.0)),   // p(3,4)
+      HessianFactor::shared_ptr()))));          // Cached: empty
+  actual.insert(sharedClique(new Clique(make_pair(
+      boost::make_shared<GaussianConditional>(pair_list_of
+          (2, Matrix_(1,1,1.0))
+          (3, Matrix_(1,1,2.0)),
+          1, Vector_(1,1.0), Vector_(1,1.0)),     // p(2|3)
+      boost::make_shared<HessianFactor>(3, Matrix_(1,1,1.0), Vector_(1,1.0), 0.0))))); // Cached: p(3)
+  actual.insert(sharedClique(new Clique(make_pair(
+      boost::make_shared<GaussianConditional>(pair_list_of
+          (0, Matrix_(1,1,1.0))
+          (2, Matrix_(1,1,2.0)),
+          1, Vector_(1,1.0), Vector_(1,1.0)),     // p(0|2)
+      boost::make_shared<HessianFactor>(2, Matrix_(1,1,1.0), Vector_(1,1.0), 0.0))))); // Cached: p(2)
+
+  // Create permutation that changes variable 2 -> 0
+  Permutation permutation = Permutation::Identity(5);
+  permutation[2] = 1;
+
+  // Permute BayesTree
+  actual.root()->permuteWithInverse(permutation);
+
+  // Check
+  EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */

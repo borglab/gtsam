@@ -132,7 +132,7 @@ namespace gtsam {
 
     bool equals(const This& other, double tol=1e-9) const {
       return (!conditional_ && !other.conditional()) ||
-          conditional_->equals(*(other.conditional()), tol);
+          conditional_->equals(*other.conditional(), tol);
     }
 
     friend class BayesTree<ConditionalType, DerivedType>;
@@ -150,12 +150,13 @@ namespace gtsam {
   }; // \struct Clique
 
   template<class DERIVED, class CONDITIONAL>
-  typename BayesTreeCliqueBase<DERIVED,CONDITIONAL>::derived_ptr asDerived(const BayesTreeCliqueBase<DERIVED,CONDITIONAL>& base) {
-#ifndef NDEBUG
-    return boost::dynamic_pointer_cast<DERIVED>(base);
-#else
-    return boost::static_pointer_cast<DERIVED>(base);
-#endif
+  const DERIVED* asDerived(const BayesTreeCliqueBase<DERIVED,CONDITIONAL>* base) {
+    return static_cast<const DERIVED*>(base);
+  }
+
+  template<class DERIVED, class CONDITIONAL>
+  DERIVED* asDerived(BayesTreeCliqueBase<DERIVED,CONDITIONAL>* base) {
+    return static_cast<DERIVED*>(base);
   }
 
 }

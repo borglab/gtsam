@@ -66,7 +66,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class DERIVED, class CONDITIONAL>
   void BayesTreeCliqueBase<DERIVED,CONDITIONAL>::printTree(const std::string& indent) const {
-    print(indent);
+    asDerived(this)->print(indent);
     BOOST_FOREACH(const derived_ptr& child, children_)
       child->printTree(indent+"  ");
   }
@@ -94,7 +94,7 @@ namespace gtsam {
     }
 #endif
     if(changed) {
-      BOOST_FOREACH(const shared_ptr& child, children_) {
+      BOOST_FOREACH(const derived_ptr& child, children_) {
         (void)child->permuteSeparatorWithInverse(inversePermutation);
       }
     }
@@ -115,7 +115,7 @@ namespace gtsam {
     // A first base case is when this clique or its parent is the root,
     // in which case we return an empty Bayes net.
 
-    shared_ptr parent(parent_.lock());
+    derived_ptr parent(parent_.lock());
 
     if (R.get()==this || parent==R) {
       BayesNet<ConditionalType> empty;
