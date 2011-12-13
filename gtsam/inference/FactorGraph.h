@@ -77,7 +77,7 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 		template<class CONDITIONAL>
 		FactorGraph(const BayesNet<CONDITIONAL>& bayesNet);
 
-    /** convert from Bayes net */
+    /** convert from Bayes tree */
 		template<class CONDITIONAL, class CLIQUE>
     FactorGraph(const BayesTree<CONDITIONAL, CLIQUE>& bayesTree);
 
