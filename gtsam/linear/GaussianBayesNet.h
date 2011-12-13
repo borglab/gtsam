@@ -64,19 +64,19 @@ namespace gtsam {
 	 */
 	boost::shared_ptr<VectorValues> optimize_(const GaussianBayesNet& bn);
 
-	/*
+	/**
 	 * Backsubstitute
 	 * (R*x)./sigmas = y by solving x=inv(R)*(y.*sigmas)
 	 * @param y is the RHS of the system
 	 */
 	VectorValues backSubstitute(const GaussianBayesNet& bn, const VectorValues& y);
 
-	/*
+	/**
 	 * Backsubstitute in place, y starts as RHS and is replaced with solution
 	 */
 	void backSubstituteInPlace(const GaussianBayesNet& bn, VectorValues& y);
 
-	/*
+	/**
 	 * Transpose Backsubstitute
 	 * gy=inv(L)*gx by solving L*gy=gx.
 	 * gy=inv(R'*inv(Sigma))*gx
@@ -107,5 +107,27 @@ namespace gtsam {
    * @return The determinant
    */
   double determinant(const GaussianBayesNet& bayesNet);
+
+  /**
+   * Compute the gradient of the energy function,
+   * \f$ \nabla_{x=x_0} \left\Vert \Sigma^{-1} R x - d \right\Vert^2 \f$,
+   * centered around \f$ x = x_0 \f$.
+   * The gradient is \f$ R^T(Rx-d) \f$.
+   * @param bayesNet The Gaussian Bayes net $(R,d)$
+   * @param x0 The center about which to compute the gradient
+   * @return The gradient as a VectorValues
+   */
+  VectorValues gradient(const GaussianBayesNet& bayesNet, const VectorValues& x0);
+
+  /**
+   * Compute the gradient of the energy function,
+   * \f$ \nabla_{x=0} \left\Vert \Sigma^{-1} R x - d \right\Vert^2 \f$,
+   * centered around zero.
+   * The gradient about zero is \f$ -R^T d \f$.  See also gradient(const GaussianBayesNet&, const VectorValues&).
+   * @param bayesNet The Gaussian Bayes net $(R,d)$
+   * @param [output] g A VectorValues to store the gradient, which must be preallocated, see allocateVectorValues
+   * @return The gradient as a VectorValues
+   */
+  void gradientAtZero(const GaussianBayesNet& bayesNet, VectorValues& g);
 
 } /// namespace gtsam

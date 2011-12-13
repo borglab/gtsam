@@ -233,14 +233,14 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
 template<class M>
 VectorValues DoglegOptimizerImpl::ComputeSteepestDescentPoint(const M& Rd) {
 
-  // Compute gradient
-  // Convert to JacobianFactor's to use existing gradient function
-  FactorGraph<JacobianFactor> jfg(Rd);
-  VectorValues grad = gradient(jfg, VectorValues::Zero(*allocateVectorValues(Rd)));
+  // Compute gradient (call gradientAtZero function, which is defined for various linear systems)
+  VectorValues grad = *allocateVectorValues(Rd);
+  gradientAtZero(Rd, grad);
   double gradientSqNorm = grad.dot(grad);
 
   // Compute R * g
-  Errors Rg = jfg * grad;
+  FactorGraph<JacobianFactor> Rd_jfg(Rd);
+  Errors Rg = Rd_jfg * grad;
 
   // Compute minimizing step size
   double step = -gradientSqNorm / dot(Rg, Rg);
