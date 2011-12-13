@@ -296,6 +296,10 @@ TEST_UNSAFE(ISAM2, slamlike_solution)
 
   // Compare solutions
   EXPECT(isam_check(fullgraph, fullinit, isam));
+
+  // Check gradient
+  VectorValues expectedGradient(*allocateVectorValues(isam));
+  gradient
 }
 
 /* ************************************************************************* */
