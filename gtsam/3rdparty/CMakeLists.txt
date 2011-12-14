@@ -9,7 +9,7 @@ install(DIRECTORY Eigen/Eigen
 file(GLOB eigen_dir_headers_all "Eigen/Eigen/*")
 foreach(eigen_dir ${eigen_dir_headers_all})
     get_filename_component(filename ${eigen_dir} NAME)
-    if (NOT ((${filename} MATCHES "CMakeLists.txt") OR (${filename} MATCHES "src")))
+    if (NOT ((${filename} MATCHES "CMakeLists.txt") OR (${filename} MATCHES "src") OR (${filename} MATCHES ".svn")))
         install(FILES Eigen/Eigen/${filename} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/gtsam/3rdparty/Eigen/Eigen)     
     endif()
 endforeach(eigen_dir)
