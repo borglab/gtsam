@@ -1,8 +1,10 @@
 project(GTSAM CXX C)
+cmake_minimum_required(VERSION 2.6)
+
+# Set the version number for the libarary
 set (GTSAM_VERSION_MAJOR 0)
 set (GTSAM_VERSION_MINOR 9)
 set (GTSAM_VERSION_PATCH 3)
-cmake_minimum_required(VERSION 2.6)
 
 # guard against in-source builds
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
@@ -23,8 +25,12 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DEIGEN_NO_DEBUG")
 
 
 # Pull in tests
-ENABLE_TESTING()
-INCLUDE(Dart)
+enable_testing()
+include(Dart)
+include(CTest)
+
+# Enable make check (http://www.cmake.org/Wiki/CMakeEmulateMakeCheck)
+add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND})
 
 # Find boost
 find_package(Boost 1.40 REQUIRED)
