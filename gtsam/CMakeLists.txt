@@ -9,10 +9,10 @@ set (gtsam_subdirs
     slam)
 
 # Include CCOLAMD source directly into gtsam
-include_directories(
-  3rdparty/UFconfig 
-  3rdparty/CCOLAMD/Include
-  ${CMAKE_SOURCE_DIR})
+#include_directories(
+#  3rdparty/UFconfig 
+#  3rdparty/CCOLAMD/Include
+#  ${CMAKE_SOURCE_DIR})
  
 set (ccolamd_srcs 
  3rdparty/CCOLAMD/Source/ccolamd.c 
@@ -22,6 +22,7 @@ set (ccolamd_srcs
 set(gtsam_srcs ${ccolamd_srcs})
  
 add_library(ccolamd STATIC ${ccolamd_srcs})
+list(APPEND inner_libs ccolamd)
 
 # Get all sources and headers from each 
 foreach(subdir ${gtsam_subdirs})
@@ -37,12 +38,27 @@ foreach(subdir ${gtsam_subdirs})
     file(GLOB tests_srcs "${subdir}/tests/test*.cpp")
     foreach(test_src ${tests_srcs})
         get_filename_component(test_base ${test_src} NAME_WE)
-        set( test_bin ${EXECUTABLE_OUTPUT_PATH}/${subdir}/${test_base} )
+        # Trying to put the executables in the right place
+        #set( test_bin ${EXECUTABLE_OUTPUT_PATH}${subdir}/${test_base} )
+        set( test_bin ${subdir}_${test_base} )
         add_executable(${test_bin} ${test_src})
-        #add_test(${subdir}/${test_base} ${subdir}/${test_base})
-        #target_link_libraries(${subdir}/${test_base} ${inner_libs} CppUnitLite ccolamd)
-        #add_custom_target(${test_base}.run ${EXECUTABLE_OUTPUT_PATH}/${test_base} ${ARGN})
+        add_test(${subdir}/${test_base} ${EXECUTABLE_OUTPUT_PATH}${test_bin})
+        
+        #Linking: would like to link against subset of convenience libraries
+        #target_link_libraries(${test_bin} CppUnitLite ${inner_libs})
+        target_link_libraries(${test_bin} CppUnitLite gtsam)
+        add_custom_target(${test_bin}.run ${EXECUTABLE_OUTPUT_PATH}${test_bin} ${ARGN})
     endforeach(test_src)
+    
+    # Build timing scripts
+    file(GLOB time_srcs "${subdir}/tests/time*.cpp") 
+    foreach(time_src ${time_srcs})
+        get_filename_component(time_base ${time_src} NAME_WE)
+        set( time_bin ${time_base} )
+        add_executable(${time_bin} ${time_src})
+        target_link_libraries(${time_bin} CppUnitLite gtsam)
+        add_custom_target(${time_base}.run ${EXECUTABLE_OUTPUT_PATH}${time_bin} ${ARGN})
+    endforeach(time_src)
 endforeach(subdir)
 
 # build a single shared library

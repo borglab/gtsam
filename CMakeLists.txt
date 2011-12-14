@@ -26,8 +26,17 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DEIGEN_NO_DEBUG")
 ENABLE_TESTING()
 INCLUDE(Dart)
 
+# Find boost
+find_package(Boost 1.40 REQUIRED)
+
 # General build settings
-include_directories(gtsam CppUnitLite)
+include_directories(
+  gtsam/3rdparty/UFconfig 
+  gtsam/3rdparty/CCOLAMD/Include
+  ${CMAKE_SOURCE_DIR}
+  CppUnitLite
+  ${BOOST_INCLUDE_DIR})
+link_directories(${Boost_LIBRARY_DIRS})
 
 # Build GTSAM library
 add_subdirectory(gtsam)
@@ -36,10 +45,10 @@ add_subdirectory(gtsam)
 add_subdirectory(CppUnitLite)
 
 # Build Tests
-#add_subdirectory(tests)
+add_subdirectory(tests)
 
 # Build wrap
-#add_subdirectory(wrap)
+add_subdirectory(wrap)
 
 # Build examples
-#add_subdirectory(examples)
+add_subdirectory(examples)
