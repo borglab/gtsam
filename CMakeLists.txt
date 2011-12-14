@@ -21,6 +21,11 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DEIGEN_NO_DEBUG")
 
 # Configurable Options
 
+
+# Pull in tests
+ENABLE_TESTING()
+INCLUDE(Dart)
+
 # General build settings
 include_directories(gtsam CppUnitLite)
 
@@ -31,10 +36,10 @@ add_subdirectory(gtsam)
 add_subdirectory(CppUnitLite)
 
 # Build Tests
-add_subdirectory(tests)
+#add_subdirectory(tests)
 
 # Build wrap
-add_subdirectory(wrap)
+#add_subdirectory(wrap)
 
 # Build examples
-add_subdirectory(examples)
+#add_subdirectory(examples)
