@@ -33,6 +33,7 @@ headers += JunctionTree.h JunctionTree-inl.h
 headers += EliminationTree.h EliminationTree-inl.h
 headers += BayesNet.h BayesNet-inl.h
 headers += BayesTree.h BayesTree-inl.h
+headers += BayesTreeCliqueBase.h BayesTreeCliqueBase-inl.h
 headers += ISAM.h ISAM-inl.h
 check_PROGRAMS += tests/testInference
 check_PROGRAMS += tests/testFactorGraph
