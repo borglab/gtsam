@@ -52,6 +52,34 @@ bool assert_equal(const string& expected, const string& actual) {
 }
 
 /* ************************************************************************* */
+bool assert_equal(const vector<string>& expected, const vector<string>& actual) {
+  bool match = true;
+  if (expected.size() != actual.size())
+    match = false;
+  vector<string>::const_iterator
+  	itExp = expected.begin(),
+  	itAct = actual.begin();
+  if(match) {
+  	for (; itExp!=expected.end() && itAct!=actual.end(); ++itExp, ++itAct) {
+  		if (*itExp != *itAct) {
+  			match = false;
+  			break;
+  		}
+  	}
+  }
+	if(!match) {
+	  cout << "expected: " << endl;
+	  BOOST_FOREACH(const vector<string>::value_type& a, expected) { cout << "["  << a << "] "; }
+	  cout << "\nactual: " << endl;
+	  BOOST_FOREACH(const vector<string>::value_type& a, actual) { cout << "["  << a << "] "; }
+	  cout << endl;
+	  return false;
+	}
+	return true;
+
+}
+
+/* ************************************************************************* */
 bool files_equal(const string& expected, const string& actual, bool skipheader) {
   try {
     string expected_contents = file_contents(expected, skipheader);
@@ -97,8 +125,8 @@ void generateUsingNamespace(ofstream& ofs, const vector<string>& using_namespace
 }
 
 /* ************************************************************************* */
-void generateIncludes(std::ofstream& ofs, const std::string& class_name,
-		const std::vector<std::string>& includes) {
+void generateIncludes(ofstream& ofs, const string& class_name,
+		const vector<string>& includes) {
 	ofs << "#include <wrap/matlab.h>" << endl;
 	if (includes.empty()) // add a default include
 		ofs << "#include <" << class_name << ".h>" << endl;

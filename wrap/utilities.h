@@ -79,6 +79,7 @@ bool files_equal(const std::string& expected, const std::string& actual, bool sk
  * Compare strings for unit tests
  */
 bool assert_equal(const std::string& expected, const std::string& actual);
+bool assert_equal(const std::vector<std::string>& expected, const std::vector<std::string>& actual);
 /**
  * emit a header at the top of generated files
  */

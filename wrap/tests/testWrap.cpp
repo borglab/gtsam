@@ -19,12 +19,14 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <boost/assign/std/vector.hpp>
 #include <CppUnitLite/TestHarness.h>
 
 #include <wrap/utilities.h>
 #include <wrap/Module.h>
 
 using namespace std;
+using namespace boost::assign;
 using namespace wrap;
 static bool enable_verbose = false;
 #ifdef TOPSRCDIR
@@ -32,6 +34,8 @@ static string topdir = TOPSRCDIR;
 #else
 static string topdir = "TOPSRCDIR_NOT_CONFIGURED"; // If TOPSRCDIR is not defined, we error
 #endif
+
+typedef vector<string> strvec;
 
 /* ************************************************************************* */
 TEST( wrap, ArgumentList ) {
@@ -117,8 +121,8 @@ TEST( wrap, parse ) {
 		EXPECT_LONGS_EQUAL(19, testCls.methods.size());
 		EXPECT_LONGS_EQUAL( 0, testCls.static_methods.size());
 		EXPECT_LONGS_EQUAL( 0, testCls.namespaces.size());
-		EXPECT_LONGS_EQUAL( 1, testCls.includes.size());
-		EXPECT(assert_equal("folder/path/to/Test.h", testCls.includes.front()));
+		strvec exp_includes; exp_includes += "folder/path/to/Test.h";
+		EXPECT(assert_equal(exp_includes, testCls.includes));
 
 		// function to parse: pair<Vector,Matrix> return_pair (Vector v, Matrix A) const;
 		Method m2 = testCls.methods.front();
@@ -134,35 +138,60 @@ TEST( wrap, parse_namespaces ) {
 	Module module(header_path.c_str(), "testNamespaces",enable_verbose);
 	EXPECT_LONGS_EQUAL(6, module.classes.size());
 
-	Class cls1 = module.classes.at(0);
-	EXPECT(assert_equal("ClassA", cls1.name));
-	EXPECT_LONGS_EQUAL(1, cls1.namespaces.size());
-	EXPECT(assert_equal("ns1", cls1.namespaces.front()));
+	{
+		Class cls = module.classes.at(0);
+		EXPECT(assert_equal("ClassA", cls.name));
+		strvec exp_namespaces; exp_namespaces += "ns1";
+		EXPECT(assert_equal(exp_namespaces, cls.namespaces));
+		strvec exp_includes; exp_includes += "path/to/ns1.h", "";
+		EXPECT(assert_equal(exp_includes, cls.includes));
+	}
 
-	Class cls2 = module.classes.at(1);
-	EXPECT(assert_equal("ClassB", cls2.name));
-	EXPECT_LONGS_EQUAL(1, cls2.namespaces.size());
-	EXPECT(assert_equal("ns1", cls2.namespaces.front()));
+	{
+		Class cls = module.classes.at(1);
+		EXPECT(assert_equal("ClassB", cls.name));
+		strvec exp_namespaces; exp_namespaces += "ns1";
+		EXPECT(assert_equal(exp_namespaces, cls.namespaces));
+		strvec exp_includes; exp_includes += "path/to/ns1.h", "path/to/ns1/ClassB.h";
+		EXPECT(assert_equal(exp_includes, cls.includes));
+	}
 
-	Class cls3 = module.classes.at(2);
-	EXPECT(assert_equal("ClassA", cls3.name));
-	EXPECT_LONGS_EQUAL(1, cls3.namespaces.size());
-	EXPECT(assert_equal("ns2", cls3.namespaces.front()));
+	{
+		Class cls = module.classes.at(2);
+		EXPECT(assert_equal("ClassA", cls.name));
+		strvec exp_namespaces; exp_namespaces += "ns2";
+		EXPECT(assert_equal(exp_namespaces, cls.namespaces));
+		strvec exp_includes; exp_includes += "path/to/ns2.h", "path/to/ns2/ClassA.h";
+		EXPECT(assert_equal(exp_includes, cls.includes));
+	}
 
-	Class cls4 = module.classes.at(3);
-	EXPECT(assert_equal("ClassB", cls4.name));
-	EXPECT_LONGS_EQUAL(2, cls4.namespaces.size());
-	EXPECT(assert_equal("ns2", cls4.namespaces.front()));
-	EXPECT(assert_equal("ns3", cls4.namespaces.back()));
+	{
+		Class cls = module.classes.at(3);
+		EXPECT(assert_equal("ClassB", cls.name));
+		strvec exp_namespaces; exp_namespaces += "ns2", "ns3";
+		EXPECT(assert_equal(exp_namespaces, cls.namespaces));
+		strvec exp_includes; exp_includes += "path/to/ns2.h", "path/to/ns3.h", "";
+		EXPECT(assert_equal(exp_includes, cls.includes));
+	}
 
-	Class cls5 = module.classes.at(4);
-	EXPECT(assert_equal("ClassC", cls5.name));
-	EXPECT_LONGS_EQUAL(1, cls5.namespaces.size());
-	EXPECT(assert_equal("ns2", cls5.namespaces.front()));
+	{
+		Class cls = module.classes.at(4);
+		EXPECT(assert_equal("ClassC", cls.name));
+		strvec exp_namespaces; exp_namespaces += "ns2";
+		EXPECT(assert_equal(exp_namespaces, cls.namespaces));
+		strvec exp_includes; exp_includes += "path/to/ns2.h", "";
+		EXPECT(assert_equal(exp_includes, cls.includes));
+	}
 
-	Class cls6 = module.classes.at(5);
-	EXPECT(assert_equal("ClassD", cls6.name));
-	EXPECT_LONGS_EQUAL(0, cls6.namespaces.size());
+	{
+		Class cls = module.classes.at(5);
+		EXPECT(assert_equal("ClassD", cls.name));
+		strvec exp_namespaces;
+		EXPECT(assert_equal(exp_namespaces, cls.namespaces));
+		strvec exp_includes; exp_includes += "";
+		EXPECT(assert_equal(exp_includes, cls.includes));
+	}
+
 }
 
 /* ************************************************************************* */

@@ -16,10 +16,9 @@
 
 #include "Module.h"
 #include "utilities.h"
-#include "pop_actor.h"
+#include "spirit_actors.h"
 
 //#define BOOST_SPIRIT_DEBUG
-#include <boost/spirit/include/classic_core.hpp>
 #include <boost/spirit/include/classic_confix.hpp>
 #include <boost/spirit/include/classic_clear_actor.hpp>
 #include <boost/foreach.hpp>
@@ -53,7 +52,11 @@ Module::Module(const string& interfacePath,
   Method method0(enable_verbose), method(enable_verbose);
   StaticMethod static_method0(enable_verbose), static_method(enable_verbose);
   Class cls0(enable_verbose),cls(enable_verbose);
-  vector<string> namespaces, namespaces_return;
+  vector<string> namespaces, /// current namespace tag
+  							 namespace_includes, /// current set of includes
+  							 namespaces_return; /// namespace for current return type
+  string include_path = "";
+  const string null_str = "";
 
   //----------------------------------------------------------------------------
   // Grammar with actions that build the Class object. Actions are
@@ -169,20 +172,32 @@ Module::Module(const string& interfacePath,
     [push_back_a(cls.static_methods, static_method)]
     [assign_a(static_method,static_method0)];
 
-  Rule includes_p = str_p("#include") >> ch_p('<') >> (*(anychar_p - '>'))[push_back_a(cls.includes)] >> ch_p('>');
-
   Rule functions_p = constructor_p | method_p | static_method_p;
 
-  Rule class_p = !includes_p >> (str_p("class") >> className_p[assign_a(cls.name)] >> '{' >>
-    *(functions_p | comments_p) >>
-    str_p("};"))[assign_a(cls.namespaces, namespaces)][push_back_a(classes,cls)][assign_a(cls,cls0)];
+  Rule include_p = str_p("#include") >> ch_p('<') >> (*(anychar_p - '>'))[assign_a(include_path)] >> ch_p('>');
 
-	Rule namespace_def_p = str_p("namespace") >>
-			namespace_name_p[push_back_a(namespaces)]
-			>> ch_p('{') >>
-					*(class_p | namespace_def_p | comments_p) >>
-					str_p("}///\\namespace") >> !namespace_name_p // end namespace, avoid confusion with classes
-					[pop_a(namespaces)];
+  Rule class_p =
+  		(!include_p
+  		>> str_p("class")[push_back_a(cls.includes, include_path)][assign_a(include_path, null_str)]
+  		>> className_p[assign_a(cls.name)]
+      >> '{'
+  		>> *(functions_p | comments_p)
+  		>> str_p("};"))
+  		[assign_a(cls.namespaces, namespaces)]
+  		[append_a(cls.includes, namespace_includes)]
+  		[push_back_a(classes,cls)]
+  		[assign_a(cls,cls0)];
+
+	Rule namespace_def_p =
+			(!include_p
+			>> str_p("namespace")[push_back_a(namespace_includes, include_path)][assign_a(include_path, null_str)]
+			>> namespace_name_p[push_back_a(namespaces)]
+			>> ch_p('{')
+			>> *(class_p | namespace_def_p | comments_p)
+			>> str_p("}///\\namespace") // end namespace, avoid confusion with classes
+			>> !namespace_name_p)
+			[pop_a(namespaces)]
+			[pop_a(namespace_includes)];
 
 	Rule using_namespace_p = str_p("using") >> str_p("namespace")
 			>> namespace_name_p[push_back_a(using_namespaces)] >> ch_p(';');
@@ -210,6 +225,7 @@ Module::Module(const string& interfacePath,
   BOOST_SPIRIT_DEBUG_NODE(methodName_p);
   BOOST_SPIRIT_DEBUG_NODE(method_p);
   BOOST_SPIRIT_DEBUG_NODE(class_p);
+  BOOST_SPIRIT_DEBUG_NODE(namespace_def_p);
   BOOST_SPIRIT_DEBUG_NODE(module_p);
 # endif
   //----------------------------------------------------------------------------
