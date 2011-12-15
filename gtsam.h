@@ -192,6 +192,7 @@ class SharedDiagonal {
 
 class SharedNoiseModel {
 #include <gtsam/linear/SharedGaussian.h>
+	// FIXME: this generates only one constructor
 	SharedNoiseModel(const SharedDiagonal& model);
 	SharedNoiseModel(const SharedGaussian& model);
 };
