@@ -33,6 +33,19 @@ struct DoglegOptimizerImpl {
     double f_error;
   };
 
+  /** Specifies how the trust region is adapted at each Dogleg iteration.  If
+   * this is SEARCH_EACH_ITERATION, then the trust region radius will be
+   * increased potentially multiple times during one iteration until increasing
+   * it further no longer decreases the error.  If this is
+   * ONE_STEP_PER_ITERATION, then the step in one iteration will not exceed the
+   * current trust region radius, but the radius will be increased for the next
+   * iteration if the error decrease is good.  The former will generally result
+   * in slower iterations, but sometimes larger steps in early iterations.  The
+   * latter generally results in faster iterations but it may take several
+   * iterations before the trust region radius is increased to the optimal
+   * value.  Generally ONE_STEP_PER_ITERATION should be used, corresponding to
+   * most published descriptions of the algorithm.
+   */
   enum TrustRegionAdaptationMode {
     SEARCH_EACH_ITERATION,
     ONE_STEP_PER_ITERATION
@@ -62,7 +75,8 @@ struct DoglegOptimizerImpl {
    * @tparam F For normal usage this will be NonlinearFactorGraph<VALUES>.
    * @tparam VALUES The Values or TupleValues to pass to F::error() to evaluate
    * the error function.
-   * @param initialDelta The initial trust region radius.
+   * @param Delta The initial trust region radius.
+   * @param mode See DoglegOptimizerImpl::TrustRegionAdaptationMode
    * @param Rd The Bayes' net or tree as described above.
    * @param f The original nonlinear factor graph with which to evaluate the
    * accuracy of \f$ M(\delta x) \f$ to adjust \f$ \Delta \f$.
@@ -95,10 +109,11 @@ struct DoglegOptimizerImpl {
    * GaussianBayesNet, containing GaussianConditional s.
    *
    * @param Delta The trust region radius
-   * @param bayesNet The Bayes' net \f$ (R,d) \f$ as described above.
+   * @param dx_u The steepest descent point, i.e. the Cauchy point
+   * @param dx_n The Gauss-Newton point
    * @return The dogleg point \f$ \delta x_d \f$
    */
-  static VectorValues ComputeDoglegPoint(double Delta, const VectorValues& x_u, const VectorValues& x_n, const bool verbose=false);
+  static VectorValues ComputeDoglegPoint(double Delta, const VectorValues& dx_u, const VectorValues& dx_n, const bool verbose=false);
 
   /** Compute the minimizer \f$ \delta x_u \f$ of the line search along the gradient direction \f$ g \f$ of
    * the function
@@ -152,9 +167,10 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
   IterationResult result;
 
   bool stay = true;
+  enum { NONE, INCREASED_DELTA, DECREASED_DELTA } lastAction; // Used to prevent alternating between increasing and decreasing in one iteration
   while(stay) {
     // Compute dog leg point
-    result.dx_d = ComputeDoglegPoint(Delta, dx_u, dx_n);
+    result.dx_d = ComputeDoglegPoint(Delta, dx_u, dx_n, verbose);
 
     if(verbose) cout << "Delta = " << Delta << ", dx_d_norm = " << result.dx_d.vector().norm() << endl;
 
@@ -186,10 +202,12 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
       if(mode == ONE_STEP_PER_ITERATION)
         stay = false;   // If not searching, just return with the new Delta
       else if(mode == SEARCH_EACH_ITERATION) {
-        if(newDelta == Delta)
+        if(newDelta == Delta || lastAction == DECREASED_DELTA)
           stay = false; // Searching, but Newton's solution is within trust region so keep the same trust region
-        else
+        else {
           stay = true;  // Searching and increased Delta, so try again to increase Delta
+          lastAction = INCREASED_DELTA;
+        }
       } else {
         assert(false); }
 
@@ -202,11 +220,12 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
     } else if(0.25 > rho && rho >= 0.0) {
       // M does not agree well with f, decrease Delta until it does
       Delta *= 0.5;
-      if(mode == ONE_STEP_PER_ITERATION)
+      if(mode == ONE_STEP_PER_ITERATION || lastAction == INCREASED_DELTA)
         stay = false;   // If not searching, just return with the new smaller delta
-      else if(mode == SEARCH_EACH_ITERATION)
+      else if(mode == SEARCH_EACH_ITERATION) {
         stay = true;
-      else {
+        lastAction = DECREASED_DELTA;
+      } else {
         assert(false); }
     }
 
@@ -214,9 +233,10 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
       // f actually increased, so keep decreasing Delta until f does not decrease
       assert(0.0 > rho);
       Delta *= 0.5;
-      if(Delta > 1e-5)
+      if(Delta > 1e-5) {
         stay = true;
-      else {
+        lastAction = DECREASED_DELTA;
+      } else {
         if(verbose) cout << "Warning:  Dog leg stopping because cannot decrease error with minimum Delta" << endl;
         stay = false;
       }
@@ -232,14 +252,14 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
 template<class M>
 VectorValues DoglegOptimizerImpl::ComputeSteepestDescentPoint(const M& Rd) {
 
-  // Compute gradient
-  // Convert to JacobianFactor's to use existing gradient function
-  FactorGraph<JacobianFactor> jfg(Rd);
-  VectorValues grad = gradient(jfg, VectorValues::Zero(*allocateVectorValues(Rd)));
+  // Compute gradient (call gradientAtZero function, which is defined for various linear systems)
+  VectorValues grad = *allocateVectorValues(Rd);
+  gradientAtZero(Rd, grad);
   double gradientSqNorm = grad.dot(grad);
 
   // Compute R * g
-  Errors Rg = jfg * grad;
+  FactorGraph<JacobianFactor> Rd_jfg(Rd);
+  Errors Rg = Rd_jfg * grad;
 
   // Compute minimizing step size
   double step = -gradientSqNorm / dot(Rg, Rg);

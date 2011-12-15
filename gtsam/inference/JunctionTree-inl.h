@@ -21,11 +21,8 @@
 
 #include <gtsam/base/timing.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
-#include <gtsam/inference/BayesTree-inl.h>
-#include <gtsam/inference/JunctionTree.h>
 #include <gtsam/inference/VariableSlots.h>
-#include <gtsam/inference/EliminationTree-inl.h>
-#include <gtsam/inference/ClusterTree-inl.h>
+#include <gtsam/inference/EliminationTree.h>
 
 #include <boost/foreach.hpp>
 #include <boost/lambda/bind.hpp>
@@ -36,8 +33,8 @@ namespace gtsam {
   using namespace std;
 
   /* ************************************************************************* */
-  template <class FG>
-  void JunctionTree<FG>::construct(const FG& fg, const VariableIndex& variableIndex) {
+  template <class FG, class BTCLIQUE>
+  void JunctionTree<FG,BTCLIQUE>::construct(const FG& fg, const VariableIndex& variableIndex) {
     tic(1, "JT Constructor");
     tic(1, "JT symbolic ET");
     const typename EliminationTree<IndexFactor>::shared_ptr symETree =
@@ -58,8 +55,8 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  template <class FG>
-  JunctionTree<FG>::JunctionTree(const FG& fg) {
+  template <class FG, class BTCLIQUE>
+  JunctionTree<FG,BTCLIQUE>::JunctionTree(const FG& fg) {
     tic(0, "VariableIndex");
     VariableIndex varIndex(fg);
     toc(0, "VariableIndex");
@@ -67,14 +64,14 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  template <class FG>
-  JunctionTree<FG>::JunctionTree(const FG& fg, const VariableIndex& variableIndex) {
+  template <class FG, class BTCLIQUE>
+  JunctionTree<FG,BTCLIQUE>::JunctionTree(const FG& fg, const VariableIndex& variableIndex) {
     construct(fg, variableIndex);
   }
 
   /* ************************************************************************* */
-  template<class FG>
-  typename JunctionTree<FG>::sharedClique JunctionTree<FG>::distributeFactors(
+  template<class FG, class BTCLIQUE>
+  typename JunctionTree<FG,BTCLIQUE>::sharedClique JunctionTree<FG,BTCLIQUE>::distributeFactors(
       const FG& fg, const typename SymbolicBayesTree::sharedClique& bayesClique) {
 
     // Build "target" index.  This is an index for each variable of the factors
@@ -109,8 +106,8 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  template<class FG>
-  typename JunctionTree<FG>::sharedClique JunctionTree<FG>::distributeFactors(const FG& fg,
+  template<class FG, class BTCLIQUE>
+  typename JunctionTree<FG,BTCLIQUE>::sharedClique JunctionTree<FG,BTCLIQUE>::distributeFactors(const FG& fg,
       const std::vector<FastList<size_t> >& targets,
       const SymbolicBayesTree::sharedClique& bayesClique) {
 
@@ -147,21 +144,21 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  template<class FG>
-	pair<typename JunctionTree<FG>::BayesTree::sharedClique,
-			typename FG::sharedFactor> JunctionTree<FG>::eliminateOneClique(
+  template<class FG, class BTCLIQUE>
+	pair<typename JunctionTree<FG,BTCLIQUE>::BTClique::shared_ptr,
+			typename FG::sharedFactor> JunctionTree<FG,BTCLIQUE>::eliminateOneClique(
 			typename FG::Eliminate function,
-			const boost::shared_ptr<const Clique>& current, bool cache) const {
+			const boost::shared_ptr<const Clique>& current) const {
 
     FG fg; // factor graph will be assembled from local factors and marginalized children
     fg.reserve(current->size() + current->children().size());
     fg.push_back(*current); // add the local factors
 
     // receive the factors from the child and its clique point
-    list<typename BayesTree::sharedClique> children;
+    list<typename BTClique::shared_ptr> children;
     BOOST_FOREACH(const boost::shared_ptr<const Clique>& child, current->children()) {
-      pair<typename BayesTree::sharedClique, typename FG::sharedFactor> tree_factor(
-          eliminateOneClique(function, child, cache));
+      pair<typename BTClique::shared_ptr, typename FG::sharedFactor> tree_factor(
+          eliminateOneClique(function, child));
       children.push_back(tree_factor.first);
       fg.push_back(tree_factor.second);
     }
@@ -172,9 +169,7 @@ namespace gtsam {
     // Now that we know which factors and variables, and where variables
     // come from and go to, create and eliminate the new joint factor.
     tic(2, "CombineAndEliminate");
-    pair<
-				typename FG::FactorType::ConditionalType::shared_ptr,
-				typename FG::sharedFactor> eliminated(function(fg,
+    typename FG::EliminationResult eliminated(function(fg,
 				current->frontal.size()));
     toc(2, "CombineAndEliminate");
 
@@ -182,33 +177,31 @@ namespace gtsam {
 
     tic(3, "Update tree");
     // create a new clique corresponding the combined factors
-    typename BayesTree::sharedClique new_clique(new typename BayesTree::Clique(eliminated.first));
+    typename BTClique::shared_ptr new_clique(BTClique::Create(eliminated));
     new_clique->children_ = children;
 
-    BOOST_FOREACH(typename BayesTree::sharedClique& childRoot, children) {
+    BOOST_FOREACH(typename BTClique::shared_ptr& childRoot, children) {
       childRoot->parent_ = new_clique;
     }
-    if(cache)
-      new_clique->cachedFactor() = eliminated.second;
     toc(3, "Update tree");
 
     return make_pair(new_clique, eliminated.second);
   }
 
   /* ************************************************************************* */
-  template<class FG>
-	typename JunctionTree<FG>::BayesTree::sharedClique JunctionTree<FG>::eliminate(
-			typename FG::Eliminate function, bool cache) const {
+  template<class FG, class BTCLIQUE>
+	typename BTCLIQUE::shared_ptr JunctionTree<FG,BTCLIQUE>::eliminate(
+			typename FG::Eliminate function) const {
 		if (this->root()) {
 			tic(2, "JT eliminate");
-			pair<typename BayesTree::sharedClique, typename FG::sharedFactor> ret =
-					this->eliminateOneClique(function, this->root(), cache);
+			pair<typename BTClique::shared_ptr, typename FG::sharedFactor> ret =
+					this->eliminateOneClique(function, this->root());
 			if (ret.second->size() != 0) throw runtime_error(
 					"JuntionTree::eliminate: elimination failed because of factors left over!");
 			toc(2, "JT eliminate");
 			return ret.first;
 		} else
-			return typename BayesTree::sharedClique();
+			return typename BTClique::shared_ptr();
 	}
 
 } //namespace gtsam

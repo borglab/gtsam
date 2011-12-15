@@ -75,7 +75,8 @@ namespace gtsam {
     /**
      * Constructor that receives a BayesTree and returns a GaussianFactorGraph
      */
-    GaussianFactorGraph(const BayesTree<GaussianConditional>& GBT);
+    template<class CLIQUE>
+    GaussianFactorGraph(const BayesTree<GaussianConditional,CLIQUE>& gbt) : Base(gbt) {}
 
     /** Constructor from a factor graph of GaussianFactor or a derived type */
     template<class DERIVEDFACTOR>

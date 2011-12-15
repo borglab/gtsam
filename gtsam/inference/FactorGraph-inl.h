@@ -24,7 +24,7 @@
 
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/graph-inl.h>
-#include <gtsam/inference/BayesTree-inl.h>
+#include <gtsam/inference/BayesTree.h>
 #include <gtsam/base/DSF.h>
 
 #include <boost/foreach.hpp>
@@ -126,28 +126,29 @@ namespace gtsam {
 	}
 
   /* ************************************************************************* */
-	template<class FACTOR, class CONDITIONAL>
+	template<class FACTOR, class CONDITIONAL, class CLIQUE>
 	void _FactorGraph_BayesTree_adder(
 	    vector<typename FactorGraph<FACTOR>::sharedFactor>& factors,
-	    const typename BayesTree<CONDITIONAL>::sharedClique& clique) {
+	    const typename BayesTree<CONDITIONAL,CLIQUE>::sharedClique& clique) {
 
 	  if(clique) {
 	    // Add factor from this clique
 	    factors.push_back((*clique)->toFactor());
 
 	    // Traverse children
-	    BOOST_FOREACH(const typename BayesTree<CONDITIONAL>::sharedClique& child, clique->children()) {
-	      _FactorGraph_BayesTree_adder<FACTOR,CONDITIONAL>(factors, child);
+	    typedef typename BayesTree<CONDITIONAL,CLIQUE>::sharedClique sharedClique;
+	    BOOST_FOREACH(const sharedClique& child, clique->children()) {
+	      _FactorGraph_BayesTree_adder<FACTOR,CONDITIONAL,CLIQUE>(factors, child);
 	    }
 	  }
 	}
 
   /* ************************************************************************* */
   template<class FACTOR>
-  template<class CONDITIONAL>
-  FactorGraph<FACTOR>::FactorGraph(const BayesTree<CONDITIONAL>& bayesTree) {
+  template<class CONDITIONAL, class CLIQUE>
+  FactorGraph<FACTOR>::FactorGraph(const BayesTree<CONDITIONAL,CLIQUE>& bayesTree) {
     factors_.reserve(bayesTree.size());
-    _FactorGraph_BayesTree_adder<FACTOR,CONDITIONAL>(factors_, bayesTree.root());
+    _FactorGraph_BayesTree_adder<FACTOR,CONDITIONAL,CLIQUE>(factors_, bayesTree.root());
   }
 
 	/* ************************************************************************* */

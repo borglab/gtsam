@@ -19,6 +19,7 @@
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 
+#include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/VectorValues.h>
 
@@ -211,6 +212,16 @@ double determinant(const GaussianBayesNet& bayesNet) {
 	}
 
 	return exp(logDet);
+}
+
+/* ************************************************************************* */
+VectorValues gradient(const GaussianBayesNet& bayesNet, const VectorValues& x0) {
+  return gradient(FactorGraph<JacobianFactor>(bayesNet), x0);
+}
+
+/* ************************************************************************* */
+void gradientAtZero(const GaussianBayesNet& bayesNet, VectorValues& g) {
+  gradientAtZero(FactorGraph<JacobianFactor>(bayesNet), g);
 }
 
 /* ************************************************************************* */

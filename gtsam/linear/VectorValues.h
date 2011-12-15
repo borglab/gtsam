@@ -238,6 +238,9 @@ namespace gtsam {
     template<class CONTAINER>
     void append(const CONTAINER& dimensions);
 
+    /** Set all entries to zero, does not modify the size. */
+    void setZero();
+
     /** Reference the entire solution vector (const version). */
     const Vector& vector() const { chk(); return values_; }
 
@@ -383,7 +386,7 @@ namespace gtsam {
   template<class CONTAINER>
   VectorValues VectorValues::Zero(const CONTAINER& dimensions) {
     VectorValues ret(dimensions);
-    ret.vector() = Vector::Zero(ret.dim());
+    ret.setZero();
     return ret;
   }
 

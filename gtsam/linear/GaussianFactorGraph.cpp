@@ -43,9 +43,6 @@ namespace gtsam {
 	GaussianFactorGraph::GaussianFactorGraph(const GaussianBayesNet& CBN) : Base(CBN) {}
 
 	/* ************************************************************************* */
-	GaussianFactorGraph::GaussianFactorGraph(const BayesTree<GaussianConditional>& GBT) : Base(GBT) {}
-
-	/* ************************************************************************* */
 	GaussianFactorGraph::Keys GaussianFactorGraph::keys() const {
 		FastSet<Index> keys;
 		BOOST_FOREACH(const sharedFactor& factor, *this)
@@ -370,10 +367,8 @@ namespace gtsam {
 
 		// Pull out keys and dimensions
 		tic(2, "keys");
-		vector<Index> keys(scatter.size());
 		vector<size_t> dimensions(scatter.size() + 1);
 		BOOST_FOREACH(const Scatter::value_type& var_slot, scatter) {
-			keys[var_slot.second.slot] = var_slot.first;
 			dimensions[var_slot.second.slot] = var_slot.second.dimension;
 		}
 		// This is for the r.h.s. vector
@@ -404,7 +399,7 @@ namespace gtsam {
 		// Extract conditionals and fill in details of the remaining factor
 		tic(5, "split");
 		GaussianConditional::shared_ptr conditionals =
-									combinedFactor->splitEliminatedFactor(nrFrontals, keys);
+									combinedFactor->splitEliminatedFactor(nrFrontals);
 		if (debug) {
 			conditionals->print("Extracted conditionals: ");
 			combinedFactor->print("Eliminated factor (L piece): ");
@@ -575,10 +570,8 @@ namespace gtsam {
 
 	  // Pull out keys and dimensions
 	  tic(2, "keys");
-	  vector<Index> keys(scatter.size());
 	  vector<size_t> dimensions(scatter.size() + 1);
 	  BOOST_FOREACH(const Scatter::value_type& var_slot, scatter) {
-	    keys[var_slot.second.slot] = var_slot.first;
 	    dimensions[var_slot.second.slot] = var_slot.second.dimension;
 	  }
 	  // This is for the r.h.s. vector
@@ -612,7 +605,7 @@ namespace gtsam {
 	  // Extract conditionals and fill in details of the remaining factor
 	  tic(5, "split");
 	  GaussianConditional::shared_ptr conditionals =
-	      combinedFactor->splitEliminatedFactor(nrFrontals, keys, permutation);
+	      combinedFactor->splitEliminatedFactor(nrFrontals, permutation);
 	  if (debug) {
 	    conditionals->print("Extracted conditionals: ");
 	    combinedFactor->print("Eliminated factor (L piece): ");

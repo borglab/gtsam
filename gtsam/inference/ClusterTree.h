@@ -110,3 +110,5 @@ namespace gtsam {
 	}; // ClusterTree
 
 } // namespace gtsam
+
+#include <gtsam/inference/ClusterTree-inl.h>

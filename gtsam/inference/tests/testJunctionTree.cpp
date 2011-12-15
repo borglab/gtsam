@@ -17,6 +17,7 @@
  */
 
 #include <boost/assign/std/list.hpp> // for operator +=
+#include <boost/assign/std/vector.hpp> // for operator +=
 #include <boost/assign/std/set.hpp> // for operator +=
 using namespace boost::assign;
 
@@ -29,12 +30,13 @@ using namespace boost::assign;
 #include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
 #include <gtsam/inference/JunctionTree.h>
-#include <gtsam/inference/ClusterTree-inl.h>
-#include <gtsam/inference/JunctionTree-inl.h>
+#include <gtsam/inference/ClusterTree.h>
+#include <gtsam/inference/JunctionTree.h>
 #include <gtsam/inference/IndexFactor.h>
 #include <gtsam/inference/SymbolicSequentialSolver.h>
 
 using namespace gtsam;
+using namespace std;
 
 typedef JunctionTree<SymbolicFactorGraph> SymbolicJunctionTree;
 typedef BayesTree<IndexConditional> SymbolicBayesTree;

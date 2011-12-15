@@ -19,9 +19,15 @@
 #pragma once
 
 #include <utility>
-
+#include <boost/function.hpp>
+#include <vector>
+#include <gtsam/base/types.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam/inference/EliminationTree.h>
+
+namespace gtsam { class VariableIndex; }
+namespace gtsam { template<class FACTOR> class EliminationTree; }
+namespace gtsam { template<class FACTOR> class FactorGraph; }
+namespace gtsam { template<class CONDITIONAL> class BayesNet; }
 
 namespace gtsam {
 
@@ -43,7 +49,12 @@ namespace gtsam {
 
 	protected:
 
-		typedef typename FactorGraph<FACTOR>::shared_ptr sharedFactorGraph;
+		typedef boost::shared_ptr<FactorGraph<FACTOR> > sharedFactorGraph;
+
+		typedef std::pair<
+		        boost::shared_ptr<typename FACTOR::ConditionalType>,
+		        boost::shared_ptr<FACTOR> > EliminationResult;
+		typedef boost::function<EliminationResult(const FactorGraph<FACTOR>&, size_t)> Eliminate;
 
 		/** Store the original factors for computing marginals
 		 * TODO Frank says: really? Marginals should be computed from result.
@@ -51,15 +62,14 @@ namespace gtsam {
 		sharedFactorGraph factors_;
 
 		/** Store column structure of the factor graph. Why? */
-		VariableIndex::shared_ptr structure_;
+		boost::shared_ptr<VariableIndex> structure_;
 
 		/** Elimination tree that performs elimination */
-		typedef EliminationTree<FACTOR> EliminationTree_;
-		typename EliminationTree<FACTOR>::shared_ptr eliminationTree_;
+		boost::shared_ptr<EliminationTree<FACTOR> > eliminationTree_;
 
 		/** concept checks */
 		GTSAM_CONCEPT_TESTABLE_TYPE(FACTOR)
-		GTSAM_CONCEPT_TESTABLE_TYPE(EliminationTree_)
+//		GTSAM_CONCEPT_TESTABLE_TYPE(EliminationTree)
 
 	public:
 
@@ -76,7 +86,7 @@ namespace gtsam {
 		 */
 		GenericSequentialSolver(
 				const sharedFactorGraph& factorGraph,
-				const VariableIndex::shared_ptr& variableIndex);
+				const boost::shared_ptr<VariableIndex>& variableIndex);
 
 		/** Print to cout */
 		void print(const std::string& name = "GenericSequentialSolver: ") const;
@@ -95,25 +105,23 @@ namespace gtsam {
 		 * Eliminate the factor graph sequentially.  Uses a column elimination tree
 		 * to recursively eliminate.
 		 */
-		typename BayesNet<typename FACTOR::ConditionalType>::shared_ptr
-		eliminate(typename EliminationTree<FACTOR>::Eliminate function) const;
+		typename boost::shared_ptr<BayesNet<typename FACTOR::ConditionalType> > eliminate(Eliminate function) const;
 
 		/**
 		 * Compute the marginal joint over a set of variables, by integrating out
 		 * all of the other variables.  Returns the result as a factor graph.
 		 */
 		typename FactorGraph<FACTOR>::shared_ptr jointFactorGraph(
-				const std::vector<Index>& js,
-				typename EliminationTree<FACTOR>::Eliminate function) const;
+				const std::vector<Index>& js, Eliminate function) const;
 
 		/**
 		 * Compute the marginal Gaussian density over a variable, by integrating out
 		 * all of the other variables.  This function returns the result as a factor.
 		 */
-		typename FACTOR::shared_ptr marginalFactor(Index j,
-				typename EliminationTree<FACTOR>::Eliminate function) const;
+		typename FACTOR::shared_ptr marginalFactor(Index j, Eliminate function) const;
 
 	}; // GenericSequentialSolver
 
 } // namespace gtsam
 
+#include <gtsam/inference/GenericSequentialSolver-inl.h>

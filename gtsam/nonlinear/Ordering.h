@@ -18,6 +18,7 @@
 #pragma once
 
 #include <map>
+#include <set>
 #include <gtsam/nonlinear/Key.h>
 #include <gtsam/inference/inference.h>
 

@@ -276,7 +276,7 @@ namespace gtsam {
 
     /** split partially eliminated factor */
     boost::shared_ptr<GaussianConditional> splitEliminatedFactor(
-				size_t nrFrontals, const std::vector<Index>& keys, const Eigen::LDLT<Matrix>::TranspositionType& permutation = Eigen::LDLT<Matrix>::TranspositionType());
+				size_t nrFrontals, const Eigen::LDLT<Matrix>::TranspositionType& permutation = Eigen::LDLT<Matrix>::TranspositionType());
 
     /** assert invariants */
     void assertInvariants() const;

@@ -147,7 +147,7 @@ namespace gtsam {
 
 		/** add a key-value pair */
 		BTree add(const KEY& x, const VALUE& d) const {
-			return add(make_pair(x, d));
+			return add(std::make_pair(x, d));
 		}
 
 		/** member predicate */

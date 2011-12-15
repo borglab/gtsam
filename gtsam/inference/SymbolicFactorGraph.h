@@ -17,8 +17,13 @@
 
 #pragma once
 
-#include <gtsam/inference/IndexConditional.h>
-#include <gtsam/inference/EliminationTree.h>
+#include <gtsam/base/types.h>
+#include <gtsam/inference/FactorGraph.h>
+#include <gtsam/inference/IndexFactor.h>
+
+namespace gtsam { template<class FACTOR> class EliminationTree; }
+namespace gtsam { template<class CONDITIONAL> class BayesNet; }
+namespace gtsam { class IndexConditional; }
 
 namespace gtsam {
 
@@ -72,7 +77,7 @@ namespace gtsam {
 	 * Combine and eliminate can also be called separately, but for this and
 	 * derived classes calling them separately generally does extra work.
 	 */
-	std::pair<IndexConditional::shared_ptr, IndexFactor::shared_ptr>
+	std::pair<boost::shared_ptr<IndexConditional>, boost::shared_ptr<IndexFactor> >
 	EliminateSymbolic(const FactorGraph<IndexFactor>&, size_t nrFrontals = 1);
 
 	/* Template function implementation */

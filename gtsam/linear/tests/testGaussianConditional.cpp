@@ -19,6 +19,7 @@
 #include <gtsam/base/TestableAssertions.h>
 
 #include <gtsam/base/Matrix.h>
+#include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 

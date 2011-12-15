@@ -79,7 +79,7 @@ namespace gtsam {
 		 * Eliminate the factor graph sequentially.  Uses a column elimination tree
 		 * to recursively eliminate.
 		 */
-		typename JUNCTIONTREE::BayesTree::shared_ptr
+		typename BayesTree<typename FACTOR::ConditionalType>::shared_ptr
 		eliminate(Eliminate function) const;
 
 		/**

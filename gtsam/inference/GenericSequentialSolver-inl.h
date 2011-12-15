@@ -18,10 +18,10 @@
 
 #pragma once
 
-#include <gtsam/inference/GenericSequentialSolver.h>
-#include <gtsam/inference/Factor-inl.h>
-#include <gtsam/inference/EliminationTree-inl.h>
-#include <gtsam/inference/BayesNet-inl.h>
+#include <gtsam/inference/Factor.h>
+#include <gtsam/inference/FactorGraph.h>
+#include <gtsam/inference/EliminationTree.h>
+#include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/inference.h>
 
 #include <boost/foreach.hpp>
@@ -77,9 +77,8 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class FACTOR>
-	typename BayesNet<typename FACTOR::ConditionalType>::shared_ptr //
-	GenericSequentialSolver<FACTOR>::eliminate(
-			typename EliminationTree<FACTOR>::Eliminate function) const {
+	typename boost::shared_ptr<BayesNet<typename FACTOR::ConditionalType> > //
+	GenericSequentialSolver<FACTOR>::eliminate(Eliminate function) const {
 		return eliminationTree_->eliminate(function);
 	}
 
@@ -87,8 +86,7 @@ namespace gtsam {
 	template<class FACTOR>
 	typename FactorGraph<FACTOR>::shared_ptr //
 	GenericSequentialSolver<FACTOR>::jointFactorGraph(
-			const std::vector<Index>& js,
-			typename EliminationTree<FACTOR>::Eliminate function) const {
+			const std::vector<Index>& js, Eliminate function) const {
 
 		// Compute a COLAMD permutation with the marginal variable constrained to the end.
 		Permutation::shared_ptr permutation(Inference::PermutationCOLAMD(*structure_, js));
@@ -127,10 +125,9 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class FACTOR>
 	typename FACTOR::shared_ptr //
-	GenericSequentialSolver<FACTOR>::marginalFactor(Index j,
-			typename EliminationTree<FACTOR>::Eliminate function) const {
+	GenericSequentialSolver<FACTOR>::marginalFactor(Index j, Eliminate function) const {
 		// Create a container for the one variable index
-		vector<Index> js(1);
+		std::vector<Index> js(1);
 		js[0] = j;
 
 		// Call joint and return the only factor in the factor graph it returns

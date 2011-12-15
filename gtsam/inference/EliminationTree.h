@@ -10,10 +10,10 @@
 #include <gtsam/base/FastSet.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/VariableIndex.h>
-#include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/FactorGraph.h>
 
 class EliminationTreeTester; // for unit tests, see testEliminationTree
+namespace gtsam { template<class CONDITIONAL> class BayesNet; }
 
 namespace gtsam {
 
@@ -140,3 +140,5 @@ struct DisconnectedGraphException : public std::exception {
 };
 
 }
+
+#include <gtsam/inference/EliminationTree-inl.h>

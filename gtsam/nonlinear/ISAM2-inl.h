@@ -28,7 +28,7 @@ using namespace boost::assign;
 #include <gtsam/linear/HessianFactor.h>
 
 #include <gtsam/nonlinear/ISAM2-impl-inl.h>
-
+#include <gtsam/nonlinear/DoglegOptimizerImpl.h>
 
 namespace gtsam {
 
@@ -42,12 +42,18 @@ static const bool structuralLast = false;
 /* ************************************************************************* */
 template<class CONDITIONAL, class VALUES, class GRAPH>
 ISAM2<CONDITIONAL, VALUES, GRAPH>::ISAM2(const ISAM2Params& params):
-    delta_(Permutation(), deltaUnpermuted_), params_(params) {}
+    delta_(Permutation(), deltaUnpermuted_), params_(params) {
+  if(params_.optimizationParams.type() == typeid(ISAM2DoglegParams))
+    doglegDelta_ = boost::get<ISAM2DoglegParams>(params_.optimizationParams).initialDelta;
+}
 
 /* ************************************************************************* */
 template<class CONDITIONAL, class VALUES, class GRAPH>
 ISAM2<CONDITIONAL, VALUES, GRAPH>::ISAM2():
-    delta_(Permutation(), deltaUnpermuted_) {}
+    delta_(Permutation(), deltaUnpermuted_) {
+  if(params_.optimizationParams.type() == typeid(ISAM2DoglegParams))
+    doglegDelta_ = boost::get<ISAM2DoglegParams>(params_.optimizationParams).initialDelta;
+}
 
 /* ************************************************************************* */
 template<class CONDITIONAL, class VALUES, class GRAPH>
@@ -182,7 +188,11 @@ boost::shared_ptr<FastSet<Index> > ISAM2<CONDITIONAL, VALUES, GRAPH>::recalculat
       sharedClique clique = this->nodes_[key];
       while(clique) {
         affectedStructuralKeys.insert((*clique)->beginFrontals(), (*clique)->endFrontals());
-        clique = clique->parent_.lock();
+#ifndef NDEBUG // This is because BayesTreeClique stores pointers to BayesTreeClique but we actually have the derived type ISAM2Clique
+        clique = boost::dynamic_pointer_cast<Clique>(clique->parent_.lock());
+#else
+        clique = boost::static_pointer_cast<Clique>(clique->parent_.lock());
+#endif
       }
     }
     toc(0, "affectedStructuralKeys");
@@ -276,13 +286,13 @@ boost::shared_ptr<FastSet<Index> > ISAM2<CONDITIONAL, VALUES, GRAPH>::recalculat
     toc(2,"linearize");
 
     tic(5,"eliminate");
-    GaussianJunctionTree jt(factors, variableIndex_);
-    sharedClique newRoot = jt.eliminate(EliminatePreferLDL, true);
+    JunctionTree<GaussianFactorGraph, typename Base::Clique> jt(factors, variableIndex_);
+    sharedClique newRoot = jt.eliminate(EliminatePreferLDL);
     if(debug) newRoot->print("Eliminated: ");
     toc(5,"eliminate");
 
     tic(6,"insert");
-    BayesTree<CONDITIONAL>::clear();
+    this->clear();
     this->insert(newRoot);
     toc(6,"insert");
 
@@ -306,6 +316,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2<CONDITIONAL, VALUES, GRAPH>::recalculat
     affectedAndNewKeys.insert(affectedAndNewKeys.end(), newKeys.begin(), newKeys.end());
     tic(1,"relinearizeAffected");
     GaussianFactorGraph factors(*relinearizeAffectedFactors(affectedAndNewKeys));
+    if(debug) factors.print("Relinearized factors: ");
     toc(1,"relinearizeAffected");
 
     if(debug) { cout << "Affected keys: "; BOOST_FOREACH(const Index key, affectedKeys) { cout << key << " "; } cout << endl; }
@@ -450,7 +461,10 @@ ISAM2Result ISAM2<CONDITIONAL, VALUES, GRAPH>::update(
   tic(3,"gather involved keys");
   // 3. Mark linear update
   FastSet<Index> markedKeys = Impl::IndicesFromFactors(ordering_, newFactors); // Get keys from new factors
-  FastVector<Index> newKeys(markedKeys.begin(), markedKeys.end());             // Make a copy of these, as we'll soon add to them
+  // NOTE: we use assign instead of the iterator constructor here because this
+  // is a vector of size_t, so the constructor unintentionally resolves to
+  // vector(size_t count, Index value) instead of the iterator constructor.
+  FastVector<Index> newKeys; newKeys.assign(markedKeys.begin(), markedKeys.end());             // Make a copy of these, as we'll soon add to them
   FastSet<Index> structuralKeys;
   if(structuralLast) structuralKeys = markedKeys;                              // If we're using structural-last ordering, make another copy
   toc(3,"gather involved keys");
@@ -513,25 +527,37 @@ ISAM2Result ISAM2<CONDITIONAL, VALUES, GRAPH>::update(
 
   tic(9,"solve");
   // 9. Solve
-  if (params_.wildfireThreshold <= 0.0 || disableReordering) {
-    VectorValues newDelta(theta_.dims(ordering_));
-    optimize2(this->root(), newDelta);
-    if(debug) newDelta.print("newDelta: ");
-    assert(newDelta.size() == delta_.size());
-    delta_.permutation() = Permutation::Identity(delta_.size());
-    delta_.container() = newDelta;
-    lastBacksubVariableCount = theta_.size();
-  } else {
-    vector<bool> replacedKeysMask(variableIndex_.size(), false);
-    if(replacedKeys) {
-      BOOST_FOREACH(const Index var, *replacedKeys) {
-        replacedKeysMask[var] = true; } }
-    lastBacksubVariableCount = optimize2(this->root(), params_.wildfireThreshold, replacedKeysMask, delta_); // modifies delta_
+  if(params_.optimizationParams.type() == typeid(ISAM2GaussNewtonParams)) {
+    const ISAM2GaussNewtonParams& gaussNewtonParams = boost::get<ISAM2GaussNewtonParams>(params_.optimizationParams);
+    if (gaussNewtonParams.wildfireThreshold <= 0.0 || disableReordering) {
+      VectorValues newDelta(theta_.dims(ordering_));
+      optimize2(this->root(), newDelta);
+      if(debug) newDelta.print("newDelta: ");
+      assert(newDelta.size() == delta_.size());
+      delta_.permutation() = Permutation::Identity(delta_.size());
+      delta_.container() = newDelta;
+      lastBacksubVariableCount = theta_.size();
+    } else {
+      vector<bool> replacedKeysMask(variableIndex_.size(), false);
+      if(replacedKeys) {
+        BOOST_FOREACH(const Index var, *replacedKeys) {
+          replacedKeysMask[var] = true; } }
+      lastBacksubVariableCount = optimize2(this->root(), gaussNewtonParams.wildfireThreshold, replacedKeysMask, delta_); // modifies delta_
 
 #ifndef NDEBUG
-    for(size_t j=0; j<delta_.container().size(); ++j)
-      assert(delta_.container()[j].unaryExpr(&isfinite<double>).all());
+      for(size_t j=0; j<delta_.container().size(); ++j)
+        assert(delta_.container()[j].unaryExpr(&isfinite<double>).all());
 #endif
+    }
+  } else if(params_.optimizationParams.type() == typeid(ISAM2DoglegParams)) {
+    const ISAM2DoglegParams& doglegParams = boost::get<ISAM2DoglegParams>(params_.optimizationParams);
+    // Do one Dogleg iteration
+    DoglegOptimizerImpl::IterationResult doglegResult = DoglegOptimizerImpl::Iterate(
+        *doglegDelta_, doglegParams.adaptationMode, *this, nonlinearFactors_, theta_, ordering_, nonlinearFactors_.error(theta_), doglegParams.verbose);
+    // Update Delta and linear step
+    doglegDelta_ = doglegResult.Delta;
+    delta_.permutation() = Permutation::Identity(delta_.size());  // Dogleg solves for the full delta so there is no permutation
+    delta_.container() = doglegResult.dx_d; // Copy the VectorValues containing with the linear solution
   }
   toc(9,"solve");
 
@@ -539,6 +565,8 @@ ISAM2Result ISAM2<CONDITIONAL, VALUES, GRAPH>::update(
   if(params_.evaluateNonlinearError)
     result.errorAfter.reset(nonlinearFactors_.error(calculateEstimate()));
   toc(10,"evaluate error after");
+
+  result.cliques = this->nodes().size();
 
   return result;
 }
@@ -569,6 +597,14 @@ VALUES ISAM2<CONDITIONAL, VALUES, GRAPH>::calculateBestEstimate() const {
   VectorValues delta(theta_.dims(ordering_));
   optimize2(this->root(), delta);
   return theta_.retract(delta, ordering_);
+}
+
+/* ************************************************************************* */
+template<class CONDITIONAL, class VALUES, class GRAPH>
+VectorValues optimize(const ISAM2<CONDITIONAL,VALUES,GRAPH>& isam) {
+  VectorValues delta = *allocateVectorValues(isam);
+  optimize2(isam.root(), delta);
+  return delta;
 }
 
 }

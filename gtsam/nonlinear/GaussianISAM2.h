@@ -1,3 +1,14 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  * @file    GaussianISAM
  * @brief   Full non-linear ISAM.
@@ -41,21 +52,74 @@ public:
   }
 };
 
-// optimize the BayesTree, starting from the root
-void optimize2(const BayesTree<GaussianConditional>::sharedClique& root, VectorValues& delta);
+/** optimize the BayesTree, starting from the root */
+template<class CLIQUE>
+void optimize2(const boost::shared_ptr<CLIQUE>& root, VectorValues& delta);
 
-// optimize the BayesTree, starting from the root; "replaced" needs to contain
-// all variables that are contained in the top of the Bayes tree that has been
-// redone; "delta" is the current solution, an offset from the linearization
-// point; "threshold" is the maximum change against the PREVIOUS delta for
-// non-replaced variables that can be ignored, ie. the old delta entry is kept
-// and recursive backsubstitution might eventually stop if none of the changed
-// variables are contained in the subtree.
-// returns the number of variables that were solved for
-int optimize2(const BayesTree<GaussianConditional>::sharedClique& root,
+/// optimize the BayesTree, starting from the root; "replaced" needs to contain
+/// all variables that are contained in the top of the Bayes tree that has been
+/// redone; "delta" is the current solution, an offset from the linearization
+/// point; "threshold" is the maximum change against the PREVIOUS delta for
+/// non-replaced variables that can be ignored, ie. the old delta entry is kept
+/// and recursive backsubstitution might eventually stop if none of the changed
+/// variables are contained in the subtree.
+/// returns the number of variables that were solved for
+template<class CLIQUE>
+int optimize2(const boost::shared_ptr<CLIQUE>& root,
     double threshold, const std::vector<bool>& replaced, Permuted<VectorValues>& delta);
 
-// calculate the number of non-zero entries for the tree starting at clique (use root for complete matrix)
-int calculate_nnz(const BayesTree<GaussianConditional>::sharedClique& clique);
+/// calculate the number of non-zero entries for the tree starting at clique (use root for complete matrix)
+template<class CLIQUE>
+int calculate_nnz(const boost::shared_ptr<CLIQUE>& clique);
+
+/**
+ * Compute the gradient of the energy function,
+ * \f$ \nabla_{x=x_0} \left\Vert \Sigma^{-1} R x - d \right\Vert^2 \f$,
+ * centered around \f$ x = x_0 \f$.
+ * The gradient is \f$ R^T(Rx-d) \f$.
+ * @param bayesTree The Gaussian Bayes Tree $(R,d)$
+ * @param x0 The center about which to compute the gradient
+ * @return The gradient as a VectorValues
+ */
+VectorValues gradient(const BayesTree<GaussianConditional>& bayesTree, const VectorValues& x0);
+
+/**
+ * Compute the gradient of the energy function,
+ * \f$ \nabla_{x=0} \left\Vert \Sigma^{-1} R x - d \right\Vert^2 \f$,
+ * centered around zero.
+ * The gradient about zero is \f$ -R^T d \f$.  See also gradient(const GaussianBayesNet&, const VectorValues&).
+ * @param bayesTree The Gaussian Bayes Tree $(R,d)$
+ * @param [output] g A VectorValues to store the gradient, which must be preallocated, see allocateVectorValues
+ * @return The gradient as a VectorValues
+ */
+void gradientAtZero(const BayesTree<GaussianConditional>& bayesTree, VectorValues& g);
+
+/**
+ * Compute the gradient of the energy function,
+ * \f$ \nabla_{x=x_0} \left\Vert \Sigma^{-1} R x - d \right\Vert^2 \f$,
+ * centered around \f$ x = x_0 \f$.
+ * The gradient is \f$ R^T(Rx-d) \f$.
+ * This specialized version is used with ISAM2, where each clique stores its
+ * gradient contribution.
+ * @param bayesTree The Gaussian Bayes Tree $(R,d)$
+ * @param x0 The center about which to compute the gradient
+ * @return The gradient as a VectorValues
+ */
+VectorValues gradient(const BayesTree<GaussianConditional, ISAM2Clique<GaussianConditional> >& bayesTree, const VectorValues& x0);
+
+/**
+ * Compute the gradient of the energy function,
+ * \f$ \nabla_{x=0} \left\Vert \Sigma^{-1} R x - d \right\Vert^2 \f$,
+ * centered around zero.
+ * The gradient about zero is \f$ -R^T d \f$.  See also gradient(const GaussianBayesNet&, const VectorValues&).
+ * This specialized version is used with ISAM2, where each clique stores its
+ * gradient contribution.
+ * @param bayesTree The Gaussian Bayes Tree $(R,d)$
+ * @param [output] g A VectorValues to store the gradient, which must be preallocated, see allocateVectorValues
+ * @return The gradient as a VectorValues
+ */
+void gradientAtZero(const BayesTree<GaussianConditional, ISAM2Clique<GaussianConditional> >& bayesTree, VectorValues& g);
 
 }/// namespace gtsam
+
+#include <gtsam/nonlinear/GaussianISAM2-inl.h>

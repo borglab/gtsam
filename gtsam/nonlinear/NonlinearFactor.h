@@ -249,7 +249,7 @@ public:
    * to transform it to \f$ (h(x)-z)^2/\sigma^2 \f$, and then multiply by 0.5.
    */
   virtual double error(const VALUES& c) const {
-  	if (active(c))
+  	if (this->active(c))
   		return 0.5 * noiseModel_->distance(unwhitenedError(c));
   	else
   		return 0.0;
@@ -262,7 +262,7 @@ public:
    */
   boost::shared_ptr<GaussianFactor> linearize(const VALUES& x, const Ordering& ordering) const {
   	// Only linearize if the factor is active
-		if (!active(x))
+		if (!this->active(x))
 			return boost::shared_ptr<JacobianFactor>();
 
     // Create the set of terms - Jacobians for each index

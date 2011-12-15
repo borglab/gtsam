@@ -18,6 +18,8 @@
  */
 
 #include <gtsam/linear/KalmanFilter.h>
+#include <gtsam/linear/NoiseModel.h>
+#include <gtsam/linear/SharedDiagonal.h>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;

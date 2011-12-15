@@ -39,7 +39,7 @@ VectorValues& VectorValues::operator=(const VectorValues& rhs) {
 /* ************************************************************************* */
 VectorValues VectorValues::Zero(const VectorValues& x) {
 	VectorValues cloned(SameStructure(x));
-	cloned.vector() = Vector::Zero(x.dim());
+	cloned.setZero();
 	return cloned;
 }
 
@@ -124,8 +124,13 @@ VectorValues VectorValues::SameStructure(const VectorValues& other) {
 /* ************************************************************************* */
 VectorValues VectorValues::Zero(Index nVars, size_t varDim) {
   VectorValues ret(nVars, varDim);
-  ret.vector() = Vector::Zero(ret.dim());
+  ret.setZero();
   return ret;
+}
+
+/* ************************************************************************* */
+void VectorValues::setZero() {
+  values_.setZero();
 }
 
 /* ************************************************************************* */

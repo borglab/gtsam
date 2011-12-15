@@ -81,7 +81,7 @@ struct ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl {
    *
    * Alternatively could we trace up towards the root for each variable here?
    */
-  static void FindAll(ISAM2Type::sharedClique clique, FastSet<Index>& keys, const std::vector<bool>& markedMask);
+  static void FindAll(typename ISAM2Clique<CONDITIONAL>::shared_ptr clique, FastSet<Index>& keys, const vector<bool>& markedMask);
 
   /**
    * Apply expmap to the given values, but only for indices appearing in
@@ -148,7 +148,7 @@ void ISAM2<CONDITIONAL,VALUES,GRAPH>::Impl::AddVariables(
   const size_t originalDim = delta->dim();
   const size_t originalnVars = delta->size();
   delta.container().append(dims);
-  delta.container().vector().segment(originalDim, newDim) = Vector::Zero(newDim);
+  delta.container().vector().segment(originalDim, newDim).operator=(Vector::Zero(newDim));
   delta.permutation().resize(originalnVars + newTheta.size());
   {
     _VariableAdder vadder(ordering, delta, originalnVars);
@@ -188,7 +188,7 @@ FastSet<Index> ISAM2<CONDITIONAL,VALUES,GRAPH>::Impl::CheckRelinearization(Permu
 
 /* ************************************************************************* */
 template<class CONDITIONAL, class VALUES, class GRAPH>
-void ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl::FindAll(ISAM2Type::sharedClique clique, FastSet<Index>& keys, const std::vector<bool>& markedMask) {
+void ISAM2<CONDITIONAL,VALUES,GRAPH>::Impl::FindAll(typename ISAM2Clique<CONDITIONAL>::shared_ptr clique, FastSet<Index>& keys, const vector<bool>& markedMask) {
   static const bool debug = false;
   // does the separator contain any of the variables?
   bool found = false;
@@ -202,7 +202,7 @@ void ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl::FindAll(ISAM2Type::sharedClique cl
     if(debug) clique->print("Key(s) marked in clique ");
     if(debug) cout << "so marking key " << (*clique)->keys().front() << endl;
   }
-  BOOST_FOREACH(const sharedClique& child, clique->children_) {
+  BOOST_FOREACH(const typename ISAM2Clique<CONDITIONAL>::shared_ptr& child, clique->children_) {
     FindAll(child, keys, markedMask);
   }
 }
@@ -334,9 +334,11 @@ ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl::PartialSolve(GaussianFactorGraph& facto
 
   // eliminate into a Bayes net
   tic(7,"eliminate");
-  GaussianJunctionTree jt(factors, affectedFactorsIndex);
-  result.bayesTree = jt.eliminate(EliminatePreferLDL, true);
+  JunctionTree<GaussianFactorGraph, typename ISAM2Type::Clique> jt(factors, affectedFactorsIndex);
+  result.bayesTree = jt.eliminate(EliminatePreferLDL);
   if(debug && result.bayesTree) {
+    if(boost::dynamic_pointer_cast<ISAM2Clique<CONDITIONAL> >(result.bayesTree))
+      cout << "Is an ISAM2 clique" << endl;
     cout << "Re-eliminated BT:\n";
     result.bayesTree->printTree("");
   }
