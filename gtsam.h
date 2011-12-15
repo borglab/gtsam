@@ -190,8 +190,8 @@ class SharedDiagonal {
 	Vector sample() const;
 };
 
-class SharedNoiseModel {
 #include <gtsam/linear/SharedGaussian.h>
+class SharedNoiseModel {
 	// FIXME: this generates only one constructor
 	SharedNoiseModel(const SharedDiagonal& model);
 	SharedNoiseModel(const SharedGaussian& model);
@@ -290,8 +290,8 @@ class Ordering {
 // Planar SLAM example domain
 namespace planarSLAM {
 
-class Values {
 #include <gtsam/slam/planarSLAM.h>
+class Values {
 	Values();
 	void print(string s) const;
 	Pose2 pose(int key) const;
@@ -300,8 +300,8 @@ class Values {
 	void insertPoint(int key, const Point2& point);
 };
 
-class Graph {
 #include <gtsam/slam/planarSLAM.h>
+class Graph {
 	Graph();
 
 	void print(string s) const;
@@ -321,8 +321,8 @@ class Graph {
 	planarSLAM::Values optimize(const planarSLAM::Values& initialEstimate);
 };
 
-class Odometry {
 #include <gtsam/slam/planarSLAM.h>
+class Odometry {
 	Odometry(int key1, int key2, const Pose2& measured,
 			const SharedNoiseModel& model);
 	void print(string s) const;
@@ -334,8 +334,8 @@ class Odometry {
 // Simulated2D Example Domain
 namespace simulated2D {
 
-class Values {
 #include <gtsam/slam/simulated2D.h>
+class Values {
 	Values();
 	void insertPose(int i, const Point2& p);
 	void insertPoint(int j, const Point2& p);
@@ -345,8 +345,8 @@ class Values {
 	Point2 point(int j);
 };
 
-class Graph {
 #include <gtsam/slam/simulated2D.h>
+class Graph {
 	Graph();
 };
 
@@ -357,8 +357,8 @@ class Graph {
 // Simulated2DOriented Example Domain
 namespace simulated2DOriented {
 
-class Values {
 #include <gtsam/slam/simulated2DOriented.h>
+class Values {
 	Values();
 	void insertPose(int i, const Pose2& p);
 	void insertPoint(int j, const Point2& p);
@@ -368,8 +368,8 @@ class Values {
 	Point2 point(int j);
 };
 
-class Graph {
 #include <gtsam/slam/simulated2DOriented.h>
+class Graph {
 	Graph();
 };
 

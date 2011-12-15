@@ -18,7 +18,8 @@ wrapdir = $(pkgincludedir)/wrap
 if ENABLE_BUILD_TOOLBOX
 
 # Build a library from the core sources
-sources += utilities.cpp Argument.cpp ReturnValue.cpp Constructor.cpp Method.cpp StaticMethod.cpp Class.cpp Module.cpp
+sources += utilities.cpp Argument.cpp ReturnValue.cpp Constructor.cpp 
+sources += Method.cpp StaticMethod.cpp Class.cpp Module.cpp
 check_PROGRAMS += tests/testSpirit tests/testWrap
 if ENABLE_INSTALL_WRAP
 wrap_PROGRAMS += wrap

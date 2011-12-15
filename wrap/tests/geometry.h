@@ -30,8 +30,8 @@ class Point3 {
  * A multi-line comment!
  */
 
-class Test {
 #include <folder/path/to/Test.h>
+class Test {
 
 	/* a comment! */
 	// another comment

@@ -171,9 +171,9 @@ Module::Module(const string& interfacePath,
 
   Rule includes_p = str_p("#include") >> ch_p('<') >> (*(anychar_p - '>'))[push_back_a(cls.includes)] >> ch_p('>');
 
-  Rule functions_p = includes_p | constructor_p | method_p | static_method_p;
+  Rule functions_p = constructor_p | method_p | static_method_p;
 
-  Rule class_p = (str_p("class") >> className_p[assign_a(cls.name)] >> '{' >>
+  Rule class_p = !includes_p >> (str_p("class") >> className_p[assign_a(cls.name)] >> '{' >>
     *(functions_p | comments_p) >>
     str_p("};"))[assign_a(cls.namespaces, namespaces)][push_back_a(classes,cls)][assign_a(cls,cls0)];
 
