@@ -94,7 +94,7 @@ struct traits<Block<XprType, BlockRows, BlockCols, InnerPanel, HasDirectAccess> 
     MaskPacketAccessBit = (InnerSize == Dynamic || (InnerSize % packet_traits<Scalar>::size) == 0)
                        && (InnerStrideAtCompileTime == 1)
                         ? PacketAccessBit : 0,
-    MaskAlignedBit = (InnerPanel && (OuterStrideAtCompileTime!=Dynamic) && ((OuterStrideAtCompileTime % packet_traits<Scalar>::size) == 0)) ? AlignedBit : 0,
+    MaskAlignedBit = (InnerPanel && (OuterStrideAtCompileTime!=Dynamic) && (((OuterStrideAtCompileTime * sizeof(Scalar)) % 16) == 0)) ? AlignedBit : 0,
     FlagsLinearAccessBit = (RowsAtCompileTime == 1 || ColsAtCompileTime == 1) ? LinearAccessBit : 0,
     FlagsLvalueBit = is_lvalue<XprType>::value ? LvalueBit : 0,
     FlagsRowMajorBit = IsRowMajor ? RowMajorBit : 0,

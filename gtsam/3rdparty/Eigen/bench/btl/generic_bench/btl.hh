@@ -39,7 +39,7 @@
 #endif
 
 #if (defined __GNUC__)
-#define BTL_ASM_COMMENT(X)  asm("#"X)
+#define BTL_ASM_COMMENT(X)  asm("#" X)
 #else
 #define BTL_ASM_COMMENT(X)
 #endif

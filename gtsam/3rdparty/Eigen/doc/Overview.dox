@@ -8,7 +8,7 @@ o /** \mainpage Eigen
   | \ref QuickRefPage         "Short reference"
 </div>
 
-This is the API documentation for Eigen3.
+This is the API documentation for Eigen3. You can <a href="eigen-doc.tgz">download</a> it as a tgz archive for offline reading.
 
 Eigen2 users: here is a \ref Eigen2ToEigen3 guide to help porting your application.
 

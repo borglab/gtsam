@@ -120,6 +120,10 @@ template<typename Scalar, int Options> void quaternion(void)
   VERIFY_IS_APPROX(q1f.template cast<Scalar>(),q1);
   Quaternion<double> q1d = q1.template cast<double>();
   VERIFY_IS_APPROX(q1d.template cast<Scalar>(),q1);
+
+  // test bug 369 - improper alignment.
+  Quaternionx *q = new Quaternionx;
+  delete q;
 }
 
 template<typename Scalar> void mapQuaternion(void){
@@ -190,7 +194,6 @@ template<typename PlainObjectType> void check_const_correctness(const PlainObjec
   VERIFY( !(Map<ConstPlainObjectType>::Flags & LvalueBit) );
   VERIFY( !(Map<ConstPlainObjectType, Aligned>::Flags & LvalueBit) );
 }
-
 
 void test_geo_quaternion()
 {

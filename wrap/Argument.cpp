@@ -18,6 +18,7 @@
 #include <fstream>
 #include <sstream>
 #include <boost/foreach.hpp>
+#include <boost/regex.hpp>
 
 #include "Argument.h"
 
@@ -70,8 +71,17 @@ string ArgumentList::types() const {
 /* ************************************************************************* */
 string ArgumentList::signature() const {
   string str;
+
   BOOST_FOREACH(Argument arg, *this)
-    str += arg.type[0];
+  {
+    BOOST_FOREACH(char ch, arg.type)
+        if(isupper(ch))
+            str += ch;
+
+    if(str.length() == 0)
+        str += arg.type[0];
+  }
+
   return str;
 }
 

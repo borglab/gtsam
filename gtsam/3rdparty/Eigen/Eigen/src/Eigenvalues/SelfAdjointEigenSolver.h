@@ -220,6 +220,7 @@ template<typename _MatrixType> class SelfAdjointEigenSolver
     const MatrixType& eigenvectors() const
     {
       eigen_assert(m_isInitialized && "SelfAdjointEigenSolver is not initialized.");
+      eigen_assert(info() == Success && "Eigenvalue computation did not converge.");
       eigen_assert(m_eigenvectorsOk && "The eigenvectors have not been computed together with the eigenvalues.");
       return m_eivec;
     }
@@ -242,6 +243,7 @@ template<typename _MatrixType> class SelfAdjointEigenSolver
     const RealVectorType& eigenvalues() const
     {
       eigen_assert(m_isInitialized && "SelfAdjointEigenSolver is not initialized.");
+      eigen_assert(info() == Success && "Eigenvalue computation did not converge.");
       return m_eivalues;
     }
 
@@ -266,6 +268,7 @@ template<typename _MatrixType> class SelfAdjointEigenSolver
     MatrixType operatorSqrt() const
     {
       eigen_assert(m_isInitialized && "SelfAdjointEigenSolver is not initialized.");
+      eigen_assert(info() == Success && "Eigenvalue computation did not converge.");
       eigen_assert(m_eigenvectorsOk && "The eigenvectors have not been computed together with the eigenvalues.");
       return m_eivec * m_eivalues.cwiseSqrt().asDiagonal() * m_eivec.adjoint();
     }
@@ -291,6 +294,7 @@ template<typename _MatrixType> class SelfAdjointEigenSolver
     MatrixType operatorInverseSqrt() const
     {
       eigen_assert(m_isInitialized && "SelfAdjointEigenSolver is not initialized.");
+      eigen_assert(info() == Success && "Eigenvalue computation did not converge.");
       eigen_assert(m_eigenvectorsOk && "The eigenvectors have not been computed together with the eigenvalues.");
       return m_eivec * m_eivalues.cwiseInverse().cwiseSqrt().asDiagonal() * m_eivec.adjoint();
     }
@@ -307,7 +311,8 @@ template<typename _MatrixType> class SelfAdjointEigenSolver
 
     /** \brief Maximum number of iterations.
       *
-      * Maximum number of iterations allowed for an eigenvalue to converge.
+      * The algorithm terminates if it does not converge within m_maxIterations * n iterations, where n
+      * denotes the size of the matrix. This value is currently set to 30 (copied from LAPACK).
       */
     static const int m_maxIterations = 30;
 
@@ -407,7 +412,7 @@ SelfAdjointEigenSolver<MatrixType>& SelfAdjointEigenSolver<MatrixType>
   
   Index end = n-1;
   Index start = 0;
-  Index iter = 0; // number of iterations we are working on one element
+  Index iter = 0; // total number of iterations
 
   while (end>0)
   {
@@ -418,15 +423,14 @@ SelfAdjointEigenSolver<MatrixType>& SelfAdjointEigenSolver<MatrixType>
     // find the largest unreduced block
     while (end>0 && m_subdiag[end-1]==0)
     {
-      iter = 0;
       end--;
     }
     if (end<=0)
       break;
 
-    // if we spent too many iterations on the current element, we give up
+    // if we spent too many iterations, we give up
     iter++;
-    if(iter > m_maxIterations) break;
+    if(iter > m_maxIterations * n) break;
 
     start = end - 1;
     while (start>0 && m_subdiag[start-1]!=0)
@@ -435,7 +439,7 @@ SelfAdjointEigenSolver<MatrixType>& SelfAdjointEigenSolver<MatrixType>
     internal::tridiagonal_qr_step<MatrixType::Flags&RowMajorBit ? RowMajor : ColMajor>(diag.data(), m_subdiag.data(), start, end, computeEigenvectors ? m_eivec.data() : (Scalar*)0, n);
   }
 
-  if (iter <= m_maxIterations)
+  if (iter <= m_maxIterations * n)
     m_info = Success;
   else
     m_info = NoConvergence;
