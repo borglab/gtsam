@@ -19,7 +19,7 @@ add_subdirectory(3rdparty)
 # Accumulate gtsam_srcs
 set(gtsam_srcs ${ccolamd_srcs})
 
-# Get all sources and headers from each 
+# Get all sources and headers from each subdirectory
 foreach(subdir ${gtsam_subdirs})
     message(STATUS "Building ${subdir}")
     file(GLOB sub_gtsam_srcs "${subdir}/*.cpp")
@@ -31,15 +31,24 @@ foreach(subdir ${gtsam_subdirs})
 endforeach(subdir)
 
 # build shared and static versions of the library
-add_library(${PROJECT_NAME}-shared SHARED ${gtsam_srcs})
-set_target_properties(${PROJECT_NAME}-shared PROPERTIES OUTPUT_NAME "${PROJECT_NAME}")
-set_target_properties(${PROJECT_NAME}-shared PROPERTIES CLEAN_DIRECT_OUTPUT 1)
-install(TARGETS ${PROJECT_NAME}-shared LIBRARY DESTINATION lib )
-
 add_library(${PROJECT_NAME}-static STATIC ${gtsam_srcs})
 set_target_properties(${PROJECT_NAME}-static PROPERTIES OUTPUT_NAME "${PROJECT_NAME}")
 set_target_properties(${PROJECT_NAME}-static PROPERTIES CLEAN_DIRECT_OUTPUT 1)
+set_target_properties(${PROJECT_NAME}-static PROPERTIES
+ 	  VERSION "${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH}"
+ 	  SOVERSION "${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH}"
+ 	)
 install(TARGETS ${PROJECT_NAME}-static ARCHIVE DESTINATION lib)
+
+add_library(${PROJECT_NAME}-shared SHARED ${gtsam_srcs})
+set_target_properties(${PROJECT_NAME}-shared PROPERTIES OUTPUT_NAME "${PROJECT_NAME}")
+set_target_properties(${PROJECT_NAME}-shared PROPERTIES CLEAN_DIRECT_OUTPUT 1)
+set_target_properties(${PROJECT_NAME}-shared PROPERTIES
+ 	  VERSION "${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH}"
+ 	  SOVERSION "${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH}"
+ 	)
+ 	
+install(TARGETS ${PROJECT_NAME}-shared LIBRARY DESTINATION lib )
 
 # Get all sources and headers from each 
 foreach(subdir ${gtsam_subdirs})
