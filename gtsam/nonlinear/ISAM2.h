@@ -60,7 +60,7 @@ struct ISAM2DoglegParams {
   /** Specify parameters as constructor arguments */
   ISAM2DoglegParams(
       double _initialDelta = 1.0, ///< see ISAM2DoglegParams public variables, ISAM2DoglegParams::initialDelta
-      DoglegOptimizerImpl::TrustRegionAdaptationMode _adaptationMode = DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, ///< see ISAM2DoglegParams public variables, ISAM2DoglegParams::adaptationMode
+      DoglegOptimizerImpl::TrustRegionAdaptationMode _adaptationMode = DoglegOptimizerImpl::SEARCH_EACH_ITERATION, ///< see ISAM2DoglegParams public variables, ISAM2DoglegParams::adaptationMode
       bool _verbose = false ///< see ISAM2DoglegParams public variables, ISAM2DoglegParams::verbose
   ) : initialDelta(_initialDelta), adaptationMode(_adaptationMode), verbose(_verbose) {}
 };
