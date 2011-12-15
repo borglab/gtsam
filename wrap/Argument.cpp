@@ -71,19 +71,24 @@ string ArgumentList::types() const {
 /* ************************************************************************* */
 string ArgumentList::signature() const {
   string sig;
+  bool cap=false;
 
   BOOST_FOREACH(Argument arg, *this)
   {
-  	// original
-  	sig += arg.type[0];
 
-  	// version to disambiguate
-//    if(sig.length() == 0)
-//        sig += arg.type[0];
-//
-//  	BOOST_FOREACH(char ch, arg.type)
-//        if(isupper(ch))
-//            sig += ch;
+  	BOOST_FOREACH(char ch, arg.type)
+        if(isupper(ch))
+        {
+            sig += ch;
+            //If there is a capital letter, we don't want to readd it below
+            cap=true;
+        }
+
+    if(!cap)
+        sig += arg.type[0];
+
+    //Reset to default
+    cap = false;
   }
 
   return sig;
