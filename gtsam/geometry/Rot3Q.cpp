@@ -33,7 +33,6 @@ namespace gtsam {
   /* ************************************************************************* */
 	// static member functions to construct rotations
 
-  // Considerably faster than composing matrices above !
   Rot3Q Rot3Q::RzRyRx(double x, double y, double z) { return Rot3Q(
       Quaternion(Eigen::AngleAxisd(z, Eigen::Vector3d::UnitZ())) *
       Quaternion(Eigen::AngleAxisd(y, Eigen::Vector3d::UnitY())) *
