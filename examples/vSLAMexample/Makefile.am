@@ -21,10 +21,6 @@ headers += Feature2D.h vSLAMutils.h
 
 noinst_HEADERS = $(headers)
 
-EXTRA_DIST = Data
-dist-hook:
-	rm -rf $(distdir)/Data/.svn
-
 #----------------------------------------------------------------------------------------------------
 # rules to build local programs
 #----------------------------------------------------------------------------------------------------
