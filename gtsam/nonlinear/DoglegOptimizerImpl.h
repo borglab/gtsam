@@ -155,7 +155,7 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
   bool stay = true;
   while(stay) {
     // Compute dog leg point
-    result.dx_d = ComputeDoglegPoint(Delta, dx_u, dx_n);
+    result.dx_d = ComputeDoglegPoint(Delta, dx_u, dx_n, verbose);
 
     if(verbose) cout << "Delta = " << Delta << ", dx_d_norm = " << result.dx_d.vector().norm() << endl;
 

@@ -92,7 +92,7 @@ VectorValues gradient(const BayesTree<GaussianConditional>& bayesTree, const Vec
  * @param [output] g A VectorValues to store the gradient, which must be preallocated, see allocateVectorValues
  * @return The gradient as a VectorValues
  */
-VectorValues gradientAtZero(const BayesTree<GaussianConditional>& bayesTree, VectorValues& g);
+void gradientAtZero(const BayesTree<GaussianConditional>& bayesTree, VectorValues& g);
 
 /**
  * Compute the gradient of the energy function,
@@ -118,7 +118,7 @@ VectorValues gradient(const BayesTree<GaussianConditional, ISAM2Clique<GaussianC
  * @param [output] g A VectorValues to store the gradient, which must be preallocated, see allocateVectorValues
  * @return The gradient as a VectorValues
  */
-VectorValues gradientAtZero(const BayesTree<GaussianConditional, ISAM2Clique<GaussianConditional> >& bayesTree, VectorValues& g);
+void gradientAtZero(const BayesTree<GaussianConditional, ISAM2Clique<GaussianConditional> >& bayesTree, VectorValues& g);
 
 }/// namespace gtsam
 

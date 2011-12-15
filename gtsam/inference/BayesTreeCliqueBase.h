@@ -39,7 +39,8 @@ namespace gtsam {
    * possible because all cliques in a BayesTree are the same type - if they
    * were not then we'd need a virtual class.
    *
-   * @tparam The derived clique type.
+   * @tparam DERIVED The derived clique type.
+   * @tparam CONDITIONAL The conditional type.
    */
   template<class DERIVED, class CONDITIONAL>
   struct BayesTreeCliqueBase {

@@ -25,7 +25,7 @@ VectorValues DoglegOptimizerImpl::ComputeDoglegPoint(
     return x_d;
   } else if(DeltaSq < x_n_norm_sq) {
     // Trust region boundary is between steepest descent point and Newton's method point
-    return ComputeBlend(Delta, dx_u, dx_n);
+    return ComputeBlend(Delta, dx_u, dx_n, verbose);
   } else {
     assert(DeltaSq >= x_n_norm_sq);
     if(verbose) cout << "In pure Newton's method region" << endl;

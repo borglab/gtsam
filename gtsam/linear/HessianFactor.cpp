@@ -20,8 +20,6 @@
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/make_shared.hpp>
-#include <boost/lambda/bind.hpp>
-#include <boost/lambda/lambda.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/bind.hpp>
 
@@ -37,8 +35,6 @@
 #include <gtsam/linear/GaussianBayesNet.h>
 
 using namespace std;
-
-using namespace boost::lambda;
 
 namespace gtsam {
 

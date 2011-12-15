@@ -28,7 +28,7 @@ using namespace boost::assign;
 #include <gtsam/linear/HessianFactor.h>
 
 #include <gtsam/nonlinear/ISAM2-impl-inl.h>
-
+#include <gtsam/nonlinear/DoglegOptimizerImpl.h>
 
 namespace gtsam {
 
@@ -42,12 +42,18 @@ static const bool structuralLast = false;
 /* ************************************************************************* */
 template<class CONDITIONAL, class VALUES, class GRAPH>
 ISAM2<CONDITIONAL, VALUES, GRAPH>::ISAM2(const ISAM2Params& params):
-    delta_(Permutation(), deltaUnpermuted_), params_(params) {}
+    delta_(Permutation(), deltaUnpermuted_), params_(params) {
+  if(params_.optimizationParams.type() == typeid(ISAM2DoglegParams))
+    doglegDelta_ = boost::get<ISAM2DoglegParams>(params_.optimizationParams).initialDelta;
+}
 
 /* ************************************************************************* */
 template<class CONDITIONAL, class VALUES, class GRAPH>
 ISAM2<CONDITIONAL, VALUES, GRAPH>::ISAM2():
-    delta_(Permutation(), deltaUnpermuted_) {}
+    delta_(Permutation(), deltaUnpermuted_) {
+  if(params_.optimizationParams.type() == typeid(ISAM2DoglegParams))
+    doglegDelta_ = boost::get<ISAM2DoglegParams>(params_.optimizationParams).initialDelta;
+}
 
 /* ************************************************************************* */
 template<class CONDITIONAL, class VALUES, class GRAPH>
@@ -518,25 +524,37 @@ ISAM2Result ISAM2<CONDITIONAL, VALUES, GRAPH>::update(
 
   tic(9,"solve");
   // 9. Solve
-  if (params_.wildfireThreshold <= 0.0 || disableReordering) {
-    VectorValues newDelta(theta_.dims(ordering_));
-    optimize2(this->root(), newDelta);
-    if(debug) newDelta.print("newDelta: ");
-    assert(newDelta.size() == delta_.size());
-    delta_.permutation() = Permutation::Identity(delta_.size());
-    delta_.container() = newDelta;
-    lastBacksubVariableCount = theta_.size();
-  } else {
-    vector<bool> replacedKeysMask(variableIndex_.size(), false);
-    if(replacedKeys) {
-      BOOST_FOREACH(const Index var, *replacedKeys) {
-        replacedKeysMask[var] = true; } }
-    lastBacksubVariableCount = optimize2(this->root(), params_.wildfireThreshold, replacedKeysMask, delta_); // modifies delta_
+  if(params_.optimizationParams.type() == typeid(ISAM2GaussNewtonParams)) {
+    const ISAM2GaussNewtonParams& gaussNewtonParams = boost::get<ISAM2GaussNewtonParams>(params_.optimizationParams);
+    if (gaussNewtonParams.wildfireThreshold <= 0.0 || disableReordering) {
+      VectorValues newDelta(theta_.dims(ordering_));
+      optimize2(this->root(), newDelta);
+      if(debug) newDelta.print("newDelta: ");
+      assert(newDelta.size() == delta_.size());
+      delta_.permutation() = Permutation::Identity(delta_.size());
+      delta_.container() = newDelta;
+      lastBacksubVariableCount = theta_.size();
+    } else {
+      vector<bool> replacedKeysMask(variableIndex_.size(), false);
+      if(replacedKeys) {
+        BOOST_FOREACH(const Index var, *replacedKeys) {
+          replacedKeysMask[var] = true; } }
+      lastBacksubVariableCount = optimize2(this->root(), gaussNewtonParams.wildfireThreshold, replacedKeysMask, delta_); // modifies delta_
 
 #ifndef NDEBUG
-    for(size_t j=0; j<delta_.container().size(); ++j)
-      assert(delta_.container()[j].unaryExpr(&isfinite<double>).all());
+      for(size_t j=0; j<delta_.container().size(); ++j)
+        assert(delta_.container()[j].unaryExpr(&isfinite<double>).all());
 #endif
+    }
+  } else if(params_.optimizationParams.type() == typeid(ISAM2DoglegParams)) {
+    const ISAM2DoglegParams& doglegParams = boost::get<ISAM2DoglegParams>(params_.optimizationParams);
+    // Do one Dogleg iteration
+    DoglegOptimizerImpl::IterationResult doglegResult = DoglegOptimizerImpl::Iterate(
+        *doglegDelta_, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, *this, nonlinearFactors_, theta_, ordering_, nonlinearFactors_.error(theta_), doglegParams.verbose);
+    // Update Delta and linear step
+    doglegDelta_ = doglegResult.Delta;
+    delta_.permutation() = Permutation::Identity(delta_.size());  // Dogleg solves for the full delta so there is no permutation
+    delta_.container() = doglegResult.dx_d; // Copy the VectorValues containing with the linear solution
   }
   toc(9,"solve");
 
@@ -576,6 +594,17 @@ VALUES ISAM2<CONDITIONAL, VALUES, GRAPH>::calculateBestEstimate() const {
   VectorValues delta(theta_.dims(ordering_));
   optimize2(this->root(), delta);
   return theta_.retract(delta, ordering_);
+}
+
+/* ************************************************************************* */
+template<class CONDITIONAL, class VALUES, class GRAPH>
+VectorValues optimize(const ISAM2<CONDITIONAL,VALUES,GRAPH>& isam) {
+  VectorValues delta = *allocateVectorValues(isam);
+  for(Index j=0; j<isam.getDelta().size(); ++j)
+    delta[j] = isam.getDelta()[j];
+  delta.print("delta: ");
+  assert_equal(isam.getDelta().container(), delta);
+  return delta;
 }
 
 }

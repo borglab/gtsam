@@ -210,7 +210,7 @@ TEST_UNSAFE(ISAM2, slamlike_solution)
   SharedDiagonal brNoise = sharedSigmas(Vector_(2, M_PI/100.0, 0.1));
 
   // These variables will be reused and accumulate factors and values
-  GaussianISAM2<planarSLAM::Values> isam(ISAM2Params(0.001, 0.0, 0, false));
+  GaussianISAM2<planarSLAM::Values> isam(ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
   planarSLAM::Values fullinit;
   planarSLAM::Graph fullgraph;
 
@@ -297,9 +297,33 @@ TEST_UNSAFE(ISAM2, slamlike_solution)
   // Compare solutions
   EXPECT(isam_check(fullgraph, fullinit, isam));
 
+  // Check gradient at each node
+  typedef GaussianISAM2<planarSLAM::Values>::sharedClique sharedClique;
+  BOOST_FOREACH(const sharedClique& clique, isam.nodes()) {
+    // Compute expected gradient
+    FactorGraph<JacobianFactor> jfg;
+    jfg.push_back(JacobianFactor::shared_ptr(new JacobianFactor(*clique->conditional())));
+    VectorValues expectedGradient(*allocateVectorValues(isam));
+    gradientAtZero(jfg, expectedGradient);
+    // Compare with actual gradients
+    int variablePosition = 0;
+    for(GaussianConditional::const_iterator jit = clique->conditional()->begin(); jit != clique->conditional()->end(); ++jit) {
+      const int dim = clique->conditional()->dim(jit);
+      Vector actual = clique->gradientContribution().segment(variablePosition, dim);
+      EXPECT(assert_equal(expectedGradient[*jit], actual));
+      variablePosition += dim;
+    }
+    LONGS_EQUAL(clique->gradientContribution().rows(), variablePosition);
+  }
+
   // Check gradient
   VectorValues expectedGradient(*allocateVectorValues(isam));
-  gradient
+  gradientAtZero(FactorGraph<JacobianFactor>(isam), expectedGradient);
+  VectorValues expectedGradient2(gradient(FactorGraph<JacobianFactor>(isam), VectorValues::Zero(expectedGradient)));
+  VectorValues actualGradient(*allocateVectorValues(isam));
+  gradientAtZero(isam, actualGradient);
+  EXPECT(assert_equal(expectedGradient2, expectedGradient));
+  EXPECT(assert_equal(expectedGradient, actualGradient));
 }
 
 /* ************************************************************************* */
@@ -314,7 +338,7 @@ TEST_UNSAFE(ISAM2, clone) {
   SharedDiagonal brNoise = sharedSigmas(Vector_(2, M_PI/100.0, 0.1));
 
   // These variables will be reused and accumulate factors and values
-  GaussianISAM2<planarSLAM::Values> isam(ISAM2Params(0.001, 0.0, 0, false, true));
+  GaussianISAM2<planarSLAM::Values> isam(ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false, true));
   planarSLAM::Values fullinit;
   planarSLAM::Graph fullgraph;
 

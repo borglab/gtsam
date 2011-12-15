@@ -36,7 +36,7 @@
 namespace gtsam {
 
   // Forward declaration of BayesTreeClique which is defined below BayesTree in this file
-  template<class CONDITIONAL> class BayesTreeClique;
+  template<class CONDITIONAL> struct BayesTreeClique;
 
 	/**
 	 * Bayes tree

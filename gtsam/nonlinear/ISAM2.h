@@ -22,6 +22,8 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/inference/BayesTree.h>
 
+#include <boost/variant.hpp>
+
 namespace gtsam {
 
 /**
@@ -30,10 +32,49 @@ namespace gtsam {
 
 /**
  * @ingroup ISAM2
+ * Parameters for ISAM2 using Gauss-Newton optimization.  Either this class or
+ * ISAM2DoglegParams should be specified as the optimizationParams in
+ * ISAM2Params, which should in turn be passed to ISAM2(const ISAM2Params&).
+ */
+struct ISAM2GaussNewtonParams {
+  double wildfireThreshold; ///< Continue updating the linear delta only when changes are above this threshold (default: 0.001)
+
+  /** Specify parameters as constructor arguments */
+  ISAM2GaussNewtonParams(
+      double _wildfireThreshold = 0.001 ///< see ISAM2GaussNewtonParams public variables, ISAM2GaussNewtonParams::wildfireThreshold
+  ) : wildfireThreshold(_wildfireThreshold) {}
+};
+
+/**
+ * @ingroup ISAM2
+ * Parameters for ISAM2 using Dogleg optimization.  Either this class or
+ * ISAM2GaussNewtonParams should be specified as the optimizationParams in
+ * ISAM2Params, which should in turn be passed to ISAM2(const ISAM2Params&).
+ */
+struct ISAM2DoglegParams {
+  double initialDelta; ///< The initial trust region radius for Dogleg
+  bool verbose; ///< Whether Dogleg prints iteration and convergence information
+
+  /** Specify parameters as constructor arguments */
+  ISAM2DoglegParams(
+      double _initialDelta = 1.0, ///< see ISAM2DoglegParams public variables, ISAM2DoglegParams::initialDelta
+      bool _verbose = false ///< see ISAM2DoglegParams public variables, ISAM2DoglegParams::verbose
+  ) : initialDelta(_initialDelta), verbose(_verbose) {}
+};
+
+/**
+ * @ingroup ISAM2
  * Parameters for the ISAM2 algorithm.  Default parameter values are listed below.
  */
 struct ISAM2Params {
-  double wildfireThreshold; ///< Continue updating the linear delta only when changes are above this threshold (default: 0.001)
+  typedef boost::variant<ISAM2GaussNewtonParams, ISAM2DoglegParams> OptimizationParams; ///< Either ISAM2GaussNewtonParams or ISAM2DoglegParams
+  /** Optimization parameters, this both selects the nonlinear optimization
+   * method and specifies its parameters, either ISAM2GaussNewtonParams or
+   * ISAM2DoglegParams.  In the former, Gauss-Newton optimization will be used
+   * with the specified parameters, and in the latter Powell's dog-leg
+   * algorithm will be used with the specified parameters.
+   */
+  OptimizationParams optimizationParams;
   double relinearizeThreshold; ///< Only relinearize variables whose linear delta magnitude is greater than this threshold (default: 0.1)
   int relinearizeSkip; ///< Only relinearize any variables every relinearizeSkip calls to ISAM2::update (default: 10)
   bool enableRelinearization; ///< Controls whether ISAM2 will ever relinearize any variables (default: true)
@@ -41,12 +82,12 @@ struct ISAM2Params {
 
   /** Specify parameters as constructor arguments */
   ISAM2Params(
-      double _wildfireThreshold = 0.001, ///< ISAM2Params::wildfireThreshold
-      double _relinearizeThreshold = 0.1, ///< ISAM2Params::relinearizeThreshold
-      int _relinearizeSkip = 10, ///< ISAM2Params::relinearizeSkip
-      bool _enableRelinearization = true, ///< ISAM2Params::enableRelinearization
-      bool _evaluateNonlinearError = false ///< ISAM2Params::evaluateNonlinearError
-  ) : wildfireThreshold(_wildfireThreshold), relinearizeThreshold(_relinearizeThreshold),
+      OptimizationParams _optimizationParams = ISAM2GaussNewtonParams(), ///< see ISAM2Params public variables, ISAM2Params::optimizationParams
+      double _relinearizeThreshold = 0.1, ///< see ISAM2Params public variables, ISAM2Params::relinearizeThreshold
+      int _relinearizeSkip = 10, ///< see ISAM2Params public variables, ISAM2Params::relinearizeSkip
+      bool _enableRelinearization = true, ///< see ISAM2Params public variables, ISAM2Params::enableRelinearization
+      bool _evaluateNonlinearError = false ///< see ISAM2Params public variables, ISAM2Params::evaluateNonlinearError
+  ) : optimizationParams(_optimizationParams), relinearizeThreshold(_relinearizeThreshold),
       relinearizeSkip(_relinearizeSkip), enableRelinearization(_enableRelinearization),
       evaluateNonlinearError(_evaluateNonlinearError) {}
 };
@@ -153,8 +194,12 @@ struct ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique<CONDITIONAL>, CONDIT
   /** print this node */
   void print(const std::string& s = "") const {
     Base::print(s);
-    if(cachedFactor_) cachedFactor_->print(s + "Cached: ");
-    else cout << s << "Cached empty" << endl;
+    if(cachedFactor_)
+      cachedFactor_->print(s + "Cached: ");
+    else
+      cout << s << "Cached empty" << endl;
+    if(gradientContribution_.rows() != 0)
+      gtsam::print(gradientContribution_, "Gradient contribution: ");
   }
 
   void permuteWithInverse(const Permutation& inversePermutation) {
@@ -224,6 +269,9 @@ protected:
   /** The current parameters */
   ISAM2Params params_;
 
+  /** The current Dogleg Delta (trust region radius) */
+  boost::optional<double> doglegDelta_;
+
 private:
 #ifndef NDEBUG
   std::vector<bool> lastRelinVariables_;
@@ -258,6 +306,7 @@ public:
     newISAM2->nonlinearFactors_ = nonlinearFactors_;
     newISAM2->ordering_ = ordering_;
     newISAM2->params_ = params_;
+    newISAM2->doglegDelta_ = doglegDelta_;
 #ifndef NDEBUG
     newISAM2->lastRelinVariables_ = lastRelinVariables_;
 #endif
@@ -349,6 +398,10 @@ private:
   //	void linear_update(const GaussianFactorGraph& newFactors);
 
 }; // ISAM2
+
+/** Get the linear delta for the ISAM2 object, unpermuted the delta returned by ISAM2::getDelta() */
+template<class CONDITIONAL, class VALUES, class GRAPH>
+VectorValues optimize(const ISAM2<CONDITIONAL,VALUES,GRAPH>& isam);
 
 } /// namespace gtsam
 
