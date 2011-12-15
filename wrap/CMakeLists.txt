@@ -17,7 +17,7 @@ foreach(test_src ${wrap_test_srcs} )
     add_executable(${test_bin} EXCLUDE_FROM_ALL ${test_src})
     add_test(${test_base} ${EXECUTABLE_OUTPUT_PATH}${test_bin})
     add_dependencies(check ${test_bin})
-    target_link_libraries(${test_bin} CppUnitLite gtsam wrapLib)
+    target_link_libraries(${test_bin} CppUnitLite gtsam-static wrapLib)
     add_custom_target(${test_bin}.run ${EXECUTABLE_OUTPUT_PATH}${test_bin} ${ARGN})
 endforeach(test_src)
 

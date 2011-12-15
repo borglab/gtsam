@@ -7,10 +7,10 @@ set ( srcs
 add_library(vSLAMexample ${srcs})
 
 add_executable(vISAMexample vISAMexample.cpp)
-target_link_libraries(vISAMexample vSLAMexample gtsam)
+target_link_libraries(vISAMexample vSLAMexample gtsam-static)
 
 add_executable(vSFMexample vSFMexample.cpp)
-target_link_libraries(vSFMexample vSLAMexample gtsam)
+target_link_libraries(vSFMexample vSLAMexample gtsam-static)
 
 
 

@@ -1,4 +1,4 @@
-project(GTSAM CXX C)
+project(gtsam CXX C)
 cmake_minimum_required(VERSION 2.6)
 
 # Set the version number for the libarary
@@ -43,6 +43,7 @@ include(CTest)
 
 # Enable make check (http://www.cmake.org/Wiki/CMakeEmulateMakeCheck)
 add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND})
+add_custom_target(timing)
 
 # Find boost
 find_package(Boost 1.40 REQUIRED)
