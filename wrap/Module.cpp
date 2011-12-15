@@ -56,6 +56,7 @@ Module::Module(const string& interfacePath,
   							 namespace_includes, /// current set of includes
   							 namespaces_return; /// namespace for current return type
   string include_path = "";
+  string class_name = "";
   const string null_str = "";
 
   //----------------------------------------------------------------------------
@@ -79,7 +80,7 @@ Module::Module(const string& interfacePath,
   Rule eigenType_p =
     (str_p("Vector") | "Matrix");
 
-  Rule className_p  = lexeme_d[upper_p >> *(alnum_p | '_')] - eigenType_p - keywords_p;
+  Rule className_p  = (lexeme_d[upper_p >> *(alnum_p | '_')] - eigenType_p - keywords_p)[assign_a(class_name)];
 
   Rule namespace_name_p = lexeme_d[lower_p >> *(alnum_p | '_')] - keywords_p;
 
@@ -199,10 +200,14 @@ Module::Module(const string& interfacePath,
 			[pop_a(namespaces)]
 			[pop_a(namespace_includes)];
 
-	Rule using_namespace_p = str_p("using") >> str_p("namespace")
+	Rule using_namespace_p =
+			str_p("using") >> str_p("namespace")
 			>> namespace_name_p[push_back_a(using_namespaces)] >> ch_p(';');
 
-  Rule module_content_p =	comments_p | using_namespace_p | class_p | namespace_def_p ;
+	Rule forward_delcaration_p =
+			(str_p("class") >> className_p >> ch_p(';'))[push_back_a(forward_declarations, class_name)];
+
+  Rule module_content_p =	comments_p | using_namespace_p | forward_delcaration_p | class_p | namespace_def_p ;
 
   Rule module_p = *module_content_p >> !end_p;
 
@@ -256,6 +261,18 @@ void verifyArguments(const vector<string>& validArgs, const vector<T>& vt) {
 }
 
 /* ************************************************************************* */
+template<class T>
+void verifyReturnTypes(const vector<string>& validtypes, const vector<T>& vt) {
+	BOOST_FOREACH(const T& t, vt) {
+		const ReturnValue& retval = t.returnVal;
+		if (find(validtypes.begin(), validtypes.end(), retval.qualifiedType1("::"))	== validtypes.end())
+			throw DependencyMissing(retval.qualifiedType1("::"), t.name);
+		if (retval.isPair && find(validtypes.begin(), validtypes.end(), retval.qualifiedType2("::"))	== validtypes.end())
+			throw DependencyMissing(retval.qualifiedType2("::"), t.name);
+	}
+}
+
+/* ************************************************************************* */
 void Module::matlab_code(const string& toolboxPath, 
 			 const string& mexExt, const string& mexFlags) const {
     string installCmd = "install -d " + toolboxPath;
@@ -286,22 +303,23 @@ void Module::matlab_code(const string& toolboxPath,
     make_ofs << "MEXENDING = " << mexExt << "\n";
     make_ofs << "mex_flags = " << mexFlags << "\n\n";
 
-    //Dependency check list
-    vector<string> validArgs;
-    validArgs.push_back("string");
-    validArgs.push_back("int");
-    validArgs.push_back("bool");
-    validArgs.push_back("size_t");
-    validArgs.push_back("double");
-    validArgs.push_back("Vector");
-    validArgs.push_back("Matrix");
+    // Dependency check list
+    vector<string> validTypes = forward_declarations;
+    validTypes.push_back("void");
+    validTypes.push_back("string");
+    validTypes.push_back("int");
+    validTypes.push_back("bool");
+    validTypes.push_back("size_t");
+    validTypes.push_back("double");
+    validTypes.push_back("Vector");
+    validTypes.push_back("Matrix");
 
     // add 'all' to Makefile
     make_ofs << "all: ";
     BOOST_FOREACH(Class cls, classes) {
     	make_ofs << cls.qualifiedName() << " ";
 			//Create a list of parsed classes for dependency checking
-			validArgs.push_back(cls.qualifiedName("::"));
+			validTypes.push_back(cls.qualifiedName("::"));
     }
     make_ofs << "\n\n";
 
@@ -317,9 +335,13 @@ void Module::matlab_code(const string& toolboxPath,
       cls.matlab_proxy(classFile);
 
       // verify all of the function arguments
-      verifyArguments<Constructor>(validArgs, cls.constructors);
-      verifyArguments<StaticMethod>(validArgs, cls.static_methods);
-      verifyArguments<Method>(validArgs, cls.methods);
+      verifyArguments<Constructor>(validTypes, cls.constructors);
+      verifyArguments<StaticMethod>(validTypes, cls.static_methods);
+      verifyArguments<Method>(validTypes, cls.methods);
+
+      // verify function return types
+      verifyReturnTypes<StaticMethod>(validTypes, cls.static_methods);
+      verifyReturnTypes<Method>(validTypes, cls.methods);
 
       // create constructor and method wrappers
       cls.matlab_constructors(toolboxPath,using_namespaces);

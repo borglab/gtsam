@@ -57,12 +57,12 @@ TEST( wrap, check_exception ) {
 	CHECK_EXCEPTION(Module("/alsonotarealpath", "geometry",enable_verbose), CantOpenFile);
 
 	// clean out previous generated code
-  string cleanCmd = "rm -rf actual";
+  string cleanCmd = "rm -rf actual_deps";
   system(cleanCmd.c_str());
 
 	string path = topdir + "/wrap/tests";
-	Module module(path.c_str(), "testWrap1",enable_verbose);
-	CHECK_EXCEPTION(module.matlab_code("actual", "mexa64", "-O5"), DependencyMissing);
+	Module module(path.c_str(), "testDependencies",enable_verbose);
+	CHECK_EXCEPTION(module.matlab_code("actual_deps", "mexa64", "-O5"), DependencyMissing);
 }
 
 /* ************************************************************************* */
@@ -72,8 +72,12 @@ TEST( wrap, parse ) {
 	EXPECT_LONGS_EQUAL(3, module.classes.size());
 
 	// check using declarations
-	EXPECT_LONGS_EQUAL(1, module.using_namespaces.size());
-	EXPECT(assert_equal("geometry", module.using_namespaces.front()));
+	strvec exp_using; exp_using += "geometry";
+	EXPECT(assert_equal(exp_using, module.using_namespaces));
+
+	// forward declarations
+	strvec exp_forward; exp_forward += "VectorNotEigen";
+	EXPECT(assert_equal(exp_forward, module.forward_declarations));
 
 	// check first class, Point2
 	{

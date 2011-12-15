@@ -13,6 +13,7 @@ class Pose3 {
 	double x() const;
 	double y() const;
 	double z() const;
+	Rot3 testReturnType() const; // Throw here
 	Matrix matrix() const;
 	Matrix adjointMap() const;
 	Pose3 compose(const Pose3& p2);

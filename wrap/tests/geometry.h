@@ -4,6 +4,8 @@
 // location of namespace isn't significant
 using namespace geometry;
 
+class VectorNotEigen;
+
 class Point2 {
  Point2();
  Point2(double x, double y);

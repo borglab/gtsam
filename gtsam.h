@@ -45,8 +45,10 @@
 /**
  * Status:
  *  - TODO: global functions
+ *  - TODO: type dependencies only apply to arguments
  *  - TODO: default values for arguments
  *  - TODO: overloaded functions
+ *  - TODO: signatures for constructors can be ambiguous if two types have the same first letter
  *  - TODO: Handle Rot3M conversions to quaternions
  */
 
@@ -195,7 +197,7 @@ class SharedDiagonal {
 
 #include <gtsam/linear/SharedGaussian.h>
 class SharedNoiseModel {
-	// FIXME: this generates only one constructor
+	// FIXME: this generates only one constructor because "SharedDiagonal" and "SharedGaussian" both start with 'S'
 	SharedNoiseModel(const SharedDiagonal& model);
 	SharedNoiseModel(const SharedGaussian& model);
 };

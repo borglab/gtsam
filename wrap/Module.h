@@ -32,6 +32,7 @@ struct Module {
   std::vector<Class> classes; ///< list of classes
   bool verbose;            ///< verbose flag
   std::vector<std::string> using_namespaces; ///< all default namespaces
+  std::vector<std::string> forward_declarations;
 
   /// constructor that parses interface file
   Module(const std::string& interfacePath,
