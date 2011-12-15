@@ -40,12 +40,14 @@
  *   	 - To override, add a full include statement just before the class statement
  *   	 - An override include can be added for a namespace by placing it just before the namespace statement
  *   	 - Both classes and namespace accept exactly one namespace
+ *   Overriding type dependency checks
+ *     - If you are using a class 'OtherClass' not wrapped in this definition file, add "class OtherClass;" to avoid a dependency error
+ *     - Limitation: this only works if the class does not need a namespace specification
  */
 
 /**
  * Status:
  *  - TODO: global functions
- *  - TODO: type dependencies only apply to arguments
  *  - TODO: default values for arguments
  *  - TODO: overloaded functions
  *  - TODO: signatures for constructors can be ambiguous if two types have the same first letter
