@@ -82,9 +82,18 @@ namespace gtsam {
 		/// Evaluate error h(x)-z and optionally derivatives
 		Vector evaluateError(const Pose3& pose, const Point3& point,
 				boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
-			SimpleCamera camera(*K_, pose);
-			Point2 reprojectionError(camera.project(point, H1, H2) - z_);
-			return reprojectionError.vector();
+			try {
+	      SimpleCamera camera(*K_, pose);
+			  Point2 reprojectionError(camera.project(point, H1, H2) - z_);
+	      return reprojectionError.vector();
+			}
+			catch( CheiralityException& e) {
+			  if (H1) *H1 = zeros(2,6);
+			  if (H2) *H2 = zeros(2,3);
+			  cout << e.what() << ": Landmark "<< this->key2_.index() <<
+			      " moved behind camera " << this->key1_.index() << endl;
+			  return zero(2);
+			}
 		}
 
     /** return the measurement */

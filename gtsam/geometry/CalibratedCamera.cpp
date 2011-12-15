@@ -61,6 +61,8 @@ Point2 CalibratedCamera::project(const Point3& point,
 	const Rot3& R = pose.rotation();
 	const Point3& r1 = R.r1(), r2 = R.r2(), r3 = R.r3();
 	Point3 q = pose.transform_to(point);
+	if(q.z() <= 0)
+	  throw CheiralityException();
 
 	if (D_intrinsic_pose || D_intrinsic_point) {
 		double X = q.x(), Y = q.y(), Z = q.z();

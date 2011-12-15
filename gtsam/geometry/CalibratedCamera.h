@@ -23,6 +23,11 @@
 
 namespace gtsam {
 
+  class CheiralityException: public std::runtime_error {
+  public:
+    CheiralityException() : std::runtime_error("Cheirality Exception") {}
+  };
+
 	/**
 	 * A Calibrated camera class [R|-R't], calibration K=I.
 	 * If calibration is known, it is more computationally efficient
