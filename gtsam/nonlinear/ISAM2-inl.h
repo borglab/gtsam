@@ -600,10 +600,7 @@ VALUES ISAM2<CONDITIONAL, VALUES, GRAPH>::calculateBestEstimate() const {
 template<class CONDITIONAL, class VALUES, class GRAPH>
 VectorValues optimize(const ISAM2<CONDITIONAL,VALUES,GRAPH>& isam) {
   VectorValues delta = *allocateVectorValues(isam);
-  for(Index j=0; j<isam.getDelta().size(); ++j)
-    delta[j] = isam.getDelta()[j];
-  delta.print("delta: ");
-  assert_equal(isam.getDelta().container(), delta);
+  optimize2(isam.root(), delta);
   return delta;
 }
 
