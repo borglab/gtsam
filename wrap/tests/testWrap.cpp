@@ -36,13 +36,15 @@ static string topdir = "TOPSRCDIR_NOT_CONFIGURED"; // If TOPSRCDIR is not define
 /* ************************************************************************* */
 TEST( wrap, ArgumentList ) {
 	ArgumentList args;
-	Argument arg; arg.type = "double"; arg.name = "x";
-	args.push_back(arg);
-	args.push_back(arg);
-	args.push_back(arg);
-	CHECK(args.signature()=="ddd");
-	EXPECT(args.types()=="double,double,double");
-	EXPECT(args.names()=="x,x,x");
+	Argument arg1; arg1.type = "double"; arg1.name = "x";
+	Argument arg2; arg2.type = "double"; arg2.name = "y";
+	Argument arg3; arg3.type = "double"; arg3.name = "z";
+	args.push_back(arg1);
+	args.push_back(arg2);
+	args.push_back(arg3);
+	EXPECT(assert_equal("ddd", args.signature()));
+	EXPECT(assert_equal("double,double,double", args.types()));
+	EXPECT(assert_equal("x,y,z", args.names()));
 }
 
 /* ************************************************************************* */

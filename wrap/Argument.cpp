@@ -70,19 +70,23 @@ string ArgumentList::types() const {
 
 /* ************************************************************************* */
 string ArgumentList::signature() const {
-  string str;
+  string sig;
 
   BOOST_FOREACH(Argument arg, *this)
   {
-    BOOST_FOREACH(char ch, arg.type)
-        if(isupper(ch))
-            str += ch;
+  	// original
+  	sig += arg.type[0];
 
-    if(str.length() == 0)
-        str += arg.type[0];
+  	// version to disambiguate
+//    if(sig.length() == 0)
+//        sig += arg.type[0];
+//
+//  	BOOST_FOREACH(char ch, arg.type)
+//        if(isupper(ch))
+//            sig += ch;
   }
 
-  return str;
+  return sig;
 }
 
 /* ************************************************************************* */
