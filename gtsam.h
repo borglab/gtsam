@@ -36,7 +36,10 @@
  *   Static methods must start with a letter (upper or lowercase) and use the "static" keyword
  *   Includes in C++ wrappers
  *   	 - By default, the include will be <[classname].h>
- *   	 - To override, add a full include statement inside the class definition
+ *   	 - All namespaces must have angle brackets: <path>
+ *   	 - To override, add a full include statement just before the class statement
+ *   	 - An override include can be added for a namespace by placing it just before the namespace statement
+ *   	 - Both classes and namespace accept exactly one namespace
  */
 
 /**
@@ -288,9 +291,9 @@ class Ordering {
 };
 
 // Planar SLAM example domain
+#include <gtsam/slam/planarSLAM.h>
 namespace planarSLAM {
 
-#include <gtsam/slam/planarSLAM.h>
 class Values {
 	Values();
 	void print(string s) const;
@@ -300,7 +303,6 @@ class Values {
 	void insertPoint(int key, const Point2& point);
 };
 
-#include <gtsam/slam/planarSLAM.h>
 class Graph {
 	Graph();
 
@@ -321,7 +323,6 @@ class Graph {
 	planarSLAM::Values optimize(const planarSLAM::Values& initialEstimate);
 };
 
-#include <gtsam/slam/planarSLAM.h>
 class Odometry {
 	Odometry(int key1, int key2, const Pose2& measured,
 			const SharedNoiseModel& model);
@@ -332,9 +333,9 @@ class Odometry {
 }///\namespace planarSLAM
 
 // Simulated2D Example Domain
+#include <gtsam/slam/simulated2D.h>
 namespace simulated2D {
 
-#include <gtsam/slam/simulated2D.h>
 class Values {
 	Values();
 	void insertPose(int i, const Point2& p);
@@ -345,7 +346,6 @@ class Values {
 	Point2 point(int j);
 };
 
-#include <gtsam/slam/simulated2D.h>
 class Graph {
 	Graph();
 };
@@ -355,9 +355,9 @@ class Graph {
 }///\namespace simulated2D
 
 // Simulated2DOriented Example Domain
+#include <gtsam/slam/simulated2DOriented.h>
 namespace simulated2DOriented {
 
-#include <gtsam/slam/simulated2DOriented.h>
 class Values {
 	Values();
 	void insertPose(int i, const Pose2& p);
@@ -368,7 +368,6 @@ class Values {
 	Point2 point(int j);
 };
 
-#include <gtsam/slam/simulated2DOriented.h>
 class Graph {
 	Graph();
 };

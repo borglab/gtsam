@@ -4,8 +4,9 @@
 #include <path/to/ns2/ClassA.h>
 void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  checkArguments("memberFunction",nargout,nargin-1,0);
+  checkArguments("nsReturn",nargout,nargin-1,1);
   shared_ptr<ns2::ClassA> self = unwrap_shared_ptr< ns2::ClassA >(in[0],"ns2ClassA");
-  double result = self->memberFunction();
-  out[0] = wrap< double >(result);
+  double q = unwrap< double >(in[1]);
+  ns2::ns3::ClassB result = self->nsReturn(q);
+  out[0] = wrap_shared_ptr(make_shared< ns2::ns3::ClassB >(result),"ns2ns3ClassB");
 }

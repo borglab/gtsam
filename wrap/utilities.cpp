@@ -128,12 +128,15 @@ void generateUsingNamespace(ofstream& ofs, const vector<string>& using_namespace
 void generateIncludes(ofstream& ofs, const string& class_name,
 		const vector<string>& includes) {
 	ofs << "#include <wrap/matlab.h>" << endl;
-	if (includes.empty()) // add a default include
-		ofs << "#include <" << class_name << ".h>" << endl;
-	else {
-		BOOST_FOREACH(const string& s, includes)
-	  		ofs << "#include <" << s << ">" << endl;
+	bool added_include = false;
+	BOOST_FOREACH(const string& s, includes) {
+		if (!s.empty()) {
+			ofs << "#include <" << s << ">" << endl;
+			added_include = true;
+		}
 	}
+	if (!added_include) // add default include
+		ofs << "#include <" << class_name << ".h>" << endl;
 }
 
 /* ************************************************************************* */

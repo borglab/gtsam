@@ -210,6 +210,29 @@ TEST( wrap, matlab_code_namespaces ) {
   string act_path = "actual_namespaces/";
 	module.matlab_code("actual_namespaces", "mexa64", "-O5");
 
+	EXPECT(files_equal(exp_path + "new_ClassD_.cpp"              , act_path + "new_ClassD_.cpp"              ));
+	EXPECT(files_equal(exp_path + "new_ClassD_.m"                , act_path + "new_ClassD_.m"                ));
+	EXPECT(files_equal(exp_path + "new_ns1ClassA_.cpp"           , act_path + "new_ns1ClassA_.cpp"           ));
+	EXPECT(files_equal(exp_path + "new_ns1ClassA_.m"             , act_path + "new_ns1ClassA_.m"             ));
+	EXPECT(files_equal(exp_path + "new_ns1ClassB_.cpp"           , act_path + "new_ns1ClassB_.cpp"           ));
+	EXPECT(files_equal(exp_path + "new_ns1ClassB_.m"             , act_path + "new_ns1ClassB_.m"             ));
+	EXPECT(files_equal(exp_path + "new_ns2ClassA_.cpp"           , act_path + "new_ns2ClassA_.cpp"           ));
+	EXPECT(files_equal(exp_path + "new_ns2ClassA_.m"             , act_path + "new_ns2ClassA_.m"             ));
+	EXPECT(files_equal(exp_path + "new_ns2ClassC_.cpp"           , act_path + "new_ns2ClassC_.cpp"           ));
+	EXPECT(files_equal(exp_path + "new_ns2ClassC_.m"             , act_path + "new_ns2ClassC_.m"             ));
+	EXPECT(files_equal(exp_path + "new_ns2ns3ClassB_.cpp"        , act_path + "new_ns2ns3ClassB_.cpp"        ));
+	EXPECT(files_equal(exp_path + "new_ns2ns3ClassB_.m"          , act_path + "new_ns2ns3ClassB_.m"          ));
+	EXPECT(files_equal(exp_path + "ns2ClassA_afunction.cpp"      , act_path + "ns2ClassA_afunction.cpp"      ));
+	EXPECT(files_equal(exp_path + "ns2ClassA_afunction.m"        , act_path + "ns2ClassA_afunction.m"        ));
+
+	EXPECT(files_equal(exp_path + "@ns2ClassA/memberFunction.cpp", act_path + "@ns2ClassA/memberFunction.cpp"));
+	EXPECT(files_equal(exp_path + "@ns2ClassA/memberFunction.m"  , act_path + "@ns2ClassA/memberFunction.m"  ));
+	EXPECT(files_equal(exp_path + "@ns2ClassA/ns2ClassA.m"       , act_path + "@ns2ClassA/ns2ClassA.m"       ));
+	EXPECT(files_equal(exp_path + "@ns2ClassA/nsArg.cpp"         , act_path + "@ns2ClassA/nsArg.cpp"         ));
+	EXPECT(files_equal(exp_path + "@ns2ClassA/nsArg.m"           , act_path + "@ns2ClassA/nsArg.m"           ));
+	EXPECT(files_equal(exp_path + "@ns2ClassA/nsReturn.cpp"      , act_path + "@ns2ClassA/nsReturn.cpp"      ));
+	EXPECT(files_equal(exp_path + "@ns2ClassA/nsReturn.m"        , act_path + "@ns2ClassA/nsReturn.m"        ));
+
 	EXPECT(files_equal(exp_path + "make_testNamespaces.m", act_path + "make_testNamespaces.m"));
 	EXPECT(files_equal(exp_path + "Makefile"       , act_path + "Makefile"       ));
 }
