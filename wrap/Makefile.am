@@ -86,7 +86,7 @@ endif # Linux
 
 all: generate_toolbox
 
-generate_toolbox: $(top_srcdir)/gtsam.h
+generate_toolbox: $(top_srcdir)/gtsam.h wrap
 	./wrap ${mexextension} ${interfacePath} ${moduleName} ${toolboxpath} ${mexFlags}
 
 source_mode = -m 644
