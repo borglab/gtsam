@@ -306,13 +306,11 @@ namespace gtsam {
   template<class G, class T, class L, class S, class W>
   NonlinearOptimizer<G, T, L, S, W> NonlinearOptimizer<G, T, L, S, W>::iterateDogLeg() {
 
-    cout << "values: " << values_.get() << endl;
     S solver(*graph_->linearize(*values_, *ordering_));
     DoglegOptimizerImpl::IterationResult result = DoglegOptimizerImpl::Iterate(
         parameters_->lambda_, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, *solver.eliminate(),
         *graph_, *values_, *ordering_, error_, parameters_->verbosity_ > Parameters::ERROR);
     shared_values newValues(new T(values_->retract(result.dx_d, *ordering_)));
-    cout << "newValues: " << newValues.get() << endl;
     return newValuesErrorLambda_(newValues, result.f_error, result.Delta);
   }
 
