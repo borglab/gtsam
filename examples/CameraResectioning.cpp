@@ -23,7 +23,7 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/NonlinearOptimization-inl.h>
+#include <gtsam/nonlinear/NonlinearOptimization.h>
 
 using namespace gtsam;
 

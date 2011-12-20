@@ -20,11 +20,11 @@
 
 #include <gtsam/geometry/StereoCamera.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
-#include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/slam/StereoFactor.h>
 
-#include <gtsam/inference/graph-inl.h>
+#include <gtsam/inference/graph.h>
 #include <gtsam/slam/visualSLAM.h>
 
 using namespace std;

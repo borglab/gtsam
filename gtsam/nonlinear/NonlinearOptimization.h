@@ -50,3 +50,4 @@ namespace gtsam {
 
 }
 
+#include <gtsam/nonlinear/NonlinearOptimization-inl.h>

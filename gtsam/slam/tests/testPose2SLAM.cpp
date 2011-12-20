@@ -18,8 +18,8 @@
 #define GTSAM_MAGIC_KEY
 
 #include <gtsam/slam/pose2SLAM.h>
-#include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
-#include <gtsam/inference/FactorGraph-inl.h>
+#include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/inference/FactorGraph.h>
 #include <gtsam/base/numericalDerivative.h>
 using namespace gtsam;
 

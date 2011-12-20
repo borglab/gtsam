@@ -23,11 +23,7 @@
 #include <iostream>
 #include <boost/tuple/tuple.hpp>
 #include <gtsam/base/cholesky.h>
-#include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
-
-#define INSTANTIATE_NONLINEAR_OPTIMIZER(G,C) \
-  template class NonlinearOptimizer<G,C>;
 
 using namespace std;
 

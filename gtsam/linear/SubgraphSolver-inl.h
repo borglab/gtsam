@@ -13,9 +13,8 @@
 
 #include <boost/foreach.hpp>
 
-#include <gtsam/linear/SubgraphSolver.h>
 #include <gtsam/linear/iterative-inl.h>
-#include <gtsam/inference/EliminationTree-inl.h>
+#include <gtsam/inference/EliminationTree.h>
 
 using namespace std;
 

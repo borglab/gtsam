@@ -16,15 +16,12 @@
  **/
 
 #include <gtsam/slam/planarSLAM.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
-#include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
-#include <gtsam/nonlinear/NonlinearOptimization-inl.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/nonlinear/NonlinearOptimization.h>
 
 // Use planarSLAM namespace for specific SLAM instance
 namespace gtsam {
-
-	INSTANTIATE_NONLINEAR_FACTOR_GRAPH(planarSLAM::Values)
-	INSTANTIATE_NONLINEAR_OPTIMIZER(planarSLAM::Graph, planarSLAM::Values)
 
 	namespace planarSLAM {
 

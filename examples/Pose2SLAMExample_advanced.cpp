@@ -22,7 +22,7 @@
 
 // pull in the Pose2 SLAM domain with all typedefs and helper functions defined
 #include <gtsam/slam/pose2SLAM.h>
-#include <gtsam/nonlinear/NonlinearOptimization-inl.h>
+#include <gtsam/nonlinear/NonlinearOptimization.h>
 
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>

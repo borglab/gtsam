@@ -95,4 +95,6 @@ private:
 	SubgraphSolver():IterativeSolver(){}
 };
 
-} // nsamespace gtsam
+} // namespace gtsam
+
+#include <gtsam/linear/SubgraphSolver-inl.h>

@@ -419,3 +419,5 @@ bool check_convergence (
 		double currentError, double newError);
 
 } // gtsam
+
+#include <gtsam/nonlinear/NonlinearOptimizer-inl.h>

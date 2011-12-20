@@ -19,7 +19,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include <gtsam/slam/pose2SLAM.h>
-#include <gtsam/nonlinear/NonlinearOptimization-inl.h>
+#include <gtsam/nonlinear/NonlinearOptimization.h>
 
 
 using namespace std;

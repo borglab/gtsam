@@ -36,9 +36,9 @@ using namespace boost;
 #include <gtsam/linear/NoiseModel.h>
 
 // template definitions
-#include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
-#include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
-#include <gtsam/nonlinear/NonlinearOptimization-inl.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/nonlinear/NonlinearOptimization.h>
 
 using namespace gtsam;
 

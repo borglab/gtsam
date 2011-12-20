@@ -16,14 +16,11 @@
  **/
 
 #include <gtsam/slam/pose3SLAM.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
-#include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/NonlinearOptimizer.h>
 
 // Use pose3SLAM namespace for specific SLAM instance
 namespace gtsam {
-
-	INSTANTIATE_NONLINEAR_FACTOR_GRAPH(pose3SLAM::Values)
-	INSTANTIATE_NONLINEAR_OPTIMIZER(pose3SLAM::Graph, pose3SLAM::Values)
 
 	namespace pose3SLAM {
 

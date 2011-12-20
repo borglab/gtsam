@@ -34,7 +34,7 @@
 #include <gtsam/slam/smallExample.h>
 #include <gtsam/slam/simulated2D.h>
 #include <gtsam/linear/GaussianFactor.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 using namespace std;
 using namespace gtsam;

@@ -16,12 +16,9 @@
  */
 
 #include <gtsam/slam/visualSLAM.h>
-#include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
+#include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 namespace gtsam {
-
-	INSTANTIATE_NONLINEAR_FACTOR_GRAPH(visualSLAM::Values)
-	INSTANTIATE_NONLINEAR_OPTIMIZER(visualSLAM::Graph, visualSLAM::Values)
 
 }

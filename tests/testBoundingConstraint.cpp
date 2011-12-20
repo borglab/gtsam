@@ -18,8 +18,8 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <gtsam/slam/simulated2DConstraints.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
-#include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/NonlinearOptimizer.h>
 
 namespace iq2D = gtsam::simulated2D::inequality_constraints;
 using namespace std;

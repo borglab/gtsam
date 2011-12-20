@@ -20,10 +20,9 @@
 
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
-#include <gtsam/nonlinear/NonlinearOptimization.h>
 
-#include <gtsam/linear/SubgraphSolver-inl.h>
-#include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
+#include <gtsam/linear/SubgraphSolver.h>
+#include <gtsam/nonlinear/NonlinearOptimizer.h>
 
 using namespace std;
 

@@ -7,7 +7,7 @@
 
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianISAM.h> // To get optimize(BayesTree<GaussianConditional>)
-#include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Ordering.h>
 
 namespace gtsam {

@@ -33,8 +33,8 @@ using namespace boost::assign;
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/slam/smallExample.h>
-#include <gtsam/inference/FactorGraph-inl.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
+#include <gtsam/inference/FactorGraph.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 using namespace gtsam;
 using namespace example;

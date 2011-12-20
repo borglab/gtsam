@@ -32,9 +32,9 @@ using namespace std;
 #include <gtsam/slam/smallExample.h>
 
 // template definitions
-#include <gtsam/inference/FactorGraph-inl.h>
+#include <gtsam/inference/FactorGraph.h>
 #include <gtsam/nonlinear/Ordering.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 namespace gtsam {
 namespace example {

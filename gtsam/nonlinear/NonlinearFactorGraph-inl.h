@@ -19,15 +19,10 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/inference/FactorGraph-inl.h>
+#include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/inference.h>
 #include <boost/foreach.hpp>
 #include <cmath>
-
-#define INSTANTIATE_NONLINEAR_FACTOR_GRAPH(C) \
-  INSTANTIATE_FACTOR_GRAPH(NonlinearFactor<C>); \
-  template class NonlinearFactorGraph<C>;
 
 using namespace std;
 

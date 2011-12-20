@@ -24,8 +24,8 @@
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/nonlinear/Key.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
-#include <gtsam/nonlinear/NonlinearOptimization-inl.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/NonlinearOptimization.h>
 
 /*
  * TODO: make factors independent of RotValues

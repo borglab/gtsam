@@ -19,7 +19,7 @@
 // \callgraph
 #pragma once
 
-#include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {

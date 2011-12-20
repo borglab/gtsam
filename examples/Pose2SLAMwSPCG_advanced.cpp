@@ -19,8 +19,8 @@
 #include <boost/shared_ptr.hpp>
 
 #include <gtsam/slam/pose2SLAM.h>
-#include <gtsam/linear/SubgraphSolver-inl.h>
-#include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
+#include <gtsam/linear/SubgraphSolver.h>
+#include <gtsam/nonlinear/NonlinearOptimizer.h>
 
 using namespace std;
 using namespace gtsam;
