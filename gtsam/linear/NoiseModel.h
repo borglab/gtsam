@@ -697,6 +697,12 @@ namespace gtsam {
       virtual void print(const std::string& name) const;
       virtual bool equals(const Base& expected, double tol=1e-9) const;
 
+      /// Return the contained robust error function
+      const RobustModel::shared_ptr& robust() const { return robust_; }
+
+      /// Return the contained noise model
+      const NoiseModel::shared_ptr& noise() const { return noise_; }
+
       // TODO: all function below are dummy but necessary for the noiseModel::Base
 
       inline virtual Vector whiten(const Vector& v) const
