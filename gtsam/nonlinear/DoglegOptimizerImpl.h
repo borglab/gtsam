@@ -188,7 +188,7 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
 
     // Compute gain ratio.  Here we take advantage of the invariant that the
     // Bayes' net error at zero is equal to the nonlinear error
-    const double rho = fabs(M_error - new_M_error) < 1e-30 ?
+    const double rho = fabs(M_error - new_M_error) < 1e-15 ?
         0.5 :
         (f_error - result.f_error) / (M_error - new_M_error);
 
@@ -219,21 +219,27 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
 
     } else if(0.25 > rho && rho >= 0.0) {
       // M does not agree well with f, decrease Delta until it does
-      Delta *= 0.5;
-      if(mode == ONE_STEP_PER_ITERATION || lastAction == INCREASED_DELTA)
+      double newDelta;
+      if(Delta > 1e-5)
+        newDelta = 0.5 * Delta;
+      else
+        newDelta = Delta;
+      if(mode == ONE_STEP_PER_ITERATION || lastAction == INCREASED_DELTA || newDelta == Delta)
         stay = false;   // If not searching, just return with the new smaller delta
       else if(mode == SEARCH_EACH_ITERATION) {
         stay = true;
         lastAction = DECREASED_DELTA;
       } else {
         assert(false); }
+
+      Delta = newDelta; // Update Delta from new Delta
     }
 
     else {
       // f actually increased, so keep decreasing Delta until f does not decrease
       assert(0.0 > rho);
-      Delta *= 0.5;
       if(Delta > 1e-5) {
+        Delta *= 0.5;
         stay = true;
         lastAction = DECREASED_DELTA;
       } else {
