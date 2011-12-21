@@ -26,7 +26,6 @@
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/inference/BayesTree-inl.h>
-#include <gtsam/inference/FactorGraph-inl.h>
 #include <gtsam/inference/VariableSlots.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
@@ -36,8 +35,6 @@ using namespace std;
 using namespace gtsam;
 
 namespace gtsam {
-	// Explicitly instantiate so we don't have to include everywhere
-	INSTANTIATE_FACTOR_GRAPH(GaussianFactor);
 
 	/* ************************************************************************* */
 	GaussianFactorGraph::GaussianFactorGraph(const GaussianBayesNet& CBN) : Base(CBN) {}

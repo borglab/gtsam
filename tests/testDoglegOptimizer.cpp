@@ -17,7 +17,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/inference/FactorGraph-inl.h>
 #include <gtsam/inference/BayesTree-inl.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>

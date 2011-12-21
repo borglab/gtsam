@@ -23,7 +23,7 @@ using namespace boost::assign;
 #include <gtsam/inference/SymbolicFactorGraph.h>
 #include <gtsam/inference/BayesNet-inl.h>
 #include <gtsam/inference/IndexFactor.h>
-#include <gtsam/inference/FactorGraph-inl.h>
+#include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/SymbolicSequentialSolver.h>
 
 using namespace std;

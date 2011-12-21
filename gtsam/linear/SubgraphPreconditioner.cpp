@@ -19,7 +19,6 @@
 #include <gtsam/linear/SubgraphPreconditioner.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/inference/FactorGraph-inl.h>
 
 using namespace std;
 

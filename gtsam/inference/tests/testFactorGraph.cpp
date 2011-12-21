@@ -29,7 +29,6 @@ using namespace boost::assign;
 #define GTSAM_MAGIC_KEY
 
 #include <gtsam/inference/SymbolicFactorGraph.h>
-#include <gtsam/inference/FactorGraph-inl.h>
 
 using namespace std;
 using namespace gtsam;

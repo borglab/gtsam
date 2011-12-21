@@ -28,7 +28,6 @@ using namespace boost::assign;
 
 #include <gtsam/slam/pose2SLAM.h>
 #include <gtsam/inference/graph-inl.h>
-#include <gtsam/inference/FactorGraph-inl.h>
 
 using namespace std;
 using namespace gtsam;

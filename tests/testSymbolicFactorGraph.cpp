@@ -26,7 +26,6 @@ using namespace boost::assign;
 #include <gtsam/slam/smallExample.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
 #include <gtsam/inference/BayesNet-inl.h>
-#include <gtsam/inference/FactorGraph-inl.h>
 #include <gtsam/inference/SymbolicSequentialSolver.h>
 #include <gtsam/nonlinear/Ordering.h>
 
