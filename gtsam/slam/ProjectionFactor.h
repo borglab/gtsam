@@ -92,7 +92,7 @@ namespace gtsam {
 			  if (H2) *H2 = zeros(2,3);
 			  cout << e.what() << ": Landmark "<< this->key2_.index() <<
 			      " moved behind camera " << this->key1_.index() << endl;
-			  return zero(2);
+			  return ones(2) * 2.0 * K_->fx();
 			}
 		}
 
