@@ -22,7 +22,6 @@
 
 #pragma once
 
-#include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/graph-inl.h>
 #include <gtsam/inference/BayesTree.h>
 #include <gtsam/base/DSF.h>
@@ -41,9 +40,9 @@
 #include <stdexcept>
 #include <functional>
 
-#define INSTANTIATE_FACTOR_GRAPH(F) \
-  template class FactorGraph<F>; \
-  template FactorGraph<F> combine(const FactorGraph<F>&, const FactorGraph<F>&)
+//#define INSTANTIATE_FACTOR_GRAPH(F) \
+//  template class FactorGraph<F>; \
+//  template FactorGraph<F> combine(const FactorGraph<F>&, const FactorGraph<F>&)
 
 using namespace std;
 

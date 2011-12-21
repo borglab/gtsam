@@ -200,8 +200,8 @@ class SharedDiagonal {
 #include <gtsam/linear/SharedGaussian.h>
 class SharedNoiseModel {
 	// FIXME: this generates only one constructor because "SharedDiagonal" and "SharedGaussian" both start with 'S'
-	SharedNoiseModel(const SharedDiagonal& model);
-	SharedNoiseModel(const SharedGaussian& model);
+//	SharedNoiseModel(const SharedDiagonal& model); // FIXME: constructor doesn't exist
+//	SharedNoiseModel(const SharedGaussian& model); // FIXME: constructor doesn't exist
 };
 
 class VectorValues {
