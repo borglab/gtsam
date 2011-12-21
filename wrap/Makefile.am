@@ -84,6 +84,15 @@ mexextension += mex_bin
 endif
 endif # Linux
 
+# Choose correct cp command by OS
+cp_install =
+if LINUX
+cp_install += cp -ru
+endif
+if DARWIN
+cp_install += cp -Rf
+endif
+
 all: generate_toolbox
 
 generate_toolbox: $(top_srcdir)/gtsam.h wrap
@@ -96,7 +105,7 @@ wrap-install-matlab-toolbox: generate_toolbox
 	install ${source_mode} -c ../toolbox/*.m ${toolbox}/gtsam
 	install ${source_mode} -c ../toolbox/*.cpp ${toolbox}/gtsam
 	install ${source_mode} -c ../toolbox/Makefile ${toolbox}/gtsam
-	cp -ru ../toolbox/@* ${toolbox}/gtsam
+	${cp_install} ../toolbox/@* ${toolbox}/gtsam
 
 wrap-install-bin: wrap
 	install -d ${wrap} 
