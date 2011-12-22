@@ -23,9 +23,9 @@
 namespace variant_workaround {
 
   /* ************************************************************************* */
-  // The following functions are pasted from boost/variant/get.hpp, but with
-  // explicit argument types to avoid a conflict with 'get' in the boost graph
-  // library that exists in boost < 1.47.
+  // The following functions are pasted from boost/variant/get.hpp, but in a
+  // 'variant_workaround' namespace to avoid a conflict with 'get' in the boost
+  // graph library that exists in boost < 1.47.
 #if BOOST_VERSION >= 104700
   using boost::get;
 #else
