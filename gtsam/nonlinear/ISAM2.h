@@ -23,7 +23,8 @@
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
 #include <gtsam/inference/BayesTree.h>
 
-#include <boost/variant.hpp>
+// Workaround for boost < 1.47, see note in file
+#include <gtsam/base/boost_variant_with_workaround.h>
 
 namespace gtsam {
 

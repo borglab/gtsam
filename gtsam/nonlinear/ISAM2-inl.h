@@ -30,6 +30,7 @@ using namespace boost::assign;
 #include <gtsam/nonlinear/ISAM2-impl-inl.h>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
 
+
 namespace gtsam {
 
 using namespace std;
@@ -43,16 +44,18 @@ static const bool structuralLast = false;
 template<class CONDITIONAL, class VALUES, class GRAPH>
 ISAM2<CONDITIONAL, VALUES, GRAPH>::ISAM2(const ISAM2Params& params):
     delta_(Permutation(), deltaUnpermuted_), params_(params) {
+  // See note in gtsam/base/boost_variant_with_workaround.h
   if(params_.optimizationParams.type() == typeid(ISAM2DoglegParams))
-    doglegDelta_ = boost::get<ISAM2DoglegParams>(params_.optimizationParams).initialDelta;
+    doglegDelta_ = variant_workaround::get<ISAM2DoglegParams>(params_.optimizationParams).initialDelta;
 }
 
 /* ************************************************************************* */
 template<class CONDITIONAL, class VALUES, class GRAPH>
 ISAM2<CONDITIONAL, VALUES, GRAPH>::ISAM2():
     delta_(Permutation(), deltaUnpermuted_) {
+  // See note in gtsam/base/boost_variant_with_workaround.h
   if(params_.optimizationParams.type() == typeid(ISAM2DoglegParams))
-    doglegDelta_ = boost::get<ISAM2DoglegParams>(params_.optimizationParams).initialDelta;
+    doglegDelta_ = variant_workaround::get<ISAM2DoglegParams>(params_.optimizationParams).initialDelta;
 }
 
 /* ************************************************************************* */
@@ -528,7 +531,9 @@ ISAM2Result ISAM2<CONDITIONAL, VALUES, GRAPH>::update(
   tic(9,"solve");
   // 9. Solve
   if(params_.optimizationParams.type() == typeid(ISAM2GaussNewtonParams)) {
-    const ISAM2GaussNewtonParams& gaussNewtonParams = boost::get<ISAM2GaussNewtonParams>(params_.optimizationParams);
+  // See note in gtsam/base/boost_variant_with_workaround.h
+    const ISAM2GaussNewtonParams& gaussNewtonParams =
+        variant_workaround::get<ISAM2GaussNewtonParams>(params_.optimizationParams);
     if (gaussNewtonParams.wildfireThreshold <= 0.0 || disableReordering) {
       VectorValues newDelta(theta_.dims(ordering_));
       optimize2(this->root(), newDelta);
@@ -550,7 +555,9 @@ ISAM2Result ISAM2<CONDITIONAL, VALUES, GRAPH>::update(
 #endif
     }
   } else if(params_.optimizationParams.type() == typeid(ISAM2DoglegParams)) {
-    const ISAM2DoglegParams& doglegParams = boost::get<ISAM2DoglegParams>(params_.optimizationParams);
+  // See note in gtsam/base/boost_variant_with_workaround.h
+    const ISAM2DoglegParams& doglegParams =
+        variant_workaround::get<ISAM2DoglegParams>(params_.optimizationParams);
     // Do one Dogleg iteration
     DoglegOptimizerImpl::IterationResult doglegResult = DoglegOptimizerImpl::Iterate(
         *doglegDelta_, doglegParams.adaptationMode, *this, nonlinearFactors_, theta_, ordering_, nonlinearFactors_.error(theta_), doglegParams.verbose);
