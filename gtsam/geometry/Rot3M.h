@@ -48,7 +48,12 @@ namespace gtsam {
       r2_(Point3(0.0,1.0,0.0)),
       r3_(Point3(0.0,0.0,1.0)) {}
 
-    /** constructor from columns */
+    /**
+     * Constructor from columns
+     * @param r1 X-axis of rotated frame
+     * @param r2 Y-axis of rotated frame
+     * @param r3 Z-axis of rotated frame
+     */
     Rot3M(const Point3& r1, const Point3& r2, const Point3& r3) :
       r1_(r1), r2_(r2), r3_(r3) {}
 
@@ -100,6 +105,8 @@ namespace gtsam {
     static Rot3M yaw  (double t) { return Rz(t);} // positive yaw is to right (as in aircraft heading)
     static Rot3M pitch(double t) { return Ry(t);} // positive pitch is up (increasing aircraft altitude)
     static Rot3M roll (double t) { return Rx(t);} // positive roll is to right (increasing yaw in aircraft)
+
+    /// Returns rotation matrix nRb from body to nav frame
     static Rot3M ypr  (double y, double p, double r) { return RzRyRx(r,p,y);}
 
     /** Create from Quaternion parameters */
