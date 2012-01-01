@@ -49,35 +49,32 @@ namespace gtsam {
     /// @{
 
     /** default constructor, unit rotation */
-    Rot3Q() : quaternion_(Quaternion::Identity()) {}
+    Rot3Q();
 
-    /** constructor from columns */
-    Rot3Q(const Point3& r1, const Point3& r2, const Point3& r3) :
-      quaternion_((Eigen::Matrix3d() <<
-          r1.x(), r2.x(), r3.x(),
-          r1.y(), r2.y(), r3.y(),
-          r1.z(), r2.z(), r3.z()).finished()) {}
+    /**
+     * Constructor from columns
+     * @param r1 X-axis of rotated frame
+     * @param r2 Y-axis of rotated frame
+     * @param r3 Z-axis of rotated frame
+     */
+    Rot3Q(const Point3& r1, const Point3& r2, const Point3& r3);
 
     /** constructor from a rotation matrix, as doubles in *row-major* order !!! */
     Rot3Q(double R11, double R12, double R13,
         double R21, double R22, double R23,
-        double R31, double R32, double R33) :
-          quaternion_((Eigen::Matrix3d() <<
-              R11, R12, R13,
-              R21, R22, R23,
-              R31, R32, R33).finished()) {}
+        double R31, double R32, double R33);
 
     /** constructor from a rotation matrix */
-    Rot3Q(const Matrix& R) : quaternion_(Eigen::Matrix3d(R)) {}
+    Rot3Q(const Matrix& R);
 
     /** Constructor from a quaternion.  This can also be called using a plain
      * Vector, due to implicit conversion from Vector to Quaternion
      * @param q The quaternion
      */
-    Rot3Q(const Quaternion& q) : quaternion_(q) {}
+    Rot3Q(const Quaternion& q);
 
     /** Constructor from a rotation matrix in a Rot3M */
-    Rot3Q(const Rot3M& r) : quaternion_(Eigen::Matrix3d(r.matrix())) {}
+    Rot3Q(const Rot3M& r);
 
     /* Static member function to generate some well known rotations */
 
@@ -85,9 +82,9 @@ namespace gtsam {
      * Rotations around axes as in http://en.wikipedia.org/wiki/Rotation_matrix
      * Counterclockwise when looking from unchanging axis.
      */
-    static Rot3Q Rx(double t) { return Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitX())); }
-    static Rot3Q Ry(double t) { return Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitY())); }
-    static Rot3Q Rz(double t) { return Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitZ())); }
+    static Rot3Q Rx(double t);
+    static Rot3Q Ry(double t);
+    static Rot3Q Rz(double t);
     static Rot3Q RzRyRx(double x, double y, double z);
     inline static Rot3Q RzRyRx(const Vector& xyz) {
     	assert(xyz.size() == 3);
@@ -102,6 +99,8 @@ namespace gtsam {
     static Rot3Q yaw  (double t) { return Rz(t); } // positive yaw is to right (as in aircraft heading)
     static Rot3Q pitch(double t) { return Ry(t); } // positive pitch is up (increasing aircraft altitude)
     static Rot3Q roll (double t) { return Rx(t); } // positive roll is to right (increasing yaw in aircraft)
+
+    /// Returns rotation matrix nRb from body to nav frame
     static Rot3Q ypr  (double y, double p, double r) { return RzRyRx(r,p,y);}
 
     /** Create from Quaternion coefficients */
@@ -151,21 +150,15 @@ namespace gtsam {
       return Rot3Q();
     }
 
-    /// derivative of inverse rotation R^T s.t. inverse(R)*R = identity
-    Rot3Q inverse(boost::optional<Matrix&> H1=boost::none) const {
-    	if (H1) *H1 = -matrix();
-    	return Rot3Q(quaternion_.inverse());
-    }
-
     /// Compose two rotations i.e., R= (*this) * R2
     Rot3Q compose(const Rot3Q& R2,
   	boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
 
     /// rotate point from rotated coordinate frame to world = R*p
-    inline Point3 operator*(const Point3& p) const {
-      Eigen::Vector3d r = quaternion_ * Eigen::Vector3d(p.x(), p.y(), p.z());
-      return Point3(r(0), r(1), r(2));
-    }
+    Point3 operator*(const Point3& p) const;
+
+    /// derivative of inverse rotation R^T s.t. inverse(R)*R = identity
+    Rot3Q inverse(boost::optional<Matrix&> H1=boost::none) const;
 
     /// @}
     /// @name Manifold
@@ -210,9 +203,10 @@ namespace gtsam {
     Matrix transpose() const;
 
     /** returns column vector specified by index */
-    Point3 r1() const { return Point3(quaternion_.toRotationMatrix().col(0)); }
-    Point3 r2() const { return Point3(quaternion_.toRotationMatrix().col(1)); }
-    Point3 r3() const { return Point3(quaternion_.toRotationMatrix().col(2)); }
+    Point3 column(int index) const;
+    Point3 r1() const;
+    Point3 r2() const;
+    Point3 r3() const;
 
     /**
      * Use RQ to calculate xyz angle representation
@@ -232,12 +226,20 @@ namespace gtsam {
      */
     Vector rpy() const;
 
-    /** Compute the quaternion representation of this rotation - this is to
-     * maintain a standard Rot3 API with Rot3M, but here just returns the
-     * internal quaternion.
+    /**
+     * Accessors to get to components of angle representations
+     * NOTE: these are not efficient to get to multiple separate parts,
+     * you should instead use xyz() or ypr()
+     * TODO: make this more efficient
+     */
+    inline double roll() const  { return ypr()(2); }
+    inline double pitch() const { return ypr()(1); }
+    inline double yaw() const   { return ypr()(0); }
+
+    /** Compute the quaternion representation of this rotation.
      * @return The quaternion
      */
-    Quaternion toQuaternion() const { return quaternion_; }
+    Quaternion toQuaternion() const;
 
     /**
      * Return relative rotation D s.t. R2=D*R1, i.e. D=R2*R1'
@@ -247,7 +249,7 @@ namespace gtsam {
     		boost::optional<Matrix&> H2=boost::none) const;
 
     /** compose two rotations */
-    Rot3Q operator*(const Rot3Q& R2) const { return Rot3Q(quaternion_ * R2.quaternion_); }
+    Rot3Q operator*(const Rot3Q& R2) const;
 
     /**
      * rotate point from rotated coordinate frame to

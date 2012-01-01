@@ -26,11 +26,15 @@
 
 namespace gtsam {
 
-  typedef Eigen::Quaternion<double,Eigen::DontAlign> Quaternion; ///< Typedef to an Eigen Quaternion<double>
+  /// Typedef to an Eigen Quaternion<double>, we disable alignment because
+  /// geometry objects are stored in boost pool allocators, Values containers,
+  /// and and these pool allocators do not support alignment.
+  typedef Eigen::Quaternion<double, Eigen::DontAlign> Quaternion;
 
   /**
    * @brief 3D Rotations represented as rotation matrices
    * @ingroup geometry
+   * \nosubgrouping
    */
   class Rot3M {
   public:
@@ -42,11 +46,11 @@ namespace gtsam {
 
   public:
 
+    /// @name Constructors and named constructors
+    /// @{
+
     /** default constructor, unit rotation */
-    Rot3M() :
-      r1_(Point3(1.0,0.0,0.0)),
-      r2_(Point3(0.0,1.0,0.0)),
-      r3_(Point3(0.0,0.0,1.0)) {}
+    Rot3M();
 
     /**
      * Constructor from columns
@@ -54,35 +58,26 @@ namespace gtsam {
      * @param r2 Y-axis of rotated frame
      * @param r3 Z-axis of rotated frame
      */
-    Rot3M(const Point3& r1, const Point3& r2, const Point3& r3) :
-      r1_(r1), r2_(r2), r3_(r3) {}
+    Rot3M(const Point3& r1, const Point3& r2, const Point3& r3);
 
-    /** constructor from doubles in *row* order !!! */
+    /** constructor from a rotation matrix, as doubles in *row-major* order !!! */
     Rot3M(double R11, double R12, double R13,
         double R21, double R22, double R23,
-        double R31, double R32, double R33) :
-          r1_(Point3(R11, R21, R31)),
-          r2_(Point3(R12, R22, R32)),
-          r3_(Point3(R13, R23, R33)) {}
+        double R31, double R32, double R33);
 
-    /** constructor from matrix */
-    Rot3M(const Matrix& R):
-      r1_(Point3(R(0,0), R(1,0), R(2,0))),
-      r2_(Point3(R(0,1), R(1,1), R(2,1))),
-      r3_(Point3(R(0,2), R(1,2), R(2,2))) {}
+    /** constructor from a rotation matrix */
+    Rot3M(const Matrix& R);
 
     /** Constructor from a quaternion.  This can also be called using a plain
      * Vector, due to implicit conversion from Vector to Quaternion
      * @param q The quaternion
      */
-    Rot3M(const Quaternion& q) {
-      Eigen::Matrix3d R = q.toRotationMatrix();
-      r1_ = Point3(R.col(0));
-      r2_ = Point3(R.col(1));
-      r3_ = Point3(R.col(2));
-    }
+    Rot3M(const Quaternion& q);
+    
+    /** Constructor from a rotation matrix in a Rot3M */
+    Rot3M(const Rot3M& r);
 
-  /** Static member function to generate some well known rotations */
+    /* Static member function to generate some well known rotations */
 
     /**
      * Rotations around axes as in http://en.wikipedia.org/wiki/Rotation_matrix
@@ -102,14 +97,14 @@ namespace gtsam {
      * as described in http://www.sedris.org/wg8home/Documents/WG80462.pdf
      * Assumes vehicle coordinate frame X forward, Y right, Z down
      */
-    static Rot3M yaw  (double t) { return Rz(t);} // positive yaw is to right (as in aircraft heading)
-    static Rot3M pitch(double t) { return Ry(t);} // positive pitch is up (increasing aircraft altitude)
-    static Rot3M roll (double t) { return Rx(t);} // positive roll is to right (increasing yaw in aircraft)
+    static Rot3M yaw  (double t) { return Rz(t); } // positive yaw is to right (as in aircraft heading)
+    static Rot3M pitch(double t) { return Ry(t); } // positive pitch is up (increasing aircraft altitude)
+    static Rot3M roll (double t) { return Rx(t); } // positive roll is to right (increasing yaw in aircraft)
 
     /// Returns rotation matrix nRb from body to nav frame
     static Rot3M ypr  (double y, double p, double r) { return RzRyRx(r,p,y);}
 
-    /** Create from Quaternion parameters */
+    /** Create from Quaternion coefficients */
     static Rot3M quaternion(double w, double x, double y, double z) { Quaternion q(w, x, y, z); return Rot3M(q); }
 
     /**
@@ -129,14 +124,15 @@ namespace gtsam {
 
     /**
      * Rodriguez' formula to compute an incremental rotation matrix
-     * @param wx
-     * @param wy
-     * @param wz
+     * @param wx Incremental roll (about X)
+     * @param wy Incremental pitch (about Y)
+     * @param wz Incremental yaw (about Z)
      * @return incremental rotation matrix
      */
     static Rot3M rodriguez(double wx, double wy, double wz)
   		{ return rodriguez(Vector_(3,wx,wy,wz));}
 
+    /// @}
     /// @name Testable
     /// @{
 
@@ -160,16 +156,10 @@ namespace gtsam {
   	boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
 
     /// rotate point from rotated coordinate frame to world = R*p
-    inline Point3 operator*(const Point3& p) const { return rotate(p);}
+    Point3 operator*(const Point3& p) const;
 
-    /// derivative of inverse rotation R^T s.t. inverse(R)*R = Rot3M()
-    Rot3M inverse(boost::optional<Matrix&> H1=boost::none) const {
-    	if (H1) *H1 = -matrix();
-    	return Rot3M(
-    			r1_.x(), r1_.y(), r1_.z(),
-    			r2_.x(), r2_.y(), r2_.z(),
-    			r3_.x(), r3_.y(), r3_.z());
-    }
+    /// derivative of inverse rotation R^T s.t. inverse(R)*R = identity
+    Rot3M inverse(boost::optional<Matrix&> H1=boost::none) const;
 
     /// @}
     /// @name Manifold
@@ -181,7 +171,7 @@ namespace gtsam {
     /// return dimensionality of tangent space, DOF = 3
     size_t dim() const { return dimension; }
 
-  	/// Updates a with tangent space delta
+    /// Retraction from R^3 to Pose2 manifold neighborhood around current pose
     Rot3M retract(const Vector& v) const { return compose(Expmap(v)); }
 
     /// Returns inverse retraction
@@ -203,7 +193,7 @@ namespace gtsam {
     /**
      * Log map at identity - return the canonical coordinates of this rotation
      */
-		static Vector Logmap(const Rot3M& R);
+    static Vector Logmap(const Rot3M& R);
 
     /// @}
 
@@ -215,9 +205,9 @@ namespace gtsam {
 
     /** returns column vector specified by index */
     Point3 column(int index) const;
-    Point3 r1() const { return r1_; }
-    Point3 r2() const { return r2_; }
-    Point3 r3() const { return r3_; }
+    Point3 r1() const;
+    Point3 r2() const;
+    Point3 r3() const;
 
     /**
      * Use RQ to calculate xyz angle representation
@@ -250,12 +240,7 @@ namespace gtsam {
     /** Compute the quaternion representation of this rotation.
      * @return The quaternion
      */
-    Quaternion toQuaternion() const {
-      return Quaternion((Eigen::Matrix3d() <<
-          r1_.x(), r2_.x(), r3_.x(),
-          r1_.y(), r2_.y(), r3_.y(),
-          r1_.z(), r2_.z(), r3_.z()).finished());
-    }
+    Quaternion toQuaternion() const;
 
     /**
      * Return relative rotation D s.t. R2=D*R1, i.e. D=R2*R1'
@@ -265,9 +250,7 @@ namespace gtsam {
     		boost::optional<Matrix&> H2=boost::none) const;
 
     /** compose two rotations */
-    Rot3M operator*(const Rot3M& R2) const {
-      return Rot3M(rotate(R2.r1_), rotate(R2.r2_), rotate(R2.r3_));
-    }
+    Rot3M operator*(const Rot3M& R2) const;
 
     /**
      * rotate point from rotated coordinate frame to

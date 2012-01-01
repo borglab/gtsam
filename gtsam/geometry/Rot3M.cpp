@@ -31,6 +31,41 @@ INSTANTIATE_LIE(Rot3M);
 static const Matrix I3 = eye(3);
 
 /* ************************************************************************* */
+Rot3M::Rot3M() :
+    r1_(Point3(1.0,0.0,0.0)),
+    r2_(Point3(0.0,1.0,0.0)),
+    r3_(Point3(0.0,0.0,1.0)) {}
+
+/* ************************************************************************* */
+Rot3M::Rot3M(const Point3& r1, const Point3& r2, const Point3& r3) :
+    r1_(r1), r2_(r2), r3_(r3) {}
+
+/* ************************************************************************* */
+Rot3M::Rot3M(double R11, double R12, double R13,
+    double R21, double R22, double R23,
+    double R31, double R32, double R33) :
+      r1_(Point3(R11, R21, R31)),
+      r2_(Point3(R12, R22, R32)),
+      r3_(Point3(R13, R23, R33)) {}
+
+/* ************************************************************************* */
+Rot3M::Rot3M(const Matrix& R):
+  r1_(Point3(R(0,0), R(1,0), R(2,0))),
+  r2_(Point3(R(0,1), R(1,1), R(2,1))),
+  r3_(Point3(R(0,2), R(1,2), R(2,2))) {}
+
+/* ************************************************************************* */
+Rot3M::Rot3M(const Quaternion& q) {
+  Eigen::Matrix3d R = q.toRotationMatrix();
+  r1_ = Point3(R.col(0));
+  r2_ = Point3(R.col(1));
+  r3_ = Point3(R.col(2));
+}
+
+/* ************************************************************************* */
+Rot3M::Rot3M(const Rot3M& r) : r1_(r.r1_), r2_(r.r2_), r3_(r.r3_) {}
+
+/* ************************************************************************* */
 Rot3M Rot3M::Rx(double t) {
 	double st = sin(t), ct = cos(t);
 	return Rot3M(
@@ -140,11 +175,22 @@ Matrix Rot3M::transpose() const {
 Point3 Rot3M::column(int index) const{
 	if(index == 3)
 		return r3_;
-	else if (index == 2)
+	else if(index == 2)
 		return r2_;
-	else
+	else if(index == 1)
 		return r1_; // default returns r1
+	else
+	  throw invalid_argument("Argument to Rot3::column must be 1, 2, or 3");
 }
+
+/* ************************************************************************* */
+Point3 Rot3M::r1() const { return r1_; }
+
+/* ************************************************************************* */
+Point3 Rot3M::r2() const { return r2_; }
+
+/* ************************************************************************* */
+Point3 Rot3M::r3() const { return r3_; }
 
 /* ************************************************************************* */
 Vector Rot3M::xyz() const {
@@ -227,11 +273,36 @@ Rot3M Rot3M::compose (const Rot3M& R2,
 }
 
 /* ************************************************************************* */
+Point3 Rot3M::operator*(const Point3& p) const { return rotate(p); }
+
+/* ************************************************************************* */
+Rot3M Rot3M::inverse(boost::optional<Matrix&> H1) const {
+  if (H1) *H1 = -matrix();
+  return Rot3M(
+      r1_.x(), r1_.y(), r1_.z(),
+      r2_.x(), r2_.y(), r2_.z(),
+      r3_.x(), r3_.y(), r3_.z());
+}
+
+/* ************************************************************************* */
+Quaternion Rot3M::toQuaternion() const {
+  return Quaternion((Eigen::Matrix3d() <<
+      r1_.x(), r2_.x(), r3_.x(),
+      r1_.y(), r2_.y(), r3_.y(),
+      r1_.z(), r2_.z(), r3_.z()).finished());
+}
+
+/* ************************************************************************* */
 Rot3M Rot3M::between (const Rot3M& R2,
 		boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
 	if (H1) *H1 = -(R2.transpose()*matrix());
 	if (H2) *H2 = I3;
 	return between_default(*this, R2);
+}
+
+/* ************************************************************************* */
+Rot3M Rot3M::operator*(const Rot3M& R2) const {
+  return Rot3M(rotate(R2.r1_), rotate(R2.r2_), rotate(R2.r3_));
 }
 
 /* ************************************************************************* */
