@@ -11,10 +11,8 @@
 
 /**
  * @file    Rot3Q.h
- * @brief   3D Rotation represented as 3*3 matrix
- * @author  Alireza Fathi
- * @author  Christian Potthast
- * @author  Frank Dellaert
+ * @brief   3D Rotation represented as a quaternion
+ * @author  Richard Roberts
  */
 
 // \callgraph
@@ -27,11 +25,15 @@
 
 namespace gtsam {
 
-  typedef Eigen::Quaternion<double,Eigen::DontAlign> Quaternion; ///< Typedef to an Eigen Quaternion<double>
+  /// Typedef to an Eigen Quaternion<double>, we disable alignment because
+  /// geometry objects are stored in boost pool allocators, Values containers,
+  /// and and these pool allocators do not support alignment.
+  typedef Eigen::Quaternion<double, Eigen::DontAlign> Quaternion;
 
   /**
-   * @brief 3D Rotations represented as rotation matrices
+   * @brief 3D Rotations represented as quaternions
    * @ingroup geometry
+   * \nosubgrouping
    */
   class Rot3Q {
   public:
@@ -43,6 +45,9 @@ namespace gtsam {
 
   public:
 
+    /// @name Constructors and named constructors
+    /// @{
+
     /** default constructor, unit rotation */
     Rot3Q() : quaternion_(Quaternion::Identity()) {}
 
@@ -53,7 +58,7 @@ namespace gtsam {
           r1.y(), r2.y(), r3.y(),
           r1.z(), r2.z(), r3.z()).finished()) {}
 
-    /** constructor from doubles in *row* order !!! */
+    /** constructor from a rotation matrix, as doubles in *row-major* order !!! */
     Rot3Q(double R11, double R12, double R13,
         double R21, double R22, double R23,
         double R31, double R32, double R33) :
@@ -62,7 +67,7 @@ namespace gtsam {
               R21, R22, R23,
               R31, R32, R33).finished()) {}
 
-    /** constructor from matrix */
+    /** constructor from a rotation matrix */
     Rot3Q(const Matrix& R) : quaternion_(Eigen::Matrix3d(R)) {}
 
     /** Constructor from a quaternion.  This can also be called using a plain
@@ -71,7 +76,7 @@ namespace gtsam {
      */
     Rot3Q(const Quaternion& q) : quaternion_(q) {}
 
-    /** Constructor from a rotation matrix rotation Rot3M */
+    /** Constructor from a rotation matrix in a Rot3M */
     Rot3Q(const Rot3M& r) : quaternion_(Eigen::Matrix3d(r.matrix())) {}
 
     /* Static member function to generate some well known rotations */
@@ -99,7 +104,7 @@ namespace gtsam {
     static Rot3Q roll (double t) { return Rx(t); } // positive roll is to right (increasing yaw in aircraft)
     static Rot3Q ypr  (double y, double p, double r) { return RzRyRx(r,p,y);}
 
-    /** Create from Quaternion parameters */
+    /** Create from Quaternion coefficients */
     static Rot3Q quaternion(double w, double x, double y, double z) { Quaternion q(w, x, y, z); return Rot3Q(q); }
 
     /**
@@ -127,6 +132,7 @@ namespace gtsam {
     static Rot3Q rodriguez(double wx, double wy, double wz)
   		{ return rodriguez(Vector_(3,wx,wy,wz));}
 
+    /// @}
     /// @name Testable
     /// @{
 
@@ -140,12 +146,12 @@ namespace gtsam {
     /// @name Group
     /// @{
 
-    /// identity for group operation
+    /// identity rotation for group operation
     inline static Rot3Q identity() {
       return Rot3Q();
     }
 
-    /// derivative of inverse rotation R^T s.t. inverse(R)*R = Rot3Q()
+    /// derivative of inverse rotation R^T s.t. inverse(R)*R = identity
     Rot3Q inverse(boost::optional<Matrix&> H1=boost::none) const {
     	if (H1) *H1 = -matrix();
     	return Rot3Q(quaternion_.inverse());
@@ -226,7 +232,9 @@ namespace gtsam {
      */
     Vector rpy() const;
 
-    /** Compute the quaternion representation of this rotation.
+    /** Compute the quaternion representation of this rotation - this is to
+     * maintain a standard Rot3 API with Rot3M, but here just returns the
+     * internal quaternion.
      * @return The quaternion
      */
     Quaternion toQuaternion() const { return quaternion_; }
@@ -254,8 +262,6 @@ namespace gtsam {
      */
     Point3 unrotate(const Point3& p,
     	boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
-
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   private:
     /** Serialization function */

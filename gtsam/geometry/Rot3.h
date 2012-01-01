@@ -11,7 +11,7 @@
 
 /**
  * @file    Rot3.h
- * @brief   Contains a typedef to the default 3D rotation implementation determined at compile time
+ * @brief   Contains a typedef to the default 3D rotation implementation determined at compile time, see Rot3M and Rot3Q.
  * @author  Richard Roberts
  */
 

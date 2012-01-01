@@ -184,8 +184,6 @@ namespace gtsam {
         boost::optional<Matrix&> H1=boost::none,
         boost::optional<Matrix&> H2=boost::none) const;
 
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   private:
     /** Serialization function */
     friend class boost::serialization::access;
