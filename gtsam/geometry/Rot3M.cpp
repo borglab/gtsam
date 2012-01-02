@@ -10,12 +10,14 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    Rot3M.cpp
+ * @file    Rot3.cpp
  * @brief   Rotation (internal: 3*3 matrix representation*)
  * @author  Alireza Fathi
  * @author  Christian Potthast
  * @author  Frank Dellaert
  */
+
+#ifndef GTSAM_DEFAULT_QUATERNIONS
 
 #include <boost/math/constants/constants.hpp>
 #include <gtsam/geometry/Rot3.h>
@@ -27,17 +29,17 @@ namespace gtsam {
 static const Matrix I3 = eye(3);
 
 /* ************************************************************************* */
-Rot3M::Rot3M() :
+Rot3::Rot3() :
     r1_(Point3(1.0,0.0,0.0)),
     r2_(Point3(0.0,1.0,0.0)),
     r3_(Point3(0.0,0.0,1.0)) {}
 
 /* ************************************************************************* */
-Rot3M::Rot3M(const Point3& r1, const Point3& r2, const Point3& r3) :
+Rot3::Rot3(const Point3& r1, const Point3& r2, const Point3& r3) :
     r1_(r1), r2_(r2), r3_(r3) {}
 
 /* ************************************************************************* */
-Rot3M::Rot3M(double R11, double R12, double R13,
+Rot3::Rot3(double R11, double R12, double R13,
     double R21, double R22, double R23,
     double R31, double R32, double R33) :
       r1_(Point3(R11, R21, R31)),
@@ -45,13 +47,13 @@ Rot3M::Rot3M(double R11, double R12, double R13,
       r3_(Point3(R13, R23, R33)) {}
 
 /* ************************************************************************* */
-Rot3M::Rot3M(const Matrix& R):
+Rot3::Rot3(const Matrix& R):
   r1_(Point3(R(0,0), R(1,0), R(2,0))),
   r2_(Point3(R(0,1), R(1,1), R(2,1))),
   r3_(Point3(R(0,2), R(1,2), R(2,2))) {}
 
 /* ************************************************************************* */
-Rot3M::Rot3M(const Quaternion& q) {
+Rot3::Rot3(const Quaternion& q) {
   Eigen::Matrix3d R = q.toRotationMatrix();
   r1_ = Point3(R.col(0));
   r2_ = Point3(R.col(1));
@@ -59,30 +61,27 @@ Rot3M::Rot3M(const Quaternion& q) {
 }
 
 /* ************************************************************************* */
-Rot3M::Rot3M(const Rot3M& r) : r1_(r.r1_), r2_(r.r2_), r3_(r.r3_) {}
-
-/* ************************************************************************* */
-Rot3M Rot3M::Rx(double t) {
+Rot3 Rot3::Rx(double t) {
 	double st = sin(t), ct = cos(t);
-	return Rot3M(
+	return Rot3(
 			1,  0,  0,
 			0, ct,-st,
 			0, st, ct);
 }
 
 /* ************************************************************************* */
-Rot3M Rot3M::Ry(double t) {
+Rot3 Rot3::Ry(double t) {
 	double st = sin(t), ct = cos(t);
-	return Rot3M(
+	return Rot3(
 			ct, 0, st,
 			0, 1,  0,
 			-st, 0, ct);
 }
 
 /* ************************************************************************* */
-Rot3M Rot3M::Rz(double t) {
+Rot3 Rot3::Rz(double t) {
 	double st = sin(t), ct = cos(t);
-	return Rot3M(
+	return Rot3(
 			ct,-st, 0,
 			st, ct, 0,
 			0,  0, 1);
@@ -90,7 +89,7 @@ Rot3M Rot3M::Rz(double t) {
 
 /* ************************************************************************* */
 // Considerably faster than composing matrices above !
-Rot3M Rot3M::RzRyRx(double x, double y, double z) {
+Rot3 Rot3::RzRyRx(double x, double y, double z) {
 	double cx=cos(x),sx=sin(x);
 	double cy=cos(y),sy=sin(y);
 	double cz=cos(z),sz=sin(z);
@@ -105,7 +104,7 @@ Rot3M Rot3M::RzRyRx(double x, double y, double z) {
 	double s_c = sx * cz;
 	double c_c = cx * cz;
 	double ssc = ss_ * cz, csc = cs_ * cz, sss = ss_ * sz, css = cs_ * sz;
-	return Rot3M(
+	return Rot3(
 			_cc,- c_s + ssc,  s_s + csc,
 			_cs,  c_c + sss, -s_c + css,
 			-sy,        sc_,        cc_
@@ -113,7 +112,7 @@ Rot3M Rot3M::RzRyRx(double x, double y, double z) {
 }
 
 /* ************************************************************************* */
-Rot3M Rot3M::rodriguez(const Vector& w, double theta) {
+Rot3 Rot3::rodriguez(const Vector& w, double theta) {
 	// get components of axis \omega
 	double wx = w(0), wy=w(1), wz=w(2);
 	double wwTxx = wx*wx, wwTyy = wy*wy, wwTzz = wz*wz;
@@ -129,26 +128,26 @@ Rot3M Rot3M::rodriguez(const Vector& w, double theta) {
 	double                  C11 = c_1*wwTyy, C12 = c_1*wy*wz;
 	double                                   C22 = c_1*wwTzz;
 
-	return Rot3M(
+	return Rot3(
 			  c + C00, -swz + C01,  swy + C02,
 			swz + C01,    c + C11, -swx + C12,
 		 -swy + C02,  swx + C12,    c + C22);
 }
 
 /* ************************************************************************* */
-Rot3M Rot3M::rodriguez(const Vector& w) {
+Rot3 Rot3::rodriguez(const Vector& w) {
 	double t = w.norm();
-	if (t < 1e-10) return Rot3M();
+	if (t < 1e-10) return Rot3();
 	return rodriguez(w/t, t);
 }
 
 /* ************************************************************************* */
-bool Rot3M::equals(const Rot3M & R, double tol) const {
+bool Rot3::equals(const Rot3 & R, double tol) const {
 	return equal_with_abs_tol(matrix(), R.matrix(), tol);
 }
 
 /* ************************************************************************* */
-Rot3M Rot3M::compose (const Rot3M& R2,
+Rot3 Rot3::compose (const Rot3& R2,
     boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
   if (H1) *H1 = R2.transpose();
   if (H2) *H2 = I3;
@@ -156,19 +155,19 @@ Rot3M Rot3M::compose (const Rot3M& R2,
 }
 
 /* ************************************************************************* */
-Point3 Rot3M::operator*(const Point3& p) const { return rotate(p); }
+Point3 Rot3::operator*(const Point3& p) const { return rotate(p); }
 
 /* ************************************************************************* */
-Rot3M Rot3M::inverse(boost::optional<Matrix&> H1) const {
+Rot3 Rot3::inverse(boost::optional<Matrix&> H1) const {
   if (H1) *H1 = -matrix();
-  return Rot3M(
+  return Rot3(
       r1_.x(), r1_.y(), r1_.z(),
       r2_.x(), r2_.y(), r2_.z(),
       r3_.x(), r3_.y(), r3_.z());
 }
 
 /* ************************************************************************* */
-Rot3M Rot3M::between (const Rot3M& R2,
+Rot3 Rot3::between (const Rot3& R2,
     boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
   if (H1) *H1 = -(R2.transpose()*matrix());
   if (H2) *H2 = I3;
@@ -176,12 +175,12 @@ Rot3M Rot3M::between (const Rot3M& R2,
 }
 
 /* ************************************************************************* */
-Rot3M Rot3M::operator*(const Rot3M& R2) const {
-  return Rot3M(rotate(R2.r1_), rotate(R2.r2_), rotate(R2.r3_));
+Rot3 Rot3::operator*(const Rot3& R2) const {
+  return Rot3(rotate(R2.r1_), rotate(R2.r2_), rotate(R2.r3_));
 }
 
 /* ************************************************************************* */
-Point3 Rot3M::rotate(const Point3& p,
+Point3 Rot3::rotate(const Point3& p,
     boost::optional<Matrix&> H1,  boost::optional<Matrix&> H2) const {
   if (H1) *H1 = matrix() * skewSymmetric(-p.x(), -p.y(), -p.z());
   if (H2) *H2 = matrix();
@@ -190,7 +189,7 @@ Point3 Rot3M::rotate(const Point3& p,
 
 /* ************************************************************************* */
 // see doc/math.lyx, SO(3) section
-Point3 Rot3M::unrotate(const Point3& p,
+Point3 Rot3::unrotate(const Point3& p,
     boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
   const Matrix Rt(transpose());
   Point3 q(Rt*p.vector()); // q = Rt*p
@@ -201,7 +200,7 @@ Point3 Rot3M::unrotate(const Point3& p,
 
 /* ************************************************************************* */
 // Log map at identity - return the canonical coordinates of this rotation
-Vector Rot3M::Logmap(const Rot3M& R) {
+Vector Rot3::Logmap(const Rot3& R) {
   double tr = R.r1().x()+R.r2().y()+R.r3().z();
   // FIXME should tr in statement below be absolute value?
   if (tr > 3.0 - 1e-17) {   // when theta = 0, +-2pi, +-4pi, etc. (or tr > 3 + 1E-10)
@@ -234,7 +233,7 @@ Vector Rot3M::Logmap(const Rot3M& R) {
 }
 
 /* ************************************************************************* */
-Matrix Rot3M::matrix() const {
+Matrix Rot3::matrix() const {
 	Matrix R(3,3);
 	R <<
 			r1_.x(), r2_.x(), r3_.x(),
@@ -244,7 +243,7 @@ Matrix Rot3M::matrix() const {
 }
 
 /* ************************************************************************* */
-Matrix Rot3M::transpose() const {
+Matrix Rot3::transpose() const {
 	Matrix Rt(3,3);
 	Rt <<
 			r1_.x(), r1_.y(), r1_.z(),
@@ -254,7 +253,7 @@ Matrix Rot3M::transpose() const {
 }
 
 /* ************************************************************************* */
-Point3 Rot3M::column(int index) const{
+Point3 Rot3::column(int index) const{
 	if(index == 3)
 		return r3_;
 	else if(index == 2)
@@ -266,35 +265,35 @@ Point3 Rot3M::column(int index) const{
 }
 
 /* ************************************************************************* */
-Point3 Rot3M::r1() const { return r1_; }
+Point3 Rot3::r1() const { return r1_; }
 
 /* ************************************************************************* */
-Point3 Rot3M::r2() const { return r2_; }
+Point3 Rot3::r2() const { return r2_; }
 
 /* ************************************************************************* */
-Point3 Rot3M::r3() const { return r3_; }
+Point3 Rot3::r3() const { return r3_; }
 
 /* ************************************************************************* */
-Vector Rot3M::xyz() const {
+Vector Rot3::xyz() const {
 	Matrix I;Vector q;
 	boost::tie(I,q)=RQ(matrix());
 	return q;
 }
 
 /* ************************************************************************* */
-Vector Rot3M::ypr() const {
+Vector Rot3::ypr() const {
 	Vector q = xyz();
 	return Vector_(3,q(2),q(1),q(0));
 }
 
 /* ************************************************************************* */
-Vector Rot3M::rpy() const {
+Vector Rot3::rpy() const {
 	Vector q = xyz();
 	return Vector_(3,q(0),q(1),q(2));
 }
 
 /* ************************************************************************* */
-Quaternion Rot3M::toQuaternion() const {
+Quaternion Rot3::toQuaternion() const {
   return Quaternion((Eigen::Matrix3d() <<
       r1_.x(), r2_.x(), r3_.x(),
       r1_.y(), r2_.y(), r3_.y(),
@@ -305,15 +304,15 @@ Quaternion Rot3M::toQuaternion() const {
 pair<Matrix, Vector> RQ(const Matrix& A) {
 
 	double x = -atan2(-A(2, 1), A(2, 2));
-	Rot3M Qx = Rot3M::Rx(-x);
+	Rot3 Qx = Rot3::Rx(-x);
 	Matrix B = A * Qx.matrix();
 
 	double y = -atan2(B(2, 0), B(2, 2));
-	Rot3M Qy = Rot3M::Ry(-y);
+	Rot3 Qy = Rot3::Ry(-y);
 	Matrix C = B * Qy.matrix();
 
 	double z = -atan2(-C(1, 0), C(1, 1));
-	Rot3M Qz = Rot3M::Rz(-z);
+	Rot3 Qz = Rot3::Rz(-z);
 	Matrix R = C * Qz.matrix();
 
 	Vector xyz = Vector_(3, x, y, z);
@@ -323,3 +322,5 @@ pair<Matrix, Vector> RQ(const Matrix& A) {
 /* ************************************************************************* */
 
 } // namespace gtsam
+
+#endif

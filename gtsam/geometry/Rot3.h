@@ -16,19 +16,12 @@
  */
 // \callgraph
 
+#pragma once
+
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/3rdparty/Eigen/Eigen/Geometry>
 
-/* ************************************************************************* */
-// Below is the class definition of Rot3.  By the macros at the end of this
-// file, both Rot3M and Rot3Q are actually defined with this interface.
-#if defined Rot3 || defined __DOXYGEN
-
 namespace gtsam {
-
-  // Forward declarations;
-  class Rot3M;
-  class Rot3Q;
 
   /// Typedef to an Eigen Quaternion<double>, we disable alignment because
   /// geometry objects are stored in boost pool allocators, in Values
@@ -47,10 +40,10 @@ namespace gtsam {
     static const size_t dimension = 3;
 
   private:
-#if defined ROT3_IS_MATRIX
+#ifndef GTSAM_DEFAULT_QUATERNIONS
     /** We store columns ! */
     Point3 r1_, r2_, r3_;
-#elif defined ROT3_IS_QUATERNION
+#else
     /** Internal Eigen Quaternion */
     Quaternion quaternion_;
 #endif
@@ -84,9 +77,6 @@ namespace gtsam {
      * @param q The quaternion
      */
     Rot3(const Quaternion& q);
-
-    /** Constructor from a rotation matrix in a Rot3M */
-    Rot3(const Rot3M& r);
 
     /* Static member function to generate some well known rotations */
 
@@ -324,11 +314,11 @@ namespace gtsam {
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version)
     {
-#if defined ROT3_IS_MATRIX
+#ifndef GTSAM_DEFAULT_QUATERNIONS
       ar & BOOST_SERIALIZATION_NVP(r1_);
       ar & BOOST_SERIALIZATION_NVP(r2_);
       ar & BOOST_SERIALIZATION_NVP(r3_);
-#elif defined ROT3_IS_QUATERNION
+#else
       ar & BOOST_SERIALIZATION_NVP(quaternion_);
 #endif
     }
@@ -346,48 +336,3 @@ namespace gtsam {
    */
   std::pair<Matrix,Vector> RQ(const Matrix& A);
 }
-
-#endif // if defined Rot3 || defined __DOXYGEN
-
-
-/* ************************************************************************* */
-// This block of code defines both Rot3Q and Rot3M, by self-including Rot3.h
-// twice and using preprocessor definitions of Rot3 to be Rot3M and Rot3Q.  It
-// then creates a typedef of Rot3 to either Rot3M or Rot3Q, depending on
-// whether GTSAM_DEFAULT_QUATERNIONS is defined.
-#if !defined __ROT3_H
-#define __ROT3_H
-
-// Define Rot3M
-#define Rot3 Rot3M
-#define ROT3_IS_MATRIX
-#include <gtsam/geometry/Rot3.h>
-#undef Rot3
-#undef ROT3_IS_MATRIX
-
-// Define Rot3Q
-#define Rot3 Rot3Q
-#define ROT3_IS_QUATERNION
-#include <gtsam/geometry/Rot3.h>
-#undef Rot3
-#undef ROT3_IS_QUATERNION
-
-// Create Rot3 typedef
-namespace gtsam {
-  /**
-   * Typedef to the main 3D rotation implementation, which is Rot3M by default,
-   * or Rot3Q if GTSAM_DEFAULT_QUATERNIONS is defined.  Depending on whether
-   * GTSAM_DEFAULT_QUATERNIONS is defined, Rot3M (the rotation matrix
-   * implementation) or Rot3Q (the quaternion implementation) will used in all
-   * built-in gtsam geometry types that involve 3D rotations, such as Pose3,
-   * SimpleCamera, CalibratedCamera, StereoCamera, etc.
-   */
-#ifdef GTSAM_DEFAULT_QUATERNIONS
-  typedef Rot3Q Rot3;
-#else
-  typedef Rot3M Rot3;
-#endif
-}
-
-#endif // if !defined Rot3
-
