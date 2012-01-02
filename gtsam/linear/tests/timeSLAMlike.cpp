@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
           else if(c != 0) {
             // Generate a random Gaussian factor
             for(size_t h=0; h<varsPerBlock; ++h) {
-              Index var;
+              int var;
               // If it's the first factor for this variable, make it "odometry"
               if(d == 0 && h == 0)
                 var = c-1;
@@ -90,12 +90,12 @@ int main(int argc, char *argv[]) {
                 do
                   var = c + ri();
                 while(var < 0 || var > nVars-1 || find_if(terms.begin(), terms.end(),
-                    boost::bind(&pair<Index, Matrix>::first, boost::lambda::_1) == var) != terms.end());
+                    boost::bind(&pair<Index, Matrix>::first, boost::lambda::_1) == Index(var)) != terms.end());
               Matrix A(blockdim, vardim);
               for(size_t j=0; j<blockdim; ++j)
                 for(size_t k=0; k<vardim; ++k)
                   A(j,k) = rg();
-              terms.push_back(make_pair(var, A));
+              terms.push_back(make_pair(Index(var), A));
             }
           }
           Vector b(blockdim);
