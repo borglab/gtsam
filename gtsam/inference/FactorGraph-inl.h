@@ -29,8 +29,7 @@
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/format.hpp>
-#include <boost/lambda/bind.hpp>
-#include <boost/lambda/lambda.hpp>
+#include <boost/bind.hpp>
 #include <boost/graph/prim_minimum_spanning_tree.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 
@@ -108,16 +107,10 @@ namespace gtsam {
 	template<class DERIVED, class KEY>
 	typename DERIVED::shared_ptr Combine(const FactorGraph<DERIVED>& factors,
 			const FastMap<KEY, std::vector<KEY> >& variableSlots) {
-		typedef const FastMap<KEY, std::vector<KEY> > VariableSlots;
-		typedef typeof(boost::lambda::bind(&VariableSlots::value_type::first, boost::lambda::_1))
-				FirstGetter;
-		typedef boost::transform_iterator<FirstGetter,
-				typename VariableSlots::const_iterator, KEY, KEY> IndexIterator;
-		FirstGetter firstGetter(boost::lambda::bind(
-				&VariableSlots::value_type::first, boost::lambda::_1));
-		IndexIterator keysBegin(variableSlots.begin(), firstGetter);
-		IndexIterator keysEnd(variableSlots.end(), firstGetter);
-		return typename DERIVED::shared_ptr(new DERIVED(keysBegin, keysEnd));
+		typedef const pair<const KEY, std::vector<KEY> > KeySlotPair;
+		return typename DERIVED::shared_ptr(new DERIVED(
+		    boost::make_transform_iterator(variableSlots.begin(), boost::bind(&KeySlotPair::first, _1)),
+		    boost::make_transform_iterator(variableSlots.end(), boost::bind(&KeySlotPair::first, _1))));
 	}
 
   /* ************************************************************************* */
