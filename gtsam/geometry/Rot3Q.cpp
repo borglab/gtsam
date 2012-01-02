@@ -10,11 +10,9 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    Rot3.cpp
- * @brief   Rotation (internal: 3*3 matrix representation*)
- * @author  Alireza Fathi
- * @author  Christian Potthast
- * @author  Frank Dellaert
+ * @file    Rot3Q.cpp
+ * @brief   Rotation (internal: quaternion representation*)
+ * @author  Richard Roberts
  */
 
 #ifdef GTSAM_DEFAULT_QUATERNIONS
