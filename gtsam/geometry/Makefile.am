@@ -14,8 +14,7 @@ check_PROGRAMS =
 headers += concepts.h
 
 # Points and poses
-sources += Point2.cpp Rot2.cpp Pose2.cpp Point3.cpp Rot3M.cpp Rot3Q.cpp Pose3.cpp
-headers += Rot3.h
+sources += Point2.cpp Rot2.cpp Pose2.cpp Point3.cpp Pose3.cpp
 check_PROGRAMS += tests/testPoint2 tests/testRot2 tests/testPose2 tests/testPoint3 tests/testRot3M tests/testRot3Q tests/testPose3
 
 # Cameras
@@ -36,6 +35,11 @@ check_PROGRAMS += tests/testTensors tests/testHomography2 tests/testFundamental
 # Timing tests
 noinst_PROGRAMS = tests/timeRot3 tests/timeCalibratedCamera
 
+# Rot3M and Rot3Q both use Rot3.h, they do not have individual header files
+allsources = $(sources)
+allsources += Rot3M.cpp Rot3Q.cpp
+headers += Rot3.h
+
 #----------------------------------------------------------------------------------------------------
 # Create a libtool library that is not installed
 # It will be packaged in the toplevel libgtsam.la as specfied in ../Makefile.am 
@@ -45,7 +49,7 @@ headers += $(sources:.cpp=.h)
 geometrydir = $(pkgincludedir)/geometry
 geometry_HEADERS = $(headers)
 noinst_LTLIBRARIES = libgeometry.la
-libgeometry_la_SOURCES = $(sources)
+libgeometry_la_SOURCES = $(allsources)
 AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I$(top_srcdir)
 AM_LDFLAGS = $(BOOST_LDFLAGS)
 

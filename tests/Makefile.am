@@ -22,7 +22,7 @@ check_PROGRAMS += testBoundingConstraint
 check_PROGRAMS += testPose2SLAMwSPCG
 check_PROGRAMS += testGaussianISAM2
 check_PROGRAMS += testExtendedKalmanFilter
-check_PROGRAMS += testRot3QOptimization
+check_PROGRAMS += testRot3Optimization
 
 # only if serialization is available
 if ENABLE_SERIALIZATION

@@ -21,7 +21,7 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/lieProxies.h>
 #include <gtsam/geometry/Point3.h>
-#include <gtsam/geometry/Rot3Q.h>
+#include <gtsam/geometry/Rot3.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearOptimization.h>
@@ -43,7 +43,9 @@ typedef BetweenFactor<ValuesM, KeyM> BetweenM;
 typedef NonlinearFactorGraph<ValuesM> GraphM;
 
 /* ************************************************************************* */
-TEST(Rot3Q, optimize1) {
+TEST(Rot3, optimize1) {
+  // Compare Rot3Q and Rot3M optimization
+
   GraphQ fgQ;
   fgQ.add(PriorQ(0, Rot3Q(), sharedSigma(3, 0.01)));
   fgQ.add(BetweenQ(0, 1, Rot3Q::Rz(M_PI/3.0), sharedSigma(3, 0.01)));
@@ -101,7 +103,7 @@ TEST(Rot3Q, optimize1) {
 }
 
 /* ************************************************************************* */
-TEST(Rot3Q, optimize) {
+TEST(Rot3, optimize) {
 
   // Optimize a circle
   ValuesQ truth;
@@ -115,7 +117,6 @@ TEST(Rot3Q, optimize) {
   }
 
   NonlinearOptimizationParameters params;
-  //params.verbosity_ = NonlinearOptimizationParameters::TRYLAMBDA;
   ValuesQ final = optimize(fg, initial, params);
 
   EXPECT(assert_equal(truth, final, 1e-5));

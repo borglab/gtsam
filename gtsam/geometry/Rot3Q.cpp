@@ -18,15 +18,11 @@
  */
 
 #include <boost/math/constants/constants.hpp>
-#include <gtsam/geometry/Rot3Q.h>
-#include <gtsam/base/Lie-inl.h>
+#include <gtsam/geometry/Rot3.h>
 
 using namespace std;
 
 namespace gtsam {
-
-  /** Explicit instantiation of base class to export members */
-  INSTANTIATE_LIE(Rot3Q);
 
 	static const Matrix I3 = eye(3);
 
