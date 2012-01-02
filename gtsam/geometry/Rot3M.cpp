@@ -148,6 +148,92 @@ bool Rot3M::equals(const Rot3M & R, double tol) const {
 }
 
 /* ************************************************************************* */
+Rot3M Rot3M::compose (const Rot3M& R2,
+    boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+  if (H1) *H1 = R2.transpose();
+  if (H2) *H2 = I3;
+  return *this * R2;
+}
+
+/* ************************************************************************* */
+Point3 Rot3M::operator*(const Point3& p) const { return rotate(p); }
+
+/* ************************************************************************* */
+Rot3M Rot3M::inverse(boost::optional<Matrix&> H1) const {
+  if (H1) *H1 = -matrix();
+  return Rot3M(
+      r1_.x(), r1_.y(), r1_.z(),
+      r2_.x(), r2_.y(), r2_.z(),
+      r3_.x(), r3_.y(), r3_.z());
+}
+
+/* ************************************************************************* */
+Rot3M Rot3M::between (const Rot3M& R2,
+    boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+  if (H1) *H1 = -(R2.transpose()*matrix());
+  if (H2) *H2 = I3;
+  return between_default(*this, R2);
+}
+
+/* ************************************************************************* */
+Rot3M Rot3M::operator*(const Rot3M& R2) const {
+  return Rot3M(rotate(R2.r1_), rotate(R2.r2_), rotate(R2.r3_));
+}
+
+/* ************************************************************************* */
+Point3 Rot3M::rotate(const Point3& p,
+    boost::optional<Matrix&> H1,  boost::optional<Matrix&> H2) const {
+  if (H1) *H1 = matrix() * skewSymmetric(-p.x(), -p.y(), -p.z());
+  if (H2) *H2 = matrix();
+  return r1_ * p.x() + r2_ * p.y() + r3_ * p.z();
+}
+
+/* ************************************************************************* */
+// see doc/math.lyx, SO(3) section
+Point3 Rot3M::unrotate(const Point3& p,
+    boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+  const Matrix Rt(transpose());
+  Point3 q(Rt*p.vector()); // q = Rt*p
+  if (H1) *H1 = skewSymmetric(q.x(), q.y(), q.z());
+  if (H2) *H2 = Rt;
+  return q;
+}
+
+/* ************************************************************************* */
+// Log map at identity - return the canonical coordinates of this rotation
+Vector Rot3M::Logmap(const Rot3M& R) {
+  double tr = R.r1().x()+R.r2().y()+R.r3().z();
+  // FIXME should tr in statement below be absolute value?
+  if (tr > 3.0 - 1e-17) {   // when theta = 0, +-2pi, +-4pi, etc. (or tr > 3 + 1E-10)
+    return zero(3);
+  } else if (tr > 3.0 - 1e-10)  {   // when theta near 0, +-2pi, +-4pi, etc. (or tr > 3 + 1E-3)
+    double theta = acos((tr-1.0)/2.0);
+    // Using Taylor expansion: theta/(2*sin(theta)) \approx 1/2+theta^2/12 + O(theta^4)
+    return (0.5 + theta*theta/12)*Vector_(3,
+        R.r2().z()-R.r3().y(),
+        R.r3().x()-R.r1().z(),
+        R.r1().y()-R.r2().x());
+    // FIXME: in statement below, is this the right comparision?
+  } else if (fabs(tr - -1.0) < 1e-10) { // when theta = +-pi, +-3pi, +-5pi, etc.
+    if(fabs(R.r3().z() - -1.0) > 1e-10)
+      return (boost::math::constants::pi<double>() / sqrt(2.0+2.0*R.r3().z())) *
+          Vector_(3, R.r3().x(), R.r3().y(), 1.0+R.r3().z());
+    else if(fabs(R.r2().y() - -1.0) > 1e-10)
+      return (boost::math::constants::pi<double>() / sqrt(2.0+2.0*R.r2().y())) *
+          Vector_(3, R.r2().x(), 1.0+R.r2().y(), R.r2().z());
+    else // if(fabs(R.r1().x() - -1.0) > 1e-10)  This is implicit
+      return (boost::math::constants::pi<double>() / sqrt(2.0+2.0*R.r1().x())) *
+          Vector_(3, 1.0+R.r1().x(), R.r1().y(), R.r1().z());
+  } else {
+    double theta = acos((tr-1.0)/2.0);
+    return (theta/2.0/sin(theta))*Vector_(3,
+        R.r2().z()-R.r3().y(),
+        R.r3().x()-R.r1().z(),
+        R.r1().y()-R.r2().x());
+  }
+}
+
+/* ************************************************************************* */
 Matrix Rot3M::matrix() const {
 	Matrix R(3,3);
 	R <<
@@ -208,97 +294,11 @@ Vector Rot3M::rpy() const {
 }
 
 /* ************************************************************************* */
-// Log map at identity - return the canonical coordinates of this rotation
-Vector Rot3M::Logmap(const Rot3M& R) {
-	double tr = R.r1().x()+R.r2().y()+R.r3().z();
-	// FIXME should tr in statement below be absolute value?
-	if (tr > 3.0 - 1e-17) {   // when theta = 0, +-2pi, +-4pi, etc. (or tr > 3 + 1E-10)
-		return zero(3);
-	} else if (tr > 3.0 - 1e-10)  {   // when theta near 0, +-2pi, +-4pi, etc. (or tr > 3 + 1E-3)
-		double theta = acos((tr-1.0)/2.0);
-		// Using Taylor expansion: theta/(2*sin(theta)) \approx 1/2+theta^2/12 + O(theta^4)
-		return (0.5 + theta*theta/12)*Vector_(3,
-				R.r2().z()-R.r3().y(),
-				R.r3().x()-R.r1().z(),
-				R.r1().y()-R.r2().x());
-		// FIXME: in statement below, is this the right comparision?
-	} else if (fabs(tr - -1.0) < 1e-10) { // when theta = +-pi, +-3pi, +-5pi, etc.
-		if(fabs(R.r3().z() - -1.0) > 1e-10)
-			return (boost::math::constants::pi<double>() / sqrt(2.0+2.0*R.r3().z())) *
-					Vector_(3, R.r3().x(), R.r3().y(), 1.0+R.r3().z());
-		else if(fabs(R.r2().y() - -1.0) > 1e-10)
-			return (boost::math::constants::pi<double>() / sqrt(2.0+2.0*R.r2().y())) *
-					Vector_(3, R.r2().x(), 1.0+R.r2().y(), R.r2().z());
-		else // if(fabs(R.r1().x() - -1.0) > 1e-10)  This is implicit
-			return (boost::math::constants::pi<double>() / sqrt(2.0+2.0*R.r1().x())) *
-					Vector_(3, 1.0+R.r1().x(), R.r1().y(), R.r1().z());
-	} else {
-		double theta = acos((tr-1.0)/2.0);
-		return (theta/2.0/sin(theta))*Vector_(3,
-				R.r2().z()-R.r3().y(),
-				R.r3().x()-R.r1().z(),
-				R.r1().y()-R.r2().x());
-	}
-}
-
-/* ************************************************************************* */
-Point3 Rot3M::rotate(const Point3& p,
-		boost::optional<Matrix&> H1,  boost::optional<Matrix&> H2) const {
-	if (H1) *H1 = matrix() * skewSymmetric(-p.x(), -p.y(), -p.z());
-	if (H2) *H2 = matrix();
-	return r1_ * p.x() + r2_ * p.y() + r3_ * p.z();
-}
-
-/* ************************************************************************* */
-// see doc/math.lyx, SO(3) section
-Point3 Rot3M::unrotate(const Point3& p,
-		boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
-	const Matrix Rt(transpose());
-	Point3 q(Rt*p.vector()); // q = Rt*p
-	if (H1) *H1 = skewSymmetric(q.x(), q.y(), q.z());
-	if (H2) *H2 = Rt;
-	return q;
-}
-
-/* ************************************************************************* */
-Rot3M Rot3M::compose (const Rot3M& R2,
-		boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
-	if (H1) *H1 = R2.transpose();
-	if (H2) *H2 = I3;
-	return *this * R2;
-}
-
-/* ************************************************************************* */
-Point3 Rot3M::operator*(const Point3& p) const { return rotate(p); }
-
-/* ************************************************************************* */
-Rot3M Rot3M::inverse(boost::optional<Matrix&> H1) const {
-  if (H1) *H1 = -matrix();
-  return Rot3M(
-      r1_.x(), r1_.y(), r1_.z(),
-      r2_.x(), r2_.y(), r2_.z(),
-      r3_.x(), r3_.y(), r3_.z());
-}
-
-/* ************************************************************************* */
 Quaternion Rot3M::toQuaternion() const {
   return Quaternion((Eigen::Matrix3d() <<
       r1_.x(), r2_.x(), r3_.x(),
       r1_.y(), r2_.y(), r3_.y(),
       r1_.z(), r2_.z(), r3_.z()).finished());
-}
-
-/* ************************************************************************* */
-Rot3M Rot3M::between (const Rot3M& R2,
-		boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
-	if (H1) *H1 = -(R2.transpose()*matrix());
-	if (H2) *H2 = I3;
-	return between_default(*this, R2);
-}
-
-/* ************************************************************************* */
-Rot3M Rot3M::operator*(const Rot3M& R2) const {
-  return Rot3M(rotate(R2.r1_), rotate(R2.r2_), rotate(R2.r3_));
 }
 
 /* ************************************************************************* */

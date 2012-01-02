@@ -199,6 +199,30 @@ namespace gtsam {
     /// derivative of inverse rotation R^T s.t. inverse(R)*R = identity
     Rot3 inverse(boost::optional<Matrix&> H1=boost::none) const;
 
+    /**
+     * Return relative rotation D s.t. R2=D*R1, i.e. D=R2*R1'
+     */
+    Rot3 between(const Rot3& R2,
+        boost::optional<Matrix&> H1=boost::none,
+        boost::optional<Matrix&> H2=boost::none) const;
+
+    /** compose two rotations */
+    Rot3 operator*(const Rot3& R2) const;
+
+    /**
+     * rotate point from rotated coordinate frame to
+     * world = R*p
+     */
+    Point3 rotate(const Point3& p,
+    boost::optional<Matrix&> H1=boost::none,  boost::optional<Matrix&> H2=boost::none) const;
+
+    /**
+     * rotate point from world to rotated
+     * frame = R'*p
+     */
+    Point3 unrotate(const Point3& p,
+      boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
+
     /// @}
     /// @name Manifold
     /// @{
@@ -293,30 +317,6 @@ namespace gtsam {
      * @return The quaternion
      */
     Quaternion toQuaternion() const;
-
-    /**
-     * Return relative rotation D s.t. R2=D*R1, i.e. D=R2*R1'
-     */
-    Rot3 between(const Rot3& R2,
-        boost::optional<Matrix&> H1=boost::none,
-        boost::optional<Matrix&> H2=boost::none) const;
-
-    /** compose two rotations */
-    Rot3 operator*(const Rot3& R2) const;
-
-    /**
-     * rotate point from rotated coordinate frame to
-     * world = R*p
-     */
-    Point3 rotate(const Point3& p,
-    boost::optional<Matrix&> H1=boost::none,  boost::optional<Matrix&> H2=boost::none) const;
-
-    /**
-     * rotate point from world to rotated
-     * frame = R'*p
-     */
-    Point3 unrotate(const Point3& p,
-      boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
 
   private:
     /** Serialization function */

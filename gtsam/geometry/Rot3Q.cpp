@@ -88,6 +88,71 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  Rot3Q Rot3Q::compose(const Rot3Q& R2,
+  boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+    if (H1) *H1 = R2.transpose();
+    if (H2) *H2 = I3;
+    return Rot3Q(quaternion_ * R2.quaternion_);
+  }
+
+  /* ************************************************************************* */
+  Point3 Rot3Q::operator*(const Point3& p) const {
+    Eigen::Vector3d r = quaternion_ * Eigen::Vector3d(p.x(), p.y(), p.z());
+    return Point3(r(0), r(1), r(2));
+  }
+
+  /* ************************************************************************* */
+  Rot3Q Rot3Q::inverse(boost::optional<Matrix&> H1) const {
+    if (H1) *H1 = -matrix();
+    return Rot3Q(quaternion_.inverse());
+  }
+
+  /* ************************************************************************* */
+  Rot3Q Rot3Q::between(const Rot3Q& R2,
+  boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+    if (H1) *H1 = -(R2.transpose()*matrix());
+    if (H2) *H2 = I3;
+    return between_default(*this, R2);
+  }
+
+  /* ************************************************************************* */
+  Rot3Q Rot3Q::operator*(const Rot3Q& R2) const {
+    return Rot3Q(quaternion_ * R2.quaternion_);
+  }
+
+  /* ************************************************************************* */
+  Point3 Rot3Q::rotate(const Point3& p,
+        boost::optional<Matrix&> H1,  boost::optional<Matrix&> H2) const {
+    Matrix R = matrix();
+    if (H1) *H1 = R * skewSymmetric(-p.x(), -p.y(), -p.z());
+    if (H2) *H2 = R;
+    Eigen::Vector3d r = R * p.vector();
+    return Point3(r.x(), r.y(), r.z());
+  }
+
+  /* ************************************************************************* */
+  // see doc/math.lyx, SO(3) section
+  Point3 Rot3Q::unrotate(const Point3& p,
+      boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+    const Matrix Rt(transpose());
+    Point3 q(Rt*p.vector()); // q = Rt*p
+    if (H1) *H1 = skewSymmetric(q.x(), q.y(), q.z());
+    if (H2) *H2 = Rt;
+    return q;
+  }
+
+  /* ************************************************************************* */
+  // Log map at identity - return the canonical coordinates of this rotation
+  Vector Rot3Q::Logmap(const Rot3Q& R) {
+    Eigen::AngleAxisd angleAxis(R.quaternion_);
+    if(angleAxis.angle() > M_PI)      // Important:  use the smallest possible
+      angleAxis.angle() -= 2.0*M_PI;  // angle, e.g. no more than PI, to keep
+    if(angleAxis.angle() < -M_PI)     // error continuous.
+      angleAxis.angle() += 2.0*M_PI;
+    return angleAxis.axis() * angleAxis.angle();
+  }
+
+  /* ************************************************************************* */
   Matrix Rot3Q::matrix() const { return quaternion_.toRotationMatrix(); }
 
   /* ************************************************************************* */
@@ -134,72 +199,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  // Log map at identity - return the canonical coordinates of this rotation
-  Vector Rot3Q::Logmap(const Rot3Q& R) {
-    Eigen::AngleAxisd angleAxis(R.quaternion_);
-    if(angleAxis.angle() > M_PI)      // Important:  use the smallest possible
-      angleAxis.angle() -= 2.0*M_PI;  // angle, e.g. no more than PI, to keep
-    if(angleAxis.angle() < -M_PI)     // error continuous.
-      angleAxis.angle() += 2.0*M_PI;
-    return angleAxis.axis() * angleAxis.angle();
-  }
-
-  /* ************************************************************************* */
-  Point3 Rot3Q::rotate(const Point3& p,
-  		  boost::optional<Matrix&> H1,  boost::optional<Matrix&> H2) const {
-    Matrix R = matrix();
-	  if (H1) *H1 = R * skewSymmetric(-p.x(), -p.y(), -p.z());
-	  if (H2) *H2 = R;
-	  Eigen::Vector3d r = R * p.vector();
-	  return Point3(r.x(), r.y(), r.z());
-  }
-
-  /* ************************************************************************* */
-  // see doc/math.lyx, SO(3) section
-  Point3 Rot3Q::unrotate(const Point3& p,
-  		boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
-    const Matrix Rt(transpose());
-    Point3 q(Rt*p.vector()); // q = Rt*p
-    if (H1) *H1 = skewSymmetric(q.x(), q.y(), q.z());
-    if (H2) *H2 = Rt;
-    return q;
-  }
-
-  /* ************************************************************************* */
-  Rot3Q Rot3Q::compose(const Rot3Q& R2,
-	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
-		if (H1) *H1 = R2.transpose();
-	  if (H2) *H2 = I3;
-	  return Rot3Q(quaternion_ * R2.quaternion_);
-  }
-
-  /* ************************************************************************* */
-  Point3 Rot3Q::operator*(const Point3& p) const {
-    Eigen::Vector3d r = quaternion_ * Eigen::Vector3d(p.x(), p.y(), p.z());
-    return Point3(r(0), r(1), r(2));
-  }
-
-  /* ************************************************************************* */
-  Rot3Q Rot3Q::inverse(boost::optional<Matrix&> H1) const {
-    if (H1) *H1 = -matrix();
-    return Rot3Q(quaternion_.inverse());
-  }
-
-  /* ************************************************************************* */
   Quaternion Rot3Q::toQuaternion() const { return quaternion_; }
-
-  /* ************************************************************************* */
-  Rot3Q Rot3Q::between(const Rot3Q& R2,
-	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
-	  if (H1) *H1 = -(R2.transpose()*matrix());
-	  if (H2) *H2 = I3;
-	  return between_default(*this, R2);
-  }
-
-  /* ************************************************************************* */
-  Rot3Q Rot3Q::operator*(const Rot3Q& R2) const {
-    return Rot3Q(quaternion_ * R2.quaternion_);
-  }
 
   /* ************************************************************************* */
 
