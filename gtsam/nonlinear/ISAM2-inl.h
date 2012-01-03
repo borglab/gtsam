@@ -37,8 +37,6 @@ using namespace std;
 
 static const bool disableReordering = false;
 static const double batchThreshold = 0.65;
-static const bool latestLast = true;
-static const bool structuralLast = false;
 
 /* ************************************************************************* */
 template<class CONDITIONAL, class VALUES, class GRAPH>
@@ -155,7 +153,8 @@ ISAM2<CONDITIONAL, VALUES, GRAPH>::getCachedBoundaryFactors(Cliques& orphans) {
 
 template<class CONDITIONAL, class VALUES, class GRAPH>
 boost::shared_ptr<FastSet<Index> > ISAM2<CONDITIONAL, VALUES, GRAPH>::recalculate(
-    const FastSet<Index>& markedKeys, const FastSet<Index>& structuralKeys, const FastVector<Index>& newKeys, const FactorGraph<GaussianFactor>::shared_ptr newFactors, ISAM2Result& result) {
+    const FastSet<Index>& markedKeys, const FastVector<Index>& newKeys, const FactorGraph<GaussianFactor>::shared_ptr newFactors,
+    const boost::optional<FastSet<Index> >& constrainKeys, ISAM2Result& result) {
 
   // TODO:  new factors are linearized twice, the newFactors passed in are not used.
 
@@ -181,38 +180,12 @@ boost::shared_ptr<FastSet<Index> > ISAM2<CONDITIONAL, VALUES, GRAPH>::recalculat
   counter++;
 #endif
 
-  FastSet<Index> affectedStructuralKeys;
-  if(structuralLast) {
-    tic(0, "affectedStructuralKeys");
-    affectedStructuralKeys.insert(structuralKeys.begin(), structuralKeys.end());
-    // For each structural variable, collect the variables up the path to the root,
-    // which will be constrained to the back of the ordering.
-    BOOST_FOREACH(Index key, structuralKeys) {
-      sharedClique clique = this->nodes_[key];
-      while(clique) {
-        affectedStructuralKeys.insert((*clique)->beginFrontals(), (*clique)->endFrontals());
-#ifndef NDEBUG // This is because BayesTreeClique stores pointers to BayesTreeClique but we actually have the derived type ISAM2Clique
-        clique = boost::dynamic_pointer_cast<Clique>(clique->parent_.lock());
-#else
-        clique = boost::static_pointer_cast<Clique>(clique->parent_.lock());
-#endif
-      }
-    }
-    toc(0, "affectedStructuralKeys");
-  }
-
   if(debug) {
     cout << "markedKeys: ";
     BOOST_FOREACH(const Index key, markedKeys) { cout << key << " "; }
     cout << endl;
     cout << "newKeys: ";
     BOOST_FOREACH(const Index key, newKeys) { cout << key << " "; }
-    cout << endl;
-    cout << "structuralKeys: ";
-    BOOST_FOREACH(const Index key, structuralKeys) { cout << key << " "; }
-    cout << endl;
-    cout << "affectedStructuralKeys: ";
-    BOOST_FOREACH(const Index key, affectedStructuralKeys) { cout << key << " "; }
     cout << endl;
   }
 
@@ -257,16 +230,13 @@ boost::shared_ptr<FastSet<Index> > ISAM2<CONDITIONAL, VALUES, GRAPH>::recalculat
     tic(1,"CCOLAMD");
     // Do a batch step - reorder and relinearize all variables
     vector<int> cmember(theta_.size(), 0);
-    if(structuralLast) {
-      if(theta_.size() > affectedStructuralKeys.size()) {
-        BOOST_FOREACH(Index var, affectedStructuralKeys) { cmember[var] = 1; }
-        if(latestLast) { BOOST_FOREACH(Index var, newKeys) { cmember[var] = 2; } }
-      }
-    } else if(latestLast) {
-      FastSet<Index> newKeysSet(newKeys.begin(), newKeys.end());
-      if(theta_.size() > newKeysSet.size()) {
-        BOOST_FOREACH(Index var, newKeys) { cmember[var] = 1; }
-      }
+    FastSet<Index> constrainedKeysSet;
+    if(constrainKeys)
+      constrainedKeysSet = *constrainKeys;
+    else
+      constrainedKeysSet.insert(newKeys.begin(), newKeys.end());
+    if(theta_.size() > constrainedKeysSet.size()) {
+      BOOST_FOREACH(Index var, constrainedKeysSet) { cmember[var] = 1; }
     }
     Permutation::shared_ptr colamd(Inference::PermutationCOLAMD_(variableIndex_, cmember));
     Permutation::shared_ptr colamdInverse(colamd->inverse());
@@ -364,8 +334,11 @@ boost::shared_ptr<FastSet<Index> > ISAM2<CONDITIONAL, VALUES, GRAPH>::recalculat
     typename Impl::ReorderingMode reorderingMode;
     reorderingMode.nFullSystemVars = ordering_.nVars();
     reorderingMode.algorithm = Impl::ReorderingMode::COLAMD;
-    reorderingMode.constrain = Impl::ReorderingMode::LATEST_LAST;
-    reorderingMode.latestKeys = FastSet<Index>(newKeys.begin(), newKeys.end());
+    reorderingMode.constrain = Impl::ReorderingMode::CONSTRAIN_LAST;
+    if(constrainKeys)
+      reorderingMode.constrainedKeys = *constrainKeys;
+    else
+      reorderingMode.constrainedKeys = FastSet<Index>(newKeys.begin(), newKeys.end());
     typename Impl::PartialSolveResult partialSolveResult =
         Impl::PartialSolve(factors, *affectedKeysSet, reorderingMode);
     toc(2,"PartialSolve");
@@ -424,7 +397,8 @@ boost::shared_ptr<FastSet<Index> > ISAM2<CONDITIONAL, VALUES, GRAPH>::recalculat
 /* ************************************************************************* */
 template<class CONDITIONAL, class VALUES, class GRAPH>
 ISAM2Result ISAM2<CONDITIONAL, VALUES, GRAPH>::update(
-    const GRAPH& newFactors, const Values& newTheta, const FastVector<size_t>& removeFactorIndices, bool force_relinearize) {
+    const GRAPH& newFactors, const Values& newTheta, const FastVector<size_t>& removeFactorIndices,
+    const boost::optional<FastSet<Symbol> >& constrainedKeys, bool force_relinearize) {
 
   static const bool debug = ISDEBUG("ISAM2 update");
   static const bool verbose = ISDEBUG("ISAM2 update verbose");
@@ -488,8 +462,6 @@ ISAM2Result ISAM2<CONDITIONAL, VALUES, GRAPH>::update(
   // is a vector of size_t, so the constructor unintentionally resolves to
   // vector(size_t count, Index value) instead of the iterator constructor.
   FastVector<Index> newKeys; newKeys.assign(markedKeys.begin(), markedKeys.end());             // Make a copy of these, as we'll soon add to them
-  FastSet<Index> structuralKeys;
-  if(structuralLast) structuralKeys = markedKeys;                              // If we're using structural-last ordering, make another copy
   toc(3,"gather involved keys");
 
   // Check relinearization if we're at the nth step, or we are using a looser loop relin threshold
@@ -543,9 +515,17 @@ ISAM2Result ISAM2<CONDITIONAL, VALUES, GRAPH>::update(
 
   tic(8,"recalculate");
   // 8. Redo top of Bayes tree
+  // Convert constrained symbols to indices
+  boost::optional<FastSet<Index> > constrainedIndices;
+  if(constrainedKeys) {
+    constrainedIndices.reset(FastSet<Index>());
+    BOOST_FOREACH(const Symbol& key, *constrainedKeys) {
+      constrainedIndices->insert(ordering_[key]);
+    }
+  }
   boost::shared_ptr<FastSet<Index> > replacedKeys;
   if(!markedKeys.empty() || !newKeys.empty())
-    replacedKeys = recalculate(markedKeys, structuralKeys, newKeys, linearFactors, result);
+    replacedKeys = recalculate(markedKeys, newKeys, linearFactors, constrainedIndices, result);
   toc(8,"recalculate");
 
   tic(9,"solve");

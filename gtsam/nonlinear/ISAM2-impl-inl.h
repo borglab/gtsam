@@ -32,9 +32,9 @@ struct ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl {
 
   struct ReorderingMode {
     size_t nFullSystemVars;
-    enum { AS_ADDED, COLAMD } algorithm;
-    enum { NO_CONSTRAINT, LATEST_LAST } constrain;
-    boost::optional<const FastSet<Index>&> latestKeys;
+    enum { /*AS_ADDED,*/ COLAMD } algorithm;
+    enum { NO_CONSTRAINT, CONSTRAIN_LAST } constrain;
+    boost::optional<const FastSet<Index>&> constrainedKeys;
   };
 
   /**
@@ -296,10 +296,10 @@ ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl::PartialSolve(GaussianFactorGraph& facto
   toc(2,"variable index");
   tic(3,"ccolamd");
   vector<int> cmember(affectedKeysSelector.size(), 0);
-  if(reorderingMode.constrain == ReorderingMode::LATEST_LAST) {
-    assert(reorderingMode.latestKeys);
-    if(keys.size() > reorderingMode.latestKeys->size()) {
-      BOOST_FOREACH(Index var, *reorderingMode.latestKeys) {
+  if(reorderingMode.constrain == ReorderingMode::CONSTRAIN_LAST) {
+    assert(reorderingMode.constrainedKeys);
+    if(keys.size() > reorderingMode.constrainedKeys->size()) {
+      BOOST_FOREACH(Index var, *reorderingMode.constrainedKeys) {
         cmember[affectedKeysSelectorInverse[var]] = 1;
       }
     }

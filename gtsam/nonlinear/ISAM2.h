@@ -346,7 +346,9 @@ public:
    * (Params::relinearizeSkip).
    * @return An ISAM2Result struct containing information about the update
    */
-  ISAM2Result update(const GRAPH& newFactors = GRAPH(), const VALUES& newTheta = VALUES(), const FastVector<size_t>& removeFactorIndices = FastVector<size_t>(),
+  ISAM2Result update(const GRAPH& newFactors = GRAPH(), const VALUES& newTheta = VALUES(),
+      const FastVector<size_t>& removeFactorIndices = FastVector<size_t>(),
+      const boost::optional<FastSet<Symbol> >& constrainedKeys = boost::none,
       bool force_relinearize = false);
 
   /** Access the current linearization point */
@@ -403,8 +405,9 @@ private:
   FactorGraph<GaussianFactor>::shared_ptr relinearizeAffectedFactors(const FastList<Index>& affectedKeys) const;
   FactorGraph<CacheFactor> getCachedBoundaryFactors(Cliques& orphans);
 
-  boost::shared_ptr<FastSet<Index> > recalculate(const FastSet<Index>& markedKeys, const FastSet<Index>& structuralKeys,
-      const FastVector<Index>& newKeys, const FactorGraph<GaussianFactor>::shared_ptr newFactors, ISAM2Result& result);
+  boost::shared_ptr<FastSet<Index> > recalculate(const FastSet<Index>& markedKeys,
+      const FastVector<Index>& newKeys, const FactorGraph<GaussianFactor>::shared_ptr newFactors,
+      const boost::optional<FastSet<size_t> >& constrainKeys, ISAM2Result& result);
   //	void linear_update(const GaussianFactorGraph& newFactors);
 
 }; // ISAM2
