@@ -17,11 +17,12 @@
 
 #pragma once
 
+#include <vector>
+#include <stdexcept>
+#include <boost/foreach.hpp>
+
 #include <gtsam/base/FastList.h>
 #include <gtsam/inference/Permutation.h>
-
-#include <vector>
-#include <boost/foreach.hpp>
 
 namespace gtsam {
 
@@ -94,7 +95,15 @@ public:
    * Augment the variable index with new factors.  This can be used when
    * solving problems incrementally.
    */
-  template<class FactorGraph> void augment(const FactorGraph& factorGraph);
+  template<class FactorGraph> void augment(const FactorGraph& factors);
+
+  /**
+   * Remove entries corresponding to the specified factors.
+   * @param indices The indices of the factors to remove, which must match \c factors
+   * @param factors The factors being removed, which must symbolically correspond
+   * exactly to the factors with the specified \c indices that were added.
+   */
+  template<typename CONTAINER, class FactorGraph> void remove(const CONTAINER& indices, const FactorGraph& factors);
 
   /** Test for equality (for unit tests and debug assertions). */
   bool equals(const VariableIndex& other, double tol=0.0) const;
@@ -119,7 +128,7 @@ template<class FactorGraph>
 void VariableIndex::fill(const FactorGraph& factorGraph) {
 
   // Build index mapping from variable id to factor index
-  for(size_t fi=0; fi<factorGraph.size(); ++fi)
+  for(size_t fi=0; fi<factorGraph.size(); ++fi) {
     if(factorGraph[fi]) {
       BOOST_FOREACH(const Index key, factorGraph[fi]->keys()) {
         if(key < index_.size()) {
@@ -127,8 +136,9 @@ void VariableIndex::fill(const FactorGraph& factorGraph) {
           ++ nEntries_;
         }
       }
-      ++ nFactors_;
     }
+    ++ nFactors_; // Increment factor count even if factors are null, to keep indices consistent
+  }
 }
 
 /* ************************************************************************* */
@@ -167,13 +177,13 @@ VariableIndex::VariableIndex(const FactorGraph& factorGraph, Index nVariables) :
 
 /* ************************************************************************* */
 template<class FactorGraph>
-void VariableIndex::augment(const FactorGraph& factorGraph) {
+void VariableIndex::augment(const FactorGraph& factors) {
   // If the factor graph is empty, return an empty index because inside this
   // if block we assume at least one factor.
-  if(factorGraph.size() > 0) {
+  if(factors.size() > 0) {
     // Find highest-numbered variable
     Index maxVar = 0;
-    BOOST_FOREACH(const typename FactorGraph::sharedFactor& factor, factorGraph) {
+    BOOST_FOREACH(const typename FactorGraph::sharedFactor& factor, factors) {
       if(factor) {
         BOOST_FOREACH(const Index key, factor->keys()) {
           if(key > maxVar)
@@ -191,15 +201,32 @@ void VariableIndex::augment(const FactorGraph& factorGraph) {
 
     // Augment index mapping from variable id to factor index
     size_t orignFactors = nFactors_;
-    for(size_t fi=0; fi<factorGraph.size(); ++fi)
-      if(factorGraph[fi]) {
-        BOOST_FOREACH(const Index key, factorGraph[fi]->keys()) {
+    for(size_t fi=0; fi<factors.size(); ++fi) {
+      if(factors[fi]) {
+        BOOST_FOREACH(const Index key, factors[fi]->keys()) {
           index_[key].push_back(orignFactors + fi);
           ++ nEntries_;
         }
-        ++ nFactors_;
       }
+      ++ nFactors_; // Increment factor count even if factors are null, to keep indices consistent
+    }
   }
+}
+
+/* ************************************************************************* */
+template<typename CONTAINER, class FactorGraph>
+void VariableIndex::remove(const CONTAINER& indices, const FactorGraph& factors) {
+  for(size_t fi=0; fi<factors.size(); ++fi)
+    if(factors[fi]) {
+      for(size_t ji = 0; ji < factors[fi]->keys().size(); ++ji) {
+        Factors& factorEntries = index_[factors[fi]->keys()[ji]];
+        Factors::iterator entry = std::find(factorEntries.begin(), factorEntries.end(), indices[fi]);
+        if(entry == factorEntries.end())
+          throw std::invalid_argument("Internal error, indices and factors passed into VariableIndex::remove are not consistent with the existing variable index");
+        factorEntries.erase(entry);
+        -- nEntries_;
+      }
+    }
 }
 
 }

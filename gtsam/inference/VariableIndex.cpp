@@ -16,6 +16,7 @@
  */
 
 #include <iostream>
+
 #include <gtsam/inference/VariableIndex.h>
 
 namespace gtsam {
@@ -49,7 +50,8 @@ bool VariableIndex::equals(const VariableIndex& other, double tol) const {
 
 /* ************************************************************************* */
 void VariableIndex::print(const std::string& str) const {
-  std::cout << str;
+  std::cout << str << "\n";
+  std::cout << "nEntries = " << this->nEntries_ << ", nFactors = " << this->nFactors_ << "\n";
   Index var = 0;
   BOOST_FOREACH(const Factors& variable, index_.container()) {
     Permutation::const_iterator rvar = find(index_.permutation().begin(), index_.permutation().end(), var);
