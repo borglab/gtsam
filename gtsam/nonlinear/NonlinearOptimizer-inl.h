@@ -36,7 +36,7 @@ namespace gtsam {
 			graph_(graph), values_(values), error_(graph->error(*values)), ordering_(ordering),
 			parameters_(parameters), iterations_(0),
 			dimensions_(new vector<size_t>(values->dims(*ordering))),
-			structure_(new VariableIndex(*graph->symbolic(*values, *ordering))) {
+			structure_(new VariableIndex(*graph->symbolic(*ordering))) {
 		if (!graph) throw std::invalid_argument(
 				"NonlinearOptimizer constructor: graph = NULL");
 		if (!values) throw std::invalid_argument(

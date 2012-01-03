@@ -64,7 +64,7 @@ namespace gtsam {
 		/**
 		 * Create a symbolic factor graph using an existing ordering
 		 */
-		SymbolicFactorGraph::shared_ptr symbolic(const VALUES& config, const Ordering& ordering) const;
+		SymbolicFactorGraph::shared_ptr symbolic(const Ordering& ordering) const;
 
 		/**
 		 * Create a symbolic factor graph and initial variable ordering that can

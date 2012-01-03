@@ -92,8 +92,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class VALUES>
-	SymbolicFactorGraph::shared_ptr NonlinearFactorGraph<VALUES>::symbolic(
-			const VALUES& config, const Ordering& ordering) const {
+	SymbolicFactorGraph::shared_ptr NonlinearFactorGraph<VALUES>::symbolic(const Ordering& ordering) const {
 		// Generate the symbolic factor graph
 		SymbolicFactorGraph::shared_ptr symbolicfg(new SymbolicFactorGraph);
 		symbolicfg->reserve(this->size());
@@ -114,7 +113,7 @@ namespace gtsam {
 			VALUES>::symbolic(const VALUES& config) const {
 		// Generate an initial key ordering in iterator order
 		Ordering::shared_ptr ordering(config.orderingArbitrary());
-		return make_pair(symbolic(config, *ordering), ordering);
+		return make_pair(symbolic(*ordering), ordering);
 	}
 
 	/* ************************************************************************* */
