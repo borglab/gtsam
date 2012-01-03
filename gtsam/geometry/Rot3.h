@@ -11,7 +11,7 @@
 
 /**
  * @file    Rot3.h
- * @brief   A common header file for rotation matrix and quaterion rotations, Rot3M and Rot3Q, as well as a typedef of Rot3 to the default implementation.
+ * @brief   3D rotation represented as a rotation matrix or quaternion
  * @author  Alireza Fathi
  * @author  Christian Potthast
  * @author  Frank Dellaert
