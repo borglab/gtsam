@@ -424,7 +424,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2<CONDITIONAL, VALUES, GRAPH>::recalculat
 /* ************************************************************************* */
 template<class CONDITIONAL, class VALUES, class GRAPH>
 ISAM2Result ISAM2<CONDITIONAL, VALUES, GRAPH>::update(
-    const GRAPH& newFactors, const Values& newTheta, bool force_relinearize) {
+    const GRAPH& newFactors, const Values& newTheta, const FastVector<size_t>& removeFactorIndices, bool force_relinearize) {
 
   static const bool debug = ISDEBUG("ISAM2 update");
   static const bool verbose = ISDEBUG("ISAM2 update verbose");
@@ -446,9 +446,24 @@ ISAM2Result ISAM2<CONDITIONAL, VALUES, GRAPH>::update(
   }
 
   tic(0,"push_back factors");
+  // Add the new factor indices to the result struct
+  result.newFactorsIndices.resize(newFactors.size());
+  for(size_t i=0; i<newFactors.size(); ++i)
+    result.newFactorsIndices[i] = i + nonlinearFactors_.size();
+
   // 1. Add any new factors \Factors:=\Factors\cup\Factors'.
   if(debug || verbose) newFactors.print("The new factors are: ");
   nonlinearFactors_.push_back(newFactors);
+
+  // Remove the removed factors
+  GRAPH removeFactors; removeFactors.reserve(removeFactorIndices.size());
+  BOOST_FOREACH(size_t index, removeFactorIndices) {
+    removeFactors.push_back(nonlinearFactors_[index]);
+    nonlinearFactors_.remove(index);
+  }
+
+  // Remove removed factors from the variable index so we do not attempt to relinearize them
+  variableIndex_.remove(removeFactorIndices, *removeFactors.symbolic(ordering_));
   toc(0,"push_back factors");
 
   tic(1,"add new variables");
@@ -464,6 +479,11 @@ ISAM2Result ISAM2<CONDITIONAL, VALUES, GRAPH>::update(
   tic(3,"gather involved keys");
   // 3. Mark linear update
   FastSet<Index> markedKeys = Impl::IndicesFromFactors(ordering_, newFactors); // Get keys from new factors
+  // Also mark keys involved in removed factors
+  {
+    FastSet<Index> markedRemoveKeys = Impl::IndicesFromFactors(ordering_, removeFactors); // Get keys involved in removed factors
+    markedKeys.insert(markedRemoveKeys.begin(), markedRemoveKeys.end()); // Add to the overall set of marked keys
+  }
   // NOTE: we use assign instead of the iterator constructor here because this
   // is a vector of size_t, so the constructor unintentionally resolves to
   // vector(size_t count, Index value) instead of the iterator constructor.

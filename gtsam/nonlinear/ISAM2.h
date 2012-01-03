@@ -148,6 +148,12 @@ struct ISAM2Result {
 
   /** The number of cliques in the Bayes' Tree */
   size_t cliques;
+
+  /** The indices of the newly-added factors, in 1-to-1 correspondence with the
+   * factors passed as \c newFactors to ISAM2::update().  These indices may be
+   * used later to refer to the factors in order to remove them.
+   */
+  FastVector<size_t> newFactorsIndices;
 };
 
 template<class CONDITIONAL>
@@ -340,7 +346,7 @@ public:
    * (Params::relinearizeSkip).
    * @return An ISAM2Result struct containing information about the update
    */
-  ISAM2Result update(const GRAPH& newFactors = GRAPH(), const VALUES& newTheta = VALUES(),
+  ISAM2Result update(const GRAPH& newFactors = GRAPH(), const VALUES& newTheta = VALUES(), const FastVector<size_t>& removeFactorIndices = FastVector<size_t>(),
       bool force_relinearize = false);
 
   /** Access the current linearization point */
