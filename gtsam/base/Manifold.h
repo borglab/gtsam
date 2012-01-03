@@ -65,7 +65,7 @@ template <class T>
 class ManifoldConcept {
 private:
 	/** concept checking function - implement the functions this demands */
-	static void concept_check(const T& t) {
+	static T concept_check(const T& t) {
 
 		/** assignment */
 		T t2 = t;
@@ -84,6 +84,8 @@ private:
 		 * Returns local coordinates of another object
 		 */
 		Vector localCoords_ret = t.localCoordinates(t2);
+
+		return retract_ret;
 	}
 };
 

@@ -78,7 +78,7 @@ template <class T>
 class LieConcept {
 private:
 	/** concept checking function - implement the functions this demands */
-	static void concept_check(const T& t) {
+	static T concept_check(const T& t) {
 
 		/** assignment */
 		T t2 = t;
@@ -95,7 +95,9 @@ private:
 		Vector logmap_identity_ret = T::Logmap(t);
 
 		/** Compute l0 s.t. l2=l1*l0, where (*this) is l1 */
-		T between_ret = t.between(t2);
+		T between_ret = expmap_identity_ret.between(t2);
+
+		return between_ret;
 	}
 
 };

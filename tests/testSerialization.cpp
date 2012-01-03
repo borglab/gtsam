@@ -541,7 +541,7 @@ TEST (Serialization, visual_system) {
 	graph.addPointConstraint(1, pt1);
 	graph.addPointPrior(1, pt2, model3);
 	graph.addPoseConstraint(1, pose1);
-	graph.addPosePrior(1, pose3, model6);
+	graph.addPosePrior(1, pose2, model6);
 
 	EXPECT(equalsObj(values));
 	EXPECT(equalsObj(graph));

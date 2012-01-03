@@ -17,18 +17,20 @@ namespace gtsam {
 template<class T>
 class GroupConcept {
 private:
-	static void concept_check(const T& t) {
+	static T concept_check(const T& t) {
 		/** assignment */
 		T t2 = t;
 
-		/** compose with another object */
-		T compose_ret = t.compose(t2);
-
-		/** invert the object and yield a new one */
-		T inverse_ret = t.inverse();
-
 		/** identity */
 		T identity = T::identity();
+
+		/** compose with another object */
+		T compose_ret = identity.compose(t2);
+
+		/** invert the object and yield a new one */
+		T inverse_ret = compose_ret.inverse();
+
+		return inverse_ret;
 	}
 };
 
