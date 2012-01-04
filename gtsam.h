@@ -121,12 +121,12 @@ class Rot3 {
   static Rot3 Ry(double t);
   static Rot3 Rz(double t);
   static Rot3 RzRyRx(double x, double y, double z);
-  static Rot3 RzRyRx(const Vector& xyz);
+  static Rot3 RzRyRx(Vector xyz);
   static Rot3 yaw  (double t); // positive yaw is to right (as in aircraft heading)
   static Rot3 pitch(double t); // positive pitch is up (increasing aircraft altitude)
   static Rot3 roll (double t); // positive roll is to right (increasing yaw in aircraft)
   static Rot3 quaternion(double w, double x, double y, double z);
-  static Rot3 rodriguez(const Vector& v);
+  static Rot3 rodriguez(Vector v);
 	Matrix matrix() const;
 	Matrix transpose() const;
 	Vector xyz() const;
@@ -197,11 +197,15 @@ class SharedDiagonal {
 	Vector sample() const;
 };
 
-#include <gtsam/linear/SharedGaussian.h>
 class SharedNoiseModel {
-	// FIXME: this generates only one constructor because "SharedDiagonal" and "SharedGaussian" both start with 'S'
-//	SharedNoiseModel(const SharedDiagonal& model); // FIXME: constructor doesn't exist
-//	SharedNoiseModel(const SharedGaussian& model); // FIXME: constructor doesn't exist
+	static SharedNoiseModel sharedSigmas(Vector sigmas);
+	static SharedNoiseModel sharedSigma(size_t dim, double sigma);
+	static SharedNoiseModel sharedPrecisions(Vector precisions);
+	static SharedNoiseModel sharedPrecision(size_t dim, double precision);
+	static SharedNoiseModel sharedUnit(size_t dim);
+	static SharedNoiseModel sharedSqrtInformation(Matrix R);
+	static SharedNoiseModel sharedCovariance(Matrix covariance);
+	void print(string s) const;
 };
 
 class VectorValues {
@@ -210,7 +214,7 @@ class VectorValues {
 	void print(string s) const;
 	bool equals(const VectorValues& expected, double tol) const;
 	int size() const;
-	void insert(int j, const Vector& value);
+	void insert(int j, Vector value);
 };
 
 class GaussianConditional {
