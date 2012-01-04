@@ -183,8 +183,11 @@ Rot3 Rot3::operator*(const Rot3& R2) const {
 /* ************************************************************************* */
 Point3 Rot3::rotate(const Point3& p,
     boost::optional<Matrix&> H1,  boost::optional<Matrix&> H2) const {
-  if (H1) *H1 = matrix() * skewSymmetric(-p.x(), -p.y(), -p.z());
-  if (H2) *H2 = matrix();
+	if (H1 || H2) {
+			const Matrix R(matrix());
+			if (H1) *H1 = R * skewSymmetric(-p.x(), -p.y(), -p.z());
+			if (H2) *H2 = R;
+		}
   return r1_ * p.x() + r2_ * p.y() + r3_ * p.z();
 }
 
