@@ -100,6 +100,7 @@ namespace screw {
 }
 
 /* ************************************************************************* */
+// Checks correct exponential map (Expmap) with brute force matrix exponential
 TEST(Pose3, expmap_c_full)
 {
   EXPECT(assert_equal(screw::expected, expm<Pose3>(screw::xi),1e-6));
@@ -124,7 +125,7 @@ TEST(Pose3, Adjoint_full)
 }
 
 /* ************************************************************************* */
-/** Agrawal06iros version */
+/** Agrawal06iros version of exponential map */
 Pose3 Agrawal06iros(const Vector& xi) {
 	Vector w = xi.head(3);
 	Vector v = xi.tail(3);
@@ -181,6 +182,8 @@ TEST(Pose3, Adjoint_compose_full)
 }
 
 /* ************************************************************************* */
+// Check compose and its pushforward
+// NOTE: testing::compose<Pose3>(t1,t2) = t1.compose(t2)  (see lieProxies.h)
 TEST( Pose3, compose )
 {
 	Matrix actual = (T2*T2).matrix();
@@ -192,12 +195,16 @@ TEST( Pose3, compose )
 
 	Matrix numericalH1 = numericalDerivative21(testing::compose<Pose3>, T2, T2);
 	EXPECT(assert_equal(numericalH1,actualDcompose1,5e-3));
+#ifdef CORRECT_POSE3_EXMAP
+	EXPECT(assert_equal(T2.inverse().adjointMap(),actualDcompose1,5e-3));
+#endif
 
 	Matrix numericalH2 = numericalDerivative22(testing::compose<Pose3>, T2, T2);
 	EXPECT(assert_equal(numericalH2,actualDcompose2,1e-4));
 }
 
 /* ************************************************************************* */
+// Check compose and its pushforward, another case
 TEST( Pose3, compose2 )
 {
 	const Pose3& T1 = T;
@@ -210,6 +217,9 @@ TEST( Pose3, compose2 )
 
 	Matrix numericalH1 = numericalDerivative21(testing::compose<Pose3>, T1, T2);
 	EXPECT(assert_equal(numericalH1,actualDcompose1,5e-3));
+#ifdef CORRECT_POSE3_EXMAP
+	EXPECT(assert_equal(T2.inverse().adjointMap(),actualDcompose1,5e-3));
+#endif
 
 	Matrix numericalH2 = numericalDerivative22(testing::compose<Pose3>, T1, T2);
 	EXPECT(assert_equal(numericalH2,actualDcompose2,1e-5));
@@ -225,6 +235,9 @@ TEST( Pose3, inverse)
 
 	Matrix numericalH = numericalDerivative11(testing::inverse<Pose3>, T);
 	EXPECT(assert_equal(numericalH,actualDinverse,5e-3));
+#ifdef CORRECT_POSE3_EXMAP
+	EXPECT(assert_equal(-T.adjointMap(),actualDinverse,5e-3));
+#endif
 }
 
 /* ************************************************************************* */
@@ -238,6 +251,9 @@ TEST( Pose3, inverseDerivatives2)
 	Matrix actualDinverse;
 	T.inverse(actualDinverse);
 	EXPECT(assert_equal(numericalH,actualDinverse,5e-3));
+#ifdef CORRECT_POSE3_EXMAP
+	EXPECT(assert_equal(-T.adjointMap(),actualDinverse,5e-3));
+#endif
 }
 
 /* ************************************************************************* */
@@ -460,7 +476,7 @@ TEST(Pose3, manifold)
 	// lines in canonical coordinates correspond to Abelian subgroups in SE(3)
 	 Vector d = Vector_(6,0.1,0.2,0.3,0.4,0.5,0.6);
 	// exp(-d)=inverse(exp(d))
-	 EXPECT(assert_equal(Pose3::Expmap(-d),inverse(Pose3::Expmap(d))));
+	 EXPECT(assert_equal(Pose3::Expmap(-d),Pose3::Expmap(d).inverse()));
 	// exp(5d)=exp(2*d+3*d)=exp(2*d)exp(3*d)=exp(3*d)exp(2*d)
 	 Pose3 T2 = Pose3::Expmap(2*d);
 	 Pose3 T3 = Pose3::Expmap(3*d);

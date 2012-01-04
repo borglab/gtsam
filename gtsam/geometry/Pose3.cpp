@@ -31,7 +31,7 @@ namespace gtsam {
 
   static const Matrix I3 = eye(3), Z3 = zeros(3, 3);
 #ifdef CORRECT_POSE3_EXMAP
-  static const _I3=-I3, I6 = eye(6);
+  static const Matrix _I3=-I3, I6 = eye(6);
 #endif
 
   /* ************************************************************************* */
@@ -100,13 +100,13 @@ namespace gtsam {
   /* ************************************************************************* */
 
   /* ************************************************************************* */
-  Pose3 Pose3::retract(const Vector& d) {
+  Pose3 Pose3::retract(const Vector& d) const {
   	return compose(Expmap(d));
   }
 
   /* ************************************************************************* */
-  Vector Pose3::localCoordinates(const Pose3& T1, const Pose3& T2) {
-  	return Logmap(T1.between(T2));
+  Vector Pose3::localCoordinates(const Pose3& T2) const {
+  	return Logmap(between(T2));
   }
 
 #else
@@ -188,7 +188,7 @@ namespace gtsam {
 		  	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
 	  if (H1) {
 #ifdef CORRECT_POSE3_EXMAP
-		*H1 = adjointMap(inverse(p2)); // FIXME: this function doesn't exist with this interface
+		*H1 = p2.inverse().adjointMap();
 #else
 		const Rot3& R2 = p2.rotation();
 		const Point3& t2 = p2.translation();
@@ -216,8 +216,7 @@ namespace gtsam {
   Pose3 Pose3::inverse(boost::optional<Matrix&> H1) const {
   	if (H1)
 #ifdef CORRECT_POSE3_EXMAP
-  		// FIXME: this function doesn't exist with this interface - should this be "*H1 = -adjointMap();" ?
-  	{ *H1 = - adjointMap(p); }
+  	{ *H1 = - adjointMap(); }
 #else
   	{
   		Matrix Rt = R_.transpose();
