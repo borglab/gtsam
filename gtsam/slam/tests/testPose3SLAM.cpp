@@ -197,21 +197,10 @@ TEST( Pose3Values, pose3Circle )
 TEST( Pose3Values, expmap )
 {
 	Pose3Values expected;
-#ifdef CORRECT_POSE3_EXMAP
 	expected.insert(0, Pose3(R1, Point3( 1.0, 0.1, 0)));
 	expected.insert(1, Pose3(R2, Point3(-0.1, 1.0, 0)));
 	expected.insert(2, Pose3(R3, Point3(-1.0,-0.1, 0)));
 	expected.insert(3, Pose3(R4, Point3( 0.1,-1.0, 0)));
-#else
-	// expected is circle shifted to East
-	expected.insert(0, Pose3(R1, Point3( 1.1, 0, 0)));
-	expected.insert(1, Pose3(R2, Point3( 0.1, 1, 0)));
-	expected.insert(2, Pose3(R3, Point3(-0.9, 0, 0)));
-	expected.insert(3, Pose3(R4, Point3( 0.1,-1, 0)));
-#endif
-
-	// Note expmap coordinates are in global coordinates with non-compose expmap
-	// so shifting to East requires little thought, different from with Pose2 !!!
 
 	Ordering ordering(*expected.orderingArbitrary());
 	VectorValues delta(expected.dims(ordering));

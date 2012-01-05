@@ -44,12 +44,12 @@ TEST( Pose3, equals)
 }
 
 /* ************************************************************************* */
-TEST( Pose3, expmap_a)
+TEST( Pose3, retract)
 {
   Pose3 id;
   Vector v = zero(6);
   v(0) = 0.3;
-  EXPECT(assert_equal(id.retract(v), Pose3(R, Point3())));
+  EXPECT(assert_equal(Pose3(R, Point3()), id.retract(v)));
 #ifdef CORRECT_POSE3_EXMAP
   v(3)=0.2;v(4)=0.394742;v(5)=-2.08998;
 #else
@@ -195,9 +195,7 @@ TEST( Pose3, compose )
 
 	Matrix numericalH1 = numericalDerivative21(testing::compose<Pose3>, T2, T2);
 	EXPECT(assert_equal(numericalH1,actualDcompose1,5e-3));
-#ifdef CORRECT_POSE3_EXMAP
 	EXPECT(assert_equal(T2.inverse().adjointMap(),actualDcompose1,5e-3));
-#endif
 
 	Matrix numericalH2 = numericalDerivative22(testing::compose<Pose3>, T2, T2);
 	EXPECT(assert_equal(numericalH2,actualDcompose2,1e-4));
@@ -217,9 +215,7 @@ TEST( Pose3, compose2 )
 
 	Matrix numericalH1 = numericalDerivative21(testing::compose<Pose3>, T1, T2);
 	EXPECT(assert_equal(numericalH1,actualDcompose1,5e-3));
-#ifdef CORRECT_POSE3_EXMAP
 	EXPECT(assert_equal(T2.inverse().adjointMap(),actualDcompose1,5e-3));
-#endif
 
 	Matrix numericalH2 = numericalDerivative22(testing::compose<Pose3>, T1, T2);
 	EXPECT(assert_equal(numericalH2,actualDcompose2,1e-5));
@@ -235,9 +231,7 @@ TEST( Pose3, inverse)
 
 	Matrix numericalH = numericalDerivative11(testing::inverse<Pose3>, T);
 	EXPECT(assert_equal(numericalH,actualDinverse,5e-3));
-#ifdef CORRECT_POSE3_EXMAP
 	EXPECT(assert_equal(-T.adjointMap(),actualDinverse,5e-3));
-#endif
 }
 
 /* ************************************************************************* */
@@ -251,9 +245,7 @@ TEST( Pose3, inverseDerivatives2)
 	Matrix actualDinverse;
 	T.inverse(actualDinverse);
 	EXPECT(assert_equal(numericalH,actualDinverse,5e-3));
-#ifdef CORRECT_POSE3_EXMAP
 	EXPECT(assert_equal(-T.adjointMap(),actualDinverse,5e-3));
-#endif
 }
 
 /* ************************************************************************* */
@@ -451,9 +443,16 @@ TEST( Pose3, transformPose_to)
 }
 
 /* ************************************************************************* */
+TEST(Pose3, localCoordinates)
+{
+	Vector d12 = repeat(6,0.1);
+	Pose3 t1 = T, t2 = t1.retract(d12);
+	EXPECT(assert_equal(d12, t1.localCoordinates(t2)));
+}
+
+/* ************************************************************************* */
 TEST(Pose3, manifold)
 {
-	//cout << "manifold" << endl;
 	Pose3 t1 = T;
 	Pose3 t2 = T3;
 	Pose3 origin;
@@ -466,13 +465,13 @@ TEST(Pose3, manifold)
 	// todo: richard - commented out because this tests for "compose-style" (new) expmap
 	// EXPECT(assert_equal(t1, retract(origin,d21)*t2));
 
-	// Check that log(t1,t2)=-log(t2,t1) - this holds even for incorrect expmap :-)
-	EXPECT(assert_equal(d12,-d21));
-
-#ifdef CORRECT_POSE3_EXMAP
-
-
-	// todo: Frank - Below only works for correct "Agrawal06iros style expmap
+	// Check that log(t1,t2)=-log(t2,t1) TODO: only holds for exp map
+	//	EXPECT(assert_equal(d12,-d21));
+}
+/* ************************************************************************* */
+TEST(Pose3, subgroups)
+{
+	// Frank - Below only works for correct "Agrawal06iros style expmap
 	// lines in canonical coordinates correspond to Abelian subgroups in SE(3)
 	 Vector d = Vector_(6,0.1,0.2,0.3,0.4,0.5,0.6);
 	// exp(-d)=inverse(exp(d))
@@ -483,8 +482,6 @@ TEST(Pose3, manifold)
 	 Pose3 T5 = Pose3::Expmap(5*d);
 	 EXPECT(assert_equal(T5,T2*T3));
 	 EXPECT(assert_equal(T5,T3*T2));
-
-#endif
 }
 
 /* ************************************************************************* */

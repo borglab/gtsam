@@ -29,10 +29,7 @@ namespace gtsam {
   /** instantiate concept checks */
   GTSAM_CONCEPT_POSE_INST(Pose3);
 
-  static const Matrix I3 = eye(3), Z3 = zeros(3, 3);
-#ifdef CORRECT_POSE3_EXMAP
-  static const Matrix _I3=-I3, I6 = eye(6);
-#endif
+  static const Matrix I3 = eye(3), Z3 = zeros(3, 3), _I3=-I3, I6 = eye(6);
 
   /* ************************************************************************* */
   // Calculate Adjoint map
@@ -94,42 +91,60 @@ namespace gtsam {
 		}
   }
 
-#ifdef CORRECT_POSE3_EXMAP
   /* ************************************************************************* */
   // Changes default to use the full verions of expmap/logmap
   /* ************************************************************************* */
 
   /* ************************************************************************* */
-  Pose3 Pose3::retract(const Vector& d) const {
-  	return compose(Expmap(d));
-  }
-
-  /* ************************************************************************* */
-  Vector Pose3::localCoordinates(const Pose3& T2) const {
-  	return Logmap(between(T2));
-  }
-
+	// Different versions of retract
+  Pose3 Pose3::retract(const Vector& xi) const {
+#ifdef CORRECT_POSE3_EXMAP
+  	// Lie group exponential map, traces out geodesic
+		return compose(Expmap(xi));
 #else
+		Vector omega(sub(xi, 0, 3));
+		Point3 v(sub(xi, 3, 6));
+
+		// R is always done exactly in all three retract versions below
+		Rot3 R = R_.retract(omega);
+
+		// Incorrect version
+		// Retracts R and t independently
+		// Point3 t = t_.retract(v.vector());
+
+		// First order t approximation
+		Point3 t = t_ + R_ * v;
+
+		// Second order t approximation
+		// Point3 t = t_ + R_ * (v+Point3(omega).cross(v)/2);
+
+		 return Pose3(R, t);
+#endif
+	}
 
   /* ************************************************************************* */
-  /** These are the "old-style" expmap and logmap about the specified
-   * pose. Increments the offset and rotation independently given a translation and
-   * canonical rotation coordinates. Created to match ML derivatives, but
-   * superseded by the correct exponential map story in .cpp */
-  Pose3 Pose3::retract(const Vector& d) const {
-    return Pose3(R_.retract(sub(d, 0, 3)),
-    		         t_.retract(sub(d, 3, 6)));
-  }
+  // different versions of localCoordinates
+	Vector Pose3::localCoordinates(const Pose3& T) const {
+#ifdef CORRECT_POSE3_EXMAP
+		// Lie group logarithm map, exact inverse of exponential map
+		return Logmap(between(T));
+#else
+		// R is always done exactly in all three retract versions below
+		Vector omega = R_.localCoordinates(T.rotation());
 
-  /* ************************************************************************* */
-  /** Independently computes the logmap of the translation and rotation. */
-  Vector Pose3::localCoordinates(const Pose3& pp) const {
-    const Vector r(R_.localCoordinates(pp.rotation())),
-                 t(t_.localCoordinates(pp.translation()));
-    return concatVectors(2, &r, &t);
-  }
+		// Incorrect version
+		// Independently computes the logmap of the translation and rotation
+		// Vector v = t_.localCoordinates(T.translation());
 
-  #endif
+		// Correct first order t inverse
+		Point3 d = R_.unrotate(T.translation() - t_);
+		Vector v = d.vector();
+
+		// TODO: correct second order t inverse
+
+		return concatVectors(2, &omega, &v);
+#endif
+	}
 
   /* ************************************************************************* */
   Matrix Pose3::matrix() const {
@@ -150,15 +165,9 @@ namespace gtsam {
   Point3 Pose3::transform_from(const Point3& p,
 		  boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
 	  if (H1) {
-#ifdef CORRECT_POSE3_EXMAP
 			const Matrix R = R_.matrix();
 			Matrix DR = R*skewSymmetric(-p.x(), -p.y(), -p.z());
 			*H1 = collect(2,&DR,&R);
-#else
-			Matrix DR;
-			R_.rotate(p, DR, boost::none);
-			*H1 = collect(2,&DR,&I3);
-#endif
 	  }
 	  if (H2) *H2 = R_.matrix();
 	  return R_ * p + t_;
@@ -168,17 +177,11 @@ namespace gtsam {
   Point3 Pose3::transform_to(const Point3& p,
     		  	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
 	  const Point3 result = R_.unrotate(p - t_);
-	  if (H1) { 
-		const Point3& q = result;
-		Matrix DR = skewSymmetric(q.x(), q.y(), q.z());
-#ifdef CORRECT_POSE3_EXMAP
-		*H1 =  collect(2, &DR, &_I3);
-#else
-		Matrix DT = - R_.transpose(); // negative because of sub
-		*H1 =  collect(2,&DR,&DT);
-#endif
-	  }
-
+	  if (H1) {
+			const Point3& q = result;
+			Matrix DR = skewSymmetric(q.x(), q.y(), q.z());
+			*H1 = collect(2, &DR, &_I3);
+		}
 	  if (H2) *H2 = R_.transpose();
 	  return result;
   }
@@ -186,47 +189,14 @@ namespace gtsam {
   /* ************************************************************************* */
   Pose3 Pose3::compose(const Pose3& p2,
 		  	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
-	  if (H1) {
-#ifdef CORRECT_POSE3_EXMAP
-		*H1 = p2.inverse().adjointMap();
-#else
-		const Rot3& R2 = p2.rotation();
-		const Point3& t2 = p2.translation();
-		Matrix DR_R1 = R2.transpose(), DR_t1 = Z3;
-		Matrix DR = collect(2, &DR_R1, &DR_t1);
-		Matrix Dt;
-		transform_from(t2, Dt, boost::none);
-		*H1 = gtsam::stack(2, &DR, &Dt);
-#endif
-	  }
-	  if (H2) {
-#ifdef CORRECT_POSE3_EXMAP
-		*H2 = I6;
-#else
-		Matrix R1 = rotation().matrix();
-		Matrix DR = collect(2, &I3, &Z3);
-		Matrix Dt = collect(2, &Z3, &R1);
-		*H2 = gtsam::stack(2, &DR, &Dt);
-#endif
-	  }
-	  return (*this) * p2;
+	  if (H1) *H1 = p2.inverse().adjointMap();
+		if (H2) *H2 = I6;
+		return (*this) * p2;
   }
 
   /* ************************************************************************* */
   Pose3 Pose3::inverse(boost::optional<Matrix&> H1) const {
-  	if (H1)
-#ifdef CORRECT_POSE3_EXMAP
-  	{ *H1 = - adjointMap(); }
-#else
-  	{
-  		Matrix Rt = R_.transpose();
-  		Matrix DR_R1 = -R_.matrix(), DR_t1 = Z3;
-  		Matrix Dt_R1 = -skewSymmetric(R_.unrotate(t_).vector()), Dt_t1 = -Rt;
-  		Matrix DR = collect(2, &DR_R1, &DR_t1);
-  		Matrix Dt = collect(2, &Dt_R1, &Dt_t1);
-  		*H1 = gtsam::stack(2, &DR, &Dt);
-  	}
-#endif
+  	if (H1) *H1 = -adjointMap();
   	Rot3 Rt = R_.inverse();
   	return Pose3(Rt, Rt*(-t_));
   }
@@ -262,11 +232,7 @@ namespace gtsam {
   			boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
   	 double r = range(point.translation(), H1, H2);
   	 if (H2) {
-#ifdef CORRECT_POSE3_EXMAP
   		 Matrix H2_ = *H2 * point.rotation().matrix();
-#else
-  		 Matrix H2_ = *H2;
-#endif
   		 *H2 = zeros(1, 6);
   		 insertSub(*H2, H2_, 0, 3);
   	 }
