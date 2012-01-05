@@ -87,10 +87,10 @@ namespace gtsam {
     inline size_t dim() const { return dimension; }
 
   	/// Updates a with tangent space delta
-  	inline Point3 retract(const Vector& v) const { return compose(Expmap(v)); }
+  	inline Point3 retract(const Vector& v) const { return Point3(*this + v); }
 
   	/// Returns inverse retraction
-  	inline Vector localCoordinates(const Point3& t2) const { return Logmap(t2) - Logmap(*this); }
+  	inline Vector localCoordinates(const Point3& q) const { return (q -*this).vector(); }
 
     /// @}
     /// @name Lie Group
