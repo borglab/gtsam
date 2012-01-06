@@ -43,7 +43,7 @@ public:
 
   /** Constructor from a range, passes through to base class */
   template<typename INPUTITERATOR>
-  FastList(INPUTITERATOR first, INPUTITERATOR last) : Base(first, last) {}
+  explicit FastList(INPUTITERATOR first, INPUTITERATOR last) : Base(first, last) {}
 
   /** Copy constructor from another FastList */
   FastList(const FastList<VALUE>& x) : Base(x) {}

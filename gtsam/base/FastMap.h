@@ -44,7 +44,7 @@ public:
 
   /** Constructor from a range, passes through to base class */
   template<typename INPUTITERATOR>
-  FastMap(INPUTITERATOR first, INPUTITERATOR last) : Base(first, last) {}
+  explicit FastMap(INPUTITERATOR first, INPUTITERATOR last) : Base(first, last) {}
 
   /** Copy constructor from another FastMap */
   FastMap(const FastMap<KEY,VALUE>& x) : Base(x) {}

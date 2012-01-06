@@ -55,7 +55,7 @@ public:
 
   /** Constructor from a range, passes through to base class */
   template<typename INPUTITERATOR>
-  FastSet(INPUTITERATOR first, INPUTITERATOR last) :
+  explicit FastSet(INPUTITERATOR first, INPUTITERATOR last) :
       Base(first, last) {
   }
 
