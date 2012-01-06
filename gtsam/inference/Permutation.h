@@ -19,6 +19,7 @@
 
 #include <vector>
 #include <string>
+#include <iostream>
 #include <boost/shared_ptr.hpp>
 
 #include <gtsam/base/types.h>
@@ -167,6 +168,13 @@ public:
    * a reference to the container is stored.
    */
   Permuted(CONTAINER& container) : permutation_(Permutation::Identity(container.size())), container_(container) {}
+
+  /** Print */
+  void print(const std::string& str = "") const {
+    std::cout << str;
+    permutation_.print("  permutation: ");
+    container_.print("  container: ");
+  }
 
   /** Access the container through the permutation */
   value_type& operator[](size_t index) { return container_[permutation_[index]]; }
