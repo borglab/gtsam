@@ -22,10 +22,10 @@
 
 #pragma once
 
+#include <gtsam/base/Vector.h>
+#include <gtsam/3rdparty/Eigen/Eigen/QR>
 #include <boost/format.hpp>
 #include <boost/tuple/tuple.hpp>
-#include <gtsam/3rdparty/Eigen/Eigen/QR>
-#include <gtsam/base/Vector.h>
 
 /**
  * Matrix is a typedef in the gtsam namespace
@@ -439,38 +439,40 @@ DLT(const Matrix& A, double rank_tol = 1e-9);
  */
 Matrix expm(const Matrix& A, size_t K=7);
 
+/// Cayley transform
+Matrix Cayley(const Matrix& A);
+
 } // namespace gtsam
 
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/split_free.hpp>
 
 namespace boost {
-namespace serialization {
+	namespace serialization {
 
 // split version - sends sizes ahead
-template<class Archive>
-void save(Archive & ar, const gtsam::Matrix & m, unsigned int version)
-{
-	const int rows = m.rows(), cols = m.cols(), elements = rows*cols;
-	std::vector<double> raw_data(elements);
-	std::copy(m.data(), m.data()+elements, raw_data.begin());
-	ar << make_nvp("rows", rows);
-	ar << make_nvp("cols", cols);
-	ar << make_nvp("data", raw_data);
-}
-template<class Archive>
-void load(Archive & ar, gtsam::Matrix & m, unsigned int version)
-{
-	size_t rows, cols;
-	std::vector<double> raw_data;
-	ar >> make_nvp("rows", rows);
-	ar >> make_nvp("cols", cols);
-	ar >> make_nvp("data", raw_data);
-	m = gtsam::Matrix(rows, cols);
-	std::copy(raw_data.begin(), raw_data.end(), m.data());
-}
+		template<class Archive>
+		void save(Archive & ar, const gtsam::Matrix & m, unsigned int version) {
+			const int rows = m.rows(), cols = m.cols(), elements = rows * cols;
+			std::vector<double> raw_data(elements);
+			std::copy(m.data(), m.data() + elements, raw_data.begin());
+			ar << make_nvp("rows", rows);
+			ar << make_nvp("cols", cols);
+			ar << make_nvp("data", raw_data);
+		}
 
-} // namespace serialization
+		template<class Archive>
+		void load(Archive & ar, gtsam::Matrix & m, unsigned int version) {
+			size_t rows, cols;
+			std::vector<double> raw_data;
+			ar >> make_nvp("rows", rows);
+			ar >> make_nvp("cols", cols);
+			ar >> make_nvp("data", raw_data);
+			m = gtsam::Matrix(rows, cols);
+			std::copy(raw_data.begin(), raw_data.end(), m.data());
+		}
+
+	} // namespace serialization
 } // namespace boost
 
 BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Matrix)

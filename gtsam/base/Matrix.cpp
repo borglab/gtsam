@@ -15,22 +15,22 @@
  * @author Christian Potthast
  */
 
+#include <gtsam/base/Matrix.h>
+#include <gtsam/base/timing.h>
+#include <gtsam/base/Vector.h>
+
+#include <gtsam/3rdparty/Eigen/Eigen/Dense>
+#include <gtsam/3rdparty/Eigen/Eigen/SVD>
+
+#include <boost/foreach.hpp>
+#include <boost/tuple/tuple.hpp>
+
 #include <stdarg.h>
 #include <string.h>
 #include <iomanip>
 #include <list>
 #include <fstream>
 #include <limits>
-
-#include <boost/foreach.hpp>
-#include <boost/tuple/tuple.hpp>
-
-#include <gtsam/3rdparty/Eigen/Eigen/Dense>
-#include <gtsam/3rdparty/Eigen/Eigen/SVD>
-
-#include <gtsam/base/Matrix.h>
-#include <gtsam/base/timing.h>
-#include <gtsam/base/Vector.h>
 
 using namespace std;
 
@@ -684,6 +684,13 @@ Matrix expm(const Matrix& A, size_t K) {
 	return E;
 }
 
+/* ************************************************************************* */
+Matrix Cayley(const Matrix& A) {
+	size_t n = A.cols();
+	assert(A.rows() == n);
+	const Matrix I = eye(n);
+	return (I-A)*inverse(I+A);
+}
 /* ************************************************************************* */
 
 } // namespace gtsam
