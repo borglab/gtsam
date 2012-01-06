@@ -30,11 +30,12 @@ using namespace gtsam;
 Rot3 R = Rot3::rodriguez(0.1, 0.4, 0.2);
 Point3 P(0.2, 0.7, -2.0);
 double error = 1e-9, epsilon = 0.001;
+static const Matrix I3 = eye(3);
 
 /* ************************************************************************* */
 TEST( Rot3, constructor)
 {
-	Rot3 expected(eye(3, 3));
+	Rot3 expected(I3);
 	Vector r1(3), r2(3), r3(3);
 	r1(0) = 1;
 	r1(1) = 0;
@@ -88,7 +89,7 @@ Rot3 slow_but_correct_rodriguez(const Vector& w) {
 	double t = norm_2(w);
 	Matrix J = skewSymmetric(w / t);
 	if (t < 1e-5) return Rot3();
-	Matrix R = eye(3) + sin(t) * J + (1.0 - cos(t)) * (J * J);
+	Matrix R = I3 + sin(t) * J + (1.0 - cos(t)) * (J * J);
 	return R;
 }
 
@@ -189,10 +190,14 @@ TEST(Rot3, manifold)
 	// log behaves correctly
 	Vector d12 = gR1.localCoordinates(gR2);
 	CHECK(assert_equal(gR2, gR1.retract(d12)));
-	CHECK(assert_equal(gR2, gR1*Rot3::Expmap(d12)));
 	Vector d21 = gR2.localCoordinates(gR1);
 	CHECK(assert_equal(gR1, gR2.retract(d21)));
+
+#ifdef CORRECT_ROT3_EXMAP
+	// Check that it is expmap
+	CHECK(assert_equal(gR2, gR1*Rot3::Expmap(d12)));
 	CHECK(assert_equal(gR1, gR2*Rot3::Expmap(d21)));
+#endif
 
 	// Check that log(t1,t2)=-log(t2,t1)
 	CHECK(assert_equal(d12,-d21));
@@ -381,7 +386,7 @@ TEST( Rot3, RQ)
 	Vector actual;
 	boost::tie(actualK, actual) = RQ(R.matrix());
 	Vector expected = Vector_(3, 0.14715, 0.385821, 0.231671);
-	CHECK(assert_equal(eye(3),actualK));
+	CHECK(assert_equal(I3,actualK));
 	CHECK(assert_equal(expected,actual,1e-6));
 
 	// Try using xyz call, asserting that Rot3::RzRyRx(x,y,z).xyz()==[x;y;z]
@@ -415,7 +420,7 @@ TEST( Rot3, expmapStability ) {
                           w(2), 0.0, -w(0),
                           -w(1), w(0), 0.0 );
   Matrix W2 = W*W;
-  Matrix Rmat = eye(3) + (1.0-theta2/6.0 + theta2*theta2/120.0
+  Matrix Rmat = I3 + (1.0-theta2/6.0 + theta2*theta2/120.0
       - theta2*theta2*theta2/5040.0)*W + (0.5 - theta2/24.0 + theta2*theta2/720.0)*W2 ;
   Rot3 expectedR( Rmat );
   CHECK(assert_equal(expectedR, actualR, 1e-10));
@@ -474,6 +479,14 @@ TEST(Rot3, quaternion) {
 }
 
 #endif
+
+/* ************************************************************************* */
+TEST( Rot3, Cayley ) {
+	Matrix A = skewSymmetric(1,2,-3);
+	Matrix Q = Cayley(A);
+  EXPECT(assert_equal(I3, trans(Q)*Q));
+  EXPECT(assert_equal(A, Cayley(Q)));
+}
 
 /* ************************************************************************* */
 int main() {

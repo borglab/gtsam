@@ -227,10 +227,10 @@ namespace gtsam {
     size_t dim() const { return dimension; }
 
     /// Retraction from R^3 to Pose2 manifold neighborhood around current pose
-    Rot3 retract(const Vector& v) const { return compose(Expmap(v)); }
+    Rot3 retract(const Vector& omega) const;
 
     /// Returns inverse retraction
-    Vector localCoordinates(const Rot3& t2) const { return Logmap(between(t2)); }
+    Vector localCoordinates(const Rot3& t2) const;
 
     /// @}
     /// @name Lie Group

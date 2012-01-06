@@ -237,6 +237,38 @@ Vector Rot3::Logmap(const Rot3& R) {
 }
 
 /* ************************************************************************* */
+Rot3 Rot3::retract(const Vector& omega) const {
+#ifdef CORRECT_ROT3_EXMAP
+	return (*this)*Expmap(omega);
+#else
+#ifdef SLOW_CAYLEY
+	Matrix Omega = skewSymmetric(omega);
+	return (*this)*Cayley(-Omega/2);
+#else
+	double x = omega(0), y = omega(1), z = omega(2);
+	double x2 = x*x, y2 = y*y, z2 = z*z;
+	double xy = x*y, xz = x*z, yz = y*z;
+	double f = 1.0 / (4.0 + x2 + y2 + z2), _2f = 2.0*f;
+	return (*this)* Rot3(
+			(4+x2-y2-z2)*f, (xy - 2*z)*_2f, (xz + 2*y)*_2f,
+			(xy + 2*z)*_2f, (4-x2+y2-z2)*f, (yz - 2*x)*_2f,
+			(xz - 2*y)*_2f, (yz + 2*x)*_2f, (4-x2-y2+z2)*f
+			);
+#endif
+#endif
+}
+
+/* ************************************************************************* */
+Vector Rot3::localCoordinates(const Rot3& T) const {
+#ifdef CORRECT_ROT3_EXMAP
+	return Logmap(between(T));
+#else
+	Matrix Omega = Cayley(between(T).matrix());
+	return -2*Vector_(3,Omega(2,1),Omega(0,2),Omega(1,0));
+#endif
+}
+
+/* ************************************************************************* */
 Matrix Rot3::matrix() const {
 	Matrix R(3,3);
 	R <<
