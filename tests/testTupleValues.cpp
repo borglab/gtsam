@@ -121,11 +121,7 @@ TEST( TupleValues, insert_duplicate )
   values1.insert(2, x2); // 6
   values1.insert(1, l1); // 8
   values1.insert(2, l2); // 10
-  values1.insert(2, l1); // still 10 !!!!
-
-  CHECK(assert_equal(l2, values1[PointKey(2)]));
-  LONGS_EQUAL(4,values1.size());
-  LONGS_EQUAL(10,values1.dim());
+  CHECK_EXCEPTION(values1.insert(2, l1), KeyAlreadyExists<PointKey>); // still 10 !!!!
 }
 
 /* ************************************************************************* */
@@ -161,8 +157,8 @@ TEST(TupleValues, at)
   EXPECT(assert_equal(l1, values1[PointKey(1)]));
   EXPECT(assert_equal(l2, values1[PointKey(2)]));
 
-  CHECK_EXCEPTION(values1[PoseKey(3)], std::invalid_argument);
-  CHECK_EXCEPTION(values1[PointKey(3)], std::invalid_argument);
+  CHECK_EXCEPTION(values1[PoseKey(3)], KeyDoesNotExist<PoseKey>);
+  CHECK_EXCEPTION(values1[PointKey(3)], KeyDoesNotExist<PointKey>);
 }
 
 /* ************************************************************************* */

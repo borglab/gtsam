@@ -37,6 +37,10 @@ namespace gtsam { class VectorValues; class Ordering; }
 
 namespace gtsam {
 
+  // Forward declarations
+  template<class J> class KeyDoesNotExist;
+  template<class J> class KeyAlreadyExists;
+
 	/**
 	 * Manifold type values structure
 	 * Takes two template types
@@ -86,11 +90,12 @@ namespace gtsam {
     /** Test whether configs are identical in keys and values */
     bool equals(const Values& expected, double tol=1e-9) const;
 
-    /** Retrieve a variable by j, throws std::invalid_argument if not found */
+    /** Retrieve a variable by j, throws KeyDoesNotExist<J> if not found */
     const Value& at(const J& j) const;
 
-    /** operator[] syntax for get */
-    const Value& operator[](const J& j) const { return at(j); }
+    /** operator[] syntax for get, throws KeyDoesNotExist<J> if not found */
+    const Value& operator[](const J& j) const {
+      return at(j); }
 
     /** Check if a variable exists */
     bool exists(const J& i) const { return values_.find(i)!=values_.end(); }
@@ -131,10 +136,10 @@ namespace gtsam {
 
     // imperative methods:
 
-    /** Add a variable with the given j - does not replace existing values */
+    /** Add a variable with the given j, throws KeyAlreadyExists<J> if j is already present */
     void insert(const J& j, const Value& val);
 
-    /** Add a set of variables - does note replace existing values */
+    /** Add a set of variables, throws KeyAlreadyExists<J> if a key is already present */
     void insert(const Values& cfg);
 
     /** update the current available values without adding new ones */
@@ -143,11 +148,12 @@ namespace gtsam {
     /** single element change of existing element */
     void update(const J& j, const Value& val);
 
-    /** Remove a variable from the config */
+    /** Remove a variable from the config, throws KeyDoesNotExist<J> if j is not present */
     void erase(const J& j);
 
     /** Remove a variable from the config while returning the dimensionality of
-     * the removed element (normally not needed by user code).
+     * the removed element (normally not needed by user code), throws
+     * KeyDoesNotExist<J> if j is not present.
      */
     void erase(const J& j, size_t& dim);
 
@@ -228,6 +234,58 @@ namespace gtsam {
       ++ var;
     }
   };
+
+
+/* ************************************************************************* */
+template<class J>
+class KeyAlreadyExists : public std::exception {
+protected:
+  const J key_; ///< The key that already existed
+  const typename J::Value value_; ///< The value attempted to be inserted
+
+private:
+  mutable std::string message_;
+
+public:
+  /// Construct with the key-value pair attemped to be added
+  KeyAlreadyExists(const J& key, const typename J::Value& value) throw() :
+    key_(key), value_(value) {}
+
+  virtual ~KeyAlreadyExists() throw() {}
+
+  /// The duplicate key that was attemped to be added
+  const J& key() const throw() { return key_; }
+
+  /// The value that was attempted to be added
+  const typename J::Value& value() const throw() { return value_; }
+
+  /// The message to be displayed to the user
+  virtual const char* what() const throw();
+};
+
+/* ************************************************************************* */
+template<class J>
+class KeyDoesNotExist : public std::exception {
+protected:
+  const char* operation_; ///< The operation that attempted to access the key
+  const J key_; ///< The key that does not exist
+
+private:
+  mutable std::string message_;
+
+public:
+  /// Construct with the key that does not exist in the values
+  KeyDoesNotExist(const char* operation, const J& key) throw() :
+    operation_(operation), key_(key) {}
+
+  virtual ~KeyDoesNotExist() throw() {}
+
+  /// The key that was attempted to be accessed that does not exist
+  const J& key() const throw() { return key_; }
+
+  /// The message to be displayed to the user
+  virtual const char* what() const throw();
+};
 
 } // \namespace gtsam
 

@@ -69,9 +69,30 @@ TEST( TestValues, equals_nan )
 }
 
 /* ************************************************************************* */
-TEST( TestValues, insert_config )
+TEST( TestValues, insert_good )
 {
   TestValues cfg1, cfg2, expected;
+  Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
+  Vector v2 = Vector_(3, 8.0, 9.0, 1.0);
+  Vector v3 = Vector_(3, 2.0, 4.0, 3.0);
+  Vector v4 = Vector_(3, 8.0, 3.0, 7.0);
+  cfg1.insert(key1, v1);
+  cfg1.insert(key2, v2);
+  cfg2.insert(key3, v4);
+
+  cfg1.insert(cfg2);
+
+  expected.insert(key1, v1);
+  expected.insert(key2, v2);
+  expected.insert(key3, v4);
+
+  CHECK(assert_equal(cfg1, expected));
+}
+
+/* ************************************************************************* */
+TEST( TestValues, insert_bad )
+{
+  TestValues cfg1, cfg2;
   Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
   Vector v2 = Vector_(3, 8.0, 9.0, 1.0);
   Vector v3 = Vector_(3, 2.0, 4.0, 3.0);
@@ -81,14 +102,7 @@ TEST( TestValues, insert_config )
   cfg2.insert(key2, v3);
   cfg2.insert(key3, v4);
 
-  cfg1.insert(cfg2);
-
-  expected.insert(key1, v1);
-  expected.insert(key2, v2);
-  expected.insert(key2, v3);
-  expected.insert(key3, v4);
-
-  CHECK(assert_equal(cfg1, expected));
+  CHECK_EXCEPTION(cfg1.insert(cfg2), const KeyAlreadyExists<VecKey>);
 }
 
 /* ************************************************************************* */

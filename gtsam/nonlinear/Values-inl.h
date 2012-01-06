@@ -57,7 +57,7 @@ namespace gtsam {
   template<class J>
   const typename J::Value& Values<J>::at(const J& j) const {
     const_iterator it = values_.find(j);
-    if (it == values_.end()) throw std::invalid_argument("Values::at() invalid j: " + (string)j);
+    if (it == values_.end()) throw KeyDoesNotExist<J>("retrieve", j);
     else return it->second;
   }
 
@@ -79,7 +79,8 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class J>
   void Values<J>::insert(const J& name, const typename J::Value& val) {
-    values_.insert(make_pair(name, val));
+    if(!values_.insert(make_pair(name, val)).second)
+      throw KeyAlreadyExists<J>(name, val);
   }
 
   /* ************************************************************************* */
@@ -124,7 +125,8 @@ namespace gtsam {
   template<class J>
   void Values<J>::erase(const J& j, size_t& dim) {
     iterator it = values_.find(j);
-    if (it == values_.end()) throw std::invalid_argument("Values::erase() invalid j: " + (string)j);
+    if (it == values_.end())
+      throw KeyDoesNotExist<J>("erase", j);
     dim = it->second.dim();
     values_.erase(it);
   }
@@ -203,6 +205,25 @@ namespace gtsam {
       assert(this->exists(value.first));
       delta[ordering[value.first]] = this->at(value.first).localCoordinates(value.second);
     }
+  }
+
+  /* ************************************************************************* */
+  template<class J>
+  const char* KeyDoesNotExist<J>::what() const throw() {
+    if(message_.empty())
+      message_ = 
+          "Attempting to " + std::string(operation_) + " the key \"" +
+          (std::string)key_ + "\", which does not exist in the Values.";
+    return message_.c_str();
+  }
+
+  /* ************************************************************************* */
+  template<class J>
+  const char* KeyAlreadyExists<J>::what() const throw() {
+    if(message_.empty())
+      message_ = 
+          "Attempting to add a key-value pair with key \"" + (std::string)key_ + "\", key already exists.";
+    return message_.c_str();
   }
 
 }
