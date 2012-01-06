@@ -686,10 +686,15 @@ Matrix expm(const Matrix& A, size_t K) {
 
 /* ************************************************************************* */
 Matrix Cayley(const Matrix& A) {
-	size_t n = A.cols();
+	int n = A.cols();
 	assert(A.rows() == n);
-	const Matrix I = eye(n);
-	return (I-A)*inverse(I+A);
+
+	// original
+//	const Matrix I = eye(n);
+//	return (I-A)*inverse(I+A);
+
+	// inlined to let Eigen do more optimization
+	return (Matrix::Identity(n, n) - A)*(Matrix::Identity(n, n) + A).inverse();
 }
 /* ************************************************************************* */
 

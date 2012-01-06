@@ -442,6 +442,14 @@ Matrix expm(const Matrix& A, size_t K=7);
 /// Cayley transform
 Matrix Cayley(const Matrix& A);
 
+/// Implementation of Cayley transform using fixed size matrices to let
+/// Eigen do more optimization
+template<int N>
+Matrix Cayley(const Eigen::Matrix<double, N, N>& A) {
+	typedef Eigen::Matrix<double, N, N> FMat;
+	return Matrix((FMat::Identity() - A)*(FMat::Identity() + A).inverse());
+}
+
 } // namespace gtsam
 
 #include <boost/serialization/nvp.hpp>

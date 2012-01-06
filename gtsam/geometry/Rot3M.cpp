@@ -263,7 +263,18 @@ Vector Rot3::localCoordinates(const Rot3& T) const {
 #ifdef CORRECT_ROT3_EXMAP
 	return Logmap(between(T));
 #else
-	Matrix Omega = Cayley(between(T).matrix());
+	// original
+//	Matrix Omega = Cayley(between(T).matrix());
+
+	// Create a fixed-size matrix
+	Eigen::Matrix3d A(between(T).matrix());
+
+	// using templated version of Cayley
+	Matrix Omega = Cayley<3>(A);
+
+	// completely inlined Cayley from template
+//	Eigen::Matrix3d Omega = (Eigen::Matrix3d::Identity() - A)*(Eigen::Matrix3d::Identity() + A).inverse();
+
 	return -2*Vector_(3,Omega(2,1),Omega(0,2),Omega(1,0));
 #endif
 }

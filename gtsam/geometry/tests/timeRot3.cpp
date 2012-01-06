@@ -47,7 +47,7 @@ int main()
   cout << seconds << " seconds" << endl;
   cout << ((double)n/seconds) << " calls/second" << endl;
 
-  cout << "Exmpap" << endl;
+  cout << "Expmap" << endl;
   timeLog = clock();
   for(int i = 0; i < n; i++)
   	R*Rot3::Expmap(v);
@@ -60,6 +60,15 @@ int main()
   timeLog = clock();
   for(int i = 0; i < n; i++)
   	R.retract(v);
+  timeLog2 = clock();
+  seconds = (double)(timeLog2-timeLog)/CLOCKS_PER_SEC;
+  cout << seconds << " seconds" << endl;
+  cout << ((double)n/seconds) << " calls/second" << endl;
+
+  cout << "localCoordinates" << endl;
+  timeLog = clock();
+  for(int i = 0; i < n; i++)
+  	R.localCoordinates(R);
   timeLog2 = clock();
   seconds = (double)(timeLog2-timeLog)/CLOCKS_PER_SEC;
   cout << seconds << " seconds" << endl;
