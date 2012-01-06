@@ -72,6 +72,8 @@ struct ISAM2DoglegParams {
  */
 struct ISAM2Params {
   typedef boost::variant<ISAM2GaussNewtonParams, ISAM2DoglegParams> OptimizationParams; ///< Either ISAM2GaussNewtonParams or ISAM2DoglegParams
+  typedef boost::variant<double, FastMap<char,Vector> > RelinearizationThreshold; ///< Either a constant relinearization threshold or a per-variable-type set of thresholds
+
   /** Optimization parameters, this both selects the nonlinear optimization
    * method and specifies its parameters, either ISAM2GaussNewtonParams or
    * ISAM2DoglegParams.  In the former, Gauss-Newton optimization will be used
@@ -79,15 +81,34 @@ struct ISAM2Params {
    * algorithm will be used with the specified parameters.
    */
   OptimizationParams optimizationParams;
-  double relinearizeThreshold; ///< Only relinearize variables whose linear delta magnitude is greater than this threshold (default: 0.1)
+
+  /** Only relinearize variables whose linear delta magnitude is greater than
+   * this threshold (default: 0.1).  If this is a FastMap<char,Vector> instead
+   * of a double, then the threshold is specified for each dimension of each
+   * variable type.  This parameter then maps from a character indicating the
+   * variable type to a Vector of thresholds for each dimension of that
+   * variable.  For example, if Pose keys are of type TypedSymbol<'x',Pose3>,
+   * and landmark keys are of type TypedSymbol<'l',Point3>, then appropriate
+   * entries would be added with:
+   * \code
+     FastMap<char,Vector> thresholds;
+     thresholds[PoseKey::chr()] = Vector_(6, 0.1, 0.1, 0.1, 0.5, 0.5, 0.5); // 0.1 rad rotation threshold, 0.5 m translation threshold
+     thresholds[PointKey::chr()] = Vector_(3, 1.0, 1.0, 1.0);               // 1.0 m landmark position threshold
+     params.relinearizeThreshold = thresholds;
+     \endcode
+   */
+  RelinearizationThreshold relinearizeThreshold;
+
   int relinearizeSkip; ///< Only relinearize any variables every relinearizeSkip calls to ISAM2::update (default: 10)
+
   bool enableRelinearization; ///< Controls whether ISAM2 will ever relinearize any variables (default: true)
+
   bool evaluateNonlinearError; ///< Whether to evaluate the nonlinear error before and after the update, to return in ISAM2Result from update()
 
   /** Specify parameters as constructor arguments */
   ISAM2Params(
       OptimizationParams _optimizationParams = ISAM2GaussNewtonParams(), ///< see ISAM2Params public variables, ISAM2Params::optimizationParams
-      double _relinearizeThreshold = 0.1, ///< see ISAM2Params public variables, ISAM2Params::relinearizeThreshold
+      RelinearizationThreshold _relinearizeThreshold = 0.1, ///< see ISAM2Params public variables, ISAM2Params::relinearizeThreshold
       int _relinearizeSkip = 10, ///< see ISAM2Params public variables, ISAM2Params::relinearizeSkip
       bool _enableRelinearization = true, ///< see ISAM2Params public variables, ISAM2Params::enableRelinearization
       bool _evaluateNonlinearError = false ///< see ISAM2Params public variables, ISAM2Params::evaluateNonlinearError

@@ -469,8 +469,8 @@ ISAM2Result ISAM2<CONDITIONAL, VALUES, GRAPH>::update(
     tic(4,"gather relinearize keys");
     vector<bool> markedRelinMask(ordering_.nVars(), false);
     // 4. Mark keys in \Delta above threshold \beta: J=\{\Delta_{j}\in\Delta|\Delta_{j}\geq\beta\}.
-    FastSet<Index> relinKeys = Impl::CheckRelinearization(delta_, params_.relinearizeThreshold);
-    if(disableReordering) relinKeys = Impl::CheckRelinearization(delta_, 0.0); // This is used for debugging
+    FastSet<Index> relinKeys = Impl::CheckRelinearization(delta_, ordering_, params_.relinearizeThreshold);
+    if(disableReordering) relinKeys = Impl::CheckRelinearization(delta_, ordering_, 0.0); // This is used for debugging
 
     // Add the variables being relinearized to the marked keys
     BOOST_FOREACH(const Index j, relinKeys) { markedRelinMask[j] = true; }

@@ -64,7 +64,7 @@ struct ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl {
    * @return The set of variable indices in delta whose magnitude is greater than or
    * equal to relinearizeThreshold
    */
-  static FastSet<Index> CheckRelinearization(Permuted<VectorValues>& delta, double relinearizeThreshold);
+  static FastSet<Index> CheckRelinearization(const Permuted<VectorValues>& delta, const Ordering& ordering, const ISAM2Params::RelinearizationThreshold& relinearizeThreshold);
 
   /**
    * Recursively search this clique and its children for marked keys appearing
@@ -175,14 +175,29 @@ FastSet<Index> ISAM2<CONDITIONAL,VALUES,GRAPH>::Impl::IndicesFromFactors(const O
 
 /* ************************************************************************* */
 template<class CONDITIONAL, class VALUES, class GRAPH>
-FastSet<Index> ISAM2<CONDITIONAL,VALUES,GRAPH>::Impl::CheckRelinearization(Permuted<VectorValues>& delta, double relinearizeThreshold) {
+FastSet<Index> ISAM2<CONDITIONAL,VALUES,GRAPH>::Impl::CheckRelinearization(const Permuted<VectorValues>& delta, const Ordering& ordering, const ISAM2Params::RelinearizationThreshold& relinearizeThreshold) {
   FastSet<Index> relinKeys;
-  for(Index var=0; var<delta.size(); ++var) {
-    double maxDelta = delta[var].lpNorm<Eigen::Infinity>();
-    if(maxDelta >= relinearizeThreshold) {
-      relinKeys.insert(var);
+
+  if(relinearizeThreshold.type() == typeid(double)) {
+    double threshold = boost::get<double>(relinearizeThreshold);
+    for(Index var=0; var<delta.size(); ++var) {
+      double maxDelta = delta[var].lpNorm<Eigen::Infinity>();
+      if(maxDelta >= threshold) {
+        relinKeys.insert(var);
+      }
+    }
+  } else if(relinearizeThreshold.type() == typeid(FastMap<char,Vector>)) {
+    const FastMap<char,Vector>& thresholds = boost::get<FastMap<char,Vector> >(relinearizeThreshold);
+    BOOST_FOREACH(const Ordering::value_type& key_index, ordering) {
+      const Vector& threshold = thresholds.find(key_index.first.chr())->second;
+      Index j = key_index.second;
+      if(threshold.rows() != delta[j].rows())
+        throw std::invalid_argument("Relinearization threshold vector dimensionality passed into iSAM2 parameters does not match actual variable dimensionality");
+      if((delta[j].array().abs() > threshold.array()).any())
+        relinKeys.insert(j);
     }
   }
+
   return relinKeys;
 }
 
