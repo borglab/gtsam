@@ -23,74 +23,30 @@
 using namespace std;
 using namespace gtsam;
 
+#define TEST(TITLE,STATEMENT) \
+	cout << TITLE << endl;\
+	timeLog = clock();\
+	for(int i = 0; i < n; i++)\
+	STATEMENT;\
+	timeLog2 = clock();\
+	seconds = (double)(timeLog2-timeLog)/CLOCKS_PER_SEC;\
+	cout << seconds << " seconds" << endl;\
+	cout << ((double)n/seconds) << " calls/second" << endl;
+
 int main()
 {
-  int n = 300000;
-  Vector v = Vector_(3,1.,0.,0.);
-  Rot3 R = Rot3::rodriguez(0.1, 0.4, 0.2);
+  int n = 300000; long timeLog, timeLog2; double seconds;
+  Vector v = Vector_(3,1.0,0.0,0.0);//0.1,0.2,-0.1);
+  Rot3 R = Rot3::rodriguez(0.1, 0.4, 0.2), R2 = R.retract(v);
 
-  cout << "Rodriguez formula given axis angle" << endl;
-  long timeLog = clock();
-  for(int i = 0; i < n; i++)
-  	Rot3::rodriguez(v,0.001);
-  long timeLog2 = clock();
-  double seconds = (double)(timeLog2-timeLog)/CLOCKS_PER_SEC;
-  cout << seconds << " seconds" << endl;
-  cout << ((double)n/seconds) << " calls/second" << endl;
-
-  cout << "Rodriguez formula given canonical coordinates" << endl;
-  timeLog = clock();
-  for(int i = 0; i < n; i++)
-  	Rot3::rodriguez(v);
-  timeLog2 = clock();
-  seconds = (double)(timeLog2-timeLog)/CLOCKS_PER_SEC;
-  cout << seconds << " seconds" << endl;
-  cout << ((double)n/seconds) << " calls/second" << endl;
-
-  cout << "Expmap" << endl;
-  timeLog = clock();
-  for(int i = 0; i < n; i++)
-  	R*Rot3::Expmap(v);
-  timeLog2 = clock();
-  seconds = (double)(timeLog2-timeLog)/CLOCKS_PER_SEC;
-  cout << seconds << " seconds" << endl;
-  cout << ((double)n/seconds) << " calls/second" << endl;
-
-  cout << "Retract" << endl;
-  timeLog = clock();
-  for(int i = 0; i < n; i++)
-  	R.retract(v);
-  timeLog2 = clock();
-  seconds = (double)(timeLog2-timeLog)/CLOCKS_PER_SEC;
-  cout << seconds << " seconds" << endl;
-  cout << ((double)n/seconds) << " calls/second" << endl;
-
-  cout << "localCoordinates" << endl;
-  timeLog = clock();
-  for(int i = 0; i < n; i++)
-  	R.localCoordinates(R);
-  timeLog2 = clock();
-  seconds = (double)(timeLog2-timeLog)/CLOCKS_PER_SEC;
-  cout << seconds << " seconds" << endl;
-  cout << ((double)n/seconds) << " calls/second" << endl;
-
-  cout << "Slow rotation matrix" << endl;
-  timeLog = clock();
-  for(int i = 0; i < n; i++)
-  	Rot3::Rz(0.3)*Rot3::Ry(0.2)*Rot3::Rx(0.1);
-  timeLog2 = clock();
-  seconds = (double)(timeLog2-timeLog)/CLOCKS_PER_SEC;
-  cout << seconds << " seconds" << endl;
-  cout << ((double)n/seconds) << " calls/second" << endl;
-
-  cout << "Fast Rotation matrix" << endl;
-  timeLog = clock();
-  for(int i = 0; i < n; i++)
-  	Rot3::RzRyRx(0.1,0.2,0.3);
-  timeLog2 = clock();
-  seconds = (double)(timeLog2-timeLog)/CLOCKS_PER_SEC;
-  cout << seconds << " seconds" << endl;
-  cout << ((double)n/seconds) << " calls/second" << endl;
+  TEST("Rodriguez formula given axis angle", Rot3::rodriguez(v,0.001))
+  TEST("Rodriguez formula given canonical coordinates", Rot3::rodriguez(v))
+  TEST("Expmap", R*Rot3::Expmap(v))
+  TEST("Logmap", Rot3::Logmap(R))
+  TEST("Retract", R.retract(v))
+  TEST("localCoordinates", R.localCoordinates(R2))
+  TEST("Slow rotation matrix",Rot3::Rz(0.3)*Rot3::Ry(0.2)*Rot3::Rx(0.1))
+  TEST("Fast Rotation matrix", Rot3::RzRyRx(0.1,0.2,0.3))
 
   return 0;
 }
