@@ -196,10 +196,13 @@ Point3 Rot3::rotate(const Point3& p,
 // see doc/math.lyx, SO(3) section
 Point3 Rot3::unrotate(const Point3& p,
     boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
-  const Matrix Rt(transpose());
-  Point3 q(Rt*p.vector()); // q = Rt*p
+  Point3 q(
+			r1_.x()*p.x()+r1_.y()*p.y()+r1_.z()*p.z(),
+			r2_.x()*p.x()+r2_.y()*p.y()+r2_.z()*p.z(),
+			r3_.x()*p.x()+r3_.y()*p.y()+r3_.z()*p.z()
+  		); // q = Rt*p
   if (H1) *H1 = skewSymmetric(q.x(), q.y(), q.z());
-  if (H2) *H2 = Rt;
+  if (H2) *H2 = transpose();
   return q;
 }
 
