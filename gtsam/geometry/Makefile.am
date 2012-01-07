@@ -33,7 +33,7 @@ sources += projectiveGeometry.cpp tensorInterface.cpp
 check_PROGRAMS += tests/testTensors tests/testHomography2 tests/testFundamental
 
 # Timing tests
-noinst_PROGRAMS = tests/timeRot3 tests/timeCalibratedCamera
+noinst_PROGRAMS = tests/timeRot3 tests/timePose3 tests/timeCalibratedCamera
 
 # Rot3M and Rot3Q both use Rot3.h, they do not have individual header files
 allsources = $(sources)
