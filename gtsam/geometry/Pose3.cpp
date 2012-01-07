@@ -14,10 +14,11 @@
  * @brief 3D Pose
  */
 
-#include <iostream>
-#include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/Lie-inl.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/concepts.h>
+#include <iostream>
+#include <cmath>
 
 using namespace std;
 
@@ -85,15 +86,14 @@ namespace gtsam {
 	    return concatVectors(2, &w, &T);
 		else {
 			Matrix W = skewSymmetric(w/t);
-			Matrix Ainv = I3 - (0.5*t)*W + ((2*sin(t)-t*(1+cos(t)))/(2*sin(t))) * (W * W);
-			Vector u = Ainv*T;
+			// Formula from Agrawal06iros, equation (14)
+			// simplified with Mathematica, and multiplying in T to avoid matrix math
+			double Tan = tan(0.5*t);
+			Vector WT = W*T;
+			Vector u = T - (0.5*t)*WT + (1 - t/(2.*Tan)) * (W * WT);
 	    return concatVectors(2, &w, &u);
 		}
   }
-
-  /* ************************************************************************* */
-  // Changes default to use the full verions of expmap/logmap
-  /* ************************************************************************* */
 
   /* ************************************************************************* */
 	// Different versions of retract
@@ -138,11 +138,10 @@ namespace gtsam {
 
 		// Correct first order t inverse
 		Point3 d = R_.unrotate(T.translation() - t_);
-		Vector v = d.vector();
 
 		// TODO: correct second order t inverse
 
-		return concatVectors(2, &omega, &v);
+		return Vector_(6,omega(0),omega(1),omega(2),d.x(),d.y(),d.z());
 #endif
 	}
 
