@@ -20,8 +20,9 @@
 
 #ifndef GTSAM_DEFAULT_QUATERNIONS
 
-#include <boost/math/constants/constants.hpp>
 #include <gtsam/geometry/Rot3.h>
+#include <boost/math/constants/constants.hpp>
+#include <cmath>
 
 using namespace std;
 
@@ -119,7 +120,7 @@ Rot3 Rot3::rodriguez(const Vector& w, double theta) {
 	double wwTxx = wx*wx, wwTyy = wy*wy, wwTzz = wz*wz;
 #ifndef NDEBUG
 	double l_n = wwTxx + wwTyy + wwTzz;
-	if (fabs(l_n-1.0)>1e-9) throw domain_error("rodriguez: length of n should be 1");
+	if (std::abs(l_n-1.0)>1e-9) throw domain_error("rodriguez: length of n should be 1");
 #endif
 
 	double c = cos(theta), s = sin(theta), c_1 = 1 - c;
@@ -205,34 +206,39 @@ Point3 Rot3::unrotate(const Point3& p,
 /* ************************************************************************* */
 // Log map at identity - return the canonical coordinates of this rotation
 Vector Rot3::Logmap(const Rot3& R) {
-  double tr = R.r1().x()+R.r2().y()+R.r3().z();
-  // FIXME should tr in statement below be absolute value?
-  if (tr > 3.0 - 1e-17) {   // when theta = 0, +-2pi, +-4pi, etc. (or tr > 3 + 1E-10)
-    return zero(3);
-  } else if (tr > 3.0 - 1e-10)  {   // when theta near 0, +-2pi, +-4pi, etc. (or tr > 3 + 1E-3)
-    double theta = acos((tr-1.0)/2.0);
-    // Using Taylor expansion: theta/(2*sin(theta)) \approx 1/2+theta^2/12 + O(theta^4)
-    return (0.5 + theta*theta/12)*Vector_(3,
-        R.r2().z()-R.r3().y(),
-        R.r3().x()-R.r1().z(),
-        R.r1().y()-R.r2().x());
-    // FIXME: in statement below, is this the right comparision?
-  } else if (fabs(tr - -1.0) < 1e-10) { // when theta = +-pi, +-3pi, +-5pi, etc.
-    if(fabs(R.r3().z() - -1.0) > 1e-10)
-      return (boost::math::constants::pi<double>() / sqrt(2.0+2.0*R.r3().z())) *
-          Vector_(3, R.r3().x(), R.r3().y(), 1.0+R.r3().z());
-    else if(fabs(R.r2().y() - -1.0) > 1e-10)
-      return (boost::math::constants::pi<double>() / sqrt(2.0+2.0*R.r2().y())) *
-          Vector_(3, R.r2().x(), 1.0+R.r2().y(), R.r2().z());
-    else // if(fabs(R.r1().x() - -1.0) > 1e-10)  This is implicit
-      return (boost::math::constants::pi<double>() / sqrt(2.0+2.0*R.r1().x())) *
-          Vector_(3, 1.0+R.r1().x(), R.r1().y(), R.r1().z());
+
+	static const double PI = boost::math::constants::pi<double>();
+
+	// Get trace(R)
+	double tr = R.r1_.x()+R.r2_.y()+R.r3_.z();
+
+	// when trace == -1, i.e., when theta = +-pi, +-3pi, +-5pi, etc.
+	// we do something special
+	if (std::abs(tr+1.0) < 1e-10) {
+    if(std::abs(R.r3_.z()+1.0) > 1e-10)
+      return (PI / sqrt(2.0+2.0*R.r3_.z())) *
+          Vector_(3, R.r3_.x(), R.r3_.y(), 1.0+R.r3_.z());
+    else if(std::abs(R.r2_.y()+1.0) > 1e-10)
+      return (PI / sqrt(2.0+2.0*R.r2_.y())) *
+          Vector_(3, R.r2_.x(), 1.0+R.r2_.y(), R.r2_.z());
+    else // if(std::abs(R.r1_.x()+1.0) > 1e-10)  This is implicit
+      return (PI / sqrt(2.0+2.0*R.r1_.x())) *
+          Vector_(3, 1.0+R.r1_.x(), R.r1_.y(), R.r1_.z());
   } else {
-    double theta = acos((tr-1.0)/2.0);
-    return (theta/2.0/sin(theta))*Vector_(3,
-        R.r2().z()-R.r3().y(),
-        R.r3().x()-R.r1().z(),
-        R.r1().y()-R.r2().x());
+		double magnitude;
+		double tr_3 = tr-3.0; // always negative
+		if (tr_3<-1e-7) {
+			double theta = acos((tr-1.0)/2.0);
+			magnitude = theta/(2.0*sin(theta));
+		} else {
+			// when theta near 0, +-2pi, +-4pi, etc. (trace near 3.0)
+			// use Taylor expansion: magnitude \approx 1/2-(t-3)/12 + O((t-3)^2)
+			magnitude = 0.5 - tr_3*tr_3/12.0;
+		}
+		return magnitude*Vector_(3,
+				R.r2_.z()-R.r3_.y(),
+				R.r3_.x()-R.r1_.z(),
+				R.r1_.y()-R.r2_.x());
   }
 }
 

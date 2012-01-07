@@ -15,16 +15,20 @@
  * @author  Alireza Fathi
  */
 
-#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
-#include <boost/math/constants/constants.hpp>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/lieProxies.h>
+
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Rot3.h>
 
+#include <boost/math/constants/constants.hpp>
+
+#include <CppUnitLite/TestHarness.h>
+
 #ifndef GTSAM_DEFAULT_QUATERNIONS
 
+using namespace std;
 using namespace gtsam;
 
 Rot3 R = Rot3::rodriguez(0.1, 0.4, 0.2);
@@ -147,37 +151,53 @@ TEST( Rot3, expmap)
 /* ************************************************************************* */
 TEST(Rot3, log)
 {
-	Vector w1 = Vector_(3, 0.1, 0.0, 0.0);
-	Rot3 R1 = Rot3::rodriguez(w1);
-	CHECK(assert_equal(w1, Rot3::Logmap(R1)));
+	static const double PI = boost::math::constants::pi<double>();
+	Vector w;
+	Rot3 R;
 
-	Vector w2 = Vector_(3, 0.0, 0.1, 0.0);
-	Rot3 R2 = Rot3::rodriguez(w2);
-	CHECK(assert_equal(w2, Rot3::Logmap(R2)));
+#define CHECK_OMEGA(X,Y,Z) \
+	w = Vector_(3, (double)X, (double)Y, double(Z)); \
+	R = Rot3::rodriguez(w); \
+	EXPECT(assert_equal(w, Rot3::Logmap(R),1e-12));
 
-	Vector w3 = Vector_(3, 0.0, 0.0, 0.1);
-	Rot3 R3 = Rot3::rodriguez(w3);
-	CHECK(assert_equal(w3, Rot3::Logmap(R3)));
+	// Check zero
+	CHECK_OMEGA(  0,   0,   0)
 
-	Vector w = Vector_(3, 0.1, 0.4, 0.2);
-	Rot3 R = Rot3::rodriguez(w);
-	CHECK(assert_equal(w, Rot3::Logmap(R)));
+	// create a random direction:
+	double norm=sqrt(1.0+16.0+4.0);
+	double x=1.0/norm, y=4.0/norm, z=2.0/norm;
 
-	Vector w5 = Vector_(3, 0.0, 0.0, 0.0);
-	Rot3 R5 = Rot3::rodriguez(w5);
-	CHECK(assert_equal(w5, Rot3::Logmap(R5)));
+	// Check very small rotation for Taylor expansion
+	// Note that tolerance above is 1e-12, so Taylor is pretty good !
+	double d = 0.0001;
+	CHECK_OMEGA(  d,   0,   0)
+	CHECK_OMEGA(  0,   d,   0)
+	CHECK_OMEGA(  0,   0,   d)
+	CHECK_OMEGA(x*d, y*d, z*d)
 
-	Vector w6 = Vector_(3, boost::math::constants::pi<double>(), 0.0, 0.0);
-	Rot3 R6 = Rot3::rodriguez(w6);
-	CHECK(assert_equal(w6, Rot3::Logmap(R6)));
+	// check normal rotation
+	d = 0.1;
+	CHECK_OMEGA(  d,   0,   0)
+	CHECK_OMEGA(  0,   d,   0)
+	CHECK_OMEGA(  0,   0,   d)
+	CHECK_OMEGA(x*d, y*d, z*d)
 
-	Vector w7 = Vector_(3, 0.0, boost::math::constants::pi<double>(), 0.0);
-	Rot3 R7 = Rot3::rodriguez(w7);
-	CHECK(assert_equal(w7, Rot3::Logmap(R7)));
+	// Check 180 degree rotations
+	CHECK_OMEGA(  PI,   0,   0)
+	CHECK_OMEGA(   0,  PI,   0)
+	CHECK_OMEGA(   0,   0,  PI)
+	CHECK_OMEGA(x*PI,y*PI,z*PI)
 
-	Vector w8 = Vector_(3, 0.0, 0.0, boost::math::constants::pi<double>());
-	Rot3 R8 = Rot3::rodriguez(w8);
-	CHECK(assert_equal(w8, Rot3::Logmap(R8)));
+	// Check 360 degree rotations
+#define CHECK_OMEGA_ZERO(X,Y,Z) \
+	w = Vector_(3, (double)X, (double)Y, double(Z)); \
+	R = Rot3::rodriguez(w); \
+	EXPECT(assert_equal(zero(3), Rot3::Logmap(R)));
+
+	CHECK_OMEGA_ZERO( 2.0*PI,      0,      0)
+	CHECK_OMEGA_ZERO(      0, 2.0*PI,      0)
+	CHECK_OMEGA_ZERO(      0,      0, 2.0*PI)
+	CHECK_OMEGA_ZERO(x*2.*PI,y*2.*PI,z*2.*PI)
 }
 
 /* ************************************************************************* */
