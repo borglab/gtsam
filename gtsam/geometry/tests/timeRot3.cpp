@@ -24,7 +24,7 @@ using namespace std;
 using namespace gtsam;
 
 #define TEST(TITLE,STATEMENT) \
-	cout << TITLE << endl;\
+	cout << endl << TITLE << endl;\
 	timeLog = clock();\
 	for(int i = 0; i < n; i++)\
 	STATEMENT;\
@@ -35,18 +35,21 @@ using namespace gtsam;
 
 int main()
 {
-  int n = 300000; long timeLog, timeLog2; double seconds;
-  Vector v = Vector_(3,1.0,0.0,0.0);//0.1,0.2,-0.1);
+  int n = 100000; long timeLog, timeLog2; double seconds;
+	// create a random direction:
+	double norm=sqrt(1.0+16.0+4.0);
+	double x=1.0/norm, y=4.0/norm, z=2.0/norm;
+  Vector v = Vector_(3,x,y,z);
   Rot3 R = Rot3::rodriguez(0.1, 0.4, 0.2), R2 = R.retract(v);
 
   TEST("Rodriguez formula given axis angle", Rot3::rodriguez(v,0.001))
   TEST("Rodriguez formula given canonical coordinates", Rot3::rodriguez(v))
   TEST("Expmap", R*Rot3::Expmap(v))
-  TEST("Logmap", Rot3::Logmap(R))
   TEST("Retract", R.retract(v))
+  TEST("Logmap", Rot3::Logmap(R.between(R2)))
   TEST("localCoordinates", R.localCoordinates(R2))
-  TEST("Slow rotation matrix",Rot3::Rz(0.3)*Rot3::Ry(0.2)*Rot3::Rx(0.1))
-  TEST("Fast Rotation matrix", Rot3::RzRyRx(0.1,0.2,0.3))
+  TEST("Slow rotation matrix",Rot3::Rz(z)*Rot3::Ry(y)*Rot3::Rx(x))
+  TEST("Fast Rotation matrix", Rot3::RzRyRx(x,y,z))
 
   return 0;
 }
