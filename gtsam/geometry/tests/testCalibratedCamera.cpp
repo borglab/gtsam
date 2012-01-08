@@ -78,10 +78,10 @@ TEST( CalibratedCamera, level2)
 /* ************************************************************************* */
 TEST( CalibratedCamera, project)
 {
-  CHECK(assert_equal( camera.project(point1), Point2(-.16,  .16) ));
-  CHECK(assert_equal( camera.project(point2), Point2(-.16, -.16) ));
-  CHECK(assert_equal( camera.project(point3), Point2( .16, -.16) ));
-  CHECK(assert_equal( camera.project(point4), Point2( .16,  .16) ));
+  CHECK(assert_equal( Point2(-.16,  .16), camera.project(point1) ));
+	CHECK(assert_equal( Point2(-.16, -.16), camera.project(point2) ));
+	CHECK(assert_equal( Point2( .16, -.16), camera.project(point3) ));
+	CHECK(assert_equal( Point2( .16,  .16), camera.project(point4) ));
 }
 
 /* ************************************************************************* */
@@ -105,9 +105,10 @@ TEST( CalibratedCamera, Dproject_point_pose)
 	Point2 result = camera.project(point1, Dpose, Dpoint);
 	Matrix numerical_pose  = numericalDerivative21(project2, pose1, point1);
 	Matrix numerical_point = numericalDerivative22(project2, pose1, point1);
-	CHECK(assert_equal(result, Point2(-.16,  .16) ));
-	CHECK(assert_equal(Dpose,  numerical_pose, 1e-7));
-	CHECK(assert_equal(Dpoint, numerical_point,1e-7));
+	CHECK(assert_equal(Point3(-0.08, 0.08, 0.5), camera.pose().transform_to(point1)));
+	CHECK(assert_equal(Point2(-.16,  .16), result));
+	CHECK(assert_equal(numerical_pose,  Dpose, 1e-7));
+	CHECK(assert_equal(numerical_point, Dpoint, 1e-7));
 }
 
 /* ************************************************************************* */
