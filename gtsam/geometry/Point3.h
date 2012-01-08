@@ -118,7 +118,7 @@ namespace gtsam {
       return sqrt(pow(x()-p2.x(),2.0) + pow(y()-p2.y(),2.0) + pow(z()-p2.z(),2.0));
     }
 
-    /** dot product */
+    /** Distance of the point from the origin */
     double norm() const;
 
     /** cross product @return this x q */
