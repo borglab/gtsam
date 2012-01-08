@@ -26,3 +26,7 @@ EXTRA_DIST = autogen.sh configure.ac COPYING INSTALL LGPL LICENSE README THANKS 
 # For Doxygen integration
 MOSTLYCLEANFILES = $(DX_CLEANFILES)
 EXTRA_DIST += $(DX_CONFIG)
+
+# Remove .svn directories from dist
+dist-hook:
+	rm -rf `find $(distdir)/doc -type d -name .svn`
