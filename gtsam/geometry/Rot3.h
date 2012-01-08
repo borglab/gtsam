@@ -22,7 +22,7 @@
 #pragma once
 
 #ifndef ROT3_DEFAULT_COORDINATES_MODE
-#define ROT3_DEFAULT_COORDINATES_MODE Rot3::FIRST_ORDER
+#define ROT3_DEFAULT_COORDINATES_MODE Rot3::CALEY
 #endif
 
 #include <gtsam/geometry/Point3.h>
@@ -228,9 +228,9 @@ namespace gtsam {
      * Rot3::localCoordinates()
      */
     enum CoordinatesMode {
-      FIRST_ORDER, ///< A fast first-order approximation to the exponential map.
-      SLOW_CALEY, ///< Retract and localCoordinates using the Caley transform.
-      CORRECT_EXPMAP ///< The correct exponential map, computationally expensive.
+      EXPMAP, ///< The exponential map, computationally expensive.
+      CALEY, ///< Retract and localCoordinates using the Caley transform.
+      SLOW_CALEY ///< Slow matrix implementation of Cayley transform (for tests only).
     };
 
     /// dimension of the variable - used to autodetect sizes

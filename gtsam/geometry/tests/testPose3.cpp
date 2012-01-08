@@ -60,9 +60,9 @@ TEST( Pose3, retract_expmap)
   Pose3 id;
   Vector v = zero(6);
   v(0) = 0.3;
-  EXPECT(assert_equal(Pose3(R, Point3()), id.retract(v, Pose3::CORRECT_EXPMAP),1e-2));
+  EXPECT(assert_equal(Pose3(R, Point3()), id.retract(v, Pose3::EXPMAP),1e-2));
   v(3)=0.2;v(4)=0.394742;v(5)=-2.08998;
-  EXPECT(assert_equal(Pose3(R, P),id.retract(v, Pose3::CORRECT_EXPMAP),1e-2));
+  EXPECT(assert_equal(Pose3(R, P),id.retract(v, Pose3::EXPMAP),1e-2));
 }
 
 /* ************************************************************************* */
@@ -461,8 +461,8 @@ TEST(Pose3, localCoordinates_first_order)
 TEST(Pose3, localCoordinates_expmap)
 {
   Vector d12 = repeat(6,0.1);
-  Pose3 t1 = T, t2 = t1.retract(d12, Pose3::CORRECT_EXPMAP);
-  EXPECT(assert_equal(d12, t1.localCoordinates(t2, Pose3::CORRECT_EXPMAP)));
+  Pose3 t1 = T, t2 = t1.retract(d12, Pose3::EXPMAP);
+  EXPECT(assert_equal(d12, t1.localCoordinates(t2, Pose3::EXPMAP)));
 }
 
 /* ************************************************************************* */
@@ -483,10 +483,10 @@ TEST(Pose3, manifold_expmap)
   Pose3 t1 = T;
   Pose3 t2 = T3;
   Pose3 origin;
-  Vector d12 = t1.localCoordinates(t2, Pose3::CORRECT_EXPMAP);
-  EXPECT(assert_equal(t2, t1.retract(d12, Pose3::CORRECT_EXPMAP)));
-  Vector d21 = t2.localCoordinates(t1, Pose3::CORRECT_EXPMAP);
-  EXPECT(assert_equal(t1, t2.retract(d21, Pose3::CORRECT_EXPMAP)));
+  Vector d12 = t1.localCoordinates(t2, Pose3::EXPMAP);
+  EXPECT(assert_equal(t2, t1.retract(d12, Pose3::EXPMAP)));
+  Vector d21 = t2.localCoordinates(t1, Pose3::EXPMAP);
+  EXPECT(assert_equal(t1, t2.retract(d21, Pose3::EXPMAP)));
 
   // Check that log(t1,t2)=-log(t2,t1)
   EXPECT(assert_equal(d12,-d21));

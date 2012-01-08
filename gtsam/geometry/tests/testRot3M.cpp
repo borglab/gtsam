@@ -201,17 +201,17 @@ TEST(Rot3, log)
 }
 
 /* ************************************************************************* */
-TEST(Rot3, manifold_first_order)
+TEST(Rot3, manifold_caley)
 {
 	Rot3 gR1 = Rot3::rodriguez(0.1, 0.4, 0.2);
 	Rot3 gR2 = Rot3::rodriguez(0.3, 0.1, 0.7);
 	Rot3 origin;
 
 	// log behaves correctly
-	Vector d12 = gR1.localCoordinates(gR2, Rot3::FIRST_ORDER);
-	CHECK(assert_equal(gR2, gR1.retract(d12, Rot3::FIRST_ORDER)));
-	Vector d21 = gR2.localCoordinates(gR1, Rot3::FIRST_ORDER);
-	CHECK(assert_equal(gR1, gR2.retract(d21, Rot3::FIRST_ORDER)));
+	Vector d12 = gR1.localCoordinates(gR2, Rot3::CALEY);
+	CHECK(assert_equal(gR2, gR1.retract(d12, Rot3::CALEY)));
+	Vector d21 = gR2.localCoordinates(gR1, Rot3::CALEY);
+	CHECK(assert_equal(gR1, gR2.retract(d21, Rot3::CALEY)));
 
 	// Check that log(t1,t2)=-log(t2,t1)
 	CHECK(assert_equal(d12,-d21));
@@ -229,7 +229,7 @@ TEST(Rot3, manifold_first_order)
 }
 
 /* ************************************************************************* */
-TEST(Rot3, manifold_caley)
+TEST(Rot3, manifold_slow_caley)
 {
   Rot3 gR1 = Rot3::rodriguez(0.1, 0.4, 0.2);
   Rot3 gR2 = Rot3::rodriguez(0.3, 0.1, 0.7);
@@ -264,10 +264,10 @@ TEST(Rot3, manifold_expmap)
   Rot3 origin;
 
   // log behaves correctly
-  Vector d12 = gR1.localCoordinates(gR2, Rot3::CORRECT_EXPMAP);
-  CHECK(assert_equal(gR2, gR1.retract(d12, Rot3::CORRECT_EXPMAP)));
-  Vector d21 = gR2.localCoordinates(gR1, Rot3::CORRECT_EXPMAP);
-  CHECK(assert_equal(gR1, gR2.retract(d21, Rot3::CORRECT_EXPMAP)));
+  Vector d12 = gR1.localCoordinates(gR2, Rot3::EXPMAP);
+  CHECK(assert_equal(gR2, gR1.retract(d12, Rot3::EXPMAP)));
+  Vector d21 = gR2.localCoordinates(gR1, Rot3::EXPMAP);
+  CHECK(assert_equal(gR1, gR2.retract(d21, Rot3::EXPMAP)));
 
   // Check that it is expmap
   CHECK(assert_equal(gR2, gR1*Rot3::Expmap(d12)));

@@ -106,8 +106,8 @@ namespace gtsam {
      * Pose3::localCoordinates()
      */
     enum CoordinatesMode {
-      FIRST_ORDER, ///< A fast first-order approximation to the exponential map.
-      CORRECT_EXPMAP ///< The correct exponential map, computationally expensive.
+      EXPMAP, ///< The correct exponential map, computationally expensive.
+      FIRST_ORDER ///< A fast first-order approximation to the exponential map.
     };
 
     /// Dimensionality of tangent space = 6 DOF - used to autodetect sizes

@@ -247,7 +247,9 @@ Vector Rot3::Logmap(const Rot3& R) {
 
 /* ************************************************************************* */
 Rot3 Rot3::retract(const Vector& omega, Rot3::CoordinatesMode mode) const {
-  if(mode == Rot3::FIRST_ORDER) {
+  if(mode == Rot3::EXPMAP) {
+    return (*this)*Expmap(omega);
+  } else if(mode == Rot3::CALEY) {
     const double x = omega(0), y = omega(1), z = omega(2);
     const double x2 = x*x, y2 = y*y, z2 = z*z;
     const double xy = x*y, xz = x*z, yz = y*z;
@@ -260,8 +262,6 @@ Rot3 Rot3::retract(const Vector& omega, Rot3::CoordinatesMode mode) const {
   } else if(mode == Rot3::SLOW_CALEY) {
     Matrix Omega = skewSymmetric(omega);
     return (*this)*Cayley<3>(-Omega/2);
-  } else if(mode == Rot3::CORRECT_EXPMAP) {
-    return (*this)*Expmap(omega);
   } else {
     assert(false);
     exit(1);
@@ -270,7 +270,9 @@ Rot3 Rot3::retract(const Vector& omega, Rot3::CoordinatesMode mode) const {
 
 /* ************************************************************************* */
 Vector Rot3::localCoordinates(const Rot3& T, Rot3::CoordinatesMode mode) const {
-  if(mode == Rot3::FIRST_ORDER) {
+  if(mode == Rot3::EXPMAP) {
+    return Logmap(between(T));
+  } else if(mode == Rot3::CALEY) {
     // Create a fixed-size matrix
     Eigen::Matrix3d A(between(T).matrix());
     // Mathematica closed form optimization (procrastination?) gone wild:
@@ -290,8 +292,6 @@ Vector Rot3::localCoordinates(const Rot3& T, Rot3::CoordinatesMode mode) const {
     // using templated version of Cayley
     Matrix Omega = Cayley<3>(A);
     return -2*Vector_(3,Omega(2,1),Omega(0,2),Omega(1,0));
-  } else if(mode == Rot3::CORRECT_EXPMAP) {
-    return Logmap(between(T));
   } else {
     assert(false);
     exit(1);
