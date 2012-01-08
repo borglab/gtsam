@@ -246,7 +246,7 @@ Vector Rot3::Logmap(const Rot3& R) {
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::retract(const Vector& omega, CoordinatesMode mode) const {
+Rot3 Rot3::retract(const Vector& omega, Rot3::CoordinatesMode mode) const {
   if(mode == Rot3::FIRST_ORDER) {
     const double x = omega(0), y = omega(1), z = omega(2);
     const double x2 = x*x, y2 = y*y, z2 = z*z;
@@ -269,7 +269,7 @@ Rot3 Rot3::retract(const Vector& omega, CoordinatesMode mode) const {
 }
 
 /* ************************************************************************* */
-Vector Rot3::localCoordinates(const Rot3& T, CoordinatesMode mode) const {
+Vector Rot3::localCoordinates(const Rot3& T, Rot3::CoordinatesMode mode) const {
   if(mode == Rot3::FIRST_ORDER) {
     // Create a fixed-size matrix
     Eigen::Matrix3d A(between(T).matrix());
