@@ -21,8 +21,15 @@
 
 #pragma once
 
+// You can override the default coordinate mode using this flag
 #ifndef ROT3_DEFAULT_COORDINATES_MODE
+#ifdef GTSAM_DEFAULT_QUATERNIONS
+// Exponential map is very cheap for quaternions
+#define ROT3_DEFAULT_COORDINATES_MODE Rot3::EXPMAP
+#else
+// For rotation matrices, the Cayley transform is a fast retract alternative
 #define ROT3_DEFAULT_COORDINATES_MODE Rot3::CAYLEY
+#endif
 #endif
 
 #include <gtsam/geometry/Point3.h>
@@ -47,12 +54,12 @@ namespace gtsam {
     static const size_t dimension = 3;
 
   private:
-#ifndef GTSAM_DEFAULT_QUATERNIONS
-    /** We store columns ! */
-    Point3 r1_, r2_, r3_;
-#else
+#ifdef GTSAM_DEFAULT_QUATERNIONS
     /** Internal Eigen Quaternion */
     Quaternion quaternion_;
+#else
+    /** We store columns ! */
+    Point3 r1_, r2_, r3_;
 #endif
 
   public:
@@ -224,20 +231,25 @@ namespace gtsam {
     /// @name Manifold
     /// @{
 
-    /** Enum to indicate which method should be used in Rot3::retract() and
-     * Rot3::localCoordinates()
-     */
-    enum CoordinatesMode {
-      EXPMAP, ///< The exponential map, computationally expensive.
-      CAYLEY, ///< Retract and localCoordinates using the Cayley transform.
-      SLOW_CAYLEY ///< Slow matrix implementation of Cayley transform (for tests only).
-    };
-
     /// dimension of the variable - used to autodetect sizes
     static size_t Dim() { return dimension; }
 
     /// return dimensionality of tangent space, DOF = 3
     size_t dim() const { return dimension; }
+
+    /**
+     * The method [retract] is used to map from the tangent space back to the manifold.
+     * Its inverse, is [localCoordinates]. For Lie groups, an obvious retraction is the
+     * exponential map, but this can be expensive to compute. The following Enum is used
+     * to indicate which method should be used (default ROT3_DEFAULT_COORDINATES_MODE).
+     */
+    enum CoordinatesMode {
+      EXPMAP, ///< Use the Lie group exponential map to retract
+#ifndef GTSAM_DEFAULT_QUATERNIONS
+      CAYLEY, ///< Retract and localCoordinates using the Cayley transform.
+      SLOW_CAYLEY ///< Slow matrix implementation of Cayley transform (for tests only).
+#endif
+      };
 
     /// Retraction from R^3 to Pose2 manifold neighborhood around current pose
     Rot3 retract(const Vector& omega, Rot3::CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE) const;
