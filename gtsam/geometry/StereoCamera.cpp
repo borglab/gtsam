@@ -46,9 +46,10 @@ namespace gtsam {
 		// calculate scaled but not translated image coordinates
 		const double d = 1.0 / q.z();
 		const double x = q.x(), y = q.y();
-		const double uL = d*fx*x;
-		const double uR = d*fx*(x - b);
-		const double v  = d*fy*y;
+		const double dfx = d*fx, dfy = d*fy;
+		const double uL = dfx*x;
+		const double uR = dfx*(x - b);
+		const double v  = dfy*y;
 
 		// check if derivatives need to be computed
 		if (H1 || H2) {
@@ -60,12 +61,11 @@ namespace gtsam {
 #else
 			// optimized version, see StereoCamera.nb
 			if (H1) {
-				const double z = q.z(), fxz = fx*z, v1 = v/fy, v2 = fx*v1;
-				const double dfx = d*fx, dx = d*x;
+				const double v1 = v/fy, v2 = fx*v1, dx=d*x;
 				*H1 = Matrix_(3, 6,
-							  uL*v1, -d*(uL*x + fxz),     v2, -dfx,   0.0, d*uL,
-							  uR*v1, -d*(uR*x + fxz),     v2, -dfx,   0.0, d*uR,
-						fy + v*v1,           -dx*v, -dx*fy,  0.0, -d*fy, d*v
+							  uL*v1, -fx-dx*uL,     v2, -dfx,  0.0, d*uL,
+							  uR*v1, -fx-dx*uR,     v2, -dfx,  0.0, d*uR,
+						fy + v*v1,    -dx*v , -x*dfy,  0.0, -dfy, d*v
 					);
 			}
 			if (H2) {
