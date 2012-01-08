@@ -1507,10 +1507,10 @@
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="tests/timeCalibratedCamera.run" path="build/gtsam/geometry" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="tests/timeStereoCamera.run" path="build/gtsam/geometry" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
 				<buildArguments>-j2</buildArguments>
-				<buildTarget>tests/timeCalibratedCamera.run</buildTarget>
+				<buildTarget>tests/timeStereoCamera.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>

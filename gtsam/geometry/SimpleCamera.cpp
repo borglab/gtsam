@@ -49,17 +49,13 @@ namespace gtsam {
 		Point2 intrinsic = calibrated_.project(point, H1, H2);
 		if (!H1 && !H2)
 			return K_.uncalibrate(intrinsic);
-
-		Matrix D_projection_intrinsic;
-		Point2 projection = K_.uncalibrate(intrinsic, boost::none, D_projection_intrinsic);
-
-		if (H1) {
-			*H1 = D_projection_intrinsic * (*H1);
+		else {
+			Matrix D_projection_intrinsic;
+			Point2 projection = K_.uncalibrate(intrinsic, boost::none, D_projection_intrinsic);
+			if (H1) *H1 = D_projection_intrinsic * (*H1);
+			if (H2) *H2 = D_projection_intrinsic * (*H2);
+			return projection;
 		}
-		if (H2) {
-			*H2 = D_projection_intrinsic * (*H2);
-		}
-		return projection;
 	}
 
 	Point3 SimpleCamera::backproject(const Point2& projection, const double scale) const {
