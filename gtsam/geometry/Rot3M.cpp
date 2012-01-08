@@ -249,7 +249,7 @@ Vector Rot3::Logmap(const Rot3& R) {
 Rot3 Rot3::retract(const Vector& omega, Rot3::CoordinatesMode mode) const {
   if(mode == Rot3::EXPMAP) {
     return (*this)*Expmap(omega);
-  } else if(mode == Rot3::CALEY) {
+  } else if(mode == Rot3::CAYLEY) {
     const double x = omega(0), y = omega(1), z = omega(2);
     const double x2 = x*x, y2 = y*y, z2 = z*z;
     const double xy = x*y, xz = x*z, yz = y*z;
@@ -259,7 +259,7 @@ Rot3 Rot3::retract(const Vector& omega, Rot3::CoordinatesMode mode) const {
         (xy + 2*z)*_2f, (4-x2+y2-z2)*f, (yz - 2*x)*_2f,
         (xz - 2*y)*_2f, (yz + 2*x)*_2f, (4-x2-y2+z2)*f
     );
-  } else if(mode == Rot3::SLOW_CALEY) {
+  } else if(mode == Rot3::SLOW_CAYLEY) {
     Matrix Omega = skewSymmetric(omega);
     return (*this)*Cayley<3>(-Omega/2);
   } else {
@@ -272,7 +272,7 @@ Rot3 Rot3::retract(const Vector& omega, Rot3::CoordinatesMode mode) const {
 Vector Rot3::localCoordinates(const Rot3& T, Rot3::CoordinatesMode mode) const {
   if(mode == Rot3::EXPMAP) {
     return Logmap(between(T));
-  } else if(mode == Rot3::CALEY) {
+  } else if(mode == Rot3::CAYLEY) {
     // Create a fixed-size matrix
     Eigen::Matrix3d A(between(T).matrix());
     // Mathematica closed form optimization (procrastination?) gone wild:
@@ -286,7 +286,7 @@ Vector Rot3::localCoordinates(const Rot3& T, Rot3::CoordinatesMode mode) const {
     const double y = (b * f - ce - c) * K;
     const double z = (fg - di - d) * K;
     return -2 * Vector_(3, x, y, z);
-  } else if(mode == Rot3::SLOW_CALEY) {
+  } else if(mode == Rot3::SLOW_CAYLEY) {
     // Create a fixed-size matrix
     Eigen::Matrix3d A(between(T).matrix());
     // using templated version of Cayley

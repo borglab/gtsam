@@ -208,10 +208,10 @@ TEST(Rot3, manifold_caley)
 	Rot3 origin;
 
 	// log behaves correctly
-	Vector d12 = gR1.localCoordinates(gR2, Rot3::CALEY);
-	CHECK(assert_equal(gR2, gR1.retract(d12, Rot3::CALEY)));
-	Vector d21 = gR2.localCoordinates(gR1, Rot3::CALEY);
-	CHECK(assert_equal(gR1, gR2.retract(d21, Rot3::CALEY)));
+	Vector d12 = gR1.localCoordinates(gR2, Rot3::CAYLEY);
+	CHECK(assert_equal(gR2, gR1.retract(d12, Rot3::CAYLEY)));
+	Vector d21 = gR2.localCoordinates(gR1, Rot3::CAYLEY);
+	CHECK(assert_equal(gR1, gR2.retract(d21, Rot3::CAYLEY)));
 
 	// Check that log(t1,t2)=-log(t2,t1)
 	CHECK(assert_equal(d12,-d21));
@@ -236,10 +236,10 @@ TEST(Rot3, manifold_slow_caley)
   Rot3 origin;
 
   // log behaves correctly
-  Vector d12 = gR1.localCoordinates(gR2, Rot3::SLOW_CALEY);
-  CHECK(assert_equal(gR2, gR1.retract(d12, Rot3::SLOW_CALEY)));
-  Vector d21 = gR2.localCoordinates(gR1, Rot3::SLOW_CALEY);
-  CHECK(assert_equal(gR1, gR2.retract(d21, Rot3::SLOW_CALEY)));
+  Vector d12 = gR1.localCoordinates(gR2, Rot3::SLOW_CAYLEY);
+  CHECK(assert_equal(gR2, gR1.retract(d12, Rot3::SLOW_CAYLEY)));
+  Vector d21 = gR2.localCoordinates(gR1, Rot3::SLOW_CAYLEY);
+  CHECK(assert_equal(gR1, gR2.retract(d21, Rot3::SLOW_CAYLEY)));
 
   // Check that log(t1,t2)=-log(t2,t1)
   CHECK(assert_equal(d12,-d21));
