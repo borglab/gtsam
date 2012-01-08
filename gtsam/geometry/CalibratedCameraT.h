@@ -18,6 +18,7 @@ namespace gtsam {
    * If calibration is known, it is more computationally efficient
    * to calibrate the measurements rather than try to predict in pixels.
    * AGC: Is this used or tested anywhere?
+   * AGC: If this is a "CalibratedCamera," why is there a calibration stored internally?
    * @ingroup geometry
    */
   template <typename Calibration>

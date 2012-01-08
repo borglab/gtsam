@@ -192,7 +192,7 @@ private:
 };
 
 typedef GeneralCameraT<CalibratedCamera,Cal3Bundler> Cal3BundlerCamera;
-typedef GeneralCameraT<CalibratedCamera,Cal3DS2> Cal3DS2Camera;
-typedef GeneralCameraT<CalibratedCamera,Cal3_S2> Cal3_S2Camera;
+typedef GeneralCameraT<CalibratedCamera,Cal3DS2> Cal3DS2Camera; // NOTE: Typedef not referenced in gtsam
+typedef GeneralCameraT<CalibratedCamera,Cal3_S2> Cal3_S2Camera; // NOTE: Typedef not referenced in gtsam
 
 }

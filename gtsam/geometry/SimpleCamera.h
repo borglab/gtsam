@@ -16,8 +16,7 @@
  * @author Frank Dellaert
  */
 
-#ifndef SIMPLECAMERA_H_
-#define SIMPLECAMERA_H_
+#pragma once
 
 #include <gtsam/geometry/CalibratedCamera.h>
 #include <gtsam/geometry/Cal3_S2.h>
@@ -93,5 +92,3 @@ namespace gtsam {
 	};
 
 }
-
-#endif /* SIMPLECAMERA_H_ */
