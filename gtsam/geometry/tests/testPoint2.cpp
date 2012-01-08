@@ -26,10 +26,15 @@ GTSAM_CONCEPT_TESTABLE_INST(Point2)
 GTSAM_CONCEPT_LIE_INST(Point2)
 
 /* ************************************************************************* */
+TEST(Point2, constructor) {
+  Point2 p1(1,2), p2 = p1;
+  EXPECT(assert_equal(p1, p2));
+}
+
+/* ************************************************************************* */
 TEST(Point2, Lie) {
-  Point2 p1(1,2);
-  Point2 p2(4,5);
-  Matrix H1, H2;
+	Point2 p1(1,2), p2(4,5);
+	Matrix H1, H2;
 
   EXPECT(assert_equal(Point2(5,7), p1.compose(p2, H1, H2)));
   EXPECT(assert_equal(eye(2), H1));
