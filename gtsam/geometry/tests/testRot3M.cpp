@@ -201,23 +201,17 @@ TEST(Rot3, log)
 }
 
 /* ************************************************************************* */
-TEST(Rot3, manifold)
+TEST(Rot3, manifold_first_order)
 {
 	Rot3 gR1 = Rot3::rodriguez(0.1, 0.4, 0.2);
 	Rot3 gR2 = Rot3::rodriguez(0.3, 0.1, 0.7);
 	Rot3 origin;
 
 	// log behaves correctly
-	Vector d12 = gR1.localCoordinates(gR2);
-	CHECK(assert_equal(gR2, gR1.retract(d12)));
-	Vector d21 = gR2.localCoordinates(gR1);
-	CHECK(assert_equal(gR1, gR2.retract(d21)));
-
-#ifdef CORRECT_ROT3_EXMAP
-	// Check that it is expmap
-	CHECK(assert_equal(gR2, gR1*Rot3::Expmap(d12)));
-	CHECK(assert_equal(gR1, gR2*Rot3::Expmap(d21)));
-#endif
+	Vector d12 = gR1.localCoordinates(gR2, Rot3::FIRST_ORDER);
+	CHECK(assert_equal(gR2, gR1.retract(d12, Rot3::FIRST_ORDER)));
+	Vector d21 = gR2.localCoordinates(gR1, Rot3::FIRST_ORDER);
+	CHECK(assert_equal(gR1, gR2.retract(d21, Rot3::FIRST_ORDER)));
 
 	// Check that log(t1,t2)=-log(t2,t1)
 	CHECK(assert_equal(d12,-d21));
@@ -232,6 +226,66 @@ TEST(Rot3, manifold)
 	Rot3 R5 = Rot3::Expmap (5 * d);
 	CHECK(assert_equal(R5,R2*R3));
 	CHECK(assert_equal(R5,R3*R2));
+}
+
+/* ************************************************************************* */
+TEST(Rot3, manifold_caley)
+{
+  Rot3 gR1 = Rot3::rodriguez(0.1, 0.4, 0.2);
+  Rot3 gR2 = Rot3::rodriguez(0.3, 0.1, 0.7);
+  Rot3 origin;
+
+  // log behaves correctly
+  Vector d12 = gR1.localCoordinates(gR2, Rot3::SLOW_CALEY);
+  CHECK(assert_equal(gR2, gR1.retract(d12, Rot3::SLOW_CALEY)));
+  Vector d21 = gR2.localCoordinates(gR1, Rot3::SLOW_CALEY);
+  CHECK(assert_equal(gR1, gR2.retract(d21, Rot3::SLOW_CALEY)));
+
+  // Check that log(t1,t2)=-log(t2,t1)
+  CHECK(assert_equal(d12,-d21));
+
+  // lines in canonical coordinates correspond to Abelian subgroups in SO(3)
+  Vector d = Vector_(3, 0.1, 0.2, 0.3);
+  // exp(-d)=inverse(exp(d))
+  CHECK(assert_equal(Rot3::Expmap(-d),Rot3::Expmap(d).inverse()));
+  // exp(5d)=exp(2*d+3*d)=exp(2*d)exp(3*d)=exp(3*d)exp(2*d)
+  Rot3 R2 = Rot3::Expmap (2 * d);
+  Rot3 R3 = Rot3::Expmap (3 * d);
+  Rot3 R5 = Rot3::Expmap (5 * d);
+  CHECK(assert_equal(R5,R2*R3));
+  CHECK(assert_equal(R5,R3*R2));
+}
+
+/* ************************************************************************* */
+TEST(Rot3, manifold_expmap)
+{
+  Rot3 gR1 = Rot3::rodriguez(0.1, 0.4, 0.2);
+  Rot3 gR2 = Rot3::rodriguez(0.3, 0.1, 0.7);
+  Rot3 origin;
+
+  // log behaves correctly
+  Vector d12 = gR1.localCoordinates(gR2, Rot3::CORRECT_EXPMAP);
+  CHECK(assert_equal(gR2, gR1.retract(d12, Rot3::CORRECT_EXPMAP)));
+  Vector d21 = gR2.localCoordinates(gR1, Rot3::CORRECT_EXPMAP);
+  CHECK(assert_equal(gR1, gR2.retract(d21, Rot3::CORRECT_EXPMAP)));
+
+  // Check that it is expmap
+  CHECK(assert_equal(gR2, gR1*Rot3::Expmap(d12)));
+  CHECK(assert_equal(gR1, gR2*Rot3::Expmap(d21)));
+
+  // Check that log(t1,t2)=-log(t2,t1)
+  CHECK(assert_equal(d12,-d21));
+
+  // lines in canonical coordinates correspond to Abelian subgroups in SO(3)
+  Vector d = Vector_(3, 0.1, 0.2, 0.3);
+  // exp(-d)=inverse(exp(d))
+  CHECK(assert_equal(Rot3::Expmap(-d),Rot3::Expmap(d).inverse()));
+  // exp(5d)=exp(2*d+3*d)=exp(2*d)exp(3*d)=exp(3*d)exp(2*d)
+  Rot3 R2 = Rot3::Expmap (2 * d);
+  Rot3 R3 = Rot3::Expmap (3 * d);
+  Rot3 R5 = Rot3::Expmap (5 * d);
+  CHECK(assert_equal(R5,R2*R3));
+  CHECK(assert_equal(R5,R3*R2));
 }
 
 /* ************************************************************************* */
@@ -498,8 +552,6 @@ TEST(Rot3, quaternion) {
   EXPECT(assert_equal(expected2, actual2));
 }
 
-#endif
-
 /* ************************************************************************* */
 TEST( Rot3, Cayley ) {
 	Matrix A = skewSymmetric(1,2,-3);
@@ -507,6 +559,8 @@ TEST( Rot3, Cayley ) {
   EXPECT(assert_equal(I3, trans(Q)*Q));
   EXPECT(assert_equal(A, Cayley(Q)));
 }
+
+#endif
 
 /* ************************************************************************* */
 int main() {

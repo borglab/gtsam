@@ -150,12 +150,12 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-	Rot3 Rot3::retract(const Vector& omega) const {
+	Rot3 Rot3::retract(const Vector& omega, CoordinatesMode mode) const {
 		return compose(Expmap(omega));
 	}
 
 	/* ************************************************************************* */
-	Vector Rot3::localCoordinates(const Rot3& t2) const {
+	Vector Rot3::localCoordinates(const Rot3& t2, CoordinatesMode mode) const {
 		return Logmap(between(t2));
 	}
 

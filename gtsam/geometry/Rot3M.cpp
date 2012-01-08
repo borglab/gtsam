@@ -246,52 +246,56 @@ Vector Rot3::Logmap(const Rot3& R) {
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::retract(const Vector& omega) const {
-#ifdef CORRECT_ROT3_EXMAP
-	return (*this)*Expmap(omega);
-#else
-#ifdef SLOW_CAYLEY
-	Matrix Omega = skewSymmetric(omega);
-	return (*this)*Cayley<3>(-Omega/2);
-#else
-	const double x = omega(0), y = omega(1), z = omega(2);
-	const double x2 = x*x, y2 = y*y, z2 = z*z;
-	const double xy = x*y, xz = x*z, yz = y*z;
-	const double f = 1.0 / (4.0 + x2 + y2 + z2), _2f = 2.0*f;
-	return (*this)* Rot3(
-			(4+x2-y2-z2)*f, (xy - 2*z)*_2f, (xz + 2*y)*_2f,
-			(xy + 2*z)*_2f, (4-x2+y2-z2)*f, (yz - 2*x)*_2f,
-			(xz - 2*y)*_2f, (yz + 2*x)*_2f, (4-x2-y2+z2)*f
-			);
-#endif
-#endif
+Rot3 Rot3::retract(const Vector& omega, CoordinatesMode mode) const {
+  if(mode == Rot3::FIRST_ORDER) {
+    const double x = omega(0), y = omega(1), z = omega(2);
+    const double x2 = x*x, y2 = y*y, z2 = z*z;
+    const double xy = x*y, xz = x*z, yz = y*z;
+    const double f = 1.0 / (4.0 + x2 + y2 + z2), _2f = 2.0*f;
+    return (*this)* Rot3(
+        (4+x2-y2-z2)*f, (xy - 2*z)*_2f, (xz + 2*y)*_2f,
+        (xy + 2*z)*_2f, (4-x2+y2-z2)*f, (yz - 2*x)*_2f,
+        (xz - 2*y)*_2f, (yz + 2*x)*_2f, (4-x2-y2+z2)*f
+    );
+  } else if(mode == Rot3::SLOW_CALEY) {
+    Matrix Omega = skewSymmetric(omega);
+    return (*this)*Cayley<3>(-Omega/2);
+  } else if(mode == Rot3::CORRECT_EXPMAP) {
+    return (*this)*Expmap(omega);
+  } else {
+    assert(false);
+    exit(1);
+  }
 }
 
 /* ************************************************************************* */
-Vector Rot3::localCoordinates(const Rot3& T) const {
-#ifdef CORRECT_ROT3_EXMAP
-	return Logmap(between(T));
-#else
-	// Create a fixed-size matrix
-	Eigen::Matrix3d A(between(T).matrix());
-#ifdef SLOW_CAYLEY
-	// using templated version of Cayley
-	Matrix Omega = Cayley<3>(A);
-	return -2*Vector_(3,Omega(2,1),Omega(0,2),Omega(1,0));
-#else
-	// Mathematica closed form optimization (procrastination?) gone wild:
-	const double a=A(0,0),b=A(0,1),c=A(0,2);
-	const double d=A(1,0),e=A(1,1),f=A(1,2);
-	const double g=A(2,0),h=A(2,1),i=A(2,2);
-	const double di = d*i, ce = c*e, cd = c*d, fg=f*g;
-	const double M = 1 + e - f*h + i + e*i;
-	const double K = 2.0 / (cd*h + M + a*M -g*(c + ce) - b*(d + di - fg));
-	const double x = (a * f - cd + f) * K;
-	const double y = (b * f - ce - c) * K;
-	const double z = (fg - di - d) * K;
-	return -2 * Vector_(3, x, y, z);
-#endif
-#endif
+Vector Rot3::localCoordinates(const Rot3& T, CoordinatesMode mode) const {
+  if(mode == Rot3::FIRST_ORDER) {
+    // Create a fixed-size matrix
+    Eigen::Matrix3d A(between(T).matrix());
+    // Mathematica closed form optimization (procrastination?) gone wild:
+    const double a=A(0,0),b=A(0,1),c=A(0,2);
+    const double d=A(1,0),e=A(1,1),f=A(1,2);
+    const double g=A(2,0),h=A(2,1),i=A(2,2);
+    const double di = d*i, ce = c*e, cd = c*d, fg=f*g;
+    const double M = 1 + e - f*h + i + e*i;
+    const double K = 2.0 / (cd*h + M + a*M -g*(c + ce) - b*(d + di - fg));
+    const double x = (a * f - cd + f) * K;
+    const double y = (b * f - ce - c) * K;
+    const double z = (fg - di - d) * K;
+    return -2 * Vector_(3, x, y, z);
+  } else if(mode == Rot3::SLOW_CALEY) {
+    // Create a fixed-size matrix
+    Eigen::Matrix3d A(between(T).matrix());
+    // using templated version of Cayley
+    Matrix Omega = Cayley<3>(A);
+    return -2*Vector_(3,Omega(2,1),Omega(0,2),Omega(1,0));
+  } else if(mode == Rot3::CORRECT_EXPMAP) {
+    return Logmap(between(T));
+  } else {
+    assert(false);
+    exit(1);
+  }
 }
 
 /* ************************************************************************* */

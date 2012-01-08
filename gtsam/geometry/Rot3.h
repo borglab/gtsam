@@ -21,6 +21,10 @@
 
 #pragma once
 
+#ifndef ROT3_DEFAULT_COORDINATES_MODE
+#define ROT3_DEFAULT_COORDINATES_MODE Rot3::FIRST_ORDER
+#endif
+
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/3rdparty/Eigen/Eigen/Geometry>
 
@@ -220,6 +224,15 @@ namespace gtsam {
     /// @name Manifold
     /// @{
 
+    /** Enum to indicate which method should be used in Rot3::retract() and
+     * Rot3::localCoordinates()
+     */
+    enum CoordinatesMode {
+      FIRST_ORDER, ///< A fast first-order approximation to the exponential map.
+      SLOW_CALEY, ///< Retract and localCoordinates using the Caley transform.
+      CORRECT_EXPMAP ///< The correct exponential map, computationally expensive.
+    };
+
     /// dimension of the variable - used to autodetect sizes
     static size_t Dim() { return dimension; }
 
@@ -227,10 +240,10 @@ namespace gtsam {
     size_t dim() const { return dimension; }
 
     /// Retraction from R^3 to Pose2 manifold neighborhood around current pose
-    Rot3 retract(const Vector& omega) const;
+    Rot3 retract(const Vector& omega, CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE) const;
 
     /// Returns inverse retraction
-    Vector localCoordinates(const Rot3& t2) const;
+    Vector localCoordinates(const Rot3& t2, CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE) const;
 
     /// @}
     /// @name Lie Group
