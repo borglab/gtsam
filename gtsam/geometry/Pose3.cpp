@@ -97,52 +97,58 @@ namespace gtsam {
 
   /* ************************************************************************* */
 	// Different versions of retract
-  Pose3 Pose3::retract(const Vector& xi) const {
-#ifdef CORRECT_POSE3_EXMAP
-  	// Lie group exponential map, traces out geodesic
-		return compose(Expmap(xi));
-#else
-		Vector omega(sub(xi, 0, 3));
-		Point3 v(sub(xi, 3, 6));
+  Pose3 Pose3::retract(const Vector& xi, Pose3::CoordinatesMode mode) const {
+    if(mode == Pose3::FIRST_ORDER) {
+      Vector omega(sub(xi, 0, 3));
+      Point3 v(sub(xi, 3, 6));
 
-		// R is always done exactly in all three retract versions below
-		Rot3 R = R_.retract(omega);
+      // R is always done exactly in all three retract versions below
+      Rot3 R = R_.retract(omega);
 
-		// Incorrect version
-		// Retracts R and t independently
-		// Point3 t = t_.retract(v.vector());
+      // Incorrect version
+      // Retracts R and t independently
+      // Point3 t = t_.retract(v.vector());
 
-		// First order t approximation
-		Point3 t = t_ + R_ * v;
+      // First order t approximation
+      Point3 t = t_ + R_ * v;
 
-		// Second order t approximation
-		// Point3 t = t_ + R_ * (v+Point3(omega).cross(v)/2);
+      // Second order t approximation
+      // Point3 t = t_ + R_ * (v+Point3(omega).cross(v)/2);
 
-		 return Pose3(R, t);
-#endif
+      return Pose3(R, t);
+    } else if(mode == Pose3::CORRECT_EXPMAP) {
+      // Lie group exponential map, traces out geodesic
+      return compose(Expmap(xi));
+    } else {
+      assert(false);
+      exit(1);
+    }
 	}
 
   /* ************************************************************************* */
   // different versions of localCoordinates
-	Vector Pose3::localCoordinates(const Pose3& T) const {
-#ifdef CORRECT_POSE3_EXMAP
-		// Lie group logarithm map, exact inverse of exponential map
-		return Logmap(between(T));
-#else
-		// R is always done exactly in all three retract versions below
-		Vector omega = R_.localCoordinates(T.rotation());
+	Vector Pose3::localCoordinates(const Pose3& T, Pose3::CoordinatesMode mode) const {
+    if(mode == Pose3::FIRST_ORDER) {
+      // R is always done exactly in all three retract versions below
+      Vector omega = R_.localCoordinates(T.rotation());
 
-		// Incorrect version
-		// Independently computes the logmap of the translation and rotation
-		// Vector v = t_.localCoordinates(T.translation());
+      // Incorrect version
+      // Independently computes the logmap of the translation and rotation
+      // Vector v = t_.localCoordinates(T.translation());
 
-		// Correct first order t inverse
-		Point3 d = R_.unrotate(T.translation() - t_);
+      // Correct first order t inverse
+      Point3 d = R_.unrotate(T.translation() - t_);
 
-		// TODO: correct second order t inverse
+      // TODO: correct second order t inverse
 
-		return Vector_(6,omega(0),omega(1),omega(2),d.x(),d.y(),d.z());
-#endif
+      return Vector_(6,omega(0),omega(1),omega(2),d.x(),d.y(),d.z());
+    } else if(mode == Pose3::CORRECT_EXPMAP) {
+      // Lie group logarithm map, exact inverse of exponential map
+      return Logmap(between(T));
+    } else {
+      assert(false);
+      exit(1);
+    }
 	}
 
   /* ************************************************************************* */

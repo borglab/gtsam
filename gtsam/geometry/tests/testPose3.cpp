@@ -44,18 +44,25 @@ TEST( Pose3, equals)
 }
 
 /* ************************************************************************* */
-TEST( Pose3, retract)
+TEST( Pose3, retract_first_order)
 {
   Pose3 id;
   Vector v = zero(6);
   v(0) = 0.3;
-  EXPECT(assert_equal(Pose3(R, Point3()), id.retract(v),1e-2));
-#ifdef CORRECT_POSE3_EXMAP
-  v(3)=0.2;v(4)=0.394742;v(5)=-2.08998;
-#else
+  EXPECT(assert_equal(Pose3(R, Point3()), id.retract(v, Pose3::FIRST_ORDER),1e-2));
   v(3)=0.2;v(4)=0.7;v(5)=-2;
-#endif
-  EXPECT(assert_equal(Pose3(R, P),id.retract(v),1e-2));
+  EXPECT(assert_equal(Pose3(R, P),id.retract(v, Pose3::FIRST_ORDER),1e-2));
+}
+
+/* ************************************************************************* */
+TEST( Pose3, retract_expmap)
+{
+  Pose3 id;
+  Vector v = zero(6);
+  v(0) = 0.3;
+  EXPECT(assert_equal(Pose3(R, Point3()), id.retract(v, Pose3::CORRECT_EXPMAP),1e-2));
+  v(3)=0.2;v(4)=0.394742;v(5)=-2.08998;
+  EXPECT(assert_equal(Pose3(R, P),id.retract(v, Pose3::CORRECT_EXPMAP),1e-2));
 }
 
 /* ************************************************************************* */
@@ -443,31 +450,48 @@ TEST( Pose3, transformPose_to)
 }
 
 /* ************************************************************************* */
-TEST(Pose3, localCoordinates)
+TEST(Pose3, localCoordinates_first_order)
 {
 	Vector d12 = repeat(6,0.1);
-	Pose3 t1 = T, t2 = t1.retract(d12);
-	EXPECT(assert_equal(d12, t1.localCoordinates(t2)));
+	Pose3 t1 = T, t2 = t1.retract(d12, Pose3::FIRST_ORDER);
+	EXPECT(assert_equal(d12, t1.localCoordinates(t2, Pose3::FIRST_ORDER)));
 }
 
 /* ************************************************************************* */
-TEST(Pose3, manifold)
+TEST(Pose3, localCoordinates_expmap)
+{
+  Vector d12 = repeat(6,0.1);
+  Pose3 t1 = T, t2 = t1.retract(d12, Pose3::CORRECT_EXPMAP);
+  EXPECT(assert_equal(d12, t1.localCoordinates(t2, Pose3::CORRECT_EXPMAP)));
+}
+
+/* ************************************************************************* */
+TEST(Pose3, manifold_first_order)
 {
 	Pose3 t1 = T;
 	Pose3 t2 = T3;
 	Pose3 origin;
-	Vector d12 = t1.localCoordinates(t2);
-	EXPECT(assert_equal(t2, t1.retract(d12)));
-	// todo: richard - commented out because this tests for "compose-style" (new) expmap
-	// EXPECT(assert_equal(t2, retract(origin,d12)*t1));
-	Vector d21 = t2.localCoordinates(t1);
-	EXPECT(assert_equal(t1, t2.retract(d21)));
-	// todo: richard - commented out because this tests for "compose-style" (new) expmap
-	// EXPECT(assert_equal(t1, retract(origin,d21)*t2));
-
-	// Check that log(t1,t2)=-log(t2,t1) TODO: only holds for exp map
-	//	EXPECT(assert_equal(d12,-d21));
+	Vector d12 = t1.localCoordinates(t2, Pose3::FIRST_ORDER);
+	EXPECT(assert_equal(t2, t1.retract(d12, Pose3::FIRST_ORDER)));
+	Vector d21 = t2.localCoordinates(t1, Pose3::FIRST_ORDER);
+	EXPECT(assert_equal(t1, t2.retract(d21, Pose3::FIRST_ORDER)));
 }
+
+/* ************************************************************************* */
+TEST(Pose3, manifold_expmap)
+{
+  Pose3 t1 = T;
+  Pose3 t2 = T3;
+  Pose3 origin;
+  Vector d12 = t1.localCoordinates(t2, Pose3::CORRECT_EXPMAP);
+  EXPECT(assert_equal(t2, t1.retract(d12, Pose3::CORRECT_EXPMAP)));
+  Vector d21 = t2.localCoordinates(t1, Pose3::CORRECT_EXPMAP);
+  EXPECT(assert_equal(t1, t2.retract(d21, Pose3::CORRECT_EXPMAP)));
+
+  // Check that log(t1,t2)=-log(t2,t1)
+  EXPECT(assert_equal(d12,-d21));
+}
+
 /* ************************************************************************* */
 TEST(Pose3, subgroups)
 {

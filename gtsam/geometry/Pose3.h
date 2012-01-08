@@ -18,6 +18,10 @@
 
 #pragma once
 
+#ifndef POSE3_DEFAULT_COORDINATES_MODE
+#define POSE3_DEFAULT_COORDINATES_MODE Pose3::FIRST_ORDER
+#endif
+
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Rot3.h>
 
@@ -98,6 +102,14 @@ namespace gtsam {
     /// @name Manifold
     /// @{
 
+    /** Enum to indicate which method should be used in Pose3::retract() and
+     * Pose3::localCoordinates()
+     */
+    enum CoordinatesMode {
+      FIRST_ORDER, ///< A fast first-order approximation to the exponential map.
+      CORRECT_EXPMAP ///< The correct exponential map, computationally expensive.
+    };
+
     /// Dimensionality of tangent space = 6 DOF - used to autodetect sizes
     static size_t Dim() { return dimension; }
 
@@ -106,10 +118,10 @@ namespace gtsam {
 
 
     /// Retraction from R^6 to Pose3 manifold neighborhood around current pose
-    Pose3 retract(const Vector& d) const;
+    Pose3 retract(const Vector& d, Pose3::CoordinatesMode mode = POSE3_DEFAULT_COORDINATES_MODE) const;
 
     /// Local 6D coordinates of Pose3 manifold neighborhood around current pose
-    Vector localCoordinates(const Pose3& T2) const;
+    Vector localCoordinates(const Pose3& T2, Pose3::CoordinatesMode mode = POSE3_DEFAULT_COORDINATES_MODE) const;
 
     /// @}
     /// @name Lie Group
