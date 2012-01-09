@@ -163,6 +163,8 @@ class Pose2 {
 	Pose2 between(const Pose2& p2);
 	Rot2 bearing(const Point2& point);
 	double range(const Point2& point);
+	Point2 translation() const;
+	Rot2 rotation() const;
 };
 
 class Pose3 {
