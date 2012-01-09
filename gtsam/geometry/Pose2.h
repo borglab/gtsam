@@ -30,6 +30,7 @@ namespace gtsam {
 /**
  * A 2D pose (Point2,Rot2)
  * @ingroup geometry
+ * \nosubgrouping
  */
 class Pose2 {
 
@@ -45,6 +46,9 @@ private:
 	Point2 t_;
 
 public:
+
+	/// @name Standard Constructors
+	/// @{
 
 	/** default constructor = origin */
 	Pose2() {} // default is origin
@@ -66,6 +70,8 @@ public:
 	Pose2(double theta, const Point2& t) :
 		r_(Rot2::fromAngle(theta)), t_(t) {
 	}
+
+	///TODO: comment
 	Pose2(const Rot2& r, const Point2& t) : r_(r), t_(t) {}
 
 	/** Constructor from 3*3 matrix */
@@ -74,11 +80,16 @@ public:
 		assert(T.rows() == 3 && T.cols() == 3);
 	}
 
+	/// @}
+	/// @name Advanced Constructors
+	/// @{
+
 	/** Construct from canonical coordinates (Lie algebra) */
 	Pose2(const Vector& v) {
 		*this = Expmap(v);
 	}
 
+	/// @}
   /// @name Testable
   /// @{
 
@@ -135,6 +146,8 @@ public:
 	static Vector Logmap(const Pose2& p);
 
   /// @}
+	/// @name Standard Interface
+	/// @{
 
 	/** return transformation matrix */
 	Matrix matrix() const;
@@ -224,8 +237,14 @@ public:
 	}
 
 	/** get functions for x, y, theta */
+
+	/// get x
 	inline double x()     const { return t_.x(); }
+
+	/// get y
 	inline double y()     const { return t_.y(); }
+
+	/// get theta
 	inline double theta() const { return r_.theta(); }
 
 	/** shorthand access functions */
@@ -237,6 +256,11 @@ public:
 	inline const Rot2&   rotation() const { return r_; }
 
 private:
+
+	/// @}
+	/// @name Advanced Interface
+	/// @{
+
 	// Serialization function
 	friend class boost::serialization::access;
 	template<class Archive>
@@ -258,6 +282,8 @@ inline Matrix wedge<Pose2>(const Vector& xi) {
  */
 typedef std::pair<Point2,Point2> Point2Pair;
 boost::optional<Pose2> align(const std::vector<Point2Pair>& pairs);
+
+/// @}
 
 } // namespace gtsam
 

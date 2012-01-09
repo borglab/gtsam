@@ -24,12 +24,16 @@ namespace tensors {
 	/**
 	 * A rank 1 tensor. Actually stores data.
 	 * @ingroup tensors
+	 * \nosubgrouping
 	 */
 	template<int N>
 	class Tensor1 {
 		double T[N]; ///< Storage
 
 	public:
+
+		/// @name Standard Constructors
+		/// @{
 
 		/** default constructor */
 		Tensor1() {
@@ -47,6 +51,10 @@ namespace tensors {
 			for (int i = 0; i < N; i++)
 				T[i] = a(i);
 		}
+
+		/// @}
+		/// @name Standard Interface
+		/// @{
 
 		/** return data */
 		inline int dim() const {
@@ -68,6 +76,8 @@ namespace tensors {
 				Index<N, I> index) const {
 			return Tensor1Expression<Tensor1, Index<N, I> >(*this);
 		}
+
+		/// @}
 
 	};
 // Tensor1

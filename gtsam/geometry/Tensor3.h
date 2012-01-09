@@ -24,12 +24,16 @@ namespace tensors {
 	/**
 	 * Rank 3 Tensor
 	 * @ingroup tensors
+	 * \nosubgrouping
 	 */
 	template<int N1, int N2, int N3>
 	class Tensor3 {
 		Tensor2<N1, N2> T[N3]; ///< Storage
 
 	public:
+
+		/// @name Standard Constructors
+		/// @{
 
 		/** default constructor */
 		Tensor3() {
@@ -41,6 +45,10 @@ namespace tensors {
 				T[k] = data[k];
 		}
 
+		/// @}
+		/// @name Advanced Constructors
+		/// @{
+
 		/** construct from expression */
 		template<class A, char I, char J, char K>
 		Tensor3(const Tensor3Expression<A, Index<N1, I> , Index<N2, J> , Index<N3,
@@ -48,6 +56,10 @@ namespace tensors {
 			for (int k = 0; k < N3; k++)
 				T[k] = a(k);
 		}
+
+		/// @}
+		/// @name Standard Interface
+		/// @{
 
 		/// element access
 		double operator()(int i, int j, int k) const {
@@ -88,5 +100,7 @@ namespace tensors {
 		}
 
 	}; // Eta
+
+	/// @}
 
 } // namespace tensors

@@ -25,6 +25,7 @@ namespace gtsam {
 	/**
 	 * A 2D stereo point, v will be same for rectified images
 	 * @ingroup geometry
+	 * \nosubgrouping
 	 */
 	class StereoPoint2 {
 	public:
@@ -33,6 +34,9 @@ namespace gtsam {
 		double uL_, uR_, v_;
 
 	public:
+
+		/// @name Standard Constructors
+		/// @{
 
 		/** default constructor */
 		StereoPoint2() :
@@ -44,6 +48,7 @@ namespace gtsam {
 			uL_(uL), uR_(uR), v_(v) {
 		}
 
+    /// @}
     /// @name Testable
     /// @{
 
@@ -113,7 +118,9 @@ namespace gtsam {
 			return p.vector();
 		}
 
-		/// @}}
+		/// @}
+		/// @name Standard Interface
+		/// @{
 
 		/** convert to vector */
 		Vector vector() const {
@@ -130,6 +137,11 @@ namespace gtsam {
 		}
 
 	private:
+
+		/// @}
+		/// @name Advanced Interface
+		/// @{
+
 		/** Serialization function */
 		friend class boost::serialization::access;
 		template<class ARCHIVE>
@@ -138,6 +150,9 @@ namespace gtsam {
 			ar & BOOST_SERIALIZATION_NVP(uR_);
 			ar & BOOST_SERIALIZATION_NVP(v_);
 		}
+
+		/// @}
+
 	};
 
 }

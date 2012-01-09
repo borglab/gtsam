@@ -20,6 +20,7 @@ namespace gtsam {
    * AGC: Is this used or tested anywhere?
    * AGC: If this is a "CalibratedCamera," why is there a calibration stored internally?
    * @ingroup geometry
+   * \nosubgrouping
    */
   template <typename Calibration>
   class CalibratedCameraT {
@@ -28,44 +29,93 @@ namespace gtsam {
     Calibration k_;
 
   public:
+
+    /// @name Standard Constructors
+    /// @{
+
+    ///TODO: comment
     CalibratedCameraT() {}
+
+    ///TODO: comment
     CalibratedCameraT(const Pose3& pose):pose_(pose){}
+
+    ///TODO: comment
     CalibratedCameraT(const Pose3& pose, const Calibration& k):pose_(pose),k_(k) {}
+
+    /// @}
+    /// @name Advanced Constructors
+    /// @{
+
+    ///TODO: comment
     CalibratedCameraT(const Vector &v): pose_(Pose3::Expmap(v)) {}
+
+    ///TODO: comment
     CalibratedCameraT(const Vector &v, const Vector &k):pose_(Pose3::Expmap(v)),k_(k){}
+
+    /// @}
+    /// @name Standard Interface
+    /// @{
+
     virtual ~CalibratedCameraT() {}
 
+    ///TODO: comment
     inline Pose3& pose() {  return pose_; }
-    inline const Pose3& pose() const {  return pose_; }
-    inline Calibration& calibration() {  return k_; }
-    inline const Calibration& calibration() const {  return k_; }
-    bool equals (const CalibratedCameraT &camera, double tol = 1e-9) const {
-      return pose_.equals(camera.pose(), tol) && k_.equals(camera.calibration(), tol) ;
-    }
 
+    ///TODO: comment
+    inline const Pose3& pose() const {  return pose_; }
+
+    ///TODO: comment
+    inline Calibration& calibration() {  return k_; }
+
+    ///TODO: comment
+    inline const Calibration& calibration() const {  return k_; }
+
+    ///TODO: comment
     inline const CalibratedCameraT compose(const CalibratedCameraT &c) const {
       return CalibratedCameraT( pose_ * c.pose(), k_ ) ;
     }
 
+    ///TODO: comment
     inline const CalibratedCameraT inverse() const {
       return CalibratedCameraT( pose_.inverse(), k_ ) ;
     }
 
-    CalibratedCameraT retract(const Vector& d) const {
-      return CalibratedCameraT(pose().retract(d), k_) ;
-    }
-    Vector localCoordinates(const CalibratedCameraT& T2) const {
-      return pose().localCoordinates(T2.pose()) ;
+  	/// @}
+  	/// @name Testable
+  	/// @{
+
+    /// assert equality up to a tolerance
+    bool equals (const CalibratedCameraT &camera, double tol = 1e-9) const {
+      return pose_.equals(camera.pose(), tol) && k_.equals(camera.calibration(), tol) ;
     }
 
+    /// print
     void print(const std::string& s = "") const {
       pose_.print("pose3");
       k_.print("calibration");
     }
 
-    inline size_t dim() const { return 6 ; }
-    inline static size_t Dim() { return 6 ; }
+  	/// @}
+  	/// @name Manifold
+  	/// @{
 
+    ///TODO: comment
+    CalibratedCameraT retract(const Vector& d) const {
+      return CalibratedCameraT(pose().retract(d), k_) ;
+    }
+
+    ///TODO: comment
+    Vector localCoordinates(const CalibratedCameraT& T2) const {
+      return pose().localCoordinates(T2.pose()) ;
+    }
+
+    ///TODO: comment
+    inline size_t dim() const { return 6 ; }	//TODO: add final dimension variable?
+
+    ///TODO: comment
+    inline static size_t Dim() { return 6 ; }	//TODO: add final dimension variable?
+
+    //TODO: remove comment and method?
     /**
      * Create a level camera at the given 2D pose and height
      * @param pose2 specifies the location and viewing direction
@@ -85,6 +135,11 @@ namespace gtsam {
      * @return the intrinsic coordinates of the projected point
      */
 
+    /// @}
+    /// @name Transformations
+    /// @{
+
+    ///TODO: comment
     inline Point2 project(const Point3& point,
       boost::optional<Matrix&> D_intrinsic_pose = boost::none,
       boost::optional<Matrix&> D_intrinsic_point = boost::none) const {
@@ -92,6 +147,7 @@ namespace gtsam {
       return result.first ;
     }
 
+    ///TODO: comment
     std::pair<Point2,bool> projectSafe(
         const Point3& pw,
         boost::optional<Matrix&> D_intrinsic_pose = boost::none,
@@ -141,6 +197,11 @@ namespace gtsam {
     }
 
 private:
+
+    /// @}
+    /// @name Advanced Interface
+    /// @{
+
       /** Serialization function */
       friend class boost::serialization::access;
       template<class Archive>
@@ -148,8 +209,12 @@ private:
         ar & BOOST_SERIALIZATION_NVP(pose_);
         ar & BOOST_SERIALIZATION_NVP(k_);
       }
+
+      /// @}
   };
 }
+
+//TODO: remove?
 
 //    static CalibratedCameraT Expmap(const Vector& v) {
 //      return CalibratedCameraT(Pose3::Expmap(v), k_) ;

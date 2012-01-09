@@ -25,9 +25,12 @@ namespace gtsam {
 /**
  * @brief Calibration of a camera with radial distortion
  * @ingroup geometry
+ * \nosubgrouping
  */
 class Cal3DS2 {
+
 private:
+
 	double fx_, fy_, s_, u0_, v0_ ; // focal length, skew and principal point
 	double k1_, k2_ ; // radial 2nd-order and 4th-order
 	double k3_, k4_ ; // tagential distortion
@@ -39,36 +42,72 @@ private:
 	// pi = K*pn
 
 public:
-	// Default Constructor with only unit focal length
-	Cal3DS2();
-
-	// Construction
-	Cal3DS2(double fx, double fy, double s, double u0, double v0,
-			double k1, double k2, double k3, double k4) ;
-
-	Cal3DS2(const Vector &v) ;
-
 	Matrix K() const ;
 	Vector k() const ;
 	Vector vector() const ;
+
+  /// @name Standard Constructors
+  /// @{
+
+	/// Default Constructor with only unit focal length
+	Cal3DS2();
+
+	Cal3DS2(double fx, double fy, double s, double u0, double v0,
+			double k1, double k2, double k3, double k4) ;
+
+  /// @}
+  /// @name Advanced Constructors
+  /// @{
+
+	Cal3DS2(const Vector &v) ;
+
+	/// @}
+	/// @name Testable
+	/// @{
+
+	/// print with optional string
 	void print(const std::string& s = "") const ;
+
+	/// assert equality up to a tolerance
 	bool equals(const Cal3DS2& K, double tol = 10e-9) const;
 
+  /// @}
+  /// @name Standard Interface
+  /// @{
 
+	///TODO: comment
 	Point2 uncalibrate(const Point2& p,
 			boost::optional<Matrix&> H1 = boost::none,
 			boost::optional<Matrix&> H2 = boost::none) const ;
 
+	///TODO: comment
 	Matrix D2d_intrinsic(const Point2& p) const ;
+
+	///TODO: comment
 	Matrix D2d_calibration(const Point2& p) const ;
 
+	/// @}
+	/// @name Manifold
+	/// @{
+
+	///TODO: comment
 	Cal3DS2 retract(const Vector& d) const ;
+
+	///TODO: comment
 	Vector localCoordinates(const Cal3DS2& T2) const ;
 
-	int dim() const { return 9 ; }
-	static size_t Dim() { return 9; }
+	///TODO: comment
+	int dim() const { return 9 ; } //TODO: make a final dimension variable (also, usually size_t in other classes e.g. Pose2)
+
+	///TODO: comment
+	static size_t Dim() { return 9; }	//TODO: make a final dimension variable
 
 private:
+
+  /// @}
+  /// @name Advanced Interface
+  /// @{
+
 	/** Serialization function */
 	friend class boost::serialization::access;
 	template<class Archive>
@@ -85,6 +124,10 @@ private:
 		ar & BOOST_SERIALIZATION_NVP(k4_);
 	}
 
+
+	/// @}
+
 };
+
 }
 

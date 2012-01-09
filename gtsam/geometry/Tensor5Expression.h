@@ -26,6 +26,7 @@ namespace tensors {
 	/**
 	 * templated class to interface to an object A as a rank 5 tensor
 	 * @ingroup tensors
+	 * \nosubgrouping
 	 */
 	template<class A, class I, class J, class K, class L, class M> class Tensor5Expression {
 		A iter;
@@ -48,10 +49,17 @@ namespace tensors {
 
 	public:
 
+		/// @name Standard Constructors
+		/// @{
+
 		/** constructor */
 		Tensor5Expression(const A &a) :
 				iter(a) {
 		}
+
+		/// @}
+		/// @name Standard Interface
+		/// @{
 
 		/** Print */
 		void print(const std::string& s = "Tensor5:") const {
@@ -85,6 +93,10 @@ namespace tensors {
 	};
 	// Tensor5Expression
 
+	/// @}
+	/// @name Advanced Interface
+	/// @{
+
 	/** Print */
 	template<class A, class I, class J, class K, class L, class M>
 	void print(const Tensor5Expression<A, I, J, K, L, M>& T,
@@ -117,5 +129,7 @@ namespace tensors {
 			const Tensor2Expression<B, L, M> &b) {
 		return Rank3Rank2_<A, I, J, K, B, L, M>(a, b);
 	}
+
+	/// @}
 
 } // namespace tensors

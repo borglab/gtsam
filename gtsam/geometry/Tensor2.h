@@ -24,6 +24,7 @@ namespace tensors {
 /**
  * Rank 2 Tensor
  * @ingroup tensors
+ * \nosubgrouping
  */
 template<int N1, int N2>
 class Tensor2 {
@@ -31,6 +32,9 @@ protected:
 	Tensor1<N1> T[N2]; ///< Storage
 
 public:
+
+	/// @name Standard Constructors
+	/// @{
 
 	/** default constructor */
 	Tensor2() {
@@ -48,6 +52,10 @@ public:
 		for (int j = 0; j < N2; j++)
 			T[j] = a(j);
 	}
+
+	/// @}
+	/// @name Standard Interface
+	/// @{
 
 	/** dimension - TODO: is this right for anything other than 3x3? */
 	size_t dim() const {return N1 * N2;}
@@ -67,6 +75,9 @@ public:
 			N2, J> > operator()(Index<N1, I> i, Index<N2, J> j) const {
 		return Tensor2Expression<Tensor2, Index<N1, I> , Index<N2, J> > (*this);
 	}
+
+  /// @}
+
 };
 
 } // namespace tensors

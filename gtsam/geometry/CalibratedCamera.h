@@ -33,24 +33,48 @@ namespace gtsam {
 	 * If calibration is known, it is more computationally efficient
 	 * to calibrate the measurements rather than try to predict in pixels.
 	 * @ingroup geometry
+	 * \nosubgrouping
 	 */
 	class CalibratedCamera {
 	private:
 		Pose3 pose_; // 6DOF pose
 
 	public:
-		CalibratedCamera() {}                ///< default constructor
-		CalibratedCamera(const Pose3& pose); ///< construct with pose
-		CalibratedCamera(const Vector &v) ;  ///< construct from vector
-		virtual ~CalibratedCamera() {}       ///< destructor
 
-		/// return pose
-		inline const Pose3& pose() const {	return pose_; }
+    /// @name Standard Constructors
+    /// @{
+
+		/// default constructor
+		CalibratedCamera() {}
+
+		/// construct with pose
+		CalibratedCamera(const Pose3& pose);
+
+    /// @}
+    /// @name Advanced Constructors
+    /// @{
+
+		/// construct from vector
+		CalibratedCamera(const Vector &v) ;
+
+		/// @}
+		/// @name Testable
+		/// @{
 
 		/// check equality to another camera
 		bool equals (const CalibratedCamera &camera, double tol = 1e-9) const {
 			return pose_.equals(camera.pose(), tol) ;
 		}
+
+    /// @}
+    /// @name Standard Interface
+    /// @{
+
+		/// destructor
+		virtual ~CalibratedCamera() {}
+
+		/// return pose
+		inline const Pose3& pose() const {	return pose_; }
 
 		/// compose the poses
 		inline const CalibratedCamera compose(const CalibratedCamera &c) const {
@@ -61,6 +85,17 @@ namespace gtsam {
 		inline const CalibratedCamera inverse() const {
 			return CalibratedCamera( pose_.inverse() ) ;
 		}
+
+		/**
+		 * Create a level camera at the given 2D pose and height
+		 * @param pose2 specifies the location and viewing direction
+		 * (theta 0 = looking in direction of positive X axis)
+		 */
+		static CalibratedCamera level(const Pose2& pose2, double height);
+
+		/// @}
+		/// @name Manifold
+		/// @{
 
 		/// move a cameras pose according to d
 		CalibratedCamera retract(const Vector& d) const;
@@ -74,16 +109,14 @@ namespace gtsam {
 	  /// Lie group dimensionality
 		inline static size_t Dim() { return 6 ; }
 
-		/**
-		 * Create a level camera at the given 2D pose and height
-		 * @param pose2 specifies the location and viewing direction
-		 * (theta 0 = looking in direction of positive X axis)
-		 */
-		static CalibratedCamera level(const Pose2& pose2, double height);
 
 		/* ************************************************************************* */
 		// measurement functions and derivatives
 		/* ************************************************************************* */
+
+    /// @}
+    /// @name Transformations
+    /// @{
 
 		/**
 		 * This function receives the camera pose and the landmark location and
@@ -111,12 +144,18 @@ namespace gtsam {
 
 private:
 
+    /// @}
+    /// @name Advanced Interface
+    /// @{
+
 	    /** Serialization function */
 	    friend class boost::serialization::access;
 	    template<class Archive>
 	    void serialize(Archive & ar, const unsigned int version) {
 	      ar & BOOST_SERIALIZATION_NVP(pose_);
 	    }
+
+	    /// @}
 	};
 }
 

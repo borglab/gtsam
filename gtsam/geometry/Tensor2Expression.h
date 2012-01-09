@@ -27,6 +27,7 @@ namespace tensors {
 	/**
 	 * Templated class to hold a rank 2 tensor expression.
 	 * @ingroup tensors
+	 * \nosubgrouping
 	 */
 	template<class A, class I, class J> class Tensor2Expression {
 
@@ -134,10 +135,17 @@ namespace tensors {
 
 	public:
 
+		/// @name Standard Constructors
+		/// @{
+
 		/** constructor */
 		Tensor2Expression(const A &a) :
 				iter(a) {
 		}
+
+		/// @}
+		/// @name Testable
+		/// @{
 
 		/** Print */
 		void print(const std::string& s = "Tensor2:") const {
@@ -158,6 +166,10 @@ namespace tensors {
 					return false;
 			return true;
 		}
+
+		/// @}
+		/// @name Standard Interface
+		/// @{
 
 		/** norm */
 		double norm() const {
@@ -206,6 +218,10 @@ namespace tensors {
 						return false;
 			return true;
 		}
+
+		/// @}
+		/// @name Advanced Interface
+		/// @{
 
 		/** c(j) = a(i,j)*b(i) */
 		template<class B>
@@ -288,5 +304,7 @@ namespace tensors {
 		actual.print("actual:\n");
 		return false;
 	}
+
+	/// @}
 
 } // namespace tensors

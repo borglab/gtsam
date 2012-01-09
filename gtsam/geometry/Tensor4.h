@@ -24,6 +24,7 @@ namespace tensors {
 	/**
 	 * Rank 4 Tensor
 	 * @ingroup tensors
+	 * \nosubgrouping
 	 */
 	template<int N1, int N2, int N3, int N4>
 	class Tensor4 {
@@ -34,14 +35,23 @@ namespace tensors {
 
 	public:
 
+		/// @name Standard Constructors
+		/// @{
+
 		/** default constructor */
 		Tensor4() {
 		}
+
+		/// @}
+		/// @name Standard Interface
+		/// @{
 
 		/// element access
 		double operator()(int i, int j, int k, int l) const {
 			return T[l](i, j, k);
 		}
+
+		/// @}
 
 	}; // Tensor4
 

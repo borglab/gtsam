@@ -28,6 +28,7 @@ namespace gtsam {
  * Complies with the Testable Concept
  * Functional, so no set functions: once created, a point is constant.
  * @ingroup geometry
+ * \nosubgrouping
  */
 class Point2 {
 public:
@@ -37,11 +38,27 @@ private:
 	double x_, y_;
 
 public:
+
+	/// @name Standard Constructors
+	/// @{
+
+	///TODO: comment
 	Point2(): x_(0), y_(0) {}
+
+	///TODO: comment
 	Point2(const Point2 &p) : x_(p.x_), y_(p.y_) {}
+
+	///TODO: comment
 	Point2(double x, double y): x_(x), y_(y) {}
+
+	/// @}
+	/// @name Advanced Constructors
+	/// @{
+
+	///TODO: comment
 	Point2(const Vector& v) : x_(v(0)), y_(v(1)) { assert(v.size() == 2); }
 
+  /// @}
   /// @name Testable
   /// @{
 
@@ -72,11 +89,19 @@ public:
 		return *this + p2;
 	}
 
-	/** operators */
+	///TODO: comment
 	inline Point2 operator- () const {return Point2(-x_,-y_);}
+
+	///TODO: comment
 	inline Point2 operator + (const Point2& q) const {return Point2(x_+q.x_,y_+q.y_);}
+
+	///TODO: comment
 	inline Point2 operator - (const Point2& q) const {return Point2(x_-q.x_,y_-q.y_);}
+
+	///TODO: comment
 	inline Point2 operator * (double s) const {return Point2(x_*s,y_*s);}
+
+	///TODO: comment
 	inline Point2 operator / (double q) const {return Point2(x_/q,y_/q);}
 
   /// @}
@@ -120,12 +145,18 @@ public:
 		return (p2 - *this).norm();
 	}
 
-	/** operators */
+	///TODO: comment
 	inline void operator += (const Point2& q) {x_+=q.x_;y_+=q.y_;}
+
+	///TODO: comment
 	inline void operator *= (double s) {x_*=s;y_*=s;}
+
+	///TODO: comment
 	inline bool operator ==(const Point2& q) const {return x_==q.x_ && q.y_==q.y_;}
 
   /// @}
+	/// @name Standard Interface
+	/// @{
 
 	/** "Between", subtracts point coordinates */
 	inline Point2 between(const Point2& p2,
@@ -136,14 +167,21 @@ public:
 		return p2 - (*this);
 	}
 
-	/** get functions for x, y */
+	/// get x
 	double x() const {return x_;}
+
+	/// get y
 	double y() const {return y_;}
 
 	/** return vectorized form (column-wise) */
 	Vector vector() const { return Vector_(2, x_, y_); }
 
 private:
+
+	/// @}
+	/// @name Advanced Interface
+	/// @{
+
 	/** Serialization function */
 	friend class boost::serialization::access;
 	template<class ARCHIVE>
@@ -152,9 +190,13 @@ private:
 		ar & BOOST_SERIALIZATION_NVP(x_);
 		ar & BOOST_SERIALIZATION_NVP(y_);
 	}
+
 };
 
 /** multiply with scalar */
 inline Point2 operator*(double s, const Point2& p) {return p*s;}
+
+/// @}
+
 }
 

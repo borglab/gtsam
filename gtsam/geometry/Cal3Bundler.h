@@ -25,6 +25,7 @@ namespace gtsam {
 /**
  * @brief Calibration used by Bundler
  * @ingroup geometry
+ * \nosubgrouping
  */
 class Cal3Bundler {
 
@@ -33,31 +34,77 @@ private:
 
 public:
 
-	Cal3Bundler() ;
-	Cal3Bundler(const Vector &v) ;
-	Cal3Bundler(const double f, const double k1, const double k2) ;
 	Matrix K() const ;
 	Vector k() const ;
 
 	Vector vector() const;
+
+  /// @name Standard Constructors
+  /// @{
+
+	///TODO: comment
+	Cal3Bundler() ;
+
+	///TODO: comment
+	Cal3Bundler(const double f, const double k1, const double k2) ;
+
+  /// @}
+  /// @name Advanced Constructors
+  /// @{
+
+	///TODO: comment
+	Cal3Bundler(const Vector &v) ;
+
+	/// @}
+	/// @name Testable
+	/// @{
+
+	/// print with optional string
 	void print(const std::string& s = "") const;
+
+	/// assert equality up to a tolerance
 	bool equals(const Cal3Bundler& K, double tol = 10e-9) const;
 
+  /// @}
+  /// @name Standard Interface
+  /// @{
+
+	///TODO: comment
 	Point2 uncalibrate(const Point2& p,
 			boost::optional<Matrix&> H1 = boost::none,
 			boost::optional<Matrix&> H2 = boost::none) const ;
 
+	///TODO: comment
 	Matrix D2d_intrinsic(const Point2& p) const ;
+
+	///TODO: comment
 	Matrix D2d_calibration(const Point2& p) const ;
+
+	///TODO: comment
 	Matrix D2d_intrinsic_calibration(const Point2& p) const ;
 
+	/// @}
+	/// @name Manifold
+	/// @{
+
+	///TODO: comment
 	Cal3Bundler retract(const Vector& d) const ;
+
+	///TODO: comment
 	Vector localCoordinates(const Cal3Bundler& T2) const ;
 
-	int dim() const { return 3 ; }
-	static size_t Dim() { return 3; }
+	///TODO: comment
+	int dim() const { return 3 ; }	//TODO: make a final dimension variable (also, usually size_t in other classes  e.g. Pose2)
+
+	///TODO: comment
+	static size_t Dim() { return 3; }	//TODO: make a final dimension variable
 
 private:
+
+  /// @}
+  /// @name Advanced Interface
+  /// @{
+
 	/** Serialization function */
 	friend class boost::serialization::access;
 	template<class Archive>
@@ -67,6 +114,9 @@ private:
 		ar & BOOST_SERIALIZATION_NVP(k1_);
 		ar & BOOST_SERIALIZATION_NVP(k2_);
 	}
+
+
+	/// @}
 
 };
 

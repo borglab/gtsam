@@ -30,6 +30,7 @@ namespace tensors {
 	 * This class does not store any data but the result of an expression.
 	 * It is associated with an index.
 	 * @ingroup tensors
+	 * \nosubgrouping
 	 */
 	template<class A, class I> class Tensor1Expression {
 
@@ -56,10 +57,17 @@ namespace tensors {
 
 	public:
 
+		/// @name Standard Constructors
+		/// @{
+
 		/** constructor */
 		Tensor1Expression(const A &a) :
 			iter(a) {
 		}
+
+		/// @}
+		/// @name Testable
+		/// @{
 
 		/** Print */
 		void print(const std::string s = "") const {
@@ -77,6 +85,10 @@ namespace tensors {
 				if (fabs((*this)(i) - q(i)) > tol) return false;
 			return true;
 		}
+
+		/// @}
+		/// @name Standard Interface
+		/// @{
 
 		/** norm */
 		double norm() const {
@@ -122,6 +134,10 @@ namespace tensors {
 
 	}; // Tensor1Expression
 
+	/// @}
+	/// @name Advanced Interface
+	/// @{
+
 	/** Print a rank 1 expression */
 	template<class A, class I>
 	void print(const Tensor1Expression<A, I>& T, const std::string s = "") {
@@ -159,5 +175,7 @@ namespace tensors {
 		actual.print("actual:\n");
 		return false;
 	}
+
+	/// @}
 
 } // namespace tensors

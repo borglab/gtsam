@@ -28,6 +28,7 @@ namespace gtsam {
 /**
  * General camera template
  * @ingroup geometry
+ * \nosubgrouping
  */
 template <typename Camera, typename Calibration>
 class GeneralCameraT {
@@ -37,22 +38,107 @@ private:
 	Calibration calibration_; // Calibration
 
 public:
+
+	/// @name Standard Constructors
+	/// @{
+
+	///TODO: comment
 	GeneralCameraT(){}
+
+	///TODO: comment
 	GeneralCameraT(const Camera& calibrated, const Calibration& K) : calibrated_(calibrated), calibration_(K) {}
+
+	///TODO: comment
 	GeneralCameraT(const Camera& calibrated ) : calibrated_(calibrated) {}
+
+	///TODO: comment
 	GeneralCameraT(const Pose3& pose, const Calibration& K) : calibrated_(pose), calibration_(K) {}
+
+	///TODO: comment
 	GeneralCameraT(const Pose3& pose) :	calibrated_(pose) {}
+
+	/// @}
+	/// @name Advanced Constructors
+	/// @{
+
+	///TODO: comment
 	GeneralCameraT(const Pose3& pose, const Vector &v) : calibrated_(pose), calibration_(v) {}
 
-	// Vector Initialization
+	///TODO: comment
 	GeneralCameraT(const Vector &v) :
 		calibrated_(sub(v, 0, Camera::Dim())),
 		calibration_(sub(v, Camera::Dim(), Camera::Dim() + Calibration::Dim() )) {}
 
+	/// @}
+	/// @name Standard Interface
+	/// @{
+
+	///TODO: comment
 	inline const Pose3& pose() const { return calibrated_.pose(); }
+
+	///TODO: comment
 	inline const Camera& calibrated() const { return calibrated_;	}
+
+	///TODO: comment
 	inline const Calibration& calibration() const { return calibration_; }
 
+	///TODO: comment
+	inline GeneralCameraT compose(const Pose3 &p) const {
+			return GeneralCameraT( pose().compose(p), calibration_ ) ;
+		}
+
+	///TODO: comment
+	Matrix D2d_camera(const Point3& point) const {
+		Point2 intrinsic = calibrated_.project(point);
+		Matrix D_intrinsic_pose = Dproject_pose(calibrated_, point);
+		Matrix D_2d_intrinsic = calibration_.D2d_intrinsic(intrinsic);
+		Matrix D_2d_pose = D_2d_intrinsic * D_intrinsic_pose;
+		Matrix D_2d_calibration = calibration_.D2d_calibration(intrinsic);
+
+		const int n1 = calibrated_.dim() ;
+		const int n2 = calibration_.dim() ;
+		Matrix D(2,n1+n2) ;
+
+		sub(D,0,2,0,n1) = D_2d_pose ;
+		sub(D,0,2,n1,n1+n2) = D_2d_calibration ;
+		return D;
+	}
+
+	///TODO: comment
+	Matrix D2d_3d(const Point3& point) const {
+		Point2 intrinsic = calibrated_.project(point);
+		Matrix D_intrinsic_3d = Dproject_point(calibrated_, point);
+		Matrix D_2d_intrinsic = calibration_.D2d_intrinsic(intrinsic);
+		return D_2d_intrinsic * D_intrinsic_3d;
+	}
+
+	///TODO: comment
+	Matrix D2d_camera_3d(const Point3& point) const {
+		Point2 intrinsic = calibrated_.project(point);
+		Matrix D_intrinsic_pose = Dproject_pose(calibrated_, point);
+		Matrix D_2d_intrinsic = calibration_.D2d_intrinsic(intrinsic);
+		Matrix D_2d_pose = D_2d_intrinsic * D_intrinsic_pose;
+		Matrix D_2d_calibration = calibration_.D2d_calibration(intrinsic);
+
+		Matrix D_intrinsic_3d = Dproject_point(calibrated_, point);
+		Matrix D_2d_3d = D_2d_intrinsic * D_intrinsic_3d;
+
+		const int n1 = calibrated_.dim() ;
+		const int n2 = calibration_.dim() ;
+
+		Matrix D(2,n1+n2+3) ;
+
+		sub(D,0,2,0,n1) = D_2d_pose ;
+		sub(D,0,2,n1,n1+n2) = D_2d_calibration ;
+		sub(D,0,2,n1+n2,n1+n2+3) = D_2d_3d ;
+		return D;
+	}
+
+  /// @}
+  /// @name Transformations
+  /// @{
+
+	///TODO: comment
 	std::pair<Point2,bool> projectSafe(
 			const Point3& P,
 			boost::optional<Matrix&> H1 = boost::none,
@@ -64,6 +150,7 @@ public:
 				cameraPoint.z() > 0);
 	}
 
+	///TODO: comment
 	Point3 backproject(const Point2& projection, const double scale) const {
 		Point2 intrinsic = calibration_.calibrate(projection);
 		Point3 cameraPoint = CalibratedCamera::backproject_from_camera(intrinsic, scale);
@@ -105,89 +192,65 @@ public:
 		return projection;
 	}
 
-	// dump functions for compilation for now
+	/// @}
+	/// @name Testable
+	/// @{
+
+	/// checks equality up to a tolerance
 	bool equals (const GeneralCameraT &camera, double tol = 1e-9) const {
 		return calibrated_.equals(camera.calibrated_, tol) &&
 				calibration_.equals(camera.calibration_, tol) ;
 	}
 
+	/// print with optional string
 	void print(const std::string& s = "") const {
 		calibrated_.pose().print(s + ".camera.") ;
 		calibration_.print(s + ".calibration.") ;
 	}
 
+  /// @}
+  /// @name Manifold
+  /// @{
+
+	///TODO: comment
 	GeneralCameraT retract(const Vector &v) const {
 		Vector v1 = sub(v,0,Camera::Dim());
 		Vector v2 = sub(v,Camera::Dim(),Camera::Dim()+Calibration::Dim());
 		return GeneralCameraT(calibrated_.retract(v1),	calibration_.retract(v2));
 	}
 
+	///TODO: comment
 	Vector localCoordinates(const GeneralCameraT &C) const {
 		const Vector v1(calibrated().localCoordinates(C.calibrated())),
 				v2(calibration().localCoordinates(C.calibration()));
 		return concatVectors(2,&v1,&v2) ;
 	}
 
-	inline GeneralCameraT compose(const Pose3 &p) const {
-		return GeneralCameraT( pose().compose(p), calibration_ ) ;
-	}
-
-	Matrix D2d_camera(const Point3& point) const {
-		Point2 intrinsic = calibrated_.project(point);
-		Matrix D_intrinsic_pose = Dproject_pose(calibrated_, point);
-		Matrix D_2d_intrinsic = calibration_.D2d_intrinsic(intrinsic);
-		Matrix D_2d_pose = D_2d_intrinsic * D_intrinsic_pose;
-		Matrix D_2d_calibration = calibration_.D2d_calibration(intrinsic);
-
-		const int n1 = calibrated_.dim() ;
-		const int n2 = calibration_.dim() ;
-		Matrix D(2,n1+n2) ;
-
-		sub(D,0,2,0,n1) = D_2d_pose ;
-		sub(D,0,2,n1,n1+n2) = D_2d_calibration ;
-		return D;
-	}
-
-	Matrix D2d_3d(const Point3& point) const {
-		Point2 intrinsic = calibrated_.project(point);
-		Matrix D_intrinsic_3d = Dproject_point(calibrated_, point);
-		Matrix D_2d_intrinsic = calibration_.D2d_intrinsic(intrinsic);
-		return D_2d_intrinsic * D_intrinsic_3d;
-	}
-
-	Matrix D2d_camera_3d(const Point3& point) const {
-		Point2 intrinsic = calibrated_.project(point);
-		Matrix D_intrinsic_pose = Dproject_pose(calibrated_, point);
-		Matrix D_2d_intrinsic = calibration_.D2d_intrinsic(intrinsic);
-		Matrix D_2d_pose = D_2d_intrinsic * D_intrinsic_pose;
-		Matrix D_2d_calibration = calibration_.D2d_calibration(intrinsic);
-
-		Matrix D_intrinsic_3d = Dproject_point(calibrated_, point);
-		Matrix D_2d_3d = D_2d_intrinsic * D_intrinsic_3d;
-
-		const int n1 = calibrated_.dim() ;
-		const int n2 = calibration_.dim() ;
-
-		Matrix D(2,n1+n2+3) ;
-
-		sub(D,0,2,0,n1) = D_2d_pose ;
-		sub(D,0,2,n1,n1+n2) = D_2d_calibration ;
-		sub(D,0,2,n1+n2,n1+n2+3) = D_2d_3d ;
-		return D;
-	}
-
 	//inline size_t dim() { return Camera::dim() + Calibration::dim() ; }
+
+	///TODO: comment
 	inline size_t dim() const { return calibrated().dim() + calibration().dim() ; }
+
+	///TODO: comment
 	static inline size_t Dim() { return Camera::Dim() + Calibration::Dim() ; }
 
 private:
+
+	/// @}
+	/// @name Advanced Interface
+	/// @{
+
 	friend class boost::serialization::access;
 	template<class Archive>
+
+	/// Serialization function
 	void serialize(Archive & ar, const unsigned int version)
 	{
 		ar & BOOST_SERIALIZATION_NVP(calibrated_);
 		ar & BOOST_SERIALIZATION_NVP(calibration_);
 	}
+
+	/// @}
 
 };
 

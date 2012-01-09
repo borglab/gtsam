@@ -28,12 +28,17 @@ namespace gtsam {
 	/**
 	 * @brief The most common 5DOF 3D->2D calibration
 	 * @ingroup geometry
+	 * \nosubgrouping
 	 */
 	class Cal3_S2 {
 	private:
 		double fx_, fy_, s_, u0_, v0_;
 
+    /// @name Standard Constructors
+    /// @{
+
 	public:
+
 		/// Create a default calibration that leaves coordinates unchanged
 		Cal3_S2() :
 			fx_(1), fy_(1), s_(0), u0_(0), v0_(0) {
@@ -52,6 +57,18 @@ namespace gtsam {
 		 */
 		Cal3_S2(double fov, int w, int h);
 
+    /// @}
+    /// @name Advanced Constructors
+    /// @{
+
+		/// load calibration from location (default name is calibration_info.txt)
+		Cal3_S2(const std::string &path);
+
+    /// @}
+		/// @name Testable
+		/// @{
+
+		/// print with optional string
 		void print(const std::string& s = "") const {
 			gtsam::print(matrix(), s);
 		}
@@ -59,8 +76,9 @@ namespace gtsam {
 		/// Check if equal up to specified tolerance
 		bool equals(const Cal3_S2& K, double tol = 10e-9) const;
 
-		/// load calibration from location (default name is calibration_info.txt)
-		Cal3_S2(const std::string &path);
+    /// @}
+    /// @name Standard Interface
+    /// @{
 
 		/// focal length x
 		inline double fx() const { return fx_;}
@@ -118,6 +136,10 @@ namespace gtsam {
 					* (v - v0_));
 		}
 
+		/// @}
+		/// @name Manifold
+		/// @{
+
 		/// return DOF, dimensionality of tangent space
 		inline size_t dim() const {
 			return 5;
@@ -138,6 +160,10 @@ namespace gtsam {
 			return vector() - T2.vector();
 		}
 
+    /// @}
+    /// @name Advanced Interface
+    /// @{
+
 	private:
 
 		/// Serialization function
@@ -150,8 +176,13 @@ namespace gtsam {
 			ar & BOOST_SERIALIZATION_NVP(u0_);
 			ar & BOOST_SERIALIZATION_NVP(v0_);
 		}
+
+		/// @}
+
 	};
 
-	typedef boost::shared_ptr<Cal3_S2> shared_ptrK;		///< shared pointer to calibration object
+
+
+	typedef boost::shared_ptr<Cal3_S2> shared_ptrK;	///< shared pointer to calibration object
 
 } // gtsam

@@ -24,6 +24,7 @@ namespace tensors {
 	/**
 	 * Rank 5 Tensor
 	 * @ingroup tensors
+	 * \nosubgrouping
 	 */
 	template<int N1, int N2, int N3, int N4, int N5>
 	class Tensor5 {
@@ -34,9 +35,16 @@ namespace tensors {
 
 	public:
 
+		/// @name Standard Constructors
+		/// @{
+
 		/** default constructor */
 		Tensor5() {
 		}
+
+		/// @}
+		/// @name Standard Interface
+		/// @{
 
 		/** construct from expression */
 		template<class A, char I, char J, char K, char L, char M>
@@ -59,6 +67,9 @@ namespace tensors {
 			return Tensor5Expression<Tensor5, Index<N1, I> , Index<N2, J> , Index<N3,
 					K> , Index<N4, L> , Index<N5, M> > (*this);
 		}
+
+	  /// @}
+
 	}; // Tensor5
 
 } // namespace tensors

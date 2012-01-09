@@ -31,6 +31,7 @@ namespace gtsam {
   /**
    * A 3D point
    * @ingroup geometry
+   * \nosubgrouping
    */
   class Point3 {
   public:
@@ -41,11 +42,27 @@ namespace gtsam {
     double x_, y_, z_;  
 		
   public:
+
+    /// @name Standard Constructors
+  	/// @{
+
+    ///TODO: comment
     Point3(): x_(0), y_(0), z_(0) {}
+
+    ///TODO: comment
     Point3(const Point3 &p) : x_(p.x_), y_(p.y_), z_(p.z_) {}
+
+    ///TODO: comment
     Point3(double x, double y, double z): x_(x), y_(y), z_(z) {}
+
+  	/// @}
+  	/// @name Advanced Constructors
+  	/// @{
+
+    ///TODO: comment
     Point3(const Vector& v) : x_(v(0)), y_(v(1)), z_(v(2)) {}
 
+    /// @}
     /// @name Testable
     /// @{
 
@@ -106,11 +123,22 @@ namespace gtsam {
     /// @name Vector Operators
     /// @{
 
+    ///TODO: comment
     Point3 operator - () const { return Point3(-x_,-y_,-z_);}
+
+    ///TODO: comment
     bool   operator ==(const Point3& q) const;
+
+    ///TODO: comment
     Point3 operator + (const Point3& q) const;
+
+    ///TODO: comment
     Point3 operator - (const Point3& q) const;
+
+    ///TODO: comment
     Point3 operator * (double s) const;
+
+    ///TODO: comment
     Point3 operator / (double s) const;
 
     /** distance between two points */
@@ -128,6 +156,8 @@ namespace gtsam {
     double dot(const Point3 &q) const;
 
     /// @}
+  	/// @name Standard Interface
+  	/// @{
 
     /** Between using the default implementation */
     inline Point3 between(const Point3& p2,
@@ -144,9 +174,13 @@ namespace gtsam {
       return v;
     }
 
-    /** get functions for x, y, z */
+    /// get x
     inline double x() const {return x_;}
+
+    /// get y
     inline double y() const {return y_;}
+
+    /// get z
     inline double z() const {return z_;}
 
     /** add two points, add(this,q) is same as this + q */
@@ -158,6 +192,11 @@ namespace gtsam {
   	      boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
 
   private:
+
+  	/// @}
+  	/// @name Advanced Interface
+  	/// @{
+
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -171,5 +210,7 @@ namespace gtsam {
 
   /// Syntactic sugar for multiplying coordinates by a scalar s*p
   inline Point3 operator*(double s, const Point3& p) { return p*s;}
+
+	/// @}
 
 }

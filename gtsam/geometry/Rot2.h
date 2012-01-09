@@ -27,6 +27,7 @@ namespace gtsam {
 	 * Rotation matrix
 	 * NOTE: the angle theta is in radians unless explicitly stated
 	 * @ingroup geometry
+	 * \nosubgrouping
 	 */
 	class Rot2 {
 
@@ -39,13 +40,17 @@ namespace gtsam {
 		/** we store cos(theta) and sin(theta) */
 		double c_, s_;
 
+
+		/** normalize to make sure cos and sin form unit vector */
+		Rot2& normalize();
+
+		/// @name Standard Constructors
+		/// @{
+
 		/** private constructor from cos/sin */
 		inline Rot2(double c, double s) :
 				c_(c), s_(s) {
 		}
-
-		/** normalize to make sure cos and sin form unit vector */
-		Rot2& normalize();
 
 	public:
 
@@ -58,8 +63,6 @@ namespace gtsam {
 		Rot2(double theta) :
 				c_(cos(theta)), s_(sin(theta)) {
 		}
-
-		/** "named constructors" */
 
 		/// Named constructor from angle in radians
 		static Rot2 fromAngle(double theta) {
@@ -88,27 +91,7 @@ namespace gtsam {
 		/** Named constructor that behaves as atan2, i.e., y,x order (!) and normalizes */
 		static Rot2 atan2(double y, double x);
 
-		/** return angle (RADIANS) */
-		double theta() const {
-			return ::atan2(s_, c_);
-		}
-
-		/** return angle (DEGREES) */
-		double degrees() const {
-			const double degree = M_PI / 180;
-			return theta() / degree;
-		}
-
-		/** return cos */
-		inline double c() const {
-			return c_;
-		}
-
-		/** return sin */
-		inline double s() const {
-			return s_;
-		}
-
+	  /// @}
     /// @name Testable
     /// @{
 
@@ -197,6 +180,29 @@ namespace gtsam {
 		}
 
 		/// @}
+		/// @name Standard Interface
+		/// @{
+
+		/** return angle (RADIANS) */
+		double theta() const {
+			return ::atan2(s_, c_);
+		}
+
+		/** return angle (DEGREES) */
+		double degrees() const {
+			const double degree = M_PI / 180;
+			return theta() / degree;
+		}
+
+		/** return cos */
+		inline double c() const {
+			return c_;
+		}
+
+		/** return sin */
+		inline double s() const {
+			return s_;
+		}
 
 		/** Between using the default implementation */
 		inline Rot2 between(const Rot2& p2, boost::optional<Matrix&> H1 =
@@ -226,6 +232,9 @@ namespace gtsam {
 		Point2 unrotate(const Point2& p, boost::optional<Matrix&> H1 = boost::none,
 				boost::optional<Matrix&> H2 = boost::none) const;
 
+		/// @}
+		/// @name Advanced Interface
+		/// @{
 
 	private:
 		/** Serialization function */
@@ -235,6 +244,8 @@ namespace gtsam {
 			ar & BOOST_SERIALIZATION_NVP(c_);
 			ar & BOOST_SERIALIZATION_NVP(s_);
 		}
+
+	  /// @}
 
 	};
 
