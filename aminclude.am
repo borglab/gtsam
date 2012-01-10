@@ -5,7 +5,7 @@
 # are controlled by the various DX_COND_??? conditionals set by autoconf.
 #
 # The provided goals are:
-# doxygen-doc: Generate all doxygen documentation.
+# doc:         Generate all doxygen documentation.
 # doxygen-run: Run doxygen, which will generate some of the documentation
 #              (HTML, CHM, CHI, MAN, RTF, XML) but will not do the post
 #              processing required for the rest of it (PS, PDF, and some MAN).
@@ -158,13 +158,13 @@ DX_CLEAN_LATEX = @DX_DOCDIR@/latex
 
 endif DX_COND_latex
 
-.PHONY: doxygen-run doxygen-doc $(DX_PS_GOAL) $(DX_PDF_GOAL)
+.PHONY: doxygen-run doc $(DX_PS_GOAL) $(DX_PDF_GOAL)
 
 .INTERMEDIATE: doxygen-run $(DX_PS_GOAL) $(DX_PDF_GOAL)
 
 doxygen-run: @DX_DOCDIR@/@PACKAGE@.tag
 
-doxygen-doc: doxygen-run $(DX_PS_GOAL) $(DX_PDF_GOAL)
+doc: doxygen-run $(DX_PS_GOAL) $(DX_PDF_GOAL)
 
 @DX_DOCDIR@/@PACKAGE@.tag: $(DX_CONFIG) $(pkginclude_HEADERS)
 	rm -rf @DX_DOCDIR@

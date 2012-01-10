@@ -567,7 +567,7 @@ FILE_VERSION_FILTER    =
 # You can optionally specify a file name after the option, if omitted 
 # DoxygenLayout.xml will be used as the name of the layout file.
 
-LAYOUT_FILE            = $(SRCDIR)/DoxygenLayout.xml
+LAYOUT_FILE            = DoxygenLayout.xml
 
 # The CITE_BIB_FILES tag can be used to specify one or more bib files 
 # containing the references data. This must be a list of .bib files. The 
@@ -638,13 +638,13 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories 
 # with spaces.
 
-INPUT                  = $(SRCDIR)/gtsam/base \
-                         $(SRCDIR)/gtsam/geometry \
-                         $(SRCDIR)/gtsam/inference \
-                         $(SRCDIR)/gtsam/linear \
-                         $(SRCDIR)/gtsam/nonlinear \
-                         $(SRCDIR)/gtsam/slam \
-                         $(SRCDIR)/gtsam
+INPUT                  = gtsam/base \
+                         gtsam/geometry \
+                         gtsam/inference \
+                         gtsam/linear \
+                         gtsam/nonlinear \
+                         gtsam/slam \
+                         gtsam
 
 # This tag can be used to specify the character encoding of the source files 
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is 
