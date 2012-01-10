@@ -27,8 +27,9 @@ using namespace wrap;
 
 /* ************************************************************************* */
 string Argument::matlabClass() const {
-	if (type=="Vector") return string("double");
-	if (type=="Matrix") return string("double");
+	if (type=="string") return string("char");
+	if (type=="bool" || type=="int" || type=="size_t" || type=="Vector" || type=="Matrix")
+		return string("double");
 	return type;
 }
 
