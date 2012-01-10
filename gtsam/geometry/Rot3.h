@@ -251,10 +251,10 @@ namespace gtsam {
 #endif
       };
 
-    /// Retraction from R^3 to Pose2 manifold neighborhood around current pose
+    /// Retraction from R^3 to Rot3 manifold neighborhood around current rotation
     Rot3 retract(const Vector& omega, Rot3::CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE) const;
 
-    /// Returns inverse retraction
+    /// Returns local retract coordinates in neighborhood around current rotation
     Vector localCoordinates(const Rot3& t2, Rot3::CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE) const;
 
     /// @}
