@@ -65,8 +65,8 @@ initialEstimate = planarSLAMValues;
 initialEstimate.insertPose(x1, Pose2(0.5, 0.0, 0.2));
 initialEstimate.insertPose(x2, Pose2(2.3, 0.1,-0.2));
 initialEstimate.insertPose(x3, Pose2(4.1, 0.1, 0.1));
-initialEstimate.insertPoint(l1, Landmark2(1.8, 2.1));
-initialEstimate.insertPoint(l2, Landmark2(4.1, 1.8));
+initialEstimate.insertPoint(l1, Point2(1.8, 2.1));
+initialEstimate.insertPoint(l2, Point2(4.1, 1.8));
 
 initialEstimate.print('initial estimate');
 
