@@ -14,9 +14,10 @@
  * @brief 3D Pose
  */
 
-#include <gtsam/base/Lie-inl.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/concepts.h>
+#include <gtsam/base/Lie-inl.h>
 #include <iostream>
 #include <cmath>
 
@@ -31,6 +32,12 @@ namespace gtsam {
   GTSAM_CONCEPT_POSE_INST(Pose3);
 
   static const Matrix I3 = eye(3), Z3 = zeros(3, 3), _I3=-I3, I6 = eye(6);
+
+  /* ************************************************************************* */
+  Pose3::Pose3(const Pose2& pose2) :
+			R_(Rot3::rodriguez(0, 0, pose2.theta())),
+			t_(Point3(pose2.x(), pose2.y(), 0)) {
+	}
 
   /* ************************************************************************* */
   // Calculate Adjoint map

@@ -14,12 +14,13 @@
  * @brief  Unit tests for Pose3 class
  */
 
-#include <cmath>
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/base/lieProxies.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/base/lieProxies.h>
-#include <gtsam/geometry/Pose3.h>
+#include <CppUnitLite/TestHarness.h>
+#include <cmath>
 
 using namespace std;
 using namespace gtsam;
@@ -41,6 +42,14 @@ TEST( Pose3, equals)
   EXPECT(T3.equals(pose2));
   Pose3 origin;
   EXPECT(!T3.equals(origin));
+}
+
+/* ************************************************************************* */
+TEST( Pose3, constructors)
+{
+	Pose3 expected(Rot3::rodriguez(0,0,3),Point3(1,2,0));
+  Pose2 pose2(1,2,3);
+  EXPECT(assert_equal(expected,Pose3(pose2)));
 }
 
 /* ************************************************************************* */

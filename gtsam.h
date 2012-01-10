@@ -172,6 +172,7 @@ class Pose3 {
 	Pose3(const Rot3& r, const Point3& t);
 	Pose3(Vector v);
 	Pose3(Matrix t);
+	Pose3(const Pose2& pose2);
 	static Pose3 Expmap(Vector v);
 	static Vector Logmap(const Pose3& p);
 	void print(string s) const;
