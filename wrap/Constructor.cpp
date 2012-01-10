@@ -33,10 +33,22 @@ string Constructor::matlab_wrapper_name(const string& className) const {
 
 /* ************************************************************************* */
 void Constructor::matlab_proxy_fragment(ofstream& ofs, const string& className) const {
-  ofs << "      if nargin == " << args.size() << ", obj.self = " 
-      << matlab_wrapper_name(className) << "(";
+	size_t nrArgs = args.size();
+	// check for number of arguments...
+  ofs << "      if (nargin == " << nrArgs;
+  if (nrArgs>0) ofs << " & ";
+	// ...and their types
   bool first = true;
-  for(size_t i=0;i<args.size();i++) {
+  for(size_t i=0;i<nrArgs;i++) {
+    if (!first) ofs << " & ";
+    ofs << "isa(varargin{" << i+1 << "},'" << args[i].matlabClass() << "')";
+    first=false;
+  }
+  // emit code for calling constructor
+  ofs << "), obj.self = " << matlab_wrapper_name(className) << "(";
+  // emit constructor arguments
+  first = true;
+  for(size_t i=0;i<nrArgs;i++) {
     if (!first) ofs << ",";
     ofs << "varargin{" << i+1 << "}";
     first=false;

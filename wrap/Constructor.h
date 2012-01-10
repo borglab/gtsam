@@ -44,7 +44,10 @@ struct Constructor {
 	/// wrapper name
 	std::string matlab_wrapper_name(const std::string& className) const;
 
-	/// proxy class fragment
+	/**
+	 * Create fragment to select constructor in proxy class, e.g.,
+	 * if nargin == 2, obj.self = new_Pose3_RP(varargin{1},varargin{2}); end
+	 */
 	void matlab_proxy_fragment(std::ofstream& ofs, const std::string& className) const;
 
 	/// m-file

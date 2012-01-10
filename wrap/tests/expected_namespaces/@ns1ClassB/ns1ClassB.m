@@ -4,7 +4,7 @@ classdef ns1ClassB
   end
   methods
     function obj = ns1ClassB(varargin)
-      if nargin == 0, obj.self = new_ns1ClassB_(); end
+      if (nargin == 0), obj.self = new_ns1ClassB_(); end
       if nargin ~= 13 && obj.self == 0, error('ns1ClassB constructor failed'); end
     end
     function display(obj), obj.print(''); end

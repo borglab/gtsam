@@ -28,21 +28,31 @@ struct Argument {
 	std::string type;
 	std::string name;
 	std::vector<std::string> namespaces;
+
 	Argument() :
 			is_const(false), is_ref(false), is_ptr(false) {
 	}
 
-	std::string qualifiedType(const std::string& delim = "") const; // adds namespaces to type
+	/// return MATLAB class for use in isa(x,class)
+	std::string matlabClass() const;
+
+	/// adds namespaces to type
+	std::string qualifiedType(const std::string& delim = "") const;
 
 	/// MATLAB code generation, MATLAB to C++
 	void matlab_unwrap(std::ofstream& ofs, const std::string& matlabName) const;
 };
 
-/// Argument list
+/// Argument list is just a container with Arguments
 struct ArgumentList: public std::vector<Argument> {
-	std::vector<Argument> args; // why does it contain this?
+
+	/// create a comma-separated string listing all argument types (not used)
 	std::string types() const;
+
+	/// create a short "signature" string
 	std::string signature() const;
+
+	/// create a comma-separated string listing all argument names, used in m-files
 	std::string names() const;
 
 	// MATLAB code generation:

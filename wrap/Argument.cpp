@@ -26,6 +26,13 @@ using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
+string Argument::matlabClass() const {
+	if (type=="Vector") return string("double");
+	if (type=="Matrix") return string("double");
+	return type;
+}
+
+/* ************************************************************************* */
 void Argument::matlab_unwrap(ofstream& ofs, const string& matlabName) const {
   ofs << "  ";
 
@@ -62,7 +69,7 @@ string Argument::qualifiedType(const string& delim) const {
 string ArgumentList::types() const {
   string str;
   bool first=true;
-  BOOST_FOREACH(Argument arg, *this)  {
+  BOOST_FOREACH(Argument arg, *this) {
     if (!first) str += ","; str += arg.type; first=false;
   }
   return str;
@@ -73,20 +80,14 @@ string ArgumentList::signature() const {
   string sig;
   bool cap=false;
 
-  BOOST_FOREACH(Argument arg, *this)
-  {
-
+  BOOST_FOREACH(Argument arg, *this) {
   	BOOST_FOREACH(char ch, arg.type)
-        if(isupper(ch))
-        {
+        if(isupper(ch)) {
             sig += ch;
-            //If there is a capital letter, we don't want to readd it below
+            //If there is a capital letter, we don't want to read it below
             cap=true;
         }
-
-    if(!cap)
-        sig += arg.type[0];
-
+    if(!cap) sig += arg.type[0];
     //Reset to default
     cap = false;
   }
