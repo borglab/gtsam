@@ -251,6 +251,11 @@ namespace gtsam {
 #endif
       };
 
+#ifndef GTSAM_DEFAULT_QUATERNIONS
+    /// Retraction from R^3 to Rot3 manifold using the Cayley transform
+    Rot3 retractCayley(const Vector& omega) const;
+#endif
+
     /// Retraction from R^3 to Rot3 manifold neighborhood around current rotation
     Rot3 retract(const Vector& omega, Rot3::CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE) const;
 

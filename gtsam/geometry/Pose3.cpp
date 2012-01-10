@@ -103,30 +103,26 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  Pose3 Pose3::retractFirstOrder(const Vector& xi) const {
+      Vector omega(sub(xi, 0, 3));
+      Point3 v(sub(xi, 3, 6));
+      Rot3 R = R_.retract(omega);  // R is done exactly
+      Point3 t = t_ + R_ * v; // First order t approximation
+      return Pose3(R, t);
+	}
+
+  /* ************************************************************************* */
 	// Different versions of retract
   Pose3 Pose3::retract(const Vector& xi, Pose3::CoordinatesMode mode) const {
     if(mode == Pose3::EXPMAP) {
-      // Lie group exponential map, traces out geodesic
+    	// Lie group exponential map, traces out geodesic
       return compose(Expmap(xi));
     } else if(mode == Pose3::FIRST_ORDER) {
-      Vector omega(sub(xi, 0, 3));
-      Point3 v(sub(xi, 3, 6));
-
-      // R is always done exactly in all three retract versions below
-      Rot3 R = R_.retract(omega);
-
-      // Incorrect version
-      // Retracts R and t independently
-      // Point3 t = t_.retract(v.vector());
-
-      // First order t approximation
-      Point3 t = t_ + R_ * v;
-
-      // Second order t approximation
-      // Point3 t = t_ + R_ * (v+Point3(omega).cross(v)/2);
-
-      return Pose3(R, t);
+    	// First order
+      return retractFirstOrder(xi);
     } else {
+      // Point3 t = t_.retract(v.vector()); // Incorrect version retracts t independently
+      // Point3 t = t_ + R_ * (v+Point3(omega).cross(v)/2); // Second order t approximation
       assert(false);
       exit(1);
     }

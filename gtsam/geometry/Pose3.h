@@ -121,6 +121,8 @@ namespace gtsam {
     /// Dimensionality of the tangent space = 6 DOF
     size_t dim() const { return dimension; }
 
+    /// Retraction with fast first-order approximation to the exponential map
+    Pose3 retractFirstOrder(const Vector& d) const;
 
     /// Retraction from R^6 to Pose3 manifold neighborhood around current pose
     Pose3 retract(const Vector& d, Pose3::CoordinatesMode mode = POSE3_DEFAULT_COORDINATES_MODE) const;

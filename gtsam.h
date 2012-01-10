@@ -139,6 +139,7 @@ class Rot3 {
 	bool equals(const Rot3& rot, double tol) const;
 	Vector localCoordinates(const Rot3& p);
 	Rot3 retract(Vector v);
+	Rot3 retractCayley(Vector v);
 	Rot3 compose(const Rot3& p2);
 	Rot3 between(const Rot3& p2);
 };
@@ -185,6 +186,7 @@ class Pose3 {
 	Pose3 compose(const Pose3& p2);
 	Pose3 between(const Pose3& p2);
 	Pose3 retract(Vector v);
+	Pose3 retractFirstOrder(Vector v);
 	Point3 translation() const;
 	Rot3 rotation() const;
 };

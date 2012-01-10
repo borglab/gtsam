@@ -246,19 +246,23 @@ Vector Rot3::Logmap(const Rot3& R) {
 }
 
 /* ************************************************************************* */
+Rot3 Rot3::retractCayley(const Vector& omega) const {
+	const double x = omega(0), y = omega(1), z = omega(2);
+	const double x2 = x * x, y2 = y * y, z2 = z * z;
+	const double xy = x * y, xz = x * z, yz = y * z;
+	const double f = 1.0 / (4.0 + x2 + y2 + z2), _2f = 2.0 * f;
+	return (*this)
+			* Rot3((4 + x2 - y2 - z2) * f, (xy - 2 * z) * _2f, (xz + 2 * y) * _2f,
+					(xy + 2 * z) * _2f, (4 - x2 + y2 - z2) * f, (yz - 2 * x) * _2f,
+					(xz - 2 * y) * _2f, (yz + 2 * x) * _2f, (4 - x2 - y2 + z2) * f);
+}
+
+/* ************************************************************************* */
 Rot3 Rot3::retract(const Vector& omega, Rot3::CoordinatesMode mode) const {
   if(mode == Rot3::EXPMAP) {
     return (*this)*Expmap(omega);
   } else if(mode == Rot3::CAYLEY) {
-    const double x = omega(0), y = omega(1), z = omega(2);
-    const double x2 = x*x, y2 = y*y, z2 = z*z;
-    const double xy = x*y, xz = x*z, yz = y*z;
-    const double f = 1.0 / (4.0 + x2 + y2 + z2), _2f = 2.0*f;
-    return (*this)* Rot3(
-        (4+x2-y2-z2)*f, (xy - 2*z)*_2f, (xz + 2*y)*_2f,
-        (xy + 2*z)*_2f, (4-x2+y2-z2)*f, (yz - 2*x)*_2f,
-        (xz - 2*y)*_2f, (yz + 2*x)*_2f, (4-x2-y2+z2)*f
-    );
+    return retractCayley(omega);
   } else if(mode == Rot3::SLOW_CAYLEY) {
     Matrix Omega = skewSymmetric(omega);
     return (*this)*Cayley<3>(-Omega/2);
