@@ -393,18 +393,18 @@ namespace gtsam {
 
 		toc(4, "partial Cholesky");
 
-		// Extract conditionals and fill in details of the remaining factor
+		// Extract conditional and fill in details of the remaining factor
 		tic(5, "split");
-		GaussianConditional::shared_ptr conditionals =
+		GaussianConditional::shared_ptr conditional =
 									combinedFactor->splitEliminatedFactor(nrFrontals);
 		if (debug) {
-			conditionals->print("Extracted conditionals: ");
+			conditional->print("Extracted conditional: ");
 			combinedFactor->print("Eliminated factor (L piece): ");
 		}
 		toc(5, "split");
 
 		combinedFactor->assertInvariants();
-		return make_pair(conditionals, combinedFactor);
+		return make_pair(conditional, combinedFactor);
 	}
 
 	/* ************************************************************************* */
@@ -456,12 +456,12 @@ namespace gtsam {
 		toc(1, "convert to Jacobian");
 
 		tic(2, "Jacobian EliminateGaussian");
-		GaussianConditional::shared_ptr conditionals;
+		GaussianConditional::shared_ptr conditional;
 		GaussianFactor::shared_ptr factor;
-		boost::tie(conditionals, factor) = EliminateJacobians(jacobians, nrFrontals);
+		boost::tie(conditional, factor) = EliminateJacobians(jacobians, nrFrontals);
 		toc(2, "Jacobian EliminateGaussian");
 
-		return make_pair(conditionals, factor);
+		return make_pair(conditional, factor);
 	} // \EliminateQR
 
 	/* ************************************************************************* */
@@ -599,18 +599,18 @@ namespace gtsam {
 	  Eigen::LDLT<Matrix>::TranspositionType permutation = combinedFactor->partialLDL(nrFrontals);
 	  toc(4, "partial LDL");
 
-	  // Extract conditionals and fill in details of the remaining factor
+	  // Extract conditional and fill in details of the remaining factor
 	  tic(5, "split");
-	  GaussianConditional::shared_ptr conditionals =
+	  GaussianConditional::shared_ptr conditional =
 	      combinedFactor->splitEliminatedFactor(nrFrontals, permutation);
 	  if (debug) {
-	    conditionals->print("Extracted conditionals: ");
+	    conditional->print("Extracted conditional: ");
 	    combinedFactor->print("Eliminated factor (L piece): ");
 	  }
 	  toc(5, "split");
 
 	  combinedFactor->assertInvariants();
-	  return make_pair(conditionals, combinedFactor);
+	  return make_pair(conditional, combinedFactor);
 	} // \EliminateLDL
 
 	/* ************************************************************************* */
