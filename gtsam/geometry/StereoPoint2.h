@@ -132,6 +132,7 @@ namespace gtsam {
 			return Point2(uL_, v_);
 		}
 
+		///TODO comment
 		inline StereoPoint2 between(const StereoPoint2& p2) const {
 			return gtsam::between_default(*this, p2);
 		}

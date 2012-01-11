@@ -139,10 +139,10 @@ public:
   /// @name Lie Group
   /// @{
 
-  /// Exponential map from Lie algebra se(2) to SE(2)
+	///Exponential map at identity - create a rotation from canonical coordinates
 	static Pose2 Expmap(const Vector& xi);
 
-  /// Exponential map from SE(2) to Lie algebra se(2)
+	///Log map at identity - return the canonical coordinates of this rotation
 	static Vector Logmap(const Pose2& p);
 
   /// @}

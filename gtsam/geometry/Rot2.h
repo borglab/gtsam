@@ -155,7 +155,7 @@ namespace gtsam {
 	  /// @name Lie Group
 	  /// @{
 
-		/// Expmap around identity - create a rotation from an angle
+  	///Exponential map at identity - create a rotation from canonical coordinates
 		static Rot2 Expmap(const Vector& v) {
 			if (zero(v))
 				return (Rot2());
@@ -163,7 +163,7 @@ namespace gtsam {
 				return Rot2::fromAngle(v(0));
 		}
 
-		/// Logmap around identity - return the angle of the rotation
+		///Log map at identity - return the canonical coordinates of this rotation
 		static inline Vector Logmap(const Rot2& r) {
 			return Vector_(1, r.theta());
 		}

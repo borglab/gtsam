@@ -32,6 +32,7 @@ namespace gtsam {
   /**
    * A 3D pose (R,t) : (Rot3,Point3)
    * @ingroup geometry
+   * \nosubgrouping
    */
   class Pose3 {
   public:
@@ -46,6 +47,9 @@ namespace gtsam {
     Point3 t_;
 
   public:
+
+  	/// @name Standard Constructors
+  	/// @{
 
     /** Default constructor is origin */
     Pose3() {}
@@ -64,16 +68,7 @@ namespace gtsam {
       R_(T(0, 0), T(0, 1), T(0, 2), T(1, 0), T(1, 1), T(1, 2), T(2, 0),
           T(2, 1), T(2, 2)), t_(T(0, 3), T(1, 3), T(2, 3)) {}
 
-    const Rot3& rotation() const { return R_; }
-    const Point3& translation() const { return t_; }
-
-    double x() const { return t_.x(); }
-    double y() const { return t_.y(); }
-    double z() const { return t_.z(); }
-
-    /** convert to 4*4 matrix */
-    Matrix matrix() const;
-
+    /// @}
     /// @name Testable
     /// @{
 
@@ -134,13 +129,25 @@ namespace gtsam {
     /// @name Lie Group
     /// @{
 
-    /// Exponential map from Lie algebra se(3) to SE(3)
+    /// Exponential map at identity - create a rotation from canonical coordinates
     static Pose3 Expmap(const Vector& xi);
 
-    /// Exponential map from SE(3) to Lie algebra se(3)
+    /// Log map at identity - return the canonical coordinates of this rotation
     static Vector Logmap(const Pose3& p);
 
     /// @}
+  	/// @name Standard Interface
+  	/// @{
+
+    const Rot3& rotation() const { return R_; }
+    const Point3& translation() const { return t_; }
+
+    double x() const { return t_.x(); }
+    double y() const { return t_.y(); }
+    double z() const { return t_.z(); }
+
+    /** convert to 4*4 matrix */
+    Matrix matrix() const;
 
     /** syntactic sugar for transform_from */
     inline Point3 operator*(const Point3& p) const { return transform_from(p); }
@@ -203,6 +210,10 @@ namespace gtsam {
         boost::optional<Matrix&> H1=boost::none,
         boost::optional<Matrix&> H2=boost::none) const;
 
+    /// @}
+  	/// @name Advanced Interface
+  	/// @{
+
   private:
     /** Serialization function */
     friend class boost::serialization::access;
@@ -224,5 +235,6 @@ namespace gtsam {
   inline Matrix wedge<Pose3>(const Vector& xi) {
     return Pose3::wedge(xi(0),xi(1),xi(2),xi(3),xi(4),xi(5));
   }
+	/// @}
 
 } // namespace gtsam

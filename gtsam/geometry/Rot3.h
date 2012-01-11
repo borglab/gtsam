@@ -281,6 +281,8 @@ namespace gtsam {
     static Vector Logmap(const Rot3& R);
 
     /// @}
+  	/// @name Standard Interface
+  	/// @{
 
     /** return 3*3 rotation matrix */
     Matrix matrix() const;
@@ -336,6 +338,10 @@ namespace gtsam {
      */
     inline double yaw() const   { return ypr()(0); }
 
+  	/// @}
+  	/// @name Advanced Interface
+  	/// @{
+
     /** Compute the quaternion representation of this rotation.
      * @return The quaternion
      */
@@ -356,6 +362,8 @@ namespace gtsam {
 #endif
     }
   };
+
+	/// @}
 
   /**
    * [RQ] receives a 3 by 3 matrix and returns an upper triangular matrix R
