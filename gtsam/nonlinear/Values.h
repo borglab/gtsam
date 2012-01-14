@@ -61,7 +61,7 @@ namespace gtsam {
      */
   	typedef J Key;
   	typedef typename J::Value Value;
-	typedef std::map<Key, Value, std::less<Key>, boost::fast_pool_allocator<std::pair<const Key, Value> > > KeyValueMap;
+  	typedef std::map<Key, Value, std::less<Key>, boost::fast_pool_allocator<std::pair<const Key, Value> > > KeyValueMap;
 	//    typedef FastMap<J,Value> KeyValueMap;
     typedef typename KeyValueMap::value_type KeyValuePair;
     typedef typename KeyValueMap::iterator iterator;
@@ -84,11 +84,16 @@ namespace gtsam {
     Values(const Values<J_ALT>& other) {} // do nothing when initializing with wrong type
     virtual ~Values() {}
 
+    /// @name Testable
+    /// @{
+
     /** print */
     void print(const std::string &s="") const;
 
     /** Test whether configs are identical in keys and values */
     bool equals(const Values& expected, double tol=1e-9) const;
+
+    /// @}
 
     /** Retrieve a variable by j, throws KeyDoesNotExist<J> if not found */
     const Value& at(const J& j) const;
@@ -120,7 +125,8 @@ namespace gtsam {
     iterator begin() { return values_.begin(); }
     iterator end() { return values_.end(); }
 
-    // Manifold operations
+    /// @name Manifold Operations
+    /// @{
 
     /** The dimensionality of the tangent space */
     size_t dim() const;
@@ -133,6 +139,8 @@ namespace gtsam {
 
     /** Get a delta config about a linearization point c0 (*this) */
     void localCoordinates(const Values& cp, const Ordering& ordering, VectorValues& delta) const;
+
+    /// @}
 
     // imperative methods:
 
