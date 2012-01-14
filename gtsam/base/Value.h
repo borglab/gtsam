@@ -30,39 +30,19 @@ namespace gtsam {
    * variable types to use with gtsam.  Examples of built-in classes
    * implementing this are mainly in geometry, including Rot3, Pose2, etc.
    *
-   * This interface specifies pure virtual retract_ and localCoordinates_
-   * functions that work with pointers to this interface class.  When you
-   * implement these functions in the derived class, the objects behind these
-   * pointers must always be instances of the proper derived class:
-   * \code
-     // This is example code you would never write, but illustrates that
-     // consistent derived value instances are passed to and from retract
-     // and localCoordinates as base class (Value) pointers.
-
-     // This is a base class pointer that is actually a Rot3:
-     auto_ptr<Value> value = new Rot3();
-
-     // The retract implementation must always returns a Rot3 instance as a
-     // base class pointer, i.e. this code must run successfully:
-     auto_ptr<Value> retracted = value->retract_(delta);
-     Rot3* rot3retracted = dynamic_cast<Rot3*>(retracted.get());
-
-     // localCoordinates will always be passed a derived class instance as
-     // a base class pointer:
-     Vector coordinates = value->localCoordinates_(retracted);
-     \endcode
-   *
-   * The reason we have require functions is so that containers, such as
+   * This interface specifies pure virtual retract_(), localCoordinates_() and
+   * equals_() functions that work with pointers and references to this interface
+   * class, i.e. the base class.  These functions allow containers, such as
    * Values can operate generically on Value objects, retracting or computing
    * local coordinates for many Value objects of different types.
    *
-   * When you implement retract_() and localCoordinates_(), we suggest first
-   * implementing versions of these functions that work directly with derived
-   * objects, then using the provided helper functions to implement the
-   * generic Value versions.  This makes your implementation easier, and also
-   * improves performance in situations where the derived type is in fact
-   * known, such as in most implementations of \c evaluateError() in classes
-   * derived from NonlinearFactor.
+   * When you implement retract_(), localCoordinates_(), and equals_(), we
+   * suggest first implementing versions of these functions that work directly
+   * with derived objects, then using the provided helper functions to
+   * implement the generic Value versions.  This makes your implementation
+   * easier, and also improves performance in situations where the derived type
+   * is in fact known, such as in most implementations of \c evaluateError() in
+   * classes derived from NonlinearFactor.
    *
    * Using the above practice, here is an example of implementing a typical
    * class derived from Value:
@@ -72,8 +52,14 @@ namespace gtsam {
        // Constructor, there is never a need to call the Value base class constructor.
        Rot3() { ... }
 
-       // Tangent space dimensionality (virtual, overrides Value::dim())
-       virtual size_t dim() cosnt {
+       // Print for unit tests and debugging (virtual, implements Value::print())
+       virtual void print(const std::string& str = "") const;
+
+       // Equals working directly with Rot3 objects (non-virtual, non-overriding!)
+       bool equals(const Rot3& other, double tol = 1e-9) const;
+
+       // Tangent space dimensionality (virtual, implements Value::dim())
+       virtual size_t dim() const {
          return 3;
        }
 
@@ -89,14 +75,21 @@ namespace gtsam {
          return Vector(result);
        }
 
-       // retract implementing the generic Value interface (virtual, overrides Value::retract())
+       // Equals implementing the generic Value interface (virtual, implements Value::equals_())
+       virtual bool equals_(const Value& other, double tol = 1e-9) const {
+         // Call our provided helper function to call your Rot3-specific
+         // equals with appropriate casting.
+         return CallDerivedEquals(this, other, tol);
+       }
+
+       // retract implementing the generic Value interface (virtual, implements Value::retract_())
        virtual std::auto_ptr<Value> retract_(const Vector& delta) const {
          // Call our provided helper function to call your Rot3-specific
          // retract and do the appropriate casting and allocation.
          return CallDerivedRetract(this, delta);
        }
 
-       // localCoordinates implementing the generic Value interface (virtual, overrides Value::localCoordinates())
+       // localCoordinates implementing the generic Value interface (virtual, implements Value::localCoordinates_())
        virtual Vector localCoordinates_(const Value& value) const {
          // Call our provided helper function to call your Rot3-specific
          // localCoordinates and do the appropriate casting.
@@ -107,6 +100,13 @@ namespace gtsam {
    */
   class Value {
   public:
+
+    /** Print this value, for debugging and unit tests */
+    virtual void print(const std::string& str = "") const = 0;
+
+    /** Compare this Value with another for equality. */
+    virtual bool equals_(const Value& other, double tol = 1e-9) const = 0;
+
     /** Return the dimensionality of the tangent space of this value.  This is
      * the dimensionality of \c delta passed into retract() and of the vector
      * returned by localCoordinates().
@@ -137,6 +137,22 @@ namespace gtsam {
     /** This is a convenience function to make it easy for you to implement the
      * generic Value inferface, see the example at the top of the Value
      * documentation.
+     * @param value1 The object on which to call equals, stored as a derived class pointer
+     * @param value2 The argument to pass to the derived equals function, strored as a Value reference
+     * @return The result of equals of the derived class
+     */
+    template<class Derived>
+    static bool CallDerivedEquals(const Derived* value1, const Value& value2, double tol) {
+      // Cast the base class Value pointer to a derived class pointer
+      const Derived& derivedValue2 = dynamic_cast<const Derived&>(value2);
+
+      // Return the result of calling equals on the derived class
+      return value1->equals(derivedValue2, tol);
+    }
+
+    /** This is a convenience function to make it easy for you to implement the
+     * generic Value inferface, see the example at the top of the Value
+     * documentation.
      * @param derived A pointer to the derived class on which to call retract
      * @param delta The delta vector to pass to the derived retract
      * @return The result of retract on the derived class, stored as a Value pointer
@@ -156,8 +172,8 @@ namespace gtsam {
     /** This is a convenience function to make it easy for you to implement the
      * generic Value inferface, see the example at the top of the Value
      * documentation.
-     * @param value1 The object on which to call localCoordinates, stored as a Value pointer
-     * @param value2 The argument to pass to the derived localCoordinates function
+     * @param value1 The object on which to call localCoordinates, stored as a derived class pointer
+     * @param value2 The argument to pass to the derived localCoordinates function, stored as a Value reference
      * @return The result of localCoordinates of the derived class
      */
     template<class Derived>
