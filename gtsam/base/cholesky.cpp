@@ -33,6 +33,7 @@ namespace gtsam {
   static const double negativePivotThreshold = -1e-1;
   static const double zeroPivotThreshold = 1e-6;
   static const double underconstrainedPrior = 1e-5;
+  static const bool dampUnderconstrained = false;
 
 /* ************************************************************************* */
 static inline bool choleskyStep(Matrix& ATA, size_t k, size_t order) {
@@ -173,15 +174,20 @@ Eigen::LDLT<Matrix>::TranspositionType ldlPartial(Matrix& ABC, size_t nFrontal) 
   ldlt.compute(ABC.block(0,0,nFrontal,nFrontal).selfadjointView<Eigen::Upper>());
   if (debug) ldlt.isNegative() ? cout << "Matrix is negative" << endl : cout << "Matrix is not negative" << endl;
 
-  if(ldlt.vectorD().unaryExpr(boost::bind(less<double>(), _1, 0.0)).any()) {
+  Vector D = ldlt.vectorD();
+  if(dampUnderconstrained) {
+    D = D.array().max(Vector::Constant(D.rows(), D.cols(), underconstrainedPrior).array());
+  }
+
+  Vector sqrtD = D.cwiseSqrt(); // FIXME: we shouldn't do sqrt in LDL
+  if (debug) cout << "LDL Dsqrt:\n" << sqrtD << endl;
+
+  if(D.unaryExpr(boost::bind(less<double>(), _1, 0.0)).any()) {
     if(ISDEBUG("detailed_exceptions"))
       throw NegativeMatrixException(NegativeMatrixException::Detail(ABC, ldlt.matrixU(), ldlt.vectorD()));
     else
       throw NegativeMatrixException();
   }
-
-  Vector sqrtD = ldlt.vectorD().cwiseSqrt(); // FIXME: we shouldn't do sqrt in LDL
-  if (debug) cout << "LDL Dsqrt:\n" << sqrtD << endl;
 
   // U = sqrtD * L^
   Matrix U = ldlt.matrixU();
