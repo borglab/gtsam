@@ -16,7 +16,8 @@ check_PROGRAMS =
 #----------------------------------------------------------------------------------------------------
 
 # Lie Groups
-headers += Values.h Values-inl.h TupleValues.h TupleValues-inl.h 
+headers += Values.h Values-inl.h TupleValues.h TupleValues-inl.h DynamicValues-inl.h
+sources += DynamicValues.cpp
 check_PROGRAMS += tests/testValues tests/testKey tests/testOrdering
 
 # Nonlinear nonlinear
