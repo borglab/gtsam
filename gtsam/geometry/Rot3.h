@@ -238,10 +238,13 @@ namespace gtsam {
     size_t dim() const { return dimension; }
 
     /**
-     * The method [retract] is used to map from the tangent space back to the manifold.
-     * Its inverse, is [localCoordinates]. For Lie groups, an obvious retraction is the
+     * The method retract() is used to map from the tangent space back to the manifold.
+     * Its inverse, is localCoordinates(). For Lie groups, an obvious retraction is the
      * exponential map, but this can be expensive to compute. The following Enum is used
-     * to indicate which method should be used (default ROT3_DEFAULT_COORDINATES_MODE).
+     * to indicate which method should be used.  The default
+     * is determined by ROT3_DEFAULT_COORDINATES_MODE, which may be set at compile time,
+     * and itself defaults to Rot3::CAYLEY, or if GTSAM_DEFAULT_QUATERNIONS is defined,
+     * to Rot3::EXPMAP.
      */
     enum CoordinatesMode {
       EXPMAP, ///< Use the Lie group exponential map to retract
