@@ -38,7 +38,9 @@ namespace gtsam {
 
   private:
 
-    typedef FastMap<Symbol, std::auto_ptr<Value> > KeyValueMap;
+    typedef std::auto_ptr<const Value> ValuePtr;
+    typedef FastMap<Symbol, std::auto_ptr<const Value> > KeyValueMap;
+    typedef KeyValueMap::value_type KeyValuePair;
     KeyValueMap values_;
 
   public:
@@ -52,7 +54,7 @@ namespace gtsam {
     DynamicValues() {}
 
     /** Copy constructor duplicates all keys and values */
-    DynamicValues(const DynamicValues& other) {}
+    DynamicValues(const DynamicValues& other);
 
     /// @name Testable
     /// @{
@@ -93,14 +95,14 @@ namespace gtsam {
     /** Check if a value exists with key \c j.  See exists<>(const Symbol& j)
      * and exists(const TypedKey& j) for versions that return the value if it
      * exists. */
-    bool exists(const Symbol& i) const;
+    bool exists(const Symbol& j) const;
 
     /** Check if a value with key \c j exists, returns the value with type
      * \c Value if the key does exist, or boost::none if it does not exist.
      * Throws DynamicValuesIncorrectType if the value type associated with the
      * requested key does not match the stored value type. */
     template<typename Value>
-    boost::optional<Value> exists(const Symbol& j) const;
+    boost::optional<const Value&> exists(const Symbol& j) const;
 
     /** Check if a value with key \c j exists, returns the value with type
      * \c Value if the key does exist, or boost::none if it does not exist.
@@ -111,7 +113,7 @@ namespace gtsam {
      * requested key does not match the stored value type.
      */
     template<class TypedKey>
-    boost::optional<typename TypedKey::Value> exists(const TypedKey& j) const;
+    boost::optional<const typename TypedKey::Value&> exists(const TypedKey& j) const;
 
     /** The number of variables in this config */
     size_t size() const { return values_.size(); }
@@ -120,7 +122,7 @@ namespace gtsam {
     bool empty() const { return values_.empty(); }
 
     /** Get a zero VectorValues of the correct structure */
-    VectorValues zero(const Ordering& ordering) const;
+    VectorValues zeroVectors(const Ordering& ordering) const;
 
     const_iterator begin() const { return values_.begin(); }
     const_iterator end() const { return values_.end(); }
@@ -133,9 +135,6 @@ namespace gtsam {
 
     /// @name Manifold Operations
     /// @{
-
-    /** The dimensionality of the tangent space */
-    size_t dim() const;
 
     /** Add a delta config to current config and returns a new config */
     DynamicValues retract(const VectorValues& delta, const Ordering& ordering) const;
@@ -220,27 +219,22 @@ namespace gtsam {
   };
 
   /* ************************************************************************* */
-  template<class ValueType>
   class DynamicValuesKeyAlreadyExists : public std::exception {
   protected:
     const Symbol key_; ///< The key that already existed
-    const Value value_; ///< The value attempted to be inserted
 
   private:
     mutable std::string message_;
 
   public:
     /// Construct with the key-value pair attemped to be added
-    DynamicValuesKeyAlreadyExists(const Symbol& key, const Value& value) throw() :
-      key_(key), value_(value) {}
+    DynamicValuesKeyAlreadyExists(const Symbol& key) throw() :
+      key_(key) {}
 
     virtual ~DynamicValuesKeyAlreadyExists() throw() {}
 
     /// The duplicate key that was attemped to be added
     const Symbol& key() const throw() { return key_; }
-
-    /// The value that was attempted to be added
-    const Value& value() const throw() { return value_; }
 
     /// The message to be displayed to the user
     virtual const char* what() const throw();
@@ -298,6 +292,19 @@ namespace gtsam {
 
     /// The message to be displayed to the user
     virtual const char* what() const throw();
+  };
+
+  /* ************************************************************************* */
+  class DynamicValuesMismatched : public std::exception {
+
+  public:
+    DynamicValuesMismatched() throw() {}
+
+    virtual ~DynamicValuesMismatched() throw() {}
+
+    virtual const char* what() const throw() {
+      return "The Values 'this' and the argument passed to DynamicValues::localCoordinates have mismatched keys and values";
+    }
   };
 
 }

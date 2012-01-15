@@ -76,6 +76,7 @@ public:
   std::string latex() const {
     return (boost::format("%c_{%d}") % C % j_).str();
   }
+  Symbol symbol() const;
 
   // logic:
 
@@ -298,6 +299,9 @@ public:
     std::string label_s = (boost::format("%1%") % label_).str();
     return (boost::format("%c%s_{%d}") % C % label_s % this->j_).str();
   }
+  Symbol symbol() const {
+    return Symbol(*this);
+  }
 
   // Needed for conversion to LabeledSymbol
   size_t convertLabel() const {
@@ -353,6 +357,12 @@ private:
     ar & BOOST_SERIALIZATION_NVP(label_);
   }
 };
+
+/* ************************************************************************* */
+template<class T, char C>
+Symbol TypedSymbol<T,C>::symbol() const {
+  return Symbol(*this);
+}
 
 } // namespace gtsam
 

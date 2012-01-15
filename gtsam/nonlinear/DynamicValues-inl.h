@@ -35,4 +35,74 @@ namespace gtsam {
     return message_.c_str();
   }
 
+  /* ************************************************************************* */
+  template<typename Value>
+  const Value& DynamicValues::at(const Symbol& j) const {
+    // Find the item
+    const_iterator item = values_.find(j);
+
+    // Throw exception if it does not exist
+    if(item == values_.end())
+      throw DynamicValuesKeyDoesNotExist("retrieve", j);
+
+    // Check the type and throw exception if incorrect
+    if(typeid(*item->second) != typeid(Value))
+      throw DynamicValuesIncorrectType(j, typeid(*item->second), typeid(Value));
+
+    // We have already checked the type, so do a "blind" static_cast, not dynamic_cast
+    return static_cast<const Value&>(*item->second);
+  }
+
+  /* ************************************************************************* */
+  template<typename TypedKey>
+  const typename TypedKey::Value& DynamicValues::at(const TypedKey& j) const {
+    // Convert to Symbol
+    const Symbol symbol(j.symbol());
+
+    // Call at with the Value type from the key
+    return at<typename TypedKey::Value>(symbol);
+  }
+
+  /* ************************************************************************* */
+  template<typename Value>
+  boost::optional<Value> DynamicValues::exists(const Symbol& j) const {
+    // Find the item
+    const_iterator item = values_.find(j);
+
+    if(item != values_.end()) {
+      // Check the type and throw exception if incorrect
+      if(typeid(*item->second) != typeid(Value))
+        throw DynamicValuesIncorrectType(j, typeid(*item->second), typeid(Value));
+
+      // We have already checked the type, so do a "blind" static_cast, not dynamic_cast
+      return static_cast<const Value&>(*item->second);
+    } else {
+      return boost::none;
+    }
+  }
+
+  /* ************************************************************************* */
+  template<class TypedKey>
+  boost::optional<const typename TypedKey::Value&> exists(const TypedKey& j) const {
+    // Convert to Symbol
+    const Symbol symbol(j.symbol());
+
+    // Call exists with the Value type from the key
+    return exists<typename TypedKey::Value>(symbol);
+  }
+
+  /* ************************************************************************* */
+  template<class ValueType>
+  void DynamicValues::insert(const Symbol& j, const ValueType& val) {
+    pair<iterator,bool> insertResult = values_.insert(make_pair(j, ValuePtr(new ValueType(val))));
+    if(!insertResult.second)
+      throw DynamicValuesKeyAlreadyExists(j);
+  }
+
+  /* ************************************************************************* */
+  void DynamicValues::insert(const DynamicValues& values) {
+    BOOST_FOREACH(const KeyValuePair& key_value, values) {
+      insert(key_value.first, key_value.)
+    }
+  }
 }
