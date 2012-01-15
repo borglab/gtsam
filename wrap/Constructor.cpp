@@ -36,11 +36,11 @@ void Constructor::matlab_proxy_fragment(ofstream& ofs, const string& className) 
 	size_t nrArgs = args.size();
 	// check for number of arguments...
   ofs << "      if (nargin == " << nrArgs;
-  if (nrArgs>0) ofs << " & ";
+  if (nrArgs>0) ofs << " && ";
 	// ...and their types
   bool first = true;
   for(size_t i=0;i<nrArgs;i++) {
-    if (!first) ofs << " & ";
+    if (!first) ofs << " && ";
     ofs << "isa(varargin{" << i+1 << "},'" << args[i].matlabClass() << "')";
     first=false;
   }
