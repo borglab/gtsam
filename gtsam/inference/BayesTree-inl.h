@@ -152,20 +152,29 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
 	typename BayesTree<CONDITIONAL,CLIQUE>::sharedClique
-	BayesTree<CONDITIONAL,CLIQUE>::addClique(const sharedConditional& conditional, sharedClique parent_clique) {
+	BayesTree<CONDITIONAL,CLIQUE>::addClique(const sharedConditional& conditional, const sharedClique& parent_clique) {
 		sharedClique new_clique(new Clique(conditional));
-    nodes_.resize(std::max(conditional->lastFrontalKey()+1, nodes_.size()));
-    BOOST_FOREACH(Index key, conditional->frontals())
-      nodes_[key] = new_clique;
-		if (parent_clique != NULL) {
-			new_clique->parent_ = parent_clique;
-			parent_clique->children_.push_back(new_clique);
-		}
-    new_clique->assertInvariants();
+		addClique(new_clique, parent_clique);
 		return new_clique;
 	}
 
-	/* ************************************************************************* */
+  /* ************************************************************************* */
+  template<class CONDITIONAL, class CLIQUE>
+	void BayesTree<CONDITIONAL,CLIQUE>::addClique(const sharedClique& clique, const sharedClique& parent_clique) {
+    nodes_.resize(std::max((*clique)->lastFrontalKey()+1, nodes_.size()));
+    BOOST_FOREACH(Index key, (*clique)->frontals())
+      nodes_[key] = clique;
+    if (parent_clique != NULL) {
+      clique->parent_ = parent_clique;
+      parent_clique->children_.push_back(clique);
+    } else {
+      assert(!root_);
+      root_ = clique;
+    }
+    clique->assertInvariants();
+  }
+
+  /* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
 	typename BayesTree<CONDITIONAL,CLIQUE>::sharedClique BayesTree<CONDITIONAL,CLIQUE>::addClique(
 	    const sharedConditional& conditional, list<sharedClique>& child_cliques) {

@@ -100,8 +100,6 @@ namespace gtsam {
 		/** Gather data on a single clique */
 		void getCliqueData(CliqueData& stats, sharedClique clique) const;
 
-	protected:
-
 		/** Root clique */
 		sharedClique root_;
 
@@ -109,12 +107,13 @@ namespace gtsam {
 		void removeClique(sharedClique clique);
 
 		/** add a clique (top down) */
-		sharedClique addClique(const sharedConditional& conditional,
-				sharedClique parent_clique = sharedClique());
+		sharedClique addClique(const sharedConditional& conditional, const sharedClique& parent_clique = sharedClique());
+
+    /** add a clique (top down) */
+    void addClique(const sharedClique& clique, const sharedClique& parent_clique = sharedClique());
 
 		/** add a clique (bottom up) */
-		sharedClique addClique(const sharedConditional& conditional,
-				std::list<sharedClique>& child_cliques);
+		sharedClique addClique(const sharedConditional& conditional, std::list<sharedClique>& child_cliques);
 
 		/**
 		 * Add a conditional to the front of a clique, i.e. a conditional whose
@@ -179,20 +178,19 @@ namespace gtsam {
 		bool equals(const BayesTree<CONDITIONAL,CLIQUE>& other, double tol = 1e-9) const;
 
 		void cloneTo(shared_ptr& newTree) const {
-		  cloneTo(newTree, root());
+		  cloneTo(newTree, root(), sharedClique());
 		}
 
 	private:
 		/** deep copy from another tree */
-		void cloneTo(shared_ptr& newTree, const sharedClique& root) const {
-		  if(root) {
-		    sharedClique newClique = root->clone();
-		    newTree->insert(newClique);
-		    BOOST_FOREACH(const sharedClique& childClique, root->children()) {
-		      cloneTo(newTree, childClique);
-		    }
+		void cloneTo(shared_ptr& newTree, const sharedClique& subtree, const sharedClique& parent) const {
+		  sharedClique newClique(subtree->clone());
+		  newTree->addClique(newClique, parent);
+		  BOOST_FOREACH(const sharedClique& childClique, subtree->children()) {
+		    cloneTo(newTree, childClique, newClique);
 		  }
 		}
+
 	public:
 
 		/**
