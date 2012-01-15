@@ -8,7 +8,8 @@
  */
 
 #include <vector>
-#include <ostream>
+
+#include "FileWriter.h"
 
 #pragma once
 
@@ -46,7 +47,7 @@ struct ReturnValue {
 
 	std::string matlab_returnType() const;
 
-	void wrap_result(std::ostream& ofs) const;
+	void wrap_result(FileWriter& file) const;
 
 };
 

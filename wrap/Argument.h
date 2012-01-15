@@ -20,6 +20,8 @@
 #include <string>
 #include <vector>
 
+#include "FileWriter.h"
+
 namespace wrap {
 
 /// Argument class
@@ -40,7 +42,7 @@ struct Argument {
 	std::string qualifiedType(const std::string& delim = "") const;
 
 	/// MATLAB code generation, MATLAB to C++
-	void matlab_unwrap(std::ofstream& ofs, const std::string& matlabName) const;
+	void matlab_unwrap(FileWriter& file, const std::string& matlabName) const;
 };
 
 /// Argument list is just a container with Arguments
@@ -59,10 +61,10 @@ struct ArgumentList: public std::vector<Argument> {
 
 	/**
 	 * emit code to unwrap arguments
-	 * @param ofs output stream
+	 * @param file output stream
 	 * @param start initial index for input array, set to 1 for method
 	 */
-	void matlab_unwrap(std::ofstream& ofs, int start = 0) const; // MATLAB to C++
+	void matlab_unwrap(FileWriter& file, int start = 0) const; // MATLAB to C++
 };
 
 } // \namespace wrap

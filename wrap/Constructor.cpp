@@ -32,28 +32,28 @@ string Constructor::matlab_wrapper_name(const string& className) const {
 }
 
 /* ************************************************************************* */
-void Constructor::matlab_proxy_fragment(ofstream& ofs, const string& className) const {
+void Constructor::matlab_proxy_fragment(FileWriter& file, const string& className) const {
 	size_t nrArgs = args.size();
 	// check for number of arguments...
-  ofs << "      if (nargin == " << nrArgs;
-  if (nrArgs>0) ofs << " && ";
+  file.oss << "      if (nargin == " << nrArgs;
+  if (nrArgs>0) file.oss << " && ";
 	// ...and their types
   bool first = true;
   for(size_t i=0;i<nrArgs;i++) {
-    if (!first) ofs << " && ";
-    ofs << "isa(varargin{" << i+1 << "},'" << args[i].matlabClass() << "')";
+    if (!first) file.oss << " && ";
+    file.oss << "isa(varargin{" << i+1 << "},'" << args[i].matlabClass() << "')";
     first=false;
   }
   // emit code for calling constructor
-  ofs << "), obj.self = " << matlab_wrapper_name(className) << "(";
+  file.oss << "), obj.self = " << matlab_wrapper_name(className) << "(";
   // emit constructor arguments
   first = true;
   for(size_t i=0;i<nrArgs;i++) {
-    if (!first) ofs << ",";
-    ofs << "varargin{" << i+1 << "}";
+    if (!first) file.oss << ",";
+    file.oss << "varargin{" << i+1 << "}";
     first=false;
   }
-  ofs << "); end" << endl;
+  file.oss << "); end" << endl;
 }
 
 /* ************************************************************************* */
@@ -63,20 +63,20 @@ void Constructor::matlab_mfile(const string& toolboxPath, const string& qualifie
 
   // open destination m-file
   string wrapperFile = toolboxPath + "/" + matlabName + ".m";
-  ofstream ofs(wrapperFile.c_str());
-  if(!ofs) throw CantOpenFile(wrapperFile);
+  FileWriter file(wrapperFile, "%");
+//  if(!file) throw CantOpenFile(wrapperFile);
   if(verbose_) cerr << "generating " << wrapperFile << endl;
 
   // generate code
-  generateHeaderComment(ofs, "%");
-  ofs << "function result = " << matlabName << "(obj";
-  if (args.size()) ofs << "," << args.names();
-  ofs << ")" << endl;
-  ofs << "  error('need to compile " << matlabName << ".cpp');" << endl;
-  ofs << "end" << endl;
+//  generateHeaderComment(file, "%");
+  file.oss << "function result = " << matlabName << "(obj";
+  if (args.size()) file.oss << "," << args.names();
+  file.oss << ")" << endl;
+  file.oss << "  error('need to compile " << matlabName << ".cpp');" << endl;
+  file.oss << "end" << endl;
 
   // close file
-  ofs.close();
+  file.emit(true);
 }
 
 /* ************************************************************************* */
@@ -88,25 +88,25 @@ void Constructor::matlab_wrapper(const string& toolboxPath,
 
   // open destination wrapperFile
   string wrapperFile = toolboxPath + "/" + matlabName + ".cpp";
-  ofstream ofs(wrapperFile.c_str());
-  if(!ofs) throw CantOpenFile(wrapperFile);
+  FileWriter file(wrapperFile, "//");
+//  if(!file) throw CantOpenFile(wrapperFile);
   if(verbose_) cerr << "generating " << wrapperFile << endl;
 
   // generate code
-  generateHeaderComment(ofs, "//");
-  generateIncludes(ofs, name, includes);
-  generateUsingNamespace(ofs, using_namespaces);
+//  generateHeaderComment(file, "//");
+  generateIncludes(file, name, includes);
+  generateUsingNamespace(file, using_namespaces);
 
-  ofs << "void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])" << endl;
-  ofs << "{" << endl;
-  ofs << "  checkArguments(\"" << matlabName << "\",nargout,nargin," << args.size() << ");" << endl;
-  args.matlab_unwrap(ofs); // unwrap arguments
-  ofs << "  " << cppClassName << "* self = new " << cppClassName << "(" << args.names() << ");" << endl; // need qualified name, delim: "::"
-  ofs << "  out[0] = wrap_constructed(self,\"" << matlabClassName << "\");" << endl; // need matlab qualified name
-  ofs << "}" << endl;
+  file.oss << "void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])" << endl;
+  file.oss << "{" << endl;
+  file.oss << "  checkArguments(\"" << matlabName << "\",nargout,nargin," << args.size() << ");" << endl;
+  args.matlab_unwrap(file); // unwrap arguments
+  file.oss << "  " << cppClassName << "* self = new " << cppClassName << "(" << args.names() << ");" << endl; // need qualified name, delim: "::"
+  file.oss << "  out[0] = wrap_constructed(self,\"" << matlabClassName << "\");" << endl; // need matlab qualified name
+  file.oss << "}" << endl;
 
   // close file
-  ofs.close();
+  file.emit(true);
 }
 
 /* ************************************************************************* */

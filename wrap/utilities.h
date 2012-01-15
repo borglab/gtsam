@@ -21,6 +21,8 @@
 #include <fstream>
 #include <sstream>
 
+#include "FileWriter.h"
+
 namespace wrap {
 
 class CantOpenFile : public std::exception {
@@ -49,18 +51,18 @@ class ParseFailed : public std::exception {
 };
 
 class DependencyMissing : public std::exception {
-    private:
-        std::string dependency_;
-        std::string location_;
-    public:
-        DependencyMissing(const std::string& dep, const std::string& loc) {
-            dependency_ = dep;
-            location_ = loc;
-        }
-        ~DependencyMissing() throw() {}
-        virtual const char* what() const throw() {
-            return ("Missing dependency " + dependency_ + " in " + location_).c_str();
-        }
+private:
+	std::string dependency_;
+	std::string location_;
+public:
+	DependencyMissing(const std::string& dep, const std::string& loc) {
+		dependency_ = dep;
+		location_ = loc;
+	}
+	~DependencyMissing() throw() {}
+	virtual const char* what() const throw() {
+		return ("Missing dependency " + dependency_ + " in " + location_).c_str();
+	}
 };
 
 
@@ -83,7 +85,7 @@ bool assert_equal(const std::vector<std::string>& expected, const std::vector<st
 /**
  * emit a header at the top of generated files
  */
-void generateHeaderComment(std::ofstream& ofs, const std::string& delimiter);
+//void generateHeaderComment(FileWriter& file, const std::string& delimiter);
 
 // auxiliary function to wrap an argument into a shared_ptr template
 std::string maybe_shared_ptr(bool add, const std::string& type);
@@ -91,12 +93,12 @@ std::string maybe_shared_ptr(bool add, const std::string& type);
 /**
  * Creates the "using namespace [name];" declarations
  */
-void generateUsingNamespace(std::ofstream& ofs, const std::vector<std::string>& using_namespaces);
+void generateUsingNamespace(FileWriter& file, const std::vector<std::string>& using_namespaces);
 
 /**
  * Creates the #include statements
  */
-void generateIncludes(std::ofstream& ofs, const std::string& class_name,
+void generateIncludes(FileWriter& file, const std::string& class_name,
 		const std::vector<std::string>& includes);
 
 } // \namespace wrap

@@ -29,31 +29,31 @@ using namespace wrap;
 /* ************************************************************************* */
 void Class::matlab_proxy(const string& classFile) const {
   // open destination classFile
-  ofstream ofs(classFile.c_str());
-  if(!ofs) throw CantOpenFile(classFile);
+  FileWriter file(classFile, "%");
+//  if(!file) throw CantOpenFile(classFile);
   if(verbose_) cerr << "generating " << classFile << endl;
 
   // get the name of actual matlab object
   string matlabName = qualifiedName();
 
   // emit class proxy code
-  ofs << "classdef " << matlabName << endl;
-  ofs << "  properties" << endl;
-  ofs << "    self = 0" << endl;
-  ofs << "  end" << endl;
-  ofs << "  methods" << endl;
-  ofs << "    function obj = " << matlabName << "(varargin)" << endl;
+  file.oss << "classdef " << matlabName << endl;
+  file.oss << "  properties" << endl;
+  file.oss << "    self = 0" << endl;
+  file.oss << "  end" << endl;
+  file.oss << "  methods" << endl;
+  file.oss << "    function obj = " << matlabName << "(varargin)" << endl;
   BOOST_FOREACH(Constructor c, constructors)
-    c.matlab_proxy_fragment(ofs,matlabName);
-  ofs << "      if nargin ~= 13 && obj.self == 0, error('" << matlabName << " constructor failed'); end" << endl;
-  ofs << "    end" << endl;
-  ofs << "    function display(obj), obj.print(''); end" << endl;
-  ofs << "    function disp(obj), obj.display; end" << endl;
-  ofs << "  end" << endl;
-  ofs << "end" << endl;
+    c.matlab_proxy_fragment(file,matlabName);
+  file.oss << "      if nargin ~= 13 && obj.self == 0, error('" << matlabName << " constructor failed'); end" << endl;
+  file.oss << "    end" << endl;
+  file.oss << "    function display(obj), obj.print(''); end" << endl;
+  file.oss << "    function disp(obj), obj.display; end" << endl;
+  file.oss << "  end" << endl;
+  file.oss << "end" << endl;
 
   // close file
-  ofs.close();
+  file.emit(false);
 }
 
 /* ************************************************************************* */
@@ -83,23 +83,23 @@ void Class::matlab_static_methods(const string& toolboxPath, const vector<string
 }
 
 /* ************************************************************************* */
-void Class::matlab_make_fragment(ofstream& ofs, 
+void Class::matlab_make_fragment(FileWriter& file, 
 				 const string& toolboxPath,
 				 const string& mexFlags) const {
   string mex = "mex " + mexFlags + " ";
   string matlabClassName = qualifiedName();
   BOOST_FOREACH(Constructor c, constructors)
-    ofs << mex << c.matlab_wrapper_name(matlabClassName) << ".cpp" << endl;
+    file.oss << mex << c.matlab_wrapper_name(matlabClassName) << ".cpp" << endl;
   BOOST_FOREACH(StaticMethod sm, static_methods)
-    ofs << mex << matlabClassName + "_" + sm.name << ".cpp" << endl;
-  ofs << endl << "cd @" << matlabClassName << endl;
+    file.oss << mex << matlabClassName + "_" + sm.name << ".cpp" << endl;
+  file.oss << endl << "cd @" << matlabClassName << endl;
   BOOST_FOREACH(Method m, methods)
-    ofs << mex << m.name << ".cpp" << endl;
-  ofs << endl;
+    file.oss << mex << m.name << ".cpp" << endl;
+  file.oss << endl;
 }
 
 /* ************************************************************************* */
-void Class::makefile_fragment(ofstream& ofs) const {
+void Class::makefile_fragment(FileWriter& file) const {
 //	new_Point2_.$(MEXENDING): new_Point2_.cpp
 //		$(MEX) $(mex_flags) new_Point2_.cpp
 //	new_Point2_dd.$(MEXENDING): new_Point2_dd.cpp
@@ -131,16 +131,16 @@ void Class::makefile_fragment(ofstream& ofs) const {
   }
 
   BOOST_FOREACH(const string& file_base, file_names) {
-  	ofs << file_base << ".$(MEXENDING): " << file_base << ".cpp" << endl;
-  	ofs << "\t$(MEX) $(mex_flags) " << file_base << ".cpp  -output " << file_base << endl;
+  	file.oss << file_base << ".$(MEXENDING): " << file_base << ".cpp" << endl;
+  	file.oss << "\t$(MEX) $(mex_flags) " << file_base << ".cpp  -output " << file_base << endl;
   }
 
 	// class target
-  ofs << "\n" << matlabName << ": ";
+  file.oss << "\n" << matlabName << ": ";
   BOOST_FOREACH(const string& file_base, file_names) {
-    	ofs << file_base << ".$(MEXENDING) ";
+    	file.oss << file_base << ".$(MEXENDING) ";
   }
-  ofs << "\n" << endl;
+  file.oss << "\n" << endl;
 }
 
 /* ************************************************************************* */

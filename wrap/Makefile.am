@@ -19,7 +19,7 @@ if ENABLE_BUILD_TOOLBOX
 
 # Build a library from the core sources
 sources += utilities.cpp Argument.cpp ReturnValue.cpp Constructor.cpp 
-sources += Method.cpp StaticMethod.cpp Class.cpp Module.cpp
+sources += Method.cpp StaticMethod.cpp Class.cpp Module.cpp FileWriter.cpp
 check_PROGRAMS += tests/testSpirit tests/testWrap
 if ENABLE_INSTALL_WRAP
 wrap_PROGRAMS += wrap

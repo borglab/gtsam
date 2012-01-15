@@ -15,6 +15,7 @@
  **/
 
 #include "Module.h"
+#include "FileWriter.h"
 #include "utilities.h"
 #include "spirit_actors.h"
 
@@ -24,7 +25,7 @@
 #include <boost/foreach.hpp>
 
 #include <iostream>
-#include <fstream>
+//#include <fstream>
 
 using namespace std;
 using namespace wrap;
@@ -279,29 +280,31 @@ void Module::matlab_code(const string& toolboxPath,
     system(installCmd.c_str());
 
     // create make m-file
-    string matlabMakeFile = toolboxPath + "/make_" + name + ".m";
-    ofstream ofs(matlabMakeFile.c_str());
-    if(!ofs) throw CantOpenFile(matlabMakeFile);
+    string matlabMakeFileName = toolboxPath + "/make_" + name + ".m";
+    FileWriter makeModuleMfile(matlabMakeFileName, "%");
+//    filetream makeModuleMfile(matlabMakeFileName.c_str());
+//    if(!makeModuleMfile) throw CantOpenFile(matlabMakeFileName);
 
     // create the (actual) make file
-    string makeFile = toolboxPath + "/Makefile";
-    ofstream make_ofs(makeFile.c_str());
-    if(!make_ofs) throw CantOpenFile(makeFile);
+    string makeFileName = toolboxPath + "/Makefile";
+    FileWriter makeModuleMakefile(makeFileName, "#");
+//    filetream makeModuleMakefile(makeFileName.c_str());
+//    if(!makeModuleMakefile) throw CantOpenFile(makeFileName);
 
-    if (verbose) cerr << "generating " << matlabMakeFile << endl;
-    generateHeaderComment(ofs,"%");
-    ofs << "echo on" << endl << endl;
-    ofs << "toolboxpath = mfilename('fullpath');" << endl;
-    ofs << "delims = find(toolboxpath == '/');" << endl;
-    ofs << "toolboxpath = toolboxpath(1:(delims(end)-1));" << endl;
-    ofs << "clear delims" << endl;
-    ofs << "addpath(toolboxpath);" << endl << endl;
+    if (verbose) cerr << "generating " << matlabMakeFileName << endl;
+//    generateHeaderComment(makeModuleMfile,"%"); // In FileWriter constructor
+    makeModuleMfile.oss << "echo on" << endl << endl;
+    makeModuleMfile.oss << "toolboxpath = mfilename('fullpath');" << endl;
+    makeModuleMfile.oss << "delims = find(toolboxpath == '/');" << endl;
+    makeModuleMfile.oss << "toolboxpath = toolboxpath(1:(delims(end)-1));" << endl;
+    makeModuleMfile.oss << "clear delims" << endl;
+    makeModuleMfile.oss << "addpath(toolboxpath);" << endl << endl;
 
-    if (verbose) cerr << "generating " << makeFile << endl;
-    generateHeaderComment(make_ofs,"#");
-    make_ofs << "\nMEX = mex\n";
-    make_ofs << "MEXENDING = " << mexExt << "\n";
-    make_ofs << "mex_flags = " << mexFlags << "\n\n";
+    if (verbose) cerr << "generating " << makeFileName << endl;
+//    generateHeaderComment(makeModuleMakefile,"#"); // In FileWriter constructor
+    makeModuleMakefile.oss << "\nMEX = mex\n";
+    makeModuleMakefile.oss << "MEXENDING = " << mexExt << "\n";
+    makeModuleMakefile.oss << "mex_flags = " << mexFlags << "\n\n";
 
     // Dependency check list
     vector<string> validTypes = forward_declarations;
@@ -315,13 +318,13 @@ void Module::matlab_code(const string& toolboxPath,
     validTypes.push_back("Matrix");
 
     // add 'all' to Makefile
-    make_ofs << "all: ";
+    makeModuleMakefile.oss << "all: ";
     BOOST_FOREACH(Class cls, classes) {
-    	make_ofs << cls.qualifiedName() << " ";
+    	makeModuleMakefile.oss << cls.qualifiedName() << " ";
 			//Create a list of parsed classes for dependency checking
 			validTypes.push_back(cls.qualifiedName("::"));
     }
-    make_ofs << "\n\n";
+    makeModuleMakefile.oss << "\n\n";
 
     // generate proxy classes and wrappers
     BOOST_FOREACH(Class cls, classes) {
@@ -349,29 +352,31 @@ void Module::matlab_code(const string& toolboxPath,
       cls.matlab_methods(classPath,using_namespaces);
 
       // add lines to make m-file
-      ofs << "%% " << cls.qualifiedName() << endl;
-      ofs << "cd(toolboxpath)" << endl;
-      cls.matlab_make_fragment(ofs, toolboxPath, mexFlags);
+      makeModuleMfile.oss << "%% " << cls.qualifiedName() << endl;
+      makeModuleMfile.oss << "cd(toolboxpath)" << endl;
+      cls.matlab_make_fragment(makeModuleMfile, toolboxPath, mexFlags);
 
       // add section to the (actual) make file
-      make_ofs << "# " << cls.qualifiedName() << endl;
-      cls.makefile_fragment(make_ofs);
+      makeModuleMakefile.oss << "# " << cls.qualifiedName() << endl;
+      cls.makefile_fragment(makeModuleMakefile);
     }  
 
     // finish make m-file
-    ofs << "cd(toolboxpath)" << endl << endl;
-    ofs << "echo off" << endl;
-    ofs.close();
+    makeModuleMfile.oss << "cd(toolboxpath)" << endl << endl;
+    makeModuleMfile.oss << "echo off" << endl;
+    makeModuleMfile.emit(true); // By default, compare existing file first
+//    makeModuleMfile.emit();
 
     // make clean at end of Makefile
-    make_ofs << "\n\nclean: \n";
-    make_ofs << "\trm -rf *.$(MEXENDING)\n";
+    makeModuleMakefile.oss << "\n\nclean: \n";
+    makeModuleMakefile.oss << "\trm -rf *.$(MEXENDING)\n";
     BOOST_FOREACH(Class cls, classes)
-    	make_ofs << "\trm -rf @" << cls.qualifiedName() << "/*.$(MEXENDING)\n";
+    	makeModuleMakefile.oss << "\trm -rf @" << cls.qualifiedName() << "/*.$(MEXENDING)\n";
 
     // finish Makefile
-    make_ofs << "\n" << endl;
-    make_ofs.close();
+    makeModuleMakefile.oss << "\n" << endl;
+    makeModuleMakefile.emit(true);
+//    makeModuleMakefile.emit();
   }
 
 /* ************************************************************************* */

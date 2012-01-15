@@ -47,10 +47,10 @@ struct Class {
 			   const std::vector<std::string>& using_namespaces) const;   ///< emit method wrappers
   void matlab_static_methods(const std::string& classPath,
   			   const std::vector<std::string>& using_namespaces) const;   ///< emit static method wrappers
-  void matlab_make_fragment(std::ofstream& ofs,
+  void matlab_make_fragment(FileWriter& file,
 			    const std::string& toolboxPath,
 			    const std::string& mexFlags) const;   ///< emit make fragment for global make script
-  void makefile_fragment(std::ofstream& ofs) const; ///< emit makefile fragment
+  void makefile_fragment(FileWriter& file) const; ///< emit makefile fragment
   std::string qualifiedName(const std::string& delim = "") const; ///< creates a namespace-qualified name, optional delimiter
 };
 

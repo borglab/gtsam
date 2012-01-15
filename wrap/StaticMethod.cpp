@@ -31,21 +31,21 @@ void StaticMethod::matlab_mfile(const string& toolboxPath, const string& classNa
   // open destination m-file
 	string full_name = className + "_" + name;
   string wrapperFile = toolboxPath + "/" + full_name + ".m";
-  ofstream ofs(wrapperFile.c_str());
-  if(!ofs) throw CantOpenFile(wrapperFile);
+  FileWriter file(wrapperFile, "%");
+//  if(!file) throw CantOpenFile(wrapperFile);
   if(verbose) cerr << "generating " << wrapperFile << endl;
 
   // generate code
   string returnType = returnVal.matlab_returnType();
-  ofs << "function " << returnType << " = " << full_name << "(";
-  if (args.size()) ofs << args.names();
-  ofs << ")" << endl;
-  ofs << "% usage: x = " << full_name << "(" << args.names() << ")" << endl;
-  ofs << "  error('need to compile " << full_name << ".cpp');" << endl;
-  ofs << "end" << endl;
+  file.oss << "function " << returnType << " = " << full_name << "(";
+  if (args.size()) file.oss << args.names();
+  file.oss << ")" << endl;
+  file.oss << "% usage: x = " << full_name << "(" << args.names() << ")" << endl;
+  file.oss << "  error('need to compile " << full_name << ".cpp');" << endl;
+  file.oss << "end" << endl;
 
   // close file
-  ofs.close();
+  file.emit(false);
 }
 
 /* ************************************************************************* */
@@ -56,45 +56,45 @@ void StaticMethod::matlab_wrapper(const string& toolboxPath, const string& class
   // open destination wrapperFile
 	string full_name = matlabClassName + "_" + name;
   string wrapperFile = toolboxPath + "/" + full_name + ".cpp";
-  ofstream ofs(wrapperFile.c_str());
-  if(!ofs) throw CantOpenFile(wrapperFile);
+  FileWriter file(wrapperFile, "%");
+//  if(!file) throw CantOpenFile(wrapperFile);
   if(verbose) cerr << "generating " << wrapperFile << endl;
 
   // generate code
 
   // header
-  generateHeaderComment(ofs, "//");
-  generateIncludes(ofs, className, includes);
-  generateUsingNamespace(ofs, using_namespaces);
+//  generateHeaderComment(file, "//");
+  generateIncludes(file, className, includes);
+  generateUsingNamespace(file, using_namespaces);
 
   // call
-  ofs << "void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])\n";
+  file.oss << "void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])\n";
   // start
-  ofs << "{\n";
+  file.oss << "{\n";
 
   // check arguments
   // NOTE: for static functions, there is no object passed
-  ofs << "  checkArguments(\"" << full_name << "\",nargout,nargin," << args.size() << ");\n";
+  file.oss << "  checkArguments(\"" << full_name << "\",nargout,nargin," << args.size() << ");\n";
 
   // unwrap arguments, see Argument.cpp
-  args.matlab_unwrap(ofs,0); // We start at 0 because there is no self object
+  args.matlab_unwrap(file,0); // We start at 0 because there is no self object
 
-  ofs << "  ";
+  file.oss << "  ";
 
   // call method with default type
   if (returnVal.type1!="void")
-    ofs << returnVal.return_type(true,ReturnValue::pair) << " result = ";
-  ofs << cppClassName  << "::" << name << "(" << args.names() << ");\n";
+    file.oss << returnVal.return_type(true,ReturnValue::pair) << " result = ";
+  file.oss << cppClassName  << "::" << name << "(" << args.names() << ");\n";
 
   // wrap result
   // example: out[0]=wrap<bool>(result);
-  returnVal.wrap_result(ofs);
+  returnVal.wrap_result(file);
 
   // finish
-  ofs << "}\n";
+  file.oss << "}\n";
 
   // close file
-  ofs.close();
+  file.emit(true);
 }
 
 /* ************************************************************************* */

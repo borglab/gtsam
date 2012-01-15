@@ -34,29 +34,29 @@ string Argument::matlabClass() const {
 }
 
 /* ************************************************************************* */
-void Argument::matlab_unwrap(ofstream& ofs, const string& matlabName) const {
-  ofs << "  ";
+void Argument::matlab_unwrap(FileWriter& file, const string& matlabName) const {
+  file.oss << "  ";
 
   string cppType = qualifiedType("::");
   string matlabType = qualifiedType();
 
   if (is_ptr)
 		// A pointer: emit an "unwrap_shared_ptr" call which returns a pointer
-		ofs << "shared_ptr<" << cppType << "> " << name << " = unwrap_shared_ptr< ";
+		file.oss << "shared_ptr<" << cppType << "> " << name << " = unwrap_shared_ptr< ";
 	else if (is_ref)
 		// A reference: emit an "unwrap_shared_ptr" call and de-reference the pointer
-		ofs << cppType << "& " << name << " = *unwrap_shared_ptr< ";
+		file.oss << cppType << "& " << name << " = *unwrap_shared_ptr< ";
 	else
 		// Not a pointer or a reference: emit an "unwrap" call
 		// unwrap is specified in matlab.h as a series of template specializations
 		// that know how to unpack the expected MATLAB object
 		// example: double tol = unwrap< double >(in[2]);
 		// example: Vector v = unwrap< Vector >(in[1]);
-		ofs << cppType << " " << name << " = unwrap< ";
+		file.oss << cppType << " " << name << " = unwrap< ";
 
-	ofs << cppType << " >(" << matlabName;
-  if (is_ptr || is_ref) ofs << ", \"" << matlabType << "\"";
-  ofs << ");" << endl;
+	file.oss << cppType << " >(" << matlabName;
+  if (is_ptr || is_ref) file.oss << ", \"" << matlabType << "\"";
+  file.oss << ");" << endl;
 }
 
 /* ************************************************************************* */
@@ -107,12 +107,12 @@ string ArgumentList::names() const {
 }
 
 /* ************************************************************************* */
-void ArgumentList::matlab_unwrap(ofstream& ofs, int start) const {
+void ArgumentList::matlab_unwrap(FileWriter& file, int start) const {
   int index = start;
   BOOST_FOREACH(Argument arg, *this) {
     stringstream buf;
     buf << "in[" << index << "]";
-    arg.matlab_unwrap(ofs,buf.str());
+    arg.matlab_unwrap(file,buf.str());
     index++;
   }
 }

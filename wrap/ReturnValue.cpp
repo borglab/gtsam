@@ -44,33 +44,33 @@ string ReturnValue::qualifiedType2(const string& delim) const {
 }
 
 /* ************************************************************************* */
-void ReturnValue::wrap_result(ostream& ofs) const {
+void ReturnValue::wrap_result(FileWriter& file) const {
 	string cppType1 = qualifiedType1("::"), matlabType1 = qualifiedType1();
 	string cppType2 = qualifiedType2("::"), matlabType2 = qualifiedType2();
 
   if (isPair) {
   	// first return value in pair
     if (isPtr1) // if we already have a pointer
-      ofs << "  out[0] = wrap_shared_ptr(result.first,\"" << matlabType1 << "\");\n";
+      file.oss << "  out[0] = wrap_shared_ptr(result.first,\"" << matlabType1 << "\");\n";
     else if (category1 == ReturnValue::CLASS) // if we are going to make one
-    	ofs << "  out[0] = wrap_shared_ptr(make_shared< " << cppType1 << " >(result.first),\"" << matlabType1 << "\");\n";
+    	file.oss << "  out[0] = wrap_shared_ptr(make_shared< " << cppType1 << " >(result.first),\"" << matlabType1 << "\");\n";
     else // if basis type
-      ofs << "  out[0] = wrap< " << return_type(true,arg1) << " >(result.first);\n";
+      file.oss << "  out[0] = wrap< " << return_type(true,arg1) << " >(result.first);\n";
 
     // second return value in pair
     if (isPtr2) // if we already have a pointer
-      ofs << "  out[1] = wrap_shared_ptr(result.second,\"" << type2 << "\");\n";
+      file.oss << "  out[1] = wrap_shared_ptr(result.second,\"" << type2 << "\");\n";
     else if (category2 == ReturnValue::CLASS) // if we are going to make one
-    	ofs << "  out[1] = wrap_shared_ptr(make_shared< " << cppType2 << " >(result.second),\"" << matlabType2 << "\");\n";
+    	file.oss << "  out[1] = wrap_shared_ptr(make_shared< " << cppType2 << " >(result.second),\"" << matlabType2 << "\");\n";
     else
-      ofs << "  out[1] = wrap< " << return_type(true,arg2) << " >(result.second);\n";
+      file.oss << "  out[1] = wrap< " << return_type(true,arg2) << " >(result.second);\n";
   }
   else if (isPtr1)
-    ofs << "  out[0] = wrap_shared_ptr(result,\"" << type1 << "\");\n";
+    file.oss << "  out[0] = wrap_shared_ptr(result,\"" << type1 << "\");\n";
   else if (category1 == ReturnValue::CLASS)
-  	ofs << "  out[0] = wrap_shared_ptr(make_shared< " << cppType1 << " >(result),\"" << matlabType1 << "\");\n";
+  	file.oss << "  out[0] = wrap_shared_ptr(make_shared< " << cppType1 << " >(result),\"" << matlabType1 << "\");\n";
   else if (type1!="void")
-    ofs << "  out[0] = wrap< " << return_type(true,arg1) << " >(result);\n";
+    file.oss << "  out[0] = wrap< " << return_type(true,arg1) << " >(result);\n";
 }
 
 /* ************************************************************************* */
