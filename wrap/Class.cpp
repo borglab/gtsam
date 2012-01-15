@@ -29,9 +29,7 @@ using namespace wrap;
 /* ************************************************************************* */
 void Class::matlab_proxy(const string& classFile) const {
   // open destination classFile
-  FileWriter file(classFile, "%");
-//  if(!file) throw CantOpenFile(classFile);
-  if(verbose_) cerr << "generating " << classFile << endl;
+  FileWriter file(classFile, verbose_, "%");
 
   // get the name of actual matlab object
   string matlabName = qualifiedName();

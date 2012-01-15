@@ -63,12 +63,9 @@ void Constructor::matlab_mfile(const string& toolboxPath, const string& qualifie
 
   // open destination m-file
   string wrapperFile = toolboxPath + "/" + matlabName + ".m";
-  FileWriter file(wrapperFile, "%");
-//  if(!file) throw CantOpenFile(wrapperFile);
-  if(verbose_) cerr << "generating " << wrapperFile << endl;
+  FileWriter file(wrapperFile, verbose_, "%");
 
   // generate code
-//  generateHeaderComment(file, "%");
   file.oss << "function result = " << matlabName << "(obj";
   if (args.size()) file.oss << "," << args.names();
   file.oss << ")" << endl;
@@ -88,12 +85,9 @@ void Constructor::matlab_wrapper(const string& toolboxPath,
 
   // open destination wrapperFile
   string wrapperFile = toolboxPath + "/" + matlabName + ".cpp";
-  FileWriter file(wrapperFile, "//");
-//  if(!file) throw CantOpenFile(wrapperFile);
-  if(verbose_) cerr << "generating " << wrapperFile << endl;
+  FileWriter file(wrapperFile, verbose_, "//");
 
   // generate code
-//  generateHeaderComment(file, "//");
   generateIncludes(file, name, includes);
   generateUsingNamespace(file, using_namespaces);
 

@@ -281,18 +281,12 @@ void Module::matlab_code(const string& toolboxPath,
 
     // create make m-file
     string matlabMakeFileName = toolboxPath + "/make_" + name + ".m";
-    FileWriter makeModuleMfile(matlabMakeFileName, "%");
-//    filetream makeModuleMfile(matlabMakeFileName.c_str());
-//    if(!makeModuleMfile) throw CantOpenFile(matlabMakeFileName);
+    FileWriter makeModuleMfile(matlabMakeFileName, verbose, "%");
 
     // create the (actual) make file
     string makeFileName = toolboxPath + "/Makefile";
-    FileWriter makeModuleMakefile(makeFileName, "#");
-//    filetream makeModuleMakefile(makeFileName.c_str());
-//    if(!makeModuleMakefile) throw CantOpenFile(makeFileName);
+    FileWriter makeModuleMakefile(makeFileName, verbose, "#");
 
-    if (verbose) cerr << "generating " << matlabMakeFileName << endl;
-//    generateHeaderComment(makeModuleMfile,"%"); // In FileWriter constructor
     makeModuleMfile.oss << "echo on" << endl << endl;
     makeModuleMfile.oss << "toolboxpath = mfilename('fullpath');" << endl;
     makeModuleMfile.oss << "delims = find(toolboxpath == '/');" << endl;
@@ -300,8 +294,6 @@ void Module::matlab_code(const string& toolboxPath,
     makeModuleMfile.oss << "clear delims" << endl;
     makeModuleMfile.oss << "addpath(toolboxpath);" << endl << endl;
 
-    if (verbose) cerr << "generating " << makeFileName << endl;
-//    generateHeaderComment(makeModuleMakefile,"#"); // In FileWriter constructor
     makeModuleMakefile.oss << "\nMEX = mex\n";
     makeModuleMakefile.oss << "MEXENDING = " << mexExt << "\n";
     makeModuleMakefile.oss << "mex_flags = " << mexFlags << "\n\n";
@@ -365,7 +357,6 @@ void Module::matlab_code(const string& toolboxPath,
     makeModuleMfile.oss << "cd(toolboxpath)" << endl << endl;
     makeModuleMfile.oss << "echo off" << endl;
     makeModuleMfile.emit(true); // By default, compare existing file first
-//    makeModuleMfile.emit();
 
     // make clean at end of Makefile
     makeModuleMakefile.oss << "\n\nclean: \n";
@@ -376,7 +367,6 @@ void Module::matlab_code(const string& toolboxPath,
     // finish Makefile
     makeModuleMakefile.oss << "\n" << endl;
     makeModuleMakefile.emit(true);
-//    makeModuleMakefile.emit();
   }
 
 /* ************************************************************************* */

@@ -30,9 +30,7 @@ void Method::matlab_mfile(const string& classPath) const {
 
   // open destination m-file
   string wrapperFile = classPath + "/" + name + ".m";
-  FileWriter file(wrapperFile.c_str(), "%");
-//  if(!file) throw CantOpenFile(wrapperFile);
-  if(verbose_) cerr << "generating " << wrapperFile << endl;
+  FileWriter file(wrapperFile, verbose_);
 
   // generate code
   string returnType = returnVal.matlab_returnType();
@@ -55,14 +53,11 @@ void Method::matlab_wrapper(const string& classPath,
 			    const vector<string>& using_namespaces, const std::vector<std::string>& includes) const {
   // open destination wrapperFile
   string wrapperFile = classPath + "/" + name + ".cpp";
-  FileWriter file(wrapperFile.c_str(), "//");
-//  if(!file) throw CantOpenFile(wrapperFile);
-  if(verbose_) cerr << "generating " << wrapperFile << endl;
+  FileWriter file(wrapperFile, verbose_, "//");
 
   // generate code
 
   // header
-//  generateHeaderComment(file, "//");
   generateIncludes(file, className, includes);
   generateUsingNamespace(file, using_namespaces);
 

@@ -31,9 +31,7 @@ void StaticMethod::matlab_mfile(const string& toolboxPath, const string& classNa
   // open destination m-file
 	string full_name = className + "_" + name;
   string wrapperFile = toolboxPath + "/" + full_name + ".m";
-  FileWriter file(wrapperFile, "%");
-//  if(!file) throw CantOpenFile(wrapperFile);
-  if(verbose) cerr << "generating " << wrapperFile << endl;
+  FileWriter file(wrapperFile, verbose);
 
   // generate code
   string returnType = returnVal.matlab_returnType();
@@ -56,14 +54,11 @@ void StaticMethod::matlab_wrapper(const string& toolboxPath, const string& class
   // open destination wrapperFile
 	string full_name = matlabClassName + "_" + name;
   string wrapperFile = toolboxPath + "/" + full_name + ".cpp";
-  FileWriter file(wrapperFile, "%");
-//  if(!file) throw CantOpenFile(wrapperFile);
-  if(verbose) cerr << "generating " << wrapperFile << endl;
+  FileWriter file(wrapperFile, verbose, "//");
 
   // generate code
 
   // header
-//  generateHeaderComment(file, "//");
   generateIncludes(file, className, includes);
   generateUsingNamespace(file, using_namespaces);
 

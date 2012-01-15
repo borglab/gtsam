@@ -85,6 +85,8 @@ endif
 endif # Linux
 
 # Choose correct cp command by OS
+# In linux, this will only copy the file if it is an update
+# Macs use an older version of cp that doesn't support the -u flag
 cp_install =
 if LINUX
 cp_install += cp -ru
@@ -102,9 +104,9 @@ source_mode = -m 644
 
 wrap-install-matlab-toolbox: generate_toolbox
 	install -d ${toolbox}/gtsam
-	install ${source_mode} -c ../toolbox/*.m ${toolbox}/gtsam
-	install ${source_mode} -c ../toolbox/*.cpp ${toolbox}/gtsam
-	install ${source_mode} -c ../toolbox/Makefile ${toolbox}/gtsam
+	${cp_install} ../toolbox/*.m ${toolbox}/gtsam
+	${cp_install} ../toolbox/*.cpp ${toolbox}/gtsam
+	${cp_install} ../toolbox/Makefile ${toolbox}/gtsam
 	${cp_install} ../toolbox/@* ${toolbox}/gtsam
 
 wrap-install-bin: wrap
