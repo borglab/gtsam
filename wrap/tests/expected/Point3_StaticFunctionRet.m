@@ -1,4 +1,4 @@
-function result = Point3_StaticFunctionRet()
-% usage: x = Point3_StaticFunctionRet()
+function result = Point3_StaticFunctionRet(z)
+% usage: x = Point3_StaticFunctionRet(z)
   error('need to compile Point3_StaticFunctionRet.cpp');
 end
