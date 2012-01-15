@@ -114,9 +114,6 @@ class Rot2 {
 class Rot3 {
 	Rot3();
 	Rot3(Matrix R);
-	static Rot3 Expmap(Vector v);
-	static Vector Logmap(const Rot3& p);
-  static Rot3 ypr(double y, double p, double r);
   static Rot3 Rx(double t);
   static Rot3 Ry(double t);
   static Rot3 Rz(double t);
@@ -125,23 +122,32 @@ class Rot3 {
   static Rot3 yaw  (double t); // positive yaw is to right (as in aircraft heading)
   static Rot3 pitch(double t); // positive pitch is up (increasing aircraft altitude)
   static Rot3 roll (double t); // positive roll is to right (increasing yaw in aircraft)
+  static Rot3 ypr(double y, double p, double r);
   static Rot3 quaternion(double w, double x, double y, double z);
   static Rot3 rodriguez(Vector v);
+	void print(string s) const;
+	bool equals(const Rot3& rot, double tol) const;
+  static Rot3 identity();
+	Rot3 compose(const Rot3& p2) const;
+	Rot3 inverse() const;
+	Rot3 between(const Rot3& p2) const;
+	Point3 rotate(const Point3& p) const;
+	Point3 unrotate(const Point3& p) const;
+	Rot3 retractCayley(Vector v) const;
+	Rot3 retract(Vector v) const;
+	Vector localCoordinates(const Rot3& p) const;
+	static Rot3 Expmap(Vector v);
+	static Vector Logmap(const Rot3& p);
 	Matrix matrix() const;
 	Matrix transpose() const;
+	Point3 column(int index) const;
 	Vector xyz() const;
 	Vector ypr() const;
+	Vector rpy() const;
   double roll() const;
   double pitch() const;
   double yaw() const;
 //  Vector toQuaternion() const;  // FIXME: Can't cast to Vector properly
-	void print(string s) const;
-	bool equals(const Rot3& rot, double tol) const;
-	Vector localCoordinates(const Rot3& p);
-	Rot3 retract(Vector v);
-	Rot3 retractCayley(Vector v);
-	Rot3 compose(const Rot3& p2);
-	Rot3 between(const Rot3& p2);
 };
 
 class Pose2 {
