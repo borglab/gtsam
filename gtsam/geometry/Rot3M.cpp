@@ -49,10 +49,13 @@ Rot3::Rot3(double R11, double R12, double R13,
       r3_(Point3(R13, R23, R33)) {}
 
 /* ************************************************************************* */
-Rot3::Rot3(const Matrix& R):
-  r1_(Point3(R(0,0), R(1,0), R(2,0))),
-  r2_(Point3(R(0,1), R(1,1), R(2,1))),
-  r3_(Point3(R(0,2), R(1,2), R(2,2))) {}
+Rot3::Rot3(const Matrix& R) {
+	if (R.rows()!=3 || R.cols()!=3)
+		throw invalid_argument("Rot3 constructor expects 3*3 matrix");
+	r1_ = Point3(R(0, 0), R(1, 0), R(2, 0));
+	r2_ = Point3(R(0, 1), R(1, 1), R(2, 1));
+	r3_ = Point3(R(0, 2), R(1, 2), R(2, 2));
+}
 
 /* ************************************************************************* */
 Rot3::Rot3(const Quaternion& q) {
