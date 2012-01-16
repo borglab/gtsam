@@ -40,6 +40,7 @@ namespace gtsam {
 
 	public:
 
+		typedef VALUES Values;
 	  typedef FactorGraph<NonlinearFactor<VALUES> > Base;
 	  typedef boost::shared_ptr<NonlinearFactorGraph<VALUES> > shared_ptr;
 		typedef boost::shared_ptr<NonlinearFactor<VALUES> > sharedFactor;
