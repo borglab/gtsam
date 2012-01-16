@@ -31,6 +31,9 @@
 
 namespace gtsam {
 
+  // Forward declarations
+  class Symbol;
+
 /**
  * TypedSymbol key class is templated on
  * 1) the type T it is supposed to retrieve, for extra type checking

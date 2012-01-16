@@ -100,9 +100,11 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  void DynamicValues::insert(const DynamicValues& values) {
-    BOOST_FOREACH(const KeyValuePair& key_value, values) {
-      insert(key_value.first, key_value.)
-    }
+  template<class ValueType>
+  void DynamicValues::update(const Symbol& j, const ValueType& val) {
+    iterator item = values_.find(j);
+    if(item == values_end)
+      throw DynamicValuesKeyDoesNotExist("update", j);
+    item->second = val.clone_();
   }
 }

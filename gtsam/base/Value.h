@@ -101,6 +101,9 @@ namespace gtsam {
   class Value {
   public:
 
+    /** Allocate and construct a clone of this value */
+    virtual std::auto_ptr<Value> clone_() const = 0;
+
     /** Print this value, for debugging and unit tests */
     virtual void print(const std::string& str = "") const = 0;
 

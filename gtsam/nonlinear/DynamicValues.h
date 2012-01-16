@@ -154,10 +154,10 @@ namespace gtsam {
     void insert(const Symbol& j, const ValueType& val);
 
     /** Add a set of variables, throws KeyAlreadyExists<J> if a key is already present */
-    void insert(const DynamicValues& cfg);
+    void insert(const DynamicValues& values);
 
     /** update the current available values without adding new ones */
-    void update(const DynamicValues& cfg);
+    void update(const DynamicValues& values);
 
     /** single element change of existing element */
     template<class ValueType>
@@ -176,34 +176,13 @@ namespace gtsam {
      * Returns a set of keys in the config
      * Note: by construction, the list is ordered
      */
-    std::list<Symbol> keys() const;
+    FastList<Symbol> keys() const;
 
     /** Replace all keys and variables */
-    DynamicValues& operator=(const DynamicValues& rhs) {
-      values_ = rhs.values_;
-      return (*this);
-    }
+    DynamicValues& operator=(const DynamicValues& rhs);
 
     /** Remove all variables from the config */
-    void clear() {
-      values_.clear();
-    }
-
-    /**
-     * Apply a class with an application operator() to a const_iterator over
-     * every <key,value> pair.  The operator must be able to handle such an
-     * iterator for every type in the Values, (i.e. through templating).
-     */
-    template<typename A>
-    void apply(A& operation) {
-      for(iterator it = begin(); it != end(); ++it)
-        operation(it);
-    }
-    template<typename A>
-    void apply(A& operation) const {
-      for(const_iterator it = begin(); it != end(); ++it)
-        operation(it);
-    }
+    void clear() { values_.clear(); }
 
     /** Create an array of variable dimensions using the given ordering */
     std::vector<size_t> dims(const Ordering& ordering) const;

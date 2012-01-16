@@ -178,6 +178,11 @@ namespace gtsam {
     static Rot3 rodriguez(double wx, double wy, double wz)
       { return rodriguez(Vector_(3,wx,wy,wz));}
 
+    /**
+     * Create a duplicate object returned as a pointer to the generic Value interface
+     */
+    virtual std::auto_ptr<Value> clone_() const { return std::auto_ptr<Value>(new Rot3(*this)); }
+
     /// @}
     /// @name Testable
     /// @{
