@@ -23,6 +23,8 @@
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/KalmanFilter.h>
+#include <gtsam/linear/SharedGaussian.h>
+#include <gtsam/linear/HessianFactor.h>
 
 namespace gtsam {
 
@@ -42,12 +44,24 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	KalmanFilter::KalmanFilter(const Vector& x, const SharedDiagonal& model) :
+	KalmanFilter::KalmanFilter(const Vector& x0, const SharedDiagonal& P0) :
+			n_(x0.size()), I_(eye(n_, n_)) {
+
+		// Create a factor graph f(x0), eliminate it into P(x0)
+		GaussianFactorGraph factorGraph;
+		factorGraph.add(0, I_, x0, P0); // |x-x0|^2_diagSigma
+		density_.reset(solve(factorGraph));
+	}
+
+	/* ************************************************************************* */
+	KalmanFilter::KalmanFilter(const Vector& x, const Matrix& P0) :
 			n_(x.size()), I_(eye(n_, n_)) {
 
 		// Create a factor graph f(x0), eliminate it into P(x0)
 		GaussianFactorGraph factorGraph;
-		factorGraph.add(0, I_, x, model);
+		// 0.5*(x-x0)'*inv(Sigma)*(x-x0)
+    HessianFactor::shared_ptr factor(new HessianFactor(0, x, P0));
+		factorGraph.push_back(factor);
 		density_.reset(solve(factorGraph));
 	}
 

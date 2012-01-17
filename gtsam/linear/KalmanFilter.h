@@ -25,6 +25,7 @@
 namespace gtsam {
 
 	class SharedDiagonal;
+	class SharedGaussian;
 
 	/**
 	 * Linear Kalman Filter
@@ -43,10 +44,18 @@ namespace gtsam {
 		/**
 		 * Constructor from prior density at time k=0
 		 * In Kalman Filter notation, these are is x_{0|0} and P_{0|0}
-		 * @param x estimate at time 0
-		 * @param P covariance at time 0, restricted to diagonal Gaussian 'model' for now
+		 * @param x0 estimate at time 0
+		 * @param P0 covariance at time 0, given as a diagonal Gaussian 'model'
 		 */
-		KalmanFilter(const Vector& x, const SharedDiagonal& model);
+		KalmanFilter(const Vector& x0, const SharedDiagonal& P0);
+
+		/**
+		 * Constructor from prior density at time k=0
+		 * In Kalman Filter notation, these are is x_{0|0} and P_{0|0}
+		 * @param x0 estimate at time 0
+		 * @param P0 covariance at time 0, full Gaussian
+		 */
+		KalmanFilter(const Vector& x0, const Matrix& P0);
 
 		/// print
 	  void print(const std::string& s="") const {

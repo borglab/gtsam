@@ -20,6 +20,8 @@
 #include <gtsam/linear/KalmanFilter.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/SharedDiagonal.h>
+#include <gtsam/linear/SharedGaussian.h>
+#include <gtsam/linear/SharedNoiseModel.h>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
@@ -33,6 +35,25 @@ struct State: Vector {
 			Vector(Vector_(2, x, y)) {
 	}
 };
+
+/* ************************************************************************* */
+TEST( KalmanFilter, constructor ) {
+	// Create the Kalman Filter initialization point
+	State x_initial(0.0,0.0);
+	SharedDiagonal P1 = noiseModel::Isotropic::Sigma(2,0.1);
+
+	// Create an KalmanFilter object
+	KalmanFilter kf1(x_initial, P1);
+	Matrix Sigma = Matrix_(2,2,0.01,0.0,0.0,0.01);
+	EXPECT(assert_equal(Sigma,kf1.covariance()));
+
+	// Create one with a sharedGaussian
+	KalmanFilter kf2(x_initial, Sigma);
+	EXPECT(assert_equal(Sigma,kf2.covariance()));
+
+	// Now make sure both agree
+	EXPECT(assert_equal(kf1.covariance(),kf2.covariance()));
+}
 
 /* ************************************************************************* */
 TEST( KalmanFilter, linear1 ) {

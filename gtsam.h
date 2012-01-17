@@ -57,6 +57,14 @@
 // Everything is in the gtsam namespace, so we avoid copying everything in
 using namespace gtsam;
 
+//*************************************************************************
+// base
+//*************************************************************************
+
+//*************************************************************************
+// geometry
+//*************************************************************************
+
 class Point2 {
 	Point2();
 	Point2(double x, double y);
@@ -197,6 +205,16 @@ class Pose3 {
 	Rot3 rotation() const;
 };
 
+//*************************************************************************
+// inference
+//*************************************************************************
+
+
+
+//*************************************************************************
+// linear
+//*************************************************************************
+
 class SharedGaussian {
 	SharedGaussian(Matrix covariance);
 	void print(string s) const;
@@ -292,7 +310,8 @@ class GaussianSequentialSolver {
 };
 
 class KalmanFilter {
-	KalmanFilter(Vector x, const SharedDiagonal& model);
+	KalmanFilter(Vector x0, const SharedDiagonal& P0);
+	KalmanFilter(Vector x0, const Matrix& P0);
 	void print(string s) const;
 	Vector mean() const;
 	Matrix information() const;
@@ -302,12 +321,20 @@ class KalmanFilter {
 	void update(Matrix H, Vector z, const SharedDiagonal& model);
 };
 
+//*************************************************************************
+// nonlinear
+//*************************************************************************
+
 class Ordering {
 	Ordering();
 	void print(string s) const;
 	bool equals(const Ordering& ord, double tol) const;
 	void push_back(string key);
 };
+
+//*************************************************************************
+// slam
+//*************************************************************************
 
 // Planar SLAM example domain
 #include <gtsam/slam/planarSLAM.h>
