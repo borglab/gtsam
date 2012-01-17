@@ -60,6 +60,13 @@ namespace gtsam {
 		ExtendedKalmanFilter(T x_initial,
 				noiseModel::Gaussian::shared_ptr P_initial);
 
+		/// print
+	  void print(const std::string& s="") const {
+	  	std::cout << s << "\n";
+	  	x_.print(s+"x");
+	  	priorFactor_->print(s+"density");
+	  }
+
 		T predict(const MotionFactor& motionFactor);
 		T update(const MeasurementFactor& measurementFactor);
 	};
