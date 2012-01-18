@@ -25,6 +25,7 @@
 #pragma once
 
 #include <string>
+#include <utility>
 
 #include <gtsam/base/Value.h>
 #include <gtsam/base/FastMap.h>

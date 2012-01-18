@@ -65,7 +65,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<typename Value>
-  boost::optional<Value> DynamicValues::exists(const Symbol& j) const {
+  boost::optional<const Value&> DynamicValues::exists(const Symbol& j) const {
     // Find the item
     const_iterator item = values_.find(j);
 
@@ -83,7 +83,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class TypedKey>
-  boost::optional<const typename TypedKey::Value&> exists(const TypedKey& j) const {
+  boost::optional<const typename TypedKey::Value&> DynamicValues::exists(const TypedKey& j) const {
     // Convert to Symbol
     const Symbol symbol(j.symbol());
 
@@ -103,7 +103,7 @@ namespace gtsam {
   template<class ValueType>
   void DynamicValues::update(const Symbol& j, const ValueType& val) {
     iterator item = values_.find(j);
-    if(item == values_end)
+    if(item == values_.end())
       throw DynamicValuesKeyDoesNotExist("update", j);
     item->second = val.clone_();
   }
