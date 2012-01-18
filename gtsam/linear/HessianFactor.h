@@ -162,8 +162,18 @@ namespace gtsam {
 
     /** Construct a binary factor.  Gxx are the upper-triangle blocks of the
      * quadratic term (the Hessian matrix), gx the pieces of the linear vector
-     * term, and f the constant term.  The quadratic error is:
-     * 0.5*(f - 2*x1'*g1 - 2*x2'*g2 + x1'*G11*x1 + x1'*G12*x2)
+     * term, and f the constant term.
+		 * JacobianFactor error is \f[ 0.5* (Ax-b)' M (Ax-b) = 0.5*x'A'MAx - x'A'Mb + 0.5*b'Mb \f]
+		 * HessianFactor  error is \f[ 0.5*(x'Gx - 2x'g + f) = 0.5*x'Gx    - x'*g   + 0.5*f    \f]
+		 * So, with \f$ A = [A1 A2] \f$ and \f$ G=A*'M*A = [A1';A2']*M*[A1 A2] \f$ we have
+		 \code
+		  n1*n1 G11 = A1'*M*A1
+		  n1*n2 G12 = A1'*M*A2
+		  n2*n2 G22 = A2'*M*A2
+		  n1*1   g1 = A1'*M*b
+		  n2*1   g2 = A2'*M*b
+		   1*1    f =  b'*M*b
+		 \endcode
      */
     HessianFactor(Index j1, Index j2,
         const Matrix& G11, const Matrix& G12, const Vector& g1,
