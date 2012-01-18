@@ -433,11 +433,11 @@ namespace gtsam {
 							"convertToJacobians: factor is neither a JacobianFactor nor a HessianFactor.");
 					J::shared_ptr converted(new J(*hessian));
 					if (debug) {
-						if (!assert_equal(*hessian, HessianFactor(*converted), 1e-3)) throw runtime_error(
-								"convertToJacobians: Conversion between Jacobian and Hessian incorrect");
 						cout << "Converted HessianFactor to JacobianFactor:\n";
 						hessian->print("HessianFactor: ");
 						converted->print("JacobianFactor: ");
+						if (!assert_equal(*hessian, HessianFactor(*converted), 1e-3)) throw runtime_error(
+								"convertToJacobians: Conversion between Jacobian and Hessian incorrect");
 					}
 					jacobians.push_back(converted);
 				}
