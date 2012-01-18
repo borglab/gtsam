@@ -12,7 +12,7 @@ sources =
 check_PROGRAMS =
 noinst_PROGRAMS =  
 wrap_PROGRAMS = 
-wrapdir = $(pkgincludedir)/wrap
+wrapdir = $(includedir)/wrap
 
 # disable all of matlab toolbox build by default
 if ENABLE_BUILD_TOOLBOX
@@ -21,15 +21,14 @@ if ENABLE_BUILD_TOOLBOX
 sources += utilities.cpp Argument.cpp ReturnValue.cpp Constructor.cpp 
 sources += Method.cpp StaticMethod.cpp Class.cpp Module.cpp FileWriter.cpp
 check_PROGRAMS += tests/testSpirit tests/testWrap
-if ENABLE_INSTALL_WRAP
-wrap_PROGRAMS += wrap
-else 
+
+# Manually install wrap later
 noinst_PROGRAMS += wrap
-endif
+
 
 #----------------------------------------------------------------------------------------------------
 # Create a libtool library that is not installed
-# The headers are installed in $(includedir)/gtsam: 
+# The headers are installed in $(includedir)/wrap: 
 #----------------------------------------------------------------------------------------------------
 # Only install the header necessary for wrap interfaces to build with mex
 headers += matlab.h 
