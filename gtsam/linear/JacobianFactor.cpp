@@ -164,6 +164,9 @@ namespace gtsam {
     keys_ = factor.keys_;
     Ab_.assignNoalias(factor.info_);
     size_t maxrank = choleskyCareful(matrix_).first;
+    // Zero out lower triangle
+    matrix_.topRows(maxrank).triangularView<Eigen::StrictlyLower>() =
+        Matrix::Zero(maxrank, matrix_.cols());
     // FIXME: replace with triangular system
     Ab_.rowEnd() = maxrank;
     model_ = noiseModel::Unit::Create(maxrank);

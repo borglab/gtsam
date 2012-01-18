@@ -236,12 +236,15 @@ TEST(GaussianJunctionTree, complicatedMarginal) {
 
   // Marginal on 5
   Matrix expectedCov = (Matrix(1,1) << 236.5166).finished();
-  JacobianFactor::shared_ptr actualJacobian = boost::dynamic_pointer_cast<JacobianFactor>(
+  JacobianFactor::shared_ptr actualJacobianLDL = boost::dynamic_pointer_cast<JacobianFactor>(
       bt.marginalFactor(5, EliminateLDL));
-  LONGS_EQUAL(1, actualJacobian->rows());
-  LONGS_EQUAL(1, actualJacobian->size());
-  LONGS_EQUAL(5, actualJacobian->keys()[0]);
-  Matrix actualA = actualJacobian->getA(actualJacobian->begin());
+  JacobianFactor::shared_ptr actualJacobianQR = boost::dynamic_pointer_cast<JacobianFactor>(
+      bt.marginalFactor(5, EliminateQR));
+  CHECK(assert_equal(*actualJacobianLDL, *actualJacobianQR)); // Check that LDL and QR obtained marginals are the same
+  LONGS_EQUAL(1, actualJacobianLDL->rows());
+  LONGS_EQUAL(1, actualJacobianLDL->size());
+  LONGS_EQUAL(5, actualJacobianLDL->keys()[0]);
+  Matrix actualA = actualJacobianLDL->getA(actualJacobianLDL->begin());
   Matrix actualCov = inverse(actualA.transpose() * actualA);
   EXPECT(assert_equal(expectedCov, actualCov, 1e-1));
 
@@ -252,12 +255,15 @@ TEST(GaussianJunctionTree, complicatedMarginal) {
   expectedCov = (Matrix(2,2) <<
       1015.8,    2886.2,
       2886.2,    8471.2).finished();
-  actualJacobian = boost::dynamic_pointer_cast<JacobianFactor>(
+  actualJacobianLDL = boost::dynamic_pointer_cast<JacobianFactor>(
       bt.marginalFactor(6, EliminateLDL));
-  LONGS_EQUAL(2, actualJacobian->rows());
-  LONGS_EQUAL(1, actualJacobian->size());
-  LONGS_EQUAL(6, actualJacobian->keys()[0]);
-  actualA = actualJacobian->getA(actualJacobian->begin());
+  actualJacobianQR = boost::dynamic_pointer_cast<JacobianFactor>(
+      bt.marginalFactor(6, EliminateQR));
+  CHECK(assert_equal(*actualJacobianLDL, *actualJacobianQR)); // Check that LDL and QR obtained marginals are the same
+  LONGS_EQUAL(2, actualJacobianLDL->rows());
+  LONGS_EQUAL(1, actualJacobianLDL->size());
+  LONGS_EQUAL(6, actualJacobianLDL->keys()[0]);
+  actualA = actualJacobianLDL->getA(actualJacobianLDL->begin());
   actualCov = inverse(actualA.transpose() * actualA);
   EXPECT(assert_equal(expectedCov, actualCov, 1e1));
 

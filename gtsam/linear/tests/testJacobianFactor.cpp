@@ -20,6 +20,7 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/GaussianConditional.h>
 
 using namespace std;
@@ -68,6 +69,27 @@ TEST(JacobianFactor, constructor2)
   EXPECT(assert_equal(eye(3), actualA0));
   EXPECT(assert_equal(2.*eye(3), actualA1));
   EXPECT(assert_equal(b, actualb));
+}
+
+/* ************************************************************************* */
+TEST(JabobianFactor, Hessian_conversion) {
+  HessianFactor hessian(0, (Matrix(4,4) <<
+        1.57,        2.695,         -1.1,        -2.35,
+       2.695,      11.3125,        -0.65,      -10.225,
+        -1.1,        -0.65,            1,          0.5,
+       -2.35,      -10.225,          0.5,         9.25).finished(),
+      (Vector(4) << -7.885, -28.5175, 2.75, 25.675).finished(),
+      73.1725);
+
+  JacobianFactor expected(0, (Matrix(2,4) <<
+      1.2530,   2.1508,   -0.8779,  -1.8755,
+           0,   2.5858,    0.4789,  -2.3943).finished(),
+      (Vector(2) << -6.2929, -5.7941).finished(),
+      sharedUnit(2));
+
+  JacobianFactor actual(hessian);
+
+  EXPECT(assert_equal(expected, actual, 1e-3));
 }
 
 /* ************************************************************************* */
