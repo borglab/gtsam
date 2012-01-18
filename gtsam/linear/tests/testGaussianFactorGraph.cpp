@@ -611,5 +611,31 @@ TEST(GaussianFactorGraph, sparseJacobian) {
 }
 
 /* ************************************************************************* */
+TEST(GaussianFactorGraph, denseHessian) {
+  // Create factor graph:
+  // x1 x2 x3 x4 x5  b
+  //  1  2  3  0  0  4
+  //  5  6  7  0  0  8
+  //  9 10  0 11 12 13
+  //  0  0  0 14 15 16
+
+  GaussianFactorGraph gfg;
+  SharedDiagonal model = sharedUnit(2);
+  gfg.add(0, Matrix_(2,3, 1., 2., 3., 5., 6., 7.), Vector_(2, 4., 8.), model);
+  gfg.add(0, Matrix_(2,3, 9.,10., 0., 0., 0., 0.), 1, Matrix_(2,2, 11., 12., 14., 15.), Vector_(2, 13.,16.), model);
+
+  Matrix jacobian(4,6);
+  jacobian <<
+      1, 2, 3, 0, 0, 4,
+      5, 6, 7, 0, 0, 8,
+      9,10, 0,11,12,13,
+      0, 0, 0,14,15,16;
+
+  Matrix expectedHessian = jacobian.transpose() * jacobian;
+  Matrix actualHessian = gfg.denseHessian();
+  EXPECT(assert_equal(expectedHessian, actualHessian));
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */

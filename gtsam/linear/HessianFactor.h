@@ -226,7 +226,10 @@ namespace gtsam {
     /** Return the number of columns and rows of the Hessian matrix */
     size_t rows() const { return info_.rows(); }
 
-    /** Return a view of the block at (j1,j2) of the information matrix \f$ H \f$, no data is copied.
+    /** Return a view of the block at (j1,j2) of the <emph>upper-triangular part</emph> of the
+     * information matrix \f$ H \f$, no data is copied.  See HessianFactor class documentation
+     * above to explain that only the upper-triangular part of the information matrix is stored
+     * and returned by this function.
      * @param j1 Which block row to get, as an iterator pointing to the slot in this factor.  You can
      * use, for example, begin() + 2 to get the 3rd variable in this factor.
      * @param j2 Which block column to get, as an iterator pointing to the slot in this factor.  You can
@@ -235,7 +238,10 @@ namespace gtsam {
      */
     constBlock info(const_iterator j1, const_iterator j2) const { return info_(j1-begin(), j2-begin()); }
 
-    /** Return the full *augmented* information matrix, as described above */
+    /** Return the <emph>upper-triangular part</emph> of the full *augmented* information matrix,
+     * as described above.  See HessianFactor class documentation above to explain that only the
+     * upper-triangular part of the information matrix is stored and returned by this function.
+     */
     constBlock info() const { return info_.full(); }
 
     /** Return the constant term \f$ f \f$ as described above

@@ -346,9 +346,12 @@ namespace gtsam {
     }
     dims.push_back(1);
 
-    // combine all factors
+    // combine all factors and get upper-triangular part of Hessian
     HessianFactor combined(*this, dims, scatter);
-    return combined.info();
+    Matrix result = combined.info();
+    // Fill in lower-triangular part of Hessian
+    result.triangularView<Eigen::StrictlyLower>() = result.transpose();
+    return result;
   }
 
 	/* ************************************************************************* */
