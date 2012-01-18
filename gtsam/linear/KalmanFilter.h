@@ -83,13 +83,18 @@ namespace gtsam {
 		 *   In a linear Kalman Filter, the motion model is f(x_{t}) = F*x_{t} + B*u_{t} + w
 		 *   where F is the state transition model/matrix, B is the control input model,
 		 *   and w is zero-mean, Gaussian white noise with covariance Q.
-		 *   Q is normally derived as G*w*G^T where w models uncertainty of some physical property,
-		 *   such as velocity or acceleration, and G is derived from physics.
-		 *   In the current implementation, the noise model for w is restricted to a diagonal.
-		 *   TODO: allow for a G
 		 */
 		void predict(const Matrix& F, const Matrix& B, const Vector& u,
-				const SharedDiagonal& model);
+				const SharedDiagonal& modelQ);
+
+		/*
+		 *  Version of predict with full covariance
+		 *  Q is normally derived as G*w*G^T where w models uncertainty of some
+		 *  physical property, such as velocity or acceleration, and G is derived from physics.
+		 *  This version allows more realistic models than a diagonal covariance matrix.
+		 */
+		void predictQ(const Matrix& F, const Matrix& B, const Vector& u,
+				const Matrix& Q);
 
 		/**
 		 * Predict the state P(x_{t+1}|Z^t)

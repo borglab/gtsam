@@ -105,16 +105,75 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
+	void KalmanFilter::predictQ(const Matrix& F, const Matrix& B, const Vector& u,
+			const Matrix& Q) {
+
+#ifndef NDEBUG
+		int n = F.cols();
+		assert(F.rows() == n);
+		assert(B.rows() == n);
+		assert(B.cols() == u.size());
+		assert(Q.rows() == n);
+		assert(Q.cols() == n);
+#endif
+
+		// Same scheme as in predict:
+		GaussianFactorGraph factorGraph;
+		factorGraph.push_back(density_->toFactor());
+
+		// The factor related to the motion model is defined as
+		// f2(x_{t},x_{t+1}) = (F*x_{t} + B*u - x_{t+1}) * Q^-1 * (F*x_{t} + B*u - x_{t+1})^T
+		// See documentation in HessianFactor, we have A1 = -F,  A2 = I_, b = B*u:
+		Vector b = B*u;
+		Matrix M = inverse(Q);
+		Matrix Ft = trans(F);
+		Matrix G12 = -Ft*M;
+		Matrix G11 = -G12*F;
+		Matrix G22 = M;
+		Vector g2 = M*b;
+		Vector g1 = -Ft*g2;
+		double f = dot(b,g2);
+		HessianFactor::shared_ptr factor(new HessianFactor(0, 1, G11, G12, g1, G22, g2, f));
+
+//#define DEBUG_PREDICTQ
+#ifdef DEBUG_PREDICTQ
+		gtsam::print(b);
+		gtsam::print(M);
+		gtsam::print(G11);
+		gtsam::print(G12);
+		gtsam::print(G22);
+		gtsam::print(g1);
+		gtsam::print(g2);
+		cout << f << endl;
+		factor->print("factor");
+#endif
+
+		factorGraph.push_back(factor);
+
+		// Eliminate graph in order x0, x1, to get Bayes net P(x0|x1)P(x1)
+		density_.reset(solve(factorGraph));
+	}
+
+	/* ************************************************************************* */
 	void KalmanFilter::predict2(const Matrix& A0, const Matrix& A1, const Vector& b,
 			const SharedDiagonal& model) {
 
-		// Exactly the same schem as in predict:
+		// Same scheme as in predict:
 		GaussianFactorGraph factorGraph;
 		factorGraph.push_back(density_->toFactor());
 
 		// However, now the factor related to the motion model is defined as
 		// f2(x_{t},x_{t+1}) = |A0*x_{t} + A1*x_{t+1} - b|^2
 		factorGraph.add(0, A0, 1, A1, b, model);
+#ifdef DEBUG_PREDICTQ
+		gtsam::print(Matrix(trans(A0)*A0));
+		gtsam::print(Matrix(trans(A0)*A1));
+		gtsam::print(Matrix(trans(A1)*A1));
+		gtsam::print(Matrix(trans(A0)*b));
+		gtsam::print(Matrix(trans(A1)*b));
+		cout << dot(b,b) << endl;
+#endif
+
 		density_.reset(solve(factorGraph));
 	}
 
