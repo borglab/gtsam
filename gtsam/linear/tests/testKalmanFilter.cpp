@@ -124,7 +124,7 @@ TEST( KalmanFilter, predict ) {
 	Matrix F = Matrix_(2,2, 1.0,0.1, 0.2,1.1);
 	Matrix B = Matrix_(2,3, 1.0,0.1,0.2, 1.1,1.2,0.8);
 	Vector u = Vector_(3, 1.0, 0.0, 2.0);
-	Matrix R = Matrix_(2,2, 1.0,0.0, 0.0,3.0);
+	Matrix R = Matrix_(2,2, 1.0,0.5, 0.0,3.0);
 	Matrix M = trans(R)*R;
 	Matrix Q = inverse(M);
 
@@ -138,7 +138,7 @@ TEST( KalmanFilter, predict ) {
 
 	// Ensure predictQ and predict2 give same answer for non-trivial inputs
 	kalmanFilter1.predictQ(F, B, u, Q);
-	// We have A1 = -F,  A2 = I_, b = B*u:
+	// We have A1 = -F,  A2 = I_, b = B*u, pre-multipled with R to match Q noise model
 	Matrix A1 = -R*F, A2 = R;
 	Vector b = R*B*u;
 	SharedDiagonal nop = noiseModel::Isotropic::Sigma(2, 1.0);
