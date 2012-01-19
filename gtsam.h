@@ -125,7 +125,7 @@ class Rot3 {
   static Rot3 Rx(double t);
   static Rot3 Ry(double t);
   static Rot3 Rz(double t);
-  static Rot3 RzRyRx(double x, double y, double z);
+//  static Rot3 RzRyRx(double x, double y, double z); // FIXME: overloaded functions don't work yet
   static Rot3 RzRyRx(Vector xyz);
   static Rot3 yaw  (double t); // positive yaw is to right (as in aircraft heading)
   static Rot3 pitch(double t); // positive pitch is up (increasing aircraft altitude)
