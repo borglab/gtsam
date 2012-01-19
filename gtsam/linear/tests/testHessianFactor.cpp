@@ -36,6 +36,12 @@ using namespace gtsam;
 const double tol = 1e-5;
 
 /* ************************************************************************* */
+TEST(HessianFactor, emptyConstructor) {
+	HessianFactor f;
+//	f.print();
+}
+
+/* ************************************************************************* */
 TEST(HessianFactor, ConversionConstructor) {
 
   HessianFactor expected;
