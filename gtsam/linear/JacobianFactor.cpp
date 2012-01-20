@@ -161,7 +161,18 @@ namespace gtsam {
   JacobianFactor::JacobianFactor(const HessianFactor& factor) : Ab_(matrix_) {
     keys_ = factor.keys_;
     Ab_.assignNoalias(factor.info_);
-    size_t maxrank = choleskyCareful(matrix_).first;
+    size_t maxrank;
+    try {
+      maxrank = choleskyCareful(matrix_).first;
+    } catch(const CarefulCholeskyNegativeMatrixException& e) {
+      cout <<
+          "Attempting to convert a HessianFactor to a JacobianFactor, but for this\n"
+          "HessianFactor it is not possible because either the Hessian is negative or\n"
+          "indefinite, or the quadratic error function it describes becomes negative for\n"
+          "some values.  Here is the HessianFactor on which this conversion was attempted:\n";
+      factor.print("");
+      throw;
+    }
     // Zero out lower triangle
     matrix_.topRows(maxrank).triangularView<Eigen::StrictlyLower>() =
         Matrix::Zero(maxrank, matrix_.cols());

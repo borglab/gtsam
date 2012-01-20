@@ -45,7 +45,7 @@ static inline bool choleskyStep(Matrix& ATA, size_t k, size_t order) {
   if(alpha < negativePivotThreshold) {
     cout << "pivot = " << alpha << endl;
     print(ATA, "Partially-factorized matrix: ");
-    throw(invalid_argument("The matrix was found to be non-positive-semidefinite when factoring with careful Cholesky."));
+    throw(CarefulCholeskyNegativeMatrixException());
   } else if(alpha < 0.0)
     alpha = 0.0;
     
@@ -64,7 +64,9 @@ static inline bool choleskyStep(Matrix& ATA, size_t k, size_t order) {
     	V *= betainv;
 
       // Update A(k+1:end, k+1:end) <- A(k+1:end, k+1:end) - v*v' / alpha
-      ATA.block(k+1, k+1, order-(k+1), order-(k+1)) -= V.transpose() * V;
+    	ATA.block(k+1, k+1, order-(k+1), order-(k+1)) -= V.transpose() * V;
+//    	ATA.bottomRightCorner(order-(k+1), order-(k+1)).selfadjointView<Eigen::Upper>()
+//    	    .rankUpdate(V.adjoint(), -1);
     }
 
     return true;

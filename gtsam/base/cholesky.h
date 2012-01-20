@@ -24,8 +24,9 @@ namespace gtsam {
 
 /**
  * An exception indicating an attempt to factor a negative or indefinite matrix.
- * If detailed exceptions are enabled
- * \todo fill this in
+ * If detailed exceptions are enabled, then the \c detail member will contain
+ * the matrices leading to the problem, see documentation for
+ * NegativeMatrixException::Detail.
  */
 struct NegativeMatrixException : public std::exception {
   /// Detail for NegativeMatrixException
@@ -46,6 +47,18 @@ struct NegativeMatrixException : public std::exception {
   NegativeMatrixException(const Detail& _detail) /**< Constructor with detail */ : detail(new Detail(_detail)) {}
   NegativeMatrixException(const boost::shared_ptr<Detail>& _detail) /**< Constructor with detail */ : detail(_detail) {}
   virtual ~NegativeMatrixException() throw() {}
+};
+
+/**
+ * An exception indicating an attempt to factor a negative or indefinite matrix.
+ * If detailed exceptions are enabled, then the \c detail member will contain
+ * the matrices leading to the problem, see documentation for
+ * CarefulCholeskyNegativeMatrixException::Detail.
+ */
+struct CarefulCholeskyNegativeMatrixException : public std::exception {
+  CarefulCholeskyNegativeMatrixException() throw() {}
+  virtual ~CarefulCholeskyNegativeMatrixException() throw() {}
+  const char* what() const throw() { return "The matrix was found to be non-positive-semidefinite when factoring with careful Cholesky."; }
 };
 
 /**
