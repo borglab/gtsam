@@ -26,14 +26,14 @@ namespace gtsam {
 /* ************************************************************************* */
 GaussianSequentialSolver::GaussianSequentialSolver(
 		const FactorGraph<GaussianFactor>& factorGraph, bool useQR) :
-		Base(factorGraph), useQR_(useQR || hasConstraints(factorGraph)) {
+		Base(factorGraph), useQR_(useQR) {
 }
 
 /* ************************************************************************* */
 GaussianSequentialSolver::GaussianSequentialSolver(
 		const FactorGraph<GaussianFactor>::shared_ptr& factorGraph,
 		const VariableIndex::shared_ptr& variableIndex, bool useQR) :
-		Base(factorGraph, variableIndex), useQR_(useQR || hasConstraints(*factorGraph)) {
+		Base(factorGraph, variableIndex), useQR_(useQR) {
 }
 
 /* ************************************************************************* */
