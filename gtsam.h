@@ -286,19 +286,56 @@ class JacobianFactor {
 	GaussianConditional* eliminateFirst();
 };
 
+class HessianFactor {
+	HessianFactor(const HessianFactor& gf);
+	HessianFactor();
+	HessianFactor(int j, Matrix G, Vector g, double f);
+	HessianFactor(int j, Vector mu, Matrix Sigma);
+	HessianFactor(int j1, int j2, Matrix G11, Matrix G12, Vector g1, Matrix G22,
+			Vector g2, double f);
+	HessianFactor(int j1, int j2, int j3, Matrix G11, Matrix G12, Matrix G13,
+			Vector g1, Matrix G22, Matrix G23, Vector g2, Matrix G33, Vector g3,
+			double f);
+	HessianFactor(const GaussianConditional& cg);
+	HessianFactor(const GaussianFactor& factor);
+  void print(string s) const;
+  bool equals(const GaussianFactor& lf, double tol) const;
+  double error(const VectorValues& c) const;
+};
+
 class GaussianFactorGraph {
 	GaussianFactorGraph();
+  GaussianFactorGraph(const GaussianBayesNet& CBN);
+
+  // From FactorGraph
+	void push_back(GaussianFactor* factor);
 	void print(string s) const;
 	bool equals(const GaussianFactorGraph& lfgraph, double tol) const;
-
 	int size() const;
-	void push_back(GaussianFactor* ptr_f);
+
+	// Building the graph
+	void add(JacobianFactor* factor);
+	void add(Vector b);
+	void add(int key1, Matrix A1, Vector b, const SharedDiagonal& model);
+	void add(int key1, Matrix A1, int key2, Matrix A2, Vector b,
+			const SharedDiagonal& model);
+	void add(int key1, Matrix A1, int key2, Matrix A2, int key3, Matrix A3,
+			Vector b, const SharedDiagonal& model);
+	void add(HessianFactor* factor);
+
+	// error and probability
 	double error(const VectorValues& c) const;
 	double probPrime(const VectorValues& c) const;
+
+	// combining
+  static GaussianFactorGraph combine2(const GaussianFactorGraph& lfg1,
+      const GaussianFactorGraph& lfg2);
 	void combine(const GaussianFactorGraph& lfg);
+
+	// Conversion to matrices
+	Matrix sparseJacobian_() const;
 	Matrix denseJacobian() const;
 	Matrix denseHessian() const;
-	Matrix sparseJacobian_() const;
 };
 
 class GaussianSequentialSolver {
