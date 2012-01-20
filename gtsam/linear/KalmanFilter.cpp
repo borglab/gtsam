@@ -29,10 +29,9 @@
 namespace gtsam {
 
 	/// Auxiliary function to solve factor graph and return pointer to root conditional
-	GaussianConditional* solve(GaussianFactorGraph& factorGraph) {
+	GaussianConditional* solve(GaussianFactorGraph& factorGraph, bool useQR) {
 
 		// Solve the factor graph
-		const bool useQR = true; // make sure we use QR (numerically stable)
 		GaussianSequentialSolver solver(factorGraph, useQR);
 		GaussianBayesNet::shared_ptr bayesNet = solver.eliminate();
 
@@ -44,8 +43,9 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	KalmanFilter::KalmanFilter(size_t n, GaussianConditional* density) :
-			n_(n), I_(eye(n_, n_)), density_(density) {
+	KalmanFilter::KalmanFilter(size_t n, GaussianConditional* density,
+			Factorization method) :
+			n_(n), I_(eye(n_, n_)), method_(method), density_(density) {
 	}
 
 	/* ************************************************************************* */
@@ -59,29 +59,31 @@ namespace gtsam {
 		factorGraph.push_back(GaussianFactor::shared_ptr(newFactor));
 
 		// Eliminate graph in order x0, x1, to get Bayes net P(x0|x1)P(x1)
-		return KalmanFilter(n_, solve(factorGraph));
+		return KalmanFilter(n_, solve(factorGraph, method_ == QR), method_);
 	}
 
 	/* ************************************************************************* */
-	KalmanFilter::KalmanFilter(const Vector& x0, const SharedDiagonal& P0) :
-			n_(x0.size()), I_(eye(n_, n_)) {
+	KalmanFilter::KalmanFilter(const Vector& x0, const SharedDiagonal& P0,
+			Factorization method) :
+			n_(x0.size()), I_(eye(n_, n_)), method_(method) {
 
 		// Create a factor graph f(x0), eliminate it into P(x0)
 		GaussianFactorGraph factorGraph;
 		factorGraph.add(0, I_, x0, P0); // |x-x0|^2_diagSigma
-		density_.reset(solve(factorGraph));
+		density_.reset(solve(factorGraph, method_ == QR));
 	}
 
 	/* ************************************************************************* */
-	KalmanFilter::KalmanFilter(const Vector& x, const Matrix& P0) :
-			n_(x.size()), I_(eye(n_, n_)) {
+	KalmanFilter::KalmanFilter(const Vector& x, const Matrix& P0,
+			Factorization method) :
+			n_(x.size()), I_(eye(n_, n_)), method_(method) {
 
 		// Create a factor graph f(x0), eliminate it into P(x0)
 		GaussianFactorGraph factorGraph;
 		// 0.5*(x-x0)'*inv(Sigma)*(x-x0)
 		HessianFactor::shared_ptr factor(new HessianFactor(0, x, P0));
 		factorGraph.push_back(factor);
-		density_.reset(solve(factorGraph));
+		density_.reset(solve(factorGraph, method_ == QR));
 	}
 
 	/* ************************************************************************* */

@@ -23,6 +23,10 @@
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/GaussianConditional.h>
 
+#ifndef KALMANFILTER_DEFAULT_FACTORIZATION
+#define KALMANFILTER_DEFAULT_FACTORIZATION QR
+#endif
+
 namespace gtsam {
 
 	class SharedDiagonal;
@@ -32,16 +36,29 @@ namespace gtsam {
 	 * Linear Kalman Filter
 	 */
 	class KalmanFilter {
+
+	public:
+
+		/**
+		 *  This Kalman filter is a Square-root Information filter
+		 *  The type below allows you to specify the factorization variant.
+		 */
+		enum Factorization {
+			QR, LDL
+		};
+
 	private:
 
 		const size_t n_; /** dimensionality of state */
 		const Matrix I_; /** identity matrix of size n*n */
+		const Factorization method_; /** algorithm */
 
 		/// The Kalman filter posterior density is a Gaussian Conditional with no parents
 		GaussianConditional::shared_ptr density_;
 
 		/// private constructor
-		KalmanFilter(size_t n, GaussianConditional* density);
+		KalmanFilter(size_t n, GaussianConditional* density, Factorization method =
+				KALMANFILTER_DEFAULT_FACTORIZATION);
 
 		/// add a new factor and marginalize to new Kalman filter
 		KalmanFilter add(GaussianFactor* newFactor);
@@ -54,7 +71,8 @@ namespace gtsam {
 		 * @param x0 estimate at time 0
 		 * @param P0 covariance at time 0, given as a diagonal Gaussian 'model'
 		 */
-		KalmanFilter(const Vector& x0, const SharedDiagonal& P0);
+		KalmanFilter(const Vector& x0, const SharedDiagonal& P0,
+				Factorization method = KALMANFILTER_DEFAULT_FACTORIZATION);
 
 		/**
 		 * Constructor from prior density at time k=0
@@ -62,16 +80,17 @@ namespace gtsam {
 		 * @param x0 estimate at time 0
 		 * @param P0 covariance at time 0, full Gaussian
 		 */
-		KalmanFilter(const Vector& x0, const Matrix& P0);
+		KalmanFilter(const Vector& x0, const Matrix& P0, Factorization method =
+				KALMANFILTER_DEFAULT_FACTORIZATION);
 
 		/// print
-	  void print(const std::string& s="") const {
-	  	std::cout << s << "\n";
-	    Vector m = mean();
-	    Matrix P = covariance();
-	    gtsam::print(m,"mean: ");
-	    gtsam::print(P,"covariance: ");
-	  }
+		void print(const std::string& s = "") const {
+			std::cout << s << "\n";
+			Vector m = mean();
+			Matrix P = covariance();
+			gtsam::print(m, "mean: ");
+			gtsam::print(P, "covariance: ");
+		}
 
 		/** Return mean of posterior P(x|Z) at given all measurements Z */
 		Vector mean() const;
@@ -122,11 +141,12 @@ namespace gtsam {
 		 * Gaussian white noise with covariance R.
 		 * Currently, R is restricted to diagonal Gaussians (model parameter)
 		 */
-		KalmanFilter update(const Matrix& H, const Vector& z, const SharedDiagonal& model);
+		KalmanFilter update(const Matrix& H, const Vector& z,
+				const SharedDiagonal& model);
 
 	};
 
-}// \namespace gtsam
+} // \namespace gtsam
 
 /* ************************************************************************* */
 
