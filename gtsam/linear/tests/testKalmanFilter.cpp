@@ -18,10 +18,9 @@
  */
 
 #include <gtsam/linear/KalmanFilter.h>
-#include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/SharedDiagonal.h>
 #include <gtsam/linear/SharedGaussian.h>
-#include <gtsam/linear/SharedNoiseModel.h>
+#include <gtsam/base/Testable.h>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
@@ -115,9 +114,11 @@ TEST( KalmanFilter, linear1 ) {
 	// Run iteration 3
 	KalmanFilter KF3p = KF2.predict(F, B, u, modelQ);
 	EXPECT(assert_equal(expected3,KF3p.mean()));
+	LONGS_EQUAL(3,KF3p.step());
 
 	KalmanFilter KF3 = KF3p.update(H,z3,modelR);
 	EXPECT(assert_equal(expected3,KF3.mean()));
+	LONGS_EQUAL(3,KF3.step());
 }
 
 /* ************************************************************************* */
@@ -192,9 +193,11 @@ TEST( KalmanFilter, QRvsCholesky ) {
 	// Create two KalmanFilter using different factorization method and compare
 	KalmanFilter KFa = KalmanFilter(mean, covariance,KalmanFilter::QR).predictQ(Psi_k,B,u,dt_Q_k);
 	KalmanFilter KFb = KalmanFilter(mean, covariance,KalmanFilter::LDL).predictQ(Psi_k,B,u,dt_Q_k);
+
+	// Check that they yield the same result
 	EXPECT(assert_equal(KFa.mean(),KFb.mean()));
-//	EXPECT(assert_equal(KFa.information(),KFb.information()));
-//	EXPECT(assert_equal(KFa.covariance(),KFb.covariance()));
+	EXPECT(assert_equal(KFa.information(),KFb.information(),1e-7));
+	EXPECT(assert_equal(KFa.covariance(),KFb.covariance(),1e-7));
 }
 
 /* ************************************************************************* */

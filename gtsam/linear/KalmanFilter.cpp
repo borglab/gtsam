@@ -25,11 +25,15 @@
 #include <gtsam/linear/KalmanFilter.h>
 #include <gtsam/linear/SharedGaussian.h>
 #include <gtsam/linear/HessianFactor.h>
+#include <gtsam/base/Testable.h>
 
 namespace gtsam {
 
+	using namespace std;
+
 	/// Auxiliary function to solve factor graph and return pointer to root conditional
-	GaussianConditional* solve(GaussianFactorGraph& factorGraph, bool useQR) {
+	GaussianConditional::shared_ptr solve(GaussianFactorGraph& factorGraph,
+			bool useQR) {
 
 		// Solve the factor graph
 		GaussianSequentialSolver solver(factorGraph, useQR);
@@ -37,14 +41,12 @@ namespace gtsam {
 
 		// As this is a filter, all we need is the posterior P(x_t),
 		// so we just keep the root of the Bayes net
-		// We need to create a new density, because we always keep the index at 0
-		const GaussianConditional::shared_ptr& r = bayesNet->back();
-		return new GaussianConditional(0, r->get_d(), r->get_R(), r->get_sigmas());
+		return bayesNet->back();
 	}
 
 	/* ************************************************************************* */
-	KalmanFilter::KalmanFilter(size_t n, GaussianConditional* density,
-			Factorization method) :
+	KalmanFilter::KalmanFilter(size_t n,
+			const GaussianConditional::shared_ptr& density, Factorization method) :
 			n_(n), I_(eye(n_, n_)), method_(method), density_(density) {
 	}
 
@@ -70,7 +72,7 @@ namespace gtsam {
 		// Create a factor graph f(x0), eliminate it into P(x0)
 		GaussianFactorGraph factorGraph;
 		factorGraph.add(0, I_, x0, P0); // |x-x0|^2_diagSigma
-		density_.reset(solve(factorGraph, method_ == QR));
+		density_ = solve(factorGraph, method_ == QR);
 	}
 
 	/* ************************************************************************* */
@@ -83,17 +85,29 @@ namespace gtsam {
 		// 0.5*(x-x0)'*inv(Sigma)*(x-x0)
 		HessianFactor::shared_ptr factor(new HessianFactor(0, x, P0));
 		factorGraph.push_back(factor);
-		density_.reset(solve(factorGraph, method_ == QR));
+		density_ = solve(factorGraph, method_ == QR);
+	}
+
+	/* ************************************************************************* */
+	void KalmanFilter::print(const string& s) const {
+		cout << s << "\n";
+		density_->print("density: ");
+		Vector m = mean();
+		Matrix P = covariance();
+		gtsam::print(m, "mean: ");
+		gtsam::print(P, "covariance: ");
 	}
 
 	/* ************************************************************************* */
 	Vector KalmanFilter::mean() const {
 		// Solve for mean
-		Index nVars = 1;
-		VectorValues x(nVars, n_);
+		VectorValues x;
+		Index k = step();
+		// a VectorValues that only has a value for k: cannot be printed
+    x.insert(k, Vector(n_));
 		density_->rhs(x);
 		density_->solveInPlace(x);
-		return x[0];
+		return x[k];
 	}
 
 	/* ************************************************************************* */
@@ -112,7 +126,8 @@ namespace gtsam {
 
 		// The factor related to the motion model is defined as
 		// f2(x_{t},x_{t+1}) = (F*x_{t} + B*u - x_{t+1}) * Q^-1 * (F*x_{t} + B*u - x_{t+1})^T
-		return add(new JacobianFactor(0, -F, 1, I_, B * u, model));
+		Index k = step();
+		return add(new JacobianFactor(k, -F, k+1, I_, B * u, model));
 	}
 
 	/* ************************************************************************* */
@@ -136,7 +151,8 @@ namespace gtsam {
 		Matrix G12 = -Ft * M, G11 = -G12 * F, G22 = M;
 		Vector b = B * u, g2 = M * b, g1 = -Ft * g2;
 		double f = dot(b, g2);
-		return add(new HessianFactor(0, 1, G11, G12, g1, G22, g2, f));
+		Index k = step();
+		return add(new HessianFactor(k, k+1, G11, G12, g1, G22, g2, f));
 	}
 
 	/* ************************************************************************* */
@@ -144,7 +160,8 @@ namespace gtsam {
 			const Vector& b, const SharedDiagonal& model) {
 		// Nhe factor related to the motion model is defined as
 		// f2(x_{t},x_{t+1}) = |A0*x_{t} + A1*x_{t+1} - b|^2
-		return add(new JacobianFactor(0, A0, 1, A1, b, model));
+		Index k = step();
+		return add(new JacobianFactor(k, A0, k+1, A1, b, model));
 	}
 
 	/* ************************************************************************* */
@@ -153,7 +170,8 @@ namespace gtsam {
 		// The factor related to the measurements would be defined as
 		// f2 = (h(x_{t}) - z_{t}) * R^-1 * (h(x_{t}) - z_{t})^T
 		//    = (x_{t} - z_{t}) * R^-1 * (x_{t} - z_{t})^T
-		return add(new JacobianFactor(0, H, z, model));
+		Index k = step();
+		return add(new JacobianFactor(k, H, z, model));
 	}
 
 /* ************************************************************************* */

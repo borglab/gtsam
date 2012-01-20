@@ -57,8 +57,8 @@ namespace gtsam {
 		GaussianConditional::shared_ptr density_;
 
 		/// private constructor
-		KalmanFilter(size_t n, GaussianConditional* density, Factorization method =
-				KALMANFILTER_DEFAULT_FACTORIZATION);
+		KalmanFilter(size_t n, const GaussianConditional::shared_ptr& density,
+				Factorization method = KALMANFILTER_DEFAULT_FACTORIZATION);
 
 		/// add a new factor and marginalize to new Kalman filter
 		KalmanFilter add(GaussianFactor* newFactor);
@@ -84,13 +84,10 @@ namespace gtsam {
 				KALMANFILTER_DEFAULT_FACTORIZATION);
 
 		/// print
-		void print(const std::string& s = "") const {
-			std::cout << s << "\n";
-			Vector m = mean();
-			Matrix P = covariance();
-			gtsam::print(m, "mean: ");
-			gtsam::print(P, "covariance: ");
-		}
+		void print(const std::string& s = "") const;
+
+		/** Return step index k, starts at 0, incremented at each predict. */
+		Index step() const { return density_->firstFrontalKey();}
 
 		/** Return mean of posterior P(x|Z) at given all measurements Z */
 		Vector mean() const;
