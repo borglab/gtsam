@@ -65,6 +65,11 @@ HessianFactor::HessianFactor(const HessianFactor& gf) :
 
 /* ************************************************************************* */
 HessianFactor::HessianFactor() : info_(matrix_) {
+  // The empty HessianFactor has only a constant error term of zero
+  FastVector<size_t> dims;
+  dims.push_back(1);
+  info_.resize(dims.begin(), dims.end(), false);
+  info_(0,0)(0,0) = 0.0;
 	assertInvariants();
 }
 

@@ -38,7 +38,10 @@ const double tol = 1e-5;
 /* ************************************************************************* */
 TEST(HessianFactor, emptyConstructor) {
 	HessianFactor f;
-//	f.print();
+	DOUBLES_EQUAL(0.0, f.constantTerm(), 1e-9);        // Constant term should be zero
+	EXPECT(assert_equal(Vector(), f.linearTerm()));    // Linear term should be empty
+	EXPECT(assert_equal(zeros(1,1), f.info()));        // Full matrix should be 1-by-1 zero matrix
+	DOUBLES_EQUAL(0.0, f.error(VectorValues()), 1e-9); // Should have zero error
 }
 
 /* ************************************************************************* */
