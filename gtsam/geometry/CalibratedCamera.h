@@ -55,12 +55,15 @@ namespace gtsam {
     /// @{
 
 		/// construct from vector
-		CalibratedCamera(const Vector &v) ;
+		CalibratedCamera(const Vector &v);
 
 		/// @}
 		/// @name Testable
 		/// @{
 
+        void print(const std::string& s="") const {
+            pose_.print(); 
+        }
 		/// check equality to another camera
 		bool equals (const CalibratedCamera &camera, double tol = 1e-9) const {
 			return pose_.equals(camera.pose(), tol) ;
