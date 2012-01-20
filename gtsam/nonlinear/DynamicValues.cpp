@@ -78,7 +78,7 @@ namespace gtsam {
 
     BOOST_FOREACH(const KeyValuePair& key_value, values_) {
       const SubVector& singleDelta = delta[ordering[key_value.first]]; // Delta for this value
-      const std::auto_ptr<const Value> retractedValue = key_value.second->retract_(singleDelta); // Retract
+      ValuePtr retractedValue(key_value.second->retract_(singleDelta)); // Retract
       result.values_.insert(make_pair(key_value.first, retractedValue)); // Add retracted result directly to result values
     }
 
@@ -96,7 +96,7 @@ namespace gtsam {
   void DynamicValues::localCoordinates(const DynamicValues& cp, const Ordering& ordering, VectorValues& result) const {
     if(this->size() != cp.size())
       throw DynamicValuesMismatched();
-    for(const_iterator it1=this->begin(), it2=other.begin(); it1!=this->end(); ++it1, ++it2) {
+    for(const_iterator it1=this->begin(), it2=cp.begin(); it1!=this->end(); ++it1, ++it2) {
       if(it1->first != it2->first)
         throw DynamicValuesMismatched(); // If keys do not match
       result[ordering[it1->first]] = it1->second->localCoordinates_(*it2->second); // Will throw a dynamic_cast exception if types do not match
@@ -120,14 +120,14 @@ namespace gtsam {
   /* ************************************************************************* */
   void DynamicValues::erase(const Symbol& j) {
     iterator item = values_.find(j);
-    if(item == values_end)
+    if(item == values_.end())
       throw DynamicValuesKeyDoesNotExist("erase", j);
     values_.erase(item);
   }
 
   /* ************************************************************************* */
   FastList<Symbol> DynamicValues::keys() const {
-    return list<Symbol>(
+    return FastList<Symbol>(
         boost::make_transform_iterator(values_.begin(), &KeyValuePair::first),
         boost::make_transform_iterator(values_.end(), &KeyValuePair::first));
   }

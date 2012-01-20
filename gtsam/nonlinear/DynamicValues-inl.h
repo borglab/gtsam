@@ -22,6 +22,8 @@
  *  which is also a manifold element, and hence supports operations dim, retract, and localCoordinates.
  */
 
+#include <utility>
+
 #include <gtsam/nonlinear/DynamicValues.h> // Only so Eclipse finds class definition
 
 namespace gtsam {
@@ -94,7 +96,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class ValueType>
   void DynamicValues::insert(const Symbol& j, const ValueType& val) {
-    pair<iterator,bool> insertResult = values_.insert(make_pair(j, ValuePtr(new ValueType(val))));
+    std::pair<iterator,bool> insertResult = values_.insert(make_pair(j, ValuePtr(new ValueType(val))));
     if(!insertResult.second)
       throw DynamicValuesKeyAlreadyExists(j);
   }
