@@ -27,9 +27,13 @@
 
 namespace gtsam {
 
-	/* ************************************************************************* */
 	/**
-	 * GaussianJunctionTree that does the optimization
+	 * A JunctionTree where all the factors are of type GaussianFactor.
+	 *
+	 * In GTSAM, typically, a GaussianJunctionTree is created directly from a GaussianFactorGraph,
+	 * after which you call optimize() to solve for the mean, or JunctionTree::eliminate() to
+	 * create a BayesTree<GaussianConditional>. In both cases, you need to provide a basic
+	 * GaussianFactorGraph::Eliminate function that will be used to
 	 *
 	 * \ingroup Multifrontal
 	 */
@@ -60,7 +64,9 @@ namespace gtsam {
     GaussianJunctionTree(const GaussianFactorGraph& fg, const VariableIndex& variableIndex)
     : Base(fg, variableIndex) {}
 
-		// optimize the linear graph
+		/**
+		 *  optimize the linear graph
+		 */
 		VectorValues optimize(Eliminate function) const;
 
 		// convenient function to return dimensions of all variables in the BayesTree<GaussianConditional>

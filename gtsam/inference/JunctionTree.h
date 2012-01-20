@@ -30,18 +30,22 @@
 namespace gtsam {
 
 	/**
-	 * In gtsam a junction tree is an intermediate data structure in multifrontal
-	 * variable elimination.  Each node is a cluster of factors, along with a
-	 * clique of variables that are eliminated all at once.  The tree structure and
-	 * elimination method are exactly analagous to the EliminationTree, except that
-	 * in the JunctionTree, at each node multiple variables are eliminated at the same
-	 * time.
+	 * A ClusterTree, i.e., a set of variable clusters with factors, arranged in a tree, with
+	 * the additional property that it represents the clique tree associated with a Bayes net.
 	 *
-	 * A junction tree (or clique-tree) is a cluster-tree where each node k represents a
-	 * clique (maximal fully connected subset) of an associated chordal graph, such as a
-	 * chordal Bayes net resulting from elimination. In GTSAM the BayesTree is used to
-	 * represent the clique tree associated with a Bayes net, and the JunctionTree is
-	 * used to collect the factors associated with each clique during the elimination process.
+	 * In GTSAM a junction tree is an intermediate data structure in multifrontal
+	 * variable elimination.  Each node is a cluster of factors, along with a
+	 * clique of variables that are eliminated all at once. In detail, every node k represents
+	 * a clique (maximal fully connected subset) of an associated chordal graph, such as a
+	 * chordal Bayes net resulting from elimination.
+	 *
+	 * The difference with the BayesTree is that a JunctionTree stores factors, whereas a
+	 * BayesTree stores conditionals, that are the product of eliminating the factors in the
+	 * corresponding JunctionTree cliques.
+	 *
+	 * The tree structure and elimination method are exactly analagous to the EliminationTree,
+	 * except that in the JunctionTree, at each node multiple variables are eliminated at a time.
+	 *
 	 *
 	 * \ingroup Multifrontal
 	 */
