@@ -20,6 +20,7 @@
  * @author Frank Dellaert
  */
 
+#include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/GaussianConditional.h>
 
 namespace gtsam {
@@ -41,6 +42,9 @@ namespace gtsam {
 
 		/// private constructor
 		KalmanFilter(size_t n, GaussianConditional* density);
+
+		/// add a new factor and marginalize to new Kalman filter
+		KalmanFilter add(GaussianFactor* newFactor);
 
 	public:
 
