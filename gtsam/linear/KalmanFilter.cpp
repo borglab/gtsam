@@ -32,7 +32,7 @@ namespace gtsam {
 	GaussianConditional* solve(GaussianFactorGraph& factorGraph) {
 
 		// Solve the factor graph
-		const bool useQR = false; // make sure we use QR (numerically stable)
+		const bool useQR = true; // make sure we use QR (numerically stable)
 		GaussianSequentialSolver solver(factorGraph, useQR);
 		GaussianBayesNet::shared_ptr bayesNet = solver.eliminate();
 
@@ -41,6 +41,11 @@ namespace gtsam {
 		// We need to create a new density, because we always keep the index at 0
 		const GaussianConditional::shared_ptr& r = bayesNet->back();
 		return new GaussianConditional(0, r->get_d(), r->get_R(), r->get_sigmas());
+	}
+
+	/* ************************************************************************* */
+	KalmanFilter::KalmanFilter(size_t n, GaussianConditional* density) :
+			n_(n), I_(eye(n_, n_)),density_(density) {
 	}
 
 	/* ************************************************************************* */
@@ -86,7 +91,7 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	void KalmanFilter::predict(const Matrix& F, const Matrix& B, const Vector& u,
+	KalmanFilter KalmanFilter::predict(const Matrix& F, const Matrix& B, const Vector& u,
 			const SharedDiagonal& model) {
 		// We will create a small factor graph f1-(x0)-f2-(x1)
 		// where factor f1 is just the prior from time t0, P(x0)
@@ -101,11 +106,11 @@ namespace gtsam {
 		factorGraph.add(0, -F, 1, I_, B * u, model);
 
 		// Eliminate graph in order x0, x1, to get Bayes net P(x0|x1)P(x1)
-		density_.reset(solve(factorGraph));
+		return KalmanFilter(n_,solve(factorGraph));
 	}
 
 	/* ************************************************************************* */
-	void KalmanFilter::predictQ(const Matrix& F, const Matrix& B, const Vector& u,
+	KalmanFilter KalmanFilter::predictQ(const Matrix& F, const Matrix& B, const Vector& u,
 			const Matrix& Q) {
 
 #ifndef NDEBUG
@@ -132,17 +137,12 @@ namespace gtsam {
 		HessianFactor::shared_ptr factor(new HessianFactor(0, 1, G11, G12, g1, G22, g2, f));
 		factorGraph.push_back(factor);
 
-#ifdef DEBUG_PREDICTQ
-    Matrix AbtAb = factorGraph.denseHessian();
-		gtsam::print(AbtAb);
-#endif
-
 		// Eliminate graph in order x0, x1, to get Bayes net P(x0|x1)P(x1)
-		density_.reset(solve(factorGraph));
+		return KalmanFilter(n_,solve(factorGraph));
 	}
 
 	/* ************************************************************************* */
-	void KalmanFilter::predict2(const Matrix& A0, const Matrix& A1, const Vector& b,
+	KalmanFilter KalmanFilter::predict2(const Matrix& A0, const Matrix& A1, const Vector& b,
 			const SharedDiagonal& model) {
 
 		// Same scheme as in predict:
@@ -152,17 +152,11 @@ namespace gtsam {
 		// However, now the factor related to the motion model is defined as
 		// f2(x_{t},x_{t+1}) = |A0*x_{t} + A1*x_{t+1} - b|^2
 		factorGraph.add(0, A0, 1, A1, b, model);
-
-		#ifdef DEBUG_PREDICTQ
-    Matrix AbtAb = factorGraph.denseHessian();
-		gtsam::print(AbtAb);
-#endif
-
-		density_.reset(solve(factorGraph));
+		return KalmanFilter(n_,solve(factorGraph));
 	}
 
 	/* ************************************************************************* */
-	void KalmanFilter::update(const Matrix& H, const Vector& z,
+	KalmanFilter KalmanFilter::update(const Matrix& H, const Vector& z,
 			const SharedDiagonal& model) {
 		// We will create a small factor graph f1-(x0)-f2
 		// where factor f1 is the predictive density
@@ -178,7 +172,7 @@ namespace gtsam {
 		factorGraph.add(0, H, z, model);
 
 		// Eliminate graph in order x0, x1, to get Bayes net P(x0|x1)P(x1)
-		density_.reset(solve(factorGraph));
+		return KalmanFilter(n_,solve(factorGraph));
 	}
 
 /* ************************************************************************* */

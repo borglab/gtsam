@@ -91,30 +91,33 @@ TEST( KalmanFilter, linear1 ) {
 	State x_initial(0.0,0.0);
 	SharedDiagonal P_initial = noiseModel::Isotropic::Sigma(2,0.1);
 
-	// Create an KalmanFilter object
-	KalmanFilter kalmanFilter(x_initial, P_initial);
-	EXPECT(assert_equal(expected0,kalmanFilter.mean()));
-	EXPECT(assert_equal(P00,kalmanFilter.covariance()));
+	// Create initial KalmanFilter object
+	KalmanFilter KF0(x_initial, P_initial);
+	EXPECT(assert_equal(expected0,KF0.mean()));
+	EXPECT(assert_equal(P00,KF0.covariance()));
 
 	// Run iteration 1
-	kalmanFilter.predict(F, B, u, modelQ);
-	EXPECT(assert_equal(expected1,kalmanFilter.mean()));
-	EXPECT(assert_equal(P01,kalmanFilter.covariance()));
-	kalmanFilter.update(H,z1,modelR);
-	EXPECT(assert_equal(expected1,kalmanFilter.mean()));
-	EXPECT(assert_equal(I11,kalmanFilter.information()));
+	KalmanFilter KF1p = KF0.predict(F, B, u, modelQ);
+	EXPECT(assert_equal(expected1,KF1p.mean()));
+	EXPECT(assert_equal(P01,KF1p.covariance()));
+
+	KalmanFilter KF1 = KF1p.update(H,z1,modelR);
+	EXPECT(assert_equal(expected1,KF1.mean()));
+	EXPECT(assert_equal(I11,KF1.information()));
 
 	// Run iteration 2 (with full covariance)
-	kalmanFilter.predictQ(F, B, u, Q);
-	EXPECT(assert_equal(expected2,kalmanFilter.mean()));
-	kalmanFilter.update(H,z2,modelR);
-	EXPECT(assert_equal(expected2,kalmanFilter.mean()));
+	KalmanFilter KF2p = KF1.predictQ(F, B, u, Q);
+	EXPECT(assert_equal(expected2,KF2p.mean()));
+
+	KalmanFilter KF2 = KF2p.update(H,z2,modelR);
+	EXPECT(assert_equal(expected2,KF2.mean()));
 
 	// Run iteration 3
-	kalmanFilter.predict(F, B, u, modelQ);
-	EXPECT(assert_equal(expected3,kalmanFilter.mean()));
-	kalmanFilter.update(H,z3,modelR);
-	EXPECT(assert_equal(expected3,kalmanFilter.mean()));
+	KalmanFilter KF3p = KF2.predict(F, B, u, modelQ);
+	EXPECT(assert_equal(expected3,KF3p.mean()));
+
+	KalmanFilter KF3 = KF3p.update(H,z3,modelR);
+	EXPECT(assert_equal(expected3,KF3.mean()));
 }
 
 /* ************************************************************************* */
@@ -133,18 +136,17 @@ TEST( KalmanFilter, predict ) {
 	SharedDiagonal P_initial = noiseModel::Isotropic::Sigma(2,1);
 
 	// Create two KalmanFilter objects
-	KalmanFilter kalmanFilter1(x_initial, P_initial);
-	KalmanFilter kalmanFilter2(x_initial, P_initial);
+	KalmanFilter KF0(x_initial, P_initial);
 
 	// Ensure predictQ and predict2 give same answer for non-trivial inputs
-	kalmanFilter1.predictQ(F, B, u, Q);
+	KalmanFilter KFa = KF0.predictQ(F, B, u, Q);
 	// We have A1 = -F,  A2 = I_, b = B*u, pre-multipled with R to match Q noise model
 	Matrix A1 = -R*F, A2 = R;
 	Vector b = R*B*u;
 	SharedDiagonal nop = noiseModel::Isotropic::Sigma(2, 1.0);
-	kalmanFilter2.predict2(A1,A2,b,nop);
-	EXPECT(assert_equal(kalmanFilter1.mean(),kalmanFilter2.mean()));
-	EXPECT(assert_equal(kalmanFilter1.covariance(),kalmanFilter2.covariance()));
+	KalmanFilter KFb = KF0.predict2(A1,A2,b,nop);
+	EXPECT(assert_equal(KFa.mean(),KFb.mean()));
+	EXPECT(assert_equal(KFa.covariance(),KFb.covariance()));
 }
 
 /* ************************************************************************* */

@@ -33,11 +33,14 @@ namespace gtsam {
 	class KalmanFilter {
 	private:
 
-		size_t n_; /** dimensionality of state */
-		Matrix I_; /** identity matrix of size n*n */
+		const size_t n_; /** dimensionality of state */
+		const Matrix I_; /** identity matrix of size n*n */
 
-		/** The Kalman filter posterior density is a Gaussian Conditional with no parents */
+		/// The Kalman filter posterior density is a Gaussian Conditional with no parents
 		GaussianConditional::shared_ptr density_;
+
+		/// private constructor
+		KalmanFilter(size_t n, GaussianConditional* density);
 
 	public:
 
@@ -84,7 +87,7 @@ namespace gtsam {
 		 *   where F is the state transition model/matrix, B is the control input model,
 		 *   and w is zero-mean, Gaussian white noise with covariance Q.
 		 */
-		void predict(const Matrix& F, const Matrix& B, const Vector& u,
+		KalmanFilter predict(const Matrix& F, const Matrix& B, const Vector& u,
 				const SharedDiagonal& modelQ);
 
 		/*
@@ -93,7 +96,7 @@ namespace gtsam {
 		 *  physical property, such as velocity or acceleration, and G is derived from physics.
 		 *  This version allows more realistic models than a diagonal covariance matrix.
 		 */
-		void predictQ(const Matrix& F, const Matrix& B, const Vector& u,
+		KalmanFilter predictQ(const Matrix& F, const Matrix& B, const Vector& u,
 				const Matrix& Q);
 
 		/**
@@ -104,7 +107,7 @@ namespace gtsam {
 		 *   This version of predict takes GaussianFactor motion model [A0 A1 b]
 		 *   with an optional noise model.
 		 */
-		void predict2(const Matrix& A0, const Matrix& A1, const Vector& b,
+		KalmanFilter predict2(const Matrix& A0, const Matrix& A1, const Vector& b,
 				const SharedDiagonal& model);
 
 		/**
@@ -115,7 +118,7 @@ namespace gtsam {
 		 * Gaussian white noise with covariance R.
 		 * Currently, R is restricted to diagonal Gaussians (model parameter)
 		 */
-		void update(const Matrix& H, const Vector& z, const SharedDiagonal& model);
+		KalmanFilter update(const Matrix& H, const Vector& z, const SharedDiagonal& model);
 
 	};
 
