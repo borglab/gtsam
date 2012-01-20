@@ -83,18 +83,26 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 
 		/** convert from a derived type */
 		template<class DERIVEDFACTOR>
-		FactorGraph(const FactorGraph<DERIVEDFACTOR>& factors) { factors_.insert(end(), factors.begin(), factors.end()); }
+		FactorGraph(const FactorGraph<DERIVEDFACTOR>& factors) {
+			factors_.insert(end(), factors.begin(), factors.end());
+		}
 
 		/** Add a factor */
 		template<class DERIVEDFACTOR>
-		void push_back(const boost::shared_ptr<DERIVEDFACTOR>& factor) { factors_.push_back(sharedFactor(factor)); }
+		void push_back(const boost::shared_ptr<DERIVEDFACTOR>& factor) {
+			factors_.push_back(boost::shared_ptr<FACTOR>(factor));
+		}
 
 		/** push back many factors */
-		void push_back(const FactorGraph<FACTOR>& factors) { factors_.insert(end(), factors.begin(), factors.end()); }
+		void push_back(const FactorGraph<FACTOR>& factors) {
+			factors_.insert(end(), factors.begin(), factors.end());
+		}
 
 		/** push back many factors with an iterator */
 		template<typename ITERATOR>
-		void push_back(ITERATOR firstFactor, ITERATOR lastFactor) { factors_.insert(end(), firstFactor, lastFactor); }
+		void push_back(ITERATOR firstFactor, ITERATOR lastFactor) {
+			factors_.insert(end(), firstFactor, lastFactor);
+		}
 
     /** push back many factors stored in a vector*/
     template<typename DERIVEDFACTOR>

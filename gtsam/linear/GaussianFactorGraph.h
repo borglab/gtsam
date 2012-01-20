@@ -25,6 +25,7 @@
 
 #include <gtsam/base/FastSet.h>
 #include <gtsam/linear/Errors.h>
+#include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 
@@ -84,22 +85,32 @@ namespace gtsam {
       push_back(fg);
     }
 
+		/** Add a Jacobian factor */
+		void add(const boost::shared_ptr<JacobianFactor>& factor) {
+			factors_.push_back(boost::shared_ptr<GaussianFactor>(factor));
+		}
+
+		/** Add a Hessian factor */
+		void add(const boost::shared_ptr<HessianFactor>& factor) {
+			factors_.push_back(boost::shared_ptr<GaussianFactor>(factor));
+		}
+
     /** Add a null factor */
     void add(const Vector& b) {
-      push_back(sharedFactor(new JacobianFactor(b)));
+    	add(JacobianFactor::shared_ptr(new JacobianFactor(b)));
     }
 
     /** Add a unary factor */
     void add(Index key1, const Matrix& A1,
         const Vector& b, const SharedDiagonal& model) {
-      push_back(sharedFactor(new JacobianFactor(key1,A1,b,model)));
+    	add(JacobianFactor::shared_ptr(new JacobianFactor(key1,A1,b,model)));
     }
 
     /** Add a binary factor */
     void add(Index key1, const Matrix& A1,
         Index key2, const Matrix& A2,
         const Vector& b, const SharedDiagonal& model) {
-      push_back(sharedFactor(new JacobianFactor(key1,A1,key2,A2,b,model)));
+    	add(JacobianFactor::shared_ptr(new JacobianFactor(key1,A1,key2,A2,b,model)));
     }
 
     /** Add a ternary factor */
@@ -107,13 +118,13 @@ namespace gtsam {
         Index key2, const Matrix& A2,
         Index key3, const Matrix& A3,
         const Vector& b, const SharedDiagonal& model) {
-      push_back(sharedFactor(new JacobianFactor(key1,A1,key2,A2,key3,A3,b,model)));
+    	add(JacobianFactor::shared_ptr(new JacobianFactor(key1,A1,key2,A2,key3,A3,b,model)));
     }
 
     /** Add an n-ary factor */
     void add(const std::vector<std::pair<Index, Matrix> > &terms,
         const Vector &b, const SharedDiagonal& model) {
-      push_back(sharedFactor(new JacobianFactor(terms,b,model)));
+    	add(JacobianFactor::shared_ptr(new JacobianFactor(terms,b,model)));
     }
 
     /**
