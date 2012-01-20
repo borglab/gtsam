@@ -151,11 +151,15 @@ mxArray* wrap<const gtsam::Vector >(const gtsam::Vector& v) {
 // wrap a const Eigen MATRIX into a double matrix
 mxArray* wrap_Matrix(const gtsam::Matrix& A) {
   int m = A.rows(), n = A.cols();
+#ifdef DEBUG_WRAP
+  mexPrintf("wrap_Matrix called with A = \n", m,n);
+  gtsam::print(A);
+#endif
   mxArray *result = mxCreateDoubleMatrix(m, n, mxREAL);
   double *data = mxGetPr(result);
   // converts from column-major to row-major
   for (int j=0;j<n;j++) for (int i=0;i<m;i++,data++) *data = A(i,j);
-  return result;
+	return result;
 }
 
 // specialization to Eigen MATRIX -> double matrix
@@ -243,10 +247,16 @@ template<>
 gtsam::Matrix unwrap< gtsam::Matrix >(const mxArray* array) {
   if (mxIsDouble(array)==false) error("unwrap<matrix>: not a matrix");
   int m = mxGetM(array), n = mxGetN(array);
+#ifdef DEBUG_WRAP
+  mexPrintf("unwrap< gtsam::Matrix > called with %dx%d argument\n", m,n);
+#endif
   double* data = (double*)mxGetData(array);
   gtsam::Matrix A(m,n);
   // converts from row-major to column-major
   for (int j=0;j<n;j++) for (int i=0;i<m;i++,data++) A(i,j) = *data;
+#ifdef DEBUG_WRAP
+	gtsam::print(A);
+#endif
   return A;
 }
 
