@@ -353,10 +353,10 @@ class KalmanFilter {
 	Vector mean() const;
 	Matrix information() const;
 	Matrix covariance() const;
-	void predict(Matrix F, Matrix B, Vector u, const SharedDiagonal& model);
-	void predictQ(Matrix F, Matrix B, Vector u, Matrix Q);
-	void predict2(Matrix A0, Matrix A1, Vector b, const SharedDiagonal& model);
-	void update(Matrix H, Vector z, const SharedDiagonal& model);
+	KalmanFilter predict(Matrix F, Matrix B, Vector u, const SharedDiagonal& model);
+	KalmanFilter predictQ(Matrix F, Matrix B, Vector u, Matrix Q);
+	KalmanFilter predict2(Matrix A0, Matrix A1, Vector b, const SharedDiagonal& model);
+	KalmanFilter update(Matrix H, Vector z, const SharedDiagonal& model);
 };
 
 //*************************************************************************
