@@ -154,11 +154,11 @@ TEST( KalmanFilter, predict ) {
 // Test both QR and LDL versions in case of a realistic (AHRS) dynamics update
 TEST( KalmanFilter, QRvsCholesky ) {
 
-	Vector mean = zero(9);
+	Vector mean = ones(9);
 	Matrix covariance = 1e-6*Matrix_(9,9,
 			15.0, -6.2, 0.0, 0.0, 0.0, 0.0, 0.0, 63.8, -0.6,
 			-6.2, 21.9, -0.0, 0.0, 0.0, 0.0, -63.8, -0.0, -0.1,
-			0.0, -0.0, 10000000.0, 0.0, 0.0, 0.0, 0.0, 0.1, -0.0,
+			0.0, -0.0, 100.0, 0.0, 0.0, 0.0, 0.0, 0.1, -0.0,
 			0.0, 0.0, 0.0, 23.4, 24.5, -0.6, 0.0, 0.0, 0.0,
 			0.0, 0.0, 0.0, 24.5, 87.9, 10.1, 0.0, 0.0, 0.0,
 			0.0, 0.0, 0.0, -0.6, 10.1, 61.1, 0.0, 0.0, 0.0,
@@ -168,20 +168,20 @@ TEST( KalmanFilter, QRvsCholesky ) {
 
 	// Set up dynamics update
 	Matrix Psi_k = 1e-6*Matrix_(9,9,
-			1000000.0, 0.0, 0.0, -19189.0, 277.7, -13.0, 0.0, 0.0, 0.0,
-			0.0, 1000000.0, 0.0, 277.6, 19188.3, 164.1, 0.0, 0.0, 0.0,
-			0.0, 0.0, 1000000.0, -15.4, -163.9, 19190.3, 0.0, 0.0, 0.0,
-			0.0, 0.0, 0.0, 999973.7, 0.0, 0.0, 0.0, 0.0, 0.0,
-			0.0, 0.0, 0.0, 0.0, 999973.7, 0.0, 0.0, 0.0, 0.0,
-			0.0, 0.0, 0.0, 0.0, 0.0, 999973.7, 0.0, 0.0, 0.0,
-			0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 999973.7, 0.0, 0.0,
-			0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 999973.7, 0.0,
-			0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 999973.7);
+			1000000.0, 0.0, 0.0, -19200.0, 600.0, -0.0, 0.0, 0.0, 0.0,
+			0.0, 1000000.0, 0.0, 600.0, 19200.0, 200.0, 0.0, 0.0, 0.0,
+			0.0, 0.0, 1000000.0, -0.0, -200.0, 19200.0, 0.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 1000000.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 0.0, 1000000.0, 0.0, 0.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 0.0, 0.0, 1000000.0, 0.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1000000.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1000000.0, 0.0,
+			0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1000000.0);
 	Matrix B = zeros(9,1);
 	Vector u = zero(1);
 	Matrix dt_Q_k = 1e-6*Matrix_(9,9,
-			33.6, 1.3, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-			1.3, 126.5, -0.3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+			33.7, 3.1, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+			3.1, 126.4, -0.3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
 			-0.0, -0.3, 88.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
 			0.0, 0.0, 0.0, 0.2, 0.0, 0.0, 0.0, 0.0, 0.0,
 			0.0, 0.0, 0.0, 0.0, 0.2, 0.0, 0.0, 0.0, 0.0,
@@ -194,10 +194,55 @@ TEST( KalmanFilter, QRvsCholesky ) {
 	KalmanFilter KFa = KalmanFilter(mean, covariance,KalmanFilter::QR).predictQ(Psi_k,B,u,dt_Q_k);
 	KalmanFilter KFb = KalmanFilter(mean, covariance,KalmanFilter::LDL).predictQ(Psi_k,B,u,dt_Q_k);
 
-	// Check that they yield the same result
+	// Check that they yield the same mean and information matrix
 	EXPECT(assert_equal(KFa.mean(),KFb.mean()));
 	EXPECT(assert_equal(KFa.information(),KFb.information(),1e-7));
-	EXPECT(assert_equal(KFa.covariance(),KFb.covariance(),1e-7));
+
+	// and in addition attain the correct covariance
+	Vector expectedMean = Vector_(9, 0.9814, 1.0200, 1.0190, 1., 1., 1., 1., 1., 1.);
+	EXPECT(assert_equal(expectedMean,KFa.mean(),1e-7));
+	EXPECT(assert_equal(expectedMean,KFb.mean(),1e-7));
+	Matrix expected = 1e-6*Matrix_(9,9,
+			48.8, -3.1, -0.0, -0.4, -0.4, 0.0, 0.0, 63.8, -0.6,
+			-3.1, 148.4, -0.3, 0.5, 1.7, 0.2, -63.8, 0.0, -0.1,
+			-0.0, -0.3, 188.0, -0.0, 0.2, 1.2, 0.0, 0.1, 0.0,
+			-0.4, 0.5, -0.0, 23.6, 24.5, -0.6, 0.0, 0.0, 0.0,
+			-0.4, 1.7, 0.2, 24.5, 88.1, 10.1, 0.0, 0.0, 0.0,
+			0.0, 0.2, 1.2, -0.6, 10.1, 61.3, 0.0, 0.0, 0.0,
+			0.0, -63.8, 0.0, 0.0, 0.0, 0.0, 647.2, 0.0, 0.0,
+			63.8, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0, 647.2, 0.0,
+			-0.6, -0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 647.2);
+	EXPECT(assert_equal(expected,KFa.covariance(),1e-7));
+	EXPECT(assert_equal(expected,KFb.covariance(),1e-7));
+
+	Matrix H = 1e-3*Matrix_(3,9,
+			0.0, 9795.9, 83.6, 0.0, 0.0, 0.0, 1000.0, 0.0, 0.0,
+			-9795.9, 0.0, -5.2, 0.0, 0.0, 0.0, 0.0, 1000.0, 0.0,
+			-83.6, 5.2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1000.);
+	Vector z = Vector_(3,0.2599 , 1.3327 , 0.2007);
+
+	Vector sigmas = Vector_(3, 0.3323 ,0.2470 ,0.1904);
+	SharedDiagonal modelR = noiseModel::Diagonal::Sigmas(sigmas);
+	KalmanFilter KFa2 = KFa.update(H, z, modelR);
+	KalmanFilter KFb2 = KFb.update(H, z, modelR);
+	EXPECT(assert_equal(KFa2.mean(),KFb2.mean()));
+	EXPECT(assert_equal(KFa2.information(),KFb2.information(),1e-7));
+
+	Vector expectedMean2 = Vector_(9, 0.9207, 0.9030, 1.0178, 1.0002, 0.9992, 0.9998, 0.9981, 1.0035, 0.9882);
+	EXPECT(assert_equal(expectedMean2,KFa2.mean(),1e-4)); // not happy with tolerance here !
+	EXPECT(assert_equal(expectedMean2,KFb2.mean(),1e-4)); // is something still amiss?
+	Matrix expected2 = 1e-6*Matrix_(9,9,
+			46.1, -2.6, -0.0, -0.4, -0.4, 0.0, 0.0, 63.9, -0.5,
+			-2.6, 132.8, -0.5, 0.4, 1.5, 0.2, -64.0, -0.0, -0.1,
+			-0.0, -0.5, 188.0, -0.0, 0.2, 1.2, -0.0, 0.1, 0.0,
+			-0.4, 0.4, -0.0, 23.6, 24.5, -0.6, -0.0, -0.0, -0.0,
+			-0.4, 1.5, 0.2, 24.5, 88.1, 10.1, -0.0, -0.0, -0.0,
+			0.0, 0.2, 1.2, -0.6, 10.1, 61.3, -0.0, 0.0, 0.0,
+			0.0, -64.0, -0.0, -0.0, -0.0, -0.0, 647.2, -0.0, 0.0,
+			63.9, -0.0, 0.1, -0.0, -0.0, 0.0, -0.0, 647.2, 0.1,
+			-0.5, -0.1, 0.0, -0.0, -0.0, 0.0, 0.0, 0.1, 635.8);
+	EXPECT(assert_equal(expected2,KFa2.covariance(),1e-7));
+	EXPECT(assert_equal(expected2,KFb2.covariance(),1e-7));
 }
 
 /* ************************************************************************* */
