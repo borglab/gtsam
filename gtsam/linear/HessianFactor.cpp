@@ -225,6 +225,13 @@ HessianFactor::HessianFactor(const FactorGraph<GaussianFactor>& factors,
 }
 
 /* ************************************************************************* */
+HessianFactor& HessianFactor::operator=(const HessianFactor& rhs) {
+  this->Base::operator=(rhs);     // Copy keys
+  info_.assignNoalias(rhs.info_); // Copy matrix and block structure
+  return *this;
+}
+
+/* ************************************************************************* */
 void HessianFactor::print(const std::string& s) const {
 	cout << s << "\n";
 	cout << " keys: ";

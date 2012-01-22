@@ -88,6 +88,7 @@ namespace gtsam {
     std::vector<size_t> firstNonzeroBlocks_;
     AbMatrix matrix_; // the full matrix corresponding to the factor
     BlockAb Ab_;      // the block view of the full matrix
+    typedef GaussianFactor Base; // typedef to base
 
   public:
     typedef boost::shared_ptr<JacobianFactor> shared_ptr;
@@ -134,7 +135,11 @@ namespace gtsam {
     /** Convert from a HessianFactor (does Cholesky) */
     JacobianFactor(const HessianFactor& factor);
 
+    /** Virtual destructor */
     virtual ~JacobianFactor() {}
+
+    /** Aassignment operator */
+    JacobianFactor& operator=(const JacobianFactor& rhs);
 
     /** Clone this JacobianFactor */
     virtual GaussianFactor::shared_ptr clone() const {

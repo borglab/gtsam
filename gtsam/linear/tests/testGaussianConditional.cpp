@@ -95,7 +95,7 @@ TEST(GaussianConditional, constructor)
   EXPECT(assert_equal(R, copied.get_R()));
 }
 
-/* ************************************************************************* *
+/* ************************************************************************* */
 
 GaussianConditional construct() {
 	Vector d = Vector_(2, 1.0, 2.0);

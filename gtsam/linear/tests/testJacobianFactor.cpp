@@ -72,6 +72,28 @@ TEST(JacobianFactor, constructor2)
 }
 
 /* ************************************************************************* */
+
+JacobianFactor construct() {
+  Matrix A = Matrix_(2,2, 1.,2.,3.,4.);
+  Vector b = Vector_(2, 1.0, 2.0);
+  SharedDiagonal s = sharedSigmas(Vector_(2, 3.0, 4.0));
+  JacobianFactor::shared_ptr shared(
+      new JacobianFactor(0, A, b, s));
+  return *shared;
+}
+
+TEST(JacobianFactor, return_value)
+{
+  Matrix A = Matrix_(2,2, 1.,2.,3.,4.);
+  Vector b = Vector_(2, 1.0, 2.0);
+  SharedDiagonal s = sharedSigmas(Vector_(2, 3.0, 4.0));
+  JacobianFactor copied = construct();
+  EXPECT(assert_equal(b, copied.getb()));
+  EXPECT(assert_equal(*s, *copied.get_model()));
+  EXPECT(assert_equal(A, copied.getA(copied.begin())));
+}
+
+/* ************************************************************************* */
 TEST(JabobianFactor, Hessian_conversion) {
   HessianFactor hessian(0, (Matrix(4,4) <<
         1.57,        2.695,         -1.1,        -2.35,

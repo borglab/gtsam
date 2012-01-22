@@ -82,6 +82,9 @@ protected:
    * This is used to get back the correct ordering of x after solving by backSubstitition */
   TranspositionType permutation_;
 
+  /** typedef to base class */
+  typedef IndexConditional Base;
+
 public:
 
 	/** default constructor needed for serialization */
@@ -130,6 +133,12 @@ public:
 	GaussianConditional(ITERATOR firstKey, ITERATOR lastKey, size_t nrFrontals,
       const VerticalBlockView<MATRIX>& matrices, const Vector& sigmas,
       const TranspositionType& permutation = TranspositionType());
+
+  /** Copy constructor */
+	GaussianConditional(const GaussianConditional& rhs);
+
+	/** Assignment operator */
+	GaussianConditional& operator=(const GaussianConditional& rhs);
 
 	/** print */
 	void print(const std::string& = "GaussianConditional") const;

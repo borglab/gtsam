@@ -116,6 +116,7 @@ namespace gtsam {
   protected:
     typedef Matrix InfoMatrix; ///< The full augmented Hessian
     typedef SymmetricBlockView<InfoMatrix> BlockInfo; ///< A blockwise view of the Hessian
+    typedef GaussianFactor Base; ///< Typedef to base class
 
     InfoMatrix matrix_; ///< The full augmented information matrix, s.t. the quadratic error is 0.5*[x -1]'*H*[x -1]
     BlockInfo info_;    ///< The block view of the full information matrix.
@@ -200,6 +201,9 @@ namespace gtsam {
 
     /** Destructor */
 		virtual ~HessianFactor() {}
+
+    /** Aassignment operator */
+		HessianFactor& operator=(const HessianFactor& rhs);
 
 		/** Clone this JacobianFactor */
 		virtual GaussianFactor::shared_ptr clone() const {

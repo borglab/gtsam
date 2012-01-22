@@ -201,6 +201,16 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  JacobianFactor& JacobianFactor::operator=(const JacobianFactor& rhs) {
+    this->Base::operator=(rhs); // Copy keys
+    model_ = rhs.model_;        // Copy noise model
+    firstNonzeroBlocks_ = rhs.firstNonzeroBlocks_; // Copy staircase pattern
+    Ab_.assignNoalias(rhs.Ab_); // Copy matrix and block structure
+    assertInvariants();
+    return *this;
+  }
+
+  /* ************************************************************************* */
   void JacobianFactor::print(const string& s) const {
     cout << s << "\n";
     if (empty()) {

@@ -199,8 +199,9 @@ TEST(HessianFactor, Constructor2)
   EXPECT(assert_equal(G12, factor.info(factor.begin(), factor.begin()+1)));
   EXPECT(assert_equal(G22, factor.info(factor.begin()+1, factor.begin()+1)));
 }
+
 /* ************************************************************************* */
-TEST_UNSAFE(HessianFactor, CopyConstructor)
+TEST_UNSAFE(HessianFactor, CopyConstructor_and_assignment)
 {
   Matrix G11 = Matrix_(1,1, 1.0);
   Matrix G12 = Matrix_(1,2, 2.0, 4.0);
@@ -223,21 +224,36 @@ TEST_UNSAFE(HessianFactor, CopyConstructor)
   HessianFactor originalFactor(0, 1, G11, G12, g1, G22, g2, f);
 
   // Make a copy
-  HessianFactor factor(originalFactor);
+  HessianFactor copy1(originalFactor);
 
   double expected = 90.5;
-  double actual = factor.error(dx);
+  double actual = copy1.error(dx);
 
   DOUBLES_EQUAL(expected, actual, 1e-10);
-  LONGS_EQUAL(4, factor.rows());
-  DOUBLES_EQUAL(10.0, factor.constantTerm(), 1e-10);
+  LONGS_EQUAL(4, copy1.rows());
+  DOUBLES_EQUAL(10.0, copy1.constantTerm(), 1e-10);
 
   Vector linearExpected(3);  linearExpected << g1, g2;
-  EXPECT(assert_equal(linearExpected, factor.linearTerm()));
+  EXPECT(assert_equal(linearExpected, copy1.linearTerm()));
 
-  EXPECT(assert_equal(G11, factor.info(factor.begin(), factor.begin())));
-  EXPECT(assert_equal(G12, factor.info(factor.begin(), factor.begin()+1)));
-  EXPECT(assert_equal(G22, factor.info(factor.begin()+1, factor.begin()+1)));
+  EXPECT(assert_equal(G11, copy1.info(copy1.begin(), copy1.begin())));
+  EXPECT(assert_equal(G12, copy1.info(copy1.begin(), copy1.begin()+1)));
+  EXPECT(assert_equal(G22, copy1.info(copy1.begin()+1, copy1.begin()+1)));
+
+  // Make a copy using the assignment operator
+  HessianFactor copy2;
+  copy2 = HessianFactor(originalFactor); // Make a temporary to make sure copying does not shared references
+
+  actual = copy2.error(dx);
+  DOUBLES_EQUAL(expected, actual, 1e-10);
+  LONGS_EQUAL(4, copy2.rows());
+  DOUBLES_EQUAL(10.0, copy2.constantTerm(), 1e-10);
+
+  EXPECT(assert_equal(linearExpected, copy2.linearTerm()));
+
+  EXPECT(assert_equal(G11, copy2.info(copy2.begin(), copy2.begin())));
+  EXPECT(assert_equal(G12, copy2.info(copy2.begin(), copy2.begin()+1)));
+  EXPECT(assert_equal(G22, copy2.info(copy2.begin()+1, copy2.begin()+1)));
 }
 
 /* ************************************************************************* */

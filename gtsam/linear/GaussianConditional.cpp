@@ -149,6 +149,23 @@ GaussianConditional::GaussianConditional(const std::list<std::pair<Index, Matrix
 }
 
 /* ************************************************************************* */
+GaussianConditional::GaussianConditional(const GaussianConditional& rhs) :
+  rsd_(matrix_) {
+  *this = rhs;
+}
+
+/* ************************************************************************* */
+GaussianConditional& GaussianConditional::operator=(const GaussianConditional& rhs) {
+  if(this != &rhs) {
+    this->Base::operator=(rhs);  // Copy keys
+    rsd_.assignNoalias(rhs.rsd_);     // Copy matrix and block configuration
+    sigmas_ = rhs.sigmas_;       // Copy sigmas
+    permutation_ = rhs.permutation_; // Copy permutation
+  }
+  return *this;
+}
+
+/* ************************************************************************* */
 void GaussianConditional::print(const string &s) const
 {
   cout << s << ": density on ";
