@@ -302,7 +302,7 @@ namespace gtsam {
   template<class G, class T, class L, class S, class W>
   NonlinearOptimizer<G, T, L, S, W> NonlinearOptimizer<G, T, L, S, W>::iterateDogLeg() {
 
-    S solver(*graph_->linearize(*values_, *ordering_));
+    S solver(*graph_->linearize(*values_, *ordering_), parameters_->useQR_);
     DoglegOptimizerImpl::IterationResult result = DoglegOptimizerImpl::Iterate(
         parameters_->lambda_, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, *solver.eliminate(),
         *graph_, *values_, *ordering_, error_, parameters_->verbosity_ > Parameters::ERROR);
