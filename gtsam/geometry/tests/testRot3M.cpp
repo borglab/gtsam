@@ -450,6 +450,8 @@ TEST( Rot3, yaw_pitch_roll )
 	// Check compound rotation
 	Rot3 expected = Rot3::yaw(0.1) * Rot3::pitch(0.2) * Rot3::roll(0.3);
 	CHECK(assert_equal(expected,Rot3::ypr(0.1,0.2,0.3)));
+
+	CHECK(assert_equal(Vector_(3,0.1,0.2,0.3),expected.ypr()));
 }
 
 /* ************************************************************************* */
