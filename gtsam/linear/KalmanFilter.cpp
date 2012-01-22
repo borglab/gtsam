@@ -32,7 +32,7 @@ namespace gtsam {
 	using namespace std;
 
 	/// Auxiliary function to solve factor graph and return pointer to root conditional
-	GaussianConditional::shared_ptr solve(GaussianFactorGraph& factorGraph,
+	KalmanFilter::State solve(const GaussianFactorGraph& factorGraph,
 			bool useQR) {
 
 		// Solve the factor graph
@@ -41,98 +41,64 @@ namespace gtsam {
 
 		// As this is a filter, all we need is the posterior P(x_t),
 		// so we just keep the root of the Bayes net
-		return bayesNet->back();
+		GaussianConditional::shared_ptr conditional = bayesNet->back();
+		return *conditional;
 	}
 
 	/* ************************************************************************* */
-	KalmanFilter::KalmanFilter(size_t n,
-			const GaussianConditional::shared_ptr& density, Factorization method) :
-			n_(n), I_(eye(n_, n_)), method_(method), density_(density) {
-	}
-
-	/* ************************************************************************* */
-	KalmanFilter KalmanFilter::add(GaussianFactor* newFactor) {
+	KalmanFilter::State fuse(const KalmanFilter::State& p,
+			GaussianFactor* newFactor, bool useQR) {
 
 		// Create a factor graph
 		GaussianFactorGraph factorGraph;
 
 		// push back previous solution and new factor
-		factorGraph.push_back(density_->toFactor());
+		factorGraph.push_back(p.toFactor());
 		factorGraph.push_back(GaussianFactor::shared_ptr(newFactor));
 
 		// Eliminate graph in order x0, x1, to get Bayes net P(x0|x1)P(x1)
-		return KalmanFilter(n_, solve(factorGraph, method_ == QR), method_);
+		return solve(factorGraph, useQR);
 	}
 
 	/* ************************************************************************* */
-	KalmanFilter::KalmanFilter(const Vector& x0, const SharedDiagonal& P0,
-			Factorization method) :
-			n_(x0.size()), I_(eye(n_, n_)), method_(method) {
+	KalmanFilter::State KalmanFilter::init(const Vector& x0,
+			const SharedDiagonal& P0) {
 
 		// Create a factor graph f(x0), eliminate it into P(x0)
 		GaussianFactorGraph factorGraph;
 		factorGraph.add(0, I_, x0, P0); // |x-x0|^2_diagSigma
-		density_ = solve(factorGraph, method_ == QR);
+		return solve(factorGraph, useQR());
 	}
 
 	/* ************************************************************************* */
-	KalmanFilter::KalmanFilter(const Vector& x, const Matrix& P0,
-			Factorization method) :
-			n_(x.size()), I_(eye(n_, n_)), method_(method) {
+	KalmanFilter::State KalmanFilter::init(const Vector& x, const Matrix& P0) {
 
 		// Create a factor graph f(x0), eliminate it into P(x0)
 		GaussianFactorGraph factorGraph;
 		// 0.5*(x-x0)'*inv(Sigma)*(x-x0)
 		HessianFactor::shared_ptr factor(new HessianFactor(0, x, P0));
 		factorGraph.push_back(factor);
-		density_ = solve(factorGraph, method_ == QR);
+		return solve(factorGraph, useQR());
 	}
 
 	/* ************************************************************************* */
 	void KalmanFilter::print(const string& s) const {
-		cout << s << "\n";
-		density_->print("density: ");
-		Vector m = mean();
-		Matrix P = covariance();
-		gtsam::print(m, "mean: ");
-		gtsam::print(P, "covariance: ");
+		cout << s << ", " << n_ << "-dimensional Kalman filter\n";
 	}
 
 	/* ************************************************************************* */
-	Vector KalmanFilter::mean() const {
-		// Solve for mean
-		VectorValues x;
-		Index k = step();
-		// a VectorValues that only has a value for k: cannot be printed
-    x.insert(k, Vector(n_));
-		density_->rhs(x);
-		density_->solveInPlace(x);
-		return x[k];
-	}
-
-	/* ************************************************************************* */
-	Matrix KalmanFilter::information() const {
-		return density_->computeInformation();
-	}
-
-	/* ************************************************************************* */
-	Matrix KalmanFilter::covariance() const {
-		return inverse(information());
-	}
-
-	/* ************************************************************************* */
-	KalmanFilter KalmanFilter::predict(const Matrix& F, const Matrix& B,
-			const Vector& u, const SharedDiagonal& model) {
+	KalmanFilter::State KalmanFilter::predict(const State& p, const Matrix& F,
+			const Matrix& B, const Vector& u, const SharedDiagonal& model) {
 
 		// The factor related to the motion model is defined as
 		// f2(x_{t},x_{t+1}) = (F*x_{t} + B*u - x_{t+1}) * Q^-1 * (F*x_{t} + B*u - x_{t+1})^T
-		Index k = step();
-		return add(new JacobianFactor(k, -F, k+1, I_, B * u, model));
+		Index k = step(p);
+		return fuse(p, new JacobianFactor(k, -F, k + 1, I_, B * u, model), useQR());
 	}
 
 	/* ************************************************************************* */
-	KalmanFilter KalmanFilter::predictQ(const Matrix& F, const Matrix& B,
-			const Vector& u, const Matrix& Q) {
+	KalmanFilter::State KalmanFilter::predictQ(const State& p, const Matrix& F,
+			const Matrix& B, const Vector& u, const Matrix& Q) {
 
 #ifndef NDEBUG
 		int n = F.cols();
@@ -151,27 +117,28 @@ namespace gtsam {
 		Matrix G12 = -Ft * M, G11 = -G12 * F, G22 = M;
 		Vector b = B * u, g2 = M * b, g1 = -Ft * g2;
 		double f = dot(b, g2);
-		Index k = step();
-		return add(new HessianFactor(k, k+1, G11, G12, g1, G22, g2, f));
+		Index k = step(p);
+		return fuse(p, new HessianFactor(k, k + 1, G11, G12, g1, G22, g2, f),
+				useQR());
 	}
 
 	/* ************************************************************************* */
-	KalmanFilter KalmanFilter::predict2(const Matrix& A0, const Matrix& A1,
-			const Vector& b, const SharedDiagonal& model) {
+	KalmanFilter::State KalmanFilter::predict2(const State& p, const Matrix& A0,
+			const Matrix& A1, const Vector& b, const SharedDiagonal& model) {
 		// Nhe factor related to the motion model is defined as
 		// f2(x_{t},x_{t+1}) = |A0*x_{t} + A1*x_{t+1} - b|^2
-		Index k = step();
-		return add(new JacobianFactor(k, A0, k+1, A1, b, model));
+		Index k = step(p);
+		return fuse(p, new JacobianFactor(k, A0, k + 1, A1, b, model), useQR());
 	}
 
 	/* ************************************************************************* */
-	KalmanFilter KalmanFilter::update(const Matrix& H, const Vector& z,
-			const SharedDiagonal& model) {
+	KalmanFilter::State KalmanFilter::update(const State& p, const Matrix& H,
+			const Vector& z, const SharedDiagonal& model) {
 		// The factor related to the measurements would be defined as
 		// f2 = (h(x_{t}) - z_{t}) * R^-1 * (h(x_{t}) - z_{t})^T
 		//    = (x_{t} - z_{t}) * R^-1 * (x_{t} - z_{t})^T
-		Index k = step();
-		return add(new JacobianFactor(k, H, z, model));
+		Index k = step(p);
+		return fuse(p, new JacobianFactor(k, H, z, model), useQR());
 	}
 
 /* ************************************************************************* */

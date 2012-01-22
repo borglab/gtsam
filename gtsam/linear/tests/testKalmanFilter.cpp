@@ -37,42 +37,50 @@ struct State: Vector {
 
 /* ************************************************************************* */
 TEST( KalmanFilter, constructor ) {
-	// Create the Kalman Filter initialization point
-	State x_initial(0.0,0.0);
-	SharedDiagonal P1 = noiseModel::Isotropic::Sigma(2,0.1);
 
-	// Create an KalmanFilter object
-	KalmanFilter kf1(x_initial, P1);
-	Matrix Sigma = Matrix_(2,2,0.01,0.0,0.0,0.01);
-	EXPECT(assert_equal(Sigma,kf1.covariance()));
+	// Create a Kalman filter of dimension 2
+	KalmanFilter kf1(2);
+
+	// Create inital mean/covariance
+	State x_initial(0.0, 0.0);
+	SharedDiagonal P1 = noiseModel::Isotropic::Sigma(2, 0.1);
+
+	// Get initial state by passing initial mean/covariance to the p
+	KalmanFilter::State p1 = kf1.init(x_initial, P1);
+
+	// Assert it has the correct mean, covariance and information
+	EXPECT(assert_equal(x_initial, p1.mean()));
+	Matrix Sigma = Matrix_(2, 2, 0.01, 0.0, 0.0, 0.01);
+	EXPECT(assert_equal(Sigma, p1.covariance()));
+	EXPECT(assert_equal(inverse(Sigma), p1.information()));
 
 	// Create one with a sharedGaussian
-	KalmanFilter kf2(x_initial, Sigma);
-	EXPECT(assert_equal(Sigma,kf2.covariance()));
+	KalmanFilter::State p2 = kf1.init(x_initial, Sigma);
+	EXPECT(assert_equal(Sigma, p2.covariance()));
 
 	// Now make sure both agree
-	EXPECT(assert_equal(kf1.covariance(),kf2.covariance()));
+	EXPECT(assert_equal(p1.covariance(), p2.covariance()));
 }
 
 /* ************************************************************************* */
 TEST( KalmanFilter, linear1 ) {
 
 	// Create the controls and measurement properties for our example
-	Matrix F = eye(2,2);
-	Matrix B = eye(2,2);
+	Matrix F = eye(2, 2);
+	Matrix B = eye(2, 2);
 	Vector u = Vector_(2, 1.0, 0.0);
 	SharedDiagonal modelQ = noiseModel::Isotropic::Sigma(2, 0.1);
-	Matrix Q = 0.01*eye(2,2);
-	Matrix H = eye(2,2);
+	Matrix Q = 0.01*eye(2, 2);
+	Matrix H = eye(2, 2);
 	State z1(1.0, 0.0);
 	State z2(2.0, 0.0);
 	State z3(3.0, 0.0);
 	SharedDiagonal modelR = noiseModel::Isotropic::Sigma(2, 0.1);
-	Matrix R = 0.01*eye(2,2);
+	Matrix R = 0.01*eye(2, 2);
 
 	// Create the set of expected output TestValues
 	State expected0(0.0, 0.0);
-	Matrix P00 = 0.01*eye(2,2);
+	Matrix P00 = 0.01*eye(2, 2);
 
 	State expected1(1.0, 0.0);
 	Matrix P01 = P00 + Q;
@@ -86,68 +94,74 @@ TEST( KalmanFilter, linear1 ) {
 	Matrix P23 = inverse(I22) + Q;
 	Matrix I33 = inverse(P23) + inverse(R);
 
+	// Create a Kalman filter of dimension 2
+	KalmanFilter kf(2);
+
 	// Create the Kalman Filter initialization point
-	State x_initial(0.0,0.0);
-	SharedDiagonal P_initial = noiseModel::Isotropic::Sigma(2,0.1);
+	State x_initial(0.0, 0.0);
+	SharedDiagonal P_initial = noiseModel::Isotropic::Sigma(2, 0.1);
 
 	// Create initial KalmanFilter object
-	KalmanFilter KF0(x_initial, P_initial);
-	EXPECT(assert_equal(expected0,KF0.mean()));
-	EXPECT(assert_equal(P00,KF0.covariance()));
+	KalmanFilter::State p0 = kf.init(x_initial, P_initial);
+	EXPECT(assert_equal(expected0, p0.mean()));
+	EXPECT(assert_equal(P00, p0.covariance()));
 
 	// Run iteration 1
-	KalmanFilter KF1p = KF0.predict(F, B, u, modelQ);
-	EXPECT(assert_equal(expected1,KF1p.mean()));
-	EXPECT(assert_equal(P01,KF1p.covariance()));
+	KalmanFilter::State p1p = kf.predict(p0, F, B, u, modelQ);
+	EXPECT(assert_equal(expected1, p1p.mean()));
+	EXPECT(assert_equal(P01, p1p.covariance()));
 
-	KalmanFilter KF1 = KF1p.update(H,z1,modelR);
-	EXPECT(assert_equal(expected1,KF1.mean()));
-	EXPECT(assert_equal(I11,KF1.information()));
+	KalmanFilter::State p1 = kf.update(p1p, H, z1, modelR);
+	EXPECT(assert_equal(expected1, p1.mean()));
+	EXPECT(assert_equal(I11, p1.information()));
 
 	// Run iteration 2 (with full covariance)
-	KalmanFilter KF2p = KF1.predictQ(F, B, u, Q);
-	EXPECT(assert_equal(expected2,KF2p.mean()));
+	KalmanFilter::State p2p = kf.predictQ(p1, F, B, u, Q);
+	EXPECT(assert_equal(expected2, p2p.mean()));
 
-	KalmanFilter KF2 = KF2p.update(H,z2,modelR);
-	EXPECT(assert_equal(expected2,KF2.mean()));
+	KalmanFilter::State p2 = kf.update(p2p, H, z2, modelR);
+	EXPECT(assert_equal(expected2, p2.mean()));
 
 	// Run iteration 3
-	KalmanFilter KF3p = KF2.predict(F, B, u, modelQ);
-	EXPECT(assert_equal(expected3,KF3p.mean()));
-	LONGS_EQUAL(3,KF3p.step());
+	KalmanFilter::State p3p = kf.predict(p2, F, B, u, modelQ);
+	EXPECT(assert_equal(expected3, p3p.mean()));
+	LONGS_EQUAL(3, KalmanFilter::step(p3p));
 
-	KalmanFilter KF3 = KF3p.update(H,z3,modelR);
-	EXPECT(assert_equal(expected3,KF3.mean()));
-	LONGS_EQUAL(3,KF3.step());
+	KalmanFilter::State p3 = kf.update(p3p, H, z3, modelR);
+	EXPECT(assert_equal(expected3, p3.mean()));
+	LONGS_EQUAL(3, KalmanFilter::step(p3));
 }
 
 /* ************************************************************************* */
 TEST( KalmanFilter, predict ) {
 
 	// Create dynamics model
-	Matrix F = Matrix_(2,2, 1.0,0.1, 0.2,1.1);
-	Matrix B = Matrix_(2,3, 1.0,0.1,0.2, 1.1,1.2,0.8);
+	Matrix F = Matrix_(2, 2, 1.0, 0.1, 0.2, 1.1);
+	Matrix B = Matrix_(2, 3, 1.0, 0.1, 0.2, 1.1, 1.2, 0.8);
 	Vector u = Vector_(3, 1.0, 0.0, 2.0);
-	Matrix R = Matrix_(2,2, 1.0,0.5, 0.0,3.0);
+	Matrix R = Matrix_(2, 2, 1.0, 0.5, 0.0, 3.0);
 	Matrix M = trans(R)*R;
 	Matrix Q = inverse(M);
 
-	// Create the Kalman Filter initialization point
-	State x_initial(0.0,0.0);
-	SharedDiagonal P_initial = noiseModel::Isotropic::Sigma(2,1);
+	// Create a Kalman filter of dimension 2
+	KalmanFilter kf(2);
 
-	// Create two KalmanFilter objects
-	KalmanFilter KF0(x_initial, P_initial);
+	// Create the Kalman Filter initialization point
+	State x_initial(0.0, 0.0);
+	SharedDiagonal P_initial = noiseModel::Isotropic::Sigma(2, 1);
+
+	// Create initial KalmanFilter state
+	KalmanFilter::State p0 = kf.init(x_initial, P_initial);
 
 	// Ensure predictQ and predict2 give same answer for non-trivial inputs
-	KalmanFilter KFa = KF0.predictQ(F, B, u, Q);
-	// We have A1 = -F,  A2 = I_, b = B*u, pre-multipled with R to match Q noise model
+	KalmanFilter::State pa = kf.predictQ(p0, F, B, u, Q);
+	// We have A1 = -F, A2 = I_, b = B*u, pre-multipled with R to match Q noise model
 	Matrix A1 = -R*F, A2 = R;
 	Vector b = R*B*u;
 	SharedDiagonal nop = noiseModel::Isotropic::Sigma(2, 1.0);
-	KalmanFilter KFb = KF0.predict2(A1,A2,b,nop);
-	EXPECT(assert_equal(KFa.mean(),KFb.mean()));
-	EXPECT(assert_equal(KFa.covariance(),KFb.covariance()));
+	KalmanFilter::State pb = kf.predict2(p0, A1, A2, b, nop);
+	EXPECT(assert_equal(pa.mean(), pb.mean()));
+	EXPECT(assert_equal(pa.covariance(), pb.covariance()));
 }
 
 /* ************************************************************************* */
@@ -155,7 +169,7 @@ TEST( KalmanFilter, predict ) {
 TEST( KalmanFilter, QRvsCholesky ) {
 
 	Vector mean = ones(9);
-	Matrix covariance = 1e-6*Matrix_(9,9,
+	Matrix covariance = 1e-6*Matrix_(9, 9,
 			15.0, -6.2, 0.0, 0.0, 0.0, 0.0, 0.0, 63.8, -0.6,
 			-6.2, 21.9, -0.0, 0.0, 0.0, 0.0, -63.8, -0.0, -0.1,
 			0.0, -0.0, 100.0, 0.0, 0.0, 0.0, 0.0, 0.1, -0.0,
@@ -166,8 +180,15 @@ TEST( KalmanFilter, QRvsCholesky ) {
 			63.8, -0.0, 0.1, 0.0, 0.0, 0.0, 0.0, 625.0, 0.0,
 			-0.6, -0.1, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 625.0);
 
+	// Create two Kalman filter of dimension 9, one using QR the other LDL
+	KalmanFilter kfa(9, KalmanFilter::QR), kfb(9, KalmanFilter::LDL);
+
+	// create corresponding initial states
+	KalmanFilter::State p0a = kfa.init(mean, covariance);
+	KalmanFilter::State p0b = kfb.init(mean, covariance);
+
 	// Set up dynamics update
-	Matrix Psi_k = 1e-6*Matrix_(9,9,
+	Matrix Psi_k = 1e-6*Matrix_(9, 9,
 			1000000.0, 0.0, 0.0, -19200.0, 600.0, -0.0, 0.0, 0.0, 0.0,
 			0.0, 1000000.0, 0.0, 600.0, 19200.0, 200.0, 0.0, 0.0, 0.0,
 			0.0, 0.0, 1000000.0, -0.0, -200.0, 19200.0, 0.0, 0.0, 0.0,
@@ -177,9 +198,9 @@ TEST( KalmanFilter, QRvsCholesky ) {
 			0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1000000.0, 0.0, 0.0,
 			0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1000000.0, 0.0,
 			0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1000000.0);
-	Matrix B = zeros(9,1);
+	Matrix B = zeros(9, 1);
 	Vector u = zero(1);
-	Matrix dt_Q_k = 1e-6*Matrix_(9,9,
+	Matrix dt_Q_k = 1e-6*Matrix_(9, 9,
 			33.7, 3.1, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
 			3.1, 126.4, -0.3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
 			-0.0, -0.3, 88.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -190,19 +211,19 @@ TEST( KalmanFilter, QRvsCholesky ) {
 			0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 22.2, 0.0,
 			0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 22.2);
 
-	// Create two KalmanFilter using different factorization method and compare
-	KalmanFilter KFa = KalmanFilter(mean, covariance,KalmanFilter::QR).predictQ(Psi_k,B,u,dt_Q_k);
-	KalmanFilter KFb = KalmanFilter(mean, covariance,KalmanFilter::LDL).predictQ(Psi_k,B,u,dt_Q_k);
+	// Do prediction step
+	KalmanFilter::State pa = kfa.predictQ(p0a, Psi_k, B, u, dt_Q_k);
+	KalmanFilter::State pb = kfb.predictQ(p0b, Psi_k, B, u, dt_Q_k);
 
 	// Check that they yield the same mean and information matrix
-	EXPECT(assert_equal(KFa.mean(),KFb.mean()));
-	EXPECT(assert_equal(KFa.information(),KFb.information(),1e-7));
+	EXPECT(assert_equal(pa.mean(), pb.mean()));
+	EXPECT(assert_equal(pa.information(), pb.information(), 1e-7));
 
 	// and in addition attain the correct covariance
 	Vector expectedMean = Vector_(9, 0.9814, 1.0200, 1.0190, 1., 1., 1., 1., 1., 1.);
-	EXPECT(assert_equal(expectedMean,KFa.mean(),1e-7));
-	EXPECT(assert_equal(expectedMean,KFb.mean(),1e-7));
-	Matrix expected = 1e-6*Matrix_(9,9,
+	EXPECT(assert_equal(expectedMean, pa.mean(), 1e-7));
+	EXPECT(assert_equal(expectedMean, pb.mean(), 1e-7));
+	Matrix expected = 1e-6*Matrix_(9, 9,
 			48.8, -3.1, -0.0, -0.4, -0.4, 0.0, 0.0, 63.8, -0.6,
 			-3.1, 148.4, -0.3, 0.5, 1.7, 0.2, -63.8, 0.0, -0.1,
 			-0.0, -0.3, 188.0, -0.0, 0.2, 1.2, 0.0, 0.1, 0.0,
@@ -212,26 +233,31 @@ TEST( KalmanFilter, QRvsCholesky ) {
 			0.0, -63.8, 0.0, 0.0, 0.0, 0.0, 647.2, 0.0, 0.0,
 			63.8, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0, 647.2, 0.0,
 			-0.6, -0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 647.2);
-	EXPECT(assert_equal(expected,KFa.covariance(),1e-7));
-	EXPECT(assert_equal(expected,KFb.covariance(),1e-7));
+	EXPECT(assert_equal(expected, pa.covariance(), 1e-7));
+	EXPECT(assert_equal(expected, pb.covariance(), 1e-7));
 
-	Matrix H = 1e-3*Matrix_(3,9,
+	// prepare update
+	Matrix H = 1e-3*Matrix_(3, 9,
 			0.0, 9795.9, 83.6, 0.0, 0.0, 0.0, 1000.0, 0.0, 0.0,
 			-9795.9, 0.0, -5.2, 0.0, 0.0, 0.0, 0.0, 1000.0, 0.0,
 			-83.6, 5.2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1000.);
-	Vector z = Vector_(3,0.2599 , 1.3327 , 0.2007);
-
-	Vector sigmas = Vector_(3, 0.3323 ,0.2470 ,0.1904);
+	Vector z = Vector_(3, 0.2599 , 1.3327 , 0.2007);
+	Vector sigmas = Vector_(3, 0.3323 , 0.2470 , 0.1904);
 	SharedDiagonal modelR = noiseModel::Diagonal::Sigmas(sigmas);
-	KalmanFilter KFa2 = KFa.update(H, z, modelR);
-	KalmanFilter KFb2 = KFb.update(H, z, modelR);
-	EXPECT(assert_equal(KFa2.mean(),KFb2.mean()));
-	EXPECT(assert_equal(KFa2.information(),KFb2.information(),1e-7));
 
+	// do update
+	KalmanFilter::State pa2 = kfa.update(pa, H, z, modelR);
+	KalmanFilter::State pb2 = kfb.update(pb, H, z, modelR);
+
+	// Check that they yield the same mean and information matrix
+	EXPECT(assert_equal(pa2.mean(), pb2.mean()));
+	EXPECT(assert_equal(pa2.information(), pb2.information(), 1e-7));
+
+	// and in addition attain the correct mean and covariance
 	Vector expectedMean2 = Vector_(9, 0.9207, 0.9030, 1.0178, 1.0002, 0.9992, 0.9998, 0.9981, 1.0035, 0.9882);
-	EXPECT(assert_equal(expectedMean2,KFa2.mean(),1e-4)); // not happy with tolerance here !
-	EXPECT(assert_equal(expectedMean2,KFb2.mean(),1e-4)); // is something still amiss?
-	Matrix expected2 = 1e-6*Matrix_(9,9,
+	EXPECT(assert_equal(expectedMean2, pa2.mean(), 1e-4));// not happy with tolerance here !
+	EXPECT(assert_equal(expectedMean2, pb2.mean(), 1e-4));// is something still amiss?
+	Matrix expected2 = 1e-6*Matrix_(9, 9,
 			46.1, -2.6, -0.0, -0.4, -0.4, 0.0, 0.0, 63.9, -0.5,
 			-2.6, 132.8, -0.5, 0.4, 1.5, 0.2, -64.0, -0.0, -0.1,
 			-0.0, -0.5, 188.0, -0.0, 0.2, 1.2, -0.0, 0.1, 0.0,
@@ -241,8 +267,8 @@ TEST( KalmanFilter, QRvsCholesky ) {
 			0.0, -64.0, -0.0, -0.0, -0.0, -0.0, 647.2, -0.0, 0.0,
 			63.9, -0.0, 0.1, -0.0, -0.0, 0.0, -0.0, 647.2, 0.1,
 			-0.5, -0.1, 0.0, -0.0, -0.0, 0.0, 0.0, 0.1, 635.8);
-	EXPECT(assert_equal(expected2,KFa2.covariance(),1e-7));
-	EXPECT(assert_equal(expected2,KFb2.covariance(),1e-7));
+	EXPECT(assert_equal(expected2, pa2.covariance(), 1e-7));
+	EXPECT(assert_equal(expected2, pb2.covariance(), 1e-7));
 }
 
 /* ************************************************************************* */

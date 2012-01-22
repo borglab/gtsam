@@ -20,8 +20,7 @@
  * @author Frank Dellaert
  */
 
-#include <gtsam/linear/GaussianFactor.h>
-#include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/GaussianDensity.h>
 
 #ifndef KALMANFILTER_DEFAULT_FACTORIZATION
 #define KALMANFILTER_DEFAULT_FACTORIZATION QR
@@ -33,7 +32,13 @@ namespace gtsam {
 	class SharedGaussian;
 
 	/**
-	 * Linear Kalman Filter
+	 * Kalman Filter class
+	 *
+	 * Knows how to maintain a Gaussian density under linear-Gaussian motion and
+	 * measurement models. It uses the square-root information form, as usual in GTSAM.
+	 *
+	 * The filter is functional, in that it does not have state: you call init() to create
+	 * an initial state, then predict() and update() that create new states out of old.
 	 */
 	class KalmanFilter {
 
@@ -47,56 +52,42 @@ namespace gtsam {
 			QR, LDL
 		};
 
+		typedef GaussianDensity State;
+
 	private:
 
 		const size_t n_; /** dimensionality of state */
 		const Matrix I_; /** identity matrix of size n*n */
 		const Factorization method_; /** algorithm */
 
-		/// The Kalman filter posterior density is a Gaussian Conditional with no parents
-		GaussianConditional::shared_ptr density_;
-
-		/// private constructor
-		KalmanFilter(size_t n, const GaussianConditional::shared_ptr& density,
-				Factorization method = KALMANFILTER_DEFAULT_FACTORIZATION);
-
-		/// add a new factor and marginalize to new Kalman filter
-		KalmanFilter add(GaussianFactor* newFactor);
+		bool useQR() const { return method_==QR; }
 
 	public:
 
+		// private constructor
+		KalmanFilter(size_t n, Factorization method =
+				KALMANFILTER_DEFAULT_FACTORIZATION) :
+				n_(n), I_(eye(n_, n_)), method_(method) {
+		}
+
 		/**
-		 * Constructor from prior density at time k=0
-		 * In Kalman Filter notation, these are is x_{0|0} and P_{0|0}
+		 * Create initial state, i.e., prior density at time k=0
+		 * In Kalman Filter notation, this are is x_{0|0} and P_{0|0}
 		 * @param x0 estimate at time 0
 		 * @param P0 covariance at time 0, given as a diagonal Gaussian 'model'
 		 */
-		KalmanFilter(const Vector& x0, const SharedDiagonal& P0,
-				Factorization method = KALMANFILTER_DEFAULT_FACTORIZATION);
+		State init(const Vector& x0, const SharedDiagonal& P0);
 
-		/**
-		 * Constructor from prior density at time k=0
-		 * In Kalman Filter notation, these are is x_{0|0} and P_{0|0}
-		 * @param x0 estimate at time 0
-		 * @param P0 covariance at time 0, full Gaussian
-		 */
-		KalmanFilter(const Vector& x0, const Matrix& P0, Factorization method =
-				KALMANFILTER_DEFAULT_FACTORIZATION);
+		/// version of init with a full covariance matrix
+		State init(const Vector& x0, const Matrix& P0);
 
 		/// print
 		void print(const std::string& s = "") const;
 
 		/** Return step index k, starts at 0, incremented at each predict. */
-		Index step() const { return density_->firstFrontalKey();}
-
-		/** Return mean of posterior P(x|Z) at given all measurements Z */
-		Vector mean() const;
-
-		/** Return information matrix of posterior P(x|Z) at given all measurements Z */
-		Matrix information() const;
-
-		/** Return covariance of posterior P(x|Z) at given all measurements Z */
-		Matrix covariance() const;
+		static Index step(const State& p) {
+			return p.firstFrontalKey();
+		}
 
 		/**
 		 * Predict the state P(x_{t+1}|Z^t)
@@ -107,8 +98,8 @@ namespace gtsam {
 		 *   where F is the state transition model/matrix, B is the control input model,
 		 *   and w is zero-mean, Gaussian white noise with covariance Q.
 		 */
-		KalmanFilter predict(const Matrix& F, const Matrix& B, const Vector& u,
-				const SharedDiagonal& modelQ);
+		KalmanFilter::State predict(const State& p, const Matrix& F,
+				const Matrix& B, const Vector& u, const SharedDiagonal& modelQ);
 
 		/*
 		 *  Version of predict with full covariance
@@ -116,8 +107,8 @@ namespace gtsam {
 		 *  physical property, such as velocity or acceleration, and G is derived from physics.
 		 *  This version allows more realistic models than a diagonal covariance matrix.
 		 */
-		KalmanFilter predictQ(const Matrix& F, const Matrix& B, const Vector& u,
-				const Matrix& Q);
+		KalmanFilter::State predictQ(const State& p, const Matrix& F,
+				const Matrix& B, const Vector& u, const Matrix& Q);
 
 		/**
 		 * Predict the state P(x_{t+1}|Z^t)
@@ -127,8 +118,8 @@ namespace gtsam {
 		 *   This version of predict takes GaussianFactor motion model [A0 A1 b]
 		 *   with an optional noise model.
 		 */
-		KalmanFilter predict2(const Matrix& A0, const Matrix& A1, const Vector& b,
-				const SharedDiagonal& model);
+		KalmanFilter::State predict2(const State& p, const Matrix& A0,
+				const Matrix& A1, const Vector& b, const SharedDiagonal& model);
 
 		/**
 		 * Update Kalman filter with a measurement
@@ -138,7 +129,7 @@ namespace gtsam {
 		 * Gaussian white noise with covariance R.
 		 * Currently, R is restricted to diagonal Gaussians (model parameter)
 		 */
-		KalmanFilter update(const Matrix& H, const Vector& z,
+		KalmanFilter::State update(const State& p, const Matrix& H, const Vector& z,
 				const SharedDiagonal& model);
 
 	};
