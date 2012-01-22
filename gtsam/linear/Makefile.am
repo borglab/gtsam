@@ -26,10 +26,10 @@ sources += GaussianSequentialSolver.cpp GaussianMultifrontalSolver.cpp
 sources += JacobianFactor.cpp HessianFactor.cpp
 sources += GaussianFactor.cpp GaussianFactorGraph.cpp
 sources += GaussianJunctionTree.cpp 
-sources += GaussianConditional.cpp GaussianBayesNet.cpp
+sources += GaussianConditional.cpp GaussianDensity.cpp GaussianBayesNet.cpp
 sources += GaussianISAM.cpp
 check_PROGRAMS += tests/testHessianFactor tests/testJacobianFactor tests/testGaussianConditional
-check_PROGRAMS += tests/testGaussianFactorGraph tests/testGaussianJunctionTree
+check_PROGRAMS +=  tests/testGaussianDensity tests/testGaussianFactorGraph tests/testGaussianJunctionTree
 
 # Kalman Filter
 sources += KalmanFilter.cpp
