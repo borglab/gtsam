@@ -43,7 +43,7 @@ class JacobianFactor;
 /**
  * A conditional Gaussian functions as the node in a Bayes network
  * It has a set of parents y,z, etc. and implements a probability density on x.
- * The negative log-probability is given by || Rx - (d - Sy - Tz - ...)||^2
+ * The negative log-probability is given by \f$ |Rx - (d - Sy - Tz - ...)|^2 \f$
  */
 class GaussianConditional : public IndexConditional {
 
@@ -65,7 +65,7 @@ public:
 protected:
 
 	/** Store the conditional as one big upper-triangular wide matrix, arranged
-	 * as [ R S1 S2 ... d ].  Access these blocks using a VerticalBlockView.
+	 * as \f$ [ R S1 S2 ... d ] \f$.  Access these blocks using a VerticalBlockView.
 	 *
 	 * WARNING!!! When using with LDL, R is the permuted upper triangular matrix.
 	 * Its columns/rows do not correspond to the correct components of the variables.
@@ -110,7 +110,7 @@ public:
 	/**
 	 * constructor with number of arbitrary parents (only used in unit tests,
 	 * std::list is not efficient)
-	 * |Rx+sum(Ai*xi)-d|
+	 * \f$ |Rx+sum(Ai*xi)-d| \f$
 	 */
 	GaussianConditional(Index key, const Vector& d,
 			const Matrix& R, const std::list<std::pair<Index, Matrix> >& parents, const Vector& sigmas);
@@ -199,7 +199,7 @@ public:
    * assuming that parents have been solved already.
    *
    * @param x values structure with solved parents, and the RHS for this conditional
-   * @return solution x = R \ (d - Sy - Tz - ...) for each frontal variable
+   * @return solution \f$ x = R \ (d - Sy - Tz - ...) \f$ for each frontal variable
    */
   void solveInPlace(VectorValues& x) const;
 
