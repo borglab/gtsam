@@ -24,7 +24,6 @@
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/slam/StereoFactor.h>
 
-#include <gtsam/inference/graph.h>
 #include <gtsam/slam/visualSLAM.h>
 
 using namespace std;

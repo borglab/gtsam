@@ -28,7 +28,6 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/FastMap.h>
 #include <gtsam/inference/BayesNet.h>
-#include <gtsam/inference/graph.h>
 
 namespace gtsam {
 

@@ -24,7 +24,6 @@ using namespace boost;
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
-#include <gtsam/inference/graph-inl.h>
 #include <gtsam/slam/visualSLAM.h>
 #include <gtsam/slam/PriorFactor.h>
 

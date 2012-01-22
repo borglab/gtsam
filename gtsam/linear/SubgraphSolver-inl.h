@@ -14,6 +14,7 @@
 #include <boost/foreach.hpp>
 
 #include <gtsam/linear/iterative-inl.h>
+#include <gtsam/inference/graph-inl.h>
 #include <gtsam/inference/EliminationTree.h>
 
 using namespace std;

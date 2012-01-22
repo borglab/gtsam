@@ -20,7 +20,6 @@
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
-#include <gtsam/inference/graph-inl.h>
 
 #include <gtsam/slam/dataset.h>
 

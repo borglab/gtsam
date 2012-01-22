@@ -22,7 +22,6 @@
 
 #pragma once
 
-#include <gtsam/inference/graph-inl.h>
 #include <gtsam/inference/BayesTree.h>
 #include <gtsam/base/DSF.h>
 

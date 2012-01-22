@@ -18,7 +18,6 @@ using namespace boost;
 #include <gtsam/base/Testable.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
-#include <gtsam/inference/graph.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/TupleValues.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
