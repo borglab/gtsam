@@ -36,12 +36,13 @@ using namespace boost::assign;
 static const double tol = 1e-5;
 static const Index _x_=0, _x1_=1, _l1_=2;
 
+Matrix R = Matrix_(2,2,
+		-12.1244,  -5.1962,
+					0.,   4.6904);
+
 /* ************************************************************************* */
 TEST(GaussianConditional, constructor)
 {
-  Matrix R = Matrix_(2,2,
-      -12.1244,  -5.1962,
-            0.,   4.6904);
   Matrix S1 = Matrix_(2,2,
       -5.2786,  -8.6603,
       5.0254,   5.5432);
@@ -86,6 +87,31 @@ TEST(GaussianConditional, constructor)
 
   EXPECT(assert_equal(d, actual.get_d()));
   EXPECT(assert_equal(s, actual.get_sigmas()));
+
+  // test copy constructor
+  GaussianConditional copied(actual);
+  EXPECT(assert_equal(d, copied.get_d()));
+  EXPECT(assert_equal(s, copied.get_sigmas()));
+  EXPECT(assert_equal(R, copied.get_R()));
+}
+
+/* ************************************************************************* *
+
+GaussianConditional construct() {
+	Vector d = Vector_(2, 1.0, 2.0);
+	Vector s = Vector_(2, 3.0, 4.0);
+	GaussianConditional::shared_ptr shared(new GaussianConditional(1, d, R, s));
+	return *shared;
+}
+
+TEST(GaussianConditional, return_value)
+{
+	Vector d = Vector_(2, 1.0, 2.0);
+	Vector s = Vector_(2, 3.0, 4.0);
+  GaussianConditional copied = construct();
+  EXPECT(assert_equal(d, copied.get_d()));
+  EXPECT(assert_equal(s, copied.get_sigmas()));
+  EXPECT(assert_equal(R, copied.get_R()));
 }
 
 /* ************************************************************************* */
