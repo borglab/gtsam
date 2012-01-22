@@ -126,8 +126,8 @@ public:
 	size_t nrParents() const { return FactorType::size() - nrFrontals_; }
 
 	/** Special accessor when there is only one frontal variable. */
-	Key firstFrontalKey() const { return FactorType::front(); }
-	Key lastFrontalKey() const { return *(endFrontals()-1); }
+	Key firstFrontalKey() const { assert(nrFrontals_>0); return FactorType::front(); }
+	Key lastFrontalKey() const { assert(nrFrontals_>0); return *(endFrontals()-1); }
 
   /** Iterators over frontal and parent variables. */
   const_iterator beginFrontals() const { return FactorType::begin(); }
