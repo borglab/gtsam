@@ -30,10 +30,15 @@ namespace gtsam {
 	typedef BayesNet<IndexConditional> SymbolicBayesNet;
 	typedef EliminationTree<IndexFactor> SymbolicEliminationTree;
 
-	/** Symbolic IndexFactor Graph */
+	/** Symbolic IndexFactor Graph
+	 *  \nosubgrouping
+	 */
 	class SymbolicFactorGraph: public FactorGraph<IndexFactor> {
 
 	public:
+
+		/// @name Standard Constructors
+		/// @{
 
 		/** Construct empty factor graph */
 		SymbolicFactorGraph() {
@@ -41,6 +46,26 @@ namespace gtsam {
 
 		/** Construct from a BayesNet */
 		SymbolicFactorGraph(const BayesNet<IndexConditional>& bayesNet);
+
+		/**
+		 * Construct from a factor graph of any type
+		 */
+		template<class FACTOR>
+		SymbolicFactorGraph(const FactorGraph<FACTOR>& fg);
+
+		/// @}
+		/// @name Standard Interface
+		/// @{
+
+		/**
+		 * Return the set of variables involved in the factors (computes a set
+		 * union).
+		 */
+		FastSet<Index> keys() const;
+
+		/// @}
+		/// @name Advanced Interface
+		/// @{
 
 		/** Push back unary factor */
 		void push_factor(Index key);
@@ -54,17 +79,6 @@ namespace gtsam {
 		/** Push back 4-way factor */
 		void push_factor(Index key1, Index key2, Index key3, Index key4);
 
-		/**
-		 * Construct from a factor graph of any type
-		 */
-		template<class FACTOR>
-		SymbolicFactorGraph(const FactorGraph<FACTOR>& fg);
-
-		/**
-		 * Return the set of variables involved in the factors (computes a set
-		 * union).
-		 */
-		FastSet<Index> keys() const;
 	};
 
 	/** Create a combined joint factor (new style for EliminationTree). */
@@ -80,7 +94,9 @@ namespace gtsam {
 	std::pair<boost::shared_ptr<IndexConditional>, boost::shared_ptr<IndexFactor> >
 	EliminateSymbolic(const FactorGraph<IndexFactor>&, size_t nrFrontals = 1);
 
-	/* Template function implementation */
+	/// @}
+
+	/** Template function implementation */
 	template<class FACTOR>
 	SymbolicFactorGraph::SymbolicFactorGraph(const FactorGraph<FACTOR>& fg) {
 		for (size_t i = 0; i < fg.size(); i++) {

@@ -42,6 +42,7 @@ class Inference;
  * arguments supplied through the square-bracket [] operator through the
  * permutation.  Note that this helper class stores a reference to the original
  * container.
+ * \nosubgrouping
  */
 class Permutation {
 protected:
@@ -51,6 +52,9 @@ public:
   typedef boost::shared_ptr<Permutation> shared_ptr;
   typedef std::vector<Index>::const_iterator const_iterator;
   typedef std::vector<Index>::iterator iterator;
+
+	/// @name Standard Constructors
+	/// @{
 
   /**
    * Create an empty permutation.  This cannot do anything, but you can later
@@ -64,12 +68,26 @@ public:
    */
   Permutation(Index nVars) : rangeIndices_(nVars) {}
 
+	/// @}
+	/// @name Testable
+	/// @{
+
+  /** Print */
+  void print(const std::string& str = "Permutation: ") const;
+
+  /** Check equality */
+  bool equals(const Permutation& rhs, double tol=0.0) const { return rangeIndices_ == rhs.rangeIndices_; }
+
+
+	/// @}
+	/// @name Standard Interface
+	/// @{
+
   /**
    * Permute the given variable, i.e. determine it's new index after the
    * permutation.
    */
   Index operator[](Index variable) const { check(variable); return rangeIndices_[variable]; }
-  Index& operator[](Index variable) { check(variable); return rangeIndices_[variable]; }
 
   /**
    * The number of variables in the range of this permutation, i.e. the output
@@ -104,28 +122,11 @@ public:
    */
   static Permutation PushToBack(const std::vector<Index>& toBack, size_t size, bool filterDuplicates = false);
 
-  iterator begin() { return rangeIndices_.begin(); }
-  const_iterator begin() const { return rangeIndices_.begin(); }
-  iterator end() { return rangeIndices_.end(); }
-  const_iterator end() const { return rangeIndices_.end(); }
-
-  /** Print for debugging */
-  void print(const std::string& str = "Permutation: ") const;
-
-  /** Equals */
-  bool equals(const Permutation& rhs, double tol=0.0) const { return rangeIndices_ == rhs.rangeIndices_; }
 
   /**
    * Permute the permutation, p1.permute(p2)[i] is equivalent to p1[p2[i]].
    */
   Permutation::shared_ptr permute(const Permutation& permutation) const;
-
-  /**
-   * A partial permutation, reorders the variables selected by selector through
-   * partialPermutation.  selector and partialPermutation should have the same
-   * size, this is checked if NDEBUG is not defined.
-   */
-  Permutation::shared_ptr partialPermutation(const Permutation& selector, const Permutation& partialPermutation) const;
 
   /**
    * Return the inverse permutation.  This is only possible if this is a non-
@@ -134,8 +135,33 @@ public:
    */
   Permutation::shared_ptr inverse() const;
 
+  const_iterator begin() const { return rangeIndices_.begin(); }	///<TODO: comment
+  const_iterator end() const { return rangeIndices_.end(); }			///<TODO: comment
+
+
+	/// @}
+	/// @name Advanced Interface
+	/// @{
+
+  /**
+   * TODO: comment
+   */
+  Index& operator[](Index variable) { check(variable); return rangeIndices_[variable]; }
+
+  /**
+   * A partial permutation, reorders the variables selected by selector through
+   * partialPermutation.  selector and partialPermutation should have the same
+   * size, this is checked if NDEBUG is not defined.
+   */
+  Permutation::shared_ptr partialPermutation(const Permutation& selector, const Permutation& partialPermutation) const;
+
+  iterator begin() { return rangeIndices_.begin(); }	///<TODO: comment
+  iterator end() { return rangeIndices_.end(); }			///<TODO: comment
+
 protected:
   void check(Index variable) const { assert(variable < rangeIndices_.size()); }
+
+	/// @}
 
   friend class Inference;
 };

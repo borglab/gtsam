@@ -32,6 +32,7 @@ namespace gtsam {
  *
  * This structure is examined even more closely in a JunctionTree, which
  * additionally identifies cliques in the chordal Bayes net.
+ * \nosubgrouping
  */
 template<class FACTOR>
 class EliminationTree {
@@ -59,20 +60,27 @@ private:
   Factors factors_; ///< factors associated with root
   SubTrees subTrees_; ///< sub-trees
 
+	/// @name Standard Constructors
+	/// @{
+
   /** default constructor, private, as you should use Create below */
   EliminationTree(Index key = 0) : key_(key) {}
 
-  /** add a factor, for Create use only */
-  void add(const sharedFactor& factor) { factors_.push_back(factor); }
-
-  /** add a subtree, for Create use only */
-  void add(const shared_ptr& child) { subTrees_.push_back(child); }
+	/// @}
+	/// @name Advanced Interface
+	/// @{
 
   /**
    * Static internal function to build a vector of parent pointers using the
    * algorithm of Gilbert et al., 2001, BIT.
    */
   static std::vector<Index> ComputeParents(const VariableIndex& structure);
+
+  /** add a factor, for Create use only */
+  void add(const sharedFactor& factor) { factors_.push_back(factor); }
+
+  /** add a subtree, for Create use only */
+  void add(const shared_ptr& child) { subTrees_.push_back(child); }
 
   /**
    * Recursive routine that eliminates the factors arranged in an elimination tree
@@ -106,11 +114,9 @@ public:
   template<class DERIVEDFACTOR>
   static shared_ptr Create(const FactorGraph<DERIVEDFACTOR>& factorGraph);
 
-  /** Print the tree to cout */
-  void print(const std::string& name = "EliminationTree: ") const;
-
-  /** Test whether the tree is equal to another */
-  bool equals(const EliminationTree& other, double tol = 1e-9) const;
+	/// @}
+	/// @name Standard Interface
+	/// @{
 
   /** Eliminate the factors to a Bayes Net
    * @param function The function to use to eliminate, see the namespace functions
@@ -118,6 +124,19 @@ public:
    * @return The BayesNet resulting from elimination
    */
   typename BayesNet::shared_ptr eliminate(Eliminate function) const;
+
+	/// @}
+	/// @name Testable
+	/// @{
+
+  /** Print the tree to cout */
+  void print(const std::string& name = "EliminationTree: ") const;
+
+  /** Test whether the tree is equal to another */
+  bool equals(const EliminationTree& other, double tol = 1e-9) const;
+
+	/// @}
+
 };
 
 

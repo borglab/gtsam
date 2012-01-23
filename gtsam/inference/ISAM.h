@@ -25,6 +25,7 @@ namespace gtsam {
 	/**
 	 * A Bayes tree with an update methods that implements the iSAM algorithm.
 	 * Given a set of new factors, it re-eliminates the invalidated part of the tree.
+	 * \nosubgrouping
 	 */
 	template<class CONDITIONAL>
 	class ISAM: public BayesTree<CONDITIONAL> {
@@ -35,6 +36,9 @@ namespace gtsam {
 
 	public:
 
+		/// @name Standard Constructors
+		/// @{
+
 		/** Create an empty Bayes Tree */
 		ISAM();
 
@@ -42,6 +46,10 @@ namespace gtsam {
 		ISAM(const Base& bayesTree) :
 				Base(bayesTree) {
 		}
+
+		/// @}
+		/// @name Advanced Interface Interface
+		/// @{
 
 		/**
 		 * update the Bayes tree with a set of new factors, typically derived from measurements
@@ -51,15 +59,15 @@ namespace gtsam {
 		template<class FG>
 		void update(const FG& newFactors, typename FG::Eliminate function);
 
-		/** advanced interface */
-
-		typedef typename BayesTree<CONDITIONAL>::sharedClique sharedClique;
-		typedef typename BayesTree<CONDITIONAL>::Cliques Cliques;
+		typedef typename BayesTree<CONDITIONAL>::sharedClique sharedClique;	///<TODO: comment
+		typedef typename BayesTree<CONDITIONAL>::Cliques Cliques;						///<TODO: comment
 
 		/** update_internal provides access to list of orphans for drawing purposes */
 		template<class FG>
 		void update_internal(const FG& newFactors, Cliques& orphans,
 				typename FG::Eliminate function);
+
+		/// @}
 
 	};
 

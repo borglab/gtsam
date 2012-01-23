@@ -31,6 +31,7 @@ namespace gtsam {
    *
    * It derives from Conditional with a key type of Index, which is an
    * unsigned integer.
+   * \nosubgrouping
    */
   class IndexConditional : public Conditional<Index> {
 
@@ -45,6 +46,9 @@ namespace gtsam {
     typedef Conditional<Index> Base;
     typedef IndexFactor FactorType;
     typedef boost::shared_ptr<IndexConditional> shared_ptr;
+
+  	/// @name Standard Constructors
+  	/// @{
 
     /** Empty Constructor to make serialization possible */
     IndexConditional() { assertInvariants(); }
@@ -61,6 +65,10 @@ namespace gtsam {
     /** Three parents */
     IndexConditional(Index j, Index parent1, Index parent2, Index parent3) : Base(j, parent1, parent2, parent3) { assertInvariants(); }
 
+  	/// @}
+  	/// @name Advanced Constructors
+  	/// @{
+
     /** Constructor from a frontal variable and a vector of parents */
 		IndexConditional(Index j, const std::vector<Index>& parents) : Base(j, parents) {
 			assertInvariants();
@@ -71,6 +79,10 @@ namespace gtsam {
 			Base(keys, nrFrontals) {
 			assertInvariants();
 		}
+
+		/// @}
+		/// @name Standard Interface
+		/// @{
 
 		/** Named constructor directly returning a shared pointer */
 		template<class KEYS>
@@ -85,6 +97,10 @@ namespace gtsam {
     IndexFactor::shared_ptr toFactor() const {
       return IndexFactor::shared_ptr(new IndexFactor(*this));
     }
+
+  	/// @}
+  	/// @name Advanced Interface
+  	/// @{
 
     /** Permute the variables when only separator variables need to be permuted.
      * Returns true if any reordered variables appeared in the separator and
@@ -105,6 +121,9 @@ namespace gtsam {
   	void serialize(Archive & ar, const unsigned int version) {
   		ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
   	}
+
+  	/// @}
+
   };
 
 }

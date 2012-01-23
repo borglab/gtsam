@@ -32,13 +32,19 @@ namespace gtsam {
 	 * elimination by JunctionTree.
 	 *
 	 * It derives from Factor with a key type of Index, an unsigned integer.
+	 * \nosubgrouping
 	 */
 	class IndexFactor: public Factor<Index> {
 
 	protected:
 
-		// Internal function for checking class invariants (unique keys for this factor)
+		/// @name Advanced Interface
+		/// @{
+
+		/// Internal function for checking class invariants (unique keys for this factor)
 		void assertInvariants() const;
+
+		/// @}
 
 	public:
 
@@ -51,6 +57,9 @@ namespace gtsam {
 		/** Overriding the shared_ptr typedef */
 		typedef boost::shared_ptr<IndexFactor> shared_ptr;
 
+		/// @name Standard Interface
+		/// @{
+
 		/** Copy constructor */
 		IndexFactor(const This& f) :
 			Base(f) {
@@ -59,13 +68,6 @@ namespace gtsam {
 
 		/** Construct from derived type */
 		IndexFactor(const IndexConditional& c);
-
-		/** Constructor from a collection of keys */
-		template<class KeyIterator> IndexFactor(KeyIterator beginKey,
-				KeyIterator endKey) :
-			Base(beginKey, endKey) {
-			assertInvariants();
-		}
 
 		/** Default constructor for I/O */
 		IndexFactor() {
@@ -96,6 +98,10 @@ namespace gtsam {
 			assertInvariants();
 		}
 
+		/// @}
+		/// @name Advanced Constructors
+		/// @{
+
 		/** Construct n-way factor */
 		IndexFactor(const std::set<Index>& js) :
 			Base(js) {
@@ -108,6 +114,15 @@ namespace gtsam {
 			assertInvariants();
 		}
 
+		/** Constructor from a collection of keys */
+		template<class KeyIterator> IndexFactor(KeyIterator beginKey,
+				KeyIterator endKey) :
+			Base(beginKey, endKey) {
+			assertInvariants();
+		}
+
+		/// @}
+
 #ifdef TRACK_ELIMINATE
 		/**
 		 * eliminate the first variable involved in this factor
@@ -119,6 +134,9 @@ namespace gtsam {
 		boost::shared_ptr<BayesNet<ConditionalType> > eliminate(size_t nrFrontals =
 				1);
 #endif
+
+		/// @name Advanced Interface
+		/// @{
 
 	  /**
 	   * Permutes the factor, but for efficiency requires the permutation
@@ -136,6 +154,8 @@ namespace gtsam {
     void serialize(ARCHIVE & ar, const unsigned int version) {
     	ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     }
+
+		/// @}
 
 	}; // IndexFactor
 

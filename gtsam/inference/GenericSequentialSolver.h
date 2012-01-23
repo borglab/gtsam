@@ -43,6 +43,7 @@ namespace gtsam {
 	 * However, sequential variable elimination is easier to understand so this is a good
 	 * starting point to learn about these algorithms and our implementation.
 	 * Additionally, the first step of MFQR is symbolic sequential elimination.
+	 * \nosubgrouping
 	 */
 	template<class FACTOR>
 	class GenericSequentialSolver {
@@ -73,6 +74,9 @@ namespace gtsam {
 
 	public:
 
+		/// @name Standard Constructors
+		/// @{
+
 		/**
 		 * Construct the solver for a factor graph.  This builds the elimination
 		 * tree, which already does some of the work of elimination.
@@ -88,11 +92,19 @@ namespace gtsam {
 				const sharedFactorGraph& factorGraph,
 				const boost::shared_ptr<VariableIndex>& variableIndex);
 
+		/// @}
+		/// @name Testable
+		/// @{
+
 		/** Print to cout */
 		void print(const std::string& name = "GenericSequentialSolver: ") const;
 
 		/** Test whether is equal to another */
 		bool equals(const GenericSequentialSolver& other, double tol = 1e-9) const;
+
+		/// @}
+		/// @name Standard Interface
+		/// @{
 
 		/**
 		 * Replace the factor graph with a new one having the same structure.  The
@@ -119,6 +131,8 @@ namespace gtsam {
 		 * all of the other variables.  This function returns the result as a factor.
 		 */
 		typename FACTOR::shared_ptr marginalFactor(Index j, Eliminate function) const;
+
+		/// @}
 
 	}; // GenericSequentialSolver
 

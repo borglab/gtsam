@@ -37,8 +37,7 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 	/**
 	 * A factor graph is a bipartite graph with factor nodes connected to variable nodes.
 	 * In this class, however, only factor nodes are kept around.
-	 * 
-	 * Templated on the type of factors and values structure.
+	 * \nosubgrouping
 	 */
 	template<class FACTOR>
 	class FactorGraph {
@@ -69,8 +68,15 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 
 		/** ------------------ Creating Factor Graphs ---------------------------- */
 
+		/// @name Standard Constructors
+		/// @{
+
 		/** Default constructor */
 		FactorGraph() {}
+
+		/// @}
+		/// @name Advanced Constructor
+		/// @{
 
 		/** convert from Bayes net */
 		template<class CONDITIONAL>
@@ -107,7 +113,9 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
     template<typename DERIVEDFACTOR>
     void push_back(const std::vector<boost::shared_ptr<DERIVEDFACTOR> >& factors);
 
-		/** ------------------ Querying Factor Graphs ---------------------------- */
+		/// @}
+  	/// @name Testable
+  	/// @{
 
 		/** print out graph */
 		void print(const std::string& s = "FactorGraph") const;
@@ -115,12 +123,14 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 		/** Check equality */
 		bool equals(const FactorGraph<FACTOR>& fg, double tol = 1e-9) const;
 
+		/// @}
+		/// @name Standard Interface
+		/// @{
+
+		/** ------------------ Querying Factor Graphs ---------------------------- */
+
 		/** const cast to the underlying vector of factors */
 		operator const std::vector<sharedFactor>&() const { return factors_; }
-
-		/** STL begin and end, so we can use BOOST_FOREACH */
-		const_iterator begin() const { return factors_.begin();}
-		const_iterator end()   const { return factors_.end();  }
 
 		/** Get a specific factor by index */
 		const sharedFactor operator[](size_t i) const { assert(i<factors_.size()); return factors_[i]; }
@@ -171,11 +181,23 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
       return ret;
     }
 
+		/// @}
+		/// @name Advanced Interface
+		/// @{
+
+		/** STL begin and end, so we can use BOOST_FOREACH */
+		const_iterator begin() const { return factors_.begin();}
+		const_iterator end()   const { return factors_.end();  }
+
 		/** ----------------- Modifying Factor Graphs ---------------------------- */
 
 		/** STL begin and end, so we can use BOOST_FOREACH */
 		iterator begin()       { return factors_.begin();}
 		iterator end()         { return factors_.end();  }
+
+		/// @}
+		/// @name Standard Interface
+		/// @{
 
 		/**
 		 * Reserve space for the specified number of factors if you know in
@@ -195,6 +217,10 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 		/** replace a factor by index */
 		void replace(size_t index, sharedFactor factor);
 
+		/// @}
+		/// @name Advanced Interface
+		/// @{
+
 	private:
 
 		/** Serialization function */
@@ -204,6 +230,8 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 			ar & BOOST_SERIALIZATION_NVP(factors_);
 		}
 	}; // FactorGraph
+
+	/// @}
 
   /** Create a combined joint factor (new style for EliminationTree). */
 	template<class DERIVED, class KEY>

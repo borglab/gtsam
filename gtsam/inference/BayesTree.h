@@ -46,6 +46,7 @@ namespace gtsam {
 	 * as it is only used when developing special versions of BayesTree, e.g. for ISAM2.
 	 *
 	 * \ingroup Multifrontal
+	 * \nosubgrouping
 	 */
 	template<class CONDITIONAL, class CLIQUE=BayesTreeClique<CONDITIONAL> >
 	class BayesTree {
@@ -128,11 +129,18 @@ namespace gtsam {
 
 	public:
 
+		/// @name Standard Constructors
+		/// @{
+
 		/** Create an empty Bayes Tree */
 		BayesTree();
 
 		/** Create a Bayes Tree from a Bayes Net */
 		BayesTree(const BayesNet<CONDITIONAL>& bayesNet);
+
+		/// @}
+		/// @name Advanced Constructors
+		/// @{
 
 		/**
 		 * Create a Bayes Tree from a Bayes Net and some subtrees. The Bayes net corresponds to the
@@ -143,53 +151,19 @@ namespace gtsam {
 		/** Destructor */
 		virtual ~BayesTree() {}
 
-		/**
-		 * Constructing Bayes trees
-		 */
-
-		/** Insert a new conditional
-		 * This function only applies for Symbolic case with IndexCondtional,
-		 * We make it static so that it won't be compiled in GaussianConditional case.
-		 * */
-		static void insert(BayesTree<CONDITIONAL,CLIQUE>& bayesTree, const sharedConditional& conditional);
-
-		/**
-		 * Insert a new clique corresponding to the given Bayes net.
-		 * It is the caller's responsibility to decide whether the given Bayes net is a valid clique,
-		 * i.e. all the variables (frontal and separator) are connected
-		 */
-		sharedClique insert(const sharedConditional& clique,
-				std::list<sharedClique>& children, bool isRootClique = false);
-
-		/**
-		 * Hang a new subtree off of the existing tree.  This finds the appropriate
-		 * parent clique for the subtree (which may be the root), and updates the
-		 * nodes index with the new cliques in the subtree.  None of the frontal
-		 * variables in the subtree may appear in the separators of the existing
-		 * BayesTree.
-		 */
-		void insert(const sharedClique& subtree);
-
-		/**
-		 * Querying Bayes trees
-		 */
+		/// @}
+		/// @name Testable
+		/// @{
 
 		/** check equality */
 		bool equals(const BayesTree<CONDITIONAL,CLIQUE>& other, double tol = 1e-9) const;
 
-		void cloneTo(shared_ptr& newTree) const {
-		  cloneTo(newTree, root(), sharedClique());
-		}
+		/** print */
+		void print(const std::string& s = "") const;
 
-	private:
-		/** deep copy from another tree */
-		void cloneTo(shared_ptr& newTree, const sharedClique& subtree, const sharedClique& parent) const {
-		  sharedClique newClique(subtree->clone());
-		  newTree->addClique(newClique, parent);
-		  BOOST_FOREACH(const sharedClique& childClique, subtree->children()) {
-		    cloneTo(newTree, childClique, newClique);
-		  }
-		}
+		/// @}
+		/// @name Standard Interface
+		/// @{
 
 	public:
 
@@ -213,9 +187,6 @@ namespace gtsam {
 
 		/** return root clique */
 		const sharedClique& root() const { return root_;	}
-
-		/** Access the root clique (non-const version) */
-		sharedClique& root() { return root_; }
 
 		/** find the clique to which key belongs */
 		sharedClique operator[](Index key) const {
@@ -245,15 +216,15 @@ namespace gtsam {
 		 * Read only with side effects
 		 */
 
-		/** print */
-		void print(const std::string& s = "") const;
-
 		/** saves the Tree to a text file in GraphViz format */
 		void saveGraph(const std::string& s) const;
 
-		/**
-		 * Altering Bayes trees
-		 */
+		/// @}
+		/// @name Advanced Interface
+		/// @{
+
+		/** Access the root clique (non-const version) */
+		sharedClique& root() { return root_; }
 
 		/** Remove all nodes */
 		void clear();
@@ -271,7 +242,45 @@ namespace gtsam {
 		template<class CONTAINER>
 		void removeTop(const CONTAINER& keys, BayesNet<CONDITIONAL>& bn, Cliques& orphans);
 
+		/**
+		 * Hang a new subtree off of the existing tree.  This finds the appropriate
+		 * parent clique for the subtree (which may be the root), and updates the
+		 * nodes index with the new cliques in the subtree.  None of the frontal
+		 * variables in the subtree may appear in the separators of the existing
+		 * BayesTree.
+		 */
+		void insert(const sharedClique& subtree);
+
+		/** Insert a new conditional
+		 * This function only applies for Symbolic case with IndexCondtional,
+		 * We make it static so that it won't be compiled in GaussianConditional case.
+		 * */
+		static void insert(BayesTree<CONDITIONAL,CLIQUE>& bayesTree, const sharedConditional& conditional);
+
+		/**
+		 * Insert a new clique corresponding to the given Bayes net.
+		 * It is the caller's responsibility to decide whether the given Bayes net is a valid clique,
+		 * i.e. all the variables (frontal and separator) are connected
+		 */
+		sharedClique insert(const sharedConditional& clique,
+				std::list<sharedClique>& children, bool isRootClique = false);
+
+		///TODO: comment
+		void cloneTo(shared_ptr& newTree) const {
+		  cloneTo(newTree, root(), sharedClique());
+		}
+
   private:
+
+		/** deep copy from another tree */
+		void cloneTo(shared_ptr& newTree, const sharedClique& subtree, const sharedClique& parent) const {
+		  sharedClique newClique(subtree->clone());
+		  newTree->addClique(newClique, parent);
+		  BOOST_FOREACH(const sharedClique& childClique, subtree->children()) {
+		    cloneTo(newTree, childClique, newClique);
+		  }
+		}
+
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -279,6 +288,8 @@ namespace gtsam {
     	ar & BOOST_SERIALIZATION_NVP(nodes_);
     	ar & BOOST_SERIALIZATION_NVP(root_);
     }
+
+		/// @}
 
 	}; // BayesTree
 

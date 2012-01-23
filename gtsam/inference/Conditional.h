@@ -36,6 +36,7 @@ namespace gtsam {
  * Derived classes *must* redefine the Factor and shared_ptr typedefs to refer
  * to the associated factor type and shared_ptr type of the derived class.  See
  * IndexConditional and GaussianConditional for examples.
+ * \nosubgrouping
  */
 template<typename KEY>
 class Conditional: public gtsam::Factor<KEY> {
@@ -87,6 +88,9 @@ public:
   /** View of the separator keys (call parents()) */
   typedef boost::iterator_range<const_iterator> Parents;
 
+	/// @name Standard Constructors
+	/// @{
+
   /** Empty Constructor to make serialization possible */
   Conditional() : nrFrontals_(0) { assertInvariants(); }
 
@@ -102,6 +106,10 @@ public:
   /** Three parents */
   Conditional(Key key, Key parent1, Key parent2, Key parent3) : FactorType(key, parent1, parent2, parent3), nrFrontals_(1) { assertInvariants(); }
 
+	/// @}
+	/// @name Advanced Constructors
+	/// @{
+
   /** Constructor from a frontal variable and a vector of parents */
 	Conditional(Key key, const std::vector<Key>& parents) :
 		FactorType(MakeKeys(key, parents.begin(), parents.end())), nrFrontals_(1) {
@@ -114,10 +122,21 @@ public:
 		assertInvariants();
 	}
 
+	/// @}
+	/// @name Testable
+	/// @{
+
+  /** print */
+  void print(const std::string& s = "Conditional") const;
+
   /** check equality */
   template<class DERIVED>
   bool equals(const DERIVED& c, double tol = 1e-9) const {
     return nrFrontals_ == c.nrFrontals_ && FactorType::equals(c, tol); }
+
+	/// @}
+	/// @name Standard Interface
+	/// @{
 
 	/** return the number of frontals */
 	size_t nrFrontals() const { return nrFrontals_; }
@@ -129,20 +148,6 @@ public:
 	Key firstFrontalKey() const { assert(nrFrontals_>0); return FactorType::front(); }
 	Key lastFrontalKey() const { assert(nrFrontals_>0); return *(endFrontals()-1); }
 
-  /** Iterators over frontal and parent variables. */
-  const_iterator beginFrontals() const { return FactorType::begin(); }
-  const_iterator endFrontals() const { return FactorType::begin()+nrFrontals_; }
-  const_iterator beginParents() const { return FactorType::begin()+nrFrontals_; }
-  const_iterator endParents() const { return FactorType::end(); }
-
-  /** Mutable iterators and accessors */
-  iterator beginFrontals() { return FactorType::begin(); }
-  iterator endFrontals() { return FactorType::begin()+nrFrontals_; }
-  iterator beginParents() { return FactorType::begin()+nrFrontals_; }
-  iterator endParents() { return FactorType::end(); }
-  boost::iterator_range<iterator> frontals() { return boost::make_iterator_range(beginFrontals(), endFrontals()); }
-  boost::iterator_range<iterator> parents() { return boost::make_iterator_range(beginParents(), endParents()); }
-
   /** return a view of the frontal keys */
   Frontals frontals() const {
     return boost::make_iterator_range(beginFrontals(), endFrontals()); }
@@ -151,8 +156,29 @@ public:
 	Parents parents() const {
 	  return boost::make_iterator_range(beginParents(), endParents()); }
 
-  /** print */
-  void print(const std::string& s = "Conditional") const;
+	 /** Iterators over frontal and parent variables. */
+	  const_iterator beginFrontals() const { return FactorType::begin(); }						///<TODO: comment
+	  const_iterator endFrontals() const { return FactorType::begin()+nrFrontals_; }	///<TODO: comment
+	  const_iterator beginParents() const { return FactorType::begin()+nrFrontals_; }	///<TODO: comment
+	  const_iterator endParents() const { return FactorType::end(); }									///<TODO: comment
+
+	/// @}
+	/// @name Advanced Interface
+	/// @{
+
+	  /** Mutable iterators and accessors */
+	  iterator beginFrontals() { return FactorType::begin(); }						///<TODO: comment
+	  iterator endFrontals() { return FactorType::begin()+nrFrontals_; }	///<TODO: comment
+	  iterator beginParents() { return FactorType::begin()+nrFrontals_; }	///<TODO: comment
+	  iterator endParents() { return FactorType::end(); }									///<TODO: comment
+
+	  ///TODO: comment
+	  boost::iterator_range<iterator> frontals() {
+	  	return boost::make_iterator_range(beginFrontals(), endFrontals()); }
+
+	  ///TODO: comment
+	  boost::iterator_range<iterator> parents() {
+	  	return boost::make_iterator_range(beginParents(), endParents()); }
 
 private:
   /** Serialization function */
@@ -162,6 +188,9 @@ private:
   	ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar & BOOST_SERIALIZATION_NVP(nrFrontals_);
   }
+
+	/// @}
+
 };
 
 

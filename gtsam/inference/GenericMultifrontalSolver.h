@@ -36,6 +36,7 @@ namespace gtsam {
 	 *   JUNCTIONTREE annoyingly, you also have to supply a compatible JT type
 	 *                i.e., one templated on a factor graph with the same factors
 	 *                TODO: figure why this is so and possibly fix it
+	 * \nosubgrouping
 	 */
 	template<class FACTOR, class JUNCTIONTREE>
 	class GenericMultifrontalSolver {
@@ -53,6 +54,9 @@ namespace gtsam {
 		typedef typename FactorGraph<FACTOR>::shared_ptr sharedGraph;
 		typedef typename FactorGraph<FACTOR>::Eliminate Eliminate;
 
+		/// @name Standard Constructors
+		/// @{
+
 		/**
 		 * Construct the solver for a factor graph.  This builds the junction
 		 * tree, which does the symbolic elimination, identifies the cliques,
@@ -67,6 +71,10 @@ namespace gtsam {
 		 */
 		GenericMultifrontalSolver(const sharedGraph& factorGraph,
 				const VariableIndex::shared_ptr& variableIndex);
+
+		/// @}
+		/// @name Standard Interface
+		/// @{
 
 		/**
 		 * Replace the factor graph with a new one having the same structure.  The
@@ -96,6 +104,8 @@ namespace gtsam {
 		 */
 		typename FACTOR::shared_ptr marginalFactor(Index j,
 				Eliminate function) const;
+
+		/// @}
 
 	};
 

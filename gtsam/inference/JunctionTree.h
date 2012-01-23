@@ -48,6 +48,7 @@ namespace gtsam {
 	 *
 	 *
 	 * \ingroup Multifrontal
+	 * \nosubgrouping
 	 */
 	template<class FG, class BTCLIQUE=typename BayesTree<typename FG::FactorType::ConditionalType>::Clique>
 	class JunctionTree: public ClusterTree<FG> {
@@ -68,23 +69,33 @@ namespace gtsam {
 		typedef gtsam::BayesTree<IndexConditional> SymbolicBayesTree;
 
 	private:
-		// distribute the factors along the cluster tree
+
+		/// @name Advanced Interface
+		/// @{
+
+		/// distribute the factors along the cluster tree
 		sharedClique distributeFactors(const FG& fg,
 				const SymbolicBayesTree::sharedClique& clique);
 
-		// distribute the factors along the cluster tree
+		/// distribute the factors along the cluster tree
     sharedClique distributeFactors(const FG& fg, const std::vector<FastList<size_t> >& targets,
         const SymbolicBayesTree::sharedClique& clique);
 
-		// recursive elimination function
+		/// recursive elimination function
 		std::pair<typename BTClique::shared_ptr, typename FG::sharedFactor>
 		eliminateOneClique(typename FG::Eliminate function,
 				const boost::shared_ptr<const Clique>& clique) const;
 
-		// internal constructor
+		/// internal constructor
 		void construct(const FG& fg, const VariableIndex& variableIndex);
 
+		/// @}
+
 	public:
+
+		/// @name Standard Constructors
+		/// @{
+
 		/** Default constructor */
 		JunctionTree() {}
 
@@ -104,12 +115,18 @@ namespace gtsam {
 		 */
 		JunctionTree(const FG& fg, const VariableIndex& variableIndex);
 
+		/// @}
+		/// @name Standard Interface
+		/// @{
+
 		/** Eliminate the factors in the subgraphs to produce a BayesTree.
 		 * @param function The function used to eliminate, see the namespace functions
 		 * in GaussianFactorGraph.h
 		 * @return The BayesTree resulting from elimination
 		 */
 		typename BTClique::shared_ptr eliminate(typename FG::Eliminate function) const;
+
+		/// @}
 
 	}; // JunctionTree
 

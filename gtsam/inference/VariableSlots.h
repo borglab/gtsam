@@ -52,6 +52,7 @@ namespace gtsam {
  * further sorted so that the column-block position of the first structural
  * non-zero increases monotonically through the rows.  This additional process
  * is not performed by this class.
+ * \nosubgrouping
  */
 
 class VariableSlots : public FastMap<Index, std::vector<Index> > {
@@ -59,6 +60,9 @@ class VariableSlots : public FastMap<Index, std::vector<Index> > {
 public:
 
   typedef FastMap<Index, std::vector<Index> > Base;
+
+	/// @name Standard Constructors
+	/// @{
 
   /**
    * Constructor from a set of factors to be combined.  Sorts the variables
@@ -68,11 +72,18 @@ public:
   template<class FG>
   VariableSlots(const FG& factorGraph);
 
+	/// @}
+	/// @name Testable
+	/// @{
+
   /** print */
   void print(const std::string& str = "VariableSlots: ") const;
 
   /** equals */
   bool equals(const VariableSlots& rhs, double tol = 0.0) const;
+
+	/// @}
+
 };
 
 /* ************************************************************************* */

@@ -48,6 +48,7 @@ template<class KEY> class Conditional;
  * This class is \bold{not} virtual for performance reasons - derived symbolic classes,
  * IndexFactor and IndexConditional, need to be created and destroyed quickly
  * during symbolic elimination.  GaussianFactor and NonlinearFactor are virtual.
+ * \nosubgrouping
  */
 template<typename KEY>
 class Factor {
@@ -88,15 +89,14 @@ protected:
 
 public:
 
+	/// @name Standard Constructors
+	/// @{
+
   /** Copy constructor */
   Factor(const This& f);
 
   /** Construct from conditional, calls ConditionalType::toFactor() */
   Factor(const ConditionalType& c);
-
-  /** Constructor from a collection of keys */
-  template<class KEYITERATOR> Factor(KEYITERATOR beginKey, KEYITERATOR endKey) :
-        keys_(beginKey, endKey) { assertInvariants(); }
 
   /** Default constructor for I/O */
   Factor() {}
@@ -117,6 +117,10 @@ public:
   Factor(Key key1, Key key2, Key key3, Key key4) : keys_(4) {
     keys_[0] = key1; keys_[1] = key2; keys_[2] = key3; keys_[3] = key4; assertInvariants(); }
 
+	/// @}
+	/// @name Advanced Constructors
+	/// @{
+
   /** Construct n-way factor */
 	Factor(const std::set<Key>& keys) {
 		BOOST_FOREACH(const Key& key, keys) keys_.push_back(key);
@@ -127,6 +131,12 @@ public:
 	Factor(const std::vector<Key>& keys) : keys_(keys) {
 		assertInvariants();
 	}
+
+  /** Constructor from a collection of keys */
+  template<class KEYITERATOR> Factor(KEYITERATOR beginKey, KEYITERATOR endKey) :
+        keys_(beginKey, endKey) { assertInvariants(); }
+
+	/// @}
 
 #ifdef TRACK_ELIMINATE
   /**
@@ -143,39 +153,53 @@ public:
   typename BayesNet<CONDITIONAL>::shared_ptr eliminate(size_t nrFrontals = 1);
 #endif
 
-  /** iterators */
-  const_iterator begin() const { return keys_.begin(); }
-  const_iterator end() const { return keys_.end(); }
+	/// @name Standard Interface
+	/// @{
 
-  /** mutable iterators */
-  iterator begin() { return keys_.begin(); }
-  iterator end() { return keys_.end(); }
-
-  /** First key*/
+  /// First key
   Key front() const { return keys_.front(); }
 
-  /** Last key */
+  /// Last key
   Key back() const { return keys_.back(); }
 
-  /** find */
+  /// find
   const_iterator find(Key key) const { return std::find(begin(), end(), key); }
 
-  /** print */
-  void print(const std::string& s = "Factor") const;
-
-  /** check equality */
-  bool equals(const This& other, double tol = 1e-9) const;
-
-  /**
-   * @return keys involved in this factor
-   */
-  std::vector<Key>& keys() { return keys_; }
+  ///TODO: comment
   const std::vector<Key>& keys() const { return keys_; }
+
+  /** iterators */
+  const_iterator begin() const { return keys_.begin(); }	///TODO: comment
+  const_iterator end() const { return keys_.end(); }			///TODO: comment
 
   /**
    * @return the number of variables involved in this factor
    */
   size_t size() const { return keys_.size(); }
+
+	/// @}
+	/// @name Testable
+	/// @{
+
+  /// print
+  void print(const std::string& s = "Factor") const;
+
+  /// check equality
+  bool equals(const This& other, double tol = 1e-9) const;
+
+	/// @}
+	/// @name Advanced Interface
+	/// @{
+
+  /**
+   * @return keys involved in this factor
+   */
+  std::vector<Key>& keys() { return keys_; }
+
+  /** mutable iterators */
+  iterator begin() { return keys_.begin(); }	///TODO: comment
+  iterator end() { return keys_.end(); }			///TODO: comment
+
 
 private:
 
@@ -185,6 +209,9 @@ private:
   void serialize(Archive & ar, const unsigned int version) {
     ar & BOOST_SERIALIZATION_NVP(keys_);
   }
+
+	/// @}
+
 };
 
 }

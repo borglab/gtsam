@@ -35,6 +35,7 @@ class Inference;
  * from a factor graph prior to elimination, and stores the list of factors
  * that involve each variable.  This information is stored as a vector of
  * lists of factor indices.
+ * \nosubgrouping
  */
 class VariableIndex {
 public:
@@ -51,6 +52,10 @@ protected:
   size_t nEntries_; // Sum of involved variable counts of each factor.
 
 public:
+
+	/// @name Standard Constructors
+	/// @{
+
   /** Default constructor, creates an empty VariableIndex */
   VariableIndex() : index_(indexUnpermuted_), nFactors_(0), nEntries_(0) {}
 
@@ -67,6 +72,10 @@ public:
    */
   template<class FactorGraph> VariableIndex(const FactorGraph& factorGraph);
 
+	/// @}
+	/// @name Standard Interface
+	/// @{
+
   /**
    * The number of variable entries.  This is one greater than the variable
    * with the highest index.
@@ -82,14 +91,23 @@ public:
   /** Access a list of factors by variable */
   const Factors& operator[](Index variable) const { checkVar(variable); return index_[variable]; }
 
+	/// @}
+	/// @name Testable
+	/// @{
+
+  /** Test for equality (for unit tests and debug assertions). */
+  bool equals(const VariableIndex& other, double tol=0.0) const;
+
+  /** Print the variable index (for unit tests and debugging). */
+  void print(const std::string& str = "VariableIndex: ") const;
+
+
+	/// @}
+	/// @name Advanced Interface
+	/// @{
+
   /** Access a list of factors by variable */
   Factors& operator[](Index variable) { checkVar(variable); return index_[variable]; }
-
-  /**
-   * Apply a variable permutation.  Does not rearrange data, just permutes
-   * future lookups by variable.
-   */
-  void permute(const Permutation& permutation);
 
   /**
    * Augment the variable index with new factors.  This can be used when
@@ -105,22 +123,30 @@ public:
    */
   template<typename CONTAINER, class FactorGraph> void remove(const CONTAINER& indices, const FactorGraph& factors);
 
-  /** Test for equality (for unit tests and debug assertions). */
-  bool equals(const VariableIndex& other, double tol=0.0) const;
 
-  /** Print the variable index (for unit tests and debugging). */
-  void print(const std::string& str = "VariableIndex: ") const;
+  /**
+   * Apply a variable permutation.  Does not rearrange data, just permutes
+   * future lookups by variable.
+   */
+  void permute(const Permutation& permutation);
 
 protected:
+  Factor_iterator factorsBegin(Index variable) { checkVar(variable); return index_[variable].begin(); }	  ///<TODO: comment
+  Factor_iterator factorsEnd(Index variable) { checkVar(variable); return index_[variable].end(); }				///<TODO: comment
+
+  Factor_const_iterator factorsBegin(Index variable) const { checkVar(variable); return index_[variable].begin(); }	///<TODO: comment
+  Factor_const_iterator factorsEnd(Index variable) const { checkVar(variable); return index_[variable].end(); }			///<TODO: comment
+
+  ///TODO: comment
   VariableIndex(size_t nVars) : indexUnpermuted_(nVars), index_(indexUnpermuted_), nFactors_(0), nEntries_(0) {}
+
+  ///TODO: comment
   void checkVar(Index variable) const { assert(variable < index_.size()); }
 
+  ///TODO: comment
   template<class FactorGraph> void fill(const FactorGraph& factorGraph);
 
-  Factor_iterator factorsBegin(Index variable) { checkVar(variable); return index_[variable].begin(); }
-  Factor_const_iterator factorsBegin(Index variable) const { checkVar(variable); return index_[variable].begin(); }
-  Factor_iterator factorsEnd(Index variable) { checkVar(variable); return index_[variable].end(); }
-  Factor_const_iterator factorsEnd(Index variable) const { checkVar(variable); return index_[variable].end(); }
+	/// @}
 };
 
 /* ************************************************************************* */

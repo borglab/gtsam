@@ -41,6 +41,7 @@ namespace gtsam {
    *
    * @tparam DERIVED The derived clique type.
    * @tparam CONDITIONAL The conditional type.
+   * \nosubgrouping
    */
   template<class DERIVED, class CONDITIONAL>
   struct BayesTreeCliqueBase {
@@ -58,7 +59,9 @@ namespace gtsam {
     typedef typename FactorGraph<FactorType>::Eliminate Eliminate;
 
   protected:
-    void assertInvariants() const;
+
+  	/// @name Standard Constructors
+  	/// @{
 
     /** Default constructor */
     BayesTreeCliqueBase() {}
@@ -69,10 +72,56 @@ namespace gtsam {
     /** Construct from an elimination result, which is a pair<CONDITIONAL,FACTOR> */
     BayesTreeCliqueBase(const std::pair<sharedConditional, boost::shared_ptr<typename ConditionalType::FactorType> >& result);
 
+   	/// @}
+
   public:
     sharedConditional conditional_;
     derived_weak_ptr parent_;
     std::list<derived_ptr> children_;
+
+  	/// @name Testable
+  	/// @{
+
+    /** check equality */
+    bool equals(const This& other, double tol=1e-9) const {
+      return (!conditional_ && !other.conditional()) ||
+          conditional_->equals(*other.conditional(), tol);
+    }
+
+    /** print this node */
+    void print(const std::string& s = "") const;
+
+    /** print this node and entire subtree below it */
+    void printTree(const std::string& indent="") const;
+
+  	/// @}
+  	/// @name Standard Interface
+  	/// @{
+
+    /** Access the conditional */
+    const sharedConditional& conditional() const { return conditional_; }
+
+    /** is this the root of a Bayes tree ? */
+    inline bool isRoot() const { return parent_.expired(); }
+
+    /** The size of subtree rooted at this clique, i.e., nr of Cliques */
+    size_t treeSize() const;
+
+    /** The arrow operator accesses the conditional */
+    const ConditionalType* operator->() const { return conditional_.get(); }
+
+    ///TODO: comment
+    const std::list<derived_ptr>& children() const { return children_; }
+
+  	/// @}
+  	/// @name Advanced Interface
+  	/// @{
+
+    /** The arrow operator accesses the conditional */
+    ConditionalType* operator->() { return conditional_.get(); }
+
+    /** return the const reference of children */
+    std::list<derived_ptr>& children() { return children_; }
 
     /** Construct shared_ptr from a conditional, leaving parent and child pointers uninitialized */
     static derived_ptr Create(const sharedConditional& conditional) { return boost::make_shared<DerivedType>(conditional); }
@@ -82,34 +131,10 @@ namespace gtsam {
      * types, such as ISAM2Clique, the factor part is kept as a cached factor.
      * @param An elimination result, which is a pair<CONDITIONAL,FACTOR>
      */
-    static derived_ptr Create(const std::pair<sharedConditional, boost::shared_ptr<typename ConditionalType::FactorType> >& result) { return boost::make_shared<DerivedType>(result); }
+     static derived_ptr Create(const std::pair<sharedConditional, boost::shared_ptr<typename ConditionalType::FactorType> >& result) { return boost::make_shared<DerivedType>(result); }
 
-    derived_ptr clone() const { return Create(sharedConditional(new ConditionalType(*conditional_))); }
-
-    /** print this node */
-    void print(const std::string& s = "") const;
-
-    /** The arrow operator accesses the conditional */
-    const ConditionalType* operator->() const { return conditional_.get(); }
-
-    /** The arrow operator accesses the conditional */
-    ConditionalType* operator->() { return conditional_.get(); }
-
-    /** Access the conditional */
-    const sharedConditional& conditional() const { return conditional_; }
-
-    /** is this the root of a Bayes tree ? */
-    inline bool isRoot() const { return parent_.expired(); }
-
-    /** return the const reference of children */
-    std::list<derived_ptr>& children() { return children_; }
-    const std::list<derived_ptr>& children() const { return children_; }
-
-    /** The size of subtree rooted at this clique, i.e., nr of Cliques */
-    size_t treeSize() const;
-
-    /** print this node and entire subtree below it */
-    void printTree(const std::string& indent="") const;
+     ///TODO: comment
+     derived_ptr clone() const { return Create(sharedConditional(new ConditionalType(*conditional_))); }
 
     /** Permute the variables in the whole subtree rooted at this clique */
     void permuteWithInverse(const Permutation& inversePermutation);
@@ -131,12 +156,12 @@ namespace gtsam {
     /** return the joint P(C1,C2), where C1==this. TODO: not a method? */
     FactorGraph<FactorType> joint(derived_ptr C2, derived_ptr root, Eliminate function);
 
-    bool equals(const This& other, double tol=1e-9) const {
-      return (!conditional_ && !other.conditional()) ||
-          conditional_->equals(*other.conditional(), tol);
-    }
-
     friend class BayesTree<ConditionalType, DerivedType>;
+
+  protected:
+
+    ///TODO: comment
+    void assertInvariants() const;
 
   private:
     /** Serialization function */
@@ -147,6 +172,8 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(parent_);
       ar & BOOST_SERIALIZATION_NVP(children_);
     }
+
+  	/// @}
 
   }; // \struct Clique
 

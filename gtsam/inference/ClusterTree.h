@@ -33,6 +33,7 @@ namespace gtsam {
 	 * A cluster-tree is associated with a factor graph and is defined as in Koller-Friedman:
 	 * each node k represents a subset C_k \sub X, and the tree is family preserving, in that
 	 * each factor f_i is associated with a single cluster and scope(f_i) \sub C_k.
+	 * \nosubgrouping
 	 */
 	template <class FG>
 	class ClusterTree {
@@ -56,56 +57,77 @@ namespace gtsam {
 
 		public:
 
-			// Construct empty clique
+			/// Construct empty clique
 			Cluster() {}
 
-			/* Create a node with a single frontal variable */
+			/** Create a node with a single frontal variable */
 			template<typename Iterator>
 			Cluster(const FG& fg, Index key, Iterator firstSeparator, Iterator lastSeparator);
 
-      /* Create a node with several frontal variables */
+      /** Create a node with several frontal variables */
       template<typename FRONTALIT, typename SEPARATORIT>
       Cluster(const FG& fg, FRONTALIT firstFrontal, FRONTALIT lastFrontal, SEPARATORIT firstSeparator, SEPARATORIT lastSeparator);
 
-      /* Create a node with several frontal variables */
+      /** Create a node with several frontal variables */
       template<typename FRONTALIT, typename SEPARATORIT>
       Cluster(FRONTALIT firstFrontal, FRONTALIT lastFrontal, SEPARATORIT firstSeparator, SEPARATORIT lastSeparator);
 
-			// print the object
+			/// print
 			void print(const std::string& indent) const;
+
+			/// print the enire tree
 			void printTree(const std::string& indent) const;
 
-			// check equality
+			/// check equality
 			bool equals(const Cluster& other) const;
 
-			// get or set the parent
-			weak_ptr& parent() { return parent_; }
-
-			// get a reference to the children
+			/// get a reference to the children
 			const std::list<shared_ptr>& children() const { return children_; }
 
-			// add a child
+			/// add a child
 			void addChild(shared_ptr child);
+
+			/// get or set the parent
+			weak_ptr& parent() { return parent_; }
+
 		};
 
-		// typedef for shared pointers to clusters
+		/// @name Advanced Interface
+		/// @{
+
+		/// typedef for shared pointers to clusters
 		typedef typename Cluster::shared_ptr sharedCluster;
 
-		// Root cluster
+		/// Root cluster
 		sharedCluster root_;
 
 	public:
-		// constructor of empty tree
+
+		/// @}
+		/// @name Standard Constructors
+		/// @{
+
+		/// constructor of empty tree
 		ClusterTree() {}
 
-		// return the root cluster
+		/// @}
+		/// @name Standard Interface
+		/// @{
+
+		/// return the root cluster
 		sharedCluster root() const { return root_; }
 
-		// print the object
+		/// @}
+  	/// @name Testable
+  	/// @{
+
+		/// print the object
 		void print(const std::string& str="") const;
 
 		/** check equality */
 		bool equals(const ClusterTree<FG>& other, double tol = 1e-9) const;
+
+		/// @}
 
 	}; // ClusterTree
 
