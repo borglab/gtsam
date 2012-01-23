@@ -84,7 +84,7 @@ TEST( wrap, parse ) {
 		Class cls = module.classes.at(0);
 		EXPECT(assert_equal("Point2", cls.name));
 		EXPECT_LONGS_EQUAL(2, cls.constructors.size());
-		EXPECT_LONGS_EQUAL(4, cls.methods.size());
+		EXPECT_LONGS_EQUAL(6, cls.methods.size());
 		EXPECT_LONGS_EQUAL(0, cls.static_methods.size());
 		EXPECT_LONGS_EQUAL(0, cls.namespaces.size());
 	}

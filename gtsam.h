@@ -9,7 +9,7 @@
  *   Only one Method/Constructor per line
  *   Methods can return
  *     - Eigen types:       Matrix, Vector
- *     - C/C++ basic types: string, bool, size_t, int, double
+ *     - C/C++ basic types: string, bool, size_t, int, double, char
  *     - void
  *     - Any class with which be copied with boost::make_shared()
  *     - boost::shared_ptr of any object type

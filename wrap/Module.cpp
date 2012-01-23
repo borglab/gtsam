@@ -73,7 +73,7 @@ Module::Module(const string& interfacePath,
   // http://www.boost.org/doc/libs/1_37_0/libs/spirit/classic/doc/directives.html
 
   Rule basisType_p =
-    (str_p("string") | "bool" | "size_t" | "int" | "double");
+    (str_p("string") | "bool" | "size_t" | "int" | "double" | "char");
 
   Rule keywords_p =
   	(str_p("const") | "static" | "namespace" | basisType_p);
@@ -304,6 +304,7 @@ void Module::matlab_code(const string& toolboxPath,
     validTypes.push_back("string");
     validTypes.push_back("int");
     validTypes.push_back("bool");
+    validTypes.push_back("char");
     validTypes.push_back("size_t");
     validTypes.push_back("double");
     validTypes.push_back("Vector");

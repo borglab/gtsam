@@ -97,6 +97,14 @@ mxArray* wrap<string>(string& value) {
   return mxCreateString(value.c_str());
 }
 
+// specialization to char
+template<>
+mxArray* wrap<char>(char& value) {
+  mxArray *result = scalar(mxUINT32OR64_CLASS);
+  *(char*)mxGetData(result) = value;
+  return result;
+}
+
 // specialization to bool
 template<>
 mxArray* wrap<bool>(bool& value) {
@@ -202,6 +210,13 @@ template<>
 bool unwrap<bool>(const mxArray* array) {
 	checkScalar(array,"unwrap<bool>");
   return mxGetScalar(array) != 0.0;
+}
+
+// specialization to bool
+template<>
+char unwrap<char>(const mxArray* array) {
+	checkScalar(array,"unwrap<char>");
+  return (char)mxGetScalar(array);
 }
 
 // specialization to size_t
