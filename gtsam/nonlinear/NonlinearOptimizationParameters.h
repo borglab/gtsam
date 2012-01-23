@@ -26,6 +26,7 @@ namespace gtsam {
 
 	/**
 	 *  a container for all related parameters
+	 *  \nosubgrouping
 	 */
 	struct NonlinearOptimizationParameters {
 
@@ -70,6 +71,9 @@ namespace gtsam {
 		/// if true, solve whole system with QR, otherwise use LDL when possible
 		bool useQR_;
 
+		/// @name Standard Constructors
+		/// @{
+
 		/// Default constructor
 		NonlinearOptimizationParameters() :
 				absDecrease_(1e-6), relDecrease_(1e-6), sumError_(0.0), maxIterations_(
@@ -97,6 +101,10 @@ namespace gtsam {
 						parameters.lambdaMode_), useQR_(parameters.useQR_) {
 		}
 
+		/// @}
+		/// @name Standard Interface
+		/// @{
+
 		/// a copy of old instance except new lambda
 		sharedThis newLambda_(double lambda) const {
 			sharedThis ptr(
@@ -104,6 +112,10 @@ namespace gtsam {
 			ptr->lambda_ = lambda;
 			return ptr;
 		}
+
+		/// @}
+		/// @name Advanced Interface
+		/// @{
 
 		/// a copy of old instance except new verbosity
 		static sharedThis newVerbosity(verbosityLevel verbosity) {
@@ -141,6 +153,8 @@ namespace gtsam {
 			ptr->useQR_ = useQR;
 			return ptr;
 		}
+
+		/// @}
 
 	private:
 	  /** Serialization function */

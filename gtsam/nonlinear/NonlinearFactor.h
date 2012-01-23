@@ -55,6 +55,7 @@ inline void __fill_from_tuple<boost::tuples::null_type>(std::vector<Symbol>& vec
  * Templated on a values structure type. The values structures are typically
  * more general than just vectors, e.g., Rot3 or Pose3,
  * which are objects in non-linear manifolds (Lie groups).
+ * \nosubgrouping
  */
 template<class VALUES>
 class NonlinearFactor: public Factor<Symbol> {
@@ -68,6 +69,9 @@ protected:
 public:
 
   typedef boost::shared_ptr<NonlinearFactor<VALUES> > shared_ptr;
+
+	/// @name Standard Constructors
+	/// @{
 
   /** Default constructor for I/O only */
   NonlinearFactor() {
@@ -94,13 +98,22 @@ public:
     this->keys_.insert(this->keys_.end(), beginKeys, endKeys);
   }
 
-  /** Destructor */
-  virtual ~NonlinearFactor() {}
+	/// @}
+	/// @name Testable
+	/// @{
 
   /** print */
   virtual void print(const std::string& s = "") const {
     std::cout << s << ": NonlinearFactor\n";
   }
+
+	/// @}
+	/// @name Standard Interface
+	/// @{
+
+  /** Destructor */
+  virtual ~NonlinearFactor() {}
+
 
   /**
    * Calculate the error of the factor

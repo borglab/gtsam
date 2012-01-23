@@ -44,6 +44,8 @@ namespace gtsam {
 	 * Switchable implementation:
 	 *   - ALLLOW_ERROR : if we allow that there can be nonzero error, does not throw, and uses gain
 	 *   - ONLY_EXACT   : throws error at linearization if not at exact feasible point, and infinite error
+	 *
+	 * \nosubgrouping
 	 */
 	template<class VALUES, class KEY>
 	class NonlinearEquality: public NonlinearFactor1<VALUES, KEY> {
@@ -76,6 +78,9 @@ namespace gtsam {
 
 		virtual ~NonlinearEquality() {}
 
+		/// @name Standard Constructors
+		/// @{
+
 		/**
 		 * Constructor - forces exact evaluation
 		 */
@@ -94,6 +99,10 @@ namespace gtsam {
 			compare_(_compare) {
 		}
 
+		/// @}
+		/// @name Testable
+		/// @{
+
 		void print(const std::string& s = "") const {
 			std::cout << "Constraint: " << s << " on [" << (std::string)(this->key_) << "]\n";
 			gtsam::print(feasible_,"Feasible Point");
@@ -106,6 +115,10 @@ namespace gtsam {
 			return feasible_.equals(f.feasible_, tol) &&
 					fabs(error_gain_ - f.error_gain_) < tol;
 		}
+
+		/// @}
+		/// @name Standard Interface
+		/// @{
 
 		/** actual error function calculation */
 		virtual double error(const VALUES& c) const {
@@ -142,6 +155,8 @@ namespace gtsam {
 			SharedDiagonal model = noiseModel::Constrained::All(b.size());
 			return GaussianFactor::shared_ptr(new JacobianFactor(ordering[this->key_], A, b, model));
 		}
+
+		/// @}
 
 	private:
 
@@ -183,6 +198,7 @@ namespace gtsam {
 
 		typedef boost::shared_ptr<NonlinearEquality1<VALUES, KEY> > shared_ptr;
 
+		///TODO: comment
 		NonlinearEquality1(const X& value, const KEY& key1, double mu = 1000.0)
 			: Base(noiseModel::Constrained::All(value.dim(), fabs(mu)), key1), value_(value) {}
 
@@ -237,6 +253,7 @@ namespace gtsam {
 
 		typedef boost::shared_ptr<NonlinearEquality2<VALUES, KEY> > shared_ptr;
 
+		///TODO: comment
 		NonlinearEquality2(const KEY& key1, const KEY& key2, double mu = 1000.0)
 			: Base(noiseModel::Constrained::All(X::Dim(), fabs(mu)), key1, key2) {}
 		virtual ~NonlinearEquality2() {}

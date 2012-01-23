@@ -20,6 +20,7 @@
  *  of variables in a factor graph. A Values is a values structure which can hold variables that
  *  are elements on manifolds, not just vectors. It then, as a whole, implements a aggregate type
  *  which is also a manifold element, and hence supports operations dim, retract, and localCoordinates.
+ *  \nosubgrouping
  */
 
 #pragma once
@@ -77,13 +78,22 @@ namespace gtsam {
 
   public:
 
+  	/// @name Standard Constructors
+  	/// @{
+
+    ///TODO comment
     Values() {}
+
+    ///TODO: comment
     Values(const Values& config) :
       values_(config.values_) {}
+
+    ///TODO: comment
     template<class J_ALT>
     Values(const Values<J_ALT>& other) {} // do nothing when initializing with wrong type
     virtual ~Values() {}
 
+  	/// @}
     /// @name Testable
     /// @{
 
@@ -94,6 +104,8 @@ namespace gtsam {
     bool equals(const Values& expected, double tol=1e-9) const;
 
     /// @}
+  	/// @name Standard Interface
+  	/// @{
 
     /** Retrieve a variable by j, throws KeyDoesNotExist<J> if not found */
     const Value& at(const J& j) const;
@@ -120,11 +132,21 @@ namespace gtsam {
     /** Get a zero VectorValues of the correct structure */
     VectorValues zero(const Ordering& ordering) const;
 
-    const_iterator begin() const { return values_.begin(); }
-    const_iterator end() const { return values_.end(); }
-    iterator begin() { return values_.begin(); }
-    iterator end() { return values_.end(); }
+    const_iterator begin() const { return values_.begin(); }	///<TODO: comment
+    const_iterator end() const { return values_.end(); }			///<TODO: comment
 
+    /** Create an array of variable dimensions using the given ordering */
+    std::vector<size_t> dims(const Ordering& ordering) const;
+
+    /**
+     * Generate a default ordering, simply in key sort order.  To instead
+     * create a fill-reducing ordering, use
+     * NonlinearFactorGraph::orderingCOLAMD().  Alternatively, you may permute
+     * this ordering yourself (as orderingCOLAMD() does internally).
+     */
+    Ordering::shared_ptr orderingArbitrary(Index firstVar = 0) const;
+
+    /// @}
     /// @name Manifold Operations
     /// @{
 
@@ -141,8 +163,13 @@ namespace gtsam {
     void localCoordinates(const Values& cp, const Ordering& ordering, VectorValues& delta) const;
 
     /// @}
+  	/// @name Advanced Interface
+  	/// @{
 
     // imperative methods:
+
+    iterator begin() { return values_.begin(); }	///<TODO: comment
+    iterator end() { return values_.end(); }			///<TODO: comment
 
     /** Add a variable with the given j, throws KeyAlreadyExists<J> if j is already present */
     void insert(const J& j, const Value& val);
@@ -198,16 +225,7 @@ namespace gtsam {
         operation(it);
     }
 
-    /** Create an array of variable dimensions using the given ordering */
-    std::vector<size_t> dims(const Ordering& ordering) const;
-
-    /**
-     * Generate a default ordering, simply in key sort order.  To instead
-     * create a fill-reducing ordering, use
-     * NonlinearFactorGraph::orderingCOLAMD().  Alternatively, you may permute
-     * this ordering yourself (as orderingCOLAMD() does internally).
-     */
-    Ordering::shared_ptr orderingArbitrary(Index firstVar = 0) const;
+    /// @}
 
   private:
   	/** Serialization function */

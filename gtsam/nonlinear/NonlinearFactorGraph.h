@@ -34,6 +34,7 @@ namespace gtsam {
 	 * Linearizing the non-linear factor graph creates a linear factor graph on the 
 	 * tangent vector space at the linearization point. Because the tangent space is a true
 	 * vector space, the config type will be an VectorValues in that linearized factor graph.
+	 * \nosubgrouping
 	 */
 	template<class VALUES>
 	class NonlinearFactorGraph: public FactorGraph<NonlinearFactor<VALUES> > {
@@ -45,8 +46,15 @@ namespace gtsam {
 	  typedef boost::shared_ptr<NonlinearFactorGraph<VALUES> > shared_ptr;
 		typedef boost::shared_ptr<NonlinearFactor<VALUES> > sharedFactor;
 
+		/// @name Testable
+		/// @{
+
     /** print just calls base class */
     void print(const std::string& str = "NonlinearFactorGraph: ") const;
+
+  	/// @}
+  	/// @name Standard Interface
+  	/// @{
 
     /** return keys in some random order */
     std::set<Symbol> keys() const;
@@ -56,11 +64,6 @@ namespace gtsam {
 
 		/** Unnormalized probability. O(n) */
 		double probPrime(const VALUES& c) const;
-
-		template<class F>
-		void add(const F& factor) {
-			this->push_back(boost::shared_ptr<F>(new F(factor)));
-		}
 
 		/**
 		 * Create a symbolic factor graph using an existing ordering
@@ -88,6 +91,17 @@ namespace gtsam {
 		 */
 		boost::shared_ptr<GaussianFactorGraph >
 				linearize(const VALUES& config, const Ordering& ordering) const;
+
+  	/// @}
+		/// @name Advanced Interface
+		/// @{
+
+		template<class F>
+		void add(const F& factor) {
+			this->push_back(boost::shared_ptr<F>(new F(factor)));
+		}
+
+		/// @}
 
 	private:
 

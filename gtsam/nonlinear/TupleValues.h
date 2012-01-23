@@ -45,6 +45,7 @@ namespace gtsam {
    *  have two versions: one with templates and one without.  The templated one allows
    *  for the arguments to be passed to the next values, while the specialized one
    *  operates on the "first" values. TupleValuesEnd contains only the specialized version.
+   *  \nosubgrouping
    */
   template<class VALUES1, class VALUES2>
   class TupleValues {
@@ -63,6 +64,9 @@ namespace gtsam {
 	  typedef typename VALUES1::Key Key1;
 	  typedef typename VALUES1::Value Value1;
 
+		/// @name Standard Constructors
+		/// @{
+
 	  /** default constructor */
 	  TupleValues() {}
 
@@ -73,6 +77,10 @@ namespace gtsam {
 	  /** Construct from valuess */
 	  TupleValues(const VALUES1& cfg1, const VALUES2& cfg2) :
 		  first_(cfg1), second_(cfg2) {}
+
+	  /// @}
+		/// @name Testable
+		/// @{
 
 	  /** Print */
 	  void print(const std::string& s = "") const {
@@ -85,6 +93,10 @@ namespace gtsam {
 		  return first_.equals(c.first_, tol) && second_.equals(c.second_, tol);
 	  }
 
+    /// @}
+    /// @name Advanced Interface
+    /// @{
+
 	  /**
 	   * Insert a key/value pair to the values.
 	   * Note: if the key is already in the values, the values will not be changed.
@@ -94,8 +106,8 @@ namespace gtsam {
 	   */
 	  template<class KEY, class VALUE>
 	  void insert(const KEY& key, const VALUE& value) {second_.insert(key, value);}
-	  void insert(int key, const Value1& value) {first_.insert(Key1(key), value);}
-	  void insert(const Key1& key, const Value1& value) {first_.insert(key, value);}
+	  void insert(int key, const Value1& value) {first_.insert(Key1(key), value);}		///<TODO: comment
+	  void insert(const Key1& key, const Value1& value) {first_.insert(key, value);}	///<TODO: comment
 
 	  /**
 	   * Insert a complete values at a time.
@@ -105,7 +117,7 @@ namespace gtsam {
 	   */
 	  template<class CFG1, class CFG2>
 	  void insert(const TupleValues<CFG1, CFG2>& values) { second_.insert(values); }
-	  void insert(const TupleValues<VALUES1, VALUES2>& values) {
+	  void insert(const TupleValues<VALUES1, VALUES2>& values) {		///<TODO: comment
 		  first_.insert(values.first_);
 		  second_.insert(values.second_);
 	  }
@@ -116,7 +128,7 @@ namespace gtsam {
 	   */
 	  template<class CFG1, class CFG2>
 	  void update(const TupleValues<CFG1, CFG2>& values) { second_.update(values); }
-	  void update(const TupleValues<VALUES1, VALUES2>& values) {
+	  void update(const TupleValues<VALUES1, VALUES2>& values) {		///<TODO: comment
 	  	first_.update(values.first_);
 	  	second_.update(values.second_);
 	  }
@@ -128,7 +140,7 @@ namespace gtsam {
 	   */
 	  template<class KEY, class VALUE>
 	  void update(const KEY& key, const VALUE& value) { second_.update(key, value); }
-	  void update(const Key1& key, const Value1& value) { first_.update(key, value); }
+	  void update(const Key1& key, const Value1& value) { first_.update(key, value); }	///<TODO: comment
 
 	  /**
 	   * Insert a subvalues
@@ -136,39 +148,43 @@ namespace gtsam {
 	   */
 	  template<class CFG>
 	  void insertSub(const CFG& values) { second_.insertSub(values); }
-	  void insertSub(const VALUES1& values) { first_.insert(values);  }
+	  void insertSub(const VALUES1& values) { first_.insert(values);  }	///<TODO: comment
 
 	  /** erase an element by key */
 	  template<class KEY>
 	  void erase(const KEY& j)  { second_.erase(j); }
-	  void erase(const Key1& j)  { first_.erase(j); }
+	  void erase(const Key1& j)  { first_.erase(j); }	///<TODO: comment
 
 	  /** clears the values */
 	  void clear() { first_.clear(); second_.clear(); }
 
+    /// @}
+    /// @name Standard Interface
+    /// @{
+
 	  /** determine whether an element exists */
 	  template<class KEY>
 	  bool exists(const KEY& j) const { return second_.exists(j); }
-	  bool exists(const Key1& j) const { return first_.exists(j); }
+	  bool exists(const Key1& j) const { return first_.exists(j); }	///<TODO: comment
 
 	  /** a variant of exists */
 	  template<class KEY>
 	  boost::optional<typename KEY::Value> exists_(const KEY& j)  const { return second_.exists_(j); }
-	  boost::optional<Value1>                exists_(const Key1& j) const { return first_.exists_(j); }
+	  boost::optional<Value1>                exists_(const Key1& j) const { return first_.exists_(j); }	///<TODO: comment
 
 	  /** access operator */
 	  template<class KEY>
 	  const typename KEY::Value & operator[](const KEY& j) const { return second_[j]; }
-	  const Value1& operator[](const Key1& j) const { return first_[j]; }
+	  const Value1& operator[](const Key1& j) const { return first_[j]; }	///<TODO: comment
 
 	  /** at access function */
 	  template<class KEY>
 	  const typename KEY::Value & at(const KEY& j) const { return second_.at(j); }
-	  const Value1& at(const Key1& j) const { return first_.at(j); }
+	  const Value1& at(const Key1& j) const { return first_.at(j); }	///<TODO: comment
 
 	  /** direct values access */
 	  const VALUES1& values() const { return first_; }
-	  const VALUES2& rest() const { return second_; }
+	  const VALUES2& rest() const { return second_; }	///<TODO: comment
 
 	  /** zero: create VectorValues of appropriate structure */
 	  VectorValues zero(const Ordering& ordering) const {
@@ -180,16 +196,6 @@ namespace gtsam {
 
 	  /** @return true if values is empty */
 	  bool empty() const { return first_.empty() && second_.empty(); }
-
-	  /** @return The dimensionality of the tangent space */
-	  size_t dim() const { return first_.dim() + second_.dim(); }
-
-	  /** Create an array of variable dimensions using the given ordering */
-	  std::vector<size_t> dims(const Ordering& ordering) const {
-	    _ValuesDimensionCollector dimCollector(ordering);
-	    this->apply(dimCollector);
-	    return dimCollector.dimensions;
-	  }
 
     /**
      * Generate a default ordering, simply in key sort order.  To instead
@@ -203,6 +209,40 @@ namespace gtsam {
       this->apply(keyOrderer);
       return keyOrderer.ordering;
     }
+
+	  /**
+	   * Apply a class with an application operator() to a const_iterator over
+	   * every <key,value> pair.  The operator must be able to handle such an
+	   * iterator for every type in the Values, (i.e. through templating).
+	   */
+    template<typename A>
+    void apply(A& operation) {
+    	first_.apply(operation);
+    	second_.apply(operation);
+    }
+
+    /**
+     * TODO: comment
+     */
+    template<typename A>
+    void apply(A& operation) const {
+    	first_.apply(operation);
+    	second_.apply(operation);
+    }
+
+    /// @}
+    /// @name Manifold
+    /// @{
+
+	  /** @return The dimensionality of the tangent space */
+	  size_t dim() const { return first_.dim() + second_.dim(); }
+
+	  /** Create an array of variable dimensions using the given ordering */
+	  std::vector<size_t> dims(const Ordering& ordering) const {
+	    _ValuesDimensionCollector dimCollector(ordering);
+	    this->apply(dimCollector);
+	    return dimCollector.dimensions;
+	  }
 
 	  /** Expmap */
 	  TupleValues<VALUES1, VALUES2> retract(const VectorValues& delta, const Ordering& ordering) const {
@@ -222,21 +262,7 @@ namespace gtsam {
       second_.localCoordinates(cp.second_, ordering, delta);
     }
 
-	  /**
-	   * Apply a class with an application operator() to a const_iterator over
-	   * every <key,value> pair.  The operator must be able to handle such an
-	   * iterator for every type in the Values, (i.e. through templating).
-	   */
-    template<typename A>
-    void apply(A& operation) {
-    	first_.apply(operation);
-    	second_.apply(operation);
-    }
-    template<typename A>
-    void apply(A& operation) const {
-    	first_.apply(operation);
-    	second_.apply(operation);
-    }
+    /// @}
 
   private:
 	  /** Serialization function */

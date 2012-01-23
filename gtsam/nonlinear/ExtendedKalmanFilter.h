@@ -37,6 +37,7 @@ namespace gtsam {
 	 *
 	 * The class provides a "predict" and "update" function to perform these steps independently.
 	 * TODO: a "predictAndUpdate" that combines both steps for some computational savings.
+	 * \nosubgrouping
 	 */
 
 	template<class VALUES, class KEY>
@@ -57,8 +58,16 @@ namespace gtsam {
 				const KEY& x, JacobianFactor::shared_ptr& newPrior) const;
 
 	public:
+
+		/// @name Standard Constructors
+		/// @{
+
 		ExtendedKalmanFilter(T x_initial,
 				noiseModel::Gaussian::shared_ptr P_initial);
+
+		/// @}
+		/// @name Testable
+		/// @{
 
 		/// print
 	  void print(const std::string& s="") const {
@@ -67,8 +76,17 @@ namespace gtsam {
 	  	priorFactor_->print(s+"density");
 	  }
 
+		/// @}
+		/// @name Advanced Interface
+		/// @{
+
+	  ///TODO: comment
 		T predict(const MotionFactor& motionFactor);
+
+	  ///TODO: comment
 		T update(const MeasurementFactor& measurementFactor);
+
+		/// @}
 	};
 
 } // namespace

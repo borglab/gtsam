@@ -40,16 +40,27 @@ template <class VALUES, class GRAPH = NonlinearFactorGraph<VALUES> >
 class GaussianISAM2 : public ISAM2<GaussianConditional, VALUES, GRAPH> {
   typedef ISAM2<GaussianConditional, VALUES, GRAPH> Base;
 public:
+
+	/// @name Standard Constructors
+	/// @{
+
   /** Create an empty ISAM2 instance */
   GaussianISAM2(const ISAM2Params& params) : ISAM2<GaussianConditional, VALUES, GRAPH>(params) {}
 
   /** Create an empty ISAM2 instance using the default set of parameters (see ISAM2Params) */
   GaussianISAM2() : ISAM2<GaussianConditional, VALUES, GRAPH>() {}
 
+	/// @}
+	/// @name Advanced Interface
+	/// @{
+
   void cloneTo(boost::shared_ptr<GaussianISAM2>& newGaussianISAM2) const {
     boost::shared_ptr<Base> isam2 = boost::static_pointer_cast<Base>(newGaussianISAM2);
     Base::cloneTo(isam2);
   }
+
+	/// @}
+
 };
 
 /** optimize the BayesTree, starting from the root */

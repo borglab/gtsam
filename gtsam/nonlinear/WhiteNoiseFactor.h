@@ -35,6 +35,7 @@ namespace gtsam {
 	 * MKEY: key type to use for mean
 	 * PKEY: key type to use for precision
 	 * VALUES: Values type for optimization
+	 * \nosubgrouping
 	 */
 	template<class MKEY, class PKEY, class VALUES>
 	class WhiteNoiseFactor: public NonlinearFactor<VALUES> {
@@ -84,6 +85,9 @@ namespace gtsam {
 					new HessianFactor(j1, j2, G11, G12, g1, G22, g2, c));
 		}
 
+		/// @name Standard Constructors
+		/// @{
+
 		/** Construct from measurement
 		 * @param z Measurment value
 		 * @param meanKey Key for mean variable
@@ -93,15 +97,27 @@ namespace gtsam {
 				Base(), z_(z), meanKey_(meanKey), precisionKey_(precisionKey) {
 		}
 
+		/// @}
+		/// @name Advanced Constructors
+		/// @{
+
 		/// Destructor
 		virtual ~WhiteNoiseFactor() {
 		}
+
+		/// @}
+		/// @name Testable
+		/// @{
 
 		/// Print
 		void print(const std::string& p = "WhiteNoiseFactor") const {
 			Base::print(p);
 			std::cout << p + ".z: " << z_ << std::endl;
 		}
+
+		/// @}
+		/// @name Standard Interface
+		/// @{
 
 		/// get the dimension of the factor (number of rows on linearization)
 		virtual size_t dim() const {
@@ -124,6 +140,19 @@ namespace gtsam {
 			return Vector_(1, sqrt(2 * error(x)));
 		}
 
+		/**
+		 * Create a symbolic factor using the given ordering to determine the
+		 * variable indices.
+		 */
+		virtual IndexFactor::shared_ptr symbolic(const Ordering& ordering) const {
+			const Index j1 = ordering[meanKey_], j2 = ordering[precisionKey_];
+			return IndexFactor::shared_ptr(new IndexFactor(j1, j2));
+		}
+
+		/// @}
+		/// @name Advanced Interface
+		/// @{
+
 		/// linearize returns a Hessianfactor that is an approximation of error(p)
 		virtual boost::shared_ptr<GaussianFactor> linearize(const VALUES& x,
 				const Ordering& ordering) const {
@@ -134,14 +163,7 @@ namespace gtsam {
 			return linearize(z_, u, p, j1, j2);
 		}
 
-		/**
-		 * Create a symbolic factor using the given ordering to determine the
-		 * variable indices.
-		 */
-		virtual IndexFactor::shared_ptr symbolic(const Ordering& ordering) const {
-			const Index j1 = ordering[meanKey_], j2 = ordering[precisionKey_];
-			return IndexFactor::shared_ptr(new IndexFactor(j1, j2));
-		}
+		/// @}
 
 	};
 // WhiteNoiseFactor

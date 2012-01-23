@@ -60,7 +60,7 @@ public:
   virtual ~TypedSymbol() {}
 
   // Get stuff:
-
+  ///TODO: comment
   size_t index() const {
     return j_;
   }

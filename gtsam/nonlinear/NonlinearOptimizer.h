@@ -56,6 +56,7 @@ public:
  * one optimizes the linearized system using various methods.
  *
  * To use the optimizer in code, include <gtsam/NonlinearOptimizer-inl.h> in your cpp file
+ * \nosubgrouping
  */
 template<class G, class T, class L = GaussianFactorGraph, class GS = GaussianMultifrontalSolver, class W = NullOptimizerWriter>
 class NonlinearOptimizer {
@@ -108,6 +109,9 @@ private:
 	// FIXME: remove this!
 	shared_solver spcg_solver_;
 
+	/// @name Advanced Constructors
+	/// @{
+
 	/**
 	 * Constructor that does not do any computation
 	 */
@@ -120,31 +124,42 @@ private:
 
 	/** constructors to replace specific components */
 
+	///TODO: comment
 	This newValues_(shared_values newValues) const {
 		return NonlinearOptimizer(graph_, newValues, graph_->error(*newValues),
 				ordering_, parameters_, dimensions_, iterations_, structure_); }
 
+	///TODO: comment
 	This newValuesErrorLambda_(shared_values newValues, double newError, double newLambda) const {
 		return NonlinearOptimizer(graph_, newValues, newError, ordering_,
 				parameters_->newLambda_(newLambda), dimensions_, iterations_, structure_); }
 
+	///TODO: comment
 	This newIterations_(int iterations) const {
 		return NonlinearOptimizer(graph_, values_, error_, ordering_, parameters_, dimensions_,
 				iterations, structure_); }
 
+	///TODO: comment
 	This newLambda_(double newLambda) const {
 		return NonlinearOptimizer(graph_, values_, error_, ordering_,
 				parameters_->newLambda_(newLambda), dimensions_, iterations_, structure_); }
 
+	///TODO: comment
 	This newValuesLambda_(shared_values newValues, double newLambda) const {
 		return NonlinearOptimizer(graph_, newValues, graph_->error(*newValues),
 				ordering_, parameters_->newLambda_(newLambda), dimensions_, iterations_, structure_); }
 
+	///TODO: comment
 	This newParameters_(shared_parameters parameters) const {
 		return NonlinearOptimizer(graph_, values_, error_, ordering_, parameters, dimensions_,
 				iterations_, structure_); }
 
+	/// @}
+
 public:
+
+	/// @name Standard Constructors
+	/// @{
 
 	/**
 	 * Constructor that evaluates new error
@@ -173,6 +188,10 @@ public:
 		iterations_(optimizer.iterations_), dimensions_(optimizer.dimensions_), structure_(optimizer.structure_) {}
 
 	// access to member variables
+
+	/// @}
+	/// @name Standard Interface
+	/// @{
 
 	/** Return current error */
 	double error() const { return error_; }
@@ -244,6 +263,10 @@ public:
 	// suggested interface
 	NonlinearOptimizer gaussNewton() const;
 
+	/// @}
+	/// @name Advanced Interface
+	/// @{
+
 	/** Recursively try to do tempered Gauss-Newton steps until we succeed */
 	NonlinearOptimizer try_lambda(const L& linear);
 
@@ -299,6 +322,7 @@ public:
 		return result.values();
 	}
 
+	///TODO: comment
 	static shared_values optimizeLM(shared_graph graph,
 			shared_values values,
 			Parameters::verbosityLevel verbosity)	{
@@ -316,6 +340,7 @@ public:
 				boost::make_shared<Parameters>(parameters));
 	}
 
+	///TODO: comment
 	static shared_values optimizeLM(const G& graph,
 			const T& values,
 			Parameters::verbosityLevel verbosity) {
@@ -367,6 +392,7 @@ public:
         boost::make_shared<Parameters>(parameters));
   }
 
+	///TODO: comment
   static shared_values optimizeDogLeg(const G& graph,
       const T& values,
       Parameters::verbosityLevel verbosity) {
@@ -414,10 +440,13 @@ bool check_convergence (
 		double errorThreshold,
 		double currentError, double newError, int verbosity);
 
+///TODO: comment
 bool check_convergence (
 		const NonlinearOptimizationParameters &parameters,
 		double currentError, double newError);
 
 } // gtsam
+
+/// @}
 
 #include <gtsam/nonlinear/NonlinearOptimizer-inl.h>

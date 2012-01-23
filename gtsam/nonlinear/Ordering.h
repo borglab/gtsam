@@ -30,6 +30,7 @@ namespace gtsam {
 
 /**
  * An ordering is a map from symbols (non-typed keys) to integer indices
+ * \nosubgrouping
  */
 class Ordering {
 protected:
@@ -46,11 +47,18 @@ public:
   typedef Map::iterator iterator;
   typedef Map::const_iterator const_iterator;
 
+	/// @name Standard Constructors
+	/// @{
+
   /// Default constructor for empty ordering
   Ordering() : nVars_(0) {}
 
   /// Construct from list, assigns order indices sequentially to list items.
   Ordering(const std::list<Symbol> & L) ;
+
+	/// @}
+	/// @name Standard Interface
+	/// @{
 
   /** One greater than the maximum ordering index, i.e. including missing indices in the count.  See also size(). */
   Index nVars() const { return nVars_; }
@@ -58,14 +66,9 @@ public:
   /** The actual number of variables in this ordering, i.e. not including missing indices in the count.  See also nVars(). */
   Index size() const { return order_.size(); }
 
-  iterator begin() { return order_.begin(); } /**< Iterator in order of sorted symbols, not in elimination/index order! */
   const_iterator begin() const { return order_.begin(); } /**< Iterator in order of sorted symbols, not in elimination/index order! */
-  iterator end() { return order_.end(); } /**< Iterator in order of sorted symbols, not in elimination/index order! */
   const_iterator end() const { return order_.end(); } /**< Iterator in order of sorted symbols, not in elimination/index order! */
 
-  // access to integer indices
-
-  Index& at(const Symbol& key) { return operator[](key); } ///< Synonym for operator[](const Symbol&)
   Index at(const Symbol& key) const { return operator[](key); } ///< Synonym for operator[](const Symbol&) const
 
   /** Assigns the ordering index of the requested \c key into \c index if the symbol
@@ -117,8 +120,6 @@ public:
    */
   const_iterator find(const Symbol& key) const { return order_.find(key); }
 
-  // adding symbols
-
   /**
    * Attempts to insert a symbol/order pair with same semantics as stl::Map::insert(),
    * i.e., returns a pair of iterator and success (false if already present)
@@ -129,7 +130,6 @@ public:
   		nVars_ = key_order.second+1;
   	return it_ok;
   }
-  std::pair<iterator,bool> tryInsert(const Symbol& key, Index order) { return tryInsert(std::make_pair(key,order)); }
 
   /** Try insert, but will fail if the key is already present */
   iterator insert(const value_type& key_order) {
@@ -137,10 +137,29 @@ public:
   	if(!it_ok.second)  throw std::invalid_argument(std::string());
   	else               return it_ok.first;
   }
-  iterator insert(const Symbol& key, Index order) { return insert(std::make_pair(key,order)); }
+
+	/// @}
+	/// @name Advanced Interface
+	/// @{
+
+  /**
+   * Iterator in order of sorted symbols, not in elimination/index order!
+   */
+  iterator begin() { return order_.begin(); }
+
+  /**
+   * Iterator in order of sorted symbols, not in elimination/index order!
+   */
+  iterator end() { return order_.end(); }
 
   /// Test if the key exists in the ordering.
   bool exists(const Symbol& key) const { return order_.count(key); }
+
+  ///TODO: comment
+  std::pair<iterator,bool> tryInsert(const Symbol& key, Index order) { return tryInsert(std::make_pair(key,order)); }
+
+  ///TODO: comment
+  iterator insert(const Symbol& key, Index order) { return insert(std::make_pair(key,order)); }
 
   /// Adds a new key to the ordering with an index of one greater than the current highest index.
   Index push_back(const Symbol& key) { return insert(std::make_pair(key, nVars_))->second; }
@@ -182,11 +201,20 @@ public:
    */
   void permuteWithInverse(const Permutation& inversePermutation);
 
+  /// Synonym for operator[](const Symbol&)
+  Index& at(const Symbol& key) { return operator[](key); }
+
+	/// @}
+	/// @name Testable
+	/// @{
+
   /** print (from Testable) for testing and debugging */
   void print(const std::string& str = "Ordering:") const;
 
   /** equals (from Testable) for testing and debugging */
   bool equals(const Ordering& rhs, double tol = 0.0) const;
+
+	/// @}
 
 private:
 

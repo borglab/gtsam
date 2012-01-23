@@ -51,6 +51,9 @@ protected:
 
 public:
 
+	/// @name Standard Constructors
+	/// @{
+
 	/**
 	 * Periodically reorder and relinearize
 	 * @param reorderInterval is the number of updates between reorderings,
@@ -60,20 +63,12 @@ public:
 	 */
 	NonlinearISAM(int reorderInterval = 1) : reorderInterval_(reorderInterval), reorderCounter_(0) {}
 
-	/** Add new factors along with their initial linearization points */
-	void update(const Factors& newFactors, const Values& initialValues);
+	/// @}
+	/// @name Standard Interface
+	/// @{
 
 	/** Return the current solution estimate */
 	Values estimate() const;
-
-	/** Relinearization and reordering of variables */
-	void reorder_relinearize();
-
-	/** manually add a key to the end of the ordering */
-	void addKey(const Symbol& key) { ordering_.push_back(key); }
-
-	/** replace the current ordering */
-	void setOrdering(const Ordering& new_ordering) { ordering_ = new_ordering; }
 
 	/** find the marginal covariance for a single variable */
 	Matrix marginalCovariance(const Symbol& key) const;
@@ -92,12 +87,31 @@ public:
 	/** get underlying nonlinear graph */
 	const Factors& getFactorsUnsafe() const { return factors_; }
 
-	/** get counters */
-	int reorderInterval() const { return reorderInterval_; }
-	int reorderCounter() const { return reorderCounter_; }
+		/** get counters */
+	int reorderInterval() const { return reorderInterval_; }	///<TODO: comment
+	int reorderCounter() const { return reorderCounter_; }		///<TODO: comment
 
 	/** prints out all contents of the system */
 	void print(const std::string& s="") const;
+
+	/// @}
+	/// @name Advanced Interface
+	/// @{
+
+	/** Add new factors along with their initial linearization points */
+	void update(const Factors& newFactors, const Values& initialValues);
+
+	/** Relinearization and reordering of variables */
+	void reorder_relinearize();
+
+	/** manually add a key to the end of the ordering */
+	void addKey(const Symbol& key) { ordering_.push_back(key); }
+
+	/** replace the current ordering */
+	void setOrdering(const Ordering& new_ordering) { ordering_ = new_ordering; }
+
+	/// @}
+
 };
 
 } // \namespace gtsam
