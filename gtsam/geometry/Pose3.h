@@ -98,6 +98,14 @@ namespace gtsam {
       return Pose3(R_*T.R_, t_ + R_*T.t_);
     }
 
+    /**
+     * Return relative pose between p1 and p2, in p1 coordinate frame
+     * as well as optionally the derivatives
+     */
+    Pose3 between(const Pose3& p2,
+        boost::optional<Matrix&> H1=boost::none,
+        boost::optional<Matrix&> H2=boost::none) const;
+
     /// @}
     /// @name Manifold
     /// @{
@@ -136,14 +144,6 @@ namespace gtsam {
     static Vector Logmap(const Pose3& p);
 
     /**
-     * Return relative pose between p1 and p2, in p1 coordinate frame
-     * as well as optionally the derivatives
-     */
-    Pose3 between(const Pose3& p2,
-        boost::optional<Matrix&> H1=boost::none,
-        boost::optional<Matrix&> H2=boost::none) const;
-
-    /**
      * Calculate Adjoint map
      * Ad_pose is 6*6 matrix that when applied to twist xi, returns Ad_pose(xi)
      */
@@ -169,24 +169,32 @@ namespace gtsam {
   	/// @name Standard Interface
   	/// @{
 
+    /// get rotation
     const Rot3& rotation() const { return R_; }
+
+    /// get translation
     const Point3& translation() const { return t_; }
 
+    /// get x
     double x() const { return t_.x(); }
+
+    /// get y
     double y() const { return t_.y(); }
+
+    /// get z
     double z() const { return t_.z(); }
 
     /** convert to 4*4 matrix */
     Matrix matrix() const;
-
-    /** syntactic sugar for transform_from */
-    inline Point3 operator*(const Point3& p) const { return transform_from(p); }
 
     Pose3 transform_to(const Pose3& pose) const;
 
     /** receives the point in Pose coordinates and transforms it to world coordinates */
     Point3 transform_from(const Point3& p,
         boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
+
+    /** syntactic sugar for transform_from */
+    inline Point3 operator*(const Point3& p) const { return transform_from(p); }
 
     /** receives the point in world coordinates and transforms it to Pose coordinates */
     Point3 transform_to(const Point3& p,

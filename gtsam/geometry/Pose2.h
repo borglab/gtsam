@@ -71,7 +71,7 @@ public:
 		r_(Rot2::fromAngle(theta)), t_(t) {
 	}
 
-	///TODO: comment
+	/** construct from r,t */
 	Pose2(const Rot2& r, const Point2& t) : r_(r), t_(t) {}
 
 	/** Constructor from 3*3 matrix */
@@ -118,6 +118,14 @@ public:
 	inline Pose2 operator*(const Pose2& p2) const {
 		return Pose2(r_*p2.r(), t_ + r_*p2.t());
 	}
+
+	/**
+	 * Return relative pose between p1 and p2, in p1 coordinate frame
+	 */
+	Pose2 between(const Pose2& p2,
+			boost::optional<Matrix&> H1=boost::none,
+			boost::optional<Matrix&> H2=boost::none) const;
+
 
   /// @}
   /// @name Manifold
@@ -175,13 +183,6 @@ public:
 
 	/** return transformation matrix */
 	Matrix matrix() const;
-
-	/**
-	 * Return relative pose between p1 and p2, in p1 coordinate frame
-	 */
-	Pose2 between(const Pose2& p2,
-			boost::optional<Matrix&> H1=boost::none,
-			boost::optional<Matrix&> H2=boost::none) const;
 
 	/**
 	 * Return point coordinates in pose coordinate frame
@@ -252,6 +253,7 @@ public:
 	inline const Rot2&   r() const { return r_; }
 
 	/** full access functions required by Pose concept */
+
 	inline const Point2& translation() const { return t_; }
 	inline const Rot2&   rotation() const { return r_; }
 

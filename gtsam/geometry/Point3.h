@@ -84,6 +84,9 @@ namespace gtsam {
     /// "Inverse" - negates the coordinates such that compose(p, inverse(p)) = Point3()
     inline Point3 inverse() const { return Point3(-x_, -y_, -z_); }
 
+    /// syntactic sugar for inverse, i.e., -p == inverse(p)
+    Point3 operator - () const { return Point3(-x_,-y_,-z_);}
+
     /// "Compose" - just adds coordinates of two points
     inline Point3 compose(const Point3& p2,
     		boost::optional<Matrix&> H1=boost::none,
@@ -92,6 +95,21 @@ namespace gtsam {
   	  if (H2) *H2 = eye(3);
   	  return *this + p2;
     }
+
+    ///syntactic sugar for adding two points, i.e., p+q == compose(p,q)
+    Point3 operator + (const Point3& q) const;
+
+    /** Between using the default implementation */
+    inline Point3 between(const Point3& p2,
+        boost::optional<Matrix&> H1=boost::none,
+        boost::optional<Matrix&> H2=boost::none) const {
+      if(H1) *H1 = -eye(3);
+      if(H2) *H2 = eye(3);
+      return p2 - *this;
+    }
+
+  	/// syntactic sugar for subtracting points, i.e., q-p == between(p,q)
+    Point3 operator - (const Point3& q) const;
 
     /// @}
     /// @name Manifold
@@ -120,25 +138,13 @@ namespace gtsam {
     static inline Vector Logmap(const Point3& dp) { return Vector_(3, dp.x(), dp.y(), dp.z()); }
 
     /// @}
-    /// @name Vector Operators
+    /// @name Vector Space
     /// @{
 
-    ///TODO: comment
-    Point3 operator - () const { return Point3(-x_,-y_,-z_);}
-
-    ///TODO: comment
-    bool   operator ==(const Point3& q) const;
-
-    ///TODO: comment
-    Point3 operator + (const Point3& q) const;
-
-    ///TODO: comment
-    Point3 operator - (const Point3& q) const;
-
-    ///TODO: comment
+    ///multiply with a scalar
     Point3 operator * (double s) const;
 
-    ///TODO: comment
+    ///divide by a scalar
     Point3 operator / (double s) const;
 
     /** distance between two points */
@@ -159,14 +165,8 @@ namespace gtsam {
   	/// @name Standard Interface
   	/// @{
 
-    /** Between using the default implementation */
-    inline Point3 between(const Point3& p2,
-        boost::optional<Matrix&> H1=boost::none,
-        boost::optional<Matrix&> H2=boost::none) const {
-      if(H1) *H1 = -eye(3);
-      if(H2) *H2 = eye(3);
-      return p2 - *this;
-    }
+    /// equality
+    bool   operator ==(const Point3& q) const;
 
     /** return vectorized form (column-wise)*/
     Vector vector() const {
@@ -191,9 +191,10 @@ namespace gtsam {
     Point3 sub (const Point3 &q,
   	      boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
 
+  	/// @}
+
   private:
 
-  	/// @}
   	/// @name Advanced Interface
   	/// @{
 
@@ -206,11 +207,12 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(y_);
       ar & BOOST_SERIALIZATION_NVP(z_);
     }
+
+  	/// @}
+
   };
 
   /// Syntactic sugar for multiplying coordinates by a scalar s*p
   inline Point3 operator*(double s, const Point3& p) { return p*s;}
-
-	/// @}
 
 }

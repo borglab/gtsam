@@ -193,15 +193,15 @@ namespace gtsam {
       return Rot3();
     }
 
+    /// derivative of inverse rotation R^T s.t. inverse(R)*R = identity
+    Rot3 inverse(boost::optional<Matrix&> H1=boost::none) const;
+
     /// Compose two rotations i.e., R= (*this) * R2
     Rot3 compose(const Rot3& R2,
     boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
 
-    /// rotate point from rotated coordinate frame to world = R*p
-    Point3 operator*(const Point3& p) const;
-
-    /// derivative of inverse rotation R^T s.t. inverse(R)*R = identity
-    Rot3 inverse(boost::optional<Matrix&> H1=boost::none) const;
+    /** compose two rotations */
+    Rot3 operator*(const Rot3& R2) const;
 
     /**
      * Return relative rotation D s.t. R2=D*R1, i.e. D=R2*R1'
@@ -209,9 +209,6 @@ namespace gtsam {
     Rot3 between(const Rot3& R2,
         boost::optional<Matrix&> H1=boost::none,
         boost::optional<Matrix&> H2=boost::none) const;
-
-    /** compose two rotations */
-    Rot3 operator*(const Rot3& R2) const;
 
     /// @}
     /// @name Manifold
@@ -279,6 +276,9 @@ namespace gtsam {
      */
     Point3 rotate(const Point3& p,
     boost::optional<Matrix&> H1=boost::none,  boost::optional<Matrix&> H2=boost::none) const;
+
+    /// rotate point from rotated coordinate frame to world = R*p
+    Point3 operator*(const Point3& p) const;
 
     /**
      * rotate point from world to rotated

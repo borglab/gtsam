@@ -126,9 +126,12 @@ namespace gtsam {
 			return fromCosSin(c_ * R.c_ - s_ * R.s_, s_ * R.c_ + c_ * R.s_);
 		}
 
-		/** syntactic sugar for rotate */
-		inline Point2 operator*(const Point2& p) const {
-			return rotate(p);
+		/** Between using the default implementation */
+		inline Rot2 between(const Rot2& p2, boost::optional<Matrix&> H1 =
+				boost::none, boost::optional<Matrix&> H2 = boost::none) const {
+			if (H1) *H1 = -eye(1);
+			if (H2) *H2 = eye(1);
+			return between_default(*this, p2);
 		}
 
 	  /// @}
@@ -169,7 +172,7 @@ namespace gtsam {
 		}
 
 		/// @}
-	  /// @name Vector Operators
+	  /// @name Vector Space
 		/// @{
 
 		/**
@@ -204,14 +207,6 @@ namespace gtsam {
 			return s_;
 		}
 
-		/** Between using the default implementation */
-		inline Rot2 between(const Rot2& p2, boost::optional<Matrix&> H1 =
-				boost::none, boost::optional<Matrix&> H2 = boost::none) const {
-			if (H1) *H1 = -eye(1);
-			if (H2) *H2 = eye(1);
-			return between_default(*this, p2);
-		}
-
 		/** return 2*2 rotation matrix */
 		Matrix matrix() const;
 
@@ -224,6 +219,11 @@ namespace gtsam {
 		 */
 		Point2 rotate(const Point2& p, boost::optional<Matrix&> H1 = boost::none,
 				boost::optional<Matrix&> H2 = boost::none) const;
+
+		/** syntactic sugar for rotate */
+		inline Point2 operator*(const Point2& p) const {
+			return rotate(p);
+		}
 
 		/**
 		 * rotate point from world to rotated
