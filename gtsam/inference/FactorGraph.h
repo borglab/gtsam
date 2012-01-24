@@ -66,16 +66,14 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 
 	public:
 
-		/** ------------------ Creating Factor Graphs ---------------------------- */
-
-		/// @name Standard Constructors
+		/// @name Standard Constructor
 		/// @{
 
 		/** Default constructor */
 		FactorGraph() {}
 
 		/// @}
-		/// @name Advanced Constructor
+		/// @name Advanced Constructors
 		/// @{
 
 		/** convert from Bayes net */
@@ -91,6 +89,16 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 		FactorGraph(const FactorGraph<DERIVEDFACTOR>& factors) {
 			factors_.insert(end(), factors.begin(), factors.end());
 		}
+
+		/// @}
+		/// @name Adding Factors
+		/// @{
+
+		/**
+		 * Reserve space for the specified number of factors if you know in
+		 * advance how many there will be (works like std::vector::reserve).
+		 */
+		void reserve(size_t size) { factors_.reserve(size); }
 
 		/** Add a factor */
 		template<class DERIVEDFACTOR>
@@ -127,7 +135,8 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 		/// @name Standard Interface
 		/// @{
 
-		/** ------------------ Querying Factor Graphs ---------------------------- */
+		/** return the number of factors and NULLS */
+		size_t size() const { return factors_.size();}
 
 		/** const cast to the underlying vector of factors */
 		operator const std::vector<sharedFactor>&() const { return factors_; }
@@ -142,11 +151,33 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 		/** Get the last factor */
 		sharedFactor back() const { return factors_.back(); }
 
-		/** return the number of factors and NULLS */
-		size_t size() const { return factors_.size();}
+		/// @}
+		/// @name Advanced Interface
+		/// @{
 
 		/** return the number valid factors */
 		size_t nrFactors() const;
+
+		/** STL begin and end, so we can use BOOST_FOREACH */
+		const_iterator begin() const { return factors_.begin();}
+		const_iterator end()   const { return factors_.end();  }
+
+		/** ----------------- Modifying Factor Graphs ---------------------------- */
+
+		/** STL begin and end, so we can use BOOST_FOREACH */
+		iterator begin()       { return factors_.begin();}
+		iterator end()         { return factors_.end();  }
+
+		/**
+		 * resize the factor graph
+		 */
+    void resize(size_t size) { factors_.resize(size); }
+
+		/** delete factor without re-arranging indexes by inserting a NULL pointer */
+		inline void remove(size_t i) { factors_[i].reset();}
+
+		/** replace a factor by index */
+		void replace(size_t index, sharedFactor factor);
 
 		/** dynamic_cast the factor pointers down or up the class hierarchy */
 		template<class RELATED>
@@ -181,46 +212,6 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
       return ret;
     }
 
-		/// @}
-		/// @name Advanced Interface
-		/// @{
-
-		/** STL begin and end, so we can use BOOST_FOREACH */
-		const_iterator begin() const { return factors_.begin();}
-		const_iterator end()   const { return factors_.end();  }
-
-		/** ----------------- Modifying Factor Graphs ---------------------------- */
-
-		/** STL begin and end, so we can use BOOST_FOREACH */
-		iterator begin()       { return factors_.begin();}
-		iterator end()         { return factors_.end();  }
-
-		/// @}
-		/// @name Standard Interface
-		/// @{
-
-		/**
-		 * Reserve space for the specified number of factors if you know in
-		 * advance how many there will be (works like std::vector::reserve).
-		 */
-
-		void reserve(size_t size) { factors_.reserve(size); }
-
-		/**
-		 * resize the factor graph
-		 */
-    void resize(size_t size) { factors_.resize(size); }
-
-		/** delete factor without re-arranging indexes by inserting a NULL pointer */
-		inline void remove(size_t i) { factors_[i].reset();}
-
-		/** replace a factor by index */
-		void replace(size_t index, sharedFactor factor);
-
-		/// @}
-		/// @name Advanced Interface
-		/// @{
-
 	private:
 
 		/** Serialization function */
@@ -229,9 +220,10 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 		void serialize(ARCHIVE & ar, const unsigned int version) {
 			ar & BOOST_SERIALIZATION_NVP(factors_);
 		}
-	}; // FactorGraph
 
-	/// @}
+		/// @}
+
+	}; // FactorGraph
 
   /** Create a combined joint factor (new style for EliminationTree). */
 	template<class DERIVED, class KEY>
