@@ -135,33 +135,6 @@ namespace gtsam {
     /// Log map at identity - return the canonical coordinates of this rotation
     static Vector Logmap(const Pose3& p);
 
-    /// @}
-  	/// @name Standard Interface
-  	/// @{
-
-    const Rot3& rotation() const { return R_; }
-    const Point3& translation() const { return t_; }
-
-    double x() const { return t_.x(); }
-    double y() const { return t_.y(); }
-    double z() const { return t_.z(); }
-
-    /** convert to 4*4 matrix */
-    Matrix matrix() const;
-
-    /** syntactic sugar for transform_from */
-    inline Point3 operator*(const Point3& p) const { return transform_from(p); }
-
-    Pose3 transform_to(const Pose3& pose) const;
-
-    /** receives the point in Pose coordinates and transforms it to world coordinates */
-    Point3 transform_from(const Point3& p,
-        boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
-
-    /** receives the point in world coordinates and transforms it to Pose coordinates */
-    Point3 transform_to(const Point3& p,
-        boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
-
     /**
      * Return relative pose between p1 and p2, in p1 coordinate frame
      * as well as optionally the derivatives
@@ -191,6 +164,33 @@ namespace gtsam {
           -wy, wx,   0., vz,
           0.,  0.,  0.,  0.);
     }
+
+    /// @}
+  	/// @name Standard Interface
+  	/// @{
+
+    const Rot3& rotation() const { return R_; }
+    const Point3& translation() const { return t_; }
+
+    double x() const { return t_.x(); }
+    double y() const { return t_.y(); }
+    double z() const { return t_.z(); }
+
+    /** convert to 4*4 matrix */
+    Matrix matrix() const;
+
+    /** syntactic sugar for transform_from */
+    inline Point3 operator*(const Point3& p) const { return transform_from(p); }
+
+    Pose3 transform_to(const Pose3& pose) const;
+
+    /** receives the point in Pose coordinates and transforms it to world coordinates */
+    Point3 transform_from(const Point3& p,
+        boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
+
+    /** receives the point in world coordinates and transforms it to Pose coordinates */
+    Point3 transform_to(const Point3& p,
+        boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
 
     /**
      * Calculate range to a landmark

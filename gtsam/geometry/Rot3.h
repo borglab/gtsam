@@ -213,20 +213,6 @@ namespace gtsam {
     /** compose two rotations */
     Rot3 operator*(const Rot3& R2) const;
 
-    /**
-     * rotate point from rotated coordinate frame to
-     * world = R*p
-     */
-    Point3 rotate(const Point3& p,
-    boost::optional<Matrix&> H1=boost::none,  boost::optional<Matrix&> H2=boost::none) const;
-
-    /**
-     * rotate point from world to rotated
-     * frame = R'*p
-     */
-    Point3 unrotate(const Point3& p,
-      boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
-
     /// @}
     /// @name Manifold
     /// @{
@@ -286,6 +272,21 @@ namespace gtsam {
     /// @}
   	/// @name Standard Interface
   	/// @{
+
+    /**
+     * rotate point from rotated coordinate frame to
+     * world = R*p
+     */
+    Point3 rotate(const Point3& p,
+    boost::optional<Matrix&> H1=boost::none,  boost::optional<Matrix&> H2=boost::none) const;
+
+    /**
+     * rotate point from world to rotated
+     * frame = R'*p
+     */
+    Point3 unrotate(const Point3& p,
+      boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
+
 
     /** return 3*3 rotation matrix */
     Matrix matrix() const;

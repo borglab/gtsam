@@ -145,6 +145,30 @@ public:
 	///Log map at identity - return the canonical coordinates of this rotation
 	static Vector Logmap(const Pose2& p);
 
+	/**
+	 * Calculate Adjoint map
+	 * Ad_pose is 3*3 matrix that when applied to twist xi, returns Ad_pose(xi)
+	 */
+	Matrix AdjointMap() const;
+	inline Vector Adjoint(const Vector& xi) const {
+		assert(xi.size() == 3);
+		return AdjointMap()*xi;
+	}
+
+	/**
+	 * wedge for SE(2):
+	 * @param xi 3-dim twist (v,omega) where
+	 *  omega is angular velocity
+	 *  v (vx,vy) = 2D velocity
+	 * @return xihat, 3*3 element of Lie algebra that can be exponentiated
+	 */
+	static inline Matrix wedge(double vx, double vy, double w) {
+		return Matrix_(3,3,
+				0.,-w,  vx,
+				w,  0., vy,
+				0., 0.,  0.);
+	}
+
   /// @}
 	/// @name Standard Interface
 	/// @{
@@ -211,30 +235,6 @@ public:
 	double range(const Pose2& point,
 			boost::optional<Matrix&> H1=boost::none,
 			boost::optional<Matrix&> H2=boost::none) const;
-
-	/**
-	 * Calculate Adjoint map
-	 * Ad_pose is 3*3 matrix that when applied to twist xi, returns Ad_pose(xi)
-	 */
-	Matrix AdjointMap() const;
-	inline Vector Adjoint(const Vector& xi) const {
-		assert(xi.size() == 3);
-		return AdjointMap()*xi;
-	}
-
-	/**
-	 * wedge for SE(2):
-	 * @param xi 3-dim twist (v,omega) where
-	 *  omega is angular velocity
-	 *  v (vx,vy) = 2D velocity
-	 * @return xihat, 3*3 element of Lie algebra that can be exponentiated
-	 */
-	static inline Matrix wedge(double vx, double vy, double w) {
-		return Matrix_(3,3,
-				0.,-w,  vx,
-				w,  0., vy,
-				0., 0.,  0.);
-	}
 
 	/** get functions for x, y, theta */
 
