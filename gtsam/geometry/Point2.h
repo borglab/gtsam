@@ -77,34 +77,34 @@ public:
 		return Point2();
 	}
 
-	/// "Inverse" - negates each coordinate such that compose(p,inverse(p))=Point2()
+	/// "Inverse" - negates each coordinate such that compose(p,inverse(p)) == identity()
 	inline Point2 inverse() const { return Point2(-x_, -y_); }
 
-	/// syntactic sugar for inverse
+	/// syntactic sugar for inverse, i.e., -p == inverse(p)
 	inline Point2 operator- () const {return Point2(-x_,-y_);}
 
 	/// "Compose", just adds the coordinates of two points. With optional derivatives
-	inline Point2 compose(const Point2& p2,
+	inline Point2 compose(const Point2& q,
 			boost::optional<Matrix&> H1=boost::none,
 			boost::optional<Matrix&> H2=boost::none) const {
 		if(H1) *H1 = eye(2);
 		if(H2) *H2 = eye(2);
-		return *this + p2;
+		return *this + q;
 	}
 
-	/// syntactic sugar for adding two points (compose())
+	/// syntactic sugar for adding two points, i.e., p+q == compose(p,q)
 	inline Point2 operator + (const Point2& q) const {return Point2(x_+q.x_,y_+q.y_);}
 
-	/// "Between", subtracts point coordinates. between(p,q) = compose(inverse(p),q)
-	inline Point2 between(const Point2& p2,
+	/// "Between", subtracts point coordinates. between(p,q) == compose(inverse(p),q)
+	inline Point2 between(const Point2& q,
 			boost::optional<Matrix&> H1=boost::none,
 			boost::optional<Matrix&> H2=boost::none) const {
 		if(H1) *H1 = -eye(2);
 		if(H2) *H2 = eye(2);
-		return p2 - (*this);
+		return q - (*this);
 	}
 
-	/// syntactic sugar for vector subtraction, i.e., between()
+	/// syntactic sugar for subtracting points, i.e., q-p == between(p,q)
 	inline Point2 operator - (const Point2& q) const {return Point2(x_-q.x_,y_-q.y_);}
 
   /// @}
