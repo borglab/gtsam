@@ -177,29 +177,50 @@ public:
 				0., 0.,  0.);
 	}
 
-  /// @}
-	/// @name Standard Interface
+	/// @}
+	/// @name Group Action on Point2
 	/// @{
 
-	/** return transformation matrix */
-	Matrix matrix() const;
-
-	/**
-	 * Return point coordinates in pose coordinate frame
-	 */
+	/** Return point coordinates in pose coordinate frame */
 	Point2 transform_to(const Point2& point,
 			boost::optional<Matrix&> H1=boost::none,
 			boost::optional<Matrix&> H2=boost::none) const;
 
-	/**
-	 * Return point coordinates in global frame
-	 */
+	/** Return point coordinates in global frame */
 	Point2 transform_from(const Point2& point,
 			boost::optional<Matrix&> H1=boost::none,
 			boost::optional<Matrix&> H2=boost::none) const;
 
 	/** syntactic sugar for transform_from */
 	inline Point2 operator*(const Point2& point) const { return transform_from(point);}
+
+  /// @}
+	/// @name Standard Interface
+	/// @{
+
+	/// get x
+	inline double x()     const { return t_.x(); }
+
+	/// get y
+	inline double y()     const { return t_.y(); }
+
+	/// get theta
+	inline double theta() const { return r_.theta(); }
+
+	/// translation
+	inline const Point2& t() const { return t_; }
+
+	/// rotation
+	inline const Rot2&   r() const { return r_; }
+
+	/// translation
+	inline const Point2& translation() const { return t_; }
+
+	/// rotation
+	inline const Rot2&   rotation() const { return r_; }
+
+	//// return transformation matrix
+	Matrix matrix() const;
 
 	/**
 	 * Calculate bearing to a landmark
@@ -236,26 +257,6 @@ public:
 	double range(const Pose2& point,
 			boost::optional<Matrix&> H1=boost::none,
 			boost::optional<Matrix&> H2=boost::none) const;
-
-	/** get functions for x, y, theta */
-
-	/// get x
-	inline double x()     const { return t_.x(); }
-
-	/// get y
-	inline double y()     const { return t_.y(); }
-
-	/// get theta
-	inline double theta() const { return r_.theta(); }
-
-	/** shorthand access functions */
-	inline const Point2& t() const { return t_; }
-	inline const Rot2&   r() const { return r_; }
-
-	/** full access functions required by Pose concept */
-
-	inline const Point2& translation() const { return t_; }
-	inline const Rot2&   rotation() const { return r_; }
 
 private:
 

@@ -165,6 +165,21 @@ namespace gtsam {
           0.,  0.,  0.,  0.);
     }
 
+  	/// @}
+  	/// @name Group Action on Point3
+  	/// @{
+
+    /** receives the point in Pose coordinates and transforms it to world coordinates */
+    Point3 transform_from(const Point3& p,
+        boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
+
+    /** syntactic sugar for transform_from */
+    inline Point3 operator*(const Point3& p) const { return transform_from(p); }
+
+    /** receives the point in world coordinates and transforms it to Pose coordinates */
+    Point3 transform_to(const Point3& p,
+        boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
+
     /// @}
   	/// @name Standard Interface
   	/// @{
@@ -187,18 +202,8 @@ namespace gtsam {
     /** convert to 4*4 matrix */
     Matrix matrix() const;
 
+    /** receives a pose in world coordinates and transforms it to local coordinates */
     Pose3 transform_to(const Pose3& pose) const;
-
-    /** receives the point in Pose coordinates and transforms it to world coordinates */
-    Point3 transform_from(const Point3& p,
-        boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
-
-    /** syntactic sugar for transform_from */
-    inline Point3 operator*(const Point3& p) const { return transform_from(p); }
-
-    /** receives the point in world coordinates and transforms it to Pose coordinates */
-    Point3 transform_to(const Point3& p,
-        boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
 
     /**
      * Calculate range to a landmark
@@ -230,6 +235,8 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(R_);
       ar & BOOST_SERIALIZATION_NVP(t_);
     }
+  	/// @}
+
   }; // Pose3 class
 
   /**
@@ -243,6 +250,5 @@ namespace gtsam {
   inline Matrix wedge<Pose3>(const Vector& xi) {
     return Pose3::wedge(xi(0),xi(1),xi(2),xi(3),xi(4),xi(5));
   }
-	/// @}
 
 } // namespace gtsam

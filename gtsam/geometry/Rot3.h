@@ -266,27 +266,28 @@ namespace gtsam {
      */
     static Vector Logmap(const Rot3& R);
 
-    /// @}
-  	/// @name Standard Interface
+  	/// @}
+  	/// @name Group Action on Point3
   	/// @{
 
     /**
-     * rotate point from rotated coordinate frame to
-     * world = R*p
-     */
-    Point3 rotate(const Point3& p,
-    boost::optional<Matrix&> H1=boost::none,  boost::optional<Matrix&> H2=boost::none) const;
+		 * rotate point from rotated coordinate frame to world \f$ p^w = R_c^w p^c \f$
+		 */
+		Point3 rotate(const Point3& p, boost::optional<Matrix&> H1 = boost::none,
+				boost::optional<Matrix&> H2 = boost::none) const;
 
-    /// rotate point from rotated coordinate frame to world = R*p
-    Point3 operator*(const Point3& p) const;
+		/// rotate point from rotated coordinate frame to world = R*p
+		Point3 operator*(const Point3& p) const;
 
-    /**
-     * rotate point from world to rotated
-     * frame = R'*p
-     */
-    Point3 unrotate(const Point3& p,
-      boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
+		/**
+		 * rotate point from world to rotated frame \f$ p^c = (R_c^w)^T p^w \f$
+		 */
+		Point3 unrotate(const Point3& p, boost::optional<Matrix&> H1 = boost::none,
+				boost::optional<Matrix&> H2 = boost::none) const;
 
+    /// @}
+  	/// @name Standard Interface
+  	/// @{
 
     /** return 3*3 rotation matrix */
     Matrix matrix() const;

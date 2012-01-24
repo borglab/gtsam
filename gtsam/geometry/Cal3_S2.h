@@ -34,10 +34,10 @@ namespace gtsam {
 	private:
 		double fx_, fy_, s_, u0_, v0_;
 
+	public:
+
     /// @name Standard Constructors
     /// @{
-
-	public:
 
 		/// Create a default calibration that leaves coordinates unchanged
 		Cal3_S2() :

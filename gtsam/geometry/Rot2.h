@@ -44,15 +44,15 @@ namespace gtsam {
 		/** normalize to make sure cos and sin form unit vector */
 		Rot2& normalize();
 
-		/// @name Standard Constructors
-		/// @{
-
 		/** private constructor from cos/sin */
 		inline Rot2(double c, double s) :
 				c_(c), s_(s) {
 		}
 
 	public:
+
+    /// @name Constructors and named constructors
+    /// @{
 
 		/** default constructor, zero rotation */
 		Rot2() :
@@ -171,20 +171,35 @@ namespace gtsam {
 			return Vector_(1, r.theta());
 		}
 
-		/// @}
-	  /// @name Vector Space
-		/// @{
+  	/// @}
+  	/// @name Group Action on Point2
+  	/// @{
+
+    /**
+		 * rotate point from rotated coordinate frame to world \f$ p^w = R_c^w p^c \f$
+		 */
+		Point2 rotate(const Point2& p, boost::optional<Matrix&> H1 = boost::none,
+				boost::optional<Matrix&> H2 = boost::none) const;
+
+		/** syntactic sugar for rotate */
+		inline Point2 operator*(const Point2& p) const {
+			return rotate(p);
+		}
 
 		/**
-		 * Creates a unit vector as a Point2
+		 * rotate point from world to rotated frame \f$ p^c = (R_c^w)^T p^w \f$
 		 */
-		inline Point2 unit() const {
-			return Point2(c_, s_);
-		}
+		Point2 unrotate(const Point2& p, boost::optional<Matrix&> H1 = boost::none,
+				boost::optional<Matrix&> H2 = boost::none) const;
 
 		/// @}
 		/// @name Standard Interface
 		/// @{
+
+		/// Creates a unit vector as a Point2
+		inline Point2 unit() const {
+			return Point2(c_, s_);
+		}
 
 		/** return angle (RADIANS) */
 		double theta() const {
@@ -212,25 +227,6 @@ namespace gtsam {
 
 		/** return 2*2 transpose (inverse) rotation matrix   */
 		Matrix transpose() const;
-
-		/**
-		 * rotate point from rotated coordinate frame to
-		 * world = R*p
-		 */
-		Point2 rotate(const Point2& p, boost::optional<Matrix&> H1 = boost::none,
-				boost::optional<Matrix&> H2 = boost::none) const;
-
-		/** syntactic sugar for rotate */
-		inline Point2 operator*(const Point2& p) const {
-			return rotate(p);
-		}
-
-		/**
-		 * rotate point from world to rotated
-		 * frame = R'*p
-		 */
-		Point2 unrotate(const Point2& p, boost::optional<Matrix&> H1 = boost::none,
-				boost::optional<Matrix&> H2 = boost::none) const;
 
 		/// @}
 		/// @name Advanced Interface
