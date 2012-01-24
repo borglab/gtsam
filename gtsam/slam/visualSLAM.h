@@ -19,16 +19,16 @@
 
 #pragma once
 
-#include <gtsam/geometry/SimpleCamera.h>
+#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/slam/ProjectionFactor.h>
+#include <gtsam/slam/StereoFactor.h>
+#include <gtsam/slam/RangeFactor.h>
 #include <gtsam/nonlinear/Key.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/TupleValues.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
-#include <gtsam/slam/PriorFactor.h>
-#include <gtsam/slam/ProjectionFactor.h>
-#include <gtsam/slam/StereoFactor.h>
-#include <gtsam/slam/RangeFactor.h>
+#include <gtsam/geometry/SimpleCamera.h>
 
 namespace gtsam {
 
@@ -104,7 +104,7 @@ namespace gtsam {
     /**
      *  Add a constraint on a point (for now, *must* be satisfied in any Values)
      *  @param j index of landmark
-     *  @param p to which point to constrain it to
+     *  @param p point around which soft prior is defined
      */
     void addPointConstraint(int j, const Point3& p = Point3()) {
       boost::shared_ptr<PointConstraint> factor(new PointConstraint(j, p));
@@ -114,7 +114,7 @@ namespace gtsam {
     /**
      *  Add a prior on a pose
      *  @param j index of camera
-     *  @param p to which pose to constrain it to
+     *  @param p around which soft prior is defined
      *  @param model uncertainty model of this prior
      */
     void addPosePrior(int j, const Pose3& p = Pose3(), const SharedNoiseModel& model = noiseModel::Unit::Create(6)) {
@@ -125,7 +125,7 @@ namespace gtsam {
     /**
      *  Add a prior on a landmark
      *  @param j index of landmark
-     *  @param p index of point
+     *  @param p to which point to constrain it to
      *  @param model uncertainty model of this prior
      */
     void addPointPrior(int j, const Point3& p = Point3(), const SharedNoiseModel& model = noiseModel::Unit::Create(3)) {
@@ -133,6 +133,13 @@ namespace gtsam {
       push_back(factor);
     }
 
+    /**
+     *  Add a range prior to a landmark
+     *  @param i index of pose
+     *  @param j index of landmark
+     *  @param range approximate range to landmark
+     *  @param model uncertainty model of this prior
+     */
     void addRangeFactor(PoseKey i, PointKey j, double range, const SharedNoiseModel& model = noiseModel::Unit::Create(1)) {
       push_back(boost::shared_ptr<RangeFactor>(new RangeFactor(i, j, range, model)));
     }
