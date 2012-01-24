@@ -42,20 +42,20 @@ public:
 	/// @name Standard Constructors
 	/// @{
 
-	///TODO: comment
+	/// default constructor
 	Point2(): x_(0), y_(0) {}
 
-	///TODO: comment
+	/// copy constructor
 	Point2(const Point2 &p) : x_(p.x_), y_(p.y_) {}
 
-	///TODO: comment
+	/// construct from doubles
 	Point2(double x, double y): x_(x), y_(y) {}
 
 	/// @}
 	/// @name Advanced Constructors
 	/// @{
 
-	///TODO: comment
+	/// construct from 2D vector
 	Point2(const Vector& v) : x_(v(0)), y_(v(1)) { assert(v.size() == 2); }
 
   /// @}
@@ -80,6 +80,9 @@ public:
 	/// "Inverse" - negates each coordinate such that compose(p,inverse(p))=Point2()
 	inline Point2 inverse() const { return Point2(-x_, -y_); }
 
+	/// syntactic sugar for inverse
+	inline Point2 operator- () const {return Point2(-x_,-y_);}
+
 	/// "Compose", just adds the coordinates of two points. With optional derivatives
 	inline Point2 compose(const Point2& p2,
 			boost::optional<Matrix&> H1=boost::none,
@@ -89,20 +92,20 @@ public:
 		return *this + p2;
 	}
 
-	///TODO: comment
-	inline Point2 operator- () const {return Point2(-x_,-y_);}
-
-	///TODO: comment
+	/// syntactic sugar for adding two points (compose())
 	inline Point2 operator + (const Point2& q) const {return Point2(x_+q.x_,y_+q.y_);}
 
-	///TODO: comment
+	/// "Between", subtracts point coordinates. between(p,q) = compose(inverse(p),q)
+	inline Point2 between(const Point2& p2,
+			boost::optional<Matrix&> H1=boost::none,
+			boost::optional<Matrix&> H2=boost::none) const {
+		if(H1) *H1 = -eye(2);
+		if(H2) *H2 = eye(2);
+		return p2 - (*this);
+	}
+
+	/// syntactic sugar for vector subtraction, i.e., between()
 	inline Point2 operator - (const Point2& q) const {return Point2(x_-q.x_,y_-q.y_);}
-
-	///TODO: comment
-	inline Point2 operator * (double s) const {return Point2(x_*s,y_*s);}
-
-	///TODO: comment
-	inline Point2 operator / (double q) const {return Point2(x_/q,y_/q);}
 
   /// @}
   /// @name Manifold
@@ -131,7 +134,7 @@ public:
 	static inline Vector Logmap(const Point2& dp) { return Vector_(2, dp.x(), dp.y()); }
 
   /// @}
-  /// @name Vector Operators
+  /// @name Vector Space
   /// @{
 
 	/** norm of point */
@@ -145,27 +148,18 @@ public:
 		return (p2 - *this).norm();
 	}
 
-	///TODO: comment
-	inline void operator += (const Point2& q) {x_+=q.x_;y_+=q.y_;}
+	/// multiply with a scalar
+	inline Point2 operator * (double s) const {return Point2(x_*s,y_*s);}
 
-	///TODO: comment
-	inline void operator *= (double s) {x_*=s;y_*=s;}
-
-	///TODO: comment
-	inline bool operator ==(const Point2& q) const {return x_==q.x_ && q.y_==q.y_;}
+	/// divide by a scalar
+	inline Point2 operator / (double q) const {return Point2(x_/q,y_/q);}
 
   /// @}
 	/// @name Standard Interface
 	/// @{
 
-	/** "Between", subtracts point coordinates */
-	inline Point2 between(const Point2& p2,
-			boost::optional<Matrix&> H1=boost::none,
-			boost::optional<Matrix&> H2=boost::none) const {
-		if(H1) *H1 = -eye(2);
-		if(H2) *H2 = eye(2);
-		return p2 - (*this);
-	}
+	/// equality
+	inline bool operator ==(const Point2& q) const {return x_==q.x_ && q.y_==q.y_;}
 
 	/// get x
 	double x() const {return x_;}
@@ -173,12 +167,18 @@ public:
 	/// get y
 	double y() const {return y_;}
 
-	/** return vectorized form (column-wise) */
+	/// return vectorized form (column-wise). TODO: why does this function exist?
 	Vector vector() const { return Vector_(2, x_, y_); }
+
+	/// @}
+	/// @name Deprecated (non-const, non-functional style. Do not use).
+	/// @{
+	inline void operator += (const Point2& q) {x_+=q.x_;y_+=q.y_;}
+	inline void operator *= (double s) {x_*=s;y_*=s;}
+	/// @}
 
 private:
 
-	/// @}
 	/// @name Advanced Interface
 	/// @{
 
@@ -191,12 +191,12 @@ private:
 		ar & BOOST_SERIALIZATION_NVP(y_);
 	}
 
+	/// @}
+
 };
 
-/** multiply with scalar */
+/// multiply with scalar
 inline Point2 operator*(double s, const Point2& p) {return p*s;}
-
-/// @}
 
 }
 
