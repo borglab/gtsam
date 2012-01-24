@@ -145,6 +145,12 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 		const sharedFactor operator[](size_t i) const { assert(i<factors_.size()); return factors_[i]; }
 		sharedFactor& operator[](size_t i) { assert(i<factors_.size()); return factors_[i]; }
 
+		/** STL begin, so we can use BOOST_FOREACH */
+		const_iterator begin() const { return factors_.begin();}
+
+		/** STL end, so we can use BOOST_FOREACH */
+		const_iterator end()   const { return factors_.end();  }
+
     /** Get the first factor */
     sharedFactor front() const { return factors_.front(); }
 
@@ -152,25 +158,16 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 		sharedFactor back() const { return factors_.back(); }
 
 		/// @}
-		/// @name Advanced Interface
+		/// @name Modifying Factor Graphs (imperative, discouraged)
 		/// @{
 
-		/** return the number valid factors */
-		size_t nrFactors() const;
-
-		/** STL begin and end, so we can use BOOST_FOREACH */
-		const_iterator begin() const { return factors_.begin();}
-		const_iterator end()   const { return factors_.end();  }
-
-		/** ----------------- Modifying Factor Graphs ---------------------------- */
-
-		/** STL begin and end, so we can use BOOST_FOREACH */
+		/** non-const STL-style begin() */
 		iterator begin()       { return factors_.begin();}
+
+		/** non-const STL-style end() */
 		iterator end()         { return factors_.end();  }
 
-		/**
-		 * resize the factor graph
-		 */
+		/** resize the factor graph. TODO: effects? */
     void resize(size_t size) { factors_.resize(size); }
 
 		/** delete factor without re-arranging indexes by inserting a NULL pointer */
@@ -178,6 +175,13 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 
 		/** replace a factor by index */
 		void replace(size_t index, sharedFactor factor);
+
+		/// @}
+		/// @name Advanced Interface
+		/// @{
+
+		/** return the number valid factors */
+		size_t nrFactors() const;
 
 		/** dynamic_cast the factor pointers down or up the class hierarchy */
 		template<class RELATED>
