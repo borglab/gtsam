@@ -27,6 +27,7 @@
 #include <list>
 
 #include <boost/foreach.hpp>
+#include <boost/bind.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 
 using namespace std;
@@ -79,7 +80,7 @@ namespace gtsam {
     BOOST_FOREACH(const KeyValuePair& key_value, values_) {
       const SubVector& singleDelta = delta[ordering[key_value.first]]; // Delta for this value
       ValuePtr retractedValue(key_value.second->retract_(singleDelta)); // Retract
-      result.values_.insert(make_pair(key_value.first, retractedValue)); // Add retracted result directly to result values
+      result.values_[key_value.first] = retractedValue; // Add retracted result directly to result values
     }
 
     return result;
@@ -105,8 +106,8 @@ namespace gtsam {
 
   /* ************************************************************************* */
   void DynamicValues::insert(const DynamicValues& values) {
-    BOOST_FOREACH(const KeyValuePair& key_value, values) {
-      insert(key_value.first, key_value.second);
+    BOOST_FOREACH(const KeyValuePair& key_value, values.values_) {
+      values_.insert(make_pair(key_value.first, key_value.second->clone_()));
     }
   }
 
@@ -128,8 +129,8 @@ namespace gtsam {
   /* ************************************************************************* */
   FastList<Symbol> DynamicValues::keys() const {
     return FastList<Symbol>(
-        boost::make_transform_iterator(values_.begin(), &KeyValuePair::first),
-        boost::make_transform_iterator(values_.end(), &KeyValuePair::first));
+        boost::make_transform_iterator(values_.begin(), boost::bind(&KeyValuePair::first, _1)),
+        boost::make_transform_iterator(values_.end(), boost::bind(&KeyValuePair::first, _1)));
   }
 
   /* ************************************************************************* */
@@ -145,14 +146,14 @@ namespace gtsam {
     // Transform with Value::dim(auto_ptr::get(KeyValuePair::second))
     result.assign(
         boost::make_transform_iterator(values_.begin(),
-            boost::bind(&Value::dim, boost::bind(&ValuePtr::get, boost::bind(&KeyValuePair::second)))),
+            boost::bind(&Value::dim, boost::bind(&ValuePtr::get, boost::bind(&KeyValuePair::second, _1)))),
         boost::make_transform_iterator(values_.begin(),
-            boost::bind(&Value::dim, boost::bind(&ValuePtr::get, boost::bind(&KeyValuePair::second)))));
+            boost::bind(&Value::dim, boost::bind(&ValuePtr::get, boost::bind(&KeyValuePair::second, _1)))));
     return result;
   }
 
   /* ************************************************************************* */
-  Ordering::shared_ptr DynamicValues::orderingArbitrary(Index firstVar = 0) const {
+  Ordering::shared_ptr DynamicValues::orderingArbitrary(Index firstVar) const {
     Ordering::shared_ptr ordering(new Ordering);
     BOOST_FOREACH(const KeyValuePair& key_value, values_) {
       ordering->insert(key_value.first, firstVar++);

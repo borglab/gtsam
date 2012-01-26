@@ -96,7 +96,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class ValueType>
   void DynamicValues::insert(const Symbol& j, const ValueType& val) {
-    std::pair<iterator,bool> insertResult = values_.insert(make_pair(j, ValuePtr(new ValueType(val))));
+    std::pair<iterator,bool> insertResult = values_.insert(make_pair(j, new ValueType(val)));
     if(!insertResult.second)
       throw DynamicValuesKeyAlreadyExists(j);
   }
