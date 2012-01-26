@@ -102,13 +102,16 @@ namespace gtsam {
   public:
 
     /** Allocate and construct a clone of this value */
-    virtual std::auto_ptr<Value> clone_() const = 0;
+    virtual Value* clone_() const = 0;
 
-    /** Print this value, for debugging and unit tests */
-    virtual void print(const std::string& str = "") const = 0;
+    /** Deallocate a raw pointer of this value */
+    virtual void deallocate_() const = 0;
 
     /** Compare this Value with another for equality. */
     virtual bool equals_(const Value& other, double tol = 1e-9) const = 0;
+
+    /** Print this value, for debugging and unit tests */
+    virtual void print(const std::string& str = "") const = 0;
 
     /** Return the dimensionality of the tangent space of this value.  This is
      * the dimensionality of \c delta passed into retract() and of the vector
@@ -136,57 +139,6 @@ namespace gtsam {
     /** Virutal destructor */
     virtual ~Value() {}
 
-  protected:
-    /** This is a convenience function to make it easy for you to implement the
-     * generic Value inferface, see the example at the top of the Value
-     * documentation.
-     * @param value1 The object on which to call equals, stored as a derived class pointer
-     * @param value2 The argument to pass to the derived equals function, strored as a Value reference
-     * @return The result of equals of the derived class
-     */
-    template<class Derived>
-    static bool CallDerivedEquals(const Derived* value1, const Value& value2, double tol) {
-      // Cast the base class Value pointer to a derived class pointer
-      const Derived& derivedValue2 = dynamic_cast<const Derived&>(value2);
-
-      // Return the result of calling equals on the derived class
-      return value1->equals(derivedValue2, tol);
-    }
-
-    /** This is a convenience function to make it easy for you to implement the
-     * generic Value inferface, see the example at the top of the Value
-     * documentation.
-     * @param derived A pointer to the derived class on which to call retract
-     * @param delta The delta vector to pass to the derived retract
-     * @return The result of retract on the derived class, stored as a Value pointer
-     */
-    template<class Derived>
-    static std::auto_ptr<Value> CallDerivedRetract(const Derived* derived, const Vector& delta) {
-      // Call retract on the derived class
-      const Derived retractResult = derived->retract(delta);
-
-      // Create a Value pointer copy of the result
-      std::auto_ptr<Value> resultAsValue(new Derived(retractResult));
-
-      // Return the pointer to the Value base class
-      return resultAsValue;
-    }
-
-    /** This is a convenience function to make it easy for you to implement the
-     * generic Value inferface, see the example at the top of the Value
-     * documentation.
-     * @param value1 The object on which to call localCoordinates, stored as a derived class pointer
-     * @param value2 The argument to pass to the derived localCoordinates function, stored as a Value reference
-     * @return The result of localCoordinates of the derived class
-     */
-    template<class Derived>
-    static Vector CallDerivedLocalCoordinates(const Derived* value1, const Value& value2) {
-      // Cast the base class Value pointer to a derived class pointer
-      const Derived& derivedValue2 = dynamic_cast<const Derived&>(value2);
-
-      // Return the result of calling localCoordinates on the derived class
-      return value1->localCoordinates(derivedValue2);
-    }
   };
 
 } /* namespace gtsam */

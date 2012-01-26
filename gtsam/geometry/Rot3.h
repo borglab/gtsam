@@ -32,7 +32,7 @@
 #endif
 #endif
 
-#include <gtsam/base/Value.h>
+#include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/3rdparty/Eigen/Eigen/Geometry>
 
@@ -50,7 +50,7 @@ namespace gtsam {
    * @ingroup geometry
    * \nosubgrouping
    */
-  class Rot3 : public Value {
+  class Rot3 : public DerivedValue<Rot3> {
   public:
     static const size_t dimension = 3;
 
@@ -178,11 +178,6 @@ namespace gtsam {
     static Rot3 rodriguez(double wx, double wy, double wz)
       { return rodriguez(Vector_(3,wx,wy,wz));}
 
-    /**
-     * Create a duplicate object returned as a pointer to the generic Value interface
-     */
-    virtual std::auto_ptr<Value> clone_() const { return std::auto_ptr<Value>(new Rot3(*this)); }
-
     /// @}
     /// @name Testable
     /// @{
@@ -192,9 +187,6 @@ namespace gtsam {
 
     /** equals with an tolerance */
     bool equals(const Rot3& p, double tol = 1e-9) const;
-
-    /** equals implementing generic Value interface */
-    virtual bool equals_(const Value& p, double tol = 1e-9) const { return CallDerivedEquals(this, p, tol); }
 
     /// @}
     /// @name Group
@@ -247,7 +239,7 @@ namespace gtsam {
     static size_t Dim() { return dimension; }
 
     /// return dimensionality of tangent space, DOF = 3
-    virtual size_t dim() const { return dimension; }
+    size_t dim() const { return dimension; }
 
     /**
      * The method retract() is used to map from the tangent space back to the manifold.
@@ -276,12 +268,6 @@ namespace gtsam {
 
     /// Returns local retract coordinates in neighborhood around current rotation
     Vector localCoordinates(const Rot3& t2, Rot3::CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE) const;
-
-    /// Generic Value interface version of retract
-    virtual std::auto_ptr<Value> retract_(const Vector& omega) const { return CallDerivedRetract(this, omega); }
-
-    /// Generic Value interface version of localCoordinates
-    virtual Vector localCoordinates_(const Value& value) const { return CallDerivedLocalCoordinates(this, value); }
 
     /// @}
     /// @name Lie Group
