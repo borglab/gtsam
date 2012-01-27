@@ -29,7 +29,6 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/format.hpp>
 #include <boost/bind.hpp>
-#include <boost/graph/prim_minimum_spanning_tree.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 
 #include <stdio.h>

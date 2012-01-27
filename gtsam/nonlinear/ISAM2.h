@@ -24,7 +24,8 @@
 #include <gtsam/inference/BayesTree.h>
 
 // Workaround for boost < 1.47, see note in file
-#include <gtsam/base/boost_variant_with_workaround.h>
+//#include <gtsam/base/boost_variant_with_workaround.h>
+#include <boost/variant.hpp>
 
 namespace gtsam {
 

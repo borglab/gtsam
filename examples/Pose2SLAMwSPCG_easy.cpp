@@ -16,6 +16,10 @@
  * Created October 21, 2010
  */
 
+#include <iostream>
+
+#if ENABLE_SPCG
+
 #include <boost/shared_ptr.hpp>
 
 #include <gtsam/slam/pose2SLAM.h>
@@ -73,3 +77,11 @@ int main(void) {
 	return 0 ;
 }
 
+#else
+
+int main() {
+  std::cout << "SPCG is currently disabled" << std::endl;
+  return 0;
+}
+
+#endif

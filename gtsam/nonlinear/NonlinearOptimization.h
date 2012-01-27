@@ -36,7 +36,9 @@ namespace gtsam {
 	typedef enum {
 		SEQUENTIAL,      // Sequential elimination
 		MULTIFRONTAL,      // Multi-frontal elimination
+#if ENABLE_SPCG
 		SPCG,			  // Subgraph Preconditioned Conjugate Gradient
+#endif
 	} LinearSolver;
 
 	/**

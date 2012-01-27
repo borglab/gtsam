@@ -21,7 +21,10 @@
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
 
+#if ENABLE_SPCG
 #include <gtsam/linear/SubgraphSolver.h>
+#endif
+
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 
 using namespace std;
@@ -74,6 +77,7 @@ namespace gtsam {
 			return *optimizer.gaussNewton().values();
 	}
 
+#if ENABLE_SPCG
 	/**
 	 * The sparse preconditioned conjugate gradient solver
 	 */
@@ -101,6 +105,7 @@ namespace gtsam {
 		else
 			return *optimizer.gaussNewton().values();
 	}
+#endif
 
 	/**
 	 * optimization that returns the values
@@ -116,10 +121,12 @@ namespace gtsam {
 		case MULTIFRONTAL:
 			return optimizeMultiFrontal<G,T>(graph, initialEstimate, parameters,
 					nonlinear_method == LM);
+#if ENABLE_SPCG
 		case SPCG:
 //			return optimizeSPCG<G,T>(graph, initialEstimate, parameters,
 //								nonlinear_method == LM);
 			throw runtime_error("optimize: SPCG not supported yet due to the specific pose constraint");
+#endif
 		}
 		throw runtime_error("optimize: undefined solver");
 	}
