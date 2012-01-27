@@ -214,6 +214,23 @@ namespace gtsam {
     std::vector<size_t> dims(const Ordering& ordering) const;
 
     /**
+     * Apply a class with an application operator() to a const_iterator over
+     * every <key,value> pair.  The operator must be able to handle such an
+     * iterator for every type in the Values, (i.e. through templating).
+     */
+    template<typename A>
+    void apply(A& operation) {
+      for(iterator it = begin(); it != end(); ++it)
+        operation(it);
+    }
+
+    template<typename A>
+    void apply(A& operation) const {
+      for(const_iterator it = begin(); it != end(); ++it)
+        operation(it);
+    }
+
+    /**
      * Generate a default ordering, simply in key sort order.  To instead
      * create a fill-reducing ordering, use
      * NonlinearFactorGraph::orderingCOLAMD().  Alternatively, you may permute

@@ -35,14 +35,13 @@ namespace gtsam {
 	 * tangent vector space at the linearization point. Because the tangent space is a true
 	 * vector space, the config type will be an VectorValues in that linearized factor graph.
 	 */
-	template<class VALUES>
-	class NonlinearFactorGraph: public FactorGraph<NonlinearFactor<VALUES> > {
+	class NonlinearFactorGraph: public FactorGraph<NonlinearFactor> {
 
 	public:
 
-	  typedef FactorGraph<NonlinearFactor<VALUES> > Base;
-	  typedef boost::shared_ptr<NonlinearFactorGraph<VALUES> > shared_ptr;
-		typedef boost::shared_ptr<NonlinearFactor<VALUES> > sharedFactor;
+	  typedef FactorGraph<NonlinearFactor> Base;
+	  typedef boost::shared_ptr<NonlinearFactorGraph> shared_ptr;
+		typedef boost::shared_ptr<NonlinearFactor> sharedFactor;
 
     /** print just calls base class */
     void print(const std::string& str = "NonlinearFactorGraph: ") const;
@@ -51,10 +50,10 @@ namespace gtsam {
     std::set<Symbol> keys() const;
 
 		/** unnormalized error */
-		double error(const VALUES& c) const;
+		double error(const DynamicValues& c) const;
 
 		/** Unnormalized probability. O(n) */
-		double probPrime(const VALUES& c) const;
+		double probPrime(const DynamicValues& c) const;
 
 		template<class F>
 		void add(const F& factor) {
@@ -73,20 +72,20 @@ namespace gtsam {
 		 * ordering is found.
 		 */
 		std::pair<SymbolicFactorGraph::shared_ptr, Ordering::shared_ptr>
-		symbolic(const VALUES& config) const;
+		symbolic(const DynamicValues& config) const;
 
     /**
      * Compute a fill-reducing ordering using COLAMD.  This returns the
      * ordering and a VariableIndex, which can later be re-used to save
      * computation.
      */
-		Ordering::shared_ptr orderingCOLAMD(const VALUES& config) const;
+		Ordering::shared_ptr orderingCOLAMD(const DynamicValues& config) const;
 
 		/**
 		 * linearize a nonlinear factor graph
 		 */
 		boost::shared_ptr<GaussianFactorGraph >
-				linearize(const VALUES& config, const Ordering& ordering) const;
+				linearize(const DynamicValues& config, const Ordering& ordering) const;
 
 	private:
 

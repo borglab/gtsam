@@ -19,10 +19,10 @@ namespace gtsam {
 
 using namespace std;
 
-template<class CONDITIONAL, class VALUES, class GRAPH>
-struct ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl {
+template<class CONDITIONAL, class GRAPH>
+struct ISAM2<CONDITIONAL, GRAPH>::Impl {
 
-  typedef ISAM2<CONDITIONAL, VALUES, GRAPH> ISAM2Type;
+  typedef ISAM2<CONDITIONAL, GRAPH> ISAM2Type;
 
   struct PartialSolveResult {
     typename ISAM2Type::sharedClique bayesTree;
@@ -45,7 +45,7 @@ struct ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl {
    * @param ordering Current ordering to be augmented with new variables
    * @param nodes Current BayesTree::Nodes index to be augmented with slots for new variables
    */
-  static void AddVariables(const VALUES& newTheta, VALUES& theta, Permuted<VectorValues>& delta, Ordering& ordering, typename Base::Nodes& nodes);
+  static void AddVariables(const DynamicValues& newTheta, DynamicValues& theta, Permuted<VectorValues>& delta, Ordering& ordering, typename Base::Nodes& nodes);
 
   /**
    * Extract the set of variable indices from a NonlinearFactorGraph.  For each Symbol
@@ -95,7 +95,7 @@ struct ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl {
    * where we might expmap something twice, or expmap it but then not
    * recalculate its delta.
    */
-  static void ExpmapMasked(VALUES& values, const Permuted<VectorValues>& delta,
+  static void ExpmapMasked(DynamicValues& values, const Permuted<VectorValues>& delta,
       const Ordering& ordering, const std::vector<bool>& mask,
       boost::optional<Permuted<VectorValues>&> invalidateIfDebug = boost::optional<Permuted<VectorValues>&>());
 
@@ -134,9 +134,9 @@ struct _VariableAdder {
 };
 
 /* ************************************************************************* */
-template<class CONDITIONAL, class VALUES, class GRAPH>
-void ISAM2<CONDITIONAL,VALUES,GRAPH>::Impl::AddVariables(
-    const VALUES& newTheta, VALUES& theta, Permuted<VectorValues>& delta, Ordering& ordering, typename Base::Nodes& nodes) {
+template<class CONDITIONAL, class GRAPH>
+void ISAM2<CONDITIONAL,GRAPH>::Impl::AddVariables(
+    const DynamicValues& newTheta, DynamicValues& theta, Permuted<VectorValues>& delta, Ordering& ordering, typename Base::Nodes& nodes) {
   const bool debug = ISDEBUG("ISAM2 AddVariables");
 
   theta.insert(newTheta);
@@ -162,10 +162,10 @@ void ISAM2<CONDITIONAL,VALUES,GRAPH>::Impl::AddVariables(
 }
 
 /* ************************************************************************* */
-template<class CONDITIONAL, class VALUES, class GRAPH>
-FastSet<Index> ISAM2<CONDITIONAL,VALUES,GRAPH>::Impl::IndicesFromFactors(const Ordering& ordering, const GRAPH& factors) {
+template<class CONDITIONAL, class GRAPH>
+FastSet<Index> ISAM2<CONDITIONAL,GRAPH>::Impl::IndicesFromFactors(const Ordering& ordering, const GRAPH& factors) {
   FastSet<Index> indices;
-  BOOST_FOREACH(const typename NonlinearFactor<VALUES>::shared_ptr& factor, factors) {
+  BOOST_FOREACH(const typename NonlinearFactor::shared_ptr& factor, factors) {
     BOOST_FOREACH(const Symbol& key, factor->keys()) {
       indices.insert(ordering[key]);
     }
@@ -174,8 +174,8 @@ FastSet<Index> ISAM2<CONDITIONAL,VALUES,GRAPH>::Impl::IndicesFromFactors(const O
 }
 
 /* ************************************************************************* */
-template<class CONDITIONAL, class VALUES, class GRAPH>
-FastSet<Index> ISAM2<CONDITIONAL,VALUES,GRAPH>::Impl::CheckRelinearization(const Permuted<VectorValues>& delta, const Ordering& ordering, const ISAM2Params::RelinearizationThreshold& relinearizeThreshold) {
+template<class CONDITIONAL, class GRAPH>
+FastSet<Index> ISAM2<CONDITIONAL,GRAPH>::Impl::CheckRelinearization(const Permuted<VectorValues>& delta, const Ordering& ordering, const ISAM2Params::RelinearizationThreshold& relinearizeThreshold) {
   FastSet<Index> relinKeys;
 
   if(relinearizeThreshold.type() == typeid(double)) {
@@ -202,8 +202,8 @@ FastSet<Index> ISAM2<CONDITIONAL,VALUES,GRAPH>::Impl::CheckRelinearization(const
 }
 
 /* ************************************************************************* */
-template<class CONDITIONAL, class VALUES, class GRAPH>
-void ISAM2<CONDITIONAL,VALUES,GRAPH>::Impl::FindAll(typename ISAM2Clique<CONDITIONAL>::shared_ptr clique, FastSet<Index>& keys, const vector<bool>& markedMask) {
+template<class CONDITIONAL, class GRAPH>
+void ISAM2<CONDITIONAL,GRAPH>::Impl::FindAll(typename ISAM2Clique<CONDITIONAL>::shared_ptr clique, FastSet<Index>& keys, const vector<bool>& markedMask) {
   static const bool debug = false;
   // does the separator contain any of the variables?
   bool found = false;
@@ -256,8 +256,8 @@ struct _SelectiveExpmapAndClear {
 };
 
 /* ************************************************************************* */
-template<class CONDITIONAL, class VALUES, class GRAPH>
-void ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl::ExpmapMasked(VALUES& values, const Permuted<VectorValues>& delta,
+template<class CONDITIONAL, class GRAPH>
+void ISAM2<CONDITIONAL, GRAPH>::Impl::ExpmapMasked(DynamicValues& values, const Permuted<VectorValues>& delta,
     const Ordering& ordering, const vector<bool>& mask, boost::optional<Permuted<VectorValues>&> invalidateIfDebug) {
   // If debugging, invalidate if requested, otherwise do not invalidate.
   // Invalidating means setting expmapped entries to Inf, to trigger assertions
@@ -271,9 +271,9 @@ void ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl::ExpmapMasked(VALUES& values, const
 }
 
 /* ************************************************************************* */
-template<class CONDITIONAL, class VALUES, class GRAPH>
-typename ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl::PartialSolveResult
-ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl::PartialSolve(GaussianFactorGraph& factors,
+template<class CONDITIONAL, class GRAPH>
+typename ISAM2<CONDITIONAL, GRAPH>::Impl::PartialSolveResult
+ISAM2<CONDITIONAL, GRAPH>::Impl::PartialSolve(GaussianFactorGraph& factors,
     const FastSet<Index>& keys, const ReorderingMode& reorderingMode) {
 
   static const bool debug = ISDEBUG("ISAM2 recalculate");

@@ -31,6 +31,7 @@
 #include <gtsam/linear/SharedNoiseModel.h>
 #include <gtsam/linear/JacobianFactor.h>
 
+#include <gtsam/nonlinear/DynamicValues.h>
 #include <gtsam/nonlinear/Ordering.h>
 
 namespace gtsam {
@@ -56,18 +57,17 @@ inline void __fill_from_tuple<boost::tuples::null_type>(std::vector<Symbol>& vec
  * more general than just vectors, e.g., Rot3 or Pose3,
  * which are objects in non-linear manifolds (Lie groups).
  */
-template<class VALUES>
 class NonlinearFactor: public Factor<Symbol> {
 
 protected:
 
   // Some handy typedefs
   typedef Factor<Symbol> Base;
-  typedef NonlinearFactor<VALUES> This;
+  typedef NonlinearFactor This;
 
 public:
 
-  typedef boost::shared_ptr<NonlinearFactor<VALUES> > shared_ptr;
+  typedef boost::shared_ptr<NonlinearFactor > shared_ptr;
 
   /** Default constructor for I/O only */
   NonlinearFactor() {
@@ -107,7 +107,7 @@ public:
    * This is typically equal to log-likelihood, e.g. 0.5(h(x)-z)^2/sigma^2 in case of Gaussian.
    * You can override this for systems with unusual noise models.
    */
-  virtual double error(const VALUES& c) const = 0;
+  virtual double error(const DynamicValues& c) const = 0;
 
   /** get the dimension of the factor (number of rows on linearization) */
   virtual size_t dim() const = 0;
@@ -122,11 +122,11 @@ public:
 	 * when the constraint is *NOT* fulfilled.
 	 * @return true if the constraint is active
 	 */
-	virtual bool active(const VALUES& c) const { return true; }
+	virtual bool active(const DynamicValues& c) const { return true; }
 
   /** linearize to a GaussianFactor */
   virtual boost::shared_ptr<GaussianFactor>
-  linearize(const VALUES& c, const Ordering& ordering) const = 0;
+  linearize(const DynamicValues& c, const Ordering& ordering) const = 0;
 
   /**
    * Create a symbolic factor using the given ordering to determine the
@@ -152,20 +152,19 @@ public:
 
  * The noise model is typically Gaussian, but robust and constrained error models are also supported.
  */
-template<class VALUES>
-class NoiseModelFactor: public NonlinearFactor<VALUES> {
+class NoiseModelFactor: public NonlinearFactor {
 
 protected:
 
   // handy typedefs
-  typedef NonlinearFactor<VALUES> Base;
-  typedef NoiseModelFactor<VALUES> This;
+  typedef NonlinearFactor Base;
+  typedef NoiseModelFactor This;
 
   SharedNoiseModel noiseModel_; /** Noise model */
 
 public:
 
-  typedef boost::shared_ptr<NoiseModelFactor<VALUES> > shared_ptr;
+  typedef boost::shared_ptr<NoiseModelFactor > shared_ptr;
 
   /** Default constructor for I/O only */
   NoiseModelFactor() {
@@ -212,7 +211,7 @@ public:
   }
 
   /** Check if two factors are equal */
-  virtual bool equals(const NoiseModelFactor<VALUES>& f, double tol = 1e-9) const {
+  virtual bool equals(const NoiseModelFactor& f, double tol = 1e-9) const {
     return noiseModel_->equals(*f.noiseModel_, tol) && Base::equals(f, tol);
   }
 
@@ -232,13 +231,13 @@ public:
    * If any of the optional Matrix reference arguments are specified, it should compute
    * both the function evaluation and its derivative(s) in X1 (and/or X2, X3...).
    */
-  virtual Vector unwhitenedError(const VALUES& x, boost::optional<std::vector<Matrix>&> H = boost::none) const = 0;
+  virtual Vector unwhitenedError(const DynamicValues& x, boost::optional<std::vector<Matrix>&> H = boost::none) const = 0;
 
   /**
    * Vector of errors, whitened
    * This is the raw error, i.e., i.e. \f$ (h(x)-z)/\sigma \f$ in case of a Gaussian
    */
-  Vector whitenedError(const VALUES& c) const {
+  Vector whitenedError(const DynamicValues& c) const {
     return noiseModel_->whiten(unwhitenedError(c));
   }
 
@@ -248,7 +247,7 @@ public:
    * In this class, we take the raw prediction error \f$ h(x)-z \f$, ask the noise model
    * to transform it to \f$ (h(x)-z)^2/\sigma^2 \f$, and then multiply by 0.5.
    */
-  virtual double error(const VALUES& c) const {
+  virtual double error(const DynamicValues& c) const {
   	if (this->active(c))
   		return 0.5 * noiseModel_->distance(unwhitenedError(c));
   	else
@@ -260,7 +259,7 @@ public:
    * \f$ Ax-b \approx h(x+\delta x)-z = h(x) + A \delta x - z \f$
    * Hence \f$ b = z - h(x) = - \mathtt{error\_vector}(x) \f$
    */
-  boost::shared_ptr<GaussianFactor> linearize(const VALUES& x, const Ordering& ordering) const {
+  boost::shared_ptr<GaussianFactor> linearize(const DynamicValues& x, const Ordering& ordering) const {
   	// Only linearize if the factor is active
 		if (!this->active(x))
 			return boost::shared_ptr<JacobianFactor>();
@@ -308,8 +307,8 @@ private:
 /* ************************************************************************* */
 /** A convenient base class for creating your own NoiseModelFactor with 1
  * variable.  To derive from this class, implement evaluateError(). */
-template<class VALUES, class KEY>
-class NonlinearFactor1: public NoiseModelFactor<VALUES> {
+template<class KEY>
+class NonlinearFactor1: public NoiseModelFactor {
 
 public:
 
@@ -321,8 +320,8 @@ protected:
   // The value of the key. Not const to allow serialization
   KEY key_;
 
-  typedef NoiseModelFactor<VALUES> Base;
-  typedef NonlinearFactor1<VALUES, KEY> This;
+  typedef NoiseModelFactor Base;
+  typedef NonlinearFactor1<KEY> This;
 
 public:
 
@@ -344,7 +343,7 @@ public:
 
   /** Calls the 1-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
-  virtual Vector unwhitenedError(const VALUES& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
+  virtual Vector unwhitenedError(const DynamicValues& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
     if(this->active(x)) {
       const X& x1 = x[key_];
       if(H) {
@@ -387,8 +386,8 @@ private:
 /* ************************************************************************* */
 /** A convenient base class for creating your own NoiseModelFactor with 2
  * variables.  To derive from this class, implement evaluateError(). */
-template<class VALUES, class KEY1, class KEY2>
-class NonlinearFactor2: public NoiseModelFactor<VALUES> {
+template<class KEY1, class KEY2>
+class NonlinearFactor2: public NoiseModelFactor {
 
 public:
 
@@ -402,8 +401,8 @@ protected:
   KEY1 key1_;
   KEY2 key2_;
 
-  typedef NoiseModelFactor<VALUES> Base;
-  typedef NonlinearFactor2<VALUES, KEY1, KEY2> This;
+  typedef NoiseModelFactor Base;
+  typedef NonlinearFactor2<KEY1, KEY2> This;
 
 public:
 
@@ -428,7 +427,7 @@ public:
 
   /** Calls the 2-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
-  virtual Vector unwhitenedError(const VALUES& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
+  virtual Vector unwhitenedError(const DynamicValues& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
     if(this->active(x)) {
       const X1& x1 = x[key1_];
       const X2& x2 = x[key2_];
@@ -475,8 +474,8 @@ private:
 /* ************************************************************************* */
 /** A convenient base class for creating your own NoiseModelFactor with 3
  * variables.  To derive from this class, implement evaluateError(). */
-template<class VALUES, class KEY1, class KEY2, class KEY3>
-class NonlinearFactor3: public NoiseModelFactor<VALUES> {
+template<class KEY1, class KEY2, class KEY3>
+class NonlinearFactor3: public NoiseModelFactor {
 
 public:
 
@@ -492,8 +491,8 @@ protected:
   KEY2 key2_;
   KEY3 key3_;
 
-  typedef NoiseModelFactor<VALUES> Base;
-  typedef NonlinearFactor3<VALUES, KEY1, KEY2, KEY3> This;
+  typedef NoiseModelFactor Base;
+  typedef NonlinearFactor3<KEY1, KEY2, KEY3> This;
 
 public:
 
@@ -520,7 +519,7 @@ public:
 
   /** Calls the 3-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
-  virtual Vector unwhitenedError(const VALUES& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
+  virtual Vector unwhitenedError(const DynamicValues& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
     if(this->active(x)) {
       if(H)
         return evaluateError(x[key1_], x[key2_], x[key3_], (*H)[0], (*H)[1], (*H)[2]);
@@ -569,8 +568,8 @@ private:
 /* ************************************************************************* */
 /** A convenient base class for creating your own NoiseModelFactor with 4
  * variables.  To derive from this class, implement evaluateError(). */
-template<class VALUES, class KEY1, class KEY2, class KEY3, class KEY4>
-class NonlinearFactor4: public NoiseModelFactor<VALUES> {
+template<class KEY1, class KEY2, class KEY3, class KEY4>
+class NonlinearFactor4: public NoiseModelFactor {
 
 public:
 
@@ -588,8 +587,8 @@ protected:
   KEY3 key3_;
   KEY4 key4_;
 
-  typedef NoiseModelFactor<VALUES> Base;
-  typedef NonlinearFactor4<VALUES, KEY1, KEY2, KEY3, KEY4> This;
+  typedef NoiseModelFactor Base;
+  typedef NonlinearFactor4<KEY1, KEY2, KEY3, KEY4> This;
 
 public:
 
@@ -618,7 +617,7 @@ public:
 
   /** Calls the 4-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
-  virtual Vector unwhitenedError(const VALUES& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
+  virtual Vector unwhitenedError(const DynamicValues& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
   	if(this->active(x)) {
   		if(H)
   			return evaluateError(x[key1_], x[key2_], x[key3_], x[key4_], (*H)[0], (*H)[1], (*H)[2], (*H)[3]);
@@ -669,8 +668,8 @@ private:
 /* ************************************************************************* */
 /** A convenient base class for creating your own NoiseModelFactor with 5
  * variables.  To derive from this class, implement evaluateError(). */
-template<class VALUES, class KEY1, class KEY2, class KEY3, class KEY4, class KEY5>
-class NonlinearFactor5: public NoiseModelFactor<VALUES> {
+template<class KEY1, class KEY2, class KEY3, class KEY4, class KEY5>
+class NonlinearFactor5: public NoiseModelFactor {
 
 public:
 
@@ -690,8 +689,8 @@ protected:
   KEY4 key4_;
   KEY5 key5_;
 
-  typedef NoiseModelFactor<VALUES> Base;
-  typedef NonlinearFactor5<VALUES, KEY1, KEY2, KEY3, KEY4, KEY5> This;
+  typedef NoiseModelFactor Base;
+  typedef NonlinearFactor5<KEY1, KEY2, KEY3, KEY4, KEY5> This;
 
 public:
 
@@ -722,7 +721,7 @@ public:
 
   /** Calls the 5-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
-  virtual Vector unwhitenedError(const VALUES& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
+  virtual Vector unwhitenedError(const DynamicValues& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
   	if(this->active(x)) {
       if(H)
         return evaluateError(x[key1_], x[key2_], x[key3_], x[key4_], x[key5_], (*H)[0], (*H)[1], (*H)[2], (*H)[3], (*H)[4]);
@@ -776,8 +775,8 @@ private:
 /* ************************************************************************* */
 /** A convenient base class for creating your own NoiseModelFactor with 6
  * variables.  To derive from this class, implement evaluateError(). */
-template<class VALUES, class KEY1, class KEY2, class KEY3, class KEY4, class KEY5, class KEY6>
-class NonlinearFactor6: public NoiseModelFactor<VALUES> {
+template<class KEY1, class KEY2, class KEY3, class KEY4, class KEY5, class KEY6>
+class NonlinearFactor6: public NoiseModelFactor {
 
 public:
 
@@ -799,8 +798,8 @@ protected:
   KEY5 key5_;
   KEY6 key6_;
 
-  typedef NoiseModelFactor<VALUES> Base;
-  typedef NonlinearFactor6<VALUES, KEY1, KEY2, KEY3, KEY4, KEY5, KEY6> This;
+  typedef NoiseModelFactor Base;
+  typedef NonlinearFactor6<KEY1, KEY2, KEY3, KEY4, KEY5, KEY6> This;
 
 public:
 
@@ -833,7 +832,7 @@ public:
 
   /** Calls the 6-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
-  virtual Vector unwhitenedError(const VALUES& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
+  virtual Vector unwhitenedError(const DynamicValues& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
   	if(this->active(x)) {
       if(H)
         return evaluateError(x[key1_], x[key2_], x[key3_], x[key4_], x[key5_], x[key6_], (*H)[0], (*H)[1], (*H)[2], (*H)[3], (*H)[4], (*H)[5]);
