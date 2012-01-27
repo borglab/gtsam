@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 
@@ -35,7 +36,7 @@ namespace gtsam {
 	 * @ingroup geometry
 	 * \nosubgrouping
 	 */
-	class CalibratedCamera {
+	class CalibratedCamera : public DerivedValue<CalibratedCamera> {
 	private:
 		Pose3 pose_; // 6DOF pose
 

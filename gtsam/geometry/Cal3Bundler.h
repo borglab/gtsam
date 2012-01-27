@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Point2.h>
 
 namespace gtsam {
@@ -27,7 +28,7 @@ namespace gtsam {
  * @ingroup geometry
  * \nosubgrouping
  */
-class Cal3Bundler {
+class Cal3Bundler : public DerivedValue<Cal3Bundler> {
 
 private:
 	double f_, k1_, k2_ ;

@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Point2.h>
 
 namespace gtsam {
@@ -27,7 +28,7 @@ namespace gtsam {
 	 * @ingroup geometry
 	 * \nosubgrouping
 	 */
-	class StereoPoint2 {
+	class StereoPoint2 : public DerivedValue<StereoPoint2> {
 	public:
 		static const size_t dimension = 3;
 	private:

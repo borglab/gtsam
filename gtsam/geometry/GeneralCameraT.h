@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/CalibratedCamera.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Cal3Bundler.h>
@@ -31,7 +32,7 @@ namespace gtsam {
  * \nosubgrouping
  */
 template <typename Camera, typename Calibration>
-class GeneralCameraT {
+class GeneralCameraT : public DerivedValue<GeneralCameraT<Camera, Calibration> > {
 
 private:
 	Camera calibrated_; // Calibrated camera

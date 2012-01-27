@@ -22,6 +22,7 @@
 #define POSE3_DEFAULT_COORDINATES_MODE Pose3::FIRST_ORDER
 #endif
 
+#include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Rot3.h>
 
@@ -34,7 +35,7 @@ namespace gtsam {
    * @ingroup geometry
    * \nosubgrouping
    */
-  class Pose3 {
+  class Pose3 : public DerivedValue<Pose3> {
   public:
     static const size_t dimension = 6;
 

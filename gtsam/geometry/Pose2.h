@@ -22,6 +22,7 @@
 
 #include <boost/optional.hpp>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Rot2.h>
 
@@ -32,7 +33,7 @@ namespace gtsam {
  * @ingroup geometry
  * \nosubgrouping
  */
-class Pose2 {
+class Pose2 : public DerivedValue<Pose2> {
 
 public:
 	static const size_t dimension = 3;

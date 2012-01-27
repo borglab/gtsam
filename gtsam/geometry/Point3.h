@@ -24,6 +24,7 @@
 #include <boost/serialization/nvp.hpp>
 
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/DerivedValue.h>
 #include <gtsam/base/Lie.h>
 
 namespace gtsam {
@@ -33,7 +34,7 @@ namespace gtsam {
    * @ingroup geometry
    * \nosubgrouping
    */
-  class Point3 {
+  class Point3 : public DerivedValue<Point3> {
   public:
 	  /// dimension of the variable - used to autodetect sizes
 	  static const size_t dimension = 3;

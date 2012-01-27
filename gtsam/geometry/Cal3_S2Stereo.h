@@ -26,7 +26,7 @@ namespace gtsam {
 	 * @ingroup geometry
 	 * \nosubgrouping
 	 */
-	class Cal3_S2Stereo: public Cal3_S2 {
+	class Cal3_S2Stereo: public DerivedValue<Cal3_S2Stereo>, public Cal3_S2 {
 	private:
 		double b_;
 

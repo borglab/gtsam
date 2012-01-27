@@ -8,6 +8,8 @@
 #pragma once
 
 #include <boost/optional.hpp>
+
+#include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 
@@ -23,7 +25,7 @@ namespace gtsam {
    * \nosubgrouping
    */
   template <typename Calibration>
-  class CalibratedCameraT {
+  class CalibratedCameraT : public DerivedValue<CalibratedCameraT<Calibration> > {
   private:
     Pose3 pose_; // 6DOF pose
     Calibration k_;

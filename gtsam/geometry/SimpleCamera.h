@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/CalibratedCamera.h>
 #include <gtsam/geometry/Cal3_S2.h>
 
@@ -29,7 +30,7 @@ namespace gtsam {
 	 * to produce measurements in pixels.
 	 * Not a sublass as a SimpleCamera *is not* a CalibratedCamera.
 	 */
-	class SimpleCamera {
+	class SimpleCamera : public DerivedValue<SimpleCamera> {
 	private:
 		CalibratedCamera calibrated_; // Calibrated camera
 		Cal3_S2 K_; // Calibration
