@@ -256,6 +256,14 @@ class GaussianConditional {
 	bool equals(const GaussianConditional &cg, double tol) const;
 };
 
+class GaussianDensity {
+	GaussianDensity(int key, Vector d, Matrix R, Vector sigmas);
+	void print(string s) const;
+	Vector mean() const;
+	Matrix information() const;
+	Matrix covariance() const;
+};
+
 class GaussianBayesNet {
 	GaussianBayesNet();
 	void print(string s) const;
@@ -347,16 +355,19 @@ class GaussianSequentialSolver {
 };
 
 class KalmanFilter {
-	KalmanFilter(Vector x0, const SharedDiagonal& P0);
-	KalmanFilter(Vector x0, Matrix P0);
+	KalmanFilter(size_t n);
+	GaussianDensity* init(Vector x0, const SharedDiagonal& P0);
+	GaussianDensity* init(Vector x0, Matrix P0);
 	void print(string s) const;
-	Vector mean() const;
-	Matrix information() const;
-	Matrix covariance() const;
-	KalmanFilter predict(Matrix F, Matrix B, Vector u, const SharedDiagonal& model);
-	KalmanFilter predictQ(Matrix F, Matrix B, Vector u, Matrix Q);
-	KalmanFilter predict2(Matrix A0, Matrix A1, Vector b, const SharedDiagonal& model);
-	KalmanFilter update(Matrix H, Vector z, const SharedDiagonal& model);
+	static int step(GaussianDensity* p);
+	GaussianDensity* predict(GaussianDensity* p, Matrix F, Matrix B, Vector u,
+			const SharedDiagonal& modelQ);
+	GaussianDensity* predictQ(GaussianDensity* p, Matrix F, Matrix B, Vector u,
+			Matrix Q);
+	GaussianDensity* predict2(GaussianDensity* p, Matrix A0, Matrix A1, Vector b,
+			const SharedDiagonal& model);
+	GaussianDensity* update(GaussianDensity* p, Matrix H, Vector z,
+			const SharedDiagonal& model);
 };
 
 //*************************************************************************

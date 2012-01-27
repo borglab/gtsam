@@ -47,31 +47,34 @@ expected3 = [3.0, 0.0]';
 P23 = inv(I22) + Q;
 I33 = inv(P23) + inv(R);
 
+%% Create an KalmanFilter object
+KF = KalmanFilter(2);
+
 %% Create the Kalman Filter initialization point
 x_initial = [0.0;0.0];
-P_initial = SharedDiagonal([0.1;0.1]);
+P_initial = 0.01*eye(2);
 
-%% Create an KalmanFilter object
-kalmanFilter = KalmanFilter(x_initial, P_initial)
-EQUALITY('expected0,kalmanFilter.mean', expected0,kalmanFilter.mean);
-EQUALITY('expected0,kalmanFilter.mean', P00,kalmanFilter.covariance);
+%% Create an KF object
+state = KF.init(x_initial, P_initial);
+EQUALITY('expected0,state.mean', expected0,state.mean);
+EQUALITY('expected0,state.mean', P00,state.covariance);
 
 %% Run iteration 1
-kalmanFilter.predict(F, B, u, modelQ);
-EQUALITY('expected1,kalmanFilter.mean', expected1,kalmanFilter.mean);
-EQUALITY('P01,kalmanFilter.covariance', P01,kalmanFilter.covariance);
-kalmanFilter.update(H,z1,modelR);
-EQUALITY('expected1,kalmanFilter.mean', expected1,kalmanFilter.mean);
-EQUALITY('I11,kalmanFilter.information', I11,kalmanFilter.information);
+state = KF.predict(state,F, B, u, modelQ);
+EQUALITY('expected1,state.mean', expected1,state.mean);
+EQUALITY('P01,state.covariance', P01,state.covariance);
+state = KF.update(state,H,z1,modelR);
+EQUALITY('expected1,state.mean', expected1,state.mean);
+EQUALITY('I11,state.information', I11,state.information);
 
 %% Run iteration 2
-kalmanFilter.predict(F, B, u, modelQ);
-EQUALITY('expected2,kalmanFilter.mean', expected2,kalmanFilter.mean);
-kalmanFilter.update(H,z2,modelR);
-EQUALITY('expected2,kalmanFilter.mean', expected2,kalmanFilter.mean);
+state = KF.predict(state,F, B, u, modelQ);
+EQUALITY('expected2,state.mean', expected2,state.mean);
+state = KF.update(state,H,z2,modelR);
+EQUALITY('expected2,state.mean', expected2,state.mean);
 
 %% Run iteration 3
-kalmanFilter.predict(F, B, u, modelQ);
-EQUALITY('expected3,kalmanFilter.mean', expected3,kalmanFilter.mean);
-kalmanFilter.update(H,z3,modelR);
-EQUALITY('expected3,kalmanFilter.mean', expected3,kalmanFilter.mean);
+state = KF.predict(state,F, B, u, modelQ);
+EQUALITY('expected3,state.mean', expected3,state.mean);
+state = KF.update(state,H,z3,modelR);
+EQUALITY('expected3,state.mean', expected3,state.mean);
