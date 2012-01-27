@@ -41,10 +41,10 @@ namespace gtsam {
 
   /* ************************************************************************* */
   void DynamicValues::print(const string& str) const {
-    cout << str << "DynamicValues with " << size() << " values:\n" << endl;
-    BOOST_FOREACH(const KeyValueMap::value_type& key_value, values_) {
-      cout << "  " << (string)key_value.first << ": ";
-      key_value.second->print("");
+    cout << str << "Values with " << size() << " values:\n" << endl;
+    for(KeyValueMap::const_iterator key_value = begin(); key_value != end(); ++key_value) {
+      cout << "  " << (string)key_value->first << ": ";
+      key_value->second->print("");
     }
   }
 
@@ -77,10 +77,12 @@ namespace gtsam {
   DynamicValues DynamicValues::retract(const VectorValues& delta, const Ordering& ordering) const {
     DynamicValues result;
 
-    BOOST_FOREACH(const KeyValuePair& key_value, values_) {
-      const SubVector& singleDelta = delta[ordering[key_value.first]]; // Delta for this value
-      ValuePtr retractedValue(key_value.second->retract_(singleDelta)); // Retract
-      result.values_[key_value.first] = retractedValue; // Add retracted result directly to result values
+    for(KeyValueMap::const_iterator key_value = begin(); key_value != end(); ++key_value) {
+      const SubVector& singleDelta = delta[ordering[key_value->first]]; // Delta for this value
+      Symbol key = key_value->first;  // Non-const duplicate to deal with non-const insert argument
+      Value* retractedValue(key_value->second->retract_(singleDelta)); // Retract
+      result.values_.insert(key, retractedValue); // Add retracted result directly to result values
+      retractedValue->deallocate_();
     }
 
     return result;
@@ -100,21 +102,23 @@ namespace gtsam {
     for(const_iterator it1=this->begin(), it2=cp.begin(); it1!=this->end(); ++it1, ++it2) {
       if(it1->first != it2->first)
         throw DynamicValuesMismatched(); // If keys do not match
-      result[ordering[it1->first]] = it1->second->localCoordinates_(*it2->second); // Will throw a dynamic_cast exception if types do not match
+      // Will throw a dynamic_cast exception if types do not match
+      result.insert(ordering[it1->first], it1->second->localCoordinates_(*it2->second));
     }
   }
 
   /* ************************************************************************* */
   void DynamicValues::insert(const DynamicValues& values) {
-    BOOST_FOREACH(const KeyValuePair& key_value, values.values_) {
-      values_.insert(make_pair(key_value.first, key_value.second->clone_()));
+    for(KeyValueMap::const_iterator key_value = begin(); key_value != end(); ++key_value) {
+      Symbol key = key_value->first; // Non-const duplicate to deal with non-const insert argument
+      values_.insert(key, key_value->second->clone_());
     }
   }
 
   /* ************************************************************************* */
   void DynamicValues::update(const DynamicValues& values) {
-    BOOST_FOREACH(const KeyValuePair& key_value, values) {
-      this->update(key_value.first, *key_value.second);
+    for(KeyValueMap::const_iterator key_value = values.begin(); key_value != values.end(); ++key_value) {
+      this->update(key_value->first, *key_value->second);
     }
   }
 
@@ -128,9 +132,10 @@ namespace gtsam {
 
   /* ************************************************************************* */
   FastList<Symbol> DynamicValues::keys() const {
-    return FastList<Symbol>(
-        boost::make_transform_iterator(values_.begin(), boost::bind(&KeyValuePair::first, _1)),
-        boost::make_transform_iterator(values_.end(), boost::bind(&KeyValuePair::first, _1)));
+    FastList<Symbol> result;
+    for(KeyValueMap::const_iterator key_value = begin(); key_value != end(); ++key_value)
+      result.push_back(key_value->first);
+    return result;
   }
 
   /* ************************************************************************* */
@@ -146,18 +151,45 @@ namespace gtsam {
     // Transform with Value::dim(auto_ptr::get(KeyValuePair::second))
     result.assign(
         boost::make_transform_iterator(values_.begin(),
-            boost::bind(&Value::dim, boost::bind(&ValuePtr::get, boost::bind(&KeyValuePair::second, _1)))),
+            boost::bind(&Value::dim, boost::bind(&KeyValuePair::second, _1))),
         boost::make_transform_iterator(values_.begin(),
-            boost::bind(&Value::dim, boost::bind(&ValuePtr::get, boost::bind(&KeyValuePair::second, _1)))));
+            boost::bind(&Value::dim, boost::bind(&KeyValuePair::second, _1))));
     return result;
   }
 
   /* ************************************************************************* */
   Ordering::shared_ptr DynamicValues::orderingArbitrary(Index firstVar) const {
     Ordering::shared_ptr ordering(new Ordering);
-    BOOST_FOREACH(const KeyValuePair& key_value, values_) {
-      ordering->insert(key_value.first, firstVar++);
+    for(KeyValueMap::const_iterator key_value = begin(); key_value != end(); ++key_value) {
+      ordering->insert(key_value->first, firstVar++);
     }
     return ordering;
   }
+
+  /* ************************************************************************* */
+  const char* DynamicValuesKeyAlreadyExists::what() const throw() {
+    if(message_.empty())
+      message_ =
+          "Attempting to add a key-value pair with key \"" + (std::string)key_ + "\", key already exists.";
+    return message_.c_str();
+  }
+
+  /* ************************************************************************* */
+  const char* DynamicValuesKeyDoesNotExist::what() const throw() {
+    if(message_.empty())
+      message_ =
+          "Attempting to " + std::string(operation_) + " the key \"" +
+          (std::string)key_ + "\", which does not exist in the Values.";
+    return message_.c_str();
+  }
+
+  /* ************************************************************************* */
+  const char* DynamicValuesIncorrectType::what() const throw() {
+    if(message_.empty())
+      message_ =
+          "Attempting to retrieve value with key \"" + (std::string)key_ + "\", type stored in DynamicValues is " +
+          std::string(storedTypeId_.name()) + " but requested type was " + std::string(requestedTypeId_.name());
+    return message_.c_str();
+  }
+
 }

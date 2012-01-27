@@ -126,7 +126,7 @@ namespace gtsam {
      * @param delta The delta vector in the tangent space of this value, by
      * which to increment this value.
      */
-    virtual std::auto_ptr<Value> retract_(const Vector& delta) const = 0;
+    virtual Value* retract_(const Vector& delta) const = 0;
 
     /** Compute the coordinates in the tangent space of this value that
      * retract() would map to \c value.

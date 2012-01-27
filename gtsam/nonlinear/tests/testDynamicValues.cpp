@@ -29,7 +29,6 @@ using namespace std;
 static double inf = std::numeric_limits<double>::infinity();
 
 typedef TypedSymbol<LieVector, 'v'> VecKey;
-typedef DynamicValues<VecKey> DynamicValues;
 
 VecKey key1(1), key2(2), key3(3), key4(4);
 
@@ -102,7 +101,7 @@ TEST( DynamicValues, insert_bad )
   cfg2.insert(key2, v3);
   cfg2.insert(key3, v4);
 
-  CHECK_EXCEPTION(cfg1.insert(cfg2), const KeyAlreadyExists<VecKey>);
+  CHECK_EXCEPTION(cfg1.insert(cfg2), DynamicValuesKeyAlreadyExists);
 }
 
 /* ************************************************************************* */
@@ -237,7 +236,7 @@ TEST(DynamicValues, exists_)
 	config0.insert(key1, Vector_(1, 1.));
 	config0.insert(key2, Vector_(1, 2.));
 
-	boost::optional<LieVector> v = config0.exists_(key1);
+	boost::optional<const LieVector&> v = config0.exists(key1);
 	CHECK(assert_equal(Vector_(1, 1.),*v));
 }
 

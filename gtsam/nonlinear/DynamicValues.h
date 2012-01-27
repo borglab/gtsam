@@ -27,6 +27,9 @@
 #include <string>
 #include <utility>
 
+#include <boost/pool/pool_alloc.hpp>
+#include <boost/ptr_container/ptr_map.hpp>
+
 #include <gtsam/base/Value.h>
 #include <gtsam/base/FastMap.h>
 #include <gtsam/linear/VectorValues.h>
@@ -35,14 +38,38 @@
 
 namespace gtsam {
 
+  // Forward declarations
+  class ValueCloneAllocator;
+
+/**
+  * A non-templated config holding any types of Manifold-group elements.  A
+  * values structure is a map from keys to values. It is used to specify the
+  * value of a bunch of variables in a factor graph. A Values is a values
+  * structure which can hold variables that are elements on manifolds, not just
+  * vectors. It then, as a whole, implements a aggregate type which is also a
+  * manifold element, and hence supports operations dim, retract, and
+  * localCoordinates.
+  */
   class DynamicValues {
 
   private:
 
-    typedef std::auto_ptr<const Value> ValuePtr;
-    typedef FastMap<Symbol, std::auto_ptr<const Value> > KeyValueMap;
-    typedef KeyValueMap::value_type KeyValuePair;
+    // Internally we store a boost ptr_map, with a ValueCloneAllocator (defined
+    // below) to clone and deallocate the Value objects, and a boost
+    // fast_pool_allocator to allocate map nodes.  In this way, all memory is
+    // allocated in a boost memory pool.
+    typedef boost::ptr_map<
+        Symbol,
+        Value,
+        std::less<Symbol>,
+        ValueCloneAllocator,
+        boost::fast_pool_allocator<std::pair<const Symbol, void*> > > KeyValueMap;
+
+    // The member to store the values, see just above
     KeyValueMap values_;
+
+    // Type obtained by iterating
+    typedef KeyValueMap::const_iterator::value_type KeyValuePair;
 
   public:
 
@@ -75,8 +102,8 @@ namespace gtsam {
      * throws DynamicValuesIncorrectType if this requested type is not correct.
      * @return A const reference to the stored value
      */
-    template<typename Value>
-    const Value& at(const Symbol& j) const;
+    template<typename ValueType>
+    const ValueType& at(const Symbol& j) const;
 
     /** Retrieve a variable using a special key (typically TypedSymbol), which
      * contains the type of the value associated with the key, and which must
@@ -102,8 +129,8 @@ namespace gtsam {
      * \c Value if the key does exist, or boost::none if it does not exist.
      * Throws DynamicValuesIncorrectType if the value type associated with the
      * requested key does not match the stored value type. */
-    template<typename Value>
-    boost::optional<const Value&> exists(const Symbol& j) const;
+    template<typename ValueType>
+    boost::optional<const ValueType&> exists(const Symbol& j) const;
 
     /** Check if a value with key \c j exists, returns the value with type
      * \c Value if the key does exist, or boost::none if it does not exist.

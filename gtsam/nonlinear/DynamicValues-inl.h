@@ -29,17 +29,17 @@
 namespace gtsam {
 
   /* ************************************************************************* */
-  const char* DynamicValuesIncorrectType::what() const throw() {
-    if(message_.empty())
-      message_ =
-          "Attempting to retrieve value with key \"" + (std::string)key_ + "\", type stored in DynamicValues is " +
-          std::string(storedTypeId_.name()) + " but requested type was " + std::string(requestedTypeId_.name());
-    return message_.c_str();
-  }
+  class ValueCloneAllocator {
+  public:
+    static Value* allocate_clone(const Value& a) { return a.clone_(); }
+    static void deallocate_clone(const Value* a) { a->deallocate_(); }
+  private:
+    ValueCloneAllocator() {}
+  };
 
   /* ************************************************************************* */
-  template<typename Value>
-  const Value& DynamicValues::at(const Symbol& j) const {
+  template<typename ValueType>
+  const ValueType& DynamicValues::at(const Symbol& j) const {
     // Find the item
     const_iterator item = values_.find(j);
 
@@ -48,11 +48,11 @@ namespace gtsam {
       throw DynamicValuesKeyDoesNotExist("retrieve", j);
 
     // Check the type and throw exception if incorrect
-    if(typeid(*item->second) != typeid(Value))
-      throw DynamicValuesIncorrectType(j, typeid(*item->second), typeid(Value));
+    if(typeid(*item->second) != typeid(ValueType))
+      throw DynamicValuesIncorrectType(j, typeid(*item->second), typeid(ValueType));
 
     // We have already checked the type, so do a "blind" static_cast, not dynamic_cast
-    return static_cast<const Value&>(*item->second);
+    return static_cast<const ValueType&>(*item->second);
   }
 
   /* ************************************************************************* */
@@ -66,18 +66,18 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  template<typename Value>
-  boost::optional<const Value&> DynamicValues::exists(const Symbol& j) const {
+  template<typename ValueType>
+  boost::optional<const ValueType&> DynamicValues::exists(const Symbol& j) const {
     // Find the item
     const_iterator item = values_.find(j);
 
     if(item != values_.end()) {
       // Check the type and throw exception if incorrect
-      if(typeid(*item->second) != typeid(Value))
-        throw DynamicValuesIncorrectType(j, typeid(*item->second), typeid(Value));
+      if(typeid(*item->second) != typeid(ValueType))
+        throw DynamicValuesIncorrectType(j, typeid(*item->second), typeid(ValueType));
 
       // We have already checked the type, so do a "blind" static_cast, not dynamic_cast
-      return static_cast<const Value&>(*item->second);
+      return static_cast<const ValueType&>(*item->second);
     } else {
       return boost::none;
     }
@@ -96,7 +96,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class ValueType>
   void DynamicValues::insert(const Symbol& j, const ValueType& val) {
-    std::pair<iterator,bool> insertResult = values_.insert(make_pair(j, new ValueType(val)));
+    std::pair<iterator,bool> insertResult = values_.insert(j, val);
     if(!insertResult.second)
       throw DynamicValuesKeyAlreadyExists(j);
   }
@@ -104,9 +104,17 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class ValueType>
   void DynamicValues::update(const Symbol& j, const ValueType& val) {
+    // Find the value to update
     iterator item = values_.find(j);
     if(item == values_.end())
       throw DynamicValuesKeyDoesNotExist("update", j);
-    item->second = val.clone_();
+
+    // Cast to the derived type
+    if(typeid(*item->second) != typeid(Value))
+      throw DynamicValuesIncorrectType(j, typeid(*item->second), typeid(Value));
+    ValueType& valueAsDerived = static_cast<ValueType&>(*item->second);
+
+    // Assign
+    valueAsDerived = val;
   }
 }
