@@ -23,6 +23,19 @@ using namespace std;
 namespace gtsam {
 
 	/* ************************************************************************* */
+	void GaussianDensity::print(const string &s) const
+	{
+	  cout << s << ": density on ";
+	  for(const_iterator it = beginFrontals(); it != endFrontals(); ++it)
+	  	cout << (boost::format("[%1%]")%(*it)).str() << " ";
+	  cout << endl;
+	  gtsam::print(Matrix(get_R()),"R");
+	  gtsam::print(Vector(get_d()),"d");
+	  gtsam::print(sigmas_,"sigmas");
+	  cout << "Permutation: " << permutation_.indices().transpose() << endl;
+	}
+
+	/* ************************************************************************* */
 	Vector GaussianDensity::mean() const {
 		// Solve for mean
 		VectorValues x;

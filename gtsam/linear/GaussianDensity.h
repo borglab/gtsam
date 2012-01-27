@@ -34,16 +34,14 @@ namespace gtsam {
 
 	public:
 
-	protected:
-
-	public:
+		typedef boost::shared_ptr<GaussianDensity> shared_ptr;
 
 		/// default constructor needed for serialization
 		GaussianDensity() :
 				GaussianConditional() {
 		}
 
-		// Copy constructor from GaussianConditional
+		/// Copy constructor from GaussianConditional
 		GaussianDensity(const GaussianConditional& conditional) :
 				GaussianConditional(conditional) {
 			assert(conditional.nrParents() == 0);
@@ -55,7 +53,10 @@ namespace gtsam {
 				GaussianConditional(key, d, R, sigmas) {
 		}
 
-		// Mean \f$ \mu = R^{-1} d \f$
+		/// print
+		void print(const std::string& = "GaussianDensity") const;
+
+		/// Mean \f$ \mu = R^{-1} d \f$
 		Vector mean() const;
 
 		/// Information matrix \f$ \Lambda = R^T R \f$
