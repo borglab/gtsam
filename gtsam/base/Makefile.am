@@ -33,7 +33,6 @@ check_PROGRAMS += tests/testLieVector tests/testLieScalar
 
 # Data structures
 headers += BTree.h DSF.h FastMap.h FastSet.h FastList.h FastVector.h
-headers += boost_variant_with_workaround.h
 sources += DSFVector.cpp
 check_PROGRAMS += tests/testBTree tests/testDSF tests/testDSFVector
 
