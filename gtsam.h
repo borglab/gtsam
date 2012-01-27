@@ -460,6 +460,45 @@ class Graph {
 
 }///\namespace simulated2DOriented
 
+
+
+
+
+
+
+
+// Planar SLAM example domain
+#include <gtsam/slam/pose2SLAM.h>
+namespace pose2SLAM {
+
+class Values {
+	Values();
+	void print(string s) const;
+	Pose2 pose(int key) const;
+	Point2 point(int key) const;
+	void insertPose(int key, const Pose2& pose);
+	void insertPoint(int key, const Point2& point);
+};
+
+class Graph {
+	Graph();
+
+	void print(string s) const;
+
+	double error(const planarSLAM::Values& values) const;
+	Ordering* orderingCOLAMD(const planarSLAM::Values& values) const;
+	GaussianFactorGraph* linearize(const planarSLAM::Values& values,
+			const Ordering& ordering) const;
+
+	void addPrior(int key, const Pose2& pose, const SharedNoiseModel& noiseModel);
+	void addHardConstraint(int key, const Pose2& pose);
+	void addConstraint(int key1, int key2, const Pose2& odometry, const SharedNoiseModel& noiseModel);
+	planarSLAM::Values optimize(const planarSLAM::Values& initialEstimate);
+};
+
+}///\namespace pose2SLAM
+
+
 //// These are considered to be broken and will be added back as they start working
 //// It's assumed that there have been interface changes that might break this
 //
