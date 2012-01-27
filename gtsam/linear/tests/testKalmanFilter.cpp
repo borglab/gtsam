@@ -49,17 +49,17 @@ TEST( KalmanFilter, constructor ) {
 	KalmanFilter::State p1 = kf1.init(x_initial, P1);
 
 	// Assert it has the correct mean, covariance and information
-	EXPECT(assert_equal(x_initial, p1.mean()));
+	EXPECT(assert_equal(x_initial, p1->mean()));
 	Matrix Sigma = Matrix_(2, 2, 0.01, 0.0, 0.0, 0.01);
-	EXPECT(assert_equal(Sigma, p1.covariance()));
-	EXPECT(assert_equal(inverse(Sigma), p1.information()));
+	EXPECT(assert_equal(Sigma, p1->covariance()));
+	EXPECT(assert_equal(inverse(Sigma), p1->information()));
 
 	// Create one with a sharedGaussian
 	KalmanFilter::State p2 = kf1.init(x_initial, Sigma);
-	EXPECT(assert_equal(Sigma, p2.covariance()));
+	EXPECT(assert_equal(Sigma, p2->covariance()));
 
 	// Now make sure both agree
-	EXPECT(assert_equal(p1.covariance(), p2.covariance()));
+	EXPECT(assert_equal(p1->covariance(), p2->covariance()));
 }
 
 /* ************************************************************************* */
@@ -103,32 +103,32 @@ TEST( KalmanFilter, linear1 ) {
 
 	// Create initial KalmanFilter object
 	KalmanFilter::State p0 = kf.init(x_initial, P_initial);
-	EXPECT(assert_equal(expected0, p0.mean()));
-	EXPECT(assert_equal(P00, p0.covariance()));
+	EXPECT(assert_equal(expected0, p0->mean()));
+	EXPECT(assert_equal(P00, p0->covariance()));
 
 	// Run iteration 1
 	KalmanFilter::State p1p = kf.predict(p0, F, B, u, modelQ);
-	EXPECT(assert_equal(expected1, p1p.mean()));
-	EXPECT(assert_equal(P01, p1p.covariance()));
+	EXPECT(assert_equal(expected1, p1p->mean()));
+	EXPECT(assert_equal(P01, p1p->covariance()));
 
 	KalmanFilter::State p1 = kf.update(p1p, H, z1, modelR);
-	EXPECT(assert_equal(expected1, p1.mean()));
-	EXPECT(assert_equal(I11, p1.information()));
+	EXPECT(assert_equal(expected1, p1->mean()));
+	EXPECT(assert_equal(I11, p1->information()));
 
 	// Run iteration 2 (with full covariance)
 	KalmanFilter::State p2p = kf.predictQ(p1, F, B, u, Q);
-	EXPECT(assert_equal(expected2, p2p.mean()));
+	EXPECT(assert_equal(expected2, p2p->mean()));
 
 	KalmanFilter::State p2 = kf.update(p2p, H, z2, modelR);
-	EXPECT(assert_equal(expected2, p2.mean()));
+	EXPECT(assert_equal(expected2, p2->mean()));
 
 	// Run iteration 3
 	KalmanFilter::State p3p = kf.predict(p2, F, B, u, modelQ);
-	EXPECT(assert_equal(expected3, p3p.mean()));
+	EXPECT(assert_equal(expected3, p3p->mean()));
 	LONGS_EQUAL(3, KalmanFilter::step(p3p));
 
 	KalmanFilter::State p3 = kf.update(p3p, H, z3, modelR);
-	EXPECT(assert_equal(expected3, p3.mean()));
+	EXPECT(assert_equal(expected3, p3->mean()));
 	LONGS_EQUAL(3, KalmanFilter::step(p3));
 }
 
@@ -160,8 +160,8 @@ TEST( KalmanFilter, predict ) {
 	Vector b = R*B*u;
 	SharedDiagonal nop = noiseModel::Isotropic::Sigma(2, 1.0);
 	KalmanFilter::State pb = kf.predict2(p0, A1, A2, b, nop);
-	EXPECT(assert_equal(pa.mean(), pb.mean()));
-	EXPECT(assert_equal(pa.covariance(), pb.covariance()));
+	EXPECT(assert_equal(pa->mean(), pb->mean()));
+	EXPECT(assert_equal(pa->covariance(), pb->covariance()));
 }
 
 /* ************************************************************************* */
@@ -216,13 +216,13 @@ TEST( KalmanFilter, QRvsCholesky ) {
 	KalmanFilter::State pb = kfb.predictQ(p0b, Psi_k, B, u, dt_Q_k);
 
 	// Check that they yield the same mean and information matrix
-	EXPECT(assert_equal(pa.mean(), pb.mean()));
-	EXPECT(assert_equal(pa.information(), pb.information(), 1e-7));
+	EXPECT(assert_equal(pa->mean(), pb->mean()));
+	EXPECT(assert_equal(pa->information(), pb->information(), 1e-7));
 
 	// and in addition attain the correct covariance
 	Vector expectedMean = Vector_(9, 0.9814, 1.0200, 1.0190, 1., 1., 1., 1., 1., 1.);
-	EXPECT(assert_equal(expectedMean, pa.mean(), 1e-7));
-	EXPECT(assert_equal(expectedMean, pb.mean(), 1e-7));
+	EXPECT(assert_equal(expectedMean, pa->mean(), 1e-7));
+	EXPECT(assert_equal(expectedMean, pb->mean(), 1e-7));
 	Matrix expected = 1e-6*Matrix_(9, 9,
 			48.8, -3.1, -0.0, -0.4, -0.4, 0.0, 0.0, 63.8, -0.6,
 			-3.1, 148.4, -0.3, 0.5, 1.7, 0.2, -63.8, 0.0, -0.1,
@@ -233,8 +233,8 @@ TEST( KalmanFilter, QRvsCholesky ) {
 			0.0, -63.8, 0.0, 0.0, 0.0, 0.0, 647.2, 0.0, 0.0,
 			63.8, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0, 647.2, 0.0,
 			-0.6, -0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 647.2);
-	EXPECT(assert_equal(expected, pa.covariance(), 1e-7));
-	EXPECT(assert_equal(expected, pb.covariance(), 1e-7));
+	EXPECT(assert_equal(expected, pa->covariance(), 1e-7));
+	EXPECT(assert_equal(expected, pb->covariance(), 1e-7));
 
 	// prepare update
 	Matrix H = 1e-3*Matrix_(3, 9,
@@ -250,13 +250,13 @@ TEST( KalmanFilter, QRvsCholesky ) {
 	KalmanFilter::State pb2 = kfb.update(pb, H, z, modelR);
 
 	// Check that they yield the same mean and information matrix
-	EXPECT(assert_equal(pa2.mean(), pb2.mean()));
-	EXPECT(assert_equal(pa2.information(), pb2.information(), 1e-7));
+	EXPECT(assert_equal(pa2->mean(), pb2->mean()));
+	EXPECT(assert_equal(pa2->information(), pb2->information(), 1e-7));
 
 	// and in addition attain the correct mean and covariance
 	Vector expectedMean2 = Vector_(9, 0.9207, 0.9030, 1.0178, 1.0002, 0.9992, 0.9998, 0.9981, 1.0035, 0.9882);
-	EXPECT(assert_equal(expectedMean2, pa2.mean(), 1e-4));// not happy with tolerance here !
-	EXPECT(assert_equal(expectedMean2, pb2.mean(), 1e-4));// is something still amiss?
+	EXPECT(assert_equal(expectedMean2, pa2->mean(), 1e-4));// not happy with tolerance here !
+	EXPECT(assert_equal(expectedMean2, pb2->mean(), 1e-4));// is something still amiss?
 	Matrix expected2 = 1e-6*Matrix_(9, 9,
 			46.1, -2.6, -0.0, -0.4, -0.4, 0.0, 0.0, 63.9, -0.5,
 			-2.6, 132.8, -0.5, 0.4, 1.5, 0.2, -64.0, -0.0, -0.1,
@@ -267,8 +267,8 @@ TEST( KalmanFilter, QRvsCholesky ) {
 			0.0, -64.0, -0.0, -0.0, -0.0, -0.0, 647.2, -0.0, 0.0,
 			63.9, -0.0, 0.1, -0.0, -0.0, 0.0, -0.0, 647.2, 0.1,
 			-0.5, -0.1, 0.0, -0.0, -0.0, 0.0, 0.0, 0.1, 635.8);
-	EXPECT(assert_equal(expected2, pa2.covariance(), 1e-7));
-	EXPECT(assert_equal(expected2, pb2.covariance(), 1e-7));
+	EXPECT(assert_equal(expected2, pa2->covariance(), 1e-7));
+	EXPECT(assert_equal(expected2, pb2->covariance(), 1e-7));
 }
 
 /* ************************************************************************* */

@@ -27,6 +27,8 @@
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/base/Testable.h>
 
+#include <boost/make_shared.hpp>
+
 namespace gtsam {
 
 	using namespace std;
@@ -42,7 +44,8 @@ namespace gtsam {
 		// As this is a filter, all we need is the posterior P(x_t),
 		// so we just keep the root of the Bayes net
 		GaussianConditional::shared_ptr conditional = bayesNet->back();
-		return *conditional;
+		// TODO: awful ! A copy constructor followed by ANOTHER copy constructor in make_shared?
+		return boost::make_shared<GaussianDensity>(*conditional);
 	}
 
 	/* ************************************************************************* */
@@ -53,7 +56,7 @@ namespace gtsam {
 		GaussianFactorGraph factorGraph;
 
 		// push back previous solution and new factor
-		factorGraph.push_back(p.toFactor());
+		factorGraph.push_back(p->toFactor());
 		factorGraph.push_back(GaussianFactor::shared_ptr(newFactor));
 
 		// Eliminate graph in order x0, x1, to get Bayes net P(x0|x1)P(x1)
@@ -83,7 +86,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	void KalmanFilter::print(const string& s) const {
-		cout << s << ", " << n_ << "-dimensional Kalman filter\n";
+		cout << "KalmanFilter " << s << ", dim = " << n_ << endl;
 	}
 
 	/* ************************************************************************* */

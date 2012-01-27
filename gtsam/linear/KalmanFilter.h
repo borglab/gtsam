@@ -52,7 +52,10 @@ namespace gtsam {
 			QR, LDL
 		};
 
-		typedef GaussianDensity State;
+		/**
+		 * The Kalman filter state is simply a GaussianDensity
+		 */
+		typedef GaussianDensity::shared_ptr State;
 
 	private:
 
@@ -60,7 +63,9 @@ namespace gtsam {
 		const Matrix I_; /** identity matrix of size n*n */
 		const Factorization method_; /** algorithm */
 
-		bool useQR() const { return method_==QR; }
+		bool useQR() const {
+			return method_ == QR;
+		}
 
 	public:
 
@@ -86,7 +91,7 @@ namespace gtsam {
 
 		/** Return step index k, starts at 0, incremented at each predict. */
 		static Index step(const State& p) {
-			return p.firstFrontalKey();
+			return p->firstFrontalKey();
 		}
 
 		/**
@@ -98,8 +103,8 @@ namespace gtsam {
 		 *   where F is the state transition model/matrix, B is the control input model,
 		 *   and w is zero-mean, Gaussian white noise with covariance Q.
 		 */
-		KalmanFilter::State predict(const State& p, const Matrix& F,
-				const Matrix& B, const Vector& u, const SharedDiagonal& modelQ);
+		State predict(const State& p, const Matrix& F, const Matrix& B,
+				const Vector& u, const SharedDiagonal& modelQ);
 
 		/*
 		 *  Version of predict with full covariance
@@ -107,8 +112,8 @@ namespace gtsam {
 		 *  physical property, such as velocity or acceleration, and G is derived from physics.
 		 *  This version allows more realistic models than a diagonal covariance matrix.
 		 */
-		KalmanFilter::State predictQ(const State& p, const Matrix& F,
-				const Matrix& B, const Vector& u, const Matrix& Q);
+		State predictQ(const State& p, const Matrix& F, const Matrix& B,
+				const Vector& u, const Matrix& Q);
 
 		/**
 		 * Predict the state P(x_{t+1}|Z^t)
@@ -118,8 +123,8 @@ namespace gtsam {
 		 *   This version of predict takes GaussianFactor motion model [A0 A1 b]
 		 *   with an optional noise model.
 		 */
-		KalmanFilter::State predict2(const State& p, const Matrix& A0,
-				const Matrix& A1, const Vector& b, const SharedDiagonal& model);
+		State predict2(const State& p, const Matrix& A0, const Matrix& A1,
+				const Vector& b, const SharedDiagonal& model);
 
 		/**
 		 * Update Kalman filter with a measurement
@@ -129,9 +134,8 @@ namespace gtsam {
 		 * Gaussian white noise with covariance R.
 		 * Currently, R is restricted to diagonal Gaussians (model parameter)
 		 */
-		KalmanFilter::State update(const State& p, const Matrix& H, const Vector& z,
+		State update(const State& p, const Matrix& H, const Vector& z,
 				const SharedDiagonal& model);
-
 	};
 
 } // \namespace gtsam
