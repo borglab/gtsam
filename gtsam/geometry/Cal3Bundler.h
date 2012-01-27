@@ -95,7 +95,7 @@ public:
 	Vector localCoordinates(const Cal3Bundler& T2) const ;
 
 	///TODO: comment
-	int dim() const { return 3 ; }	//TODO: make a final dimension variable (also, usually size_t in other classes  e.g. Pose2)
+	virtual size_t dim() const { return 3 ; }	//TODO: make a final dimension variable (also, usually size_t in other classes  e.g. Pose2)
 
 	///TODO: comment
 	static size_t Dim() { return 3; }	//TODO: make a final dimension variable

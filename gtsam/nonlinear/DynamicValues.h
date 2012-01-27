@@ -178,18 +178,16 @@ namespace gtsam {
     // imperative methods:
 
     /** Add a variable with the given j, throws KeyAlreadyExists<J> if j is already present */
-    template<class ValueType>
-    void insert(const Symbol& j, const ValueType& val);
+    void insert(const Symbol& j, const Value& val);
 
     /** Add a set of variables, throws KeyAlreadyExists<J> if a key is already present */
     void insert(const DynamicValues& values);
 
+    /** single element change of existing element */
+    void update(const Symbol& j, const Value& val);
+
     /** update the current available values without adding new ones */
     void update(const DynamicValues& values);
-
-    /** single element change of existing element */
-    template<class ValueType>
-    void update(const Symbol& j, const ValueType& val);
 
     /** Remove a variable from the config, throws KeyDoesNotExist<J> if j is not present */
     void erase(const Symbol& j);

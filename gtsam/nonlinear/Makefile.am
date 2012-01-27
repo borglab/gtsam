@@ -63,7 +63,7 @@ AM_CXXFLAGS =
 #----------------------------------------------------------------------------------------------------
 TESTS = $(check_PROGRAMS)
 AM_LDFLAGS += $(boost_serialization)
-LDADD = libnonlinear.la ../linear/liblinear.la ../inference/libinference.la ../base/libbase.la ../3rdparty/libccolamd.la
+LDADD = libnonlinear.la ../linear/liblinear.la ../inference/libinference.la ../geometry/libgeometry.la ../base/libbase.la ../3rdparty/libccolamd.la
 LDADD += ../../CppUnitLite/libCppUnitLite.a
 AM_DEFAULT_SOURCE_EXT = .cpp
 

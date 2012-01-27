@@ -82,7 +82,6 @@ namespace gtsam {
       Symbol key = key_value->first;  // Non-const duplicate to deal with non-const insert argument
       Value* retractedValue(key_value->second->retract_(singleDelta)); // Retract
       result.values_.insert(key, retractedValue); // Add retracted result directly to result values
-      retractedValue->deallocate_();
     }
 
     return result;
@@ -108,11 +107,33 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  void DynamicValues::insert(const Symbol& j, const Value& val) {
+  	Symbol key = j; // Non-const duplicate to deal with non-const insert argument
+  	std::pair<iterator,bool> insertResult = values_.insert(key, val.clone_());
+  	if(!insertResult.second)
+  		throw DynamicValuesKeyAlreadyExists(j);
+  }
+
+  /* ************************************************************************* */
   void DynamicValues::insert(const DynamicValues& values) {
-    for(KeyValueMap::const_iterator key_value = begin(); key_value != end(); ++key_value) {
+    for(KeyValueMap::const_iterator key_value = values.begin(); key_value != values.end(); ++key_value) {
       Symbol key = key_value->first; // Non-const duplicate to deal with non-const insert argument
-      values_.insert(key, key_value->second->clone_());
+      insert(key, *key_value->second);
     }
+  }
+
+  /* ************************************************************************* */
+  void DynamicValues::update(const Symbol& j, const Value& val) {
+  	// Find the value to update
+  	iterator item = values_.find(j);
+  	if(item == values_.end())
+  		throw DynamicValuesKeyDoesNotExist("update", j);
+
+  	// Cast to the derived type
+  	if(typeid(*item->second) != typeid(val))
+  		throw DynamicValuesIncorrectType(j, typeid(*item->second), typeid(val));
+
+  	values_.replace(item, val.clone_());
   }
 
   /* ************************************************************************* */
@@ -152,7 +173,7 @@ namespace gtsam {
     result.assign(
         boost::make_transform_iterator(values_.begin(),
             boost::bind(&Value::dim, boost::bind(&KeyValuePair::second, _1))),
-        boost::make_transform_iterator(values_.begin(),
+        boost::make_transform_iterator(values_.end(),
             boost::bind(&Value::dim, boost::bind(&KeyValuePair::second, _1))));
     return result;
   }

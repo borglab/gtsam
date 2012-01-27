@@ -30,7 +30,7 @@ namespace gtsam {
 	 * to produce measurements in pixels.
 	 * Not a sublass as a SimpleCamera *is not* a CalibratedCamera.
 	 */
-	class SimpleCamera : public DerivedValue<SimpleCamera> {
+	class SimpleCamera {
 	private:
 		CalibratedCamera calibrated_; // Calibrated camera
 		Cal3_S2 K_; // Calibration
@@ -76,6 +76,12 @@ namespace gtsam {
 		Point2 project(const Point3& point,
 			    boost::optional<Matrix&> H1 = boost::none,
 			    boost::optional<Matrix&> H2 = boost::none) const;
+
+		virtual void print(const std::string& s = "") const {
+			std::cout << s;
+			calibrated_.print("calibrated: ");
+			K_.print("K: ");
+		}
 
 		bool equals(const SimpleCamera& X, double tol=1e-9) const {
 			return calibrated_.equals(X.calibrated_, tol) && K_.equals(X.K_, tol);

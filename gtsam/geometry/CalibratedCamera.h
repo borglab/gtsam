@@ -62,6 +62,11 @@ namespace gtsam {
 		/// @name Testable
 		/// @{
 
+		virtual void print(const std::string& s = "") const {
+			std::cout << s;
+			pose_.print("pose: ");
+		}
+
 		/// check equality to another camera
 		bool equals (const CalibratedCamera &camera, double tol = 1e-9) const {
 			return pose_.equals(camera.pose(), tol) ;

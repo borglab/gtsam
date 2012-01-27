@@ -93,28 +93,4 @@ namespace gtsam {
     return exists<typename TypedKey::Value>(symbol);
   }
 
-  /* ************************************************************************* */
-  template<class ValueType>
-  void DynamicValues::insert(const Symbol& j, const ValueType& val) {
-    std::pair<iterator,bool> insertResult = values_.insert(j, val);
-    if(!insertResult.second)
-      throw DynamicValuesKeyAlreadyExists(j);
-  }
-
-  /* ************************************************************************* */
-  template<class ValueType>
-  void DynamicValues::update(const Symbol& j, const ValueType& val) {
-    // Find the value to update
-    iterator item = values_.find(j);
-    if(item == values_.end())
-      throw DynamicValuesKeyDoesNotExist("update", j);
-
-    // Cast to the derived type
-    if(typeid(*item->second) != typeid(Value))
-      throw DynamicValuesIncorrectType(j, typeid(*item->second), typeid(Value));
-    ValueType& valueAsDerived = static_cast<ValueType&>(*item->second);
-
-    // Assign
-    valueAsDerived = val;
-  }
 }
