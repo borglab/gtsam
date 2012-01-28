@@ -26,6 +26,8 @@ check_PROGRAMS += tests/testSimulated3D
 # Generic SLAM headers
 headers += BetweenFactor.h PriorFactor.h PartialPriorFactor.h
 headers += BearingFactor.h RangeFactor.h BearingRangeFactor.h
+headers += AntiFactor.h
+check_PROGRAMS += tests/testAntiFactor 
 
 # Generic constraint headers
 headers += BoundingConstraint.h
