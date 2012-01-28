@@ -7,7 +7,7 @@ It was designed to be more general than just wrapping GTSAM, but a small amount 
 GTSAM specific code exists in matlab.h, the include file that is included by the
 mex files. In addition, the current makefile (Oct 11) is GTSAM specific.
 
-The classes and methods to be warpped are specified in gtsam.h
+The classes and methods to be wrapped are specified in gtsam.h
 This tool will not wrap arbitrary methods. Please read comments in matlab.h
 Some good things to know:
 
@@ -18,7 +18,7 @@ OBJECT CREATION
 	
 METHOD (AND CONSTRUCTOR) ARGUMENTS
 - Simple argument types of methods, such as "double", will be converted in the
-  mex warppers by calling unwrap<double>, defined in matlab.h
+  mex wrappers by calling unwrap<double>, defined in matlab.h
 - Vector and Matrix arguments are normally passed by reference in GTSAM, but
   in gtsam.h you need to pretend they are passed by value, to trigger the 
   generation of the correct conversion routines unwrap<Vector> and unwrap<Matrix>
