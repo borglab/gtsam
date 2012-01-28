@@ -41,16 +41,16 @@ std::pair<std::string, boost::optional<gtsam::SharedDiagonal> >
  * @param maxID, if non-zero cut out vertices >= maxID
  * @param smart: try to reduce complexity of covariance to cheapest model
  */
-std::pair<boost::shared_ptr<gtsam::Pose2Graph>, boost::shared_ptr<gtsam::Pose2Values> > load2D(
+std::pair<boost::shared_ptr<gtsam::Pose2Graph>, boost::shared_ptr<DynamicValues> > load2D(
 		std::pair<std::string, boost::optional<SharedDiagonal> > dataset,
 		int maxID = 0, bool addNoise=false, bool smart=true);
-std::pair<boost::shared_ptr<gtsam::Pose2Graph>, boost::shared_ptr<gtsam::Pose2Values> > load2D(
+std::pair<boost::shared_ptr<gtsam::Pose2Graph>, boost::shared_ptr<DynamicValues> > load2D(
 		const std::string& filename,
 		boost::optional<gtsam::SharedDiagonal> model = boost::optional<gtsam::SharedDiagonal>(),
 		int maxID = 0, bool addNoise=false, bool smart=true);
 
 /** save 2d graph */
-void save2D(const gtsam::Pose2Graph& graph, const gtsam::Pose2Values& config, const gtsam::SharedDiagonal model,
+void save2D(const gtsam::Pose2Graph& graph, const DynamicValues& config, const gtsam::SharedDiagonal model,
 		const std::string& filename);
 
 /**

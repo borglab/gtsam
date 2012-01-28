@@ -29,13 +29,13 @@ namespace gtsam {
 	 * KEY1::Value is the Lie Group type
 	 * T is the measurement type, by default the same
 	 */
-	template<class VALUES, class KEY1, class T = typename KEY1::Value>
-	class BetweenFactor: public NonlinearFactor2<VALUES, KEY1, KEY1> {
+	template<class KEY1, class T = typename KEY1::Value>
+	class BetweenFactor: public NonlinearFactor2<KEY1, KEY1> {
 
 	private:
 
-		typedef BetweenFactor<VALUES, KEY1, T> This;
-		typedef NonlinearFactor2<VALUES, KEY1, KEY1> Base;
+		typedef BetweenFactor<KEY1, T> This;
+		typedef NonlinearFactor2<KEY1, KEY1> Base;
 
 		T measured_; /** The measurement */
 
@@ -71,7 +71,7 @@ namespace gtsam {
 		}
 
 		/** equals */
-		virtual bool equals(const NonlinearFactor<VALUES>& expected, double tol=1e-9) const {
+		virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
 			const This *e =	dynamic_cast<const This*> (&expected);
 			return e != NULL && Base::equals(*e, tol) && this->measured_.equals(e->measured_, tol);
 		}

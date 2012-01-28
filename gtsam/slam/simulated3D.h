@@ -40,10 +40,6 @@ namespace simulated3D {
 typedef gtsam::TypedSymbol<Point3, 'x'> PoseKey;
 typedef gtsam::TypedSymbol<Point3, 'l'> PointKey;
 
-typedef Values<PoseKey> PoseValues;
-typedef Values<PointKey> PointValues;
-typedef TupleValues2<PoseValues, PointValues> Values;
-
 /**
  * Prior on a single pose
  */
@@ -66,7 +62,7 @@ Point3 mea(const Point3& x, const Point3& l,
 /**
  * A prior factor on a single linear robot pose
  */
-struct PointPrior3D: public NonlinearFactor1<Values, PoseKey> {
+struct PointPrior3D: public NonlinearFactor1<PoseKey> {
 
 	Point3 z_; ///< The prior pose value for the variable attached to this factor
 
@@ -78,7 +74,7 @@ struct PointPrior3D: public NonlinearFactor1<Values, PoseKey> {
 	 */
 	PointPrior3D(const Point3& z,
 			const SharedNoiseModel& model, const PoseKey& j) :
-				NonlinearFactor1<Values, PoseKey> (model, j), z_(z) {
+				NonlinearFactor1<PoseKey> (model, j), z_(z) {
 	}
 
 	/**
@@ -97,8 +93,7 @@ struct PointPrior3D: public NonlinearFactor1<Values, PoseKey> {
 /**
  * Models a linear 3D measurement between 3D points
  */
-struct Simulated3DMeasurement: public NonlinearFactor2<Values,
-PoseKey, PointKey> {
+struct Simulated3DMeasurement: public NonlinearFactor2<PoseKey, PointKey> {
 
 	Point3 z_; ///< Linear displacement between a pose and landmark
 
@@ -111,7 +106,7 @@ PoseKey, PointKey> {
 	 */
 	Simulated3DMeasurement(const Point3& z,
 			const SharedNoiseModel& model, PoseKey& j1, PointKey j2) :
-				NonlinearFactor2<Values, PoseKey, PointKey> (
+				NonlinearFactor2<PoseKey, PointKey> (
 						model, j1, j2), z_(z) {
 	}
 

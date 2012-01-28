@@ -30,8 +30,8 @@ using namespace std;
 namespace gtsam {
 
 	/* ************************************************************************* */
-	template<class G, class C, class L, class S, class W>
-	NonlinearOptimizer<G, C, L, S, W>::NonlinearOptimizer(shared_graph graph,
+	template<class G, class L, class S, class W>
+	NonlinearOptimizer<G, L, S, W>::NonlinearOptimizer(shared_graph graph,
 			shared_values values, shared_ordering ordering, shared_parameters parameters) :
 			graph_(graph), values_(values), error_(graph->error(*values)), ordering_(ordering),
 			parameters_(parameters), iterations_(0),
@@ -47,8 +47,8 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	// FIXME: remove this constructor
-	template<class G, class C, class L, class S, class W>
-	NonlinearOptimizer<G, C, L, S, W>::NonlinearOptimizer(shared_graph graph,
+	template<class G, class L, class S, class W>
+	NonlinearOptimizer<G, L, S, W>::NonlinearOptimizer(shared_graph graph,
 			shared_values values, shared_ordering ordering,
 			shared_solver spcg_solver, shared_parameters parameters) :
 			graph_(graph), values_(values), error_(graph->error(*values)), ordering_(ordering),
@@ -66,8 +66,8 @@ namespace gtsam {
 	/* ************************************************************************* */
 	// One iteration of Gauss Newton
 	/* ************************************************************************* */
-	template<class G, class C, class L, class S, class W>
-	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::iterate() const {
+	template<class G, class L, class S, class W>
+	NonlinearOptimizer<G, L, S, W> NonlinearOptimizer<G, L, S, W>::iterate() const {
 
 		Parameters::verbosityLevel verbosity = parameters_->verbosity_ ;
 
@@ -86,7 +86,7 @@ namespace gtsam {
 		if (verbosity >= Parameters::DELTA) delta.print("delta");
 
 		// take old values and update it
-		shared_values newValues(new C(values_->retract(delta, *ordering_)));
+		shared_values newValues(new DynamicValues(values_->retract(delta, *ordering_)));
 
 		// maybe show output
 		if (verbosity >= Parameters::VALUES) newValues->print("newValues");
@@ -99,8 +99,8 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	template<class G, class C, class L, class S, class W>
-	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::gaussNewton() const {
+	template<class G, class L, class S, class W>
+	NonlinearOptimizer<G, L, S, W> NonlinearOptimizer<G, L, S, W>::gaussNewton() const {
 		static W writer(error_);
 
 		if (error_ < parameters_->sumError_ ) {
@@ -130,8 +130,8 @@ namespace gtsam {
 	// TODO: in theory we can't infinitely recurse, but maybe we should put a max.
 	// Reminder: the parameters are Graph type $G$, Values class type $T$,
 	// linear system class $L$, the non linear solver type $S$, and the writer type $W$
-	template<class G, class T, class L, class S, class W>
-	NonlinearOptimizer<G, T, L, S, W> NonlinearOptimizer<G, T, L, S, W>::try_lambda(const L& linearSystem) {
+	template<class G, class L, class S, class W>
+	NonlinearOptimizer<G, L, S, W> NonlinearOptimizer<G, L, S, W>::try_lambda(const L& linearSystem) {
 
 		const Parameters::verbosityLevel verbosity = parameters_->verbosity_ ;
 		const Parameters::LambdaMode lambdaMode = parameters_->lambdaMode_ ;
@@ -178,7 +178,7 @@ namespace gtsam {
 		    if (verbosity >= Parameters::TRYDELTA) delta.print("delta");
 
 		    // update values
-		    shared_values newValues(new T(values_->retract(delta, *ordering_)));
+		    shared_values newValues(new DynamicValues(values_->retract(delta, *ordering_)));
 
 		    // create new optimization state with more adventurous lambda
 		    double error = graph_->error(*newValues);
@@ -228,8 +228,8 @@ namespace gtsam {
 	// One iteration of Levenberg Marquardt
 	// Reminder: the parameters are Graph type $G$, Values class type $T$,
 	// linear system class $L$, the non linear solver type $S$, and the writer type $W$
-	template<class G, class T, class L, class S, class W>
-	NonlinearOptimizer<G, T, L, S, W> NonlinearOptimizer<G, T, L, S, W>::iterateLM() {
+	template<class G, class L, class S, class W>
+	NonlinearOptimizer<G, L, S, W> NonlinearOptimizer<G, L, S, W>::iterateLM() {
 
 		const Parameters::verbosityLevel verbosity = parameters_->verbosity_ ;
 		const double lambda = parameters_->lambda_ ;
@@ -253,8 +253,8 @@ namespace gtsam {
 	/* ************************************************************************* */
 	// Reminder: the parameters are Graph type $G$, Values class type $T$,
 	// linear system class $L$, the non linear solver type $S$, and the writer type $W$
-	template<class G, class T, class L, class S, class W>
-	NonlinearOptimizer<G, T, L, S, W> NonlinearOptimizer<G, T, L, S, W>::levenbergMarquardt() {
+	template<class G, class L, class S, class W>
+	NonlinearOptimizer<G, L, S, W> NonlinearOptimizer<G, L, S, W>::levenbergMarquardt() {
 
 		// Initialize
 		bool converged = false;
@@ -299,20 +299,20 @@ namespace gtsam {
 	}
 
   /* ************************************************************************* */
-  template<class G, class T, class L, class S, class W>
-  NonlinearOptimizer<G, T, L, S, W> NonlinearOptimizer<G, T, L, S, W>::iterateDogLeg() {
+  template<class G, class L, class S, class W>
+  NonlinearOptimizer<G, L, S, W> NonlinearOptimizer<G, L, S, W>::iterateDogLeg() {
 
     S solver(*graph_->linearize(*values_, *ordering_));
     DoglegOptimizerImpl::IterationResult result = DoglegOptimizerImpl::Iterate(
         parameters_->lambda_, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, *solver.eliminate(),
         *graph_, *values_, *ordering_, error_, parameters_->verbosity_ > Parameters::ERROR);
-    shared_values newValues(new T(values_->retract(result.dx_d, *ordering_)));
+    shared_values newValues(new DynamicValues(values_->retract(result.dx_d, *ordering_)));
     return newValuesErrorLambda_(newValues, result.f_error, result.Delta);
   }
 
   /* ************************************************************************* */
-  template<class G, class T, class L, class S, class W>
-  NonlinearOptimizer<G, T, L, S, W> NonlinearOptimizer<G, T, L, S, W>::dogLeg() {
+  template<class G, class L, class S, class W>
+  NonlinearOptimizer<G, L, S, W> NonlinearOptimizer<G, L, S, W>::dogLeg() {
     static W writer(error_);
 
     // check if we're already close enough

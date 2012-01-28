@@ -30,7 +30,7 @@ using namespace gtsam;
 #define LINESIZE 81920
 
 typedef boost::shared_ptr<Pose2Graph> sharedPose2Graph;
-typedef boost::shared_ptr<Pose2Values> sharedPose2Values;
+typedef boost::shared_ptr<DynamicValues> sharedPose2Values;
 
 namespace gtsam {
 
@@ -81,7 +81,7 @@ pair<sharedPose2Graph, sharedPose2Values> load2D(const string& filename,
 		exit(-1);
 	}
 
-	sharedPose2Values poses(new Pose2Values);
+	sharedPose2Values poses(new DynamicValues);
 	sharedPose2Graph graph(new Pose2Graph);
 
 	string tag;
@@ -96,7 +96,7 @@ pair<sharedPose2Graph, sharedPose2Values> load2D(const string& filename,
 			is >> id >> x >> y >> yaw;
 			// optional filter
 			if (maxID && id >= maxID) continue;
-			poses->insert(id, Pose2(x, y, yaw));
+			poses->insert(pose2SLAM::Key(id), Pose2(x, y, yaw));
 		}
 		is.ignore(LINESIZE, '\n');
 	}
@@ -133,8 +133,8 @@ pair<sharedPose2Graph, sharedPose2Values> load2D(const string& filename,
 				l1Xl2 = l1Xl2.retract((*model)->sample());
 
 			// Insert vertices if pure odometry file
-			if (!poses->exists(id1)) poses->insert(id1, Pose2());
-			if (!poses->exists(id2)) poses->insert(id2, poses->at(id1) * l1Xl2);
+			if (!poses->exists(pose2SLAM::Key(id1))) poses->insert(pose2SLAM::Key(id1), Pose2());
+			if (!poses->exists(pose2SLAM::Key(id2))) poses->insert(pose2SLAM::Key(id2), poses->at(pose2SLAM::Key(id1)) * l1Xl2);
 
 			Pose2Graph::sharedFactor factor(new Pose2Factor(id1, id2, l1Xl2, *model));
 			graph->push_back(factor);
@@ -149,14 +149,14 @@ pair<sharedPose2Graph, sharedPose2Values> load2D(const string& filename,
 }
 
 /* ************************************************************************* */
-void save2D(const Pose2Graph& graph, const Pose2Values& config, const SharedDiagonal model,
+void save2D(const Pose2Graph& graph, const DynamicValues& config, const SharedDiagonal model,
 		const string& filename) {
-	typedef Pose2Values::Key Key;
+//	typedef DynamicValues::Key Key;
 
 	fstream stream(filename.c_str(), fstream::out);
 
 	// save poses
-	Pose2Values::Key key;
+	pose2SLAM::Key key;
 	Pose2 pose;
 	BOOST_FOREACH(boost::tie(key, pose), config)
 		stream << "VERTEX2 " << key.index() << " " <<  pose.x() << " " << pose.y() << " " << pose.theta() << endl;
@@ -164,7 +164,7 @@ void save2D(const Pose2Graph& graph, const Pose2Values& config, const SharedDiag
 	// save edges
 	Matrix R = model->R();
 	Matrix RR = trans(R)*R;//prod(trans(R),R);
-	BOOST_FOREACH(boost::shared_ptr<NonlinearFactor<Pose2Values> > factor_, graph) {
+	BOOST_FOREACH(boost::shared_ptr<NonlinearFactor> factor_, graph) {
 		boost::shared_ptr<Pose2Factor> factor = boost::dynamic_pointer_cast<Pose2Factor>(factor_);
 		if (!factor) continue;
 
