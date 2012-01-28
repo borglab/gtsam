@@ -381,11 +381,16 @@ class Ordering {
 	void push_back(string key);
 };
 
+class NonlinearOptimizationParameters {
+	NonlinearOptimizationParameters(double absDecrease, double relDecrease,
+			double sumError, int iIters, double lambda, double lambdaFactor);
+	void print(string s) const;
+};
+
 //*************************************************************************
-// slam
+// planarSLAM
 //*************************************************************************
 
-// Planar SLAM example domain
 #include <gtsam/slam/planarSLAM.h>
 namespace planarSLAM {
 
@@ -425,9 +430,18 @@ class Odometry {
 	GaussianFactor* linearize(const planarSLAM::Values& center, const Ordering& ordering) const;
 };
 
+class Optimizer {
+	Optimizer(planarSLAM::Graph* graph, planarSLAM::Values* values,
+				Ordering* ordering, NonlinearOptimizationParameters* parameters);
+	void print(string s) const;
+};
+
 }///\namespace planarSLAM
 
-// Pose2SLAM example domain
+//*************************************************************************
+// pose2SLAM
+//*************************************************************************
+
 #include <gtsam/slam/pose2SLAM.h>
 namespace pose2SLAM {
 
@@ -454,10 +468,18 @@ class Graph {
   pose2SLAM::Values optimize(const pose2SLAM::Values& initialEstimate);
 };
 
+class Optimizer {
+	Optimizer(pose2SLAM::Graph* graph, pose2SLAM::Values* values,
+				Ordering* ordering, NonlinearOptimizationParameters* parameters);
+	void print(string s) const;
+};
+
 }///\namespace pose2SLAM
 
+//*************************************************************************
+// Simulated2D
+//*************************************************************************
 
-// Simulated2D Example Domain
 #include <gtsam/slam/simulated2D.h>
 namespace simulated2D {
 
