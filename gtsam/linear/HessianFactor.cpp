@@ -156,6 +156,66 @@ HessianFactor::HessianFactor(Index j1, Index j2, Index j3,
 }
 
 /* ************************************************************************* */
+HessianFactor::HessianFactor(const std::vector<Index>& js, const std::vector<Matrix>& Gs,
+        const std::vector<Vector>& gs, double f) : GaussianFactor(js), info_(matrix_) {
+
+  // Get the number of variables
+  size_t variable_count = js.size();
+
+  // Verify the provided number of entries in the vectors are consistent
+  if(gs.size() != variable_count || Gs.size() != (variable_count*(variable_count+1))/2)
+    throw invalid_argument("Inconsistent number of entries between js, Gs, and gs in HessianFactor constructor.\nThe number of keys provided \
+        in js must match the number of linear vector pieces in gs. The number of upper-diagonal blocks in Gs must be n*(n+1)/2");
+
+  // Verify the dimensions of each provided matrix are consistent
+  // Note: equations for calculating the indices derived from the "sum of an arithmetic sequence" formula
+  for(size_t i = 0; i < variable_count; ++i){
+    int block_size = gs[i].size();
+    // Check rows
+    for(size_t j = 0; j < variable_count-i; ++j){
+      size_t index = i*(2*variable_count - i + 1)/2 + j;
+      if(Gs[index].rows() != block_size){
+        throw invalid_argument("Inconsistent matrix and/or vector dimensions in HessianFactor constructor");
+      }
+    }
+    // Check cols
+    for(size_t j = 0; j <= i; ++j){
+      size_t index = j*(2*variable_count - j + 1)/2 + (i-j);
+      if(Gs[index].cols() != block_size){
+        throw invalid_argument("Inconsistent matrix and/or vector dimensions in HessianFactor constructor");
+      }
+    }
+  }
+
+  // Create the dims vector
+  size_t dims[variable_count+1];
+  size_t total_size = 0;
+  for(unsigned int i = 0; i < variable_count; ++i){
+    dims[i] = gs[i].size();
+    total_size += gs[i].size();
+  }
+  dims[variable_count] = 1;
+  total_size += 1;
+
+  // Fill in the internal matrix with the supplied blocks
+  InfoMatrix fullMatrix(total_size, total_size);
+  BlockInfo infoMatrix(fullMatrix, dims, dims+variable_count+1);
+  size_t index = 0;
+  for(size_t i = 0; i < variable_count; ++i){
+    for(size_t j = i; j < variable_count; ++j){
+      infoMatrix(i,j) = Gs[index++];
+    }
+    infoMatrix.column(i,variable_count,0) = gs[i];
+  }
+  infoMatrix(variable_count,variable_count)(0,0) = f;
+
+  // update the BlockView variable
+  infoMatrix.swap(info_);
+
+  assertInvariants();
+}
+
+/* ************************************************************************* */
 HessianFactor::HessianFactor(const GaussianConditional& cg) : GaussianFactor(cg), info_(matrix_) {
 	JacobianFactor jf(cg);
 	info_.copyStructureFrom(jf.Ab_);

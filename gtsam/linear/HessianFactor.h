@@ -189,6 +189,13 @@ namespace gtsam {
         const Matrix& G22, const Matrix& G23, const Vector& g2,
         const Matrix& G33, const Vector& g3, double f);
 
+    /** Construct an n-way factor.  Gs contains the upper-triangle blocks of the
+     * quadratic term (the Hessian matrix) provided in row-order, gs the pieces
+     * of the linear vector term, and f the constant term.
+     */
+    HessianFactor(const std::vector<Index>& js, const std::vector<Matrix>& Gs,
+        const std::vector<Vector>& gs, double f);
+
     /** Construct from Conditional Gaussian */
     HessianFactor(const GaussianConditional& cg);
 

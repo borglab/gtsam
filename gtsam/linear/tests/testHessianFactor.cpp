@@ -138,7 +138,6 @@ TEST(HessianFactor, Constructor1)
   double actual = factor.error(dx);
   double expected_manual = 0.5 * (f - 2.0 * dxv.dot(g) + dxv.transpose() * G.selfadjointView<Eigen::Upper>() * dxv);
   EXPECT_DOUBLES_EQUAL(expected, expected_manual, 1e-10);
-
   DOUBLES_EQUAL(expected, actual, 1e-10);
 }
 
@@ -198,6 +197,117 @@ TEST(HessianFactor, Constructor2)
   EXPECT(assert_equal(G11, factor.info(factor.begin(), factor.begin())));
   EXPECT(assert_equal(G12, factor.info(factor.begin(), factor.begin()+1)));
   EXPECT(assert_equal(G22, factor.info(factor.begin()+1, factor.begin()+1)));
+}
+
+/* ************************************************************************* */
+TEST(HessianFactor, Constructor3)
+{
+  Matrix G11 = Matrix_(1,1, 1.0);
+  Matrix G12 = Matrix_(1,2, 2.0, 4.0);
+  Matrix G13 = Matrix_(1,3, 3.0, 6.0, 9.0);
+
+  Matrix G22 = Matrix_(2,2, 3.0, 5.0, 0.0, 6.0);
+  Matrix G23 = Matrix_(2,3, 4.0, 6.0, 8.0, 1.0, 2.0, 4.0);
+
+  Matrix G33 = Matrix_(3,3, 1.0, 2.0, 3.0, 0.0, 5.0, 6.0, 0.0, 0.0, 9.0);
+
+  Vector g1 = Vector_(1, -7.0);
+  Vector g2 = Vector_(2, -8.0, -9.0);
+  Vector g3 = Vector_(3,  1.0,  2.0,  3.0);
+
+  double f = 10.0;
+
+  Vector dx0 = Vector_(1, 0.5);
+  Vector dx1 = Vector_(2, 1.5, 2.5);
+  Vector dx2 = Vector_(3, 1.5, 2.5, 3.5);
+
+  vector<size_t> dims;
+  dims.push_back(1);
+  dims.push_back(2);
+  dims.push_back(3);
+  VectorValues dx(dims);
+
+  dx[0] = dx0;
+  dx[1] = dx1;
+  dx[2] = dx2;
+
+  HessianFactor factor(0, 1, 2, G11, G12, G13, g1, G22, G23, g2, G33, g3, f);
+
+  double expected = 371.3750;
+  double actual = factor.error(dx);
+
+  DOUBLES_EQUAL(expected, actual, 1e-10);
+  LONGS_EQUAL(7, factor.rows());
+  DOUBLES_EQUAL(10.0, factor.constantTerm(), 1e-10);
+
+  Vector linearExpected(6);  linearExpected << g1, g2, g3;
+  EXPECT(assert_equal(linearExpected, factor.linearTerm()));
+
+  EXPECT(assert_equal(G11, factor.info(factor.begin()+0, factor.begin()+0)));
+  EXPECT(assert_equal(G12, factor.info(factor.begin()+0, factor.begin()+1)));
+  EXPECT(assert_equal(G13, factor.info(factor.begin()+0, factor.begin()+2)));
+  EXPECT(assert_equal(G22, factor.info(factor.begin()+1, factor.begin()+1)));
+  EXPECT(assert_equal(G23, factor.info(factor.begin()+1, factor.begin()+2)));
+  EXPECT(assert_equal(G33, factor.info(factor.begin()+2, factor.begin()+2)));
+}
+
+/* ************************************************************************* */
+TEST(HessianFactor, ConstructorNWay)
+{
+  Matrix G11 = Matrix_(1,1, 1.0);
+  Matrix G12 = Matrix_(1,2, 2.0, 4.0);
+  Matrix G13 = Matrix_(1,3, 3.0, 6.0, 9.0);
+
+  Matrix G22 = Matrix_(2,2, 3.0, 5.0, 0.0, 6.0);
+  Matrix G23 = Matrix_(2,3, 4.0, 6.0, 8.0, 1.0, 2.0, 4.0);
+
+  Matrix G33 = Matrix_(3,3, 1.0, 2.0, 3.0, 0.0, 5.0, 6.0, 0.0, 0.0, 9.0);
+
+  Vector g1 = Vector_(1, -7.0);
+  Vector g2 = Vector_(2, -8.0, -9.0);
+  Vector g3 = Vector_(3,  1.0,  2.0,  3.0);
+
+  double f = 10.0;
+
+  Vector dx0 = Vector_(1, 0.5);
+  Vector dx1 = Vector_(2, 1.5, 2.5);
+  Vector dx2 = Vector_(3, 1.5, 2.5, 3.5);
+
+  vector<size_t> dims;
+  dims.push_back(1);
+  dims.push_back(2);
+  dims.push_back(3);
+  VectorValues dx(dims);
+
+  dx[0] = dx0;
+  dx[1] = dx1;
+  dx[2] = dx2;
+
+
+  std::vector<Index> js;
+  js.push_back(0); js.push_back(1); js.push_back(2);
+  std::vector<Matrix> Gs;
+  Gs.push_back(G11); Gs.push_back(G12); Gs.push_back(G13); Gs.push_back(G22); Gs.push_back(G23); Gs.push_back(G33);
+  std::vector<Vector> gs;
+  gs.push_back(g1); gs.push_back(g2); gs.push_back(g3);
+  HessianFactor factor(js, Gs, gs, f);
+
+  double expected = 371.3750;
+  double actual = factor.error(dx);
+
+  DOUBLES_EQUAL(expected, actual, 1e-10);
+  LONGS_EQUAL(7, factor.rows());
+  DOUBLES_EQUAL(10.0, factor.constantTerm(), 1e-10);
+
+  Vector linearExpected(6);  linearExpected << g1, g2, g3;
+  EXPECT(assert_equal(linearExpected, factor.linearTerm()));
+
+  EXPECT(assert_equal(G11, factor.info(factor.begin()+0, factor.begin()+0)));
+  EXPECT(assert_equal(G12, factor.info(factor.begin()+0, factor.begin()+1)));
+  EXPECT(assert_equal(G13, factor.info(factor.begin()+0, factor.begin()+2)));
+  EXPECT(assert_equal(G22, factor.info(factor.begin()+1, factor.begin()+1)));
+  EXPECT(assert_equal(G23, factor.info(factor.begin()+1, factor.begin()+2)));
+  EXPECT(assert_equal(G33, factor.info(factor.begin()+2, factor.begin()+2)));
 }
 
 /* ************************************************************************* */
