@@ -16,19 +16,19 @@ using namespace boost;
 #define GTSAM_MAGIC_KEY
 
 #include <gtsam/base/Testable.h>
+#include <gtsam/geometry/Cal3Bundler.h>
+#include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/TupleValues.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
-
-#include <gtsam/geometry/GeneralCameraT.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 
 using namespace std;
 using namespace gtsam;
 
-typedef Cal3BundlerCamera GeneralCamera;
+typedef PinholeCamera<Cal3Bundler> GeneralCamera;
 typedef TypedSymbol<GeneralCamera, 'x'> CameraKey;
 typedef TypedSymbol<Point3, 'l'> PointKey;
 typedef Values<CameraKey> CameraConfig;

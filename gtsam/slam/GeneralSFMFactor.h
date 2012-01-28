@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include <gtsam/geometry/Point2.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 
@@ -82,7 +83,7 @@ namespace gtsam {
 				boost::optional<Matrix&> H1=boost::none,
 				boost::optional<Matrix&> H2=boost::none) const {
 
-			Vector error = z_.localCoordinates(camera.project(point,H1,H2));
+			Vector error = z_.localCoordinates(camera.project2(point,H1,H2));
 //			gtsam::print(error, "error");
 			return error;
 		}
