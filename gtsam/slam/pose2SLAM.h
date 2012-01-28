@@ -94,6 +94,13 @@ namespace pose2SLAM {
     /// Creates a between factor between keys i and j with a noise model with Pose2 z in the graph
     void addOdometry(const PoseKey& i, const PoseKey& j, const Pose2& z,
         const SharedNoiseModel& model);
+
+    /// Optimize
+    Values optimize(const Values& initialEstimate) {
+      typedef NonlinearOptimizer<Graph, Values> Optimizer;
+      return *Optimizer::optimizeLM(*this, initialEstimate,
+                  NonlinearOptimizationParameters::LAMBDA);
+    }
   };
 
   /// The sequential optimizer
