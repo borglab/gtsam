@@ -36,7 +36,7 @@ struct Argument {
 	}
 
 	/// return MATLAB class for use in isa(x,class)
-	std::string matlabClass() const;
+	std::string matlabClass(const std::string& delim = "") const;
 
 	/// adds namespaces to type
 	std::string qualifiedType(const std::string& delim = "") const;

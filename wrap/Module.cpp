@@ -65,12 +65,11 @@ Module::Module(const string& interfacePath,
   // defined within the square brackets [] and are executed whenever a
   // rule is successfully parsed. Define BOOST_SPIRIT_DEBUG to debug.
   // The grammar is allows a very restricted C++ header
+  // lexeme_d turns off white space skipping
+  // http://www.boost.org/doc/libs/1_37_0/libs/spirit/classic/doc/directives.html
   // ----------------------------------------------------------------------------
 
   Rule comments_p =  comment_p("/*", "*/") |	comment_p("//", eol_p);
-
-  // lexeme_d turns off white space skipping
-  // http://www.boost.org/doc/libs/1_37_0/libs/spirit/classic/doc/directives.html
 
   Rule basisType_p =
     (str_p("string") | "bool" | "size_t" | "int" | "double" | "char");
@@ -87,17 +86,6 @@ Module::Module(const string& interfacePath,
 
   Rule namespace_arg_p = namespace_name_p[push_back_a(arg.namespaces)] >> str_p("::");
 
-  Rule classPtr_p =
-  	*namespace_arg_p >>
-    className_p     [assign_a(arg.type)] >> 
-    ch_p('*')       [assign_a(arg.is_ptr,true)];
-
-  Rule classRef_p =
-    !str_p("const") [assign_a(arg.is_const,true)] >> 
-  	*namespace_arg_p >>
-    className_p     [assign_a(arg.type)] >> 
-    ch_p('&')       [assign_a(arg.is_ref,true)];
-
   Rule argEigenType_p =
   	eigenType_p[assign_a(arg.type)] >>
   	!ch_p('*')[assign_a(arg.is_ptr,true)];
@@ -107,10 +95,16 @@ Module::Module(const string& interfacePath,
       eigenType_p     [assign_a(arg.type)] >>
       ch_p('&')       [assign_a(arg.is_ref,true)];
 
+  Rule classArg_p =
+    !str_p("const") [assign_a(arg.is_const,true)] >>
+  	*namespace_arg_p >>
+    className_p     [assign_a(arg.type)] >>
+    (ch_p('*')[assign_a(arg.is_ptr,true)] | ch_p('&')[assign_a(arg.is_ref,true)]);
+
   Rule name_p = lexeme_d[alpha_p >> *(alnum_p | '_')];
 
   Rule argument_p = 
-    ((basisType_p[assign_a(arg.type)] | argEigenType_p | classRef_p | eigenRef_p | classPtr_p)
+    ((basisType_p[assign_a(arg.type)] | argEigenType_p | eigenRef_p | classArg_p)
     		>> name_p[assign_a(arg.name)])
     [push_back_a(args, arg)]
     [assign_a(arg,arg0)];

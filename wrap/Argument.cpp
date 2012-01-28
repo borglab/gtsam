@@ -26,11 +26,13 @@ using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
-string Argument::matlabClass() const {
-	if (type=="string") return string("char");
+string Argument::matlabClass(const string& delim) const {
+	string result;
+	BOOST_FOREACH(const string& ns, namespaces) result += ns + delim;
+	if (type=="string") return result + "char";
 	if (type=="bool" || type=="int" || type=="size_t" || type=="Vector" || type=="Matrix")
-		return string("double");
-	return type;
+		return result + "double";
+	return result + type;
 }
 
 /* ************************************************************************* */
