@@ -9,9 +9,7 @@
 
 # Find include dirs
 find_path(_gtsam_INCLUDE_DIR gtsam/inference/FactorGraph.h
-    PATHS ${GTSAM_ROOT} ${CMAKE_SOURCE_DIR}/dep/gtsam-0.9.2
-    NO_DEFAULT_PATH
-)
+    PATHS ${GTSAM_ROOT} ${CMAKE_INSTALL_PREFIX}/include ${HOME}/include /usr/local/include /usr/include )
 
 # Find libraries
 find_library(_gtsam_LIB NAMES gtsam
