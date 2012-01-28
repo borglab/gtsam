@@ -193,7 +193,14 @@ public:
 	/// @name Standard Interface
 	/// @{
 
-	/** Return current error */
+	/// print
+	void print(const std::string& s="") const {
+    cout << "NonlinearOptimizer " << s << endl;
+    cout << "   current error: " << error_ << endl;
+    cout << "iterations count: " << iterations_ << endl;
+	}
+
+  /** Return current error */
 	double error() const { return error_; }
 
 	/** Return current lambda */

@@ -105,7 +105,21 @@ namespace gtsam {
 		/// @name Standard Interface
 		/// @{
 
-		/// a copy of old instance except new lambda
+		/// print
+		void print(const std::string& s="") const {
+	    cout << "NonlinearOptimizationParameters " << s << endl;
+	    cout << "absolute decrease threshold: " << absDecrease_ << endl;
+	    cout << "relative decrease threshold: " << relDecrease_ << endl;
+	    cout << "        error sum threshold: " << sumError_ << endl;
+	    cout << "  maximum nr. of iterations: " << maxIterations_ << endl;
+	    cout << "       initial lambda value: " << lambda_ << endl;
+	    cout << "  factor to multiply lambda: " << lambdaFactor_ << endl;
+	    cout << "            verbosity level: " << verbosity_ << endl;
+	    cout << "                lambda mode: " << lambdaMode_ << endl;
+	    cout << "                     use QR: " << useQR_ << endl;
+	  }
+
+	  /// a copy of old instance except new lambda
 		sharedThis newLambda_(double lambda) const {
 			sharedThis ptr(
 					boost::make_shared < NonlinearOptimizationParameters > (*this));
