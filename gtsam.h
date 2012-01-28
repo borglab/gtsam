@@ -449,7 +449,7 @@ class Graph {
       const Ordering& ordering) const;
 
   void addPrior(int key, const Pose2& pose, const SharedNoiseModel& noiseModel);
-  void addConstraint(int key, const Pose2& pose);
+  void addPoseConstraint(int key, const Pose2& pose);
   void addOdometry(int key1, int key2, const Pose2& odometry, const SharedNoiseModel& noiseModel);
   pose2SLAM::Values optimize(const pose2SLAM::Values& initialEstimate);
 };
