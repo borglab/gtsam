@@ -427,6 +427,36 @@ class Odometry {
 
 }///\namespace planarSLAM
 
+// Pose2SLAM example domain
+#include <gtsam/slam/pose2SLAM.h>
+namespace pose2SLAM {
+
+class Values {
+  Values();
+  void print(string s) const;
+  void insertPose(int key, const Pose2& pose);
+  Pose2 pose(int i);
+};
+
+class Graph {
+  Graph();
+
+  void print(string s) const;
+
+  double error(const pose2SLAM::Values& values) const;
+  Ordering* orderingCOLAMD(const pose2SLAM::Values& values) const;
+  GaussianFactorGraph* linearize(const pose2SLAM::Values& values,
+      const Ordering& ordering) const;
+
+  void addPrior(int key, const Pose2& pose, const SharedNoiseModel& noiseModel);
+  void addConstraint(int key, const Pose2& pose);
+  void addOdometry(int key1, int key2, const Pose2& odometry, const SharedNoiseModel& noiseModel);
+  pose2SLAM::Values optimize(const pose2SLAM::Values& initialEstimate);
+};
+
+}///\namespace pose2SLAM
+
+
 // Simulated2D Example Domain
 #include <gtsam/slam/simulated2D.h>
 namespace simulated2D {
@@ -470,45 +500,6 @@ class Graph {
 // TODO: add factors, etc.
 
 }///\namespace simulated2DOriented
-
-
-
-
-
-
-
-
-// Planar SLAM example domain
-#include <gtsam/slam/pose2SLAM.h>
-namespace pose2SLAM {
-
-class Values {
-	Values();
-	void print(string s) const;
-	Pose2 pose(int key) const;
-	Point2 point(int key) const;
-	void insertPose(int key, const Pose2& pose);
-	void insertPoint(int key, const Point2& point);
-};
-
-class Graph {
-	Graph();
-
-	void print(string s) const;
-
-	double error(const planarSLAM::Values& values) const;
-	Ordering* orderingCOLAMD(const planarSLAM::Values& values) const;
-	GaussianFactorGraph* linearize(const planarSLAM::Values& values,
-			const Ordering& ordering) const;
-
-	void addPrior(int key, const Pose2& pose, const SharedNoiseModel& noiseModel);
-	void addHardConstraint(int key, const Pose2& pose);
-	void addConstraint(int key1, int key2, const Pose2& odometry, const SharedNoiseModel& noiseModel);
-	planarSLAM::Values optimize(const planarSLAM::Values& initialEstimate);
-};
-
-}///\namespace pose2SLAM
-
 
 //// These are considered to be broken and will be added back as they start working
 //// It's assumed that there have been interface changes that might break this
