@@ -253,24 +253,24 @@ TEST( NonlinearOptimizer, optimization_method )
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, Factorization )
 {
-	typedef NonlinearOptimizer<Pose2Graph, Pose2Values, GaussianFactorGraph, GaussianSequentialSolver > Optimizer;
+	typedef NonlinearOptimizer<pose2SLAM::Graph, pose2SLAM::Values, GaussianFactorGraph, GaussianSequentialSolver > Optimizer;
 
-	boost::shared_ptr<Pose2Values> config(new Pose2Values);
+	boost::shared_ptr<pose2SLAM::Values> config(new pose2SLAM::Values);
 	config->insert(1, Pose2(0.,0.,0.));
 	config->insert(2, Pose2(1.5,0.,0.));
 
-	boost::shared_ptr<Pose2Graph> graph(new Pose2Graph);
+	boost::shared_ptr<pose2SLAM::Graph> graph(new pose2SLAM::Graph);
 	graph->addPrior(1, Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10));
-	graph->addConstraint(1,2, Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1));
+	graph->addOdometry(1,2, Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1));
 
 	boost::shared_ptr<Ordering> ordering(new Ordering);
-	ordering->push_back(Pose2Values::Key(1));
-	ordering->push_back(Pose2Values::Key(2));
+	ordering->push_back(pose2SLAM::PoseKey(1));
+	ordering->push_back(pose2SLAM::PoseKey(2));
 
 	Optimizer optimizer(graph, config, ordering);
 	Optimizer optimized = optimizer.iterateLM();
 
-	Pose2Values expected;
+	pose2SLAM::Values expected;
 	expected.insert(1, Pose2(0.,0.,0.));
 	expected.insert(2, Pose2(1.,0.,0.));
 	CHECK(assert_equal(expected, *optimized.values(), 1e-5));

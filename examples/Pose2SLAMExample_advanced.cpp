@@ -34,7 +34,7 @@ using namespace gtsam::pose2SLAM;
 
 int main(int argc, char** argv) {
 	// create keys for robot positions
-	Key x1(1), x2(2), x3(3);
+	PoseKey x1(1), x2(2), x3(3);
 
 	/* 1. create graph container and add factors to it */
 	shared_ptr<Graph> graph(new Graph);
@@ -51,8 +51,8 @@ int main(int argc, char** argv) {
 
 	/* Pose2 measurements take (x,y,theta), where theta is taken from the positive x-axis*/
 	Pose2 odom_measurement(2.0, 0.0, 0.0); // create a measurement for both factors (the same in this case)
-	graph->addConstraint(x1, x2, odom_measurement, odom_model);
-	graph->addConstraint(x2, x3, odom_measurement, odom_model);
+	graph->addOdometry(x1, x2, odom_measurement, odom_model);
+	graph->addOdometry(x2, x3, odom_measurement, odom_model);
 	graph->print("full graph");
 
   /* 3. Create the data structure to hold the initial estimate to the solution

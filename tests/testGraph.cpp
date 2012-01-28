@@ -78,15 +78,15 @@ TEST( Graph, predecessorMap2Graph )
 /* ************************************************************************* */
 TEST( Graph, composePoses )
 {
-	Pose2Graph graph;
+	pose2SLAM::Graph graph;
 	Matrix cov = eye(3);
 	Pose2 p1(1.0, 2.0, 0.3), p2(4.0, 5.0, 0.6), p3(7.0, 8.0, 0.9), p4(2.0, 2.0, 2.9);
 	Pose2 p12=p1.between(p2), p23=p2.between(p3), p43=p4.between(p3);
-	graph.addConstraint(1,2, p12, cov);
-	graph.addConstraint(2,3, p23, cov);
-	graph.addConstraint(4,3, p43, cov);
+	graph.addOdometry(1,2, p12, cov);
+	graph.addOdometry(2,3, p23, cov);
+	graph.addOdometry(4,3, p43, cov);
 
-	PredecessorMap<Pose2Values::Key> tree;
+	PredecessorMap<pose2SLAM::Values::Key> tree;
 	tree.insert(1,2);
 	tree.insert(2,2);
 	tree.insert(3,2);
@@ -94,10 +94,10 @@ TEST( Graph, composePoses )
 
 	Pose2 rootPose = p2;
 
-	boost::shared_ptr<Pose2Values> actual = composePoses<Pose2Graph, Pose2Factor,
-			Pose2, Pose2Values> (graph, tree, rootPose);
+	boost::shared_ptr<pose2SLAM::Values> actual = composePoses<pose2SLAM::Graph, pose2SLAM::Odometry,
+			Pose2, pose2SLAM::Values> (graph, tree, rootPose);
 
-	Pose2Values expected;
+	pose2SLAM::Values expected;
 	expected.insert(1, p1);
 	expected.insert(2, p2);
 	expected.insert(3, p3);

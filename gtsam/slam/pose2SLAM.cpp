@@ -11,7 +11,7 @@
 
 /**
  *  @file  pose2SLAM.cpp
- *  @brief: bearing/range measurements in 2D plane
+ *  @brief: Odometry measurements in 2D plane
  *  @author Frank Dellaert
  **/
 
@@ -36,20 +36,20 @@ namespace gtsam {
 		}
 
 		/* ************************************************************************* */
-		void Graph::addPrior(const Key& i, const Pose2& p,
+		void Graph::addPrior(const PoseKey& i, const Pose2& p,
 				const SharedNoiseModel& model) {
 			sharedFactor factor(new Prior(i, p, model));
 			push_back(factor);
 		}
 
-		void Graph::addConstraint(const Key& i, const Key& j, const Pose2& z,
-				const SharedNoiseModel& model) {
-			sharedFactor factor(new Constraint(i, j, z, model));
-			push_back(factor);
-		}
+    void Graph::addPoseConstraint(const PoseKey& i, const Pose2& p) {
+      sharedFactor factor(new HardConstraint(i, p));
+      push_back(factor);
+    }
 
-		void Graph::addHardConstraint(const Key& i, const Pose2& p) {
-			sharedFactor factor(new HardConstraint(i, p));
+		void Graph::addOdometry(const PoseKey& i, const PoseKey& j, const Pose2& z,
+				const SharedNoiseModel& model) {
+			sharedFactor factor(new Odometry(i, j, z, model));
 			push_back(factor);
 		}
 

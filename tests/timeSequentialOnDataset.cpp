@@ -44,13 +44,13 @@ int main(int argc, char *argv[]) {
   else if (argc == 4)
   	nrTrials = strtoul(argv[3], NULL, 10);
 
-  pair<shared_ptr<Pose2Graph>, shared_ptr<Pose2Values> > data = load2D(dataset(datasetname));
+  pair<shared_ptr<pose2SLAM::Graph>, shared_ptr<pose2SLAM::Values> > data = load2D(dataset(datasetname));
 
   // Add a prior on the first pose
   if (soft_prior)
   	data.first->addPrior(0, Pose2(), sharedSigma(Pose2::Dim(), 0.0005));
   else
-  	data.first->addHardConstraint(0, Pose2());
+  	data.first->addPoseConstraint(0, Pose2());
 
   tic_(1, "order");
   Ordering::shared_ptr ordering(data.first->orderingCOLAMD(*data.second));
