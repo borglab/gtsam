@@ -52,7 +52,7 @@ void generate_matlab_toolbox(const string& mexExt,
 int main(int argc, const char* argv[]) {
   if (argc<6 || argc>7) {
     cerr << "wrap parses an interface file and produces a MATLAB toolbox" << endl;
-    cerr << "usage: wrap interfacePath moduleName toolboxPath" << endl;
+    cerr << "usage: wrap mexExtension interfacePath moduleName toolboxPath [mexFlags]" << endl;
     cerr << "  mexExtension  : OS/CPU-dependent extension for MEX binaries" << endl;
     cerr << "  interfacePath : *absolute* path to directory of module interface file" << endl;
     cerr << "  moduleName    : the name of the module, interface file must be called moduleName.h" << endl;
