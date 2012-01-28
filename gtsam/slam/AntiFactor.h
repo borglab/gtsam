@@ -23,9 +23,9 @@
 namespace gtsam {
 
 	/**
-	 * A class for a measurement predicted by "between(config[key1],config[key2])"
-	 * KEY1::Value is the Lie Group type
-	 * T is the measurement type, by default the same
+	 * A class for downdating an existing factor from a graph. The AntiFactor returns the same
+	 * linearized Hessian matrices of the original factor, but with the opposite sign. This effectively
+	 * cancels out any affects of the original factor during optimization."
 	 */
 	template<class VALUES>
 	class AntiFactor: public NonlinearFactor<VALUES> {
@@ -69,27 +69,26 @@ namespace gtsam {
 
 	  /**
 	   * Calculate the error of the factor
-	   * This is typically equal to log-likelihood, e.g. 0.5(h(x)-z)^2/sigma^2 in case of Gaussian.
-	   * You can override this for systems with unusual noise models.
+	   * For the AntiFactor, this will have the same magnitude of the original factor,
+	   * but the opposite sign.
 	   */
 	  double error(const VALUES& c) const { return -factor_->error(c); }
 
-	  /** get the dimension of the factor (number of rows on linearization) */
+	  /** get the dimension of the factor (same as the original factor) */
 	  size_t dim() const { return factor_->dim(); }
 
 	  /**
-	   * Checks whether a factor should be used based on a set of values.
-	   * This is primarily used to implment inequality constraints that
-	   * require a variable active set. For all others, the default implementation
-	   * returning true solves this problem.
-	   *
-	   * In an inequality/bounding constraint, this active() returns true
-	   * when the constraint is *NOT* fulfilled.
-	   * @return true if the constraint is active
+	   * Checks whether this factor should be used based on a set of values.
+	   * The AntiFactor will have the same 'active' profile as the original factor.
 	   */
 	  bool active(const VALUES& c) const { return factor_->active(c); }
 
-	  /** linearize to a GaussianFactor */
+	  /**
+	   * Linearize to a GaussianFactor. The AntiFactor always returns a Hessian Factor
+	   * with the same Hessian matrices as the original factor (even if the original factor
+	   * returns a Jacobian instead of a full Hessian), but with the opposite sign. This
+	   * effectively cancels the effect of the original factor on the factor graph.
+	   */
 	  boost::shared_ptr<GaussianFactor>
 	  linearize(const VALUES& c, const Ordering& ordering) const {
 
