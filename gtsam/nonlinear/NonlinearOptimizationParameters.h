@@ -18,8 +18,8 @@
 
 #pragma once
 
+#include <string>
 #include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
 #include <boost/serialization/nvp.hpp>
 
 namespace gtsam {
@@ -32,7 +32,6 @@ namespace gtsam {
 
 		typedef boost::shared_ptr<NonlinearOptimizationParameters> shared_ptr;
 		typedef NonlinearOptimizationParameters This;
-		typedef boost::shared_ptr<NonlinearOptimizationParameters> sharedThis;
 
 		double absDecrease_; ///< threshold for the absolute decrease per iteration
 
@@ -40,12 +39,12 @@ namespace gtsam {
 		 * Relative decrease threshold, where relative error = (new-current)/current.
 		 * This can be set to 0 if there is a possibility for negative error values.
 		 */
-		double relDecrease_; ///< threshold for the relative decrease per iteration
+		double relDecrease_;   ///< threshold for the relative decrease per iteration
 
-		double sumError_; ///< threshold for the sum of error
+		double sumError_;      ///< threshold for the sum of error
 		size_t maxIterations_; ///< maximum number of iterations
-		double lambda_; ///< starting lambda value
-		double lambdaFactor_; ///< factor by which lambda is multiplied
+		double lambda_;        ///< starting lambda value
+		double lambdaFactor_;  ///< factor by which lambda is multiplied
 
 		/// verbosity levels
 		typedef enum {
@@ -75,98 +74,47 @@ namespace gtsam {
 		/// @{
 
 		/// Default constructor
-		NonlinearOptimizationParameters() :
-				absDecrease_(1e-6), relDecrease_(1e-6), sumError_(0.0), maxIterations_(
-						100), lambda_(1e-5), lambdaFactor_(10.0), verbosity_(SILENT), lambdaMode_(
-						BOUNDED), useQR_(false) {
-		}
+		NonlinearOptimizationParameters();
 
 		/// Constructor from doubles
 		NonlinearOptimizationParameters(double absDecrease, double relDecrease,
 				double sumError, int iIters = 100, double lambda = 1e-5,
 				double lambdaFactor = 10, verbosityLevel v = SILENT,
-				LambdaMode lambdaMode = BOUNDED, bool useQR = false) :
-				absDecrease_(absDecrease), relDecrease_(relDecrease), sumError_(
-						sumError), maxIterations_(iIters), lambda_(lambda), lambdaFactor_(
-						lambdaFactor), verbosity_(v), lambdaMode_(lambdaMode), useQR_(useQR) {
-		}
+				LambdaMode lambdaMode = BOUNDED, bool useQR = false);
 
 		/// Copy constructor
 		NonlinearOptimizationParameters(
-				const NonlinearOptimizationParameters &parameters) :
-				absDecrease_(parameters.absDecrease_), relDecrease_(
-						parameters.relDecrease_), sumError_(parameters.sumError_), maxIterations_(
-						parameters.maxIterations_), lambda_(parameters.lambda_), lambdaFactor_(
-						parameters.lambdaFactor_), verbosity_(parameters.verbosity_), lambdaMode_(
-						parameters.lambdaMode_), useQR_(parameters.useQR_) {
-		}
+				const NonlinearOptimizationParameters &parameters);
 
 		/// @}
 		/// @name Standard Interface
 		/// @{
 
 		/// print
-		void print(const std::string& s="") const {
-	    cout << "NonlinearOptimizationParameters " << s << endl;
-	    cout << "absolute decrease threshold: " << absDecrease_ << endl;
-	    cout << "relative decrease threshold: " << relDecrease_ << endl;
-	    cout << "        error sum threshold: " << sumError_ << endl;
-	    cout << "  maximum nr. of iterations: " << maxIterations_ << endl;
-	    cout << "       initial lambda value: " << lambda_ << endl;
-	    cout << "  factor to multiply lambda: " << lambdaFactor_ << endl;
-	    cout << "            verbosity level: " << verbosity_ << endl;
-	    cout << "                lambda mode: " << lambdaMode_ << endl;
-	    cout << "                     use QR: " << useQR_ << endl;
-	  }
+		void print(const std::string& s="") const;
 
 	  /// a copy of old instance except new lambda
-		sharedThis newLambda_(double lambda) const {
-			sharedThis ptr(
-					boost::make_shared < NonlinearOptimizationParameters > (*this));
-			ptr->lambda_ = lambda;
-			return ptr;
-		}
+		shared_ptr newLambda_(double lambda) const;
 
 		/// @}
 		/// @name Advanced Interface
 		/// @{
 
 		/// a copy of old instance except new verbosity
-		static sharedThis newVerbosity(verbosityLevel verbosity) {
-			sharedThis ptr(boost::make_shared<NonlinearOptimizationParameters>());
-			ptr->verbosity_ = verbosity;
-			return ptr;
-		}
+		static shared_ptr newVerbosity(verbosityLevel verbosity);
 
 		/// a copy of old instance except new maxIterations
-		static sharedThis newMaxIterations(int maxIterations) {
-			sharedThis ptr(boost::make_shared<NonlinearOptimizationParameters>());
-			ptr->maxIterations_ = maxIterations;
-			return ptr;
-		}
+		static shared_ptr newMaxIterations(int maxIterations);
 
 		/// a copy of old instance except new lambda
-		static sharedThis newLambda(double lambda) {
-			sharedThis ptr(boost::make_shared<NonlinearOptimizationParameters>());
-			ptr->lambda_ = lambda;
-			return ptr;
-		}
+		static shared_ptr newLambda(double lambda);
 
 		/// a copy of old instance except new thresholds
-		static sharedThis newDrecreaseThresholds(double absDecrease,
-				double relDecrease) {
-			sharedThis ptr(boost::make_shared<NonlinearOptimizationParameters>());
-			ptr->absDecrease_ = absDecrease;
-			ptr->relDecrease_ = relDecrease;
-			return ptr;
-		}
+		static shared_ptr newDrecreaseThresholds(double absDecrease,
+				double relDecrease);
 
 		/// a copy of old instance except new QR flag
-		static sharedThis newFactorization(bool useQR) {
-			sharedThis ptr(boost::make_shared<NonlinearOptimizationParameters>());
-			ptr->useQR_ = useQR;
-			return ptr;
-		}
+		static shared_ptr newFactorization(bool useQR);
 
 		/// @}
 

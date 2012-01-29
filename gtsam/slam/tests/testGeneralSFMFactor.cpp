@@ -187,7 +187,7 @@ TEST( GeneralSFMFactor, optimize_defaultK ) {
 
 	// Create an ordering of the variables
   shared_ptr<Ordering> ordering = getOrdering(X,L);
-  NonlinearOptimizationParameters::sharedThis params (
+  NonlinearOptimizationParameters::shared_ptr params (
       new NonlinearOptimizationParameters(1e-5, 1e-5, 0.0, 100, 1e-5, 10, NonlinearOptimizationParameters::SILENT));
 	Optimizer optimizer(graph, values, ordering, params);
 	Optimizer optimizer2 = optimizer.levenbergMarquardt();
@@ -232,7 +232,7 @@ TEST( GeneralSFMFactor, optimize_varK_SingleMeasurementError ) {
   const double reproj_error = 1e-5;
 
   shared_ptr<Ordering> ordering = getOrdering(X,L);
-  NonlinearOptimizationParameters::sharedThis params (
+  NonlinearOptimizationParameters::shared_ptr params (
       new NonlinearOptimizationParameters(1e-5, 1e-5, 0.0, 100, 1e-5, 10, NonlinearOptimizationParameters::SILENT));
   Optimizer optimizer(graph, values, ordering, params);
   Optimizer optimizer2 = optimizer.levenbergMarquardt();
@@ -275,7 +275,7 @@ TEST( GeneralSFMFactor, optimize_varK_FixCameras ) {
   const double reproj_error = 1e-5 ;
 
   shared_ptr<Ordering> ordering = getOrdering(X,L);
-  NonlinearOptimizationParameters::sharedThis params (
+  NonlinearOptimizationParameters::shared_ptr params (
       new NonlinearOptimizationParameters(1e-5, 1e-5, 0.0, 100, 1e-3, 10, NonlinearOptimizationParameters::SILENT));
   Optimizer optimizer(graph, values, ordering, params);
 
@@ -335,7 +335,7 @@ TEST( GeneralSFMFactor, optimize_varK_FixLandmarks ) {
   const double reproj_error = 1e-5 ;
 
   shared_ptr<Ordering> ordering = getOrdering(X,L);
-  NonlinearOptimizationParameters::sharedThis params (
+  NonlinearOptimizationParameters::shared_ptr params (
       new NonlinearOptimizationParameters(1e-5, 1e-5, 0.0, 100, 1e-3, 10, NonlinearOptimizationParameters::SILENT));
   Optimizer optimizer(graph, values, ordering, params);
 
@@ -378,7 +378,7 @@ TEST( GeneralSFMFactor, optimize_varK_BA ) {
   const double reproj_error = 1e-5 ;
 
   shared_ptr<Ordering> ordering = getOrdering(X,L);
-  NonlinearOptimizationParameters::sharedThis params (
+  NonlinearOptimizationParameters::shared_ptr params (
       new NonlinearOptimizationParameters(1e-2, 1e-2, 0.0, 100, 1e-5, 10, NonlinearOptimizationParameters::SILENT));
   Optimizer optimizer(graph, values, ordering, params);
 

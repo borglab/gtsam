@@ -162,7 +162,7 @@ TEST(Pose2Graph, optimize) {
   *ordering += "x0","x1";
   typedef NonlinearOptimizer<pose2SLAM::Graph, pose2SLAM::Values> Optimizer;
 
-  NonlinearOptimizationParameters::sharedThis params = NonlinearOptimizationParameters::newDrecreaseThresholds(1e-15, 1e-15);
+  NonlinearOptimizationParameters::shared_ptr params = NonlinearOptimizationParameters::newDrecreaseThresholds(1e-15, 1e-15);
   Optimizer optimizer0(fg, initial, ordering, params);
   Optimizer optimizer = optimizer0.levenbergMarquardt();
 
@@ -200,7 +200,7 @@ TEST(Pose2Graph, optimizeThreePoses) {
   *ordering += "x0","x1","x2";
 
   // optimize
-  NonlinearOptimizationParameters::sharedThis params = NonlinearOptimizationParameters::newDrecreaseThresholds(1e-15, 1e-15);
+  NonlinearOptimizationParameters::shared_ptr params = NonlinearOptimizationParameters::newDrecreaseThresholds(1e-15, 1e-15);
   pose2SLAM::Optimizer optimizer0(fg, initial, ordering, params);
   pose2SLAM::Optimizer optimizer = optimizer0.levenbergMarquardt();
 
@@ -243,7 +243,7 @@ TEST_UNSAFE(Pose2SLAM, optimizeCircle) {
   *ordering += "x0","x1","x2","x3","x4","x5";
 
   // optimize
-  NonlinearOptimizationParameters::sharedThis params = NonlinearOptimizationParameters::newDrecreaseThresholds(1e-15, 1e-15);
+  NonlinearOptimizationParameters::shared_ptr params = NonlinearOptimizationParameters::newDrecreaseThresholds(1e-15, 1e-15);
   pose2SLAM::Optimizer optimizer0(fg, initial, ordering, params);
   pose2SLAM::Optimizer optimizer = optimizer0.levenbergMarquardt();
 

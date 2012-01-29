@@ -76,7 +76,7 @@ TEST(Pose3Graph, optimizeCircle) {
   // Choose an ordering and optimize
   shared_ptr<Ordering> ordering(new Ordering);
   *ordering += "x0","x1","x2","x3","x4","x5";
-  NonlinearOptimizationParameters::sharedThis params = NonlinearOptimizationParameters::newDrecreaseThresholds(1e-15, 1e-15);
+  NonlinearOptimizationParameters::shared_ptr params = NonlinearOptimizationParameters::newDrecreaseThresholds(1e-15, 1e-15);
   pose3SLAM::Optimizer optimizer0(fg, initial, ordering, params);
   pose3SLAM::Optimizer optimizer = optimizer0.levenbergMarquardt();
 

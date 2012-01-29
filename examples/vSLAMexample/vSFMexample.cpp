@@ -146,7 +146,7 @@ int main(int argc, char* argv[]) {
 
   // Optimize the graph
   cout << "*******************************************************" << endl;
-  NonlinearOptimizationParameters::sharedThis params = NonlinearOptimizationParameters::newVerbosity(Optimizer::Parameters::DAMPED);
+  NonlinearOptimizationParameters::shared_ptr params = NonlinearOptimizationParameters::newVerbosity(Optimizer::Parameters::DAMPED);
   visualSLAM::Optimizer::shared_values result = visualSLAM::Optimizer::optimizeGN(graph, initialEstimates, params);
 
   // Print final results

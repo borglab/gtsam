@@ -201,7 +201,7 @@ TEST ( NonlinearEquality, allow_error_optimize ) {
 	// optimize
 	boost::shared_ptr<Ordering> ord(new Ordering());
 	ord->push_back(key1);
-  NonlinearOptimizationParameters::sharedThis params = NonlinearOptimizationParameters::newDrecreaseThresholds(1e-5, 1e-5);
+  NonlinearOptimizationParameters::shared_ptr params = NonlinearOptimizationParameters::newDrecreaseThresholds(1e-5, 1e-5);
 	PoseOptimizer optimizer(graph, init, ord, params);
 	PoseOptimizer result = optimizer.levenbergMarquardt();
 
@@ -237,7 +237,7 @@ TEST ( NonlinearEquality, allow_error_optimize_with_factors ) {
 	// optimize
 	boost::shared_ptr<Ordering> ord(new Ordering());
 	ord->push_back(key1);
-  NonlinearOptimizationParameters::sharedThis params = NonlinearOptimizationParameters::newDrecreaseThresholds(1e-5, 1e-5);
+  NonlinearOptimizationParameters::shared_ptr params = NonlinearOptimizationParameters::newDrecreaseThresholds(1e-5, 1e-5);
 	PoseOptimizer optimizer(graph, init, ord, params);
 	PoseOptimizer result = optimizer.levenbergMarquardt();
 

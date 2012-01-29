@@ -120,7 +120,7 @@ namespace gtsam {
 
     /// move a cameras according to d
     PinholeCamera retract(const Vector& d) const {
-      if ( d.size() == pose_.dim() )
+      if ((size_t) d.size() == pose_.dim() )
         return PinholeCamera(pose().retract(d), calibration()) ;
       else
         return PinholeCamera(pose().retract(d.head(pose().dim())),

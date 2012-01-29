@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
 	Ordering::shared_ptr ordering = graph->orderingCOLAMD(*initial);
 
 	/* 4.2.2 set up solver and optimize */
-  NonlinearOptimizationParameters::sharedThis params = NonlinearOptimizationParameters::newDrecreaseThresholds(1e-15, 1e-15);
+  NonlinearOptimizationParameters::shared_ptr params = NonlinearOptimizationParameters::newDrecreaseThresholds(1e-15, 1e-15);
 	Optimizer optimizer(graph, initial, ordering, params);
 	Optimizer optimizer_result = optimizer.levenbergMarquardt();
 
