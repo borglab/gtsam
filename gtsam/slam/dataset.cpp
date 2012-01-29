@@ -156,10 +156,10 @@ void save2D(const Pose2Graph& graph, const DynamicValues& config, const SharedDi
 	fstream stream(filename.c_str(), fstream::out);
 
 	// save poses
-	pose2SLAM::Key key;
-	Pose2 pose;
-	BOOST_FOREACH(boost::tie(key, pose), config)
-		stream << "VERTEX2 " << key.index() << " " <<  pose.x() << " " << pose.y() << " " << pose.theta() << endl;
+	for (DynamicValues::const_iterator it = config.begin(); it != config.end(); ++it) {
+		Pose2 pose = config.at<Pose2>(it->first);
+		stream << "VERTEX2 " << it->first.index() << " " <<  pose.x() << " " << pose.y() << " " << pose.theta() << endl;
+	}
 
 	// save edges
 	Matrix R = model->R();
@@ -168,7 +168,7 @@ void save2D(const Pose2Graph& graph, const DynamicValues& config, const SharedDi
 		boost::shared_ptr<Pose2Factor> factor = boost::dynamic_pointer_cast<Pose2Factor>(factor_);
 		if (!factor) continue;
 
-		pose = factor->measured().inverse();
+		Pose2 pose = factor->measured().inverse();
 		stream << "EDGE2 " << factor->key2().index() << " " << factor->key1().index()
 				<< " " << pose.x() << " " << pose.y() << " " << pose.theta()
 				<< " " << RR(0, 0) << " " << RR(0, 1) << " " << RR(1, 1) << " " << RR(2, 2)

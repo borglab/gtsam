@@ -22,7 +22,6 @@
 #include <gtsam/geometry/SimpleCamera.h>
 #include <gtsam/nonlinear/Key.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/TupleValues.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/slam/PriorFactor.h>
@@ -39,25 +38,22 @@ namespace gtsam {
    */
   typedef TypedSymbol<Pose3,'x'> PoseKey;									///< The key type used for poses
   typedef TypedSymbol<Point3,'l'> PointKey;								///< The key type used for points
-  typedef Values<PoseKey> PoseValues;									///< Values used for poses
-  typedef Values<PointKey> PointValues;								///< Values used for points
-  typedef TupleValues2<PoseValues, PointValues> Values;		///< Values data structure
-  typedef boost::shared_ptr<Values> shared_values;				///< shared pointer to values data structure
+  typedef boost::shared_ptr<DynamicValues> shared_values;				///< shared pointer to values data structure
 
-  typedef NonlinearEquality<Values, PoseKey> PoseConstraint;	 ///< put a hard constraint on a pose
-  typedef NonlinearEquality<Values, PointKey> PointConstraint; ///< put a hard constraint on a point
-  typedef PriorFactor<Values, PoseKey> PosePrior;							 ///< put a soft prior on a Pose
-  typedef PriorFactor<Values, PointKey> PointPrior;						 ///< put a soft prior on a point
-  typedef RangeFactor<Values, PoseKey, PointKey> RangeFactor;  ///< put a factor on the range from a pose to a point
+  typedef NonlinearEquality<PoseKey> PoseConstraint;	 ///< put a hard constraint on a pose
+  typedef NonlinearEquality<PointKey> PointConstraint; ///< put a hard constraint on a point
+  typedef PriorFactor<PoseKey> PosePrior;							 ///< put a soft prior on a Pose
+  typedef PriorFactor<PointKey> PointPrior;						 ///< put a soft prior on a point
+  typedef RangeFactor<PoseKey, PointKey> RangeFactor;  ///< put a factor on the range from a pose to a point
   
   /// monocular and stereo camera typedefs for general use
-  typedef GenericProjectionFactor<Values, PointKey, PoseKey> ProjectionFactor;
-  typedef GenericStereoFactor<Values, PoseKey, PointKey> StereoFactor;
+  typedef GenericProjectionFactor<PointKey, PoseKey> ProjectionFactor;
+  typedef GenericStereoFactor<PoseKey, PointKey> StereoFactor;
 
   /**
    * Non-linear factor graph for vanilla visual SLAM
    */
-  class Graph: public NonlinearFactorGraph<Values> {
+  class Graph: public NonlinearFactorGraph {
 
   public:
   	/// shared pointer to this type of graph
@@ -69,12 +65,12 @@ namespace gtsam {
 
     /// print out graph
     void print(const std::string& s = "") const {
-      NonlinearFactorGraph<Values>::print(s);
+      NonlinearFactorGraph::print(s);
     }
 
     /// check if two graphs are equal
     bool equals(const Graph& p, double tol = 1e-9) const {
-      return NonlinearFactorGraph<Values>::equals(p, tol);
+      return NonlinearFactorGraph::equals(p, tol);
     }
 
     /**
@@ -140,6 +136,6 @@ namespace gtsam {
   }; // Graph
 
   /// typedef for Optimizer. The current default will use the multi-frontal solver
-  typedef NonlinearOptimizer<Graph, Values> Optimizer;
+  typedef NonlinearOptimizer<Graph> Optimizer;
 
 } } // namespaces

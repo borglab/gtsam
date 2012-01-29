@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file Values.cpp
+ * @file ValuesOld.cpp
  * @author Richard Roberts
  */
 
@@ -34,8 +34,8 @@ namespace gtsam {
 
 /* ************************************************************************* */
   template<class J>
-  void Values<J>::print(const string &s) const {
-       cout << "Values " << s << ", size " << values_.size() << "\n";
+  void ValuesOld<J>::print(const string &s) const {
+       cout << "ValuesOld " << s << ", size " << values_.size() << "\n";
        BOOST_FOREACH(const KeyValuePair& v, values_) {
          gtsam::print(v.second, (string)(v.first));
        }
@@ -43,7 +43,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class J>
-  bool Values<J>::equals(const Values<J>& expected, double tol) const {
+  bool ValuesOld<J>::equals(const ValuesOld<J>& expected, double tol) const {
     if (values_.size() != expected.values_.size()) return false;
     BOOST_FOREACH(const KeyValuePair& v, values_) {
     	if (!expected.exists(v.first)) return false;
@@ -55,7 +55,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class J>
-  const typename J::Value& Values<J>::at(const J& j) const {
+  const typename J::Value& ValuesOld<J>::at(const J& j) const {
     const_iterator it = values_.find(j);
     if (it == values_.end()) throw KeyDoesNotExist<J>("retrieve", j);
     else return it->second;
@@ -63,7 +63,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class J>
-  size_t Values<J>::dim() const {
+  size_t ValuesOld<J>::dim() const {
   	size_t n = 0;
   	BOOST_FOREACH(const KeyValuePair& value, values_)
   		n += value.second.dim();
@@ -72,27 +72,27 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class J>
-  VectorValues Values<J>::zero(const Ordering& ordering) const {
+  VectorValues ValuesOld<J>::zero(const Ordering& ordering) const {
   	return VectorValues::Zero(this->dims(ordering));
   }
 
   /* ************************************************************************* */
   template<class J>
-  void Values<J>::insert(const J& name, const typename J::Value& val) {
+  void ValuesOld<J>::insert(const J& name, const typename J::Value& val) {
     if(!values_.insert(make_pair(name, val)).second)
       throw KeyAlreadyExists<J>(name, val);
   }
 
   /* ************************************************************************* */
   template<class J>
-  void Values<J>::insert(const Values<J>& cfg) {
+  void ValuesOld<J>::insert(const ValuesOld<J>& cfg) {
 	  BOOST_FOREACH(const KeyValuePair& v, cfg.values_)
 		 insert(v.first, v.second);
   }
 
   /* ************************************************************************* */
   template<class J>
-  void Values<J>::update(const Values<J>& cfg) {
+  void ValuesOld<J>::update(const ValuesOld<J>& cfg) {
 	  BOOST_FOREACH(const KeyValuePair& v, values_) {
 	  	boost::optional<typename J::Value> t = cfg.exists_(v.first);
 	  	if (t) values_[v.first] = *t;
@@ -101,13 +101,13 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class J>
-  void Values<J>::update(const J& j, const typename J::Value& val) {
+  void ValuesOld<J>::update(const J& j, const typename J::Value& val) {
 	  	values_[j] = val;
   }
 
   /* ************************************************************************* */
   template<class J>
-  std::list<J> Values<J>::keys() const {
+  std::list<J> ValuesOld<J>::keys() const {
 	  std::list<J> ret;
 	  BOOST_FOREACH(const KeyValuePair& v, values_)
 		  ret.push_back(v.first);
@@ -116,14 +116,14 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class J>
-  void Values<J>::erase(const J& j) {
+  void ValuesOld<J>::erase(const J& j) {
     size_t dim; // unused
     erase(j, dim);
   }
 
   /* ************************************************************************* */
   template<class J>
-  void Values<J>::erase(const J& j, size_t& dim) {
+  void ValuesOld<J>::erase(const J& j, size_t& dim) {
     iterator it = values_.find(j);
     if (it == values_.end())
       throw KeyDoesNotExist<J>("erase", j);
@@ -134,8 +134,8 @@ namespace gtsam {
   /* ************************************************************************* */
   // todo: insert for every element is inefficient
   template<class J>
-  Values<J> Values<J>::retract(const VectorValues& delta, const Ordering& ordering) const {
-		Values<J> newValues;
+  ValuesOld<J> ValuesOld<J>::retract(const VectorValues& delta, const Ordering& ordering) const {
+		ValuesOld<J> newValues;
 		typedef pair<J,typename J::Value> KeyValue;
 		BOOST_FOREACH(const KeyValue& value, this->values_) {
 			const J& j = value.first;
@@ -151,7 +151,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class J>
-  std::vector<size_t> Values<J>::dims(const Ordering& ordering) const {
+  std::vector<size_t> ValuesOld<J>::dims(const Ordering& ordering) const {
     _ValuesDimensionCollector dimCollector(ordering);
     this->apply(dimCollector);
     return dimCollector.dimensions;
@@ -159,7 +159,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class J>
-  Ordering::shared_ptr Values<J>::orderingArbitrary(Index firstVar) const {
+  Ordering::shared_ptr ValuesOld<J>::orderingArbitrary(Index firstVar) const {
     // Generate an initial key ordering in iterator order
     _ValuesKeyOrderer keyOrderer(firstVar);
     this->apply(keyOrderer);
@@ -169,12 +169,12 @@ namespace gtsam {
 //  /* ************************************************************************* */
 //  // todo: insert for every element is inefficient
 //  template<class J>
-//  Values<J> Values<J>::retract(const Vector& delta) const {
+//  ValuesOld<J> ValuesOld<J>::retract(const Vector& delta) const {
 //    if(delta.size() != dim()) {
-//    	cout << "Values::dim (" << dim() << ") <> delta.size (" << delta.size() << ")" << endl;
+//    	cout << "ValuesOld::dim (" << dim() << ") <> delta.size (" << delta.size() << ")" << endl;
 //      throw invalid_argument("Delta vector length does not match config dimensionality.");
 //    }
-//    Values<J> newValues;
+//    ValuesOld<J> newValues;
 //    int delta_offset = 0;
 //		typedef pair<J,typename J::Value> KeyValue;
 //		BOOST_FOREACH(const KeyValue& value, this->values_) {
@@ -191,7 +191,7 @@ namespace gtsam {
   // todo: insert for every element is inefficient
   // todo: currently only logmaps elements in both configs
   template<class J>
-  inline VectorValues Values<J>::localCoordinates(const Values<J>& cp, const Ordering& ordering) const {
+  inline VectorValues ValuesOld<J>::localCoordinates(const ValuesOld<J>& cp, const Ordering& ordering) const {
   	VectorValues delta(this->dims(ordering));
   	localCoordinates(cp, ordering, delta);
   	return delta;
@@ -199,7 +199,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class J>
-  void Values<J>::localCoordinates(const Values<J>& cp, const Ordering& ordering, VectorValues& delta) const {
+  void ValuesOld<J>::localCoordinates(const ValuesOld<J>& cp, const Ordering& ordering, VectorValues& delta) const {
     typedef pair<J,typename J::Value> KeyValue;
     BOOST_FOREACH(const KeyValue& value, cp) {
       assert(this->exists(value.first));
@@ -213,7 +213,7 @@ namespace gtsam {
     if(message_.empty())
       message_ = 
           "Attempting to " + std::string(operation_) + " the key \"" +
-          (std::string)key_ + "\", which does not exist in the Values.";
+          (std::string)key_ + "\", which does not exist in the ValuesOld.";
     return message_.c_str();
   }
 

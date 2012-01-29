@@ -25,8 +25,8 @@ namespace gtsam {
 	namespace pose3SLAM {
 
 		/* ************************************************************************* */
-		Values circle(size_t n, double radius) {
-			Values x;
+		DynamicValues circle(size_t n, double radius) {
+			DynamicValues x;
 			double theta = 0, dtheta = 2 * M_PI / n;
 			// We use aerospace/navlab convention, X forward, Y right, Z down
 			// First pose will be at (R,0,0)
@@ -39,7 +39,7 @@ namespace gtsam {
 				Point3 gti(radius*cos(theta), radius*sin(theta), 0);
 				Rot3 _0Ri = Rot3::yaw(-theta); // negative yaw goes counterclockwise, with Z down !
 				Pose3 gTi(gR0 * _0Ri, gti);
-				x.insert(i, gTi);
+				x.insert(Key(i), gTi);
 			}
 			return x;
 		}

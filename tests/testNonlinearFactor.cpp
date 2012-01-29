@@ -93,7 +93,7 @@ TEST( NonlinearFactor, NonlinearFactor )
   CHECK(assert_equal(0.1*ones(2),actual_e));
 
   // error = 0.5 * [1 1] * [1;1] = 1
-  double expected = 1.0; 
+  double expected = 1.0;
 
   // calculate the error from the factor "f1"
   double actual = factor->error(cfg);
@@ -179,14 +179,14 @@ TEST( NonlinearFactor, size )
 {
 	// create a non linear factor graph
 	Graph fg = createNonlinearFactorGraph();
-	
+
 	// create a values structure for the non linear factor graph
 	example::Values cfg = createNoisyValues();
-	
+
 	// get some factors from the graph
 	Graph::sharedFactor factor1 = fg[0], factor2 = fg[1],
 			factor3 = fg[2];
-	
+
 	CHECK(factor1->size() == 1);
 	CHECK(factor2->size() == 2);
 	CHECK(factor3->size() == 2);

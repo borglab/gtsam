@@ -100,4 +100,3 @@ namespace gtsam {
 
 } // namespace
 
-#include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>

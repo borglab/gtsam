@@ -22,7 +22,6 @@
 #include <gtsam/slam/RangeFactor.h>
 #include <gtsam/slam/BearingFactor.h>
 #include <gtsam/slam/BearingRangeFactor.h>
-#include <gtsam/nonlinear/TupleValues.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearOptimization.h>
@@ -41,32 +40,21 @@ namespace gtsam {
 		/// Typedef for a PointKey with Point2 data and 'l' symbol
 		typedef TypedSymbol<Point2, 'l'> PointKey;
 
-		/// Typedef for Values structure with PoseKey type
-		typedef Values<PoseKey> PoseValues;
-
-		/// Typedef for Values structure with PointKey type
-		typedef Values<PointKey> PointValues;
-
 		/// Values class, inherited from TupleValues2, using PoseKeys and PointKeys
-		struct Values: public TupleValues2<PoseValues, PointValues> {
+		struct Values: public DynamicValues {
 
 			/// Default constructor
 			Values() {}
 
 			/// Copy constructor
-			Values(const TupleValues2<PoseValues, PointValues>& values) :
-				TupleValues2<PoseValues, PointValues>(values) {
-			}
-
-			/// Copy constructor
-			Values(const TupleValues2<PoseValues, PointValues>::Base& values) :
-				TupleValues2<PoseValues, PointValues>(values) {
+			Values(const DynamicValues& values) :
+				DynamicValues(values) {
 			}
 
 			/// From sub-values
-			Values(const PoseValues& poses, const PointValues& points) :
-				TupleValues2<PoseValues, PointValues>(poses, points) {
-			}
+//			Values(const DynamicValues& poses, const DynamicValues& points) :
+//				DynamicValues(poses, points) {
+//			}
 
 			// Convenience for MATLAB wrapper, which does not allow for identically named methods
 
@@ -88,26 +76,26 @@ namespace gtsam {
 		 */
 
 		/// A hard constraint for PoseKeys to enforce particular values
-		typedef NonlinearEquality<Values, PoseKey> Constraint;
+		typedef NonlinearEquality<PoseKey> Constraint;
 		/// A prior factor to bias the value of a PoseKey
-		typedef PriorFactor<Values, PoseKey> Prior;
+		typedef PriorFactor<PoseKey> Prior;
 		/// A factor between two PoseKeys set with a Pose2
-		typedef BetweenFactor<Values, PoseKey> Odometry;
+		typedef BetweenFactor<PoseKey> Odometry;
 		/// A factor between a PoseKey and a PointKey to express difference in rotation (set with a Rot2)
-		typedef BearingFactor<Values, PoseKey, PointKey> Bearing;
+		typedef BearingFactor<PoseKey, PointKey> Bearing;
 		/// A factor between a PoseKey and a PointKey to express distance between them (set with a double)
-		typedef RangeFactor<Values, PoseKey, PointKey> Range;
+		typedef RangeFactor<PoseKey, PointKey> Range;
 		/// A factor between a PoseKey and a PointKey to express difference in rotation and location
-		typedef BearingRangeFactor<Values, PoseKey, PointKey> BearingRange;
+		typedef BearingRangeFactor<PoseKey, PointKey> BearingRange;
 
 		/// Creates a NonlinearFactorGraph with the Values type
-		struct Graph: public NonlinearFactorGraph<Values> {
+		struct Graph: public NonlinearFactorGraph {
 
 			/// Default constructor for a NonlinearFactorGraph
 			Graph(){}
 
 			/// Creates a NonlinearFactorGraph based on another NonlinearFactorGraph
-			Graph(const NonlinearFactorGraph<Values>& graph);
+			Graph(const NonlinearFactorGraph& graph);
 
 			/// Biases the value of PoseKey key with Pose2 p given a noise model
 			void addPrior(const PoseKey& key, const Pose2& pose, const SharedNoiseModel& noiseModel);
@@ -132,15 +120,15 @@ namespace gtsam {
 					const Rot2& bearing, double range, const SharedNoiseModel& model);
 
 			/// Optimize
-			Values optimize(const Values& initialEstimate) {
-				typedef NonlinearOptimizer<Graph, Values> Optimizer;
+			Values optimize(const DynamicValues& initialEstimate) {
+				typedef NonlinearOptimizer<Graph> Optimizer;
 				return *Optimizer::optimizeLM(*this, initialEstimate,
 										NonlinearOptimizationParameters::LAMBDA);
 			}
 		};
 
 		/// Optimizer
-		typedef NonlinearOptimizer<Graph, Values> Optimizer;
+		typedef NonlinearOptimizer<Graph> Optimizer;
 
 	} // planarSLAM
 

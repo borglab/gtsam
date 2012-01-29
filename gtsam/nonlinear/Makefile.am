@@ -22,10 +22,10 @@ check_PROGRAMS += tests/testValues tests/testDynamicValues tests/testKey tests/t
 
 # Nonlinear nonlinear
 headers += Key.h 
-headers += NonlinearFactorGraph.h NonlinearFactorGraph-inl.h
+headers += NonlinearFactorGraph.h
 headers += NonlinearOptimizer-inl.h NonlinearOptimization.h NonlinearOptimization-inl.h NonlinearOptimizationParameters.h
 headers += NonlinearFactor.h
-sources += NonlinearOptimizer.cpp Ordering.cpp DoglegOptimizerImpl.cpp
+sources += NonlinearFactorGraph.cpp NonlinearOptimizer.cpp Ordering.cpp DoglegOptimizerImpl.cpp
 headers += DoglegOptimizer.h DoglegOptimizer-inl.h
 
 # Nonlinear iSAM(2)

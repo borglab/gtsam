@@ -10,14 +10,14 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file Values.h
+ * @file ValuesOld.h
  * @author Richard Roberts
  *
  * @brief A templated config for Manifold-group elements
  *
  *  Detailed story:
  *  A values structure is a map from keys to values. It is used to specify the value of a bunch
- *  of variables in a factor graph. A Values is a values structure which can hold variables that
+ *  of variables in a factor graph. A ValuesOld is a values structure which can hold variables that
  *  are elements on manifolds, not just vectors. It then, as a whole, implements a aggregate type
  *  which is also a manifold element, and hence supports operations dim, retract, and localCoordinates.
  */
@@ -52,7 +52,7 @@ namespace gtsam {
 	 *  labels (example: Pose2, Point2, etc)
 	 */
   template<class J>
-  class Values {
+  class ValuesOld {
 
   public:
 
@@ -77,12 +77,12 @@ namespace gtsam {
 
   public:
 
-    Values() {}
-    Values(const Values& config) :
+    ValuesOld() {}
+    ValuesOld(const ValuesOld& config) :
       values_(config.values_) {}
     template<class J_ALT>
-    Values(const Values<J_ALT>& other) {} // do nothing when initializing with wrong type
-    virtual ~Values() {}
+    ValuesOld(const ValuesOld<J_ALT>& other) {} // do nothing when initializing with wrong type
+    virtual ~ValuesOld() {}
 
     /// @name Testable
     /// @{
@@ -91,7 +91,7 @@ namespace gtsam {
     void print(const std::string &s="") const;
 
     /** Test whether configs are identical in keys and values */
-    bool equals(const Values& expected, double tol=1e-9) const;
+    bool equals(const ValuesOld& expected, double tol=1e-9) const;
 
     /// @}
 
@@ -132,13 +132,13 @@ namespace gtsam {
     size_t dim() const;
 
     /** Add a delta config to current config and returns a new config */
-    Values retract(const VectorValues& delta, const Ordering& ordering) const;
+    ValuesOld retract(const VectorValues& delta, const Ordering& ordering) const;
 
     /** Get a delta config about a linearization point c0 (*this) */
-    VectorValues localCoordinates(const Values& cp, const Ordering& ordering) const;
+    VectorValues localCoordinates(const ValuesOld& cp, const Ordering& ordering) const;
 
     /** Get a delta config about a linearization point c0 (*this) */
-    void localCoordinates(const Values& cp, const Ordering& ordering, VectorValues& delta) const;
+    void localCoordinates(const ValuesOld& cp, const Ordering& ordering, VectorValues& delta) const;
 
     /// @}
 
@@ -148,10 +148,10 @@ namespace gtsam {
     void insert(const J& j, const Value& val);
 
     /** Add a set of variables, throws KeyAlreadyExists<J> if a key is already present */
-    void insert(const Values& cfg);
+    void insert(const ValuesOld& cfg);
 
     /** update the current available values without adding new ones */
-    void update(const Values& cfg);
+    void update(const ValuesOld& cfg);
 
     /** single element change of existing element */
     void update(const J& j, const Value& val);
@@ -172,7 +172,7 @@ namespace gtsam {
     std::list<J> keys() const;
 
     /** Replace all keys and variables */
-    Values& operator=(const Values& rhs) {
+    ValuesOld& operator=(const ValuesOld& rhs) {
       values_ = rhs.values_;
       return (*this);
     }
@@ -185,7 +185,7 @@ namespace gtsam {
     /**
      * Apply a class with an application operator() to a const_iterator over
      * every <key,value> pair.  The operator must be able to handle such an
-     * iterator for every type in the Values, (i.e. through templating).
+     * iterator for every type in the ValuesOld, (i.e. through templating).
      */
     template<typename A>
     void apply(A& operation) {
@@ -297,5 +297,5 @@ public:
 
 } // \namespace gtsam
 
-#include <gtsam/nonlinear/Values-inl.h>
+#include <gtsam/nonlinear/ValuesOld-inl.h>
 

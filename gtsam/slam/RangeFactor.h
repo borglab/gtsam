@@ -25,14 +25,14 @@ namespace gtsam {
 	/**
 	 * Binary factor for a range measurement
 	 */
-	template<class VALUES, class POSEKEY, class POINTKEY>
-	class RangeFactor: public NonlinearFactor2<VALUES, POSEKEY, POINTKEY> {
+	template<class POSEKEY, class POINTKEY>
+	class RangeFactor: public NonlinearFactor2<POSEKEY, POINTKEY> {
 	private:
 
 		double z_; /** measurement */
 
-		typedef RangeFactor<VALUES, POSEKEY, POINTKEY> This;
-		typedef NonlinearFactor2<VALUES, POSEKEY, POINTKEY> Base;
+		typedef RangeFactor<POSEKEY, POINTKEY> This;
+		typedef NonlinearFactor2<POSEKEY, POINTKEY> Base;
 
 		typedef typename POSEKEY::Value Pose;
 		typedef typename POINTKEY::Value Point;
@@ -64,7 +64,7 @@ namespace gtsam {
 		}
 
 		/** equals specialized to this factor */
-		virtual bool equals(const NonlinearFactor<VALUES>& expected, double tol=1e-9) const {
+		virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
 			const This *e = dynamic_cast<const This*> (&expected);
 			return e != NULL && Base::equals(*e, tol) && fabs(this->z_ - e->z_) < tol;
 		}

@@ -10,19 +10,18 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    NonlinearFactorGraph-inl.h
+ * @file    NonlinearFactorGraph.cpp
  * @brief   Factor Graph Consisting of non-linear factors
  * @author  Frank Dellaert
  * @author  Carlos Nieto
  * @author  Christian Potthast
  */
 
-#pragma once
-
+#include <cmath>
+#include <boost/foreach.hpp>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/inference.h>
-#include <boost/foreach.hpp>
-#include <cmath>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 using namespace std;
 

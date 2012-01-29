@@ -19,7 +19,6 @@
 
 #include <gtsam/base/LieVector.h>
 #include <gtsam/geometry/Pose2.h>
-#include <gtsam/nonlinear/Values.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/Key.h>

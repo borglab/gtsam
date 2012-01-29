@@ -19,7 +19,6 @@
 #pragma once
 
 #include <gtsam/geometry/Pose2.h>
-#include <gtsam/nonlinear/TupleValues.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
@@ -32,25 +31,26 @@ namespace gtsam {
 		// The types that take an oriented pose2 rather than point2
 		typedef TypedSymbol<Point2, 'l'> PointKey;
 		typedef TypedSymbol<Pose2, 'x'> PoseKey;
-		typedef Values<PoseKey> PoseValues;
-		typedef Values<PointKey> PointValues;
 
 		/// Specialized Values structure with syntactic sugar for
 		/// compatibility with matlab
-		class Values: public TupleValues2<PoseValues, PointValues> {
+		class Values: public DynamicValues {
+			int nrPoses_, nrPoints_;
 		public:
-			Values() {}
+			Values() : nrPoses_(0), nrPoints_(0) {}
 
 			void insertPose(const PoseKey& i, const Pose2& p) {
 				insert(i, p);
+				nrPoses_++;
 			}
 
 			void insertPoint(const PointKey& j, const Point2& p) {
 				insert(j, p);
+				nrPoints_++;
 			}
 
-			int nrPoses() const {	return this->first_.size();	}
-			int nrPoints() const { return this->second_.size();	}
+			int nrPoses() const {	return nrPoses_;	}
+			int nrPoints() const { return nrPoints_;	}
 
 			Pose2 pose(const PoseKey& i) const { return (*this)[i];	}
 			Point2 point(const PointKey& j) const { return (*this)[j]; }

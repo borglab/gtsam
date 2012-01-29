@@ -19,7 +19,6 @@
 #pragma once
 
 #include <gtsam/geometry/Point2.h>
-#include <gtsam/nonlinear/TupleValues.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 

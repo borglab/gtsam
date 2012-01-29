@@ -38,16 +38,16 @@ namespace gtsam {
 	 * For practical use, it would be good to subclass this factor and have the class type
 	 * construct the mask.
 	 */
-	template<class VALUES, class KEY>
-	class PartialPriorFactor: public NonlinearFactor1<VALUES, KEY> {
+	template<class KEY>
+	class PartialPriorFactor: public NonlinearFactor1<KEY> {
 
 	public:
 		typedef typename KEY::Value T;
 
 	protected:
 
-		typedef NonlinearFactor1<VALUES, KEY> Base;
-		typedef PartialPriorFactor<VALUES, KEY> This;
+		typedef NonlinearFactor1<KEY> Base;
+		typedef PartialPriorFactor<KEY> This;
 
 		Vector prior_;             ///< measurement on logmap parameters, in compressed form
 		std::vector<size_t> mask_; ///< indices of values to constrain in compressed prior vector

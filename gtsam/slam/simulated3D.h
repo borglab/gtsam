@@ -24,7 +24,6 @@
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/Key.h>
-#include <gtsam/nonlinear/TupleValues.h>
 
 // \namespace
 

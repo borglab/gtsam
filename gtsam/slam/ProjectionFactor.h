@@ -29,8 +29,8 @@ namespace gtsam {
 	 * Non-linear factor for a constraint derived from a 2D measurement. The calibration is known here.
 	 * i.e. the main building block for visual SLAM.
 	 */
-	template<class VALUES, class LMK, class POSK>
-	class GenericProjectionFactor: public NonlinearFactor2<VALUES, POSK, LMK> {
+	template<class LMK, class POSK>
+	class GenericProjectionFactor: public NonlinearFactor2<POSK, LMK> {
 	protected:
 
 		// Keep a copy of measurement and calibration for I/O
@@ -40,10 +40,10 @@ namespace gtsam {
 	public:
 
 		/// shorthand for base class type
-		typedef NonlinearFactor2<VALUES, POSK, LMK> Base;
+		typedef NonlinearFactor2<POSK, LMK> Base;
 
 		/// shorthand for a smart pointer to a factor
-		typedef boost::shared_ptr<GenericProjectionFactor<VALUES, LMK, POSK> > shared_ptr;
+		typedef boost::shared_ptr<GenericProjectionFactor<LMK, POSK> > shared_ptr;
 
 		/// Default constructor
 		GenericProjectionFactor() :
@@ -73,7 +73,7 @@ namespace gtsam {
 		}
 
 		/// equals
-		bool equals(const GenericProjectionFactor<VALUES, LMK, POSK>& p
+		bool equals(const GenericProjectionFactor<LMK, POSK>& p
 				, double tol = 1e-9) const {
 			return Base::equals(p, tol) && this->z_.equals(p.z_, tol)
 					&& this->K_->equals(*p.K_, tol);
