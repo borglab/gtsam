@@ -186,7 +186,7 @@ Cal3_S2Stereo cal4(1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
 Cal3_S2Stereo::shared_ptr cal4ptr(new Cal3_S2Stereo(cal4));
 CalibratedCamera cal5(Pose3(rt3, pt3));
 
-SimpleCamera cam1(cal1, cal5);
+PinholeCamera<Cal3_S2> cam1(pose3, cal1);
 StereoCamera cam2(pose3, cal4ptr);
 StereoPoint2 spt(1.0, 2.0, 3.0);
 
