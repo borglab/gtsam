@@ -29,9 +29,9 @@ using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
-template<class VALUES, class GRAPH>
-void NonlinearISAM<VALUES,GRAPH>::update(const Factors& newFactors,
-		const Values& initialValues) {
+template<class GRAPH>
+void NonlinearISAM<GRAPH>::update(const Factors& newFactors,
+		const DynamicValues& initialValues) {
 
   if(newFactors.size() > 0) {
 
@@ -62,14 +62,14 @@ void NonlinearISAM<VALUES,GRAPH>::update(const Factors& newFactors,
 }
 
 /* ************************************************************************* */
-template<class VALUES, class GRAPH>
-void NonlinearISAM<VALUES,GRAPH>::reorder_relinearize() {
+template<class GRAPH>
+void NonlinearISAM<GRAPH>::reorder_relinearize() {
 
 //  cout << "Reordering, relinearizing..." << endl;
 
   if(factors_.size() > 0) {
     // Obtain the new linearization point
-    const Values newLinPoint = estimate();
+    const DynamicValues newLinPoint = estimate();
 
     isam_.clear();
 
@@ -89,8 +89,8 @@ void NonlinearISAM<VALUES,GRAPH>::reorder_relinearize() {
 }
 
 /* ************************************************************************* */
-template<class VALUES, class GRAPH>
-VALUES NonlinearISAM<VALUES,GRAPH>::estimate() const {
+template<class GRAPH>
+DynamicValues NonlinearISAM<GRAPH>::estimate() const {
   if(isam_.size() > 0)
     return linPoint_.retract(optimize(isam_), ordering_);
   else
@@ -98,14 +98,14 @@ VALUES NonlinearISAM<VALUES,GRAPH>::estimate() const {
 }
 
 /* ************************************************************************* */
-template<class VALUES, class GRAPH>
-Matrix NonlinearISAM<VALUES,GRAPH>::marginalCovariance(const Symbol& key) const {
+template<class GRAPH>
+Matrix NonlinearISAM<GRAPH>::marginalCovariance(const Symbol& key) const {
 	return isam_.marginalCovariance(ordering_[key]);
 }
 
 /* ************************************************************************* */
-template<class VALUES, class GRAPH>
-void NonlinearISAM<VALUES,GRAPH>::print(const std::string& s) const {
+template<class GRAPH>
+void NonlinearISAM<GRAPH>::print(const std::string& s) const {
 	cout << "ISAM - " << s << ":" << endl;
 	cout << "  ReorderInterval: " << reorderInterval_ << " Current Count: " << reorderCounter_ << endl;
 	isam_.print("GaussianISAM");

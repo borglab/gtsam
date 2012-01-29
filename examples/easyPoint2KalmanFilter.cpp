@@ -24,7 +24,6 @@
 #include <gtsam/nonlinear/ExtendedKalmanFilter-inl.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/Values.h>
 #include <gtsam/geometry/Point2.h>
 
 using namespace std;
@@ -32,7 +31,6 @@ using namespace gtsam;
 
 // Define Types for Linear System Test
 typedef TypedSymbol<Point2, 'x'> LinearKey;
-typedef Values<LinearKey> LinearValues;
 typedef Point2 LinearMeasurement;
 
 int main() {
@@ -42,7 +40,7 @@ int main() {
   SharedDiagonal P_initial = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1));
 
   // Create an ExtendedKalmanFilter object
-  ExtendedKalmanFilter<LinearValues,LinearKey> ekf(x_initial, P_initial);
+  ExtendedKalmanFilter<LinearKey> ekf(x_initial, P_initial);
 
 
 
@@ -67,7 +65,7 @@ int main() {
   // Predict delta based on controls
   Point2 difference(1,0);
   // Create Factor
-  BetweenFactor<LinearValues,LinearKey> factor1(x0, x1, difference, Q);
+  BetweenFactor<LinearKey> factor1(x0, x1, difference, Q);
 
   // Predict the new value with the EKF class
   Point2 x1_predict = ekf.predict(factor1);
@@ -88,7 +86,7 @@ int main() {
 
   // This simple measurement can be modeled with a PriorFactor
   Point2 z1(1.0, 0.0);
-  PriorFactor<LinearValues,LinearKey> factor2(x1, z1, R);
+  PriorFactor<LinearKey> factor2(x1, z1, R);
 
   // Update the Kalman Filter with the measurement
   Point2 x1_update = ekf.update(factor2);
@@ -100,13 +98,13 @@ int main() {
   // Predict
   LinearKey x2(2);
   difference = Point2(1,0);
-  BetweenFactor<LinearValues,LinearKey> factor3(x1, x2, difference, Q);
+  BetweenFactor<LinearKey> factor3(x1, x2, difference, Q);
   Point2 x2_predict = ekf.predict(factor1);
   x2_predict.print("X2 Predict");
 
   // Update
   Point2 z2(2.0, 0.0);
-  PriorFactor<LinearValues,LinearKey> factor4(x2, z2, R);
+  PriorFactor<LinearKey> factor4(x2, z2, R);
   Point2 x2_update = ekf.update(factor4);
   x2_update.print("X2 Update");
 
@@ -116,13 +114,13 @@ int main() {
   // Predict
   LinearKey x3(3);
   difference = Point2(1,0);
-  BetweenFactor<LinearValues,LinearKey> factor5(x2, x3, difference, Q);
+  BetweenFactor<LinearKey> factor5(x2, x3, difference, Q);
   Point2 x3_predict = ekf.predict(factor5);
   x3_predict.print("X3 Predict");
 
   // Update
   Point2 z3(3.0, 0.0);
-  PriorFactor<LinearValues,LinearKey> factor6(x3, z3, R);
+  PriorFactor<LinearKey> factor6(x3, z3, R);
   Point2 x3_update = ekf.update(factor6);
   x3_update.print("X3 Update");
 

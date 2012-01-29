@@ -20,8 +20,8 @@ using namespace std;
 
 namespace gtsam {
 
-template<class GRAPH, class LINEAR, class VALUES>
-void SubgraphSolver<GRAPH,LINEAR,VALUES>::replaceFactors(const typename LINEAR::shared_ptr &graph) {
+template<class GRAPH, class LINEAR, class KEY>
+void SubgraphSolver<GRAPH,LINEAR,KEY>::replaceFactors(const typename LINEAR::shared_ptr &graph) {
 
 	GaussianFactorGraph::shared_ptr Ab1 = boost::make_shared<GaussianFactorGraph>();
 	GaussianFactorGraph::shared_ptr Ab2 = boost::make_shared<GaussianFactorGraph>();
@@ -46,8 +46,8 @@ void SubgraphSolver<GRAPH,LINEAR,VALUES>::replaceFactors(const typename LINEAR::
 			Ab1->dynamicCastFactors<FactorGraph<JacobianFactor> >(), Ab2->dynamicCastFactors<FactorGraph<JacobianFactor> >(),Rc1,xbar);
 }
 
-template<class GRAPH, class LINEAR, class VALUES>
-VectorValues::shared_ptr SubgraphSolver<GRAPH,LINEAR,VALUES>::optimize() const {
+template<class GRAPH, class LINEAR, class KEY>
+VectorValues::shared_ptr SubgraphSolver<GRAPH,LINEAR,KEY>::optimize() const {
 
 	// preconditioned conjugate gradient
 	VectorValues zeros = pc_->zero();
@@ -59,18 +59,18 @@ VectorValues::shared_ptr SubgraphSolver<GRAPH,LINEAR,VALUES>::optimize() const {
 	return xbar;
 }
 
-template<class GRAPH, class LINEAR, class VALUES>
-void SubgraphSolver<GRAPH,LINEAR,VALUES>::initialize(const GRAPH& G, const VALUES& theta0) {
+template<class GRAPH, class LINEAR, class KEY>
+void SubgraphSolver<GRAPH,LINEAR,KEY>::initialize(const GRAPH& G, const DynamicValues& theta0) {
 	// generate spanning tree
-	PredecessorMap<Key> tree_ = gtsam::findMinimumSpanningTree<GRAPH, Key, Constraint>(G);
+	PredecessorMap<KEY> tree_ = gtsam::findMinimumSpanningTree<GRAPH, KEY, Constraint>(G);
 
 	// make the ordering
-	list<Key> keys = predecessorMap2Keys(tree_);
+	list<KEY> keys = predecessorMap2Keys(tree_);
 	ordering_ = boost::make_shared<Ordering>(list<Symbol>(keys.begin(), keys.end()));
 
 	// build factor pairs
 	pairs_.clear();
-	typedef pair<Key,Key> EG ;
+	typedef pair<KEY,KEY> EG ;
 	BOOST_FOREACH( const EG &eg, tree_ ) {
 		Symbol key1 = Symbol(eg.first),
 				key2 = Symbol(eg.second) ;

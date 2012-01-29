@@ -57,7 +57,7 @@ int main(int argc, char** argv) {
 
   /* 3. Create the data structure to hold the initial estimate to the solution
    * initialize to noisy points */
-	shared_ptr<pose2SLAM::Values> initial(new pose2SLAM::Values);
+	shared_ptr<DynamicValues> initial(new DynamicValues);
 	initial->insert(x1, Pose2(0.5, 0.0, 0.2));
 	initial->insert(x2, Pose2(2.3, 0.1,-0.2));
 	initial->insert(x3, Pose2(4.1, 0.1, 0.1));
@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
 	Optimizer optimizer(graph, initial, ordering, params);
 	Optimizer optimizer_result = optimizer.levenbergMarquardt();
 
-	pose2SLAM::Values result = *optimizer_result.values();
+	DynamicValues result = *optimizer_result.values();
 	result.print("final result");
 
 	/* Get covariances */

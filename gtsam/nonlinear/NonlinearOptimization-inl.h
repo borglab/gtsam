@@ -39,7 +39,7 @@ namespace gtsam {
 	  Ordering::shared_ptr ordering = graph.orderingCOLAMD(initialEstimate);
 
 		// Create an nonlinear Optimizer that uses a Sequential Solver
-	  typedef NonlinearOptimizer<G, DynamicValues, GaussianFactorGraph, GaussianSequentialSolver> Optimizer;
+	  typedef NonlinearOptimizer<G, GaussianFactorGraph, GaussianSequentialSolver> Optimizer;
 	  Optimizer optimizer(boost::make_shared<const G>(graph),
 	  		boost::make_shared<const DynamicValues>(initialEstimate), ordering,
 	  		boost::make_shared<NonlinearOptimizationParameters>(parameters));
@@ -62,7 +62,7 @@ namespace gtsam {
 	  Ordering::shared_ptr ordering = graph.orderingCOLAMD(initialEstimate);
 
 		// Create an nonlinear Optimizer that uses a Multifrontal Solver
-	  typedef NonlinearOptimizer<G, DynamicValues, GaussianFactorGraph, GaussianMultifrontalSolver> Optimizer;
+	  typedef NonlinearOptimizer<G, GaussianFactorGraph, GaussianMultifrontalSolver> Optimizer;
 	  Optimizer optimizer(boost::make_shared<const G>(graph),
 	  		boost::make_shared<const DynamicValues>(initialEstimate), ordering,
 	  		boost::make_shared<NonlinearOptimizationParameters>(parameters));
@@ -85,7 +85,7 @@ namespace gtsam {
 		// initial optimization state is the same in both cases tested
 		typedef SubgraphSolver<G,GaussianFactorGraph,DynamicValues> Solver;
 		typedef boost::shared_ptr<Solver> shared_Solver;
-		typedef NonlinearOptimizer<G, DynamicValues, GaussianFactorGraph, Solver> SPCGOptimizer;
+		typedef NonlinearOptimizer<G, GaussianFactorGraph, Solver> SPCGOptimizer;
 		shared_Solver solver = boost::make_shared<Solver>(
 				graph, initialEstimate, IterativeOptimizationParameters());
 		SPCGOptimizer optimizer(
@@ -111,10 +111,10 @@ namespace gtsam {
 			const NonlinearOptimizationMethod& nonlinear_method) {
 		switch (solver) {
 		case SEQUENTIAL:
-			return optimizeSequential<G,DynamicValues>(graph, initialEstimate, parameters,
+			return optimizeSequential<G>(graph, initialEstimate, parameters,
 					nonlinear_method == LM);
 		case MULTIFRONTAL:
-			return optimizeMultiFrontal<G,DynamicValues>(graph, initialEstimate, parameters,
+			return optimizeMultiFrontal<G>(graph, initialEstimate, parameters,
 					nonlinear_method == LM);
 		case SPCG:
 //			return optimizeSPCG<G,DynamicValues>(graph, initialEstimate, parameters,

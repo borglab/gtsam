@@ -24,11 +24,10 @@ namespace gtsam {
 /**
  * Wrapper class to manage ISAM in a nonlinear context
  */
-template<class VALUES, class GRAPH = gtsam::NonlinearFactorGraph<VALUES> >
+template<class GRAPH = gtsam::NonlinearFactorGraph >
 class NonlinearISAM {
 public:
 
-	typedef VALUES Values;
 	typedef GRAPH Factors;
 
 protected:
@@ -37,7 +36,7 @@ protected:
 	gtsam::GaussianISAM isam_;
 
 	/** The current linearization point */
-	Values linPoint_;
+	DynamicValues linPoint_;
 
 	/** The ordering */
 	gtsam::Ordering ordering_;
@@ -61,10 +60,10 @@ public:
 	NonlinearISAM(int reorderInterval = 1) : reorderInterval_(reorderInterval), reorderCounter_(0) {}
 
 	/** Add new factors along with their initial linearization points */
-	void update(const Factors& newFactors, const Values& initialValues);
+	void update(const Factors& newFactors, const DynamicValues& initialValues);
 
 	/** Return the current solution estimate */
-	Values estimate() const;
+	DynamicValues estimate() const;
 
 	/** Relinearization and reordering of variables */
 	void reorder_relinearize();
@@ -84,7 +83,7 @@ public:
 	const GaussianISAM& bayesTree() const { return isam_; }
 
 	/** Return the current linearization point */
-	const Values& getLinearizationPoint() const { return linPoint_; }
+	const DynamicValues& getLinearizationPoint() const { return linPoint_; }
 
 	/** Get the ordering */
 	const gtsam::Ordering& getOrdering() const { return ordering_; }
