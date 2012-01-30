@@ -26,7 +26,7 @@ sources += timing.cpp debug.cpp
 check_PROGRAMS += tests/testDebug tests/testTestableAssertions
 
 # Manifolds and Lie Groups
-headers += Value.h Manifold.h Group.h
+headers += DerivedValue.h Value.h Manifold.h Group.h
 headers += Lie.h Lie-inl.h lieProxies.h LieScalar.h
 sources += LieVector.cpp
 check_PROGRAMS += tests/testLieVector tests/testLieScalar
