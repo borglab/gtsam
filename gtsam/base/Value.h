@@ -136,6 +136,9 @@ namespace gtsam {
      */
     virtual Vector localCoordinates_(const Value& value) const = 0;
 
+    /** Assignment operator */
+    virtual Value& operator=(const Value& rhs) = 0;
+
     /** Virutal destructor */
     virtual ~Value() {}
 

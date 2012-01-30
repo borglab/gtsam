@@ -73,6 +73,23 @@ public:
     return (static_cast<const DERIVED*>(this))->localCoordinates(derivedValue2);
 	}
 
+	/// Assignment operator
+	virtual Value& operator=(const Value& rhs) {
+    // Cast the base class Value pointer to a derived class pointer
+    const DERIVED& derivedRhs = dynamic_cast<const DERIVED&>(rhs);
+
+    // Do the assignment and return the result
+    return (static_cast<DERIVED*>(this))->operator=(derivedRhs);
+	}
+
+protected:
+	/// Assignment operator, protected because only the Value or DERIVED
+	/// assignment operators should be used.
+	DerivedValue<DERIVED>& operator=(const DerivedValue<DERIVED>& rhs) {
+	  // Nothing to do, do not call base class assignment operator
+	  return *this;
+	}
+
 };
 
 } /* namespace gtsam */

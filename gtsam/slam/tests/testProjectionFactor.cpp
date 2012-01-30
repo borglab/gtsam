@@ -85,8 +85,6 @@ TEST( ProjectionFactor, error )
   Point3 t2(1,1,-5); Pose3 x2(R,t2); expected_config.insert(PoseKey(1), x2);
   Point3 l2(1,2,3); expected_config.insert(PointKey(1), l2);
 	VectorValues delta(expected_config.dims(ordering));
-	ordering.print("ordering: ");
-	delta.print("delta: ");
 	delta[ordering["x1"]] = Vector_(6, 0.,0.,0., 1.,1.,1.);
 	delta[ordering["l1"]] = Vector_(3, 1.,2.,3.);
 	DynamicValues actual_config = config.retract(delta, ordering);

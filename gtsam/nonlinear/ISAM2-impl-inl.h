@@ -245,10 +245,12 @@ struct _SelectiveExpmapAndClear {
       else
         cout << "       " << (string)it_x->first << " (j = " << var << "), delta = " << delta[var].transpose() << endl;
     }
-    assert(delta[var].size() == (int)it_x->second.dim());
+    assert(delta[var].size() == (int)it_x->second->dim());
     assert(delta[var].unaryExpr(&isfinite<double>).all());
     if(mask[var]) {
-      it_x->second = it_x->second.retract(delta[var]);
+      Value* retracted = it_x->second->retract_(delta[var]);
+      *it_x->second = *retracted;
+      retracted->deallocate_();
       if(invalidate)
         (*invalidate)[var].operator=(Vector::Constant(delta[var].rows(), numeric_limits<double>::infinity())); // Strange syntax to work with clang++ (bug in clang?)
     }

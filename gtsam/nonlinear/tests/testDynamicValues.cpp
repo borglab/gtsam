@@ -162,7 +162,7 @@ TEST(DynamicValues, expmap_b)
   config0.insert(key2, LieVector(3, 5.0, 6.0, 7.0));
 
   Ordering ordering(*config0.orderingArbitrary());
-  VectorValues increment(config0.dims(ordering));
+  VectorValues increment(VectorValues::Zero(config0.dims(ordering)));
   increment[ordering[key2]] = LieVector(3, 1.3, 1.4, 1.5);
 
   DynamicValues expected;

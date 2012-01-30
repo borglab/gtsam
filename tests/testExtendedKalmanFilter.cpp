@@ -365,8 +365,8 @@ public:
 TEST( ExtendedKalmanFilter, nonlinear ) {
 
   // Create the set of expected output TestValues (generated using Matlab Kalman Filter)
-  Point2 expected_predict[10];
-  Point2 expected_update[10];
+  Point2 expected_predict[11];
+  Point2 expected_update[11];
   expected_predict[1] = Point2(0.81,0.99);
   expected_update[1] =  Point2(0.824926197027,0.29509808);
   expected_predict[2] = Point2(0.680503230541,0.24343413);
