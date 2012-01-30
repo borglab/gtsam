@@ -28,7 +28,7 @@ using namespace gtsam;
 /* ************************************************************************* */
 TEST( simulated3D, Values )
 {
-	simulated3D::Values actual;
+	DynamicValues actual;
 	actual.insert(simulated3D::PointKey(1),Point3(1,1,1));
 	actual.insert(simulated3D::PoseKey(2),Point3(2,2,2));
 	EXPECT(assert_equal(actual,actual,1e-9));

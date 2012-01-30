@@ -198,9 +198,9 @@ TEST(GaussianJunctionTree, simpleMarginal) {
   fg.addPrior(pose2SLAM::Key(0), Pose2(), sharedSigma(3, 10.0));
   fg.addConstraint(0, 1, Pose2(1.0, 0.0, 0.0), sharedSigmas(Vector_(3, 10.0, 1.0, 1.0)));
 
-  pose2SLAM::Values init;
-  init.insert(0, Pose2());
-  init.insert(1, Pose2(1.0, 0.0, 0.0));
+  DynamicValues init;
+  init.insert(pose2SLAM::Key(0), Pose2());
+  init.insert(pose2SLAM::Key(1), Pose2(1.0, 0.0, 0.0));
 
   Ordering ordering;
   ordering += "x1", "x0";

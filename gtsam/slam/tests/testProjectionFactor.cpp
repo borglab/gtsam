@@ -25,6 +25,7 @@
 
 using namespace std;
 using namespace gtsam;
+using namespace visualSLAM;
 
 // make cube
 static Point3
@@ -51,9 +52,9 @@ TEST( ProjectionFactor, error )
 	factor(new visualSLAM::ProjectionFactor(z, sigma, cameraFrameNumber, landmarkNumber, sK));
 
 	// For the following values structure, the factor predicts 320,240
-	visualSLAM::Values config;
-	Rot3 R;Point3 t1(0,0,-6); Pose3 x1(R,t1); config.insert(1, x1);
-	Point3 l1;  config.insert(1, l1);
+	DynamicValues config;
+	Rot3 R;Point3 t1(0,0,-6); Pose3 x1(R,t1); config.insert(PoseKey(1), x1);
+	Point3 l1;  config.insert(PointKey(1), l1);
 	// Point should project to Point2(320.,240.)
 	CHECK(assert_equal(Vector_(2, -3.0, 0.0), factor->unwhitenedError(config)));
 
@@ -80,13 +81,13 @@ TEST( ProjectionFactor, error )
 	CHECK(assert_equal(expected_lfg,*actual_lfg));
 
 	// expmap on a config
-	visualSLAM::Values expected_config;
-  Point3 t2(1,1,-5); Pose3 x2(R,t2); expected_config.insert(1, x2);
-  Point3 l2(1,2,3); expected_config.insert(1, l2);
+	DynamicValues expected_config;
+  Point3 t2(1,1,-5); Pose3 x2(R,t2); expected_config.insert(PoseKey(1), x2);
+  Point3 l2(1,2,3); expected_config.insert(PointKey(1), l2);
 	VectorValues delta(expected_config.dims(ordering));
 	delta[ordering["x1"]] = Vector_(6, 0.,0.,0., 1.,1.,1.);
 	delta[ordering["l1"]] = Vector_(3, 1.,2.,3.);
-	visualSLAM::Values actual_config = config.retract(delta, ordering);
+	DynamicValues actual_config = config.retract(delta, ordering);
 	CHECK(assert_equal(expected_config,actual_config,1e-9));
 }
 

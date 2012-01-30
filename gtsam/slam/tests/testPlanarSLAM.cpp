@@ -23,6 +23,7 @@
 
 using namespace std;
 using namespace gtsam;
+using namespace planarSLAM;
 
 // some shared test values
 static Pose2 x1, x2(1, 1, 0), x3(1, 1, M_PI_4);
@@ -50,9 +51,9 @@ TEST( planarSLAM, BearingFactor )
 	planarSLAM::Bearing factor(2, 3, z, sigma);
 
 	// create config
-	planarSLAM::Values c;
-	c.insert(2, x2);
-	c.insert(3, l3);
+	DynamicValues c;
+	c.insert(PoseKey(2), x2);
+	c.insert(PointKey(3), l3);
 
 	// Check error
 	Vector actual = factor.unwhitenedError(c);
@@ -78,9 +79,9 @@ TEST( planarSLAM, RangeFactor )
 	planarSLAM::Range factor(2, 3, z, sigma);
 
 	// create config
-	planarSLAM::Values c;
-	c.insert(2, x2);
-	c.insert(3, l3);
+	DynamicValues c;
+	c.insert(PoseKey(2), x2);
+	c.insert(PointKey(3), l3);
 
 	// Check error
 	Vector actual = factor.unwhitenedError(c);
@@ -105,9 +106,9 @@ TEST( planarSLAM, BearingRangeFactor )
 	planarSLAM::BearingRange factor(2, 3, r, b, sigma2);
 
 	// create config
-	planarSLAM::Values c;
-	c.insert(2, x2);
-	c.insert(3, l3);
+	DynamicValues c;
+	c.insert(PoseKey(2), x2);
+	c.insert(PointKey(3), l3);
 
 	// Check error
 	Vector actual = factor.unwhitenedError(c);
@@ -138,10 +139,10 @@ TEST( planarSLAM, PoseConstraint_equals )
 TEST( planarSLAM, constructor )
 {
 	// create config
-	planarSLAM::Values c;
-	c.insert(2, x2);
-	c.insert(3, x3);
-	c.insert(3, l3);
+	DynamicValues c;
+	c.insert(PoseKey(2), x2);
+	c.insert(PoseKey(3), x3);
+	c.insert(PointKey(3), l3);
 
 	// create graph
 	planarSLAM::Graph G;
@@ -165,8 +166,8 @@ TEST( planarSLAM, constructor )
 	Vector expected2 = Vector_(1, -0.1);
 	Vector expected3 = Vector_(1, 0.22);
 	// Get NoiseModelFactors
-	FactorGraph<NoiseModelFactor<planarSLAM::Values> > GNM =
-	    *G.dynamicCastFactors<FactorGraph<NoiseModelFactor<planarSLAM::Values> > >();
+	FactorGraph<NoiseModelFactor > GNM =
+	    *G.dynamicCastFactors<FactorGraph<NoiseModelFactor > >();
 	EXPECT(assert_equal(expected0, GNM[0]->unwhitenedError(c)));
   EXPECT(assert_equal(expected1, GNM[1]->unwhitenedError(c)));
   EXPECT(assert_equal(expected2, GNM[2]->unwhitenedError(c)));

@@ -86,22 +86,22 @@ TEST( Graph, composePoses )
 	graph.addConstraint(2,3, p23, cov);
 	graph.addConstraint(4,3, p43, cov);
 
-	PredecessorMap<Pose2Values::Key> tree;
-	tree.insert(1,2);
-	tree.insert(2,2);
-	tree.insert(3,2);
-	tree.insert(4,3);
+	PredecessorMap<pose2SLAM::Key> tree;
+	tree.insert(pose2SLAM::Key(1),2);
+	tree.insert(pose2SLAM::Key(2),2);
+	tree.insert(pose2SLAM::Key(3),2);
+	tree.insert(pose2SLAM::Key(4),3);
 
 	Pose2 rootPose = p2;
 
-	boost::shared_ptr<Pose2Values> actual = composePoses<Pose2Graph, Pose2Factor,
-			Pose2, Pose2Values> (graph, tree, rootPose);
+	boost::shared_ptr<DynamicValues> actual = composePoses<Pose2Graph, Pose2Factor,
+			Pose2, pose2SLAM::Key> (graph, tree, rootPose);
 
-	Pose2Values expected;
-	expected.insert(1, p1);
-	expected.insert(2, p2);
-	expected.insert(3, p3);
-	expected.insert(4, p4);
+	DynamicValues expected;
+	expected.insert(pose2SLAM::Key(1), p1);
+	expected.insert(pose2SLAM::Key(2), p2);
+	expected.insert(pose2SLAM::Key(3), p3);
+	expected.insert(pose2SLAM::Key(4), p4);
 
 	LONGS_EQUAL(4, actual->size());
 	CHECK(assert_equal(expected, *actual));

@@ -32,6 +32,7 @@ using namespace boost::assign;
 
 #include <iostream>
 using namespace std;
+using namespace pose2SLAM;
 
 // common measurement covariance
 static double sx=0.5, sy=0.5,st=0.1;
@@ -115,9 +116,9 @@ TEST( Pose2SLAM, linearization )
 	// Choose a linearization point
 	Pose2 p1(1.1,2,M_PI_2); // robot at (1.1,2) looking towards y (ground truth is at 1,2, see testPose2)
 	Pose2 p2(-1,4.1,M_PI);  // robot at (-1,4) looking at negative (ground truth is at 4.1,2)
-	Pose2Values config;
-	config.insert(1,p1);
-	config.insert(2,p2);
+	DynamicValues config;
+	config.insert(Key(1),p1);
+	config.insert(Key(2),p2);
 	// Linearize
 	Ordering ordering(*config.orderingArbitrary());
 	boost::shared_ptr<FactorGraph<GaussianFactor> > lfg_linearized = graph.linearize(config, ordering);
@@ -151,23 +152,23 @@ TEST(Pose2Graph, optimize) {
   fg->addConstraint(0, 1, Pose2(1,2,M_PI_2), covariance);
 
   // Create initial config
-  boost::shared_ptr<Pose2Values> initial(new Pose2Values());
-  initial->insert(0, Pose2(0,0,0));
-  initial->insert(1, Pose2(0,0,0));
+  boost::shared_ptr<DynamicValues> initial(new DynamicValues());
+  initial->insert(Key(0), Pose2(0,0,0));
+  initial->insert(Key(1), Pose2(0,0,0));
 
   // Choose an ordering and optimize
   shared_ptr<Ordering> ordering(new Ordering);
   *ordering += "x0","x1";
-  typedef NonlinearOptimizer<Pose2Graph, Pose2Values> Optimizer;
+  typedef NonlinearOptimizer<Pose2Graph> Optimizer;
 
   NonlinearOptimizationParameters::sharedThis params = NonlinearOptimizationParameters::newDrecreaseThresholds(1e-15, 1e-15);
   Optimizer optimizer0(fg, initial, ordering, params);
   Optimizer optimizer = optimizer0.levenbergMarquardt();
 
   // Check with expected config
-  Pose2Values expected;
-  expected.insert(0, Pose2(0,0,0));
-  expected.insert(1, Pose2(1,2,M_PI_2));
+  DynamicValues expected;
+  expected.insert(Key(0), Pose2(0,0,0));
+  expected.insert(Key(1), Pose2(1,2,M_PI_2));
   CHECK(assert_equal(expected, *optimizer.values()));
 }
 
@@ -176,8 +177,8 @@ TEST(Pose2Graph, optimize) {
 TEST(Pose2Graph, optimizeThreePoses) {
 
 	// Create a hexagon of poses
-	Pose2Values hexagon = pose2SLAM::circle(3,1.0);
-  Pose2 p0 = hexagon[0], p1 = hexagon[1];
+	DynamicValues hexagon = pose2SLAM::circle(3,1.0);
+  Pose2 p0 = hexagon[Key(0)], p1 = hexagon[Key(1)];
 
 	// create a Pose graph with one equality constraint and one measurement
   shared_ptr<Pose2Graph> fg(new Pose2Graph);
@@ -188,10 +189,10 @@ TEST(Pose2Graph, optimizeThreePoses) {
   fg->addConstraint(2, 0, delta, covariance);
 
   // Create initial config
-  boost::shared_ptr<Pose2Values> initial(new Pose2Values());
-  initial->insert(0, p0);
-  initial->insert(1, hexagon[1].retract(Vector_(3,-0.1, 0.1,-0.1)));
-  initial->insert(2, hexagon[2].retract(Vector_(3, 0.1,-0.1, 0.1)));
+  boost::shared_ptr<DynamicValues> initial(new DynamicValues());
+  initial->insert(Key(0), p0);
+  initial->insert(Key(1), hexagon[Key(1)].retract(Vector_(3,-0.1, 0.1,-0.1)));
+  initial->insert(Key(2), hexagon[Key(2)].retract(Vector_(3, 0.1,-0.1, 0.1)));
 
   // Choose an ordering
   shared_ptr<Ordering> ordering(new Ordering);
@@ -202,7 +203,7 @@ TEST(Pose2Graph, optimizeThreePoses) {
   pose2SLAM::Optimizer optimizer0(fg, initial, ordering, params);
   pose2SLAM::Optimizer optimizer = optimizer0.levenbergMarquardt();
 
-  Pose2Values actual = *optimizer.values();
+  DynamicValues actual = *optimizer.values();
 
   // Check with ground truth
   CHECK(assert_equal(hexagon, actual));
@@ -213,8 +214,8 @@ TEST(Pose2Graph, optimizeThreePoses) {
 TEST_UNSAFE(Pose2Graph, optimizeCircle) {
 
 	// Create a hexagon of poses
-	Pose2Values hexagon = pose2SLAM::circle(6,1.0);
-  Pose2 p0 = hexagon[0], p1 = hexagon[1];
+	DynamicValues hexagon = pose2SLAM::circle(6,1.0);
+  Pose2 p0 = hexagon[Key(0)], p1 = hexagon[Key(1)];
 
 	// create a Pose graph with one equality constraint and one measurement
   shared_ptr<Pose2Graph> fg(new Pose2Graph);
@@ -228,13 +229,13 @@ TEST_UNSAFE(Pose2Graph, optimizeCircle) {
   fg->addConstraint(5, 0, delta, covariance);
 
   // Create initial config
-  boost::shared_ptr<Pose2Values> initial(new Pose2Values());
-  initial->insert(0, p0);
-  initial->insert(1, hexagon[1].retract(Vector_(3,-0.1, 0.1,-0.1)));
-  initial->insert(2, hexagon[2].retract(Vector_(3, 0.1,-0.1, 0.1)));
-  initial->insert(3, hexagon[3].retract(Vector_(3,-0.1, 0.1,-0.1)));
-  initial->insert(4, hexagon[4].retract(Vector_(3, 0.1,-0.1, 0.1)));
-  initial->insert(5, hexagon[5].retract(Vector_(3,-0.1, 0.1,-0.1)));
+  boost::shared_ptr<DynamicValues> initial(new DynamicValues());
+  initial->insert(Key(0), p0);
+  initial->insert(Key(1), hexagon[Key(1)].retract(Vector_(3,-0.1, 0.1,-0.1)));
+  initial->insert(Key(2), hexagon[Key(2)].retract(Vector_(3, 0.1,-0.1, 0.1)));
+  initial->insert(Key(3), hexagon[Key(3)].retract(Vector_(3,-0.1, 0.1,-0.1)));
+  initial->insert(Key(4), hexagon[Key(4)].retract(Vector_(3, 0.1,-0.1, 0.1)));
+  initial->insert(Key(5), hexagon[Key(5)].retract(Vector_(3,-0.1, 0.1,-0.1)));
 
   // Choose an ordering
   shared_ptr<Ordering> ordering(new Ordering);
@@ -245,13 +246,13 @@ TEST_UNSAFE(Pose2Graph, optimizeCircle) {
   pose2SLAM::Optimizer optimizer0(fg, initial, ordering, params);
   pose2SLAM::Optimizer optimizer = optimizer0.levenbergMarquardt();
 
-  Pose2Values actual = *optimizer.values();
+  DynamicValues actual = *optimizer.values();
 
   // Check with ground truth
   CHECK(assert_equal(hexagon, actual));
 
   // Check loop closure
-  CHECK(assert_equal(delta,actual[5].between(actual[0])));
+  CHECK(assert_equal(delta,actual[Key(5)].between(actual[Key(0)])));
 
 //  Pose2SLAMOptimizer myOptimizer("3");
 
@@ -279,7 +280,7 @@ TEST_UNSAFE(Pose2Graph, optimizeCircle) {
 //
 //  myOptimizer.update(x);
 //
-//  Pose2Values expected;
+//  DynamicValues expected;
 //  expected.insert(0, Pose2(0.,0.,0.));
 //  expected.insert(1, Pose2(1.,0.,0.));
 //  expected.insert(2, Pose2(2.,0.,0.));
@@ -340,38 +341,38 @@ TEST(Pose2Graph, optimize2) {
 using namespace pose2SLAM;
 
 /* ************************************************************************* */
-TEST( Pose2Values, pose2Circle )
+TEST( DynamicValues, pose2Circle )
 {
 	// expected is 4 poses tangent to circle with radius 1m
-	Pose2Values expected;
-	expected.insert(0, Pose2( 1,  0,   M_PI_2));
-	expected.insert(1, Pose2( 0,  1, - M_PI  ));
-	expected.insert(2, Pose2(-1,  0, - M_PI_2));
-	expected.insert(3, Pose2( 0, -1,   0     ));
+	DynamicValues expected;
+	expected.insert(Key(0), Pose2( 1,  0,   M_PI_2));
+	expected.insert(Key(1), Pose2( 0,  1, - M_PI  ));
+	expected.insert(Key(2), Pose2(-1,  0, - M_PI_2));
+	expected.insert(Key(3), Pose2( 0, -1,   0     ));
 
-	Pose2Values actual = pose2SLAM::circle(4,1.0);
+	DynamicValues actual = pose2SLAM::circle(4,1.0);
 	CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
-TEST( Pose2Values, expmap )
+TEST( DynamicValues, expmap )
 {
 	// expected is circle shifted to right
-	Pose2Values expected;
-	expected.insert(0, Pose2( 1.1,  0,   M_PI_2));
-	expected.insert(1, Pose2( 0.1,  1, - M_PI  ));
-	expected.insert(2, Pose2(-0.9,  0, - M_PI_2));
-	expected.insert(3, Pose2( 0.1, -1,   0     ));
+	DynamicValues expected;
+	expected.insert(Key(0), Pose2( 1.1,  0,   M_PI_2));
+	expected.insert(Key(1), Pose2( 0.1,  1, - M_PI  ));
+	expected.insert(Key(2), Pose2(-0.9,  0, - M_PI_2));
+	expected.insert(Key(3), Pose2( 0.1, -1,   0     ));
 
 	// Note expmap coordinates are in local coordinates, so shifting to right requires thought !!!
-  Pose2Values circle(pose2SLAM::circle(4,1.0));
+  DynamicValues circle(pose2SLAM::circle(4,1.0));
   Ordering ordering(*circle.orderingArbitrary());
 	VectorValues delta(circle.dims(ordering));
 	delta[ordering[Key(0)]] = Vector_(3, 0.0,-0.1,0.0);
 	delta[ordering[Key(1)]] = Vector_(3, -0.1,0.0,0.0);
 	delta[ordering[Key(2)]] = Vector_(3, 0.0,0.1,0.0);
 	delta[ordering[Key(3)]] = Vector_(3, 0.1,0.0,0.0);
-	Pose2Values actual = circle.retract(delta, ordering);
+	DynamicValues actual = circle.retract(delta, ordering);
 	CHECK(assert_equal(expected,actual));
 }
 
@@ -384,8 +385,8 @@ TEST( Pose2Prior, error )
 {
 	// Choose a linearization point
 	Pose2 p1(1, 0, 0); // robot at (1,0)
-	Pose2Values x0;
-	x0.insert(1, p1);
+	DynamicValues x0;
+	x0.insert(Key(1), p1);
 
 	// Create factor
 	Pose2Prior factor(1, p1, sigmas);
@@ -406,7 +407,7 @@ TEST( Pose2Prior, error )
 	VectorValues addition(VectorValues::Zero(x0.dims(ordering)));
 	addition[ordering["x1"]] = Vector_(3, 0.1, 0.0, 0.0);
 	VectorValues plus = delta + addition;
-	Pose2Values x1 = x0.retract(plus, ordering);
+	DynamicValues x1 = x0.retract(plus, ordering);
 	Vector error_at_plus = Vector_(3,0.1/sx,0.0,0.0); // h(x)-z = 0.1 !
 	CHECK(assert_equal(error_at_plus,factor.whitenedError(x1)));
 	CHECK(assert_equal(error_at_plus,linear->error_vector(plus)));
@@ -428,8 +429,8 @@ LieVector hprior(const Pose2& p1) {
 TEST( Pose2Prior, linearize )
 {
 	// Choose a linearization point at ground truth
-	Pose2Values x0;
-	x0.insert(1,priorVal);
+	DynamicValues x0;
+	x0.insert(Key(1),priorVal);
 
 	// Actual linearization
 	Ordering ordering(*x0.orderingArbitrary());
@@ -448,9 +449,9 @@ TEST( Pose2Factor, error )
 	// Choose a linearization point
 	Pose2 p1; // robot at origin
 	Pose2 p2(1, 0, 0); // robot at (1,0)
-	Pose2Values x0;
-	x0.insert(1, p1);
-	x0.insert(2, p2);
+	DynamicValues x0;
+	x0.insert(Key(1), p1);
+	x0.insert(Key(2), p2);
 
 	// Create factor
 	Pose2 z = p1.between(p2);
@@ -472,7 +473,7 @@ TEST( Pose2Factor, error )
 	// Check error after increasing p2
 	VectorValues plus = delta;
 	plus[ordering["x2"]] = Vector_(3, 0.1, 0.0, 0.0);
-	Pose2Values x1 = x0.retract(plus, ordering);
+	DynamicValues x1 = x0.retract(plus, ordering);
 	Vector error_at_plus = Vector_(3,0.1/sx,0.0,0.0); // h(x)-z = 0.1 !
 	CHECK(assert_equal(error_at_plus,factor.whitenedError(x1)));
 	CHECK(assert_equal(error_at_plus,linear->error_vector(plus)));
@@ -489,9 +490,9 @@ TEST( Pose2Factor, rhs )
 	// Choose a linearization point
 	Pose2 p1(1.1,2,M_PI_2); // robot at (1.1,2) looking towards y (ground truth is at 1,2, see testPose2)
 	Pose2 p2(-1,4.1,M_PI);  // robot at (-1,4.1) looking at negative (ground truth is at -1,4)
-	Pose2Values x0;
-	x0.insert(1,p1);
-	x0.insert(2,p2);
+	DynamicValues x0;
+	x0.insert(Key(1),p1);
+	x0.insert(Key(2),p2);
 
 	// Actual linearization
 	Ordering ordering(*x0.orderingArbitrary());
@@ -519,9 +520,9 @@ TEST( Pose2Factor, linearize )
 	// Choose a linearization point at ground truth
 	Pose2 p1(1,2,M_PI_2);
 	Pose2 p2(-1,4,M_PI);
-	Pose2Values x0;
-	x0.insert(1,p1);
-	x0.insert(2,p2);
+	DynamicValues x0;
+	x0.insert(Key(1),p1);
+	x0.insert(Key(2),p2);
 
 	// expected linearization
 	Matrix expectedH1 = covariance->Whiten(Matrix_(3,3,

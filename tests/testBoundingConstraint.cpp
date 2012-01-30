@@ -31,10 +31,10 @@ SharedDiagonal soft_model2 = noiseModel::Unit::Create(2);
 SharedDiagonal soft_model2_alt = noiseModel::Isotropic::Sigma(2, 0.1);
 SharedDiagonal hard_model1 = noiseModel::Constrained::All(1);
 
-typedef NonlinearFactorGraph<simulated2D::Values> Graph;
+typedef NonlinearFactorGraph Graph;
 typedef boost::shared_ptr<Graph> shared_graph;
 typedef boost::shared_ptr<simulated2D::Values> shared_values;
-typedef NonlinearOptimizer<Graph, simulated2D::Values> Optimizer;
+typedef NonlinearOptimizer<Graph> Optimizer;
 
 // some simple inequality constraints
 simulated2D::PoseKey key(1);
@@ -160,7 +160,7 @@ TEST( testBoundingConstraint, unary_simple_optimization1) {
 	initValues->insert(x1, start_pt);
 
 	Optimizer::shared_values actual = Optimizer::optimizeLM(graph, initValues);
-	simulated2D::Values expected;
+	DynamicValues expected;
 	expected.insert(x1, goal_pt);
 	CHECK(assert_equal(expected, *actual, tol));
 }
@@ -182,7 +182,7 @@ TEST( testBoundingConstraint, unary_simple_optimization2) {
 	initValues->insert(x1, start_pt);
 
 	Optimizer::shared_values actual = Optimizer::optimizeLM(graph, initValues);
-	simulated2D::Values expected;
+	DynamicValues expected;
 	expected.insert(x1, goal_pt);
 	CHECK(assert_equal(expected, *actual, tol));
 }

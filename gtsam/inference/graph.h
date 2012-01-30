@@ -25,6 +25,7 @@
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/shared_ptr.hpp>
+#include <gtsam/nonlinear/DynamicValues.h>
 
 namespace gtsam {
 
@@ -87,9 +88,9 @@ namespace gtsam {
 	/**
 	 * Compose the poses by following the chain specified by the spanning tree
 	 */
-	template<class G, class Factor, class POSE, class VALUES>
-	boost::shared_ptr<VALUES>
-		composePoses(const G& graph, const PredecessorMap<typename VALUES::Key>& tree, const POSE& rootPose);
+	template<class G, class Factor, class POSE, class KEY>
+	boost::shared_ptr<DynamicValues>
+		composePoses(const G& graph, const PredecessorMap<KEY>& tree, const POSE& rootPose);
 
 
 	/**

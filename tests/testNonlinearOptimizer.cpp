@@ -44,7 +44,7 @@ using namespace gtsam;
 
 const double tol = 1e-5;
 
-typedef NonlinearOptimizer<example::Graph,example::Values> Optimizer;
+typedef NonlinearOptimizer<example::Graph> Optimizer;
 
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, linearizeAndOptimizeForDelta )
@@ -241,11 +241,11 @@ TEST( NonlinearOptimizer, optimization_method )
 	example::Values c0;
 	c0.insert(simulated2D::PoseKey(1), x0);
 
-	example::Values actualMFQR = optimize<example::Graph,example::Values>(
+	DynamicValues actualMFQR = optimize<example::Graph>(
 			fg, c0, *NonlinearOptimizationParameters().newFactorization(true), MULTIFRONTAL, LM);
 	DOUBLES_EQUAL(0,fg.error(actualMFQR),tol);
 
-	example::Values actualMFLDL = optimize<example::Graph,example::Values>(
+	DynamicValues actualMFLDL = optimize<example::Graph>(
 			fg, c0, *NonlinearOptimizationParameters().newFactorization(false), MULTIFRONTAL, LM);
 	DOUBLES_EQUAL(0,fg.error(actualMFLDL),tol);
 }
@@ -253,26 +253,26 @@ TEST( NonlinearOptimizer, optimization_method )
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, Factorization )
 {
-	typedef NonlinearOptimizer<Pose2Graph, Pose2Values, GaussianFactorGraph, GaussianSequentialSolver > Optimizer;
+	typedef NonlinearOptimizer<Pose2Graph, GaussianFactorGraph, GaussianSequentialSolver > Optimizer;
 
-	boost::shared_ptr<Pose2Values> config(new Pose2Values);
-	config->insert(1, Pose2(0.,0.,0.));
-	config->insert(2, Pose2(1.5,0.,0.));
+	boost::shared_ptr<DynamicValues> config(new DynamicValues);
+	config->insert(pose2SLAM::Key(1), Pose2(0.,0.,0.));
+	config->insert(pose2SLAM::Key(2), Pose2(1.5,0.,0.));
 
 	boost::shared_ptr<Pose2Graph> graph(new Pose2Graph);
 	graph->addPrior(1, Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10));
 	graph->addConstraint(1,2, Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1));
 
 	boost::shared_ptr<Ordering> ordering(new Ordering);
-	ordering->push_back(Pose2Values::Key(1));
-	ordering->push_back(Pose2Values::Key(2));
+	ordering->push_back(pose2SLAM::Key(1));
+	ordering->push_back(pose2SLAM::Key(2));
 
 	Optimizer optimizer(graph, config, ordering);
 	Optimizer optimized = optimizer.iterateLM();
 
-	Pose2Values expected;
-	expected.insert(1, Pose2(0.,0.,0.));
-	expected.insert(2, Pose2(1.,0.,0.));
+	DynamicValues expected;
+	expected.insert(pose2SLAM::Key(1), Pose2(0.,0.,0.));
+	expected.insert(pose2SLAM::Key(2), Pose2(1.,0.,0.));
 	CHECK(assert_equal(expected, *optimized.values(), 1e-5));
 }
 

@@ -95,7 +95,7 @@ namespace gtsam {
 		}
 
 		/** equals */
-		virtual bool equals(const NonlinearFactor<VALUES>& expected, double tol=1e-9) const {
+		virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
 			const This *e = dynamic_cast<const This*> (&expected);
 			return e != NULL && Base::equals(*e, tol) &&
 					gtsam::equal_with_abs_tol(this->prior_, e->prior_, tol) &&

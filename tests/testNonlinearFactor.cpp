@@ -40,7 +40,7 @@ using namespace std;
 using namespace gtsam;
 using namespace example;
 
-typedef boost::shared_ptr<NonlinearFactor<VectorValues> > shared_nlf;
+typedef boost::shared_ptr<NonlinearFactor > shared_nlf;
 
 /* ************************************************************************* */
 TEST( NonlinearFactor, equals )
@@ -89,7 +89,7 @@ TEST( NonlinearFactor, NonlinearFactor )
 
   // calculate the error_vector from the factor "f1"
   // error_vector = [0.1 0.1]
-  Vector actual_e = boost::dynamic_pointer_cast<NoiseModelFactor<example::Values> >(factor)->unwhitenedError(cfg);
+  Vector actual_e = boost::dynamic_pointer_cast<NoiseModelFactor>(factor)->unwhitenedError(cfg);
   CHECK(assert_equal(0.1*ones(2),actual_e));
 
   // error = 0.5 * [1 1] * [1;1] = 1
@@ -236,12 +236,11 @@ TEST( NonlinearFactor, linearize_constraint2 )
 
 /* ************************************************************************* */
 typedef TypedSymbol<LieVector, 'x'> TestKey;
-typedef gtsam::Values<TestKey> TestValues;
 
 /* ************************************************************************* */
-class TestFactor4 : public NonlinearFactor4<TestValues, TestKey, TestKey, TestKey, TestKey> {
+class TestFactor4 : public NonlinearFactor4<TestKey, TestKey, TestKey, TestKey> {
 public:
-  typedef NonlinearFactor4<TestValues, TestKey, TestKey, TestKey, TestKey> Base;
+  typedef NonlinearFactor4<TestKey, TestKey, TestKey, TestKey> Base;
   TestFactor4() : Base(sharedSigmas(Vector_(1, 2.0)), 1, 2, 3, 4) {}
 
   virtual Vector
@@ -263,11 +262,11 @@ public:
 /* ************************************ */
 TEST(NonlinearFactor, NonlinearFactor4) {
   TestFactor4 tf;
-  TestValues tv;
-  tv.insert(1, LieVector(1, 1.0));
-  tv.insert(2, LieVector(1, 2.0));
-  tv.insert(3, LieVector(1, 3.0));
-  tv.insert(4, LieVector(1, 4.0));
+  DynamicValues tv;
+  tv.insert(TestKey(1), LieVector(1, 1.0));
+  tv.insert(TestKey(2), LieVector(1, 2.0));
+  tv.insert(TestKey(3), LieVector(1, 3.0));
+  tv.insert(TestKey(4), LieVector(1, 4.0));
   EXPECT(assert_equal(Vector_(1, 10.0), tf.unwhitenedError(tv)));
   DOUBLES_EQUAL(25.0/2.0, tf.error(tv), 1e-9);
   Ordering ordering; ordering += TestKey(1), TestKey(2), TestKey(3), TestKey(4);
@@ -284,9 +283,9 @@ TEST(NonlinearFactor, NonlinearFactor4) {
 }
 
 /* ************************************************************************* */
-class TestFactor5 : public NonlinearFactor5<TestValues, TestKey, TestKey, TestKey, TestKey, TestKey> {
+class TestFactor5 : public NonlinearFactor5<TestKey, TestKey, TestKey, TestKey, TestKey> {
 public:
-  typedef NonlinearFactor5<TestValues, TestKey, TestKey, TestKey, TestKey, TestKey> Base;
+  typedef NonlinearFactor5<TestKey, TestKey, TestKey, TestKey, TestKey> Base;
   TestFactor5() : Base(sharedSigmas(Vector_(1, 2.0)), 1, 2, 3, 4, 5) {}
 
   virtual Vector
@@ -310,12 +309,12 @@ public:
 /* ************************************ */
 TEST(NonlinearFactor, NonlinearFactor5) {
   TestFactor5 tf;
-  TestValues tv;
-  tv.insert(1, LieVector(1, 1.0));
-  tv.insert(2, LieVector(1, 2.0));
-  tv.insert(3, LieVector(1, 3.0));
-  tv.insert(4, LieVector(1, 4.0));
-  tv.insert(5, LieVector(1, 5.0));
+  DynamicValues tv;
+  tv.insert(TestKey(1), LieVector(1, 1.0));
+  tv.insert(TestKey(2), LieVector(1, 2.0));
+  tv.insert(TestKey(3), LieVector(1, 3.0));
+  tv.insert(TestKey(4), LieVector(1, 4.0));
+  tv.insert(TestKey(5), LieVector(1, 5.0));
   EXPECT(assert_equal(Vector_(1, 15.0), tf.unwhitenedError(tv)));
   DOUBLES_EQUAL(56.25/2.0, tf.error(tv), 1e-9);
   Ordering ordering; ordering += TestKey(1), TestKey(2), TestKey(3), TestKey(4), TestKey(5);
@@ -334,9 +333,9 @@ TEST(NonlinearFactor, NonlinearFactor5) {
 }
 
 /* ************************************************************************* */
-class TestFactor6 : public NonlinearFactor6<TestValues, TestKey, TestKey, TestKey, TestKey, TestKey, TestKey> {
+class TestFactor6 : public NonlinearFactor6<TestKey, TestKey, TestKey, TestKey, TestKey, TestKey> {
 public:
-  typedef NonlinearFactor6<TestValues, TestKey, TestKey, TestKey, TestKey, TestKey, TestKey> Base;
+  typedef NonlinearFactor6<TestKey, TestKey, TestKey, TestKey, TestKey, TestKey> Base;
   TestFactor6() : Base(sharedSigmas(Vector_(1, 2.0)), 1, 2, 3, 4, 5, 6) {}
 
   virtual Vector
@@ -362,13 +361,13 @@ public:
 /* ************************************ */
 TEST(NonlinearFactor, NonlinearFactor6) {
   TestFactor6 tf;
-  TestValues tv;
-  tv.insert(1, LieVector(1, 1.0));
-  tv.insert(2, LieVector(1, 2.0));
-  tv.insert(3, LieVector(1, 3.0));
-  tv.insert(4, LieVector(1, 4.0));
-  tv.insert(5, LieVector(1, 5.0));
-  tv.insert(6, LieVector(1, 6.0));
+  DynamicValues tv;
+  tv.insert(TestKey(1), LieVector(1, 1.0));
+  tv.insert(TestKey(2), LieVector(1, 2.0));
+  tv.insert(TestKey(3), LieVector(1, 3.0));
+  tv.insert(TestKey(4), LieVector(1, 4.0));
+  tv.insert(TestKey(5), LieVector(1, 5.0));
+  tv.insert(TestKey(6), LieVector(1, 6.0));
   EXPECT(assert_equal(Vector_(1, 21.0), tf.unwhitenedError(tv)));
   DOUBLES_EQUAL(110.25/2.0, tf.error(tv), 1e-9);
   Ordering ordering; ordering += TestKey(1), TestKey(2), TestKey(3), TestKey(4), TestKey(5), TestKey(6);
