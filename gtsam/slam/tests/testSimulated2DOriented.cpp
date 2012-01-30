@@ -26,6 +26,7 @@
 
 using namespace std;
 using namespace gtsam;
+using namespace simulated2DOriented;
 
 /* ************************************************************************* */
 TEST( simulated2DOriented, Dprior )

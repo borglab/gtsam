@@ -17,25 +17,23 @@
 
 #include <gtsam/slam/simulated2DOriented.h>
 
-namespace gtsam {
+namespace simulated2DOriented {
 
-	namespace simulated2DOriented {
+  static Matrix I = gtsam::eye(3);
 
-		static Matrix I = gtsam::eye(3);
+  /* ************************************************************************* */
+  Pose2 prior(const Pose2& x, boost::optional<Matrix&> H) {
+    if (H) *H = I;
+    return x;
+  }
 
-		/* ************************************************************************* */
-		Pose2 prior(const Pose2& x, boost::optional<Matrix&> H) {
-			if (H) *H = I;
-			return x;
-		}
+  /* ************************************************************************* */
+  Pose2 odo(const Pose2& x1, const Pose2& x2, boost::optional<Matrix&> H1,
+      boost::optional<Matrix&> H2) {
+    return x1.between(x2, H1, H2);
+  }
 
-		/* ************************************************************************* */
-		Pose2 odo(const Pose2& x1, const Pose2& x2, boost::optional<Matrix&> H1,
-				boost::optional<Matrix&> H2) {
-			return x1.between(x2, H1, H2);
-		}
+/* ************************************************************************* */
 
-	/* ************************************************************************* */
+} // namespace simulated2DOriented
 
-	} // namespace simulated2DOriented
-} // namespace gtsam

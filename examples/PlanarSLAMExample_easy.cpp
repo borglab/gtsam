@@ -24,7 +24,7 @@
 
 using namespace std;
 using namespace gtsam;
-using namespace gtsam::planarSLAM;
+using namespace planarSLAM;
 
 /**
  * In this version of the system we make the following assumptions:

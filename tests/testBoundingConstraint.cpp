@@ -21,7 +21,7 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 
-namespace iq2D = gtsam::simulated2D::inequality_constraints;
+namespace iq2D = simulated2D::inequality_constraints;
 using namespace std;
 using namespace gtsam;
 

@@ -28,7 +28,7 @@
 
 using namespace std;
 using namespace gtsam;
-using namespace gtsam::pose2SLAM;
+using namespace pose2SLAM;
 
 int main(int argc, char** argv) {
 	// create keys for robot positions

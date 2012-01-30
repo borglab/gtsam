@@ -24,6 +24,7 @@
 #include <gtsam/slam/simulated3D.h>
 
 using namespace gtsam;
+using namespace simulated3D;
 
 /* ************************************************************************* */
 TEST( simulated3D, Values )

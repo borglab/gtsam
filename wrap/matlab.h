@@ -22,6 +22,9 @@
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
 
+using gtsam::Vector;
+using gtsam::Matrix;
+
 extern "C" {
 #include <mex.h>
 }

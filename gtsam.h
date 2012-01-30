@@ -51,11 +51,13 @@
  *  - TODO: default values for arguments
  *  - TODO: overloaded functions
  *  - TODO: signatures for constructors can be ambiguous if two types have the same first letter
- *  - TODO: Handle Rot3M conversions to quaternions
+ *  - TODO: Handle gtsam::Rot3M conversions to quaternions
  */
 
 // Everything is in the gtsam namespace, so we avoid copying everything in
-using namespace gtsam;
+//using namespace gtsam;
+
+namespace gtsam {
 
 //*************************************************************************
 // base
@@ -66,89 +68,89 @@ using namespace gtsam;
 //*************************************************************************
 
 class Point2 {
-	Point2();
-	Point2(double x, double y);
-	static Point2 Expmap(Vector v);
-	static Vector Logmap(const Point2& p);
+  Point2();
+  Point2(double x, double y);
+  static gtsam::Point2 Expmap(Vector v);
+	static Vector Logmap(const gtsam::Point2& p);
 	void print(string s) const;
 	double x();
 	double y();
-	Vector localCoordinates(const Point2& p);
-	Point2 compose(const Point2& p2);
-	Point2 between(const Point2& p2);
-	Point2 retract(Vector v);
+  Vector localCoordinates(const gtsam::Point2& p);
+	gtsam::Point2 compose(const gtsam::Point2& p2);
+	gtsam::Point2 between(const gtsam::Point2& p2);
+  gtsam::Point2 retract(Vector v);
 };
 
 class Point3 {
 	Point3();
 	Point3(double x, double y, double z);
 	Point3(Vector v);
-	static Point3 Expmap(Vector v);
-	static Vector Logmap(const Point3& p);
+	static gtsam::Point3 Expmap(Vector v);
+	static Vector Logmap(const gtsam::Point3& p);
 	void print(string s) const;
-	bool equals(const Point3& p, double tol);
+	bool equals(const gtsam::Point3& p, double tol);
 	Vector vector() const;
 	double x();
 	double y();
 	double z();
-	Vector localCoordinates(const Point3& p);
-	Point3 retract(Vector v);
-	Point3 compose(const Point3& p2);
-	Point3 between(const Point3& p2);
+	Vector localCoordinates(const gtsam::Point3& p);
+	gtsam::Point3 retract(Vector v);
+	gtsam::Point3 compose(const gtsam::Point3& p2);
+	gtsam::Point3 between(const gtsam::Point3& p2);
 };
 
 class Rot2 {
 	Rot2();
 	Rot2(double theta);
-	static Rot2 Expmap(Vector v);
-	static Vector Logmap(const Rot2& p);
-	static Rot2 fromAngle(double theta);
-	static Rot2 fromDegrees(double theta);
-	static Rot2 fromCosSin(double c, double s);
-	static Rot2 relativeBearing(const Point2& d); // Ignoring derivative
-	static Rot2 atan2(double y, double x);
+	static gtsam::Rot2 Expmap(Vector v);
+	static Vector Logmap(const gtsam::Rot2& p);
+	static gtsam::Rot2 fromAngle(double theta);
+	static gtsam::Rot2 fromDegrees(double theta);
+	static gtsam::Rot2 fromCosSin(double c, double s);
+	static gtsam::Rot2 relativeBearing(const gtsam::Point2& d); // Ignoring derivative
+	static gtsam::Rot2 atan2(double y, double x);
 	void print(string s) const;
-	bool equals(const Rot2& rot, double tol) const;
+	bool equals(const gtsam::Rot2& rot, double tol) const;
 	double theta() const;
 	double degrees() const;
 	double c() const;
 	double s() const;
-	Vector localCoordinates(const Rot2& p);
-	Rot2 retract(Vector v);
-	Rot2 compose(const Rot2& p2);
-	Rot2 between(const Rot2& p2);
+	Vector localCoordinates(const gtsam::Rot2& p);
+	gtsam::Rot2 retract(Vector v);
+	gtsam::Rot2 compose(const gtsam::Rot2& p2);
+	gtsam::Rot2 between(const gtsam::Rot2& p2);
 };
 
 class Rot3 {
 	Rot3();
 	Rot3(Matrix R);
-  static Rot3 Rx(double t);
-  static Rot3 Ry(double t);
-  static Rot3 Rz(double t);
-//  static Rot3 RzRyRx(double x, double y, double z); // FIXME: overloaded functions don't work yet
-  static Rot3 RzRyRx(Vector xyz);
-  static Rot3 yaw  (double t); // positive yaw is to right (as in aircraft heading)
-  static Rot3 pitch(double t); // positive pitch is up (increasing aircraft altitude)
-  static Rot3 roll (double t); // positive roll is to right (increasing yaw in aircraft)
-  static Rot3 ypr(double y, double p, double r);
-  static Rot3 quaternion(double w, double x, double y, double z);
-  static Rot3 rodriguez(Vector v);
+  static gtsam::Rot3 Rx(double t);
+  static gtsam::Rot3 Ry(double t);
+  static gtsam::Rot3 Rz(double t);
+//  static gtsam::Rot3 RzRyRx(double x, double y, double z); // FIXME: overloaded functions don't work yet
+  static gtsam::Rot3 RzRyRx(Vector xyz);
+  static gtsam::Rot3 yaw  (double t); // positive yaw is to right (as in aircraft heading)
+  static gtsam::Rot3 pitch(double t); // positive pitch is up (increasing aircraft altitude)
+  static gtsam::Rot3 roll (double t); // positive roll is to right (increasing yaw in aircraft)
+  static gtsam::Rot3 ypr(double y, double p, double r);
+  static gtsam::Rot3 quaternion(double w, double x, double y, double z);
+  static gtsam::Rot3 rodriguez(Vector v);
 	void print(string s) const;
-	bool equals(const Rot3& rot, double tol) const;
-  static Rot3 identity();
-	Rot3 compose(const Rot3& p2) const;
-	Rot3 inverse() const;
-	Rot3 between(const Rot3& p2) const;
-	Point3 rotate(const Point3& p) const;
-	Point3 unrotate(const Point3& p) const;
-	Rot3 retractCayley(Vector v) const;
-	Rot3 retract(Vector v) const;
-	Vector localCoordinates(const Rot3& p) const;
-	static Rot3 Expmap(Vector v);
-	static Vector Logmap(const Rot3& p);
+	bool equals(const gtsam::Rot3& rot, double tol) const;
+  static gtsam::Rot3 identity();
+  gtsam::Rot3 compose(const gtsam::Rot3& p2) const;
+  gtsam::Rot3 inverse() const;
+	gtsam::Rot3 between(const gtsam::Rot3& p2) const;
+	gtsam::Point3 rotate(const gtsam::Point3& p) const;
+	gtsam::Point3 unrotate(const gtsam::Point3& p) const;
+	gtsam::Rot3 retractCayley(Vector v) const;
+	gtsam::Rot3 retract(Vector v) const;
+	Vector localCoordinates(const gtsam::Rot3& p) const;
+	static gtsam::Rot3 Expmap(Vector v);
+	static Vector Logmap(const gtsam::Rot3& p);
 	Matrix matrix() const;
 	Matrix transpose() const;
-	Point3 column(int index) const;
+	gtsam::Point3 column(int index) const;
 	Vector xyz() const;
 	Vector ypr() const;
 	Vector rpy() const;
@@ -161,48 +163,48 @@ class Rot3 {
 class Pose2 {
 	Pose2();
 	Pose2(double x, double y, double theta);
-	Pose2(double theta, const Point2& t);
-	Pose2(const Rot2& r, const Point2& t);
+	Pose2(double theta, const gtsam::Point2& t);
+	Pose2(const gtsam::Rot2& r, const gtsam::Point2& t);
 	Pose2(Vector v);
-	static Pose2 Expmap(Vector v);
-	static Vector Logmap(const Pose2& p);
+	static gtsam::Pose2 Expmap(Vector v);
+	static Vector Logmap(const gtsam::Pose2& p);
 	void print(string s) const;
-	bool equals(const Pose2& pose, double tol) const;
+	bool equals(const gtsam::Pose2& pose, double tol) const;
 	double x() const;
 	double y() const;
 	double theta() const;
 	int dim() const;
-	Vector localCoordinates(const Pose2& p);
-	Pose2 retract(Vector v);
-	Pose2 compose(const Pose2& p2);
-	Pose2 between(const Pose2& p2);
-	Rot2 bearing(const Point2& point);
-	double range(const Point2& point);
-	Point2 translation() const;
-	Rot2 rotation() const;
+	Vector localCoordinates(const gtsam::Pose2& p);
+	gtsam::Pose2 retract(Vector v);
+	gtsam::Pose2 compose(const gtsam::Pose2& p2);
+	gtsam::Pose2 between(const gtsam::Pose2& p2);
+	gtsam::Rot2 bearing(const gtsam::Point2& point);
+	double range(const gtsam::Point2& point);
+	gtsam::Point2 translation() const;
+	gtsam::Rot2 rotation() const;
 };
 
 class Pose3 {
 	Pose3();
-	Pose3(const Rot3& r, const Point3& t);
+	Pose3(const gtsam::Rot3& r, const gtsam::Point3& t);
 	Pose3(Vector v);
 	Pose3(Matrix t);
-	Pose3(const Pose2& pose2);
-	static Pose3 Expmap(Vector v);
-	static Vector Logmap(const Pose3& p);
+	Pose3(const gtsam::Pose2& pose2);
+	static gtsam::Pose3 Expmap(Vector v);
+	static Vector Logmap(const gtsam::Pose3& p);
 	void print(string s) const;
-	bool equals(const Pose3& pose, double tol) const;
+	bool equals(const gtsam::Pose3& pose, double tol) const;
 	double x() const;
 	double y() const;
 	double z() const;
 	Matrix matrix() const;
 	Matrix adjointMap() const;
-	Pose3 compose(const Pose3& p2);
-	Pose3 between(const Pose3& p2);
-	Pose3 retract(Vector v);
-	Pose3 retractFirstOrder(Vector v);
-	Point3 translation() const;
-	Rot3 rotation() const;
+	gtsam::Pose3 compose(const gtsam::Pose3& p2);
+	gtsam::Pose3 between(const gtsam::Pose3& p2);
+	gtsam::Pose3 retract(Vector v);
+	gtsam::Pose3 retractFirstOrder(Vector v);
+	gtsam::Point3 translation() const;
+	gtsam::Rot3 rotation() const;
 };
 
 //*************************************************************************
@@ -227,13 +229,13 @@ class SharedDiagonal {
 };
 
 class SharedNoiseModel {
-	static SharedNoiseModel sharedSigmas(Vector sigmas);
-	static SharedNoiseModel sharedSigma(size_t dim, double sigma);
-	static SharedNoiseModel sharedPrecisions(Vector precisions);
-	static SharedNoiseModel sharedPrecision(size_t dim, double precision);
-	static SharedNoiseModel sharedUnit(size_t dim);
-	static SharedNoiseModel sharedSqrtInformation(Matrix R);
-	static SharedNoiseModel sharedCovariance(Matrix covariance);
+	static gtsam::SharedNoiseModel sharedSigmas(Vector sigmas);
+	static gtsam::SharedNoiseModel sharedSigma(size_t dim, double sigma);
+	static gtsam::SharedNoiseModel sharedPrecisions(Vector precisions);
+	static gtsam::SharedNoiseModel sharedPrecision(size_t dim, double precision);
+	static gtsam::SharedNoiseModel sharedUnit(size_t dim);
+	static gtsam::SharedNoiseModel sharedSqrtInformation(Matrix R);
+	static gtsam::SharedNoiseModel sharedCovariance(Matrix covariance);
 	void print(string s) const;
 };
 
@@ -241,7 +243,7 @@ class VectorValues {
 	VectorValues();
 	VectorValues(int nVars, int varDim);
 	void print(string s) const;
-	bool equals(const VectorValues& expected, double tol) const;
+	bool equals(const gtsam::VectorValues& expected, double tol) const;
 	int size() const;
 	void insert(int j, Vector value);
 };
@@ -253,7 +255,7 @@ class GaussianConditional {
 	GaussianConditional(int key, Vector d, Matrix R, int name1, Matrix S,
 			int name2, Matrix T, Vector sigmas);
 	void print(string s) const;
-	bool equals(const GaussianConditional &cg, double tol) const;
+	bool equals(const gtsam::GaussianConditional &cg, double tol) const;
 };
 
 class GaussianDensity {
@@ -267,35 +269,35 @@ class GaussianDensity {
 class GaussianBayesNet {
 	GaussianBayesNet();
 	void print(string s) const;
-	bool equals(const GaussianBayesNet& cbn, double tol) const;
-	void push_back(GaussianConditional* conditional);
-	void push_front(GaussianConditional* conditional);
+	bool equals(const gtsam::GaussianBayesNet& cbn, double tol) const;
+	void push_back(gtsam::GaussianConditional* conditional);
+	void push_front(gtsam::GaussianConditional* conditional);
 };
 
 class GaussianFactor {
 	void print(string s) const;
-	bool equals(const GaussianFactor& lf, double tol) const;
-	double error(const VectorValues& c) const;
+	bool equals(const gtsam::GaussianFactor& lf, double tol) const;
+	double error(const gtsam::VectorValues& c) const;
 };
 
 class JacobianFactor {
 	JacobianFactor();
 	JacobianFactor(Vector b_in);
-	JacobianFactor(int i1, Matrix A1, Vector b, const SharedDiagonal& model);
+	JacobianFactor(int i1, Matrix A1, Vector b, const gtsam::SharedDiagonal& model);
 	JacobianFactor(int i1, Matrix A1, int i2, Matrix A2, Vector b,
-			const SharedDiagonal& model);
+			const gtsam::SharedDiagonal& model);
 	JacobianFactor(int i1, Matrix A1, int i2, Matrix A2, int i3, Matrix A3,
-			Vector b, const SharedDiagonal& model);
+			Vector b, const gtsam::SharedDiagonal& model);
 	void print(string s) const;
-	bool equals(const GaussianFactor& lf, double tol) const;
+	bool equals(const gtsam::GaussianFactor& lf, double tol) const;
 	bool empty() const;
 	Vector getb() const;
-	double error(const VectorValues& c) const;
-	GaussianConditional* eliminateFirst();
+	double error(const gtsam::VectorValues& c) const;
+	gtsam::GaussianConditional* eliminateFirst();
 };
 
 class HessianFactor {
-	HessianFactor(const HessianFactor& gf);
+	HessianFactor(const gtsam::HessianFactor& gf);
 	HessianFactor();
 	HessianFactor(int j, Matrix G, Vector g, double f);
 	HessianFactor(int j, Vector mu, Matrix Sigma);
@@ -304,41 +306,41 @@ class HessianFactor {
 	HessianFactor(int j1, int j2, int j3, Matrix G11, Matrix G12, Matrix G13,
 			Vector g1, Matrix G22, Matrix G23, Vector g2, Matrix G33, Vector g3,
 			double f);
-	HessianFactor(const GaussianConditional& cg);
-	HessianFactor(const GaussianFactor& factor);
+	HessianFactor(const gtsam::GaussianConditional& cg);
+	HessianFactor(const gtsam::GaussianFactor& factor);
   void print(string s) const;
-  bool equals(const GaussianFactor& lf, double tol) const;
-  double error(const VectorValues& c) const;
+  bool equals(const gtsam::GaussianFactor& lf, double tol) const;
+  double error(const gtsam::VectorValues& c) const;
 };
 
 class GaussianFactorGraph {
 	GaussianFactorGraph();
-  GaussianFactorGraph(const GaussianBayesNet& CBN);
+  GaussianFactorGraph(const gtsam::GaussianBayesNet& CBN);
 
   // From FactorGraph
-	void push_back(GaussianFactor* factor);
+	void push_back(gtsam::GaussianFactor* factor);
 	void print(string s) const;
-	bool equals(const GaussianFactorGraph& lfgraph, double tol) const;
+	bool equals(const gtsam::GaussianFactorGraph& lfgraph, double tol) const;
 	int size() const;
 
 	// Building the graph
-	void add(JacobianFactor* factor);
+	void add(gtsam::JacobianFactor* factor);
 	void add(Vector b);
-	void add(int key1, Matrix A1, Vector b, const SharedDiagonal& model);
+	void add(int key1, Matrix A1, Vector b, const gtsam::SharedDiagonal& model);
 	void add(int key1, Matrix A1, int key2, Matrix A2, Vector b,
-			const SharedDiagonal& model);
+			const gtsam::SharedDiagonal& model);
 	void add(int key1, Matrix A1, int key2, Matrix A2, int key3, Matrix A3,
-			Vector b, const SharedDiagonal& model);
-	void add(HessianFactor* factor);
+			Vector b, const gtsam::SharedDiagonal& model);
+	void add(gtsam::HessianFactor* factor);
 
 	// error and probability
-	double error(const VectorValues& c) const;
-	double probPrime(const VectorValues& c) const;
+	double error(const gtsam::VectorValues& c) const;
+	double probPrime(const gtsam::VectorValues& c) const;
 
 	// combining
-  static GaussianFactorGraph combine2(const GaussianFactorGraph& lfg1,
-      const GaussianFactorGraph& lfg2);
-	void combine(const GaussianFactorGraph& lfg);
+  static gtsam::GaussianFactorGraph combine2(const gtsam::GaussianFactorGraph& lfg1,
+      const gtsam::GaussianFactorGraph& lfg2);
+	void combine(const gtsam::GaussianFactorGraph& lfg);
 
 	// Conversion to matrices
 	Matrix sparseJacobian_() const;
@@ -347,27 +349,27 @@ class GaussianFactorGraph {
 };
 
 class GaussianSequentialSolver {
-  GaussianSequentialSolver(const GaussianFactorGraph& graph, bool useQR);
-  GaussianBayesNet* eliminate() const;
-  VectorValues* optimize() const;
-  GaussianFactor* marginalFactor(int j) const;
+  GaussianSequentialSolver(const gtsam::GaussianFactorGraph& graph, bool useQR);
+  gtsam::GaussianBayesNet* eliminate() const;
+  gtsam::VectorValues* optimize() const;
+  gtsam::GaussianFactor* marginalFactor(int j) const;
   Matrix marginalCovariance(int j) const;
 };
 
 class KalmanFilter {
 	KalmanFilter(size_t n);
-	GaussianDensity* init(Vector x0, const SharedDiagonal& P0);
-	GaussianDensity* init(Vector x0, Matrix P0);
+	gtsam::GaussianDensity* init(Vector x0, const gtsam::SharedDiagonal& P0);
+	gtsam::GaussianDensity* init(Vector x0, Matrix P0);
 	void print(string s) const;
-	static int step(GaussianDensity* p);
-	GaussianDensity* predict(GaussianDensity* p, Matrix F, Matrix B, Vector u,
-			const SharedDiagonal& modelQ);
-	GaussianDensity* predictQ(GaussianDensity* p, Matrix F, Matrix B, Vector u,
+	static int step(gtsam::GaussianDensity* p);
+	gtsam::GaussianDensity* predict(gtsam::GaussianDensity* p, Matrix F, Matrix B, Vector u,
+			const gtsam::SharedDiagonal& modelQ);
+	gtsam::GaussianDensity* predictQ(gtsam::GaussianDensity* p, Matrix F, Matrix B, Vector u,
 			Matrix Q);
-	GaussianDensity* predict2(GaussianDensity* p, Matrix A0, Matrix A1, Vector b,
-			const SharedDiagonal& model);
-	GaussianDensity* update(GaussianDensity* p, Matrix H, Vector z,
-			const SharedDiagonal& model);
+	gtsam::GaussianDensity* predict2(gtsam::GaussianDensity* p, Matrix A0, Matrix A1, Vector b,
+			const gtsam::SharedDiagonal& model);
+	gtsam::GaussianDensity* update(gtsam::GaussianDensity* p, Matrix H, Vector z,
+			const gtsam::SharedDiagonal& model);
 };
 
 //*************************************************************************
@@ -377,7 +379,7 @@ class KalmanFilter {
 class Ordering {
 	Ordering();
 	void print(string s) const;
-	bool equals(const Ordering& ord, double tol) const;
+	bool equals(const gtsam::Ordering& ord, double tol) const;
 	void push_back(string key);
 };
 
@@ -386,6 +388,9 @@ class NonlinearOptimizationParameters {
 			double sumError, int iIters, double lambda, double lambdaFactor);
 	void print(string s) const;
 };
+
+
+}///\namespace gtsam
 
 //*************************************************************************
 // planarSLAM
@@ -397,10 +402,10 @@ namespace planarSLAM {
 class Values {
 	Values();
 	void print(string s) const;
-	Pose2 pose(int key) const;
-	Point2 point(int key) const;
-	void insertPose(int key, const Pose2& pose);
-	void insertPoint(int key, const Point2& point);
+	gtsam::Pose2 pose(int key) const;
+	gtsam::Point2 point(int key) const;
+	void insertPose(int key, const gtsam::Pose2& pose);
+	void insertPoint(int key, const gtsam::Point2& point);
 };
 
 class Graph {
@@ -409,37 +414,37 @@ class Graph {
 	void print(string s) const;
 
 	double error(const planarSLAM::Values& values) const;
-	Ordering* orderingCOLAMD(const planarSLAM::Values& values) const;
-	GaussianFactorGraph* linearize(const planarSLAM::Values& values,
-			const Ordering& ordering) const;
+	gtsam::Ordering* orderingCOLAMD(const planarSLAM::Values& values) const;
+	gtsam::GaussianFactorGraph* linearize(const planarSLAM::Values& values,
+			const gtsam::Ordering& ordering) const;
 
-	void addPrior(int key, const Pose2& pose, const SharedNoiseModel& noiseModel);
-	void addPoseConstraint(int key, const Pose2& pose);
-	void addOdometry(int key1, int key2, const Pose2& odometry, const SharedNoiseModel& noiseModel);
-	void addBearing(int poseKey, int pointKey, const Rot2& bearing, const SharedNoiseModel& noiseModel);
-	void addRange(int poseKey, int pointKey, double range, const SharedNoiseModel& noiseModel);
-	void addBearingRange(int poseKey, int pointKey, const Rot2& bearing, double range,
-			const SharedNoiseModel& noiseModel);
+	void addPrior(int key, const gtsam::Pose2& pose, const gtsam::SharedNoiseModel& noiseModel);
+	void addPoseConstraint(int key, const gtsam::Pose2& pose);
+	void addOdometry(int key1, int key2, const gtsam::Pose2& odometry, const gtsam::SharedNoiseModel& noiseModel);
+	void addBearing(int poseKey, int pointKey, const gtsam::Rot2& bearing, const gtsam::SharedNoiseModel& noiseModel);
+	void addRange(int poseKey, int pointKey, double range, const gtsam::SharedNoiseModel& noiseModel);
+	void addBearingRange(int poseKey, int pointKey, const gtsam::Rot2& bearing, double range,
+			const gtsam::SharedNoiseModel& noiseModel);
 	planarSLAM::Values optimize(const planarSLAM::Values& initialEstimate);
 };
 
 class Odometry {
-	Odometry(int key1, int key2, const Pose2& measured,
-			const SharedNoiseModel& model);
+	Odometry(int key1, int key2, const gtsam::Pose2& measured,
+			const gtsam::SharedNoiseModel& model);
 	void print(string s) const;
-	GaussianFactor* linearize(const planarSLAM::Values& center, const Ordering& ordering) const;
+	gtsam::GaussianFactor* linearize(const planarSLAM::Values& center, const gtsam::Ordering& ordering) const;
 };
 
 class Optimizer {
 	Optimizer(planarSLAM::Graph* graph, planarSLAM::Values* values,
-				Ordering* ordering, NonlinearOptimizationParameters* parameters);
+	    gtsam::Ordering* ordering, gtsam::NonlinearOptimizationParameters* parameters);
 	void print(string s) const;
 };
 
 }///\namespace planarSLAM
 
 //*************************************************************************
-// pose2SLAM
+// gtsam::Pose2SLAM
 //*************************************************************************
 
 #include <gtsam/slam/pose2SLAM.h>
@@ -448,8 +453,8 @@ namespace pose2SLAM {
 class Values {
   Values();
   void print(string s) const;
-  void insertPose(int key, const Pose2& pose);
-  Pose2 pose(int i);
+  void insertPose(int key, const gtsam::Pose2& pose);
+  gtsam::Pose2 pose(int i);
 };
 
 class Graph {
@@ -458,19 +463,19 @@ class Graph {
   void print(string s) const;
 
   double error(const pose2SLAM::Values& values) const;
-  Ordering* orderingCOLAMD(const pose2SLAM::Values& values) const;
-  GaussianFactorGraph* linearize(const pose2SLAM::Values& values,
-      const Ordering& ordering) const;
+  gtsam::Ordering* orderingCOLAMD(const pose2SLAM::Values& values) const;
+  gtsam::GaussianFactorGraph* linearize(const pose2SLAM::Values& values,
+      const gtsam::Ordering& ordering) const;
 
-  void addPrior(int key, const Pose2& pose, const SharedNoiseModel& noiseModel);
-  void addPoseConstraint(int key, const Pose2& pose);
-  void addOdometry(int key1, int key2, const Pose2& odometry, const SharedNoiseModel& noiseModel);
+  void addPrior(int key, const gtsam::Pose2& pose, const gtsam::SharedNoiseModel& noiseModel);
+  void addPoseConstraint(int key, const gtsam::Pose2& pose);
+  void addOdometry(int key1, int key2, const gtsam::Pose2& odometry, const gtsam::SharedNoiseModel& noiseModel);
   pose2SLAM::Values optimize(const pose2SLAM::Values& initialEstimate);
 };
 
 class Optimizer {
 	Optimizer(pose2SLAM::Graph* graph, pose2SLAM::Values* values,
-				Ordering* ordering, NonlinearOptimizationParameters* parameters);
+	    gtsam::Ordering* ordering, gtsam::NonlinearOptimizationParameters* parameters);
 	void print(string s) const;
 };
 
@@ -485,12 +490,12 @@ namespace simulated2D {
 
 class Values {
 	Values();
-	void insertPose(int i, const Point2& p);
-	void insertPoint(int j, const Point2& p);
+	void insertPose(int i, const gtsam::Point2& p);
+	void insertPoint(int j, const gtsam::Point2& p);
 	int nrPoses() const;
 	int nrPoints() const;
-	Point2 pose(int i);
-	Point2 point(int j);
+	gtsam::Point2 pose(int i);
+	gtsam::Point2 point(int j);
 };
 
 class Graph {
@@ -507,12 +512,12 @@ namespace simulated2DOriented {
 
 class Values {
 	Values();
-	void insertPose(int i, const Pose2& p);
-	void insertPoint(int j, const Point2& p);
+	void insertPose(int i, const gtsam::Pose2& p);
+	void insertPoint(int j, const gtsam::Point2& p);
 	int nrPoses() const;
 	int nrPoints() const;
-	Pose2 pose(int i);
-	Point2 point(int j);
+	gtsam::Pose2 pose(int i);
+	gtsam::Point2 point(int j);
 };
 
 class Graph {
@@ -522,6 +527,7 @@ class Graph {
 // TODO: add factors, etc.
 
 }///\namespace simulated2DOriented
+
 
 //// These are considered to be broken and will be added back as they start working
 //// It's assumed that there have been interface changes that might break this
@@ -611,28 +617,28 @@ class Graph {
 //	VectorValues* conjugateGradientDescent_(const VectorValues& x0) const;
 //};
 //
-//class Pose2Values{
+//class gtsam::Pose2Values{
 //	Pose2Values();
 //	Pose2 get(string key) const;
-//	void insert(string name, const Pose2& val);
+//	void insert(string name, const gtsam::Pose2& val);
 //	void print(string s) const;
 //	void clear();
 //	int size();
 //};
 //
-//class Pose2Factor {
+//class gtsam::Pose2Factor {
 //	Pose2Factor(string key1, string key2,
-//			const Pose2& measured, Matrix measurement_covariance);
+//			const gtsam::Pose2& measured, Matrix measurement_covariance);
 //	void print(string name) const;
-//	double error(const Pose2Values& c) const;
+//	double error(const gtsam::Pose2Values& c) const;
 //	size_t size() const;
-//	GaussianFactor* linearize(const Pose2Values& config) const;
+//	GaussianFactor* linearize(const gtsam::Pose2Values& config) const;
 //};
 //
-//class Pose2Graph{
+//class gtsam::Pose2Graph{
 //	Pose2Graph();
 //	void print(string s) const;
-//	GaussianFactorGraph* linearize_(const Pose2Values& config) const;
+//	GaussianFactorGraph* linearize_(const gtsam::Pose2Values& config) const;
 //	void push_back(Pose2Factor* factor);
 //};
 //
@@ -665,7 +671,7 @@ class Graph {
 //	GaussianFactor* linearize(const Simulated2DValues& config) const;
 //};
 //
-//class Pose2SLAMOptimizer {
+//class gtsam::Pose2SLAMOptimizer {
 //	Pose2SLAMOptimizer(string dataset_name);
 //	void print(string s) const;
 //	void update(Vector x) const;

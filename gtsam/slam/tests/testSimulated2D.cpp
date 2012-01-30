@@ -25,6 +25,7 @@
 
 using namespace std;
 using namespace gtsam;
+using namespace simulated2D;
 
 /* ************************************************************************* */
 TEST( simulated2D, Simulated2DValues )

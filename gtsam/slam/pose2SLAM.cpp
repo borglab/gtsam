@@ -20,41 +20,38 @@
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 
 // Use pose2SLAM namespace for specific SLAM instance
-namespace gtsam {
 
-	template class NonlinearOptimizer<pose2SLAM::Graph, pose2SLAM::Values, GaussianFactorGraph, GaussianSequentialSolver>;
+template class gtsam::NonlinearOptimizer<pose2SLAM::Graph, pose2SLAM::Values, gtsam::GaussianFactorGraph, gtsam::GaussianSequentialSolver>;
 
-	namespace pose2SLAM {
+namespace pose2SLAM {
 
-		/* ************************************************************************* */
-		Values circle(size_t n, double R) {
-			Values x;
-			double theta = 0, dtheta = 2 * M_PI / n;
-			for (size_t i = 0; i < n; i++, theta += dtheta)
-				x.insert(i, Pose2(cos(theta), sin(theta), M_PI_2 + theta));
-			return x;
-		}
+  /* ************************************************************************* */
+  Values circle(size_t n, double R) {
+    Values x;
+    double theta = 0, dtheta = 2 * M_PI / n;
+    for (size_t i = 0; i < n; i++, theta += dtheta)
+      x.insert(i, Pose2(cos(theta), sin(theta), M_PI_2 + theta));
+    return x;
+  }
 
-		/* ************************************************************************* */
-		void Graph::addPrior(const PoseKey& i, const Pose2& p,
-				const SharedNoiseModel& model) {
-			sharedFactor factor(new Prior(i, p, model));
-			push_back(factor);
-		}
+  /* ************************************************************************* */
+  void Graph::addPrior(const PoseKey& i, const Pose2& p,
+      const SharedNoiseModel& model) {
+    sharedFactor factor(new Prior(i, p, model));
+    push_back(factor);
+  }
 
-    void Graph::addPoseConstraint(const PoseKey& i, const Pose2& p) {
-      sharedFactor factor(new HardConstraint(i, p));
-      push_back(factor);
-    }
+  void Graph::addPoseConstraint(const PoseKey& i, const Pose2& p) {
+    sharedFactor factor(new HardConstraint(i, p));
+    push_back(factor);
+  }
 
-		void Graph::addOdometry(const PoseKey& i, const PoseKey& j, const Pose2& z,
-				const SharedNoiseModel& model) {
-			sharedFactor factor(new Odometry(i, j, z, model));
-			push_back(factor);
-		}
+  void Graph::addOdometry(const PoseKey& i, const PoseKey& j, const Pose2& z,
+      const SharedNoiseModel& model) {
+    sharedFactor factor(new Odometry(i, j, z, model));
+    push_back(factor);
+  }
 
-	/* ************************************************************************* */
+/* ************************************************************************* */
 
-	} // pose2SLAM
-
-} // gtsam
+} // pose2SLAM

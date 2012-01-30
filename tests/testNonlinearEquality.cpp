@@ -27,7 +27,7 @@
 using namespace std;
 using namespace gtsam;
 
-namespace eq2D = gtsam::simulated2D::equality_constraints;
+namespace eq2D = simulated2D::equality_constraints;
 
 static const double tol = 1e-5;
 

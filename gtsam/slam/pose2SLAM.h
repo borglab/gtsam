@@ -28,10 +28,10 @@
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
 
-namespace gtsam {
-
 // Use pose2SLAM namespace for specific SLAM instance
 namespace pose2SLAM {
+
+  using namespace gtsam;
 
   /// Keys with Pose2 and symbol 'x'
   typedef TypedSymbol<Pose2, 'x'> PoseKey;
@@ -111,7 +111,7 @@ namespace pose2SLAM {
   typedef NonlinearOptimizer<Graph, Values, GaussianFactorGraph,
       GaussianMultifrontalSolver> Optimizer;
 
-  } // pose2SLAM
+} // pose2SLAM
 
-} // namespace gtsam
+
 

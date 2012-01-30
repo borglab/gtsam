@@ -21,48 +21,45 @@
 #include <gtsam/nonlinear/NonlinearOptimization.h>
 
 // Use planarSLAM namespace for specific SLAM instance
-namespace gtsam {
+namespace planarSLAM {
 
-	namespace planarSLAM {
+  Graph::Graph(const NonlinearFactorGraph<Values>& graph) :
+      NonlinearFactorGraph<Values>(graph) {}
 
-		Graph::Graph(const NonlinearFactorGraph<Values>& graph) :
-				NonlinearFactorGraph<Values>(graph) {}
+  void Graph::addPrior(const PoseKey& i, const Pose2& p,
+      const SharedNoiseModel& model) {
+    sharedFactor factor(new Prior(i, p, model));
+    push_back(factor);
+  }
 
-		void Graph::addPrior(const PoseKey& i, const Pose2& p,
-				const SharedNoiseModel& model) {
-			sharedFactor factor(new Prior(i, p, model));
-			push_back(factor);
-		}
+  void Graph::addPoseConstraint(const PoseKey& i, const Pose2& p) {
+    sharedFactor factor(new Constraint(i, p));
+    push_back(factor);
+  }
 
-	  void Graph::addPoseConstraint(const PoseKey& i, const Pose2& p) {
-	  	sharedFactor factor(new Constraint(i, p));
-			push_back(factor);
-		}
+  void Graph::addOdometry(const PoseKey& i, const PoseKey& j, const Pose2& z,
+      const SharedNoiseModel& model) {
+    sharedFactor factor(new Odometry(i, j, z, model));
+    push_back(factor);
+  }
 
-		void Graph::addOdometry(const PoseKey& i, const PoseKey& j, const Pose2& z,
-				const SharedNoiseModel& model) {
-			sharedFactor factor(new Odometry(i, j, z, model));
-			push_back(factor);
-		}
+  void Graph::addBearing(const PoseKey& i, const PointKey& j, const Rot2& z,
+      const SharedNoiseModel& model) {
+    sharedFactor factor(new Bearing(i, j, z, model));
+    push_back(factor);
+  }
 
-		void Graph::addBearing(const PoseKey& i, const PointKey& j, const Rot2& z,
-				const SharedNoiseModel& model) {
-			sharedFactor factor(new Bearing(i, j, z, model));
-			push_back(factor);
-		}
+  void Graph::addRange(const PoseKey& i, const PointKey& j, double z,
+      const SharedNoiseModel& model) {
+    sharedFactor factor(new Range(i, j, z, model));
+    push_back(factor);
+  }
 
-		void Graph::addRange(const PoseKey& i, const PointKey& j, double z,
-				const SharedNoiseModel& model) {
-			sharedFactor factor(new Range(i, j, z, model));
-			push_back(factor);
-		}
+  void Graph::addBearingRange(const PoseKey& i, const PointKey& j, const Rot2& z1,
+      double z2, const SharedNoiseModel& model) {
+    sharedFactor factor(new BearingRange(i, j, z1, z2, model));
+    push_back(factor);
+  }
 
-		void Graph::addBearingRange(const PoseKey& i, const PointKey& j, const Rot2& z1,
-				double z2, const SharedNoiseModel& model) {
-			sharedFactor factor(new BearingRange(i, j, z1, z2, model));
-			push_back(factor);
-		}
+} // planarSLAM
 
-	} // planarSLAM
-
-} // gtsam
