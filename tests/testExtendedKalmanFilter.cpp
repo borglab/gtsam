@@ -369,26 +369,39 @@ TEST( ExtendedKalmanFilter, nonlinear ) {
   // Create the set of expected output TestValues (generated using Matlab Kalman Filter)
   Point2 expected_predict[10];
   Point2 expected_update[10];
-  expected_predict[1] = Point2(0.81,0.99);
-  expected_update[1] =  Point2(0.824926197027,0.29509808);
-  expected_predict[2] = Point2(0.680503230541,0.24343413);
-  expected_update[2] =  Point2(0.773360464065,0.43518355);
-  expected_predict[3] = Point2(0.598086407378,0.33655375);
-  expected_update[3] =  Point2(0.908781566884,0.60766713);
-  expected_predict[4] = Point2(0.825883936308,0.55223668);
-  expected_update[4] =  Point2(1.23221370495,0.74372849);
-  expected_predict[5] = Point2(1.51835061468,0.91643243);
-  expected_update[5] =  Point2(1.32823362774,0.855855);
-  expected_predict[6] = Point2(1.76420456986,1.1367754);
-  expected_update[6] =  Point2(1.36378040243,1.0623832);
-  expected_predict[7] = Point2(1.85989698605,1.4488574);
-  expected_update[7] =  Point2(1.24068063304,1.3431964);
-  expected_predict[8] = Point2(1.53928843321,1.6664778);
-  expected_update[8] =  Point2(1.04229257957,1.4856408);
-  expected_predict[9] = Point2(1.08637382142,1.5484724);
-  expected_update[9] =  Point2(1.13201933157,1.5795507);
-  expected_predict[10] = Point2(1.28146776705,1.7880819);
-  expected_update[10] =  Point2(1.22159588179,1.7434982);
+  expected_predict[0] = Point2(0.81,0.99);
+  expected_update[0] =  Point2(0.824926197027,0.29509808);
+  expected_predict[1] = Point2(0.680503230541,0.24343413);
+  expected_update[1] =  Point2(0.773360464065,0.43518355);
+  expected_predict[2] = Point2(0.598086407378,0.33655375);
+  expected_update[2] =  Point2(0.908781566884,0.60766713);
+  expected_predict[3] = Point2(0.825883936308,0.55223668);
+  expected_update[3] =  Point2(1.23221370495,0.74372849);
+  expected_predict[4] = Point2(1.51835061468,0.91643243);
+  expected_update[4] =  Point2(1.32823362774,0.855855);
+  expected_predict[5] = Point2(1.76420456986,1.1367754);
+  expected_update[5] =  Point2(1.36378040243,1.0623832);
+  expected_predict[6] = Point2(1.85989698605,1.4488574);
+  expected_update[6] =  Point2(1.24068063304,1.3431964);
+  expected_predict[7] = Point2(1.53928843321,1.6664778);
+  expected_update[7] =  Point2(1.04229257957,1.4856408);
+  expected_predict[8] = Point2(1.08637382142,1.5484724);
+  expected_update[8] =  Point2(1.13201933157,1.5795507);
+  expected_predict[9] = Point2(1.28146776705,1.7880819);
+  expected_update[9] =  Point2(1.22159588179,1.7434982);
+
+  // Measurements
+  double z[10];
+  z[0] =  1.0;
+  z[1] =  2.0;
+  z[2] =  3.0;
+  z[3] =  4.0;
+  z[4] =  5.0;
+  z[5] =  6.0;
+  z[6] =  7.0;
+  z[7] =  8.0;
+  z[8] =  9.0;
+  z[9] = 10.0;
 
   // Create the Kalman Filter initialization point
   Point2 x_initial(0.90, 1.10);
@@ -399,13 +412,13 @@ TEST( ExtendedKalmanFilter, nonlinear ) {
 
   // Enter Predict-Update Loop
   Point2 x_predict, x_update;
-  for(unsigned int i = 1; i < 9; ++i){
+  for(unsigned int i = 0; i < 10; ++i){
     // Create motion factor
     NonlinearMotionModel motionFactor(TestKey(i-1), TestKey(i));
     x_predict = ekf.predict(motionFactor);
 
     // Create a measurement factor
-    NonlinearMeasurementModel measurementFactor(TestKey(i), Vector_(1, (double)i));
+    NonlinearMeasurementModel measurementFactor(TestKey(i), Vector_(1, z[i]));
     x_update = ekf.update(measurementFactor);
 
     EXPECT(assert_equal(expected_predict[i],x_predict, 1e-6));
