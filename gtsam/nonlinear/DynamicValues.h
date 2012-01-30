@@ -41,6 +41,19 @@ namespace gtsam {
   // Forward declarations
   class ValueCloneAllocator;
 
+  struct _ValuesDimensionCollector {
+    const Ordering& ordering;
+    std::vector<size_t> dimensions;
+    _ValuesDimensionCollector(const Ordering& _ordering) : ordering(_ordering), dimensions(_ordering.nVars()) {}
+    template<typename I> void operator()(const I& key_value) {
+      Index var;
+      if(ordering.tryAt(key_value->first, var)) {
+        assert(var < dimensions.size());
+        dimensions[var] = key_value->second->dim();
+      }
+    }
+  };
+
 /**
   * A non-templated config holding any types of Manifold-group elements.  A
   * values structure is a map from keys to values. It is used to specify the

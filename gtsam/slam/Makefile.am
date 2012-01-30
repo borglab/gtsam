@@ -45,7 +45,7 @@ check_PROGRAMS += tests/testPose3SLAM
 # Visual SLAM
 headers += GeneralSFMFactor.h ProjectionFactor.h
 sources += visualSLAM.cpp
-#check_PROGRAMS += tests/testProjectionFactor tests/testVSLAM 
+check_PROGRAMS += tests/testProjectionFactor tests/testVSLAM 
 check_PROGRAMS += tests/testGeneralSFMFactor tests/testGeneralSFMFactor_Cal3Bundler
 
 # StereoFactor

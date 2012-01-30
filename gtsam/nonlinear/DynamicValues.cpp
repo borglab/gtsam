@@ -168,14 +168,17 @@ namespace gtsam {
 
   /* ************************************************************************* */
   vector<size_t> DynamicValues::dims(const Ordering& ordering) const {
-    vector<size_t> result(values_.size());
-    // Transform with Value::dim(auto_ptr::get(KeyValuePair::second))
-    result.assign(
-        boost::make_transform_iterator(values_.begin(),
-            boost::bind(&Value::dim, boost::bind(&KeyValuePair::second, _1))),
-        boost::make_transform_iterator(values_.end(),
-            boost::bind(&Value::dim, boost::bind(&KeyValuePair::second, _1))));
-    return result;
+//    vector<size_t> result(values_.size());
+//    // Transform with Value::dim(auto_ptr::get(KeyValuePair::second))
+//    result.assign(
+//        boost::make_transform_iterator(values_.begin(),
+//            boost::bind(&Value::dim, boost::bind(&KeyValuePair::second, _1))),
+//        boost::make_transform_iterator(values_.end(),
+//            boost::bind(&Value::dim, boost::bind(&KeyValuePair::second, _1))));
+//    return result;
+    _ValuesDimensionCollector dimCollector(ordering);
+    this->apply(dimCollector);
+    return dimCollector.dimensions;
   }
 
   /* ************************************************************************* */
