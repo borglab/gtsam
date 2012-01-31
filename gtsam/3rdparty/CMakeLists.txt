@@ -15,3 +15,11 @@ foreach(eigen_dir ${eigen_dir_headers_all})
         install(FILES Eigen/Eigen/${filename} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/gtsam/3rdparty/Eigen/Eigen)     
     endif()
 endforeach(eigen_dir)
+
+# build convenience library
+set (ccolamd_srcs 
+ CCOLAMD/Source/ccolamd.c 
+ CCOLAMD/Source/ccolamd_global.c
+ UFconfig/UFconfig.c) 
+
+add_library(ccolamd STATIC ${ccolamd_srcs}) 

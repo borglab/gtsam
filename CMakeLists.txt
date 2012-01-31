@@ -34,7 +34,7 @@ set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DEIGEN_NO_DEBUG")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DEIGEN_NO_DEBUG")
 
 # Configurable Options
-
+# TODO
 
 # Pull in tests
 enable_testing()
