@@ -6,6 +6,9 @@ set (GTSAM_VERSION_MAJOR 0)
 set (GTSAM_VERSION_MINOR 9)
 set (GTSAM_VERSION_PATCH 3)
 
+# Set the default install path to home
+set (CMAKE_INSTALL_PREFIX ${HOME} CACHE DOCSTRING "Install prefix for library")
+
 # guard against in-source builds
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
   message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there. You may need to remove CMakeCache.txt. ")
@@ -38,7 +41,8 @@ option(GTSAM_BUILD_EXAMPLES "Enable/Disable building of examples"       ON)
 option(GTSAM_BUILD_WRAP     "Enable/Disable building of matlab wrap utility (necessary for matlab interface)" ON)
 
 # Avoid building non-installed exes and unit tests when installing
-set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY TRUE)
+# FIXME: breaks generation and install of matlab toolbox
+#set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY TRUE)
 
 # Pull in tests
 enable_testing()

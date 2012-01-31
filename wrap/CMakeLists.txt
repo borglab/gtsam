@@ -92,7 +92,7 @@ message(STATUS "Detected Matlab mex extension: ${mex_bin_extension_default}")
 message(STATUS "Current Matlab mex extension: ${mex_bin_extension}")
 
 # Actual build commands - separated by OS
-add_custom_target(wrap_gtsam COMMAND 
+add_custom_target(wrap_gtsam ALL COMMAND 
     ./wrap ${mex_bin_extension} ${CMAKE_SOURCE_DIR} ${moduleName} ${toolbox_path} "${mexFlags}")
 
 option(GTSAM_INSTALL_MATLAB_TOOLBOX  "Enable/Disable installation of matlab toolbox"  ON)
@@ -104,9 +104,12 @@ set(toolbox_install_path ${CMAKE_INSTALL_PREFIX}/borg/toolbox CACHE DOCSTRING "P
 if (GTSAM_INSTALL_MATLAB_TOOLBOX)
     # Primary toolbox files
     message(STATUS "Installing Matlab Toolbox to ${toolbox_install_path}")
-    install(DIRECTORY ${toolbox_path} DESTINATION ${toolbox_install_path} FILES_MATCHING PATTERN "*.m")
-    install(DIRECTORY ${toolbox_path} DESTINATION ${toolbox_install_path} FILES_MATCHING PATTERN "*.cpp")
-    install(DIRECTORY ${toolbox_path} DESTINATION ${toolbox_install_path} FILES_MATCHING PATTERN "Makefile")
+    install(DIRECTORY DESTINATION ${toolbox_install_path})
+    install(DIRECTORY ${toolbox_path} DESTINATION ${toolbox_install_path})
+    
+    #install(DIRECTORY ${toolbox_path} DESTINATION ${toolbox_install_path} FILES_MATCHING PATTERN "*.m")
+    #install(DIRECTORY ${toolbox_path} DESTINATION ${toolbox_install_path} FILES_MATCHING PATTERN "*.cpp")
+    #install(DIRECTORY ${toolbox_path} DESTINATION ${toolbox_install_path} FILES_MATCHING PATTERN "Makefile")
     
     # Examples
     if (GTSAM_INSTALL_MATLAB_EXAMPLES)
