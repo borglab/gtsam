@@ -44,15 +44,17 @@ set(gtsam_srcs
     ${nonlinear_srcs}
     ${slam_srcs}
 )
+
+option (GTSAM_BUILD_SHARED_LIBRARY "Enable/Disable building of a shared version of gtsam" ON)
  
 # Versions
 set(gtsam_version   ${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH})
 set(gtsam_soversion ${GTSAM_VERSION_MAJOR})
 message(STATUS "GTSAM Version: ${gtsam_version}")
+message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
  
 # build shared and static versions of the library
 message(STATUS "Building GTSAM - static")
-#message(STATUS "GTSAM library sources ${gtsam_srcs}")
 add_library(gtsam-static STATIC ${gtsam_srcs})
 set_target_properties(gtsam-static PROPERTIES 
     OUTPUT_NAME         gtsam
@@ -61,12 +63,14 @@ set_target_properties(gtsam-static PROPERTIES
  	SOVERSION           ${gtsam_soversion})
 install(TARGETS gtsam-static ARCHIVE DESTINATION lib)
 
-message(STATUS "Building GTSAM - shared")
-add_library(gtsam-shared SHARED ${gtsam_srcs})
-set_target_properties(gtsam-shared PROPERTIES 
-    OUTPUT_NAME         gtsam
-    CLEAN_DIRECT_OUTPUT 1
-	VERSION             ${gtsam_version}
- 	SOVERSION           ${gtsam_soversion})
-install(TARGETS gtsam-shared LIBRARY DESTINATION lib )
+if (GTSAM_BUILD_SHARED_LIBRARY)
+    message(STATUS "Building GTSAM - shared")
+    add_library(gtsam-shared SHARED ${gtsam_srcs})
+    set_target_properties(gtsam-shared PROPERTIES 
+        OUTPUT_NAME         gtsam
+        CLEAN_DIRECT_OUTPUT 1
+    	VERSION             ${gtsam_version}
+     	SOVERSION           ${gtsam_soversion})
+    install(TARGETS gtsam-shared LIBRARY DESTINATION lib )
+endif(GTSAM_BUILD_SHARED_LIBRARY)
 

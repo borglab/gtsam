@@ -1,15 +1,3 @@
-#set(examples_local_libs
-#   slam
-#   nonlinear
-#   linear
-#   inference
-#   geometry
-#   base
-#   ccolamd
-#   CppUnitLite
-#   ${Boost_LIBRARIES}
-#)
-
 add_custom_target(examples)
 
 # Build example executables

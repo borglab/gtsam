@@ -1,7 +1,7 @@
 project(GTSAM CXX C)
 cmake_minimum_required(VERSION 2.6)
 
-# Set the version number for the libarary
+# Set the version number for the library
 set (GTSAM_VERSION_MAJOR 0)
 set (GTSAM_VERSION_MINOR 9)
 set (GTSAM_VERSION_PATCH 3)
@@ -24,12 +24,21 @@ if(    NOT cmake_build_type_tolower STREQUAL "debug"
 endif()
 
 # Add debugging flags
+set(CMAKE_C_FLAGS_DEBUG            "${CMAKE_C_FLAGS_DEBUG} -fno-inline -Wall")
 set(CMAKE_CXX_FLAGS_DEBUG          "${CMAKE_CXX_FLAGS_DEBUG} -fno-inline -Wall")
+set(CMAKE_C_FLAGS_RELWITHDEBINFO   "-g -fno-inline -Wall -DNDEBUG -DEIGEN_NO_DEBUG")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -fno-inline -Wall -DNDEBUG -DEIGEN_NO_DEBUG")
+set(CMAKE_C_FLAGS_RELEASE          "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG -Wall -DEIGEN_NO_DEBUG")
 set(CMAKE_CXX_FLAGS_RELEASE        "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -Wall -DEIGEN_NO_DEBUG")
 
 # Configurable Options
-# TODO
+option(GTSAM_BUILD_TESTS    "Enable/Disable building of tests"          ON)
+option(GTSAM_BUILD_TIMING   "Enable/Disable building of timing scripts" ON)
+option(GTSAM_BUILD_EXAMPLES "Enable/Disable building of examples"       ON)
+option(GTSAM_BUILD_WRAP     "Enable/Disable building of matlab wrap utility (necessary for matlab interface)" ON)
+
+# Avoid building non-installed exes and unit tests when installing
+set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY TRUE)
 
 # Pull in tests
 enable_testing()
@@ -62,7 +71,11 @@ add_subdirectory(gtsam)
 add_subdirectory(tests)
 
 # Build wrap
-add_subdirectory(wrap)
+if (GTSAM_BUILD_WRAP)
+    add_subdirectory(wrap)
+endif(GTSAM_BUILD_WRAP)
 
 # Build examples
-add_subdirectory(examples)
+if (GTSAM_BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif(GTSAM_BUILD_EXAMPLES)
