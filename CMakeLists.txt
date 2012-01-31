@@ -70,4 +70,4 @@ add_subdirectory(tests)
 #add_subdirectory(wrap)
 
 # Build examples
-#add_subdirectory(examples)
+add_subdirectory(examples)

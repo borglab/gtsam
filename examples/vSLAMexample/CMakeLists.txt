@@ -1,17 +1,14 @@
 # Build vSLAMexample
 
-set ( srcs 
-  Feature2D.cpp
-  vSLAMutils.cpp
-)
-add_library(vSLAMexample ${srcs})
+message(STATUS "Adding Example vISAMexample")
+add_executable(vISAMexample vISAMexample.cpp vSLAMutils.cpp)
+target_link_libraries(vISAMexample gtsam-static)
+add_dependencies(examples vISAMexample)
 
-add_executable(vISAMexample vISAMexample.cpp)
-target_link_libraries(vISAMexample vSLAMexample gtsam-static)
-
-add_executable(vSFMexample vSFMexample.cpp)
-target_link_libraries(vSFMexample vSLAMexample gtsam-static)
-
+message(STATUS "Adding Example vSFMexample")
+add_executable(vSFMexample vSFMexample.cpp vSLAMutils.cpp)
+target_link_libraries(vSFMexample gtsam-static)
+add_dependencies(examples vSFMexample)
 
 
 

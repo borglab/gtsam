@@ -2,18 +2,6 @@
 add_custom_target(check.tests COMMAND ${CMAKE_CTEST_COMMAND})
 add_custom_target(timing.tests)
 
-set(tests_local_libs
-   slam
-   nonlinear
-   linear
-   inference
-   geometry
-   base
-   ccolamd
-   CppUnitLite
-   ${Boost_LIBRARIES}
-)
-
 # Build tests
 file(GLOB tests_srcs "test*.cpp")
 foreach(test_src ${tests_srcs})
@@ -24,7 +12,7 @@ foreach(test_src ${tests_srcs})
     add_dependencies(check.tests ${test_bin})
     add_dependencies(check ${test_bin})
     add_test(${test_base} ${EXECUTABLE_OUTPUT_PATH}${test_bin})
-    target_link_libraries(${test_bin} ${tests_local_libs})
+    target_link_libraries(${test_bin} gtsam-static CppUnitLite ${Boost_LIBRARIES})
     add_custom_target(${test_bin}.run ${EXECUTABLE_OUTPUT_PATH}${test_bin} ${ARGN})
 endforeach(test_src)
 
@@ -37,7 +25,7 @@ foreach(time_src ${timing_srcs})
     add_executable(${time_bin} ${time_src})
     add_dependencies(timing.tests ${time_bin})
     add_dependencies(timing ${time_bin})
-    target_link_libraries(${time_bin} ${tests_local_libs})
+    target_link_libraries(${time_bin} gtsam-static CppUnitLite ${Boost_LIBRARIES})
     add_custom_target(${time_bin}.run ${EXECUTABLE_OUTPUT_PATH}${time_bin} ${ARGN})
 endforeach(time_src)
 

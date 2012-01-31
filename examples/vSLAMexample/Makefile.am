@@ -12,10 +12,10 @@ check_PROGRAMS =
 
 # Examples
 noinst_PROGRAMS = vSFMexample
-vSFMexample_SOURCES = vSFMexample.cpp Feature2D.cpp vSLAMutils.cpp
+vSFMexample_SOURCES = vSFMexample.cpp vSLAMutils.cpp
 
 noinst_PROGRAMS += vISAMexample
-vISAMexample_SOURCES = vISAMexample.cpp Feature2D.cpp vSLAMutils.cpp
+vISAMexample_SOURCES = vISAMexample.cpp vSLAMutils.cpp
 
 headers += Feature2D.h vSLAMutils.h
 
