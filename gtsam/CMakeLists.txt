@@ -12,6 +12,7 @@ set (gtsam_subdirs
 
 foreach(subdir ${gtsam_subdirs})
     # Build local library and tests
+    message(STATUS "Building ${subdir}") 
     add_subdirectory(${subdir})
     
     # link subfolder check to main check
