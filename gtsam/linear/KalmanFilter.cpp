@@ -144,6 +144,17 @@ namespace gtsam {
 		return fuse(p, new JacobianFactor(k, H, z, model), useQR());
 	}
 
+  /* ************************************************************************* */
+  KalmanFilter::State KalmanFilter::update(const State& p, const Matrix& H, const Vector& z,
+      const Matrix& Q) {
+    Index k = step(p);
+    Matrix M = inverse(Q), Ht = trans(H);
+    Matrix G = Ht * M * H;
+    Vector g = Ht * M * z;
+    double f = dot(z, M * z);
+    return fuse(p, new HessianFactor(k, G, g, f), useQR());
+  }
+
 /* ************************************************************************* */
 
 } // \namespace gtsam

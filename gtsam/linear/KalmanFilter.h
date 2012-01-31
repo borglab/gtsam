@@ -136,6 +136,15 @@ namespace gtsam {
 		 */
 		State update(const State& p, const Matrix& H, const Vector& z,
 				const SharedDiagonal& model);
+
+    /*
+     *  Version of update with full covariance
+     *  Q is normally derived as G*w*G^T where w models uncertainty of some
+     *  physical property, such as velocity or acceleration, and G is derived from physics.
+     *  This version allows more realistic models than a diagonal covariance matrix.
+     */
+    State update(const State& p, const Matrix& H, const Vector& z,
+        const Matrix& Q);
 	};
 
 } // \namespace gtsam

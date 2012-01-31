@@ -269,6 +269,22 @@ TEST( KalmanFilter, QRvsCholesky ) {
 			-0.5, -0.1, 0.0, -0.0, -0.0, 0.0, 0.0, 0.1, 635.8);
 	EXPECT(assert_equal(expected2, pa2->covariance(), 1e-7));
 	EXPECT(assert_equal(expected2, pb2->covariance(), 1e-7));
+
+	// do the above update again, this time with a full Matrix Q
+	Matrix modelQ = diag(emul(sigmas,sigmas));
+  KalmanFilter::State pa3 = kfa.update(pa, H, z, modelQ);
+  KalmanFilter::State pb3 = kfb.update(pb, H, z, modelQ);
+
+  // Check that they yield the same mean and information matrix
+  EXPECT(assert_equal(pa3->mean(), pb3->mean()));
+  EXPECT(assert_equal(pa3->information(), pb3->information(), 1e-7));
+
+  // and in addition attain the correct mean and covariance
+  EXPECT(assert_equal(expectedMean2, pa3->mean(), 1e-4));
+  EXPECT(assert_equal(expectedMean2, pb3->mean(), 1e-4));
+
+  EXPECT(assert_equal(expected2, pa3->covariance(), 1e-7));
+  EXPECT(assert_equal(expected2, pb3->covariance(), 1e-7));
 }
 
 /* ************************************************************************* */
