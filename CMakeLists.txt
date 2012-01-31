@@ -64,10 +64,10 @@ add_subdirectory(gtsam)
 add_subdirectory(CppUnitLite)
 
 # Build Tests
-add_subdirectory(tests)
+#add_subdirectory(tests)
 
 # Build wrap
-add_subdirectory(wrap)
+#add_subdirectory(wrap)
 
 # Build examples
-add_subdirectory(examples)
+#add_subdirectory(examples)

@@ -3,14 +3,20 @@
 set (gtsam_subdirs 
     3rdparty
     base 
-    geometry 
-    inference 
-    linear 
-    nonlinear 
-    slam)
+ #   geometry 
+ #   inference 
+ #   linear 
+ #   nonlinear 
+ #   slam
+ )
 
 foreach(subdir ${gtsam_subdirs})
+    # Build local library and tests
     add_subdirectory(${subdir})
+    
+    # link subfolder check to main check
+    add_dependencies(check check.${subdir})
+    add_dependencies(timing timing.${subdir})
 endforeach(subdir)
  
 #set (ccolamd_srcs 
