@@ -39,6 +39,8 @@ option(GTSAM_BUILD_TESTS    "Enable/Disable building of tests"          ON)
 option(GTSAM_BUILD_TIMING   "Enable/Disable building of timing scripts" ON)
 option(GTSAM_BUILD_EXAMPLES "Enable/Disable building of examples"       ON)
 option(GTSAM_BUILD_WRAP     "Enable/Disable building of matlab wrap utility (necessary for matlab interface)" ON)
+option(GTSAM_LINK_BINARIES_AGAINST_CONVENIENCE_LIBS    
+    "Enable/Disable linking tests against the convenince libraries for faster debugging" ON)
 
 # Avoid building non-installed exes and unit tests when installing
 # FIXME: breaks generation and install of matlab toolbox

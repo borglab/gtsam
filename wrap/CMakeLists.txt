@@ -16,6 +16,20 @@ endif(GTSAM_INSTALL_WRAP)
 # Install matlab header
 install(FILES matlab.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/wrap)
 
+if (GTSAM_LINK_BINARIES_AGAINST_CONVENIENCE_LIBS)
+    set(convenience_libs
+       slam
+       nonlinear
+       linear
+       inference
+       geometry
+       base
+       ccolamd)
+else (GTSAM_LINK_BINARIES_AGAINST_CONVENIENCE_LIBS)
+    set(convenience_libs
+       gtsam-static)
+endif (GTSAM_LINK_BINARIES_AGAINST_CONVENIENCE_LIBS)
+
 # Build tests
 if (GTSAM_BUILD_TESTS)
     add_custom_target(check.wrap COMMAND ${CMAKE_CTEST_COMMAND})
@@ -28,7 +42,7 @@ if (GTSAM_BUILD_TESTS)
         add_test(${test_base} ${EXECUTABLE_OUTPUT_PATH}${test_bin})
         add_dependencies(check ${test_bin})
         add_dependencies(check.wrap ${test_bin})
-        target_link_libraries(${test_bin} CppUnitLite gtsam-static wrap_lib)
+        target_link_libraries(${test_bin} CppUnitLite ${convenience_libs} wrap_lib)
         add_custom_target(${test_bin}.run ${EXECUTABLE_OUTPUT_PATH}${test_bin} ${ARGN})
     endforeach(test_src)
 endif(GTSAM_BUILD_TESTS)
