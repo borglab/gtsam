@@ -28,4 +28,3 @@ foreach(time_src ${timing_srcs})
     target_link_libraries(${time_bin} gtsam-static CppUnitLite ${Boost_LIBRARIES})
     add_custom_target(${time_bin}.run ${EXECUTABLE_OUTPUT_PATH}${time_bin} ${ARGN})
 endforeach(time_src)
-

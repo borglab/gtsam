@@ -23,15 +23,10 @@ if(    NOT cmake_build_type_tolower STREQUAL "debug"
   message(FATAL_ERROR "Unknown build type \"${CMAKE_BUILD_TYPE}\". Allowed values are Debug, Release, RelWithDebInfo (case-insensitive).")
 endif()
 
-# Turn off function inlining when debugging
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -fno-inline -Wall")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-inline -Wall")
-# No optimization in relwithdebinfo
-set(CMAKE_C_FLAGS_RELWITHDEBINFO "-g -fno-inline -Wall")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -fno-inline -Wall")
-# Eigen no debug in release mode
-set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DEIGEN_NO_DEBUG")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DEIGEN_NO_DEBUG")
+# Add debugging flags
+set(CMAKE_CXX_FLAGS_DEBUG          "${CMAKE_CXX_FLAGS_DEBUG} -fno-inline -Wall")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -fno-inline -Wall -DNDEBUG")
+set(CMAKE_CXX_FLAGS_RELEASE        "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -Wall")
 
 # Configurable Options
 # TODO
@@ -57,17 +52,17 @@ include_directories(
   ${BOOST_INCLUDE_DIR})
 link_directories(${Boost_LIBRARY_DIRS})
 
-# Build GTSAM library
-add_subdirectory(gtsam)
-
 # Build CppUnitLite
 add_subdirectory(CppUnitLite)
+
+# Build GTSAM library
+add_subdirectory(gtsam)
 
 # Build Tests
 add_subdirectory(tests)
 
 # Build wrap
-#add_subdirectory(wrap)
+add_subdirectory(wrap)
 
 # Build examples
 add_subdirectory(examples)
