@@ -16,10 +16,9 @@ foreach(eigen_dir ${eigen_dir_headers_all})
     endif()
 endforeach(eigen_dir)
 
-# build convenience library
-set (ccolamd_srcs 
- CCOLAMD/Source/ccolamd.c 
- CCOLAMD/Source/ccolamd_global.c
- UFconfig/UFconfig.c) 
-
-add_library(ccolamd STATIC ${ccolamd_srcs}) 
+## build convenience library
+#set (3rdparty_srcs 
+# CCOLAMD/Source/ccolamd.c 
+# CCOLAMD/Source/ccolamd_global.c
+# UFconfig/UFconfig.c) 
+#add_library(ccolamd STATIC ${3rdparty_srcs}) 

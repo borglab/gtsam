@@ -1,7 +1,3 @@
-# Build convenience libraries
-file(GLOB base_srcs "*.cpp")
-add_library(base STATIC ${base_srcs})
-
 # Install headers
 file(GLOB base_headers "*.h")
 install(FILES ${base_headers} DESTINATION include/gtsam/base)

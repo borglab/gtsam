@@ -1,7 +1,3 @@
-# Build convenience libraries
-file(GLOB nonlinear_srcs "*.cpp")
-add_library(nonlinear STATIC ${nonlinear_srcs})
-
 # link back to base
 add_dependencies(nonlinear linear)
 

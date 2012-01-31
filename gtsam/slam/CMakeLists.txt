@@ -1,7 +1,3 @@
-# Build convenience libraries
-file(GLOB slam_srcs "*.cpp")
-add_library(slam STATIC ${slam_srcs})
-
 # link back to base
 add_dependencies(slam nonlinear)
 

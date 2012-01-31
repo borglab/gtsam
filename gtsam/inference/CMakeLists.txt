@@ -1,7 +1,3 @@
-# Build convenience libraries
-file(GLOB inference_srcs "*.cpp")
-add_library(inference STATIC ${inference_srcs})
-
 # link back to previous convenience library
 add_dependencies(inference base)
 

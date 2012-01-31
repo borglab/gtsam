@@ -1,7 +1,3 @@
-# Build convenience libraries
-file(GLOB linear_srcs "*.cpp")
-add_library(linear STATIC ${linear_srcs})
-
 # link back to base
 add_dependencies(linear inference)
 

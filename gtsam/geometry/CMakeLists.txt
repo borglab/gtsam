@@ -1,7 +1,3 @@
-# Build convenience libraries
-file(GLOB geometry_srcs "*.cpp")
-add_library(geometry STATIC ${geometry_srcs})
-
 # link back to base
 add_dependencies(geometry base)
 
