@@ -4,10 +4,10 @@ set (gtsam_subdirs
     3rdparty
     base 
     geometry 
- #   inference 
- #   linear 
- #   nonlinear 
- #   slam
+    inference 
+    linear 
+    nonlinear 
+    slam
  )
 
 foreach(subdir ${gtsam_subdirs})
