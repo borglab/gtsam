@@ -370,6 +370,8 @@ class KalmanFilter {
 			const gtsam::SharedDiagonal& model);
 	gtsam::GaussianDensity* update(gtsam::GaussianDensity* p, Matrix H, Vector z,
 			const gtsam::SharedDiagonal& model);
+	gtsam::GaussianDensity* updateQ(gtsam::GaussianDensity* p, Matrix H, Vector z,
+	    Matrix Q);
 };
 
 //*************************************************************************

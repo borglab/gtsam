@@ -143,7 +143,7 @@ namespace gtsam {
      *  physical property, such as velocity or acceleration, and G is derived from physics.
      *  This version allows more realistic models than a diagonal covariance matrix.
      */
-    State update(const State& p, const Matrix& H, const Vector& z,
+    State updateQ(const State& p, const Matrix& H, const Vector& z,
         const Matrix& Q);
 	};
 

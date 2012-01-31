@@ -145,7 +145,7 @@ namespace gtsam {
 	}
 
   /* ************************************************************************* */
-  KalmanFilter::State KalmanFilter::update(const State& p, const Matrix& H, const Vector& z,
+  KalmanFilter::State KalmanFilter::updateQ(const State& p, const Matrix& H, const Vector& z,
       const Matrix& Q) {
     Index k = step(p);
     Matrix M = inverse(Q), Ht = trans(H);

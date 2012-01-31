@@ -272,8 +272,8 @@ TEST( KalmanFilter, QRvsCholesky ) {
 
 	// do the above update again, this time with a full Matrix Q
 	Matrix modelQ = diag(emul(sigmas,sigmas));
-  KalmanFilter::State pa3 = kfa.update(pa, H, z, modelQ);
-  KalmanFilter::State pb3 = kfb.update(pb, H, z, modelQ);
+  KalmanFilter::State pa3 = kfa.updateQ(pa, H, z, modelQ);
+  KalmanFilter::State pb3 = kfb.updateQ(pb, H, z, modelQ);
 
   // Check that they yield the same mean and information matrix
   EXPECT(assert_equal(pa3->mean(), pb3->mean()));
