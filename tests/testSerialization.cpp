@@ -159,8 +159,6 @@ bool equalsDereferencedXML(const T& input = T()) {
 #include <gtsam/slam/pose3SLAM.h>
 #include <gtsam/slam/visualSLAM.h>
 
-#include <gtsam/inference/BayesTree-inl.h>
-
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
@@ -438,9 +436,9 @@ TEST (Serialization, gaussianISAM) {
 
 /* ************************************************************************* */
 /* Create GUIDs for factors in simulated2D */
-BOOST_CLASS_EXPORT_GUID(gtsam::simulated2D::Prior,       "gtsam::simulated2D::Prior"      );
-BOOST_CLASS_EXPORT_GUID(gtsam::simulated2D::Odometry,    "gtsam::simulated2D::Odometry"   );
-BOOST_CLASS_EXPORT_GUID(gtsam::simulated2D::Measurement, "gtsam::simulated2D::Measurement");
+BOOST_CLASS_EXPORT_GUID(simulated2D::Prior,       "gtsam::simulated2D::Prior"      );
+BOOST_CLASS_EXPORT_GUID(simulated2D::Odometry,    "gtsam::simulated2D::Odometry"   );
+BOOST_CLASS_EXPORT_GUID(simulated2D::Measurement, "gtsam::simulated2D::Measurement");
 /* ************************************************************************* */
 TEST (Serialization, smallExample) {
 	using namespace example;
@@ -455,12 +453,12 @@ TEST (Serialization, smallExample) {
 
 /* ************************************************************************* */
 /* Create GUIDs for factors */
-BOOST_CLASS_EXPORT_GUID(gtsam::planarSLAM::Prior,       "gtsam::planarSLAM::Prior");
-BOOST_CLASS_EXPORT_GUID(gtsam::planarSLAM::Bearing,     "gtsam::planarSLAM::Bearing");
-BOOST_CLASS_EXPORT_GUID(gtsam::planarSLAM::Range,       "gtsam::planarSLAM::Range");
-BOOST_CLASS_EXPORT_GUID(gtsam::planarSLAM::BearingRange,"gtsam::planarSLAM::BearingRange");
-BOOST_CLASS_EXPORT_GUID(gtsam::planarSLAM::Odometry,    "gtsam::planarSLAM::Odometry");
-BOOST_CLASS_EXPORT_GUID(gtsam::planarSLAM::Constraint,  "gtsam::planarSLAM::Constraint");
+BOOST_CLASS_EXPORT_GUID(planarSLAM::Prior,       "gtsam::planarSLAM::Prior");
+BOOST_CLASS_EXPORT_GUID(planarSLAM::Bearing,     "gtsam::planarSLAM::Bearing");
+BOOST_CLASS_EXPORT_GUID(planarSLAM::Range,       "gtsam::planarSLAM::Range");
+BOOST_CLASS_EXPORT_GUID(planarSLAM::BearingRange,"gtsam::planarSLAM::BearingRange");
+BOOST_CLASS_EXPORT_GUID(planarSLAM::Odometry,    "gtsam::planarSLAM::Odometry");
+BOOST_CLASS_EXPORT_GUID(planarSLAM::Constraint,  "gtsam::planarSLAM::Constraint");
 /* ************************************************************************* */
 TEST (Serialization, planar_system) {
 	using namespace planarSLAM;
@@ -514,12 +512,12 @@ TEST (Serialization, planar_system) {
 
 /* ************************************************************************* */
 /* Create GUIDs for factors */
-BOOST_CLASS_EXPORT_GUID(gtsam::visualSLAM::PoseConstraint,  "gtsam::visualSLAM::PoseConstraint");
-BOOST_CLASS_EXPORT_GUID(gtsam::visualSLAM::PointConstraint, "gtsam::visualSLAM::PointConstraint");
-BOOST_CLASS_EXPORT_GUID(gtsam::visualSLAM::PosePrior,       "gtsam::visualSLAM::PosePrior");
-BOOST_CLASS_EXPORT_GUID(gtsam::visualSLAM::PointPrior,      "gtsam::visualSLAM::PointPrior");
-BOOST_CLASS_EXPORT_GUID(gtsam::visualSLAM::ProjectionFactor,"gtsam::visualSLAM::ProjectionFactor");
-BOOST_CLASS_EXPORT_GUID(gtsam::visualSLAM::StereoFactor,    "gtsam::visualSLAM::StereoFactor");
+BOOST_CLASS_EXPORT_GUID(visualSLAM::PoseConstraint,  "gtsam::visualSLAM::PoseConstraint");
+BOOST_CLASS_EXPORT_GUID(visualSLAM::PointConstraint, "gtsam::visualSLAM::PointConstraint");
+BOOST_CLASS_EXPORT_GUID(visualSLAM::PosePrior,       "gtsam::visualSLAM::PosePrior");
+BOOST_CLASS_EXPORT_GUID(visualSLAM::PointPrior,      "gtsam::visualSLAM::PointPrior");
+BOOST_CLASS_EXPORT_GUID(visualSLAM::ProjectionFactor,"gtsam::visualSLAM::ProjectionFactor");
+BOOST_CLASS_EXPORT_GUID(visualSLAM::StereoFactor,    "gtsam::visualSLAM::StereoFactor");
 
 /* ************************************************************************* */
 TEST (Serialization, visual_system) {

@@ -46,7 +46,7 @@ add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND})
 add_custom_target(timing)
 
 # Find boost
-find_package(Boost 1.40 REQUIRED)
+find_package(Boost 1.40 COMPONENTS serialization REQUIRED)
 
 # General build settings
 include_directories(
@@ -64,7 +64,7 @@ add_subdirectory(gtsam)
 add_subdirectory(CppUnitLite)
 
 # Build Tests
-#add_subdirectory(tests)
+add_subdirectory(tests)
 
 # Build wrap
 #add_subdirectory(wrap)
