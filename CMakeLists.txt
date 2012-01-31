@@ -1,4 +1,4 @@
-project(gtsam CXX C)
+project(GTSAM CXX C)
 cmake_minimum_required(VERSION 2.6)
 
 # Set the version number for the libarary
