@@ -76,7 +76,7 @@ TEST( wrap, parse ) {
 	EXPECT(assert_equal(exp_using, module.using_namespaces));
 
 	// forward declarations
-	strvec exp_forward; exp_forward += "VectorNotEigen";
+	strvec exp_forward; exp_forward += "VectorNotEigen", "ns::OtherClass";
 	EXPECT(assert_equal(exp_forward, module.forward_declarations));
 
 	// check first class, Point2

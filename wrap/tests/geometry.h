@@ -5,6 +5,7 @@
 using namespace geometry;
 
 class VectorNotEigen;
+class ns::OtherClass;
 
 class Point2 {
  Point2();

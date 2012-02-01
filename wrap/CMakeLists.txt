@@ -18,13 +18,8 @@ install(FILES matlab.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/wrap)
 
 if (GTSAM_LINK_BINARIES_AGAINST_CONVENIENCE_LIBS)
     set(convenience_libs
-       slam
-       nonlinear
-       linear
-       inference
-       geometry
        base
-       ccolamd)
+       )
 else (GTSAM_LINK_BINARIES_AGAINST_CONVENIENCE_LIBS)
     set(convenience_libs
        gtsam-static)

@@ -25,7 +25,6 @@
 #include <boost/foreach.hpp>
 
 #include <iostream>
-//#include <fstream>
 
 using namespace std;
 using namespace wrap;
@@ -98,7 +97,7 @@ Module::Module(const string& interfacePath,
   Rule classArg_p =
     !str_p("const") [assign_a(arg.is_const,true)] >>
   	*namespace_arg_p >>
-    className_p     [assign_a(arg.type)] >>
+    className_p[assign_a(arg.type)] >>
     (ch_p('*')[assign_a(arg.is_ptr,true)] | ch_p('&')[assign_a(arg.is_ref,true)]);
 
   Rule name_p = lexeme_d[alpha_p >> *(alnum_p | '_')];
@@ -199,10 +198,12 @@ Module::Module(const string& interfacePath,
 			str_p("using") >> str_p("namespace")
 			>> namespace_name_p[push_back_a(using_namespaces)] >> ch_p(';');
 
-	Rule forward_delcaration_p =
-			(str_p("class") >> className_p >> ch_p(';'))[push_back_a(forward_declarations, class_name)];
+	Rule forward_declaration_p =
+			str_p("class") >>
+					(*(namespace_name_p >> str_p("::")) >> className_p)[push_back_a(forward_declarations)]
+					>> ch_p(';');
 
-  Rule module_content_p =	comments_p | using_namespace_p | forward_delcaration_p | class_p | namespace_def_p ;
+  Rule module_content_p =	comments_p | using_namespace_p | class_p | forward_declaration_p | namespace_def_p ;
 
   Rule module_p = *module_content_p >> !end_p;
 
