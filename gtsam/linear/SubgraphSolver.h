@@ -85,7 +85,7 @@ public:
 				IterativeSolver(parameters), ordering_(ordering), pairs_(pairs), pc_(pc), useQR_(useQR) {}
 
 	void replaceFactors(const typename LINEAR::shared_ptr &graph);
-	VectorValues::shared_ptr optimize() const ;
+	VectorValues::shared_ptr optimize() ;
 	shared_ordering ordering() const { return ordering_; }
 
 protected:

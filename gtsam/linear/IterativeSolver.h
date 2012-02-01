@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include <gtsam/inference/VariableIndex.h>
+#include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/IterativeOptimizationParameters.h>
 
 namespace gtsam {
@@ -25,10 +27,29 @@ namespace gtsam {
 class IterativeSolver {
 
 public:
-	typedef IterativeOptimizationParameters Parameters;
-	typedef boost::shared_ptr<Parameters> sharedParameters;
 
-	sharedParameters parameters_ ;
+	typedef IterativeOptimizationParameters Parameters;
+	typedef Parameters::shared_ptr sharedParameters;
+
+protected:
+
+	GaussianFactorGraph::shared_ptr graph_;
+	VariableIndex::shared_ptr variableIndex_;
+	Parameters::shared_ptr parameters_ ;
+
+public:
+
+  IterativeSolver(
+    const GaussianFactorGraph::shared_ptr& factorGraph,
+    const VariableIndex::shared_ptr& variableIndex):
+    graph_(factorGraph), variableIndex_(variableIndex),
+    parameters_(new Parameters()) { }
+
+  IterativeSolver(
+    const GaussianFactorGraph::shared_ptr& factorGraph,
+    const VariableIndex::shared_ptr& variableIndex,
+    const Parameters::shared_ptr& parameters):
+    graph_(factorGraph), variableIndex_(variableIndex), parameters_(parameters) { }
 
 	IterativeSolver():
 		parameters_(new IterativeOptimizationParameters()) {}
@@ -41,6 +62,10 @@ public:
 
 	IterativeSolver(const sharedParameters parameters):
 		parameters_(parameters) {}
+
+	virtual ~IterativeSolver() {}
+
+	virtual VectorValues::shared_ptr optimize () = 0;
 };
 
 }

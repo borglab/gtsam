@@ -48,7 +48,7 @@ void SubgraphSolver<GRAPH,LINEAR,VALUES>::replaceFactors(const typename LINEAR::
 }
 
 template<class GRAPH, class LINEAR, class VALUES>
-VectorValues::shared_ptr SubgraphSolver<GRAPH,LINEAR,VALUES>::optimize() const {
+VectorValues::shared_ptr SubgraphSolver<GRAPH,LINEAR,VALUES>::optimize() {
 
 	// preconditioned conjugate gradient
 	VectorValues zeros = pc_->zero();
