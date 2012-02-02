@@ -42,9 +42,9 @@ namespace gtsam {
   /* ************************************************************************* */
   void Values::print(const string& str) const {
     cout << str << "Values with " << size() << " values:\n" << endl;
-    for(KeyValueMap::const_iterator key_value = begin(); key_value != end(); ++key_value) {
+    for(const_iterator key_value = begin(); key_value != end(); ++key_value) {
       cout << "  " << (string)key_value->first << ": ";
-      key_value->second->print("");
+      key_value->second.print("");
     }
   }
 
@@ -53,11 +53,11 @@ namespace gtsam {
     if(this->size() != other.size())
       return false;
     for(const_iterator it1=this->begin(), it2=other.begin(); it1!=this->end(); ++it1, ++it2) {
-      if(typeid(*it1->second) != typeid(*it2->second))
+      if(typeid(it1->second) != typeid(it2->second))
         return false;
       if(it1->first != it2->first)
         return false;
-      if(!it1->second->equals_(*it2->second, tol))
+      if(!it1->second.equals_(it2->second, tol))
         return false;
     }
     return true; // We return false earlier if we find anything that does not match
@@ -77,10 +77,10 @@ namespace gtsam {
   Values Values::retract(const VectorValues& delta, const Ordering& ordering) const {
     Values result;
 
-    for(KeyValueMap::const_iterator key_value = begin(); key_value != end(); ++key_value) {
+    for(const_iterator key_value = begin(); key_value != end(); ++key_value) {
       const SubVector& singleDelta = delta[ordering[key_value->first]]; // Delta for this value
       Symbol key = key_value->first;  // Non-const duplicate to deal with non-const insert argument
-      Value* retractedValue(key_value->second->retract_(singleDelta)); // Retract
+      Value* retractedValue(key_value->second.retract_(singleDelta)); // Retract
       result.values_.insert(key, retractedValue); // Add retracted result directly to result values
     }
 
@@ -102,7 +102,7 @@ namespace gtsam {
       if(it1->first != it2->first)
         throw DynamicValuesMismatched(); // If keys do not match
       // Will throw a dynamic_cast exception if types do not match
-      result.insert(ordering[it1->first], it1->second->localCoordinates_(*it2->second));
+      result.insert(ordering[it1->first], it1->second.localCoordinates_(it2->second));
     }
   }
 
@@ -116,16 +116,16 @@ namespace gtsam {
 
   /* ************************************************************************* */
   void Values::insert(const Values& values) {
-    for(KeyValueMap::const_iterator key_value = values.begin(); key_value != values.end(); ++key_value) {
+    for(const_iterator key_value = values.begin(); key_value != values.end(); ++key_value) {
       Symbol key = key_value->first; // Non-const duplicate to deal with non-const insert argument
-      insert(key, *key_value->second);
+      insert(key, key_value->second);
     }
   }
 
   /* ************************************************************************* */
   void Values::update(const Symbol& j, const Value& val) {
   	// Find the value to update
-  	iterator item = values_.find(j);
+  	KeyValueMap::iterator item = values_.find(j);
   	if(item == values_.end())
   		throw ValuesKeyDoesNotExist("update", j);
 
@@ -138,14 +138,14 @@ namespace gtsam {
 
   /* ************************************************************************* */
   void Values::update(const Values& values) {
-    for(KeyValueMap::const_iterator key_value = values.begin(); key_value != values.end(); ++key_value) {
-      this->update(key_value->first, *key_value->second);
+    for(const_iterator key_value = values.begin(); key_value != values.end(); ++key_value) {
+      this->update(key_value->first, key_value->second);
     }
   }
 
   /* ************************************************************************* */
   void Values::erase(const Symbol& j) {
-    iterator item = values_.find(j);
+    KeyValueMap::iterator item = values_.find(j);
     if(item == values_.end())
       throw ValuesKeyDoesNotExist("erase", j);
     values_.erase(item);
@@ -154,7 +154,7 @@ namespace gtsam {
   /* ************************************************************************* */
   FastList<Symbol> Values::keys() const {
     FastList<Symbol> result;
-    for(KeyValueMap::const_iterator key_value = begin(); key_value != end(); ++key_value)
+    for(const_iterator key_value = begin(); key_value != end(); ++key_value)
       result.push_back(key_value->first);
     return result;
   }
@@ -168,23 +168,17 @@ namespace gtsam {
 
   /* ************************************************************************* */
   vector<size_t> Values::dims(const Ordering& ordering) const {
-//    vector<size_t> result(values_.size());
-//    // Transform with Value::dim(auto_ptr::get(KeyValuePair::second))
-//    result.assign(
-//        boost::make_transform_iterator(values_.begin(),
-//            boost::bind(&Value::dim, boost::bind(&KeyValuePair::second, _1))),
-//        boost::make_transform_iterator(values_.end(),
-//            boost::bind(&Value::dim, boost::bind(&KeyValuePair::second, _1))));
-//    return result;
-    _ValuesDimensionCollector dimCollector(ordering);
-    this->apply(dimCollector);
-    return dimCollector.dimensions;
+    vector<size_t> result(values_.size());
+    BOOST_FOREACH(const ConstKeyValuePair& key_value, *this) {
+      result[ordering[key_value.first]] = key_value.second.dim();
+    }
+    return result;
   }
 
   /* ************************************************************************* */
   Ordering::shared_ptr Values::orderingArbitrary(Index firstVar) const {
     Ordering::shared_ptr ordering(new Ordering);
-    for(KeyValueMap::const_iterator key_value = begin(); key_value != end(); ++key_value) {
+    for(const_iterator key_value = begin(); key_value != end(); ++key_value) {
       ordering->insert(key_value->first, firstVar++);
     }
     return ordering;

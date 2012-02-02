@@ -29,6 +29,9 @@
 
 #include <boost/pool/pool_alloc.hpp>
 #include <boost/ptr_container/ptr_map.hpp>
+#include <boost/iterator/transform_iterator.hpp>
+#include <boost/function.hpp>
+#include <boost/bind.hpp>
 
 #include <gtsam/base/Value.h>
 #include <gtsam/base/FastMap.h>
@@ -40,19 +43,6 @@ namespace gtsam {
 
   // Forward declarations
   class ValueCloneAllocator;
-
-  struct _ValuesDimensionCollector {
-    const Ordering& ordering;
-    std::vector<size_t> dimensions;
-    _ValuesDimensionCollector(const Ordering& _ordering) : ordering(_ordering), dimensions(_ordering.nVars()) {}
-    template<typename I> void operator()(const I& key_value) {
-      Index var;
-      if(ordering.tryAt(key_value->first, var)) {
-        assert(var < dimensions.size());
-        dimensions[var] = key_value->second->dim();
-      }
-    }
-  };
 
 /**
   * A non-templated config holding any types of Manifold-group elements.  A
@@ -81,15 +71,33 @@ namespace gtsam {
     // The member to store the values, see just above
     KeyValueMap values_;
 
-    // Type obtained by iterating
-    typedef KeyValueMap::const_iterator::value_type KeyValuePair;
+    // Types obtained by iterating
+    typedef KeyValueMap::const_iterator::value_type ConstKeyValuePtrPair;
+    typedef KeyValueMap::iterator::value_type KeyValuePtrPair;
 
   public:
 
-    typedef KeyValueMap::iterator iterator;
-    typedef KeyValueMap::const_iterator const_iterator;
-    typedef KeyValueMap::reverse_iterator reverse_iterator;
-    typedef KeyValueMap::const_reverse_iterator const_reverse_iterator;
+    /// A pair of const references to the key and value, the dereferenced type of the const_iterator and const_reverse_iterator
+    typedef std::pair<const Symbol&, const Value&> ConstKeyValuePair;
+
+    /// A pair of references to the key and value, the dereferenced type of the iterator and reverse_iterator
+    typedef std::pair<const Symbol&, Value&> KeyValuePair;
+
+    /// Mutable forward iterator, with value type KeyValuePair
+    typedef boost::transform_iterator<
+        boost::function1<KeyValuePair, const KeyValuePtrPair&>, KeyValueMap::iterator> iterator;
+
+    /// Const forward iterator, with value type ConstKeyValuePair
+    typedef boost::transform_iterator<
+        boost::function1<ConstKeyValuePair, const ConstKeyValuePtrPair&>, KeyValueMap::const_iterator> const_iterator;
+
+    /// Mutable reverse iterator, with value type KeyValuePair
+    typedef boost::transform_iterator<
+        boost::function1<KeyValuePair, const KeyValuePtrPair&>, KeyValueMap::reverse_iterator> reverse_iterator;
+
+    /// Const reverse iterator, with value type ConstKeyValuePair
+    typedef boost::transform_iterator<
+        boost::function1<ConstKeyValuePair, const ConstKeyValuePtrPair&>, KeyValueMap::const_reverse_iterator> const_reverse_iterator;
 
     /** Default constructor creates an empty Values class */
     Values() {}
@@ -165,14 +173,21 @@ namespace gtsam {
     /** Get a zero VectorValues of the correct structure */
     VectorValues zeroVectors(const Ordering& ordering) const;
 
-    const_iterator begin() const { return values_.begin(); }
-    const_iterator end() const { return values_.end(); }
-    iterator begin() { return values_.begin(); }
-    iterator end() { return values_.end(); }
-    const_reverse_iterator rbegin() const { return values_.rbegin(); }
-    const_reverse_iterator rend() const { return values_.rend(); }
-    reverse_iterator rbegin() { return values_.rbegin(); }
-    reverse_iterator rend() { return values_.rend(); }
+  private:
+    static std::pair<const Symbol&, const Value&> make_const_deref_pair(const KeyValueMap::const_iterator::value_type& key_value) {
+      return std::make_pair<const Symbol&, const Value&>(key_value.first, *key_value.second); }
+    static std::pair<const Symbol&, Value&> make_deref_pair(const KeyValueMap::iterator::value_type& key_value) {
+      return std::make_pair<const Symbol&, Value&>(key_value.first, *key_value.second); }
+
+  public:
+    const_iterator begin() const { return boost::make_transform_iterator(values_.begin(), &make_const_deref_pair); }
+    const_iterator end() const { return boost::make_transform_iterator(values_.end(), &make_const_deref_pair); }
+    iterator begin() { return boost::make_transform_iterator(values_.begin(), &make_deref_pair); }
+    iterator end() { return boost::make_transform_iterator(values_.end(), &make_deref_pair); }
+    const_reverse_iterator rbegin() const { return boost::make_transform_iterator(values_.rbegin(), &make_const_deref_pair); }
+    const_reverse_iterator rend() const { return boost::make_transform_iterator(values_.rend(), &make_const_deref_pair); }
+    reverse_iterator rbegin() { return boost::make_transform_iterator(values_.rbegin(), &make_deref_pair); }
+    reverse_iterator rend() { return boost::make_transform_iterator(values_.rend(), &make_deref_pair); }
 
     /// @name Manifold Operations
     /// @{
@@ -187,8 +202,6 @@ namespace gtsam {
     void localCoordinates(const Values& cp, const Ordering& ordering, VectorValues& delta) const;
 
     ///@}
-
-    // imperative methods:
 
     /** Add a variable with the given j, throws KeyAlreadyExists<J> if j is already present */
     void insert(const Symbol& j, const Value& val);
@@ -205,12 +218,6 @@ namespace gtsam {
     /** Remove a variable from the config, throws KeyDoesNotExist<J> if j is not present */
     void erase(const Symbol& j);
 
-    /** Remove a variable from the config while returning the dimensionality of
-     * the removed element (normally not needed by user code), throws
-     * KeyDoesNotExist<J> if j is not present.
-     */
-    //void erase(const J& j, size_t& dim);
-
     /**
      * Returns a set of keys in the config
      * Note: by construction, the list is ordered
@@ -225,23 +232,6 @@ namespace gtsam {
 
     /** Create an array of variable dimensions using the given ordering */
     std::vector<size_t> dims(const Ordering& ordering) const;
-
-    /**
-     * Apply a class with an application operator() to a const_iterator over
-     * every <key,value> pair.  The operator must be able to handle such an
-     * iterator for every type in the Values, (i.e. through templating).
-     */
-    template<typename A>
-    void apply(A& operation) {
-      for(iterator it = begin(); it != end(); ++it)
-        operation(it);
-    }
-
-    template<typename A>
-    void apply(A& operation) const {
-      for(const_iterator it = begin(); it != end(); ++it)
-        operation(it);
-    }
 
     /**
      * Generate a default ordering, simply in key sort order.  To instead

@@ -41,7 +41,7 @@ namespace gtsam {
   template<typename ValueType>
   const ValueType& Values::at(const Symbol& j) const {
     // Find the item
-    const_iterator item = values_.find(j);
+    KeyValueMap::const_iterator item = values_.find(j);
 
     // Throw exception if it does not exist
     if(item == values_.end())
@@ -69,7 +69,7 @@ namespace gtsam {
   template<typename ValueType>
   boost::optional<const ValueType&> Values::exists(const Symbol& j) const {
     // Find the item
-    const_iterator item = values_.find(j);
+    KeyValueMap::const_iterator item = values_.find(j);
 
     if(item != values_.end()) {
       // Check the type and throw exception if incorrect
