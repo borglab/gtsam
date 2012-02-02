@@ -34,7 +34,7 @@ using namespace boost;
 
 using namespace std;
 using namespace gtsam;
-using namespace gtsam::visualSLAM;
+using namespace visualSLAM;
 using namespace boost;
 
 /* ************************************************************************* */

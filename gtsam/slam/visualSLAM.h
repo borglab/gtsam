@@ -30,9 +30,10 @@
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/geometry/SimpleCamera.h>
 
-namespace gtsam {
 
-	namespace visualSLAM {
+namespace visualSLAM {
+
+	using namespace gtsam;
 
   /**
    * Typedefs that make up the visualSLAM namespace.
@@ -149,4 +150,4 @@ namespace gtsam {
   /// typedef for Optimizer. The current default will use the multi-frontal solver
   typedef NonlinearOptimizer<Graph, Values> Optimizer;
 
-} } // namespaces
+} // namespaces
