@@ -28,8 +28,8 @@
 namespace gtsam {
 
 	/**
-	 * A non-linear factor graph is templated on a values structure, but the factor type
-	 * is fixed as a NonlinearFactor. The values structures are typically (in SAM) more general
+	 * A non-linear factor graph is a graph of non-Gaussian, i.e. non-linear factors,
+	 * which derive from NonlinearFactor. The values structures are typically (in SAM) more general
 	 * than just vectors, e.g., Rot3 or Pose3, which are objects in non-linear manifolds.
 	 * Linearizing the non-linear factor graph creates a linear factor graph on the 
 	 * tangent vector space at the linearization point. Because the tangent space is a true
