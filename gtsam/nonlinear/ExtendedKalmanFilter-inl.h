@@ -30,7 +30,7 @@ namespace gtsam {
 	template<class KEY>
 	typename ExtendedKalmanFilter<KEY>::T ExtendedKalmanFilter<KEY>::solve_(
 			const GaussianFactorGraph& linearFactorGraph, const Ordering& ordering,
-			const DynamicValues& linearizationPoints, const KEY& lastKey,
+			const Values& linearizationPoints, const KEY& lastKey,
 			JacobianFactor::shared_ptr& newPrior) const {
 
 		// Extract the Index of the provided last key
@@ -100,7 +100,7 @@ namespace gtsam {
 		ordering.insert(x1, 1);
 
 		// Create a set of linearization points
-		DynamicValues linearizationPoints;
+		Values linearizationPoints;
 		linearizationPoints.insert(x0, x_);
 		linearizationPoints.insert(x1, x_); // TODO should this really be x_ ?
 
@@ -138,7 +138,7 @@ namespace gtsam {
 		ordering.insert(x0, 0);
 
 		// Create a set of linearization points
-		DynamicValues linearizationPoints;
+		Values linearizationPoints;
 		linearizationPoints.insert(x0, x_);
 
 		// Create a Gaussian Factor Graph

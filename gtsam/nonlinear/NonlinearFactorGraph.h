@@ -50,10 +50,10 @@ namespace gtsam {
     std::set<Symbol> keys() const;
 
 		/** unnormalized error */
-		double error(const DynamicValues& c) const;
+		double error(const Values& c) const;
 
 		/** Unnormalized probability. O(n) */
-		double probPrime(const DynamicValues& c) const;
+		double probPrime(const Values& c) const;
 
 		template<class F>
 		void add(const F& factor) {
@@ -72,20 +72,20 @@ namespace gtsam {
 		 * ordering is found.
 		 */
 		std::pair<SymbolicFactorGraph::shared_ptr, Ordering::shared_ptr>
-		symbolic(const DynamicValues& config) const;
+		symbolic(const Values& config) const;
 
     /**
      * Compute a fill-reducing ordering using COLAMD.  This returns the
      * ordering and a VariableIndex, which can later be re-used to save
      * computation.
      */
-		Ordering::shared_ptr orderingCOLAMD(const DynamicValues& config) const;
+		Ordering::shared_ptr orderingCOLAMD(const Values& config) const;
 
 		/**
 		 * linearize a nonlinear factor graph
 		 */
 		boost::shared_ptr<GaussianFactorGraph >
-				linearize(const DynamicValues& config, const Ordering& ordering) const;
+				linearize(const Values& config, const Ordering& ordering) const;
 
 	private:
 

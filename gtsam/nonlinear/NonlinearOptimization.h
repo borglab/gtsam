@@ -43,7 +43,7 @@ namespace gtsam {
 	 * optimization that returns the values
 	 */
 	template<class G>
-	DynamicValues optimize(const G& graph, const DynamicValues& initialEstimate,
+	Values optimize(const G& graph, const Values& initialEstimate,
 			const NonlinearOptimizationParameters& parameters = NonlinearOptimizationParameters(),
 			const LinearSolver& solver = MULTIFRONTAL,
 			const NonlinearOptimizationMethod& nonlinear_method = LM);

@@ -38,8 +38,8 @@ typedef NonlinearFactorGraph Graph;
 TEST(Rot3, optimize) {
 
   // Optimize a circle
-  DynamicValues truth;
-  DynamicValues initial;
+  Values truth;
+  Values initial;
   Graph fg;
   fg.add(Prior(0, Rot3(), sharedSigma(3, 0.01)));
   for(int j=0; j<6; ++j) {
@@ -49,7 +49,7 @@ TEST(Rot3, optimize) {
   }
 
   NonlinearOptimizationParameters params;
-  DynamicValues final = optimize(fg, initial, params);
+  Values final = optimize(fg, initial, params);
 
   EXPECT(assert_equal(truth, final, 1e-5));
 }

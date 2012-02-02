@@ -92,13 +92,13 @@ int main(int argc, char* argv[]) {
   graph.push_back(factor);
 
   /* 3. Create an initial estimate for the camera pose */
-  DynamicValues initial;
+  Values initial;
   initial.insert(X, Pose3(Rot3(1.,0.,0.,
                                0.,-1.,0.,
                                0.,0.,-1.), Point3(0.,0.,2.0)));
 
   /* 4. Optimize the graph using Levenberg-Marquardt*/
-  DynamicValues result = optimize<NonlinearFactorGraph> (graph, initial);
+  Values result = optimize<NonlinearFactorGraph> (graph, initial);
   result.print("Final result: ");
 
   return 0;

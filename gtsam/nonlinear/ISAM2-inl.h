@@ -580,10 +580,10 @@ ISAM2Result ISAM2<CONDITIONAL, GRAPH>::update(
 
 /* ************************************************************************* */
 template<class CONDITIONAL, class GRAPH>
-DynamicValues ISAM2<CONDITIONAL, GRAPH>::calculateEstimate() const {
+Values ISAM2<CONDITIONAL, GRAPH>::calculateEstimate() const {
   // We use ExpmapMasked here instead of regular expmap because the former
   // handles Permuted<VectorValues>
-	DynamicValues ret(theta_);
+	Values ret(theta_);
   vector<bool> mask(ordering_.nVars(), true);
   Impl::ExpmapMasked(ret, delta_, ordering_, mask);
   return ret;
@@ -600,7 +600,7 @@ typename KEY::Value ISAM2<CONDITIONAL, GRAPH>::calculateEstimate(const KEY& key)
 
 /* ************************************************************************* */
 template<class CONDITIONAL, class GRAPH>
-DynamicValues ISAM2<CONDITIONAL, GRAPH>::calculateBestEstimate() const {
+Values ISAM2<CONDITIONAL, GRAPH>::calculateBestEstimate() const {
   VectorValues delta(theta_.dims(ordering_));
   optimize2(this->root(), delta);
   return theta_.retract(delta, ordering_);

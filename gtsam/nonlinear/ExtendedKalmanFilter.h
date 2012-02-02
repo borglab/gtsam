@@ -53,7 +53,7 @@ namespace gtsam {
 		JacobianFactor::shared_ptr priorFactor_; // density
 
 		T solve_(const GaussianFactorGraph& linearFactorGraph,
-				const Ordering& ordering, const DynamicValues& linearizationPoints,
+				const Ordering& ordering, const Values& linearizationPoints,
 				const KEY& x, JacobianFactor::shared_ptr& newPrior) const;
 
 	public:

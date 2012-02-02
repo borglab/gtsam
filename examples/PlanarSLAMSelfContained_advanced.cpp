@@ -108,7 +108,7 @@ int main(int argc, char** argv) {
 	graph->print("Full Graph");
 
 	// initialize to noisy points
-	boost::shared_ptr<DynamicValues> initial(new DynamicValues);
+	boost::shared_ptr<Values> initial(new Values);
 	initial->insert(x1, Pose2(0.5, 0.0, 0.2));
 	initial->insert(x2, Pose2(2.3, 0.1,-0.2));
 	initial->insert(x3, Pose2(4.1, 0.1, 0.1));

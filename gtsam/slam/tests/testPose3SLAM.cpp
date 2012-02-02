@@ -49,7 +49,7 @@ TEST(Pose3Graph, optimizeCircle) {
 
 	// Create a hexagon of poses
 	double radius = 10;
-	DynamicValues hexagon = pose3SLAM::circle(6,radius);
+	Values hexagon = pose3SLAM::circle(6,radius);
   Pose3 gT0 = hexagon[Key(0)], gT1 = hexagon[Key(1)];
 
 	// create a Pose graph with one equality constraint and one measurement
@@ -66,7 +66,7 @@ TEST(Pose3Graph, optimizeCircle) {
   fg->addConstraint(5,0, _0T1, covariance);
 
   // Create initial config
-  boost::shared_ptr<DynamicValues> initial(new DynamicValues());
+  boost::shared_ptr<Values> initial(new Values());
   initial->insert(Key(0), gT0);
   initial->insert(Key(1), hexagon[Key(1)].retract(Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
   initial->insert(Key(2), hexagon[Key(2)].retract(Vector_(6, 0.1,-0.1, 0.1, 0.1,-0.1, 0.1)));
@@ -81,7 +81,7 @@ TEST(Pose3Graph, optimizeCircle) {
   pose3SLAM::Optimizer optimizer0(fg, initial, ordering, params);
   pose3SLAM::Optimizer optimizer = optimizer0.levenbergMarquardt();
 
-  DynamicValues actual = *optimizer.values();
+  Values actual = *optimizer.values();
 
   // Check with ground truth
   CHECK(assert_equal(hexagon, actual,1e-4));
@@ -110,13 +110,13 @@ TEST(Pose3Graph, partial_prior_height) {
 	pose3SLAM::Graph graph;
 	graph.add(height);
 
-	DynamicValues values;
+	Values values;
 	values.insert(key, init);
 
 	// linearization
 	EXPECT_DOUBLES_EQUAL(2.0, height.error(values), tol);
 
-	DynamicValues actual = *pose3SLAM::Optimizer::optimizeLM(graph, values);
+	Values actual = *pose3SLAM::Optimizer::optimizeLM(graph, values);
 	EXPECT(assert_equal(expected, actual[key], tol));
 	EXPECT_DOUBLES_EQUAL(0.0, graph.error(actual), tol);
 }
@@ -134,7 +134,7 @@ TEST( Pose3Factor, error )
 	Pose3Factor factor(1,2, z, I6);
 
 	// Create config
-	DynamicValues x;
+	Values x;
 	x.insert(Key(1),t1);
 	x.insert(Key(2),t2);
 
@@ -165,10 +165,10 @@ TEST(Pose3Graph, partial_prior_xy) {
 	pose3SLAM::Graph graph;
 	graph.add(priorXY);
 
-	DynamicValues values;
+	Values values;
 	values.insert(key, init);
 
-	DynamicValues actual = *pose3SLAM::Optimizer::optimizeLM(graph, values);
+	Values actual = *pose3SLAM::Optimizer::optimizeLM(graph, values);
 	EXPECT(assert_equal(expected, actual[key], tol));
 	EXPECT_DOUBLES_EQUAL(0.0, graph.error(actual), tol);
 }
@@ -181,23 +181,23 @@ Rot3 R3(Point3( 0,-1, 0), Point3(-1, 0, 0), Point3(0, 0, -1));
 Rot3 R4(Point3( 1, 0, 0), Point3( 0,-1, 0), Point3(0, 0, -1));
 
 /* ************************************************************************* */
-TEST( DynamicValues, pose3Circle )
+TEST( Values, pose3Circle )
 {
 	// expected is 4 poses tangent to circle with radius 1m
-	DynamicValues expected;
+	Values expected;
 	expected.insert(Key(0), Pose3(R1, Point3( 1, 0, 0)));
 	expected.insert(Key(1), Pose3(R2, Point3( 0, 1, 0)));
 	expected.insert(Key(2), Pose3(R3, Point3(-1, 0, 0)));
 	expected.insert(Key(3), Pose3(R4, Point3( 0,-1, 0)));
 
-	DynamicValues actual = pose3SLAM::circle(4,1.0);
+	Values actual = pose3SLAM::circle(4,1.0);
 	CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
-TEST( DynamicValues, expmap )
+TEST( Values, expmap )
 {
-	DynamicValues expected;
+	Values expected;
 	expected.insert(Key(0), Pose3(R1, Point3( 1.0, 0.1, 0)));
 	expected.insert(Key(1), Pose3(R2, Point3(-0.1, 1.0, 0)));
 	expected.insert(Key(2), Pose3(R3, Point3(-1.0,-0.1, 0)));
@@ -210,7 +210,7 @@ TEST( DynamicValues, expmap )
 			0.0,0.0,0.0,  0.1, 0.0, 0.0,
 			0.0,0.0,0.0,  0.1, 0.0, 0.0,
 			0.0,0.0,0.0,  0.1, 0.0, 0.0);
-	DynamicValues actual = pose3SLAM::circle(4,1.0).retract(delta, ordering);
+	Values actual = pose3SLAM::circle(4,1.0).retract(delta, ordering);
 	CHECK(assert_equal(expected,actual));
 }
 

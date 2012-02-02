@@ -43,7 +43,7 @@ namespace gtsam {
 		 * @param c character to use for keys
 		 * @return circle of n 2D poses
 		 */
-		DynamicValues circle(size_t n, double R);
+		Values circle(size_t n, double R);
 
 		/// A prior factor on Key with Pose2 data type.
 		typedef PriorFactor<Key> Prior;

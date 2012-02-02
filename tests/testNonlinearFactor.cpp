@@ -82,7 +82,7 @@ TEST( NonlinearFactor, NonlinearFactor )
   Graph fg = createNonlinearFactorGraph();
 
   // create a values structure for the non linear factor graph
-  example::Values cfg = createNoisyValues();
+  Values cfg = createNoisyValues();
 
   // get the factor "f1" from the factor graph
   Graph::sharedFactor factor = fg[0];
@@ -103,7 +103,7 @@ TEST( NonlinearFactor, NonlinearFactor )
 /* ************************************************************************* */
 TEST( NonlinearFactor, linearize_f1 )
 {
-	example::Values c = createNoisyValues();
+	Values c = createNoisyValues();
 
   // Grab a non-linear factor
   Graph nfg = createNonlinearFactorGraph();
@@ -125,7 +125,7 @@ TEST( NonlinearFactor, linearize_f1 )
 /* ************************************************************************* */
 TEST( NonlinearFactor, linearize_f2 )
 {
-	example::Values c = createNoisyValues();
+	Values c = createNoisyValues();
 
   // Grab a non-linear factor
   Graph nfg = createNonlinearFactorGraph();
@@ -148,7 +148,7 @@ TEST( NonlinearFactor, linearize_f3 )
   Graph::sharedFactor nlf = nfg[2];
 
   // We linearize at noisy config from SmallExample
-  example::Values c = createNoisyValues();
+  Values c = createNoisyValues();
   GaussianFactor::shared_ptr actual = nlf->linearize(c, *c.orderingArbitrary());
 
   GaussianFactorGraph lfg = createGaussianFactorGraph(*c.orderingArbitrary());
@@ -165,7 +165,7 @@ TEST( NonlinearFactor, linearize_f4 )
   Graph::sharedFactor nlf = nfg[3];
 
   // We linearize at noisy config from SmallExample
-  example::Values c = createNoisyValues();
+  Values c = createNoisyValues();
   GaussianFactor::shared_ptr actual = nlf->linearize(c, *c.orderingArbitrary());
 
   GaussianFactorGraph lfg = createGaussianFactorGraph(*c.orderingArbitrary());
@@ -181,7 +181,7 @@ TEST( NonlinearFactor, size )
 	Graph fg = createNonlinearFactorGraph();
 
 	// create a values structure for the non linear factor graph
-	example::Values cfg = createNoisyValues();
+	Values cfg = createNoisyValues();
 
 	// get some factors from the graph
 	Graph::sharedFactor factor1 = fg[0], factor2 = fg[1],
@@ -201,7 +201,7 @@ TEST( NonlinearFactor, linearize_constraint1 )
 	Point2 mu(1., -1.);
 	Graph::sharedFactor f0(new simulated2D::Prior(mu, constraint, 1));
 
-	example::Values config;
+	Values config;
 	config.insert(simulated2D::PoseKey(1), Point2(1.0, 2.0));
 	GaussianFactor::shared_ptr actual = f0->linearize(config, *config.orderingArbitrary());
 
@@ -221,7 +221,7 @@ TEST( NonlinearFactor, linearize_constraint2 )
 	Point2 z3(1.,-1.);
 	simulated2D::Measurement f0(z3, constraint, 1,1);
 
-	example::Values config;
+	Values config;
 	config.insert(simulated2D::PoseKey(1), Point2(1.0, 2.0));
 	config.insert(simulated2D::PointKey(1), Point2(5.0, 4.0));
 	GaussianFactor::shared_ptr actual = f0.linearize(config, *config.orderingArbitrary());
@@ -262,7 +262,7 @@ public:
 /* ************************************ */
 TEST(NonlinearFactor, NonlinearFactor4) {
   TestFactor4 tf;
-  DynamicValues tv;
+  Values tv;
   tv.insert(TestKey(1), LieVector(1, 1.0));
   tv.insert(TestKey(2), LieVector(1, 2.0));
   tv.insert(TestKey(3), LieVector(1, 3.0));
@@ -309,7 +309,7 @@ public:
 /* ************************************ */
 TEST(NonlinearFactor, NonlinearFactor5) {
   TestFactor5 tf;
-  DynamicValues tv;
+  Values tv;
   tv.insert(TestKey(1), LieVector(1, 1.0));
   tv.insert(TestKey(2), LieVector(1, 2.0));
   tv.insert(TestKey(3), LieVector(1, 3.0));
@@ -361,7 +361,7 @@ public:
 /* ************************************ */
 TEST(NonlinearFactor, NonlinearFactor6) {
   TestFactor6 tf;
-  DynamicValues tv;
+  Values tv;
   tv.insert(TestKey(1), LieVector(1, 1.0));
   tv.insert(TestKey(2), LieVector(1, 2.0));
   tv.insert(TestKey(3), LieVector(1, 3.0));

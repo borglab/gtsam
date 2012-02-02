@@ -38,7 +38,7 @@ namespace gtsam {
    */
   typedef TypedSymbol<Pose3,'x'> PoseKey;									///< The key type used for poses
   typedef TypedSymbol<Point3,'l'> PointKey;								///< The key type used for points
-  typedef boost::shared_ptr<DynamicValues> shared_values;				///< shared pointer to values data structure
+  typedef boost::shared_ptr<Values> shared_values;				///< shared pointer to values data structure
 
   typedef NonlinearEquality<PoseKey> PoseConstraint;	 ///< put a hard constraint on a pose
   typedef NonlinearEquality<PointKey> PointConstraint; ///< put a hard constraint on a point

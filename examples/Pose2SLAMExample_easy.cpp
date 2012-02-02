@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
 
     /* 3. Create the data structure to hold the initial estinmate to the solution
      * initialize to noisy points */
-	DynamicValues initial;
+	Values initial;
 	initial.insert(x1, Pose2(0.5, 0.0, 0.2));
 	initial.insert(x2, Pose2(2.3, 0.1,-0.2));
 	initial.insert(x3, Pose2(4.1, 0.1, 0.1));
@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
 
 	/* 4 Single Step Optimization
 	* optimize using Levenberg-Marquardt optimization with an ordering from colamd */
-	DynamicValues result = optimize<Graph>(graph, initial);
+	Values result = optimize<Graph>(graph, initial);
 	result.print("final result");
 
 

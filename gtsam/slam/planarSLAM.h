@@ -40,37 +40,6 @@ namespace gtsam {
 		/// Typedef for a PointKey with Point2 data and 'l' symbol
 		typedef TypedSymbol<Point2, 'l'> PointKey;
 
-		/// Values class, inherited from TupleValues2, using PoseKeys and PointKeys
-		struct Values: public DynamicValues {
-
-			/// Default constructor
-			Values() {}
-
-			/// Copy constructor
-			Values(const DynamicValues& values) :
-				DynamicValues(values) {
-			}
-
-			/// From sub-values
-//			Values(const DynamicValues& poses, const DynamicValues& points) :
-//				DynamicValues(poses, points) {
-//			}
-
-			// Convenience for MATLAB wrapper, which does not allow for identically named methods
-
-			/// get a pose
-	    Pose2 pose(int key) const {	return (*this)[PoseKey(key)]; }
-
-	    /// get a point
-	    Point2 point(int key) const {	return (*this)[PointKey(key)]; }
-
-			/// insert a pose
-		  void insertPose(int key, const Pose2& pose) {insert(PoseKey(key), pose); }
-
-			/// insert a point
-		  void insertPoint(int key, const Point2& point) {insert(PointKey(key), point); }
-		};
-
 		/**
 		 * List of typedefs for factors
 		 */
@@ -120,7 +89,7 @@ namespace gtsam {
 					const Rot2& bearing, double range, const SharedNoiseModel& model);
 
 			/// Optimize
-			Values optimize(const DynamicValues& initialEstimate) {
+			Values optimize(const Values& initialEstimate) {
 				typedef NonlinearOptimizer<Graph> Optimizer;
 				return *Optimizer::optimizeLM(*this, initialEstimate,
 										NonlinearOptimizationParameters::LAMBDA);

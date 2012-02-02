@@ -112,7 +112,7 @@ int main() {
 	 * on the type of key used to find the appropriate value map if there
 	 * are multiple types of variables.
 	 */
-	DynamicValues initial;
+	Values initial;
 	initial.insert(key, Rot2::fromAngle(20 * degree));
 	initial.print("initial estimate");
 
@@ -124,7 +124,7 @@ int main() {
 	 * initial estimate.  This will yield a new RotValues structure
 	 * with the final state of the optimization.
 	 */
-	DynamicValues result = optimize<Graph>(graph, initial);
+	Values result = optimize<Graph>(graph, initial);
 	result.print("final result");
 
 	return 0;

@@ -44,7 +44,7 @@ PoseKey key(1);
 /* ************************************************************************* */
 TEST ( NonlinearEquality, linearization ) {
 	Pose2 value = Pose2(2.1, 1.0, 2.0);
-	DynamicValues linearize;
+	Values linearize;
 	linearize.insert(key, value);
 
 	// create a nonlinear equality constraint
@@ -62,7 +62,7 @@ TEST ( NonlinearEquality, linearization_pose ) {
 
 	PoseKey key(1);
 	Pose2 value;
-	DynamicValues config;
+	Values config;
 	config.insert(key, value);
 
 	// create a nonlinear equality constraint
@@ -76,7 +76,7 @@ TEST ( NonlinearEquality, linearization_pose ) {
 TEST ( NonlinearEquality, linearization_fail ) {
 	Pose2 value = Pose2(2.1, 1.0, 2.0);
 	Pose2 wrong = Pose2(2.1, 3.0, 4.0);
-	DynamicValues bad_linearize;
+	Values bad_linearize;
 	bad_linearize.insert(key, wrong);
 
 	// create a nonlinear equality constraint
@@ -92,7 +92,7 @@ TEST ( NonlinearEquality, linearization_fail_pose ) {
 	PoseKey key(1);
 	Pose2 value(2.0, 1.0, 2.0),
 		  wrong(2.0, 3.0, 4.0);
-	DynamicValues bad_linearize;
+	Values bad_linearize;
 	bad_linearize.insert(key, wrong);
 
 	// create a nonlinear equality constraint
@@ -108,7 +108,7 @@ TEST ( NonlinearEquality, linearization_fail_pose_origin ) {
 	PoseKey key(1);
 	Pose2 value,
 		  wrong(2.0, 3.0, 4.0);
-	DynamicValues bad_linearize;
+	Values bad_linearize;
 	bad_linearize.insert(key, wrong);
 
 	// create a nonlinear equality constraint
@@ -122,7 +122,7 @@ TEST ( NonlinearEquality, linearization_fail_pose_origin ) {
 TEST ( NonlinearEquality, error ) {
 	Pose2 value = Pose2(2.1, 1.0, 2.0);
 	Pose2 wrong = Pose2(2.1, 3.0, 4.0);
-	DynamicValues feasible, bad_linearize;
+	Values feasible, bad_linearize;
 	feasible.insert(key, value);
 	bad_linearize.insert(key, wrong);
 
@@ -167,7 +167,7 @@ TEST ( NonlinearEquality, allow_error_pose ) {
 	EXPECT(assert_equal(expVec, actVec, 1e-5));
 
 	// the actual error should have a gain on it
-	DynamicValues config;
+	Values config;
 	config.insert(key1, badPoint1);
 	double actError = nle.error(config);
 	DOUBLES_EQUAL(500.0, actError, 1e-9);
@@ -194,7 +194,7 @@ TEST ( NonlinearEquality, allow_error_optimize ) {
 
 	// initialize away from the ideal
 	Pose2 initPose(0.0, 2.0, 3.0);
-	boost::shared_ptr<DynamicValues> init(new DynamicValues());
+	boost::shared_ptr<Values> init(new Values());
 	init->insert(key1, initPose);
 
 	// optimize
@@ -205,7 +205,7 @@ TEST ( NonlinearEquality, allow_error_optimize ) {
 	PoseOptimizer result = optimizer.levenbergMarquardt();
 
 	// verify
-	DynamicValues expected;
+	Values expected;
 	expected.insert(key1, feasible1);
 	EXPECT(assert_equal(expected, *result.values()));
 }
@@ -218,7 +218,7 @@ TEST ( NonlinearEquality, allow_error_optimize_with_factors ) {
 	Pose2 feasible1(1.0, 2.0, 3.0);
 
 	// initialize away from the ideal
-	boost::shared_ptr<DynamicValues> init(new DynamicValues());
+	boost::shared_ptr<Values> init(new Values());
 	Pose2 initPose(0.0, 2.0, 3.0);
 	init->insert(key1, initPose);
 
@@ -241,7 +241,7 @@ TEST ( NonlinearEquality, allow_error_optimize_with_factors ) {
 	PoseOptimizer result = optimizer.levenbergMarquardt();
 
 	// verify
-	DynamicValues expected;
+	Values expected;
 	expected.insert(key1, feasible1);
 	EXPECT(assert_equal(expected, *result.values()));
 }
@@ -252,7 +252,7 @@ SharedDiagonal soft_model = noiseModel::Isotropic::Sigma(2, 1.0);
 
 typedef NonlinearFactorGraph Graph;
 typedef boost::shared_ptr<Graph> shared_graph;
-typedef boost::shared_ptr<DynamicValues> shared_values;
+typedef boost::shared_ptr<Values> shared_values;
 typedef NonlinearOptimizer<Graph> Optimizer;
 
 /* ************************************************************************* */
@@ -262,14 +262,14 @@ TEST( testNonlinearEqualityConstraint, unary_basics ) {
 	double mu = 1000.0;
 	eq2D::UnaryEqualityConstraint constraint(pt, key, mu);
 
-	simulated2D::Values config1;
+	Values config1;
 	config1.insert(key, pt);
 	EXPECT(constraint.active(config1));
 	EXPECT(assert_equal(zero(2), constraint.evaluateError(pt), tol));
 	EXPECT(assert_equal(zero(2), constraint.unwhitenedError(config1), tol));
 	EXPECT_DOUBLES_EQUAL(0.0, constraint.error(config1), tol);
 
-	simulated2D::Values config2;
+	Values config2;
 	Point2 ptBad1(2.0, 2.0);
 	config2.insert(key, ptBad1);
 	EXPECT(constraint.active(config2));
@@ -287,13 +287,13 @@ TEST( testNonlinearEqualityConstraint, unary_linearization ) {
 	ordering += key;
 	eq2D::UnaryEqualityConstraint constraint(pt, key, mu);
 
-	simulated2D::Values config1;
+	Values config1;
 	config1.insert(key, pt);
 	GaussianFactor::shared_ptr actual1 = constraint.linearize(config1, ordering);
 	GaussianFactor::shared_ptr expected1(new JacobianFactor(ordering[key], eye(2,2), zero(2), hard_model));
 	EXPECT(assert_equal(*expected1, *actual1, tol));
 
-	simulated2D::Values config2;
+	Values config2;
 	Point2 ptBad(2.0, 2.0);
 	config2.insert(key, ptBad);
 	GaussianFactor::shared_ptr actual2 = constraint.linearize(config2, ordering);
@@ -319,13 +319,13 @@ TEST( testNonlinearEqualityConstraint, unary_simple_optimization ) {
 	graph->push_back(constraint);
 	graph->push_back(factor);
 
-	shared_values initValues(new simulated2D::Values());
+	shared_values initValues(new Values());
 	initValues->insert(key, badPt);
 
 	// verify error values
 	EXPECT(constraint->active(*initValues));
 
-	DynamicValues expected;
+	Values expected;
 	expected.insert(key, truth_pt);
 	EXPECT(constraint->active(expected));
 	EXPECT_DOUBLES_EQUAL(0.0, constraint->error(expected), tol);
@@ -341,7 +341,7 @@ TEST( testNonlinearEqualityConstraint, odo_basics ) {
 	double mu = 1000.0;
 	eq2D::OdoEqualityConstraint constraint(odom, key1, key2, mu);
 
-	simulated2D::Values config1;
+	Values config1;
 	config1.insert(key1, x1);
 	config1.insert(key2, x2);
 	EXPECT(constraint.active(config1));
@@ -349,7 +349,7 @@ TEST( testNonlinearEqualityConstraint, odo_basics ) {
 	EXPECT(assert_equal(zero(2), constraint.unwhitenedError(config1), tol));
 	EXPECT_DOUBLES_EQUAL(0.0, constraint.error(config1), tol);
 
-	simulated2D::Values config2;
+	Values config2;
 	Point2 x1bad(2.0, 2.0);
 	Point2 x2bad(2.0, 2.0);
 	config2.insert(key1, x1bad);
@@ -369,7 +369,7 @@ TEST( testNonlinearEqualityConstraint, odo_linearization ) {
 	ordering += key1, key2;
 	eq2D::OdoEqualityConstraint constraint(odom, key1, key2, mu);
 
-	simulated2D::Values config1;
+	Values config1;
 	config1.insert(key1, x1);
 	config1.insert(key2, x2);
 	GaussianFactor::shared_ptr actual1 = constraint.linearize(config1, ordering);
@@ -378,7 +378,7 @@ TEST( testNonlinearEqualityConstraint, odo_linearization ) {
 					eye(2,2), zero(2), hard_model));
 	EXPECT(assert_equal(*expected1, *actual1, tol));
 
-	simulated2D::Values config2;
+	Values config2;
 	Point2 x1bad(2.0, 2.0);
 	Point2 x2bad(2.0, 2.0);
 	config2.insert(key1, x1bad);
@@ -417,12 +417,12 @@ TEST( testNonlinearEqualityConstraint, odo_simple_optimize ) {
 	graph->push_back(constraint2);
 	graph->push_back(factor);
 
-	shared_values initValues(new simulated2D::Values());
+	shared_values initValues(new Values());
 	initValues->insert(key1, Point2());
 	initValues->insert(key2, badPt);
 
 	Optimizer::shared_values actual = Optimizer::optimizeLM(graph, initValues);
-	DynamicValues expected;
+	Values expected;
 	expected.insert(key1, truth_pt1);
 	expected.insert(key2, truth_pt2);
 	CHECK(assert_equal(expected, *actual, tol));
@@ -454,7 +454,7 @@ TEST (testNonlinearEqualityConstraint, two_pose ) {
 
 	graph->add(eq2D::PointEqualityConstraint(l1, l2));
 
-	shared_values initialEstimate(new simulated2D::Values());
+	shared_values initialEstimate(new Values());
 	initialEstimate->insert(x1, pt_x1);
 	initialEstimate->insert(x2, Point2());
 	initialEstimate->insert(l1, Point2(1.0, 6.0)); // ground truth
@@ -462,7 +462,7 @@ TEST (testNonlinearEqualityConstraint, two_pose ) {
 
 	Optimizer::shared_values actual = Optimizer::optimizeLM(graph, initialEstimate);
 
-	DynamicValues expected;
+	Values expected;
 	expected.insert(x1, pt_x1);
 	expected.insert(l1, Point2(1.0, 6.0));
 	expected.insert(l2, Point2(1.0, 6.0));
@@ -497,7 +497,7 @@ TEST (testNonlinearEqualityConstraint, map_warp ) {
 	graph->add(eq2D::PointEqualityConstraint(l1, l2));
 
 	// create an initial estimate
-	shared_values initialEstimate(new simulated2D::Values());
+	shared_values initialEstimate(new Values());
 	initialEstimate->insert(x1, Point2( 1.0, 1.0));
 	initialEstimate->insert(l1, Point2( 1.0, 6.0));
 	initialEstimate->insert(l2, Point2(-4.0, 0.0)); // starting with a separate reference frame
@@ -506,7 +506,7 @@ TEST (testNonlinearEqualityConstraint, map_warp ) {
 	// optimize
 	Optimizer::shared_values actual = Optimizer::optimizeLM(graph, initialEstimate);
 
-	DynamicValues expected;
+	Values expected;
 	expected.insert(x1, Point2(1.0, 1.0));
 	expected.insert(l1, Point2(1.0, 6.0));
 	expected.insert(l2, Point2(1.0, 6.0));
@@ -521,7 +521,7 @@ Cal3_S2 K(fov,w,h);
 boost::shared_ptr<Cal3_S2> shK(new Cal3_S2(K));
 
 // typedefs for visual SLAM example
-typedef boost::shared_ptr<DynamicValues> shared_vconfig;
+typedef boost::shared_ptr<Values> shared_vconfig;
 typedef visualSLAM::Graph VGraph;
 typedef NonlinearOptimizer<VGraph> VOptimizer;
 
@@ -565,7 +565,7 @@ TEST (testNonlinearEqualityConstraint, stereo_constrained ) {
 	Point3 landmark1(0.5, 5.0, 0.0);
 	Point3 landmark2(1.5, 5.0, 0.0);
 
-	shared_vconfig initValues(new DynamicValues());
+	shared_vconfig initValues(new Values());
 	initValues->insert(x1, pose1);
 	initValues->insert(x2, pose2);
 	initValues->insert(l1, landmark1);
@@ -575,7 +575,7 @@ TEST (testNonlinearEqualityConstraint, stereo_constrained ) {
 	VOptimizer::shared_values actual = VOptimizer::optimizeLM(graph, initValues);
 
 	// create config
-	DynamicValues truthValues;
+	Values truthValues;
 	truthValues.insert(x1, camera1.pose());
 	truthValues.insert(x2, camera2.pose());
 	truthValues.insert(l1, landmark);

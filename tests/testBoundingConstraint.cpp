@@ -33,7 +33,7 @@ SharedDiagonal hard_model1 = noiseModel::Constrained::All(1);
 
 typedef NonlinearFactorGraph Graph;
 typedef boost::shared_ptr<Graph> shared_graph;
-typedef boost::shared_ptr<simulated2D::Values> shared_values;
+typedef boost::shared_ptr<Values> shared_values;
 typedef NonlinearOptimizer<Graph> Optimizer;
 
 // some simple inequality constraints
@@ -50,7 +50,7 @@ iq2D::PoseYInequality constraint4(key, 2.0, false, mu);
 /* ************************************************************************* */
 TEST( testBoundingConstraint, unary_basics_inactive1 ) {
 	Point2 pt1(2.0, 3.0);
-	simulated2D::Values config;
+	Values config;
 	config.insert(key, pt1);
 	EXPECT(!constraint1.active(config));
 	EXPECT(!constraint2.active(config));
@@ -69,7 +69,7 @@ TEST( testBoundingConstraint, unary_basics_inactive1 ) {
 /* ************************************************************************* */
 TEST( testBoundingConstraint, unary_basics_inactive2 ) {
 	Point2 pt2(-2.0, -3.0);
-	simulated2D::Values config;
+	Values config;
 	config.insert(key, pt2);
 	EXPECT(!constraint3.active(config));
 	EXPECT(!constraint4.active(config));
@@ -88,7 +88,7 @@ TEST( testBoundingConstraint, unary_basics_inactive2 ) {
 /* ************************************************************************* */
 TEST( testBoundingConstraint, unary_basics_active1 ) {
 	Point2 pt2(-2.0, -3.0);
-	simulated2D::Values config;
+	Values config;
 	config.insert(key, pt2);
 	EXPECT(constraint1.active(config));
 	EXPECT(constraint2.active(config));
@@ -103,7 +103,7 @@ TEST( testBoundingConstraint, unary_basics_active1 ) {
 /* ************************************************************************* */
 TEST( testBoundingConstraint, unary_basics_active2 ) {
 	Point2 pt1(2.0, 3.0);
-	simulated2D::Values config;
+	Values config;
 	config.insert(key, pt1);
 	EXPECT(constraint3.active(config));
 	EXPECT(constraint4.active(config));
@@ -118,7 +118,7 @@ TEST( testBoundingConstraint, unary_basics_active2 ) {
 /* ************************************************************************* */
 TEST( testBoundingConstraint, unary_linearization_inactive) {
 	Point2 pt1(2.0, 3.0);
-	simulated2D::Values config1;
+	Values config1;
 	config1.insert(key, pt1);
 	Ordering ordering;
 	ordering += key;
@@ -131,7 +131,7 @@ TEST( testBoundingConstraint, unary_linearization_inactive) {
 /* ************************************************************************* */
 TEST( testBoundingConstraint, unary_linearization_active) {
 	Point2 pt2(-2.0, -3.0);
-	simulated2D::Values config2;
+	Values config2;
 	config2.insert(key, pt2);
 	Ordering ordering;
 	ordering += key;
@@ -156,11 +156,11 @@ TEST( testBoundingConstraint, unary_simple_optimization1) {
 	graph->add(iq2D::PoseYInequality(x1, 2.0, true));
 	graph->add(simulated2D::Prior(start_pt, soft_model2, x1));
 
-	shared_values initValues(new simulated2D::Values());
+	shared_values initValues(new Values());
 	initValues->insert(x1, start_pt);
 
 	Optimizer::shared_values actual = Optimizer::optimizeLM(graph, initValues);
-	DynamicValues expected;
+	Values expected;
 	expected.insert(x1, goal_pt);
 	CHECK(assert_equal(expected, *actual, tol));
 }
@@ -178,11 +178,11 @@ TEST( testBoundingConstraint, unary_simple_optimization2) {
 	graph->add(iq2D::PoseYInequality(x1, 2.0, false));
 	graph->add(simulated2D::Prior(start_pt, soft_model2, x1));
 
-	shared_values initValues(new simulated2D::Values());
+	shared_values initValues(new Values());
 	initValues->insert(x1, start_pt);
 
 	Optimizer::shared_values actual = Optimizer::optimizeLM(graph, initValues);
-	DynamicValues expected;
+	Values expected;
 	expected.insert(x1, goal_pt);
 	CHECK(assert_equal(expected, *actual, tol));
 }
@@ -201,7 +201,7 @@ TEST( testBoundingConstraint, MaxDistance_basics) {
 	EXPECT(assert_equal(zero(1), rangeBound.evaluateError(pt1, pt3)));
 	EXPECT(assert_equal(-1.0*ones(1), rangeBound.evaluateError(pt1, pt4)));
 
-	simulated2D::Values config1;
+	Values config1;
 	config1.insert(key1, pt1);
 	config1.insert(key2, pt1);
 	Ordering ordering; ordering += key1, key2;
@@ -238,11 +238,11 @@ TEST( testBoundingConstraint, MaxDistance_simple_optimization) {
 	graph.add(simulated2D::Prior(pt2_init, soft_model2_alt, x2));
 	graph.add(iq2D::PoseMaxDistConstraint(x1, x2, 2.0));
 
-	simulated2D::Values initial_state;
+	Values initial_state;
 	initial_state.insert(x1, pt1);
 	initial_state.insert(x2, pt2_init);
 
-	simulated2D::Values expected;
+	Values expected;
 	expected.insert(x1, pt1);
 	expected.insert(x2, pt2_goal);
 
@@ -268,7 +268,7 @@ TEST( testBoundingConstraint, avoid_demo) {
 	graph.add(simulated2D::Odometry(odo, soft_model2_alt, x2, x3));
 	graph.add(simulated2D::equality_constraints::UnaryEqualityConstraint(x3_pt, x3));
 
-	simulated2D::Values init, expected;
+	Values init, expected;
 	init.insert(x1, x1_pt);
 	init.insert(x3, x3_pt);
 	init.insert(l1, l1_pt);

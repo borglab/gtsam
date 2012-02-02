@@ -94,10 +94,10 @@ TEST( Graph, composePoses )
 
 	Pose2 rootPose = p2;
 
-	boost::shared_ptr<DynamicValues> actual = composePoses<Pose2Graph, Pose2Factor,
+	boost::shared_ptr<Values> actual = composePoses<Pose2Graph, Pose2Factor,
 			Pose2, pose2SLAM::Key> (graph, tree, rootPose);
 
-	DynamicValues expected;
+	Values expected;
 	expected.insert(pose2SLAM::Key(1), p1);
 	expected.insert(pose2SLAM::Key(2), p2);
 	expected.insert(pose2SLAM::Key(3), p3);

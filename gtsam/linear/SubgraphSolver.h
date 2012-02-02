@@ -16,7 +16,7 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/IterativeSolver.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
-#include <gtsam/nonlinear/DynamicValues.h>
+#include <gtsam/nonlinear/Values.h>
 
 namespace gtsam {
 
@@ -44,7 +44,7 @@ private:
 	typedef boost::shared_ptr<Ordering> shared_ordering ;
 	typedef boost::shared_ptr<GRAPH> shared_graph ;
 	typedef boost::shared_ptr<LINEAR> shared_linear ;
-	typedef boost::shared_ptr<DynamicValues> shared_values ;
+	typedef boost::shared_ptr<Values> shared_values ;
 	typedef boost::shared_ptr<SubgraphPreconditioner> shared_preconditioner ;
 	typedef std::map<Index,Index> mapPairIndex ;
 
@@ -62,7 +62,7 @@ private:
 
 public:
 
-	SubgraphSolver(const GRAPH& G, const DynamicValues& theta0, const Parameters &parameters = Parameters(), bool useQR = false):
+	SubgraphSolver(const GRAPH& G, const Values& theta0, const Parameters &parameters = Parameters(), bool useQR = false):
 		IterativeSolver(parameters), useQR_(useQR) { initialize(G,theta0); }
 
 	SubgraphSolver(const LINEAR& GFG) {
@@ -90,7 +90,7 @@ public:
 	shared_ordering ordering() const { return ordering_; }
 
 protected:
-	void initialize(const GRAPH& G, const DynamicValues& theta0);
+	void initialize(const GRAPH& G, const Values& theta0);
 
 private:
 	SubgraphSolver():IterativeSolver(){}

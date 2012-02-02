@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file DynamicValues.h
+ * @file Values.h
  * @author Richard Roberts
  *
  * @brief A non-templated config holding any types of Manifold-group elements
@@ -22,7 +22,7 @@
  *  which is also a manifold element, and hence supports operations dim, retract, and localCoordinates.
  */
 
-#include <gtsam/nonlinear/DynamicValues.h>
+#include <gtsam/nonlinear/Values.h>
 
 #include <list>
 
@@ -35,12 +35,12 @@ using namespace std;
 namespace gtsam {
 
   /* ************************************************************************* */
-  DynamicValues::DynamicValues(const DynamicValues& other) {
+  Values::Values(const Values& other) {
     this->insert(other);
   }
 
   /* ************************************************************************* */
-  void DynamicValues::print(const string& str) const {
+  void Values::print(const string& str) const {
     cout << str << "Values with " << size() << " values:\n" << endl;
     for(KeyValueMap::const_iterator key_value = begin(); key_value != end(); ++key_value) {
       cout << "  " << (string)key_value->first << ": ";
@@ -49,7 +49,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  bool DynamicValues::equals(const DynamicValues& other, double tol) const {
+  bool Values::equals(const Values& other, double tol) const {
     if(this->size() != other.size())
       return false;
     for(const_iterator it1=this->begin(), it2=other.begin(); it1!=this->end(); ++it1, ++it2) {
@@ -64,18 +64,18 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  bool DynamicValues::exists(const Symbol& j) const {
+  bool Values::exists(const Symbol& j) const {
     return values_.find(j) != values_.end();
   }
 
   /* ************************************************************************* */
-  VectorValues DynamicValues::zeroVectors(const Ordering& ordering) const {
+  VectorValues Values::zeroVectors(const Ordering& ordering) const {
     return VectorValues::Zero(this->dims(ordering));
   }
 
   /* ************************************************************************* */
-  DynamicValues DynamicValues::retract(const VectorValues& delta, const Ordering& ordering) const {
-    DynamicValues result;
+  Values Values::retract(const VectorValues& delta, const Ordering& ordering) const {
+    Values result;
 
     for(KeyValueMap::const_iterator key_value = begin(); key_value != end(); ++key_value) {
       const SubVector& singleDelta = delta[ordering[key_value->first]]; // Delta for this value
@@ -88,14 +88,14 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  VectorValues DynamicValues::localCoordinates(const DynamicValues& cp, const Ordering& ordering) const {
+  VectorValues Values::localCoordinates(const Values& cp, const Ordering& ordering) const {
     VectorValues result(this->dims(ordering));
     localCoordinates(cp, ordering, result);
     return result;
   }
 
   /* ************************************************************************* */
-  void DynamicValues::localCoordinates(const DynamicValues& cp, const Ordering& ordering, VectorValues& result) const {
+  void Values::localCoordinates(const Values& cp, const Ordering& ordering, VectorValues& result) const {
     if(this->size() != cp.size())
       throw DynamicValuesMismatched();
     for(const_iterator it1=this->begin(), it2=cp.begin(); it1!=this->end(); ++it1, ++it2) {
@@ -107,15 +107,15 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  void DynamicValues::insert(const Symbol& j, const Value& val) {
+  void Values::insert(const Symbol& j, const Value& val) {
   	Symbol key = j; // Non-const duplicate to deal with non-const insert argument
   	std::pair<iterator,bool> insertResult = values_.insert(key, val.clone_());
   	if(!insertResult.second)
-  		throw DynamicValuesKeyAlreadyExists(j);
+  		throw ValuesKeyAlreadyExists(j);
   }
 
   /* ************************************************************************* */
-  void DynamicValues::insert(const DynamicValues& values) {
+  void Values::insert(const Values& values) {
     for(KeyValueMap::const_iterator key_value = values.begin(); key_value != values.end(); ++key_value) {
       Symbol key = key_value->first; // Non-const duplicate to deal with non-const insert argument
       insert(key, *key_value->second);
@@ -123,36 +123,36 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  void DynamicValues::update(const Symbol& j, const Value& val) {
+  void Values::update(const Symbol& j, const Value& val) {
   	// Find the value to update
   	iterator item = values_.find(j);
   	if(item == values_.end())
-  		throw DynamicValuesKeyDoesNotExist("update", j);
+  		throw ValuesKeyDoesNotExist("update", j);
 
   	// Cast to the derived type
   	if(typeid(*item->second) != typeid(val))
-  		throw DynamicValuesIncorrectType(j, typeid(*item->second), typeid(val));
+  		throw ValuesIncorrectType(j, typeid(*item->second), typeid(val));
 
   	values_.replace(item, val.clone_());
   }
 
   /* ************************************************************************* */
-  void DynamicValues::update(const DynamicValues& values) {
+  void Values::update(const Values& values) {
     for(KeyValueMap::const_iterator key_value = values.begin(); key_value != values.end(); ++key_value) {
       this->update(key_value->first, *key_value->second);
     }
   }
 
   /* ************************************************************************* */
-  void DynamicValues::erase(const Symbol& j) {
+  void Values::erase(const Symbol& j) {
     iterator item = values_.find(j);
     if(item == values_.end())
-      throw DynamicValuesKeyDoesNotExist("erase", j);
+      throw ValuesKeyDoesNotExist("erase", j);
     values_.erase(item);
   }
 
   /* ************************************************************************* */
-  FastList<Symbol> DynamicValues::keys() const {
+  FastList<Symbol> Values::keys() const {
     FastList<Symbol> result;
     for(KeyValueMap::const_iterator key_value = begin(); key_value != end(); ++key_value)
       result.push_back(key_value->first);
@@ -160,14 +160,14 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  DynamicValues& DynamicValues::operator=(const DynamicValues& rhs) {
+  Values& Values::operator=(const Values& rhs) {
     this->clear();
     this->insert(rhs);
     return *this;
   }
 
   /* ************************************************************************* */
-  vector<size_t> DynamicValues::dims(const Ordering& ordering) const {
+  vector<size_t> Values::dims(const Ordering& ordering) const {
 //    vector<size_t> result(values_.size());
 //    // Transform with Value::dim(auto_ptr::get(KeyValuePair::second))
 //    result.assign(
@@ -182,7 +182,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Ordering::shared_ptr DynamicValues::orderingArbitrary(Index firstVar) const {
+  Ordering::shared_ptr Values::orderingArbitrary(Index firstVar) const {
     Ordering::shared_ptr ordering(new Ordering);
     for(KeyValueMap::const_iterator key_value = begin(); key_value != end(); ++key_value) {
       ordering->insert(key_value->first, firstVar++);
@@ -191,7 +191,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  const char* DynamicValuesKeyAlreadyExists::what() const throw() {
+  const char* ValuesKeyAlreadyExists::what() const throw() {
     if(message_.empty())
       message_ =
           "Attempting to add a key-value pair with key \"" + (std::string)key_ + "\", key already exists.";
@@ -199,7 +199,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  const char* DynamicValuesKeyDoesNotExist::what() const throw() {
+  const char* ValuesKeyDoesNotExist::what() const throw() {
     if(message_.empty())
       message_ =
           "Attempting to " + std::string(operation_) + " the key \"" +
@@ -208,10 +208,10 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  const char* DynamicValuesIncorrectType::what() const throw() {
+  const char* ValuesIncorrectType::what() const throw() {
     if(message_.empty())
       message_ =
-          "Attempting to retrieve value with key \"" + (std::string)key_ + "\", type stored in DynamicValues is " +
+          "Attempting to retrieve value with key \"" + (std::string)key_ + "\", type stored in Values is " +
           std::string(storedTypeId_.name()) + " but requested type was " + std::string(requestedTypeId_.name());
     return message_.c_str();
   }

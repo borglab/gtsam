@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
   else if (argc == 4)
   	nrTrials = strtoul(argv[3], NULL, 10);
 
-  pair<shared_ptr<Pose2Graph>, shared_ptr<DynamicValues> > data = load2D(dataset(datasetname));
+  pair<shared_ptr<Pose2Graph>, shared_ptr<Values> > data = load2D(dataset(datasetname));
 
   // Add a prior on the first pose
   if (soft_prior)

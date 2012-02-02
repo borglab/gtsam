@@ -60,7 +60,7 @@ VectorValues::shared_ptr SubgraphSolver<GRAPH,LINEAR,KEY>::optimize() const {
 }
 
 template<class GRAPH, class LINEAR, class KEY>
-void SubgraphSolver<GRAPH,LINEAR,KEY>::initialize(const GRAPH& G, const DynamicValues& theta0) {
+void SubgraphSolver<GRAPH,LINEAR,KEY>::initialize(const GRAPH& G, const Values& theta0) {
 	// generate spanning tree
 	PredecessorMap<KEY> tree_ = gtsam::findMinimumSpanningTree<GRAPH, KEY, Constraint>(G);
 

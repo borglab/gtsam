@@ -108,7 +108,7 @@ namespace gtsam {
 		}
 
 		/** actual error function calculation */
-		virtual double error(const DynamicValues& c) const {
+		virtual double error(const Values& c) const {
 			const T& xj = c[this->key_];
 			Vector e = this->unwhitenedError(c);
 			if (allow_error_ || !compare_(xj, feasible_)) {
@@ -135,7 +135,7 @@ namespace gtsam {
 		}
 
 		// Linearize is over-written, because base linearization tries to whiten
-		virtual GaussianFactor::shared_ptr linearize(const DynamicValues& x, const Ordering& ordering) const {
+		virtual GaussianFactor::shared_ptr linearize(const Values& x, const Ordering& ordering) const {
 			const T& xj = x[this->key_];
 			Matrix A;
 			Vector b = evaluateError(xj, A);

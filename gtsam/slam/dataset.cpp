@@ -30,7 +30,7 @@ using namespace gtsam;
 #define LINESIZE 81920
 
 typedef boost::shared_ptr<Pose2Graph> sharedPose2Graph;
-typedef boost::shared_ptr<DynamicValues> sharedPose2Values;
+typedef boost::shared_ptr<Values> sharedPose2Values;
 
 namespace gtsam {
 
@@ -81,7 +81,7 @@ pair<sharedPose2Graph, sharedPose2Values> load2D(const string& filename,
 		exit(-1);
 	}
 
-	sharedPose2Values poses(new DynamicValues);
+	sharedPose2Values poses(new Values);
 	sharedPose2Graph graph(new Pose2Graph);
 
 	string tag;
@@ -149,14 +149,14 @@ pair<sharedPose2Graph, sharedPose2Values> load2D(const string& filename,
 }
 
 /* ************************************************************************* */
-void save2D(const Pose2Graph& graph, const DynamicValues& config, const SharedDiagonal model,
+void save2D(const Pose2Graph& graph, const Values& config, const SharedDiagonal model,
 		const string& filename) {
-//	typedef DynamicValues::Key Key;
+//	typedef Values::Key Key;
 
 	fstream stream(filename.c_str(), fstream::out);
 
 	// save poses
-	for (DynamicValues::const_iterator it = config.begin(); it != config.end(); ++it) {
+	for (Values::const_iterator it = config.begin(); it != config.end(); ++it) {
 		Pose2 pose = config.at<Pose2>(it->first);
 		stream << "VERTEX2 " << it->first.index() << " " <<  pose.x() << " " << pose.y() << " " << pose.theta() << endl;
 	}

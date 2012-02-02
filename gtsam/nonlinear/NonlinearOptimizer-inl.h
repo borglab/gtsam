@@ -86,7 +86,7 @@ namespace gtsam {
 		if (verbosity >= Parameters::DELTA) delta.print("delta");
 
 		// take old values and update it
-		shared_values newValues(new DynamicValues(values_->retract(delta, *ordering_)));
+		shared_values newValues(new Values(values_->retract(delta, *ordering_)));
 
 		// maybe show output
 		if (verbosity >= Parameters::VALUES) newValues->print("newValues");
@@ -178,7 +178,7 @@ namespace gtsam {
 		    if (verbosity >= Parameters::TRYDELTA) delta.print("delta");
 
 		    // update values
-		    shared_values newValues(new DynamicValues(values_->retract(delta, *ordering_)));
+		    shared_values newValues(new Values(values_->retract(delta, *ordering_)));
 
 		    // create new optimization state with more adventurous lambda
 		    double error = graph_->error(*newValues);
@@ -306,7 +306,7 @@ namespace gtsam {
     DoglegOptimizerImpl::IterationResult result = DoglegOptimizerImpl::Iterate(
         parameters_->lambda_, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, *solver.eliminate(),
         *graph_, *values_, *ordering_, error_, parameters_->verbosity_ > Parameters::ERROR);
-    shared_values newValues(new DynamicValues(values_->retract(result.dx_d, *ordering_)));
+    shared_values newValues(new Values(values_->retract(result.dx_d, *ordering_)));
     return newValuesErrorLambda_(newValues, result.f_error, result.Delta);
   }
 

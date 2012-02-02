@@ -27,8 +27,8 @@ namespace gtsam {
 	namespace pose2SLAM {
 
 		/* ************************************************************************* */
-		DynamicValues circle(size_t n, double R) {
-			DynamicValues x;
+		Values circle(size_t n, double R) {
+			Values x;
 			double theta = 0, dtheta = 2 * M_PI / n;
 			for (size_t i = 0; i < n; i++, theta += dtheta)
 				x.insert(Key(i), Pose2(cos(theta), sin(theta), M_PI_2 + theta));

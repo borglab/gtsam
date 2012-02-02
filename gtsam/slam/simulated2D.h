@@ -32,58 +32,6 @@ namespace gtsam {
 		typedef TypedSymbol<Point2, 'x'> PoseKey;
 		typedef TypedSymbol<Point2, 'l'> PointKey;
 
-		/**
-		 *  Custom Values class that holds poses and points
-		 */
-		class Values: public DynamicValues {
-			size_t nrPoses_;
-			size_t nrPoints_;
-		public:
-			typedef DynamicValues Base;  ///< base class
-			typedef boost::shared_ptr<Point2> sharedPoint;  ///< shortcut to shared Point type
-
-			/// Constructor
-			Values() : nrPoses_(0), nrPoints_(0) {
-			}
-
-			/// Copy constructor
-			Values(const Base& base) :
-					Base(base), nrPoses_(0), nrPoints_(0) {
-			}
-
-			/// Insert a pose
-			void insertPose(const simulated2D::PoseKey& i, const Point2& p) {
-				insert(i, p);
-				nrPoses_++;
-			}
-
-			/// Insert a point
-			void insertPoint(const simulated2D::PointKey& j, const Point2& p) {
-				insert(j, p);
-				nrPoints_++;
-			}
-
-			/// Number of poses
-			int nrPoses() const {
-				return nrPoses_;
-			}
-
-			/// Number of points
-			int nrPoints() const {
-				return nrPoints_;
-			}
-
-			/// Return pose i
-			Point2 pose(const simulated2D::PoseKey& i) const {
-				return (*this)[i];
-			}
-
-			/// Return point j
-			Point2 point(const simulated2D::PointKey& j) const {
-				return (*this)[j];
-			}
-		};
-
 		/// Prior on a single pose
 		inline Point2 prior(const Point2& x) {
 			return x;

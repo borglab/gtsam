@@ -143,11 +143,11 @@ template <class V, class POSE, class KEY>
 class compose_key_visitor : public boost::default_bfs_visitor {
 
 private:
-	boost::shared_ptr<DynamicValues> config_;
+	boost::shared_ptr<Values> config_;
 
 public:
 
-	compose_key_visitor(boost::shared_ptr<DynamicValues> config_in) {config_ = config_in;}
+	compose_key_visitor(boost::shared_ptr<Values> config_in) {config_ = config_in;}
 
 	template <typename Edge, typename Graph> void tree_edge(Edge edge, const Graph& g) const {
 		KEY key_from = boost::get(boost::vertex_name, g, boost::source(edge, g));
@@ -160,7 +160,7 @@ public:
 
 /* ************************************************************************* */
 template<class G, class Factor, class POSE, class KEY>
-boost::shared_ptr<DynamicValues> composePoses(const G& graph, const PredecessorMap<KEY>& tree,
+boost::shared_ptr<Values> composePoses(const G& graph, const PredecessorMap<KEY>& tree,
 		const POSE& rootPose) {
 
 	//TODO: change edge_weight_t to edge_pose_t
@@ -207,7 +207,7 @@ boost::shared_ptr<DynamicValues> composePoses(const G& graph, const PredecessorM
 	}
 
 	// compose poses
-	boost::shared_ptr<DynamicValues> config(new DynamicValues);
+	boost::shared_ptr<Values> config(new Values);
 	KEY rootKey = boost::get(boost::vertex_name, g, root);
 	config->insert(rootKey, rootPose);
 	compose_key_visitor<PoseVertex, POSE, KEY> vis(config);

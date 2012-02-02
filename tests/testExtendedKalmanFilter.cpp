@@ -170,7 +170,7 @@ public:
    * calculate the error of the factor
    * Override for systems with unusual noise models
    */
-  virtual double error(const DynamicValues& c) const {
+  virtual double error(const Values& c) const {
     Vector w = whitenedError(c);
     return 0.5 * w.dot(w);
   }
@@ -181,7 +181,7 @@ public:
   }
 
   /** Vector of errors, whitened ! */
-  Vector whitenedError(const DynamicValues& c) const {
+  Vector whitenedError(const Values& c) const {
     return QInvSqrt(c[key1_])*unwhitenedError(c);
   }
 
@@ -190,7 +190,7 @@ public:
    * Ax-b \approx h(x1+dx1,x2+dx2)-z = h(x1,x2) + A2*dx1 + A2*dx2 - z
    * Hence b = z - h(x1,x2) = - error_vector(x)
    */
-  boost::shared_ptr<GaussianFactor> linearize(const DynamicValues& c, const Ordering& ordering) const {
+  boost::shared_ptr<GaussianFactor> linearize(const Values& c, const Ordering& ordering) const {
     const X1& x1 = c[key1_];
     const X2& x2 = c[key2_];
     Matrix A1, A2;
@@ -307,7 +307,7 @@ public:
    * calculate the error of the factor
    * Override for systems with unusual noise models
    */
-  virtual double error(const DynamicValues& c) const {
+  virtual double error(const Values& c) const {
     Vector w = whitenedError(c);
     return 0.5 * w.dot(w);
   }
@@ -318,7 +318,7 @@ public:
   }
 
   /** Vector of errors, whitened ! */
-  Vector whitenedError(const DynamicValues& c) const {
+  Vector whitenedError(const Values& c) const {
     return RInvSqrt(c[key_])*unwhitenedError(c);
   }
 
@@ -327,7 +327,7 @@ public:
    * Ax-b \approx h(x1+dx1)-z = h(x1) + A1*dx1 - z
    * Hence b = z - h(x1) = - error_vector(x)
    */
-  boost::shared_ptr<GaussianFactor> linearize(const DynamicValues& c, const Ordering& ordering) const {
+  boost::shared_ptr<GaussianFactor> linearize(const Values& c, const Ordering& ordering) const {
     const X& x1 = c[key_];
     Matrix A1;
     Vector b = -evaluateError(x1, A1);

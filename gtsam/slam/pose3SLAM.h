@@ -39,7 +39,7 @@ namespace gtsam {
 		 * @param R radius of circle
 		 * @return circle of n 3D poses
 		 */
-		DynamicValues circle(size_t n, double R);
+		Values circle(size_t n, double R);
 
 		/// A prior factor on Key with Pose3 data type.
 		typedef PriorFactor<Key> Prior;

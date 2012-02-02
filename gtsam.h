@@ -321,9 +321,9 @@ class Graph {
 
 	void print(string s) const;
 
-	double error(const planarSLAM::Values& values) const;
-	Ordering* orderingCOLAMD(const planarSLAM::Values& values) const;
-	GaussianFactorGraph* linearize(const planarSLAM::Values& values,
+	double error(const Values& values) const;
+	Ordering* orderingCOLAMD(const Values& values) const;
+	GaussianFactorGraph* linearize(const Values& values,
 			const Ordering& ordering) const;
 
 	void addPrior(int key, const Pose2& pose, const SharedNoiseModel& noiseModel);
@@ -333,14 +333,14 @@ class Graph {
 	void addRange(int poseKey, int pointKey, double range, const SharedNoiseModel& noiseModel);
 	void addBearingRange(int poseKey, int pointKey, const Rot2& bearing, double range,
 			const SharedNoiseModel& noiseModel);
-	planarSLAM::Values optimize(const planarSLAM::Values& initialEstimate);
+	Values optimize(const Values& initialEstimate);
 };
 
 class Odometry {
 	Odometry(int key1, int key2, const Pose2& measured,
 			const SharedNoiseModel& model);
 	void print(string s) const;
-	GaussianFactor* linearize(const planarSLAM::Values& center, const Ordering& ordering) const;
+	GaussianFactor* linearize(const Values& center, const Ordering& ordering) const;
 };
 
 }///\namespace planarSLAM

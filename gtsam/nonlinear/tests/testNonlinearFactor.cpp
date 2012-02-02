@@ -76,7 +76,7 @@ public:
 /* ************************************ */
 TEST(NonlinearFactor, NonlinearFactor4) {
   TestFactor4 tf;
-  DynamicValues tv;
+  Values tv;
   tv.insert(TestKey(1), LieVector(1, 1.0));
   tv.insert(TestKey(2), LieVector(1, 2.0));
   tv.insert(TestKey(3), LieVector(1, 3.0));
@@ -124,7 +124,7 @@ public:
 /* ************************************ */
 TEST(NonlinearFactor, NonlinearFactor5) {
   TestFactor5 tf;
-  DynamicValues tv;
+  Values tv;
   tv.insert(TestKey(1), LieVector(1, 1.0));
   tv.insert(TestKey(2), LieVector(1, 2.0));
   tv.insert(TestKey(3), LieVector(1, 3.0));
@@ -177,7 +177,7 @@ public:
 /* ************************************ */
 TEST(NonlinearFactor, NonlinearFactor6) {
   TestFactor6 tf;
-  DynamicValues tv;
+  Values tv;
   tv.insert(TestKey(1), LieVector(1, 1.0));
   tv.insert(TestKey(2), LieVector(1, 2.0));
   tv.insert(TestKey(3), LieVector(1, 3.0));

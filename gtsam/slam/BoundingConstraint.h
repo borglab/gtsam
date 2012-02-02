@@ -57,7 +57,7 @@ struct BoundingConstraint1: public NonlinearFactor1<KEY> {
 			boost::none) const = 0;
 
 	/** active when constraint *NOT* met */
-	bool active(const DynamicValues& c) const {
+	bool active(const Values& c) const {
 		// note: still active at equality to avoid zigzagging
 		double x = value(c[this->key_]);
 		return (isGreaterThan_) ? x <= threshold_ : x >= threshold_;
@@ -125,7 +125,7 @@ struct BoundingConstraint2: public NonlinearFactor2<KEY1, KEY2> {
 			boost::optional<Matrix&> H2 = boost::none) const = 0;
 
 	/** active when constraint *NOT* met */
-	bool active(const DynamicValues& c) const {
+	bool active(const Values& c) const {
 		// note: still active at equality to avoid zigzagging
 		double x = value(c[this->key1_], c[this->key2_]);
 		return (isGreaterThan_) ? x <= threshold_ : x >= threshold_;

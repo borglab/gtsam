@@ -36,7 +36,7 @@ protected:
 	gtsam::GaussianISAM isam_;
 
 	/** The current linearization point */
-	DynamicValues linPoint_;
+	Values linPoint_;
 
 	/** The ordering */
 	gtsam::Ordering ordering_;
@@ -60,10 +60,10 @@ public:
 	NonlinearISAM(int reorderInterval = 1) : reorderInterval_(reorderInterval), reorderCounter_(0) {}
 
 	/** Add new factors along with their initial linearization points */
-	void update(const Factors& newFactors, const DynamicValues& initialValues);
+	void update(const Factors& newFactors, const Values& initialValues);
 
 	/** Return the current solution estimate */
-	DynamicValues estimate() const;
+	Values estimate() const;
 
 	/** Relinearization and reordering of variables */
 	void reorder_relinearize();
@@ -83,7 +83,7 @@ public:
 	const GaussianISAM& bayesTree() const { return isam_; }
 
 	/** Return the current linearization point */
-	const DynamicValues& getLinearizationPoint() const { return linPoint_; }
+	const Values& getLinearizationPoint() const { return linPoint_; }
 
 	/** Get the ordering */
 	const gtsam::Ordering& getOrdering() const { return ordering_; }

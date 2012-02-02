@@ -45,7 +45,7 @@ struct ISAM2<CONDITIONAL, GRAPH>::Impl {
    * @param ordering Current ordering to be augmented with new variables
    * @param nodes Current BayesTree::Nodes index to be augmented with slots for new variables
    */
-  static void AddVariables(const DynamicValues& newTheta, DynamicValues& theta, Permuted<VectorValues>& delta, Ordering& ordering, typename Base::Nodes& nodes);
+  static void AddVariables(const Values& newTheta, Values& theta, Permuted<VectorValues>& delta, Ordering& ordering, typename Base::Nodes& nodes);
 
   /**
    * Extract the set of variable indices from a NonlinearFactorGraph.  For each Symbol
@@ -95,7 +95,7 @@ struct ISAM2<CONDITIONAL, GRAPH>::Impl {
    * where we might expmap something twice, or expmap it but then not
    * recalculate its delta.
    */
-  static void ExpmapMasked(DynamicValues& values, const Permuted<VectorValues>& delta,
+  static void ExpmapMasked(Values& values, const Permuted<VectorValues>& delta,
       const Ordering& ordering, const std::vector<bool>& mask,
       boost::optional<Permuted<VectorValues>&> invalidateIfDebug = boost::optional<Permuted<VectorValues>&>());
 
@@ -136,7 +136,7 @@ struct _VariableAdder {
 /* ************************************************************************* */
 template<class CONDITIONAL, class GRAPH>
 void ISAM2<CONDITIONAL,GRAPH>::Impl::AddVariables(
-    const DynamicValues& newTheta, DynamicValues& theta, Permuted<VectorValues>& delta, Ordering& ordering, typename Base::Nodes& nodes) {
+    const Values& newTheta, Values& theta, Permuted<VectorValues>& delta, Ordering& ordering, typename Base::Nodes& nodes) {
   const bool debug = ISDEBUG("ISAM2 AddVariables");
 
   theta.insert(newTheta);
@@ -259,7 +259,7 @@ struct _SelectiveExpmapAndClear {
 
 /* ************************************************************************* */
 template<class CONDITIONAL, class GRAPH>
-void ISAM2<CONDITIONAL, GRAPH>::Impl::ExpmapMasked(DynamicValues& values, const Permuted<VectorValues>& delta,
+void ISAM2<CONDITIONAL, GRAPH>::Impl::ExpmapMasked(Values& values, const Permuted<VectorValues>& delta,
     const Ordering& ordering, const vector<bool>& mask, boost::optional<Permuted<VectorValues>&> invalidateIfDebug) {
   // If debugging, invalidate if requested, otherwise do not invalidate.
   // Invalidating means setting expmapped entries to Inf, to trigger assertions

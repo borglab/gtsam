@@ -16,9 +16,9 @@ check_PROGRAMS =
 #----------------------------------------------------------------------------------------------------
 
 # Lie Groups
-headers += DynamicValues.h DynamicValues-inl.h
-sources += DynamicValues.cpp
-check_PROGRAMS += tests/testDynamicValues tests/testKey tests/testOrdering tests/testNonlinearFactor
+headers += Values-inl.h
+sources += Values.cpp
+check_PROGRAMS += tests/testValues tests/testKey tests/testOrdering tests/testNonlinearFactor
 
 # Nonlinear nonlinear
 headers += Key.h 

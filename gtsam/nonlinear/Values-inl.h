@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file DynamicValues.h
+ * @file Values.h
  * @author Richard Roberts
  *
  * @brief A non-templated config holding any types of Manifold-group elements
@@ -24,7 +24,7 @@
 
 #include <utility>
 
-#include <gtsam/nonlinear/DynamicValues.h> // Only so Eclipse finds class definition
+#include <gtsam/nonlinear/Values.h> // Only so Eclipse finds class definition
 
 namespace gtsam {
 
@@ -39,17 +39,17 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<typename ValueType>
-  const ValueType& DynamicValues::at(const Symbol& j) const {
+  const ValueType& Values::at(const Symbol& j) const {
     // Find the item
     const_iterator item = values_.find(j);
 
     // Throw exception if it does not exist
     if(item == values_.end())
-      throw DynamicValuesKeyDoesNotExist("retrieve", j);
+      throw ValuesKeyDoesNotExist("retrieve", j);
 
     // Check the type and throw exception if incorrect
     if(typeid(*item->second) != typeid(ValueType))
-      throw DynamicValuesIncorrectType(j, typeid(*item->second), typeid(ValueType));
+      throw ValuesIncorrectType(j, typeid(*item->second), typeid(ValueType));
 
     // We have already checked the type, so do a "blind" static_cast, not dynamic_cast
     return static_cast<const ValueType&>(*item->second);
@@ -57,7 +57,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<typename TypedKey>
-  const typename TypedKey::Value& DynamicValues::at(const TypedKey& j) const {
+  const typename TypedKey::Value& Values::at(const TypedKey& j) const {
     // Convert to Symbol
     const Symbol symbol(j.symbol());
 
@@ -67,14 +67,14 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<typename ValueType>
-  boost::optional<const ValueType&> DynamicValues::exists(const Symbol& j) const {
+  boost::optional<const ValueType&> Values::exists(const Symbol& j) const {
     // Find the item
     const_iterator item = values_.find(j);
 
     if(item != values_.end()) {
       // Check the type and throw exception if incorrect
       if(typeid(*item->second) != typeid(ValueType))
-        throw DynamicValuesIncorrectType(j, typeid(*item->second), typeid(ValueType));
+        throw ValuesIncorrectType(j, typeid(*item->second), typeid(ValueType));
 
       // We have already checked the type, so do a "blind" static_cast, not dynamic_cast
       return static_cast<const ValueType&>(*item->second);
@@ -85,7 +85,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class TypedKey>
-  boost::optional<const typename TypedKey::Value&> DynamicValues::exists(const TypedKey& j) const {
+  boost::optional<const typename TypedKey::Value&> Values::exists(const TypedKey& j) const {
     // Convert to Symbol
     const Symbol symbol(j.symbol());
 

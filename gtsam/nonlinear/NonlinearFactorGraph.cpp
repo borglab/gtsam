@@ -28,7 +28,7 @@ using namespace std;
 namespace gtsam {
 
 	/* ************************************************************************* */
-	double NonlinearFactorGraph::probPrime(const DynamicValues& c) const {
+	double NonlinearFactorGraph::probPrime(const Values& c) const {
 		return exp(-0.5 * error(c));
 	}
 
@@ -38,7 +38,7 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	double NonlinearFactorGraph::error(const DynamicValues& c) const {
+	double NonlinearFactorGraph::error(const Values& c) const {
 		double total_error = 0.;
 		// iterate over all the factors_ to accumulate the log probabilities
 		BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
@@ -60,7 +60,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	Ordering::shared_ptr NonlinearFactorGraph::orderingCOLAMD(
-			const DynamicValues& config) const {
+			const Values& config) const {
 
 		// Create symbolic graph and initial (iterator) ordering
 		SymbolicFactorGraph::shared_ptr symbolic;
@@ -102,7 +102,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	pair<SymbolicFactorGraph::shared_ptr, Ordering::shared_ptr> NonlinearFactorGraph::symbolic(
-		const DynamicValues& config) const {
+		const Values& config) const {
 		// Generate an initial key ordering in iterator order
 		Ordering::shared_ptr ordering(config.orderingArbitrary());
 		return make_pair(symbolic(*ordering), ordering);
@@ -110,7 +110,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	GaussianFactorGraph::shared_ptr NonlinearFactorGraph::linearize(
-			const DynamicValues& config, const Ordering& ordering) const {
+			const Values& config, const Ordering& ordering) const {
 
 		// create an empty linear FG
 		GaussianFactorGraph::shared_ptr linearFG(new GaussianFactorGraph);

@@ -46,7 +46,7 @@ int main() {
   Ordering::shared_ptr ordering(new Ordering);
 
   // Create a structure to hold the linearization points
-  DynamicValues linearizationPoints;
+  Values linearizationPoints;
 
 	// Ground truth example
 	// Start at origin, move to the right (x-axis): 0,0  0,1  0,2

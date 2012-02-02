@@ -60,7 +60,7 @@ TEST( StereoFactor, singlePoint)
 	graph->add(visualSLAM::StereoFactor(z14,sigma, 1, 1, K));
 
 	// Create a configuration corresponding to the ground truth
-	boost::shared_ptr<DynamicValues> values(new DynamicValues());
+	boost::shared_ptr<Values> values(new Values());
 	values->insert(PoseKey(1), camera1); // add camera at z=6.25m looking towards origin
 
 	Point3 l1(0, 0, 0);

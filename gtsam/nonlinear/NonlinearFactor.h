@@ -31,7 +31,7 @@
 #include <gtsam/linear/SharedNoiseModel.h>
 #include <gtsam/linear/JacobianFactor.h>
 
-#include <gtsam/nonlinear/DynamicValues.h>
+#include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Ordering.h>
 
 namespace gtsam {
@@ -107,7 +107,7 @@ public:
    * This is typically equal to log-likelihood, e.g. 0.5(h(x)-z)^2/sigma^2 in case of Gaussian.
    * You can override this for systems with unusual noise models.
    */
-  virtual double error(const DynamicValues& c) const = 0;
+  virtual double error(const Values& c) const = 0;
 
   /** get the dimension of the factor (number of rows on linearization) */
   virtual size_t dim() const = 0;
@@ -122,11 +122,11 @@ public:
 	 * when the constraint is *NOT* fulfilled.
 	 * @return true if the constraint is active
 	 */
-	virtual bool active(const DynamicValues& c) const { return true; }
+	virtual bool active(const Values& c) const { return true; }
 
   /** linearize to a GaussianFactor */
   virtual boost::shared_ptr<GaussianFactor>
-  linearize(const DynamicValues& c, const Ordering& ordering) const = 0;
+  linearize(const Values& c, const Ordering& ordering) const = 0;
 
   /**
    * Create a symbolic factor using the given ordering to determine the
@@ -231,13 +231,13 @@ public:
    * If any of the optional Matrix reference arguments are specified, it should compute
    * both the function evaluation and its derivative(s) in X1 (and/or X2, X3...).
    */
-  virtual Vector unwhitenedError(const DynamicValues& x, boost::optional<std::vector<Matrix>&> H = boost::none) const = 0;
+  virtual Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const = 0;
 
   /**
    * Vector of errors, whitened
    * This is the raw error, i.e., i.e. \f$ (h(x)-z)/\sigma \f$ in case of a Gaussian
    */
-  Vector whitenedError(const DynamicValues& c) const {
+  Vector whitenedError(const Values& c) const {
     return noiseModel_->whiten(unwhitenedError(c));
   }
 
@@ -247,7 +247,7 @@ public:
    * In this class, we take the raw prediction error \f$ h(x)-z \f$, ask the noise model
    * to transform it to \f$ (h(x)-z)^2/\sigma^2 \f$, and then multiply by 0.5.
    */
-  virtual double error(const DynamicValues& c) const {
+  virtual double error(const Values& c) const {
   	if (this->active(c))
   		return 0.5 * noiseModel_->distance(unwhitenedError(c));
   	else
@@ -259,7 +259,7 @@ public:
    * \f$ Ax-b \approx h(x+\delta x)-z = h(x) + A \delta x - z \f$
    * Hence \f$ b = z - h(x) = - \mathtt{error\_vector}(x) \f$
    */
-  boost::shared_ptr<GaussianFactor> linearize(const DynamicValues& x, const Ordering& ordering) const {
+  boost::shared_ptr<GaussianFactor> linearize(const Values& x, const Ordering& ordering) const {
   	// Only linearize if the factor is active
 		if (!this->active(x))
 			return boost::shared_ptr<JacobianFactor>();
@@ -343,7 +343,7 @@ public:
 
   /** Calls the 1-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
-  virtual Vector unwhitenedError(const DynamicValues& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
+  virtual Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
     if(this->active(x)) {
       const X& x1 = x[key_];
       if(H) {
@@ -427,7 +427,7 @@ public:
 
   /** Calls the 2-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
-  virtual Vector unwhitenedError(const DynamicValues& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
+  virtual Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
     if(this->active(x)) {
       const X1& x1 = x[key1_];
       const X2& x2 = x[key2_];
@@ -519,7 +519,7 @@ public:
 
   /** Calls the 3-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
-  virtual Vector unwhitenedError(const DynamicValues& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
+  virtual Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
     if(this->active(x)) {
       if(H)
         return evaluateError(x[key1_], x[key2_], x[key3_], (*H)[0], (*H)[1], (*H)[2]);
@@ -617,7 +617,7 @@ public:
 
   /** Calls the 4-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
-  virtual Vector unwhitenedError(const DynamicValues& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
+  virtual Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
   	if(this->active(x)) {
   		if(H)
   			return evaluateError(x[key1_], x[key2_], x[key3_], x[key4_], (*H)[0], (*H)[1], (*H)[2], (*H)[3]);
@@ -721,7 +721,7 @@ public:
 
   /** Calls the 5-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
-  virtual Vector unwhitenedError(const DynamicValues& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
+  virtual Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
   	if(this->active(x)) {
       if(H)
         return evaluateError(x[key1_], x[key2_], x[key3_], x[key4_], x[key5_], (*H)[0], (*H)[1], (*H)[2], (*H)[3], (*H)[4]);
@@ -832,7 +832,7 @@ public:
 
   /** Calls the 6-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
-  virtual Vector unwhitenedError(const DynamicValues& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
+  virtual Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
   	if(this->active(x)) {
       if(H)
         return evaluateError(x[key1_], x[key2_], x[key3_], x[key4_], x[key5_], x[key6_], (*H)[0], (*H)[1], (*H)[2], (*H)[3], (*H)[4], (*H)[5]);

@@ -25,13 +25,14 @@
 
 using namespace std;
 using namespace gtsam;
+using namespace gtsam::simulated2D;
 
 /* ************************************************************************* */
 TEST( simulated2D, Simulated2DValues )
 {
-	simulated2D::Values actual;
-	actual.insertPose(1,Point2(1,1));
-	actual.insertPoint(2,Point2(2,2));
+	Values actual;
+	actual.insert(PoseKey(1),Point2(1,1));
+	actual.insert(PointKey(2),Point2(2,2));
   EXPECT(assert_equal(actual,actual,1e-9));
 }
 

@@ -27,17 +27,17 @@ using namespace gtsam;
 using namespace pose2SLAM;
 
 typedef boost::shared_ptr<Graph> sharedGraph ;
-typedef boost::shared_ptr<pose2SLAM::Values> sharedValue ;
+typedef boost::shared_ptr<Values> sharedValue ;
 //typedef NonlinearOptimizer<Graph, Values, SubgraphPreconditioner, SubgraphSolver<Graph,Values> > SPCGOptimizer;
 
 
-typedef SubgraphSolver<Graph, GaussianFactorGraph, pose2SLAM::Values> Solver;
+typedef SubgraphSolver<Graph, GaussianFactorGraph, Values> Solver;
 typedef boost::shared_ptr<Solver> sharedSolver ;
-typedef NonlinearOptimizer<Graph, pose2SLAM::Values, GaussianFactorGraph, Solver> SPCGOptimizer;
+typedef NonlinearOptimizer<Graph, Values, GaussianFactorGraph, Solver> SPCGOptimizer;
 
 sharedGraph graph;
 sharedValue initial;
-pose2SLAM::Values result;
+Values result;
 
 /* ************************************************************************* */
 int main(void) {
@@ -47,7 +47,7 @@ int main(void) {
 	Key x1(1), x2(2), x3(3), x4(4), x5(5), x6(6), x7(7), x8(8), x9(9);
 
 	graph = boost::make_shared<Graph>() ;
-	initial = boost::make_shared<pose2SLAM::Values>() ;
+	initial = boost::make_shared<Values>() ;
 
 	// create a 3 by 3 grid
 	// x3 x6 x9

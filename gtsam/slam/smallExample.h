@@ -28,7 +28,6 @@
 namespace gtsam {
 	namespace example {
 
-		typedef simulated2D::Values Values;
 		typedef NonlinearFactorGraph Graph;
 
 		/**

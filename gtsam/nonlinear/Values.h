@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file DynamicValues.h
+ * @file Values.h
  * @author Richard Roberts
  *
  * @brief A non-templated config holding any types of Manifold-group elements
@@ -63,7 +63,7 @@ namespace gtsam {
   * manifold element, and hence supports operations dim, retract, and
   * localCoordinates.
   */
-  class DynamicValues {
+  class Values {
 
   private:
 
@@ -91,11 +91,11 @@ namespace gtsam {
     typedef KeyValueMap::reverse_iterator reverse_iterator;
     typedef KeyValueMap::const_reverse_iterator const_reverse_iterator;
 
-    /** Default constructor creates an empty DynamicValues class */
-    DynamicValues() {}
+    /** Default constructor creates an empty Values class */
+    Values() {}
 
     /** Copy constructor duplicates all keys and values */
-    DynamicValues(const DynamicValues& other);
+    Values(const Values& other);
 
     /// @name Testable
     /// @{
@@ -104,7 +104,7 @@ namespace gtsam {
     void print(const std::string& str = "") const;
 
     /** Test whether the sets of keys and values are identical */
-    bool equals(const DynamicValues& other, double tol=1e-9) const;
+    bool equals(const Values& other, double tol=1e-9) const;
 
     /// @}
 
@@ -178,13 +178,13 @@ namespace gtsam {
     /// @{
 
     /** Add a delta config to current config and returns a new config */
-    DynamicValues retract(const VectorValues& delta, const Ordering& ordering) const;
+    Values retract(const VectorValues& delta, const Ordering& ordering) const;
 
     /** Get a delta config about a linearization point c0 (*this) */
-    VectorValues localCoordinates(const DynamicValues& cp, const Ordering& ordering) const;
+    VectorValues localCoordinates(const Values& cp, const Ordering& ordering) const;
 
     /** Get a delta config about a linearization point c0 (*this) */
-    void localCoordinates(const DynamicValues& cp, const Ordering& ordering, VectorValues& delta) const;
+    void localCoordinates(const Values& cp, const Ordering& ordering, VectorValues& delta) const;
 
     ///@}
 
@@ -194,13 +194,13 @@ namespace gtsam {
     void insert(const Symbol& j, const Value& val);
 
     /** Add a set of variables, throws KeyAlreadyExists<J> if a key is already present */
-    void insert(const DynamicValues& values);
+    void insert(const Values& values);
 
     /** single element change of existing element */
     void update(const Symbol& j, const Value& val);
 
     /** update the current available values without adding new ones */
-    void update(const DynamicValues& values);
+    void update(const Values& values);
 
     /** Remove a variable from the config, throws KeyDoesNotExist<J> if j is not present */
     void erase(const Symbol& j);
@@ -218,7 +218,7 @@ namespace gtsam {
     FastList<Symbol> keys() const;
 
     /** Replace all keys and variables */
-    DynamicValues& operator=(const DynamicValues& rhs);
+    Values& operator=(const Values& rhs);
 
     /** Remove all variables from the config */
     void clear() { values_.clear(); }
@@ -254,7 +254,7 @@ namespace gtsam {
   };
 
   /* ************************************************************************* */
-  class DynamicValuesKeyAlreadyExists : public std::exception {
+  class ValuesKeyAlreadyExists : public std::exception {
   protected:
     const Symbol key_; ///< The key that already existed
 
@@ -263,10 +263,10 @@ namespace gtsam {
 
   public:
     /// Construct with the key-value pair attemped to be added
-    DynamicValuesKeyAlreadyExists(const Symbol& key) throw() :
+    ValuesKeyAlreadyExists(const Symbol& key) throw() :
       key_(key) {}
 
-    virtual ~DynamicValuesKeyAlreadyExists() throw() {}
+    virtual ~ValuesKeyAlreadyExists() throw() {}
 
     /// The duplicate key that was attemped to be added
     const Symbol& key() const throw() { return key_; }
@@ -276,7 +276,7 @@ namespace gtsam {
   };
 
   /* ************************************************************************* */
-  class DynamicValuesKeyDoesNotExist : public std::exception {
+  class ValuesKeyDoesNotExist : public std::exception {
   protected:
     const char* operation_; ///< The operation that attempted to access the key
     const Symbol key_; ///< The key that does not exist
@@ -286,10 +286,10 @@ namespace gtsam {
 
   public:
     /// Construct with the key that does not exist in the values
-    DynamicValuesKeyDoesNotExist(const char* operation, const Symbol& key) throw() :
+    ValuesKeyDoesNotExist(const char* operation, const Symbol& key) throw() :
       operation_(operation), key_(key) {}
 
-    virtual ~DynamicValuesKeyDoesNotExist() throw() {}
+    virtual ~ValuesKeyDoesNotExist() throw() {}
 
     /// The key that was attempted to be accessed that does not exist
     const Symbol& key() const throw() { return key_; }
@@ -299,7 +299,7 @@ namespace gtsam {
   };
 
   /* ************************************************************************* */
-  class DynamicValuesIncorrectType : public std::exception {
+  class ValuesIncorrectType : public std::exception {
   protected:
     const Symbol key_; ///< The key requested
     const std::type_info& storedTypeId_;
@@ -310,16 +310,16 @@ namespace gtsam {
 
   public:
     /// Construct with the key that does not exist in the values
-    DynamicValuesIncorrectType(const Symbol& key,
+    ValuesIncorrectType(const Symbol& key,
         const std::type_info& storedTypeId, const std::type_info& requestedTypeId) throw() :
       key_(key), storedTypeId_(storedTypeId), requestedTypeId_(requestedTypeId) {}
 
-    virtual ~DynamicValuesIncorrectType() throw() {}
+    virtual ~ValuesIncorrectType() throw() {}
 
     /// The key that was attempted to be accessed that does not exist
     const Symbol& key() const throw() { return key_; }
 
-    /// The typeid of the value stores in the DynamicValues
+    /// The typeid of the value stores in the Values
     const std::type_info& storedTypeId() const { return storedTypeId_; }
 
     /// The requested typeid
@@ -338,10 +338,10 @@ namespace gtsam {
     virtual ~DynamicValuesMismatched() throw() {}
 
     virtual const char* what() const throw() {
-      return "The Values 'this' and the argument passed to DynamicValues::localCoordinates have mismatched keys and values";
+      return "The Values 'this' and the argument passed to Values::localCoordinates have mismatched keys and values";
     }
   };
 
 }
 
-#include <gtsam/nonlinear/DynamicValues-inl.h>
+#include <gtsam/nonlinear/Values-inl.h>

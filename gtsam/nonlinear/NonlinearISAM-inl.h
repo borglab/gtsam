@@ -31,7 +31,7 @@ using namespace gtsam;
 /* ************************************************************************* */
 template<class GRAPH>
 void NonlinearISAM<GRAPH>::update(const Factors& newFactors,
-		const DynamicValues& initialValues) {
+		const Values& initialValues) {
 
   if(newFactors.size() > 0) {
 
@@ -69,7 +69,7 @@ void NonlinearISAM<GRAPH>::reorder_relinearize() {
 
   if(factors_.size() > 0) {
     // Obtain the new linearization point
-    const DynamicValues newLinPoint = estimate();
+    const Values newLinPoint = estimate();
 
     isam_.clear();
 
@@ -90,7 +90,7 @@ void NonlinearISAM<GRAPH>::reorder_relinearize() {
 
 /* ************************************************************************* */
 template<class GRAPH>
-DynamicValues NonlinearISAM<GRAPH>::estimate() const {
+Values NonlinearISAM<GRAPH>::estimate() const {
   if(isam_.size() > 0)
     return linPoint_.retract(optimize(isam_), ordering_);
   else

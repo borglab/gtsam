@@ -97,7 +97,7 @@ TEST( GeneralSFMFactor, error ) {
 	boost::shared_ptr<Projection>
 	factor(new Projection(z, sigma, cameraFrameNumber, landmarkNumber));
 	// For the following configuration, the factor predicts 320,240
-	DynamicValues values;
+	Values values;
 	Rot3 R;
 	Point3 t1(0,0,-6);
 	Pose3 x1(R,t1);
@@ -170,7 +170,7 @@ TEST( GeneralSFMFactor, optimize_defaultK ) {
 
 	// add initial
 	const double noise = baseline*0.1;
-	boost::shared_ptr<DynamicValues> values(new DynamicValues);
+	boost::shared_ptr<Values> values(new Values);
 	for ( size_t i = 0 ; i < X.size() ; ++i )
 	  values->insert(CameraKey((int)i), X[i]) ;
 
@@ -209,7 +209,7 @@ TEST( GeneralSFMFactor, optimize_varK_SingleMeasurementError ) {
 
   // add initial
   const double noise = baseline*0.1;
-  boost::shared_ptr<DynamicValues> values(new DynamicValues);
+  boost::shared_ptr<Values> values(new Values);
   for ( size_t i = 0 ; i < X.size() ; ++i )
     values->insert(CameraKey((int)i), X[i]) ;
 
@@ -255,7 +255,7 @@ TEST( GeneralSFMFactor, optimize_varK_FixCameras ) {
 
   const size_t nMeasurements = L.size()*X.size();
 
-  boost::shared_ptr<DynamicValues> values(new DynamicValues);
+  boost::shared_ptr<Values> values(new Values);
   for ( size_t i = 0 ; i < X.size() ; ++i )
     values->insert(CameraKey((int)i), X[i]) ;
 
@@ -298,7 +298,7 @@ TEST( GeneralSFMFactor, optimize_varK_FixLandmarks ) {
 
   const size_t nMeasurements = L.size()*X.size();
 
-  boost::shared_ptr<DynamicValues> values(new DynamicValues);
+  boost::shared_ptr<Values> values(new Values);
   for ( size_t i = 0 ; i < X.size() ; ++i ) {
     const double
       rot_noise = 1e-5,
@@ -359,7 +359,7 @@ TEST( GeneralSFMFactor, optimize_varK_BA ) {
 
   // add initial
   const double noise = baseline*0.1;
-  boost::shared_ptr<DynamicValues> values(new DynamicValues);
+  boost::shared_ptr<Values> values(new Values);
   for ( size_t i = 0 ; i < X.size() ; ++i )
     values->insert(CameraKey((int)i), X[i]) ;
 

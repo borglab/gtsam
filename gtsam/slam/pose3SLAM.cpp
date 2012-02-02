@@ -25,8 +25,8 @@ namespace gtsam {
 	namespace pose3SLAM {
 
 		/* ************************************************************************* */
-		DynamicValues circle(size_t n, double radius) {
-			DynamicValues x;
+		Values circle(size_t n, double radius) {
+			Values x;
 			double theta = 0, dtheta = 2 * M_PI / n;
 			// We use aerospace/navlab convention, X forward, Y right, Z down
 			// First pose will be at (R,0,0)
