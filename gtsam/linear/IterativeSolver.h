@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/inference/VariableIndex.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/IterativeOptimizationParameters.h>
