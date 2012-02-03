@@ -37,6 +37,7 @@
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/archive/xml_oarchive.hpp>
 
+#include <gtsam/geometry/Point2.h>
 // whether to print the serialized text to stdout
 const bool verbose = false;
 
@@ -441,6 +442,10 @@ TEST (Serialization, gaussianISAM) {
 BOOST_CLASS_EXPORT_GUID(gtsam::simulated2D::Prior,       "gtsam::simulated2D::Prior"      );
 BOOST_CLASS_EXPORT_GUID(gtsam::simulated2D::Odometry,    "gtsam::simulated2D::Odometry"   );
 BOOST_CLASS_EXPORT_GUID(gtsam::simulated2D::Measurement, "gtsam::simulated2D::Measurement");
+BOOST_CLASS_EXPORT(gtsam::Point2)
+BOOST_CLASS_EXPORT(gtsam::Point3)
+BOOST_CLASS_EXPORT(gtsam::Pose2)
+BOOST_CLASS_EXPORT(gtsam::Pose3)
 /* ************************************************************************* */
 TEST (Serialization, smallExample) {
 	using namespace example;

@@ -32,6 +32,7 @@
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
+#include <boost/ptr_container/serialize_ptr_map.hpp>
 
 #include <gtsam/base/Value.h>
 #include <gtsam/base/FastMap.h>
@@ -240,6 +241,14 @@ namespace gtsam {
      * this ordering yourself (as orderingCOLAMD() does internally).
      */
     Ordering::shared_ptr orderingArbitrary(Index firstVar = 0) const;
+
+  private:
+  	/** Serialization function */
+  	friend class boost::serialization::access;
+  	template<class ARCHIVE>
+  	void serialize(ARCHIVE & ar, const unsigned int version) {
+  		ar & BOOST_SERIALIZATION_NVP(values_);
+  	}
 
   };
 
