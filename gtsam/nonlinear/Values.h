@@ -82,10 +82,18 @@ namespace gtsam {
     typedef boost::shared_ptr<Values> shared_ptr;
 
     /// A pair of const references to the key and value, the dereferenced type of the const_iterator and const_reverse_iterator
-    typedef std::pair<const Symbol&, const Value&> ConstKeyValuePair;
+    struct ConstKeyValuePair {
+      const Symbol& first;
+      const Value& second;
+      ConstKeyValuePair(const Symbol& key, const Value& value) : first(key), second(value) {}
+    };
 
     /// A pair of references to the key and value, the dereferenced type of the iterator and reverse_iterator
-    typedef std::pair<const Symbol&, Value&> KeyValuePair;
+    struct KeyValuePair {
+      const Symbol& first;
+      Value& second;
+      KeyValuePair(const Symbol& key, Value& value) : first(key), second(value) {}
+    };
 
     /// Mutable forward iterator, with value type KeyValuePair
     typedef boost::transform_iterator<
@@ -178,10 +186,10 @@ namespace gtsam {
     VectorValues zeroVectors(const Ordering& ordering) const;
 
   private:
-    static std::pair<const Symbol&, const Value&> make_const_deref_pair(const KeyValueMap::const_iterator::value_type& key_value) {
-      return std::make_pair<const Symbol&, const Value&>(key_value.first, *key_value.second); }
-    static std::pair<const Symbol&, Value&> make_deref_pair(const KeyValueMap::iterator::value_type& key_value) {
-      return std::make_pair<const Symbol&, Value&>(key_value.first, *key_value.second); }
+    static ConstKeyValuePair make_const_deref_pair(const KeyValueMap::const_iterator::value_type& key_value) {
+      return ConstKeyValuePair(key_value.first, *key_value.second); }
+    static KeyValuePair make_deref_pair(const KeyValueMap::iterator::value_type& key_value) {
+      return KeyValuePair(key_value.first, *key_value.second); }
 
   public:
     const_iterator begin() const { return boost::make_transform_iterator(values_.begin(), &make_const_deref_pair); }
