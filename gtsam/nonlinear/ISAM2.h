@@ -314,7 +314,6 @@ public:
 
   typedef BayesTree<CONDITIONAL,ISAM2Clique<CONDITIONAL> > Base; ///< The BayesTree base class
   typedef ISAM2<CONDITIONAL> This; ///< This class
-  typedef Values Values;
   typedef GRAPH Graph;
 
   /** Create an empty ISAM2 instance */
