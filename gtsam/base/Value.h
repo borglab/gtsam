@@ -143,12 +143,19 @@ namespace gtsam {
     virtual ~Value() {}
 
   private:
-  	/** Serialization function */
+  	/** Serialization function
+  	 * All DERIVED classes derived from Value must put the following line in their serialization function:
+  	 * 		ar & boost::serialization::make_nvp("DERIVED", boost::serialization::base_object<Value>(*this));
+  	 * Alternatively, if the derived class is template-based, for example PinholeCamera<Calibration>,
+  	 * it can put the following code in its serialization function
+  	 *    ar & boost::serialization::void_cast_register<PinholeCamera<Calibration>, Value>(
+     * 	            static_cast<PinholeCamera<Calibration> *>(NULL),
+     * 	            static_cast<Value *>(NULL));
+  	 * See more: http://www.boost.org/doc/libs/1_45_0/libs/serialization/doc/serialization.html#runtimecasting
+  	 * */
   	friend class boost::serialization::access;
   	template<class ARCHIVE>
-  	void serialize(ARCHIVE & ar, const unsigned int version) {
-  		std::cout << "value serialization" << std::endl;
-  	}
+  	void serialize(ARCHIVE & ar, const unsigned int version) {}
 
   };
 

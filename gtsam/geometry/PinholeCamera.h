@@ -279,6 +279,9 @@ private:
       friend class boost::serialization::access;
       template<class Archive>
       void serialize(Archive & ar, const unsigned int version) {
+      	ar & boost::serialization::void_cast_register<PinholeCamera<Calibration>, Value>(
+      	            static_cast<PinholeCamera<Calibration> *>(NULL),
+      	            static_cast<Value *>(NULL));
         ar & BOOST_SERIALIZATION_NVP(pose_);
         ar & BOOST_SERIALIZATION_NVP(k_);
       }

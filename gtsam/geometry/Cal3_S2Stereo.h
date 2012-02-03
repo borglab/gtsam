@@ -81,6 +81,8 @@ namespace gtsam {
 		template<class Archive>
 		void serialize(Archive & ar, const unsigned int version)
 		{
+			ar & boost::serialization::make_nvp("Cal3_S2Stereo",
+					boost::serialization::base_object<Value>(*this));
 			ar & BOOST_SERIALIZATION_NVP(b_);
 			ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Cal3_S2);
 		}

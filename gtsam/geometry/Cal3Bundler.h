@@ -111,6 +111,8 @@ private:
 	template<class Archive>
 	void serialize(Archive & ar, const unsigned int version)
 	{
+		ar & boost::serialization::make_nvp("Cal3Bundler",
+				boost::serialization::base_object<Value>(*this));
 		ar & BOOST_SERIALIZATION_NVP(f_);
 		ar & BOOST_SERIALIZATION_NVP(k1_);
 		ar & BOOST_SERIALIZATION_NVP(k2_);

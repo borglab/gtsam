@@ -148,6 +148,8 @@ namespace gtsam {
 		friend class boost::serialization::access;
 		template<class ARCHIVE>
 		void serialize(ARCHIVE & ar, const unsigned int version) {
+			ar & boost::serialization::make_nvp("StereoPoint2",
+					boost::serialization::base_object<Value>(*this));
 			ar & BOOST_SERIALIZATION_NVP(uL_);
 			ar & BOOST_SERIALIZATION_NVP(uR_);
 			ar & BOOST_SERIALIZATION_NVP(v_);

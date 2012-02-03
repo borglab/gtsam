@@ -174,6 +174,8 @@ namespace gtsam {
 		friend class boost::serialization::access;
 		template<class Archive>
 		void serialize(Archive & ar, const unsigned int version) {
+			ar & boost::serialization::make_nvp("Cal3_S2",
+					boost::serialization::base_object<Value>(*this));
 			ar & BOOST_SERIALIZATION_NVP(fx_);
 			ar & BOOST_SERIALIZATION_NVP(fy_);
 			ar & BOOST_SERIALIZATION_NVP(s_);

@@ -8,8 +8,6 @@
 #pragma once
 
 #include <boost/pool/singleton_pool.hpp>
-#include <boost/serialization/serialization.hpp>
-#include <boost/serialization/export.hpp>
 #include <gtsam/base/Value.h>
 
 namespace gtsam {
@@ -21,16 +19,7 @@ private:
 	struct PoolTag { };
 
 protected:
-	DerivedValue() {
-  	// Register the base/derived class relationship for boost::serialization
-		// See: http://www.boost.org/doc/libs/1_45_0/libs/serialization/doc/serialization.html#runtimecasting
-		static bool first = true;
-		if (first) {
-			boost::serialization::void_cast_register<DERIVED, Value>(
-					static_cast<DERIVED *>(NULL), static_cast<Value *>(NULL) );
-			first = false;
-		}
-	}
+	DerivedValue() {}
 
 public:
 
