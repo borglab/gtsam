@@ -20,6 +20,7 @@
 
 #include <cmath>
 #include <boost/optional.hpp>
+#include <boost/serialization/nvp.hpp>
 #include <gtsam/base/DerivedValue.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
@@ -279,9 +280,7 @@ private:
       friend class boost::serialization::access;
       template<class Archive>
       void serialize(Archive & ar, const unsigned int version) {
-      	ar & boost::serialization::void_cast_register<PinholeCamera<Calibration>, Value>(
-      	            static_cast<PinholeCamera<Calibration> *>(NULL),
-      	            static_cast<Value *>(NULL));
+      	ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Value);
         ar & BOOST_SERIALIZATION_NVP(pose_);
         ar & BOOST_SERIALIZATION_NVP(k_);
       }

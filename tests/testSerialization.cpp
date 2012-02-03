@@ -165,6 +165,7 @@ bool equalsDereferencedXML(const T& input = T()) {
 using namespace std;
 using namespace gtsam;
 
+
 /* ************************************************************************* */
 TEST (Serialization, matrix_vector) {
 	EXPECT(equality<Vector>(Vector_(4, 1.0, 2.0, 3.0, 4.0)));
@@ -174,6 +175,24 @@ TEST (Serialization, matrix_vector) {
 	EXPECT(equalityXML<Matrix>(Matrix_(2, 2, 1.0, 2.0, 3.0, 4.0)));
 }
 
+/* ************************************************************************* */
+// Export all classes derived from Value
+BOOST_CLASS_EXPORT(gtsam::Cal3_S2)
+BOOST_CLASS_EXPORT(gtsam::Cal3_S2Stereo)
+BOOST_CLASS_EXPORT(gtsam::Cal3Bundler)
+BOOST_CLASS_EXPORT(gtsam::CalibratedCamera)
+BOOST_CLASS_EXPORT(gtsam::Point2)
+BOOST_CLASS_EXPORT(gtsam::Point3)
+BOOST_CLASS_EXPORT(gtsam::Pose2)
+BOOST_CLASS_EXPORT(gtsam::Pose3)
+BOOST_CLASS_EXPORT(gtsam::Rot2)
+BOOST_CLASS_EXPORT(gtsam::Rot3)
+BOOST_CLASS_EXPORT(gtsam::PinholeCamera<Cal3_S2>)
+BOOST_CLASS_EXPORT(gtsam::PinholeCamera<Cal3DS2>)
+BOOST_CLASS_EXPORT(gtsam::PinholeCamera<Cal3Bundler>)
+BOOST_CLASS_EXPORT(gtsam::StereoPoint2)
+
+/* ************************************************************************* */
 Point3 pt3(1.0, 2.0, 3.0);
 Rot3 rt3 = Rot3::RzRyRx(1.0, 3.0, 2.0);
 Pose3 pose3(rt3, pt3);
@@ -188,7 +207,6 @@ CalibratedCamera cal5(Pose3(rt3, pt3));
 PinholeCamera<Cal3_S2> cam1(pose3, cal1);
 StereoCamera cam2(pose3, cal4ptr);
 StereoPoint2 spt(1.0, 2.0, 3.0);
-
 
 /* ************************************************************************* */
 TEST (Serialization, text_geometry) {
@@ -230,6 +248,25 @@ TEST (Serialization, xml_geometry) {
 	EXPECT(equalsXML(cam1));
 	EXPECT(equalsXML(cam2));
 	EXPECT(equalsXML(spt));
+}
+
+/* ************************************************************************* */
+typedef PinholeCamera<Cal3_S2> 				PinholeCal3S2;
+typedef PinholeCamera<Cal3DS2> 				PinholeCal3DS2;
+typedef PinholeCamera<Cal3Bundler> 		PinholeCal3Bundler;
+
+typedef TypedSymbol<Cal3_S2,'a'> 				PinholeCal3S2Key;
+typedef TypedSymbol<Cal3DS2,'s'> 				PinholeCal3DS2Key;
+typedef TypedSymbol<Cal3Bundler,'d'> 		PinholeCal3BundlerKey;
+
+TEST (Serialization, TemplatedValues) {
+	Values values;
+	values.insert(PinholeCal3S2Key(0), 	PinholeCal3S2(pose3, cal1));
+	values.insert(PinholeCal3DS2Key(5), PinholeCal3DS2(pose3, cal2));
+	values.insert(PinholeCal3BundlerKey(47), PinholeCal3Bundler(pose3, cal3));
+	values.insert(PinholeCal3S2Key(5), 	PinholeCal3S2(pose3, cal1));
+	EXPECT(equalsObj(values));
+	EXPECT(equalsXML(values));
 }
 
 /* ************************************************************************* */
@@ -437,13 +474,10 @@ TEST (Serialization, gaussianISAM) {
 
 /* ************************************************************************* */
 /* Create GUIDs for factors in simulated2D */
-BOOST_CLASS_EXPORT_GUID(simulated2D::Prior,       "gtsam::simulated2D::Prior"      );
-BOOST_CLASS_EXPORT_GUID(simulated2D::Odometry,    "gtsam::simulated2D::Odometry"   );
-BOOST_CLASS_EXPORT_GUID(simulated2D::Measurement, "gtsam::simulated2D::Measurement");
-BOOST_CLASS_EXPORT(gtsam::Point2)
-BOOST_CLASS_EXPORT(gtsam::Point3)
-BOOST_CLASS_EXPORT(gtsam::Pose2)
-BOOST_CLASS_EXPORT(gtsam::Pose3)
+BOOST_CLASS_EXPORT_GUID(simulated2D::Prior,       "gtsam::simulated2D::Prior"      )
+BOOST_CLASS_EXPORT_GUID(simulated2D::Odometry,    "gtsam::simulated2D::Odometry"   )
+BOOST_CLASS_EXPORT_GUID(simulated2D::Measurement, "gtsam::simulated2D::Measurement")
+
 /* ************************************************************************* */
 TEST (Serialization, smallExample) {
 	using namespace example;
