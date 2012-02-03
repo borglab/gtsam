@@ -38,7 +38,7 @@ public:
 
 public:
   IterativeOptimizationParameters() :
-    maxIterations_(100), reset_(101), epsilon_(1e-5), epsilon_abs_(1e-5),
+    maxIterations_(500), reset_(501), epsilon_(1e-3), epsilon_abs_(1e-3),
         verbosity_(SILENT), nReduce_(0), skeleton_spec_(), est_cond_(false) {
   }
 

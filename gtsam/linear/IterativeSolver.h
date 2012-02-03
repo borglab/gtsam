@@ -34,35 +34,23 @@ public:
 
 protected:
 
-	GaussianFactorGraph::shared_ptr graph_;
-	VariableIndex::shared_ptr variableIndex_;
 	Parameters::shared_ptr parameters_ ;
 
 public:
 
-  IterativeSolver(
-    const GaussianFactorGraph::shared_ptr& factorGraph,
-    const VariableIndex::shared_ptr& variableIndex):
-    graph_(factorGraph), variableIndex_(variableIndex),
-    parameters_(new Parameters()) { }
+  IterativeSolver(): parameters_(new Parameters()) {}
 
-  IterativeSolver(
-    const GaussianFactorGraph::shared_ptr& factorGraph,
-    const VariableIndex::shared_ptr& variableIndex,
-    const Parameters::shared_ptr& parameters):
-    graph_(factorGraph), variableIndex_(variableIndex), parameters_(parameters) { }
+  IterativeSolver(const Parameters::shared_ptr& parameters)
+  : parameters_(parameters) {}
 
-	IterativeSolver():
-		parameters_(new IterativeOptimizationParameters()) {}
+	IterativeSolver(const IterativeSolver &solver)
+	: parameters_(solver.parameters_) {}
 
-	IterativeSolver(const IterativeSolver &solver):
-		parameters_(solver.parameters_) {}
+	IterativeSolver(const Parameters &parameters)
+	:	parameters_(new Parameters(parameters)) {}
 
-	IterativeSolver(const IterativeOptimizationParameters &parameters):
-		parameters_(new IterativeOptimizationParameters(parameters)) {}
-
-	IterativeSolver(const sharedParameters parameters):
-		parameters_(parameters) {}
+	IterativeSolver(const sharedParameters parameters)
+	:	parameters_(parameters) {}
 
 	virtual ~IterativeSolver() {}
 
