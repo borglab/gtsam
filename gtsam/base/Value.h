@@ -145,8 +145,8 @@ namespace gtsam {
   private:
   	/** Empty serialization function.
   	 *
-  	 * There are two important notes for successfully serializing derived objects in Values:
-  	 * (Those derived objects are stored as pointer to this abstract base class Value)
+  	 * There are two important things that users need to do to serialize derived objects in Values successfully:
+  	 * (Those derived objects are stored in Values as pointer to this abstract base class Value)
   	 *
   	 * 		1. All DERIVED classes derived from Value must put the following line in their serialization function:
   	 * 					ar & boost::serialization::make_nvp("DERIVED", boost::serialization::base_object<Value>(*this));
@@ -166,7 +166,7 @@ namespace gtsam {
   	 * 		  			http://www.boost.org/doc/libs/release/libs/serialization/doc/serialization.html#instantiation\
   	 * 		  			http://www.boost.org/doc/libs/release/libs/serialization/doc/special.html#export
   	 * 		  			http://www.boost.org/doc/libs/release/libs/serialization/doc/traits.html#export
-  	 * 		  The last two links explain why this export line has to be in the same source module thaat includes
+  	 * 		  The last two links explain why this export line has to be in the same source module that includes
   	 * 		  any of the archive class headers.
   	 * */
   	friend class boost::serialization::access;
