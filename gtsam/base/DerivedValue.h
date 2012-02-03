@@ -8,7 +8,10 @@
 #pragma once
 
 #include <boost/pool/singleton_pool.hpp>
+#include <boost/serialization/serialization.hpp>
+#include <boost/serialization/export.hpp>
 #include <gtsam/base/Value.h>
+
 namespace gtsam {
 
 template<class DERIVED>
