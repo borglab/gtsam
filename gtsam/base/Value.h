@@ -19,7 +19,7 @@
 #pragma once
 
 #include <memory>
-
+#include <boost/serialization/assume_abstract.hpp>
 #include <gtsam/base/Vector.h>
 
 namespace gtsam {
@@ -142,6 +142,16 @@ namespace gtsam {
     /** Virutal destructor */
     virtual ~Value() {}
 
+  private:
+  	/** Serialization function */
+  	friend class boost::serialization::access;
+  	template<class ARCHIVE>
+  	void serialize(ARCHIVE & ar, const unsigned int version) {
+  		std::cout << "value serialization" << std::endl;
+  	}
+
   };
 
 } /* namespace gtsam */
+
+BOOST_SERIALIZATION_ASSUME_ABSTRACT(gtsam::Value)
