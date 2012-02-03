@@ -32,6 +32,7 @@ using namespace boost;
 using namespace std;
 using namespace gtsam;
 using namespace boost;
+using namespace visualSLAM;
 
 static SharedNoiseModel sigma(noiseModel::Unit::Create(1));
 
@@ -90,13 +91,13 @@ TEST( Graph, optimizeLM)
   graph->addPointConstraint(3, landmark3);
 
   // Create an initial values structure corresponding to the ground truth
-  boost::shared_ptr<visualSLAM::Values> initialEstimate(new visualSLAM::Values);
-  initialEstimate->insert(1, camera1);
-  initialEstimate->insert(2, camera2);
-  initialEstimate->insert(1, landmark1);
-  initialEstimate->insert(2, landmark2);
-  initialEstimate->insert(3, landmark3);
-  initialEstimate->insert(4, landmark4);
+  boost::shared_ptr<Values> initialEstimate(new Values);
+  initialEstimate->insert(PoseKey(1), camera1);
+  initialEstimate->insert(PoseKey(2), camera2);
+  initialEstimate->insert(PointKey(1), landmark1);
+  initialEstimate->insert(PointKey(2), landmark2);
+  initialEstimate->insert(PointKey(3), landmark3);
+  initialEstimate->insert(PointKey(4), landmark4);
 
   // Create an ordering of the variables
   shared_ptr<Ordering> ordering(new Ordering);
@@ -127,13 +128,13 @@ TEST( Graph, optimizeLM2)
   graph->addPoseConstraint(2, camera2);
 
   // Create an initial values structure corresponding to the ground truth
-  boost::shared_ptr<visualSLAM::Values> initialEstimate(new visualSLAM::Values);
-  initialEstimate->insert(1, camera1);
-  initialEstimate->insert(2, camera2);
-  initialEstimate->insert(1, landmark1);
-  initialEstimate->insert(2, landmark2);
-  initialEstimate->insert(3, landmark3);
-  initialEstimate->insert(4, landmark4);
+  boost::shared_ptr<Values> initialEstimate(new Values);
+  initialEstimate->insert(PoseKey(1), camera1);
+  initialEstimate->insert(PoseKey(2), camera2);
+  initialEstimate->insert(PointKey(1), landmark1);
+  initialEstimate->insert(PointKey(2), landmark2);
+  initialEstimate->insert(PointKey(3), landmark3);
+  initialEstimate->insert(PointKey(4), landmark4);
 
   // Create an ordering of the variables
   shared_ptr<Ordering> ordering(new Ordering);
@@ -164,13 +165,13 @@ TEST( Graph, CHECK_ORDERING)
   graph->addPoseConstraint(2, camera2);
 
   // Create an initial values structure corresponding to the ground truth
-  boost::shared_ptr<visualSLAM::Values> initialEstimate(new visualSLAM::Values);
-  initialEstimate->insert(1, camera1);
-  initialEstimate->insert(2, camera2);
-  initialEstimate->insert(1, landmark1);
-  initialEstimate->insert(2, landmark2);
-  initialEstimate->insert(3, landmark3);
-  initialEstimate->insert(4, landmark4);
+  boost::shared_ptr<Values> initialEstimate(new Values);
+  initialEstimate->insert(PoseKey(1), camera1);
+  initialEstimate->insert(PoseKey(2), camera2);
+  initialEstimate->insert(PointKey(1), landmark1);
+  initialEstimate->insert(PointKey(2), landmark2);
+  initialEstimate->insert(PointKey(3), landmark3);
+  initialEstimate->insert(PointKey(4), landmark4);
 
   Ordering::shared_ptr ordering = graph->orderingCOLAMD(*initialEstimate);
 
@@ -192,23 +193,23 @@ TEST( Graph, CHECK_ORDERING)
 TEST( Values, update_with_large_delta) {
 	// this test ensures that if the update for delta is larger than
 	// the size of the config, it only updates existing variables
-	visualSLAM::Values init;
-	init.insert(1, Pose3());
-	init.insert(1, Point3(1.0, 2.0, 3.0));
+	Values init;
+	init.insert(PoseKey(1), Pose3());
+	init.insert(PointKey(1), Point3(1.0, 2.0, 3.0));
 
-	visualSLAM::Values expected;
-	expected.insert(1, Pose3(Rot3(), Point3(0.1, 0.1, 0.1)));
-	expected.insert(1, Point3(1.1, 2.1, 3.1));
+	Values expected;
+	expected.insert(PoseKey(1), Pose3(Rot3(), Point3(0.1, 0.1, 0.1)));
+	expected.insert(PointKey(1), Point3(1.1, 2.1, 3.1));
 
 	Ordering largeOrdering;
-	visualSLAM::Values largeValues = init;
-	largeValues.insert(2, Pose3());
+	Values largeValues = init;
+	largeValues.insert(PoseKey(2), Pose3());
 	largeOrdering += "x1","l1","x2";
 	VectorValues delta(largeValues.dims(largeOrdering));
 	delta[largeOrdering["x1"]] = Vector_(6, 0.0, 0.0, 0.0, 0.1, 0.1, 0.1);
 	delta[largeOrdering["l1"]] = Vector_(3, 0.1, 0.1, 0.1);
 	delta[largeOrdering["x2"]] = Vector_(6, 0.0, 0.0, 0.0, 100.1, 4.1, 9.1);
-	visualSLAM::Values actual = init.retract(delta, largeOrdering);
+	Values actual = init.retract(delta, largeOrdering);
 
 	CHECK(assert_equal(expected,actual));
 }

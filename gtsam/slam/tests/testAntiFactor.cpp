@@ -39,9 +39,9 @@ TEST( AntiFactor, NegativeHessian)
   SharedNoiseModel sigma(noiseModel::Unit::Create(Pose3::Dim()));
 
   // Create a configuration corresponding to the ground truth
-  boost::shared_ptr<pose3SLAM::Values> values(new pose3SLAM::Values());
-  values->insert(1, pose1);
-  values->insert(2, pose2);
+  boost::shared_ptr<Values> values(new Values());
+  values->insert(pose3SLAM::Key(1), pose1);
+  values->insert(pose3SLAM::Key(2), pose2);
 
   // Define an elimination ordering
   Ordering::shared_ptr ordering(new Ordering());
@@ -50,7 +50,7 @@ TEST( AntiFactor, NegativeHessian)
 
 
   // Create a "standard" factor
-  BetweenFactor<pose3SLAM::Values,pose3SLAM::Key>::shared_ptr originalFactor(new BetweenFactor<pose3SLAM::Values,pose3SLAM::Key>(1, 2, z, sigma));
+  BetweenFactor<pose3SLAM::Key>::shared_ptr originalFactor(new BetweenFactor<pose3SLAM::Key>(1, 2, z, sigma));
 
   // Linearize it into a Jacobian Factor
   GaussianFactor::shared_ptr originalJacobian = originalFactor->linearize(*values, *ordering);
@@ -59,7 +59,7 @@ TEST( AntiFactor, NegativeHessian)
   HessianFactor::shared_ptr originalHessian = HessianFactor::shared_ptr(new HessianFactor(*originalJacobian));
 
   // Create the AntiFactor version of the original nonlinear factor
-  AntiFactor<pose3SLAM::Values>::shared_ptr antiFactor(new AntiFactor<pose3SLAM::Values>(originalFactor));
+  AntiFactor::shared_ptr antiFactor(new AntiFactor(originalFactor));
 
   // Linearize the AntiFactor into a Hessian Factor
   GaussianFactor::shared_ptr antiGaussian = antiFactor->linearize(*values, *ordering);
@@ -100,9 +100,9 @@ TEST( AntiFactor, EquivalentBayesNet)
 	graph->addConstraint(1, 2, pose1.between(pose2), sigma);
 
 	// Create a configuration corresponding to the ground truth
-	boost::shared_ptr<pose3SLAM::Values> values(new pose3SLAM::Values());
-	values->insert(1, pose1);
-	values->insert(2, pose2);
+	boost::shared_ptr<Values> values(new Values());
+	values->insert(pose3SLAM::Key(1), pose1);
+	values->insert(pose3SLAM::Key(2), pose2);
 
 	// Define an elimination ordering
 	Ordering::shared_ptr ordering = graph->orderingCOLAMD(*values);
@@ -119,7 +119,7 @@ TEST( AntiFactor, EquivalentBayesNet)
   graph->push_back(f1);
 
   // Add the corresponding AntiFactor between Pose1 and Pose2
-  AntiFactor<pose3SLAM::Values>::shared_ptr f2(new AntiFactor<pose3SLAM::Values>(f1));
+  AntiFactor::shared_ptr f2(new AntiFactor(f1));
   graph->push_back(f2);
 
 	// Again, Eliminate into a BayesNet

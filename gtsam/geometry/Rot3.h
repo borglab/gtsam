@@ -32,6 +32,7 @@
 #endif
 #endif
 
+#include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/3rdparty/Eigen/Eigen/Geometry>
 
@@ -49,7 +50,7 @@ namespace gtsam {
    * @ingroup geometry
    * \nosubgrouping
    */
-  class Rot3 {
+  class Rot3 : public DerivedValue<Rot3> {
   public:
     static const size_t dimension = 3;
 
@@ -91,6 +92,9 @@ namespace gtsam {
      * @param q The quaternion
      */
     Rot3(const Quaternion& q);
+
+    /** Virtual destructor */
+    virtual ~Rot3() {}
 
     /* Static member function to generate some well known rotations */
 

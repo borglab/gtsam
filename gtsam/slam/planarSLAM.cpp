@@ -23,8 +23,8 @@
 // Use planarSLAM namespace for specific SLAM instance
 namespace planarSLAM {
 
-  Graph::Graph(const NonlinearFactorGraph<Values>& graph) :
-      NonlinearFactorGraph<Values>(graph) {}
+  Graph::Graph(const NonlinearFactorGraph& graph) :
+      NonlinearFactorGraph(graph) {}
 
   void Graph::addPrior(const PoseKey& i, const Pose2& p,
       const SharedNoiseModel& model) {

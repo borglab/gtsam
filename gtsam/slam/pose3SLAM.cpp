@@ -39,7 +39,7 @@ namespace gtsam {
 				Point3 gti(radius*cos(theta), radius*sin(theta), 0);
 				Rot3 _0Ri = Rot3::yaw(-theta); // negative yaw goes counterclockwise, with Z down !
 				Pose3 gTi(gR0 * _0Ri, gti);
-				x.insert(i, gTi);
+				x.insert(Key(i), gTi);
 			}
 			return x;
 		}

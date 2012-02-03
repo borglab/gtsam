@@ -19,7 +19,6 @@
 #pragma once
 
 #include <gtsam/geometry/Point2.h>
-#include <gtsam/nonlinear/TupleValues.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
@@ -32,56 +31,6 @@ namespace simulated2D {
   // Simulated2D robots have no orientation, just a position
   typedef TypedSymbol<Point2, 'x'> PoseKey;
   typedef TypedSymbol<Point2, 'l'> PointKey;
-  typedef Values<PoseKey> PoseValues;
-  typedef Values<PointKey> PointValues;
-
-  /**
-   *  Custom Values class that holds poses and points
-   */
-  class Values: public TupleValues2<PoseValues, PointValues> {
-  public:
-    typedef TupleValues2<PoseValues, PointValues> Base;  ///< base class
-    typedef boost::shared_ptr<Point2> sharedPoint;  ///< shortcut to shared Point type
-
-    /// Constructor
-    Values() {
-    }
-
-    /// Copy constructor
-    Values(const Base& base) :
-        Base(base) {
-    }
-
-    /// Insert a pose
-    void insertPose(const simulated2D::PoseKey& i, const Point2& p) {
-      insert(i, p);
-    }
-
-    /// Insert a point
-    void insertPoint(const simulated2D::PointKey& j, const Point2& p) {
-      insert(j, p);
-    }
-
-    /// Number of poses
-    int nrPoses() const {
-      return this->first_.size();
-    }
-
-    /// Number of points
-    int nrPoints() const {
-      return this->second_.size();
-    }
-
-    /// Return pose i
-    Point2 pose(const simulated2D::PoseKey& i) const {
-      return (*this)[i];
-    }
-
-    /// Return point j
-    Point2 point(const simulated2D::PointKey& j) const {
-      return (*this)[j];
-    }
-  };
 
   /// Prior on a single pose
   inline Point2 prior(const Point2& x) {
@@ -112,18 +61,18 @@ namespace simulated2D {
   /**
    *  Unary factor encoding a soft prior on a vector
    */
-  template<class VALUES = Values, class KEY = PoseKey>
-  class GenericPrior: public NonlinearFactor1<VALUES, KEY> {
+  template<class KEY = PoseKey>
+  class GenericPrior: public NonlinearFactor1<KEY> {
   public:
-    typedef NonlinearFactor1<VALUES, KEY> Base;  ///< base class
-    typedef boost::shared_ptr<GenericPrior<VALUES, KEY> > shared_ptr;
+    typedef NonlinearFactor1<KEY> Base;  ///< base class
+    typedef boost::shared_ptr<GenericPrior<KEY> > shared_ptr;
     typedef typename KEY::Value Pose; ///< shortcut to Pose type
 
     Pose z_; ///< prior mean
 
     /// Create generic prior
     GenericPrior(const Pose& z, const SharedNoiseModel& model, const KEY& key) :
-        NonlinearFactor1<VALUES, KEY>(model, key), z_(z) {
+      NonlinearFactor1<KEY>(model, key), z_(z) {
     }
 
     /// Return error and optional derivative
@@ -150,11 +99,11 @@ namespace simulated2D {
   /**
    * Binary factor simulating "odometry" between two Vectors
    */
-  template<class VALUES = Values, class KEY = PoseKey>
-  class GenericOdometry: public NonlinearFactor2<VALUES, KEY, KEY> {
+  template<class KEY = PoseKey>
+  class GenericOdometry: public NonlinearFactor2<KEY, KEY> {
   public:
-    typedef NonlinearFactor2<VALUES, KEY, KEY> Base; ///< base class
-    typedef boost::shared_ptr<GenericOdometry<VALUES, KEY> > shared_ptr;
+    typedef NonlinearFactor2<KEY, KEY> Base; ///< base class
+    typedef boost::shared_ptr<GenericOdometry<KEY> > shared_ptr;
     typedef typename KEY::Value Pose; ///< shortcut to Pose type
 
     Pose z_; ///< odometry measurement
@@ -162,7 +111,7 @@ namespace simulated2D {
     /// Create odometry
     GenericOdometry(const Pose& z, const SharedNoiseModel& model,
         const KEY& i1, const KEY& i2) :
-        NonlinearFactor2<VALUES, KEY, KEY>(model, i1, i2), z_(z) {
+          NonlinearFactor2<KEY, KEY>(model, i1, i2), z_(z) {
     }
 
     /// Evaluate error and optionally return derivatives
@@ -190,11 +139,11 @@ namespace simulated2D {
   /**
    * Binary factor simulating "measurement" between two Vectors
    */
-  template<class VALUES = Values, class XKEY = PoseKey, class LKEY = PointKey>
-  class GenericMeasurement: public NonlinearFactor2<VALUES, XKEY, LKEY> {
+  template<class XKEY = PoseKey, class LKEY = PointKey>
+  class GenericMeasurement: public NonlinearFactor2<XKEY, LKEY> {
   public:
-    typedef NonlinearFactor2<VALUES, XKEY, LKEY> Base;  ///< base class
-    typedef boost::shared_ptr<GenericMeasurement<VALUES, XKEY, LKEY> > shared_ptr;
+    typedef NonlinearFactor2<XKEY, LKEY> Base;  ///< base class
+    typedef boost::shared_ptr<GenericMeasurement<XKEY, LKEY> > shared_ptr;
     typedef typename XKEY::Value Pose; ///< shortcut to Pose type
     typedef typename LKEY::Value Point; ///< shortcut to Point type
 
@@ -203,7 +152,7 @@ namespace simulated2D {
     /// Create measurement factor
     GenericMeasurement(const Point& z, const SharedNoiseModel& model,
         const XKEY& i, const LKEY& j) :
-        NonlinearFactor2<VALUES, XKEY, LKEY>(model, i, j), z_(z) {
+          NonlinearFactor2<XKEY, LKEY>(model, i, j), z_(z) {
     }
 
     /// Evaluate error and optionally return derivatives
@@ -229,13 +178,13 @@ namespace simulated2D {
   };
 
   /** Typedefs for regular use */
-  typedef GenericPrior<Values, PoseKey> Prior;
-  typedef GenericOdometry<Values, PoseKey> Odometry;
-  typedef GenericMeasurement<Values, PoseKey, PointKey> Measurement;
+  typedef GenericPrior<PoseKey> Prior;
+  typedef GenericOdometry<PoseKey> Odometry;
+  typedef GenericMeasurement<PoseKey, PointKey> Measurement;
 
   // Specialization of a graph for this example domain
   // TODO: add functions to add factor types
-  class Graph : public NonlinearFactorGraph<Values> {
+  class Graph : public NonlinearFactorGraph {
   public:
     Graph() {}
   };

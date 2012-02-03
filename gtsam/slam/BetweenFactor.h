@@ -29,13 +29,13 @@ namespace gtsam {
 	 * KEY1::Value is the Lie Group type
 	 * T is the measurement type, by default the same
 	 */
-	template<class VALUES, class KEY1, class T = typename KEY1::Value>
-	class BetweenFactor: public NonlinearFactor2<VALUES, KEY1, KEY1> {
+	template<class KEY1, class T = typename KEY1::Value>
+	class BetweenFactor: public NonlinearFactor2<KEY1, KEY1> {
 
 	private:
 
-		typedef BetweenFactor<VALUES, KEY1, T> This;
-		typedef NonlinearFactor2<VALUES, KEY1, KEY1> Base;
+		typedef BetweenFactor<KEY1, T> This;
+		typedef NonlinearFactor2<KEY1, KEY1> Base;
 
 		T measured_; /** The measurement */
 
@@ -71,7 +71,7 @@ namespace gtsam {
 		}
 
 		/** equals */
-		virtual bool equals(const NonlinearFactor<VALUES>& expected, double tol=1e-9) const {
+		virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
 			const This *e =	dynamic_cast<const This*> (&expected);
 			return e != NULL && Base::equals(*e, tol) && this->measured_.equals(e->measured_, tol);
 		}
@@ -114,15 +114,15 @@ namespace gtsam {
 	 * This constraint requires the underlying type to a Lie type
 	 *
 	 */
-	template<class VALUES, class KEY>
-	class BetweenConstraint : public BetweenFactor<VALUES, KEY> {
+	template<class KEY>
+	class BetweenConstraint : public BetweenFactor<KEY> {
 	public:
-		typedef boost::shared_ptr<BetweenConstraint<VALUES, KEY> > shared_ptr;
+		typedef boost::shared_ptr<BetweenConstraint<KEY> > shared_ptr;
 
 		/** Syntactic sugar for constrained version */
 		BetweenConstraint(const typename KEY::Value& measured,
 				const KEY& key1, const KEY& key2, double mu = 1000.0)
-			: BetweenFactor<VALUES, KEY>(key1, key2, measured,
+			: BetweenFactor<KEY>(key1, key2, measured,
 					noiseModel::Constrained::All(KEY::Value::Dim(), fabs(mu))) {}
 
 	private:
@@ -132,7 +132,7 @@ namespace gtsam {
 		template<class ARCHIVE>
 		void serialize(ARCHIVE & ar, const unsigned int version) {
 			ar & boost::serialization::make_nvp("BetweenFactor",
-					boost::serialization::base_object<BetweenFactor<VALUES, KEY> >(*this));
+					boost::serialization::base_object<BetweenFactor<KEY> >(*this));
 		}
 	}; // \class BetweenConstraint
 

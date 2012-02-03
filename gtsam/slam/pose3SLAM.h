@@ -18,7 +18,6 @@
 #pragma once
 
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/nonlinear/Values.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/Key.h>
@@ -33,8 +32,6 @@ namespace gtsam {
 
 		/// Creates a Key with data Pose3 and symbol 'x'
 		typedef TypedSymbol<Pose3, 'x'> Key;
-		/// Creates a Values structure with type 'Key'
-		typedef Values<Key> Values;
 
 		/**
 		 * Create a circle of n 3D poses tangent to circle of radius R, first pose at (R,0)
@@ -45,14 +42,14 @@ namespace gtsam {
 		Values circle(size_t n, double R);
 
 		/// A prior factor on Key with Pose3 data type.
-		typedef PriorFactor<Values, Key> Prior;
+		typedef PriorFactor<Key> Prior;
 		/// A factor to put constraints between two factors.
-		typedef BetweenFactor<Values, Key> Constraint;
+		typedef BetweenFactor<Key> Constraint;
 		/// A hard constraint would enforce that the given key would have the input value in the results.
-		typedef NonlinearEquality<Values, Key> HardConstraint;
+		typedef NonlinearEquality<Key> HardConstraint;
 
 		/// Graph
-		struct Graph: public NonlinearFactorGraph<Values> {
+		struct Graph: public NonlinearFactorGraph {
 
 			/// Adds a factor between keys of the same type
 			void addPrior(const Key& i, const Pose3& p,
@@ -67,14 +64,13 @@ namespace gtsam {
 		};
 
 		/// Optimizer
-		typedef NonlinearOptimizer<Graph, Values> Optimizer;
+		typedef NonlinearOptimizer<Graph> Optimizer;
 
 	} // pose3SLAM
 
 	/**
 	 * Backwards compatibility
 	 */
-	typedef pose3SLAM::Values Pose3Values;			///< Typedef for Values class for backwards compatibility
 	typedef pose3SLAM::Prior Pose3Prior;			///< Typedef for Prior class for backwards compatibility
 	typedef pose3SLAM::Constraint Pose3Factor;		///< Typedef for Constraint class for backwards compatibility
 	typedef pose3SLAM::Graph Pose3Graph;			///< Typedef for Graph class for backwards compatibility

@@ -79,7 +79,7 @@ void readAllDataISAM() {
 /**
  * Setup newFactors and initialValues for each new pose and set of measurements at each frame.
  */
-void createNewFactors(shared_ptr<Graph>& newFactors, boost::shared_ptr<visualSLAM::Values>& initialValues,
+void createNewFactors(shared_ptr<Graph>& newFactors, boost::shared_ptr<Values>& initialValues,
     int pose_id, const Pose3& pose, const std::vector<Feature2D>& measurements, SharedNoiseModel measurementSigma, shared_ptrK calib) {
 
   // Create a graph of newFactors with new measurements
@@ -100,10 +100,10 @@ void createNewFactors(shared_ptr<Graph>& newFactors, boost::shared_ptr<visualSLA
   }
 
   // Create initial values for all nodes in the newFactors
-  initialValues = shared_ptr<visualSLAM::Values> (new visualSLAM::Values());
-  initialValues->insert(pose_id, pose);
+  initialValues = shared_ptr<Values> (new Values());
+  initialValues->insert(PoseKey(pose_id), pose);
   for (size_t i = 0; i < measurements.size(); i++) {
-    initialValues->insert(measurements[i].m_idLandmark, g_landmarks[measurements[i].m_idLandmark]);
+    initialValues->insert(PointKey(measurements[i].m_idLandmark), g_landmarks[measurements[i].m_idLandmark]);
   }
 }
 
@@ -123,7 +123,7 @@ int main(int argc, char* argv[]) {
 
   // Create a NonlinearISAM which will be relinearized and reordered after every "relinearizeInterval" updates
   int relinearizeInterval = 3;
-  NonlinearISAM<visualSLAM::Values> isam(relinearizeInterval);
+  NonlinearISAM<> isam(relinearizeInterval);
 
   // At each frame (poseId) with new camera pose and set of associated measurements,
   // create a graph of new factors and update ISAM
@@ -131,12 +131,12 @@ int main(int argc, char* argv[]) {
   BOOST_FOREACH(const FeatureMap::value_type& features, g_measurements) {
     const int poseId = features.first;
     shared_ptr<Graph> newFactors;
-    shared_ptr<visualSLAM::Values> initialValues;
+    shared_ptr<Values> initialValues;
     createNewFactors(newFactors, initialValues, poseId, g_poses[poseId],
             features.second, measurementSigma, g_calib);
 
     isam.update(*newFactors, *initialValues);
-    visualSLAM::Values currentEstimate = isam.estimate();
+    Values currentEstimate = isam.estimate();
     cout << "****************************************************" << endl;
     currentEstimate.print("Current estimate: ");
   }

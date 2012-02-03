@@ -18,10 +18,10 @@
 #pragma once
 
 #include <gtsam/geometry/Pose2.h>
-#include <gtsam/nonlinear/Values.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/Key.h>
+#include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
@@ -36,25 +36,6 @@ namespace pose2SLAM {
   /// Keys with Pose2 and symbol 'x'
   typedef TypedSymbol<Pose2, 'x'> PoseKey;
 
-  /// Values class, inherited from Values, using PoseKeys
-  struct Values: public gtsam::Values<PoseKey> {
-
-    /// Default constructor
-    Values() {}
-
-    /// Copy constructor
-    Values(const gtsam::Values<PoseKey>& values) :
-        gtsam::Values<PoseKey>(values) {
-    }
-
-    // Convenience for MATLAB wrapper, which does not allow for identically named methods
-
-    /// get a pose
-    Pose2 pose(int key) const { return (*this)[PoseKey(key)]; }
-
-    /// insert a pose
-    void insertPose(int key, const Pose2& pose) { insert(PoseKey(key), pose); }
-  };
 
   /**
    * Create a circle of n 2D poses tangent to circle of radius R, first pose at (R,0)
@@ -70,20 +51,20 @@ namespace pose2SLAM {
    */
 
   /// A hard constraint to enforce a specific value for a pose
-  typedef NonlinearEquality<Values, PoseKey> HardConstraint;
+  typedef NonlinearEquality<PoseKey> HardConstraint;
   /// A prior factor on a pose with Pose2 data type.
-  typedef PriorFactor<Values, PoseKey> Prior;
+  typedef PriorFactor<PoseKey> Prior;
   /// A factor to add an odometry measurement between two poses.
-  typedef BetweenFactor<Values, PoseKey> Odometry;
+  typedef BetweenFactor<PoseKey> Odometry;
 
   /// Graph
-  struct Graph: public NonlinearFactorGraph<Values> {
+  struct Graph: public NonlinearFactorGraph {
 
     /// Default constructor for a NonlinearFactorGraph
     Graph(){}
 
     /// Creates a NonlinearFactorGraph based on another NonlinearFactorGraph
-    Graph(const NonlinearFactorGraph<Values>& graph);
+    Graph(const NonlinearFactorGraph& graph);
 
     /// Adds a Pose2 prior with a noise model to one of the keys in the nonlinear factor graph
     void addPrior(const PoseKey& i, const Pose2& p, const SharedNoiseModel& model);
@@ -97,18 +78,18 @@ namespace pose2SLAM {
 
     /// Optimize
     Values optimize(const Values& initialEstimate) {
-      typedef NonlinearOptimizer<Graph, Values> Optimizer;
+      typedef NonlinearOptimizer<Graph> Optimizer;
       return *Optimizer::optimizeLM(*this, initialEstimate,
                   NonlinearOptimizationParameters::LAMBDA);
     }
   };
 
   /// The sequential optimizer
-  typedef NonlinearOptimizer<Graph, Values, GaussianFactorGraph,
+  typedef NonlinearOptimizer<Graph, GaussianFactorGraph,
       GaussianSequentialSolver> OptimizerSequential;
 
   /// The multifrontal optimizer
-  typedef NonlinearOptimizer<Graph, Values, GaussianFactorGraph,
+  typedef NonlinearOptimizer<Graph, GaussianFactorGraph,
       GaussianMultifrontalSolver> Optimizer;
 
 } // pose2SLAM

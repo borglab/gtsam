@@ -33,10 +33,10 @@ const double tol = 1e-4;
 TEST(ISAM2, AddVariables) {
 
   // Create initial state
-  planarSLAM::Values theta;
+  Values theta;
   theta.insert(planarSLAM::PoseKey(0), Pose2(.1, .2, .3));
   theta.insert(planarSLAM::PointKey(0), Point2(.4, .5));
-  planarSLAM::Values newTheta;
+  Values newTheta;
   newTheta.insert(planarSLAM::PoseKey(1), Pose2(.6, .7, .8));
 
   VectorValues deltaUnpermuted;
@@ -51,7 +51,7 @@ TEST(ISAM2, AddVariables) {
 
   Ordering ordering; ordering += planarSLAM::PointKey(0), planarSLAM::PoseKey(0);
 
-  GaussianISAM2<planarSLAM::Values>::Nodes nodes(2);
+  GaussianISAM2<>::Nodes nodes(2);
 
   // Verify initial state
   LONGS_EQUAL(0, ordering[planarSLAM::PointKey(0)]);
@@ -60,7 +60,7 @@ TEST(ISAM2, AddVariables) {
   EXPECT(assert_equal(deltaUnpermuted[0], delta[ordering[planarSLAM::PoseKey(0)]]));
 
   // Create expected state
-  planarSLAM::Values thetaExpected;
+  Values thetaExpected;
   thetaExpected.insert(planarSLAM::PoseKey(0), Pose2(.1, .2, .3));
   thetaExpected.insert(planarSLAM::PointKey(0), Point2(.4, .5));
   thetaExpected.insert(planarSLAM::PoseKey(1), Pose2(.6, .7, .8));
@@ -79,11 +79,11 @@ TEST(ISAM2, AddVariables) {
 
   Ordering orderingExpected; orderingExpected += planarSLAM::PointKey(0), planarSLAM::PoseKey(0), planarSLAM::PoseKey(1);
 
-  GaussianISAM2<planarSLAM::Values>::Nodes nodesExpected(
-          3, GaussianISAM2<planarSLAM::Values>::sharedClique());
+  GaussianISAM2<>::Nodes nodesExpected(
+          3, GaussianISAM2<>::sharedClique());
 
   // Expand initial state
-  GaussianISAM2<planarSLAM::Values>::Impl::AddVariables(newTheta, theta, delta, ordering, nodes);
+  GaussianISAM2<>::Impl::AddVariables(newTheta, theta, delta, ordering, nodes);
 
   EXPECT(assert_equal(thetaExpected, theta));
   EXPECT(assert_equal(deltaUnpermutedExpected, deltaUnpermuted));
@@ -95,7 +95,7 @@ TEST(ISAM2, AddVariables) {
 //TEST(ISAM2, IndicesFromFactors) {
 //
 //  using namespace gtsam::planarSLAM;
-//  typedef GaussianISAM2<planarSLAM::Values>::Impl Impl;
+//  typedef GaussianISAM2<Values>::Impl Impl;
 //
 //  Ordering ordering; ordering += PointKey(0), PoseKey(0), PoseKey(1);
 //  planarSLAM::Graph graph;
@@ -114,7 +114,7 @@ TEST(ISAM2, AddVariables) {
 /* ************************************************************************* */
 //TEST(ISAM2, CheckRelinearization) {
 //
-//  typedef GaussianISAM2<planarSLAM::Values>::Impl Impl;
+//  typedef GaussianISAM2<Values>::Impl Impl;
 //
 //  // Create values where indices 1 and 3 are above the threshold of 0.1
 //  VectorValues values;
@@ -148,7 +148,7 @@ TEST(ISAM2, AddVariables) {
 TEST(ISAM2, optimize2) {
 
   // Create initialization
-  planarSLAM::Values theta;
+  Values theta;
   theta.insert(planarSLAM::PoseKey(0), Pose2(0.01, 0.01, 0.01));
 
   // Create conditional
@@ -168,8 +168,8 @@ TEST(ISAM2, optimize2) {
   conditional->solveInPlace(expected);
 
   // Clique
-  GaussianISAM2<planarSLAM::Values>::sharedClique clique(
-      GaussianISAM2<planarSLAM::Values>::Clique::Create(make_pair(conditional,GaussianFactor::shared_ptr())));
+  GaussianISAM2<>::sharedClique clique(
+      GaussianISAM2<>::Clique::Create(make_pair(conditional,GaussianFactor::shared_ptr())));
   VectorValues actual(theta.dims(ordering));
   conditional->rhs(actual);
   optimize2(clique, actual);
@@ -180,15 +180,15 @@ TEST(ISAM2, optimize2) {
 }
 
 /* ************************************************************************* */
-bool isam_check(const planarSLAM::Graph& fullgraph, const planarSLAM::Values& fullinit, const GaussianISAM2<planarSLAM::Values>& isam) {
-  planarSLAM::Values actual = isam.calculateEstimate();
+bool isam_check(const planarSLAM::Graph& fullgraph, const Values& fullinit, const GaussianISAM2<>& isam) {
+  Values actual = isam.calculateEstimate();
   Ordering ordering = isam.getOrdering(); // *fullgraph.orderingCOLAMD(fullinit).first;
   GaussianFactorGraph linearized = *fullgraph.linearize(fullinit, ordering);
 //  linearized.print("Expected linearized: ");
   GaussianBayesNet gbn = *GaussianSequentialSolver(linearized).eliminate();
 //  gbn.print("Expected bayesnet: ");
   VectorValues delta = optimize(gbn);
-  planarSLAM::Values expected = fullinit.retract(delta, ordering);
+  Values expected = fullinit.retract(delta, ordering);
 
   return assert_equal(expected, actual);
 }
@@ -210,8 +210,8 @@ TEST(ISAM2, slamlike_solution_gaussnewton)
   SharedDiagonal brNoise = sharedSigmas(Vector_(2, M_PI/100.0, 0.1));
 
   // These variables will be reused and accumulate factors and values
-  GaussianISAM2<planarSLAM::Values> isam(ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
-  planarSLAM::Values fullinit;
+  GaussianISAM2<> isam(ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
+  Values fullinit;
   planarSLAM::Graph fullgraph;
 
   // i keeps track of the time step
@@ -223,7 +223,7 @@ TEST(ISAM2, slamlike_solution_gaussnewton)
     newfactors.addPrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
-    planarSLAM::Values init;
+    Values init;
     init.insert(PoseKey(0), Pose2(0.01, 0.01, 0.01));
     fullinit.insert(PoseKey(0), Pose2(0.01, 0.01, 0.01));
 
@@ -238,7 +238,7 @@ TEST(ISAM2, slamlike_solution_gaussnewton)
     newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
-    planarSLAM::Values init;
+    Values init;
     init.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
     fullinit.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
 
@@ -253,7 +253,7 @@ TEST(ISAM2, slamlike_solution_gaussnewton)
     newfactors.addBearingRange(i, 1, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
     fullgraph.push_back(newfactors);
 
-    planarSLAM::Values init;
+    Values init;
     init.insert(PoseKey(i+1), Pose2(1.01, 0.01, 0.01));
     init.insert(PointKey(0), Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
     init.insert(PointKey(1), Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
@@ -271,7 +271,7 @@ TEST(ISAM2, slamlike_solution_gaussnewton)
     newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
-    planarSLAM::Values init;
+    Values init;
     init.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
     fullinit.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
 
@@ -286,7 +286,7 @@ TEST(ISAM2, slamlike_solution_gaussnewton)
     newfactors.addBearingRange(i, 1, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
     fullgraph.push_back(newfactors);
 
-    planarSLAM::Values init;
+    Values init;
     init.insert(PoseKey(i+1), Pose2(6.9, 0.1, 0.01));
     fullinit.insert(PoseKey(i+1), Pose2(6.9, 0.1, 0.01));
 
@@ -298,7 +298,7 @@ TEST(ISAM2, slamlike_solution_gaussnewton)
   CHECK(isam_check(fullgraph, fullinit, isam));
 
   // Check gradient at each node
-  typedef GaussianISAM2<planarSLAM::Values>::sharedClique sharedClique;
+  typedef GaussianISAM2<>::sharedClique sharedClique;
   BOOST_FOREACH(const sharedClique& clique, isam.nodes()) {
     // Compute expected gradient
     FactorGraph<JacobianFactor> jfg;
@@ -343,8 +343,8 @@ TEST(ISAM2, slamlike_solution_dogleg)
   SharedDiagonal brNoise = sharedSigmas(Vector_(2, M_PI/100.0, 0.1));
 
   // These variables will be reused and accumulate factors and values
-  GaussianISAM2<planarSLAM::Values> isam(ISAM2Params(ISAM2DoglegParams(1.0), 0.0, 0, false));
-  planarSLAM::Values fullinit;
+  GaussianISAM2<> isam(ISAM2Params(ISAM2DoglegParams(1.0), 0.0, 0, false));
+  Values fullinit;
   planarSLAM::Graph fullgraph;
 
   // i keeps track of the time step
@@ -356,7 +356,7 @@ TEST(ISAM2, slamlike_solution_dogleg)
     newfactors.addPrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
-    planarSLAM::Values init;
+    Values init;
     init.insert(PoseKey(0), Pose2(0.01, 0.01, 0.01));
     fullinit.insert(PoseKey(0), Pose2(0.01, 0.01, 0.01));
 
@@ -371,7 +371,7 @@ TEST(ISAM2, slamlike_solution_dogleg)
     newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
-    planarSLAM::Values init;
+    Values init;
     init.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
     fullinit.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
 
@@ -386,7 +386,7 @@ TEST(ISAM2, slamlike_solution_dogleg)
     newfactors.addBearingRange(i, 1, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
     fullgraph.push_back(newfactors);
 
-    planarSLAM::Values init;
+    Values init;
     init.insert(PoseKey(i+1), Pose2(1.01, 0.01, 0.01));
     init.insert(PointKey(0), Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
     init.insert(PointKey(1), Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
@@ -404,7 +404,7 @@ TEST(ISAM2, slamlike_solution_dogleg)
     newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
-    planarSLAM::Values init;
+    Values init;
     init.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
     fullinit.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
 
@@ -419,7 +419,7 @@ TEST(ISAM2, slamlike_solution_dogleg)
     newfactors.addBearingRange(i, 1, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
     fullgraph.push_back(newfactors);
 
-    planarSLAM::Values init;
+    Values init;
     init.insert(PoseKey(i+1), Pose2(6.9, 0.1, 0.01));
     fullinit.insert(PoseKey(i+1), Pose2(6.9, 0.1, 0.01));
 
@@ -431,7 +431,7 @@ TEST(ISAM2, slamlike_solution_dogleg)
   CHECK(isam_check(fullgraph, fullinit, isam));
 
   // Check gradient at each node
-  typedef GaussianISAM2<planarSLAM::Values>::sharedClique sharedClique;
+  typedef GaussianISAM2<>::sharedClique sharedClique;
   BOOST_FOREACH(const sharedClique& clique, isam.nodes()) {
     // Compute expected gradient
     FactorGraph<JacobianFactor> jfg;
@@ -471,8 +471,8 @@ TEST(ISAM2, clone) {
   SharedDiagonal brNoise = sharedSigmas(Vector_(2, M_PI/100.0, 0.1));
 
   // These variables will be reused and accumulate factors and values
-  GaussianISAM2<planarSLAM::Values> isam(ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false, true));
-  planarSLAM::Values fullinit;
+  GaussianISAM2<> isam(ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false, true));
+  Values fullinit;
   planarSLAM::Graph fullgraph;
 
   // i keeps track of the time step
@@ -484,7 +484,7 @@ TEST(ISAM2, clone) {
     newfactors.addPrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
-    planarSLAM::Values init;
+    Values init;
     init.insert(PoseKey(0), Pose2(0.01, 0.01, 0.01));
     fullinit.insert(PoseKey(0), Pose2(0.01, 0.01, 0.01));
 
@@ -499,7 +499,7 @@ TEST(ISAM2, clone) {
     newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
-    planarSLAM::Values init;
+    Values init;
     init.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
     fullinit.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
 
@@ -514,7 +514,7 @@ TEST(ISAM2, clone) {
     newfactors.addBearingRange(i, 1, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
     fullgraph.push_back(newfactors);
 
-    planarSLAM::Values init;
+    Values init;
     init.insert(PoseKey(i+1), Pose2(1.01, 0.01, 0.01));
     init.insert(PointKey(0), Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
     init.insert(PointKey(1), Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
@@ -532,7 +532,7 @@ TEST(ISAM2, clone) {
     newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
-    planarSLAM::Values init;
+    Values init;
     init.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
     fullinit.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
 
@@ -547,7 +547,7 @@ TEST(ISAM2, clone) {
     newfactors.addBearingRange(i, 1, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
     fullgraph.push_back(newfactors);
 
-    planarSLAM::Values init;
+    Values init;
     init.insert(PoseKey(i+1), Pose2(6.9, 0.1, 0.01));
     fullinit.insert(PoseKey(i+1), Pose2(6.9, 0.1, 0.01));
 
@@ -556,8 +556,8 @@ TEST(ISAM2, clone) {
   }
 
   // CLONING...
-  boost::shared_ptr<GaussianISAM2<planarSLAM::Values> > isam2
-      = boost::shared_ptr<GaussianISAM2<planarSLAM::Values> >(new GaussianISAM2<planarSLAM::Values>());
+  boost::shared_ptr<GaussianISAM2<> > isam2
+      = boost::shared_ptr<GaussianISAM2<> >(new GaussianISAM2<>());
   isam.cloneTo(isam2);
 
   CHECK(assert_equal(isam, *isam2));
@@ -644,8 +644,8 @@ TEST(ISAM2, removeFactors)
   SharedDiagonal brNoise = sharedSigmas(Vector_(2, M_PI/100.0, 0.1));
 
   // These variables will be reused and accumulate factors and values
-  GaussianISAM2<planarSLAM::Values> isam(ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
-  planarSLAM::Values fullinit;
+  GaussianISAM2<> isam(ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
+  Values fullinit;
   planarSLAM::Graph fullgraph;
 
   // i keeps track of the time step
@@ -657,7 +657,7 @@ TEST(ISAM2, removeFactors)
     newfactors.addPrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
-    planarSLAM::Values init;
+    Values init;
     init.insert(PoseKey(0), Pose2(0.01, 0.01, 0.01));
     fullinit.insert(PoseKey(0), Pose2(0.01, 0.01, 0.01));
 
@@ -672,7 +672,7 @@ TEST(ISAM2, removeFactors)
     newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
-    planarSLAM::Values init;
+    Values init;
     init.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
     fullinit.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
 
@@ -687,7 +687,7 @@ TEST(ISAM2, removeFactors)
     newfactors.addBearingRange(i, 1, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
     fullgraph.push_back(newfactors);
 
-    planarSLAM::Values init;
+    Values init;
     init.insert(PoseKey(i+1), Pose2(1.01, 0.01, 0.01));
     init.insert(PointKey(0), Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
     init.insert(PointKey(1), Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
@@ -705,7 +705,7 @@ TEST(ISAM2, removeFactors)
     newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
-    planarSLAM::Values init;
+    Values init;
     init.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
     fullinit.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
 
@@ -721,7 +721,7 @@ TEST(ISAM2, removeFactors)
     fullgraph.push_back(newfactors[0]);
     fullgraph.push_back(newfactors[2]); // Don't add measurement on landmark 0
 
-    planarSLAM::Values init;
+    Values init;
     init.insert(PoseKey(i+1), Pose2(6.9, 0.1, 0.01));
     fullinit.insert(PoseKey(i+1), Pose2(6.9, 0.1, 0.01));
 
@@ -731,14 +731,14 @@ TEST(ISAM2, removeFactors)
     // Remove the measurement on landmark 0
     FastVector<size_t> toRemove;
     toRemove.push_back(result.newFactorsIndices[1]);
-    isam.update(planarSLAM::Graph(), planarSLAM::Values(), toRemove);
+    isam.update(planarSLAM::Graph(), Values(), toRemove);
   }
 
   // Compare solutions
   CHECK(isam_check(fullgraph, fullinit, isam));
 
   // Check gradient at each node
-  typedef GaussianISAM2<planarSLAM::Values>::sharedClique sharedClique;
+  typedef GaussianISAM2<>::sharedClique sharedClique;
   BOOST_FOREACH(const sharedClique& clique, isam.nodes()) {
     // Compute expected gradient
     FactorGraph<JacobianFactor> jfg;
@@ -783,8 +783,8 @@ TEST(ISAM2, constrained_ordering)
   SharedDiagonal brNoise = sharedSigmas(Vector_(2, M_PI/100.0, 0.1));
 
   // These variables will be reused and accumulate factors and values
-  GaussianISAM2<planarSLAM::Values> isam(ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
-  planarSLAM::Values fullinit;
+  GaussianISAM2<> isam(ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
+  Values fullinit;
   planarSLAM::Graph fullgraph;
 
   // We will constrain x3 and x4 to the end
@@ -799,7 +799,7 @@ TEST(ISAM2, constrained_ordering)
     newfactors.addPrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
-    planarSLAM::Values init;
+    Values init;
     init.insert(PoseKey(0), Pose2(0.01, 0.01, 0.01));
     fullinit.insert(PoseKey(0), Pose2(0.01, 0.01, 0.01));
 
@@ -814,7 +814,7 @@ TEST(ISAM2, constrained_ordering)
     newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
-    planarSLAM::Values init;
+    Values init;
     init.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
     fullinit.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
 
@@ -832,7 +832,7 @@ TEST(ISAM2, constrained_ordering)
     newfactors.addBearingRange(i, 1, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
     fullgraph.push_back(newfactors);
 
-    planarSLAM::Values init;
+    Values init;
     init.insert(PoseKey(i+1), Pose2(1.01, 0.01, 0.01));
     init.insert(PointKey(0), Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
     init.insert(PointKey(1), Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
@@ -850,7 +850,7 @@ TEST(ISAM2, constrained_ordering)
     newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
-    planarSLAM::Values init;
+    Values init;
     init.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
     fullinit.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
 
@@ -865,7 +865,7 @@ TEST(ISAM2, constrained_ordering)
     newfactors.addBearingRange(i, 1, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
     fullgraph.push_back(newfactors);
 
-    planarSLAM::Values init;
+    Values init;
     init.insert(PoseKey(i+1), Pose2(6.9, 0.1, 0.01));
     fullinit.insert(PoseKey(i+1), Pose2(6.9, 0.1, 0.01));
 
@@ -881,7 +881,7 @@ TEST(ISAM2, constrained_ordering)
       (isam.getOrdering()[planarSLAM::PoseKey(3)] == 13 && isam.getOrdering()[planarSLAM::PoseKey(4)] == 12));
 
   // Check gradient at each node
-  typedef GaussianISAM2<planarSLAM::Values>::sharedClique sharedClique;
+  typedef GaussianISAM2<>::sharedClique sharedClique;
   BOOST_FOREACH(const sharedClique& clique, isam.nodes()) {
     // Compute expected gradient
     FactorGraph<JacobianFactor> jfg;

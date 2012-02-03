@@ -102,17 +102,17 @@ Graph setupGraph(std::vector<Feature2D>& measurements, SharedNoiseModel measurem
  * Create a structure of initial estimates for all nodes (landmarks and poses) in the graph.
  * The returned Values structure contains all initial values for all nodes.
  */
-visualSLAM::Values initialize(std::map<int, Point3> landmarks, std::map<int, Pose3> poses) {
+Values initialize(std::map<int, Point3> landmarks, std::map<int, Pose3> poses) {
 
-	visualSLAM::Values initValues;
+	Values initValues;
 
   // Initialize landmarks 3D positions.
   for (map<int, Point3>::iterator lmit = landmarks.begin(); lmit != landmarks.end(); lmit++)
-    initValues.insert(lmit->first, lmit->second);
+    initValues.insert(PointKey(lmit->first), lmit->second);
 
   // Initialize camera poses.
   for (map<int, Pose3>::iterator poseit = poses.begin(); poseit != poses.end(); poseit++)
-    initValues.insert(poseit->first, poseit->second);
+    initValues.insert(PoseKey(poseit->first), poseit->second);
 
   return initValues;
 }
@@ -135,7 +135,7 @@ int main(int argc, char* argv[]) {
   boost::shared_ptr<Graph> graph(new Graph(setupGraph(g_measurements, measurementSigma, g_calib)));
 
   // Create an initial Values structure using groundtruth values as the initial estimates
-  boost::shared_ptr<visualSLAM::Values> initialEstimates(new visualSLAM::Values(initialize(g_landmarks, g_poses)));
+  boost::shared_ptr<Values> initialEstimates(new Values(initialize(g_landmarks, g_poses)));
   cout << "*******************************************************" << endl;
   initialEstimates->print("INITIAL ESTIMATES: ");
 

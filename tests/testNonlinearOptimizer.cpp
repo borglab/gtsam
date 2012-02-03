@@ -44,7 +44,7 @@ using namespace gtsam;
 
 const double tol = 1e-5;
 
-typedef NonlinearOptimizer<example::Graph,example::Values> Optimizer;
+typedef NonlinearOptimizer<example::Graph> Optimizer;
 
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, linearizeAndOptimizeForDelta )
@@ -113,7 +113,7 @@ TEST( NonlinearOptimizer, iterateLM )
 
 	// config far from minimum
 	Point2 x0(3,0);
-	boost::shared_ptr<example::Values> config(new example::Values);
+	boost::shared_ptr<Values> config(new Values);
 	config->insert(simulated2D::PoseKey(1), x0);
 
 	// ordering
@@ -149,13 +149,13 @@ TEST( NonlinearOptimizer, optimize )
 
 	// test error at minimum
 	Point2 xstar(0,0);
-	example::Values cstar;
+	Values cstar;
 	cstar.insert(simulated2D::PoseKey(1), xstar);
 	DOUBLES_EQUAL(0.0,fg->error(cstar),0.0);
 
 	// test error at initial = [(1-cos(3))^2 + (sin(3))^2]*50 =
 	Point2 x0(3,3);
-	boost::shared_ptr<example::Values> c0(new example::Values);
+	boost::shared_ptr<Values> c0(new Values);
 	c0->insert(simulated2D::PoseKey(1), x0);
 	DOUBLES_EQUAL(199.0,fg->error(*c0),1e-3);
 
@@ -185,7 +185,7 @@ TEST( NonlinearOptimizer, SimpleLMOptimizer )
 			example::createReallyNonlinearFactorGraph()));
 
 	Point2 x0(3,3);
-	boost::shared_ptr<example::Values> c0(new example::Values);
+	boost::shared_ptr<Values> c0(new Values);
 	c0->insert(simulated2D::PoseKey(1), x0);
 
 	Optimizer::shared_values actual = Optimizer::optimizeLM(fg, c0);
@@ -198,7 +198,7 @@ TEST( NonlinearOptimizer, SimpleLMOptimizer_noshared )
 	example::Graph fg = example::createReallyNonlinearFactorGraph();
 
 	Point2 x0(3,3);
-	example::Values c0;
+	Values c0;
 	c0.insert(simulated2D::PoseKey(1), x0);
 
 	Optimizer::shared_values actual = Optimizer::optimizeLM(fg, c0);
@@ -212,7 +212,7 @@ TEST( NonlinearOptimizer, SimpleGNOptimizer )
 			example::createReallyNonlinearFactorGraph()));
 
 	Point2 x0(3,3);
-	boost::shared_ptr<example::Values> c0(new example::Values);
+	boost::shared_ptr<Values> c0(new Values);
 	c0->insert(simulated2D::PoseKey(1), x0);
 
 	Optimizer::shared_values actual = Optimizer::optimizeGN(fg, c0);
@@ -225,7 +225,7 @@ TEST( NonlinearOptimizer, SimpleGNOptimizer_noshared )
 	example::Graph fg = example::createReallyNonlinearFactorGraph();
 
 	Point2 x0(3,3);
-	example::Values c0;
+	Values c0;
 	c0.insert(simulated2D::PoseKey(1), x0);
 
 	Optimizer::shared_values actual = Optimizer::optimizeGN(fg, c0);
@@ -238,14 +238,14 @@ TEST( NonlinearOptimizer, optimization_method )
 	example::Graph fg = example::createReallyNonlinearFactorGraph();
 
 	Point2 x0(3,3);
-	example::Values c0;
+	Values c0;
 	c0.insert(simulated2D::PoseKey(1), x0);
 
-	example::Values actualMFQR = optimize<example::Graph,example::Values>(
+	Values actualMFQR = optimize<example::Graph>(
 			fg, c0, *NonlinearOptimizationParameters().newFactorization(true), MULTIFRONTAL, LM);
 	DOUBLES_EQUAL(0,fg.error(actualMFQR),tol);
 
-	example::Values actualMFLDL = optimize<example::Graph,example::Values>(
+	Values actualMFLDL = optimize<example::Graph>(
 			fg, c0, *NonlinearOptimizationParameters().newFactorization(false), MULTIFRONTAL, LM);
 	DOUBLES_EQUAL(0,fg.error(actualMFLDL),tol);
 }
@@ -253,11 +253,11 @@ TEST( NonlinearOptimizer, optimization_method )
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, Factorization )
 {
-	typedef NonlinearOptimizer<pose2SLAM::Graph, pose2SLAM::Values, GaussianFactorGraph, GaussianSequentialSolver > Optimizer;
+	typedef NonlinearOptimizer<pose2SLAM::Graph, GaussianFactorGraph, GaussianSequentialSolver > Optimizer;
 
-	boost::shared_ptr<pose2SLAM::Values> config(new pose2SLAM::Values);
-	config->insert(1, Pose2(0.,0.,0.));
-	config->insert(2, Pose2(1.5,0.,0.));
+	boost::shared_ptr<Values> config(new Values);
+	config->insert(pose2SLAM::PoseKey(1), Pose2(0.,0.,0.));
+	config->insert(pose2SLAM::PoseKey(2), Pose2(1.5,0.,0.));
 
 	boost::shared_ptr<pose2SLAM::Graph> graph(new pose2SLAM::Graph);
 	graph->addPrior(1, Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10));
@@ -270,9 +270,9 @@ TEST( NonlinearOptimizer, Factorization )
 	Optimizer optimizer(graph, config, ordering);
 	Optimizer optimized = optimizer.iterateLM();
 
-	pose2SLAM::Values expected;
-	expected.insert(1, Pose2(0.,0.,0.));
-	expected.insert(2, Pose2(1.,0.,0.));
+	Values expected;
+	expected.insert(pose2SLAM::PoseKey(1), Pose2(0.,0.,0.));
+	expected.insert(pose2SLAM::PoseKey(2), Pose2(1.,0.,0.));
 	CHECK(assert_equal(expected, *optimized.values(), 1e-5));
 }
 
@@ -287,13 +287,13 @@ TEST_UNSAFE(NonlinearOptimizer, NullFactor) {
 
   // test error at minimum
   Point2 xstar(0,0);
-  example::Values cstar;
+  Values cstar;
   cstar.insert(simulated2D::PoseKey(1), xstar);
   DOUBLES_EQUAL(0.0,fg->error(cstar),0.0);
 
   // test error at initial = [(1-cos(3))^2 + (sin(3))^2]*50 =
   Point2 x0(3,3);
-  boost::shared_ptr<example::Values> c0(new example::Values);
+  boost::shared_ptr<Values> c0(new Values);
   c0->insert(simulated2D::PoseKey(1), x0);
   DOUBLES_EQUAL(199.0,fg->error(*c0),1e-3);
 

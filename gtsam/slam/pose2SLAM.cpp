@@ -21,7 +21,7 @@
 
 // Use pose2SLAM namespace for specific SLAM instance
 
-template class gtsam::NonlinearOptimizer<pose2SLAM::Graph, pose2SLAM::Values, gtsam::GaussianFactorGraph, gtsam::GaussianSequentialSolver>;
+	template class gtsam::NonlinearOptimizer<pose2SLAM::Graph, gtsam::GaussianFactorGraph, gtsam::GaussianSequentialSolver>;
 
 namespace pose2SLAM {
 
@@ -30,7 +30,7 @@ namespace pose2SLAM {
     Values x;
     double theta = 0, dtheta = 2 * M_PI / n;
     for (size_t i = 0; i < n; i++, theta += dtheta)
-      x.insert(i, Pose2(cos(theta), sin(theta), M_PI_2 + theta));
+      x.insert(PoseKey(i), Pose2(cos(theta), sin(theta), M_PI_2 + theta));
     return x;
   }
 

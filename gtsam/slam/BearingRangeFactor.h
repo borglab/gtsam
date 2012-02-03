@@ -27,16 +27,16 @@ namespace gtsam {
 	/**
 	 * Binary factor for a bearing measurement
 	 */
-	template<class VALUES, class POSEKEY, class POINTKEY>
-	class BearingRangeFactor: public NonlinearFactor2<VALUES, POSEKEY, POINTKEY> {
+	template<class POSEKEY, class POINTKEY>
+	class BearingRangeFactor: public NonlinearFactor2<POSEKEY, POINTKEY> {
 	private:
 
 		typedef typename POSEKEY::Value Pose;
 		typedef typename POSEKEY::Value::Rotation Rot;
 		typedef typename POINTKEY::Value Point;
 
-		typedef BearingRangeFactor<VALUES, POSEKEY, POINTKEY> This;
-		typedef NonlinearFactor2<VALUES, POSEKEY, POINTKEY> Base;
+		typedef BearingRangeFactor<POSEKEY, POINTKEY> This;
+		typedef NonlinearFactor2<POSEKEY, POINTKEY> Base;
 
 		// the measurement
 		Rot bearing_;
@@ -68,7 +68,7 @@ namespace gtsam {
 	  }
 
 		/** equals */
-		virtual bool equals(const NonlinearFactor<VALUES>& expected, double tol=1e-9) const {
+		virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
 			const This *e =	dynamic_cast<const This*> (&expected);
 			return e != NULL && Base::equals(*e, tol) &&
 					fabs(this->range_ - e->range_) < tol &&

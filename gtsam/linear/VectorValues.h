@@ -175,7 +175,7 @@ namespace gtsam {
     /// @name Advanced Constructors
     /// @{
 
-    /** Construct from a container of variable dimensions (in variable order). */
+    /** Construct from a container of variable dimensions (in variable order), without initializing any values. */
     template<class CONTAINER>
     VectorValues(const CONTAINER& dimensions) { append(dimensions); }
 

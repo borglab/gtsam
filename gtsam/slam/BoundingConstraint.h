@@ -28,11 +28,11 @@ namespace gtsam {
  * will need to have its value function implemented to return
  * a scalar for comparison.
  */
-template<class VALUES, class KEY>
-struct BoundingConstraint1: public NonlinearFactor1<VALUES, KEY> {
+template<class KEY>
+struct BoundingConstraint1: public NonlinearFactor1<KEY> {
 	typedef typename KEY::Value X;
-	typedef NonlinearFactor1<VALUES, KEY> Base;
-	typedef boost::shared_ptr<BoundingConstraint1<VALUES, KEY> > shared_ptr;
+	typedef NonlinearFactor1<KEY> Base;
+	typedef boost::shared_ptr<BoundingConstraint1<KEY> > shared_ptr;
 
 	double threshold_;
 	bool isGreaterThan_; /// flag for greater/less than
@@ -57,7 +57,7 @@ struct BoundingConstraint1: public NonlinearFactor1<VALUES, KEY> {
 			boost::none) const = 0;
 
 	/** active when constraint *NOT* met */
-	bool active(const VALUES& c) const {
+	bool active(const Values& c) const {
 		// note: still active at equality to avoid zigzagging
 		double x = value(c[this->key_]);
 		return (isGreaterThan_) ? x <= threshold_ : x >= threshold_;
@@ -95,13 +95,13 @@ private:
  * Binary scalar inequality constraint, with a similar value() function
  * to implement for specific systems
  */
-template<class VALUES, class KEY1, class KEY2>
-struct BoundingConstraint2: public NonlinearFactor2<VALUES, KEY1, KEY2> {
+template<class KEY1, class KEY2>
+struct BoundingConstraint2: public NonlinearFactor2<KEY1, KEY2> {
 	typedef typename KEY1::Value X1;
 	typedef typename KEY2::Value X2;
 
-	typedef NonlinearFactor2<VALUES, KEY1, KEY2> Base;
-	typedef boost::shared_ptr<BoundingConstraint2<VALUES, KEY1, KEY2> > shared_ptr;
+	typedef NonlinearFactor2<KEY1, KEY2> Base;
+	typedef boost::shared_ptr<BoundingConstraint2<KEY1, KEY2> > shared_ptr;
 
 	double threshold_;
 	bool isGreaterThan_; /// flag for greater/less than
@@ -125,7 +125,7 @@ struct BoundingConstraint2: public NonlinearFactor2<VALUES, KEY1, KEY2> {
 			boost::optional<Matrix&> H2 = boost::none) const = 0;
 
 	/** active when constraint *NOT* met */
-	bool active(const VALUES& c) const {
+	bool active(const Values& c) const {
 		// note: still active at equality to avoid zigzagging
 		double x = value(c[this->key1_], c[this->key2_]);
 		return (isGreaterThan_) ? x <= threshold_ : x >= threshold_;

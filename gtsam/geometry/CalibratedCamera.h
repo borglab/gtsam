@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 
@@ -35,7 +36,7 @@ namespace gtsam {
 	 * @ingroup geometry
 	 * \nosubgrouping
 	 */
-	class CalibratedCamera {
+	class CalibratedCamera : public DerivedValue<CalibratedCamera> {
 	private:
 		Pose3 pose_; // 6DOF pose
 
@@ -61,9 +62,10 @@ namespace gtsam {
 		/// @name Testable
 		/// @{
 
-        void print(const std::string& s="") const {
-            pose_.print(); 
-        }
+		virtual void print(const std::string& s = "") const {
+			pose_.print(s);
+		}
+
 		/// check equality to another camera
 		bool equals (const CalibratedCamera &camera, double tol = 1e-9) const {
 			return pose_.equals(camera.pose(), tol) ;

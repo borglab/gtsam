@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Point2.h>
 
 namespace gtsam {
@@ -27,7 +28,7 @@ namespace gtsam {
  * @ingroup geometry
  * \nosubgrouping
  */
-class Cal3Bundler {
+class Cal3Bundler : public DerivedValue<Cal3Bundler> {
 
 private:
 	double f_, k1_, k2_ ;
@@ -94,7 +95,7 @@ public:
 	Vector localCoordinates(const Cal3Bundler& T2) const ;
 
 	///TODO: comment
-	int dim() const { return 3 ; }	//TODO: make a final dimension variable (also, usually size_t in other classes  e.g. Pose2)
+	virtual size_t dim() const { return 3 ; }	//TODO: make a final dimension variable (also, usually size_t in other classes  e.g. Pose2)
 
 	///TODO: comment
 	static size_t Dim() { return 3; }	//TODO: make a final dimension variable

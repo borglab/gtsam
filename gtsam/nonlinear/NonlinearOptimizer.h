@@ -37,20 +37,20 @@ public:
  * and then one of the optimization routines is called. These iterate
  * until convergence. All methods are functional and return a new state.
  *
- * The class is parameterized by the Graph type $G$, Values class type $T$,
+ * The class is parameterized by the Graph type $G$, Values class type $Values$,
  * linear system class $L$, the non linear solver type $S$, and the writer type $W$
  *
- * The values class type $T$ is in order to be able to optimize over non-vector values structures.
+ * The values class type $Values$ is in order to be able to optimize over non-vector values structures.
  *
  * A nonlinear system solver $S$
- * Concept NonLinearSolver<G,T,L> implements
- *   linearize: G * T -> L
- *   solve : L -> T
+ * Concept NonLinearSolver<G,Values,L> implements
+ *   linearize: G * Values -> L
+ *   solve : L -> Values
  *
  * The writer $W$ generates output to disk or the screen.
  *
- * For example, in a 2D case, $G$ can be Pose2Graph, $T$ can be Pose2Values,
- * $L$ can be GaussianFactorGraph and $S$ can be Factorization<Pose2Graph, Pose2Values>.
+ * For example, in a 2D case, $G$ can be pose2SLAM::Graph, $Values$ can be Pose2Values,
+ * $L$ can be GaussianFactorGraph and $S$ can be Factorization<pose2SLAM::Graph, Pose2Values>.
  * The solver class has two main functions: linearize and optimize. The first one
  * linearizes the nonlinear cost function around the current estimate, and the second
  * one optimizes the linearized system using various methods.
@@ -58,12 +58,12 @@ public:
  * To use the optimizer in code, include <gtsam/NonlinearOptimizer-inl.h> in your cpp file
  * \nosubgrouping
  */
-template<class G, class T, class L = GaussianFactorGraph, class GS = GaussianMultifrontalSolver, class W = NullOptimizerWriter>
+template<class G, class L = GaussianFactorGraph, class GS = GaussianMultifrontalSolver, class W = NullOptimizerWriter>
 class NonlinearOptimizer {
 public:
 
 	// For performance reasons in recursion, we store values in a shared_ptr
-	typedef boost::shared_ptr<const T> shared_values; ///Prevent memory leaks in Values
+	typedef boost::shared_ptr<const Values> shared_values; ///Prevent memory leaks in Values
 	typedef boost::shared_ptr<const G> shared_graph;  /// Prevent memory leaks in Graph
 	typedef boost::shared_ptr<L> shared_linear;    /// Not sure
 	typedef boost::shared_ptr<const Ordering> shared_ordering; ///ordering parameters
@@ -74,7 +74,7 @@ public:
 
 private:
 
-	typedef NonlinearOptimizer<G, T, L, GS> This;
+	typedef NonlinearOptimizer<G, L, GS> This;
 	typedef boost::shared_ptr<const std::vector<size_t> > shared_dimensions;
 
 	/// keep a reference to const version of the graph
@@ -182,7 +182,7 @@ public:
 	/**
 	 * Copy constructor
 	 */
-	NonlinearOptimizer(const NonlinearOptimizer<G, T, L, GS> &optimizer) :
+	NonlinearOptimizer(const NonlinearOptimizer<G, L, GS> &optimizer) :
 		graph_(optimizer.graph_), values_(optimizer.values_), error_(optimizer.error_),
 		ordering_(optimizer.ordering_), parameters_(optimizer.parameters_),
 		iterations_(optimizer.iterations_), dimensions_(optimizer.dimensions_), structure_(optimizer.structure_) {}
@@ -248,7 +248,7 @@ public:
 
 	/**
 	 *  linearize and optimize
-	 *  This returns an VectorValues, i.e., vectors in tangent space of T
+	 *  This returns an VectorValues, i.e., vectors in tangent space of Values
 	 */
 	VectorValues linearizeAndOptimizeForDelta() const {
 		return *createSolver()->optimize();
@@ -340,19 +340,19 @@ public:
 	 * Static interface to LM optimization (no shared_ptr arguments) - see above
 	 */
 	static shared_values optimizeLM(const G& graph,
-			const T& values,
+			const Values& values,
 			const Parameters parameters = Parameters()) {
 		return optimizeLM(boost::make_shared<const G>(graph),
-				boost::make_shared<const T>(values),
+				boost::make_shared<const Values>(values),
 				boost::make_shared<Parameters>(parameters));
 	}
 
 	///TODO: comment
 	static shared_values optimizeLM(const G& graph,
-			const T& values,
+			const Values& values,
 			Parameters::verbosityLevel verbosity) {
 		return optimizeLM(boost::make_shared<const G>(graph),
-				boost::make_shared<const T>(values),
+				boost::make_shared<const Values>(values),
 				verbosity);
 	}
 
@@ -392,19 +392,19 @@ public:
    * Static interface to Dogleg optimization (no shared_ptr arguments) - see above
    */
   static shared_values optimizeDogLeg(const G& graph,
-      const T& values,
+      const Values& values,
       const Parameters parameters = Parameters()) {
     return optimizeDogLeg(boost::make_shared<const G>(graph),
-        boost::make_shared<const T>(values),
+        boost::make_shared<const Values>(values),
         boost::make_shared<Parameters>(parameters));
   }
 
 	///TODO: comment
   static shared_values optimizeDogLeg(const G& graph,
-      const T& values,
+      const Values& values,
       Parameters::verbosityLevel verbosity) {
     return optimizeDogLeg(boost::make_shared<const G>(graph),
-        boost::make_shared<const T>(values),
+        boost::make_shared<const Values>(values),
         verbosity);
   }
 
@@ -431,9 +431,9 @@ public:
 	/**
 	 * Static interface to GN optimization (no shared_ptr arguments) - see above
 	 */
-	static shared_values optimizeGN(const G& graph, const T& values, const Parameters parameters = Parameters()) {
+	static shared_values optimizeGN(const G& graph, const Values& values, const Parameters parameters = Parameters()) {
 		return optimizeGN(boost::make_shared<const G>(graph),
-				boost::make_shared<const T>(values),
+				boost::make_shared<const Values>(values),
 				boost::make_shared<Parameters>(parameters));
 	}
 };

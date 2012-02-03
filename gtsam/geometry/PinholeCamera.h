@@ -20,6 +20,7 @@
 
 #include <cmath>
 #include <boost/optional.hpp>
+#include <gtsam/base/DerivedValue.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/geometry/Point2.h>
@@ -35,7 +36,7 @@ namespace gtsam {
    * \nosubgrouping
    */
   template <typename Calibration>
-  class PinholeCamera {
+  class PinholeCamera : public DerivedValue<PinholeCamera<Calibration> > {
   private:
     Pose3 pose_;
     Calibration k_;

@@ -40,7 +40,7 @@ using namespace std;
 using namespace gtsam;
 using namespace example;
 
-typedef boost::shared_ptr<NonlinearFactor<VectorValues> > shared_nlf;
+typedef boost::shared_ptr<NonlinearFactor > shared_nlf;
 
 /* ************************************************************************* */
 TEST( NonlinearFactor, equals )
@@ -82,18 +82,18 @@ TEST( NonlinearFactor, NonlinearFactor )
   Graph fg = createNonlinearFactorGraph();
 
   // create a values structure for the non linear factor graph
-  example::Values cfg = createNoisyValues();
+  Values cfg = createNoisyValues();
 
   // get the factor "f1" from the factor graph
   Graph::sharedFactor factor = fg[0];
 
   // calculate the error_vector from the factor "f1"
   // error_vector = [0.1 0.1]
-  Vector actual_e = boost::dynamic_pointer_cast<NoiseModelFactor<example::Values> >(factor)->unwhitenedError(cfg);
+  Vector actual_e = boost::dynamic_pointer_cast<NoiseModelFactor>(factor)->unwhitenedError(cfg);
   CHECK(assert_equal(0.1*ones(2),actual_e));
 
   // error = 0.5 * [1 1] * [1;1] = 1
-  double expected = 1.0; 
+  double expected = 1.0;
 
   // calculate the error from the factor "f1"
   double actual = factor->error(cfg);
@@ -103,7 +103,7 @@ TEST( NonlinearFactor, NonlinearFactor )
 /* ************************************************************************* */
 TEST( NonlinearFactor, linearize_f1 )
 {
-	example::Values c = createNoisyValues();
+	Values c = createNoisyValues();
 
   // Grab a non-linear factor
   Graph nfg = createNonlinearFactorGraph();
@@ -125,7 +125,7 @@ TEST( NonlinearFactor, linearize_f1 )
 /* ************************************************************************* */
 TEST( NonlinearFactor, linearize_f2 )
 {
-	example::Values c = createNoisyValues();
+	Values c = createNoisyValues();
 
   // Grab a non-linear factor
   Graph nfg = createNonlinearFactorGraph();
@@ -148,7 +148,7 @@ TEST( NonlinearFactor, linearize_f3 )
   Graph::sharedFactor nlf = nfg[2];
 
   // We linearize at noisy config from SmallExample
-  example::Values c = createNoisyValues();
+  Values c = createNoisyValues();
   GaussianFactor::shared_ptr actual = nlf->linearize(c, *c.orderingArbitrary());
 
   GaussianFactorGraph lfg = createGaussianFactorGraph(*c.orderingArbitrary());
@@ -165,7 +165,7 @@ TEST( NonlinearFactor, linearize_f4 )
   Graph::sharedFactor nlf = nfg[3];
 
   // We linearize at noisy config from SmallExample
-  example::Values c = createNoisyValues();
+  Values c = createNoisyValues();
   GaussianFactor::shared_ptr actual = nlf->linearize(c, *c.orderingArbitrary());
 
   GaussianFactorGraph lfg = createGaussianFactorGraph(*c.orderingArbitrary());
@@ -179,14 +179,14 @@ TEST( NonlinearFactor, size )
 {
 	// create a non linear factor graph
 	Graph fg = createNonlinearFactorGraph();
-	
+
 	// create a values structure for the non linear factor graph
-	example::Values cfg = createNoisyValues();
-	
+	Values cfg = createNoisyValues();
+
 	// get some factors from the graph
 	Graph::sharedFactor factor1 = fg[0], factor2 = fg[1],
 			factor3 = fg[2];
-	
+
 	CHECK(factor1->size() == 1);
 	CHECK(factor2->size() == 2);
 	CHECK(factor3->size() == 2);
@@ -201,7 +201,7 @@ TEST( NonlinearFactor, linearize_constraint1 )
 	Point2 mu(1., -1.);
 	Graph::sharedFactor f0(new simulated2D::Prior(mu, constraint, 1));
 
-	example::Values config;
+	Values config;
 	config.insert(simulated2D::PoseKey(1), Point2(1.0, 2.0));
 	GaussianFactor::shared_ptr actual = f0->linearize(config, *config.orderingArbitrary());
 
@@ -221,7 +221,7 @@ TEST( NonlinearFactor, linearize_constraint2 )
 	Point2 z3(1.,-1.);
 	simulated2D::Measurement f0(z3, constraint, 1,1);
 
-	example::Values config;
+	Values config;
 	config.insert(simulated2D::PoseKey(1), Point2(1.0, 2.0));
 	config.insert(simulated2D::PointKey(1), Point2(5.0, 4.0));
 	GaussianFactor::shared_ptr actual = f0.linearize(config, *config.orderingArbitrary());
@@ -236,12 +236,11 @@ TEST( NonlinearFactor, linearize_constraint2 )
 
 /* ************************************************************************* */
 typedef TypedSymbol<LieVector, 'x'> TestKey;
-typedef gtsam::Values<TestKey> TestValues;
 
 /* ************************************************************************* */
-class TestFactor4 : public NonlinearFactor4<TestValues, TestKey, TestKey, TestKey, TestKey> {
+class TestFactor4 : public NonlinearFactor4<TestKey, TestKey, TestKey, TestKey> {
 public:
-  typedef NonlinearFactor4<TestValues, TestKey, TestKey, TestKey, TestKey> Base;
+  typedef NonlinearFactor4<TestKey, TestKey, TestKey, TestKey> Base;
   TestFactor4() : Base(sharedSigmas(Vector_(1, 2.0)), 1, 2, 3, 4) {}
 
   virtual Vector
@@ -263,11 +262,11 @@ public:
 /* ************************************ */
 TEST(NonlinearFactor, NonlinearFactor4) {
   TestFactor4 tf;
-  TestValues tv;
-  tv.insert(1, LieVector(1, 1.0));
-  tv.insert(2, LieVector(1, 2.0));
-  tv.insert(3, LieVector(1, 3.0));
-  tv.insert(4, LieVector(1, 4.0));
+  Values tv;
+  tv.insert(TestKey(1), LieVector(1, 1.0));
+  tv.insert(TestKey(2), LieVector(1, 2.0));
+  tv.insert(TestKey(3), LieVector(1, 3.0));
+  tv.insert(TestKey(4), LieVector(1, 4.0));
   EXPECT(assert_equal(Vector_(1, 10.0), tf.unwhitenedError(tv)));
   DOUBLES_EQUAL(25.0/2.0, tf.error(tv), 1e-9);
   Ordering ordering; ordering += TestKey(1), TestKey(2), TestKey(3), TestKey(4);
@@ -284,9 +283,9 @@ TEST(NonlinearFactor, NonlinearFactor4) {
 }
 
 /* ************************************************************************* */
-class TestFactor5 : public NonlinearFactor5<TestValues, TestKey, TestKey, TestKey, TestKey, TestKey> {
+class TestFactor5 : public NonlinearFactor5<TestKey, TestKey, TestKey, TestKey, TestKey> {
 public:
-  typedef NonlinearFactor5<TestValues, TestKey, TestKey, TestKey, TestKey, TestKey> Base;
+  typedef NonlinearFactor5<TestKey, TestKey, TestKey, TestKey, TestKey> Base;
   TestFactor5() : Base(sharedSigmas(Vector_(1, 2.0)), 1, 2, 3, 4, 5) {}
 
   virtual Vector
@@ -310,12 +309,12 @@ public:
 /* ************************************ */
 TEST(NonlinearFactor, NonlinearFactor5) {
   TestFactor5 tf;
-  TestValues tv;
-  tv.insert(1, LieVector(1, 1.0));
-  tv.insert(2, LieVector(1, 2.0));
-  tv.insert(3, LieVector(1, 3.0));
-  tv.insert(4, LieVector(1, 4.0));
-  tv.insert(5, LieVector(1, 5.0));
+  Values tv;
+  tv.insert(TestKey(1), LieVector(1, 1.0));
+  tv.insert(TestKey(2), LieVector(1, 2.0));
+  tv.insert(TestKey(3), LieVector(1, 3.0));
+  tv.insert(TestKey(4), LieVector(1, 4.0));
+  tv.insert(TestKey(5), LieVector(1, 5.0));
   EXPECT(assert_equal(Vector_(1, 15.0), tf.unwhitenedError(tv)));
   DOUBLES_EQUAL(56.25/2.0, tf.error(tv), 1e-9);
   Ordering ordering; ordering += TestKey(1), TestKey(2), TestKey(3), TestKey(4), TestKey(5);
@@ -334,9 +333,9 @@ TEST(NonlinearFactor, NonlinearFactor5) {
 }
 
 /* ************************************************************************* */
-class TestFactor6 : public NonlinearFactor6<TestValues, TestKey, TestKey, TestKey, TestKey, TestKey, TestKey> {
+class TestFactor6 : public NonlinearFactor6<TestKey, TestKey, TestKey, TestKey, TestKey, TestKey> {
 public:
-  typedef NonlinearFactor6<TestValues, TestKey, TestKey, TestKey, TestKey, TestKey, TestKey> Base;
+  typedef NonlinearFactor6<TestKey, TestKey, TestKey, TestKey, TestKey, TestKey> Base;
   TestFactor6() : Base(sharedSigmas(Vector_(1, 2.0)), 1, 2, 3, 4, 5, 6) {}
 
   virtual Vector
@@ -362,13 +361,13 @@ public:
 /* ************************************ */
 TEST(NonlinearFactor, NonlinearFactor6) {
   TestFactor6 tf;
-  TestValues tv;
-  tv.insert(1, LieVector(1, 1.0));
-  tv.insert(2, LieVector(1, 2.0));
-  tv.insert(3, LieVector(1, 3.0));
-  tv.insert(4, LieVector(1, 4.0));
-  tv.insert(5, LieVector(1, 5.0));
-  tv.insert(6, LieVector(1, 6.0));
+  Values tv;
+  tv.insert(TestKey(1), LieVector(1, 1.0));
+  tv.insert(TestKey(2), LieVector(1, 2.0));
+  tv.insert(TestKey(3), LieVector(1, 3.0));
+  tv.insert(TestKey(4), LieVector(1, 4.0));
+  tv.insert(TestKey(5), LieVector(1, 5.0));
+  tv.insert(TestKey(6), LieVector(1, 6.0));
   EXPECT(assert_equal(Vector_(1, 21.0), tf.unwhitenedError(tv)));
   DOUBLES_EQUAL(110.25/2.0, tf.error(tv), 1e-9);
   Ordering ordering; ordering += TestKey(1), TestKey(2), TestKey(3), TestKey(4), TestKey(5), TestKey(6);

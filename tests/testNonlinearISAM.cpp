@@ -12,7 +12,7 @@
 using namespace gtsam;
 using namespace planarSLAM;
 
-typedef NonlinearISAM<planarSLAM::Values> PlanarISAM;
+typedef NonlinearISAM<> PlanarISAM;
 
 const double tol=1e-5;
 
@@ -30,8 +30,8 @@ TEST(testNonlinearISAM, markov_chain ) {
 	Graph start_factors;
 	start_factors.addPoseConstraint(key, cur_pose);
 
-	planarSLAM::Values init;
-	planarSLAM::Values expected;
+	Values init;
+	Values expected;
 	init.insert(key, cur_pose);
 	expected.insert(key, cur_pose);
 	isam.update(start_factors, init);
@@ -43,7 +43,7 @@ TEST(testNonlinearISAM, markov_chain ) {
 		Graph new_factors;
 		PoseKey key1(i-1), key2(i);
 		new_factors.addOdometry(key1, key2, z, model);
-		planarSLAM::Values new_init;
+		Values new_init;
 
 		// perform a check on changing orderings
 		if (i == 5) {
@@ -67,7 +67,7 @@ TEST(testNonlinearISAM, markov_chain ) {
 	}
 
 	// verify values - all but the last one should be very close
-	planarSLAM::Values actual = isam.estimate();
+	Values actual = isam.estimate();
 	for (size_t i=0; i<nrPoses; ++i) {
 		PoseKey cur_key(i);
 		EXPECT(assert_equal(expected[cur_key], actual[cur_key], tol));

@@ -33,13 +33,13 @@ namespace simulated2D {
   namespace equality_constraints {
 
     /** Typedefs for regular use */
-    typedef NonlinearEquality1<Values, PoseKey> UnaryEqualityConstraint;
-    typedef NonlinearEquality1<Values, PointKey> UnaryEqualityPointConstraint;
-    typedef BetweenConstraint<Values, PoseKey> OdoEqualityConstraint;
+    typedef NonlinearEquality1<PoseKey> UnaryEqualityConstraint;
+    typedef NonlinearEquality1<PointKey> UnaryEqualityPointConstraint;
+    typedef BetweenConstraint<PoseKey> OdoEqualityConstraint;
 
     /** Equality between variables */
-    typedef NonlinearEquality2<Values, PoseKey> PoseEqualityConstraint;
-    typedef NonlinearEquality2<Values, PointKey> PointEqualityConstraint;
+    typedef NonlinearEquality2<PoseKey> PoseEqualityConstraint;
+    typedef NonlinearEquality2<PointKey> PointEqualityConstraint;
 
   } // \namespace equality_constraints
 
@@ -51,10 +51,10 @@ namespace simulated2D {
      * @tparam KEY is the key type for the variable constrained
      * @tparam IDX is an index in tangent space to constrain, must be less than KEY::VALUE::Dim()
      */
-    template<class VALUES, class KEY, unsigned int IDX>
-    struct ScalarCoordConstraint1: public BoundingConstraint1<VALUES, KEY> {
-      typedef BoundingConstraint1<VALUES, KEY> Base;  ///< Base class convenience typedef
-      typedef boost::shared_ptr<ScalarCoordConstraint1<VALUES, KEY, IDX> > shared_ptr; ///< boost::shared_ptr convenience typedef
+    template<class KEY, unsigned int IDX>
+    struct ScalarCoordConstraint1: public BoundingConstraint1<KEY> {
+      typedef BoundingConstraint1<KEY> Base;  ///< Base class convenience typedef
+      typedef boost::shared_ptr<ScalarCoordConstraint1<KEY, IDX> > shared_ptr; ///< boost::shared_ptr convenience typedef
       typedef typename KEY::Value Point; ///< Constrained variable type
 
       virtual ~ScalarCoordConstraint1() {}
@@ -68,7 +68,7 @@ namespace simulated2D {
        */
       ScalarCoordConstraint1(const KEY& key, double c,
           bool isGreaterThan, double mu = 1000.0) :
-        Base(key, c, isGreaterThan, mu) {
+            Base(key, c, isGreaterThan, mu) {
       }
 
       /**
@@ -94,8 +94,8 @@ namespace simulated2D {
     };
 
     /** typedefs for use with simulated2D systems */
-    typedef ScalarCoordConstraint1<Values, PoseKey, 0> PoseXInequality; ///< Simulated2D domain example factor constraining X
-    typedef ScalarCoordConstraint1<Values, PoseKey, 1> PoseYInequality; ///< Simulated2D domain example factor constraining Y
+    typedef ScalarCoordConstraint1<PoseKey, 0> PoseXInequality; ///< Simulated2D domain example factor constraining X
+    typedef ScalarCoordConstraint1<PoseKey, 1> PoseYInequality; ///< Simulated2D domain example factor constraining Y
 
     /**
      * Trait for distance constraints to provide distance
@@ -114,9 +114,9 @@ namespace simulated2D {
      * @tparam VALUES is the variable set for the graph
      * @tparam KEY is the type of the keys for the variables constrained
      */
-    template<class VALUES, class KEY>
-    struct MaxDistanceConstraint : public BoundingConstraint2<VALUES, KEY, KEY> {
-      typedef BoundingConstraint2<VALUES, KEY, KEY> Base;  ///< Base class for factor
+    template<class KEY>
+    struct MaxDistanceConstraint : public BoundingConstraint2<KEY, KEY> {
+      typedef BoundingConstraint2<KEY, KEY> Base;  ///< Base class for factor
       typedef typename KEY::Value Point; ///< Type of variable constrained
 
       virtual ~MaxDistanceConstraint() {}
@@ -129,7 +129,7 @@ namespace simulated2D {
        * @param mu is the gain for the penalty function
        */
       MaxDistanceConstraint(const KEY& key1, const KEY& key2, double range_bound, double mu = 1000.0)
-        : Base(key1, key2, range_bound, false, mu) {}
+      : Base(key1, key2, range_bound, false, mu) {}
 
       /**
        * computes the range with derivatives
@@ -148,7 +148,7 @@ namespace simulated2D {
       }
     };
 
-    typedef MaxDistanceConstraint<Values, PoseKey> PoseMaxDistConstraint; ///< Simulated2D domain example factor
+    typedef MaxDistanceConstraint<PoseKey> PoseMaxDistConstraint; ///< Simulated2D domain example factor
 
     /**
      * Binary inequality constraint forcing a minimum range
@@ -157,9 +157,9 @@ namespace simulated2D {
      * @tparam XKEY is the type of the pose key constrained
      * @tparam PKEY is the type of the point key constrained
      */
-    template<class VALUES, class XKEY, class PKEY>
-    struct MinDistanceConstraint : public BoundingConstraint2<VALUES, XKEY, PKEY> {
-      typedef BoundingConstraint2<VALUES, XKEY, PKEY> Base; ///< Base class for factor
+    template<class XKEY, class PKEY>
+    struct MinDistanceConstraint : public BoundingConstraint2<XKEY, PKEY> {
+      typedef BoundingConstraint2<XKEY, PKEY> Base; ///< Base class for factor
       typedef typename XKEY::Value Pose; ///< Type of pose variable constrained
       typedef typename PKEY::Value Point; ///< Type of point variable constrained
 
@@ -174,7 +174,7 @@ namespace simulated2D {
        */
       MinDistanceConstraint(const XKEY& key1, const PKEY& key2,
           double range_bound, double mu = 1000.0)
-        : Base(key1, key2, range_bound, true, mu) {}
+      : Base(key1, key2, range_bound, true, mu) {}
 
       /**
        * computes the range with derivatives
@@ -193,7 +193,7 @@ namespace simulated2D {
       }
     };
 
-    typedef MinDistanceConstraint<Values, PoseKey, PointKey> LandmarkAvoid; ///< Simulated2D domain example factor
+    typedef MinDistanceConstraint<PoseKey, PointKey> LandmarkAvoid; ///< Simulated2D domain example factor
 
 
   } // \namespace inequality_constraints

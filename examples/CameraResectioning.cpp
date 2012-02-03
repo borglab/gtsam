@@ -20,7 +20,6 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/SimpleCamera.h>
-#include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearOptimization.h>
@@ -28,13 +27,12 @@
 using namespace gtsam;
 
 typedef TypedSymbol<Pose3, 'x'> PoseKey;
-typedef Values<PoseKey> PoseValues;
 
 /**
  * Unary factor for the pose.
  */
-class ResectioningFactor: public NonlinearFactor1<PoseValues, PoseKey> {
-  typedef NonlinearFactor1<PoseValues, PoseKey> Base;
+class ResectioningFactor: public NonlinearFactor1<PoseKey> {
+  typedef NonlinearFactor1<PoseKey> Base;
 
   shared_ptrK K_; // camera's intrinsic parameters
   Point3 P_; // 3D point on the calibration rig
@@ -45,6 +43,8 @@ public:
       const shared_ptrK& calib, const Point2& p, const Point3& P) :
     Base(model, key), K_(calib), P_(P), p_(p) {
   }
+
+  virtual ~ResectioningFactor() {}
 
   virtual Vector evaluateError(const Pose3& X, boost::optional<Matrix&> H =
       boost::none) const {
@@ -72,7 +72,7 @@ int main(int argc, char* argv[]) {
   PoseKey X(1);
 
   /* 1. create graph */
-  NonlinearFactorGraph<PoseValues> graph;
+  NonlinearFactorGraph graph;
 
   /* 2. add factors to the graph */
   // add measurement factors
@@ -92,14 +92,13 @@ int main(int argc, char* argv[]) {
   graph.push_back(factor);
 
   /* 3. Create an initial estimate for the camera pose */
-  PoseValues initial;
+  Values initial;
   initial.insert(X, Pose3(Rot3(1.,0.,0.,
                                0.,-1.,0.,
                                0.,0.,-1.), Point3(0.,0.,2.0)));
 
   /* 4. Optimize the graph using Levenberg-Marquardt*/
-  PoseValues result = optimize<NonlinearFactorGraph<PoseValues> , PoseValues> (
-      graph, initial);
+  Values result = optimize<NonlinearFactorGraph> (graph, initial);
   result.print("Final result: ");
 
   return 0;

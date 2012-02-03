@@ -47,8 +47,8 @@ namespace gtsam {
 	 *
 	 * \nosubgrouping
 	 */
-	template<class VALUES, class KEY>
-	class NonlinearEquality: public NonlinearFactor1<VALUES, KEY> {
+	template<class KEY>
+	class NonlinearEquality: public NonlinearFactor1<KEY> {
 
 	public:
 		typedef typename KEY::Value T;
@@ -71,7 +71,7 @@ namespace gtsam {
 		 */
 		bool (*compare_)(const T& a, const T& b);
 
-		typedef NonlinearFactor1<VALUES, KEY> Base;
+		typedef NonlinearFactor1<KEY> Base;
 
 		/** default constructor - only for serialization */
 		NonlinearEquality() {}
@@ -110,7 +110,7 @@ namespace gtsam {
 		}
 
 		/** Check if two factors are equal */
-		bool equals(const NonlinearEquality<VALUES,KEY>& f, double tol = 1e-9) const {
+		bool equals(const NonlinearEquality<KEY>& f, double tol = 1e-9) const {
 			if (!Base::equals(f)) return false;
 			return feasible_.equals(f.feasible_, tol) &&
 					fabs(error_gain_ - f.error_gain_) < tol;
@@ -121,7 +121,7 @@ namespace gtsam {
 		/// @{
 
 		/** actual error function calculation */
-		virtual double error(const VALUES& c) const {
+		virtual double error(const Values& c) const {
 			const T& xj = c[this->key_];
 			Vector e = this->unwhitenedError(c);
 			if (allow_error_ || !compare_(xj, feasible_)) {
@@ -148,7 +148,7 @@ namespace gtsam {
 		}
 
 		// Linearize is over-written, because base linearization tries to whiten
-		virtual GaussianFactor::shared_ptr linearize(const VALUES& x, const Ordering& ordering) const {
+		virtual GaussianFactor::shared_ptr linearize(const Values& x, const Ordering& ordering) const {
 			const T& xj = x[this->key_];
 			Matrix A;
 			Vector b = evaluateError(xj, A);
@@ -177,14 +177,14 @@ namespace gtsam {
 	/**
 	 * Simple unary equality constraint - fixes a value for a variable
 	 */
-	template<class VALUES, class KEY>
-	class NonlinearEquality1 : public NonlinearFactor1<VALUES, KEY> {
+	template<class KEY>
+	class NonlinearEquality1 : public NonlinearFactor1<KEY> {
 
 	public:
 		typedef typename KEY::Value X;
 
 	protected:
-		typedef NonlinearFactor1<VALUES, KEY> Base;
+		typedef NonlinearFactor1<KEY> Base;
 
 		/** default constructor to allow for serialization */
 		NonlinearEquality1() {}
@@ -196,7 +196,7 @@ namespace gtsam {
 
 	public:
 
-		typedef boost::shared_ptr<NonlinearEquality1<VALUES, KEY> > shared_ptr;
+		typedef boost::shared_ptr<NonlinearEquality1<KEY> > shared_ptr;
 
 		///TODO: comment
 		NonlinearEquality1(const X& value, const KEY& key1, double mu = 1000.0)
@@ -236,13 +236,13 @@ namespace gtsam {
 	 * Simple binary equality constraint - this constraint forces two factors to
 	 * be the same.
 	 */
-	template<class VALUES, class KEY>
-	class NonlinearEquality2 : public NonlinearFactor2<VALUES, KEY, KEY> {
+	template<class KEY>
+	class NonlinearEquality2 : public NonlinearFactor2<KEY, KEY> {
 	public:
 		typedef typename KEY::Value X;
 
 	protected:
-		typedef NonlinearFactor2<VALUES, KEY, KEY> Base;
+		typedef NonlinearFactor2<KEY, KEY> Base;
 
 		GTSAM_CONCEPT_MANIFOLD_TYPE(X);
 
@@ -251,7 +251,7 @@ namespace gtsam {
 
 	public:
 
-		typedef boost::shared_ptr<NonlinearEquality2<VALUES, KEY> > shared_ptr;
+		typedef boost::shared_ptr<NonlinearEquality2<KEY> > shared_ptr;
 
 		///TODO: comment
 		NonlinearEquality2(const KEY& key1, const KEY& key2, double mu = 1000.0)

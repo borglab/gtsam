@@ -110,7 +110,7 @@ TEST( GaussianJunctionTree, optimizeMultiFrontal2)
 {
 	// create a graph
 	example::Graph nlfg = createNonlinearFactorGraph();
-	example::Values noisy = createNoisyValues();
+	Values noisy = createNoisyValues();
   Ordering ordering; ordering += "x1","x2","l1";
 	GaussianFactorGraph fg = *nlfg.linearize(noisy, ordering);
 
@@ -128,7 +128,7 @@ TEST(GaussianJunctionTree, slamlike) {
   typedef planarSLAM::PoseKey PoseKey;
   typedef planarSLAM::PointKey PointKey;
 
-  planarSLAM::Values init;
+  Values init;
   planarSLAM::Graph newfactors;
   planarSLAM::Graph fullgraph;
   SharedDiagonal odoNoise = sharedSigmas(Vector_(3, 0.1, 0.1, M_PI/100.0));
@@ -179,11 +179,11 @@ TEST(GaussianJunctionTree, slamlike) {
 
   GaussianJunctionTree gjt(linearized);
   VectorValues deltaactual = gjt.optimize(&EliminateQR);
-  planarSLAM::Values actual = init.retract(deltaactual, ordering);
+  Values actual = init.retract(deltaactual, ordering);
 
   GaussianBayesNet gbn = *GaussianSequentialSolver(linearized).eliminate();
   VectorValues delta = optimize(gbn);
-  planarSLAM::Values expected = init.retract(delta, ordering);
+  Values expected = init.retract(delta, ordering);
 
   EXPECT(assert_equal(expected, actual));
 }
@@ -198,9 +198,9 @@ TEST(GaussianJunctionTree, simpleMarginal) {
   fg.addPrior(pose2SLAM::PoseKey(0), Pose2(), sharedSigma(3, 10.0));
   fg.addOdometry(0, 1, Pose2(1.0, 0.0, 0.0), sharedSigmas(Vector_(3, 10.0, 1.0, 1.0)));
 
-  pose2SLAM::Values init;
-  init.insert(0, Pose2());
-  init.insert(1, Pose2(1.0, 0.0, 0.0));
+  Values init;
+  init.insert(pose2SLAM::PoseKey(0), Pose2());
+  init.insert(pose2SLAM::PoseKey(1), Pose2(1.0, 0.0, 0.0));
 
   Ordering ordering;
   ordering += "x1", "x0";

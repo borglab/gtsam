@@ -19,7 +19,6 @@
 #pragma once
 
 #include <gtsam/geometry/Pose2.h>
-#include <gtsam/nonlinear/TupleValues.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
@@ -31,29 +30,6 @@ namespace simulated2DOriented {
   // The types that take an oriented pose2 rather than point2
   typedef TypedSymbol<Point2, 'l'> PointKey;
   typedef TypedSymbol<Pose2, 'x'> PoseKey;
-  typedef Values<PoseKey> PoseValues;
-  typedef Values<PointKey> PointValues;
-
-  /// Specialized Values structure with syntactic sugar for
-  /// compatibility with matlab
-  class Values: public TupleValues2<PoseValues, PointValues> {
-  public:
-    Values() {}
-
-    void insertPose(const PoseKey& i, const Pose2& p) {
-      insert(i, p);
-    }
-
-    void insertPoint(const PointKey& j, const Point2& p) {
-      insert(j, p);
-    }
-
-    int nrPoses() const {	return this->first_.size();	}
-    int nrPoints() const { return this->second_.size();	}
-
-    Pose2 pose(const PoseKey& i) const { return (*this)[i];	}
-    Point2 point(const PointKey& j) const { return (*this)[j]; }
-  };
 
   //TODO:: point prior is not implemented right now
 
@@ -75,15 +51,15 @@ namespace simulated2DOriented {
       boost::none, boost::optional<Matrix&> H2 = boost::none);
 
   /// Unary factor encoding a soft prior on a vector
-  template<class VALUES = Values, class Key = PoseKey>
-  struct GenericPosePrior: public NonlinearFactor1<VALUES, Key> {
+		template<class Key = PoseKey>
+		struct GenericPosePrior: public NonlinearFactor1<Key> {
 
     Pose2 z_; ///< measurement
 
     /// Create generic pose prior
     GenericPosePrior(const Pose2& z, const SharedNoiseModel& model,
         const Key& key) :
-        NonlinearFactor1<VALUES, Key>(model, key), z_(z) {
+					NonlinearFactor1<Key>(model, key), z_(z) {
     }
 
     /// Evaluate error and optionally derivative
@@ -97,8 +73,8 @@ namespace simulated2DOriented {
   /**
    * Binary factor simulating "odometry" between two Vectors
    */
-  template<class VALUES = Values, class KEY = PoseKey>
-  struct GenericOdometry: public NonlinearFactor2<VALUES, KEY, KEY> {
+		template<class KEY = PoseKey>
+		struct GenericOdometry: public NonlinearFactor2<KEY, KEY> {
     Pose2 z_;   ///< Between measurement for odometry factor
 
     /**
@@ -106,7 +82,7 @@ namespace simulated2DOriented {
      */
     GenericOdometry(const Pose2& z, const SharedNoiseModel& model,
         const KEY& i1, const KEY& i2) :
-        NonlinearFactor2<VALUES, KEY, KEY>(model, i1, i2), z_(z) {
+					NonlinearFactor2<KEY, KEY>(model, i1, i2), z_(z) {
     }
 
     /// Evaluate error and optionally derivative
@@ -118,10 +94,10 @@ namespace simulated2DOriented {
 
   };
 
-  typedef GenericOdometry<Values, PoseKey> Odometry;
+		typedef GenericOdometry<PoseKey> Odometry;
 
   /// Graph specialization for syntactic sugar use with matlab
-  class Graph : public NonlinearFactorGraph<Values> {
+		class Graph : public NonlinearFactorGraph {
   public:
     Graph() {}
     // TODO: add functions to add factors

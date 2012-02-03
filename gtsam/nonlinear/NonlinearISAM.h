@@ -24,11 +24,10 @@ namespace gtsam {
 /**
  * Wrapper class to manage ISAM in a nonlinear context
  */
-template<class VALUES, class GRAPH = gtsam::NonlinearFactorGraph<VALUES> >
+template<class GRAPH = gtsam::NonlinearFactorGraph >
 class NonlinearISAM {
 public:
 
-	typedef VALUES Values;
 	typedef GRAPH Factors;
 
 protected:

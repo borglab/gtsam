@@ -118,8 +118,8 @@ TEST( Pose2SLAM, linearization )
 	Pose2 p1(1.1,2,M_PI_2); // robot at (1.1,2) looking towards y (ground truth is at 1,2, see testPose2)
 	Pose2 p2(-1,4.1,M_PI);  // robot at (-1,4) looking at negative (ground truth is at 4.1,2)
 	pose2SLAM::Values config;
-	config.insert(1,p1);
-	config.insert(2,p2);
+	config.insert(pose2SLAM::PoseKey(1),p1);
+	config.insert(pose2SLAM::PoseKey(2),p2);
 	// Linearize
 	Ordering ordering(*config.orderingArbitrary());
 	boost::shared_ptr<FactorGraph<GaussianFactor> > lfg_linearized = graph.linearize(config, ordering);
@@ -153,23 +153,23 @@ TEST(Pose2Graph, optimize) {
   fg->addOdometry(0, 1, Pose2(1,2,M_PI_2), covariance);
 
   // Create initial config
-  boost::shared_ptr<pose2SLAM::Values> initial(new pose2SLAM::Values());
-  initial->insert(0, Pose2(0,0,0));
-  initial->insert(1, Pose2(0,0,0));
+  boost::shared_ptr<Values> initial(new Values());
+  initial->insert(pose2SLAM::PoseKey(0), Pose2(0,0,0));
+  initial->insert(pose2SLAM::PoseKey(1), Pose2(0,0,0));
 
   // Choose an ordering and optimize
   shared_ptr<Ordering> ordering(new Ordering);
   *ordering += "x0","x1";
-  typedef NonlinearOptimizer<pose2SLAM::Graph, pose2SLAM::Values> Optimizer;
+  typedef NonlinearOptimizer<pose2SLAM::Graph> Optimizer;
 
   NonlinearOptimizationParameters::shared_ptr params = NonlinearOptimizationParameters::newDrecreaseThresholds(1e-15, 1e-15);
   Optimizer optimizer0(fg, initial, ordering, params);
   Optimizer optimizer = optimizer0.levenbergMarquardt();
 
   // Check with expected config
-  pose2SLAM::Values expected;
-  expected.insert(0, Pose2(0,0,0));
-  expected.insert(1, Pose2(1,2,M_PI_2));
+  Values expected;
+  expected.insert(pose2SLAM::PoseKey(0), Pose2(0,0,0));
+  expected.insert(pose2SLAM::PoseKey(1), Pose2(1,2,M_PI_2));
   CHECK(assert_equal(expected, *optimizer.values()));
 }
 
@@ -178,8 +178,8 @@ TEST(Pose2Graph, optimize) {
 TEST(Pose2Graph, optimizeThreePoses) {
 
 	// Create a hexagon of poses
-	pose2SLAM::Values hexagon = pose2SLAM::circle(3,1.0);
-  Pose2 p0 = hexagon[0], p1 = hexagon[1];
+	Values hexagon = pose2SLAM::circle(3,1.0);
+  Pose2 p0 = hexagon[pose2SLAM::PoseKey(0)], p1 = hexagon[pose2SLAM::PoseKey(1)];
 
 	// create a Pose graph with one equality constraint and one measurement
   shared_ptr<pose2SLAM::Graph> fg(new pose2SLAM::Graph);
@@ -190,10 +190,10 @@ TEST(Pose2Graph, optimizeThreePoses) {
   fg->addOdometry(2, 0, delta, covariance);
 
   // Create initial config
-  boost::shared_ptr<pose2SLAM::Values> initial(new pose2SLAM::Values());
-  initial->insert(0, p0);
-  initial->insert(1, hexagon[1].retract(Vector_(3,-0.1, 0.1,-0.1)));
-  initial->insert(2, hexagon[2].retract(Vector_(3, 0.1,-0.1, 0.1)));
+  boost::shared_ptr<Values> initial(new Values());
+  initial->insert(pose2SLAM::PoseKey(0), p0);
+  initial->insert(pose2SLAM::PoseKey(1), hexagon[pose2SLAM::PoseKey(1)].retract(Vector_(3,-0.1, 0.1,-0.1)));
+  initial->insert(pose2SLAM::PoseKey(2), hexagon[pose2SLAM::PoseKey(2)].retract(Vector_(3, 0.1,-0.1, 0.1)));
 
   // Choose an ordering
   shared_ptr<Ordering> ordering(new Ordering);
@@ -204,7 +204,7 @@ TEST(Pose2Graph, optimizeThreePoses) {
   pose2SLAM::Optimizer optimizer0(fg, initial, ordering, params);
   pose2SLAM::Optimizer optimizer = optimizer0.levenbergMarquardt();
 
-  pose2SLAM::Values actual = *optimizer.values();
+  Values actual = *optimizer.values();
 
   // Check with ground truth
   CHECK(assert_equal(hexagon, actual));
@@ -215,8 +215,8 @@ TEST(Pose2Graph, optimizeThreePoses) {
 TEST_UNSAFE(Pose2SLAM, optimizeCircle) {
 
 	// Create a hexagon of poses
-	pose2SLAM::Values hexagon = pose2SLAM::circle(6,1.0);
-  Pose2 p0 = hexagon[0], p1 = hexagon[1];
+	Values hexagon = pose2SLAM::circle(6,1.0);
+  Pose2 p0 = hexagon[pose2SLAM::PoseKey(0)], p1 = hexagon[pose2SLAM::PoseKey(1)];
 
 	// create a Pose graph with one equality constraint and one measurement
   shared_ptr<pose2SLAM::Graph> fg(new pose2SLAM::Graph);
@@ -230,13 +230,13 @@ TEST_UNSAFE(Pose2SLAM, optimizeCircle) {
   fg->addOdometry(5, 0, delta, covariance);
 
   // Create initial config
-  boost::shared_ptr<pose2SLAM::Values> initial(new pose2SLAM::Values());
-  initial->insert(0, p0);
-  initial->insert(1, hexagon[1].retract(Vector_(3,-0.1, 0.1,-0.1)));
-  initial->insert(2, hexagon[2].retract(Vector_(3, 0.1,-0.1, 0.1)));
-  initial->insert(3, hexagon[3].retract(Vector_(3,-0.1, 0.1,-0.1)));
-  initial->insert(4, hexagon[4].retract(Vector_(3, 0.1,-0.1, 0.1)));
-  initial->insert(5, hexagon[5].retract(Vector_(3,-0.1, 0.1,-0.1)));
+  boost::shared_ptr<Values> initial(new Values());
+  initial->insert(pose2SLAM::PoseKey(0), p0);
+  initial->insert(pose2SLAM::PoseKey(1), hexagon[pose2SLAM::PoseKey(1)].retract(Vector_(3,-0.1, 0.1,-0.1)));
+  initial->insert(pose2SLAM::PoseKey(2), hexagon[pose2SLAM::PoseKey(2)].retract(Vector_(3, 0.1,-0.1, 0.1)));
+  initial->insert(pose2SLAM::PoseKey(3), hexagon[pose2SLAM::PoseKey(3)].retract(Vector_(3,-0.1, 0.1,-0.1)));
+  initial->insert(pose2SLAM::PoseKey(4), hexagon[pose2SLAM::PoseKey(4)].retract(Vector_(3, 0.1,-0.1, 0.1)));
+  initial->insert(pose2SLAM::PoseKey(5), hexagon[pose2SLAM::PoseKey(5)].retract(Vector_(3,-0.1, 0.1,-0.1)));
 
   // Choose an ordering
   shared_ptr<Ordering> ordering(new Ordering);
@@ -247,13 +247,13 @@ TEST_UNSAFE(Pose2SLAM, optimizeCircle) {
   pose2SLAM::Optimizer optimizer0(fg, initial, ordering, params);
   pose2SLAM::Optimizer optimizer = optimizer0.levenbergMarquardt();
 
-  pose2SLAM::Values actual = *optimizer.values();
+  Values actual = *optimizer.values();
 
   // Check with ground truth
   CHECK(assert_equal(hexagon, actual));
 
   // Check loop closure
-  CHECK(assert_equal(delta,actual[5].between(actual[0])));
+  CHECK(assert_equal(delta,actual[pose2SLAM::PoseKey(5)].between(actual[pose2SLAM::PoseKey(0)])));
 
 //  Pose2SLAMOptimizer myOptimizer("3");
 
@@ -281,7 +281,7 @@ TEST_UNSAFE(Pose2SLAM, optimizeCircle) {
 //
 //  myOptimizer.update(x);
 //
-//  pose2SLAM::Values expected;
+//  Values expected;
 //  expected.insert(0, Pose2(0.,0.,0.));
 //  expected.insert(1, Pose2(1.,0.,0.));
 //  expected.insert(2, Pose2(2.,0.,0.));
@@ -315,8 +315,8 @@ TEST(Pose2Graph, optimize2) {
 //	G.addConstraint(1, 3, Pose2(0.,0.,0.), I3);
 //	G.addConstraint(2, 3, Pose2(0.,0.,0.), I3);
 //
-//	PredecessorMap<pose2SLAM::Key> tree =
-//			G.findMinimumSpanningTree<pose2SLAM::Key, Pose2Factor>();
+//	PredecessorMap<pose2SLAM::pose2SLAM::PoseKey> tree =
+//			G.findMinimumSpanningTree<pose2SLAM::pose2SLAM::PoseKey, Pose2Factor>();
 //	CHECK(tree[1] == 1);
 //	CHECK(tree[2] == 1);
 //	CHECK(tree[3] == 1);
@@ -329,12 +329,12 @@ TEST(Pose2Graph, optimize2) {
 //	G.addConstraint(1, 3, Pose2(0.,0.,0.), I3);
 //	G.addConstraint(2, 3, Pose2(0.,0.,0.), I3);
 //
-//	PredecessorMap<pose2SLAM::Key> tree;
+//	PredecessorMap<pose2SLAM::pose2SLAM::PoseKey> tree;
 //	tree.insert(1,2);
 //	tree.insert(2,2);
 //	tree.insert(3,2);
 //
-//	G.split<pose2SLAM::Key, Pose2Factor>(tree, T, C);
+//	G.split<pose2SLAM::pose2SLAM::PoseKey, Pose2Factor>(tree, T, C);
 //	LONGS_EQUAL(2, T.size());
 //	LONGS_EQUAL(1, C.size());
 //}
@@ -345,13 +345,13 @@ using namespace pose2SLAM;
 TEST(Pose2Values, pose2Circle )
 {
 	// expected is 4 poses tangent to circle with radius 1m
-	pose2SLAM::Values expected;
-	expected.insert(0, Pose2( 1,  0,   M_PI_2));
-	expected.insert(1, Pose2( 0,  1, - M_PI  ));
-	expected.insert(2, Pose2(-1,  0, - M_PI_2));
-	expected.insert(3, Pose2( 0, -1,   0     ));
+	Values expected;
+	expected.insert(pose2SLAM::PoseKey(0), Pose2( 1,  0,   M_PI_2));
+	expected.insert(pose2SLAM::PoseKey(1), Pose2( 0,  1, - M_PI  ));
+	expected.insert(pose2SLAM::PoseKey(2), Pose2(-1,  0, - M_PI_2));
+	expected.insert(pose2SLAM::PoseKey(3), Pose2( 0, -1,   0     ));
 
-	pose2SLAM::Values actual = pose2SLAM::circle(4,1.0);
+	Values actual = pose2SLAM::circle(4,1.0);
 	CHECK(assert_equal(expected,actual));
 }
 
@@ -359,21 +359,21 @@ TEST(Pose2Values, pose2Circle )
 TEST(Pose2SLAM, expmap )
 {
 	// expected is circle shifted to right
-	pose2SLAM::Values expected;
-	expected.insert(0, Pose2( 1.1,  0,   M_PI_2));
-	expected.insert(1, Pose2( 0.1,  1, - M_PI  ));
-	expected.insert(2, Pose2(-0.9,  0, - M_PI_2));
-	expected.insert(3, Pose2( 0.1, -1,   0     ));
+	Values expected;
+	expected.insert(pose2SLAM::PoseKey(0), Pose2( 1.1,  0,   M_PI_2));
+	expected.insert(pose2SLAM::PoseKey(1), Pose2( 0.1,  1, - M_PI  ));
+	expected.insert(pose2SLAM::PoseKey(2), Pose2(-0.9,  0, - M_PI_2));
+	expected.insert(pose2SLAM::PoseKey(3), Pose2( 0.1, -1,   0     ));
 
 	// Note expmap coordinates are in local coordinates, so shifting to right requires thought !!!
-  pose2SLAM::Values circle(pose2SLAM::circle(4,1.0));
+  Values circle(pose2SLAM::circle(4,1.0));
   Ordering ordering(*circle.orderingArbitrary());
 	VectorValues delta(circle.dims(ordering));
-	delta[ordering[PoseKey(0)]] = Vector_(3, 0.0,-0.1,0.0);
-	delta[ordering[PoseKey(1)]] = Vector_(3, -0.1,0.0,0.0);
-	delta[ordering[PoseKey(2)]] = Vector_(3, 0.0,0.1,0.0);
-	delta[ordering[PoseKey(3)]] = Vector_(3, 0.1,0.0,0.0);
-	pose2SLAM::Values actual = circle.retract(delta, ordering);
+	delta[ordering[pose2SLAM::PoseKey(0)]] = Vector_(3, 0.0,-0.1,0.0);
+	delta[ordering[pose2SLAM::PoseKey(1)]] = Vector_(3, -0.1,0.0,0.0);
+	delta[ordering[pose2SLAM::PoseKey(2)]] = Vector_(3, 0.0,0.1,0.0);
+	delta[ordering[pose2SLAM::PoseKey(3)]] = Vector_(3, 0.1,0.0,0.0);
+	Values actual = circle.retract(delta, ordering);
 	CHECK(assert_equal(expected,actual));
 }
 
@@ -386,8 +386,8 @@ TEST( Pose2Prior, error )
 {
 	// Choose a linearization point
 	Pose2 p1(1, 0, 0); // robot at (1,0)
-	pose2SLAM::Values x0;
-	x0.insert(1, p1);
+	Values x0;
+	x0.insert(pose2SLAM::PoseKey(1), p1);
 
 	// Create factor
 	pose2SLAM::Prior factor(1, p1, sigmas);
@@ -408,7 +408,7 @@ TEST( Pose2Prior, error )
 	VectorValues addition(VectorValues::Zero(x0.dims(ordering)));
 	addition[ordering["x1"]] = Vector_(3, 0.1, 0.0, 0.0);
 	VectorValues plus = delta + addition;
-	pose2SLAM::Values x1 = x0.retract(plus, ordering);
+	Values x1 = x0.retract(plus, ordering);
 	Vector error_at_plus = Vector_(3,0.1/sx,0.0,0.0); // h(x)-z = 0.1 !
 	CHECK(assert_equal(error_at_plus,factor.whitenedError(x1)));
 	CHECK(assert_equal(error_at_plus,linear->error_vector(plus)));
@@ -430,8 +430,8 @@ LieVector hprior(const Pose2& p1) {
 TEST( Pose2Prior, linearize )
 {
 	// Choose a linearization point at ground truth
-	pose2SLAM::Values x0;
-	x0.insert(1,priorVal);
+	Values x0;
+	x0.insert(pose2SLAM::PoseKey(1),priorVal);
 
 	// Actual linearization
 	Ordering ordering(*x0.orderingArbitrary());
@@ -450,9 +450,9 @@ TEST( Pose2Factor, error )
 	// Choose a linearization point
 	Pose2 p1; // robot at origin
 	Pose2 p2(1, 0, 0); // robot at (1,0)
-	pose2SLAM::Values x0;
-	x0.insert(1, p1);
-	x0.insert(2, p2);
+	Values x0;
+	x0.insert(pose2SLAM::PoseKey(1), p1);
+	x0.insert(pose2SLAM::PoseKey(2), p2);
 
 	// Create factor
 	Pose2 z = p1.between(p2);
@@ -474,7 +474,7 @@ TEST( Pose2Factor, error )
 	// Check error after increasing p2
 	VectorValues plus = delta;
 	plus[ordering["x2"]] = Vector_(3, 0.1, 0.0, 0.0);
-	pose2SLAM::Values x1 = x0.retract(plus, ordering);
+	Values x1 = x0.retract(plus, ordering);
 	Vector error_at_plus = Vector_(3,0.1/sx,0.0,0.0); // h(x)-z = 0.1 !
 	CHECK(assert_equal(error_at_plus,factor.whitenedError(x1)));
 	CHECK(assert_equal(error_at_plus,linear->error_vector(plus)));
@@ -491,9 +491,9 @@ TEST( Pose2Factor, rhs )
 	// Choose a linearization point
 	Pose2 p1(1.1,2,M_PI_2); // robot at (1.1,2) looking towards y (ground truth is at 1,2, see testPose2)
 	Pose2 p2(-1,4.1,M_PI);  // robot at (-1,4.1) looking at negative (ground truth is at -1,4)
-	pose2SLAM::Values x0;
-	x0.insert(1,p1);
-	x0.insert(2,p2);
+	Values x0;
+	x0.insert(pose2SLAM::PoseKey(1),p1);
+	x0.insert(pose2SLAM::PoseKey(2),p2);
 
 	// Actual linearization
 	Ordering ordering(*x0.orderingArbitrary());
@@ -521,9 +521,9 @@ TEST( Pose2Factor, linearize )
 	// Choose a linearization point at ground truth
 	Pose2 p1(1,2,M_PI_2);
 	Pose2 p2(-1,4,M_PI);
-	pose2SLAM::Values x0;
-	x0.insert(1,p1);
-	x0.insert(2,p2);
+	Values x0;
+	x0.insert(pose2SLAM::PoseKey(1),p1);
+	x0.insert(pose2SLAM::PoseKey(2),p2);
 
 	// expected linearization
 	Matrix expectedH1 = covariance->Whiten(Matrix_(3,3,

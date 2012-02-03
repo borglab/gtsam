@@ -39,7 +39,7 @@ using namespace std;
 namespace gtsam {
 namespace example {
 
-	typedef boost::shared_ptr<NonlinearFactor<Values> > shared;
+	typedef boost::shared_ptr<NonlinearFactor > shared;
 
 	static SharedDiagonal sigma1_0 = noiseModel::Isotropic::Sigma(2,1.0);
 	static SharedDiagonal sigma0_1 = noiseModel::Isotropic::Sigma(2,0.1);
@@ -195,14 +195,13 @@ namespace example {
 					 0.0, cos(v.y()));
 		}
 
-		struct UnaryFactor: public gtsam::NonlinearFactor1<Values,
-		simulated2D::PoseKey> {
+		struct UnaryFactor: public gtsam::NonlinearFactor1<simulated2D::PoseKey> {
 
 			Point2 z_;
 
 			UnaryFactor(const Point2& z, const SharedNoiseModel& model,
 					const simulated2D::PoseKey& key) :
-				gtsam::NonlinearFactor1<Values, simulated2D::PoseKey>(model, key), z_(z) {
+				gtsam::NonlinearFactor1<simulated2D::PoseKey>(model, key), z_(z) {
 			}
 
 			Vector evaluateError(const Point2& x, boost::optional<Matrix&> A =
@@ -423,7 +422,7 @@ namespace example {
 	boost::tuple<FactorGraph<GaussianFactor>, Ordering, VectorValues> planarGraph(size_t N) {
 
 		// create empty graph
-		NonlinearFactorGraph<Values> nlfg;
+		NonlinearFactorGraph nlfg;
 
 		// Create almost hard constraint on x11, sigma=0 will work for PCG not for normal
 		shared constraint(new simulated2D::Prior(Point2(1.0, 1.0), sharedSigma(2,1e-3), key(1,1)));

@@ -16,15 +16,16 @@ check_PROGRAMS =
 #----------------------------------------------------------------------------------------------------
 
 # Lie Groups
-headers += Values.h Values-inl.h TupleValues.h TupleValues-inl.h 
+headers += Values-inl.h
+sources += Values.cpp
 check_PROGRAMS += tests/testValues tests/testKey tests/testOrdering
 
 # Nonlinear nonlinear
 headers += Key.h 
-headers += NonlinearFactorGraph.h NonlinearFactorGraph-inl.h
+headers += NonlinearFactorGraph.h
 headers += NonlinearOptimizer-inl.h NonlinearOptimization.h NonlinearOptimization-inl.h 
 headers += NonlinearFactor.h
-sources += NonlinearOptimizer.cpp Ordering.cpp DoglegOptimizerImpl.cpp NonlinearOptimizationParameters.cpp
+sources += NonlinearFactorGraph.cpp NonlinearOptimizer.cpp Ordering.cpp DoglegOptimizerImpl.cpp NonlinearOptimizationParameters.cpp
 headers += DoglegOptimizer.h DoglegOptimizer-inl.h
 
 # Nonlinear iSAM(2)
@@ -62,7 +63,7 @@ AM_CXXFLAGS =
 #----------------------------------------------------------------------------------------------------
 TESTS = $(check_PROGRAMS)
 AM_LDFLAGS += $(boost_serialization)
-LDADD = libnonlinear.la ../linear/liblinear.la ../inference/libinference.la ../base/libbase.la ../3rdparty/libccolamd.la
+LDADD = libnonlinear.la ../linear/liblinear.la ../inference/libinference.la ../geometry/libgeometry.la ../base/libbase.la ../3rdparty/libccolamd.la
 LDADD += ../../CppUnitLite/libCppUnitLite.a
 AM_DEFAULT_SOURCE_EXT = .cpp
 

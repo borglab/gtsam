@@ -23,7 +23,6 @@
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/nonlinear/Key.h>
-#include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearOptimization.h>
 
@@ -53,8 +52,7 @@ using namespace gtsam;
  * and 2D poses.
  */
 typedef TypedSymbol<Rot2, 'x'> Key; 								/// Variable labels for a specific type
-typedef Values<Key> RotValues;											/// Class to store values - acts as a state for the system
-typedef NonlinearFactorGraph<RotValues> Graph;					/// Graph container for constraints - needs to know type of variables
+typedef NonlinearFactorGraph Graph;					/// Graph container for constraints - needs to know type of variables
 
 const double degree = M_PI / 180;
 
@@ -83,7 +81,7 @@ int main() {
 	prior.print("goal angle");
 	SharedDiagonal model = noiseModel::Isotropic::Sigma(1, 1 * degree);
 	Key key(1);
-	PriorFactor<RotValues, Key> factor(key, prior, model);
+	PriorFactor<Key> factor(key, prior, model);
 
 	/**
 	 *    Step 3: create a graph container and add the factor to it
@@ -114,7 +112,7 @@ int main() {
 	 * on the type of key used to find the appropriate value map if there
 	 * are multiple types of variables.
 	 */
-	RotValues initial;
+	Values initial;
 	initial.insert(key, Rot2::fromAngle(20 * degree));
 	initial.print("initial estimate");
 
@@ -126,7 +124,7 @@ int main() {
 	 * initial estimate.  This will yield a new RotValues structure
 	 * with the final state of the optimization.
 	 */
-	RotValues result = optimize<Graph, RotValues>(graph, initial);
+	Values result = optimize<Graph>(graph, initial);
 	result.print("final result");
 
 	return 0;

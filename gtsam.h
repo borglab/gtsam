@@ -427,14 +427,14 @@ class Graph {
 	void addRange(int poseKey, int pointKey, double range, const gtsam::SharedNoiseModel& noiseModel);
 	void addBearingRange(int poseKey, int pointKey, const gtsam::Rot2& bearing, double range,
 			const gtsam::SharedNoiseModel& noiseModel);
-	planarSLAM::Values optimize(const planarSLAM::Values& initialEstimate);
+	Values optimize(const Values& initialEstimate);
 };
 
 class Odometry {
 	Odometry(int key1, int key2, const gtsam::Pose2& measured,
 			const gtsam::SharedNoiseModel& model);
 	void print(string s) const;
-	gtsam::GaussianFactor* linearize(const planarSLAM::Values& center, const gtsam::Ordering& ordering) const;
+	gtsam::GaussianFactor* linearize(const Values& center, const Ordering& ordering) const;
 };
 
 class Optimizer {
@@ -637,8 +637,8 @@ class Graph {
 //	GaussianFactor* linearize(const gtsam::Pose2Values& config) const;
 //};
 //
-//class gtsam::Pose2Graph{
-//	Pose2Graph();
+//class gtsam::pose2SLAM::Graph{
+//	pose2SLAM::Graph();
 //	void print(string s) const;
 //	GaussianFactorGraph* linearize_(const gtsam::Pose2Values& config) const;
 //	void push_back(Pose2Factor* factor);

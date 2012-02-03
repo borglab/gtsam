@@ -19,6 +19,8 @@
 #pragma once
 
 #include <boost/optional.hpp>
+
+#include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Point2.h>
 
 namespace gtsam {
@@ -29,7 +31,7 @@ namespace gtsam {
 	 * @ingroup geometry
 	 * \nosubgrouping
 	 */
-	class Rot2 {
+	class Rot2 : public DerivedValue<Rot2> {
 
 	public:
 		/** get the dimension by the type */

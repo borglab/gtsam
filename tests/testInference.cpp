@@ -61,7 +61,7 @@ TEST( Inference, marginals2)
   fg.addBearingRange(planarSLAM::PoseKey(1), planarSLAM::PointKey(0), Rot2(), 1.0, pointModel);
   fg.addBearingRange(planarSLAM::PoseKey(2), planarSLAM::PointKey(0), Rot2(), 1.0, pointModel);
 
-  planarSLAM::Values init;
+  Values init;
   init.insert(planarSLAM::PoseKey(0), Pose2(0.0,0.0,0.0));
   init.insert(planarSLAM::PoseKey(1), Pose2(1.0,0.0,0.0));
   init.insert(planarSLAM::PoseKey(2), Pose2(2.0,0.0,0.0));

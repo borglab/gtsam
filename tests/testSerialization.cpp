@@ -443,7 +443,7 @@ BOOST_CLASS_EXPORT_GUID(simulated2D::Measurement, "gtsam::simulated2D::Measureme
 TEST (Serialization, smallExample) {
 	using namespace example;
 	Graph nfg = createNonlinearFactorGraph();
-	example::Values c1 = createValues();
+	Values c1 = createValues();
 	EXPECT(equalsObj(nfg));
 	EXPECT(equalsXML(nfg));
 
@@ -462,7 +462,7 @@ BOOST_CLASS_EXPORT_GUID(planarSLAM::Constraint,  "gtsam::planarSLAM::Constraint"
 /* ************************************************************************* */
 TEST (Serialization, planar_system) {
 	using namespace planarSLAM;
-	planarSLAM::Values values;
+	Values values;
 	values.insert(PointKey(3), Point2(1.0, 2.0));
 	values.insert(PoseKey(4), Pose2(1.0, 2.0, 0.3));
 
@@ -488,7 +488,7 @@ TEST (Serialization, planar_system) {
 	// text
 	EXPECT(equalsObj<PoseKey>(PoseKey(2)));
 	EXPECT(equalsObj<PointKey>(PointKey(3)));
-	EXPECT(equalsObj<planarSLAM::Values>(values));
+	EXPECT(equalsObj<Values>(values));
 	EXPECT(equalsObj<Prior>(prior));
 	EXPECT(equalsObj<Bearing>(bearing));
 	EXPECT(equalsObj<BearingRange>(bearingRange));
@@ -500,7 +500,7 @@ TEST (Serialization, planar_system) {
 	// xml
 	EXPECT(equalsXML<PoseKey>(PoseKey(2)));
 	EXPECT(equalsXML<PointKey>(PointKey(3)));
-	EXPECT(equalsXML<planarSLAM::Values>(values));
+	EXPECT(equalsXML<Values>(values));
 	EXPECT(equalsXML<Prior>(prior));
 	EXPECT(equalsXML<Bearing>(bearing));
 	EXPECT(equalsXML<BearingRange>(bearingRange));
@@ -522,7 +522,7 @@ BOOST_CLASS_EXPORT_GUID(visualSLAM::StereoFactor,    "gtsam::visualSLAM::StereoF
 /* ************************************************************************* */
 TEST (Serialization, visual_system) {
 	using namespace visualSLAM;
-	visualSLAM::Values values;
+	Values values;
 	PoseKey x1(1), x2(2);
 	PointKey l1(1), l2(2);
 	Pose3 pose1 = pose3, pose2 = pose3.inverse();

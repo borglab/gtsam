@@ -36,19 +36,19 @@ namespace gtsam {
  * variables.
  * @tparam GRAPH The NonlinearFactorGraph structure to store factors.  Defaults to standard NonlinearFactorGraph<VALUES>
  */
-template <class VALUES, class GRAPH = NonlinearFactorGraph<VALUES> >
-class GaussianISAM2 : public ISAM2<GaussianConditional, VALUES, GRAPH> {
-  typedef ISAM2<GaussianConditional, VALUES, GRAPH> Base;
+template <class GRAPH = NonlinearFactorGraph>
+class GaussianISAM2 : public ISAM2<GaussianConditional, GRAPH> {
+  typedef ISAM2<GaussianConditional, GRAPH> Base;
 public:
 
 	/// @name Standard Constructors
 	/// @{
 
   /** Create an empty ISAM2 instance */
-  GaussianISAM2(const ISAM2Params& params) : ISAM2<GaussianConditional, VALUES, GRAPH>(params) {}
+  GaussianISAM2(const ISAM2Params& params) : ISAM2<GaussianConditional, GRAPH>(params) {}
 
   /** Create an empty ISAM2 instance using the default set of parameters (see ISAM2Params) */
-  GaussianISAM2() : ISAM2<GaussianConditional, VALUES, GRAPH>() {}
+  GaussianISAM2() : ISAM2<GaussianConditional, GRAPH>() {}
 
 	/// @}
 	/// @name Advanced Interface

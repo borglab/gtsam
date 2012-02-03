@@ -16,6 +16,7 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/IterativeSolver.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
+#include <gtsam/nonlinear/Values.h>
 
 namespace gtsam {
 
@@ -31,11 +32,11 @@ bool split(const std::map<Index, Index> &M,
  *   linearize: G * T -> L
  *   solve : L -> VectorValues
  */
-template<class GRAPH, class LINEAR, class VALUES>
+template<class GRAPH, class LINEAR, class KEY>
 class SubgraphSolver : public IterativeSolver {
 
 private:
-	typedef typename VALUES::Key Key;
+//	typedef typename VALUES::Key Key;
 	typedef typename GRAPH::Pose Pose;
 	typedef typename GRAPH::Constraint Constraint;
 
@@ -43,7 +44,7 @@ private:
 	typedef boost::shared_ptr<Ordering> shared_ordering ;
 	typedef boost::shared_ptr<GRAPH> shared_graph ;
 	typedef boost::shared_ptr<LINEAR> shared_linear ;
-	typedef boost::shared_ptr<VALUES> shared_values ;
+	typedef boost::shared_ptr<Values> shared_values ;
 	typedef boost::shared_ptr<SubgraphPreconditioner> shared_preconditioner ;
 	typedef std::map<Index,Index> mapPairIndex ;
 
@@ -61,7 +62,7 @@ private:
 
 public:
 
-	SubgraphSolver(const GRAPH& G, const VALUES& theta0, const Parameters &parameters = Parameters(), bool useQR = false):
+	SubgraphSolver(const GRAPH& G, const Values& theta0, const Parameters &parameters = Parameters(), bool useQR = false):
 		IterativeSolver(parameters), useQR_(useQR) { initialize(G,theta0); }
 
 	SubgraphSolver(const LINEAR& GFG) {
@@ -85,11 +86,11 @@ public:
 				IterativeSolver(parameters), ordering_(ordering), pairs_(pairs), pc_(pc), useQR_(useQR) {}
 
 	void replaceFactors(const typename LINEAR::shared_ptr &graph);
-	VectorValues::shared_ptr optimize() ;
+	VectorValues::shared_ptr optimize() const;
 	shared_ordering ordering() const { return ordering_; }
 
 protected:
-	void initialize(const GRAPH& G, const VALUES& theta0);
+	void initialize(const GRAPH& G, const Values& theta0);
 
 private:
 	SubgraphSolver():IterativeSolver(){}

@@ -28,42 +28,37 @@
 namespace gtsam {
 
 	/**
-	 * A non-linear factor graph is templated on a values structure, but the factor type
-	 * is fixed as a NonlinearFactor. The values structures are typically (in SAM) more general
+	 * A non-linear factor graph is a graph of non-Gaussian, i.e. non-linear factors,
+	 * which derive from NonlinearFactor. The values structures are typically (in SAM) more general
 	 * than just vectors, e.g., Rot3 or Pose3, which are objects in non-linear manifolds.
 	 * Linearizing the non-linear factor graph creates a linear factor graph on the 
 	 * tangent vector space at the linearization point. Because the tangent space is a true
 	 * vector space, the config type will be an VectorValues in that linearized factor graph.
-	 * \nosubgrouping
 	 */
-	template<class VALUES>
-	class NonlinearFactorGraph: public FactorGraph<NonlinearFactor<VALUES> > {
+	class NonlinearFactorGraph: public FactorGraph<NonlinearFactor> {
 
 	public:
 
-		typedef VALUES Values;
-	  typedef FactorGraph<NonlinearFactor<VALUES> > Base;
-	  typedef boost::shared_ptr<NonlinearFactorGraph<VALUES> > shared_ptr;
-		typedef boost::shared_ptr<NonlinearFactor<VALUES> > sharedFactor;
-
-		/// @name Testable
-		/// @{
+	  typedef FactorGraph<NonlinearFactor> Base;
+	  typedef boost::shared_ptr<NonlinearFactorGraph> shared_ptr;
+		typedef boost::shared_ptr<NonlinearFactor> sharedFactor;
 
     /** print just calls base class */
     void print(const std::string& str = "NonlinearFactorGraph: ") const;
-
-  	/// @}
-  	/// @name Standard Interface
-  	/// @{
 
     /** return keys in some random order */
     std::set<Symbol> keys() const;
 
 		/** unnormalized error */
-		double error(const VALUES& c) const;
+		double error(const Values& c) const;
 
 		/** Unnormalized probability. O(n) */
-		double probPrime(const VALUES& c) const;
+		double probPrime(const Values& c) const;
+
+		template<class F>
+		void add(const F& factor) {
+			this->push_back(boost::shared_ptr<F>(new F(factor)));
+		}
 
 		/**
 		 * Create a symbolic factor graph using an existing ordering
@@ -77,31 +72,20 @@ namespace gtsam {
 		 * ordering is found.
 		 */
 		std::pair<SymbolicFactorGraph::shared_ptr, Ordering::shared_ptr>
-		symbolic(const VALUES& config) const;
+		symbolic(const Values& config) const;
 
     /**
      * Compute a fill-reducing ordering using COLAMD.  This returns the
      * ordering and a VariableIndex, which can later be re-used to save
      * computation.
      */
-		Ordering::shared_ptr orderingCOLAMD(const VALUES& config) const;
+		Ordering::shared_ptr orderingCOLAMD(const Values& config) const;
 
 		/**
 		 * linearize a nonlinear factor graph
 		 */
 		boost::shared_ptr<GaussianFactorGraph >
-				linearize(const VALUES& config, const Ordering& ordering) const;
-
-  	/// @}
-		/// @name Advanced Interface
-		/// @{
-
-		template<class F>
-		void add(const F& factor) {
-			this->push_back(boost::shared_ptr<F>(new F(factor)));
-		}
-
-		/// @}
+				linearize(const Values& config, const Ordering& ordering) const;
 
 	private:
 
@@ -116,4 +100,3 @@ namespace gtsam {
 
 } // namespace
 
-#include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>

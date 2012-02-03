@@ -40,21 +40,21 @@ namespace gtsam {
 	 * \nosubgrouping
 	 */
 
-	template<class VALUES, class KEY>
+	template<class KEY>
 	class ExtendedKalmanFilter {
 	public:
 
-		typedef boost::shared_ptr<ExtendedKalmanFilter<VALUES, KEY> > shared_ptr;
+		typedef boost::shared_ptr<ExtendedKalmanFilter<KEY> > shared_ptr;
 		typedef typename KEY::Value T;
-		typedef NonlinearFactor2<VALUES, KEY, KEY> MotionFactor;
-		typedef NonlinearFactor1<VALUES, KEY> MeasurementFactor;
+		typedef NonlinearFactor2<KEY, KEY> MotionFactor;
+		typedef NonlinearFactor1<KEY> MeasurementFactor;
 
 	protected:
 		T x_; // linearization point
 		JacobianFactor::shared_ptr priorFactor_; // density
 
 		T solve_(const GaussianFactorGraph& linearFactorGraph,
-				const Ordering& ordering, const VALUES& linearizationPoints,
+				const Ordering& ordering, const Values& linearizationPoints,
 				const KEY& x, JacobianFactor::shared_ptr& newPrior) const;
 
 	public:

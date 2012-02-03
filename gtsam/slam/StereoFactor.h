@@ -22,8 +22,8 @@
 
 namespace gtsam {
 
-template<class VALUES, class KEY1, class KEY2>
-class GenericStereoFactor: public NonlinearFactor2<VALUES, KEY1, KEY2> {
+template<class KEY1, class KEY2>
+class GenericStereoFactor: public NonlinearFactor2<KEY1, KEY2> {
 private:
 
 	// Keep a copy of measurement and calibration for I/O
@@ -33,7 +33,7 @@ private:
 public:
 
 	// shorthand for base class type
-	typedef NonlinearFactor2<VALUES, KEY1, KEY2> Base;					///< typedef for base class
+	typedef NonlinearFactor2<KEY1, KEY2> Base;					///< typedef for base class
 	typedef boost::shared_ptr<GenericStereoFactor> shared_ptr;  ///< typedef for shared pointer to this object
 	typedef typename KEY1::Value CamPose;												///< typedef for Pose Lie Value type
 
