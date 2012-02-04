@@ -24,10 +24,9 @@ check_PROGRAMS += testGaussianISAM2
 check_PROGRAMS += testExtendedKalmanFilter
 check_PROGRAMS += testRot3Optimization
 
-## flag disabled to force this test to get updated properly
-#if ENABLE_SERIALIZATION
+if ENABLE_SERIALIZATION
 check_PROGRAMS += testSerialization
-#endif
+endif
 
 # Timing tests
 noinst_PROGRAMS = timeGaussianFactorGraph timeSequentialOnDataset timeMultifrontalOnDataset
@@ -40,9 +39,9 @@ AM_LDFLAGS = $(BOOST_LDFLAGS)
 AM_CPPFLAGS = $(BOOST_CPPFLAGS)  -I$(top_srcdir)
 
 # link to serialization library for test 
-#if ENABLE_SERIALIZATION
+if ENABLE_SERIALIZATION
 AM_LDFLAGS += -lboost_serialization
-#endif
+endif
 
 LDADD = ../gtsam/libgtsam.la ../CppUnitLite/libCppUnitLite.a  
 AM_DEFAULT_SOURCE_EXT = .cpp
