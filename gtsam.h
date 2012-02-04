@@ -187,7 +187,6 @@ class Pose2 {
 class Pose3 {
 	Pose3();
 	Pose3(const gtsam::Rot3& r, const gtsam::Point3& t);
-	Pose3(Vector v);
 	Pose3(Matrix t);
 	Pose3(const gtsam::Pose2& pose2);
 	static gtsam::Pose3 Expmap(Vector v);
@@ -203,6 +202,7 @@ class Pose3 {
 	gtsam::Pose3 between(const gtsam::Pose3& p2);
 	gtsam::Pose3 retract(Vector v);
 	gtsam::Pose3 retractFirstOrder(Vector v);
+  Vector localCoordinates(const gtsam::Pose3& T2) const;
 	gtsam::Point3 translation() const;
 	gtsam::Rot3 rotation() const;
 };
