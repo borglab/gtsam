@@ -31,6 +31,30 @@ namespace simulated2DOriented {
   typedef TypedSymbol<Point2, 'l'> PointKey;
   typedef TypedSymbol<Pose2, 'x'> PoseKey;
 
+  /// Specialized Values structure with syntactic sugar for
+  /// compatibility with matlab
+  class Values: public gtsam::Values {
+  	int nrPoses_, nrPoints_;
+  public:
+    Values() : nrPoses_(0), nrPoints_(0)  {}
+
+    void insertPose(const PoseKey& i, const Pose2& p) {
+      insert(i, p);
+      nrPoses_++;
+    }
+
+    void insertPoint(const PointKey& j, const Point2& p) {
+      insert(j, p);
+      nrPoints_++;
+    }
+
+    int nrPoses() const {	return nrPoses_;	}
+    int nrPoints() const { return nrPoints_;	}
+
+    Pose2 pose(const PoseKey& i) const { return (*this)[i];	}
+    Point2 point(const PointKey& j) const { return (*this)[j]; }
+  };
+
   //TODO:: point prior is not implemented right now
 
   /// Prior on a single pose

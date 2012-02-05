@@ -51,7 +51,7 @@ TEST( planarSLAM, BearingFactor )
 	planarSLAM::Bearing factor(2, 3, z, sigma);
 
 	// create config
-	Values c;
+	planarSLAM::Values c;
 	c.insert(PoseKey(2), x2);
 	c.insert(PointKey(3), l3);
 
@@ -79,7 +79,7 @@ TEST( planarSLAM, RangeFactor )
 	planarSLAM::Range factor(2, 3, z, sigma);
 
 	// create config
-	Values c;
+	planarSLAM::Values c;
 	c.insert(PoseKey(2), x2);
 	c.insert(PointKey(3), l3);
 
@@ -106,7 +106,7 @@ TEST( planarSLAM, BearingRangeFactor )
 	planarSLAM::BearingRange factor(2, 3, r, b, sigma2);
 
 	// create config
-	Values c;
+	planarSLAM::Values c;
 	c.insert(PoseKey(2), x2);
 	c.insert(PointKey(3), l3);
 
@@ -139,7 +139,7 @@ TEST( planarSLAM, PoseConstraint_equals )
 TEST( planarSLAM, constructor )
 {
 	// create config
-	Values c;
+	planarSLAM::Values c;
 	c.insert(PoseKey(2), x2);
 	c.insert(PoseKey(3), x3);
 	c.insert(PointKey(3), l3);

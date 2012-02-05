@@ -36,6 +36,25 @@ namespace pose2SLAM {
   /// Keys with Pose2 and symbol 'x'
   typedef TypedSymbol<Pose2, 'x'> PoseKey;
 
+  /// Values class, inherited from Values, using PoseKeys, mainly used as a convenience for MATLAB wrapper
+  struct Values: public gtsam::Values {
+
+    /// Default constructor
+    Values() {}
+
+    /// Copy constructor
+    Values(const gtsam::Values& values) :
+        gtsam::Values(values) {
+    }
+
+    // Convenience for MATLAB wrapper, which does not allow for identically named methods
+
+    /// get a pose
+    Pose2 pose(int key) const { return (*this)[PoseKey(key)]; }
+
+    /// insert a pose
+    void insertPose(int key, const Pose2& pose) { insert(PoseKey(key), pose); }
+  };
 
   /**
    * Create a circle of n 2D poses tangent to circle of radius R, first pose at (R,0)

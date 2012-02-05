@@ -31,70 +31,97 @@
 // Use planarSLAM namespace for specific SLAM instance
 namespace planarSLAM {
 
-  using namespace gtsam;
+	using namespace gtsam;
 
-  /// Typedef for a PoseKey with Pose2 data and 'x' symbol
-  typedef TypedSymbol<Pose2, 'x'> PoseKey;
+	/// Typedef for a PoseKey with Pose2 data and 'x' symbol
+	typedef TypedSymbol<Pose2, 'x'> PoseKey;
 
-  /// Typedef for a PointKey with Point2 data and 'l' symbol
-  typedef TypedSymbol<Point2, 'l'> PointKey;
-  /**
-   * List of typedefs for factors
+	/// Typedef for a PointKey with Point2 data and 'l' symbol
+	typedef TypedSymbol<Point2, 'l'> PointKey;
+	/**
+	 * List of typedefs for factors
+	 */
+	/// A hard constraint for PoseKeys to enforce particular values
+	typedef NonlinearEquality<PoseKey> Constraint;
+	/// A prior factor to bias the value of a PoseKey
+	typedef PriorFactor<PoseKey> Prior;
+	/// A factor between two PoseKeys set with a Pose2
+	typedef BetweenFactor<PoseKey> Odometry;
+	/// A factor between a PoseKey and a PointKey to express difference in rotation (set with a Rot2)
+	typedef BearingFactor<PoseKey, PointKey> Bearing;
+	/// A factor between a PoseKey and a PointKey to express distance between them (set with a double)
+	typedef RangeFactor<PoseKey, PointKey> Range;
+	/// A factor between a PoseKey and a PointKey to express difference in rotation and location
+	typedef BearingRangeFactor<PoseKey, PointKey> BearingRange;
+
+  /**  Values class, using specific PoseKeys and PointKeys
+   * Mainly as a convenience for MATLAB wrapper, which does not allow for identically named methods
    */
-		/// A hard constraint for PoseKeys to enforce particular values
-		typedef NonlinearEquality<PoseKey> Constraint;
-		/// A prior factor to bias the value of a PoseKey
-		typedef PriorFactor<PoseKey> Prior;
-		/// A factor between two PoseKeys set with a Pose2
-		typedef BetweenFactor<PoseKey> Odometry;
-		/// A factor between a PoseKey and a PointKey to express difference in rotation (set with a Rot2)
-		typedef BearingFactor<PoseKey, PointKey> Bearing;
-		/// A factor between a PoseKey and a PointKey to express distance between them (set with a double)
-		typedef RangeFactor<PoseKey, PointKey> Range;
-		/// A factor between a PoseKey and a PointKey to express difference in rotation and location
-		typedef BearingRangeFactor<PoseKey, PointKey> BearingRange;
+  struct Values: public gtsam::Values {
 
-		/// Creates a NonlinearFactorGraph with the Values type
-		struct Graph: public NonlinearFactorGraph {
+    /// Default constructor
+    Values() {}
 
-		  /// Default constructor for a NonlinearFactorGraph
-		  Graph(){}
+    /// Copy constructor
+    Values(const gtsam::Values& values) :
+      gtsam::Values(values) {
+    }
 
-		  /// Creates a NonlinearFactorGraph based on another NonlinearFactorGraph
-		  Graph(const NonlinearFactorGraph& graph);
+    /// get a pose
+    Pose2 pose(int key) const {	return (*this)[PoseKey(key)]; }
 
-		  /// Biases the value of PoseKey key with Pose2 p given a noise model
-		  void addPrior(const PoseKey& key, const Pose2& pose, const SharedNoiseModel& noiseModel);
+    /// get a point
+    Point2 point(int key) const {	return (*this)[PointKey(key)]; }
 
-		  /// Creates a hard constraint to enforce Pose2 p for PoseKey poseKey's value
-		  void addPoseConstraint(const PoseKey& poseKey, const Pose2& pose);
+    /// insert a pose
+    void insertPose(int key, const Pose2& pose) {insert(PoseKey(key), pose); }
 
-		  /// Creates a factor with a Pose2 between PoseKeys poseKey and pointKey (poseKey.e. an odometry measurement)
-		  void addOdometry(const PoseKey& poseKey, const PoseKey& pointKey, const Pose2& odometry,
-		      const SharedNoiseModel& model);
+    /// insert a point
+    void insertPoint(int key, const Point2& point) {insert(PointKey(key), point); }
+  };
 
-		  /// Creates a factor with a Rot2 between a PoseKey poseKey and PointKey pointKey for difference in rotation
-		  void addBearing(const PoseKey& poseKey, const PointKey& pointKey, const Rot2& bearing,
-		      const SharedNoiseModel& model);
 
-		  /// Creates a factor with a Rot2 between a PoseKey poseKey and PointKey pointKey for difference in location
-		  void addRange(const PoseKey& poseKey, const PointKey& pointKey, double range,
-		      const SharedNoiseModel& model);
+	/// Creates a NonlinearFactorGraph with the Values type
+	struct Graph: public NonlinearFactorGraph {
 
-		  /// Creates a factor with a Rot2 between a PoseKey poseKey and PointKey pointKey for difference in rotation and location
-		  void addBearingRange(const PoseKey& poseKey, const PointKey& pointKey,
-		      const Rot2& bearing, double range, const SharedNoiseModel& model);
+		/// Default constructor for a NonlinearFactorGraph
+		Graph(){}
 
-		  /// Optimize
-		  Values optimize(const Values& initialEstimate) {
-		    typedef NonlinearOptimizer<Graph> Optimizer;
-		    return *Optimizer::optimizeLM(*this, initialEstimate,
-		        NonlinearOptimizationParameters::LAMBDA);
-		  }
-		};
+		/// Creates a NonlinearFactorGraph based on another NonlinearFactorGraph
+		Graph(const NonlinearFactorGraph& graph);
 
-		/// Optimizer
-		typedef NonlinearOptimizer<Graph> Optimizer;
+		/// Biases the value of PoseKey key with Pose2 p given a noise model
+		void addPrior(const PoseKey& key, const Pose2& pose, const SharedNoiseModel& noiseModel);
+
+		/// Creates a hard constraint to enforce Pose2 p for PoseKey poseKey's value
+		void addPoseConstraint(const PoseKey& poseKey, const Pose2& pose);
+
+		/// Creates a factor with a Pose2 between PoseKeys poseKey and pointKey (poseKey.e. an odometry measurement)
+		void addOdometry(const PoseKey& poseKey, const PoseKey& pointKey, const Pose2& odometry,
+				const SharedNoiseModel& model);
+
+		/// Creates a factor with a Rot2 between a PoseKey poseKey and PointKey pointKey for difference in rotation
+		void addBearing(const PoseKey& poseKey, const PointKey& pointKey, const Rot2& bearing,
+				const SharedNoiseModel& model);
+
+		/// Creates a factor with a Rot2 between a PoseKey poseKey and PointKey pointKey for difference in location
+		void addRange(const PoseKey& poseKey, const PointKey& pointKey, double range,
+				const SharedNoiseModel& model);
+
+		/// Creates a factor with a Rot2 between a PoseKey poseKey and PointKey pointKey for difference in rotation and location
+		void addBearingRange(const PoseKey& poseKey, const PointKey& pointKey,
+				const Rot2& bearing, double range, const SharedNoiseModel& model);
+
+		/// Optimize
+		Values optimize(const Values& initialEstimate) {
+			typedef NonlinearOptimizer<Graph> Optimizer;
+			return *Optimizer::optimizeLM(*this, initialEstimate,
+					NonlinearOptimizationParameters::LAMBDA);
+		}
+	};
+
+/// Optimizer
+typedef NonlinearOptimizer<Graph> Optimizer;
 
 } // planarSLAM
 

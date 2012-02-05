@@ -345,13 +345,13 @@ using namespace pose2SLAM;
 TEST(Pose2Values, pose2Circle )
 {
 	// expected is 4 poses tangent to circle with radius 1m
-	Values expected;
+	pose2SLAM::Values expected;
 	expected.insert(pose2SLAM::PoseKey(0), Pose2( 1,  0,   M_PI_2));
 	expected.insert(pose2SLAM::PoseKey(1), Pose2( 0,  1, - M_PI  ));
 	expected.insert(pose2SLAM::PoseKey(2), Pose2(-1,  0, - M_PI_2));
 	expected.insert(pose2SLAM::PoseKey(3), Pose2( 0, -1,   0     ));
 
-	Values actual = pose2SLAM::circle(4,1.0);
+	pose2SLAM::Values actual = pose2SLAM::circle(4,1.0);
 	CHECK(assert_equal(expected,actual));
 }
 
@@ -359,21 +359,21 @@ TEST(Pose2Values, pose2Circle )
 TEST(Pose2SLAM, expmap )
 {
 	// expected is circle shifted to right
-	Values expected;
+	pose2SLAM::Values expected;
 	expected.insert(pose2SLAM::PoseKey(0), Pose2( 1.1,  0,   M_PI_2));
 	expected.insert(pose2SLAM::PoseKey(1), Pose2( 0.1,  1, - M_PI  ));
 	expected.insert(pose2SLAM::PoseKey(2), Pose2(-0.9,  0, - M_PI_2));
 	expected.insert(pose2SLAM::PoseKey(3), Pose2( 0.1, -1,   0     ));
 
 	// Note expmap coordinates are in local coordinates, so shifting to right requires thought !!!
-  Values circle(pose2SLAM::circle(4,1.0));
+	pose2SLAM::Values circle(pose2SLAM::circle(4,1.0));
   Ordering ordering(*circle.orderingArbitrary());
 	VectorValues delta(circle.dims(ordering));
 	delta[ordering[pose2SLAM::PoseKey(0)]] = Vector_(3, 0.0,-0.1,0.0);
 	delta[ordering[pose2SLAM::PoseKey(1)]] = Vector_(3, -0.1,0.0,0.0);
 	delta[ordering[pose2SLAM::PoseKey(2)]] = Vector_(3, 0.0,0.1,0.0);
 	delta[ordering[pose2SLAM::PoseKey(3)]] = Vector_(3, 0.1,0.0,0.0);
-	Values actual = circle.retract(delta, ordering);
+	pose2SLAM::Values actual = circle.retract(delta, ordering);
 	CHECK(assert_equal(expected,actual));
 }
 
@@ -386,7 +386,7 @@ TEST( Pose2Prior, error )
 {
 	// Choose a linearization point
 	Pose2 p1(1, 0, 0); // robot at (1,0)
-	Values x0;
+	pose2SLAM::Values x0;
 	x0.insert(pose2SLAM::PoseKey(1), p1);
 
 	// Create factor
@@ -408,7 +408,7 @@ TEST( Pose2Prior, error )
 	VectorValues addition(VectorValues::Zero(x0.dims(ordering)));
 	addition[ordering["x1"]] = Vector_(3, 0.1, 0.0, 0.0);
 	VectorValues plus = delta + addition;
-	Values x1 = x0.retract(plus, ordering);
+	pose2SLAM::Values x1 = x0.retract(plus, ordering);
 	Vector error_at_plus = Vector_(3,0.1/sx,0.0,0.0); // h(x)-z = 0.1 !
 	CHECK(assert_equal(error_at_plus,factor.whitenedError(x1)));
 	CHECK(assert_equal(error_at_plus,linear->error_vector(plus)));
@@ -430,7 +430,7 @@ LieVector hprior(const Pose2& p1) {
 TEST( Pose2Prior, linearize )
 {
 	// Choose a linearization point at ground truth
-	Values x0;
+	pose2SLAM::Values x0;
 	x0.insert(pose2SLAM::PoseKey(1),priorVal);
 
 	// Actual linearization
@@ -450,7 +450,7 @@ TEST( Pose2Factor, error )
 	// Choose a linearization point
 	Pose2 p1; // robot at origin
 	Pose2 p2(1, 0, 0); // robot at (1,0)
-	Values x0;
+	pose2SLAM::Values x0;
 	x0.insert(pose2SLAM::PoseKey(1), p1);
 	x0.insert(pose2SLAM::PoseKey(2), p2);
 
@@ -474,7 +474,7 @@ TEST( Pose2Factor, error )
 	// Check error after increasing p2
 	VectorValues plus = delta;
 	plus[ordering["x2"]] = Vector_(3, 0.1, 0.0, 0.0);
-	Values x1 = x0.retract(plus, ordering);
+	pose2SLAM::Values x1 = x0.retract(plus, ordering);
 	Vector error_at_plus = Vector_(3,0.1/sx,0.0,0.0); // h(x)-z = 0.1 !
 	CHECK(assert_equal(error_at_plus,factor.whitenedError(x1)));
 	CHECK(assert_equal(error_at_plus,linear->error_vector(plus)));
@@ -491,7 +491,7 @@ TEST( Pose2Factor, rhs )
 	// Choose a linearization point
 	Pose2 p1(1.1,2,M_PI_2); // robot at (1.1,2) looking towards y (ground truth is at 1,2, see testPose2)
 	Pose2 p2(-1,4.1,M_PI);  // robot at (-1,4.1) looking at negative (ground truth is at -1,4)
-	Values x0;
+	pose2SLAM::Values x0;
 	x0.insert(pose2SLAM::PoseKey(1),p1);
 	x0.insert(pose2SLAM::PoseKey(2),p2);
 
@@ -521,7 +521,7 @@ TEST( Pose2Factor, linearize )
 	// Choose a linearization point at ground truth
 	Pose2 p1(1,2,M_PI_2);
 	Pose2 p2(-1,4,M_PI);
-	Values x0;
+	pose2SLAM::Values x0;
 	x0.insert(pose2SLAM::PoseKey(1),p1);
 	x0.insert(pose2SLAM::PoseKey(2),p2);
 

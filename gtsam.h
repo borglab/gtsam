@@ -389,6 +389,8 @@ class NonlinearOptimizationParameters {
 	NonlinearOptimizationParameters(double absDecrease, double relDecrease,
 			double sumError, int iIters, double lambda, double lambdaFactor);
 	void print(string s) const;
+	static gtsam::NonlinearOptimizationParameters* newDrecreaseThresholds(double absDecrease,
+			double relDecrease);
 };
 
 
@@ -427,14 +429,14 @@ class Graph {
 	void addRange(int poseKey, int pointKey, double range, const gtsam::SharedNoiseModel& noiseModel);
 	void addBearingRange(int poseKey, int pointKey, const gtsam::Rot2& bearing, double range,
 			const gtsam::SharedNoiseModel& noiseModel);
-	Values optimize(const Values& initialEstimate);
+	planarSLAM::Values optimize(const planarSLAM::Values& initialEstimate);
 };
 
 class Odometry {
 	Odometry(int key1, int key2, const gtsam::Pose2& measured,
 			const gtsam::SharedNoiseModel& model);
 	void print(string s) const;
-	gtsam::GaussianFactor* linearize(const Values& center, const Ordering& ordering) const;
+	gtsam::GaussianFactor* linearize(const planarSLAM::Values& center, const gtsam::Ordering& ordering) const;
 };
 
 class Optimizer {

@@ -501,7 +501,7 @@ BOOST_CLASS_EXPORT_GUID(planarSLAM::Constraint,  "gtsam::planarSLAM::Constraint"
 /* ************************************************************************* */
 TEST (Serialization, planar_system) {
 	using namespace planarSLAM;
-	Values values;
+	planarSLAM::Values values;
 	values.insert(PointKey(3), Point2(1.0, 2.0));
 	values.insert(PoseKey(4), Pose2(1.0, 2.0, 0.3));
 
@@ -527,7 +527,7 @@ TEST (Serialization, planar_system) {
 	// text
 	EXPECT(equalsObj<PoseKey>(PoseKey(2)));
 	EXPECT(equalsObj<PointKey>(PointKey(3)));
-	EXPECT(equalsObj<Values>(values));
+	EXPECT(equalsObj<planarSLAM::Values>(values));
 	EXPECT(equalsObj<Prior>(prior));
 	EXPECT(equalsObj<Bearing>(bearing));
 	EXPECT(equalsObj<BearingRange>(bearingRange));
@@ -539,7 +539,7 @@ TEST (Serialization, planar_system) {
 	// xml
 	EXPECT(equalsXML<PoseKey>(PoseKey(2)));
 	EXPECT(equalsXML<PointKey>(PointKey(3)));
-	EXPECT(equalsXML<Values>(values));
+	EXPECT(equalsXML<planarSLAM::Values>(values));
 	EXPECT(equalsXML<Prior>(prior));
 	EXPECT(equalsXML<Bearing>(bearing));
 	EXPECT(equalsXML<BearingRange>(bearingRange));
