@@ -110,7 +110,7 @@ namespace gtsam {
 		static shared_ptr newLambda(double lambda);
 
 		/// a copy of old instance except new thresholds
-		static shared_ptr newDrecreaseThresholds(double absDecrease,
+		static shared_ptr newDecreaseThresholds(double absDecrease,
 				double relDecrease);
 
 		/// a copy of old instance except new QR flag

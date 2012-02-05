@@ -389,7 +389,7 @@ class NonlinearOptimizationParameters {
 	NonlinearOptimizationParameters(double absDecrease, double relDecrease,
 			double sumError, int iIters, double lambda, double lambdaFactor);
 	void print(string s) const;
-	static gtsam::NonlinearOptimizationParameters* newDrecreaseThresholds(double absDecrease,
+	static gtsam::NonlinearOptimizationParameters* newDecreaseThresholds(double absDecrease,
 			double relDecrease);
 };
 
