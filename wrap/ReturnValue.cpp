@@ -59,17 +59,17 @@ void ReturnValue::wrap_result(FileWriter& file) const {
 
     // second return value in pair
     if (isPtr2) // if we already have a pointer
-      file.oss << "  out[1] = wrap_shared_ptr(result.second,\"" << type2 << "\");\n";
+      file.oss << "  out[1] = wrap_shared_ptr(result.second,\"" << matlabType2 << "\");\n";
     else if (category2 == ReturnValue::CLASS) // if we are going to make one
     	file.oss << "  out[1] = wrap_shared_ptr(make_shared< " << cppType2 << " >(result.second),\"" << matlabType2 << "\");\n";
     else
       file.oss << "  out[1] = wrap< " << return_type(true,arg2) << " >(result.second);\n";
   }
   else if (isPtr1)
-    file.oss << "  out[0] = wrap_shared_ptr(result,\"" << type1 << "\");\n";
+    file.oss << "  out[0] = wrap_shared_ptr(result,\"" << matlabType1 << "\");\n";
   else if (category1 == ReturnValue::CLASS)
   	file.oss << "  out[0] = wrap_shared_ptr(make_shared< " << cppType1 << " >(result),\"" << matlabType1 << "\");\n";
-  else if (type1!="void")
+  else if (matlabType1!="void")
     file.oss << "  out[0] = wrap< " << return_type(true,arg1) << " >(result);\n";
 }
 
