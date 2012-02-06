@@ -22,13 +22,13 @@
 F = eye(2,2);
 B = eye(2,2);
 u = [1.0; 0.0];
-modelQ = SharedDiagonal([0.1;0.1]);
+modelQ = gtsamSharedDiagonal([0.1;0.1]);
 Q = 0.01*eye(2,2);
 H = eye(2,2);
 z1 = [1.0, 0.0]';
 z2 = [2.0, 0.0]';
 z3 = [3.0, 0.0]';
-modelR = SharedDiagonal([0.1;0.1]);
+modelR = gtsamSharedDiagonal([0.1;0.1]);
 R = 0.01*eye(2,2);
 
 %% Create the set of expected output TestValues
@@ -48,7 +48,7 @@ P23 = inv(I22) + Q;
 I33 = inv(P23) + inv(R);
 
 %% Create an KalmanFilter object
-KF = KalmanFilter(2);
+KF = gtsamKalmanFilter(2);
 
 %% Create the Kalman Filter initialization point
 x_initial = [0.0;0.0];
