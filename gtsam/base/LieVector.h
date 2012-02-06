@@ -76,10 +76,14 @@ struct LieVector : public Vector {
 		return LieVector();
 	}
 
+	// Note: Manually specifying the 'gtsam' namespace for the optional Matrix arguments
+	// This is a work-around for linux g++ 4.6.1 that incorrectly selects the Eigen::Matrix class
+	// instead of the gtsam::Matrix class. This is related to deriving this class from an Eigen Vector
+	// as the other geometry objects (Point3, Rot3, etc.) have this problem
 	/** compose with another object */
 	inline LieVector compose(const LieVector& p,
-			boost::optional<Matrix&> H1=boost::none,
-			boost::optional<Matrix&> H2=boost::none) const {
+			boost::optional<gtsam::Matrix&> H1=boost::none,
+			boost::optional<gtsam::Matrix&> H2=boost::none) const {
 		if(H1) *H1 = eye(dim());
 		if(H2) *H2 = eye(p.dim());
 
@@ -88,15 +92,15 @@ struct LieVector : public Vector {
 
 	/** between operation */
 	inline LieVector between(const LieVector& l2,
-			boost::optional<Matrix&> H1=boost::none,
-			boost::optional<Matrix&> H2=boost::none) const {
+			boost::optional<gtsam::Matrix&> H1=boost::none,
+			boost::optional<gtsam::Matrix&> H2=boost::none) const {
 		if(H1) *H1 = -eye(dim());
 		if(H2) *H2 = eye(l2.dim());
 		return LieVector(l2.vector() - vector());
 	}
 
 	/** invert the object and yield a new one */
-	inline LieVector inverse(boost::optional<Matrix&> H=boost::none) const {
+	inline LieVector inverse(boost::optional<gtsam::Matrix&> H=boost::none) const {
 		if(H) *H = -eye(dim());
 
 		return LieVector(-1.0 * vector());
