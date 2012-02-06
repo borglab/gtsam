@@ -40,21 +40,21 @@ namespace simulated2DOriented {
   public:
     Values() : nrPoses_(0), nrPoints_(0)  {}
 
-    void insertPose(const PoseKey& i, const Pose2& p) {
-      insert(i, p);
+    void insertPose(Index j, const Pose2& p) {
+      insert(PoseKey(j), p);
       nrPoses_++;
     }
 
-    void insertPoint(const PointKey& j, const Point2& p) {
-      insert(j, p);
+    void insertPoint(Index j, const Point2& p) {
+      insert(PointKey(j), p);
       nrPoints_++;
     }
 
     int nrPoses() const {	return nrPoses_;	}
     int nrPoints() const { return nrPoints_;	}
 
-    Pose2 pose(const PoseKey& i) const { return (*this)[i];	}
-    Point2 point(const PointKey& j) const { return (*this)[j]; }
+    Pose2 pose(Index j) const { return at<Pose2>(PoseKey(j));	}
+    Point2 point(Index j) const { return at<Point2>(PointKey(j)); }
   };
 
   //TODO:: point prior is not implemented right now
@@ -111,7 +111,7 @@ namespace simulated2DOriented {
     }
 
     /// Evaluate error and optionally derivative
-    Vector evaluateError(const Pose2& x1, const Pose2& x2,
+    Vector evaluateError(const VALUE& x1, const VALUE& x2,
         boost::optional<Matrix&> H1 = boost::none,
         boost::optional<Matrix&> H2 = boost::none) const {
       return measured_.localCoordinates(odo(x1, x2, H1, H2));

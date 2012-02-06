@@ -23,7 +23,10 @@
  */
 
 #include <utility>
+#include <boost/type_traits/conditional.hpp>
+#include <boost/type_traits/is_base_of.hpp>
 
+#include <gtsam/base/DerivedValue.h>
 #include <gtsam/nonlinear/Values.h> // Only so Eclipse finds class definition
 
 namespace gtsam {
@@ -36,6 +39,30 @@ namespace gtsam {
   private:
     ValueCloneAllocator() {}
   };
+
+  /* ************************************************************************* */
+  class ValueAutomaticCasting {
+    const Symbol& key_;
+    const Value& value_;
+  public:
+    ValueAutomaticCasting(const Symbol& key, const Value& value) : key_(key), value_(value) {}
+
+    template<class ValueType>
+    operator const ValueType& () const {
+      // Check the type and throw exception if incorrect
+      if(typeid(ValueType) != typeid(value_))
+        throw ValuesIncorrectType(key_, typeid(ValueType), typeid(value_));
+
+      // We have already checked the type, so do a "blind" static_cast, not dynamic_cast
+      return static_cast<const ValueType&>(value_);
+    }
+  };
+
+//  /* ************************************************************************* */
+//  template<class ValueType>
+//  ValueType& operator=(ValueType& lhs, const ValueAutomaticCasting& rhs) {
+//    lhs = rhs;
+//  }
 
   /* ************************************************************************* */
   template<typename ValueType>
@@ -56,6 +83,18 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  inline ValueAutomaticCasting Values::at(const Symbol& j) const {
+    // Find the item
+    KeyValueMap::const_iterator item = values_.find(j);
+
+    // Throw exception if it does not exist
+    if(item == values_.end())
+      throw ValuesKeyDoesNotExist("retrieve", j);
+
+    return ValueAutomaticCasting(item->first, *item->second);
+  }
+
+  /* ************************************************************************* */
   template<typename TypedKey>
   const typename TypedKey::Value& Values::at(const TypedKey& j) const {
     // Convert to Symbol
@@ -63,6 +102,11 @@ namespace gtsam {
 
     // Call at with the Value type from the key
     return at<typename TypedKey::Value>(symbol);
+  }
+
+  /* ************************************************************************* */
+  inline ValueAutomaticCasting Values::operator[](const Symbol& j) const {
+    return at(j);
   }
 
   /* ************************************************************************* */

@@ -31,9 +31,9 @@ namespace gtsam {
 	class BearingRangeFactor: public NonlinearFactor2<POSE, POINT> {
 	private:
 
-		typedef typename POSE Pose;
+		typedef POSE Pose;
 		typedef typename POSE::Rotation Rot;
-		typedef typename POINT Point;
+		typedef POINT Point;
 
 		typedef BearingRangeFactor<POSE, POINT> This;
 		typedef NonlinearFactor2<POSE, POINT> Base;
@@ -60,9 +60,9 @@ namespace gtsam {
 	  /** Print */
 	  virtual void print(const std::string& s = "") const {
 	    std::cout << s << ": BearingRangeFactor("
-	    		<< (std::string) this->key1_ << ","
-	    		<< (std::string) this->key2_ << ")\n";
-	    bearing_.print("  measured bearing");
+	    		<< (std::string) this->key1() << ","
+	    		<< (std::string) this->key2() << ")\n";
+	    measuredBearing_.print("  measured bearing");
 	    std::cout << "  measured range: " << measuredRange_ << std::endl;
 	    this->noiseModel_->print("  noise model");
 	  }

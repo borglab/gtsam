@@ -27,6 +27,8 @@
 using namespace std;
 using namespace gtsam;
 
+using pose3SLAM::PoseKey;
+
 /* ************************************************************************* */
 TEST( AntiFactor, NegativeHessian)
 {
@@ -40,17 +42,17 @@ TEST( AntiFactor, NegativeHessian)
 
   // Create a configuration corresponding to the ground truth
   boost::shared_ptr<Values> values(new Values());
-  values->insert(pose3SLAM::Key(1), pose1);
-  values->insert(pose3SLAM::Key(2), pose2);
+  values->insert(PoseKey(1), pose1);
+  values->insert(PoseKey(2), pose2);
 
   // Define an elimination ordering
   Ordering::shared_ptr ordering(new Ordering());
-  ordering->insert(pose3SLAM::Key(1), 0);
-  ordering->insert(pose3SLAM::Key(2), 1);
+  ordering->insert(PoseKey(1), 0);
+  ordering->insert(PoseKey(2), 1);
 
 
   // Create a "standard" factor
-  BetweenFactor<pose3SLAM::Key>::shared_ptr originalFactor(new BetweenFactor<pose3SLAM::Key>(1, 2, z, sigma));
+  BetweenFactor<Pose3>::shared_ptr originalFactor(new BetweenFactor<Pose3>(PoseKey(1), PoseKey(2), z, sigma));
 
   // Linearize it into a Jacobian Factor
   GaussianFactor::shared_ptr originalJacobian = originalFactor->linearize(*values, *ordering);
@@ -101,8 +103,8 @@ TEST( AntiFactor, EquivalentBayesNet)
 
 	// Create a configuration corresponding to the ground truth
 	boost::shared_ptr<Values> values(new Values());
-	values->insert(pose3SLAM::Key(1), pose1);
-	values->insert(pose3SLAM::Key(2), pose2);
+	values->insert(PoseKey(1), pose1);
+	values->insert(PoseKey(2), pose2);
 
 	// Define an elimination ordering
 	Ordering::shared_ptr ordering = graph->orderingCOLAMD(*values);
@@ -115,7 +117,7 @@ TEST( AntiFactor, EquivalentBayesNet)
   VectorValues expectedDeltas = optimize(*expectedBayesNet);
 
 	// Add an additional factor between Pose1 and Pose2
-  pose3SLAM::Constraint::shared_ptr f1(new pose3SLAM::Constraint(1, 2, z, sigma));
+  pose3SLAM::Constraint::shared_ptr f1(new pose3SLAM::Constraint(PoseKey(1), PoseKey(2), z, sigma));
   graph->push_back(f1);
 
   // Add the corresponding AntiFactor between Pose1 and Pose2

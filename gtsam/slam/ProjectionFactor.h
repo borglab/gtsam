@@ -78,8 +78,8 @@ namespace gtsam {
 
 		/// equals
 		virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const {
-      const This *e = dynamic_cast<const This*> (&expected);
-			return e && Base::equals(p, tol) && this->measured_.equals(e->z_, tol) && this->K_->equals(*e->K_, tol);
+      const This *e = dynamic_cast<const This*>(&p);
+			return e && Base::equals(p, tol) && this->measured_.equals(e->measured_, tol) && this->K_->equals(*e->K_, tol);
 		}
 
 		/// Evaluate error h(x)-z and optionally derivatives
@@ -92,8 +92,8 @@ namespace gtsam {
 			} catch( CheiralityException& e) {
 			  if (H1) *H1 = zeros(2,6);
 			  if (H2) *H2 = zeros(2,3);
-			  cout << e.what() << ": Landmark "<< this->key2_.index() <<
-			      " moved behind camera " << this->key1_.index() << endl;
+			  cout << e.what() << ": Landmark "<< this->key2().index() <<
+			      " moved behind camera " << this->key1().index() << endl;
 			  return ones(2) * 2.0 * K_->fx();
 			}
 		}

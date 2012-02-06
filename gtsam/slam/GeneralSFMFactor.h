@@ -37,10 +37,10 @@ namespace gtsam {
 
 	public:
 
-		typedef typename CAMERA Cam;										///< typedef for camera type
-		typedef GeneralSFMFactor<CAMERA, LANDMARK> This ;	///< typedef for this object
-		typedef NonlinearFactor2<CAMERA, LANDMARK> Base;		///< typedef for the base class
-		typedef Point2 Measurement;													///< typedef for the measurement
+		typedef CAMERA Cam;					            					///< typedef for camera type
+		typedef GeneralSFMFactor<CAMERA, LANDMARK> This;	///< typedef for this object
+		typedef NonlinearFactor2<CAMERA, LANDMARK> Base;	///< typedef for the base class
+		typedef Point2 Measurement;												///< typedef for the measurement
 
 		// shorthand for a smart pointer to a factor
 		typedef boost::shared_ptr<This> shared_ptr;
@@ -52,7 +52,8 @@ namespace gtsam {
 		 * @param i is basically the frame number
 		 * @param j is the index of the landmark
 		 */
-		GeneralSFMFactor(const Point2& measured, const SharedNoiseModel& model, const Symbol& cameraKey, const Landmark& landmarkKey) : Base(model, i, j), measured_(measured) {}
+		GeneralSFMFactor(const Point2& measured, const SharedNoiseModel& model, const Symbol& cameraKey, const Symbol& landmarkKey) :
+		  Base(model, cameraKey, cameraKey), measured_(measured) {}
 
 		GeneralSFMFactor():measured_(0.0,0.0) {} 							///< default constructor
 		GeneralSFMFactor(const Point2 & p):measured_(p) {}			///< constructor that takes a Point2
@@ -66,14 +67,15 @@ namespace gtsam {
 		 */
 		void print(const std::string& s = "SFMFactor") const {
 			Base::print(s);
-			z_.print(s + ".z");
+			measured_.print(s + ".z");
 		}
 
 		/**
 		 * equals
 		 */
-		bool equals(const GeneralSFMFactor<CamK, LmK> &p, double tol = 1e-9) const	{
-			return Base::equals(p, tol) && this->measured_.equals(p.z_, tol) ;
+		bool equals(const NonlinearFactor &p, double tol = 1e-9) const	{
+		  const This* e = dynamic_cast<const This*>(&p);
+			return e && Base::equals(p, tol) && this->measured_.equals(e->measured_, tol) ;
 		}
 
 		/** h(x)-z */

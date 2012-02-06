@@ -57,14 +57,14 @@ namespace simulated2D {
     }
 
     /// Insert a pose
-    void insertPose(const simulated2D::PoseKey& i, const Point2& p) {
-      insert(i, p);
+    void insertPose(Index j, const Point2& p) {
+      insert(PoseKey(j), p);
       nrPoses_++;
     }
 
     /// Insert a point
-    void insertPoint(const simulated2D::PointKey& j, const Point2& p) {
-      insert(j, p);
+    void insertPoint(Index j, const Point2& p) {
+      insert(PointKey(j), p);
       nrPoints_++;
     }
 
@@ -79,13 +79,13 @@ namespace simulated2D {
     }
 
     /// Return pose i
-    Point2 pose(const simulated2D::PoseKey& i) const {
-      return (*this)[i];
+    Point2 pose(Index j) const {
+      return at<Point2>(PoseKey(j));
     }
 
     /// Return point j
-    Point2 point(const simulated2D::PointKey& j) const {
-      return (*this)[j];
+    Point2 point(Index j) const {
+      return at<Point2>(PointKey(j));
     }
   };
 
@@ -156,7 +156,7 @@ namespace simulated2D {
   /**
    * Binary factor simulating "odometry" between two Vectors
    */
-  template<class VALUE = Pose2>
+  template<class VALUE = Point2>
   class GenericOdometry: public NonlinearFactor2<VALUE, VALUE> {
   public:
     typedef NonlinearFactor2<VALUE, VALUE> Base; ///< base class
@@ -203,7 +203,7 @@ namespace simulated2D {
     typedef POSE Pose; ///< shortcut to Pose type
     typedef LANDMARK Landmark; ///< shortcut to Landmark type
 
-    Landmark z_; ///< Measurement
+    Landmark measured_; ///< Measurement
 
     /// Create measurement factor
     GenericMeasurement(const Landmark& measured, const SharedNoiseModel& model, const Symbol& poseKey, const Symbol& landmarkKey) :

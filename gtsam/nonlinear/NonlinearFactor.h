@@ -95,6 +95,11 @@ public:
     std::cout << s << ": NonlinearFactor\n";
   }
 
+  /** Check if two factors are equal */
+  virtual bool equals(const NonlinearFactor& f, double tol = 1e-9) const {
+    return Base::equals(f);
+  }
+
 	/// @}
 	/// @name Standard Interface
 	/// @{
@@ -202,8 +207,9 @@ public:
   }
 
   /** Check if two factors are equal */
-  virtual bool equals(const NoiseModelFactor& f, double tol = 1e-9) const {
-    return noiseModel_->equals(*f.noiseModel_, tol) && Base::equals(f, tol);
+  virtual bool equals(const NonlinearFactor& f, double tol = 1e-9) const {
+    const NoiseModelFactor* e = dynamic_cast<const NoiseModelFactor*>(&f);
+    return e && Base::equals(f, tol) && noiseModel_->equals(*e->noiseModel_, tol);
   }
 
   /** get the dimension of the factor (number of rows on linearization) */

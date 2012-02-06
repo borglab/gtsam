@@ -34,6 +34,7 @@ using namespace boost::assign;
 using namespace std;
 
 typedef pose2SLAM::Odometry Pose2Factor;
+using pose2SLAM::PoseKey;
 
 // common measurement covariance
 static double sx=0.5, sy=0.5,st=0.1;
@@ -49,7 +50,7 @@ static noiseModel::Gaussian::shared_ptr covariance(
 // Test constraint, small displacement
 Vector f1(const Pose2& pose1, const Pose2& pose2) {
 	Pose2 z(2.1130913087, 0.468461064817, 0.436332312999);
-	Pose2Factor constraint(1, 2, z, covariance);
+	Pose2Factor constraint(PoseKey(1), PoseKey(2), z, covariance);
 	return constraint.evaluateError(pose1, pose2);
 }
 
@@ -57,7 +58,7 @@ TEST( Pose2SLAM, constraint1 )
 {
 	// create a factor between unknown poses p1 and p2
 	Pose2 pose1, pose2(2.1130913087, 0.468461064817, 0.436332312999);
-	Pose2Factor constraint(1, 2, pose2, covariance);
+	Pose2Factor constraint(PoseKey(1), PoseKey(2), pose2, covariance);
 	Matrix H1, H2;
 	Vector actual = constraint.evaluateError(pose1, pose2, H1, H2);
 
@@ -72,7 +73,7 @@ TEST( Pose2SLAM, constraint1 )
 // Test constraint, large displacement
 Vector f2(const Pose2& pose1, const Pose2& pose2) {
 	Pose2 z(2,2,M_PI_2);
-	Pose2Factor constraint(1, 2, z, covariance);
+	Pose2Factor constraint(PoseKey(1), PoseKey(2), z, covariance);
 	return constraint.evaluateError(pose1, pose2);
 }
 
@@ -80,7 +81,7 @@ TEST( Pose2SLAM, constraint2 )
 {
 	// create a factor between unknown poses p1 and p2
 	Pose2 pose1, pose2(2,2,M_PI_2);
-	Pose2Factor constraint(1, 2, pose2, covariance);
+	Pose2Factor constraint(PoseKey(1), PoseKey(2), pose2, covariance);
 	Matrix H1, H2;
 	Vector actual = constraint.evaluateError(pose1, pose2, H1, H2);
 
@@ -110,7 +111,7 @@ TEST( Pose2SLAM, linearization )
 {
 	// create a factor between unknown poses p1 and p2
 	Pose2 measured(2,2,M_PI_2);
-	Pose2Factor constraint(1,2,measured, covariance);
+	Pose2Factor constraint(PoseKey(1), PoseKey(2), measured, covariance);
 	pose2SLAM::Graph graph;
 	graph.addOdometry(1,2,measured, covariance);
 
@@ -178,8 +179,8 @@ TEST(Pose2Graph, optimize) {
 TEST(Pose2Graph, optimizeThreePoses) {
 
 	// Create a hexagon of poses
-	Values hexagon = pose2SLAM::circle(3,1.0);
-  Pose2 p0 = hexagon[pose2SLAM::PoseKey(0)], p1 = hexagon[pose2SLAM::PoseKey(1)];
+	pose2SLAM::Values hexagon = pose2SLAM::circle(3,1.0);
+  Pose2 p0 = hexagon.pose(0), p1 = hexagon.pose(1);
 
 	// create a Pose graph with one equality constraint and one measurement
   shared_ptr<pose2SLAM::Graph> fg(new pose2SLAM::Graph);
@@ -190,10 +191,10 @@ TEST(Pose2Graph, optimizeThreePoses) {
   fg->addOdometry(2, 0, delta, covariance);
 
   // Create initial config
-  boost::shared_ptr<Values> initial(new Values());
-  initial->insert(pose2SLAM::PoseKey(0), p0);
-  initial->insert(pose2SLAM::PoseKey(1), hexagon[pose2SLAM::PoseKey(1)].retract(Vector_(3,-0.1, 0.1,-0.1)));
-  initial->insert(pose2SLAM::PoseKey(2), hexagon[pose2SLAM::PoseKey(2)].retract(Vector_(3, 0.1,-0.1, 0.1)));
+  boost::shared_ptr<pose2SLAM::Values> initial(new pose2SLAM::Values());
+  initial->insertPose(0, p0);
+  initial->insertPose(1, hexagon.pose(1).retract(Vector_(3,-0.1, 0.1,-0.1)));
+  initial->insertPose(2, hexagon.pose(2).retract(Vector_(3, 0.1,-0.1, 0.1)));
 
   // Choose an ordering
   shared_ptr<Ordering> ordering(new Ordering);
@@ -207,7 +208,7 @@ TEST(Pose2Graph, optimizeThreePoses) {
   Values actual = *optimizer.values();
 
   // Check with ground truth
-  CHECK(assert_equal(hexagon, actual));
+  CHECK(assert_equal((const Values&)hexagon, actual));
 }
 
 /* ************************************************************************* */
@@ -215,8 +216,8 @@ TEST(Pose2Graph, optimizeThreePoses) {
 TEST_UNSAFE(Pose2SLAM, optimizeCircle) {
 
 	// Create a hexagon of poses
-	Values hexagon = pose2SLAM::circle(6,1.0);
-  Pose2 p0 = hexagon[pose2SLAM::PoseKey(0)], p1 = hexagon[pose2SLAM::PoseKey(1)];
+	pose2SLAM::Values hexagon = pose2SLAM::circle(6,1.0);
+  Pose2 p0 = hexagon.pose(0), p1 = hexagon.pose(1);
 
 	// create a Pose graph with one equality constraint and one measurement
   shared_ptr<pose2SLAM::Graph> fg(new pose2SLAM::Graph);
@@ -230,13 +231,13 @@ TEST_UNSAFE(Pose2SLAM, optimizeCircle) {
   fg->addOdometry(5, 0, delta, covariance);
 
   // Create initial config
-  boost::shared_ptr<Values> initial(new Values());
-  initial->insert(pose2SLAM::PoseKey(0), p0);
-  initial->insert(pose2SLAM::PoseKey(1), hexagon[pose2SLAM::PoseKey(1)].retract(Vector_(3,-0.1, 0.1,-0.1)));
-  initial->insert(pose2SLAM::PoseKey(2), hexagon[pose2SLAM::PoseKey(2)].retract(Vector_(3, 0.1,-0.1, 0.1)));
-  initial->insert(pose2SLAM::PoseKey(3), hexagon[pose2SLAM::PoseKey(3)].retract(Vector_(3,-0.1, 0.1,-0.1)));
-  initial->insert(pose2SLAM::PoseKey(4), hexagon[pose2SLAM::PoseKey(4)].retract(Vector_(3, 0.1,-0.1, 0.1)));
-  initial->insert(pose2SLAM::PoseKey(5), hexagon[pose2SLAM::PoseKey(5)].retract(Vector_(3,-0.1, 0.1,-0.1)));
+  boost::shared_ptr<pose2SLAM::Values> initial(new pose2SLAM::Values());
+  initial->insertPose(0, p0);
+  initial->insertPose(1, hexagon.pose(1).retract(Vector_(3,-0.1, 0.1,-0.1)));
+  initial->insertPose(2, hexagon.pose(2).retract(Vector_(3, 0.1,-0.1, 0.1)));
+  initial->insertPose(3, hexagon.pose(3).retract(Vector_(3,-0.1, 0.1,-0.1)));
+  initial->insertPose(4, hexagon.pose(4).retract(Vector_(3, 0.1,-0.1, 0.1)));
+  initial->insertPose(5, hexagon.pose(5).retract(Vector_(3,-0.1, 0.1,-0.1)));
 
   // Choose an ordering
   shared_ptr<Ordering> ordering(new Ordering);
@@ -250,10 +251,10 @@ TEST_UNSAFE(Pose2SLAM, optimizeCircle) {
   Values actual = *optimizer.values();
 
   // Check with ground truth
-  CHECK(assert_equal(hexagon, actual));
+  CHECK(assert_equal((const Values&)hexagon, actual));
 
   // Check loop closure
-  CHECK(assert_equal(delta,actual[pose2SLAM::PoseKey(5)].between(actual[pose2SLAM::PoseKey(0)])));
+  CHECK(assert_equal(delta, actual.at<Pose2>(PoseKey(5)).between(actual.at<Pose2>(PoseKey(0)))));
 
 //  Pose2SLAMOptimizer myOptimizer("3");
 
@@ -387,10 +388,10 @@ TEST( Pose2Prior, error )
 	// Choose a linearization point
 	Pose2 p1(1, 0, 0); // robot at (1,0)
 	pose2SLAM::Values x0;
-	x0.insert(pose2SLAM::PoseKey(1), p1);
+	x0.insert(PoseKey(1), p1);
 
 	// Create factor
-	pose2SLAM::Prior factor(1, p1, sigmas);
+	pose2SLAM::Prior factor(PoseKey(1), p1, sigmas);
 
 	// Actual linearization
 	Ordering ordering(*x0.orderingArbitrary());
@@ -417,7 +418,7 @@ TEST( Pose2Prior, error )
 /* ************************************************************************* */
 // common Pose2Prior for tests below
 static gtsam::Pose2 priorVal(2,2,M_PI_2);
-static pose2SLAM::Prior priorFactor(1,priorVal, sigmas);
+static pose2SLAM::Prior priorFactor(PoseKey(1), priorVal, sigmas);
 
 /* ************************************************************************* */
 // The error |A*dx-b| approximates (h(x0+dx)-z) = -error_vector
@@ -431,7 +432,7 @@ TEST( Pose2Prior, linearize )
 {
 	// Choose a linearization point at ground truth
 	pose2SLAM::Values x0;
-	x0.insert(pose2SLAM::PoseKey(1),priorVal);
+	x0.insertPose(1, priorVal);
 
 	// Actual linearization
 	Ordering ordering(*x0.orderingArbitrary());
@@ -451,12 +452,12 @@ TEST( Pose2Factor, error )
 	Pose2 p1; // robot at origin
 	Pose2 p2(1, 0, 0); // robot at (1,0)
 	pose2SLAM::Values x0;
-	x0.insert(pose2SLAM::PoseKey(1), p1);
-	x0.insert(pose2SLAM::PoseKey(2), p2);
+	x0.insertPose(1, p1);
+	x0.insertPose(2, p2);
 
 	// Create factor
 	Pose2 z = p1.between(p2);
-	Pose2Factor factor(1, 2, z, covariance);
+	Pose2Factor factor(PoseKey(1), PoseKey(2), z, covariance);
 
 	// Actual linearization
 	Ordering ordering(*x0.orderingArbitrary());
@@ -483,7 +484,7 @@ TEST( Pose2Factor, error )
 /* ************************************************************************* */
 // common Pose2Factor for tests below
 static Pose2 measured(2,2,M_PI_2);
-static Pose2Factor factor(1,2,measured, covariance);
+static Pose2Factor factor(PoseKey(1),PoseKey(2),measured, covariance);
 
 /* ************************************************************************* */
 TEST( Pose2Factor, rhs )

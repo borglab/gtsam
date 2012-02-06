@@ -26,11 +26,14 @@ namespace gtsam {
 
 	/**
 	 * A class for a measurement predicted by "between(config[key1],config[key2])"
-	 * KEY1::Value is the Lie Group type
-	 * T is the measurement type, by default the same
+	 * @tparam VALUE the Value type
 	 */
 	template<class VALUE>
 	class BetweenFactor: public NonlinearFactor2<VALUE, VALUE> {
+
+	public:
+
+	  typedef VALUE T;
 
 	private:
 
@@ -64,8 +67,8 @@ namespace gtsam {
 		/** print */
 		virtual void print(const std::string& s) const {
 	    std::cout << s << "BetweenFactor("
-	    		<< (std::string) this->key1_ << ","
-	    		<< (std::string) this->key2_ << ")\n";
+	    		<< (std::string) this->key1() << ","
+	    		<< (std::string) this->key2() << ")\n";
 			measured_.print("  measured");
 	    this->noiseModel_->print("  noise model");
 		}
@@ -79,7 +82,7 @@ namespace gtsam {
 		/** implement functions needed to derive from Factor */
 
 		/** vector of errors */
-		Vector evaluateError(const typename KEY1::Value& p1, const typename KEY1::Value& p2,
+		Vector evaluateError(const T& p1, const T& p2,
 				boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
 						boost::none) const {
 			T hx = p1.between(p2, H1, H2); // h(x)
@@ -121,7 +124,7 @@ namespace gtsam {
 
 		/** Syntactic sugar for constrained version */
 		BetweenConstraint(const VALUE& measured, const Symbol& key1, const Symbol& key2, double mu = 1000.0) :
-		  BetweenFactor<VALUE>(key1, key2, measured, noiseModel::Constrained::All(KEY::Value::Dim(), fabs(mu))) {}
+		  BetweenFactor<VALUE>(key1, key2, measured, noiseModel::Constrained::All(VALUE::Dim(), fabs(mu))) {}
 
 	private:
 

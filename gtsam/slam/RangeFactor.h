@@ -34,8 +34,8 @@ namespace gtsam {
 		typedef RangeFactor<POSE, POINT> This;
 		typedef NonlinearFactor2<POSE, POINT> Base;
 
-		typedef typename POSE Pose;
-		typedef typename POINT Point;
+		typedef POSE Pose;
+		typedef POINT Point;
 
 		// Concept requirements for this factor
 		GTSAM_CONCEPT_RANGE_MEASUREMENT_TYPE(Pose, Point)
@@ -46,7 +46,7 @@ namespace gtsam {
 
 		RangeFactor(const Symbol& poseKey, const Symbol& pointKey, double measured,
 				const SharedNoiseModel& model) :
-					Base(model, poseKey, PointKey), measured_(measured) {
+					Base(model, poseKey, pointKey), measured_(measured) {
 		}
 
 		virtual ~RangeFactor() {}
@@ -65,7 +65,7 @@ namespace gtsam {
 		/** equals specialized to this factor */
 		virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
 			const This *e = dynamic_cast<const This*> (&expected);
-			return e != NULL && Base::equals(*e, tol) && fabs(this->measured_ - e->z_) < tol;
+			return e != NULL && Base::equals(*e, tol) && fabs(this->measured_ - e->measured_) < tol;
 		}
 
 		/** print contents */

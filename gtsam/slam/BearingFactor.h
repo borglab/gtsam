@@ -29,9 +29,9 @@ namespace gtsam {
 	class BearingFactor: public NonlinearFactor2<POSE, POINT> {
 	private:
 
-		typedef typename POSE Pose;
+		typedef POSE Pose;
 		typedef typename Pose::Rotation Rot;
-		typedef typename POINT Point;
+		typedef POINT Point;
 
 		typedef BearingFactor<POSE, POINT> This;
 		typedef NonlinearFactor2<POSE, POINT> Base;
