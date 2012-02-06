@@ -55,19 +55,19 @@ initialEstimate.insertPose(x3, gtsamPose2(4.1, 0.1, 0.1));
 initialEstimate.print('initial estimate');
 
 %% set up solver, choose ordering and optimize
-params = NonlinearOptimizationParameters_newDrecreaseThresholds(1e-15, 1e-15);
+params = gtsamNonlinearOptimizationParameters_newDecreaseThresholds(1e-15, 1e-15);
 
 ord = graph.orderingCOLAMD(initialEstimate);
 
-result = pose2SLAMOptimizer(graph,initialEstimate,ord,params);        
-              
-result.print('final result');        
+%result = pose2SLAMOptimizer(graph,initialEstimate,ord,params);                      
+%result.print('final result');
+
 % %     
 % % disp('\\\');
 % % 
 % % %% Optimize using Levenberg-Marquardt optimization with an ordering from colamd
-% % result = graph.optimize(initialEstimate);
-% % result.print('final result');
+result = graph.optimize(initialEstimate);
+result.print('final result');
 
 %% Get the corresponding dense matrix
 ord = graph.orderingCOLAMD(result);
