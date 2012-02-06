@@ -29,15 +29,15 @@ namespace gtsam {
 	 * KEY1::Value is the Lie Group type
 	 * T is the measurement type, by default the same
 	 */
-	template<class KEY1, class T = typename KEY1::Value>
-	class BetweenFactor: public NonlinearFactor2<KEY1, KEY1> {
+	template<class VALUE>
+	class BetweenFactor: public NonlinearFactor2<VALUE, VALUE> {
 
 	private:
 
-		typedef BetweenFactor<KEY1, T> This;
-		typedef NonlinearFactor2<KEY1, KEY1> Base;
+		typedef BetweenFactor<VALUE> This;
+		typedef NonlinearFactor2<VALUE, VALUE> Base;
 
-		T measured_; /** The measurement */
+		VALUE measured_; /** The measurement */
 
 		/** concept check by type */
 		GTSAM_CONCEPT_LIE_TYPE(T)
@@ -52,7 +52,7 @@ namespace gtsam {
 		BetweenFactor() {}
 
 		/** Constructor */
-		BetweenFactor(const KEY1& key1, const KEY1& key2, const T& measured,
+		BetweenFactor(const Symbol& key1, const Symbol& key2, const VALUE& measured,
 				const SharedNoiseModel& model) :
 			Base(model, key1, key2), measured_(measured) {
 		}
@@ -88,12 +88,12 @@ namespace gtsam {
 		}
 
 		/** return the measured */
-		inline const T measured() const {
+		const VALUE& measured() const {
 			return measured_;
 		}
 
 		/** number of variables attached to this factor */
-		inline std::size_t size() const {
+		std::size_t size() const {
 			return 2;
 		}
 
@@ -114,16 +114,14 @@ namespace gtsam {
 	 * This constraint requires the underlying type to a Lie type
 	 *
 	 */
-	template<class KEY>
-	class BetweenConstraint : public BetweenFactor<KEY> {
+	template<class VALUE>
+	class BetweenConstraint : public BetweenFactor<VALUE> {
 	public:
-		typedef boost::shared_ptr<BetweenConstraint<KEY> > shared_ptr;
+		typedef boost::shared_ptr<BetweenConstraint<VALUE> > shared_ptr;
 
 		/** Syntactic sugar for constrained version */
-		BetweenConstraint(const typename KEY::Value& measured,
-				const KEY& key1, const KEY& key2, double mu = 1000.0)
-			: BetweenFactor<KEY>(key1, key2, measured,
-					noiseModel::Constrained::All(KEY::Value::Dim(), fabs(mu))) {}
+		BetweenConstraint(const VALUE& measured, const Symbol& key1, const Symbol& key2, double mu = 1000.0) :
+		  BetweenFactor<VALUE>(key1, key2, measured, noiseModel::Constrained::All(KEY::Value::Dim(), fabs(mu))) {}
 
 	private:
 
@@ -132,7 +130,7 @@ namespace gtsam {
 		template<class ARCHIVE>
 		void serialize(ARCHIVE & ar, const unsigned int version) {
 			ar & boost::serialization::make_nvp("BetweenFactor",
-					boost::serialization::base_object<BetweenFactor<KEY> >(*this));
+					boost::serialization::base_object<BetweenFactor<VALUE> >(*this));
 		}
 	}; // \class BetweenConstraint
 

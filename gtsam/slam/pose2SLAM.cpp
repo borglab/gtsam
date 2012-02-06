@@ -35,20 +35,20 @@ namespace pose2SLAM {
   }
 
   /* ************************************************************************* */
-  void Graph::addPrior(const PoseKey& i, const Pose2& p,
+  void Graph::addPrior(Index i, const Pose2& p,
       const SharedNoiseModel& model) {
-    sharedFactor factor(new Prior(i, p, model));
+    sharedFactor factor(new Prior(PoseKey(i), p, model));
     push_back(factor);
   }
 
-  void Graph::addPoseConstraint(const PoseKey& i, const Pose2& p) {
-    sharedFactor factor(new HardConstraint(i, p));
+  void Graph::addPoseConstraint(Index i, const Pose2& p) {
+    sharedFactor factor(new HardConstraint(PoseKey(i), p));
     push_back(factor);
   }
 
-  void Graph::addOdometry(const PoseKey& i, const PoseKey& j, const Pose2& z,
+  void Graph::addOdometry(Index i, Index j, const Pose2& z,
       const SharedNoiseModel& model) {
-    sharedFactor factor(new Odometry(i, j, z, model));
+    sharedFactor factor(new Odometry(PoseKey(i), PoseKey(j), z, model));
     push_back(factor);
   }
 

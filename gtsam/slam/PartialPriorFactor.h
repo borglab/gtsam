@@ -38,16 +38,16 @@ namespace gtsam {
 	 * For practical use, it would be good to subclass this factor and have the class type
 	 * construct the mask.
 	 */
-	template<class KEY>
-	class PartialPriorFactor: public NonlinearFactor1<KEY> {
+	template<class VALUE>
+	class PartialPriorFactor: public NonlinearFactor1<VALUE> {
 
 	public:
-		typedef typename KEY::Value T;
+		typedef VALUE T;
 
 	protected:
 
-		typedef NonlinearFactor1<KEY> Base;
-		typedef PartialPriorFactor<KEY> This;
+		typedef NonlinearFactor1<VALUE> Base;
+		typedef PartialPriorFactor<VALUE> This;
 
 		Vector prior_;             ///< measurement on logmap parameters, in compressed form
 		std::vector<size_t> mask_; ///< indices of values to constrain in compressed prior vector
@@ -60,7 +60,7 @@ namespace gtsam {
 		 * constructor with just minimum requirements for a factor - allows more
 		 * computation in the constructor.  This should only be used by subclasses
 		 */
-		PartialPriorFactor(const KEY& key, const SharedNoiseModel& model)
+		PartialPriorFactor(const Symbol& key, const SharedNoiseModel& model)
 		  : Base(model, key) {}
 
 	public:
@@ -71,14 +71,14 @@ namespace gtsam {
 		virtual ~PartialPriorFactor() {}
 
 		/** Single Element Constructor: acts on a single parameter specified by idx */
-		PartialPriorFactor(const KEY& key, size_t idx, double prior, const SharedNoiseModel& model) :
+		PartialPriorFactor(const Symbol& key, size_t idx, double prior, const SharedNoiseModel& model) :
 			Base(model, key), prior_(Vector_(1, prior)), mask_(1, idx), H_(zeros(1, T::Dim())) {
 			assert(model->dim() == 1);
 			this->fillH();
 		}
 
 		/** Indices Constructor: specify the mask with a set of indices */
-		PartialPriorFactor(const KEY& key, const std::vector<size_t>& mask, const Vector& prior,
+		PartialPriorFactor(const Symbol& key, const std::vector<size_t>& mask, const Vector& prior,
 				const SharedNoiseModel& model) :
 			Base(model, key), prior_(prior), mask_(mask), H_(zeros(mask.size(), T::Dim())) {
 			assert((size_t)prior_.size() == mask.size());

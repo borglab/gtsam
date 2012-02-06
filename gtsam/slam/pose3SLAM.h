@@ -30,8 +30,8 @@ namespace gtsam {
 	/// Use pose3SLAM namespace for specific SLAM instance
 	namespace pose3SLAM {
 
-		/// Creates a Key with data Pose3 and symbol 'x'
-		typedef TypedSymbol<Pose3, 'x'> Key;
+	  /// Convenience function for constructing a pose key
+	  inline Symbol PoseKey(Index j) { return Symbol('x', j); }
 
 		/**
 		 * Create a circle of n 3D poses tangent to circle of radius R, first pose at (R,0)
@@ -42,25 +42,23 @@ namespace gtsam {
 		Values circle(size_t n, double R);
 
 		/// A prior factor on Key with Pose3 data type.
-		typedef PriorFactor<Key> Prior;
+		typedef PriorFactor<Pose3> Prior;
 		/// A factor to put constraints between two factors.
-		typedef BetweenFactor<Key> Constraint;
+		typedef BetweenFactor<Pose3> Constraint;
 		/// A hard constraint would enforce that the given key would have the input value in the results.
-		typedef NonlinearEquality<Key> HardConstraint;
+		typedef NonlinearEquality<Pose3> HardConstraint;
 
 		/// Graph
 		struct Graph: public NonlinearFactorGraph {
 
 			/// Adds a factor between keys of the same type
-			void addPrior(const Key& i, const Pose3& p,
-					const SharedNoiseModel& model);
+			void addPrior(Index i, const Pose3& p, const SharedNoiseModel& model);
 
 			/// Creates a between factor between keys i and j with a noise model with Pos3 z in the graph
-			void addConstraint(const Key& i, const Key& j, const Pose3& z,
-					const SharedNoiseModel& model);
+			void addConstraint(Index i, Index j, const Pose3& z, const SharedNoiseModel& model);
 
 			/// Creates a hard constraint for key i with the given Pose3 p.
-			void addHardConstraint(const Key& i, const Pose3& p);
+			void addHardConstraint(Index i, const Pose3& p);
 		};
 
 		/// Optimizer

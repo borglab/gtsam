@@ -25,18 +25,18 @@ namespace gtsam {
 	/**
 	 * Binary factor for a bearing measurement
 	 */
-	template<class POSEKEY, class POINTKEY>
-	class BearingFactor: public NonlinearFactor2<POSEKEY, POINTKEY> {
+	template<class POSE, class POINT>
+	class BearingFactor: public NonlinearFactor2<POSE, POINT> {
 	private:
 
-		typedef typename POSEKEY::Value Pose;
-		typedef typename POSEKEY::Value::Rotation Rot;
-		typedef typename POINTKEY::Value Point;
+		typedef typename POSE Pose;
+		typedef typename Pose::Rotation Rot;
+		typedef typename POINT Point;
 
-		typedef BearingFactor<POSEKEY, POINTKEY> This;
-		typedef NonlinearFactor2<POSEKEY, POINTKEY> Base;
+		typedef BearingFactor<POSE, POINT> This;
+		typedef NonlinearFactor2<POSE, POINT> Base;
 
-		Rot z_; /** measurement */
+		Rot measured_; /** measurement */
 
 		/** concept check by type */
 		GTSAM_CONCEPT_TESTABLE_TYPE(Rot)
@@ -48,9 +48,9 @@ namespace gtsam {
 		BearingFactor() {}
 
 		/** primary constructor */
-		BearingFactor(const POSEKEY& i, const POINTKEY& j, const Rot& z,
+		BearingFactor(const Symbol& poseKey, const Symbol& pointKey, const Rot& measured,
 				const SharedNoiseModel& model) :
-					Base(model, i, j), z_(z) {
+					Base(model, poseKey, pointKey), measured_(measured) {
 		}
 
 		virtual ~BearingFactor() {}
@@ -59,18 +59,18 @@ namespace gtsam {
 		Vector evaluateError(const Pose& pose, const Point& point,
 				boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
 			Rot hx = pose.bearing(point, H1, H2);
-			return Rot::Logmap(z_.between(hx));
+			return Rot::Logmap(measured_.between(hx));
 		}
 
 		/** return the measured */
-		inline const Rot measured() const {
-			return z_;
+		const Rot& measured() const {
+			return measured_;
 		}
 
 		/** equals */
 		virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
 			const This *e =	dynamic_cast<const This*> (&expected);
-			return e != NULL && Base::equals(*e, tol) && this->z_.equals(e->z_, tol);
+			return e != NULL && Base::equals(*e, tol) && this->measured_.equals(e->measured_, tol);
 		}
 
 	private:
@@ -81,7 +81,7 @@ namespace gtsam {
 		void serialize(ARCHIVE & ar, const unsigned int version) {
 			ar & boost::serialization::make_nvp("NonlinearFactor2",
 					boost::serialization::base_object<Base>(*this));
-			ar & BOOST_SERIALIZATION_NVP(z_);
+			ar & BOOST_SERIALIZATION_NVP(measured_);
 		}
 
 	}; // BearingFactor

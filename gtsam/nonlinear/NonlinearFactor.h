@@ -68,25 +68,13 @@ protected:
 
 public:
 
-  typedef boost::shared_ptr<NonlinearFactor > shared_ptr;
+  typedef boost::shared_ptr<NonlinearFactor> shared_ptr;
 
 	/// @name Standard Constructors
 	/// @{
 
   /** Default constructor for I/O only */
   NonlinearFactor() {
-  }
-
-  /**
-   * Constructor
-   * @param keys A boost::tuple containing the variables involved in this factor,
-   * example: <tt>NonlinearFactor(make_tuple(symbol1, symbol2, symbol3))</tt>
-   */
-  template<class U1, class U2>
-  NonlinearFactor(const boost::tuples::cons<U1,U2>& keys) {
-    this->keys_.resize(boost::tuples::length<boost::tuples::cons<U1,U2> >::value);
-    // Use helper function to fill key vector, using 'cons' representation of tuple
-    __fill_from_tuple(this->keys(), 0, keys);
   }
 
   /**
@@ -185,16 +173,6 @@ public:
 
   /** Destructor */
   virtual ~NoiseModelFactor() {}
-
-  /**
-   * Constructor
-   * @param keys A boost::tuple containing the variables involved in this factor,
-   * example: <tt>NoiseModelFactor(noiseModel, make_tuple(symbol1, symbol2, symbol3)</tt>
-   */
-  template<class U1, class U2>
-  NoiseModelFactor(const SharedNoiseModel& noiseModel, const boost::tuples::cons<U1,U2>& keys)
-  : Base(keys), noiseModel_(noiseModel) {
-  }
 
   /**
    * Constructor
@@ -320,21 +298,18 @@ private:
 /* ************************************************************************* */
 /** A convenient base class for creating your own NoiseModelFactor with 1
  * variable.  To derive from this class, implement evaluateError(). */
-template<class KEY>
+template<class VALUE>
 class NonlinearFactor1: public NoiseModelFactor {
 
 public:
 
   // typedefs for value types pulled from keys
-  typedef typename KEY::Value X;
+  typedef VALUE X;
 
 protected:
 
-  // The value of the key. Not const to allow serialization
-  KEY key_;
-
   typedef NoiseModelFactor Base;
-  typedef NonlinearFactor1<KEY> This;
+  typedef NonlinearFactor1<VALUE> This;
 
 public:
 
@@ -343,22 +318,24 @@ public:
 
   virtual ~NonlinearFactor1() {}
 
-  inline const KEY& key() const {	return key_; }
+  inline const Symbol& key() const { return keys_[0]; }
 
   /**
    *  Constructor
    *  @param z measurement
    *  @param key by which to look up X value in Values
    */
-  NonlinearFactor1(const SharedNoiseModel& noiseModel, const KEY& key1) :
-    Base(noiseModel, make_tuple(key1)), key_(key1) {
+  NonlinearFactor1(const SharedNoiseModel& noiseModel, const Symbol& key1) :
+    Base(noiseModel) {
+    keys_.resize(1);
+    keys_[0] = key1;
   }
 
   /** Calls the 1-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
   virtual Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
     if(this->active(x)) {
-      const X& x1 = x[key_];
+      const X& x1 = x.at<X>(keys_[0]);
       if(H) {
         return evaluateError(x1, (*H)[0]);
       } else {
@@ -371,7 +348,7 @@ public:
 
   /** Print */
   virtual void print(const std::string& s = "") const {
-    std::cout << s << ": NonlinearFactor1(" << (std::string) this->key_ << ")\n";
+    std::cout << s << ": NonlinearFactor1(" << (std::string) keys_[0] << ")\n";
     this->noiseModel_->print("  noise model: ");
   }
 
@@ -391,7 +368,6 @@ private:
   void serialize(ARCHIVE & ar, const unsigned int version) {
     ar & boost::serialization::make_nvp("NoiseModelFactor",
         boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(key_);
   }
 };// \class NonlinearFactor1
 
@@ -399,23 +375,19 @@ private:
 /* ************************************************************************* */
 /** A convenient base class for creating your own NoiseModelFactor with 2
  * variables.  To derive from this class, implement evaluateError(). */
-template<class KEY1, class KEY2>
+template<class VALUE1, class VALUE2>
 class NonlinearFactor2: public NoiseModelFactor {
 
 public:
 
   // typedefs for value types pulled from keys
-  typedef typename KEY1::Value X1;
-  typedef typename KEY2::Value X2;
+  typedef VALUE1 X1;
+  typedef VALUE2 X2;
 
 protected:
 
-  // The values of the keys. Not const to allow serialization
-  KEY1 key1_;
-  KEY2 key2_;
-
   typedef NoiseModelFactor Base;
-  typedef NonlinearFactor2<KEY1, KEY2> This;
+  typedef NonlinearFactor2<VALUE1, VALUE2> This;
 
 public:
 
@@ -429,21 +401,25 @@ public:
    * @param j1 key of the first variable
    * @param j2 key of the second variable
    */
-  NonlinearFactor2(const SharedNoiseModel& noiseModel, const KEY1& j1, const KEY2& j2) :
-    Base(noiseModel, make_tuple(j1,j2)), key1_(j1), key2_(j2) {}
+  NonlinearFactor2(const SharedNoiseModel& noiseModel, const Symbol& j1, const Symbol& j2) :
+    Base(noiseModel) {
+    keys_.resize(2);
+    keys_[0] = j1;
+    keys_[1] = j2;
+  }
 
   virtual ~NonlinearFactor2() {}
 
   /** methods to retrieve both keys */
-  inline const KEY1& key1() const { return key1_;	}
-  inline const KEY2& key2() const {	return key2_;	}
+  inline const Symbol& key1() const { return keys_[0];	}
+  inline const Symbol& key2() const {	return keys_[1];	}
 
   /** Calls the 2-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
   virtual Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
     if(this->active(x)) {
-      const X1& x1 = x[key1_];
-      const X2& x2 = x[key2_];
+      const X1& x1 = x.at<X1>(keys_[0]);
+      const X2& x2 = x.at<X2>(keys_[1]);
       if(H) {
         return evaluateError(x1, x2, (*H)[0], (*H)[1]);
       } else {
@@ -457,8 +433,8 @@ public:
   /** Print */
   virtual void print(const std::string& s = "") const {
     std::cout << s << ": NonlinearFactor2("
-    		<< (std::string) this->key1_ << ","
-    		<< (std::string) this->key2_ << ")\n";
+    		<< (std::string) keys_[0] << ","
+    		<< (std::string) keys_[1] << ")\n";
     this->noiseModel_->print("  noise model: ");
   }
 
@@ -479,33 +455,26 @@ private:
   void serialize(ARCHIVE & ar, const unsigned int version) {
     ar & boost::serialization::make_nvp("NoiseModelFactor",
         boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(key1_);
-    ar & BOOST_SERIALIZATION_NVP(key2_);
   }
 }; // \class NonlinearFactor2
 
 /* ************************************************************************* */
 /** A convenient base class for creating your own NoiseModelFactor with 3
  * variables.  To derive from this class, implement evaluateError(). */
-template<class KEY1, class KEY2, class KEY3>
+template<class VALUE1, class VALUE2, class VALUE3>
 class NonlinearFactor3: public NoiseModelFactor {
 
 public:
 
   // typedefs for value types pulled from keys
-  typedef typename KEY1::Value X1;
-  typedef typename KEY2::Value X2;
-  typedef typename KEY3::Value X3;
+  typedef VALUE1 X1;
+  typedef VALUE2 X2;
+  typedef VALUE3 X3;
 
 protected:
 
-  // The values of the keys. Not const to allow serialization
-  KEY1 key1_;
-  KEY2 key2_;
-  KEY3 key3_;
-
   typedef NoiseModelFactor Base;
-  typedef NonlinearFactor3<KEY1, KEY2, KEY3> This;
+  typedef NonlinearFactor3<VALUE1, VALUE2, VALUE3> This;
 
 public:
 
@@ -520,24 +489,29 @@ public:
    * @param j2 key of the second variable
    * @param j3 key of the third variable
    */
-  NonlinearFactor3(const SharedNoiseModel& noiseModel, const KEY1& j1, const KEY2& j2, const KEY3& j3) :
-    Base(noiseModel, make_tuple(j1,j2,j3)), key1_(j1), key2_(j2), key3_(j3) {}
+  NonlinearFactor3(const SharedNoiseModel& noiseModel, const Symbol& j1, const Symbol& j2, const Symbol& j3) :
+    Base(noiseModel) {
+    keys_.resize(3);
+    keys_[0] = j1;
+    keys_[1] = j2;
+    keys_[2] = j3;
+  }
 
   virtual ~NonlinearFactor3() {}
 
   /** methods to retrieve keys */
-  inline const KEY1& key1() const { return key1_; }
-  inline const KEY2& key2() const { return key2_; }
-  inline const KEY3& key3() const { return key3_; }
+  inline const Symbol& key1() const { return keys_[0]; }
+  inline const Symbol& key2() const { return keys_[1]; }
+  inline const Symbol& key3() const { return keys_[2]; }
 
   /** Calls the 3-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
   virtual Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
     if(this->active(x)) {
       if(H)
-        return evaluateError(x[key1_], x[key2_], x[key3_], (*H)[0], (*H)[1], (*H)[2]);
+        return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]), (*H)[0], (*H)[1], (*H)[2]);
       else
-        return evaluateError(x[key1_], x[key2_], x[key3_]);
+        return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]));
     } else {
       return zero(this->dim());
     }
@@ -546,9 +520,9 @@ public:
   /** Print */
   virtual void print(const std::string& s = "") const {
     std::cout << s << ": NonlinearFactor3("
-    		<< (std::string) this->key1_ << ","
-    		<< (std::string) this->key2_ << ","
-    		<< (std::string) this->key3_ << ")\n";
+    		<< (std::string) this->keys_[0] << ","
+    		<< (std::string) this->keys_[1] << ","
+    		<< (std::string) this->keys_[2] << ")\n";
     this->noiseModel_->print("  noise model: ");
   }
 
@@ -572,36 +546,27 @@ private:
   void serialize(ARCHIVE & ar, const unsigned int version) {
     ar & boost::serialization::make_nvp("NoiseModelFactor",
         boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(key1_);
-    ar & BOOST_SERIALIZATION_NVP(key2_);
-    ar & BOOST_SERIALIZATION_NVP(key3_);
   }
 }; // \class NonlinearFactor3
 
 /* ************************************************************************* */
 /** A convenient base class for creating your own NoiseModelFactor with 4
  * variables.  To derive from this class, implement evaluateError(). */
-template<class KEY1, class KEY2, class KEY3, class KEY4>
+template<class VALUE1, class VALUE2, class VALUE3, class VALUE4>
 class NonlinearFactor4: public NoiseModelFactor {
 
 public:
 
   // typedefs for value types pulled from keys
-  typedef typename KEY1::Value X1;
-  typedef typename KEY2::Value X2;
-  typedef typename KEY3::Value X3;
-  typedef typename KEY4::Value X4;
+  typedef VALUE1 X1;
+  typedef VALUE2 X2;
+  typedef VALUE3 X3;
+  typedef VALUE4 X4;
 
 protected:
 
-  // The values of the keys. Not const to allow serialization
-  KEY1 key1_;
-  KEY2 key2_;
-  KEY3 key3_;
-  KEY4 key4_;
-
   typedef NoiseModelFactor Base;
-  typedef NonlinearFactor4<KEY1, KEY2, KEY3, KEY4> This;
+  typedef NonlinearFactor4<VALUE1, VALUE2, VALUE3, VALUE4> This;
 
 public:
 
@@ -617,25 +582,31 @@ public:
    * @param j3 key of the third variable
    * @param j4 key of the fourth variable
    */
-  NonlinearFactor4(const SharedNoiseModel& noiseModel, const KEY1& j1, const KEY2& j2, const KEY3& j3, const KEY4& j4) :
-    Base(noiseModel, make_tuple(j1,j2,j3,j4)), key1_(j1), key2_(j2), key3_(j3), key4_(j4) {}
+  NonlinearFactor4(const SharedNoiseModel& noiseModel, const Symbol& j1, const Symbol& j2, const Symbol& j3, const Symbol& j4) :
+    Base(noiseModel) {
+    keys_.resize(4);
+    keys_[0] = j1;
+    keys_[1] = j2;
+    keys_[2] = j3;
+    keys_[3] = j4;
+  }
 
   virtual ~NonlinearFactor4() {}
 
   /** methods to retrieve keys */
-  inline const KEY1& key1() const { return key1_; }
-  inline const KEY2& key2() const { return key2_; }
-  inline const KEY3& key3() const { return key3_; }
-  inline const KEY4& key4() const { return key4_; }
+  inline const Symbol& key1() const { return keys_[0]; }
+  inline const Symbol& key2() const { return keys_[1]; }
+  inline const Symbol& key3() const { return keys_[2]; }
+  inline const Symbol& key4() const { return keys_[3]; }
 
   /** Calls the 4-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
   virtual Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
   	if(this->active(x)) {
   		if(H)
-  			return evaluateError(x[key1_], x[key2_], x[key3_], x[key4_], (*H)[0], (*H)[1], (*H)[2], (*H)[3]);
+  			return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]), x.at<X4>(keys_[3]), (*H)[0], (*H)[1], (*H)[2], (*H)[3]);
   		else
-  			return evaluateError(x[key1_], x[key2_], x[key3_], x[key4_]);
+  			return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]), x.at<X4>(keys_[3]));
   	} else {
   		return zero(this->dim());
   	}
@@ -644,10 +615,10 @@ public:
   /** Print */
   virtual void print(const std::string& s = "") const {
     std::cout << s << ": NonlinearFactor4("
-    		<< (std::string) this->key1_ << ","
-    		<< (std::string) this->key2_ << ","
-     		<< (std::string) this->key3_ << ","
-    		<< (std::string) this->key4_ << ")\n";
+    		<< (std::string) this->keys_[0] << ","
+    		<< (std::string) this->keys_[1] << ","
+     		<< (std::string) this->keys_[2] << ","
+    		<< (std::string) this->keys_[3] << ")\n";
     this->noiseModel_->print("  noise model: ");
   }
 
@@ -671,39 +642,28 @@ private:
   void serialize(ARCHIVE & ar, const unsigned int version) {
     ar & boost::serialization::make_nvp("NoiseModelFactor",
         boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(key1_);
-    ar & BOOST_SERIALIZATION_NVP(key2_);
-    ar & BOOST_SERIALIZATION_NVP(key3_);
-    ar & BOOST_SERIALIZATION_NVP(key4_);
   }
 }; // \class NonlinearFactor4
 
 /* ************************************************************************* */
 /** A convenient base class for creating your own NoiseModelFactor with 5
  * variables.  To derive from this class, implement evaluateError(). */
-template<class KEY1, class KEY2, class KEY3, class KEY4, class KEY5>
+template<class VALUE1, class VALUE2, class VALUE3, class VALUE4, class VALUE5>
 class NonlinearFactor5: public NoiseModelFactor {
 
 public:
 
   // typedefs for value types pulled from keys
-  typedef typename KEY1::Value X1;
-  typedef typename KEY2::Value X2;
-  typedef typename KEY3::Value X3;
-  typedef typename KEY4::Value X4;
-  typedef typename KEY5::Value X5;
+  typedef VALUE1 X1;
+  typedef VALUE2 X2;
+  typedef VALUE3 X3;
+  typedef VALUE4 X4;
+  typedef VALUE5 X5;
 
 protected:
 
-  // The values of the keys. Not const to allow serialization
-  KEY1 key1_;
-  KEY2 key2_;
-  KEY3 key3_;
-  KEY4 key4_;
-  KEY5 key5_;
-
   typedef NoiseModelFactor Base;
-  typedef NonlinearFactor5<KEY1, KEY2, KEY3, KEY4, KEY5> This;
+  typedef NonlinearFactor5<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5> This;
 
 public:
 
@@ -720,26 +680,33 @@ public:
    * @param j4 key of the fourth variable
    * @param j5 key of the fifth variable
    */
-  NonlinearFactor5(const SharedNoiseModel& noiseModel, const KEY1& j1, const KEY2& j2, const KEY3& j3, const KEY4& j4, const KEY5& j5) :
-    Base(noiseModel, make_tuple(j1,j2,j3,j4,j5)), key1_(j1), key2_(j2), key3_(j3), key4_(j4), key5_(j5) {}
+  NonlinearFactor5(const SharedNoiseModel& noiseModel, const Symbol& j1, const Symbol& j2, const Symbol& j3, const Symbol& j4, const Symbol& j5) :
+    Base(noiseModel) {
+    keys_.resize(5);
+    keys_[0] = j1;
+    keys_[1] = j2;
+    keys_[2] = j3;
+    keys_[3] = j4;
+    keys_[4] = j5;
+  }
 
   virtual ~NonlinearFactor5() {}
 
   /** methods to retrieve keys */
-  inline const KEY1& key1() const { return key1_; }
-  inline const KEY2& key2() const { return key2_; }
-  inline const KEY3& key3() const { return key3_; }
-  inline const KEY4& key4() const { return key4_; }
-  inline const KEY5& key5() const { return key5_; }
+  inline const Symbol& key1() const { return keys_[0]; }
+  inline const Symbol& key2() const { return keys_[1]; }
+  inline const Symbol& key3() const { return keys_[2]; }
+  inline const Symbol& key4() const { return keys_[3]; }
+  inline const Symbol& key5() const { return keys_[4]; }
 
   /** Calls the 5-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
   virtual Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
   	if(this->active(x)) {
       if(H)
-        return evaluateError(x[key1_], x[key2_], x[key3_], x[key4_], x[key5_], (*H)[0], (*H)[1], (*H)[2], (*H)[3], (*H)[4]);
+        return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]), x.at<X4>(keys_[3]), x.at<X5>(keys_[4]), (*H)[0], (*H)[1], (*H)[2], (*H)[3], (*H)[4]);
       else
-        return evaluateError(x[key1_], x[key2_], x[key3_], x[key4_], x[key5_]);
+        return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]), x.at<X4>(keys_[3]), x.at<X5>(keys_[4]));
   	} else {
   		return zero(this->dim());
   	}
@@ -748,11 +715,11 @@ public:
   /** Print */
   virtual void print(const std::string& s = "") const {
     std::cout << s << ": NonlinearFactor5("
-    		<< (std::string) this->key1_ << ","
-    		<< (std::string) this->key2_ << ","
-     		<< (std::string) this->key3_ << ","
-    		<< (std::string) this->key4_ << ","
-    		<< (std::string) this->key5_ << ")\n";
+    		<< (std::string) this->keys_[0] << ","
+    		<< (std::string) this->keys_[1] << ","
+     		<< (std::string) this->keys_[2] << ","
+    		<< (std::string) this->keys_[3] << ","
+    		<< (std::string) this->keys_[4] << ")\n";
     this->noiseModel_->print("  noise model: ");
   }
 
@@ -777,42 +744,29 @@ private:
   void serialize(ARCHIVE & ar, const unsigned int version) {
     ar & boost::serialization::make_nvp("NoiseModelFactor",
         boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(key1_);
-    ar & BOOST_SERIALIZATION_NVP(key2_);
-    ar & BOOST_SERIALIZATION_NVP(key3_);
-    ar & BOOST_SERIALIZATION_NVP(key4_);
-    ar & BOOST_SERIALIZATION_NVP(key5_);
   }
 }; // \class NonlinearFactor5
 
 /* ************************************************************************* */
 /** A convenient base class for creating your own NoiseModelFactor with 6
  * variables.  To derive from this class, implement evaluateError(). */
-template<class KEY1, class KEY2, class KEY3, class KEY4, class KEY5, class KEY6>
+template<class VALUE1, class VALUE2, class VALUE3, class VALUE4, class VALUE5, class VALUE6>
 class NonlinearFactor6: public NoiseModelFactor {
 
 public:
 
   // typedefs for value types pulled from keys
-  typedef typename KEY1::Value X1;
-  typedef typename KEY2::Value X2;
-  typedef typename KEY3::Value X3;
-  typedef typename KEY4::Value X4;
-  typedef typename KEY5::Value X5;
-  typedef typename KEY6::Value X6;
+  typedef VALUE1 X1;
+  typedef VALUE2 X2;
+  typedef VALUE3 X3;
+  typedef VALUE4 X4;
+  typedef VALUE5 X5;
+  typedef VALUE6 X6;
 
 protected:
 
-  // The values of the keys. Not const to allow serialization
-  KEY1 key1_;
-  KEY2 key2_;
-  KEY3 key3_;
-  KEY4 key4_;
-  KEY5 key5_;
-  KEY6 key6_;
-
   typedef NoiseModelFactor Base;
-  typedef NonlinearFactor6<KEY1, KEY2, KEY3, KEY4, KEY5, KEY6> This;
+  typedef NonlinearFactor6<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5, VALUE6> This;
 
 public:
 
@@ -830,27 +784,35 @@ public:
    * @param j5 key of the fifth variable
    * @param j6 key of the fifth variable
    */
-  NonlinearFactor6(const SharedNoiseModel& noiseModel, const KEY1& j1, const KEY2& j2, const KEY3& j3, const KEY4& j4, const KEY5& j5, const KEY6& j6) :
-    Base(noiseModel, make_tuple(j1,j2,j3,j4,j5,j6)), key1_(j1), key2_(j2), key3_(j3), key4_(j4), key5_(j5), key6_(j6) {}
+  NonlinearFactor6(const SharedNoiseModel& noiseModel, const Symbol& j1, const Symbol& j2, const Symbol& j3, const Symbol& j4, const Symbol& j5, const Symbol& j6) :
+    Base(noiseModel) {
+    keys_.resize(6);
+    keys_[0] = j1;
+    keys_[1] = j2;
+    keys_[2] = j3;
+    keys_[3] = j4;
+    keys_[4] = j5;
+    keys_[5] = j6;
+  }
 
   virtual ~NonlinearFactor6() {}
 
   /** methods to retrieve keys */
-  inline const KEY1& key1() const { return key1_; }
-  inline const KEY2& key2() const { return key2_; }
-  inline const KEY3& key3() const { return key3_; }
-  inline const KEY4& key4() const { return key4_; }
-  inline const KEY5& key5() const { return key5_; }
-  inline const KEY6& key6() const { return key6_; }
+  inline const Symbol& key1() const { return keys_[0]; }
+  inline const Symbol& key2() const { return keys_[1]; }
+  inline const Symbol& key3() const { return keys_[2]; }
+  inline const Symbol& key4() const { return keys_[3]; }
+  inline const Symbol& key5() const { return keys_[4]; }
+  inline const Symbol& key6() const { return keys_[5]; }
 
   /** Calls the 6-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
   virtual Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
   	if(this->active(x)) {
       if(H)
-        return evaluateError(x[key1_], x[key2_], x[key3_], x[key4_], x[key5_], x[key6_], (*H)[0], (*H)[1], (*H)[2], (*H)[3], (*H)[4], (*H)[5]);
+        return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]), x.at<X4>(keys_[3]), x.at<X5>(keys_[4]), x.at<X6>(keys_[5]), (*H)[0], (*H)[1], (*H)[2], (*H)[3], (*H)[4], (*H)[5]);
       else
-        return evaluateError(x[key1_], x[key2_], x[key3_], x[key4_], x[key5_], x[key6_]);
+        return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]), x.at<X4>(keys_[3]), x.at<X5>(keys_[4]), x.at<X6>(keys_[5]));
   	} else {
   		return zero(this->dim());
   	}
@@ -859,12 +821,12 @@ public:
   /** Print */
   virtual void print(const std::string& s = "") const {
     std::cout << s << ": NonlinearFactor6("
-    		<< (std::string) this->key1_ << ","
-    		<< (std::string) this->key2_ << ","
-     		<< (std::string) this->key3_ << ","
-    		<< (std::string) this->key4_ << ","
-    		<< (std::string) this->key5_ << ","
-    		<< (std::string) this->key6_ << ")\n";
+    		<< (std::string) this->keys_[0] << ","
+    		<< (std::string) this->keys_[1] << ","
+     		<< (std::string) this->keys_[2] << ","
+    		<< (std::string) this->keys_[3] << ","
+    		<< (std::string) this->keys_[4] << ","
+    		<< (std::string) this->keys_[5] << ")\n";
     this->noiseModel_->print("  noise model: ");
   }
 
@@ -890,12 +852,6 @@ private:
   void serialize(ARCHIVE & ar, const unsigned int version) {
     ar & boost::serialization::make_nvp("NoiseModelFactor",
         boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(key1_);
-    ar & BOOST_SERIALIZATION_NVP(key2_);
-    ar & BOOST_SERIALIZATION_NVP(key3_);
-    ar & BOOST_SERIALIZATION_NVP(key4_);
-    ar & BOOST_SERIALIZATION_NVP(key5_);
-    ar & BOOST_SERIALIZATION_NVP(key6_);
   }
 }; // \class NonlinearFactor6
 

@@ -28,16 +28,16 @@ namespace gtsam {
  * will need to have its value function implemented to return
  * a scalar for comparison.
  */
-template<class KEY>
-struct BoundingConstraint1: public NonlinearFactor1<KEY> {
-	typedef typename KEY::Value X;
-	typedef NonlinearFactor1<KEY> Base;
-	typedef boost::shared_ptr<BoundingConstraint1<KEY> > shared_ptr;
+template<class VALUE>
+struct BoundingConstraint1: public NonlinearFactor1<VALUE> {
+	typedef VALUE X;
+	typedef NonlinearFactor1<VALUE> Base;
+	typedef boost::shared_ptr<BoundingConstraint1<VALUE> > shared_ptr;
 
 	double threshold_;
 	bool isGreaterThan_; /// flag for greater/less than
 
-	BoundingConstraint1(const KEY& key, double threshold,
+	BoundingConstraint1(const Symbol& key, double threshold,
 			bool isGreaterThan, double mu = 1000.0) :
 				Base(noiseModel::Constrained::All(1, mu), key),
 				threshold_(threshold), isGreaterThan_(isGreaterThan) {
@@ -59,7 +59,7 @@ struct BoundingConstraint1: public NonlinearFactor1<KEY> {
 	/** active when constraint *NOT* met */
 	bool active(const Values& c) const {
 		// note: still active at equality to avoid zigzagging
-		double x = value(c[this->key_]);
+		double x = value(c[this->key()]);
 		return (isGreaterThan_) ? x <= threshold_ : x >= threshold_;
 	}
 
