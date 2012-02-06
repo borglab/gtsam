@@ -77,7 +77,12 @@ struct LieVector : public Vector {
 	}
 
 	/** compose with another object */
-	inline LieVector compose(const LieVector& p) const {
+	inline LieVector compose(const LieVector& p,
+			boost::optional<Matrix&> H1=boost::none,
+			boost::optional<Matrix&> H2=boost::none) const {
+		if(H1) *H1 = eye(dim());
+		if(H2) *H2 = eye(p.dim());
+
 		return LieVector(vector() + p);
 	}
 
@@ -91,7 +96,9 @@ struct LieVector : public Vector {
 	}
 
 	/** invert the object and yield a new one */
-	inline LieVector inverse() const {
+	inline LieVector inverse(boost::optional<Matrix&> H=boost::none) const {
+		if(H) *H = -eye(dim());
+
 		return LieVector(-1.0 * vector());
 	}
 
