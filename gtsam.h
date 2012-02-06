@@ -207,6 +207,28 @@ class Pose3 {
 	gtsam::Rot3 rotation() const;
 };
 
+class CalibratedCamera {
+    
+    CalibratedCamera();
+    CalibratedCamera(const gtsam::Pose3& pose);
+    CalibratedCamera(const Vector& v);
+
+    void print(string s) const;
+    bool equals(const gtsam::Pose3& pose, double tol) const;
+
+    gtsam::Pose3 pose() const;
+
+    gtsam::CalibratedCamera compose(const gtsam::CalibratedCamera& c) const;
+    gtsam::CalibratedCamera inverse() const;
+    gtsam::CalibratedCamera level(const gtsam::Pose2& pose2, double height);
+    gtsam::CalibratedCamera retract(const Vector& d) const;
+    Vector localCoordinates(const gtsam::CalibratedCamera& T2) const;
+
+    gtsam::Point2 project(const gtsam::Point3& point) const;
+    static gtsam::Point2 project_to_camera(const gtsam::Point3& cameraPoint);
+};
+
+
 //*************************************************************************
 // inference
 //*************************************************************************
