@@ -35,6 +35,7 @@ namespace pose2SLAM {
 
   /// Convenience function for constructing a pose key
   inline Symbol PoseKey(Index j) { return Symbol('x', j); }
+
   /// Values class, inherited from Values, using PoseKeys, mainly used as a convenience for MATLAB wrapper
   struct Values: public gtsam::Values {
 
@@ -49,10 +50,10 @@ namespace pose2SLAM {
     // Convenience for MATLAB wrapper, which does not allow for identically named methods
 
     /// get a pose
-    Pose2 pose(int key) const { return (*this)[PoseKey(key)]; }
+    Pose2 pose(Index key) const { return at<Pose2>(PoseKey(key)); }
 
     /// insert a pose
-    void insertPose(int key, const Pose2& pose) { insert(PoseKey(key), pose); }
+    void insertPose(Index key, const Pose2& pose) { insert(PoseKey(key), pose); }
   };
 
   /**

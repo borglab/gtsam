@@ -33,14 +33,11 @@ namespace planarSLAM {
 
   using namespace gtsam;
 
-  /// Typedef for a PoseKey with Pose2 data and 'x' symbol
-  typedef TypedSymbol<Pose2, 'x'> PoseKey;
-
-  /// Typedef for a PointKey with Point2 data and 'l' symbol
-  typedef TypedSymbol<Point2, 'l'> PointKey;
-
   /// Convenience function for constructing a pose key
   inline Symbol PoseKey(Index j) { return Symbol('x', j); }
+
+  /// Convenience function for constructing a pose key
+  inline Symbol PointKey(Index j) { return Symbol('l', j); }
 
   /*
    * List of typedefs for factors
@@ -72,16 +69,16 @@ namespace planarSLAM {
     }
 
     /// get a pose
-    Pose2 pose(int key) const {	return (*this)[PoseKey(key)]; }
+    Pose2 pose(Index key) const { return at<Pose2>(PoseKey(key)); }
 
     /// get a point
-    Point2 point(int key) const {	return (*this)[PointKey(key)]; }
+    Point2 point(Index key) const { return at<Point2>(PointKey(key)); }
 
     /// insert a pose
-    void insertPose(int key, const Pose2& pose) {insert(PoseKey(key), pose); }
+    void insertPose(Index key, const Pose2& pose) { insert(PoseKey(key), pose); }
 
     /// insert a point
-    void insertPoint(int key, const Point2& point) {insert(PointKey(key), point); }
+    void insertPoint(Index key, const Point2& point) { insert(PointKey(key), point); }
   };
 
   /// Creates a NonlinearFactorGraph with the Values type
