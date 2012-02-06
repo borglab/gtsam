@@ -4,8 +4,8 @@
 using namespace geometry;
 void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  checkArguments("x",nargout,nargin-1,0);
+  checkArguments("returnChar",nargout,nargin-1,0);
   shared_ptr<Point2> self = unwrap_shared_ptr< Point2 >(in[0],"Point2");
-  double result = self->x();
-  out[0] = wrap< double >(result);
+  char result = self->returnChar();
+  out[0] = wrap< char >(result);
 }

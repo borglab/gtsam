@@ -42,7 +42,7 @@ void Method::matlab_mfile(const string& classPath) const {
   file.oss << "end" << endl;
 
   // close file
-  file.emit(false);
+  file.emit(true);
 }
 
 /* ************************************************************************* */
