@@ -86,16 +86,16 @@ TEST( Graph, composePoses )
 	graph.addOdometry(2,3, p23, cov);
 	graph.addOdometry(4,3, p43, cov);
 
-	PredecessorMap<pose2SLAM::PoseKey> tree;
-	tree.insert(pose2SLAM::PoseKey(1),2);
-	tree.insert(pose2SLAM::PoseKey(2),2);
-	tree.insert(pose2SLAM::PoseKey(3),2);
-	tree.insert(pose2SLAM::PoseKey(4),3);
+	PredecessorMap<Symbol> tree;
+	tree.insert(pose2SLAM::PoseKey(1),pose2SLAM::PoseKey(2));
+	tree.insert(pose2SLAM::PoseKey(2),pose2SLAM::PoseKey(2));
+	tree.insert(pose2SLAM::PoseKey(3),pose2SLAM::PoseKey(2));
+	tree.insert(pose2SLAM::PoseKey(4),pose2SLAM::PoseKey(3));
 
 	Pose2 rootPose = p2;
 
 	boost::shared_ptr<Values> actual = composePoses<pose2SLAM::Graph, pose2SLAM::Odometry,
-			Pose2, pose2SLAM::PoseKey> (graph, tree, rootPose);
+			Pose2, Symbol> (graph, tree, rootPose);
 
 	Values expected;
 	expected.insert(pose2SLAM::PoseKey(1), p1);

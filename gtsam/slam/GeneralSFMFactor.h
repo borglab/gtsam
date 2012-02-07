@@ -53,7 +53,7 @@ namespace gtsam {
 		 * @param j is the index of the landmark
 		 */
 		GeneralSFMFactor(const Point2& measured, const SharedNoiseModel& model, const Symbol& cameraKey, const Symbol& landmarkKey) :
-		  Base(model, cameraKey, cameraKey), measured_(measured) {}
+		  Base(model, cameraKey, landmarkKey), measured_(measured) {}
 
 		GeneralSFMFactor():measured_(0.0,0.0) {} 							///< default constructor
 		GeneralSFMFactor(const Point2 & p):measured_(p) {}			///< constructor that takes a Point2

@@ -525,8 +525,8 @@ TEST (Serialization, planar_system) {
 	graph.add(constraint);
 
 	// text
-	EXPECT(equalsObj<PoseKey>(PoseKey(2)));
-	EXPECT(equalsObj<PointKey>(PointKey(3)));
+	EXPECT(equalsObj<Symbol>(PoseKey(2)));
+	EXPECT(equalsObj<Symbol>(PointKey(3)));
 	EXPECT(equalsObj<planarSLAM::Values>(values));
 	EXPECT(equalsObj<Prior>(prior));
 	EXPECT(equalsObj<Bearing>(bearing));
@@ -537,8 +537,8 @@ TEST (Serialization, planar_system) {
 	EXPECT(equalsObj<Graph>(graph));
 
 	// xml
-	EXPECT(equalsXML<PoseKey>(PoseKey(2)));
-	EXPECT(equalsXML<PointKey>(PointKey(3)));
+	EXPECT(equalsXML<Symbol>(PoseKey(2)));
+	EXPECT(equalsXML<Symbol>(PointKey(3)));
 	EXPECT(equalsXML<planarSLAM::Values>(values));
 	EXPECT(equalsXML<Prior>(prior));
 	EXPECT(equalsXML<Bearing>(bearing));
@@ -562,8 +562,8 @@ BOOST_CLASS_EXPORT_GUID(visualSLAM::StereoFactor,    "gtsam::visualSLAM::StereoF
 TEST (Serialization, visual_system) {
 	using namespace visualSLAM;
 	Values values;
-	PoseKey x1(1), x2(2);
-	PointKey l1(1), l2(2);
+	Symbol x1('x',1), x2('x',2);
+	Symbol l1('l',1), l2('l',2);
 	Pose3 pose1 = pose3, pose2 = pose3.inverse();
 	Point3 pt1(1.0, 2.0, 3.0), pt2(4.0, 5.0, 6.0);
 	values.insert(x1, pose1);
@@ -574,7 +574,7 @@ TEST (Serialization, visual_system) {
 	boost::shared_ptr<Cal3_S2> K(new Cal3_S2(cal1));
 
 	Graph graph;
-	graph.addMeasurement(Point2(1.0, 2.0), model2, x1, l1, K);
+	graph.addMeasurement(Point2(1.0, 2.0), model2, 1, 1, K);
 	graph.addPointConstraint(1, pt1);
 	graph.addPointPrior(1, pt2, model3);
 	graph.addPoseConstraint(1, pose1);

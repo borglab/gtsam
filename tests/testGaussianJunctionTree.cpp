@@ -125,8 +125,8 @@ TEST( GaussianJunctionTree, optimizeMultiFrontal2)
 
 /* ************************************************************************* */
 TEST(GaussianJunctionTree, slamlike) {
-  typedef planarSLAM::PoseKey PoseKey;
-  typedef planarSLAM::PointKey PointKey;
+  using planarSLAM::PoseKey;
+  using planarSLAM::PointKey;
 
   Values init;
   planarSLAM::Graph newfactors;
@@ -195,7 +195,7 @@ TEST(GaussianJunctionTree, simpleMarginal) {
 
   // Create a simple graph
   pose2SLAM::Graph fg;
-  fg.addPrior(pose2SLAM::PoseKey(0), Pose2(), sharedSigma(3, 10.0));
+  fg.addPrior(0, Pose2(), sharedSigma(3, 10.0));
   fg.addOdometry(0, 1, Pose2(1.0, 0.0, 0.0), sharedSigmas(Vector_(3, 10.0, 1.0, 1.0)));
 
   Values init;

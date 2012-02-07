@@ -17,6 +17,8 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#define GTSAM_MAGIC_KEY
+
 #include <gtsam/slam/simulated2DConstraints.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
@@ -37,7 +39,7 @@ typedef boost::shared_ptr<Values> shared_values;
 typedef NonlinearOptimizer<Graph> Optimizer;
 
 // some simple inequality constraints
-simulated2D::PoseKey key(1);
+Symbol key(simulated2D::PoseKey(1));
 double mu = 10.0;
 // greater than
 iq2D::PoseXInequality constraint1(key, 1.0, true, mu);
@@ -151,7 +153,7 @@ TEST( testBoundingConstraint, unary_simple_optimization1) {
 	Point2 start_pt(0.0, 1.0);
 
 	shared_graph graph(new Graph());
-	simulated2D::PoseKey x1(1);
+	Symbol x1("x1");
 	graph->add(iq2D::PoseXInequality(x1, 1.0, true));
 	graph->add(iq2D::PoseYInequality(x1, 2.0, true));
 	graph->add(simulated2D::Prior(start_pt, soft_model2, x1));
@@ -173,7 +175,7 @@ TEST( testBoundingConstraint, unary_simple_optimization2) {
 	Point2 start_pt(2.0, 3.0);
 
 	shared_graph graph(new Graph());
-	simulated2D::PoseKey x1(1);
+	Symbol x1("x1");
 	graph->add(iq2D::PoseXInequality(x1, 1.0, false));
 	graph->add(iq2D::PoseYInequality(x1, 2.0, false));
 	graph->add(simulated2D::Prior(start_pt, soft_model2, x1));
@@ -189,7 +191,7 @@ TEST( testBoundingConstraint, unary_simple_optimization2) {
 
 /* ************************************************************************* */
 TEST( testBoundingConstraint, MaxDistance_basics) {
-	simulated2D::PoseKey key1(1), key2(2);
+	Symbol key1("x1"), key2("x2");
 	Point2 pt1, pt2(1.0, 0.0), pt3(2.0, 0.0), pt4(3.0, 0.0);
 	iq2D::PoseMaxDistConstraint rangeBound(key1, key2, 2.0, mu);
 	EXPECT_DOUBLES_EQUAL(2.0, rangeBound.threshold(), tol);
@@ -231,7 +233,7 @@ TEST( testBoundingConstraint, MaxDistance_basics) {
 TEST( testBoundingConstraint, MaxDistance_simple_optimization) {
 
 	Point2 pt1, pt2_init(5.0, 0.0), pt2_goal(2.0, 0.0);
-	simulated2D::PoseKey x1(1), x2(2);
+  Symbol x1("x1"), x2("x2");
 
 	Graph graph;
 	graph.add(simulated2D::equality_constraints::UnaryEqualityConstraint(pt1, x1));
@@ -254,8 +256,7 @@ TEST( testBoundingConstraint, MaxDistance_simple_optimization) {
 /* ************************************************************************* */
 TEST( testBoundingConstraint, avoid_demo) {
 
-	simulated2D::PoseKey x1(1), x2(2), x3(3);
-	simulated2D::PointKey l1(1);
+  Symbol x1("x1"), x2("x2"), x3("x3"), l1("l1");
 	double radius = 1.0;
 	Point2 x1_pt, x2_init(2.0, 0.5), x2_goal(2.0, 1.0), x3_pt(4.0, 0.0), l1_pt(2.0, 0.0);
 	Point2 odo(2.0, 0.0);

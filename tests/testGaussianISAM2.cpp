@@ -202,8 +202,8 @@ TEST(ISAM2, slamlike_solution_gaussnewton)
 //  SETDEBUG("ISAM2 recalculate", true);
 
   // Pose and landmark key types from planarSLAM
-  typedef planarSLAM::PoseKey PoseKey;
-  typedef planarSLAM::PointKey PointKey;
+  using planarSLAM::PoseKey;
+  using planarSLAM::PointKey;
 
   // Set up parameters
   SharedDiagonal odoNoise = sharedSigmas(Vector_(3, 0.1, 0.1, M_PI/100.0));
@@ -335,8 +335,8 @@ TEST(ISAM2, slamlike_solution_dogleg)
 //  SETDEBUG("ISAM2 recalculate", true);
 
   // Pose and landmark key types from planarSLAM
-  typedef planarSLAM::PoseKey PoseKey;
-  typedef planarSLAM::PointKey PointKey;
+  using planarSLAM::PoseKey;
+  using planarSLAM::PointKey;
 
   // Set up parameters
   SharedDiagonal odoNoise = sharedSigmas(Vector_(3, 0.1, 0.1, M_PI/100.0));
@@ -463,8 +463,8 @@ TEST(ISAM2, slamlike_solution_dogleg)
 TEST(ISAM2, clone) {
 
   // Pose and landmark key types from planarSLAM
-  typedef planarSLAM::PoseKey PoseKey;
-  typedef planarSLAM::PointKey PointKey;
+  using planarSLAM::PoseKey;
+  using planarSLAM::PointKey;
 
   // Set up parameters
   SharedDiagonal odoNoise = sharedSigmas(Vector_(3, 0.1, 0.1, M_PI/100.0));
@@ -636,8 +636,8 @@ TEST(ISAM2, removeFactors)
   // then removes the 2nd-to-last landmark measurement
 
   // Pose and landmark key types from planarSLAM
-  typedef planarSLAM::PoseKey PoseKey;
-  typedef planarSLAM::PointKey PointKey;
+  using planarSLAM::PoseKey;
+  using planarSLAM::PointKey;
 
   // Set up parameters
   SharedDiagonal odoNoise = sharedSigmas(Vector_(3, 0.1, 0.1, M_PI/100.0));
@@ -775,8 +775,8 @@ TEST(ISAM2, constrained_ordering)
 //  SETDEBUG("ISAM2 recalculate", true);
 
   // Pose and landmark key types from planarSLAM
-  typedef planarSLAM::PoseKey PoseKey;
-  typedef planarSLAM::PointKey PointKey;
+  using planarSLAM::PoseKey;
+  using planarSLAM::PointKey;
 
   // Set up parameters
   SharedDiagonal odoNoise = sharedSigmas(Vector_(3, 0.1, 0.1, M_PI/100.0));

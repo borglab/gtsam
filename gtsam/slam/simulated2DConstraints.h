@@ -147,7 +147,7 @@ namespace simulated2D {
       }
     };
 
-    typedef MaxDistanceConstraint<PoseKey> PoseMaxDistConstraint; ///< Simulated2D domain example factor
+    typedef MaxDistanceConstraint<Point2> PoseMaxDistConstraint; ///< Simulated2D domain example factor
 
     /**
      * Binary inequality constraint forcing a minimum range

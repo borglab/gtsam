@@ -95,18 +95,18 @@ private:
  * Binary scalar inequality constraint, with a similar value() function
  * to implement for specific systems
  */
-template<class KEY1, class KEY2>
-struct BoundingConstraint2: public NonlinearFactor2<KEY1, KEY2> {
-	typedef typename KEY1::Value X1;
-	typedef typename KEY2::Value X2;
+template<class VALUE1, class VALUE2>
+struct BoundingConstraint2: public NonlinearFactor2<VALUE1, VALUE2> {
+	typedef VALUE1 X1;
+	typedef VALUE2 X2;
 
-	typedef NonlinearFactor2<KEY1, KEY2> Base;
-	typedef boost::shared_ptr<BoundingConstraint2<KEY1, KEY2> > shared_ptr;
+	typedef NonlinearFactor2<VALUE1, VALUE2> Base;
+	typedef boost::shared_ptr<BoundingConstraint2<VALUE1, VALUE2> > shared_ptr;
 
 	double threshold_;
 	bool isGreaterThan_; /// flag for greater/less than
 
-	BoundingConstraint2(const KEY1& key1, const KEY2& key2, double threshold,
+	BoundingConstraint2(const Symbol& key1, const Symbol& key2, double threshold,
 			bool isGreaterThan, double mu = 1000.0)
 	: Base(noiseModel::Constrained::All(1, mu), key1, key2),
 	  threshold_(threshold), isGreaterThan_(isGreaterThan) {}
@@ -127,7 +127,7 @@ struct BoundingConstraint2: public NonlinearFactor2<KEY1, KEY2> {
 	/** active when constraint *NOT* met */
 	bool active(const Values& c) const {
 		// note: still active at equality to avoid zigzagging
-		double x = value(c[this->key1_], c[this->key2_]);
+		double x = value(c[this->key1()], c[this->key2()]);
 		return (isGreaterThan_) ? x <= threshold_ : x >= threshold_;
 	}
 

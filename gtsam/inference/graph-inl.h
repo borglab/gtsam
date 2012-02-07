@@ -153,7 +153,7 @@ public:
 		KEY key_from = boost::get(boost::vertex_name, g, boost::source(edge, g));
 		KEY key_to = boost::get(boost::vertex_name, g, boost::target(edge, g));
 		POSE relativePose = boost::get(boost::edge_weight, g, edge);
-		config_->insert(key_to, (*config_)[key_from].compose(relativePose));
+		config_->insert(key_to, config_->at<POSE>(key_from).compose(relativePose));
 	}
 
 };

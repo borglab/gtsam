@@ -40,6 +40,9 @@ using namespace std;
 using namespace gtsam;
 using namespace example;
 
+using simulated2D::PoseKey;
+using simulated2D::PointKey;
+
 typedef boost::shared_ptr<NonlinearFactor > shared_nlf;
 
 /* ************************************************************************* */
@@ -49,11 +52,11 @@ TEST( NonlinearFactor, equals )
 
 	// create two nonlinear2 factors
 	Point2 z3(0.,-1.);
-	simulated2D::Measurement f0(z3, sigma, 1,1);
+	simulated2D::Measurement f0(z3, sigma, PoseKey(1),PointKey(1));
 
 	// measurement between x2 and l1
 	Point2 z4(-1.5, -1.);
-	simulated2D::Measurement f1(z4, sigma, 2,1);
+	simulated2D::Measurement f1(z4, sigma, PoseKey(2),PointKey(1));
 
 	CHECK(assert_equal(f0,f0));
 	CHECK(f0.equals(f0));
@@ -199,7 +202,7 @@ TEST( NonlinearFactor, linearize_constraint1 )
 	SharedDiagonal constraint = noiseModel::Constrained::MixedSigmas(sigmas);
 
 	Point2 mu(1., -1.);
-	Graph::sharedFactor f0(new simulated2D::Prior(mu, constraint, 1));
+	Graph::sharedFactor f0(new simulated2D::Prior(mu, constraint, PoseKey(1)));
 
 	Values config;
 	config.insert(simulated2D::PoseKey(1), Point2(1.0, 2.0));
@@ -219,7 +222,7 @@ TEST( NonlinearFactor, linearize_constraint2 )
 	SharedDiagonal constraint = noiseModel::Constrained::MixedSigmas(sigmas);
 
 	Point2 z3(1.,-1.);
-	simulated2D::Measurement f0(z3, constraint, 1,1);
+	simulated2D::Measurement f0(z3, constraint, PoseKey(1),PointKey(1));
 
 	Values config;
 	config.insert(simulated2D::PoseKey(1), Point2(1.0, 2.0));
@@ -283,7 +286,7 @@ TEST(NonlinearFactor, NonlinearFactor4) {
 class TestFactor5 : public NonlinearFactor5<LieVector, LieVector, LieVector, LieVector, LieVector> {
 public:
   typedef NonlinearFactor5<LieVector, LieVector, LieVector, LieVector, LieVector> Base;
-  TestFactor5() : Base(sharedSigmas(Vector_(1, 2.0)), 1, 2, 3, 4, 5) {}
+  TestFactor5() : Base(sharedSigmas(Vector_(1, 2.0)), "x1", "x2", "x3", "x4", "x5") {}
 
   virtual Vector
     evaluateError(const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5,
@@ -333,7 +336,7 @@ TEST(NonlinearFactor, NonlinearFactor5) {
 class TestFactor6 : public NonlinearFactor6<LieVector, LieVector, LieVector, LieVector, LieVector, LieVector> {
 public:
   typedef NonlinearFactor6<LieVector, LieVector, LieVector, LieVector, LieVector, LieVector> Base;
-  TestFactor6() : Base(sharedSigmas(Vector_(1, 2.0)), 1, 2, 3, 4, 5, 6) {}
+  TestFactor6() : Base(sharedSigmas(Vector_(1, 2.0)), "x1", "x2", "x3", "x4", "x5", "x6") {}
 
   virtual Vector
     evaluateError(const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5, const X6& x6,

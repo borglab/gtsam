@@ -207,7 +207,7 @@ TEST( GeneralSFMFactor, optimize_varK_SingleMeasurementError ) {
   const double noise = baseline*0.1;
   boost::shared_ptr<Values> values(new Values);
   for ( size_t i = 0 ; i < X.size() ; ++i )
-    values->insert(CameraKey((int)i), X[i]) ;
+    values->insert(Symbol('x',i), X[i]) ;
 
   // add noise only to the first landmark
   for ( size_t i = 0 ; i < L.size() ; ++i ) {
@@ -215,10 +215,10 @@ TEST( GeneralSFMFactor, optimize_varK_SingleMeasurementError ) {
       Point3 pt(L[i].x()+noise*getGaussian(),
                 L[i].y()+noise*getGaussian(),
                 L[i].z()+noise*getGaussian());
-      values->insert(PointKey(i), pt) ;
+      values->insert(Symbol('l',i), pt) ;
     }
     else {
-      values->insert(PointKey(i), L[i]) ;
+      values->insert(Symbol('l',i), L[i]) ;
     }
   }
 
@@ -253,14 +253,14 @@ TEST( GeneralSFMFactor, optimize_varK_FixCameras ) {
 
   boost::shared_ptr<Values> values(new Values);
   for ( size_t i = 0 ; i < X.size() ; ++i )
-    values->insert(CameraKey((int)i), X[i]) ;
+    values->insert(Symbol('x',i), X[i]) ;
 
   for ( size_t i = 0 ; i < L.size() ; ++i ) {
     Point3 pt(L[i].x()+noise*getGaussian(),
               L[i].y()+noise*getGaussian(),
               L[i].z()+noise*getGaussian());
     //Point3 pt(L[i].x(), L[i].y(), L[i].z());
-    values->insert(PointKey(i), pt) ;
+    values->insert(Symbol('l',i), pt) ;
   }
 
   for ( size_t i = 0 ; i < X.size() ; ++i )
@@ -300,7 +300,7 @@ TEST( GeneralSFMFactor, optimize_varK_FixLandmarks ) {
       rot_noise = 1e-5, trans_noise = 1e-3,
       focal_noise = 1, distort_noise = 1e-3;
     if ( i == 0 ) {
-      values->insert(CameraKey((int)i), X[i]) ;
+      values->insert(Symbol('x',i), X[i]) ;
     }
     else {
 
@@ -309,12 +309,12 @@ TEST( GeneralSFMFactor, optimize_varK_FixLandmarks ) {
           trans_noise, trans_noise, trans_noise, // translation
           focal_noise, distort_noise, distort_noise // f, k1, k2
           ) ;
-      values->insert(CameraKey((int)i), X[i].retract(delta)) ;
+      values->insert(Symbol('x',i), X[i].retract(delta)) ;
     }
   }
 
   for ( size_t i = 0 ; i < L.size() ; ++i ) {
-    values->insert(PointKey(i), L[i]) ;
+    values->insert(Symbol('l',i), L[i]) ;
   }
 
   // fix X0 and all landmarks, allow only the X[1] to move
@@ -353,14 +353,14 @@ TEST( GeneralSFMFactor, optimize_varK_BA ) {
   const double noise = baseline*0.1;
   boost::shared_ptr<Values> values(new Values);
   for ( size_t i = 0 ; i < X.size() ; ++i )
-    values->insert(CameraKey((int)i), X[i]) ;
+    values->insert(Symbol('x',i), X[i]) ;
 
   // add noise only to the first landmark
   for ( size_t i = 0 ; i < L.size() ; ++i ) {
     Point3 pt(L[i].x()+noise*getGaussian(),
               L[i].y()+noise*getGaussian(),
               L[i].z()+noise*getGaussian());
-    values->insert(PointKey(i), pt) ;
+    values->insert(Symbol('l',i), pt) ;
   }
 
   graph->addCameraConstraint(0, X[0]);

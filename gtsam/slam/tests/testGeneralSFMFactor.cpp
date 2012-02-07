@@ -44,7 +44,7 @@ public:
 	}
 
   void addPoint3Constraint(int j, const Point3& p) {
-    boost::shared_ptr<Point3Constraint> factor(new Point3Constraint(Symbol('x',j), p));
+    boost::shared_ptr<Point3Constraint> factor(new Point3Constraint(Symbol('l',j), p));
     push_back(factor);
   }
 
@@ -89,8 +89,7 @@ TEST( GeneralSFMFactor, equals )
 TEST( GeneralSFMFactor, error ) {
 	Point2 z(3.,0.);
 	const SharedNoiseModel sigma(noiseModel::Unit::Create(1));
-	boost::shared_ptr<Projection>
-	factor(new Projection(z, sigma, "x1", "l1"));
+	boost::shared_ptr<Projection>	factor(new Projection(z, sigma, "x1", "l1"));
 	// For the following configuration, the factor predicts 320,240
 	Values values;
 	Rot3 R;
@@ -167,13 +166,13 @@ TEST( GeneralSFMFactor, optimize_defaultK ) {
 	const double noise = baseline*0.1;
 	boost::shared_ptr<Values> values(new Values);
 	for ( size_t i = 0 ; i < X.size() ; ++i )
-	  values->insert(CameraKey((int)i), X[i]) ;
+	  values->insert(Symbol('x',i), X[i]) ;
 
 	for ( size_t i = 0 ; i < L.size() ; ++i ) {
 		Point3 pt(L[i].x()+noise*getGaussian(),
 		          L[i].y()+noise*getGaussian(),
 		          L[i].z()+noise*getGaussian());
-		values->insert(PointKey(i), pt) ;
+		values->insert(Symbol('l',i), pt) ;
 	}
 
 	graph->addCameraConstraint(0, X[0]);
@@ -206,7 +205,7 @@ TEST( GeneralSFMFactor, optimize_varK_SingleMeasurementError ) {
   const double noise = baseline*0.1;
   boost::shared_ptr<Values> values(new Values);
   for ( size_t i = 0 ; i < X.size() ; ++i )
-    values->insert(CameraKey((int)i), X[i]) ;
+    values->insert(Symbol('x',i), X[i]) ;
 
   // add noise only to the first landmark
   for ( size_t i = 0 ; i < L.size() ; ++i ) {
@@ -214,10 +213,10 @@ TEST( GeneralSFMFactor, optimize_varK_SingleMeasurementError ) {
       Point3 pt(L[i].x()+noise*getGaussian(),
                 L[i].y()+noise*getGaussian(),
                 L[i].z()+noise*getGaussian());
-      values->insert(PointKey(i), pt) ;
+      values->insert(Symbol('l',i), pt) ;
     }
     else {
-      values->insert(PointKey(i), L[i]) ;
+      values->insert(Symbol('l',i), L[i]) ;
     }
   }
 
@@ -252,14 +251,14 @@ TEST( GeneralSFMFactor, optimize_varK_FixCameras ) {
 
   boost::shared_ptr<Values> values(new Values);
   for ( size_t i = 0 ; i < X.size() ; ++i )
-    values->insert(CameraKey((int)i), X[i]) ;
+    values->insert(Symbol('x',i), X[i]) ;
 
   for ( size_t i = 0 ; i < L.size() ; ++i ) {
     Point3 pt(L[i].x()+noise*getGaussian(),
               L[i].y()+noise*getGaussian(),
               L[i].z()+noise*getGaussian());
     //Point3 pt(L[i].x(), L[i].y(), L[i].z());
-    values->insert(PointKey(i), pt) ;
+    values->insert(Symbol('l',i), pt) ;
   }
 
   for ( size_t i = 0 ; i < X.size() ; ++i )
@@ -301,7 +300,7 @@ TEST( GeneralSFMFactor, optimize_varK_FixLandmarks ) {
       focal_noise = 1,
       skew_noise = 1e-5;
     if ( i == 0 ) {
-      values->insert(CameraKey((int)i), X[i]) ;
+      values->insert(Symbol('x',i), X[i]) ;
     }
     else {
 
@@ -312,12 +311,12 @@ TEST( GeneralSFMFactor, optimize_varK_FixLandmarks ) {
           skew_noise, // s
           trans_noise, trans_noise // ux, uy
           ) ;
-      values->insert(CameraKey((int)i), X[i].retract(delta)) ;
+      values->insert(Symbol('x',i), X[i].retract(delta)) ;
     }
   }
 
   for ( size_t i = 0 ; i < L.size() ; ++i ) {
-    values->insert(PointKey(i), L[i]) ;
+    values->insert(Symbol('l',i), L[i]) ;
   }
 
   // fix X0 and all landmarks, allow only the X[1] to move
@@ -357,14 +356,14 @@ TEST( GeneralSFMFactor, optimize_varK_BA ) {
   const double noise = baseline*0.1;
   boost::shared_ptr<Values> values(new Values);
   for ( size_t i = 0 ; i < X.size() ; ++i )
-    values->insert(CameraKey((int)i), X[i]) ;
+    values->insert(Symbol('x',i), X[i]) ;
 
   // add noise only to the first landmark
   for ( size_t i = 0 ; i < L.size() ; ++i ) {
     Point3 pt(L[i].x()+noise*getGaussian(),
               L[i].y()+noise*getGaussian(),
               L[i].z()+noise*getGaussian());
-    values->insert(PointKey(i), pt) ;
+    values->insert(Symbol('l',i), pt) ;
   }
 
   graph->addCameraConstraint(0, X[0]);

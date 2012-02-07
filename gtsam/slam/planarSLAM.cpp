@@ -37,7 +37,7 @@ namespace planarSLAM {
   }
 
   void Graph::addOdometry(Index i, Index j, const Pose2& odometry, const SharedNoiseModel& model) {
-    sharedFactor factor(new Odometry(PoseKey(i), PointKey(j), odometry, model));
+    sharedFactor factor(new Odometry(PoseKey(i), PoseKey(j), odometry, model));
     push_back(factor);
   }
 

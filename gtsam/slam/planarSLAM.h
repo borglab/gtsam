@@ -97,7 +97,7 @@ namespace planarSLAM {
     void addPoseConstraint(Index poseKey, const Pose2& pose);
 
     /// Creates a factor with a Pose2 between PoseKeys poseKey and pointKey (poseKey.e. an odometry measurement)
-    void addOdometry(Index poseKey, Index pointKey, const Pose2& odometry, const SharedNoiseModel& model);
+    void addOdometry(Index poseKey1, Index poseKey2, const Pose2& odometry, const SharedNoiseModel& model);
 
     /// Creates a factor with a Rot2 between a PoseKey poseKey and PointKey pointKey for difference in rotation
     void addBearing(Index poseKey, Index pointKey, const Rot2& bearing, const SharedNoiseModel& model);

@@ -219,7 +219,7 @@ namespace gtsam {
 		/** Print */
 	  virtual void print(const std::string& s = "") const {
 	    std::cout << s << ": NonlinearEquality1("
-	    		<< (std::string) this->key_ << "),"<< "\n";
+	    		<< (std::string) this->key() << "),"<< "\n";
 	    this->noiseModel_->print();
 	    value_.print("Value");
 	  }

@@ -131,12 +131,12 @@ TEST( Pose3Factor, error )
 
 	// Create factor
 	SharedNoiseModel I6(noiseModel::Unit::Create(6));
-	Pose3Factor factor(1,2, z, I6);
+	Pose3Factor factor(PoseKey(1), PoseKey(2), z, I6);
 
 	// Create config
 	Values x;
-	x.insert(Key(1),t1);
-	x.insert(Key(2),t2);
+	x.insert(PoseKey(1),t1);
+	x.insert(PoseKey(2),t2);
 
 	// Get error h(x)-z -> localCoordinates(z,h(x)) = localCoordinates(z,between(t1,t2))
 	Vector actual = factor.unwhitenedError(x);
@@ -146,10 +146,10 @@ TEST( Pose3Factor, error )
 
 /* ************************************************************************* */
 TEST(Pose3Graph, partial_prior_xy) {
-	typedef PartialPriorFactor<pose3SLAM::Key> Partial;
+	typedef PartialPriorFactor<Pose3> Partial;
 
 	// XY prior - full mask interface
-	pose3SLAM::Key key(1);
+	Symbol key = PoseKey(1);
 	Vector exp_xy = Vector_(2, 3.0, 4.0);
 	SharedDiagonal model = noiseModel::Unit::Create(2);
 	Pose3 init(Rot3(), Point3(1.0,-2.0, 3.0)), expected(Rot3(), Point3(3.0, 4.0, 3.0));
@@ -169,7 +169,7 @@ TEST(Pose3Graph, partial_prior_xy) {
 	values.insert(key, init);
 
 	Values actual = *pose3SLAM::Optimizer::optimizeLM(graph, values);
-	EXPECT(assert_equal(expected, actual[key], tol));
+	EXPECT(assert_equal(expected, actual.at<Pose3>(key), tol));
 	EXPECT_DOUBLES_EQUAL(0.0, graph.error(actual), tol);
 }
 
@@ -185,10 +185,10 @@ TEST( Values, pose3Circle )
 {
 	// expected is 4 poses tangent to circle with radius 1m
 	Values expected;
-	expected.insert(Key(0), Pose3(R1, Point3( 1, 0, 0)));
-	expected.insert(Key(1), Pose3(R2, Point3( 0, 1, 0)));
-	expected.insert(Key(2), Pose3(R3, Point3(-1, 0, 0)));
-	expected.insert(Key(3), Pose3(R4, Point3( 0,-1, 0)));
+	expected.insert(PoseKey(0), Pose3(R1, Point3( 1, 0, 0)));
+	expected.insert(PoseKey(1), Pose3(R2, Point3( 0, 1, 0)));
+	expected.insert(PoseKey(2), Pose3(R3, Point3(-1, 0, 0)));
+	expected.insert(PoseKey(3), Pose3(R4, Point3( 0,-1, 0)));
 
 	Values actual = pose3SLAM::circle(4,1.0);
 	CHECK(assert_equal(expected,actual));
@@ -198,10 +198,10 @@ TEST( Values, pose3Circle )
 TEST( Values, expmap )
 {
 	Values expected;
-	expected.insert(Key(0), Pose3(R1, Point3( 1.0, 0.1, 0)));
-	expected.insert(Key(1), Pose3(R2, Point3(-0.1, 1.0, 0)));
-	expected.insert(Key(2), Pose3(R3, Point3(-1.0,-0.1, 0)));
-	expected.insert(Key(3), Pose3(R4, Point3( 0.1,-1.0, 0)));
+	expected.insert(PoseKey(0), Pose3(R1, Point3( 1.0, 0.1, 0)));
+	expected.insert(PoseKey(1), Pose3(R2, Point3(-0.1, 1.0, 0)));
+	expected.insert(PoseKey(2), Pose3(R3, Point3(-1.0,-0.1, 0)));
+	expected.insert(PoseKey(3), Pose3(R4, Point3( 0.1,-1.0, 0)));
 
 	Ordering ordering(*expected.orderingArbitrary());
 	VectorValues delta(expected.dims(ordering));
