@@ -20,6 +20,8 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 
+#define GTSAM_MAGIC_KEY
+
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/LieVector.h>
 #include <gtsam/geometry/Pose2.h>
@@ -29,9 +31,7 @@ using namespace gtsam;
 using namespace std;
 static double inf = std::numeric_limits<double>::infinity();
 
-typedef TypedSymbol<LieVector, 'v'> VecKey;
-
-VecKey key1(1), key2(2), key3(3), key4(4);
+Symbol key1("v1"), key2("v2"), key3("v3"), key4("v4");
 
 /* ************************************************************************* */
 TEST( Values, equals1 )
@@ -114,11 +114,11 @@ TEST( Values, update_element )
 
   cfg.insert(key1, v1);
   CHECK(cfg.size() == 1);
-  CHECK(assert_equal(v1, cfg.at(key1)));
+  CHECK(assert_equal(v1, cfg.at<LieVector>(key1)));
 
   cfg.update(key1, v2);
   CHECK(cfg.size() == 1);
-  CHECK(assert_equal(v2, cfg.at(key1)));
+  CHECK(assert_equal(v2, cfg.at<LieVector>(key1)));
 }
 
 ///* ************************************************************************* */
@@ -200,10 +200,9 @@ TEST(Values, expmap_d)
   CHECK(equal(config0, config0));
   CHECK(config0.equals(config0));
 
-  typedef TypedSymbol<Pose2, 'p'> PoseKey;
   Values poseconfig;
-  poseconfig.insert(PoseKey(1), Pose2(1,2,3));
-  poseconfig.insert(PoseKey(2), Pose2(0.3, 0.4, 0.5));
+  poseconfig.insert("p1", Pose2(1,2,3));
+  poseconfig.insert("p2", Pose2(0.3, 0.4, 0.5));
 
   CHECK(equal(config0, config0));
   CHECK(config0.equals(config0));
@@ -212,16 +211,15 @@ TEST(Values, expmap_d)
 /* ************************************************************************* */
 TEST(Values, extract_keys)
 {
-	typedef TypedSymbol<Pose2, 'x'> PoseKey;
 	Values config;
 
-	config.insert(PoseKey(1), Pose2());
-	config.insert(PoseKey(2), Pose2());
-	config.insert(PoseKey(4), Pose2());
-	config.insert(PoseKey(5), Pose2());
+	config.insert("x1", Pose2());
+	config.insert("x2", Pose2());
+	config.insert("x4", Pose2());
+	config.insert("x5", Pose2());
 
 	FastList<Symbol> expected, actual;
-	expected += PoseKey(1), PoseKey(2), PoseKey(4), PoseKey(5);
+	expected += "x1", "x2", "x4", "x5";
 	actual = config.keys();
 
 	CHECK(actual.size() == expected.size());
@@ -238,7 +236,7 @@ TEST(Values, exists_)
 	config0.insert(key1, LieVector(Vector_(1, 1.)));
 	config0.insert(key2, LieVector(Vector_(1, 2.)));
 
-	boost::optional<const LieVector&> v = config0.exists(key1);
+	boost::optional<const LieVector&> v = config0.exists<LieVector>(key1);
 	CHECK(assert_equal(Vector_(1, 1.),*v));
 }
 

@@ -145,7 +145,7 @@ bool equalsDereferencedXML(const T& input = T()) {
 // Actual Tests
 /* ************************************************************************* */
 
-// Magically casts strings like "x3" to a Symbol('x',3) key, see Key.h
+// Magically casts strings like "x3" to a Symbol('x',3) key, see Symbol.h
 #define GTSAM_MAGIC_KEY
 
 #include <gtsam/geometry/Cal3DS2.h>
@@ -255,16 +255,12 @@ typedef PinholeCamera<Cal3_S2> 				PinholeCal3S2;
 typedef PinholeCamera<Cal3DS2> 				PinholeCal3DS2;
 typedef PinholeCamera<Cal3Bundler> 		PinholeCal3Bundler;
 
-typedef TypedSymbol<Cal3_S2,'a'> 				PinholeCal3S2Key;
-typedef TypedSymbol<Cal3DS2,'s'> 				PinholeCal3DS2Key;
-typedef TypedSymbol<Cal3Bundler,'d'> 		PinholeCal3BundlerKey;
-
 TEST (Serialization, TemplatedValues) {
 	Values values;
-	values.insert(PinholeCal3S2Key(0), 	PinholeCal3S2(pose3, cal1));
-	values.insert(PinholeCal3DS2Key(5), PinholeCal3DS2(pose3, cal2));
-	values.insert(PinholeCal3BundlerKey(47), PinholeCal3Bundler(pose3, cal3));
-	values.insert(PinholeCal3S2Key(5), 	PinholeCal3S2(pose3, cal1));
+	values.insert(Symbol('a',0), 	PinholeCal3S2(pose3, cal1));
+	values.insert(Symbol('s',5), PinholeCal3DS2(pose3, cal2));
+	values.insert(Symbol('d',47), PinholeCal3Bundler(pose3, cal3));
+	values.insert(Symbol('a',5), 	PinholeCal3S2(pose3, cal1));
 	EXPECT(equalsObj(values));
 	EXPECT(equalsXML(values));
 }

@@ -22,7 +22,7 @@
 #include <vector>
 #include <map>
 
-#include <gtsam/nonlinear/Key.h>
+#include <gtsam/nonlinear/Symbol.h>
 
 using namespace std;
 using namespace boost;

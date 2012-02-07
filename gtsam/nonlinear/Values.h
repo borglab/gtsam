@@ -37,7 +37,7 @@
 #include <gtsam/base/Value.h>
 #include <gtsam/base/FastMap.h>
 #include <gtsam/linear/VectorValues.h>
-#include <gtsam/nonlinear/Key.h>
+#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/Ordering.h>
 
 namespace gtsam {

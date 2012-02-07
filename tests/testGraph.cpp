@@ -23,6 +23,8 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
+#define GTSAM_MAGIC_KEY
+
 // TODO: DANGEROUS, create shared pointers
 #define GTSAM_MAGIC_GAUSSIAN 3
 
@@ -37,22 +39,21 @@ using namespace gtsam;
 //		-> x3 -> x4
 //    -> x5
 TEST ( Ordering, predecessorMap2Keys ) {
-	typedef TypedSymbol<Pose2,'x'> PoseKey;
-	PredecessorMap<PoseKey> p_map;
-	p_map.insert(1,1);
-	p_map.insert(2,1);
-	p_map.insert(3,1);
-	p_map.insert(4,3);
-	p_map.insert(5,1);
+	PredecessorMap<Symbol> p_map;
+	p_map.insert("x1","x1");
+	p_map.insert("x2","x1");
+	p_map.insert("x3","x1");
+	p_map.insert("x4","x3");
+	p_map.insert("x5","x1");
 
-	list<PoseKey> expected;
-	expected += 4,5,3,2,1;//PoseKey(4), PoseKey(5), PoseKey(3), PoseKey(2), PoseKey(1);
+	list<Symbol> expected;
+	expected += "x4","x5","x3","x2","x1";//PoseKey(4), PoseKey(5), PoseKey(3), PoseKey(2), PoseKey(1);
 
-	list<PoseKey> actual = predecessorMap2Keys<PoseKey>(p_map);
+	list<Symbol> actual = predecessorMap2Keys<Symbol>(p_map);
 	LONGS_EQUAL(expected.size(), actual.size());
 
-	list<PoseKey>::const_iterator it1 = expected.begin();
-	list<PoseKey>::const_iterator it2 = actual.begin();
+	list<Symbol>::const_iterator it1 = expected.begin();
+	list<Symbol>::const_iterator it2 = actual.begin();
 	for(; it1!=expected.end(); it1++, it2++)
 		CHECK(*it1 == *it2)
 }

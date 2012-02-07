@@ -19,7 +19,7 @@
 
 #include <map>
 #include <set>
-#include <gtsam/nonlinear/Key.h>
+#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/inference/inference.h>
 
 #include <boost/foreach.hpp>

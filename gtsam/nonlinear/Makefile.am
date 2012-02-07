@@ -21,7 +21,7 @@ sources += Values.cpp
 check_PROGRAMS += tests/testValues tests/testKey tests/testOrdering
 
 # Nonlinear nonlinear
-headers += Key.h 
+headers += Symbol.h 
 headers += NonlinearFactorGraph.h
 headers += NonlinearOptimizer-inl.h NonlinearOptimization.h NonlinearOptimization-inl.h 
 headers += NonlinearFactor.h

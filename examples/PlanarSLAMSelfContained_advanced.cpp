@@ -19,7 +19,7 @@
 #include <iostream>
 
 // for all nonlinear keys
-#include <gtsam/nonlinear/Key.h>
+#include <gtsam/nonlinear/Symbol.h>
 
 // for points and poses
 #include <gtsam/geometry/Point2.h>
