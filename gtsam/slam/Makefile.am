@@ -54,6 +54,11 @@ check_PROGRAMS += tests/testGeneralSFMFactor tests/testGeneralSFMFactor_Cal3Bund
 headers += StereoFactor.h
 check_PROGRAMS += tests/testStereoFactor
 
+## flag disabled to force this test to get updated properly
+if ENABLE_SERIALIZATION
+check_PROGRAMS += tests/testSerializationSLAM
+endif
+
 #----------------------------------------------------------------------------------------------------
 # Create a libtool library that is not installed
 # It will be packaged in the toplevel libgtsam.la as specfied in ../Makefile.am 
@@ -66,6 +71,11 @@ noinst_LTLIBRARIES = libslam.la
 libslam_la_SOURCES = $(sources)
 AM_CPPFLAGS = $(BOOST_CPPFLAGS)  -I$(top_srcdir)
 AM_LDFLAGS = $(BOOST_LDFLAGS)
+
+# link to serialization library for test 
+if ENABLE_SERIALIZATION
+tests_testSerializationSLAM_LDFLAGS = -lboost_serialization
+endif
 
 #----------------------------------------------------------------------------------------------------
 # rules to build local programs

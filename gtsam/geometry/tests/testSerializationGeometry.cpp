@@ -1,0 +1,115 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file testSerializationGeometry.cpp
+ * @brief 
+ * @author Richard Roberts
+ * @date Feb 7, 2012
+ */
+
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/geometry/Point3.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/Cal3_S2Stereo.h>
+#include <gtsam/geometry/CalibratedCamera.h>
+#include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/Cal3DS2.h>
+#include <gtsam/geometry/Cal3Bundler.h>
+#include <gtsam/geometry/StereoCamera.h>
+#include <gtsam/geometry/StereoPoint2.h>
+
+#include <gtsam/base/serializationTestHelpers.h>
+#include <CppUnitLite/TestHarness.h>
+
+using namespace std;
+using namespace gtsam;
+using namespace gtsam::serializationTestHelpers;
+
+/* ************************************************************************* */
+// Export all classes derived from Value
+BOOST_CLASS_EXPORT(gtsam::Cal3_S2)
+BOOST_CLASS_EXPORT(gtsam::Cal3_S2Stereo)
+BOOST_CLASS_EXPORT(gtsam::Cal3Bundler)
+BOOST_CLASS_EXPORT(gtsam::CalibratedCamera)
+BOOST_CLASS_EXPORT(gtsam::Point2)
+BOOST_CLASS_EXPORT(gtsam::Point3)
+BOOST_CLASS_EXPORT(gtsam::Pose2)
+BOOST_CLASS_EXPORT(gtsam::Pose3)
+BOOST_CLASS_EXPORT(gtsam::Rot2)
+BOOST_CLASS_EXPORT(gtsam::Rot3)
+BOOST_CLASS_EXPORT(gtsam::PinholeCamera<Cal3_S2>)
+BOOST_CLASS_EXPORT(gtsam::PinholeCamera<Cal3DS2>)
+BOOST_CLASS_EXPORT(gtsam::PinholeCamera<Cal3Bundler>)
+BOOST_CLASS_EXPORT(gtsam::StereoPoint2)
+
+/* ************************************************************************* */
+Point3 pt3(1.0, 2.0, 3.0);
+Rot3 rt3 = Rot3::RzRyRx(1.0, 3.0, 2.0);
+Pose3 pose3(rt3, pt3);
+
+Cal3_S2 cal1(1.0, 2.0, 0.3, 0.1, 0.5);
+Cal3DS2 cal2(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0);
+Cal3Bundler cal3(1.0, 2.0, 3.0);
+Cal3_S2Stereo cal4(1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
+Cal3_S2Stereo::shared_ptr cal4ptr(new Cal3_S2Stereo(cal4));
+CalibratedCamera cal5(Pose3(rt3, pt3));
+
+PinholeCamera<Cal3_S2> cam1(pose3, cal1);
+StereoCamera cam2(pose3, cal4ptr);
+StereoPoint2 spt(1.0, 2.0, 3.0);
+
+/* ************************************************************************* */
+TEST (Serialization, text_geometry) {
+  EXPECT(equalsObj<gtsam::Point2>(Point2(1.0, 2.0)));
+  EXPECT(equalsObj<gtsam::Pose2>(Pose2(1.0, 2.0, 0.3)));
+  EXPECT(equalsObj<gtsam::Rot2>(Rot2::fromDegrees(30.0)));
+
+  EXPECT(equalsObj(pt3));
+  EXPECT(equalsObj<gtsam::Rot3>(rt3));
+  EXPECT(equalsObj<gtsam::Pose3>(Pose3(rt3, pt3)));
+
+  EXPECT(equalsObj(cal1));
+  EXPECT(equalsObj(cal2));
+  EXPECT(equalsObj(cal3));
+  EXPECT(equalsObj(cal4));
+  EXPECT(equalsObj(cal5));
+
+  EXPECT(equalsObj(cam1));
+  EXPECT(equalsObj(cam2));
+  EXPECT(equalsObj(spt));
+}
+
+/* ************************************************************************* */
+TEST (Serialization, xml_geometry) {
+  EXPECT(equalsXML<gtsam::Point2>(Point2(1.0, 2.0)));
+  EXPECT(equalsXML<gtsam::Pose2>(Pose2(1.0, 2.0, 0.3)));
+  EXPECT(equalsXML<gtsam::Rot2>(Rot2::fromDegrees(30.0)));
+
+  EXPECT(equalsXML<gtsam::Point3>(pt3));
+  EXPECT(equalsXML<gtsam::Rot3>(rt3));
+  EXPECT(equalsXML<gtsam::Pose3>(Pose3(rt3, pt3)));
+
+  EXPECT(equalsXML(cal1));
+  EXPECT(equalsXML(cal2));
+  EXPECT(equalsXML(cal3));
+  EXPECT(equalsXML(cal4));
+  EXPECT(equalsXML(cal5));
+
+  EXPECT(equalsXML(cam1));
+  EXPECT(equalsXML(cam2));
+  EXPECT(equalsXML(spt));
+}
+
+/* ************************************************************************* */
+int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
+/* ************************************************************************* */

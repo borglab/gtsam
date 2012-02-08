@@ -32,6 +32,11 @@ headers += Tensor1Expression.h Tensor2Expression.h Tensor3Expression.h Tensor5Ex
 sources += projectiveGeometry.cpp tensorInterface.cpp
 check_PROGRAMS += tests/testTensors tests/testHomography2 tests/testFundamental
 
+## flag disabled to force this test to get updated properly
+if ENABLE_SERIALIZATION
+check_PROGRAMS += tests/testSerializationGeometry
+endif
+
 # Timing tests
 noinst_PROGRAMS = tests/timeRot3 tests/timePose3 tests/timeCalibratedCamera tests/timeStereoCamera
 
@@ -52,6 +57,11 @@ noinst_LTLIBRARIES = libgeometry.la
 libgeometry_la_SOURCES = $(allsources)
 AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I$(top_srcdir)
 AM_LDFLAGS = $(BOOST_LDFLAGS)
+
+# link to serialization library for test 
+if ENABLE_SERIALIZATION
+tests_testSerializationGeometry_LDFLAGS = -lboost_serialization
+endif
 
 #----------------------------------------------------------------------------------------------------
 # rules to build local programs

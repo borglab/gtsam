@@ -36,6 +36,11 @@ headers += BTree.h DSF.h FastMap.h FastSet.h FastList.h FastVector.h
 sources += DSFVector.cpp
 check_PROGRAMS += tests/testBTree tests/testDSF tests/testDSFVector
 
+## flag disabled to force this test to get updated properly
+if ENABLE_SERIALIZATION
+check_PROGRAMS += tests/testSerializationBase
+endif
+
 # Timing tests
 noinst_PROGRAMS = tests/timeMatrix tests/timeVirtual tests/timeVirtual2 tests/timeTest
 noinst_PROGRAMS += tests/timeMatrixOps 
@@ -55,6 +60,11 @@ AM_CPPFLAGS =
 
 AM_CPPFLAGS += $(BOOST_CPPFLAGS) -I$(top_srcdir)
 AM_LDFLAGS = $(BOOST_LDFLAGS)
+
+# link to serialization library for test 
+if ENABLE_SERIALIZATION
+tests_testSerializationBase_LDFLAGS = -lboost_serialization
+endif
 
 #----------------------------------------------------------------------------------------------------
 # rules to build local programs

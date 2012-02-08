@@ -41,6 +41,11 @@ sources += iterative.cpp SubgraphPreconditioner.cpp SubgraphSolver.cpp
 headers += IterativeSolver.h IterativeOptimizationParameters.h 
 headers += SubgraphSolver-inl.h
 
+## flag disabled to force this test to get updated properly
+if ENABLE_SERIALIZATION
+check_PROGRAMS += tests/testSerializationLinear
+endif
+
 # Timing tests
 noinst_PROGRAMS = tests/timeGaussianFactor tests/timeFactorOverhead tests/timeSLAMlike
 
@@ -57,6 +62,11 @@ liblinear_la_SOURCES = $(sources)
 AM_CPPFLAGS = $(BOOST_CPPFLAGS)  -I$(top_srcdir)
 AM_LDFLAGS = $(BOOST_LDFLAGS)
 AM_CXXFLAGS =
+
+# link to serialization library for test 
+if ENABLE_SERIALIZATION
+tests_testSerializationLinear_LDFLAGS = -lboost_serialization
+endif
 
 #----------------------------------------------------------------------------------------------------
 # rules to build local programs
