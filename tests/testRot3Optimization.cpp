@@ -29,9 +29,8 @@
 
 using namespace gtsam;
 
-typedef TypedSymbol<Rot3, 'r'> Key;
-typedef PriorFactor<Key> Prior;
-typedef BetweenFactor<Key> Between;
+typedef PriorFactor<Rot3> Prior;
+typedef BetweenFactor<Rot3> Between;
 typedef NonlinearFactorGraph Graph;
 
 /* ************************************************************************* */
@@ -41,11 +40,11 @@ TEST(Rot3, optimize) {
   Values truth;
   Values initial;
   Graph fg;
-  fg.add(Prior(0, Rot3(), sharedSigma(3, 0.01)));
+  fg.add(Prior(Symbol('r',0), Rot3(), sharedSigma(3, 0.01)));
   for(int j=0; j<6; ++j) {
-    truth.insert(Key(j), Rot3::Rz(M_PI/3.0 * double(j)));
-    initial.insert(Key(j), Rot3::Rz(M_PI/3.0 * double(j) + 0.1 * double(j%2)));
-    fg.add(Between(Key(j), Key((j+1)%6), Rot3::Rz(M_PI/3.0), sharedSigma(3, 0.01)));
+    truth.insert(Symbol('r',j), Rot3::Rz(M_PI/3.0 * double(j)));
+    initial.insert(Symbol('r',j), Rot3::Rz(M_PI/3.0 * double(j) + 0.1 * double(j%2)));
+    fg.add(Between(Symbol('r',j), Symbol('r',(j+1)%6), Rot3::Rz(M_PI/3.0), sharedSigma(3, 0.01)));
   }
 
   NonlinearOptimizationParameters params;

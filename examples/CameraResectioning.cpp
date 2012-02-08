@@ -16,7 +16,7 @@
  * @date	  Aug 23, 2011
  */
 
-#include <gtsam/nonlinear/Key.h>
+#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/SimpleCamera.h>
@@ -26,28 +26,25 @@
 
 using namespace gtsam;
 
-typedef TypedSymbol<Pose3, 'x'> PoseKey;
-
 /**
  * Unary factor for the pose.
  */
-class ResectioningFactor: public NonlinearFactor1<PoseKey> {
-  typedef NonlinearFactor1<PoseKey> Base;
+class ResectioningFactor: public NonlinearFactor1<Pose3> {
+  typedef NonlinearFactor1<Pose3> Base;
 
   shared_ptrK K_; // camera's intrinsic parameters
   Point3 P_; // 3D point on the calibration rig
   Point2 p_; // 2D measurement of the 3D point
 
 public:
-  ResectioningFactor(const SharedNoiseModel& model, const PoseKey& key,
+  ResectioningFactor(const SharedNoiseModel& model, const Symbol& key,
       const shared_ptrK& calib, const Point2& p, const Point3& P) :
     Base(model, key), K_(calib), P_(P), p_(p) {
   }
 
   virtual ~ResectioningFactor() {}
 
-  virtual Vector evaluateError(const Pose3& X, boost::optional<Matrix&> H =
-      boost::none) const {
+  virtual Vector evaluateError(const Pose3& X, boost::optional<Matrix&> H = boost::none) const {
     SimpleCamera camera(*K_, X);
     Point2 reprojectionError(camera.project(P_, H) - p_);
     return reprojectionError.vector();
@@ -69,7 +66,7 @@ int main(int argc, char* argv[]) {
 
   /* create keys for variables */
   // we have only 1 variable to solve: the camera pose
-  PoseKey X(1);
+  Symbol X('x',1);
 
   /* 1. create graph */
   NonlinearFactorGraph graph;

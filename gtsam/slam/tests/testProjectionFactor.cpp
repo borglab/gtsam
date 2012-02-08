@@ -18,7 +18,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-// Magically casts strings like "x3" to a Symbol('x',3) key, see Key.h
+// Magically casts strings like "x3" to a Symbol('x',3) key, see Symbol.h
 #define GTSAM_MAGIC_KEY
 
 #include <gtsam/slam/visualSLAM.h>
@@ -49,7 +49,7 @@ TEST( ProjectionFactor, error )
 	Point2 z(323.,240.);
 	int cameraFrameNumber=1, landmarkNumber=1;
 	boost::shared_ptr<visualSLAM::ProjectionFactor>
-	factor(new visualSLAM::ProjectionFactor(z, sigma, cameraFrameNumber, landmarkNumber, sK));
+	factor(new visualSLAM::ProjectionFactor(z, sigma, PoseKey(cameraFrameNumber), PointKey(landmarkNumber), sK));
 
 	// For the following values structure, the factor predicts 320,240
 	Values config;
@@ -98,10 +98,10 @@ TEST( ProjectionFactor, equals )
 	Vector z = Vector_(2,323.,240.);
 	int cameraFrameNumber=1, landmarkNumber=1;
 	boost::shared_ptr<visualSLAM::ProjectionFactor>
-	  factor1(new visualSLAM::ProjectionFactor(z, sigma, cameraFrameNumber, landmarkNumber, sK));
+	  factor1(new visualSLAM::ProjectionFactor(z, sigma, PoseKey(cameraFrameNumber), PointKey(landmarkNumber), sK));
 
 	boost::shared_ptr<visualSLAM::ProjectionFactor>
-		factor2(new visualSLAM::ProjectionFactor(z, sigma, cameraFrameNumber, landmarkNumber, sK));
+		factor2(new visualSLAM::ProjectionFactor(z, sigma, PoseKey(cameraFrameNumber), PointKey(landmarkNumber), sK));
 
 	CHECK(assert_equal(*factor1, *factor2));
 }

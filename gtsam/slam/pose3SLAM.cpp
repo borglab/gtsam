@@ -39,26 +39,24 @@ namespace gtsam {
 				Point3 gti(radius*cos(theta), radius*sin(theta), 0);
 				Rot3 _0Ri = Rot3::yaw(-theta); // negative yaw goes counterclockwise, with Z down !
 				Pose3 gTi(gR0 * _0Ri, gti);
-				x.insert(Key(i), gTi);
+				x.insert(PoseKey(i), gTi);
 			}
 			return x;
 		}
 
 		/* ************************************************************************* */
-		void Graph::addPrior(const Key& i, const Pose3& p,
-				const SharedNoiseModel& model) {
-			sharedFactor factor(new Prior(i, p, model));
+		void Graph::addPrior(Index i, const Pose3& p, const SharedNoiseModel& model) {
+			sharedFactor factor(new Prior(PoseKey(i), p, model));
 			push_back(factor);
 		}
 
-		void Graph::addConstraint(const Key& i, const Key& j, const Pose3& z,
-				const SharedNoiseModel& model) {
-			sharedFactor factor(new Constraint(i, j, z, model));
+		void Graph::addConstraint(Index i, Index j, const Pose3& z, const SharedNoiseModel& model) {
+			sharedFactor factor(new Constraint(PoseKey(i), PoseKey(j), z, model));
 			push_back(factor);
 		}
 
-		void Graph::addHardConstraint(const Key& i, const Pose3& p) {
-			sharedFactor factor(new HardConstraint(i, p));
+		void Graph::addHardConstraint(Index i, const Pose3& p) {
+			sharedFactor factor(new HardConstraint(PoseKey(i), p));
 			push_back(factor);
 		}
 

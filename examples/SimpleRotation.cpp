@@ -22,7 +22,7 @@
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/linear/NoiseModel.h>
-#include <gtsam/nonlinear/Key.h>
+#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearOptimization.h>
 
@@ -35,25 +35,6 @@
 using namespace std;
 using namespace gtsam;
 
-/**
- *   Step 1: Setup basic types for optimization of a single variable type
- * This can be considered to be specifying the domain of the problem we wish
- * to solve.  In this case, we will create a very simple domain that operates
- * on variables of a specific type, in this case, Rot2.
- *
- * To create a domain:
- *  - variable types need to have a key defined to act as a label in graphs
- *  - a "RotValues" structure needs to be defined to store the system state
- *  - a graph container acting on a given RotValues
- *
- * In a typical scenario, these typedefs could be placed in a header
- * file and reused between projects.  Also, RotValues can be combined to
- * form a "TupleValues" to enable multiple variable types, such as 2D points
- * and 2D poses.
- */
-typedef TypedSymbol<Rot2, 'x'> Key; 								/// Variable labels for a specific type
-typedef NonlinearFactorGraph Graph;					/// Graph container for constraints - needs to know type of variables
-
 const double degree = M_PI / 180;
 
 int main() {
@@ -64,7 +45,7 @@ int main() {
 	 */
 
 	/**
-	 *    Step 2: create a factor on to express a unary constraint
+	 *    Step 1: create a factor on to express a unary constraint
 	 * The "prior" in this case is the measurement from a sensor,
 	 * with a model of the noise on the measurement.
 	 *
@@ -80,11 +61,11 @@ int main() {
 	Rot2 prior = Rot2::fromAngle(30 * degree);
 	prior.print("goal angle");
 	SharedDiagonal model = noiseModel::Isotropic::Sigma(1, 1 * degree);
-	Key key(1);
-	PriorFactor<Key> factor(key, prior, model);
+	Symbol key('x',1);
+	PriorFactor<Rot2> factor(key, prior, model);
 
 	/**
-	 *    Step 3: create a graph container and add the factor to it
+	 *    Step 2: create a graph container and add the factor to it
 	 * Before optimizing, all factors need to be added to a Graph container,
 	 * which provides the necessary top-level functionality for defining a
 	 * system of constraints.
@@ -92,12 +73,12 @@ int main() {
 	 * In this case, there is only one factor, but in a practical scenario,
 	 * many more factors would be added.
 	 */
-	Graph graph;
+	NonlinearFactorGraph graph;
 	graph.add(factor);
 	graph.print("full graph");
 
 	/**
-	 *    Step 4: create an initial estimate
+	 *    Step 3: create an initial estimate
 	 * An initial estimate of the solution for the system is necessary to
 	 * start optimization.  This system state is the "RotValues" structure,
 	 * which is similar in structure to a STL map, in that it maps
@@ -117,14 +98,14 @@ int main() {
 	initial.print("initial estimate");
 
 	/**
-	 *    Step 5: optimize
+	 *    Step 4: optimize
 	 * After formulating the problem with a graph of constraints
 	 * and an initial estimate, executing optimization is as simple
 	 * as calling a general optimization function with the graph and
 	 * initial estimate.  This will yield a new RotValues structure
 	 * with the final state of the optimization.
 	 */
-	Values result = optimize<Graph>(graph, initial);
+	Values result = optimize(graph, initial);
 	result.print("final result");
 
 	return 0;

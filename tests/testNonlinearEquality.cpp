@@ -31,15 +31,14 @@ namespace eq2D = simulated2D::equality_constraints;
 
 static const double tol = 1e-5;
 
-typedef TypedSymbol<Pose2, 'x'> PoseKey;
-typedef PriorFactor<PoseKey> PosePrior;
-typedef NonlinearEquality<PoseKey> PoseNLE;
+typedef PriorFactor<Pose2> PosePrior;
+typedef NonlinearEquality<Pose2> PoseNLE;
 typedef boost::shared_ptr<PoseNLE> shared_poseNLE;
 
 typedef NonlinearFactorGraph PoseGraph;
 typedef NonlinearOptimizer<PoseGraph> PoseOptimizer;
 
-PoseKey key(1);
+Symbol key('x',1);
 
 /* ************************************************************************* */
 TEST ( NonlinearEquality, linearization ) {
@@ -60,7 +59,7 @@ TEST ( NonlinearEquality, linearization ) {
 /* ********************************************************************** */
 TEST ( NonlinearEquality, linearization_pose ) {
 
-	PoseKey key(1);
+  Symbol key('x',1);
 	Pose2 value;
 	Values config;
 	config.insert(key, value);
@@ -89,7 +88,7 @@ TEST ( NonlinearEquality, linearization_fail ) {
 /* ********************************************************************** */
 TEST ( NonlinearEquality, linearization_fail_pose ) {
 
-	PoseKey key(1);
+  Symbol key('x',1);
 	Pose2 value(2.0, 1.0, 2.0),
 		  wrong(2.0, 3.0, 4.0);
 	Values bad_linearize;
@@ -105,7 +104,7 @@ TEST ( NonlinearEquality, linearization_fail_pose ) {
 /* ********************************************************************** */
 TEST ( NonlinearEquality, linearization_fail_pose_origin ) {
 
-	PoseKey key(1);
+  Symbol key('x',1);
 	Pose2 value,
 		  wrong(2.0, 3.0, 4.0);
 	Values bad_linearize;
@@ -155,7 +154,7 @@ TEST ( NonlinearEquality, equals ) {
 
 /* ************************************************************************* */
 TEST ( NonlinearEquality, allow_error_pose ) {
-	PoseKey key1(1);
+	Symbol key1('x',1);
 	Pose2 feasible1(1.0, 2.0, 3.0);
 	double error_gain = 500.0;
 	PoseNLE nle(key1, feasible1, error_gain);
@@ -183,7 +182,7 @@ TEST ( NonlinearEquality, allow_error_pose ) {
 
 /* ************************************************************************* */
 TEST ( NonlinearEquality, allow_error_optimize ) {
-	PoseKey key1(1);
+  Symbol key1('x',1);
 	Pose2 feasible1(1.0, 2.0, 3.0);
 	double error_gain = 500.0;
 	PoseNLE nle(key1, feasible1, error_gain);
@@ -200,7 +199,7 @@ TEST ( NonlinearEquality, allow_error_optimize ) {
 	// optimize
 	boost::shared_ptr<Ordering> ord(new Ordering());
 	ord->push_back(key1);
-  NonlinearOptimizationParameters::shared_ptr params = NonlinearOptimizationParameters::newDrecreaseThresholds(1e-5, 1e-5);
+  NonlinearOptimizationParameters::shared_ptr params = NonlinearOptimizationParameters::newDecreaseThresholds(1e-5, 1e-5);
 	PoseOptimizer optimizer(graph, init, ord, params);
 	PoseOptimizer result = optimizer.levenbergMarquardt();
 
@@ -214,7 +213,7 @@ TEST ( NonlinearEquality, allow_error_optimize ) {
 TEST ( NonlinearEquality, allow_error_optimize_with_factors ) {
 
 	// create a hard constraint
-	PoseKey key1(1);
+  Symbol key1('x',1);
 	Pose2 feasible1(1.0, 2.0, 3.0);
 
 	// initialize away from the ideal
@@ -236,7 +235,7 @@ TEST ( NonlinearEquality, allow_error_optimize_with_factors ) {
 	// optimize
 	boost::shared_ptr<Ordering> ord(new Ordering());
 	ord->push_back(key1);
-  NonlinearOptimizationParameters::shared_ptr params = NonlinearOptimizationParameters::newDrecreaseThresholds(1e-5, 1e-5);
+  NonlinearOptimizationParameters::shared_ptr params = NonlinearOptimizationParameters::newDecreaseThresholds(1e-5, 1e-5);
 	PoseOptimizer optimizer(graph, init, ord, params);
 	PoseOptimizer result = optimizer.levenbergMarquardt();
 
@@ -258,7 +257,7 @@ typedef NonlinearOptimizer<Graph> Optimizer;
 /* ************************************************************************* */
 TEST( testNonlinearEqualityConstraint, unary_basics ) {
 	Point2 pt(1.0, 2.0);
-	simulated2D::PoseKey key(1);
+  Symbol key1('x',1);
 	double mu = 1000.0;
 	eq2D::UnaryEqualityConstraint constraint(pt, key, mu);
 
@@ -281,7 +280,7 @@ TEST( testNonlinearEqualityConstraint, unary_basics ) {
 /* ************************************************************************* */
 TEST( testNonlinearEqualityConstraint, unary_linearization ) {
 	Point2 pt(1.0, 2.0);
-	simulated2D::PoseKey key(1);
+  Symbol key1('x',1);
 	double mu = 1000.0;
 	Ordering ordering;
 	ordering += key;
@@ -306,7 +305,7 @@ TEST( testNonlinearEqualityConstraint, unary_simple_optimization ) {
 	// create a single-node graph with a soft and hard constraint to
 	// ensure that the hard constraint overrides the soft constraint
 	Point2 truth_pt(1.0, 2.0);
-	simulated2D::PoseKey key(1);
+  Symbol key('x',1);
 	double mu = 10.0;
 	eq2D::UnaryEqualityConstraint::shared_ptr constraint(
 			new eq2D::UnaryEqualityConstraint(truth_pt, key, mu));
@@ -337,7 +336,7 @@ TEST( testNonlinearEqualityConstraint, unary_simple_optimization ) {
 /* ************************************************************************* */
 TEST( testNonlinearEqualityConstraint, odo_basics ) {
 	Point2 x1(1.0, 2.0), x2(2.0, 3.0), odom(1.0, 1.0);
-	simulated2D::PoseKey key1(1), key2(2);
+  Symbol key1('x',1), key2('x',2);
 	double mu = 1000.0;
 	eq2D::OdoEqualityConstraint constraint(odom, key1, key2, mu);
 
@@ -363,7 +362,7 @@ TEST( testNonlinearEqualityConstraint, odo_basics ) {
 /* ************************************************************************* */
 TEST( testNonlinearEqualityConstraint, odo_linearization ) {
 	Point2 x1(1.0, 2.0), x2(2.0, 3.0), odom(1.0, 1.0);
-	simulated2D::PoseKey key1(1), key2(2);
+  Symbol key1('x',1), key2('x',2);
 	double mu = 1000.0;
 	Ordering ordering;
 	ordering += key1, key2;
@@ -396,7 +395,7 @@ TEST( testNonlinearEqualityConstraint, odo_simple_optimize ) {
 	// a hard prior on one variable, and a conflicting soft prior
 	// on the other variable - the constraints should override the soft constraint
 	Point2 truth_pt1(1.0, 2.0), truth_pt2(3.0, 2.0);
-	simulated2D::PoseKey key1(1), key2(2);
+	Symbol key1('x',1), key2('x',2);
 
 	// hard prior on x1
 	eq2D::UnaryEqualityConstraint::shared_ptr constraint1(
@@ -438,8 +437,8 @@ TEST (testNonlinearEqualityConstraint, two_pose ) {
 
 	shared_graph graph(new Graph());
 
-	simulated2D::PoseKey x1(1), x2(2);
-	simulated2D::PointKey l1(1), l2(2);
+  Symbol x1('x',1), x2('x',2);
+  Symbol l1('l',1), l2('l',2);
 	Point2 pt_x1(1.0, 1.0),
 		   pt_x2(5.0, 6.0);
 	graph->add(eq2D::UnaryEqualityConstraint(pt_x1, x1));
@@ -476,8 +475,8 @@ TEST (testNonlinearEqualityConstraint, map_warp ) {
 	shared_graph graph(new Graph());
 
 	// keys
-	simulated2D::PoseKey x1(1), x2(2);
-	simulated2D::PointKey l1(1), l2(2);
+  Symbol x1('x',1), x2('x',2);
+  Symbol l1('l',1), l2('l',2);
 
 	// constant constraint on x1
 	Point2 pose1(1.0, 1.0);
@@ -526,7 +525,7 @@ typedef visualSLAM::Graph VGraph;
 typedef NonlinearOptimizer<VGraph> VOptimizer;
 
 // factors for visual slam
-typedef NonlinearEquality2<visualSLAM::PointKey> Point3Equality;
+typedef NonlinearEquality2<Point3> Point3Equality;
 
 /* ********************************************************************* */
 TEST (testNonlinearEqualityConstraint, stereo_constrained ) {
@@ -543,8 +542,8 @@ TEST (testNonlinearEqualityConstraint, stereo_constrained ) {
 	Point3 landmark(1.0, 5.0, 0.0); //centered between the cameras, 5 units away
 
 	// keys
-	visualSLAM::PoseKey x1(1), x2(2);
-	visualSLAM::PointKey l1(1), l2(2);
+  Symbol x1('x',1), x2('x',2);
+  Symbol l1('l',1), l2('l',2);
 
 	// create graph
 	VGraph::shared_graph graph(new VGraph());

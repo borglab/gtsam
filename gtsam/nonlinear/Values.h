@@ -37,13 +37,14 @@
 #include <gtsam/base/Value.h>
 #include <gtsam/base/FastMap.h>
 #include <gtsam/linear/VectorValues.h>
-#include <gtsam/nonlinear/Key.h>
+#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/Ordering.h>
 
 namespace gtsam {
 
   // Forward declarations
   class ValueCloneAllocator;
+  class ValueAutomaticCasting;
 
 /**
   * A non-templated config holding any types of Manifold-group elements.  A
@@ -138,6 +139,15 @@ namespace gtsam {
     template<typename ValueType>
     const ValueType& at(const Symbol& j) const;
 
+    /** Retrieve a variable by key \c j.  This non-templated version returns a
+     * special ValueAutomaticCasting object that may be assigned to the proper
+     * value.
+     * @param j Retrieve the value associated with this key
+     * @return A ValueAutomaticCasting object that may be assignmed to a Value
+     * of the proper type.
+     */
+    ValueAutomaticCasting at(const Symbol& j) const;
+
     /** Retrieve a variable using a special key (typically TypedSymbol), which
      * contains the type of the value associated with the key, and which must
      * be conversion constructible to a Symbol, e.g.
@@ -152,6 +162,9 @@ namespace gtsam {
     template<class TypedKey>
     const typename TypedKey::Value& operator[](const TypedKey& j) const {
       return at(j); }
+
+    /** operator[] syntax for at(const Symbol& j) */
+    ValueAutomaticCasting operator[](const Symbol& j) const;
 
     /** Check if a value exists with key \c j.  See exists<>(const Symbol& j)
      * and exists(const TypedKey& j) for versions that return the value if it

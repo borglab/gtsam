@@ -26,18 +26,21 @@ namespace gtsam {
 
 	/**
 	 * A class for a measurement predicted by "between(config[key1],config[key2])"
-	 * KEY1::Value is the Lie Group type
-	 * T is the measurement type, by default the same
+	 * @tparam VALUE the Value type
 	 */
-	template<class KEY1, class T = typename KEY1::Value>
-	class BetweenFactor: public NonlinearFactor2<KEY1, KEY1> {
+	template<class VALUE>
+	class BetweenFactor: public NonlinearFactor2<VALUE, VALUE> {
+
+	public:
+
+	  typedef VALUE T;
 
 	private:
 
-		typedef BetweenFactor<KEY1, T> This;
-		typedef NonlinearFactor2<KEY1, KEY1> Base;
+		typedef BetweenFactor<VALUE> This;
+		typedef NonlinearFactor2<VALUE, VALUE> Base;
 
-		T measured_; /** The measurement */
+		VALUE measured_; /** The measurement */
 
 		/** concept check by type */
 		GTSAM_CONCEPT_LIE_TYPE(T)
@@ -52,7 +55,7 @@ namespace gtsam {
 		BetweenFactor() {}
 
 		/** Constructor */
-		BetweenFactor(const KEY1& key1, const KEY1& key2, const T& measured,
+		BetweenFactor(const Symbol& key1, const Symbol& key2, const VALUE& measured,
 				const SharedNoiseModel& model) :
 			Base(model, key1, key2), measured_(measured) {
 		}
@@ -64,8 +67,8 @@ namespace gtsam {
 		/** print */
 		virtual void print(const std::string& s) const {
 	    std::cout << s << "BetweenFactor("
-	    		<< (std::string) this->key1_ << ","
-	    		<< (std::string) this->key2_ << ")\n";
+	    		<< (std::string) this->key1() << ","
+	    		<< (std::string) this->key2() << ")\n";
 			measured_.print("  measured");
 	    this->noiseModel_->print("  noise model");
 		}
@@ -79,7 +82,7 @@ namespace gtsam {
 		/** implement functions needed to derive from Factor */
 
 		/** vector of errors */
-		Vector evaluateError(const typename KEY1::Value& p1, const typename KEY1::Value& p2,
+		Vector evaluateError(const T& p1, const T& p2,
 				boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
 						boost::none) const {
 			T hx = p1.between(p2, H1, H2); // h(x)
@@ -88,12 +91,12 @@ namespace gtsam {
 		}
 
 		/** return the measured */
-		inline const T measured() const {
+		const VALUE& measured() const {
 			return measured_;
 		}
 
 		/** number of variables attached to this factor */
-		inline std::size_t size() const {
+		std::size_t size() const {
 			return 2;
 		}
 
@@ -114,16 +117,14 @@ namespace gtsam {
 	 * This constraint requires the underlying type to a Lie type
 	 *
 	 */
-	template<class KEY>
-	class BetweenConstraint : public BetweenFactor<KEY> {
+	template<class VALUE>
+	class BetweenConstraint : public BetweenFactor<VALUE> {
 	public:
-		typedef boost::shared_ptr<BetweenConstraint<KEY> > shared_ptr;
+		typedef boost::shared_ptr<BetweenConstraint<VALUE> > shared_ptr;
 
 		/** Syntactic sugar for constrained version */
-		BetweenConstraint(const typename KEY::Value& measured,
-				const KEY& key1, const KEY& key2, double mu = 1000.0)
-			: BetweenFactor<KEY>(key1, key2, measured,
-					noiseModel::Constrained::All(KEY::Value::Dim(), fabs(mu))) {}
+		BetweenConstraint(const VALUE& measured, const Symbol& key1, const Symbol& key2, double mu = 1000.0) :
+		  BetweenFactor<VALUE>(key1, key2, measured, noiseModel::Constrained::All(VALUE::Dim(), fabs(mu))) {}
 
 	private:
 
@@ -132,7 +133,7 @@ namespace gtsam {
 		template<class ARCHIVE>
 		void serialize(ARCHIVE & ar, const unsigned int version) {
 			ar & boost::serialization::make_nvp("BetweenFactor",
-					boost::serialization::base_object<BetweenFactor<KEY> >(*this));
+					boost::serialization::base_object<BetweenFactor<VALUE> >(*this));
 		}
 	}; // \class BetweenConstraint
 

@@ -20,7 +20,7 @@
 
 #include <gtsam/base/TestableAssertions.h>
 
-// Magically casts strings like "x3" to a Symbol('x',3) key, see Key.h
+// Magically casts strings like "x3" to a Symbol('x',3) key, see Symbol.h
 #define GTSAM_MAGIC_KEY
 
 #include <gtsam/geometry/Pose2.h>
@@ -29,7 +29,7 @@
 #include <gtsam/geometry/Point3.h>
 
 #include <gtsam/base/Vector.h>
-#include <gtsam/nonlinear/Key.h>
+#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/TupleValues.h>
 
 using namespace gtsam;

@@ -20,7 +20,7 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/Key.h>
+#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -33,8 +33,8 @@ namespace pose2SLAM {
 
   using namespace gtsam;
 
-  /// Keys with Pose2 and symbol 'x'
-  typedef TypedSymbol<Pose2, 'x'> PoseKey;
+  /// Convenience function for constructing a pose key
+  inline Symbol PoseKey(Index j) { return Symbol('x', j); }
 
   /// Values class, inherited from Values, using PoseKeys, mainly used as a convenience for MATLAB wrapper
   struct Values: public gtsam::Values {
@@ -50,10 +50,10 @@ namespace pose2SLAM {
     // Convenience for MATLAB wrapper, which does not allow for identically named methods
 
     /// get a pose
-    Pose2 pose(int key) const { return (*this)[PoseKey(key)]; }
+    Pose2 pose(Index key) const { return at<Pose2>(PoseKey(key)); }
 
     /// insert a pose
-    void insertPose(int key, const Pose2& pose) { insert(PoseKey(key), pose); }
+    void insertPose(Index key, const Pose2& pose) { insert(PoseKey(key), pose); }
   };
 
   /**
@@ -70,11 +70,11 @@ namespace pose2SLAM {
    */
 
   /// A hard constraint to enforce a specific value for a pose
-  typedef NonlinearEquality<PoseKey> HardConstraint;
+  typedef NonlinearEquality<Pose2> HardConstraint;
   /// A prior factor on a pose with Pose2 data type.
-  typedef PriorFactor<PoseKey> Prior;
+  typedef PriorFactor<Pose2> Prior;
   /// A factor to add an odometry measurement between two poses.
-  typedef BetweenFactor<PoseKey> Odometry;
+  typedef BetweenFactor<Pose2> Odometry;
 
   /// Graph
   struct Graph: public NonlinearFactorGraph {
@@ -86,13 +86,13 @@ namespace pose2SLAM {
     Graph(const NonlinearFactorGraph& graph);
 
     /// Adds a Pose2 prior with a noise model to one of the keys in the nonlinear factor graph
-    void addPrior(const PoseKey& i, const Pose2& p, const SharedNoiseModel& model);
+    void addPrior(Index i, const Pose2& p, const SharedNoiseModel& model);
 
     /// Creates a hard constraint for key i with the given Pose2 p.
-    void addPoseConstraint(const PoseKey& i, const Pose2& p);
+    void addPoseConstraint(Index i, const Pose2& p);
 
     /// Creates a between factor between keys i and j with a noise model with Pose2 z in the graph
-    void addOdometry(const PoseKey& i, const PoseKey& j, const Pose2& z,
+    void addOdometry(Index i, Index j, const Pose2& z,
         const SharedNoiseModel& model);
 
     /// Optimize

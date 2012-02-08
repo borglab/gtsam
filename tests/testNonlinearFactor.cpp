@@ -25,7 +25,7 @@
 // TODO: DANGEROUS, create shared pointers
 #define GTSAM_MAGIC_GAUSSIAN 2
 
-// Magically casts strings like "x3" to a Symbol('x',3) key, see Key.h
+// Magically casts strings like "x3" to a Symbol('x',3) key, see Symbol.h
 #define GTSAM_MAGIC_KEY
 
 #include <gtsam/base/Testable.h>
@@ -40,6 +40,9 @@ using namespace std;
 using namespace gtsam;
 using namespace example;
 
+using simulated2D::PoseKey;
+using simulated2D::PointKey;
+
 typedef boost::shared_ptr<NonlinearFactor > shared_nlf;
 
 /* ************************************************************************* */
@@ -49,11 +52,11 @@ TEST( NonlinearFactor, equals )
 
 	// create two nonlinear2 factors
 	Point2 z3(0.,-1.);
-	simulated2D::Measurement f0(z3, sigma, 1,1);
+	simulated2D::Measurement f0(z3, sigma, PoseKey(1),PointKey(1));
 
 	// measurement between x2 and l1
 	Point2 z4(-1.5, -1.);
-	simulated2D::Measurement f1(z4, sigma, 2,1);
+	simulated2D::Measurement f1(z4, sigma, PoseKey(2),PointKey(1));
 
 	CHECK(assert_equal(f0,f0));
 	CHECK(f0.equals(f0));
@@ -199,7 +202,7 @@ TEST( NonlinearFactor, linearize_constraint1 )
 	SharedDiagonal constraint = noiseModel::Constrained::MixedSigmas(sigmas);
 
 	Point2 mu(1., -1.);
-	Graph::sharedFactor f0(new simulated2D::Prior(mu, constraint, 1));
+	Graph::sharedFactor f0(new simulated2D::Prior(mu, constraint, PoseKey(1)));
 
 	Values config;
 	config.insert(simulated2D::PoseKey(1), Point2(1.0, 2.0));
@@ -219,7 +222,7 @@ TEST( NonlinearFactor, linearize_constraint2 )
 	SharedDiagonal constraint = noiseModel::Constrained::MixedSigmas(sigmas);
 
 	Point2 z3(1.,-1.);
-	simulated2D::Measurement f0(z3, constraint, 1,1);
+	simulated2D::Measurement f0(z3, constraint, PoseKey(1),PointKey(1));
 
 	Values config;
 	config.insert(simulated2D::PoseKey(1), Point2(1.0, 2.0));
@@ -235,13 +238,10 @@ TEST( NonlinearFactor, linearize_constraint2 )
 }
 
 /* ************************************************************************* */
-typedef TypedSymbol<LieVector, 'x'> TestKey;
-
-/* ************************************************************************* */
-class TestFactor4 : public NonlinearFactor4<TestKey, TestKey, TestKey, TestKey> {
+class TestFactor4 : public NonlinearFactor4<LieVector, LieVector, LieVector, LieVector> {
 public:
-  typedef NonlinearFactor4<TestKey, TestKey, TestKey, TestKey> Base;
-  TestFactor4() : Base(sharedSigmas(Vector_(1, 2.0)), 1, 2, 3, 4) {}
+  typedef NonlinearFactor4<LieVector, LieVector, LieVector, LieVector> Base;
+  TestFactor4() : Base(sharedSigmas(Vector_(1, 2.0)), "x1", "x2", "x3", "x4") {}
 
   virtual Vector
     evaluateError(const LieVector& x1, const LieVector& x2, const LieVector& x3, const LieVector& x4,
@@ -263,13 +263,13 @@ public:
 TEST(NonlinearFactor, NonlinearFactor4) {
   TestFactor4 tf;
   Values tv;
-  tv.insert(TestKey(1), LieVector(1, 1.0));
-  tv.insert(TestKey(2), LieVector(1, 2.0));
-  tv.insert(TestKey(3), LieVector(1, 3.0));
-  tv.insert(TestKey(4), LieVector(1, 4.0));
+  tv.insert("x1", LieVector(1, 1.0));
+  tv.insert("x2", LieVector(1, 2.0));
+  tv.insert("x3", LieVector(1, 3.0));
+  tv.insert("x4", LieVector(1, 4.0));
   EXPECT(assert_equal(Vector_(1, 10.0), tf.unwhitenedError(tv)));
   DOUBLES_EQUAL(25.0/2.0, tf.error(tv), 1e-9);
-  Ordering ordering; ordering += TestKey(1), TestKey(2), TestKey(3), TestKey(4);
+  Ordering ordering; ordering += "x1", "x2", "x3", "x4";
   JacobianFactor jf(*boost::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv, ordering)));
   LONGS_EQUAL(jf.keys()[0], 0);
   LONGS_EQUAL(jf.keys()[1], 1);
@@ -283,10 +283,10 @@ TEST(NonlinearFactor, NonlinearFactor4) {
 }
 
 /* ************************************************************************* */
-class TestFactor5 : public NonlinearFactor5<TestKey, TestKey, TestKey, TestKey, TestKey> {
+class TestFactor5 : public NonlinearFactor5<LieVector, LieVector, LieVector, LieVector, LieVector> {
 public:
-  typedef NonlinearFactor5<TestKey, TestKey, TestKey, TestKey, TestKey> Base;
-  TestFactor5() : Base(sharedSigmas(Vector_(1, 2.0)), 1, 2, 3, 4, 5) {}
+  typedef NonlinearFactor5<LieVector, LieVector, LieVector, LieVector, LieVector> Base;
+  TestFactor5() : Base(sharedSigmas(Vector_(1, 2.0)), "x1", "x2", "x3", "x4", "x5") {}
 
   virtual Vector
     evaluateError(const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5,
@@ -310,14 +310,14 @@ public:
 TEST(NonlinearFactor, NonlinearFactor5) {
   TestFactor5 tf;
   Values tv;
-  tv.insert(TestKey(1), LieVector(1, 1.0));
-  tv.insert(TestKey(2), LieVector(1, 2.0));
-  tv.insert(TestKey(3), LieVector(1, 3.0));
-  tv.insert(TestKey(4), LieVector(1, 4.0));
-  tv.insert(TestKey(5), LieVector(1, 5.0));
+  tv.insert("x1", LieVector(1, 1.0));
+  tv.insert("x2", LieVector(1, 2.0));
+  tv.insert("x3", LieVector(1, 3.0));
+  tv.insert("x4", LieVector(1, 4.0));
+  tv.insert("x5", LieVector(1, 5.0));
   EXPECT(assert_equal(Vector_(1, 15.0), tf.unwhitenedError(tv)));
   DOUBLES_EQUAL(56.25/2.0, tf.error(tv), 1e-9);
-  Ordering ordering; ordering += TestKey(1), TestKey(2), TestKey(3), TestKey(4), TestKey(5);
+  Ordering ordering; ordering += "x1", "x2", "x3", "x4", "x5";
   JacobianFactor jf(*boost::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv, ordering)));
   LONGS_EQUAL(jf.keys()[0], 0);
   LONGS_EQUAL(jf.keys()[1], 1);
@@ -333,10 +333,10 @@ TEST(NonlinearFactor, NonlinearFactor5) {
 }
 
 /* ************************************************************************* */
-class TestFactor6 : public NonlinearFactor6<TestKey, TestKey, TestKey, TestKey, TestKey, TestKey> {
+class TestFactor6 : public NonlinearFactor6<LieVector, LieVector, LieVector, LieVector, LieVector, LieVector> {
 public:
-  typedef NonlinearFactor6<TestKey, TestKey, TestKey, TestKey, TestKey, TestKey> Base;
-  TestFactor6() : Base(sharedSigmas(Vector_(1, 2.0)), 1, 2, 3, 4, 5, 6) {}
+  typedef NonlinearFactor6<LieVector, LieVector, LieVector, LieVector, LieVector, LieVector> Base;
+  TestFactor6() : Base(sharedSigmas(Vector_(1, 2.0)), "x1", "x2", "x3", "x4", "x5", "x6") {}
 
   virtual Vector
     evaluateError(const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5, const X6& x6,
@@ -362,15 +362,15 @@ public:
 TEST(NonlinearFactor, NonlinearFactor6) {
   TestFactor6 tf;
   Values tv;
-  tv.insert(TestKey(1), LieVector(1, 1.0));
-  tv.insert(TestKey(2), LieVector(1, 2.0));
-  tv.insert(TestKey(3), LieVector(1, 3.0));
-  tv.insert(TestKey(4), LieVector(1, 4.0));
-  tv.insert(TestKey(5), LieVector(1, 5.0));
-  tv.insert(TestKey(6), LieVector(1, 6.0));
+  tv.insert("x1", LieVector(1, 1.0));
+  tv.insert("x2", LieVector(1, 2.0));
+  tv.insert("x3", LieVector(1, 3.0));
+  tv.insert("x4", LieVector(1, 4.0));
+  tv.insert("x5", LieVector(1, 5.0));
+  tv.insert("x6", LieVector(1, 6.0));
   EXPECT(assert_equal(Vector_(1, 21.0), tf.unwhitenedError(tv)));
   DOUBLES_EQUAL(110.25/2.0, tf.error(tv), 1e-9);
-  Ordering ordering; ordering += TestKey(1), TestKey(2), TestKey(3), TestKey(4), TestKey(5), TestKey(6);
+  Ordering ordering; ordering += "x1", "x2", "x3", "x4", "x5", "x6";
   JacobianFactor jf(*boost::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv, ordering)));
   LONGS_EQUAL(jf.keys()[0], 0);
   LONGS_EQUAL(jf.keys()[1], 1);

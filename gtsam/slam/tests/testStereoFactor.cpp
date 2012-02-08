@@ -52,11 +52,11 @@ TEST( StereoFactor, singlePoint)
 	boost::shared_ptr<Cal3_S2Stereo> K(new Cal3_S2Stereo(625, 625, 0, 320, 240, 0.5));
 	boost::shared_ptr<visualSLAM::Graph> graph(new visualSLAM::Graph());
 
-	graph->add(visualSLAM::PoseConstraint(1,camera1));
+	graph->add(visualSLAM::PoseConstraint(PoseKey(1),camera1));
 
 	StereoPoint2 z14(320,320.0-50, 240);
   // arguments: measurement, sigma, cam#, measurement #, K, baseline (m)
-	graph->add(visualSLAM::StereoFactor(z14,sigma, 1, 1, K));
+	graph->add(visualSLAM::StereoFactor(z14,sigma, PoseKey(1), PointKey(1), K));
 
 	// Create a configuration corresponding to the ground truth
 	boost::shared_ptr<Values> values(new Values());

@@ -23,7 +23,7 @@
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/nonlinear/Key.h>
+#include <gtsam/nonlinear/Symbol.h>
 
 // \namespace
 
@@ -36,8 +36,11 @@ namespace simulated3D {
  * the simulated2D domain.
  */
 
-typedef gtsam::TypedSymbol<Point3, 'x'> PoseKey;
-typedef gtsam::TypedSymbol<Point3, 'l'> PointKey;
+  /// Convenience function for constructing a pose key
+  inline Symbol PoseKey(Index j) { return Symbol('x', j); }
+
+  /// Convenience function for constructing a pose key
+  inline Symbol PointKey(Index j) { return Symbol('l', j); }
 
 /**
  * Prior on a single pose
@@ -61,19 +64,18 @@ Point3 mea(const Point3& x, const Point3& l,
 /**
  * A prior factor on a single linear robot pose
  */
-struct PointPrior3D: public NonlinearFactor1<PoseKey> {
+struct PointPrior3D: public NonlinearFactor1<Point3> {
 
-	Point3 z_; ///< The prior pose value for the variable attached to this factor
+	Point3 measured_; ///< The prior pose value for the variable attached to this factor
 
 	/**
 	 * Constructor for a prior factor
-	 * @param z is the measured/prior position for the pose
+	 * @param measured is the measured/prior position for the pose
 	 * @param model is the measurement model for the factor (Dimension: 3)
-	 * @param j is the key for the pose
+	 * @param key is the key for the pose
 	 */
-	PointPrior3D(const Point3& z,
-			const SharedNoiseModel& model, const PoseKey& j) :
-				NonlinearFactor1<PoseKey> (model, j), z_(z) {
+	PointPrior3D(const Point3& measured, const SharedNoiseModel& model, const Symbol& key) :
+	  NonlinearFactor1<Point3> (model, key), measured_(measured) {
 	}
 
 	/**
@@ -85,29 +87,27 @@ struct PointPrior3D: public NonlinearFactor1<PoseKey> {
 	 */
 	Vector evaluateError(const Point3& x, boost::optional<Matrix&> H =
 			boost::none) {
-		return (prior(x, H) - z_).vector();
+		return (prior(x, H) - measured_).vector();
 	}
 };
 
 /**
  * Models a linear 3D measurement between 3D points
  */
-struct Simulated3DMeasurement: public NonlinearFactor2<PoseKey, PointKey> {
+struct Simulated3DMeasurement: public NonlinearFactor2<Point3, Point3> {
 
-	Point3 z_; ///< Linear displacement between a pose and landmark
+	Point3 measured_; ///< Linear displacement between a pose and landmark
 
 	/**
 	 * Creates a measurement factor with a given measurement
-	 * @param z is the measurement, a linear displacement between poses and landmarks
+	 * @param measured is the measurement, a linear displacement between poses and landmarks
 	 * @param model is a measurement model for the factor (Dimension: 3)
-	 * @param j1 is the pose key of the robot
-	 * @param j2 is the point key for the landmark
+	 * @param poseKey is the pose key of the robot
+	 * @param pointKey is the point key for the landmark
 	 */
-	Simulated3DMeasurement(const Point3& z,
-			const SharedNoiseModel& model, PoseKey& j1, PointKey j2) :
-				NonlinearFactor2<PoseKey, PointKey> (
-						model, j1, j2), z_(z) {
-	}
+	Simulated3DMeasurement(const Point3& measured, const SharedNoiseModel& model,
+	    const Symbol& poseKey, const Symbol& pointKey) :
+	      NonlinearFactor2<Point3, Point3>(model, poseKey, pointKey), measured_(measured) {}
 
 	/**
 	 * Error function with optional derivatives
@@ -117,9 +117,9 @@ struct Simulated3DMeasurement: public NonlinearFactor2<PoseKey, PointKey> {
 	 * @param H2 is an optional Jacobian matrix in terms of x2 (Dimension: 3x3)
 	 * @return vector error between measurement and prediction (Dimension: 3)
 	 */
-	Vector evaluateError(const Point3& x1, const Point3& x2, boost::optional<
-			Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) {
-		return (mea(x1, x2, H1, H2) - z_).vector();
+	Vector evaluateError(const Point3& x1, const Point3& x2,
+	    boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) {
+		return (mea(x1, x2, H1, H2) - measured_).vector();
 	}
 };
 

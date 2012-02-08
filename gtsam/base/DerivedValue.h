@@ -83,6 +83,16 @@ public:
     return (static_cast<DERIVED*>(this))->operator=(derivedRhs);
 	}
 
+	/// Conversion to the derived class
+	operator const DERIVED& () const {
+	  return static_cast<const DERIVED&>(*this);
+	}
+
+  /// Conversion to the derived class
+  operator DERIVED& () {
+    return static_cast<DERIVED&>(*this);
+  }
+
 protected:
 	/// Assignment operator, protected because only the Value or DERIVED
 	/// assignment operators should be used.

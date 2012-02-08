@@ -9,22 +9,33 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * @file testKey.cpp
- * @author Alex Cunningham
+/**
+ * @file testSerializationBase.cpp
+ * @brief 
+ * @author Richard Roberts
+ * @date Feb 7, 2012
  */
 
-#include <boost/assign/std/list.hpp> // for operator +=
-using namespace boost::assign;
+#include <gtsam/base/Matrix.h>
+#include <gtsam/base/Vector.h>
 
+#include <gtsam/base/serializationTestHelpers.h>
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/nonlinear/Symbol.h>
-	
+
 using namespace std;
 using namespace gtsam;
+using namespace gtsam::serializationTestHelpers;
+
+
+/* ************************************************************************* */
+TEST (Serialization, matrix_vector) {
+  EXPECT(equality<Vector>(Vector_(4, 1.0, 2.0, 3.0, 4.0)));
+  EXPECT(equality<Matrix>(Matrix_(2, 2, 1.0, 2.0, 3.0, 4.0)));
+
+  EXPECT(equalityXML<Vector>(Vector_(4, 1.0, 2.0, 3.0, 4.0)));
+  EXPECT(equalityXML<Matrix>(Matrix_(2, 2, 1.0, 2.0, 3.0, 4.0)));
+}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
-

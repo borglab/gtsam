@@ -133,9 +133,9 @@ pair<sharedPose2Graph, Values::shared_ptr> load2D(const string& filename,
 
 			// Insert vertices if pure odometry file
 			if (!poses->exists(pose2SLAM::PoseKey(id1))) poses->insert(pose2SLAM::PoseKey(id1), Pose2());
-			if (!poses->exists(pose2SLAM::PoseKey(id2))) poses->insert(pose2SLAM::PoseKey(id2), poses->at(pose2SLAM::PoseKey(id1)) * l1Xl2);
+			if (!poses->exists(pose2SLAM::PoseKey(id2))) poses->insert(pose2SLAM::PoseKey(id2), poses->at<Pose2>(pose2SLAM::PoseKey(id1)) * l1Xl2);
 
-			pose2SLAM::Graph::sharedFactor factor(new Pose2Factor(id1, id2, l1Xl2, *model));
+			pose2SLAM::Graph::sharedFactor factor(new Pose2Factor(pose2SLAM::PoseKey(id1), pose2SLAM::PoseKey(id2), l1Xl2, *model));
 			graph->push_back(factor);
 		}
 		is.ignore(LINESIZE, '\n');

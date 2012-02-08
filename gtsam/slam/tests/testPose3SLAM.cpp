@@ -28,7 +28,7 @@ using namespace boost::assign;
 // TODO: DANGEROUS, create shared pointers
 #define GTSAM_MAGIC_GAUSSIAN 6
 
-// Magically casts strings like "x3" to a Symbol('x',3) key, see Key.h
+// Magically casts strings like "x3" to a Symbol('x',3) key, see Symbol.h
 #define GTSAM_MAGIC_KEY
 
 #include <gtsam/slam/pose3SLAM.h>
@@ -50,7 +50,7 @@ TEST(Pose3Graph, optimizeCircle) {
 	// Create a hexagon of poses
 	double radius = 10;
 	Values hexagon = pose3SLAM::circle(6,radius);
-  Pose3 gT0 = hexagon[Key(0)], gT1 = hexagon[Key(1)];
+  Pose3 gT0 = hexagon[PoseKey(0)], gT1 = hexagon[PoseKey(1)];
 
 	// create a Pose graph with one equality constraint and one measurement
   shared_ptr<Pose3Graph> fg(new Pose3Graph);
@@ -67,12 +67,12 @@ TEST(Pose3Graph, optimizeCircle) {
 
   // Create initial config
   boost::shared_ptr<Values> initial(new Values());
-  initial->insert(Key(0), gT0);
-  initial->insert(Key(1), hexagon[Key(1)].retract(Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
-  initial->insert(Key(2), hexagon[Key(2)].retract(Vector_(6, 0.1,-0.1, 0.1, 0.1,-0.1, 0.1)));
-  initial->insert(Key(3), hexagon[Key(3)].retract(Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
-  initial->insert(Key(4), hexagon[Key(4)].retract(Vector_(6, 0.1,-0.1, 0.1, 0.1,-0.1, 0.1)));
-  initial->insert(Key(5), hexagon[Key(5)].retract(Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
+  initial->insert(PoseKey(0), gT0);
+  initial->insert(PoseKey(1), hexagon.at<Pose3>(PoseKey(1)).retract(Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
+  initial->insert(PoseKey(2), hexagon.at<Pose3>(PoseKey(2)).retract(Vector_(6, 0.1,-0.1, 0.1, 0.1,-0.1, 0.1)));
+  initial->insert(PoseKey(3), hexagon.at<Pose3>(PoseKey(3)).retract(Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
+  initial->insert(PoseKey(4), hexagon.at<Pose3>(PoseKey(4)).retract(Vector_(6, 0.1,-0.1, 0.1, 0.1,-0.1, 0.1)));
+  initial->insert(PoseKey(5), hexagon.at<Pose3>(PoseKey(5)).retract(Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
 
   // Choose an ordering and optimize
   shared_ptr<Ordering> ordering(new Ordering);
@@ -87,17 +87,17 @@ TEST(Pose3Graph, optimizeCircle) {
   CHECK(assert_equal(hexagon, actual,1e-4));
 
   // Check loop closure
-  CHECK(assert_equal(_0T1,actual[Key(5)].between(actual[Key(0)]),1e-5));
+  CHECK(assert_equal(_0T1, actual.at<Pose3>(PoseKey(5)).between(actual.at<Pose3>(PoseKey(0))),1e-5));
 }
 
 /* ************************************************************************* */
 TEST(Pose3Graph, partial_prior_height) {
-	typedef PartialPriorFactor<pose3SLAM::Key> Partial;
+	typedef PartialPriorFactor<Pose3> Partial;
 
 	// reference: Pose3 Expmap - (0-2: Rot3) (3-5: Point3)
 
 	// height prior - single element interface
-	pose3SLAM::Key key(1);
+	Symbol key = PoseKey(1);
 	double exp_height = 5.0;
 	SharedDiagonal model = noiseModel::Unit::Create(1);
 	Pose3 init(Rot3(), Point3(1.0, 2.0, 3.0)), expected(Rot3(), Point3(1.0, 2.0, exp_height));
@@ -117,7 +117,7 @@ TEST(Pose3Graph, partial_prior_height) {
 	EXPECT_DOUBLES_EQUAL(2.0, height.error(values), tol);
 
 	Values actual = *pose3SLAM::Optimizer::optimizeLM(graph, values);
-	EXPECT(assert_equal(expected, actual[key], tol));
+	EXPECT(assert_equal(expected, actual.at<Pose3>(key), tol));
 	EXPECT_DOUBLES_EQUAL(0.0, graph.error(actual), tol);
 }
 
@@ -131,12 +131,12 @@ TEST( Pose3Factor, error )
 
 	// Create factor
 	SharedNoiseModel I6(noiseModel::Unit::Create(6));
-	Pose3Factor factor(1,2, z, I6);
+	Pose3Factor factor(PoseKey(1), PoseKey(2), z, I6);
 
 	// Create config
 	Values x;
-	x.insert(Key(1),t1);
-	x.insert(Key(2),t2);
+	x.insert(PoseKey(1),t1);
+	x.insert(PoseKey(2),t2);
 
 	// Get error h(x)-z -> localCoordinates(z,h(x)) = localCoordinates(z,between(t1,t2))
 	Vector actual = factor.unwhitenedError(x);
@@ -146,10 +146,10 @@ TEST( Pose3Factor, error )
 
 /* ************************************************************************* */
 TEST(Pose3Graph, partial_prior_xy) {
-	typedef PartialPriorFactor<pose3SLAM::Key> Partial;
+	typedef PartialPriorFactor<Pose3> Partial;
 
 	// XY prior - full mask interface
-	pose3SLAM::Key key(1);
+	Symbol key = PoseKey(1);
 	Vector exp_xy = Vector_(2, 3.0, 4.0);
 	SharedDiagonal model = noiseModel::Unit::Create(2);
 	Pose3 init(Rot3(), Point3(1.0,-2.0, 3.0)), expected(Rot3(), Point3(3.0, 4.0, 3.0));
@@ -169,7 +169,7 @@ TEST(Pose3Graph, partial_prior_xy) {
 	values.insert(key, init);
 
 	Values actual = *pose3SLAM::Optimizer::optimizeLM(graph, values);
-	EXPECT(assert_equal(expected, actual[key], tol));
+	EXPECT(assert_equal(expected, actual.at<Pose3>(key), tol));
 	EXPECT_DOUBLES_EQUAL(0.0, graph.error(actual), tol);
 }
 
@@ -185,10 +185,10 @@ TEST( Values, pose3Circle )
 {
 	// expected is 4 poses tangent to circle with radius 1m
 	Values expected;
-	expected.insert(Key(0), Pose3(R1, Point3( 1, 0, 0)));
-	expected.insert(Key(1), Pose3(R2, Point3( 0, 1, 0)));
-	expected.insert(Key(2), Pose3(R3, Point3(-1, 0, 0)));
-	expected.insert(Key(3), Pose3(R4, Point3( 0,-1, 0)));
+	expected.insert(PoseKey(0), Pose3(R1, Point3( 1, 0, 0)));
+	expected.insert(PoseKey(1), Pose3(R2, Point3( 0, 1, 0)));
+	expected.insert(PoseKey(2), Pose3(R3, Point3(-1, 0, 0)));
+	expected.insert(PoseKey(3), Pose3(R4, Point3( 0,-1, 0)));
 
 	Values actual = pose3SLAM::circle(4,1.0);
 	CHECK(assert_equal(expected,actual));
@@ -198,10 +198,10 @@ TEST( Values, pose3Circle )
 TEST( Values, expmap )
 {
 	Values expected;
-	expected.insert(Key(0), Pose3(R1, Point3( 1.0, 0.1, 0)));
-	expected.insert(Key(1), Pose3(R2, Point3(-0.1, 1.0, 0)));
-	expected.insert(Key(2), Pose3(R3, Point3(-1.0,-0.1, 0)));
-	expected.insert(Key(3), Pose3(R4, Point3( 0.1,-1.0, 0)));
+	expected.insert(PoseKey(0), Pose3(R1, Point3( 1.0, 0.1, 0)));
+	expected.insert(PoseKey(1), Pose3(R2, Point3(-0.1, 1.0, 0)));
+	expected.insert(PoseKey(2), Pose3(R3, Point3(-1.0,-0.1, 0)));
+	expected.insert(PoseKey(3), Pose3(R4, Point3( 0.1,-1.0, 0)));
 
 	Ordering ordering(*expected.orderingArbitrary());
 	VectorValues delta(expected.dims(ordering));

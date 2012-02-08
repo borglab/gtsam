@@ -16,6 +16,8 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#define GTSAM_MAGIC_KEY
+
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/ExtendedKalmanFilter-inl.h>
@@ -23,9 +25,6 @@
 #include <gtsam/geometry/Point2.h>
 
 using namespace gtsam;
-
-// Define Types for System Test
-typedef TypedSymbol<Point2, 'x'> TestKey;
 
 /* ************************************************************************* */
 TEST( ExtendedKalmanFilter, linear ) {
@@ -35,10 +34,10 @@ TEST( ExtendedKalmanFilter, linear ) {
   SharedDiagonal P_initial = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1));
 
   // Create an ExtendedKalmanFilter object
-  ExtendedKalmanFilter<TestKey> ekf(x_initial, P_initial);
+  ExtendedKalmanFilter<Point2> ekf(x_initial, P_initial);
 
   // Create the TestKeys for our example
-  TestKey x0(0), x1(1), x2(2), x3(3);
+  Symbol x0("x0"), x1("x1"), x2("x2"), x3("x3");
 
   // Create the controls and measurement properties for our example
   double dt = 1.0;
@@ -57,30 +56,30 @@ TEST( ExtendedKalmanFilter, linear ) {
 
   // Run iteration 1
   // Create motion factor
-  BetweenFactor<TestKey> factor1(x0, x1, difference, Q);
+  BetweenFactor<Point2> factor1(x0, x1, difference, Q);
   Point2 predict1 = ekf.predict(factor1);
   EXPECT(assert_equal(expected1,predict1));
 
   // Create the measurement factor
-  PriorFactor<TestKey> factor2(x1, z1, R);
+  PriorFactor<Point2> factor2(x1, z1, R);
   Point2 update1 = ekf.update(factor2);
   EXPECT(assert_equal(expected1,update1));
 
   // Run iteration 2
-  BetweenFactor<TestKey> factor3(x1, x2, difference, Q);
+  BetweenFactor<Point2> factor3(x1, x2, difference, Q);
   Point2 predict2 = ekf.predict(factor3);
   EXPECT(assert_equal(expected2,predict2));
 
-  PriorFactor<TestKey> factor4(x2, z2, R);
+  PriorFactor<Point2> factor4(x2, z2, R);
   Point2 update2 = ekf.update(factor4);
   EXPECT(assert_equal(expected2,update2));
 
   // Run iteration 3
-  BetweenFactor<TestKey> factor5(x2, x3, difference, Q);
+  BetweenFactor<Point2> factor5(x2, x3, difference, Q);
   Point2 predict3 = ekf.predict(factor5);
   EXPECT(assert_equal(expected3,predict3));
 
-  PriorFactor<TestKey> factor6(x3, z3, R);
+  PriorFactor<Point2> factor6(x3, z3, R);
   Point2 update3 = ekf.update(factor6);
   EXPECT(assert_equal(expected3,update3));
 
@@ -89,12 +88,12 @@ TEST( ExtendedKalmanFilter, linear ) {
 
 
 // Create Motion Model Factor
-class NonlinearMotionModel : public NonlinearFactor2<TestKey,TestKey> {
+class NonlinearMotionModel : public NonlinearFactor2<Point2,Point2> {
 public:
-  typedef TestKey::Value T;
+  typedef Point2 T;
 
 private:
-  typedef NonlinearFactor2<TestKey,TestKey> Base;
+  typedef NonlinearFactor2<Point2, Point2> Base;
   typedef NonlinearMotionModel This;
 
 protected:
@@ -104,7 +103,7 @@ protected:
 public:
   NonlinearMotionModel(){}
 
-  NonlinearMotionModel(const TestKey& TestKey1, const TestKey& TestKey2) :
+  NonlinearMotionModel(const Symbol& TestKey1, const Symbol& TestKey2) :
     Base(noiseModel::Diagonal::Sigmas(Vector_(2, 1.0, 1.0)), TestKey1, TestKey2), Q_(2,2) {
 
     // Initialize motion model parameters:
@@ -156,14 +155,14 @@ public:
   /* print */
   virtual void print(const std::string& s = "") const {
     std::cout << s << ": NonlinearMotionModel\n";
-    std::cout << "  TestKey1: " << (std::string) key1_ << std::endl;
-    std::cout << "  TestKey2: " << (std::string) key2_ << std::endl;
+    std::cout << "  TestKey1: " << (std::string) key1() << std::endl;
+    std::cout << "  TestKey2: " << (std::string) key2() << std::endl;
   }
 
   /** Check if two factors are equal. Note type is IndexFactor and needs cast. */
-  virtual bool equals(const NonlinearFactor2<TestKey,TestKey>& f, double tol = 1e-9) const {
+  virtual bool equals(const NonlinearFactor& f, double tol = 1e-9) const {
     const This *e = dynamic_cast<const This*> (&f);
-    return (e != NULL) && (key1_ == e->key1_) && (key2_ == e->key2_);
+    return (e != NULL) && (key1() == e->key1()) && (key2() == e->key2());
   }
 
   /**
@@ -182,7 +181,7 @@ public:
 
   /** Vector of errors, whitened ! */
   Vector whitenedError(const Values& c) const {
-    return QInvSqrt(c[key1_])*unwhitenedError(c);
+    return QInvSqrt(c[key1()])*unwhitenedError(c);
   }
 
   /**
@@ -191,11 +190,11 @@ public:
    * Hence b = z - h(x1,x2) = - error_vector(x)
    */
   boost::shared_ptr<GaussianFactor> linearize(const Values& c, const Ordering& ordering) const {
-    const X1& x1 = c[key1_];
-    const X2& x2 = c[key2_];
+    const X1& x1 = c[key1()];
+    const X2& x2 = c[key2()];
     Matrix A1, A2;
     Vector b = -evaluateError(x1, x2, A1, A2);
-    const Index var1 = ordering[key1_], var2 = ordering[key2_];
+    const Index var1 = ordering[key1()], var2 = ordering[key2()];
     SharedDiagonal constrained =
         boost::shared_dynamic_cast<noiseModel::Constrained>(this->noiseModel_);
     if (constrained.get() != NULL) {
@@ -236,13 +235,13 @@ public:
 };
 
 // Create Measurement Model Factor
-class NonlinearMeasurementModel : public NonlinearFactor1<TestKey> {
+class NonlinearMeasurementModel : public NonlinearFactor1<Point2> {
 public:
-  typedef TestKey::Value T;
+  typedef Point2 T;
 
 private:
 
-  typedef NonlinearFactor1<TestKey> Base;
+  typedef NonlinearFactor1<Point2> Base;
   typedef NonlinearMeasurementModel This;
 
 protected:
@@ -253,7 +252,7 @@ protected:
 public:
   NonlinearMeasurementModel(){}
 
-  NonlinearMeasurementModel(const TestKey& TestKey, Vector z) :
+  NonlinearMeasurementModel(const Symbol& TestKey, Vector z) :
     Base(noiseModel::Diagonal::Sigmas(Vector_(2, 1.0, 1.0)), TestKey), z_(z), R_(1,1) {
 
     // Initialize nonlinear measurement model parameters:
@@ -294,13 +293,13 @@ public:
   /* print */
   virtual void print(const std::string& s = "") const {
     std::cout << s << ": NonlinearMeasurementModel\n";
-    std::cout << "  TestKey: " << (std::string) key_ << std::endl;
+    std::cout << "  TestKey: " << (std::string) key() << std::endl;
   }
 
   /** Check if two factors are equal. Note type is IndexFactor and needs cast. */
-  virtual bool equals(const NonlinearFactor1<TestKey>& f, double tol = 1e-9) const {
+  virtual bool equals(const NonlinearFactor& f, double tol = 1e-9) const {
     const This *e = dynamic_cast<const This*> (&f);
-    return (e != NULL) && (key_ == e->key_);
+    return (e != NULL) && Base::equals(f);
   }
 
   /**
@@ -319,7 +318,7 @@ public:
 
   /** Vector of errors, whitened ! */
   Vector whitenedError(const Values& c) const {
-    return RInvSqrt(c[key_])*unwhitenedError(c);
+    return RInvSqrt(c[key()])*unwhitenedError(c);
   }
 
   /**
@@ -328,10 +327,10 @@ public:
    * Hence b = z - h(x1) = - error_vector(x)
    */
   boost::shared_ptr<GaussianFactor> linearize(const Values& c, const Ordering& ordering) const {
-    const X& x1 = c[key_];
+    const X& x1 = c[key()];
     Matrix A1;
     Vector b = -evaluateError(x1, A1);
-    const Index var1 = ordering[key_];
+    const Index var1 = ordering[key()];
     SharedDiagonal constrained =
         boost::shared_dynamic_cast<noiseModel::Constrained>(this->noiseModel_);
     if (constrained.get() != NULL) {
@@ -345,7 +344,7 @@ public:
   }
 
   /** vector of errors */
-  Vector evaluateError(const TestKey::Value& p, boost::optional<Matrix&> H1 = boost::none) const {
+  Vector evaluateError(const T& p, boost::optional<Matrix&> H1 = boost::none) const {
     // error = z - h(p)
     // H = d error / d p = -d h/ d p = -H
     Vector z_hat = h(p);
@@ -406,17 +405,17 @@ TEST( ExtendedKalmanFilter, nonlinear ) {
   SharedDiagonal P_initial = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1));
 
   // Create an ExtendedKalmanFilter object
-  ExtendedKalmanFilter<TestKey> ekf(x_initial, P_initial);
+  ExtendedKalmanFilter<Point2> ekf(x_initial, P_initial);
 
   // Enter Predict-Update Loop
   Point2 x_predict, x_update;
   for(unsigned int i = 0; i < 10; ++i){
     // Create motion factor
-    NonlinearMotionModel motionFactor(TestKey(i-1), TestKey(i));
+    NonlinearMotionModel motionFactor(Symbol('x',i-1), Symbol('x',i));
     x_predict = ekf.predict(motionFactor);
 
     // Create a measurement factor
-    NonlinearMeasurementModel measurementFactor(TestKey(i), Vector_(1, z[i]));
+    NonlinearMeasurementModel measurementFactor(Symbol('x',i), Vector_(1, z[i]));
     x_update = ekf.update(measurementFactor);
 
     EXPECT(assert_equal(expected_predict[i],x_predict, 1e-6));

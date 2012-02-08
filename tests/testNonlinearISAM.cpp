@@ -25,15 +25,14 @@ TEST(testNonlinearISAM, markov_chain ) {
 	Sampler sampler(model, 42u);
 
 	// create initial graph
-	PoseKey key(0);
 	Pose2 cur_pose; // start at origin
 	Graph start_factors;
-	start_factors.addPoseConstraint(key, cur_pose);
+	start_factors.addPoseConstraint(0, cur_pose);
 
 	planarSLAM::Values init;
 	planarSLAM::Values expected;
-	init.insert(key, cur_pose);
-	expected.insert(key, cur_pose);
+	init.insertPose(0, cur_pose);
+	expected.insertPose(0, cur_pose);
 	isam.update(start_factors, init);
 
 	// loop for a period of time to verify memory usage
@@ -41,8 +40,7 @@ TEST(testNonlinearISAM, markov_chain ) {
 	Pose2 z(1.0, 2.0, 0.1);
 	for (size_t i=1; i<=nrPoses; ++i) {
 		Graph new_factors;
-		PoseKey key1(i-1), key2(i);
-		new_factors.addOdometry(key1, key2, z, model);
+		new_factors.addOdometry(i-1, i, z, model);
 		planarSLAM::Values new_init;
 
 		// perform a check on changing orderings
@@ -61,16 +59,15 @@ TEST(testNonlinearISAM, markov_chain ) {
 		}
 
 		cur_pose = cur_pose.compose(z);
-		new_init.insert(key2, cur_pose.retract(sampler.sample()));
-		expected.insert(key2, cur_pose);
+		new_init.insertPose(i, cur_pose.retract(sampler.sample()));
+		expected.insertPose(i, cur_pose);
 		isam.update(new_factors, new_init);
 	}
 
 	// verify values - all but the last one should be very close
 	planarSLAM::Values actual = isam.estimate();
 	for (size_t i=0; i<nrPoses; ++i) {
-		PoseKey cur_key(i);
-		EXPECT(assert_equal(expected[cur_key], actual[cur_key], tol));
+		EXPECT(assert_equal(expected.pose(i), actual.pose(i), tol));
 	}
 }
 

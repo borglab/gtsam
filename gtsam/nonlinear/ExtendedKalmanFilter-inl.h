@@ -27,10 +27,10 @@
 namespace gtsam {
 
 	/* ************************************************************************* */
-	template<class KEY>
-	typename ExtendedKalmanFilter<KEY>::T ExtendedKalmanFilter<KEY>::solve_(
+	template<class VALUE>
+	typename ExtendedKalmanFilter<VALUE>::T ExtendedKalmanFilter<VALUE>::solve_(
 			const GaussianFactorGraph& linearFactorGraph, const Ordering& ordering,
-			const Values& linearizationPoints, const KEY& lastKey,
+			const Values& linearizationPoints, const Symbol& lastKey,
 			JacobianFactor::shared_ptr& newPrior) const {
 
 		// Extract the Index of the provided last key
@@ -43,7 +43,7 @@ namespace gtsam {
 
 		// Extract the current estimate of x1,P1 from the Bayes Network
 		VectorValues result = optimize(*linearBayesNet);
-		T x = linearizationPoints[lastKey].retract(result[lastIndex]);
+		T x = linearizationPoints.at<T>(lastKey).retract(result[lastIndex]);
 
 		// Create a Jacobian Factor from the root node of the produced Bayes Net.
 		// This will act as a prior for the next iteration.
@@ -66,8 +66,8 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	template<class KEY>
-	ExtendedKalmanFilter<KEY>::ExtendedKalmanFilter(T x_initial,
+	template<class VALUE>
+	ExtendedKalmanFilter<VALUE>::ExtendedKalmanFilter(T x_initial,
 			noiseModel::Gaussian::shared_ptr P_initial) {
 
 		// Set the initial linearization point to the provided mean
@@ -82,8 +82,8 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	template<class KEY>
-	typename ExtendedKalmanFilter<KEY>::T ExtendedKalmanFilter<KEY>::predict(
+	template<class VALUE>
+	typename ExtendedKalmanFilter<VALUE>::T ExtendedKalmanFilter<VALUE>::predict(
 			const MotionFactor& motionFactor) {
 
 		// TODO: This implementation largely ignores the actual factor symbols.
@@ -91,8 +91,8 @@ namespace gtsam {
 		// different keys will still compute as if a common key-set was used
 
 		// Create Keys
-		KEY x0 = motionFactor.key1();
-		KEY x1 = motionFactor.key2();
+		Symbol x0 = motionFactor.key1();
+		Symbol x1 = motionFactor.key2();
 
 		// Create an elimination ordering
 		Ordering ordering;
@@ -122,8 +122,8 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	template<class KEY>
-	typename ExtendedKalmanFilter<KEY>::T ExtendedKalmanFilter<KEY>::update(
+	template<class VALUE>
+	typename ExtendedKalmanFilter<VALUE>::T ExtendedKalmanFilter<VALUE>::update(
 			const MeasurementFactor& measurementFactor) {
 
 		// TODO: This implementation largely ignores the actual factor symbols.
@@ -131,7 +131,7 @@ namespace gtsam {
 		// different keys will still compute as if a common key-set was used
 
 		// Create Keys
-		KEY x0 = measurementFactor.key();
+		Symbol x0 = measurementFactor.key();
 
 		// Create an elimination ordering
 		Ordering ordering;
