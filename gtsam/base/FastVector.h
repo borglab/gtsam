@@ -20,6 +20,8 @@
 
 #include <vector>
 #include <boost/pool/pool_alloc.hpp>
+#include <boost/serialization/nvp.hpp>
+#include <boost/serialization/vector.hpp>
 
 namespace gtsam {
 
@@ -55,6 +57,14 @@ public:
 
   /** Copy constructor from the base map class */
   FastVector(const Base& x) : Base(x) {}
+
+private:
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int version) {
+    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+  }
 
 };
 
