@@ -21,6 +21,8 @@
 
 namespace gtsam {
 
+using namespace std;
+
 /* ************************************************************************* */
 void VariableIndex::permute(const Permutation& permutation) {
 #ifndef NDEBUG
@@ -36,7 +38,7 @@ void VariableIndex::permute(const Permutation& permutation) {
 /* ************************************************************************* */
 bool VariableIndex::equals(const VariableIndex& other, double tol) const {
   if(this->nEntries_ == other.nEntries_ && this->nFactors_ == other.nFactors_) {
-    for(size_t var=0; var < std::max(this->index_.size(), other.index_.size()); ++var)
+    for(size_t var=0; var < max(this->index_.size(), other.index_.size()); ++var)
       if(var >= this->index_.size() || var >= other.index_.size()) {
         if(!((var >= this->index_.size() && other.index_[var].empty()) ||
             (var >= other.index_.size() && this->index_[var].empty())))
@@ -49,21 +51,33 @@ bool VariableIndex::equals(const VariableIndex& other, double tol) const {
 }
 
 /* ************************************************************************* */
-void VariableIndex::print(const std::string& str) const {
-  std::cout << str << "\n";
-  std::cout << "nEntries = " << this->nEntries_ << ", nFactors = " << this->nFactors_ << "\n";
+void VariableIndex::print(const string& str) const {
+  cout << str << "\n";
+  cout << "nEntries = " << nEntries() << ", nFactors = " << nFactors() << "\n";
   Index var = 0;
   BOOST_FOREACH(const Factors& variable, index_.container()) {
     Permutation::const_iterator rvar = find(index_.permutation().begin(), index_.permutation().end(), var);
     assert(rvar != index_.permutation().end());
-    std::cout << "var " << (rvar-index_.permutation().begin()) << ":";
-    BOOST_FOREACH(const size_t factor, variable) {
-      std::cout << " " << factor;
-    }
-    std::cout << "\n";
+    cout << "var " << (rvar-index_.permutation().begin()) << ":";
+    BOOST_FOREACH(const size_t factor, variable)
+      cout << " " << factor;
+    cout << "\n";
     ++ var;
   }
-  std::cout << std::flush;
+  cout << flush;
+}
+
+/* ************************************************************************* */
+void VariableIndex::outputMetisFormat(ostream& os) const {
+  os << size() << " " << nFactors() << "\n";
+  // run over variables, which will be hyper-edges.
+  BOOST_FOREACH(const Factors& variable, index_.container()) {
+  	// every variable is a hyper-edge covering its factors
+    BOOST_FOREACH(const size_t factor, variable)
+      os << (factor+1) << " "; // base 1
+    os << "\n";
+  }
+  os << flush;
 }
 
 }
