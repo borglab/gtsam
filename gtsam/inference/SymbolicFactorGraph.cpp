@@ -66,7 +66,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	IndexFactor::shared_ptr CombineSymbolic(
 			const FactorGraph<IndexFactor>& factors, const FastMap<Index,
-					std::vector<Index> >& variableSlots) {
+			FastVector<Index> >& variableSlots) {
 		IndexFactor::shared_ptr combined(Combine<IndexFactor, Index> (factors,
 				variableSlots));
 //		combined->assertInvariants();
@@ -84,9 +84,11 @@ namespace gtsam {
 
 		if (keys.size() < 1) throw invalid_argument(
 				"IndexFactor::CombineAndEliminate called on factors with no variables.");
+		if(nrFrontals > keys.size()) throw invalid_argument(
+		    "Requesting to eliminate more variables than are present in the factors");
 
 		pair<IndexConditional::shared_ptr, IndexFactor::shared_ptr> result;
-		std::vector<Index> newKeys(keys.begin(),keys.end());
+		FastVector<Index> newKeys(keys.begin(),keys.end());
     result.first.reset(new IndexConditional(newKeys, nrFrontals));
 		result.second.reset(new IndexFactor(newKeys.begin()+nrFrontals, newKeys.end()));
 

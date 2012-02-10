@@ -113,7 +113,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  JacobianFactor::JacobianFactor(const std::vector<std::pair<Index, Matrix> > &terms,
+  JacobianFactor::JacobianFactor(const FastVector<std::pair<Index, Matrix> > &terms,
   		const Vector &b, const SharedDiagonal& model) :
   	GaussianFactor(GetKeys(terms.size(), terms.begin(), terms.end())),
 		model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_)
@@ -260,7 +260,7 @@ namespace gtsam {
       sourceSlots.insert(make_pair(inversePermutation[keys_[j]], j));
 
     // Build a vector of variable dimensions in the new order
-    vector<size_t> dimensions(size() + 1);
+    FastVector<size_t> dimensions(size() + 1);
     size_t j = 0;
     BOOST_FOREACH(const SourceSlots::value_type& sourceSlot, sourceSlots) {
       dimensions[j++] = Ab_(sourceSlot.second).cols();
@@ -269,7 +269,7 @@ namespace gtsam {
     dimensions.back() = 1;
 
     // Copy the variables and matrix into the new order
-    vector<Index> oldKeys(size());
+    FastVector<Index> oldKeys(size());
     keys_.swap(oldKeys);
     AbMatrix oldMatrix;
     BlockAb oldAb(oldMatrix, dimensions.begin(), dimensions.end(), Ab_.rows());
@@ -506,7 +506,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  void JacobianFactor::collectInfo(size_t index, vector<_RowSource>& rowSources) const {
+  void JacobianFactor::collectInfo(size_t index, FastVector<_RowSource>& rowSources) const {
 		assertInvariants();
 		for (size_t row = 0; row < rows(); ++row) {
 			Index firstNonzeroVar;
@@ -522,7 +522,7 @@ namespace gtsam {
 	}
 
   /* ************************************************************************* */
-  void JacobianFactor::allocate(const VariableSlots& variableSlots, vector<
+  void JacobianFactor::allocate(const VariableSlots& variableSlots, FastVector<
 			size_t>& varDims, size_t m) {
 		keys_.resize(variableSlots.size());
 		std::transform(variableSlots.begin(), variableSlots.end(), begin(),
@@ -551,7 +551,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   void JacobianFactor::copyFNZ(size_t m, size_t n,
-			vector<_RowSource>& rowSources) {
+      FastVector<_RowSource>& rowSources) {
 		Index i = 0;
 		for (size_t row = 0; row < m; ++row) {
 			while (i < n && rowSources[row].firstNonzeroVar > keys_[i])

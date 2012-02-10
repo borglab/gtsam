@@ -223,7 +223,7 @@ namespace gtsam {
 
     assertInvariants();
     GenericSequentialSolver<FactorType> solver(p_FSR);
-    return *solver.jointFactorGraph(conditional_->keys(), function);
+    return *solver.jointFactorGraph(vector<Index>(conditional_->keys().begin(), conditional_->keys().end()), function);
   }
 
   /* ************************************************************************* */
@@ -243,8 +243,8 @@ namespace gtsam {
     joint.push_back(R->conditional()->toFactor()); // P(R)
 
     // Find the keys of both C1 and C2
-    std::vector<Index> keys1(conditional_->keys());
-    std::vector<Index> keys2(C2->conditional_->keys());
+    const FastVector<Index>& keys1(conditional_->keys());
+    const FastVector<Index>& keys2(C2->conditional_->keys());
     FastSet<Index> keys12;
     keys12.insert(keys1.begin(), keys1.end());
     keys12.insert(keys2.begin(), keys2.end());

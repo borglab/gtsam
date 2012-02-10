@@ -204,7 +204,7 @@ namespace gtsam {
 
     /** Special constructor used in EliminateCholesky which combines the given factors */
     HessianFactor(const FactorGraph<GaussianFactor>& factors,
-				const std::vector<size_t>& dimensions, const Scatter& scatter);
+				const FastVector<size_t>& dimensions, const Scatter& scatter);
 
     /** Destructor */
 		virtual ~HessianFactor() {}

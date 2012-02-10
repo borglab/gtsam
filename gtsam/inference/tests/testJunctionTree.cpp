@@ -56,15 +56,15 @@ TEST( JunctionTree, constructor )
 
 	SymbolicJunctionTree actual(fg);
 
-	vector<Index> frontal1; frontal1 += x3, x4;
-	vector<Index> frontal2; frontal2 += x2, x1;
-	vector<Index> sep1;
-	vector<Index> sep2; sep2 += x3;
-	CHECK(assert_equal(frontal1, actual.root()->frontal));
-	CHECK(assert_equal(sep1,     actual.root()->separator));
+	FastVector<Index> frontal1; frontal1 += x3, x4;
+	FastVector<Index> frontal2; frontal2 += x2, x1;
+	FastVector<Index> sep1;
+	FastVector<Index> sep2; sep2 += x3;
+	CHECK(assert_container_equality(frontal1, actual.root()->frontal));
+	CHECK(assert_container_equality(sep1,     actual.root()->separator));
 	LONGS_EQUAL(1,               actual.root()->size());
-	CHECK(assert_equal(frontal2, actual.root()->children().front()->frontal));
-	CHECK(assert_equal(sep2,     actual.root()->children().front()->separator));
+	CHECK(assert_container_equality(frontal2, actual.root()->children().front()->frontal));
+	CHECK(assert_container_equality(sep2,     actual.root()->children().front()->separator));
 	LONGS_EQUAL(2,               actual.root()->children().front()->size());
 	CHECK(assert_equal(*fg[2], *(*actual.root())[0]));
   CHECK(assert_equal(*fg[0], *(*actual.root()->children().front())[0]));

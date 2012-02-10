@@ -126,7 +126,7 @@ void ISAM2<CONDITIONAL,GRAPH>::Impl::AddVariables(
   theta.insert(newTheta);
   if(debug) newTheta.print("The new variables are: ");
   // Add the new keys onto the ordering, add zeros to the delta for the new variables
-  std::vector<Index> dims(newTheta.dims(*newTheta.orderingArbitrary()));
+  FastVector<Index> dims(newTheta.dims(*newTheta.orderingArbitrary()));
   if(debug) cout << "New variables have total dimensionality " << accumulate(dims.begin(), dims.end(), 0) << endl;
   const size_t newDim = accumulate(dims.begin(), dims.end(), 0);
   const size_t originalDim = delta->dim();
@@ -287,7 +287,7 @@ ISAM2<CONDITIONAL, GRAPH>::Impl::PartialSolve(GaussianFactorGraph& factors,
   if(debug) affectedFactorsIndex.print("affectedFactorsIndex: ");
   toc(2,"variable index");
   tic(3,"ccolamd");
-  vector<int> cmember(affectedKeysSelector.size(), 0);
+  FastVector<int> cmember(affectedKeysSelector.size(), 0);
   if(reorderingMode.constrain == ReorderingMode::CONSTRAIN_LAST) {
     assert(reorderingMode.constrainedKeys);
     if(keys.size() > reorderingMode.constrainedKeys->size()) {

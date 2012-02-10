@@ -58,7 +58,7 @@ typename EliminationTree<FACTOR>::sharedFactor EliminationTree<FACTOR>::eliminat
 
 /* ************************************************************************* */
 template<class FACTOR>
-vector<Index> EliminationTree<FACTOR>::ComputeParents(const VariableIndex& structure) {
+FastVector<Index> EliminationTree<FACTOR>::ComputeParents(const VariableIndex& structure) {
 
   // Number of factors and variables
   const size_t m = structure.nFactors();
@@ -67,8 +67,8 @@ vector<Index> EliminationTree<FACTOR>::ComputeParents(const VariableIndex& struc
   static const Index none = numeric_limits<Index>::max();
 
   // Allocate result parent vector and vector of last factor columns
-  vector<Index> parents(n, none);
-  vector<Index> prevCol(m, none);
+  FastVector<Index> parents(n, none);
+  FastVector<Index> prevCol(m, none);
 
   // for column j \in 1 to n do
   for (Index j = 0; j < n; j++) {
@@ -100,7 +100,7 @@ typename EliminationTree<FACTOR>::shared_ptr EliminationTree<FACTOR>::Create(
 
   tic(1, "ET ComputeParents");
   // Compute the tree structure
-  vector<Index> parents(ComputeParents(structure));
+  FastVector<Index> parents(ComputeParents(structure));
   toc(1, "ET ComputeParents");
 
   // Number of variables
@@ -110,7 +110,7 @@ typename EliminationTree<FACTOR>::shared_ptr EliminationTree<FACTOR>::Create(
 
   // Create tree structure
   tic(2, "assemble tree");
-  vector<shared_ptr> trees(n);
+  FastVector<shared_ptr> trees(n);
   for (Index k = 1; k <= n; k++) {
     Index j = n - k;  // Start at the last variable and loop down to 0
     trees[j].reset(new EliminationTree(j));  // Create a new node on this variable

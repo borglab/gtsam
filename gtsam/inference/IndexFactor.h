@@ -114,6 +114,12 @@ namespace gtsam {
 			assertInvariants();
 		}
 
+    /** Construct n-way factor (FastVector version) */
+    IndexFactor(const FastVector<Index>& js) :
+      Base(js) {
+      assertInvariants();
+    }
+
 		/** Constructor from a collection of keys */
 		template<class KeyIterator> IndexFactor(KeyIterator beginKey,
 				KeyIterator endKey) :

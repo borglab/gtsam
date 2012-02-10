@@ -20,12 +20,13 @@
 #pragma once
 
 #include <list>
-#include <vector>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 
 #include <gtsam/base/types.h>
+#include <gtsam/base/FastVector.h>
+#include <gtsam/base/FastList.h>
 
 namespace gtsam {
 
@@ -46,13 +47,13 @@ namespace gtsam {
 			typedef typename boost::shared_ptr<Cluster> shared_ptr;
 			typedef typename boost::weak_ptr<Cluster> weak_ptr;
 
-      const std::vector<Index> frontal;                   // the frontal variables
-      const std::vector<Index> separator;                // the separator variables
+      const FastVector<Index> frontal;                   // the frontal variables
+      const FastVector<Index> separator;                // the separator variables
 
 		protected:
 
 			weak_ptr parent_;                      // the parent cluster
-			std::list<shared_ptr> children_;     // the child clusters
+			FastList<shared_ptr> children_;     // the child clusters
 			const typename FG::sharedFactor eliminated_; // the eliminated factor to pass on to the parent
 
 		public:
@@ -82,7 +83,7 @@ namespace gtsam {
 			bool equals(const Cluster& other) const;
 
 			/// get a reference to the children
-			const std::list<shared_ptr>& children() const { return children_; }
+			const FastList<shared_ptr>& children() const { return children_; }
 
 			/// add a child
 			void addChild(shared_ptr child);

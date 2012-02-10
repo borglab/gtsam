@@ -83,7 +83,7 @@ namespace gtsam {
 
     // Two stages - first build an array of the lowest-ordered variable in each
     // factor and find the last variable to be eliminated.
-    vector<Index> lowestOrdered(fg.size(), numeric_limits<Index>::max());
+    FastVector<Index> lowestOrdered(fg.size(), numeric_limits<Index>::max());
     Index maxVar = 0;
     for(size_t i=0; i<fg.size(); ++i)
       if(fg[i]) {
@@ -96,7 +96,7 @@ namespace gtsam {
 
     // Now add each factor to the list corresponding to its lowest-ordered
     // variable.
-    vector<FastList<size_t> > targets(maxVar+1);
+    FastVector<FastList<size_t> > targets(maxVar+1);
     for(size_t i=0; i<lowestOrdered.size(); ++i)
       if(lowestOrdered[i] != numeric_limits<Index>::max())
         targets[lowestOrdered[i]].push_back(i);
@@ -108,7 +108,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class FG, class BTCLIQUE>
   typename JunctionTree<FG,BTCLIQUE>::sharedClique JunctionTree<FG,BTCLIQUE>::distributeFactors(const FG& fg,
-      const std::vector<FastList<size_t> >& targets,
+      const FastVector<FastList<size_t> >& targets,
       const SymbolicBayesTree::sharedClique& bayesClique) {
 
     if(bayesClique) {

@@ -22,10 +22,10 @@
 #pragma once
 
 #include <set>
-#include <vector>
 #include <boost/serialization/nvp.hpp>
 #include <boost/foreach.hpp>
-#include <gtsam/base/FastMap.h>
+
+#include <gtsam/base/FastVector.h>
 
 namespace gtsam {
 
@@ -68,15 +68,15 @@ public:
   typedef boost::shared_ptr<Factor> shared_ptr;
 
   /// Iterator over keys
-  typedef typename std::vector<Key>::iterator iterator;
+  typedef typename FastVector<Key>::iterator iterator;
 
   /// Const iterator over keys
-  typedef typename std::vector<Key>::const_iterator const_iterator;
+  typedef typename FastVector<Key>::const_iterator const_iterator;
 
 protected:
 
   /// The keys involved in this factor
-  std::vector<Key> keys_;
+  FastVector<Key> keys_;
 
   friend class JacobianFactor;
   friend class HessianFactor;
@@ -132,6 +132,11 @@ public:
 		assertInvariants();
 	}
 
+  /** Construct n-way factor */
+  Factor(const FastVector<Key>& keys) : keys_(keys) {
+    assertInvariants();
+  }
+
   /** Constructor from a collection of keys */
   template<class KEYITERATOR> Factor(KEYITERATOR beginKey, KEYITERATOR endKey) :
         keys_(beginKey, endKey) { assertInvariants(); }
@@ -165,8 +170,8 @@ public:
   /// find
   const_iterator find(Key key) const { return std::find(begin(), end(), key); }
 
-  ///TODO: comment
-  const std::vector<Key>& keys() const { return keys_; }
+  /// @return keys involved in this factor
+  const FastVector<Key>& keys() const { return keys_; }
 
   /** iterators */
   const_iterator begin() const { return keys_.begin(); }	///TODO: comment
@@ -194,7 +199,7 @@ public:
   /**
    * @return keys involved in this factor
    */
-  std::vector<Key>& keys() { return keys_; }
+  FastVector<Key>& keys() { return keys_; }
 
   /** mutable iterators */
   iterator begin() { return keys_.begin(); }	///TODO: comment

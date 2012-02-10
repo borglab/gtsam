@@ -21,8 +21,6 @@
 #include <gtsam/inference/JunctionTree.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
 
-#include <vector>
-
 #include <boost/foreach.hpp>
 
 namespace gtsam {
@@ -68,7 +66,7 @@ namespace gtsam {
 
 		// Allocate solution vector and copy RHS
     tic(2, "allocate VectorValues");
-    vector<size_t> dims(rootClique->conditional()->back()+1, 0);
+    FastVector<size_t> dims(rootClique->conditional()->back()+1, 0);
 		countDims(rootClique, dims);
 		VectorValues result(dims);
 		btreeRHS(rootClique, result);

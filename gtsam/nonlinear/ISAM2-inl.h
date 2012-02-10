@@ -229,7 +229,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2<CONDITIONAL, GRAPH>::recalculate(
     tic(1,"reorder");
     tic(1,"CCOLAMD");
     // Do a batch step - reorder and relinearize all variables
-    vector<int> cmember(theta_.size(), 0);
+    FastVector<int> cmember(theta_.size(), 0);
     FastSet<Index> constrainedKeysSet;
     if(constrainKeys)
       constrainedKeysSet = *constrainKeys;

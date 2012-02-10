@@ -104,8 +104,8 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class DERIVED, class KEY>
 	typename DERIVED::shared_ptr Combine(const FactorGraph<DERIVED>& factors,
-			const FastMap<KEY, std::vector<KEY> >& variableSlots) {
-		typedef const pair<const KEY, std::vector<KEY> > KeySlotPair;
+			const FastMap<KEY, FastVector<KEY> >& variableSlots) {
+		typedef const pair<const KEY, FastVector<KEY> > KeySlotPair;
 		return typename DERIVED::shared_ptr(new DERIVED(
 		    boost::make_transform_iterator(variableSlots.begin(), boost::bind(&KeySlotPair::first, _1)),
 		    boost::make_transform_iterator(variableSlots.end(), boost::bind(&KeySlotPair::first, _1))));

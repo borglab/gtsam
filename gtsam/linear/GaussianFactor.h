@@ -74,6 +74,9 @@ namespace gtsam {
     /** Construct n-way factor */
     GaussianFactor(const std::vector<Index>& js) : IndexFactor(js) {}
 
+    /** Construct n-way factor */
+    GaussianFactor(const FastVector<Index>& js) : IndexFactor(js) {}
+
   public:
 
     typedef GaussianConditional ConditionalType;
@@ -110,8 +113,8 @@ namespace gtsam {
 
   /** make keys from list, vector, or map of matrices */
 	template<typename ITERATOR>
-	static std::vector<Index> GetKeys(size_t n, ITERATOR begin, ITERATOR end) {
-		std::vector<Index> keys;
+	static FastVector<Index> GetKeys(size_t n, ITERATOR begin, ITERATOR end) {
+	  FastVector<Index> keys;
 		keys.reserve(n);
 		for (ITERATOR it=begin;it!=end;++it) keys.push_back(it->first);
 		return keys;

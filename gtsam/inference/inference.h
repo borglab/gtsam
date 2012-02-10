@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/base/FastVector.h>
 #include <gtsam/inference/VariableIndex.h>
 #include <gtsam/inference/Permutation.h>
 
@@ -48,7 +49,7 @@ namespace gtsam {
 	  /**
 	   * Compute a CCOLAMD permutation using the constraint groups in cmember.
 	   */
-    static Permutation::shared_ptr PermutationCOLAMD_(const VariableIndex& variableIndex, std::vector<int>& cmember);
+    static Permutation::shared_ptr PermutationCOLAMD_(const VariableIndex& variableIndex, FastVector<int>& cmember);
 
 	};
 
@@ -56,7 +57,7 @@ namespace gtsam {
 	template<typename CONSTRAINED>
 	Permutation::shared_ptr Inference::PermutationCOLAMD(const VariableIndex& variableIndex, const CONSTRAINED& constrainLast) {
 
-	  std::vector<int> cmember(variableIndex.size(), 0);
+	  FastVector<int> cmember(variableIndex.size(), 0);
 
 	  // If at least some variables are not constrained to be last, constrain the
 	  // ones that should be constrained.
@@ -72,7 +73,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	inline Permutation::shared_ptr Inference::PermutationCOLAMD(const VariableIndex& variableIndex) {
-	  std::vector<int> cmember(variableIndex.size(), 0);
+	  FastVector<int> cmember(variableIndex.size(), 0);
 	  return PermutationCOLAMD_(variableIndex, cmember);
 	}
 

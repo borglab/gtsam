@@ -268,7 +268,7 @@ template<typename ITERATOR, class MATRIX>
 GaussianConditional::GaussianConditional(ITERATOR firstKey, ITERATOR lastKey,
 		size_t nrFrontals, const VerticalBlockView<MATRIX>& matrices,
 		const Vector& sigmas, const GaussianConditional::TranspositionType& permutation) :
-	IndexConditional(std::vector<Index>(firstKey, lastKey), nrFrontals), rsd_(
+	IndexConditional(FastVector<Index>(firstKey, lastKey), nrFrontals), rsd_(
 			matrix_), sigmas_(sigmas), permutation_(permutation) {
 	rsd_.assignNoalias(matrices);
 }
