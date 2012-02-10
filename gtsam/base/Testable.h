@@ -35,6 +35,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <stdio.h>
+#include <string>
 
 #define GTSAM_PRINT(x)((x).print(#x))
 
