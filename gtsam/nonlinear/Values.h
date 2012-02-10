@@ -255,8 +255,11 @@ namespace gtsam {
     /** Remove all variables from the config */
     void clear() { values_.clear(); }
 
-    /** Create an array of variable dimensions using the given ordering */
+    /** Create an array of variable dimensions using the given ordering (\f$ O(n) \f$) */
     std::vector<size_t> dims(const Ordering& ordering) const;
+
+    /** Compute the total dimensionality of all values (\f$ O(n) \f$) */
+    size_t dim() const;
 
     /**
      * Generate a default ordering, simply in key sort order.  To instead

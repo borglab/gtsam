@@ -58,12 +58,6 @@ namespace gtsam {
     }
   };
 
-//  /* ************************************************************************* */
-//  template<class ValueType>
-//  ValueType& operator=(ValueType& lhs, const ValueAutomaticCasting& rhs) {
-//    lhs = rhs;
-//  }
-
   /* ************************************************************************* */
   template<typename ValueType>
   const ValueType& Values::at(const Symbol& j) const {

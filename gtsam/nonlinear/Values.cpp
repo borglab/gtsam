@@ -176,6 +176,15 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  size_t Values::dim() const {
+    size_t result = 0;
+    BOOST_FOREACH(const ConstKeyValuePair& key_value, *this) {
+      result += key_value.second.dim();
+    }
+    return result;
+  }
+
+  /* ************************************************************************* */
   Ordering::shared_ptr Values::orderingArbitrary(Index firstVar) const {
     Ordering::shared_ptr ordering(new Ordering);
     for(const_iterator key_value = begin(); key_value != end(); ++key_value) {
