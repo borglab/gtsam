@@ -5,6 +5,7 @@ install(FILES ${base_headers} DESTINATION include/gtsam/base)
 # Components to link tests in this subfolder against
 set(base_local_libs
     CppUnitLite
+    ${Boost_LIBRARIES}
     base
 )
 

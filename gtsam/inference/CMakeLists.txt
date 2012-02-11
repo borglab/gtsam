@@ -12,6 +12,7 @@ set(inference_local_libs
    base
    ccolamd
    CppUnitLite
+   ${Boost_LIBRARIES}
 )
 
 # Build tests

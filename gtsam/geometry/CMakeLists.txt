@@ -9,6 +9,7 @@ install(FILES ${geometry_headers} DESTINATION include/gtsam/geometry)
 set(geometry_local_libs
    geometry
    base
+   ${Boost_LIBRARIES}
    CppUnitLite
 )
 

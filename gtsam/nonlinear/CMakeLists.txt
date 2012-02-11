@@ -14,6 +14,7 @@ set(nonlinear_local_libs
    base
    ccolamd
    CppUnitLite
+   ${Boost_LIBRARIES}
 )
 
 # Build tests

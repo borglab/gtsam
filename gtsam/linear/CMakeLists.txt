@@ -13,6 +13,7 @@ set(linear_local_libs
    base
    ccolamd
    CppUnitLite
+   ${Boost_LIBRARIES}
 )
 
 # Build tests
