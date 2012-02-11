@@ -50,7 +50,8 @@ TEST(Pose3Graph, optimizeCircle) {
 	// Create a hexagon of poses
 	double radius = 10;
 	Values hexagon = pose3SLAM::circle(6,radius);
-  Pose3 gT0 = hexagon[PoseKey(0)], gT1 = hexagon[PoseKey(1)];
+//  Pose3 gT0 = hexagon[PoseKey(0)], gT1 = hexagon[PoseKey(1)]; // FAIL: cannot cast ValueAutomaticCasting
+  Pose3 gT0 = hexagon.at<Pose3>(PoseKey(0)), gT1 = hexagon.at<Pose3>(PoseKey(1)); // Works
 
 	// create a Pose graph with one equality constraint and one measurement
   shared_ptr<Pose3Graph> fg(new Pose3Graph);

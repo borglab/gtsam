@@ -14,7 +14,6 @@ using namespace pose2SLAM;
 
 const double tol = 1e-5;
 
-#if ENABLE_SPCG
 /* ************************************************************************* */
 TEST(testPose2SLAMwSPCG, example1) {
 
@@ -67,7 +66,6 @@ TEST(testPose2SLAMwSPCG, example1) {
 
 	EXPECT(assert_equal(expected, actual, tol));
 }
-#endif
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
