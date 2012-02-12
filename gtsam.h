@@ -229,13 +229,13 @@ class SharedDiagonal {
 };
 
 class SharedNoiseModel {
-	static gtsam::SharedNoiseModel sharedSigmas(Vector sigmas);
-	static gtsam::SharedNoiseModel sharedSigma(size_t dim, double sigma);
-	static gtsam::SharedNoiseModel sharedPrecisions(Vector precisions);
-	static gtsam::SharedNoiseModel sharedPrecision(size_t dim, double precision);
-	static gtsam::SharedNoiseModel sharedUnit(size_t dim);
-	static gtsam::SharedNoiseModel sharedSqrtInformation(Matrix R);
-	static gtsam::SharedNoiseModel sharedCovariance(Matrix covariance);
+	static gtsam::SharedNoiseModel Sigmas(Vector sigmas);
+	static gtsam::SharedNoiseModel Sigma(size_t dim, double sigma);
+	static gtsam::SharedNoiseModel Precisions(Vector precisions);
+	static gtsam::SharedNoiseModel Precision(size_t dim, double precision);
+	static gtsam::SharedNoiseModel Unit(size_t dim);
+	static gtsam::SharedNoiseModel SqrtInformation(Matrix R);
+	static gtsam::SharedNoiseModel Covariance(Matrix covariance);
 	void print(string s) const;
 };
 
