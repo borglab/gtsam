@@ -139,6 +139,7 @@ namespace gtsam {
     template<typename ValueType>
     const ValueType& at(const Symbol& j) const;
 
+#if 0
     /** Retrieve a variable by key \c j.  This non-templated version returns a
      * special ValueAutomaticCasting object that may be assigned to the proper
      * value.
@@ -147,6 +148,7 @@ namespace gtsam {
      * of the proper type.
      */
     ValueAutomaticCasting at(const Symbol& j) const;
+#endif
 
     /** Retrieve a variable using a special key (typically TypedSymbol), which
      * contains the type of the value associated with the key, and which must
@@ -163,8 +165,10 @@ namespace gtsam {
     const typename TypedKey::Value& operator[](const TypedKey& j) const {
       return at(j); }
 
+#if 0
     /** operator[] syntax for at(const Symbol& j) */
     ValueAutomaticCasting operator[](const Symbol& j) const;
+#endif
 
     /** Check if a value exists with key \c j.  See exists<>(const Symbol& j)
      * and exists(const TypedKey& j) for versions that return the value if it

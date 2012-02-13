@@ -59,7 +59,7 @@ struct BoundingConstraint1: public NonlinearFactor1<VALUE> {
 	/** active when constraint *NOT* met */
 	bool active(const Values& c) const {
 		// note: still active at equality to avoid zigzagging
-		double x = value(c[this->key()]);
+		double x = value(c.at<X>(this->key()));
 		return (isGreaterThan_) ? x <= threshold_ : x >= threshold_;
 	}
 
@@ -127,7 +127,7 @@ struct BoundingConstraint2: public NonlinearFactor2<VALUE1, VALUE2> {
 	/** active when constraint *NOT* met */
 	bool active(const Values& c) const {
 		// note: still active at equality to avoid zigzagging
-		double x = value(c[this->key1()], c[this->key2()]);
+		double x = value(c.at<X1>(this->key1()), c.at<X2>(this->key2()));
 		return (isGreaterThan_) ? x <= threshold_ : x >= threshold_;
 	}
 

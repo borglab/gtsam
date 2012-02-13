@@ -49,14 +49,14 @@ namespace gtsam {
 		CalibratedCamera() {}
 
 		/// construct with pose
-		CalibratedCamera(const Pose3& pose);
+		explicit CalibratedCamera(const Pose3& pose);
 
     /// @}
     /// @name Advanced Constructors
     /// @{
 
 		/// construct from vector
-		CalibratedCamera(const Vector &v);
+		explicit CalibratedCamera(const Vector &v);
 
 		/// @}
 		/// @name Testable

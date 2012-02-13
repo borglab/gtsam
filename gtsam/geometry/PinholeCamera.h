@@ -51,7 +51,7 @@ namespace gtsam {
     PinholeCamera() {}
 
     /** constructor with pose */
-    PinholeCamera(const Pose3& pose):pose_(pose){}
+    explicit PinholeCamera(const Pose3& pose):pose_(pose){}
 
     /** constructor with pose and calibration */
     PinholeCamera(const Pose3& pose, const Calibration& k):pose_(pose),k_(k) {}
@@ -63,7 +63,7 @@ namespace gtsam {
     /// @name Advanced Constructors
     /// @{
 
-    PinholeCamera(const Vector &v){
+    explicit PinholeCamera(const Vector &v){
       pose_ = Pose3::Expmap(v.head(Pose3::Dim()));
       if ( v.size() > Pose3::Dim()) {
         k_ = Calibration(v.tail(Calibration::Dim()));

@@ -181,7 +181,7 @@ public:
 
   /** Vector of errors, whitened ! */
   Vector whitenedError(const Values& c) const {
-    return QInvSqrt(c[key1()])*unwhitenedError(c);
+    return QInvSqrt(c.at<T>(key1()))*unwhitenedError(c);
   }
 
   /**
@@ -190,8 +190,8 @@ public:
    * Hence b = z - h(x1,x2) = - error_vector(x)
    */
   boost::shared_ptr<GaussianFactor> linearize(const Values& c, const Ordering& ordering) const {
-    const X1& x1 = c[key1()];
-    const X2& x2 = c[key2()];
+    const X1& x1 = c.at<X1>(key1());
+    const X2& x2 = c.at<X2>(key2());
     Matrix A1, A2;
     Vector b = -evaluateError(x1, x2, A1, A2);
     const Index var1 = ordering[key1()], var2 = ordering[key2()];
@@ -318,7 +318,7 @@ public:
 
   /** Vector of errors, whitened ! */
   Vector whitenedError(const Values& c) const {
-    return RInvSqrt(c[key()])*unwhitenedError(c);
+    return RInvSqrt(c.at<T>(key()))*unwhitenedError(c);
   }
 
   /**
@@ -327,7 +327,7 @@ public:
    * Hence b = z - h(x1) = - error_vector(x)
    */
   boost::shared_ptr<GaussianFactor> linearize(const Values& c, const Ordering& ordering) const {
-    const X& x1 = c[key()];
+    const X& x1 = c.at<X>(key());
     Matrix A1;
     Vector b = -evaluateError(x1, A1);
     const Index var1 = ordering[key()];
