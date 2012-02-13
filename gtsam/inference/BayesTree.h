@@ -297,7 +297,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class CONDITIONAL, class CLIQUE>
   void _BayesTree_dim_adder(
-      FastVector<size_t>& dims,
+      std::vector<size_t>& dims,
       const typename BayesTree<CONDITIONAL,CLIQUE>::sharedClique& clique) {
 
     if(clique) {
@@ -316,7 +316,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class CONDITIONAL,class CLIQUE>
 	boost::shared_ptr<VectorValues> allocateVectorValues(const BayesTree<CONDITIONAL,CLIQUE>& bt) {
-	  FastVector<size_t> dimensions(bt.nodes().size(), 0);
+	  std::vector<size_t> dimensions(bt.nodes().size(), 0);
 	  _BayesTree_dim_adder<CONDITIONAL,CLIQUE>(dimensions, bt.root());
 	  return boost::shared_ptr<VectorValues>(new VectorValues(dimensions));
 	}

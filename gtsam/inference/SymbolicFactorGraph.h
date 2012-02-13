@@ -84,7 +84,7 @@ namespace gtsam {
 	/** Create a combined joint factor (new style for EliminationTree). */
 	IndexFactor::shared_ptr CombineSymbolic(
 			const FactorGraph<IndexFactor>& factors, const FastMap<Index,
-			FastVector<Index> >& variableSlots);
+					std::vector<Index> >& variableSlots);
 
 	/**
 	 * CombineAndEliminate provides symbolic elimination.

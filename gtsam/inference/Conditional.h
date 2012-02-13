@@ -45,8 +45,8 @@ private:
 
 	/** Create keys by adding key in front */
 	template<typename ITERATOR>
-	static FastVector<KEY> MakeKeys(KEY key, ITERATOR firstParent, ITERATOR lastParent) {
-		FastVector<Key> keys((lastParent - firstParent) + 1);
+	static std::vector<KEY> MakeKeys(KEY key, ITERATOR firstParent, ITERATOR lastParent) {
+		std::vector<Key> keys((lastParent - firstParent) + 1);
 		std::copy(firstParent, lastParent, keys.begin() + 1);
 		keys[0] = key;
 		return keys;
@@ -116,14 +116,8 @@ public:
 		assertInvariants();
 	}
 
-  /** Constructor from a frontal variable and a vector of parents */
-  Conditional(Key key, const FastVector<Key>& parents) :
-    FactorType(MakeKeys(key, parents.begin(), parents.end())), nrFrontals_(1) {
-    assertInvariants();
-  }
-
   /** Constructor from keys and nr of frontal variables */
-	Conditional(const FastVector<Index>& keys, size_t nrFrontals) :
+	Conditional(const std::vector<Index>& keys, size_t nrFrontals) :
 		FactorType(keys), nrFrontals_(nrFrontals) {
 		assertInvariants();
 	}

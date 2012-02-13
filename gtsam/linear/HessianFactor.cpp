@@ -248,7 +248,7 @@ HessianFactor::HessianFactor(const GaussianFactor& gf) : info_(matrix_) {
 
 /* ************************************************************************* */
 HessianFactor::HessianFactor(const FactorGraph<GaussianFactor>& factors,
-		const FastVector<size_t>& dimensions, const Scatter& scatter) :
+		const vector<size_t>& dimensions, const Scatter& scatter) :
 		info_(matrix_) {
 
 	const bool debug = ISDEBUG("EliminateCholesky") || ISDEBUG("EliminateLDL");
@@ -505,7 +505,7 @@ HessianFactor::splitEliminatedFactor(size_t nrFrontals, const Eigen::LDLT<Matrix
   tic(2, "remaining factor");
   info_.blockStart() = nrFrontals;
   // Assign the keys
-  FastVector<Index> remainingKeys(keys_.size() - nrFrontals);
+  vector<Index> remainingKeys(keys_.size() - nrFrontals);
   remainingKeys.assign(keys_.begin() + nrFrontals, keys_.end());
   keys_.swap(remainingKeys);
   toc(2, "remaining factor");

@@ -59,29 +59,29 @@ TEST( GaussianJunctionTree, constructor2 )
 	// create an ordering
 	GaussianJunctionTree actual(fg);
 
-	FastVector<Index> frontal1; frontal1 += ordering["x5"], ordering["x6"], ordering["x4"];
-	FastVector<Index> frontal2; frontal2 += ordering["x3"], ordering["x2"];
-	FastVector<Index> frontal3; frontal3 += ordering["x1"];
-	FastVector<Index> frontal4; frontal4 += ordering["x7"];
-	FastVector<Index> sep1;
-	FastVector<Index> sep2; sep2 += ordering["x4"];
-	FastVector<Index> sep3; sep3 += ordering["x2"];
-	FastVector<Index> sep4; sep4 += ordering["x6"];
-	EXPECT(assert_container_equality(frontal1, actual.root()->frontal));
-	EXPECT(assert_container_equality(sep1,     actual.root()->separator));
+	vector<Index> frontal1; frontal1 += ordering["x5"], ordering["x6"], ordering["x4"];
+	vector<Index> frontal2; frontal2 += ordering["x3"], ordering["x2"];
+	vector<Index> frontal3; frontal3 += ordering["x1"];
+	vector<Index> frontal4; frontal4 += ordering["x7"];
+	vector<Index> sep1;
+	vector<Index> sep2; sep2 += ordering["x4"];
+	vector<Index> sep3; sep3 += ordering["x2"];
+	vector<Index> sep4; sep4 += ordering["x6"];
+	EXPECT(assert_equal(frontal1, actual.root()->frontal));
+	EXPECT(assert_equal(sep1,     actual.root()->separator));
 	LONGS_EQUAL(5,               actual.root()->size());
 	list<GaussianJunctionTree::sharedClique>::const_iterator child0it = actual.root()->children().begin();
   list<GaussianJunctionTree::sharedClique>::const_iterator child1it = child0it; ++child1it;
   GaussianJunctionTree::sharedClique child0 = *child0it;
   GaussianJunctionTree::sharedClique child1 = *child1it;
-	EXPECT(assert_container_equality(frontal2, child0->frontal));
-	EXPECT(assert_container_equality(sep2,     child0->separator));
+	EXPECT(assert_equal(frontal2, child0->frontal));
+	EXPECT(assert_equal(sep2,     child0->separator));
 	LONGS_EQUAL(4,               child0->size());
-	EXPECT(assert_container_equality(frontal3, child0->children().front()->frontal));
-	EXPECT(assert_container_equality(sep3,     child0->children().front()->separator));
+	EXPECT(assert_equal(frontal3, child0->children().front()->frontal));
+	EXPECT(assert_equal(sep3,     child0->children().front()->separator));
 	LONGS_EQUAL(2,               child0->children().front()->size());
-	EXPECT(assert_container_equality(frontal4, child1->frontal));
-	EXPECT(assert_container_equality(sep4,     child1->separator));
+	EXPECT(assert_equal(frontal4, child1->frontal));
+	EXPECT(assert_equal(sep4,     child1->separator));
 	LONGS_EQUAL(2,               child1->size());
 }
 

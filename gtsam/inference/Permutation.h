@@ -17,12 +17,12 @@
 
 #pragma once
 
+#include <vector>
 #include <string>
 #include <iostream>
 #include <boost/shared_ptr.hpp>
 
 #include <gtsam/base/types.h>
-#include <gtsam/base/FastVector.h>
 
 namespace gtsam {
 
@@ -46,12 +46,12 @@ class Inference;
  */
 class Permutation {
 protected:
-  FastVector<Index> rangeIndices_;
+  std::vector<Index> rangeIndices_;
 
 public:
   typedef boost::shared_ptr<Permutation> shared_ptr;
-  typedef FastVector<Index>::const_iterator const_iterator;
-  typedef FastVector<Index>::iterator iterator;
+  typedef std::vector<Index>::const_iterator const_iterator;
+  typedef std::vector<Index>::iterator iterator;
 
 	/// @name Standard Constructors
 	/// @{

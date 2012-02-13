@@ -74,22 +74,11 @@ namespace gtsam {
 			assertInvariants();
 		}
 
-    /** Constructor from a frontal variable and a vector of parents (FastVector version) */
-    IndexConditional(Index j, const FastVector<Index>& parents) : Base(j, parents) {
-      assertInvariants();
-    }
-
     /** Constructor from keys and nr of frontal variables */
 		IndexConditional(const std::vector<Index>& keys, size_t nrFrontals) :
 			Base(keys, nrFrontals) {
 			assertInvariants();
 		}
-
-    /** Constructor from keys and nr of frontal variables (FastVector version) */
-    IndexConditional(const FastVector<Index>& keys, size_t nrFrontals) :
-      Base(keys, nrFrontals) {
-      assertInvariants();
-    }
 
 		/// @}
 		/// @name Standard Interface

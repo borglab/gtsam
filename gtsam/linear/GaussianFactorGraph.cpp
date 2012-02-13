@@ -167,11 +167,11 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	// Helper functions for Combine
-	static boost::tuple<FastVector<size_t>, size_t, size_t> countDims(const std::vector<JacobianFactor::shared_ptr>& factors, const VariableSlots& variableSlots) {
+	static boost::tuple<vector<size_t>, size_t, size_t> countDims(const std::vector<JacobianFactor::shared_ptr>& factors, const VariableSlots& variableSlots) {
 #ifndef NDEBUG
-	  FastVector<size_t> varDims(variableSlots.size(), numeric_limits<size_t>::max());
+		vector<size_t> varDims(variableSlots.size(), numeric_limits<size_t>::max());
 #else
-	  FastVector<size_t> varDims(variableSlots.size());
+		vector<size_t> varDims(variableSlots.size());
 #endif
 		size_t m = 0;
 		size_t n = 0;
@@ -220,7 +220,7 @@ break;
 
 		if (debug) cout << "Determine dimensions" << endl;
 		tic(1, "countDims");
-		FastVector<size_t> varDims;
+		vector<size_t> varDims;
 		size_t m, n;
 		boost::tie(varDims, m, n) = countDims(factors, variableSlots);
 		if (debug) {
@@ -232,7 +232,7 @@ break;
 
 		if (debug) cout << "Sort rows" << endl;
 		tic(2, "sort rows");
-		FastVector<JacobianFactor::_RowSource> rowSources;
+		vector<JacobianFactor::_RowSource> rowSources;
 		rowSources.reserve(m);
 		bool anyConstrained = false;
 		for (size_t sourceFactorI = 0; sourceFactorI < factors.size(); ++sourceFactorI) {
@@ -366,7 +366,7 @@ break;
 
 		// Pull out keys and dimensions
 		tic(2, "keys");
-		FastVector<size_t> dimensions(scatter.size() + 1);
+		vector<size_t> dimensions(scatter.size() + 1);
 		BOOST_FOREACH(const Scatter::value_type& var_slot, scatter) {
 			dimensions[var_slot.second.slot] = var_slot.second.dimension;
 		}
@@ -568,7 +568,7 @@ break;
 
 		// Pull out keys and dimensions
 		tic(2, "keys");
-		FastVector<size_t> dimensions(scatter.size() + 1);
+		vector<size_t> dimensions(scatter.size() + 1);
 		BOOST_FOREACH(const Scatter::value_type& var_slot, scatter) {
 			dimensions[var_slot.second.slot] = var_slot.second.dimension;
 		}

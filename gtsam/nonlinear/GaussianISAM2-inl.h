@@ -57,7 +57,7 @@ namespace gtsam {
     if(recalculate) {
 
       // Temporary copy of the original values, to check how much they change
-      FastVector<Vector> originalValues((*clique)->nrFrontals());
+      vector<Vector> originalValues((*clique)->nrFrontals());
       GaussianConditional::const_iterator it;
       for(it = (*clique)->beginFrontals(); it!=(*clique)->endFrontals(); it++) {
         originalValues[it - (*clique)->beginFrontals()] = delta[*it];

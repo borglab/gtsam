@@ -54,7 +54,7 @@ private:
 
   typedef FastList<sharedFactor> Factors;
   typedef FastList<shared_ptr> SubTrees;
-  typedef FastVector<typename FACTOR::ConditionalType::shared_ptr> Conditionals;
+  typedef std::vector<typename FACTOR::ConditionalType::shared_ptr> Conditionals;
 
   Index key_; ///< index associated with root
   Factors factors_; ///< factors associated with root
@@ -74,7 +74,7 @@ private:
    * Static internal function to build a vector of parent pointers using the
    * algorithm of Gilbert et al., 2001, BIT.
    */
-  static FastVector<Index> ComputeParents(const VariableIndex& structure);
+  static std::vector<Index> ComputeParents(const VariableIndex& structure);
 
   /** add a factor, for Create use only */
   void add(const sharedFactor& factor) { factors_.push_back(factor); }

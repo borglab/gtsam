@@ -20,7 +20,7 @@
 #pragma once
 
 #include <set>
-#include <gtsam/base/FastVector.h>
+#include <vector>
 #include <gtsam/base/FastList.h>
 #include <gtsam/inference/BayesTree.h>
 #include <gtsam/inference/ClusterTree.h>
@@ -78,7 +78,7 @@ namespace gtsam {
 				const SymbolicBayesTree::sharedClique& clique);
 
 		/// distribute the factors along the cluster tree
-    sharedClique distributeFactors(const FG& fg, const FastVector<FastList<size_t> >& targets,
+    sharedClique distributeFactors(const FG& fg, const std::vector<FastList<size_t> >& targets,
         const SymbolicBayesTree::sharedClique& clique);
 
 		/// recursive elimination function

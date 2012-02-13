@@ -85,7 +85,7 @@ namespace gtsam {
   protected:
 
     SharedDiagonal model_; // Gaussian noise model with diagonal covariance matrix
-    FastVector<size_t> firstNonzeroBlocks_;
+    std::vector<size_t> firstNonzeroBlocks_;
     AbMatrix matrix_; // the full matrix corresponding to the factor
     BlockAb Ab_;      // the block view of the full matrix
     typedef GaussianFactor Base; // typedef to base
@@ -123,7 +123,7 @@ namespace gtsam {
         const Vector& b, const SharedDiagonal& model);
 
     /** Construct an n-ary factor */
-    JacobianFactor(const FastVector<std::pair<Index, Matrix> > &terms,
+    JacobianFactor(const std::vector<std::pair<Index, Matrix> > &terms,
         const Vector &b, const SharedDiagonal& model);
 
     JacobianFactor(const std::list<std::pair<Index, Matrix> > &terms,
@@ -268,18 +268,18 @@ namespace gtsam {
     // Many imperative, perhaps all need to be combined in constructor
 
     /** Collect information on Jacobian rows */
-    void collectInfo(size_t index, FastVector<_RowSource>& rowSources) const;
+    void collectInfo(size_t index, std::vector<_RowSource>& rowSources) const;
 
     /** allocate space */
     void allocate(const VariableSlots& variableSlots,
-        FastVector<size_t>& varDims, size_t m);
+				std::vector<size_t>& varDims, size_t m);
 
     /** copy a slot from source */
     void copyRow(const JacobianFactor& source,
     		Index sourceRow, size_t sourceSlot, size_t row, Index slot);
 
     /** copy firstNonzeroBlocks structure */
-    void copyFNZ(size_t m, size_t n, FastVector<_RowSource>& rowSources);
+    void copyFNZ(size_t m, size_t n, std::vector<_RowSource>& rowSources);
 
     /** set noiseModel correctly */
   	void setModel(bool anyConstrained, const Vector& sigmas);

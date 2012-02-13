@@ -163,7 +163,7 @@ SharedDiagonal Gaussian::Cholesky(Matrix& Ab, size_t nFrontals) const {
   return Unit::Create(maxrank);
 }
 
-void Gaussian::WhitenSystem(FastVector<Matrix>& A, Vector& b) const {
+void Gaussian::WhitenSystem(vector<Matrix>& A, Vector& b) const {
   BOOST_FOREACH(Matrix& Aj, A) { WhitenInPlace(Aj); }
   whitenInPlace(b);
 }
@@ -513,7 +513,7 @@ Vector Base::sqrtWeight(const Vector &error) const {
  * according to their weight implementation */
 
 /** Reweight n block matrices with one error vector */
-void Base::reweight(FastVector<Matrix> &A, Vector &error) const {
+void Base::reweight(vector<Matrix> &A, Vector &error) const {
   if ( reweight_ == Block ) {
     const double w = sqrtWeight(error.norm());
     BOOST_FOREACH(Matrix& Aj, A) {
@@ -662,7 +662,7 @@ bool Robust::equals(const Base& expected, double tol) const {
   return noise_->equals(*p->noise_,tol) && robust_->equals(*p->robust_,tol);
 }
 
-void Robust::WhitenSystem(FastVector<Matrix>& A, Vector& b) const {
+void Robust::WhitenSystem(vector<Matrix>& A, Vector& b) const {
   noise_->WhitenSystem(A,b);
   robust_->reweight(A,b);
 }

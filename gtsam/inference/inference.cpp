@@ -29,12 +29,12 @@ using namespace std;
 
 namespace gtsam {
 
-Permutation::shared_ptr Inference::PermutationCOLAMD_(const VariableIndex& variableIndex, FastVector<int>& cmember) {
+Permutation::shared_ptr Inference::PermutationCOLAMD_(const VariableIndex& variableIndex, std::vector<int>& cmember) {
   size_t nEntries = variableIndex.nEntries(), nFactors = variableIndex.nFactors(), nVars = variableIndex.size();
   // Convert to compressed column major format colamd wants it in (== MATLAB format!)
   int Alen = ccolamd_recommended(nEntries, nFactors, nVars); /* colamd arg 3: size of the array A */
-  vector<int> A(Alen); /* colamd arg 4: row indices of A, of size Alen */
-  vector<int> p(nVars + 1); /* colamd arg 5: column pointers of A, of size n_col+1 */
+  vector<int> A = vector<int>(Alen); /* colamd arg 4: row indices of A, of size Alen */
+  vector<int> p = vector<int>(nVars + 1); /* colamd arg 5: column pointers of A, of size n_col+1 */
 
   static const bool debug = false;
 

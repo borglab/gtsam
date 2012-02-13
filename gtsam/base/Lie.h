@@ -133,7 +133,7 @@ template <class T> Matrix wedge(const Vector& x);
 template <class T>
 T expm(const Vector& x, int K=7) {
 	Matrix xhat = wedge<T>(x);
-	return T(expm(xhat,K));
+	return expm(xhat,K);
 }
 
 } // namespace gtsam
