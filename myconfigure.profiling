@@ -1,3 +1,0 @@
-
-#../configure --disable-fast-install --prefix=$HOME/borg-simplelinear  CXXFLAGS="-fno-inline -g -D_GLIBCXX_DEBUG -DNDEBUG" CFLAGS="-fno-inline -g -D_GLIBCXX_DEBUG -DNDEBUG" LDFLAGS="-fno-inline -g " --disable-static
-../configure --prefix=$HOME/borg CPPFLAGS="-g -DNDEBUG -O3" LDFLAGS="-g -DNDEBUG -O3" --disable-static
