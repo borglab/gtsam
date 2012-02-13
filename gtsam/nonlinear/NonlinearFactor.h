@@ -24,7 +24,6 @@
 #include <limits>
 
 #include <boost/serialization/base_object.hpp>
-#include <boost/tuple/tuple.hpp>
 
 #include <gtsam/inference/Factor-inl.h>
 #include <gtsam/inference/IndexFactor.h>
@@ -35,19 +34,6 @@
 #include <gtsam/nonlinear/Ordering.h>
 
 namespace gtsam {
-
-using boost::make_tuple;
-
-// Helper function to fill a vector from a tuple function of any length
-template<typename CONS>
-inline void __fill_from_tuple(std::vector<Symbol>& vector, size_t position, const CONS& tuple) {
-  vector[position] = tuple.get_head();
-  __fill_from_tuple<typename CONS::tail_type>(vector, position+1, tuple.get_tail());
-}
-template<>
-inline void __fill_from_tuple<boost::tuples::null_type>(std::vector<Symbol>& vector, size_t position, const boost::tuples::null_type& tuple) {
-  // Do nothing
-}
 
 /* ************************************************************************* */
 /**
