@@ -50,13 +50,28 @@ public:
 
   /** Constructor from a range, passes through to base class */
   template<typename INPUTITERATOR>
-  explicit FastVector(INPUTITERATOR first, INPUTITERATOR last) : Base(first, last) {}
+  explicit FastVector(INPUTITERATOR first, INPUTITERATOR last) {
+    // This if statement works around a bug in boost pool allocator and/or
+    // STL vector where if the size is zero, the pool allocator will allocate
+    // huge amounts of memory.
+    if(first != last)
+      Base::assign(first, last);
+  }
 
   /** Copy constructor from another FastSet */
   FastVector(const FastVector<VALUE>& x) : Base(x) {}
 
-  /** Copy constructor from the base map class */
+  /** Copy constructor from the base class */
   FastVector(const Base& x) : Base(x) {}
+
+  /** Copy constructor from a standard STL container */
+  FastVector(const std::vector<VALUE>& x) {
+    // This if statement works around a bug in boost pool allocator and/or
+    // STL vector where if the size is zero, the pool allocator will allocate
+    // huge amounts of memory.
+    if(x.size() > 0)
+      Base::assign(x.begin(), x.end());
+  }
 
 private:
   /** Serialization function */
