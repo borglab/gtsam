@@ -63,7 +63,7 @@ set(moduleName gtsam)
 
 # only support 64-bit apple
 if(CMAKE_HOST_APPLE)
-    set(mex_bin_extension_default mexmaci64)
+    set(GTSAM_MEX_BIN_EXTENSION_default mexmaci64)
 endif(CMAKE_HOST_APPLE)
 
 if(NOT CMAKE_HOST_APPLE)
@@ -79,56 +79,56 @@ if(NOT CMAKE_HOST_APPLE)
     # Check for linux machines
     if (CMAKE_HOST_UNIX)
         if (HAVE_64_BIT)
-            set(mex_bin_extension_default mexa64)
+            set(GTSAM_MEX_BIN_EXTENSION_default mexa64)
         else (HAVE_64_BIT)
-            set(mex_bin_extension_default mexglx)
+            set(GTSAM_MEX_BIN_EXTENSION_default mexglx)
         endif (HAVE_64_BIT)
     endif(CMAKE_HOST_UNIX)
     
     # Check for windows machines
     if (CMAKE_HOST_WIN32)
         if (HAVE_64_BIT)
-            set(mex_bin_extension_default mexw64)
+            set(GTSAM_MEX_BIN_EXTENSION_default mexw64)
         else (HAVE_64_BIT)
-            set(mex_bin_extension_default mexw32)
+            set(GTSAM_MEX_BIN_EXTENSION_default mexw32)
         endif (HAVE_64_BIT)
     endif(CMAKE_HOST_WIN32)
 endif(NOT CMAKE_HOST_APPLE)
 
 # Allow for setting mex extension manually
-set(mex_bin_extension ${mex_bin_extension_default} CACHE DOCSTRING "Extension for matlab mex files")
-message(STATUS "Detected Matlab mex extension: ${mex_bin_extension_default}")
-message(STATUS "Current Matlab mex extension: ${mex_bin_extension}")
+set(GTSAM_MEX_BIN_EXTENSION ${GTSAM_MEX_BIN_EXTENSION_default} CACHE DOCSTRING "Extension for matlab mex files")
+message(STATUS "Detected Matlab mex extension: ${GTSAM_MEX_BIN_EXTENSION_default}")
+message(STATUS "Current Matlab mex extension: ${GTSAM_MEX_BIN_EXTENSION}")
 
 # Actual build commands - separated by OS
 add_custom_target(wrap_gtsam ALL COMMAND 
-    ./wrap ${mex_bin_extension} ${CMAKE_SOURCE_DIR} ${moduleName} ${toolbox_path} "${mexFlags}"
+    ./wrap ${GTSAM_MEX_BIN_EXTENSION} ${CMAKE_SOURCE_DIR} ${moduleName} ${toolbox_path} "${mexFlags}"
     DEPENDS wrap)
 
 option(GTSAM_INSTALL_MATLAB_TOOLBOX  "Enable/Disable installation of matlab toolbox"  ON)
 option(GTSAM_INSTALL_MATLAB_EXAMPLES "Enable/Disable installation of matlab examples" ON)
 option(GTSAM_INSTALL_MATLAB_TESTS    "Enable/Disable installation of matlab tests"    ON)
 
-set(toolbox_install_path ${CMAKE_INSTALL_PREFIX}/borg/toolbox CACHE DOCSTRING "Path to install matlab toolbox")
+set(GTSAM_TOOLBOX_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/borg/toolbox CACHE DOCSTRING "Path to install matlab toolbox")
 
 if (GTSAM_INSTALL_MATLAB_TOOLBOX)
     # Primary toolbox files
-    message(STATUS "Installing Matlab Toolbox to ${toolbox_install_path}")
-    install(DIRECTORY DESTINATION ${toolbox_install_path}) # make an empty folder
+    message(STATUS "Installing Matlab Toolbox to ${GTSAM_TOOLBOX_INSTALL_PATH}")
+    install(DIRECTORY DESTINATION ${GTSAM_TOOLBOX_INSTALL_PATH}) # make an empty folder
     # exploit need for trailing slash to specify a full folder, rather than just its contents to copy
-    install(DIRECTORY ${toolbox_path} DESTINATION ${toolbox_install_path})
+    install(DIRECTORY ${toolbox_path} DESTINATION ${GTSAM_TOOLBOX_INSTALL_PATH})
     
     # Examples
     if (GTSAM_INSTALL_MATLAB_EXAMPLES)
         message(STATUS "Installing Matlab Toolbox Examples")
         file(GLOB matlab_examples "${CMAKE_SOURCE_DIR}/examples/matlab/*.m")
-        install(FILES ${matlab_examples} DESTINATION ${toolbox_install_path}/gtsam/examples)
+        install(FILES ${matlab_examples} DESTINATION ${GTSAM_TOOLBOX_INSTALL_PATH}/gtsam/examples)
     endif (GTSAM_INSTALL_MATLAB_EXAMPLES)
     
     # Tests
     if (GTSAM_INSTALL_MATLAB_TESTS)
         message(STATUS "Installing Matlab Toolbox Tests")
         file(GLOB matlab_tests "${CMAKE_SOURCE_DIR}/tests/matlab/*.m")
-        install(FILES ${matlab_tests} DESTINATION ${toolbox_install_path}/gtsam/tests)
+        install(FILES ${matlab_tests} DESTINATION ${GTSAM_TOOLBOX_INSTALL_PATH}/gtsam/tests)
     endif (GTSAM_INSTALL_MATLAB_TESTS)
 endif (GTSAM_INSTALL_MATLAB_TOOLBOX)

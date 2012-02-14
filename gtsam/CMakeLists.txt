@@ -20,14 +20,20 @@ set (3rdparty_srcs
  3rdparty/CCOLAMD/Source/ccolamd.c 
  3rdparty/CCOLAMD/Source/ccolamd_global.c
  3rdparty/UFconfig/UFconfig.c) 
-add_library(ccolamd STATIC ${3rdparty_srcs})
+if (GTSAM_BUILD_CONVENIENCE_LIBRARIES)
+    message(STATUS "Building Convenience Library: ccolamd")
+    add_library(ccolamd STATIC ${3rdparty_srcs})
+endif()
 
 # assemble core libaries
 foreach(subdir ${gtsam_subdirs})
     # Build convenience libraries
     file(GLOB subdir_srcs "${subdir}/*.cpp")
-    add_library(${subdir} STATIC ${subdir_srcs})
     set(${subdir}_srcs ${subdir_srcs})
+    if (GTSAM_BUILD_CONVENIENCE_LIBRARIES)
+        message(STATUS "Building Convenience Library: ${subdir}")
+        add_library(${subdir} STATIC ${subdir_srcs})
+    endif()
 
     # Build local library and tests
     message(STATUS "Building ${subdir}") 

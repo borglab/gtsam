@@ -3,11 +3,15 @@ file(GLOB base_headers "*.h")
 install(FILES ${base_headers} DESTINATION include/gtsam/base)
 
 # Components to link tests in this subfolder against
-set(base_local_libs
-    CppUnitLite
-    ${Boost_LIBRARIES}
-    base
-)
+if (GTSAM_BUILD_CONVENIENCE_LIBRARIES)
+    set(base_local_libs
+        CppUnitLite
+        base)
+else()
+    set(base_local_libs
+        CppUnitLite
+        gtsam-static)
+endif()
 
 # Build tests
 if (GTSAM_BUILD_TESTS)
@@ -20,8 +24,11 @@ if (GTSAM_BUILD_TESTS)
         add_executable(${test_bin} ${test_src})
         add_dependencies(check.base ${test_bin})
         add_dependencies(check ${test_bin})
-        add_test(${test_base} ${EXECUTABLE_OUTPUT_PATH}${test_bin})
-        target_link_libraries(${test_bin} ${base_local_libs})
+        if (GTSAM_BUILD_CONVENIENCE_LIBRARIES)
+            add_dependencies(${test_bin} ${base_local_libs})
+        endif()
+        add_test(${test_base} ${EXECUTABLE_OUTPUT_PATH}${test_bin} )
+        target_link_libraries(${test_bin} ${base_local_libs} ${Boost_LIBRARIES})
         add_custom_target(${test_bin}.run ${EXECUTABLE_OUTPUT_PATH}${test_bin} ${ARGN})
     endforeach(test_src)
 endif(GTSAM_BUILD_TESTS)
@@ -37,7 +44,10 @@ if (GTSAM_BUILD_TIMING)
         add_executable(${time_bin} ${time_src})
         add_dependencies(timing.base ${time_bin})
         add_dependencies(timing ${time_bin})
-        target_link_libraries(${time_bin} ${base_local_libs})
+        if (GTSAM_BUILD_CONVENIENCE_LIBRARIES)
+            add_dependencies(${time_bin} ${base_local_libs})
+        endif()
+        target_link_libraries(${time_bin} ${base_local_libs} ${Boost_LIBRARIES})
         add_custom_target(${time_bin}.run ${EXECUTABLE_OUTPUT_PATH}${time_bin} ${ARGN})
     endforeach(time_src)
 endif(GTSAM_BUILD_TIMING)

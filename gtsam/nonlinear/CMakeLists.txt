@@ -1,21 +1,25 @@
-# link back to base
-add_dependencies(nonlinear linear)
-
 # Install headers
 file(GLOB nonlinear_headers "*.h")
 install(FILES ${nonlinear_headers} DESTINATION include/gtsam/nonlinear)
 
 # Components to link tests in this subfolder against
-set(nonlinear_local_libs
-   nonlinear
-   linear
-   inference
-   geometry
-   base
-   ccolamd
-   CppUnitLite
-   ${Boost_LIBRARIES}
-)
+if (GTSAM_BUILD_CONVENIENCE_LIBRARIES)
+    set(nonlinear_local_libs
+       nonlinear
+       linear
+       inference
+       geometry
+       base
+       ccolamd
+       CppUnitLite)
+    # link back to base
+    add_dependencies(nonlinear linear)
+else()
+    set(nonlinear_local_libs
+        CppUnitLite
+        gtsam-static
+    )
+endif()
 
 # Build tests
 if (GTSAM_BUILD_TESTS)
@@ -28,8 +32,11 @@ if (GTSAM_BUILD_TESTS)
         add_executable(${test_bin} ${test_src})
         add_dependencies(check.nonlinear ${test_bin})
         add_dependencies(check ${test_bin})
+        if (GTSAM_BUILD_CONVENIENCE_LIBRARIES)
+            add_dependencies(${test_bin} ${nonlinear_local_libs} )
+        endif()
         add_test(${test_base} ${EXECUTABLE_OUTPUT_PATH}${test_bin})
-        target_link_libraries(${test_bin} ${nonlinear_local_libs})
+        target_link_libraries(${test_bin} ${nonlinear_local_libs} ${Boost_LIBRARIES})
         add_custom_target(${test_bin}.run ${EXECUTABLE_OUTPUT_PATH}${test_bin} ${ARGN})
     endforeach(test_src)
 endif (GTSAM_BUILD_TESTS)
@@ -45,7 +52,10 @@ if (GTSAM_BUILD_TIMING)
         add_executable(${time_bin} ${time_src})
         add_dependencies(timing.nonlinear ${time_bin})
         add_dependencies(timing ${time_bin})
-        target_link_libraries(${time_bin} ${nonlinear_local_libs})
+        if (GTSAM_BUILD_CONVENIENCE_LIBRARIES)
+            add_dependencies(${time_bin} ${nonlinear_local_libs} )
+        endif()
+        target_link_libraries(${time_bin} ${nonlinear_local_libs} ${Boost_LIBRARIES})
         add_custom_target(${time_bin}.run ${EXECUTABLE_OUTPUT_PATH}${time_bin} ${ARGN})
     endforeach(time_src)
 endif (GTSAM_BUILD_TIMING)

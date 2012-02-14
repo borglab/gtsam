@@ -39,6 +39,7 @@ option(GTSAM_BUILD_TESTS    "Enable/Disable building of tests"          ON)
 option(GTSAM_BUILD_TIMING   "Enable/Disable building of timing scripts" ON)
 option(GTSAM_BUILD_EXAMPLES "Enable/Disable building of examples"       ON)
 option(GTSAM_BUILD_WRAP     "Enable/Disable building of matlab wrap utility (necessary for matlab interface)" ON)
+option(GTSAM_BUILD_CONVENIENCE_LIBRARIES "Enable/Disable using convenience librares for tests" ON)
 option(GTSAM_LINK_BINARIES_AGAINST_CONVENIENCE_LIBS    
     "Enable/Disable linking tests against the convenince libraries for faster debugging" ON)
 
@@ -46,10 +47,12 @@ option(GTSAM_LINK_BINARIES_AGAINST_CONVENIENCE_LIBS
 # FIXME: breaks generation and install of matlab toolbox
 #set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY TRUE)
 
-# Pull in tests
-enable_testing()
-include(Dart)
-include(CTest)
+# Pull in infrastructure
+if (GTSAM_BUILD_TESTS)
+    enable_testing()
+    include(Dart)
+    include(CTest)
+endif()
 
 # Enable make check (http://www.cmake.org/Wiki/CMakeEmulateMakeCheck)
 add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND})
