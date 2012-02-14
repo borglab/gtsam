@@ -71,7 +71,7 @@ include_directories(
   gtsam/3rdparty/CCOLAMD/Include
   ${CMAKE_SOURCE_DIR}
   CppUnitLite
-  ${BOOST_INCLUDE_DIR})
+  ${Boost_INCLUDE_DIR})
 link_directories(${Boost_LIBRARY_DIRS})
 
 # Build CppUnitLite
