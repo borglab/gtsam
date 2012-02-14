@@ -30,7 +30,6 @@ class IterativeSolver {
 public:
 
 	typedef IterativeOptimizationParameters Parameters;
-	typedef Parameters::shared_ptr sharedParameters;
 
 protected:
 
@@ -40,21 +39,20 @@ public:
 
   IterativeSolver(): parameters_(new Parameters()) {}
 
-  IterativeSolver(const Parameters::shared_ptr& parameters)
-  : parameters_(parameters) {}
-
 	IterativeSolver(const IterativeSolver &solver)
 	: parameters_(solver.parameters_) {}
+
+  IterativeSolver(const Parameters::shared_ptr& parameters)
+  : parameters_(parameters) {}
 
 	IterativeSolver(const Parameters &parameters)
 	:	parameters_(new Parameters(parameters)) {}
 
-	IterativeSolver(const sharedParameters parameters)
-	:	parameters_(parameters) {}
-
 	virtual ~IterativeSolver() {}
 
 	virtual VectorValues::shared_ptr optimize () = 0;
+
+	Parameters::shared_ptr parameters() { return parameters_ ; }
 };
 
 }
