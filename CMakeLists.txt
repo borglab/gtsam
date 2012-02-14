@@ -54,6 +54,10 @@ if (GTSAM_BUILD_TESTS)
     include(CTest)
 endif()
 
+# Use macros for creating tests/timing scripts
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+include(GtsamTesting)
+
 # Enable make check (http://www.cmake.org/Wiki/CMakeEmulateMakeCheck)
 add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND})
 add_custom_target(timing)
