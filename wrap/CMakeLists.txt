@@ -16,30 +16,10 @@ endif(GTSAM_INSTALL_WRAP)
 # Install matlab header
 install(FILES matlab.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/wrap)
 
-set(wrap_local_libs
-    base
-#    wrap_lib 
-#    gtsam-static # FIXME: find a way to avoid this inclusion
-)
-
 # Build tests
 if (GTSAM_BUILD_TESTS)
-    # FIXME: need to add way to force linking against local libs when convenience libraries are disabled 
-#    gtsam_add_external_tests(wrap "${wrap_local_libs}")
-    
-    add_custom_target(check.wrap COMMAND ${CMAKE_CTEST_COMMAND})
-    file(GLOB wrap_test_srcs "tests/test*.cpp")
-    add_definitions(-DTOPSRCDIR="${CMAKE_SOURCE_DIR}")
-    foreach(test_src ${wrap_test_srcs} )
-        get_filename_component(test_base ${test_src} NAME_WE)
-        set( test_bin wrap.${test_base} )
-        add_executable(${test_bin} EXCLUDE_FROM_ALL ${test_src})
-        add_test(${test_base} ${EXECUTABLE_OUTPUT_PATH}${test_bin})
-        add_dependencies(check ${test_bin})
-        add_dependencies(check.wrap ${test_bin})
-        target_link_libraries(${test_bin} CppUnitLite ${wrap_local_libs} wrap_lib)
-        add_custom_target(${test_bin}.run ${EXECUTABLE_OUTPUT_PATH}${test_bin} ${ARGN})
-    endforeach(test_src)
+    add_definitions(-DTOPSRCDIR="${CMAKE_SOURCE_DIR}") 
+    gtsam_add_external_tests(wrap wrap_lib)
 endif(GTSAM_BUILD_TESTS)
 
 # Wrap codegen
