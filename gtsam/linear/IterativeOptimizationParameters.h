@@ -6,13 +6,11 @@
 
 #pragma once
 
-#include <vector>
+#include <string>
+#include <map>
 #include <boost/shared_ptr.hpp>
-#include <gtsam/linear/VectorValues.h>
 
 namespace gtsam {
-
-struct DimSpec;
 
 // a container for all related parameters
 struct IterativeOptimizationParameters {
@@ -34,6 +32,7 @@ public:
   double epsilon_abs_; // absolute error
   verbosityLevel verbosity_;
   bool est_cond_ ;
+  std::map<std::string, std::string> sandbox_;
 
 public:
   IterativeOptimizationParameters()
@@ -60,28 +59,5 @@ public:
   verbosityLevel verbosity() const { return verbosity_; }
   bool est_cond() const { return est_cond_ ; }
 };
-
-//struct DimSpec: public std::vector<size_t> {
-//
-//  typedef std::vector<size_t> Base;
-//  typedef boost::shared_ptr<DimSpec> shared_ptr;
-//
-//  DimSpec() :
-//    Base() {
-//  }
-//  DimSpec(size_t n) :
-//    Base(n) {
-//  }
-//  DimSpec(size_t n, size_t init) :
-//    Base(n, init) {
-//  }
-//  DimSpec(const VectorValues &V) :
-//    Base(V.size()) {
-//    const size_t n = V.size();
-//    for (size_t i = 0; i < n; ++i) {
-//      (*this)[i] = V[i].rows();
-//    }
-//  }
-//};
 
 }
