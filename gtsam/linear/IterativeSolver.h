@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <boost/shared_ptr.hpp>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/inference/VariableIndex.h>
 #include <gtsam/linear/VectorValues.h>
@@ -29,6 +30,7 @@ class IterativeSolver {
 
 public:
 
+	typedef boost::shared_ptr<IterativeSolver> shared_ptr;
 	typedef IterativeOptimizationParameters Parameters;
 
 protected:
