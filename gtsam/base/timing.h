@@ -35,6 +35,7 @@ protected:
   size_t tMin_;
   size_t n_;
   std::string label_;
+  std::vector<size_t> history_;
   boost::weak_ptr<TimingOutline> parent_;
   std::vector<boost::shared_ptr<TimingOutline> > children_;
   struct timeval t0_;
@@ -49,6 +50,8 @@ public:
   size_t time() const;
 
   void print(const std::string& outline = "") const;
+
+  void print2(const std::string& outline = "") const;
 
   const boost::shared_ptr<TimingOutline>& child(size_t child, const std::string& label, const boost::weak_ptr<TimingOutline>& thisPtr);
 
@@ -168,9 +171,15 @@ inline void ticPush_(const std::string& prefix, const std::string& id) {
   tic_(id);
 }
 void ticPop_(const std::string& prefix, const std::string& id);
+
 inline void tictoc_print_() {
   timing.print();
   timingRoot->print();
+}
+
+/* print mean and standard deviation */
+inline void tictoc_print2_() {
+  timingRoot->print2();
 }
 
 #ifdef ENABLE_TIMING

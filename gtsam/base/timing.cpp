@@ -16,8 +16,10 @@
  * @date 		Oct 5, 2010
  */
 
+#include <math.h>
 #include <stdio.h>
 #include <iostream>
+#include <iomanip>
 #include <sys/time.h>
 #include <stdlib.h>
 #include <boost/foreach.hpp>
@@ -41,6 +43,7 @@ void TimingOutline::add(size_t usecs) {
 	t_ += usecs;
 	tIt_ += usecs;
 	++ n_;
+  history_.push_back(usecs);
 }
 
 /* ************************************************************************* */
@@ -81,6 +84,44 @@ void TimingOutline::print(const std::string& outline) const {
 			children_[i]->print(childOutline);
 		}
 	}
+}
+
+void TimingOutline::print2(const std::string& outline) const {
+
+  const int w1 = 24, w2 = 3, w3 = 6, precision = 3;
+  const double selfTotal = double(t_)/(1000000.0),
+               selfMean = selfTotal/double(n_);
+  // const double childMean = double(time())/(1000000.0*n_);
+
+  // compute standard deviation
+  double acc = 0.0;
+  BOOST_FOREACH(const size_t &t, history_) {
+    const double tmp = double(t)/1000000.0 - selfMean ;
+    acc += (tmp*tmp);
+  }
+  const double selfStd = sqrt(acc);
+  const std::string label = label_ + ": " ;
+
+  if ( n_ == 0 ) {
+    std::cout << label << std::fixed << std::setprecision(precision) << double(time())/(1000000.0) << " seconds" << std::endl;
+  }
+  else {
+  std::cout << std::setw(w1) << label ;
+  std::cout << std::setiosflags(std::ios::right) << std::setw(w2) << n_ << " (times), "
+    << std::setiosflags(std::ios::right) << std::fixed << std::setw(w3) << std::setprecision(precision) << selfMean << " (mean), "
+    << std::setiosflags(std::ios::right) << std::fixed << std::setw(w3) << std::setprecision(precision) << selfStd  << " (std),"
+    << std::setiosflags(std::ios::right) << std::fixed << std::setw(w3) << std::setprecision(precision) << selfTotal  << " (total)"
+    //<< std::setprecision(precision) << std::setw(w3) << std::fixed << childMean << " (child-mean)"
+    << std::endl;
+  }
+
+  for(size_t i=0; i<children_.size(); ++i) {
+    if(children_[i]) {
+      std::string childOutline(outline);
+      childOutline += "  ";
+      children_[i]->print2(childOutline);
+    }
+  }
 }
 
 /* ************************************************************************* */
