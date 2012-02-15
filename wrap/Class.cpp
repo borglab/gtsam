@@ -51,7 +51,7 @@ void Class::matlab_proxy(const string& classFile) const {
   file.oss << "end" << endl;
 
   // close file
-  file.emit(false);
+  file.emit(true);
 }
 
 /* ************************************************************************* */

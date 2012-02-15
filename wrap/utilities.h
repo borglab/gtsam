@@ -75,7 +75,7 @@ std::string file_contents(const std::string& filename, bool skipheader=false);
  * Check whether two files are equal
  * By default, skips the first line of actual so header is not generated
  */
-bool files_equal(const std::string& expected, const std::string& actual, bool skipheader=true);
+bool files_equal(const std::string& expected, const std::string& actual, bool skipheader=false);
 
 /**
  * Compare strings for unit tests

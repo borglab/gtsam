@@ -289,7 +289,7 @@ namespace gtsam {
 
   private:
 
-    // Friend HessianFactor to facilitate convertion constructors
+    // Friend HessianFactor to facilitate conversion constructors
     friend class HessianFactor;
 
     // Friend unit tests (see also forward declarations above)

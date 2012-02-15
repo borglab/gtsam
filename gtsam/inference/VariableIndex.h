@@ -101,6 +101,12 @@ public:
   /** Print the variable index (for unit tests and debugging). */
   void print(const std::string& str = "VariableIndex: ") const;
 
+  /**
+   * Output dual hypergraph to Metis file format for use with hmetis
+   * In the dual graph, variables are hyperedges, factors are nodes.
+   */
+  void outputMetisFormat(std::ostream& os) const;
+
 
 	/// @}
 	/// @name Advanced Interface

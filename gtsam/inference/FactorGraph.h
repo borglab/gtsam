@@ -138,6 +138,9 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 		/** return the number of factors and NULLS */
 		size_t size() const { return factors_.size();}
 
+		/** Simple check for an empty graph - faster than comparing size() to zero */
+		bool empty() const { return factors_.empty(); }
+
 		/** const cast to the underlying vector of factors */
 		operator const std::vector<sharedFactor>&() const { return factors_; }
 

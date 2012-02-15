@@ -43,7 +43,7 @@ void StaticMethod::matlab_mfile(const string& toolboxPath, const string& classNa
   file.oss << "end" << endl;
 
   // close file
-  file.emit(false);
+  file.emit(true);
 }
 
 /* ************************************************************************* */

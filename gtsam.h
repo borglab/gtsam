@@ -187,7 +187,6 @@ class Pose2 {
 class Pose3 {
 	Pose3();
 	Pose3(const gtsam::Rot3& r, const gtsam::Point3& t);
-	Pose3(Vector v);
 	Pose3(Matrix t);
 	Pose3(const gtsam::Pose2& pose2);
 	static gtsam::Pose3 Expmap(Vector v);
@@ -203,9 +202,32 @@ class Pose3 {
 	gtsam::Pose3 between(const gtsam::Pose3& p2);
 	gtsam::Pose3 retract(Vector v);
 	gtsam::Pose3 retractFirstOrder(Vector v);
+  Vector localCoordinates(const gtsam::Pose3& T2) const;
 	gtsam::Point3 translation() const;
 	gtsam::Rot3 rotation() const;
 };
+
+class CalibratedCamera {
+    
+    CalibratedCamera();
+    CalibratedCamera(const gtsam::Pose3& pose);
+    CalibratedCamera(const Vector& v);
+
+    void print(string s) const;
+    bool equals(const gtsam::Pose3& pose, double tol) const;
+
+    gtsam::Pose3 pose() const;
+
+    gtsam::CalibratedCamera compose(const gtsam::CalibratedCamera& c) const;
+    gtsam::CalibratedCamera inverse() const;
+    gtsam::CalibratedCamera level(const gtsam::Pose2& pose2, double height);
+    gtsam::CalibratedCamera retract(const Vector& d) const;
+    Vector localCoordinates(const gtsam::CalibratedCamera& T2) const;
+
+    gtsam::Point2 project(const gtsam::Point3& point) const;
+    static gtsam::Point2 project_to_camera(const gtsam::Point3& cameraPoint);
+};
+
 
 //*************************************************************************
 // inference
