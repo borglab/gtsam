@@ -30,12 +30,13 @@ extern boost::weak_ptr<TimingOutline> timingCurrent;
 class TimingOutline {
 protected:
   size_t t_;
+  double t2_ ; /* cache the \sum t_i^2 */
   size_t tIt_;
   size_t tMax_;
   size_t tMin_;
   size_t n_;
   std::string label_;
-  std::vector<size_t> history_;
+
   boost::weak_ptr<TimingOutline> parent_;
   std::vector<boost::shared_ptr<TimingOutline> > children_;
   struct timeval t0_;

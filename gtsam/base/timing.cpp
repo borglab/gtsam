@@ -42,13 +42,13 @@ std::string timingPrefix;
 void TimingOutline::add(size_t usecs) {
 	t_ += usecs;
 	tIt_ += usecs;
+	t2_ += (double(usecs)/1000000.0)*(double(usecs)/1000000.0);
 	++ n_;
-  history_.push_back(usecs);
 }
 
 /* ************************************************************************* */
 TimingOutline::TimingOutline(const std::string& label) :
-   t_(0), tIt_(0), tMax_(0), tMin_(0), n_(0), label_(label), timerActive_(false) {}
+   t_(0), t2_(0.0), tIt_(0), tMax_(0), tMin_(0), n_(0), label_(label), timerActive_(false) {}
 
 /* ************************************************************************* */
 size_t TimingOutline::time() const {
@@ -88,18 +88,13 @@ void TimingOutline::print(const std::string& outline) const {
 
 void TimingOutline::print2(const std::string& outline) const {
 
-  const int w1 = 24, w2 = 3, w3 = 6, precision = 3;
+  const int w1 = 24, w2 = 3, w3 = 8, precision = 3;
   const double selfTotal = double(t_)/(1000000.0),
                selfMean = selfTotal/double(n_);
   // const double childMean = double(time())/(1000000.0*n_);
 
   // compute standard deviation
-  double acc = 0.0;
-  BOOST_FOREACH(const size_t &t, history_) {
-    const double tmp = double(t)/1000000.0 - selfMean ;
-    acc += (tmp*tmp);
-  }
-  const double selfStd = sqrt(acc);
+  const double selfStd = sqrt(t2_/double(n_) - selfMean*selfMean);
   const std::string label = label_ + ": " ;
 
   if ( n_ == 0 ) {
