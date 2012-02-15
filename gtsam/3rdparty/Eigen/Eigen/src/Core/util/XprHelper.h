@@ -127,7 +127,7 @@ class compute_matrix_flags
             ((Options&DontAlign)==0)
         && (
 #if EIGEN_ALIGN_STATICALLY
-             ((!is_dynamic_size_storage) && (((MaxCols*MaxRows*sizeof(Scalar)) % 16) == 0))
+             ((!is_dynamic_size_storage) && (((MaxCols*MaxRows*int(sizeof(Scalar))) % 16) == 0))
 #else
              0
 #endif

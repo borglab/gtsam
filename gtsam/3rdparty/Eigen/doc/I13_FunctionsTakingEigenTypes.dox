@@ -47,9 +47,9 @@ void print_block(const DenseBase<Derived>& b, int x, int y, int r, int c)
 Prints the maximum coefficient of the array or array-expression.
 \code
 template <typename Derived>
-void print_max(const ArrayBase<Derived>& a, const ArrayBase<Derived>& b)
+void print_max_coeff(const ArrayBase<Derived> &a)
 {
-  std::cout << "max: " << (a.max(b)).maxCoeff() << std::endl;
+  std::cout << "max: " << a.maxCoeff() << std::endl;
 }
 \endcode
 <b> %MatrixBase Example </b><br/><br/>
@@ -63,6 +63,21 @@ void print_inv_cond(const MatrixBase<Derived>& a)
   std::cout << "inv cond: " << sing_vals(sing_vals.size()-1) / sing_vals(0) << std::endl;
 }
 \endcode
+<b> Multiple templated arguments example </b><br/><br/>
+Calculate the Euclidean distance between two points.
+\code
+template <typename DerivedA,typename DerivedB>
+typename DerivedA::Scalar squaredist(const MatrixBase<DerivedA>& p1,const MatrixBase<DerivedB>& p2)
+{
+  return (p1-p2).squaredNorm();
+}
+\endcode
+Notice that we used two template parameters, one per argument. This permits the function to handle inputs of different types, e.g.,
+\code
+squaredist(v1,2*v2)
+\endcode
+where the first argument \c v1 is a vector and the second argument \c 2*v2 is an expression.
+<br/><br/>
 
 These examples are just intended to give the reader a first impression of how functions can be written which take a plain and constant Matrix or Array argument. They are also intended to give the reader an idea about the most common base classes being the optimal candidates for functions. In the next section we will look in more detail at an example and the different ways it can be implemented, while discussing each implementation's problems and advantages. For the discussion below, Matrix and Array as well as MatrixBase and ArrayBase can be exchanged and all arguments still hold.
 
@@ -127,6 +142,8 @@ void cov(const MatrixBase<Derived>& x, const MatrixBase<Derived>& y, MatrixBase<
 The implementation above does now not only work with temporary expressions but it also allows to use the function with matrices of arbitrary floating point scalar types.
 
 \b Note: The const cast hack will only work with templated functions. It will not work with the MatrixXf implementation because it is not possible to cast a Block expression to a Matrix reference!
+
+
 
 \section TopicResizingInGenericImplementations How to resize matrices in generic implementations?
 

@@ -4,7 +4,7 @@ namespace Eigen {
     \ingroup Tutorial
 
 \li \b Previous: \ref TutorialGeometry
-\li \b Next: TODO
+\li \b Next: \ref TutorialMapClass
 
 \b Table \b of \b contents \n
   - \ref TutorialSparseIntro
@@ -254,7 +254,7 @@ if(!lu_of_A.solve(b,&x)) {
 
 See also the class SparseLLT, class SparseLU, and class SparseLDLT.
 
-\li \b Next: TODO
+\li \b Next: \ref TutorialMapClass
 
 */
 
