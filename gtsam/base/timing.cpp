@@ -86,35 +86,43 @@ void TimingOutline::print(const std::string& outline) const {
 	}
 }
 
-void TimingOutline::print2(const std::string& outline) const {
+void TimingOutline::print2(const std::string& outline, const double parentTotal) const {
 
-  const int w1 = 24, w2 = 3, w3 = 8, precision = 3;
+  const int w1 = 24, w2 = 2, w3 = 6, w4 = 8, precision = 2;
   const double selfTotal = double(t_)/(1000000.0),
                selfMean = selfTotal/double(n_);
-  // const double childMean = double(time())/(1000000.0*n_);
+  const double childTotal = double(time())/(1000000.0);
 
   // compute standard deviation
   const double selfStd = sqrt(t2_/double(n_) - selfMean*selfMean);
-  const std::string label = label_ + ": " ;
+  const std::string label = outline + label_ + ": " ;
 
   if ( n_ == 0 ) {
-    std::cout << label << std::fixed << std::setprecision(precision) << double(time())/(1000000.0) << " seconds" << std::endl;
+    std::cout << label << std::fixed << std::setprecision(precision) << childTotal << " seconds" << std::endl;
   }
   else {
-  std::cout << std::setw(w1) << label ;
-  std::cout << std::setiosflags(std::ios::right) << std::setw(w2) << n_ << " (times), "
-    << std::setiosflags(std::ios::right) << std::fixed << std::setw(w3) << std::setprecision(precision) << selfMean << " (mean), "
-    << std::setiosflags(std::ios::right) << std::fixed << std::setw(w3) << std::setprecision(precision) << selfStd  << " (std),"
-    << std::setiosflags(std::ios::right) << std::fixed << std::setw(w3) << std::setprecision(precision) << selfTotal  << " (total)"
-    //<< std::setprecision(precision) << std::setw(w3) << std::fixed << childMean << " (child-mean)"
-    << std::endl;
+    std::cout << std::setw(w1+outline.length()) << label ;
+    std::cout << std::setiosflags(std::ios::right) << std::setw(w2) << n_ << " (times), "
+      << std::setiosflags(std::ios::right) << std::fixed << std::setw(w3) << std::setprecision(precision) << selfMean << " (mean), "
+      << std::setiosflags(std::ios::right) << std::fixed << std::setw(w3) << std::setprecision(precision) << selfStd  << " (std),"
+      << std::setiosflags(std::ios::right) << std::fixed << std::setw(w4) << std::setprecision(precision) << selfTotal  << " (total),";
+
+    if ( parentTotal > 0.0 )
+      std::cout << std::setiosflags(std::ios::right) << std::fixed << std::setw(w3) << std::setprecision(precision) << 100.0*selfTotal/parentTotal  << " (%)";
+
+    std::cout << std::endl;
   }
 
   for(size_t i=0; i<children_.size(); ++i) {
     if(children_[i]) {
       std::string childOutline(outline);
-      childOutline += "  ";
-      children_[i]->print2(childOutline);
+      if ( n_ == 0 ) {
+        children_[i]->print2(childOutline, childTotal);
+      }
+      else {
+        childOutline += "  ";
+        children_[i]->print2(childOutline, selfTotal);
+      }
     }
   }
 }

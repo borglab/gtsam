@@ -52,7 +52,7 @@ public:
 
   void print(const std::string& outline = "") const;
 
-  void print2(const std::string& outline = "") const;
+  void print2(const std::string& outline = "", const double parentTotal = -1.0) const;
 
   const boost::shared_ptr<TimingOutline>& child(size_t child, const std::string& label, const boost::weak_ptr<TimingOutline>& thisPtr);
 
