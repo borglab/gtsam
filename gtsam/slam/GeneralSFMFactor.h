@@ -77,15 +77,20 @@ namespace gtsam {
 		}
 
 		/** h(x)-z */
-		Vector evaluateError(
-				const Cam& camera,
-				const Point3& point,
-				boost::optional<Matrix&> H1=boost::none,
-				boost::optional<Matrix&> H2=boost::none) const {
+		Vector evaluateError(const Cam& camera,	const Point3& point,
+				boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const {
 
-			Vector error = z_.localCoordinates(camera.project2(point,H1,H2));
-//			gtsam::print(error, "error");
-			return error;
+			try {
+				Point2 reprojError(camera.project2(point,H1,H2) - z_);
+	      return reprojError.vector();
+			}
+			catch( CheiralityException& e) {
+			  if (H1) *H1 = zeros(2, camera.dim());
+			  if (H2) *H2 = zeros(2, point.dim());
+//			  cout << e.what() << ": Landmark "<< this->key2_.index()
+//			  								 << " behind Camera " << this->key1_.index() << endl;
+			  return zero(2);
+			}
 		}
 
 		/** return the measured */
