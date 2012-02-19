@@ -32,6 +32,7 @@
 
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/nonlinear/Symbol.h>
 
 namespace gtsam {
 
@@ -44,12 +45,12 @@ namespace gtsam {
  * which are objects in non-linear manifolds (Lie groups).
  * \nosubgrouping
  */
-class NonlinearFactor: public Factor<Symbol> {
+class NonlinearFactor: public Factor<Key> {
 
 protected:
 
   // Some handy typedefs
-  typedef Factor<Symbol> Base;
+  typedef Factor<Key> Base;
   typedef NonlinearFactor This;
 
 public:
@@ -187,7 +188,7 @@ public:
   virtual void print(const std::string& s = "") const {
     std::cout << s << ": NoiseModelFactor\n";
     std::cout << "  ";
-    BOOST_FOREACH(const Symbol& key, this->keys()) { std::cout << (std::string)key << " "; }
+    BOOST_FOREACH(Key key, this->keys()) { std::cout << (std::string)key << " "; }
     std::cout << "\n";
     this->noiseModel_->print("  noise model: ");
   }
@@ -310,14 +311,14 @@ public:
 
   virtual ~NonlinearFactor1() {}
 
-  inline const Symbol& key() const { return keys_[0]; }
+  inline Key key() const { return keys_[0]; }
 
   /**
    *  Constructor
    *  @param z measurement
    *  @param key by which to look up X value in Values
    */
-  NonlinearFactor1(const SharedNoiseModel& noiseModel, const Symbol& key1) :
+  NonlinearFactor1(const SharedNoiseModel& noiseModel, Key key1) :
     Base(noiseModel) {
     keys_.resize(1);
     keys_[0] = key1;
@@ -393,7 +394,7 @@ public:
    * @param j1 key of the first variable
    * @param j2 key of the second variable
    */
-  NonlinearFactor2(const SharedNoiseModel& noiseModel, const Symbol& j1, const Symbol& j2) :
+  NonlinearFactor2(const SharedNoiseModel& noiseModel, Key j1, Key j2) :
     Base(noiseModel) {
     keys_.resize(2);
     keys_[0] = j1;
@@ -403,8 +404,8 @@ public:
   virtual ~NonlinearFactor2() {}
 
   /** methods to retrieve both keys */
-  inline const Symbol& key1() const { return keys_[0];	}
-  inline const Symbol& key2() const {	return keys_[1];	}
+  inline Key key1() const { return keys_[0];	}
+  inline Key key2() const {	return keys_[1];	}
 
   /** Calls the 2-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
@@ -481,7 +482,7 @@ public:
    * @param j2 key of the second variable
    * @param j3 key of the third variable
    */
-  NonlinearFactor3(const SharedNoiseModel& noiseModel, const Symbol& j1, const Symbol& j2, const Symbol& j3) :
+  NonlinearFactor3(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3) :
     Base(noiseModel) {
     keys_.resize(3);
     keys_[0] = j1;
@@ -492,9 +493,9 @@ public:
   virtual ~NonlinearFactor3() {}
 
   /** methods to retrieve keys */
-  inline const Symbol& key1() const { return keys_[0]; }
-  inline const Symbol& key2() const { return keys_[1]; }
-  inline const Symbol& key3() const { return keys_[2]; }
+  inline Key key1() const { return keys_[0]; }
+  inline Key key2() const { return keys_[1]; }
+  inline Key key3() const { return keys_[2]; }
 
   /** Calls the 3-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
@@ -574,7 +575,7 @@ public:
    * @param j3 key of the third variable
    * @param j4 key of the fourth variable
    */
-  NonlinearFactor4(const SharedNoiseModel& noiseModel, const Symbol& j1, const Symbol& j2, const Symbol& j3, const Symbol& j4) :
+  NonlinearFactor4(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3, Key j4) :
     Base(noiseModel) {
     keys_.resize(4);
     keys_[0] = j1;
@@ -586,10 +587,10 @@ public:
   virtual ~NonlinearFactor4() {}
 
   /** methods to retrieve keys */
-  inline const Symbol& key1() const { return keys_[0]; }
-  inline const Symbol& key2() const { return keys_[1]; }
-  inline const Symbol& key3() const { return keys_[2]; }
-  inline const Symbol& key4() const { return keys_[3]; }
+  inline Key key1() const { return keys_[0]; }
+  inline Key key2() const { return keys_[1]; }
+  inline Key key3() const { return keys_[2]; }
+  inline Key key4() const { return keys_[3]; }
 
   /** Calls the 4-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
@@ -672,7 +673,7 @@ public:
    * @param j4 key of the fourth variable
    * @param j5 key of the fifth variable
    */
-  NonlinearFactor5(const SharedNoiseModel& noiseModel, const Symbol& j1, const Symbol& j2, const Symbol& j3, const Symbol& j4, const Symbol& j5) :
+  NonlinearFactor5(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3, Key j4, Key j5) :
     Base(noiseModel) {
     keys_.resize(5);
     keys_[0] = j1;
@@ -685,11 +686,11 @@ public:
   virtual ~NonlinearFactor5() {}
 
   /** methods to retrieve keys */
-  inline const Symbol& key1() const { return keys_[0]; }
-  inline const Symbol& key2() const { return keys_[1]; }
-  inline const Symbol& key3() const { return keys_[2]; }
-  inline const Symbol& key4() const { return keys_[3]; }
-  inline const Symbol& key5() const { return keys_[4]; }
+  inline Key key1() const { return keys_[0]; }
+  inline Key key2() const { return keys_[1]; }
+  inline Key key3() const { return keys_[2]; }
+  inline Key key4() const { return keys_[3]; }
+  inline Key key5() const { return keys_[4]; }
 
   /** Calls the 5-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
@@ -776,7 +777,7 @@ public:
    * @param j5 key of the fifth variable
    * @param j6 key of the fifth variable
    */
-  NonlinearFactor6(const SharedNoiseModel& noiseModel, const Symbol& j1, const Symbol& j2, const Symbol& j3, const Symbol& j4, const Symbol& j5, const Symbol& j6) :
+  NonlinearFactor6(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3, Key j4, Key j5, Key j6) :
     Base(noiseModel) {
     keys_.resize(6);
     keys_[0] = j1;
@@ -790,12 +791,12 @@ public:
   virtual ~NonlinearFactor6() {}
 
   /** methods to retrieve keys */
-  inline const Symbol& key1() const { return keys_[0]; }
-  inline const Symbol& key2() const { return keys_[1]; }
-  inline const Symbol& key3() const { return keys_[2]; }
-  inline const Symbol& key4() const { return keys_[3]; }
-  inline const Symbol& key5() const { return keys_[4]; }
-  inline const Symbol& key6() const { return keys_[5]; }
+  inline Key key1() const { return keys_[0]; }
+  inline Key key2() const { return keys_[1]; }
+  inline Key key3() const { return keys_[2]; }
+  inline Key key4() const { return keys_[3]; }
+  inline Key key5() const { return keys_[4]; }
+  inline Key key6() const { return keys_[5]; }
 
   /** Calls the 6-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */

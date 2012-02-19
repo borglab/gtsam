@@ -67,14 +67,14 @@ void SubgraphSolver<GRAPH,LINEAR,KEY>::initialize(const GRAPH& G, const Values& 
 
 	// make the ordering
 	list<KEY> keys = predecessorMap2Keys(tree_);
-	ordering_ = boost::make_shared<Ordering>(list<Symbol>(keys.begin(), keys.end()));
+	ordering_ = boost::make_shared<Ordering>(list<Key>(keys.begin(), keys.end()));
 
 	// build factor pairs
 	pairs_.clear();
 	typedef pair<KEY,KEY> EG ;
 	BOOST_FOREACH( const EG &eg, tree_ ) {
-		Symbol key1 = Symbol(eg.first),
-				key2 = Symbol(eg.second) ;
+		Key key1 = Key(eg.first),
+				key2 = Key(eg.second) ;
 		pairs_.insert(pair<Index, Index>((*ordering_)[key1], (*ordering_)[key2])) ;
 	}
 }

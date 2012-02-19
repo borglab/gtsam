@@ -30,7 +30,7 @@ namespace gtsam {
 	template<class VALUE>
 	typename ExtendedKalmanFilter<VALUE>::T ExtendedKalmanFilter<VALUE>::solve_(
 			const GaussianFactorGraph& linearFactorGraph, const Ordering& ordering,
-			const Values& linearizationPoints, const Symbol& lastKey,
+			const Values& linearizationPoints, Key lastKey,
 			JacobianFactor::shared_ptr& newPrior) const {
 
 		// Extract the Index of the provided last key
@@ -91,8 +91,8 @@ namespace gtsam {
 		// different keys will still compute as if a common key-set was used
 
 		// Create Keys
-		Symbol x0 = motionFactor.key1();
-		Symbol x1 = motionFactor.key2();
+		Key x0 = motionFactor.key1();
+		Key x1 = motionFactor.key2();
 
 		// Create an elimination ordering
 		Ordering ordering;
@@ -131,7 +131,7 @@ namespace gtsam {
 		// different keys will still compute as if a common key-set was used
 
 		// Create Keys
-		Symbol x0 = measurementFactor.key();
+		Key x0 = measurementFactor.key();
 
 		// Create an elimination ordering
 		Ordering ordering;

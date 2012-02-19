@@ -44,7 +44,7 @@ namespace gtsam {
 
 		RangeFactor() {} /* Default constructor */
 
-		RangeFactor(const Symbol& poseKey, const Symbol& pointKey, double measured,
+		RangeFactor(Key poseKey, Key pointKey, double measured,
 				const SharedNoiseModel& model) :
 					Base(model, poseKey, pointKey), measured_(measured) {
 		}

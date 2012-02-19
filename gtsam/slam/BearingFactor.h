@@ -48,7 +48,7 @@ namespace gtsam {
 		BearingFactor() {}
 
 		/** primary constructor */
-		BearingFactor(const Symbol& poseKey, const Symbol& pointKey, const Rot& measured,
+		BearingFactor(Key poseKey, Key pointKey, const Rot& measured,
 				const SharedNoiseModel& model) :
 					Base(model, poseKey, pointKey), measured_(measured) {
 		}

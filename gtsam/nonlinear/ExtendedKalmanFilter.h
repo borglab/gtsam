@@ -55,7 +55,7 @@ namespace gtsam {
 
 		T solve_(const GaussianFactorGraph& linearFactorGraph,
 				const Ordering& ordering, const Values& linearizationPoints,
-				const Symbol& x, JacobianFactor::shared_ptr& newPrior) const;
+				Key x, JacobianFactor::shared_ptr& newPrior) const;
 
 	public:
 

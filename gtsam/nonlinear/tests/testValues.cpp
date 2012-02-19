@@ -31,7 +31,7 @@ using namespace gtsam;
 using namespace std;
 static double inf = std::numeric_limits<double>::infinity();
 
-Symbol key1("v1"), key2("v2"), key3("v3"), key4("v4");
+Key key1("v1"), key2("v2"), key3("v3"), key4("v4");
 
 /* ************************************************************************* */
 TEST( Values, equals1 )
@@ -218,12 +218,12 @@ TEST(Values, extract_keys)
 	config.insert("x4", Pose2());
 	config.insert("x5", Pose2());
 
-	FastList<Symbol> expected, actual;
+	FastList<Key> expected, actual;
 	expected += "x1", "x2", "x4", "x5";
 	actual = config.keys();
 
 	CHECK(actual.size() == expected.size());
-	FastList<Symbol>::const_iterator itAct = actual.begin(), itExp = expected.begin();
+	FastList<Key>::const_iterator itAct = actual.begin(), itExp = expected.begin();
 	for (; itAct != actual.end() && itExp != expected.end(); ++itAct, ++itExp) {
 		CHECK(assert_equal(*itExp, *itAct));
 	}

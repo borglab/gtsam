@@ -74,7 +74,7 @@ struct PointPrior3D: public NonlinearFactor1<Point3> {
 	 * @param model is the measurement model for the factor (Dimension: 3)
 	 * @param key is the key for the pose
 	 */
-	PointPrior3D(const Point3& measured, const SharedNoiseModel& model, const Symbol& key) :
+	PointPrior3D(const Point3& measured, const SharedNoiseModel& model, Key key) :
 	  NonlinearFactor1<Point3> (model, key), measured_(measured) {
 	}
 
@@ -106,7 +106,7 @@ struct Simulated3DMeasurement: public NonlinearFactor2<Point3, Point3> {
 	 * @param pointKey is the point key for the landmark
 	 */
 	Simulated3DMeasurement(const Point3& measured, const SharedNoiseModel& model,
-	    const Symbol& poseKey, const Symbol& pointKey) :
+	    Key poseKey, Key pointKey) :
 	      NonlinearFactor2<Point3, Point3>(model, poseKey, pointKey), measured_(measured) {}
 
 	/**

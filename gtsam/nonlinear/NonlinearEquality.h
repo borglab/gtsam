@@ -89,7 +89,7 @@ namespace gtsam {
 		/**
 		 * Constructor - forces exact evaluation
 		 */
-		NonlinearEquality(const Symbol& j, const T& feasible, bool (*_compare)(const T&, const T&) = compare<T>) :
+		NonlinearEquality(Key j, const T& feasible, bool (*_compare)(const T&, const T&) = compare<T>) :
 			Base(noiseModel::Constrained::All(feasible.dim()), j), feasible_(feasible),
 			allow_error_(false), error_gain_(0.0),
 			compare_(_compare) {
@@ -98,7 +98,7 @@ namespace gtsam {
 		/**
 		 * Constructor - allows inexact evaluation
 		 */
-		NonlinearEquality(const Symbol& j, const T& feasible, double error_gain, bool (*_compare)(const T&, const T&) = compare<T>) :
+		NonlinearEquality(Key j, const T& feasible, double error_gain, bool (*_compare)(const T&, const T&) = compare<T>) :
 			Base(noiseModel::Constrained::All(feasible.dim()), j), feasible_(feasible),
 			allow_error_(true), error_gain_(error_gain),
 			compare_(_compare) {
@@ -109,7 +109,7 @@ namespace gtsam {
 		/// @{
 
 		virtual void print(const std::string& s = "") const {
-			std::cout << "Constraint: " << s << " on [" << (std::string)(this->key()) << "]\n";
+			std::cout << "Constraint: " << s << " on [" << (std::string)this->key() << "]\n";
 			gtsam::print(feasible_,"Feasible Point");
 			std::cout << "Variable Dimension: " << feasible_.dim() << std::endl;
 		}
@@ -204,7 +204,7 @@ namespace gtsam {
 		typedef boost::shared_ptr<NonlinearEquality1<VALUE> > shared_ptr;
 
 		///TODO: comment
-		NonlinearEquality1(const X& value, const Symbol& key1, double mu = 1000.0)
+		NonlinearEquality1(const X& value, Key key1, double mu = 1000.0)
 			: Base(noiseModel::Constrained::All(value.dim(), fabs(mu)), key1), value_(value) {}
 
 		virtual ~NonlinearEquality1() {}
@@ -259,7 +259,7 @@ namespace gtsam {
 		typedef boost::shared_ptr<NonlinearEquality2<VALUE> > shared_ptr;
 
 		///TODO: comment
-		NonlinearEquality2(const Symbol& key1, const Symbol& key2, double mu = 1000.0)
+		NonlinearEquality2(Key key1, Key key2, double mu = 1000.0)
 			: Base(noiseModel::Constrained::All(X::Dim(), fabs(mu)), key1, key2) {}
 		virtual ~NonlinearEquality2() {}
 

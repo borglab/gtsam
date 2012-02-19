@@ -105,7 +105,7 @@ ISAM2<CONDITIONAL, GRAPH>::relinearizeAffectedFactors(const FastList<Index>& aff
   tic(3,"check candidates");
   BOOST_FOREACH(size_t idx, candidates) {
     bool inside = true;
-    BOOST_FOREACH(const Symbol& key, nonlinearFactors_[idx]->keys()) {
+    BOOST_FOREACH(Key key, nonlinearFactors_[idx]->keys()) {
       Index var = ordering_[key];
       if (affectedKeysSet.find(var) == affectedKeysSet.end()) {
         inside = false;
@@ -398,7 +398,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2<CONDITIONAL, GRAPH>::recalculate(
 template<class CONDITIONAL, class GRAPH>
 ISAM2Result ISAM2<CONDITIONAL, GRAPH>::update(
     const GRAPH& newFactors, const Values& newTheta, const FastVector<size_t>& removeFactorIndices,
-    const boost::optional<FastSet<Symbol> >& constrainedKeys, bool force_relinearize) {
+    const boost::optional<FastSet<Key> >& constrainedKeys, bool force_relinearize) {
 
   static const bool debug = ISDEBUG("ISAM2 update");
   static const bool verbose = ISDEBUG("ISAM2 update verbose");
@@ -519,7 +519,7 @@ ISAM2Result ISAM2<CONDITIONAL, GRAPH>::update(
   boost::optional<FastSet<Index> > constrainedIndices;
   if(constrainedKeys) {
     constrainedIndices.reset(FastSet<Index>());
-    BOOST_FOREACH(const Symbol& key, *constrainedKeys) {
+    BOOST_FOREACH(Key key, *constrainedKeys) {
       constrainedIndices->insert(ordering_[key]);
     }
   }

@@ -55,7 +55,7 @@ namespace gtsam {
 		BetweenFactor() {}
 
 		/** Constructor */
-		BetweenFactor(const Symbol& key1, const Symbol& key2, const VALUE& measured,
+		BetweenFactor(Key key1, Key key2, const VALUE& measured,
 				const SharedNoiseModel& model) :
 			Base(model, key1, key2), measured_(measured) {
 		}
@@ -123,7 +123,7 @@ namespace gtsam {
 		typedef boost::shared_ptr<BetweenConstraint<VALUE> > shared_ptr;
 
 		/** Syntactic sugar for constrained version */
-		BetweenConstraint(const VALUE& measured, const Symbol& key1, const Symbol& key2, double mu = 1000.0) :
+		BetweenConstraint(const VALUE& measured, Key key1, Key key2, double mu = 1000.0) :
 		  BetweenFactor<VALUE>(key1, key2, measured, noiseModel::Constrained::All(VALUE::Dim(), fabs(mu))) {}
 
 	private:

@@ -242,7 +242,7 @@ public:
 	/**
 	 * Return mean and covariance on a single variable
 	 */
-	Matrix marginalCovariance(Symbol j) const {
+	Matrix marginalCovariance(Key j) const {
 		return createSolver()->marginalCovariance((*ordering_)[j]);
 	}
 

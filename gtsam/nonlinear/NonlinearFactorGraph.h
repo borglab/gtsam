@@ -47,7 +47,7 @@ namespace gtsam {
     void print(const std::string& str = "NonlinearFactorGraph: ") const;
 
     /** return keys in some random order */
-    std::set<Symbol> keys() const;
+    std::set<Key> keys() const;
 
 		/** unnormalized error */
 		double error(const Values& c) const;

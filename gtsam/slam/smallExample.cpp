@@ -202,7 +202,7 @@ namespace example {
 
 			Point2 z_;
 
-			UnaryFactor(const Point2& z, const SharedNoiseModel& model, const Symbol& key) :
+			UnaryFactor(const Point2& z, const SharedNoiseModel& model, Key key) :
 				gtsam::NonlinearFactor1<Point2>(model, key), z_(z) {
 			}
 

@@ -87,6 +87,30 @@ public:
   }
 #endif
 
+  /** Constructor that decodes an integer Key */
+  Symbol(Key key) {
+    const size_t keyBytes = sizeof(Key);
+    const size_t chrBytes = sizeof(unsigned char);
+    const size_t indexBytes = keyBytes - chrBytes;
+    const Key chrMask = std::numeric_limits<unsigned char>::max() << indexBytes;
+    const Key indexMask = ~chrMask;
+    c_ = key & chrMask;
+    j_ = key & indexMask;
+  }
+
+  /** Cast to integer */
+  operator Key() const {
+    const size_t keyBytes = sizeof(Key);
+    const size_t chrBytes = sizeof(unsigned char);
+    const size_t indexBytes = keyBytes - chrBytes;
+    const Key chrMask = std::numeric_limits<unsigned char>::max() << indexBytes;
+    const Key indexMask = ~chrMask;
+    if(j_ > indexMask)
+      throw std::invalid_argument("Symbol index is too large");
+    Key key = (c_ << indexBytes) | j_;
+    return key;
+  }
+
   // Testable Requirements
   void print(const std::string& s = "") const {
     std::cout << s << ": " << (std::string) (*this) << std::endl;

@@ -50,7 +50,7 @@ public:
 	 * @param landmarkKey the landmark variable key
 	 * @param K the constant calibration
 	 */
-	GenericStereoFactor(const StereoPoint2& measured, const SharedNoiseModel& model, const Symbol& poseKey, const Symbol& landmarkKey, const shared_ptrKStereo& K) :
+	GenericStereoFactor(const StereoPoint2& measured, const SharedNoiseModel& model, Key poseKey, Key landmarkKey, const shared_ptrKStereo& K) :
 		Base(model, poseKey, landmarkKey), measured_(measured), K_(K) {
 	}
 

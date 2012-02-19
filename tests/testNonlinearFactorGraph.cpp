@@ -64,9 +64,9 @@ TEST( Graph, error )
 TEST( Graph, keys )
 {
 	Graph fg = createNonlinearFactorGraph();
-	set<Symbol> actual = fg.keys();
+	set<Key> actual = fg.keys();
 	LONGS_EQUAL(3, actual.size());
-	set<Symbol>::const_iterator it = actual.begin();
+	set<Key>::const_iterator it = actual.begin();
 	CHECK(assert_equal(Symbol('l', 1), *(it++)));
 	CHECK(assert_equal(Symbol('x', 1), *(it++)));
 	CHECK(assert_equal(Symbol('x', 2), *(it++)));

@@ -64,7 +64,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  bool Values::exists(const Symbol& j) const {
+  bool Values::exists(Key j) const {
     return values_.find(j) != values_.end();
   }
 
@@ -79,7 +79,7 @@ namespace gtsam {
 
     for(const_iterator key_value = begin(); key_value != end(); ++key_value) {
       const SubVector& singleDelta = delta[ordering[key_value->first]]; // Delta for this value
-      Symbol key = key_value->first;  // Non-const duplicate to deal with non-const insert argument
+      Key key = key_value->first;  // Non-const duplicate to deal with non-const insert argument
       Value* retractedValue(key_value->second.retract_(singleDelta)); // Retract
       result.values_.insert(key, retractedValue); // Add retracted result directly to result values
     }
@@ -107,8 +107,8 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  void Values::insert(const Symbol& j, const Value& val) {
-  	Symbol key = j; // Non-const duplicate to deal with non-const insert argument
+  void Values::insert(Key j, const Value& val) {
+  	Key key = j; // Non-const duplicate to deal with non-const insert argument
   	std::pair<iterator,bool> insertResult = values_.insert(key, val.clone_());
   	if(!insertResult.second)
   		throw ValuesKeyAlreadyExists(j);
@@ -117,13 +117,13 @@ namespace gtsam {
   /* ************************************************************************* */
   void Values::insert(const Values& values) {
     for(const_iterator key_value = values.begin(); key_value != values.end(); ++key_value) {
-      Symbol key = key_value->first; // Non-const duplicate to deal with non-const insert argument
+      Key key = key_value->first; // Non-const duplicate to deal with non-const insert argument
       insert(key, key_value->second);
     }
   }
 
   /* ************************************************************************* */
-  void Values::update(const Symbol& j, const Value& val) {
+  void Values::update(Key j, const Value& val) {
   	// Find the value to update
   	KeyValueMap::iterator item = values_.find(j);
   	if(item == values_.end())
@@ -144,7 +144,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  void Values::erase(const Symbol& j) {
+  void Values::erase(Key j) {
     KeyValueMap::iterator item = values_.find(j);
     if(item == values_.end())
       throw ValuesKeyDoesNotExist("erase", j);
@@ -152,8 +152,8 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  FastList<Symbol> Values::keys() const {
-    FastList<Symbol> result;
+  FastList<Key> Values::keys() const {
+    FastList<Key> result;
     for(const_iterator key_value = begin(); key_value != end(); ++key_value)
       result.push_back(key_value->first);
     return result;

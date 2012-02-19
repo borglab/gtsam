@@ -60,7 +60,7 @@ namespace gtsam {
 		 * constructor with just minimum requirements for a factor - allows more
 		 * computation in the constructor.  This should only be used by subclasses
 		 */
-		PartialPriorFactor(const Symbol& key, const SharedNoiseModel& model)
+		PartialPriorFactor(Key key, const SharedNoiseModel& model)
 		  : Base(model, key) {}
 
 	public:
@@ -71,14 +71,14 @@ namespace gtsam {
 		virtual ~PartialPriorFactor() {}
 
 		/** Single Element Constructor: acts on a single parameter specified by idx */
-		PartialPriorFactor(const Symbol& key, size_t idx, double prior, const SharedNoiseModel& model) :
+		PartialPriorFactor(Key key, size_t idx, double prior, const SharedNoiseModel& model) :
 			Base(model, key), prior_(Vector_(1, prior)), mask_(1, idx), H_(zeros(1, T::Dim())) {
 			assert(model->dim() == 1);
 			this->fillH();
 		}
 
 		/** Indices Constructor: specify the mask with a set of indices */
-		PartialPriorFactor(const Symbol& key, const std::vector<size_t>& mask, const Vector& prior,
+		PartialPriorFactor(Key key, const std::vector<size_t>& mask, const Vector& prior,
 				const SharedNoiseModel& model) :
 			Base(model, key), prior_(prior), mask_(mask), H_(zeros(mask.size(), T::Dim())) {
 			assert((size_t)prior_.size() == mask.size());

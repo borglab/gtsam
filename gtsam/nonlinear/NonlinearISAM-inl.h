@@ -50,7 +50,7 @@ void NonlinearISAM<GRAPH>::update(const Factors& newFactors,
     // Augment ordering
     // FIXME: should just loop over new values
     BOOST_FOREACH(const typename Factors::sharedFactor& factor, newFactors)
-      BOOST_FOREACH(const Symbol& key, factor->keys())
+      BOOST_FOREACH(Key key, factor->keys())
         ordering_.tryInsert(key, ordering_.nVars()); // will do nothing if already present
 
     boost::shared_ptr<GaussianFactorGraph> linearizedNewFactors(
@@ -99,7 +99,7 @@ Values NonlinearISAM<GRAPH>::estimate() const {
 
 /* ************************************************************************* */
 template<class GRAPH>
-Matrix NonlinearISAM<GRAPH>::marginalCovariance(const Symbol& key) const {
+Matrix NonlinearISAM<GRAPH>::marginalCovariance(Key key) const {
 	return isam_.marginalCovariance(ordering_[key]);
 }
 

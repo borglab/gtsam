@@ -121,7 +121,7 @@ namespace gtsam {
   ///* ************************************************************************* */
   //boost::shared_ptr<VectorValues> optimize2(const GaussianISAM2::sharedClique& root) {
   //	boost::shared_ptr<VectorValues> delta(new VectorValues());
-  //	set<Symbol> changed;
+  //	set<Key> changed;
   //	// starting from the root, call optimize on each conditional
   //	optimize2(root, delta);
   //	return delta;

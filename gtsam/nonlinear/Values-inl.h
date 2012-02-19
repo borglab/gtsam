@@ -43,11 +43,11 @@ namespace gtsam {
 #if 0
   /* ************************************************************************* */
   class ValueAutomaticCasting {
-    const Symbol& key_;
+    Key key_;
     const Value& value_;
 
   public:
-    ValueAutomaticCasting(const Symbol& key, const Value& value) : key_(key), value_(value) {}
+    ValueAutomaticCasting(Key key, const Value& value) : key_(key), value_(value) {}
 
     template<class ValueType>
     class ConvertibleToValue : public ValueType {
@@ -67,7 +67,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<typename ValueType>
-  const ValueType& Values::at(const Symbol& j) const {
+  const ValueType& Values::at(Key j) const {
     // Find the item
     KeyValueMap::const_iterator item = values_.find(j);
 
@@ -85,7 +85,7 @@ namespace gtsam {
 
 #if 0
   /* ************************************************************************* */
-  inline ValueAutomaticCasting Values::at(const Symbol& j) const {
+  inline ValueAutomaticCasting Values::at(Key j) const {
     // Find the item
     KeyValueMap::const_iterator item = values_.find(j);
 
@@ -97,26 +97,16 @@ namespace gtsam {
   }
 #endif
 
-  /* ************************************************************************* */
-  template<typename TypedKey>
-  const typename TypedKey::Value& Values::at(const TypedKey& j) const {
-    // Convert to Symbol
-    const Symbol symbol(j.symbol());
-
-    // Call at with the Value type from the key
-    return at<typename TypedKey::Value>(symbol);
-  }
-
 #if 0
   /* ************************************************************************* */
-  inline ValueAutomaticCasting Values::operator[](const Symbol& j) const {
+  inline ValueAutomaticCasting Values::operator[](Key j) const {
     return at(j);
   }
 #endif
 
   /* ************************************************************************* */
   template<typename ValueType>
-  boost::optional<const ValueType&> Values::exists(const Symbol& j) const {
+  boost::optional<const ValueType&> Values::exists(Key j) const {
     // Find the item
     KeyValueMap::const_iterator item = values_.find(j);
 
@@ -130,16 +120,6 @@ namespace gtsam {
     } else {
       return boost::none;
     }
-  }
-
-  /* ************************************************************************* */
-  template<class TypedKey>
-  boost::optional<const typename TypedKey::Value&> Values::exists(const TypedKey& j) const {
-    // Convert to Symbol
-    const Symbol symbol(j.symbol());
-
-    // Call exists with the Value type from the key
-    return exists<typename TypedKey::Value>(symbol);
   }
 
 }

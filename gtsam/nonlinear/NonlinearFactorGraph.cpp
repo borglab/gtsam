@@ -49,8 +49,8 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	std::set<Symbol> NonlinearFactorGraph::keys() const {
-		std::set<Symbol> keys;
+	std::set<Key> NonlinearFactorGraph::keys() const {
+		std::set<Key> keys;
 		BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
 		  if(factor)
 		    keys.insert(factor->begin(), factor->end());

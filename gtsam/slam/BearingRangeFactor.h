@@ -50,7 +50,7 @@ namespace gtsam {
 	public:
 
 		BearingRangeFactor() {} /* Default constructor */
-		BearingRangeFactor(const Symbol& poseKey, const Symbol& pointKey, const Rot& measuredBearing, const double measuredRange,
+		BearingRangeFactor(Key poseKey, Key pointKey, const Rot& measuredBearing, const double measuredRange,
 				const SharedNoiseModel& model) :
 					Base(model, poseKey, pointKey), measuredBearing_(measuredBearing), measuredRange_(measuredRange) {
 		}

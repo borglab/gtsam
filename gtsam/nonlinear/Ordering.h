@@ -17,9 +17,8 @@
 
 #pragma once
 
-#include <map>
 #include <set>
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/base/FastMap.h>
 #include <gtsam/inference/inference.h>
 
 #include <boost/foreach.hpp>
@@ -34,8 +33,7 @@ namespace gtsam {
  */
 class Ordering {
 protected:
-  typedef boost::fast_pool_allocator<std::pair<const Symbol, Index> > Allocator;
-  typedef std::map<Symbol, Index, std::less<Symbol>, Allocator> Map;
+  typedef FastMap<Key, Index> Map;
   Map order_;
   Index nVars_;
 
@@ -43,7 +41,7 @@ public:
 
   typedef boost::shared_ptr<Ordering> shared_ptr;
 
-  typedef std::pair<const Symbol, Index> value_type;
+  typedef std::pair<const Key, Index> value_type;
   typedef Map::iterator iterator;
   typedef Map::const_iterator const_iterator;
 
@@ -54,7 +52,7 @@ public:
   Ordering() : nVars_(0) {}
 
   /// Construct from list, assigns order indices sequentially to list items.
-  Ordering(const std::list<Symbol> & L) ;
+  Ordering(const std::list<Key> & L) ;
 
 	/// @}
 	/// @name Standard Interface
@@ -69,7 +67,7 @@ public:
   const_iterator begin() const { return order_.begin(); } /**< Iterator in order of sorted symbols, not in elimination/index order! */
   const_iterator end() const { return order_.end(); } /**< Iterator in order of sorted symbols, not in elimination/index order! */
 
-  Index at(const Symbol& key) const { return operator[](key); } ///< Synonym for operator[](const Symbol&) const
+  Index at(Key key) const { return operator[](key); } ///< Synonym for operator[](Key) const
 
   /** Assigns the ordering index of the requested \c key into \c index if the symbol
    * is present in the ordering, otherwise does not modify \c index.  The
@@ -79,7 +77,7 @@ public:
    * @param [out] index Reference into which to write the index of the requested key, if the key is present.
    * @return true if the key is present and \c index was modified, false otherwise.
    */
-  bool tryAt(const Symbol& key, Index& index) const {
+  bool tryAt(Key key, Index& index) const {
     const_iterator i = order_.find(key);
     if(i != order_.end()) {
       index = i->second;
@@ -91,7 +89,7 @@ public:
   /// Access the index for the requested key, throws std::out_of_range if the
   /// key is not present in the ordering (note that this differs from the
   /// behavior of std::map)
-  Index& operator[](const Symbol& key) {
+  Index& operator[](Key key) {
     iterator i=order_.find(key);
     if(i == order_.end())  throw std::out_of_range(std::string());
     else                   return i->second; }
@@ -99,7 +97,7 @@ public:
   /// Access the index for the requested key, throws std::out_of_range if the
   /// key is not present in the ordering (note that this differs from the
   /// behavior of std::map)
-  Index operator[](const Symbol& key) const {
+  Index operator[](Key key) const {
     const_iterator i=order_.find(key);
     if(i == order_.end())  throw std::out_of_range(std::string());
     else                   return i->second; }
@@ -110,7 +108,7 @@ public:
    * @return An iterator pointing to the symbol/index pair with the requested,
    * or the end iterator if it does not exist.
    */
-  iterator find(const Symbol& key) { return order_.find(key); }
+  iterator find(Key key) { return order_.find(key); }
 
   /** Returns an iterator pointing to the symbol/index pair with the requested,
    * or the end iterator if it does not exist.
@@ -118,7 +116,7 @@ public:
    * @return An iterator pointing to the symbol/index pair with the requested,
    * or the end iterator if it does not exist.
    */
-  const_iterator find(const Symbol& key) const { return order_.find(key); }
+  const_iterator find(Key key) const { return order_.find(key); }
 
   /**
    * Attempts to insert a symbol/order pair with same semantics as stl::Map::insert(),
@@ -153,22 +151,22 @@ public:
   iterator end() { return order_.end(); }
 
   /// Test if the key exists in the ordering.
-  bool exists(const Symbol& key) const { return order_.count(key); }
+  bool exists(Key key) const { return order_.count(key); }
 
   ///TODO: comment
-  std::pair<iterator,bool> tryInsert(const Symbol& key, Index order) { return tryInsert(std::make_pair(key,order)); }
+  std::pair<iterator,bool> tryInsert(Key key, Index order) { return tryInsert(std::make_pair(key,order)); }
 
   ///TODO: comment
-  iterator insert(const Symbol& key, Index order) { return insert(std::make_pair(key,order)); }
+  iterator insert(Key key, Index order) { return insert(std::make_pair(key,order)); }
 
   /// Adds a new key to the ordering with an index of one greater than the current highest index.
-  Index push_back(const Symbol& key) { return insert(std::make_pair(key, nVars_))->second; }
+  Index push_back(Key key) { return insert(std::make_pair(key, nVars_))->second; }
 
   /** Remove the last (last-ordered, not highest-sorting key) symbol/index pair
    * from the ordering (this version is \f$ O(n) \f$, use it when you do not
    * know the last-ordered key).
    *
-   * If you already know the last-ordered symbol, call popback(const Symbol&)
+   * If you already know the last-ordered symbol, call popback(Key)
    * that accepts this symbol as an argument.
    *
    * @return The symbol and index that were removed.
@@ -183,15 +181,15 @@ public:
    *
    * @return The index of the symbol that was removed.
    */
-  Index pop_back(const Symbol& key);
+  Index pop_back(Key key);
 
   /**
    * += operator allows statements like 'ordering += x0,x1,x2,x3;', which are
    * very useful for unit tests.  This functionality is courtesy of
    * boost::assign.
    */
-  inline boost::assign::list_inserter<boost::assign_detail::call_push_back<Ordering>, Symbol>
-  operator+=(const Symbol& key) {
+  inline boost::assign::list_inserter<boost::assign_detail::call_push_back<Ordering>, Key>
+  operator+=(Key key) {
     return boost::assign::make_list_inserter(boost::assign_detail::call_push_back<Ordering>(*this))(key); }
 
   /**
@@ -201,8 +199,8 @@ public:
    */
   void permuteWithInverse(const Permutation& inversePermutation);
 
-  /// Synonym for operator[](const Symbol&)
-  Index& at(const Symbol& key) { return operator[](key); }
+  /// Synonym for operator[](Key)
+  Index& at(Key key) { return operator[](key); }
 
 	/// @}
 	/// @name Testable

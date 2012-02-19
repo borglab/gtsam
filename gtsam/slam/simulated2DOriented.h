@@ -83,7 +83,7 @@ namespace simulated2DOriented {
     Pose2 measured_; ///< measurement
 
     /// Create generic pose prior
-    GenericPosePrior(const Pose2& measured, const SharedNoiseModel& model, const Symbol& key) :
+    GenericPosePrior(const Pose2& measured, const SharedNoiseModel& model, Key key) :
       NonlinearFactor1<VALUE>(model, key), measured_(measured) {
     }
 
@@ -106,7 +106,7 @@ namespace simulated2DOriented {
      * Creates an odometry factor between two poses
      */
     GenericOdometry(const Pose2& measured, const SharedNoiseModel& model,
-        const Symbol& i1, const Symbol& i2) :
+        Key i1, Key i2) :
           NonlinearFactor2<VALUE, VALUE>(model, i1, i2), measured_(measured) {
     }
 

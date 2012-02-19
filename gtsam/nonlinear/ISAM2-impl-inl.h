@@ -155,7 +155,7 @@ template<class CONDITIONAL, class GRAPH>
 FastSet<Index> ISAM2<CONDITIONAL,GRAPH>::Impl::IndicesFromFactors(const Ordering& ordering, const GRAPH& factors) {
   FastSet<Index> indices;
   BOOST_FOREACH(const typename NonlinearFactor::shared_ptr& factor, factors) {
-    BOOST_FOREACH(const Symbol& key, factor->keys()) {
+    BOOST_FOREACH(Key key, factor->keys()) {
       indices.insert(ordering[key]);
     }
   }

@@ -26,9 +26,9 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-Ordering::Ordering(const std::list<Symbol> & L):nVars_(0) {
+Ordering::Ordering(const std::list<Key> & L):nVars_(0) {
 	int i = 0;
-	BOOST_FOREACH( const Symbol& s, L )
+	BOOST_FOREACH( Key s, L )
 	  insert(s, i++) ;
 }
 
@@ -70,7 +70,7 @@ Ordering::value_type Ordering::pop_back() {
 }
 
 /* ************************************************************************* */
-Index Ordering::pop_back(const Symbol& key) {
+Index Ordering::pop_back(Key key) {
   Map::iterator item = order_.find(key);
   if(item == order_.end()) {
     throw invalid_argument("Attempting to remove a key from an ordering that does not contain that key");

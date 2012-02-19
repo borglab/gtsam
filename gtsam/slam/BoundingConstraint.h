@@ -37,7 +37,7 @@ struct BoundingConstraint1: public NonlinearFactor1<VALUE> {
 	double threshold_;
 	bool isGreaterThan_; /// flag for greater/less than
 
-	BoundingConstraint1(const Symbol& key, double threshold,
+	BoundingConstraint1(Key key, double threshold,
 			bool isGreaterThan, double mu = 1000.0) :
 				Base(noiseModel::Constrained::All(1, mu), key),
 				threshold_(threshold), isGreaterThan_(isGreaterThan) {
@@ -106,7 +106,7 @@ struct BoundingConstraint2: public NonlinearFactor2<VALUE1, VALUE2> {
 	double threshold_;
 	bool isGreaterThan_; /// flag for greater/less than
 
-	BoundingConstraint2(const Symbol& key1, const Symbol& key2, double threshold,
+	BoundingConstraint2(Key key1, Key key2, double threshold,
 			bool isGreaterThan, double mu = 1000.0)
 	: Base(noiseModel::Constrained::All(1, mu), key1, key2),
 	  threshold_(threshold), isGreaterThan_(isGreaterThan) {}

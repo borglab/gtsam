@@ -129,7 +129,7 @@ namespace simulated2D {
     Pose measured_; ///< prior mean
 
     /// Create generic prior
-    GenericPrior(const Pose& z, const SharedNoiseModel& model, const Symbol& key) :
+    GenericPrior(const Pose& z, const SharedNoiseModel& model, Key key) :
       Base(model, key), measured_(z) {
     }
 
@@ -166,7 +166,7 @@ namespace simulated2D {
     Pose measured_; ///< odometry measurement
 
     /// Create odometry
-    GenericOdometry(const Pose& measured, const SharedNoiseModel& model, const Symbol& key1, const Symbol& key2) :
+    GenericOdometry(const Pose& measured, const SharedNoiseModel& model, Key key1, Key key2) :
           Base(model, key1, key2), measured_(measured) {
     }
 
@@ -206,7 +206,7 @@ namespace simulated2D {
     Landmark measured_; ///< Measurement
 
     /// Create measurement factor
-    GenericMeasurement(const Landmark& measured, const SharedNoiseModel& model, const Symbol& poseKey, const Symbol& landmarkKey) :
+    GenericMeasurement(const Landmark& measured, const SharedNoiseModel& model, Key poseKey, Key landmarkKey) :
           Base(model, poseKey, landmarkKey), measured_(measured) {
     }
 

@@ -369,7 +369,7 @@ public:
    */
   ISAM2Result update(const GRAPH& newFactors = GRAPH(), const Values& newTheta = Values(),
       const FastVector<size_t>& removeFactorIndices = FastVector<size_t>(),
-      const boost::optional<FastSet<Symbol> >& constrainedKeys = boost::none,
+      const boost::optional<FastSet<Key> >& constrainedKeys = boost::none,
       bool force_relinearize = false);
 
   /** Access the current linearization point */

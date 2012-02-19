@@ -37,11 +37,11 @@ private:
 	Map values_;
 
 public:
-	typedef pair<Symbol, T> value_type;
+	typedef pair<Key, T> value_type;
 
 	SymbolMapExp() {}
 
-	T& at(const Symbol& key) {
+	T& at(Key key) {
 		typename Map::iterator it = values_.find(key.chr());
 		if(it != values_.end())
 			return it->second.at(key.index());
@@ -49,7 +49,7 @@ public:
 			throw invalid_argument("Key " + (string)key + " not present");
 	}
 
-	void set(const Symbol& key, const T& value) {
+	void set(Key key, const T& value) {
 		Vec& vec(values_[key.chr()]);
 		//vec.reserve(10000);
 		if(key.index() >= vec.size()) {
@@ -62,13 +62,13 @@ public:
 };
 
 template<class T>
-class SymbolMapBinary : public std::map<Symbol, T> {
+class SymbolMapBinary : public std::map<Key, T> {
 private:
-	typedef std::map<Symbol, T> Base;
+	typedef std::map<Key, T> Base;
 public:
-	SymbolMapBinary() : std::map<Symbol, T>() {}
+	SymbolMapBinary() : std::map<Key, T>() {}
 
-	T& at(const Symbol& key) {
+	T& at(Key key) {
 		typename Base::iterator it = Base::find(key);
 		if (it == Base::end())
 			throw(std::invalid_argument("SymbolMap::[] invalid key: " + (std::string)key));
@@ -76,8 +76,8 @@ public:
 	}
 };
 
-struct SymbolHash : public std::unary_function<Symbol, std::size_t> {
-	std::size_t operator()(Symbol const& x) const {
+struct SymbolHash : public std::unary_function<Key, std::size_t> {
+	std::size_t operator()(Key const& x) const {
 		std::size_t seed = 0;
 		boost::hash_combine(seed, x.chr());
 		boost::hash_combine(seed, x.index());
@@ -86,9 +86,9 @@ struct SymbolHash : public std::unary_function<Symbol, std::size_t> {
 };
 
 template<class T>
-class SymbolMapHash : public boost::unordered_map<Symbol, T, SymbolHash> {
+class SymbolMapHash : public boost::unordered_map<Key, T, SymbolHash> {
 public:
-	SymbolMapHash() : boost::unordered_map<Symbol, T, SymbolHash>(60000) {}
+	SymbolMapHash() : boost::unordered_map<Key, T, SymbolHash>(60000) {}
 };
 
 struct Value {
@@ -107,7 +107,7 @@ int main(int argc, char *argv[]) {
 
 	// pre-allocate
 	cout << "Generating test data ..." << endl;
-	vector<pair<Symbol, Value> > values;
+	vector<pair<Key, Value> > values;
 	for(size_t i=0; i<ELEMS; i++) {
 		values.push_back(make_pair(Symbol('a',i), (double)i));
 		values.push_back(make_pair(Symbol('b',i), (double)i));
