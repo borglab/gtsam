@@ -120,9 +120,9 @@ namespace simulated2D {
    *  Unary factor encoding a soft prior on a vector
    */
   template<class VALUE = Point2>
-  class GenericPrior: public NonlinearFactor1<VALUE> {
+  class GenericPrior: public NoiseModelFactor1<VALUE> {
   public:
-    typedef NonlinearFactor1<VALUE> Base;  ///< base class
+    typedef NoiseModelFactor1<VALUE> Base;  ///< base class
     typedef boost::shared_ptr<GenericPrior<VALUE> > shared_ptr;
     typedef VALUE Pose; ///< shortcut to Pose type
 
@@ -157,9 +157,9 @@ namespace simulated2D {
    * Binary factor simulating "odometry" between two Vectors
    */
   template<class VALUE = Point2>
-  class GenericOdometry: public NonlinearFactor2<VALUE, VALUE> {
+  class GenericOdometry: public NoiseModelFactor2<VALUE, VALUE> {
   public:
-    typedef NonlinearFactor2<VALUE, VALUE> Base; ///< base class
+    typedef NoiseModelFactor2<VALUE, VALUE> Base; ///< base class
     typedef boost::shared_ptr<GenericOdometry<VALUE> > shared_ptr;
     typedef VALUE Pose; ///< shortcut to Pose type
 
@@ -196,9 +196,9 @@ namespace simulated2D {
    * Binary factor simulating "measurement" between two Vectors
    */
   template<class POSE, class LANDMARK>
-  class GenericMeasurement: public NonlinearFactor2<POSE, LANDMARK> {
+  class GenericMeasurement: public NoiseModelFactor2<POSE, LANDMARK> {
   public:
-    typedef NonlinearFactor2<POSE, LANDMARK> Base;  ///< base class
+    typedef NoiseModelFactor2<POSE, LANDMARK> Base;  ///< base class
     typedef boost::shared_ptr<GenericMeasurement<POSE, LANDMARK> > shared_ptr;
     typedef POSE Pose; ///< shortcut to Pose type
     typedef LANDMARK Landmark; ///< shortcut to Landmark type

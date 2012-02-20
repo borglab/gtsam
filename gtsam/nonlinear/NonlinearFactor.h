@@ -294,7 +294,7 @@ private:
 /** A convenient base class for creating your own NoiseModelFactor with 1
  * variable.  To derive from this class, implement evaluateError(). */
 template<class VALUE>
-class NonlinearFactor1: public NoiseModelFactor {
+class NoiseModelFactor1: public NoiseModelFactor {
 
 public:
 
@@ -304,14 +304,14 @@ public:
 protected:
 
   typedef NoiseModelFactor Base;
-  typedef NonlinearFactor1<VALUE> This;
+  typedef NoiseModelFactor1<VALUE> This;
 
 public:
 
   /** Default constructor for I/O only */
-  NonlinearFactor1() {}
+  NoiseModelFactor1() {}
 
-  virtual ~NonlinearFactor1() {}
+  virtual ~NoiseModelFactor1() {}
 
   inline Key key() const { return keys_[0]; }
 
@@ -320,7 +320,7 @@ public:
    *  @param z measurement
    *  @param key by which to look up X value in Values
    */
-  NonlinearFactor1(const SharedNoiseModel& noiseModel, Key key1) :
+  NoiseModelFactor1(const SharedNoiseModel& noiseModel, Key key1) :
     Base(noiseModel) {
     keys_.resize(1);
     keys_[0] = key1;
@@ -364,14 +364,14 @@ private:
     ar & boost::serialization::make_nvp("NoiseModelFactor",
         boost::serialization::base_object<Base>(*this));
   }
-};// \class NonlinearFactor1
+};// \class NoiseModelFactor1
 
 
 /* ************************************************************************* */
 /** A convenient base class for creating your own NoiseModelFactor with 2
  * variables.  To derive from this class, implement evaluateError(). */
 template<class VALUE1, class VALUE2>
-class NonlinearFactor2: public NoiseModelFactor {
+class NoiseModelFactor2: public NoiseModelFactor {
 
 public:
 
@@ -382,28 +382,28 @@ public:
 protected:
 
   typedef NoiseModelFactor Base;
-  typedef NonlinearFactor2<VALUE1, VALUE2> This;
+  typedef NoiseModelFactor2<VALUE1, VALUE2> This;
 
 public:
 
   /**
    * Default Constructor for I/O
    */
-  NonlinearFactor2() {}
+  NoiseModelFactor2() {}
 
   /**
    * Constructor
    * @param j1 key of the first variable
    * @param j2 key of the second variable
    */
-  NonlinearFactor2(const SharedNoiseModel& noiseModel, Key j1, Key j2) :
+  NoiseModelFactor2(const SharedNoiseModel& noiseModel, Key j1, Key j2) :
     Base(noiseModel) {
     keys_.resize(2);
     keys_[0] = j1;
     keys_[1] = j2;
   }
 
-  virtual ~NonlinearFactor2() {}
+  virtual ~NoiseModelFactor2() {}
 
   /** methods to retrieve both keys */
   inline Key key1() const { return keys_[0];	}
@@ -451,13 +451,13 @@ private:
     ar & boost::serialization::make_nvp("NoiseModelFactor",
         boost::serialization::base_object<Base>(*this));
   }
-}; // \class NonlinearFactor2
+}; // \class NoiseModelFactor2
 
 /* ************************************************************************* */
 /** A convenient base class for creating your own NoiseModelFactor with 3
  * variables.  To derive from this class, implement evaluateError(). */
 template<class VALUE1, class VALUE2, class VALUE3>
-class NonlinearFactor3: public NoiseModelFactor {
+class NoiseModelFactor3: public NoiseModelFactor {
 
 public:
 
@@ -469,14 +469,14 @@ public:
 protected:
 
   typedef NoiseModelFactor Base;
-  typedef NonlinearFactor3<VALUE1, VALUE2, VALUE3> This;
+  typedef NoiseModelFactor3<VALUE1, VALUE2, VALUE3> This;
 
 public:
 
   /**
    * Default Constructor for I/O
    */
-  NonlinearFactor3() {}
+  NoiseModelFactor3() {}
 
   /**
    * Constructor
@@ -484,7 +484,7 @@ public:
    * @param j2 key of the second variable
    * @param j3 key of the third variable
    */
-  NonlinearFactor3(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3) :
+  NoiseModelFactor3(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3) :
     Base(noiseModel) {
     keys_.resize(3);
     keys_[0] = j1;
@@ -492,7 +492,7 @@ public:
     keys_[2] = j3;
   }
 
-  virtual ~NonlinearFactor3() {}
+  virtual ~NoiseModelFactor3() {}
 
   /** methods to retrieve keys */
   inline Key key1() const { return keys_[0]; }
@@ -542,13 +542,13 @@ private:
     ar & boost::serialization::make_nvp("NoiseModelFactor",
         boost::serialization::base_object<Base>(*this));
   }
-}; // \class NonlinearFactor3
+}; // \class NoiseModelFactor3
 
 /* ************************************************************************* */
 /** A convenient base class for creating your own NoiseModelFactor with 4
  * variables.  To derive from this class, implement evaluateError(). */
 template<class VALUE1, class VALUE2, class VALUE3, class VALUE4>
-class NonlinearFactor4: public NoiseModelFactor {
+class NoiseModelFactor4: public NoiseModelFactor {
 
 public:
 
@@ -561,14 +561,14 @@ public:
 protected:
 
   typedef NoiseModelFactor Base;
-  typedef NonlinearFactor4<VALUE1, VALUE2, VALUE3, VALUE4> This;
+  typedef NoiseModelFactor4<VALUE1, VALUE2, VALUE3, VALUE4> This;
 
 public:
 
   /**
    * Default Constructor for I/O
    */
-  NonlinearFactor4() {}
+  NoiseModelFactor4() {}
 
   /**
    * Constructor
@@ -577,7 +577,7 @@ public:
    * @param j3 key of the third variable
    * @param j4 key of the fourth variable
    */
-  NonlinearFactor4(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3, Key j4) :
+  NoiseModelFactor4(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3, Key j4) :
     Base(noiseModel) {
     keys_.resize(4);
     keys_[0] = j1;
@@ -586,7 +586,7 @@ public:
     keys_[3] = j4;
   }
 
-  virtual ~NonlinearFactor4() {}
+  virtual ~NoiseModelFactor4() {}
 
   /** methods to retrieve keys */
   inline Key key1() const { return keys_[0]; }
@@ -638,13 +638,13 @@ private:
     ar & boost::serialization::make_nvp("NoiseModelFactor",
         boost::serialization::base_object<Base>(*this));
   }
-}; // \class NonlinearFactor4
+}; // \class NoiseModelFactor4
 
 /* ************************************************************************* */
 /** A convenient base class for creating your own NoiseModelFactor with 5
  * variables.  To derive from this class, implement evaluateError(). */
 template<class VALUE1, class VALUE2, class VALUE3, class VALUE4, class VALUE5>
-class NonlinearFactor5: public NoiseModelFactor {
+class NoiseModelFactor5: public NoiseModelFactor {
 
 public:
 
@@ -658,14 +658,14 @@ public:
 protected:
 
   typedef NoiseModelFactor Base;
-  typedef NonlinearFactor5<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5> This;
+  typedef NoiseModelFactor5<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5> This;
 
 public:
 
   /**
    * Default Constructor for I/O
    */
-  NonlinearFactor5() {}
+  NoiseModelFactor5() {}
 
   /**
    * Constructor
@@ -675,7 +675,7 @@ public:
    * @param j4 key of the fourth variable
    * @param j5 key of the fifth variable
    */
-  NonlinearFactor5(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3, Key j4, Key j5) :
+  NoiseModelFactor5(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3, Key j4, Key j5) :
     Base(noiseModel) {
     keys_.resize(5);
     keys_[0] = j1;
@@ -685,7 +685,7 @@ public:
     keys_[4] = j5;
   }
 
-  virtual ~NonlinearFactor5() {}
+  virtual ~NoiseModelFactor5() {}
 
   /** methods to retrieve keys */
   inline Key key1() const { return keys_[0]; }
@@ -740,13 +740,13 @@ private:
     ar & boost::serialization::make_nvp("NoiseModelFactor",
         boost::serialization::base_object<Base>(*this));
   }
-}; // \class NonlinearFactor5
+}; // \class NoiseModelFactor5
 
 /* ************************************************************************* */
 /** A convenient base class for creating your own NoiseModelFactor with 6
  * variables.  To derive from this class, implement evaluateError(). */
 template<class VALUE1, class VALUE2, class VALUE3, class VALUE4, class VALUE5, class VALUE6>
-class NonlinearFactor6: public NoiseModelFactor {
+class NoiseModelFactor6: public NoiseModelFactor {
 
 public:
 
@@ -761,14 +761,14 @@ public:
 protected:
 
   typedef NoiseModelFactor Base;
-  typedef NonlinearFactor6<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5, VALUE6> This;
+  typedef NoiseModelFactor6<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5, VALUE6> This;
 
 public:
 
   /**
    * Default Constructor for I/O
    */
-  NonlinearFactor6() {}
+  NoiseModelFactor6() {}
 
   /**
    * Constructor
@@ -779,7 +779,7 @@ public:
    * @param j5 key of the fifth variable
    * @param j6 key of the fifth variable
    */
-  NonlinearFactor6(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3, Key j4, Key j5, Key j6) :
+  NoiseModelFactor6(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3, Key j4, Key j5, Key j6) :
     Base(noiseModel) {
     keys_.resize(6);
     keys_[0] = j1;
@@ -790,7 +790,7 @@ public:
     keys_[5] = j6;
   }
 
-  virtual ~NonlinearFactor6() {}
+  virtual ~NoiseModelFactor6() {}
 
   /** methods to retrieve keys */
   inline Key key1() const { return keys_[0]; }
@@ -848,7 +848,7 @@ private:
     ar & boost::serialization::make_nvp("NoiseModelFactor",
         boost::serialization::base_object<Base>(*this));
   }
-}; // \class NonlinearFactor6
+}; // \class NoiseModelFactor6
 
 /* ************************************************************************* */
 

@@ -31,7 +31,7 @@ namespace gtsam {
 	 */
 	template <class CAMERA, class LANDMARK>
 	class GeneralSFMFactor:
-	public NonlinearFactor2<CAMERA, LANDMARK> {
+	public NoiseModelFactor2<CAMERA, LANDMARK> {
 	protected:
 		Point2 measured_;			///< the 2D measurement
 
@@ -39,7 +39,7 @@ namespace gtsam {
 
 		typedef CAMERA Cam;					            					///< typedef for camera type
 		typedef GeneralSFMFactor<CAMERA, LANDMARK> This;	///< typedef for this object
-		typedef NonlinearFactor2<CAMERA, LANDMARK> Base;	///< typedef for the base class
+		typedef NoiseModelFactor2<CAMERA, LANDMARK> Base;	///< typedef for the base class
 		typedef Point2 Measurement;												///< typedef for the measurement
 
 		// shorthand for a smart pointer to a factor

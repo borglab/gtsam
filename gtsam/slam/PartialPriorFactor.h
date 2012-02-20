@@ -39,14 +39,14 @@ namespace gtsam {
 	 * construct the mask.
 	 */
 	template<class VALUE>
-	class PartialPriorFactor: public NonlinearFactor1<VALUE> {
+	class PartialPriorFactor: public NoiseModelFactor1<VALUE> {
 
 	public:
 		typedef VALUE T;
 
 	protected:
 
-		typedef NonlinearFactor1<VALUE> Base;
+		typedef NoiseModelFactor1<VALUE> Base;
 		typedef PartialPriorFactor<VALUE> This;
 
 		Vector prior_;             ///< measurement on logmap parameters, in compressed form
@@ -133,7 +133,7 @@ namespace gtsam {
 		friend class boost::serialization::access;
 		template<class ARCHIVE>
 		void serialize(ARCHIVE & ar, const unsigned int version) {
-			ar & boost::serialization::make_nvp("NonlinearFactor1",
+			ar & boost::serialization::make_nvp("NoiseModelFactor1",
 					boost::serialization::base_object<Base>(*this));
 			ar & BOOST_SERIALIZATION_NVP(prior_);
 			ar & BOOST_SERIALIZATION_NVP(mask_);

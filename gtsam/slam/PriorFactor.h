@@ -24,14 +24,14 @@ namespace gtsam {
 	 * A class for a soft prior on any Value type
 	 */
 	template<class VALUE>
-	class PriorFactor: public NonlinearFactor1<VALUE> {
+	class PriorFactor: public NoiseModelFactor1<VALUE> {
 
 	public:
 		typedef VALUE T;
 
 	private:
 
-		typedef NonlinearFactor1<VALUE> Base;
+		typedef NoiseModelFactor1<VALUE> Base;
 
 		VALUE prior_; /** The measurement */
 
@@ -86,7 +86,7 @@ namespace gtsam {
 		friend class boost::serialization::access;
 		template<class ARCHIVE>
 		void serialize(ARCHIVE & ar, const unsigned int version) {
-			ar & boost::serialization::make_nvp("NonlinearFactor1",
+			ar & boost::serialization::make_nvp("NoiseModelFactor1",
 					boost::serialization::base_object<Base>(*this));
 			ar & BOOST_SERIALIZATION_NVP(prior_);
 		}

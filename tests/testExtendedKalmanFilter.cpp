@@ -88,12 +88,12 @@ TEST( ExtendedKalmanFilter, linear ) {
 
 
 // Create Motion Model Factor
-class NonlinearMotionModel : public NonlinearFactor2<Point2,Point2> {
+class NonlinearMotionModel : public NoiseModelFactor2<Point2,Point2> {
 public:
   typedef Point2 T;
 
 private:
-  typedef NonlinearFactor2<Point2, Point2> Base;
+  typedef NoiseModelFactor2<Point2, Point2> Base;
   typedef NonlinearMotionModel This;
 
 protected:
@@ -235,13 +235,13 @@ public:
 };
 
 // Create Measurement Model Factor
-class NonlinearMeasurementModel : public NonlinearFactor1<Point2> {
+class NonlinearMeasurementModel : public NoiseModelFactor1<Point2> {
 public:
   typedef Point2 T;
 
 private:
 
-  typedef NonlinearFactor1<Point2> Base;
+  typedef NoiseModelFactor1<Point2> Base;
   typedef NonlinearMeasurementModel This;
 
 protected:

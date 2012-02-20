@@ -198,12 +198,12 @@ namespace example {
 					 0.0, cos(v.y()));
 		}
 
-		struct UnaryFactor: public gtsam::NonlinearFactor1<Point2> {
+		struct UnaryFactor: public gtsam::NoiseModelFactor1<Point2> {
 
 			Point2 z_;
 
 			UnaryFactor(const Point2& z, const SharedNoiseModel& model, Key key) :
-				gtsam::NonlinearFactor1<Point2>(model, key), z_(z) {
+				gtsam::NoiseModelFactor1<Point2>(model, key), z_(z) {
 			}
 
 			Vector evaluateError(const Point2& x, boost::optional<Matrix&> A = boost::none) const {

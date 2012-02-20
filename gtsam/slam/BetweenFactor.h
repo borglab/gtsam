@@ -29,7 +29,7 @@ namespace gtsam {
 	 * @tparam VALUE the Value type
 	 */
 	template<class VALUE>
-	class BetweenFactor: public NonlinearFactor2<VALUE, VALUE> {
+	class BetweenFactor: public NoiseModelFactor2<VALUE, VALUE> {
 
 	public:
 
@@ -38,7 +38,7 @@ namespace gtsam {
 	private:
 
 		typedef BetweenFactor<VALUE> This;
-		typedef NonlinearFactor2<VALUE, VALUE> Base;
+		typedef NoiseModelFactor2<VALUE, VALUE> Base;
 
 		VALUE measured_; /** The measurement */
 
@@ -106,7 +106,7 @@ namespace gtsam {
 		friend class boost::serialization::access;
 		template<class ARCHIVE>
 		void serialize(ARCHIVE & ar, const unsigned int version) {
-			ar & boost::serialization::make_nvp("NonlinearFactor2",
+			ar & boost::serialization::make_nvp("NoiseModelFactor2",
 					boost::serialization::base_object<Base>(*this));
 			ar & BOOST_SERIALIZATION_NVP(measured_);
 		}

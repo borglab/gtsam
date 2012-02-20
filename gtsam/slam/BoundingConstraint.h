@@ -29,9 +29,9 @@ namespace gtsam {
  * a scalar for comparison.
  */
 template<class VALUE>
-struct BoundingConstraint1: public NonlinearFactor1<VALUE> {
+struct BoundingConstraint1: public NoiseModelFactor1<VALUE> {
 	typedef VALUE X;
-	typedef NonlinearFactor1<VALUE> Base;
+	typedef NoiseModelFactor1<VALUE> Base;
 	typedef boost::shared_ptr<BoundingConstraint1<VALUE> > shared_ptr;
 
 	double threshold_;
@@ -84,7 +84,7 @@ private:
 	friend class boost::serialization::access;
 	template<class ARCHIVE>
 	void serialize(ARCHIVE & ar, const unsigned int version) {
-		ar & boost::serialization::make_nvp("NonlinearFactor1",
+		ar & boost::serialization::make_nvp("NoiseModelFactor1",
 				boost::serialization::base_object<Base>(*this));
 		ar & BOOST_SERIALIZATION_NVP(threshold_);
 		ar & BOOST_SERIALIZATION_NVP(isGreaterThan_);
@@ -96,11 +96,11 @@ private:
  * to implement for specific systems
  */
 template<class VALUE1, class VALUE2>
-struct BoundingConstraint2: public NonlinearFactor2<VALUE1, VALUE2> {
+struct BoundingConstraint2: public NoiseModelFactor2<VALUE1, VALUE2> {
 	typedef VALUE1 X1;
 	typedef VALUE2 X2;
 
-	typedef NonlinearFactor2<VALUE1, VALUE2> Base;
+	typedef NoiseModelFactor2<VALUE1, VALUE2> Base;
 	typedef boost::shared_ptr<BoundingConstraint2<VALUE1, VALUE2> > shared_ptr;
 
 	double threshold_;
@@ -157,7 +157,7 @@ private:
 	friend class boost::serialization::access;
 	template<class ARCHIVE>
 	void serialize(ARCHIVE & ar, const unsigned int version) {
-		ar & boost::serialization::make_nvp("NonlinearFactor2",
+		ar & boost::serialization::make_nvp("NoiseModelFactor2",
 				boost::serialization::base_object<Base>(*this));
 		ar & BOOST_SERIALIZATION_NVP(threshold_);
 		ar & BOOST_SERIALIZATION_NVP(isGreaterThan_);

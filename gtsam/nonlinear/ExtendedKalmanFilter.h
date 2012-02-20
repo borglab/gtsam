@@ -46,8 +46,8 @@ namespace gtsam {
 
 		typedef boost::shared_ptr<ExtendedKalmanFilter<VALUE> > shared_ptr;
 		typedef VALUE T;
-		typedef NonlinearFactor2<VALUE, VALUE> MotionFactor;
-		typedef NonlinearFactor1<VALUE> MeasurementFactor;
+		typedef NoiseModelFactor2<VALUE, VALUE> MotionFactor;
+		typedef NoiseModelFactor1<VALUE> MeasurementFactor;
 
 	protected:
 		T x_; // linearization point

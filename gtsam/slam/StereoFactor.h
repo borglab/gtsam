@@ -23,7 +23,7 @@
 namespace gtsam {
 
 template<class POSE, class LANDMARK>
-class GenericStereoFactor: public NonlinearFactor2<POSE, LANDMARK> {
+class GenericStereoFactor: public NoiseModelFactor2<POSE, LANDMARK> {
 private:
 
 	// Keep a copy of measurement and calibration for I/O
@@ -33,7 +33,7 @@ private:
 public:
 
 	// shorthand for base class type
-	typedef NonlinearFactor2<POSE, LANDMARK> Base;		     			///< typedef for base class
+	typedef NoiseModelFactor2<POSE, LANDMARK> Base;		     			///< typedef for base class
 	typedef boost::shared_ptr<GenericStereoFactor> shared_ptr;  ///< typedef for shared pointer to this object
 	typedef POSE CamPose;												///< typedef for Pose Lie Value type
 

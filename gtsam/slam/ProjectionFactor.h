@@ -30,7 +30,7 @@ namespace gtsam {
 	 * i.e. the main building block for visual SLAM.
 	 */
 	template<class POSE, class LANDMARK>
-	class GenericProjectionFactor: public NonlinearFactor2<POSE, LANDMARK> {
+	class GenericProjectionFactor: public NoiseModelFactor2<POSE, LANDMARK> {
 	protected:
 
 		// Keep a copy of measurement and calibration for I/O
@@ -40,7 +40,7 @@ namespace gtsam {
 	public:
 
 		/// shorthand for base class type
-		typedef NonlinearFactor2<POSE, LANDMARK> Base;
+		typedef NoiseModelFactor2<POSE, LANDMARK> Base;
 
 		/// shorthand for this class
 		typedef GenericProjectionFactor<POSE, LANDMARK> This;

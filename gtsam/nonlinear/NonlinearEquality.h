@@ -48,7 +48,7 @@ namespace gtsam {
 	 * \nosubgrouping
 	 */
 	template<class VALUE>
-	class NonlinearEquality: public NonlinearFactor1<VALUE> {
+	class NonlinearEquality: public NoiseModelFactor1<VALUE> {
 
 	public:
 		typedef VALUE T;
@@ -68,7 +68,7 @@ namespace gtsam {
 		typedef NonlinearEquality<VALUE> This;
 
 		// typedef to base class
-		typedef NonlinearFactor1<VALUE> Base;
+		typedef NoiseModelFactor1<VALUE> Base;
 
 	public:
 
@@ -169,7 +169,7 @@ namespace gtsam {
 		friend class boost::serialization::access;
 		template<class ARCHIVE>
 		void serialize(ARCHIVE & ar, const unsigned int version) {
-			ar & boost::serialization::make_nvp("NonlinearFactor1",
+			ar & boost::serialization::make_nvp("NoiseModelFactor1",
 					boost::serialization::base_object<Base>(*this));
 			ar & BOOST_SERIALIZATION_NVP(feasible_);
 			ar & BOOST_SERIALIZATION_NVP(allow_error_);
@@ -183,13 +183,13 @@ namespace gtsam {
 	 * Simple unary equality constraint - fixes a value for a variable
 	 */
 	template<class VALUE>
-	class NonlinearEquality1 : public NonlinearFactor1<VALUE> {
+	class NonlinearEquality1 : public NoiseModelFactor1<VALUE> {
 
 	public:
 		typedef VALUE X;
 
 	protected:
-		typedef NonlinearFactor1<VALUE> Base;
+		typedef NoiseModelFactor1<VALUE> Base;
 
 		/** default constructor to allow for serialization */
 		NonlinearEquality1() {}
@@ -230,7 +230,7 @@ namespace gtsam {
 		friend class boost::serialization::access;
 		template<class ARCHIVE>
 		void serialize(ARCHIVE & ar, const unsigned int version) {
-			ar & boost::serialization::make_nvp("NonlinearFactor1",
+			ar & boost::serialization::make_nvp("NoiseModelFactor1",
 					boost::serialization::base_object<Base>(*this));
 			ar & BOOST_SERIALIZATION_NVP(value_);
 		}
@@ -242,12 +242,12 @@ namespace gtsam {
 	 * be the same.
 	 */
 	template<class VALUE>
-	class NonlinearEquality2 : public NonlinearFactor2<VALUE, VALUE> {
+	class NonlinearEquality2 : public NoiseModelFactor2<VALUE, VALUE> {
 	public:
 		typedef VALUE X;
 
 	protected:
-		typedef NonlinearFactor2<VALUE, VALUE> Base;
+		typedef NoiseModelFactor2<VALUE, VALUE> Base;
 
 		GTSAM_CONCEPT_MANIFOLD_TYPE(X);
 
@@ -279,7 +279,7 @@ namespace gtsam {
 		friend class boost::serialization::access;
 		template<class ARCHIVE>
 		void serialize(ARCHIVE & ar, const unsigned int version) {
-			ar & boost::serialization::make_nvp("NonlinearFactor2",
+			ar & boost::serialization::make_nvp("NoiseModelFactor2",
 					boost::serialization::base_object<Base>(*this));
 		}
 	}; // \NonlinearEquality2

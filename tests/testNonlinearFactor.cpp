@@ -238,9 +238,9 @@ TEST( NonlinearFactor, linearize_constraint2 )
 }
 
 /* ************************************************************************* */
-class TestFactor4 : public NonlinearFactor4<LieVector, LieVector, LieVector, LieVector> {
+class TestFactor4 : public NoiseModelFactor4<LieVector, LieVector, LieVector, LieVector> {
 public:
-  typedef NonlinearFactor4<LieVector, LieVector, LieVector, LieVector> Base;
+  typedef NoiseModeFactor4<LieVector, LieVector, LieVector, LieVector> Base;
   TestFactor4() : Base(sharedSigmas(Vector_(1, 2.0)), "x1", "x2", "x3", "x4") {}
 
   virtual Vector
@@ -260,7 +260,7 @@ public:
 };
 
 /* ************************************ */
-TEST(NonlinearFactor, NonlinearFactor4) {
+TEST(NonlinearFactor, NoiseModelFactor4) {
   TestFactor4 tf;
   Values tv;
   tv.insert("x1", LieVector(1, 1.0));
@@ -283,9 +283,9 @@ TEST(NonlinearFactor, NonlinearFactor4) {
 }
 
 /* ************************************************************************* */
-class TestFactor5 : public NonlinearFactor5<LieVector, LieVector, LieVector, LieVector, LieVector> {
+class TestFactor5 : public NoiseModelFactor5<LieVector, LieVector, LieVector, LieVector, LieVector> {
 public:
-  typedef NonlinearFactor5<LieVector, LieVector, LieVector, LieVector, LieVector> Base;
+  typedef NoiseModelFactor5<LieVector, LieVector, LieVector, LieVector, LieVector> Base;
   TestFactor5() : Base(sharedSigmas(Vector_(1, 2.0)), "x1", "x2", "x3", "x4", "x5") {}
 
   virtual Vector
@@ -307,7 +307,7 @@ public:
 };
 
 /* ************************************ */
-TEST(NonlinearFactor, NonlinearFactor5) {
+TEST(NonlinearFactor, NoiseModelFactor5) {
   TestFactor5 tf;
   Values tv;
   tv.insert("x1", LieVector(1, 1.0));
@@ -333,9 +333,9 @@ TEST(NonlinearFactor, NonlinearFactor5) {
 }
 
 /* ************************************************************************* */
-class TestFactor6 : public NonlinearFactor6<LieVector, LieVector, LieVector, LieVector, LieVector, LieVector> {
+class TestFactor6 : public NoiseModelFactor6<LieVector, LieVector, LieVector, LieVector, LieVector, LieVector> {
 public:
-  typedef NonlinearFactor6<LieVector, LieVector, LieVector, LieVector, LieVector, LieVector> Base;
+  typedef NoiseModelFactor6<LieVector, LieVector, LieVector, LieVector, LieVector, LieVector> Base;
   TestFactor6() : Base(sharedSigmas(Vector_(1, 2.0)), "x1", "x2", "x3", "x4", "x5", "x6") {}
 
   virtual Vector
@@ -359,7 +359,7 @@ public:
 };
 
 /* ************************************ */
-TEST(NonlinearFactor, NonlinearFactor6) {
+TEST(NonlinearFactor, NoiseModelFactor6) {
   TestFactor6 tf;
   Values tv;
   tv.insert("x1", LieVector(1, 1.0));
