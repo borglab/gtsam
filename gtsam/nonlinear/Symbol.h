@@ -119,6 +119,11 @@ public:
     return (*this) == expected;
   }
 
+  /** Format function that can be passed to print functions in nonlinear */
+  static std::string format(Key key) {
+    return (std::string)Symbol(key);
+  }
+
   /** Retrieve key character */
   unsigned char chr() const {
     return c_;

@@ -24,6 +24,7 @@
 #include <limits>
 
 #include <boost/serialization/base_object.hpp>
+#include <boost/function.hpp>
 
 #include <gtsam/inference/Factor-inl.h>
 #include <gtsam/inference/IndexFactor.h>
@@ -78,7 +79,8 @@ public:
 	/// @{
 
   /** print */
-  virtual void print(const std::string& s = "") const {
+  virtual void print(const std::string& s = "",
+      const boost::function<std::string(Key)>& keyFormatter = &Symbol::format) const {
     std::cout << s << ": NonlinearFactor\n";
   }
 
