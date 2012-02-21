@@ -30,6 +30,7 @@
 #include <boost/pool/pool_alloc.hpp>
 #include <boost/ptr_container/ptr_map.hpp>
 #include <boost/iterator/transform_iterator.hpp>
+#include <boost/iterator/filter_iterator.hpp>
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
 #include <boost/ptr_container/serialize_ptr_map.hpp>
@@ -81,18 +82,19 @@ namespace gtsam {
     /// A shared_ptr to this class
     typedef boost::shared_ptr<Values> shared_ptr;
 
-    /// A pair of const references to the key and value, the dereferenced type of the const_iterator and const_reverse_iterator
-    struct ConstKeyValuePair {
-      const Key first;
-      const Value& second;
-      ConstKeyValuePair(Key key, const Value& value) : first(key), second(value) {}
-    };
-
     /// A pair of references to the key and value, the dereferenced type of the iterator and reverse_iterator
     struct KeyValuePair {
       const Key first;
       Value& second;
       KeyValuePair(Key key, Value& value) : first(key), second(value) {}
+    };
+
+    /// A pair of const references to the key and value, the dereferenced type of the const_iterator and const_reverse_iterator
+    struct ConstKeyValuePair {
+      const Key first;
+      const Value& second;
+      ConstKeyValuePair(Key key, const Value& value) : first(key), second(value) {}
+      ConstKeyValuePair(const KeyValuePair& key_value) : first(key_value.first), second(key_value.second) {}
     };
 
     /// Mutable forward iterator, with value type KeyValuePair
@@ -110,6 +112,28 @@ namespace gtsam {
     /// Const reverse iterator, with value type ConstKeyValuePair
     typedef boost::transform_iterator<
         boost::function1<ConstKeyValuePair, const ConstKeyValuePtrPair&>, KeyValueMap::const_reverse_iterator> const_reverse_iterator;
+
+    /// Mutable filtered iterator
+    typedef boost::filter_iterator<boost::function<bool(const KeyValuePair&)>, iterator> filter_iterator;
+
+    /// Const filtered iterator
+    typedef boost::filter_iterator<boost::function<bool(const ConstKeyValuePair&)>, const_iterator> const_filter_iterator;
+
+    /// Mutable type-filtered iterator
+    template<class ValueType>
+    struct type_filter_iterator {
+      typedef boost::transform_iterator<
+          std::pair<const Key, ValueType&>(*)(KeyValuePair),
+          boost::filter_iterator<bool(*)(const KeyValuePair&), iterator> > type;
+    };
+
+    /// Const type-filtered iterator
+    template<class ValueType>
+    struct const_type_filter_iterator {
+      typedef boost::transform_iterator<
+          std::pair<const Key, const ValueType&>(*)(ConstKeyValuePair),
+          boost::filter_iterator<bool(*)(const ConstKeyValuePair&), const_iterator> > type;
+    };
 
     /** Default constructor creates an empty Values class */
     Values() {}
@@ -190,6 +214,86 @@ namespace gtsam {
     const_reverse_iterator rend() const { return boost::make_transform_iterator(values_.rend(), &make_const_deref_pair); }
     reverse_iterator rbegin() { return boost::make_transform_iterator(values_.rbegin(), &make_deref_pair); }
     reverse_iterator rend() { return boost::make_transform_iterator(values_.rend(), &make_deref_pair); }
+
+    /** Iterator over a subset of the Key-Value pairs, for which the given
+     * \c filter function returns true when evaluated on the Key. */
+    const_filter_iterator beginFilterByKey(const boost::function<bool(Key)>& filter) const {
+      return boost::make_filter_iterator(
+          boost::function<bool(const ConstKeyValuePair&)>(boost::bind(filter, boost::bind(&ConstKeyValuePair::first, _1))),
+          begin(), end()); }
+
+    /** Iterator over a subset of the Key-Value pairs, for which the given
+     * \c filter function returns true when evaluated on the Key. */
+    const_filter_iterator endFilterByKey(const boost::function<bool(Key)>& filter) const {
+      return boost::make_filter_iterator(
+          boost::function<bool(const ConstKeyValuePair&)>(boost::bind(filter, boost::bind(&ConstKeyValuePair::first, _1))),
+          end(), end()); }
+
+    /** Iterator over a subset of the Key-Value pairs, for which the given
+     * \c filter function returns true when evaluated on the Key. */
+    filter_iterator beginFilterByKey(const boost::function<bool(Key)>& filter) {
+      return boost::make_filter_iterator(
+          boost::function<bool(const KeyValuePair&)>(boost::bind(filter, boost::bind(&KeyValuePair::first, _1))),
+          begin(), end()); }
+
+    /** Iterator over a subset of the Key-Value pairs, for which the given
+     * \c filter function returns true when evaluated on the Key. */
+    filter_iterator endFilterByKey(const boost::function<bool(Key)>& filter) {
+      return boost::make_filter_iterator(
+          boost::function<bool(const KeyValuePair&)>(boost::bind(filter, boost::bind(&KeyValuePair::first, _1))),
+          end(), end()); }
+
+  private:
+    template<class ValueType, class KeyValue>
+    static bool _typeFilterHelper(const KeyValue& key_value) {
+      return typeid(ValueType) == typeid(key_value.second);
+    }
+
+    template<class ValueType>
+    static std::pair<const Key, const ValueType&> _typeCastHelperConst(ConstKeyValuePair key_value) {
+      return std::make_pair<const Key, const ValueType&>(key_value.first, static_cast<const ValueType&>(key_value.second)); }
+
+    template<class ValueType>
+    static std::pair<const Key, ValueType&> _typeCastHelper(KeyValuePair key_value) {
+      return std::make_pair<const Key, ValueType&>(key_value.first, static_cast<ValueType&>(key_value.second)); }
+
+  public:
+
+    /** Iterator over a subset of the Key-Value pairs, for which the Value type
+     * matches the template parameter \c ValueType.
+     */
+    template<class ValueType>
+    typename const_type_filter_iterator<ValueType>::type beginFilterByType() const {
+      return boost::make_transform_iterator(
+          boost::filter_iterator<bool(*)(ConstKeyValuePair), const_iterator>(&_typeFilterHelper<ValueType,ConstKeyValuePair>, begin(), end()),
+          &_typeCastHelperConst<ValueType>); }
+
+    /** Iterator over a subset of the Key-Value pairs, for which the Value type
+     * matches the template parameter \c ValueType.
+     */
+    template<class ValueType>
+    typename const_type_filter_iterator<ValueType>::type endFilterByType() const {
+      return boost::make_transform_iterator(
+          boost::filter_iterator<bool(*)(ConstKeyValuePair), const_iterator>(&_typeFilterHelper<ValueType,ConstKeyValuePair>, end(), end()),
+          &_typeCastHelperConst<ValueType>); }
+
+    /** Iterator over a subset of the Key-Value pairs, for which the Value type
+     * matches the template parameter \c ValueType.
+     */
+    template<class ValueType>
+    typename type_filter_iterator<ValueType>::type beginFilterByType() {
+      return boost::make_transform_iterator(
+          boost::make_filter_iterator(&_typeFilterHelper<ValueType,KeyValuePair>, begin(), end()),
+          &_typeCastHelper<ValueType>); }
+
+    /** Iterator over a subset of the Key-Value pairs, for which the Value type
+     * matches the template parameter \c ValueType.
+     */
+    template<class ValueType>
+    typename type_filter_iterator<ValueType>::type endFilterByType() {
+      return boost::make_transform_iterator(
+          boost::make_filter_iterator(&_typeFilterHelper<ValueType,KeyValuePair>, end(), end()),
+          &_typeCastHelper<ValueType>); }
 
     /// @name Manifold Operations
     /// @{

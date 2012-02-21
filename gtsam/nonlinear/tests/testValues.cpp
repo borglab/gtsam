@@ -26,6 +26,7 @@ using namespace boost::assign;
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/LieVector.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>
 
 using namespace gtsam;
@@ -257,6 +258,47 @@ TEST(Values, update)
 	expected.insert(key1, LieVector(1, -1.));
 	expected.insert(key2, LieVector(1, -2.));
 	CHECK(assert_equal(expected,config0));
+}
+
+/* ************************************************************************* */
+TEST(Values, filter) {
+  Values values;
+  values.insert(0, Pose2());
+  values.insert(1, Pose3());
+  values.insert(2, Pose2());
+  values.insert(3, Pose3());
+
+  // Filter by key
+  int i = 0;
+  for(Values::filter_iterator it = values.beginFilterByKey(boost::bind(std::greater_equal<Key>(), _1, 2));
+      it != values.endFilterByKey(boost::bind(std::greater_equal<Key>(), _1, 2)); ++it, ++i) {
+    if(i == 0) {
+      LONGS_EQUAL(2, it->first);
+      EXPECT(typeid(Pose2) == typeid(it->second));
+    } else if(i == 1) {
+      LONGS_EQUAL(3, it->first);
+      EXPECT(typeid(Pose3) == typeid(it->second));
+    } else {
+      EXPECT(false);
+    }
+  }
+  LONGS_EQUAL(2, i);
+
+  // Filter by type
+  i = 0;
+  for(Values::type_filter_iterator<Pose3>::type it = values.beginFilterByType<Pose3>();
+      it != values.endFilterByType<Pose3>(); ++it, ++i) {
+    if(i == 0) {
+      LONGS_EQUAL(1, it->first);
+      EXPECT(assert_equal(Pose3(), it->second));
+    } else if(i == 1) {
+      LONGS_EQUAL(3, it->first);
+      EXPECT(assert_equal(Pose3(), it->second));
+    } else {
+      EXPECT(false);
+    }
+  }
+  LONGS_EQUAL(2, i);
 }
 
 /* ************************************************************************* */
