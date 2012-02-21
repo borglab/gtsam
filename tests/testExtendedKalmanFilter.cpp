@@ -155,8 +155,8 @@ public:
   /* print */
   virtual void print(const std::string& s = "") const {
     std::cout << s << ": NonlinearMotionModel\n";
-    std::cout << "  TestKey1: " << (std::string) key1() << std::endl;
-    std::cout << "  TestKey2: " << (std::string) key2() << std::endl;
+    std::cout << "  TestKey1: " << DefaultKeyFormatter(key1()) << std::endl;
+    std::cout << "  TestKey2: " << DefaultKeyFormatter(key2()) << std::endl;
   }
 
   /** Check if two factors are equal. Note type is IndexFactor and needs cast. */
@@ -293,7 +293,7 @@ public:
   /* print */
   virtual void print(const std::string& s = "") const {
     std::cout << s << ": NonlinearMeasurementModel\n";
-    std::cout << "  TestKey: " << (std::string) key() << std::endl;
+    std::cout << "  TestKey: " << DefaultKeyFormatter(key()) << std::endl;
   }
 
   /** Check if two factors are equal. Note type is IndexFactor and needs cast. */

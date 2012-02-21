@@ -39,6 +39,9 @@ using namespace boost::assign;
 using namespace gtsam;
 using namespace example;
 
+Key kx(size_t i) { return Symbol('x',i); }
+Key kl(size_t i) { return Symbol('l',i); }
+
 /* ************************************************************************* */
 TEST( Graph, equals )
 {
@@ -67,16 +70,16 @@ TEST( Graph, keys )
 	set<Key> actual = fg.keys();
 	LONGS_EQUAL(3, actual.size());
 	set<Key>::const_iterator it = actual.begin();
-	CHECK(assert_equal(Symbol('l', 1), *(it++)));
-	CHECK(assert_equal(Symbol('x', 1), *(it++)));
-	CHECK(assert_equal(Symbol('x', 2), *(it++)));
+	LONGS_EQUAL(kl(1), *(it++));
+	LONGS_EQUAL(kx(1), *(it++));
+	LONGS_EQUAL(kx(2), *(it++));
 }
 
 /* ************************************************************************* */
 TEST( Graph, GET_ORDERING)
 {
 //  Ordering expected; expected += "x1","l1","x2"; // For starting with x1,x2,l1
-  Ordering expected; expected += "l1","x2","x1"; // For starting with l1,x1,x2
+  Ordering expected; expected += kl(1), kx(2), kx(1); // For starting with l1,x1,x2
   Graph nlfg = createNonlinearFactorGraph();
   SymbolicFactorGraph::shared_ptr symbolic;
   Ordering::shared_ptr ordering;

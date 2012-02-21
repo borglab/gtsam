@@ -59,8 +59,8 @@ namespace gtsam {
 		/** implement functions needed for Testable */
 
 		/** print */
-		virtual void print(const std::string& s) const {
-			std::cout << s << "PriorFactor(" << (std::string) this->key() << ")\n";
+		virtual void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+			std::cout << s << "PriorFactor(" << keyFormatter(this->key()) << ")\n";
 			prior_.print("  prior");
 			this->noiseModel_->print("  noise model");
 		}

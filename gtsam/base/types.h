@@ -26,9 +26,6 @@ namespace gtsam {
 	/// Integer variable index type
 	typedef size_t Index;
 
-	/// Integer nonlinear key type
-	typedef size_t Key;
-
 	/**
 	 * Helper class that uses templates to select between two types based on
 	 * whether TEST_TYPE is const or not.

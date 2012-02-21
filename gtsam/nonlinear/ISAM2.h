@@ -106,16 +106,19 @@ struct ISAM2Params {
 
   bool evaluateNonlinearError; ///< Whether to evaluate the nonlinear error before and after the update, to return in ISAM2Result from update()
 
+  KeyFormatter keyFormatter; ///< A KeyFormatter for when keys are printed during debugging (default: DefaultKeyFormatter)
+
   /** Specify parameters as constructor arguments */
   ISAM2Params(
-      OptimizationParams _optimizationParams = ISAM2GaussNewtonParams(), ///< see ISAM2Params public variables, ISAM2Params::optimizationParams
-      RelinearizationThreshold _relinearizeThreshold = 0.1, ///< see ISAM2Params public variables, ISAM2Params::relinearizeThreshold
-      int _relinearizeSkip = 10, ///< see ISAM2Params public variables, ISAM2Params::relinearizeSkip
-      bool _enableRelinearization = true, ///< see ISAM2Params public variables, ISAM2Params::enableRelinearization
-      bool _evaluateNonlinearError = false ///< see ISAM2Params public variables, ISAM2Params::evaluateNonlinearError
+      OptimizationParams _optimizationParams = ISAM2GaussNewtonParams(), ///< see ISAM2Params::optimizationParams
+      RelinearizationThreshold _relinearizeThreshold = 0.1, ///< see ISAM2Params::relinearizeThreshold
+      int _relinearizeSkip = 10, ///< see ISAM2Params::relinearizeSkip
+      bool _enableRelinearization = true, ///< see ISAM2Params::enableRelinearization
+      bool _evaluateNonlinearError = false, ///< see ISAM2Params::evaluateNonlinearError
+      const KeyFormatter& _keyFormatter = DefaultKeyFormatter ///< see ISAM2::Params::keyFormatter
   ) : optimizationParams(_optimizationParams), relinearizeThreshold(_relinearizeThreshold),
       relinearizeSkip(_relinearizeSkip), enableRelinearization(_enableRelinearization),
-      evaluateNonlinearError(_evaluateNonlinearError) {}
+      evaluateNonlinearError(_evaluateNonlinearError), keyFormatter(_keyFormatter) {}
 };
 
 /**

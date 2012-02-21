@@ -60,8 +60,8 @@ public:
 	 * print
 	 * @param s optional string naming the factor
 	 */
-	void print(const std::string& s) const {
-		Base::print(s);
+	void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+		Base::print(s, keyFormatter);
 		measured_.print(s + ".z");
 	}
 

@@ -44,7 +44,7 @@ namespace gtsam {
 		typedef boost::shared_ptr<NonlinearFactor> sharedFactor;
 
     /** print just calls base class */
-    void print(const std::string& str = "NonlinearFactorGraph: ") const;
+    void print(const std::string& str = "NonlinearFactorGraph: ", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
     /** return keys in some random order */
     std::set<Key> keys() const;

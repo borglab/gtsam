@@ -51,7 +51,7 @@ BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal");
 TEST (Serialization, smallExample_linear) {
   using namespace example;
 
-  Ordering ordering; ordering += "x1","x2","l1";
+  Ordering ordering; ordering += Symbol("x1"),Symbol("x2"),Symbol("l1");
   GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
   EXPECT(equalsObj(ordering));
   EXPECT(equalsXML(ordering));

@@ -89,8 +89,8 @@ namespace gtsam {
 		/** implement functions needed for Testable */
 
 		/** print */
-		virtual void print(const std::string& s) const {
-			Base::print(s);
+		virtual void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+			Base::print(s, keyFormatter);
 			gtsam::print(prior_, "prior");
 		}
 

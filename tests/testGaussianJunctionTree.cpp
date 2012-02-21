@@ -25,7 +25,7 @@
 #include <boost/assign/std/vector.hpp>
 using namespace boost::assign;
 
-// Magically casts strings like "x3" to a Symbol('x',3) key, see Symbol.h
+// Magically casts strings like kx(3) to a Symbol('x',3) key, see Symbol.h
 #define GTSAM_MAGIC_KEY
 
 #include <gtsam/base/debug.h>
@@ -43,6 +43,9 @@ using namespace std;
 using namespace gtsam;
 using namespace example;
 
+Key kx(size_t i) { return Symbol('x',i); }
+Key kl(size_t i) { return Symbol('l',i); }
+
 /* ************************************************************************* *
  Bayes tree for smoother with "nested dissection" ordering:
 	 C1		 x5 x6 x4
@@ -53,20 +56,20 @@ using namespace example;
 TEST( GaussianJunctionTree, constructor2 )
 {
 	// create a graph
-  Ordering ordering; ordering += "x1","x3","x5","x7","x2","x6","x4";
+  Ordering ordering; ordering += kx(1),kx(3),kx(5),kx(7),kx(2),kx(6),kx(4);
   GaussianFactorGraph fg = createSmoother(7, ordering).first;
 
 	// create an ordering
 	GaussianJunctionTree actual(fg);
 
-	vector<Index> frontal1; frontal1 += ordering["x5"], ordering["x6"], ordering["x4"];
-	vector<Index> frontal2; frontal2 += ordering["x3"], ordering["x2"];
-	vector<Index> frontal3; frontal3 += ordering["x1"];
-	vector<Index> frontal4; frontal4 += ordering["x7"];
+	vector<Index> frontal1; frontal1 += ordering[kx(5)], ordering[kx(6)], ordering[kx(4)];
+	vector<Index> frontal2; frontal2 += ordering[kx(3)], ordering[kx(2)];
+	vector<Index> frontal3; frontal3 += ordering[kx(1)];
+	vector<Index> frontal4; frontal4 += ordering[kx(7)];
 	vector<Index> sep1;
-	vector<Index> sep2; sep2 += ordering["x4"];
-	vector<Index> sep3; sep3 += ordering["x2"];
-	vector<Index> sep4; sep4 += ordering["x6"];
+	vector<Index> sep2; sep2 += ordering[kx(4)];
+	vector<Index> sep3; sep3 += ordering[kx(2)];
+	vector<Index> sep4; sep4 += ordering[kx(6)];
 	EXPECT(assert_equal(frontal1, actual.root()->frontal));
 	EXPECT(assert_equal(sep1,     actual.root()->separator));
 	LONGS_EQUAL(5,               actual.root()->size());
@@ -111,7 +114,7 @@ TEST( GaussianJunctionTree, optimizeMultiFrontal2)
 	// create a graph
 	example::Graph nlfg = createNonlinearFactorGraph();
 	Values noisy = createNoisyValues();
-  Ordering ordering; ordering += "x1","x2","l1";
+  Ordering ordering; ordering += kx(1),kx(2),kl(1);
 	GaussianFactorGraph fg = *nlfg.linearize(noisy, ordering);
 
 	// optimize the graph
@@ -203,7 +206,7 @@ TEST(GaussianJunctionTree, simpleMarginal) {
   init.insert(pose2SLAM::PoseKey(1), Pose2(1.0, 0.0, 0.0));
 
   Ordering ordering;
-  ordering += "x1", "x0";
+  ordering += kx(1), kx(0);
 
   GaussianFactorGraph gfg = *fg.linearize(init, ordering);
 

@@ -79,9 +79,10 @@ public:
 	/// @{
 
   /** print */
-  virtual void print(const std::string& s = "",
-      const boost::function<std::string(Key)>& keyFormatter = &Symbol::format) const {
-    std::cout << s << ": NonlinearFactor\n";
+  virtual void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+    std::cout << s << "keys = { ";
+    BOOST_FOREACH(Key key, this->keys()) { std::cout << keyFormatter(key) << " "; }
+    std::cout << "}" << endl;
   }
 
   /** Check if two factors are equal */
@@ -187,11 +188,8 @@ protected:
 public:
 
   /** Print */
-  virtual void print(const std::string& s = "") const {
-    std::cout << s << ": NoiseModelFactor\n";
-    std::cout << "  ";
-    BOOST_FOREACH(Key key, this->keys()) { std::cout << (std::string)key << " "; }
-    std::cout << "\n";
+  virtual void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+    Base::print(s, keyFormatter);
     this->noiseModel_->print("  noise model: ");
   }
 
@@ -341,12 +339,6 @@ public:
     }
   }
 
-  /** Print */
-  virtual void print(const std::string& s = "") const {
-    std::cout << s << ": NonlinearFactor1(" << (std::string) keys_[0] << ")\n";
-    this->noiseModel_->print("  noise model: ");
-  }
-
   /**
    *  Override this method to finish implementing a unary factor.
    *  If the optional Matrix reference argument is specified, it should compute
@@ -423,14 +415,6 @@ public:
     } else {
       return zero(this->dim());
     }
-  }
-
-  /** Print */
-  virtual void print(const std::string& s = "") const {
-    std::cout << s << ": NonlinearFactor2("
-    		<< (std::string) keys_[0] << ","
-    		<< (std::string) keys_[1] << ")\n";
-    this->noiseModel_->print("  noise model: ");
   }
 
   /**
@@ -511,16 +495,6 @@ public:
       return zero(this->dim());
     }
   }
-
-  /** Print */
-  virtual void print(const std::string& s = "") const {
-    std::cout << s << ": NonlinearFactor3("
-    		<< (std::string) this->keys_[0] << ","
-    		<< (std::string) this->keys_[1] << ","
-    		<< (std::string) this->keys_[2] << ")\n";
-    this->noiseModel_->print("  noise model: ");
-  }
-
 
   /**
    *  Override this method to finish implementing a trinary factor.
@@ -605,16 +579,6 @@ public:
   	} else {
   		return zero(this->dim());
   	}
-  }
-
-  /** Print */
-  virtual void print(const std::string& s = "") const {
-    std::cout << s << ": NonlinearFactor4("
-    		<< (std::string) this->keys_[0] << ","
-    		<< (std::string) this->keys_[1] << ","
-     		<< (std::string) this->keys_[2] << ","
-    		<< (std::string) this->keys_[3] << ")\n";
-    this->noiseModel_->print("  noise model: ");
   }
 
   /**
@@ -705,17 +669,6 @@ public:
   	} else {
   		return zero(this->dim());
   	}
-  }
-
-  /** Print */
-  virtual void print(const std::string& s = "") const {
-    std::cout << s << ": NonlinearFactor5("
-    		<< (std::string) this->keys_[0] << ","
-    		<< (std::string) this->keys_[1] << ","
-     		<< (std::string) this->keys_[2] << ","
-    		<< (std::string) this->keys_[3] << ","
-    		<< (std::string) this->keys_[4] << ")\n";
-    this->noiseModel_->print("  noise model: ");
   }
 
   /**
@@ -811,18 +764,6 @@ public:
   	} else {
   		return zero(this->dim());
   	}
-  }
-
-  /** Print */
-  virtual void print(const std::string& s = "") const {
-    std::cout << s << ": NonlinearFactor6("
-    		<< (std::string) this->keys_[0] << ","
-    		<< (std::string) this->keys_[1] << ","
-     		<< (std::string) this->keys_[2] << ","
-    		<< (std::string) this->keys_[3] << ","
-    		<< (std::string) this->keys_[4] << ","
-    		<< (std::string) this->keys_[5] << ")\n";
-    this->noiseModel_->print("  noise model: ");
   }
 
   /**

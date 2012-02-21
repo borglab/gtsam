@@ -71,8 +71,8 @@ namespace gtsam {
 		 * print
 		 * @param s optional string naming the factor
 		 */
-		void print(const std::string& s = "ProjectionFactor") const {
-			Base::print(s);
+		void print(const std::string& s = "ProjectionFactor", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+			Base::print(s, keyFormatter);
 			measured_.print(s + ".z");
 		}
 
@@ -92,8 +92,8 @@ namespace gtsam {
 			} catch( CheiralityException& e) {
 			  if (H1) *H1 = zeros(2,6);
 			  if (H2) *H2 = zeros(2,3);
-			  cout << e.what() << ": Landmark "<< this->key2().index() <<
-			      " moved behind camera " << this->key1().index() << endl;
+			  cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2()) <<
+			      " moved behind camera " << DefaultKeyFormatter(this->key1()) << endl;
 			  return ones(2) * 2.0 * K_->fx();
 			}
 		}

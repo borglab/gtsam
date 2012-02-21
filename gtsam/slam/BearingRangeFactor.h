@@ -58,10 +58,10 @@ namespace gtsam {
 		virtual ~BearingRangeFactor() {}
 
 	  /** Print */
-	  virtual void print(const std::string& s = "") const {
+	  virtual void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
 	    std::cout << s << ": BearingRangeFactor("
-	    		<< (std::string) this->key1() << ","
-	    		<< (std::string) this->key2() << ")\n";
+	    		<< keyFormatter(this->key1()) << ","
+	    		<< keyFormatter(this->key2()) << ")\n";
 	    measuredBearing_.print("  measured bearing");
 	    std::cout << "  measured range: " << measuredRange_ << std::endl;
 	    this->noiseModel_->print("  noise model");

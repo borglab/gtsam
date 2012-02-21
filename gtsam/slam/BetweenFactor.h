@@ -65,10 +65,10 @@ namespace gtsam {
 		/** implement functions needed for Testable */
 
 		/** print */
-		virtual void print(const std::string& s) const {
+		virtual void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
 	    std::cout << s << "BetweenFactor("
-	    		<< (std::string) this->key1() << ","
-	    		<< (std::string) this->key2() << ")\n";
+	    		<< keyFormatter(this->key1()) << ","
+	    		<< keyFormatter(this->key2()) << ")\n";
 			measured_.print("  measured");
 	    this->noiseModel_->print("  noise model");
 		}

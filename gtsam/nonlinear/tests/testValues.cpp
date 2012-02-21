@@ -23,6 +23,7 @@ using namespace boost::assign;
 #define GTSAM_MAGIC_KEY
 
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/LieVector.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/nonlinear/Values.h>
@@ -31,7 +32,7 @@ using namespace gtsam;
 using namespace std;
 static double inf = std::numeric_limits<double>::infinity();
 
-Key key1("v1"), key2("v2"), key3("v3"), key4("v4");
+Key key1(Symbol("v1")), key2(Symbol("v2")), key3(Symbol("v3")), key4(Symbol("v4"));
 
 /* ************************************************************************* */
 TEST( Values, equals1 )
@@ -201,8 +202,8 @@ TEST(Values, expmap_d)
   CHECK(config0.equals(config0));
 
   Values poseconfig;
-  poseconfig.insert("p1", Pose2(1,2,3));
-  poseconfig.insert("p2", Pose2(0.3, 0.4, 0.5));
+  poseconfig.insert(key1, Pose2(1,2,3));
+  poseconfig.insert(key2, Pose2(0.3, 0.4, 0.5));
 
   CHECK(equal(config0, config0));
   CHECK(config0.equals(config0));
@@ -213,19 +214,19 @@ TEST(Values, extract_keys)
 {
 	Values config;
 
-	config.insert("x1", Pose2());
-	config.insert("x2", Pose2());
-	config.insert("x4", Pose2());
-	config.insert("x5", Pose2());
+	config.insert(key1, Pose2());
+	config.insert(key2, Pose2());
+	config.insert(key3, Pose2());
+	config.insert(key4, Pose2());
 
 	FastList<Key> expected, actual;
-	expected += "x1", "x2", "x4", "x5";
+	expected += key1, key2, key3, key4;
 	actual = config.keys();
 
 	CHECK(actual.size() == expected.size());
 	FastList<Key>::const_iterator itAct = actual.begin(), itExp = expected.begin();
 	for (; itAct != actual.end() && itExp != expected.end(); ++itAct, ++itExp) {
-		CHECK(assert_equal(*itExp, *itAct));
+		LONGS_EQUAL(*itExp, *itAct);
 	}
 }
 

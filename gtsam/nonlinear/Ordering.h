@@ -20,6 +20,7 @@
 #include <set>
 #include <gtsam/base/FastMap.h>
 #include <gtsam/inference/inference.h>
+#include <gtsam/nonlinear/Symbol.h>
 
 #include <boost/foreach.hpp>
 #include <boost/assign/list_inserter.hpp>
@@ -207,7 +208,7 @@ public:
 	/// @{
 
   /** print (from Testable) for testing and debugging */
-  void print(const std::string& str = "Ordering:") const;
+  void print(const std::string& str = "Ordering:", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
   /** equals (from Testable) for testing and debugging */
   bool equals(const Ordering& rhs, double tol = 0.0) const;

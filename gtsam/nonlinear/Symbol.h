@@ -27,6 +27,8 @@
 #include <boost/lexical_cast.hpp>
 #endif
 
+#include <gtsam/nonlinear/Key.h>
+
 #define ALPHA '\224'
 
 namespace gtsam {
@@ -94,7 +96,7 @@ public:
     const size_t indexBytes = keyBytes - chrBytes;
     const Key chrMask = std::numeric_limits<unsigned char>::max() << indexBytes;
     const Key indexMask = ~chrMask;
-    c_ = key & chrMask;
+    c_ = (key & chrMask) >> indexBytes;
     j_ = key & indexMask;
   }
 
@@ -117,11 +119,6 @@ public:
   }
   bool equals(const Symbol& expected, double tol = 0.0) const {
     return (*this) == expected;
-  }
-
-  /** Format function that can be passed to print functions in nonlinear */
-  static std::string format(Key key) {
-    return (std::string)Symbol(key);
   }
 
   /** Retrieve key character */

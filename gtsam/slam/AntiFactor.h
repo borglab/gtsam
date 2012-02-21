@@ -53,9 +53,9 @@ namespace gtsam {
 		/** implement functions needed for Testable */
 
 		/** print */
-		virtual void print(const std::string& s) const {
+		virtual void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
 	    std::cout << s << "AntiFactor version of:" << std::endl;
-	    factor_->print(s);
+	    factor_->print(s, keyFormatter);
 		}
 
 		/** equals */

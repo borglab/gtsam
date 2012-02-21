@@ -40,10 +40,10 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  void Values::print(const string& str) const {
+  void Values::print(const string& str, const KeyFormatter& keyFormatter) const {
     cout << str << "Values with " << size() << " values:\n" << endl;
     for(const_iterator key_value = begin(); key_value != end(); ++key_value) {
-      cout << "  " << (string)key_value->first << ": ";
+      cout << "  " << keyFormatter(key_value->first) << ": ";
       key_value->second.print("");
     }
   }
@@ -197,7 +197,7 @@ namespace gtsam {
   const char* ValuesKeyAlreadyExists::what() const throw() {
     if(message_.empty())
       message_ =
-          "Attempting to add a key-value pair with key \"" + (std::string)key_ + "\", key already exists.";
+          "Attempting to add a key-value pair with key \"" + DefaultKeyFormatter(key_) + "\", key already exists.";
     return message_.c_str();
   }
 
@@ -206,7 +206,7 @@ namespace gtsam {
     if(message_.empty())
       message_ =
           "Attempting to " + std::string(operation_) + " the key \"" +
-          (std::string)key_ + "\", which does not exist in the Values.";
+          DefaultKeyFormatter(key_) + "\", which does not exist in the Values.";
     return message_.c_str();
   }
 
@@ -214,7 +214,7 @@ namespace gtsam {
   const char* ValuesIncorrectType::what() const throw() {
     if(message_.empty())
       message_ =
-          "Attempting to retrieve value with key \"" + (std::string)key_ + "\", type stored in Values is " +
+          "Attempting to retrieve value with key \"" + DefaultKeyFormatter(key_) + "\", type stored in Values is " +
           std::string(storedTypeId_.name()) + " but requested type was " + std::string(requestedTypeId_.name());
     return message_.c_str();
   }

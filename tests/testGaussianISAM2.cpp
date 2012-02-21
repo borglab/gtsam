@@ -788,7 +788,7 @@ TEST(ISAM2, constrained_ordering)
   planarSLAM::Graph fullgraph;
 
   // We will constrain x3 and x4 to the end
-  FastSet<Symbol> constrained; constrained.insert(planarSLAM::PoseKey(3)); constrained.insert(planarSLAM::PoseKey(4));
+  FastSet<Key> constrained; constrained.insert(planarSLAM::PoseKey(3)); constrained.insert(planarSLAM::PoseKey(4));
 
   // i keeps track of the time step
   size_t i = 0;

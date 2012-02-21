@@ -108,8 +108,8 @@ namespace gtsam {
 		/// @name Testable
 		/// @{
 
-		virtual void print(const std::string& s = "") const {
-			std::cout << "Constraint: " << s << " on [" << (std::string)this->key() << "]\n";
+		virtual void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+			std::cout << "Constraint: " << s << " on [" << keyFormatter(this->key()) << "]\n";
 			gtsam::print(feasible_,"Feasible Point");
 			std::cout << "Variable Dimension: " << feasible_.dim() << std::endl;
 		}
@@ -147,7 +147,7 @@ namespace gtsam {
 				return zero(nj); // set error to zero if equal
 			} else {
 				if (H) throw std::invalid_argument(
-						"Linearization point not feasible for " + (std::string)(this->key()) + "!");
+						"Linearization point not feasible for " + DefaultKeyFormatter(this->key()) + "!");
 				return repeat(nj, std::numeric_limits<double>::infinity()); // set error to infinity if not equal
 			}
 		}
@@ -217,9 +217,9 @@ namespace gtsam {
 		}
 
 		/** Print */
-	  virtual void print(const std::string& s = "") const {
+	  virtual void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
 	    std::cout << s << ": NonlinearEquality1("
-	    		<< (std::string) this->key() << "),"<< "\n";
+	    		<< keyFormatter(this->key()) << "),"<< "\n";
 	    this->noiseModel_->print();
 	    value_.print("Value");
 	  }

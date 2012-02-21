@@ -33,8 +33,13 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	void NonlinearFactorGraph::print(const std::string& str) const {
-		Base::print(str);
+	void NonlinearFactorGraph::print(const std::string& str, const KeyFormatter& keyFormatter) const {
+    cout << str << "size: " << size() << endl;
+    for (size_t i = 0; i < factors_.size(); i++) {
+      stringstream ss;
+      ss << "factor " << i << ": ";
+      if (factors_[i] != NULL) factors_[i]->print(ss.str(), keyFormatter);
+    }
 	}
 
 	/* ************************************************************************* */
