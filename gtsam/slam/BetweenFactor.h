@@ -29,7 +29,7 @@ namespace gtsam {
 	 * @tparam VALUE the Value type
 	 */
 	template<class VALUE>
-	class BetweenFactor: public NonlinearFactor2<VALUE, VALUE> {
+	class BetweenFactor: public NoiseModelFactor2<VALUE, VALUE> {
 
 	public:
 
@@ -38,7 +38,7 @@ namespace gtsam {
 	private:
 
 		typedef BetweenFactor<VALUE> This;
-		typedef NonlinearFactor2<VALUE, VALUE> Base;
+		typedef NoiseModelFactor2<VALUE, VALUE> Base;
 
 		VALUE measured_; /** The measurement */
 
@@ -55,7 +55,7 @@ namespace gtsam {
 		BetweenFactor() {}
 
 		/** Constructor */
-		BetweenFactor(const Symbol& key1, const Symbol& key2, const VALUE& measured,
+		BetweenFactor(Key key1, Key key2, const VALUE& measured,
 				const SharedNoiseModel& model) :
 			Base(model, key1, key2), measured_(measured) {
 		}
@@ -65,10 +65,10 @@ namespace gtsam {
 		/** implement functions needed for Testable */
 
 		/** print */
-		virtual void print(const std::string& s) const {
+		virtual void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
 	    std::cout << s << "BetweenFactor("
-	    		<< (std::string) this->key1() << ","
-	    		<< (std::string) this->key2() << ")\n";
+	    		<< keyFormatter(this->key1()) << ","
+	    		<< keyFormatter(this->key2()) << ")\n";
 			measured_.print("  measured");
 	    this->noiseModel_->print("  noise model");
 		}
@@ -106,7 +106,7 @@ namespace gtsam {
 		friend class boost::serialization::access;
 		template<class ARCHIVE>
 		void serialize(ARCHIVE & ar, const unsigned int version) {
-			ar & boost::serialization::make_nvp("NonlinearFactor2",
+			ar & boost::serialization::make_nvp("NoiseModelFactor2",
 					boost::serialization::base_object<Base>(*this));
 			ar & BOOST_SERIALIZATION_NVP(measured_);
 		}
@@ -123,7 +123,7 @@ namespace gtsam {
 		typedef boost::shared_ptr<BetweenConstraint<VALUE> > shared_ptr;
 
 		/** Syntactic sugar for constrained version */
-		BetweenConstraint(const VALUE& measured, const Symbol& key1, const Symbol& key2, double mu = 1000.0) :
+		BetweenConstraint(const VALUE& measured, Key key1, Key key2, double mu = 1000.0) :
 		  BetweenFactor<VALUE>(key1, key2, measured, noiseModel::Constrained::All(VALUE::Dim(), fabs(mu))) {}
 
 	private:

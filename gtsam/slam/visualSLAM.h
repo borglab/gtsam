@@ -67,8 +67,8 @@ namespace visualSLAM {
     }
 
     /// print out graph
-    void print(const std::string& s = "") const {
-      NonlinearFactorGraph::print(s);
+    void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+      NonlinearFactorGraph::print(s, keyFormatter);
     }
 
     /// check if two graphs are equal

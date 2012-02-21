@@ -20,7 +20,7 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
-// Magically casts strings like "x3" to a Symbol('x',3) key, see Symbol.h
+// Magically casts strings like kx(3) to a Symbol('x',3) key, see Symbol.h
 #define GTSAM_MAGIC_KEY
 
 #include <gtsam/slam/smallExample.h>
@@ -33,16 +33,19 @@ using namespace std;
 using namespace gtsam;
 using namespace example;
 
+Key kx(size_t i) { return Symbol('x',i); }
+Key kl(size_t i) { return Symbol('l',i); }
+
 /* ************************************************************************* */
 TEST( SymbolicFactorGraph, symbolicFactorGraph )
 {
-  Ordering o; o += "x1","l1","x2";
+  Ordering o; o += kx(1),kl(1),kx(2);
 	// construct expected symbolic graph
 	SymbolicFactorGraph expected;
-	expected.push_factor(o["x1"]);
-	expected.push_factor(o["x1"],o["x2"]);
-	expected.push_factor(o["x1"],o["l1"]);
-	expected.push_factor(o["x2"],o["l1"]);
+	expected.push_factor(o[kx(1)]);
+	expected.push_factor(o[kx(1)],o[kx(2)]);
+	expected.push_factor(o[kx(1)],o[kl(1)]);
+	expected.push_factor(o[kx(2)],o[kl(1)]);
 
 	// construct it from the factor graph
 	GaussianFactorGraph factorGraph = createGaussianFactorGraph(o);
@@ -59,7 +62,7 @@ TEST( SymbolicFactorGraph, symbolicFactorGraph )
 //	SymbolicFactorGraph actual(factorGraph);
 //  SymbolicFactor::shared_ptr f1 = actual[0];
 //  SymbolicFactor::shared_ptr f3 = actual[2];
-//	actual.findAndRemoveFactors("x2");
+//	actual.findAndRemoveFactors(kx(2));
 //
 //	// construct expected graph after find_factors_and_remove
 //	SymbolicFactorGraph expected;
@@ -79,13 +82,13 @@ TEST( SymbolicFactorGraph, symbolicFactorGraph )
 //	SymbolicFactorGraph fg(factorGraph);
 //
 //	// ask for all factor indices connected to x1
-//	list<size_t> x1_factors = fg.factors("x1");
+//	list<size_t> x1_factors = fg.factors(kx(1));
 //	int x1_indices[] = { 0, 1, 2 };
 //	list<size_t> x1_expected(x1_indices, x1_indices + 3);
 //	CHECK(x1_factors==x1_expected);
 //
 //	// ask for all factor indices connected to x2
-//	list<size_t> x2_factors = fg.factors("x2");
+//	list<size_t> x2_factors = fg.factors(kx(2));
 //	int x2_indices[] = { 1, 3 };
 //	list<size_t> x2_expected(x2_indices, x2_indices + 2);
 //	CHECK(x2_factors==x2_expected);
@@ -99,26 +102,26 @@ TEST( SymbolicFactorGraph, symbolicFactorGraph )
 //	SymbolicFactorGraph fg(factorGraph);
 //
 //  // combine all factors connected to x1
-//  SymbolicFactor::shared_ptr actual = removeAndCombineFactors(fg,"x1");
+//  SymbolicFactor::shared_ptr actual = removeAndCombineFactors(fg,kx(1));
 //
 //  // check result
-//  SymbolicFactor expected("l1","x1","x2");
+//  SymbolicFactor expected(kl(1),kx(1),kx(2));
 //  CHECK(assert_equal(expected,*actual));
 //}
 
 ///* ************************************************************************* */
 //TEST( SymbolicFactorGraph, eliminateOne )
 //{
-//  Ordering o; o += "x1","l1","x2";
+//  Ordering o; o += kx(1),kl(1),kx(2);
 //	// create a test graph
 //	GaussianFactorGraph factorGraph = createGaussianFactorGraph(o);
 //	SymbolicFactorGraph fg(factorGraph);
 //
 //	// eliminate
-//	IndexConditional::shared_ptr actual = GaussianSequentialSolver::EliminateUntil(fg, o["x1"]+1);
+//	IndexConditional::shared_ptr actual = GaussianSequentialSolver::EliminateUntil(fg, o[kx(1)]+1);
 //
 //  // create expected symbolic IndexConditional
-//  IndexConditional expected(o["x1"],o["l1"],o["x2"]);
+//  IndexConditional expected(o[kx(1)],o[kl(1)],o[kx(2)]);
 //
 //  CHECK(assert_equal(expected,*actual));
 //}
@@ -126,12 +129,12 @@ TEST( SymbolicFactorGraph, symbolicFactorGraph )
 /* ************************************************************************* */
 TEST( SymbolicFactorGraph, eliminate )
 {
-  Ordering o; o += "x2","l1","x1";
+  Ordering o; o += kx(2),kl(1),kx(1);
 
   // create expected Chordal bayes Net
-  IndexConditional::shared_ptr x2(new IndexConditional(o["x2"], o["l1"], o["x1"]));
-  IndexConditional::shared_ptr l1(new IndexConditional(o["l1"], o["x1"]));
-  IndexConditional::shared_ptr x1(new IndexConditional(o["x1"]));
+  IndexConditional::shared_ptr x2(new IndexConditional(o[kx(2)], o[kl(1)], o[kx(1)]));
+  IndexConditional::shared_ptr l1(new IndexConditional(o[kl(1)], o[kx(1)]));
+  IndexConditional::shared_ptr x1(new IndexConditional(o[kx(1)]));
 
   SymbolicBayesNet expected;
   expected.push_back(x2);

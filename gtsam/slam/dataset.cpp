@@ -156,7 +156,7 @@ void save2D(const pose2SLAM::Graph& graph, const Values& config, const SharedDia
 	// save poses
 	BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, config) {
 	  const Pose2& pose = dynamic_cast<const Pose2&>(key_value.second);
-		stream << "VERTEX2 " << key_value.first.index() << " " <<  pose.x() << " " << pose.y() << " " << pose.theta() << endl;
+		stream << "VERTEX2 " << key_value.first << " " <<  pose.x() << " " << pose.y() << " " << pose.theta() << endl;
 	}
 
 	// save edges
@@ -167,7 +167,7 @@ void save2D(const pose2SLAM::Graph& graph, const Values& config, const SharedDia
 		if (!factor) continue;
 
 		Pose2 pose = factor->measured().inverse();
-		stream << "EDGE2 " << factor->key2().index() << " " << factor->key1().index()
+		stream << "EDGE2 " << factor->key2() << " " << factor->key1()
 				<< " " << pose.x() << " " << pose.y() << " " << pose.theta()
 				<< " " << RR(0, 0) << " " << RR(0, 1) << " " << RR(1, 1) << " " << RR(2, 2)
 				<< " " << RR(0, 2) << " " << RR(1, 2) << endl;

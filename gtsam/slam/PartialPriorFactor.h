@@ -39,14 +39,14 @@ namespace gtsam {
 	 * construct the mask.
 	 */
 	template<class VALUE>
-	class PartialPriorFactor: public NonlinearFactor1<VALUE> {
+	class PartialPriorFactor: public NoiseModelFactor1<VALUE> {
 
 	public:
 		typedef VALUE T;
 
 	protected:
 
-		typedef NonlinearFactor1<VALUE> Base;
+		typedef NoiseModelFactor1<VALUE> Base;
 		typedef PartialPriorFactor<VALUE> This;
 
 		Vector prior_;             ///< measurement on logmap parameters, in compressed form
@@ -60,7 +60,7 @@ namespace gtsam {
 		 * constructor with just minimum requirements for a factor - allows more
 		 * computation in the constructor.  This should only be used by subclasses
 		 */
-		PartialPriorFactor(const Symbol& key, const SharedNoiseModel& model)
+		PartialPriorFactor(Key key, const SharedNoiseModel& model)
 		  : Base(model, key) {}
 
 	public:
@@ -71,14 +71,14 @@ namespace gtsam {
 		virtual ~PartialPriorFactor() {}
 
 		/** Single Element Constructor: acts on a single parameter specified by idx */
-		PartialPriorFactor(const Symbol& key, size_t idx, double prior, const SharedNoiseModel& model) :
+		PartialPriorFactor(Key key, size_t idx, double prior, const SharedNoiseModel& model) :
 			Base(model, key), prior_(Vector_(1, prior)), mask_(1, idx), H_(zeros(1, T::Dim())) {
 			assert(model->dim() == 1);
 			this->fillH();
 		}
 
 		/** Indices Constructor: specify the mask with a set of indices */
-		PartialPriorFactor(const Symbol& key, const std::vector<size_t>& mask, const Vector& prior,
+		PartialPriorFactor(Key key, const std::vector<size_t>& mask, const Vector& prior,
 				const SharedNoiseModel& model) :
 			Base(model, key), prior_(prior), mask_(mask), H_(zeros(mask.size(), T::Dim())) {
 			assert((size_t)prior_.size() == mask.size());
@@ -89,8 +89,8 @@ namespace gtsam {
 		/** implement functions needed for Testable */
 
 		/** print */
-		virtual void print(const std::string& s) const {
-			Base::print(s);
+		virtual void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+			Base::print(s, keyFormatter);
 			gtsam::print(prior_, "prior");
 		}
 
@@ -133,7 +133,7 @@ namespace gtsam {
 		friend class boost::serialization::access;
 		template<class ARCHIVE>
 		void serialize(ARCHIVE & ar, const unsigned int version) {
-			ar & boost::serialization::make_nvp("NonlinearFactor1",
+			ar & boost::serialization::make_nvp("NoiseModelFactor1",
 					boost::serialization::base_object<Base>(*this));
 			ar & BOOST_SERIALIZATION_NVP(prior_);
 			ar & BOOST_SERIALIZATION_NVP(mask_);

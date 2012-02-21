@@ -26,7 +26,7 @@ namespace gtsam {
 	 * Binary factor for a bearing measurement
 	 */
 	template<class POSE, class POINT>
-	class BearingFactor: public NonlinearFactor2<POSE, POINT> {
+	class BearingFactor: public NoiseModelFactor2<POSE, POINT> {
 	private:
 
 		typedef POSE Pose;
@@ -34,7 +34,7 @@ namespace gtsam {
 		typedef POINT Point;
 
 		typedef BearingFactor<POSE, POINT> This;
-		typedef NonlinearFactor2<POSE, POINT> Base;
+		typedef NoiseModelFactor2<POSE, POINT> Base;
 
 		Rot measured_; /** measurement */
 
@@ -48,7 +48,7 @@ namespace gtsam {
 		BearingFactor() {}
 
 		/** primary constructor */
-		BearingFactor(const Symbol& poseKey, const Symbol& pointKey, const Rot& measured,
+		BearingFactor(Key poseKey, Key pointKey, const Rot& measured,
 				const SharedNoiseModel& model) :
 					Base(model, poseKey, pointKey), measured_(measured) {
 		}
@@ -79,7 +79,7 @@ namespace gtsam {
 		friend class boost::serialization::access;
 		template<class ARCHIVE>
 		void serialize(ARCHIVE & ar, const unsigned int version) {
-			ar & boost::serialization::make_nvp("NonlinearFactor2",
+			ar & boost::serialization::make_nvp("NoiseModelFactor2",
 					boost::serialization::base_object<Base>(*this));
 			ar & BOOST_SERIALIZATION_NVP(measured_);
 		}

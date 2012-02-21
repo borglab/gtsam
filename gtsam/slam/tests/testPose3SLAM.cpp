@@ -43,6 +43,8 @@ static Matrix covariance = eye(6);
 
 const double tol=1e-5;
 
+const Key kx0 = Symbol("x0"), kx1 = Symbol("x1"), kx2 = Symbol("x2"), kx3 = Symbol("x3"), kx4 = Symbol("x4"), kx5 = Symbol("x5");
+
 /* ************************************************************************* */
 // test optimization with 6 poses arranged in a hexagon and a loop closure
 TEST(Pose3Graph, optimizeCircle) {
@@ -76,7 +78,7 @@ TEST(Pose3Graph, optimizeCircle) {
 
   // Choose an ordering and optimize
   shared_ptr<Ordering> ordering(new Ordering);
-  *ordering += "x0","x1","x2","x3","x4","x5";
+  *ordering += kx0,kx1,kx2,kx3,kx4,kx5;
   NonlinearOptimizationParameters::shared_ptr params = NonlinearOptimizationParameters::newDecreaseThresholds(1e-15, 1e-15);
   pose3SLAM::Optimizer optimizer0(fg, initial, ordering, params);
   pose3SLAM::Optimizer optimizer = optimizer0.levenbergMarquardt();

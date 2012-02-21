@@ -46,7 +46,7 @@ private:
 	/** Create keys by adding key in front */
 	template<typename ITERATOR>
 	static std::vector<KEY> MakeKeys(KEY key, ITERATOR firstParent, ITERATOR lastParent) {
-		std::vector<Key> keys((lastParent - firstParent) + 1);
+		std::vector<KeyType> keys((lastParent - firstParent) + 1);
 		std::copy(firstParent, lastParent, keys.begin() + 1);
 		keys[0] = key;
 		return keys;
@@ -62,16 +62,16 @@ protected:
 
 public:
 
-  typedef KEY Key;
-  typedef Conditional<Key> This;
-  typedef Factor<Key> Base;
+  typedef KEY KeyType;
+  typedef Conditional<KeyType> This;
+  typedef Factor<KeyType> Base;
 
   /**
    * Typedef to the factor type that produces this conditional and that this
    * conditional can be converted to using a factor constructor. Derived
    * classes must redefine this.
    */
-  typedef gtsam::Factor<Key> FactorType;
+  typedef gtsam::Factor<KeyType> FactorType;
 
   /** A shared_ptr to this class.  Derived classes must redefine this. */
   typedef boost::shared_ptr<This> shared_ptr;
@@ -95,23 +95,23 @@ public:
   Conditional() : nrFrontals_(0) { assertInvariants(); }
 
   /** No parents */
-  Conditional(Key key) : FactorType(key), nrFrontals_(1) { assertInvariants(); }
+  Conditional(KeyType key) : FactorType(key), nrFrontals_(1) { assertInvariants(); }
 
   /** Single parent */
-  Conditional(Key key, Key parent) : FactorType(key, parent), nrFrontals_(1) { assertInvariants(); }
+  Conditional(KeyType key, KeyType parent) : FactorType(key, parent), nrFrontals_(1) { assertInvariants(); }
 
   /** Two parents */
-  Conditional(Key key, Key parent1, Key parent2) : FactorType(key, parent1, parent2), nrFrontals_(1) { assertInvariants(); }
+  Conditional(KeyType key, KeyType parent1, KeyType parent2) : FactorType(key, parent1, parent2), nrFrontals_(1) { assertInvariants(); }
 
   /** Three parents */
-  Conditional(Key key, Key parent1, Key parent2, Key parent3) : FactorType(key, parent1, parent2, parent3), nrFrontals_(1) { assertInvariants(); }
+  Conditional(KeyType key, KeyType parent1, KeyType parent2, KeyType parent3) : FactorType(key, parent1, parent2, parent3), nrFrontals_(1) { assertInvariants(); }
 
 	/// @}
 	/// @name Advanced Constructors
 	/// @{
 
   /** Constructor from a frontal variable and a vector of parents */
-	Conditional(Key key, const std::vector<Key>& parents) :
+	Conditional(KeyType key, const std::vector<KeyType>& parents) :
 		FactorType(MakeKeys(key, parents.begin(), parents.end())), nrFrontals_(1) {
 		assertInvariants();
 	}
@@ -145,8 +145,8 @@ public:
 	size_t nrParents() const { return FactorType::size() - nrFrontals_; }
 
 	/** Special accessor when there is only one frontal variable. */
-	Key firstFrontalKey() const { assert(nrFrontals_>0); return FactorType::front(); }
-	Key lastFrontalKey() const { assert(nrFrontals_>0); return *(endFrontals()-1); }
+	KeyType firstFrontalKey() const { assert(nrFrontals_>0); return FactorType::front(); }
+	KeyType lastFrontalKey() const { assert(nrFrontals_>0); return *(endFrontals()-1); }
 
   /** return a view of the frontal keys */
   Frontals frontals() const {
@@ -198,9 +198,9 @@ private:
 template<typename KEY>
 void Conditional<KEY>::print(const std::string& s) const {
   std::cout << s << " P(";
-  BOOST_FOREACH(Key key, frontals()) std::cout << " " << key;
+  BOOST_FOREACH(KeyType key, frontals()) std::cout << " " << key;
   if (nrParents()>0) std::cout << " |";
-  BOOST_FOREACH(Key parent, parents()) std::cout << " " << parent;
+  BOOST_FOREACH(KeyType parent, parents()) std::cout << " " << parent;
   std::cout << ")" << std::endl;
 }
 

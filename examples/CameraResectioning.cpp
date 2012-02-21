@@ -29,8 +29,8 @@ using namespace gtsam;
 /**
  * Unary factor for the pose.
  */
-class ResectioningFactor: public NonlinearFactor1<Pose3> {
-  typedef NonlinearFactor1<Pose3> Base;
+class ResectioningFactor: public NoiseModelFactor1<Pose3> {
+  typedef NoiseModelFactor1<Pose3> Base;
 
   shared_ptrK K_; // camera's intrinsic parameters
   Point3 P_; // 3D point on the calibration rig

@@ -23,7 +23,7 @@
 namespace gtsam {
 
 template<class POSE, class LANDMARK>
-class GenericStereoFactor: public NonlinearFactor2<POSE, LANDMARK> {
+class GenericStereoFactor: public NoiseModelFactor2<POSE, LANDMARK> {
 private:
 
 	// Keep a copy of measurement and calibration for I/O
@@ -33,7 +33,7 @@ private:
 public:
 
 	// shorthand for base class type
-	typedef NonlinearFactor2<POSE, LANDMARK> Base;		     			///< typedef for base class
+	typedef NoiseModelFactor2<POSE, LANDMARK> Base;		     			///< typedef for base class
 	typedef boost::shared_ptr<GenericStereoFactor> shared_ptr;  ///< typedef for shared pointer to this object
 	typedef POSE CamPose;												///< typedef for Pose Lie Value type
 
@@ -50,7 +50,7 @@ public:
 	 * @param landmarkKey the landmark variable key
 	 * @param K the constant calibration
 	 */
-	GenericStereoFactor(const StereoPoint2& measured, const SharedNoiseModel& model, const Symbol& poseKey, const Symbol& landmarkKey, const shared_ptrKStereo& K) :
+	GenericStereoFactor(const StereoPoint2& measured, const SharedNoiseModel& model, Key poseKey, Key landmarkKey, const shared_ptrKStereo& K) :
 		Base(model, poseKey, landmarkKey), measured_(measured), K_(K) {
 	}
 
@@ -60,8 +60,8 @@ public:
 	 * print
 	 * @param s optional string naming the factor
 	 */
-	void print(const std::string& s) const {
-		Base::print(s);
+	void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+		Base::print(s, keyFormatter);
 		measured_.print(s + ".z");
 	}
 

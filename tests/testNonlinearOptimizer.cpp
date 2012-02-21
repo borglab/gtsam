@@ -26,7 +26,7 @@ using namespace boost::assign;
 #include <boost/shared_ptr.hpp>
 using namespace boost;
 
-// Magically casts strings like "x3" to a Symbol('x',3) key, see Symbol.h
+// Magically casts strings like kx(3) to a Symbol('x',3) key, see Symbol.h
 #define GTSAM_MAGIC_KEY
 
 #include <gtsam/base/Matrix.h>
@@ -44,6 +44,9 @@ using namespace gtsam;
 
 const double tol = 1e-5;
 
+Key kx(size_t i) { return Symbol('x',i); }
+Key kl(size_t i) { return Symbol('l',i); }
+
 typedef NonlinearOptimizer<example::Graph> Optimizer;
 
 /* ************************************************************************* */
@@ -55,20 +58,20 @@ TEST( NonlinearOptimizer, linearizeAndOptimizeForDelta )
 
 	// Expected values structure is the difference between the noisy config
 	// and the ground-truth config. One step only because it's linear !
-  Ordering ord1; ord1 += "x2","l1","x1";
+  Ordering ord1; ord1 += kx(2),kl(1),kx(1);
 	VectorValues expected(initial->dims(ord1));
 	Vector dl1(2);
 	dl1(0) = -0.1;
 	dl1(1) = 0.1;
-	expected[ord1["l1"]] = dl1;
+	expected[ord1[kl(1)]] = dl1;
 	Vector dx1(2);
 	dx1(0) = -0.1;
 	dx1(1) = -0.1;
-	expected[ord1["x1"]] = dx1;
+	expected[ord1[kx(1)]] = dx1;
 	Vector dx2(2);
 	dx2(0) = 0.1;
 	dx2(1) = -0.2;
-	expected[ord1["x2"]] = dx2;
+	expected[ord1[kx(2)]] = dx2;
 
 	// Check one ordering
 	Optimizer optimizer1(fg, initial, Optimizer::shared_ordering(new Ordering(ord1)));
@@ -78,7 +81,7 @@ TEST( NonlinearOptimizer, linearizeAndOptimizeForDelta )
 
 // SL-FIX	// Check another
 //	shared_ptr<Ordering> ord2(new Ordering());
-//	*ord2 += "x1","x2","l1";
+//	*ord2 += kx(1),kx(2),kl(1);
 //	solver = Optimizer::shared_solver(new Optimizer::solver(ord2));
 //	Optimizer optimizer2(fg, initial, solver);
 //
@@ -87,7 +90,7 @@ TEST( NonlinearOptimizer, linearizeAndOptimizeForDelta )
 //
 //	// And yet another...
 //	shared_ptr<Ordering> ord3(new Ordering());
-//	*ord3 += "l1","x1","x2";
+//	*ord3 += kl(1),kx(1),kx(2);
 //	solver = Optimizer::shared_solver(new Optimizer::solver(ord3));
 //	Optimizer optimizer3(fg, initial, solver);
 //
@@ -96,7 +99,7 @@ TEST( NonlinearOptimizer, linearizeAndOptimizeForDelta )
 //
 //	// More...
 //	shared_ptr<Ordering> ord4(new Ordering());
-//	*ord4 += "x1","x2", "l1";
+//	*ord4 += kx(1),kx(2), kl(1);
 //	solver = Optimizer::shared_solver(new Optimizer::solver(ord4));
 //	Optimizer optimizer4(fg, initial, solver);
 //
@@ -118,7 +121,7 @@ TEST( NonlinearOptimizer, iterateLM )
 
 	// ordering
 	shared_ptr<Ordering> ord(new Ordering());
-	ord->push_back("x1");
+	ord->push_back(kx(1));
 
 	// create initial optimization state, with lambda=0
 	Optimizer optimizer(fg, config, ord, NonlinearOptimizationParameters::newLambda(0.));
@@ -161,7 +164,7 @@ TEST( NonlinearOptimizer, optimize )
 
 	// optimize parameters
 	shared_ptr<Ordering> ord(new Ordering());
-	ord->push_back("x1");
+	ord->push_back(kx(1));
 
 	// initial optimization state is the same in both cases tested
 	boost::shared_ptr<NonlinearOptimizationParameters> params = boost::make_shared<NonlinearOptimizationParameters>();
@@ -299,7 +302,7 @@ TEST_UNSAFE(NonlinearOptimizer, NullFactor) {
 
   // optimize parameters
   shared_ptr<Ordering> ord(new Ordering());
-  ord->push_back("x1");
+  ord->push_back(kx(1));
 
   // initial optimization state is the same in both cases tested
   boost::shared_ptr<NonlinearOptimizationParameters> params = boost::make_shared<NonlinearOptimizationParameters>();
@@ -367,7 +370,7 @@ TEST_UNSAFE(NonlinearOptimizer, NullFactor) {
 //
 //	// Check one ordering
 //	shared_ptr<Ordering> ord1(new Ordering());
-//	*ord1 += "x2","l1","x1";
+//	*ord1 += kx(2),kl(1),kx(1);
 //	solver = Optimizer::shared_solver(new Optimizer::solver(ord1));
 //	Optimizer optimizer1(fg, initial, solver);
 //

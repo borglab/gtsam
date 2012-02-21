@@ -25,6 +25,15 @@ using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
+TEST(Key, KeySymbolConversion) {
+  Symbol expected('j', 4);
+  Key key(expected);
+  Symbol actual(key);
+
+  EXPECT(assert_equal(expected, actual))
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
 

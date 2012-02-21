@@ -64,7 +64,7 @@ Point3 mea(const Point3& x, const Point3& l,
 /**
  * A prior factor on a single linear robot pose
  */
-struct PointPrior3D: public NonlinearFactor1<Point3> {
+struct PointPrior3D: public NoiseModelFactor1<Point3> {
 
 	Point3 measured_; ///< The prior pose value for the variable attached to this factor
 
@@ -74,8 +74,8 @@ struct PointPrior3D: public NonlinearFactor1<Point3> {
 	 * @param model is the measurement model for the factor (Dimension: 3)
 	 * @param key is the key for the pose
 	 */
-	PointPrior3D(const Point3& measured, const SharedNoiseModel& model, const Symbol& key) :
-	  NonlinearFactor1<Point3> (model, key), measured_(measured) {
+	PointPrior3D(const Point3& measured, const SharedNoiseModel& model, Key key) :
+	  NoiseModelFactor1<Point3> (model, key), measured_(measured) {
 	}
 
 	/**
@@ -94,7 +94,7 @@ struct PointPrior3D: public NonlinearFactor1<Point3> {
 /**
  * Models a linear 3D measurement between 3D points
  */
-struct Simulated3DMeasurement: public NonlinearFactor2<Point3, Point3> {
+struct Simulated3DMeasurement: public NoiseModelFactor2<Point3, Point3> {
 
 	Point3 measured_; ///< Linear displacement between a pose and landmark
 
@@ -106,8 +106,8 @@ struct Simulated3DMeasurement: public NonlinearFactor2<Point3, Point3> {
 	 * @param pointKey is the point key for the landmark
 	 */
 	Simulated3DMeasurement(const Point3& measured, const SharedNoiseModel& model,
-	    const Symbol& poseKey, const Symbol& pointKey) :
-	      NonlinearFactor2<Point3, Point3>(model, poseKey, pointKey), measured_(measured) {}
+	    Key poseKey, Key pointKey) :
+	      NoiseModelFactor2<Point3, Point3>(model, poseKey, pointKey), measured_(measured) {}
 
 	/**
 	 * Error function with optional derivatives

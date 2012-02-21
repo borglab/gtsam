@@ -65,7 +65,7 @@ namespace simulated2D {
        * @param isGreaterThan is a flag to set inequality as greater than or less than
        * @param mu is the penalty function gain
        */
-      ScalarCoordConstraint1(const Symbol& key, double c,
+      ScalarCoordConstraint1(Key key, double c,
           bool isGreaterThan, double mu = 1000.0) :
             Base(key, c, isGreaterThan, mu) {
       }
@@ -127,7 +127,7 @@ namespace simulated2D {
        * @param range_bound is the maximum range allowed between the variables
        * @param mu is the gain for the penalty function
        */
-      MaxDistanceConstraint(const Symbol& key1, const Symbol& key2, double range_bound, double mu = 1000.0) :
+      MaxDistanceConstraint(Key key1, Key key2, double range_bound, double mu = 1000.0) :
         Base(key1, key2, range_bound, false, mu) {}
 
       /**
@@ -170,7 +170,7 @@ namespace simulated2D {
        * @param range_bound is the minimum range allowed between the variables
        * @param mu is the gain for the penalty function
        */
-      MinDistanceConstraint(const Symbol& key1, const Symbol& key2,
+      MinDistanceConstraint(Key key1, Key key2,
           double range_bound, double mu = 1000.0)
       : Base(key1, key2, range_bound, true, mu) {}
 

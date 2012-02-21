@@ -37,7 +37,6 @@
 #include <gtsam/base/Value.h>
 #include <gtsam/base/FastMap.h>
 #include <gtsam/linear/VectorValues.h>
-#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/Ordering.h>
 
 namespace gtsam {
@@ -64,11 +63,11 @@ namespace gtsam {
     // fast_pool_allocator to allocate map nodes.  In this way, all memory is
     // allocated in a boost memory pool.
     typedef boost::ptr_map<
-        Symbol,
+        Key,
         Value,
-        std::less<Symbol>,
+        std::less<Key>,
         ValueCloneAllocator,
-        boost::fast_pool_allocator<std::pair<const Symbol, void*> > > KeyValueMap;
+        boost::fast_pool_allocator<std::pair<const Key, void*> > > KeyValueMap;
 
     // The member to store the values, see just above
     KeyValueMap values_;
@@ -84,16 +83,16 @@ namespace gtsam {
 
     /// A pair of const references to the key and value, the dereferenced type of the const_iterator and const_reverse_iterator
     struct ConstKeyValuePair {
-      const Symbol& first;
+      const Key first;
       const Value& second;
-      ConstKeyValuePair(const Symbol& key, const Value& value) : first(key), second(value) {}
+      ConstKeyValuePair(Key key, const Value& value) : first(key), second(value) {}
     };
 
     /// A pair of references to the key and value, the dereferenced type of the iterator and reverse_iterator
     struct KeyValuePair {
-      const Symbol& first;
+      const Key first;
       Value& second;
-      KeyValuePair(const Symbol& key, Value& value) : first(key), second(value) {}
+      KeyValuePair(Key key, Value& value) : first(key), second(value) {}
     };
 
     /// Mutable forward iterator, with value type KeyValuePair
@@ -122,7 +121,7 @@ namespace gtsam {
     /// @{
 
     /** print method for testing and debugging */
-    void print(const std::string& str = "") const;
+    void print(const std::string& str = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
     /** Test whether the sets of keys and values are identical */
     bool equals(const Values& other, double tol=1e-9) const;
@@ -137,7 +136,7 @@ namespace gtsam {
      * @return A const reference to the stored value
      */
     template<typename ValueType>
-    const ValueType& at(const Symbol& j) const;
+    const ValueType& at(Key j) const;
 
 #if 0
     /** Retrieve a variable by key \c j.  This non-templated version returns a
@@ -147,51 +146,25 @@ namespace gtsam {
      * @return A ValueAutomaticCasting object that may be assignmed to a Value
      * of the proper type.
      */
-    ValueAutomaticCasting at(const Symbol& j) const;
+    ValueAutomaticCasting at(Key j) const;
 #endif
-
-    /** Retrieve a variable using a special key (typically TypedSymbol), which
-     * contains the type of the value associated with the key, and which must
-     * be conversion constructible to a Symbol, e.g.
-     * <tt>Symbol(const TypedKey&)</tt>.  Throws DynamicValuesKeyDoesNotExist
-     * the key is not found, and DynamicValuesIncorrectType if the value type
-     * associated with the requested key does not match the stored value type.
-     */
-    template<class TypedKey>
-    const typename TypedKey::Value& at(const TypedKey& j) const;
-
-    /** operator[] syntax for at(const TypedKey& j) */
-    template<class TypedKey>
-    const typename TypedKey::Value& operator[](const TypedKey& j) const {
-      return at(j); }
 
 #if 0
-    /** operator[] syntax for at(const Symbol& j) */
-    ValueAutomaticCasting operator[](const Symbol& j) const;
+    /** operator[] syntax for at(Key j) */
+    ValueAutomaticCasting operator[](Key j) const;
 #endif
 
-    /** Check if a value exists with key \c j.  See exists<>(const Symbol& j)
+    /** Check if a value exists with key \c j.  See exists<>(Key j)
      * and exists(const TypedKey& j) for versions that return the value if it
      * exists. */
-    bool exists(const Symbol& j) const;
+    bool exists(Key j) const;
 
     /** Check if a value with key \c j exists, returns the value with type
      * \c Value if the key does exist, or boost::none if it does not exist.
      * Throws DynamicValuesIncorrectType if the value type associated with the
      * requested key does not match the stored value type. */
     template<typename ValueType>
-    boost::optional<const ValueType&> exists(const Symbol& j) const;
-
-    /** Check if a value with key \c j exists, returns the value with type
-     * \c Value if the key does exist, or boost::none if it does not exist.
-     * Uses a special key (typically TypedSymbol), which contains the type of
-     * the value associated with the key, and which must be conversion
-     * constructible to a Symbol, e.g. <tt>Symbol(const TypedKey&)</tt>. Throws
-     * DynamicValuesIncorrectType if the value type associated with the
-     * requested key does not match the stored value type.
-     */
-    template<class TypedKey>
-    boost::optional<const typename TypedKey::Value&> exists(const TypedKey& j) const;
+    boost::optional<const ValueType&> exists(Key j) const;
 
     /** The number of variables in this config */
     size_t size() const { return values_.size(); }
@@ -233,25 +206,25 @@ namespace gtsam {
     ///@}
 
     /** Add a variable with the given j, throws KeyAlreadyExists<J> if j is already present */
-    void insert(const Symbol& j, const Value& val);
+    void insert(Key j, const Value& val);
 
     /** Add a set of variables, throws KeyAlreadyExists<J> if a key is already present */
     void insert(const Values& values);
 
     /** single element change of existing element */
-    void update(const Symbol& j, const Value& val);
+    void update(Key j, const Value& val);
 
     /** update the current available values without adding new ones */
     void update(const Values& values);
 
     /** Remove a variable from the config, throws KeyDoesNotExist<J> if j is not present */
-    void erase(const Symbol& j);
+    void erase(Key j);
 
     /**
      * Returns a set of keys in the config
      * Note: by construction, the list is ordered
      */
-    FastList<Symbol> keys() const;
+    FastList<Key> keys() const;
 
     /** Replace all keys and variables */
     Values& operator=(const Values& rhs);
@@ -286,20 +259,20 @@ namespace gtsam {
   /* ************************************************************************* */
   class ValuesKeyAlreadyExists : public std::exception {
   protected:
-    const Symbol key_; ///< The key that already existed
+    const Key key_; ///< The key that already existed
 
   private:
     mutable std::string message_;
 
   public:
     /// Construct with the key-value pair attemped to be added
-    ValuesKeyAlreadyExists(const Symbol& key) throw() :
+    ValuesKeyAlreadyExists(Key key) throw() :
       key_(key) {}
 
     virtual ~ValuesKeyAlreadyExists() throw() {}
 
     /// The duplicate key that was attemped to be added
-    const Symbol& key() const throw() { return key_; }
+    Key key() const throw() { return key_; }
 
     /// The message to be displayed to the user
     virtual const char* what() const throw();
@@ -309,20 +282,20 @@ namespace gtsam {
   class ValuesKeyDoesNotExist : public std::exception {
   protected:
     const char* operation_; ///< The operation that attempted to access the key
-    const Symbol key_; ///< The key that does not exist
+    const Key key_; ///< The key that does not exist
 
   private:
     mutable std::string message_;
 
   public:
     /// Construct with the key that does not exist in the values
-    ValuesKeyDoesNotExist(const char* operation, const Symbol& key) throw() :
+    ValuesKeyDoesNotExist(const char* operation, Key key) throw() :
       operation_(operation), key_(key) {}
 
     virtual ~ValuesKeyDoesNotExist() throw() {}
 
     /// The key that was attempted to be accessed that does not exist
-    const Symbol& key() const throw() { return key_; }
+    Key key() const throw() { return key_; }
 
     /// The message to be displayed to the user
     virtual const char* what() const throw();
@@ -331,7 +304,7 @@ namespace gtsam {
   /* ************************************************************************* */
   class ValuesIncorrectType : public std::exception {
   protected:
-    const Symbol key_; ///< The key requested
+    const Key key_; ///< The key requested
     const std::type_info& storedTypeId_;
     const std::type_info& requestedTypeId_;
 
@@ -340,14 +313,14 @@ namespace gtsam {
 
   public:
     /// Construct with the key that does not exist in the values
-    ValuesIncorrectType(const Symbol& key,
+    ValuesIncorrectType(Key key,
         const std::type_info& storedTypeId, const std::type_info& requestedTypeId) throw() :
       key_(key), storedTypeId_(storedTypeId), requestedTypeId_(requestedTypeId) {}
 
     virtual ~ValuesIncorrectType() throw() {}
 
     /// The key that was attempted to be accessed that does not exist
-    const Symbol& key() const throw() { return key_; }
+    Key key() const throw() { return key_; }
 
     /// The typeid of the value stores in the Values
     const std::type_info& storedTypeId() const { return storedTypeId_; }

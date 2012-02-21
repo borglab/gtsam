@@ -26,13 +26,13 @@ namespace gtsam {
 	 * Binary factor for a range measurement
 	 */
 	template<class POSE, class POINT>
-	class RangeFactor: public NonlinearFactor2<POSE, POINT> {
+	class RangeFactor: public NoiseModelFactor2<POSE, POINT> {
 	private:
 
 		double measured_; /** measurement */
 
 		typedef RangeFactor<POSE, POINT> This;
-		typedef NonlinearFactor2<POSE, POINT> Base;
+		typedef NoiseModelFactor2<POSE, POINT> Base;
 
 		typedef POSE Pose;
 		typedef POINT Point;
@@ -44,7 +44,7 @@ namespace gtsam {
 
 		RangeFactor() {} /* Default constructor */
 
-		RangeFactor(const Symbol& poseKey, const Symbol& pointKey, double measured,
+		RangeFactor(Key poseKey, Key pointKey, double measured,
 				const SharedNoiseModel& model) :
 					Base(model, poseKey, pointKey), measured_(measured) {
 		}
@@ -69,8 +69,8 @@ namespace gtsam {
 		}
 
 		/** print contents */
-		void print(const std::string& s="") const {
-			Base::print(s + std::string(" range: ") + boost::lexical_cast<std::string>(measured_));
+		void print(const std::string& s="", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+			Base::print(s + std::string(" range: ") + boost::lexical_cast<std::string>(measured_), keyFormatter);
 		}
 
 	private:
@@ -79,7 +79,7 @@ namespace gtsam {
 		friend class boost::serialization::access;
 		template<class ARCHIVE>
 		void serialize(ARCHIVE & ar, const unsigned int version) {
-			ar & boost::serialization::make_nvp("NonlinearFactor2",
+			ar & boost::serialization::make_nvp("NoiseModelFactor2",
 					boost::serialization::base_object<Base>(*this));
 			ar & BOOST_SERIALIZATION_NVP(measured_);
 		}

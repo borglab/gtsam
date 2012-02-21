@@ -31,7 +31,7 @@ namespace gtsam {
 	 */
 	template <class CAMERA, class LANDMARK>
 	class GeneralSFMFactor:
-	public NonlinearFactor2<CAMERA, LANDMARK> {
+	public NoiseModelFactor2<CAMERA, LANDMARK> {
 	protected:
 		Point2 measured_;			///< the 2D measurement
 
@@ -39,7 +39,7 @@ namespace gtsam {
 
 		typedef CAMERA Cam;					            					///< typedef for camera type
 		typedef GeneralSFMFactor<CAMERA, LANDMARK> This;	///< typedef for this object
-		typedef NonlinearFactor2<CAMERA, LANDMARK> Base;	///< typedef for the base class
+		typedef NoiseModelFactor2<CAMERA, LANDMARK> Base;	///< typedef for the base class
 		typedef Point2 Measurement;												///< typedef for the measurement
 
 		// shorthand for a smart pointer to a factor
@@ -52,7 +52,7 @@ namespace gtsam {
 		 * @param i is basically the frame number
 		 * @param j is the index of the landmark
 		 */
-		GeneralSFMFactor(const Point2& measured, const SharedNoiseModel& model, const Symbol& cameraKey, const Symbol& landmarkKey) :
+		GeneralSFMFactor(const Point2& measured, const SharedNoiseModel& model, Key cameraKey, Key landmarkKey) :
 		  Base(model, cameraKey, landmarkKey), measured_(measured) {}
 
 		GeneralSFMFactor():measured_(0.0,0.0) {} 							///< default constructor
@@ -65,8 +65,8 @@ namespace gtsam {
 		 * print
 		 * @param s optional string naming the factor
 		 */
-		void print(const std::string& s = "SFMFactor") const {
-			Base::print(s);
+		void print(const std::string& s = "SFMFactor", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+			Base::print(s, keyFormatter);
 			measured_.print(s + ".z");
 		}
 

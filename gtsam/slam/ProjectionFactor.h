@@ -30,7 +30,7 @@ namespace gtsam {
 	 * i.e. the main building block for visual SLAM.
 	 */
 	template<class POSE, class LANDMARK>
-	class GenericProjectionFactor: public NonlinearFactor2<POSE, LANDMARK> {
+	class GenericProjectionFactor: public NoiseModelFactor2<POSE, LANDMARK> {
 	protected:
 
 		// Keep a copy of measurement and calibration for I/O
@@ -40,7 +40,7 @@ namespace gtsam {
 	public:
 
 		/// shorthand for base class type
-		typedef NonlinearFactor2<POSE, LANDMARK> Base;
+		typedef NoiseModelFactor2<POSE, LANDMARK> Base;
 
 		/// shorthand for this class
 		typedef GenericProjectionFactor<POSE, LANDMARK> This;
@@ -63,7 +63,7 @@ namespace gtsam {
 		 * @param K shared pointer to the constant calibration
 		 */
 		GenericProjectionFactor(const Point2& measured, const SharedNoiseModel& model,
-				const Symbol poseKey, const Symbol& pointKey, const shared_ptrK& K) :
+				const Symbol poseKey, Key pointKey, const shared_ptrK& K) :
 				  Base(model, poseKey, pointKey), measured_(measured), K_(K) {
 		}
 
@@ -71,8 +71,8 @@ namespace gtsam {
 		 * print
 		 * @param s optional string naming the factor
 		 */
-		void print(const std::string& s = "ProjectionFactor") const {
-			Base::print(s);
+		void print(const std::string& s = "ProjectionFactor", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+			Base::print(s, keyFormatter);
 			measured_.print(s + ".z");
 		}
 
@@ -92,8 +92,8 @@ namespace gtsam {
 			} catch( CheiralityException& e) {
 			  if (H1) *H1 = zeros(2,6);
 			  if (H2) *H2 = zeros(2,3);
-			  cout << e.what() << ": Landmark "<< this->key2().index() <<
-			      " moved behind camera " << this->key1().index() << endl;
+			  cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2()) <<
+			      " moved behind camera " << DefaultKeyFormatter(this->key1()) << endl;
 			  return ones(2) * 2.0 * K_->fx();
 			}
 		}

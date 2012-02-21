@@ -101,7 +101,7 @@ TEST( Graph, optimizeLM)
 
   // Create an ordering of the variables
   shared_ptr<Ordering> ordering(new Ordering);
-  *ordering += "l1","l2","l3","l4","x1","x2";
+  *ordering += PointKey(1),PointKey(2),PointKey(3),PointKey(4),PoseKey(1),PoseKey(2);
 
   // Create an optimizer and check its error
   // We expect the initial to be zero because config is the ground truth
@@ -138,7 +138,7 @@ TEST( Graph, optimizeLM2)
 
   // Create an ordering of the variables
   shared_ptr<Ordering> ordering(new Ordering);
-  *ordering += "l1","l2","l3","l4","x1","x2";
+  *ordering += PointKey(1),PointKey(2),PointKey(3),PointKey(4),PoseKey(1),PoseKey(2);
 
   // Create an optimizer and check its error
   // We expect the initial to be zero because config is the ground truth
@@ -204,11 +204,11 @@ TEST( Values, update_with_large_delta) {
 	Ordering largeOrdering;
 	Values largeValues = init;
 	largeValues.insert(PoseKey(2), Pose3());
-	largeOrdering += "x1","l1","x2";
+	largeOrdering += PoseKey(1),PointKey(1),PoseKey(2);
 	VectorValues delta(largeValues.dims(largeOrdering));
-	delta[largeOrdering["x1"]] = Vector_(6, 0.0, 0.0, 0.0, 0.1, 0.1, 0.1);
-	delta[largeOrdering["l1"]] = Vector_(3, 0.1, 0.1, 0.1);
-	delta[largeOrdering["x2"]] = Vector_(6, 0.0, 0.0, 0.0, 100.1, 4.1, 9.1);
+	delta[largeOrdering[PoseKey(1)]] = Vector_(6, 0.0, 0.0, 0.0, 0.1, 0.1, 0.1);
+	delta[largeOrdering[PointKey(1)]] = Vector_(3, 0.1, 0.1, 0.1);
+	delta[largeOrdering[PoseKey(2)]] = Vector_(6, 0.0, 0.0, 0.0, 100.1, 4.1, 9.1);
 	Values actual = init.retract(delta, largeOrdering);
 
 	CHECK(assert_equal(expected,actual));

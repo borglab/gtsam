@@ -16,12 +16,9 @@
  * @date Feb 7, 2012
  */
 
-#define GTSAM_MAGIC_KEY
-
 #include <gtsam/inference/IndexConditional.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
 #include <gtsam/inference/BayesTree.h>
-#include <gtsam/nonlinear/Ordering.h>
 
 #include <gtsam/base/serializationTestHelpers.h>
 #include <CppUnitLite/TestHarness.h>
@@ -32,13 +29,12 @@ using namespace gtsam::serializationTestHelpers;
 
 /* ************************************************************************* */
 TEST (Serialization, symbolic_graph) {
-  Ordering o; o += "x1","l1","x2";
   // construct expected symbolic graph
   SymbolicFactorGraph sfg;
-  sfg.push_factor(o["x1"]);
-  sfg.push_factor(o["x1"],o["x2"]);
-  sfg.push_factor(o["x1"],o["l1"]);
-  sfg.push_factor(o["l1"],o["x2"]);
+  sfg.push_factor(0);
+  sfg.push_factor(0,1);
+  sfg.push_factor(0,2);
+  sfg.push_factor(2,1);
 
   EXPECT(equalsObj(sfg));
   EXPECT(equalsXML(sfg));
@@ -46,11 +42,9 @@ TEST (Serialization, symbolic_graph) {
 
 /* ************************************************************************* */
 TEST (Serialization, symbolic_bn) {
-  Ordering o; o += "x2","l1","x1";
-
-  IndexConditional::shared_ptr x2(new IndexConditional(o["x2"], o["l1"], o["x1"]));
-  IndexConditional::shared_ptr l1(new IndexConditional(o["l1"], o["x1"]));
-  IndexConditional::shared_ptr x1(new IndexConditional(o["x1"]));
+  IndexConditional::shared_ptr x2(new IndexConditional(1, 2, 0));
+  IndexConditional::shared_ptr l1(new IndexConditional(2, 0));
+  IndexConditional::shared_ptr x1(new IndexConditional(0));
 
   SymbolicBayesNet sbn;
   sbn.push_back(x2);

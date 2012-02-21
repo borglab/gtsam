@@ -44,8 +44,10 @@ struct ISAM2<CONDITIONAL, GRAPH>::Impl {
    * @param delta Current linear delta to be augmented with zeros
    * @param ordering Current ordering to be augmented with new variables
    * @param nodes Current BayesTree::Nodes index to be augmented with slots for new variables
+   * @param keyFormatter Formatter for printing nonlinear keys during debugging
    */
-  static void AddVariables(const Values& newTheta, Values& theta, Permuted<VectorValues>& delta, Ordering& ordering, typename Base::Nodes& nodes);
+  static void AddVariables(const Values& newTheta, Values& theta, Permuted<VectorValues>& delta, Ordering& ordering,
+      typename Base::Nodes& nodes, const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
   /**
    * Extract the set of variable indices from a NonlinearFactorGraph.  For each Symbol
@@ -61,10 +63,12 @@ struct ISAM2<CONDITIONAL, GRAPH>::Impl {
    * Any variables in the VectorValues delta whose vector magnitude is greater than
    * or equal to relinearizeThreshold are returned.
    * @param delta The linear delta to check against the threshold
+   * @param keyFormatter Formatter for printing nonlinear keys during debugging
    * @return The set of variable indices in delta whose magnitude is greater than or
    * equal to relinearizeThreshold
    */
-  static FastSet<Index> CheckRelinearization(const Permuted<VectorValues>& delta, const Ordering& ordering, const ISAM2Params::RelinearizationThreshold& relinearizeThreshold);
+  static FastSet<Index> CheckRelinearization(const Permuted<VectorValues>& delta, const Ordering& ordering,
+      const ISAM2Params::RelinearizationThreshold& relinearizeThreshold, const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
   /**
    * Recursively search this clique and its children for marked keys appearing
@@ -94,10 +98,12 @@ struct ISAM2<CONDITIONAL, GRAPH>::Impl {
    * expmapped deltas will be set to an invalid value (infinity) to catch bugs
    * where we might expmap something twice, or expmap it but then not
    * recalculate its delta.
+   * @param keyFormatter Formatter for printing nonlinear keys during debugging
    */
   static void ExpmapMasked(Values& values, const Permuted<VectorValues>& delta,
       const Ordering& ordering, const std::vector<bool>& mask,
-      boost::optional<Permuted<VectorValues>&> invalidateIfDebug = boost::optional<Permuted<VectorValues>&>());
+      boost::optional<Permuted<VectorValues>&> invalidateIfDebug = boost::optional<Permuted<VectorValues>&>(),
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
   /**
    * Reorder and eliminate factors.  These factors form a subset of the full
@@ -120,7 +126,7 @@ struct ISAM2<CONDITIONAL, GRAPH>::Impl {
 /* ************************************************************************* */
 template<class CONDITIONAL, class GRAPH>
 void ISAM2<CONDITIONAL,GRAPH>::Impl::AddVariables(
-    const Values& newTheta, Values& theta, Permuted<VectorValues>& delta, Ordering& ordering, typename Base::Nodes& nodes) {
+    const Values& newTheta, Values& theta, Permuted<VectorValues>& delta, Ordering& ordering, typename Base::Nodes& nodes, const KeyFormatter& keyFormatter) {
   const bool debug = ISDEBUG("ISAM2 AddVariables");
 
   theta.insert(newTheta);
@@ -139,7 +145,7 @@ void ISAM2<CONDITIONAL,GRAPH>::Impl::AddVariables(
     BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, newTheta) {
       delta.permutation()[nextVar] = nextVar;
       ordering.insert(key_value.first, nextVar);
-      if(debug) cout << "Adding variable " << (string)key_value.first << " with order " << nextVar << endl;
+      if(debug) cout << "Adding variable " << keyFormatter(key_value.first) << " with order " << nextVar << endl;
       ++ nextVar;
     }
     assert(delta.permutation().size() == delta.container().size());
@@ -155,7 +161,7 @@ template<class CONDITIONAL, class GRAPH>
 FastSet<Index> ISAM2<CONDITIONAL,GRAPH>::Impl::IndicesFromFactors(const Ordering& ordering, const GRAPH& factors) {
   FastSet<Index> indices;
   BOOST_FOREACH(const typename NonlinearFactor::shared_ptr& factor, factors) {
-    BOOST_FOREACH(const Symbol& key, factor->keys()) {
+    BOOST_FOREACH(Key key, factor->keys()) {
       indices.insert(ordering[key]);
     }
   }
@@ -164,7 +170,8 @@ FastSet<Index> ISAM2<CONDITIONAL,GRAPH>::Impl::IndicesFromFactors(const Ordering
 
 /* ************************************************************************* */
 template<class CONDITIONAL, class GRAPH>
-FastSet<Index> ISAM2<CONDITIONAL,GRAPH>::Impl::CheckRelinearization(const Permuted<VectorValues>& delta, const Ordering& ordering, const ISAM2Params::RelinearizationThreshold& relinearizeThreshold) {
+FastSet<Index> ISAM2<CONDITIONAL,GRAPH>::Impl::CheckRelinearization(const Permuted<VectorValues>& delta, const Ordering& ordering,
+    const ISAM2Params::RelinearizationThreshold& relinearizeThreshold, const KeyFormatter& keyFormatter) {
   FastSet<Index> relinKeys;
 
   if(relinearizeThreshold.type() == typeid(double)) {
@@ -178,7 +185,7 @@ FastSet<Index> ISAM2<CONDITIONAL,GRAPH>::Impl::CheckRelinearization(const Permut
   } else if(relinearizeThreshold.type() == typeid(FastMap<char,Vector>)) {
     const FastMap<char,Vector>& thresholds = boost::get<FastMap<char,Vector> >(relinearizeThreshold);
     BOOST_FOREACH(const Ordering::value_type& key_index, ordering) {
-      const Vector& threshold = thresholds.find(key_index.first.chr())->second;
+      const Vector& threshold = thresholds.find(Symbol(key_index.first).chr())->second;
       Index j = key_index.second;
       if(threshold.rows() != delta[j].rows())
         throw std::invalid_argument("Relinearization threshold vector dimensionality passed into iSAM2 parameters does not match actual variable dimensionality");
@@ -213,8 +220,8 @@ void ISAM2<CONDITIONAL,GRAPH>::Impl::FindAll(typename ISAM2Clique<CONDITIONAL>::
 
 /* ************************************************************************* */
 template<class CONDITIONAL, class GRAPH>
-void ISAM2<CONDITIONAL, GRAPH>::Impl::ExpmapMasked(Values& values, const Permuted<VectorValues>& delta,
-    const Ordering& ordering, const vector<bool>& mask, boost::optional<Permuted<VectorValues>&> invalidateIfDebug) {
+void ISAM2<CONDITIONAL, GRAPH>::Impl::ExpmapMasked(Values& values, const Permuted<VectorValues>& delta, const Ordering& ordering,
+    const vector<bool>& mask, boost::optional<Permuted<VectorValues>&> invalidateIfDebug, const KeyFormatter& keyFormatter) {
   // If debugging, invalidate if requested, otherwise do not invalidate.
   // Invalidating means setting expmapped entries to Inf, to trigger assertions
   // if we try to re-use them.
@@ -231,9 +238,9 @@ void ISAM2<CONDITIONAL, GRAPH>::Impl::ExpmapMasked(Values& values, const Permute
     const Index var = key_index->second;
     if(ISDEBUG("ISAM2 update verbose")) {
       if(mask[var])
-        cout << "expmap " << (string)key_value->first << " (j = " << var << "), delta = " << delta[var].transpose() << endl;
+        cout << "expmap " << keyFormatter(key_value->first) << " (j = " << var << "), delta = " << delta[var].transpose() << endl;
       else
-        cout << "       " << (string)key_value->first << " (j = " << var << "), delta = " << delta[var].transpose() << endl;
+        cout << "       " << keyFormatter(key_value->first) << " (j = " << var << "), delta = " << delta[var].transpose() << endl;
     }
     assert(delta[var].size() == (int)key_value->second.dim());
     assert(delta[var].unaryExpr(&isfinite<double>).all());

@@ -33,8 +33,13 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	void NonlinearFactorGraph::print(const std::string& str) const {
-		Base::print(str);
+	void NonlinearFactorGraph::print(const std::string& str, const KeyFormatter& keyFormatter) const {
+    cout << str << "size: " << size() << endl;
+    for (size_t i = 0; i < factors_.size(); i++) {
+      stringstream ss;
+      ss << "factor " << i << ": ";
+      if (factors_[i] != NULL) factors_[i]->print(ss.str(), keyFormatter);
+    }
 	}
 
 	/* ************************************************************************* */
@@ -49,8 +54,8 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	std::set<Symbol> NonlinearFactorGraph::keys() const {
-		std::set<Symbol> keys;
+	std::set<Key> NonlinearFactorGraph::keys() const {
+		std::set<Key> keys;
 		BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
 		  if(factor)
 		    keys.insert(factor->begin(), factor->end());

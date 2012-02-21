@@ -55,28 +55,28 @@ class Factor {
 
 public:
 
-  typedef KEY Key; ///< The KEY template parameter
-  typedef Factor<Key> This; ///< This class
+  typedef KEY KeyType; ///< The KEY template parameter
+  typedef Factor<KeyType> This; ///< This class
 
   /**
    * Typedef to the conditional type obtained by eliminating this factor,
    * derived classes must redefine this.
    */
-  typedef Conditional<Key> ConditionalType;
+  typedef Conditional<KeyType> ConditionalType;
 
   /// A shared_ptr to this class, derived classes must redefine this.
   typedef boost::shared_ptr<Factor> shared_ptr;
 
   /// Iterator over keys
-  typedef typename std::vector<Key>::iterator iterator;
+  typedef typename std::vector<KeyType>::iterator iterator;
 
   /// Const iterator over keys
-  typedef typename std::vector<Key>::const_iterator const_iterator;
+  typedef typename std::vector<KeyType>::const_iterator const_iterator;
 
 protected:
 
   /// The keys involved in this factor
-  std::vector<Key> keys_;
+  std::vector<KeyType> keys_;
 
   friend class JacobianFactor;
   friend class HessianFactor;
@@ -102,19 +102,19 @@ public:
   Factor() {}
 
   /** Construct unary factor */
-  Factor(Key key) : keys_(1) {
+  Factor(KeyType key) : keys_(1) {
     keys_[0] = key; assertInvariants(); }
 
   /** Construct binary factor */
-  Factor(Key key1, Key key2) : keys_(2) {
+  Factor(KeyType key1, KeyType key2) : keys_(2) {
     keys_[0] = key1; keys_[1] = key2; assertInvariants(); }
 
   /** Construct ternary factor */
-  Factor(Key key1, Key key2, Key key3) : keys_(3) {
+  Factor(KeyType key1, KeyType key2, KeyType key3) : keys_(3) {
     keys_[0] = key1; keys_[1] = key2; keys_[2] = key3; assertInvariants(); }
 
   /** Construct 4-way factor */
-  Factor(Key key1, Key key2, Key key3, Key key4) : keys_(4) {
+  Factor(KeyType key1, KeyType key2, KeyType key3, KeyType key4) : keys_(4) {
     keys_[0] = key1; keys_[1] = key2; keys_[2] = key3; keys_[3] = key4; assertInvariants(); }
 
 	/// @}
@@ -122,13 +122,13 @@ public:
 	/// @{
 
   /** Construct n-way factor */
-	Factor(const std::set<Key>& keys) {
-		BOOST_FOREACH(const Key& key, keys) keys_.push_back(key);
+	Factor(const std::set<KeyType>& keys) {
+		BOOST_FOREACH(const KeyType& key, keys) keys_.push_back(key);
 		assertInvariants();
 	}
 
 	/** Construct n-way factor */
-	Factor(const std::vector<Key>& keys) : keys_(keys) {
+	Factor(const std::vector<KeyType>& keys) : keys_(keys) {
 		assertInvariants();
 	}
 
@@ -157,16 +157,16 @@ public:
 	/// @{
 
   /// First key
-  Key front() const { return keys_.front(); }
+  KeyType front() const { return keys_.front(); }
 
   /// Last key
-  Key back() const { return keys_.back(); }
+  KeyType back() const { return keys_.back(); }
 
   /// find
-  const_iterator find(Key key) const { return std::find(begin(), end(), key); }
+  const_iterator find(KeyType key) const { return std::find(begin(), end(), key); }
 
   ///TODO: comment
-  const std::vector<Key>& keys() const { return keys_; }
+  const std::vector<KeyType>& keys() const { return keys_; }
 
   /** iterators */
   const_iterator begin() const { return keys_.begin(); }	///TODO: comment
@@ -194,7 +194,7 @@ public:
   /**
    * @return keys involved in this factor
    */
-  std::vector<Key>& keys() { return keys_; }
+  std::vector<KeyType>& keys() { return keys_; }
 
   /** mutable iterators */
   iterator begin() { return keys_.begin(); }	///TODO: comment

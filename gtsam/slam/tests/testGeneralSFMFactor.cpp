@@ -89,14 +89,14 @@ TEST( GeneralSFMFactor, equals )
 TEST( GeneralSFMFactor, error ) {
 	Point2 z(3.,0.);
 	const SharedNoiseModel sigma(noiseModel::Unit::Create(1));
-	boost::shared_ptr<Projection>	factor(new Projection(z, sigma, "x1", "l1"));
+	boost::shared_ptr<Projection>	factor(new Projection(z, sigma, Symbol("x1"), Symbol("l1")));
 	// For the following configuration, the factor predicts 320,240
 	Values values;
 	Rot3 R;
 	Point3 t1(0,0,-6);
 	Pose3 x1(R,t1);
-	values.insert("x1", GeneralCamera(x1));
-	Point3 l1;  values.insert("l1", l1);
+	values.insert(Symbol("x1"), GeneralCamera(x1));
+	Point3 l1;  values.insert(Symbol("l1"), l1);
 	EXPECT(assert_equal(Vector_(2, -3.0, 0.0), factor->unwhitenedError(values)));
 }
 
@@ -137,10 +137,9 @@ vector<GeneralCamera> genCameraVariableCalibration() {
 }
 
 shared_ptr<Ordering> getOrdering(const vector<GeneralCamera>& X, const vector<Point3>& L) {
-  list<Symbol> keys;
-  for ( size_t i = 0 ; i < L.size() ; ++i ) keys.push_back(Symbol('l', i)) ;
-  for ( size_t i = 0 ; i < X.size() ; ++i ) keys.push_back(Symbol('x', i)) ;
-  shared_ptr<Ordering> ordering(new Ordering(keys));
+  shared_ptr<Ordering> ordering(new Ordering);
+  for ( size_t i = 0 ; i < L.size() ; ++i ) ordering->push_back(Symbol('l', i)) ;
+  for ( size_t i = 0 ; i < X.size() ; ++i ) ordering->push_back(Symbol('x', i)) ;
   return ordering ;
 }
 

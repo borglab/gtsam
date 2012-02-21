@@ -46,6 +46,8 @@ static noiseModel::Gaussian::shared_ptr covariance(
 	)));
 //static noiseModel::Gaussian::shared_ptr I3(noiseModel::Unit::Create(3));
 
+const Key kx0 = Symbol("x0"), kx1 = Symbol("x1"), kx2 = Symbol("x2"), kx3 = Symbol("x3"), kx4 = Symbol("x4"), kx5 = Symbol("x5"), kl1 = Symbol("l1");
+
 /* ************************************************************************* */
 // Test constraint, small displacement
 Vector f1(const Pose2& pose1, const Pose2& pose2) {
@@ -140,7 +142,7 @@ TEST( Pose2SLAM, linearization )
 
 	Vector b = Vector_(3,-0.1/sx,0.1/sy,0.0);
 	SharedDiagonal probModel1 = noiseModel::Unit::Create(3);
-	lfg_expected.push_back(JacobianFactor::shared_ptr(new JacobianFactor(ordering["x1"], A1, ordering["x2"], A2, b, probModel1)));
+	lfg_expected.push_back(JacobianFactor::shared_ptr(new JacobianFactor(ordering[kx1], A1, ordering[kx2], A2, b, probModel1)));
 
 	CHECK(assert_equal(lfg_expected, *lfg_linearized));
 }
@@ -160,7 +162,7 @@ TEST(Pose2Graph, optimize) {
 
   // Choose an ordering and optimize
   shared_ptr<Ordering> ordering(new Ordering);
-  *ordering += "x0","x1";
+  *ordering += kx0, kx1;
   typedef NonlinearOptimizer<pose2SLAM::Graph> Optimizer;
 
   NonlinearOptimizationParameters::shared_ptr params = NonlinearOptimizationParameters::newDecreaseThresholds(1e-15, 1e-15);
@@ -198,7 +200,7 @@ TEST(Pose2Graph, optimizeThreePoses) {
 
   // Choose an ordering
   shared_ptr<Ordering> ordering(new Ordering);
-  *ordering += "x0","x1","x2";
+  *ordering += kx0,kx1,kx2;
 
   // optimize
   NonlinearOptimizationParameters::shared_ptr params = NonlinearOptimizationParameters::newDecreaseThresholds(1e-15, 1e-15);
@@ -241,7 +243,7 @@ TEST_UNSAFE(Pose2SLAM, optimizeCircle) {
 
   // Choose an ordering
   shared_ptr<Ordering> ordering(new Ordering);
-  *ordering += "x0","x1","x2","x3","x4","x5";
+  *ordering += kx0,kx1,kx2,kx3,kx4,kx5;
 
   // optimize
   NonlinearOptimizationParameters::shared_ptr params = NonlinearOptimizationParameters::newDecreaseThresholds(1e-15, 1e-15);
@@ -400,14 +402,14 @@ TEST( Pose2Prior, error )
 
 	// Check error at x0, i.e. delta = zero !
 	VectorValues delta(VectorValues::Zero(x0.dims(ordering)));
-	delta[ordering["x1"]] = zero(3);
+	delta[ordering[kx1]] = zero(3);
 	Vector error_at_zero = Vector_(3,0.0,0.0,0.0);
 	CHECK(assert_equal(error_at_zero,factor.whitenedError(x0)));
 	CHECK(assert_equal(-error_at_zero,linear->error_vector(delta)));
 
 	// Check error after increasing p2
 	VectorValues addition(VectorValues::Zero(x0.dims(ordering)));
-	addition[ordering["x1"]] = Vector_(3, 0.1, 0.0, 0.0);
+	addition[ordering[kx1]] = Vector_(3, 0.1, 0.0, 0.0);
 	VectorValues plus = delta + addition;
 	pose2SLAM::Values x1 = x0.retract(plus, ordering);
 	Vector error_at_plus = Vector_(3,0.1/sx,0.0,0.0); // h(x)-z = 0.1 !
@@ -441,7 +443,7 @@ TEST( Pose2Prior, linearize )
 
 	// Test with numerical derivative
 	Matrix numericalH = numericalDerivative11(hprior, priorVal);
-	CHECK(assert_equal(numericalH,actual->getA(actual->find(ordering["x1"]))));
+	CHECK(assert_equal(numericalH,actual->getA(actual->find(ordering[kx1]))));
 }
 
 /* ************************************************************************* */
@@ -466,15 +468,15 @@ TEST( Pose2Factor, error )
 
 	// Check error at x0, i.e. delta = zero !
 	VectorValues delta(x0.dims(ordering));
-	delta[ordering["x1"]] = zero(3);
-	delta[ordering["x2"]] = zero(3);
+	delta[ordering[kx1]] = zero(3);
+	delta[ordering[kx2]] = zero(3);
 	Vector error_at_zero = Vector_(3,0.0,0.0,0.0);
 	CHECK(assert_equal(error_at_zero,factor.unwhitenedError(x0)));
 	CHECK(assert_equal(-error_at_zero, linear->error_vector(delta)));
 
 	// Check error after increasing p2
 	VectorValues plus = delta;
-	plus[ordering["x2"]] = Vector_(3, 0.1, 0.0, 0.0);
+	plus[ordering[kx2]] = Vector_(3, 0.1, 0.0, 0.0);
 	pose2SLAM::Values x1 = x0.retract(plus, ordering);
 	Vector error_at_plus = Vector_(3,0.1/sx,0.0,0.0); // h(x)-z = 0.1 !
 	CHECK(assert_equal(error_at_plus,factor.whitenedError(x1)));
@@ -542,7 +544,7 @@ TEST( Pose2Factor, linearize )
 	// expected linear factor
 	Ordering ordering(*x0.orderingArbitrary());
 	SharedDiagonal probModel1 = noiseModel::Unit::Create(3);
-	JacobianFactor expected(ordering["x1"], expectedH1, ordering["x2"], expectedH2, expected_b, probModel1);
+	JacobianFactor expected(ordering[kx1], expectedH1, ordering[kx2], expectedH2, expected_b, probModel1);
 
 	// Actual linearization
 	boost::shared_ptr<JacobianFactor> actual =

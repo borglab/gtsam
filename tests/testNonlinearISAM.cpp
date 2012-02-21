@@ -48,8 +48,8 @@ TEST(testNonlinearISAM, markov_chain ) {
 			Ordering ordering = isam.getOrdering();
 
 			// swap last two elements
-			Symbol last = ordering.pop_back().first;
-			Symbol secondLast = ordering.pop_back().first;
+			Key last = ordering.pop_back().first;
+			Key secondLast = ordering.pop_back().first;
 			ordering.push_back(last);
 			ordering.push_back(secondLast);
 			isam.setOrdering(ordering);

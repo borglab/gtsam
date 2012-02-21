@@ -24,7 +24,7 @@
 
 using namespace std;
 
-// Magically casts strings like "x3" to a Symbol('x',3) key, see Symbol.h
+// Magically casts strings like Symbol("x3") to a Symbol('x',3) key, see Symbol.h
 #define GTSAM_MAGIC_KEY
 
 #include <gtsam/base/Matrix.h>
@@ -121,18 +121,18 @@ namespace example {
 	/* ************************************************************************* */
 	VectorValues createCorrectDelta(const Ordering& ordering) {
 		VectorValues c(vector<size_t>(3,2));
-		c[ordering["l1"]] = Vector_(2, -0.1, 0.1);
-		c[ordering["x1"]] = Vector_(2, -0.1, -0.1);
-		c[ordering["x2"]] = Vector_(2, 0.1, -0.2);
+		c[ordering[Symbol(Symbol("l1"))]] = Vector_(2, -0.1, 0.1);
+		c[ordering[Symbol("x1")]] = Vector_(2, -0.1, -0.1);
+		c[ordering[Symbol("x2")]] = Vector_(2, 0.1, -0.2);
 		return c;
 	}
 
 	/* ************************************************************************* */
 	VectorValues createZeroDelta(const Ordering& ordering) {
 		VectorValues c(vector<size_t>(3,2));
-		c[ordering["l1"]] = zero(2);
-		c[ordering["x1"]] = zero(2);
-		c[ordering["x2"]] = zero(2);
+		c[ordering[Symbol(Symbol("l1"))]] = zero(2);
+		c[ordering[Symbol("x1")]] = zero(2);
+		c[ordering[Symbol("x2")]] = zero(2);
 		return c;
 	}
 
@@ -144,16 +144,16 @@ namespace example {
 		SharedDiagonal unit2 = noiseModel::Unit::Create(2);
 
 		// linearized prior on x1: c[_x1_]+x1=0 i.e. x1=-c[_x1_]
-		fg.add(ordering["x1"], 10*eye(2), -1.0*ones(2), unit2);
+		fg.add(ordering[Symbol("x1")], 10*eye(2), -1.0*ones(2), unit2);
 
 		// odometry between x1 and x2: x2-x1=[0.2;-0.1]
-		fg.add(ordering["x1"], -10*eye(2),ordering["x2"], 10*eye(2), Vector_(2, 2.0, -1.0), unit2);
+		fg.add(ordering[Symbol("x1")], -10*eye(2),ordering[Symbol("x2")], 10*eye(2), Vector_(2, 2.0, -1.0), unit2);
 
     // measurement between x1 and l1: l1-x1=[0.0;0.2]
-		fg.add(ordering["x1"], -5*eye(2), ordering["l1"], 5*eye(2), Vector_(2, 0.0, 1.0), unit2);
+		fg.add(ordering[Symbol("x1")], -5*eye(2), ordering[Symbol("l1")], 5*eye(2), Vector_(2, 0.0, 1.0), unit2);
 
 		// measurement between x2 and l1: l1-x2=[-0.2;0.3]
-		fg.add(ordering["x2"], -5*eye(2), ordering["l1"], 5*eye(2), Vector_(2, -1.0, 1.5), unit2);
+		fg.add(ordering[Symbol("x2")], -5*eye(2), ordering[Symbol("l1")], 5*eye(2), Vector_(2, -1.0, 1.5), unit2);
 
 		return *fg.dynamicCastFactors<FactorGraph<JacobianFactor> >();
 	}
@@ -198,12 +198,12 @@ namespace example {
 					 0.0, cos(v.y()));
 		}
 
-		struct UnaryFactor: public gtsam::NonlinearFactor1<Point2> {
+		struct UnaryFactor: public gtsam::NoiseModelFactor1<Point2> {
 
 			Point2 z_;
 
-			UnaryFactor(const Point2& z, const SharedNoiseModel& model, const Symbol& key) :
-				gtsam::NonlinearFactor1<Point2>(model, key), z_(z) {
+			UnaryFactor(const Point2& z, const SharedNoiseModel& model, Key key) :
+				gtsam::NoiseModelFactor1<Point2>(model, key), z_(z) {
 			}
 
 			Vector evaluateError(const Point2& x, boost::optional<Matrix&> A = boost::none) const {
