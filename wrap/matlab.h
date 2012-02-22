@@ -40,8 +40,6 @@ using namespace std;
 using namespace boost; // not usual, but for conciseness of generated code
 
 // start GTSAM Specifics /////////////////////////////////////////////////
-// to make keys be constructed from strings:
-#define GTSAM_MAGIC_KEY
 // to enable Matrix and Vector constructor for SharedGaussian:
 #define GTSAM_MAGIC_GAUSSIAN
 // end GTSAM Specifics /////////////////////////////////////////////////

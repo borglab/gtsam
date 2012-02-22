@@ -11,8 +11,6 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
-#define GTSAM_MAGIC_KEY
-
 #include <gtsam/base/debug.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/nonlinear/Ordering.h>

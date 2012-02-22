@@ -25,9 +25,6 @@
 // TODO: DANGEROUS, create shared pointers
 #define GTSAM_MAGIC_GAUSSIAN 2
 
-// Magically casts strings like PoseKey(3) to a Symbol('x',3) key, see Symbol.h
-#define GTSAM_MAGIC_KEY
-
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/LieVector.h>

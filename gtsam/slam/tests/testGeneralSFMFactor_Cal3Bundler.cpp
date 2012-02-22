@@ -12,9 +12,6 @@
 #include <CppUnitLite/TestHarness.h>
 using namespace boost;
 
-// Magically casts strings like "x3" to a Symbol('x',3) key, see Symbol.h
-#define GTSAM_MAGIC_KEY
-
 #include <gtsam/base/Testable.h>
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/PinholeCamera.h>
@@ -75,7 +72,7 @@ TEST( GeneralSFMFactor, equals )
 {
   // Create two identical factors and make sure they're equal
   Vector z = Vector_(2,323.,240.);
-  const Symbol cameraFrameNumber="x1", landmarkNumber="l1";
+  const Symbol cameraFrameNumber('x',1), landmarkNumber('l',1);
   const SharedNoiseModel sigma(noiseModel::Unit::Create(1));
   boost::shared_ptr<Projection>
     factor1(new Projection(z, sigma, cameraFrameNumber, landmarkNumber));
@@ -91,14 +88,14 @@ TEST( GeneralSFMFactor, error ) {
   Point2 z(3.,0.);
   const SharedNoiseModel sigma(noiseModel::Unit::Create(1));
   boost::shared_ptr<Projection>
-  factor(new Projection(z, sigma, Symbol("x1"), Symbol("l1")));
+  factor(new Projection(z, sigma, Symbol('x',1), Symbol('l',1)));
   // For the following configuration, the factor predicts 320,240
   Values values;
   Rot3 R;
   Point3 t1(0,0,-6);
   Pose3 x1(R,t1);
-  values.insert(Symbol("x1"), GeneralCamera(x1));
-  Point3 l1;  values.insert(Symbol("l1"), l1);
+  values.insert(Symbol('x',1), GeneralCamera(x1));
+  Point3 l1;  values.insert(Symbol('l',1), l1);
   EXPECT(assert_equal(Vector_(2, -3.0, 0.0), factor->unwhitenedError(values)));
 }
 

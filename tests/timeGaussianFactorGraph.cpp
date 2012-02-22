@@ -15,9 +15,6 @@
  * @author  Frank Dellaert
  */
 
-// Magically casts strings like "x3" to a Symbol('x',3) key, see Symbol.h
-#define GTSAM_MAGIC_KEY
-
 #include <time.h>
 #include <boost/foreach.hpp>
 #include <boost/assign/std/list.hpp> // for operator += in Ordering

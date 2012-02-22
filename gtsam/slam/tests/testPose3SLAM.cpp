@@ -28,9 +28,6 @@ using namespace boost::assign;
 // TODO: DANGEROUS, create shared pointers
 #define GTSAM_MAGIC_GAUSSIAN 6
 
-// Magically casts strings like "x3" to a Symbol('x',3) key, see Symbol.h
-#define GTSAM_MAGIC_KEY
-
 #include <gtsam/slam/pose3SLAM.h>
 #include <gtsam/slam/PartialPriorFactor.h>
 
@@ -43,7 +40,7 @@ static Matrix covariance = eye(6);
 
 const double tol=1e-5;
 
-const Key kx0 = Symbol("x0"), kx1 = Symbol("x1"), kx2 = Symbol("x2"), kx3 = Symbol("x3"), kx4 = Symbol("x4"), kx5 = Symbol("x5");
+const Key kx0 = Symbol('x',0), kx1 = Symbol('x',1), kx2 = Symbol('x',2), kx3 = Symbol('x',3), kx4 = Symbol('x',4), kx5 = Symbol('x',5);
 
 /* ************************************************************************* */
 // test optimization with 6 poses arranged in a hexagon and a loop closure

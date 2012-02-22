@@ -16,8 +16,6 @@
  * @date Feb 7, 2012
  */
 
-#define GTSAM_MAGIC_KEY
-
 #include <gtsam/linear/GaussianISAM.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
 #include <gtsam/slam/smallExample.h>
@@ -51,7 +49,7 @@ BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal");
 TEST (Serialization, smallExample_linear) {
   using namespace example;
 
-  Ordering ordering; ordering += Symbol("x1"),Symbol("x2"),Symbol("l1");
+  Ordering ordering; ordering += Symbol('x',1),Symbol('x',2),Symbol('l',1);
   GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
   EXPECT(equalsObj(ordering));
   EXPECT(equalsXML(ordering));

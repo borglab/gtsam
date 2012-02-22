@@ -20,9 +20,6 @@
 
 #include <gtsam/base/TestableAssertions.h>
 
-// Magically casts strings like "x3" to a Symbol('x',3) key, see Symbol.h
-#define GTSAM_MAGIC_KEY
-
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Pose3.h>

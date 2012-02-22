@@ -25,9 +25,6 @@
 #include <boost/assign/std/vector.hpp>
 using namespace boost::assign;
 
-// Magically casts strings like kx(3) to a Symbol('x',3) key, see Symbol.h
-#define GTSAM_MAGIC_KEY
-
 #include <gtsam/base/debug.h>
 #include <gtsam/base/cholesky.h>
 #include <gtsam/inference/BayesTree-inl.h>

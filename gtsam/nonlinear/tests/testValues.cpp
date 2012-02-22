@@ -20,8 +20,6 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 
-#define GTSAM_MAGIC_KEY
-
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/LieVector.h>
@@ -33,7 +31,7 @@ using namespace gtsam;
 using namespace std;
 static double inf = std::numeric_limits<double>::infinity();
 
-Key key1(Symbol("v1")), key2(Symbol("v2")), key3(Symbol("v3")), key4(Symbol("v4"));
+Key key1(Symbol('v',1)), key2(Symbol('v',2)), key3(Symbol('v',3)), key4(Symbol('v',4));
 
 /* ************************************************************************* */
 TEST( Values, equals1 )

@@ -26,9 +26,6 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
-// Magically casts strings like kx3 to a Symbol('x',3) key, see Symbol.h
-#define GTSAM_MAGIC_KEY
-
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/linear/GaussianConditional.h>
@@ -44,7 +41,7 @@ static SharedDiagonal
 	sigma0_1 = sharedSigma(2,0.1), sigma_02 = sharedSigma(2,0.2),
 	constraintModel = noiseModel::Constrained::All(2);
 
-const Key kx1 = Symbol("x1"), kx2 = Symbol("x2"), kl1 = Symbol("l1");
+const Key kx1 = Symbol('x',1), kx2 = Symbol('x',2), kl1 = Symbol('l',1);
 
 /* ************************************************************************* */
 TEST( GaussianFactor, linearFactor )

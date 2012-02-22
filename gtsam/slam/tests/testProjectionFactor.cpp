@@ -18,9 +18,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-// Magically casts strings like "x3" to a Symbol('x',3) key, see Symbol.h
-#define GTSAM_MAGIC_KEY
-
 #include <gtsam/slam/visualSLAM.h>
 
 using namespace std;
@@ -40,7 +37,7 @@ static Cal3_S2 K(fov,w,h);
 static SharedNoiseModel sigma(noiseModel::Unit::Create(1));
 static shared_ptrK sK(new Cal3_S2(K));
 
-const Key kx1 = Symbol("x1"), kl1 = Symbol("l1");
+const Key kx1 = Symbol('x',1), kl1 = Symbol('l',1);
 
 // make cameras
 

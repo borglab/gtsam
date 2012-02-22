@@ -28,9 +28,6 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
-// Magically casts strings like kx(3) to a Symbol('x',3) key, see Symbol.h
-#define GTSAM_MAGIC_KEY
-
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>

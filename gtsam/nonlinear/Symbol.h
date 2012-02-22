@@ -23,13 +23,8 @@
 #include <boost/mpl/char.hpp>
 #include <boost/format.hpp>
 #include <boost/serialization/nvp.hpp>
-#ifdef GTSAM_MAGIC_KEY
-#include <boost/lexical_cast.hpp>
-#endif
 
 #include <gtsam/nonlinear/Key.h>
-
-#define ALPHA '\224'
 
 namespace gtsam {
 
@@ -59,35 +54,6 @@ public:
   Symbol(unsigned char c, size_t j) :
     c_(c), j_(j) {
   }
-
-  /** "Magic" key casting constructor from string */
-#ifdef GTSAM_MAGIC_KEY
-  Symbol(const std::string& str) {
-    if(str.length() < 1)
-    throw std::invalid_argument("Cannot parse string key '" + str + "'");
-    else {
-      const char *c_str = str.c_str();
-      c_ = c_str[0];
-      if(str.length() > 1)
-      j_ = boost::lexical_cast<size_t>(c_str+1);
-      else
-      j_ = 0;
-    }
-  }
-
-  Symbol(const char *c_str) {
-    std::string str(c_str);
-    if(str.length() < 1)
-    throw std::invalid_argument("Cannot parse string key '" + str + "'");
-    else {
-      c_ = c_str[0];
-      if(str.length() > 1)
-      j_ = boost::lexical_cast<size_t>(c_str+1);
-      else
-      j_ = 0;
-    }
-  }
-#endif
 
   /** Constructor that decodes an integer Key */
   Symbol(Key key) {

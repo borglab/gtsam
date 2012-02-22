@@ -24,9 +24,6 @@
 
 using namespace std;
 
-// Magically casts strings like Symbol("x3") to a Symbol('x',3) key, see Symbol.h
-#define GTSAM_MAGIC_KEY
-
 #include <gtsam/base/Matrix.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/slam/smallExample.h>
@@ -51,6 +48,9 @@ namespace example {
 
 	static const Index _l1_=0, _x1_=1, _x2_=2;
 	static const Index _x_=0, _y_=1, _z_=2;
+
+	Key kx(size_t i) { return Symbol('x',i); }
+	Key kl(size_t i) { return Symbol('l',i); }
 
 	/* ************************************************************************* */
 	boost::shared_ptr<const Graph> sharedNonlinearFactorGraph() {
@@ -121,18 +121,18 @@ namespace example {
 	/* ************************************************************************* */
 	VectorValues createCorrectDelta(const Ordering& ordering) {
 		VectorValues c(vector<size_t>(3,2));
-		c[ordering[Symbol(Symbol("l1"))]] = Vector_(2, -0.1, 0.1);
-		c[ordering[Symbol("x1")]] = Vector_(2, -0.1, -0.1);
-		c[ordering[Symbol("x2")]] = Vector_(2, 0.1, -0.2);
+		c[ordering[kl(1)]] = Vector_(2, -0.1, 0.1);
+		c[ordering[kx(1)]] = Vector_(2, -0.1, -0.1);
+		c[ordering[kx(2)]] = Vector_(2, 0.1, -0.2);
 		return c;
 	}
 
 	/* ************************************************************************* */
 	VectorValues createZeroDelta(const Ordering& ordering) {
 		VectorValues c(vector<size_t>(3,2));
-		c[ordering[Symbol(Symbol("l1"))]] = zero(2);
-		c[ordering[Symbol("x1")]] = zero(2);
-		c[ordering[Symbol("x2")]] = zero(2);
+		c[ordering[kl(1)]] = zero(2);
+		c[ordering[kx(1)]] = zero(2);
+		c[ordering[kx(2)]] = zero(2);
 		return c;
 	}
 
@@ -144,16 +144,16 @@ namespace example {
 		SharedDiagonal unit2 = noiseModel::Unit::Create(2);
 
 		// linearized prior on x1: c[_x1_]+x1=0 i.e. x1=-c[_x1_]
-		fg.add(ordering[Symbol("x1")], 10*eye(2), -1.0*ones(2), unit2);
+		fg.add(ordering[kx(1)], 10*eye(2), -1.0*ones(2), unit2);
 
 		// odometry between x1 and x2: x2-x1=[0.2;-0.1]
-		fg.add(ordering[Symbol("x1")], -10*eye(2),ordering[Symbol("x2")], 10*eye(2), Vector_(2, 2.0, -1.0), unit2);
+		fg.add(ordering[kx(1)], -10*eye(2),ordering[kx(2)], 10*eye(2), Vector_(2, 2.0, -1.0), unit2);
 
     // measurement between x1 and l1: l1-x1=[0.0;0.2]
-		fg.add(ordering[Symbol("x1")], -5*eye(2), ordering[Symbol("l1")], 5*eye(2), Vector_(2, 0.0, 1.0), unit2);
+		fg.add(ordering[kx(1)], -5*eye(2), ordering[kl(1)], 5*eye(2), Vector_(2, 0.0, 1.0), unit2);
 
 		// measurement between x2 and l1: l1-x2=[-0.2;0.3]
-		fg.add(ordering[Symbol("x2")], -5*eye(2), ordering[Symbol("l1")], 5*eye(2), Vector_(2, -1.0, 1.5), unit2);
+		fg.add(ordering[kx(2)], -5*eye(2), ordering[kl(1)], 5*eye(2), Vector_(2, -1.0, 1.5), unit2);
 
 		return *fg.dynamicCastFactors<FactorGraph<JacobianFactor> >();
 	}

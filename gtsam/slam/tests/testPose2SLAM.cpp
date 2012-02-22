@@ -14,9 +14,6 @@
  *  @author Frank Dellaert, Viorela Ila
  **/
 
-// Magically casts strings like "x3" to a Symbol('x',3) key, see Symbol.h
-#define GTSAM_MAGIC_KEY
-
 #include <gtsam/slam/pose2SLAM.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/inference/FactorGraph.h>
@@ -46,7 +43,7 @@ static noiseModel::Gaussian::shared_ptr covariance(
 	)));
 //static noiseModel::Gaussian::shared_ptr I3(noiseModel::Unit::Create(3));
 
-const Key kx0 = Symbol("x0"), kx1 = Symbol("x1"), kx2 = Symbol("x2"), kx3 = Symbol("x3"), kx4 = Symbol("x4"), kx5 = Symbol("x5"), kl1 = Symbol("l1");
+const Key kx0 = Symbol('x',0), kx1 = Symbol('x',1), kx2 = Symbol('x',2), kx3 = Symbol('x',3), kx4 = Symbol('x',4), kx5 = Symbol('x',5), kl1 = Symbol('l',1);
 
 /* ************************************************************************* */
 // Test constraint, small displacement

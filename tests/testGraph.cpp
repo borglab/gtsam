@@ -23,8 +23,6 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
-#define GTSAM_MAGIC_KEY
-
 // TODO: DANGEROUS, create shared pointers
 #define GTSAM_MAGIC_GAUSSIAN 3
 

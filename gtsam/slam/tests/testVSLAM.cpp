@@ -22,9 +22,6 @@
 #include <boost/shared_ptr.hpp>
 using namespace boost;
 
-// Magically casts strings like "x3" to a Symbol('x',3) key, see Symbol.h
-#define GTSAM_MAGIC_KEY
-
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/slam/visualSLAM.h>

@@ -16,8 +16,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#define GTSAM_MAGIC_KEY
-
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/ExtendedKalmanFilter-inl.h>
@@ -37,7 +35,7 @@ TEST( ExtendedKalmanFilter, linear ) {
   ExtendedKalmanFilter<Point2> ekf(x_initial, P_initial);
 
   // Create the TestKeys for our example
-  Symbol x0("x0"), x1("x1"), x2("x2"), x3("x3");
+  Symbol x0('x',0), x1('x',1), x2('x',2), x3('x',3);
 
   // Create the controls and measurement properties for our example
   double dt = 1.0;
