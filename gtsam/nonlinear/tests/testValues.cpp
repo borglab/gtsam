@@ -262,11 +262,16 @@ TEST(Values, update)
 
 /* ************************************************************************* */
 TEST(Values, filter) {
+	Pose2 pose0(1.0, 2.0, 0.3);
+	Pose3 pose1(Pose2(0.1, 0.2, 0.3));
+	Pose2 pose2(4.0, 5.0, 0.6);
+	Pose3 pose3(Pose2(0.3, 0.7, 0.9));
+
   Values values;
-  values.insert(0, Pose2());
-  values.insert(1, Pose3());
-  values.insert(2, Pose2());
-  values.insert(3, Pose3());
+  values.insert(0, pose0);
+  values.insert(1, pose1);
+  values.insert(2, pose2);
+  values.insert(3, pose3);
 
   // Filter by key
   int i = 0;
@@ -275,9 +280,11 @@ TEST(Values, filter) {
     if(i == 0) {
       LONGS_EQUAL(2, it->first);
       EXPECT(typeid(Pose2) == typeid(it->second));
+      EXPECT(assert_equal(pose2, dynamic_cast<const Pose2&>(it->second)));
     } else if(i == 1) {
       LONGS_EQUAL(3, it->first);
       EXPECT(typeid(Pose3) == typeid(it->second));
+      EXPECT(assert_equal(pose3, dynamic_cast<const Pose3&>(it->second)));
     } else {
       EXPECT(false);
     }
@@ -290,10 +297,10 @@ TEST(Values, filter) {
       it != values.endFilterByType<Pose3>(); ++it, ++i) {
     if(i == 0) {
       LONGS_EQUAL(1, it->first);
-      EXPECT(assert_equal(Pose3(), it->second));
+      EXPECT(assert_equal(pose1, it->second));
     } else if(i == 1) {
       LONGS_EQUAL(3, it->first);
-      EXPECT(assert_equal(Pose3(), it->second));
+      EXPECT(assert_equal(pose3, it->second));
     } else {
       EXPECT(false);
     }
