@@ -1,4 +1,4 @@
-if (GTSAM_LINK_BINARIES_AGAINST_CONVENIENCE_LIBS)
+if (GTSAM_BUILD_CONVENIENCE_LIBRARIES)
     set(convenience_libs
        slam
        nonlinear
@@ -7,10 +7,10 @@ if (GTSAM_LINK_BINARIES_AGAINST_CONVENIENCE_LIBS)
        geometry
        base
        ccolamd)
-else (GTSAM_LINK_BINARIES_AGAINST_CONVENIENCE_LIBS)
+else (GTSAM_BUILD_CONVENIENCE_LIBRARIES)
     set(convenience_libs
        gtsam-static)
-endif (GTSAM_LINK_BINARIES_AGAINST_CONVENIENCE_LIBS)
+endif (GTSAM_BUILD_CONVENIENCE_LIBRARIES)
 
 # exclude certain files
 # note the source dir on each 
