@@ -158,10 +158,16 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
     const F& f, const VALUES& x0, const Ordering& ordering, const double f_error, const bool verbose) {
 
   // Compute steepest descent and Newton's method points
+  tic(0, "Steepest Descent");
   VectorValues dx_u = ComputeSteepestDescentPoint(Rd);
+  toc(0, "Steepest Descent");
+  tic(1, "optimize");
   VectorValues dx_n = optimize(Rd);
+  toc(1, "optimize");
+  tic(2, "jfg error");
   const GaussianFactorGraph jfg(Rd);
   const double M_error = jfg.error(VectorValues::Zero(dx_u));
+  toc(2, "jfg error");
 
   // Result to return
   IterationResult result;
@@ -169,19 +175,27 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
   bool stay = true;
   enum { NONE, INCREASED_DELTA, DECREASED_DELTA } lastAction; // Used to prevent alternating between increasing and decreasing in one iteration
   while(stay) {
+    tic(3, "Dog leg point");
     // Compute dog leg point
     result.dx_d = ComputeDoglegPoint(Delta, dx_u, dx_n, verbose);
+    toc(3, "Dog leg point");
 
     if(verbose) cout << "Delta = " << Delta << ", dx_d_norm = " << result.dx_d.vector().norm() << endl;
 
+    tic(4, "retract");
     // Compute expmapped solution
     const VALUES x_d(x0.retract(result.dx_d, ordering));
+    toc(4, "retract");
 
+    tic(5, "decrease in f");
     // Compute decrease in f
     result.f_error = f.error(x_d);
+    toc(5, "decrease in f");
 
+    tic(6, "decrease in M");
     // Compute decrease in M
     const double new_M_error = jfg.error(result.dx_d);
+    toc(6, "decrease in M");
 
     if(verbose) cout << "f error: " << f_error << " -> " << result.f_error << endl;
     if(verbose) cout << "M error: " << M_error << " -> " << new_M_error << endl;
@@ -195,6 +209,7 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
     if(verbose) cout << "rho = " << rho << endl;
 
     if(rho >= 0.75) {
+      tic(7, "Rho >= 0.75");
       // M agrees very well with f, so try to increase lambda
       const double dx_d_norm = result.dx_d.vector().norm();
       const double newDelta = std::max(Delta, 3.0 * dx_d_norm); // Compute new Delta
@@ -212,12 +227,14 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
         assert(false); }
 
       Delta = newDelta; // Update Delta from new Delta
+      toc(7, "Rho >= 0.75");
 
     } else if(0.75 > rho && rho >= 0.25) {
       // M agrees so-so with f, keep the same Delta
       stay = false;
 
     } else if(0.25 > rho && rho >= 0.0) {
+      tic(8, "0.25 > Rho >= 0.75");
       // M does not agree well with f, decrease Delta until it does
       double newDelta;
       if(Delta > 1e-5)
@@ -233,9 +250,11 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
         assert(false); }
 
       Delta = newDelta; // Update Delta from new Delta
+      toc(8, "0.25 > Rho >= 0.75");
     }
 
     else {
+      tic(9, "Rho < 0");
       // f actually increased, so keep decreasing Delta until f does not decrease
       assert(0.0 > rho);
       if(Delta > 1e-5) {
@@ -246,6 +265,7 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
         if(verbose) cout << "Warning:  Dog leg stopping because cannot decrease error with minimum Delta" << endl;
         stay = false;
       }
+      toc(9, "Rho < 0");
     }
   }
 
@@ -258,20 +278,28 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
 template<class M>
 VectorValues DoglegOptimizerImpl::ComputeSteepestDescentPoint(const M& Rd) {
 
+  tic(0, "Compute Gradient");
   // Compute gradient (call gradientAtZero function, which is defined for various linear systems)
   VectorValues grad = *allocateVectorValues(Rd);
   gradientAtZero(Rd, grad);
   double gradientSqNorm = grad.dot(grad);
+  toc(0, "Compute Gradient");
 
+  tic(1, "Compute R*g");
   // Compute R * g
   FactorGraph<JacobianFactor> Rd_jfg(Rd);
   Errors Rg = Rd_jfg * grad;
+  toc(1, "Compute R*g");
 
+  tic(2, "Compute minimizing step size");
   // Compute minimizing step size
   double step = -gradientSqNorm / dot(Rg, Rg);
+  toc(2, "Compute minimizing step size");
 
+  tic(3, "Compute point");
   // Compute steepest descent point
   scal(step, grad);
+  toc(3, "Compute point");
   return grad;
 }
 

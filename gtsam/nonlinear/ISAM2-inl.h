@@ -559,8 +559,10 @@ ISAM2Result ISAM2<CONDITIONAL, VALUES, GRAPH>::update(
     const ISAM2DoglegParams& doglegParams =
         boost::get<ISAM2DoglegParams>(params_.optimizationParams);
     // Do one Dogleg iteration
+    tic(1, "Dogleg Iterate");
     DoglegOptimizerImpl::IterationResult doglegResult = DoglegOptimizerImpl::Iterate(
         *doglegDelta_, doglegParams.adaptationMode, *this, nonlinearFactors_, theta_, ordering_, nonlinearFactors_.error(theta_), doglegParams.verbose);
+    toc(1, "Dogleg Iterate");
     // Update Delta and linear step
     doglegDelta_ = doglegResult.Delta;
     delta_.permutation() = Permutation::Identity(delta_.size());  // Dogleg solves for the full delta so there is no permutation
