@@ -101,6 +101,11 @@ namespace gtsam {
       return z_;
     }
 
+    /** return the calibration object */
+    inline const Cal3_S2::shared_ptr calibration() const {
+      return K_;
+    }
+
 	private:
 
 		/// Serialization function

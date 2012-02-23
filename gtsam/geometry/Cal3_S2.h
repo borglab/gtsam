@@ -36,6 +36,8 @@ namespace gtsam {
 
 	public:
 
+		typedef boost::shared_ptr<Cal3_S2> shared_ptr;  ///< shared pointer to calibration object
+
     /// @name Standard Constructors
     /// @{
 

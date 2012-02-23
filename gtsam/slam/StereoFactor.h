@@ -100,6 +100,12 @@ public:
 	  return z_;
 	}
 
+  /** return the calibration object */
+  inline const Cal3_S2Stereo::shared_ptr calibration() const {
+    return K_;
+  }
+
+
 private:
 	/** Serialization function */
 	friend class boost::serialization::access;
