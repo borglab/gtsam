@@ -39,7 +39,15 @@ option(GTSAM_BUILD_TESTS    "Enable/Disable building of tests"          ON)
 option(GTSAM_BUILD_TIMING   "Enable/Disable building of timing scripts" ON)
 option(GTSAM_BUILD_EXAMPLES "Enable/Disable building of examples"       ON)
 option(GTSAM_BUILD_WRAP     "Enable/Disable building of matlab wrap utility (necessary for matlab interface)" ON)
-option(GTSAM_BUILD_CONVENIENCE_LIBRARIES "Enable/Disable using convenience librares for tests and examples" ON)
+option(GTSAM_USE_QUATERNIONS "Enable/Disable using an internal Quaternion representation for rotations instead of rotation matrices" OFF)
+option(GTSAM_LINK_BINARIES_AGAINST_CONVENIENCE_LIBS    
+    "Enable/Disable linking tests against the convenience libraries for faster debugging" ON)
+
+# Add the Quaternion Build Flag if requested
+if (GTSAM_USE_QUATERNIONS)
+	set(CMAKE_C_FLAGS            "${CMAKE_C_FLAGS} -DGTSAM_DEFAULT_QUATERNIONS")
+	set(CMAKE_CXX_FLAGS          "${CMAKE_CXX_FLAGS} -DGTSAM_DEFAULT_QUATERNIONS")
+endif(GTSAM_USE_QUATERNIONS)
 
 # Avoid building non-installed exes and unit tests when installing
 # FIXME: breaks generation and install of matlab toolbox
