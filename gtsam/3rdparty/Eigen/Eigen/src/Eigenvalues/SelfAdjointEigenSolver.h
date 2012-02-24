@@ -220,7 +220,6 @@ template<typename _MatrixType> class SelfAdjointEigenSolver
     const MatrixType& eigenvectors() const
     {
       eigen_assert(m_isInitialized && "SelfAdjointEigenSolver is not initialized.");
-      eigen_assert(info() == Success && "Eigenvalue computation did not converge.");
       eigen_assert(m_eigenvectorsOk && "The eigenvectors have not been computed together with the eigenvalues.");
       return m_eivec;
     }
@@ -243,7 +242,6 @@ template<typename _MatrixType> class SelfAdjointEigenSolver
     const RealVectorType& eigenvalues() const
     {
       eigen_assert(m_isInitialized && "SelfAdjointEigenSolver is not initialized.");
-      eigen_assert(info() == Success && "Eigenvalue computation did not converge.");
       return m_eivalues;
     }
 
@@ -268,7 +266,6 @@ template<typename _MatrixType> class SelfAdjointEigenSolver
     MatrixType operatorSqrt() const
     {
       eigen_assert(m_isInitialized && "SelfAdjointEigenSolver is not initialized.");
-      eigen_assert(info() == Success && "Eigenvalue computation did not converge.");
       eigen_assert(m_eigenvectorsOk && "The eigenvectors have not been computed together with the eigenvalues.");
       return m_eivec * m_eivalues.cwiseSqrt().asDiagonal() * m_eivec.adjoint();
     }
@@ -294,7 +291,6 @@ template<typename _MatrixType> class SelfAdjointEigenSolver
     MatrixType operatorInverseSqrt() const
     {
       eigen_assert(m_isInitialized && "SelfAdjointEigenSolver is not initialized.");
-      eigen_assert(info() == Success && "Eigenvalue computation did not converge.");
       eigen_assert(m_eigenvectorsOk && "The eigenvectors have not been computed together with the eigenvalues.");
       return m_eivec * m_eivalues.cwiseInverse().cwiseSqrt().asDiagonal() * m_eivec.adjoint();
     }

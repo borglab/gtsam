@@ -15,7 +15,7 @@ mkdir build -p
 
 #step 2 : upload
 # (the '/' at the end of path are very important, see rsync documentation)
-rsync -az build/doc/html/ $USER@ssh.tuxfamily.org:eigen/eigen.tuxfamily.org-web/htdocs/dox-3.0/ || { echo "upload failed"; exit 1; }
+rsync -az --no-p build/doc/html/ $USER@ssh.tuxfamily.org:eigen/eigen.tuxfamily.org-web/htdocs/dox-3.0/ || { echo "upload failed"; exit 1; }
 
 echo "Uploaded successfully"
 

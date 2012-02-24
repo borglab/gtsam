@@ -708,6 +708,13 @@ struct solve_retval<JacobiSVD<_MatrixType, QRPreconditioner>, Rhs>
 };
 } // end namespace internal
 
+/** \svd_module
+  *
+  * \return the singular value decomposition of \c *this computed by two-sided
+  * Jacobi transformations.
+  *
+  * \sa class JacobiSVD
+  */
 template<typename Derived>
 JacobiSVD<typename MatrixBase<Derived>::PlainObject>
 MatrixBase<Derived>::jacobiSvd(unsigned int computationOptions) const

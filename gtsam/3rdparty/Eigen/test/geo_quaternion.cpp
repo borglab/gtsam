@@ -28,6 +28,35 @@
 #include <Eigen/LU>
 #include <Eigen/SVD>
 
+template<typename T> T bounded_acos(T v)
+{
+  using std::acos;
+  using std::min;
+  using std::max;
+  return acos((max)(T(-1),(min)(v,T(1))));
+}
+
+template<typename QuatType> void check_slerp(const QuatType& q0, const QuatType& q1)
+{
+  typedef typename QuatType::Scalar Scalar;
+  typedef Matrix<Scalar,3,1> VectorType;
+  typedef AngleAxis<Scalar> AA;
+
+  Scalar largeEps = test_precision<Scalar>();
+
+  Scalar theta_tot = AA(q1*q0.inverse()).angle();
+  if(theta_tot>M_PI)
+    theta_tot = 2.*M_PI-theta_tot;
+  for(Scalar t=0; t<=1.001; t+=0.1)
+  {
+    QuatType q = q0.slerp(t,q1);
+    Scalar theta = AA(q*q0.inverse()).angle();
+    VERIFY(internal::abs(q.norm() - 1) < largeEps);
+    if(theta_tot==0)  VERIFY(theta_tot==0);
+    else              VERIFY(internal::abs(theta/theta_tot - t) < largeEps);
+  }
+}
+
 template<typename Scalar, int Options> void quaternion(void)
 {
   /* this test covers the following files:
@@ -36,6 +65,7 @@ template<typename Scalar, int Options> void quaternion(void)
 
   typedef Matrix<Scalar,3,3> Matrix3;
   typedef Matrix<Scalar,3,1> Vector3;
+  typedef Matrix<Scalar,4,1> Vector4;
   typedef Quaternion<Scalar,Options> Quaternionx;
   typedef AngleAxis<Scalar> AngleAxisx;
 
@@ -50,7 +80,8 @@ template<typename Scalar, int Options> void quaternion(void)
           v2 = Vector3::Random(),
           v3 = Vector3::Random();
 
-  Scalar a = internal::random<Scalar>(-Scalar(M_PI), Scalar(M_PI));
+  Scalar  a = internal::random<Scalar>(-Scalar(M_PI), Scalar(M_PI)),
+          b = internal::random<Scalar>(-Scalar(M_PI), Scalar(M_PI));
 
   // Quaternion: Identity(), setIdentity();
   Quaternionx q1, q2;
@@ -124,6 +155,22 @@ template<typename Scalar, int Options> void quaternion(void)
   // test bug 369 - improper alignment.
   Quaternionx *q = new Quaternionx;
   delete q;
+
+  q1 = AngleAxisx(a, v0.normalized());
+  q2 = AngleAxisx(b, v1.normalized());
+  check_slerp(q1,q2);
+
+  q1 = AngleAxisx(b, v1.normalized());
+  q2 = AngleAxisx(b+M_PI, v1.normalized());
+  check_slerp(q1,q2);
+
+  q1 = AngleAxisx(b,  v1.normalized());
+  q2 = AngleAxisx(-b, -v1.normalized());
+  check_slerp(q1,q2);
+
+  q1.coeffs() = Vector4::Random().normalized();
+  q2.coeffs() = -q1.coeffs();
+  check_slerp(q1,q2);
 }
 
 template<typename Scalar> void mapQuaternion(void){

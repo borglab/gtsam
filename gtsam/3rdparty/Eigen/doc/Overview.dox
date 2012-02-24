@@ -27,6 +27,7 @@ For a first contact with Eigen, the best place is to have a look at the \ref Get
     - \ref TutorialReductionsVisitorsBroadcasting
     - \ref TutorialGeometry
     - \ref TutorialSparse
+    - \ref TutorialMapClass
   - \ref QuickRefPage
   - <b>Advanced topics</b>
     - \ref TopicAliasing

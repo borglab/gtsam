@@ -682,7 +682,7 @@ QuaternionBase<Derived>::slerp(Scalar t, const QuaternionBase<OtherDerived>& oth
   Scalar scale0;
   Scalar scale1;
 
-  if (absD>=one)
+  if(absD>=one)
   {
     scale0 = Scalar(1) - t;
     scale1 = t;
@@ -695,9 +695,8 @@ QuaternionBase<Derived>::slerp(Scalar t, const QuaternionBase<OtherDerived>& oth
 
     scale0 = internal::sin( ( Scalar(1) - t ) * theta) / sinTheta;
     scale1 = internal::sin( ( t * theta) ) / sinTheta;
-    if (d<0)
-      scale1 = -scale1;
   }
+  if(d<0) scale1 = -scale1;
 
   return Quaternion<Scalar>(scale0 * coeffs() + scale1 * other.coeffs());
 }

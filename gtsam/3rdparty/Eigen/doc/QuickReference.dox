@@ -645,11 +645,11 @@ m3 -= s1 * m3.adjoint() * m1.selfadjointView<Eigen::Lower>();\endcode
 </td></tr>
 <tr><td>
 Rank 1 and rank K update: \n
-\f$ upper(M_1) \mathrel{{+}{=}} s_1 M_2^* M_2 \f$ \n
-\f$ lower(M_1) \mathbin{{-}{=}} M_2 M_2^* \f$
+\f$ upper(M_1) \mathrel{{+}{=}} s_1 M_2 M_2^* \f$ \n
+\f$ lower(M_1) \mathbin{{-}{=}} M_2^* M_2 \f$
 </td><td>\n \code
 M1.selfadjointView<Eigen::Upper>().rankUpdate(M2,s1);
-m1.selfadjointView<Eigen::Lower>().rankUpdate(m2.adjoint(),-1); \endcode
+M1.selfadjointView<Eigen::Lower>().rankUpdate(M2.adjoint(),-1); \endcode
 </td></tr>
 <tr><td>
 Rank 2 update: (\f$ M \mathrel{{+}{=}} s u v^* + s v u^* \f$)
