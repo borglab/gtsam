@@ -40,8 +40,6 @@ option(GTSAM_BUILD_TIMING   "Enable/Disable building of timing scripts" ON)
 option(GTSAM_BUILD_EXAMPLES "Enable/Disable building of examples"       ON)
 option(GTSAM_BUILD_WRAP     "Enable/Disable building of matlab wrap utility (necessary for matlab interface)" ON)
 option(GTSAM_USE_QUATERNIONS "Enable/Disable using an internal Quaternion representation for rotations instead of rotation matrices" OFF)
-option(GTSAM_LINK_BINARIES_AGAINST_CONVENIENCE_LIBS    
-    "Enable/Disable linking tests against the convenience libraries for faster debugging" ON)
 
 # Add the Quaternion Build Flag if requested
 if (GTSAM_USE_QUATERNIONS)
@@ -53,10 +51,16 @@ endif(GTSAM_USE_QUATERNIONS)
 # FIXME: breaks generation and install of matlab toolbox
 #set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY TRUE)
 
-# Pull in tests
-enable_testing()
-include(Dart)
-include(CTest)
+# Pull in infrastructure
+if (GTSAM_BUILD_TESTS)
+    enable_testing()
+    include(Dart)
+    include(CTest)
+endif()
+
+# Use macros for creating tests/timing scripts
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+include(GtsamTesting)
 
 # Enable make check (http://www.cmake.org/Wiki/CMakeEmulateMakeCheck)
 add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND})
@@ -71,7 +75,7 @@ include_directories(
   gtsam/3rdparty/CCOLAMD/Include
   ${CMAKE_SOURCE_DIR}
   CppUnitLite
-  ${BOOST_INCLUDE_DIR})
+  ${Boost_INCLUDE_DIR})
 link_directories(${Boost_LIBRARY_DIRS})
 
 # Build CppUnitLite
