@@ -62,7 +62,7 @@ namespace gtsam {
     Pose3(const Rot3& R, const Point3& t) : R_(R), t_(t) {}
 
     /** Construct from Pose2 */
-    Pose3(const Pose2& pose2);
+    explicit Pose3(const Pose2& pose2);
 
     /** Constructor from 4*4 matrix */
     Pose3(const Matrix &T) :

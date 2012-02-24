@@ -23,6 +23,10 @@
 #include <boost/mpl/char.hpp>
 #include <boost/format.hpp>
 #include <boost/serialization/nvp.hpp>
+#include <boost/function.hpp>
+#include <boost/lambda/bind.hpp>
+#include <boost/lambda/construct.hpp>
+#include <boost/lambda/lambda.hpp>
 
 #include <gtsam/nonlinear/Key.h>
 
@@ -57,25 +61,25 @@ public:
 
   /** Constructor that decodes an integer Key */
   Symbol(Key key) {
-    const size_t keyBytes = sizeof(Key);
-    const size_t chrBytes = sizeof(unsigned char);
-    const size_t indexBytes = keyBytes - chrBytes;
-    const Key chrMask = std::numeric_limits<unsigned char>::max() << indexBytes;
+    const size_t keyBits = sizeof(Key) * 8;
+    const size_t chrBits = sizeof(unsigned char) * 8;
+    const size_t indexBits = keyBits - chrBits;
+    const Key chrMask = Key(std::numeric_limits<unsigned char>::max()) << indexBits;
     const Key indexMask = ~chrMask;
-    c_ = (key & chrMask) >> indexBytes;
+    c_ = (unsigned char)((key & chrMask) >> indexBits);
     j_ = key & indexMask;
   }
 
   /** Cast to integer */
   operator Key() const {
-    const size_t keyBytes = sizeof(Key);
-    const size_t chrBytes = sizeof(unsigned char);
-    const size_t indexBytes = keyBytes - chrBytes;
-    const Key chrMask = std::numeric_limits<unsigned char>::max() << indexBytes;
+    const size_t keyBits = sizeof(Key) * 8;
+    const size_t chrBits = sizeof(unsigned char) * 8;
+    const size_t indexBits = keyBits - chrBits;
+    const Key chrMask = Key(std::numeric_limits<unsigned char>::max()) << indexBits;
     const Key indexMask = ~chrMask;
     if(j_ > indexMask)
       throw std::invalid_argument("Symbol index is too large");
-    Key key = (c_ << indexBytes) | j_;
+    Key key = (Key(c_) << indexBits) | j_;
     return key;
   }
 
@@ -111,6 +115,16 @@ public:
   }
   bool operator!=(const Symbol& comp) const {
     return comp.c_ != c_ || comp.j_ != j_;
+  }
+
+  /** Return a filter function that returns true when evaluated on a Key whose
+   * character (when converted to a Symbol) matches \c c.  Use this with the
+   * Values::filter() function to retrieve all key-value pairs with the
+   * requested character.
+   */
+  static boost::function<bool(Key)> ChrTest(unsigned char c) {
+    namespace bl = boost::lambda;
+    return bl::bind(&Symbol::chr, bl::bind(bl::constructor<Symbol>(), bl::_1)) == c;
   }
 
 private:

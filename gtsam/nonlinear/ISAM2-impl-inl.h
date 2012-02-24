@@ -144,8 +144,8 @@ void ISAM2<CONDITIONAL,GRAPH>::Impl::AddVariables(
     Index nextVar = originalnVars;
     BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, newTheta) {
       delta.permutation()[nextVar] = nextVar;
-      ordering.insert(key_value.first, nextVar);
-      if(debug) cout << "Adding variable " << keyFormatter(key_value.first) << " with order " << nextVar << endl;
+      ordering.insert(key_value.key, nextVar);
+      if(debug) cout << "Adding variable " << keyFormatter(key_value.key) << " with order " << nextVar << endl;
       ++ nextVar;
     }
     assert(delta.permutation().size() == delta.container().size());
@@ -234,19 +234,19 @@ void ISAM2<CONDITIONAL, GRAPH>::Impl::ExpmapMasked(Values& values, const Permute
   Ordering::const_iterator key_index;
   for(key_value = values.begin(), key_index = ordering.begin();
       key_value != values.end() && key_index != ordering.end(); ++key_value, ++key_index) {
-    assert(key_value->first == key_index->first);
+    assert(key_value->key == key_index->first);
     const Index var = key_index->second;
     if(ISDEBUG("ISAM2 update verbose")) {
       if(mask[var])
-        cout << "expmap " << keyFormatter(key_value->first) << " (j = " << var << "), delta = " << delta[var].transpose() << endl;
+        cout << "expmap " << keyFormatter(key_value->key) << " (j = " << var << "), delta = " << delta[var].transpose() << endl;
       else
-        cout << "       " << keyFormatter(key_value->first) << " (j = " << var << "), delta = " << delta[var].transpose() << endl;
+        cout << "       " << keyFormatter(key_value->key) << " (j = " << var << "), delta = " << delta[var].transpose() << endl;
     }
-    assert(delta[var].size() == (int)key_value->second.dim());
+    assert(delta[var].size() == (int)key_value->value.dim());
     assert(delta[var].unaryExpr(&isfinite<double>).all());
     if(mask[var]) {
-      Value* retracted = key_value->second.retract_(delta[var]);
-      key_value->second = *retracted;
+      Value* retracted = key_value->value.retract_(delta[var]);
+      key_value->value = *retracted;
       retracted->deallocate_();
       if(invalidateIfDebug)
         (*invalidateIfDebug)[var].operator=(Vector::Constant(delta[var].rows(), numeric_limits<double>::infinity())); // Strange syntax to work with clang++ (bug in clang?)

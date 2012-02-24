@@ -19,6 +19,7 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/TestableAssertions.h>
 #include <gtsam/nonlinear/Symbol.h>
 	
 using namespace std;
@@ -31,6 +32,30 @@ TEST(Key, KeySymbolConversion) {
   Symbol actual(key);
 
   EXPECT(assert_equal(expected, actual))
+}
+
+/* ************************************************************************* */
+TEST(Key, KeySymbolEncoding) {
+
+  // Test encoding of Symbol <-> size_t <-> string
+
+  if(sizeof(Key) == 8) {
+    Symbol symbol(0x61, 5);
+    Key key = 0x6100000000000005;
+    string str = "a5";
+
+    LONGS_EQUAL(key, (Key)symbol);
+    assert_equal(str, DefaultKeyFormatter(symbol));
+    assert_equal(symbol, Symbol(key));
+  } else if(sizeof(Key) == 4) {
+    Symbol symbol(0x61, 5);
+    Key key = 0x61000005;
+    string str = "a5";
+
+    LONGS_EQUAL(key, (Key)symbol);
+    assert_equal(str, DefaultKeyFormatter(symbol));
+    assert_equal(symbol, Symbol(key));
+  }
 }
 
 /* ************************************************************************* */

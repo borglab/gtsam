@@ -87,10 +87,21 @@ namespace gtsam {
     typedef boost::shared_ptr<Values> shared_ptr;
 
     /// A key-value pair, which you get by dereferencing iterators
-    typedef std::pair<const Key, Value&> KeyValuePair;
+    struct KeyValuePair {
+      const Key key; ///< The key
+      Value& value;  ///< The value
+
+      KeyValuePair(Key _key, Value& _value) : key(_key), value(_value) {}
+    };
 
     /// A key-value pair, which you get by dereferencing iterators
-    typedef std::pair<const Key, const Value&> ConstKeyValuePair;
+    struct ConstKeyValuePair {
+      const Key key; ///< The key
+      const Value& value;  ///< The value
+
+      ConstKeyValuePair(Key _key, const Value& _value) : key(_key), value(_value) {}
+      ConstKeyValuePair(const KeyValuePair& kv) : key(kv.key), value(kv.value) {}
+    };
 
     /// Mutable forward iterator, with value type KeyValuePair
     typedef boost::transform_iterator<
@@ -108,17 +119,42 @@ namespace gtsam {
     typedef boost::transform_iterator<
         boost::function1<ConstKeyValuePair, const ConstKeyValuePtrPair&>, KeyValueMap::const_reverse_iterator> const_reverse_iterator;
 
+  private:
     template<class ValueType>
+    struct _KeyValuePair {
+      const Key key; ///< The key
+      ValueType& value;  ///< The value
+      const Key& first; ///< For std::pair compatibility, the key
+      ValueType& second;    ///< For std::pair compatibility, the value
+
+      _KeyValuePair(Key _key, ValueType& _value) : key(_key), value(_value), first(key), second(value) {}
+    };
+
+    template<class ValueType>
+    struct _ConstKeyValuePair {
+      const Key key; ///< The key
+      const ValueType& value;  ///< The value
+      const Key& first; ///< For std::pair compatibility, the key
+      const ValueType& second;    ///< For std::pair compatibility, the value
+
+      _ConstKeyValuePair(Key _key, const Value& _value) : key(_key), value(_value), first(key), second(value) {}
+    };
+
+  public:
+    template<class ValueType = Value>
     class Filtered : public boost::transformed_range<
-    std::pair<const Key, ValueType&>(*)(KeyValuePair key_value),
+    _KeyValuePair<ValueType>(*)(Values::KeyValuePair key_value),
     const boost::filtered_range<
     boost::function<bool(const ConstKeyValuePair&)>,
     const boost::iterator_range<iterator> > > {
+    public:
+      typedef _KeyValuePair<ValueType> KeyValuePair;
+
     private:
       typedef boost::transformed_range<
-          std::pair<const Key, ValueType&>(*)(KeyValuePair key_value),
+          KeyValuePair(*)(Values::KeyValuePair key_value),
           const boost::filtered_range<
-          boost::function<bool(const ConstKeyValuePair&)>,
+          boost::function<bool(const Values::ConstKeyValuePair&)>,
           const boost::iterator_range<iterator> > > Base;
 
       Filtered(const Base& base) : Base(base) {}
@@ -126,17 +162,20 @@ namespace gtsam {
       friend class Values;
     };
 
-    template<class ValueType>
+    template<class ValueType = Value>
     class ConstFiltered : public boost::transformed_range<
-    std::pair<const Key, const ValueType&>(*)(ConstKeyValuePair key_value),
+    _ConstKeyValuePair<ValueType>(*)(Values::ConstKeyValuePair key_value),
     const boost::filtered_range<
     boost::function<bool(const ConstKeyValuePair&)>,
     const boost::iterator_range<const_iterator> > > {
+    public:
+      typedef _ConstKeyValuePair<ValueType> KeyValuePair;
+
     private:
       typedef boost::transformed_range<
-          std::pair<const Key, const ValueType&>(*)(ConstKeyValuePair key_value),
+          KeyValuePair(*)(Values::ConstKeyValuePair key_value),
           const boost::filtered_range<
-          boost::function<bool(const ConstKeyValuePair&)>,
+          boost::function<bool(const Values::ConstKeyValuePair&)>,
           const boost::iterator_range<const_iterator> > > Base;
 
       ConstFiltered(const Base& base) : Base(base) {}
@@ -257,7 +296,7 @@ namespace gtsam {
      * Returns a set of keys in the config
      * Note: by construction, the list is ordered
      */
-    FastList<Key> keys() const;
+    std::list<Key> keys() const;
 
     /** Replace all keys and variables */
     Values& operator=(const Values& rhs);
@@ -324,7 +363,7 @@ namespace gtsam {
               boost::make_iterator_range(begin(), end()),
               boost::function<bool(const ConstKeyValuePair&)>(
                   boost::bind(&filterHelper<ValueType>, filterFcn, _1))),
-          &castHelper<ValueType, KeyValuePair>);
+          &castHelper<ValueType, _KeyValuePair<ValueType>, KeyValuePair>);
     }
 
     /**
@@ -371,7 +410,7 @@ namespace gtsam {
               boost::make_iterator_range(begin(), end()),
               boost::function<bool(const ConstKeyValuePair&)>(
                   boost::bind(&filterHelper<ValueType>, filterFcn, _1))),
-          &castHelper<const ValueType, ConstKeyValuePair>);
+          &castHelper<const ValueType, _ConstKeyValuePair<ValueType>, ConstKeyValuePair>);
     }
 
   private:
@@ -380,14 +419,14 @@ namespace gtsam {
     template<class ValueType>
     static bool filterHelper(const boost::function<bool(Key)> filter, const ConstKeyValuePair& key_value) {
       // Filter and check the type
-      return filter(key_value.first) && (typeid(ValueType) == typeid(key_value.second) || typeid(ValueType) == typeid(Value));
+      return filter(key_value.key) && (typeid(ValueType) == typeid(key_value.value) || typeid(ValueType) == typeid(Value));
     }
 
     // Cast to the derived ValueType
-    template<class ValueType, class KeyValuePairType>
-    static std::pair<const Key, ValueType&> castHelper(KeyValuePairType key_value) {
+    template<class ValueType, class CastedKeyValuePairType, class KeyValuePairType>
+    static CastedKeyValuePairType castHelper(KeyValuePairType key_value) {
       // Static cast because we already checked the type during filtering
-      return std::pair<const Key, ValueType&>(key_value.first, static_cast<ValueType&>(key_value.second));
+      return CastedKeyValuePairType(key_value.key, static_cast<ValueType&>(key_value.value));
     }
 
     /** Serialization function */

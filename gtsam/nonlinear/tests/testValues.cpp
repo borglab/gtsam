@@ -31,7 +31,7 @@ using namespace gtsam;
 using namespace std;
 static double inf = std::numeric_limits<double>::infinity();
 
-Key key1(Symbol('v',1)), key2(Symbol('v',2)), key3(Symbol('v',3)), key4(Symbol('v',4));
+const Key key1(Symbol('v',1)), key2(Symbol('v',2)), key3(Symbol('v',3)), key4(Symbol('v',4));
 
 /* ************************************************************************* */
 TEST( Values, equals1 )
@@ -218,14 +218,14 @@ TEST(Values, extract_keys)
 	config.insert(key3, Pose2());
 	config.insert(key4, Pose2());
 
-	FastList<Key> expected, actual;
+	std::list<Key> expected, actual;
 	expected += key1, key2, key3, key4;
 	actual = config.keys();
 
 	CHECK(actual.size() == expected.size());
-	FastList<Key>::const_iterator itAct = actual.begin(), itExp = expected.begin();
+	std::list<Key>::const_iterator itAct = actual.begin(), itExp = expected.begin();
 	for (; itAct != actual.end() && itExp != expected.end(); ++itAct, ++itExp) {
-		LONGS_EQUAL(*itExp, *itAct);
+		EXPECT(*itExp == *itAct);
 	}
 }
 
@@ -274,15 +274,15 @@ TEST(Values, filter) {
   // Filter by key
   int i = 0;
   Values::Filtered<Value> filtered = values.filter(boost::bind(std::greater_equal<Key>(), _1, 2));
-  BOOST_FOREACH(const Values::Filtered<Value>::value_type& key_value, filtered) {
+  BOOST_FOREACH(const Values::Filtered<>::KeyValuePair& key_value, filtered) {
     if(i == 0) {
-      LONGS_EQUAL(2, key_value.first);
-      EXPECT(typeid(Pose2) == typeid(key_value.second));
-      EXPECT(assert_equal(pose2, dynamic_cast<const Pose2&>(key_value.second)));
+      LONGS_EQUAL(2, key_value.key);
+      EXPECT(typeid(Pose2) == typeid(key_value.value));
+      EXPECT(assert_equal(pose2, dynamic_cast<const Pose2&>(key_value.value)));
     } else if(i == 1) {
-      LONGS_EQUAL(3, key_value.first);
-      EXPECT(typeid(Pose3) == typeid(key_value.second));
-      EXPECT(assert_equal(pose3, dynamic_cast<const Pose3&>(key_value.second)));
+      LONGS_EQUAL(3, key_value.key);
+      EXPECT(typeid(Pose3) == typeid(key_value.value));
+      EXPECT(assert_equal(pose3, dynamic_cast<const Pose3&>(key_value.value)));
     } else {
       EXPECT(false);
     }
@@ -292,13 +292,42 @@ TEST(Values, filter) {
 
   // Filter by type
   i = 0;
-  BOOST_FOREACH(const Values::Filtered<Pose3>::value_type& key_value, values.filter<Pose3>()) {
+  BOOST_FOREACH(const Values::Filtered<Pose3>::KeyValuePair& key_value, values.filter<Pose3>()) {
     if(i == 0) {
-      LONGS_EQUAL(1, key_value.first);
-      EXPECT(assert_equal(pose1, key_value.second));
+      LONGS_EQUAL(1, key_value.key);
+      EXPECT(assert_equal(pose1, key_value.value));
     } else if(i == 1) {
-      LONGS_EQUAL(3, key_value.first);
-      EXPECT(assert_equal(pose3, key_value.second));
+      LONGS_EQUAL(3, key_value.key);
+      EXPECT(assert_equal(pose3, key_value.value));
+    } else {
+      EXPECT(false);
+    }
+    ++ i;
+  }
+  LONGS_EQUAL(2, i);
+}
+
+/* ************************************************************************* */
+TEST(Values, Symbol_filter) {
+  Pose2 pose0(1.0, 2.0, 0.3);
+  Pose3 pose1(Pose2(0.1, 0.2, 0.3));
+  Pose2 pose2(4.0, 5.0, 0.6);
+  Pose3 pose3(Pose2(0.3, 0.7, 0.9));
+
+  Values values;
+  values.insert(Symbol('x',0), pose0);
+  values.insert(Symbol('y',1), pose1);
+  values.insert(Symbol('x',2), pose2);
+  values.insert(Symbol('y',3), pose3);
+
+  int i = 0;
+  BOOST_FOREACH(const Values::Filtered<Value>::KeyValuePair& key_value, values.filter(Symbol::ChrTest('y'))) {
+    if(i == 0) {
+      LONGS_EQUAL(Symbol('y',1), key_value.key);
+      EXPECT(assert_equal(pose1, dynamic_cast<const Pose3&>(key_value.value)));
+    } else if(i == 1) {
+      LONGS_EQUAL(Symbol('y',3), key_value.key);
+      EXPECT(assert_equal(pose3, dynamic_cast<const Pose3&>(key_value.value)));
     } else {
       EXPECT(false);
     }
