@@ -273,35 +273,36 @@ TEST(Values, filter) {
 
   // Filter by key
   int i = 0;
-  for(Values::filter_iterator it = values.beginFilterByKey(boost::bind(std::greater_equal<Key>(), _1, 2));
-      it != values.endFilterByKey(boost::bind(std::greater_equal<Key>(), _1, 2)); ++it, ++i) {
+  Values::Filtered<Value> filtered = values.filter(boost::bind(std::greater_equal<Key>(), _1, 2));
+  BOOST_FOREACH(const Values::Filtered<Value>::value_type& key_value, filtered) {
     if(i == 0) {
-      LONGS_EQUAL(2, it->first);
-      EXPECT(typeid(Pose2) == typeid(it->second));
-      EXPECT(assert_equal(pose2, dynamic_cast<const Pose2&>(it->second)));
+      LONGS_EQUAL(2, key_value.first);
+      EXPECT(typeid(Pose2) == typeid(key_value.second));
+      EXPECT(assert_equal(pose2, dynamic_cast<const Pose2&>(key_value.second)));
     } else if(i == 1) {
-      LONGS_EQUAL(3, it->first);
-      EXPECT(typeid(Pose3) == typeid(it->second));
-      EXPECT(assert_equal(pose3, dynamic_cast<const Pose3&>(it->second)));
+      LONGS_EQUAL(3, key_value.first);
+      EXPECT(typeid(Pose3) == typeid(key_value.second));
+      EXPECT(assert_equal(pose3, dynamic_cast<const Pose3&>(key_value.second)));
     } else {
       EXPECT(false);
     }
+    ++ i;
   }
   LONGS_EQUAL(2, i);
 
   // Filter by type
   i = 0;
-  for(Values::type_filter_iterator<Pose3>::type it = values.beginFilterByType<Pose3>();
-      it != values.endFilterByType<Pose3>(); ++it, ++i) {
+  BOOST_FOREACH(const Values::Filtered<Pose3>::value_type& key_value, values.filter<Pose3>()) {
     if(i == 0) {
-      LONGS_EQUAL(1, it->first);
-      EXPECT(assert_equal(pose1, it->second));
+      LONGS_EQUAL(1, key_value.first);
+      EXPECT(assert_equal(pose1, key_value.second));
     } else if(i == 1) {
-      LONGS_EQUAL(3, it->first);
-      EXPECT(assert_equal(pose3, it->second));
+      LONGS_EQUAL(3, key_value.first);
+      EXPECT(assert_equal(pose3, key_value.second));
     } else {
       EXPECT(false);
     }
+    ++ i;
   }
   LONGS_EQUAL(2, i);
 }
