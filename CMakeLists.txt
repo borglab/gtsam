@@ -40,6 +40,7 @@ option(GTSAM_BUILD_TIMING   "Enable/Disable building of timing scripts" ON)
 option(GTSAM_BUILD_EXAMPLES "Enable/Disable building of examples"       ON)
 option(GTSAM_BUILD_WRAP     "Enable/Disable building of matlab wrap utility (necessary for matlab interface)" ON)
 option(GTSAM_USE_QUATERNIONS "Enable/Disable using an internal Quaternion representation for rotations instead of rotation matrices" OFF)
+option(GTSAM_BUILD_CONVENIENCE_LIBRARIES "Enable/Disable use of convenience libraries for faster development rebuilds, but slower install" ON)
 
 # Add the Quaternion Build Flag if requested
 if (GTSAM_USE_QUATERNIONS)
