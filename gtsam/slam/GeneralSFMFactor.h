@@ -83,7 +83,7 @@ namespace gtsam {
 				boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const {
 
 			try {
-				Point2 reprojError(camera.project2(point,H1,H2) - z_);
+				Point2 reprojError(camera.project2(point,H1,H2) - measured_);
 	      return reprojError.vector();
 			}
 			catch( CheiralityException& e) {
