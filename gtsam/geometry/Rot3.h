@@ -363,7 +363,10 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(r2_);
       ar & BOOST_SERIALIZATION_NVP(r3_);
 #else
-      ar & BOOST_SERIALIZATION_NVP(quaternion_);
+      ar & boost::serialization::make_nvp("w", quaternion_.w());
+      ar & boost::serialization::make_nvp("x", quaternion_.x());
+      ar & boost::serialization::make_nvp("y", quaternion_.y());
+      ar & boost::serialization::make_nvp("z", quaternion_.z());
 #endif
     }
   };
