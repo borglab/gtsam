@@ -14,7 +14,6 @@ using namespace pose2SLAM;
 
 const double tol = 1e-5;
 
-#if ENABLE_SPCG
 /* ************************************************************************* */
 TEST(testPose2SLAMwSPCG, example1) {
 
@@ -41,7 +40,7 @@ TEST(testPose2SLAMwSPCG, example1) {
 	graph.addConstraint(x6,x9,Pose2(2,0,0),sigma) ;
 	graph.addPrior(x1, Pose2(0,0,0), sigma) ;
 
-	pose2SLAM::Values initial;
+	Values initial;
 	initial.insert(x1, Pose2(  0,  0,   0));
 	initial.insert(x2, Pose2(  0, 2.1, 0.01));
 	initial.insert(x3, Pose2(  0, 3.9,-0.01));
@@ -52,7 +51,7 @@ TEST(testPose2SLAMwSPCG, example1) {
 	initial.insert(x8, Pose2(3.9, 2.1, 0.01));
 	initial.insert(x9, Pose2(4.1, 3.9,-0.01));
 
-	pose2SLAM::Values expected;
+	Values expected;
 	expected.insert(x1, Pose2(0.0, 0.0, 0.0));
 	expected.insert(x2, Pose2(0.0, 2.0, 0.0));
 	expected.insert(x3, Pose2(0.0, 4.0, 0.0));
@@ -63,11 +62,10 @@ TEST(testPose2SLAMwSPCG, example1) {
 	expected.insert(x8, Pose2(4.0, 2.0, 0.0));
 	expected.insert(x9, Pose2(4.0, 4.0, 0.0));
 
-	pose2SLAM::Values actual = optimizeSPCG(graph, initial);
+	Values actual = optimizeSPCG(graph, initial);
 
 	EXPECT(assert_equal(expected, actual, tol));
 }
-#endif
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

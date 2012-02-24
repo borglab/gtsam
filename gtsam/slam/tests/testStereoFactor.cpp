@@ -29,6 +29,7 @@
 using namespace std;
 using namespace gtsam;
 using namespace boost;
+using namespace visualSLAM;
 
 Pose3 camera1(Matrix_(3,3,
 		       1., 0., 0.,
@@ -51,22 +52,22 @@ TEST( StereoFactor, singlePoint)
 	boost::shared_ptr<Cal3_S2Stereo> K(new Cal3_S2Stereo(625, 625, 0, 320, 240, 0.5));
 	boost::shared_ptr<visualSLAM::Graph> graph(new visualSLAM::Graph());
 
-	graph->add(visualSLAM::PoseConstraint(1,camera1));
+	graph->add(visualSLAM::PoseConstraint(PoseKey(1),camera1));
 
 	StereoPoint2 z14(320,320.0-50, 240);
   // arguments: measurement, sigma, cam#, measurement #, K, baseline (m)
-	graph->add(visualSLAM::StereoFactor(z14,sigma, 1, 1, K));
+	graph->add(visualSLAM::StereoFactor(z14,sigma, PoseKey(1), PointKey(1), K));
 
 	// Create a configuration corresponding to the ground truth
-	boost::shared_ptr<visualSLAM::Values> values(new visualSLAM::Values());
-	values->insert(1, camera1); // add camera at z=6.25m looking towards origin
+	boost::shared_ptr<Values> values(new Values());
+	values->insert(PoseKey(1), camera1); // add camera at z=6.25m looking towards origin
 
 	Point3 l1(0, 0, 0);
-	values->insert(1, l1);   // add point at origin;
+	values->insert(PointKey(1), l1);   // add point at origin;
 
 	Ordering::shared_ptr ordering = graph->orderingCOLAMD(*values);
 
-	typedef gtsam::NonlinearOptimizer<visualSLAM::Graph,visualSLAM::Values,gtsam::GaussianFactorGraph,gtsam::GaussianMultifrontalSolver> Optimizer;   // optimization engine for this domain
+	typedef gtsam::NonlinearOptimizer<visualSLAM::Graph, gtsam::GaussianFactorGraph, gtsam::GaussianMultifrontalSolver> Optimizer;   // optimization engine for this domain
 
 	double absoluteThreshold = 1e-9;
 	double relativeThreshold = 1e-5;

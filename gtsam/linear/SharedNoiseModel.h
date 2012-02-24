@@ -50,31 +50,31 @@ namespace gtsam { // note, deliberately not in noiseModel namespace
 
     // Static syntactic sugar functions to create noisemodels directly
     // These should only be used with the Matlab interface
-  	static inline SharedNoiseModel sharedSigmas(const Vector& sigmas, bool smart=false) {
+  	static inline SharedNoiseModel Sigmas(const Vector& sigmas, bool smart=false) {
   		return noiseModel::Diagonal::Sigmas(sigmas, smart);
   	}
 
-  	static inline SharedNoiseModel sharedSigma(size_t dim, double sigma) {
+  	static inline SharedNoiseModel Sigma(size_t dim, double sigma) {
   		return noiseModel::Isotropic::Sigma(dim, sigma);
   	}
 
-  	static inline SharedNoiseModel sharedPrecisions(const Vector& precisions) {
+  	static inline SharedNoiseModel Precisions(const Vector& precisions) {
   	  return noiseModel::Diagonal::Precisions(precisions);
   	}
 
-  	static inline SharedNoiseModel sharedPrecision(size_t dim, double precision) {
+  	static inline SharedNoiseModel Precision(size_t dim, double precision) {
   	  return noiseModel::Isotropic::Precision(dim, precision);
   	}
 
-  	static inline SharedNoiseModel sharedUnit(size_t dim) {
+  	static inline SharedNoiseModel Unit(size_t dim) {
   	  return noiseModel::Unit::Create(dim);
   	}
 
-  	static inline SharedNoiseModel sharedSqrtInformation(const Matrix& R) {
+  	static inline SharedNoiseModel SqrtInformation(const Matrix& R) {
   	  return noiseModel::Gaussian::SqrtInformation(R);
   	}
 
-  	static inline SharedNoiseModel sharedCovariance(const Matrix& covariance, bool smart=false) {
+  	static inline SharedNoiseModel Covariance(const Matrix& covariance, bool smart=false) {
   		return noiseModel::Gaussian::Covariance(covariance, smart);
   	}
 

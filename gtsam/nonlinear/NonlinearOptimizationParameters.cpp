@@ -102,7 +102,7 @@ NonlinearOptimizationParameters::newLambda(double lambda) {
 
 /* ************************************************************************* */
 NonlinearOptimizationParameters::shared_ptr
-NonlinearOptimizationParameters::newDrecreaseThresholds(double absDecrease,
+NonlinearOptimizationParameters::newDecreaseThresholds(double absDecrease,
 		double relDecrease) {
 	shared_ptr ptr(boost::make_shared<NonlinearOptimizationParameters>());
 	ptr->absDecrease_ = absDecrease;

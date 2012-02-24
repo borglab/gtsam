@@ -106,16 +106,19 @@ struct ISAM2Params {
 
   bool evaluateNonlinearError; ///< Whether to evaluate the nonlinear error before and after the update, to return in ISAM2Result from update()
 
+  KeyFormatter keyFormatter; ///< A KeyFormatter for when keys are printed during debugging (default: DefaultKeyFormatter)
+
   /** Specify parameters as constructor arguments */
   ISAM2Params(
-      OptimizationParams _optimizationParams = ISAM2GaussNewtonParams(), ///< see ISAM2Params public variables, ISAM2Params::optimizationParams
-      RelinearizationThreshold _relinearizeThreshold = 0.1, ///< see ISAM2Params public variables, ISAM2Params::relinearizeThreshold
-      int _relinearizeSkip = 10, ///< see ISAM2Params public variables, ISAM2Params::relinearizeSkip
-      bool _enableRelinearization = true, ///< see ISAM2Params public variables, ISAM2Params::enableRelinearization
-      bool _evaluateNonlinearError = false ///< see ISAM2Params public variables, ISAM2Params::evaluateNonlinearError
+      OptimizationParams _optimizationParams = ISAM2GaussNewtonParams(), ///< see ISAM2Params::optimizationParams
+      RelinearizationThreshold _relinearizeThreshold = 0.1, ///< see ISAM2Params::relinearizeThreshold
+      int _relinearizeSkip = 10, ///< see ISAM2Params::relinearizeSkip
+      bool _enableRelinearization = true, ///< see ISAM2Params::enableRelinearization
+      bool _evaluateNonlinearError = false, ///< see ISAM2Params::evaluateNonlinearError
+      const KeyFormatter& _keyFormatter = DefaultKeyFormatter ///< see ISAM2::Params::keyFormatter
   ) : optimizationParams(_optimizationParams), relinearizeThreshold(_relinearizeThreshold),
       relinearizeSkip(_relinearizeSkip), enableRelinearization(_enableRelinearization),
-      evaluateNonlinearError(_evaluateNonlinearError) {}
+      evaluateNonlinearError(_evaluateNonlinearError), keyFormatter(_keyFormatter) {}
 };
 
 /**
@@ -266,13 +269,13 @@ private:
  * estimate of all variables.
  *
  */
-template<class CONDITIONAL, class VALUES, class GRAPH = NonlinearFactorGraph<VALUES> >
+template<class CONDITIONAL, class GRAPH = NonlinearFactorGraph>
 class ISAM2: public BayesTree<CONDITIONAL, ISAM2Clique<CONDITIONAL> > {
 
 protected:
 
   /** The current linearization point */
-  VALUES theta_;
+  Values theta_;
 
   /** VariableIndex lets us look up factors by involved variable and keeps track of dimensions */
   VariableIndex variableIndex_;
@@ -314,8 +317,7 @@ private:
 public:
 
   typedef BayesTree<CONDITIONAL,ISAM2Clique<CONDITIONAL> > Base; ///< The BayesTree base class
-  typedef ISAM2<CONDITIONAL, VALUES> This; ///< This class
-  typedef VALUES Values;
+  typedef ISAM2<CONDITIONAL> This; ///< This class
   typedef GRAPH Graph;
 
   /** Create an empty ISAM2 instance */
@@ -368,19 +370,19 @@ public:
    * (Params::relinearizeSkip).
    * @return An ISAM2Result struct containing information about the update
    */
-  ISAM2Result update(const GRAPH& newFactors = GRAPH(), const VALUES& newTheta = VALUES(),
+  ISAM2Result update(const GRAPH& newFactors = GRAPH(), const Values& newTheta = Values(),
       const FastVector<size_t>& removeFactorIndices = FastVector<size_t>(),
-      const boost::optional<FastSet<Symbol> >& constrainedKeys = boost::none,
+      const boost::optional<FastSet<Key> >& constrainedKeys = boost::none,
       bool force_relinearize = false);
 
   /** Access the current linearization point */
-  const VALUES& getLinearizationPoint() const {return theta_;}
+  const Values& getLinearizationPoint() const {return theta_;}
 
   /** Compute an estimate from the incomplete linear delta computed during the last update.
    * This delta is incomplete because it was not updated below wildfire_threshold.  If only
    * a single variable is needed, it is faster to call calculateEstimate(const KEY&).
    */
-  VALUES calculateEstimate() const;
+  Values calculateEstimate() const;
 
   /** Compute an estimate for a single variable using its incomplete linear delta computed
    * during the last update.  This is faster than calling the no-argument version of
@@ -399,7 +401,7 @@ public:
 
   /** Compute an estimate using a complete delta computed by a full back-substitution.
    */
-  VALUES calculateBestEstimate() const;
+  Values calculateBestEstimate() const;
 
   /** Access the current delta, computed during the last call to update */
   const Permuted<VectorValues>& getDelta() const { return delta_; }
@@ -435,8 +437,8 @@ private:
 }; // ISAM2
 
 /** Get the linear delta for the ISAM2 object, unpermuted the delta returned by ISAM2::getDelta() */
-template<class CONDITIONAL, class VALUES, class GRAPH>
-VectorValues optimize(const ISAM2<CONDITIONAL,VALUES,GRAPH>& isam);
+template<class CONDITIONAL, class GRAPH>
+VectorValues optimize(const ISAM2<CONDITIONAL, GRAPH>& isam);
 
 } /// namespace gtsam
 

@@ -16,38 +16,35 @@
  * @date	  Aug 23, 2011
  */
 
-#include <gtsam/nonlinear/Key.h>
+#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/SimpleCamera.h>
-#include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearOptimization.h>
 
 using namespace gtsam;
 
-typedef TypedSymbol<Pose3, 'x'> PoseKey;
-typedef Values<PoseKey> PoseValues;
-
 /**
  * Unary factor for the pose.
  */
-class ResectioningFactor: public NonlinearFactor1<PoseValues, PoseKey> {
-  typedef NonlinearFactor1<PoseValues, PoseKey> Base;
+class ResectioningFactor: public NoiseModelFactor1<Pose3> {
+  typedef NoiseModelFactor1<Pose3> Base;
 
   shared_ptrK K_; // camera's intrinsic parameters
   Point3 P_; // 3D point on the calibration rig
   Point2 p_; // 2D measurement of the 3D point
 
 public:
-  ResectioningFactor(const SharedNoiseModel& model, const PoseKey& key,
+  ResectioningFactor(const SharedNoiseModel& model, const Symbol& key,
       const shared_ptrK& calib, const Point2& p, const Point3& P) :
     Base(model, key), K_(calib), P_(P), p_(p) {
   }
 
-  virtual Vector evaluateError(const Pose3& X, boost::optional<Matrix&> H =
-      boost::none) const {
+  virtual ~ResectioningFactor() {}
+
+  virtual Vector evaluateError(const Pose3& X, boost::optional<Matrix&> H = boost::none) const {
     SimpleCamera camera(*K_, X);
     Point2 reprojectionError(camera.project(P_, H) - p_);
     return reprojectionError.vector();
@@ -69,10 +66,10 @@ int main(int argc, char* argv[]) {
 
   /* create keys for variables */
   // we have only 1 variable to solve: the camera pose
-  PoseKey X(1);
+  Symbol X('x',1);
 
   /* 1. create graph */
-  NonlinearFactorGraph<PoseValues> graph;
+  NonlinearFactorGraph graph;
 
   /* 2. add factors to the graph */
   // add measurement factors
@@ -92,14 +89,13 @@ int main(int argc, char* argv[]) {
   graph.push_back(factor);
 
   /* 3. Create an initial estimate for the camera pose */
-  PoseValues initial;
+  Values initial;
   initial.insert(X, Pose3(Rot3(1.,0.,0.,
                                0.,-1.,0.,
                                0.,0.,-1.), Point3(0.,0.,2.0)));
 
   /* 4. Optimize the graph using Levenberg-Marquardt*/
-  PoseValues result = optimize<NonlinearFactorGraph<PoseValues> , PoseValues> (
-      graph, initial);
+  Values result = optimize<NonlinearFactorGraph> (graph, initial);
   result.print("Final result: ");
 
   return 0;

@@ -27,40 +27,39 @@ namespace gtsam {
 	 * linearized Hessian matrices of the original factor, but with the opposite sign. This effectively
 	 * cancels out any affects of the original factor during optimization."
 	 */
-	template<class VALUES>
-	class AntiFactor: public NonlinearFactor<VALUES> {
+	class AntiFactor: public NonlinearFactor {
 
 	private:
 
-		typedef AntiFactor<VALUES> This;
-		typedef NonlinearFactor<VALUES> Base;
-		typedef typename NonlinearFactor<VALUES>::shared_ptr sharedFactor;
+		typedef AntiFactor This;
+		typedef NonlinearFactor Base;
+		typedef NonlinearFactor::shared_ptr sharedFactor;
 
 		sharedFactor factor_;
 
 	public:
 
 		// shorthand for a smart pointer to a factor
-		typedef typename boost::shared_ptr<AntiFactor> shared_ptr;
+		typedef boost::shared_ptr<AntiFactor> shared_ptr;
 
 		/** default constructor - only use for serialization */
 		AntiFactor() {}
 
 		/** constructor - Creates the equivalent AntiFactor from an existing factor */
-		AntiFactor(typename NonlinearFactor<VALUES>::shared_ptr factor) : Base(factor->begin(), factor->end()), factor_(factor) {}
+		AntiFactor(NonlinearFactor::shared_ptr factor) : Base(factor->begin(), factor->end()), factor_(factor) {}
 
 		virtual ~AntiFactor() {}
 
 		/** implement functions needed for Testable */
 
 		/** print */
-		virtual void print(const std::string& s) const {
+		virtual void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
 	    std::cout << s << "AntiFactor version of:" << std::endl;
-	    factor_->print(s);
+	    factor_->print(s, keyFormatter);
 		}
 
 		/** equals */
-		virtual bool equals(const NonlinearFactor<VALUES>& expected, double tol=1e-9) const {
+		virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
 			const This *e =	dynamic_cast<const This*> (&expected);
 			return e != NULL && Base::equals(*e, tol) && this->factor_->equals(*e->factor_, tol);
 		}
@@ -72,7 +71,7 @@ namespace gtsam {
 	   * For the AntiFactor, this will have the same magnitude of the original factor,
 	   * but the opposite sign.
 	   */
-	  double error(const VALUES& c) const { return -factor_->error(c); }
+	  double error(const Values& c) const { return -factor_->error(c); }
 
 	  /** get the dimension of the factor (same as the original factor) */
 	  size_t dim() const { return factor_->dim(); }
@@ -81,7 +80,7 @@ namespace gtsam {
 	   * Checks whether this factor should be used based on a set of values.
 	   * The AntiFactor will have the same 'active' profile as the original factor.
 	   */
-	  bool active(const VALUES& c) const { return factor_->active(c); }
+	  bool active(const Values& c) const { return factor_->active(c); }
 
 	  /**
 	   * Linearize to a GaussianFactor. The AntiFactor always returns a Hessian Factor
@@ -90,7 +89,7 @@ namespace gtsam {
 	   * effectively cancels the effect of the original factor on the factor graph.
 	   */
 	  boost::shared_ptr<GaussianFactor>
-	  linearize(const VALUES& c, const Ordering& ordering) const {
+	  linearize(const Values& c, const Ordering& ordering) const {
 
 	    // Generate the linearized factor from the contained nonlinear factor
 	    GaussianFactor::shared_ptr gaussianFactor = factor_->linearize(c, ordering);

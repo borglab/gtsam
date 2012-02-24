@@ -23,6 +23,7 @@
 
 using namespace std;
 using namespace gtsam;
+using namespace planarSLAM;
 
 // some shared test values
 static Pose2 x1, x2(1, 1, 0), x3(1, 1, M_PI_4);
@@ -36,7 +37,7 @@ SharedNoiseModel
 /* ************************************************************************* */
 TEST( planarSLAM, PriorFactor_equals )
 {
-	planarSLAM::Prior factor1(2, x1, I3), factor2(2, x2, I3);
+	planarSLAM::Prior factor1(PoseKey(2), x1, I3), factor2(PoseKey(2), x2, I3);
 	EXPECT(assert_equal(factor1, factor1, 1e-5));
 	EXPECT(assert_equal(factor2, factor2, 1e-5));
 	EXPECT(assert_inequal(factor1, factor2, 1e-5));
@@ -47,12 +48,12 @@ TEST( planarSLAM, BearingFactor )
 {
 	// Create factor
 	Rot2 z = Rot2::fromAngle(M_PI_4 + 0.1); // h(x) - z = -0.1
-	planarSLAM::Bearing factor(2, 3, z, sigma);
+	planarSLAM::Bearing factor(PoseKey(2), PointKey(3), z, sigma);
 
 	// create config
 	planarSLAM::Values c;
-	c.insert(2, x2);
-	c.insert(3, l3);
+	c.insert(PoseKey(2), x2);
+	c.insert(PointKey(3), l3);
 
 	// Check error
 	Vector actual = factor.unwhitenedError(c);
@@ -63,8 +64,8 @@ TEST( planarSLAM, BearingFactor )
 TEST( planarSLAM, BearingFactor_equals )
 {
 	planarSLAM::Bearing
-		factor1(2, 3, Rot2::fromAngle(0.1), sigma),
-		factor2(2, 3, Rot2::fromAngle(2.3), sigma);
+		factor1(PoseKey(2), PointKey(3), Rot2::fromAngle(0.1), sigma),
+		factor2(PoseKey(2), PointKey(3), Rot2::fromAngle(2.3), sigma);
 	EXPECT(assert_equal(factor1, factor1, 1e-5));
 	EXPECT(assert_equal(factor2, factor2, 1e-5));
 	EXPECT(assert_inequal(factor1, factor2, 1e-5));
@@ -75,12 +76,12 @@ TEST( planarSLAM, RangeFactor )
 {
 	// Create factor
 	double z(sqrt(2) - 0.22); // h(x) - z = 0.22
-	planarSLAM::Range factor(2, 3, z, sigma);
+	planarSLAM::Range factor(PoseKey(2), PointKey(3), z, sigma);
 
 	// create config
 	planarSLAM::Values c;
-	c.insert(2, x2);
-	c.insert(3, l3);
+	c.insert(PoseKey(2), x2);
+	c.insert(PointKey(3), l3);
 
 	// Check error
 	Vector actual = factor.unwhitenedError(c);
@@ -90,7 +91,7 @@ TEST( planarSLAM, RangeFactor )
 /* ************************************************************************* */
 TEST( planarSLAM, RangeFactor_equals )
 {
-	planarSLAM::Range factor1(2, 3, 1.2, sigma), factor2(2, 3, 7.2, sigma);
+	planarSLAM::Range factor1(PoseKey(2), PointKey(3), 1.2, sigma), factor2(PoseKey(2), PointKey(3), 7.2, sigma);
 	EXPECT(assert_equal(factor1, factor1, 1e-5));
 	EXPECT(assert_equal(factor2, factor2, 1e-5));
 	EXPECT(assert_inequal(factor1, factor2, 1e-5));
@@ -102,12 +103,12 @@ TEST( planarSLAM, BearingRangeFactor )
 	// Create factor
 	Rot2 r = Rot2::fromAngle(M_PI_4 + 0.1); // h(x) - z = -0.1
 	double b(sqrt(2) - 0.22); // h(x) - z = 0.22
-	planarSLAM::BearingRange factor(2, 3, r, b, sigma2);
+	planarSLAM::BearingRange factor(PoseKey(2), PointKey(3), r, b, sigma2);
 
 	// create config
 	planarSLAM::Values c;
-	c.insert(2, x2);
-	c.insert(3, l3);
+	c.insert(PoseKey(2), x2);
+	c.insert(PointKey(3), l3);
 
 	// Check error
 	Vector actual = factor.unwhitenedError(c);
@@ -118,8 +119,8 @@ TEST( planarSLAM, BearingRangeFactor )
 TEST( planarSLAM, BearingRangeFactor_equals )
 {
 	planarSLAM::BearingRange
-		factor1(2, 3, Rot2::fromAngle(0.1), 7.3,  sigma2),
-		factor2(2, 3, Rot2::fromAngle(3), 2.0, sigma2);
+		factor1(PoseKey(2), PointKey(3), Rot2::fromAngle(0.1), 7.3,  sigma2),
+		factor2(PoseKey(2), PointKey(3), Rot2::fromAngle(3), 2.0, sigma2);
 	EXPECT(assert_equal(factor1, factor1, 1e-5));
 	EXPECT(assert_equal(factor2, factor2, 1e-5));
 	EXPECT(assert_inequal(factor1, factor2, 1e-5));
@@ -128,7 +129,7 @@ TEST( planarSLAM, BearingRangeFactor_equals )
 /* ************************************************************************* */
 TEST( planarSLAM, PoseConstraint_equals )
 {
-	planarSLAM::Constraint factor1(2, x2), factor2(2, x3);
+	planarSLAM::Constraint factor1(PoseKey(2), x2), factor2(PoseKey(2), x3);
 	EXPECT(assert_equal(factor1, factor1, 1e-5));
 	EXPECT(assert_equal(factor2, factor2, 1e-5));
 	EXPECT(assert_inequal(factor1, factor2, 1e-5));
@@ -139,9 +140,9 @@ TEST( planarSLAM, constructor )
 {
 	// create config
 	planarSLAM::Values c;
-	c.insert(2, x2);
-	c.insert(3, x3);
-	c.insert(3, l3);
+	c.insert(PoseKey(2), x2);
+	c.insert(PoseKey(3), x3);
+	c.insert(PointKey(3), l3);
 
 	// create graph
 	planarSLAM::Graph G;
@@ -165,8 +166,8 @@ TEST( planarSLAM, constructor )
 	Vector expected2 = Vector_(1, -0.1);
 	Vector expected3 = Vector_(1, 0.22);
 	// Get NoiseModelFactors
-	FactorGraph<NoiseModelFactor<planarSLAM::Values> > GNM =
-	    *G.dynamicCastFactors<FactorGraph<NoiseModelFactor<planarSLAM::Values> > >();
+	FactorGraph<NoiseModelFactor > GNM =
+	    *G.dynamicCastFactors<FactorGraph<NoiseModelFactor > >();
 	EXPECT(assert_equal(expected0, GNM[0]->unwhitenedError(c)));
   EXPECT(assert_equal(expected1, GNM[1]->unwhitenedError(c)));
   EXPECT(assert_equal(expected2, GNM[2]->unwhitenedError(c)));

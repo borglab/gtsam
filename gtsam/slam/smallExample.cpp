@@ -24,9 +24,6 @@
 
 using namespace std;
 
-// Magically casts strings like "x3" to a Symbol('x',3) key, see Key.h
-#define GTSAM_MAGIC_KEY
-
 #include <gtsam/base/Matrix.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/slam/smallExample.h>
@@ -39,7 +36,10 @@ using namespace std;
 namespace gtsam {
 namespace example {
 
-	typedef boost::shared_ptr<NonlinearFactor<Values> > shared;
+  using simulated2D::PoseKey;
+  using simulated2D::PointKey;
+
+	typedef boost::shared_ptr<NonlinearFactor> shared;
 
 	static SharedDiagonal sigma1_0 = noiseModel::Isotropic::Sigma(2,1.0);
 	static SharedDiagonal sigma0_1 = noiseModel::Isotropic::Sigma(2,0.1);
@@ -49,6 +49,9 @@ namespace example {
 	static const Index _l1_=0, _x1_=1, _x2_=2;
 	static const Index _x_=0, _y_=1, _z_=2;
 
+	Key kx(size_t i) { return Symbol('x',i); }
+	Key kl(size_t i) { return Symbol('l',i); }
+
 	/* ************************************************************************* */
 	boost::shared_ptr<const Graph> sharedNonlinearFactorGraph() {
 		// Create
@@ -57,22 +60,22 @@ namespace example {
 
 		// prior on x1
 		Point2 mu;
-		shared f1(new simulated2D::Prior(mu, sigma0_1, 1));
+		shared f1(new simulated2D::Prior(mu, sigma0_1, PoseKey(1)));
 		nlfg->push_back(f1);
 
 		// odometry between x1 and x2
 		Point2 z2(1.5, 0);
-		shared f2(new simulated2D::Odometry(z2, sigma0_1, 1, 2));
+		shared f2(new simulated2D::Odometry(z2, sigma0_1, PoseKey(1), PoseKey(2)));
 		nlfg->push_back(f2);
 
 		// measurement between x1 and l1
 		Point2 z3(0, -1);
-		shared f3(new simulated2D::Measurement(z3, sigma0_2, 1, 1));
+		shared f3(new simulated2D::Measurement(z3, sigma0_2, PoseKey(1), PointKey(1)));
 		nlfg->push_back(f3);
 
 		// measurement between x2 and l1
 		Point2 z4(-1.5, -1.);
-		shared f4(new simulated2D::Measurement(z4, sigma0_2, 2, 1));
+		shared f4(new simulated2D::Measurement(z4, sigma0_2, PoseKey(2), PointKey(1)));
 		nlfg->push_back(f4);
 
 		return nlfg;
@@ -86,9 +89,9 @@ namespace example {
 	/* ************************************************************************* */
 	Values createValues() {
 		Values c;
-		c.insert(simulated2D::PoseKey(1), Point2(0.0, 0.0));
-		c.insert(simulated2D::PoseKey(2), Point2(1.5, 0.0));
-		c.insert(simulated2D::PointKey(1), Point2(0.0, -1.0));
+		c.insert(PoseKey(1), Point2(0.0, 0.0));
+		c.insert(PoseKey(2), Point2(1.5, 0.0));
+		c.insert(PointKey(1), Point2(0.0, -1.0));
 		return c;
 	}
 
@@ -104,9 +107,9 @@ namespace example {
 	/* ************************************************************************* */
 	boost::shared_ptr<const Values> sharedNoisyValues() {
 		boost::shared_ptr<Values> c(new Values);
-		c->insert(simulated2D::PoseKey(1), Point2(0.1, 0.1));
-		c->insert(simulated2D::PoseKey(2), Point2(1.4, 0.2));
-		c->insert(simulated2D::PointKey(1), Point2(0.1, -1.1));
+		c->insert(PoseKey(1), Point2(0.1, 0.1));
+		c->insert(PoseKey(2), Point2(1.4, 0.2));
+		c->insert(PointKey(1), Point2(0.1, -1.1));
 		return c;
 	}
 
@@ -118,18 +121,18 @@ namespace example {
 	/* ************************************************************************* */
 	VectorValues createCorrectDelta(const Ordering& ordering) {
 		VectorValues c(vector<size_t>(3,2));
-		c[ordering["l1"]] = Vector_(2, -0.1, 0.1);
-		c[ordering["x1"]] = Vector_(2, -0.1, -0.1);
-		c[ordering["x2"]] = Vector_(2, 0.1, -0.2);
+		c[ordering[kl(1)]] = Vector_(2, -0.1, 0.1);
+		c[ordering[kx(1)]] = Vector_(2, -0.1, -0.1);
+		c[ordering[kx(2)]] = Vector_(2, 0.1, -0.2);
 		return c;
 	}
 
 	/* ************************************************************************* */
 	VectorValues createZeroDelta(const Ordering& ordering) {
 		VectorValues c(vector<size_t>(3,2));
-		c[ordering["l1"]] = zero(2);
-		c[ordering["x1"]] = zero(2);
-		c[ordering["x2"]] = zero(2);
+		c[ordering[kl(1)]] = zero(2);
+		c[ordering[kx(1)]] = zero(2);
+		c[ordering[kx(2)]] = zero(2);
 		return c;
 	}
 
@@ -141,16 +144,16 @@ namespace example {
 		SharedDiagonal unit2 = noiseModel::Unit::Create(2);
 
 		// linearized prior on x1: c[_x1_]+x1=0 i.e. x1=-c[_x1_]
-		fg.add(ordering["x1"], 10*eye(2), -1.0*ones(2), unit2);
+		fg.add(ordering[kx(1)], 10*eye(2), -1.0*ones(2), unit2);
 
 		// odometry between x1 and x2: x2-x1=[0.2;-0.1]
-		fg.add(ordering["x1"], -10*eye(2),ordering["x2"], 10*eye(2), Vector_(2, 2.0, -1.0), unit2);
+		fg.add(ordering[kx(1)], -10*eye(2),ordering[kx(2)], 10*eye(2), Vector_(2, 2.0, -1.0), unit2);
 
     // measurement between x1 and l1: l1-x1=[0.0;0.2]
-		fg.add(ordering["x1"], -5*eye(2), ordering["l1"], 5*eye(2), Vector_(2, 0.0, 1.0), unit2);
+		fg.add(ordering[kx(1)], -5*eye(2), ordering[kl(1)], 5*eye(2), Vector_(2, 0.0, 1.0), unit2);
 
 		// measurement between x2 and l1: l1-x2=[-0.2;0.3]
-		fg.add(ordering["x2"], -5*eye(2), ordering["l1"], 5*eye(2), Vector_(2, -1.0, 1.5), unit2);
+		fg.add(ordering[kx(2)], -5*eye(2), ordering[kl(1)], 5*eye(2), Vector_(2, -1.0, 1.5), unit2);
 
 		return *fg.dynamicCastFactors<FactorGraph<JacobianFactor> >();
 	}
@@ -195,18 +198,15 @@ namespace example {
 					 0.0, cos(v.y()));
 		}
 
-		struct UnaryFactor: public gtsam::NonlinearFactor1<Values,
-		simulated2D::PoseKey> {
+		struct UnaryFactor: public gtsam::NoiseModelFactor1<Point2> {
 
 			Point2 z_;
 
-			UnaryFactor(const Point2& z, const SharedNoiseModel& model,
-					const simulated2D::PoseKey& key) :
-				gtsam::NonlinearFactor1<Values, simulated2D::PoseKey>(model, key), z_(z) {
+			UnaryFactor(const Point2& z, const SharedNoiseModel& model, Key key) :
+				gtsam::NoiseModelFactor1<Point2>(model, key), z_(z) {
 			}
 
-			Vector evaluateError(const Point2& x, boost::optional<Matrix&> A =
-					boost::none) const {
+			Vector evaluateError(const Point2& x, boost::optional<Matrix&> A = boost::none) const {
 				if (A) *A = H(x);
 				return (h(x) - z_).vector();
 			}
@@ -221,7 +221,7 @@ namespace example {
 		Vector z = Vector_(2, 1.0, 0.0);
 		double sigma = 0.1;
 		boost::shared_ptr<smallOptimize::UnaryFactor> factor(
-				new smallOptimize::UnaryFactor(z, noiseModel::Isotropic::Sigma(2,sigma), 1));
+				new smallOptimize::UnaryFactor(z, noiseModel::Isotropic::Sigma(2,sigma), PoseKey(1)));
 		fg->push_back(factor);
 		return fg;
 	}
@@ -239,23 +239,23 @@ namespace example {
 
 		// prior on x1
 		Point2 x1(1.0, 0.0);
-		shared prior(new simulated2D::Prior(x1, sigma1_0, 1));
+		shared prior(new simulated2D::Prior(x1, sigma1_0, PoseKey(1)));
 		nlfg.push_back(prior);
 		poses.insert(simulated2D::PoseKey(1), x1);
 
 		for (int t = 2; t <= T; t++) {
 			// odometry between x_t and x_{t-1}
 			Point2 odo(1.0, 0.0);
-			shared odometry(new simulated2D::Odometry(odo, sigma1_0, t - 1, t));
+			shared odometry(new simulated2D::Odometry(odo, sigma1_0, PoseKey(t - 1), PoseKey(t)));
 			nlfg.push_back(odometry);
 
 			// measurement on x_t is like perfect GPS
 			Point2 xt(t, 0);
-			shared measurement(new simulated2D::Prior(xt, sigma1_0, t));
+			shared measurement(new simulated2D::Prior(xt, sigma1_0, PoseKey(t)));
 			nlfg.push_back(measurement);
 
 			// initial estimate
-			poses.insert(simulated2D::PoseKey(t), xt);
+			poses.insert(PoseKey(t), xt);
 		}
 
 		return make_pair(nlfg, poses);
@@ -415,15 +415,15 @@ namespace example {
 
 	/* ************************************************************************* */
 	// Create key for simulated planar graph
-	simulated2D::PoseKey key(int x, int y) {
-		return simulated2D::PoseKey(1000*x+y);
+	Symbol key(int x, int y) {
+		return PoseKey(1000*x+y);
 	}
 
 	/* ************************************************************************* */
 	boost::tuple<FactorGraph<GaussianFactor>, Ordering, VectorValues> planarGraph(size_t N) {
 
 		// create empty graph
-		NonlinearFactorGraph<Values> nlfg;
+		NonlinearFactorGraph nlfg;
 
 		// Create almost hard constraint on x11, sigma=0 will work for PCG not for normal
 		shared constraint(new simulated2D::Prior(Point2(1.0, 1.0), sharedSigma(2,1e-3), key(1,1)));

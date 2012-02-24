@@ -21,9 +21,6 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
-// Magically casts strings like "x3" to a Symbol('x',3) key, see Key.h
-#define GTSAM_MAGIC_KEY
-
 #include <gtsam/base/Testable.h>
 #include <gtsam/slam/smallExample.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
@@ -34,6 +31,9 @@ using namespace std;
 using namespace gtsam;
 using namespace example;
 
+Key kx(size_t i) { return Symbol('x',i); }
+Key kl(size_t i) { return Symbol('l',i); }
+
 //Symbol _B_('B', 0), _L_('L', 0);
 //IndexConditional::shared_ptr
 //	B(new IndexConditional(_B_)),
@@ -42,12 +42,12 @@ using namespace example;
 /* ************************************************************************* */
 TEST( SymbolicBayesNet, constructor )
 {
-  Ordering o; o += "x2","l1","x1";
+  Ordering o; o += kx(2),kl(1),kx(1);
 	// Create manually
 	IndexConditional::shared_ptr
-		x2(new IndexConditional(o["x2"],o["l1"], o["x1"])),
-		l1(new IndexConditional(o["l1"],o["x1"])),
-		x1(new IndexConditional(o["x1"]));
+		x2(new IndexConditional(o[kx(2)],o[kl(1)], o[kx(1)])),
+		l1(new IndexConditional(o[kl(1)],o[kx(1)])),
+		x1(new IndexConditional(o[kx(1)]));
 	BayesNet<IndexConditional> expected;
 	expected.push_back(x2);
 	expected.push_back(l1);

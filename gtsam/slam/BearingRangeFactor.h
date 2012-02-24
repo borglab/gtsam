@@ -27,20 +27,20 @@ namespace gtsam {
 	/**
 	 * Binary factor for a bearing measurement
 	 */
-	template<class VALUES, class POSEKEY, class POINTKEY>
-	class BearingRangeFactor: public NonlinearFactor2<VALUES, POSEKEY, POINTKEY> {
+	template<class POSE, class POINT>
+	class BearingRangeFactor: public NoiseModelFactor2<POSE, POINT> {
 	private:
 
-		typedef typename POSEKEY::Value Pose;
-		typedef typename POSEKEY::Value::Rotation Rot;
-		typedef typename POINTKEY::Value Point;
+		typedef POSE Pose;
+		typedef typename POSE::Rotation Rot;
+		typedef POINT Point;
 
-		typedef BearingRangeFactor<VALUES, POSEKEY, POINTKEY> This;
-		typedef NonlinearFactor2<VALUES, POSEKEY, POINTKEY> Base;
+		typedef BearingRangeFactor<POSE, POINT> This;
+		typedef NoiseModelFactor2<POSE, POINT> Base;
 
 		// the measurement
-		Rot bearing_;
-		double range_;
+		Rot measuredBearing_;
+		double measuredRange_;
 
 		/** concept check by type */
 		GTSAM_CONCEPT_TESTABLE_TYPE(Rot)
@@ -50,29 +50,29 @@ namespace gtsam {
 	public:
 
 		BearingRangeFactor() {} /* Default constructor */
-		BearingRangeFactor(const POSEKEY& i, const POINTKEY& j, const Rot& bearing, const double range,
+		BearingRangeFactor(Key poseKey, Key pointKey, const Rot& measuredBearing, const double measuredRange,
 				const SharedNoiseModel& model) :
-					Base(model, i, j), bearing_(bearing), range_(range) {
+					Base(model, poseKey, pointKey), measuredBearing_(measuredBearing), measuredRange_(measuredRange) {
 		}
 
 		virtual ~BearingRangeFactor() {}
 
 	  /** Print */
-	  virtual void print(const std::string& s = "") const {
+	  virtual void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
 	    std::cout << s << ": BearingRangeFactor("
-	    		<< (std::string) this->key1_ << ","
-	    		<< (std::string) this->key2_ << ")\n";
-	    bearing_.print("  measured bearing");
-	    std::cout << "  measured range: " << range_ << std::endl;
+	    		<< keyFormatter(this->key1()) << ","
+	    		<< keyFormatter(this->key2()) << ")\n";
+	    measuredBearing_.print("  measured bearing");
+	    std::cout << "  measured range: " << measuredRange_ << std::endl;
 	    this->noiseModel_->print("  noise model");
 	  }
 
 		/** equals */
-		virtual bool equals(const NonlinearFactor<VALUES>& expected, double tol=1e-9) const {
+		virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
 			const This *e =	dynamic_cast<const This*> (&expected);
 			return e != NULL && Base::equals(*e, tol) &&
-					fabs(this->range_ - e->range_) < tol &&
-					this->bearing_.equals(e->bearing_, tol);
+					fabs(this->measuredRange_ - e->measuredRange_) < tol &&
+					this->measuredBearing_.equals(e->measuredBearing_, tol);
 		}
 
 		/** h(x)-z -> between(z,h(x)) for Rot manifold */
@@ -85,10 +85,10 @@ namespace gtsam {
 			boost::optional<Matrix&> H22_ = H2 ? boost::optional<Matrix&>(H22) : boost::optional<Matrix&>();
 
 			Rot y1 = pose.bearing(point, H11_, H12_);
-			Vector e1 = Rot::Logmap(bearing_.between(y1));
+			Vector e1 = Rot::Logmap(measuredBearing_.between(y1));
 
 			double y2 = pose.range(point, H21_, H22_);
-			Vector e2 = Vector_(1, y2 - range_);
+			Vector e2 = Vector_(1, y2 - measuredRange_);
 
 			if (H1) *H1 = gtsam::stack(2, &H11, &H21);
 			if (H2) *H2 = gtsam::stack(2, &H12, &H22);
@@ -96,8 +96,8 @@ namespace gtsam {
 		}
 
 		/** return the measured */
-		inline const std::pair<Rot, double> measured() const {
-			return std::make_pair(bearing_, range_);
+		const std::pair<Rot, double> measured() const {
+			return std::make_pair(measuredBearing_, measuredRange_);
 		}
 
 	private:
@@ -106,10 +106,10 @@ namespace gtsam {
 		friend class boost::serialization::access;
 		template<class ARCHIVE>
 		void serialize(ARCHIVE & ar, const unsigned int version) {
-			ar & boost::serialization::make_nvp("NonlinearFactor2",
+			ar & boost::serialization::make_nvp("NoiseModelFactor2",
 					boost::serialization::base_object<Base>(*this));
-			ar & BOOST_SERIALIZATION_NVP(bearing_);
-			ar & BOOST_SERIALIZATION_NVP(range_);
+			ar & BOOST_SERIALIZATION_NVP(measuredBearing_);
+			ar & BOOST_SERIALIZATION_NVP(measuredRange_);
 		}
 	}; // BearingRangeFactor
 

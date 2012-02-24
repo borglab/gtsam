@@ -25,9 +25,6 @@
 #include <boost/assign/std/vector.hpp>
 using namespace boost::assign;
 
-// Magically casts strings like "x3" to a Symbol('x',3) key, see Key.h
-#define GTSAM_MAGIC_KEY
-
 #include <gtsam/base/debug.h>
 #include <gtsam/base/cholesky.h>
 #include <gtsam/inference/BayesTree-inl.h>
@@ -43,6 +40,9 @@ using namespace std;
 using namespace gtsam;
 using namespace example;
 
+Key kx(size_t i) { return Symbol('x',i); }
+Key kl(size_t i) { return Symbol('l',i); }
+
 /* ************************************************************************* *
  Bayes tree for smoother with "nested dissection" ordering:
 	 C1		 x5 x6 x4
@@ -53,20 +53,20 @@ using namespace example;
 TEST( GaussianJunctionTree, constructor2 )
 {
 	// create a graph
-  Ordering ordering; ordering += "x1","x3","x5","x7","x2","x6","x4";
+  Ordering ordering; ordering += kx(1),kx(3),kx(5),kx(7),kx(2),kx(6),kx(4);
   GaussianFactorGraph fg = createSmoother(7, ordering).first;
 
 	// create an ordering
 	GaussianJunctionTree actual(fg);
 
-	vector<Index> frontal1; frontal1 += ordering["x5"], ordering["x6"], ordering["x4"];
-	vector<Index> frontal2; frontal2 += ordering["x3"], ordering["x2"];
-	vector<Index> frontal3; frontal3 += ordering["x1"];
-	vector<Index> frontal4; frontal4 += ordering["x7"];
+	vector<Index> frontal1; frontal1 += ordering[kx(5)], ordering[kx(6)], ordering[kx(4)];
+	vector<Index> frontal2; frontal2 += ordering[kx(3)], ordering[kx(2)];
+	vector<Index> frontal3; frontal3 += ordering[kx(1)];
+	vector<Index> frontal4; frontal4 += ordering[kx(7)];
 	vector<Index> sep1;
-	vector<Index> sep2; sep2 += ordering["x4"];
-	vector<Index> sep3; sep3 += ordering["x2"];
-	vector<Index> sep4; sep4 += ordering["x6"];
+	vector<Index> sep2; sep2 += ordering[kx(4)];
+	vector<Index> sep3; sep3 += ordering[kx(2)];
+	vector<Index> sep4; sep4 += ordering[kx(6)];
 	EXPECT(assert_equal(frontal1, actual.root()->frontal));
 	EXPECT(assert_equal(sep1,     actual.root()->separator));
 	LONGS_EQUAL(5,               actual.root()->size());
@@ -110,8 +110,8 @@ TEST( GaussianJunctionTree, optimizeMultiFrontal2)
 {
 	// create a graph
 	example::Graph nlfg = createNonlinearFactorGraph();
-	example::Values noisy = createNoisyValues();
-  Ordering ordering; ordering += "x1","x2","l1";
+	Values noisy = createNoisyValues();
+  Ordering ordering; ordering += kx(1),kx(2),kl(1);
 	GaussianFactorGraph fg = *nlfg.linearize(noisy, ordering);
 
 	// optimize the graph
@@ -125,10 +125,10 @@ TEST( GaussianJunctionTree, optimizeMultiFrontal2)
 
 /* ************************************************************************* */
 TEST(GaussianJunctionTree, slamlike) {
-  typedef planarSLAM::PoseKey PoseKey;
-  typedef planarSLAM::PointKey PointKey;
+  using planarSLAM::PoseKey;
+  using planarSLAM::PointKey;
 
-  planarSLAM::Values init;
+  Values init;
   planarSLAM::Graph newfactors;
   planarSLAM::Graph fullgraph;
   SharedDiagonal odoNoise = sharedSigmas(Vector_(3, 0.1, 0.1, M_PI/100.0));
@@ -179,11 +179,11 @@ TEST(GaussianJunctionTree, slamlike) {
 
   GaussianJunctionTree gjt(linearized);
   VectorValues deltaactual = gjt.optimize(&EliminateQR);
-  planarSLAM::Values actual = init.retract(deltaactual, ordering);
+  Values actual = init.retract(deltaactual, ordering);
 
   GaussianBayesNet gbn = *GaussianSequentialSolver(linearized).eliminate();
   VectorValues delta = optimize(gbn);
-  planarSLAM::Values expected = init.retract(delta, ordering);
+  Values expected = init.retract(delta, ordering);
 
   EXPECT(assert_equal(expected, actual));
 }
@@ -195,15 +195,15 @@ TEST(GaussianJunctionTree, simpleMarginal) {
 
   // Create a simple graph
   pose2SLAM::Graph fg;
-  fg.addPrior(pose2SLAM::PoseKey(0), Pose2(), sharedSigma(3, 10.0));
+  fg.addPrior(0, Pose2(), sharedSigma(3, 10.0));
   fg.addOdometry(0, 1, Pose2(1.0, 0.0, 0.0), sharedSigmas(Vector_(3, 10.0, 1.0, 1.0)));
 
-  pose2SLAM::Values init;
-  init.insert(0, Pose2());
-  init.insert(1, Pose2(1.0, 0.0, 0.0));
+  Values init;
+  init.insert(pose2SLAM::PoseKey(0), Pose2());
+  init.insert(pose2SLAM::PoseKey(1), Pose2(1.0, 0.0, 0.0));
 
   Ordering ordering;
-  ordering += "x1", "x0";
+  ordering += kx(1), kx(0);
 
   GaussianFactorGraph gfg = *fg.linearize(init, ordering);
 

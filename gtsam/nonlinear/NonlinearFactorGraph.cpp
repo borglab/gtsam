@@ -10,39 +10,40 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    NonlinearFactorGraph-inl.h
+ * @file    NonlinearFactorGraph.cpp
  * @brief   Factor Graph Consisting of non-linear factors
  * @author  Frank Dellaert
  * @author  Carlos Nieto
  * @author  Christian Potthast
  */
 
-#pragma once
-
+#include <cmath>
+#include <boost/foreach.hpp>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/inference.h>
-#include <boost/foreach.hpp>
-#include <cmath>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 using namespace std;
 
 namespace gtsam {
 
 	/* ************************************************************************* */
-	template<class VALUES>
-	double NonlinearFactorGraph<VALUES>::probPrime(const VALUES& c) const {
+	double NonlinearFactorGraph::probPrime(const Values& c) const {
 		return exp(-0.5 * error(c));
 	}
 
 	/* ************************************************************************* */
-	template<class VALUES>
-	void NonlinearFactorGraph<VALUES>::print(const std::string& str) const {
-		Base::print(str);
+	void NonlinearFactorGraph::print(const std::string& str, const KeyFormatter& keyFormatter) const {
+    cout << str << "size: " << size() << endl;
+    for (size_t i = 0; i < factors_.size(); i++) {
+      stringstream ss;
+      ss << "factor " << i << ": ";
+      if (factors_[i] != NULL) factors_[i]->print(ss.str(), keyFormatter);
+    }
 	}
 
 	/* ************************************************************************* */
-	template<class VALUES>
-	double NonlinearFactorGraph<VALUES>::error(const VALUES& c) const {
+	double NonlinearFactorGraph::error(const Values& c) const {
 		double total_error = 0.;
 		// iterate over all the factors_ to accumulate the log probabilities
 		BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
@@ -53,9 +54,8 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	template<class VALUES>
-	std::set<Symbol> NonlinearFactorGraph<VALUES>::keys() const {
-		std::set<Symbol> keys;
+	std::set<Key> NonlinearFactorGraph::keys() const {
+		std::set<Key> keys;
 		BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
 		  if(factor)
 		    keys.insert(factor->begin(), factor->end());
@@ -64,9 +64,8 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	template<class VALUES>
-	Ordering::shared_ptr NonlinearFactorGraph<VALUES>::orderingCOLAMD(
-			const VALUES& config) const {
+	Ordering::shared_ptr NonlinearFactorGraph::orderingCOLAMD(
+			const Values& config) const {
 
 		// Create symbolic graph and initial (iterator) ordering
 		SymbolicFactorGraph::shared_ptr symbolic;
@@ -91,8 +90,7 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	template<class VALUES>
-	SymbolicFactorGraph::shared_ptr NonlinearFactorGraph<VALUES>::symbolic(const Ordering& ordering) const {
+	SymbolicFactorGraph::shared_ptr NonlinearFactorGraph::symbolic(const Ordering& ordering) const {
 		// Generate the symbolic factor graph
 		SymbolicFactorGraph::shared_ptr symbolicfg(new SymbolicFactorGraph);
 		symbolicfg->reserve(this->size());
@@ -108,21 +106,19 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	template<class VALUES>
-	pair<SymbolicFactorGraph::shared_ptr, Ordering::shared_ptr> NonlinearFactorGraph<
-			VALUES>::symbolic(const VALUES& config) const {
+	pair<SymbolicFactorGraph::shared_ptr, Ordering::shared_ptr> NonlinearFactorGraph::symbolic(
+		const Values& config) const {
 		// Generate an initial key ordering in iterator order
 		Ordering::shared_ptr ordering(config.orderingArbitrary());
 		return make_pair(symbolic(*ordering), ordering);
 	}
 
 	/* ************************************************************************* */
-	template<class VALUES>
-	typename GaussianFactorGraph::shared_ptr NonlinearFactorGraph<VALUES>::linearize(
-			const VALUES& config, const Ordering& ordering) const {
+	GaussianFactorGraph::shared_ptr NonlinearFactorGraph::linearize(
+			const Values& config, const Ordering& ordering) const {
 
 		// create an empty linear FG
-		typename GaussianFactorGraph::shared_ptr linearFG(new GaussianFactorGraph);
+		GaussianFactorGraph::shared_ptr linearFG(new GaussianFactorGraph);
 		linearFG->reserve(this->size());
 
 		// linearize all factors

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -10,222 +10,116 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file Values.cpp
+ * @file Values.h
  * @author Richard Roberts
+ *
+ * @brief A non-templated config holding any types of Manifold-group elements
+ *
+ *  Detailed story:
+ *  A values structure is a map from keys to values. It is used to specify the value of a bunch
+ *  of variables in a factor graph. A Values is a values structure which can hold variables that
+ *  are elements on manifolds, not just vectors. It then, as a whole, implements a aggregate type
+ *  which is also a manifold element, and hence supports operations dim, retract, and localCoordinates.
  */
 
-#pragma once
-
 #include <utility>
-#include <iostream>
-#include <stdexcept>
+#include <boost/type_traits/conditional.hpp>
+#include <boost/type_traits/is_base_of.hpp>
 
-#include <boost/foreach.hpp>
-#include <boost/tuple/tuple.hpp>
-
-#include <gtsam/linear/VectorValues.h>
-#include <gtsam/base/LieVector.h>
-#include <gtsam/base/Lie-inl.h>
-#include <gtsam/nonlinear/Ordering.h>
-
-using namespace std;
+#include <gtsam/base/DerivedValue.h>
+#include <gtsam/nonlinear/Values.h> // Only so Eclipse finds class definition
 
 namespace gtsam {
 
-/* ************************************************************************* */
-  template<class J>
-  void Values<J>::print(const string &s) const {
-       cout << "Values " << s << ", size " << values_.size() << "\n";
-       BOOST_FOREACH(const KeyValuePair& v, values_) {
-         gtsam::print(v.second, (string)(v.first));
-       }
-     }
-
   /* ************************************************************************* */
-  template<class J>
-  bool Values<J>::equals(const Values<J>& expected, double tol) const {
-    if (values_.size() != expected.values_.size()) return false;
-    BOOST_FOREACH(const KeyValuePair& v, values_) {
-    	if (!expected.exists(v.first)) return false;
-      if(!gtsam::equal(v.second, expected[v.first], tol))
-        return false;
+  class ValueCloneAllocator {
+  public:
+    static Value* allocate_clone(const Value& a) { return a.clone_(); }
+    static void deallocate_clone(const Value* a) { a->deallocate_(); }
+  private:
+    ValueCloneAllocator() {}
+  };
+
+#if 0
+  /* ************************************************************************* */
+  class ValueAutomaticCasting {
+    Key key_;
+    const Value& value_;
+
+  public:
+    ValueAutomaticCasting(Key key, const Value& value) : key_(key), value_(value) {}
+
+    template<class ValueType>
+    class ConvertibleToValue : public ValueType {
+    };
+
+    template<class ValueType>
+    operator const ConvertibleToValue<ValueType>& () const {
+      // Check the type and throw exception if incorrect
+      if(typeid(ValueType) != typeid(value_))
+        throw ValuesIncorrectType(key_, typeid(ValueType), typeid(value_));
+
+      // We have already checked the type, so do a "blind" static_cast, not dynamic_cast
+      return static_cast<const ConvertibleToValue<ValueType>&>(value_);
     }
-    return true;
+  };
+#endif
+
+  /* ************************************************************************* */
+  template<typename ValueType>
+  const ValueType& Values::at(Key j) const {
+    // Find the item
+    KeyValueMap::const_iterator item = values_.find(j);
+
+    // Throw exception if it does not exist
+    if(item == values_.end())
+      throw ValuesKeyDoesNotExist("retrieve", j);
+
+    // Check the type and throw exception if incorrect
+    if(typeid(*item->second) != typeid(ValueType))
+      throw ValuesIncorrectType(j, typeid(*item->second), typeid(ValueType));
+
+    // We have already checked the type, so do a "blind" static_cast, not dynamic_cast
+    return static_cast<const ValueType&>(*item->second);
   }
 
+#if 0
   /* ************************************************************************* */
-  template<class J>
-  const typename J::Value& Values<J>::at(const J& j) const {
-    const_iterator it = values_.find(j);
-    if (it == values_.end()) throw KeyDoesNotExist<J>("retrieve", j);
-    else return it->second;
+  inline ValueAutomaticCasting Values::at(Key j) const {
+    // Find the item
+    KeyValueMap::const_iterator item = values_.find(j);
+
+    // Throw exception if it does not exist
+    if(item == values_.end())
+      throw ValuesKeyDoesNotExist("retrieve", j);
+
+    return ValueAutomaticCasting(item->first, *item->second);
   }
+#endif
 
+#if 0
   /* ************************************************************************* */
-  template<class J>
-  size_t Values<J>::dim() const {
-  	size_t n = 0;
-  	BOOST_FOREACH(const KeyValuePair& value, values_)
-  		n += value.second.dim();
-  	return n;
+  inline ValueAutomaticCasting Values::operator[](Key j) const {
+    return at(j);
   }
+#endif
 
   /* ************************************************************************* */
-  template<class J>
-  VectorValues Values<J>::zero(const Ordering& ordering) const {
-  	return VectorValues::Zero(this->dims(ordering));
-  }
+  template<typename ValueType>
+  boost::optional<const ValueType&> Values::exists(Key j) const {
+    // Find the item
+    KeyValueMap::const_iterator item = values_.find(j);
 
-  /* ************************************************************************* */
-  template<class J>
-  void Values<J>::insert(const J& name, const typename J::Value& val) {
-    if(!values_.insert(make_pair(name, val)).second)
-      throw KeyAlreadyExists<J>(name, val);
-  }
+    if(item != values_.end()) {
+      // Check the type and throw exception if incorrect
+      if(typeid(*item->second) != typeid(ValueType))
+        throw ValuesIncorrectType(j, typeid(*item->second), typeid(ValueType));
 
-  /* ************************************************************************* */
-  template<class J>
-  void Values<J>::insert(const Values<J>& cfg) {
-	  BOOST_FOREACH(const KeyValuePair& v, cfg.values_)
-		 insert(v.first, v.second);
-  }
-
-  /* ************************************************************************* */
-  template<class J>
-  void Values<J>::update(const Values<J>& cfg) {
-	  BOOST_FOREACH(const KeyValuePair& v, values_) {
-	  	boost::optional<typename J::Value> t = cfg.exists_(v.first);
-	  	if (t) values_[v.first] = *t;
-	  }
-  }
-
-  /* ************************************************************************* */
-  template<class J>
-  void Values<J>::update(const J& j, const typename J::Value& val) {
-	  	values_[j] = val;
-  }
-
-  /* ************************************************************************* */
-  template<class J>
-  std::list<J> Values<J>::keys() const {
-	  std::list<J> ret;
-	  BOOST_FOREACH(const KeyValuePair& v, values_)
-		  ret.push_back(v.first);
-	  return ret;
-  }
-
-  /* ************************************************************************* */
-  template<class J>
-  void Values<J>::erase(const J& j) {
-    size_t dim; // unused
-    erase(j, dim);
-  }
-
-  /* ************************************************************************* */
-  template<class J>
-  void Values<J>::erase(const J& j, size_t& dim) {
-    iterator it = values_.find(j);
-    if (it == values_.end())
-      throw KeyDoesNotExist<J>("erase", j);
-    dim = it->second.dim();
-    values_.erase(it);
-  }
-
-  /* ************************************************************************* */
-  // todo: insert for every element is inefficient
-  template<class J>
-  Values<J> Values<J>::retract(const VectorValues& delta, const Ordering& ordering) const {
-		Values<J> newValues;
-		typedef pair<J,typename J::Value> KeyValue;
-		BOOST_FOREACH(const KeyValue& value, this->values_) {
-			const J& j = value.first;
-			const typename J::Value& pj = value.second;
-			Index index;
-			if(ordering.tryAt(j,index)) {
-			  newValues.insert(j, pj.retract(delta[index]));
-			} else
-			  newValues.insert(j, pj);
-		}
-		return newValues;
-	}
-
-  /* ************************************************************************* */
-  template<class J>
-  std::vector<size_t> Values<J>::dims(const Ordering& ordering) const {
-    _ValuesDimensionCollector dimCollector(ordering);
-    this->apply(dimCollector);
-    return dimCollector.dimensions;
-  }
-
-  /* ************************************************************************* */
-  template<class J>
-  Ordering::shared_ptr Values<J>::orderingArbitrary(Index firstVar) const {
-    // Generate an initial key ordering in iterator order
-    _ValuesKeyOrderer keyOrderer(firstVar);
-    this->apply(keyOrderer);
-    return keyOrderer.ordering;
-  }
-
-//  /* ************************************************************************* */
-//  // todo: insert for every element is inefficient
-//  template<class J>
-//  Values<J> Values<J>::retract(const Vector& delta) const {
-//    if(delta.size() != dim()) {
-//    	cout << "Values::dim (" << dim() << ") <> delta.size (" << delta.size() << ")" << endl;
-//      throw invalid_argument("Delta vector length does not match config dimensionality.");
-//    }
-//    Values<J> newValues;
-//    int delta_offset = 0;
-//		typedef pair<J,typename J::Value> KeyValue;
-//		BOOST_FOREACH(const KeyValue& value, this->values_) {
-//			const J& j = value.first;
-//			const typename J::Value& pj = value.second;
-//      int cur_dim = pj.dim();
-//      newValues.insert(j,pj.retract(sub(delta, delta_offset, delta_offset+cur_dim)));
-//      delta_offset += cur_dim;
-//    }
-//    return newValues;
-//  }
-
-  /* ************************************************************************* */
-  // todo: insert for every element is inefficient
-  // todo: currently only logmaps elements in both configs
-  template<class J>
-  inline VectorValues Values<J>::localCoordinates(const Values<J>& cp, const Ordering& ordering) const {
-  	VectorValues delta(this->dims(ordering));
-  	localCoordinates(cp, ordering, delta);
-  	return delta;
-  }
-
-  /* ************************************************************************* */
-  template<class J>
-  void Values<J>::localCoordinates(const Values<J>& cp, const Ordering& ordering, VectorValues& delta) const {
-    typedef pair<J,typename J::Value> KeyValue;
-    BOOST_FOREACH(const KeyValue& value, cp) {
-      assert(this->exists(value.first));
-      delta[ordering[value.first]] = this->at(value.first).localCoordinates(value.second);
+      // We have already checked the type, so do a "blind" static_cast, not dynamic_cast
+      return static_cast<const ValueType&>(*item->second);
+    } else {
+      return boost::none;
     }
-  }
-
-  /* ************************************************************************* */
-  template<class J>
-  const char* KeyDoesNotExist<J>::what() const throw() {
-    if(message_.empty())
-      message_ = 
-          "Attempting to " + std::string(operation_) + " the key \"" +
-          (std::string)key_ + "\", which does not exist in the Values.";
-    return message_.c_str();
-  }
-
-  /* ************************************************************************* */
-  template<class J>
-  const char* KeyAlreadyExists<J>::what() const throw() {
-    if(message_.empty())
-      message_ = 
-          "Attempting to add a key-value pair with key \"" + (std::string)key_ + "\", key already exists.";
-    return message_.c_str();
   }
 
 }
-
-

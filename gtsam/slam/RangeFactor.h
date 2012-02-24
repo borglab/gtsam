@@ -25,17 +25,17 @@ namespace gtsam {
 	/**
 	 * Binary factor for a range measurement
 	 */
-	template<class VALUES, class POSEKEY, class POINTKEY>
-	class RangeFactor: public NonlinearFactor2<VALUES, POSEKEY, POINTKEY> {
+	template<class POSE, class POINT>
+	class RangeFactor: public NoiseModelFactor2<POSE, POINT> {
 	private:
 
-		double z_; /** measurement */
+		double measured_; /** measurement */
 
-		typedef RangeFactor<VALUES, POSEKEY, POINTKEY> This;
-		typedef NonlinearFactor2<VALUES, POSEKEY, POINTKEY> Base;
+		typedef RangeFactor<POSE, POINT> This;
+		typedef NoiseModelFactor2<POSE, POINT> Base;
 
-		typedef typename POSEKEY::Value Pose;
-		typedef typename POINTKEY::Value Point;
+		typedef POSE Pose;
+		typedef POINT Point;
 
 		// Concept requirements for this factor
 		GTSAM_CONCEPT_RANGE_MEASUREMENT_TYPE(Pose, Point)
@@ -44,34 +44,33 @@ namespace gtsam {
 
 		RangeFactor() {} /* Default constructor */
 
-		RangeFactor(const POSEKEY& i, const POINTKEY& j, double z,
+		RangeFactor(Key poseKey, Key pointKey, double measured,
 				const SharedNoiseModel& model) :
-					Base(model, i, j), z_(z) {
+					Base(model, poseKey, pointKey), measured_(measured) {
 		}
 
 		virtual ~RangeFactor() {}
 
 		/** h(x)-z */
-		Vector evaluateError(const typename POSEKEY::Value& pose, const typename POINTKEY::Value& point,
-				boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+		Vector evaluateError(const Pose& pose, const Point& point, boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
 			double hx = pose.range(point, H1, H2);
-			return Vector_(1, hx - z_);
+			return Vector_(1, hx - measured_);
 		}
 
 		/** return the measured */
-		inline double measured() const {
-			return z_;
+		double measured() const {
+			return measured_;
 		}
 
 		/** equals specialized to this factor */
-		virtual bool equals(const NonlinearFactor<VALUES>& expected, double tol=1e-9) const {
+		virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
 			const This *e = dynamic_cast<const This*> (&expected);
-			return e != NULL && Base::equals(*e, tol) && fabs(this->z_ - e->z_) < tol;
+			return e != NULL && Base::equals(*e, tol) && fabs(this->measured_ - e->measured_) < tol;
 		}
 
 		/** print contents */
-		void print(const std::string& s="") const {
-			Base::print(s + std::string(" range: ") + boost::lexical_cast<std::string>(z_));
+		void print(const std::string& s="", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+			Base::print(s + std::string(" range: ") + boost::lexical_cast<std::string>(measured_), keyFormatter);
 		}
 
 	private:
@@ -80,9 +79,9 @@ namespace gtsam {
 		friend class boost::serialization::access;
 		template<class ARCHIVE>
 		void serialize(ARCHIVE & ar, const unsigned int version) {
-			ar & boost::serialization::make_nvp("NonlinearFactor2",
+			ar & boost::serialization::make_nvp("NoiseModelFactor2",
 					boost::serialization::base_object<Base>(*this));
-			ar & BOOST_SERIALIZATION_NVP(z_);
+			ar & BOOST_SERIALIZATION_NVP(measured_);
 		}
 	}; // RangeFactor
 

@@ -19,6 +19,8 @@
 #pragma once
 
 #include <boost/optional.hpp>
+
+#include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Point2.h>
 
 namespace gtsam {
@@ -29,7 +31,7 @@ namespace gtsam {
 	 * @ingroup geometry
 	 * \nosubgrouping
 	 */
-	class Rot2 {
+	class Rot2 : public DerivedValue<Rot2> {
 
 	public:
 		/** get the dimension by the type */
@@ -237,6 +239,8 @@ namespace gtsam {
 		friend class boost::serialization::access;
 		template<class ARCHIVE>
 		void serialize(ARCHIVE & ar, const unsigned int version) {
+			ar & boost::serialization::make_nvp("Rot2",
+					boost::serialization::base_object<Value>(*this));
 			ar & BOOST_SERIALIZATION_NVP(c_);
 			ar & BOOST_SERIALIZATION_NVP(s_);
 		}

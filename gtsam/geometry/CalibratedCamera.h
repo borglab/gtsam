@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 
@@ -35,7 +36,7 @@ namespace gtsam {
 	 * @ingroup geometry
 	 * \nosubgrouping
 	 */
-	class CalibratedCamera {
+	class CalibratedCamera : public DerivedValue<CalibratedCamera> {
 	private:
 		Pose3 pose_; // 6DOF pose
 
@@ -48,22 +49,23 @@ namespace gtsam {
 		CalibratedCamera() {}
 
 		/// construct with pose
-		CalibratedCamera(const Pose3& pose);
+		explicit CalibratedCamera(const Pose3& pose);
 
     /// @}
     /// @name Advanced Constructors
     /// @{
 
 		/// construct from vector
-		CalibratedCamera(const Vector &v);
+		explicit CalibratedCamera(const Vector &v);
 
 		/// @}
 		/// @name Testable
 		/// @{
 
-        void print(const std::string& s="") const {
-            pose_.print(); 
-        }
+		virtual void print(const std::string& s = "") const {
+			pose_.print(s);
+		}
+
 		/// check equality to another camera
 		bool equals (const CalibratedCamera &camera, double tol = 1e-9) const {
 			return pose_.equals(camera.pose(), tol) ;
@@ -155,6 +157,8 @@ private:
 	    friend class boost::serialization::access;
 	    template<class Archive>
 	    void serialize(Archive & ar, const unsigned int version) {
+	  		ar & boost::serialization::make_nvp("CalibratedCamera",
+	  				boost::serialization::base_object<Value>(*this));
 	      ar & BOOST_SERIALIZATION_NVP(pose_);
 	    }
 

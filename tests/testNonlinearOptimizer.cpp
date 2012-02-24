@@ -26,9 +26,6 @@ using namespace boost::assign;
 #include <boost/shared_ptr.hpp>
 using namespace boost;
 
-// Magically casts strings like "x3" to a Symbol('x',3) key, see Key.h
-#define GTSAM_MAGIC_KEY
-
 #include <gtsam/base/Matrix.h>
 #include <gtsam/slam/smallExample.h>
 #include <gtsam/slam/pose2SLAM.h>
@@ -44,7 +41,10 @@ using namespace gtsam;
 
 const double tol = 1e-5;
 
-typedef NonlinearOptimizer<example::Graph,example::Values> Optimizer;
+Key kx(size_t i) { return Symbol('x',i); }
+Key kl(size_t i) { return Symbol('l',i); }
+
+typedef NonlinearOptimizer<example::Graph> Optimizer;
 
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, linearizeAndOptimizeForDelta )
@@ -55,20 +55,20 @@ TEST( NonlinearOptimizer, linearizeAndOptimizeForDelta )
 
 	// Expected values structure is the difference between the noisy config
 	// and the ground-truth config. One step only because it's linear !
-  Ordering ord1; ord1 += "x2","l1","x1";
+  Ordering ord1; ord1 += kx(2),kl(1),kx(1);
 	VectorValues expected(initial->dims(ord1));
 	Vector dl1(2);
 	dl1(0) = -0.1;
 	dl1(1) = 0.1;
-	expected[ord1["l1"]] = dl1;
+	expected[ord1[kl(1)]] = dl1;
 	Vector dx1(2);
 	dx1(0) = -0.1;
 	dx1(1) = -0.1;
-	expected[ord1["x1"]] = dx1;
+	expected[ord1[kx(1)]] = dx1;
 	Vector dx2(2);
 	dx2(0) = 0.1;
 	dx2(1) = -0.2;
-	expected[ord1["x2"]] = dx2;
+	expected[ord1[kx(2)]] = dx2;
 
 	// Check one ordering
 	Optimizer optimizer1(fg, initial, Optimizer::shared_ordering(new Ordering(ord1)));
@@ -78,7 +78,7 @@ TEST( NonlinearOptimizer, linearizeAndOptimizeForDelta )
 
 // SL-FIX	// Check another
 //	shared_ptr<Ordering> ord2(new Ordering());
-//	*ord2 += "x1","x2","l1";
+//	*ord2 += kx(1),kx(2),kl(1);
 //	solver = Optimizer::shared_solver(new Optimizer::solver(ord2));
 //	Optimizer optimizer2(fg, initial, solver);
 //
@@ -87,7 +87,7 @@ TEST( NonlinearOptimizer, linearizeAndOptimizeForDelta )
 //
 //	// And yet another...
 //	shared_ptr<Ordering> ord3(new Ordering());
-//	*ord3 += "l1","x1","x2";
+//	*ord3 += kl(1),kx(1),kx(2);
 //	solver = Optimizer::shared_solver(new Optimizer::solver(ord3));
 //	Optimizer optimizer3(fg, initial, solver);
 //
@@ -96,7 +96,7 @@ TEST( NonlinearOptimizer, linearizeAndOptimizeForDelta )
 //
 //	// More...
 //	shared_ptr<Ordering> ord4(new Ordering());
-//	*ord4 += "x1","x2", "l1";
+//	*ord4 += kx(1),kx(2), kl(1);
 //	solver = Optimizer::shared_solver(new Optimizer::solver(ord4));
 //	Optimizer optimizer4(fg, initial, solver);
 //
@@ -113,12 +113,12 @@ TEST( NonlinearOptimizer, iterateLM )
 
 	// config far from minimum
 	Point2 x0(3,0);
-	boost::shared_ptr<example::Values> config(new example::Values);
+	boost::shared_ptr<Values> config(new Values);
 	config->insert(simulated2D::PoseKey(1), x0);
 
 	// ordering
 	shared_ptr<Ordering> ord(new Ordering());
-	ord->push_back("x1");
+	ord->push_back(kx(1));
 
 	// create initial optimization state, with lambda=0
 	Optimizer optimizer(fg, config, ord, NonlinearOptimizationParameters::newLambda(0.));
@@ -149,19 +149,19 @@ TEST( NonlinearOptimizer, optimize )
 
 	// test error at minimum
 	Point2 xstar(0,0);
-	example::Values cstar;
+	Values cstar;
 	cstar.insert(simulated2D::PoseKey(1), xstar);
 	DOUBLES_EQUAL(0.0,fg->error(cstar),0.0);
 
 	// test error at initial = [(1-cos(3))^2 + (sin(3))^2]*50 =
 	Point2 x0(3,3);
-	boost::shared_ptr<example::Values> c0(new example::Values);
+	boost::shared_ptr<Values> c0(new Values);
 	c0->insert(simulated2D::PoseKey(1), x0);
 	DOUBLES_EQUAL(199.0,fg->error(*c0),1e-3);
 
 	// optimize parameters
 	shared_ptr<Ordering> ord(new Ordering());
-	ord->push_back("x1");
+	ord->push_back(kx(1));
 
 	// initial optimization state is the same in both cases tested
 	boost::shared_ptr<NonlinearOptimizationParameters> params = boost::make_shared<NonlinearOptimizationParameters>();
@@ -185,7 +185,7 @@ TEST( NonlinearOptimizer, SimpleLMOptimizer )
 			example::createReallyNonlinearFactorGraph()));
 
 	Point2 x0(3,3);
-	boost::shared_ptr<example::Values> c0(new example::Values);
+	boost::shared_ptr<Values> c0(new Values);
 	c0->insert(simulated2D::PoseKey(1), x0);
 
 	Optimizer::shared_values actual = Optimizer::optimizeLM(fg, c0);
@@ -198,7 +198,7 @@ TEST( NonlinearOptimizer, SimpleLMOptimizer_noshared )
 	example::Graph fg = example::createReallyNonlinearFactorGraph();
 
 	Point2 x0(3,3);
-	example::Values c0;
+	Values c0;
 	c0.insert(simulated2D::PoseKey(1), x0);
 
 	Optimizer::shared_values actual = Optimizer::optimizeLM(fg, c0);
@@ -212,7 +212,7 @@ TEST( NonlinearOptimizer, SimpleGNOptimizer )
 			example::createReallyNonlinearFactorGraph()));
 
 	Point2 x0(3,3);
-	boost::shared_ptr<example::Values> c0(new example::Values);
+	boost::shared_ptr<Values> c0(new Values);
 	c0->insert(simulated2D::PoseKey(1), x0);
 
 	Optimizer::shared_values actual = Optimizer::optimizeGN(fg, c0);
@@ -225,7 +225,7 @@ TEST( NonlinearOptimizer, SimpleGNOptimizer_noshared )
 	example::Graph fg = example::createReallyNonlinearFactorGraph();
 
 	Point2 x0(3,3);
-	example::Values c0;
+	Values c0;
 	c0.insert(simulated2D::PoseKey(1), x0);
 
 	Optimizer::shared_values actual = Optimizer::optimizeGN(fg, c0);
@@ -238,14 +238,14 @@ TEST( NonlinearOptimizer, optimization_method )
 	example::Graph fg = example::createReallyNonlinearFactorGraph();
 
 	Point2 x0(3,3);
-	example::Values c0;
+	Values c0;
 	c0.insert(simulated2D::PoseKey(1), x0);
 
-	example::Values actualMFQR = optimize<example::Graph,example::Values>(
+	Values actualMFQR = optimize<example::Graph>(
 			fg, c0, *NonlinearOptimizationParameters().newFactorization(true), MULTIFRONTAL, LM);
 	DOUBLES_EQUAL(0,fg.error(actualMFQR),tol);
 
-	example::Values actualMFLDL = optimize<example::Graph,example::Values>(
+	Values actualMFLDL = optimize<example::Graph>(
 			fg, c0, *NonlinearOptimizationParameters().newFactorization(false), MULTIFRONTAL, LM);
 	DOUBLES_EQUAL(0,fg.error(actualMFLDL),tol);
 }
@@ -253,11 +253,11 @@ TEST( NonlinearOptimizer, optimization_method )
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, Factorization )
 {
-	typedef NonlinearOptimizer<pose2SLAM::Graph, pose2SLAM::Values, GaussianFactorGraph, GaussianSequentialSolver > Optimizer;
+	typedef NonlinearOptimizer<pose2SLAM::Graph, GaussianFactorGraph, GaussianSequentialSolver > Optimizer;
 
-	boost::shared_ptr<pose2SLAM::Values> config(new pose2SLAM::Values);
-	config->insert(1, Pose2(0.,0.,0.));
-	config->insert(2, Pose2(1.5,0.,0.));
+	boost::shared_ptr<Values> config(new Values);
+	config->insert(pose2SLAM::PoseKey(1), Pose2(0.,0.,0.));
+	config->insert(pose2SLAM::PoseKey(2), Pose2(1.5,0.,0.));
 
 	boost::shared_ptr<pose2SLAM::Graph> graph(new pose2SLAM::Graph);
 	graph->addPrior(1, Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10));
@@ -270,9 +270,9 @@ TEST( NonlinearOptimizer, Factorization )
 	Optimizer optimizer(graph, config, ordering);
 	Optimizer optimized = optimizer.iterateLM();
 
-	pose2SLAM::Values expected;
-	expected.insert(1, Pose2(0.,0.,0.));
-	expected.insert(2, Pose2(1.,0.,0.));
+	Values expected;
+	expected.insert(pose2SLAM::PoseKey(1), Pose2(0.,0.,0.));
+	expected.insert(pose2SLAM::PoseKey(2), Pose2(1.,0.,0.));
 	CHECK(assert_equal(expected, *optimized.values(), 1e-5));
 }
 
@@ -287,19 +287,19 @@ TEST_UNSAFE(NonlinearOptimizer, NullFactor) {
 
   // test error at minimum
   Point2 xstar(0,0);
-  example::Values cstar;
+  Values cstar;
   cstar.insert(simulated2D::PoseKey(1), xstar);
   DOUBLES_EQUAL(0.0,fg->error(cstar),0.0);
 
   // test error at initial = [(1-cos(3))^2 + (sin(3))^2]*50 =
   Point2 x0(3,3);
-  boost::shared_ptr<example::Values> c0(new example::Values);
+  boost::shared_ptr<Values> c0(new Values);
   c0->insert(simulated2D::PoseKey(1), x0);
   DOUBLES_EQUAL(199.0,fg->error(*c0),1e-3);
 
   // optimize parameters
   shared_ptr<Ordering> ord(new Ordering());
-  ord->push_back("x1");
+  ord->push_back(kx(1));
 
   // initial optimization state is the same in both cases tested
   boost::shared_ptr<NonlinearOptimizationParameters> params = boost::make_shared<NonlinearOptimizationParameters>();
@@ -367,7 +367,7 @@ TEST_UNSAFE(NonlinearOptimizer, NullFactor) {
 //
 //	// Check one ordering
 //	shared_ptr<Ordering> ord1(new Ordering());
-//	*ord1 += "x2","l1","x1";
+//	*ord1 += kx(2),kl(1),kx(1);
 //	solver = Optimizer::shared_solver(new Optimizer::solver(ord1));
 //	Optimizer optimizer1(fg, initial, solver);
 //

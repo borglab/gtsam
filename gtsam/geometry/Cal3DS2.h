@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Point2.h>
 
 namespace gtsam {
@@ -27,7 +28,7 @@ namespace gtsam {
  * @ingroup geometry
  * \nosubgrouping
  */
-class Cal3DS2 {
+class Cal3DS2 : public DerivedValue<Cal3DS2> {
 
 private:
 
@@ -97,7 +98,7 @@ public:
 	Vector localCoordinates(const Cal3DS2& T2) const ;
 
 	///TODO: comment
-	int dim() const { return 9 ; } //TODO: make a final dimension variable (also, usually size_t in other classes e.g. Pose2)
+	virtual size_t dim() const { return 9 ; } //TODO: make a final dimension variable (also, usually size_t in other classes e.g. Pose2)
 
 	///TODO: comment
 	static size_t Dim() { return 9; }	//TODO: make a final dimension variable
@@ -113,6 +114,8 @@ private:
 	template<class Archive>
 	void serialize(Archive & ar, const unsigned int version)
 	{
+		ar & boost::serialization::make_nvp("Cal3DS2",
+				boost::serialization::base_object<Value>(*this));
 		ar & BOOST_SERIALIZATION_NVP(fx_);
 		ar & BOOST_SERIALIZATION_NVP(fy_);
 		ar & BOOST_SERIALIZATION_NVP(s_);

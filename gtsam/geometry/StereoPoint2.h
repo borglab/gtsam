@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Point2.h>
 
 namespace gtsam {
@@ -27,7 +28,7 @@ namespace gtsam {
 	 * @ingroup geometry
 	 * \nosubgrouping
 	 */
-	class StereoPoint2 {
+	class StereoPoint2 : public DerivedValue<StereoPoint2> {
 	public:
 		static const size_t dimension = 3;
 	private:
@@ -147,6 +148,8 @@ namespace gtsam {
 		friend class boost::serialization::access;
 		template<class ARCHIVE>
 		void serialize(ARCHIVE & ar, const unsigned int version) {
+			ar & boost::serialization::make_nvp("StereoPoint2",
+					boost::serialization::base_object<Value>(*this));
 			ar & BOOST_SERIALIZATION_NVP(uL_);
 			ar & BOOST_SERIALIZATION_NVP(uR_);
 			ar & BOOST_SERIALIZATION_NVP(v_);

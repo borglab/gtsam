@@ -19,7 +19,7 @@
 #include <iostream>
 
 // for all nonlinear keys
-#include <gtsam/nonlinear/Key.h>
+#include <gtsam/nonlinear/Symbol.h>
 
 // for points and poses
 #include <gtsam/geometry/Point2.h>
@@ -34,21 +34,14 @@
 #include <gtsam/slam/BearingRangeFactor.h>
 
 // implementations for structures - needed if self-contained, and these should be included last
-#include <gtsam/nonlinear/TupleValues.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
 
 // Main typedefs
-typedef gtsam::TypedSymbol<gtsam::Pose2, 'x'> PoseKey;       // Key for poses, with type included
-typedef gtsam::TypedSymbol<gtsam::Point2,'l'> PointKey;      // Key for points, with type included
-typedef gtsam::Values<PoseKey> PoseValues;                // config type for poses
-typedef gtsam::Values<PointKey> PointValues;              // config type for points
-typedef gtsam::TupleValues2<PoseValues, PointValues> PlanarValues; // main config with two variable classes
-typedef gtsam::NonlinearFactorGraph<PlanarValues> Graph;			 // graph structure
-typedef gtsam::NonlinearOptimizer<Graph,PlanarValues,gtsam::GaussianFactorGraph,gtsam::GaussianSequentialSolver> OptimizerSeqential;   // optimization engine for this domain
-typedef gtsam::NonlinearOptimizer<Graph,PlanarValues,gtsam::GaussianFactorGraph,gtsam::GaussianMultifrontalSolver> OptimizerMultifrontal;   // optimization engine for this domain
+typedef gtsam::NonlinearOptimizer<gtsam::NonlinearFactorGraph,gtsam::GaussianFactorGraph,gtsam::GaussianSequentialSolver> OptimizerSeqential;   // optimization engine for this domain
+typedef gtsam::NonlinearOptimizer<gtsam::NonlinearFactorGraph,gtsam::GaussianFactorGraph,gtsam::GaussianMultifrontalSolver> OptimizerMultifrontal;   // optimization engine for this domain
 
 using namespace std;
 using namespace gtsam;
@@ -64,17 +57,17 @@ using namespace gtsam;
  */
 int main(int argc, char** argv) {
 	// create keys for variables
-	PoseKey x1(1), x2(2), x3(3);
-	PointKey l1(1), l2(2);
+	Symbol x1('x',1), x2('x',2), x3('x',3);
+	Symbol l1('l',1), l2('l',2);
 
 	// create graph container and add factors to it
-	Graph::shared_ptr graph(new Graph);
+	NonlinearFactorGraph::shared_ptr graph(new NonlinearFactorGraph);
 
 	/* add prior  */
 	// gaussian for prior
 	SharedDiagonal prior_model = noiseModel::Diagonal::Sigmas(Vector_(3, 0.3, 0.3, 0.1));
 	Pose2 prior_measurement(0.0, 0.0, 0.0); // prior at origin
-	PriorFactor<PlanarValues, PoseKey> posePrior(x1, prior_measurement, prior_model); // create the factor
+	PriorFactor<Pose2> posePrior(x1, prior_measurement, prior_model); // create the factor
 	graph->add(posePrior);  // add the factor to the graph
 
 	/* add odometry */
@@ -82,8 +75,8 @@ int main(int argc, char** argv) {
 	SharedDiagonal odom_model = noiseModel::Diagonal::Sigmas(Vector_(3, 0.2, 0.2, 0.1));
 	Pose2 odom_measurement(2.0, 0.0, 0.0); // create a measurement for both factors (the same in this case)
 	// create between factors to represent odometry
-	BetweenFactor<PlanarValues,PoseKey> odom12(x1, x2, odom_measurement, odom_model);
-	BetweenFactor<PlanarValues,PoseKey> odom23(x2, x3, odom_measurement, odom_model);
+	BetweenFactor<Pose2> odom12(x1, x2, odom_measurement, odom_model);
+	BetweenFactor<Pose2> odom23(x2, x3, odom_measurement, odom_model);
 	graph->add(odom12); // add both to graph
 	graph->add(odom23);
 
@@ -100,9 +93,9 @@ int main(int argc, char** argv) {
 		   range32 = 2.0;
 
 	// create bearing/range factors
-	BearingRangeFactor<PlanarValues, PoseKey, PointKey> meas11(x1, l1, bearing11, range11, meas_model);
-	BearingRangeFactor<PlanarValues, PoseKey, PointKey> meas21(x2, l1, bearing21, range21, meas_model);
-	BearingRangeFactor<PlanarValues, PoseKey, PointKey> meas32(x3, l2, bearing32, range32, meas_model);
+	BearingRangeFactor<Pose2, Point2> meas11(x1, l1, bearing11, range11, meas_model);
+	BearingRangeFactor<Pose2, Point2> meas21(x2, l1, bearing21, range21, meas_model);
+	BearingRangeFactor<Pose2, Point2> meas32(x3, l2, bearing32, range32, meas_model);
 
 	// add the factors
 	graph->add(meas11);
@@ -112,7 +105,7 @@ int main(int argc, char** argv) {
 	graph->print("Full Graph");
 
 	// initialize to noisy points
-	boost::shared_ptr<PlanarValues> initial(new PlanarValues);
+	boost::shared_ptr<Values> initial(new Values);
 	initial->insert(x1, Pose2(0.5, 0.0, 0.2));
 	initial->insert(x2, Pose2(2.3, 0.1,-0.2));
 	initial->insert(x3, Pose2(4.1, 0.1, 0.1));

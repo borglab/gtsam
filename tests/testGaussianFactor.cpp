@@ -26,9 +26,6 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
-// Magically casts strings like "x3" to a Symbol('x',3) key, see Key.h
-#define GTSAM_MAGIC_KEY
-
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/linear/GaussianConditional.h>
@@ -44,19 +41,21 @@ static SharedDiagonal
 	sigma0_1 = sharedSigma(2,0.1), sigma_02 = sharedSigma(2,0.2),
 	constraintModel = noiseModel::Constrained::All(2);
 
+const Key kx1 = Symbol('x',1), kx2 = Symbol('x',2), kl1 = Symbol('l',1);
+
 /* ************************************************************************* */
 TEST( GaussianFactor, linearFactor )
 {
-  Ordering ordering; ordering += "x1","x2","l1";
+  Ordering ordering; ordering += kx1,kx2,kl1;
 
   Matrix I = eye(2);
 	Vector b = Vector_(2, 2.0, -1.0);
-	JacobianFactor expected(ordering["x1"], -10*I,ordering["x2"], 10*I, b, noiseModel::Unit::Create(2));
+	JacobianFactor expected(ordering[kx1], -10*I,ordering[kx2], 10*I, b, noiseModel::Unit::Create(2));
 
 	// create a small linear factor graph
 	FactorGraph<JacobianFactor> fg = createGaussianFactorGraph(ordering);
 
-	// get the factor "f2" from the factor graph
+	// get the factor kf2 from the factor graph
 	JacobianFactor::shared_ptr lf = fg[1];
 
 	// check if the two factors are the same
@@ -66,26 +65,26 @@ TEST( GaussianFactor, linearFactor )
 ///* ************************************************************************* */
 // SL-FIX TEST( GaussianFactor, keys )
 //{
-//	// get the factor "f2" from the small linear factor graph
-//  Ordering ordering; ordering += "x1","x2","l1";
+//	// get the factor kf2 from the small linear factor graph
+//  Ordering ordering; ordering += kx1,kx2,kl1;
 //  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
 //	GaussianFactor::shared_ptr lf = fg[1];
 //	list<Symbol> expected;
-//	expected.push_back("x1");
-//	expected.push_back("x2");
+//	expected.push_back(kx1);
+//	expected.push_back(kx2);
 //	EXPECT(lf->keys() == expected);
 //}
 
 ///* ************************************************************************* */
 // SL-FIX TEST( GaussianFactor, dimensions )
 //{
-//  // get the factor "f2" from the small linear factor graph
-//  Ordering ordering; ordering += "x1","x2","l1";
+//  // get the factor kf2 from the small linear factor graph
+//  Ordering ordering; ordering += kx1,kx2,kl1;
 //  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
 //
 //  // Check a single factor
 //  Dimensions expected;
-//  insert(expected)("x1", 2)("x2", 2);
+//  insert(expected)(kx1, 2)(kx2, 2);
 //  Dimensions actual = fg[1]->dimensions();
 //  EXPECT(expected==actual);
 //}
@@ -94,12 +93,12 @@ TEST( GaussianFactor, linearFactor )
 TEST( GaussianFactor, getDim )
 {
 	// get a factor
-  Ordering ordering; ordering += "x1","x2","l1";
+  Ordering ordering; ordering += kx1,kx2,kl1;
   GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
 	GaussianFactor::shared_ptr factor = fg[0];
 
 	// get the size of a variable
-	size_t actual = factor->getDim(factor->find(ordering["x1"]));
+	size_t actual = factor->getDim(factor->find(ordering[kx1]));
 
 	// verify
 	size_t expected = 2;
@@ -110,7 +109,7 @@ TEST( GaussianFactor, getDim )
 // SL-FIX TEST( GaussianFactor, combine )
 //{
 //	// create a small linear factor graph
-//  Ordering ordering; ordering += "x1","x2","l1";
+//  Ordering ordering; ordering += kx1,kx2,kl1;
 //  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
 //
 //	// get two factors from it and insert the factors into a vector
@@ -155,9 +154,9 @@ TEST( GaussianFactor, getDim )
 //
 //	// use general constructor for making arbitrary factors
 //	vector<pair<Symbol, Matrix> > meas;
-//	meas.push_back(make_pair("x2", Ax2));
-//	meas.push_back(make_pair("l1", Al1));
-//	meas.push_back(make_pair("x1", Ax1));
+//	meas.push_back(make_pair(kx2, Ax2));
+//	meas.push_back(make_pair(kl1, Al1));
+//	meas.push_back(make_pair(kx1, Ax1));
 //	GaussianFactor expected(meas, b2, noiseModel::Diagonal::Sigmas(ones(4)));
 //	EXPECT(assert_equal(expected,combined));
 //}
@@ -166,7 +165,7 @@ TEST( GaussianFactor, getDim )
 TEST( GaussianFactor, error )
 {
 	// create a small linear factor graph
-  Ordering ordering; ordering += "x1","x2","l1";
+  Ordering ordering; ordering += kx1,kx2,kl1;
   GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
 
 	// get the first factor from the factor graph
@@ -175,7 +174,7 @@ TEST( GaussianFactor, error )
 	// check the error of the first factor with noisy config
 	VectorValues cfg = createZeroDelta(ordering);
 
-	// calculate the error from the factor "f1"
+	// calculate the error from the factor kf1
 	// note the error is the same as in testNonlinearFactor
 	double actual = lf->error(cfg);
 	DOUBLES_EQUAL( 1.0, actual, 0.00000001 );
@@ -185,7 +184,7 @@ TEST( GaussianFactor, error )
 // SL-FIX TEST( GaussianFactor, eliminate )
 //{
 //	// create a small linear factor graph
-//  Ordering ordering; ordering += "x1","x2","l1";
+//  Ordering ordering; ordering += kx1,kx2,kl1;
 //  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
 //
 //	// get two factors from it and insert the factors into a vector
@@ -199,7 +198,7 @@ TEST( GaussianFactor, error )
 //	// eliminate the combined factor
 //	GaussianConditional::shared_ptr actualCG;
 //	GaussianFactor::shared_ptr actualLF;
-//	boost::tie(actualCG,actualLF) = combined.eliminate("x2");
+//	boost::tie(actualCG,actualLF) = combined.eliminate(kx2);
 //
 //	// create expected Conditional Gaussian
 //	Matrix I = eye(2)*sqrt(125.0);
@@ -208,14 +207,14 @@ TEST( GaussianFactor, error )
 //
 //	// Check the conditional Gaussian
 //	GaussianConditional
-//	expectedCG("x2", d, R11, "l1", S12, "x1", S13, repeat(2, 1.0));
+//	expectedCG(kx2, d, R11, kl1, S12, kx1, S13, repeat(2, 1.0));
 //
 //	// the expected linear factor
 //	I = eye(2)/0.2236;
 //	Matrix Bl1 = I, Bx1 = -I;
 //	Vector b1 = I*Vector_(2,0.0,0.2);
 //
-//	GaussianFactor expectedLF("l1", Bl1, "x1", Bx1, b1, repeat(2,1.0));
+//	GaussianFactor expectedLF(kl1, Bl1, kx1, Bx1, b1, repeat(2,1.0));
 //
 //	// check if the result matches
 //	EXPECT(assert_equal(expectedCG,*actualCG,1e-3));
@@ -226,17 +225,17 @@ TEST( GaussianFactor, error )
 TEST( GaussianFactor, matrix )
 {
 	// create a small linear factor graph
-  Ordering ordering; ordering += "x1","x2","l1";
+  Ordering ordering; ordering += kx1,kx2,kl1;
   FactorGraph<JacobianFactor> fg = createGaussianFactorGraph(ordering);
 
-	// get the factor "f2" from the factor graph
+	// get the factor kf2 from the factor graph
 	//GaussianFactor::shared_ptr lf = fg[1]; // NOTE: using the older version
 	Vector b2 = Vector_(2, 0.2, -0.1);
 	Matrix I = eye(2);
   // render with a given ordering
   Ordering ord;
-  ord += "x1","x2";
-	JacobianFactor::shared_ptr lf(new JacobianFactor(ord["x1"], -I, ord["x2"], I, b2, sigma0_1));
+  ord += kx1,kx2;
+	JacobianFactor::shared_ptr lf(new JacobianFactor(ord[kx1], -I, ord[kx2], I, b2, sigma0_1));
 
 	// Test whitened version
 	Matrix A_act1; Vector b_act1;
@@ -274,17 +273,17 @@ TEST( GaussianFactor, matrix )
 TEST( GaussianFactor, matrix_aug )
 {
 	// create a small linear factor graph
-  Ordering ordering; ordering += "x1","x2","l1";
+  Ordering ordering; ordering += kx1,kx2,kl1;
   FactorGraph<JacobianFactor> fg = createGaussianFactorGraph(ordering);
 
-	// get the factor "f2" from the factor graph
+	// get the factor kf2 from the factor graph
 	//GaussianFactor::shared_ptr lf = fg[1];
 	Vector b2 = Vector_(2, 0.2, -0.1);
 	Matrix I = eye(2);
   // render with a given ordering
   Ordering ord;
-  ord += "x1","x2";
-	JacobianFactor::shared_ptr lf(new JacobianFactor(ord["x1"], -I, ord["x2"], I, b2, sigma0_1));
+  ord += kx1,kx2;
+	JacobianFactor::shared_ptr lf(new JacobianFactor(ord[kx1], -I, ord[kx2], I, b2, sigma0_1));
 
 
 	// Test unwhitened version
@@ -325,15 +324,15 @@ void print(const list<T>& i) {
 // SL-FIX TEST( GaussianFactor, sparse )
 //{
 //	// create a small linear factor graph
-//  Ordering ordering; ordering += "x1","x2","l1";
+//  Ordering ordering; ordering += kx1,kx2,kl1;
 //  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
 //
-//	// get the factor "f2" from the factor graph
+//	// get the factor kf2 from the factor graph
 //	GaussianFactor::shared_ptr lf = fg[1];
 //
 //	// render with a given ordering
 //	Ordering ord;
-//	ord += "x1","x2";
+//	ord += kx1,kx2;
 //
 //	list<int> i,j;
 //	list<double> s;
@@ -355,15 +354,15 @@ void print(const list<T>& i) {
 // SL-FIX TEST( GaussianFactor, sparse2 )
 //{
 //	// create a small linear factor graph
-//  Ordering ordering; ordering += "x1","x2","l1";
+//  Ordering ordering; ordering += kx1,kx2,kl1;
 //  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
 //
-//	// get the factor "f2" from the factor graph
+//	// get the factor kf2 from the factor graph
 //	GaussianFactor::shared_ptr lf = fg[1];
 //
 //	// render with a given ordering
 //	Ordering ord;
-//	ord += "x2","l1","x1";
+//	ord += kx2,kl1,kx1;
 //
 //	list<int> i,j;
 //	list<double> s;
@@ -385,7 +384,7 @@ void print(const list<T>& i) {
 TEST( GaussianFactor, size )
 {
 	// create a linear factor graph
-  Ordering ordering; ordering += "x1","x2","l1";
+  Ordering ordering; ordering += kx1,kx2,kl1;
   GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
 
 	// get some factors from the graph

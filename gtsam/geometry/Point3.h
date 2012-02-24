@@ -24,6 +24,7 @@
 #include <boost/serialization/nvp.hpp>
 
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/DerivedValue.h>
 #include <gtsam/base/Lie.h>
 
 namespace gtsam {
@@ -33,7 +34,7 @@ namespace gtsam {
    * @ingroup geometry
    * \nosubgrouping
    */
-  class Point3 {
+  class Point3 : public DerivedValue<Point3> {
   public:
 	  /// dimension of the variable - used to autodetect sizes
 	  static const size_t dimension = 3;
@@ -203,6 +204,8 @@ namespace gtsam {
     template<class ARCHIVE>
       void serialize(ARCHIVE & ar, const unsigned int version)
     {
+    	ar & boost::serialization::make_nvp("Point3",
+   			 boost::serialization::base_object<Value>(*this));
       ar & BOOST_SERIALIZATION_NVP(x_);
       ar & BOOST_SERIALIZATION_NVP(y_);
       ar & BOOST_SERIALIZATION_NVP(z_);

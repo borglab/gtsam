@@ -28,20 +28,20 @@ graph = pose2SLAMGraph;
 
 %% Add prior
 % gaussian for prior
-prior_model = gtsamSharedNoiseModel_sharedSigmas([0.3; 0.3; 0.1]);
+prior_model = gtsamSharedNoiseModel_Sigmas([0.3; 0.3; 0.1]);
 prior_measurement = gtsamPose2(0.0, 0.0, 0.0); % prior at origin
 graph.addPrior(x1, prior_measurement, prior_model); % add directly to graph
 
 %% Add odometry
 % general noisemodel for odometry
-odom_model = gtsamSharedNoiseModel_sharedSigmas([0.2; 0.2; 0.1]);
+odom_model = gtsamSharedNoiseModel_Sigmas([0.2; 0.2; 0.1]);
 odom_measurement = gtsamPose2(2.0, 0.0, 0.0); % create a measurement for both factors (the same in this case)
 graph.addOdometry(x1, x2, odom_measurement, odom_model);
 graph.addOdometry(x2, x3, odom_measurement, odom_model);
 
 %% Add measurements
 % general noisemodel for measurements
-meas_model = gtsamSharedNoiseModel_sharedSigmas([0.1; 0.2]);
+meas_model = gtsamSharedNoiseModel_Sigmas([0.1; 0.2]);
 
 % print
 graph.print('full graph');
@@ -55,19 +55,19 @@ initialEstimate.insertPose(x3, gtsamPose2(4.1, 0.1, 0.1));
 initialEstimate.print('initial estimate');
 
 %% set up solver, choose ordering and optimize
-params = NonlinearOptimizationParameters_newDrecreaseThresholds(1e-15, 1e-15);
+params = gtsamNonlinearOptimizationParameters_newDecreaseThresholds(1e-15, 1e-15);
 
 ord = graph.orderingCOLAMD(initialEstimate);
 
-result = pose2SLAMOptimizer(graph,initialEstimate,ord,params);        
-              
-result.print('final result');        
+%result = pose2SLAMOptimizer(graph,initialEstimate,ord,params);                      
+%result.print('final result');
+
 % %     
 % % disp('\\\');
 % % 
 % % %% Optimize using Levenberg-Marquardt optimization with an ordering from colamd
-% % result = graph.optimize(initialEstimate);
-% % result.print('final result');
+result = graph.optimize(initialEstimate);
+result.print('final result');
 
 %% Get the corresponding dense matrix
 ord = graph.orderingCOLAMD(result);

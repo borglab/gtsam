@@ -17,9 +17,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-// Magically casts strings like "x3" to a Symbol('x',3) key, see Key.h
-#define GTSAM_MAGIC_KEY
-
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/slam/smallExample.h>
 #include <gtsam/slam/planarSLAM.h>
@@ -54,14 +51,14 @@ TEST( Inference, marginals2)
   SharedDiagonal poseModel(sharedSigma(3, 0.1));
   SharedDiagonal pointModel(sharedSigma(3, 0.1));
 
-  fg.addPrior(planarSLAM::PoseKey(0), Pose2(), poseModel);
-  fg.addOdometry(planarSLAM::PoseKey(0), planarSLAM::PoseKey(1), Pose2(1.0,0.0,0.0), poseModel);
-  fg.addOdometry(planarSLAM::PoseKey(1), planarSLAM::PoseKey(2), Pose2(1.0,0.0,0.0), poseModel);
-  fg.addBearingRange(planarSLAM::PoseKey(0), planarSLAM::PointKey(0), Rot2(), 1.0, pointModel);
-  fg.addBearingRange(planarSLAM::PoseKey(1), planarSLAM::PointKey(0), Rot2(), 1.0, pointModel);
-  fg.addBearingRange(planarSLAM::PoseKey(2), planarSLAM::PointKey(0), Rot2(), 1.0, pointModel);
+  fg.addPrior(0, Pose2(), poseModel);
+  fg.addOdometry(0, 1, Pose2(1.0,0.0,0.0), poseModel);
+  fg.addOdometry(1, 2, Pose2(1.0,0.0,0.0), poseModel);
+  fg.addBearingRange(0, 0, Rot2(), 1.0, pointModel);
+  fg.addBearingRange(1, 0, Rot2(), 1.0, pointModel);
+  fg.addBearingRange(2, 0, Rot2(), 1.0, pointModel);
 
-  planarSLAM::Values init;
+  Values init;
   init.insert(planarSLAM::PoseKey(0), Pose2(0.0,0.0,0.0));
   init.insert(planarSLAM::PoseKey(1), Pose2(1.0,0.0,0.0));
   init.insert(planarSLAM::PoseKey(2), Pose2(2.0,0.0,0.0));

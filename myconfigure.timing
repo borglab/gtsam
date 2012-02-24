@@ -1,3 +1,0 @@
-../configure --prefix=$HOME CPP="/opt/local/bin/cpp-mp-4.5" CC="/opt/local/bin/gcc-mp-4.5" CXX="/opt/local/bin/g++-mp-4.5" CPPFLAGS="-DENABLE_TIMING -DNDEBUG -O3" LDFLAGS="-DNDEBUG -O3" --disable-static
- 
- 

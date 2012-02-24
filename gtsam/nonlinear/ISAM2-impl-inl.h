@@ -19,10 +19,10 @@ namespace gtsam {
 
 using namespace std;
 
-template<class CONDITIONAL, class VALUES, class GRAPH>
-struct ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl {
+template<class CONDITIONAL, class GRAPH>
+struct ISAM2<CONDITIONAL, GRAPH>::Impl {
 
-  typedef ISAM2<CONDITIONAL, VALUES, GRAPH> ISAM2Type;
+  typedef ISAM2<CONDITIONAL, GRAPH> ISAM2Type;
 
   struct PartialSolveResult {
     typename ISAM2Type::sharedClique bayesTree;
@@ -44,8 +44,10 @@ struct ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl {
    * @param delta Current linear delta to be augmented with zeros
    * @param ordering Current ordering to be augmented with new variables
    * @param nodes Current BayesTree::Nodes index to be augmented with slots for new variables
+   * @param keyFormatter Formatter for printing nonlinear keys during debugging
    */
-  static void AddVariables(const VALUES& newTheta, VALUES& theta, Permuted<VectorValues>& delta, Ordering& ordering, typename Base::Nodes& nodes);
+  static void AddVariables(const Values& newTheta, Values& theta, Permuted<VectorValues>& delta, Ordering& ordering,
+      typename Base::Nodes& nodes, const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
   /**
    * Extract the set of variable indices from a NonlinearFactorGraph.  For each Symbol
@@ -61,10 +63,12 @@ struct ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl {
    * Any variables in the VectorValues delta whose vector magnitude is greater than
    * or equal to relinearizeThreshold are returned.
    * @param delta The linear delta to check against the threshold
+   * @param keyFormatter Formatter for printing nonlinear keys during debugging
    * @return The set of variable indices in delta whose magnitude is greater than or
    * equal to relinearizeThreshold
    */
-  static FastSet<Index> CheckRelinearization(const Permuted<VectorValues>& delta, const Ordering& ordering, const ISAM2Params::RelinearizationThreshold& relinearizeThreshold);
+  static FastSet<Index> CheckRelinearization(const Permuted<VectorValues>& delta, const Ordering& ordering,
+      const ISAM2Params::RelinearizationThreshold& relinearizeThreshold, const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
   /**
    * Recursively search this clique and its children for marked keys appearing
@@ -94,10 +98,12 @@ struct ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl {
    * expmapped deltas will be set to an invalid value (infinity) to catch bugs
    * where we might expmap something twice, or expmap it but then not
    * recalculate its delta.
+   * @param keyFormatter Formatter for printing nonlinear keys during debugging
    */
-  static void ExpmapMasked(VALUES& values, const Permuted<VectorValues>& delta,
+  static void ExpmapMasked(Values& values, const Permuted<VectorValues>& delta,
       const Ordering& ordering, const std::vector<bool>& mask,
-      boost::optional<Permuted<VectorValues>&> invalidateIfDebug = boost::optional<Permuted<VectorValues>&>());
+      boost::optional<Permuted<VectorValues>&> invalidateIfDebug = boost::optional<Permuted<VectorValues>&>(),
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
   /**
    * Reorder and eliminate factors.  These factors form a subset of the full
@@ -118,25 +124,9 @@ struct ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl {
 };
 
 /* ************************************************************************* */
-struct _VariableAdder {
-  Ordering& ordering;
-  Permuted<VectorValues>& vconfig;
-  Index nextVar;
-  _VariableAdder(Ordering& _ordering, Permuted<VectorValues>& _vconfig, Index _nextVar) : ordering(_ordering), vconfig(_vconfig), nextVar(_nextVar){}
-  template<typename I>
-  void operator()(I xIt) {
-    const bool debug = ISDEBUG("ISAM2 AddVariables");
-    vconfig.permutation()[nextVar] = nextVar;
-    ordering.insert(xIt->first, nextVar);
-    if(debug) cout << "Adding variable " << (string)xIt->first << " with order " << nextVar << endl;
-    ++ nextVar;
-  }
-};
-
-/* ************************************************************************* */
-template<class CONDITIONAL, class VALUES, class GRAPH>
-void ISAM2<CONDITIONAL,VALUES,GRAPH>::Impl::AddVariables(
-    const VALUES& newTheta, VALUES& theta, Permuted<VectorValues>& delta, Ordering& ordering, typename Base::Nodes& nodes) {
+template<class CONDITIONAL, class GRAPH>
+void ISAM2<CONDITIONAL,GRAPH>::Impl::AddVariables(
+    const Values& newTheta, Values& theta, Permuted<VectorValues>& delta, Ordering& ordering, typename Base::Nodes& nodes, const KeyFormatter& keyFormatter) {
   const bool debug = ISDEBUG("ISAM2 AddVariables");
 
   theta.insert(newTheta);
@@ -151,8 +141,13 @@ void ISAM2<CONDITIONAL,VALUES,GRAPH>::Impl::AddVariables(
   delta.container().vector().segment(originalDim, newDim).operator=(Vector::Zero(newDim));
   delta.permutation().resize(originalnVars + newTheta.size());
   {
-    _VariableAdder vadder(ordering, delta, originalnVars);
-    newTheta.apply(vadder);
+    Index nextVar = originalnVars;
+    BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, newTheta) {
+      delta.permutation()[nextVar] = nextVar;
+      ordering.insert(key_value.first, nextVar);
+      if(debug) cout << "Adding variable " << keyFormatter(key_value.first) << " with order " << nextVar << endl;
+      ++ nextVar;
+    }
     assert(delta.permutation().size() == delta.container().size());
     assert(ordering.nVars() == delta.size());
     assert(ordering.size() == delta.size());
@@ -162,11 +157,11 @@ void ISAM2<CONDITIONAL,VALUES,GRAPH>::Impl::AddVariables(
 }
 
 /* ************************************************************************* */
-template<class CONDITIONAL, class VALUES, class GRAPH>
-FastSet<Index> ISAM2<CONDITIONAL,VALUES,GRAPH>::Impl::IndicesFromFactors(const Ordering& ordering, const GRAPH& factors) {
+template<class CONDITIONAL, class GRAPH>
+FastSet<Index> ISAM2<CONDITIONAL,GRAPH>::Impl::IndicesFromFactors(const Ordering& ordering, const GRAPH& factors) {
   FastSet<Index> indices;
-  BOOST_FOREACH(const typename NonlinearFactor<VALUES>::shared_ptr& factor, factors) {
-    BOOST_FOREACH(const Symbol& key, factor->keys()) {
+  BOOST_FOREACH(const typename NonlinearFactor::shared_ptr& factor, factors) {
+    BOOST_FOREACH(Key key, factor->keys()) {
       indices.insert(ordering[key]);
     }
   }
@@ -174,8 +169,9 @@ FastSet<Index> ISAM2<CONDITIONAL,VALUES,GRAPH>::Impl::IndicesFromFactors(const O
 }
 
 /* ************************************************************************* */
-template<class CONDITIONAL, class VALUES, class GRAPH>
-FastSet<Index> ISAM2<CONDITIONAL,VALUES,GRAPH>::Impl::CheckRelinearization(const Permuted<VectorValues>& delta, const Ordering& ordering, const ISAM2Params::RelinearizationThreshold& relinearizeThreshold) {
+template<class CONDITIONAL, class GRAPH>
+FastSet<Index> ISAM2<CONDITIONAL,GRAPH>::Impl::CheckRelinearization(const Permuted<VectorValues>& delta, const Ordering& ordering,
+    const ISAM2Params::RelinearizationThreshold& relinearizeThreshold, const KeyFormatter& keyFormatter) {
   FastSet<Index> relinKeys;
 
   if(relinearizeThreshold.type() == typeid(double)) {
@@ -189,7 +185,7 @@ FastSet<Index> ISAM2<CONDITIONAL,VALUES,GRAPH>::Impl::CheckRelinearization(const
   } else if(relinearizeThreshold.type() == typeid(FastMap<char,Vector>)) {
     const FastMap<char,Vector>& thresholds = boost::get<FastMap<char,Vector> >(relinearizeThreshold);
     BOOST_FOREACH(const Ordering::value_type& key_index, ordering) {
-      const Vector& threshold = thresholds.find(key_index.first.chr())->second;
+      const Vector& threshold = thresholds.find(Symbol(key_index.first).chr())->second;
       Index j = key_index.second;
       if(threshold.rows() != delta[j].rows())
         throw std::invalid_argument("Relinearization threshold vector dimensionality passed into iSAM2 parameters does not match actual variable dimensionality");
@@ -202,8 +198,8 @@ FastSet<Index> ISAM2<CONDITIONAL,VALUES,GRAPH>::Impl::CheckRelinearization(const
 }
 
 /* ************************************************************************* */
-template<class CONDITIONAL, class VALUES, class GRAPH>
-void ISAM2<CONDITIONAL,VALUES,GRAPH>::Impl::FindAll(typename ISAM2Clique<CONDITIONAL>::shared_ptr clique, FastSet<Index>& keys, const vector<bool>& markedMask) {
+template<class CONDITIONAL, class GRAPH>
+void ISAM2<CONDITIONAL,GRAPH>::Impl::FindAll(typename ISAM2Clique<CONDITIONAL>::shared_ptr clique, FastSet<Index>& keys, const vector<bool>& markedMask) {
   static const bool debug = false;
   // does the separator contain any of the variables?
   bool found = false;
@@ -223,42 +219,9 @@ void ISAM2<CONDITIONAL,VALUES,GRAPH>::Impl::FindAll(typename ISAM2Clique<CONDITI
 }
 
 /* ************************************************************************* */
-// Internal class used in ExpmapMasked()
-// This debug version sets delta entries that are applied to "Inf".  The
-// idea is that if a delta is applied, the variable is being relinearized,
-// so the same delta should not be re-applied because it will be recalc-
-// ulated.  This is a debug check to prevent against a mix-up of indices
-// or not keeping track of recalculated variables.
-struct _SelectiveExpmapAndClear {
-  const Permuted<VectorValues>& delta;
-  const Ordering& ordering;
-  const vector<bool>& mask;
-  const boost::optional<Permuted<VectorValues>&> invalidate;
-  _SelectiveExpmapAndClear(const Permuted<VectorValues>& _delta, const Ordering& _ordering, const vector<bool>& _mask, boost::optional<Permuted<VectorValues>&> _invalidate) :
-    delta(_delta), ordering(_ordering), mask(_mask), invalidate(_invalidate) {}
-  template<typename I>
-  void operator()(I it_x) {
-    Index var = ordering[it_x->first];
-    if(ISDEBUG("ISAM2 update verbose")) {
-      if(mask[var])
-        cout << "expmap " << (string)it_x->first << " (j = " << var << "), delta = " << delta[var].transpose() << endl;
-      else
-        cout << "       " << (string)it_x->first << " (j = " << var << "), delta = " << delta[var].transpose() << endl;
-    }
-    assert(delta[var].size() == (int)it_x->second.dim());
-    assert(delta[var].unaryExpr(&isfinite<double>).all());
-    if(mask[var]) {
-      it_x->second = it_x->second.retract(delta[var]);
-      if(invalidate)
-        (*invalidate)[var].operator=(Vector::Constant(delta[var].rows(), numeric_limits<double>::infinity())); // Strange syntax to work with clang++ (bug in clang?)
-    }
-  }
-};
-
-/* ************************************************************************* */
-template<class CONDITIONAL, class VALUES, class GRAPH>
-void ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl::ExpmapMasked(VALUES& values, const Permuted<VectorValues>& delta,
-    const Ordering& ordering, const vector<bool>& mask, boost::optional<Permuted<VectorValues>&> invalidateIfDebug) {
+template<class CONDITIONAL, class GRAPH>
+void ISAM2<CONDITIONAL, GRAPH>::Impl::ExpmapMasked(Values& values, const Permuted<VectorValues>& delta, const Ordering& ordering,
+    const vector<bool>& mask, boost::optional<Permuted<VectorValues>&> invalidateIfDebug, const KeyFormatter& keyFormatter) {
   // If debugging, invalidate if requested, otherwise do not invalidate.
   // Invalidating means setting expmapped entries to Inf, to trigger assertions
   // if we try to re-use them.
@@ -266,14 +229,35 @@ void ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl::ExpmapMasked(VALUES& values, const
   invalidateIfDebug = boost::optional<Permuted<VectorValues>&>();
 #endif
 
-  _SelectiveExpmapAndClear selectiveExpmapper(delta, ordering, mask, invalidateIfDebug);
-  values.apply(selectiveExpmapper);
+  assert(values.size() == ordering.size());
+  Values::iterator key_value;
+  Ordering::const_iterator key_index;
+  for(key_value = values.begin(), key_index = ordering.begin();
+      key_value != values.end() && key_index != ordering.end(); ++key_value, ++key_index) {
+    assert(key_value->first == key_index->first);
+    const Index var = key_index->second;
+    if(ISDEBUG("ISAM2 update verbose")) {
+      if(mask[var])
+        cout << "expmap " << keyFormatter(key_value->first) << " (j = " << var << "), delta = " << delta[var].transpose() << endl;
+      else
+        cout << "       " << keyFormatter(key_value->first) << " (j = " << var << "), delta = " << delta[var].transpose() << endl;
+    }
+    assert(delta[var].size() == (int)key_value->second.dim());
+    assert(delta[var].unaryExpr(&isfinite<double>).all());
+    if(mask[var]) {
+      Value* retracted = key_value->second.retract_(delta[var]);
+      key_value->second = *retracted;
+      retracted->deallocate_();
+      if(invalidateIfDebug)
+        (*invalidateIfDebug)[var].operator=(Vector::Constant(delta[var].rows(), numeric_limits<double>::infinity())); // Strange syntax to work with clang++ (bug in clang?)
+    }
+  }
 }
 
 /* ************************************************************************* */
-template<class CONDITIONAL, class VALUES, class GRAPH>
-typename ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl::PartialSolveResult
-ISAM2<CONDITIONAL, VALUES, GRAPH>::Impl::PartialSolve(GaussianFactorGraph& factors,
+template<class CONDITIONAL, class GRAPH>
+typename ISAM2<CONDITIONAL, GRAPH>::Impl::PartialSolveResult
+ISAM2<CONDITIONAL, GRAPH>::Impl::PartialSolve(GaussianFactorGraph& factors,
     const FastSet<Index>& keys, const ReorderingMode& reorderingMode) {
 
   static const bool debug = ISDEBUG("ISAM2 recalculate");

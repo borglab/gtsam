@@ -24,11 +24,10 @@ namespace gtsam {
 /**
  * Wrapper class to manage ISAM in a nonlinear context
  */
-template<class VALUES, class GRAPH = gtsam::NonlinearFactorGraph<VALUES> >
+template<class GRAPH = gtsam::NonlinearFactorGraph >
 class NonlinearISAM {
 public:
 
-	typedef VALUES Values;
 	typedef GRAPH Factors;
 
 protected:
@@ -71,7 +70,7 @@ public:
 	Values estimate() const;
 
 	/** find the marginal covariance for a single variable */
-	Matrix marginalCovariance(const Symbol& key) const;
+	Matrix marginalCovariance(Key key) const;
 
 	// access
 
@@ -105,7 +104,7 @@ public:
 	void reorder_relinearize();
 
 	/** manually add a key to the end of the ordering */
-	void addKey(const Symbol& key) { ordering_.push_back(key); }
+	void addKey(Key key) { ordering_.push_back(key); }
 
 	/** replace the current ordering */
 	void setOrdering(const Ordering& new_ordering) { ordering_ = new_ordering; }

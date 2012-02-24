@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file testValues.cpp
+ * @file testDynamicValues.cpp
  * @author Richard Roberts
  */
 
@@ -21,35 +21,35 @@
 using namespace boost::assign;
 
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/LieVector.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>
 
 using namespace gtsam;
 using namespace std;
 static double inf = std::numeric_limits<double>::infinity();
 
-typedef TypedSymbol<LieVector, 'v'> VecKey;
-typedef Values<VecKey> TestValues;
-
-VecKey key1(1), key2(2), key3(3), key4(4);
+Key key1(Symbol('v',1)), key2(Symbol('v',2)), key3(Symbol('v',3)), key4(Symbol('v',4));
 
 /* ************************************************************************* */
-TEST( TestValues, equals1 )
+TEST( Values, equals1 )
 {
-  TestValues expected;
-  Vector v = Vector_(3, 5.0, 6.0, 7.0);
+  Values expected;
+  LieVector v(3, 5.0, 6.0, 7.0);
   expected.insert(key1,v);
-  TestValues actual;
+  Values actual;
   actual.insert(key1,v);
   CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
-TEST( TestValues, equals2 )
+TEST( Values, equals2 )
 {
-  TestValues cfg1, cfg2;
-  Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
-  Vector v2 = Vector_(3, 5.0, 6.0, 8.0);
+  Values cfg1, cfg2;
+  LieVector v1(3, 5.0, 6.0, 7.0);
+  LieVector v2(3, 5.0, 6.0, 8.0);
   cfg1.insert(key1, v1);
   cfg2.insert(key1, v2);
   CHECK(!cfg1.equals(cfg2));
@@ -57,11 +57,11 @@ TEST( TestValues, equals2 )
 }
 
 /* ************************************************************************* */
-TEST( TestValues, equals_nan )
+TEST( Values, equals_nan )
 {
-  TestValues cfg1, cfg2;
-  Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
-  Vector v2 = Vector_(3, inf, inf, inf);
+  Values cfg1, cfg2;
+  LieVector v1(3, 5.0, 6.0, 7.0);
+  LieVector v2(3, inf, inf, inf);
   cfg1.insert(key1, v1);
   cfg2.insert(key1, v2);
   CHECK(!cfg1.equals(cfg2));
@@ -69,13 +69,13 @@ TEST( TestValues, equals_nan )
 }
 
 /* ************************************************************************* */
-TEST( TestValues, insert_good )
+TEST( Values, insert_good )
 {
-  TestValues cfg1, cfg2, expected;
-  Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
-  Vector v2 = Vector_(3, 8.0, 9.0, 1.0);
-  Vector v3 = Vector_(3, 2.0, 4.0, 3.0);
-  Vector v4 = Vector_(3, 8.0, 3.0, 7.0);
+  Values cfg1, cfg2, expected;
+  LieVector v1(3, 5.0, 6.0, 7.0);
+  LieVector v2(3, 8.0, 9.0, 1.0);
+  LieVector v3(3, 2.0, 4.0, 3.0);
+  LieVector v4(3, 8.0, 3.0, 7.0);
   cfg1.insert(key1, v1);
   cfg1.insert(key2, v2);
   cfg2.insert(key3, v4);
@@ -86,48 +86,48 @@ TEST( TestValues, insert_good )
   expected.insert(key2, v2);
   expected.insert(key3, v4);
 
-  CHECK(assert_equal(cfg1, expected));
+  CHECK(assert_equal(expected, cfg1));
 }
 
 /* ************************************************************************* */
-TEST( TestValues, insert_bad )
+TEST( Values, insert_bad )
 {
-  TestValues cfg1, cfg2;
-  Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
-  Vector v2 = Vector_(3, 8.0, 9.0, 1.0);
-  Vector v3 = Vector_(3, 2.0, 4.0, 3.0);
-  Vector v4 = Vector_(3, 8.0, 3.0, 7.0);
+  Values cfg1, cfg2;
+  LieVector v1(3, 5.0, 6.0, 7.0);
+  LieVector v2(3, 8.0, 9.0, 1.0);
+  LieVector v3(3, 2.0, 4.0, 3.0);
+  LieVector v4(3, 8.0, 3.0, 7.0);
   cfg1.insert(key1, v1);
   cfg1.insert(key2, v2);
   cfg2.insert(key2, v3);
   cfg2.insert(key3, v4);
 
-  CHECK_EXCEPTION(cfg1.insert(cfg2), const KeyAlreadyExists<VecKey>);
+  CHECK_EXCEPTION(cfg1.insert(cfg2), ValuesKeyAlreadyExists);
 }
 
 /* ************************************************************************* */
-TEST( TestValues, update_element )
+TEST( Values, update_element )
 {
-  TestValues cfg;
-  Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
-  Vector v2 = Vector_(3, 8.0, 9.0, 1.0);
+  Values cfg;
+  LieVector v1(3, 5.0, 6.0, 7.0);
+  LieVector v2(3, 8.0, 9.0, 1.0);
 
   cfg.insert(key1, v1);
   CHECK(cfg.size() == 1);
-  CHECK(assert_equal(v1, cfg.at(key1)));
+  CHECK(assert_equal(v1, cfg.at<LieVector>(key1)));
 
   cfg.update(key1, v2);
   CHECK(cfg.size() == 1);
-  CHECK(assert_equal(v2, cfg.at(key1)));
+  CHECK(assert_equal(v2, cfg.at<LieVector>(key1)));
 }
 
 ///* ************************************************************************* */
-//TEST(TestValues, dim_zero)
+//TEST(Values, dim_zero)
 //{
-//  TestValues config0;
-//  config0.insert(key1, Vector_(2, 2.0, 3.0));
-//  config0.insert(key2, Vector_(3, 5.0, 6.0, 7.0));
-//  LONGS_EQUAL(5,config0.dim());
+//  Values config0;
+//  config0.insert(key1, LieVector(2, 2.0, 3.0));
+//  config0.insert(key2, LieVector(3, 5.0, 6.0, 7.0));
+//  LONGS_EQUAL(5, config0.dim());
 //
 //  VectorValues expected;
 //  expected.insert(key1, zero(2));
@@ -136,149 +136,175 @@ TEST( TestValues, update_element )
 //}
 
 /* ************************************************************************* */
-TEST(TestValues, expmap_a)
+TEST(Values, expmap_a)
 {
-  TestValues config0;
-  config0.insert(key1, Vector_(3, 1.0, 2.0, 3.0));
-  config0.insert(key2, Vector_(3, 5.0, 6.0, 7.0));
+  Values config0;
+  config0.insert(key1, LieVector(3, 1.0, 2.0, 3.0));
+  config0.insert(key2, LieVector(3, 5.0, 6.0, 7.0));
 
   Ordering ordering(*config0.orderingArbitrary());
   VectorValues increment(config0.dims(ordering));
   increment[ordering[key1]] = Vector_(3, 1.0, 1.1, 1.2);
   increment[ordering[key2]] = Vector_(3, 1.3, 1.4, 1.5);
 
-  TestValues expected;
-  expected.insert(key1, Vector_(3, 2.0, 3.1, 4.2));
-  expected.insert(key2, Vector_(3, 6.3, 7.4, 8.5));
+  Values expected;
+  expected.insert(key1, LieVector(3, 2.0, 3.1, 4.2));
+  expected.insert(key2, LieVector(3, 6.3, 7.4, 8.5));
 
   CHECK(assert_equal(expected, config0.retract(increment, ordering)));
 }
 
-///* ************************************************************************* */
-//TEST(TestValues, expmap_b)
-//{
-//  TestValues config0;
-//  config0.insert(key1, Vector_(3, 1.0, 2.0, 3.0));
-//  config0.insert(key2, Vector_(3, 5.0, 6.0, 7.0));
-//
-//  Ordering ordering(*config0.orderingArbitrary());
-//  VectorValues increment(config0.dims(ordering));
-//  increment[ordering[key2]] = Vector_(3, 1.3, 1.4, 1.5);
-//
-//  TestValues expected;
-//  expected.insert(key1, Vector_(3, 1.0, 2.0, 3.0));
-//  expected.insert(key2, Vector_(3, 6.3, 7.4, 8.5));
-//
-//  CHECK(assert_equal(expected, config0.retract(increment, ordering)));
-//}
+/* ************************************************************************* */
+TEST(Values, expmap_b)
+{
+  Values config0;
+  config0.insert(key1, LieVector(3, 1.0, 2.0, 3.0));
+  config0.insert(key2, LieVector(3, 5.0, 6.0, 7.0));
 
-///* ************************************************************************* */
-//TEST(TestValues, expmap_c)
+  Ordering ordering(*config0.orderingArbitrary());
+  VectorValues increment(VectorValues::Zero(config0.dims(ordering)));
+  increment[ordering[key2]] = LieVector(3, 1.3, 1.4, 1.5);
+
+  Values expected;
+  expected.insert(key1, LieVector(3, 1.0, 2.0, 3.0));
+  expected.insert(key2, LieVector(3, 6.3, 7.4, 8.5));
+
+  CHECK(assert_equal(expected, config0.retract(increment, ordering)));
+}
+
+/* ************************************************************************* */
+//TEST(Values, expmap_c)
 //{
-//  TestValues config0;
-//  config0.insert(key1, Vector_(3, 1.0, 2.0, 3.0));
-//  config0.insert(key2, Vector_(3, 5.0, 6.0, 7.0));
+//  Values config0;
+//  config0.insert(key1, LieVector(3, 1.0, 2.0, 3.0));
+//  config0.insert(key2, LieVector(3, 5.0, 6.0, 7.0));
 //
-//  Vector increment = Vector_(6,
+//  Vector increment = LieVector(6,
 //      1.0, 1.1, 1.2,
 //      1.3, 1.4, 1.5);
 //
-//  TestValues expected;
-//  expected.insert(key1, Vector_(3, 2.0, 3.1, 4.2));
-//  expected.insert(key2, Vector_(3, 6.3, 7.4, 8.5));
+//  Values expected;
+//  expected.insert(key1, LieVector(3, 2.0, 3.1, 4.2));
+//  expected.insert(key2, LieVector(3, 6.3, 7.4, 8.5));
 //
 //  CHECK(assert_equal(expected, config0.retract(increment)));
 //}
 
 /* ************************************************************************* */
-/*TEST(TestValues, expmap_d)
+TEST(Values, expmap_d)
 {
-  TestValues config0;
-  config0.insert(key1, Vector_(3, 1.0, 2.0, 3.0));
-  config0.insert(key2, Vector_(3, 5.0, 6.0, 7.0));
+  Values config0;
+  config0.insert(key1, LieVector(3, 1.0, 2.0, 3.0));
+  config0.insert(key2, LieVector(3, 5.0, 6.0, 7.0));
   //config0.print("config0");
   CHECK(equal(config0, config0));
   CHECK(config0.equals(config0));
 
-  TestValues<string,Pose2> poseconfig;
-  poseconfig.insert("p1", Pose2(1,2,3));
-  poseconfig.insert("p2", Pose2(0.3, 0.4, 0.5));
-  //poseconfig.print("poseconfig");
+  Values poseconfig;
+  poseconfig.insert(key1, Pose2(1,2,3));
+  poseconfig.insert(key2, Pose2(0.3, 0.4, 0.5));
+
   CHECK(equal(config0, config0));
   CHECK(config0.equals(config0));
-}*/
+}
 
 /* ************************************************************************* */
-/*TEST(TestValues, extract_keys)
+TEST(Values, extract_keys)
 {
-	typedef TypedSymbol<Pose2, 'x'> PoseKey;
-	TestValues<PoseKey, Pose2> config;
+	Values config;
 
-	config.insert(PoseKey(1), Pose2());
-	config.insert(PoseKey(2), Pose2());
-	config.insert(PoseKey(4), Pose2());
-	config.insert(PoseKey(5), Pose2());
+	config.insert(key1, Pose2());
+	config.insert(key2, Pose2());
+	config.insert(key3, Pose2());
+	config.insert(key4, Pose2());
 
-	list<PoseKey> expected, actual;
-	expected += PoseKey(1), PoseKey(2), PoseKey(4), PoseKey(5);
+	FastList<Key> expected, actual;
+	expected += key1, key2, key3, key4;
 	actual = config.keys();
 
 	CHECK(actual.size() == expected.size());
-	list<PoseKey>::const_iterator itAct = actual.begin(), itExp = expected.begin();
+	FastList<Key>::const_iterator itAct = actual.begin(), itExp = expected.begin();
 	for (; itAct != actual.end() && itExp != expected.end(); ++itAct, ++itExp) {
-		CHECK(assert_equal(*itExp, *itAct));
+		LONGS_EQUAL(*itExp, *itAct);
 	}
-}*/
+}
 
 /* ************************************************************************* */
-TEST(TestValues, exists_)
+TEST(Values, exists_)
 {
-	TestValues config0;
-	config0.insert(key1, Vector_(1, 1.));
-	config0.insert(key2, Vector_(1, 2.));
+	Values config0;
+	config0.insert(key1, LieVector(Vector_(1, 1.)));
+	config0.insert(key2, LieVector(Vector_(1, 2.)));
 
-	boost::optional<LieVector> v = config0.exists_(key1);
+	boost::optional<const LieVector&> v = config0.exists<LieVector>(key1);
 	CHECK(assert_equal(Vector_(1, 1.),*v));
 }
 
 /* ************************************************************************* */
-TEST(TestValues, update)
+TEST(Values, update)
 {
-	TestValues config0;
-	config0.insert(key1, Vector_(1, 1.));
-	config0.insert(key2, Vector_(1, 2.));
+	Values config0;
+	config0.insert(key1, LieVector(1, 1.));
+	config0.insert(key2, LieVector(1, 2.));
 
-	TestValues superset;
-	superset.insert(key1, Vector_(1, -1.));
-	superset.insert(key2, Vector_(1, -2.));
-	superset.insert(key3, Vector_(1, -3.));
+	Values superset;
+	superset.insert(key1, LieVector(1, -1.));
+	superset.insert(key2, LieVector(1, -2.));
 	config0.update(superset);
 
-	TestValues expected;
-	expected.insert(key1, Vector_(1, -1.));
-	expected.insert(key2, Vector_(1, -2.));
+	Values expected;
+	expected.insert(key1, LieVector(1, -1.));
+	expected.insert(key2, LieVector(1, -2.));
 	CHECK(assert_equal(expected,config0));
 }
 
 /* ************************************************************************* */
-TEST(TestValues, dummy_initialization)
-{
-	typedef TypedSymbol<LieVector, 'z'> Key;
-	typedef Values<Key> Values1;
+TEST(Values, filter) {
+	Pose2 pose0(1.0, 2.0, 0.3);
+	Pose3 pose1(Pose2(0.1, 0.2, 0.3));
+	Pose2 pose2(4.0, 5.0, 0.6);
+	Pose3 pose3(Pose2(0.3, 0.7, 0.9));
 
-	Values1 init1;
-	init1.insert(Key(1), Vector_(2, 1.0, 2.0));
-	init1.insert(Key(2), Vector_(2, 4.0, 3.0));
+  Values values;
+  values.insert(0, pose0);
+  values.insert(1, pose1);
+  values.insert(2, pose2);
+  values.insert(3, pose3);
 
-	TestValues init2;
-	init2.insert(key1, Vector_(2, 1.0, 2.0));
-	init2.insert(key2, Vector_(2, 4.0, 3.0));
+  // Filter by key
+  int i = 0;
+  Values::Filtered<Value> filtered = values.filter(boost::bind(std::greater_equal<Key>(), _1, 2));
+  BOOST_FOREACH(const Values::Filtered<Value>::value_type& key_value, filtered) {
+    if(i == 0) {
+      LONGS_EQUAL(2, key_value.first);
+      EXPECT(typeid(Pose2) == typeid(key_value.second));
+      EXPECT(assert_equal(pose2, dynamic_cast<const Pose2&>(key_value.second)));
+    } else if(i == 1) {
+      LONGS_EQUAL(3, key_value.first);
+      EXPECT(typeid(Pose3) == typeid(key_value.second));
+      EXPECT(assert_equal(pose3, dynamic_cast<const Pose3&>(key_value.second)));
+    } else {
+      EXPECT(false);
+    }
+    ++ i;
+  }
+  LONGS_EQUAL(2, i);
 
-	Values1 actual1(init2);
-	TestValues actual2(init1);
-
-	EXPECT(actual1.empty());
-	EXPECT(actual2.empty());
+  // Filter by type
+  i = 0;
+  BOOST_FOREACH(const Values::Filtered<Pose3>::value_type& key_value, values.filter<Pose3>()) {
+    if(i == 0) {
+      LONGS_EQUAL(1, key_value.first);
+      EXPECT(assert_equal(pose1, key_value.second));
+    } else if(i == 1) {
+      LONGS_EQUAL(3, key_value.first);
+      EXPECT(assert_equal(pose3, key_value.second));
+    } else {
+      EXPECT(false);
+    }
+    ++ i;
+  }
+  LONGS_EQUAL(2, i);
 }
 
 /* ************************************************************************* */

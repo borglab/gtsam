@@ -32,21 +32,22 @@ using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
+Key kx(size_t i) { return Symbol('x',i); }
+
 /* ************************************************************************* */
 // x1 -> x2
 //		-> x3 -> x4
 //    -> x5
 TEST ( Ordering, predecessorMap2Keys ) {
-	typedef TypedSymbol<Pose2,'x'> Key;
 	PredecessorMap<Key> p_map;
-	p_map.insert(1,1);
-	p_map.insert(2,1);
-	p_map.insert(3,1);
-	p_map.insert(4,3);
-	p_map.insert(5,1);
+	p_map.insert(kx(1),kx(1));
+	p_map.insert(kx(2),kx(1));
+	p_map.insert(kx(3),kx(1));
+	p_map.insert(kx(4),kx(3));
+	p_map.insert(kx(5),kx(1));
 
 	list<Key> expected;
-	expected += 4,5,3,2,1;//Key(4), Key(5), Key(3), Key(2), Key(1);
+	expected += kx(4),kx(5),kx(3),kx(2),kx(1);//PoseKey(4), PoseKey(5), PoseKey(3), PoseKey(2), PoseKey(1);
 
 	list<Key> actual = predecessorMap2Keys<Key>(p_map);
 	LONGS_EQUAL(expected.size(), actual.size());
@@ -61,18 +62,18 @@ TEST ( Ordering, predecessorMap2Keys ) {
 TEST( Graph, predecessorMap2Graph )
 {
 	typedef SGraph<string>::Vertex SVertex;
-	SGraph<string> graph;
+	SGraph<Key> graph;
 	SVertex root;
-	map<string, SVertex> key2vertex;
+	map<Key, SVertex> key2vertex;
 
-	PredecessorMap<string> p_map;
-	p_map.insert("x1", "x2");
-	p_map.insert("x2", "x2");
-	p_map.insert("x3", "x2");
-	tie(graph, root, key2vertex) = predecessorMap2Graph<SGraph<string>, SVertex, string>(p_map);
+	PredecessorMap<Key> p_map;
+	p_map.insert(kx(1), kx(2));
+	p_map.insert(kx(2), kx(2));
+	p_map.insert(kx(3), kx(2));
+	tie(graph, root, key2vertex) = predecessorMap2Graph<SGraph<Key>, SVertex, Key>(p_map);
 
 	LONGS_EQUAL(3, boost::num_vertices(graph));
-	CHECK(root == key2vertex["x2"]);
+	CHECK(root == key2vertex[kx(2)]);
 }
 
 /* ************************************************************************* */
@@ -86,22 +87,22 @@ TEST( Graph, composePoses )
 	graph.addOdometry(2,3, p23, cov);
 	graph.addOdometry(4,3, p43, cov);
 
-	PredecessorMap<pose2SLAM::Values::Key> tree;
-	tree.insert(1,2);
-	tree.insert(2,2);
-	tree.insert(3,2);
-	tree.insert(4,3);
+	PredecessorMap<Key> tree;
+	tree.insert(pose2SLAM::PoseKey(1),pose2SLAM::PoseKey(2));
+	tree.insert(pose2SLAM::PoseKey(2),pose2SLAM::PoseKey(2));
+	tree.insert(pose2SLAM::PoseKey(3),pose2SLAM::PoseKey(2));
+	tree.insert(pose2SLAM::PoseKey(4),pose2SLAM::PoseKey(3));
 
 	Pose2 rootPose = p2;
 
-	boost::shared_ptr<pose2SLAM::Values> actual = composePoses<pose2SLAM::Graph, pose2SLAM::Odometry,
-			Pose2, pose2SLAM::Values> (graph, tree, rootPose);
+	boost::shared_ptr<Values> actual = composePoses<pose2SLAM::Graph, pose2SLAM::Odometry,
+			Pose2, Key> (graph, tree, rootPose);
 
-	pose2SLAM::Values expected;
-	expected.insert(1, p1);
-	expected.insert(2, p2);
-	expected.insert(3, p3);
-	expected.insert(4, p4);
+	Values expected;
+	expected.insert(pose2SLAM::PoseKey(1), p1);
+	expected.insert(pose2SLAM::PoseKey(2), p2);
+	expected.insert(pose2SLAM::PoseKey(3), p3);
+	expected.insert(pose2SLAM::PoseKey(4), p4);
 
 	LONGS_EQUAL(4, actual->size());
 	CHECK(assert_equal(expected, *actual));

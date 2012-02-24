@@ -25,6 +25,8 @@
 #include <boost/pool/pool_alloc.hpp>
 #include <boost/mpl/has_xxx.hpp>
 #include <boost/utility/enable_if.hpp>
+#include <boost/serialization/nvp.hpp>
+#include <boost/serialization/set.hpp>
 
 BOOST_MPL_HAS_XXX_TRAIT_DEF(print)
 
@@ -74,6 +76,14 @@ public:
 
   /** Check for equality within tolerance to implement Testable */
   bool equals(const FastSet<VALUE>& other, double tol = 1e-9) const { return FastSetTestableHelper<VALUE>::equals(*this, other, tol); }
+
+private:
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int version) {
+    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+  }
 };
 
 // This is the default Testable interface for *non*Testable elements, which

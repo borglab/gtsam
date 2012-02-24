@@ -38,16 +38,16 @@ namespace gtsam {
 	 * For practical use, it would be good to subclass this factor and have the class type
 	 * construct the mask.
 	 */
-	template<class VALUES, class KEY>
-	class PartialPriorFactor: public NonlinearFactor1<VALUES, KEY> {
+	template<class VALUE>
+	class PartialPriorFactor: public NoiseModelFactor1<VALUE> {
 
 	public:
-		typedef typename KEY::Value T;
+		typedef VALUE T;
 
 	protected:
 
-		typedef NonlinearFactor1<VALUES, KEY> Base;
-		typedef PartialPriorFactor<VALUES, KEY> This;
+		typedef NoiseModelFactor1<VALUE> Base;
+		typedef PartialPriorFactor<VALUE> This;
 
 		Vector prior_;             ///< measurement on logmap parameters, in compressed form
 		std::vector<size_t> mask_; ///< indices of values to constrain in compressed prior vector
@@ -60,7 +60,7 @@ namespace gtsam {
 		 * constructor with just minimum requirements for a factor - allows more
 		 * computation in the constructor.  This should only be used by subclasses
 		 */
-		PartialPriorFactor(const KEY& key, const SharedNoiseModel& model)
+		PartialPriorFactor(Key key, const SharedNoiseModel& model)
 		  : Base(model, key) {}
 
 	public:
@@ -71,14 +71,14 @@ namespace gtsam {
 		virtual ~PartialPriorFactor() {}
 
 		/** Single Element Constructor: acts on a single parameter specified by idx */
-		PartialPriorFactor(const KEY& key, size_t idx, double prior, const SharedNoiseModel& model) :
+		PartialPriorFactor(Key key, size_t idx, double prior, const SharedNoiseModel& model) :
 			Base(model, key), prior_(Vector_(1, prior)), mask_(1, idx), H_(zeros(1, T::Dim())) {
 			assert(model->dim() == 1);
 			this->fillH();
 		}
 
 		/** Indices Constructor: specify the mask with a set of indices */
-		PartialPriorFactor(const KEY& key, const std::vector<size_t>& mask, const Vector& prior,
+		PartialPriorFactor(Key key, const std::vector<size_t>& mask, const Vector& prior,
 				const SharedNoiseModel& model) :
 			Base(model, key), prior_(prior), mask_(mask), H_(zeros(mask.size(), T::Dim())) {
 			assert((size_t)prior_.size() == mask.size());
@@ -89,13 +89,13 @@ namespace gtsam {
 		/** implement functions needed for Testable */
 
 		/** print */
-		virtual void print(const std::string& s) const {
-			Base::print(s);
+		virtual void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+			Base::print(s, keyFormatter);
 			gtsam::print(prior_, "prior");
 		}
 
 		/** equals */
-		virtual bool equals(const NonlinearFactor<VALUES>& expected, double tol=1e-9) const {
+		virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
 			const This *e = dynamic_cast<const This*> (&expected);
 			return e != NULL && Base::equals(*e, tol) &&
 					gtsam::equal_with_abs_tol(this->prior_, e->prior_, tol) &&
@@ -133,7 +133,7 @@ namespace gtsam {
 		friend class boost::serialization::access;
 		template<class ARCHIVE>
 		void serialize(ARCHIVE & ar, const unsigned int version) {
-			ar & boost::serialization::make_nvp("NonlinearFactor1",
+			ar & boost::serialization::make_nvp("NoiseModelFactor1",
 					boost::serialization::base_object<Base>(*this));
 			ar & BOOST_SERIALIZATION_NVP(prior_);
 			ar & BOOST_SERIALIZATION_NVP(mask_);

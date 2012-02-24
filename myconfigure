@@ -1,1 +1,0 @@
-../configure --prefix=$HOME --enable-install-cppunitlite CFLAGS="-fno-inline -g -Wall" CXXFLAGS="-fno-inline -g -Wall" LDFLAGS="-fno-inline -g -Wall" --disable-static  --disable-fast-install

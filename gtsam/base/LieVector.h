@@ -19,13 +19,14 @@
 
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Vector.h>
+#include <gtsam/base/DerivedValue.h>
 
 namespace gtsam {
 
 /**
  * LieVector is a wrapper around vector to allow it to be a Lie type
  */
-struct LieVector : public Vector {
+struct LieVector : public Vector, public DerivedValue<LieVector> {
 
 	/** default constructor - should be unnecessary */
 	LieVector() {}

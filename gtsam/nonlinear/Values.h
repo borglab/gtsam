@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -13,115 +13,191 @@
  * @file Values.h
  * @author Richard Roberts
  *
- * @brief A templated config for Manifold-group elements
+ * @brief A non-templated config holding any types of Manifold-group elements
  *
  *  Detailed story:
  *  A values structure is a map from keys to values. It is used to specify the value of a bunch
  *  of variables in a factor graph. A Values is a values structure which can hold variables that
  *  are elements on manifolds, not just vectors. It then, as a whole, implements a aggregate type
  *  which is also a manifold element, and hence supports operations dim, retract, and localCoordinates.
- *  \nosubgrouping
  */
 
 #pragma once
 
-#include <set>
+#include <string>
+#include <utility>
 
-#include <gtsam/base/Testable.h>
+#include <boost/pool/pool_alloc.hpp>
+#include <boost/ptr_container/ptr_map.hpp>
+#include <boost/iterator/transform_iterator.hpp>
+#include <boost/iterator/filter_iterator.hpp>
+#include <boost/function.hpp>
+#include <boost/bind.hpp>
+#include <boost/ptr_container/serialize_ptr_map.hpp>
+#include <boost/range/iterator_range.hpp>
+#include <boost/range/adaptor/filtered.hpp>
+#include <boost/range/adaptor/transformed.hpp>
+#include <boost/lambda/lambda.hpp>
+
+#include <gtsam/base/Value.h>
 #include <gtsam/base/FastMap.h>
-#include <gtsam/base/Vector.h>
-#include <gtsam/base/Manifold.h>
+#include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/Ordering.h>
-
-namespace boost { template<class T> class optional; }
-namespace gtsam { class VectorValues; class Ordering; }
 
 namespace gtsam {
 
   // Forward declarations
-  template<class J> class KeyDoesNotExist;
-  template<class J> class KeyAlreadyExists;
+  class ValueCloneAllocator;
+  class ValueAutomaticCasting;
 
-	/**
-	 * Manifold type values structure
-	 * Takes two template types
-	 *  J: a key type to look up values in the values structure (need to be sortable)
-	 *
-	 * Key concept:
-	 *  The key will be assumed to be sortable, and must have a
-	 *  typedef called "Value" with the type of the value the key
-	 *  labels (example: Pose2, Point2, etc)
-	 */
-  template<class J>
+/**
+  * A non-templated config holding any types of Manifold-group elements.  A
+  * values structure is a map from keys to values. It is used to specify the
+  * value of a bunch of variables in a factor graph. A Values is a values
+  * structure which can hold variables that are elements on manifolds, not just
+  * vectors. It then, as a whole, implements a aggregate type which is also a
+  * manifold element, and hence supports operations dim, retract, and
+  * localCoordinates.
+  */
   class Values {
-
-  public:
-
-    /**
-     * Typedefs
-     */
-  	typedef J Key;
-  	typedef typename J::Value Value;
-  	typedef std::map<Key, Value, std::less<Key>, boost::fast_pool_allocator<std::pair<const Key, Value> > > KeyValueMap;
-	//    typedef FastMap<J,Value> KeyValueMap;
-    typedef typename KeyValueMap::value_type KeyValuePair;
-    typedef typename KeyValueMap::iterator iterator;
-    typedef typename KeyValueMap::const_iterator const_iterator;
 
   private:
 
-    /** concept check */
-    GTSAM_CONCEPT_TESTABLE_TYPE(Value)
-    GTSAM_CONCEPT_MANIFOLD_TYPE(Value)
+    // Internally we store a boost ptr_map, with a ValueCloneAllocator (defined
+    // below) to clone and deallocate the Value objects, and a boost
+    // fast_pool_allocator to allocate map nodes.  In this way, all memory is
+    // allocated in a boost memory pool.
+    typedef boost::ptr_map<
+        Key,
+        Value,
+        std::less<Key>,
+        ValueCloneAllocator,
+        boost::fast_pool_allocator<std::pair<const Key, void*> > > KeyValueMap;
 
+    // The member to store the values, see just above
     KeyValueMap values_;
+
+    // Types obtained by iterating
+    typedef KeyValueMap::const_iterator::value_type ConstKeyValuePtrPair;
+    typedef KeyValueMap::iterator::value_type KeyValuePtrPair;
 
   public:
 
-  	/// @name Standard Constructors
-  	/// @{
+    /// A shared_ptr to this class
+    typedef boost::shared_ptr<Values> shared_ptr;
 
-    ///TODO comment
+    /// A key-value pair, which you get by dereferencing iterators
+    typedef std::pair<const Key, Value&> KeyValuePair;
+
+    /// A key-value pair, which you get by dereferencing iterators
+    typedef std::pair<const Key, const Value&> ConstKeyValuePair;
+
+    /// Mutable forward iterator, with value type KeyValuePair
+    typedef boost::transform_iterator<
+        boost::function1<KeyValuePair, const KeyValuePtrPair&>, KeyValueMap::iterator> iterator;
+
+    /// Const forward iterator, with value type ConstKeyValuePair
+    typedef boost::transform_iterator<
+        boost::function1<ConstKeyValuePair, const ConstKeyValuePtrPair&>, KeyValueMap::const_iterator> const_iterator;
+
+    /// Mutable reverse iterator, with value type KeyValuePair
+    typedef boost::transform_iterator<
+        boost::function1<KeyValuePair, const KeyValuePtrPair&>, KeyValueMap::reverse_iterator> reverse_iterator;
+
+    /// Const reverse iterator, with value type ConstKeyValuePair
+    typedef boost::transform_iterator<
+        boost::function1<ConstKeyValuePair, const ConstKeyValuePtrPair&>, KeyValueMap::const_reverse_iterator> const_reverse_iterator;
+
+    template<class ValueType>
+    class Filtered : public boost::transformed_range<
+    std::pair<const Key, ValueType&>(*)(KeyValuePair key_value),
+    const boost::filtered_range<
+    boost::function<bool(const ConstKeyValuePair&)>,
+    const boost::iterator_range<iterator> > > {
+    private:
+      typedef boost::transformed_range<
+          std::pair<const Key, ValueType&>(*)(KeyValuePair key_value),
+          const boost::filtered_range<
+          boost::function<bool(const ConstKeyValuePair&)>,
+          const boost::iterator_range<iterator> > > Base;
+
+      Filtered(const Base& base) : Base(base) {}
+
+      friend class Values;
+    };
+
+    template<class ValueType>
+    class ConstFiltered : public boost::transformed_range<
+    std::pair<const Key, const ValueType&>(*)(ConstKeyValuePair key_value),
+    const boost::filtered_range<
+    boost::function<bool(const ConstKeyValuePair&)>,
+    const boost::iterator_range<const_iterator> > > {
+    private:
+      typedef boost::transformed_range<
+          std::pair<const Key, const ValueType&>(*)(ConstKeyValuePair key_value),
+          const boost::filtered_range<
+          boost::function<bool(const ConstKeyValuePair&)>,
+          const boost::iterator_range<const_iterator> > > Base;
+
+      ConstFiltered(const Base& base) : Base(base) {}
+
+      friend class Values;
+    };
+
+    /** Default constructor creates an empty Values class */
     Values() {}
 
-    ///TODO: comment
-    Values(const Values& config) :
-      values_(config.values_) {}
+    /** Copy constructor duplicates all keys and values */
+    Values(const Values& other);
 
-    ///TODO: comment
-    template<class J_ALT>
-    Values(const Values<J_ALT>& other) {} // do nothing when initializing with wrong type
-    virtual ~Values() {}
-
-  	/// @}
     /// @name Testable
     /// @{
 
-    /** print */
-    void print(const std::string &s="") const;
+    /** print method for testing and debugging */
+    void print(const std::string& str = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
-    /** Test whether configs are identical in keys and values */
-    bool equals(const Values& expected, double tol=1e-9) const;
+    /** Test whether the sets of keys and values are identical */
+    bool equals(const Values& other, double tol=1e-9) const;
 
     /// @}
-  	/// @name Standard Interface
-  	/// @{
 
-    /** Retrieve a variable by j, throws KeyDoesNotExist<J> if not found */
-    const Value& at(const J& j) const;
+    /** Retrieve a variable by key \c j.  The type of the value associated with
+     * this key is supplied as a template argument to this function.
+     * @param j Retrieve the value associated with this key
+     * @tparam Value The type of the value stored with this key, this method
+     * throws DynamicValuesIncorrectType if this requested type is not correct.
+     * @return A const reference to the stored value
+     */
+    template<typename ValueType>
+    const ValueType& at(Key j) const;
 
-    /** operator[] syntax for get, throws KeyDoesNotExist<J> if not found */
-    const Value& operator[](const J& j) const {
-      return at(j); }
+#if 0
+    /** Retrieve a variable by key \c j.  This non-templated version returns a
+     * special ValueAutomaticCasting object that may be assigned to the proper
+     * value.
+     * @param j Retrieve the value associated with this key
+     * @return A ValueAutomaticCasting object that may be assignmed to a Value
+     * of the proper type.
+     */
+    ValueAutomaticCasting at(Key j) const;
+#endif
 
-    /** Check if a variable exists */
-    bool exists(const J& i) const { return values_.find(i)!=values_.end(); }
+#if 0
+    /** operator[] syntax for at(Key j) */
+    ValueAutomaticCasting operator[](Key j) const;
+#endif
 
-    /** Check if a variable exists and return it if so */
-    boost::optional<Value> exists_(const J& i) const {
-    	const_iterator it = values_.find(i);
-    	if (it==values_.end()) return boost::none; else	return it->second;
-    }
+    /** Check if a value exists with key \c j.  See exists<>(Key j)
+     * and exists(const TypedKey& j) for versions that return the value if it
+     * exists. */
+    bool exists(Key j) const;
+
+    /** Check if a value with key \c j exists, returns the value with type
+     * \c Value if the key does exist, or boost::none if it does not exist.
+     * Throws DynamicValuesIncorrectType if the value type associated with the
+     * requested key does not match the stored value type. */
+    template<typename ValueType>
+    boost::optional<const ValueType&> exists(Key j) const;
 
     /** The number of variables in this config */
     size_t size() const { return values_.size(); }
@@ -130,28 +206,26 @@ namespace gtsam {
     bool empty() const { return values_.empty(); }
 
     /** Get a zero VectorValues of the correct structure */
-    VectorValues zero(const Ordering& ordering) const;
+    VectorValues zeroVectors(const Ordering& ordering) const;
 
-    const_iterator begin() const { return values_.begin(); }	///<TODO: comment
-    const_iterator end() const { return values_.end(); }			///<TODO: comment
+  private:
+    static ConstKeyValuePair make_const_deref_pair(const KeyValueMap::const_iterator::value_type& key_value) {
+      return ConstKeyValuePair(key_value.first, *key_value.second); }
+    static KeyValuePair make_deref_pair(const KeyValueMap::iterator::value_type& key_value) {
+      return KeyValuePair(key_value.first, *key_value.second); }
 
-    /** Create an array of variable dimensions using the given ordering */
-    std::vector<size_t> dims(const Ordering& ordering) const;
+  public:
+    const_iterator begin() const { return boost::make_transform_iterator(values_.begin(), &make_const_deref_pair); }
+    const_iterator end() const { return boost::make_transform_iterator(values_.end(), &make_const_deref_pair); }
+    iterator begin() { return boost::make_transform_iterator(values_.begin(), &make_deref_pair); }
+    iterator end() { return boost::make_transform_iterator(values_.end(), &make_deref_pair); }
+    const_reverse_iterator rbegin() const { return boost::make_transform_iterator(values_.rbegin(), &make_const_deref_pair); }
+    const_reverse_iterator rend() const { return boost::make_transform_iterator(values_.rend(), &make_const_deref_pair); }
+    reverse_iterator rbegin() { return boost::make_transform_iterator(values_.rbegin(), &make_deref_pair); }
+    reverse_iterator rend() { return boost::make_transform_iterator(values_.rend(), &make_deref_pair); }
 
-    /**
-     * Generate a default ordering, simply in key sort order.  To instead
-     * create a fill-reducing ordering, use
-     * NonlinearFactorGraph::orderingCOLAMD().  Alternatively, you may permute
-     * this ordering yourself (as orderingCOLAMD() does internally).
-     */
-    Ordering::shared_ptr orderingArbitrary(Index firstVar = 0) const;
-
-    /// @}
     /// @name Manifold Operations
     /// @{
-
-    /** The dimensionality of the tangent space */
-    size_t dim() const;
 
     /** Add a delta config to current config and returns a new config */
     Values retract(const VectorValues& delta, const Ordering& ordering) const;
@@ -162,73 +236,161 @@ namespace gtsam {
     /** Get a delta config about a linearization point c0 (*this) */
     void localCoordinates(const Values& cp, const Ordering& ordering, VectorValues& delta) const;
 
-    /// @}
-  	/// @name Advanced Interface
-  	/// @{
-
-    // imperative methods:
-
-    iterator begin() { return values_.begin(); }	///<TODO: comment
-    iterator end() { return values_.end(); }			///<TODO: comment
+    ///@}
 
     /** Add a variable with the given j, throws KeyAlreadyExists<J> if j is already present */
-    void insert(const J& j, const Value& val);
+    void insert(Key j, const Value& val);
 
     /** Add a set of variables, throws KeyAlreadyExists<J> if a key is already present */
-    void insert(const Values& cfg);
-
-    /** update the current available values without adding new ones */
-    void update(const Values& cfg);
+    void insert(const Values& values);
 
     /** single element change of existing element */
-    void update(const J& j, const Value& val);
+    void update(Key j, const Value& val);
+
+    /** update the current available values without adding new ones */
+    void update(const Values& values);
 
     /** Remove a variable from the config, throws KeyDoesNotExist<J> if j is not present */
-    void erase(const J& j);
-
-    /** Remove a variable from the config while returning the dimensionality of
-     * the removed element (normally not needed by user code), throws
-     * KeyDoesNotExist<J> if j is not present.
-     */
-    void erase(const J& j, size_t& dim);
+    void erase(Key j);
 
     /**
      * Returns a set of keys in the config
      * Note: by construction, the list is ordered
      */
-    std::list<J> keys() const;
+    FastList<Key> keys() const;
 
     /** Replace all keys and variables */
-    Values& operator=(const Values& rhs) {
-      values_ = rhs.values_;
-      return (*this);
-    }
+    Values& operator=(const Values& rhs);
 
     /** Remove all variables from the config */
-    void clear() {
-      values_.clear();
+    void clear() { values_.clear(); }
+
+    /** Create an array of variable dimensions using the given ordering (\f$ O(n) \f$) */
+    std::vector<size_t> dims(const Ordering& ordering) const;
+
+    /** Compute the total dimensionality of all values (\f$ O(n) \f$) */
+    size_t dim() const;
+
+    /**
+     * Generate a default ordering, simply in key sort order.  To instead
+     * create a fill-reducing ordering, use
+     * NonlinearFactorGraph::orderingCOLAMD().  Alternatively, you may permute
+     * this ordering yourself (as orderingCOLAMD() does internally).
+     */
+    Ordering::shared_ptr orderingArbitrary(Index firstVar = 0) const;
+
+    /**
+     * Return a filtered view of this Values class, without copying any data.
+     * When iterating over the filtered view, only the key-value pairs
+     * with a key causing \c filterFcn to return \c true are visited.  Because
+     * the object Filtered<Value> returned from filter() is only a
+     * <emph>view</emph> the original Values object must not be deallocated or
+     * go out of scope as long as the view is needed.
+     * @param filterFcn The function that determines which key-value pairs are
+     * included in the filtered view, for which this function returns \c true
+     * on their keys.
+     * @return A filtered view of the original Values class, which references
+     * the original Values class.
+     */
+    Filtered<Value>
+    filter(const boost::function<bool(Key)>& filterFcn) {
+      return filter<Value>(filterFcn);
     }
 
     /**
-     * Apply a class with an application operator() to a const_iterator over
-     * every <key,value> pair.  The operator must be able to handle such an
-     * iterator for every type in the Values, (i.e. through templating).
+     * Return a filtered view of this Values class, without copying any data.
+     * In this templated version, only key-value pairs whose value matches the
+     * template argument \c ValueType and whose key causes the function argument
+     * \c filterFcn to return true are visited when iterating over the filtered
+     * view.  Because the object Filtered<Value> returned from filter() is only
+     * a <emph>view</emph> the original Values object must not be deallocated or
+     * go out of scope as long as the view is needed.
+     * @tparam ValueType The type that the value in a key-value pair must match
+     * to be included in the filtered view.  Currently, base classes are not
+     * resolved so the type must match exactly, except if ValueType = Value, in
+     * which case no type filtering is done.
+     * @param filterFcn The function that determines which key-value pairs are
+     * included in the filtered view, for which this function returns \c true
+     * on their keys (default:  always return true so that filter() only
+     * filters by type, matching \c ValueType).
+     * @return A filtered view of the original Values class, which references
+     * the original Values class.
      */
-    template<typename A>
-    void apply(A& operation) {
-      for(iterator it = begin(); it != end(); ++it)
-        operation(it);
-    }
-    template<typename A>
-    void apply(A& operation) const {
-      for(const_iterator it = begin(); it != end(); ++it)
-        operation(it);
+    template<class ValueType>
+    Filtered<ValueType>
+    filter(const boost::function<bool(Key)>& filterFcn = (boost::lambda::_1, true)) {
+      return boost::adaptors::transform(
+          boost::adaptors::filter(
+              boost::make_iterator_range(begin(), end()),
+              boost::function<bool(const ConstKeyValuePair&)>(
+                  boost::bind(&filterHelper<ValueType>, filterFcn, _1))),
+          &castHelper<ValueType, KeyValuePair>);
     }
 
-    /// @}
+    /**
+     * Return a filtered view of this Values class, without copying any data.
+     * When iterating over the filtered view, only the key-value pairs
+     * with a key causing \c filterFcn to return \c true are visited.  Because
+     * the object Filtered<Value> returned from filter() is only a
+     * <emph>view</emph> the original Values object must not be deallocated or
+     * go out of scope as long as the view is needed.
+     * @param filterFcn The function that determines which key-value pairs are
+     * included in the filtered view, for which this function returns \c true
+     * on their keys.
+     * @return A filtered view of the original Values class, which references
+     * the original Values class.
+     */
+    ConstFiltered<Value>
+    filter(const boost::function<bool(Key)>& filterFcn) const {
+      return filter<Value>(filterFcn);
+    }
+
+    /**
+     * Return a filtered view of this Values class, without copying any data.
+     * In this templated version, only key-value pairs whose value matches the
+     * template argument \c ValueType and whose key causes the function argument
+     * \c filterFcn to return true are visited when iterating over the filtered
+     * view.  Because the object Filtered<Value> returned from filter() is only
+     * a <emph>view</emph> the original Values object must not be deallocated or
+     * go out of scope as long as the view is needed.
+     * @tparam ValueType The type that the value in a key-value pair must match
+     * to be included in the filtered view.  Currently, base classes are not
+     * resolved so the type must match exactly, except if ValueType = Value, in
+     * which case no type filtering is done.
+     * @param filterFcn The function that determines which key-value pairs are
+     * included in the filtered view, for which this function returns \c true
+     * on their keys.
+     * @return A filtered view of the original Values class, which references
+     * the original Values class.
+     */
+    template<class ValueType>
+    ConstFiltered<ValueType>
+    filter(const boost::function<bool(Key)>& filterFcn = (boost::lambda::_1, true)) const {
+      return boost::adaptors::transform(
+          boost::adaptors::filter(
+              boost::make_iterator_range(begin(), end()),
+              boost::function<bool(const ConstKeyValuePair&)>(
+                  boost::bind(&filterHelper<ValueType>, filterFcn, _1))),
+          &castHelper<const ValueType, ConstKeyValuePair>);
+    }
 
   private:
-  	/** Serialization function */
+    // Filters based on ValueType (if not Value) and also based on the user-
+    // supplied \c filter function.
+    template<class ValueType>
+    static bool filterHelper(const boost::function<bool(Key)> filter, const ConstKeyValuePair& key_value) {
+      // Filter and check the type
+      return filter(key_value.first) && (typeid(ValueType) == typeid(key_value.second) || typeid(ValueType) == typeid(Value));
+    }
+
+    // Cast to the derived ValueType
+    template<class ValueType, class KeyValuePairType>
+    static std::pair<const Key, ValueType&> castHelper(KeyValuePairType key_value) {
+      // Static cast because we already checked the type during filtering
+      return std::pair<const Key, ValueType&>(key_value.first, static_cast<ValueType&>(key_value.second));
+    }
+
+    /** Serialization function */
   	friend class boost::serialization::access;
   	template<class ARCHIVE>
   	void serialize(ARCHIVE & ar, const unsigned int version) {
@@ -237,83 +399,95 @@ namespace gtsam {
 
   };
 
-  struct _ValuesDimensionCollector {
-    const Ordering& ordering;
-    std::vector<size_t> dimensions;
-    _ValuesDimensionCollector(const Ordering& _ordering) : ordering(_ordering), dimensions(_ordering.nVars()) {}
-    template<typename I> void operator()(const I& key_value) {
-      Index var;
-      if(ordering.tryAt(key_value->first, var)) {
-        assert(var < dimensions.size());
-        dimensions[var] = key_value->second.dim();
-      }
-    }
+  /* ************************************************************************* */
+  class ValuesKeyAlreadyExists : public std::exception {
+  protected:
+    const Key key_; ///< The key that already existed
+
+  private:
+    mutable std::string message_;
+
+  public:
+    /// Construct with the key-value pair attemped to be added
+    ValuesKeyAlreadyExists(Key key) throw() :
+      key_(key) {}
+
+    virtual ~ValuesKeyAlreadyExists() throw() {}
+
+    /// The duplicate key that was attemped to be added
+    Key key() const throw() { return key_; }
+
+    /// The message to be displayed to the user
+    virtual const char* what() const throw();
   };
 
   /* ************************************************************************* */
-  struct _ValuesKeyOrderer {
-    Index var;
-    Ordering::shared_ptr ordering;
-    _ValuesKeyOrderer(Index firstVar) : var(firstVar), ordering(new Ordering) {}
-    template<typename I> void operator()(const I& key_value) {
-      ordering->insert(key_value->first, var);
-      ++ var;
+  class ValuesKeyDoesNotExist : public std::exception {
+  protected:
+    const char* operation_; ///< The operation that attempted to access the key
+    const Key key_; ///< The key that does not exist
+
+  private:
+    mutable std::string message_;
+
+  public:
+    /// Construct with the key that does not exist in the values
+    ValuesKeyDoesNotExist(const char* operation, Key key) throw() :
+      operation_(operation), key_(key) {}
+
+    virtual ~ValuesKeyDoesNotExist() throw() {}
+
+    /// The key that was attempted to be accessed that does not exist
+    Key key() const throw() { return key_; }
+
+    /// The message to be displayed to the user
+    virtual const char* what() const throw();
+  };
+
+  /* ************************************************************************* */
+  class ValuesIncorrectType : public std::exception {
+  protected:
+    const Key key_; ///< The key requested
+    const std::type_info& storedTypeId_;
+    const std::type_info& requestedTypeId_;
+
+  private:
+    mutable std::string message_;
+
+  public:
+    /// Construct with the key that does not exist in the values
+    ValuesIncorrectType(Key key,
+        const std::type_info& storedTypeId, const std::type_info& requestedTypeId) throw() :
+      key_(key), storedTypeId_(storedTypeId), requestedTypeId_(requestedTypeId) {}
+
+    virtual ~ValuesIncorrectType() throw() {}
+
+    /// The key that was attempted to be accessed that does not exist
+    Key key() const throw() { return key_; }
+
+    /// The typeid of the value stores in the Values
+    const std::type_info& storedTypeId() const { return storedTypeId_; }
+
+    /// The requested typeid
+    const std::type_info& requestedTypeId() const { return requestedTypeId_; }
+
+    /// The message to be displayed to the user
+    virtual const char* what() const throw();
+  };
+
+  /* ************************************************************************* */
+  class DynamicValuesMismatched : public std::exception {
+
+  public:
+    DynamicValuesMismatched() throw() {}
+
+    virtual ~DynamicValuesMismatched() throw() {}
+
+    virtual const char* what() const throw() {
+      return "The Values 'this' and the argument passed to Values::localCoordinates have mismatched keys and values";
     }
   };
 
-
-/* ************************************************************************* */
-template<class J>
-class KeyAlreadyExists : public std::exception {
-protected:
-  const J key_; ///< The key that already existed
-  const typename J::Value value_; ///< The value attempted to be inserted
-
-private:
-  mutable std::string message_;
-
-public:
-  /// Construct with the key-value pair attemped to be added
-  KeyAlreadyExists(const J& key, const typename J::Value& value) throw() :
-    key_(key), value_(value) {}
-
-  virtual ~KeyAlreadyExists() throw() {}
-
-  /// The duplicate key that was attemped to be added
-  const J& key() const throw() { return key_; }
-
-  /// The value that was attempted to be added
-  const typename J::Value& value() const throw() { return value_; }
-
-  /// The message to be displayed to the user
-  virtual const char* what() const throw();
-};
-
-/* ************************************************************************* */
-template<class J>
-class KeyDoesNotExist : public std::exception {
-protected:
-  const char* operation_; ///< The operation that attempted to access the key
-  const J key_; ///< The key that does not exist
-
-private:
-  mutable std::string message_;
-
-public:
-  /// Construct with the key that does not exist in the values
-  KeyDoesNotExist(const char* operation, const J& key) throw() :
-    operation_(operation), key_(key) {}
-
-  virtual ~KeyDoesNotExist() throw() {}
-
-  /// The key that was attempted to be accessed that does not exist
-  const J& key() const throw() { return key_; }
-
-  /// The message to be displayed to the user
-  virtual const char* what() const throw();
-};
-
-} // \namespace gtsam
+}
 
 #include <gtsam/nonlinear/Values-inl.h>
-

@@ -23,7 +23,7 @@
  * 		void print(const std::string& name) const = 0;
  * 
  * equality up to tolerance
- * tricky to implement, see NonlinearFactor1 for an example
+ * tricky to implement, see NoiseModelFactor1 for an example
  * equals is not supposed to print out *anything*, just return true|false
  * 		bool equals(const Derived& expected, double tol) const = 0;
  * 
@@ -35,6 +35,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <stdio.h>
+#include <string>
 
 #define GTSAM_PRINT(x)((x).print(#x))
 

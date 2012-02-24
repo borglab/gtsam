@@ -22,6 +22,7 @@
 #define POSE3_DEFAULT_COORDINATES_MODE Pose3::FIRST_ORDER
 #endif
 
+#include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Rot3.h>
 
@@ -34,7 +35,7 @@ namespace gtsam {
    * @ingroup geometry
    * \nosubgrouping
    */
-  class Pose3 {
+  class Pose3 : public DerivedValue<Pose3> {
   public:
     static const size_t dimension = 6;
 
@@ -232,6 +233,8 @@ namespace gtsam {
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version) {
+    	ar & boost::serialization::make_nvp("Pose3",
+    	 			 boost::serialization::base_object<Value>(*this));
       ar & BOOST_SERIALIZATION_NVP(R_);
       ar & BOOST_SERIALIZATION_NVP(t_);
     }

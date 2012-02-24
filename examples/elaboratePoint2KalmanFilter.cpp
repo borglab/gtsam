@@ -22,9 +22,8 @@
 
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Ordering.h>
-#include <gtsam/nonlinear/Key.h>
+#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
@@ -33,9 +32,6 @@
 
 using namespace std;
 using namespace gtsam;
-
-typedef TypedSymbol<Point2, 'x'> Key;               /// Variable labels for a specific type
-typedef Values<Key> KalmanValues;                   /// Class to store values - acts as a state for the system
 
 int main() {
 
@@ -48,7 +44,7 @@ int main() {
   Ordering::shared_ptr ordering(new Ordering);
 
   // Create a structure to hold the linearization points
-  KalmanValues linearizationPoints;
+  Values linearizationPoints;
 
 	// Ground truth example
 	// Start at origin, move to the right (x-axis): 0,0  0,1  0,2
@@ -57,14 +53,14 @@ int main() {
 	// i.e., we should get 0,0  0,1  0,2 if there is no noise
 
   // Create new state variable
-  Key x0(0);
+  Symbol x0('x',0);
   ordering->insert(x0, 0);
 
   // Initialize state x0 (2D point) at origin by adding a prior factor, i.e., Bayes net P(x0)
   // This is equivalent to x_0 and P_0
   Point2 x_initial(0,0);
   SharedDiagonal P_initial = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1));
-  PriorFactor<KalmanValues, Key> factor1(x0, x_initial, P_initial);
+  PriorFactor<Point2> factor1(x0, x_initial, P_initial);
   // Linearize the factor and add it to the linear factor graph
   linearizationPoints.insert(x0, x_initial);
   linearFactorGraph->push_back(factor1.linearize(linearizationPoints, *ordering));
@@ -90,12 +86,12 @@ int main() {
   // so, difference = x_{t+1} - x_{t} = F*x_{t} + B*u_{t} - I*x_{t}
   //                                  = (F - I)*x_{t} + B*u_{t}
   //                                  = B*u_{t} (for our example)
-  Key x1(1);
+  Symbol x1('x',1);
   ordering->insert(x1, 1);
 
   Point2 difference(1,0);
   SharedDiagonal Q = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1));
-  BetweenFactor<KalmanValues, Key> factor2(x0, x1, difference, Q);
+  BetweenFactor<Point2> factor2(x0, x1, difference, Q);
   // Linearize the factor and add it to the linear factor graph
   linearizationPoints.insert(x1, x_initial);
   linearFactorGraph->push_back(factor2.linearize(linearizationPoints, *ordering));
@@ -118,7 +114,7 @@ int main() {
 
   // Extract the current estimate of x1,P1 from the Bayes Network
   VectorValues result = optimize(*linearBayesNet);
-  Point2 x1_predict = linearizationPoints[x1].retract(result[ordering->at(x1)]);
+  Point2 x1_predict = linearizationPoints.at<Point2>(x1).retract(result[ordering->at(x1)]);
   x1_predict.print("X1 Predict");
 
   // Update the new linearization point to the new estimate
@@ -173,7 +169,7 @@ int main() {
   // This can be modeled using the PriorFactor, where the mean is z_{t} and the covariance is R.
   Point2 z1(1.0, 0.0);
   SharedDiagonal R1 = noiseModel::Diagonal::Sigmas(Vector_(2, 0.25, 0.25));
-  PriorFactor<KalmanValues, Key> factor4(x1, z1, R1);
+  PriorFactor<Point2> factor4(x1, z1, R1);
   // Linearize the factor and add it to the linear factor graph
   linearFactorGraph->push_back(factor4.linearize(linearizationPoints, *ordering));
 
@@ -190,7 +186,7 @@ int main() {
 
   // Extract the current estimate of x1 from the Bayes Network
   result = optimize(*linearBayesNet);
-  Point2 x1_update = linearizationPoints[x1].retract(result[ordering->at(x1)]);
+  Point2 x1_update = linearizationPoints.at<Point2>(x1).retract(result[ordering->at(x1)]);
   x1_update.print("X1 Update");
 
   // Update the linearization point to the new estimate
@@ -215,7 +211,7 @@ int main() {
   linearFactorGraph->add(0, tmpPrior1.getA(tmpPrior1.begin()), tmpPrior1.getb() - tmpPrior1.getA(tmpPrior1.begin()) * result[ordering->at(x1)], tmpPrior1.get_model());
 
   // Create a key for the new state
-  Key x2(2);
+  Symbol x2('x',2);
 
   // Create the desired ordering
   ordering = Ordering::shared_ptr(new Ordering);
@@ -225,7 +221,7 @@ int main() {
   // Create a nonlinear factor describing the motion model
   difference = Point2(1,0);
   Q = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1));
-  BetweenFactor<KalmanValues, Key> factor6(x1, x2, difference, Q);
+  BetweenFactor<Point2> factor6(x1, x2, difference, Q);
 
   // Linearize the factor and add it to the linear factor graph
   linearizationPoints.insert(x2, x1_update);
@@ -237,7 +233,7 @@ int main() {
 
   // Extract the current estimate of x2 from the Bayes Network
   result = optimize(*linearBayesNet);
-  Point2 x2_predict = linearizationPoints[x2].retract(result[ordering->at(x2)]);
+  Point2 x2_predict = linearizationPoints.at<Point2>(x2).retract(result[ordering->at(x2)]);
   x2_predict.print("X2 Predict");
 
   // Update the linearization point to the new estimate
@@ -263,7 +259,7 @@ int main() {
   // And update using z2 ...
   Point2 z2(2.0, 0.0);
   SharedDiagonal R2 = noiseModel::Diagonal::Sigmas(Vector_(2, 0.25, 0.25));
-  PriorFactor<KalmanValues, Key> factor8(x2, z2, R2);
+  PriorFactor<Point2> factor8(x2, z2, R2);
 
   // Linearize the factor and add it to the linear factor graph
   linearFactorGraph->push_back(factor8.linearize(linearizationPoints, *ordering));
@@ -281,7 +277,7 @@ int main() {
 
   // Extract the current estimate of x2 from the Bayes Network
   result = optimize(*linearBayesNet);
-  Point2 x2_update = linearizationPoints[x2].retract(result[ordering->at(x2)]);
+  Point2 x2_update = linearizationPoints.at<Point2>(x2).retract(result[ordering->at(x2)]);
   x2_update.print("X2 Update");
 
   // Update the linearization point to the new estimate
@@ -304,7 +300,7 @@ int main() {
   linearFactorGraph->add(0, tmpPrior3.getA(tmpPrior3.begin()), tmpPrior3.getb() - tmpPrior3.getA(tmpPrior3.begin()) * result[ordering->at(x2)], tmpPrior3.get_model());
 
   // Create a key for the new state
-  Key x3(3);
+  Symbol x3('x',3);
 
   // Create the desired ordering
   ordering = Ordering::shared_ptr(new Ordering);
@@ -314,7 +310,7 @@ int main() {
   // Create a nonlinear factor describing the motion model
   difference = Point2(1,0);
   Q = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1));
-  BetweenFactor<KalmanValues, Key> factor10(x2, x3, difference, Q);
+  BetweenFactor<Point2> factor10(x2, x3, difference, Q);
 
   // Linearize the factor and add it to the linear factor graph
   linearizationPoints.insert(x3, x2_update);
@@ -326,7 +322,7 @@ int main() {
 
   // Extract the current estimate of x3 from the Bayes Network
   result = optimize(*linearBayesNet);
-  Point2 x3_predict = linearizationPoints[x3].retract(result[ordering->at(x3)]);
+  Point2 x3_predict = linearizationPoints.at<Point2>(x3).retract(result[ordering->at(x3)]);
   x3_predict.print("X3 Predict");
 
   // Update the linearization point to the new estimate
@@ -352,7 +348,7 @@ int main() {
   // And update using z3 ...
   Point2 z3(3.0, 0.0);
   SharedDiagonal R3 = noiseModel::Diagonal::Sigmas(Vector_(2, 0.25, 0.25));
-  PriorFactor<KalmanValues, Key> factor12(x3, z3, R3);
+  PriorFactor<Point2> factor12(x3, z3, R3);
 
   // Linearize the factor and add it to the linear factor graph
   linearFactorGraph->push_back(factor12.linearize(linearizationPoints, *ordering));
@@ -370,7 +366,7 @@ int main() {
 
   // Extract the current estimate of x2 from the Bayes Network
   result = optimize(*linearBayesNet);
-  Point2 x3_update = linearizationPoints[x3].retract(result[ordering->at(x3)]);
+  Point2 x3_update = linearizationPoints.at<Point2>(x3).retract(result[ordering->at(x3)]);
   x3_update.print("X3 Update");
 
   // Update the linearization point to the new estimate

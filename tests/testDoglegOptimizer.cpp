@@ -385,7 +385,7 @@ TEST(DoglegOptimizer, Iterate) {
 
   // config far from minimum
   Point2 x0(3,0);
-  boost::shared_ptr<simulated2D::Values> config(new example::Values);
+  boost::shared_ptr<Values> config(new Values);
   config->insert(simulated2D::PoseKey(1), x0);
 
   // ordering
@@ -404,7 +404,7 @@ TEST(DoglegOptimizer, Iterate) {
     DoglegOptimizerImpl::IterationResult result = DoglegOptimizerImpl::Iterate(Delta, DoglegOptimizerImpl::SEARCH_EACH_ITERATION, gbn, *fg, *config, *ord, fg->error(*config));
     Delta = result.Delta;
     EXPECT(result.f_error < fg->error(*config)); // Check that error decreases
-    simulated2D::Values newConfig(config->retract(result.dx_d, *ord));
+    Values newConfig(config->retract(result.dx_d, *ord));
     (*config) = newConfig;
     DOUBLES_EQUAL(fg->error(*config), result.f_error, 1e-5); // Check that error is correctly filled in
   }

@@ -20,6 +20,8 @@
 
 #include <cmath>
 #include <boost/optional.hpp>
+#include <boost/serialization/nvp.hpp>
+#include <gtsam/base/DerivedValue.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/geometry/Point2.h>
@@ -35,7 +37,7 @@ namespace gtsam {
    * \nosubgrouping
    */
   template <typename Calibration>
-  class PinholeCamera {
+  class PinholeCamera : public DerivedValue<PinholeCamera<Calibration> > {
   private:
     Pose3 pose_;
     Calibration k_;
@@ -49,7 +51,7 @@ namespace gtsam {
     PinholeCamera() {}
 
     /** constructor with pose */
-    PinholeCamera(const Pose3& pose):pose_(pose){}
+    explicit PinholeCamera(const Pose3& pose):pose_(pose){}
 
     /** constructor with pose and calibration */
     PinholeCamera(const Pose3& pose, const Calibration& k):pose_(pose),k_(k) {}
@@ -61,7 +63,7 @@ namespace gtsam {
     /// @name Advanced Constructors
     /// @{
 
-    PinholeCamera(const Vector &v){
+    explicit PinholeCamera(const Vector &v){
       pose_ = Pose3::Expmap(v.head(Pose3::Dim()));
       if ( v.size() > Pose3::Dim()) {
         k_ = Calibration(v.tail(Calibration::Dim()));
@@ -278,6 +280,7 @@ private:
       friend class boost::serialization::access;
       template<class Archive>
       void serialize(Archive & ar, const unsigned int version) {
+      	ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Value);
         ar & BOOST_SERIALIZATION_NVP(pose_);
         ar & BOOST_SERIALIZATION_NVP(k_);
       }

@@ -21,7 +21,7 @@
 
 // Use pose2SLAM namespace for specific SLAM instance
 
-template class gtsam::NonlinearOptimizer<pose2SLAM::Graph, pose2SLAM::Values, gtsam::GaussianFactorGraph, gtsam::GaussianSequentialSolver>;
+	template class gtsam::NonlinearOptimizer<pose2SLAM::Graph, gtsam::GaussianFactorGraph, gtsam::GaussianSequentialSolver>;
 
 namespace pose2SLAM {
 
@@ -30,25 +30,25 @@ namespace pose2SLAM {
     Values x;
     double theta = 0, dtheta = 2 * M_PI / n;
     for (size_t i = 0; i < n; i++, theta += dtheta)
-      x.insert(i, Pose2(cos(theta), sin(theta), M_PI_2 + theta));
+      x.insert(PoseKey(i), Pose2(cos(theta), sin(theta), M_PI_2 + theta));
     return x;
   }
 
   /* ************************************************************************* */
-  void Graph::addPrior(const PoseKey& i, const Pose2& p,
+  void Graph::addPrior(Index i, const Pose2& p,
       const SharedNoiseModel& model) {
-    sharedFactor factor(new Prior(i, p, model));
+    sharedFactor factor(new Prior(PoseKey(i), p, model));
     push_back(factor);
   }
 
-  void Graph::addPoseConstraint(const PoseKey& i, const Pose2& p) {
-    sharedFactor factor(new HardConstraint(i, p));
+  void Graph::addPoseConstraint(Index i, const Pose2& p) {
+    sharedFactor factor(new HardConstraint(PoseKey(i), p));
     push_back(factor);
   }
 
-  void Graph::addOdometry(const PoseKey& i, const PoseKey& j, const Pose2& z,
+  void Graph::addOdometry(Index i, Index j, const Pose2& z,
       const SharedNoiseModel& model) {
-    sharedFactor factor(new Odometry(i, j, z, model));
+    sharedFactor factor(new Odometry(PoseKey(i), PoseKey(j), z, model));
     push_back(factor);
   }
 

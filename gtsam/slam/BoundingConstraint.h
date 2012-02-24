@@ -28,16 +28,16 @@ namespace gtsam {
  * will need to have its value function implemented to return
  * a scalar for comparison.
  */
-template<class VALUES, class KEY>
-struct BoundingConstraint1: public NonlinearFactor1<VALUES, KEY> {
-	typedef typename KEY::Value X;
-	typedef NonlinearFactor1<VALUES, KEY> Base;
-	typedef boost::shared_ptr<BoundingConstraint1<VALUES, KEY> > shared_ptr;
+template<class VALUE>
+struct BoundingConstraint1: public NoiseModelFactor1<VALUE> {
+	typedef VALUE X;
+	typedef NoiseModelFactor1<VALUE> Base;
+	typedef boost::shared_ptr<BoundingConstraint1<VALUE> > shared_ptr;
 
 	double threshold_;
 	bool isGreaterThan_; /// flag for greater/less than
 
-	BoundingConstraint1(const KEY& key, double threshold,
+	BoundingConstraint1(Key key, double threshold,
 			bool isGreaterThan, double mu = 1000.0) :
 				Base(noiseModel::Constrained::All(1, mu), key),
 				threshold_(threshold), isGreaterThan_(isGreaterThan) {
@@ -57,9 +57,9 @@ struct BoundingConstraint1: public NonlinearFactor1<VALUES, KEY> {
 			boost::none) const = 0;
 
 	/** active when constraint *NOT* met */
-	bool active(const VALUES& c) const {
+	bool active(const Values& c) const {
 		// note: still active at equality to avoid zigzagging
-		double x = value(c[this->key_]);
+		double x = value(c.at<X>(this->key()));
 		return (isGreaterThan_) ? x <= threshold_ : x >= threshold_;
 	}
 
@@ -84,7 +84,7 @@ private:
 	friend class boost::serialization::access;
 	template<class ARCHIVE>
 	void serialize(ARCHIVE & ar, const unsigned int version) {
-		ar & boost::serialization::make_nvp("NonlinearFactor1",
+		ar & boost::serialization::make_nvp("NoiseModelFactor1",
 				boost::serialization::base_object<Base>(*this));
 		ar & BOOST_SERIALIZATION_NVP(threshold_);
 		ar & BOOST_SERIALIZATION_NVP(isGreaterThan_);
@@ -95,18 +95,18 @@ private:
  * Binary scalar inequality constraint, with a similar value() function
  * to implement for specific systems
  */
-template<class VALUES, class KEY1, class KEY2>
-struct BoundingConstraint2: public NonlinearFactor2<VALUES, KEY1, KEY2> {
-	typedef typename KEY1::Value X1;
-	typedef typename KEY2::Value X2;
+template<class VALUE1, class VALUE2>
+struct BoundingConstraint2: public NoiseModelFactor2<VALUE1, VALUE2> {
+	typedef VALUE1 X1;
+	typedef VALUE2 X2;
 
-	typedef NonlinearFactor2<VALUES, KEY1, KEY2> Base;
-	typedef boost::shared_ptr<BoundingConstraint2<VALUES, KEY1, KEY2> > shared_ptr;
+	typedef NoiseModelFactor2<VALUE1, VALUE2> Base;
+	typedef boost::shared_ptr<BoundingConstraint2<VALUE1, VALUE2> > shared_ptr;
 
 	double threshold_;
 	bool isGreaterThan_; /// flag for greater/less than
 
-	BoundingConstraint2(const KEY1& key1, const KEY2& key2, double threshold,
+	BoundingConstraint2(Key key1, Key key2, double threshold,
 			bool isGreaterThan, double mu = 1000.0)
 	: Base(noiseModel::Constrained::All(1, mu), key1, key2),
 	  threshold_(threshold), isGreaterThan_(isGreaterThan) {}
@@ -125,9 +125,9 @@ struct BoundingConstraint2: public NonlinearFactor2<VALUES, KEY1, KEY2> {
 			boost::optional<Matrix&> H2 = boost::none) const = 0;
 
 	/** active when constraint *NOT* met */
-	bool active(const VALUES& c) const {
+	bool active(const Values& c) const {
 		// note: still active at equality to avoid zigzagging
-		double x = value(c[this->key1_], c[this->key2_]);
+		double x = value(c.at<X1>(this->key1()), c.at<X2>(this->key2()));
 		return (isGreaterThan_) ? x <= threshold_ : x >= threshold_;
 	}
 
@@ -157,7 +157,7 @@ private:
 	friend class boost::serialization::access;
 	template<class ARCHIVE>
 	void serialize(ARCHIVE & ar, const unsigned int version) {
-		ar & boost::serialization::make_nvp("NonlinearFactor2",
+		ar & boost::serialization::make_nvp("NoiseModelFactor2",
 				boost::serialization::base_object<Base>(*this));
 		ar & BOOST_SERIALIZATION_NVP(threshold_);
 		ar & BOOST_SERIALIZATION_NVP(isGreaterThan_);

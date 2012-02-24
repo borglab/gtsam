@@ -29,8 +29,8 @@ using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
-template<class VALUES, class GRAPH>
-void NonlinearISAM<VALUES,GRAPH>::update(const Factors& newFactors,
+template<class GRAPH>
+void NonlinearISAM<GRAPH>::update(const Factors& newFactors,
 		const Values& initialValues) {
 
   if(newFactors.size() > 0) {
@@ -50,7 +50,7 @@ void NonlinearISAM<VALUES,GRAPH>::update(const Factors& newFactors,
     // Augment ordering
     // FIXME: should just loop over new values
     BOOST_FOREACH(const typename Factors::sharedFactor& factor, newFactors)
-      BOOST_FOREACH(const Symbol& key, factor->keys())
+      BOOST_FOREACH(Key key, factor->keys())
         ordering_.tryInsert(key, ordering_.nVars()); // will do nothing if already present
 
     boost::shared_ptr<GaussianFactorGraph> linearizedNewFactors(
@@ -62,8 +62,8 @@ void NonlinearISAM<VALUES,GRAPH>::update(const Factors& newFactors,
 }
 
 /* ************************************************************************* */
-template<class VALUES, class GRAPH>
-void NonlinearISAM<VALUES,GRAPH>::reorder_relinearize() {
+template<class GRAPH>
+void NonlinearISAM<GRAPH>::reorder_relinearize() {
 
 //  cout << "Reordering, relinearizing..." << endl;
 
@@ -89,8 +89,8 @@ void NonlinearISAM<VALUES,GRAPH>::reorder_relinearize() {
 }
 
 /* ************************************************************************* */
-template<class VALUES, class GRAPH>
-VALUES NonlinearISAM<VALUES,GRAPH>::estimate() const {
+template<class GRAPH>
+Values NonlinearISAM<GRAPH>::estimate() const {
   if(isam_.size() > 0)
     return linPoint_.retract(optimize(isam_), ordering_);
   else
@@ -98,14 +98,14 @@ VALUES NonlinearISAM<VALUES,GRAPH>::estimate() const {
 }
 
 /* ************************************************************************* */
-template<class VALUES, class GRAPH>
-Matrix NonlinearISAM<VALUES,GRAPH>::marginalCovariance(const Symbol& key) const {
+template<class GRAPH>
+Matrix NonlinearISAM<GRAPH>::marginalCovariance(Key key) const {
 	return isam_.marginalCovariance(ordering_[key]);
 }
 
 /* ************************************************************************* */
-template<class VALUES, class GRAPH>
-void NonlinearISAM<VALUES,GRAPH>::print(const std::string& s) const {
+template<class GRAPH>
+void NonlinearISAM<GRAPH>::print(const std::string& s) const {
 	cout << "ISAM - " << s << ":" << endl;
 	cout << "  ReorderInterval: " << reorderInterval_ << " Current Count: " << reorderCounter_ << endl;
 	isam_.print("GaussianISAM");
