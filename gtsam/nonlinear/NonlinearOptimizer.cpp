@@ -24,22 +24,50 @@ using namespace std;
 
 namespace gtsam {
 
+/* ************************************************************************* */
+auto_ptr NonlinearOptimizer::defaultOptimize() const {
 
-bool check_convergence (
-		const NonlinearOptimizationParameters &parameters,
-		double currentError, double newError) {
-	return check_convergence(parameters.relDecrease_,
-							 parameters.absDecrease_,
-							 parameters.sumError_,
-							 currentError, newError,
-							 parameters.verbosity_) ;
+  double currentError = this->error();
+
+  // check if we're already close enough
+  if(currentError <= params_->errorTol) {
+    if (params_->verbosity >= NonlinearOptimizerParams::ERROR)
+      cout << "Exiting, as error = " << currentError << " < " << errorTol << endl;
+    return this->clone();
+  }
+
+  // Return if we already have too many iterations
+  if(this->iterations() >= params_->maxIterations)
+    return this->clone();
+
+  // Iterative loop
+  auto_ptr next = this->iterate(); // First iteration happens here
+  while(next->iterations() < params_->maxIterations &&
+      !checkConvergence(params_->relativeErrorTol, params_->absoluteErrorTol,
+          params_->errorTol, currentError, next->error(), params_->verbosity)) {
+
+    // Do next iteration
+    currentError = next->error();
+    next = next->iterate();
+  }
+
+  // Printing if verbose
+  if (params_->verbosity >= NonlinearOptimizerParams::VALUES)
+    next->values()->print("final values");
+  if (params_->verbosity >= NonlinearOptimizerParams::ERROR &&
+      next->iterations() >= params_->maxIterations)
+    cout << "Terminating because reached maximum iterations" << endl;
+  if (params_->verbosity >= NonlinearOptimizerParams::ERROR)
+    cout << "final error: " << next->error() << endl;
+
+  // Return optimizer from final iteration
+  return next;
 }
 
-bool check_convergence(
-		double relativeErrorTreshold,
-		double absoluteErrorTreshold,
-		double errorThreshold,
-		double currentError, double newError, int verbosity) {
+/* ************************************************************************* */
+bool checkConvergence(double relativeErrorTreshold, double absoluteErrorTreshold,
+    double errorThreshold, double currentError, double newError,
+    NonlinearOptimizerParams::Verbosity verbosity) {
 
 	if ( verbosity >= 2 ) {
 		if ( newError <= errorThreshold )
