@@ -296,7 +296,7 @@ namespace gtsam {
      * Returns a set of keys in the config
      * Note: by construction, the list is ordered
      */
-    std::list<Key> keys() const;
+    FastList<Key> keys() const;
 
     /** Replace all keys and variables */
     Values& operator=(const Values& rhs);

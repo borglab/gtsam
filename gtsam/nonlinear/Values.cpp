@@ -152,8 +152,8 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  std::list<Key> Values::keys() const {
-    std::list<Key> result;
+  FastList<Key> Values::keys() const {
+    FastList<Key> result;
     for(const_iterator key_value = begin(); key_value != end(); ++key_value) {
       result.push_back(key_value->key);
       cout << result.back() << endl;
