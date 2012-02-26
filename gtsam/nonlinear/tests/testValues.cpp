@@ -218,12 +218,12 @@ TEST(Values, extract_keys)
 	config.insert(key3, Pose2());
 	config.insert(key4, Pose2());
 
-	std::list<Key> expected, actual;
+	FastList<Key> expected, actual;
 	expected += key1, key2, key3, key4;
 	actual = config.keys();
 
 	CHECK(actual.size() == expected.size());
-	std::list<Key>::const_iterator itAct = actual.begin(), itExp = expected.begin();
+	FastList<Key>::const_iterator itAct = actual.begin(), itExp = expected.begin();
 	for (; itAct != actual.end() && itExp != expected.end(); ++itAct, ++itExp) {
 		EXPECT(*itExp == *itAct);
 	}
