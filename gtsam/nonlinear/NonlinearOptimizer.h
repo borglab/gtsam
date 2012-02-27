@@ -11,15 +11,14 @@
 
 /**
  * @file NonlinearOptimizer.h
- * @brief Encapsulates nonlinear optimization state
- * @author Frank Dellaert
+ * @brief Base class and parameters for nonlinear optimization algorithms
+ * @author Richard Roberts
  * @date Sep 7, 2009
  */
 
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/NonlinearOptimizationParameters.h>
 
 namespace gtsam {
 
@@ -28,8 +27,7 @@ namespace gtsam {
  */
 class NonlinearOptimizerParams {
 public:
-
-  /** Control the printing verbosity */
+  /** See NonlinearOptimizationParams::verbosity */
   enum Verbosity {
     SILENT,
     ERROR,
@@ -53,14 +51,16 @@ public:
     maxIterations(100.0), relativeErrorTol(1e-5), absoluteErrorTol(0.0),
     errorTol(0.0), verbosity(SILENT) {}
 
-  void print(const std::string& str = "") const {
-    cout << s << "\n";
-    cout << "relative decrease threshold: " << relativeErrorTol << "\n";
-    cout << "absolute decrease threshold: " << absoluteErrorTol << "\n";
-    cout << "      total error threshold: " << errorTol << "\n";
-    cout << "         maximum iterations: " << maxIterations << "\n";
-    cout << "            verbosity level: " << verbosity << "\n";
+  virtual void print(const std::string& str = "") const {
+    std::cout << s << "\n";
+    std::cout << "relative decrease threshold: " << relativeErrorTol << "\n";
+    std::cout << "absolute decrease threshold: " << absoluteErrorTol << "\n";
+    std::cout << "      total error threshold: " << errorTol << "\n";
+    std::cout << "         maximum iterations: " << maxIterations << "\n";
+    std::cout << "            verbosity level: " << verbosity << std::endl;
   }
+
+  virtual ~NonlinearOptimizationParams() {}
 };
 
 
@@ -80,7 +80,7 @@ public:
  *
  * Example:
  * \code
-NonlinearOptimizer::shared_ptr optimizer = DoglegOptimizer::Create(graph, initialValues);
+NonlinearOptimizer::auto_ptr optimizer = DoglegOptimizer::Create(graph, initialValues);
 optimizer = optimizer->optimizer();
 Values result = optimizer->values();
 useTheResult(result);
@@ -123,26 +123,6 @@ public:
   /** A const shared_ptr to the parameters */
   typedef boost::shared_ptr<const NonlinearOptimizerParams> SharedParams;
 
-protected:
-
-  const SharedGraph graph_;
-  const SharedValues values_;
-  const SharedParams params_;
-  const double error_;
-  const int iterations_;
-
-  NonlinearOptimizer(const SharedGraph& graph, const SharedValues& values,
-      const SharedParams& params) :
-    graph_(graph), values_(values), params_(params),
-    error_(graph_->error(*values_)), iterations_(0) {}
-
-  NonlinearOptimizer(const SharedGraph& graph, const SharedValues& values,
-      const SharedParams& params, double error, int iterations) :
-    graph_(graph), values_(values), params_(params),
-    error_(error), iterations_(iterations) {}
-
-public:
-
   /// @name Standard interface
   /// @{
 
@@ -169,29 +149,24 @@ public:
   /// @name Advanced interface
   /// @{
 
+  /** Virtual destructor */
+  virtual ~NonlinearOptimizer() {}
+
   /** Perform a single iteration, returning a new NonlinearOptimizer class
    * containing the updated variable assignments, which may be retrieved with
    * values().
    */
   virtual auto_ptr iterate() const = 0;
 
-  /** Update the nonlinear factor graph, leaving all other state the same.
-   * Returns a new updated NonlinearOptimzier object, the original is not
-   * modified.
+  /** Update the graph, values, and/or parameters, leaving all other state
+   * the same.  Any of these that are empty shared pointers are left unchanged
+   * in the returned optimizer object.  Returns a new updated
+   * NonlinearOptimzier object, the original is not modified.
    */
-  virtual auto_ptr update(const SharedGraph& newGraph) const = 0;
-
-  /** Update the variable assignments, leaving all other state the same.
-   * Returns a new updated NonlinearOptimzier object, the original is not
-   * modified.
-   */
-  virtual auto_ptr update(const SharedValues& newValues) const = 0;
-
-  /** Update the parameters, leaving all other state the same.
-   * Returns a new updated NonlinearOptimzier object, the original is not
-   * modified.
-   */
-  virtual auto_ptr update(const SharedParams& newParams) const = 0;
+  virtual auto_ptr update(
+      const SharedGraph& newGraph = SharedGraph(),
+      const SharedValues& newValues = SharedValues(),
+      const SharedParams& newParams = SharedParams()) const = 0;
 
   /** Create a copy of the NonlinearOptimizer */
   virtual auto_ptr clone() const = 0;
@@ -204,6 +179,37 @@ protected:
    * until checkConvergence returns true.
    */
   auto_ptr defaultOptimize() const;
+
+protected:
+
+  const SharedGraph graph_;
+  const SharedValues values_;
+  const SharedParams params_;
+  const double error_;
+  const int iterations_;
+
+  /** Constructor for initial construction of base classes, computes error and
+   * sets iterations to zero.
+   */
+  NonlinearOptimizer(const SharedGraph& graph, const SharedValues& values,
+      const SharedParams& params) :
+    graph_(graph), values_(values), params_(params),
+    error_(graph_->error(*values_)), iterations_(0) {}
+
+  /** Constructor that specifies all parts of the state, used for updates */
+  NonlinearOptimizer(const SharedGraph& graph, const SharedValues& values,
+      const SharedParams& params, double error, int iterations) :
+    graph_(graph), values_(values), params_(params),
+    error_(error), iterations_(iterations) {}
+
+  /** Convenience constructor for modifying only some of the state. */
+  NonlinearOptimizer(const NonlinearOptimizer& original, const SharedGraph& newGraph,
+      const SharedValues& newValues, const SharedParams& newParams) :
+    graph_(newGraph ? newGraph : original.graph_),
+    values_(newValues ? newValues : original.values_),
+    params_(newParams ? newParams : original.params_),
+    error_(newGraph || newValues ? graph_->error(*values_) : original.error_),
+    iterations_(original.iterations_) {}
 
 };
 

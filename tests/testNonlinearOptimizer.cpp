@@ -35,7 +35,6 @@ using namespace boost;
 // template definitions
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
-#include <gtsam/nonlinear/NonlinearOptimization.h>
 
 using namespace gtsam;
 
@@ -235,6 +234,10 @@ TEST( NonlinearOptimizer, SimpleGNOptimizer_noshared )
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, optimization_method )
 {
+  GaussNewtonParams params;
+  params.elimination = GaussNewtonParams::QR;
+  EXPECT(false);
+
 	example::Graph fg = example::createReallyNonlinearFactorGraph();
 
 	Point2 x0(3,3);
