@@ -288,23 +288,38 @@ TEST(Values, filter) {
     }
     ++ i;
   }
-  LONGS_EQUAL(2, i);
+  EXPECT_LONGS_EQUAL(2, i);
+
+  // construct a values with the view
+  Values actualSubValues1(filtered);
+  Values expectedSubValues1;
+  expectedSubValues1.insert(2, pose2);
+  expectedSubValues1.insert(3, pose3);
+  EXPECT(assert_equal(expectedSubValues1, actualSubValues1));
 
   // Filter by type
   i = 0;
-  BOOST_FOREACH(const Values::Filtered<Pose3>::KeyValuePair& key_value, values.filter<Pose3>()) {
+  Values::Filtered<Pose3> pose_filtered = values.filter<Pose3>();
+  BOOST_FOREACH(const Values::Filtered<Pose3>::KeyValuePair& key_value, pose_filtered) {
     if(i == 0) {
-      LONGS_EQUAL(1, key_value.key);
+    	EXPECT_LONGS_EQUAL(1, key_value.key);
       EXPECT(assert_equal(pose1, key_value.value));
     } else if(i == 1) {
-      LONGS_EQUAL(3, key_value.key);
+    	EXPECT_LONGS_EQUAL(3, key_value.key);
       EXPECT(assert_equal(pose3, key_value.value));
     } else {
       EXPECT(false);
     }
     ++ i;
   }
-  LONGS_EQUAL(2, i);
+  EXPECT_LONGS_EQUAL(2, i);
+
+  // construct a values with the view
+  Values actualSubValues2(pose_filtered);
+  Values expectedSubValues2;
+  expectedSubValues2.insert(1, pose1);
+  expectedSubValues2.insert(3, pose3);
+  EXPECT(assert_equal(expectedSubValues2, actualSubValues2));
 }
 
 /* ************************************************************************* */
