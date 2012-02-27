@@ -44,17 +44,17 @@ TEST(Key, KeySymbolEncoding) {
     Key key = 0x6100000000000005;
     string str = "a5";
 
-    LONGS_EQUAL(key, (Key)symbol);
-    assert_equal(str, DefaultKeyFormatter(symbol));
-    assert_equal(symbol, Symbol(key));
+    EXPECT_LONGS_EQUAL(key, (Key)symbol);
+    EXPECT(assert_equal(str, DefaultKeyFormatter(symbol)));
+    EXPECT(assert_equal(symbol, Symbol(key)));
   } else if(sizeof(Key) == 4) {
     Symbol symbol(0x61, 5);
     Key key = 0x61000005;
     string str = "a5";
 
-    LONGS_EQUAL(key, (Key)symbol);
-    assert_equal(str, DefaultKeyFormatter(symbol));
-    assert_equal(symbol, Symbol(key));
+    EXPECT_LONGS_EQUAL(key, (Key)symbol);
+    EXPECT(assert_equal(str, DefaultKeyFormatter(symbol)));
+    EXPECT(assert_equal(symbol, Symbol(key)));
   }
 }
 
