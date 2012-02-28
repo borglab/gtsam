@@ -274,6 +274,7 @@ TEST(Values, filter) {
   // Filter by key
   int i = 0;
   Values::Filtered<Value> filtered = values.filter(boost::bind(std::greater_equal<Key>(), _1, 2));
+  EXPECT_LONGS_EQUAL(2, filtered.size());
   BOOST_FOREACH(const Values::Filtered<>::KeyValuePair& key_value, filtered) {
     if(i == 0) {
       LONGS_EQUAL(2, key_value.key);
@@ -300,6 +301,7 @@ TEST(Values, filter) {
   // Filter by type
   i = 0;
   Values::Filtered<Pose3> pose_filtered = values.filter<Pose3>();
+  EXPECT_LONGS_EQUAL(2, pose_filtered.size());
   BOOST_FOREACH(const Values::Filtered<Pose3>::KeyValuePair& key_value, pose_filtered) {
     if(i == 0) {
     	EXPECT_LONGS_EQUAL(1, key_value.key);

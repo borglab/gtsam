@@ -151,11 +151,22 @@ namespace gtsam {
       typedef _KeyValuePair<ValueType> KeyValuePair;
 
     private:
-      typedef boost::transformed_range<
-          KeyValuePair(*)(Values::KeyValuePair key_value),
-          const boost::filtered_range<
-          boost::function<bool(const Values::ConstKeyValuePair&)>,
-          const boost::iterator_range<iterator> > > Base;
+    	typedef boost::transformed_range<
+    			KeyValuePair(*)(Values::KeyValuePair key_value),
+    			const boost::filtered_range<
+    			boost::function<bool(const Values::ConstKeyValuePair&)>,
+    			const boost::iterator_range<iterator> > > Base;
+    public:
+      /** Returns the number of values in this view */
+      size_t size() const {
+      	typename Base::iterator it = this->begin();
+      	size_t i = 0;
+      	for (; it!=this->end(); ++it)
+      		++i;
+      	return i;
+      }
+
+    private:
 
       Filtered(const Base& base) : Base(base) {}
 
@@ -177,6 +188,18 @@ namespace gtsam {
           const boost::filtered_range<
           boost::function<bool(const Values::ConstKeyValuePair&)>,
           const boost::iterator_range<const_iterator> > > Base;
+
+    public:
+      /** Returns the number of values in this view */
+      size_t size() const {
+      	typename Base::const_iterator it = this->begin();
+      	size_t i = 0;
+      	for (; it!=this->end(); ++it)
+      		++i;
+      	return i;
+      }
+
+    private:
 
       ConstFiltered(const Base& base) : Base(base) {}
 
