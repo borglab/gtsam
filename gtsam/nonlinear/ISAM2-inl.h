@@ -593,11 +593,11 @@ Values ISAM2<CONDITIONAL, GRAPH>::calculateEstimate() const {
 
 /* ************************************************************************* */
 template<class CONDITIONAL, class GRAPH>
-template<class KEY>
-typename KEY::Value ISAM2<CONDITIONAL, GRAPH>::calculateEstimate(const KEY& key) const {
+template<class VALUE>
+VALUE ISAM2<CONDITIONAL, GRAPH>::calculateEstimate(Key key) const {
   const Index index = getOrdering()[key];
   const SubVector delta = getDelta()[index];
-  return getLinearizationPoint()[key].retract(delta);
+  return theta_.at<VALUE>(key).retract(delta);
 }
 
 /* ************************************************************************* */

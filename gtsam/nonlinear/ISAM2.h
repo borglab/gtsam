@@ -390,8 +390,8 @@ public:
    * @param key
    * @return
    */
-  template<class KEY>
-  typename KEY::Value calculateEstimate(const KEY& key) const;
+  template<class VALUE>
+  VALUE calculateEstimate(Key key) const;
 
   /// @name Public members for non-typical usage
   //@{
