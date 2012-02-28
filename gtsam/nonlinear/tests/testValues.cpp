@@ -300,9 +300,9 @@ TEST(Values, filter) {
 
   // Filter by type
   i = 0;
-  Values::Filtered<Pose3> pose_filtered = values.filter<Pose3>();
+  Values::ConstFiltered<Pose3> pose_filtered = values.filter<Pose3>();
   EXPECT_LONGS_EQUAL(2, pose_filtered.size());
-  BOOST_FOREACH(const Values::Filtered<Pose3>::KeyValuePair& key_value, pose_filtered) {
+  BOOST_FOREACH(const Values::ConstFiltered<Pose3>::KeyValuePair& key_value, pose_filtered) {
     if(i == 0) {
     	EXPECT_LONGS_EQUAL(1, key_value.key);
       EXPECT(assert_equal(pose1, key_value.value));
