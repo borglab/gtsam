@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearOptimizationParameters.h>
 
 namespace gtsam {
