@@ -255,6 +255,13 @@ namespace gtsam {
     template<typename ValueType>
     const ValueType& at(Key j) const;
 
+    /** Retrieve a variable by key \c j.  This version returns a reference
+     * to the base Value class, and needs to be casted before use.
+     * @param j Retrieve the value associated with this key
+     * @return A const reference to the stored value
+     */
+    const Value& at(Key j) const;
+
 #if 0
     /** Retrieve a variable by key \c j.  This non-templated version returns a
      * special ValueAutomaticCasting object that may be assigned to the proper

@@ -107,6 +107,17 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  const Value& Values::at(Key j) const {
+    // Find the item
+    KeyValueMap::const_iterator item = values_.find(j);
+
+    // Throw exception if it does not exist
+    if(item == values_.end())
+      throw ValuesKeyDoesNotExist("retrieve", j);
+    return *item->second;
+  }
+
+  /* ************************************************************************* */
   void Values::insert(Key j, const Value& val) {
   	Key key = j; // Non-const duplicate to deal with non-const insert argument
   	std::pair<iterator,bool> insertResult = values_.insert(key, val.clone_());
