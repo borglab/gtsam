@@ -70,6 +70,14 @@ bool assert_equal(const V& expected, const boost::optional<V>& actual, double to
 	return assert_equal(expected, *actual, tol);
 }
 
+template<class V>
+bool assert_equal(const V& expected, const boost::optional<const V&>& actual, double tol = 1e-9) {
+	if (!actual) {
+		std::cout << "actual is boost::none" << std::endl;
+		return false;
+	}
+	return assert_equal(expected, *actual, tol);
+}
 
 /**
  * Version of assert_equals to work with vectors
