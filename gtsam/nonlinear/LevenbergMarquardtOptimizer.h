@@ -39,11 +39,17 @@ public:
     QR,
   };
 
+  /** See LevenbergMarquardtParams::lmVerbosity */
+  enum LMVerbosity {
+
+  };
+
   Elimination elimination; ///< The elimination algorithm to use (default: MULTIFRONTAL)
   Factorization factorization; ///< The numerical factorization (default: LDL)
   Ordering::shared_ptr ordering; ///< The variable elimination ordering (default: empty -> COLAMD)
   double lambda; ///< The initial (and current after each iteration) Levenberg-Marquardt damping term (default: 1e-5)
   double lambdaFactor; ///< The amount by which to multiply or divide lambda when adjusting lambda (default: 10.0)
+  double lambdaUpperBound; ///< The maximum lambda to try before assuming the optimization has failed (default: 1e5)
 
   LevenbergMarquardtParams() :
     elimination(MULTIFRONTAL), factorization(LDL), lambda(1e-5), lambdaFactor(10.0) {}
