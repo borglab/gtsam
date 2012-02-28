@@ -178,7 +178,7 @@ namespace gtsam {
     public:
       typedef _ConstKeyValuePair<ValueType> KeyValuePair;
 
-      /** Conversion from Filtered<ValueType> to ConstFiltered<ValueType> */
+      /** Conversion from Filtered to ConstFiltered */
       ConstFiltered(const Filtered<ValueType>& rhs) : Base(
           boost::adaptors::transform(
               boost::adaptors::filter(
