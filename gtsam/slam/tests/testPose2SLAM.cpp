@@ -160,17 +160,16 @@ TEST(Pose2Graph, optimize) {
   // Choose an ordering and optimize
   shared_ptr<Ordering> ordering(new Ordering);
   *ordering += kx0, kx1;
-  typedef NonlinearOptimizer<pose2SLAM::Graph> Optimizer;
 
-  NonlinearOptimizationParameters::shared_ptr params = NonlinearOptimizationParameters::newDecreaseThresholds(1e-15, 1e-15);
-  Optimizer optimizer0(fg, initial, ordering, params);
-  Optimizer optimizer = optimizer0.levenbergMarquardt();
+  LevenbergMarquardtParams params;
+  params.relativeErrorTol = 1e-15;
+  NonlinearOptimizer::auto_ptr optimizer = LevenbergMarquardtOptimizer(fg, initial, params, ordering).optimize();
 
   // Check with expected config
   Values expected;
   expected.insert(pose2SLAM::PoseKey(0), Pose2(0,0,0));
   expected.insert(pose2SLAM::PoseKey(1), Pose2(1,2,M_PI_2));
-  CHECK(assert_equal(expected, *optimizer.values()));
+  CHECK(assert_equal(expected, *optimizer->values()));
 }
 
 /* ************************************************************************* */
@@ -200,11 +199,11 @@ TEST(Pose2Graph, optimizeThreePoses) {
   *ordering += kx0,kx1,kx2;
 
   // optimize
-  NonlinearOptimizationParameters::shared_ptr params = NonlinearOptimizationParameters::newDecreaseThresholds(1e-15, 1e-15);
-  pose2SLAM::Optimizer optimizer0(fg, initial, ordering, params);
-  pose2SLAM::Optimizer optimizer = optimizer0.levenbergMarquardt();
+  LevenbergMarquardtParams params;
+  params.relativeErrorTol = 1e-15;
+  NonlinearOptimizer::auto_ptr optimizer = LevenbergMarquardtOptimizer(fg, initial, params, ordering).optimize();
 
-  Values actual = *optimizer.values();
+  Values actual = *optimizer->values();
 
   // Check with ground truth
   CHECK(assert_equal((const Values&)hexagon, actual));
@@ -243,11 +242,11 @@ TEST_UNSAFE(Pose2SLAM, optimizeCircle) {
   *ordering += kx0,kx1,kx2,kx3,kx4,kx5;
 
   // optimize
-  NonlinearOptimizationParameters::shared_ptr params = NonlinearOptimizationParameters::newDecreaseThresholds(1e-15, 1e-15);
-  pose2SLAM::Optimizer optimizer0(fg, initial, ordering, params);
-  pose2SLAM::Optimizer optimizer = optimizer0.levenbergMarquardt();
+  LevenbergMarquardtParams params;
+  params.relativeErrorTol = 1e-15;
+  NonlinearOptimizer::auto_ptr optimizer = LevenbergMarquardtOptimizer(fg, initial, params, ordering).optimize();
 
-  Values actual = *optimizer.values();
+  Values actual = *optimizer->values();
 
   // Check with ground truth
   CHECK(assert_equal((const Values&)hexagon, actual));

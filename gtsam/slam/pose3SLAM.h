@@ -61,9 +61,6 @@ namespace gtsam {
 			void addHardConstraint(Index i, const Pose3& p);
 		};
 
-		/// Optimizer
-		typedef NonlinearOptimizer<Graph> Optimizer;
-
 	} // pose3SLAM
 
 	/**

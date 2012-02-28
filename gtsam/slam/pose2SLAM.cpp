@@ -21,8 +21,6 @@
 
 // Use pose2SLAM namespace for specific SLAM instance
 
-	template class gtsam::NonlinearOptimizer<pose2SLAM::Graph, gtsam::GaussianFactorGraph, gtsam::GaussianSequentialSolver>;
-
 namespace pose2SLAM {
 
   /* ************************************************************************* */

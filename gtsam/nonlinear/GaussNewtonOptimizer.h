@@ -69,6 +69,7 @@ public:
 
 /**
  * This class performs Gauss-Newton nonlinear optimization
+ * TODO: use make_shared
  */
 class GaussNewtonOptimizer : public NonlinearOptimizer {
 
@@ -107,9 +108,9 @@ public:
    * @param params The optimization parameters
    */
   GaussNewtonOptimizer(const SharedGraph& graph, const SharedValues& values,
-      const SharedGNParams& params = SharedGNParams(),
+      const GaussNewtonParams& params = GaussNewtonParams(),
       const SharedOrdering& ordering = SharedOrdering()) :
-        NonlinearOptimizer(graph, values, params ? params : SharedGNParams(new GaussNewtonParams())),
+        NonlinearOptimizer(graph, values, SharedGNParams(new GaussNewtonParams(params))),
         gnParams_(boost::static_pointer_cast<const GaussNewtonParams>(params_)),
         colamdOrdering_(!ordering || ordering->size() == 0),
         ordering_(colamdOrdering_ ? graph_->orderingCOLAMD(*values_) : ordering) {}

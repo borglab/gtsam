@@ -16,7 +16,7 @@ using namespace boost;
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
@@ -62,8 +62,6 @@ double getGaussian()
     } while(S>=1);
     return sqrt(-2.0f * (double)log(S) / S) * V1;
 }
-
-typedef NonlinearOptimizer<Graph> Optimizer;
 
 const SharedNoiseModel sigma1(noiseModel::Unit::Create(1));
 
@@ -177,11 +175,9 @@ TEST( GeneralSFMFactor, optimize_defaultK ) {
 
   // Create an ordering of the variables
   shared_ptr<Ordering> ordering = getOrdering(X,L);
-  NonlinearOptimizationParameters::shared_ptr params (
-      new NonlinearOptimizationParameters(1e-5, 1e-5, 0.0, 100, 1e-5, 10, NonlinearOptimizationParameters::SILENT));
-  Optimizer optimizer(graph, values, ordering, params);
-  Optimizer optimizer2 = optimizer.levenbergMarquardt();
-  EXPECT(optimizer2.error() < 0.5 * 1e-5 * nMeasurements);
+  NonlinearOptimizer::auto_ptr optimizer =
+      LevenbergMarquardtOptimizer(graph, values, LevenbergMarquardtParams(), ordering).optimize();
+  EXPECT(optimizer->error() < 0.5 * 1e-5 * nMeasurements);
 }
 
 /* ************************************************************************* */
@@ -222,11 +218,9 @@ TEST( GeneralSFMFactor, optimize_varK_SingleMeasurementError ) {
   const double reproj_error = 1e-5;
 
   shared_ptr<Ordering> ordering = getOrdering(X,L);
-  NonlinearOptimizationParameters::shared_ptr params (
-      new NonlinearOptimizationParameters(1e-5, 1e-5, 0.0, 100, 1e-5, 10, NonlinearOptimizationParameters::SILENT));
-  Optimizer optimizer(graph, values, ordering, params);
-  Optimizer optimizer2 = optimizer.levenbergMarquardt();
-  EXPECT(optimizer2.error() < 0.5 * reproj_error * nMeasurements);
+  NonlinearOptimizer::auto_ptr optimizer =
+      LevenbergMarquardtOptimizer(graph, values, LevenbergMarquardtParams(), ordering).optimize();
+  EXPECT(optimizer->error() < 0.5 * reproj_error * nMeasurements);
 }
 
 /* ************************************************************************* */
@@ -265,12 +259,9 @@ TEST( GeneralSFMFactor, optimize_varK_FixCameras ) {
   const double reproj_error = 1e-5 ;
 
   shared_ptr<Ordering> ordering = getOrdering(X,L);
-  NonlinearOptimizationParameters::shared_ptr params (
-      new NonlinearOptimizationParameters(1e-5, 1e-5, 0.0, 100, 1e-3, 10, NonlinearOptimizationParameters::SILENT));
-  Optimizer optimizer(graph, values, ordering, params);
-
-  Optimizer optimizer2 = optimizer.levenbergMarquardt();
-  EXPECT(optimizer2.error() < 0.5 * reproj_error * nMeasurements);
+  NonlinearOptimizer::auto_ptr optimizer =
+      LevenbergMarquardtOptimizer(graph, values, LevenbergMarquardtParams(), ordering).optimize();
+  EXPECT(optimizer->error() < 0.5 * reproj_error * nMeasurements);
 }
 
 /* ************************************************************************* */
@@ -321,12 +312,9 @@ TEST( GeneralSFMFactor, optimize_varK_FixLandmarks ) {
   const double reproj_error = 1e-5 ;
 
   shared_ptr<Ordering> ordering = getOrdering(X,L);
-  NonlinearOptimizationParameters::shared_ptr params (
-      new NonlinearOptimizationParameters(1e-5, 1e-5, 0.0, 100, 1e-3, 10, NonlinearOptimizationParameters::SILENT));
-  Optimizer optimizer(graph, values, ordering, params);
-
-  Optimizer optimizer2 = optimizer.levenbergMarquardt();
-  EXPECT(optimizer2.error() < 0.5 * reproj_error * nMeasurements);
+  NonlinearOptimizer::auto_ptr optimizer =
+      LevenbergMarquardtOptimizer(graph, values, LevenbergMarquardtParams(), ordering).optimize();
+  EXPECT(optimizer->error() < 0.5 * reproj_error * nMeasurements);
 }
 
 /* ************************************************************************* */
@@ -363,12 +351,9 @@ TEST( GeneralSFMFactor, optimize_varK_BA ) {
   const double reproj_error = 1e-5 ;
 
   shared_ptr<Ordering> ordering = getOrdering(X,L);
-  NonlinearOptimizationParameters::shared_ptr params (
-      new NonlinearOptimizationParameters(1e-5, 1e-5, 0.0, 100, 1e-5, 10, NonlinearOptimizationParameters::SILENT));
-  Optimizer optimizer(graph, values, ordering, params);
-
-  Optimizer optimizer2 = optimizer.levenbergMarquardt();
-  EXPECT(optimizer2.error() < 0.5 * reproj_error * nMeasurements);
+  NonlinearOptimizer::auto_ptr optimizer =
+      LevenbergMarquardtOptimizer(graph, values, LevenbergMarquardtParams(), ordering).optimize();
+  EXPECT(optimizer->error() < 0.5 * reproj_error * nMeasurements);
 }
 
 /* ************************************************************************* */

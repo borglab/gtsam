@@ -23,7 +23,7 @@
 using namespace boost;
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/slam/visualSLAM.h>
 
 using namespace std;
@@ -102,16 +102,16 @@ TEST( Graph, optimizeLM)
 
   // Create an optimizer and check its error
   // We expect the initial to be zero because config is the ground truth
-  visualSLAM::Optimizer optimizer(graph, initialEstimate, ordering);
-  DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
+  NonlinearOptimizer::auto_ptr optimizer(new GaussNewtonOptimizer(graph, initialEstimate, GaussNewtonParams(), ordering));
+  DOUBLES_EQUAL(0.0, optimizer->error(), 1e-9);
 
   // Iterate once, and the config should not have changed because we started
   // with the ground truth
-  visualSLAM::Optimizer afterOneIteration = optimizer.iterate();
-  DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
+  NonlinearOptimizer::auto_ptr afterOneIteration = optimizer->iterate();
+  DOUBLES_EQUAL(0.0, optimizer->error(), 1e-9);
 
   // check if correct
-  CHECK(assert_equal(*initialEstimate,*(afterOneIteration.values())));
+  CHECK(assert_equal(*initialEstimate,*(afterOneIteration->values())));
 }
 
 
@@ -139,16 +139,16 @@ TEST( Graph, optimizeLM2)
 
   // Create an optimizer and check its error
   // We expect the initial to be zero because config is the ground truth
-  visualSLAM::Optimizer optimizer(graph, initialEstimate, ordering);
-  DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
+  NonlinearOptimizer::auto_ptr optimizer(new GaussNewtonOptimizer(graph, initialEstimate, GaussNewtonParams(), ordering));
+  DOUBLES_EQUAL(0.0, optimizer->error(), 1e-9);
 
   // Iterate once, and the config should not have changed because we started
   // with the ground truth
-  visualSLAM::Optimizer afterOneIteration = optimizer.iterate();
-  DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
+  NonlinearOptimizer::auto_ptr afterOneIteration = optimizer->iterate();
+  DOUBLES_EQUAL(0.0, optimizer->error(), 1e-9);
 
   // check if correct
-  CHECK(assert_equal(*initialEstimate,*(afterOneIteration.values())));
+  CHECK(assert_equal(*initialEstimate,*(afterOneIteration->values())));
 }
 
 
@@ -170,20 +170,18 @@ TEST( Graph, CHECK_ORDERING)
   initialEstimate->insert(PointKey(3), landmark3);
   initialEstimate->insert(PointKey(4), landmark4);
 
-  Ordering::shared_ptr ordering = graph->orderingCOLAMD(*initialEstimate);
-
   // Create an optimizer and check its error
   // We expect the initial to be zero because config is the ground truth
-  visualSLAM::Optimizer optimizer(graph, initialEstimate, ordering);
-  DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
+  NonlinearOptimizer::auto_ptr optimizer(new GaussNewtonOptimizer(graph, initialEstimate));
+  DOUBLES_EQUAL(0.0, optimizer->error(), 1e-9);
 
   // Iterate once, and the config should not have changed because we started
   // with the ground truth
-  visualSLAM::Optimizer afterOneIteration = optimizer.iterate();
-  DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
+  NonlinearOptimizer::auto_ptr afterOneIteration = optimizer->iterate();
+  DOUBLES_EQUAL(0.0, optimizer->error(), 1e-9);
 
   // check if correct
-  CHECK(assert_equal(*initialEstimate,*(afterOneIteration.values())));
+  CHECK(assert_equal(*initialEstimate,*(afterOneIteration->values())));
 }
 
 /* ************************************************************************* */

@@ -21,7 +21,7 @@
 #include <gtsam/geometry/StereoCamera.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/slam/StereoFactor.h>
 
 #include <gtsam/slam/visualSLAM.h>
@@ -50,45 +50,34 @@ TEST( StereoFactor, singlePoint)
 {
 	//Cal3_S2 K(625, 625, 0, 320, 240, 0.5);
 	boost::shared_ptr<Cal3_S2Stereo> K(new Cal3_S2Stereo(625, 625, 0, 320, 240, 0.5));
-	boost::shared_ptr<visualSLAM::Graph> graph(new visualSLAM::Graph());
+	NonlinearFactorGraph graph;
 
-	graph->add(visualSLAM::PoseConstraint(PoseKey(1),camera1));
+	graph.add(visualSLAM::PoseConstraint(PoseKey(1),camera1));
 
 	StereoPoint2 z14(320,320.0-50, 240);
   // arguments: measurement, sigma, cam#, measurement #, K, baseline (m)
-	graph->add(visualSLAM::StereoFactor(z14,sigma, PoseKey(1), PointKey(1), K));
+	graph.add(visualSLAM::StereoFactor(z14,sigma, PoseKey(1), PointKey(1), K));
 
 	// Create a configuration corresponding to the ground truth
-	boost::shared_ptr<Values> values(new Values());
-	values->insert(PoseKey(1), camera1); // add camera at z=6.25m looking towards origin
+	Values values(new Values());
+	values.insert(PoseKey(1), camera1); // add camera at z=6.25m looking towards origin
 
 	Point3 l1(0, 0, 0);
-	values->insert(PointKey(1), l1);   // add point at origin;
+	values.insert(PointKey(1), l1);   // add point at origin;
 
-	Ordering::shared_ptr ordering = graph->orderingCOLAMD(*values);
-
-	typedef gtsam::NonlinearOptimizer<visualSLAM::Graph, gtsam::GaussianFactorGraph, gtsam::GaussianMultifrontalSolver> Optimizer;   // optimization engine for this domain
-
-	double absoluteThreshold = 1e-9;
-	double relativeThreshold = 1e-5;
-	int maxIterations = 100;
-	NonlinearOptimizationParameters::verbosityLevel verbose = NonlinearOptimizationParameters::SILENT;
-	NonlinearOptimizationParameters parameters(absoluteThreshold, relativeThreshold, 0,
-			maxIterations, 1.0, 10, verbose, NonlinearOptimizationParameters::BOUNDED);
-
-	Optimizer optimizer(graph, values, ordering, make_shared<NonlinearOptimizationParameters>(parameters));
+	NonlinearOptimizer::auto_ptr optimizer(new GaussNewtonOptimizer(graph, values)));
 
 	// We expect the initial to be zero because config is the ground truth
-	DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
+	DOUBLES_EQUAL(0.0, optimizer->error(), 1e-9);
 
 	// Iterate once, and the config should not have changed
-	Optimizer afterOneIteration = optimizer.iterate();
-	DOUBLES_EQUAL(0.0, afterOneIteration.error(), 1e-9);
+	NonlinearOptimizer::auto_ptr afterOneIteration = optimizer->iterate();
+	DOUBLES_EQUAL(0.0, afterOneIteration->error(), 1e-9);
 
 	// Complete solution
-	Optimizer final = optimizer.gaussNewton();
+	NonlinearOptimizer::auto_ptr final = optimizer->optimize();
 
-	DOUBLES_EQUAL(0.0, final.error(), 1e-6);
+	DOUBLES_EQUAL(0.0, final->error(), 1e-6);
 }
 
 /* ************************************************************************* */

@@ -31,11 +31,6 @@ SharedDiagonal soft_model2 = noiseModel::Unit::Create(2);
 SharedDiagonal soft_model2_alt = noiseModel::Isotropic::Sigma(2, 0.1);
 SharedDiagonal hard_model1 = noiseModel::Constrained::All(1);
 
-typedef NonlinearFactorGraph Graph;
-typedef boost::shared_ptr<Graph> shared_graph;
-typedef boost::shared_ptr<Values> shared_values;
-typedef NonlinearOptimizer<Graph> Optimizer;
-
 // some simple inequality constraints
 Symbol key(simulated2D::PoseKey(1));
 double mu = 10.0;
@@ -150,19 +145,19 @@ TEST( testBoundingConstraint, unary_simple_optimization1) {
 	Point2 goal_pt(1.0, 2.0);
 	Point2 start_pt(0.0, 1.0);
 
-	shared_graph graph(new Graph());
+	NonlinearFactorGraph graph;
 	Symbol x1('x',1);
-	graph->add(iq2D::PoseXInequality(x1, 1.0, true));
-	graph->add(iq2D::PoseYInequality(x1, 2.0, true));
-	graph->add(simulated2D::Prior(start_pt, soft_model2, x1));
+	graph.add(iq2D::PoseXInequality(x1, 1.0, true));
+	graph.add(iq2D::PoseYInequality(x1, 2.0, true));
+	graph.add(simulated2D::Prior(start_pt, soft_model2, x1));
 
-	shared_values initValues(new Values());
-	initValues->insert(x1, start_pt);
+	Values initValues;
+	initValues.insert(x1, start_pt);
 
-	Optimizer::shared_values actual = Optimizer::optimizeLM(graph, initValues);
+	Values actual = *LevenbergMarquardtOptimizer(graph, initValues).optimize()->values();
 	Values expected;
 	expected.insert(x1, goal_pt);
-	CHECK(assert_equal(expected, *actual, tol));
+	CHECK(assert_equal(expected, actual, tol));
 }
 
 /* ************************************************************************* */
@@ -172,19 +167,19 @@ TEST( testBoundingConstraint, unary_simple_optimization2) {
 	Point2 goal_pt(1.0, 2.0);
 	Point2 start_pt(2.0, 3.0);
 
-	shared_graph graph(new Graph());
+	NonlinearFactorGraph graph;
 	Symbol x1('x',1);
-	graph->add(iq2D::PoseXInequality(x1, 1.0, false));
-	graph->add(iq2D::PoseYInequality(x1, 2.0, false));
-	graph->add(simulated2D::Prior(start_pt, soft_model2, x1));
+	graph.add(iq2D::PoseXInequality(x1, 1.0, false));
+	graph.add(iq2D::PoseYInequality(x1, 2.0, false));
+	graph.add(simulated2D::Prior(start_pt, soft_model2, x1));
 
-	shared_values initValues(new Values());
-	initValues->insert(x1, start_pt);
+	Values initValues;
+	initValues.insert(x1, start_pt);
 
-	Optimizer::shared_values actual = Optimizer::optimizeLM(graph, initValues);
+	Values actual = *LevenbergMarquardtOptimizer(graph, initValues).optimize()->values();
 	Values expected;
 	expected.insert(x1, goal_pt);
-	CHECK(assert_equal(expected, *actual, tol));
+	CHECK(assert_equal(expected, actual, tol));
 }
 
 /* ************************************************************************* */

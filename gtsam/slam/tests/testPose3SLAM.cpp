@@ -30,6 +30,7 @@ using namespace boost::assign;
 
 #include <gtsam/slam/pose3SLAM.h>
 #include <gtsam/slam/PartialPriorFactor.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 
 using namespace std;
 using namespace gtsam;
@@ -76,11 +77,9 @@ TEST(Pose3Graph, optimizeCircle) {
   // Choose an ordering and optimize
   shared_ptr<Ordering> ordering(new Ordering);
   *ordering += kx0,kx1,kx2,kx3,kx4,kx5;
-  NonlinearOptimizationParameters::shared_ptr params = NonlinearOptimizationParameters::newDecreaseThresholds(1e-15, 1e-15);
-  pose3SLAM::Optimizer optimizer0(fg, initial, ordering, params);
-  pose3SLAM::Optimizer optimizer = optimizer0.levenbergMarquardt();
 
-  Values actual = *optimizer.values();
+  Values actual = *LevenbergMarquardtOptimizer(
+      fg, initial, LevenbergMarquardtOptimizer::SharedLMParams(), ordering).optimize()->values();
 
   // Check with ground truth
   CHECK(assert_equal(hexagon, actual,1e-4));
@@ -115,7 +114,7 @@ TEST(Pose3Graph, partial_prior_height) {
 	// linearization
 	EXPECT_DOUBLES_EQUAL(2.0, height.error(values), tol);
 
-	Values actual = *pose3SLAM::Optimizer::optimizeLM(graph, values);
+	Values actual = *LevenbergMarquardtOptimizer(graph, values).optimize()->values();
 	EXPECT(assert_equal(expected, actual.at<Pose3>(key), tol));
 	EXPECT_DOUBLES_EQUAL(0.0, graph.error(actual), tol);
 }
@@ -167,7 +166,7 @@ TEST(Pose3Graph, partial_prior_xy) {
 	Values values;
 	values.insert(key, init);
 
-	Values actual = *pose3SLAM::Optimizer::optimizeLM(graph, values);
+	Values actual = *LevenbergMarquardtOptimizer(graph, values).optimize()->values();
 	EXPECT(assert_equal(expected, actual.at<Pose3>(key), tol));
 	EXPECT_DOUBLES_EQUAL(0.0, graph.error(actual), tol);
 }

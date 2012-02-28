@@ -24,7 +24,7 @@
 #include <gtsam/slam/BearingRangeFactor.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/NonlinearOptimization.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/geometry/Pose2.h>
 
@@ -110,14 +110,9 @@ namespace planarSLAM {
 
     /// Optimize
     Values optimize(const Values& initialEstimate) {
-      typedef NonlinearOptimizer<Graph> Optimizer;
-      return *Optimizer::optimizeLM(*this, initialEstimate,
-          NonlinearOptimizationParameters::LAMBDA);
+      return *LevenbergMarquardtOptimizer(*this, initialEstimate).optimize()->values();
     }
   };
-
-  /// Optimizer
-  typedef NonlinearOptimizer<Graph> Optimizer;
 
 } // planarSLAM
 

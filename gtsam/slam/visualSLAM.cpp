@@ -16,7 +16,6 @@
  */
 
 #include <gtsam/slam/visualSLAM.h>
-#include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 namespace gtsam {
