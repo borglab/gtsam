@@ -27,10 +27,10 @@ namespace gtsam {
 NonlinearOptimizer::auto_ptr GaussNewtonOptimizer::iterate() const {
 
   // Linearize graph
-  GaussianFactorGraph::shared_ptr linear = graph_->linearize(values_, gnParams_->ordering);
+  GaussianFactorGraph::shared_ptr linear = graph_->linearize(*values_, *ordering_);
 
   // Check whether to use QR
-  const bool useQR;
+  bool useQR;
   if(gnParams_->factorization == GaussNewtonParams::LDL)
     useQR = false;
   else if(gnParams_->factorization == GaussNewtonParams::QR)
@@ -40,9 +40,9 @@ NonlinearOptimizer::auto_ptr GaussNewtonOptimizer::iterate() const {
 
   // Optimize
   VectorValues::shared_ptr delta;
-  if(gnParams_->elimination == MULTIFRONTAL)
+  if(gnParams_->elimination == GaussNewtonParams::MULTIFRONTAL)
     delta = GaussianMultifrontalSolver(*linear, useQR).optimize();
-  else if(gnParams_->elimination == SEQUENTIAL)
+  else if(gnParams_->elimination == GaussNewtonParams::SEQUENTIAL)
     delta = GaussianSequentialSolver(*linear, useQR).optimize();
   else
     throw runtime_error("Optimization parameter is invalid: GaussNewtonParams::elimination");
@@ -51,16 +51,16 @@ NonlinearOptimizer::auto_ptr GaussNewtonOptimizer::iterate() const {
   if(params_->verbosity >= NonlinearOptimizerParams::DELTA) delta->print("delta");
 
   // Update values
-  SharedValues newValues(new Values(values_->retract(*delta, gnParams_->ordering)));
-  double newError = graph_->error(newValues);
+  SharedValues newValues(new Values(values_->retract(*delta, *ordering_)));
+  double newError = graph_->error(*newValues);
 
   // Maybe show output
   if (params_->verbosity >= NonlinearOptimizerParams::VALUES) newValues->print("newValues");
   if (params_->verbosity >= NonlinearOptimizerParams::ERROR) cout << "error: " << newError << endl;
 
   // Create new optimizer with new values and new error
-  auto_ptr<GaussNewtonOptimizer> newOptimizer(new GaussNewtonOptimizer(
-      graph_, newValues, gnParams_, newError, iterations_+1));
+  NonlinearOptimizer::auto_ptr newOptimizer(new GaussNewtonOptimizer(
+      *this, newValues, newError));
 
   return newOptimizer;
 }

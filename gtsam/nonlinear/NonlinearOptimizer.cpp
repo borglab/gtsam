@@ -25,14 +25,14 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-auto_ptr NonlinearOptimizer::defaultOptimize() const {
+NonlinearOptimizer::auto_ptr NonlinearOptimizer::defaultOptimize() const {
 
   double currentError = this->error();
 
   // check if we're already close enough
   if(currentError <= params_->errorTol) {
     if (params_->verbosity >= NonlinearOptimizerParams::ERROR)
-      cout << "Exiting, as error = " << currentError << " < " << errorTol << endl;
+      cout << "Exiting, as error = " << currentError << " < " << params_->errorTol << endl;
     return this->clone();
   }
 

@@ -27,18 +27,13 @@ namespace gtsam {
  */
 class NonlinearOptimizerParams {
 public:
-  /** See NonlinearOptimizationParams::verbosity */
+  /** See NonlinearOptimizerParams::verbosity */
   enum Verbosity {
     SILENT,
     ERROR,
-    LAMBDA,
-    TRYLAMBDA,
     VALUES,
     DELTA,
-    TRYCONFIG,
-    TRYDELTA,
-    LINEAR,
-    DAMPED
+    LINEAR
   };
 
   int maxIterations; ///< The maximum iterations to stop iterating (default 100)
@@ -52,7 +47,7 @@ public:
     errorTol(0.0), verbosity(SILENT) {}
 
   virtual void print(const std::string& str = "") const {
-    std::cout << s << "\n";
+    std::cout << str << "\n";
     std::cout << "relative decrease threshold: " << relativeErrorTol << "\n";
     std::cout << "absolute decrease threshold: " << absoluteErrorTol << "\n";
     std::cout << "      total error threshold: " << errorTol << "\n";
@@ -60,7 +55,7 @@ public:
     std::cout << "            verbosity level: " << verbosity << std::endl;
   }
 
-  virtual ~NonlinearOptimizationParams() {}
+  virtual ~NonlinearOptimizerParams() {}
 };
 
 
@@ -112,7 +107,7 @@ class NonlinearOptimizer {
 public:
 
   /** An auto pointer to this class */
-  typedef std::auto_ptr<NonlinearOptimizer> auto_ptr;
+  typedef std::auto_ptr<const NonlinearOptimizer> auto_ptr;
 
   /** A const shared_ptr to a NonlinearFactorGraph */
   typedef boost::shared_ptr<const NonlinearFactorGraph> SharedGraph;

@@ -17,6 +17,8 @@
  */
 
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+
+#include <gtsam/base/cholesky.h> // For NegativeMatrixException
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 
@@ -27,75 +29,72 @@ namespace gtsam {
 NonlinearOptimizer::auto_ptr LevenbergMarquardtOptimizer::iterate() const {
 
   // Linearize graph
-  GaussianFactorGraph::shared_ptr linear = graph_->linearize(values_, gnParams_->ordering);
+  GaussianFactorGraph::shared_ptr linear = graph_->linearize(*values_, *ordering_);
 
   // Check whether to use QR
-  const bool useQR;
-  if(gnParams_->factorization == LevenbergMarquardtParams::LDL)
+  bool useQR;
+  if(lmParams_->factorization == LevenbergMarquardtParams::LDL)
     useQR = false;
-  else if(gnParams_->factorization == LevenbergMarquardtParams::QR)
+  else if(lmParams_->factorization == LevenbergMarquardtParams::QR)
     useQR = true;
   else
     throw runtime_error("Optimization parameter is invalid: LevenbergMarquardtParams::factorization");
 
-  // Optimize
-  VectorValues::shared_ptr delta;
-  if(gnParams_->elimination == MULTIFRONTAL)
-    delta = GaussianMultifrontalSolver(*linear, useQR).optimize();
-  else if(gnParams_->elimination == SEQUENTIAL)
-    delta = GaussianSequentialSolver(*linear, useQR).optimize();
-  else
-    throw runtime_error("Optimization parameter is invalid: LevenbergMarquardtParams::elimination");
+  // Pull out parameters we'll use
+  const NonlinearOptimizerParams::Verbosity nloVerbosity = params_->verbosity;
+  const LevenbergMarquardtParams::LMVerbosity lmVerbosity = lmParams_->lmVerbosity;
+  const double lambdaFactor = lmParams_->lambdaFactor;
 
-
-  const NonlinearOptimizerParams::Verbosity verbosity = params_->verbosity;
-  const double lambdaFactor = parameters_->lambdaFactor_ ;
-  double lambda = params_->lambda;
-
-  double next_error = error_;
-  SharedValues next_values = values_;
+  // Variables to update during try_lambda loop
+  double lambda = lmParams_->lambdaInitial;
+  double next_error = error();
+  SharedValues next_values = values();
 
   // Keep increasing lambda until we make make progress
   while(true) {
-    if (verbosity >= Parameters::TRYLAMBDA) cout << "trying lambda = " << lambda << endl;
+    if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
+      cout << "trying lambda = " << lambda << endl;
 
-    // add prior-factors
+    // Add prior-factors
     // TODO: replace this dampening with a backsubstitution approach
-    typename L::shared_ptr dampedSystem(new L(linearSystem));
+    GaussianFactorGraph dampedSystem(*linear);
     {
       double sigma = 1.0 / sqrt(lambda);
-      dampedSystem->reserve(dampedSystem->size() + dimensions_->size());
+      dampedSystem.reserve(dampedSystem.size() + dimensions_->size());
       // for each of the variables, add a prior
       for(Index j=0; j<dimensions_->size(); ++j) {
         size_t dim = (*dimensions_)[j];
         Matrix A = eye(dim);
         Vector b = zero(dim);
         SharedDiagonal model = noiseModel::Isotropic::Sigma(dim,sigma);
-        typename L::sharedFactor prior(new JacobianFactor(j, A, b, model));
-        dampedSystem->push_back(prior);
+        GaussianFactor::shared_ptr prior(new JacobianFactor(j, A, b, model));
+        dampedSystem.push_back(prior);
       }
     }
-    if (verbosity >= Parameters::DAMPED) dampedSystem->print("damped");
-
-    // Create a new solver using the damped linear system
-    // FIXME: remove spcg specific code
-    if (spcg_solver_) spcg_solver_->replaceFactors(dampedSystem);
-    shared_solver solver = (spcg_solver_) ? spcg_solver_ : shared_solver(
-        new S(dampedSystem, structure_, parameters_->useQR_));
+    if (lmVerbosity >= LevenbergMarquardtParams::DAMPED) dampedSystem.print("damped");
 
     // Try solving
     try {
-      VectorValues delta = *solver->optimize();
-      if (verbosity >= Parameters::TRYLAMBDA) cout << "linear delta norm = " << delta.vector().norm() << endl;
-      if (verbosity >= Parameters::TRYDELTA) delta.print("delta");
+
+      // Optimize
+      VectorValues::shared_ptr delta;
+      if(lmParams_->elimination == LevenbergMarquardtParams::MULTIFRONTAL)
+        delta = GaussianMultifrontalSolver(dampedSystem, useQR).optimize();
+      else if(lmParams_->elimination == LevenbergMarquardtParams::SEQUENTIAL)
+        delta = GaussianSequentialSolver(dampedSystem, useQR).optimize();
+      else
+        throw runtime_error("Optimization parameter is invalid: LevenbergMarquardtParams::elimination");
+
+      if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) cout << "linear delta norm = " << delta->vector().norm() << endl;
+      if (lmVerbosity >= LevenbergMarquardtParams::TRYDELTA) delta->print("delta");
 
       // update values
-      shared_values newValues(new Values(values_->retract(delta, *ordering_)));
+      SharedValues newValues(new Values(values_->retract(*delta, *ordering_)));
 
       // create new optimization state with more adventurous lambda
       double error = graph_->error(*newValues);
 
-      if (verbosity >= Parameters::TRYLAMBDA) cout << "next error = " << error << endl;
+      if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) cout << "next error = " << error << endl;
 
       if( error <= error_ ) {
         next_values = newValues;
@@ -107,49 +106,39 @@ NonlinearOptimizer::auto_ptr LevenbergMarquardtOptimizer::iterate() const {
         // Either we're not cautious, or the same lambda was worse than the current error.
         // The more adventurous lambda was worse too, so make lambda more conservative
         // and keep the same values.
-        if(lambdaMode >= Parameters::BOUNDED && lambda >= 1.0e5) {
-          if(verbosity >= Parameters::ERROR)
+        if(lambda >= lmParams_->lambdaUpperBound) {
+          if(nloVerbosity >= NonlinearOptimizerParams::ERROR)
             cout << "Warning:  Levenberg-Marquardt giving up because cannot decrease error with maximum lambda" << endl;
           break;
         } else {
-          lambda *= factor;
+          lambda *= lambdaFactor;
         }
       }
     } catch(const NegativeMatrixException& e) {
-      if(verbosity >= Parameters::LAMBDA)
+      if(lmVerbosity >= LevenbergMarquardtParams::LAMBDA)
         cout << "Negative matrix, increasing lambda" << endl;
       // Either we're not cautious, or the same lambda was worse than the current error.
       // The more adventurous lambda was worse too, so make lambda more conservative
       // and keep the same values.
-      if(lambdaMode >= Parameters::BOUNDED && lambda >= 1.0e5) {
-        if(verbosity >= Parameters::ERROR)
+      if(lambda >= lmParams_->lambdaUpperBound) {
+        if(nloVerbosity >= NonlinearOptimizerParams::ERROR)
           cout << "Warning:  Levenberg-Marquardt giving up because cannot decrease error with maximum lambda" << endl;
         break;
       } else {
-        lambda *= factor;
+        lambda *= lambdaFactor;
       }
     } catch(...) {
       throw;
     }
   } // end while
 
-  return newValuesErrorLambda_(next_values, next_error, lambda);
-
-
   // Maybe show output
-  if(params_->verbosity >= NonlinearOptimizerParams::DELTA) delta->print("delta");
-
-  // Update values
-  SharedValues newValues(new Values(values_->retract(*delta, gnParams_->ordering)));
-  double newError = graph_->error(newValues);
-
-  // Maybe show output
-  if (params_->verbosity >= NonlinearOptimizerParams::VALUES) newValues->print("newValues");
-  if (params_->verbosity >= NonlinearOptimizerParams::ERROR) cout << "error: " << newError << endl;
+  if (params_->verbosity >= NonlinearOptimizerParams::VALUES) next_values->print("newValues");
+  if (params_->verbosity >= NonlinearOptimizerParams::ERROR) cout << "error: " << next_error << endl;
 
   // Create new optimizer with new values and new error
-  auto_ptr<LevenbergMarquardtOptimizer> newOptimizer(new LevenbergMarquardtOptimizer(
-      graph_, newValues, gnParams_, newError, iterations_+1));
+  NonlinearOptimizer::auto_ptr newOptimizer(new LevenbergMarquardtOptimizer(
+      *this, next_values, next_error, lambda));
 
   return newOptimizer;
 }
