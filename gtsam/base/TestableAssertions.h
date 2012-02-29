@@ -256,6 +256,45 @@ bool assert_container_equal(const V& expected, const V& actual, double tol = 1e-
 }
 
 /**
+ * Function for comparing maps of size_t->testable
+ * Types are assumed to have operator ==
+ */
+template<class V2>
+bool assert_container_equality(const std::map<size_t,V2>& expected, const std::map<size_t,V2>& actual) {
+	typedef typename std::map<size_t,V2> Map;
+  bool match = true;
+  if (expected.size() != actual.size())
+    match = false;
+  typename Map::const_iterator
+  	itExp = expected.begin(),
+  	itAct = actual.begin();
+  if(match) {
+  	for (; itExp!=expected.end() && itAct!=actual.end(); ++itExp, ++itAct) {
+  		if (itExp->first  != itAct->first || itExp->second != itAct->second) {
+  			match = false;
+  			break;
+  		}
+  	}
+  }
+	if(!match) {
+	  std::cout << "expected: " << std::endl;
+	  BOOST_FOREACH(const typename Map::value_type& a, expected) {
+	  	std::cout << "Key:   " << a.first << std::endl;
+	  	std::cout << "Value: " << a.second << std::endl;
+	  }
+	  std::cout << "\nactual: " << std::endl;
+	  BOOST_FOREACH(const typename Map::value_type& a, actual)  {
+	  	std::cout << "Key:   " << a.first << std::endl;
+	  	std::cout << "Value: " << a.second << std::endl;
+	  }
+	  std::cout << std::endl;
+	  return false;
+	}
+	return true;
+}
+
+
+/**
  * General function for comparing containers of objects with operator==
  */
 template<class V>

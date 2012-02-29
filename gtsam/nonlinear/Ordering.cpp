@@ -86,6 +86,14 @@ Index Ordering::pop_back(Key key) {
 }
 
 /* ************************************************************************* */
+Ordering::InvertedMap Ordering::invert() const {
+	InvertedMap result;
+	BOOST_FOREACH(const value_type& p, *this)
+		result.insert(make_pair(p.second, p.first));
+	return result;
+}
+
+/* ************************************************************************* */
 void Unordered::print(const string& s) const {
   cout << s << " (" << size() << "):";
   BOOST_FOREACH(Index key, *this)

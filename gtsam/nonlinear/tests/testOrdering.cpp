@@ -18,6 +18,7 @@
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/nonlinear/Ordering.h>
 
+using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
@@ -49,6 +50,25 @@ TEST( testOrdering, simple_modifications ) {
 	Ordering expectedFinal;
 	expectedFinal += x1, x2, x4, x3;
 	EXPECT(assert_equal(expectedFinal, ordering));
+}
+
+/* ************************************************************************* */
+TEST( testOrdering, invert ) {
+	// creates a map with the opposite mapping: Index->Key
+	Ordering ordering;
+
+	// create an ordering
+	Symbol x1('x', 1), x2('x', 2), x3('x', 3), x4('x', 4);
+	ordering += x1, x2, x3, x4;
+
+	Ordering::InvertedMap actual = ordering.invert();
+	Ordering::InvertedMap expected;
+	expected.insert(make_pair(0, x1));
+	expected.insert(make_pair(1, x2));
+	expected.insert(make_pair(2, x3));
+	expected.insert(make_pair(3, x4));
+
+	EXPECT(assert_container_equality(expected, actual));
 }
 
 /* ************************************************************************* */
