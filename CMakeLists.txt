@@ -9,6 +9,11 @@ set (GTSAM_VERSION_PATCH 3)
 # Set the default install path to home
 set (CMAKE_INSTALL_PREFIX ${HOME} CACHE DOCSTRING "Install prefix for library")
 
+# Use macros for creating tests/timing scripts
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+include(GtsamTesting)
+include(GtsamPrinting)
+
 # guard against in-source builds
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
   message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there. You may need to remove CMakeCache.txt. ")
@@ -41,6 +46,10 @@ option(GTSAM_BUILD_EXAMPLES "Enable/Disable building of examples"       ON)
 option(GTSAM_BUILD_WRAP     "Enable/Disable building of matlab wrap utility (necessary for matlab interface)" ON)
 option(GTSAM_USE_QUATERNIONS "Enable/Disable using an internal Quaternion representation for rotations instead of rotation matrices" OFF)
 option(GTSAM_BUILD_CONVENIENCE_LIBRARIES "Enable/Disable use of convenience libraries for faster development rebuilds, but slower install" ON)
+option(GTSAM_INSTALL_MATLAB_TOOLBOX  "Enable/Disable installation of matlab toolbox"  ON)
+option(GTSAM_INSTALL_MATLAB_EXAMPLES "Enable/Disable installation of matlab examples" ON)
+option(GTSAM_INSTALL_MATLAB_TESTS    "Enable/Disable installation of matlab tests"    ON)
+option(GTSAM_INSTALL_WRAP "Enable/Disable installation of wrap utility" ON)
 
 # Add the Quaternion Build Flag if requested
 if (GTSAM_USE_QUATERNIONS)
@@ -58,10 +67,6 @@ if (GTSAM_BUILD_TESTS)
     include(Dart)
     include(CTest)
 endif()
-
-# Use macros for creating tests/timing scripts
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
-include(GtsamTesting)
 
 # Enable make check (http://www.cmake.org/Wiki/CMakeEmulateMakeCheck)
 add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND})
@@ -97,6 +102,26 @@ endif(GTSAM_BUILD_WRAP)
 if (GTSAM_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif(GTSAM_BUILD_EXAMPLES)
+
+# print configuration variables
+message(STATUS "===============================================================")
+message(STATUS "================  Configuration Options  ======================")
+message(STATUS "Build flags                                               ")
+print_config_flag(${GTSAM_BUILD_TIMING}                "Build Timing scripts       ")
+print_config_flag(${GTSAM_BUILD_EXAMPLES}              "Build Examples             ")
+print_config_flag(${GTSAM_BUILD_TESTS}                 "Build Tests                ")
+print_config_flag(${GTSAM_BUILD_WRAP}                  "Build Wrap                 ")
+print_config_flag(${GTSAM_BUILD_CONVENIENCE_LIBRARIES} "Build Convenience Libraries")
+
+message(STATUS "GTSAM flags                                               ")
+print_config_flag(${GTSAM_USE_QUATERNIONS}             "Quaternions as default Rot3")
+
+message(STATUS "MATLAB toolbox flags                                      ")
+print_config_flag(${GTSAM_INSTALL_MATLAB_TOOLBOX}      "Install matlab toolbox     ")
+print_config_flag(${GTSAM_INSTALL_MATLAB_EXAMPLES}     "Install matlab examples    ")
+print_config_flag(${GTSAM_INSTALL_MATLAB_TESTS}        "Install matlab tests       ")
+print_config_flag(${GTSAM_INSTALL_WRAP}                "Install wrap utility       ")
+message(STATUS "===============================================================")
 
 # Set up CPack
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "GTSAM")

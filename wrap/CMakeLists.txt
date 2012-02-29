@@ -8,7 +8,6 @@ add_executable(wrap wrap.cpp)
 target_link_libraries(wrap wrap_lib)
 
 # Install wrap binary
-option(GTSAM_INSTALL_WRAP "Enable/Disable installation of wrap utility" ON)
 if (GTSAM_INSTALL_WRAP)
     install(TARGETS wrap DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 endif(GTSAM_INSTALL_WRAP)
@@ -41,10 +40,6 @@ find_mexextension()
 add_custom_target(wrap_gtsam ALL COMMAND 
     ./wrap ${GTSAM_MEX_BIN_EXTENSION} ${CMAKE_SOURCE_DIR} ${moduleName} ${toolbox_path} "${mexFlags}"
     DEPENDS wrap)
-
-option(GTSAM_INSTALL_MATLAB_TOOLBOX  "Enable/Disable installation of matlab toolbox"  ON)
-option(GTSAM_INSTALL_MATLAB_EXAMPLES "Enable/Disable installation of matlab examples" ON)
-option(GTSAM_INSTALL_MATLAB_TESTS    "Enable/Disable installation of matlab tests"    ON)
 
 set(GTSAM_TOOLBOX_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/borg/toolbox CACHE DOCSTRING "Path to install matlab toolbox")
 
