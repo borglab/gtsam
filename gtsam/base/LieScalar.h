@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <gtsam/base/DerivedValue.h>
 #include <gtsam/base/Lie.h>
 
 namespace gtsam {
@@ -24,7 +25,7 @@ namespace gtsam {
 	/**
 	 * LieScalar is a wrapper around double to allow it to be a Lie type
 	 */
-	struct LieScalar {
+	struct LieScalar : public DerivedValue<LieScalar> {
 
 		/** default constructor */
 		LieScalar() : d_(0.0) {}

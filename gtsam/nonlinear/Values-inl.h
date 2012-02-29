@@ -22,6 +22,8 @@
  *  which is also a manifold element, and hence supports operations dim, retract, and localCoordinates.
  */
 
+#pragma once
+
 #include <utility>
 #include <boost/type_traits/conditional.hpp>
 #include <boost/type_traits/is_base_of.hpp>
