@@ -35,7 +35,7 @@
 #include <boost/bind.hpp>
 #include <boost/ptr_container/serialize_ptr_map.hpp>
 #include <boost/range/iterator_range.hpp>
-#include <boost/range/adaptor/filtered.hpp>
+#include <boost/range/adaptor/filtered.hpp> // FIXME: adaptors only added to boost in 1.43
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/lambda/lambda.hpp>
 
