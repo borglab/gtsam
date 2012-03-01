@@ -125,6 +125,27 @@ public:
         lambda_(lmParams_->lambdaInitial) {}
 
   /** Standard constructor, requires a nonlinear factor graph, initial
+   * variable assignments, and optimization parameters.  For convenience this
+   * version takes plain objects instead of shared pointers, but internally
+   * copies the objects.
+   * @param graph The nonlinear factor graph to optimize
+   * @param values The initial variable assignments
+   * @param params The optimization parameters
+   */
+  LevenbergMarquardtOptimizer(const NonlinearFactorGraph& graph, const Values& values,
+      const Ordering& ordering) :
+        NonlinearOptimizer(
+            SharedGraph(new NonlinearFactorGraph(graph)),
+            SharedValues(new Values(values)),
+            SharedLMParams(new LevenbergMarquardtParams())),
+        lmParams_(boost::static_pointer_cast<const LevenbergMarquardtParams>(params_)),
+        colamdOrdering_(ordering.size() == 0),
+        ordering_(colamdOrdering_ ?
+            graph_->orderingCOLAMD(*values_) : Ordering::shared_ptr(new Ordering(ordering))),
+        dimensions_(new vector<size_t>(values_->dims(*ordering_))),
+        lambda_(lmParams_->lambdaInitial) {}
+
+  /** Standard constructor, requires a nonlinear factor graph, initial
    * variable assignments, and optimization parameters.
    * @param graph The nonlinear factor graph to optimize
    * @param values The initial variable assignments

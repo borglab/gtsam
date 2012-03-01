@@ -90,12 +90,31 @@ public:
    * @param params The optimization parameters
    */
   GaussNewtonOptimizer(const NonlinearFactorGraph& graph, const Values& values,
-      const GaussNewtonParams& params = GaussNewtonParams(),
+      const GaussNewtonParams& params,
       const Ordering& ordering = Ordering()) :
         NonlinearOptimizer(
             SharedGraph(new NonlinearFactorGraph(graph)),
             SharedValues(new Values(values)),
             SharedGNParams(new GaussNewtonParams(params))),
+        gnParams_(boost::static_pointer_cast<const GaussNewtonParams>(params_)),
+        colamdOrdering_(ordering.size() == 0),
+        ordering_(colamdOrdering_ ?
+            graph_->orderingCOLAMD(*values_) : Ordering::shared_ptr(new Ordering(ordering))) {}
+
+  /** Standard constructor, requires a nonlinear factor graph, initial
+   * variable assignments, and optimization parameters.  For convenience this
+   * version takes plain objects instead of shared pointers, but internally
+   * copies the objects.
+   * @param graph The nonlinear factor graph to optimize
+   * @param values The initial variable assignments
+   * @param params The optimization parameters
+   */
+  GaussNewtonOptimizer(const NonlinearFactorGraph& graph, const Values& values,
+      const Ordering& ordering = Ordering()) :
+        NonlinearOptimizer(
+            SharedGraph(new NonlinearFactorGraph(graph)),
+            SharedValues(new Values(values)),
+            SharedGNParams(new GaussNewtonParams())),
         gnParams_(boost::static_pointer_cast<const GaussNewtonParams>(params_)),
         colamdOrdering_(ordering.size() == 0),
         ordering_(colamdOrdering_ ?
