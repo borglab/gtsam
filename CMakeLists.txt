@@ -2,9 +2,9 @@ project(GTSAM CXX C)
 cmake_minimum_required(VERSION 2.6)
 
 # Set the version number for the library
-set (GTSAM_VERSION_MAJOR 0)
+set (GTSAM_VERSION_MAJOR 1)
 set (GTSAM_VERSION_MINOR 9)
-set (GTSAM_VERSION_PATCH 3)
+set (GTSAM_VERSION_PATCH 0)
 
 # Set the default install path to home
 set (CMAKE_INSTALL_PREFIX ${HOME} CACHE DOCSTRING "Install prefix for library")
@@ -135,6 +135,7 @@ set(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSIO
 set(CPACK_INSTALLED_DIRECTORIES "doc" ".") # Include doc directory
 set(CPACK_SOURCE_IGNORE_FILES "/build;/\\\\.;/makedoc.sh$")
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "gtsam-${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH}")
+#set(CPACK_SOURCE_PACKAGE_FILE_NAME "gtsam-aspn${GTSAM_VERSION_PATCH}") # Used for creating ASPN tarballs
 set(CPACK_SOURCE_GENERATOR "TGZ")
 set(CPACK_GENERATOR "TGZ")
 include(CPack)
