@@ -148,11 +148,11 @@ TEST( GeneralSFMFactor, optimize_defaultK ) {
   vector<GeneralCamera> X = genCameraDefaultCalibration();
 
   // add measurement with noise
-  shared_ptr<Graph> graph(new Graph());
+  Graph graph;
   for ( size_t j = 0 ; j < X.size() ; ++j) {
     for ( size_t i = 0 ; i < L.size() ; ++i) {
       Point2 pt = X[j].project(L[i]) ;
-      graph->addMeasurement(j, i, pt, sigma1);
+      graph.addMeasurement(j, i, pt, sigma1);
     }
   }
 
@@ -160,23 +160,22 @@ TEST( GeneralSFMFactor, optimize_defaultK ) {
 
   // add initial
   const double noise = baseline*0.1;
-  boost::shared_ptr<Values> values(new Values);
+  Values values;
   for ( size_t i = 0 ; i < X.size() ; ++i )
-    values->insert(Symbol('x',i), X[i]) ;
+    values.insert(Symbol('x',i), X[i]) ;
 
   for ( size_t i = 0 ; i < L.size() ; ++i ) {
     Point3 pt(L[i].x()+noise*getGaussian(),
               L[i].y()+noise*getGaussian(),
               L[i].z()+noise*getGaussian());
-    values->insert(Symbol('l',i), pt) ;
+    values.insert(Symbol('l',i), pt) ;
   }
 
-  graph->addCameraConstraint(0, X[0]);
+  graph.addCameraConstraint(0, X[0]);
 
   // Create an ordering of the variables
-  shared_ptr<Ordering> ordering = getOrdering(X,L);
-  NonlinearOptimizer::auto_ptr optimizer =
-      LevenbergMarquardtOptimizer(graph, values, LevenbergMarquardtParams(), ordering).optimize();
+  Ordering ordering = *getOrdering(X,L);
+  NonlinearOptimizer::auto_ptr optimizer = LevenbergMarquardtOptimizer(graph, values, ordering).optimize();
   EXPECT(optimizer->error() < 0.5 * 1e-5 * nMeasurements);
 }
 
@@ -185,11 +184,11 @@ TEST( GeneralSFMFactor, optimize_varK_SingleMeasurementError ) {
   vector<Point3> L = genPoint3();
   vector<GeneralCamera> X = genCameraVariableCalibration();
   // add measurement with noise
-  shared_ptr<Graph> graph(new Graph());
+  Graph graph;
   for ( size_t j = 0 ; j < X.size() ; ++j) {
     for ( size_t i = 0 ; i < L.size() ; ++i) {
       Point2 pt = X[j].project(L[i]) ;
-      graph->addMeasurement(j, i, pt, sigma1);
+      graph.addMeasurement(j, i, pt, sigma1);
     }
   }
 
@@ -197,9 +196,9 @@ TEST( GeneralSFMFactor, optimize_varK_SingleMeasurementError ) {
 
   // add initial
   const double noise = baseline*0.1;
-  boost::shared_ptr<Values> values(new Values);
+  Values values;
   for ( size_t i = 0 ; i < X.size() ; ++i )
-    values->insert(Symbol('x',i), X[i]) ;
+    values.insert(Symbol('x',i), X[i]) ;
 
   // add noise only to the first landmark
   for ( size_t i = 0 ; i < L.size() ; ++i ) {
@@ -207,19 +206,18 @@ TEST( GeneralSFMFactor, optimize_varK_SingleMeasurementError ) {
       Point3 pt(L[i].x()+noise*getGaussian(),
                 L[i].y()+noise*getGaussian(),
                 L[i].z()+noise*getGaussian());
-      values->insert(Symbol('l',i), pt) ;
+      values.insert(Symbol('l',i), pt) ;
     }
     else {
-      values->insert(Symbol('l',i), L[i]) ;
+      values.insert(Symbol('l',i), L[i]) ;
     }
   }
 
-  graph->addCameraConstraint(0, X[0]);
+  graph.addCameraConstraint(0, X[0]);
   const double reproj_error = 1e-5;
 
-  shared_ptr<Ordering> ordering = getOrdering(X,L);
-  NonlinearOptimizer::auto_ptr optimizer =
-      LevenbergMarquardtOptimizer(graph, values, LevenbergMarquardtParams(), ordering).optimize();
+  Ordering ordering = *getOrdering(X,L);
+  NonlinearOptimizer::auto_ptr optimizer = LevenbergMarquardtOptimizer(graph, values, ordering).optimize();
   EXPECT(optimizer->error() < 0.5 * reproj_error * nMeasurements);
 }
 
@@ -231,36 +229,35 @@ TEST( GeneralSFMFactor, optimize_varK_FixCameras ) {
 
   // add measurement with noise
   const double noise = baseline*0.1;
-  shared_ptr<Graph> graph(new Graph());
+  Graph graph;
   for ( size_t j = 0 ; j < X.size() ; ++j) {
     for ( size_t i = 0 ; i < L.size() ; ++i) {
       Point2 pt = X[j].project(L[i]) ;
-      graph->addMeasurement(j, i, pt, sigma1);
+      graph.addMeasurement(j, i, pt, sigma1);
     }
   }
 
   const size_t nMeasurements = L.size()*X.size();
 
-  boost::shared_ptr<Values> values(new Values);
+  Values values;
   for ( size_t i = 0 ; i < X.size() ; ++i )
-    values->insert(Symbol('x',i), X[i]) ;
+    values.insert(Symbol('x',i), X[i]) ;
 
   for ( size_t i = 0 ; i < L.size() ; ++i ) {
     Point3 pt(L[i].x()+noise*getGaussian(),
               L[i].y()+noise*getGaussian(),
               L[i].z()+noise*getGaussian());
     //Point3 pt(L[i].x(), L[i].y(), L[i].z());
-    values->insert(Symbol('l',i), pt) ;
+    values.insert(Symbol('l',i), pt) ;
   }
 
   for ( size_t i = 0 ; i < X.size() ; ++i )
-    graph->addCameraConstraint(i, X[i]);
+    graph.addCameraConstraint(i, X[i]);
 
   const double reproj_error = 1e-5 ;
 
-  shared_ptr<Ordering> ordering = getOrdering(X,L);
-  NonlinearOptimizer::auto_ptr optimizer =
-      LevenbergMarquardtOptimizer(graph, values, LevenbergMarquardtParams(), ordering).optimize();
+  Ordering ordering = *getOrdering(X,L);
+  NonlinearOptimizer::auto_ptr optimizer = LevenbergMarquardtOptimizer(graph, values, ordering).optimize();
   EXPECT(optimizer->error() < 0.5 * reproj_error * nMeasurements);
 }
 
@@ -271,23 +268,23 @@ TEST( GeneralSFMFactor, optimize_varK_FixLandmarks ) {
   vector<GeneralCamera> X = genCameraVariableCalibration();
 
   // add measurement with noise
-  shared_ptr<Graph> graph(new Graph());
+  Graph graph;
   for ( size_t j = 0 ; j < X.size() ; ++j) {
     for ( size_t i = 0 ; i < L.size() ; ++i) {
       Point2 pt = X[j].project(L[i]) ;
-      graph->addMeasurement(j, i, pt, sigma1);
+      graph.addMeasurement(j, i, pt, sigma1);
     }
   }
 
   const size_t nMeasurements = L.size()*X.size();
 
-  boost::shared_ptr<Values> values(new Values);
+  Values values;
   for ( size_t i = 0 ; i < X.size() ; ++i ) {
     const double
       rot_noise = 1e-5, trans_noise = 1e-3,
       focal_noise = 1, distort_noise = 1e-3;
     if ( i == 0 ) {
-      values->insert(Symbol('x',i), X[i]) ;
+      values.insert(Symbol('x',i), X[i]) ;
     }
     else {
 
@@ -296,24 +293,23 @@ TEST( GeneralSFMFactor, optimize_varK_FixLandmarks ) {
           trans_noise, trans_noise, trans_noise, // translation
           focal_noise, distort_noise, distort_noise // f, k1, k2
           ) ;
-      values->insert(Symbol('x',i), X[i].retract(delta)) ;
+      values.insert(Symbol('x',i), X[i].retract(delta)) ;
     }
   }
 
   for ( size_t i = 0 ; i < L.size() ; ++i ) {
-    values->insert(Symbol('l',i), L[i]) ;
+    values.insert(Symbol('l',i), L[i]) ;
   }
 
   // fix X0 and all landmarks, allow only the X[1] to move
-  graph->addCameraConstraint(0, X[0]);
+  graph.addCameraConstraint(0, X[0]);
   for ( size_t i = 0 ; i < L.size() ; ++i )
-    graph->addPoint3Constraint(i, L[i]);
+    graph.addPoint3Constraint(i, L[i]);
 
   const double reproj_error = 1e-5 ;
 
-  shared_ptr<Ordering> ordering = getOrdering(X,L);
-  NonlinearOptimizer::auto_ptr optimizer =
-      LevenbergMarquardtOptimizer(graph, values, LevenbergMarquardtParams(), ordering).optimize();
+  Ordering ordering = *getOrdering(X,L);
+  NonlinearOptimizer::auto_ptr optimizer = LevenbergMarquardtOptimizer(graph, values, ordering).optimize();
   EXPECT(optimizer->error() < 0.5 * reproj_error * nMeasurements);
 }
 
@@ -323,11 +319,11 @@ TEST( GeneralSFMFactor, optimize_varK_BA ) {
   vector<GeneralCamera> X = genCameraVariableCalibration();
 
   // add measurement with noise
-  shared_ptr<Graph> graph(new Graph());
+  Graph graph;
   for ( size_t j = 0 ; j < X.size() ; ++j) {
     for ( size_t i = 0 ; i < L.size() ; ++i) {
       Point2 pt = X[j].project(L[i]) ;
-      graph->addMeasurement(j, i, pt, sigma1);
+      graph.addMeasurement(j, i, pt, sigma1);
     }
   }
 
@@ -335,24 +331,23 @@ TEST( GeneralSFMFactor, optimize_varK_BA ) {
 
   // add initial
   const double noise = baseline*0.1;
-  boost::shared_ptr<Values> values(new Values);
+  Values values;
   for ( size_t i = 0 ; i < X.size() ; ++i )
-    values->insert(Symbol('x',i), X[i]) ;
+    values.insert(Symbol('x',i), X[i]) ;
 
   // add noise only to the first landmark
   for ( size_t i = 0 ; i < L.size() ; ++i ) {
     Point3 pt(L[i].x()+noise*getGaussian(),
               L[i].y()+noise*getGaussian(),
               L[i].z()+noise*getGaussian());
-    values->insert(Symbol('l',i), pt) ;
+    values.insert(Symbol('l',i), pt) ;
   }
 
-  graph->addCameraConstraint(0, X[0]);
+  graph.addCameraConstraint(0, X[0]);
   const double reproj_error = 1e-5 ;
 
-  shared_ptr<Ordering> ordering = getOrdering(X,L);
-  NonlinearOptimizer::auto_ptr optimizer =
-      LevenbergMarquardtOptimizer(graph, values, LevenbergMarquardtParams(), ordering).optimize();
+  Ordering ordering = *getOrdering(X,L);
+  NonlinearOptimizer::auto_ptr optimizer = LevenbergMarquardtOptimizer(graph, values, ordering).optimize();
   EXPECT(optimizer->error() < 0.5 * reproj_error * nMeasurements);
 }
 

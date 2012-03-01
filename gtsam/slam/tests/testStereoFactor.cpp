@@ -59,13 +59,13 @@ TEST( StereoFactor, singlePoint)
 	graph.add(visualSLAM::StereoFactor(z14,sigma, PoseKey(1), PointKey(1), K));
 
 	// Create a configuration corresponding to the ground truth
-	Values values(new Values());
+	Values values;
 	values.insert(PoseKey(1), camera1); // add camera at z=6.25m looking towards origin
 
 	Point3 l1(0, 0, 0);
 	values.insert(PointKey(1), l1);   // add point at origin;
 
-	NonlinearOptimizer::auto_ptr optimizer(new GaussNewtonOptimizer(graph, values)));
+	NonlinearOptimizer::auto_ptr optimizer(new GaussNewtonOptimizer(graph, values));
 
 	// We expect the initial to be zero because config is the ground truth
 	DOUBLES_EQUAL(0.0, optimizer->error(), 1e-9);

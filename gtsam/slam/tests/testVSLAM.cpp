@@ -81,28 +81,28 @@ visualSLAM::Graph testGraph() {
 TEST( Graph, optimizeLM)
 {
   // build a graph
-  shared_ptr<visualSLAM::Graph> graph(new visualSLAM::Graph(testGraph()));
+  visualSLAM::Graph graph(testGraph());
 	// add 3 landmark constraints
-  graph->addPointConstraint(1, landmark1);
-  graph->addPointConstraint(2, landmark2);
-  graph->addPointConstraint(3, landmark3);
+  graph.addPointConstraint(1, landmark1);
+  graph.addPointConstraint(2, landmark2);
+  graph.addPointConstraint(3, landmark3);
 
   // Create an initial values structure corresponding to the ground truth
-  boost::shared_ptr<Values> initialEstimate(new Values);
-  initialEstimate->insert(PoseKey(1), camera1);
-  initialEstimate->insert(PoseKey(2), camera2);
-  initialEstimate->insert(PointKey(1), landmark1);
-  initialEstimate->insert(PointKey(2), landmark2);
-  initialEstimate->insert(PointKey(3), landmark3);
-  initialEstimate->insert(PointKey(4), landmark4);
+  Values initialEstimate;
+  initialEstimate.insert(PoseKey(1), camera1);
+  initialEstimate.insert(PoseKey(2), camera2);
+  initialEstimate.insert(PointKey(1), landmark1);
+  initialEstimate.insert(PointKey(2), landmark2);
+  initialEstimate.insert(PointKey(3), landmark3);
+  initialEstimate.insert(PointKey(4), landmark4);
 
   // Create an ordering of the variables
-  shared_ptr<Ordering> ordering(new Ordering);
-  *ordering += PointKey(1),PointKey(2),PointKey(3),PointKey(4),PoseKey(1),PoseKey(2);
+  Ordering ordering;
+  ordering += PointKey(1),PointKey(2),PointKey(3),PointKey(4),PoseKey(1),PoseKey(2);
 
   // Create an optimizer and check its error
   // We expect the initial to be zero because config is the ground truth
-  NonlinearOptimizer::auto_ptr optimizer(new GaussNewtonOptimizer(graph, initialEstimate, GaussNewtonParams(), ordering));
+  NonlinearOptimizer::auto_ptr optimizer(new GaussNewtonOptimizer(graph, initialEstimate, ordering));
   DOUBLES_EQUAL(0.0, optimizer->error(), 1e-9);
 
   // Iterate once, and the config should not have changed because we started
@@ -111,7 +111,7 @@ TEST( Graph, optimizeLM)
   DOUBLES_EQUAL(0.0, optimizer->error(), 1e-9);
 
   // check if correct
-  CHECK(assert_equal(*initialEstimate,*(afterOneIteration->values())));
+  CHECK(assert_equal(initialEstimate,*(afterOneIteration->values())));
 }
 
 
@@ -119,27 +119,27 @@ TEST( Graph, optimizeLM)
 TEST( Graph, optimizeLM2)
 {
   // build a graph
-  shared_ptr<visualSLAM::Graph> graph(new visualSLAM::Graph(testGraph()));
+  visualSLAM::Graph graph(testGraph());
 	// add 2 camera constraints
-  graph->addPoseConstraint(1, camera1);
-  graph->addPoseConstraint(2, camera2);
+  graph.addPoseConstraint(1, camera1);
+  graph.addPoseConstraint(2, camera2);
 
   // Create an initial values structure corresponding to the ground truth
-  boost::shared_ptr<Values> initialEstimate(new Values);
-  initialEstimate->insert(PoseKey(1), camera1);
-  initialEstimate->insert(PoseKey(2), camera2);
-  initialEstimate->insert(PointKey(1), landmark1);
-  initialEstimate->insert(PointKey(2), landmark2);
-  initialEstimate->insert(PointKey(3), landmark3);
-  initialEstimate->insert(PointKey(4), landmark4);
+  Values initialEstimate;
+  initialEstimate.insert(PoseKey(1), camera1);
+  initialEstimate.insert(PoseKey(2), camera2);
+  initialEstimate.insert(PointKey(1), landmark1);
+  initialEstimate.insert(PointKey(2), landmark2);
+  initialEstimate.insert(PointKey(3), landmark3);
+  initialEstimate.insert(PointKey(4), landmark4);
 
   // Create an ordering of the variables
-  shared_ptr<Ordering> ordering(new Ordering);
-  *ordering += PointKey(1),PointKey(2),PointKey(3),PointKey(4),PoseKey(1),PoseKey(2);
+  Ordering ordering;
+  ordering += PointKey(1),PointKey(2),PointKey(3),PointKey(4),PoseKey(1),PoseKey(2);
 
   // Create an optimizer and check its error
   // We expect the initial to be zero because config is the ground truth
-  NonlinearOptimizer::auto_ptr optimizer(new GaussNewtonOptimizer(graph, initialEstimate, GaussNewtonParams(), ordering));
+  NonlinearOptimizer::auto_ptr optimizer(new GaussNewtonOptimizer(graph, initialEstimate, ordering));
   DOUBLES_EQUAL(0.0, optimizer->error(), 1e-9);
 
   // Iterate once, and the config should not have changed because we started
@@ -148,7 +148,7 @@ TEST( Graph, optimizeLM2)
   DOUBLES_EQUAL(0.0, optimizer->error(), 1e-9);
 
   // check if correct
-  CHECK(assert_equal(*initialEstimate,*(afterOneIteration->values())));
+  CHECK(assert_equal(initialEstimate,*(afterOneIteration->values())));
 }
 
 

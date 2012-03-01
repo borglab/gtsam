@@ -53,33 +53,32 @@ TEST(Pose3Graph, optimizeCircle) {
   Pose3 gT0 = hexagon.at<Pose3>(PoseKey(0)), gT1 = hexagon.at<Pose3>(PoseKey(1));
 
 	// create a Pose graph with one equality constraint and one measurement
-  shared_ptr<Pose3Graph> fg(new Pose3Graph);
-  fg->addHardConstraint(0, gT0);
+  Pose3Graph fg;
+  fg.addHardConstraint(0, gT0);
   Pose3 _0T1 = gT0.between(gT1); // inv(gT0)*gT1
   double theta = M_PI/3.0;
   CHECK(assert_equal(Pose3(Rot3::yaw(-theta),Point3(radius*sin(theta),-radius*cos(theta),0)),_0T1));
-  fg->addConstraint(0,1, _0T1, covariance);
-  fg->addConstraint(1,2, _0T1, covariance);
-  fg->addConstraint(2,3, _0T1, covariance);
-  fg->addConstraint(3,4, _0T1, covariance);
-  fg->addConstraint(4,5, _0T1, covariance);
-  fg->addConstraint(5,0, _0T1, covariance);
+  fg.addConstraint(0,1, _0T1, covariance);
+  fg.addConstraint(1,2, _0T1, covariance);
+  fg.addConstraint(2,3, _0T1, covariance);
+  fg.addConstraint(3,4, _0T1, covariance);
+  fg.addConstraint(4,5, _0T1, covariance);
+  fg.addConstraint(5,0, _0T1, covariance);
 
   // Create initial config
-  boost::shared_ptr<Values> initial(new Values());
-  initial->insert(PoseKey(0), gT0);
-  initial->insert(PoseKey(1), hexagon.at<Pose3>(PoseKey(1)).retract(Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
-  initial->insert(PoseKey(2), hexagon.at<Pose3>(PoseKey(2)).retract(Vector_(6, 0.1,-0.1, 0.1, 0.1,-0.1, 0.1)));
-  initial->insert(PoseKey(3), hexagon.at<Pose3>(PoseKey(3)).retract(Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
-  initial->insert(PoseKey(4), hexagon.at<Pose3>(PoseKey(4)).retract(Vector_(6, 0.1,-0.1, 0.1, 0.1,-0.1, 0.1)));
-  initial->insert(PoseKey(5), hexagon.at<Pose3>(PoseKey(5)).retract(Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
+  Values initial;
+  initial.insert(PoseKey(0), gT0);
+  initial.insert(PoseKey(1), hexagon.at<Pose3>(PoseKey(1)).retract(Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
+  initial.insert(PoseKey(2), hexagon.at<Pose3>(PoseKey(2)).retract(Vector_(6, 0.1,-0.1, 0.1, 0.1,-0.1, 0.1)));
+  initial.insert(PoseKey(3), hexagon.at<Pose3>(PoseKey(3)).retract(Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
+  initial.insert(PoseKey(4), hexagon.at<Pose3>(PoseKey(4)).retract(Vector_(6, 0.1,-0.1, 0.1, 0.1,-0.1, 0.1)));
+  initial.insert(PoseKey(5), hexagon.at<Pose3>(PoseKey(5)).retract(Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
 
   // Choose an ordering and optimize
-  shared_ptr<Ordering> ordering(new Ordering);
-  *ordering += kx0,kx1,kx2,kx3,kx4,kx5;
+  Ordering ordering;
+  ordering += kx0,kx1,kx2,kx3,kx4,kx5;
 
-  Values actual = *LevenbergMarquardtOptimizer(
-      fg, initial, LevenbergMarquardtOptimizer::SharedLMParams(), ordering).optimize()->values();
+  Values actual = *LevenbergMarquardtOptimizer(fg, initial, ordering).optimize()->values();
 
   // Check with ground truth
   CHECK(assert_equal(hexagon, actual,1e-4));

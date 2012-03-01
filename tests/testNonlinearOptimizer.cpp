@@ -43,66 +43,6 @@ const double tol = 1e-5;
 Key kx(size_t i) { return Symbol('x',i); }
 Key kl(size_t i) { return Symbol('l',i); }
 
-typedef NonlinearOptimizer<example::Graph> Optimizer;
-
-/* ************************************************************************* */
-TEST( NonlinearOptimizer, linearizeAndOptimizeForDelta )
-{
-	shared_ptr<example::Graph> fg(new example::Graph(
-			example::createNonlinearFactorGraph()));
-	Optimizer::shared_values initial = example::sharedNoisyValues();
-
-	// Expected values structure is the difference between the noisy config
-	// and the ground-truth config. One step only because it's linear !
-  Ordering ord1; ord1 += kx(2),kl(1),kx(1);
-	VectorValues expected(initial->dims(ord1));
-	Vector dl1(2);
-	dl1(0) = -0.1;
-	dl1(1) = 0.1;
-	expected[ord1[kl(1)]] = dl1;
-	Vector dx1(2);
-	dx1(0) = -0.1;
-	dx1(1) = -0.1;
-	expected[ord1[kx(1)]] = dx1;
-	Vector dx2(2);
-	dx2(0) = 0.1;
-	dx2(1) = -0.2;
-	expected[ord1[kx(2)]] = dx2;
-
-	// Check one ordering
-	Optimizer optimizer1(fg, initial, Optimizer::shared_ordering(new Ordering(ord1)));
-
-	VectorValues actual1 = optimizer1.linearizeAndOptimizeForDelta();
-	CHECK(assert_equal(actual1,expected));
-
-// SL-FIX	// Check another
-//	shared_ptr<Ordering> ord2(new Ordering());
-//	*ord2 += kx(1),kx(2),kl(1);
-//	solver = Optimizer::shared_solver(new Optimizer::solver(ord2));
-//	Optimizer optimizer2(fg, initial, solver);
-//
-//	VectorValues actual2 = optimizer2.linearizeAndOptimizeForDelta();
-//	CHECK(assert_equal(actual2,expected));
-//
-//	// And yet another...
-//	shared_ptr<Ordering> ord3(new Ordering());
-//	*ord3 += kl(1),kx(1),kx(2);
-//	solver = Optimizer::shared_solver(new Optimizer::solver(ord3));
-//	Optimizer optimizer3(fg, initial, solver);
-//
-//	VectorValues actual3 = optimizer3.linearizeAndOptimizeForDelta();
-//	CHECK(assert_equal(actual3,expected));
-//
-//	// More...
-//	shared_ptr<Ordering> ord4(new Ordering());
-//	*ord4 += kx(1),kx(2), kl(1);
-//	solver = Optimizer::shared_solver(new Optimizer::solver(ord4));
-//	Optimizer optimizer4(fg, initial, solver);
-//
-//	VectorValues actual4 = optimizer4.linearizeAndOptimizeForDelta();
-//	CHECK(assert_equal(actual4,expected));
-}
-
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, iterateLM )
 {
@@ -120,22 +60,13 @@ TEST( NonlinearOptimizer, iterateLM )
 	ord->push_back(kx(1));
 
 	// create initial optimization state, with lambda=0
-	Optimizer optimizer(fg, config, ord, NonlinearOptimizationParameters::newLambda(0.));
+	NonlinearOptimizer::auto_ptr optimizer = LevenbergMarquardtOptimizer(fg, config, LevenbergMarquardtParams(), ord).update(0.0);
 
 	// normal iterate
-	Optimizer iterated1 = optimizer.iterate();
+	NonlinearOptimizer::auto_ptr iterated1 = GaussNewtonOptimizer(fg, config, GaussNewtonParams(), ord).iterate();
 
 	// LM iterate with lambda 0 should be the same
-	Optimizer iterated2 = optimizer.iterateLM();
-
-	// Try successive iterates. TODO: ugly pointers, better way ?
-	Optimizer *pointer = new Optimizer(iterated2);
-	for (int i=0;i<10;i++) {
-		Optimizer* newOptimizer = new Optimizer(pointer->iterateLM());
-		delete pointer;
-		pointer = newOptimizer;
-	}
-	delete(pointer);
+	NonlinearOptimizer::auto_ptr iterated2 = LevenbergMarquardtOptimizer(fg, config, LevenbergMarquardtParams(), ord).update(0.0)->iterate();
 
 	CHECK(assert_equal(*iterated1.values(), *iterated2.values(), 1e-9));
 }
@@ -169,12 +100,12 @@ TEST( NonlinearOptimizer, optimize )
 	Optimizer optimizer(fg, c0, ord, params);
 
 	// Gauss-Newton
-	Optimizer actual1 = optimizer.gaussNewton();
-	DOUBLES_EQUAL(0,fg->error(*(actual1.values())),tol);
+	NonlinearOptimizer::auto_ptr actual1 = *GaussNewtonOptimizer(fg, c0, GaussNewtonParams(), ord).optimize();
+	DOUBLES_EQUAL(0,fg->error(*(actual1->values())),tol);
 
 	// Levenberg-Marquardt
-	Optimizer actual2 = optimizer.levenbergMarquardt();
-	DOUBLES_EQUAL(0,fg->error(*(actual2.values())),tol);
+	Optimizer actual2 = *LevenbergMarquardtOptimizer(fg, c0, LevenbergMarquardtParams(), ord).optimizer();
+	DOUBLES_EQUAL(0,fg->error(*(actual2->values())),tol);
 }
 
 /* ************************************************************************* */
