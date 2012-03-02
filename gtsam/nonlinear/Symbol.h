@@ -113,8 +113,14 @@ public:
   bool operator==(const Symbol& comp) const {
     return comp.c_ == c_ && comp.j_ == j_;
   }
+  bool operator==(Key comp) const {
+    return comp == (Key)(*this);
+  }
   bool operator!=(const Symbol& comp) const {
     return comp.c_ != c_ || comp.j_ != j_;
+  }
+  bool operator!=(Key comp) const {
+    return comp != (Key)(*this);
   }
 
   /** Return a filter function that returns true when evaluated on a Key whose
