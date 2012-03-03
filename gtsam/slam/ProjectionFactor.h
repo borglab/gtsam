@@ -67,6 +67,9 @@ namespace gtsam {
 				  Base(model, poseKey, pointKey), measured_(measured), K_(K) {
 		}
 
+		/** Virtual destructor */
+		virtual ~GenericProjectionFactor() {}
+
 		/**
 		 * print
 		 * @param s optional string naming the factor
