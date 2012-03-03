@@ -85,7 +85,7 @@ TEST_UNSAFE( ISAM, iSAM_smoother )
 //	Ordering ord; ord += kx(4),kx(3),kx(2),kx(1);
 //	GaussianFactorGraph factors1;
 //	for (int i=0;i<7;i++) factors1.push_back(smoother[i]);
-//	GaussianISAM actual(*Inference::Eliminate(factors1));
+//	GaussianISAM actual(*inference::Eliminate(factors1));
 //
 //	// run iSAM with remaining factors
 //	GaussianFactorGraph factors2;
@@ -298,7 +298,7 @@ TEST_UNSAFE( BayesTree, balanced_smoother_shortcuts )
 //	varIndex.permute(toFront);
 //	BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, marginal) {
 //	  factor->permuteWithInverse(toFrontInverse); }
-//	GaussianBayesNet actual = *Inference::EliminateUntil(marginal, C3->keys().size(), varIndex);
+//	GaussianBayesNet actual = *inference::EliminateUntil(marginal, C3->keys().size(), varIndex);
 //	actual.permuteWithInverse(toFront);
 //	EXPECT(assert_equal(expected,actual,tol));
 //}

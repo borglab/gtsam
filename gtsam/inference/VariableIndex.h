@@ -26,8 +26,6 @@
 
 namespace gtsam {
 
-class Inference;
-
 /**
  * The VariableIndex class computes and stores the block column structure of a
  * factor graph.  The factor graph stores a collection of factors, each of 

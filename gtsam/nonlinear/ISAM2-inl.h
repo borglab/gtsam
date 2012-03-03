@@ -238,7 +238,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2<CONDITIONAL, GRAPH>::recalculate(
     if(theta_.size() > constrainedKeysSet.size()) {
       BOOST_FOREACH(Index var, constrainedKeysSet) { cmember[var] = 1; }
     }
-    Permutation::shared_ptr colamd(Inference::PermutationCOLAMD_(variableIndex_, cmember));
+    Permutation::shared_ptr colamd(inference::PermutationCOLAMD_(variableIndex_, cmember));
     Permutation::shared_ptr colamdInverse(colamd->inverse());
     toc(1,"CCOLAMD");
 

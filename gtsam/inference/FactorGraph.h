@@ -43,6 +43,7 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 	class FactorGraph {
 	public:
 	  typedef FACTOR FactorType;
+	  typedef typename FACTOR::KeyType KeyType;
 	  typedef boost::shared_ptr<FactorGraph<FACTOR> > shared_ptr;
 		typedef typename boost::shared_ptr<FACTOR> sharedFactor;
 		typedef typename std::vector<sharedFactor>::iterator iterator;
@@ -55,6 +56,11 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 
 	  /** typedef for an eliminate subroutine */
 	  typedef boost::function<EliminationResult(const FactorGraph<FACTOR>&, size_t)> Eliminate;
+
+	  /** Typedef for the result of factorization */
+	  typedef std::pair<
+	      boost::shared_ptr<typename FACTOR::ConditionalType>,
+	      FactorGraph<FACTOR> > FactorizationResult;
 
 	protected:
 

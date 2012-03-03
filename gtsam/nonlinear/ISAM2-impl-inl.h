@@ -303,7 +303,7 @@ ISAM2<CONDITIONAL, GRAPH>::Impl::PartialSolve(GaussianFactorGraph& factors,
       }
     }
   }
-  Permutation::shared_ptr affectedColamd(Inference::PermutationCOLAMD_(affectedFactorsIndex, cmember));
+  Permutation::shared_ptr affectedColamd(inference::PermutationCOLAMD_(affectedFactorsIndex, cmember));
   toc(3,"ccolamd");
   tic(4,"ccolamd permutations");
   Permutation::shared_ptr affectedColamdInverse(affectedColamd->inverse());
