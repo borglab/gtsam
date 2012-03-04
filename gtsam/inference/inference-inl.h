@@ -104,8 +104,9 @@ typename Graph::FactorizationResult eliminate(const Graph& factorGraph, const st
       remainingGraph.push_back(factorGraph[i]);
   }
 
-  // Add remaining factor
-  remainingGraph.push_back(remainingFactor);
+  // Add the remaining factor if it is not empty.
+  if(remainingFactor->size() != 0)
+  	remainingGraph.push_back(remainingFactor);
 
   return typename Graph::FactorizationResult(conditional, remainingGraph);
 
