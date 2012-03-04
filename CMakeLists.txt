@@ -31,7 +31,7 @@ if(    NOT cmake_build_type_tolower STREQUAL "debug"
   message(FATAL_ERROR "Unknown build type \"${CMAKE_BUILD_TYPE}\". Allowed values are Debug, Release, RelWithDebInfo (case-insensitive).")
 endif()
 
-# Add debugging flags
+# Add debugging flags 
 set(CMAKE_C_FLAGS_DEBUG            "${CMAKE_C_FLAGS_DEBUG} -fno-inline -Wall")
 set(CMAKE_CXX_FLAGS_DEBUG          "${CMAKE_CXX_FLAGS_DEBUG} -fno-inline -Wall")
 set(CMAKE_C_FLAGS_RELWITHDEBINFO   "-g -fno-inline -Wall -DNDEBUG -DEIGEN_NO_DEBUG")
