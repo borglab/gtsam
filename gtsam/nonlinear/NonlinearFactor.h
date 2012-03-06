@@ -66,13 +66,24 @@ public:
   }
 
   /**
-   * Constructor
-   * @param keys The variables involved in this factor
+   * Constructor from a vector of the keys involved in this factor
+   */
+  NonlinearFactor(const std::vector<size_t>& keys) :
+    Base(keys) {}
+
+  /**
+   * Constructor from iterators over the keys involved in this factor
    */
   template<class ITERATOR>
-  NonlinearFactor(ITERATOR beginKeys, ITERATOR endKeys) {
-    this->keys_.insert(this->keys_.end(), beginKeys, endKeys);
-  }
+  NonlinearFactor(ITERATOR beginKeys, ITERATOR endKeys) :
+    Base(beginKeys, endKeys) {}
+
+  NonlinearFactor(Key key) : Base(key) {} ///< Convenience constructor for 1 key
+  NonlinearFactor(Key key1, Key key2) : Base(key1, key2) {} ///< Convenience constructor for 2 keys
+  NonlinearFactor(Key key1, Key key2, Key key3) : Base(key1, key2, key3) {} ///< Convenience constructor for 3 keys
+  NonlinearFactor(Key key1, Key key2, Key key3, Key key4) : Base(key1, key2, key3, key4) {} ///< Convenience constructor for 4 keys
+  NonlinearFactor(Key key1, Key key2, Key key3, Key key4, Key key5) : Base(key1, key2, key3, key4, key5) {} ///< Convenience constructor for 5 keys
+  NonlinearFactor(Key key1, Key key2, Key key3, Key key4, Key key5, Key key6) : Base(key1, key2, key3, key4, key5, key6) {} ///< Convenience constructor for 6 keys
 
 	/// @}
 	/// @name Testable
@@ -177,6 +188,13 @@ public:
   NoiseModelFactor(const SharedNoiseModel& noiseModel, ITERATOR beginKeys, ITERATOR endKeys)
   : Base(beginKeys, endKeys), noiseModel_(noiseModel) {
   }
+
+  NoiseModelFactor(const SharedNoiseModel& noiseModel, Key key) : Base(key), noiseModel_(noiseModel) {} ///< Convenience constructor for 1 key
+  NoiseModelFactor(const SharedNoiseModel& noiseModel, Key key1, Key key2) : Base(key1, key2), noiseModel_(noiseModel) {} ///< Convenience constructor for 2 keys
+  NoiseModelFactor(const SharedNoiseModel& noiseModel, Key key1, Key key2, Key key3) : Base(key1, key2, key3), noiseModel_(noiseModel) {} ///< Convenience constructor for 3 keys
+  NoiseModelFactor(const SharedNoiseModel& noiseModel, Key key1, Key key2, Key key3, Key key4) : Base(key1, key2, key3, key4), noiseModel_(noiseModel) {} ///< Convenience constructor for 4 keys
+  NoiseModelFactor(const SharedNoiseModel& noiseModel, Key key1, Key key2, Key key3, Key key4, Key key5) : Base(key1, key2, key3, key4, key5), noiseModel_(noiseModel) {} ///< Convenience constructor for 5 keys
+  NoiseModelFactor(const SharedNoiseModel& noiseModel, Key key1, Key key2, Key key3, Key key4, Key key5, Key key6) : Base(key1, key2, key3, key4, key5, key6), noiseModel_(noiseModel) {} ///< Convenience constructor for 6 keys
 
 protected:
 
@@ -319,10 +337,7 @@ public:
    *  @param key by which to look up X value in Values
    */
   NoiseModelFactor1(const SharedNoiseModel& noiseModel, Key key1) :
-    Base(noiseModel) {
-    keys_.resize(1);
-    keys_[0] = key1;
-  }
+    Base(noiseModel, key1) {}
 
   /** Calls the 1-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
@@ -389,11 +404,7 @@ public:
    * @param j2 key of the second variable
    */
   NoiseModelFactor2(const SharedNoiseModel& noiseModel, Key j1, Key j2) :
-    Base(noiseModel) {
-    keys_.resize(2);
-    keys_[0] = j1;
-    keys_[1] = j2;
-  }
+    Base(noiseModel, j1, j2) {}
 
   virtual ~NoiseModelFactor2() {}
 
@@ -469,12 +480,7 @@ public:
    * @param j3 key of the third variable
    */
   NoiseModelFactor3(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3) :
-    Base(noiseModel) {
-    keys_.resize(3);
-    keys_[0] = j1;
-    keys_[1] = j2;
-    keys_[2] = j3;
-  }
+    Base(noiseModel, j1, j2, j3) {}
 
   virtual ~NoiseModelFactor3() {}
 
@@ -552,13 +558,7 @@ public:
    * @param j4 key of the fourth variable
    */
   NoiseModelFactor4(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3, Key j4) :
-    Base(noiseModel) {
-    keys_.resize(4);
-    keys_[0] = j1;
-    keys_[1] = j2;
-    keys_[2] = j3;
-    keys_[3] = j4;
-  }
+    Base(noiseModel, j1, j2, j3, j4) {}
 
   virtual ~NoiseModelFactor4() {}
 
@@ -640,14 +640,7 @@ public:
    * @param j5 key of the fifth variable
    */
   NoiseModelFactor5(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3, Key j4, Key j5) :
-    Base(noiseModel) {
-    keys_.resize(5);
-    keys_[0] = j1;
-    keys_[1] = j2;
-    keys_[2] = j3;
-    keys_[3] = j4;
-    keys_[4] = j5;
-  }
+    Base(noiseModel, j1, j2, j3, j4, j5) {}
 
   virtual ~NoiseModelFactor5() {}
 
@@ -733,15 +726,7 @@ public:
    * @param j6 key of the fifth variable
    */
   NoiseModelFactor6(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3, Key j4, Key j5, Key j6) :
-    Base(noiseModel) {
-    keys_.resize(6);
-    keys_[0] = j1;
-    keys_[1] = j2;
-    keys_[2] = j3;
-    keys_[3] = j4;
-    keys_[4] = j5;
-    keys_[5] = j6;
-  }
+    Base(noiseModel, j1, j2, j3, j4, j5, j6) {}
 
   virtual ~NoiseModelFactor6() {}
 

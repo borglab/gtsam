@@ -117,6 +117,14 @@ public:
   Factor(KeyType key1, KeyType key2, KeyType key3, KeyType key4) : keys_(4) {
     keys_[0] = key1; keys_[1] = key2; keys_[2] = key3; keys_[3] = key4; assertInvariants(); }
 
+  /** Construct 5-way factor */
+  Factor(KeyType key1, KeyType key2, KeyType key3, KeyType key4, KeyType key5) : keys_(5) {
+    keys_[0] = key1; keys_[1] = key2; keys_[2] = key3; keys_[3] = key4; keys_[4] = key5; assertInvariants(); }
+
+  /** Construct 6-way factor */
+  Factor(KeyType key1, KeyType key2, KeyType key3, KeyType key4, KeyType key5, KeyType key6) : keys_(6) {
+    keys_[0] = key1; keys_[1] = key2; keys_[2] = key3; keys_[3] = key4; keys_[4] = key5; keys_[5] = key6; assertInvariants(); }
+
 	/// @}
 	/// @name Advanced Constructors
 	/// @{
