@@ -19,25 +19,41 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
   message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there. You may need to remove CMakeCache.txt. ")
 endif()
 
-# guard against bad build-type strings
-if (NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE "Debug")
+# Default to Debug mode
+if(NOT FIRST_PASS_DONE)
+  set(CMAKE_BUILD_TYPE "Debug" CACHE STRING
+      "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
+      FORCE)
 endif()
 
+# Check build types
+if(${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} VERSION_GREATER 2.8 OR ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} VERSION_EQUAL 2.8)
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release Timing Profiling RelWithDebInfo MinSizeRel)
+endif()
 string(TOLOWER "${CMAKE_BUILD_TYPE}" cmake_build_type_tolower)
 if(    NOT cmake_build_type_tolower STREQUAL "debug"
    AND NOT cmake_build_type_tolower STREQUAL "release"
+   AND NOT cmake_build_type_tolower STREQUAL "timing"
+   AND NOT cmake_build_type_tolower STREQUAL "profiling"
    AND NOT cmake_build_type_tolower STREQUAL "relwithdebinfo")
-  message(FATAL_ERROR "Unknown build type \"${CMAKE_BUILD_TYPE}\". Allowed values are Debug, Release, RelWithDebInfo (case-insensitive).")
+  message(FATAL_ERROR "Unknown build type \"${CMAKE_BUILD_TYPE}\". Allowed values are Debug, Release, Timing, Profiling, RelWithDebInfo (case-insensitive).")
 endif()
 
-# Add debugging flags 
-set(CMAKE_C_FLAGS_DEBUG            "${CMAKE_C_FLAGS_DEBUG} -fno-inline -Wall")
-set(CMAKE_CXX_FLAGS_DEBUG          "${CMAKE_CXX_FLAGS_DEBUG} -fno-inline -Wall")
-set(CMAKE_C_FLAGS_RELWITHDEBINFO   "-g -fno-inline -Wall -DNDEBUG -DEIGEN_NO_DEBUG")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -fno-inline -Wall -DNDEBUG -DEIGEN_NO_DEBUG")
-set(CMAKE_C_FLAGS_RELEASE          "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG -Wall -DEIGEN_NO_DEBUG")
-set(CMAKE_CXX_FLAGS_RELEASE        "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -Wall -DEIGEN_NO_DEBUG")
+# Add debugging flags but only on the first pass
+if(NOT FIRST_PASS_DONE)
+  set(CMAKE_C_FLAGS_DEBUG            "${CMAKE_C_FLAGS_DEBUG} -fno-inline -Wall" CACHE STRING "Flags used by the compiler during debug builds." FORCE)
+  set(CMAKE_CXX_FLAGS_DEBUG          "${CMAKE_CXX_FLAGS_DEBUG} -fno-inline -Wall" CACHE STRING "Flags used by the compiler during debug builds." FORCE)
+  set(CMAKE_C_FLAGS_RELWITHDEBINFO   "-g -fno-inline -Wall -DNDEBUG" CACHE STRING "Flags used by the compiler during relwithdebinfo builds." FORCE)
+  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -fno-inline -Wall -DNDEBUG" CACHE STRING "Flags used by the compiler during relwithdebinfo builds." FORCE)
+  set(CMAKE_C_FLAGS_RELEASE          "${CMAKE_C_FLAGS_RELEASE} -Wall" CACHE STRING "Flags used by the compiler during release builds." FORCE)
+  set(CMAKE_CXX_FLAGS_RELEASE        "${CMAKE_CXX_FLAGS_RELEASE} -Wall" CACHE STRING "Flags used by the compiler during release builds." FORCE)
+  set(CMAKE_C_FLAGS_TIMING           "${CMAKE_C_FLAGS_RELEASE} -DENABLE_TIMING" CACHE STRING "Flags used by the compiler during timing builds." FORCE)
+  set(CMAKE_CXX_FLAGS_TIMING         "${CMAKE_CXX_FLAGS_RELEASE} -DENABLE_TIMING" CACHE STRING "Flags used by the compiler during timing builds." FORCE)
+  mark_as_advanced(CMAKE_C_FLAGS_TIMING CMAKE_CXX_FLAGS_TIMING)
+  set(CMAKE_C_FLAGS_PROFILING        "-g -O2 -Wall -DNDEBUG" CACHE STRING "Flags used by the compiler during profiling builds." FORCE)
+  set(CMAKE_CXX_FLAGS_PROFILING      "-g -O2 -Wall -DNDEBUG" CACHE STRING "Flags used by the compiler during profiling builds." FORCE)
+  mark_as_advanced(CMAKE_C_FLAGS_PROFILING CMAKE_CXX_FLAGS_PROFILING)
+endif()
 
 # Configurable Options
 option(GTSAM_BUILD_TESTS    "Enable/Disable building of tests"          ON)
@@ -103,6 +119,10 @@ if (GTSAM_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif(GTSAM_BUILD_EXAMPLES)
 
+# Mark that first pass is done
+set(FIRST_PASS_DONE true CACHE BOOL "Internally used to mark whether cmake has been run multiple times")
+mark_as_advanced(FIRST_PASS_DONE) 
+
 # print configuration variables
 message(STATUS "===============================================================")
 message(STATUS "================  Configuration Options  ======================")
@@ -112,6 +132,10 @@ print_config_flag(${GTSAM_BUILD_EXAMPLES}              "Build Examples          
 print_config_flag(${GTSAM_BUILD_TESTS}                 "Build Tests                ")
 print_config_flag(${GTSAM_BUILD_WRAP}                  "Build Wrap                 ")
 print_config_flag(${GTSAM_BUILD_CONVENIENCE_LIBRARIES} "Build Convenience Libraries")
+string(TOUPPER "${CMAKE_BUILD_TYPE}" cmake_build_type_toupper)
+message(STATUS                                       "  Build type                 : ${CMAKE_BUILD_TYPE}")
+message(STATUS                                       "  C compilation flags        : ${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${cmake_build_type_toupper}}")
+message(STATUS                                       "  C++ compilation flags      : ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${cmake_build_type_toupper}}")
 
 message(STATUS "GTSAM flags                                               ")
 print_config_flag(${GTSAM_USE_QUATERNIONS}             "Quaternions as default Rot3")
