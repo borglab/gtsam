@@ -127,6 +127,13 @@ TEST( planarSLAM, BearingRangeFactor_equals )
 }
 
 /* ************************************************************************* */
+TEST( planarSLAM, BearingRangeFactor_poses )
+{
+	typedef BearingRangeFactor<Pose2,Pose2> PoseBearingRange;
+	PoseBearingRange actual(PoseKey(2), PoseKey(3), Rot2::fromDegrees(60.0), 12.3, sigma2);
+}
+
+/* ************************************************************************* */
 TEST( planarSLAM, PoseConstraint_equals )
 {
 	planarSLAM::Constraint factor1(PoseKey(2), x2), factor2(PoseKey(2), x3);
