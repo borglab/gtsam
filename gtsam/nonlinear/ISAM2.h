@@ -283,19 +283,42 @@ protected:
   /** The linear delta from the last linear solution, an update to the estimate in theta */
   VectorValues deltaUnpermuted_;
 
-  /** @brief The permutation through which the deltaUnpermuted_ is
+  /** The permutation through which the deltaUnpermuted_ is
    * referenced.
    *
    * Permuting Vector entries would be slow, so for performance we
    * instead maintain this permutation through which we access the linear delta
    * indirectly
+   *
+   * This is \c mutable because it is a "cached" variable - it is not updated
+   * until either requested with getDelta() or calculateEstimate(), or needed
+   * during update() to evaluate whether to relinearize variables.
    */
-  Permuted<VectorValues> delta_;
+  mutable Permuted<VectorValues> delta_;
+
+  /** Indicates whether the current delta is up-to-date, only used
+   * internally - delta will always be updated if necessary when it is
+   * requested with getDelta() or calculateEstimate().
+   *
+   * This is \c mutable because it is used internally to not update delta_
+   * until it is needed.
+   */
+  mutable bool deltaUptodate_;
+
+  /** A cumulative mask for the variables that were replaced and have not yet
+   * been updated in the linear solution delta_, this is only used internally,
+   * delta will always be updated if necessary when requested with getDelta()
+   * or calculateEstimate().
+   *
+   * This is \c mutable because it is used internally to not update delta_
+   * until it is needed.
+   */
+  mutable std::vector<bool> deltaReplacedMask_;
 
   /** All original nonlinear factors are stored here to use during relinearization */
   GRAPH nonlinearFactors_;
 
-  /** @brief The current elimination ordering Symbols to Index (integer) keys.
+  /** The current elimination ordering Symbols to Index (integer) keys.
    *
    * We keep it up to date as we add and reorder variables.
    */
@@ -305,7 +328,7 @@ protected:
   ISAM2Params params_;
 
   /** The current Dogleg Delta (trust region radius) */
-  boost::optional<double> doglegDelta_;
+  mutable boost::optional<double> doglegDelta_;
 
 private:
 #ifndef NDEBUG
@@ -337,6 +360,8 @@ public:
     newISAM2->variableIndex_ = variableIndex_;
     newISAM2->deltaUnpermuted_ = deltaUnpermuted_;
     newISAM2->delta_ = delta_;
+    newISAM2->deltaUptodate_ = deltaUptodate_;
+    newISAM2->deltaReplacedMask_ = deltaReplacedMask_;
     newISAM2->nonlinearFactors_ = nonlinearFactors_;
     newISAM2->ordering_ = ordering_;
     newISAM2->params_ = params_;
@@ -404,7 +429,7 @@ public:
   Values calculateBestEstimate() const;
 
   /** Access the current delta, computed during the last call to update */
-  const Permuted<VectorValues>& getDelta() const { return delta_; }
+  const Permuted<VectorValues>& getDelta() const;
 
   /** Access the set of nonlinear factors */
   const GRAPH& getFactorsUnsafe() const { return nonlinearFactors_; }
@@ -416,7 +441,7 @@ public:
   size_t lastAffectedFactorCount;
   size_t lastAffectedCliqueCount;
   size_t lastAffectedMarkedCount;
-  size_t lastBacksubVariableCount;
+  mutable size_t lastBacksubVariableCount;
   size_t lastNnzTop;
 
   ISAM2Params params() const { return params_; }
@@ -433,6 +458,7 @@ private:
       const FastVector<Index>& newKeys, const FactorGraph<GaussianFactor>::shared_ptr newFactors,
       const boost::optional<FastSet<size_t> >& constrainKeys, ISAM2Result& result);
   //	void linear_update(const GaussianFactorGraph& newFactors);
+  void updateDelta(bool forceFullSolve = false) const;
 
 }; // ISAM2
 

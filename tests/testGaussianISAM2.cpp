@@ -47,6 +47,8 @@ TEST(ISAM2, AddVariables) {
 
   Permuted<VectorValues> delta(permutation, deltaUnpermuted);
 
+  vector<bool> replacedKeys(2, false);
+
   Ordering ordering; ordering += planarSLAM::PointKey(0), planarSLAM::PoseKey(0);
 
   GaussianISAM2<>::Nodes nodes(2);
@@ -75,17 +77,20 @@ TEST(ISAM2, AddVariables) {
 
   Permuted<VectorValues> deltaExpected(permutationExpected, deltaUnpermutedExpected);
 
+  vector<bool> replacedKeysExpected(3, false);
+
   Ordering orderingExpected; orderingExpected += planarSLAM::PointKey(0), planarSLAM::PoseKey(0), planarSLAM::PoseKey(1);
 
   GaussianISAM2<>::Nodes nodesExpected(
           3, GaussianISAM2<>::sharedClique());
 
   // Expand initial state
-  GaussianISAM2<>::Impl::AddVariables(newTheta, theta, delta, ordering, nodes);
+  GaussianISAM2<>::Impl::AddVariables(newTheta, theta, delta, replacedKeys, ordering, nodes);
 
   EXPECT(assert_equal(thetaExpected, theta));
   EXPECT(assert_equal(deltaUnpermutedExpected, deltaUnpermuted));
   EXPECT(assert_equal(deltaExpected.permutation(), delta.permutation()));
+  EXPECT(assert_container_equality(replacedKeysExpected, replacedKeys));
   EXPECT(assert_equal(orderingExpected, ordering));
 }
 

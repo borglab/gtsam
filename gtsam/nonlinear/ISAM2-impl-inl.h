@@ -46,8 +46,8 @@ struct ISAM2<CONDITIONAL, GRAPH>::Impl {
    * @param nodes Current BayesTree::Nodes index to be augmented with slots for new variables
    * @param keyFormatter Formatter for printing nonlinear keys during debugging
    */
-  static void AddVariables(const Values& newTheta, Values& theta, Permuted<VectorValues>& delta, Ordering& ordering,
-      typename Base::Nodes& nodes, const KeyFormatter& keyFormatter = DefaultKeyFormatter);
+  static void AddVariables(const Values& newTheta, Values& theta, Permuted<VectorValues>& delta, vector<bool>& replacedKeys,
+      Ordering& ordering, typename Base::Nodes& nodes, const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
   /**
    * Extract the set of variable indices from a NonlinearFactorGraph.  For each Symbol
@@ -121,12 +121,15 @@ struct ISAM2<CONDITIONAL, GRAPH>::Impl {
   static PartialSolveResult PartialSolve(GaussianFactorGraph& factors, const FastSet<Index>& keys,
       const ReorderingMode& reorderingMode);
 
+  static size_t UpdateDelta(const boost::shared_ptr<ISAM2Clique<CONDITIONAL> >& root, std::vector<bool>& replacedKeys, Permuted<VectorValues>& delta, double wildfireThreshold);
+
 };
 
 /* ************************************************************************* */
 template<class CONDITIONAL, class GRAPH>
 void ISAM2<CONDITIONAL,GRAPH>::Impl::AddVariables(
-    const Values& newTheta, Values& theta, Permuted<VectorValues>& delta, Ordering& ordering, typename Base::Nodes& nodes, const KeyFormatter& keyFormatter) {
+    const Values& newTheta, Values& theta, Permuted<VectorValues>& delta, vector<bool>& replacedKeys,
+    Ordering& ordering,typename Base::Nodes& nodes, const KeyFormatter& keyFormatter) {
   const bool debug = ISDEBUG("ISAM2 AddVariables");
 
   theta.insert(newTheta);
@@ -153,6 +156,7 @@ void ISAM2<CONDITIONAL,GRAPH>::Impl::AddVariables(
     assert(ordering.size() == delta.size());
   }
   assert(ordering.nVars() >= nodes.size());
+  replacedKeys.resize(ordering.nVars(), false);
   nodes.resize(ordering.nVars());
 }
 
@@ -229,7 +233,8 @@ void ISAM2<CONDITIONAL, GRAPH>::Impl::ExpmapMasked(Values& values, const Permute
   invalidateIfDebug = boost::optional<Permuted<VectorValues>&>();
 #endif
 
-  assert(values.size() == ordering.size());
+  assert(values.size() == ordering.nVars());
+  assert(delta.size() == ordering.nVars());
   Values::iterator key_value;
   Ordering::const_iterator key_index;
   for(key_value = values.begin(), key_index = ordering.begin();
@@ -352,6 +357,45 @@ ISAM2<CONDITIONAL, GRAPH>::Impl::PartialSolve(GaussianFactorGraph& factors,
   toc(8,"permute eliminated");
 
   return result;
+}
+
+/* ************************************************************************* */
+template<class CONDITIONAL, class GRAPH>
+size_t ISAM2<CONDITIONAL,GRAPH>::Impl::UpdateDelta(const boost::shared_ptr<ISAM2Clique<CONDITIONAL> >& root, std::vector<bool>& replacedKeys, Permuted<VectorValues>& delta, double wildfireThreshold) {
+
+  size_t lastBacksubVariableCount;
+
+  if (wildfireThreshold <= 0.0) {
+    // Threshold is zero or less, so do a full recalculation
+    // Collect dimensions and allocate new VectorValues
+    vector<size_t> dims(delta.size());
+    for(size_t j=0; j<delta.size(); ++j)
+      dims[j] = delta->dim(j);
+    VectorValues newDelta(dims);
+
+    // Optimize full solution delta
+    optimize2(root, newDelta);
+
+    // Copy solution into delta
+    delta.permutation() = Permutation::Identity(delta.size());
+    delta.container() = newDelta;
+
+    lastBacksubVariableCount = delta.size();
+
+  } else {
+    // Optimize with wildfire
+    lastBacksubVariableCount = optimize2(root, wildfireThreshold, replacedKeys, delta); // modifies delta_
+
+#ifndef NDEBUG
+    for(size_t j=0; j<delta.container().size(); ++j)
+      assert(delta.container()[j].unaryExpr(&isfinite<double>).all());
+#endif
+  }
+
+  // Clear replacedKeys
+  replacedKeys.assign(replacedKeys.size(), false);
+
+  return lastBacksubVariableCount;
 }
 
 }
