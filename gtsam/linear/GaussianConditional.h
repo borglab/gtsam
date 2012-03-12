@@ -137,6 +137,15 @@ public:
   /** Copy constructor */
 	GaussianConditional(const GaussianConditional& rhs);
 
+	/** Combine several GaussianConditional into a single dense GC.  The
+	 * conditionals enumerated by \c first and \c last must be in increasing
+	 * order, meaning that the parents of any conditional may not include a
+	 * conditional coming before it.
+	 * @param firstConditional Iterator to the first conditional to combine, must dereference to a shared_ptr<GaussianConditional>.
+   * @param lastConditional Iterator to after the last conditional to combine, must dereference to a shared_ptr<GaussianConditional>. */
+	template<typename ITERATOR>
+	static shared_ptr Combine(ITERATOR firstConditional, ITERATOR lastConditional);
+
 	/** Assignment operator */
 	GaussianConditional& operator=(const GaussianConditional& rhs);
 
@@ -274,5 +283,49 @@ GaussianConditional::GaussianConditional(ITERATOR firstKey, ITERATOR lastKey,
 }
 
 /* ************************************************************************* */
+template<typename ITERATOR>
+GaussianConditional::shared_ptr GaussianConditional::Combine(ITERATOR firstConditional, ITERATOR lastConditional) {
+
+  // TODO:  check for being a clique
+
+  // Get dimensions from first conditional
+  std::vector<size_t> dims;   dims.reserve((*firstConditional)->size() + 1);
+  for(const_iterator j = (*firstConditional)->begin(); j != (*firstConditional)->end(); ++j)
+    dims.push_back((*firstConditional)->dim(j));
+  dims.push_back(1);
+
+  // We assume the conditionals form clique, so the first n variables will be
+  // frontal variables in the new conditional.
+  size_t nFrontals = 0;
+  size_t nRows = 0;
+  for(ITERATOR c = firstConditional; c != lastConditional; ++c) {
+    nRows += dims[nFrontals];
+    ++ nFrontals;
+  }
+
+  // Allocate combined conditional, has same keys as firstConditional
+  Matrix tempCombined;
+  VerticalBlockView<Matrix> tempBlockView(tempCombined, dims.begin(), dims.end(), 0);
+  GaussianConditional::shared_ptr combinedConditional(new GaussianConditional((*firstConditional)->begin(), (*firstConditional)->end(), nFrontals, tempBlockView, zero(nRows)));
+
+  // Resize to correct number of rows
+  combinedConditional->matrix_.resize(nRows, combinedConditional->matrix_.cols());
+  combinedConditional->rsd_.rowEnd() = combinedConditional->matrix_.rows();
+
+  // Copy matrix and sigmas
+  const size_t totalDims = combinedConditional->matrix_.cols();
+  size_t currentSlot = 0;
+  for(ITERATOR c = firstConditional; c != lastConditional; ++c) {
+    const size_t startRow = combinedConditional->rsd_.offset(currentSlot); // Start row is same as start column
+    combinedConditional->rsd_.range(0, currentSlot).block(startRow, 0, dims[currentSlot], combinedConditional->rsd_.offset(currentSlot)).operator=(
+        Matrix::Zero(dims[currentSlot], combinedConditional->rsd_.offset(currentSlot)));
+    combinedConditional->rsd_.range(currentSlot, dims.size()).block(startRow, 0, dims[currentSlot], totalDims - startRow).operator=(
+        (*c)->matrix_);
+    combinedConditional->sigmas_.segment(startRow, dims[currentSlot]) = (*c)->sigmas_;
+    ++ currentSlot;
+  }
+
+  return combinedConditional;
+}
 
 } // gtsam

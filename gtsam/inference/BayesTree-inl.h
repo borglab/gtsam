@@ -234,15 +234,56 @@ namespace gtsam {
 	  }
 	}
 
-	/* ************************************************************************* */
+  /* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
-	BayesTree<CONDITIONAL,CLIQUE>::BayesTree() {
+	void BayesTree<CONDITIONAL,CLIQUE>::recursiveTreeBuild(const boost::shared_ptr<BayesTreeClique<IndexConditional> >& symbolic,
+	    const std::vector<boost::shared_ptr<CONDITIONAL> >& conditionals,
+	    const typename BayesTree<CONDITIONAL,CLIQUE>::sharedClique& parent) {
+
+	  // Helper function to build a non-symbolic tree (e.g. Gaussian) using a
+	  // symbolic tree, used in the BT(BN) constructor.
+
+	  // Build the current clique
+	  FastList<typename CONDITIONAL::shared_ptr> cliqueConditionals;
+	  BOOST_FOREACH(Index j, symbolic->conditional()->frontals()) {
+	    cliqueConditionals.push_back(conditionals[j]); }
+	  typename BayesTree<CONDITIONAL,CLIQUE>::sharedClique thisClique(new CLIQUE(CONDITIONAL::Combine(cliqueConditionals.begin(), cliqueConditionals.end())));
+
+	  // Add the new clique with the current parent
+	  this->addClique(thisClique, parent);
+
+	  // Build the children, whose parent is the new clique
+	  BOOST_FOREACH(const BayesTree<IndexConditional>::sharedClique& child, symbolic->children()) {
+	    this->recursiveTreeBuild(child, conditionals, thisClique); }
+	}
+
+  /* ************************************************************************* */
+	template<class CONDITIONAL, class CLIQUE>
+	BayesTree<CONDITIONAL,CLIQUE>::BayesTree(const BayesNet<CONDITIONAL>& bayesNet) {
+	  // First generate symbolic BT to determine clique structure
+	  BayesTree<IndexConditional> sbt(bayesNet);
+
+	  // Build index of variables to conditionals
+	  std::vector<boost::shared_ptr<CONDITIONAL> > conditionals(sbt.root()->conditional()->frontals().back() + 1);
+	  BOOST_FOREACH(const boost::shared_ptr<CONDITIONAL>& c, bayesNet) {
+	    if(c->nrFrontals() != 1)
+	      throw std::invalid_argument("BayesTree constructor from BayesNet only supports single frontal variable conditionals");
+	    if(c->firstFrontalKey() >= conditionals.size())
+	      throw std::invalid_argument("An inconsistent BayesNet was passed into the BayesTree constructor!");
+	    if(conditionals[c->firstFrontalKey()])
+	      throw std::invalid_argument("An inconsistent BayesNet with duplicate frontal variables was passed into the BayesTree constructor!");
+
+	    conditionals[c->firstFrontalKey()] = c;
+	  }
+
+	  // Build the new tree
+	  this->recursiveTreeBuild(sbt.root(), conditionals, sharedClique());
 	}
 
 	/* ************************************************************************* */
-	template<class CONDITIONAL, class CLIQUE>
-	BayesTree<CONDITIONAL,CLIQUE>::BayesTree(const BayesNet<CONDITIONAL>& bayesNet) {
-		typename BayesNet<CONDITIONAL>::const_reverse_iterator rit;
+	template<>
+	inline BayesTree<IndexConditional>::BayesTree(const BayesNet<IndexConditional>& bayesNet) {
+		typename BayesNet<IndexConditional>::const_reverse_iterator rit;
 		for ( rit=bayesNet.rbegin(); rit != bayesNet.rend(); ++rit )
 			insert(*this, *rit);
 	}

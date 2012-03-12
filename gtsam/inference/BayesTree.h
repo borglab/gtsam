@@ -31,6 +31,7 @@
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/BayesTreeCliqueBase.h>
+#include <gtsam/inference/IndexConditional.h>
 #include <gtsam/linear/VectorValues.h>
 
 namespace gtsam {
@@ -127,15 +128,22 @@ namespace gtsam {
 		/** Fill the nodes index for a subtree */
 		void fillNodesIndex(const sharedClique& subtree);
 
+    /** Helper function to build a non-symbolic tree (e.g. Gaussian) using a
+     * symbolic tree, used in the BT(BN) constructor.
+     */
+		void recursiveTreeBuild(const boost::shared_ptr<BayesTreeClique<IndexConditional> >& symbolic,
+		      const std::vector<boost::shared_ptr<CONDITIONAL> >& conditionals,
+		      const typename BayesTree<CONDITIONAL,CLIQUE>::sharedClique& parent);
+
 	public:
 
 		/// @name Standard Constructors
 		/// @{
 
 		/** Create an empty Bayes Tree */
-		BayesTree();
+		BayesTree() {}
 
-		/** Create a Bayes Tree from a Bayes Net */
+		/** Create a Bayes Tree from a Bayes Net (requires CONDITIONAL is IndexConditional *or* CONDITIONAL::Combine) */
 		BayesTree(const BayesNet<CONDITIONAL>& bayesNet);
 
 		/// @}

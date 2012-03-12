@@ -104,6 +104,21 @@ TEST( GaussianJunctionTree, eliminate )
 }
 
 /* ************************************************************************* */
+TEST_UNSAFE( GaussianJunctionTree, GBNConstructor )
+{
+  GaussianFactorGraph fg = createChain();
+  GaussianJunctionTree jt(fg);
+  BayesTree<GaussianConditional>::sharedClique root = jt.eliminate(&EliminateQR);
+  BayesTree<GaussianConditional> expected;
+  expected.insert(root);
+
+  GaussianBayesNet bn(*GaussianSequentialSolver(fg).eliminate());
+  BayesTree<GaussianConditional> actual(bn);
+
+  EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
 TEST( GaussianJunctionTree, optimizeMultiFrontal )
 {
   GaussianFactorGraph fg = createChain();
