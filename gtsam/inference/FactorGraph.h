@@ -93,7 +93,7 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 		/** convert from a derived type */
 		template<class DERIVEDFACTOR>
 		FactorGraph(const FactorGraph<DERIVEDFACTOR>& factors) {
-			factors_.insert(end(), factors.begin(), factors.end());
+			factors_.assign(factors.begin(), factors.end());
 		}
 
 		/// @}
