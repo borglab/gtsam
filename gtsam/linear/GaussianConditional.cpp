@@ -60,7 +60,7 @@ static void writeVectorValuesSlices(const VECTOR& vector, VectorValues& values, 
     values[*j] = vector.segment(varStart, values.dim(*j));
     varStart += values.dim(*j);
   }
-  assert(varStart = vector.rows());
+  assert(varStart == vector.rows());
 }
 
 /* ************************************************************************* */
