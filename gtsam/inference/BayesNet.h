@@ -74,6 +74,12 @@ public:
   /** Default constructor as an empty BayesNet */
   BayesNet() {};
 
+  /** convert from a derived type */
+  template<class DERIVEDCONDITIONAL>
+  BayesNet(const BayesNet<DERIVEDCONDITIONAL>& bn) {
+    conditionals_.assign(bn.begin(), bn.end());
+  }
+
   /** BayesNet with 1 conditional */
   BayesNet(const sharedConditional& conditional) { push_back(conditional); }
 
