@@ -78,7 +78,8 @@ VectorValues::shared_ptr GaussianSequentialSolver::optimize() const {
 
   tic(2,"optimize");
   // Back-substitute
-  VectorValues::shared_ptr solution(gtsam::optimize_(*bayesNet));
+  VectorValues::shared_ptr solution(
+      new VectorValues(gtsam::optimize(*bayesNet)));
   toc(2,"optimize");
 
   if(debug) solution->print("GaussianSequentialSolver, solution ");

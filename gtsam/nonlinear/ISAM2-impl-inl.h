@@ -15,6 +15,8 @@
  * @author  Michael Kaess, Richard Roberts
  */
 
+#include <gtsam/linear/GaussianBayesTree.h>
+
 namespace gtsam {
 
 using namespace std;
@@ -374,7 +376,7 @@ size_t ISAM2<CONDITIONAL,GRAPH>::Impl::UpdateDelta(const boost::shared_ptr<ISAM2
     VectorValues newDelta(dims);
 
     // Optimize full solution delta
-    optimize2(root, newDelta);
+    internal::optimizeInPlace(root, newDelta);
 
     // Copy solution into delta
     delta.permutation() = Permutation::Identity(delta.size());
@@ -384,7 +386,7 @@ size_t ISAM2<CONDITIONAL,GRAPH>::Impl::UpdateDelta(const boost::shared_ptr<ISAM2
 
   } else {
     // Optimize with wildfire
-    lastBacksubVariableCount = optimize2(root, wildfireThreshold, replacedKeys, delta); // modifies delta_
+    lastBacksubVariableCount = optimizeWildfire(root, wildfireThreshold, replacedKeys, delta); // modifies delta_
 
 #ifndef NDEBUG
     for(size_t j=0; j<delta.container().size(); ++j)

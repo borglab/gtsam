@@ -634,7 +634,7 @@ const Permuted<VectorValues>& ISAM2<CONDITIONAL, GRAPH>::getDelta() const {
 template<class CONDITIONAL, class GRAPH>
 VectorValues optimize(const ISAM2<CONDITIONAL, GRAPH>& isam) {
   VectorValues delta = *allocateVectorValues(isam);
-  optimize2(isam.root(), delta);
+  internal::optimizeInPlace(isam.root(), delta);
   return delta;
 }
 

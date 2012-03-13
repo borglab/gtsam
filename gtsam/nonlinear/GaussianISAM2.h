@@ -63,10 +63,6 @@ public:
 
 };
 
-/** optimize the BayesTree, starting from the root */
-template<class CLIQUE>
-void optimize2(const boost::shared_ptr<CLIQUE>& root, VectorValues& delta);
-
 /// optimize the BayesTree, starting from the root; "replaced" needs to contain
 /// all variables that are contained in the top of the Bayes tree that has been
 /// redone; "delta" is the current solution, an offset from the linearization
@@ -76,7 +72,7 @@ void optimize2(const boost::shared_ptr<CLIQUE>& root, VectorValues& delta);
 /// variables are contained in the subtree.
 /// returns the number of variables that were solved for
 template<class CLIQUE>
-int optimize2(const boost::shared_ptr<CLIQUE>& root,
+int optimizeWildfire(const boost::shared_ptr<CLIQUE>& root,
     double threshold, const std::vector<bool>& replaced, Permuted<VectorValues>& delta);
 
 /// calculate the number of non-zero entries for the tree starting at clique (use root for complete matrix)

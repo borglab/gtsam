@@ -20,6 +20,7 @@
 #include <gtsam/inference/ClusterTree.h>
 #include <gtsam/inference/JunctionTree.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
+#include <gtsam/linear/GaussianBayesTree.h>
 
 #include <vector>
 
@@ -34,32 +35,6 @@ namespace gtsam {
 	using namespace std;
 
 	/* ************************************************************************* */
-	void GaussianJunctionTree::btreeBackSubstitute(const BTClique::shared_ptr& current, VectorValues& config) const {
-		// solve the bayes net in the current node
-	  current->conditional()->solveInPlace(config);
-
-	  //		GaussianBayesNet::const_reverse_iterator it = current->rbegin();
-//		for (; it!=current->rend(); ++it) {
-//			(*it)->solveInPlace(config); // solve and store result
-//
-////			Vector x = (*it)->solve(config); // Solve for that variable
-////			config[(*it)->key()] = x;   // store result in partial solution
-//		}
-
-		// solve the bayes nets in the child nodes
-		BOOST_FOREACH(const BTClique::shared_ptr& child, current->children()) {
-			btreeBackSubstitute(child, config);
-		}
-	}
-
-	/* ************************************************************************* */
-	void GaussianJunctionTree::btreeRHS(const BTClique::shared_ptr& current, VectorValues& config) const {
-		current->conditional()->rhs(config);
-		BOOST_FOREACH(const BTClique::shared_ptr& child, current->children())
-			btreeRHS(child, config);
-	}
-
-	/* ************************************************************************* */
 	VectorValues GaussianJunctionTree::optimize(Eliminate function) const {
 	  tic(1, "GJT eliminate");
 		// eliminate from leaves to the root
@@ -71,12 +46,11 @@ namespace gtsam {
     vector<size_t> dims(rootClique->conditional()->back()+1, 0);
 		countDims(rootClique, dims);
 		VectorValues result(dims);
-		btreeRHS(rootClique, result);
     toc(2, "allocate VectorValues");
 
 		// back-substitution
     tic(3, "back-substitute");
-		btreeBackSubstitute(rootClique, result);
+		internal::optimizeInPlace(rootClique, result);
     toc(3, "back-substitute");
 		return result;
 	}

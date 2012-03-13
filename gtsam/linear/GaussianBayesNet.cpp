@@ -83,33 +83,14 @@ boost::shared_ptr<VectorValues> allocateVectorValues(const GaussianBayesNet& bn)
 
 /* ************************************************************************* */
 VectorValues optimize(const GaussianBayesNet& bn) {
-  return *optimize_(bn);
-}
-
-/* ************************************************************************* */
-boost::shared_ptr<VectorValues> optimize_(const GaussianBayesNet& bn)
-{
-	// get the RHS as a VectorValues to initialize system
-	boost::shared_ptr<VectorValues> result(new VectorValues(rhs(bn)));
-
-  /** solve each node in turn in topological sort order (parents first)*/
-	BOOST_REVERSE_FOREACH(GaussianConditional::shared_ptr cg, bn)
-		cg->solveInPlace(*result); // solve and store solution in same step
-
-	return result;
-}
-
-/* ************************************************************************* */
-VectorValues backSubstitute(const GaussianBayesNet& bn, const VectorValues& y) {
-	VectorValues x(y);
-	backSubstituteInPlace(bn,x);
+	VectorValues x = *allocateVectorValues(bn);
+	optimizeInPlace(bn, x);
 	return x;
 }
 
 /* ************************************************************************* */
 // (R*x)./sigmas = y by solving x=inv(R)*(y.*sigmas)
-void backSubstituteInPlace(const GaussianBayesNet& bn, VectorValues& y) {
-	VectorValues& x = y;
+void optimizeInPlace(const GaussianBayesNet& bn, VectorValues& x) {
 	/** solve each node in turn in topological sort order (parents first)*/
 	BOOST_REVERSE_FOREACH(const boost::shared_ptr<const GaussianConditional> cg, bn) {
 		// i^th part of R*x=y, x=inv(R)*y
@@ -192,15 +173,6 @@ pair<Matrix,Vector> matrix(const GaussianBayesNet& bn)  {
   } // keyI
 
   return make_pair(R,d);
-}
-
-/* ************************************************************************* */
-VectorValues rhs(const GaussianBayesNet& bn) {
-	boost::shared_ptr<VectorValues> result(allocateVectorValues(bn));
-  BOOST_FOREACH(boost::shared_ptr<const GaussianConditional> cg,bn)
-  	cg->rhs(*result);
-
-  return *result;
 }
 
 /* ************************************************************************* */

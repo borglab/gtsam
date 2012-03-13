@@ -119,64 +119,25 @@ TEST( GaussianBayesNet, optimize2 )
 }
 
 /* ************************************************************************* */
-TEST( GaussianBayesNet, backSubstitute )
+TEST( GaussianBayesNet, optimize3 )
 {
 	// y=R*x, x=inv(R)*y
-	// 2 = 1 1  -1
-	// 3     1   3
+	// 9 = 1 1   4
+	// 5     1   5
 	// NOTE: we are supplying a new RHS here
   GaussianBayesNet cbn = createSmallGaussianBayesNet();
 
-  VectorValues y(vector<size_t>(2,1)), x(vector<size_t>(2,1));
-  y[_x_] = Vector_(1,2.);
-  y[_y_] = Vector_(1,3.);
-  x[_x_] = Vector_(1,-1.);
-  x[_y_] = Vector_(1, 3.);
+  VectorValues expected(vector<size_t>(2,1)), x(vector<size_t>(2,1));
+  expected[_x_] = Vector_(1, 4.);
+  expected[_y_] = Vector_(1, 5.);
 
   // test functional version
-  VectorValues actual = backSubstitute(cbn,y);
-  EXPECT(assert_equal(x,actual));
+  VectorValues actual = optimize(cbn);
+  EXPECT(assert_equal(expected,actual));
 
   // test imperative version
-  backSubstituteInPlace(cbn,y);
-  EXPECT(assert_equal(x,y));
-}
-
-/* ************************************************************************* */
-TEST( GaussianBayesNet, rhs )
-{
-	// y=R*x, x=inv(R)*y
-	// 2 = 1 1  -1
-	// 3     1   3
-  GaussianBayesNet cbn = createSmallGaussianBayesNet();
-	VectorValues expected = gtsam::optimize(cbn);
-	VectorValues d = rhs(cbn);
-	VectorValues actual = backSubstitute(cbn, d);
-	EXPECT(assert_equal(expected, actual));
-}
-
-/* ************************************************************************* */
-TEST( GaussianBayesNet, rhs_with_sigmas )
-{
-	Matrix R11 = Matrix_(1, 1, 1.0), S12 = Matrix_(1, 1, 1.0);
-	Matrix R22 = Matrix_(1, 1, 1.0);
-	Vector d1(1), d2(1);
-	d1(0) = 9;
-	d2(0) = 5;
-	Vector tau(1);
-	tau(0) = 0.25;
-
-	// define nodes and specify in reverse topological sort (i.e. parents last)
-	GaussianConditional::shared_ptr Px_y(new GaussianConditional(_x_, d1, R11,
-			_y_, S12, tau)), Py(new GaussianConditional(_y_, d2, R22, tau));
-	GaussianBayesNet cbn;
-	cbn.push_back(Px_y);
-	cbn.push_back(Py);
-
-	VectorValues expected = gtsam::optimize(cbn);
-	VectorValues d = rhs(cbn);
-	VectorValues actual = backSubstitute(cbn, d);
-	EXPECT(assert_equal(expected, actual));
+  optimizeInPlace(cbn,x);
+  EXPECT(assert_equal(expected,x));
 }
 
 /* ************************************************************************* */

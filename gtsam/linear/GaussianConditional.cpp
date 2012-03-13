@@ -31,19 +31,19 @@ namespace gtsam {
 // Helper function used only in this file - extracts vectors with variable indices
 // in the first and last iterators, and concatenates them in that order into the
 // output.
-template<typename ITERATOR>
-static Vector extractVectorValuesSlices(const VectorValues& values, ITERATOR first, ITERATOR last) {
+template<class VALUES, typename ITERATOR>
+static Vector extractVectorValuesSlices(const VALUES& values, ITERATOR first, ITERATOR last) {
   // Find total dimensionality
   int dim = 0;
   for(ITERATOR j = first; j != last; ++j)
-    dim += values.dim(*j);
+    dim += values[*j].rows();
 
   // Copy vectors
   Vector ret(dim);
   int varStart = 0;
   for(ITERATOR j = first; j != last; ++j) {
-    ret.segment(varStart, values.dim(*j)) = values[*j];
-    varStart += values.dim(*j);
+    ret.segment(varStart, values[*j].rows()) = values[*j];
+    varStart += values[*j].rows();
   }
   return ret;
 }
@@ -52,13 +52,13 @@ static Vector extractVectorValuesSlices(const VectorValues& values, ITERATOR fir
 // Helper function used only in this file - writes to the variables in values
 // with indices iterated over by first and last, interpreting vector as the
 // concatenated vectors to write.
-template<class VECTOR, typename ITERATOR>
-static void writeVectorValuesSlices(const VECTOR& vector, VectorValues& values, ITERATOR first, ITERATOR last) {
+template<class VECTOR, class VALUES, typename ITERATOR>
+static void writeVectorValuesSlices(const VECTOR& vector, VALUES& values, ITERATOR first, ITERATOR last) {
   // Copy vectors
   int varStart = 0;
   for(ITERATOR j = first; j != last; ++j) {
-    values[*j] = vector.segment(varStart, values.dim(*j));
-    varStart += values.dim(*j);
+    values[*j] = vector.segment(varStart, values[*j].rows());
+    varStart += values[*j].rows();
   }
   assert(varStart == vector.rows());
 }
@@ -221,78 +221,34 @@ JacobianFactor::shared_ptr GaussianConditional::toFactor() const {
 }
 
 /* ************************************************************************* */
-void GaussianConditional::rhs(VectorValues& x) const {
-  writeVectorValuesSlices(get_d(), x, beginFrontals(), endFrontals());
-}
+template<class VALUES>
+inline static void doSolveInPlace(const GaussianConditional& conditional, VALUES& x) {
 
-/* ************************************************************************* */
-void GaussianConditional::rhs(Permuted<VectorValues>& x) const {
-  // Copy the rhs into x, accounting for the permutation
-  Vector d = get_d();
-  size_t rhsPosition = 0;  // We walk through the rhs by variable
-  for(const_iterator j = beginFrontals(); j != endFrontals(); ++j) {
-    // Get the segment of the rhs for this variable
-    x[*j] = d.segment(rhsPosition, this->dim(j));
-    // Increment the position
-    rhsPosition += this->dim(j);
+  // Helper function to solve-in-place on a VectorValues or Permuted<VectorValues>,
+  // called by GaussianConditional::solveInPlace(VectorValues&) and by
+  // GaussianConditional::solveInPlace(Permuted<VectorValues>&).
+
+  static const bool debug = false;
+  if(debug) conditional.print("Solving conditional in place");
+  Vector xS = extractVectorValuesSlices(x, conditional.beginParents(), conditional.endParents());
+  xS = conditional.get_d() - conditional.get_S() * xS;
+  Vector soln = conditional.permutation().transpose() *
+      conditional.get_R().triangularView<Eigen::Upper>().solve(xS);
+  if(debug) {
+    gtsam::print(Matrix(conditional.get_R()), "Calling backSubstituteUpper on ");
+    gtsam::print(soln, "full back-substitution solution: ");
   }
+  writeVectorValuesSlices(soln, x, conditional.beginFrontals(), conditional.endFrontals());
 }
 
 /* ************************************************************************* */
 void GaussianConditional::solveInPlace(VectorValues& x) const {
-  static const bool debug = false;
-  if(debug) print("Solving conditional in place");
-  Vector rhs = extractVectorValuesSlices(x, beginFrontals(), endFrontals());
-	for (const_iterator parent = beginParents(); parent != endParents(); ++parent) {
-		rhs += -get_S(parent) * x[*parent];
-	}
-	Vector soln = permutation_.transpose() * get_R().triangularView<Eigen::Upper>().solve(rhs);
-	if(debug) {
-		gtsam::print(Matrix(get_R()), "Calling backSubstituteUpper on ");
-		gtsam::print(rhs, "rhs: ");
-	  gtsam::print(soln, "full back-substitution solution: ");
-	}
-	writeVectorValuesSlices(soln, x, beginFrontals(), endFrontals());
+  doSolveInPlace(*this, x); // Call helper version above
 }
 
 /* ************************************************************************* */
 void GaussianConditional::solveInPlace(Permuted<VectorValues>& x) const {
-  static const bool debug = false;
-  if(debug) print("Solving conditional in place (permuted)");
-	// Extract RHS from values - inlined from VectorValues
-	size_t s = 0;
-	for (const_iterator it=beginFrontals(); it!=endFrontals(); ++it)
-		s += x[*it].size();
-	Vector rhs(s); size_t start = 0;
-	for (const_iterator it=beginFrontals(); it!=endFrontals(); ++it) {
-		SubVector v = x[*it];
-		const size_t d = v.size();
-		rhs.segment(start, d) = v;
-		start += d;
-	}
-
-	// apply parents to rhs
-	for (const_iterator parent = beginParents(); parent != endParents(); ++parent) {
-		rhs += -get_S(parent) * x[*parent];
-	}
-
-	// solve system - backsubstitution
-	Vector soln = permutation_.transpose() * get_R().triangularView<Eigen::Upper>().solve(rhs);
-
-	// apply solution: inlined manually due to permutation
-  size_t solnStart = 0;
-  for (const_iterator frontal = beginFrontals(); frontal != endFrontals(); ++frontal) {
-  	const size_t d = this->dim(frontal);
-  	x[*frontal] = soln.segment(solnStart, d);
-  	solnStart += d;
-  }
-}
-
-/* ************************************************************************* */
-VectorValues GaussianConditional::solve(const VectorValues& x) const {
-	VectorValues result = x;
-	solveInPlace(result);
-	return result;
+  doSolveInPlace(*this, x); // Call helper version above
 }
 
 /* ************************************************************************* */

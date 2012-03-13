@@ -16,6 +16,7 @@ using namespace boost::assign;
 #include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
+#include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/nonlinear/GaussianISAM2.h>
 #include <gtsam/slam/smallExample.h>
 #include <gtsam/slam/planarSLAM.h>
@@ -167,15 +168,13 @@ TEST(ISAM2, optimize2) {
 
   // Expected vector
   VectorValues expected(1, 3);
-  conditional->rhs(expected);
   conditional->solveInPlace(expected);
 
   // Clique
   GaussianISAM2<>::sharedClique clique(
       GaussianISAM2<>::Clique::Create(make_pair(conditional,GaussianFactor::shared_ptr())));
   VectorValues actual(theta.dims(ordering));
-  conditional->rhs(actual);
-  optimize2(clique, actual);
+  internal::optimizeInPlace(clique, actual);
 
 //  expected.print("expected: ");
 //  actual.print("actual: ");

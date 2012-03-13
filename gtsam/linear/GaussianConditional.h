@@ -197,45 +197,38 @@ public:
 	 */
 	boost::shared_ptr<JacobianFactor> toFactor() const;
 
-	/**
-	 * Adds the RHS to a given VectorValues for use in solve() functions.
-	 * @param x is the values to be updated, assumed allocated
-	 */
-	void rhs(VectorValues& x) const;
-
   /**
-   * Adds the RHS to a given VectorValues for use in solve() functions.
-   * @param x is the values to be updated, assumed allocated
-   */
-  void rhs(Permuted<VectorValues>& x) const;
-
-  /**
-   * solves a conditional Gaussian and stores the result in x
+   * Solves a conditional Gaussian and writes the solution into the entries of
+   * \c x for each frontal variable of the conditional.  The parents are
+   * assumed to have already been solved in and their values are read from \c x.
    * This function works for multiple frontal variables.
-   * NOTE: assumes that the RHS for the frontals is stored in x, and
-   * then replaces the RHS with the partial result for this conditional,
-   * assuming that parents have been solved already.
    *
-   * @param x values structure with solved parents, and the RHS for this conditional
-   * @return solution \f$ x = R \ (d - Sy - Tz - ...) \f$ for each frontal variable
+   * Given the Gaussian conditional with log likelihood \f$ |R x_f - (d - S x_s)|^2,
+   * where \f$ f \f$ are the frontal variables and \f$ s \f$ are the separator
+   * variables of this conditional, this solve function computes
+   * \f$ x_f = R^{-1} (d - S x_s) \f$ using back-substitution.
+   *
+   * @param x VectorValues structure with solved parents \f$ x_s \f$, and into which the
+   * solution \f$ x_f \f$ will be written.
    */
   void solveInPlace(VectorValues& x) const;
 
   /**
-   * solves a conditional Gaussian and stores the result in x
-   * Identical to solveInPlace() above, with a permuted x
+   * Solves a conditional Gaussian and writes the solution into the entries of
+   * \c x for each frontal variable of the conditional (version for permuted
+   * VectorValues).  The parents are assumed to have already been solved in
+   * and their values are read from \c x.  This function works for multiple
+   * frontal variables.
+   *
+   * Given the Gaussian conditional with log likelihood \f$ |R x_f - (d - S x_s)|^2,
+   * where \f$ f \f$ are the frontal variables and \f$ s \f$ are the separator
+   * variables of this conditional, this solve function computes
+   * \f$ x_f = R^{-1} (d - S x_s) \f$ using back-substitution.
+   *
+   * @param x VectorValues structure with solved parents \f$ x_s \f$, and into which the
+   * solution \f$ x_f \f$ will be written.
    */
   void solveInPlace(Permuted<VectorValues>& x) const;
-
-  /**
-   * Solves a conditional Gaussian and returns a new VectorValues
-   * This function works for multiple frontal variables, but should
-   * only be used for testing as it copies the input vector values
-   *
-   * Assumes, as in solveInPlace, that the RHS has been stored in x
-   * for all frontal variables
-   */
-  VectorValues solve(const VectorValues& x) const;
 
   // functions for transpose backsubstitution
 

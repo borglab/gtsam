@@ -55,26 +55,19 @@ namespace gtsam {
 	boost::shared_ptr<VectorValues> allocateVectorValues(const GaussianBayesNet& bn);
 
 	/**
-	 * optimize, i.e. return x = inv(R)*d
+	 * Solve the GaussianBayesNet, i.e. return \f$ x = R^{-1}*d \f$, computed by
+	 * back-substitution.
 	 */
-	VectorValues optimize(const GaussianBayesNet&);
+	VectorValues optimize(const GaussianBayesNet& bn);
 
-	/**
-	 * shared pointer version
-	 */
-	boost::shared_ptr<VectorValues> optimize_(const GaussianBayesNet& bn);
-
-	/**
-	 * Backsubstitute
-	 * (R*x)./sigmas = y by solving x=inv(R)*(y.*sigmas)
-	 * @param y is the RHS of the system
-	 */
-	VectorValues backSubstitute(const GaussianBayesNet& bn, const VectorValues& y);
-
-	/**
-	 * Backsubstitute in place, y starts as RHS and is replaced with solution
-	 */
-	void backSubstituteInPlace(const GaussianBayesNet& bn, VectorValues& y);
+  /**
+   * Solve the GaussianBayesNet, i.e. return \f$ x = R^{-1}*d \f$, computed by
+   * back-substitution, writes the solution \f$ x \f$ into a pre-allocated
+   * VectorValues.  You can use allocateVectorValues(const GaussianBayesNet&)
+   * allocate it.  See also optimize(const GaussianBayesNet&), which does not
+   * require pre-allocation.
+   */
+  void optimizeInPlace(const GaussianBayesNet& bn, VectorValues& x);
 
 	/**
 	 * Transpose Backsubstitute
@@ -90,12 +83,6 @@ namespace gtsam {
 	 * not necessarily be upper triangular due to column permutations
 	 */
 	std::pair<Matrix, Vector> matrix(const GaussianBayesNet&);
-
-  /**
-   * Return RHS d as a VectorValues
-   * Such that backSubstitute(bn,d) = optimize(bn)
-   */
-  VectorValues rhs(const GaussianBayesNet&);
 
   /**
    * Computes the determinant of a GassianBayesNet

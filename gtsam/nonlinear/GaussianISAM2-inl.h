@@ -25,8 +25,9 @@ namespace gtsam {
   using namespace std;
 
   /* ************************************************************************* */
+  namespace internal {
   template<class CLIQUE>
-  void optimize2(const boost::shared_ptr<CLIQUE>& clique, double threshold,
+  void optimizeWildfire(const boost::shared_ptr<CLIQUE>& clique, double threshold,
       vector<bool>& changed, const vector<bool>& replaced, Permuted<VectorValues>& delta, int& count) {
     // if none of the variables in this clique (frontal and separator!) changed
     // significantly, then by the running intersection property, none of the
@@ -63,7 +64,6 @@ namespace gtsam {
       }
 
       // Back-substitute
-      (*clique)->rhs(delta);
       (*clique)->solveInPlace(delta);
       count += (*clique)->nrFrontals();
 
@@ -97,42 +97,19 @@ namespace gtsam {
 
       // Recurse to children
       BOOST_FOREACH(const typename CLIQUE::shared_ptr& child, clique->children_) {
-        optimize2(child, threshold, changed, replaced, delta, count);
+        optimizeWildfire(child, threshold, changed, replaced, delta, count);
       }
     }
   }
-
-  /* ************************************************************************* */
-  // fast full version without threshold
-  template<class CLIQUE>
-  void optimize2(const boost::shared_ptr<CLIQUE>& clique, VectorValues& delta) {
-
-    // parents are assumed to already be solved and available in result
-    (*clique)->rhs(delta);
-    (*clique)->solveInPlace(delta);
-
-    // Solve chilren recursively
-    BOOST_FOREACH(const typename CLIQUE::shared_ptr& child, clique->children_) {
-      optimize2(child, delta);
-    }
   }
 
-  ///* ************************************************************************* */
-  //boost::shared_ptr<VectorValues> optimize2(const GaussianISAM2::sharedClique& root) {
-  //	boost::shared_ptr<VectorValues> delta(new VectorValues());
-  //	set<Key> changed;
-  //	// starting from the root, call optimize on each conditional
-  //	optimize2(root, delta);
-  //	return delta;
-  //}
-
   /* ************************************************************************* */
   template<class CLIQUE>
-  int optimize2(const boost::shared_ptr<CLIQUE>& root, double threshold, const vector<bool>& keys, Permuted<VectorValues>& delta) {
+  int optimizeWildfire(const boost::shared_ptr<CLIQUE>& root, double threshold, const vector<bool>& keys, Permuted<VectorValues>& delta) {
     vector<bool> changed(keys.size(), false);
     int count = 0;
     // starting from the root, call optimize on each conditional
-    optimize2(root, threshold, changed, keys, delta, count);
+    internal::optimizeWildfire(root, threshold, changed, keys, delta, count);
     return count;
   }
 
