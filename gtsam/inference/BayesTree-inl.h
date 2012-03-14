@@ -283,7 +283,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<>
 	inline BayesTree<IndexConditional>::BayesTree(const BayesNet<IndexConditional>& bayesNet) {
-		typename BayesNet<IndexConditional>::const_reverse_iterator rit;
+		BayesNet<IndexConditional>::const_reverse_iterator rit;
 		for ( rit=bayesNet.rbegin(); rit != bayesNet.rend(); ++rit )
 			insert(*this, *rit);
 	}
@@ -352,19 +352,6 @@ namespace gtsam {
 	  typename CONTAINER::const_iterator lowestOrderedParent = min_element(parents.begin(), parents.end());
 	  assert(lowestOrderedParent != parents.end());
 	  return *lowestOrderedParent;
-
-//		boost::optional<Index> parentCliqueRepresentative;
-//		boost::optional<size_t> lowest;
-//		BOOST_FOREACH(Index p, parents) {
-//			size_t i = index(p);
-//			if (!lowest || i<*lowest) {
-//				lowest.reset(i);
-//				parentCliqueRepresentative.reset(p);
-//			}
-//		}
-//		if (!lowest) throw
-//			invalid_argument("BayesTree::findParentClique: no parents given or key not present in index");
-//		return *parentCliqueRepresentative;
 	}
 
 	/* ************************************************************************* */
