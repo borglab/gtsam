@@ -109,7 +109,8 @@ namespace gtsam {
     vector<bool> changed(keys.size(), false);
     int count = 0;
     // starting from the root, call optimize on each conditional
-    internal::optimizeWildfire(root, threshold, changed, keys, delta, count);
+    if(root)
+      internal::optimizeWildfire(root, threshold, changed, keys, delta, count);
     return count;
   }
 
