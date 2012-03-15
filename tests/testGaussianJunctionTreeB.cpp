@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file testGaussianJunctionTree.cpp
+ * @file testGaussianJunctionTreeB.cpp
  * @date Jul 8, 2010
  * @author nikai
  */

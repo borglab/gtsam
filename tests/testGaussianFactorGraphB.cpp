@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file   testGaussianFactorGraph.cpp
+ *  @file   testGaussianFactorGraphB.cpp
  *  @brief  Unit tests for Linear Factor Graph
  *  @author Christian Potthast
  **/

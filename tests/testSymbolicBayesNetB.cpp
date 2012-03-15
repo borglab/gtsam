@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    testSymbolicBayesNet.cpp
+ * @file    testSymbolicBayesNetB.cpp
  * @brief   Unit tests for a symbolic Bayes chain
  * @author  Frank Dellaert
  */

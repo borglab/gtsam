@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    testInference.cpp
+ * @file    testInferenceB.cpp
  * @brief   Unit tests for functionality declared in inference.h
  * @author  Frank Dellaert
  */

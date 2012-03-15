@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    testSymbolicFactorGraph.cpp
+ * @file    testSymbolicFactorGraphB.cpp
  * @brief   Unit tests for a symbolic Factor Graph
  * @author  Frank Dellaert
  */
