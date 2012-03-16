@@ -115,29 +115,6 @@ struct DoglegOptimizerImpl {
    */
   static VectorValues ComputeDoglegPoint(double Delta, const VectorValues& dx_u, const VectorValues& dx_n, const bool verbose=false);
 
-  /** Compute the minimizer \f$ \delta x_u \f$ of the line search along the gradient direction \f$ g \f$ of
-   * the function
-   * \f[
-   * M(\delta x) = (R \delta x - d)^T (R \delta x - d)
-   * \f]
-   * where \f$ R \f$ is an upper-triangular matrix and \f$ d \f$ is a vector.
-   * Together \f$ (R,d) \f$ are either a Bayes' net or a Bayes' tree.
-   *
-   * The same quadratic error function written as a Taylor expansion of the original
-   * non-linear error function is
-   * \f[
-   * M(\delta x) = f(x_0) + g(x_0) + \frac{1}{2} \delta x^T G(x_0) \delta x,
-   * \f]
-   * @tparam M The type of the Bayes' net or tree, currently
-   * either BayesNet<GaussianConditional> (or GaussianBayesNet) or BayesTree<GaussianConditional>.
-   * @param Rd The Bayes' net or tree \f$ (R,d) \f$ as described above, currently
-   * this must be of type BayesNet<GaussianConditional> (or GaussianBayesNet) or
-   * BayesTree<GaussianConditional>.
-   * @return The minimizer \f$ \delta x_u \f$ along the gradient descent direction.
-   */
-  template<class M>
-  static VectorValues ComputeSteepestDescentPoint(const M& Rd);
-
   /** Compute the point on the line between the steepest descent point and the
    * Newton's method point intersecting the trust region boundary.
    * Mathematically, computes \f$ \tau \f$ such that \f$ 0<\tau<1 \f$ and
@@ -159,7 +136,7 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
 
   // Compute steepest descent and Newton's method points
   tic(0, "Steepest Descent");
-  VectorValues dx_u = ComputeSteepestDescentPoint(Rd);
+  VectorValues dx_u = optimizeGradientSearch(Rd);
   toc(0, "Steepest Descent");
   tic(1, "optimize");
   VectorValues dx_n = optimize(Rd);
@@ -272,35 +249,6 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
   // dx_d and f_error have already been filled in during the loop
   result.Delta = Delta;
   return result;
-}
-
-/* ************************************************************************* */
-template<class M>
-VectorValues DoglegOptimizerImpl::ComputeSteepestDescentPoint(const M& Rd) {
-
-  tic(0, "Compute Gradient");
-  // Compute gradient (call gradientAtZero function, which is defined for various linear systems)
-  VectorValues grad = *allocateVectorValues(Rd);
-  gradientAtZero(Rd, grad);
-  double gradientSqNorm = grad.dot(grad);
-  toc(0, "Compute Gradient");
-
-  tic(1, "Compute R*g");
-  // Compute R * g
-  FactorGraph<JacobianFactor> Rd_jfg(Rd);
-  Errors Rg = Rd_jfg * grad;
-  toc(1, "Compute R*g");
-
-  tic(2, "Compute minimizing step size");
-  // Compute minimizing step size
-  double step = -gradientSqNorm / dot(Rg, Rg);
-  toc(2, "Compute minimizing step size");
-
-  tic(3, "Compute point");
-  // Compute steepest descent point
-  scal(step, grad);
-  toc(3, "Compute point");
-  return grad;
 }
 
 }

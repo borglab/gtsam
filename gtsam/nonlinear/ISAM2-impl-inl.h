@@ -362,6 +362,18 @@ ISAM2<CONDITIONAL, GRAPH>::Impl::PartialSolve(GaussianFactorGraph& factors,
 }
 
 /* ************************************************************************* */
+namespace internal {
+inline static void optimizeInPlace(const boost::shared_ptr<ISAM2Clique<GaussianConditional> >& clique, VectorValues& result) {
+  // parents are assumed to already be solved and available in result
+  clique->conditional()->solveInPlace(result);
+
+  // starting from the root, call optimize on each conditional
+  BOOST_FOREACH(const boost::shared_ptr<ISAM2Clique<GaussianConditional> >& child, clique->children_)
+    optimizeInPlace(child, result);
+}
+}
+
+/* ************************************************************************* */
 template<class CONDITIONAL, class GRAPH>
 size_t ISAM2<CONDITIONAL,GRAPH>::Impl::UpdateDelta(const boost::shared_ptr<ISAM2Clique<CONDITIONAL> >& root, std::vector<bool>& replacedKeys, Permuted<VectorValues>& delta, double wildfireThreshold) {
 

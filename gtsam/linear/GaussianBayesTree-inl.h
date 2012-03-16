@@ -25,31 +25,4 @@
 
 namespace gtsam {
 
-/* ************************************************************************* */
-namespace internal {
-template<class CLIQUE>
-inline static void optimizeInPlace(const boost::shared_ptr<CLIQUE>& clique, VectorValues& result) {
-  // parents are assumed to already be solved and available in result
-  clique->conditional()->solveInPlace(result);
-
-  // starting from the root, call optimize on each conditional
-  BOOST_FOREACH(const boost::shared_ptr<CLIQUE>& child, clique->children_)
-    optimizeInPlace(child, result);
-}
-}
-
-/* ************************************************************************* */
-template<class CLIQUE>
-VectorValues optimize(const BayesTree<GaussianConditional, CLIQUE>& bayesTree) {
-  VectorValues result = *allocateVectorValues(bayesTree);
-  internal::optimizeInPlace(bayesTree.root(), result);
-  return result;
-}
-
-/* ************************************************************************* */
-template<class CLIQUE>
-void optimizeInPlace(const BayesTree<GaussianConditional, CLIQUE>& bayesTree, VectorValues& result) {
-  internal::optimizeInPlace(bayesTree.root(), result);
-}
-
 }

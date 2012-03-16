@@ -462,10 +462,6 @@ private:
 
 }; // ISAM2
 
-/** Get the linear delta for the ISAM2 object, unpermuted the delta returned by ISAM2::getDelta() */
-template<class CONDITIONAL, class GRAPH>
-VectorValues optimize(const ISAM2<CONDITIONAL, GRAPH>& isam);
-
 } /// namespace gtsam
 
 #include <gtsam/nonlinear/ISAM2-inl.h>

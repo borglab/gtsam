@@ -27,16 +27,6 @@ using namespace gtsam;
 namespace gtsam {
 
   /* ************************************************************************* */
-  VectorValues gradient(const BayesTree<GaussianConditional>& bayesTree, const VectorValues& x0) {
-    return gradient(FactorGraph<JacobianFactor>(bayesTree), x0);
-  }
-
-  /* ************************************************************************* */
-  void gradientAtZero(const BayesTree<GaussianConditional>& bayesTree, VectorValues& g) {
-    gradientAtZero(FactorGraph<JacobianFactor>(bayesTree), g);
-  }
-
-  /* ************************************************************************* */
   VectorValues gradient(const BayesTree<GaussianConditional, ISAM2Clique<GaussianConditional> >& bayesTree, const VectorValues& x0) {
     return gradient(FactorGraph<JacobianFactor>(bayesTree), x0);
   }
