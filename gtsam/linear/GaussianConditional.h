@@ -43,7 +43,7 @@ class JacobianFactor;
 /**
  * A conditional Gaussian functions as the node in a Bayes network
  * It has a set of parents y,z, etc. and implements a probability density on x.
- * The negative log-probability is given by \f$ |Rx - (d - Sy - Tz - ...)|^2 \f$
+ * The negative log-probability is given by \f$ \frac{1}{2} |Rx - (d - Sy - Tz - ...)|^2 \f$
  */
 class GaussianConditional : public IndexConditional {
 

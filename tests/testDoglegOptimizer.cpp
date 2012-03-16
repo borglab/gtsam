@@ -20,6 +20,7 @@
 #include <gtsam/inference/BayesTree-inl.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
+#include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
 #include <gtsam/slam/pose2SLAM.h>
 #include <gtsam/slam/smallExample.h>
@@ -102,7 +103,7 @@ TEST(DoglegOptimizer, ComputeSteepestDescentPoint) {
   VectorValues expected = gradientValues;  scal(step, expected);
 
   // Compute the steepest descent point with the dogleg function
-  VectorValues actual = DoglegOptimizerImpl::ComputeSteepestDescentPoint(gbn);
+  VectorValues actual = optimizeGradientSearch(gbn);
 
   // Check that points agree
   EXPECT(assert_equal(expected, actual, 1e-5));
@@ -290,7 +291,7 @@ TEST(DoglegOptimizer, ComputeSteepestDescentPointBT) {
   expectedFromBN[4] = Vector_(2, 0.300134, 0.423233);
 
   // Compute the steepest descent point with the dogleg function
-  VectorValues actual = DoglegOptimizerImpl::ComputeSteepestDescentPoint(bt);
+  VectorValues actual = optimizeGradientSearch(bt);
 
   // Check that points agree
   EXPECT(assert_equal(expected, actual, 1e-5));
@@ -324,7 +325,7 @@ TEST(DoglegOptimizer, ComputeBlend) {
       4, Vector_(2, 49.0,50.0), Matrix_(2,2, 51.0,52.0,0.0,54.0), ones(2)));
 
   // Compute steepest descent point
-  VectorValues xu = DoglegOptimizerImpl::ComputeSteepestDescentPoint(gbn);
+  VectorValues xu = optimizeGradientSearch(gbn);
 
   // Compute Newton's method point
   VectorValues xn = optimize(gbn);
@@ -362,18 +363,18 @@ TEST(DoglegOptimizer, ComputeDoglegPoint) {
   // Compute dogleg point for different deltas
 
   double Delta1 = 0.5;  // Less than steepest descent
-  VectorValues actual1 = DoglegOptimizerImpl::ComputeDoglegPoint(Delta1, DoglegOptimizerImpl::ComputeSteepestDescentPoint(gbn), optimize(gbn));
+  VectorValues actual1 = DoglegOptimizerImpl::ComputeDoglegPoint(Delta1, optimizeGradientSearch(gbn), optimize(gbn));
   DOUBLES_EQUAL(Delta1, actual1.vector().norm(), 1e-5);
 
   double Delta2 = 1.5;  // Between steepest descent and Newton's method
-  VectorValues expected2 = DoglegOptimizerImpl::ComputeBlend(Delta2, DoglegOptimizerImpl::ComputeSteepestDescentPoint(gbn), optimize(gbn));
-  VectorValues actual2 = DoglegOptimizerImpl::ComputeDoglegPoint(Delta2, DoglegOptimizerImpl::ComputeSteepestDescentPoint(gbn), optimize(gbn));
+  VectorValues expected2 = DoglegOptimizerImpl::ComputeBlend(Delta2, optimizeGradientSearch(gbn), optimize(gbn));
+  VectorValues actual2 = DoglegOptimizerImpl::ComputeDoglegPoint(Delta2, optimizeGradientSearch(gbn), optimize(gbn));
   DOUBLES_EQUAL(Delta2, actual2.vector().norm(), 1e-5);
   EXPECT(assert_equal(expected2, actual2));
 
   double Delta3 = 5.0;  // Larger than Newton's method point
   VectorValues expected3 = optimize(gbn);
-  VectorValues actual3 = DoglegOptimizerImpl::ComputeDoglegPoint(Delta3, DoglegOptimizerImpl::ComputeSteepestDescentPoint(gbn), optimize(gbn));
+  VectorValues actual3 = DoglegOptimizerImpl::ComputeDoglegPoint(Delta3, optimizeGradientSearch(gbn), optimize(gbn));
   EXPECT(assert_equal(expected3, actual3));
 }
 

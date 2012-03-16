@@ -122,6 +122,42 @@ VectorValues backSubstituteTranspose(const GaussianBayesNet& bn,
 	return gy;
 }
 
+/* ************************************************************************* */
+VectorValues optimizeGradientSearch(const GaussianBayesNet& Rd) {
+  tic(0, "Allocate VectorValues");
+  VectorValues grad = *allocateVectorValues(Rd);
+  toc(0, "Allocate VectorValues");
+
+  optimizeGradientSearchInPlace(Rd, grad);
+
+  return grad;
+}
+
+/* ************************************************************************* */
+void optimizeGradientSearchInPlace(const GaussianBayesNet& Rd, VectorValues& grad) {
+  tic(1, "Compute Gradient");
+  // Compute gradient (call gradientAtZero function, which is defined for various linear systems)
+  gradientAtZero(Rd, grad);
+  double gradientSqNorm = grad.dot(grad);
+  toc(1, "Compute Gradient");
+
+  tic(2, "Compute R*g");
+  // Compute R * g
+  FactorGraph<JacobianFactor> Rd_jfg(Rd);
+  Errors Rg = Rd_jfg * grad;
+  toc(2, "Compute R*g");
+
+  tic(3, "Compute minimizing step size");
+  // Compute minimizing step size
+  double step = -gradientSqNorm / dot(Rg, Rg);
+  toc(3, "Compute minimizing step size");
+
+  tic(4, "Compute point");
+  // Compute steepest descent point
+  scal(step, grad);
+  toc(4, "Compute point");
+}
+
 /* ************************************************************************* */  
 pair<Matrix,Vector> matrix(const GaussianBayesNet& bn)  {
 

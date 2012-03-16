@@ -557,7 +557,6 @@ ISAM2Result ISAM2<CONDITIONAL, GRAPH>::update(
   return result;
 }
 
-
 /* ************************************************************************* */
 template<class CONDITIONAL, class GRAPH>
 void ISAM2<CONDITIONAL, GRAPH>::updateDelta(bool forceFullSolve) const {
@@ -628,14 +627,6 @@ const Permuted<VectorValues>& ISAM2<CONDITIONAL, GRAPH>::getDelta() const {
   if(!deltaUptodate_)
     updateDelta();
   return delta_;
-}
-
-/* ************************************************************************* */
-template<class CONDITIONAL, class GRAPH>
-VectorValues optimize(const ISAM2<CONDITIONAL, GRAPH>& isam) {
-  VectorValues delta = *allocateVectorValues(isam);
-  internal::optimizeInPlace(isam.root(), delta);
-  return delta;
 }
 
 }

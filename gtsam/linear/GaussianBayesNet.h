@@ -69,6 +69,43 @@ namespace gtsam {
    */
   void optimizeInPlace(const GaussianBayesNet& bn, VectorValues& x);
 
+  /**
+   * Optimize along the gradient direction, with a closed-form computation to
+   * perform the line search.  The gradient is computed about \f$ \delta x=0 \f$.
+   *
+   * This function returns \f$ \delta x \f$ that minimizes a reparametrized
+   * problem.  The error function of a GaussianBayesNet is
+   *
+   * \f[ f(\delta x) = \frac{1}{2} |R \delta x - d|^2 = \frac{1}{2}d^T d - d^T R \delta x + \frac{1}{2} \delta x^T R^T R \delta x \f]
+   *
+   * with gradient and Hessian
+   *
+   * \f[ g(\delta x) = R^T(R\delta x - d), \qquad G(\delta x) = R^T R. \f]
+   *
+   * This function performs the line search in the direction of the
+   * gradient evaluated at \f$ g = g(\delta x = 0) \f$ with step size
+   * \f$ \alpha \f$ that minimizes \f$ f(\delta x = \alpha g) \f$:
+   *
+   * \f[ f(\alpha) = \frac{1}{2} d^T d + g^T \delta x + \frac{1}{2} \alpha^2 g^T G g \f]
+   *
+   * Optimizing by setting the derivative to zero yields
+   * \f$ \hat \alpha = (-g^T g) / (g^T G g) \f$.  For efficiency, this function
+   * evaluates the denominator without computing the Hessian \f$ G \f$, returning
+   *
+   * \f[ \delta x = \hat\alpha g = \frac{-g^T g}{(R g)^T(R g)} \f]
+   *
+   * @param bn The GaussianBayesNet on which to perform this computation
+   * @return The resulting \f$ \delta x \f$ as described above
+   */
+  VectorValues optimizeGradientSearch(const GaussianBayesNet& bn);
+
+  /** In-place version of optimizeGradientSearch(const GaussianBayesNet&) requiring pre-allocated VectorValues \c grad
+   *
+   * @param bn The GaussianBayesNet on which to perform this computation
+   * @param [out] grad The resulting \f$ \delta x \f$ as described in optimizeGradientSearch(const GaussianBayesNet&)
+   * */
+  void optimizeGradientSearchInPlace(const GaussianBayesNet& bn, VectorValues& grad);
+
 	/**
 	 * Transpose Backsubstitute
 	 * gy=inv(L)*gx by solving L*gy=gx.
