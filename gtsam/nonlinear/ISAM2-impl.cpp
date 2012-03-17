@@ -16,13 +16,14 @@
  */
 
 #include <gtsam/nonlinear/ISAM2-impl.h>
+#include <gtsam/base/debug.h>
 
 namespace gtsam {
 
 /* ************************************************************************* */
 void ISAM2::Impl::AddVariables(
     const Values& newTheta, Values& theta, Permuted<VectorValues>& delta, vector<bool>& replacedKeys,
-    Ordering& ordering,typename Base::Nodes& nodes, const KeyFormatter& keyFormatter) {
+    Ordering& ordering, Base::Nodes& nodes, const KeyFormatter& keyFormatter) {
   const bool debug = ISDEBUG("ISAM2 AddVariables");
 
   theta.insert(newTheta);
@@ -54,9 +55,9 @@ void ISAM2::Impl::AddVariables(
 }
 
 /* ************************************************************************* */
-FastSet<Index> ISAM2::Impl::IndicesFromFactors(const Ordering& ordering, const GRAPH& factors) {
+FastSet<Index> ISAM2::Impl::IndicesFromFactors(const Ordering& ordering, const NonlinearFactorGraph& factors) {
   FastSet<Index> indices;
-  BOOST_FOREACH(const typename NonlinearFactor::shared_ptr& factor, factors) {
+  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, factors) {
     BOOST_FOREACH(Key key, factor->keys()) {
       indices.insert(ordering[key]);
     }
@@ -93,7 +94,7 @@ FastSet<Index> ISAM2::Impl::CheckRelinearization(const Permuted<VectorValues>& d
 }
 
 /* ************************************************************************* */
-void ISAM2::Impl::FindAll(typename ISAM2Clique::shared_ptr clique, FastSet<Index>& keys, const vector<bool>& markedMask) {
+void ISAM2::Impl::FindAll(ISAM2Clique::shared_ptr clique, FastSet<Index>& keys, const vector<bool>& markedMask) {
   static const bool debug = false;
   // does the separator contain any of the variables?
   bool found = false;
@@ -107,7 +108,7 @@ void ISAM2::Impl::FindAll(typename ISAM2Clique::shared_ptr clique, FastSet<Index
     if(debug) clique->print("Key(s) marked in clique ");
     if(debug) cout << "so marking key " << (*clique)->keys().front() << endl;
   }
-  BOOST_FOREACH(const typename ISAM2Clique::shared_ptr& child, clique->children_) {
+  BOOST_FOREACH(const ISAM2Clique::shared_ptr& child, clique->children_) {
     FindAll(child, keys, markedMask);
   }
 }
@@ -226,7 +227,7 @@ ISAM2::Impl::PartialSolve(GaussianFactorGraph& factors,
 
   // eliminate into a Bayes net
   tic(7,"eliminate");
-  JunctionTree<GaussianFactorGraph, typename ISAM2::Clique> jt(factors, affectedFactorsIndex);
+  JunctionTree<GaussianFactorGraph, ISAM2::Clique> jt(factors, affectedFactorsIndex);
   result.bayesTree = jt.eliminate(EliminatePreferLDL);
   toc(7,"eliminate");
 

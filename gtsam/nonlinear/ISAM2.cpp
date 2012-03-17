@@ -26,7 +26,6 @@ using namespace boost::assign;
 #include <gtsam/linear/HessianFactor.h>
 
 #include <gtsam/nonlinear/ISAM2.h>
-#include <gtsam/nonlinear/ISAM2-impl-inl.h>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
 
 
@@ -120,7 +119,7 @@ ISAM2::relinearizeAffectedFactors(const FastList<Index>& affectedKeys) const {
 
 /* ************************************************************************* */
 // find intermediate (linearized) factors from cache that are passed into the affected area
-FactorGraph<typename ISAM2::CacheFactor>
+FactorGraph<ISAM2::CacheFactor>
 ISAM2::getCachedBoundaryFactors(Cliques& orphans) {
 
   static const bool debug = false;
@@ -252,7 +251,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
     toc(2,"linearize");
 
     tic(5,"eliminate");
-    JunctionTree<GaussianFactorGraph, typename Base::Clique> jt(factors, variableIndex_);
+    JunctionTree<GaussianFactorGraph, Base::Clique> jt(factors, variableIndex_);
     sharedClique newRoot = jt.eliminate(EliminatePreferLDL);
     if(debug) newRoot->print("Eliminated: ");
     toc(5,"eliminate");
@@ -324,7 +323,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
     toc(1,"list to set");
 
     tic(2,"PartialSolve");
-    typename Impl::ReorderingMode reorderingMode;
+    Impl::ReorderingMode reorderingMode;
     reorderingMode.nFullSystemVars = ordering_.nVars();
     reorderingMode.algorithm = Impl::ReorderingMode::COLAMD;
     reorderingMode.constrain = Impl::ReorderingMode::CONSTRAIN_LAST;
@@ -332,7 +331,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
       reorderingMode.constrainedKeys = *constrainKeys;
     else
       reorderingMode.constrainedKeys = FastSet<Index>(newKeys.begin(), newKeys.end());
-    typename Impl::PartialSolveResult partialSolveResult =
+    Impl::PartialSolveResult partialSolveResult =
         Impl::PartialSolve(factors, *affectedKeysSet, reorderingMode);
     toc(2,"PartialSolve");
 
@@ -605,7 +604,7 @@ VALUE ISAM2::calculateEstimate(Key key) const {
 /* ************************************************************************* */
 Values ISAM2::calculateBestEstimate() const {
   VectorValues delta(theta_.dims(ordering_));
-  optimize2(this->root(), delta);
+  internal::optimizeInPlace<Base>(this->root(), delta);
   return theta_.retract(delta, ordering_);
 }
 
@@ -614,6 +613,13 @@ const Permuted<VectorValues>& ISAM2::getDelta() const {
   if(!deltaUptodate_)
     updateDelta();
   return delta_;
+}
+
+/* ************************************************************************* */
+VectorValues optimize(const ISAM2& isam) {
+  VectorValues delta = *allocateVectorValues(isam);
+  internal::optimizeInPlace<ISAM2::Base>(isam.root(), delta);
+  return delta;
 }
 
 /* ************************************************************************* */

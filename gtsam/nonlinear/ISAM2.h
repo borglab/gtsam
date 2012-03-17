@@ -21,7 +21,7 @@
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
-#include <gtsam/inference/BayesTree.h>
+#include <gtsam/linear/GaussianBayesTree.h>
 
 #include <boost/variant.hpp>
 
@@ -186,9 +186,9 @@ struct ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique, GaussianConditional
   typedef boost::shared_ptr<This> shared_ptr;
   typedef boost::weak_ptr<This> weak_ptr;
   typedef GaussianConditional ConditionalType;
-  typedef typename ConditionalType::shared_ptr sharedConditional;
+  typedef ConditionalType::shared_ptr sharedConditional;
 
-  typename Base::FactorType::shared_ptr cachedFactor_;
+  Base::FactorType::shared_ptr cachedFactor_;
   Vector gradientContribution_;
 
   /** Construct from a conditional */
@@ -196,7 +196,7 @@ struct ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique, GaussianConditional
     throw runtime_error("ISAM2Clique should always be constructed with the elimination result constructor"); }
 
   /** Construct from an elimination result */
-  ISAM2Clique(const std::pair<sharedConditional, boost::shared_ptr<typename ConditionalType::FactorType> >& result) :
+  ISAM2Clique(const std::pair<sharedConditional, boost::shared_ptr<ConditionalType::FactorType> >& result) :
     Base(result.first), cachedFactor_(result.second), gradientContribution_(result.first->get_R().cols() + result.first->get_S().cols()) {
     // Compute gradient contribution
     const ConditionalType& conditional(*result.first);
@@ -208,13 +208,13 @@ struct ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique, GaussianConditional
   shared_ptr clone() const {
     shared_ptr copy(new ISAM2Clique(make_pair(
         sharedConditional(new ConditionalType(*Base::conditional_)),
-        cachedFactor_ ? cachedFactor_->clone() : typename Base::FactorType::shared_ptr())));
+        cachedFactor_ ? cachedFactor_->clone() : Base::FactorType::shared_ptr())));
     copy->gradientContribution_ = gradientContribution_;
     return copy;
   }
 
   /** Access the cached factor */
-  typename Base::FactorType::shared_ptr& cachedFactor() { return cachedFactor_; }
+   Base::FactorType::shared_ptr& cachedFactor() { return cachedFactor_; }
 
   /** Access the gradient contribution */
   const Vector& gradientContribution() const { return gradientContribution_; }
@@ -343,9 +343,9 @@ public:
   /** Create an empty ISAM2 instance using the default set of parameters (see ISAM2Params) */
   ISAM2();
 
-  typedef typename Base::Clique Clique; ///< A clique
-  typedef typename Base::sharedClique sharedClique; ///< Shared pointer to a clique
-  typedef typename Base::Cliques Cliques; ///< List of Clique typedef from base class
+  typedef Base::Clique Clique; ///< A clique
+  typedef Base::sharedClique sharedClique; ///< Shared pointer to a clique
+  typedef Base::Cliques Cliques; ///< List of Clique typedef from base class
 
   void cloneTo(boost::shared_ptr<ISAM2>& newISAM2) const {
     boost::shared_ptr<Base> bayesTree = boost::static_pointer_cast<Base>(newISAM2);
@@ -457,11 +457,7 @@ private:
 }; // ISAM2
 
 /** Get the linear delta for the ISAM2 object, unpermuted the delta returned by ISAM2::getDelta() */
-VectorValues optimize(const ISAM2& isam) {
-  VectorValues delta = *allocateVectorValues(isam);
-  internal::optimizeInPlace(isam.root(), delta);
-  return delta;
-}
+VectorValues optimize(const ISAM2& isam);
 
 /// Optimize the BayesTree, starting from the root.
 /// @param replaced Needs to contain
@@ -541,3 +537,4 @@ void gradientAtZero(const BayesTree<GaussianConditional, ISAM2Clique>& bayesTree
 } /// namespace gtsam
 
 #include <gtsam/nonlinear/ISAM2-inl.h>
+#include <gtsam/nonlinear/ISAM2-impl.h>

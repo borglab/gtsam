@@ -15,7 +15,10 @@
  * @author  Michael Kaess, Richard Roberts
  */
 
+#pragma once
+
 #include <gtsam/linear/GaussianBayesTree.h>
+#include <gtsam/nonlinear/ISAM2.h>
 
 namespace gtsam {
 
@@ -24,7 +27,7 @@ using namespace std;
 struct ISAM2::Impl {
 
   struct PartialSolveResult {
-    typename ISAM2::sharedClique bayesTree;
+    ISAM2::sharedClique bayesTree;
     Permutation fullReordering;
     Permutation fullReorderingInverse;
   };
@@ -46,7 +49,7 @@ struct ISAM2::Impl {
    * @param keyFormatter Formatter for printing nonlinear keys during debugging
    */
   static void AddVariables(const Values& newTheta, Values& theta, Permuted<VectorValues>& delta, vector<bool>& replacedKeys,
-      Ordering& ordering, typename Base::Nodes& nodes, const KeyFormatter& keyFormatter = DefaultKeyFormatter);
+      Ordering& ordering, Base::Nodes& nodes, const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
   /**
    * Extract the set of variable indices from a NonlinearFactorGraph.  For each Symbol
@@ -55,7 +58,7 @@ struct ISAM2::Impl {
    * @param factors The factors from which to extract the variables
    * @return The set of variables indices from the factors
    */
-  static FastSet<Index> IndicesFromFactors(const Ordering& ordering, const GRAPH& factors);
+  static FastSet<Index> IndicesFromFactors(const Ordering& ordering, const NonlinearFactorGraph& factors);
 
   /**
    * Find the set of variables to be relinearized according to relinearizeThreshold.
@@ -84,7 +87,7 @@ struct ISAM2::Impl {
    *
    * Alternatively could we trace up towards the root for each variable here?
    */
-  static void FindAll(typename ISAM2Clique<CONDITIONAL>::shared_ptr clique, FastSet<Index>& keys, const vector<bool>& markedMask);
+  static void FindAll(ISAM2Clique::shared_ptr clique, FastSet<Index>& keys, const vector<bool>& markedMask);
 
   /**
    * Apply expmap to the given values, but only for indices appearing in
@@ -120,7 +123,7 @@ struct ISAM2::Impl {
   static PartialSolveResult PartialSolve(GaussianFactorGraph& factors, const FastSet<Index>& keys,
       const ReorderingMode& reorderingMode);
 
-  static size_t UpdateDelta(const boost::shared_ptr<ISAM2Clique<CONDITIONAL> >& root, std::vector<bool>& replacedKeys, Permuted<VectorValues>& delta, double wildfireThreshold);
+  static size_t UpdateDelta(const boost::shared_ptr<ISAM2Clique>& root, std::vector<bool>& replacedKeys, Permuted<VectorValues>& delta, double wildfireThreshold);
 
 };
 

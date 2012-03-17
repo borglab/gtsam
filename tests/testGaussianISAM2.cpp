@@ -17,7 +17,7 @@ using namespace boost::assign;
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianBayesTree.h>
-#include <gtsam/nonlinear/GaussianISAM2.h>
+#include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/slam/smallExample.h>
 #include <gtsam/slam/planarSLAM.h>
 
@@ -52,7 +52,7 @@ TEST(ISAM2, AddVariables) {
 
   Ordering ordering; ordering += planarSLAM::PointKey(0), planarSLAM::PoseKey(0);
 
-  GaussianISAM2<>::Nodes nodes(2);
+  ISAM2::Nodes nodes(2);
 
   // Verify initial state
   LONGS_EQUAL(0, ordering[planarSLAM::PointKey(0)]);
@@ -82,11 +82,11 @@ TEST(ISAM2, AddVariables) {
 
   Ordering orderingExpected; orderingExpected += planarSLAM::PointKey(0), planarSLAM::PoseKey(0), planarSLAM::PoseKey(1);
 
-  GaussianISAM2<>::Nodes nodesExpected(
-          3, GaussianISAM2<>::sharedClique());
+  ISAM2::Nodes nodesExpected(
+          3, ISAM2::sharedClique());
 
   // Expand initial state
-  GaussianISAM2<>::Impl::AddVariables(newTheta, theta, delta, replacedKeys, ordering, nodes);
+  ISAM2::Impl::AddVariables(newTheta, theta, delta, replacedKeys, ordering, nodes);
 
   EXPECT(assert_equal(thetaExpected, theta));
   EXPECT(assert_equal(deltaUnpermutedExpected, deltaUnpermuted));
@@ -171,10 +171,10 @@ TEST(ISAM2, optimize2) {
   conditional->solveInPlace(expected);
 
   // Clique
-  GaussianISAM2<>::sharedClique clique(
-      GaussianISAM2<>::Clique::Create(make_pair(conditional,GaussianFactor::shared_ptr())));
+  ISAM2::sharedClique clique(
+      ISAM2::Clique::Create(make_pair(conditional,GaussianFactor::shared_ptr())));
   VectorValues actual(theta.dims(ordering));
-  internal::optimizeInPlace(clique, actual);
+  internal::optimizeInPlace<ISAM2::Base>(clique, actual);
 
 //  expected.print("expected: ");
 //  actual.print("actual: ");
@@ -182,7 +182,7 @@ TEST(ISAM2, optimize2) {
 }
 
 /* ************************************************************************* */
-bool isam_check(const planarSLAM::Graph& fullgraph, const Values& fullinit, const GaussianISAM2<>& isam) {
+bool isam_check(const planarSLAM::Graph& fullgraph, const Values& fullinit, const ISAM2& isam) {
   Values actual = isam.calculateEstimate();
   Ordering ordering = isam.getOrdering(); // *fullgraph.orderingCOLAMD(fullinit).first;
   GaussianFactorGraph linearized = *fullgraph.linearize(fullinit, ordering);
@@ -212,7 +212,7 @@ TEST(ISAM2, slamlike_solution_gaussnewton)
   SharedDiagonal brNoise = sharedSigmas(Vector_(2, M_PI/100.0, 0.1));
 
   // These variables will be reused and accumulate factors and values
-  GaussianISAM2<> isam(ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
+  ISAM2 isam(ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
   Values fullinit;
   planarSLAM::Graph fullgraph;
 
@@ -300,7 +300,7 @@ TEST(ISAM2, slamlike_solution_gaussnewton)
   CHECK(isam_check(fullgraph, fullinit, isam));
 
   // Check gradient at each node
-  typedef GaussianISAM2<>::sharedClique sharedClique;
+  typedef ISAM2::sharedClique sharedClique;
   BOOST_FOREACH(const sharedClique& clique, isam.nodes()) {
     // Compute expected gradient
     FactorGraph<JacobianFactor> jfg;
@@ -345,7 +345,7 @@ TEST(ISAM2, slamlike_solution_dogleg)
   SharedDiagonal brNoise = sharedSigmas(Vector_(2, M_PI/100.0, 0.1));
 
   // These variables will be reused and accumulate factors and values
-  GaussianISAM2<> isam(ISAM2Params(ISAM2DoglegParams(1.0), 0.0, 0, false));
+  ISAM2 isam(ISAM2Params(ISAM2DoglegParams(1.0), 0.0, 0, false));
   Values fullinit;
   planarSLAM::Graph fullgraph;
 
@@ -433,7 +433,7 @@ TEST(ISAM2, slamlike_solution_dogleg)
   CHECK(isam_check(fullgraph, fullinit, isam));
 
   // Check gradient at each node
-  typedef GaussianISAM2<>::sharedClique sharedClique;
+  typedef ISAM2::sharedClique sharedClique;
   BOOST_FOREACH(const sharedClique& clique, isam.nodes()) {
     // Compute expected gradient
     FactorGraph<JacobianFactor> jfg;
@@ -473,7 +473,7 @@ TEST(ISAM2, clone) {
   SharedDiagonal brNoise = sharedSigmas(Vector_(2, M_PI/100.0, 0.1));
 
   // These variables will be reused and accumulate factors and values
-  GaussianISAM2<> isam(ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false, true));
+  ISAM2 isam(ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false, true));
   Values fullinit;
   planarSLAM::Graph fullgraph;
 
@@ -558,8 +558,8 @@ TEST(ISAM2, clone) {
   }
 
   // CLONING...
-  boost::shared_ptr<GaussianISAM2<> > isam2
-      = boost::shared_ptr<GaussianISAM2<> >(new GaussianISAM2<>());
+  boost::shared_ptr<ISAM2 > isam2
+      = boost::shared_ptr<ISAM2 >(new ISAM2());
   isam.cloneTo(isam2);
 
   CHECK(assert_equal(isam, *isam2));
@@ -567,24 +567,23 @@ TEST(ISAM2, clone) {
 
 /* ************************************************************************* */
 TEST(ISAM2, permute_cached) {
-  typedef ISAM2Clique<GaussianConditional> Clique;
-  typedef boost::shared_ptr<ISAM2Clique<GaussianConditional> > sharedClique;
+  typedef boost::shared_ptr<ISAM2Clique> sharedISAM2Clique;
 
   // Construct expected permuted BayesTree (variable 2 has been changed to 1)
-  BayesTree<GaussianConditional, Clique> expected;
-  expected.insert(sharedClique(new Clique(make_pair(
+  BayesTree<GaussianConditional, ISAM2Clique> expected;
+  expected.insert(sharedISAM2Clique(new ISAM2Clique(make_pair(
       boost::make_shared<GaussianConditional>(pair_list_of
           (3, Matrix_(1,1,1.0))
           (4, Matrix_(1,1,2.0)),
           2, Vector_(1,1.0), Vector_(1,1.0)),   // p(3,4)
       HessianFactor::shared_ptr()))));          // Cached: empty
-  expected.insert(sharedClique(new Clique(make_pair(
+  expected.insert(sharedISAM2Clique(new ISAM2Clique(make_pair(
       boost::make_shared<GaussianConditional>(pair_list_of
           (2, Matrix_(1,1,1.0))
           (3, Matrix_(1,1,2.0)),
           1, Vector_(1,1.0), Vector_(1,1.0)),     // p(2|3)
       boost::make_shared<HessianFactor>(3, Matrix_(1,1,1.0), Vector_(1,1.0), 0.0))))); // Cached: p(3)
-  expected.insert(sharedClique(new Clique(make_pair(
+  expected.insert(sharedISAM2Clique(new ISAM2Clique(make_pair(
       boost::make_shared<GaussianConditional>(pair_list_of
           (0, Matrix_(1,1,1.0))
           (2, Matrix_(1,1,2.0)),
@@ -595,20 +594,20 @@ TEST(ISAM2, permute_cached) {
   expected.root()->children().front()->children().front()->conditional()->keys()[1] = 1;
 
   // Construct unpermuted BayesTree
-  BayesTree<GaussianConditional, Clique> actual;
-  actual.insert(sharedClique(new Clique(make_pair(
+  BayesTree<GaussianConditional, ISAM2Clique> actual;
+  actual.insert(sharedISAM2Clique(new ISAM2Clique(make_pair(
       boost::make_shared<GaussianConditional>(pair_list_of
           (3, Matrix_(1,1,1.0))
           (4, Matrix_(1,1,2.0)),
           2, Vector_(1,1.0), Vector_(1,1.0)),   // p(3,4)
       HessianFactor::shared_ptr()))));          // Cached: empty
-  actual.insert(sharedClique(new Clique(make_pair(
+  actual.insert(sharedISAM2Clique(new ISAM2Clique(make_pair(
       boost::make_shared<GaussianConditional>(pair_list_of
           (2, Matrix_(1,1,1.0))
           (3, Matrix_(1,1,2.0)),
           1, Vector_(1,1.0), Vector_(1,1.0)),     // p(2|3)
       boost::make_shared<HessianFactor>(3, Matrix_(1,1,1.0), Vector_(1,1.0), 0.0))))); // Cached: p(3)
-  actual.insert(sharedClique(new Clique(make_pair(
+  actual.insert(sharedISAM2Clique(new ISAM2Clique(make_pair(
       boost::make_shared<GaussianConditional>(pair_list_of
           (0, Matrix_(1,1,1.0))
           (2, Matrix_(1,1,2.0)),
@@ -646,7 +645,7 @@ TEST(ISAM2, removeFactors)
   SharedDiagonal brNoise = sharedSigmas(Vector_(2, M_PI/100.0, 0.1));
 
   // These variables will be reused and accumulate factors and values
-  GaussianISAM2<> isam(ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
+  ISAM2 isam(ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
   Values fullinit;
   planarSLAM::Graph fullgraph;
 
@@ -740,7 +739,7 @@ TEST(ISAM2, removeFactors)
   CHECK(isam_check(fullgraph, fullinit, isam));
 
   // Check gradient at each node
-  typedef GaussianISAM2<>::sharedClique sharedClique;
+  typedef ISAM2::sharedClique sharedClique;
   BOOST_FOREACH(const sharedClique& clique, isam.nodes()) {
     // Compute expected gradient
     FactorGraph<JacobianFactor> jfg;
@@ -785,7 +784,7 @@ TEST(ISAM2, constrained_ordering)
   SharedDiagonal brNoise = sharedSigmas(Vector_(2, M_PI/100.0, 0.1));
 
   // These variables will be reused and accumulate factors and values
-  GaussianISAM2<> isam(ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
+  ISAM2 isam(ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
   Values fullinit;
   planarSLAM::Graph fullgraph;
 
@@ -883,7 +882,7 @@ TEST(ISAM2, constrained_ordering)
       (isam.getOrdering()[planarSLAM::PoseKey(3)] == 13 && isam.getOrdering()[planarSLAM::PoseKey(4)] == 12));
 
   // Check gradient at each node
-  typedef GaussianISAM2<>::sharedClique sharedClique;
+  typedef ISAM2::sharedClique sharedClique;
   BOOST_FOREACH(const sharedClique& clique, isam.nodes()) {
     // Compute expected gradient
     FactorGraph<JacobianFactor> jfg;
