@@ -292,6 +292,11 @@ protected:
    */
   mutable Permuted<VectorValues> delta_;
 
+  VectorValues deltaNewtonUnpermuted_;
+  mutable Permuted<VectorValues> deltaNewtonUnpermuted_;
+  VectorValues deltaGradSearchUnpermuted_;
+  mutable Permuted<VectorValues> deltaGradSearchUnpermuted_;
+
   /** Indicates whether the current delta is up-to-date, only used
    * internally - delta will always be updated if necessary when it is
    * requested with getDelta() or calculateEstimate().
@@ -458,6 +463,9 @@ private:
 
 /** Get the linear delta for the ISAM2 object, unpermuted the delta returned by ISAM2::getDelta() */
 VectorValues optimize(const ISAM2& isam);
+
+/** Get the linear delta for the ISAM2 object, unpermuted the delta returned by ISAM2::getDelta() */
+void optimizeInPlace(const ISAM2& isam, VectorValues& delta);
 
 /// Optimize the BayesTree, starting from the root.
 /// @param replaced Needs to contain

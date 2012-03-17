@@ -135,9 +135,14 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
     const F& f, const VALUES& x0, const Ordering& ordering, const double f_error, const bool verbose) {
 
   // Compute steepest descent and Newton's method points
-  tic(0, "Steepest Descent");
-  VectorValues dx_u = optimizeGradientSearch(Rd);
-  toc(0, "Steepest Descent");
+  tic(0, "optimizeGradientSearch");
+  tic(0, "allocateVectorValues");
+  VectorValues dx_u = *allocateVectorValues(Rd);
+  toc(0, "allocateVectorValues");
+  tic(1, "optimizeGradientSearchInPlace");
+  optimizeGradientSearchInPlace(Rd, dx_u);
+  toc(1, "optimizeGradientSearchInPlace");
+  toc(0, "optimizeGradientSearch");
   tic(1, "optimize");
   VectorValues dx_n = optimize(Rd);
   toc(1, "optimize");

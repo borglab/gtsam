@@ -594,14 +594,6 @@ Values ISAM2::calculateEstimate() const {
 }
 
 /* ************************************************************************* */
-template<class VALUE>
-VALUE ISAM2::calculateEstimate(Key key) const {
-  const Index index = getOrdering()[key];
-  const SubVector delta = getDelta()[index];
-  return theta_.at<VALUE>(key).retract(delta);
-}
-
-/* ************************************************************************* */
 Values ISAM2::calculateBestEstimate() const {
   VectorValues delta(theta_.dims(ordering_));
   internal::optimizeInPlace<Base>(this->root(), delta);
@@ -617,9 +609,18 @@ const Permuted<VectorValues>& ISAM2::getDelta() const {
 
 /* ************************************************************************* */
 VectorValues optimize(const ISAM2& isam) {
+  tic(0, "allocateVectorValues");
   VectorValues delta = *allocateVectorValues(isam);
-  internal::optimizeInPlace<ISAM2::Base>(isam.root(), delta);
+  toc(0, "allocateVectorValues");
+  optimizeInPlace(isam, delta);
   return delta;
+}
+
+/* ************************************************************************* */
+void optimizeInPlace(const ISAM2& isam, VectorValues& delta) {
+  tic(1, "optimizeInPlace");
+  internal::optimizeInPlace<ISAM2::Base>(isam.root(), delta);
+  toc(1, "optimizeInPlace");
 }
 
 /* ************************************************************************* */

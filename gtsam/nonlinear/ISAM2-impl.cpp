@@ -23,6 +23,7 @@ namespace gtsam {
 /* ************************************************************************* */
 void ISAM2::Impl::AddVariables(
     const Values& newTheta, Values& theta, Permuted<VectorValues>& delta, vector<bool>& replacedKeys,
+    Permuted<VectorValues>& deltaNewton, Permuted<VectorValues>& deltaGradSearch,
     Ordering& ordering, Base::Nodes& nodes, const KeyFormatter& keyFormatter) {
   const bool debug = ISDEBUG("ISAM2 AddVariables");
 
@@ -37,6 +38,12 @@ void ISAM2::Impl::AddVariables(
   delta.container().append(dims);
   delta.container().vector().segment(originalDim, newDim).operator=(Vector::Zero(newDim));
   delta.permutation().resize(originalnVars + newTheta.size());
+  deltaNewton.container().append(dims);
+  deltaNewton.container().vector().segment(originalDim, newDim).operator=(Vector::Zero(newDim));
+  deltaNewton.permutation().resize(originalnVars + newTheta.size());
+  deltaGradSearch.container().append(dims);
+  deltaGradSearch.container().vector().segment(originalDim, newDim).operator=(Vector::Zero(newDim));
+  deltaGradSearch.permutation().resize(originalnVars + newTheta.size());
   {
     Index nextVar = originalnVars;
     BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, newTheta) {

@@ -30,6 +30,14 @@ namespace gtsam {
 using namespace std;
 
 /* ************************************************************************* */
+template<class VALUE>
+VALUE ISAM2::calculateEstimate(Key key) const {
+  const Index index = getOrdering()[key];
+  const SubVector delta = getDelta()[index];
+  return theta_.at<VALUE>(key).retract(delta);
+}
+
+/* ************************************************************************* */
 namespace internal {
 template<class CLIQUE>
 void optimizeWildfire(const boost::shared_ptr<CLIQUE>& clique, double threshold,

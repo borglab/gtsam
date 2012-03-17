@@ -48,7 +48,8 @@ struct ISAM2::Impl {
    * @param nodes Current BayesTree::Nodes index to be augmented with slots for new variables
    * @param keyFormatter Formatter for printing nonlinear keys during debugging
    */
-  static void AddVariables(const Values& newTheta, Values& theta, Permuted<VectorValues>& delta, vector<bool>& replacedKeys,
+  static void AddVariables(const Values& newTheta, Values& theta, Permuted<VectorValues>& delta,
+      Permuted<VectorValues>& deltaNewton, Permuted<VectorValues>& deltaGradSearch, vector<bool>& replacedKeys,
       Ordering& ordering, Base::Nodes& nodes, const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
   /**
