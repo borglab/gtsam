@@ -23,7 +23,7 @@
 
 namespace gtsam {
 
-	struct SharedDiagonal; // forward declare
+	class SharedDiagonal; // forward declare
 
 	/// All noise models live in the noiseModel namespace
 	namespace noiseModel {

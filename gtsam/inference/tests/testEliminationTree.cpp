@@ -25,7 +25,8 @@
 using namespace gtsam;
 using namespace std;
 
-struct EliminationTreeTester {
+class EliminationTreeTester {
+public:
   // build hardcoded tree
   static SymbolicEliminationTree::shared_ptr buildHardcodedTree(const SymbolicFactorGraph& fg) {
 
