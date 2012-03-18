@@ -660,7 +660,7 @@ void optimizeGradientSearchInPlace(const ISAM2& Rd, VectorValues& grad) {
 }
 
 /* ************************************************************************* */
-VectorValues gradient(const BayesTree<GaussianConditional, ISAM2Clique>& bayesTree, const VectorValues& x0) {
+VectorValues gradient(const ISAM2& bayesTree, const VectorValues& x0) {
   return gradient(FactorGraph<JacobianFactor>(bayesTree), x0);
 }
 
@@ -682,7 +682,7 @@ static void gradientAtZeroTreeAdder(const boost::shared_ptr<ISAM2Clique>& root, 
 }
 
 /* ************************************************************************* */
-void gradientAtZero(const BayesTree<GaussianConditional, ISAM2Clique>& bayesTree, VectorValues& g) {
+void gradientAtZero(const ISAM2& bayesTree, VectorValues& g) {
   // Zero-out gradient
   g.setZero();
 

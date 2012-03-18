@@ -299,4 +299,39 @@ size_t ISAM2::Impl::UpdateDelta(const boost::shared_ptr<ISAM2Clique>& root, std:
   return lastBacksubVariableCount;
 }
 
+/* ************************************************************************* */
+namespace internal {
+size_t updateDoglegDeltas(const boost::shared_ptr<ISAM2Clique>& clique, std::vector<bool>& replacedKeys,
+    const VectorValues& grad, Permuted<VectorValues>& deltaNewton, Permuted<VectorValues>& RgProd, vector<bool>& updated) {
+
+
+
+  // Update the current variable
+  // Get VectorValues slice corresponding to current variables
+  Vector gR = internal::extractVectorValuesSlices(grad, (*clique)->beginFrontals(), (*clique)->endFrontals());
+  Vector gS = internal::extractVectorValuesSlices(grad, (*clique)->beginParents(), (*clique)->endParents());
+
+  // Compute R*g and S*g for this clique
+  Vector RSgProd = ((*clique)->get_R() * (*clique)->permutation().transpose()) * gR + (*clique)->get_S() * gS;
+
+  // Write into RgProd vector
+  internal::writeVectorValuesSlices(RSgProd, RgProd, (*clique)->begin(), (*clique)->end());
+}
+}
+
+/* ************************************************************************* */
+size_t ISAM2::Impl::UpdateDoglegDeltas(const ISAM2& isam, std::vector<bool>& replacedKeys,
+    Permuted<VectorValues>& deltaNewton, Permuted<VectorValues>& RgProd) {
+
+  // Keep a set of flags for whether each variable has been updated.
+  vector<bool> updated(replacedKeys.size());
+
+  // Get gradient
+  VectorValues grad = *allocateVectorValues(isam);
+  gradientAtZero(isam, grad);
+
+  // Update variables
+  return internal::updateDoglegDeltas(root, replacedKeys, grad, deltaNewton, RgProd, updated);
+}
+
 }

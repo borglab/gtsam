@@ -293,9 +293,9 @@ protected:
   mutable Permuted<VectorValues> delta_;
 
   VectorValues deltaNewtonUnpermuted_;
-  mutable Permuted<VectorValues> deltaNewtonUnpermuted_;
-  VectorValues deltaGradSearchUnpermuted_;
-  mutable Permuted<VectorValues> deltaGradSearchUnpermuted_;
+  mutable Permuted<VectorValues> deltaNewton_;
+  VectorValues RgProdUnpermuted_;
+  mutable Permuted<VectorValues> RgProd_;
 
   /** Indicates whether the current delta is up-to-date, only used
    * internally - delta will always be updated if necessary when it is
@@ -527,7 +527,7 @@ int calculate_nnz(const boost::shared_ptr<CLIQUE>& clique);
  * @param x0 The center about which to compute the gradient
  * @return The gradient as a VectorValues
  */
-VectorValues gradient(const BayesTree<GaussianConditional, ISAM2Clique>& bayesTree, const VectorValues& x0);
+VectorValues gradient(const ISAM2& bayesTree, const VectorValues& x0);
 
 /**
  * Compute the gradient of the energy function,
@@ -540,7 +540,7 @@ VectorValues gradient(const BayesTree<GaussianConditional, ISAM2Clique>& bayesTr
  * @param [output] g A VectorValues to store the gradient, which must be preallocated, see allocateVectorValues
  * @return The gradient as a VectorValues
  */
-void gradientAtZero(const BayesTree<GaussianConditional, ISAM2Clique>& bayesTree, VectorValues& g);
+void gradientAtZero(const ISAM2& bayesTree, VectorValues& g);
 
 } /// namespace gtsam
 

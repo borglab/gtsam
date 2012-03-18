@@ -28,42 +28,6 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-// Helper function used only in this file - extracts vectors with variable indices
-// in the first and last iterators, and concatenates them in that order into the
-// output.
-template<class VALUES, typename ITERATOR>
-static Vector extractVectorValuesSlices(const VALUES& values, ITERATOR first, ITERATOR last) {
-  // Find total dimensionality
-  int dim = 0;
-  for(ITERATOR j = first; j != last; ++j)
-    dim += values[*j].rows();
-
-  // Copy vectors
-  Vector ret(dim);
-  int varStart = 0;
-  for(ITERATOR j = first; j != last; ++j) {
-    ret.segment(varStart, values[*j].rows()) = values[*j];
-    varStart += values[*j].rows();
-  }
-  return ret;
-}
-
-/* ************************************************************************* */
-// Helper function used only in this file - writes to the variables in values
-// with indices iterated over by first and last, interpreting vector as the
-// concatenated vectors to write.
-template<class VECTOR, class VALUES, typename ITERATOR>
-static void writeVectorValuesSlices(const VECTOR& vector, VALUES& values, ITERATOR first, ITERATOR last) {
-  // Copy vectors
-  int varStart = 0;
-  for(ITERATOR j = first; j != last; ++j) {
-    values[*j] = vector.segment(varStart, values[*j].rows());
-    varStart += values[*j].rows();
-  }
-  assert(varStart == vector.rows());
-}
-
-/* ************************************************************************* */
 GaussianConditional::GaussianConditional() : rsd_(matrix_) {}
 
 /* ************************************************************************* */
