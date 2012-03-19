@@ -22,8 +22,8 @@ namespace gtsam {
 
 /* ************************************************************************* */
 void ISAM2::Impl::AddVariables(
-    const Values& newTheta, Values& theta, Permuted<VectorValues>& delta, vector<bool>& replacedKeys,
-    Permuted<VectorValues>& deltaNewton, Permuted<VectorValues>& deltaGradSearch,
+    const Values& newTheta, Values& theta, Permuted<VectorValues>& delta,
+    Permuted<VectorValues>& deltaNewton, Permuted<VectorValues>& deltaGradSearch, vector<bool>& replacedKeys,
     Ordering& ordering, Base::Nodes& nodes, const KeyFormatter& keyFormatter) {
   const bool debug = ISDEBUG("ISAM2 AddVariables");
 
@@ -48,6 +48,8 @@ void ISAM2::Impl::AddVariables(
     Index nextVar = originalnVars;
     BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, newTheta) {
       delta.permutation()[nextVar] = nextVar;
+      deltaNewton.permutation()[nextVar] = nextVar;
+      deltaGradSearch.permutation()[nextVar] = nextVar;
       ordering.insert(key_value.key, nextVar);
       if(debug) cout << "Adding variable " << keyFormatter(key_value.key) << " with order " << nextVar << endl;
       ++ nextVar;
@@ -301,21 +303,47 @@ size_t ISAM2::Impl::UpdateDelta(const boost::shared_ptr<ISAM2Clique>& root, std:
 
 /* ************************************************************************* */
 namespace internal {
-size_t updateDoglegDeltas(const boost::shared_ptr<ISAM2Clique>& clique, std::vector<bool>& replacedKeys,
-    const VectorValues& grad, Permuted<VectorValues>& deltaNewton, Permuted<VectorValues>& RgProd, vector<bool>& updated) {
+void updateDoglegDeltas(const boost::shared_ptr<ISAM2Clique>& clique, std::vector<bool>& replacedKeys,
+    const VectorValues& grad, Permuted<VectorValues>& deltaNewton, Permuted<VectorValues>& RgProd, size_t& varsUpdated) {
 
+  // Check if any frontal or separator keys were recalculated, if so, we need
+  // update deltas and recurse to children, but if not, we do not need to
+  // recurse further because of the running separator property.
+  bool anyReplaced = false;
+  BOOST_FOREACH(Index j, *clique->conditional()) {
+    if(replacedKeys[j]) {
+      anyReplaced = true;
+      break;
+    }
+  }
 
+  if(anyReplaced) {
+    // Update the current variable
+    // Get VectorValues slice corresponding to current variables
+    Vector gR = internal::extractVectorValuesSlices(grad, (*clique)->beginFrontals(), (*clique)->endFrontals());
+    Vector gS = internal::extractVectorValuesSlices(grad, (*clique)->beginParents(), (*clique)->endParents());
 
-  // Update the current variable
-  // Get VectorValues slice corresponding to current variables
-  Vector gR = internal::extractVectorValuesSlices(grad, (*clique)->beginFrontals(), (*clique)->endFrontals());
-  Vector gS = internal::extractVectorValuesSlices(grad, (*clique)->beginParents(), (*clique)->endParents());
+    // Compute R*g and S*g for this clique
+    Vector RSgProd = ((*clique)->get_R() * (*clique)->permutation().transpose()) * gR + (*clique)->get_S() * gS;
 
-  // Compute R*g and S*g for this clique
-  Vector RSgProd = ((*clique)->get_R() * (*clique)->permutation().transpose()) * gR + (*clique)->get_S() * gS;
+    // Write into RgProd vector
+    internal::writeVectorValuesSlices(RSgProd, RgProd, (*clique)->beginFrontals(), (*clique)->endFrontals());
 
-  // Write into RgProd vector
-  internal::writeVectorValuesSlices(RSgProd, RgProd, (*clique)->begin(), (*clique)->end());
+    // Now solve the part of the Newton's method point for this clique (back-substitution)
+    (*clique)->solveInPlace(deltaNewton);
+
+    // If debugging, set recalculated keys to false so we can check them later
+#ifndef NDEBUG
+    BOOST_FOREACH(Index j, (*clique)->frontals()) {
+      replacedKeys[j] = false; }
+#endif
+
+    varsUpdated += (*clique)->nrFrontals();
+
+    // Recurse to children
+    BOOST_FOREACH(const ISAM2Clique::shared_ptr& child, clique->children()) {
+      updateDoglegDeltas(child, replacedKeys, grad, deltaNewton, RgProd, varsUpdated); }
+  }
 }
 }
 
@@ -323,15 +351,23 @@ size_t updateDoglegDeltas(const boost::shared_ptr<ISAM2Clique>& clique, std::vec
 size_t ISAM2::Impl::UpdateDoglegDeltas(const ISAM2& isam, std::vector<bool>& replacedKeys,
     Permuted<VectorValues>& deltaNewton, Permuted<VectorValues>& RgProd) {
 
-  // Keep a set of flags for whether each variable has been updated.
-  vector<bool> updated(replacedKeys.size());
-
   // Get gradient
   VectorValues grad = *allocateVectorValues(isam);
   gradientAtZero(isam, grad);
 
   // Update variables
-  return internal::updateDoglegDeltas(root, replacedKeys, grad, deltaNewton, RgProd, updated);
+  size_t varsUpdated = 0;
+  internal::updateDoglegDeltas(isam.root(), replacedKeys, grad, deltaNewton, RgProd, varsUpdated);
+
+  // Make sure all were updated
+#ifndef NDEBUG
+  for(size_t j=0; j<replacedKeys.size(); ++j)
+    assert(!replacedKeys[j]);
+#else
+  replacedKeys.assign(replacedKeys.size(), false);
+#endif
+
+  return varsUpdated;
 }
 
 }

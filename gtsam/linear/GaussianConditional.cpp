@@ -194,7 +194,7 @@ inline static void doSolveInPlace(const GaussianConditional& conditional, VALUES
 
   static const bool debug = false;
   if(debug) conditional.print("Solving conditional in place");
-  Vector xS = extractVectorValuesSlices(x, conditional.beginParents(), conditional.endParents());
+  Vector xS = internal::extractVectorValuesSlices(x, conditional.beginParents(), conditional.endParents());
   xS = conditional.get_d() - conditional.get_S() * xS;
   Vector soln = conditional.permutation().transpose() *
       conditional.get_R().triangularView<Eigen::Upper>().solve(xS);
@@ -202,7 +202,7 @@ inline static void doSolveInPlace(const GaussianConditional& conditional, VALUES
     gtsam::print(Matrix(conditional.get_R()), "Calling backSubstituteUpper on ");
     gtsam::print(soln, "full back-substitution solution: ");
   }
-  writeVectorValuesSlices(soln, x, conditional.beginFrontals(), conditional.endFrontals());
+  internal::writeVectorValuesSlices(soln, x, conditional.beginFrontals(), conditional.endFrontals());
 }
 
 /* ************************************************************************* */
@@ -217,7 +217,7 @@ void GaussianConditional::solveInPlace(Permuted<VectorValues>& x) const {
 
 /* ************************************************************************* */
 void GaussianConditional::solveTransposeInPlace(VectorValues& gy) const {
-	Vector frontalVec = extractVectorValuesSlices(gy, beginFrontals(), endFrontals());
+	Vector frontalVec = internal::extractVectorValuesSlices(gy, beginFrontals(), endFrontals());
 	// TODO: verify permutation
 	frontalVec = permutation_ * gtsam::backSubstituteUpper(frontalVec,Matrix(get_R()));
 	GaussianConditional::const_iterator it;
@@ -225,14 +225,14 @@ void GaussianConditional::solveTransposeInPlace(VectorValues& gy) const {
 		const Index i = *it;
 		transposeMultiplyAdd(-1.0,get_S(it),frontalVec,gy[i]);
 	}
-	writeVectorValuesSlices(frontalVec, gy, beginFrontals(), endFrontals());
+	internal::writeVectorValuesSlices(frontalVec, gy, beginFrontals(), endFrontals());
 }
 
 /* ************************************************************************* */
 void GaussianConditional::scaleFrontalsBySigma(VectorValues& gy) const {
-	Vector frontalVec = extractVectorValuesSlices(gy, beginFrontals(), endFrontals());
+	Vector frontalVec = internal::extractVectorValuesSlices(gy, beginFrontals(), endFrontals());
 	frontalVec = emul(frontalVec, get_sigmas());
-	writeVectorValuesSlices(frontalVec, gy, beginFrontals(), endFrontals());
+	internal::writeVectorValuesSlices(frontalVec, gy, beginFrontals(), endFrontals());
 }
 
 }

@@ -29,7 +29,7 @@ using boost::shared_ptr;
 const double tol = 1e-4;
 
 /* ************************************************************************* */
-TEST(ISAM2, AddVariables) {
+TEST_UNSAFE(ISAM2, AddVariables) {
 
   // Create initial state
   Values theta;
@@ -47,6 +47,26 @@ TEST(ISAM2, AddVariables) {
   permutation[1] = 0;
 
   Permuted<VectorValues> delta(permutation, deltaUnpermuted);
+
+  VectorValues deltaNewtonUnpermuted;
+  deltaNewtonUnpermuted.insert(0, Vector_(3, .1, .2, .3));
+  deltaNewtonUnpermuted.insert(1, Vector_(2, .4, .5));
+
+  Permutation permutationNewton(2);
+  permutationNewton[0] = 1;
+  permutationNewton[1] = 0;
+
+  Permuted<VectorValues> deltaNewton(permutationNewton, deltaNewtonUnpermuted);
+
+  VectorValues deltaRgUnpermuted;
+  deltaRgUnpermuted.insert(0, Vector_(3, .1, .2, .3));
+  deltaRgUnpermuted.insert(1, Vector_(2, .4, .5));
+
+  Permutation permutationRg(2);
+  permutationRg[0] = 1;
+  permutationRg[1] = 0;
+
+  Permuted<VectorValues> deltaRg(permutationRg, deltaRgUnpermuted);
 
   vector<bool> replacedKeys(2, false);
 
@@ -78,6 +98,30 @@ TEST(ISAM2, AddVariables) {
 
   Permuted<VectorValues> deltaExpected(permutationExpected, deltaUnpermutedExpected);
 
+  VectorValues deltaNewtonUnpermutedExpected;
+  deltaNewtonUnpermutedExpected.insert(0, Vector_(3, .1, .2, .3));
+  deltaNewtonUnpermutedExpected.insert(1, Vector_(2, .4, .5));
+  deltaNewtonUnpermutedExpected.insert(2, Vector_(3, 0.0, 0.0, 0.0));
+
+  Permutation permutationNewtonExpected(3);
+  permutationNewtonExpected[0] = 1;
+  permutationNewtonExpected[1] = 0;
+  permutationNewtonExpected[2] = 2;
+
+  Permuted<VectorValues> deltaNewtonExpected(permutationNewtonExpected, deltaNewtonUnpermutedExpected);
+
+  VectorValues deltaRgUnpermutedExpected;
+  deltaRgUnpermutedExpected.insert(0, Vector_(3, .1, .2, .3));
+  deltaRgUnpermutedExpected.insert(1, Vector_(2, .4, .5));
+  deltaRgUnpermutedExpected.insert(2, Vector_(3, 0.0, 0.0, 0.0));
+
+  Permutation permutationRgExpected(3);
+  permutationRgExpected[0] = 1;
+  permutationRgExpected[1] = 0;
+  permutationRgExpected[2] = 2;
+
+  Permuted<VectorValues> deltaRgExpected(permutationRgExpected, deltaRgUnpermutedExpected);
+
   vector<bool> replacedKeysExpected(3, false);
 
   Ordering orderingExpected; orderingExpected += planarSLAM::PointKey(0), planarSLAM::PoseKey(0), planarSLAM::PoseKey(1);
@@ -86,11 +130,15 @@ TEST(ISAM2, AddVariables) {
           3, ISAM2::sharedClique());
 
   // Expand initial state
-  ISAM2::Impl::AddVariables(newTheta, theta, delta, replacedKeys, ordering, nodes);
+  ISAM2::Impl::AddVariables(newTheta, theta, delta, deltaNewton, deltaRg, replacedKeys, ordering, nodes);
 
   EXPECT(assert_equal(thetaExpected, theta));
   EXPECT(assert_equal(deltaUnpermutedExpected, deltaUnpermuted));
   EXPECT(assert_equal(deltaExpected.permutation(), delta.permutation()));
+  EXPECT(assert_equal(deltaNewtonUnpermutedExpected, deltaNewtonUnpermuted));
+  EXPECT(assert_equal(deltaNewtonExpected.permutation(), deltaNewton.permutation()));
+  EXPECT(assert_equal(deltaRgUnpermutedExpected, deltaRgUnpermuted));
+  EXPECT(assert_equal(deltaRgExpected.permutation(), deltaRg.permutation()));
   EXPECT(assert_container_equality(replacedKeysExpected, replacedKeys));
   EXPECT(assert_equal(orderingExpected, ordering));
 }

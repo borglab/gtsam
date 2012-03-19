@@ -38,7 +38,8 @@ static const double batchThreshold = 0.65;
 
 /* ************************************************************************* */
 ISAM2::ISAM2(const ISAM2Params& params):
-    delta_(Permutation(), deltaUnpermuted_), deltaUptodate_(true), params_(params) {
+    delta_(deltaUnpermuted_), deltaNewton_(deltaNewtonUnpermuted_), RgProd_(RgProdUnpermuted_),
+    deltaDoglegUptodate_(true), deltaUptodate_(true), params_(params) {
   // See note in gtsam/base/boost_variant_with_workaround.h
   if(params_.optimizationParams.type() == typeid(ISAM2DoglegParams))
     doglegDelta_ = boost::get<ISAM2DoglegParams>(params_.optimizationParams).initialDelta;
@@ -46,7 +47,8 @@ ISAM2::ISAM2(const ISAM2Params& params):
 
 /* ************************************************************************* */
 ISAM2::ISAM2():
-    delta_(Permutation(), deltaUnpermuted_), deltaUptodate_(true) {
+    delta_(deltaUnpermuted_), deltaNewton_(deltaNewtonUnpermuted_), RgProd_(RgProdUnpermuted_),
+    deltaDoglegUptodate_(true), deltaUptodate_(true) {
   // See note in gtsam/base/boost_variant_with_workaround.h
   if(params_.optimizationParams.type() == typeid(ISAM2DoglegParams))
     doglegDelta_ = boost::get<ISAM2DoglegParams>(params_.optimizationParams).initialDelta;
@@ -344,6 +346,8 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
     toc(3,"permute global variable index");
     tic(4,"permute delta");
     delta_.permute(partialSolveResult.fullReordering);
+    deltaNewton_.permute(partialSolveResult.fullReordering);
+    RgProd_.permute(partialSolveResult.fullReordering);
     toc(4,"permute delta");
     tic(5,"permute ordering");
     ordering_.permuteWithInverse(partialSolveResult.fullReorderingInverse);
@@ -441,7 +445,7 @@ ISAM2Result ISAM2::update(
 
   tic(2,"add new variables");
   // 2. Initialize any new variables \Theta_{new} and add \Theta:=\Theta\cup\Theta_{new}.
-  Impl::AddVariables(newTheta, theta_, delta_, deltaReplacedMask_, ordering_, Base::nodes_);
+  Impl::AddVariables(newTheta, theta_, delta_, deltaNewton_, RgProd_, deltaReplacedMask_, ordering_, Base::nodes_);
   toc(2,"add new variables");
 
   tic(3,"evaluate error before");
@@ -543,6 +547,7 @@ ISAM2Result ISAM2::update(
   toc(10,"evaluate error after");
 
   result.cliques = this->nodes().size();
+  deltaDoglegUptodate_ = false;
   deltaUptodate_ = false;
 
   return result;
@@ -575,9 +580,6 @@ void ISAM2::updateDelta(bool forceFullSolve) const {
     doglegDelta_ = doglegResult.Delta;
     delta_.permutation() = Permutation::Identity(delta_.size());  // Dogleg solves for the full delta so there is no permutation
     delta_.container() = doglegResult.dx_d; // Copy the VectorValues containing with the linear solution
-
-    // Clear replaced mask
-    deltaReplacedMask_.assign(deltaReplacedMask_.size(), false);
   }
 
   deltaUptodate_ = true;
@@ -618,9 +620,17 @@ VectorValues optimize(const ISAM2& isam) {
 
 /* ************************************************************************* */
 void optimizeInPlace(const ISAM2& isam, VectorValues& delta) {
-  tic(1, "optimizeInPlace");
-  internal::optimizeInPlace<ISAM2::Base>(isam.root(), delta);
-  toc(1, "optimizeInPlace");
+  // We may need to update the solution calcaulations
+  if(!isam.deltaDoglegUptodate_) {
+    tic(1, "UpdateDoglegDeltas");
+    ISAM2::Impl::UpdateDoglegDeltas(isam, isam.deltaReplacedMask_, isam.deltaNewton_, isam.RgProd_);
+    isam.deltaDoglegUptodate_ = true;
+    toc(1, "UpdateDoglegDeltas");
+  }
+
+  tic(2, "copy delta");
+  delta = isam.deltaNewton_;
+  toc(2, "copy delta");
 }
 
 /* ************************************************************************* */
@@ -635,27 +645,30 @@ VectorValues optimizeGradientSearch(const ISAM2& isam) {
 }
 
 /* ************************************************************************* */
-void optimizeGradientSearchInPlace(const ISAM2& Rd, VectorValues& grad) {
+void optimizeGradientSearchInPlace(const ISAM2& isam, VectorValues& grad) {
+  // We may need to update the solution calcaulations
+  if(!isam.deltaDoglegUptodate_) {
+    tic(1, "UpdateDoglegDeltas");
+    ISAM2::Impl::UpdateDoglegDeltas(isam, isam.deltaReplacedMask_, isam.deltaNewton_, isam.RgProd_);
+    isam.deltaDoglegUptodate_ = true;
+    toc(1, "UpdateDoglegDeltas");
+  }
+
   tic(1, "Compute Gradient");
   // Compute gradient (call gradientAtZero function, which is defined for various linear systems)
-  gradientAtZero(Rd, grad);
+  gradientAtZero(isam, grad);
   double gradientSqNorm = grad.dot(grad);
   toc(1, "Compute Gradient");
 
-  tic(2, "Compute R*g");
-  // Compute R * g
-  FactorGraph<JacobianFactor> Rd_jfg(Rd);
-  Errors Rg = Rd_jfg * grad;
-  toc(2, "Compute R*g");
-
-  tic(3, "Compute minimizing step size");
+  tic(2, "Compute minimizing step size");
   // Compute minimizing step size
-  double step = -gradientSqNorm / dot(Rg, Rg);
-  toc(3, "Compute minimizing step size");
+  double RgNormSq = isam.RgProd_.container().vector().squaredNorm();
+  double step = -gradientSqNorm / RgNormSq;
+  toc(2, "Compute minimizing step size");
 
   tic(4, "Compute point");
   // Compute steepest descent point
-  scal(step, grad);
+  grad.vector() *= step;
   toc(4, "Compute point");
 }
 

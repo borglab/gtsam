@@ -127,7 +127,7 @@ struct ISAM2::Impl {
   static size_t UpdateDelta(const boost::shared_ptr<ISAM2Clique>& root, std::vector<bool>& replacedKeys, Permuted<VectorValues>& delta, double wildfireThreshold);
 
   static size_t UpdateDoglegDeltas(const ISAM2& isam, std::vector<bool>& replacedKeys,
-      const VectorValues& grad, Permuted<VectorValues>& deltaNewton, Permuted<VectorValues>& RgProd);
+      Permuted<VectorValues>& deltaNewton, Permuted<VectorValues>& RgProd);
 
 };
 

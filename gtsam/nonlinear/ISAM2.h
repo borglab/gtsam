@@ -296,6 +296,7 @@ protected:
   mutable Permuted<VectorValues> deltaNewton_;
   VectorValues RgProdUnpermuted_;
   mutable Permuted<VectorValues> RgProd_;
+  mutable bool deltaDoglegUptodate_;
 
   /** Indicates whether the current delta is up-to-date, only used
    * internally - delta will always be updated if necessary when it is
@@ -359,6 +360,11 @@ public:
     newISAM2->variableIndex_ = variableIndex_;
     newISAM2->deltaUnpermuted_ = deltaUnpermuted_;
     newISAM2->delta_ = delta_;
+    newISAM2->deltaNewtonUnpermuted_ = deltaNewtonUnpermuted_;
+    newISAM2->deltaNewton_ = deltaNewton_;
+    newISAM2->RgProdUnpermuted_ = RgProdUnpermuted_;
+    newISAM2->RgProd_ = RgProd_;
+    newISAM2->deltaDoglegUptodate_ = deltaDoglegUptodate_;
     newISAM2->deltaUptodate_ = deltaUptodate_;
     newISAM2->deltaReplacedMask_ = deltaReplacedMask_;
     newISAM2->nonlinearFactors_ = nonlinearFactors_;
@@ -458,6 +464,9 @@ private:
       const boost::optional<FastSet<size_t> >& constrainKeys, ISAM2Result& result);
   //	void linear_update(const GaussianFactorGraph& newFactors);
   void updateDelta(bool forceFullSolve = false) const;
+
+  friend void optimizeInPlace(const ISAM2&, VectorValues&);
+  friend void optimizeGradientSearchInPlace(const ISAM2&, VectorValues&);
 
 }; // ISAM2
 

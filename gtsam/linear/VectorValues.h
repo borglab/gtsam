@@ -19,6 +19,7 @@
 
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/types.h>
+#include <gtsam/inference/Permutation.h>
 
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
@@ -272,6 +273,11 @@ namespace gtsam {
      * same structure (checked when NDEBUG is not defined).
      */
     void operator+=(const VectorValues& c);
+
+    /** Assignment operator from Permuted<VectorValues>, requires the dimensions
+     * of the assignee to already be properly pre-allocated.
+     */
+    VectorValues& operator=(const Permuted<VectorValues>& rhs);
 
     /// @}
 
