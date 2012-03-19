@@ -591,9 +591,16 @@ void ISAM2::updateDelta(bool forceFullSolve) const {
 Values ISAM2::calculateEstimate() const {
   // We use ExpmapMasked here instead of regular expmap because the former
   // handles Permuted<VectorValues>
+  tic(1, "Copy Values");
 	Values ret(theta_);
+	toc(1, "Copy Values");
+	tic(2, "getDelta");
+	const Permuted<VectorValues>& delta(getDelta());
+  toc(2, "getDelta");
+  tic(3, "Expmap");
   vector<bool> mask(ordering_.nVars(), true);
-  Impl::ExpmapMasked(ret, getDelta(), ordering_, mask);
+  Impl::ExpmapMasked(ret, delta, ordering_, mask);
+  toc(3, "Expmap");
   return ret;
 }
 

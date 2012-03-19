@@ -191,7 +191,6 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
     if(verbose) cout << "rho = " << rho << endl;
 
     if(rho >= 0.75) {
-      tic(7, "Rho >= 0.75");
       // M agrees very well with f, so try to increase lambda
       const double dx_d_norm = result.dx_d.vector().norm();
       const double newDelta = std::max(Delta, 3.0 * dx_d_norm); // Compute new Delta
@@ -209,14 +208,12 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
         assert(false); }
 
       Delta = newDelta; // Update Delta from new Delta
-      toc(7, "Rho >= 0.75");
 
     } else if(0.75 > rho && rho >= 0.25) {
       // M agrees so-so with f, keep the same Delta
       stay = false;
 
     } else if(0.25 > rho && rho >= 0.0) {
-      tic(8, "0.25 > Rho >= 0.75");
       // M does not agree well with f, decrease Delta until it does
       double newDelta;
       if(Delta > 1e-5)
@@ -232,11 +229,8 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
         assert(false); }
 
       Delta = newDelta; // Update Delta from new Delta
-      toc(8, "0.25 > Rho >= 0.75");
-    }
 
-    else {
-      tic(9, "Rho < 0");
+    } else {
       // f actually increased, so keep decreasing Delta until f does not decrease
       assert(0.0 > rho);
       if(Delta > 1e-5) {
@@ -247,7 +241,6 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
         if(verbose) cout << "Warning:  Dog leg stopping because cannot decrease error with minimum Delta" << endl;
         stay = false;
       }
-      toc(9, "Rho < 0");
     }
   }
 
