@@ -168,6 +168,9 @@ VectorValues& VectorValues::operator=(const Permuted<VectorValues>& rhs) {
       if(l.rows() != r.rows())
         throw std::invalid_argument("VectorValues assignment from Permuted<VectorValues> requires pre-allocation, see documentation.");
       l = r;
+    } else {
+      if(rhs.container().exists(rhs.permutation()[j]))
+        throw std::invalid_argument("VectorValues assignment from Permuted<VectorValues> requires pre-allocation, see documentation.");
     }
   }
   return *this;
