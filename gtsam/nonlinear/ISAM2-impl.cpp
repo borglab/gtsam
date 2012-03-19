@@ -330,13 +330,7 @@ void updateDoglegDeltas(const boost::shared_ptr<ISAM2Clique>& clique, std::vecto
     internal::writeVectorValuesSlices(RSgProd, RgProd, (*clique)->beginFrontals(), (*clique)->endFrontals());
 
     // Now solve the part of the Newton's method point for this clique (back-substitution)
-    (*clique)->solveInPlace(deltaNewton);
-
-    // If debugging, set recalculated keys to false so we can check them later
-#ifndef NDEBUG
-    BOOST_FOREACH(Index j, (*clique)->frontals()) {
-      replacedKeys[j] = false; }
-#endif
+    //(*clique)->solveInPlace(deltaNewton);
 
     varsUpdated += (*clique)->nrFrontals();
 
@@ -348,7 +342,7 @@ void updateDoglegDeltas(const boost::shared_ptr<ISAM2Clique>& clique, std::vecto
 }
 
 /* ************************************************************************* */
-size_t ISAM2::Impl::UpdateDoglegDeltas(const ISAM2& isam, std::vector<bool>& replacedKeys,
+size_t ISAM2::Impl::UpdateDoglegDeltas(const ISAM2& isam, double wildfireThreshold, std::vector<bool>& replacedKeys,
     Permuted<VectorValues>& deltaNewton, Permuted<VectorValues>& RgProd) {
 
   // Get gradient
@@ -358,14 +352,23 @@ size_t ISAM2::Impl::UpdateDoglegDeltas(const ISAM2& isam, std::vector<bool>& rep
   // Update variables
   size_t varsUpdated = 0;
   internal::updateDoglegDeltas(isam.root(), replacedKeys, grad, deltaNewton, RgProd, varsUpdated);
+  optimizeWildfire(isam.root(), wildfireThreshold, replacedKeys, deltaNewton);
 
-  // Make sure all were updated
-#ifndef NDEBUG
-  for(size_t j=0; j<replacedKeys.size(); ++j)
-    assert(!replacedKeys[j]);
-#else
-  replacedKeys.assign(replacedKeys.size(), false);
+#if 0
+  VectorValues expected = *allocateVectorValues(isam);
+  internal::optimizeInPlace<ISAM2>(isam.root(), expected);
+  for(size_t j = 0; j<expected.size(); ++j)
+    assert(equal_with_abs_tol(expected[j], deltaNewton[j], 1e-2));
+
+  FactorGraph<JacobianFactor> Rd_jfg(isam);
+  Errors Rg = Rd_jfg * grad;
+  double RgMagExpected = dot(Rg, Rg);
+  double RgMagActual = RgProd.container().vector().squaredNorm();
+  cout << fabs(RgMagExpected - RgMagActual) << endl;
+  assert(fabs(RgMagExpected - RgMagActual) < (1e-8 * RgMagActual + 1e-4));
 #endif
+
+  replacedKeys.assign(replacedKeys.size(), false);
 
   return varsUpdated;
 }

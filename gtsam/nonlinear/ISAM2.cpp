@@ -242,6 +242,8 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
     toc(2,"permute global variable index");
     tic(3,"permute delta");
     delta_.permute(*colamd);
+    deltaNewton_.permute(*colamd);
+    RgProd_.permute(*colamd);
     toc(3,"permute delta");
     tic(4,"permute ordering");
     ordering_.permuteWithInverse(*colamdInverse);
@@ -623,7 +625,14 @@ void optimizeInPlace(const ISAM2& isam, VectorValues& delta) {
   // We may need to update the solution calcaulations
   if(!isam.deltaDoglegUptodate_) {
     tic(1, "UpdateDoglegDeltas");
-    ISAM2::Impl::UpdateDoglegDeltas(isam, isam.deltaReplacedMask_, isam.deltaNewton_, isam.RgProd_);
+    double wildfireThreshold = 0.0;
+    if(isam.params().optimizationParams.type() == typeid(ISAM2GaussNewtonParams))
+      wildfireThreshold = boost::get<ISAM2GaussNewtonParams>(isam.params().optimizationParams).wildfireThreshold;
+    else if(isam.params().optimizationParams.type() == typeid(ISAM2DoglegParams))
+      wildfireThreshold = boost::get<ISAM2DoglegParams>(isam.params().optimizationParams).wildfireThreshold;
+    else
+      assert(false);
+    ISAM2::Impl::UpdateDoglegDeltas(isam, wildfireThreshold, isam.deltaReplacedMask_, isam.deltaNewton_, isam.RgProd_);
     isam.deltaDoglegUptodate_ = true;
     toc(1, "UpdateDoglegDeltas");
   }
@@ -649,7 +658,14 @@ void optimizeGradientSearchInPlace(const ISAM2& isam, VectorValues& grad) {
   // We may need to update the solution calcaulations
   if(!isam.deltaDoglegUptodate_) {
     tic(1, "UpdateDoglegDeltas");
-    ISAM2::Impl::UpdateDoglegDeltas(isam, isam.deltaReplacedMask_, isam.deltaNewton_, isam.RgProd_);
+    double wildfireThreshold = 0.0;
+    if(isam.params().optimizationParams.type() == typeid(ISAM2GaussNewtonParams))
+      wildfireThreshold = boost::get<ISAM2GaussNewtonParams>(isam.params().optimizationParams).wildfireThreshold;
+    else if(isam.params().optimizationParams.type() == typeid(ISAM2DoglegParams))
+      wildfireThreshold = boost::get<ISAM2DoglegParams>(isam.params().optimizationParams).wildfireThreshold;
+    else
+      assert(false);
+    ISAM2::Impl::UpdateDoglegDeltas(isam, wildfireThreshold, isam.deltaReplacedMask_, isam.deltaNewton_, isam.RgProd_);
     isam.deltaDoglegUptodate_ = true;
     toc(1, "UpdateDoglegDeltas");
   }

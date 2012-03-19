@@ -54,15 +54,18 @@ struct ISAM2GaussNewtonParams {
  */
 struct ISAM2DoglegParams {
   double initialDelta; ///< The initial trust region radius for Dogleg
+  double wildfireThreshold; ///< Continue updating the linear delta only when changes are above this threshold (default: 0.001)
   DoglegOptimizerImpl::TrustRegionAdaptationMode adaptationMode; ///< See description in DoglegOptimizerImpl::TrustRegionAdaptationMode
   bool verbose; ///< Whether Dogleg prints iteration and convergence information
 
   /** Specify parameters as constructor arguments */
   ISAM2DoglegParams(
-      double _initialDelta = 1.0, ///< see ISAM2DoglegParams public variables, ISAM2DoglegParams::initialDelta
-      DoglegOptimizerImpl::TrustRegionAdaptationMode _adaptationMode = DoglegOptimizerImpl::SEARCH_EACH_ITERATION, ///< see ISAM2DoglegParams public variables, ISAM2DoglegParams::adaptationMode
-      bool _verbose = false ///< see ISAM2DoglegParams public variables, ISAM2DoglegParams::verbose
-  ) : initialDelta(_initialDelta), adaptationMode(_adaptationMode), verbose(_verbose) {}
+      double _initialDelta = 1.0, ///< see ISAM2DoglegParams::initialDelta
+      double _wildfireThreshold = 0.0, ///< see ISAM2DoglegParams::wildfireThreshold
+      DoglegOptimizerImpl::TrustRegionAdaptationMode _adaptationMode = DoglegOptimizerImpl::SEARCH_EACH_ITERATION, ///< see ISAM2DoglegParams::adaptationMode
+      bool _verbose = false ///< see ISAM2DoglegParams::verbose
+  ) : initialDelta(_initialDelta), wildfireThreshold(_wildfireThreshold),
+  adaptationMode(_adaptationMode), verbose(_verbose) {}
 };
 
 /**
