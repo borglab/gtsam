@@ -178,7 +178,7 @@ namespace gtsam {
 
     /** Construct from a container of variable dimensions (in variable order), without initializing any values. */
     template<class CONTAINER>
-    VectorValues(const CONTAINER& dimensions) { append(dimensions); }
+    explicit VectorValues(const CONTAINER& dimensions) { append(dimensions); }
 
     /** Construct to hold nVars vectors of varDim dimension each. */
     VectorValues(Index nVars, size_t varDim) { resize(nVars, varDim); }
