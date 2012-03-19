@@ -61,7 +61,7 @@ struct ISAM2DoglegParams {
   /** Specify parameters as constructor arguments */
   ISAM2DoglegParams(
       double _initialDelta = 1.0, ///< see ISAM2DoglegParams::initialDelta
-      double _wildfireThreshold = 0.0, ///< see ISAM2DoglegParams::wildfireThreshold
+      double _wildfireThreshold = 1e-5, ///< see ISAM2DoglegParams::wildfireThreshold
       DoglegOptimizerImpl::TrustRegionAdaptationMode _adaptationMode = DoglegOptimizerImpl::SEARCH_EACH_ITERATION, ///< see ISAM2DoglegParams::adaptationMode
       bool _verbose = false ///< see ISAM2DoglegParams::verbose
   ) : initialDelta(_initialDelta), wildfireThreshold(_wildfireThreshold),
