@@ -150,7 +150,7 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
   IterationResult result;
 
   bool stay = true;
-  enum { NONE, INCREASED_DELTA, DECREASED_DELTA } lastAction; // Used to prevent alternating between increasing and decreasing in one iteration
+  enum { NONE, INCREASED_DELTA, DECREASED_DELTA } lastAction = 0; // Used to prevent alternating between increasing and decreasing in one iteration
   while(stay) {
     tic(3, "Dog leg point");
     // Compute dog leg point
