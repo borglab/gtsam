@@ -45,13 +45,6 @@ namespace gtsam {
 		typedef Base::sharedClique sharedClique;
 		typedef GaussianFactorGraph::Eliminate Eliminate;
 
-	protected:
-		// back-substitute in topological sort order (parents first)
-		void btreeBackSubstitute(const BTClique::shared_ptr& current, VectorValues& config) const;
-
-		// find the RHS for the system in order to perform backsubstitution
-		void btreeRHS(const BTClique::shared_ptr& current, VectorValues& config) const;
-
 	public :
 
 		/** Default constructor */

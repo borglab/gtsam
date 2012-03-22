@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    testSymbolicBayesNet.cpp
+ * @file    testSymbolicBayesNetB.cpp
  * @brief   Unit tests for a symbolic Bayes chain
  * @author  Frank Dellaert
  */
@@ -33,11 +33,6 @@ using namespace example;
 
 Key kx(size_t i) { return Symbol('x',i); }
 Key kl(size_t i) { return Symbol('l',i); }
-
-//Symbol _B_('B', 0), _L_('L', 0);
-//IndexConditional::shared_ptr
-//	B(new IndexConditional(_B_)),
-//	L(new IndexConditional(_L_, _B_));
 
 /* ************************************************************************* */
 TEST( SymbolicBayesNet, constructor )
@@ -62,6 +57,18 @@ TEST( SymbolicBayesNet, constructor )
 			&EliminateSymbolic);
 
   CHECK(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST( SymbolicBayesNet, FromGaussian) {
+  SymbolicBayesNet expected;
+  expected.push_back(IndexConditional::shared_ptr(new IndexConditional(0, 1)));
+  expected.push_back(IndexConditional::shared_ptr(new IndexConditional(1)));
+
+  GaussianBayesNet gbn = createSmallGaussianBayesNet();
+  SymbolicBayesNet actual(gbn);
+
+  EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */

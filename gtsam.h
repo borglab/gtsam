@@ -214,7 +214,7 @@ class CalibratedCamera {
     CalibratedCamera(const Vector& v);
 
     void print(string s) const;
-    bool equals(const gtsam::Pose3& pose, double tol) const;
+    bool equals(const gtsam::CalibratedCamera& camera, double tol) const;
 
     gtsam::Pose3 pose() const;
 
@@ -404,7 +404,7 @@ class Ordering {
 	Ordering();
 	void print(string s) const;
 	bool equals(const gtsam::Ordering& ord, double tol) const;
-	void push_back(string key);
+	void push_back(size_t key);
 };
 
 class NonlinearOptimizationParameters {

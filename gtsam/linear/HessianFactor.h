@@ -71,7 +71,7 @@ namespace gtsam {
    * and the information vector @f$ \eta = P^{-1} \mu = \Lambda \mu @f$
    * to arrive at the canonical form of the Gaussian:
    * @f[
-   * E(x) = 0.5 x^T \Lambda x - x^T \eta + 0.5 \mu^T \Lambda \mu + C
+   * E(x) = 0.5 x^T \Lambda x - x^T \eta + 0.5 \mu^T \Lambda \mu
    * @f]
    *
    * This factor is one of the factors that can be in a GaussianFactorGraph.

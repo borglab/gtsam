@@ -9,6 +9,7 @@ foreach(example_src ${example_srcs} )
     add_dependencies(examples ${example_bin})
     add_executable(${example_bin} ${example_src})
     target_link_libraries(${example_bin} gtsam-static)
+    add_custom_target(${example_bin}.run ${EXECUTABLE_OUTPUT_PATH}${example_bin} ${ARGN})
 endforeach(example_src)
 
 add_subdirectory(vSLAMexample)

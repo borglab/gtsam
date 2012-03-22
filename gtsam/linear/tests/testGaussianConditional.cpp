@@ -145,48 +145,6 @@ TEST( GaussianConditional, equals )
 }
 
 /* ************************************************************************* */
-TEST( GaussianConditional, rhs_permuted )
-{
-  // Test filling the rhs when the VectorValues is permuted
-
-  // Create a VectorValues
-  VectorValues unpermuted(5, 2);
-  unpermuted[0] << 1, 2;
-  unpermuted[1] << 3, 4;
-  unpermuted[2] << 5, 6;
-  unpermuted[3] << 7, 8;
-  unpermuted[4] << 9, 10;
-
-  // Create a permutation
-  Permutation permutation(5);
-  permutation[0] = 4;
-  permutation[1] = 3;
-  permutation[2] = 2;
-  permutation[3] = 1;
-  permutation[4] = 0;
-
-  // Permuted VectorValues
-  Permuted<VectorValues> permuted(permutation, unpermuted);
-
-  // Expected VectorValues
-  VectorValues expected(5, 2);
-  expected[0] << 1, 2;
-  expected[1] << 3, 4;
-  expected[2] << 5, 6;
-  expected[3] << 7, 8;
-  expected[4] << 11, 12;
-
-  // GaussianConditional
-  Vector d(2);  d << 11, 12;
-  GaussianConditional conditional(0, d, Matrix::Identity(2,2), Vector::Ones(2));
-
-  // Fill rhs, conditional is on index 0, which should fill slot 4 of the values
-  conditional.rhs(permuted);
-
-  EXPECT(assert_equal(expected, unpermuted));
-}
-
-/* ************************************************************************* */
 TEST( GaussianConditional, solve )
 {
   //expected solution
@@ -208,8 +166,7 @@ TEST( GaussianConditional, solve )
 
   Vector tau = ones(2);
 
-  // RHS is different than the one in the solution vector
-  GaussianConditional cg(_x_,ones(2), R, _x1_, A1, _l1_, A2, tau);
+  GaussianConditional cg(_x_, d, R, _x1_, A1, _l1_, A2, tau);
 
   Vector sx1(2);
   sx1(0) = 1.0; sx1(1) = 1.0;
@@ -218,21 +175,16 @@ TEST( GaussianConditional, solve )
   sl1(0) = 1.0; sl1(1) = 1.0;
 
   VectorValues solution(vector<size_t>(3, 2));
-  solution[_x_]  = d;   // RHS
+  solution[_x_]  = d;
   solution[_x1_] = sx1; // parents
   solution[_l1_] = sl1;
 
-  // NOTE: the solve functions assume the RHS is passed as the initialization of
-  // the solution.
   VectorValues expected(vector<size_t>(3, 2));
   expected[_x_] = expectedX;
   expected[_x1_] = sx1;
   expected[_l1_] = sl1;
-
-  VectorValues copy_result = cg.solve(solution);
   cg.solveInPlace(solution);
 
-  EXPECT(assert_equal(expected, copy_result, 0.0001));
   EXPECT(assert_equal(expected, solution, 0.0001));
 }
 
@@ -240,12 +192,11 @@ TEST( GaussianConditional, solve )
 TEST( GaussianConditional, solve_simple )
 {
 	// no pivoting from LDL, so R matrix is not permuted
-	// RHS is deliberately not the same as below
 	Matrix full_matrix = Matrix_(4, 7,
-			1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 0.0,
-			0.0, 1.0, 0.0, 2.0, 0.0, 3.0, 0.0,
-			0.0, 0.0, 3.0, 0.0, 4.0, 0.0, 0.0,
-			0.0, 0.0, 0.0, 3.0, 0.0, 4.0, 0.0);
+			1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 0.1,
+			0.0, 1.0, 0.0, 2.0, 0.0, 3.0, 0.2,
+			0.0, 0.0, 3.0, 0.0, 4.0, 0.0, 0.3,
+			0.0, 0.0, 0.0, 3.0, 0.0, 4.0, 0.4);
 
 	// solve system as a non-multifrontal version first
 	// 2 variables, frontal has dim=4
@@ -261,7 +212,6 @@ TEST( GaussianConditional, solve_simple )
 	// elimination order; _x_, _x1_
 	vector<size_t> vdim; vdim += 4, 2;
 	VectorValues actual(vdim);
-	actual[_x_]  = Vector_(4, 0.1, 0.2, 0.3, 0.4); // d
 	actual[_x1_] = sx1; // parent
 
 	VectorValues expected(vdim);
@@ -283,10 +233,10 @@ TEST( GaussianConditional, solve_multifrontal )
 	// create full system, 3 variables, 2 frontals, all 2 dim
 	// no pivoting from LDL, so R matrix is not permuted
 	Matrix full_matrix = Matrix_(4, 7,
-			1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 0.5,
-			0.0, 1.0, 0.0, 2.0, 0.0, 3.0, 0.6,
-			0.0, 0.0, 3.0, 0.0, 4.0, 0.0, 0.7,
-			0.0, 0.0, 0.0, 3.0, 0.0, 4.0, 0.8);
+			1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 0.1,
+			0.0, 1.0, 0.0, 2.0, 0.0, 3.0, 0.2,
+			0.0, 0.0, 3.0, 0.0, 4.0, 0.0, 0.3,
+			0.0, 0.0, 0.0, 3.0, 0.0, 4.0, 0.4);
 
 	// 3 variables, all dim=2
 	vector<size_t> dims; dims += 2, 2, 2, 1;
@@ -295,15 +245,13 @@ TEST( GaussianConditional, solve_multifrontal )
 	vector<size_t> cgdims; cgdims += _x_, _x1_, _l1_;
 	GaussianConditional cg(cgdims.begin(), cgdims.end(), 2, matrices, sigmas);
 
-	EXPECT(assert_equal(Vector_(4, 0.5, 0.6, 0.7, 0.8), cg.get_d()));
+	EXPECT(assert_equal(Vector_(4, 0.1, 0.2, 0.3, 0.4), cg.get_d()));
 
 	// partial solution
 	Vector sl1 = Vector_(2, 9.0, 10.0);
 
 	// elimination order; _x_, _x1_, _l1_
 	VectorValues actual(vector<size_t>(3, 2));
-	actual[_x_]  = Vector_(2, 0.1, 0.2); // rhs
-	actual[_x1_] = Vector_(2, 0.3, 0.4); // rhs
 	actual[_l1_] = sl1; // parent
 
 	VectorValues expected(vector<size_t>(3, 2));
@@ -327,10 +275,10 @@ TEST( GaussianConditional, solve_multifrontal_permuted )
   // create full system, 3 variables, 2 frontals, all 2 dim
   // no pivoting from LDL, so R matrix is not permuted
   Matrix full_matrix = Matrix_(4, 7,
-      1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 0.5,
-      0.0, 1.0, 0.0, 2.0, 0.0, 3.0, 0.6,
-      0.0, 0.0, 3.0, 0.0, 4.0, 0.0, 0.7,
-      0.0, 0.0, 0.0, 3.0, 0.0, 4.0, 0.8);
+      1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 0.1,
+      0.0, 1.0, 0.0, 2.0, 0.0, 3.0, 0.2,
+      0.0, 0.0, 3.0, 0.0, 4.0, 0.0, 0.3,
+      0.0, 0.0, 0.0, 3.0, 0.0, 4.0, 0.4);
 
   // 3 variables, all dim=2
   vector<size_t> dims; dims += 2, 2, 2, 1;
@@ -339,7 +287,7 @@ TEST( GaussianConditional, solve_multifrontal_permuted )
   vector<size_t> cgdims; cgdims += _x_, _x1_, _l1_;
   GaussianConditional cg(cgdims.begin(), cgdims.end(), 2, matrices, sigmas);
 
-  EXPECT(assert_equal(Vector_(4, 0.5, 0.6, 0.7, 0.8), cg.get_d()));
+  EXPECT(assert_equal(Vector_(4, 0.1, 0.2, 0.3, 0.4), cg.get_d()));
 
   // partial solution
   Vector sl1 = Vector_(2, 9.0, 10.0);

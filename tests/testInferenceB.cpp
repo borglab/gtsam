@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    testInference.cpp
+ * @file    testInferenceB.cpp
  * @brief   Unit tests for functionality declared in inference.h
  * @author  Frank Dellaert
  */
@@ -31,7 +31,7 @@ using namespace gtsam;
 /* ************************************************************************* */
 
 /* ************************************************************************* */
-TEST( Inference, marginals )
+TEST( inference, marginals )
 {
   using namespace example;
 	// create and marginalize a small Bayes net on "x"
@@ -46,7 +46,7 @@ TEST( Inference, marginals )
 }
 
 /* ************************************************************************* */
-TEST( Inference, marginals2)
+TEST( inference, marginals2)
 {
 	planarSLAM::Graph fg;
   SharedDiagonal poseModel(sharedSigma(3, 0.1));

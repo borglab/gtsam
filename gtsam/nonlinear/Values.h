@@ -34,9 +34,7 @@
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
 #include <boost/ptr_container/serialize_ptr_map.hpp>
-#include <boost/range/iterator_range.hpp>
-#include <boost/range/adaptor/filtered.hpp>
-#include <boost/range/adaptor/transformed.hpp>
+#include <boost/iterator_adaptors.hpp>
 #include <boost/lambda/lambda.hpp>
 
 #include <gtsam/base/Value.h>
@@ -124,63 +122,125 @@ namespace gtsam {
     struct _KeyValuePair {
       const Key key; ///< The key
       ValueType& value;  ///< The value
-      const Key& first; ///< For std::pair compatibility, the key
-      ValueType& second;    ///< For std::pair compatibility, the value
 
-      _KeyValuePair(Key _key, ValueType& _value) : key(_key), value(_value), first(key), second(value) {}
+      _KeyValuePair(Key _key, ValueType& _value) : key(_key), value(_value) {}
     };
 
     template<class ValueType>
     struct _ConstKeyValuePair {
       const Key key; ///< The key
       const ValueType& value;  ///< The value
-      const Key& first; ///< For std::pair compatibility, the key
-      const ValueType& second;    ///< For std::pair compatibility, the value
 
-      _ConstKeyValuePair(Key _key, const Value& _value) : key(_key), value(_value), first(key), second(value) {}
+      _ConstKeyValuePair(Key _key, const ValueType& _value) : key(_key), value(_value) {}
+      _ConstKeyValuePair(const _KeyValuePair<ValueType>& rhs) : key(rhs.key), value(rhs.value) {}
     };
 
   public:
+
     template<class ValueType = Value>
-    class Filtered : public boost::transformed_range<
-    _KeyValuePair<ValueType>(*)(Values::KeyValuePair key_value),
-    const boost::filtered_range<
-    boost::function<bool(const ConstKeyValuePair&)>,
-    const boost::iterator_range<iterator> > > {
+    class Filtered {
     public:
+      /** A key-value pair, with the value a specific derived Value type. */
       typedef _KeyValuePair<ValueType> KeyValuePair;
+      typedef _ConstKeyValuePair<ValueType> ConstKeyValuePair;
+
+      typedef
+          boost::transform_iterator<
+            KeyValuePair(*)(Values::KeyValuePair),
+            boost::filter_iterator<
+              boost::function<bool(const Values::ConstKeyValuePair&)>,
+              Values::iterator> >
+      iterator;
+
+      typedef iterator const_iterator;
+
+      typedef
+          boost::transform_iterator<
+            ConstKeyValuePair(*)(Values::ConstKeyValuePair),
+            boost::filter_iterator<
+              boost::function<bool(const Values::ConstKeyValuePair&)>,
+              Values::const_iterator> >
+      const_const_iterator;
+
+      iterator begin() { return begin_; }
+      iterator end() { return end_; }
+      const_iterator begin() const { return begin_; }
+      const_iterator end() const { return end_; }
+      const_const_iterator beginConst() const { return constBegin_; }
+      const_const_iterator endConst() const { return constEnd_; }
+
+      /** Returns the number of values in this view */
+      size_t size() const {
+        size_t i = 0;
+        for (const_const_iterator it = beginConst(); it != endConst(); ++it)
+          ++i;
+        return i;
+      }
 
     private:
-      typedef boost::transformed_range<
-          KeyValuePair(*)(Values::KeyValuePair key_value),
-          const boost::filtered_range<
-          boost::function<bool(const Values::ConstKeyValuePair&)>,
-          const boost::iterator_range<iterator> > > Base;
-
-      Filtered(const Base& base) : Base(base) {}
+      Filtered(const boost::function<bool(const Values::ConstKeyValuePair&)>& filter, Values& values) :
+        begin_(boost::make_transform_iterator(
+            boost::make_filter_iterator(
+                filter, values.begin(), values.end()),
+            &castHelper<ValueType, KeyValuePair, Values::KeyValuePair>)),
+        end_(boost::make_transform_iterator(
+            boost::make_filter_iterator(
+                filter, values.end(), values.end()),
+            &castHelper<ValueType, KeyValuePair, Values::KeyValuePair>)),
+        constBegin_(boost::make_transform_iterator(
+            boost::make_filter_iterator(
+                filter, ((const Values&)values).begin(), ((const Values&)values).end()),
+            &castHelper<const ValueType, ConstKeyValuePair, Values::ConstKeyValuePair>)),
+        constEnd_(boost::make_transform_iterator(
+            boost::make_filter_iterator(
+                filter, ((const Values&)values).end(), ((const Values&)values).end()),
+            &castHelper<const ValueType, ConstKeyValuePair, Values::ConstKeyValuePair>)) {}
 
       friend class Values;
+      iterator begin_;
+      iterator end_;
+      const_const_iterator constBegin_;
+      const_const_iterator constEnd_;
     };
 
     template<class ValueType = Value>
-    class ConstFiltered : public boost::transformed_range<
-    _ConstKeyValuePair<ValueType>(*)(Values::ConstKeyValuePair key_value),
-    const boost::filtered_range<
-    boost::function<bool(const ConstKeyValuePair&)>,
-    const boost::iterator_range<const_iterator> > > {
+    class ConstFiltered {
     public:
+      /** A const key-value pair, with the value a specific derived Value type. */
       typedef _ConstKeyValuePair<ValueType> KeyValuePair;
 
+      typedef typename Filtered<ValueType>::const_const_iterator iterator;
+      typedef typename Filtered<ValueType>::const_const_iterator const_iterator;
+
+      /** Conversion from Filtered to ConstFiltered */
+      ConstFiltered(const Filtered<ValueType>& rhs) :
+        begin_(rhs.beginConst()),
+        end_(rhs.endConst()) {}
+
+      iterator begin() { return begin_; }
+      iterator end() { return end_; }
+      const_iterator begin() const { return begin_; }
+      const_iterator end() const { return end_; }
+
+      /** Returns the number of values in this view */
+      size_t size() const {
+        size_t i = 0;
+        for (const_iterator it = begin(); it != end(); ++it)
+          ++i;
+        return i;
+      }
+
     private:
-      typedef boost::transformed_range<
-          KeyValuePair(*)(Values::ConstKeyValuePair key_value),
-          const boost::filtered_range<
-          boost::function<bool(const Values::ConstKeyValuePair&)>,
-          const boost::iterator_range<const_iterator> > > Base;
-
-      ConstFiltered(const Base& base) : Base(base) {}
-
       friend class Values;
+      const_iterator begin_;
+      const_iterator end_;
+      ConstFiltered(const boost::function<bool(const Values::ConstKeyValuePair&)>& filter, const Values& values) {
+        // We remove the const from values to create a non-const Filtered
+        // view, then pull the const_iterators out of it.
+        const Filtered<ValueType> filtered(filter, const_cast<Values&>(values));
+        begin_ = filtered.beginConst();
+        end_ = filtered.endConst();
+      }
     };
 
     /** Default constructor creates an empty Values class */
@@ -188,6 +248,24 @@ namespace gtsam {
 
     /** Copy constructor duplicates all keys and values */
     Values(const Values& other);
+
+    /** Constructor from a Filtered view copies out all values */
+    template<class ValueType>
+    Values(const Filtered<ValueType>& view) {
+    	BOOST_FOREACH(const typename Filtered<ValueType>::KeyValuePair& key_value, view) {
+        Key key = key_value.key;
+        insert(key, key_value.value);
+      }
+    }
+
+    /** Constructor from Const Filtered view */
+    template<class ValueType>
+    Values(const ConstFiltered<ValueType>& view) {
+    	BOOST_FOREACH(const typename ConstFiltered<ValueType>::KeyValuePair& key_value, view) {
+        Key key = key_value.key;
+        insert(key, key_value.value);
+      }
+    }
 
     /// @name Testable
     /// @{
@@ -209,6 +287,13 @@ namespace gtsam {
      */
     template<typename ValueType>
     const ValueType& at(Key j) const;
+
+    /** Retrieve a variable by key \c j.  This version returns a reference
+     * to the base Value class, and needs to be casted before use.
+     * @param j Retrieve the value associated with this key
+     * @return A const reference to the stored value
+     */
+    const Value& at(Key j) const;
 
 #if 0
     /** Retrieve a variable by key \c j.  This non-templated version returns a
@@ -358,12 +443,7 @@ namespace gtsam {
     template<class ValueType>
     Filtered<ValueType>
     filter(const boost::function<bool(Key)>& filterFcn = (boost::lambda::_1, true)) {
-      return boost::adaptors::transform(
-          boost::adaptors::filter(
-              boost::make_iterator_range(begin(), end()),
-              boost::function<bool(const ConstKeyValuePair&)>(
-                  boost::bind(&filterHelper<ValueType>, filterFcn, _1))),
-          &castHelper<ValueType, _KeyValuePair<ValueType>, KeyValuePair>);
+      return Filtered<ValueType>(boost::bind(&filterHelper<ValueType>, filterFcn, _1), *this);
     }
 
     /**
@@ -405,12 +485,7 @@ namespace gtsam {
     template<class ValueType>
     ConstFiltered<ValueType>
     filter(const boost::function<bool(Key)>& filterFcn = (boost::lambda::_1, true)) const {
-      return boost::adaptors::transform(
-          boost::adaptors::filter(
-              boost::make_iterator_range(begin(), end()),
-              boost::function<bool(const ConstKeyValuePair&)>(
-                  boost::bind(&filterHelper<ValueType>, filterFcn, _1))),
-          &castHelper<const ValueType, _ConstKeyValuePair<ValueType>, ConstKeyValuePair>);
+      return ConstFiltered<ValueType>(boost::bind(&filterHelper<ValueType>, filterFcn, _1), *this);
     }
 
   private:

@@ -78,7 +78,7 @@ namespace gtsam {
 				"orderingCOLAMD: some variables in the graph are not constrained!");
 
 		// Compute a fill-reducing ordering with COLAMD
-		Permutation::shared_ptr colamdPerm(Inference::PermutationCOLAMD(
+		Permutation::shared_ptr colamdPerm(inference::PermutationCOLAMD(
 				variableIndex));
 
 		// Permute the Ordering with the COLAMD ordering

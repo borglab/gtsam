@@ -40,6 +40,7 @@ protected:
 
 public:
 
+  typedef std::map<Index, Key> InvertedMap;
   typedef boost::shared_ptr<Ordering> shared_ptr;
 
   typedef std::pair<const Key, Index> value_type;
@@ -202,6 +203,12 @@ public:
 
   /// Synonym for operator[](Key)
   Index& at(Key key) { return operator[](key); }
+
+  /**
+   * Create an inverse mapping from Index->Key, useful for decoding linear systems
+   * @return inverse mapping structure
+   */
+  InvertedMap invert() const;
 
 	/// @}
 	/// @name Testable

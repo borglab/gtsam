@@ -642,8 +642,9 @@ namespace gtsam {
     r.vector() = Vector::Zero(r.dim());
     Index i = 0;
     BOOST_FOREACH(const JacobianFactor::shared_ptr& factor, fg) {
+      SubVector &y = r[i];
       for(JacobianFactor::const_iterator j = factor->begin(); j != factor->end(); ++j) {
-        r[i] += factor->getA(j) * x[*j];
+        y += factor->getA(j) * x[*j];
       }
       ++i;
     }

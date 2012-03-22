@@ -39,12 +39,12 @@
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
 
-// Main typedefs
-typedef gtsam::NonlinearOptimizer<gtsam::NonlinearFactorGraph,gtsam::GaussianFactorGraph,gtsam::GaussianSequentialSolver> OptimizerSeqential;   // optimization engine for this domain
-typedef gtsam::NonlinearOptimizer<gtsam::NonlinearFactorGraph,gtsam::GaussianFactorGraph,gtsam::GaussianMultifrontalSolver> OptimizerMultifrontal;   // optimization engine for this domain
-
 using namespace std;
 using namespace gtsam;
+
+// Main typedefs
+typedef NonlinearOptimizer<NonlinearFactorGraph,GaussianFactorGraph,GaussianSequentialSolver> OptimizerSeqential;   // optimization engine for this domain
+typedef NonlinearOptimizer<NonlinearFactorGraph,GaussianFactorGraph,GaussianMultifrontalSolver> OptimizerMultifrontal;   // optimization engine for this domain
 
 /**
  * In this version of the system we make the following assumptions:

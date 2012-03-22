@@ -18,16 +18,16 @@
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/linear/JacobianFactor.h>
 
-using namespace std;
-using namespace gtsam;
-
 #include <boost/bind.hpp>
 
 namespace gtsam {
 
+  using namespace std;
+
   /* ************************************************************************* */
+  namespace internal {
   template<class CLIQUE>
-  void optimize2(const boost::shared_ptr<CLIQUE>& clique, double threshold,
+  void optimizeWildfire(const boost::shared_ptr<CLIQUE>& clique, double threshold,
       vector<bool>& changed, const vector<bool>& replaced, Permuted<VectorValues>& delta, int& count) {
     // if none of the variables in this clique (frontal and separator!) changed
     // significantly, then by the running intersection property, none of the
@@ -64,7 +64,6 @@ namespace gtsam {
       }
 
       // Back-substitute
-      (*clique)->rhs(delta);
       (*clique)->solveInPlace(delta);
       count += (*clique)->nrFrontals();
 
@@ -98,43 +97,59 @@ namespace gtsam {
 
       // Recurse to children
       BOOST_FOREACH(const typename CLIQUE::shared_ptr& child, clique->children_) {
-        optimize2(child, threshold, changed, replaced, delta, count);
+        optimizeWildfire(child, threshold, changed, replaced, delta, count);
       }
     }
   }
-
-  /* ************************************************************************* */
-  // fast full version without threshold
-  template<class CLIQUE>
-  void optimize2(const boost::shared_ptr<CLIQUE>& clique, VectorValues& delta) {
-
-    // parents are assumed to already be solved and available in result
-    (*clique)->rhs(delta);
-    (*clique)->solveInPlace(delta);
-
-    // Solve chilren recursively
-    BOOST_FOREACH(const typename CLIQUE::shared_ptr& child, clique->children_) {
-      optimize2(child, delta);
-    }
   }
 
-  ///* ************************************************************************* */
-  //boost::shared_ptr<VectorValues> optimize2(const GaussianISAM2::sharedClique& root) {
-  //	boost::shared_ptr<VectorValues> delta(new VectorValues());
-  //	set<Key> changed;
-  //	// starting from the root, call optimize on each conditional
-  //	optimize2(root, delta);
-  //	return delta;
-  //}
-
   /* ************************************************************************* */
   template<class CLIQUE>
-  int optimize2(const boost::shared_ptr<CLIQUE>& root, double threshold, const vector<bool>& keys, Permuted<VectorValues>& delta) {
+  int optimizeWildfire(const boost::shared_ptr<CLIQUE>& root, double threshold, const vector<bool>& keys, Permuted<VectorValues>& delta) {
     vector<bool> changed(keys.size(), false);
     int count = 0;
     // starting from the root, call optimize on each conditional
-    optimize2(root, threshold, changed, keys, delta, count);
+    if(root)
+      internal::optimizeWildfire(root, threshold, changed, keys, delta, count);
     return count;
+  }
+
+  /* ************************************************************************* */
+  template<class GRAPH>
+  VectorValues optimizeGradientSearch(const ISAM2<GaussianConditional, GRAPH>& isam) {
+    tic(0, "Allocate VectorValues");
+    VectorValues grad = *allocateVectorValues(isam);
+    toc(0, "Allocate VectorValues");
+
+    optimizeGradientSearchInPlace(isam, grad);
+
+    return grad;
+  }
+
+  /* ************************************************************************* */
+  template<class GRAPH>
+  void optimizeGradientSearchInPlace(const ISAM2<GaussianConditional, GRAPH>& Rd, VectorValues& grad) {
+    tic(1, "Compute Gradient");
+    // Compute gradient (call gradientAtZero function, which is defined for various linear systems)
+    gradientAtZero(Rd, grad);
+    double gradientSqNorm = grad.dot(grad);
+    toc(1, "Compute Gradient");
+
+    tic(2, "Compute R*g");
+    // Compute R * g
+    FactorGraph<JacobianFactor> Rd_jfg(Rd);
+    Errors Rg = Rd_jfg * grad;
+    toc(2, "Compute R*g");
+
+    tic(3, "Compute minimizing step size");
+    // Compute minimizing step size
+    double step = -gradientSqNorm / dot(Rg, Rg);
+    toc(3, "Compute minimizing step size");
+
+    tic(4, "Compute point");
+    // Compute steepest descent point
+    scal(step, grad);
+    toc(4, "Compute point");
   }
 
   /* ************************************************************************* */

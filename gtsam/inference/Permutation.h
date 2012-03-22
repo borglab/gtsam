@@ -26,8 +26,6 @@
 
 namespace gtsam {
 
-class Inference;
-
 /**
  * A permutation reorders variables, for example to reduce fill-in during
  * elimination.  To save computation, the permutation can be applied to
@@ -162,8 +160,6 @@ protected:
   void check(Index variable) const { assert(variable < rangeIndices_.size()); }
 
 	/// @}
-
-  friend class Inference;
 };
 
 

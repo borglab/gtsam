@@ -42,7 +42,6 @@ namespace gtsam {
 		Index k = firstFrontalKey();
 		// a VectorValues that only has a value for k: cannot be printed if k<>0
 		x.insert(k, Vector(sigmas_.size()));
-		rhs(x);
 		solveInPlace(x);
 		return x[k];
 	}

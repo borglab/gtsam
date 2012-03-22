@@ -90,19 +90,7 @@ public:
 
 }; // \class GaussianISAM
 
-/** load a VectorValues with the RHS of the system for backsubstitution */
-VectorValues rhs(const BayesTree<GaussianConditional>& bayesTree, boost::optional<const GaussianISAM::Dims&> dims = boost::none);
-
-/** recursively load RHS for system */
-void treeRHS(const BayesTree<GaussianConditional>::sharedClique& clique, VectorValues& result);
-
-// recursively optimize this conditional and all subtrees
-void optimize(const BayesTree<GaussianConditional>::sharedClique& clique, VectorValues& result);
-
 // optimize the BayesTree, starting from the root
 VectorValues optimize(const GaussianISAM& isam);
-
-// optimize the BayesTree, starting from the root
-VectorValues optimize(const BayesTree<GaussianConditional>& bayesTree);
 
 } // \namespace gtsam

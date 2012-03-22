@@ -8,7 +8,6 @@ add_executable(wrap wrap.cpp)
 target_link_libraries(wrap wrap_lib)
 
 # Install wrap binary
-option(GTSAM_INSTALL_WRAP "Enable/Disable installation of wrap utility" ON)
 if (GTSAM_INSTALL_WRAP)
     install(TARGETS wrap DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 endif(GTSAM_INSTALL_WRAP)
@@ -34,60 +33,13 @@ set(mexFlags "-I${Boost_INCLUDE_DIR} -I${CMAKE_INSTALL_PREFIX}/include -I${CMAKE
 set(toolbox_path ${CMAKE_BINARY_DIR}/wrap/gtsam)
 set(moduleName gtsam)
 
-## Determine the mex extension
-# Apple Macintosh (64-bit) mexmaci64
-# Linux (32-bit) mexglx
-# Linux (64-bit) mexa64
-# Microsoft Windows (32-bit) mexw32
-# Windows (64-bit) mexw64
+include(GtsamMatlabWrap)
+find_mexextension()
 
-# only support 64-bit apple
-if(CMAKE_HOST_APPLE)
-    set(GTSAM_MEX_BIN_EXTENSION_default mexmaci64)
-endif(CMAKE_HOST_APPLE)
-
-if(NOT CMAKE_HOST_APPLE)
-    # check 64 bit
-    if( ${CMAKE_SIZEOF_VOID_P} EQUAL 4 )
-      set( HAVE_64_BIT 0 )
-    endif( ${CMAKE_SIZEOF_VOID_P} EQUAL 4 )
-    
-    if( ${CMAKE_SIZEOF_VOID_P} EQUAL 8 )
-      set( HAVE_64_BIT 1 )
-    endif( ${CMAKE_SIZEOF_VOID_P} EQUAL 8 )
-    
-    # Check for linux machines
-    if (CMAKE_HOST_UNIX)
-        if (HAVE_64_BIT)
-            set(GTSAM_MEX_BIN_EXTENSION_default mexa64)
-        else (HAVE_64_BIT)
-            set(GTSAM_MEX_BIN_EXTENSION_default mexglx)
-        endif (HAVE_64_BIT)
-    endif(CMAKE_HOST_UNIX)
-    
-    # Check for windows machines
-    if (CMAKE_HOST_WIN32)
-        if (HAVE_64_BIT)
-            set(GTSAM_MEX_BIN_EXTENSION_default mexw64)
-        else (HAVE_64_BIT)
-            set(GTSAM_MEX_BIN_EXTENSION_default mexw32)
-        endif (HAVE_64_BIT)
-    endif(CMAKE_HOST_WIN32)
-endif(NOT CMAKE_HOST_APPLE)
-
-# Allow for setting mex extension manually
-set(GTSAM_MEX_BIN_EXTENSION ${GTSAM_MEX_BIN_EXTENSION_default} CACHE DOCSTRING "Extension for matlab mex files")
-message(STATUS "Detected Matlab mex extension: ${GTSAM_MEX_BIN_EXTENSION_default}")
-message(STATUS "Current Matlab mex extension: ${GTSAM_MEX_BIN_EXTENSION}")
-
-# Actual build commands - separated by OS
+# Code generation command
 add_custom_target(wrap_gtsam ALL COMMAND 
     ./wrap ${GTSAM_MEX_BIN_EXTENSION} ${CMAKE_SOURCE_DIR} ${moduleName} ${toolbox_path} "${mexFlags}"
     DEPENDS wrap)
-
-option(GTSAM_INSTALL_MATLAB_TOOLBOX  "Enable/Disable installation of matlab toolbox"  ON)
-option(GTSAM_INSTALL_MATLAB_EXAMPLES "Enable/Disable installation of matlab examples" ON)
-option(GTSAM_INSTALL_MATLAB_TESTS    "Enable/Disable installation of matlab tests"    ON)
 
 set(GTSAM_TOOLBOX_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/borg/toolbox CACHE DOCSTRING "Path to install matlab toolbox")
 

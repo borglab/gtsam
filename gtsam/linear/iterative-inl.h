@@ -82,7 +82,7 @@ namespace gtsam {
 		/* ************************************************************************* */
 		// take a step, return true if converged
 		bool step(const S& Ab, V& x) {
-			if ((++k) >= parameters_.maxIterations()) return true;
+			if ((++k) >= ((int)parameters_.maxIterations())) return true;
 
 			//---------------------------------->
 			double alpha = takeOptimalStep(x);

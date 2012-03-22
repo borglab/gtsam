@@ -16,6 +16,7 @@ using namespace boost::assign;
 #include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
+#include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/nonlinear/GaussianISAM2.h>
 #include <gtsam/slam/smallExample.h>
 #include <gtsam/slam/planarSLAM.h>
@@ -47,6 +48,8 @@ TEST(ISAM2, AddVariables) {
 
   Permuted<VectorValues> delta(permutation, deltaUnpermuted);
 
+  vector<bool> replacedKeys(2, false);
+
   Ordering ordering; ordering += planarSLAM::PointKey(0), planarSLAM::PoseKey(0);
 
   GaussianISAM2<>::Nodes nodes(2);
@@ -75,17 +78,20 @@ TEST(ISAM2, AddVariables) {
 
   Permuted<VectorValues> deltaExpected(permutationExpected, deltaUnpermutedExpected);
 
+  vector<bool> replacedKeysExpected(3, false);
+
   Ordering orderingExpected; orderingExpected += planarSLAM::PointKey(0), planarSLAM::PoseKey(0), planarSLAM::PoseKey(1);
 
   GaussianISAM2<>::Nodes nodesExpected(
           3, GaussianISAM2<>::sharedClique());
 
   // Expand initial state
-  GaussianISAM2<>::Impl::AddVariables(newTheta, theta, delta, ordering, nodes);
+  GaussianISAM2<>::Impl::AddVariables(newTheta, theta, delta, replacedKeys, ordering, nodes);
 
   EXPECT(assert_equal(thetaExpected, theta));
   EXPECT(assert_equal(deltaUnpermutedExpected, deltaUnpermuted));
   EXPECT(assert_equal(deltaExpected.permutation(), delta.permutation()));
+  EXPECT(assert_container_equality(replacedKeysExpected, replacedKeys));
   EXPECT(assert_equal(orderingExpected, ordering));
 }
 
@@ -162,15 +168,13 @@ TEST(ISAM2, optimize2) {
 
   // Expected vector
   VectorValues expected(1, 3);
-  conditional->rhs(expected);
   conditional->solveInPlace(expected);
 
   // Clique
   GaussianISAM2<>::sharedClique clique(
       GaussianISAM2<>::Clique::Create(make_pair(conditional,GaussianFactor::shared_ptr())));
   VectorValues actual(theta.dims(ordering));
-  conditional->rhs(actual);
-  optimize2(clique, actual);
+  internal::optimizeInPlace(clique, actual);
 
 //  expected.print("expected: ");
 //  actual.print("actual: ");

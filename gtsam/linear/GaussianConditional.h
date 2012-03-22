@@ -43,7 +43,7 @@ class JacobianFactor;
 /**
  * A conditional Gaussian functions as the node in a Bayes network
  * It has a set of parents y,z, etc. and implements a probability density on x.
- * The negative log-probability is given by \f$ |Rx - (d - Sy - Tz - ...)|^2 \f$
+ * The negative log-probability is given by \f$ \frac{1}{2} |Rx - (d - Sy - Tz - ...)|^2 \f$
  */
 class GaussianConditional : public IndexConditional {
 
@@ -137,6 +137,15 @@ public:
   /** Copy constructor */
 	GaussianConditional(const GaussianConditional& rhs);
 
+	/** Combine several GaussianConditional into a single dense GC.  The
+	 * conditionals enumerated by \c first and \c last must be in increasing
+	 * order, meaning that the parents of any conditional may not include a
+	 * conditional coming before it.
+	 * @param firstConditional Iterator to the first conditional to combine, must dereference to a shared_ptr<GaussianConditional>.
+   * @param lastConditional Iterator to after the last conditional to combine, must dereference to a shared_ptr<GaussianConditional>. */
+	template<typename ITERATOR>
+	static shared_ptr Combine(ITERATOR firstConditional, ITERATOR lastConditional);
+
 	/** Assignment operator */
 	GaussianConditional& operator=(const GaussianConditional& rhs);
 
@@ -188,45 +197,38 @@ public:
 	 */
 	boost::shared_ptr<JacobianFactor> toFactor() const;
 
-	/**
-	 * Adds the RHS to a given VectorValues for use in solve() functions.
-	 * @param x is the values to be updated, assumed allocated
-	 */
-	void rhs(VectorValues& x) const;
-
   /**
-   * Adds the RHS to a given VectorValues for use in solve() functions.
-   * @param x is the values to be updated, assumed allocated
-   */
-  void rhs(Permuted<VectorValues>& x) const;
-
-  /**
-   * solves a conditional Gaussian and stores the result in x
+   * Solves a conditional Gaussian and writes the solution into the entries of
+   * \c x for each frontal variable of the conditional.  The parents are
+   * assumed to have already been solved in and their values are read from \c x.
    * This function works for multiple frontal variables.
-   * NOTE: assumes that the RHS for the frontals is stored in x, and
-   * then replaces the RHS with the partial result for this conditional,
-   * assuming that parents have been solved already.
    *
-   * @param x values structure with solved parents, and the RHS for this conditional
-   * @return solution \f$ x = R \ (d - Sy - Tz - ...) \f$ for each frontal variable
+   * Given the Gaussian conditional with log likelihood \f$ |R x_f - (d - S x_s)|^2,
+   * where \f$ f \f$ are the frontal variables and \f$ s \f$ are the separator
+   * variables of this conditional, this solve function computes
+   * \f$ x_f = R^{-1} (d - S x_s) \f$ using back-substitution.
+   *
+   * @param x VectorValues structure with solved parents \f$ x_s \f$, and into which the
+   * solution \f$ x_f \f$ will be written.
    */
   void solveInPlace(VectorValues& x) const;
 
   /**
-   * solves a conditional Gaussian and stores the result in x
-   * Identical to solveInPlace() above, with a permuted x
+   * Solves a conditional Gaussian and writes the solution into the entries of
+   * \c x for each frontal variable of the conditional (version for permuted
+   * VectorValues).  The parents are assumed to have already been solved in
+   * and their values are read from \c x.  This function works for multiple
+   * frontal variables.
+   *
+   * Given the Gaussian conditional with log likelihood \f$ |R x_f - (d - S x_s)|^2,
+   * where \f$ f \f$ are the frontal variables and \f$ s \f$ are the separator
+   * variables of this conditional, this solve function computes
+   * \f$ x_f = R^{-1} (d - S x_s) \f$ using back-substitution.
+   *
+   * @param x VectorValues structure with solved parents \f$ x_s \f$, and into which the
+   * solution \f$ x_f \f$ will be written.
    */
   void solveInPlace(Permuted<VectorValues>& x) const;
-
-  /**
-   * Solves a conditional Gaussian and returns a new VectorValues
-   * This function works for multiple frontal variables, but should
-   * only be used for testing as it copies the input vector values
-   *
-   * Assumes, as in solveInPlace, that the RHS has been stored in x
-   * for all frontal variables
-   */
-  VectorValues solve(const VectorValues& x) const;
 
   // functions for transpose backsubstitution
 
@@ -274,5 +276,49 @@ GaussianConditional::GaussianConditional(ITERATOR firstKey, ITERATOR lastKey,
 }
 
 /* ************************************************************************* */
+template<typename ITERATOR>
+GaussianConditional::shared_ptr GaussianConditional::Combine(ITERATOR firstConditional, ITERATOR lastConditional) {
+
+  // TODO:  check for being a clique
+
+  // Get dimensions from first conditional
+  std::vector<size_t> dims;   dims.reserve((*firstConditional)->size() + 1);
+  for(const_iterator j = (*firstConditional)->begin(); j != (*firstConditional)->end(); ++j)
+    dims.push_back((*firstConditional)->dim(j));
+  dims.push_back(1);
+
+  // We assume the conditionals form clique, so the first n variables will be
+  // frontal variables in the new conditional.
+  size_t nFrontals = 0;
+  size_t nRows = 0;
+  for(ITERATOR c = firstConditional; c != lastConditional; ++c) {
+    nRows += dims[nFrontals];
+    ++ nFrontals;
+  }
+
+  // Allocate combined conditional, has same keys as firstConditional
+  Matrix tempCombined;
+  VerticalBlockView<Matrix> tempBlockView(tempCombined, dims.begin(), dims.end(), 0);
+  GaussianConditional::shared_ptr combinedConditional(new GaussianConditional((*firstConditional)->begin(), (*firstConditional)->end(), nFrontals, tempBlockView, zero(nRows)));
+
+  // Resize to correct number of rows
+  combinedConditional->matrix_.resize(nRows, combinedConditional->matrix_.cols());
+  combinedConditional->rsd_.rowEnd() = combinedConditional->matrix_.rows();
+
+  // Copy matrix and sigmas
+  const size_t totalDims = combinedConditional->matrix_.cols();
+  size_t currentSlot = 0;
+  for(ITERATOR c = firstConditional; c != lastConditional; ++c) {
+    const size_t startRow = combinedConditional->rsd_.offset(currentSlot); // Start row is same as start column
+    combinedConditional->rsd_.range(0, currentSlot).block(startRow, 0, dims[currentSlot], combinedConditional->rsd_.offset(currentSlot)).operator=(
+        Matrix::Zero(dims[currentSlot], combinedConditional->rsd_.offset(currentSlot)));
+    combinedConditional->rsd_.range(currentSlot, dims.size()).block(startRow, 0, dims[currentSlot], totalDims - startRow).operator=(
+        (*c)->matrix_);
+    combinedConditional->sigmas_.segment(startRow, dims[currentSlot]) = (*c)->sigmas_;
+    ++ currentSlot;
+  }
+
+  return combinedConditional;
+}
 
 } // gtsam

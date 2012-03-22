@@ -54,7 +54,7 @@ public:
 		Base(model, poseKey, landmarkKey), measured_(measured), K_(K) {
 	}
 
-	~GenericStereoFactor() {}  ///< destructor
+	virtual ~GenericStereoFactor() {}  ///< Virtual destructor
 
 	/**
 	 * print

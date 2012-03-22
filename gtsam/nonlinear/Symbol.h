@@ -113,8 +113,14 @@ public:
   bool operator==(const Symbol& comp) const {
     return comp.c_ == c_ && comp.j_ == j_;
   }
+  bool operator==(Key comp) const {
+    return comp == (Key)(*this);
+  }
   bool operator!=(const Symbol& comp) const {
     return comp.c_ != c_ || comp.j_ != j_;
+  }
+  bool operator!=(Key comp) const {
+    return comp != (Key)(*this);
   }
 
   /** Return a filter function that returns true when evaluated on a Key whose
@@ -137,6 +143,35 @@ private:
     ar & BOOST_SERIALIZATION_NVP(j_);
   }
 };
+
+namespace symbol_shorthand {
+inline Key A(size_t j) { return Symbol('a', j); }
+inline Key B(size_t j) { return Symbol('b', j); }
+inline Key C(size_t j) { return Symbol('c', j); }
+inline Key D(size_t j) { return Symbol('d', j); }
+inline Key E(size_t j) { return Symbol('e', j); }
+inline Key F(size_t j) { return Symbol('f', j); }
+inline Key G(size_t j) { return Symbol('g', j); }
+inline Key H(size_t j) { return Symbol('h', j); }
+inline Key I(size_t j) { return Symbol('i', j); }
+inline Key J(size_t j) { return Symbol('j', j); }
+inline Key K(size_t j) { return Symbol('k', j); }
+inline Key L(size_t j) { return Symbol('l', j); }
+inline Key M(size_t j) { return Symbol('m', j); }
+inline Key N(size_t j) { return Symbol('n', j); }
+inline Key O(size_t j) { return Symbol('o', j); }
+inline Key P(size_t j) { return Symbol('p', j); }
+inline Key Q(size_t j) { return Symbol('q', j); }
+inline Key R(size_t j) { return Symbol('r', j); }
+inline Key S(size_t j) { return Symbol('s', j); }
+inline Key T(size_t j) { return Symbol('t', j); }
+inline Key U(size_t j) { return Symbol('u', j); }
+inline Key V(size_t j) { return Symbol('v', j); }
+inline Key W(size_t j) { return Symbol('w', j); }
+inline Key X(size_t j) { return Symbol('x', j); }
+inline Key Y(size_t j) { return Symbol('y', j); }
+inline Key Z(size_t j) { return Symbol('z', j); }
+}
 
 } // namespace gtsam
 

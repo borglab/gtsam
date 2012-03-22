@@ -31,12 +31,12 @@ namespace gtsam {
     // Checks for uniqueness of keys
     Base::assertInvariants();
 #ifndef NDEBUG
-    // Check that separator keys are sorted
-    FastSet<Index> uniquesorted(beginFrontals(), endFrontals());
-    assert(uniquesorted.size() == nrFrontals() && std::equal(uniquesorted.begin(), uniquesorted.end(), beginFrontals()));
-    // Check that separator keys are less than parent keys
-    //BOOST_FOREACH(Index j, frontals()) {
-    //  assert(find_if(beginParents(), endParents(), _1 < j) == endParents()); }
+    // Check that frontal keys are sorted
+    //FastSet<Index> uniquesorted(beginFrontals(), endFrontals());
+    //assert(uniquesorted.size() == nrFrontals() && std::equal(uniquesorted.begin(), uniquesorted.end(), beginFrontals()));
+    //// Check that separator keys are less than parent keys
+    ////BOOST_FOREACH(Index j, frontals()) {
+    ////  assert(find_if(beginParents(), endParents(), _1 < j) == endParents()); }
 #endif
   }
 
@@ -60,13 +60,13 @@ namespace gtsam {
   /* ************************************************************************* */
   void IndexConditional::permuteWithInverse(const Permutation& inversePermutation) {
     // The permutation may not move the separators into the frontals
-  #ifndef NDEBUG
-    BOOST_FOREACH(const KeyType frontal, this->frontals()) {
-      BOOST_FOREACH(const KeyType separator, this->parents()) {
-        assert(inversePermutation[frontal] < inversePermutation[separator]);
-      }
-    }
-  #endif
+//  #ifndef NDEBUG
+//    BOOST_FOREACH(const KeyType frontal, this->frontals()) {
+//      BOOST_FOREACH(const KeyType separator, this->parents()) {
+//        assert(inversePermutation[frontal] < inversePermutation[separator]);
+//      }
+//    }
+//  #endif
 		BOOST_FOREACH(Index& key, keys())
 						key = inversePermutation[key];
     assertInvariants();

@@ -29,7 +29,9 @@ using namespace std;
 
 namespace gtsam {
 
-Permutation::shared_ptr Inference::PermutationCOLAMD_(const VariableIndex& variableIndex, std::vector<int>& cmember) {
+namespace inference {
+
+Permutation::shared_ptr PermutationCOLAMD_(const VariableIndex& variableIndex, std::vector<int>& cmember) {
   size_t nEntries = variableIndex.nEntries(), nFactors = variableIndex.nFactors(), nVars = variableIndex.size();
   // Convert to compressed column major format colamd wants it in (== MATLAB format!)
   int Alen = ccolamd_recommended(nEntries, nFactors, nVars); /* colamd arg 3: size of the array A */
@@ -79,15 +81,17 @@ Permutation::shared_ptr Inference::PermutationCOLAMD_(const VariableIndex& varia
   // Convert elimination ordering in p to an ordering
   Permutation::shared_ptr permutation(new Permutation(nVars));
   for (Index j = 0; j < nVars; j++) {
-//    if(p[j] == -1)
-//      permutation->operator[](j) = j;
-//    else
-      permutation->operator[](j) = p[j];
+    //    if(p[j] == -1)
+    //      permutation->operator[](j) = j;
+    //    else
+    permutation->operator[](j) = p[j];
     if(debug) cout << "COLAMD:  " << j << "->" << p[j] << endl;
   }
   if(debug) cout << "COLAMD:  p[" << nVars << "] = " << p[nVars] << endl;
 
   return permutation;
+}
+
 }
 
 }

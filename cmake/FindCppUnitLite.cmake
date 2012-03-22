@@ -3,22 +3,19 @@
 # The following variables will be defined:
 #
 # CppUnitLite_FOUND          : TRUE if the package has been successfully found
-# CppUnitLite_INCLUDE_DIRS   : paths to CppUnitLite's INCLUDE directories
+# CppUnitLite_INCLUDE_DIR    : paths to CppUnitLite's INCLUDE directories
 # CppUnitLite_LIBS           : paths to CppUnitLite's libraries
-
 
 # Find include dirs
 find_path(_CppUnitLite_INCLUDE_DIR CppUnitLite/Test.h
-    PATHS ${GTSAM_ROOT} ${CMAKE_INSTALL_PREFIX}/include ${HOME}/include /usr/local/include /usr/include )
+    PATHS ${CMAKE_INSTALL_PREFIX}/include "$ENV{HOME}/include" /usr/local/include /usr/include )
 
 # Find libraries
 find_library(_CppUnitLite_LIB NAMES CppUnitLite
-    HINTS ${_CppUnitLite_INCLUDE_DIR}/build/CppUnitLite  ${_CppUnitLite_INCLUDE_DIR}/CppUnitLite)
+  HINTS ${CMAKE_INSTALL_PREFIX}/lib "$ENV{HOME}/lib" /usr/local/lib /usr/lib)
 
-set (CppUnitLite_INCLUDE_DIRS ${_CppUnitLite_INCLUDE_DIR})
-set (CppUnitLite_LIBS         ${_CppUnitLite_LIB})
-
-
+set (CppUnitLite_INCLUDE_DIR  ${_CppUnitLite_INCLUDE_DIR} CACHE STRING "CppUnitLite INCLUDE directories")
+set (CppUnitLite_LIBS         ${_CppUnitLite_LIB} CACHE STRING "CppUnitLite libraries")
 
 # handle the QUIETLY and REQUIRED arguments and set LIBXML2_FOUND to TRUE
 # if all listed variables are TRUE

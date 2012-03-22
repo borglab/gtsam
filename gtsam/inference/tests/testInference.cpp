@@ -25,7 +25,7 @@
 using namespace gtsam;
 
 /* ************************************************************************* */
-TEST(Inference, UnobservedVariables) {
+TEST(inference, UnobservedVariables) {
   SymbolicFactorGraph sfg;
 
   // Create a factor graph that skips some variables
@@ -35,7 +35,7 @@ TEST(Inference, UnobservedVariables) {
 
   VariableIndex variableIndex(sfg);
 
-  Permutation::shared_ptr colamd(Inference::PermutationCOLAMD(variableIndex));
+  Permutation::shared_ptr colamd(inference::PermutationCOLAMD(variableIndex));
 }
 
 /* ************************************************************************* */

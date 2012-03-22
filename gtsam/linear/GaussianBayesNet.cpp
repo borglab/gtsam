@@ -83,33 +83,14 @@ boost::shared_ptr<VectorValues> allocateVectorValues(const GaussianBayesNet& bn)
 
 /* ************************************************************************* */
 VectorValues optimize(const GaussianBayesNet& bn) {
-  return *optimize_(bn);
-}
-
-/* ************************************************************************* */
-boost::shared_ptr<VectorValues> optimize_(const GaussianBayesNet& bn)
-{
-	// get the RHS as a VectorValues to initialize system
-	boost::shared_ptr<VectorValues> result(new VectorValues(rhs(bn)));
-
-  /** solve each node in turn in topological sort order (parents first)*/
-	BOOST_REVERSE_FOREACH(GaussianConditional::shared_ptr cg, bn)
-		cg->solveInPlace(*result); // solve and store solution in same step
-
-	return result;
-}
-
-/* ************************************************************************* */
-VectorValues backSubstitute(const GaussianBayesNet& bn, const VectorValues& y) {
-	VectorValues x(y);
-	backSubstituteInPlace(bn,x);
+	VectorValues x = *allocateVectorValues(bn);
+	optimizeInPlace(bn, x);
 	return x;
 }
 
 /* ************************************************************************* */
 // (R*x)./sigmas = y by solving x=inv(R)*(y.*sigmas)
-void backSubstituteInPlace(const GaussianBayesNet& bn, VectorValues& y) {
-	VectorValues& x = y;
+void optimizeInPlace(const GaussianBayesNet& bn, VectorValues& x) {
 	/** solve each node in turn in topological sort order (parents first)*/
 	BOOST_REVERSE_FOREACH(const boost::shared_ptr<const GaussianConditional> cg, bn) {
 		// i^th part of R*x=y, x=inv(R)*y
@@ -139,6 +120,42 @@ VectorValues backSubstituteTranspose(const GaussianBayesNet& bn,
 		cg->scaleFrontalsBySigma(gy);
 
 	return gy;
+}
+
+/* ************************************************************************* */
+VectorValues optimizeGradientSearch(const GaussianBayesNet& Rd) {
+  tic(0, "Allocate VectorValues");
+  VectorValues grad = *allocateVectorValues(Rd);
+  toc(0, "Allocate VectorValues");
+
+  optimizeGradientSearchInPlace(Rd, grad);
+
+  return grad;
+}
+
+/* ************************************************************************* */
+void optimizeGradientSearchInPlace(const GaussianBayesNet& Rd, VectorValues& grad) {
+  tic(1, "Compute Gradient");
+  // Compute gradient (call gradientAtZero function, which is defined for various linear systems)
+  gradientAtZero(Rd, grad);
+  double gradientSqNorm = grad.dot(grad);
+  toc(1, "Compute Gradient");
+
+  tic(2, "Compute R*g");
+  // Compute R * g
+  FactorGraph<JacobianFactor> Rd_jfg(Rd);
+  Errors Rg = Rd_jfg * grad;
+  toc(2, "Compute R*g");
+
+  tic(3, "Compute minimizing step size");
+  // Compute minimizing step size
+  double step = -gradientSqNorm / dot(Rg, Rg);
+  toc(3, "Compute minimizing step size");
+
+  tic(4, "Compute point");
+  // Compute steepest descent point
+  scal(step, grad);
+  toc(4, "Compute point");
 }
 
 /* ************************************************************************* */  
@@ -192,15 +209,6 @@ pair<Matrix,Vector> matrix(const GaussianBayesNet& bn)  {
   } // keyI
 
   return make_pair(R,d);
-}
-
-/* ************************************************************************* */
-VectorValues rhs(const GaussianBayesNet& bn) {
-	boost::shared_ptr<VectorValues> result(allocateVectorValues(bn));
-  BOOST_FOREACH(boost::shared_ptr<const GaussianConditional> cg,bn)
-  	cg->rhs(*result);
-
-  return *result;
 }
 
 /* ************************************************************************* */
