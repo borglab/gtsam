@@ -84,6 +84,9 @@ namespace gtsam {
     /// A shared_ptr to this class
     typedef boost::shared_ptr<Values> shared_ptr;
 
+    /// A const shared_ptr to this class
+    typedef boost::shared_ptr<const Values> const_shared_ptr;
+
     /// A key-value pair, which you get by dereferencing iterators
     struct KeyValuePair {
       const Key key; ///< The key
