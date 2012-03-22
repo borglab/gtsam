@@ -195,7 +195,7 @@ TEST ( NonlinearEquality, allow_error_optimize ) {
 
 	// optimize
 	Ordering ordering;
-	ord.push_back(key1);
+	ordering.push_back(key1);
 	NonlinearOptimizer::auto_ptr result = LevenbergMarquardtOptimizer(graph, init, ordering).optimize();
 
 	// verify
@@ -229,8 +229,8 @@ TEST ( NonlinearEquality, allow_error_optimize_with_factors ) {
 
 	// optimize
 	Ordering ordering;
-	ord.push_back(key1);
-  Values actual = *LevenbergMarquardtOptimizer(graph, values, ordering).optimize()->values();
+	ordering.push_back(key1);
+  Values actual = *LevenbergMarquardtOptimizer(graph, init, ordering).optimize()->values();
 
 	// verify
 	Values expected;
@@ -399,7 +399,7 @@ TEST( testNonlinearEqualityConstraint, odo_simple_optimize ) {
 			new eq2D::OdoEqualityConstraint(
 					truth_pt1.between(truth_pt2), key1, key2));
 
-	Graph graph;
+	NonlinearFactorGraph graph;
 	graph.push_back(constraint1);
 	graph.push_back(constraint2);
 	graph.push_back(factor);
@@ -423,7 +423,7 @@ TEST (testNonlinearEqualityConstraint, two_pose ) {
 	 * constrained to a particular value
 	 */
 
-	Graph graph;
+  NonlinearFactorGraph graph;
 
   Symbol x1('x',1), x2('x',2);
   Symbol l1('l',1), l2('l',2);
@@ -460,7 +460,7 @@ TEST (testNonlinearEqualityConstraint, two_pose ) {
 /* ********************************************************************* */
 TEST (testNonlinearEqualityConstraint, map_warp ) {
 	// get a graph
-	Graph graph;
+  NonlinearFactorGraph graph;
 
 	// keys
   Symbol x1('x',1), x2('x',2);

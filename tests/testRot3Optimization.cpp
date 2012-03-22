@@ -23,7 +23,7 @@
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/NonlinearOptimization.h>
+#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/PriorFactor.h>
 
@@ -47,8 +47,7 @@ TEST(Rot3, optimize) {
     fg.add(Between(Symbol('r',j), Symbol('r',(j+1)%6), Rot3::Rz(M_PI/3.0), sharedSigma(3, 0.01)));
   }
 
-  NonlinearOptimizationParameters params;
-  Values final = optimize(fg, initial, params);
+  Values final = *GaussNewtonOptimizer(fg, initial).optimize()->values();
 
   EXPECT(assert_equal(truth, final, 1e-5));
 }

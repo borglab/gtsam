@@ -34,7 +34,7 @@ using namespace boost;
 
 // template definitions
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 
 using namespace gtsam;
 
@@ -68,7 +68,7 @@ TEST( NonlinearOptimizer, iterateLM )
 	// LM iterate with lambda 0 should be the same
 	NonlinearOptimizer::auto_ptr iterated2 = LevenbergMarquardtOptimizer(fg, config, LevenbergMarquardtParams(), ord).update(0.0)->iterate();
 
-	CHECK(assert_equal(*iterated1.values(), *iterated2.values(), 1e-9));
+	CHECK(assert_equal(*iterated1->values(), *iterated2->values(), 1e-9));
 }
 
 /* ************************************************************************* */
@@ -93,18 +93,12 @@ TEST( NonlinearOptimizer, optimize )
 	shared_ptr<Ordering> ord(new Ordering());
 	ord->push_back(kx(1));
 
-	// initial optimization state is the same in both cases tested
-	boost::shared_ptr<NonlinearOptimizationParameters> params = boost::make_shared<NonlinearOptimizationParameters>();
-	params->relDecrease_ = 1e-5;
-	params->absDecrease_ = 1e-5;
-	Optimizer optimizer(fg, c0, ord, params);
-
 	// Gauss-Newton
-	NonlinearOptimizer::auto_ptr actual1 = *GaussNewtonOptimizer(fg, c0, GaussNewtonParams(), ord).optimize();
+	NonlinearOptimizer::auto_ptr actual1 = GaussNewtonOptimizer(fg, c0, GaussNewtonParams(), ord).optimize();
 	DOUBLES_EQUAL(0,fg->error(*(actual1->values())),tol);
 
 	// Levenberg-Marquardt
-	Optimizer actual2 = *LevenbergMarquardtOptimizer(fg, c0, LevenbergMarquardtParams(), ord).optimizer();
+	NonlinearOptimizer::auto_ptr actual2 = LevenbergMarquardtOptimizer(fg, c0, LevenbergMarquardtParams(), ord).optimize();
 	DOUBLES_EQUAL(0,fg->error(*(actual2->values())),tol);
 }
 
@@ -118,7 +112,7 @@ TEST( NonlinearOptimizer, SimpleLMOptimizer )
 	boost::shared_ptr<Values> c0(new Values);
 	c0->insert(simulated2D::PoseKey(1), x0);
 
-	Optimizer::shared_values actual = Optimizer::optimizeLM(fg, c0);
+	Values::const_shared_ptr actual = LevenbergMarquardtOptimizer(fg, c0).optimize()->values();
 	DOUBLES_EQUAL(0,fg->error(*actual),tol);
 }
 
@@ -131,7 +125,7 @@ TEST( NonlinearOptimizer, SimpleLMOptimizer_noshared )
 	Values c0;
 	c0.insert(simulated2D::PoseKey(1), x0);
 
-	Optimizer::shared_values actual = Optimizer::optimizeLM(fg, c0);
+  Values::const_shared_ptr actual = LevenbergMarquardtOptimizer(fg, c0).optimize()->values();
 	DOUBLES_EQUAL(0,fg.error(*actual),tol);
 }
 
@@ -145,7 +139,7 @@ TEST( NonlinearOptimizer, SimpleGNOptimizer )
 	boost::shared_ptr<Values> c0(new Values);
 	c0->insert(simulated2D::PoseKey(1), x0);
 
-	Optimizer::shared_values actual = Optimizer::optimizeGN(fg, c0);
+  Values::const_shared_ptr actual = GaussNewtonOptimizer(fg, c0).optimize()->values();
 	DOUBLES_EQUAL(0,fg->error(*actual),tol);
 }
 
@@ -158,15 +152,17 @@ TEST( NonlinearOptimizer, SimpleGNOptimizer_noshared )
 	Values c0;
 	c0.insert(simulated2D::PoseKey(1), x0);
 
-	Optimizer::shared_values actual = Optimizer::optimizeGN(fg, c0);
+  Values::const_shared_ptr actual = GaussNewtonOptimizer(fg, c0).optimize()->values();
 	DOUBLES_EQUAL(0,fg.error(*actual),tol);
 }
 
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, optimization_method )
 {
-  GaussNewtonParams params;
-  params.elimination = GaussNewtonParams::QR;
+  LevenbergMarquardtParams paramsQR;
+  paramsQR.factorization = LevenbergMarquardtParams::QR;
+  LevenbergMarquardtParams paramsLDL;
+  paramsLDL.factorization = LevenbergMarquardtParams::LDL;
   EXPECT(false);
 
 	example::Graph fg = example::createReallyNonlinearFactorGraph();
@@ -175,79 +171,67 @@ TEST( NonlinearOptimizer, optimization_method )
 	Values c0;
 	c0.insert(simulated2D::PoseKey(1), x0);
 
-	Values actualMFQR = optimize<example::Graph>(
-			fg, c0, *NonlinearOptimizationParameters().newFactorization(true), MULTIFRONTAL, LM);
+	Values actualMFQR = *LevenbergMarquardtOptimizer(fg, c0, paramsQR).optimize()->values();
 	DOUBLES_EQUAL(0,fg.error(actualMFQR),tol);
 
-	Values actualMFLDL = optimize<example::Graph>(
-			fg, c0, *NonlinearOptimizationParameters().newFactorization(false), MULTIFRONTAL, LM);
+	Values actualMFLDL = *LevenbergMarquardtOptimizer(fg, c0, paramsLDL).optimize()->values();
 	DOUBLES_EQUAL(0,fg.error(actualMFLDL),tol);
 }
 
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, Factorization )
 {
-	typedef NonlinearOptimizer<pose2SLAM::Graph, GaussianFactorGraph, GaussianSequentialSolver > Optimizer;
+	Values config;
+	config.insert(pose2SLAM::PoseKey(1), Pose2(0.,0.,0.));
+	config.insert(pose2SLAM::PoseKey(2), Pose2(1.5,0.,0.));
 
-	boost::shared_ptr<Values> config(new Values);
-	config->insert(pose2SLAM::PoseKey(1), Pose2(0.,0.,0.));
-	config->insert(pose2SLAM::PoseKey(2), Pose2(1.5,0.,0.));
+	pose2SLAM::Graph graph;
+	graph.addPrior(1, Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10));
+	graph.addOdometry(1,2, Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1));
 
-	boost::shared_ptr<pose2SLAM::Graph> graph(new pose2SLAM::Graph);
-	graph->addPrior(1, Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10));
-	graph->addOdometry(1,2, Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1));
+	Ordering ordering;
+	ordering.push_back(pose2SLAM::PoseKey(1));
+	ordering.push_back(pose2SLAM::PoseKey(2));
 
-	boost::shared_ptr<Ordering> ordering(new Ordering);
-	ordering->push_back(pose2SLAM::PoseKey(1));
-	ordering->push_back(pose2SLAM::PoseKey(2));
-
-	Optimizer optimizer(graph, config, ordering);
-	Optimizer optimized = optimizer.iterateLM();
+	NonlinearOptimizer::auto_ptr optimized = LevenbergMarquardtOptimizer(graph, config, ordering).iterate();
 
 	Values expected;
 	expected.insert(pose2SLAM::PoseKey(1), Pose2(0.,0.,0.));
 	expected.insert(pose2SLAM::PoseKey(2), Pose2(1.,0.,0.));
-	CHECK(assert_equal(expected, *optimized.values(), 1e-5));
+	CHECK(assert_equal(expected, *optimized->values(), 1e-5));
 }
 
 /* ************************************************************************* */
 TEST_UNSAFE(NonlinearOptimizer, NullFactor) {
 
-  shared_ptr<example::Graph> fg(new example::Graph(
-      example::createReallyNonlinearFactorGraph()));
+  example::Graph fg = example::createReallyNonlinearFactorGraph();
 
   // Add null factor
-  fg->push_back(example::Graph::sharedFactor());
+  fg.push_back(example::Graph::sharedFactor());
 
   // test error at minimum
   Point2 xstar(0,0);
   Values cstar;
   cstar.insert(simulated2D::PoseKey(1), xstar);
-  DOUBLES_EQUAL(0.0,fg->error(cstar),0.0);
+  DOUBLES_EQUAL(0.0,fg.error(cstar),0.0);
 
   // test error at initial = [(1-cos(3))^2 + (sin(3))^2]*50 =
   Point2 x0(3,3);
-  boost::shared_ptr<Values> c0(new Values);
-  c0->insert(simulated2D::PoseKey(1), x0);
-  DOUBLES_EQUAL(199.0,fg->error(*c0),1e-3);
+  Values c0;
+  c0.insert(simulated2D::PoseKey(1), x0);
+  DOUBLES_EQUAL(199.0,fg.error(c0),1e-3);
 
   // optimize parameters
-  shared_ptr<Ordering> ord(new Ordering());
-  ord->push_back(kx(1));
-
-  // initial optimization state is the same in both cases tested
-  boost::shared_ptr<NonlinearOptimizationParameters> params = boost::make_shared<NonlinearOptimizationParameters>();
-  params->relDecrease_ = 1e-5;
-  params->absDecrease_ = 1e-5;
-  Optimizer optimizer(fg, c0, ord, params);
+  Ordering ord;
+  ord.push_back(kx(1));
 
   // Gauss-Newton
-  Optimizer actual1 = optimizer.gaussNewton();
-  DOUBLES_EQUAL(0,fg->error(*(actual1.values())),tol);
+  NonlinearOptimizer::auto_ptr actual1 = GaussNewtonOptimizer(fg, c0, ord).optimize();
+  DOUBLES_EQUAL(0,fg.error(*actual1->values()),tol);
 
   // Levenberg-Marquardt
-  Optimizer actual2 = optimizer.levenbergMarquardt();
-  DOUBLES_EQUAL(0,fg->error(*(actual2.values())),tol);
+  NonlinearOptimizer::auto_ptr actual2 = LevenbergMarquardtOptimizer(fg, c0, ord).optimize();
+  DOUBLES_EQUAL(0,fg.error(*actual2->values()),tol);
 }
 
 ///* ************************************************************************* */
