@@ -177,7 +177,7 @@ public:
 
   /** Update the graph, values, and/or parameters, leaving all other state
    * the same.  Any of these that are empty shared pointers are left unchanged
-   * in the returned optimizer object.  Returns a new updated NonlinearOptimzier
+   * in the returned optimizer object.  Returns a new updated NonlinearOptimizer
    * object, the original is not modified.
    */
   virtual auto_ptr update(

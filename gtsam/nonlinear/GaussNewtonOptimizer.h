@@ -90,7 +90,7 @@ public:
    * @param params The optimization parameters
    */
   GaussNewtonOptimizer(const NonlinearFactorGraph& graph, const Values& values,
-      const GaussNewtonParams& params,
+      const GaussNewtonParams& params = GaussNewtonParams(),
       const Ordering& ordering = Ordering()) :
         NonlinearOptimizer(
             SharedGraph(new NonlinearFactorGraph(graph)),
@@ -110,7 +110,7 @@ public:
    * @param params The optimization parameters
    */
   GaussNewtonOptimizer(const NonlinearFactorGraph& graph, const Values& values,
-      const Ordering& ordering = Ordering()) :
+      const Ordering& ordering) :
         NonlinearOptimizer(
             SharedGraph(new NonlinearFactorGraph(graph)),
             SharedValues(new Values(values)),
@@ -151,7 +151,7 @@ public:
   /** Update the graph, values, and/or parameters, leaving all other state
    * the same.  Any of these that are empty shared pointers are left unchanged
    * in the returned optimizer object.  Returns a new updated
-   * NonlinearOptimzier object, the original is not modified.
+   * NonlinearOptimizer object, the original is not modified.
    */
   virtual auto_ptr update(
       const SharedGraph& newGraph,
