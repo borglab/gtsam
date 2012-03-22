@@ -574,14 +574,16 @@ void ISAM2::updateDelta(bool forceFullSolve) const {
 
     // Do one Dogleg iteration
     tic(1, "Dogleg Iterate");
-    DoglegOptimizerImpl::IterationResult doglegResult = DoglegOptimizerImpl::Iterate(
-        *doglegDelta_, doglegParams.adaptationMode, *this, nonlinearFactors_, theta_, ordering_, nonlinearFactors_.error(theta_), doglegParams.verbose);
+    DoglegOptimizerImpl::IterationResult doglegResult(DoglegOptimizerImpl::Iterate(
+        *doglegDelta_, doglegParams.adaptationMode, *this, nonlinearFactors_, theta_, ordering_, nonlinearFactors_.error(theta_), doglegParams.verbose));
     toc(1, "Dogleg Iterate");
 
+    tic(2, "Copy dx_d");
     // Update Delta and linear step
     doglegDelta_ = doglegResult.Delta;
     delta_.permutation() = Permutation::Identity(delta_.size());  // Dogleg solves for the full delta so there is no permutation
     delta_.container() = doglegResult.dx_d; // Copy the VectorValues containing with the linear solution
+    toc(2, "Copy dx_d");
   }
 
   deltaUptodate_ = true;
@@ -677,17 +679,17 @@ void optimizeGradientSearchInPlace(const ISAM2& isam, VectorValues& grad) {
     toc(1, "UpdateDoglegDeltas");
   }
 
-  tic(1, "Compute Gradient");
+  tic(2, "Compute Gradient");
   // Compute gradient (call gradientAtZero function, which is defined for various linear systems)
   gradientAtZero(isam, grad);
   double gradientSqNorm = grad.dot(grad);
-  toc(1, "Compute Gradient");
+  toc(2, "Compute Gradient");
 
-  tic(2, "Compute minimizing step size");
+  tic(3, "Compute minimizing step size");
   // Compute minimizing step size
   double RgNormSq = isam.RgProd_.container().vector().squaredNorm();
   double step = -gradientSqNorm / RgNormSq;
-  toc(2, "Compute minimizing step size");
+  toc(3, "Compute minimizing step size");
 
   tic(4, "Compute point");
   // Compute steepest descent point

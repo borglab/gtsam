@@ -143,9 +143,10 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
   optimizeGradientSearchInPlace(Rd, dx_u);
   toc(1, "optimizeGradientSearchInPlace");
   toc(0, "optimizeGradientSearch");
-  tic(1, "optimize");
-  VectorValues dx_n = optimize(Rd);
-  toc(1, "optimize");
+  tic(1, "optimizeInPlace");
+  VectorValues dx_n(VectorValues::SameStructure(dx_u);
+  optimizeInPlace(Rd, *dx_n);
+  toc(1, "optimizeInPlace");
   tic(2, "jfg error");
   const GaussianFactorGraph jfg(Rd);
   const double M_error = jfg.error(VectorValues::Zero(dx_u));
@@ -182,6 +183,7 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
     if(verbose) cout << "f error: " << f_error << " -> " << result.f_error << endl;
     if(verbose) cout << "M error: " << M_error << " -> " << new_M_error << endl;
 
+    tic(7, "adjust Delta");
     // Compute gain ratio.  Here we take advantage of the invariant that the
     // Bayes' net error at zero is equal to the nonlinear error
     const double rho = fabs(M_error - new_M_error) < 1e-15 ?
@@ -242,6 +244,7 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
         stay = false;
       }
     }
+    toc(7, "adjust Delta");
   }
 
   // dx_d and f_error have already been filled in during the loop
