@@ -163,7 +163,6 @@ TEST( NonlinearOptimizer, optimization_method )
   paramsQR.factorization = LevenbergMarquardtParams::QR;
   LevenbergMarquardtParams paramsLDL;
   paramsLDL.factorization = LevenbergMarquardtParams::LDL;
-  EXPECT(false);
 
 	example::Graph fg = example::createReallyNonlinearFactorGraph();
 
@@ -202,7 +201,7 @@ TEST( NonlinearOptimizer, Factorization )
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(NonlinearOptimizer, NullFactor) {
+TEST(NonlinearOptimizer, NullFactor) {
 
   example::Graph fg = example::createReallyNonlinearFactorGraph();
 
@@ -233,66 +232,6 @@ TEST_UNSAFE(NonlinearOptimizer, NullFactor) {
   NonlinearOptimizer::auto_ptr actual2 = LevenbergMarquardtOptimizer(fg, c0, ord).optimize();
   DOUBLES_EQUAL(0,fg.error(*actual2->values()),tol);
 }
-
-///* ************************************************************************* */
-// SL-FIX TEST( NonlinearOptimizer, SubgraphSolver )
-//{
-//	using namespace pose2SLAM;
-//	typedef SubgraphSolver<Graph, Values> Solver;
-//	typedef NonlinearOptimizer<Graph, Values, SubgraphPreconditioner, Solver> Optimizer;
-//
-//	// Create a graph
-//	boost::shared_ptr<Graph> graph(new Graph);
-//	graph->addPrior(1, Pose2(0., 0., 0.), noiseModel::Isotropic::Sigma(3, 1e-10));
-//	graph->addConstraint(1, 2, Pose2(1., 0., 0.), noiseModel::Isotropic::Sigma(3, 1));
-//
-//	// Create an initial config
-//	boost::shared_ptr<Values> config(new Values);
-//	config->insert(1, Pose2(0., 0., 0.));
-//	config->insert(2, Pose2(1.5, 0., 0.));
-//
-//	// Create solver and optimizer
-//	Optimizer::shared_solver solver
-//		(new SubgraphSolver<Graph, Values> (*graph, *config));
-//	Optimizer optimizer(graph, config, solver);
-//
-//	// Optimize !!!!
-//	double relativeThreshold = 1e-5;
-//	double absoluteThreshold = 1e-5;
-//	Optimizer optimized = optimizer.gaussNewton(relativeThreshold,
-//			absoluteThreshold, Optimizer::SILENT);
-//
-//	// Check solution
-//	Values expected;
-//	expected.insert(1, Pose2(0., 0., 0.));
-//	expected.insert(2, Pose2(1., 0., 0.));
-//	CHECK(assert_equal(expected, *optimized.values(), 1e-5));
-//}
-
-/* ************************************************************************* */
-// SL-FIX TEST( NonlinearOptimizer, MultiFrontalSolver )
-//{
-//	shared_ptr<example::Graph> fg(new example::Graph(
-//			example::createNonlinearFactorGraph()));
-//	Optimizer::shared_values initial = example::sharedNoisyValues();
-//
-//	Values expected;
-//	expected.insert(simulated2D::PoseKey(1), Point2(0.0, 0.0));
-//	expected.insert(simulated2D::PoseKey(2), Point2(1.5, 0.0));
-//	expected.insert(simulated2D::PointKey(1), Point2(0.0, -1.0));
-//
-//	Optimizer::shared_solver solver;
-//
-//	// Check one ordering
-//	shared_ptr<Ordering> ord1(new Ordering());
-//	*ord1 += kx(2),kl(1),kx(1);
-//	solver = Optimizer::shared_solver(new Optimizer::solver(ord1));
-//	Optimizer optimizer1(fg, initial, solver);
-//
-//	Values actual = optimizer1.levenbergMarquardt();
-//	CHECK(assert_equal(actual,expected));
-//}
-
 
 /* ************************************************************************* */
 int main() {

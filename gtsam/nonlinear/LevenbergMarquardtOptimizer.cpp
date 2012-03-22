@@ -46,7 +46,7 @@ NonlinearOptimizer::auto_ptr LevenbergMarquardtOptimizer::iterate() const {
   const double lambdaFactor = lmParams_->lambdaFactor;
 
   // Variables to update during try_lambda loop
-  double lambda = lmParams_->lambdaInitial;
+  double lambda = lambda_;
   double next_error = error();
   SharedValues next_values = values();
 

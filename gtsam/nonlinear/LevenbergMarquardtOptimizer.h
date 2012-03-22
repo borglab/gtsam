@@ -263,7 +263,7 @@ private:
   // error, and increments the iteration count.
   LevenbergMarquardtOptimizer(const LevenbergMarquardtOptimizer& original,
       const SharedValues& newValues, double newError, double newLambda) :
-        NonlinearOptimizer(graph_, newValues, params_, newError, iterations_+1),
+        NonlinearOptimizer(original.graph_, newValues, original.params_, newError, original.iterations_+1),
         lmParams_(original.lmParams_),
         colamdOrdering_(original.colamdOrdering_),
         ordering_(original.ordering_),
