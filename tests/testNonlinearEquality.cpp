@@ -230,7 +230,7 @@ TEST ( NonlinearEquality, allow_error_optimize_with_factors ) {
 	// optimize
 	Ordering ordering;
 	ordering.push_back(key1);
-  Values actual = *LevenbergMarquardtOptimizer(graph, init, ordering).optimize()->values();
+  Values actual = *LevenbergMarquardtOptimizer(graph, init, ordering).optimized();
 
 	// verify
 	Values expected;
@@ -317,7 +317,7 @@ TEST( testNonlinearEqualityConstraint, unary_simple_optimization ) {
 	EXPECT(constraint->active(expected));
 	EXPECT_DOUBLES_EQUAL(0.0, constraint->error(expected), tol);
 
-	Values actual = *LevenbergMarquardtOptimizer(graph, initValues).optimize()->values();
+	Values actual = *LevenbergMarquardtOptimizer(graph, initValues).optimized();
 	EXPECT(assert_equal(expected, actual, tol));
 }
 
@@ -408,7 +408,7 @@ TEST( testNonlinearEqualityConstraint, odo_simple_optimize ) {
 	initValues.insert(key1, Point2());
 	initValues.insert(key2, badPt);
 
-	Values actual = *LevenbergMarquardtOptimizer(graph, initValues).optimize()->values();
+	Values actual = *LevenbergMarquardtOptimizer(graph, initValues).optimized();
 	Values expected;
 	expected.insert(key1, truth_pt1);
 	expected.insert(key2, truth_pt2);
@@ -447,7 +447,7 @@ TEST (testNonlinearEqualityConstraint, two_pose ) {
 	initialEstimate.insert(l1, Point2(1.0, 6.0)); // ground truth
 	initialEstimate.insert(l2, Point2(-4.0, 0.0)); // starting with a separate reference frame
 
-	Values actual = *LevenbergMarquardtOptimizer(graph, initialEstimate).optimize()->values();
+	Values actual = *LevenbergMarquardtOptimizer(graph, initialEstimate).optimized();
 
 	Values expected;
 	expected.insert(x1, pt_x1);
@@ -491,7 +491,7 @@ TEST (testNonlinearEqualityConstraint, map_warp ) {
 	initialEstimate.insert(x2, Point2( 0.0, 0.0)); // other pose starts at origin
 
 	// optimize
-	Values actual = *LevenbergMarquardtOptimizer(graph, initialEstimate).optimize()->values();
+	Values actual = *LevenbergMarquardtOptimizer(graph, initialEstimate).optimized();
 
 	Values expected;
 	expected.insert(x1, Point2(1.0, 1.0));
@@ -557,7 +557,7 @@ TEST (testNonlinearEqualityConstraint, stereo_constrained ) {
 	initValues.insert(l2, landmark2);
 
 	// optimize
-	Values actual = *LevenbergMarquardtOptimizer(graph, initValues).optimize()->values();
+	Values actual = *LevenbergMarquardtOptimizer(graph, initValues).optimized();
 
 	// create config
 	Values truthValues;

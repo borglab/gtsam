@@ -115,7 +115,7 @@ TEST( NonlinearOptimizer, SimpleLMOptimizer )
 	boost::shared_ptr<Values> c0(new Values);
 	c0->insert(simulated2D::PoseKey(1), x0);
 
-	Values::const_shared_ptr actual = LevenbergMarquardtOptimizer(fg, c0).optimize()->values();
+	Values::const_shared_ptr actual = LevenbergMarquardtOptimizer(fg, c0).optimized();
 	DOUBLES_EQUAL(0,fg->error(*actual),tol);
 }
 
@@ -129,7 +129,7 @@ TEST( NonlinearOptimizer, SimpleGNOptimizer )
 	boost::shared_ptr<Values> c0(new Values);
 	c0->insert(simulated2D::PoseKey(1), x0);
 
-  Values::const_shared_ptr actual = GaussNewtonOptimizer(fg, c0).optimize()->values();
+  Values::const_shared_ptr actual = GaussNewtonOptimizer(fg, c0).optimized();
 	DOUBLES_EQUAL(0,fg->error(*actual),tol);
 }
 
@@ -143,7 +143,7 @@ TEST( NonlinearOptimizer, SimpleDLOptimizer )
   boost::shared_ptr<Values> c0(new Values);
   c0->insert(simulated2D::PoseKey(1), x0);
 
-  Values::const_shared_ptr actual = DoglegOptimizer(fg, c0).optimize()->values();
+  Values::const_shared_ptr actual = DoglegOptimizer(fg, c0).optimized();
   DOUBLES_EQUAL(0,fg->error(*actual),tol);
 }
 
@@ -161,10 +161,10 @@ TEST( NonlinearOptimizer, optimization_method )
 	Values c0;
 	c0.insert(simulated2D::PoseKey(1), x0);
 
-	Values actualMFQR = *LevenbergMarquardtOptimizer(fg, c0, paramsQR).optimize()->values();
+	Values actualMFQR = *LevenbergMarquardtOptimizer(fg, c0, paramsQR).optimized();
 	DOUBLES_EQUAL(0,fg.error(actualMFQR),tol);
 
-	Values actualMFLDL = *LevenbergMarquardtOptimizer(fg, c0, paramsLDL).optimize()->values();
+	Values actualMFLDL = *LevenbergMarquardtOptimizer(fg, c0, paramsLDL).optimized();
 	DOUBLES_EQUAL(0,fg.error(actualMFLDL),tol);
 }
 

@@ -110,7 +110,7 @@ namespace planarSLAM {
 
     /// Optimize
     Values optimize(const Values& initialEstimate) {
-      return *LevenbergMarquardtOptimizer(*this, initialEstimate).optimize()->values();
+      return *LevenbergMarquardtOptimizer(*this, initialEstimate).optimized();
     }
   };
 

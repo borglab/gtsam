@@ -154,7 +154,7 @@ TEST( testBoundingConstraint, unary_simple_optimization1) {
 	Values initValues;
 	initValues.insert(x1, start_pt);
 
-	Values actual = *LevenbergMarquardtOptimizer(graph, initValues).optimize()->values();
+	Values actual = *LevenbergMarquardtOptimizer(graph, initValues).optimized();
 	Values expected;
 	expected.insert(x1, goal_pt);
 	CHECK(assert_equal(expected, actual, tol));
@@ -176,7 +176,7 @@ TEST( testBoundingConstraint, unary_simple_optimization2) {
 	Values initValues;
 	initValues.insert(x1, start_pt);
 
-	Values actual = *LevenbergMarquardtOptimizer(graph, initValues).optimize()->values();
+	Values actual = *LevenbergMarquardtOptimizer(graph, initValues).optimized();
 	Values expected;
 	expected.insert(x1, goal_pt);
 	CHECK(assert_equal(expected, actual, tol));

@@ -124,8 +124,20 @@ public:
   /** Optimize for the maximum-likelihood estimate, returning a new
    * NonlinearOptimizer class containing the optimized variable assignments,
    * which may be retrieved with values().
+   *
+   * This function simply calls iterate() in a loop, checking for convergence
+   * with check_convergence().  For fine-grain control over the optimization
+   * process, you may call iterate() and check_convergence() yourself, and if
+   * needed modify the optimization state between iterations.
    */
   virtual auto_ptr optimize() const { return defaultOptimize(); }
+
+  /** Shortcut to optimize and return the resulting Values of the maximum-
+   * likelihood estimate.  To access statistics and information such as the
+   * final error and number of iterations, use optimize() instead.
+   * @return The maximum-likelihood estimate.
+   */
+  virtual SharedValues optimized() const { return this->optimize()->values(); }
 
   /** Retrieve the current variable assignment estimate. */
   virtual const SharedValues& values() const { return values_; }
