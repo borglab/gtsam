@@ -38,12 +38,12 @@ public:
 
   int maxIterations; ///< The maximum iterations to stop iterating (default 100)
   double relativeErrorTol; ///< The maximum relative error decrease to stop iterating (default 1e-5)
-  double absoluteErrorTol; ///< The maximum absolute error decrease to stop iterating (default 0.0)
+  double absoluteErrorTol; ///< The maximum absolute error decrease to stop iterating (default 1e-5)
   double errorTol; ///< The maximum total error to stop iterating (default 0.0)
   Verbosity verbosity; ///< The printing verbosity during optimization (default SILENT)
 
   NonlinearOptimizerParams() :
-    maxIterations(100.0), relativeErrorTol(1e-5), absoluteErrorTol(0.0),
+    maxIterations(100.0), relativeErrorTol(1e-5), absoluteErrorTol(1e-5),
     errorTol(0.0), verbosity(SILENT) {}
 
   virtual void print(const std::string& str = "") const {
