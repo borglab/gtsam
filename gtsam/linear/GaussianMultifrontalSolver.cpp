@@ -44,7 +44,7 @@ void GaussianMultifrontalSolver::replaceFactors(const FactorGraph<GaussianFactor
 }
 
 /* ************************************************************************* */
-BayesTree<GaussianConditional>::shared_ptr GaussianMultifrontalSolver::eliminate() const {
+GaussianBayesTree::shared_ptr GaussianMultifrontalSolver::eliminate() const {
 	if (useQR_)
 		return Base::eliminate(&EliminateQR);
 	else

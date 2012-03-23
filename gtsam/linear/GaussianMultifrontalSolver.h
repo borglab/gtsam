@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gtsam/inference/GenericMultifrontalSolver.h>
+#include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
 #include <gtsam/linear/VectorValues.h>
 
@@ -86,7 +87,7 @@ public:
    * Eliminate the factor graph sequentially.  Uses a column elimination tree
    * to recursively eliminate.
    */
-  BayesTree<GaussianConditional>::shared_ptr eliminate() const;
+  GaussianBayesTree::shared_ptr eliminate() const;
 
   /**
    * Compute the least-squares solution of the GaussianFactorGraph.  This
