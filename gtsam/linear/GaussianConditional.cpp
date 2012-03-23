@@ -28,42 +28,6 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-// Helper function used only in this file - extracts vectors with variable indices
-// in the first and last iterators, and concatenates them in that order into the
-// output.
-template<class VALUES, typename ITERATOR>
-static Vector extractVectorValuesSlices(const VALUES& values, ITERATOR first, ITERATOR last) {
-  // Find total dimensionality
-  int dim = 0;
-  for(ITERATOR j = first; j != last; ++j)
-    dim += values[*j].rows();
-
-  // Copy vectors
-  Vector ret(dim);
-  int varStart = 0;
-  for(ITERATOR j = first; j != last; ++j) {
-    ret.segment(varStart, values[*j].rows()) = values[*j];
-    varStart += values[*j].rows();
-  }
-  return ret;
-}
-
-/* ************************************************************************* */
-// Helper function used only in this file - writes to the variables in values
-// with indices iterated over by first and last, interpreting vector as the
-// concatenated vectors to write.
-template<class VECTOR, class VALUES, typename ITERATOR>
-static void writeVectorValuesSlices(const VECTOR& vector, VALUES& values, ITERATOR first, ITERATOR last) {
-  // Copy vectors
-  int varStart = 0;
-  for(ITERATOR j = first; j != last; ++j) {
-    values[*j] = vector.segment(varStart, values[*j].rows());
-    varStart += values[*j].rows();
-  }
-  assert(varStart == vector.rows());
-}
-
-/* ************************************************************************* */
 GaussianConditional::GaussianConditional() : rsd_(matrix_) {}
 
 /* ************************************************************************* */
@@ -230,7 +194,7 @@ inline static void doSolveInPlace(const GaussianConditional& conditional, VALUES
 
   static const bool debug = false;
   if(debug) conditional.print("Solving conditional in place");
-  Vector xS = extractVectorValuesSlices(x, conditional.beginParents(), conditional.endParents());
+  Vector xS = internal::extractVectorValuesSlices(x, conditional.beginParents(), conditional.endParents());
   xS = conditional.get_d() - conditional.get_S() * xS;
   Vector soln = conditional.permutation().transpose() *
       conditional.get_R().triangularView<Eigen::Upper>().solve(xS);
@@ -238,7 +202,7 @@ inline static void doSolveInPlace(const GaussianConditional& conditional, VALUES
     gtsam::print(Matrix(conditional.get_R()), "Calling backSubstituteUpper on ");
     gtsam::print(soln, "full back-substitution solution: ");
   }
-  writeVectorValuesSlices(soln, x, conditional.beginFrontals(), conditional.endFrontals());
+  internal::writeVectorValuesSlices(soln, x, conditional.beginFrontals(), conditional.endFrontals());
 }
 
 /* ************************************************************************* */
@@ -253,7 +217,7 @@ void GaussianConditional::solveInPlace(Permuted<VectorValues>& x) const {
 
 /* ************************************************************************* */
 void GaussianConditional::solveTransposeInPlace(VectorValues& gy) const {
-	Vector frontalVec = extractVectorValuesSlices(gy, beginFrontals(), endFrontals());
+	Vector frontalVec = internal::extractVectorValuesSlices(gy, beginFrontals(), endFrontals());
 	// TODO: verify permutation
 	frontalVec = permutation_ * gtsam::backSubstituteUpper(frontalVec,Matrix(get_R()));
 	GaussianConditional::const_iterator it;
@@ -261,14 +225,14 @@ void GaussianConditional::solveTransposeInPlace(VectorValues& gy) const {
 		const Index i = *it;
 		transposeMultiplyAdd(-1.0,get_S(it),frontalVec,gy[i]);
 	}
-	writeVectorValuesSlices(frontalVec, gy, beginFrontals(), endFrontals());
+	internal::writeVectorValuesSlices(frontalVec, gy, beginFrontals(), endFrontals());
 }
 
 /* ************************************************************************* */
 void GaussianConditional::scaleFrontalsBySigma(VectorValues& gy) const {
-	Vector frontalVec = extractVectorValuesSlices(gy, beginFrontals(), endFrontals());
+	Vector frontalVec = internal::extractVectorValuesSlices(gy, beginFrontals(), endFrontals());
 	frontalVec = emul(frontalVec, get_sigmas());
-	writeVectorValuesSlices(frontalVec, gy, beginFrontals(), endFrontals());
+	internal::writeVectorValuesSlices(frontalVec, gy, beginFrontals(), endFrontals());
 }
 
 }

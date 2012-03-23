@@ -25,4 +25,17 @@
 
 namespace gtsam {
 
+/* ************************************************************************* */
+namespace internal {
+template<class BAYESTREE>
+void optimizeInPlace(const typename BAYESTREE::sharedClique& clique, VectorValues& result) {
+  // parents are assumed to already be solved and available in result
+  clique->conditional()->solveInPlace(result);
+
+  // starting from the root, call optimize on each conditional
+  BOOST_FOREACH(const typename BAYESTREE::sharedClique& child, clique->children_)
+    optimizeInPlace<BAYESTREE>(child, result);
+}
+}
+
 }

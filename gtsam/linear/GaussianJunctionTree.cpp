@@ -50,7 +50,7 @@ namespace gtsam {
 
 		// back-substitution
     tic(3, "back-substitute");
-		internal::optimizeInPlace(rootClique, result);
+		internal::optimizeInPlace<GaussianBayesTree>(rootClique, result);
     toc(3, "back-substitute");
 		return result;
 	}

@@ -156,3 +156,22 @@ void VectorValues::operator+=(const VectorValues& c) {
 	assert(this->hasSameStructure(c));
 	this->values_ += c.values_;
 }
+
+/* ************************************************************************* */
+VectorValues& VectorValues::operator=(const Permuted<VectorValues>& rhs) {
+  if(this->size() != rhs.size())
+    throw std::invalid_argument("VectorValues assignment from Permuted<VectorValues> requires pre-allocation, see documentation.");
+  for(size_t j=0; j<this->size(); ++j) {
+    if(exists(j)) {
+      SubVector& l(this->at(j));
+      const SubVector& r(rhs[j]);
+      if(l.rows() != r.rows())
+        throw std::invalid_argument("VectorValues assignment from Permuted<VectorValues> requires pre-allocation, see documentation.");
+      l = r;
+    } else {
+      if(rhs.container().exists(rhs.permutation()[j]))
+        throw std::invalid_argument("VectorValues assignment from Permuted<VectorValues> requires pre-allocation, see documentation.");
+    }
+  }
+  return *this;
+}
