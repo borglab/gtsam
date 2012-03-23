@@ -37,8 +37,8 @@ NonlinearOptimizer::auto_ptr NonlinearOptimizer::defaultOptimize() const {
   }
 
   // Maybe show output
-  if (params_->verbosity >= NonlinearOptimizerParams::VALUES) this->values()->print("newValues");
-  if (params_->verbosity >= NonlinearOptimizerParams::ERROR) cout << "newError: " << this->error() << endl;
+  if (params_->verbosity >= NonlinearOptimizerParams::VALUES) this->values()->print("Initial values");
+  if (params_->verbosity >= NonlinearOptimizerParams::ERROR) cout << "Initial error: " << this->error() << endl;
 
   // Return if we already have too many iterations
   if(this->iterations() >= params_->maxIterations)
@@ -47,16 +47,17 @@ NonlinearOptimizer::auto_ptr NonlinearOptimizer::defaultOptimize() const {
   // Iterative loop
   auto_ptr next = this->iterate(); // First iteration happens here
   while(next->iterations() < params_->maxIterations &&
-      !checkConvergence(params_->relativeErrorTol, params_->absoluteErrorTol,
+    !checkConvergence(params_->relativeErrorTol, params_->absoluteErrorTol,
           params_->errorTol, currentError, next->error(), params_->verbosity)) {
-
-    // Do next iteration
-    currentError = next->error();
-    next = next->iterate();
 
     // Maybe show output
     if (params_->verbosity >= NonlinearOptimizerParams::VALUES) next->values()->print("newValues");
     if (params_->verbosity >= NonlinearOptimizerParams::ERROR) cout << "newError: " << next->error() << endl;
+
+
+    // Do next iteration
+    currentError = next->error();
+    next = next->iterate();
   }
 
   // Printing if verbose
