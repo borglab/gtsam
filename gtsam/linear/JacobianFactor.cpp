@@ -42,20 +42,20 @@ using namespace boost::lambda;
 namespace gtsam {
 
   /* ************************************************************************* */
-  inline void JacobianFactor::assertInvariants() const {
-  #ifndef NDEBUG
+  void JacobianFactor::assertInvariants() const {
+#ifndef NDEBUG
     GaussianFactor::assertInvariants(); // The base class checks for unique keys
     assert((size() == 0 && Ab_.rows() == 0 && Ab_.nBlocks() == 0) || size()+1 == Ab_.nBlocks());
     assert(firstNonzeroBlocks_.size() == Ab_.rows());
     for(size_t i=0; i<firstNonzeroBlocks_.size(); ++i)
       assert(firstNonzeroBlocks_[i] < Ab_.nBlocks());
-  #endif
 
     // Check for non-finite values
     for(size_t i=0; i<Ab_.rows(); ++i)
       for(size_t j=0; j<Ab_.cols(); ++j)
         if(isnan(matrix_(i,j)))
           throw invalid_argument("JacobianFactor contains NaN matrix entries.");
+#endif
   }
 
   /* ************************************************************************* */
