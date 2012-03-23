@@ -132,10 +132,6 @@ NonlinearOptimizer::auto_ptr LevenbergMarquardtOptimizer::iterate() const {
     }
   } // end while
 
-  // Maybe show output
-  if (params_->verbosity >= NonlinearOptimizerParams::VALUES) next_values->print("newValues");
-  if (params_->verbosity >= NonlinearOptimizerParams::ERROR) cout << "error: " << next_error << endl;
-
   // Create new optimizer with new values and new error
   NonlinearOptimizer::auto_ptr newOptimizer(new LevenbergMarquardtOptimizer(
       *this, next_values, next_error, lambda));

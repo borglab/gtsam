@@ -54,10 +54,6 @@ NonlinearOptimizer::auto_ptr GaussNewtonOptimizer::iterate() const {
   SharedValues newValues(new Values(values_->retract(*delta, *ordering_)));
   double newError = graph_->error(*newValues);
 
-  // Maybe show output
-  if (params_->verbosity >= NonlinearOptimizerParams::VALUES) newValues->print("newValues");
-  if (params_->verbosity >= NonlinearOptimizerParams::ERROR) cout << "error: " << newError << endl;
-
   // Create new optimizer with new values and new error
   NonlinearOptimizer::auto_ptr newOptimizer(new GaussNewtonOptimizer(
       *this, newValues, newError));

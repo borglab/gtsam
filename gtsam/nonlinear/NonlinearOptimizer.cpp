@@ -36,6 +36,10 @@ NonlinearOptimizer::auto_ptr NonlinearOptimizer::defaultOptimize() const {
     return this->clone();
   }
 
+  // Maybe show output
+  if (params_->verbosity >= NonlinearOptimizerParams::VALUES) this->values()->print("newValues");
+  if (params_->verbosity >= NonlinearOptimizerParams::ERROR) cout << "newError: " << this->error() << endl;
+
   // Return if we already have too many iterations
   if(this->iterations() >= params_->maxIterations)
     return this->clone();
@@ -49,6 +53,10 @@ NonlinearOptimizer::auto_ptr NonlinearOptimizer::defaultOptimize() const {
     // Do next iteration
     currentError = next->error();
     next = next->iterate();
+
+    // Maybe show output
+    if (params_->verbosity >= NonlinearOptimizerParams::VALUES) next->values()->print("newValues");
+    if (params_->verbosity >= NonlinearOptimizerParams::ERROR) cout << "newError: " << next->error() << endl;
   }
 
   // Printing if verbose
