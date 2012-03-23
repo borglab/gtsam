@@ -53,7 +53,7 @@ public:
 
   Elimination elimination; ///< The elimination algorithm to use (default: MULTIFRONTAL)
   Factorization factorization; ///< The numerical factorization (default: LDL)
-  double lambdaInitial; ///< The initial (and current after each iteration) Levenberg-Marquardt damping term (default: 1e-5)
+  double lambdaInitial; ///< The initial Levenberg-Marquardt damping term (default: 1e-5)
   double lambdaFactor; ///< The amount by which to multiply or divide lambda when adjusting lambda (default: 10.0)
   double lambdaUpperBound; ///< The maximum lambda to try before assuming the optimization has failed (default: 1e5)
   LMVerbosity lmVerbosity; ///< The verbosity level for Levenberg-Marquardt (default: SILENT), see also NonlinearOptimizerParams::verbosity
