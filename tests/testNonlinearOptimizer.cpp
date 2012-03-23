@@ -31,10 +31,9 @@ using namespace boost;
 #include <gtsam/slam/pose2SLAM.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/NoiseModel.h>
-
-// template definitions
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
+#include <gtsam/nonlinear/DoglegOptimizer.h>
 
 using namespace gtsam;
 
@@ -100,6 +99,10 @@ TEST( NonlinearOptimizer, optimize )
 	// Levenberg-Marquardt
 	NonlinearOptimizer::auto_ptr actual2 = LevenbergMarquardtOptimizer(fg, c0, LevenbergMarquardtParams(), ord).optimize();
 	DOUBLES_EQUAL(0,fg->error(*(actual2->values())),tol);
+
+  // Dogleg
+  NonlinearOptimizer::auto_ptr actual3 = DoglegOptimizer(fg, c0, DoglegParams(), ord).optimize();
+  DOUBLES_EQUAL(0,fg->error(*(actual2->values())),tol);
 }
 
 /* ************************************************************************* */
@@ -117,19 +120,6 @@ TEST( NonlinearOptimizer, SimpleLMOptimizer )
 }
 
 /* ************************************************************************* */
-TEST( NonlinearOptimizer, SimpleLMOptimizer_noshared )
-{
-	example::Graph fg = example::createReallyNonlinearFactorGraph();
-
-	Point2 x0(3,3);
-	Values c0;
-	c0.insert(simulated2D::PoseKey(1), x0);
-
-  Values::const_shared_ptr actual = LevenbergMarquardtOptimizer(fg, c0).optimize()->values();
-	DOUBLES_EQUAL(0,fg.error(*actual),tol);
-}
-
-/* ************************************************************************* */
 TEST( NonlinearOptimizer, SimpleGNOptimizer )
 {
 	shared_ptr<example::Graph> fg(new example::Graph(
@@ -144,16 +134,17 @@ TEST( NonlinearOptimizer, SimpleGNOptimizer )
 }
 
 /* ************************************************************************* */
-TEST( NonlinearOptimizer, SimpleGNOptimizer_noshared )
+TEST( NonlinearOptimizer, SimpleDLOptimizer )
 {
-	example::Graph fg = example::createReallyNonlinearFactorGraph();
+  shared_ptr<example::Graph> fg(new example::Graph(
+      example::createReallyNonlinearFactorGraph()));
 
-	Point2 x0(3,3);
-	Values c0;
-	c0.insert(simulated2D::PoseKey(1), x0);
+  Point2 x0(3,3);
+  boost::shared_ptr<Values> c0(new Values);
+  c0->insert(simulated2D::PoseKey(1), x0);
 
-  Values::const_shared_ptr actual = GaussNewtonOptimizer(fg, c0).optimize()->values();
-	DOUBLES_EQUAL(0,fg.error(*actual),tol);
+  Values::const_shared_ptr actual = DoglegOptimizer(fg, c0).optimize()->values();
+  DOUBLES_EQUAL(0,fg->error(*actual),tol);
 }
 
 /* ************************************************************************* */
@@ -230,6 +221,10 @@ TEST(NonlinearOptimizer, NullFactor) {
 
   // Levenberg-Marquardt
   NonlinearOptimizer::auto_ptr actual2 = LevenbergMarquardtOptimizer(fg, c0, ord).optimize();
+  DOUBLES_EQUAL(0,fg.error(*actual2->values()),tol);
+
+  // Dogleg
+  NonlinearOptimizer::auto_ptr actual3 = DoglegOptimizer(fg, c0, ord).optimize();
   DOUBLES_EQUAL(0,fg.error(*actual2->values()),tol);
 }
 
