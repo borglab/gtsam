@@ -20,7 +20,7 @@
 using namespace boost;
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/slam/visualSLAM.h>
 #include <gtsam/slam/PriorFactor.h>
 
@@ -143,12 +143,13 @@ int main(int argc, char* argv[]) {
 
   // Optimize the graph
   cout << "*******************************************************" << endl;
-  NonlinearOptimizationParameters::shared_ptr params = NonlinearOptimizationParameters::newVerbosity(Optimizer::Parameters::DAMPED);
-  visualSLAM::Optimizer::shared_values result = visualSLAM::Optimizer::optimizeGN(graph, initialEstimates, params);
+  LevenbergMarquardtParams params;
+  params.lmVerbosity = LevenbergMarquardtParams::DAMPED;
+  visualSLAM::Values result = *LevenbergMarquardtOptimizer(graph, initialEstimates, params).optimized();
 
   // Print final results
   cout << "*******************************************************" << endl;
-  result->print("FINAL RESULTS: ");
+  result.print("FINAL RESULTS: ");
 
   return 0;
 }

@@ -35,16 +35,12 @@
 
 // implementations for structures - needed if self-contained, and these should be included last
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
 
 using namespace std;
 using namespace gtsam;
-
-// Main typedefs
-typedef NonlinearOptimizer<NonlinearFactorGraph,GaussianFactorGraph,GaussianSequentialSolver> OptimizerSeqential;   // optimization engine for this domain
-typedef NonlinearOptimizer<NonlinearFactorGraph,GaussianFactorGraph,GaussianMultifrontalSolver> OptimizerMultifrontal;   // optimization engine for this domain
 
 /**
  * In this version of the system we make the following assumptions:
@@ -117,22 +113,27 @@ int main(int argc, char** argv) {
 	// optimize using Levenberg-Marquardt optimization with an ordering from colamd
 
 	// first using sequential elimination
-	OptimizerSeqential::shared_values resultSequential = OptimizerSeqential::optimizeLM(*graph, *initial);
+	LevenbergMarquardtParams lmParams;
+	lmParams.elimination = LevenbergMarquardtParams::SEQUENTIAL;
+	Values::const_shared_ptr resultSequential = LevenbergMarquardtOptimizer(graph, initial, lmParams).optimized();
 	resultSequential->print("final result (solved with a sequential solver)");
 
 	// then using multifrontal, advanced interface
-	// Note how we create an optimizer, call LM, then we get access to covariances
-	Ordering::shared_ptr ordering = graph->orderingCOLAMD(*initial);
-  OptimizerMultifrontal optimizerMF(graph, initial, ordering);
-  OptimizerMultifrontal resultMF = optimizerMF.levenbergMarquardt();
-  resultMF.values()->print("final result (solved with a multifrontal solver)");
+	// Note that we keep the original optimizer object so we can use the COLAMD
+	// ordering it computes.
+	LevenbergMarquardtOptimizer optimizer(graph, initial);
+	Values::const_shared_ptr resultMultifrontal = optimizer.optimized();
+	resultMultifrontal->print("final result (solved with a multifrontal solver)");
+
+	const Ordering& ordering = *optimizer.ordering();
+	GaussianMultifrontalSolver linearSolver(*graph->linearize(*resultMultifrontal, ordering));
 
   // Print marginals covariances for all variables
-  print(resultMF.marginalCovariance(x1), "x1 covariance");
-  print(resultMF.marginalCovariance(x2), "x2 covariance");
-  print(resultMF.marginalCovariance(x3), "x3 covariance");
-  print(resultMF.marginalCovariance(l1), "l1 covariance");
-  print(resultMF.marginalCovariance(l2), "l2 covariance");
+  print(linearSolver.marginalCovariance(ordering[x1]), "x1 covariance");
+  print(linearSolver.marginalCovariance(ordering[x2]), "x2 covariance");
+  print(linearSolver.marginalCovariance(ordering[x3]), "x3 covariance");
+  print(linearSolver.marginalCovariance(ordering[l1]), "l1 covariance");
+  print(linearSolver.marginalCovariance(ordering[l2]), "l2 covariance");
 
 	return 0;
 }
