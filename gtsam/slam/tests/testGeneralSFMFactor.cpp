@@ -21,6 +21,7 @@ using namespace boost;
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/slam/RangeFactor.h>
+#include <gtsam/slam/PriorFactor.h>
 
 using namespace std;
 using namespace gtsam;
@@ -357,6 +358,55 @@ TEST( GeneralSFMFactor, optimize_varK_BA ) {
   Ordering ordering = *getOrdering(X,L);
   NonlinearOptimizer::auto_ptr optimizer = LevenbergMarquardtOptimizer(graph, values, ordering).optimize();
   EXPECT(optimizer->error() < 0.5 * reproj_error * nMeasurements);
+}
+
+/* ************************************************************************* */
+TEST(GeneralSFMFactor, GeneralCameraPoseRange) {
+  // Tests range factor between a GeneralCamera and a Pose3
+  Graph graph;
+  graph.addCameraConstraint(0, GeneralCamera());
+  graph.add(RangeFactor<GeneralCamera, Pose3>(Symbol('x',0), Symbol('x',1), 2.0, sharedSigma(1, 1.0)));
+  graph.add(PriorFactor<Pose3>(Symbol('x',1), Pose3(Rot3(), Point3(1.0, 0.0, 0.0)), sharedSigma(6, 1.0)));
+
+  Values init;
+  init.insert(Symbol('x',0), GeneralCamera());
+  init.insert(Symbol('x',1), Pose3(Rot3(), Point3(1.0,1.0,1.0)));
+
+  // The optimal value between the 2m range factor and 1m prior is 1.5m
+  Values expected;
+  expected.insert(Symbol('x',0), GeneralCamera());
+  expected.insert(Symbol('x',1), Pose3(Rot3(), Point3(1.5,0.0,0.0)));
+
+  LevenbergMarquardtParams params;
+  params.absoluteErrorTol = 1e-9;
+  params.relativeErrorTol = 1e-9;
+  Values actual = *LevenbergMarquardtOptimizer(graph, init, params).optimized();
+
+  EXPECT(assert_equal(expected, actual, 1e-4));
+}
+
+/* ************************************************************************* */
+TEST(GeneralSFMFactor, CalibratedCameraPoseRange) {
+  // Tests range factor between a CalibratedCamera and a Pose3
+  NonlinearFactorGraph graph;
+  graph.add(PriorFactor<CalibratedCamera>(Symbol('x',0), CalibratedCamera(), sharedSigma(6, 1.0)));
+  graph.add(RangeFactor<CalibratedCamera, Pose3>(Symbol('x',0), Symbol('x',1), 2.0, sharedSigma(1, 1.0)));
+  graph.add(PriorFactor<Pose3>(Symbol('x',1), Pose3(Rot3(), Point3(1.0, 0.0, 0.0)), sharedSigma(6, 1.0)));
+
+  Values init;
+  init.insert(Symbol('x',0), CalibratedCamera());
+  init.insert(Symbol('x',1), Pose3(Rot3(), Point3(1.0,1.0,1.0)));
+
+  Values expected;
+  expected.insert(Symbol('x',0), CalibratedCamera(Pose3(Rot3(), Point3(-0.333333333333, 0, 0))));
+  expected.insert(Symbol('x',1), Pose3(Rot3(), Point3(1.333333333333, 0, 0)));
+
+  LevenbergMarquardtParams params;
+  params.absoluteErrorTol = 1e-9;
+  params.relativeErrorTol = 1e-9;
+  Values actual = *LevenbergMarquardtOptimizer(graph, init, params).optimized();
+
+  EXPECT(assert_equal(expected, actual, 1e-4));
 }
 
 /* ************************************************************************* */

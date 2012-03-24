@@ -23,7 +23,7 @@
 using namespace boost;
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/slam/visualSLAM.h>
 
 using namespace std;
@@ -102,7 +102,7 @@ TEST( Graph, optimizeLM)
 
   // Create an optimizer and check its error
   // We expect the initial to be zero because config is the ground truth
-  NonlinearOptimizer::auto_ptr optimizer(new GaussNewtonOptimizer(graph, initialEstimate, ordering));
+  NonlinearOptimizer::auto_ptr optimizer(new LevenbergMarquardtOptimizer(graph, initialEstimate, ordering));
   DOUBLES_EQUAL(0.0, optimizer->error(), 1e-9);
 
   // Iterate once, and the config should not have changed because we started
@@ -139,7 +139,7 @@ TEST( Graph, optimizeLM2)
 
   // Create an optimizer and check its error
   // We expect the initial to be zero because config is the ground truth
-  NonlinearOptimizer::auto_ptr optimizer(new GaussNewtonOptimizer(graph, initialEstimate, ordering));
+  NonlinearOptimizer::auto_ptr optimizer(new LevenbergMarquardtOptimizer(graph, initialEstimate, ordering));
   DOUBLES_EQUAL(0.0, optimizer->error(), 1e-9);
 
   // Iterate once, and the config should not have changed because we started
@@ -172,7 +172,7 @@ TEST( Graph, CHECK_ORDERING)
 
   // Create an optimizer and check its error
   // We expect the initial to be zero because config is the ground truth
-  NonlinearOptimizer::auto_ptr optimizer(new GaussNewtonOptimizer(graph, initialEstimate));
+  NonlinearOptimizer::auto_ptr optimizer(new LevenbergMarquardtOptimizer(graph, initialEstimate));
   DOUBLES_EQUAL(0.0, optimizer->error(), 1e-9);
 
   // Iterate once, and the config should not have changed because we started
