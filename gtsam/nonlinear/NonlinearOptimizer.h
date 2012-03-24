@@ -109,6 +109,9 @@ public:
   /** An auto pointer to this class */
   typedef std::auto_ptr<const NonlinearOptimizer> auto_ptr;
 
+  /** A shared pointer to this class */
+  typedef boost::shared_ptr<const NonlinearOptimizer> shared_ptr;
+
   /** A const shared_ptr to a NonlinearFactorGraph */
   typedef boost::shared_ptr<const NonlinearFactorGraph> SharedGraph;
 
