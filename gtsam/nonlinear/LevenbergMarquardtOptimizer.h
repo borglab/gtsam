@@ -161,6 +161,9 @@ public:
         dimensions_(new vector<size_t>(values_->dims(*ordering_))),
         lambda_(lmParams_->lambdaInitial) {}
 
+  /** Access the variable ordering used by this optimizer */
+  const SharedOrdering& ordering() const { return ordering_; }
+
   /// @}
 
   /// @name Advanced interface

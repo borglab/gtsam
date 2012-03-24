@@ -101,8 +101,7 @@ NonlinearOptimizer::auto_ptr LevenbergMarquardtOptimizer::iterate() const {
         next_error = error;
         lambda /= lambdaFactor;
         break;
-      }
-      else {
+      } else {
         // Either we're not cautious, or the same lambda was worse than the current error.
         // The more adventurous lambda was worse too, so make lambda more conservative
         // and keep the same values.

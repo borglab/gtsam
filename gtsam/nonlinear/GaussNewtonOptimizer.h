@@ -134,6 +134,9 @@ public:
         colamdOrdering_(!ordering || ordering->size() == 0),
         ordering_(colamdOrdering_ ? graph_->orderingCOLAMD(*values_) : ordering) {}
 
+  /** Access the variable ordering used by this optimizer */
+  const SharedOrdering& ordering() const { return ordering_; }
+
   /// @}
 
   /// @name Advanced interface
