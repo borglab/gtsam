@@ -90,7 +90,7 @@ bool checkConvergence(double relativeErrorTreshold, double absoluteErrorTreshold
 	// check if diverges
 	double absoluteDecrease = currentError - newError;
 	if (verbosity >= 2) {
-		if (absoluteDecrease < absoluteErrorTreshold)
+		if (absoluteDecrease <= absoluteErrorTreshold)
 			cout << "absoluteDecrease: " << setprecision(12) << absoluteDecrease << " < " << absoluteErrorTreshold << endl;
 		else
 			cout << "absoluteDecrease: " << setprecision(12) << absoluteDecrease << " >= " << absoluteErrorTreshold << endl;
@@ -99,13 +99,13 @@ bool checkConvergence(double relativeErrorTreshold, double absoluteErrorTreshold
 	// calculate relative error decrease and update currentError
 	double relativeDecrease = absoluteDecrease / currentError;
 	if (verbosity >= 2) {
-		if (relativeDecrease < relativeErrorTreshold)
+		if (relativeDecrease <= relativeErrorTreshold)
 			cout << "relativeDecrease: " << setprecision(12) << relativeDecrease << " < " << relativeErrorTreshold << endl;
 		else
 			cout << "relativeDecrease: " << setprecision(12) << relativeDecrease << " >= " << relativeErrorTreshold << endl;
 	}
-	bool converged = (relativeErrorTreshold && (relativeDecrease < relativeErrorTreshold))
-			|| (absoluteDecrease < absoluteErrorTreshold);
+	bool converged = (relativeErrorTreshold && (relativeDecrease <= relativeErrorTreshold))
+			|| (absoluteDecrease <= absoluteErrorTreshold);
 	if (verbosity >= 1 && converged) {
 		if(absoluteDecrease >= 0.0)
 		  cout << "converged" << endl;
