@@ -405,7 +405,7 @@ public:
    */
   ISAM2Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values(),
       const FastVector<size_t>& removeFactorIndices = FastVector<size_t>(),
-      const boost::optional<FastSet<Key> >& constrainedKeys = boost::none,
+      const boost::optional<FastMap<Key,int> >& constrainedKeys = boost::none,
       bool force_relinearize = false);
 
   /** Access the current linearization point */
@@ -464,7 +464,7 @@ private:
 
   boost::shared_ptr<FastSet<Index> > recalculate(const FastSet<Index>& markedKeys,
       const FastVector<Index>& newKeys, const FactorGraph<GaussianFactor>::shared_ptr newFactors,
-      const boost::optional<FastSet<size_t> >& constrainKeys, ISAM2Result& result);
+      const boost::optional<FastMap<Index,int> >& constrainKeys, ISAM2Result& result);
   //	void linear_update(const GaussianFactorGraph& newFactors);
   void updateDelta(bool forceFullSolve = false) const;
 

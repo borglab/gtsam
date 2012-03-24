@@ -36,7 +36,7 @@ struct ISAM2::Impl {
     size_t nFullSystemVars;
     enum { /*AS_ADDED,*/ COLAMD } algorithm;
     enum { NO_CONSTRAINT, CONSTRAIN_LAST } constrain;
-    boost::optional<const FastSet<Index>&> constrainedKeys;
+    boost::optional<FastMap<Index,int> > constrainedKeys;
   };
 
   /**

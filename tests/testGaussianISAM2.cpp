@@ -837,7 +837,9 @@ TEST(ISAM2, constrained_ordering)
   planarSLAM::Graph fullgraph;
 
   // We will constrain x3 and x4 to the end
-  FastSet<Key> constrained; constrained.insert(planarSLAM::PoseKey(3)); constrained.insert(planarSLAM::PoseKey(4));
+  FastMap<Key, int> constrained;
+  constrained.insert(make_pair(planarSLAM::PoseKey(3), 1));
+  constrained.insert(make_pair(planarSLAM::PoseKey(4), 2));
 
   // i keeps track of the time step
   size_t i = 0;
@@ -926,8 +928,7 @@ TEST(ISAM2, constrained_ordering)
   EXPECT(isam_check(fullgraph, fullinit, isam));
 
   // Check that x3 and x4 are last, but either can come before the other
-  EXPECT((isam.getOrdering()[planarSLAM::PoseKey(3)] == 12 && isam.getOrdering()[planarSLAM::PoseKey(4)] == 13) ||
-      (isam.getOrdering()[planarSLAM::PoseKey(3)] == 13 && isam.getOrdering()[planarSLAM::PoseKey(4)] == 12));
+  EXPECT(isam.getOrdering()[planarSLAM::PoseKey(3)] == 12 && isam.getOrdering()[planarSLAM::PoseKey(4)] == 13);
 
   // Check gradient at each node
   typedef ISAM2::sharedClique sharedClique;

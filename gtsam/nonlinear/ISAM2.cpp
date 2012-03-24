@@ -18,6 +18,8 @@
 #include <boost/foreach.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
+#include <boost/range/adaptors.hpp>
+#include <boost/range/algorithm.hpp>
 
 #include <gtsam/base/timing.h>
 #include <gtsam/base/debug.h>
@@ -148,11 +150,11 @@ ISAM2::getCachedBoundaryFactors(Cliques& orphans) {
 
 boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
     const FastSet<Index>& markedKeys, const FastVector<Index>& newKeys, const FactorGraph<GaussianFactor>::shared_ptr newFactors,
-    const boost::optional<FastSet<Index> >& constrainKeys, ISAM2Result& result) {
+    const boost::optional<FastMap<Index,int> >& constrainKeys, ISAM2Result& result) {
 
   // TODO:  new factors are linearized twice, the newFactors passed in are not used.
 
-  static const bool debug = ISDEBUG("ISAM2 recalculate");
+  const bool debug = ISDEBUG("ISAM2 recalculate");
 
   // Input: BayesTree(this), newFactors
 
@@ -224,13 +226,21 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
     tic(1,"CCOLAMD");
     // Do a batch step - reorder and relinearize all variables
     vector<int> cmember(theta_.size(), 0);
-    FastSet<Index> constrainedKeysSet;
-    if(constrainKeys)
-      constrainedKeysSet = *constrainKeys;
-    else
-      constrainedKeysSet.insert(newKeys.begin(), newKeys.end());
-    if(theta_.size() > constrainedKeysSet.size()) {
-      BOOST_FOREACH(Index var, constrainedKeysSet) { cmember[var] = 1; }
+    if(constrainKeys) {
+      if(!constrainKeys->empty()) {
+        typedef std::pair<const Index,int> Index_Group;
+        if(theta_.size() > constrainKeys->size()) { // Only if some variables are unconstrained
+          BOOST_FOREACH(const Index_Group& index_group, *constrainKeys) {
+            cmember[index_group.first] = index_group.second; }
+        } else {
+          int minGroup = *boost::range::min_element(boost::adaptors::values(*constrainKeys));
+          BOOST_FOREACH(const Index_Group& index_group, *constrainKeys) {
+            cmember[index_group.first] = index_group.second - minGroup; }
+        }
+      }
+    } else {
+      if(theta_.size() > newKeys.size()) // Only if some variables are unconstrained
+        BOOST_FOREACH(Index var, newKeys) { cmember[var] = 1; }
     }
     Permutation::shared_ptr colamd(inference::PermutationCOLAMD_(variableIndex_, cmember));
     Permutation::shared_ptr colamdInverse(colamd->inverse());
@@ -331,10 +341,12 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
     reorderingMode.nFullSystemVars = ordering_.nVars();
     reorderingMode.algorithm = Impl::ReorderingMode::COLAMD;
     reorderingMode.constrain = Impl::ReorderingMode::CONSTRAIN_LAST;
-    if(constrainKeys)
+    if(constrainKeys) {
       reorderingMode.constrainedKeys = *constrainKeys;
-    else
-      reorderingMode.constrainedKeys = FastSet<Index>(newKeys.begin(), newKeys.end());
+    } else {
+      reorderingMode.constrainedKeys = FastMap<Index,int>();
+      BOOST_FOREACH(Index var, newKeys) { reorderingMode.constrainedKeys->insert(make_pair(var, 1)); }
+    }
     Impl::PartialSolveResult partialSolveResult =
         Impl::PartialSolve(factors, *affectedKeysSet, reorderingMode);
     toc(2,"PartialSolve");
@@ -395,10 +407,10 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
 /* ************************************************************************* */
 ISAM2Result ISAM2::update(
     const NonlinearFactorGraph& newFactors, const Values& newTheta, const FastVector<size_t>& removeFactorIndices,
-    const boost::optional<FastSet<Key> >& constrainedKeys, bool force_relinearize) {
+    const boost::optional<FastMap<Key,int> >& constrainedKeys, bool force_relinearize) {
 
-  static const bool debug = ISDEBUG("ISAM2 update");
-  static const bool verbose = ISDEBUG("ISAM2 update verbose");
+  const bool debug = ISDEBUG("ISAM2 update");
+  const bool verbose = ISDEBUG("ISAM2 update verbose");
 
   static int count = 0;
   count++;
@@ -521,11 +533,12 @@ ISAM2Result ISAM2::update(
   tic(9,"recalculate");
   // 8. Redo top of Bayes tree
   // Convert constrained symbols to indices
-  boost::optional<FastSet<Index> > constrainedIndices;
+  boost::optional<FastMap<Index,int> > constrainedIndices;
   if(constrainedKeys) {
-    constrainedIndices.reset(FastSet<Index>());
-    BOOST_FOREACH(Key key, *constrainedKeys) {
-      constrainedIndices->insert(ordering_[key]);
+    constrainedIndices = FastMap<Index,int>();
+    typedef pair<const Key, int> Key_Group;
+    BOOST_FOREACH(Key_Group key_group, *constrainedKeys) {
+      constrainedIndices->insert(make_pair(ordering_[key_group.first], key_group.second));
     }
   }
   boost::shared_ptr<FastSet<Index> > replacedKeys;

@@ -15,6 +15,8 @@
  * @author  Michael Kaess, Richard Roberts
  */
 
+#include <boost/range/adaptors.hpp>
+#include <boost/range/algorithm.hpp>
 #include <gtsam/nonlinear/ISAM2-impl.h>
 #include <gtsam/base/debug.h>
 
@@ -163,7 +165,7 @@ ISAM2::Impl::PartialSolveResult
 ISAM2::Impl::PartialSolve(GaussianFactorGraph& factors,
     const FastSet<Index>& keys, const ReorderingMode& reorderingMode) {
 
-  static const bool debug = ISDEBUG("ISAM2 recalculate");
+  const bool debug = ISDEBUG("ISAM2 recalculate");
 
   PartialSolveResult result;
 
@@ -200,9 +202,15 @@ ISAM2::Impl::PartialSolve(GaussianFactorGraph& factors,
   vector<int> cmember(affectedKeysSelector.size(), 0);
   if(reorderingMode.constrain == ReorderingMode::CONSTRAIN_LAST) {
     assert(reorderingMode.constrainedKeys);
-    if(keys.size() > reorderingMode.constrainedKeys->size()) {
-      BOOST_FOREACH(Index var, *reorderingMode.constrainedKeys) {
-        cmember[affectedKeysSelectorInverse[var]] = 1;
+    if(!reorderingMode.constrainedKeys->empty()) {
+      typedef std::pair<const Index,int> Index_Group;
+      if(keys.size() > reorderingMode.constrainedKeys->size()) { // Only if some variables are unconstrained
+        BOOST_FOREACH(const Index_Group& index_group, *reorderingMode.constrainedKeys) {
+          cmember[affectedKeysSelectorInverse[index_group.first]] = index_group.second; }
+      } else {
+        int minGroup = *boost::range::min_element(boost::adaptors::values(*reorderingMode.constrainedKeys));
+        BOOST_FOREACH(const Index_Group& index_group, *reorderingMode.constrainedKeys) {
+          cmember[affectedKeysSelectorInverse[index_group.first]] = index_group.second - minGroup; }
       }
     }
   }
