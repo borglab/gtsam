@@ -20,6 +20,7 @@ using namespace boost;
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
+#include <gtsam/slam/RangeFactor.h>
 
 using namespace std;
 using namespace gtsam;
@@ -343,7 +344,12 @@ TEST( GeneralSFMFactor, optimize_varK_BA ) {
     values.insert(Symbol('l',i), pt) ;
   }
 
+  // Constrain position of system with the first camera constrained to the origin
   graph.addCameraConstraint(0, X[0]);
+
+  // Constrain the scale of the problem with a soft range factor of 1m between the cameras
+  graph.add(RangeFactor<GeneralCamera,GeneralCamera>(Symbol('x',0), Symbol('x',1), 2.0, sharedSigma(1, 10.0)));
+
   const double reproj_error = 1e-5 ;
 
   Ordering ordering = *getOrdering(X,L);
