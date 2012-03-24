@@ -280,9 +280,7 @@ namespace gtsam {
         Matrix& H1r(*H1);
         H1r.conservativeResize(Eigen::NoChange, pose_.dim() + k_.dim());
         H1r.block(0, pose_.dim(), 1, k_.dim()) = Matrix::Zero(1, k_.dim());
-        gtsam::print(*H1, "H1: ");
       }
-      std::cout << "Range = " << result << std::endl;
       return result;
     }
 
