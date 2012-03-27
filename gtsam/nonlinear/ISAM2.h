@@ -107,6 +107,17 @@ struct ISAM2Params {
 
   bool evaluateNonlinearError; ///< Whether to evaluate the nonlinear error before and after the update, to return in ISAM2Result from update()
 
+  enum Factorization { LDL, QR };
+  /** Specifies whether to use QR or LDL numerical factorization (default: LDL).
+   * LDL is faster but potentially numerically unstable for poorly-conditioned problems, which can occur when
+   * uncertainty is very low in some variables (or dimensions of variables) and very high in others.  QR is
+   * slower but more numerically stable in poorly-conditioned problems.  We suggest using the default of LDL
+   * unless gtsam sometimes throws NegativeMatrixException when your problem's Hessian is actually positive
+   * definite.  For positive definite problems, numerical error accumulation can cause the problem to become
+   * numerically negative or indefinite as solving proceeds, especially when using LDL.
+   */
+  Factorization factorization;
+
   KeyFormatter keyFormatter; ///< A KeyFormatter for when keys are printed during debugging (default: DefaultKeyFormatter)
 
   /** Specify parameters as constructor arguments */
@@ -116,10 +127,12 @@ struct ISAM2Params {
       int _relinearizeSkip = 10, ///< see ISAM2Params::relinearizeSkip
       bool _enableRelinearization = true, ///< see ISAM2Params::enableRelinearization
       bool _evaluateNonlinearError = false, ///< see ISAM2Params::evaluateNonlinearError
+      Factorization _factorization = ISAM2Params::LDL, ///< see ISAM2Params::factorization
       const KeyFormatter& _keyFormatter = DefaultKeyFormatter ///< see ISAM2::Params::keyFormatter
   ) : optimizationParams(_optimizationParams), relinearizeThreshold(_relinearizeThreshold),
       relinearizeSkip(_relinearizeSkip), enableRelinearization(_enableRelinearization),
-      evaluateNonlinearError(_evaluateNonlinearError), keyFormatter(_keyFormatter) {}
+      evaluateNonlinearError(_evaluateNonlinearError), factorization(_factorization),
+      keyFormatter(_keyFormatter) {}
 };
 
 /**
@@ -340,8 +353,6 @@ private:
   std::vector<bool> lastRelinVariables_;
 #endif
 
-  typedef HessianFactor CacheFactor;
-
 public:
 
   typedef BayesTree<GaussianConditional,ISAM2Clique> Base; ///< The BayesTree base class
@@ -460,7 +471,7 @@ private:
 
   FastList<size_t> getAffectedFactors(const FastList<Index>& keys) const;
   FactorGraph<GaussianFactor>::shared_ptr relinearizeAffectedFactors(const FastList<Index>& affectedKeys) const;
-  FactorGraph<CacheFactor> getCachedBoundaryFactors(Cliques& orphans);
+  GaussianFactorGraph getCachedBoundaryFactors(Cliques& orphans);
 
   boost::shared_ptr<FastSet<Index> > recalculate(const FastSet<Index>& markedKeys,
       const FastVector<Index>& newKeys, const FactorGraph<GaussianFactor>::shared_ptr newFactors,

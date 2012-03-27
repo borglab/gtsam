@@ -163,7 +163,7 @@ void ISAM2::Impl::ExpmapMasked(Values& values, const Permuted<VectorValues>& del
 /* ************************************************************************* */
 ISAM2::Impl::PartialSolveResult
 ISAM2::Impl::PartialSolve(GaussianFactorGraph& factors,
-    const FastSet<Index>& keys, const ReorderingMode& reorderingMode) {
+    const FastSet<Index>& keys, const ReorderingMode& reorderingMode, bool useQR) {
 
   const bool debug = ISDEBUG("ISAM2 recalculate");
 
@@ -245,7 +245,10 @@ ISAM2::Impl::PartialSolve(GaussianFactorGraph& factors,
   // eliminate into a Bayes net
   tic(7,"eliminate");
   JunctionTree<GaussianFactorGraph, ISAM2::Clique> jt(factors, affectedFactorsIndex);
-  result.bayesTree = jt.eliminate(EliminatePreferLDL);
+  if(!useQR)
+    result.bayesTree = jt.eliminate(EliminatePreferLDL);
+  else
+    result.bayesTree = jt.eliminate(EliminateQR);
   toc(7,"eliminate");
 
   tic(8,"permute eliminated");

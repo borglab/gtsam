@@ -118,11 +118,12 @@ struct ISAM2::Impl {
    * problem.  This is permuted during use and so is cleared when this function
    * returns in order to invalidate it.
    * \param keys The set of indices used in \c factors.
+   * \param useQR Whether to use QR (if true), or LDL (if false).
    * \return The eliminated BayesTree and the permutation to be applied to the
    * rest of the ISAM2 data.
    */
   static PartialSolveResult PartialSolve(GaussianFactorGraph& factors, const FastSet<Index>& keys,
-      const ReorderingMode& reorderingMode);
+      const ReorderingMode& reorderingMode, bool useQR);
 
   static size_t UpdateDelta(const boost::shared_ptr<ISAM2Clique>& root, std::vector<bool>& replacedKeys, Permuted<VectorValues>& delta, double wildfireThreshold);
 

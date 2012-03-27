@@ -123,12 +123,11 @@ ISAM2::relinearizeAffectedFactors(const FastList<Index>& affectedKeys) const {
 
 /* ************************************************************************* */
 // find intermediate (linearized) factors from cache that are passed into the affected area
-FactorGraph<ISAM2::CacheFactor>
-ISAM2::getCachedBoundaryFactors(Cliques& orphans) {
+GaussianFactorGraph ISAM2::getCachedBoundaryFactors(Cliques& orphans) {
 
   static const bool debug = false;
 
-  FactorGraph<CacheFactor> cachedBoundary;
+  GaussianFactorGraph cachedBoundary;
 
   BOOST_FOREACH(sharedClique orphan, orphans) {
     // find the last variable that was eliminated
@@ -141,7 +140,7 @@ ISAM2::getCachedBoundaryFactors(Cliques& orphans) {
 //    assert(key == lastKey);
 #endif
     // retrieve the cached factor and add to boundary
-    cachedBoundary.push_back(boost::dynamic_pointer_cast<CacheFactor>(orphan->cachedFactor()));
+    cachedBoundary.push_back(orphan->cachedFactor());
     if(debug) { cout << "Cached factor for variable " << key; orphan->cachedFactor()->print(""); }
   }
 
@@ -266,7 +265,12 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
 
     tic(5,"eliminate");
     JunctionTree<GaussianFactorGraph, Base::Clique> jt(factors, variableIndex_);
-    sharedClique newRoot = jt.eliminate(EliminatePreferLDL);
+    sharedClique newRoot;
+    if(params_.factorization == ISAM2Params::LDL)
+      newRoot = jt.eliminate(EliminatePreferLDL);
+    else if(params_.factorization == ISAM2Params::QR)
+      newRoot = jt.eliminate(EliminateQR);
+    else assert(false);
     if(debug) newRoot->print("Eliminated: ");
     toc(5,"eliminate");
 
@@ -314,12 +318,12 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
 
     tic(2,"cached");
     // add the cached intermediate results from the boundary of the orphans ...
-    FactorGraph<CacheFactor> cachedBoundary = getCachedBoundaryFactors(orphans);
+    GaussianFactorGraph cachedBoundary = getCachedBoundaryFactors(orphans);
     if(debug) cachedBoundary.print("Boundary factors: ");
     factors.reserve(factors.size() + cachedBoundary.size());
     // Copy so that we can later permute factors
-    BOOST_FOREACH(const CacheFactor::shared_ptr& cached, cachedBoundary) {
-      factors.push_back(GaussianFactor::shared_ptr(new CacheFactor(*cached)));
+    BOOST_FOREACH(const GaussianFactor::shared_ptr& cached, cachedBoundary) {
+      factors.push_back(cached->clone());
     }
     toc(2,"cached");
 
@@ -348,7 +352,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
       BOOST_FOREACH(Index var, newKeys) { reorderingMode.constrainedKeys->insert(make_pair(var, 1)); }
     }
     Impl::PartialSolveResult partialSolveResult =
-        Impl::PartialSolve(factors, *affectedKeysSet, reorderingMode);
+        Impl::PartialSolve(factors, *affectedKeysSet, reorderingMode, (params_.factorization == ISAM2Params::QR));
     toc(2,"PartialSolve");
 
     // We now need to permute everything according this partial reordering: the
