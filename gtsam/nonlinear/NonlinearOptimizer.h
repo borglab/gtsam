@@ -64,26 +64,55 @@ public:
  * maximum-likelihood estimate of a NonlinearFactorGraph.
  *
  * To use a class derived from this interface, construct the class with a
- * NonlinearFactorGraph and an initial variable assignment.  Next, call the
+ * NonlinearFactorGraph and an initial Values variable assignment.  Next, call the
  * optimize() method, which returns a new NonlinearOptimizer object containing
  * the optimized variable assignment.  Call the values() method to retrieve the
- * optimized estimate.
+ * optimized estimate.  Alternatively, to take a shortcut, instead of calling
+ * optimize(), call optimized(), which performs full optimization and returns
+ * the resulting Values instead of the new optimizer.
  *
  * Note:  This class is immutable, optimize() and iterate() return new
  * NonlinearOptimizer objects, so be sure to use the returned object and not
  * simply keep the unchanged original.
  *
- * Example:
+ * Simple and compact example:
  * \code
-NonlinearOptimizer::auto_ptr optimizer = DoglegOptimizer::Create(graph, initialValues);
-optimizer = optimizer->optimizer();
-Values result = optimizer->values();
+// One-liner to do full optimization and use the result.
+// Note use of "optimized()" to directly return Values, instead of "optimize()" that returns a new optimizer.
+Values::const_shared_ptr result = DoglegOptimizer(graph, initialValues).optimized();
+\endcode
+ *
+ * Example exposing more functionality and details:
+ * \code
+// Create initial optimizer
+DoglegOptimizer initial(graph, initialValues);
+
+// Run full optimization until convergence.
+// Note use of "optimize()" to return a new optimizer, instead of "optimized()" that returns only the Values.
+// NonlinearOptimizer pointers are always returned, though they are actually a derived optimizer type.
+NonlinearOptimizer::auto_ptr final = initial->optimize();
+
+// The new optimizer has results and statistics
+cout << "Converged in " << final->iterations() << " iterations "
+        "with final error " << final->error() << endl;
+
+// The values are a const_shared_ptr (boost::shared_ptr<const Values>)
+Values::const_shared_ptr result = final->values();
+
+// Use the results
 useTheResult(result);
 \endcode
  *
- * Equivalent, but more compact:
+ * Example of setting parameters before optimization:
  * \code
-useTheResult(DoglegOptimizer(graph, initialValues).optimize()->values());
+// Each derived optimizer type has its own parameters class, which inherits from NonlinearOptimizerParams
+DoglegParams params;
+params.factorization = DoglegParams::QR;
+params.relativeErrorTol = 1e-3;
+params.absoluteErrorTol = 1e-3;
+
+// Optimize
+Values::const_shared_ptr result = DoglegOptimizer(graph, initialValues, params).optimized();
 \endcode
  *
  * This interface also exposes an iterate() method, which performs one
