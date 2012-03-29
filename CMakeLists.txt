@@ -75,6 +75,7 @@ endif(GTSAM_USE_QUATERNIONS)
 
 # Avoid building non-installed exes and unit tests when installing
 # FIXME: breaks generation and install of matlab toolbox
+# FIXME: can't add install dependencies, so libraries never get built
 #set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY TRUE)
 
 # Pull in infrastructure
