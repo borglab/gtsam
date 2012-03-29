@@ -21,6 +21,6 @@ endif(GTSAM_BUILD_TESTS)
 
 # Build timing scripts
 if (GTSAM_BUILD_TIMING)
-    gtsam_add_timing(geometry "${geometry_local_libs}")
+    gtsam_add_subdir_timing(geometry "${geometry_local_libs}" "gtsam-static" "${geometry_excluded_files}") 
 endif(GTSAM_BUILD_TIMING)
 

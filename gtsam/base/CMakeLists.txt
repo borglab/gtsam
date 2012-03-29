@@ -20,6 +20,6 @@ endif(GTSAM_BUILD_TESTS)
 
 # Build timing scripts
 if (GTSAM_BUILD_TIMING)
-    gtsam_add_timing(base "${base_local_libs}")
+    gtsam_add_subdir_timing(base "${base_local_libs}" "gtsam-static" "${base_excluded_files}") 
 endif(GTSAM_BUILD_TIMING)
 
