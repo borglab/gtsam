@@ -158,6 +158,12 @@ $] cmake -DGTSAM_BUILD_CONVENIENCE_LIBRARIES:OPTION=ON ..
   				 link all of the tests at once. This option is best for users of GTSAM, 
   				 as it avoids rebuilding the entirety of gtsam an extra time. 
 
+CMAKE_BUILD_TYPE: We support several build configurations for GTSAM (case insensitive)
+  Debug (default)  All error checking options on, no optimization. Use for development.
+  Release          Optimizations turned on, no debug symbols.           
+  Timing           Adds ENABLE_TIMING flag to provide statistics on operation 
+  Profiling        Standard configuration for use during profiling
+  RelWithDebInfo   Same as Release, but with the -g flag for debug symbols
 
 
 Build and Install

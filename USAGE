@@ -20,6 +20,9 @@ Compiling/Linking with gtsam:
   	the library has also been designed to make use of XML serialization through
   	the Boost.serialization library, which requires the the Boost.serialization
   	headers and binaries to be linked.  
+  	
+  	If you use CMake for your project, you can use the CMake scripts in the 
+  	cmake folder for finding GTSAM, CppUnitLite, and Wrap.  
 
 Examples:
 	To see how the library works, examine the unit tests provided.  
@@ -27,7 +30,7 @@ Examples:
 
 Overview
 ---------------------------------------------------
-The gtsam library has three primary components necessary for the construction
+The GTSAM library has three primary components necessary for the construction
 of factor graph representation and optimization which users will need to 
 adapt to their particular problem.  
 
@@ -48,19 +51,20 @@ Factors:
 VSLAM Example
 ---------------------------------------------------
 The visual slam example shows a full implementation of a slam system.  The example contains
-derived versions of NonlinearFactor, NonlinearFactorGraph, and a Config, in classes
-VSLAMFactor, VSLAMGraph, and VSLAMConfig, respectively.  
+derived versions of NonlinearFactor, NonlinearFactorGraph, in classes visualSLAM::ProjectionFactor, 
+visualSLAM::Graph, respectively. The values for the system are stored in the generic 
+Values structure. For definitions and interface, see gtsam/slam/visualSLAM.h. 
 
 The clearest example of the use of the graph to find a solution is in 
-testVSLAMGraph.  The basic process for using graphs is as follows (and can be seen in 
+testVSLAM.  The basic process for using graphs is as follows (and can be seen in 
 the test):
-  - Create a NonlinearFactorGraph object (VSLAMGraph)
-  - Add factors to the graph (note the use of Boost.shared_ptr here) (VSLAMFactor)
-  - Create an initial configuration (VSLAMConfig)
+  - Create a NonlinearFactorGraph object (visualSLAM::Graph)
+  - Add factors to the graph (note the use of Boost.shared_ptr here) (visualSLAM::ProjectionFactor)
+  - Create an initial configuration (Values)
   - Create an elimination ordering of variables (this must include all variables)
   - Create and initialize a NonlinearOptimizer object (Note that this is a generic 
       algorithm that does not need to be derived for a particular problem)
   - Call optimization functions with the optimizer to optimize the graph
-  - Extract an updated configuration from the optimizer
+  - Extract an updated values from the optimizer
  
   

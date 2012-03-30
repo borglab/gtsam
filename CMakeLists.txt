@@ -22,7 +22,7 @@ endif()
 # Default to Debug mode
 if(NOT FIRST_PASS_DONE)
   set(CMAKE_BUILD_TYPE "Debug" CACHE STRING
-      "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
+      "Choose the type of build, options are: Debug Release Timing Profiling RelWithDebInfo."
       FORCE)
 endif()
 
