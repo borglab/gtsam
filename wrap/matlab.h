@@ -294,7 +294,6 @@ public:
 	ObjectHandle(T* ptr) :
 		type(&typeid(T)), t(shared_ptr<T> (ptr)) {
 		signature = this;
-		this->print("Constructor");
 	}
 
 	// Constructor for shared pointers
