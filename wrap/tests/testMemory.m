@@ -2,6 +2,6 @@
 %Andrew Melim
 
 addpath([pwd,'/../../../toolbox/gtsam']);
-for i=1:10
+for i=1:100000
     p = gtsamPoint2()
 end
