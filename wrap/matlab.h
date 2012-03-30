@@ -281,8 +281,6 @@ gtsam::Matrix unwrap< gtsam::Matrix >(const mxArray* array) {
 // inspired by mexhandle, but using shared_ptr
 //*****************************************************************************
 
-template<typename T> class Collector;
-
 template<typename T>
 class ObjectHandle {
 private:
@@ -296,13 +294,13 @@ public:
 	ObjectHandle(T* ptr) :
 		type(&typeid(T)), t(shared_ptr<T> (ptr)) {
 		signature = this;
-		Collector<T>::register_handle(this);
+		this->print("Constructor");
 	}
 
 	// Constructor for shared pointers
 	// Creates shared pointer, will delete if is last one to hold pointer
 	ObjectHandle(shared_ptr<T> ptr) :
-		type(&typeid(T)), t(ptr) {
+		/*type(&typeid(T)),*/ t(ptr) {
 		signature = this;
 	}
 
@@ -364,42 +362,6 @@ public:
 		return obj;
 	}
 
-	friend class Collector<T> ; // allow Collector access to signature
-};
-
-// --------------------------------------------------------- 
-// ------------------ Garbage Collection -------------------
-// --------------------------------------------------------- 
-
-// Garbage collection singleton (one collector object for each type T).
-// Ensures that registered handles are deleted when the dll is released (they
-// may also be deleted previously without problem).
-//    The Collector provides protection against resource leaks in the case
-// where 'clear all' is called in MatLab. (This is because MatLab will call
-// the destructors of statically allocated objects but not free-store allocated
-// objects.)
-template <typename T>
-class Collector {
-  typedef ObjectHandle<T> Handle;
-  typedef std::list< Handle* > ObjList;
-  typedef typename ObjList::iterator iterator;
-  ObjList objlist;
-public:
-  ~Collector() {
-    for (iterator i= objlist.begin(); i!=objlist.end(); ++i) {
-      if ((*i)->signature == *i) // check for valid signature
-	delete *i;
-    }
-  }
-
-  static void register_handle (Handle* obj) {
-    static Collector singleton;
-    singleton.objlist.push_back(obj);
-  }
-
-private: // prevent construction
-  Collector() {}
-  Collector(const Collector&);
 };
 
 //*****************************************************************************
@@ -462,6 +424,7 @@ mxArray* wrap_shared_ptr(shared_ptr< Class > shared_ptr, const char *classname) 
 */
 template <typename Class>
 shared_ptr<Class> unwrap_shared_ptr(const mxArray* obj, const string& className) {
+    //Why is this here?
 #ifndef UNSAFE_WRAP
   bool isClass = mxIsClass(obj, className.c_str());
   if (!isClass) {
@@ -473,6 +436,22 @@ shared_ptr<Class> unwrap_shared_ptr(const mxArray* obj, const string& className)
   if (mxh==NULL) error("unwrap_reference: invalid wrap object");
   ObjectHandle<Class>* handle = ObjectHandle<Class>::from_mex_handle(mxh);
   return handle->get_object();
+}
+
+template <typename Class>
+void delete_shared_ptr(const mxArray* obj, const string& className) {
+    //Why is this here?
+#ifndef UNSAFE_WRAP
+  bool isClass = true;//mxIsClass(obj, className.c_str());
+  if (!isClass) {
+    mexPrintf("Expected %s, got %s\n", className.c_str(), mxGetClassName(obj));
+    error("Argument has wrong type.");
+  }
+#endif
+  mxArray* mxh = mxGetProperty(obj,0,"self");
+  if (mxh==NULL) error("unwrap_reference: invalid wrap object");
+  ObjectHandle<Class>* handle = ObjectHandle<Class>::from_mex_handle(mxh);
+  delete handle;
 }
 
 //*****************************************************************************
