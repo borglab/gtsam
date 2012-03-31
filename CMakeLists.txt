@@ -20,23 +20,25 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
 endif()
 
 # Default to Debug mode
-if(NOT FIRST_PASS_DONE)
+if(NOT FIRST_PASS_DONE AND NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Debug" CACHE STRING
-      "Choose the type of build, options are: Debug Release Timing Profiling RelWithDebInfo."
+      "Choose the type of build, options are: None Debug Release Timing Profiling RelWithDebInfo."
       FORCE)
 endif()
 
 # Check build types
 if(${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} VERSION_GREATER 2.8 OR ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} VERSION_EQUAL 2.8)
-  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release Timing Profiling RelWithDebInfo MinSizeRel)
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS None Debug Release Timing Profiling RelWithDebInfo MinSizeRel)
 endif()
 string(TOLOWER "${CMAKE_BUILD_TYPE}" cmake_build_type_tolower)
-if(    NOT cmake_build_type_tolower STREQUAL "debug"
+if(    NOT cmake_build_type_tolower STREQUAL ""
+   AND NOT cmake_build_type_tolower STREQUAL "none"
+   AND NOT cmake_build_type_tolower STREQUAL "debug"
    AND NOT cmake_build_type_tolower STREQUAL "release"
    AND NOT cmake_build_type_tolower STREQUAL "timing"
    AND NOT cmake_build_type_tolower STREQUAL "profiling"
    AND NOT cmake_build_type_tolower STREQUAL "relwithdebinfo")
-  message(FATAL_ERROR "Unknown build type \"${CMAKE_BUILD_TYPE}\". Allowed values are Debug, Release, Timing, Profiling, RelWithDebInfo (case-insensitive).")
+  message(FATAL_ERROR "Unknown build type \"${CMAKE_BUILD_TYPE}\". Allowed values are None, Debug, Release, Timing, Profiling, RelWithDebInfo (case-insensitive).")
 endif()
 
 # Add debugging flags but only on the first pass
