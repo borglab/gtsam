@@ -13,33 +13,33 @@ Please see USAGE for an example on how to use GTSAM.
 
 The code is organized according to the following directory structure:
  
-  3rdparty    local copies of third party libraries - Eigen3 and CCOLAMD
-  base        provides some base Math and data structures, as well as test-related utilities
-  geometry    points, poses, tensors, etc
-  inference   core graphical model inference such as factor graphs, junction trees, Bayes nets, Bayes trees 
-  linear      inference specialized to Gaussian linear case, GaussianFactorGraph etc...
-  nonlinear   non-linear factor graphs and non-linear optimization
-  slam        SLAM and visual SLAM application code
+  3rdparty      local copies of third party libraries - Eigen3 and CCOLAMD
+  base          provides some base Math and data structures, as well as test-related utilities
+  geometry      points, poses, tensors, etc
+  inference     core graphical model inference such as factor graphs, junction trees, Bayes nets, Bayes trees 
+  linear        inference specialized to Gaussian linear case, GaussianFactorGraph etc...
+  nonlinear     non-linear factor graphs and non-linear optimization
+  slam          SLAM and visual SLAM application code
   
 This library contains unchanged copies of two third party libraries, with documentation 
 of licensing in LICENSE and as follows: 
   - CCOLAMD 2.73: Tim Davis' constrained column approximate minimum degree ordering library
     - http://www.cise.ufl.edu/research/sparse
     - Licenced under LGPL v2.1, provided in gtsam/3rdparty/CCOLAMD/Doc/lesser.txt
-  - Eigen 3.0.3:  General C++ matrix and linear algebra library
+  - Eigen 3.0.5:  General C++ matrix and linear algebra library
     - Licenced under LGPL v3, provided in gtsam/3rdparty/Eigen/COPYING.LGPL
   
-All of the above contain code and tests, and build local shared libraries that are then
-bundled in a top-level shared library libgtsam.la. After this is built, you can also run
-the more involved tests, which test the entire library:  
+All of the above contain code and tests, and produce a single library libgtsam. 
+After this is built, you can also run the more involved tests, which test the entire library:  
   
-  tests       more involved tests that depend on slam
-  examples    Demo applications as a tutorial for using gtsam
+  tests         more involved tests that depend on slam
+  examples      Demo applications as a tutorial for using gtsam
+  cmake         CMake scripts used within the library, as well as for finding GTSAM by dependent projects
 
 Finally, there are some local libraries built needed in the rest of the code:
 
-  CppUnitLite unit test library
-  m4          local M4 macros
+  CppUnitLite   unit test library customized for use with gtsam
+  wrap          code generation utility for the Matlab interface to gtsam
 
 Important Installation Notes Specific to GTSAM
 ----------------------------------------------
@@ -47,8 +47,14 @@ Important Installation Notes Specific to GTSAM
 1)
 GTSAM requires the following libraries to be installed on your system:
  - BOOST version 1.40 or greater (install through Linux repositories or MacPorts)
- - Automake
- - libtool
+
+GTSAM uses CMake (http://www.cmake.org/) for build automation
+ - Installed cmake version must be 2.6 or higher
+
+Tested compilers
+ - gcc
+ - clang
+ - OSX gcc
 
 2)
 GTSAM makes extensive use of debug assertions, even for checking input of
@@ -71,54 +77,115 @@ gtsam will need to be compiled with _GLIBCXX_DEBUG as well, due to the use of
 header-only Eigen.  
 
 3)
-Putting the above together, here are some sample ./configure commands for
-compiling gtsam:
+GTSAM has been written to support the creation of API documentation using
+doxygen.  To create html documentation for GTSAM, run the the script 
+makedoc.sh.  
 
-NOTE: If checked out from SVN, before attempting to compile run the command ./autogen.sh
+4)
+For developers, we primarily use the Eclipse IDE for development, and provide
+an Eclipse project file with a variety of make targets to build and debug 
+from within Eclipse. 
 
-For Debugging (native Snow Leopard g++ compiler):
-./configure CXXFLAGS="-fno-inline -g -Wall" \
-    LDFLAGS="-fno-inline -g -Wall" 
+5)
+After installing prerequisites for building GTSAM, you can configure and build
+GTSAM using CMake with the default options with the quickstart options. For 
+details on the full functionality of CMake, see the CMake documentation.  
 
-For Debugging (Linux or MacPorts g++ compilers):
-./configure CXXFLAGS="-fno-inline -g -Wall -D_GLIBCXX_DEBUG" \
-    LDFLAGS="-fno-inline -g -Wall" 
-
-For Performance:
-./configure CXXFLAGS="-DNDEBUG -O3" LDFLAGS="-O3" 
-
-After that (this would be for an in-source build, see next for out-of-source):
-$ make
-$ make check (optional, runs unit tests)
-$ make install
-
-
-Out-of-source build:
---------------------
-The above will put object files and executables in the source directories. If you like, it is 
-very easy to configure the libraries to put all these in a parallel build tree so they do not 
-clutter the source tree. To do this, instead of running configure in the gtsam directory itself, 
-run it in sub-directory of choice, e.g., starting out in the main GTSAM folder:
+- CMake Quickstart
+Installs to the default system install path and builds all components.  From a terminal, 
+starting in the root library folder, execute commands as follows for an out-of-source
+build:
 
 $] mkdir build
 $] cd build
-
-if you want to install:
-
-$] ../configure ..... (command as above)
+$] cmake ..
+$] make check (optional, runs unit tests)
 $] make install
 
-or if you dont want to install then you can:
+This will build the library and unit tests, run all of the unit tests, and then install
+the library itself, as well as the Matlab toolbox.
 
-$] ../configure ..... (command as above)
-$] ../configure --disable-shared
-$] make (or make check)
+- Additional CMake Options and Details
 
-Built-in Unit Tests:
---------------------
-There is one more optional step in which you can invoke the unit tests included in the gtsam libraries. 
-$] make check
-By verifying all the test results are positive, you can make sure that the functionalities of the GTSAM
-libraries are correct.
+The cmake scripts force a out-of-source build, so inside gtsam, 
+create a new folder called "build", and run cmake. From the command line:
+
+$] mkdir build
+$] cd build
+$] cmake ..
+
+Note the ".." after the cmake command - it tells cmake to look for the 
+root CMakeLists.txt file in the root gtsam folder instead of in the build folder. 
+This is a necessary argument for starting cmake in all of its variations. 
+There a few ways of actually doing the configuration to make adjusting options easier.
+
+  cmake       the regular command-line version of cmake, allows configuration with scripts
+  ccmake      the curses GUI for cmake, which lets you see the various options, change them, and run configuration.
+  cmake-gui   a real GUI for cmake, which has a similar interface to ccmake, but with easier controls. 
+
+Note that during configuration, the settings get cached so if you rerun cmake later, 
+it will keep your previous settings. In particular, you can use the "cmake" build target 
+within the Eclipse project to update the configuration, which will be necessary 
+when file structures change.  
+
+While it is possible to use command-line arguments to cmake to change configuration 
+options, it is usually easier to use cmake-gui or ccmake to set parameters and use the other flags.
+
+Important CMake configuration options: 
+
+CMAKE_INSTALL_PREFIX: this is the folder where installed files will go, and for 
+our development purposes, should be set to the home folder, like so
+$] cmake -DCMAKE_INSTALL_PREFIX:PATH=$HOME ..
+
+GTSAM_TOOLBOX_INSTALL_PATH: When the library is installed with "make install", 
+the generated matlab toolbox code (created by wrap) gets installed as well in 
+this path. For example, use "/home/username/borg/toolbox" to install the 
+toolbox in your borg/toolbox folder. The matlab toolbox will get installed 
+into borg/toolbox/gtsam.
+$] cmake -DGTSAM_TOOLBOX_INSTALL_PATH:PATH=$HOME/borg/toolbox ..
+
+GTSAM_BUILD_CONVENIENCE_LIBRARIES: This is a build option to allow for tests in 
+subfolders to be linked against convenience libraries rather than the full libgtsam. 
+Set with the command line as follows:
+$] cmake -DGTSAM_BUILD_CONVENIENCE_LIBRARIES:OPTION=ON ..
+  ON (Default)   This builds convenience libraries and links tests against them. This 
+  				 option is suggested for gtsam developers, as it is possible to build 
+  				 and run tests without first building the rest of the library, and 
+  				 speeds up compilation for a single test. The downside of this option 
+  				 is that it will build the entire library again to build the full 
+  				 libgtsam library, so build/install will be slower.
+  OFF            This will build all of libgtsam before any of the tests, and then 
+  				 link all of the tests at once. This option is best for users of GTSAM, 
+  				 as it avoids rebuilding the entirety of gtsam an extra time. 
+
+CMAKE_BUILD_TYPE: We support several build configurations for GTSAM (case insensitive)
+  Debug (default)  All error checking options on, no optimization. Use for development.
+  Release          Optimizations turned on, no debug symbols.           
+  Timing           Adds ENABLE_TIMING flag to provide statistics on operation 
+  Profiling        Standard configuration for use during profiling
+  RelWithDebInfo   Same as Release, but with the -g flag for debug symbols
+
+
+Build and Install
+
+After configuring, you use make just as you normally would, and the all, check and 
+install targets work as in autotools. Note that all targets are at the root level 
+of the build folder. You can also build any of the subfolders individually as 
+individual targets, such as "make geometry slam" to build both geometry and slam. 
+Running "make install" will install the library to the prefix location.
+
+Check
+
+As with autotools, "make check" will build and run all of the tests. You can also 
+run "make timing" to build all of the timing scripts. To run check on a particular 
+subsection, there is a convention of "make check.[subfolder]", so to run just the 
+geometry tests, run "make check.geometry". Individual tests can be run by 
+appending ".run" to the name of the test, for example, to run testMatrix, 
+run "make testMatrix.run". 
+
+The make target "wrap" will build the wrap binary, and the "wrap_gtsam" target will 
+generate code for the toolbox. By default, the toolbox will be created and installed 
+by the install target for the library. To change the install folder for the toolbox, 
+choose a different setting during cmake settings for the toolbox install path. 
 
 

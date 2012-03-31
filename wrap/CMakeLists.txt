@@ -17,8 +17,9 @@ install(FILES matlab.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/wrap)
 
 # Build tests
 if (GTSAM_BUILD_TESTS)
-    add_definitions(-DTOPSRCDIR="${CMAKE_SOURCE_DIR}") 
-    gtsam_add_external_tests(wrap wrap_lib)
+    add_definitions(-DTOPSRCDIR="${CMAKE_SOURCE_DIR}")
+    set(wrap_local_libs wrap_lib) 
+    gtsam_add_subdir_tests("wrap" "${wrap_local_libs}" "${wrap_local_libs}" "") 
 endif(GTSAM_BUILD_TESTS)
 
 # Wrap codegen

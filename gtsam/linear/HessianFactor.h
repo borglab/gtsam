@@ -33,7 +33,7 @@ namespace gtsam {
 
   // Forward declarations
   class JacobianFactor;
-  struct SharedDiagonal;
+  class SharedDiagonal;
   class GaussianConditional;
   template<class C> class BayesNet;
 

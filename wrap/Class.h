@@ -20,6 +20,7 @@
 #include <string>
 
 #include "Constructor.h"
+#include "Deconstructor.h"
 #include "Method.h"
 #include "StaticMethod.h"
 
@@ -37,12 +38,15 @@ struct Class {
   std::vector<StaticMethod> static_methods; ///< Static methods
   std::vector<std::string> namespaces;      ///< Stack of namespaces
   std::vector<std::string> includes;        ///< header include overrides
+  Deconstructor d;
   bool verbose_;                            ///< verbose flag
 
   // And finally MATLAB code is emitted, methods below called by Module::matlab_code
   void matlab_proxy(const std::string& classFile) const;          ///< emit proxy class
   void matlab_constructors(const std::string& toolboxPath,
 			   const std::vector<std::string>& using_namespaces) const;   ///< emit constructor wrappers
+  void matlab_deconstructor(const std::string& toolboxPath,
+               const std::vector<std::string>& using_namespaces) const;
   void matlab_methods(const std::string& classPath,
 			   const std::vector<std::string>& using_namespaces) const;   ///< emit method wrappers
   void matlab_static_methods(const std::string& classPath,

@@ -12,6 +12,8 @@
 /**
  * @file Module.ccp
  * @author Frank Dellaert
+ * @author Alex Cunningham
+ * @author Andrew Melim
  **/
 
 #include "Module.h"
@@ -49,6 +51,7 @@ Module::Module(const string& interfacePath,
   Argument arg0, arg;
   ArgumentList args0, args;
   Constructor constructor0(enable_verbose), constructor(enable_verbose);
+  Deconstructor deconstructor0(enable_verbose), deconstructor(enable_verbose);
   Method method0(enable_verbose), method(enable_verbose);
   StaticMethod static_method0(enable_verbose), static_method(enable_verbose);
   Class cls0(enable_verbose),cls(enable_verbose);
@@ -180,7 +183,10 @@ Module::Module(const string& interfacePath,
   		>> str_p("};"))
   		[assign_a(cls.namespaces, namespaces)]
   		[append_a(cls.includes, namespace_includes)]
+        [assign_a(deconstructor.name,cls.name)]
+        [assign_a(cls.d, deconstructor)]
   		[push_back_a(classes,cls)]
+        [assign_a(deconstructor,deconstructor0)]
   		[assign_a(cls,cls0)];
 
 	Rule namespace_def_p =
@@ -338,6 +344,9 @@ void Module::matlab_code(const string& toolboxPath,
       cls.matlab_constructors(toolboxPath,using_namespaces);
       cls.matlab_static_methods(toolboxPath,using_namespaces);
       cls.matlab_methods(classPath,using_namespaces);
+
+      // create deconstructor
+      cls.matlab_deconstructor(toolboxPath,using_namespaces);
 
       // add lines to make m-file
       makeModuleMfile.oss << "%% " << cls.qualifiedName() << endl;

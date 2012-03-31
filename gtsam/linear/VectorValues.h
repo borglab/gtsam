@@ -19,6 +19,7 @@
 
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/types.h>
+#include <gtsam/inference/Permutation.h>
 
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
@@ -177,7 +178,7 @@ namespace gtsam {
 
     /** Construct from a container of variable dimensions (in variable order), without initializing any values. */
     template<class CONTAINER>
-    VectorValues(const CONTAINER& dimensions) { append(dimensions); }
+    explicit VectorValues(const CONTAINER& dimensions) { append(dimensions); }
 
     /** Construct to hold nVars vectors of varDim dimension each. */
     VectorValues(Index nVars, size_t varDim) { resize(nVars, varDim); }
@@ -272,6 +273,11 @@ namespace gtsam {
      * same structure (checked when NDEBUG is not defined).
      */
     void operator+=(const VectorValues& c);
+
+    /** Assignment operator from Permuted<VectorValues>, requires the dimensions
+     * of the assignee to already be properly pre-allocated.
+     */
+    VectorValues& operator=(const Permuted<VectorValues>& rhs);
 
     /// @}
 
@@ -400,6 +406,44 @@ namespace gtsam {
       assert(values_.rows() == maps_.back().data() + maps_.back().rows() - maps_.front().data());
     }
 #endif
+  }
+
+  namespace internal {
+  /* ************************************************************************* */
+  // Helper function, extracts vectors with variable indices
+  // in the first and last iterators, and concatenates them in that order into the
+  // output.
+  template<class VALUES, typename ITERATOR>
+  Vector extractVectorValuesSlices(const VALUES& values, ITERATOR first, ITERATOR last) {
+    // Find total dimensionality
+    int dim = 0;
+    for(ITERATOR j = first; j != last; ++j)
+      dim += values[*j].rows();
+
+    // Copy vectors
+    Vector ret(dim);
+    int varStart = 0;
+    for(ITERATOR j = first; j != last; ++j) {
+      ret.segment(varStart, values[*j].rows()) = values[*j];
+      varStart += values[*j].rows();
+    }
+    return ret;
+  }
+
+  /* ************************************************************************* */
+  // Helper function, writes to the variables in values
+  // with indices iterated over by first and last, interpreting vector as the
+  // concatenated vectors to write.
+  template<class VECTOR, class VALUES, typename ITERATOR>
+  void writeVectorValuesSlices(const VECTOR& vector, VALUES& values, ITERATOR first, ITERATOR last) {
+    // Copy vectors
+    int varStart = 0;
+    for(ITERATOR j = first; j != last; ++j) {
+      values[*j] = vector.segment(varStart, values[*j].rows());
+      varStart += values[*j].rows();
+    }
+    assert(varStart == vector.rows());
+  }
   }
 
 } // \namespace gtsam

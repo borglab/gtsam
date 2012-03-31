@@ -27,7 +27,8 @@ namespace gtsam { // note, deliberately not in noiseModel namespace
 	 * A useful convenience class to refer to a shared Gaussian model
 	 * Also needed to make noise models in matlab
 	 */
-	struct SharedGaussian: public SharedNoiseModel {
+	class SharedGaussian: public SharedNoiseModel {
+	public:
 
 	  typedef SharedNoiseModel Base;
 

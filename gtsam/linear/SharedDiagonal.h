@@ -25,7 +25,8 @@ namespace gtsam { // note, deliberately not in noiseModel namespace
 	// A useful convenience class to refer to a shared Diagonal model
 	// There are (somewhat dangerous) constructors from Vector and pair<size_t,double>
 	// that call Sigmas and Sigma, respectively.
-	struct SharedDiagonal: public noiseModel::Diagonal::shared_ptr {
+	class SharedDiagonal: public noiseModel::Diagonal::shared_ptr {
+	public:
 		SharedDiagonal() {
 		}
 		SharedDiagonal(const noiseModel::Diagonal::shared_ptr& p) :

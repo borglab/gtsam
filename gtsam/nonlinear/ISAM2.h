@@ -12,7 +12,7 @@
 /**
  * @file    ISAM2.h
  * @brief   Incremental update functionality (ISAM2) for BayesTree, with fluid relinearization.
- * @author  Michael Kaess
+ * @author  Michael Kaess, Richard Roberts
  */
 
 // \callgraph
@@ -21,10 +21,8 @@
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
-#include <gtsam/inference/BayesTree.h>
+#include <gtsam/linear/GaussianBayesTree.h>
 
-// Workaround for boost < 1.47, see note in file
-//#include <gtsam/base/boost_variant_with_workaround.h>
 #include <boost/variant.hpp>
 
 namespace gtsam {
@@ -56,15 +54,18 @@ struct ISAM2GaussNewtonParams {
  */
 struct ISAM2DoglegParams {
   double initialDelta; ///< The initial trust region radius for Dogleg
+  double wildfireThreshold; ///< Continue updating the linear delta only when changes are above this threshold (default: 0.001)
   DoglegOptimizerImpl::TrustRegionAdaptationMode adaptationMode; ///< See description in DoglegOptimizerImpl::TrustRegionAdaptationMode
   bool verbose; ///< Whether Dogleg prints iteration and convergence information
 
   /** Specify parameters as constructor arguments */
   ISAM2DoglegParams(
-      double _initialDelta = 1.0, ///< see ISAM2DoglegParams public variables, ISAM2DoglegParams::initialDelta
-      DoglegOptimizerImpl::TrustRegionAdaptationMode _adaptationMode = DoglegOptimizerImpl::SEARCH_EACH_ITERATION, ///< see ISAM2DoglegParams public variables, ISAM2DoglegParams::adaptationMode
-      bool _verbose = false ///< see ISAM2DoglegParams public variables, ISAM2DoglegParams::verbose
-  ) : initialDelta(_initialDelta), adaptationMode(_adaptationMode), verbose(_verbose) {}
+      double _initialDelta = 1.0, ///< see ISAM2DoglegParams::initialDelta
+      double _wildfireThreshold = 1e-5, ///< see ISAM2DoglegParams::wildfireThreshold
+      DoglegOptimizerImpl::TrustRegionAdaptationMode _adaptationMode = DoglegOptimizerImpl::SEARCH_EACH_ITERATION, ///< see ISAM2DoglegParams::adaptationMode
+      bool _verbose = false ///< see ISAM2DoglegParams::verbose
+  ) : initialDelta(_initialDelta), wildfireThreshold(_wildfireThreshold),
+  adaptationMode(_adaptationMode), verbose(_verbose) {}
 };
 
 /**
@@ -106,6 +107,17 @@ struct ISAM2Params {
 
   bool evaluateNonlinearError; ///< Whether to evaluate the nonlinear error before and after the update, to return in ISAM2Result from update()
 
+  enum Factorization { LDL, QR };
+  /** Specifies whether to use QR or LDL numerical factorization (default: LDL).
+   * LDL is faster but potentially numerically unstable for poorly-conditioned problems, which can occur when
+   * uncertainty is very low in some variables (or dimensions of variables) and very high in others.  QR is
+   * slower but more numerically stable in poorly-conditioned problems.  We suggest using the default of LDL
+   * unless gtsam sometimes throws NegativeMatrixException when your problem's Hessian is actually positive
+   * definite.  For positive definite problems, numerical error accumulation can cause the problem to become
+   * numerically negative or indefinite as solving proceeds, especially when using LDL.
+   */
+  Factorization factorization;
+
   KeyFormatter keyFormatter; ///< A KeyFormatter for when keys are printed during debugging (default: DefaultKeyFormatter)
 
   /** Specify parameters as constructor arguments */
@@ -115,10 +127,12 @@ struct ISAM2Params {
       int _relinearizeSkip = 10, ///< see ISAM2Params::relinearizeSkip
       bool _enableRelinearization = true, ///< see ISAM2Params::enableRelinearization
       bool _evaluateNonlinearError = false, ///< see ISAM2Params::evaluateNonlinearError
+      Factorization _factorization = ISAM2Params::LDL, ///< see ISAM2Params::factorization
       const KeyFormatter& _keyFormatter = DefaultKeyFormatter ///< see ISAM2::Params::keyFormatter
   ) : optimizationParams(_optimizationParams), relinearizeThreshold(_relinearizeThreshold),
       relinearizeSkip(_relinearizeSkip), enableRelinearization(_enableRelinearization),
-      evaluateNonlinearError(_evaluateNonlinearError), keyFormatter(_keyFormatter) {}
+      evaluateNonlinearError(_evaluateNonlinearError), factorization(_factorization),
+      keyFormatter(_keyFormatter) {}
 };
 
 /**
@@ -181,17 +195,16 @@ struct ISAM2Result {
   FastVector<size_t> newFactorsIndices;
 };
 
-template<class CONDITIONAL>
-struct ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique<CONDITIONAL>, CONDITIONAL> {
+struct ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique, GaussianConditional> {
 
-  typedef ISAM2Clique<CONDITIONAL> This;
-  typedef BayesTreeCliqueBase<This,CONDITIONAL> Base;
+  typedef ISAM2Clique This;
+  typedef BayesTreeCliqueBase<This,GaussianConditional> Base;
   typedef boost::shared_ptr<This> shared_ptr;
   typedef boost::weak_ptr<This> weak_ptr;
-  typedef CONDITIONAL ConditionalType;
-  typedef typename ConditionalType::shared_ptr sharedConditional;
+  typedef GaussianConditional ConditionalType;
+  typedef ConditionalType::shared_ptr sharedConditional;
 
-  typename Base::FactorType::shared_ptr cachedFactor_;
+  Base::FactorType::shared_ptr cachedFactor_;
   Vector gradientContribution_;
 
   /** Construct from a conditional */
@@ -199,7 +212,7 @@ struct ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique<CONDITIONAL>, CONDIT
     throw runtime_error("ISAM2Clique should always be constructed with the elimination result constructor"); }
 
   /** Construct from an elimination result */
-  ISAM2Clique(const std::pair<sharedConditional, boost::shared_ptr<typename ConditionalType::FactorType> >& result) :
+  ISAM2Clique(const std::pair<sharedConditional, boost::shared_ptr<ConditionalType::FactorType> >& result) :
     Base(result.first), cachedFactor_(result.second), gradientContribution_(result.first->get_R().cols() + result.first->get_S().cols()) {
     // Compute gradient contribution
     const ConditionalType& conditional(*result.first);
@@ -211,13 +224,13 @@ struct ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique<CONDITIONAL>, CONDIT
   shared_ptr clone() const {
     shared_ptr copy(new ISAM2Clique(make_pair(
         sharedConditional(new ConditionalType(*Base::conditional_)),
-        cachedFactor_ ? cachedFactor_->clone() : typename Base::FactorType::shared_ptr())));
+        cachedFactor_ ? cachedFactor_->clone() : Base::FactorType::shared_ptr())));
     copy->gradientContribution_ = gradientContribution_;
     return copy;
   }
 
   /** Access the cached factor */
-  typename Base::FactorType::shared_ptr& cachedFactor() { return cachedFactor_; }
+   Base::FactorType::shared_ptr& cachedFactor() { return cachedFactor_; }
 
   /** Access the gradient contribution */
   const Vector& gradientContribution() const { return gradientContribution_; }
@@ -269,8 +282,7 @@ private:
  * estimate of all variables.
  *
  */
-template<class CONDITIONAL, class GRAPH = NonlinearFactorGraph>
-class ISAM2: public BayesTree<CONDITIONAL, ISAM2Clique<CONDITIONAL> > {
+class ISAM2: public BayesTree<GaussianConditional, ISAM2Clique> {
 
 protected:
 
@@ -296,6 +308,12 @@ protected:
    */
   mutable Permuted<VectorValues> delta_;
 
+  VectorValues deltaNewtonUnpermuted_;
+  mutable Permuted<VectorValues> deltaNewton_;
+  VectorValues RgProdUnpermuted_;
+  mutable Permuted<VectorValues> RgProd_;
+  mutable bool deltaDoglegUptodate_;
+
   /** Indicates whether the current delta is up-to-date, only used
    * internally - delta will always be updated if necessary when it is
    * requested with getDelta() or calculateEstimate().
@@ -316,7 +334,7 @@ protected:
   mutable std::vector<bool> deltaReplacedMask_;
 
   /** All original nonlinear factors are stored here to use during relinearization */
-  GRAPH nonlinearFactors_;
+  NonlinearFactorGraph nonlinearFactors_;
 
   /** The current elimination ordering Symbols to Index (integer) keys.
    *
@@ -335,13 +353,9 @@ private:
   std::vector<bool> lastRelinVariables_;
 #endif
 
-  typedef HessianFactor CacheFactor;
-
 public:
 
-  typedef BayesTree<CONDITIONAL,ISAM2Clique<CONDITIONAL> > Base; ///< The BayesTree base class
-  typedef ISAM2<CONDITIONAL> This; ///< This class
-  typedef GRAPH Graph;
+  typedef BayesTree<GaussianConditional,ISAM2Clique> Base; ///< The BayesTree base class
 
   /** Create an empty ISAM2 instance */
   ISAM2(const ISAM2Params& params);
@@ -349,17 +363,22 @@ public:
   /** Create an empty ISAM2 instance using the default set of parameters (see ISAM2Params) */
   ISAM2();
 
-  typedef typename Base::Clique Clique; ///< A clique
-  typedef typename Base::sharedClique sharedClique; ///< Shared pointer to a clique
-  typedef typename Base::Cliques Cliques; ///< List of Clique typedef from base class
+  typedef Base::Clique Clique; ///< A clique
+  typedef Base::sharedClique sharedClique; ///< Shared pointer to a clique
+  typedef Base::Cliques Cliques; ///< List of Clique typedef from base class
 
-  void cloneTo(boost::shared_ptr<This>& newISAM2) const {
+  void cloneTo(boost::shared_ptr<ISAM2>& newISAM2) const {
     boost::shared_ptr<Base> bayesTree = boost::static_pointer_cast<Base>(newISAM2);
     Base::cloneTo(bayesTree);
     newISAM2->theta_ = theta_;
     newISAM2->variableIndex_ = variableIndex_;
     newISAM2->deltaUnpermuted_ = deltaUnpermuted_;
     newISAM2->delta_ = delta_;
+    newISAM2->deltaNewtonUnpermuted_ = deltaNewtonUnpermuted_;
+    newISAM2->deltaNewton_ = deltaNewton_;
+    newISAM2->RgProdUnpermuted_ = RgProdUnpermuted_;
+    newISAM2->RgProd_ = RgProd_;
+    newISAM2->deltaDoglegUptodate_ = deltaDoglegUptodate_;
     newISAM2->deltaUptodate_ = deltaUptodate_;
     newISAM2->deltaReplacedMask_ = deltaReplacedMask_;
     newISAM2->nonlinearFactors_ = nonlinearFactors_;
@@ -395,9 +414,9 @@ public:
    * (Params::relinearizeSkip).
    * @return An ISAM2Result struct containing information about the update
    */
-  ISAM2Result update(const GRAPH& newFactors = GRAPH(), const Values& newTheta = Values(),
+  ISAM2Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values(),
       const FastVector<size_t>& removeFactorIndices = FastVector<size_t>(),
-      const boost::optional<FastSet<Key> >& constrainedKeys = boost::none,
+      const boost::optional<FastMap<Key,int> >& constrainedKeys = boost::none,
       bool force_relinearize = false);
 
   /** Access the current linearization point */
@@ -432,7 +451,7 @@ public:
   const Permuted<VectorValues>& getDelta() const;
 
   /** Access the set of nonlinear factors */
-  const GRAPH& getFactorsUnsafe() const { return nonlinearFactors_; }
+  const NonlinearFactorGraph& getFactorsUnsafe() const { return nonlinearFactors_; }
 
   /** Access the current ordering */
   const Ordering& getOrdering() const { return ordering_; }
@@ -452,16 +471,101 @@ private:
 
   FastList<size_t> getAffectedFactors(const FastList<Index>& keys) const;
   FactorGraph<GaussianFactor>::shared_ptr relinearizeAffectedFactors(const FastList<Index>& affectedKeys) const;
-  FactorGraph<CacheFactor> getCachedBoundaryFactors(Cliques& orphans);
+  GaussianFactorGraph getCachedBoundaryFactors(Cliques& orphans);
 
   boost::shared_ptr<FastSet<Index> > recalculate(const FastSet<Index>& markedKeys,
       const FastVector<Index>& newKeys, const FactorGraph<GaussianFactor>::shared_ptr newFactors,
-      const boost::optional<FastSet<size_t> >& constrainKeys, ISAM2Result& result);
+      const boost::optional<FastMap<Index,int> >& constrainKeys, ISAM2Result& result);
   //	void linear_update(const GaussianFactorGraph& newFactors);
   void updateDelta(bool forceFullSolve = false) const;
 
+  friend void optimizeInPlace(const ISAM2&, VectorValues&);
+  friend void optimizeGradientSearchInPlace(const ISAM2&, VectorValues&);
+
 }; // ISAM2
+
+/** Get the linear delta for the ISAM2 object, unpermuted the delta returned by ISAM2::getDelta() */
+VectorValues optimize(const ISAM2& isam);
+
+/** Get the linear delta for the ISAM2 object, unpermuted the delta returned by ISAM2::getDelta() */
+void optimizeInPlace(const ISAM2& isam, VectorValues& delta);
+
+/// Optimize the BayesTree, starting from the root.
+/// @param replaced Needs to contain
+/// all variables that are contained in the top of the Bayes tree that has been
+/// redone.
+/// @param delta The current solution, an offset from the linearization
+/// point.
+/// @param threshold The maximum change against the PREVIOUS delta for
+/// non-replaced variables that can be ignored, ie. the old delta entry is kept
+/// and recursive backsubstitution might eventually stop if none of the changed
+/// variables are contained in the subtree.
+/// @return The number of variables that were solved for
+template<class CLIQUE>
+int optimizeWildfire(const boost::shared_ptr<CLIQUE>& root,
+    double threshold, const std::vector<bool>& replaced, Permuted<VectorValues>& delta);
+
+/**
+ * Optimize along the gradient direction, with a closed-form computation to
+ * perform the line search.  The gradient is computed about \f$ \delta x=0 \f$.
+ *
+ * This function returns \f$ \delta x \f$ that minimizes a reparametrized
+ * problem.  The error function of a GaussianBayesNet is
+ *
+ * \f[ f(\delta x) = \frac{1}{2} |R \delta x - d|^2 = \frac{1}{2}d^T d - d^T R \delta x + \frac{1}{2} \delta x^T R^T R \delta x \f]
+ *
+ * with gradient and Hessian
+ *
+ * \f[ g(\delta x) = R^T(R\delta x - d), \qquad G(\delta x) = R^T R. \f]
+ *
+ * This function performs the line search in the direction of the
+ * gradient evaluated at \f$ g = g(\delta x = 0) \f$ with step size
+ * \f$ \alpha \f$ that minimizes \f$ f(\delta x = \alpha g) \f$:
+ *
+ * \f[ f(\alpha) = \frac{1}{2} d^T d + g^T \delta x + \frac{1}{2} \alpha^2 g^T G g \f]
+ *
+ * Optimizing by setting the derivative to zero yields
+ * \f$ \hat \alpha = (-g^T g) / (g^T G g) \f$.  For efficiency, this function
+ * evaluates the denominator without computing the Hessian \f$ G \f$, returning
+ *
+ * \f[ \delta x = \hat\alpha g = \frac{-g^T g}{(R g)^T(R g)} \f]
+ */
+VectorValues optimizeGradientSearch(const ISAM2& isam);
+
+/** In-place version of optimizeGradientSearch requiring pre-allocated VectorValues \c x */
+void optimizeGradientSearchInPlace(const ISAM2& isam, VectorValues& grad);
+
+/// calculate the number of non-zero entries for the tree starting at clique (use root for complete matrix)
+template<class CLIQUE>
+int calculate_nnz(const boost::shared_ptr<CLIQUE>& clique);
+
+/**
+ * Compute the gradient of the energy function,
+ * \f$ \nabla_{x=x_0} \left\Vert \Sigma^{-1} R x - d \right\Vert^2 \f$,
+ * centered around \f$ x = x_0 \f$.
+ * The gradient is \f$ R^T(Rx-d) \f$.
+ * This specialized version is used with ISAM2, where each clique stores its
+ * gradient contribution.
+ * @param bayesTree The Gaussian Bayes Tree $(R,d)$
+ * @param x0 The center about which to compute the gradient
+ * @return The gradient as a VectorValues
+ */
+VectorValues gradient(const ISAM2& bayesTree, const VectorValues& x0);
+
+/**
+ * Compute the gradient of the energy function,
+ * \f$ \nabla_{x=0} \left\Vert \Sigma^{-1} R x - d \right\Vert^2 \f$,
+ * centered around zero.
+ * The gradient about zero is \f$ -R^T d \f$.  See also gradient(const GaussianBayesNet&, const VectorValues&).
+ * This specialized version is used with ISAM2, where each clique stores its
+ * gradient contribution.
+ * @param bayesTree The Gaussian Bayes Tree $(R,d)$
+ * @param [output] g A VectorValues to store the gradient, which must be preallocated, see allocateVectorValues
+ * @return The gradient as a VectorValues
+ */
+void gradientAtZero(const ISAM2& bayesTree, VectorValues& g);
 
 } /// namespace gtsam
 
 #include <gtsam/nonlinear/ISAM2-inl.h>
+#include <gtsam/nonlinear/ISAM2-impl.h>

@@ -10,13 +10,19 @@ set(inference_local_libs
    ccolamd
 )
 
+# Files to exclude from compilation of tests and timing scripts
+set(inference_excluded_files
+# "${CMAKE_CURRENT_SOURCE_DIR}/tests/testTypedDiscreteFactor.cpp" # Example of excluding a test     
+    ""  # Add to this list, with full path, to exclude
+)
+
 # Build tests
 if (GTSAM_BUILD_TESTS)
-    gtsam_add_tests(inference "${inference_local_libs}")
+    gtsam_add_subdir_tests(inference "${inference_local_libs}" "gtsam-static" "${inference_excluded_files}") 
 endif(GTSAM_BUILD_TESTS)
 
 # Build timing scripts
 if (GTSAM_BUILD_TIMING)
-    gtsam_add_timing(inference "${inference_local_libs}")
+    gtsam_add_subdir_timing(inference "${inference_local_libs}" "gtsam-static" "${inference_excluded_files}") 
 endif(GTSAM_BUILD_TIMING)
 

@@ -23,22 +23,15 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-namespace internal {
-void optimizeInPlace(const boost::shared_ptr<BayesTreeClique<GaussianConditional> >& clique, VectorValues& result) {
-  // parents are assumed to already be solved and available in result
-  clique->conditional()->solveInPlace(result);
-
-  // starting from the root, call optimize on each conditional
-  BOOST_FOREACH(const boost::shared_ptr<BayesTreeClique<GaussianConditional> >& child, clique->children_)
-    optimizeInPlace(child, result);
-}
+VectorValues optimize(const GaussianBayesTree& bayesTree) {
+  VectorValues result = *allocateVectorValues(bayesTree);
+  optimizeInPlace(bayesTree, result);
+  return result;
 }
 
 /* ************************************************************************* */
-VectorValues optimize(const GaussianBayesTree& bayesTree) {
-  VectorValues result = *allocateVectorValues(bayesTree);
-  internal::optimizeInPlace(bayesTree.root(), result);
-  return result;
+void optimizeInPlace(const GaussianBayesTree& bayesTree, VectorValues& result) {
+  internal::optimizeInPlace<GaussianBayesTree>(bayesTree.root(), result);
 }
 
 /* ************************************************************************* */
@@ -75,11 +68,6 @@ void optimizeGradientSearchInPlace(const GaussianBayesTree& Rd, VectorValues& gr
   // Compute steepest descent point
   scal(step, grad);
   toc(4, "Compute point");
-}
-
-/* ************************************************************************* */
-void optimizeInPlace(const GaussianBayesTree& bayesTree, VectorValues& result) {
-  internal::optimizeInPlace(bayesTree.root(), result);
 }
 
 /* ************************************************************************* */

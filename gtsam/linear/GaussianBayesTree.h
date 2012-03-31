@@ -34,7 +34,8 @@ VectorValues optimize(const GaussianBayesTree& bayesTree);
 void optimizeInPlace(const GaussianBayesTree& clique, VectorValues& result);
 
 namespace internal {
-void optimizeInPlace(const boost::shared_ptr<BayesTreeClique<GaussianConditional> >& clique, VectorValues& result);
+template<class BAYESTREE>
+void optimizeInPlace(const typename BAYESTREE::sharedClique& clique, VectorValues& result);
 }
 
 /**

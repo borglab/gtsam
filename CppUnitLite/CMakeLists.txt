@@ -1,9 +1,9 @@
 # Build/install CppUnitLite
 
-FILE(GLOB cppunitlite_headers "*.h")
-FILE(GLOB cppunitlite_src "*.cpp")
+file(GLOB cppunitlite_headers "*.h")
+file(GLOB cppunitlite_src "*.cpp")
 
-ADD_LIBRARY(CppUnitLite STATIC ${cppunitlite_src})
+add_library(CppUnitLite STATIC ${cppunitlite_src})
 
 option(GTSAM_INSTALL_CPPUNITLITE "Enable/Disable installation of CppUnitLite library" ON)
 if (GTSAM_INSTALL_CPPUNITLITE)

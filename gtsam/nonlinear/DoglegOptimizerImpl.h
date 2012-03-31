@@ -135,12 +135,18 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
     const F& f, const VALUES& x0, const Ordering& ordering, const double f_error, const bool verbose) {
 
   // Compute steepest descent and Newton's method points
-  tic(0, "Steepest Descent");
-  VectorValues dx_u = optimizeGradientSearch(Rd);
-  toc(0, "Steepest Descent");
-  tic(1, "optimize");
-  VectorValues dx_n = optimize(Rd);
-  toc(1, "optimize");
+  tic(0, "optimizeGradientSearch");
+  tic(0, "allocateVectorValues");
+  VectorValues dx_u = *allocateVectorValues(Rd);
+  toc(0, "allocateVectorValues");
+  tic(1, "optimizeGradientSearchInPlace");
+  optimizeGradientSearchInPlace(Rd, dx_u);
+  toc(1, "optimizeGradientSearchInPlace");
+  toc(0, "optimizeGradientSearch");
+  tic(1, "optimizeInPlace");
+  VectorValues dx_n(VectorValues::SameStructure(dx_u));
+  optimizeInPlace(Rd, dx_n);
+  toc(1, "optimizeInPlace");
   tic(2, "jfg error");
   const GaussianFactorGraph jfg(Rd);
   const double M_error = jfg.error(VectorValues::Zero(dx_u));
@@ -177,6 +183,7 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
     if(verbose) cout << "f error: " << f_error << " -> " << result.f_error << endl;
     if(verbose) cout << "M error: " << M_error << " -> " << new_M_error << endl;
 
+    tic(7, "adjust Delta");
     // Compute gain ratio.  Here we take advantage of the invariant that the
     // Bayes' net error at zero is equal to the nonlinear error
     const double rho = fabs(M_error - new_M_error) < 1e-15 ?
@@ -186,7 +193,6 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
     if(verbose) cout << "rho = " << rho << endl;
 
     if(rho >= 0.75) {
-      tic(7, "Rho >= 0.75");
       // M agrees very well with f, so try to increase lambda
       const double dx_d_norm = result.dx_d.vector().norm();
       const double newDelta = std::max(Delta, 3.0 * dx_d_norm); // Compute new Delta
@@ -204,14 +210,12 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
         assert(false); }
 
       Delta = newDelta; // Update Delta from new Delta
-      toc(7, "Rho >= 0.75");
 
     } else if(0.75 > rho && rho >= 0.25) {
       // M agrees so-so with f, keep the same Delta
       stay = false;
 
     } else if(0.25 > rho && rho >= 0.0) {
-      tic(8, "0.25 > Rho >= 0.75");
       // M does not agree well with f, decrease Delta until it does
       double newDelta;
       if(Delta > 1e-5)
@@ -227,11 +231,8 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
         assert(false); }
 
       Delta = newDelta; // Update Delta from new Delta
-      toc(8, "0.25 > Rho >= 0.75");
-    }
 
-    else {
-      tic(9, "Rho < 0");
+    } else {
       // f actually increased, so keep decreasing Delta until f does not decrease
       assert(0.0 > rho);
       if(Delta > 1e-5) {
@@ -242,8 +243,8 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
         if(verbose) cout << "Warning:  Dog leg stopping because cannot decrease error with minimum Delta" << endl;
         stay = false;
       }
-      toc(9, "Rho < 0");
     }
+    toc(7, "adjust Delta");
   }
 
   // dx_d and f_error have already been filled in during the loop

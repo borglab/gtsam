@@ -120,6 +120,8 @@ namespace gtsam {
     typedef boost::transform_iterator<
         boost::function1<ConstKeyValuePair, const ConstKeyValuePtrPair&>, KeyValueMap::const_reverse_iterator> const_reverse_iterator;
 
+    typedef KeyValuePair value_type;
+
   private:
     template<class ValueType>
     struct _KeyValuePair {
@@ -146,6 +148,7 @@ namespace gtsam {
       /** A key-value pair, with the value a specific derived Value type. */
       typedef _KeyValuePair<ValueType> KeyValuePair;
       typedef _ConstKeyValuePair<ValueType> ConstKeyValuePair;
+      typedef KeyValuePair value_type;
 
       typedef
           boost::transform_iterator<
@@ -211,6 +214,7 @@ namespace gtsam {
     public:
       /** A const key-value pair, with the value a specific derived Value type. */
       typedef _ConstKeyValuePair<ValueType> KeyValuePair;
+      typedef KeyValuePair value_type;
 
       typedef typename Filtered<ValueType>::const_const_iterator iterator;
       typedef typename Filtered<ValueType>::const_const_iterator const_iterator;

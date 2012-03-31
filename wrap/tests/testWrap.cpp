@@ -226,6 +226,18 @@ TEST( wrap, matlab_code_namespaces ) {
 	EXPECT(files_equal(exp_path + "new_ns2ClassC_.m"             , act_path + "new_ns2ClassC_.m"             ));
 	EXPECT(files_equal(exp_path + "new_ns2ns3ClassB_.cpp"        , act_path + "new_ns2ns3ClassB_.cpp"        ));
 	EXPECT(files_equal(exp_path + "new_ns2ns3ClassB_.m"          , act_path + "new_ns2ns3ClassB_.m"          ));
+	EXPECT(files_equal(exp_path + "delete_ClassD.cpp"              , act_path + "delete_ClassD.cpp"              ));
+	EXPECT(files_equal(exp_path + "delete_ClassD.m"                , act_path + "delete_ClassD.m"                ));
+	EXPECT(files_equal(exp_path + "delete_ns1ClassA.cpp"           , act_path + "delete_ns1ClassA.cpp"           ));
+	EXPECT(files_equal(exp_path + "delete_ns1ClassA.m"             , act_path + "delete_ns1ClassA.m"             ));
+	EXPECT(files_equal(exp_path + "delete_ns1ClassB.cpp"           , act_path + "delete_ns1ClassB.cpp"           ));
+	EXPECT(files_equal(exp_path + "delete_ns1ClassB.m"             , act_path + "delete_ns1ClassB.m"             ));
+	EXPECT(files_equal(exp_path + "delete_ns2ClassA.cpp"           , act_path + "delete_ns2ClassA.cpp"           ));
+	EXPECT(files_equal(exp_path + "delete_ns2ClassA.m"             , act_path + "delete_ns2ClassA.m"             ));
+	EXPECT(files_equal(exp_path + "delete_ns2ClassC.cpp"           , act_path + "delete_ns2ClassC.cpp"           ));
+	EXPECT(files_equal(exp_path + "delete_ns2ClassC.m"             , act_path + "delete_ns2ClassC.m"             ));
+	EXPECT(files_equal(exp_path + "delete_ns2ns3ClassB.cpp"        , act_path + "delete_ns2ns3ClassB.cpp"        ));
+	EXPECT(files_equal(exp_path + "delete_ns2ns3ClassB.m"          , act_path + "delete_ns2ns3ClassB.m"          ));
 	EXPECT(files_equal(exp_path + "ns2ClassA_afunction.cpp"      , act_path + "ns2ClassA_afunction.cpp"      ));
 	EXPECT(files_equal(exp_path + "ns2ClassA_afunction.m"        , act_path + "ns2ClassA_afunction.m"        ));
 
@@ -267,6 +279,8 @@ TEST( wrap, matlab_code ) {
 	EXPECT(files_equal(path + "/tests/expected/@Point3/norm.cpp"  , "actual/@Point3/norm.cpp"  ));
 
 	EXPECT(files_equal(path + "/tests/expected/new_Test_.cpp"           , "actual/new_Test_.cpp"           ));
+	EXPECT(files_equal(path + "/tests/expected/delete_Test.cpp"           , "actual/delete_Test.cpp"           ));
+	EXPECT(files_equal(path + "/tests/expected/delete_Test.m"           , "actual/delete_Test.m"           ));
 	EXPECT(files_equal(path + "/tests/expected/@Test/Test.m"            , "actual/@Test/Test.m"            ));
 	EXPECT(files_equal(path + "/tests/expected/@Test/return_string.cpp" , "actual/@Test/return_string.cpp" ));
 	EXPECT(files_equal(path + "/tests/expected/@Test/return_pair.cpp"   , "actual/@Test/return_pair.cpp"   ));
