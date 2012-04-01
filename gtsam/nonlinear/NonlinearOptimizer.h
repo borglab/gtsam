@@ -60,6 +60,27 @@ public:
 
 
 /**
+ * Base class for a nonlinear optimization state, including the current estimate
+ * of the variable values, error, and number of iterations.  Optimizers derived
+ * from NonlinearOptimizer usually also define a derived state class containing
+ * additional state specific to the algorithm (for example, Dogleg state
+ * contains the current trust region radius).
+ */
+class NonlinearOptimizerState {
+public:
+
+  /** The current estimate of the variable values. */
+  Values values;
+
+  /** The factor graph error on the current values. */
+  double error;
+
+  /** The number of optimization iterations performed. */
+  unsigned int iterations;
+};
+
+
+/**
  * This is the abstract interface for classes that can optimize for the
  * maximum-likelihood estimate of a NonlinearFactorGraph.
  *
