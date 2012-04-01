@@ -37,9 +37,14 @@ set(moduleName gtsam)
 include(GtsamMatlabWrap)
 find_mexextension()
 
+# get binary path for wrap executable to allow for different build configurations (e.g., ROS)
+if (NOT EXECUTABLE_OUTPUT_PATH)
+    set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR})
+endif()
+
 # Code generation command
 add_custom_target(wrap_gtsam ALL COMMAND 
-    ./wrap ${GTSAM_MEX_BIN_EXTENSION} ${CMAKE_SOURCE_DIR} ${moduleName} ${toolbox_path} "${mexFlags}"
+    ${EXECUTABLE_OUTPUT_PATH}/wrap ${GTSAM_MEX_BIN_EXTENSION} ${CMAKE_CURRENT_SOURCE_DIR}/../ ${moduleName} ${toolbox_path} "${mexFlags}"
     DEPENDS wrap)
 
 set(GTSAM_TOOLBOX_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/borg/toolbox CACHE DOCSTRING "Path to install matlab toolbox")

@@ -58,16 +58,23 @@ if(NOT FIRST_PASS_DONE)
 endif()
 
 # Configurable Options
-option(GTSAM_BUILD_TESTS    "Enable/Disable building of tests"          ON)
-option(GTSAM_BUILD_TIMING   "Enable/Disable building of timing scripts" ON)
-option(GTSAM_BUILD_EXAMPLES "Enable/Disable building of examples"       ON)
-option(GTSAM_BUILD_WRAP     "Enable/Disable building of matlab wrap utility (necessary for matlab interface)" ON)
-option(GTSAM_USE_QUATERNIONS "Enable/Disable using an internal Quaternion representation for rotations instead of rotation matrices" OFF)
+#SET(FOO_BUILD_SHARED OFF CACHE BOOL "Build libfoo shared library")
+#set(GTSAM_BUILD_TESTS                  ON CACHE BOOL "Enable/Disable building of tests")
+#set(GTSAM_BUILD_TIMING                 ON CACHE BOOL "Enable/Disable building of timing scripts")
+#set(GTSAM_BUILD_EXAMPLES               ON CACHE BOOL "Enable/Disable building of examples")
+#set(GTSAM_BUILD_WRAP                   ON CACHE BOOL "Enable/Disable building of matlab wrap utility (necessary for matlab interface)")
+#set(GTSAM_BUILD_CONVENIENCE_LIBRARIES OFF CACHE BOOL "Enable/Disable use of convenience libraries for faster development rebuilds, but slower install")
+   
+option(GTSAM_BUILD_TESTS                 "Enable/Disable building of tests"          ON)
+option(GTSAM_BUILD_TIMING                "Enable/Disable building of timing scripts" ON)
+option(GTSAM_BUILD_EXAMPLES              "Enable/Disable building of examples"       ON)
+option(GTSAM_BUILD_WRAP                  "Enable/Disable building of matlab wrap utility (necessary for matlab interface)" ON)
+option(GTSAM_USE_QUATERNIONS             "Enable/Disable using an internal Quaternion representation for rotations instead of rotation matrices" OFF)
 option(GTSAM_BUILD_CONVENIENCE_LIBRARIES "Enable/Disable use of convenience libraries for faster development rebuilds, but slower install" ON)
-option(GTSAM_INSTALL_MATLAB_TOOLBOX  "Enable/Disable installation of matlab toolbox"  ON)
-option(GTSAM_INSTALL_MATLAB_EXAMPLES "Enable/Disable installation of matlab examples" ON)
-option(GTSAM_INSTALL_MATLAB_TESTS    "Enable/Disable installation of matlab tests"    ON)
-option(GTSAM_INSTALL_WRAP "Enable/Disable installation of wrap utility" ON)
+option(GTSAM_INSTALL_MATLAB_TOOLBOX      "Enable/Disable installation of matlab toolbox"  ON)
+option(GTSAM_INSTALL_MATLAB_EXAMPLES     "Enable/Disable installation of matlab examples" ON)
+option(GTSAM_INSTALL_MATLAB_TESTS        "Enable/Disable installation of matlab tests"    ON)
+option(GTSAM_INSTALL_WRAP                "Enable/Disable installation of wrap utility" ON)
 
 # Add the Quaternion Build Flag if requested
 if (GTSAM_USE_QUATERNIONS)
@@ -125,6 +132,11 @@ endif(GTSAM_BUILD_EXAMPLES)
 # Mark that first pass is done
 set(FIRST_PASS_DONE true CACHE BOOL "Internally used to mark whether cmake has been run multiple times")
 mark_as_advanced(FIRST_PASS_DONE) 
+
+# Record the root dir for gtsam - needed during external builds, e.g., ROS
+set(GTSAM_SOURCE_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+message(STATUS "GTSAM_SOURCE_ROOT_DIR: [${GTSAM_SOURCE_ROOT_DIR}]")
+
 
 # print configuration variables
 message(STATUS "===============================================================")

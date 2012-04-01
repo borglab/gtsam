@@ -45,19 +45,28 @@ void generate_matlab_toolbox(const string& mexExt,
   module.matlab_code(toolboxPath,mexExt,mexFlags);
 }
 
+/** Displays usage information */
+void usage() {
+  cerr << "wrap parses an interface file and produces a MATLAB toolbox" << endl;
+  cerr << "usage: wrap mexExtension interfacePath moduleName toolboxPath [mexFlags]" << endl;
+  cerr << "  mexExtension  : OS/CPU-dependent extension for MEX binaries" << endl;
+  cerr << "  interfacePath : *absolute* path to directory of module interface file" << endl;
+  cerr << "  moduleName    : the name of the module, interface file must be called moduleName.h" << endl;
+  cerr << "  toolboxPath   : the directory in which to generate the wrappers" << endl;
+  cerr << "  [mexFlags]    : extra flags for the mex command" << endl;
+}
+
 /**
  * main parses arguments and calls generate_matlab_toolbox above
  * Typically called from "make all" using appropriate arguments
  */
 int main(int argc, const char* argv[]) {
   if (argc<6 || argc>7) {
-    cerr << "wrap parses an interface file and produces a MATLAB toolbox" << endl;
-    cerr << "usage: wrap mexExtension interfacePath moduleName toolboxPath [mexFlags]" << endl;
-    cerr << "  mexExtension  : OS/CPU-dependent extension for MEX binaries" << endl;
-    cerr << "  interfacePath : *absolute* path to directory of module interface file" << endl;
-    cerr << "  moduleName    : the name of the module, interface file must be called moduleName.h" << endl;
-    cerr << "  toolboxPath   : the directory in which to generate the wrappers" << endl;
-    cerr << "  [mexFlags]    : extra flags for the mex command" << endl;
+  	cerr << "Invalid arguments:\n";
+  	for (int i=0; i<argc; ++i)
+  		cerr << argv[i] << endl;
+  	cerr << endl;
+  	usage();
   }
   else
     generate_matlab_toolbox(argv[1],argv[2],argv[3],argv[4],argc==5 ? " " : argv[5]);
