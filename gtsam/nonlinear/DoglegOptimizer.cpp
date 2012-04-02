@@ -26,7 +26,7 @@ using namespace std;
 
 namespace gtsam {
 
-NonlinearOptimizer::auto_ptr DoglegOptimizer::iterate() const {
+NonlinearOptimizer::SharedState DoglegOptimizer::iterate(const SharedState& current) const {
 
   // Linearize graph
   GaussianFactorGraph::shared_ptr linear = graph_->linearize(*values_, *ordering_);
@@ -59,13 +59,16 @@ NonlinearOptimizer::auto_ptr DoglegOptimizer::iterate() const {
   }
 
   // Update values
-  SharedValues newValues(new Values(values_->retract(result.dx_d, *ordering_)));
+  SharedValues newValues = boost::make_shared<Values>(values_->retract(result.dx_d, *ordering_));
 
-  // Create new optimizer with new values and new error
-  NonlinearOptimizer::auto_ptr newOptimizer(new DoglegOptimizer(
-      *this, newValues, result.f_error, result.Delta));
+  // Create new state with new values and new error
+  DoglegOptimizer::SharedState newState = boost::make_shared<DoglegState>();
+  newState->values = newValues;
+  newState->error = rsult.f_error;
+  newState->iterations = current->iterations + 1;
+  newState->Delta = result.Delta;
 
-  return newOptimizer;
+  return newState;
 }
 
 } /* namespace gtsam */

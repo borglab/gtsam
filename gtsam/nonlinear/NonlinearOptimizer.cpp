@@ -25,49 +25,58 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-NonlinearOptimizer::auto_ptr NonlinearOptimizer::defaultOptimize() const {
+NonlinearOptimizer::shared_ptr NonlinearOptimizer::update(const NonlinearOptimizer::SharedGraph& newGraph) const {
+  shared_ptr result(this->clone());
+  result->graph_ = newGraph;
+  return result;
+}
 
-  double currentError = this->error();
+/* ************************************************************************* */
+NonlinearOptimizer::shared_ptr NonlinearOptimizer::update(const NonlinearOptimizer::SharedParams& newParams) const {
+  shared_ptr result(this->clone());
+  result->params_ = newParams;
+  return result;
+}
+
+/* ************************************************************************* */
+NonlinearOptimizer::SharedState NonlinearOptimizer::defaultOptimize(const SharedState& initial) const {
+
+  const SharedParams& params = this->params();
+  double currentError = initial->error();
 
   // check if we're already close enough
-  if(currentError <= params_->errorTol) {
-    if (params_->verbosity >= NonlinearOptimizerParams::ERROR)
-      cout << "Exiting, as error = " << currentError << " < " << params_->errorTol << endl;
-    return this->clone();
+  if(currentError <= params->errorTol) {
+    if (params->verbosity >= NonlinearOptimizerParams::ERROR)
+      cout << "Exiting, as error = " << currentError << " < " << params->errorTol << endl;
+    return initial;
   }
 
   // Maybe show output
-  if (params_->verbosity >= NonlinearOptimizerParams::VALUES) this->values()->print("Initial values");
-  if (params_->verbosity >= NonlinearOptimizerParams::ERROR) cout << "Initial error: " << this->error() << endl;
+  if (params->verbosity >= NonlinearOptimizerParams::VALUES) this->values()->print("Initial values");
+  if (params->verbosity >= NonlinearOptimizerParams::ERROR) cout << "Initial error: " << this->error() << endl;
 
   // Return if we already have too many iterations
-  if(this->iterations() >= params_->maxIterations)
-    return this->clone();
+  if(this->iterations() >= params->maxIterations)
+    return initial;
 
   // Iterative loop
-  auto_ptr next = this->iterate(); // First iteration happens here
-  while(next->iterations() < params_->maxIterations &&
-    !checkConvergence(params_->relativeErrorTol, params_->absoluteErrorTol,
-          params_->errorTol, currentError, next->error(), params_->verbosity)) {
+  SharedState next = initial;
+  do {
+    // Do next iteration
+    currentError = next->error;
+    next = this->iterate(next);
 
     // Maybe show output
-    if (params_->verbosity >= NonlinearOptimizerParams::VALUES) next->values()->print("newValues");
-    if (params_->verbosity >= NonlinearOptimizerParams::ERROR) cout << "newError: " << next->error() << endl;
-
-
-    // Do next iteration
-    currentError = next->error();
-    next = next->iterate();
-  }
+    if (params->verbosity >= NonlinearOptimizerParams::VALUES) next->values->print("newValues");
+    if (params->verbosity >= NonlinearOptimizerParams::ERROR) cout << "newError: " << next->error << endl;
+  } while(next->iterations < params->maxIterations &&
+      !checkConvergence(params->relativeErrorTol, params->absoluteErrorTol,
+            params->errorTol, currentError, next->error, params->verbosity));
 
   // Printing if verbose
-  if (params_->verbosity >= NonlinearOptimizerParams::VALUES)
-    next->values()->print("final values");
-  if (params_->verbosity >= NonlinearOptimizerParams::ERROR &&
-      next->iterations() >= params_->maxIterations)
+  if (params->verbosity >= NonlinearOptimizerParams::ERROR &&
+      next->iterations >= params->maxIterations)
     cout << "Terminating because reached maximum iterations" << endl;
-  if (params_->verbosity >= NonlinearOptimizerParams::ERROR)
-    cout << "final error: " << next->error() << endl;
 
   // Return optimizer from final iteration
   return next;

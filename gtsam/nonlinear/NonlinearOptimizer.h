@@ -77,6 +77,9 @@ public:
 
   /** The number of optimization iterations performed. */
   unsigned int iterations;
+
+  /** Virtual destructor to enable RTTI */
+  virtual ~NonlinearOptimizerState() {}
 };
 
 
@@ -156,20 +159,17 @@ class NonlinearOptimizer {
 
 public:
 
-  /** An auto pointer to this class */
-  typedef std::auto_ptr<const NonlinearOptimizer> auto_ptr;
-
   /** A shared pointer to this class */
   typedef boost::shared_ptr<const NonlinearOptimizer> shared_ptr;
 
   /** A const shared_ptr to a NonlinearFactorGraph */
   typedef boost::shared_ptr<const NonlinearFactorGraph> SharedGraph;
 
-  /** A const shared_ptr to a NonlinearFactorGraph */
-  typedef boost::shared_ptr<const Values> SharedValues;
-
   /** A const shared_ptr to the parameters */
   typedef boost::shared_ptr<const NonlinearOptimizerParams> SharedParams;
+
+  /** A shared_ptr to an optimizer state */
+  typedef boost::shared_ptr<NonlinearOptimizerState> SharedState;
 
   /// @name Standard interface
   /// @{
@@ -183,26 +183,17 @@ public:
    * process, you may call iterate() and check_convergence() yourself, and if
    * needed modify the optimization state between iterations.
    */
-  virtual auto_ptr optimize() const { return defaultOptimize(); }
+  virtual SharedState optimize(const SharedState& initial) const { return defaultOptimize(initial); }
 
   /** Shortcut to optimize and return the resulting Values of the maximum-
    * likelihood estimate.  To access statistics and information such as the
    * final error and number of iterations, use optimize() instead.
    * @return The maximum-likelihood estimate.
    */
-  virtual SharedValues optimized() const { return this->optimize()->values(); }
-
-  /** Retrieve the current variable assignment estimate. */
-  virtual const SharedValues& values() const { return values_; }
+  virtual SharedValues optimized(const SharedState& initial) const { return this->optimize(initial)->values(); }
 
   /** Retrieve the parameters. */
-  virtual const SharedParams& params() const { return params_; }
-
-  /** Return the current factor graph error */
-  virtual double error() const { return error_; }
-
-  /** Return the number of iterations that have been performed */
-  virtual int iterations() const { return iterations_; }
+  virtual const SharedParams& params() const = 0;
 
   /// @}
 
@@ -216,60 +207,41 @@ public:
    * containing the updated variable assignments, which may be retrieved with
    * values().
    */
-  virtual auto_ptr iterate() const = 0;
+  virtual SharedState iterate(const SharedState& current) const = 0;
 
-  /** Update the graph, values, and/or parameters, leaving all other state
-   * the same.  Any of these that are empty shared pointers are left unchanged
-   * in the returned optimizer object.  Returns a new updated
-   * NonlinearOptimzier object, the original is not modified.
+  /** Update the graph, leaving all other parts of the optimizer unchanged,
+   * returns a new updated NonlinearOptimzier object, the original is not
+   * modified.
    */
-  virtual auto_ptr update(
-      const SharedGraph& newGraph = SharedGraph(),
-      const SharedValues& newValues = SharedValues(),
-      const SharedParams& newParams = SharedParams()) const = 0;
+  virtual shared_ptr update(const SharedGraph& newGraph) const;
+
+  /** Update the parameters, leaving all other parts of the optimizer unchanged,
+   * returns a new updated NonlinearOptimzier object, the original is not
+   * modified.
+   */
+  const shared_ptr update(const SharedParams& newParams) const;
 
   /** Create a copy of the NonlinearOptimizer */
-  virtual auto_ptr clone() const = 0;
+  virtual shared_ptr clone() const = 0;
 
   /// @}
 
 protected:
 
+  const SharedGraph graph_;
+
   /** A default implementation of the optimization loop, which calls iterate()
    * until checkConvergence returns true.
    */
-  auto_ptr defaultOptimize() const;
+  SharedState defaultOptimize(const SharedState& initial) const;
 
-protected:
+  /** Modify the parameters in-place (not for external use) */
+  virtual void setParams(const NonlinearOptimizer::SharedParams& newParams);
 
-  const SharedGraph graph_;
-  const SharedValues values_;
-  const SharedParams params_;
-  const double error_;
-  const int iterations_;
-
-  /** Constructor for initial construction of base classes, computes error and
-   * sets iterations to zero.
+  /** Constructor for initial construction of base classes.
    */
-  NonlinearOptimizer(const SharedGraph& graph, const SharedValues& values,
-      const SharedParams& params) :
-    graph_(graph), values_(values), params_(params),
-    error_(graph_->error(*values_)), iterations_(0) {}
-
-  /** Constructor that specifies all parts of the state, used for updates */
-  NonlinearOptimizer(const SharedGraph& graph, const SharedValues& values,
-      const SharedParams& params, double error, int iterations) :
-    graph_(graph), values_(values), params_(params),
-    error_(error), iterations_(iterations) {}
-
-  /** Convenience constructor for modifying only some of the state. */
-  NonlinearOptimizer(const NonlinearOptimizer& original, const SharedGraph& newGraph,
-      const SharedValues& newValues, const SharedParams& newParams) :
-    graph_(newGraph ? newGraph : original.graph_),
-    values_(newValues ? newValues : original.values_),
-    params_(newParams ? newParams : original.params_),
-    error_(newGraph || newValues ? graph_->error(*values_) : original.error_),
-    iterations_(original.iterations_) {}
+  NonlinearOptimizer(const SharedGraph& graph) :
+    graph_(graph) {}
 
 };
 
