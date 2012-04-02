@@ -238,8 +238,9 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
         }
       }
     } else {
-      if(theta_.size() > newKeys.size()) // Only if some variables are unconstrained
+      if(theta_.size() > newKeys.size()) { // Only if some variables are unconstrained
         BOOST_FOREACH(Index var, newKeys) { cmember[var] = 1; }
+      }
     }
     Permutation::shared_ptr colamd(inference::PermutationCOLAMD_(variableIndex_, cmember));
     Permutation::shared_ptr colamdInverse(colamd->inverse());
