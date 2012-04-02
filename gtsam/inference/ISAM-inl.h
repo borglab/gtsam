@@ -22,9 +22,8 @@
 using namespace boost::assign;
 
 #include <gtsam/inference/Conditional.h>
-#include <gtsam/inference/ISAM.h>
-#include <gtsam/inference/BayesTree-inl.h>
-#include <gtsam/inference/GenericMultifrontalSolver-inl.h>
+#include <gtsam/inference/BayesTree.h>
+#include <gtsam/inference/GenericMultifrontalSolver.h>
 
 namespace gtsam {
 

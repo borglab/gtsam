@@ -19,7 +19,7 @@
 #include <gtsam/linear/GaussianISAM.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 
-#include <gtsam/inference/ISAM-inl.h>
+#include <gtsam/inference/ISAM.h>
 
 using namespace std;
 using namespace gtsam;

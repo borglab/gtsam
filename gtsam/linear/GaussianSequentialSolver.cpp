@@ -19,8 +19,6 @@
 #include <gtsam/base/timing.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 
-#include <gtsam/inference/GenericSequentialSolver-inl.h>
-
 namespace gtsam {
 
 /* ************************************************************************* */

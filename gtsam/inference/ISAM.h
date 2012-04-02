@@ -72,3 +72,5 @@ namespace gtsam {
 	};
 
 }/// namespace gtsam
+
+#include <gtsam/inference/ISAM-inl.h>

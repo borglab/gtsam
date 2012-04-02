@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include <gtsam/inference/GenericMultifrontalSolver.h>
 #include <gtsam/inference/Factor-inl.h>
 #include <gtsam/inference/JunctionTree.h>
 #include <gtsam/inference/BayesNet-inl.h>
