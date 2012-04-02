@@ -216,7 +216,10 @@ struct ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique, GaussianConditional
     Base(result.first), cachedFactor_(result.second), gradientContribution_(result.first->get_R().cols() + result.first->get_S().cols()) {
     // Compute gradient contribution
     const ConditionalType& conditional(*result.first);
-    gradientContribution_ << -(conditional.get_R() * conditional.permutation().transpose()).transpose() * conditional.get_d(),
+    // Rewrite -(R * P')'*d   as   -(d' * R * P')'   for computational speed reasons
+//    gradientContribution_ << -(conditional.get_R() * conditional.permutation().transpose()).transpose() * conditional.get_d(),
+//        -conditional.get_S().transpose() * conditional.get_d();
+    gradientContribution_ << -(conditional.get_d().transpose() * conditional.get_R() * conditional.permutation().transpose()).transpose(),
         -conditional.get_S().transpose() * conditional.get_d();
   }
 
