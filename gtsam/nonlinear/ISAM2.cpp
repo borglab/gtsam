@@ -561,14 +561,14 @@ ISAM2Result ISAM2::update(
   if(debug) delta_.print("delta_: ");
   //toc(9,"solve");
 
+  result.cliques = this->nodes().size();
+  deltaDoglegUptodate_ = false;
+  deltaUptodate_ = false;
+
   tic(10,"evaluate error after");
   if(params_.evaluateNonlinearError)
     result.errorAfter.reset(nonlinearFactors_.error(calculateEstimate()));
   toc(10,"evaluate error after");
-
-  result.cliques = this->nodes().size();
-  deltaDoglegUptodate_ = false;
-  deltaUptodate_ = false;
 
   return result;
 }
