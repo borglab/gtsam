@@ -743,7 +743,8 @@ void gradientAtZero(const ISAM2& bayesTree, VectorValues& g) {
   g.setZero();
 
   // Sum up contributions for each clique
-  gradientAtZeroTreeAdder(bayesTree.root(), g);
+  if(bayesTree.root())
+    gradientAtZeroTreeAdder(bayesTree.root(), g);
 }
 
 }
