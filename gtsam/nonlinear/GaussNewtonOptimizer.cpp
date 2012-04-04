@@ -24,6 +24,7 @@ using namespace std;
 
 namespace gtsam {
 
+/* ************************************************************************* */
 NonlinearOptimizer::auto_ptr GaussNewtonOptimizer::iterate() const {
 
   // Linearize graph
@@ -59,6 +60,13 @@ NonlinearOptimizer::auto_ptr GaussNewtonOptimizer::iterate() const {
       *this, newValues, newError));
 
   return newOptimizer;
+}
+
+/* ************************************************************************* */
+NonlinearOptimizer::SharedState GaussNewtonOptimizer::initialState(const Values& initialValues) const {
+  SharedState initial = boost::make_shared<GaussNewtonState>();
+  defaultInitialState(*initial);
+  return initial;
 }
 
 } /* namespace gtsam */

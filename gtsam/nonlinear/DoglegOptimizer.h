@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/DirectOptimizer.h>
+#include <gtsam/nonlinear/SuccessiveLinearizationOptimizer.h>
 
 namespace gtsam {
 
@@ -27,7 +27,7 @@ namespace gtsam {
  * common to all nonlinear optimization algorithms.  This class also contains
  * all of those parameters.
  */
-class DoglegParams : public DirectOptimizerParams {
+class DoglegParams : public SuccessiveLinearizationParams {
 public:
   /** See DoglegParams::dlVerbosity */
   enum DLVerbosity {
@@ -44,7 +44,7 @@ public:
   virtual ~DoglegParams() {}
 
   virtual void print(const std::string& str = "") const {
-    DirectOptimizerParams::print(str);
+    SuccessiveLinearizationParams::print(str);
     std::cout << "               deltaInitial: " << deltaInitial << "\n";
     std::cout.flush();
   }
@@ -53,7 +53,7 @@ public:
 /**
  * State for DoglegOptimizer
  */
-class DoglegState : public NonlinearOptimizerState {
+class DoglegState : public SuccessiveLinearizationState {
 public:
 
   double Delta;
@@ -63,11 +63,11 @@ public:
 /**
  * This class performs Dogleg nonlinear optimization
  */
-class DoglegOptimizer : public DirectOptimizer {
+class DoglegOptimizer : public SuccessiveLinearizationOptimizer {
 
 public:
 
-  typedef boost::shared_ptr<DoglegParams> SharedParams;
+  typedef boost::shared_ptr<const DoglegParams> SharedParams;
   typedef boost::shared_ptr<DoglegState> SharedState;
   typedef boost::shared_ptr<DoglegOptimizer> shared_ptr;
 
@@ -85,7 +85,7 @@ public:
   DoglegOptimizer(const NonlinearFactorGraph& graph,
       const DoglegParams& params = DoglegParams(),
       const Ordering& ordering = Ordering()) :
-        DirectOptimizer(SharedGraph(new NonlinearFactorGraph(graph))),
+        SuccessiveLinearizationOptimizer(SharedGraph(new NonlinearFactorGraph(graph))),
         params_(new DoglegParams(params)) {}
 
   /** Standard constructor, requires a nonlinear factor graph, initial
@@ -96,9 +96,8 @@ public:
    * @param values The initial variable assignments
    * @param params The optimization parameters
    */
-  DoglegOptimizer(const NonlinearFactorGraph& graph,
-      const Ordering& ordering) :
-        DirectOptimizer(SharedGraph(new NonlinearFactorGraph(graph))),
+  DoglegOptimizer(const NonlinearFactorGraph& graph, const Ordering& ordering) :
+        SuccessiveLinearizationOptimizer(SharedGraph(new NonlinearFactorGraph(graph))),
         params_(new DoglegParams()) {}
 
   /** Standard constructor, requires a nonlinear factor graph, initial
@@ -110,14 +109,11 @@ public:
   DoglegOptimizer(const SharedGraph& graph,
       const DoglegParams& params = DoglegParams(),
       const SharedOrdering& ordering = SharedOrdering()) :
-        DirectOptimizer(graph),
+        SuccessiveLinearizationOptimizer(graph),
         params_(new DoglegParams(params)) {}
 
   /** Access the parameters */
-  virtual const NonlinearOptimizer::SharedParams& params() const { return params_; }
-
-  /** Access the parameters */
-  const DoglegOptimizer::SharedParams& params() const { return params_; }
+  virtual NonlinearOptimizer::SharedParams params() const { return params_; }
 
   /// @}
 
@@ -131,19 +127,18 @@ public:
    * containing the updated variable assignments, which may be retrieved with
    * values().
    */
-  virtual NonlinearOptimizer::SharedState iterate(const SharedState& current) const;
+  virtual NonlinearOptimizer::SharedState iterate(const NonlinearOptimizer::SharedState& current) const;
 
-  /** Create a copy of the NonlinearOptimizer */
-  virtual NonlinearOptimizer::shared_ptr clone() const {
-    return boost::make_shared<DoglegOptimizer>(*this); }
+  /** Create an initial state with the specified variable assignment values and
+   * all other default state.
+   */
+  virtual NonlinearOptimizer::SharedState initialState(const Values& initialValues) const;
 
   /// @}
 
 protected:
 
-  const SharedParams params_;
-
-  virtual void setParams(const NonlinearOptimizer::SharedParams& newParams) { params_ = newParams; }
+  SharedParams params_;
 };
 
 }

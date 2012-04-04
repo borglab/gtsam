@@ -83,6 +83,13 @@ NonlinearOptimizer::SharedState NonlinearOptimizer::defaultOptimize(const Shared
 }
 
 /* ************************************************************************* */
+void NonlinearOptimizer::defaultInitialState(NonlinearOptimizerState& initial) const {
+  state.values = initialValues;
+  state.error = graph_->error(initialValues);
+  state.iterations = 0;
+}
+
+/* ************************************************************************* */
 bool checkConvergence(double relativeErrorTreshold, double absoluteErrorTreshold,
     double errorThreshold, double currentError, double newError,
     NonlinearOptimizerParams::Verbosity verbosity) {

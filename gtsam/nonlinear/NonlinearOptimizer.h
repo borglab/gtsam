@@ -78,8 +78,11 @@ public:
   /** The number of optimization iterations performed. */
   unsigned int iterations;
 
-  /** Virtual destructor to enable RTTI */
+  /** Virtual destructor */
   virtual ~NonlinearOptimizerState() {}
+
+  /** Clone the state (i.e. make a copy of the derived class) */
+  virtual boost::shared_ptr<NonlinearOptimizerState> clone() = 0;
 };
 
 
@@ -185,15 +188,19 @@ public:
    */
   virtual SharedState optimize(const SharedState& initial) const { return defaultOptimize(initial); }
 
+  SharedState optimize(const Values& initialization) const { return optimize(initialState(initialization)); }
+
   /** Shortcut to optimize and return the resulting Values of the maximum-
    * likelihood estimate.  To access statistics and information such as the
    * final error and number of iterations, use optimize() instead.
    * @return The maximum-likelihood estimate.
    */
-  virtual SharedValues optimized(const SharedState& initial) const { return this->optimize(initial)->values(); }
+  virtual Values optimized(const SharedState& initial) const { return this->optimize(initial)->values; }
+
+  Values optimized(const Values& initialization) const { return optimized(initialState(initialization)); }
 
   /** Retrieve the parameters. */
-  virtual const SharedParams& params() const = 0;
+  virtual SharedParams params() const = 0;
 
   /// @}
 
@@ -209,20 +216,10 @@ public:
    */
   virtual SharedState iterate(const SharedState& current) const = 0;
 
-  /** Update the graph, leaving all other parts of the optimizer unchanged,
-   * returns a new updated NonlinearOptimzier object, the original is not
-   * modified.
+  /** Create an initial state from a variable assignment Values, with all
+   * other state values at their default initial values.
    */
-  virtual shared_ptr update(const SharedGraph& newGraph) const;
-
-  /** Update the parameters, leaving all other parts of the optimizer unchanged,
-   * returns a new updated NonlinearOptimzier object, the original is not
-   * modified.
-   */
-  const shared_ptr update(const SharedParams& newParams) const;
-
-  /** Create a copy of the NonlinearOptimizer */
-  virtual shared_ptr clone() const = 0;
+  virtual SharedState initialState(const Values& initialValues) const = 0;
 
   /// @}
 
@@ -235,13 +232,12 @@ protected:
    */
   SharedState defaultOptimize(const SharedState& initial) const;
 
-  /** Modify the parameters in-place (not for external use) */
-  virtual void setParams(const NonlinearOptimizer::SharedParams& newParams);
+  /** Initialize a state, using the current error and 0 iterations */
+  void defaultInitialState(SharedState& initial) const;
 
   /** Constructor for initial construction of base classes.
    */
-  NonlinearOptimizer(const SharedGraph& graph) :
-    graph_(graph) {}
+  NonlinearOptimizer(const SharedGraph& graph) : graph_(graph) {}
 
 };
 

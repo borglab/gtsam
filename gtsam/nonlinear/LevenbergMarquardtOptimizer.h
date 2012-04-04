@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/DirectOptimizer.h>
+#include <gtsam/nonlinear/SuccessiveLinearizationOptimizer.h>
 
 namespace gtsam {
 
@@ -27,7 +27,7 @@ namespace gtsam {
  * common to all nonlinear optimization algorithms.  This class also contains
  * all of those parameters.
  */
-class LevenbergMarquardtParams : public DirectOptimizerParams {
+class LevenbergMarquardtParams : public SuccessiveLinearizationParams {
 public:
   /** See LevenbergMarquardtParams::lmVerbosity */
   enum LMVerbosity {
@@ -50,7 +50,7 @@ public:
   virtual ~LevenbergMarquardtParams() {}
 
   virtual void print(const std::string& str = "") const {
-    DirectOptimizerParams::print(str);
+    SuccessiveLinearizationParams::print(str);
     std::cout << "              lambdaInitial: " << lambdaInitial << "\n";
     std::cout << "               lambdaFactor: " << lambdaFactor << "\n";
     std::cout << "           lambdaUpperBound: " << lambdaUpperBound << "\n";
@@ -61,7 +61,7 @@ public:
 /**
  * State for LevenbergMarquardtOptimizer
  */
-class LevenbergMarquardtState : public NonlinearOptimizerState {
+class LevenbergMarquardtState : public SuccessiveLinearizationState {
 public:
 
   double lambda;
@@ -72,11 +72,11 @@ public:
  * This class performs Levenberg-Marquardt nonlinear optimization
  * TODO: use make_shared
  */
-class LevenbergMarquardtOptimizer : public DirectOptimizer {
+class LevenbergMarquardtOptimizer : public SuccessiveLinearizationOptimizer {
 
 public:
 
-  typedef boost::shared_ptr<LevenbergMarquardtParams> SharedParams;
+  typedef boost::shared_ptr<const LevenbergMarquardtParams> SharedParams;
   typedef boost::shared_ptr<LevenbergMarquardtState> SharedState;
   typedef boost::shared_ptr<LevenbergMarquardtOptimizer> shared_ptr;
 
@@ -94,7 +94,7 @@ public:
   LevenbergMarquardtOptimizer(const NonlinearFactorGraph& graph,
       const LevenbergMarquardtParams& params = LevenbergMarquardtParams(),
       const Ordering& ordering = Ordering()) :
-        DirectOptimizer(SharedGraph(new NonlinearFactorGraph(graph))),
+        SuccessiveLinearizationOptimizer(SharedGraph(new NonlinearFactorGraph(graph))),
         params_(new LevenbergMarquardtParams(params)) {}
 
   /** Standard constructor, requires a nonlinear factor graph, initial
@@ -107,7 +107,7 @@ public:
    */
   LevenbergMarquardtOptimizer(const NonlinearFactorGraph& graph,
       const Ordering& ordering) :
-        DirectOptimizer(SharedGraph(new NonlinearFactorGraph(graph))),
+        SuccessiveLinearizationOptimizer(SharedGraph(new NonlinearFactorGraph(graph))),
         params_(new LevenbergMarquardtParams()) {}
 
   /** Standard constructor, requires a nonlinear factor graph, initial
@@ -119,14 +119,11 @@ public:
   LevenbergMarquardtOptimizer(const SharedGraph& graph,
       const LevenbergMarquardtParams& params = LevenbergMarquardtParams(),
       const SharedOrdering& ordering = SharedOrdering()) :
-        DirectOptimizer(graph),
+        SuccessiveLinearizationOptimizer(graph),
         params_(new LevenbergMarquardtParams(params)) {}
 
   /** Access the parameters */
-  virtual const NonlinearOptimizer::SharedParams& params() const { return params_; }
-
-  /** Access the parameters */
-  const LevenbergMarquardtOptimizer::SharedParams& params() const { return params_; }
+  virtual NonlinearOptimizer::SharedParams params() const { return params_; }
 
   /// @}
 
@@ -140,11 +137,12 @@ public:
    * containing the updated variable assignments, which may be retrieved with
    * values().
    */
-  virtual NonlinearOptimizer::SharedState iterate(const SharedState& current) const;
+  virtual NonlinearOptimizer::SharedState iterate(const NonlinearOptimizer::SharedState& current) const;
 
-  /** Create a copy of the NonlinearOptimizer */
-  virtual NonlinearOptimizer::shared_ptr clone() const {
-    return boost::make_shared<LevenbergMarquardtOptimizer>(*this); }
+  /** Create an initial state with the specified variable assignment values and
+   * all other default state.
+   */
+  virtual NonlinearOptimizer::SharedState initialState(const Values& initialValues) const;
 
   /// @}
 
@@ -152,7 +150,7 @@ protected:
 
   typedef boost::shared_ptr<const std::vector<size_t> > SharedDimensions;
 
-  const SharedParams params_;
+  SharedParams params_;
   const SharedDimensions dimensions_;
 };
 

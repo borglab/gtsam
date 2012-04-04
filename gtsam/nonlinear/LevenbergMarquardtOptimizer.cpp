@@ -26,7 +26,8 @@ using namespace std;
 
 namespace gtsam {
 
-NonlinearOptimizer::auto_ptr LevenbergMarquardtOptimizer::iterate(const SharedState& current) const {
+/* ************************************************************************* */
+NonlinearOptimizer::SharedState LevenbergMarquardtOptimizer::iterate(const NonlinearOptimizer::SharedState& current) const {
 
   // Linearize graph
   GaussianFactorGraph::shared_ptr linear = graph_->linearize(*values_, *ordering_);
@@ -139,6 +140,14 @@ NonlinearOptimizer::auto_ptr LevenbergMarquardtOptimizer::iterate(const SharedSt
   newState->Delta = lambda;
 
   return newState;
+}
+
+/* ************************************************************************* */
+NonlinearOptimizer::SharedState LevenbergMarquardtOptimizer::initialState(const Values& initialValues) const {
+  SharedState initial = boost::make_shared<LevenbergMarquardtState>();
+  defaultInitialState(*initial);
+  initial->lambda = params_->lambdaInitial;
+  return initial;
 }
 
 } /* namespace gtsam */
