@@ -58,13 +58,6 @@ if(NOT FIRST_PASS_DONE)
 endif()
 
 # Configurable Options
-#SET(FOO_BUILD_SHARED OFF CACHE BOOL "Build libfoo shared library")
-#set(GTSAM_BUILD_TESTS                  ON CACHE BOOL "Enable/Disable building of tests")
-#set(GTSAM_BUILD_TIMING                 ON CACHE BOOL "Enable/Disable building of timing scripts")
-#set(GTSAM_BUILD_EXAMPLES               ON CACHE BOOL "Enable/Disable building of examples")
-#set(GTSAM_BUILD_WRAP                   ON CACHE BOOL "Enable/Disable building of matlab wrap utility (necessary for matlab interface)")
-#set(GTSAM_BUILD_CONVENIENCE_LIBRARIES OFF CACHE BOOL "Enable/Disable use of convenience libraries for faster development rebuilds, but slower install")
-   
 option(GTSAM_BUILD_TESTS                 "Enable/Disable building of tests"          ON)
 option(GTSAM_BUILD_TIMING                "Enable/Disable building of timing scripts" ON)
 option(GTSAM_BUILD_EXAMPLES              "Enable/Disable building of examples"       ON)
