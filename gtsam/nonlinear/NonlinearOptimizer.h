@@ -36,7 +36,7 @@ public:
     LINEAR
   };
 
-  int maxIterations; ///< The maximum iterations to stop iterating (default 100)
+  size_t maxIterations; ///< The maximum iterations to stop iterating (default 100)
   double relativeErrorTol; ///< The maximum relative error decrease to stop iterating (default 1e-5)
   double absoluteErrorTol; ///< The maximum absolute error decrease to stop iterating (default 1e-5)
   double errorTol; ///< The maximum total error to stop iterating (default 0.0)
@@ -80,9 +80,6 @@ public:
 
   /** Virtual destructor */
   virtual ~NonlinearOptimizerState() {}
-
-  /** Clone the state (i.e. make a copy of the derived class) */
-  virtual boost::shared_ptr<NonlinearOptimizerState> clone() = 0;
 };
 
 
@@ -233,7 +230,7 @@ protected:
   SharedState defaultOptimize(const SharedState& initial) const;
 
   /** Initialize a state, using the current error and 0 iterations */
-  void defaultInitialState(SharedState& initial) const;
+  void defaultInitialState(const Values& initialValues, NonlinearOptimizerState& initialState) const;
 
   /** Constructor for initial construction of base classes.
    */

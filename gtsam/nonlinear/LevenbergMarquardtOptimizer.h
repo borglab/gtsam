@@ -76,7 +76,7 @@ class LevenbergMarquardtOptimizer : public SuccessiveLinearizationOptimizer {
 
 public:
 
-  typedef boost::shared_ptr<const LevenbergMarquardtParams> SharedParams;
+  typedef boost::shared_ptr<LevenbergMarquardtParams> SharedParams;
   typedef boost::shared_ptr<LevenbergMarquardtState> SharedState;
   typedef boost::shared_ptr<LevenbergMarquardtOptimizer> shared_ptr;
 
@@ -92,8 +92,7 @@ public:
    * @param params The optimization parameters
    */
   LevenbergMarquardtOptimizer(const NonlinearFactorGraph& graph,
-      const LevenbergMarquardtParams& params = LevenbergMarquardtParams(),
-      const Ordering& ordering = Ordering()) :
+      const LevenbergMarquardtParams& params = LevenbergMarquardtParams()) :
         SuccessiveLinearizationOptimizer(SharedGraph(new NonlinearFactorGraph(graph))),
         params_(new LevenbergMarquardtParams(params)) {}
 
@@ -105,10 +104,10 @@ public:
    * @param values The initial variable assignments
    * @param params The optimization parameters
    */
-  LevenbergMarquardtOptimizer(const NonlinearFactorGraph& graph,
-      const Ordering& ordering) :
+  LevenbergMarquardtOptimizer(const NonlinearFactorGraph& graph, const Ordering& ordering) :
         SuccessiveLinearizationOptimizer(SharedGraph(new NonlinearFactorGraph(graph))),
-        params_(new LevenbergMarquardtParams()) {}
+        params_(new LevenbergMarquardtParams()) {
+    params_->ordering = ordering; }
 
   /** Standard constructor, requires a nonlinear factor graph, initial
    * variable assignments, and optimization parameters.
@@ -117,8 +116,7 @@ public:
    * @param params The optimization parameters
    */
   LevenbergMarquardtOptimizer(const SharedGraph& graph,
-      const LevenbergMarquardtParams& params = LevenbergMarquardtParams(),
-      const SharedOrdering& ordering = SharedOrdering()) :
+      const LevenbergMarquardtParams& params = LevenbergMarquardtParams()) :
         SuccessiveLinearizationOptimizer(graph),
         params_(new LevenbergMarquardtParams(params)) {}
 
@@ -151,7 +149,7 @@ protected:
   typedef boost::shared_ptr<const std::vector<size_t> > SharedDimensions;
 
   SharedParams params_;
-  const SharedDimensions dimensions_;
+  mutable SharedDimensions dimensions_; // Mutable because we compute it when needed and cache it
 };
 
 }

@@ -27,29 +27,36 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-NonlinearOptimizer::SharedState LevenbergMarquardtOptimizer::iterate(const NonlinearOptimizer::SharedState& current) const {
+NonlinearOptimizer::SharedState LevenbergMarquardtOptimizer::iterate(const NonlinearOptimizer::SharedState& _current) const {
+
+  const LevenbergMarquardtState& current = dynamic_cast<const LevenbergMarquardtState&>(*_current);
 
   // Linearize graph
-  GaussianFactorGraph::shared_ptr linear = graph_->linearize(*values_, *ordering_);
+  const Ordering& ordering = this->ordering(current.values);
+  GaussianFactorGraph::shared_ptr linear = graph_->linearize(current.values, ordering);
 
   // Check whether to use QR
   bool useQR;
-  if(lmParams_->factorization == LevenbergMarquardtParams::LDL)
+  if(params_->factorization == LevenbergMarquardtParams::LDL)
     useQR = false;
-  else if(lmParams_->factorization == LevenbergMarquardtParams::QR)
+  else if(params_->factorization == LevenbergMarquardtParams::QR)
     useQR = true;
   else
     throw runtime_error("Optimization parameter is invalid: LevenbergMarquardtParams::factorization");
 
   // Pull out parameters we'll use
   const NonlinearOptimizerParams::Verbosity nloVerbosity = params_->verbosity;
-  const LevenbergMarquardtParams::LMVerbosity lmVerbosity = lmParams_->lmVerbosity;
-  const double lambdaFactor = lmParams_->lambdaFactor;
+  const LevenbergMarquardtParams::LMVerbosity lmVerbosity = params_->lmVerbosity;
+  const double lambdaFactor = params_->lambdaFactor;
 
   // Variables to update during try_lambda loop
-  double lambda = lambda_;
-  double next_error = error();
-  SharedValues next_values = values();
+  double lambda = current.lambda;
+  double next_error = current.error;
+  Values next_values = current.values;
+
+  // Compute dimensions if we haven't done it yet
+  if(!dimensions_)
+    dimensions_.reset(new vector<size_t>(current.values.dims(ordering)));
 
   // Keep increasing lambda until we make make progress
   while(true) {
@@ -79,9 +86,9 @@ NonlinearOptimizer::SharedState LevenbergMarquardtOptimizer::iterate(const Nonli
 
       // Optimize
       VectorValues::shared_ptr delta;
-      if(lmParams_->elimination == LevenbergMarquardtParams::MULTIFRONTAL)
+      if(params_->elimination == LevenbergMarquardtParams::MULTIFRONTAL)
         delta = GaussianMultifrontalSolver(dampedSystem, useQR).optimize();
-      else if(lmParams_->elimination == LevenbergMarquardtParams::SEQUENTIAL)
+      else if(params_->elimination == LevenbergMarquardtParams::SEQUENTIAL)
         delta = GaussianSequentialSolver(dampedSystem, useQR).optimize();
       else
         throw runtime_error("Optimization parameter is invalid: LevenbergMarquardtParams::elimination");
@@ -90,15 +97,15 @@ NonlinearOptimizer::SharedState LevenbergMarquardtOptimizer::iterate(const Nonli
       if (lmVerbosity >= LevenbergMarquardtParams::TRYDELTA) delta->print("delta");
 
       // update values
-      SharedValues newValues(new Values(values_->retract(*delta, *ordering_)));
+      Values newValues = current.values.retract(*delta, ordering);
 
       // create new optimization state with more adventurous lambda
-      double error = graph_->error(*newValues);
+      double error = graph_->error(newValues);
 
       if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) cout << "next error = " << error << endl;
 
-      if( error <= error_ ) {
-        next_values = newValues;
+      if(error <= current.error) {
+        next_values.swap(newValues);
         next_error = error;
         lambda /= lambdaFactor;
         break;
@@ -106,7 +113,7 @@ NonlinearOptimizer::SharedState LevenbergMarquardtOptimizer::iterate(const Nonli
         // Either we're not cautious, or the same lambda was worse than the current error.
         // The more adventurous lambda was worse too, so make lambda more conservative
         // and keep the same values.
-        if(lambda >= lmParams_->lambdaUpperBound) {
+        if(lambda >= params_->lambdaUpperBound) {
           if(nloVerbosity >= NonlinearOptimizerParams::ERROR)
             cout << "Warning:  Levenberg-Marquardt giving up because cannot decrease error with maximum lambda" << endl;
           break;
@@ -120,7 +127,7 @@ NonlinearOptimizer::SharedState LevenbergMarquardtOptimizer::iterate(const Nonli
       // Either we're not cautious, or the same lambda was worse than the current error.
       // The more adventurous lambda was worse too, so make lambda more conservative
       // and keep the same values.
-      if(lambda >= lmParams_->lambdaUpperBound) {
+      if(lambda >= params_->lambdaUpperBound) {
         if(nloVerbosity >= NonlinearOptimizerParams::ERROR)
           cout << "Warning:  Levenberg-Marquardt giving up because cannot decrease error with maximum lambda" << endl;
         break;
@@ -136,8 +143,8 @@ NonlinearOptimizer::SharedState LevenbergMarquardtOptimizer::iterate(const Nonli
   LevenbergMarquardtOptimizer::SharedState newState = boost::make_shared<LevenbergMarquardtState>();
   newState->values = next_values;
   newState->error = next_error;
-  newState->iterations = current->iterations + 1;
-  newState->Delta = lambda;
+  newState->iterations = current.iterations + 1;
+  newState->lambda = lambda;
 
   return newState;
 }
@@ -145,7 +152,7 @@ NonlinearOptimizer::SharedState LevenbergMarquardtOptimizer::iterate(const Nonli
 /* ************************************************************************* */
 NonlinearOptimizer::SharedState LevenbergMarquardtOptimizer::initialState(const Values& initialValues) const {
   SharedState initial = boost::make_shared<LevenbergMarquardtState>();
-  defaultInitialState(*initial);
+  defaultInitialState(initialValues, *initial);
   initial->lambda = params_->lambdaInitial;
   return initial;
 }

@@ -22,20 +22,20 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-const SuccessiveLinearizationOptimizer::SharedOrdering& SuccessiveLinearizationOptimizer::ordering(const Values& values) const {
+const Ordering& SuccessiveLinearizationOptimizer::ordering(const Values& values) const {
 
   if(!ordering_) {
     SharedParams params =
-        boost::dynamic_pointer_cast<const SuccessiveLinearizationParams>(params());
+        boost::dynamic_pointer_cast<const SuccessiveLinearizationParams>(this->params());
 
     // If we're using a COLAMD ordering, compute it
-    if(!params.ordering)
-      ordering_ = graph_->orderingCOLAMD(values);
+    if(params->ordering)
+      ordering_ = params->ordering;
     else
-      ordering_ = params.ordering;
+      ordering_ = *graph_->orderingCOLAMD(values);
   }
 
-  return ordering_;
+  return *ordering_;
 }
 
 } /* namespace gtsam */

@@ -24,6 +24,9 @@
 
 namespace gtsam {
 
+class SuccessiveLinearizationParams;
+class SuccessiveLinearizationState;
+
 /**
  * This is an intermediate base class for NonlinearOptimizers that use direct
  * solving, i.e. factorization.  This class is here to reduce code duplication
@@ -33,23 +36,18 @@ namespace gtsam {
 class SuccessiveLinearizationOptimizer : public NonlinearOptimizer {
 public:
 
-  class SuccessiveLinearizationParams;
-  class SuccessiveLinearizationState;
-
   typedef boost::shared_ptr<const SuccessiveLinearizationParams> SharedParams;
   typedef boost::shared_ptr<const SuccessiveLinearizationOptimizer> shared_ptr;
 
 protected:
 
-  typedef boost::shared_ptr<const Ordering> SharedOrdering;
-
   SuccessiveLinearizationOptimizer(const SharedGraph& graph) : NonlinearOptimizer(graph) {}
 
-  const SharedOrdering& ordering(const Values& values) const;
+  const Ordering& ordering(const Values& values) const;
 
 private:
 
-  SharedOrdering ordering_;
+  mutable boost::optional<Ordering> ordering_; // Mutable because we set/compute it when needed and cache it
 };
 
 class SuccessiveLinearizationParams : public NonlinearOptimizerParams {
@@ -66,12 +64,9 @@ public:
     QR,
   };
 
-  /** See SuccessiveLinearizationParams::ordering */
-  typedef boost::shared_ptr<const Ordering> SharedOrdering;
-
   Elimination elimination; ///< The elimination algorithm to use (default: MULTIFRONTAL)
   Factorization factorization; ///< The numerical factorization (default: LDL)
-  SharedOrdering ordering; ///< The variable elimination ordering, or empty to use COLAMD (default: empty)
+  boost::optional<Ordering> ordering; ///< The variable elimination ordering, or empty to use COLAMD (default: empty)
 
   SuccessiveLinearizationParams() :
     elimination(MULTIFRONTAL), factorization(LDL) {}

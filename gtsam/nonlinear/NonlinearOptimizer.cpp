@@ -25,24 +25,10 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-NonlinearOptimizer::shared_ptr NonlinearOptimizer::update(const NonlinearOptimizer::SharedGraph& newGraph) const {
-  shared_ptr result(this->clone());
-  result->graph_ = newGraph;
-  return result;
-}
-
-/* ************************************************************************* */
-NonlinearOptimizer::shared_ptr NonlinearOptimizer::update(const NonlinearOptimizer::SharedParams& newParams) const {
-  shared_ptr result(this->clone());
-  result->params_ = newParams;
-  return result;
-}
-
-/* ************************************************************************* */
 NonlinearOptimizer::SharedState NonlinearOptimizer::defaultOptimize(const SharedState& initial) const {
 
   const SharedParams& params = this->params();
-  double currentError = initial->error();
+  double currentError = initial->error;
 
   // check if we're already close enough
   if(currentError <= params->errorTol) {
@@ -52,11 +38,11 @@ NonlinearOptimizer::SharedState NonlinearOptimizer::defaultOptimize(const Shared
   }
 
   // Maybe show output
-  if (params->verbosity >= NonlinearOptimizerParams::VALUES) this->values()->print("Initial values");
-  if (params->verbosity >= NonlinearOptimizerParams::ERROR) cout << "Initial error: " << this->error() << endl;
+  if (params->verbosity >= NonlinearOptimizerParams::VALUES) initial->values.print("Initial values");
+  if (params->verbosity >= NonlinearOptimizerParams::ERROR) cout << "Initial error: " << initial->error << endl;
 
   // Return if we already have too many iterations
-  if(this->iterations() >= params->maxIterations)
+  if(initial->iterations >= params->maxIterations)
     return initial;
 
   // Iterative loop
@@ -67,8 +53,8 @@ NonlinearOptimizer::SharedState NonlinearOptimizer::defaultOptimize(const Shared
     next = this->iterate(next);
 
     // Maybe show output
-    if (params->verbosity >= NonlinearOptimizerParams::VALUES) next->values->print("newValues");
-    if (params->verbosity >= NonlinearOptimizerParams::ERROR) cout << "newError: " << next->error << endl;
+    if(params->verbosity >= NonlinearOptimizerParams::VALUES) next->values.print("newValues");
+    if(params->verbosity >= NonlinearOptimizerParams::ERROR) cout << "newError: " << next->error << endl;
   } while(next->iterations < params->maxIterations &&
       !checkConvergence(params->relativeErrorTol, params->absoluteErrorTol,
             params->errorTol, currentError, next->error, params->verbosity));
@@ -83,10 +69,10 @@ NonlinearOptimizer::SharedState NonlinearOptimizer::defaultOptimize(const Shared
 }
 
 /* ************************************************************************* */
-void NonlinearOptimizer::defaultInitialState(NonlinearOptimizerState& initial) const {
-  state.values = initialValues;
-  state.error = graph_->error(initialValues);
-  state.iterations = 0;
+void NonlinearOptimizer::defaultInitialState(const Values& initialValues, NonlinearOptimizerState& initialState) const {
+  initialState.values = initialValues;
+  initialState.error = graph_->error(initialValues);
+  initialState.iterations = 0;
 }
 
 /* ************************************************************************* */

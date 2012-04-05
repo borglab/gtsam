@@ -25,25 +25,28 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-NonlinearOptimizer::auto_ptr GaussNewtonOptimizer::iterate() const {
+NonlinearOptimizer::SharedState GaussNewtonOptimizer::iterate(const NonlinearOptimizer::SharedState& _current) const {
+
+  const GaussNewtonState& current = dynamic_cast<const GaussNewtonState&>(*_current);
 
   // Linearize graph
-  GaussianFactorGraph::shared_ptr linear = graph_->linearize(*values_, *ordering_);
+  const Ordering& ordering = this->ordering(current.values);
+  GaussianFactorGraph::shared_ptr linear = graph_->linearize(current.values, ordering);
 
   // Check whether to use QR
   bool useQR;
-  if(gnParams_->factorization == GaussNewtonParams::LDL)
+  if(params_->factorization == GaussNewtonParams::LDL)
     useQR = false;
-  else if(gnParams_->factorization == GaussNewtonParams::QR)
+  else if(params_->factorization == GaussNewtonParams::QR)
     useQR = true;
   else
     throw runtime_error("Optimization parameter is invalid: GaussNewtonParams::factorization");
 
   // Optimize
   VectorValues::shared_ptr delta;
-  if(gnParams_->elimination == GaussNewtonParams::MULTIFRONTAL)
+  if(params_->elimination == GaussNewtonParams::MULTIFRONTAL)
     delta = GaussianMultifrontalSolver(*linear, useQR).optimize();
-  else if(gnParams_->elimination == GaussNewtonParams::SEQUENTIAL)
+  else if(params_->elimination == GaussNewtonParams::SEQUENTIAL)
     delta = GaussianSequentialSolver(*linear, useQR).optimize();
   else
     throw runtime_error("Optimization parameter is invalid: GaussNewtonParams::elimination");
@@ -51,21 +54,19 @@ NonlinearOptimizer::auto_ptr GaussNewtonOptimizer::iterate() const {
   // Maybe show output
   if(params_->verbosity >= NonlinearOptimizerParams::DELTA) delta->print("delta");
 
-  // Update values
-  SharedValues newValues(new Values(values_->retract(*delta, *ordering_)));
-  double newError = graph_->error(*newValues);
+  // Create new state with new values and new error
+  SharedState newState = boost::make_shared<GaussNewtonState>();
+  newState->values = current.values.retract(*delta, ordering);
+  newState->error = graph_->error(newState->values);
+  newState->iterations = current.iterations + 1;
 
-  // Create new optimizer with new values and new error
-  NonlinearOptimizer::auto_ptr newOptimizer(new GaussNewtonOptimizer(
-      *this, newValues, newError));
-
-  return newOptimizer;
+  return newState;
 }
 
 /* ************************************************************************* */
 NonlinearOptimizer::SharedState GaussNewtonOptimizer::initialState(const Values& initialValues) const {
   SharedState initial = boost::make_shared<GaussNewtonState>();
-  defaultInitialState(*initial);
+  defaultInitialState(initialValues, *initial);
   return initial;
 }
 

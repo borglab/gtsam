@@ -27,11 +27,13 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-NonlinearOptimizer::SharedState DoglegOptimizer::iterate(const NonlinearOptimizer::SharedState& current) const {
+NonlinearOptimizer::SharedState DoglegOptimizer::iterate(const NonlinearOptimizer::SharedState& _current) const {
+
+  const DoglegState& current = dynamic_cast<const DoglegState&>(*_current);
 
   // Linearize graph
-  const Ordering& ordering = *ordering(current->values);
-  GaussianFactorGraph::shared_ptr linear = graph_->linearize(current->values, ordering);
+  const Ordering& ordering = this->ordering(current.values);
+  GaussianFactorGraph::shared_ptr linear = graph_->linearize(current.values, ordering);
 
   // Check whether to use QR
   bool useQR;
@@ -50,24 +52,24 @@ NonlinearOptimizer::SharedState DoglegOptimizer::iterate(const NonlinearOptimize
 
   if(params_->elimination == DoglegParams::MULTIFRONTAL) {
     GaussianBayesTree::shared_ptr bt = GaussianMultifrontalSolver(*linear, useQR).eliminate();
-    result = DoglegOptimizerImpl::Iterate(current->Delta, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, *bt, *graph_, *values(), ordering, error(), dlVerbose);
+    result = DoglegOptimizerImpl::Iterate(current.Delta, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, *bt, *graph_, current.values, ordering, current.error, dlVerbose);
 
   } else if(params_->elimination == DoglegParams::SEQUENTIAL) {
     GaussianBayesNet::shared_ptr bn = GaussianSequentialSolver(*linear, useQR).eliminate();
-    result = DoglegOptimizerImpl::Iterate(current->Delta, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, *bn, *graph_, *values(), ordering, error(), dlVerbose);
+    result = DoglegOptimizerImpl::Iterate(current.Delta, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, *bn, *graph_, current.values, ordering, current.error, dlVerbose);
 
   } else {
     throw runtime_error("Optimization parameter is invalid: DoglegParams::elimination");
   }
 
+  // Maybe show output
+  if(params_->verbosity >= NonlinearOptimizerParams::DELTA) result.dx_d.print("delta");
+
   // Create new state with new values and new error
-  DoglegOptimizer::SharedState newState = boost::make_shared<DoglegState>();
-
-  // Update values
-  newState->values = current->values.retract(result.dx_d, ordering);
-
+  SharedState newState = boost::make_shared<DoglegState>();
+  newState->values = current.values.retract(result.dx_d, ordering);
   newState->error = result.f_error;
-  newState->iterations = current->iterations + 1;
+  newState->iterations = current.iterations + 1;
   newState->Delta = result.Delta;
 
   return newState;
@@ -76,7 +78,7 @@ NonlinearOptimizer::SharedState DoglegOptimizer::iterate(const NonlinearOptimize
 /* ************************************************************************* */
 NonlinearOptimizer::SharedState DoglegOptimizer::initialState(const Values& initialValues) const {
   SharedState initial = boost::make_shared<DoglegState>();
-  defaultInitialState(initialValues);
+  defaultInitialState(initialValues, *initial);
   initial->Delta = params_->deltaInitial;
   return initial;
 }

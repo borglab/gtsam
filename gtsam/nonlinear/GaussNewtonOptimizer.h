@@ -39,7 +39,7 @@ class GaussNewtonOptimizer : public SuccessiveLinearizationOptimizer {
 
 public:
 
-  typedef boost::shared_ptr<const GaussNewtonParams> SharedParams;
+  typedef boost::shared_ptr<GaussNewtonParams> SharedParams;
 
   /// @name Standard interface
   /// @{
@@ -53,8 +53,7 @@ public:
    * @param params The optimization parameters
    */
   GaussNewtonOptimizer(const NonlinearFactorGraph& graph,
-      const GaussNewtonParams& params = GaussNewtonParams(),
-      const Ordering& ordering = Ordering()) :
+      const GaussNewtonParams& params = GaussNewtonParams()) :
         SuccessiveLinearizationOptimizer(SharedGraph(new NonlinearFactorGraph(graph))),
         params_(new GaussNewtonParams(params)) {}
 
@@ -68,7 +67,8 @@ public:
    */
   GaussNewtonOptimizer(const NonlinearFactorGraph& graph, const Ordering& ordering) :
         SuccessiveLinearizationOptimizer(SharedGraph(new NonlinearFactorGraph(graph))),
-        params_(new GaussNewtonParams()) {}
+        params_(new GaussNewtonParams()) {
+    params_->ordering = ordering; }
 
   /** Standard constructor, requires a nonlinear factor graph, initial
    * variable assignments, and optimization parameters.
@@ -77,8 +77,7 @@ public:
    * @param params The optimization parameters
    */
   GaussNewtonOptimizer(const SharedGraph& graph,
-      const GaussNewtonParams& params = GaussNewtonParams(),
-      const SharedOrdering& ordering = SharedOrdering()) :
+      const GaussNewtonParams& params = GaussNewtonParams()) :
         SuccessiveLinearizationOptimizer(graph),
         params_(new GaussNewtonParams(params)) {}
 

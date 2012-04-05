@@ -67,7 +67,7 @@ class DoglegOptimizer : public SuccessiveLinearizationOptimizer {
 
 public:
 
-  typedef boost::shared_ptr<const DoglegParams> SharedParams;
+  typedef boost::shared_ptr<DoglegParams> SharedParams;
   typedef boost::shared_ptr<DoglegState> SharedState;
   typedef boost::shared_ptr<DoglegOptimizer> shared_ptr;
 
@@ -83,8 +83,7 @@ public:
    * @param params The optimization parameters
    */
   DoglegOptimizer(const NonlinearFactorGraph& graph,
-      const DoglegParams& params = DoglegParams(),
-      const Ordering& ordering = Ordering()) :
+      const DoglegParams& params = DoglegParams()) :
         SuccessiveLinearizationOptimizer(SharedGraph(new NonlinearFactorGraph(graph))),
         params_(new DoglegParams(params)) {}
 
@@ -98,7 +97,8 @@ public:
    */
   DoglegOptimizer(const NonlinearFactorGraph& graph, const Ordering& ordering) :
         SuccessiveLinearizationOptimizer(SharedGraph(new NonlinearFactorGraph(graph))),
-        params_(new DoglegParams()) {}
+        params_(new DoglegParams()) {
+    params_->ordering = ordering; }
 
   /** Standard constructor, requires a nonlinear factor graph, initial
    * variable assignments, and optimization parameters.
@@ -107,8 +107,7 @@ public:
    * @param params The optimization parameters
    */
   DoglegOptimizer(const SharedGraph& graph,
-      const DoglegParams& params = DoglegParams(),
-      const SharedOrdering& ordering = SharedOrdering()) :
+      const DoglegParams& params = DoglegParams()) :
         SuccessiveLinearizationOptimizer(graph),
         params_(new DoglegParams(params)) {}
 
