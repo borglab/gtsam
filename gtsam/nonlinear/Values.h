@@ -393,6 +393,9 @@ namespace gtsam {
     /** Replace all keys and variables */
     Values& operator=(const Values& rhs);
 
+    /** Swap the contents of two Values without copying data */
+    void swap(Values& other) { values_.swap(other.values_); }
+
     /** Remove all variables from the config */
     void clear() { values_.clear(); }
 
