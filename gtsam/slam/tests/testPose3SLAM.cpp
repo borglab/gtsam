@@ -78,7 +78,7 @@ TEST(Pose3Graph, optimizeCircle) {
   Ordering ordering;
   ordering += kx0,kx1,kx2,kx3,kx4,kx5;
 
-  Values actual = *LevenbergMarquardtOptimizer(fg, initial, ordering).optimized();
+  Values actual = LevenbergMarquardtOptimizer(fg, ordering).optimized(initial);
 
   // Check with ground truth
   CHECK(assert_equal(hexagon, actual,1e-4));
@@ -113,7 +113,7 @@ TEST(Pose3Graph, partial_prior_height) {
 	// linearization
 	EXPECT_DOUBLES_EQUAL(2.0, height.error(values), tol);
 
-	Values actual = *LevenbergMarquardtOptimizer(graph, values).optimized();
+	Values actual = LevenbergMarquardtOptimizer(graph).optimized(values);
 	EXPECT(assert_equal(expected, actual.at<Pose3>(key), tol));
 	EXPECT_DOUBLES_EQUAL(0.0, graph.error(actual), tol);
 }
@@ -165,7 +165,7 @@ TEST(Pose3Graph, partial_prior_xy) {
 	Values values;
 	values.insert(key, init);
 
-	Values actual = *LevenbergMarquardtOptimizer(graph, values).optimized();
+	Values actual = LevenbergMarquardtOptimizer(graph).optimized(values);
 	EXPECT(assert_equal(expected, actual.at<Pose3>(key), tol));
 	EXPECT_DOUBLES_EQUAL(0.0, graph.error(actual), tol);
 }

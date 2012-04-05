@@ -176,8 +176,8 @@ TEST( GeneralSFMFactor, optimize_defaultK ) {
 
   // Create an ordering of the variables
   Ordering ordering = *getOrdering(X,L);
-  NonlinearOptimizer::auto_ptr optimizer = LevenbergMarquardtOptimizer(graph, values, ordering).optimize();
-  EXPECT(optimizer->error() < 0.5 * 1e-5 * nMeasurements);
+  NonlinearOptimizer::SharedState final = LevenbergMarquardtOptimizer(graph, ordering).optimize(values);
+  EXPECT(final->error < 0.5 * 1e-5 * nMeasurements);
 }
 
 /* ************************************************************************* */
@@ -218,8 +218,8 @@ TEST( GeneralSFMFactor, optimize_varK_SingleMeasurementError ) {
   const double reproj_error = 1e-5;
 
   Ordering ordering = *getOrdering(X,L);
-  NonlinearOptimizer::auto_ptr optimizer = LevenbergMarquardtOptimizer(graph, values, ordering).optimize();
-  EXPECT(optimizer->error() < 0.5 * reproj_error * nMeasurements);
+  NonlinearOptimizer::SharedState final = LevenbergMarquardtOptimizer(graph, ordering).optimize(values);
+  EXPECT(final->error < 0.5 * reproj_error * nMeasurements);
 }
 
 /* ************************************************************************* */
@@ -258,8 +258,8 @@ TEST( GeneralSFMFactor, optimize_varK_FixCameras ) {
   const double reproj_error = 1e-5 ;
 
   Ordering ordering = *getOrdering(X,L);
-  NonlinearOptimizer::auto_ptr optimizer = LevenbergMarquardtOptimizer(graph, values, ordering).optimize();
-  EXPECT(optimizer->error() < 0.5 * reproj_error * nMeasurements);
+  NonlinearOptimizer::SharedState final = LevenbergMarquardtOptimizer(graph, ordering).optimize(values);
+  EXPECT(final->error < 0.5 * reproj_error * nMeasurements);
 }
 
 /* ************************************************************************* */
@@ -310,8 +310,8 @@ TEST( GeneralSFMFactor, optimize_varK_FixLandmarks ) {
   const double reproj_error = 1e-5 ;
 
   Ordering ordering = *getOrdering(X,L);
-  NonlinearOptimizer::auto_ptr optimizer = LevenbergMarquardtOptimizer(graph, values, ordering).optimize();
-  EXPECT(optimizer->error() < 0.5 * reproj_error * nMeasurements);
+  NonlinearOptimizer::SharedState final = LevenbergMarquardtOptimizer(graph, ordering).optimize(values);
+  EXPECT(final->error < 0.5 * reproj_error * nMeasurements);
 }
 
 /* ************************************************************************* */
@@ -353,8 +353,8 @@ TEST( GeneralSFMFactor, optimize_varK_BA ) {
   const double reproj_error = 1e-5 ;
 
   Ordering ordering = *getOrdering(X,L);
-  NonlinearOptimizer::auto_ptr optimizer = LevenbergMarquardtOptimizer(graph, values, ordering).optimize();
-  EXPECT(optimizer->error() < 0.5 * reproj_error * nMeasurements);
+  NonlinearOptimizer::SharedState final = LevenbergMarquardtOptimizer(graph, ordering).optimize(values);
+  EXPECT(final->error < 0.5 * reproj_error * nMeasurements);
 }
 
 /* ************************************************************************* */

@@ -65,19 +65,20 @@ TEST( StereoFactor, singlePoint)
 	Point3 l1(0, 0, 0);
 	values.insert(PointKey(1), l1);   // add point at origin;
 
-	NonlinearOptimizer::auto_ptr optimizer(new GaussNewtonOptimizer(graph, values));
+	GaussNewtonOptimizer optimizer(graph);
+	NonlinearOptimizer::SharedState initial = optimizer.initialState(values);
 
 	// We expect the initial to be zero because config is the ground truth
-	DOUBLES_EQUAL(0.0, optimizer->error(), 1e-9);
+	DOUBLES_EQUAL(0.0, initial->error, 1e-9);
 
 	// Iterate once, and the config should not have changed
-	NonlinearOptimizer::auto_ptr afterOneIteration = optimizer->iterate();
-	DOUBLES_EQUAL(0.0, afterOneIteration->error(), 1e-9);
+	NonlinearOptimizer::SharedState afterOneIteration = optimizer.iterate(initial);
+	DOUBLES_EQUAL(0.0, afterOneIteration->error, 1e-9);
 
 	// Complete solution
-	NonlinearOptimizer::auto_ptr final = optimizer->optimize();
+	NonlinearOptimizer::SharedState final = optimizer.optimize(initial);
 
-	DOUBLES_EQUAL(0.0, final->error(), 1e-6);
+	DOUBLES_EQUAL(0.0, final->error, 1e-6);
 }
 
 /* ************************************************************************* */
