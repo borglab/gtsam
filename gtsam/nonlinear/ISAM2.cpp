@@ -42,7 +42,6 @@ static const double batchThreshold = 0.65;
 ISAM2::ISAM2(const ISAM2Params& params):
     delta_(deltaUnpermuted_), deltaNewton_(deltaNewtonUnpermuted_), RgProd_(RgProdUnpermuted_),
     deltaDoglegUptodate_(true), deltaUptodate_(true), params_(params) {
-  // See note in gtsam/base/boost_variant_with_workaround.h
   if(params_.optimizationParams.type() == typeid(ISAM2DoglegParams))
     doglegDelta_ = boost::get<ISAM2DoglegParams>(params_.optimizationParams).initialDelta;
 }
@@ -51,9 +50,49 @@ ISAM2::ISAM2(const ISAM2Params& params):
 ISAM2::ISAM2():
     delta_(deltaUnpermuted_), deltaNewton_(deltaNewtonUnpermuted_), RgProd_(RgProdUnpermuted_),
     deltaDoglegUptodate_(true), deltaUptodate_(true) {
-  // See note in gtsam/base/boost_variant_with_workaround.h
   if(params_.optimizationParams.type() == typeid(ISAM2DoglegParams))
     doglegDelta_ = boost::get<ISAM2DoglegParams>(params_.optimizationParams).initialDelta;
+}
+
+/* ************************************************************************* */
+ISAM2::ISAM2(const ISAM2& other):
+    delta_(deltaUnpermuted_), deltaNewton_(deltaNewtonUnpermuted_), RgProd_(RgProdUnpermuted_) {
+  *this = other;
+}
+
+/* ************************************************************************* */
+ISAM2& ISAM2::operator=(const ISAM2& rhs) {
+  // Copy BayesTree
+  this->Base::operator=(rhs);
+
+  // Copy our variables
+  // When we have Permuted<...>, it is only necessary to copy this permuted
+  // view and not the original, because copying the permuted view automatically
+  // copies the original.
+  theta_ = rhs.theta_;
+  variableIndex_ = rhs.variableIndex_;
+  delta_ = rhs.delta_;
+  deltaNewton_ = rhs.deltaNewton_;
+  RgProd_ = rhs.RgProd_;
+  deltaDoglegUptodate_ = rhs.deltaDoglegUptodate_;
+  deltaUptodate_ = rhs.deltaUptodate_;
+  deltaReplacedMask_ = rhs.deltaReplacedMask_;
+  nonlinearFactors_ = rhs.nonlinearFactors_;
+  ordering_ = rhs.ordering_;
+  params_ = rhs.params_;
+  doglegDelta_ = rhs.doglegDelta_;
+
+#ifndef NDEBUG
+  lastRelinVariables_ = rhs.lastRelinVariables_;
+#endif
+  lastAffectedVariableCount = rhs.lastAffectedVariableCount;
+  lastAffectedFactorCount = rhs.lastAffectedFactorCount;
+  lastAffectedCliqueCount = rhs.lastAffectedCliqueCount;
+  lastAffectedMarkedCount = rhs.lastAffectedMarkedCount;
+  lastBacksubVariableCount = rhs.lastBacksubVariableCount;
+  lastNnzTop = rhs.lastNnzTop;
+
+  return *this;
 }
 
 /* ************************************************************************* */

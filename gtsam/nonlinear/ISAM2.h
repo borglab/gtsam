@@ -329,6 +329,10 @@ protected:
    * delta will always be updated if necessary when requested with getDelta()
    * or calculateEstimate().
    *
+   * This does not need to be permuted because any change in variable ordering
+   * that would cause a permutation will also mark variables as needing to be
+   * updated in this mask.
+   *
    * This is \c mutable because it is used internally to not update delta_
    * until it is needed.
    */
@@ -356,6 +360,7 @@ private:
 
 public:
 
+  typedef ISAM2 This; ///< This class
   typedef BayesTree<GaussianConditional,ISAM2Clique> Base; ///< The BayesTree base class
 
   /** Create an empty ISAM2 instance */
@@ -364,38 +369,15 @@ public:
   /** Create an empty ISAM2 instance using the default set of parameters (see ISAM2Params) */
   ISAM2();
 
+  /** Copy constructor */
+  ISAM2(const ISAM2& other);
+
+  /** Assignment operator */
+  ISAM2& operator=(const ISAM2& rhs);
+
   typedef Base::Clique Clique; ///< A clique
   typedef Base::sharedClique sharedClique; ///< Shared pointer to a clique
   typedef Base::Cliques Cliques; ///< List of Clique typedef from base class
-
-  void cloneTo(boost::shared_ptr<ISAM2>& newISAM2) const {
-    boost::shared_ptr<Base> bayesTree = boost::static_pointer_cast<Base>(newISAM2);
-    Base::cloneTo(bayesTree);
-    newISAM2->theta_ = theta_;
-    newISAM2->variableIndex_ = variableIndex_;
-    newISAM2->deltaUnpermuted_ = deltaUnpermuted_;
-    newISAM2->delta_ = delta_;
-    newISAM2->deltaNewtonUnpermuted_ = deltaNewtonUnpermuted_;
-    newISAM2->deltaNewton_ = deltaNewton_;
-    newISAM2->RgProdUnpermuted_ = RgProdUnpermuted_;
-    newISAM2->RgProd_ = RgProd_;
-    newISAM2->deltaDoglegUptodate_ = deltaDoglegUptodate_;
-    newISAM2->deltaUptodate_ = deltaUptodate_;
-    newISAM2->deltaReplacedMask_ = deltaReplacedMask_;
-    newISAM2->nonlinearFactors_ = nonlinearFactors_;
-    newISAM2->ordering_ = ordering_;
-    newISAM2->params_ = params_;
-    newISAM2->doglegDelta_ = doglegDelta_;
-#ifndef NDEBUG
-    newISAM2->lastRelinVariables_ = lastRelinVariables_;
-#endif
-    newISAM2->lastAffectedVariableCount = lastAffectedVariableCount;
-    newISAM2->lastAffectedFactorCount = lastAffectedFactorCount;
-    newISAM2->lastAffectedCliqueCount = lastAffectedCliqueCount;
-    newISAM2->lastAffectedMarkedCount = lastAffectedMarkedCount;
-    newISAM2->lastBacksubVariableCount = lastBacksubVariableCount;
-    newISAM2->lastNnzTop = lastNnzTop;
-  }
 
   /**
    * Add new factors, updating the solution and relinearizing as needed.
