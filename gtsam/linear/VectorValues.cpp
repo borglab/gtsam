@@ -30,7 +30,7 @@ VectorValues::VectorValues(const VectorValues& other) {
 /* ************************************************************************* */
 VectorValues& VectorValues::operator=(const VectorValues& rhs) {
   if(this != &rhs) {
-    resizeLike(rhs);          // Copy structure
+    resizeLike(rhs);        // Copy structure
     values_ = rhs.values_;  // Copy values
   }
   return *this;
