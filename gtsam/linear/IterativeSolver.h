@@ -19,8 +19,6 @@
 #pragma once
 
 #include <boost/shared_ptr.hpp>
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/inference/VariableIndex.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/IterativeOptimizationParameters.h>
 
@@ -40,15 +38,9 @@ protected:
 public:
 
   IterativeSolver(): parameters_(new Parameters()) {}
-
-	IterativeSolver(const IterativeSolver &solver)
-	: parameters_(solver.parameters_) {}
-
-  IterativeSolver(const Parameters::shared_ptr& parameters)
-  : parameters_(parameters) {}
-
-	IterativeSolver(const Parameters &parameters)
-	:	parameters_(new Parameters(parameters)) {}
+	IterativeSolver(const IterativeSolver &solver) : parameters_(solver.parameters_) {}
+  IterativeSolver(const Parameters::shared_ptr& parameters) : parameters_(parameters) {}
+	IterativeSolver(const Parameters &parameters) :	parameters_(new Parameters(parameters)) {}
 
 	virtual ~IterativeSolver() {}
 
