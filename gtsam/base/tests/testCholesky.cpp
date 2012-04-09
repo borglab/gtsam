@@ -161,6 +161,55 @@ TEST(cholesky, ldlPartial2) {
 }
 
 /* ************************************************************************* */
+TEST(cholesky, BadScalingCholesky) {
+  Matrix A = Matrix_(2,2,
+      1e-40, 0.0,
+      0.0, 1.0);
+
+  Matrix R(A.transpose() * A);
+  choleskyPartial(R, 2);
+
+  double expectedSqrtCondition = 1e-40;
+  double actualSqrtCondition = R(0,0) / R(1,1);
+
+  DOUBLES_EQUAL(expectedSqrtCondition, actualSqrtCondition, 1e-41);
+}
+
+/* ************************************************************************* */
+TEST(cholesky, BadScalingLDL) {
+  Matrix A = Matrix_(2,2,
+      1.0, 0.0,
+      0.0, 1e-40);
+
+  Matrix R(A.transpose() * A);
+  Eigen::LDLT<Matrix>::TranspositionType permutation = ldlPartial(R, 2);
+
+  EXPECT(permutation.indices()(0) == 0);
+  EXPECT(permutation.indices()(1) == 1);
+
+  double expectedCondition = 1e40;
+  double actualCondition = R(0,0) / R(1,1);
+
+  DOUBLES_EQUAL(expectedCondition, actualCondition, 1e-41);
+}
+
+/* ************************************************************************* */
+TEST(cholesky, BadScalingSVD) {
+  Matrix A = Matrix_(2,2,
+      1.0, 0.0,
+      0.0, 1e-40);
+
+  Matrix U, V;
+  Vector S;
+  gtsam::svd(A, U, S, V);
+
+  double expectedCondition = 1e40;
+  double actualCondition = S(0) / S(1);
+
+  DOUBLES_EQUAL(expectedCondition, actualCondition, 1e-41);
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
