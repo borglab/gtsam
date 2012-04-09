@@ -105,7 +105,7 @@ struct FastSetTestableHelper {
     typename Set::const_iterator it2 = set2.begin();
     while (it1 != set1.end()) {
       if (it2 == set2.end() ||
-          fabs((double)(*it1) - (double)(*it2) > tol))
+          fabs((double)(*it1) - (double)(*it2)) > tol)
         return false;
       ++it1;
       ++it2;
