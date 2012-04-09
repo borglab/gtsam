@@ -582,6 +582,13 @@ namespace gtsam {
 	  }
 	}
 
+  /* ************************************************************************* */
+	template<class CONDITIONAL, class CLIQUE>
+	void BayesTree<CONDITIONAL,CLIQUE>::cloneTo(This& newTree) const {
+	  if(root())
+	    cloneTo(newTree, root(), sharedClique());
+	}
+
 	/* ************************************************************************* */
   template<class CONDITIONAL, class CLIQUE>
 	void BayesTree<CONDITIONAL,CLIQUE>::cloneTo(

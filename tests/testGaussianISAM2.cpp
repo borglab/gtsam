@@ -898,6 +898,11 @@ TEST(ISAM2, clone) {
 
   CHECK(assert_equal(createSlamlikeISAM2(), clone1));
   CHECK(assert_equal(clone1, temp));
+
+  // Check clone empty
+  ISAM2 isam;
+  clone1 = isam;
+  CHECK(assert_equal(ISAM2(), clone1));
 }
 
 /* ************************************************************************* */

@@ -283,9 +283,7 @@ namespace gtsam {
   private:
 
     /** deep copy to another tree */
-		void cloneTo(This& newTree) const {
-		  cloneTo(newTree, root(), sharedClique());
-		}
+		void cloneTo(This& newTree) const;
 
 		/** deep copy to another tree */
 		void cloneTo(This& newTree, const sharedClique& subtree, const sharedClique& parent) const;
