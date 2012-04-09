@@ -5,6 +5,8 @@
  */
 #pragma once
 
+#include <iomanip>
+
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianISAM.h> // To get optimize(BayesTree<GaussianConditional>)
 //#include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -180,17 +182,17 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
     const double new_M_error = jfg.error(result.dx_d);
     toc(6, "decrease in M");
 
-    if(verbose) cout << "f error: " << f_error << " -> " << result.f_error << endl;
-    if(verbose) cout << "M error: " << M_error << " -> " << new_M_error << endl;
+    if(verbose) cout << setprecision(15) << "f error: " << f_error << " -> " << result.f_error << endl;
+    if(verbose) cout << setprecision(15) << "M error: " << M_error << " -> " << new_M_error << endl;
 
     tic(7, "adjust Delta");
     // Compute gain ratio.  Here we take advantage of the invariant that the
     // Bayes' net error at zero is equal to the nonlinear error
-    const double rho = fabs(M_error - new_M_error) < 1e-15 ?
+    const double rho = fabs(f_error - result.f_error) < 1e-15 || fabs(M_error - new_M_error) < 1e-15 ?
         0.5 :
         (f_error - result.f_error) / (M_error - new_M_error);
 
-    if(verbose) cout << "rho = " << rho << endl;
+    if(verbose) cout << setprecision(15) << "rho = " << rho << endl;
 
     if(rho >= 0.75) {
       // M agrees very well with f, so try to increase lambda
