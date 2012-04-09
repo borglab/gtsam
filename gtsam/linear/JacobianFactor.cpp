@@ -474,7 +474,7 @@ namespace gtsam {
     tic(4, "remaining factor");
     // Take lower-right block of Ab to get the new factor
     Ab_.rowEnd() = noiseModel->dim();
-    keys_.assign(begin() + nrFrontals, end());
+    keys_.erase(begin(), begin() + nrFrontals);
     // Set sigmas with the right model
     if (noiseModel->isConstrained())
       model_ = noiseModel::Constrained::MixedSigmas(sub(noiseModel->sigmas(), frontalDim, noiseModel->dim()));
