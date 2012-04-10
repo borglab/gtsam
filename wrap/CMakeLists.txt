@@ -9,11 +9,11 @@ target_link_libraries(wrap wrap_lib)
 
 # Install wrap binary
 if (GTSAM_INSTALL_WRAP)
-    install(TARGETS wrap DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+    install(TARGETS wrap DESTINATION bin)
 endif(GTSAM_INSTALL_WRAP)
 
 # Install matlab header
-install(FILES matlab.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/wrap)
+install(FILES matlab.h DESTINATION include/wrap)
 
 # Build tests
 if (GTSAM_BUILD_TESTS)
