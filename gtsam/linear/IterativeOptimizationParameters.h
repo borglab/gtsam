@@ -83,14 +83,18 @@ struct PreconditionerParameters {
 
   CombinatorialParameters combinatorial_;
 
-  PreconditionerParameters(): kernel_(CHOLMOD), type_(Combinatorial) {}
-  PreconditionerParameters(Kernel kernel, const CombinatorialParameters &combinatorial)
-    : kernel_(kernel), type_(Combinatorial), combinatorial_(combinatorial) {}
+  enum Verbosity { SILENT = 0, COMPLEXITY = 1, ERROR = 2} verbosity_ ;  /* Verbosity */
+
+  PreconditionerParameters(): kernel_(CHOLMOD), type_(Combinatorial), verbosity_(SILENT) {}
+  PreconditionerParameters(Kernel kernel, const CombinatorialParameters &combinatorial, Verbosity verbosity)
+    : kernel_(kernel), type_(Combinatorial), combinatorial_(combinatorial), verbosity_(verbosity) {}
 
   /* general interface */
   inline Kernel kernel() const { return kernel_; }
   inline Type type() const { return type_; }
   inline const CombinatorialParameters & combinatorial() const { return combinatorial_; }
+  inline Verbosity verbosity() const { return verbosity_; }
+
 
   void print() const {
     const std::string kernelStr[2] = {"gtsam", "cholmod"};
@@ -119,16 +123,18 @@ struct ConjugateGradientParameters {
     CHOLMOD           /* Cholmod Sparse */
   } blas_kernel_;
 
-  /* Specific for PCGPlus */
   size_t degree_;         /* the maximum degree of the vertices to be eliminated before doing cg */
+
+  enum Verbosity { SILENT = 0, COMPLEXITY = 1, ERROR = 2} verbosity_ ;  /* Verbosity */
 
   ConjugateGradientParameters()
   : minIterations_(1), maxIterations_(500), reset_(501), epsilon_rel_(1e-3), epsilon_abs_(1e-3),
-    blas_kernel_(GTSAM), degree_(0) {}
+    blas_kernel_(GTSAM), degree_(0), verbosity_(SILENT) {}
+
   ConjugateGradientParameters(size_t minIterations, size_t maxIterations, size_t reset,
-    double epsilon_rel, double epsilon_abs, BLASKernel blas = GTSAM, size_t degree = 0)
+    double epsilon_rel, double epsilon_abs, BLASKernel blas = GTSAM, size_t degree = 0, Verbosity verbosity = SILENT)
     : minIterations_(minIterations), maxIterations_(maxIterations), reset_(reset),
-      epsilon_rel_(epsilon_rel), epsilon_abs_(epsilon_abs), blas_kernel_(blas), degree_(degree) {}
+      epsilon_rel_(epsilon_rel), epsilon_abs_(epsilon_abs), blas_kernel_(blas), degree_(degree), verbosity_(verbosity) {}
 
   /* general interface */
   inline size_t minIterations() const { return minIterations_; }
@@ -139,6 +145,7 @@ struct ConjugateGradientParameters {
   inline double epsilon_abs() const { return epsilon_abs_; }
   inline BLASKernel blas_kernel() const { return blas_kernel_; }
   inline size_t degree() const { return degree_; }
+  inline Verbosity verbosity() const { return verbosity_; }
 
   void print() const {
     const std::string blasStr[4] = {"gtsam", "sbm", "sm", "cholmod"};
@@ -164,7 +171,7 @@ public:
   PreconditionerParameters preconditioner_;
   ConjugateGradientParameters cg_;
   enum Kernel { PCG = 0 /*, PCGPlus*/, LSPCG } kernel_ ;                /* Iterative Method Kernel */
-  enum Verbosity { SILENT = 0, ERROR } verbosity_ ;   /* Verbosity */
+  enum Verbosity { SILENT = 0, COMPLEXITY = 1, ERROR = 2} verbosity_ ;  /* Verbosity */
 
 public:
 
