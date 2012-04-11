@@ -395,7 +395,7 @@ Matrix vector_scale(const Matrix& A, const Vector& v, bool inf_mask = false); //
  * @param wz
  * @return a 3*3 skew symmetric matrix
 */
-Matrix skewSymmetric(double wx, double wy, double wz);
+Matrix3 skewSymmetric(double wx, double wy, double wz);
 inline Matrix skewSymmetric(const Vector& w) { return skewSymmetric(w(0),w(1),w(2));}
 
 /** Use SVD to calculate inverse square root of a matrix */
