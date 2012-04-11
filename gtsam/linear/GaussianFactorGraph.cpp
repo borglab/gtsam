@@ -51,7 +51,8 @@ namespace gtsam {
 	void GaussianFactorGraph::permuteWithInverse(
 	    const Permutation& inversePermutation) {
 	  BOOST_FOREACH(const sharedFactor& factor, factors_) {
-	    factor->permuteWithInverse(inversePermutation);
+	    if(factor)
+	      factor->permuteWithInverse(inversePermutation);
     }
 	}
 

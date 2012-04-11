@@ -251,43 +251,6 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  void JacobianFactor::permuteWithInverse(const Permutation& inversePermutation) {
-
-    // Build a map from the new variable indices to the old slot positions.
-    typedef FastMap<size_t, size_t> SourceSlots;
-    SourceSlots sourceSlots;
-    for(size_t j=0; j<size(); ++j)
-      sourceSlots.insert(make_pair(inversePermutation[keys_[j]], j));
-
-    // Build a vector of variable dimensions in the new order
-    vector<size_t> dimensions(size() + 1);
-    size_t j = 0;
-    BOOST_FOREACH(const SourceSlots::value_type& sourceSlot, sourceSlots) {
-      dimensions[j++] = Ab_(sourceSlot.second).cols();
-    }
-    assert(j == size());
-    dimensions.back() = 1;
-
-    // Copy the variables and matrix into the new order
-    vector<Index> oldKeys(size());
-    keys_.swap(oldKeys);
-    AbMatrix oldMatrix;
-    BlockAb oldAb(oldMatrix, dimensions.begin(), dimensions.end(), Ab_.rows());
-    Ab_.swap(oldAb);
-    j = 0;
-    BOOST_FOREACH(const SourceSlots::value_type& sourceSlot, sourceSlots) {
-      keys_[j] = sourceSlot.first;
-      Ab_(j++).noalias() = oldAb(sourceSlot.second);
-    }
-    Ab_(j).noalias() = oldAb(j);
-
-    // Since we're permuting the variables, ensure that entire rows from this
-    // factor are copied when Combine is called
-    BOOST_FOREACH(size_t& varpos, firstNonzeroBlocks_) { varpos = 0; }
-    assertInvariants();
-  }
-
-  /* ************************************************************************* */
   Vector JacobianFactor::unweighted_error(const VectorValues& c) const {
     Vector e = -getb();
     if (empty()) return e;

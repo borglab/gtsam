@@ -96,7 +96,7 @@ namespace gtsam {
      * to already be inverted.  This acts just as a change-of-name for each
      * variable.  The order of the variables within the factor is not changed.
      */
-    virtual void permuteWithInverse(const Permutation& inversePermutation) = 0;
+    virtual void permuteWithInverse(const Permutation& inversePermutation) { IndexFactor::permuteWithInverse(inversePermutation); }
 
   private:
     /** Serialization function */

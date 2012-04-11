@@ -270,14 +270,6 @@ namespace gtsam {
      * @return The linear term \f$ g \f$ */
     constColumn linearTerm() const;
 
-    /**
-     * Permutes the GaussianFactor, but for efficiency requires the permutation
-     * to already be inverted.  This acts just as a change-of-name for each
-     * variable.  The order of the variables within the factor is not changed.
-     */
-    virtual void permuteWithInverse(const Permutation& inversePermutation) {
-      IndexFactor::permuteWithInverse(inversePermutation); }
-
     // Friend unit test classes
     friend class ::ConversionConstructorHessianFactorTest;
     friend class ::Constructor1HessianFactorTest;

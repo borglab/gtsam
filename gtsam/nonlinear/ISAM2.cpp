@@ -78,6 +78,12 @@ ISAM2& ISAM2::operator=(const ISAM2& rhs) {
   deltaUptodate_ = rhs.deltaUptodate_;
   deltaReplacedMask_ = rhs.deltaReplacedMask_;
   nonlinearFactors_ = rhs.nonlinearFactors_;
+
+  linearFactors_ = GaussianFactorGraph();
+  linearFactors_.reserve(rhs.linearFactors_.size());
+  BOOST_FOREACH(const GaussianFactor::shared_ptr& linearFactor, rhs.linearFactors_) {
+    linearFactors_.push_back(linearFactor->clone()); }
+
   ordering_ = rhs.ordering_;
   params_ = rhs.params_;
   doglegDelta_ = rhs.doglegDelta_;
@@ -125,7 +131,7 @@ FastList<size_t> ISAM2::getAffectedFactors(const FastList<Index>& keys) const {
 // retrieve all factors that ONLY contain the affected variables
 // (note that the remaining stuff is summarized in the cached factors)
 FactorGraph<GaussianFactor>::shared_ptr
-ISAM2::relinearizeAffectedFactors(const FastList<Index>& affectedKeys) const {
+ISAM2::relinearizeAffectedFactors(const FastList<Index>& affectedKeys, const FastSet<Index>& relinKeys) const {
 
   tic(1,"getAffectedFactors");
   FastList<size_t> candidates = getAffectedFactors(affectedKeys);
@@ -139,24 +145,37 @@ ISAM2::relinearizeAffectedFactors(const FastList<Index>& affectedKeys) const {
   affectedKeysSet.insert(affectedKeys.begin(), affectedKeys.end());
   toc(2,"affectedKeysSet");
 
-  tic(3,"check candidates");
+  tic(3,"check candidates and linearize");
+  FactorGraph<GaussianFactor>::shared_ptr linearized = boost::make_shared<FactorGraph<GaussianFactor> >();
   BOOST_FOREACH(size_t idx, candidates) {
     bool inside = true;
+    bool useCachedLinear = params_.cacheLinearizedFactors;
     BOOST_FOREACH(Key key, nonlinearFactors_[idx]->keys()) {
       Index var = ordering_[key];
-      if (affectedKeysSet.find(var) == affectedKeysSet.end()) {
+      if(affectedKeysSet.find(var) == affectedKeysSet.end()) {
         inside = false;
         break;
       }
+      if(useCachedLinear && relinKeys.find(var) != relinKeys.end())
+        useCachedLinear = false;
     }
-    if (inside)
-      nonlinearAffectedFactors.push_back(nonlinearFactors_[idx]);
+    if(inside) {
+      if(useCachedLinear) {
+        assert(linearFactors_[idx]);
+        linearized->push_back(linearFactors_[idx]);
+        assert(linearFactors_[idx]->keys() == nonlinearFactors_[idx]->symbolic(ordering_)->keys());
+      } else {
+        GaussianFactor::shared_ptr linearFactor = nonlinearFactors_[idx]->linearize(theta_, ordering_);
+        linearized->push_back(linearFactor);
+        if(params_.cacheLinearizedFactors) {
+          assert(linearFactors_[idx]->keys() == linearFactor->keys());
+          linearFactors_[idx] = linearFactor;
+        }
+      }
+    }
   }
-  toc(3,"check candidates");
+  toc(3,"check candidates and linearize");
 
-  tic(4,"linearize");
-  FactorGraph<GaussianFactor>::shared_ptr linearized(nonlinearAffectedFactors.linearize(theta_, ordering_));
-  toc(4,"linearize");
   return linearized;
 }
 
@@ -187,7 +206,7 @@ GaussianFactorGraph ISAM2::getCachedBoundaryFactors(Cliques& orphans) {
 }
 
 boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
-    const FastSet<Index>& markedKeys, const FastVector<Index>& newKeys, const FactorGraph<GaussianFactor>::shared_ptr newFactors,
+    const FastSet<Index>& markedKeys, const FastSet<Index>& relinKeys, const FastVector<Index>& newKeys,
     const boost::optional<FastMap<Index,int> >& constrainKeys, ISAM2Result& result) {
 
   // TODO:  new factors are linearized twice, the newFactors passed in are not used.
@@ -300,11 +319,11 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
     toc(1,"reorder");
 
     tic(2,"linearize");
-    GaussianFactorGraph factors(*nonlinearFactors_.linearize(theta_, ordering_));
+    linearFactors_ = *nonlinearFactors_.linearize(theta_, ordering_);
     toc(2,"linearize");
 
     tic(5,"eliminate");
-    JunctionTree<GaussianFactorGraph, Base::Clique> jt(factors, variableIndex_);
+    JunctionTree<GaussianFactorGraph, Base::Clique> jt(linearFactors_, variableIndex_);
     sharedClique newRoot;
     if(params_.factorization == ISAM2Params::LDL)
       newRoot = jt.eliminate(EliminatePreferLDL);
@@ -325,7 +344,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
 
     lastAffectedMarkedCount = markedKeys.size();
     lastAffectedVariableCount = affectedKeysSet->size();
-    lastAffectedFactorCount = factors.size();
+    lastAffectedFactorCount = linearFactors_.size();
 
     return affectedKeysSet;
 
@@ -338,7 +357,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
     affectedAndNewKeys.insert(affectedAndNewKeys.end(), affectedKeys.begin(), affectedKeys.end());
     affectedAndNewKeys.insert(affectedAndNewKeys.end(), newKeys.begin(), newKeys.end());
     tic(1,"relinearizeAffected");
-    GaussianFactorGraph factors(*relinearizeAffectedFactors(affectedAndNewKeys));
+    GaussianFactorGraph factors(*relinearizeAffectedFactors(affectedAndNewKeys, relinKeys));
     if(debug) factors.print("Relinearized factors: ");
     toc(1,"relinearizeAffected");
 
@@ -360,11 +379,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
     // add the cached intermediate results from the boundary of the orphans ...
     GaussianFactorGraph cachedBoundary = getCachedBoundaryFactors(orphans);
     if(debug) cachedBoundary.print("Boundary factors: ");
-    factors.reserve(factors.size() + cachedBoundary.size());
-    // Copy so that we can later permute factors
-    BOOST_FOREACH(const GaussianFactor::shared_ptr& cached, cachedBoundary) {
-      factors.push_back(cached->clone());
-    }
+    factors.push_back(cachedBoundary);
     toc(2,"cached");
 
     // END OF COPIED CODE
@@ -410,6 +425,15 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
     tic(5,"permute ordering");
     ordering_.permuteWithInverse(partialSolveResult.fullReorderingInverse);
     toc(5,"permute ordering");
+    if(params_.cacheLinearizedFactors) {
+      tic(6,"permute cached linear");
+      //linearFactors_.permuteWithInverse(partialSolveResult.fullReorderingInverse);
+      FastList<size_t> permuteLinearIndices = getAffectedFactors(affectedAndNewKeys);
+      BOOST_FOREACH(size_t idx, permuteLinearIndices) {
+        linearFactors_[idx]->permuteWithInverse(partialSolveResult.fullReorderingInverse);
+      }
+      toc(6,"permute cached linear");
+    }
 
     toc(4,"reorder and eliminate");
 
@@ -526,11 +550,12 @@ ISAM2Result ISAM2::update(
   toc(4,"gather involved keys");
 
   // Check relinearization if we're at the nth step, or we are using a looser loop relin threshold
+  FastSet<Index> relinKeys;
   if (relinearizeThisStep) {
     tic(5,"gather relinearize keys");
     vector<bool> markedRelinMask(ordering_.nVars(), false);
     // 4. Mark keys in \Delta above threshold \beta: J=\{\Delta_{j}\in\Delta|\Delta_{j}\geq\beta\}.
-    FastSet<Index> relinKeys = Impl::CheckRelinearization(delta_, ordering_, params_.relinearizeThreshold);
+    relinKeys = Impl::CheckRelinearization(delta_, ordering_, params_.relinearizeThreshold);
     if(disableReordering) relinKeys = Impl::CheckRelinearization(delta_, ordering_, 0.0); // This is used for debugging
 
     // Add the variables being relinearized to the marked keys
@@ -563,15 +588,21 @@ ISAM2Result ISAM2::update(
   }
 
   tic(8,"linearize new");
-  tic(1,"linearize");
   // 7. Linearize new factors
-  FactorGraph<GaussianFactor>::shared_ptr linearFactors = newFactors.linearize(theta_, ordering_);
-  toc(1,"linearize");
+  if(params_.cacheLinearizedFactors) {
+    tic(1,"linearize");
+    FactorGraph<GaussianFactor>::shared_ptr linearFactors = newFactors.linearize(theta_, ordering_);
+    linearFactors_.push_back(*linearFactors);
+    assert(nonlinearFactors_.size() == linearFactors_.size());
+    toc(1,"linearize");
 
-  tic(2,"augment VI");
-  // Augment the variable index with the new factors
-  variableIndex_.augment(*linearFactors);
-  toc(2,"augment VI");
+    tic(2,"augment VI");
+    // Augment the variable index with the new factors
+    variableIndex_.augment(*linearFactors);
+    toc(2,"augment VI");
+  } else {
+    variableIndex_.augment(*newFactors.symbolic(ordering_));
+  }
   toc(8,"linearize new");
 
   tic(9,"recalculate");
@@ -587,7 +618,7 @@ ISAM2Result ISAM2::update(
   }
   boost::shared_ptr<FastSet<Index> > replacedKeys;
   if(!markedKeys.empty() || !newKeys.empty())
-    replacedKeys = recalculate(markedKeys, newKeys, linearFactors, constrainedIndices, result);
+    replacedKeys = recalculate(markedKeys, relinKeys, newKeys, constrainedIndices, result);
 
   // Update replaced keys mask (accumulates until back-substitution takes place)
   if(replacedKeys) {

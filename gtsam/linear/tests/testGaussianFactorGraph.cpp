@@ -552,7 +552,7 @@ TEST(GaussianFactor, permuteWithInverse)
   actual.permuteWithInverse(inversePermutation);
 //  actualIndex.permute(*inversePermutation.inverse());
 
-  JacobianFactor expected(0, A3, 2, A2, 4, A1, b, sharedSigma(2, 1.0));
+  JacobianFactor expected(4, A1, 2, A2, 0, A3, b, sharedSigma(2, 1.0));
   GaussianFactorGraph expectedFG; expectedFG.push_back(JacobianFactor::shared_ptr(new JacobianFactor(expected)));
 //  GaussianVariableIndex expectedIndex(expectedFG);
 

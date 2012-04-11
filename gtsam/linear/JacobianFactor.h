@@ -170,13 +170,6 @@ namespace gtsam {
     virtual size_t getDim(const_iterator variable) const { return Ab_(variable - begin()).cols(); }
 
     /**
-     * Permutes the GaussianFactor, but for efficiency requires the permutation
-     * to already be inverted.  This acts just as a change-of-name for each
-     * variable.  The order of the variables within the factor is not changed.
-     */
-    virtual void permuteWithInverse(const Permutation& inversePermutation);
-
-    /**
      * return the number of rows in the corresponding linear system
      */
     size_t rows() const { return Ab_.rows(); }

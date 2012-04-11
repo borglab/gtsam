@@ -257,6 +257,9 @@ ISAM2::Impl::PartialSolve(GaussianFactorGraph& factors,
     cout << "Full var-ordered eliminated BT:\n";
     result.bayesTree->printTree("");
   }
+  // Undo permutation on our subset of cached factors, we must later permute *all* of the cached factors
+  factors.permuteWithInverse(*affectedColamd);
+  factors.permuteWithInverse(affectedKeysSelector);
   toc(8,"permute eliminated");
 
   return result;

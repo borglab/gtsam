@@ -118,6 +118,13 @@ struct ISAM2Params {
    */
   Factorization factorization;
 
+  /** Whether to cache linear factors (default: true).
+   * This can improve performance if linearization is expensive, but can hurt
+   * performance if linearization is very cleap due to computation to look up
+   * additional keys.
+   */
+  bool cacheLinearizedFactors;
+
   KeyFormatter keyFormatter; ///< A KeyFormatter for when keys are printed during debugging (default: DefaultKeyFormatter)
 
   /** Specify parameters as constructor arguments */
@@ -128,11 +135,12 @@ struct ISAM2Params {
       bool _enableRelinearization = true, ///< see ISAM2Params::enableRelinearization
       bool _evaluateNonlinearError = false, ///< see ISAM2Params::evaluateNonlinearError
       Factorization _factorization = ISAM2Params::LDL, ///< see ISAM2Params::factorization
+      bool _cacheLinearizedFactors = true, ///< see ISAM2Params::cacheLinearizedFactors
       const KeyFormatter& _keyFormatter = DefaultKeyFormatter ///< see ISAM2::Params::keyFormatter
   ) : optimizationParams(_optimizationParams), relinearizeThreshold(_relinearizeThreshold),
       relinearizeSkip(_relinearizeSkip), enableRelinearization(_enableRelinearization),
       evaluateNonlinearError(_evaluateNonlinearError), factorization(_factorization),
-      keyFormatter(_keyFormatter) {}
+      cacheLinearizedFactors(_cacheLinearizedFactors), keyFormatter(_keyFormatter) {}
 };
 
 /**
@@ -341,6 +349,9 @@ protected:
   /** All original nonlinear factors are stored here to use during relinearization */
   NonlinearFactorGraph nonlinearFactors_;
 
+  /** The current linear factors, which are only updated as needed */
+  mutable GaussianFactorGraph linearFactors_;
+
   /** The current elimination ordering Symbols to Index (integer) keys.
    *
    * We keep it up to date as we add and reorder variables.
@@ -453,11 +464,11 @@ public:
 private:
 
   FastList<size_t> getAffectedFactors(const FastList<Index>& keys) const;
-  FactorGraph<GaussianFactor>::shared_ptr relinearizeAffectedFactors(const FastList<Index>& affectedKeys) const;
+  FactorGraph<GaussianFactor>::shared_ptr relinearizeAffectedFactors(const FastList<Index>& affectedKeys, const FastSet<Index>& relinKeys) const;
   GaussianFactorGraph getCachedBoundaryFactors(Cliques& orphans);
 
-  boost::shared_ptr<FastSet<Index> > recalculate(const FastSet<Index>& markedKeys,
-      const FastVector<Index>& newKeys, const FactorGraph<GaussianFactor>::shared_ptr newFactors,
+  boost::shared_ptr<FastSet<Index> > recalculate(const FastSet<Index>& markedKeys, const FastSet<Index>& relinKeys,
+      const FastVector<Index>& newKeys,
       const boost::optional<FastMap<Index,int> >& constrainKeys, ISAM2Result& result);
   //	void linear_update(const GaussianFactorGraph& newFactors);
   void updateDelta(bool forceFullSolve = false) const;
