@@ -377,9 +377,6 @@ namespace gtsam {
        ar & boost::serialization::make_nvp("rot31", rot_(2,0));
        ar & boost::serialization::make_nvp("rot32", rot_(2,1));
        ar & boost::serialization::make_nvp("rot33", rot_(2,2));
-//      ar & BOOST_SERIALIZATION_NVP(r1_);
-//      ar & BOOST_SERIALIZATION_NVP(r2_);
-//      ar & BOOST_SERIALIZATION_NVP(r3_);
 #else
       ar & boost::serialization::make_nvp("w", quaternion_.w());
       ar & boost::serialization::make_nvp("x", quaternion_.x());
@@ -401,5 +398,5 @@ namespace gtsam {
    * @return an upper triangular matrix R
    * @return a vector [thetax, thetay, thetaz] in radians.
    */
-  std::pair<Matrix3,Vector3> RQ(const Matrix& A);
+  std::pair<Matrix3,Vector3> RQ(const Matrix3& A);
 }

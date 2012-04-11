@@ -213,7 +213,7 @@ namespace gtsam {
   Quaternion Rot3::toQuaternion() const { return quaternion_; }
 
   /* ************************************************************************* */
-  pair<Matrix3, Vector3> RQ(const Matrix& A) {
+  pair<Matrix3, Vector3> RQ(const Matrix3& A) {
 
     double x = -atan2(-A(2, 1), A(2, 2));
     Rot3 Qx = Rot3::Rx(-x);

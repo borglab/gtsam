@@ -322,8 +322,8 @@ Point3 Rot3::r3() const { return Point3(rot_.col(2)); }
 
 /* ************************************************************************* */
 Vector3 Rot3::xyz() const {
-	Matrix I;Vector3 q;
-	boost::tie(I,q)=RQ(matrix());
+	Matrix3 I;Vector3 q;
+	boost::tie(I,q)=RQ(rot_);
 	return q;
 }
 
@@ -335,8 +335,7 @@ Vector3 Rot3::ypr() const {
 
 /* ************************************************************************* */
 Vector3 Rot3::rpy() const {
-	Vector3 q = xyz();
-	return Vector3(q(0),q(1),q(2));
+  return xyz();
 }
 
 /* ************************************************************************* */
@@ -345,7 +344,7 @@ Quaternion Rot3::toQuaternion() const {
 }
 
 /* ************************************************************************* */
-pair<Matrix3, Vector3> RQ(const Matrix& A) {
+pair<Matrix3, Vector3> RQ(const Matrix3& A) {
 
 	double x = -atan2(-A(2, 1), A(2, 2));
 	Rot3 Qx = Rot3::Rx(-x);
