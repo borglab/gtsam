@@ -74,7 +74,7 @@ int main(int argc, char** argv) {
 
 	/* Get covariances */
 	Matrix covariance1  = optimizer_result.marginalCovariance(PoseKey(1));
-	Matrix covariance2  = optimizer_result.marginalCovariance(PoseKey(1));
+	Matrix covariance2  = optimizer_result.marginalCovariance(PoseKey(2));
 
 	print(covariance1, "Covariance1");
 	print(covariance2, "Covariance2");
