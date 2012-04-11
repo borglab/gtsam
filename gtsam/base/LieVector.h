@@ -34,6 +34,10 @@ struct LieVector : public Vector, public DerivedValue<LieVector> {
 	/** initialize from a normal vector */
 	LieVector(const Vector& v) : Vector(v) {}
 
+	/** initialize from a fixed size normal vector */
+	template<int N>
+	LieVector(const Eigen::Matrix<double, N, 1>& v) : Vector(v) {}
+
 	/** wrap a double */
 	LieVector(double d) : Vector(Vector_(1, d)) {}
 
