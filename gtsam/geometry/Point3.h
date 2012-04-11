@@ -126,7 +126,7 @@ namespace gtsam {
   	inline Point3 retract(const Vector& v) const { return Point3(*this + v); }
 
   	/// Returns inverse retraction
-  	inline Vector localCoordinates(const Point3& q) const { return (q -*this).vector(); }
+  	inline Vector3 localCoordinates(const Point3& q) const { return (q -*this).vector(); }
 
     /// @}
     /// @name Lie Group
@@ -136,7 +136,7 @@ namespace gtsam {
     static inline Point3 Expmap(const Vector& v) { return Point3(v); }
 
     /** Log map at identity - return the x,y,z of this point */
-    static inline Vector Logmap(const Point3& dp) { return Vector_(3, dp.x(), dp.y(), dp.z()); }
+    static inline Vector3 Logmap(const Point3& dp) { return Vector3(dp.x(), dp.y(), dp.z()); }
 
     /// @}
     /// @name Vector Space
@@ -170,9 +170,8 @@ namespace gtsam {
     bool   operator ==(const Point3& q) const;
 
     /** return vectorized form (column-wise)*/
-    Vector vector() const {
-      Vector v(3); v(0)=x_; v(1)=y_; v(2)=z_;
-      return v;
+    Vector3 vector() const {
+      return Vector3(x_,y_,z_);
     }
 
     /// get x

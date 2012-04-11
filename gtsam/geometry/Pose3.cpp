@@ -136,7 +136,7 @@ namespace gtsam {
       return Logmap(between(T));
     } else if(mode == Pose3::FIRST_ORDER) {
       // R is always done exactly in all three retract versions below
-      Vector omega = R_.localCoordinates(T.rotation());
+      Vector3 omega = R_.localCoordinates(T.rotation());
 
       // Incorrect version
       // Independently computes the logmap of the translation and rotation

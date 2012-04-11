@@ -33,6 +33,7 @@
 #endif
 
 #include <gtsam/base/DerivedValue.h>
+#include <gtsam/base/Matrix.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/3rdparty/Eigen/Eigen/Geometry>
 
@@ -59,8 +60,7 @@ namespace gtsam {
     /** Internal Eigen Quaternion */
     Quaternion quaternion_;
 #else
-    /** We store columns ! */
-    Point3 r1_, r2_, r3_;
+    Matrix3 rot_;
 #endif
 
   public:
@@ -86,6 +86,9 @@ namespace gtsam {
 
     /** constructor from a rotation matrix */
     Rot3(const Matrix& R);
+
+//    /** constructor from a fixed size rotation matrix */
+//    Rot3(const Matrix3& R);
 
     /** Constructor from a quaternion.  This can also be called using a plain
      * Vector, due to implicit conversion from Vector to Quaternion
@@ -183,7 +186,7 @@ namespace gtsam {
     /// @{
 
     /** print */
-    void print(const std::string& s="R") const { gtsam::print(matrix(), s);}
+    void print(const std::string& s="R") const { gtsam::print((Matrix)matrix(), s);}
 
     /** equals with an tolerance */
     bool equals(const Rot3& p, double tol = 1e-9) const;
@@ -250,7 +253,7 @@ namespace gtsam {
     Rot3 retract(const Vector& omega, Rot3::CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE) const;
 
     /// Returns local retract coordinates in neighborhood around current rotation
-    Vector localCoordinates(const Rot3& t2, Rot3::CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE) const;
+    Vector3 localCoordinates(const Rot3& t2, Rot3::CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE) const;
 
     /// @}
     /// @name Lie Group
@@ -268,7 +271,7 @@ namespace gtsam {
     /**
      * Log map at identity - return the canonical coordinates of this rotation
      */
-    static Vector Logmap(const Rot3& R);
+    static Vector3 Logmap(const Rot3& R);
 
   	/// @}
   	/// @name Group Action on Point3
@@ -294,10 +297,10 @@ namespace gtsam {
   	/// @{
 
     /** return 3*3 rotation matrix */
-    Matrix matrix() const;
+    Matrix3 matrix() const;
 
     /** return 3*3 transpose (inverse) rotation matrix   */
-    Matrix transpose() const;
+    Matrix3 transpose() const;
 
     /** returns column vector specified by index */
     Point3 column(int index) const;
@@ -309,19 +312,19 @@ namespace gtsam {
      * Use RQ to calculate xyz angle representation
      * @return a vector containing x,y,z s.t. R = Rot3::RzRyRx(x,y,z)
      */
-    Vector xyz() const;
+    Vector3 xyz() const;
 
     /**
      * Use RQ to calculate yaw-pitch-roll angle representation
      * @return a vector containing ypr s.t. R = Rot3::ypr(y,p,r)
      */
-    Vector ypr() const;
+    Vector3 ypr() const;
 
     /**
      * Use RQ to calculate roll-pitch-yaw angle representation
      * @return a vector containing ypr s.t. R = Rot3::ypr(y,p,r)
      */
-    Vector rpy() const;
+    Vector3 rpy() const;
 
     /**
      * Accessor to get to component of angle representations
@@ -365,9 +368,18 @@ namespace gtsam {
     	 ar & boost::serialization::make_nvp("Rot3",
     			 boost::serialization::base_object<Value>(*this));
 #ifndef GTSAM_DEFAULT_QUATERNIONS
-      ar & BOOST_SERIALIZATION_NVP(r1_);
-      ar & BOOST_SERIALIZATION_NVP(r2_);
-      ar & BOOST_SERIALIZATION_NVP(r3_);
+    	 ar & boost::serialization::make_nvp("rot11", rot_(0,0));
+       ar & boost::serialization::make_nvp("rot12", rot_(0,1));
+       ar & boost::serialization::make_nvp("rot13", rot_(0,2));
+       ar & boost::serialization::make_nvp("rot21", rot_(1,0));
+       ar & boost::serialization::make_nvp("rot22", rot_(1,1));
+       ar & boost::serialization::make_nvp("rot23", rot_(1,2));
+       ar & boost::serialization::make_nvp("rot31", rot_(2,0));
+       ar & boost::serialization::make_nvp("rot32", rot_(2,1));
+       ar & boost::serialization::make_nvp("rot33", rot_(2,2));
+//      ar & BOOST_SERIALIZATION_NVP(r1_);
+//      ar & BOOST_SERIALIZATION_NVP(r2_);
+//      ar & BOOST_SERIALIZATION_NVP(r3_);
 #else
       ar & boost::serialization::make_nvp("w", quaternion_.w());
       ar & boost::serialization::make_nvp("x", quaternion_.x());
@@ -389,5 +401,5 @@ namespace gtsam {
    * @return an upper triangular matrix R
    * @return a vector [thetax, thetay, thetaz] in radians.
    */
-  std::pair<Matrix,Vector> RQ(const Matrix& A);
+  std::pair<Matrix3,Vector3> RQ(const Matrix& A);
 }

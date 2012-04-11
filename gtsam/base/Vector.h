@@ -33,6 +33,10 @@ namespace gtsam {
 // Typedef arbitary length vector
 typedef Eigen::VectorXd Vector;
 
+// Commonly used fixed size vectors
+typedef Eigen::Vector3d Vector3;
+typedef Eigen::Matrix<double, 6, 1> Vector6;
+
 typedef Eigen::VectorBlock<Vector> SubVector;
 typedef Eigen::VectorBlock<const Vector> ConstSubVector;
 
