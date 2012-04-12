@@ -127,6 +127,8 @@ struct ISAM2Params {
 
   KeyFormatter keyFormatter; ///< A KeyFormatter for when keys are printed during debugging (default: DefaultKeyFormatter)
 
+  bool enableDetailedResults; ///< Whether to compute and return ISAM2Result::detailedResults, this can increase running time (default: false)
+
   /** Specify parameters as constructor arguments */
   ISAM2Params(
       OptimizationParams _optimizationParams = ISAM2GaussNewtonParams(), ///< see ISAM2Params::optimizationParams
@@ -140,7 +142,8 @@ struct ISAM2Params {
   ) : optimizationParams(_optimizationParams), relinearizeThreshold(_relinearizeThreshold),
       relinearizeSkip(_relinearizeSkip), enableRelinearization(_enableRelinearization),
       evaluateNonlinearError(_evaluateNonlinearError), factorization(_factorization),
-      cacheLinearizedFactors(_cacheLinearizedFactors), keyFormatter(_keyFormatter) {}
+      cacheLinearizedFactors(_cacheLinearizedFactors), keyFormatter(_keyFormatter),
+      enableDetailedResults(false) {}
 };
 
 /**
@@ -201,6 +204,35 @@ struct ISAM2Result {
    * used later to refer to the factors in order to remove them.
    */
   FastVector<size_t> newFactorsIndices;
+
+  /** A struct holding detailed results, which must be enabled with
+   * ISAM2Params::enableDetailedResults.
+   */
+  struct DetailedResults {
+    /** The status of a single variable, this struct is stored in
+     * DetailedResults::variableStatus */
+    struct VariableStatus {
+      /** Whether the variable was just reeliminated, due to being relinearized,
+       * observed, new, or on the path up to the root clique from another
+       * reeliminated variable. */
+      bool isReeliminated;
+      bool isAboveRelinThreshold; ///< Whether the variable was just relinearized due to being above the relinearization threshold
+      bool isRelinearizeInvolved; ///< Whether the variable was below the relinearization threshold but was relinearized by being involved in a factor with a variable above the relinearization threshold
+      bool isRelinearized; /// Whether the variable was relinearized, either by being above the relinearization threshold or by involvement.
+      bool isObserved; ///< Whether the variable was just involved in new factors
+      bool isNew; ///< Whether the variable itself was just added
+      bool inRootClique; ///< Whether the variable is in the root clique
+      VariableStatus(): isReeliminated(false), isRelinearized(false), isObserved(false), isNew(false), inRootClique(false) {}
+    };
+
+    /** The status of each variable during this update, see VariableStatus.
+     */
+    FastMap<Key, VariableStatus> variableStatus;
+  };
+
+  /** Detailed results, if enabled by ISAM2Params::enableDetailedResults.  See
+   * Detail for information about the results data stored here. */
+  boost::optional<DetailedResults> detail;
 };
 
 struct ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique, GaussianConditional> {
@@ -364,6 +396,9 @@ protected:
   /** The current Dogleg Delta (trust region radius) */
   mutable boost::optional<double> doglegDelta_;
 
+  /** The inverse ordering, only used for creating ISAM2Result::DetailedResults */
+  boost::optional<Ordering::InvertedMap> inverseOrdering_;
+
 private:
 #ifndef NDEBUG
   std::vector<bool> lastRelinVariables_;
@@ -468,7 +503,7 @@ private:
   GaussianFactorGraph getCachedBoundaryFactors(Cliques& orphans);
 
   boost::shared_ptr<FastSet<Index> > recalculate(const FastSet<Index>& markedKeys, const FastSet<Index>& relinKeys,
-      const FastVector<Index>& newKeys,
+      const FastVector<Index>& observedKeys,
       const boost::optional<FastMap<Index,int> >& constrainKeys, ISAM2Result& result);
   //	void linear_update(const GaussianFactorGraph& newFactors);
   void updateDelta(bool forceFullSolve = false) const;
