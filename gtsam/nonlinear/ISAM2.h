@@ -222,7 +222,8 @@ struct ISAM2Result {
       bool isObserved; ///< Whether the variable was just involved in new factors
       bool isNew; ///< Whether the variable itself was just added
       bool inRootClique; ///< Whether the variable is in the root clique
-      VariableStatus(): isReeliminated(false), isRelinearized(false), isObserved(false), isNew(false), inRootClique(false) {}
+      VariableStatus(): isReeliminated(false), isAboveRelinThreshold(false), isRelinearizeInvolved(false),
+          isRelinearized(false), isObserved(false), isNew(false), inRootClique(false) {}
     };
 
     /** The status of each variable during this update, see VariableStatus.
