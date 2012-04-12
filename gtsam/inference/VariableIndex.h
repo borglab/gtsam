@@ -70,6 +70,16 @@ public:
    */
   template<class FactorGraph> VariableIndex(const FactorGraph& factorGraph);
 
+  /**
+   * Copy constructor
+   */
+  VariableIndex(const VariableIndex& other);
+
+  /**
+   * Assignment operator
+   */
+  VariableIndex& operator=(const VariableIndex& rhs);
+
 	/// @}
 	/// @name Standard Interface
 	/// @{
@@ -126,7 +136,6 @@ public:
    * exactly to the factors with the specified \c indices that were added.
    */
   template<typename CONTAINER, class FactorGraph> void remove(const CONTAINER& indices, const FactorGraph& factors);
-
 
   /**
    * Apply a variable permutation.  Does not rearrange data, just permutes

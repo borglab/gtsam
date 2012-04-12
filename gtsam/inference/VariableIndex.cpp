@@ -24,6 +24,20 @@ namespace gtsam {
 using namespace std;
 
 /* ************************************************************************* */
+VariableIndex::VariableIndex(const VariableIndex& other) :
+    index_(indexUnpermuted_) {
+  *this = other;
+}
+
+/* ************************************************************************* */
+VariableIndex& VariableIndex::operator=(const VariableIndex& rhs) {
+  index_ = rhs.index_;
+  nFactors_ = rhs.nFactors_;
+  nEntries_ = rhs.nEntries_;
+  return *this;
+}
+
+/* ************************************************************************* */
 void VariableIndex::permute(const Permutation& permutation) {
 #ifndef NDEBUG
   // Assert that the permutation does not leave behind any non-empty variables,
