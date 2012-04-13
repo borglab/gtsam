@@ -38,6 +38,8 @@
 
 using namespace std;
 
+boost::minstd_rand generator(42u);
+
 namespace gtsam {
 
 /* ************************************************************************* */
@@ -192,6 +194,15 @@ bool equal_with_abs_tol(const SubVector& vec1, const SubVector& vec2, double tol
 bool assert_equal(const Vector& expected, const Vector& actual, double tol) {
 	if (equal_with_abs_tol(expected,actual,tol)) return true;
 	cout << "not equal:" << endl;
+	print(expected, "expected");
+	print(actual, "actual");
+	return false;
+}
+
+/* ************************************************************************* */
+bool assert_inequal(const Vector& expected, const Vector& actual, double tol) {
+	if (!equal_with_abs_tol(expected,actual,tol)) return true;
+	cout << "Erroneously equal:" << endl;
 	print(expected, "expected");
 	print(actual, "actual");
 	return false;
