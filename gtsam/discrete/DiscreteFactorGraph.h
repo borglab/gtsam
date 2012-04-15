@@ -1,0 +1,87 @@
+/*
+ * DiscreteFactorGraph.h
+ *
+ *  @date Feb 14, 2011
+ *  @author Duy-Nguyen Ta
+ */
+
+#pragma once
+
+#include <gtsam2/discrete/DecisionTreeFactor.h>
+#include <gtsam2/discrete/DiscreteBayesNet.h>
+#include <gtsam/inference/FactorGraph.h>
+#include <gtsam/base/FastSet.h>
+#include <boost/make_shared.hpp>
+
+namespace gtsam {
+
+class DiscreteFactorGraph: public FactorGraph<DiscreteFactor> {
+public:
+
+	/** A map from keys to values */
+	typedef std::vector<Index> Indices;
+	typedef Assignment<Index> Values;
+	typedef boost::shared_ptr<Values> sharedValues;
+
+	/** Construct empty factor graph */
+	DiscreteFactorGraph();
+
+	/** Constructor from a factor graph of GaussianFactor or a derived type */
+	template<class DERIVEDFACTOR>
+	DiscreteFactorGraph(const FactorGraph<DERIVEDFACTOR>& fg) {
+		push_back(fg);
+	}
+
+	/** construct from a BayesNet */
+	DiscreteFactorGraph(const BayesNet<DiscreteConditional>& bayesNet);
+
+	template<class SOURCE>
+	void add(const DiscreteKey& j, SOURCE table) {
+		DiscreteKeys keys;
+		keys.push_back(j);
+		push_back(boost::make_shared<DecisionTreeFactor>(keys, table));
+	}
+
+	template<class SOURCE>
+	void add(const DiscreteKey& j1, const DiscreteKey& j2, SOURCE table) {
+		DiscreteKeys keys;
+		keys.push_back(j1);
+		keys.push_back(j2);
+		push_back(boost::make_shared<DecisionTreeFactor>(keys, table));
+	}
+
+	/** add shared discreteFactor immediately from arguments */
+	template<class SOURCE>
+	void add(const DiscreteKeys& keys, SOURCE table) {
+		push_back(boost::make_shared<DecisionTreeFactor>(keys, table));
+	}
+
+	/** Return the set of variables involved in the factors (set union) */
+	FastSet<Index> keys() const;
+
+	/** return product of all factors as a single factor */
+	DecisionTreeFactor product() const;
+
+	/** Evaluates the factor graph given values, returns the joint probability of the factor graph given specific instantiation of values*/
+	double operator()(const DiscreteFactor::Values & values) const;
+
+	/// print
+	void print(const std::string& s = "DiscreteFactorGraph") const {
+		std::cout << s << std::endl;
+		std::cout << "size: " << size() << std::endl;
+		for (size_t i = 0; i < factors_.size(); i++) {
+			std::stringstream ss;
+			ss << "factor " << i << ": ";
+			if (factors_[i] != NULL) factors_[i]->print(ss.str());
+		}
+	}
+
+};
+// DiscreteFactorGraph
+
+/** Main elimination function for DiscreteFactorGraph */
+std::pair<boost::shared_ptr<DiscreteConditional>, DecisionTreeFactor::shared_ptr>
+EliminateDiscrete(const FactorGraph<DiscreteFactor>& factors,
+		size_t nrFrontals = 1);
+
+} // namespace gtsam
