@@ -6,8 +6,8 @@
  */
 
 //#define ENABLE_TIMING
-#include <gtsam2/discrete/DiscreteFactorGraph.h>
-#include <gtsam2/discrete/DiscreteConditional.h>
+#include <gtsam/discrete/DiscreteFactorGraph.h>
+#include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/inference/EliminationTree-inl.h>
 #include <boost/make_shared.hpp>
 

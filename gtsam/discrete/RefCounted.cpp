@@ -5,5 +5,5 @@
  * @date	Mar 29, 2011
  */
 
-#include <gtsam2/discrete/RefCounted.h>
+#include <gtsam/discrete/RefCounted.h>
 

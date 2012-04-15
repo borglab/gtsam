@@ -6,8 +6,8 @@
  */
 
 //#define ENABLE_TIMING
-#include <gtsam2/discrete/DiscreteSequentialSolver.h>
-#include <gtsam2/discrete/PotentialTable.h>
+#include <gtsam/discrete/DiscreteSequentialSolver.h>
+#include <gtsam/discrete/PotentialTable.h>
 #include <gtsam/inference/GenericSequentialSolver-inl.h>
 #include <gtsam/base/timing.h>
 

@@ -5,8 +5,8 @@
  *  @author Frank Dellaert
  */
 
-#include <gtsam2/discrete/DiscreteBayesNet.h>
-#include <gtsam2/discrete/DiscreteSequentialSolver.h>
+#include <gtsam/discrete/DiscreteBayesNet.h>
+#include <gtsam/discrete/DiscreteSequentialSolver.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/debug.h>
 

@@ -11,7 +11,7 @@
 #include <algorithm>
 #include <boost/format.hpp>
 #include <boost/foreach.hpp>
-#include <gtsam2/discrete/PotentialTable.h>
+#include <gtsam/discrete/PotentialTable.h>
 
 using namespace std;
 

@@ -4,8 +4,8 @@
  * @author Frank Dellaert
  */
 
-#include <gtsam2/discrete/Potentials.h>
-#include <gtsam2/discrete/DecisionTree-inl.h>
+#include <gtsam/discrete/Potentials.h>
+#include <gtsam/discrete/DecisionTree-inl.h>
 #include <boost/format.hpp>
 
 using namespace std;

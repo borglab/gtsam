@@ -5,7 +5,7 @@
  */
 
 //#define ENABLE_TIMING
-#include <gtsam2/discrete/Scheduler.h>
+#include <gtsam/discrete/Scheduler.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/timing.h>
 
@@ -149,7 +149,7 @@ TEST( schedulingExample, test)
 /* ************************************************************************* */
 TEST( schedulingExample, smallFromFile)
 {
-	string path("../../../gtsam2/discrete/examples/");
+	string path("../../../gtsam/discrete/examples/");
 	Scheduler s(2, path + "small.csv");
 
 	// add areas

@@ -6,8 +6,8 @@
  *  @author Frank Dellaert
  */
 
-#include <gtsam2/discrete/DiscreteBayesNet.h>
-#include <gtsam2/discrete/DiscreteConditional.h>
+#include <gtsam/discrete/DiscreteBayesNet.h>
+#include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/inference/BayesNet-inl.h>
 #include <boost/make_shared.hpp>
 

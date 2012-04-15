@@ -5,9 +5,9 @@
  *  @author Duy-Nguyen Ta
  */
 
-#include <gtsam2/discrete/DiscreteFactor.h>
-#include <gtsam2/discrete/DiscreteFactorGraph.h>
-#include <gtsam2/discrete/DiscreteSequentialSolver.h>
+#include <gtsam/discrete/DiscreteFactor.h>
+#include <gtsam/discrete/DiscreteFactorGraph.h>
+#include <gtsam/discrete/DiscreteSequentialSolver.h>
 #include <gtsam/inference/GenericMultifrontalSolver.h>
 
 #include <CppUnitLite/TestHarness.h>

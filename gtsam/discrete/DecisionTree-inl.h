@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <gtsam2/discrete/DecisionTree.h>
+#include <gtsam/discrete/DecisionTree.h>
 #include <gtsam/base/Testable.h>
 
 #include <boost/format.hpp>

@@ -11,7 +11,7 @@
 #include <vector>
 #include <set>
 #include <gtsam/inference/FactorGraph.h>
-#include <gtsam2/discrete/TypedDiscreteFactor.h>
+#include <gtsam/discrete/TypedDiscreteFactor.h>
 
 namespace gtsam {
 

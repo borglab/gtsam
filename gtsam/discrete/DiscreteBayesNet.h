@@ -11,7 +11,7 @@
 #include <map>
 #include <boost/shared_ptr.hpp>
 #include <gtsam/inference/BayesNet.h>
-#include <gtsam2/discrete/DiscreteConditional.h>
+#include <gtsam/discrete/DiscreteConditional.h>
 
 namespace gtsam {
 

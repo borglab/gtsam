@@ -11,8 +11,8 @@
 using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam2/discrete/DecisionTreeFactor.h>
-#include <gtsam2/discrete/DiscreteConditional.h>
+#include <gtsam/discrete/DecisionTreeFactor.h>
+#include <gtsam/discrete/DiscreteConditional.h>
 #include <boost/version.hpp>  // for checking whether we are using boost 1.40
 #if BOOST_VERSION >= 104200
 #define BOOST_HAVE_PARSER

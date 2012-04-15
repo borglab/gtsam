@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <gtsam2/discrete/Assignment.h>
+#include <gtsam/discrete/Assignment.h>
 #include <gtsam/inference/IndexFactor.h>
 
 namespace gtsam {

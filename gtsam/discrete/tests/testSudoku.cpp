@@ -5,7 +5,7 @@
  * @author Frank Dellaert
  */
 
-#include <gtsam2/discrete/CSP.h>
+#include <gtsam/discrete/CSP.h>
 #include <CppUnitLite/TestHarness.h>
 #include <iostream>
 #include <sstream>

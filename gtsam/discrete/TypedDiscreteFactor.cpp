@@ -6,9 +6,9 @@
  */
 
 #include <boost/make_shared.hpp>
-#include <gtsam2/discrete/TypedDiscreteFactor.h>
+#include <gtsam/discrete/TypedDiscreteFactor.h>
 #include <gtsam/inference/Factor-inl.h>
-#include <gtsam2/discrete/DecisionDiagram-inl.h>
+#include <gtsam/discrete/DecisionDiagram-inl.h>
 
 using namespace std;
 

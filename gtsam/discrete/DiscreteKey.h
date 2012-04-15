@@ -8,7 +8,7 @@
 #pragma once
 
 #include <gtsam/base/types.h>
-#include <gtsam2/discrete/label_traits.h>
+#include <gtsam/discrete/label_traits.h>
 
 #include <map>
 #include <string>

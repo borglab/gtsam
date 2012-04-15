@@ -10,9 +10,9 @@
 #include <stdexcept>
 #include <boost/lexical_cast.hpp>
 #include <boost/foreach.hpp>
-#include <gtsam2/discrete/DiscreteFactor.h>
-#include <gtsam2/discrete/TypedDiscreteFactorGraph.h>
-#include <gtsam2/discrete/parseUAI.h>
+#include <gtsam/discrete/DiscreteFactor.h>
+#include <gtsam/discrete/TypedDiscreteFactorGraph.h>
+#include <gtsam/discrete/parseUAI.h>
 
 #include <gtsam/inference/FactorGraph.h>
 

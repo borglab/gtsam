@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include <gtsam2/discrete/DecisionTreeFactor.h>
-#include <gtsam2/discrete/DiscreteBayesNet.h>
+#include <gtsam/discrete/DecisionTreeFactor.h>
+#include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/base/FastSet.h>
 #include <boost/make_shared.hpp>

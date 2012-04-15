@@ -7,7 +7,7 @@
  */
 
 #include <string>
-#include <gtsam2/discrete/TypedDiscreteFactorGraph.h>
+#include <gtsam/discrete/TypedDiscreteFactorGraph.h>
 
 namespace gtsam {
 

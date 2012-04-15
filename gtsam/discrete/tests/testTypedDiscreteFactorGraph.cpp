@@ -14,8 +14,8 @@
 //#include <gtsam/inference/JunctionTree.h>
 //#include <gtsam/inference/JunctionTree-inl.h>
 
-#include <gtsam2/discrete/TypedDiscreteFactorGraph.h>
-//#include <gtsam2/discrete/DiscreteSequentialSolver.h>
+#include <gtsam/discrete/TypedDiscreteFactorGraph.h>
+//#include <gtsam/discrete/DiscreteSequentialSolver.h>
 
 using namespace std;
 using namespace gtsam;
@@ -31,7 +31,7 @@ void init() {
 	values[v2] = 1;
 }
 
-string path("../../../gtsam2/discrete/tests/data/");
+string path("../../../gtsam/discrete/tests/data/");
 
 /* ************************************************************************* */
 TEST( TypedDiscreteFactorGraph, parseUAI)

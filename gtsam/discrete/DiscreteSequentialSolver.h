@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <gtsam2/discrete/DiscreteFactorGraph.h>
+#include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/inference/GenericSequentialSolver.h>
 #include <boost/shared_ptr.hpp>
 

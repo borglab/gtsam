@@ -8,7 +8,7 @@
 //#define ENABLE_TIMING
 #define ADD_NO_CACHING
 #define ADD_NO_PRUNING
-#include <gtsam2/discrete/Scheduler.h>
+#include <gtsam/discrete/Scheduler.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
 
@@ -53,7 +53,7 @@ void addStudent(Scheduler& s, size_t i) {
 }
 /* ************************************************************************* */
 Scheduler largeExample(size_t nrStudents = 7) {
-	string path("/Users/dellaert/borg/gtsam2/gtsam2/discrete/examples/");
+	string path("/Users/dellaert/borg/gtsam/gtsam/discrete/examples/");
 	Scheduler s(nrStudents, path + "Doodle.csv");
 
 	s.addArea("Harvey Lipkin", "Mechanics");

@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <gtsam2/discrete/Assignment.h>
+#include <gtsam/discrete/Assignment.h>
 #include <boost/function.hpp>
 #include <iostream>
 #include <vector>

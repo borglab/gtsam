@@ -10,7 +10,7 @@
 using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam2/discrete/PotentialTable.h>
+#include <gtsam/discrete/PotentialTable.h>
 
 using namespace std;
 using namespace gtsam;

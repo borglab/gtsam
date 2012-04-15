@@ -6,8 +6,8 @@
  *  @author Duy-Nguyen Ta
  */
 
-#include <gtsam2/discrete/Signature.h>
-#include <gtsam2/discrete/DecisionTreeFactor.h>
+#include <gtsam/discrete/Signature.h>
+#include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/base/Testable.h>
 #include <CppUnitLite/TestHarness.h>
 #include <boost/assign/std/map.hpp>

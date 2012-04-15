@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include <gtsam2/discrete/DiscreteFactor.h>
-#include <gtsam2/discrete/Potentials.h>
+#include <gtsam/discrete/DiscreteFactor.h>
+#include <gtsam/discrete/Potentials.h>
 
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>

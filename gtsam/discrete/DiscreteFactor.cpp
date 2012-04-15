@@ -6,7 +6,7 @@
  * @author Frank Dellaert
  */
 
-#include <gtsam2/discrete/DiscreteFactor.h>
+#include <gtsam/discrete/DiscreteFactor.h>
 #include <boost/foreach.hpp>
 
 using namespace std;

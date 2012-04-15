@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <gtsam2/discrete/DecisionTree-inl.h>
+#include <gtsam/discrete/DecisionTree-inl.h>
 
 namespace gtsam {
 

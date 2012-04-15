@@ -12,12 +12,12 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam2/discrete/Signature.h>
+#include <gtsam/discrete/Signature.h>
 
 //#define DT_DEBUG_MEMORY
 //#define DT_NO_PRUNING
 #define DISABLE_DOT
-#include <gtsam2/discrete/DecisionTree-inl.h>
+#include <gtsam/discrete/DecisionTree-inl.h>
 using namespace std;
 using namespace gtsam;
 

@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include <gtsam2/discrete/DecisionTreeFactor.h>
-#include <gtsam2/discrete/Signature.h>
+#include <gtsam/discrete/DecisionTreeFactor.h>
+#include <gtsam/discrete/Signature.h>
 #include <gtsam/inference/IndexConditional.h>
 #include <boost/shared_ptr.hpp>
 

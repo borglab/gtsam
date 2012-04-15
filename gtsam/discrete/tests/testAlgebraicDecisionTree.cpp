@@ -6,11 +6,11 @@
  */
 
 #include <gtsam/base/Testable.h>
-#include <gtsam2/discrete/DiscreteKey.h> // make sure we have traits
+#include <gtsam/discrete/DiscreteKey.h> // make sure we have traits
 // headers first to make sure no missing headers
 //#define DT_NO_PRUNING
-#include <gtsam2/discrete/AlgebraicDecisionTree.h>
-#include <gtsam2/discrete/DecisionTree-inl.h> // for convert only
+#include <gtsam/discrete/AlgebraicDecisionTree.h>
+#include <gtsam/discrete/DecisionTree-inl.h> // for convert only
 #define DISABLE_TIMING
 #include <boost/version.hpp>  // for checking whether we are using boost 1.40
 #if BOOST_VERSION >= 104200
@@ -25,7 +25,7 @@
 using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam2/discrete/Signature.h>
+#include <gtsam/discrete/Signature.h>
 
 using namespace std;
 using namespace gtsam;

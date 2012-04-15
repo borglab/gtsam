@@ -5,9 +5,9 @@
  * @author Frank Dellaert
  */
 
-#include <gtsam2/discrete/Scheduler.h>
-#include <gtsam2/discrete/DiscreteFactorGraph.h>
-#include <gtsam2/discrete/DiscreteSequentialSolver.h>
+#include <gtsam/discrete/Scheduler.h>
+#include <gtsam/discrete/DiscreteFactorGraph.h>
+#include <gtsam/discrete/DiscreteSequentialSolver.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
 

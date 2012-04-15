@@ -9,7 +9,7 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <gtsam/base/Testable.h>
-#include <gtsam2/discrete/Signature.h>
+#include <gtsam/discrete/Signature.h>
 
 using namespace std;
 using namespace gtsam;

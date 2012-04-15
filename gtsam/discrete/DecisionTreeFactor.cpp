@@ -6,8 +6,8 @@
  * @author Frank Dellaert
  */
 
-#include <gtsam2/discrete/DecisionTreeFactor.h>
-#include <gtsam2/discrete/DiscreteConditional.h>
+#include <gtsam/discrete/DecisionTreeFactor.h>
+#include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/base/FastSet.h>
 
 #include <boost/foreach.hpp>

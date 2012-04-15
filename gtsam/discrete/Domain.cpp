@@ -5,8 +5,8 @@
  * @author Frank Dellaert
  */
 
-#include <gtsam2/discrete/Domain.h>
-#include <gtsam2/discrete/DecisionTreeFactor.h>
+#include <gtsam/discrete/Domain.h>
+#include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/base/Testable.h>
 #include <boost/make_shared.hpp>
 

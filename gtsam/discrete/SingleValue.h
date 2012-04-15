@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include <gtsam2/discrete/DiscreteKey.h>
-#include <gtsam2/discrete/DiscreteFactor.h>
+#include <gtsam/discrete/DiscreteKey.h>
+#include <gtsam/discrete/DiscreteFactor.h>
 
 namespace gtsam {
 

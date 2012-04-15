@@ -10,7 +10,7 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam2/discrete/TypedDiscreteFactor.h>
+#include <gtsam/discrete/TypedDiscreteFactor.h>
 
 using namespace std;
 using namespace gtsam;

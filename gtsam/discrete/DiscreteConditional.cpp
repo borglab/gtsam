@@ -6,8 +6,8 @@
  *  @author Frank Dellaert
  */
 
-#include <gtsam2/discrete/DiscreteConditional.h>
-#include <gtsam2/discrete/Signature.h>
+#include <gtsam/discrete/DiscreteConditional.h>
+#include <gtsam/discrete/Signature.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/debug.h>
 

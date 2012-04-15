@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 #include <boost/optional.hpp>
-#include <gtsam2/discrete/DiscreteKey.h>
+#include <gtsam/discrete/DiscreteKey.h>
 
 #include <boost/version.hpp>  // for checking whether we are using boost 1.40
 #if BOOST_VERSION >= 104200

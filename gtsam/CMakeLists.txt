@@ -4,6 +4,7 @@ set (gtsam_subdirs
     base 
     geometry 
     inference 
+    discrete 
     linear 
     nonlinear 
     slam
@@ -25,10 +26,24 @@ if (GTSAM_BUILD_CONVENIENCE_LIBRARIES)
     add_library(ccolamd STATIC ${3rdparty_srcs})
 endif()
 
+# Sources to remove from builds
+set (excluded_sources
+    "${CMAKE_CURRENT_SOURCE_DIR}/discrete/TypedDiscreteFactor.cpp" 
+    "${CMAKE_CURRENT_SOURCE_DIR}/discrete/TypedDiscreteFactorGraph.cpp" 
+    "${CMAKE_CURRENT_SOURCE_DIR}/discrete/parseUAI.cpp" 
+    "${CMAKE_CURRENT_SOURCE_DIR}/discrete/PotentialTable.cpp")
+    
+if(GSAM_USE_QUATERNIONS)
+    set(excluded_sources ${excluded_sources} "${CMAKE_CURRENT_SOURCE_DIR}/geometry/Rot3M.cpp")
+else()
+    set(excluded_sources ${excluded_sources} "${CMAKE_CURRENT_SOURCE_DIR}/geometry/Rot3Q.cpp")
+endif()
+
 # assemble core libaries
 foreach(subdir ${gtsam_subdirs})
     # Build convenience libraries
     file(GLOB subdir_srcs "${subdir}/*.cpp")
+    list(REMOVE_ITEM subdir_srcs ${excluded_sources})
     set(${subdir}_srcs ${subdir_srcs})
     if (GTSAM_BUILD_CONVENIENCE_LIBRARIES)
         message(STATUS "Building Convenience Library: ${subdir}")
@@ -46,6 +61,7 @@ set(gtsam_srcs
     ${base_srcs}
     ${geometry_srcs}
     ${inference_srcs}
+    ${discrete_srcs}
     ${linear_srcs}
     ${nonlinear_srcs}
     ${slam_srcs}

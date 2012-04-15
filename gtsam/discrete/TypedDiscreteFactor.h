@@ -9,8 +9,8 @@
 
 #include <map>
 #include <gtsam/inference/Factor.h>
-#include <gtsam2/discrete/DiscreteFactor.h>
-#include <gtsam2/discrete/AlgebraicDecisionDiagram.h>
+#include <gtsam/discrete/DiscreteFactor.h>
+#include <gtsam/discrete/AlgebraicDecisionDiagram.h>
 
 namespace gtsam {
 

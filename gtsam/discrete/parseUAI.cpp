@@ -16,7 +16,7 @@
 #include <boost/spirit/home/phoenix/operator.hpp>
 #include <boost/spirit/include/support_istream_iterator.hpp>
 
-#include <gtsam2/discrete/parseUAI.h>
+#include <gtsam/discrete/parseUAI.h>
 
 using namespace std;
 namespace qi = boost::spirit::qi;
@@ -144,7 +144,7 @@ namespace gtsam {
 }// gtsam
 #else
 
-#include <gtsam2/discrete/parseUAI.h>
+#include <gtsam/discrete/parseUAI.h>
 
 namespace gtsam {
 
