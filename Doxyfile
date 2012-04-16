@@ -641,6 +641,7 @@ WARN_LOGFILE           =
 INPUT                  = gtsam/base \
                          gtsam/geometry \
                          gtsam/inference \
+                         gtsam/discrete \
                          gtsam/linear \
                          gtsam/nonlinear \
                          gtsam/slam \
