@@ -5,7 +5,12 @@ file(GLOB discrete_headers "*.h")
 install(FILES ${discrete_headers} DESTINATION include/gtsam/discrete)
 
 # Set up library dependencies
-set (discrete_local_libs ccolamd base inference discrete)
+set (discrete_local_libs 
+   discrete
+   inference
+   base
+   ccolamd
+)
 
 # Exclude tests that don't work
 set (discrete_excluded_tests
