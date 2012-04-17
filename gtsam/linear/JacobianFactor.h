@@ -196,11 +196,17 @@ namespace gtsam {
     /** Get a view of the A matrix for the variable pointed to by the given key iterator */
     constABlock getA(const_iterator variable) const { return Ab_(variable - begin()); }
 
+    /** Get a view of the A matrix */
+    constABlock getA() const { return Ab_.range(0, size()); }
+
     /** Get a view of the r.h.s. vector b (non-const version) */
     BVector getb() { return Ab_.column(size(), 0); }
 
     /** Get a view of the A matrix for the variable pointed to by the given key iterator (non-const version) */
     ABlock getA(iterator variable) { return Ab_(variable - begin()); }
+
+    /** Get a view of the A matrix */
+    ABlock getA() { return Ab_.range(0, size()); }
 
     /** Return A*x */
     Vector operator*(const VectorValues& x) const;
