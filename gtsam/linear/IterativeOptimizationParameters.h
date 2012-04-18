@@ -147,7 +147,7 @@ struct ConjugateGradientParameters {
   inline Verbosity verbosity() const { return verbosity_; }
 
   void print() const {
-    const std::string blasStr[4] = {"gtsam", "sbm", "sm", "cholmod"};
+    const std::string blasStr[4] = {"gtsam", "sbm", "sbm-mt"};
     std::cout << "ConjugateGradientParameters: "
               << "blas = " << blasStr[blas_kernel_]
               << ", minIter = " << minIterations_
