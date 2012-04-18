@@ -118,7 +118,8 @@ struct ConjugateGradientParameters {
 
   enum BLASKernel {   /* Matrix Operation Kernel */
     GTSAM = 0,        /* Jacobian Factor Graph of GTSAM */
-    SBM               /* Sparse Block Matrix */
+    SBM,              /* Sparse Block Matrix */
+    SBM_MT            /* Sparse Block Matrix Multithreaded */
   } blas_kernel_;
 
   size_t degree_;         /* the maximum degree of the vertices to be eliminated before doing cg */
