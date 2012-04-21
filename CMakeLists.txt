@@ -19,12 +19,8 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
   message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there. You may need to remove CMakeCache.txt. ")
 endif()
 
-# Default to Debug mode
-if(NOT FIRST_PASS_DONE AND NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE "Debug" CACHE STRING
-      "Choose the type of build, options are: None Debug Release Timing Profiling RelWithDebInfo."
-      FORCE)
-endif()
+# Load build type flags and default to Debug mode
+include(GtsamBuildTypes)
 
 # Check build types
 if(${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} VERSION_GREATER 2.8 OR ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} VERSION_EQUAL 2.8)
@@ -39,22 +35,6 @@ if(    NOT cmake_build_type_tolower STREQUAL ""
    AND NOT cmake_build_type_tolower STREQUAL "profiling"
    AND NOT cmake_build_type_tolower STREQUAL "relwithdebinfo")
   message(FATAL_ERROR "Unknown build type \"${CMAKE_BUILD_TYPE}\". Allowed values are None, Debug, Release, Timing, Profiling, RelWithDebInfo (case-insensitive).")
-endif()
-
-# Add debugging flags but only on the first pass
-if(NOT FIRST_PASS_DONE)
-  set(CMAKE_C_FLAGS_DEBUG            "${CMAKE_C_FLAGS_DEBUG} -fno-inline -Wall" CACHE STRING "Flags used by the compiler during debug builds." FORCE)
-  set(CMAKE_CXX_FLAGS_DEBUG          "${CMAKE_CXX_FLAGS_DEBUG} -fno-inline -Wall" CACHE STRING "Flags used by the compiler during debug builds." FORCE)
-  set(CMAKE_C_FLAGS_RELWITHDEBINFO   "-g -fno-inline -Wall -DNDEBUG" CACHE STRING "Flags used by the compiler during relwithdebinfo builds." FORCE)
-  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -fno-inline -Wall -DNDEBUG" CACHE STRING "Flags used by the compiler during relwithdebinfo builds." FORCE)
-  set(CMAKE_C_FLAGS_RELEASE          "${CMAKE_C_FLAGS_RELEASE} -Wall" CACHE STRING "Flags used by the compiler during release builds." FORCE)
-  set(CMAKE_CXX_FLAGS_RELEASE        "${CMAKE_CXX_FLAGS_RELEASE} -Wall" CACHE STRING "Flags used by the compiler during release builds." FORCE)
-  set(CMAKE_C_FLAGS_TIMING           "${CMAKE_C_FLAGS_RELEASE} -DENABLE_TIMING" CACHE STRING "Flags used by the compiler during timing builds." FORCE)
-  set(CMAKE_CXX_FLAGS_TIMING         "${CMAKE_CXX_FLAGS_RELEASE} -DENABLE_TIMING" CACHE STRING "Flags used by the compiler during timing builds." FORCE)
-  mark_as_advanced(CMAKE_C_FLAGS_TIMING CMAKE_CXX_FLAGS_TIMING)
-  set(CMAKE_C_FLAGS_PROFILING        "-g -O2 -Wall -DNDEBUG" CACHE STRING "Flags used by the compiler during profiling builds." FORCE)
-  set(CMAKE_CXX_FLAGS_PROFILING      "-g -O2 -Wall -DNDEBUG" CACHE STRING "Flags used by the compiler during profiling builds." FORCE)
-  mark_as_advanced(CMAKE_C_FLAGS_PROFILING CMAKE_CXX_FLAGS_PROFILING)
 endif()
 
 # Configurable Options
@@ -132,10 +112,6 @@ endif(GTSAM_BUILD_WRAP)
 if (GTSAM_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif(GTSAM_BUILD_EXAMPLES)
-
-# Mark that first pass is done
-set(FIRST_PASS_DONE true CACHE BOOL "Internally used to mark whether cmake has been run multiple times")
-mark_as_advanced(FIRST_PASS_DONE) 
 
 # Set up CPack
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "GTSAM")
