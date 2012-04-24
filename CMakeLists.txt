@@ -78,10 +78,6 @@ if (GTSAM_BUILD_TESTS)
     include(CTest)
 endif()
 
-# Enable make check (http://www.cmake.org/Wiki/CMakeEmulateMakeCheck)
-add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND})
-add_custom_target(timing)
-
 # Find boost
 find_package(Boost 1.40 COMPONENTS serialization REQUIRED)
 
