@@ -33,7 +33,7 @@ set (excluded_sources
     "${CMAKE_CURRENT_SOURCE_DIR}/discrete/parseUAI.cpp" 
     "${CMAKE_CURRENT_SOURCE_DIR}/discrete/PotentialTable.cpp")
     
-if(GSAM_USE_QUATERNIONS)
+if(GTSAM_USE_QUATERNIONS)
     set(excluded_sources ${excluded_sources} "${CMAKE_CURRENT_SOURCE_DIR}/geometry/Rot3M.cpp")
 else()
     set(excluded_sources ${excluded_sources} "${CMAKE_CURRENT_SOURCE_DIR}/geometry/Rot3Q.cpp")
