@@ -10,7 +10,7 @@ set (GTSAM_VERSION_PATCH 0)
 #set (CMAKE_INSTALL_PREFIX ${HOME} CACHE PATH "Install prefix for library")
 
 # Use macros for creating tests/timing scripts
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${PROJECT_SOURCE_DIR}/cmake")
 include(GtsamTesting)
 include(GtsamPrinting)
 
