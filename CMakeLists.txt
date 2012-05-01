@@ -71,6 +71,10 @@ endif(GTSAM_USE_QUATERNIONS)
 # FIXME: can't add install dependencies, so libraries never get built
 #set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY TRUE)
 
+# Alternative version to keep tests from building during make install
+# Use the EXCLUDE_FROM_ALL property on test executables
+option(GTSAM_ENABLE_INSTALL_TEST_FIX "Enable/Disable installation of wrap utility" ON)
+
 # Pull in infrastructure
 if (GTSAM_BUILD_TESTS)
     enable_testing()
@@ -132,13 +136,14 @@ message(STATUS "GTSAM_SOURCE_ROOT_DIR: [${GTSAM_SOURCE_ROOT_DIR}]")
 message(STATUS "===============================================================")
 message(STATUS "================  Configuration Options  ======================")
 message(STATUS "Build flags                                               ")
-print_config_flag(${GTSAM_BUILD_TIMING}                "Build Timing scripts       ")
-print_config_flag(${GTSAM_BUILD_EXAMPLES}              "Build Examples             ")
-print_config_flag(${GTSAM_BUILD_TESTS}                 "Build Tests                ")
-print_config_flag(${GTSAM_BUILD_WRAP}                  "Build Wrap                 ")
-print_config_flag(${GTSAM_BUILD_SHARED_LIBRARY}        "Build shared GTSAM Library ")
-print_config_flag(${GTSAM_BUILD_STATIC_LIBRARY}        "Build static GTSAM Library ")
-print_config_flag(${GTSAM_BUILD_CONVENIENCE_LIBRARIES} "Build Convenience Libraries")
+print_config_flag(${GTSAM_BUILD_TIMING}                "Build Timing scripts           ")
+print_config_flag(${GTSAM_BUILD_EXAMPLES}              "Build Examples                 ")
+print_config_flag(${GTSAM_BUILD_TESTS}                 "Build Tests                    ")
+print_config_flag(${GTSAM_BUILD_WRAP}                  "Build Wrap                     ")
+print_config_flag(${GTSAM_BUILD_SHARED_LIBRARY}        "Build shared GTSAM Library     ")
+print_config_flag(${GTSAM_BUILD_STATIC_LIBRARY}        "Build static GTSAM Library     ")
+print_config_flag(${GTSAM_BUILD_CONVENIENCE_LIBRARIES} "Build Convenience Libraries    ")
+print_config_flag(${GTSAM_ENABLE_INSTALL_TEST_FIX}     "Tests excluded from all target ")
 string(TOUPPER "${CMAKE_BUILD_TYPE}" cmake_build_type_toupper)
 message(STATUS                                       "  Build type                 : ${CMAKE_BUILD_TYPE}")
 message(STATUS                                       "  C compilation flags        : ${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${cmake_build_type_toupper}}")
