@@ -429,6 +429,9 @@ public:
   /**
    * Add new factors, updating the solution and relinearizing as needed.
    *
+   * Optionally, this function remove existing factors from the system to enable
+   * behaviors such as swapping existing factors with new ones.
+   *
    * Add new measurements, and optionally new variables, to the current system.
    * This runs a full step of the ISAM2 algorithm, relinearizing and updating
    * the solution as needed, according to the wildfire and relinearize
@@ -439,6 +442,7 @@ public:
    * You must include here all new variables occuring in newFactors (which were not already
    * in the system).  There must not be any variables here that do not occur in newFactors,
    * and additionally, variables that were already in the system must not be included here.
+   * @param removeFactorIndices Indices of factors to remove from system
    * @param force_relinearize Relinearize any variables whose delta magnitude is sufficiently
    * large (Params::relinearizeThreshold), regardless of the relinearization interval
    * (Params::relinearizeSkip).

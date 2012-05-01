@@ -346,8 +346,11 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
     lastAffectedFactorCount = linearFactors_.size();
 
     // Reeliminated keys for detailed results
-    if(params_.enableDetailedResults)
-      BOOST_FOREACH(Key key, theta_.keys()) { result.detail->variableStatus[key].isReeliminated = true; }
+    if(params_.enableDetailedResults) {
+      BOOST_FOREACH(Key key, theta_.keys()) {
+      	result.detail->variableStatus[key].isReeliminated = true;
+      }
+    }
 
     toc(3,"batch");
 
@@ -367,8 +370,11 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
     if(debug) { cout << "Affected keys: "; BOOST_FOREACH(const Index key, affectedKeys) { cout << key << " "; } cout << endl; }
 
     // Reeliminated keys for detailed results
-    if(params_.enableDetailedResults)
-      BOOST_FOREACH(Index index, affectedAndNewKeys) { result.detail->variableStatus[inverseOrdering_->at(index)].isReeliminated = true; }
+    if(params_.enableDetailedResults) {
+      BOOST_FOREACH(Index index, affectedAndNewKeys) {
+      	result.detail->variableStatus[inverseOrdering_->at(index)].isReeliminated = true;
+      }
+    }
 
     result.variablesReeliminated = affectedAndNewKeys.size();
     lastAffectedMarkedCount = markedKeys.size();
@@ -477,8 +483,11 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
   }
 
   // Root clique variables for detailed results
-  if(params_.enableDetailedResults)
-    BOOST_FOREACH(Index index, this->root()->conditional()->frontals()) { result.detail->variableStatus[inverseOrdering_->at(index)].inRootClique = true; }
+  if(params_.enableDetailedResults) {
+    BOOST_FOREACH(Index index, this->root()->conditional()->frontals()) {
+    	result.detail->variableStatus[inverseOrdering_->at(index)].inRootClique = true;
+    }
+  }
 
   return affectedKeysSet;
 }
@@ -561,8 +570,11 @@ ISAM2Result ISAM2::update(
     markedKeys.insert(markedRemoveKeys.begin(), markedRemoveKeys.end()); // Add to the overall set of marked keys
   }
   // Observed keys for detailed results
-  if(params_.enableDetailedResults)
-    BOOST_FOREACH(Index index, markedKeys) { result.detail->variableStatus[inverseOrdering_->at(index)].isObserved = true; }
+  if(params_.enableDetailedResults) {
+    BOOST_FOREACH(Index index, markedKeys) {
+    	result.detail->variableStatus[inverseOrdering_->at(index)].isObserved = true;
+    }
+  }
   // NOTE: we use assign instead of the iterator constructor here because this
   // is a vector of size_t, so the constructor unintentionally resolves to
   // vector(size_t count, Index value) instead of the iterator constructor.

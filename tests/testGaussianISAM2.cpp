@@ -28,7 +28,10 @@ using boost::shared_ptr;
 
 const double tol = 1e-4;
 
-ISAM2 createSlamlikeISAM2() {
+ISAM2 createSlamlikeISAM2(
+		boost::optional<Values&> init_values = boost::none,
+		boost::optional<planarSLAM::Graph&> full_graph = boost::none,
+		const ISAM2Params& params = ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false, true)) {
 
   // Pose and landmark key types from planarSLAM
   using planarSLAM::PoseKey;
@@ -39,7 +42,8 @@ ISAM2 createSlamlikeISAM2() {
   SharedDiagonal brNoise = sharedSigmas(Vector_(2, M_PI/100.0, 0.1));
 
   // These variables will be reused and accumulate factors and values
-  ISAM2 isam(ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false, true));
+  ISAM2 isam(params);
+//  ISAM2 isam(ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false, true));
   Values fullinit;
   planarSLAM::Graph fullgraph;
 
@@ -120,6 +124,12 @@ ISAM2 createSlamlikeISAM2() {
     isam.update(newfactors, init);
     ++ i;
   }
+
+  if (full_graph)
+  	*full_graph = fullgraph;
+
+  if (init_values)
+  	*init_values = fullinit;
 
   return isam;
 }
@@ -1071,6 +1081,7 @@ TEST(ISAM2, removeFactors)
 
     // Remove the measurement on landmark 0
     FastVector<size_t> toRemove;
+    EXPECT_LONGS_EQUAL(isam.getFactorsUnsafe().size()-2, result.newFactorsIndices[1]);
     toRemove.push_back(result.newFactorsIndices[1]);
     isam.update(planarSLAM::Graph(), Values(), toRemove);
   }
@@ -1095,6 +1106,76 @@ TEST(ISAM2, removeFactors)
       variablePosition += dim;
     }
     LONGS_EQUAL(clique->gradientContribution().rows(), variablePosition);
+  }
+
+  // Check gradient
+  VectorValues expectedGradient(*allocateVectorValues(isam));
+  gradientAtZero(FactorGraph<JacobianFactor>(isam), expectedGradient);
+  VectorValues expectedGradient2(gradient(FactorGraph<JacobianFactor>(isam), VectorValues::Zero(expectedGradient)));
+  VectorValues actualGradient(*allocateVectorValues(isam));
+  gradientAtZero(isam, actualGradient);
+  EXPECT(assert_equal(expectedGradient2, expectedGradient));
+  EXPECT(assert_equal(expectedGradient, actualGradient));
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, swapFactors)
+{
+
+//  SETDEBUG("ISAM2 update", true);
+//  SETDEBUG("ISAM2 update verbose", true);
+//  SETDEBUG("ISAM2 recalculate", true);
+
+  // This test builds a graph in the same way as the "slamlike" test above, but
+  // then swaps the 2nd-to-last landmark measurement with a different one
+
+  // Pose and landmark key types from planarSLAM
+  using planarSLAM::PoseKey;
+  using planarSLAM::PointKey;
+
+  // Set up parameters
+  SharedDiagonal odoNoise = sharedSigmas(Vector_(3, 0.1, 0.1, M_PI/100.0));
+  SharedDiagonal brNoise = sharedSigmas(Vector_(2, M_PI/100.0, 0.1));
+
+  Values fullinit;
+  planarSLAM::Graph fullgraph;
+  ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph);
+
+  // Remove the measurement on landmark 0 and replace with a different one
+  {
+  	size_t swap_idx = isam.getFactorsUnsafe().size()-2;
+  	FastVector<size_t> toRemove;
+  	toRemove.push_back(swap_idx);
+  	fullgraph.remove(swap_idx);
+
+  	planarSLAM::Graph swapfactors;
+//  	swapfactors.addBearingRange(10, 0, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise); // original factor
+  	swapfactors.addBearingRange(10, 0, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 5.0, brNoise);
+  	fullgraph.push_back(swapfactors);
+  	isam.update(swapfactors, Values(), toRemove);
+  }
+
+  // Compare solutions
+  EXPECT(assert_equal(fullgraph, planarSLAM::Graph(isam.getFactorsUnsafe())));
+  EXPECT(isam_check(fullgraph, fullinit, isam));
+
+  // Check gradient at each node
+  typedef ISAM2::sharedClique sharedClique;
+  BOOST_FOREACH(const sharedClique& clique, isam.nodes()) {
+    // Compute expected gradient
+    FactorGraph<JacobianFactor> jfg;
+    jfg.push_back(JacobianFactor::shared_ptr(new JacobianFactor(*clique->conditional())));
+    VectorValues expectedGradient(*allocateVectorValues(isam));
+    gradientAtZero(jfg, expectedGradient);
+    // Compare with actual gradients
+    int variablePosition = 0;
+    for(GaussianConditional::const_iterator jit = clique->conditional()->begin(); jit != clique->conditional()->end(); ++jit) {
+      const int dim = clique->conditional()->dim(jit);
+      Vector actual = clique->gradientContribution().segment(variablePosition, dim);
+      EXPECT(assert_equal(expectedGradient[*jit], actual));
+      variablePosition += dim;
+    }
+    EXPECT_LONGS_EQUAL(clique->gradientContribution().rows(), variablePosition);
   }
 
   // Check gradient
