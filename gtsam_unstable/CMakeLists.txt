@@ -32,7 +32,12 @@ set(gtsam_unstable_srcs
 )
 
 option (GTSAM_UNSTABLE_BUILD_SHARED_LIBRARY "Enable/Disable building of a shared version of gtsam_unstable" ON)
- 
+
+# Wrap version for gtsam_unstable
+if (GTSAM_BUILD_WRAP)
+    add_subdirectory(wrap)
+endif(GTSAM_BUILD_WRAP)
+
 # Versions - same as core gtsam library
 set(gtsam_unstable_version   ${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH})
 set(gtsam_unstable_soversion ${GTSAM_VERSION_MAJOR})
