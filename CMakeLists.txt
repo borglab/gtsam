@@ -41,7 +41,7 @@ endif()
 option(GTSAM_BUILD_TESTS                 "Enable/Disable building of tests"          ON)
 option(GTSAM_BUILD_TIMING                "Enable/Disable building of timing scripts" ON)
 option(GTSAM_BUILD_EXAMPLES              "Enable/Disable building of examples"       ON)
-option(GTSAM_BUILD_UNSTABLE              "Enable/Disable libgtsam_unstable"          ON)
+option(GTSAM_BUILD_UNSTABLE              "Enable/Disable libgtsam_unstable"          OFF)
 option(GTSAM_BUILD_WRAP                  "Enable/Disable building of matlab wrap utility (necessary for matlab interface)" ON)
 option(GTSAM_BUILD_SHARED_LIBRARY        "Enable/Disable building of a shared version of gtsam" ON)
 option(GTSAM_BUILD_STATIC_LIBRARY        "Enable/Disable building of a static version of gtsam" ON)
@@ -74,7 +74,7 @@ endif(GTSAM_USE_QUATERNIONS)
 
 # Alternative version to keep tests from building during make install
 # Use the EXCLUDE_FROM_ALL property on test executables
-option(GTSAM_ENABLE_INSTALL_TEST_FIX "Enable/Disable installation of wrap utility" ON)
+option(GTSAM_ENABLE_INSTALL_TEST_FIX "Enable/Disable fix to remove dependency of tests on 'all' target" ON)
 
 # Pull in infrastructure
 if (GTSAM_BUILD_TESTS)
