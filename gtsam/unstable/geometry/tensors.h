@@ -1,0 +1,45 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file tensors.h
+ * @brief Tensor expression templates based on http://www.gps.caltech.edu/~walter/FTensor/FTensor.pdf
+ * @date Feb 10, 2010
+ * @author Frank Dellaert
+ * @defgroup tensors
+ */
+
+#pragma once
+
+namespace tensors {
+
+	/** index */
+	template<int Dim, char C> struct Index {
+		static const int dim = Dim; ///< dimension
+	};
+
+} // namespace tensors
+
+// Expression templates
+#include <gtsam2/geometry/Tensor1Expression.h>
+#include <gtsam2/geometry/Tensor2Expression.h>
+#include <gtsam2/geometry/Tensor3Expression.h>
+// Tensor4 not needed so far
+#include <gtsam2/geometry/Tensor5Expression.h>
+
+// Actual tensor classes
+#include <gtsam2/geometry/Tensor1.h>
+#include <gtsam2/geometry/Tensor2.h>
+#include <gtsam2/geometry/Tensor3.h>
+#include <gtsam2/geometry/Tensor4.h>
+#include <gtsam2/geometry/Tensor5.h>
+
+
