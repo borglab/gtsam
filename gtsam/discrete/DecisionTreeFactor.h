@@ -33,9 +33,6 @@ namespace gtsam {
 		typedef DiscreteConditional ConditionalType;
 		typedef boost::shared_ptr<DecisionTreeFactor> shared_ptr;
 
-		/// Index label and cardinality
-		typedef std::pair<Index,size_t> IndexC;
-
 	public:
 
 		/// @name Standard Constructors

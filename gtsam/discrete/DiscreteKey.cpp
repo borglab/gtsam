@@ -14,19 +14,6 @@ namespace gtsam {
 
 	using namespace std;
 
-	bool OldDiscreteKey::equals(const OldDiscreteKey& other, double tol) const {
-		return (*this == other);
-	}
-
-	void OldDiscreteKey::print(const string& s) const {
-		cout << s << *this;
-	}
-
-	ostream& operator <<(ostream &os, const OldDiscreteKey &key) {
-		os << key.name_;
-		return os;
-	}
-
 	DiscreteKeys::DiscreteKeys(const vector<int>& cs) {
 		for (size_t i = 0; i < cs.size(); i++) {
 			string name = boost::str(boost::format("v%1%") % i);
