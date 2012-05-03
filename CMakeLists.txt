@@ -41,6 +41,7 @@ endif()
 option(GTSAM_BUILD_TESTS                 "Enable/Disable building of tests"          ON)
 option(GTSAM_BUILD_TIMING                "Enable/Disable building of timing scripts" ON)
 option(GTSAM_BUILD_EXAMPLES              "Enable/Disable building of examples"       ON)
+option(GTSAM_BUILD_UNSTABLE              "Enable/Disable libgtsam_unstable"          ON)
 option(GTSAM_BUILD_WRAP                  "Enable/Disable building of matlab wrap utility (necessary for matlab interface)" ON)
 option(GTSAM_BUILD_SHARED_LIBRARY        "Enable/Disable building of a shared version of gtsam" ON)
 option(GTSAM_BUILD_STATIC_LIBRARY        "Enable/Disable building of a static version of gtsam" ON)
@@ -113,6 +114,11 @@ if (GTSAM_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif(GTSAM_BUILD_EXAMPLES)
 
+# Build gtsam_unstable
+if (GTSAM_BUILD_UNSTABLE)
+    add_subdirectory(gtsam_unstable)
+endif(GTSAM_BUILD_UNSTABLE)
+
 # Set up CPack
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "GTSAM")
 set(CPACK_PACKAGE_VENDOR "Frank Dellaert, Georgia Institute of Technology")
@@ -143,6 +149,7 @@ print_config_flag(${GTSAM_BUILD_WRAP}                  "Build Wrap              
 print_config_flag(${GTSAM_BUILD_SHARED_LIBRARY}        "Build shared GTSAM Library     ")
 print_config_flag(${GTSAM_BUILD_STATIC_LIBRARY}        "Build static GTSAM Library     ")
 print_config_flag(${GTSAM_BUILD_CONVENIENCE_LIBRARIES} "Build Convenience Libraries    ")
+print_config_flag(${GTSAM_BUILD_UNSTABLE}              "Build libgtsam_unstable        ")
 print_config_flag(${GTSAM_ENABLE_INSTALL_TEST_FIX}     "Tests excluded from all target ")
 string(TOUPPER "${CMAKE_BUILD_TYPE}" cmake_build_type_toupper)
 message(STATUS                                       "  Build type                 : ${CMAKE_BUILD_TYPE}")
