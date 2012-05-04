@@ -74,7 +74,7 @@ if (GTSAM_BUILD_WRAP)
     #  [mexFlags]    : extra flags for the mex command
     
     # TODO: generate these includes programmatically
-    set(mexFlags "-I${Boost_INCLUDE_DIR} -I${Wrap_INCLUDE_DIR} -I${CMAKE_INSTALL_PREFIX}/include/gtsam_unstable -I${CMAKE_INSTALL_PREFIX}/include/gtsam_unstable/dynamics -I${CMAKE_INSTALL_PREFIX}/include/gtsam_unstable/discrete -L${CMAKE_INSTALL_PREFIX}/lib -lgtsam -lgtsam_unstable")
+    set(mexFlags "-I${Boost_INCLUDE_DIR} -I${CMAKE_INSTALL_PREFIX}/include -I${CMAKE_INSTALL_PREFIX}/include/gtsam_unstable -I${CMAKE_INSTALL_PREFIX}/include/gtsam_unstable/dynamics -I${CMAKE_INSTALL_PREFIX}/include/gtsam_unstable/discrete -L${CMAKE_INSTALL_PREFIX}/lib -lgtsam -lgtsam_unstable")
     set(toolbox_path ${CMAKE_BINARY_DIR}/wrap/gtsam_unstable)
     set(moduleName gtsam_unstable)
     
