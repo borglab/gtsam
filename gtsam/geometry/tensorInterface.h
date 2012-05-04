@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <gtsam_unstable/geometry/tensors.h>
+#include <gtsam/geometry/tensors.h>
 #include <gtsam/base/Matrix.h>
 
 namespace gtsam {

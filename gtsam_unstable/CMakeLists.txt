@@ -3,7 +3,6 @@
 set (gtsam_unstable_subdirs
     base 
     dynamics
-    geometry
     slam 
 )
 
@@ -27,7 +26,6 @@ set(gtsam_unstable_srcs
     ${base_srcs} 
     ${discrete_srcs}
     ${dynamics_srcs}
-    ${geometry_srcs}
     ${slam_srcs} 
 )
 

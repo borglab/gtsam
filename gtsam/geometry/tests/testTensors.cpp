@@ -23,9 +23,9 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <gtsam_unstable/geometry/tensors.h>
-#include <gtsam_unstable/geometry/tensorInterface.h>
-#include <gtsam_unstable/geometry/projectiveGeometry.h>
+#include <gtsam/geometry/tensors.h>
+#include <gtsam/geometry/tensorInterface.h>
+#include <gtsam/geometry/projectiveGeometry.h>
 
 using namespace std;
 using namespace gtsam;

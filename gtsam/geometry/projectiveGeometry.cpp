@@ -19,8 +19,8 @@
 #include <boost/foreach.hpp>
 #include <gtsam/base/Matrix.h>
 
-#include <gtsam_unstable/geometry/tensorInterface.h>
-#include <gtsam_unstable/geometry/projectiveGeometry.h>
+#include <gtsam/geometry/tensorInterface.h>
+#include <gtsam/geometry/projectiveGeometry.h>
 
 namespace gtsam {
 

@@ -20,7 +20,7 @@
 
 #include <stdexcept>
 #include <iostream>
-#include <gtsam_unstable/geometry/tensors.h>
+#include <gtsam/geometry/tensors.h>
 
 namespace tensors {
 
