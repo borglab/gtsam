@@ -15,6 +15,7 @@ class Point2 {
  int dim() const;
  char returnChar() const;
  void argChar(char a) const;
+ void argUChar(unsigned char a) const;
  VectorNotEigen vectorConfusion();
 };
 

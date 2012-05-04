@@ -23,10 +23,12 @@ delete_Point2.$(MEXENDING): delete_Point2.cpp
 	$(MEX) $(mex_flags) @Point2/returnChar.cpp  -output @Point2/returnChar
 @Point2/argChar.$(MEXENDING): @Point2/argChar.cpp
 	$(MEX) $(mex_flags) @Point2/argChar.cpp  -output @Point2/argChar
+@Point2/argUChar.$(MEXENDING): @Point2/argUChar.cpp
+	$(MEX) $(mex_flags) @Point2/argUChar.cpp  -output @Point2/argUChar
 @Point2/vectorConfusion.$(MEXENDING): @Point2/vectorConfusion.cpp
 	$(MEX) $(mex_flags) @Point2/vectorConfusion.cpp  -output @Point2/vectorConfusion
 
-Point2: new_Point2_.$(MEXENDING) new_Point2_dd.$(MEXENDING) delete_Point2.$(MEXENDING) @Point2/x.$(MEXENDING) @Point2/y.$(MEXENDING) @Point2/dim.$(MEXENDING) @Point2/returnChar.$(MEXENDING) @Point2/argChar.$(MEXENDING) @Point2/vectorConfusion.$(MEXENDING) 
+Point2: new_Point2_.$(MEXENDING) new_Point2_dd.$(MEXENDING) delete_Point2.$(MEXENDING) @Point2/x.$(MEXENDING) @Point2/y.$(MEXENDING) @Point2/dim.$(MEXENDING) @Point2/returnChar.$(MEXENDING) @Point2/argChar.$(MEXENDING) @Point2/argUChar.$(MEXENDING) @Point2/vectorConfusion.$(MEXENDING) 
 
 # Point3
 new_Point3_ddd.$(MEXENDING): new_Point3_ddd.cpp

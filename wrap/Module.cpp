@@ -74,7 +74,7 @@ Module::Module(const string& interfacePath,
   Rule comments_p =  comment_p("/*", "*/") |	comment_p("//", eol_p);
 
   Rule basisType_p =
-    (str_p("string") | "bool" | "size_t" | "int" | "double" | "char");
+    (str_p("string") | "bool" | "size_t" | "int" | "double" | "char" | "unsigned char");
 
   Rule keywords_p =
   	(str_p("const") | "static" | "namespace" | basisType_p);
@@ -306,6 +306,7 @@ void Module::matlab_code(const string& toolboxPath,
     validTypes.push_back("int");
     validTypes.push_back("bool");
     validTypes.push_back("char");
+    validTypes.push_back("unsigned char");
     validTypes.push_back("size_t");
     validTypes.push_back("double");
     validTypes.push_back("Vector");
