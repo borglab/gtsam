@@ -11,7 +11,10 @@ What is GTSAM ?
 GTSAM is not (yet) open source: See COPYING & LICENSE
 Please see USAGE for an example on how to use GTSAM.
 
-The code is organized according to the following directory structure:
+The core GTSAM code within the folder gtsam, with source, headers, and 
+unit tests. After building, this will generate a single library "libgtsam"
+
+The libgtsam code is organized according to the following directory structure:
  
   3rdparty      local copies of third party libraries - Eigen3 and CCOLAMD
   base          provides some base Math and data structures, as well as test-related utilities
@@ -20,7 +23,13 @@ The code is organized according to the following directory structure:
   linear        inference specialized to Gaussian linear case, GaussianFactorGraph etc...
   nonlinear     non-linear factor graphs and non-linear optimization
   slam          SLAM and visual SLAM application code
-  
+
+Additionally, in the SVN development version of GTSAM, there is an area for 
+unstable code directly under development in the folder gtsam_unstable, which contains 
+a directory structuring mirroring the libgtsam structure as necessary.  This section produces
+a single library "libgtsam_unstable".  Building of gtsam_unstable is disabled by default, see
+CMake configuration options for information on enabling building.
+
 This library contains unchanged copies of two third party libraries, with documentation 
 of licensing in LICENSE and as follows: 
   - CCOLAMD 2.73: Tim Davis' constrained column approximate minimum degree ordering library
@@ -28,11 +37,10 @@ of licensing in LICENSE and as follows:
     - Licenced under LGPL v2.1, provided in gtsam/3rdparty/CCOLAMD/Doc/lesser.txt
   - Eigen 3.0.5:  General C++ matrix and linear algebra library
     - Licenced under LGPL v3, provided in gtsam/3rdparty/Eigen/COPYING.LGPL
-  
-All of the above contain code and tests, and produce a single library libgtsam. 
+
 After this is built, you can also run the more involved tests, which test the entire library:  
   
-  tests         more involved tests that depend on slam
+  tests         More involved unit tests that depend on slam
   examples      Demo applications as a tutorial for using gtsam
   cmake         CMake scripts used within the library, as well as for finding GTSAM by dependent projects
 
@@ -158,6 +166,16 @@ $] cmake -DGTSAM_BUILD_CONVENIENCE_LIBRARIES:OPTION=ON ..
   				 link all of the tests at once. This option is best for users of GTSAM, 
   				 as it avoids rebuilding the entirety of gtsam an extra time. 
 
+GTSAM_BUILD_UNSTABLE: Enable build and install for libgtsam_unstable library. 
+Set with the command line as follows:
+$] cmake -DGTSAM_BUILD_UNSTABLE:OPTION=ON ..
+  ON             When enabled, libgtsam_unstable will be built and installed with the 
+                 same options as libgtsam.  In addition, if tests are enabled, the 
+                 unit tests will be built as well.  The Matlab toolbox will also
+                 be generated if the matlab toolbox is enabled, installing into a 
+                 folder called "gtsam_unstable".
+  OFF (Default)  If disabled, no gtsam_unstable code will be included in build or install. 
+
 CMAKE_BUILD_TYPE: We support several build configurations for GTSAM (case insensitive)
   Debug (default)  All error checking options on, no optimization. Use for development.
   Release          Optimizations turned on, no debug symbols.           
@@ -176,12 +194,13 @@ Running "make install" will install the library to the prefix location.
 
 Check
 
-As with autotools, "make check" will build and run all of the tests. You can also 
-run "make timing" to build all of the timing scripts. To run check on a particular 
-subsection, there is a convention of "make check.[subfolder]", so to run just the 
-geometry tests, run "make check.geometry". Individual tests can be run by 
-appending ".run" to the name of the test, for example, to run testMatrix, 
-run "make testMatrix.run". 
+As with autotools, "make check" will build and run all of the tests. Note that the 
+tests will only be built when using the "check" targets, to prevent "make install" from
+building the tests unnecessarily. You can also run "make timing" to build all of 
+the timing scripts. To run check on a particular subsection, there is a convention 
+of "make check.[subfolder]", so to run just the geometry tests, 
+run "make check.geometry". Individual tests can be run by appending ".run" to the
+name of the test, for example, to run testMatrix, run "make testMatrix.run". 
 
 The make target "wrap" will build the wrap binary, and the "wrap_gtsam" target will 
 generate code for the toolbox. By default, the toolbox will be created and installed 
