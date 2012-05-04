@@ -45,6 +45,7 @@ set_target_properties(gtsam_unstable-static PROPERTIES
     CLEAN_DIRECT_OUTPUT 1
 	VERSION             ${gtsam_unstable_version}
  	SOVERSION           ${gtsam_unstable_soversion})
+target_link_libraries(gtsam_unstable-static gtsam-static)
 install(TARGETS gtsam_unstable-static ARCHIVE DESTINATION lib)
 
 if (GTSAM_UNSTABLE_BUILD_SHARED_LIBRARY)
@@ -55,6 +56,7 @@ if (GTSAM_UNSTABLE_BUILD_SHARED_LIBRARY)
         CLEAN_DIRECT_OUTPUT 1
     	VERSION             ${gtsam_unstable_version}
      	SOVERSION           ${gtsam_unstable_soversion})
+    target_link_libraries(gtsam_unstable-shared gtsam-shared)
     install(TARGETS gtsam_unstable-shared LIBRARY DESTINATION lib )
 endif(GTSAM_UNSTABLE_BUILD_SHARED_LIBRARY)
 
