@@ -3,8 +3,8 @@
 #include <Point2.h>
 void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  checkArguments("argChar",nargout,nargin-1,1);
+  checkArguments("argUChar",nargout,nargin-1,1);
   shared_ptr<Point2> self = unwrap_shared_ptr< Point2 >(in[0],"Point2");
-  char a = unwrap< char >(in[1]);
-  self->argChar(a);
+  unsigned char a = unwrap< unsigned char >(in[1]);
+  self->argUChar(a);
 }

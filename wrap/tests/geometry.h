@@ -1,9 +1,5 @@
 	// comments!
 
-// set the default namespace
-// location of namespace isn't significant
-using namespace geometry;
-
 class VectorNotEigen;
 class ns::OtherClass;
 
@@ -18,6 +14,9 @@ class Point2 {
  void argUChar(unsigned char a) const;
  VectorNotEigen vectorConfusion();
 };
+
+// flag a namespace as in use - only applies *after* the declaration
+using namespace geometry;
 
 class Point3 {
   Point3(double x, double y, double z);

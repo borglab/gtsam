@@ -72,8 +72,7 @@ TEST( wrap, parse ) {
 	EXPECT_LONGS_EQUAL(3, module.classes.size());
 
 	// check using declarations
-	strvec exp_using; exp_using += "geometry";
-	EXPECT(assert_equal(exp_using, module.using_namespaces));
+	strvec exp_using1, exp_using2; exp_using2 += "geometry";
 
 	// forward declarations
 	strvec exp_forward; exp_forward += "VectorNotEigen", "ns::OtherClass";
@@ -87,6 +86,7 @@ TEST( wrap, parse ) {
 		EXPECT_LONGS_EQUAL(7, cls.methods.size());
 		EXPECT_LONGS_EQUAL(0, cls.static_methods.size());
 		EXPECT_LONGS_EQUAL(0, cls.namespaces.size());
+		EXPECT(assert_equal(exp_using1, cls.using_namespaces));
 	}
 
 	// check second class, Point3
@@ -97,6 +97,7 @@ TEST( wrap, parse ) {
 		EXPECT_LONGS_EQUAL(1, cls.methods.size());
 		EXPECT_LONGS_EQUAL(2, cls.static_methods.size());
 		EXPECT_LONGS_EQUAL(0, cls.namespaces.size());
+		EXPECT(assert_equal(exp_using2, cls.using_namespaces));
 
 		// first constructor takes 3 doubles
 		Constructor c1 = cls.constructors.front();
@@ -125,6 +126,7 @@ TEST( wrap, parse ) {
 		EXPECT_LONGS_EQUAL(19, testCls.methods.size());
 		EXPECT_LONGS_EQUAL( 0, testCls.static_methods.size());
 		EXPECT_LONGS_EQUAL( 0, testCls.namespaces.size());
+		EXPECT(assert_equal(exp_using2, testCls.using_namespaces));
 		strvec exp_includes; exp_includes += "folder/path/to/Test.h";
 		EXPECT(assert_equal(exp_includes, testCls.includes));
 
