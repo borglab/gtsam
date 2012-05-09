@@ -38,6 +38,8 @@ typedef Eigen::MatrixXd Matrix;
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> MatrixRowMajor;
 
 typedef Eigen::Matrix3d Matrix3;
+typedef Eigen::Matrix4d Matrix4;
+typedef Eigen::Matrix<double,6,6> Matrix6;
 
 // Matrix expressions for accessing parts of matrices
 typedef Eigen::Block<Matrix> SubMatrix;

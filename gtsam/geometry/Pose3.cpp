@@ -31,7 +31,8 @@ namespace gtsam {
   /** instantiate concept checks */
   GTSAM_CONCEPT_POSE_INST(Pose3);
 
-  static const Matrix I3 = eye(3), Z3 = zeros(3, 3), _I3=-I3, I6 = eye(6);
+  static const Matrix3 I3 = eye(3), Z3 = zeros(3, 3), _I3=-I3;
+  static const Matrix6 I6 = eye(6);
 
   /* ************************************************************************* */
   Pose3::Pose3(const Pose2& pose2) :
@@ -43,13 +44,13 @@ namespace gtsam {
   // Calculate Adjoint map
   // Ad_pose is 6*6 matrix that when applied to twist xi, returns Ad_pose(xi)
   // Experimental - unit tests of derivatives based on it do not check out yet
-  Matrix Pose3::adjointMap() const {
-		const Matrix R = R_.matrix();
-		const Vector t = t_.vector();
-		Matrix A = skewSymmetric(t)*R;
-		Matrix DR = collect(2, &R, &Z3);
-		Matrix Dt = collect(2, &A, &R);
-		return gtsam::stack(2, &DR, &Dt);
+  Matrix6 Pose3::adjointMap() const {
+		const Matrix3 R = R_.matrix();
+		const Vector3 t = t_.vector();
+		Matrix3 A = skewSymmetric(t)*R;
+		Matrix6 adj;
+		adj << R, Z3, A, R;
+		return adj;
 	}
 
   /* ************************************************************************* */
@@ -86,25 +87,30 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Vector Pose3::Logmap(const Pose3& p) {
-    Vector w = Rot3::Logmap(p.rotation()), T = p.translation().vector();
+  Vector6 Pose3::Logmap(const Pose3& p) {
+    Vector3 w = Rot3::Logmap(p.rotation()), T = p.translation().vector();
   	double t = w.norm();
-		if (t < 1e-10)
-	    return concatVectors(2, &w, &T);
+		if (t < 1e-10) {
+		  Vector6 log;
+		  log << w, T;
+		  return log;
+		}
 		else {
-			Matrix W = skewSymmetric(w/t);
+			Matrix3 W = skewSymmetric(w/t);
 			// Formula from Agrawal06iros, equation (14)
 			// simplified with Mathematica, and multiplying in T to avoid matrix math
 			double Tan = tan(0.5*t);
-			Vector WT = W*T;
-			Vector u = T - (0.5*t)*WT + (1 - t/(2.*Tan)) * (W * WT);
-	    return concatVectors(2, &w, &u);
+			Vector3 WT = W*T;
+			Vector3 u = T - (0.5*t)*WT + (1 - t/(2.*Tan)) * (W * WT);
+			Vector6 log;
+			log << w, u;
+			return log;
 		}
   }
 
   /* ************************************************************************* */
   Pose3 Pose3::retractFirstOrder(const Vector& xi) const {
-      Vector omega(sub(xi, 0, 3));
+      Vector3 omega(sub(xi, 0, 3));
       Point3 v(sub(xi, 3, 6));
       Rot3 R = R_.retract(omega);  // R is done exactly
       Point3 t = t_ + R_ * v; // First order t approximation
@@ -130,7 +136,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   // different versions of localCoordinates
-	Vector Pose3::localCoordinates(const Pose3& T, Pose3::CoordinatesMode mode) const {
+	Vector6 Pose3::localCoordinates(const Pose3& T, Pose3::CoordinatesMode mode) const {
     if(mode == Pose3::EXPMAP) {
       // Lie group logarithm map, exact inverse of exponential map
       return Logmap(between(T));
@@ -146,8 +152,9 @@ namespace gtsam {
       Point3 d = R_.unrotate(T.translation() - t_);
 
       // TODO: correct second order t inverse
-
-      return Vector_(6,omega(0),omega(1),omega(2),d.x(),d.y(),d.z());
+      Vector6 local;
+      local << omega(0),omega(1),omega(2),d.x(),d.y(),d.z();
+      return local;
     } else {
       assert(false);
       exit(1);
@@ -155,11 +162,14 @@ namespace gtsam {
 	}
 
   /* ************************************************************************* */
-  Matrix Pose3::matrix() const {
-    const Matrix R = R_.matrix(), T = Matrix_(3,1, t_.vector());
-    const Matrix A34 = collect(2, &R, &T);
-    const Matrix A14 = Matrix_(1,4, 0.0, 0.0, 0.0, 1.0);
-    return gtsam::stack(2, &A34, &A14);
+  Matrix4 Pose3::matrix() const {
+    const Matrix3 R = R_.matrix();
+    const Vector3 T = t_.vector();
+    Eigen::Matrix<double,1,4> A14;
+    A14 << 0.0, 0.0, 0.0, 1.0;
+    Matrix4 mat;
+    mat << R, T, A14;
+    return mat;
   }
 
   /* ************************************************************************* */
@@ -175,7 +185,8 @@ namespace gtsam {
 	  if (H1) {
 			const Matrix R = R_.matrix();
 			Matrix DR = R*skewSymmetric(-p.x(), -p.y(), -p.z());
-			*H1 = collect(2,&DR,&R);
+			H1->resize(3,6);
+			(*H1) << DR, R;
 	  }
 	  if (H2) *H2 = R_.matrix();
 	  return R_ * p + t_;
@@ -188,7 +199,8 @@ namespace gtsam {
 	  if (H1) {
 			const Point3& q = result;
 			Matrix DR = skewSymmetric(q.x(), q.y(), q.z());
-			*H1 = collect(2, &DR, &_I3);
+			H1->resize(3,6);
+			(*H1) << DR, _I3;
 		}
 	  if (H2) *H2 = R_.transpose();
 	  return result;
