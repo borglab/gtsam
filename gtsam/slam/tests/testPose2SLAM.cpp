@@ -164,7 +164,7 @@ TEST(Pose2Graph, optimize) {
   LevenbergMarquardtParams params;
   params.relativeErrorTol = 1e-15;
   params.ordering = ordering;
-  Values actual = LevenbergMarquardtOptimizer(fg, params).optimized(initial);
+  Values actual = LevenbergMarquardtOptimizer(fg, initial, params).optimize();
 
   // Check with expected config
   Values expected;
@@ -203,7 +203,7 @@ TEST(Pose2Graph, optimizeThreePoses) {
   LevenbergMarquardtParams params;
   params.relativeErrorTol = 1e-15;
   params.ordering = ordering;
-  Values actual = LevenbergMarquardtOptimizer(fg, params).optimized(initial);
+  Values actual = LevenbergMarquardtOptimizer(fg, initial, params).optimize();
 
   // Check with ground truth
   CHECK(assert_equal((const Values&)hexagon, actual));
@@ -245,7 +245,7 @@ TEST_UNSAFE(Pose2SLAM, optimizeCircle) {
   LevenbergMarquardtParams params;
   params.relativeErrorTol = 1e-15;
   params.ordering = ordering;
-  Values actual = LevenbergMarquardtOptimizer(fg, params).optimized(initial);
+  Values actual = LevenbergMarquardtOptimizer(fg, initial, params).optimize();
 
   // Check with ground truth
   CHECK(assert_equal((const Values&)hexagon, actual));

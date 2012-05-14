@@ -47,7 +47,7 @@ TEST(Rot3, optimize) {
     fg.add(Between(Symbol('r',j), Symbol('r',(j+1)%6), Rot3::Rz(M_PI/3.0), sharedSigma(3, 0.01)));
   }
 
-  Values final = *GaussNewtonOptimizer(fg, initial).optimized();
+  Values final = GaussNewtonOptimizer(fg, initial).optimize();
 
   EXPECT(assert_equal(truth, final, 1e-5));
 }

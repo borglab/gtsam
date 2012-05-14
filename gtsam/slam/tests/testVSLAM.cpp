@@ -102,17 +102,16 @@ TEST( Graph, optimizeLM)
 
   // Create an optimizer and check its error
   // We expect the initial to be zero because config is the ground truth
-  const NonlinearOptimizer& optimizer = LevenbergMarquardtOptimizer(graph, ordering);
-  NonlinearOptimizer::SharedState initial = optimizer.initialState(initialEstimate);
-  DOUBLES_EQUAL(0.0, initial->error, 1e-9);
+  LevenbergMarquardtOptimizer optimizer(graph, initialEstimate, ordering);
+  DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
 
   // Iterate once, and the config should not have changed because we started
   // with the ground truth
-  NonlinearOptimizer::SharedState afterOneIteration = optimizer.iterate(initial);
-  DOUBLES_EQUAL(0.0, afterOneIteration->error, 1e-9);
+  optimizer.iterate();
+  DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
 
   // check if correct
-  CHECK(assert_equal(initialEstimate, afterOneIteration->values));
+  CHECK(assert_equal(initialEstimate, optimizer.values()));
 }
 
 
@@ -140,17 +139,16 @@ TEST( Graph, optimizeLM2)
 
   // Create an optimizer and check its error
   // We expect the initial to be zero because config is the ground truth
-  LevenbergMarquardtOptimizer optimizer(graph, ordering);
-  NonlinearOptimizer::SharedState initial = optimizer.initialState(initialEstimate);
-  DOUBLES_EQUAL(0.0, initial->error, 1e-9);
+  LevenbergMarquardtOptimizer optimizer(graph, initialEstimate, ordering);
+  DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
 
   // Iterate once, and the config should not have changed because we started
   // with the ground truth
-  NonlinearOptimizer::SharedState afterOneIteration = optimizer.iterate(initial);
-  DOUBLES_EQUAL(0.0, afterOneIteration->error, 1e-9);
+  optimizer.iterate();
+  DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
 
   // check if correct
-  CHECK(assert_equal(initialEstimate, afterOneIteration->values));
+  CHECK(assert_equal(initialEstimate, optimizer.values()));
 }
 
 
@@ -174,17 +172,16 @@ TEST( Graph, CHECK_ORDERING)
 
   // Create an optimizer and check its error
   // We expect the initial to be zero because config is the ground truth
-  LevenbergMarquardtOptimizer optimizer(graph);
-  NonlinearOptimizer::SharedState initial = optimizer.initialState(initialEstimate);
-  DOUBLES_EQUAL(0.0, initial->error, 1e-9);
+  LevenbergMarquardtOptimizer optimizer(graph, initialEstimate);
+  DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
 
   // Iterate once, and the config should not have changed because we started
   // with the ground truth
-  NonlinearOptimizer::SharedState afterOneIteration = optimizer.iterate(initial);
-  DOUBLES_EQUAL(0.0, afterOneIteration->error, 1e-9);
+  optimizer.iterate();
+  DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
 
   // check if correct
-  CHECK(assert_equal(initialEstimate, afterOneIteration->values));
+  CHECK(assert_equal(initialEstimate, optimizer.values()));
 }
 
 /* ************************************************************************* */
