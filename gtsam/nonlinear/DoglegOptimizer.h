@@ -22,6 +22,82 @@
 
 namespace gtsam {
 
+/**
+ * This class performs Dogleg nonlinear optimization
+ */
+class DoglegOptimizer : public SuccessiveLinearizationOptimizer {
+
+public:
+
+  typedef boost::shared_ptr<DoglegOptimizer> shared_ptr;
+
+  /// @name Standard interface
+  /// @{
+
+  /** Standard constructor, requires a nonlinear factor graph, initial
+   * variable assignments, and optimization parameters.  For convenience this
+   * version takes plain objects instead of shared pointers, but internally
+   * copies the objects.
+   * @param graph The nonlinear factor graph to optimize
+   * @param initialValues The initial variable assignments
+   * @param params The optimization parameters
+   */
+  DoglegOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues,
+      const DoglegParams& params = DoglegParams()) :
+        NonlinearOptimizer(graph), params_(ensureHasOrdering(params)), state_(graph, initialValues) {}
+
+  /** Standard constructor, requires a nonlinear factor graph, initial
+   * variable assignments, and optimization parameters.  For convenience this
+   * version takes plain objects instead of shared pointers, but internally
+   * copies the objects.
+   * @param graph The nonlinear factor graph to optimize
+   * @param initialValues The initial variable assignments
+   * @param params The optimization parameters
+   */
+  DoglegOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues, const Ordering& ordering) :
+        NonlinearOptimizer(graph), state_(graph, initialValues) {
+    *params_.ordering = ordering; }
+
+  /// @}
+
+  /// @name Advanced interface
+  /// @{
+
+  /** Virtual destructor */
+  virtual ~DoglegOptimizer() {}
+
+  /** Perform a single iteration, returning a new NonlinearOptimizer class
+   * containing the updated variable assignments, which may be retrieved with
+   * values().
+   */
+  virtual void iterate() const;
+
+  /** Access the parameters */
+  const DoglegParams& params() const { return params_; }
+
+  /** Access the last state */
+  const DoglegState& state() const { return state_; }
+
+  /// @}
+
+protected:
+  DoglegParams params_;
+  DoglegState state_;
+
+  /** Access the parameters (base class version) */
+  virtual const NonlinearOptimizerParams& _params() const { return params_; }
+
+  /** Access the state (base class version) */
+  virtual const NonlinearOptimizerState& _state() const { return state_; }
+
+  /** Internal function for computing a COLAMD ordering if no ordering is specified */
+  DoglegParams ensureHasOrdering(DoglegParams params, const NonlinearFactorGraph& graph, const Values& values) const {
+    if(!params.ordering)
+      params.ordering = graph.orderingCOLAMD(values);
+    return params;
+  }
+};
+
 /** Parameters for Levenberg-Marquardt optimization.  Note that this parameters
  * class inherits from NonlinearOptimizerParams, which specifies the parameters
  * common to all nonlinear optimization algorithms.  This class also contains
@@ -56,88 +132,8 @@ public:
 class DoglegState : public SuccessiveLinearizationState {
 public:
 
-  double Delta;
+  double delta;
 
-};
-
-/**
- * This class performs Dogleg nonlinear optimization
- */
-class DoglegOptimizer : public SuccessiveLinearizationOptimizer {
-
-public:
-
-  typedef boost::shared_ptr<DoglegParams> SharedParams;
-  typedef boost::shared_ptr<DoglegState> SharedState;
-  typedef boost::shared_ptr<DoglegOptimizer> shared_ptr;
-
-  /// @name Standard interface
-  /// @{
-
-  /** Standard constructor, requires a nonlinear factor graph, initial
-   * variable assignments, and optimization parameters.  For convenience this
-   * version takes plain objects instead of shared pointers, but internally
-   * copies the objects.
-   * @param graph The nonlinear factor graph to optimize
-   * @param values The initial variable assignments
-   * @param params The optimization parameters
-   */
-  DoglegOptimizer(const NonlinearFactorGraph& graph,
-      const DoglegParams& params = DoglegParams()) :
-        SuccessiveLinearizationOptimizer(SharedGraph(new NonlinearFactorGraph(graph))),
-        params_(new DoglegParams(params)) {}
-
-  /** Standard constructor, requires a nonlinear factor graph, initial
-   * variable assignments, and optimization parameters.  For convenience this
-   * version takes plain objects instead of shared pointers, but internally
-   * copies the objects.
-   * @param graph The nonlinear factor graph to optimize
-   * @param values The initial variable assignments
-   * @param params The optimization parameters
-   */
-  DoglegOptimizer(const NonlinearFactorGraph& graph, const Ordering& ordering) :
-        SuccessiveLinearizationOptimizer(SharedGraph(new NonlinearFactorGraph(graph))),
-        params_(new DoglegParams()) {
-    params_->ordering = ordering; }
-
-  /** Standard constructor, requires a nonlinear factor graph, initial
-   * variable assignments, and optimization parameters.
-   * @param graph The nonlinear factor graph to optimize
-   * @param values The initial variable assignments
-   * @param params The optimization parameters
-   */
-  DoglegOptimizer(const SharedGraph& graph,
-      const DoglegParams& params = DoglegParams()) :
-        SuccessiveLinearizationOptimizer(graph),
-        params_(new DoglegParams(params)) {}
-
-  /** Access the parameters */
-  virtual NonlinearOptimizer::SharedParams params() const { return params_; }
-
-  /// @}
-
-  /// @name Advanced interface
-  /// @{
-
-  /** Virtual destructor */
-  virtual ~DoglegOptimizer() {}
-
-  /** Perform a single iteration, returning a new NonlinearOptimizer class
-   * containing the updated variable assignments, which may be retrieved with
-   * values().
-   */
-  virtual NonlinearOptimizer::SharedState iterate(const NonlinearOptimizer::SharedState& current) const;
-
-  /** Create an initial state with the specified variable assignment values and
-   * all other default state.
-   */
-  virtual NonlinearOptimizer::SharedState initialState(const Values& initialValues) const;
-
-  /// @}
-
-protected:
-
-  SharedParams params_;
 };
 
 }

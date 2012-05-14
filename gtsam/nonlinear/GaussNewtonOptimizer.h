@@ -37,7 +37,7 @@ public:
    * version takes plain objects instead of shared pointers, but internally
    * copies the objects.
    * @param graph The nonlinear factor graph to optimize
-   * @param values The initial variable assignments
+   * @param initialValues The initial variable assignments
    * @param params The optimization parameters
    */
   GaussNewtonOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues,
@@ -49,12 +49,12 @@ public:
    * version takes plain objects instead of shared pointers, but internally
    * copies the objects.
    * @param graph The nonlinear factor graph to optimize
-   * @param values The initial variable assignments
+   * @param initialValues The initial variable assignments
    * @param params The optimization parameters
    */
   GaussNewtonOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues, const Ordering& ordering) :
         NonlinearOptimizer(graph), state_(graph, initialValues) {
-    params_.ordering = ordering; }
+    *params_.ordering = ordering; }
 
   /// @}
 

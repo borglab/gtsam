@@ -27,19 +27,17 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-NonlinearOptimizer::SharedState DoglegOptimizer::iterate(const NonlinearOptimizer::SharedState& _current) const {
-
-  const DoglegState& current = dynamic_cast<const DoglegState&>(*_current);
+void DoglegOptimizer::iterate(void) const {
 
   // Linearize graph
-  const Ordering& ordering = this->ordering(current.values);
-  GaussianFactorGraph::shared_ptr linear = graph_->linearize(current.values, ordering);
+  const Ordering& ordering = *params_.ordering;
+  GaussianFactorGraph::shared_ptr linear = graph_->linearize(state_.values, ordering);
 
   // Check whether to use QR
   bool useQR;
-  if(params_->factorization == DoglegParams::LDL)
+  if(params_.factorization == DoglegParams::LDL)
     useQR = false;
-  else if(params_->factorization == DoglegParams::QR)
+  else if(params_.factorization == DoglegParams::QR)
     useQR = true;
   else
     throw runtime_error("Optimization parameter is invalid: DoglegParams::factorization");
@@ -50,37 +48,26 @@ NonlinearOptimizer::SharedState DoglegOptimizer::iterate(const NonlinearOptimize
   // Do Dogleg iteration with either Multifrontal or Sequential elimination
   DoglegOptimizerImpl::IterationResult result;
 
-  if(params_->elimination == DoglegParams::MULTIFRONTAL) {
+  if(params_.elimination == DoglegParams::MULTIFRONTAL) {
     GaussianBayesTree::shared_ptr bt = GaussianMultifrontalSolver(*linear, useQR).eliminate();
-    result = DoglegOptimizerImpl::Iterate(current.Delta, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, *bt, *graph_, current.values, ordering, current.error, dlVerbose);
+    result = DoglegOptimizerImpl::Iterate(state_.delta, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, *bt, graph_, state_.values, ordering, state_.error, dlVerbose);
 
-  } else if(params_->elimination == DoglegParams::SEQUENTIAL) {
+  } else if(params_.elimination == DoglegParams::SEQUENTIAL) {
     GaussianBayesNet::shared_ptr bn = GaussianSequentialSolver(*linear, useQR).eliminate();
-    result = DoglegOptimizerImpl::Iterate(current.Delta, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, *bn, *graph_, current.values, ordering, current.error, dlVerbose);
+    result = DoglegOptimizerImpl::Iterate(state_.delta, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, *bn, graph_, state_.values, ordering, state_.error, dlVerbose);
 
   } else {
     throw runtime_error("Optimization parameter is invalid: DoglegParams::elimination");
   }
 
   // Maybe show output
-  if(params_->verbosity >= NonlinearOptimizerParams::DELTA) result.dx_d.print("delta");
+  if(params_.verbosity >= NonlinearOptimizerParams::DELTA) result.dx_d.print("delta");
 
   // Create new state with new values and new error
-  SharedState newState = boost::make_shared<DoglegState>();
-  newState->values = current.values.retract(result.dx_d, ordering);
-  newState->error = result.f_error;
-  newState->iterations = current.iterations + 1;
-  newState->Delta = result.Delta;
-
-  return newState;
-}
-
-/* ************************************************************************* */
-NonlinearOptimizer::SharedState DoglegOptimizer::initialState(const Values& initialValues) const {
-  SharedState initial = boost::make_shared<DoglegState>();
-  defaultInitialState(initialValues, *initial);
-  initial->Delta = params_->deltaInitial;
-  return initial;
+  state_.values = state_.values.retract(result.dx_d, ordering);
+  state_.error = result.f_error;
+  state_.delta = result.delta;
+  ++state_.iterations;
 }
 
 } /* namespace gtsam */

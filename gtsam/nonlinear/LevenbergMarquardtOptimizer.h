@@ -24,7 +24,6 @@ namespace gtsam {
 
 /**
  * This class performs Levenberg-Marquardt nonlinear optimization
- * TODO: use make_shared
  */
 class LevenbergMarquardtOptimizer : public NonlinearOptimizer {
 
@@ -40,24 +39,24 @@ public:
    * version takes plain objects instead of shared pointers, but internally
    * copies the objects.
    * @param graph The nonlinear factor graph to optimize
-   * @param values The initial variable assignments
+   * @param initialValues The initial variable assignments
    * @param params The optimization parameters
    */
   LevenbergMarquardtOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues,
       const LevenbergMarquardtParams& params = LevenbergMarquardtParams()) :
-        NonlinearOptimizer(graph), params_(ensureHasOrdering(params)), state_(graph, initialValues) {}
+        NonlinearOptimizer(graph), params_(ensureHasOrdering(params)), state_(graph, initialValues), dimensions_(initialValues.dims(*params_.ordering)) {}
 
   /** Standard constructor, requires a nonlinear factor graph, initial
    * variable assignments, and optimization parameters.  For convenience this
    * version takes plain objects instead of shared pointers, but internally
    * copies the objects.
    * @param graph The nonlinear factor graph to optimize
-   * @param values The initial variable assignments
+   * @param initialValues The initial variable assignments
    * @param params The optimization parameters
    */
   LevenbergMarquardtOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues, const Ordering& ordering) :
-        NonlinearOptimizer(graph), state_(graph, initialValues) {
-    params_.ordering = ordering; }
+        NonlinearOptimizer(graph), state_(graph, initialValues), dimensions_(initialValues.dims(ordering)) {
+    *params_.ordering = ordering; }
 
   /// @}
 
@@ -74,21 +73,18 @@ public:
   virtual void iterate() const;
 
   /** Access the parameters */
-  const GaussNewtonParams& params() const { return params_; }
+  const LevenbergMarquardtParams& params() const { return params_; }
 
   /** Access the last state */
-  const NonlinearOptimizerState& state() const { return state_; }
+  const LevenbergMarquardtState& state() const { return state_; }
 
   /// @}
 
 protected:
 
-  typedef boost::shared_ptr<const std::vector<size_t> > SharedDimensions;
-
-  mutable SharedDimensions dimensions_; // Mutable because we compute it when needed and cache it
-
   LevenbergMarquardtParams params_;
   LevenbergMarquardtState state_;
+  std::vector<size_t> dimensions_;
 
   /** Access the parameters (base class version) */
   virtual const NonlinearOptimizerParams& _params() const { return params_; }
@@ -97,7 +93,7 @@ protected:
   virtual const NonlinearOptimizerState& _state() const { return state_; }
 
   /** Internal function for computing a COLAMD ordering if no ordering is specified */
-  GaussNewtonParams ensureHasOrdering(GaussNewtonParams params, const NonlinearFactorGraph& graph, const Values& values) const {
+  LevenbergMarquardtParams ensureHasOrdering(LevenbergMarquardtParams params, const NonlinearFactorGraph& graph, const Values& values) const {
     if(!params.ordering)
       params.ordering = graph.orderingCOLAMD(values);
     return params;
