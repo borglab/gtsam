@@ -11,7 +11,8 @@ $] cmake ..
 $] make check (optional, runs unit tests)
 $] make install
 
-What is GTSAM ?
+---------------------------------------------------
+What is GTSAM?
 
   GTSAM is a library of C++ classes that implement smoothing and
   mapping (SAM) in robotics and vision, using factor graphs and Bayes
@@ -21,10 +22,7 @@ What is GTSAM ?
 GTSAM is not (yet) open source: See COPYING & LICENSE
 Please see USAGE for an example on how to use GTSAM.
 
-The core GTSAM code within the folder gtsam, with source, headers, and 
-unit tests. After building, this will generate a single library "libgtsam"
-
-The libgtsam code is organized according to the following directory structure:
+The library is organized according to the following directory structure:
  
   3rdparty      local copies of third party libraries - Eigen3 and CCOLAMD
   base          provides some base Math and data structures, as well as test-related utilities
@@ -34,12 +32,6 @@ The libgtsam code is organized according to the following directory structure:
   nonlinear     non-linear factor graphs and non-linear optimization
   slam          SLAM and visual SLAM application code
 
-Additionally, in the SVN development version of GTSAM, there is an area for 
-unstable code directly under development in the folder gtsam_unstable, which contains 
-a directory structuring mirroring the libgtsam structure as necessary.  This section produces
-a single library "libgtsam_unstable".  Building of gtsam_unstable is disabled by default, see
-CMake configuration options for information on enabling building.
-
 This library contains unchanged copies of two third party libraries, with documentation 
 of licensing in LICENSE and as follows: 
   - CCOLAMD 2.73: Tim Davis' constrained column approximate minimum degree ordering library
@@ -48,26 +40,19 @@ of licensing in LICENSE and as follows:
   - Eigen 3.0.5:  General C++ matrix and linear algebra library
     - Licenced under LGPL v3, provided in gtsam/3rdparty/Eigen/COPYING.LGPL
 
-After this is built, you can also run the more involved tests, which test the entire library:  
-  
-  tests         More involved unit tests that depend on slam
-  examples      Demo applications as a tutorial for using gtsam
-  cmake         CMake scripts used within the library, as well as for finding GTSAM by dependent projects
 
-Finally, there are some local libraries built needed in the rest of the code:
+There are two supporting libraries:
 
   CppUnitLite   unit test library customized for use with gtsam
   wrap          code generation utility for the Matlab interface to gtsam
 
-Important Installation Notes Specific to GTSAM
-----------------------------------------------
+Important Installation Notes
+----------------------------
 
 1)
 GTSAM requires the following libraries to be installed on your system:
  - BOOST version 1.40 or greater (install through Linux repositories or MacPorts)
-
-GTSAM uses CMake (http://www.cmake.org/) for build automation
- - Installed cmake version must be 2.6 or higher
+ - Cmake version 2.6 or higher
 
 Tested compilers
  - gcc
@@ -75,39 +60,20 @@ Tested compilers
  - OSX gcc
 
 2)
-GTSAM makes extensive use of debug assertions, even for checking input of
-the functions you will call.  These assertions are disabled when NDEBUG is
-defined.  Thus, we strongly recommend compiling GTSAM and your own code without
-this symbol during debugging.
-
-After debugging, GTSAM will run much faster when compiled with NDEBUG defined,
-so that debug checks are disabled.
-
-Another useful debugging symbol is _GLIBCXX_DEBUG, which enables debug checks
-and safe containers in the standard C++ library and makes problems much easier
-to find.
-
-NOTE:  The native Snow Leopard g++ compiler/library contains a bug that makes
-it impossible to use _GLIBCXX_DEBUG.  MacPorts g++ compilers do work with it though.
-
-NOTE:  If _GLIBCXX_DEBUG is used to compile gtsam, anything that links against
-gtsam will need to be compiled with _GLIBCXX_DEBUG as well, due to the use of
-header-only Eigen.  
+GTSAM makes extensive use of debug assertions, and we highly recommend you work
+in Debug mode while developing (enabled by default). Likewise, it is imperative
+that you switch to release mode when running finished code and for timing. GTSAM
+will run up to 10x faster in Release mode! See the end of this document for 
+additional debugging tips.
 
 3)
-GTSAM has been written to support the creation of API documentation using
-doxygen.  To create html documentation for GTSAM, run the the script 
+GTSAM has Doxygen documentation. To generate, run the the script 
 makedoc.sh.  
 
 4)
-After installing prerequisites for building GTSAM, you can configure and build
-GTSAM using CMake with the default options with the quickstart options. For 
-details on the full functionality of CMake, see the CMake documentation.  
-
-- CMake Quickstart
-Installs to the default system install path and builds all components.  From a terminal, 
-starting in the root library folder, execute commands as follows for an out-of-source
-build:
+The instructions below install the library to the default system install path and
+build all components. From a terminal, starting in the root library folder, 
+execute commands as follows for an out-of-source build:
 
 $] mkdir build
 $] cd build
@@ -118,7 +84,7 @@ $] make install
 This will build the library and unit tests, run all of the unit tests, 
 and then install the library itself.
 
-- Additional CMake Options and Details
+- CMake Configuration Options and Details
 
 GTSAM has a number of options that can be configured, which is best done with
 one of the following:
@@ -126,7 +92,7 @@ one of the following:
   ccmake      the curses GUI for cmake
   cmake-gui   a real GUI for cmake
 
-Important CMake configuration options: 
+Important Options: 
 
 CMAKE_BUILD_TYPE: We support several build configurations for GTSAM (case insensitive)
   Debug (default)  All error checking options on, no optimization. Use for development.
@@ -176,3 +142,16 @@ To run check on a particular module only, run "make check.[subfolder]", so to ru
 just the geometry tests, run "make check.geometry". Individual tests can be run by
 appending ".run" to the name of the test, for example, to run testMatrix, run 
 "make testMatrix.run". 
+
+Debugging tips:
+
+Another useful debugging symbol is _GLIBCXX_DEBUG, which enables debug checks
+and safe containers in the standard C++ library and makes problems much easier
+to find.
+
+NOTE:  The native Snow Leopard g++ compiler/library contains a bug that makes
+it impossible to use _GLIBCXX_DEBUG.  MacPorts g++ compilers do work with it though.
+
+NOTE:  If _GLIBCXX_DEBUG is used to compile gtsam, anything that links against
+gtsam will need to be compiled with _GLIBCXX_DEBUG as well, due to the use of
+header-only Eigen.  
