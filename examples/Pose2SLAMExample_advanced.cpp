@@ -65,16 +65,16 @@ int main(int argc, char** argv) {
 	Ordering::shared_ptr ordering = graph->orderingCOLAMD(*initial);
 
 	/* 4.2.2 set up solver and optimize */
-	LevenbergMarquardtParams params;
-	params.relativeErrorTol = 1e-15;
-	params.absoluteErrorTol = 1e-15;
-	pose2SLAM::Values result = *LevenbergMarquardtOptimizer(graph, initial, params, ordering).optimized();
+  NonlinearOptimizationParameters::shared_ptr params = NonlinearOptimizationParameters::newDecreaseThresholds(1e-15, 1e-15);
+	Optimizer optimizer(graph, initial, ordering, params);
+	Optimizer optimizer_result = optimizer.levenbergMarquardt();
+
+	pose2SLAM::Values result = *optimizer_result.values();
 	result.print("final result");
 
 	/* Get covariances */
-	GaussianMultifrontalSolver solver(*graph->linearize(result, *ordering));
-	Matrix covariance1 = solver.marginalCovariance(ordering->at(PoseKey(1)));
-	Matrix covariance2 = solver.marginalCovariance(ordering->at(PoseKey(1)));
+	Matrix covariance1  = optimizer_result.marginalCovariance(PoseKey(1));
+	Matrix covariance2  = optimizer_result.marginalCovariance(PoseKey(2));
 
 	print(covariance1, "Covariance1");
 	print(covariance2, "Covariance2");

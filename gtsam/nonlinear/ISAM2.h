@@ -118,7 +118,16 @@ struct ISAM2Params {
    */
   Factorization factorization;
 
+  /** Whether to cache linear factors (default: true).
+   * This can improve performance if linearization is expensive, but can hurt
+   * performance if linearization is very cleap due to computation to look up
+   * additional keys.
+   */
+  bool cacheLinearizedFactors;
+
   KeyFormatter keyFormatter; ///< A KeyFormatter for when keys are printed during debugging (default: DefaultKeyFormatter)
+
+  bool enableDetailedResults; ///< Whether to compute and return ISAM2Result::detailedResults, this can increase running time (default: false)
 
   /** Specify parameters as constructor arguments */
   ISAM2Params(
@@ -128,11 +137,13 @@ struct ISAM2Params {
       bool _enableRelinearization = true, ///< see ISAM2Params::enableRelinearization
       bool _evaluateNonlinearError = false, ///< see ISAM2Params::evaluateNonlinearError
       Factorization _factorization = ISAM2Params::LDL, ///< see ISAM2Params::factorization
+      bool _cacheLinearizedFactors = true, ///< see ISAM2Params::cacheLinearizedFactors
       const KeyFormatter& _keyFormatter = DefaultKeyFormatter ///< see ISAM2::Params::keyFormatter
   ) : optimizationParams(_optimizationParams), relinearizeThreshold(_relinearizeThreshold),
       relinearizeSkip(_relinearizeSkip), enableRelinearization(_enableRelinearization),
       evaluateNonlinearError(_evaluateNonlinearError), factorization(_factorization),
-      keyFormatter(_keyFormatter) {}
+      cacheLinearizedFactors(_cacheLinearizedFactors), keyFormatter(_keyFormatter),
+      enableDetailedResults(false) {}
 };
 
 /**
@@ -193,6 +204,36 @@ struct ISAM2Result {
    * used later to refer to the factors in order to remove them.
    */
   FastVector<size_t> newFactorsIndices;
+
+  /** A struct holding detailed results, which must be enabled with
+   * ISAM2Params::enableDetailedResults.
+   */
+  struct DetailedResults {
+    /** The status of a single variable, this struct is stored in
+     * DetailedResults::variableStatus */
+    struct VariableStatus {
+      /** Whether the variable was just reeliminated, due to being relinearized,
+       * observed, new, or on the path up to the root clique from another
+       * reeliminated variable. */
+      bool isReeliminated;
+      bool isAboveRelinThreshold; ///< Whether the variable was just relinearized due to being above the relinearization threshold
+      bool isRelinearizeInvolved; ///< Whether the variable was below the relinearization threshold but was relinearized by being involved in a factor with a variable above the relinearization threshold
+      bool isRelinearized; /// Whether the variable was relinearized, either by being above the relinearization threshold or by involvement.
+      bool isObserved; ///< Whether the variable was just involved in new factors
+      bool isNew; ///< Whether the variable itself was just added
+      bool inRootClique; ///< Whether the variable is in the root clique
+      VariableStatus(): isReeliminated(false), isAboveRelinThreshold(false), isRelinearizeInvolved(false),
+          isRelinearized(false), isObserved(false), isNew(false), inRootClique(false) {}
+    };
+
+    /** The status of each variable during this update, see VariableStatus.
+     */
+    FastMap<Key, VariableStatus> variableStatus;
+  };
+
+  /** Detailed results, if enabled by ISAM2Params::enableDetailedResults.  See
+   * Detail for information about the results data stored here. */
+  boost::optional<DetailedResults> detail;
 };
 
 struct ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique, GaussianConditional> {
@@ -216,7 +257,8 @@ struct ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique, GaussianConditional
     Base(result.first), cachedFactor_(result.second), gradientContribution_(result.first->get_R().cols() + result.first->get_S().cols()) {
     // Compute gradient contribution
     const ConditionalType& conditional(*result.first);
-    gradientContribution_ << -(conditional.get_R() * conditional.permutation().transpose()).transpose() * conditional.get_d(),
+    // Rewrite -(R * P')'*d   as   -(d' * R * P')'   for computational speed reasons
+    gradientContribution_ << -(conditional.get_d().transpose() * conditional.get_R() * conditional.permutation().transpose()).transpose(),
         -conditional.get_S().transpose() * conditional.get_d();
   }
 
@@ -328,6 +370,10 @@ protected:
    * delta will always be updated if necessary when requested with getDelta()
    * or calculateEstimate().
    *
+   * This does not need to be permuted because any change in variable ordering
+   * that would cause a permutation will also mark variables as needing to be
+   * updated in this mask.
+   *
    * This is \c mutable because it is used internally to not update delta_
    * until it is needed.
    */
@@ -335,6 +381,9 @@ protected:
 
   /** All original nonlinear factors are stored here to use during relinearization */
   NonlinearFactorGraph nonlinearFactors_;
+
+  /** The current linear factors, which are only updated as needed */
+  mutable GaussianFactorGraph linearFactors_;
 
   /** The current elimination ordering Symbols to Index (integer) keys.
    *
@@ -348,6 +397,9 @@ protected:
   /** The current Dogleg Delta (trust region radius) */
   mutable boost::optional<double> doglegDelta_;
 
+  /** The inverse ordering, only used for creating ISAM2Result::DetailedResults */
+  boost::optional<Ordering::InvertedMap> inverseOrdering_;
+
 private:
 #ifndef NDEBUG
   std::vector<bool> lastRelinVariables_;
@@ -355,6 +407,7 @@ private:
 
 public:
 
+  typedef ISAM2 This; ///< This class
   typedef BayesTree<GaussianConditional,ISAM2Clique> Base; ///< The BayesTree base class
 
   /** Create an empty ISAM2 instance */
@@ -363,41 +416,21 @@ public:
   /** Create an empty ISAM2 instance using the default set of parameters (see ISAM2Params) */
   ISAM2();
 
+  /** Copy constructor */
+  ISAM2(const ISAM2& other);
+
+  /** Assignment operator */
+  ISAM2& operator=(const ISAM2& rhs);
+
   typedef Base::Clique Clique; ///< A clique
   typedef Base::sharedClique sharedClique; ///< Shared pointer to a clique
   typedef Base::Cliques Cliques; ///< List of Clique typedef from base class
 
-  void cloneTo(boost::shared_ptr<ISAM2>& newISAM2) const {
-    boost::shared_ptr<Base> bayesTree = boost::static_pointer_cast<Base>(newISAM2);
-    Base::cloneTo(bayesTree);
-    newISAM2->theta_ = theta_;
-    newISAM2->variableIndex_ = variableIndex_;
-    newISAM2->deltaUnpermuted_ = deltaUnpermuted_;
-    newISAM2->delta_ = delta_;
-    newISAM2->deltaNewtonUnpermuted_ = deltaNewtonUnpermuted_;
-    newISAM2->deltaNewton_ = deltaNewton_;
-    newISAM2->RgProdUnpermuted_ = RgProdUnpermuted_;
-    newISAM2->RgProd_ = RgProd_;
-    newISAM2->deltaDoglegUptodate_ = deltaDoglegUptodate_;
-    newISAM2->deltaUptodate_ = deltaUptodate_;
-    newISAM2->deltaReplacedMask_ = deltaReplacedMask_;
-    newISAM2->nonlinearFactors_ = nonlinearFactors_;
-    newISAM2->ordering_ = ordering_;
-    newISAM2->params_ = params_;
-    newISAM2->doglegDelta_ = doglegDelta_;
-#ifndef NDEBUG
-    newISAM2->lastRelinVariables_ = lastRelinVariables_;
-#endif
-    newISAM2->lastAffectedVariableCount = lastAffectedVariableCount;
-    newISAM2->lastAffectedFactorCount = lastAffectedFactorCount;
-    newISAM2->lastAffectedCliqueCount = lastAffectedCliqueCount;
-    newISAM2->lastAffectedMarkedCount = lastAffectedMarkedCount;
-    newISAM2->lastBacksubVariableCount = lastBacksubVariableCount;
-    newISAM2->lastNnzTop = lastNnzTop;
-  }
-
   /**
    * Add new factors, updating the solution and relinearizing as needed.
+   *
+   * Optionally, this function remove existing factors from the system to enable
+   * behaviors such as swapping existing factors with new ones.
    *
    * Add new measurements, and optionally new variables, to the current system.
    * This runs a full step of the ISAM2 algorithm, relinearizing and updating
@@ -409,6 +442,7 @@ public:
    * You must include here all new variables occuring in newFactors (which were not already
    * in the system).  There must not be any variables here that do not occur in newFactors,
    * and additionally, variables that were already in the system must not be included here.
+   * @param removeFactorIndices Indices of factors to remove from system
    * @param force_relinearize Relinearize any variables whose delta magnitude is sufficiently
    * large (Params::relinearizeThreshold), regardless of the relinearization interval
    * (Params::relinearizeSkip).
@@ -470,11 +504,11 @@ public:
 private:
 
   FastList<size_t> getAffectedFactors(const FastList<Index>& keys) const;
-  FactorGraph<GaussianFactor>::shared_ptr relinearizeAffectedFactors(const FastList<Index>& affectedKeys) const;
+  FactorGraph<GaussianFactor>::shared_ptr relinearizeAffectedFactors(const FastList<Index>& affectedKeys, const FastSet<Index>& relinKeys) const;
   GaussianFactorGraph getCachedBoundaryFactors(Cliques& orphans);
 
-  boost::shared_ptr<FastSet<Index> > recalculate(const FastSet<Index>& markedKeys,
-      const FastVector<Index>& newKeys, const FactorGraph<GaussianFactor>::shared_ptr newFactors,
+  boost::shared_ptr<FastSet<Index> > recalculate(const FastSet<Index>& markedKeys, const FastSet<Index>& relinKeys,
+      const FastVector<Index>& observedKeys,
       const boost::optional<FastMap<Index,int> >& constrainKeys, ISAM2Result& result);
   //	void linear_update(const GaussianFactorGraph& newFactors);
   void updateDelta(bool forceFullSolve = false) const;

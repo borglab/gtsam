@@ -25,13 +25,26 @@
 #include <gtsam/3rdparty/Eigen/Eigen/Core>
 #include <boost/random/linear_congruential.hpp>
 
-// Vector is just a typedef of the Eigen dynamic vector type
-// TODO: make a version that works for matlab wrapping
+/**
+ * Static random number generator - needs to maintain a state
+ * over time, hence the static generator.  Be careful in
+ * cases where multiple processes (as is frequently the case with
+ * multi-robot scenarios) are using the sample() facilities
+ * in NoiseModel, as they will each have the same seed.
+ */
+// FIXME: make this go away - use the Sampler class instead
+extern boost::minstd_rand generator;
 
 namespace gtsam {
 
+// Vector is just a typedef of the Eigen dynamic vector type
+
 // Typedef arbitary length vector
 typedef Eigen::VectorXd Vector;
+
+// Commonly used fixed size vectors
+typedef Eigen::Vector3d Vector3;
+typedef Eigen::Matrix<double, 6, 1> Vector6;
 
 typedef Eigen::VectorBlock<Vector> SubVector;
 typedef Eigen::VectorBlock<const Vector> ConstSubVector;
@@ -155,6 +168,15 @@ inline bool equal(const Vector& vec1, const Vector& vec2) {
  * @return bool
  */
 bool assert_equal(const Vector& vec1, const Vector& vec2, double tol=1e-9);
+
+/**
+ * Not the same, prints if error
+ * @param vec1 Vector
+ * @param vec2 Vector
+ * @param tol 1e-9
+ * @return bool
+ */
+bool assert_inequal(const Vector& vec1, const Vector& vec2, double tol=1e-9);
 
 /**
  * Same, prints if error
@@ -340,11 +362,16 @@ Vector concatVectors(size_t nrVectors, ...);
  */
 Vector rand_vector_norm(size_t dim, double mean = 0, double sigma = 1);
 
+/**
+ * Sets the generator to use a different seed value.
+ * Default argument resets the RNG
+ * @param seed is the new seed
+ */
+inline void seedRNG(unsigned int seed = 42u) {
+	generator.seed(seed);
+}
+
 } // namespace gtsam
-
-// FIXME: make this go away - use the Sampler class instead
-static boost::minstd_rand generator(42u);
-
 
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/split_free.hpp>

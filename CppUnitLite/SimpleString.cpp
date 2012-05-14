@@ -102,7 +102,7 @@ SimpleString StringFrom (long value)
 SimpleString StringFrom (double value)
 {
 	char buffer [DEFAULT_SIZE];
-	sprintf (buffer, "%lf", value);
+	sprintf (buffer, "%lg", value);
 
 	return SimpleString(buffer);
 }

@@ -18,8 +18,6 @@
 #include <gtsam/3rdparty/Eigen/Eigen/Dense>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
 
-#include <gtsam/inference/GenericMultifrontalSolver-inl.h>
-
 namespace gtsam {
 
 /* ************************************************************************* */

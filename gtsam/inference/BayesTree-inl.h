@@ -315,6 +315,20 @@ namespace gtsam {
 		root_ = new_clique;
 	}
 
+  /* ************************************************************************* */
+  template<class CONDITIONAL, class CLIQUE>
+  BayesTree<CONDITIONAL,CLIQUE>::BayesTree(const This& other) {
+    *this = other;
+  }
+
+  /* ************************************************************************* */
+  template<class CONDITIONAL, class CLIQUE>
+  BayesTree<CONDITIONAL,CLIQUE>& BayesTree<CONDITIONAL,CLIQUE>::operator=(const This& other) {
+    this->clear();
+    other.cloneTo(*this);
+    return *this;
+  }
+
 	/* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
 	void BayesTree<CONDITIONAL,CLIQUE>::print(const string& s) const {
@@ -568,7 +582,23 @@ namespace gtsam {
 	  }
 	}
 
-/* ************************************************************************* */
+  /* ************************************************************************* */
+	template<class CONDITIONAL, class CLIQUE>
+	void BayesTree<CONDITIONAL,CLIQUE>::cloneTo(This& newTree) const {
+	  if(root())
+	    cloneTo(newTree, root(), sharedClique());
+	}
+
+	/* ************************************************************************* */
+  template<class CONDITIONAL, class CLIQUE>
+	void BayesTree<CONDITIONAL,CLIQUE>::cloneTo(
+	    This& newTree, const sharedClique& subtree, const sharedClique& parent) const {
+    sharedClique newClique(subtree->clone());
+    newTree.addClique(newClique, parent);
+    BOOST_FOREACH(const sharedClique& childClique, subtree->children()) {
+      cloneTo(newTree, childClique, newClique);
+    }
+  }
 
 }
 /// namespace gtsam

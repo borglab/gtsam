@@ -49,6 +49,10 @@ namespace gtsam {
   Rot3::Rot3(const Matrix& R) :
       quaternion_(Eigen::Matrix3d(R)) {}
 
+//  /* ************************************************************************* */
+//   Rot3::Rot3(const Matrix3& R) :
+//       quaternion_(R) {}
+
   /* ************************************************************************* */
   Rot3::Rot3(const Quaternion& q) : quaternion_(q) {}
 
@@ -140,7 +144,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   // Log map at identity - return the canonical coordinates of this rotation
-  Vector Rot3::Logmap(const Rot3& R) {
+  Vector3 Rot3::Logmap(const Rot3& R) {
     Eigen::AngleAxisd angleAxis(R.quaternion_);
     if(angleAxis.angle() > M_PI)      // Important:  use the smallest possible
       angleAxis.angle() -= 2.0*M_PI;  // angle, e.g. no more than PI, to keep
@@ -155,15 +159,15 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	Vector Rot3::localCoordinates(const Rot3& t2, Rot3::CoordinatesMode mode) const {
+	Vector3 Rot3::localCoordinates(const Rot3& t2, Rot3::CoordinatesMode mode) const {
 		return Logmap(between(t2));
 	}
 
   /* ************************************************************************* */
-  Matrix Rot3::matrix() const { return quaternion_.toRotationMatrix(); }
+  Matrix3 Rot3::matrix() const { return quaternion_.toRotationMatrix(); }
 
   /* ************************************************************************* */
-  Matrix Rot3::transpose() const { return quaternion_.toRotationMatrix().transpose(); }
+  Matrix3 Rot3::transpose() const { return quaternion_.toRotationMatrix().transpose(); }
 
   /* ************************************************************************* */
   Point3 Rot3::column(int index) const{
@@ -187,43 +191,43 @@ namespace gtsam {
   Point3 Rot3::r3() const { return Point3(quaternion_.toRotationMatrix().col(2)); }
 
   /* ************************************************************************* */
-  Vector Rot3::xyz() const {
-    Matrix I;Vector q;
+  Vector3 Rot3::xyz() const {
+    Matrix I;Vector3 q;
     boost::tie(I,q)=RQ(matrix());
     return q;
   }
 
   /* ************************************************************************* */
-  Vector Rot3::ypr() const {
-  	Vector q = xyz();
-    return Vector_(3,q(2),q(1),q(0));
+  Vector3 Rot3::ypr() const {
+  	Vector3 q = xyz();
+    return Vector3(q(2),q(1),q(0));
   }
 
   /* ************************************************************************* */
-  Vector Rot3::rpy() const {
-  	Vector q = xyz();
-    return Vector_(3,q(0),q(1),q(2));
+  Vector3 Rot3::rpy() const {
+  	Vector3 q = xyz();
+    return Vector3(q(0),q(1),q(2));
   }
 
   /* ************************************************************************* */
   Quaternion Rot3::toQuaternion() const { return quaternion_; }
 
   /* ************************************************************************* */
-  pair<Matrix, Vector> RQ(const Matrix& A) {
+  pair<Matrix3, Vector3> RQ(const Matrix3& A) {
 
     double x = -atan2(-A(2, 1), A(2, 2));
     Rot3 Qx = Rot3::Rx(-x);
-    Matrix B = A * Qx.matrix();
+    Matrix3 B = A * Qx.matrix();
 
     double y = -atan2(B(2, 0), B(2, 2));
     Rot3 Qy = Rot3::Ry(-y);
-    Matrix C = B * Qy.matrix();
+    Matrix3 C = B * Qy.matrix();
 
     double z = -atan2(-C(1, 0), C(1, 1));
     Rot3 Qz = Rot3::Rz(-z);
-    Matrix R = C * Qz.matrix();
+    Matrix3 R = C * Qz.matrix();
 
-    Vector xyz = Vector_(3, x, y, z);
+    Vector xyz = Vector3(x, y, z);
     return make_pair(R, xyz);
   }
 

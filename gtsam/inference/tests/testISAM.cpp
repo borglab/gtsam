@@ -24,7 +24,7 @@ using namespace boost::assign;
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/IndexConditional.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
-#include <gtsam/inference/ISAM-inl.h>
+#include <gtsam/inference/ISAM.h>
 
 using namespace std;
 using namespace gtsam;

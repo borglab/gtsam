@@ -23,7 +23,6 @@
 #pragma once
 
 #include <gtsam/inference/BayesTree.h>
-#include <gtsam/base/DSF.h>
 
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>

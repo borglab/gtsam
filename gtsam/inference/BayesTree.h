@@ -54,6 +54,7 @@ namespace gtsam {
 
 	public:
 
+	  typedef BayesTree<CONDITIONAL, CLIQUE> This;
 	  typedef boost::shared_ptr<BayesTree<CONDITIONAL, CLIQUE> > shared_ptr;
 		typedef boost::shared_ptr<CONDITIONAL> sharedConditional;
 		typedef boost::shared_ptr<BayesNet<CONDITIONAL> > sharedBayesNet;
@@ -145,6 +146,12 @@ namespace gtsam {
 
 		/** Create a Bayes Tree from a Bayes Net (requires CONDITIONAL is IndexConditional *or* CONDITIONAL::Combine) */
 		explicit BayesTree(const BayesNet<CONDITIONAL>& bayesNet);
+
+		/** Copy constructor */
+		BayesTree(const This& other);
+
+		/** Assignment operator */
+		This& operator=(const This& other);
 
 		/// @}
 		/// @name Advanced Constructors
@@ -273,21 +280,13 @@ namespace gtsam {
 		sharedClique insert(const sharedConditional& clique,
 				std::list<sharedClique>& children, bool isRootClique = false);
 
-		///TODO: comment
-		void cloneTo(shared_ptr& newTree) const {
-		  cloneTo(newTree, root(), sharedClique());
-		}
-
   private:
 
-		/** deep copy from another tree */
-		void cloneTo(shared_ptr& newTree, const sharedClique& subtree, const sharedClique& parent) const {
-		  sharedClique newClique(subtree->clone());
-		  newTree->addClique(newClique, parent);
-		  BOOST_FOREACH(const sharedClique& childClique, subtree->children()) {
-		    cloneTo(newTree, childClique, newClique);
-		  }
-		}
+    /** deep copy to another tree */
+		void cloneTo(This& newTree) const;
+
+		/** deep copy to another tree */
+		void cloneTo(This& newTree, const sharedClique& subtree, const sharedClique& parent) const;
 
     /** Serialization function */
     friend class boost::serialization::access;

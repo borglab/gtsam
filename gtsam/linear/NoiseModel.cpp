@@ -59,7 +59,7 @@ Gaussian::shared_ptr Gaussian::Covariance(const Matrix& covariance, bool smart) 
 		size_t i,j;
 		for (i = 0; i < m; i++)
 			for (j = 0; j < n; j++)
-				if (i != j && fabs(covariance(i, j) > 1e-9)) goto full;
+				if (i != j && fabs(covariance(i, j)) > 1e-9) goto full;
 		Vector variances(n);
 		for (j = 0; j < n; j++) variances(j) = covariance(j,j);
 		return Diagonal::Variances(variances,true);

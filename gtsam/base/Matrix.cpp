@@ -541,12 +541,12 @@ Matrix vector_scale(const Matrix& A, const Vector& v, bool inf_mask) {
 }
 
 /* ************************************************************************* */
-Matrix skewSymmetric(double wx, double wy, double wz)
+Matrix3 skewSymmetric(double wx, double wy, double wz)
 {
-	return Matrix_(3,3,
+	return (Matrix3() <<
 			0.0, -wz, +wy,
 			+wz, 0.0, -wx,
-			-wy, +wx, 0.0);
+			-wy, +wx, 0.0).finished();
 }
 
 /* ************************************************************************* */

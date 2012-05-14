@@ -25,10 +25,12 @@ namespace gtsam {
  * for each.
  */
 template<class POSE>
-struct PoseConcept {
+class PoseConcept {
+public:
 	typedef typename POSE::Translation Translation;
 	typedef typename POSE::Rotation Rotation;
 
+private:
 	static Rotation checkRotationMemberAccess(const POSE& p) {
 		return p.rotation();
 	}
@@ -44,7 +46,8 @@ struct PoseConcept {
  * range with derivatives.
  */
 template<class V1, class V2>
-struct RangeMeasurementConcept {
+class RangeMeasurementConcept {
+private:
 	static double checkRangeMeasurement(const V1& x, const V2& p) {
 		return x.range(p);
 	}

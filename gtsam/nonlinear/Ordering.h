@@ -93,7 +93,7 @@ public:
   /// behavior of std::map)
   Index& operator[](Key key) {
     iterator i=order_.find(key);
-    if(i == order_.end())  throw std::out_of_range(std::string());
+    if(i == order_.end())  throw std::out_of_range(std::string("Attempting to access a key from an ordering that does not contain that key"));
     else                   return i->second; }
 
   /// Access the index for the requested key, throws std::out_of_range if the
@@ -101,7 +101,7 @@ public:
   /// behavior of std::map)
   Index operator[](Key key) const {
     const_iterator i=order_.find(key);
-    if(i == order_.end())  throw std::out_of_range(std::string());
+    if(i == order_.end())  throw std::out_of_range(std::string("Attempting to access a key from an ordering that does not contain that key"));
     else                   return i->second; }
 
   /** Returns an iterator pointing to the symbol/index pair with the requested,
@@ -134,7 +134,7 @@ public:
   /** Try insert, but will fail if the key is already present */
   iterator insert(const value_type& key_order) {
   	std::pair<iterator,bool> it_ok(tryInsert(key_order));
-  	if(!it_ok.second)  throw std::invalid_argument(std::string());
+  	if(!it_ok.second)  throw std::invalid_argument(std::string("Attempting to insert a key into an ordering that already contains that key"));
   	else               return it_ok.first;
   }
 

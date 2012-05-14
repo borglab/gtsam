@@ -5,7 +5,8 @@ set(tests_local_libs
    inference
    geometry
    base
-   ccolamd)
+   ccolamd
+   CppUnitLite)
 
 # exclude certain files
 # note the source dir on each 
@@ -22,7 +23,7 @@ if (GTSAM_BUILD_TESTS)
     # Build grouped tests
     gtsam_add_grouped_scripts("tests"               # Use subdirectory as group label
     "test*.cpp" check "Test"                      # Standard for all tests
-    "${tests_local_libs}" "gtsam-static" "${tests_exclude}"  # Pass in linking and exclusion lists
+    "${tests_local_libs}" "gtsam-static;CppUnitLite" "${tests_exclude}"  # Pass in linking and exclusion lists
     ${is_test})                                         # Set all as tests
 endif (GTSAM_BUILD_TESTS)
 
@@ -35,6 +36,6 @@ if (GTSAM_BUILD_TIMING)
     # Build grouped benchmarks
     gtsam_add_grouped_scripts("tests"               # Use subdirectory as group label
     "time*.cpp" timing "Timing Benchmark"         # Standard for all timing scripts
-    "${tests_local_libs}" "gtsam-static" "${tests_exclude}"   # Pass in linking and exclusion lists
-    ${is_test})   
+    "${tests_local_libs}" "gtsam-static;CppUnitLite" "${tests_exclude}"   # Pass in linking and exclusion lists
+    ${is_test})
 endif (GTSAM_BUILD_TIMING)

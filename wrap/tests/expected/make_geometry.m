@@ -19,6 +19,7 @@ mex -O5 y.cpp
 mex -O5 dim.cpp
 mex -O5 returnChar.cpp
 mex -O5 argChar.cpp
+mex -O5 argUChar.cpp
 mex -O5 vectorConfusion.cpp
 
 %% Point3

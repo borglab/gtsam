@@ -57,7 +57,8 @@ Module::Module(const string& interfacePath,
   Class cls0(enable_verbose),cls(enable_verbose);
   vector<string> namespaces, /// current namespace tag
   							 namespace_includes, /// current set of includes
-  							 namespaces_return; /// namespace for current return type
+  							 namespaces_return, /// namespace for current return type
+  							 using_namespace_current;  /// All namespaces from "using" declarations
   string include_path = "";
   string class_name = "";
   const string null_str = "";
@@ -74,7 +75,7 @@ Module::Module(const string& interfacePath,
   Rule comments_p =  comment_p("/*", "*/") |	comment_p("//", eol_p);
 
   Rule basisType_p =
-    (str_p("string") | "bool" | "size_t" | "int" | "double" | "char");
+    (str_p("string") | "bool" | "size_t" | "int" | "double" | "char" | "unsigned char");
 
   Rule keywords_p =
   	(str_p("const") | "static" | "namespace" | basisType_p);
@@ -182,6 +183,7 @@ Module::Module(const string& interfacePath,
   		>> *(functions_p | comments_p)
   		>> str_p("};"))
   		[assign_a(cls.namespaces, namespaces)]
+  		 [assign_a(cls.using_namespaces, using_namespace_current)]
   		[append_a(cls.includes, namespace_includes)]
         [assign_a(deconstructor.name,cls.name)]
         [assign_a(cls.d, deconstructor)]
@@ -202,7 +204,7 @@ Module::Module(const string& interfacePath,
 
 	Rule using_namespace_p =
 			str_p("using") >> str_p("namespace")
-			>> namespace_name_p[push_back_a(using_namespaces)] >> ch_p(';');
+			>> namespace_name_p[push_back_a(using_namespace_current)] >> ch_p(';');
 
 	Rule forward_declaration_p =
 			str_p("class") >>
@@ -306,6 +308,7 @@ void Module::matlab_code(const string& toolboxPath,
     validTypes.push_back("int");
     validTypes.push_back("bool");
     validTypes.push_back("char");
+    validTypes.push_back("unsigned char");
     validTypes.push_back("size_t");
     validTypes.push_back("double");
     validTypes.push_back("Vector");
@@ -341,12 +344,12 @@ void Module::matlab_code(const string& toolboxPath,
       verifyReturnTypes<Method>(validTypes, cls.methods);
 
       // create constructor and method wrappers
-      cls.matlab_constructors(toolboxPath,using_namespaces);
-      cls.matlab_static_methods(toolboxPath,using_namespaces);
-      cls.matlab_methods(classPath,using_namespaces);
+      cls.matlab_constructors(toolboxPath);
+      cls.matlab_static_methods(toolboxPath);
+      cls.matlab_methods(classPath);
 
       // create deconstructor
-      cls.matlab_deconstructor(toolboxPath,using_namespaces);
+      cls.matlab_deconstructor(toolboxPath);
 
       // add lines to make m-file
       makeModuleMfile.oss << "%% " << cls.qualifiedName() << endl;

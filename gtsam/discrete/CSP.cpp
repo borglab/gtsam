@@ -1,0 +1,94 @@
+/*
+ * CSP.cpp
+ * @brief Constraint Satisfaction Problem class
+ * @date Feb 6, 2012
+ * @author Frank Dellaert
+ */
+
+#include <gtsam/discrete/Domain.h>
+#include <gtsam/discrete/CSP.h>
+#include <gtsam/discrete/DiscreteSequentialSolver.h>
+#include <gtsam/base/Testable.h>
+#include <boost/foreach.hpp>
+
+namespace gtsam {
+
+	/// Find the best total assignment - can be expensive
+	CSP::sharedValues CSP::optimalAssignment() const {
+		DiscreteSequentialSolver solver(*this);
+		DiscreteBayesNet::shared_ptr chordal = solver.eliminate();
+		sharedValues mpe = optimize(*chordal);
+		return mpe;
+	}
+
+	void CSP::runArcConsistency(size_t cardinality, size_t nrIterations, bool print) const {
+		// Create VariableIndex
+		VariableIndex index(*this);
+		// index.print();
+
+		size_t n = index.size();
+
+		// Initialize domains
+		std::vector < Domain > domains;
+		for (size_t j = 0; j < n; j++)
+			domains.push_back(Domain(DiscreteKey(j,cardinality)));
+
+		// Create array of flags indicating a domain changed or not
+		std::vector<bool> changed(n);
+
+		// iterate nrIterations over entire grid
+		for (size_t it = 0; it < nrIterations; it++) {
+			bool anyChange = false;
+			// iterate over all cells
+			for (size_t v = 0; v < n; v++) {
+				// keep track of which domains changed
+				changed[v] = false;
+				// loop over all factors/constraints for variable v
+				const VariableIndex::Factors& factors = index[v];
+				BOOST_FOREACH(size_t f,factors) {
+					// if not already a singleton
+					if (!domains[v].isSingleton()) {
+						// get the constraint and call its ensureArcConsistency method
+						DiscreteFactor::shared_ptr factor = (*this)[f];
+						changed[v] = factor->ensureArcConsistency(v,domains) || changed[v];
+					}
+				} // f
+				if (changed[v]) anyChange = true;
+			} // v
+			if (!anyChange) break;
+			// TODO: Sudoku specific hack
+			if (print) {
+				if (cardinality == 9 && n == 81) {
+					for (size_t i = 0, v = 0; i < sqrt(n); i++) {
+						for (size_t j = 0; j < sqrt(n); j++, v++) {
+							if (changed[v]) cout << "*";
+							domains[v].print();
+							cout << "\t";
+						} // i
+						cout << endl;
+					} // j
+				} else {
+					for (size_t v = 0; v < n; v++) {
+						if (changed[v]) cout << "*";
+						domains[v].print();
+						cout << "\t";
+					} // v
+				}
+				cout << endl;
+			} // print
+		} // it
+
+#ifndef INPROGRESS
+		// Now create new problem with all singleton variables removed
+		// We do this by adding simplifying all factors using parial application
+		// TODO: create a new ordering as we go, to ensure a connected graph
+		// KeyOrdering ordering;
+		// vector<Index> dkeys;
+		BOOST_FOREACH(const DiscreteFactor::shared_ptr& factor, factors_) {
+			DiscreteFactor::shared_ptr reduced = factor->partiallyApply(domains);
+			if (print) reduced->print();
+		}
+#endif
+	}
+} // gtsam
+

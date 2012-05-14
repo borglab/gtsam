@@ -37,6 +37,10 @@ namespace gtsam {
 typedef Eigen::MatrixXd Matrix;
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> MatrixRowMajor;
 
+typedef Eigen::Matrix3d Matrix3;
+typedef Eigen::Matrix4d Matrix4;
+typedef Eigen::Matrix<double,6,6> Matrix6;
+
 // Matrix expressions for accessing parts of matrices
 typedef Eigen::Block<Matrix> SubMatrix;
 typedef Eigen::Block<const Matrix> ConstSubMatrix;
@@ -393,8 +397,8 @@ Matrix vector_scale(const Matrix& A, const Vector& v, bool inf_mask = false); //
  * @param wz
  * @return a 3*3 skew symmetric matrix
 */
-Matrix skewSymmetric(double wx, double wy, double wz);
-inline Matrix skewSymmetric(const Vector& w) { return skewSymmetric(w(0),w(1),w(2));}
+Matrix3 skewSymmetric(double wx, double wy, double wz);
+inline Matrix3 skewSymmetric(const Vector& w) { return skewSymmetric(w(0),w(1),w(2));}
 
 /** Use SVD to calculate inverse square root of a matrix */
 Matrix inverse_square_root(const Matrix& A);

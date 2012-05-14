@@ -111,3 +111,4 @@ namespace gtsam {
 
 } // gtsam
 
+#include <gtsam/inference/GenericMultifrontalSolver-inl.h>

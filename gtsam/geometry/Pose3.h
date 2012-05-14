@@ -132,7 +132,7 @@ namespace gtsam {
     Pose3 retract(const Vector& d, Pose3::CoordinatesMode mode = POSE3_DEFAULT_COORDINATES_MODE) const;
 
     /// Local 6D coordinates of Pose3 manifold neighborhood around current pose
-    Vector localCoordinates(const Pose3& T2, Pose3::CoordinatesMode mode = POSE3_DEFAULT_COORDINATES_MODE) const;
+    Vector6 localCoordinates(const Pose3& T2, Pose3::CoordinatesMode mode = POSE3_DEFAULT_COORDINATES_MODE) const;
 
     /// @}
     /// @name Lie Group
@@ -142,13 +142,13 @@ namespace gtsam {
     static Pose3 Expmap(const Vector& xi);
 
     /// Log map at identity - return the canonical coordinates of this rotation
-    static Vector Logmap(const Pose3& p);
+    static Vector6 Logmap(const Pose3& p);
 
     /**
      * Calculate Adjoint map
      * Ad_pose is 6*6 matrix that when applied to twist xi, returns Ad_pose(xi)
      */
-    Matrix adjointMap() const; /// FIXME Not tested - marked as incorrect
+    Matrix6 adjointMap() const; /// FIXME Not tested - marked as incorrect
     Vector adjoint(const Vector& xi) const {return adjointMap()*xi; } /// FIXME Not tested - marked as incorrect
 
     /**
@@ -201,7 +201,7 @@ namespace gtsam {
     double z() const { return t_.z(); }
 
     /** convert to 4*4 matrix */
-    Matrix matrix() const;
+    Matrix4 matrix() const;
 
     /** receives a pose in world coordinates and transforms it to local coordinates */
     Pose3 transform_to(const Pose3& pose) const;

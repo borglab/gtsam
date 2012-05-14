@@ -24,7 +24,7 @@ using namespace boost::assign;
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/inference/ISAM-inl.h>
+#include <gtsam/inference/ISAM.h>
 #include <gtsam/linear/GaussianISAM.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>

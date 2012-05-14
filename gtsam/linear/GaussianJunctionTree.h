@@ -21,7 +21,7 @@
 
 #include <boost/foreach.hpp>
 #include <gtsam/inference/JunctionTree.h>
-#include <gtsam/inference/BayesTree.h>
+#include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 

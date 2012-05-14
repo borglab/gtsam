@@ -87,7 +87,7 @@ namespace gtsam {
 
 		/// Evaluate error h(x)-z and optionally derivatives
 		Vector evaluateError(const Pose3& pose, const Point3& point,
-				boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+				boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const {
 			try {
 	      SimpleCamera camera(*K_, pose);
 			  Point2 reprojectionError(camera.project(point, H1, H2) - measured_);

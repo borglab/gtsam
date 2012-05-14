@@ -134,7 +134,9 @@ namespace gtsam {
      */
      static derived_ptr Create(const std::pair<sharedConditional, boost::shared_ptr<typename ConditionalType::FactorType> >& result) { return boost::make_shared<DerivedType>(result); }
 
-     ///TODO: comment
+     /** Returns a new clique containing a copy of the conditional but without
+      * the parent and child clique pointers.
+      */
      derived_ptr clone() const { return Create(sharedConditional(new ConditionalType(*conditional_))); }
 
     /** Permute the variables in the whole subtree rooted at this clique */
@@ -165,6 +167,17 @@ namespace gtsam {
     void assertInvariants() const;
 
   private:
+
+    /** Cliques cannot be copied except by the clone() method, which does not
+     * copy the parent and child pointers.
+     */
+    BayesTreeCliqueBase(const This& other) { assert(false); }
+
+    /** Cliques cannot be copied except by the clone() method, which does not
+     * copy the parent and child pointers.
+     */
+    This& operator=(const This& other) { assert(false); return *this; }
+
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
