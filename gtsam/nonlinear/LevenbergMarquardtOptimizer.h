@@ -22,6 +22,88 @@
 
 namespace gtsam {
 
+/**
+ * This class performs Levenberg-Marquardt nonlinear optimization
+ * TODO: use make_shared
+ */
+class LevenbergMarquardtOptimizer : public NonlinearOptimizer {
+
+public:
+
+  typedef boost::shared_ptr<LevenbergMarquardtOptimizer> shared_ptr;
+
+  /// @name Standard interface
+  /// @{
+
+  /** Standard constructor, requires a nonlinear factor graph, initial
+   * variable assignments, and optimization parameters.  For convenience this
+   * version takes plain objects instead of shared pointers, but internally
+   * copies the objects.
+   * @param graph The nonlinear factor graph to optimize
+   * @param values The initial variable assignments
+   * @param params The optimization parameters
+   */
+  LevenbergMarquardtOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues,
+      const LevenbergMarquardtParams& params = LevenbergMarquardtParams()) :
+        NonlinearOptimizer(graph), params_(ensureHasOrdering(params)), state_(graph, initialValues) {}
+
+  /** Standard constructor, requires a nonlinear factor graph, initial
+   * variable assignments, and optimization parameters.  For convenience this
+   * version takes plain objects instead of shared pointers, but internally
+   * copies the objects.
+   * @param graph The nonlinear factor graph to optimize
+   * @param values The initial variable assignments
+   * @param params The optimization parameters
+   */
+  LevenbergMarquardtOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues, const Ordering& ordering) :
+        NonlinearOptimizer(graph), state_(graph, initialValues) {
+    params_.ordering = ordering; }
+
+  /// @}
+
+  /// @name Advanced interface
+  /// @{
+
+  /** Virtual destructor */
+  virtual ~LevenbergMarquardtOptimizer() {}
+
+  /** Perform a single iteration, returning a new NonlinearOptimizer class
+   * containing the updated variable assignments, which may be retrieved with
+   * values().
+   */
+  virtual void iterate() const;
+
+  /** Access the parameters */
+  const GaussNewtonParams& params() const { return params_; }
+
+  /** Access the last state */
+  const NonlinearOptimizerState& state() const { return state_; }
+
+  /// @}
+
+protected:
+
+  typedef boost::shared_ptr<const std::vector<size_t> > SharedDimensions;
+
+  mutable SharedDimensions dimensions_; // Mutable because we compute it when needed and cache it
+
+  LevenbergMarquardtParams params_;
+  LevenbergMarquardtState state_;
+
+  /** Access the parameters (base class version) */
+  virtual const NonlinearOptimizerParams& _params() const { return params_; }
+
+  /** Access the state (base class version) */
+  virtual const NonlinearOptimizerState& _state() const { return state_; }
+
+  /** Internal function for computing a COLAMD ordering if no ordering is specified */
+  GaussNewtonParams ensureHasOrdering(GaussNewtonParams params, const NonlinearFactorGraph& graph, const Values& values) const {
+    if(!params.ordering)
+      params.ordering = graph.orderingCOLAMD(values);
+    return params;
+  }
+};
+
 /** Parameters for Levenberg-Marquardt optimization.  Note that this parameters
  * class inherits from NonlinearOptimizerParams, which specifies the parameters
  * common to all nonlinear optimization algorithms.  This class also contains
@@ -61,95 +143,11 @@ public:
 /**
  * State for LevenbergMarquardtOptimizer
  */
-class LevenbergMarquardtState : public SuccessiveLinearizationState {
+class LevenbergMarquardtState : public NonlinearOptimizerState {
 public:
 
   double lambda;
 
-};
-
-/**
- * This class performs Levenberg-Marquardt nonlinear optimization
- * TODO: use make_shared
- */
-class LevenbergMarquardtOptimizer : public SuccessiveLinearizationOptimizer {
-
-public:
-
-  typedef boost::shared_ptr<LevenbergMarquardtParams> SharedParams;
-  typedef boost::shared_ptr<LevenbergMarquardtState> SharedState;
-  typedef boost::shared_ptr<LevenbergMarquardtOptimizer> shared_ptr;
-
-  /// @name Standard interface
-  /// @{
-
-  /** Standard constructor, requires a nonlinear factor graph, initial
-   * variable assignments, and optimization parameters.  For convenience this
-   * version takes plain objects instead of shared pointers, but internally
-   * copies the objects.
-   * @param graph The nonlinear factor graph to optimize
-   * @param values The initial variable assignments
-   * @param params The optimization parameters
-   */
-  LevenbergMarquardtOptimizer(const NonlinearFactorGraph& graph,
-      const LevenbergMarquardtParams& params = LevenbergMarquardtParams()) :
-        SuccessiveLinearizationOptimizer(SharedGraph(new NonlinearFactorGraph(graph))),
-        params_(new LevenbergMarquardtParams(params)) {}
-
-  /** Standard constructor, requires a nonlinear factor graph, initial
-   * variable assignments, and optimization parameters.  For convenience this
-   * version takes plain objects instead of shared pointers, but internally
-   * copies the objects.
-   * @param graph The nonlinear factor graph to optimize
-   * @param values The initial variable assignments
-   * @param params The optimization parameters
-   */
-  LevenbergMarquardtOptimizer(const NonlinearFactorGraph& graph, const Ordering& ordering) :
-        SuccessiveLinearizationOptimizer(SharedGraph(new NonlinearFactorGraph(graph))),
-        params_(new LevenbergMarquardtParams()) {
-    params_->ordering = ordering; }
-
-  /** Standard constructor, requires a nonlinear factor graph, initial
-   * variable assignments, and optimization parameters.
-   * @param graph The nonlinear factor graph to optimize
-   * @param values The initial variable assignments
-   * @param params The optimization parameters
-   */
-  LevenbergMarquardtOptimizer(const SharedGraph& graph,
-      const LevenbergMarquardtParams& params = LevenbergMarquardtParams()) :
-        SuccessiveLinearizationOptimizer(graph),
-        params_(new LevenbergMarquardtParams(params)) {}
-
-  /** Access the parameters */
-  virtual NonlinearOptimizer::SharedParams params() const { return params_; }
-
-  /// @}
-
-  /// @name Advanced interface
-  /// @{
-
-  /** Virtual destructor */
-  virtual ~LevenbergMarquardtOptimizer() {}
-
-  /** Perform a single iteration, returning a new NonlinearOptimizer class
-   * containing the updated variable assignments, which may be retrieved with
-   * values().
-   */
-  virtual NonlinearOptimizer::SharedState iterate(const NonlinearOptimizer::SharedState& current) const;
-
-  /** Create an initial state with the specified variable assignment values and
-   * all other default state.
-   */
-  virtual NonlinearOptimizer::SharedState initialState(const Values& initialValues) const;
-
-  /// @}
-
-protected:
-
-  typedef boost::shared_ptr<const std::vector<size_t> > SharedDimensions;
-
-  SharedParams params_;
-  mutable SharedDimensions dimensions_; // Mutable because we compute it when needed and cache it
 };
 
 }

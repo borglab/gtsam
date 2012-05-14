@@ -18,37 +18,9 @@
 
 #pragma once
 
-#include <boost/variant.hpp>
-
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 
 namespace gtsam {
-
-class SuccessiveLinearizationParams;
-class SuccessiveLinearizationState;
-
-/**
- * This is an intermediate base class for NonlinearOptimizers that use direct
- * solving, i.e. factorization.  This class is here to reduce code duplication
- * for storing the ordering, having factorization and elimination parameters,
- * etc.
- */
-class SuccessiveLinearizationOptimizer : public NonlinearOptimizer {
-public:
-
-  typedef boost::shared_ptr<const SuccessiveLinearizationParams> SharedParams;
-  typedef boost::shared_ptr<const SuccessiveLinearizationOptimizer> shared_ptr;
-
-protected:
-
-  SuccessiveLinearizationOptimizer(const SharedGraph& graph) : NonlinearOptimizer(graph) {}
-
-  const Ordering& ordering(const Values& values) const;
-
-private:
-
-  mutable boost::optional<Ordering> ordering_; // Mutable because we set/compute it when needed and cache it
-};
 
 class SuccessiveLinearizationParams : public NonlinearOptimizerParams {
 public:
@@ -96,9 +68,6 @@ public:
 
     std::cout.flush();
   }
-};
-
-class SuccessiveLinearizationState : public NonlinearOptimizerState {
 };
 
 } /* namespace gtsam */

@@ -22,24 +22,12 @@
 
 namespace gtsam {
 
-/** Parameters for Gauss-Newton optimization, inherits from
- * NonlinearOptimizationParams.
- */
-class GaussNewtonParams : public SuccessiveLinearizationParams {
-};
-
-class GaussNewtonState : public SuccessiveLinearizationState {
-};
-
 /**
  * This class performs Gauss-Newton nonlinear optimization
- * TODO: use make_shared
  */
-class GaussNewtonOptimizer : public SuccessiveLinearizationOptimizer {
+class GaussNewtonOptimizer : public NonlinearOptimizer {
 
 public:
-
-  typedef boost::shared_ptr<GaussNewtonParams> SharedParams;
 
   /// @name Standard interface
   /// @{
@@ -52,10 +40,9 @@ public:
    * @param values The initial variable assignments
    * @param params The optimization parameters
    */
-  GaussNewtonOptimizer(const NonlinearFactorGraph& graph,
+  GaussNewtonOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues,
       const GaussNewtonParams& params = GaussNewtonParams()) :
-        SuccessiveLinearizationOptimizer(SharedGraph(new NonlinearFactorGraph(graph))),
-        params_(new GaussNewtonParams(params)) {}
+        NonlinearOptimizer(graph), params_(ensureHasOrdering(params)), state_(graph, initialValues) {}
 
   /** Standard constructor, requires a nonlinear factor graph, initial
    * variable assignments, and optimization parameters.  For convenience this
@@ -65,24 +52,9 @@ public:
    * @param values The initial variable assignments
    * @param params The optimization parameters
    */
-  GaussNewtonOptimizer(const NonlinearFactorGraph& graph, const Ordering& ordering) :
-        SuccessiveLinearizationOptimizer(SharedGraph(new NonlinearFactorGraph(graph))),
-        params_(new GaussNewtonParams()) {
-    params_->ordering = ordering; }
-
-  /** Standard constructor, requires a nonlinear factor graph, initial
-   * variable assignments, and optimization parameters.
-   * @param graph The nonlinear factor graph to optimize
-   * @param values The initial variable assignments
-   * @param params The optimization parameters
-   */
-  GaussNewtonOptimizer(const SharedGraph& graph,
-      const GaussNewtonParams& params = GaussNewtonParams()) :
-        SuccessiveLinearizationOptimizer(graph),
-        params_(new GaussNewtonParams(params)) {}
-
-  /** Access the parameters */
-  virtual NonlinearOptimizer::SharedParams params() const { return params_; }
+  GaussNewtonOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues, const Ordering& ordering) :
+        NonlinearOptimizer(graph), state_(graph, initialValues) {
+    params_.ordering = ordering; }
 
   /// @}
 
@@ -96,18 +68,40 @@ public:
    * containing the updated variable assignments, which may be retrieved with
    * values().
    */
-  virtual NonlinearOptimizer::SharedState iterate(const NonlinearOptimizer::SharedState& current) const;
+  virtual void iterate() const;
 
-  /** Create an initial state with the specified variable assignment values and
-   * all other default state.
-   */
-  virtual NonlinearOptimizer::SharedState initialState(const Values& initialValues) const;
+  /** Access the parameters */
+  const GaussNewtonParams& params() const { return params_; }
+
+  /** Access the last state */
+  const NonlinearOptimizerState& state() const { return state_; }
 
   /// @}
 
 protected:
 
-  const SharedParams params_;
+  GaussNewtonParams params_;
+  NonlinearOptimizerState state_;
+
+  /** Access the parameters (base class version) */
+  virtual const NonlinearOptimizerParams& _params() const { return params_; }
+
+  /** Access the state (base class version) */
+  virtual const NonlinearOptimizerState& _state() const { return state_; }
+
+  /** Internal function for computing a COLAMD ordering if no ordering is specified */
+  GaussNewtonParams ensureHasOrdering(GaussNewtonParams params, const NonlinearFactorGraph& graph, const Values& values) const {
+    if(!params.ordering)
+      params.ordering = graph.orderingCOLAMD(values);
+    return params;
+  }
+
+};
+
+/** Parameters for Gauss-Newton optimization, inherits from
+ * NonlinearOptimizationParams.
+ */
+class GaussNewtonParams : public SuccessiveLinearizationParams {
 };
 
 }

@@ -25,54 +25,43 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-NonlinearOptimizer::SharedState NonlinearOptimizer::defaultOptimize(const SharedState& initial) const {
+void NonlinearOptimizer::defaultOptimize() {
 
-  const SharedParams& params = this->params();
-  double currentError = initial->error;
+  const NonlinearOptimizerParams& params = this->params();
+  double currentError = this->error();
 
   // check if we're already close enough
-  if(currentError <= params->errorTol) {
-    if (params->verbosity >= NonlinearOptimizerParams::ERROR)
-      cout << "Exiting, as error = " << currentError << " < " << params->errorTol << endl;
-    return initial;
+  if(currentError <= params.errorTol) {
+    if (params.verbosity >= NonlinearOptimizerParams::ERROR)
+      cout << "Exiting, as error = " << currentError << " < " << params.errorTol << endl;
+    return;
   }
 
   // Maybe show output
-  if (params->verbosity >= NonlinearOptimizerParams::VALUES) initial->values.print("Initial values");
-  if (params->verbosity >= NonlinearOptimizerParams::ERROR) cout << "Initial error: " << initial->error << endl;
+  if (params.verbosity >= NonlinearOptimizerParams::VALUES) this->values().print("Initial values");
+  if (params.verbosity >= NonlinearOptimizerParams::ERROR) cout << "Initial error: " << currentError << endl;
 
   // Return if we already have too many iterations
-  if(initial->iterations >= params->maxIterations)
-    return initial;
+  if(this->iterations() >= params.maxIterations)
+    return;
 
   // Iterative loop
-  SharedState next = initial;
   do {
     // Do next iteration
-    currentError = next->error;
-    next = this->iterate(next);
+    currentError = this->error();
+    this->iterate();
 
     // Maybe show output
-    if(params->verbosity >= NonlinearOptimizerParams::VALUES) next->values.print("newValues");
-    if(params->verbosity >= NonlinearOptimizerParams::ERROR) cout << "newError: " << next->error << endl;
-  } while(next->iterations < params->maxIterations &&
-      !checkConvergence(params->relativeErrorTol, params->absoluteErrorTol,
-            params->errorTol, currentError, next->error, params->verbosity));
+    if(params.verbosity >= NonlinearOptimizerParams::VALUES) this->values().print("newValues");
+    if(params.verbosity >= NonlinearOptimizerParams::ERROR) cout << "newError: " << this->error() << endl;
+  } while(this->iterations() < params.maxIterations &&
+      !checkConvergence(params.relativeErrorTol, params.absoluteErrorTol,
+            params.errorTol, currentError, this->error(), params.verbosity));
 
   // Printing if verbose
-  if (params->verbosity >= NonlinearOptimizerParams::ERROR &&
-      next->iterations >= params->maxIterations)
+  if (params.verbosity >= NonlinearOptimizerParams::ERROR &&
+      this->iterations() >= params.maxIterations)
     cout << "Terminating because reached maximum iterations" << endl;
-
-  // Return optimizer from final iteration
-  return next;
-}
-
-/* ************************************************************************* */
-void NonlinearOptimizer::defaultInitialState(const Values& initialValues, NonlinearOptimizerState& initialState) const {
-  initialState.values = initialValues;
-  initialState.error = graph_->error(initialValues);
-  initialState.iterations = 0;
 }
 
 /* ************************************************************************* */
