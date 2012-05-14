@@ -65,7 +65,7 @@ public:
   virtual ~DoglegState() {}
 
 protected:
-  DoglegState(const NonlinearFactorGraph& graph, const Values& values, const DoglegParams& params, unsigned int interations = 0) :
+  DoglegState(const NonlinearFactorGraph& graph, const Values& values, const DoglegParams& params, unsigned int iterations = 0) :
     NonlinearOptimizerState(graph, values, iterations), Delta(params.deltaInitial) {}
 
   friend class DoglegOptimizer;
@@ -105,7 +105,7 @@ public:
    */
   DoglegOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues, const Ordering& ordering) :
         NonlinearOptimizer(graph) {
-    *params_.ordering = ordering;
+    params_.ordering = ordering;
     state_ = DoglegState(graph, initialValues, params_); }
 
   /// @}

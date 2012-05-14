@@ -70,7 +70,7 @@ public:
    */
   GaussNewtonOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues, const Ordering& ordering) :
         NonlinearOptimizer(graph), state_(graph, initialValues) {
-    *params_.ordering = ordering; }
+    params_.ordering = ordering; }
 
   /// @}
 

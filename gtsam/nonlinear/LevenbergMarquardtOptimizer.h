@@ -74,7 +74,7 @@ public:
 
 protected:
   LevenbergMarquardtState(const NonlinearFactorGraph& graph, const Values& initialValues, const LevenbergMarquardtParams& params, unsigned int iterations = 0) :
-    NonlinearOptimizerState(graph, values, iterations), lambda(params.lambdaInitial) {}
+    NonlinearOptimizerState(graph, initialValues, iterations), lambda(params.lambdaInitial) {}
 
   friend class LevenbergMarquardtOptimizer;
 };
@@ -114,7 +114,7 @@ public:
    */
   LevenbergMarquardtOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues, const Ordering& ordering) :
         NonlinearOptimizer(graph), dimensions_(initialValues.dims(ordering)) {
-    *params_.ordering = ordering;
+    params_.ordering = ordering;
     state_ = LevenbergMarquardtState(graph, initialValues, params_); }
 
   /** Access the current damping value */

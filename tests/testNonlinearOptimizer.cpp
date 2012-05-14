@@ -54,11 +54,14 @@ TEST( NonlinearOptimizer, iterateLM )
 	config.insert(simulated2D::PoseKey(1), x0);
 
 	// normal iterate
-	GaussNewtonOptimizer gnOptimizer(fg, config);
+	GaussNewtonParams gnParams;
+	GaussNewtonOptimizer gnOptimizer(fg, config, gnParams);
 	gnOptimizer.iterate();
 
 	// LM iterate with lambda 0 should be the same
-	LevenbergMarquardtOptimizer lmOptimizer(fg, config);
+	LevenbergMarquardtParams lmParams;
+	lmParams.lambdaInitial = 0.0;
+	LevenbergMarquardtOptimizer lmOptimizer(fg, config, lmParams);
 	lmOptimizer.iterate();
 
 	CHECK(assert_equal(gnOptimizer.values(), lmOptimizer.values(), 1e-9));
@@ -81,16 +84,26 @@ TEST( NonlinearOptimizer, optimize )
 	c0.insert(simulated2D::PoseKey(1), x0);
 	DOUBLES_EQUAL(199.0,fg.error(c0),1e-3);
 
+	// optimize parameters
+	Ordering ord;
+	ord.push_back(kx(1));
+
 	// Gauss-Newton
-	Values actual1 = GaussNewtonOptimizer(fg, c0).optimize();
+	GaussNewtonParams gnParams;
+	gnParams.ordering = ord;
+	Values actual1 = GaussNewtonOptimizer(fg, c0, gnParams).optimize();
 	DOUBLES_EQUAL(0,fg.error(actual1),tol);
 
 	// Levenberg-Marquardt
-  Values actual2 = LevenbergMarquardtOptimizer(fg, c0).optimize();
+	LevenbergMarquardtParams lmParams;
+	lmParams.ordering = ord;
+  Values actual2 = LevenbergMarquardtOptimizer(fg, c0, lmParams).optimize();
   DOUBLES_EQUAL(0,fg.error(actual2),tol);
 
   // Dogleg
-  Values actual3 = DoglegOptimizer(fg, c0).optimize();
+  DoglegParams dlParams;
+  dlParams.ordering = ord;
+  Values actual3 = DoglegOptimizer(fg, c0, dlParams).optimize();
   DOUBLES_EQUAL(0,fg.error(actual3),tol);
 }
 
