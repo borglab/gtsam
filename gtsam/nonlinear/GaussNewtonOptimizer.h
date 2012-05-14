@@ -22,6 +22,12 @@
 
 namespace gtsam {
 
+/** Parameters for Gauss-Newton optimization, inherits from
+ * NonlinearOptimizationParams.
+ */
+class GaussNewtonParams : public SuccessiveLinearizationParams {
+};
+
 /**
  * This class performs Gauss-Newton nonlinear optimization
  */
@@ -96,12 +102,6 @@ protected:
     return params;
   }
 
-};
-
-/** Parameters for Gauss-Newton optimization, inherits from
- * NonlinearOptimizationParams.
- */
-class GaussNewtonParams : public SuccessiveLinearizationParams {
 };
 
 }

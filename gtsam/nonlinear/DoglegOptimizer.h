@@ -22,6 +22,44 @@
 
 namespace gtsam {
 
+/** Parameters for Levenberg-Marquardt optimization.  Note that this parameters
+ * class inherits from NonlinearOptimizerParams, which specifies the parameters
+ * common to all nonlinear optimization algorithms.  This class also contains
+ * all of those parameters.
+ */
+class DoglegParams : public SuccessiveLinearizationParams {
+public:
+  /** See DoglegParams::dlVerbosity */
+  enum DLVerbosity {
+    SILENT,
+    VERBOSE
+  };
+
+  double deltaInitial; ///< The initial trust region radius (default: 1.0)
+  DLVerbosity dlVerbosity; ///< The verbosity level for Dogleg (default: SILENT), see also NonlinearOptimizerParams::verbosity
+
+  DoglegParams() :
+    deltaInitial(1.0), dlVerbosity(SILENT) {}
+
+  virtual ~DoglegParams() {}
+
+  virtual void print(const std::string& str = "") const {
+    SuccessiveLinearizationParams::print(str);
+    std::cout << "               deltaInitial: " << deltaInitial << "\n";
+    std::cout.flush();
+  }
+};
+
+/**
+ * State for DoglegOptimizer
+ */
+class DoglegState : public SuccessiveLinearizationState {
+public:
+
+  double delta;
+
+};
+
 /**
  * This class performs Dogleg nonlinear optimization
  */
@@ -96,44 +134,6 @@ protected:
       params.ordering = graph.orderingCOLAMD(values);
     return params;
   }
-};
-
-/** Parameters for Levenberg-Marquardt optimization.  Note that this parameters
- * class inherits from NonlinearOptimizerParams, which specifies the parameters
- * common to all nonlinear optimization algorithms.  This class also contains
- * all of those parameters.
- */
-class DoglegParams : public SuccessiveLinearizationParams {
-public:
-  /** See DoglegParams::dlVerbosity */
-  enum DLVerbosity {
-    SILENT,
-    VERBOSE
-  };
-
-  double deltaInitial; ///< The initial trust region radius (default: 1.0)
-  DLVerbosity dlVerbosity; ///< The verbosity level for Dogleg (default: SILENT), see also NonlinearOptimizerParams::verbosity
-
-  DoglegParams() :
-    deltaInitial(1.0), dlVerbosity(SILENT) {}
-
-  virtual ~DoglegParams() {}
-
-  virtual void print(const std::string& str = "") const {
-    SuccessiveLinearizationParams::print(str);
-    std::cout << "               deltaInitial: " << deltaInitial << "\n";
-    std::cout.flush();
-  }
-};
-
-/**
- * State for DoglegOptimizer
- */
-class DoglegState : public SuccessiveLinearizationState {
-public:
-
-  double delta;
-
 };
 
 }
