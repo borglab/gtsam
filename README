@@ -100,11 +100,6 @@ doxygen.  To create html documentation for GTSAM, run the the script
 makedoc.sh.  
 
 4)
-For developers, we primarily use the Eclipse IDE for development, and provide
-an Eclipse project file with a variety of make targets to build and debug 
-from within Eclipse. 
-
-5)
 After installing prerequisites for building GTSAM, you can configure and build
 GTSAM using CMake with the default options with the quickstart options. For 
 details on the full functionality of CMake, see the CMake documentation.  
@@ -120,47 +115,33 @@ $] cmake ..
 $] make check (optional, runs unit tests)
 $] make install
 
-This will build the library and unit tests, run all of the unit tests, and then install
-the library itself, as well as the Matlab toolbox.
+This will build the library and unit tests, run all of the unit tests, 
+and then install the library itself.
 
 - Additional CMake Options and Details
 
-The cmake scripts force a out-of-source build, so inside gtsam, 
-create a new folder called "build", and run cmake. From the command line:
+GTSAM has a number of options that can be configured, which is best done with
+one of the following:
 
-$] mkdir build
-$] cd build
-$] cmake ..
-
-Note the ".." after the cmake command - it tells cmake to look for the 
-root CMakeLists.txt file in the root gtsam folder instead of in the build folder. 
-This is a necessary argument for starting cmake in all of its variations. 
-There a few ways of actually doing the configuration to make adjusting options easier.
-
-  cmake       the regular command-line version of cmake, allows configuration with scripts
-  ccmake      the curses GUI for cmake, which lets you see the various options, change them, and run configuration.
-  cmake-gui   a real GUI for cmake, which has a similar interface to ccmake, but with easier controls. 
-
-Note that during configuration, the settings get cached so if you rerun cmake later, 
-it will keep your previous settings. In particular, you can use the "cmake" build target 
-within the Eclipse project to update the configuration, which will be necessary 
-when file structures change.  
-
-While it is possible to use command-line arguments to cmake to change configuration 
-options, it is usually easier to use cmake-gui or ccmake to set parameters and use the other flags.
+  ccmake      the curses GUI for cmake
+  cmake-gui   a real GUI for cmake
 
 Important CMake configuration options: 
 
-CMAKE_INSTALL_PREFIX: this is the folder where installed files will go, and for 
-our development purposes, should be set to the home folder, like so
+CMAKE_BUILD_TYPE: We support several build configurations for GTSAM (case insensitive)
+  Debug (default)  All error checking options on, no optimization. Use for development.
+  Release          Optimizations turned on, no debug symbols.           
+  Timing           Adds ENABLE_TIMING flag to provide statistics on operation 
+  Profiling        Standard configuration for use during profiling
+  RelWithDebInfo   Same as Release, but with the -g flag for debug symbols
+
+CMAKE_INSTALL_PREFIX: The install folder. The default is typically /usr/local/
+To configure to install to your home directory, you could execute:
 $] cmake -DCMAKE_INSTALL_PREFIX:PATH=$HOME ..
 
-GTSAM_TOOLBOX_INSTALL_PATH: When the library is installed with "make install", 
-the generated matlab toolbox code (created by wrap) gets installed as well in 
-this path. For example, use "/home/username/borg/toolbox" to install the 
-toolbox in your borg/toolbox folder. The matlab toolbox will get installed 
-into borg/toolbox/gtsam.
-$] cmake -DGTSAM_TOOLBOX_INSTALL_PATH:PATH=$HOME/borg/toolbox ..
+GTSAM_TOOLBOX_INSTALL_PATH: The Matlab toolbox will be installed in a subdirectory
+of this folder, called 'gtsam'.
+$] cmake -DGTSAM_TOOLBOX_INSTALL_PATH:PATH=$HOME/toolbox ..
 
 GTSAM_BUILD_CONVENIENCE_LIBRARIES: This is a build option to allow for tests in 
 subfolders to be linked against convenience libraries rather than the full libgtsam. 
@@ -186,35 +167,12 @@ $] cmake -DGTSAM_BUILD_UNSTABLE:OPTION=ON ..
                  folder called "gtsam_unstable".
   OFF (Default)  If disabled, no gtsam_unstable code will be included in build or install. 
 
-CMAKE_BUILD_TYPE: We support several build configurations for GTSAM (case insensitive)
-  Debug (default)  All error checking options on, no optimization. Use for development.
-  Release          Optimizations turned on, no debug symbols.           
-  Timing           Adds ENABLE_TIMING flag to provide statistics on operation 
-  Profiling        Standard configuration for use during profiling
-  RelWithDebInfo   Same as Release, but with the -g flag for debug symbols
-
-
-Build and Install
-
-After configuring, you use make just as you normally would, and the all, check and 
-install targets work as in autotools. Note that all targets are at the root level 
-of the build folder. You can also build any of the subfolders individually as 
-individual targets, such as "make geometry slam" to build both geometry and slam. 
-Running "make install" will install the library to the prefix location.
-
 Check
 
-As with autotools, "make check" will build and run all of the tests. Note that the 
-tests will only be built when using the "check" targets, to prevent "make install" from
-building the tests unnecessarily. You can also run "make timing" to build all of 
-the timing scripts. To run check on a particular subsection, there is a convention 
-of "make check.[subfolder]", so to run just the geometry tests, 
-run "make check.geometry". Individual tests can be run by appending ".run" to the
-name of the test, for example, to run testMatrix, run "make testMatrix.run". 
-
-The make target "wrap" will build the wrap binary, and the "wrap_gtsam" target will 
-generate code for the toolbox. By default, the toolbox will be created and installed 
-by the install target for the library. To change the install folder for the toolbox, 
-choose a different setting during cmake settings for the toolbox install path. 
-
-
+"make check" will build and run all of the tests. Note that the tests will only be 
+built when using the "check" targets, to prevent "make install" from building the tests
+unnecessarily. You can also run "make timing" to build all of the timing scripts. 
+To run check on a particular module only, run "make check.[subfolder]", so to run
+just the geometry tests, run "make check.geometry". Individual tests can be run by
+appending ".run" to the name of the test, for example, to run testMatrix, run 
+"make testMatrix.run". 
