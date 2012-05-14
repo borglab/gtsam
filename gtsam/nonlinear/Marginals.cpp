@@ -39,6 +39,10 @@ Marginals::Marginals(const NonlinearFactorGraph& graph, const Values& solution, 
 }
 
 Matrix Marginals::marginalCovariance(Key variable) const {
+  return marginalInformation(variable).inverse();
+}
+
+Matrix Marginals::marginalInformation(Key variable) const {
   // Get linear key
   Index index = ordering_[variable];
 
@@ -50,18 +54,16 @@ Matrix Marginals::marginalCovariance(Key variable) const {
     marginalFactor = bayesTree_.marginalFactor(index, EliminateQR);
 
   // Get information matrix (only store upper-right triangle)
-  Matrix info;
   if(typeid(*marginalFactor) == typeid(JacobianFactor)) {
     JacobianFactor::constABlock A = static_cast<const JacobianFactor&>(*marginalFactor).getA();
-    info = A.transpose() * A; // Compute A'A
+    return A.transpose() * A; // Compute A'A
   } else if(typeid(*marginalFactor) == typeid(HessianFactor)) {
     const HessianFactor& hessian = static_cast<const HessianFactor&>(*marginalFactor);
     const size_t dim = hessian.getDim(hessian.begin());
-    info = hessian.info().topLeftCorner(dim,dim).selfadjointView<Eigen::Upper>(); // Take the non-augmented part of the information matrix
+    return hessian.info().topLeftCorner(dim,dim).selfadjointView<Eigen::Upper>(); // Take the non-augmented part of the information matrix
+  } else {
+    throw runtime_error("Internal error: Marginals::marginalInformation expected either a JacobianFactor or HessianFactor");
   }
-
-  // Compute covariance
-  return info.inverse();
 }
 
 } /* namespace gtsam */
