@@ -25,7 +25,7 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-void GaussNewtonOptimizer::iterate() const {
+void GaussNewtonOptimizer::iterate() {
 
   const NonlinearOptimizerState& current = state_;
 
@@ -54,7 +54,6 @@ void GaussNewtonOptimizer::iterate() const {
   if(params_.verbosity >= NonlinearOptimizerParams::DELTA) delta->print("delta");
 
   // Create new state with new values and new error
-  NonlinearOptimizerState newState;
   state_.values = current.values.retract(*delta, *params_.ordering);
   state_.error = graph_.error(state_.values);
   ++ state_.iterations;

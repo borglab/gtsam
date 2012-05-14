@@ -22,6 +22,8 @@
 
 namespace gtsam {
 
+class LevenbergMarquardtOptimizer;
+
 /** Parameters for Levenberg-Marquardt optimization.  Note that this parameters
  * class inherits from NonlinearOptimizerParams, which specifies the parameters
  * common to all nonlinear optimization algorithms.  This class also contains
@@ -66,6 +68,15 @@ public:
 
   double lambda;
 
+  LevenbergMarquardtState() {}
+
+  virtual ~LevenbergMarquardtState() {}
+
+protected:
+  LevenbergMarquardtState(const NonlinearFactorGraph& graph, const Values& initialValues, const LevenbergMarquardtParams& params, unsigned int iterations = 0) :
+    NonlinearOptimizerState(graph, values, iterations), lambda(params.lambdaInitial) {}
+
+  friend class LevenbergMarquardtOptimizer;
 };
 
 /**
@@ -90,8 +101,8 @@ public:
    */
   LevenbergMarquardtOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues,
       const LevenbergMarquardtParams& params = LevenbergMarquardtParams()) :
-        NonlinearOptimizer(graph), params_(ensureHasOrdering(params)),
-        state_(graph, initialValues), dimensions_(initialValues.dims(*params_.ordering)) {}
+        NonlinearOptimizer(graph), params_(ensureHasOrdering(params, graph, initialValues)),
+        state_(graph, initialValues, params_), dimensions_(initialValues.dims(*params_.ordering)) {}
 
   /** Standard constructor, requires a nonlinear factor graph, initial
    * variable assignments, and optimization parameters.  For convenience this
@@ -102,8 +113,12 @@ public:
    * @param params The optimization parameters
    */
   LevenbergMarquardtOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues, const Ordering& ordering) :
-        NonlinearOptimizer(graph), state_(graph, initialValues), dimensions_(initialValues.dims(ordering)) {
-    *params_.ordering = ordering; }
+        NonlinearOptimizer(graph), dimensions_(initialValues.dims(ordering)) {
+    *params_.ordering = ordering;
+    state_ = LevenbergMarquardtState(graph, initialValues, params_); }
+
+  /** Access the current damping value */
+  double lambda() const { return state_.lambda; }
 
   /// @}
 
@@ -117,7 +132,7 @@ public:
    * containing the updated variable assignments, which may be retrieved with
    * values().
    */
-  virtual void iterate() const;
+  virtual void iterate();
 
   /** Access the parameters */
   const LevenbergMarquardtParams& params() const { return params_; }
@@ -142,7 +157,7 @@ protected:
   /** Internal function for computing a COLAMD ordering if no ordering is specified */
   LevenbergMarquardtParams ensureHasOrdering(LevenbergMarquardtParams params, const NonlinearFactorGraph& graph, const Values& values) const {
     if(!params.ordering)
-      params.ordering = graph.orderingCOLAMD(values);
+      params.ordering = *graph.orderingCOLAMD(values);
     return params;
   }
 };

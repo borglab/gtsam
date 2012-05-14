@@ -27,10 +27,10 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-void LevenbergMarquardtOptimizer::iterate() const {
+void LevenbergMarquardtOptimizer::iterate() {
 
   // Linearize graph
-  GaussianFactorGraph::shared_ptr linear = graph_->linearize(state_.values, *params_.ordering);
+  GaussianFactorGraph::shared_ptr linear = graph_.linearize(state_.values, *params_.ordering);
 
   // Check whether to use QR
   bool useQR;
@@ -48,13 +48,13 @@ void LevenbergMarquardtOptimizer::iterate() const {
   // Keep increasing lambda until we make make progress
   while(true) {
     if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
-      cout << "trying lambda = " << lambda << endl;
+      cout << "trying lambda = " << state_.lambda << endl;
 
     // Add prior-factors
     // TODO: replace this dampening with a backsubstitution approach
     GaussianFactorGraph dampedSystem(*linear);
     {
-      double sigma = 1.0 / sqrt(lambda);
+      double sigma = 1.0 / sqrt(state_.lambda);
       dampedSystem.reserve(dampedSystem.size() + dimensions_.size());
       // for each of the variables, add a prior
       for(Index j=0; j<dimensions_.size(); ++j) {
@@ -114,7 +114,7 @@ void LevenbergMarquardtOptimizer::iterate() const {
       // Either we're not cautious, or the same lambda was worse than the current error.
       // The more adventurous lambda was worse too, so make lambda more conservative
       // and keep the same values.
-      if(lambda >= params_.lambdaUpperBound) {
+      if(state_.lambda >= params_.lambdaUpperBound) {
         if(nloVerbosity >= NonlinearOptimizerParams::ERROR)
           cout << "Warning:  Levenberg-Marquardt giving up because cannot decrease error with maximum lambda" << endl;
         break;

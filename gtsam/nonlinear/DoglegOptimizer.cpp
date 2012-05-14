@@ -27,11 +27,11 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-void DoglegOptimizer::iterate(void) const {
+void DoglegOptimizer::iterate(void) {
 
   // Linearize graph
   const Ordering& ordering = *params_.ordering;
-  GaussianFactorGraph::shared_ptr linear = graph_->linearize(state_.values, ordering);
+  GaussianFactorGraph::shared_ptr linear = graph_.linearize(state_.values, ordering);
 
   // Check whether to use QR
   bool useQR;
@@ -43,18 +43,18 @@ void DoglegOptimizer::iterate(void) const {
     throw runtime_error("Optimization parameter is invalid: DoglegParams::factorization");
 
   // Pull out parameters we'll use
-  const bool dlVerbose = (params_->dlVerbosity > DoglegParams::SILENT);
+  const bool dlVerbose = (params_.dlVerbosity > DoglegParams::SILENT);
 
   // Do Dogleg iteration with either Multifrontal or Sequential elimination
   DoglegOptimizerImpl::IterationResult result;
 
   if(params_.elimination == DoglegParams::MULTIFRONTAL) {
     GaussianBayesTree::shared_ptr bt = GaussianMultifrontalSolver(*linear, useQR).eliminate();
-    result = DoglegOptimizerImpl::Iterate(state_.delta, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, *bt, graph_, state_.values, ordering, state_.error, dlVerbose);
+    result = DoglegOptimizerImpl::Iterate(state_.Delta, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, *bt, graph_, state_.values, ordering, state_.error, dlVerbose);
 
   } else if(params_.elimination == DoglegParams::SEQUENTIAL) {
     GaussianBayesNet::shared_ptr bn = GaussianSequentialSolver(*linear, useQR).eliminate();
-    result = DoglegOptimizerImpl::Iterate(state_.delta, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, *bn, graph_, state_.values, ordering, state_.error, dlVerbose);
+    result = DoglegOptimizerImpl::Iterate(state_.Delta, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, *bn, graph_, state_.values, ordering, state_.error, dlVerbose);
 
   } else {
     throw runtime_error("Optimization parameter is invalid: DoglegParams::elimination");
@@ -66,7 +66,7 @@ void DoglegOptimizer::iterate(void) const {
   // Create new state with new values and new error
   state_.values = state_.values.retract(result.dx_d, ordering);
   state_.error = result.f_error;
-  state_.delta = result.delta;
+  state_.Delta = result.Delta;
   ++state_.iterations;
 }
 

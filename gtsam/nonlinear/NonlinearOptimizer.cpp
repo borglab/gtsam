@@ -27,7 +27,7 @@ namespace gtsam {
 /* ************************************************************************* */
 void NonlinearOptimizer::defaultOptimize() {
 
-  const NonlinearOptimizerParams& params = this->params();
+  const NonlinearOptimizerParams& params = this->_params();
   double currentError = this->error();
 
   // check if we're already close enough

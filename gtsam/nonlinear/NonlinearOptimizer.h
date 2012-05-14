@@ -22,6 +22,79 @@
 
 namespace gtsam {
 
+class NonlinearOptimizer;
+
+/** The common parameters for Nonlinear optimizers.  Most optimizers
+ * deriving from NonlinearOptimizer also subclass the parameters.
+ */
+class NonlinearOptimizerParams {
+public:
+  /** See NonlinearOptimizerParams::verbosity */
+  enum Verbosity {
+    SILENT,
+    ERROR,
+    VALUES,
+    DELTA,
+    LINEAR
+  };
+
+  size_t maxIterations; ///< The maximum iterations to stop iterating (default 100)
+  double relativeErrorTol; ///< The maximum relative error decrease to stop iterating (default 1e-5)
+  double absoluteErrorTol; ///< The maximum absolute error decrease to stop iterating (default 1e-5)
+  double errorTol; ///< The maximum total error to stop iterating (default 0.0)
+  Verbosity verbosity; ///< The printing verbosity during optimization (default SILENT)
+
+  NonlinearOptimizerParams() :
+    maxIterations(100.0), relativeErrorTol(1e-5), absoluteErrorTol(1e-5),
+    errorTol(0.0), verbosity(SILENT) {}
+
+  virtual void print(const std::string& str = "") const {
+    std::cout << str << "\n";
+    std::cout << "relative decrease threshold: " << relativeErrorTol << "\n";
+    std::cout << "absolute decrease threshold: " << absoluteErrorTol << "\n";
+    std::cout << "      total error threshold: " << errorTol << "\n";
+    std::cout << "         maximum iterations: " << maxIterations << "\n";
+    std::cout << "            verbosity level: " << verbosity << std::endl;
+  }
+
+  virtual ~NonlinearOptimizerParams() {}
+};
+
+
+/**
+ * Base class for a nonlinear optimization state, including the current estimate
+ * of the variable values, error, and number of iterations.  Optimizers derived
+ * from NonlinearOptimizer usually also define a derived state class containing
+ * additional state specific to the algorithm (for example, Dogleg state
+ * contains the current trust region radius).
+ */
+class NonlinearOptimizerState {
+public:
+
+  /** The current estimate of the variable values. */
+  Values values;
+
+  /** The factor graph error on the current values. */
+  double error;
+
+  /** The number of optimization iterations performed. */
+  unsigned int iterations;
+
+  NonlinearOptimizerState() {}
+
+  /** Virtual destructor */
+  virtual ~NonlinearOptimizerState() {}
+
+protected:
+  NonlinearOptimizerState(const NonlinearFactorGraph& graph, const Values& values, unsigned int iterations = 0) :
+    values(values), error(graph.error(values)), iterations(iterations) {}
+
+  NonlinearOptimizerState(const Values& values, double error, unsigned int iterations) :
+    values(values), error(error), iterations(iterations) {}
+
+  friend class NonlinearOptimizer;
+};
+
 /**
  * This is the abstract interface for classes that can optimize for the
  * maximum-likelihood estimate of a NonlinearFactorGraph.
@@ -113,7 +186,7 @@ public:
    * process, you may call iterate() and check_convergence() yourself, and if
    * needed modify the optimization state between iterations.
    */
-  virtual const Values& optimize() const { return defaultOptimize(); }
+  virtual const Values& optimize() { defaultOptimize(); return values(); }
 
   double error() const { return _state().error; }
 
@@ -133,7 +206,7 @@ public:
    * containing the updated variable assignments, which may be retrieved with
    * values().
    */
-  virtual void iterate() const = 0;
+  virtual void iterate() = 0;
 
   /// @}
 
@@ -153,73 +226,6 @@ protected:
   /** Constructor for initial construction of base classes. */
   NonlinearOptimizer(const NonlinearFactorGraph& graph) : graph_(graph) {}
 
-};
-
-
-/** The common parameters for Nonlinear optimizers.  Most optimizers
- * deriving from NonlinearOptimizer also subclass the parameters.
- */
-class NonlinearOptimizerParams {
-public:
-  /** See NonlinearOptimizerParams::verbosity */
-  enum Verbosity {
-    SILENT,
-    ERROR,
-    VALUES,
-    DELTA,
-    LINEAR
-  };
-
-  size_t maxIterations; ///< The maximum iterations to stop iterating (default 100)
-  double relativeErrorTol; ///< The maximum relative error decrease to stop iterating (default 1e-5)
-  double absoluteErrorTol; ///< The maximum absolute error decrease to stop iterating (default 1e-5)
-  double errorTol; ///< The maximum total error to stop iterating (default 0.0)
-  Verbosity verbosity; ///< The printing verbosity during optimization (default SILENT)
-
-  NonlinearOptimizerParams() :
-    maxIterations(100.0), relativeErrorTol(1e-5), absoluteErrorTol(1e-5),
-    errorTol(0.0), verbosity(SILENT) {}
-
-  virtual void print(const std::string& str = "") const {
-    std::cout << str << "\n";
-    std::cout << "relative decrease threshold: " << relativeErrorTol << "\n";
-    std::cout << "absolute decrease threshold: " << absoluteErrorTol << "\n";
-    std::cout << "      total error threshold: " << errorTol << "\n";
-    std::cout << "         maximum iterations: " << maxIterations << "\n";
-    std::cout << "            verbosity level: " << verbosity << std::endl;
-  }
-
-  virtual ~NonlinearOptimizerParams() {}
-};
-
-
-/**
- * Base class for a nonlinear optimization state, including the current estimate
- * of the variable values, error, and number of iterations.  Optimizers derived
- * from NonlinearOptimizer usually also define a derived state class containing
- * additional state specific to the algorithm (for example, Dogleg state
- * contains the current trust region radius).
- */
-class NonlinearOptimizerState {
-public:
-
-  /** The current estimate of the variable values. */
-  Values values;
-
-  /** The factor graph error on the current values. */
-  double error;
-
-  /** The number of optimization iterations performed. */
-  unsigned int iterations;
-
-  NonlinearOptimizerState(const NonlinearFactorGraph& graph, const Values& values, unsigned int iterations = 0) :
-    values(values), error(graph.error(values)), iterations(iterations) {}
-
-  NonlinearOptimizerState(const Values& values, double error, unsigned int iterations) :
-    values(values), error(error), iterations(iterations) {}
-
-  /** Virtual destructor */
-  virtual ~NonlinearOptimizerState() {}
 };
 
 /** Check whether the relative error decrease is less than relativeErrorTreshold,

@@ -22,10 +22,20 @@
 
 namespace gtsam {
 
+class GaussNewtonOptimizer;
+
 /** Parameters for Gauss-Newton optimization, inherits from
  * NonlinearOptimizationParams.
  */
 class GaussNewtonParams : public SuccessiveLinearizationParams {
+};
+
+class GaussNewtonState : public NonlinearOptimizerState {
+protected:
+  GaussNewtonState(const NonlinearFactorGraph& graph, const Values& values, unsigned int iterations = 0) :
+    NonlinearOptimizerState(graph, values, iterations) {}
+
+  friend class GaussNewtonOptimizer;
 };
 
 /**
@@ -48,7 +58,7 @@ public:
    */
   GaussNewtonOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues,
       const GaussNewtonParams& params = GaussNewtonParams()) :
-        NonlinearOptimizer(graph), params_(ensureHasOrdering(params)), state_(graph, initialValues) {}
+        NonlinearOptimizer(graph), params_(ensureHasOrdering(params, graph, initialValues)), state_(graph, initialValues) {}
 
   /** Standard constructor, requires a nonlinear factor graph, initial
    * variable assignments, and optimization parameters.  For convenience this
@@ -74,20 +84,20 @@ public:
    * containing the updated variable assignments, which may be retrieved with
    * values().
    */
-  virtual void iterate() const;
+  virtual void iterate();
 
   /** Access the parameters */
   const GaussNewtonParams& params() const { return params_; }
 
   /** Access the last state */
-  const NonlinearOptimizerState& state() const { return state_; }
+  const GaussNewtonState& state() const { return state_; }
 
   /// @}
 
 protected:
 
   GaussNewtonParams params_;
-  NonlinearOptimizerState state_;
+  GaussNewtonState state_;
 
   /** Access the parameters (base class version) */
   virtual const NonlinearOptimizerParams& _params() const { return params_; }
@@ -98,7 +108,7 @@ protected:
   /** Internal function for computing a COLAMD ordering if no ordering is specified */
   GaussNewtonParams ensureHasOrdering(GaussNewtonParams params, const NonlinearFactorGraph& graph, const Values& values) const {
     if(!params.ordering)
-      params.ordering = graph.orderingCOLAMD(values);
+      params.ordering = *graph.orderingCOLAMD(values);
     return params;
   }
 

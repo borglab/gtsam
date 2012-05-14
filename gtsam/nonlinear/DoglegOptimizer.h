@@ -22,6 +22,8 @@
 
 namespace gtsam {
 
+class DoglegOptimizer;
+
 /** Parameters for Levenberg-Marquardt optimization.  Note that this parameters
  * class inherits from NonlinearOptimizerParams, which specifies the parameters
  * common to all nonlinear optimization algorithms.  This class also contains
@@ -53,17 +55,26 @@ public:
 /**
  * State for DoglegOptimizer
  */
-class DoglegState : public SuccessiveLinearizationState {
+class DoglegState : public NonlinearOptimizerState {
 public:
 
-  double delta;
+  double Delta;
 
+  DoglegState() {}
+
+  virtual ~DoglegState() {}
+
+protected:
+  DoglegState(const NonlinearFactorGraph& graph, const Values& values, const DoglegParams& params, unsigned int interations = 0) :
+    NonlinearOptimizerState(graph, values, iterations), Delta(params.deltaInitial) {}
+
+  friend class DoglegOptimizer;
 };
 
 /**
  * This class performs Dogleg nonlinear optimization
  */
-class DoglegOptimizer : public SuccessiveLinearizationOptimizer {
+class DoglegOptimizer : public NonlinearOptimizer {
 
 public:
 
@@ -82,7 +93,7 @@ public:
    */
   DoglegOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues,
       const DoglegParams& params = DoglegParams()) :
-        NonlinearOptimizer(graph), params_(ensureHasOrdering(params)), state_(graph, initialValues) {}
+        NonlinearOptimizer(graph), params_(ensureHasOrdering(params, graph, initialValues)), state_(graph, initialValues, params_) {}
 
   /** Standard constructor, requires a nonlinear factor graph, initial
    * variable assignments, and optimization parameters.  For convenience this
@@ -93,8 +104,9 @@ public:
    * @param params The optimization parameters
    */
   DoglegOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues, const Ordering& ordering) :
-        NonlinearOptimizer(graph), state_(graph, initialValues) {
-    *params_.ordering = ordering; }
+        NonlinearOptimizer(graph) {
+    *params_.ordering = ordering;
+    state_ = DoglegState(graph, initialValues, params_); }
 
   /// @}
 
@@ -108,13 +120,16 @@ public:
    * containing the updated variable assignments, which may be retrieved with
    * values().
    */
-  virtual void iterate() const;
+  virtual void iterate();
 
   /** Access the parameters */
   const DoglegParams& params() const { return params_; }
 
   /** Access the last state */
   const DoglegState& state() const { return state_; }
+
+  /** Access the current trust region radius Delta */
+  double Delta() const { return state_.Delta; }
 
   /// @}
 
@@ -131,7 +146,7 @@ protected:
   /** Internal function for computing a COLAMD ordering if no ordering is specified */
   DoglegParams ensureHasOrdering(DoglegParams params, const NonlinearFactorGraph& graph, const Values& values) const {
     if(!params.ordering)
-      params.ordering = graph.orderingCOLAMD(values);
+      params.ordering = *graph.orderingCOLAMD(values);
     return params;
   }
 };
