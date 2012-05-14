@@ -83,7 +83,7 @@ int main(int argc, char** argv) {
 	initialEstimate.print("initial estimate");
 
 	// optimize using Levenberg-Marquardt optimization with an ordering from colamd
-	planarSLAM::Values result = *LevenbergMarquardtOptimizer(graph, initialEstimate).optimized();
+	planarSLAM::Values result = LevenbergMarquardtOptimizer(graph, initialEstimate).optimize();
 	result.print("final result");
 
 	return 0;

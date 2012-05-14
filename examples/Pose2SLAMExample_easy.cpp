@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
 
 	/* 4 Single Step Optimization
 	* optimize using Levenberg-Marquardt optimization with an ordering from colamd */
-	pose2SLAM::Values result = *LevenbergMarquardtOptimizer(graph, initial).optimized();
+	pose2SLAM::Values result = graph.optimize(initial);
 	result.print("final result");
 
 

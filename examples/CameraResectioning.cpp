@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
                                0.,0.,-1.), Point3(0.,0.,2.0)));
 
   /* 4. Optimize the graph using Levenberg-Marquardt*/
-  Values result = *LevenbergMarquardtOptimizer(graph, initial).optimized();
+  Values result = LevenbergMarquardtOptimizer(graph, initial).optimize();
   result.print("Final result: ");
 
   return 0;

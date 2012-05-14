@@ -105,7 +105,7 @@ int main() {
 	 * initial estimate.  This will yield a new RotValues structure
 	 * with the final state of the optimization.
 	 */
-	Values result = *LevenbergMarquardtOptimizer(graph, initial).optimized();
+	Values result = LevenbergMarquardtOptimizer(graph, initial).optimize();
 	result.print("final result");
 
 	return 0;

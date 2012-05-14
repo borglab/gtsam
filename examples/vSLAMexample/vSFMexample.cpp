@@ -129,23 +129,23 @@ int main(int argc, char* argv[]) {
   readAllData();
 
   // Create a graph using the 2D measurements (features) and the calibration data
-  boost::shared_ptr<Graph> graph(new Graph(setupGraph(g_measurements, measurementSigma, g_calib)));
+  Graph graph(setupGraph(g_measurements, measurementSigma, g_calib));
 
   // Create an initial Values structure using groundtruth values as the initial estimates
-  boost::shared_ptr<Values> initialEstimates(new Values(initialize(g_landmarks, g_poses)));
+  Values initialEstimates(initialize(g_landmarks, g_poses));
   cout << "*******************************************************" << endl;
-  initialEstimates->print("INITIAL ESTIMATES: ");
+  initialEstimates.print("INITIAL ESTIMATES: ");
 
   // Add prior factor for all poses in the graph
   map<int, Pose3>::iterator poseit = g_poses.begin();
   for (; poseit != g_poses.end(); poseit++)
-    graph->addPosePrior(poseit->first, poseit->second, noiseModel::Unit::Create(1));
+    graph.addPosePrior(poseit->first, poseit->second, noiseModel::Unit::Create(1));
 
   // Optimize the graph
   cout << "*******************************************************" << endl;
   LevenbergMarquardtParams params;
   params.lmVerbosity = LevenbergMarquardtParams::DAMPED;
-  visualSLAM::Values result = *LevenbergMarquardtOptimizer(graph, initialEstimates, params).optimized();
+  visualSLAM::Values result = LevenbergMarquardtOptimizer(graph, initialEstimates, params).optimize();
 
   // Print final results
   cout << "*******************************************************" << endl;
