@@ -1,6 +1,16 @@
 README - Georgia Tech Smoothing and Mapping library
 ---------------------------------------------------
 
+Quickstart
+
+In the root library folder execute:
+
+$] mkdir build
+$] cd build
+$] cmake ..
+$] make check (optional, runs unit tests)
+$] make install
+
 What is GTSAM ?
 
   GTSAM is a library of C++ classes that implement smoothing and
