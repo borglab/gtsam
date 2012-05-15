@@ -302,22 +302,6 @@ namespace gtsam {
      */
     const Value& at(Key j) const;
 
-#if 0
-    /** Retrieve a variable by key \c j.  This non-templated version returns a
-     * special ValueAutomaticCasting object that may be assigned to the proper
-     * value.
-     * @param j Retrieve the value associated with this key
-     * @return A ValueAutomaticCasting object that may be assignmed to a Value
-     * of the proper type.
-     */
-    ValueAutomaticCasting at(Key j) const;
-#endif
-
-#if 0
-    /** operator[] syntax for at(Key j) */
-    ValueAutomaticCasting operator[](Key j) const;
-#endif
-
     /** Check if a value exists with key \c j.  See exists<>(Key j)
      * and exists(const TypedKey& j) for versions that return the value if it
      * exists. */
