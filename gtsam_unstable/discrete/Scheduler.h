@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <gtsam/discrete/CSP.h>
+#include <gtsam_unstable/discrete/CSP.h>
 
 namespace gtsam {
 

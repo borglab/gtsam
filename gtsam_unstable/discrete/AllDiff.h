@@ -7,8 +7,8 @@
 
 #pragma once
 
+#include <gtsam_unstable/discrete/BinaryAllDiff.h>
 #include <gtsam/discrete/DiscreteKey.h>
-#include <gtsam/discrete/BinaryAllDiff.h>
 
 namespace gtsam {
 

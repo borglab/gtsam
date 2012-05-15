@@ -5,8 +5,8 @@
  * @author Frank Dellaert
  */
 
-#include <gtsam/discrete/Domain.h>
-#include <gtsam/discrete/AllDiff.h>
+#include <gtsam_unstable/discrete/Domain.h>
+#include <gtsam_unstable/discrete/AllDiff.h>
 #include <gtsam/base/Testable.h>
 #include <boost/make_shared.hpp>
 
