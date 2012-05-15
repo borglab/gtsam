@@ -18,11 +18,14 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/base/blockMatrices.h>
 #include <gtsam/linear/GaussianBayesTree.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 
 namespace gtsam {
+
+class JointMarginal;
 
 /**
  * A class for computing Gaussian marginals of variables in a NonlinearFactorGraph
@@ -52,13 +55,62 @@ public:
    * matrix. */
   Matrix marginalInformation(Key variable) const;
 
+  /** Compute the joint marginal covariance of several variables */
+  JointMarginal jointMarginalCovariance(const std::vector<Key>& variables) const;
+
+  /** Compute the joint marginal information of several variables */
+  JointMarginal jointMarginalInformation(const std::vector<Key>& variables) const;
+
 protected:
 
   GaussianFactorGraph graph_;
+  Values values_;
   Ordering ordering_;
   Factorization factorization_;
   GaussianBayesTree bayesTree_;
+};
 
+/**
+ * A class to store and access a joint marginal, returned from Marginals::jointMarginalCovariance and Marginals::jointMarginalInformation
+ */
+class JointMarginal {
+
+protected:
+  typedef SymmetricBlockView<Matrix> BlockView;
+
+public:
+  /** A block view of the joint marginal - this stores a reference to the
+   * JointMarginal object, so the JointMarginal object must be kept in scope
+   * while this block view is needed, otherwise assign this block object to a
+   * Matrix to store it.
+   */
+  typedef BlockView::constBlock Block;
+
+  /** Access a block, corresponding to a pair of variables, of the joint
+   * marginal.  Each block is accessed by its "vertical position",
+   * corresponding to the variable with nonlinear Key \c iVariable and
+   * "horizontal position", corresponding to the variable with nonlinear Key
+   * \c jVariable.
+   *
+   * For example, if we have the joint marginal on a 2D pose "x3" and a 2D
+   * landmark "l2", then jointMarginal(Symbol('x',3), Symbol('l',2)) will
+   * return the 3x2 block of the joint covariance matrix corresponding to x3
+   * and l2.
+   * @param iVariable The nonlinear Key specifying the "vertical position" of the requested block
+   * @param jVariable The nonlinear Key specifying the "horizontal position" of the requested block
+   */
+  Block operator()(Key iVariable, Key jVariable) const {
+    return blockView_(indices_[iVariable], indices_[jVariable]); }
+
+protected:
+  Matrix fullMatrix_;
+  BlockView blockView_;
+  Ordering indices_;
+
+  JointMarginal(const Matrix& fullMatrix, const std::vector<size_t>& dims, const Ordering& indices) :
+    fullMatrix_(fullMatrix), blockView_(fullMatrix_, dims.begin(), dims.end()), indices_(indices) {}
+
+  friend class Marginals;
 };
 
 } /* namespace gtsam */

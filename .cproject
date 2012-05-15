@@ -844,10 +844,26 @@
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="check" path="build/gtsam/discrete" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="install" path="wrap" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
-				<buildArguments>-j5</buildArguments>
+				<buildArguments>-j2</buildArguments>
+				<buildTarget>install</buildTarget>
+				<stopOnError>true</stopOnError>
+				<useDefaultCommand>true</useDefaultCommand>
+				<runAllBuilders>true</runAllBuilders>
+			</target>
+			<target name="check" path="wrap" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+				<buildCommand>make</buildCommand>
+				<buildArguments>-j2</buildArguments>
 				<buildTarget>check</buildTarget>
+				<stopOnError>true</stopOnError>
+				<useDefaultCommand>true</useDefaultCommand>
+				<runAllBuilders>true</runAllBuilders>
+			</target>
+			<target name="clean" path="wrap" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+				<buildCommand>make</buildCommand>
+				<buildArguments>-j2</buildArguments>
+				<buildTarget>clean</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
@@ -1024,6 +1040,14 @@
 				<buildCommand>make</buildCommand>
 				<buildArguments>-j5</buildArguments>
 				<buildTarget>timing.tests</buildTarget>
+				<stopOnError>true</stopOnError>
+				<useDefaultCommand>true</useDefaultCommand>
+				<runAllBuilders>true</runAllBuilders>
+			</target>
+			<target name="SimpleRotation.run" path="examples" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+				<buildCommand>make</buildCommand>
+				<buildArguments>-j2</buildArguments>
+				<buildTarget>SimpleRotation.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
@@ -1635,14 +1659,6 @@
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="testVector.run" path="build/gtsam/base" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
-				<buildCommand>make</buildCommand>
-				<buildArguments>-j5</buildArguments>
-				<buildTarget>testVector.run</buildTarget>
-				<stopOnError>true</stopOnError>
-				<useDefaultCommand>true</useDefaultCommand>
-				<runAllBuilders>true</runAllBuilders>
-			</target>
 			<target name="tests/testVectorValues.run" path="build/gtsam/linear" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
 				<buildArguments>-j2</buildArguments>
@@ -1799,14 +1815,6 @@
 				<buildCommand>make</buildCommand>
 				<buildArguments>-j2</buildArguments>
 				<buildTarget>Pose2SLAMwSPCG_easy.run</buildTarget>
-				<stopOnError>true</stopOnError>
-				<useDefaultCommand>true</useDefaultCommand>
-				<runAllBuilders>true</runAllBuilders>
-			</target>
-			<target name="UGM_small.run" path="build/examples" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
-				<buildCommand>make</buildCommand>
-				<buildArguments>-j5</buildArguments>
-				<buildTarget>UGM_small.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
@@ -2122,110 +2130,26 @@
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="wrap_gtsam" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="testMarginals.run" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
-				<buildArguments>-j5</buildArguments>
-				<buildTarget>wrap_gtsam</buildTarget>
+				<buildArguments>-j8</buildArguments>
+				<buildTarget>testMarginals.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="verbose wrap_gtsam" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
-				<buildCommand>make</buildCommand>
-				<buildArguments>VERBOSE=1</buildArguments>
-				<buildTarget>wrap_gtsam</buildTarget>
-				<stopOnError>true</stopOnError>
-				<useDefaultCommand>false</useDefaultCommand>
-				<runAllBuilders>true</runAllBuilders>
-			</target>
-			<target name="Generate DEB Package" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
-				<buildCommand>cpack</buildCommand>
-				<buildTarget>-G DEB</buildTarget>
-				<stopOnError>true</stopOnError>
-				<useDefaultCommand>false</useDefaultCommand>
-				<runAllBuilders>true</runAllBuilders>
-			</target>
-			<target name="Generate RPM Package" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
-				<buildCommand>cpack</buildCommand>
-				<buildTarget>-G RPM</buildTarget>
-				<stopOnError>true</stopOnError>
-				<useDefaultCommand>false</useDefaultCommand>
-				<runAllBuilders>true</runAllBuilders>
-			</target>
-			<target name="Generate TGZ Package" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
-				<buildCommand>cpack</buildCommand>
-				<buildTarget>-G TGZ</buildTarget>
-				<stopOnError>true</stopOnError>
-				<useDefaultCommand>false</useDefaultCommand>
-				<runAllBuilders>true</runAllBuilders>
-			</target>
-			<target name="Generate TGZ Source Package" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
-				<buildCommand>cpack</buildCommand>
-				<buildTarget>--config CPackSourceConfig.cmake</buildTarget>
-				<stopOnError>true</stopOnError>
-				<useDefaultCommand>false</useDefaultCommand>
-				<runAllBuilders>true</runAllBuilders>
-			</target>
-			<target name="check.discrete" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="wrap.testSpirit.run" path="build/wrap" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
 				<buildArguments>-j5</buildArguments>
-				<buildTarget>check.discrete</buildTarget>
+				<buildTarget>wrap.testSpirit.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="wrap_gtsam_unstable" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="wrap.testWrap.run" path="build/wrap" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
 				<buildArguments>-j5</buildArguments>
-				<buildTarget>wrap_gtsam_unstable</buildTarget>
-				<stopOnError>true</stopOnError>
-				<useDefaultCommand>true</useDefaultCommand>
-				<runAllBuilders>true</runAllBuilders>
-			</target>
-			<target name="check.wrap" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
-				<buildCommand>make</buildCommand>
-				<buildArguments>-j5</buildArguments>
-				<buildTarget>check.wrap</buildTarget>
-				<stopOnError>true</stopOnError>
-				<useDefaultCommand>true</useDefaultCommand>
-				<runAllBuilders>true</runAllBuilders>
-			</target>
-			<target name="check.dynamics_unstable" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
-				<buildCommand>make</buildCommand>
-				<buildArguments>-j5</buildArguments>
-				<buildTarget>check.dynamics_unstable</buildTarget>
-				<stopOnError>true</stopOnError>
-				<useDefaultCommand>true</useDefaultCommand>
-				<runAllBuilders>true</runAllBuilders>
-			</target>
-			<target name="check.slam_unstable" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
-				<buildCommand>make</buildCommand>
-				<buildArguments>-j5</buildArguments>
-				<buildTarget>check.slam_unstable</buildTarget>
-				<stopOnError>true</stopOnError>
-				<useDefaultCommand>true</useDefaultCommand>
-				<runAllBuilders>true</runAllBuilders>
-			</target>
-			<target name="check.base_unstable" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
-				<buildCommand>make</buildCommand>
-				<buildArguments>-j5</buildArguments>
-				<buildTarget>check.base_unstable</buildTarget>
-				<stopOnError>true</stopOnError>
-				<useDefaultCommand>true</useDefaultCommand>
-				<runAllBuilders>true</runAllBuilders>
-			</target>
-			<target name="testSpirit.run" path="build/wrap" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
-				<buildCommand>make</buildCommand>
-				<buildArguments>-j5</buildArguments>
-				<buildTarget>testSpirit.run</buildTarget>
-				<stopOnError>true</stopOnError>
-				<useDefaultCommand>true</useDefaultCommand>
-				<runAllBuilders>true</runAllBuilders>
-			</target>
-			<target name="testWrap.run" path="build/wrap" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
-				<buildCommand>make</buildCommand>
-				<buildArguments>-j5</buildArguments>
-				<buildTarget>testWrap.run</buildTarget>
+				<buildTarget>wrap.testWrap.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
