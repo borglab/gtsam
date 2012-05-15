@@ -68,9 +68,9 @@ void LevenbergMarquardtOptimizer::iterate() {
       // Optimize
       VectorValues delta;
       if(params_.elimination == SuccessiveLinearizationParams::MULTIFRONTAL)
-        delta = GaussianJunctionTree(*linear).optimize(eliminationMethod);
+        delta = GaussianJunctionTree(dampedSystem).optimize(eliminationMethod);
       else if(params_.elimination == SuccessiveLinearizationParams::SEQUENTIAL)
-        delta = gtsam::optimize(*EliminationTree<GaussianFactor>::Create(*linear)->eliminate(eliminationMethod));
+        delta = gtsam::optimize(*EliminationTree<GaussianFactor>::Create(dampedSystem)->eliminate(eliminationMethod));
       else
         throw runtime_error("Optimization parameter is invalid: LevenbergMarquardtParams::elimination");
 
