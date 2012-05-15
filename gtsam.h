@@ -410,15 +410,6 @@ class Ordering {
 	void push_back(size_t key);
 };
 
-class NonlinearOptimizationParameters {
-	NonlinearOptimizationParameters(double absDecrease, double relDecrease,
-			double sumError, int iIters, double lambda, double lambdaFactor);
-	void print(string s) const;
-	static gtsam::NonlinearOptimizationParameters* newDecreaseThresholds(double absDecrease,
-			double relDecrease);
-};
-
-
 }///\namespace gtsam
 
 //*************************************************************************
@@ -464,12 +455,6 @@ class Odometry {
 	gtsam::GaussianFactor* linearize(const planarSLAM::Values& center, const gtsam::Ordering& ordering) const;
 };
 
-class Optimizer {
-	Optimizer(planarSLAM::Graph* graph, planarSLAM::Values* values,
-	    gtsam::Ordering* ordering, gtsam::NonlinearOptimizationParameters* parameters);
-	void print(string s) const;
-};
-
 }///\namespace planarSLAM
 
 //*************************************************************************
@@ -500,12 +485,6 @@ class Graph {
   void addPoseConstraint(int key, const gtsam::Pose2& pose);
   void addOdometry(int key1, int key2, const gtsam::Pose2& odometry, const gtsam::SharedNoiseModel& noiseModel);
   pose2SLAM::Values optimize(const pose2SLAM::Values& initialEstimate);
-};
-
-class Optimizer {
-	Optimizer(pose2SLAM::Graph* graph, pose2SLAM::Values* values,
-	    gtsam::Ordering* ordering, gtsam::NonlinearOptimizationParameters* parameters);
-	void print(string s) const;
 };
 
 }///\namespace pose2SLAM

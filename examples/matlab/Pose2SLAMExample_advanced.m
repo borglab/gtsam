@@ -55,10 +55,10 @@ initialEstimate.insertPose(x3, gtsamPose2(4.1, 0.1, 0.1));
 initialEstimate.print('initial estimate');
 
 %% set up solver, choose ordering and optimize
-params = gtsamNonlinearOptimizationParameters_newDecreaseThresholds(1e-15, 1e-15);
-
-ord = graph.orderingCOLAMD(initialEstimate);
-
+%params = gtsamNonlinearOptimizationParameters_newDecreaseThresholds(1e-15, 1e-15);
+%
+%ord = graph.orderingCOLAMD(initialEstimate);
+%
 %result = pose2SLAMOptimizer(graph,initialEstimate,ord,params);                      
 %result.print('final result');
 
