@@ -5,8 +5,7 @@
  */
 
 #include <gtsam_unstable/dynamics/imuSystem.h>
-
-#include <gtsam/nonlinear/NonlinearOptimization.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 
 namespace imu {
 
@@ -56,7 +55,7 @@ void Graph::addRange(Key key1, Key key2, double z, const SharedNoiseModel& noise
 
 /* ************************************************************************* */
 Values Graph::optimize(const Values& init) const {
-	return gtsam::optimize<Graph>(*this, init);
+  return LevenbergMarquardtOptimizer(*this, init).optimize();
 }
 /* ************************************************************************* */
 
