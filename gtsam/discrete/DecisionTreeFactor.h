@@ -1,8 +1,19 @@
-/*
- * DecisionTreeFactor.h
- *
- *  @date Feb 14, 2011
- *  @author Duy-Nguyen Ta
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file DecisionTreeFactor.h
+ * @date Feb 14, 2011
+ * @author Duy-Nguyen Ta
+ * @author Frank Dellaert
  */
 
 #pragma once
@@ -116,28 +127,6 @@ namespace gtsam {
 		 */
 		shared_ptr combine(size_t nrFrontals, ADT::Binary op) const;
 
-		/*
-		 * Ensure Arc-consistency
-		 * @param j domain to be checked
-		 * @param domains all other domains
-		 */
-		///
-		bool ensureArcConsistency(size_t j, std::vector<Domain>& domains) const {
-//			throw std::runtime_error(
-//					"DecisionTreeFactor::ensureArcConsistency not implemented");
-			return false;
-		}
-
-		/// Partially apply known values
-		virtual DiscreteFactor::shared_ptr partiallyApply(const Values&) const {
-			throw std::runtime_error("DecisionTreeFactor::partiallyApply not implemented");
-		}
-
-		/// Partially apply known values, domain version
-		virtual DiscreteFactor::shared_ptr partiallyApply(
-				const std::vector<Domain>&) const {
-			throw std::runtime_error("DecisionTreeFactor::partiallyApply not implemented");
-		}
 		/// @}
 	};
 // DecisionTreeFactor

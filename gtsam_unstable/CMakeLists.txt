@@ -2,6 +2,7 @@
 # and also build tests 
 set (gtsam_unstable_subdirs
     base 
+    discrete 
     dynamics
     slam 
 )

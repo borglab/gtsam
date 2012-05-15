@@ -7,10 +7,10 @@
 
 #pragma once
 
-#include <map>
-#include <gtsam/inference/Factor.h>
 #include <gtsam/discrete/DiscreteFactor.h>
-#include <gtsam/discrete/AlgebraicDecisionDiagram.h>
+#include <gtsam/discrete/AlgebraicDecisionTree.h>
+#include <gtsam/inference/Factor.h>
+#include <map>
 
 namespace gtsam {
 

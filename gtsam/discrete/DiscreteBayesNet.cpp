@@ -1,9 +1,19 @@
-/*
- * DiscreteBayesNet.cpp
- *
- *  @date Feb 15, 2011
- *  @author Duy-Nguyen Ta
- *  @author Frank Dellaert
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file DiscreteBayesNet.cpp
+ * @date Feb 15, 2011
+ * @author Duy-Nguyen Ta
+ * @author Frank Dellaert
  */
 
 #include <gtsam/discrete/DiscreteBayesNet.h>

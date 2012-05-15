@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include <gtsam/discrete/AllDiff.h>
-#include <gtsam/discrete/SingleValue.h>
+#include <gtsam_unstable/discrete/AllDiff.h>
+#include <gtsam_unstable/discrete/SingleValue.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 
 namespace gtsam {
@@ -18,11 +18,38 @@ namespace gtsam {
 	 * A specialization of a DiscreteFactorGraph.
 	 * It knows about CSP-specific constraints and algorithms
 	 */
-	class CSP: public DiscreteFactorGraph {
+	class CSP: public FactorGraph<Constraint> {
+	public:
+
+		/** A map from keys to values */
+		typedef std::vector<Index> Indices;
+		typedef Assignment<Index> Values;
+		typedef boost::shared_ptr<Values> sharedValues;
 
 	public:
 		/// Constructor
 		CSP() {
+		}
+
+		template<class SOURCE>
+		void add(const DiscreteKey& j, SOURCE table) {
+			DiscreteKeys keys;
+			keys.push_back(j);
+			push_back(boost::make_shared<DecisionTreeFactor>(keys, table));
+		}
+
+		template<class SOURCE>
+		void add(const DiscreteKey& j1, const DiscreteKey& j2, SOURCE table) {
+			DiscreteKeys keys;
+			keys.push_back(j1);
+			keys.push_back(j2);
+			push_back(boost::make_shared<DecisionTreeFactor>(keys, table));
+		}
+
+		/** add shared discreteFactor immediately from arguments */
+		template<class SOURCE>
+		void add(const DiscreteKeys& keys, SOURCE table) {
+			push_back(boost::make_shared<DecisionTreeFactor>(keys, table));
 		}
 
 		/// Add a unary constraint, allowing only a single value

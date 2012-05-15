@@ -5,16 +5,15 @@
  * @date	Mar 1, 2011
  */
 
+#include <gtsam_unstable/discrete/TypedDiscreteFactorGraph.h>
+#include <gtsam/discrete/parseUAI.h>
+#include <gtsam/discrete/DiscreteFactor.h>
+#include <gtsam/inference/FactorGraph.h>
+#include <boost/lexical_cast.hpp>
+#include <boost/foreach.hpp>
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
-#include <boost/lexical_cast.hpp>
-#include <boost/foreach.hpp>
-#include <gtsam/discrete/DiscreteFactor.h>
-#include <gtsam/discrete/TypedDiscreteFactorGraph.h>
-#include <gtsam/discrete/parseUAI.h>
-
-#include <gtsam/inference/FactorGraph.h>
 
 using namespace std;
 

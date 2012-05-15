@@ -5,7 +5,7 @@
  * @author Frank Dellaert
  */
 
-#include <gtsam/discrete/Domain.h>
+#include <gtsam_unstable/discrete/Domain.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/base/Testable.h>
 #include <boost/make_shared.hpp>
@@ -74,7 +74,7 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	DiscreteFactor::shared_ptr Domain::partiallyApply(
+	Constraint::shared_ptr Domain::partiallyApply(
 			const Values& values) const {
 		Values::const_iterator it = values.find(keys_[0]);
 		if (it != values.end() && !contains(it->second)) throw runtime_error(
@@ -83,7 +83,7 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	DiscreteFactor::shared_ptr Domain::partiallyApply(
+	Constraint::shared_ptr Domain::partiallyApply(
 			const vector<Domain>& domains) const {
 		const Domain& Dk = domains[keys_[0]];
 		if (Dk.isSingleton() && !contains(*Dk.begin())) throw runtime_error(

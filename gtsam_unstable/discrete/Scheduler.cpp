@@ -5,7 +5,7 @@
  * @author Frank Dellaert
  */
 
-#include <gtsam/discrete/Scheduler.h>
+#include <gtsam_unstable/discrete/Scheduler.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/discrete/DiscreteSequentialSolver.h>
 #include <gtsam/base/debug.h>
@@ -29,6 +29,10 @@ namespace gtsam {
 
 		// open file
 		ifstream is(filename.c_str());
+		if (!is) {
+			cerr << "Scheduler: could not open file " << filename << endl;
+			throw runtime_error("Scheduler: could not open file " + filename);
+		}
 
 		string line; // buffer
 
@@ -101,6 +105,7 @@ namespace gtsam {
 
 	/** Add student-specific constraints to the graph */
 	void Scheduler::addStudentSpecificConstraints(size_t i, boost::optional<size_t> slot) {
+#ifdef BROKEN
 		bool debug = ISDEBUG("Scheduler::buildGraph");
 
 		assert(i<nrStudents());
@@ -108,7 +113,7 @@ namespace gtsam {
 
 		if (!slot && !slotsAvailable_.empty()) {
 			if (debug) cout << "Adding availability of slots" << endl;
-			DiscreteFactorGraph::add(s.key_, slotsAvailable_);
+			CSP::add(s.key_, slotsAvailable_);
 		}
 
 		// For all areas
@@ -118,10 +123,10 @@ namespace gtsam {
 			const string& areaName = s.areaName_[area];
 
 			if (debug) cout << "Area constraints " << areaName << endl;
-			DiscreteFactorGraph::add(areaKey, facultyInArea_[areaName]);
+			CSP::add(areaKey, facultyInArea_[areaName]);
 
 			if (debug) cout << "Advisor constraint " << areaName << endl;
-			DiscreteFactorGraph::add(areaKey, s.advisor_);
+			CSP::add(areaKey, s.advisor_);
 
 			if (debug) cout << "Availability of faculty " << areaName << endl;
 			if (slot) {
@@ -129,22 +134,25 @@ namespace gtsam {
 				DiscreteKey dummy(0, nrTimeSlots());
 				Potentials::ADT p(dummy & areaKey, available_);
 				Potentials::ADT q = p.choose(0, *slot);
-				DecisionTreeFactor::shared_ptr f(new DecisionTreeFactor(areaKey, q));
-				DiscreteFactorGraph::push_back(f);
+				Constraint::shared_ptr f(new DecisionTreeFactor(areaKey, q));
+				CSP::push_back(f);
 			} else {
-				DiscreteFactorGraph::add(s.key_, areaKey, available_);
+				CSP::add(s.key_, areaKey, available_);
 			}
 		}
 
 		// add mutex
 		if (debug) cout << "Mutex for faculty" << endl;
 		addAllDiff(s.keys_[0] & s.keys_[1] & s.keys_[2]);
-	} // students loop
+#else
+				throw runtime_error("addStudentSpecificConstraints is broken");
+#endif
+	}
 
 
 	/** Main routine that builds factor graph */
 	void Scheduler::buildGraph(size_t mutexBound) {
-
+#ifdef BROKEN
 		bool debug = ISDEBUG("Scheduler::buildGraph");
 
 		if (debug) cout << "Adding student-specific constraints" << endl;
@@ -152,7 +160,7 @@ namespace gtsam {
 			addStudentSpecificConstraints(i);
 
 		// special constraint for MN
-		if (studentName(0) == "Michael N") DiscreteFactorGraph::add(studentKey(0),
+		if (studentName(0) == "Michael N") CSP::add(studentKey(0),
 				"0 0 0 0  1 1 1 1  1 1 1 1  1 1 1 1  1 1 1 1");
 
 		if (!mutexBound) {
@@ -170,6 +178,9 @@ namespace gtsam {
 				}
 			}
 		}
+#else
+				throw runtime_error("buildGraph is broken");
+#endif
 
 	} // buildGraph
 
@@ -204,7 +215,7 @@ namespace gtsam {
 						student.print();
 		cout << endl;
 
-		DiscreteFactorGraph::print(s + " Factor graph");
+		CSP::print(s + " Factor graph");
 		cout << endl;
 	} // print
 

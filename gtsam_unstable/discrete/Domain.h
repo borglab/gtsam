@@ -7,15 +7,15 @@
 
 #pragma once
 
+#include <gtsam_unstable/discrete/Constraint.h>
 #include <gtsam/discrete/DiscreteKey.h>
-#include <gtsam/discrete/DiscreteFactor.h>
 
 namespace gtsam {
 
 	/**
 	 * Domain restriction constraint
 	 */
-	class Domain: public DiscreteFactor {
+	class Domain: public Constraint {
 
 		size_t cardinality_; /// Cardinality
 		std::set<size_t> values_; /// allowed values
@@ -26,7 +26,7 @@ namespace gtsam {
 
 		// Constructor on Discrete Key initializes an "all-allowed" domain
 		Domain(const DiscreteKey& dkey) :
-			DiscreteFactor(dkey.first), cardinality_(dkey.second) {
+			Constraint(dkey.first), cardinality_(dkey.second) {
 			for (size_t v = 0; v < cardinality_; v++)
 				values_.insert(v);
 		}
@@ -34,13 +34,13 @@ namespace gtsam {
 		// Constructor on Discrete Key with single allowed value
 		// Consider SingleValue constraint
 		Domain(const DiscreteKey& dkey, size_t v) :
-			DiscreteFactor(dkey.first), cardinality_(dkey.second) {
+			Constraint(dkey.first), cardinality_(dkey.second) {
 			values_.insert(v);
 		}
 
 		/// Constructor
 		Domain(const Domain& other) :
-				DiscreteFactor(other.keys_[0]), values_(other.values_) {
+			Constraint(other.keys_[0]), values_(other.values_) {
 		}
 
 		/// insert a value, non const :-(
@@ -96,11 +96,11 @@ namespace gtsam {
 		bool checkAllDiff(const std::vector<Index> keys, std::vector<Domain>& domains);
 
 		/// Partially apply known values
-		virtual DiscreteFactor::shared_ptr partiallyApply(
+		virtual Constraint::shared_ptr partiallyApply(
 				const Values& values) const;
 
 		/// Partially apply known values, domain version
-		virtual DiscreteFactor::shared_ptr partiallyApply(
+		virtual Constraint::shared_ptr partiallyApply(
 				const std::vector<Domain>& domains) const;
 	};
 

@@ -5,8 +5,8 @@
  * @author Frank Dellaert
  */
 
-#include <gtsam/discrete/SingleValue.h>
-#include <gtsam/discrete/Domain.h>
+#include <gtsam_unstable/discrete/SingleValue.h>
+#include <gtsam_unstable/discrete/Domain.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/base/Testable.h>
 #include <boost/make_shared.hpp>
@@ -58,7 +58,7 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	DiscreteFactor::shared_ptr SingleValue::partiallyApply(const Values& values) const {
+	Constraint::shared_ptr SingleValue::partiallyApply(const Values& values) const {
 		Values::const_iterator it = values.find(keys_[0]);
 		if (it != values.end() && it->second != value_) throw runtime_error(
 				"SingleValue::partiallyApply: unsatisfiable");
@@ -66,7 +66,7 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	DiscreteFactor::shared_ptr SingleValue::partiallyApply(
+	Constraint::shared_ptr SingleValue::partiallyApply(
 			const vector<Domain>& domains) const {
 		const Domain& Dk = domains[keys_[0]];
 		if (Dk.isSingleton() && !Dk.contains(value_)) throw runtime_error(

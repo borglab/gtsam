@@ -2,8 +2,8 @@ project(GTSAM CXX C)
 cmake_minimum_required(VERSION 2.6)
 
 # Set the version number for the library
-set (GTSAM_VERSION_MAJOR 1)
-set (GTSAM_VERSION_MINOR 9)
+set (GTSAM_VERSION_MAJOR 2)
+set (GTSAM_VERSION_MINOR 0)
 set (GTSAM_VERSION_PATCH 0)
 
 # Set the default install path to home

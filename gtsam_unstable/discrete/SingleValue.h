@@ -7,15 +7,15 @@
 
 #pragma once
 
+#include <gtsam_unstable/discrete/Constraint.h>
 #include <gtsam/discrete/DiscreteKey.h>
-#include <gtsam/discrete/DiscreteFactor.h>
 
 namespace gtsam {
 
 	/**
 	 * SingleValue constraint
 	 */
-	class SingleValue: public DiscreteFactor {
+	class SingleValue: public Constraint {
 
 		/// Number of values
 		size_t cardinality_;
@@ -33,12 +33,12 @@ namespace gtsam {
 
 		/// Constructor
 		SingleValue(Index key, size_t n, size_t value) :
-				DiscreteFactor(key), cardinality_(n), value_(value) {
+			Constraint(key), cardinality_(n), value_(value) {
 		}
 
 		/// Constructor
 		SingleValue(const DiscreteKey& dkey, size_t value) :
-				DiscreteFactor(dkey.first), cardinality_(dkey.second), value_(value) {
+			Constraint(dkey.first), cardinality_(dkey.second), value_(value) {
 		}
 
 		// print
@@ -61,11 +61,11 @@ namespace gtsam {
 		bool ensureArcConsistency(size_t j, std::vector<Domain>& domains) const;
 
 		/// Partially apply known values
-		virtual DiscreteFactor::shared_ptr partiallyApply(
+		virtual Constraint::shared_ptr partiallyApply(
 				const Values& values) const;
 
 		/// Partially apply known values, domain version
-		virtual DiscreteFactor::shared_ptr partiallyApply(
+		virtual Constraint::shared_ptr partiallyApply(
 				const std::vector<Domain>& domains) const;
 	};
 

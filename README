@@ -1,7 +1,18 @@
 README - Georgia Tech Smoothing and Mapping library
 ---------------------------------------------------
 
-What is GTSAM ?
+Quickstart
+
+In the root library folder execute:
+
+$] mkdir build
+$] cd build
+$] cmake ..
+$] make check (optional, runs unit tests)
+$] make install
+
+---------------------------------------------------
+What is GTSAM?
 
   GTSAM is a library of C++ classes that implement smoothing and
   mapping (SAM) in robotics and vision, using factor graphs and Bayes
@@ -11,10 +22,7 @@ What is GTSAM ?
 GTSAM is not (yet) open source: See COPYING & LICENSE
 Please see USAGE for an example on how to use GTSAM.
 
-The core GTSAM code within the folder gtsam, with source, headers, and 
-unit tests. After building, this will generate a single library "libgtsam"
-
-The libgtsam code is organized according to the following directory structure:
+The library is organized according to the following directory structure:
  
   3rdparty      local copies of third party libraries - Eigen3 and CCOLAMD
   base          provides some base Math and data structures, as well as test-related utilities
@@ -24,12 +32,6 @@ The libgtsam code is organized according to the following directory structure:
   nonlinear     non-linear factor graphs and non-linear optimization
   slam          SLAM and visual SLAM application code
 
-Additionally, in the SVN development version of GTSAM, there is an area for 
-unstable code directly under development in the folder gtsam_unstable, which contains 
-a directory structuring mirroring the libgtsam structure as necessary.  This section produces
-a single library "libgtsam_unstable".  Building of gtsam_unstable is disabled by default, see
-CMake configuration options for information on enabling building.
-
 This library contains unchanged copies of two third party libraries, with documentation 
 of licensing in LICENSE and as follows: 
   - CCOLAMD 2.73: Tim Davis' constrained column approximate minimum degree ordering library
@@ -38,26 +40,19 @@ of licensing in LICENSE and as follows:
   - Eigen 3.0.5:  General C++ matrix and linear algebra library
     - Licenced under LGPL v3, provided in gtsam/3rdparty/Eigen/COPYING.LGPL
 
-After this is built, you can also run the more involved tests, which test the entire library:  
-  
-  tests         More involved unit tests that depend on slam
-  examples      Demo applications as a tutorial for using gtsam
-  cmake         CMake scripts used within the library, as well as for finding GTSAM by dependent projects
 
-Finally, there are some local libraries built needed in the rest of the code:
+There are two supporting libraries:
 
   CppUnitLite   unit test library customized for use with gtsam
   wrap          code generation utility for the Matlab interface to gtsam
 
-Important Installation Notes Specific to GTSAM
-----------------------------------------------
+Important Installation Notes
+----------------------------
 
 1)
 GTSAM requires the following libraries to be installed on your system:
  - BOOST version 1.40 or greater (install through Linux repositories or MacPorts)
-
-GTSAM uses CMake (http://www.cmake.org/) for build automation
- - Installed cmake version must be 2.6 or higher
+ - Cmake version 2.6 or higher
 
 Tested compilers
  - gcc
@@ -65,44 +60,20 @@ Tested compilers
  - OSX gcc
 
 2)
-GTSAM makes extensive use of debug assertions, even for checking input of
-the functions you will call.  These assertions are disabled when NDEBUG is
-defined.  Thus, we strongly recommend compiling GTSAM and your own code without
-this symbol during debugging.
-
-After debugging, GTSAM will run much faster when compiled with NDEBUG defined,
-so that debug checks are disabled.
-
-Another useful debugging symbol is _GLIBCXX_DEBUG, which enables debug checks
-and safe containers in the standard C++ library and makes problems much easier
-to find.
-
-NOTE:  The native Snow Leopard g++ compiler/library contains a bug that makes
-it impossible to use _GLIBCXX_DEBUG.  MacPorts g++ compilers do work with it though.
-
-NOTE:  If _GLIBCXX_DEBUG is used to compile gtsam, anything that links against
-gtsam will need to be compiled with _GLIBCXX_DEBUG as well, due to the use of
-header-only Eigen.  
+GTSAM makes extensive use of debug assertions, and we highly recommend you work
+in Debug mode while developing (enabled by default). Likewise, it is imperative
+that you switch to release mode when running finished code and for timing. GTSAM
+will run up to 10x faster in Release mode! See the end of this document for 
+additional debugging tips.
 
 3)
-GTSAM has been written to support the creation of API documentation using
-doxygen.  To create html documentation for GTSAM, run the the script 
+GTSAM has Doxygen documentation. To generate, run the the script 
 makedoc.sh.  
 
 4)
-For developers, we primarily use the Eclipse IDE for development, and provide
-an Eclipse project file with a variety of make targets to build and debug 
-from within Eclipse. 
-
-5)
-After installing prerequisites for building GTSAM, you can configure and build
-GTSAM using CMake with the default options with the quickstart options. For 
-details on the full functionality of CMake, see the CMake documentation.  
-
-- CMake Quickstart
-Installs to the default system install path and builds all components.  From a terminal, 
-starting in the root library folder, execute commands as follows for an out-of-source
-build:
+The instructions below install the library to the default system install path and
+build all components. From a terminal, starting in the root library folder, 
+execute commands as follows for an out-of-source build:
 
 $] mkdir build
 $] cd build
@@ -110,47 +81,33 @@ $] cmake ..
 $] make check (optional, runs unit tests)
 $] make install
 
-This will build the library and unit tests, run all of the unit tests, and then install
-the library itself, as well as the Matlab toolbox.
+This will build the library and unit tests, run all of the unit tests, 
+and then install the library itself.
 
-- Additional CMake Options and Details
+- CMake Configuration Options and Details
 
-The cmake scripts force a out-of-source build, so inside gtsam, 
-create a new folder called "build", and run cmake. From the command line:
+GTSAM has a number of options that can be configured, which is best done with
+one of the following:
 
-$] mkdir build
-$] cd build
-$] cmake ..
+  ccmake      the curses GUI for cmake
+  cmake-gui   a real GUI for cmake
 
-Note the ".." after the cmake command - it tells cmake to look for the 
-root CMakeLists.txt file in the root gtsam folder instead of in the build folder. 
-This is a necessary argument for starting cmake in all of its variations. 
-There a few ways of actually doing the configuration to make adjusting options easier.
+Important Options: 
 
-  cmake       the regular command-line version of cmake, allows configuration with scripts
-  ccmake      the curses GUI for cmake, which lets you see the various options, change them, and run configuration.
-  cmake-gui   a real GUI for cmake, which has a similar interface to ccmake, but with easier controls. 
+CMAKE_BUILD_TYPE: We support several build configurations for GTSAM (case insensitive)
+  Debug (default)  All error checking options on, no optimization. Use for development.
+  Release          Optimizations turned on, no debug symbols.           
+  Timing           Adds ENABLE_TIMING flag to provide statistics on operation 
+  Profiling        Standard configuration for use during profiling
+  RelWithDebInfo   Same as Release, but with the -g flag for debug symbols
 
-Note that during configuration, the settings get cached so if you rerun cmake later, 
-it will keep your previous settings. In particular, you can use the "cmake" build target 
-within the Eclipse project to update the configuration, which will be necessary 
-when file structures change.  
-
-While it is possible to use command-line arguments to cmake to change configuration 
-options, it is usually easier to use cmake-gui or ccmake to set parameters and use the other flags.
-
-Important CMake configuration options: 
-
-CMAKE_INSTALL_PREFIX: this is the folder where installed files will go, and for 
-our development purposes, should be set to the home folder, like so
+CMAKE_INSTALL_PREFIX: The install folder. The default is typically /usr/local/
+To configure to install to your home directory, you could execute:
 $] cmake -DCMAKE_INSTALL_PREFIX:PATH=$HOME ..
 
-GTSAM_TOOLBOX_INSTALL_PATH: When the library is installed with "make install", 
-the generated matlab toolbox code (created by wrap) gets installed as well in 
-this path. For example, use "/home/username/borg/toolbox" to install the 
-toolbox in your borg/toolbox folder. The matlab toolbox will get installed 
-into borg/toolbox/gtsam.
-$] cmake -DGTSAM_TOOLBOX_INSTALL_PATH:PATH=$HOME/borg/toolbox ..
+GTSAM_TOOLBOX_INSTALL_PATH: The Matlab toolbox will be installed in a subdirectory
+of this folder, called 'gtsam'.
+$] cmake -DGTSAM_TOOLBOX_INSTALL_PATH:PATH=$HOME/toolbox ..
 
 GTSAM_BUILD_CONVENIENCE_LIBRARIES: This is a build option to allow for tests in 
 subfolders to be linked against convenience libraries rather than the full libgtsam. 
@@ -176,35 +133,25 @@ $] cmake -DGTSAM_BUILD_UNSTABLE:OPTION=ON ..
                  folder called "gtsam_unstable".
   OFF (Default)  If disabled, no gtsam_unstable code will be included in build or install. 
 
-CMAKE_BUILD_TYPE: We support several build configurations for GTSAM (case insensitive)
-  Debug (default)  All error checking options on, no optimization. Use for development.
-  Release          Optimizations turned on, no debug symbols.           
-  Timing           Adds ENABLE_TIMING flag to provide statistics on operation 
-  Profiling        Standard configuration for use during profiling
-  RelWithDebInfo   Same as Release, but with the -g flag for debug symbols
-
-
-Build and Install
-
-After configuring, you use make just as you normally would, and the all, check and 
-install targets work as in autotools. Note that all targets are at the root level 
-of the build folder. You can also build any of the subfolders individually as 
-individual targets, such as "make geometry slam" to build both geometry and slam. 
-Running "make install" will install the library to the prefix location.
-
 Check
 
-As with autotools, "make check" will build and run all of the tests. Note that the 
-tests will only be built when using the "check" targets, to prevent "make install" from
-building the tests unnecessarily. You can also run "make timing" to build all of 
-the timing scripts. To run check on a particular subsection, there is a convention 
-of "make check.[subfolder]", so to run just the geometry tests, 
-run "make check.geometry". Individual tests can be run by appending ".run" to the
-name of the test, for example, to run testMatrix, run "make testMatrix.run". 
+"make check" will build and run all of the tests. Note that the tests will only be 
+built when using the "check" targets, to prevent "make install" from building the tests
+unnecessarily. You can also run "make timing" to build all of the timing scripts. 
+To run check on a particular module only, run "make check.[subfolder]", so to run
+just the geometry tests, run "make check.geometry". Individual tests can be run by
+appending ".run" to the name of the test, for example, to run testMatrix, run 
+"make testMatrix.run". 
 
-The make target "wrap" will build the wrap binary, and the "wrap_gtsam" target will 
-generate code for the toolbox. By default, the toolbox will be created and installed 
-by the install target for the library. To change the install folder for the toolbox, 
-choose a different setting during cmake settings for the toolbox install path. 
+Debugging tips:
 
+Another useful debugging symbol is _GLIBCXX_DEBUG, which enables debug checks
+and safe containers in the standard C++ library and makes problems much easier
+to find.
 
+NOTE:  The native Snow Leopard g++ compiler/library contains a bug that makes
+it impossible to use _GLIBCXX_DEBUG.  MacPorts g++ compilers do work with it though.
+
+NOTE:  If _GLIBCXX_DEBUG is used to compile gtsam, anything that links against
+gtsam will need to be compiled with _GLIBCXX_DEBUG as well, due to the use of
+header-only Eigen.  

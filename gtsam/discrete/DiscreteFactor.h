@@ -1,8 +1,19 @@
-/*
- * DiscreteFactor.h
- *
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ *  @file DiscreteFactor.h
  *  @date Feb 14, 2011
  *  @author Duy-Nguyen Ta
+ *  @author Frank Dellaert
  */
 
 #pragma once
@@ -14,7 +25,6 @@ namespace gtsam {
 
 	class DecisionTreeFactor;
 	class DiscreteConditional;
-	class Domain;
 
 	/**
 	 * Base class for discrete probabilistic factors
@@ -88,19 +98,6 @@ namespace gtsam {
 
 		virtual operator DecisionTreeFactor() const = 0;
 
-		/*
-		 * Ensure Arc-consistency
-		 * @param j domain to be checked
-		 * @param domains all other domains
-		 */
-		virtual bool ensureArcConsistency(size_t j, std::vector<Domain>& domains) const = 0;
-
-		/// Partially apply known values
-		virtual shared_ptr partiallyApply(const Values&) const = 0;
-
-
-		/// Partially apply known values, domain version
-		virtual shared_ptr partiallyApply(const std::vector<Domain>&) const = 0;
 		/// @}
 	};
 // DiscreteFactor

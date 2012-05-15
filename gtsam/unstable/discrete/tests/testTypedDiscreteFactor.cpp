@@ -5,12 +5,11 @@
  * @date	Mar 5, 2011
  */
 
+#include <gtsam_unstable/discrete/TypedDiscreteFactor.h>
+#include <gtsam/base/Testable.h>
+#include <CppUnitLite/TestHarness.h>
 #include <boost/assign/std/vector.hpp>
 using namespace boost::assign;
-
-#include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/discrete/TypedDiscreteFactor.h>
 
 using namespace std;
 using namespace gtsam;
