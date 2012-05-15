@@ -23,6 +23,7 @@
 // pull in the Pose2 SLAM domain with all typedefs and helper functions defined
 #include <gtsam/slam/pose2SLAM.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/Marginals.h>
 
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
@@ -74,12 +75,13 @@ int main(int argc, char** argv) {
 	pose2SLAM::Values result = optimizer.optimize();
 	result.print("final result");
 
-//	/* Get covariances */
-//	Matrix covariance1  = optimizer_result.marginalCovariance(PoseKey(1));
-//	Matrix covariance2  = optimizer_result.marginalCovariance(PoseKey(2));
-//
-//	print(covariance1, "Covariance1");
-//	print(covariance2, "Covariance2");
+	/* Get covariances */
+	Marginals marginals(graph, result, Marginals::CHOLESKY);
+	Matrix covariance1  = marginals.marginalCovariance(PoseKey(1));
+	Matrix covariance2  = marginals.marginalCovariance(PoseKey(2));
+
+	print(covariance1, "Covariance1");
+	print(covariance2, "Covariance2");
 
 	return 0;
 }

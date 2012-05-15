@@ -36,8 +36,7 @@
 // implementations for structures - needed if self-contained, and these should be included last
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/linear/GaussianSequentialSolver.h>
-#include <gtsam/linear/GaussianMultifrontalSolver.h>
+#include <gtsam/nonlinear/Marginals.h>
 
 using namespace std;
 using namespace gtsam;
@@ -125,15 +124,13 @@ int main(int argc, char** argv) {
 	Values resultMultifrontal = optimizer.optimize();
 	resultMultifrontal.print("final result (solved with a multifrontal solver)");
 
-	const Ordering& ordering = *optimizer.params().ordering;
-	GaussianMultifrontalSolver linearSolver(*graph.linearize(resultMultifrontal, ordering));
-
   // Print marginals covariances for all variables
-  print(linearSolver.marginalCovariance(ordering[x1]), "x1 covariance");
-  print(linearSolver.marginalCovariance(ordering[x2]), "x2 covariance");
-  print(linearSolver.marginalCovariance(ordering[x3]), "x3 covariance");
-  print(linearSolver.marginalCovariance(ordering[l1]), "l1 covariance");
-  print(linearSolver.marginalCovariance(ordering[l2]), "l2 covariance");
+	Marginals marginals(graph, resultMultifrontal, Marginals::CHOLESKY);
+  print(marginals.marginalCovariance(x1), "x1 covariance");
+  print(marginals.marginalCovariance(x2), "x2 covariance");
+  print(marginals.marginalCovariance(x3), "x3 covariance");
+  print(marginals.marginalCovariance(l1), "l1 covariance");
+  print(marginals.marginalCovariance(l2), "l2 covariance");
 
 	return 0;
 }
