@@ -5,10 +5,10 @@
  * @date	Mar 5, 2011
  */
 
-#include <boost/make_shared.hpp>
-#include <gtsam/discrete/TypedDiscreteFactor.h>
+#include <gtsam_unstable/discrete/TypedDiscreteFactor.h>
+#include <gtsam/discrete/DecisionTree.h>
 #include <gtsam/inference/Factor-inl.h>
-#include <gtsam/discrete/DecisionDiagram-inl.h>
+#include <boost/make_shared.hpp>
 
 using namespace std;
 

@@ -6,16 +6,9 @@
  * @date Feb 14, 2011
  */
 
-//#include <map>
-//#include <fstream>
-
-#include <boost/foreach.hpp>
+#include <gtsam_unstable/discrete/TypedDiscreteFactorGraph.h>
 #include <CppUnitLite/TestHarness.h>
-//#include <gtsam/inference/JunctionTree.h>
-//#include <gtsam/inference/JunctionTree-inl.h>
-
-#include <gtsam/discrete/TypedDiscreteFactorGraph.h>
-//#include <gtsam/discrete/DiscreteSequentialSolver.h>
+#include <boost/foreach.hpp>
 
 using namespace std;
 using namespace gtsam;

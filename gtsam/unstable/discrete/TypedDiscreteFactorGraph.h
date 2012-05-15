@@ -8,10 +8,10 @@
 
 #pragma once
 
+#include <gtsam_unstable/discrete/TypedDiscreteFactor.h>
+#include <gtsam/inference/FactorGraph.h>
 #include <vector>
 #include <set>
-#include <gtsam/inference/FactorGraph.h>
-#include <gtsam/discrete/TypedDiscreteFactor.h>
 
 namespace gtsam {
 
