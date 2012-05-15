@@ -644,13 +644,13 @@ INPUT                  = gtsam/base \
                          gtsam/discrete \
                          gtsam/linear \
                          gtsam/nonlinear \
-                         gtsam/slam \
-                         gtsam \
-                         gtsam_unstable/slam \
-                         gtsam_unstable/base \
-                         gtsam_unstable/geometry \
-                         gtsam_unstable/dynamics \
-                         gtsam_unstable 
+                         gtsam
+#                         gtsam/slam \
+#                         gtsam_unstable/slam \
+#                         gtsam_unstable/base \
+#                         gtsam_unstable/geometry \
+#                         gtsam_unstable/dynamics \
+#                         gtsam_unstable 
 
 # This tag can be used to specify the character encoding of the source files 
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is 
