@@ -148,29 +148,29 @@ TEST( Pose2SLAM, linearization )
 TEST(Pose2Graph, optimize) {
 
 	// create a Pose graph with one equality constraint and one measurement
-  shared_ptr<pose2SLAM::Graph> fg(new pose2SLAM::Graph);
-  fg->addPoseConstraint(0, Pose2(0,0,0));
-  fg->addOdometry(0, 1, Pose2(1,2,M_PI_2), covariance);
+  pose2SLAM::Graph fg;
+  fg.addPoseConstraint(0, Pose2(0,0,0));
+  fg.addOdometry(0, 1, Pose2(1,2,M_PI_2), covariance);
 
   // Create initial config
-  boost::shared_ptr<Values> initial(new Values());
-  initial->insert(pose2SLAM::PoseKey(0), Pose2(0,0,0));
-  initial->insert(pose2SLAM::PoseKey(1), Pose2(0,0,0));
+  Values initial;
+  initial.insert(pose2SLAM::PoseKey(0), Pose2(0,0,0));
+  initial.insert(pose2SLAM::PoseKey(1), Pose2(0,0,0));
 
   // Choose an ordering and optimize
-  shared_ptr<Ordering> ordering(new Ordering);
-  *ordering += kx0, kx1;
-  typedef NonlinearOptimizer<pose2SLAM::Graph> Optimizer;
+  Ordering ordering;
+  ordering += kx0, kx1;
 
-  NonlinearOptimizationParameters::shared_ptr params = NonlinearOptimizationParameters::newDecreaseThresholds(1e-15, 1e-15);
-  Optimizer optimizer0(fg, initial, ordering, params);
-  Optimizer optimizer = optimizer0.levenbergMarquardt();
+  LevenbergMarquardtParams params;
+  params.relativeErrorTol = 1e-15;
+  params.ordering = ordering;
+  Values actual = LevenbergMarquardtOptimizer(fg, initial, params).optimize();
 
   // Check with expected config
   Values expected;
   expected.insert(pose2SLAM::PoseKey(0), Pose2(0,0,0));
   expected.insert(pose2SLAM::PoseKey(1), Pose2(1,2,M_PI_2));
-  CHECK(assert_equal(expected, *optimizer.values()));
+  CHECK(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
@@ -182,29 +182,28 @@ TEST(Pose2Graph, optimizeThreePoses) {
   Pose2 p0 = hexagon.pose(0), p1 = hexagon.pose(1);
 
 	// create a Pose graph with one equality constraint and one measurement
-  shared_ptr<pose2SLAM::Graph> fg(new pose2SLAM::Graph);
-  fg->addPoseConstraint(0, p0);
+  pose2SLAM::Graph fg;
+  fg.addPoseConstraint(0, p0);
   Pose2 delta = p0.between(p1);
-  fg->addOdometry(0, 1, delta, covariance);
-  fg->addOdometry(1, 2, delta, covariance);
-  fg->addOdometry(2, 0, delta, covariance);
+  fg.addOdometry(0, 1, delta, covariance);
+  fg.addOdometry(1, 2, delta, covariance);
+  fg.addOdometry(2, 0, delta, covariance);
 
   // Create initial config
-  boost::shared_ptr<pose2SLAM::Values> initial(new pose2SLAM::Values());
-  initial->insertPose(0, p0);
-  initial->insertPose(1, hexagon.pose(1).retract(Vector_(3,-0.1, 0.1,-0.1)));
-  initial->insertPose(2, hexagon.pose(2).retract(Vector_(3, 0.1,-0.1, 0.1)));
+  pose2SLAM::Values initial;
+  initial.insertPose(0, p0);
+  initial.insertPose(1, hexagon.pose(1).retract(Vector_(3,-0.1, 0.1,-0.1)));
+  initial.insertPose(2, hexagon.pose(2).retract(Vector_(3, 0.1,-0.1, 0.1)));
 
   // Choose an ordering
-  shared_ptr<Ordering> ordering(new Ordering);
-  *ordering += kx0,kx1,kx2;
+  Ordering ordering;
+  ordering += kx0,kx1,kx2;
 
   // optimize
-  NonlinearOptimizationParameters::shared_ptr params = NonlinearOptimizationParameters::newDecreaseThresholds(1e-15, 1e-15);
-  pose2SLAM::Optimizer optimizer0(fg, initial, ordering, params);
-  pose2SLAM::Optimizer optimizer = optimizer0.levenbergMarquardt();
-
-  Values actual = *optimizer.values();
+  LevenbergMarquardtParams params;
+  params.relativeErrorTol = 1e-15;
+  params.ordering = ordering;
+  Values actual = LevenbergMarquardtOptimizer(fg, initial, params).optimize();
 
   // Check with ground truth
   CHECK(assert_equal((const Values&)hexagon, actual));
@@ -219,35 +218,34 @@ TEST_UNSAFE(Pose2SLAM, optimizeCircle) {
   Pose2 p0 = hexagon.pose(0), p1 = hexagon.pose(1);
 
 	// create a Pose graph with one equality constraint and one measurement
-  shared_ptr<pose2SLAM::Graph> fg(new pose2SLAM::Graph);
-  fg->addPoseConstraint(0, p0);
+  pose2SLAM::Graph fg;
+  fg.addPoseConstraint(0, p0);
   Pose2 delta = p0.between(p1);
-  fg->addOdometry(0, 1, delta, covariance);
-  fg->addOdometry(1,2, delta, covariance);
-  fg->addOdometry(2,3, delta, covariance);
-  fg->addOdometry(3,4, delta, covariance);
-  fg->addOdometry(4,5, delta, covariance);
-  fg->addOdometry(5, 0, delta, covariance);
+  fg.addOdometry(0, 1, delta, covariance);
+  fg.addOdometry(1,2, delta, covariance);
+  fg.addOdometry(2,3, delta, covariance);
+  fg.addOdometry(3,4, delta, covariance);
+  fg.addOdometry(4,5, delta, covariance);
+  fg.addOdometry(5, 0, delta, covariance);
 
   // Create initial config
-  boost::shared_ptr<pose2SLAM::Values> initial(new pose2SLAM::Values());
-  initial->insertPose(0, p0);
-  initial->insertPose(1, hexagon.pose(1).retract(Vector_(3,-0.1, 0.1,-0.1)));
-  initial->insertPose(2, hexagon.pose(2).retract(Vector_(3, 0.1,-0.1, 0.1)));
-  initial->insertPose(3, hexagon.pose(3).retract(Vector_(3,-0.1, 0.1,-0.1)));
-  initial->insertPose(4, hexagon.pose(4).retract(Vector_(3, 0.1,-0.1, 0.1)));
-  initial->insertPose(5, hexagon.pose(5).retract(Vector_(3,-0.1, 0.1,-0.1)));
+  pose2SLAM::Values initial;
+  initial.insertPose(0, p0);
+  initial.insertPose(1, hexagon.pose(1).retract(Vector_(3,-0.1, 0.1,-0.1)));
+  initial.insertPose(2, hexagon.pose(2).retract(Vector_(3, 0.1,-0.1, 0.1)));
+  initial.insertPose(3, hexagon.pose(3).retract(Vector_(3,-0.1, 0.1,-0.1)));
+  initial.insertPose(4, hexagon.pose(4).retract(Vector_(3, 0.1,-0.1, 0.1)));
+  initial.insertPose(5, hexagon.pose(5).retract(Vector_(3,-0.1, 0.1,-0.1)));
 
   // Choose an ordering
-  shared_ptr<Ordering> ordering(new Ordering);
-  *ordering += kx0,kx1,kx2,kx3,kx4,kx5;
+  Ordering ordering;
+  ordering += kx0,kx1,kx2,kx3,kx4,kx5;
 
   // optimize
-  NonlinearOptimizationParameters::shared_ptr params = NonlinearOptimizationParameters::newDecreaseThresholds(1e-15, 1e-15);
-  pose2SLAM::Optimizer optimizer0(fg, initial, ordering, params);
-  pose2SLAM::Optimizer optimizer = optimizer0.levenbergMarquardt();
-
-  Values actual = *optimizer.values();
+  LevenbergMarquardtParams params;
+  params.relativeErrorTol = 1e-15;
+  params.ordering = ordering;
+  Values actual = LevenbergMarquardtOptimizer(fg, initial, params).optimize();
 
   // Check with ground truth
   CHECK(assert_equal((const Values&)hexagon, actual));

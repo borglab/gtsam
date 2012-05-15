@@ -81,7 +81,7 @@ public:
   }
 
   /** BayesNet with 1 conditional */
-  BayesNet(const sharedConditional& conditional) { push_back(conditional); }
+  explicit BayesNet(const sharedConditional& conditional) { push_back(conditional); }
 
 	/// @}
 	/// @name Testable

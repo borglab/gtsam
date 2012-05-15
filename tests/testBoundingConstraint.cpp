@@ -19,7 +19,7 @@
 
 #include <gtsam/slam/simulated2DConstraints.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 
 namespace iq2D = simulated2D::inequality_constraints;
 using namespace std;
@@ -30,11 +30,6 @@ static const double tol = 1e-5;
 SharedDiagonal soft_model2 = noiseModel::Unit::Create(2);
 SharedDiagonal soft_model2_alt = noiseModel::Isotropic::Sigma(2, 0.1);
 SharedDiagonal hard_model1 = noiseModel::Constrained::All(1);
-
-typedef NonlinearFactorGraph Graph;
-typedef boost::shared_ptr<Graph> shared_graph;
-typedef boost::shared_ptr<Values> shared_values;
-typedef NonlinearOptimizer<Graph> Optimizer;
 
 // some simple inequality constraints
 Symbol key(simulated2D::PoseKey(1));
@@ -150,19 +145,19 @@ TEST( testBoundingConstraint, unary_simple_optimization1) {
 	Point2 goal_pt(1.0, 2.0);
 	Point2 start_pt(0.0, 1.0);
 
-	shared_graph graph(new Graph());
+	NonlinearFactorGraph graph;
 	Symbol x1('x',1);
-	graph->add(iq2D::PoseXInequality(x1, 1.0, true));
-	graph->add(iq2D::PoseYInequality(x1, 2.0, true));
-	graph->add(simulated2D::Prior(start_pt, soft_model2, x1));
+	graph.add(iq2D::PoseXInequality(x1, 1.0, true));
+	graph.add(iq2D::PoseYInequality(x1, 2.0, true));
+	graph.add(simulated2D::Prior(start_pt, soft_model2, x1));
 
-	shared_values initValues(new Values());
-	initValues->insert(x1, start_pt);
+	Values initValues;
+	initValues.insert(x1, start_pt);
 
-	Optimizer::shared_values actual = Optimizer::optimizeLM(graph, initValues);
+	Values actual = LevenbergMarquardtOptimizer(graph, initValues).optimize();
 	Values expected;
 	expected.insert(x1, goal_pt);
-	CHECK(assert_equal(expected, *actual, tol));
+	CHECK(assert_equal(expected, actual, tol));
 }
 
 /* ************************************************************************* */
@@ -172,19 +167,19 @@ TEST( testBoundingConstraint, unary_simple_optimization2) {
 	Point2 goal_pt(1.0, 2.0);
 	Point2 start_pt(2.0, 3.0);
 
-	shared_graph graph(new Graph());
+	NonlinearFactorGraph graph;
 	Symbol x1('x',1);
-	graph->add(iq2D::PoseXInequality(x1, 1.0, false));
-	graph->add(iq2D::PoseYInequality(x1, 2.0, false));
-	graph->add(simulated2D::Prior(start_pt, soft_model2, x1));
+	graph.add(iq2D::PoseXInequality(x1, 1.0, false));
+	graph.add(iq2D::PoseYInequality(x1, 2.0, false));
+	graph.add(simulated2D::Prior(start_pt, soft_model2, x1));
 
-	shared_values initValues(new Values());
-	initValues->insert(x1, start_pt);
+	Values initValues;
+	initValues.insert(x1, start_pt);
 
-	Optimizer::shared_values actual = Optimizer::optimizeLM(graph, initValues);
+	Values actual = LevenbergMarquardtOptimizer(graph, initValues).optimize();
 	Values expected;
 	expected.insert(x1, goal_pt);
-	CHECK(assert_equal(expected, *actual, tol));
+	CHECK(assert_equal(expected, actual, tol));
 }
 
 /* ************************************************************************* */
@@ -233,7 +228,7 @@ TEST( testBoundingConstraint, MaxDistance_simple_optimization) {
 	Point2 pt1, pt2_init(5.0, 0.0), pt2_goal(2.0, 0.0);
   Symbol x1('x',1), x2('x',2);
 
-	Graph graph;
+	NonlinearFactorGraph graph;
 	graph.add(simulated2D::equality_constraints::UnaryEqualityConstraint(pt1, x1));
 	graph.add(simulated2D::Prior(pt2_init, soft_model2_alt, x2));
 	graph.add(iq2D::PoseMaxDistConstraint(x1, x2, 2.0));
@@ -259,7 +254,7 @@ TEST( testBoundingConstraint, avoid_demo) {
 	Point2 x1_pt, x2_init(2.0, 0.5), x2_goal(2.0, 1.0), x3_pt(4.0, 0.0), l1_pt(2.0, 0.0);
 	Point2 odo(2.0, 0.0);
 
-	Graph graph;
+	NonlinearFactorGraph graph;
 	graph.add(simulated2D::equality_constraints::UnaryEqualityConstraint(x1_pt, x1));
 	graph.add(simulated2D::Odometry(odo, soft_model2_alt, x1, x2));
 	graph.add(iq2D::LandmarkAvoid(x2, l1, radius));

@@ -24,22 +24,50 @@ using namespace std;
 
 namespace gtsam {
 
+/* ************************************************************************* */
+void NonlinearOptimizer::defaultOptimize() {
 
-bool check_convergence (
-		const NonlinearOptimizationParameters &parameters,
-		double currentError, double newError) {
-	return check_convergence(parameters.relDecrease_,
-							 parameters.absDecrease_,
-							 parameters.sumError_,
-							 currentError, newError,
-							 parameters.verbosity_) ;
+  const NonlinearOptimizerParams& params = this->_params();
+  double currentError = this->error();
+
+  // check if we're already close enough
+  if(currentError <= params.errorTol) {
+    if (params.verbosity >= NonlinearOptimizerParams::ERROR)
+      cout << "Exiting, as error = " << currentError << " < " << params.errorTol << endl;
+    return;
+  }
+
+  // Maybe show output
+  if (params.verbosity >= NonlinearOptimizerParams::VALUES) this->values().print("Initial values");
+  if (params.verbosity >= NonlinearOptimizerParams::ERROR) cout << "Initial error: " << currentError << endl;
+
+  // Return if we already have too many iterations
+  if(this->iterations() >= params.maxIterations)
+    return;
+
+  // Iterative loop
+  do {
+    // Do next iteration
+    currentError = this->error();
+    this->iterate();
+
+    // Maybe show output
+    if(params.verbosity >= NonlinearOptimizerParams::VALUES) this->values().print("newValues");
+    if(params.verbosity >= NonlinearOptimizerParams::ERROR) cout << "newError: " << this->error() << endl;
+  } while(this->iterations() < params.maxIterations &&
+      !checkConvergence(params.relativeErrorTol, params.absoluteErrorTol,
+            params.errorTol, currentError, this->error(), params.verbosity));
+
+  // Printing if verbose
+  if (params.verbosity >= NonlinearOptimizerParams::ERROR &&
+      this->iterations() >= params.maxIterations)
+    cout << "Terminating because reached maximum iterations" << endl;
 }
 
-bool check_convergence(
-		double relativeErrorTreshold,
-		double absoluteErrorTreshold,
-		double errorThreshold,
-		double currentError, double newError, int verbosity) {
+/* ************************************************************************* */
+bool checkConvergence(double relativeErrorTreshold, double absoluteErrorTreshold,
+    double errorThreshold, double currentError, double newError,
+    NonlinearOptimizerParams::Verbosity verbosity) {
 
 	if ( verbosity >= 2 ) {
 		if ( newError <= errorThreshold )
@@ -53,7 +81,7 @@ bool check_convergence(
 	// check if diverges
 	double absoluteDecrease = currentError - newError;
 	if (verbosity >= 2) {
-		if (absoluteDecrease < absoluteErrorTreshold)
+		if (absoluteDecrease <= absoluteErrorTreshold)
 			cout << "absoluteDecrease: " << setprecision(12) << absoluteDecrease << " < " << absoluteErrorTreshold << endl;
 		else
 			cout << "absoluteDecrease: " << setprecision(12) << absoluteDecrease << " >= " << absoluteErrorTreshold << endl;
@@ -62,13 +90,13 @@ bool check_convergence(
 	// calculate relative error decrease and update currentError
 	double relativeDecrease = absoluteDecrease / currentError;
 	if (verbosity >= 2) {
-		if (relativeDecrease < relativeErrorTreshold)
+		if (relativeDecrease <= relativeErrorTreshold)
 			cout << "relativeDecrease: " << setprecision(12) << relativeDecrease << " < " << relativeErrorTreshold << endl;
 		else
 			cout << "relativeDecrease: " << setprecision(12) << relativeDecrease << " >= " << relativeErrorTreshold << endl;
 	}
-	bool converged = (relativeErrorTreshold && (relativeDecrease < relativeErrorTreshold))
-			|| (absoluteDecrease < absoluteErrorTreshold);
+	bool converged = (relativeErrorTreshold && (relativeDecrease <= relativeErrorTreshold))
+			|| (absoluteDecrease <= absoluteErrorTreshold);
 	if (verbosity >= 1 && converged) {
 		if(absoluteDecrease >= 0.0)
 		  cout << "converged" << endl;

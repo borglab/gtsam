@@ -84,6 +84,9 @@ namespace gtsam {
     /// A shared_ptr to this class
     typedef boost::shared_ptr<Values> shared_ptr;
 
+    /// A const shared_ptr to this class
+    typedef boost::shared_ptr<const Values> const_shared_ptr;
+
     /// A key-value pair, which you get by dereferencing iterators
     struct KeyValuePair {
       const Key key; ///< The key
@@ -299,22 +302,6 @@ namespace gtsam {
      */
     const Value& at(Key j) const;
 
-#if 0
-    /** Retrieve a variable by key \c j.  This non-templated version returns a
-     * special ValueAutomaticCasting object that may be assigned to the proper
-     * value.
-     * @param j Retrieve the value associated with this key
-     * @return A ValueAutomaticCasting object that may be assignmed to a Value
-     * of the proper type.
-     */
-    ValueAutomaticCasting at(Key j) const;
-#endif
-
-#if 0
-    /** operator[] syntax for at(Key j) */
-    ValueAutomaticCasting operator[](Key j) const;
-#endif
-
     /** Check if a value exists with key \c j.  See exists<>(Key j)
      * and exists(const TypedKey& j) for versions that return the value if it
      * exists. */
@@ -389,6 +376,9 @@ namespace gtsam {
 
     /** Replace all keys and variables */
     Values& operator=(const Values& rhs);
+
+    /** Swap the contents of two Values without copying data */
+    void swap(Values& other) { values_.swap(other.values_); }
 
     /** Remove all variables from the config */
     void clear() { values_.clear(); }

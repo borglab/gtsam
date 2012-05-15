@@ -18,6 +18,7 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <gtsam/linear/GaussianSequentialSolver.h>
+#include <gtsam/linear/GaussianMultifrontalSolver.h>
 #include <gtsam/slam/smallExample.h>
 #include <gtsam/slam/planarSLAM.h>
 

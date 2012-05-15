@@ -24,7 +24,7 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
 
@@ -97,19 +97,9 @@ namespace pose2SLAM {
 
     /// Optimize
     Values optimize(const Values& initialEstimate) {
-      typedef NonlinearOptimizer<Graph> Optimizer;
-      return *Optimizer::optimizeLM(*this, initialEstimate,
-                  NonlinearOptimizationParameters::LAMBDA);
+      return LevenbergMarquardtOptimizer(*this, initialEstimate).optimize();
     }
   };
-
-  /// The sequential optimizer
-  typedef NonlinearOptimizer<Graph, GaussianFactorGraph,
-      GaussianSequentialSolver> OptimizerSequential;
-
-  /// The multifrontal optimizer
-  typedef NonlinearOptimizer<Graph, GaussianFactorGraph,
-      GaussianMultifrontalSolver> Optimizer;
 
 } // pose2SLAM
 

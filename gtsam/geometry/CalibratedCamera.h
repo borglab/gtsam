@@ -120,7 +120,7 @@ namespace gtsam {
 		/* ************************************************************************* */
 
     /// @}
-    /// @name Transformations
+    /// @name Transformations and mesaurement functions
     /// @{
 
 		/**
@@ -146,6 +146,36 @@ namespace gtsam {
 		 * backproject a 2-dimensional point to a 3-dimension point
 		 */
 		static Point3 backproject_from_camera(const Point2& p, const double scale);
+
+    /**
+     * Calculate range to a landmark
+     * @param point 3D location of landmark
+     * @return range (double)
+     */
+    double range(const Point3& point,
+        boost::optional<Matrix&> H1=boost::none,
+        boost::optional<Matrix&> H2=boost::none) const {
+      return pose_.range(point, H1, H2); }
+
+    /**
+     * Calculate range to another pose
+     * @param pose Other SO(3) pose
+     * @return range (double)
+     */
+    double range(const Pose3& pose,
+        boost::optional<Matrix&> H1=boost::none,
+        boost::optional<Matrix&> H2=boost::none) const {
+      return pose_.range(pose, H1, H2); }
+
+    /**
+     * Calculate range to another camera
+     * @param camera Other camera
+     * @return range (double)
+     */
+    double range(const CalibratedCamera& camera,
+        boost::optional<Matrix&> H1=boost::none,
+        boost::optional<Matrix&> H2=boost::none) const {
+      return pose_.range(camera.pose_, H1, H2); }
 
 private:
 

@@ -22,7 +22,7 @@
 #include <gtsam/geometry/SimpleCamera.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/NonlinearOptimization.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 
 using namespace gtsam;
 
@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
                                0.,0.,-1.), Point3(0.,0.,2.0)));
 
   /* 4. Optimize the graph using Levenberg-Marquardt*/
-  Values result = optimize<NonlinearFactorGraph> (graph, initial);
+  Values result = LevenbergMarquardtOptimizer(graph, initial).optimize();
   result.print("Final result: ");
 
   return 0;

@@ -145,7 +145,7 @@ namespace gtsam {
 		BayesTree() {}
 
 		/** Create a Bayes Tree from a Bayes Net (requires CONDITIONAL is IndexConditional *or* CONDITIONAL::Combine) */
-		BayesTree(const BayesNet<CONDITIONAL>& bayesNet);
+		explicit BayesTree(const BayesNet<CONDITIONAL>& bayesNet);
 
 		/** Copy constructor */
 		BayesTree(const This& other);

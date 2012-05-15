@@ -145,7 +145,4 @@ namespace visualSLAM {
 
   }; // Graph
 
-  /// typedef for Optimizer. The current default will use the multi-frontal solver
-  typedef NonlinearOptimizer<Graph> Optimizer;
-
 } // namespaces

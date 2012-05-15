@@ -217,10 +217,10 @@ namespace gtsam {
 
     /**
      * Calculate range to another pose
-     * @param point SO(3) pose of landmark
+     * @param pose Other SO(3) pose
      * @return range (double)
      */
-    double range(const Pose3& point,
+    double range(const Pose3& pose,
         boost::optional<Matrix&> H1=boost::none,
         boost::optional<Matrix&> H2=boost::none) const;
 

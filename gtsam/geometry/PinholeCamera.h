@@ -161,9 +161,9 @@ namespace gtsam {
         return PinholeCamera(pose3, K);
     }
 
-    /* ************************************************************************* */
-    // measurement functions and derivatives
-    /* ************************************************************************* */
+    /// @}
+    /// @name Transformations and measurement functions
+    /// @{
 
     /**
     * projects a 3-dimensional point in camera coordinates into the
@@ -185,10 +185,6 @@ namespace gtsam {
       const Point2 pn = project_to_camera(pc) ;
       return std::make_pair(k_.uncalibrate(pn), pc.z()>0);
     }
-
-    /// @}
-    /// @name Transformations
-    /// @{
 
     /** project a point from world coordinate to the image
      *  @param pw is a point in the world coordinate
@@ -269,6 +265,77 @@ namespace gtsam {
     inline Point3 backproject_from_camera(const Point2& pi, const double scale) const {
       return backproject(pi, scale);
     }
+
+    /**
+     * Calculate range to a landmark
+     * @param point 3D location of landmark
+     * @return range (double)
+     */
+    double range(const Point3& point,
+        boost::optional<Matrix&> H1=boost::none,
+        boost::optional<Matrix&> H2=boost::none) const {
+      double result = pose_.range(point, H1, H2);
+      if(H1) {
+        // Add columns of zeros to Jacobian for calibration
+        Matrix& H1r(*H1);
+        H1r.conservativeResize(Eigen::NoChange, pose_.dim() + k_.dim());
+        H1r.block(0, pose_.dim(), 1, k_.dim()) = Matrix::Zero(1, k_.dim());
+      }
+      return result;
+    }
+
+    /**
+     * Calculate range to another pose
+     * @param pose Other SO(3) pose
+     * @return range (double)
+     */
+    double range(const Pose3& pose,
+        boost::optional<Matrix&> H1=boost::none,
+        boost::optional<Matrix&> H2=boost::none) const {
+      double result = pose_.range(pose, H1, H2);
+      if(H1) {
+        // Add columns of zeros to Jacobian for calibration
+        Matrix& H1r(*H1);
+        H1r.conservativeResize(Eigen::NoChange, pose_.dim() + k_.dim());
+        H1r.block(0, pose_.dim(), 1, k_.dim()) = Matrix::Zero(1, k_.dim());
+      }
+      return result;
+    }
+
+    /**
+     * Calculate range to another camera
+     * @param camera Other camera
+     * @return range (double)
+     */
+    template<class CalibrationB>
+    double range(const PinholeCamera<CalibrationB>& camera,
+        boost::optional<Matrix&> H1=boost::none,
+        boost::optional<Matrix&> H2=boost::none) const {
+      double result = pose_.range(camera.pose_, H1, H2);
+      if(H1) {
+        // Add columns of zeros to Jacobian for calibration
+        Matrix& H1r(*H1);
+        H1r.conservativeResize(Eigen::NoChange, pose_.dim() + k_.dim());
+        H1r.block(0, pose_.dim(), 1, k_.dim()) = Matrix::Zero(1, k_.dim());
+      }
+      if(H2) {
+        // Add columns of zeros to Jacobian for calibration
+        Matrix& H2r(*H2);
+        H2r.conservativeResize(Eigen::NoChange, camera.pose().dim() + camera.calibration().dim());
+        H2r.block(0, camera.pose().dim(), 1, camera.calibration().dim()) = Matrix::Zero(1, camera.calibration().dim());
+      }
+      return result;
+    }
+
+    /**
+     * Calculate range to another camera
+     * @param camera Other camera
+     * @return range (double)
+     */
+    double range(const CalibratedCamera& camera,
+        boost::optional<Matrix&> H1=boost::none,
+        boost::optional<Matrix&> H2=boost::none) const {
+      return pose_.range(camera.pose_, H1, H2); }
 
 private:
 

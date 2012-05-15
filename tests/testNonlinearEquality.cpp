@@ -22,7 +22,7 @@
 #include <gtsam/slam/visualSLAM.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 
 using namespace std;
 using namespace gtsam;
@@ -34,9 +34,6 @@ static const double tol = 1e-5;
 typedef PriorFactor<Pose2> PosePrior;
 typedef NonlinearEquality<Pose2> PoseNLE;
 typedef boost::shared_ptr<PoseNLE> shared_poseNLE;
-
-typedef NonlinearFactorGraph PoseGraph;
-typedef NonlinearOptimizer<PoseGraph> PoseOptimizer;
 
 Symbol key('x',1);
 
@@ -188,25 +185,23 @@ TEST ( NonlinearEquality, allow_error_optimize ) {
 	PoseNLE nle(key1, feasible1, error_gain);
 
 	// add to a graph
-	boost::shared_ptr<PoseGraph> graph(new PoseGraph());
-	graph->add(nle);
+	NonlinearFactorGraph graph;
+	graph.add(nle);
 
 	// initialize away from the ideal
 	Pose2 initPose(0.0, 2.0, 3.0);
-	boost::shared_ptr<Values> init(new Values());
-	init->insert(key1, initPose);
+	Values init;
+	init.insert(key1, initPose);
 
 	// optimize
-	boost::shared_ptr<Ordering> ord(new Ordering());
-	ord->push_back(key1);
-  NonlinearOptimizationParameters::shared_ptr params = NonlinearOptimizationParameters::newDecreaseThresholds(1e-5, 1e-5);
-	PoseOptimizer optimizer(graph, init, ord, params);
-	PoseOptimizer result = optimizer.levenbergMarquardt();
+	Ordering ordering;
+	ordering.push_back(key1);
+	Values result = LevenbergMarquardtOptimizer(graph, init, ordering).optimize();
 
 	// verify
 	Values expected;
 	expected.insert(key1, feasible1);
-	EXPECT(assert_equal(expected, *result.values()));
+	EXPECT(assert_equal(expected, result));
 }
 
 /* ************************************************************************* */
@@ -217,9 +212,9 @@ TEST ( NonlinearEquality, allow_error_optimize_with_factors ) {
 	Pose2 feasible1(1.0, 2.0, 3.0);
 
 	// initialize away from the ideal
-	boost::shared_ptr<Values> init(new Values());
+	Values init;
 	Pose2 initPose(0.0, 2.0, 3.0);
-	init->insert(key1, initPose);
+	init.insert(key1, initPose);
 
 	double error_gain = 500.0;
 	PoseNLE nle(key1, feasible1, error_gain);
@@ -228,31 +223,24 @@ TEST ( NonlinearEquality, allow_error_optimize_with_factors ) {
 	PosePrior prior(key1, initPose, noiseModel::Isotropic::Sigma(3, 0.1));
 
 	// add to a graph
-	boost::shared_ptr<PoseGraph> graph(new PoseGraph());
-	graph->add(nle);
-	graph->add(prior);
+	NonlinearFactorGraph graph;
+	graph.add(nle);
+	graph.add(prior);
 
 	// optimize
-	boost::shared_ptr<Ordering> ord(new Ordering());
-	ord->push_back(key1);
-  NonlinearOptimizationParameters::shared_ptr params = NonlinearOptimizationParameters::newDecreaseThresholds(1e-5, 1e-5);
-	PoseOptimizer optimizer(graph, init, ord, params);
-	PoseOptimizer result = optimizer.levenbergMarquardt();
+	Ordering ordering;
+	ordering.push_back(key1);
+  Values actual = LevenbergMarquardtOptimizer(graph, init, ordering).optimize();
 
 	// verify
 	Values expected;
 	expected.insert(key1, feasible1);
-	EXPECT(assert_equal(expected, *result.values()));
+	EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
 SharedDiagonal hard_model = noiseModel::Constrained::All(2);
 SharedDiagonal soft_model = noiseModel::Isotropic::Sigma(2, 1.0);
-
-typedef NonlinearFactorGraph Graph;
-typedef boost::shared_ptr<Graph> shared_graph;
-typedef boost::shared_ptr<Values> shared_values;
-typedef NonlinearOptimizer<Graph> Optimizer;
 
 /* ************************************************************************* */
 TEST( testNonlinearEqualityConstraint, unary_basics ) {
@@ -314,23 +302,23 @@ TEST( testNonlinearEqualityConstraint, unary_simple_optimization ) {
 	simulated2D::Prior::shared_ptr factor(
 			new simulated2D::Prior(badPt, soft_model, key));
 
-	shared_graph graph(new Graph());
-	graph->push_back(constraint);
-	graph->push_back(factor);
+	NonlinearFactorGraph graph;
+	graph.push_back(constraint);
+	graph.push_back(factor);
 
-	shared_values initValues(new Values());
-	initValues->insert(key, badPt);
+	Values initValues;
+	initValues.insert(key, badPt);
 
 	// verify error values
-	EXPECT(constraint->active(*initValues));
+	EXPECT(constraint->active(initValues));
 
 	Values expected;
 	expected.insert(key, truth_pt);
 	EXPECT(constraint->active(expected));
 	EXPECT_DOUBLES_EQUAL(0.0, constraint->error(expected), tol);
 
-	Optimizer::shared_values actual = Optimizer::optimizeLM(graph, initValues);
-	EXPECT(assert_equal(expected, *actual, tol));
+	Values actual = LevenbergMarquardtOptimizer(graph, initValues).optimize();
+	EXPECT(assert_equal(expected, actual, tol));
 }
 
 /* ************************************************************************* */
@@ -411,20 +399,20 @@ TEST( testNonlinearEqualityConstraint, odo_simple_optimize ) {
 			new eq2D::OdoEqualityConstraint(
 					truth_pt1.between(truth_pt2), key1, key2));
 
-	shared_graph graph(new Graph());
-	graph->push_back(constraint1);
-	graph->push_back(constraint2);
-	graph->push_back(factor);
+	NonlinearFactorGraph graph;
+	graph.push_back(constraint1);
+	graph.push_back(constraint2);
+	graph.push_back(factor);
 
-	shared_values initValues(new Values());
-	initValues->insert(key1, Point2());
-	initValues->insert(key2, badPt);
+	Values initValues;
+	initValues.insert(key1, Point2());
+	initValues.insert(key2, badPt);
 
-	Optimizer::shared_values actual = Optimizer::optimizeLM(graph, initValues);
+	Values actual = LevenbergMarquardtOptimizer(graph, initValues).optimize();
 	Values expected;
 	expected.insert(key1, truth_pt1);
 	expected.insert(key2, truth_pt2);
-	CHECK(assert_equal(expected, *actual, tol));
+	CHECK(assert_equal(expected, actual, tol));
 }
 
 /* ********************************************************************* */
@@ -435,44 +423,44 @@ TEST (testNonlinearEqualityConstraint, two_pose ) {
 	 * constrained to a particular value
 	 */
 
-	shared_graph graph(new Graph());
+  NonlinearFactorGraph graph;
 
   Symbol x1('x',1), x2('x',2);
   Symbol l1('l',1), l2('l',2);
 	Point2 pt_x1(1.0, 1.0),
 		   pt_x2(5.0, 6.0);
-	graph->add(eq2D::UnaryEqualityConstraint(pt_x1, x1));
-	graph->add(eq2D::UnaryEqualityConstraint(pt_x2, x2));
+	graph.add(eq2D::UnaryEqualityConstraint(pt_x1, x1));
+	graph.add(eq2D::UnaryEqualityConstraint(pt_x2, x2));
 
 	Point2 z1(0.0, 5.0);
 	SharedNoiseModel sigma(noiseModel::Isotropic::Sigma(2, 0.1));
-	graph->add(simulated2D::Measurement(z1, sigma, x1,l1));
+	graph.add(simulated2D::Measurement(z1, sigma, x1,l1));
 
 	Point2 z2(-4.0, 0.0);
-	graph->add(simulated2D::Measurement(z2, sigma, x2,l2));
+	graph.add(simulated2D::Measurement(z2, sigma, x2,l2));
 
-	graph->add(eq2D::PointEqualityConstraint(l1, l2));
+	graph.add(eq2D::PointEqualityConstraint(l1, l2));
 
-	shared_values initialEstimate(new Values());
-	initialEstimate->insert(x1, pt_x1);
-	initialEstimate->insert(x2, Point2());
-	initialEstimate->insert(l1, Point2(1.0, 6.0)); // ground truth
-	initialEstimate->insert(l2, Point2(-4.0, 0.0)); // starting with a separate reference frame
+	Values initialEstimate;
+	initialEstimate.insert(x1, pt_x1);
+	initialEstimate.insert(x2, Point2());
+	initialEstimate.insert(l1, Point2(1.0, 6.0)); // ground truth
+	initialEstimate.insert(l2, Point2(-4.0, 0.0)); // starting with a separate reference frame
 
-	Optimizer::shared_values actual = Optimizer::optimizeLM(graph, initialEstimate);
+	Values actual = LevenbergMarquardtOptimizer(graph, initialEstimate).optimize();
 
 	Values expected;
 	expected.insert(x1, pt_x1);
 	expected.insert(l1, Point2(1.0, 6.0));
 	expected.insert(l2, Point2(1.0, 6.0));
 	expected.insert(x2, Point2(5.0, 6.0));
-	CHECK(assert_equal(expected, *actual, 1e-5));
+	CHECK(assert_equal(expected, actual, 1e-5));
 }
 
 /* ********************************************************************* */
 TEST (testNonlinearEqualityConstraint, map_warp ) {
 	// get a graph
-	shared_graph graph(new Graph());
+  NonlinearFactorGraph graph;
 
 	// keys
   Symbol x1('x',1), x2('x',2);
@@ -480,37 +468,37 @@ TEST (testNonlinearEqualityConstraint, map_warp ) {
 
 	// constant constraint on x1
 	Point2 pose1(1.0, 1.0);
-	graph->add(eq2D::UnaryEqualityConstraint(pose1, x1));
+	graph.add(eq2D::UnaryEqualityConstraint(pose1, x1));
 
 	SharedDiagonal sigma = noiseModel::Isotropic::Sigma(1,0.1);
 
 	// measurement from x1 to l1
 	Point2 z1(0.0, 5.0);
-	graph->add(simulated2D::Measurement(z1, sigma, x1, l1));
+	graph.add(simulated2D::Measurement(z1, sigma, x1, l1));
 
 	// measurement from x2 to l2
 	Point2 z2(-4.0, 0.0);
-	graph->add(simulated2D::Measurement(z2, sigma, x2, l2));
+	graph.add(simulated2D::Measurement(z2, sigma, x2, l2));
 
 	// equality constraint between l1 and l2
-	graph->add(eq2D::PointEqualityConstraint(l1, l2));
+	graph.add(eq2D::PointEqualityConstraint(l1, l2));
 
 	// create an initial estimate
-	shared_values initialEstimate(new Values());
-	initialEstimate->insert(x1, Point2( 1.0, 1.0));
-	initialEstimate->insert(l1, Point2( 1.0, 6.0));
-	initialEstimate->insert(l2, Point2(-4.0, 0.0)); // starting with a separate reference frame
-	initialEstimate->insert(x2, Point2( 0.0, 0.0)); // other pose starts at origin
+	Values initialEstimate;
+	initialEstimate.insert(x1, Point2( 1.0, 1.0));
+	initialEstimate.insert(l1, Point2( 1.0, 6.0));
+	initialEstimate.insert(l2, Point2(-4.0, 0.0)); // starting with a separate reference frame
+	initialEstimate.insert(x2, Point2( 0.0, 0.0)); // other pose starts at origin
 
 	// optimize
-	Optimizer::shared_values actual = Optimizer::optimizeLM(graph, initialEstimate);
+	Values actual = LevenbergMarquardtOptimizer(graph, initialEstimate).optimize();
 
 	Values expected;
 	expected.insert(x1, Point2(1.0, 1.0));
 	expected.insert(l1, Point2(1.0, 6.0));
 	expected.insert(l2, Point2(1.0, 6.0));
 	expected.insert(x2, Point2(5.0, 6.0));
-	CHECK(assert_equal(expected, *actual, tol));
+	CHECK(assert_equal(expected, actual, tol));
 }
 
 // make a realistic calibration matrix
@@ -520,9 +508,7 @@ Cal3_S2 K(fov,w,h);
 boost::shared_ptr<Cal3_S2> shK(new Cal3_S2(K));
 
 // typedefs for visual SLAM example
-typedef boost::shared_ptr<Values> shared_vconfig;
 typedef visualSLAM::Graph VGraph;
-typedef NonlinearOptimizer<VGraph> VOptimizer;
 
 // factors for visual slam
 typedef NonlinearEquality2<Point3> Point3Equality;
@@ -546,32 +532,32 @@ TEST (testNonlinearEqualityConstraint, stereo_constrained ) {
   Symbol l1('l',1), l2('l',2);
 
 	// create graph
-	VGraph::shared_graph graph(new VGraph());
+	VGraph graph;
 
 	// create equality constraints for poses
-	graph->addPoseConstraint(1, camera1.pose());
-	graph->addPoseConstraint(2, camera2.pose());
+	graph.addPoseConstraint(1, camera1.pose());
+	graph.addPoseConstraint(2, camera2.pose());
 
 	// create  factors
 	SharedDiagonal vmodel = noiseModel::Unit::Create(3);
-	graph->addMeasurement(camera1.project(landmark), vmodel, 1, 1, shK);
-	graph->addMeasurement(camera2.project(landmark), vmodel, 2, 2, shK);
+	graph.addMeasurement(camera1.project(landmark), vmodel, 1, 1, shK);
+	graph.addMeasurement(camera2.project(landmark), vmodel, 2, 2, shK);
 
 	// add equality constraint
-	graph->add(Point3Equality(l1, l2));
+	graph.add(Point3Equality(l1, l2));
 
 	// create initial data
 	Point3 landmark1(0.5, 5.0, 0.0);
 	Point3 landmark2(1.5, 5.0, 0.0);
 
-	shared_vconfig initValues(new Values());
-	initValues->insert(x1, pose1);
-	initValues->insert(x2, pose2);
-	initValues->insert(l1, landmark1);
-	initValues->insert(l2, landmark2);
+	Values initValues;
+	initValues.insert(x1, pose1);
+	initValues.insert(x2, pose2);
+	initValues.insert(l1, landmark1);
+	initValues.insert(l2, landmark2);
 
 	// optimize
-	VOptimizer::shared_values actual = VOptimizer::optimizeLM(graph, initValues);
+	Values actual = LevenbergMarquardtOptimizer(graph, initValues).optimize();
 
 	// create config
 	Values truthValues;
@@ -581,7 +567,7 @@ TEST (testNonlinearEqualityConstraint, stereo_constrained ) {
 	truthValues.insert(l2, landmark);
 
 	// check if correct
-	CHECK(assert_equal(truthValues, *actual, 1e-5));
+	CHECK(assert_equal(truthValues, actual, 1e-5));
 }
 
 /* ************************************************************************* */

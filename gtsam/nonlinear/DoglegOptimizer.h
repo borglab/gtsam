@@ -1,67 +1,154 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  * @file    DoglegOptimizer.h
- * @brief   Nonlinear factor graph optimizer using Powell's Dogleg algorithm
+ * @brief   
  * @author  Richard Roberts
+ * @created Feb 26, 2012
  */
 
 #pragma once
 
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/SuccessiveLinearizationOptimizer.h>
 
 namespace gtsam {
 
-/**
- * A class to perform nonlinear optimization using Powell's dogleg algorithm.
- * This class is functional, meaning every method is \c const, and returns a new
- * copy of the class.
- *
- * \tparam VALUES The Values or TupleValues type to hold the values to be
- * estimated.
- *
- * \tparam GAUSSIAN_SOLVER The linear solver to use at each iteration,
- * currently either GaussianSequentialSolver or GaussianMultifrontalSolver.
- * The latter is typically faster, especially for non-trivial problems.
+class DoglegOptimizer;
+
+/** Parameters for Levenberg-Marquardt optimization.  Note that this parameters
+ * class inherits from NonlinearOptimizerParams, which specifies the parameters
+ * common to all nonlinear optimization algorithms.  This class also contains
+ * all of those parameters.
  */
-template<class VALUES, class GAUSSIAN_SOLVER>
-class DoglegOptimizer {
+class DoglegParams : public SuccessiveLinearizationParams {
+public:
+  /** See DoglegParams::dlVerbosity */
+  enum VerbosityDL {
+    SILENT,
+    VERBOSE
+  };
+
+  double deltaInitial; ///< The initial trust region radius (default: 1.0)
+  VerbosityDL verbosityDL; ///< The verbosity level for Dogleg (default: SILENT), see also NonlinearOptimizerParams::verbosity
+
+  DoglegParams() :
+    deltaInitial(1.0), verbosityDL(SILENT) {}
+
+  virtual ~DoglegParams() {}
+
+  virtual void print(const std::string& str = "") const {
+    SuccessiveLinearizationParams::print(str);
+    std::cout << "               deltaInitial: " << deltaInitial << "\n";
+    std::cout.flush();
+  }
+};
+
+/**
+ * State for DoglegOptimizer
+ */
+class DoglegState : public NonlinearOptimizerState {
+public:
+
+  double Delta;
+
+  DoglegState() {}
+
+  virtual ~DoglegState() {}
 
 protected:
+  DoglegState(const NonlinearFactorGraph& graph, const Values& values, const DoglegParams& params, unsigned int iterations = 0) :
+    NonlinearOptimizerState(graph, values, iterations), Delta(params.deltaInitial) {}
 
-  typedef DoglegOptimizer<VALUES, GAUSSIAN_SOLVER> This; ///< Typedef to this class
+  friend class DoglegOptimizer;
+};
 
-  const sharedGraph graph_;
-  const sharedValues values_;
-  const double error_;
+/**
+ * This class performs Dogleg nonlinear optimization
+ */
+class DoglegOptimizer : public NonlinearOptimizer {
 
 public:
 
-  typedef VALUES ValuesType; ///< Typedef of the VALUES template parameter
-  typedef GAUSSIAN_SOLVER SolverType; ///< Typedef of the GAUSSIAN_SOLVER template parameter
-  typedef NonlinearFactorGraph<VALUES> GraphType; ///< A nonlinear factor graph templated on ValuesType
+  typedef boost::shared_ptr<DoglegOptimizer> shared_ptr;
 
-  typedef boost::shared_ptr<const GraphType> sharedGraph; ///< A shared_ptr to GraphType
-  typedef boost::shared_ptr<const ValuesType> sharedValues; ///< A shared_ptr to ValuesType
+  /// @name Standard interface
+  /// @{
 
-
-  /**
-   * Construct a DoglegOptimizer from the factor graph to optimize and the
-   * initial estimate of the variable values, using the default variable
-   * ordering method, currently COLAMD.
-   * @param graph  The factor graph to optimize
-   * @param initialization  An initial estimate of the variable values
+  /** Standard constructor, requires a nonlinear factor graph, initial
+   * variable assignments, and optimization parameters.  For convenience this
+   * version takes plain objects instead of shared pointers, but internally
+   * copies the objects.
+   * @param graph The nonlinear factor graph to optimize
+   * @param initialValues The initial variable assignments
+   * @param params The optimization parameters
    */
-  DoglegOptimizer(sharedGraph graph, sharedValues initialization);
+  DoglegOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues,
+      const DoglegParams& params = DoglegParams()) :
+        NonlinearOptimizer(graph), params_(ensureHasOrdering(params, graph, initialValues)), state_(graph, initialValues, params_) {}
 
-  /**
-   * Construct a DoglegOptimizer from the factor graph to optimize and the
-   * initial estimate of the variable values, using the default variable
-   * ordering method, currently COLAMD. (this non-shared-pointer version
-   * incurs a performance hit for copying, see DoglegOptimizer(sharedGraph, sharedValues)).
-   * @param graph  The factor graph to optimize
-   * @param initialization  An initial estimate of the variable values
+  /** Standard constructor, requires a nonlinear factor graph, initial
+   * variable assignments, and optimization parameters.  For convenience this
+   * version takes plain objects instead of shared pointers, but internally
+   * copies the objects.
+   * @param graph The nonlinear factor graph to optimize
+   * @param initialValues The initial variable assignments
+   * @param params The optimization parameters
    */
-  DoglegOptimizer(const GraphType& graph, const ValuesType& initialization);
+  DoglegOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues, const Ordering& ordering) :
+        NonlinearOptimizer(graph) {
+    params_.ordering = ordering;
+    state_ = DoglegState(graph, initialValues, params_); }
 
+  /// @}
+
+  /// @name Advanced interface
+  /// @{
+
+  /** Virtual destructor */
+  virtual ~DoglegOptimizer() {}
+
+  /** Perform a single iteration, returning a new NonlinearOptimizer class
+   * containing the updated variable assignments, which may be retrieved with
+   * values().
+   */
+  virtual void iterate();
+
+  /** Access the parameters */
+  const DoglegParams& params() const { return params_; }
+
+  /** Access the last state */
+  const DoglegState& state() const { return state_; }
+
+  /** Access the current trust region radius Delta */
+  double Delta() const { return state_.Delta; }
+
+  /// @}
+
+protected:
+  DoglegParams params_;
+  DoglegState state_;
+
+  /** Access the parameters (base class version) */
+  virtual const NonlinearOptimizerParams& _params() const { return params_; }
+
+  /** Access the state (base class version) */
+  virtual const NonlinearOptimizerState& _state() const { return state_; }
+
+  /** Internal function for computing a COLAMD ordering if no ordering is specified */
+  DoglegParams ensureHasOrdering(DoglegParams params, const NonlinearFactorGraph& graph, const Values& values) const {
+    if(!params.ordering)
+      params.ordering = *graph.orderingCOLAMD(values);
+    return params;
+  }
 };
 
 }

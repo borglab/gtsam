@@ -24,7 +24,7 @@
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/NonlinearOptimization.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 
 /*
  * TODO: make factors independent of RotValues
@@ -105,7 +105,7 @@ int main() {
 	 * initial estimate.  This will yield a new RotValues structure
 	 * with the final state of the optimization.
 	 */
-	Values result = optimize(graph, initial);
+	Values result = LevenbergMarquardtOptimizer(graph, initial).optimize();
 	result.print("final result");
 
 	return 0;

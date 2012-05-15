@@ -20,7 +20,7 @@
 using namespace boost;
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/slam/visualSLAM.h>
 #include <gtsam/slam/PriorFactor.h>
 
@@ -129,26 +129,27 @@ int main(int argc, char* argv[]) {
   readAllData();
 
   // Create a graph using the 2D measurements (features) and the calibration data
-  boost::shared_ptr<Graph> graph(new Graph(setupGraph(g_measurements, measurementSigma, g_calib)));
+  Graph graph(setupGraph(g_measurements, measurementSigma, g_calib));
 
   // Create an initial Values structure using groundtruth values as the initial estimates
-  boost::shared_ptr<Values> initialEstimates(new Values(initialize(g_landmarks, g_poses)));
+  Values initialEstimates(initialize(g_landmarks, g_poses));
   cout << "*******************************************************" << endl;
-  initialEstimates->print("INITIAL ESTIMATES: ");
+  initialEstimates.print("INITIAL ESTIMATES: ");
 
   // Add prior factor for all poses in the graph
   map<int, Pose3>::iterator poseit = g_poses.begin();
   for (; poseit != g_poses.end(); poseit++)
-    graph->addPosePrior(poseit->first, poseit->second, noiseModel::Unit::Create(1));
+    graph.addPosePrior(poseit->first, poseit->second, noiseModel::Unit::Create(1));
 
   // Optimize the graph
   cout << "*******************************************************" << endl;
-  NonlinearOptimizationParameters::shared_ptr params = NonlinearOptimizationParameters::newVerbosity(Optimizer::Parameters::DAMPED);
-  visualSLAM::Optimizer::shared_values result = visualSLAM::Optimizer::optimizeGN(graph, initialEstimates, params);
+  LevenbergMarquardtParams params;
+  params.verbosityLM = LevenbergMarquardtParams::DAMPED;
+  visualSLAM::Values result = LevenbergMarquardtOptimizer(graph, initialEstimates, params).optimize();
 
   // Print final results
   cout << "*******************************************************" << endl;
-  result->print("FINAL RESULTS: ");
+  result.print("FINAL RESULTS: ");
 
   return 0;
 }

@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
 
   size_t vardim = 3;
   size_t blockdim = 3;
-  size_t nVars = 500;
+  int nVars = 500;
   size_t blocksPerVar = 5;
   size_t varsPerBlock = 2;
   size_t varSpread = 10;
@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
     for(size_t trial=0; trial<nTrials; ++trial) {
       blockGfgs.push_back(GaussianFactorGraph());
       SharedDiagonal noise = sharedSigma(blockdim, 1.0);
-      for(size_t c=0; c<nVars; ++c) {
+      for(int c=0; c<nVars; ++c) {
         for(size_t d=0; d<blocksPerVar; ++d) {
           vector<pair<Index, Matrix> > terms; terms.reserve(varsPerBlock);
           if(c == 0 && d == 0)

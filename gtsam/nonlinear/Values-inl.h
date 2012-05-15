@@ -40,31 +40,6 @@ namespace gtsam {
     ValueCloneAllocator() {}
   };
 
-#if 0
-  /* ************************************************************************* */
-  class ValueAutomaticCasting {
-    Key key_;
-    const Value& value_;
-
-  public:
-    ValueAutomaticCasting(Key key, const Value& value) : key_(key), value_(value) {}
-
-    template<class ValueType>
-    class ConvertibleToValue : public ValueType {
-    };
-
-    template<class ValueType>
-    operator const ConvertibleToValue<ValueType>& () const {
-      // Check the type and throw exception if incorrect
-      if(typeid(ValueType) != typeid(value_))
-        throw ValuesIncorrectType(key_, typeid(ValueType), typeid(value_));
-
-      // We have already checked the type, so do a "blind" static_cast, not dynamic_cast
-      return static_cast<const ConvertibleToValue<ValueType>&>(value_);
-    }
-  };
-#endif
-
   /* ************************************************************************* */
   template<typename ValueType>
   const ValueType& Values::at(Key j) const {
@@ -82,27 +57,6 @@ namespace gtsam {
     // We have already checked the type, so do a "blind" static_cast, not dynamic_cast
     return static_cast<const ValueType&>(*item->second);
   }
-
-#if 0
-  /* ************************************************************************* */
-  inline ValueAutomaticCasting Values::at(Key j) const {
-    // Find the item
-    KeyValueMap::const_iterator item = values_.find(j);
-
-    // Throw exception if it does not exist
-    if(item == values_.end())
-      throw ValuesKeyDoesNotExist("retrieve", j);
-
-    return ValueAutomaticCasting(item->first, *item->second);
-  }
-#endif
-
-#if 0
-  /* ************************************************************************* */
-  inline ValueAutomaticCasting Values::operator[](Key j) const {
-    return at(j);
-  }
-#endif
 
   /* ************************************************************************* */
   template<typename ValueType>
