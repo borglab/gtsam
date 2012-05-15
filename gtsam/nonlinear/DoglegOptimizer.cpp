@@ -18,8 +18,8 @@
 
 #include <gtsam/nonlinear/DoglegOptimizer.h>
 
-#include <gtsam/linear/GaussianMultifrontalSolver.h>
-#include <gtsam/linear/GaussianSequentialSolver.h>
+#include <gtsam/inference/EliminationTree.h>
+#include <gtsam/linear/GaussianJunctionTree.h>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
 
 using namespace std;
@@ -33,14 +33,8 @@ void DoglegOptimizer::iterate(void) {
   const Ordering& ordering = *params_.ordering;
   GaussianFactorGraph::shared_ptr linear = graph_.linearize(state_.values, ordering);
 
-  // Check whether to use QR
-  bool useQR;
-  if(params_.factorization == DoglegParams::LDL)
-    useQR = false;
-  else if(params_.factorization == DoglegParams::QR)
-    useQR = true;
-  else
-    throw runtime_error("Optimization parameter is invalid: DoglegParams::factorization");
+  // Get elimination method
+  GaussianFactorGraph::Eliminate eliminationMethod = params_.getEliminationFunction();
 
   // Pull out parameters we'll use
   const bool dlVerbose = (params_.dlVerbosity > DoglegParams::SILENT);
@@ -49,11 +43,12 @@ void DoglegOptimizer::iterate(void) {
   DoglegOptimizerImpl::IterationResult result;
 
   if(params_.elimination == DoglegParams::MULTIFRONTAL) {
-    GaussianBayesTree::shared_ptr bt = GaussianMultifrontalSolver(*linear, useQR).eliminate();
-    result = DoglegOptimizerImpl::Iterate(state_.Delta, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, *bt, graph_, state_.values, ordering, state_.error, dlVerbose);
+    GaussianBayesTree bt;
+    bt.insert(GaussianJunctionTree(*linear).eliminate(eliminationMethod));
+    result = DoglegOptimizerImpl::Iterate(state_.Delta, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, bt, graph_, state_.values, ordering, state_.error, dlVerbose);
 
   } else if(params_.elimination == DoglegParams::SEQUENTIAL) {
-    GaussianBayesNet::shared_ptr bn = GaussianSequentialSolver(*linear, useQR).eliminate();
+    GaussianBayesNet::shared_ptr bn = EliminationTree<GaussianFactor>::Create(*linear)->eliminate(eliminationMethod);
     result = DoglegOptimizerImpl::Iterate(state_.Delta, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, *bn, graph_, state_.values, ordering, state_.error, dlVerbose);
 
   } else {

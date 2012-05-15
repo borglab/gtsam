@@ -153,6 +153,8 @@ TEST( NonlinearOptimizer, optimization_method )
   paramsQR.factorization = LevenbergMarquardtParams::QR;
   LevenbergMarquardtParams paramsLDL;
   paramsLDL.factorization = LevenbergMarquardtParams::LDL;
+  LevenbergMarquardtParams paramsChol;
+  paramsLDL.factorization = LevenbergMarquardtParams::CHOLESKY;
 
 	example::Graph fg = example::createReallyNonlinearFactorGraph();
 
@@ -165,6 +167,9 @@ TEST( NonlinearOptimizer, optimization_method )
 
 	Values actualMFLDL = LevenbergMarquardtOptimizer(fg, c0, paramsLDL).optimize();
 	DOUBLES_EQUAL(0,fg.error(actualMFLDL),tol);
+
+  Values actualMFChol = LevenbergMarquardtOptimizer(fg, c0, paramsChol).optimize();
+  DOUBLES_EQUAL(0,fg.error(actualMFChol),tol);
 }
 
 /* ************************************************************************* */

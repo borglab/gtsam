@@ -19,8 +19,8 @@
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 
 #include <gtsam/base/cholesky.h> // For NegativeMatrixException
-#include <gtsam/linear/GaussianMultifrontalSolver.h>
-#include <gtsam/linear/GaussianSequentialSolver.h>
+#include <gtsam/inference/EliminationTree.h>
+#include <gtsam/linear/GaussianJunctionTree.h>
 
 using namespace std;
 
@@ -32,14 +32,8 @@ void LevenbergMarquardtOptimizer::iterate() {
   // Linearize graph
   GaussianFactorGraph::shared_ptr linear = graph_.linearize(state_.values, *params_.ordering);
 
-  // Check whether to use QR
-  bool useQR;
-  if(params_.factorization == LevenbergMarquardtParams::LDL)
-    useQR = false;
-  else if(params_.factorization == LevenbergMarquardtParams::QR)
-    useQR = true;
-  else
-    throw runtime_error("Optimization parameter is invalid: LevenbergMarquardtParams::factorization");
+  // Get elimination method
+  GaussianFactorGraph::Eliminate eliminationMethod = params_.getEliminationFunction();
 
   // Pull out parameters we'll use
   const NonlinearOptimizerParams::Verbosity nloVerbosity = params_.verbosity;
@@ -72,19 +66,19 @@ void LevenbergMarquardtOptimizer::iterate() {
     try {
 
       // Optimize
-      VectorValues::shared_ptr delta;
-      if(params_.elimination == LevenbergMarquardtParams::MULTIFRONTAL)
-        delta = GaussianMultifrontalSolver(dampedSystem, useQR).optimize();
-      else if(params_.elimination == LevenbergMarquardtParams::SEQUENTIAL)
-        delta = GaussianSequentialSolver(dampedSystem, useQR).optimize();
+      VectorValues delta;
+      if(params_.elimination == SuccessiveLinearizationParams::MULTIFRONTAL)
+        delta = GaussianJunctionTree(*linear).optimize(eliminationMethod);
+      else if(params_.elimination == SuccessiveLinearizationParams::SEQUENTIAL)
+        delta = gtsam::optimize(*EliminationTree<GaussianFactor>::Create(*linear)->eliminate(eliminationMethod));
       else
         throw runtime_error("Optimization parameter is invalid: LevenbergMarquardtParams::elimination");
 
-      if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) cout << "linear delta norm = " << delta->vector().norm() << endl;
-      if (lmVerbosity >= LevenbergMarquardtParams::TRYDELTA) delta->print("delta");
+      if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) cout << "linear delta norm = " << delta.vector().norm() << endl;
+      if (lmVerbosity >= LevenbergMarquardtParams::TRYDELTA) delta.print("delta");
 
       // update values
-      Values newValues = state_.values.retract(*delta, *params_.ordering);
+      Values newValues = state_.values.retract(delta, *params_.ordering);
 
       // create new optimization state with more adventurous lambda
       double error = graph_.error(newValues);

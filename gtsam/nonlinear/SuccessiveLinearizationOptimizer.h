@@ -32,6 +32,7 @@ public:
 
   /** See SuccessiveLinearizationParams::factorization */
   enum Factorization {
+    CHOLESKY,
     LDL,
     QR,
   };
@@ -54,7 +55,9 @@ public:
     else
       std::cout << "         elimination method: (invalid)\n";
 
-    if(factorization == LDL)
+    if(factorization == CHOLESKY)
+      std::cout << "       factorization method: CHOLESKY\n";
+    else if(factorization == LDL)
       std::cout << "       factorization method: LDL\n";
     else if(factorization == QR)
       std::cout << "       factorization method: QR\n";
@@ -67,6 +70,17 @@ public:
       std::cout << "                   ordering: COLAMD\n";
 
     std::cout.flush();
+  }
+
+  GaussianFactorGraph::Eliminate getEliminationFunction() const {
+    if(factorization == SuccessiveLinearizationParams::CHOLESKY)
+      return EliminatePreferCholesky;
+    else if(factorization == SuccessiveLinearizationParams::LDL)
+      return EliminatePreferLDL;
+    else if(factorization == SuccessiveLinearizationParams::QR)
+      return EliminateQR;
+    else
+      throw runtime_error("Nonlinear optimization parameter \"factorization\" is invalid");
   }
 };
 

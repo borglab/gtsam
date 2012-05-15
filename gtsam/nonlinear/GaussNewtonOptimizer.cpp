@@ -16,9 +16,9 @@
  * @created Feb 26, 2012
  */
 
+#include <gtsam/inference/EliminationTree.h>
+#include <gtsam/linear/GaussianJunctionTree.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
-#include <gtsam/linear/GaussianMultifrontalSolver.h>
-#include <gtsam/linear/GaussianSequentialSolver.h>
 
 using namespace std;
 
@@ -32,29 +32,23 @@ void GaussNewtonOptimizer::iterate() {
   // Linearize graph
   GaussianFactorGraph::shared_ptr linear = graph_.linearize(current.values, *params_.ordering);
 
-  // Check whether to use QR
-  bool useQR;
-  if(params_.factorization == GaussNewtonParams::LDL)
-    useQR = false;
-  else if(params_.factorization == GaussNewtonParams::QR)
-    useQR = true;
-  else
-    throw runtime_error("Optimization parameter is invalid: GaussNewtonParams::factorization");
-
   // Optimize
-  VectorValues::shared_ptr delta;
-  if(params_.elimination == GaussNewtonParams::MULTIFRONTAL)
-    delta = GaussianMultifrontalSolver(*linear, useQR).optimize();
-  else if(params_.elimination == GaussNewtonParams::SEQUENTIAL)
-    delta = GaussianSequentialSolver(*linear, useQR).optimize();
-  else
-    throw runtime_error("Optimization parameter is invalid: GaussNewtonParams::elimination");
+  VectorValues delta;
+  {
+    GaussianFactorGraph::Eliminate eliminationMethod = params_.getEliminationFunction();
+    if(params_.elimination == GaussNewtonParams::MULTIFRONTAL)
+      delta = GaussianJunctionTree(*linear).optimize(eliminationMethod);
+    else if(params_.elimination == GaussNewtonParams::SEQUENTIAL)
+      delta = gtsam::optimize(*EliminationTree<GaussianFactor>::Create(*linear)->eliminate(eliminationMethod));
+    else
+      throw runtime_error("Optimization parameter is invalid: GaussNewtonParams::elimination");
+  }
 
   // Maybe show output
-  if(params_.verbosity >= NonlinearOptimizerParams::DELTA) delta->print("delta");
+  if(params_.verbosity >= NonlinearOptimizerParams::DELTA) delta.print("delta");
 
   // Create new state with new values and new error
-  state_.values = current.values.retract(*delta, *params_.ordering);
+  state_.values = current.values.retract(delta, *params_.ordering);
   state_.error = graph_.error(state_.values);
   ++ state_.iterations;
 }
