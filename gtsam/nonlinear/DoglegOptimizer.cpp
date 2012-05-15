@@ -37,7 +37,7 @@ void DoglegOptimizer::iterate(void) {
   GaussianFactorGraph::Eliminate eliminationMethod = params_.getEliminationFunction();
 
   // Pull out parameters we'll use
-  const bool dlVerbose = (params_.dlVerbosity > DoglegParams::SILENT);
+  const bool dlVerbose = (params_.verbosityDL > DoglegParams::SILENT);
 
   // Do Dogleg iteration with either Multifrontal or Sequential elimination
   DoglegOptimizerImpl::IterationResult result;

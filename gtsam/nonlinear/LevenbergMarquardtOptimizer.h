@@ -32,7 +32,7 @@ class LevenbergMarquardtOptimizer;
 class LevenbergMarquardtParams : public SuccessiveLinearizationParams {
 public:
   /** See LevenbergMarquardtParams::lmVerbosity */
-  enum LMVerbosity {
+  enum VerbosityLM {
     SILENT,
     LAMBDA,
     TRYLAMBDA,
@@ -44,10 +44,10 @@ public:
   double lambdaInitial; ///< The initial Levenberg-Marquardt damping term (default: 1e-5)
   double lambdaFactor; ///< The amount by which to multiply or divide lambda when adjusting lambda (default: 10.0)
   double lambdaUpperBound; ///< The maximum lambda to try before assuming the optimization has failed (default: 1e5)
-  LMVerbosity lmVerbosity; ///< The verbosity level for Levenberg-Marquardt (default: SILENT), see also NonlinearOptimizerParams::verbosity
+  VerbosityLM verbosityLM; ///< The verbosity level for Levenberg-Marquardt (default: SILENT), see also NonlinearOptimizerParams::verbosity
 
   LevenbergMarquardtParams() :
-    lambdaInitial(1e-5), lambdaFactor(10.0), lambdaUpperBound(1e5), lmVerbosity(SILENT) {}
+    lambdaInitial(1e-5), lambdaFactor(10.0), lambdaUpperBound(1e5), verbosityLM(SILENT) {}
 
   virtual ~LevenbergMarquardtParams() {}
 

@@ -32,16 +32,16 @@ class DoglegOptimizer;
 class DoglegParams : public SuccessiveLinearizationParams {
 public:
   /** See DoglegParams::dlVerbosity */
-  enum DLVerbosity {
+  enum VerbosityDL {
     SILENT,
     VERBOSE
   };
 
   double deltaInitial; ///< The initial trust region radius (default: 1.0)
-  DLVerbosity dlVerbosity; ///< The verbosity level for Dogleg (default: SILENT), see also NonlinearOptimizerParams::verbosity
+  VerbosityDL verbosityDL; ///< The verbosity level for Dogleg (default: SILENT), see also NonlinearOptimizerParams::verbosity
 
   DoglegParams() :
-    deltaInitial(1.0), dlVerbosity(SILENT) {}
+    deltaInitial(1.0), verbosityDL(SILENT) {}
 
   virtual ~DoglegParams() {}
 

@@ -37,7 +37,7 @@ void LevenbergMarquardtOptimizer::iterate() {
 
   // Pull out parameters we'll use
   const NonlinearOptimizerParams::Verbosity nloVerbosity = params_.verbosity;
-  const LevenbergMarquardtParams::LMVerbosity lmVerbosity = params_.lmVerbosity;
+  const LevenbergMarquardtParams::VerbosityLM lmVerbosity = params_.verbosityLM;
 
   // Keep increasing lambda until we make make progress
   while(true) {

@@ -144,7 +144,7 @@ int main(int argc, char* argv[]) {
   // Optimize the graph
   cout << "*******************************************************" << endl;
   LevenbergMarquardtParams params;
-  params.lmVerbosity = LevenbergMarquardtParams::DAMPED;
+  params.verbosityLM = LevenbergMarquardtParams::DAMPED;
   visualSLAM::Values result = LevenbergMarquardtOptimizer(graph, initialEstimates, params).optimize();
 
   // Print final results
