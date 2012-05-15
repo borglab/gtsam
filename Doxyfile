@@ -644,6 +644,7 @@ INPUT                  = gtsam/base \
                          gtsam/discrete \
                          gtsam/linear \
                          gtsam/nonlinear \
+                         gtsam/slam \
                          gtsam \
                          gtsam_unstable/slam \
                          gtsam_unstable/base \
