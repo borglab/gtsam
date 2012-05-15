@@ -24,8 +24,8 @@ gtsam_add_subdir_tests(discrete_unstable "${discrete_local_libs}" "${discrete_fu
 # add examples
 foreach(example schedulingExample schedulingQuals12)
 	add_executable(${example} "examples/${example}.cpp")
-	add_dependencies(${example} gtsam-static)
-	target_link_libraries(${example} gtsam-static)
+	add_dependencies(${example} gtsam-static gtsam_unstable-static)
+	target_link_libraries(${example} gtsam-static gtsam_unstable-static)
 	add_custom_target(${example}.run ${EXECUTABLE_OUTPUT_PATH}${example} ${ARGN})
 endforeach(example)
 

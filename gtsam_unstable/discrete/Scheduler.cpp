@@ -29,6 +29,10 @@ namespace gtsam {
 
 		// open file
 		ifstream is(filename.c_str());
+		if (!is) {
+			cerr << "Scheduler: could not open file " << filename << endl;
+			throw runtime_error("Scheduler: could not open file " + filename);
+		}
 
 		string line; // buffer
 

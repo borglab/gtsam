@@ -53,7 +53,7 @@ void addStudent(Scheduler& s, size_t i) {
 }
 /* ************************************************************************* */
 Scheduler largeExample(size_t nrStudents = 7) {
-	string path("/Users/dellaert/borg/gtsam/gtsam/discrete/examples/");
+	string path("../../../gtsam_unstable/discrete/examples/");
 	Scheduler s(nrStudents, path + "Doodle.csv");
 
 	s.addArea("Harvey Lipkin", "Mechanics");
