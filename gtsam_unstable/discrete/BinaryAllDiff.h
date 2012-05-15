@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <gtsam_unstable/discrete/Domain.h>
+#include <gtsam_unstable/discrete/Constraint.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 
 namespace gtsam {
@@ -18,7 +20,7 @@ namespace gtsam {
 	 * for each variable we have a Index and an Index. In this factor, we
 	 * keep the Indices locally, and the Indices are stored in IndexFactor.
 	 */
-	class BinaryAllDiff: public DiscreteFactor {
+	class BinaryAllDiff: public Constraint {
 
 		size_t cardinality0_, cardinality1_; /// cardinality
 
@@ -26,7 +28,7 @@ namespace gtsam {
 
 		/// Constructor
 		BinaryAllDiff(const DiscreteKey& key1, const DiscreteKey& key2) :
-				DiscreteFactor(key1.first, key2.first),
+			Constraint(key1.first, key2.first),
 				cardinality0_(key1.second), cardinality1_(key2.second) {
 		}
 
@@ -73,12 +75,12 @@ namespace gtsam {
 		}
 
 		/// Partially apply known values
-		virtual DiscreteFactor::shared_ptr partiallyApply(const Values&) const {
+		virtual Constraint::shared_ptr partiallyApply(const Values&) const {
 			throw std::runtime_error("BinaryAllDiff::partiallyApply not implemented");
 		}
 
 		/// Partially apply known values, domain version
-		virtual DiscreteFactor::shared_ptr partiallyApply(
+		virtual Constraint::shared_ptr partiallyApply(
 				const std::vector<Domain>&) const {
 			throw std::runtime_error("BinaryAllDiff::partiallyApply not implemented");
 		}

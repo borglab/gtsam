@@ -14,7 +14,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	AllDiff::AllDiff(const DiscreteKeys& dkeys) :
-		DiscreteFactor(dkeys.indices()) {
+		Constraint(dkeys.indices()) {
 		BOOST_FOREACH(const DiscreteKey& dkey, dkeys)
 				cardinalities_.insert(dkey);
 	}
@@ -84,7 +84,7 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	DiscreteFactor::shared_ptr AllDiff::partiallyApply(const Values& values) const {
+	Constraint::shared_ptr AllDiff::partiallyApply(const Values& values) const {
 		DiscreteKeys newKeys;
 		// loop over keys and add them only if they do not appear in values
 		BOOST_FOREACH(Index k, keys_)
@@ -95,7 +95,7 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	DiscreteFactor::shared_ptr AllDiff::partiallyApply(
+	Constraint::shared_ptr AllDiff::partiallyApply(
 			const std::vector<Domain>& domains) const {
 		DiscreteFactor::Values known;
 		BOOST_FOREACH(Index k, keys_) {

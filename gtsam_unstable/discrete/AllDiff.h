@@ -19,7 +19,7 @@ namespace gtsam {
 	 * for each variable we have a Index and an Index. In this factor, we
 	 * keep the Indices locally, and the Indices are stored in IndexFactor.
 	 */
-	class AllDiff: public DiscreteFactor {
+	class AllDiff: public Constraint {
 
 		std::map<Index,size_t> cardinalities_;
 
@@ -55,10 +55,10 @@ namespace gtsam {
 		bool ensureArcConsistency(size_t j, std::vector<Domain>& domains) const;
 
 		/// Partially apply known values
-		virtual DiscreteFactor::shared_ptr partiallyApply(const Values&) const;
+		virtual Constraint::shared_ptr partiallyApply(const Values&) const;
 
 		/// Partially apply known values, domain version
-		virtual DiscreteFactor::shared_ptr partiallyApply(const std::vector<Domain>&) const;
+		virtual Constraint::shared_ptr partiallyApply(const std::vector<Domain>&) const;
 	};
 
 } // namespace gtsam

@@ -49,7 +49,7 @@ namespace gtsam {
 					// if not already a singleton
 					if (!domains[v].isSingleton()) {
 						// get the constraint and call its ensureArcConsistency method
-						DiscreteFactor::shared_ptr factor = (*this)[f];
+						Constraint::shared_ptr factor = (*this)[f];
 						changed[v] = factor->ensureArcConsistency(v,domains) || changed[v];
 					}
 				} // f
@@ -84,8 +84,8 @@ namespace gtsam {
 		// TODO: create a new ordering as we go, to ensure a connected graph
 		// KeyOrdering ordering;
 		// vector<Index> dkeys;
-		BOOST_FOREACH(const DiscreteFactor::shared_ptr& factor, factors_) {
-			DiscreteFactor::shared_ptr reduced = factor->partiallyApply(domains);
+		BOOST_FOREACH(const Constraint::shared_ptr& factor, factors_) {
+			Constraint::shared_ptr reduced = factor->partiallyApply(domains);
 			if (print) reduced->print();
 		}
 #endif
