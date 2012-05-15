@@ -1,5 +1,6 @@
-# Build full gtsam library as a single library
-# and also build tests 
+# We split the library in to separate subfolders, each containing
+# tests, timing, and an optional convenience library.
+# The following variable is the master list of subdirs to add
 set (gtsam_subdirs 
     base 
     geometry 
@@ -26,12 +27,14 @@ if (GTSAM_BUILD_CONVENIENCE_LIBRARIES)
     add_library(ccolamd STATIC ${3rdparty_srcs})
 endif()
 
+# To exclude a source from the library build (in any subfolder)
+# Add the full name to this list, as in the following example
 # Sources to remove from builds
-set (excluded_sources
-    "${CMAKE_CURRENT_SOURCE_DIR}/discrete/TypedDiscreteFactor.cpp" 
-    "${CMAKE_CURRENT_SOURCE_DIR}/discrete/TypedDiscreteFactorGraph.cpp" 
-    "${CMAKE_CURRENT_SOURCE_DIR}/discrete/parseUAI.cpp" 
-    "${CMAKE_CURRENT_SOURCE_DIR}/discrete/PotentialTable.cpp")
+set (excluded_sources "")
+#    "${CMAKE_CURRENT_SOURCE_DIR}/discrete/TypedDiscreteFactor.cpp" 
+#    "${CMAKE_CURRENT_SOURCE_DIR}/discrete/TypedDiscreteFactorGraph.cpp" 
+#    "${CMAKE_CURRENT_SOURCE_DIR}/discrete/parseUAI.cpp" 
+#    "${CMAKE_CURRENT_SOURCE_DIR}/discrete/PotentialTable.cpp")
     
 if(GTSAM_USE_QUATERNIONS)
     set(excluded_sources ${excluded_sources} "${CMAKE_CURRENT_SOURCE_DIR}/geometry/Rot3M.cpp")
@@ -55,7 +58,8 @@ foreach(subdir ${gtsam_subdirs})
     add_subdirectory(${subdir})
 endforeach(subdir)
  
-# assemble gtsam components
+# To add additional sources to gtsam when building the full library (static or shared)
+# Add the subfolder with _srcs appended to the end to this list
 set(gtsam_srcs
     ${3rdparty_srcs}
     ${base_srcs}
