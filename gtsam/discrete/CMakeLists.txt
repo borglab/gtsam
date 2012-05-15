@@ -14,9 +14,6 @@ set (discrete_local_libs
 
 # Exclude tests that don't work
 set (discrete_excluded_tests "")
-#"${CMAKE_CURRENT_SOURCE_DIR}/tests/testTypedDiscreteFactor.cpp"
-#"${CMAKE_CURRENT_SOURCE_DIR}/tests/testTypedDiscreteFactorGraph.cpp"
-#"${CMAKE_CURRENT_SOURCE_DIR}/tests/testPotentialTable.cpp")
 
 # Add all tests
 if (GTSAM_BUILD_TESTS)
