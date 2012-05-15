@@ -104,7 +104,7 @@ TEST( GaussianJunctionTree, eliminate )
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE( GaussianJunctionTree, GBNConstructor )
+TEST( GaussianJunctionTree, GBNConstructor )
 {
   GaussianFactorGraph fg = createChain();
   GaussianJunctionTree jt(fg);
@@ -167,6 +167,25 @@ TEST(GaussianJunctionTree, complicatedMarginal) {
               0.7943,    0.1656,
               0.3112,    0.6020).finished()),
       2, (Vector(3) << 0.9619, 0.0046, 0.7749).finished(), ones(3)));
+//  GaussianConditional::shared_ptr R_5_6(new GaussianConditional(
+//      pair_list_of
+//          (5, (Matrix(3,1) <<
+//              0.2435,
+//              0,
+//              0).finished())
+//          (6, (Matrix(3,2) <<
+//              0.4733,    0.1966,
+//              0.9022,    0.0979,
+//                 0.0,    0.2312).finished())     // Attempted to recreate without permutation
+//          (7, (Matrix(3,1) <<
+//              0.5853,
+//              1.0589,
+//              0.1487).finished())
+//          (8, (Matrix(3,2) <<
+//              0.2858,    0.3804,
+//              0.9893,    0.2912,
+//              0.4035,    0.4933).finished()),
+//      2, (Vector(3) << 0.8173, 0.4164, 0.7671).finished(), ones(3)));
   GaussianConditional::shared_ptr R_5_6(new GaussianConditional(
       pair_list_of
           (5, (Matrix(3,1) <<
@@ -174,9 +193,13 @@ TEST(GaussianJunctionTree, complicatedMarginal) {
               0,
               0).finished())
           (6, (Matrix(3,2) <<
-              0.1966,    0.4733,
-              0.2511,    0.3517,
-                   0,    0.8308).finished())
+              0.4733,    0.1966,
+              0.3517,    0.2511,
+              0.8308,    0.0).finished()) // NOTE the non-upper-triangular form
+              // here since this test was written when we had column permutations
+              // from LDL.  The code still works currently (does not enfore
+              // upper-triangularity in this case) but this test will need to be
+              // redone if this stops working in the future
           (7, (Matrix(3,1) <<
               0.5853,
               0.5497,
@@ -186,9 +209,6 @@ TEST(GaussianJunctionTree, complicatedMarginal) {
               0.7572,    0.5678,
               0.7537,    0.0759).finished()),
       2, (Vector(3) << 0.8173, 0.8687, 0.0844).finished(), ones(3)));
-  R_5_6->permutation_ = Eigen::Transpositions<Eigen::Dynamic>(2);
-  R_5_6->permutation_.indices()(0) = 0;
-  R_5_6->permutation_.indices()(1) = 2;
   GaussianConditional::shared_ptr R_7_8(new GaussianConditional(
       pair_list_of
           (7, (Matrix(3,1) <<
@@ -251,15 +271,15 @@ TEST(GaussianJunctionTree, complicatedMarginal) {
 
   // Marginal on 5
   Matrix expectedCov = (Matrix(1,1) << 236.5166).finished();
-  JacobianFactor::shared_ptr actualJacobianLDL = boost::dynamic_pointer_cast<JacobianFactor>(
-      bt.marginalFactor(5, EliminateLDL));
+  JacobianFactor::shared_ptr actualJacobianChol= boost::dynamic_pointer_cast<JacobianFactor>(
+      bt.marginalFactor(5, EliminateCholesky));
   JacobianFactor::shared_ptr actualJacobianQR = boost::dynamic_pointer_cast<JacobianFactor>(
       bt.marginalFactor(5, EliminateQR));
-  CHECK(assert_equal(*actualJacobianLDL, *actualJacobianQR)); // Check that LDL and QR obtained marginals are the same
-  LONGS_EQUAL(1, actualJacobianLDL->rows());
-  LONGS_EQUAL(1, actualJacobianLDL->size());
-  LONGS_EQUAL(5, actualJacobianLDL->keys()[0]);
-  Matrix actualA = actualJacobianLDL->getA(actualJacobianLDL->begin());
+  CHECK(assert_equal(*actualJacobianChol, *actualJacobianQR)); // Check that Chol and QR obtained marginals are the same
+  LONGS_EQUAL(1, actualJacobianChol->rows());
+  LONGS_EQUAL(1, actualJacobianChol->size());
+  LONGS_EQUAL(5, actualJacobianChol->keys()[0]);
+  Matrix actualA = actualJacobianChol->getA(actualJacobianChol->begin());
   Matrix actualCov = inverse(actualA.transpose() * actualA);
   EXPECT(assert_equal(expectedCov, actualCov, 1e-1));
 
@@ -270,15 +290,15 @@ TEST(GaussianJunctionTree, complicatedMarginal) {
   expectedCov = (Matrix(2,2) <<
       1015.8,    2886.2,
       2886.2,    8471.2).finished();
-  actualJacobianLDL = boost::dynamic_pointer_cast<JacobianFactor>(
-      bt.marginalFactor(6, EliminateLDL));
+  actualJacobianChol = boost::dynamic_pointer_cast<JacobianFactor>(
+      bt.marginalFactor(6, EliminateCholesky));
   actualJacobianQR = boost::dynamic_pointer_cast<JacobianFactor>(
       bt.marginalFactor(6, EliminateQR));
-  CHECK(assert_equal(*actualJacobianLDL, *actualJacobianQR)); // Check that LDL and QR obtained marginals are the same
-  LONGS_EQUAL(2, actualJacobianLDL->rows());
-  LONGS_EQUAL(1, actualJacobianLDL->size());
-  LONGS_EQUAL(6, actualJacobianLDL->keys()[0]);
-  actualA = actualJacobianLDL->getA(actualJacobianLDL->begin());
+  CHECK(assert_equal(*actualJacobianChol, *actualJacobianQR)); // Check that Chol and QR obtained marginals are the same
+  LONGS_EQUAL(2, actualJacobianChol->rows());
+  LONGS_EQUAL(1, actualJacobianChol->size());
+  LONGS_EQUAL(6, actualJacobianChol->keys()[0]);
+  actualA = actualJacobianChol->getA(actualJacobianChol->begin());
   actualCov = inverse(actualA.transpose() * actualA);
   EXPECT(assert_equal(expectedCov, actualCov, 1e1));
 

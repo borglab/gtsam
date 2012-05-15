@@ -191,7 +191,6 @@ TEST( GaussianConditional, solve )
 /* ************************************************************************* */
 TEST( GaussianConditional, solve_simple )
 {
-	// no pivoting from LDL, so R matrix is not permuted
 	Matrix full_matrix = Matrix_(4, 7,
 			1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 0.1,
 			0.0, 1.0, 0.0, 2.0, 0.0, 3.0, 0.2,
@@ -231,7 +230,6 @@ TEST( GaussianConditional, solve_simple )
 TEST( GaussianConditional, solve_multifrontal )
 {
 	// create full system, 3 variables, 2 frontals, all 2 dim
-	// no pivoting from LDL, so R matrix is not permuted
 	Matrix full_matrix = Matrix_(4, 7,
 			1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 0.1,
 			0.0, 1.0, 0.0, 2.0, 0.0, 3.0, 0.2,
@@ -273,7 +271,6 @@ TEST( GaussianConditional, solve_multifrontal )
 TEST( GaussianConditional, solve_multifrontal_permuted )
 {
   // create full system, 3 variables, 2 frontals, all 2 dim
-  // no pivoting from LDL, so R matrix is not permuted
   Matrix full_matrix = Matrix_(4, 7,
       1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 0.1,
       0.0, 1.0, 0.0, 2.0, 0.0, 3.0, 0.2,
@@ -367,30 +364,11 @@ TEST( GaussianConditional, computeInformation ) {
       0, 0, 8, 9,
       0, 0, 0, 10).finished();
 
-  // Shuffle columns
-  Eigen::Transpositions<Eigen::Dynamic> p(4);
-  p.indices()[0] = 1;
-  p.indices()[1] = 1;
-  p.indices()[2] = 2;
-  p.indices()[3] = 0;
-
-  // The expected result of permuting R
-  Matrix RpExpected = (Matrix(4,4) <<
-      2, 4, 3, 1,
-      5, 7, 6, 0,
-      0, 9, 8, 0,
-      0, 10,0, 0).finished();
-
-  // Check that the permutation does what we expect
-  Matrix RpActual = R * p.transpose();
-  EXPECT(assert_equal(RpExpected, RpActual));
-
-  // Create conditional with the permutation
+  // Create conditional
   GaussianConditional conditional(0, Vector::Zero(4), R, Vector::Constant(4, 1.0));
-  conditional.permutation_ = p;
 
   // Expected information matrix (using permuted R)
-  Matrix IExpected = RpExpected.transpose() * RpExpected;
+  Matrix IExpected = R.transpose() * R;
 
   // Actual information matrix (conditional should permute R)
   Matrix IActual = conditional.computeInformation();
@@ -407,23 +385,8 @@ TEST( GaussianConditional, isGaussianFactor ) {
       0, 0, 8, 9,
       0, 0, 0, 10).finished();
 
-  // Shuffle columns
-  Eigen::Transpositions<Eigen::Dynamic> p(4);
-  p.indices()[0] = 1;
-  p.indices()[1] = 1;
-  p.indices()[2] = 2;
-  p.indices()[3] = 0;
-
-  // The expected result of the permutation
-  Matrix RpExpected = (Matrix(4,4) <<
-      4, 1, 3, 2,
-      7, 0, 6, 5,
-      9, 0, 8, 0,
-      10,0, 0, 0).finished();
-
-  // Create a conditional with this permutation
+  // Create a conditional
   GaussianConditional conditional(0, Vector::Zero(4), R, Vector::Constant(4, 1.0));
-  conditional.permutation_ = p;
 
   // Expected information matrix computed by conditional
   Matrix IExpected = conditional.computeInformation();

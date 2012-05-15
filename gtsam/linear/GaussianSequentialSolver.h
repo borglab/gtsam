@@ -54,7 +54,7 @@ protected:
   typedef GenericSequentialSolver<GaussianFactor> Base;
   typedef boost::shared_ptr<const GaussianSequentialSolver> shared_ptr;
 
-  /** flag to determine whether to use LDL or QR */
+  /** flag to determine whether to use Cholesky or QR */
   bool useQR_;
 
 public:

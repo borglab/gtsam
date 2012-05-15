@@ -13,7 +13,7 @@
  * @file testKalmanFilter.cpp
  *
  * Simple linear Kalman filter.
- * Implemented using factor graphs, i.e., does LDL-based SRIF, really.
+ * Implemented using factor graphs, i.e., does Cholesky-based SRIF, really.
  *
  * @date Sep 3, 2011
  * @author Stephen Williams
@@ -49,7 +49,7 @@ namespace gtsam {
 		 *  The type below allows you to specify the factorization variant.
 		 */
 		enum Factorization {
-			QR, LDL
+			QR, CHOLESKY
 		};
 
 		/**

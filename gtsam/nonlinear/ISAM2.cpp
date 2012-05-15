@@ -326,8 +326,8 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
     tic(5,"eliminate");
     JunctionTree<GaussianFactorGraph, Base::Clique> jt(linearFactors_, variableIndex_);
     sharedClique newRoot;
-    if(params_.factorization == ISAM2Params::LDL)
-      newRoot = jt.eliminate(EliminatePreferLDL);
+    if(params_.factorization == ISAM2Params::CHOLESKY)
+      newRoot = jt.eliminate(EliminatePreferCholesky);
     else if(params_.factorization == ISAM2Params::QR)
       newRoot = jt.eliminate(EliminateQR);
     else assert(false);

@@ -251,7 +251,7 @@ HessianFactor::HessianFactor(const FactorGraph<GaussianFactor>& factors,
 		const vector<size_t>& dimensions, const Scatter& scatter) :
 		info_(matrix_) {
 
-	const bool debug = ISDEBUG("EliminateCholesky") || ISDEBUG("EliminateLDL");
+	const bool debug = ISDEBUG("EliminateCholesky");
 	// Form Ab' * Ab
 	tic(1, "allocate");
 	info_.resize(dimensions.begin(), dimensions.end(), false);
@@ -472,19 +472,13 @@ void HessianFactor::partialCholesky(size_t nrFrontals) {
 }
 
 /* ************************************************************************* */
-Eigen::LDLT<Matrix>::TranspositionType HessianFactor::partialLDL(size_t nrFrontals) {
-  return ldlPartial(matrix_, info_.offset(nrFrontals));
-}
-
-/* ************************************************************************* */
-GaussianConditional::shared_ptr
-HessianFactor::splitEliminatedFactor(size_t nrFrontals, const Eigen::LDLT<Matrix>::TranspositionType& permutation) {
+GaussianConditional::shared_ptr HessianFactor::splitEliminatedFactor(size_t nrFrontals) {
 
   static const bool debug = false;
 
   // Extract conditionals
   tic(1, "extract conditionals");
-  GaussianConditional::shared_ptr conditionals(new GaussianConditional());
+  GaussianConditional::shared_ptr conditional(new GaussianConditional());
   typedef VerticalBlockView<Matrix> BlockAb;
   BlockAb Ab(matrix_, info_);
 
@@ -492,12 +486,11 @@ HessianFactor::splitEliminatedFactor(size_t nrFrontals, const Eigen::LDLT<Matrix
   Ab.rowEnd() = Ab.rowStart() + varDim;
 
   // Create one big conditionals with many frontal variables.
-  // Because of the pivoting permutation when using LDL, treating each variable separately doesn't make sense.
   tic(2, "construct cond");
   Vector sigmas = Vector::Ones(varDim);
-  conditionals = boost::make_shared<ConditionalType>(keys_.begin(), keys_.end(), nrFrontals, Ab, sigmas, permutation);
+  conditional = boost::make_shared<ConditionalType>(keys_.begin(), keys_.end(), nrFrontals, Ab, sigmas);
   toc(2, "construct cond");
-  if(debug) conditionals->print("Extracted conditional: ");
+  if(debug) conditional->print("Extracted conditional: ");
 
   toc(1, "extract conditionals");
 
@@ -510,7 +503,7 @@ HessianFactor::splitEliminatedFactor(size_t nrFrontals, const Eigen::LDLT<Matrix
   keys_.swap(remainingKeys);
   toc(2, "remaining factor");
 
-  return conditionals;
+  return conditional;
 }
 
 } // gtsam

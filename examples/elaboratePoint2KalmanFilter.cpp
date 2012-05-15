@@ -35,7 +35,7 @@ using namespace gtsam;
 
 int main() {
 
-	// [code below basically does SRIF with LDL]
+	// [code below basically does SRIF with Cholesky]
 
   // Create a factor graph to perform the inference
   GaussianFactorGraph::shared_ptr linearFactorGraph(new GaussianFactorGraph);

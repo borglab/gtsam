@@ -152,7 +152,6 @@ namespace gtsam {
   /* ************************************************************************* */
   JacobianFactor::JacobianFactor(const GaussianConditional& cg) : GaussianFactor(cg), model_(noiseModel::Diagonal::Sigmas(cg.get_sigmas(), true)), Ab_(matrix_) {
     Ab_.assignNoalias(cg.rsd_);
-    Ab_.range(0,cg.nrFrontals()) = Ab_.range(0,cg.nrFrontals()) * cg.permutation_.transpose();
     firstNonzeroBlocks_.resize(cg.get_d().size(), 0); // set sigmas from precisions
     assertInvariants();
   }

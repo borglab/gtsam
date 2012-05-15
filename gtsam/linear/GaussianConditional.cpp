@@ -124,7 +124,6 @@ GaussianConditional& GaussianConditional::operator=(const GaussianConditional& r
     this->Base::operator=(rhs);  // Copy keys
     rsd_.assignNoalias(rhs.rsd_);     // Copy matrix and block configuration
     sigmas_ = rhs.sigmas_;       // Copy sigmas
-    permutation_ = rhs.permutation_; // Copy permutation
   }
   return *this;
 }
@@ -143,7 +142,6 @@ void GaussianConditional::print(const string &s) const
   }
   gtsam::print(Vector(get_d()),"d");
   gtsam::print(sigmas_,"sigmas");
-  cout << "Permutation: " << permutation_.indices().transpose() << endl;
 }    
 
 /* ************************************************************************* */
@@ -196,8 +194,7 @@ inline static void doSolveInPlace(const GaussianConditional& conditional, VALUES
   if(debug) conditional.print("Solving conditional in place");
   Vector xS = internal::extractVectorValuesSlices(x, conditional.beginParents(), conditional.endParents());
   xS = conditional.get_d() - conditional.get_S() * xS;
-  Vector soln = conditional.permutation().transpose() *
-      conditional.get_R().triangularView<Eigen::Upper>().solve(xS);
+  Vector soln = conditional.get_R().triangularView<Eigen::Upper>().solve(xS);
   if(debug) {
     gtsam::print(Matrix(conditional.get_R()), "Calling backSubstituteUpper on ");
     gtsam::print(soln, "full back-substitution solution: ");
@@ -219,7 +216,7 @@ void GaussianConditional::solveInPlace(Permuted<VectorValues>& x) const {
 void GaussianConditional::solveTransposeInPlace(VectorValues& gy) const {
 	Vector frontalVec = internal::extractVectorValuesSlices(gy, beginFrontals(), endFrontals());
 	// TODO: verify permutation
-	frontalVec = permutation_ * gtsam::backSubstituteUpper(frontalVec,Matrix(get_R()));
+	frontalVec = gtsam::backSubstituteUpper(frontalVec,Matrix(get_R()));
 	GaussianConditional::const_iterator it;
 	for (it = beginParents(); it!= endParents(); it++) {
 		const Index i = *it;

@@ -46,7 +46,7 @@ GaussianBayesTree::shared_ptr GaussianMultifrontalSolver::eliminate() const {
 	if (useQR_)
 		return Base::eliminate(&EliminateQR);
 	else
-		return Base::eliminate(&EliminatePreferLDL);
+		return Base::eliminate(&EliminatePreferCholesky);
 }
 
 /* ************************************************************************* */
@@ -56,7 +56,7 @@ VectorValues::shared_ptr GaussianMultifrontalSolver::optimize() const {
   if (useQR_)
   	values = VectorValues::shared_ptr(new VectorValues(junctionTree_->optimize(&EliminateQR)));
   else
-  	values= VectorValues::shared_ptr(new VectorValues(junctionTree_->optimize(&EliminatePreferLDL)));
+  	values= VectorValues::shared_ptr(new VectorValues(junctionTree_->optimize(&EliminatePreferCholesky)));
   toc(2,"optimize");
   return values;
 }
@@ -66,7 +66,7 @@ GaussianFactorGraph::shared_ptr GaussianMultifrontalSolver::jointFactorGraph(con
 	if (useQR_)
 		return GaussianFactorGraph::shared_ptr(new GaussianFactorGraph(*Base::jointFactorGraph(js,&EliminateQR)));
 	else
-		return GaussianFactorGraph::shared_ptr(new GaussianFactorGraph(*Base::jointFactorGraph(js,&EliminatePreferLDL)));
+		return GaussianFactorGraph::shared_ptr(new GaussianFactorGraph(*Base::jointFactorGraph(js,&EliminatePreferCholesky)));
 }
 
 /* ************************************************************************* */
@@ -74,7 +74,7 @@ GaussianFactor::shared_ptr GaussianMultifrontalSolver::marginalFactor(Index j) c
 	if (useQR_)
 		return Base::marginalFactor(j,&EliminateQR);
 	else
-		return Base::marginalFactor(j,&EliminatePreferLDL);
+		return Base::marginalFactor(j,&EliminatePreferCholesky);
 }
 
 /* ************************************************************************* */
@@ -85,8 +85,8 @@ Matrix GaussianMultifrontalSolver::marginalCovariance(Index j) const {
   	fg.push_back(Base::marginalFactor(j,&EliminateQR));
   	conditional = EliminateQR(fg,1).first;
   } else {
-  	fg.push_back(Base::marginalFactor(j,&EliminatePreferLDL));
-  	conditional = EliminatePreferLDL(fg,1).first;
+  	fg.push_back(Base::marginalFactor(j,&EliminatePreferCholesky));
+  	conditional = EliminatePreferCholesky(fg,1).first;
   }
   return conditional->computeInformation().inverse();
 }

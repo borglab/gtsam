@@ -476,7 +476,7 @@ TEST( GaussianFactorGraph, getOrdering)
 //}
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, optimize_LDL )
+TEST( GaussianFactorGraph, optimize_Cholesky )
 {
   // create an ordering
   Ordering ord; ord += kx(2),kl(1),kx(1);

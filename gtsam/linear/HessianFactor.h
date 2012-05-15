@@ -288,14 +288,8 @@ namespace gtsam {
 		 */
     void partialCholesky(size_t nrFrontals);
 
-    /**
-     * Do LDL.
-     */
-    Eigen::LDLT<Matrix>::TranspositionType partialLDL(size_t nrFrontals);
-
     /** split partially eliminated factor */
-    boost::shared_ptr<GaussianConditional> splitEliminatedFactor(
-				size_t nrFrontals, const Eigen::LDLT<Matrix>::TranspositionType& permutation = Eigen::LDLT<Matrix>::TranspositionType());
+    boost::shared_ptr<GaussianConditional> splitEliminatedFactor(size_t nrFrontals);
 
     /** assert invariants */
     void assertInvariants() const;

@@ -26,7 +26,7 @@ namespace gtsam {
 
 	/**
 	 * This is a generic Extended Kalman Filter class implemented using nonlinear factors. GTSAM
-	 * basically does SRIF with LDL to solve the filter problem, making this an efficient, numerically
+	 * basically does SRIF with Cholesky to solve the filter problem, making this an efficient, numerically
 	 * stable Kalman Filter implementation.
 	 *
 	 * The Kalman Filter relies on two models: a motion model that predicts the next state using

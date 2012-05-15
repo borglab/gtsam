@@ -107,14 +107,14 @@ struct ISAM2Params {
 
   bool evaluateNonlinearError; ///< Whether to evaluate the nonlinear error before and after the update, to return in ISAM2Result from update()
 
-  enum Factorization { LDL, QR };
-  /** Specifies whether to use QR or LDL numerical factorization (default: LDL).
-   * LDL is faster but potentially numerically unstable for poorly-conditioned problems, which can occur when
+  enum Factorization { CHOLESKY, QR };
+  /** Specifies whether to use QR or CHOESKY numerical factorization (default: CHOLESKY).
+   * Cholesky is faster but potentially numerically unstable for poorly-conditioned problems, which can occur when
    * uncertainty is very low in some variables (or dimensions of variables) and very high in others.  QR is
-   * slower but more numerically stable in poorly-conditioned problems.  We suggest using the default of LDL
+   * slower but more numerically stable in poorly-conditioned problems.  We suggest using the default of Cholesky
    * unless gtsam sometimes throws NegativeMatrixException when your problem's Hessian is actually positive
    * definite.  For positive definite problems, numerical error accumulation can cause the problem to become
-   * numerically negative or indefinite as solving proceeds, especially when using LDL.
+   * numerically negative or indefinite as solving proceeds, especially when using Cholesky.
    */
   Factorization factorization;
 
@@ -136,7 +136,7 @@ struct ISAM2Params {
       int _relinearizeSkip = 10, ///< see ISAM2Params::relinearizeSkip
       bool _enableRelinearization = true, ///< see ISAM2Params::enableRelinearization
       bool _evaluateNonlinearError = false, ///< see ISAM2Params::evaluateNonlinearError
-      Factorization _factorization = ISAM2Params::LDL, ///< see ISAM2Params::factorization
+      Factorization _factorization = ISAM2Params::CHOLESKY, ///< see ISAM2Params::factorization
       bool _cacheLinearizedFactors = true, ///< see ISAM2Params::cacheLinearizedFactors
       const KeyFormatter& _keyFormatter = DefaultKeyFormatter ///< see ISAM2::Params::keyFormatter
   ) : optimizationParams(_optimizationParams), relinearizeThreshold(_relinearizeThreshold),
@@ -258,7 +258,7 @@ struct ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique, GaussianConditional
     // Compute gradient contribution
     const ConditionalType& conditional(*result.first);
     // Rewrite -(R * P')'*d   as   -(d' * R * P')'   for computational speed reasons
-    gradientContribution_ << -(conditional.get_d().transpose() * conditional.get_R() * conditional.permutation().transpose()).transpose(),
+    gradientContribution_ << -conditional.get_R().transpose() * conditional.get_d(),
         -conditional.get_S().transpose() * conditional.get_d();
   }
 

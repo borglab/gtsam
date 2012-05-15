@@ -219,8 +219,8 @@ TEST(GaussianJunctionTree, simpleMarginal) {
 
   // Compute marginal directly from BayesTree
   GaussianBayesTree gbt;
-  gbt.insert(GaussianJunctionTree(gfg).eliminate(EliminateLDL));
-  marginalFactor = gbt.marginalFactor(1, EliminateLDL);
+  gbt.insert(GaussianJunctionTree(gfg).eliminate(EliminateCholesky));
+  marginalFactor = gbt.marginalFactor(1, EliminateCholesky);
   marginalJacobian = boost::dynamic_pointer_cast<JacobianFactor>(marginalFactor);
   Matrix actual3 = inverse(marginalJacobian->getA(marginalJacobian->begin()).transpose() * marginalJacobian->getA(marginalJacobian->begin()));
 

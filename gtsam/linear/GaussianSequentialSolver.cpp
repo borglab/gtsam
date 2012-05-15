@@ -53,7 +53,7 @@ GaussianBayesNet::shared_ptr GaussianSequentialSolver::eliminate() const {
 	if (useQR_)
 		return Base::eliminate(&EliminateQR);
 	else
-		return Base::eliminate(&EliminatePreferLDL);
+		return Base::eliminate(&EliminatePreferCholesky);
 }
 
 /* ************************************************************************* */
@@ -90,7 +90,7 @@ GaussianFactor::shared_ptr GaussianSequentialSolver::marginalFactor(Index j) con
 	if (useQR_)
 		return Base::marginalFactor(j,&EliminateQR);
 	else
-		return Base::marginalFactor(j,&EliminatePreferLDL);
+		return Base::marginalFactor(j,&EliminatePreferCholesky);
 }
 
 /* ************************************************************************* */
@@ -101,8 +101,8 @@ Matrix GaussianSequentialSolver::marginalCovariance(Index j) const {
 		fg.push_back(Base::marginalFactor(j, &EliminateQR));
 		conditional = EliminateQR(fg, 1).first;
 	} else {
-		fg.push_back(Base::marginalFactor(j, &EliminatePreferLDL));
-		conditional = EliminatePreferLDL(fg, 1).first;
+		fg.push_back(Base::marginalFactor(j, &EliminatePreferCholesky));
+		conditional = EliminatePreferCholesky(fg, 1).first;
 	}
 	return conditional->computeInformation().inverse();
 }
@@ -115,7 +115,7 @@ GaussianSequentialSolver::jointFactorGraph(const std::vector<Index>& js) const {
 				*Base::jointFactorGraph(js, &EliminateQR)));
 	else
 		return GaussianFactorGraph::shared_ptr(new GaussianFactorGraph(
-				*Base::jointFactorGraph(js, &EliminatePreferLDL)));
+				*Base::jointFactorGraph(js, &EliminatePreferCholesky)));
 }
 
 } /// namespace gtsam

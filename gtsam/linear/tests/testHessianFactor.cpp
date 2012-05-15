@@ -414,7 +414,7 @@ TEST_UNSAFE(HessianFactor, CombineAndEliminate)
   // create expected Hessian after elimination
   HessianFactor expectedCholeskyFactor(expectedFactor);
 
-  GaussianFactorGraph::EliminationResult actualCholesky = EliminateLDL(
+  GaussianFactorGraph::EliminationResult actualCholesky = EliminateCholesky(
 			*gfg.convertCastFactors<FactorGraph<HessianFactor> > (), 1);
 	HessianFactor::shared_ptr actualFactor = boost::dynamic_pointer_cast<
 			HessianFactor>(actualCholesky.second);
@@ -465,7 +465,7 @@ TEST(HessianFactor, eliminate2 )
   FactorGraph<HessianFactor> combinedLFG_Chol;
   combinedLFG_Chol.push_back(combinedLF_Chol);
 
-  GaussianFactorGraph::EliminationResult actual_Chol = EliminateLDL(
+  GaussianFactorGraph::EliminationResult actual_Chol = EliminateCholesky(
 			combinedLFG_Chol, 1);
 	HessianFactor::shared_ptr actualFactor = boost::dynamic_pointer_cast<
 			HessianFactor>(actual_Chol.second);
@@ -573,16 +573,6 @@ TEST(HessianFactor, eliminateUnsorted) {
   GaussianFactor::shared_ptr actual_factor;
   boost::tie(actual_bn, actual_factor) =
   		EliminatePreferCholesky(unsortedGraph, 1);
-
-  EXPECT(assert_equal(*expected_bn, *actual_bn, 1e-10));
-  EXPECT(assert_equal(*expected_factor, *actual_factor, 1e-10));
-
-  // Test LDL
-  boost::tie(expected_bn, expected_factor) =
-      EliminatePreferLDL(sortedGraph, 1);
-
-  boost::tie(actual_bn, actual_factor) =
-      EliminatePreferLDL(unsortedGraph, 1);
 
   EXPECT(assert_equal(*expected_bn, *actual_bn, 1e-10));
   EXPECT(assert_equal(*expected_factor, *actual_factor, 1e-10));

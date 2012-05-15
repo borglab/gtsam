@@ -165,7 +165,7 @@ TEST( KalmanFilter, predict ) {
 }
 
 /* ************************************************************************* */
-// Test both QR and LDL versions in case of a realistic (AHRS) dynamics update
+// Test both QR and Cholesky versions in case of a realistic (AHRS) dynamics update
 TEST( KalmanFilter, QRvsCholesky ) {
 
 	Vector mean = ones(9);
@@ -180,8 +180,8 @@ TEST( KalmanFilter, QRvsCholesky ) {
 			63.8, -0.0, 0.1, 0.0, 0.0, 0.0, 0.0, 625.0, 0.0,
 			-0.6, -0.1, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 625.0);
 
-	// Create two Kalman filter of dimension 9, one using QR the other LDL
-	KalmanFilter kfa(9, KalmanFilter::QR), kfb(9, KalmanFilter::LDL);
+	// Create two Kalman filter of dimension 9, one using QR the other Cholesky
+	KalmanFilter kfa(9, KalmanFilter::QR), kfb(9, KalmanFilter::CHOLESKY);
 
 	// create corresponding initial states
 	KalmanFilter::State p0a = kfa.init(mean, covariance);

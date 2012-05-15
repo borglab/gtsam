@@ -60,27 +60,16 @@ public:
   typedef rsd_type::Column d_type;
   typedef rsd_type::constColumn const_d_type;
 
-  typedef Eigen::LDLT<Matrix>::TranspositionType TranspositionType;
-
 protected:
 
 	/** Store the conditional as one big upper-triangular wide matrix, arranged
 	 * as \f$ [ R S1 S2 ... d ] \f$.  Access these blocks using a VerticalBlockView.
-	 *
-	 * WARNING!!! When using with LDL, R is the permuted upper triangular matrix.
-	 * Its columns/rows do not correspond to the correct components of the variables.
-	 * Use R*permutation_ to get back the correct non-permuted order,
-	 * for example when converting to the Jacobian
 	 * */
 	RdMatrix matrix_;
 	rsd_type rsd_;
 
 	/** vector of standard deviations */
 	Vector sigmas_;
-
-  /** Store the permutation matrix, used by LDL' in the pivoting process
-   * This is used to get back the correct ordering of x after solving by backSubstitition */
-  TranspositionType permutation_;
 
   /** typedef to base class */
   typedef IndexConditional Base;
@@ -131,8 +120,7 @@ public:
 	 */
 	template<typename ITERATOR, class MATRIX>
 	GaussianConditional(ITERATOR firstKey, ITERATOR lastKey, size_t nrFrontals,
-      const VerticalBlockView<MATRIX>& matrices, const Vector& sigmas,
-      const TranspositionType& permutation = TranspositionType());
+      const VerticalBlockView<MATRIX>& matrices, const Vector& sigmas);
 
   /** Copy constructor */
 	GaussianConditional(const GaussianConditional& rhs);
@@ -160,8 +148,7 @@ public:
 
 	/** Compute the information matrix */
 	Matrix computeInformation() const {
-	  Matrix R = get_R() * permutation_.transpose();
-	  return R.transpose() * R;
+	  return get_R().transpose() * get_R();
 	}
 
 	/** Return a view of the upper-triangular R block of the conditional */
@@ -179,11 +166,6 @@ public:
 	rsd_type::constBlock get_S() const { return rsd_.range(nrFrontals(), size()); }
 	/** Get the Vector of sigmas */
 	const Vector& get_sigmas() const {return sigmas_;}
-
-	/** Return the permutation of R made by LDL, to recover R in the correct
-	 * order use R*permutation, see the GaussianConditional main class comment
-	 */
-	const TranspositionType& permutation() const { return permutation_; }
 
 protected:
 
@@ -269,9 +251,9 @@ private:
 template<typename ITERATOR, class MATRIX>
 GaussianConditional::GaussianConditional(ITERATOR firstKey, ITERATOR lastKey,
 		size_t nrFrontals, const VerticalBlockView<MATRIX>& matrices,
-		const Vector& sigmas, const GaussianConditional::TranspositionType& permutation) :
+		const Vector& sigmas) :
 	IndexConditional(std::vector<Index>(firstKey, lastKey), nrFrontals), rsd_(
-			matrix_), sigmas_(sigmas), permutation_(permutation) {
+			matrix_), sigmas_(sigmas) {
 	rsd_.assignNoalias(matrices);
 }
 

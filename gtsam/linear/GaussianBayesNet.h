@@ -116,8 +116,6 @@ namespace gtsam {
 
 	/**
 	 * Return (dense) upper-triangular matrix representation
-	 * NOTE: if this is the result of elimination with LDL, the matrix will
-	 * not necessarily be upper triangular due to column permutations
 	 */
 	std::pair<Matrix, Vector> matrix(const GaussianBayesNet&);
 

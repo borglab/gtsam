@@ -118,7 +118,7 @@ struct ISAM2::Impl {
    * problem.  This is permuted during use and so is cleared when this function
    * returns in order to invalidate it.
    * \param keys The set of indices used in \c factors.
-   * \param useQR Whether to use QR (if true), or LDL (if false).
+   * \param useQR Whether to use QR (if true), or Cholesky (if false).
    * \return The eliminated BayesTree and the permutation to be applied to the
    * rest of the ISAM2 data.
    */

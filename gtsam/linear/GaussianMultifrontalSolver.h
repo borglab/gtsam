@@ -48,7 +48,7 @@ protected:
   typedef GenericMultifrontalSolver<GaussianFactor, GaussianJunctionTree> Base;
   typedef boost::shared_ptr<const GaussianMultifrontalSolver> shared_ptr;
 
-  /** flag to determine whether to use LDL or QR */
+  /** flag to determine whether to use Cholesky or QR */
   bool useQR_;
 
 public:

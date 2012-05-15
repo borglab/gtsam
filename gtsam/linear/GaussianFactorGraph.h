@@ -286,47 +286,4 @@ namespace gtsam {
   GaussianFactorGraph::EliminationResult EliminateCholesky(const FactorGraph<
 			GaussianFactor>& factors, size_t nrFrontals = 1);
 
-  /**
-   * Densely partially eliminate with LDL factorization.  JacobianFactors
-   * are left-multiplied with their transpose to form the Hessian using the
-   * conversion constructor HessianFactor(const JacobianFactor&).
-   *
-   * If any factors contain constrained noise models (any sigmas equal to
-   * zero), QR factorization will be performed instead, because our current
-   * implementation cannot handle constrained noise models in LDL
-   * factorization.  EliminateLDL(), on the other hand, will fail if any
-   * factors contain constrained noise models.
-   *
-   * Variables are eliminated in the natural order of the variable indices of in
-   * the factors.
-   * @param factors Factors to combine and eliminate
-   * @param nrFrontals Number of frontal variables to eliminate.
-   * @return The conditional and remaining factor
-
-   * \ingroup LinearSolving
-   */
-  GaussianFactorGraph::EliminationResult EliminatePreferLDL(const FactorGraph<
-          GaussianFactor>& factors, size_t nrFrontals = 1);
-
-  /**
-   * Densely partially eliminate with LDL factorization.  JacobianFactors
-   * are left-multiplied with their transpose to form the Hessian using the
-   * conversion constructor HessianFactor(const JacobianFactor&).
-   *
-   * If any factors contain constrained noise models, this function will fail
-   * because our current implementation cannot handle constrained noise models
-   * in LDL factorization.  The function EliminatePreferLDL()
-   * automatically does QR instead when this is the case.
-   *
-   * Variables are eliminated in the natural order of the variable indices of in
-   * the factors.
-   * @param factors Factors to combine and eliminate
-   * @param nrFrontals Number of frontal variables to eliminate.
-   * @return The conditional and remaining factor
-
-   * \ingroup LinearSolving
-   */
-  GaussianFactorGraph::EliminationResult EliminateLDL(const FactorGraph<
-      GaussianFactor>& factors, size_t nrFrontals = 1);
-
 } // namespace gtsam

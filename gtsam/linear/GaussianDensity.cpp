@@ -32,7 +32,6 @@ namespace gtsam {
 	  gtsam::print(Matrix(get_R()),"R");
 	  gtsam::print(Vector(get_d()),"d");
 	  gtsam::print(sigmas_,"sigmas");
-	  cout << "Permutation: " << permutation_.indices().transpose() << endl;
 	}
 
 	/* ************************************************************************* */

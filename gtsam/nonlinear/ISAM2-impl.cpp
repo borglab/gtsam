@@ -246,7 +246,7 @@ ISAM2::Impl::PartialSolve(GaussianFactorGraph& factors,
   tic(7,"eliminate");
   JunctionTree<GaussianFactorGraph, ISAM2::Clique> jt(factors, affectedFactorsIndex);
   if(!useQR)
-    result.bayesTree = jt.eliminate(EliminatePreferLDL);
+    result.bayesTree = jt.eliminate(EliminatePreferCholesky);
   else
     result.bayesTree = jt.eliminate(EliminateQR);
   toc(7,"eliminate");
@@ -338,7 +338,7 @@ void updateDoglegDeltas(const boost::shared_ptr<ISAM2Clique>& clique, std::vecto
     Vector gS = internal::extractVectorValuesSlices(grad, (*clique)->beginParents(), (*clique)->endParents());
 
     // Compute R*g and S*g for this clique
-    Vector RSgProd = ((*clique)->get_R() * (*clique)->permutation().transpose()) * gR + (*clique)->get_S() * gS;
+    Vector RSgProd = (*clique)->get_R() * gR + (*clique)->get_S() * gS;
 
     // Write into RgProd vector
     internal::writeVectorValuesSlices(RSgProd, RgProd, (*clique)->beginFrontals(), (*clique)->endFrontals());
