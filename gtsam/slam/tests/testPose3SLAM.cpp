@@ -53,7 +53,7 @@ TEST(Pose3Graph, optimizeCircle) {
   Pose3 gT0 = hexagon.at<Pose3>(PoseKey(0)), gT1 = hexagon.at<Pose3>(PoseKey(1));
 
 	// create a Pose graph with one equality constraint and one measurement
-  Pose3Graph fg;
+  pose3SLAM::Graph fg;
   fg.addHardConstraint(0, gT0);
   Pose3 _0T1 = gT0.between(gT1); // inv(gT0)*gT1
   double theta = M_PI/3.0;
@@ -128,7 +128,7 @@ TEST( Pose3Factor, error )
 
 	// Create factor
 	SharedNoiseModel I6(noiseModel::Unit::Create(6));
-	Pose3Factor factor(PoseKey(1), PoseKey(2), z, I6);
+	pose3SLAM::Constraint factor(PoseKey(1), PoseKey(2), z, I6);
 
 	// Create config
 	Values x;

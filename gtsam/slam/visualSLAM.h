@@ -26,7 +26,7 @@
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
-#include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/geometry/SimpleCamera.h>
 
 
@@ -85,30 +85,21 @@ namespace visualSLAM {
      *  @param K shared pointer to calibration object
      */
     void addMeasurement(const Point2& measured, const SharedNoiseModel& model,
-        Index poseKey, Index pointKey, const shared_ptrK& K) {
-      boost::shared_ptr<ProjectionFactor> factor(new ProjectionFactor(measured, model, PoseKey(poseKey), PointKey(pointKey), K));
-      push_back(factor);
-    }
+        Index poseKey, Index pointKey, const shared_ptrK& K);
 
     /**
      *  Add a constraint on a pose (for now, *must* be satisfied in any Values)
      *  @param key variable key of the camera pose
      *  @param p to which pose to constrain it to
      */
-    void addPoseConstraint(Index poseKey, const Pose3& p = Pose3()) {
-      boost::shared_ptr<PoseConstraint> factor(new PoseConstraint(PoseKey(poseKey), p));
-      push_back(factor);
-    }
+    void addPoseConstraint(Index poseKey, const Pose3& p = Pose3());
 
     /**
      *  Add a constraint on a point (for now, *must* be satisfied in any Values)
      *  @param key variable key of the landmark
      *  @param p point around which soft prior is defined
      */
-    void addPointConstraint(Index pointKey, const Point3& p = Point3()) {
-      boost::shared_ptr<PointConstraint> factor(new PointConstraint(PointKey(pointKey), p));
-      push_back(factor);
-    }
+    void addPointConstraint(Index pointKey, const Point3& p = Point3());
 
     /**
      *  Add a prior on a pose
@@ -116,10 +107,7 @@ namespace visualSLAM {
      *  @param p around which soft prior is defined
      *  @param model uncertainty model of this prior
      */
-    void addPosePrior(Index poseKey, const Pose3& p = Pose3(), const SharedNoiseModel& model = noiseModel::Unit::Create(6)) {
-      boost::shared_ptr<PosePrior> factor(new PosePrior(PoseKey(poseKey), p, model));
-      push_back(factor);
-    }
+    void addPosePrior(Index poseKey, const Pose3& p = Pose3(), const SharedNoiseModel& model = noiseModel::Unit::Create(6));
 
     /**
      *  Add a prior on a landmark
@@ -127,10 +115,7 @@ namespace visualSLAM {
      *  @param p to which point to constrain it to
      *  @param model uncertainty model of this prior
      */
-    void addPointPrior(Index pointKey, const Point3& p = Point3(), const SharedNoiseModel& model = noiseModel::Unit::Create(3)) {
-      boost::shared_ptr<PointPrior> factor(new PointPrior(PointKey(pointKey), p, model));
-      push_back(factor);
-    }
+    void addPointPrior(Index pointKey, const Point3& p = Point3(), const SharedNoiseModel& model = noiseModel::Unit::Create(3));
 
     /**
      *  Add a range prior to a landmark
@@ -139,8 +124,17 @@ namespace visualSLAM {
      *  @param range approximate range to landmark
      *  @param model uncertainty model of this prior
      */
-    void addRangeFactor(Index poseKey, Index pointKey, double range, const SharedNoiseModel& model = noiseModel::Unit::Create(1)) {
-      push_back(boost::shared_ptr<RangeFactor>(new RangeFactor(PoseKey(poseKey), PointKey(pointKey), range, model)));
+    void addRangeFactor(Index poseKey, Index pointKey, double range, const SharedNoiseModel& model = noiseModel::Unit::Create(1));
+
+    /**
+     *  Optimize the graph
+     *  @param initialEstimate initial estimate of all variables in the graph
+     *  @param pointKey variable key of the landmark
+     *  @param range approximate range to landmark
+     *  @param model uncertainty model of this prior
+     */
+    Values optimize(const Values& initialEstimate) {
+      return LevenbergMarquardtOptimizer(*this, initialEstimate).optimize();
     }
 
   }; // Graph

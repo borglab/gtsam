@@ -25,7 +25,6 @@
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/geometry/Pose2.h>
 
 // Use planarSLAM namespace for specific SLAM instance

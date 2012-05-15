@@ -25,8 +25,6 @@
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/linear/GaussianSequentialSolver.h>
-#include <gtsam/linear/GaussianMultifrontalSolver.h>
 
 // Use pose2SLAM namespace for specific SLAM instance
 namespace pose2SLAM {
@@ -96,7 +94,7 @@ namespace pose2SLAM {
         const SharedNoiseModel& model);
 
     /// Optimize
-    Values optimize(const Values& initialEstimate) {
+    Values optimize(const Values& initialEstimate) const {
       return LevenbergMarquardtOptimizer(*this, initialEstimate).optimize();
     }
   };

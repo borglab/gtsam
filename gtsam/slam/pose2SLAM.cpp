@@ -16,8 +16,6 @@
  **/
 
 #include <gtsam/slam/pose2SLAM.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/NonlinearOptimizer.h>
 
 // Use pose2SLAM namespace for specific SLAM instance
 
@@ -39,17 +37,19 @@ namespace pose2SLAM {
     push_back(factor);
   }
 
+  /* ************************************************************************* */
   void Graph::addPoseConstraint(Index i, const Pose2& p) {
     sharedFactor factor(new HardConstraint(PoseKey(i), p));
     push_back(factor);
   }
 
+  /* ************************************************************************* */
   void Graph::addOdometry(Index i, Index j, const Pose2& z,
       const SharedNoiseModel& model) {
     sharedFactor factor(new Odometry(PoseKey(i), PoseKey(j), z, model));
     push_back(factor);
   }
 
-/* ************************************************************************* */
+  /* ************************************************************************* */
 
 } // pose2SLAM
