@@ -2,6 +2,7 @@ set(tests_local_libs
    slam
    nonlinear
    linear
+   discrete
    inference
    geometry
    base
