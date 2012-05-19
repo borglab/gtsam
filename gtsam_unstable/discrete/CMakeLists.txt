@@ -25,6 +25,14 @@ gtsam_add_subdir_tests(discrete_unstable "${discrete_local_libs}" "${discrete_fu
 # add examples
 foreach(example schedulingExample schedulingQuals12)
 	add_executable(${example} "examples/${example}.cpp")
+	
+	# Disable building during make all/install
+    if (GTSAM_ENABLE_INSTALL_EXAMPLE_FIX)
+        set_target_properties(${example} PROPERTIES EXCLUDE_FROM_ALL ON)
+    endif()
+	
+	add_dependencies(examples ${example})
+	
 	add_dependencies(${example} gtsam-static gtsam_unstable-static)
 	target_link_libraries(${example} gtsam-static gtsam_unstable-static)
 	add_custom_target(${example}.run ${EXECUTABLE_OUTPUT_PATH}${example} ${ARGN})

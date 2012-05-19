@@ -8,6 +8,12 @@ foreach(example_src ${example_srcs} )
     message(STATUS "Adding Example ${example_bin}")
     add_dependencies(examples ${example_bin})
     add_executable(${example_bin} ${example_src})
+    
+    # Disable building during make all/install
+    if (GTSAM_ENABLE_INSTALL_EXAMPLE_FIX)
+        set_target_properties(${example_bin} PROPERTIES EXCLUDE_FROM_ALL ON)
+    endif()
+    
     target_link_libraries(${example_bin} gtsam-static)
     add_custom_target(${example_bin}.run ${EXECUTABLE_OUTPUT_PATH}${example_bin} ${ARGN})
 endforeach(example_src)

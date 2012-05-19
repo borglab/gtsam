@@ -84,6 +84,7 @@ endif(GTSAM_USE_QUATERNIONS)
 # Alternative version to keep tests from building during make install
 # Use the EXCLUDE_FROM_ALL property on test executables
 option(GTSAM_ENABLE_INSTALL_TEST_FIX "Enable/Disable fix to remove dependency of tests on 'all' target" ON)
+option(GTSAM_ENABLE_INSTALL_EXAMPLE_FIX "Enable/Disable fix to remove dependency of examples on 'all' target" OFF)
 
 # Pull in infrastructure
 if (GTSAM_BUILD_TESTS)
@@ -162,6 +163,7 @@ if(GTSAM_UNSTABLE_AVAILABLE)
     print_config_flag(${GTSAM_BUILD_UNSTABLE}              "Build libgtsam_unstable        ")
 endif()
 print_config_flag(${GTSAM_ENABLE_INSTALL_TEST_FIX}     "Tests excluded from all target ")
+print_config_flag(${GTSAM_ENABLE_INSTALL_EXAMPLE_FIX}     "Examples excluded from all target ")
 string(TOUPPER "${CMAKE_BUILD_TYPE}" cmake_build_type_toupper)
 message(STATUS                                       "  Build type                 : ${CMAKE_BUILD_TYPE}")
 message(STATUS                                       "  C compilation flags        : ${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${cmake_build_type_toupper}}")
