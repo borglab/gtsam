@@ -18,6 +18,13 @@
 // pull in the 2D PoseSLAM domain with all typedefs and helper functions defined
 #include <gtsam/slam/pose2SLAM.h>
 
+// include this for marginals
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/Marginals.h>
+
+#include <iomanip>
+#include <iostream>
+
 using namespace std;
 using namespace gtsam;
 
@@ -57,6 +64,14 @@ int main(int argc, char** argv) {
 	// optimize using Levenberg-Marquardt optimization with an ordering from colamd
 	pose2SLAM::Values result = graph.optimize(initialEstimate);
 	result.print("\nFinal result:\n  ");
+
+	// use an explicit Optimizer object so we can query the marginals
+	LevenbergMarquardtOptimizer optimizer(graph, initialEstimate);
+	Marginals marginals(graph, result);
+	cout.precision(2);
+  cout << "\nP1:\n" << marginals.marginalCovariance(pose2SLAM::PoseKey(1)) << endl;
+  cout << "\nP2:\n" << marginals.marginalCovariance(pose2SLAM::PoseKey(2)) << endl;
+  cout << "\nP3:\n" << marginals.marginalCovariance(pose2SLAM::PoseKey(3)) << endl;
 
 	return 0;
 }
