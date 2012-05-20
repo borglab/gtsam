@@ -20,6 +20,8 @@
 #include <gtsam/base/Testable.h>
 #include <boost/foreach.hpp>
 #include <cmath>
+#include <iostream>
+#include <iomanip>
 
 using namespace std;
 
@@ -44,7 +46,7 @@ Matrix Pose2::matrix() const {
 
 /* ************************************************************************* */
 void Pose2::print(const string& s) const {
-	cout << s << "(" << t_.x() << ", " << t_.y() << ", " << r_.theta() << ")" << endl;
+	cout << s << setprecision(2) << "(" << t_.x() << ", " << t_.y() << ", " << r_.theta() << ")" << endl;
 }
 
 /* ************************************************************************* */
