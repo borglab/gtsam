@@ -41,7 +41,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   void Values::print(const string& str, const KeyFormatter& keyFormatter) const {
-    cout << str << "Values with " << size() << " values:\n" << endl;
+    cout << str << "Values with " << size() << " values:" << endl;
     for(const_iterator key_value = begin(); key_value != end(); ++key_value) {
       cout << "  " << keyFormatter(key_value->key) << ": ";
       key_value->value.print("");
