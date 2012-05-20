@@ -24,7 +24,6 @@
 #include <gtsam/slam/BearingRangeFactor.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/geometry/Pose2.h>
 
 // Use planarSLAM namespace for specific SLAM instance
@@ -108,9 +107,7 @@ namespace planarSLAM {
     void addBearingRange(Index poseKey, Index pointKey, const Rot2& bearing, double range, const SharedNoiseModel& model);
 
     /// Optimize
-    Values optimize(const Values& initialEstimate) {
-      return LevenbergMarquardtOptimizer(*this, initialEstimate).optimize();
-    }
+    Values optimize(const Values& initialEstimate) const;
   };
 
 } // planarSLAM

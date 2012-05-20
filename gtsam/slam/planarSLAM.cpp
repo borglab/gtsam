@@ -16,7 +16,7 @@
  **/
 
 #include <gtsam/slam/planarSLAM.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 
 // Use planarSLAM namespace for specific SLAM instance
 namespace planarSLAM {
@@ -60,6 +60,11 @@ namespace planarSLAM {
       double z2, const SharedNoiseModel& model) {
     sharedFactor factor(new BearingRange(PoseKey(i), PointKey(j), z1, z2, model));
     push_back(factor);
+  }
+
+  /* ************************************************************************* */
+  Values Graph::optimize(const Values& initialEstimate) const {
+    return LevenbergMarquardtOptimizer(*this, initialEstimate).optimize();
   }
 
   /* ************************************************************************* */
