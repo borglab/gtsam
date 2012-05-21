@@ -157,10 +157,19 @@ public:
   /**
    * Creates a shared_ptr clone of the factor - needs to be specialized to allow
    * for subclasses
-   *
-   * Default implementation will slice the factor
    */
   virtual shared_ptr clone() const =0;
+
+  /**
+   * Clones a factor and replaces its keys
+   */
+  shared_ptr rekey(const std::vector<Key>& new_keys) const {
+  	assert(new_keys.size() == this->keys().size());
+  	shared_ptr new_factor = clone();
+  	new_factor->keys() = new_keys;
+  	return new_factor;
+  }
+
 
 }; // \class NonlinearFactor
 

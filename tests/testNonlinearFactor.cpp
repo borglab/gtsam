@@ -392,7 +392,7 @@ TEST(NonlinearFactor, NoiseModelFactor6) {
 }
 
 /* ************************************************************************* */
-TEST( NonlinearFactor, clone )
+TEST( NonlinearFactor, clone_rekey )
 {
 	shared_nlf init(new TestFactor4());
   EXPECT_LONGS_EQUAL(PoseKey(1), init->keys()[0]);
@@ -400,9 +400,31 @@ TEST( NonlinearFactor, clone )
   EXPECT_LONGS_EQUAL(PoseKey(3), init->keys()[2]);
   EXPECT_LONGS_EQUAL(PoseKey(4), init->keys()[3]);
 
+  // Standard clone
   shared_nlf actClone = init->clone();
   EXPECT(actClone.get() != init.get()); // Ensure different pointers
   EXPECT(assert_equal(*init, *actClone));
+
+  // Re-key factor - clones with different keys
+  std::vector<Key> new_keys(4);
+  new_keys[0] = PoseKey(5);
+  new_keys[1] = PoseKey(6);
+  new_keys[2] = PoseKey(7);
+  new_keys[3] = PoseKey(8);
+  shared_nlf actRekey = init->rekey(new_keys);
+  EXPECT(actRekey.get() != init.get()); // Ensure different pointers
+
+  // Ensure init is unchanged
+  EXPECT_LONGS_EQUAL(PoseKey(1), init->keys()[0]);
+  EXPECT_LONGS_EQUAL(PoseKey(2), init->keys()[1]);
+  EXPECT_LONGS_EQUAL(PoseKey(3), init->keys()[2]);
+  EXPECT_LONGS_EQUAL(PoseKey(4), init->keys()[3]);
+
+  // Check new keys
+  EXPECT_LONGS_EQUAL(PoseKey(5), actRekey->keys()[0]);
+  EXPECT_LONGS_EQUAL(PoseKey(6), actRekey->keys()[1]);
+  EXPECT_LONGS_EQUAL(PoseKey(7), actRekey->keys()[2]);
+  EXPECT_LONGS_EQUAL(PoseKey(8), actRekey->keys()[3]);
 }
 
 /* ************************************************************************* */
