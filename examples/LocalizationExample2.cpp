@@ -84,14 +84,14 @@ int main(int argc, char** argv) {
 	initialEstimate.insertPose(1, Pose2(0.5, 0.0, 0.2));
 	initialEstimate.insertPose(2, Pose2(2.3, 0.1,-0.2));
 	initialEstimate.insertPose(3, Pose2(4.1, 0.1, 0.1));
-
 	initialEstimate.print("\nInitial estimate:\n  ");
 
-	// use an explicit Optimizer object, used for both optimization and marginal inference
+	// use an explicit Optimizer object
 	LevenbergMarquardtOptimizer optimizer(graph, initialEstimate);
 	pose2SLAM::Values result = optimizer.optimize();
 	result.print("\nFinal result:\n  ");
-	Values resultMultifrontal = optimizer.optimize();
+
+	// Query the marginals
 	Marginals marginals(graph, result);
 	cout.precision(2);
   cout << "\nP1:\n" << marginals.marginalCovariance(x1) << endl;

@@ -19,7 +19,6 @@
 #include <gtsam/slam/pose2SLAM.h>
 
 // include this for marginals
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/Marginals.h>
 
 #include <iomanip>
@@ -65,8 +64,7 @@ int main(int argc, char** argv) {
 	pose2SLAM::Values result = graph.optimize(initialEstimate);
 	result.print("\nFinal result:\n  ");
 
-	// use an explicit Optimizer object so we can query the marginals
-	LevenbergMarquardtOptimizer optimizer(graph, initialEstimate);
+	// Query the marginals
 	Marginals marginals(graph, result);
 	cout.precision(2);
   cout << "\nP1:\n" << marginals.marginalCovariance(pose2SLAM::PoseKey(1)) << endl;
