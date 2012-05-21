@@ -10,7 +10,8 @@
 #include <gtsam/geometry/Pose2.h>
 #include <CppUnitLite/TestHarness.h>
 #include <boost/random/mersenne_twister.hpp>
-#include <boost/random/uniform_int_distribution.hpp>
+//#include <boost/random/uniform_int_distribution.hpp>  // FIXME: does not exist in boost 1.46
+#include <boost/random/uniform_int.hpp> // Old header - should still exist
 
 #include <vector>
 #include <stdlib.h>
@@ -225,9 +226,9 @@ public:
 		size_t size = cellCount();
 		Marginals marginals(size);
 
-		boost::random::mt19937 rng;
-		boost::random::uniform_int_distribution<Index> random_cell(0,size-1);
-
+		// NOTE: using older interface for boost.random due to interface changes after boost 1.46
+		boost::mt19937 rng;
+		boost::uniform_int<Index> random_cell(0,size-1);
 
 		// run Metropolis for the requested number of operations
 		// compute initial probability of occupancy grid, P(x_t)
