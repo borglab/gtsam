@@ -407,10 +407,21 @@ class Ordering {
 	void push_back(size_t key);
 };
 
+//Andrew says: Required definitions for Marginal arguments
+class NonlinearFactorGraph {
+    NonlinearFactorGraph();
+    //This need to be populated with whatever functions might be needed.
+};
+
+class Values {
+    Values();
+    //Same here
+};
+
 // Frank says: this does not work. Why not?
-//class Marginals {
-//	Marginals(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& solution);
-//};
+class Marginals {
+	Marginals(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& solution);
+};
 
 }///\namespace gtsam
 
