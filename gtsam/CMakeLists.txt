@@ -97,6 +97,6 @@ if (GTSAM_BUILD_SHARED_LIBRARY)
         CLEAN_DIRECT_OUTPUT 1
     	VERSION             ${gtsam_version}
      	SOVERSION           ${gtsam_soversion})
-    install(TARGETS gtsam-shared LIBRARY DESTINATION lib )
+    install(TARGETS gtsam-shared DESTINATION lib )
 endif(GTSAM_BUILD_SHARED_LIBRARY)
 
