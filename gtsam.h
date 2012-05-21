@@ -57,9 +57,6 @@
  *  - TODO: Handle gtsam::Rot3M conversions to quaternions
  */
 
-// Everything is in the gtsam namespace, so we avoid copying everything in
-//using namespace gtsam;
-
 namespace gtsam {
 
 //*************************************************************************
@@ -409,6 +406,11 @@ class Ordering {
 	bool equals(const gtsam::Ordering& ord, double tol) const;
 	void push_back(size_t key);
 };
+
+// Frank says: this does not work. Why not?
+//class Marginals {
+//	Marginals(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& solution);
+//};
 
 }///\namespace gtsam
 
