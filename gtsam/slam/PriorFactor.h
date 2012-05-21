@@ -56,6 +56,8 @@ namespace gtsam {
 			Base(model, key), prior_(prior) {
 		}
 
+		ADD_CLONE_NONLINEAR_FACTOR(This)
+
 		/** implement functions needed for Testable */
 
 		/** print */

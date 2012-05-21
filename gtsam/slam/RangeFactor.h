@@ -51,6 +51,8 @@ namespace gtsam {
 
 		virtual ~RangeFactor() {}
 
+		ADD_CLONE_NONLINEAR_FACTOR(This)
+
 		/** h(x)-z */
 		Vector evaluateError(const Pose& pose, const Point& point, boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
 			double hx = pose.range(point, H1, H2);

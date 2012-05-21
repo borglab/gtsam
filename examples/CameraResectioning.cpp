@@ -44,6 +44,8 @@ public:
 
   virtual ~ResectioningFactor() {}
 
+  ADD_CLONE_NONLINEAR_FACTOR(ResectioningFactor)
+
   virtual Vector evaluateError(const Pose3& X, boost::optional<Matrix&> H = boost::none) const {
     SimpleCamera camera(*K_, X);
     Point2 reprojectionError(camera.project(P_, H) - p_);

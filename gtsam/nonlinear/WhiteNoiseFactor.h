@@ -163,6 +163,8 @@ namespace gtsam {
 			return linearize(z_, u, p, j1, j2);
 		}
 
+		ADD_CLONE_NONLINEAR_FACTOR(This)
+
 		/// @}
 
 	};

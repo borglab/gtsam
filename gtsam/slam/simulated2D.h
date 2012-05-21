@@ -123,6 +123,7 @@ namespace simulated2D {
   class GenericPrior: public NoiseModelFactor1<VALUE> {
   public:
     typedef NoiseModelFactor1<VALUE> Base;  ///< base class
+    typedef GenericPrior<VALUE> This;
     typedef boost::shared_ptr<GenericPrior<VALUE> > shared_ptr;
     typedef VALUE Pose; ///< shortcut to Pose type
 
@@ -138,11 +139,14 @@ namespace simulated2D {
       return (prior(x, H) - measured_).vector();
     }
 
+    virtual ~GenericPrior() {}
+
+    ADD_CLONE_NONLINEAR_FACTOR(This)
+
   private:
 
     /// Default constructor
-    GenericPrior() {
-    }
+    GenericPrior() { }
 
     /// Serialization function
     friend class boost::serialization::access;
@@ -160,6 +164,7 @@ namespace simulated2D {
   class GenericOdometry: public NoiseModelFactor2<VALUE, VALUE> {
   public:
     typedef NoiseModelFactor2<VALUE, VALUE> Base; ///< base class
+    typedef GenericOdometry<VALUE> This;
     typedef boost::shared_ptr<GenericOdometry<VALUE> > shared_ptr;
     typedef VALUE Pose; ///< shortcut to Pose type
 
@@ -177,11 +182,14 @@ namespace simulated2D {
       return (odo(x1, x2, H1, H2) - measured_).vector();
     }
 
+    virtual ~GenericOdometry() {}
+
+    ADD_CLONE_NONLINEAR_FACTOR(This)
+
   private:
 
     /// Default constructor
-    GenericOdometry() {
-    }
+    GenericOdometry() { }
 
     /// Serialization function
     friend class boost::serialization::access;
@@ -199,6 +207,7 @@ namespace simulated2D {
   class GenericMeasurement: public NoiseModelFactor2<POSE, LANDMARK> {
   public:
     typedef NoiseModelFactor2<POSE, LANDMARK> Base;  ///< base class
+    typedef GenericMeasurement<POSE, LANDMARK> This;
     typedef boost::shared_ptr<GenericMeasurement<POSE, LANDMARK> > shared_ptr;
     typedef POSE Pose; ///< shortcut to Pose type
     typedef LANDMARK Landmark; ///< shortcut to Landmark type
@@ -217,11 +226,14 @@ namespace simulated2D {
       return (mea(x1, x2, H1, H2) - measured_).vector();
     }
 
+    virtual ~GenericMeasurement() {}
+
+    ADD_CLONE_NONLINEAR_FACTOR(This)
+
   private:
 
     /// Default constructor
-    GenericMeasurement() {
-    }
+    GenericMeasurement() { }
 
     /// Serialization function
     friend class boost::serialization::access;

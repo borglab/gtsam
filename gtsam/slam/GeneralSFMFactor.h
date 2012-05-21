@@ -61,6 +61,8 @@ namespace gtsam {
 
 		virtual ~GeneralSFMFactor() {} ///< destructor
 
+		ADD_CLONE_NONLINEAR_FACTOR(This)
+
 		/**
 		 * print
 		 * @param s optional string naming the factor

@@ -53,10 +53,13 @@ namespace simulated2D {
     template<class VALUE, unsigned int IDX>
     struct ScalarCoordConstraint1: public BoundingConstraint1<VALUE> {
       typedef BoundingConstraint1<VALUE> Base;  ///< Base class convenience typedef
+      typedef ScalarCoordConstraint1<VALUE, IDX> This; ///< This class convenience typedef
       typedef boost::shared_ptr<ScalarCoordConstraint1<VALUE, IDX> > shared_ptr; ///< boost::shared_ptr convenience typedef
       typedef VALUE Point; ///< Constrained variable type
 
       virtual ~ScalarCoordConstraint1() {}
+
+      ADD_CLONE_NONLINEAR_FACTOR(This)
 
       /**
        * Constructor for constraint
@@ -116,9 +119,12 @@ namespace simulated2D {
     template<class VALUE>
     struct MaxDistanceConstraint : public BoundingConstraint2<VALUE, VALUE> {
       typedef BoundingConstraint2<VALUE, VALUE> Base;  ///< Base class for factor
+      typedef MaxDistanceConstraint<VALUE> This;  ///< This class for factor
       typedef VALUE Point; ///< Type of variable constrained
 
       virtual ~MaxDistanceConstraint() {}
+
+      ADD_CLONE_NONLINEAR_FACTOR(This)
 
       /**
        * Primary constructor for factor
@@ -158,10 +164,13 @@ namespace simulated2D {
     template<class POSE, class POINT>
     struct MinDistanceConstraint : public BoundingConstraint2<POSE, POINT> {
       typedef BoundingConstraint2<POSE, POINT> Base; ///< Base class for factor
+      typedef MinDistanceConstraint<POSE, POINT> This; ///< This class for factor
       typedef POSE Pose; ///< Type of pose variable constrained
       typedef POINT Point; ///< Type of point variable constrained
 
       virtual ~MinDistanceConstraint() {}
+
+      ADD_CLONE_NONLINEAR_FACTOR(This)
 
       /**
        * Primary constructor for factor

@@ -161,6 +161,8 @@ namespace gtsam {
 			return GaussianFactor::shared_ptr(new JacobianFactor(ordering[this->key()], A, b, model));
 		}
 
+		ADD_CLONE_NONLINEAR_FACTOR(This)
+
 		/// @}
 
 	private:
@@ -190,6 +192,7 @@ namespace gtsam {
 
 	protected:
 		typedef NoiseModelFactor1<VALUE> Base;
+		typedef NonlinearEquality1<VALUE> This;
 
 		/** default constructor to allow for serialization */
 		NonlinearEquality1() {}
@@ -208,6 +211,8 @@ namespace gtsam {
 			: Base(noiseModel::Constrained::All(value.dim(), fabs(mu)), key1), value_(value) {}
 
 		virtual ~NonlinearEquality1() {}
+
+		ADD_CLONE_NONLINEAR_FACTOR(This)
 
 		/** g(x) with optional derivative */
 		Vector evaluateError(const X& x1, boost::optional<Matrix&> H = boost::none) const {
@@ -248,6 +253,7 @@ namespace gtsam {
 
 	protected:
 		typedef NoiseModelFactor2<VALUE, VALUE> Base;
+		typedef NonlinearEquality2<VALUE> This;
 
 		GTSAM_CONCEPT_MANIFOLD_TYPE(X);
 
@@ -262,6 +268,8 @@ namespace gtsam {
 		NonlinearEquality2(Key key1, Key key2, double mu = 1000.0)
 			: Base(noiseModel::Constrained::All(X::Dim(), fabs(mu)), key1, key2) {}
 		virtual ~NonlinearEquality2() {}
+
+		ADD_CLONE_NONLINEAR_FACTOR(This)
 
 		/** g(x) with optional derivative2 */
 		Vector evaluateError(const X& x1, const X& x2,

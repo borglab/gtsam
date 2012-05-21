@@ -55,6 +55,8 @@ namespace gtsam {
 
 		virtual ~BearingFactor() {}
 
+		ADD_CLONE_NONLINEAR_FACTOR(This)
+
 		/** h(x)-z -> between(z,h(x)) for Rot2 manifold */
 		Vector evaluateError(const Pose& pose, const Point& point,
 				boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {

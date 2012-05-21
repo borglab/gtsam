@@ -120,6 +120,8 @@ public:
 
   virtual ~NonlinearMotionModel() {}
 
+  ADD_CLONE_NONLINEAR_FACTOR(This)
+
   // Calculate the next state prediction using the nonlinear function f()
   T f(const T& x_t0) const {
 
@@ -261,6 +263,8 @@ public:
   }
 
   virtual ~NonlinearMeasurementModel() {}
+
+  ADD_CLONE_NONLINEAR_FACTOR(This)
 
   // Calculate the predicted measurement using the nonlinear function h()
   // Byproduct: updates Jacobian H, and noiseModel (R)

@@ -72,6 +72,8 @@ public:
 
 	virtual ~VelocityConstraint() {}
 
+	ADD_CLONE_NONLINEAR_FACTOR(VelocityConstraint)
+
 	/**
 	 * Calculates the error for trapezoidal model given
 	 */

@@ -102,6 +102,8 @@ namespace simulated2DOriented {
   struct GenericOdometry: public NoiseModelFactor2<VALUE, VALUE> {
     Pose2 measured_;   ///< Between measurement for odometry factor
 
+    typedef GenericOdometry<VALUE> This;
+
     /**
      * Creates an odometry factor between two poses
      */
@@ -110,12 +112,16 @@ namespace simulated2DOriented {
           NoiseModelFactor2<VALUE, VALUE>(model, i1, i2), measured_(measured) {
     }
 
+    virtual ~GenericOdometry() {}
+
     /// Evaluate error and optionally derivative
     Vector evaluateError(const VALUE& x1, const VALUE& x2,
         boost::optional<Matrix&> H1 = boost::none,
         boost::optional<Matrix&> H2 = boost::none) const {
       return measured_.localCoordinates(odo(x1, x2, H1, H2));
     }
+
+    ADD_CLONE_NONLINEAR_FACTOR(This)
 
   };
 

@@ -50,6 +50,8 @@ namespace gtsam {
 
 		virtual ~AntiFactor() {}
 
+		ADD_CLONE_NONLINEAR_FACTOR(This)
+
 		/** implement functions needed for Testable */
 
 		/** print */

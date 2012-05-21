@@ -34,6 +34,7 @@ public:
 
 	// shorthand for base class type
 	typedef NoiseModelFactor2<POSE, LANDMARK> Base;		     			///< typedef for base class
+	typedef GenericStereoFactor<POSE, LANDMARK> This;           ///< typedef for this class (with templates)
 	typedef boost::shared_ptr<GenericStereoFactor> shared_ptr;  ///< typedef for shared pointer to this object
 	typedef POSE CamPose;												///< typedef for Pose Lie Value type
 
@@ -55,6 +56,8 @@ public:
 	}
 
 	virtual ~GenericStereoFactor() {}  ///< Virtual destructor
+
+	ADD_CLONE_NONLINEAR_FACTOR(This)
 
 	/**
 	 * print

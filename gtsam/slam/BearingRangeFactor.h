@@ -57,6 +57,8 @@ namespace gtsam {
 
 		virtual ~BearingRangeFactor() {}
 
+		ADD_CLONE_NONLINEAR_FACTOR(This)
+
 	  /** Print */
 	  virtual void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
 	    std::cout << s << ": BearingRangeFactor("

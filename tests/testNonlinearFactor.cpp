@@ -254,6 +254,8 @@ public:
     }
     return (Vector(1) << x1 + x2 + x3 + x4).finished();
   }
+
+  ADD_CLONE_NONLINEAR_FACTOR(TestFactor4)
 };
 
 /* ************************************ */
@@ -301,6 +303,8 @@ public:
     }
     return (Vector(1) << x1 + x2 + x3 + x4 + x5).finished();
   }
+
+  ADD_CLONE_NONLINEAR_FACTOR(TestFactor5)
 };
 
 /* ************************************ */
@@ -353,6 +357,8 @@ public:
     }
     return (Vector(1) << x1 + x2 + x3 + x4 + x5 + x6).finished();
   }
+
+  ADD_CLONE_NONLINEAR_FACTOR(TestFactor6)
 };
 
 /* ************************************ */
@@ -383,6 +389,20 @@ TEST(NonlinearFactor, NoiseModelFactor6) {
   EXPECT(assert_equal(Matrix_(1,1, 3.0), jf.getA(jf.begin()+5)));
   EXPECT(assert_equal(Vector_(1, -10.5), jf.getb()));
 
+}
+
+/* ************************************************************************* */
+TEST( NonlinearFactor, clone )
+{
+	shared_nlf init(new TestFactor4());
+  EXPECT_LONGS_EQUAL(PoseKey(1), init->keys()[0]);
+  EXPECT_LONGS_EQUAL(PoseKey(2), init->keys()[1]);
+  EXPECT_LONGS_EQUAL(PoseKey(3), init->keys()[2]);
+  EXPECT_LONGS_EQUAL(PoseKey(4), init->keys()[3]);
+
+  shared_nlf actClone = init->clone();
+  EXPECT(actClone.get() != init.get()); // Ensure different pointers
+  EXPECT(assert_equal(*init, *actClone));
 }
 
 /* ************************************************************************* */

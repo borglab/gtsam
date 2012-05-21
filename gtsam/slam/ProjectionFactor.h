@@ -70,6 +70,8 @@ namespace gtsam {
 		/** Virtual destructor */
 		virtual ~GenericProjectionFactor() {}
 
+		ADD_CLONE_NONLINEAR_FACTOR(This)
+
 		/**
 		 * print
 		 * @param s optional string naming the factor

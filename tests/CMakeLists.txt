@@ -13,6 +13,7 @@ set(tests_local_libs
 # note the source dir on each 
 set (tests_exclude
     "${CMAKE_CURRENT_SOURCE_DIR}/testPose2SLAMwSPCG.cpp"
+    #"${CMAKE_CURRENT_SOURCE_DIR}/testOccupancyGrid.cpp"
 )
 
 # Build tests

@@ -51,6 +51,8 @@ public:
 
 	virtual ~FullIMUFactor() {}
 
+	ADD_CLONE_NONLINEAR_FACTOR(This)
+
 	/** Check if two factors are equal */
 	virtual bool equals(const NonlinearFactor& e, double tol = 1e-9) const {
 	  const This* const f = dynamic_cast<const This*>(&e);

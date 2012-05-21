@@ -86,6 +86,8 @@ namespace gtsam {
 			this->fillH();
 		}
 
+		ADD_CLONE_NONLINEAR_FACTOR(This)
+
 		/** implement functions needed for Testable */
 
 		/** print */

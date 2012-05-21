@@ -35,6 +35,14 @@
 #include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/Symbol.h>
 
+/**
+ * Macro to add a standard clone function to a derived factor
+ */
+#define ADD_CLONE_NONLINEAR_FACTOR(Derived) \
+	virtual gtsam::NonlinearFactor::shared_ptr clone() const { \
+  return boost::static_pointer_cast<gtsam::NonlinearFactor>( \
+      gtsam::NonlinearFactor::shared_ptr(new Derived(*this))); }
+
 namespace gtsam {
 
 /* ************************************************************************* */
@@ -145,6 +153,14 @@ public:
       indices[j] = ordering[this->keys()[j]];
     return IndexFactor::shared_ptr(new IndexFactor(indices));
   }
+
+  /**
+   * Creates a shared_ptr clone of the factor - needs to be specialized to allow
+   * for subclasses
+   *
+   * Default implementation will slice the factor
+   */
+  virtual shared_ptr clone() const =0;
 
 }; // \class NonlinearFactor
 
