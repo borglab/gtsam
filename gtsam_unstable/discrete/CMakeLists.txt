@@ -24,9 +24,14 @@ set (discrete_excluded_tests
 # Add all tests
 gtsam_add_subdir_tests(discrete_unstable "${discrete_local_libs}" "${discrete_full_libs}" "${discrete_excluded_tests}") 
 
-# add examples
+# List examples to build - comment out here to exclude from compilation
+set(discrete_unstable_examples
+#schedulingExample
+#schedulingQuals12
+)
+
 if (GTSAM_BUILD_EXAMPLES)
-    foreach(example schedulingExample schedulingQuals12)
+    foreach(example ${discrete_unstable_examples})
     	add_executable(${example} "examples/${example}.cpp")
     	
     	# Disable building during make all/install
