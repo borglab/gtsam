@@ -226,7 +226,7 @@ Diagonal::shared_ptr Diagonal::Sigmas(const Vector& sigmas, bool smart) {
 
 /* ************************************************************************* */
 void Diagonal::print(const string& name) const {
-	gtsam::print(sigmas_, name + ": diagonal sigmas");
+	gtsam::print(sigmas_, name + "diagonal sigmas");
 }
 
 /* ************************************************************************* */
@@ -290,8 +290,8 @@ Constrained::shared_ptr Constrained::MixedSigmas(const Vector& mu, const Vector&
 
 /* ************************************************************************* */
 void Constrained::print(const std::string& name) const {
-	gtsam::print(sigmas_, name + ": constrained sigmas");
-	gtsam::print(mu_, name + ": constrained mu");
+	gtsam::print(sigmas_, name + "constrained sigmas");
+	gtsam::print(mu_, name + "constrained mu");
 }
 
 /* ************************************************************************* */
@@ -436,7 +436,7 @@ Isotropic::shared_ptr Isotropic::Variance(size_t dim, double variance, bool smar
 
 /* ************************************************************************* */
 void Isotropic::print(const string& name) const {
-	cout << name << ": isotropic sigma " << " " << sigma_ << endl;
+	cout << name << "isotropic sigma " << " " << sigma_ << endl;
 }
 
 /* ************************************************************************* */
@@ -480,7 +480,7 @@ Vector Isotropic::sample() const {
 // Unit
 /* ************************************************************************* */
 void Unit::print(const std::string& name) const {
-	cout << name << ": unit (" << dim_ << ") " << endl;
+	cout << name << "unit (" << dim_ << ") " << endl;
 }
 
 /* ************************************************************************* */
@@ -583,7 +583,7 @@ void Base::reweight(Matrix &A1, Matrix &A2, Matrix &A3, Vector &error) const {
 /* ************************************************************************* */
 
 void Null::print(const std::string &s="") const
-{ cout << s << ": null ()" << endl; }
+{ cout << s << "null ()" << endl; }
 
 Null::shared_ptr Null::Create()
 { return shared_ptr(new Null()); }
@@ -604,7 +604,7 @@ double Fair::weight(const double &error) const
 { return 1.0 / (1.0 + fabs(error)/c_); }
 
 void Fair::print(const std::string &s="") const
-{ cout << s << ": fair (" << c_ << ")" << endl; }
+{ cout << s << "fair (" << c_ << ")" << endl; }
 
 bool Fair::equals(const Base &expected, const double tol) const {
   const Fair* p = dynamic_cast<const Fair*> (&expected);
@@ -632,7 +632,7 @@ double Huber::weight(const double &error) const {
 }
 
 void Huber::print(const std::string &s="") const {
-	cout << s << ": huber (" << k_ << ")" << endl;
+	cout << s << "huber (" << k_ << ")" << endl;
 }
 
 bool Huber::equals(const Base &expected, const double tol) const {
