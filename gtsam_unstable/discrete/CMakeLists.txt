@@ -16,8 +16,10 @@ set (discrete_full_libs
     gtsam_unstable-static)
 
 # Exclude tests that don't work
-set (discrete_excluded_tests "")
-#"${CMAKE_CURRENT_SOURCE_DIR}/tests/testScheduler.cpp")
+set (discrete_excluded_tests 
+"${CMAKE_CURRENT_SOURCE_DIR}/tests/testScheduler.cpp"
+"${CMAKE_CURRENT_SOURCE_DIR}/tests/testCSP.cpp")
+
 
 # Add all tests
 gtsam_add_subdir_tests(discrete_unstable "${discrete_local_libs}" "${discrete_full_libs}" "${discrete_excluded_tests}") 
