@@ -27,11 +27,11 @@ using namespace gtsam;
 
 /* ************************************************************************* */
 TEST(Key, KeySymbolConversion) {
-  Symbol expected('j', 4);
-  Key key(expected);
+  Symbol original('j', 4);
+  Key key(original);
+  EXPECT(assert_equal(key, original.key()))
   Symbol actual(key);
-
-  EXPECT(assert_equal(expected, actual))
+  EXPECT(assert_equal(original, actual))
 }
 
 /* ************************************************************************* */
