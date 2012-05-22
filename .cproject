@@ -593,38 +593,6 @@
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="testBTree.run" path="build/gtsam_unstable/base" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
-				<buildCommand>make</buildCommand>
-				<buildArguments>-j5</buildArguments>
-				<buildTarget>testBTree.run</buildTarget>
-				<stopOnError>true</stopOnError>
-				<useDefaultCommand>true</useDefaultCommand>
-				<runAllBuilders>true</runAllBuilders>
-			</target>
-			<target name="testDSF.run" path="build/gtsam_unstable/base" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
-				<buildCommand>make</buildCommand>
-				<buildArguments>-j5</buildArguments>
-				<buildTarget>testDSF.run</buildTarget>
-				<stopOnError>true</stopOnError>
-				<useDefaultCommand>true</useDefaultCommand>
-				<runAllBuilders>true</runAllBuilders>
-			</target>
-			<target name="testDSFVector.run" path="build/gtsam_unstable/base" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
-				<buildCommand>make</buildCommand>
-				<buildArguments>-j5</buildArguments>
-				<buildTarget>testDSFVector.run</buildTarget>
-				<stopOnError>true</stopOnError>
-				<useDefaultCommand>true</useDefaultCommand>
-				<runAllBuilders>true</runAllBuilders>
-			</target>
-			<target name="testFixedVector.run" path="build/gtsam_unstable/base" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
-				<buildCommand>make</buildCommand>
-				<buildArguments>-j5</buildArguments>
-				<buildTarget>testFixedVector.run</buildTarget>
-				<stopOnError>true</stopOnError>
-				<useDefaultCommand>true</useDefaultCommand>
-				<runAllBuilders>true</runAllBuilders>
-			</target>
 			<target name="all" path="release" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
 				<buildArguments>-j2</buildArguments>
@@ -721,50 +689,50 @@
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="testValues.run" path="build/gtsam/nonlinear" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="nonlinear.testValues.run" path="build/gtsam/nonlinear" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
 				<buildArguments>-j5</buildArguments>
-				<buildTarget>testValues.run</buildTarget>
+				<buildTarget>nonlinear.testValues.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="testOrdering.run" path="build/gtsam/nonlinear" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="nonlinear.testOrdering.run" path="build/gtsam/nonlinear" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
 				<buildArguments>-j5</buildArguments>
-				<buildTarget>testOrdering.run</buildTarget>
+				<buildTarget>nonlinear.testOrdering.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="tests/testGeneralSFMFactor.run" path="build/gtsam/slam" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="testGeneralSFMFactor.run" path="build/gtsam/slam" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
-				<buildArguments>-j2</buildArguments>
-				<buildTarget>tests/testGeneralSFMFactor.run</buildTarget>
+				<buildArguments>-j5</buildArguments>
+				<buildTarget>testGeneralSFMFactor.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="tests/testPlanarSLAM.run" path="build/gtsam/slam" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="testPlanarSLAM.run" path="build/gtsam/slam" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
-				<buildArguments>-j2</buildArguments>
-				<buildTarget>tests/testPlanarSLAM.run</buildTarget>
+				<buildArguments>-j5</buildArguments>
+				<buildTarget>testPlanarSLAM.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="tests/testPose2SLAM.run" path="build/gtsam/slam" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="testPose2SLAM.run" path="build/gtsam/slam" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
-				<buildArguments>-j2</buildArguments>
-				<buildTarget>tests/testPose2SLAM.run</buildTarget>
+				<buildArguments>-j5</buildArguments>
+				<buildTarget>testPose2SLAM.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="tests/testPose3SLAM.run" path="build/gtsam/slam" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="testPose3SLAM.run" path="build/gtsam/slam" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
-				<buildArguments>-j2</buildArguments>
-				<buildTarget>tests/testPose3SLAM.run</buildTarget>
+				<buildArguments>-j5</buildArguments>
+				<buildTarget>testPose3SLAM.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
@@ -789,46 +757,6 @@
 				<buildCommand>make</buildCommand>
 				<buildArguments>-j2</buildArguments>
 				<buildTarget>clean</buildTarget>
-				<stopOnError>true</stopOnError>
-				<useDefaultCommand>true</useDefaultCommand>
-				<runAllBuilders>true</runAllBuilders>
-			</target>
-			<target name="schedulingExample.run" path="build/gtsam_unstable/discrete" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
-				<buildCommand>make</buildCommand>
-				<buildArguments>-j5</buildArguments>
-				<buildTarget>schedulingExample.run</buildTarget>
-				<stopOnError>true</stopOnError>
-				<useDefaultCommand>true</useDefaultCommand>
-				<runAllBuilders>true</runAllBuilders>
-			</target>
-			<target name="testCSP.run" path="build/gtsam_unstable/discrete" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
-				<buildCommand>make</buildCommand>
-				<buildArguments>-j5</buildArguments>
-				<buildTarget>testCSP.run</buildTarget>
-				<stopOnError>true</stopOnError>
-				<useDefaultCommand>true</useDefaultCommand>
-				<runAllBuilders>true</runAllBuilders>
-			</target>
-			<target name="testScheduler.run" path="build/gtsam_unstable/discrete" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
-				<buildCommand>make</buildCommand>
-				<buildArguments>-j5</buildArguments>
-				<buildTarget>testScheduler.run</buildTarget>
-				<stopOnError>true</stopOnError>
-				<useDefaultCommand>true</useDefaultCommand>
-				<runAllBuilders>true</runAllBuilders>
-			</target>
-			<target name="schedulingQuals12.run" path="build/gtsam_unstable/discrete" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
-				<buildCommand>make</buildCommand>
-				<buildArguments>-j5</buildArguments>
-				<buildTarget>schedulingQuals12.run</buildTarget>
-				<stopOnError>true</stopOnError>
-				<useDefaultCommand>true</useDefaultCommand>
-				<runAllBuilders>true</runAllBuilders>
-			</target>
-			<target name="testSudoku.run" path="build/gtsam_unstable/discrete" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
-				<buildCommand>make</buildCommand>
-				<buildArguments>-j5</buildArguments>
-				<buildTarget>testSudoku.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
@@ -865,10 +793,10 @@
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="testDiscreteFactor.run" path="build/gtsam/discrete" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="check" path="build/gtsam/discrete" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
 				<buildArguments>-j5</buildArguments>
-				<buildTarget>testDiscreteFactor.run</buildTarget>
+				<buildTarget>check</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
@@ -1045,14 +973,6 @@
 				<buildCommand>make</buildCommand>
 				<buildArguments>-j5</buildArguments>
 				<buildTarget>timing.tests</buildTarget>
-				<stopOnError>true</stopOnError>
-				<useDefaultCommand>true</useDefaultCommand>
-				<runAllBuilders>true</runAllBuilders>
-			</target>
-			<target name="testNonlinearFactor.run" path="build/tests" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
-				<buildCommand>make</buildCommand>
-				<buildArguments>-j5</buildArguments>
-				<buildTarget>testNonlinearFactor.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
@@ -1672,74 +1592,82 @@
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="testVectorValues.run" path="build/gtsam/linear" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="tests/testVectorValues.run" path="build/gtsam/linear" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
-				<buildArguments>-j5</buildArguments>
-				<buildTarget>testVectorValues.run</buildTarget>
+				<buildArguments>-j2</buildArguments>
+				<buildTarget>tests/testVectorValues.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="testNoiseModel.run" path="build/gtsam/linear" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="linear.testNoiseModel.run" path="build/gtsam/linear" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
 				<buildArguments>-j5</buildArguments>
-				<buildTarget>testNoiseModel.run</buildTarget>
+				<buildTarget>linear.testNoiseModel.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="testHessianFactor.run" path="build/gtsam/linear" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="tests/testGaussianFactor.run" path="build/gtsam/linear" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
-				<buildArguments>-j5</buildArguments>
-				<buildTarget>testHessianFactor.run</buildTarget>
+				<buildArguments>-j2</buildArguments>
+				<buildTarget>tests/testGaussianFactor.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="testGaussianConditional.run" path="build/gtsam/linear" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="tests/testHessianFactor.run" path="build/gtsam/linear" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
-				<buildArguments>-j5</buildArguments>
-				<buildTarget>testGaussianConditional.run</buildTarget>
+				<buildArguments>-j2</buildArguments>
+				<buildTarget>tests/testHessianFactor.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="testGaussianFactorGraph.run" path="build/gtsam/linear" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="tests/testGaussianConditional.run" path="build/gtsam/linear" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
-				<buildArguments>-j5</buildArguments>
-				<buildTarget>testGaussianFactorGraph.run</buildTarget>
+				<buildArguments>-j2</buildArguments>
+				<buildTarget>tests/testGaussianConditional.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="testGaussianJunctionTree.run" path="build/gtsam/linear" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="tests/testGaussianFactorGraph.run" path="build/gtsam/linear" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
-				<buildArguments>-j5</buildArguments>
-				<buildTarget>testGaussianJunctionTree.run</buildTarget>
+				<buildArguments>-j2</buildArguments>
+				<buildTarget>tests/testGaussianFactorGraph.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="testKalmanFilter.run" path="build/gtsam/linear" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="tests/testGaussianJunctionTree.run" path="build/gtsam/linear" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
-				<buildArguments>-j5</buildArguments>
-				<buildTarget>testKalmanFilter.run</buildTarget>
+				<buildArguments>-j2</buildArguments>
+				<buildTarget>tests/testGaussianJunctionTree.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="testGaussianDensity.run" path="build/gtsam/linear" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="tests/testKalmanFilter.run" path="build/gtsam/linear" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
-				<buildArguments>-j5</buildArguments>
-				<buildTarget>testGaussianDensity.run</buildTarget>
+				<buildArguments>-j2</buildArguments>
+				<buildTarget>tests/testKalmanFilter.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="testSerializationLinear.run" path="build/gtsam/linear" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="tests/testGaussianDensity.run" path="build/gtsam/linear" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+				<buildCommand>make</buildCommand>
+				<buildArguments>-j2</buildArguments>
+				<buildTarget>tests/testGaussianDensity.run</buildTarget>
+				<stopOnError>true</stopOnError>
+				<useDefaultCommand>true</useDefaultCommand>
+				<runAllBuilders>true</runAllBuilders>
+			</target>
+			<target name="linear.testSerializationLinear.run" path="build/gtsam/linear" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
 				<buildArguments>-j5</buildArguments>
-				<buildTarget>testSerializationLinear.run</buildTarget>
+				<buildTarget>linear.testSerializationLinear.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
@@ -1828,6 +1756,22 @@
 				<buildCommand>make</buildCommand>
 				<buildArguments>-j5</buildArguments>
 				<buildTarget>UGM_small.run</buildTarget>
+				<stopOnError>true</stopOnError>
+				<useDefaultCommand>true</useDefaultCommand>
+				<runAllBuilders>true</runAllBuilders>
+			</target>
+			<target name="LocalizationExample.run" path="build/examples" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+				<buildCommand>make</buildCommand>
+				<buildArguments>-j5</buildArguments>
+				<buildTarget>LocalizationExample.run</buildTarget>
+				<stopOnError>true</stopOnError>
+				<useDefaultCommand>true</useDefaultCommand>
+				<runAllBuilders>true</runAllBuilders>
+			</target>
+			<target name="LocalizationExample2.run" path="build/examples" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+				<buildCommand>make</buildCommand>
+				<buildArguments>-j5</buildArguments>
+				<buildTarget>LocalizationExample2.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
@@ -2195,18 +2139,58 @@
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="wrap.testSpirit.run" path="build/wrap" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="wrap_gtsam_unstable" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
 				<buildArguments>-j5</buildArguments>
-				<buildTarget>wrap.testSpirit.run</buildTarget>
+				<buildTarget>wrap_gtsam_unstable</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="wrap.testWrap.run" path="build/wrap" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="check.wrap" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
 				<buildArguments>-j5</buildArguments>
-				<buildTarget>wrap.testWrap.run</buildTarget>
+				<buildTarget>check.wrap</buildTarget>
+				<stopOnError>true</stopOnError>
+				<useDefaultCommand>true</useDefaultCommand>
+				<runAllBuilders>true</runAllBuilders>
+			</target>
+			<target name="check.dynamics_unstable" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+				<buildCommand>make</buildCommand>
+				<buildArguments>-j5</buildArguments>
+				<buildTarget>check.dynamics_unstable</buildTarget>
+				<stopOnError>true</stopOnError>
+				<useDefaultCommand>true</useDefaultCommand>
+				<runAllBuilders>true</runAllBuilders>
+			</target>
+			<target name="check.slam_unstable" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+				<buildCommand>make</buildCommand>
+				<buildArguments>-j5</buildArguments>
+				<buildTarget>check.slam_unstable</buildTarget>
+				<stopOnError>true</stopOnError>
+				<useDefaultCommand>true</useDefaultCommand>
+				<runAllBuilders>true</runAllBuilders>
+			</target>
+			<target name="check.base_unstable" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+				<buildCommand>make</buildCommand>
+				<buildArguments>-j5</buildArguments>
+				<buildTarget>check.base_unstable</buildTarget>
+				<stopOnError>true</stopOnError>
+				<useDefaultCommand>true</useDefaultCommand>
+				<runAllBuilders>true</runAllBuilders>
+			</target>
+			<target name="testSpirit.run" path="build/wrap" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+				<buildCommand>make</buildCommand>
+				<buildArguments>-j5</buildArguments>
+				<buildTarget>testSpirit.run</buildTarget>
+				<stopOnError>true</stopOnError>
+				<useDefaultCommand>true</useDefaultCommand>
+				<runAllBuilders>true</runAllBuilders>
+			</target>
+			<target name="testWrap.run" path="build/wrap" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+				<buildCommand>make</buildCommand>
+				<buildArguments>-j5</buildArguments>
+				<buildTarget>testWrap.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
