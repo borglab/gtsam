@@ -22,6 +22,7 @@
 
 #include <list>
 #include <vector>
+#include <gtsam/base/types.h>
 #include <gtsam/3rdparty/Eigen/Eigen/Core>
 #include <boost/random/linear_congruential.hpp>
 

@@ -27,7 +27,7 @@ namespace pose2SLAM {
     Values x;
     double theta = 0, dtheta = 2 * M_PI / n;
     for (size_t i = 0; i < n; i++, theta += dtheta)
-      x.insert(PoseKey(i), Pose2(cos(theta), sin(theta), M_PI_2 + theta));
+      x.insert(PoseKey(i), Pose2(cos(theta), sin(theta), (M_PI/2.0) + theta));
     return x;
   }
 

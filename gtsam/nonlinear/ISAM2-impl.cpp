@@ -15,6 +15,7 @@
  * @author  Michael Kaess, Richard Roberts
  */
 
+#include <functional>
 #include <boost/range/adaptors.hpp>
 #include <boost/range/algorithm.hpp>
 #include <gtsam/nonlinear/ISAM2-impl.h>
@@ -149,7 +150,7 @@ void ISAM2::Impl::ExpmapMasked(Values& values, const Permuted<VectorValues>& del
         cout << "       " << keyFormatter(key_value->key) << " (j = " << var << "), delta = " << delta[var].transpose() << endl;
     }
     assert(delta[var].size() == (int)key_value->value.dim());
-    assert(delta[var].unaryExpr(&isfinite<double>).all());
+    assert(delta[var].unaryExpr(ptr_fun(isfinite<double>)).all());
     if(mask[var]) {
       Value* retracted = key_value->value.retract_(delta[var]);
       key_value->value = *retracted;
@@ -305,7 +306,7 @@ size_t ISAM2::Impl::UpdateDelta(const boost::shared_ptr<ISAM2Clique>& root, std:
 
 #ifndef NDEBUG
     for(size_t j=0; j<delta.container().size(); ++j)
-      assert(delta.container()[j].unaryExpr(&isfinite<double>).all());
+      assert(delta.container()[j].unaryExpr(ptr_fun(isfinite<double>)).all());
 #endif
   }
 

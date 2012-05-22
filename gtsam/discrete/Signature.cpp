@@ -33,6 +33,7 @@ namespace gtsam {
 
 #ifdef BOOST_HAVE_PARSER
 	namespace qi = boost::spirit::qi;
+  namespace ph = boost::phoenix;
 
 	// parser for strings of form "99/1 80/20" etc...
 	namespace parser {
@@ -85,9 +86,9 @@ namespace gtsam {
 			// check for OR, AND on whole phrase
 			It f = spec.begin(), l = spec.end();
 			if (qi::parse(f, l,
-						qi::lit("OR")[ref(table) = logic(false, true, true, true)]) ||
+						qi::lit("OR")[ph::ref(table) = logic(false, true, true, true)]) ||
 					qi::parse(f, l,
-						qi::lit("AND")[ref(table) = logic(false, false, false, true)]))
+						qi::lit("AND")[ph::ref(table) = logic(false, false, false, true)]))
 				return true;
 
 			// tokenize into separate rows
@@ -97,9 +98,9 @@ namespace gtsam {
 				Signature::Row values;
 				It tf = token.begin(), tl = token.end();
 				bool r = qi::parse(tf, tl,
-						qi::double_[push_back(ref(values), qi::_1)] >> +("/" >> qi::double_[push_back(ref(values), qi::_1)]) |
-						qi::lit("T")[ref(values) = T] |
-						qi::lit("F")[ref(values) = F] );
+						qi::double_[push_back(ph::ref(values), qi::_1)] >> +("/" >> qi::double_[push_back(ph::ref(values), qi::_1)]) |
+						qi::lit("T")[ph::ref(values) = T] |
+						qi::lit("F")[ph::ref(values) = F] );
 				if (!r)
 					return false;
 				table.push_back(values);

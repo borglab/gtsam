@@ -49,15 +49,14 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	template<class F, class JT>
-	typename BayesTree<typename F::ConditionalType>::shared_ptr GenericMultifrontalSolver<F, JT>::eliminate(
-			typename FactorGraph<F>::Eliminate function) const {
+	template<class FACTOR, class JUNCTIONTREE>
+	typename BayesTree<typename FACTOR::ConditionalType>::shared_ptr GenericMultifrontalSolver<FACTOR, JUNCTIONTREE>::eliminate(Eliminate function) const {
 
 		// eliminate junction tree, returns pointer to root
-		typename BayesTree<typename F::ConditionalType>::sharedClique root = junctionTree_->eliminate(function);
+		typename BayesTree<typename FACTOR::ConditionalType>::sharedClique root = junctionTree_->eliminate(function);
 
 		// create an empty Bayes tree and insert root clique
-		typename BayesTree<typename F::ConditionalType>::shared_ptr bayesTree(new BayesTree<typename F::ConditionalType>);
+		typename BayesTree<typename FACTOR::ConditionalType>::shared_ptr bayesTree(new BayesTree<typename FACTOR::ConditionalType>);
 		bayesTree->insert(root);
 
 		// return the Bayes tree

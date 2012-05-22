@@ -21,6 +21,7 @@
 
 #pragma once
 
+#include <cmath>
 #include <boost/serialization/nvp.hpp>
 
 #include <gtsam/base/Matrix.h>
@@ -150,7 +151,7 @@ namespace gtsam {
 
     /** distance between two points */
     double dist(const Point3& p2) const {
-      return sqrt(pow(x()-p2.x(),2.0) + pow(y()-p2.y(),2.0) + pow(z()-p2.z(),2.0));
+      return std::sqrt(pow(x()-p2.x(),2.0) + pow(y()-p2.y(),2.0) + pow(z()-p2.z(),2.0));
     }
 
     /** Distance of the point from the origin */

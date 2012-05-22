@@ -53,7 +53,7 @@ namespace gtsam {
 
 	template<class CONDITIONAL, class CLIQUE>
 	void BayesTree<CONDITIONAL,CLIQUE>::getCliqueData(CliqueData& data,
-			BayesTree<CONDITIONAL,CLIQUE>::sharedClique clique) const {
+			typename BayesTree<CONDITIONAL,CLIQUE>::sharedClique clique) const {
 		data.conditionalSizes.push_back((*clique)->nrFrontals());
 		data.separatorSizes.push_back((*clique)->nrParents());
 		BOOST_FOREACH(sharedClique c, clique->children_) {
@@ -74,7 +74,7 @@ namespace gtsam {
 
 	template<class CONDITIONAL, class CLIQUE>
 	void BayesTree<CONDITIONAL,CLIQUE>::saveGraph(ostream &s,
-			BayesTree<CONDITIONAL,CLIQUE>::sharedClique clique,
+			typename BayesTree<CONDITIONAL,CLIQUE>::sharedClique clique,
 			int parentnum) const {
 		static int num = 0;
 		bool first = true;

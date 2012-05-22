@@ -16,7 +16,7 @@
  * @author  Frank Dellaert
  */
 
-#include <stdarg.h>
+#include <cstdarg>
 #include <limits>
 #include <iostream>
 #include <fstream>
@@ -25,17 +25,17 @@
 #include <cmath>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
-#include <stdio.h>
-
-#ifdef WIN32
-#include <Windows.h>
-#endif
+#include <cstdio>
 
 #include <boost/random/normal_distribution.hpp>
 #include <boost/random/variate_generator.hpp>
 
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/types.h>
+
+//#ifdef WIN32
+//#include <Windows.h>
+//#endif
 
 using namespace std;
 
@@ -56,11 +56,11 @@ void odprintf_(const char *format, ostream& stream, ...) {
 #endif
 	va_end(args);
 
-#ifdef WIN32
-	OutputDebugString(buf);
-#else
+//#ifdef WIN32
+//	OutputDebugString(buf);
+//#else
 	stream << buf;
-#endif
+//#endif
 }
 
 /* ************************************************************************* */
@@ -77,11 +77,11 @@ void odprintf(const char *format, ...) {
 #endif
 	va_end(args);
 
-#ifdef WIN32
-	OutputDebugString(buf);
-#else
+//#ifdef WIN32
+//	OutputDebugString(buf);
+//#else
 	cout << buf;
-#endif
+//#endif
 }
 
 /* ************************************************************************* */
