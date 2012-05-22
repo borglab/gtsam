@@ -37,7 +37,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class CONDITIONAL>
 	void BayesNet<CONDITIONAL>::print(const string& s) const {
-		cout << s << ":\n";
+		cout << s;
 		BOOST_REVERSE_FOREACH(sharedConditional conditional,conditionals_)
 			conditional->print();
 	}

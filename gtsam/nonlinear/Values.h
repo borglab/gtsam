@@ -24,8 +24,10 @@
 
 #pragma once
 
-#include <string>
-#include <utility>
+#include <gtsam/base/Value.h>
+#include <gtsam/base/FastMap.h>
+#include <gtsam/linear/VectorValues.h>
+#include <gtsam/nonlinear/Ordering.h>
 
 #include <boost/pool/pool_alloc.hpp>
 #include <boost/ptr_container/ptr_map.hpp>
@@ -37,10 +39,8 @@
 #include <boost/iterator_adaptors.hpp>
 #include <boost/lambda/lambda.hpp>
 
-#include <gtsam/base/Value.h>
-#include <gtsam/base/FastMap.h>
-#include <gtsam/linear/VectorValues.h>
-#include <gtsam/nonlinear/Ordering.h>
+#include <string>
+#include <utility>
 
 namespace gtsam {
 
