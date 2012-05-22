@@ -17,14 +17,13 @@
 
 #pragma once
 
-#include <gtsam/geometry/Pose2.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/geometry/Pose2.h>
 
 // Use pose2SLAM namespace for specific SLAM instance
 namespace pose2SLAM {
@@ -93,10 +92,14 @@ namespace pose2SLAM {
     void addOdometry(Index i, Index j, const Pose2& z,
         const SharedNoiseModel& model);
 
-    /// Optimize
-    Values optimize(const Values& initialEstimate) const {
-      return LevenbergMarquardtOptimizer(*this, initialEstimate).optimize();
+    /// AddConstraint adds a soft constraint between factor between keys i and j
+    void addConstraint(Index i, Index j, const Pose2& z,
+        const SharedNoiseModel& model) {
+    	addOdometry(i,j,z,model); // same for now
     }
+
+    /// Optimize
+    Values optimize(const Values& initialEstimate) const;
   };
 
 } // pose2SLAM

@@ -16,6 +16,7 @@
  **/
 
 #include <gtsam/slam/pose2SLAM.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 
 // Use pose2SLAM namespace for specific SLAM instance
 
@@ -48,6 +49,11 @@ namespace pose2SLAM {
       const SharedNoiseModel& model) {
     sharedFactor factor(new Odometry(PoseKey(i), PoseKey(j), z, model));
     push_back(factor);
+  }
+
+  /* ************************************************************************* */
+  Values Graph::optimize(const Values& initialEstimate) const {
+    return LevenbergMarquardtOptimizer(*this, initialEstimate).optimize();
   }
 
   /* ************************************************************************* */
