@@ -36,12 +36,12 @@ using pose2SLAM::PoseKey;
 
 // common measurement covariance
 static double sx=0.5, sy=0.5,st=0.1;
-static noiseModel::Gaussian::shared_ptr covariance(
-		noiseModel::Gaussian::Covariance(Matrix_(3, 3,
+static Matrix cov(Matrix_(3, 3,
 	sx*sx, 0.0, 0.0,
 	0.0, sy*sy, 0.0,
 	0.0, 0.0, st*st
-	)));
+	));
+static noiseModel::Gaussian::shared_ptr covariance(noiseModel::Gaussian::Covariance(cov));
 //static noiseModel::Gaussian::shared_ptr I3(noiseModel::Unit::Create(3));
 
 const Key kx0 = Symbol('x',0), kx1 = Symbol('x',1), kx2 = Symbol('x',2), kx3 = Symbol('x',3), kx4 = Symbol('x',4), kx5 = Symbol('x',5), kl1 = Symbol('l',1);
@@ -175,6 +175,12 @@ TEST(Pose2SLAM, optimize) {
 
   // Check marginals
   Marginals marginals = fg.marginals(actual);
+	// Matrix expectedP0 = Infinity, as we have a pose constraint !?
+	// Matrix actualP0 = marginals.marginalCovariance(pose2SLAM::PoseKey(0));
+	// EQUALITY(expectedP0, actualP0);
+	Matrix expectedP1 = cov; // the second pose really should have just the noise covariance
+	Matrix actualP1 = marginals.marginalCovariance(pose2SLAM::PoseKey(1));
+	EQUALITY(expectedP1, actualP1);
 }
 
 /* ************************************************************************* */
