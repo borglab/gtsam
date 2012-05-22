@@ -57,7 +57,6 @@ int main(int argc, char** argv) {
 	initialEstimate.insertPose(1, Pose2(0.5, 0.0, 0.2));
 	initialEstimate.insertPose(2, Pose2(2.3, 0.1,-0.2));
 	initialEstimate.insertPose(3, Pose2(4.1, 0.1, 0.1));
-
 	initialEstimate.print("\nInitial estimate:\n  ");
 
 	// optimize using Levenberg-Marquardt optimization with an ordering from colamd

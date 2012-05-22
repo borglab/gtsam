@@ -11,59 +11,54 @@
 
 /**
  * @file Pose2SLAMExample_easy.cpp
- *
- * A 2D Pose SLAM example using the predefined typedefs in gtsam/slam/pose2SLAM.h
- *
+ * @brief A 2D Pose SLAM example using the predefined typedefs in gtsam/slam/pose2SLAM.h
  * @date Oct 21, 2010
- * @author ydjian
+ * @author Yong Dian Jian
  */
-
-#include <cmath>
-#include <iostream>
-#include <boost/shared_ptr.hpp>
 
 // pull in the Pose2 SLAM domain with all typedefs and helper functions defined
 #include <gtsam/slam/pose2SLAM.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <cmath>
 
 using namespace std;
 using namespace gtsam;
-using namespace pose2SLAM;
 
 int main(int argc, char** argv) {
 
-	/* 1. create graph container and add factors to it */
-	Graph graph ;
+	// 1. Create graph container and add factors to it
+	pose2SLAM::Graph graph ;
 
-	/* 2.a add prior  */
-	// gaussian for prior
-	SharedDiagonal prior_model = noiseModel::Diagonal::Sigmas(Vector_(3, 0.3, 0.3, 0.1));
-	Pose2 prior_measurement(0.0, 0.0, 0.0); // prior at origin
-	graph.addPrior(1, prior_measurement, prior_model); // add directly to graph
+	// 2a. Add Gaussian prior
+	Pose2 priorMean(0.0, 0.0, 0.0); // prior at origin
+	SharedDiagonal priorNoise(Vector_(3, 0.3, 0.3, 0.1));
+	graph.addPrior(1, priorMean, priorNoise);
 
-	/* 2.b add odometry */
-	// general noisemodel for odometry
-	SharedDiagonal odom_model = noiseModel::Diagonal::Sigmas(Vector_(3, 0.2, 0.2, 0.1));
+	// 2b. Add odometry factors
+	SharedDiagonal odometryNoise(Vector_(3, 0.2, 0.2, 0.1));
+	graph.addOdometry(1, 2, Pose2(2.0, 0.0, 0.0   ), odometryNoise);
+	graph.addOdometry(2, 3, Pose2(2.0, 0.0, M_PI_2), odometryNoise);
+	graph.addOdometry(3, 4, Pose2(2.0, 0.0, M_PI_2), odometryNoise);
+	graph.addOdometry(4, 5, Pose2(2.0, 0.0, M_PI_2), odometryNoise);
 
-	/* Pose2 measurements take (x,y,theta), where theta is taken from the positive x-axis*/
-	Pose2 odom_measurement(2.0, 0.0, 0.0); // create a measurement for both factors (the same in this case)
-	graph.addOdometry(1, 2, odom_measurement, odom_model);
-	graph.addOdometry(2, 3, odom_measurement, odom_model);
-	graph.print("full graph");
+	// 2c. Add pose constraint
+	SharedDiagonal constraintUncertainty(Vector_(3, 0.2, 0.2, 0.1));
+	graph.addConstraint(5, 2, Pose2(2.0, 0.0, M_PI_2), constraintUncertainty);
 
-    /* 3. Create the data structure to hold the initial estinmate to the solution
-     * initialize to noisy points */
-	pose2SLAM::Values initial;
-	initial.insertPose(1, Pose2(0.5, 0.0, 0.2));
-	initial.insertPose(2, Pose2(2.3, 0.1,-0.2));
-	initial.insertPose(3, Pose2(4.1, 0.1, 0.1));
-	initial.print("initial estimate");
+	// print
+	graph.print("\nFactor graph:\n");
 
-	/* 4 Single Step Optimization
-	* optimize using Levenberg-Marquardt optimization with an ordering from colamd */
-	pose2SLAM::Values result = graph.optimize(initial);
-	result.print("final result");
+  // 3. Create the data structure to hold the initialEstimate estinmate to the solution
+	pose2SLAM::Values initialEstimate;
+	Pose2 x1(0.5, 0.0, 0.2   ); initialEstimate.insertPose(1, x1);
+	Pose2 x2(2.3, 0.1,-0.2   ); initialEstimate.insertPose(2, x2);
+	Pose2 x3(4.1, 0.1, M_PI_2); initialEstimate.insertPose(3, x3);
+	Pose2 x4(4.0, 2.0, M_PI  ); initialEstimate.insertPose(4, x4);
+	Pose2 x5(2.1, 2.1,-M_PI_2); initialEstimate.insertPose(5, x5);
+	initialEstimate.print("\nInitial estimate:\n  ");
 
+	// 4. Single Step Optimization using Levenberg-Marquardt
+	pose2SLAM::Values result = graph.optimize(initialEstimate);
+	result.print("\nFinal result:\n  ");
 
 	return 0;
 }
