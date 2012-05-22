@@ -15,26 +15,25 @@
  * @author  Frank Dellaert
  */
 
-#include <iostream>
-using namespace std;
-
-#include <boost/assign/std/list.hpp> // for operator +=
-using namespace boost::assign;
+#include <gtsam/slam/smallExample.h>
+#include <gtsam/slam/pose2SLAM.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
+#include <gtsam/nonlinear/DoglegOptimizer.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/NoiseModel.h>
+#include <gtsam/base/Matrix.h>
 
 #include <CppUnitLite/TestHarness.h>
 
 #include <boost/shared_ptr.hpp>
-using namespace boost;
+#include <boost/assign/std/list.hpp> // for operator +=
+using namespace boost::assign;
 
-#include <gtsam/base/Matrix.h>
-#include <gtsam/slam/smallExample.h>
-#include <gtsam/slam/pose2SLAM.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/NoiseModel.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
-#include <gtsam/nonlinear/DoglegOptimizer.h>
+#include <iostream>
 
+using namespace std;
 using namespace gtsam;
 
 const double tol = 1e-5;

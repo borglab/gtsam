@@ -16,6 +16,7 @@
 
 #include <gtsam/slam/pose2SLAM.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/base/numericalDerivative.h>
 using namespace gtsam;
@@ -145,7 +146,7 @@ TEST( Pose2SLAM, linearization )
 }
 
 /* ************************************************************************* */
-TEST(Pose2Graph, optimize) {
+TEST(Pose2SLAM, optimize) {
 
 	// create a Pose graph with one equality constraint and one measurement
   pose2SLAM::Graph fg;
@@ -171,11 +172,14 @@ TEST(Pose2Graph, optimize) {
   expected.insert(pose2SLAM::PoseKey(0), Pose2(0,0,0));
   expected.insert(pose2SLAM::PoseKey(1), Pose2(1,2,M_PI_2));
   CHECK(assert_equal(expected, actual));
+
+  // Check marginals
+  Marginals marginals = fg.marginals(actual);
 }
 
 /* ************************************************************************* */
 // test optimization with 3 poses
-TEST(Pose2Graph, optimizeThreePoses) {
+TEST(Pose2SLAM, optimizeThreePoses) {
 
 	// Create a hexagon of poses
 	pose2SLAM::Values hexagon = pose2SLAM::circle(3,1.0);
@@ -289,7 +293,7 @@ TEST_UNSAFE(Pose2SLAM, optimizeCircle) {
 }
 
 /* ************************************************************************* */
-TEST(Pose2Graph, optimize2) {
+TEST(Pose2SLAM, optimize2) {
 //  Pose2SLAMOptimizer myOptimizer("100");
 //  Matrix A1 = myOptimizer.a1();
 //  Matrix A2 = myOptimizer.a2();
