@@ -347,13 +347,14 @@ class GaussianFactorGraph {
 
 	// Building the graph
 	void add(gtsam::JacobianFactor* factor);
-	void add(Vector b);
-	void add(int key1, Matrix A1, Vector b, const gtsam::SharedDiagonal& model);
-	void add(int key1, Matrix A1, int key2, Matrix A2, Vector b,
-			const gtsam::SharedDiagonal& model);
-	void add(int key1, Matrix A1, int key2, Matrix A2, int key3, Matrix A3,
-			Vector b, const gtsam::SharedDiagonal& model);
-	void add(gtsam::HessianFactor* factor);
+	// all these won't work as MATLAB can't handle overloading
+//	void add(Vector b);
+//	void add(int key1, Matrix A1, Vector b, const gtsam::SharedDiagonal& model);
+//	void add(int key1, Matrix A1, int key2, Matrix A2, Vector b,
+//			const gtsam::SharedDiagonal& model);
+//	void add(int key1, Matrix A1, int key2, Matrix A2, int key3, Matrix A3,
+//			Vector b, const gtsam::SharedDiagonal& model);
+//	void add(gtsam::HessianFactor* factor);
 
 	// error and probability
 	double error(const gtsam::VectorValues& c) const;
@@ -380,7 +381,7 @@ class GaussianSequentialSolver {
 
 class KalmanFilter {
 	KalmanFilter(size_t n);
-	gtsam::GaussianDensity* init(Vector x0, const gtsam::SharedDiagonal& P0);
+	// gtsam::GaussianDensity* init(Vector x0, const gtsam::SharedDiagonal& P0);
 	gtsam::GaussianDensity* init(Vector x0, Matrix P0);
 	void print(string s) const;
 	static int step(gtsam::GaussianDensity* p);
@@ -400,6 +401,12 @@ class KalmanFilter {
 // nonlinear
 //*************************************************************************
 
+class Symbol {
+  Symbol(char c, size_t j);
+	void print(string s) const;
+  size_t key() const;
+};
+
 class Ordering {
 	Ordering();
 	void print(string s) const;
@@ -407,20 +414,21 @@ class Ordering {
 	void push_back(size_t key);
 };
 
-//Andrew says: Required definitions for Marginal arguments
 class NonlinearFactorGraph {
     NonlinearFactorGraph();
-    //This need to be populated with whatever functions might be needed.
 };
 
 class Values {
     Values();
-    //Same here
+  	void print(string s) const;
+    bool exists(size_t j) const;
 };
 
-// Frank says: this does not work. Why not?
 class Marginals {
 	Marginals(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& solution);
+  void print(string s) const;
+  Matrix marginalCovariance(size_t variable) const;
+  Matrix marginalInformation(size_t variable) const;
 };
 
 }///\namespace gtsam
@@ -471,7 +479,7 @@ class Odometry {
 }///\namespace planarSLAM
 
 //*************************************************************************
-// gtsam::Pose2SLAM
+// Pose2SLAM
 //*************************************************************************
 
 #include <gtsam/slam/pose2SLAM.h>
@@ -481,6 +489,7 @@ class Values {
   Values();
   void print(string s) const;
   void insertPose(int key, const gtsam::Pose2& pose);
+  gtsam::Symbol poseKey(int i);
   gtsam::Pose2 pose(int i);
 };
 
@@ -497,7 +506,8 @@ class Graph {
   void addPrior(int key, const gtsam::Pose2& pose, const gtsam::SharedNoiseModel& noiseModel);
   void addPoseConstraint(int key, const gtsam::Pose2& pose);
   void addOdometry(int key1, int key2, const gtsam::Pose2& odometry, const gtsam::SharedNoiseModel& noiseModel);
-  pose2SLAM::Values optimize(const pose2SLAM::Values& initialEstimate);
+  pose2SLAM::Values optimize(const pose2SLAM::Values& initialEstimate) const;
+  gtsam::Marginals marginals(const pose2SLAM::Values& solution) const;
 };
 
 }///\namespace pose2SLAM

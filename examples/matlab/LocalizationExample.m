@@ -43,8 +43,8 @@ initialEstimate.print(sprintf('\nInitial estimate:\n  '));
 result = graph.optimize(initialEstimate);
 result.print(sprintf('\nFinal result:\n  '));
 
-%% Use an explicit Optimizer object so we can query the marginals
-% marginals = gtsamMarginals(graph, result);
-% marginals.marginalCovariance(pose2SLAMPoseKey(1))
-% marginals.marginalCovariance(pose2SLAMPoseKey(2))
-% marginals.marginalCovariance(pose2SLAMPoseKey(3))
+%% Query the marginals
+marginals = graph.marginals(result);
+x1=gtsamSymbol('x',1); marginals.marginalCovariance(x1.key)
+x2=gtsamSymbol('x',2); marginals.marginalCovariance(x2.key)
+x3=gtsamSymbol('x',3); marginals.marginalCovariance(x3.key)
