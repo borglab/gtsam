@@ -15,7 +15,7 @@ include(GtsamTesting)
 include(GtsamPrinting)
 
 # guard against in-source builds
-if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
+if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR} AND NOT MSVC)
   message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there. You may need to remove CMakeCache.txt. ")
 endif()
 
@@ -94,6 +94,9 @@ if (GTSAM_BUILD_TESTS)
 endif()
 
 # Find boost
+if(MSVC)
+  set(Boost_USE_STATIC_LIBS 1)
+endif()
 find_package(Boost 1.40 COMPONENTS serialization REQUIRED)
 
 # General build settings

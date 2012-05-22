@@ -71,6 +71,8 @@ set(gtsam_srcs
     ${slam_srcs}
 )
 
+#gtsam_assign_source_folders("${gtsam_srcs}")
+
 # Versions
 set(gtsam_version   ${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH})
 set(gtsam_soversion ${GTSAM_VERSION_MAJOR})
@@ -97,6 +99,6 @@ if (GTSAM_BUILD_SHARED_LIBRARY)
         CLEAN_DIRECT_OUTPUT 1
     	VERSION             ${gtsam_version}
      	SOVERSION           ${gtsam_soversion})
-    install(TARGETS gtsam-shared LIBRARY DESTINATION lib )
+    install(TARGETS gtsam-shared LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
 endif(GTSAM_BUILD_SHARED_LIBRARY)
 
