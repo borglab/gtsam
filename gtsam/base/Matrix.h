@@ -26,6 +26,7 @@
 #include <gtsam/3rdparty/Eigen/Eigen/QR>
 #include <boost/format.hpp>
 #include <boost/tuple/tuple.hpp>
+#include <boost/math/special_functions/fpclassify.hpp>
 
 /**
  * Matrix is a typedef in the gtsam namespace
@@ -87,7 +88,7 @@ bool equal_with_abs_tol(const Eigen::DenseBase<MATRIX>& A, const Eigen::DenseBas
 
 	for(size_t i=0; i<m1; i++)
 		for(size_t j=0; j<n1; j++) {
-			if(std::isnan(A(i,j)) xor std::isnan(B(i,j)))
+			if(boost::math::isnan(A(i,j)) ^ boost::math::isnan(B(i,j)))
 				return false;
 			else if(fabs(A(i,j) - B(i,j)) > tol)
 				return false;

@@ -35,6 +35,7 @@
 #include <boost/random/variate_generator.hpp>
 
 #include <gtsam/base/Vector.h>
+#include <gtsam/base/types.h>
 
 using namespace std;
 
@@ -169,7 +170,7 @@ bool equal_with_abs_tol(const Vector& vec1, const Vector& vec2, double tol) {
 	if (vec1.size()!=vec2.size()) return false;
 	size_t m = vec1.size();
 	for(size_t i=0; i<m; ++i) {
-		if(isnan(vec1[i]) xor isnan(vec2[i]))
+		if(isnan(vec1[i]) ^ isnan(vec2[i]))
 			return false;
 		if(fabs(vec1[i] - vec2[i]) > tol)
 			return false;
@@ -182,7 +183,7 @@ bool equal_with_abs_tol(const SubVector& vec1, const SubVector& vec2, double tol
 	if (vec1.size()!=vec2.size()) return false;
 	size_t m = vec1.size();
 	for(size_t i=0; i<m; ++i) {
-		if(isnan(vec1[i]) xor isnan(vec2[i]))
+		if(isnan(vec1[i]) ^ isnan(vec2[i]))
 			return false;
 		if(fabs(vec1[i] - vec2[i]) > tol)
 			return false;

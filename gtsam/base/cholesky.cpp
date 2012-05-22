@@ -16,15 +16,16 @@
  * @date    Nov 5, 2010
  */
 
+#include <functional>
+#include <boost/format.hpp>
+#include <boost/bind.hpp>
+
 #include <gtsam/base/debug.h>
 #include <gtsam/base/cholesky.h>
 #include <gtsam/base/timing.h>
 
 #include <gtsam/3rdparty/Eigen/Eigen/Core>
 #include <gtsam/3rdparty/Eigen/Eigen/Dense>
-
-#include <boost/format.hpp>
-#include <boost/bind.hpp>
 
 using namespace std;
 
@@ -129,7 +130,7 @@ void choleskyPartial(Matrix& ABC, size_t nFrontal) {
   tic(1, "lld");
   ABC.block(0,0,nFrontal,nFrontal).triangularView<Eigen::Upper>() =
       ABC.block(0,0,nFrontal,nFrontal).selfadjointView<Eigen::Upper>().llt().matrixU();
-  assert(ABC.topLeftCorner(nFrontal,nFrontal).triangularView<Eigen::Upper>().toDenseMatrix().unaryExpr(&isfinite<double>).all());
+  assert(ABC.topLeftCorner(nFrontal,nFrontal).triangularView<Eigen::Upper>().toDenseMatrix().unaryExpr(ptr_fun(isfinite<double>)).all());
   toc(1, "lld");
 
   if(debug) cout << "R:\n" << Eigen::MatrixXd(ABC.topLeftCorner(nFrontal,nFrontal).triangularView<Eigen::Upper>()) << endl;
@@ -140,7 +141,7 @@ void choleskyPartial(Matrix& ABC, size_t nFrontal) {
     ABC.topLeftCorner(nFrontal,nFrontal).triangularView<Eigen::Upper>().transpose().solveInPlace(
         ABC.topRightCorner(nFrontal, n-nFrontal));
   }
-  assert(ABC.topRightCorner(nFrontal, n-nFrontal).unaryExpr(&isfinite<double>).all());
+  assert(ABC.topRightCorner(nFrontal, n-nFrontal).unaryExpr(ptr_fun(isfinite<double>)).all());
   if(debug) cout << "S:\n" << ABC.topRightCorner(nFrontal, n-nFrontal) << endl;
   toc(2, "compute S");
 
@@ -150,7 +151,7 @@ void choleskyPartial(Matrix& ABC, size_t nFrontal) {
   if(n - nFrontal > 0)
     ABC.bottomRightCorner(n-nFrontal,n-nFrontal).selfadjointView<Eigen::Upper>().rankUpdate(
         ABC.topRightCorner(nFrontal, n-nFrontal).transpose(), -1.0);
-  assert(ABC.bottomRightCorner(n-nFrontal,n-nFrontal).selfadjointView<Eigen::Upper>().toDenseMatrix().unaryExpr(&isfinite<double>).all());
+  assert(ABC.bottomRightCorner(n-nFrontal,n-nFrontal).selfadjointView<Eigen::Upper>().toDenseMatrix().unaryExpr(ptr_fun(isfinite<double>)).all());
   if(debug) cout << "L:\n" << Eigen::MatrixXd(ABC.bottomRightCorner(n-nFrontal,n-nFrontal).selfadjointView<Eigen::Upper>()) << endl;
   toc(3, "compute L");
 }

@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include <unistd.h>
+#include <cstddef>
 
 namespace gtsam {
 
@@ -70,4 +70,18 @@ namespace gtsam {
 	};
 
 }
+
+#ifdef _MSC_VER
+
+#include <boost/math/special_functions/fpclassify.hpp>
+using boost::math::isfinite;
+using boost::math::isnan;
+using boost::math::isinf;
+
+#include <boost/math/constants/constants.hpp>
+#ifndef M_PI
+#define M_PI (boost::math::constants::pi<double>())
+#endif
+
+#endif
 

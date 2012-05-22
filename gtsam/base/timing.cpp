@@ -241,9 +241,11 @@ void Timing::print() {
 
 /* ************************************************************************* */
 double _tic_() {
-  struct timeval t;
-  gettimeofday(&t, NULL);
-  return ((double)t.tv_sec + ((double)t.tv_usec)/1000000.);
+  typedef boost::chrono::high_resolution_clock clock_t;
+  typedef boost::chrono::duration<double> duration_t;
+
+  clock_t::time_point t = clock_t::now();
+  return boost::chrono::duration_cast< duration_t >(t.time_since_epoch()).count();
 }
 
 /* ************************************************************************* */
