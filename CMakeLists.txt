@@ -105,7 +105,7 @@ endif()
 if(MSVC)
   set(Boost_USE_STATIC_LIBS 1)
 endif()
-find_package(Boost 1.40 COMPONENTS serialization system chrono REQUIRED)
+find_package(Boost 1.40 COMPONENTS serialization system chrono filesystem REQUIRED)
 
 # General build settings
 include_directories(
