@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
 	Rot2 bearing11 = Rot2::fromDegrees(45),
 		   bearing21 = Rot2::fromDegrees(90),
 		   bearing32 = Rot2::fromDegrees(90);
-	double range11 = sqrt(4+4),
+	double range11 = std::sqrt(4.0+4.0),
 		     range21 = 2.0,
 		     range32 = 2.0;
 

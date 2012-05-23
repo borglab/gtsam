@@ -70,7 +70,7 @@ TEST( Graph, predecessorMap2Graph )
 	p_map.insert(kx(1), kx(2));
 	p_map.insert(kx(2), kx(2));
 	p_map.insert(kx(3), kx(2));
-	tie(graph, root, key2vertex) = predecessorMap2Graph<SGraph<Key>, SVertex, Key>(p_map);
+	boost::tie(graph, root, key2vertex) = predecessorMap2Graph<SGraph<Key>, SVertex, Key>(p_map);
 
 	LONGS_EQUAL(3, boost::num_vertices(graph));
 	CHECK(root == key2vertex[kx(2)]);

@@ -263,7 +263,7 @@ TEST( GaussianFactor, matrix )
 	EQUALITY(b_act2,b2);
 
 	// Ensure that whitening is consistent
-	shared_ptr<noiseModel::Gaussian> model = lf->get_model();
+	boost::shared_ptr<noiseModel::Gaussian> model = lf->get_model();
 	model->WhitenSystem(A_act2, b_act2);
 	EQUALITY(A_act1, A_act2);
 	EQUALITY(b_act1, b_act2);
@@ -307,7 +307,7 @@ TEST( GaussianFactor, matrix_aug )
 	EQUALITY(Ab_act2,Ab2);
 
 	// Ensure that whitening is consistent
-	shared_ptr<noiseModel::Gaussian> model = lf->get_model();
+	boost::shared_ptr<noiseModel::Gaussian> model = lf->get_model();
 	model->WhitenInPlace(Ab_act1);
 	EQUALITY(Ab_act1, Ab_act2);
 }

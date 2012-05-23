@@ -232,7 +232,7 @@ TEST( GaussianFactorGraph, eliminateOne_l1 )
   GaussianConditional::shared_ptr actual = inference::eliminateOne(fg, 0, EliminateQR).first;
 
   // create expected Conditional Gaussian
-  double sig = sqrt(2)/10.;
+  double sig = sqrt(2.0)/10.;
   Matrix I = eye(2)/sig, R11 = I, S12 = -0.5*I, S13 = -0.5*I;
   Vector d = Vector_(2, -0.1, 0.25)/sig, sigma = ones(2);
   GaussianConditional expected(ordering[kl(1)],d,R11,ordering[kx(1)],S12,ordering[kx(2)],S13,sigma);
@@ -295,7 +295,7 @@ TEST( GaussianFactorGraph, eliminateOne_l1_fast )
   GaussianConditional::shared_ptr actual = inference::eliminateOne(fg, ordering[kl(1)], EliminateQR).first;
 
   // create expected Conditional Gaussian
-  double sig = sqrt(2)/10.;
+  double sig = sqrt(2.0)/10.;
   Matrix I = eye(2)/sig, R11 = I, S12 = -0.5*I, S13 = -0.5*I;
   Vector d = Vector_(2, -0.1, 0.25)/sig, sigma = ones(2);
   GaussianConditional expected(ordering[kl(1)],d,R11,ordering[kx(1)],S12,ordering[kx(2)],S13,sigma);

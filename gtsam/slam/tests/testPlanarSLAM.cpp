@@ -26,7 +26,7 @@ using namespace gtsam;
 using namespace planarSLAM;
 
 // some shared test values
-static Pose2 x1, x2(1, 1, 0), x3(1, 1, M_PI_4);
+static Pose2 x1, x2(1, 1, 0), x3(1, 1, M_PI/4.0);
 static Point2 l1(1, 0), l2(1, 1), l3(2, 2), l4(1, 3);
 
 SharedNoiseModel
@@ -47,7 +47,7 @@ TEST( planarSLAM, PriorFactor_equals )
 TEST( planarSLAM, BearingFactor )
 {
 	// Create factor
-	Rot2 z = Rot2::fromAngle(M_PI_4 + 0.1); // h(x) - z = -0.1
+	Rot2 z = Rot2::fromAngle(M_PI/4.0 + 0.1); // h(x) - z = -0.1
 	planarSLAM::Bearing factor(PoseKey(2), PointKey(3), z, sigma);
 
 	// create config
@@ -75,7 +75,7 @@ TEST( planarSLAM, BearingFactor_equals )
 TEST( planarSLAM, RangeFactor )
 {
 	// Create factor
-	double z(sqrt(2) - 0.22); // h(x) - z = 0.22
+	double z(sqrt(2.0) - 0.22); // h(x) - z = 0.22
 	planarSLAM::Range factor(PoseKey(2), PointKey(3), z, sigma);
 
 	// create config
@@ -101,8 +101,8 @@ TEST( planarSLAM, RangeFactor_equals )
 TEST( planarSLAM, BearingRangeFactor )
 {
 	// Create factor
-	Rot2 r = Rot2::fromAngle(M_PI_4 + 0.1); // h(x) - z = -0.1
-	double b(sqrt(2) - 0.22); // h(x) - z = 0.22
+	Rot2 r = Rot2::fromAngle(M_PI/4.0 + 0.1); // h(x) - z = -0.1
+	double b(sqrt(2.0) - 0.22); // h(x) - z = 0.22
 	planarSLAM::BearingRange factor(PoseKey(2), PointKey(3), r, b, sigma2);
 
 	// create config
@@ -158,14 +158,14 @@ TEST( planarSLAM, constructor )
 	G.addPoseConstraint(2, x2); // make it feasible :-)
 
 	// Add odometry
-	G.addOdometry(2, 3, Pose2(0, 0, M_PI_4), I3);
+	G.addOdometry(2, 3, Pose2(0, 0, M_PI/4.0), I3);
 
 	// Create bearing factor
-	Rot2 z1 = Rot2::fromAngle(M_PI_4 + 0.1); // h(x) - z = -0.1
+	Rot2 z1 = Rot2::fromAngle(M_PI/4.0 + 0.1); // h(x) - z = -0.1
 	G.addBearing(2, 3, z1, sigma);
 
 	// Create range factor
-	double z2(sqrt(2) - 0.22); // h(x) - z = 0.22
+	double z2(sqrt(2.0) - 0.22); // h(x) - z = 0.22
 	G.addRange(2, 3, z2, sigma);
 
 	Vector expected0 = Vector_(3, 0.0, 0.0, 0.0);

@@ -131,7 +131,7 @@ TEST( Rot3, rodriguez3)
 TEST( Rot3, rodriguez4)
 {
 	Vector axis = Vector_(3,0.,0.,1.); // rotation around Z
-	double angle = M_PI_2;
+	double angle = M_PI/2.0;
 	Rot3 actual = Rot3::rodriguez(axis, angle);
 	double c=cos(angle),s=sin(angle);
 	Rot3 expected(c,-s, 0,

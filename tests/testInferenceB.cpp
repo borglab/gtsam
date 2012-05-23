@@ -41,7 +41,7 @@ TEST( inference, marginals )
   		*GaussianSequentialSolver(GaussianFactorGraph(cbn)).jointFactorGraph(xvar)).eliminate();
 
   // expected is just scalar Gaussian on x
-  GaussianBayesNet expected = scalarGaussian(0, 4, sqrt(2));
+  GaussianBayesNet expected = scalarGaussian(0, 4, sqrt(2.0));
   CHECK(assert_equal(expected,actual));
 }
 

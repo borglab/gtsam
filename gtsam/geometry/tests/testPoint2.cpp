@@ -72,7 +72,7 @@ TEST( Point2, arithmetic)
 /* ************************************************************************* */
 TEST( Point2, norm)
 {
-	Point2 p0(cos(5), sin(5));
+	Point2 p0(cos(5.0), sin(5.0));
 	DOUBLES_EQUAL(1,p0.norm(),1e-6);
 	Point2 p1(4, 5), p2(1, 1);
 	DOUBLES_EQUAL( 5,p1.dist(p2),1e-6);
@@ -85,7 +85,7 @@ TEST( Point2, unit)
 	Point2 p0(10.0, 0.0), p1(0.0,-10.0), p2(10.0, 10.0);
 	EXPECT(assert_equal(Point2(1.0, 0.0), p0.unit(), 1e-6));
 	EXPECT(assert_equal(Point2(0.0,-1.0), p1.unit(), 1e-6));
-	EXPECT(assert_equal(Point2(sqrt(2)/2.0, sqrt(2)/2.0), p2.unit(), 1e-6));
+	EXPECT(assert_equal(Point2(sqrt(2.0)/2.0, sqrt(2.0)/2.0), p2.unit(), 1e-6));
 }
 
 /* ************************************************************************* */

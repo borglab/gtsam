@@ -72,7 +72,7 @@ TEST( Pose2SLAM, constraint1 )
 /* ************************************************************************* */
 // Test constraint, large displacement
 Vector f2(const Pose2& pose1, const Pose2& pose2) {
-	Pose2 z(2,2,M_PI_2);
+	Pose2 z(2,2,M_PI/2.0);
 	Pose2Factor constraint(PoseKey(1), PoseKey(2), z, covariance);
 	return constraint.evaluateError(pose1, pose2);
 }
@@ -80,7 +80,7 @@ Vector f2(const Pose2& pose1, const Pose2& pose2) {
 TEST( Pose2SLAM, constraint2 )
 {
 	// create a factor between unknown poses p1 and p2
-	Pose2 pose1, pose2(2,2,M_PI_2);
+	Pose2 pose1, pose2(2,2,M_PI/2.0);
 	Pose2Factor constraint(PoseKey(1), PoseKey(2), pose2, covariance);
 	Matrix H1, H2;
 	Vector actual = constraint.evaluateError(pose1, pose2, H1, H2);
@@ -96,7 +96,7 @@ TEST( Pose2SLAM, constraint2 )
 TEST( Pose2SLAM, constructor )
 {
 	// create a factor between unknown poses p1 and p2
-	Pose2 measured(2,2,M_PI_2);
+	Pose2 measured(2,2,M_PI/2.0);
 	pose2SLAM::Graph graph;
 	graph.addOdometry(1,2,measured, covariance);
 	// get the size of the graph
@@ -110,13 +110,13 @@ TEST( Pose2SLAM, constructor )
 TEST( Pose2SLAM, linearization )
 {
 	// create a factor between unknown poses p1 and p2
-	Pose2 measured(2,2,M_PI_2);
+	Pose2 measured(2,2,M_PI/2.0);
 	Pose2Factor constraint(PoseKey(1), PoseKey(2), measured, covariance);
 	pose2SLAM::Graph graph;
 	graph.addOdometry(1,2,measured, covariance);
 
 	// Choose a linearization point
-	Pose2 p1(1.1,2,M_PI_2); // robot at (1.1,2) looking towards y (ground truth is at 1,2, see testPose2)
+	Pose2 p1(1.1,2,M_PI/2.0); // robot at (1.1,2) looking towards y (ground truth is at 1,2, see testPose2)
 	Pose2 p2(-1,4.1,M_PI);  // robot at (-1,4) looking at negative (ground truth is at 4.1,2)
 	pose2SLAM::Values config;
 	config.insert(pose2SLAM::PoseKey(1),p1);
@@ -151,7 +151,7 @@ TEST(Pose2SLAM, optimize) {
 	// create a Pose graph with one equality constraint and one measurement
   pose2SLAM::Graph fg;
   fg.addPoseConstraint(0, Pose2(0,0,0));
-  fg.addOdometry(0, 1, Pose2(1,2,M_PI_2), covariance);
+  fg.addOdometry(0, 1, Pose2(1,2,M_PI/2.0), covariance);
 
   // Create initial config
   Values initial;
@@ -170,7 +170,7 @@ TEST(Pose2SLAM, optimize) {
   // Check with expected config
   Values expected;
   expected.insert(pose2SLAM::PoseKey(0), Pose2(0,0,0));
-  expected.insert(pose2SLAM::PoseKey(1), Pose2(1,2,M_PI_2));
+  expected.insert(pose2SLAM::PoseKey(1), Pose2(1,2,M_PI/2.0));
   CHECK(assert_equal(expected, actual));
 
   // Check marginals
@@ -348,9 +348,9 @@ TEST(Pose2Values, pose2Circle )
 {
 	// expected is 4 poses tangent to circle with radius 1m
 	pose2SLAM::Values expected;
-	expected.insert(pose2SLAM::PoseKey(0), Pose2( 1,  0,   M_PI_2));
+	expected.insert(pose2SLAM::PoseKey(0), Pose2( 1,  0,   M_PI/2.0));
 	expected.insert(pose2SLAM::PoseKey(1), Pose2( 0,  1, - M_PI  ));
-	expected.insert(pose2SLAM::PoseKey(2), Pose2(-1,  0, - M_PI_2));
+	expected.insert(pose2SLAM::PoseKey(2), Pose2(-1,  0, - M_PI/2.0));
 	expected.insert(pose2SLAM::PoseKey(3), Pose2( 0, -1,   0     ));
 
 	pose2SLAM::Values actual = pose2SLAM::circle(4,1.0);
@@ -362,9 +362,9 @@ TEST(Pose2SLAM, expmap )
 {
 	// expected is circle shifted to right
 	pose2SLAM::Values expected;
-	expected.insert(pose2SLAM::PoseKey(0), Pose2( 1.1,  0,   M_PI_2));
+	expected.insert(pose2SLAM::PoseKey(0), Pose2( 1.1,  0,   M_PI/2.0));
 	expected.insert(pose2SLAM::PoseKey(1), Pose2( 0.1,  1, - M_PI  ));
-	expected.insert(pose2SLAM::PoseKey(2), Pose2(-0.9,  0, - M_PI_2));
+	expected.insert(pose2SLAM::PoseKey(2), Pose2(-0.9,  0, - M_PI/2.0));
 	expected.insert(pose2SLAM::PoseKey(3), Pose2( 0.1, -1,   0     ));
 
 	// Note expmap coordinates are in local coordinates, so shifting to right requires thought !!!
@@ -418,7 +418,7 @@ TEST( Pose2Prior, error )
 
 /* ************************************************************************* */
 // common Pose2Prior for tests below
-static gtsam::Pose2 priorVal(2,2,M_PI_2);
+static gtsam::Pose2 priorVal(2,2,M_PI/2.0);
 static pose2SLAM::Prior priorFactor(PoseKey(1), priorVal, sigmas);
 
 /* ************************************************************************* */
@@ -484,14 +484,14 @@ TEST( Pose2Factor, error )
 
 /* ************************************************************************* */
 // common Pose2Factor for tests below
-static Pose2 measured(2,2,M_PI_2);
+static Pose2 measured(2,2,M_PI/2.0);
 static Pose2Factor factor(PoseKey(1),PoseKey(2),measured, covariance);
 
 /* ************************************************************************* */
 TEST( Pose2Factor, rhs )
 {
 	// Choose a linearization point
-	Pose2 p1(1.1,2,M_PI_2); // robot at (1.1,2) looking towards y (ground truth is at 1,2, see testPose2)
+	Pose2 p1(1.1,2,M_PI/2.0); // robot at (1.1,2) looking towards y (ground truth is at 1,2, see testPose2)
 	Pose2 p2(-1,4.1,M_PI);  // robot at (-1,4.1) looking at negative (ground truth is at -1,4)
 	pose2SLAM::Values x0;
 	x0.insert(pose2SLAM::PoseKey(1),p1);
@@ -504,7 +504,7 @@ TEST( Pose2Factor, rhs )
 
 	// Check RHS
 	Pose2 hx0 = p1.between(p2);
-	CHECK(assert_equal(Pose2(2.1, 2.1, M_PI_2),hx0));
+	CHECK(assert_equal(Pose2(2.1, 2.1, M_PI/2.0),hx0));
 	Vector expected_b = Vector_(3, -0.1/sx, 0.1/sy, 0.0);
 	CHECK(assert_equal(expected_b,-factor.whitenedError(x0)));
 	CHECK(assert_equal(expected_b,linear->getb()));
@@ -521,7 +521,7 @@ LieVector h(const Pose2& p1,const Pose2& p2) {
 TEST( Pose2Factor, linearize )
 {
 	// Choose a linearization point at ground truth
-	Pose2 p1(1,2,M_PI_2);
+	Pose2 p1(1,2,M_PI/2.0);
 	Pose2 p2(-1,4,M_PI);
 	pose2SLAM::Values x0;
 	x0.insert(pose2SLAM::PoseKey(1),p1);

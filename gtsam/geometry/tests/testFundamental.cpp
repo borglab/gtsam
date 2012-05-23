@@ -34,11 +34,11 @@ using namespace tensors;
 /* ************************************************************************* */
 // Indices
 
-Index<3, 'a'> a;
-Index<3, 'b'> b;
+tensors::Index<3, 'a'> a;
+tensors::Index<3, 'b'> b;
 
-Index<4, 'A'> A;
-Index<4, 'B'> B;
+tensors::Index<4, 'A'> A;
+tensors::Index<4, 'B'> B;
 
 /* ************************************************************************* */
 TEST( Tensors, FundamentalMatrix)

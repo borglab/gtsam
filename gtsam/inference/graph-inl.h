@@ -196,8 +196,8 @@ boost::shared_ptr<Values> composePoses(const G& graph, const PredecessorMap<KEY>
 		PoseVertex v2 = key2vertex.find(key2)->second;
 
 		POSE l1Xl2 = factor->measured();
-		tie(edge12, found1) = boost::edge(v1, v2, g);
-		tie(edge21, found2) = boost::edge(v2, v1, g);
+		boost::tie(edge12, found1) = boost::edge(v1, v2, g);
+		boost::tie(edge21, found2) = boost::edge(v2, v1, g);
 		if (found1 && found2) throw invalid_argument ("composePoses: invalid spanning tree");
 		if (!found1 && !found2) continue;
 		if (found1)

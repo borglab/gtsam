@@ -44,14 +44,14 @@ TEST(Pose2, constructors) {
   Pose2 pose(0,p);
   Pose2 origin;
   assert_equal(pose,origin);
-	Pose2 t(M_PI_2+0.018, Point2(1.015, 2.01));
+	Pose2 t(M_PI/2.0+0.018, Point2(1.015, 2.01));
 	EXPECT(assert_equal(t,Pose2(t.matrix())));
 }
 
 /* ************************************************************************* */
 TEST(Pose2, manifold) {
-	Pose2 t1(M_PI_2, Point2(1, 2));
-	Pose2 t2(M_PI_2+0.018, Point2(1.015, 2.01));
+	Pose2 t1(M_PI/2.0, Point2(1, 2));
+	Pose2 t2(M_PI/2.0+0.018, Point2(1.015, 2.01));
 	Pose2 origin;
 	Vector d12 = t1.localCoordinates(t2);
 	EXPECT(assert_equal(t2, t1.retract(d12)));
@@ -63,11 +63,11 @@ TEST(Pose2, manifold) {
 
 /* ************************************************************************* */
 TEST(Pose2, retract) {
-  Pose2 pose(M_PI_2, Point2(1, 2));
+  Pose2 pose(M_PI/2.0, Point2(1, 2));
 #ifdef SLOW_BUT_CORRECT_EXPMAP
   Pose2 expected(1.00811, 2.01528, 2.5608);
 #else
-  Pose2 expected(M_PI_2+0.99, Point2(1.015, 2.01));
+  Pose2 expected(M_PI/2.0+0.99, Point2(1.015, 2.01));
 #endif
   Pose2 actual = pose.retract(Vector_(3, 0.01, -0.015, 0.99));
   EXPECT(assert_equal(expected, actual, 1e-5));
@@ -75,7 +75,7 @@ TEST(Pose2, retract) {
 
 /* ************************************************************************* */
 TEST(Pose2, expmap) {
-  Pose2 pose(M_PI_2, Point2(1, 2));
+  Pose2 pose(M_PI/2.0, Point2(1, 2));
   Pose2 expected(1.00811, 2.01528, 2.5608);
   Pose2 actual = expmap_default<Pose2>(pose, Vector_(3, 0.01, -0.015, 0.99));
   EXPECT(assert_equal(expected, actual, 1e-5));
@@ -83,7 +83,7 @@ TEST(Pose2, expmap) {
 
 /* ************************************************************************* */
 TEST(Pose2, expmap2) {
-  Pose2 pose(M_PI_2, Point2(1, 2));
+  Pose2 pose(M_PI/2.0, Point2(1, 2));
   Pose2 expected(1.00811, 2.01528, 2.5608);
   Pose2 actual = expmap_default<Pose2>(pose, Vector_(3, 0.01, -0.015, 0.99));
   EXPECT(assert_equal(expected, actual, 1e-5));
@@ -110,11 +110,11 @@ TEST(Pose2, expmap3) {
 
 /* ************************************************************************* */
 TEST(Pose2, expmap0) {
-  Pose2 pose(M_PI_2, Point2(1, 2));
+  Pose2 pose(M_PI/2.0, Point2(1, 2));
 //#ifdef SLOW_BUT_CORRECT_EXPMAP
   Pose2 expected(1.01491, 2.01013, 1.5888);
 //#else
-//  Pose2 expected(M_PI_2+0.018, Point2(1.015, 2.01));
+//  Pose2 expected(M_PI/2.0+0.018, Point2(1.015, 2.01));
 //#endif
   Pose2 actual = pose * (Pose2::Expmap(Vector_(3, 0.01, -0.015, 0.018)));
   EXPECT(assert_equal(expected, actual, 1e-5));
@@ -122,7 +122,7 @@ TEST(Pose2, expmap0) {
 
 /* ************************************************************************* */
 TEST(Pose2, expmap0_full) {
-  Pose2 pose(M_PI_2, Point2(1, 2));
+  Pose2 pose(M_PI/2.0, Point2(1, 2));
   Pose2 expected(1.01491, 2.01013, 1.5888);
   Pose2 actual = pose * Pose2::Expmap(Vector_(3, 0.01, -0.015, 0.018));
   EXPECT(assert_equal(expected, actual, 1e-5));
@@ -130,7 +130,7 @@ TEST(Pose2, expmap0_full) {
 
 /* ************************************************************************* */
 TEST(Pose2, expmap0_full2) {
-  Pose2 pose(M_PI_2, Point2(1, 2));
+  Pose2 pose(M_PI/2.0, Point2(1, 2));
   Pose2 expected(1.01491, 2.01013, 1.5888);
   Pose2 actual = pose * Pose2::Expmap(Vector_(3, 0.01, -0.015, 0.018));
   EXPECT(assert_equal(expected, actual, 1e-5));
@@ -170,8 +170,8 @@ TEST(Pose3, expmap_c_full)
 
 /* ************************************************************************* */
 TEST(Pose2, logmap) {
-  Pose2 pose0(M_PI_2, Point2(1, 2));
-  Pose2 pose(M_PI_2+0.018, Point2(1.015, 2.01));
+  Pose2 pose0(M_PI/2.0, Point2(1, 2));
+  Pose2 pose(M_PI/2.0+0.018, Point2(1.015, 2.01));
 #ifdef SLOW_BUT_CORRECT_EXPMAP
   Vector expected = Vector_(3, 0.00986473, -0.0150896, 0.018);
 #else
@@ -183,8 +183,8 @@ TEST(Pose2, logmap) {
 
 /* ************************************************************************* */
 TEST(Pose2, logmap_full) {
-  Pose2 pose0(M_PI_2, Point2(1, 2));
-  Pose2 pose(M_PI_2+0.018, Point2(1.015, 2.01));
+  Pose2 pose0(M_PI/2.0, Point2(1, 2));
+  Pose2 pose(M_PI/2.0+0.018, Point2(1.015, 2.01));
   Vector expected = Vector_(3, 0.00986473, -0.0150896, 0.018);
   Vector actual = logmap_default<Pose2>(pose0, pose);
   EXPECT(assert_equal(expected, actual, 1e-5));
@@ -197,7 +197,7 @@ Point2 transform_to_proxy(const Pose2& pose, const Point2& point) {
 
 TEST( Pose2, transform_to )
 {
-  Pose2 pose(M_PI_2, Point2(1,2)); // robot at (1,2) looking towards y
+  Pose2 pose(M_PI/2.0, Point2(1,2)); // robot at (1,2) looking towards y
   Point2 point(-1,4);    // landmark at (-1,4)
 
   // expected
@@ -226,7 +226,7 @@ Point2 transform_from_proxy(const Pose2& pose, const Point2& point) {
 
 TEST (Pose2, transform_from)
 {
-	Pose2 pose(1., 0., M_PI_2);
+	Pose2 pose(1., 0., M_PI/2.0);
 	Point2 pt(2., 1.);
 	Matrix H1, H2;
 	Point2 actual = pose.transform_from(pt, H1, H2);
@@ -326,7 +326,7 @@ TEST(Pose2, compose_c)
 TEST(Pose2, inverse )
 {
 	Point2 origin, t(1,2);
-	Pose2 gTl(M_PI_2, t); // robot at (1,2) looking towards y
+	Pose2 gTl(M_PI/2.0, t); // robot at (1,2) looking towards y
 
 	Pose2 identity, lTg = gTl.inverse();
 	EXPECT(assert_equal(identity,lTg.compose(gTl)));
@@ -362,7 +362,7 @@ Matrix matrix(const Pose2& gTl) {
 TEST( Pose2, matrix )
 {
 	Point2 origin, t(1,2);
-	Pose2 gTl(M_PI_2, t); // robot at (1,2) looking towards y
+	Pose2 gTl(M_PI/2.0, t); // robot at (1,2) looking towards y
   Matrix gMl = matrix(gTl);
   EXPECT(assert_equal(Matrix_(3,3,
   		0.0, -1.0, 1.0,
@@ -393,7 +393,7 @@ TEST( Pose2, matrix )
 /* ************************************************************************* */
 TEST( Pose2, compose_matrix )
 {
-  Pose2 gT1(M_PI_2, Point2(1,2)); // robot at (1,2) looking towards y
+  Pose2 gT1(M_PI/2.0, Point2(1,2)); // robot at (1,2) looking towards y
   Pose2 _1T2(M_PI, Point2(-1,4));  // local robot at (-1,4) loooking at negative x
   Matrix gM1(matrix(gT1)),_1M2(matrix(_1T2));
   EXPECT(assert_equal(gM1*_1M2,matrix(gT1.compose(_1T2)))); // RIGHT DOES NOT
@@ -407,11 +407,11 @@ TEST( Pose2, between )
 	//       ^
 	//
 	// *--0--*--*
-  Pose2 gT1(M_PI_2, Point2(1,2)); // robot at (1,2) looking towards y
+  Pose2 gT1(M_PI/2.0, Point2(1,2)); // robot at (1,2) looking towards y
   Pose2 gT2(M_PI, Point2(-1,4));  // robot at (-1,4) loooking at negative x
 
   Matrix actualH1,actualH2;
-  Pose2 expected(M_PI_2, Point2(2,2));
+  Pose2 expected(M_PI/2.0, Point2(2,2));
   Pose2 actual1 = gT1.between(gT2);
   Pose2 actual2 = gT1.between(gT2,actualH1,actualH2);
   EXPECT(assert_equal(expected,actual1));
@@ -443,7 +443,7 @@ TEST( Pose2, between )
 // reverse situation for extra test
 TEST( Pose2, between2 )
 {
-  Pose2 p2(M_PI_2, Point2(1,2)); // robot at (1,2) looking towards y
+  Pose2 p2(M_PI/2.0, Point2(1,2)); // robot at (1,2) looking towards y
   Pose2 p1(M_PI, Point2(-1,4));  // robot at (-1,4) loooking at negative x
 
   Matrix actualH1,actualH2;
@@ -472,7 +472,7 @@ TEST(Pose2, members)
 
 /* ************************************************************************* */
 // some shared test values
-Pose2 x1, x2(1, 1, 0), x3(1, 1, M_PI_4);
+Pose2 x1, x2(1, 1, 0), x3(1, 1, M_PI/4.0);
 Point2 l1(1, 0), l2(1, 1), l3(2, 2), l4(1, 3);
 
 /* ************************************************************************* */
@@ -488,11 +488,11 @@ TEST( Pose2, bearing )
 	EXPECT(assert_equal(Rot2(),x1.bearing(l1)));
 
 	// establish bearing is indeed 45 degrees
-	EXPECT(assert_equal(Rot2::fromAngle(M_PI_4),x1.bearing(l2)));
+	EXPECT(assert_equal(Rot2::fromAngle(M_PI/4.0),x1.bearing(l2)));
 
 	// establish bearing is indeed 45 degrees even if shifted
 	Rot2 actual23 = x2.bearing(l3, actualH1, actualH2);
-	EXPECT(assert_equal(Rot2::fromAngle(M_PI_4),actual23));
+	EXPECT(assert_equal(Rot2::fromAngle(M_PI/4.0),actual23));
 
 	// Check numerical derivatives
 	expectedH1 = numericalDerivative21(bearing_proxy, x2, l3);
@@ -502,7 +502,7 @@ TEST( Pose2, bearing )
 
 	// establish bearing is indeed 45 degrees even if rotated
 	Rot2 actual34 = x3.bearing(l4, actualH1, actualH2);
-	EXPECT(assert_equal(Rot2::fromAngle(M_PI_4),actual34));
+	EXPECT(assert_equal(Rot2::fromAngle(M_PI/4.0),actual34));
 
 	// Check numerical derivatives
 	expectedH1 = numericalDerivative21(bearing_proxy, x3, l4);
@@ -518,7 +518,7 @@ Rot2 bearing_pose_proxy(const Pose2& pose, const Pose2& pt) {
 
 TEST( Pose2, bearing_pose )
 {
-	Pose2 xl1(1, 0, M_PI_2), xl2(1, 1, M_PI), xl3(2.0, 2.0,-M_PI_2), xl4(1, 3, 0);
+	Pose2 xl1(1, 0, M_PI/2.0), xl2(1, 1, M_PI), xl3(2.0, 2.0,-M_PI/2.0), xl4(1, 3, 0);
 
 	Matrix expectedH1, actualH1, expectedH2, actualH2;
 
@@ -526,11 +526,11 @@ TEST( Pose2, bearing_pose )
 	EXPECT(assert_equal(Rot2(),x1.bearing(xl1)));
 
 	// establish bearing is indeed 45 degrees
-	EXPECT(assert_equal(Rot2::fromAngle(M_PI_4),x1.bearing(xl2)));
+	EXPECT(assert_equal(Rot2::fromAngle(M_PI/4.0),x1.bearing(xl2)));
 
 	// establish bearing is indeed 45 degrees even if shifted
 	Rot2 actual23 = x2.bearing(xl3, actualH1, actualH2);
-	EXPECT(assert_equal(Rot2::fromAngle(M_PI_4),actual23));
+	EXPECT(assert_equal(Rot2::fromAngle(M_PI/4.0),actual23));
 
 	// Check numerical derivatives
 	expectedH1 = numericalDerivative21(bearing_pose_proxy, x2, xl3);
@@ -540,7 +540,7 @@ TEST( Pose2, bearing_pose )
 
 	// establish bearing is indeed 45 degrees even if rotated
 	Rot2 actual34 = x3.bearing(xl4, actualH1, actualH2);
-	EXPECT(assert_equal(Rot2::fromAngle(M_PI_4),actual34));
+	EXPECT(assert_equal(Rot2::fromAngle(M_PI/4.0),actual34));
 
 	// Check numerical derivatives
 	expectedH1 = numericalDerivative21(bearing_pose_proxy, x3, xl4);
@@ -561,11 +561,11 @@ TEST( Pose2, range )
 	EXPECT_DOUBLES_EQUAL(1,x1.range(l1),1e-9);
 
 	// establish range is indeed 45 degrees
-	EXPECT_DOUBLES_EQUAL(sqrt(2),x1.range(l2),1e-9);
+	EXPECT_DOUBLES_EQUAL(sqrt(2.0),x1.range(l2),1e-9);
 
 	// Another pair
 	double actual23 = x2.range(l3, actualH1, actualH2);
-	EXPECT_DOUBLES_EQUAL(sqrt(2),actual23,1e-9);
+	EXPECT_DOUBLES_EQUAL(sqrt(2.0),actual23,1e-9);
 
 	// Check numerical derivatives
 	expectedH1 = numericalDerivative21(range_proxy, x2, l3);
@@ -590,7 +590,7 @@ LieVector range_pose_proxy(const Pose2& pose, const Pose2& point) {
 }
 TEST( Pose2, range_pose )
 {
-	Pose2 xl1(1, 0, M_PI_2), xl2(1, 1, M_PI), xl3(2.0, 2.0,-M_PI_2), xl4(1, 3, 0);
+	Pose2 xl1(1, 0, M_PI/2.0), xl2(1, 1, M_PI), xl3(2.0, 2.0,-M_PI/2.0), xl4(1, 3, 0);
 
 	Matrix expectedH1, actualH1, expectedH2, actualH2;
 
@@ -598,11 +598,11 @@ TEST( Pose2, range_pose )
 	EXPECT_DOUBLES_EQUAL(1,x1.range(xl1),1e-9);
 
 	// establish range is indeed 45 degrees
-	EXPECT_DOUBLES_EQUAL(sqrt(2),x1.range(xl2),1e-9);
+	EXPECT_DOUBLES_EQUAL(sqrt(2.0),x1.range(xl2),1e-9);
 
 	// Another pair
 	double actual23 = x2.range(xl3, actualH1, actualH2);
-	EXPECT_DOUBLES_EQUAL(sqrt(2),actual23,1e-9);
+	EXPECT_DOUBLES_EQUAL(sqrt(2.0),actual23,1e-9);
 
 	// Check numerical derivatives
 	expectedH1 = numericalDerivative21(range_pose_proxy, x2, xl3);
@@ -637,7 +637,7 @@ TEST(Pose2, align_1) {
 
 TEST(Pose2, align_2) {
 	Point2 t(20,10);
-	Rot2 R = Rot2::fromAngle(M_PI_2);
+	Rot2 R = Rot2::fromAngle(M_PI/2.0);
 	Pose2 expected(R, t);
 
 	vector<Point2Pair> correspondences;

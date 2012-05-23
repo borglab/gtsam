@@ -53,7 +53,7 @@ TEST( SimpleCamera, constructor)
 TEST( SimpleCamera, level2)
 {
 	// Create a level camera, looking in Y-direction
-	Pose2 pose2(0.4,0.3,M_PI_2);
+	Pose2 pose2(0.4,0.3,M_PI/2.0);
 	SimpleCamera camera = SimpleCamera::level(K, pose2, 0.1);
 
 	// expected
