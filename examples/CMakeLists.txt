@@ -15,7 +15,9 @@ foreach(example_src ${example_srcs} )
     endif()
     
     target_link_libraries(${example_bin} gtsam-static)
-    add_custom_target(${example_bin}.run ${EXECUTABLE_OUTPUT_PATH}${example_bin} ${ARGN})
+	if(NOT MSVC)
+      add_custom_target(${example_bin}.run ${EXECUTABLE_OUTPUT_PATH}${example_bin} ${ARGN})
+	endif()
 endforeach(example_src)
 
 add_subdirectory(vSLAMexample)

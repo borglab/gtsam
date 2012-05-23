@@ -46,6 +46,8 @@ endif()
 foreach(subdir ${gtsam_subdirs})
     # Build convenience libraries
     file(GLOB subdir_srcs "${subdir}/*.cpp")
+    file(GLOB subdir_headers "${subdir}/*.h")
+    set(subdir_srcs ${subdir_srcs} ${subdir_headers}) # Include header files so they show up in Visual Studio
     list(REMOVE_ITEM subdir_srcs ${excluded_sources})
     set(${subdir}_srcs ${subdir_srcs})
     if (GTSAM_BUILD_CONVENIENCE_LIBRARIES)
@@ -71,7 +73,11 @@ set(gtsam_srcs
     ${slam_srcs}
 )
 
-#gtsam_assign_source_folders("${gtsam_srcs}")
+# Create MSVC structure
+file(GLOB_RECURSE all_c_srcs "*.c")
+file(GLOB_RECURSE all_cpp_srcs "*.cpp")
+file(GLOB_RECURSE all_headers "*.h")
+gtsam_assign_source_folders("${all_c_srcs};${all_cpp_srcs};${all_headers}")
 
 # Versions
 set(gtsam_version   ${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH})
@@ -83,6 +89,7 @@ message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
 if (GTSAM_BUILD_STATIC_LIBRARY)
     message(STATUS "Building GTSAM - static")
     add_library(gtsam-static STATIC ${gtsam_srcs})
+	target_link_libraries(gtsam-static ${Boost_LIBRARIES})
     set_target_properties(gtsam-static PROPERTIES 
         OUTPUT_NAME         gtsam
         CLEAN_DIRECT_OUTPUT 1
@@ -94,6 +101,7 @@ endif (GTSAM_BUILD_STATIC_LIBRARY)
 if (GTSAM_BUILD_SHARED_LIBRARY)
     message(STATUS "Building GTSAM - shared")
     add_library(gtsam-shared SHARED ${gtsam_srcs})
+	target_link_libraries(gtsam-shared ${Boost_LIBRARIES})
     set_target_properties(gtsam-shared PROPERTIES 
         OUTPUT_NAME         gtsam
         CLEAN_DIRECT_OUTPUT 1

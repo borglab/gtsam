@@ -24,6 +24,10 @@ if (GTSAM_BUILD_TESTS)
     gtsam_add_subdir_tests(slam "${slam_local_libs}" "gtsam-static" "${slam_excluded_files}") 
 endif(GTSAM_BUILD_TESTS)
 
+if(MSVC)
+  add_definitions("/bigobj")
+endif()
+
 # Build timing scripts
 if (GTSAM_BUILD_TIMING)
     gtsam_add_subdir_timing(slam "${slam_local_libs}" "gtsam-static" "${slam_excluded_files}") 
