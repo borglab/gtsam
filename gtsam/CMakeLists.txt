@@ -95,6 +95,10 @@ if (GTSAM_BUILD_STATIC_LIBRARY)
         CLEAN_DIRECT_OUTPUT 1
     	VERSION             ${gtsam_version}
      	SOVERSION           ${gtsam_soversion})
+	if(MSVC)
+	  set_target_properties(gtsam-static PROPERTIES
+	      COMPILE_FLAGS "/MP")
+    endif()
     install(TARGETS gtsam-static ARCHIVE DESTINATION lib)
 endif (GTSAM_BUILD_STATIC_LIBRARY)
 
@@ -107,6 +111,10 @@ if (GTSAM_BUILD_SHARED_LIBRARY)
         CLEAN_DIRECT_OUTPUT 1
     	VERSION             ${gtsam_version}
      	SOVERSION           ${gtsam_soversion})
+	if(MSVC)
+	  set_target_properties(gtsam-shared PROPERTIES
+	      COMPILE_FLAGS "/MP")
+    endif()
     install(TARGETS gtsam-shared LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
 endif(GTSAM_BUILD_SHARED_LIBRARY)
 
