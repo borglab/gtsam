@@ -286,84 +286,38 @@ TEST_UNSAFE( OccupancyGrid, Test1) {
 	//Build a small grid and test optimization
 
 	//Build small grid
-	double width 		=	20; 		//meters
-	double height 		= 	20; 		//meters
-	double resolution 	= 	0.2; 	//meters
+	double width 		=	3; 		//meters
+	double height 		= 	2; 		//meters
+	double resolution 	= 	0.5; 	//meters
 	OccupancyGrid occupancyGrid(width, height, resolution); //default center to middle
 
 	//Add measurements
-//	Pose2 pose(0,0,0);
-//	double range = 4.499765;
-//
-//	occupancyGrid.addPrior(0, 0.7);
-//	EXPECT_LONGS_EQUAL(1, occupancyGrid.size());
-//
-//	occupancyGrid.addLaser(pose, range);
-//	EXPECT_LONGS_EQUAL(2, occupancyGrid.size());
+	Pose2 pose(0,0,0);
+	double range = 1;
 
-	//add lasers
-	int n_frames = 1;
-	int n_lasers_per_frame = 640;
-	char laser_list_file[1000];
+	occupancyGrid.addPrior(0, 0.7);
+	EXPECT_LONGS_EQUAL(1, occupancyGrid.size());
+
+	occupancyGrid.addLaser(pose, range);
+	EXPECT_LONGS_EQUAL(2, occupancyGrid.size());
+
+	OccupancyGrid::Occupancy occupancy = occupancyGrid.emptyOccupancy();
+	EXPECT_LONGS_EQUAL(900, occupancyGrid.laserFactorValue(0,occupancy));
 
 
-	for(int i = 0; i < n_frames; i++){
-		sprintf(laser_list_file, "/home/brian/Desktop/research/user/bpeasle/code/KinectInterface/Data/ScanLinesAsLasers/KinectRecording9/laser_list%.4d", i);
-		FILE *fptr = fopen(laser_list_file,"r");
-		double x,y, theta;
-		double range, angle;
-		fscanf(fptr, "%lf %lf %lf", &x, &y, &theta);
+	occupancy[16] = 1;
+	EXPECT_LONGS_EQUAL(1, occupancyGrid.laserFactorValue(0,occupancy));
 
-		for(int j = 0; j < n_lasers_per_frame; j++){
-			fscanf(fptr, "%lf %lf", &range, &angle);
-			//if(j == 159){
-				Pose2 pose(x,y, theta+angle);
+	occupancy[15] = 1;
+	EXPECT_LONGS_EQUAL(1000, occupancyGrid.laserFactorValue(0,occupancy));
 
-				occupancyGrid.addLaser(pose, range);
-			//}
-		}
-		fclose(fptr);
-
-	}
-
-
-//	OccupancyGrid::Occupancy occupancy = occupancyGrid.emptyOccupancy();
-//	EXPECT_LONGS_EQUAL(900, occupancyGrid.laserFactorValue(0,occupancy));
-//
-//
-//	occupancy[16] = 1;
-//	EXPECT_LONGS_EQUAL(1, occupancyGrid.laserFactorValue(0,occupancy));
-//
-//	occupancy[15] = 1;
-//	EXPECT_LONGS_EQUAL(1000, occupancyGrid.laserFactorValue(0,occupancy));
-//
-//	occupancy[16] = 0;
-//	EXPECT_LONGS_EQUAL(1000, occupancyGrid.laserFactorValue(0,occupancy));
+	occupancy[16] = 0;
+	EXPECT_LONGS_EQUAL(1000, occupancyGrid.laserFactorValue(0,occupancy));
 
 
 	//run MCMC
 	OccupancyGrid::Marginals occupancyMarginals = occupancyGrid.runMetropolis(50000);
-	//EXPECT_LONGS_EQUAL( (width*height)/pow(resolution,2), occupancyMarginals.size());
-	//select a cell at a random to flip
-
-
-	printf("\n");
-	for(size_t i = 0, it = 0; i < occupancyGrid.height(); i++){
-		for(size_t j = 0; j < occupancyGrid.width(); j++, it++){
-			printf("%.2lf ", occupancyMarginals[it]);
-		}
-		printf("\n");
-	}
-
-	char marginalsOutput[1000];
-	sprintf(marginalsOutput, "/home/brian/Desktop/research/user/bpeasle/code/KinectInterface/marginals.txt");
-	FILE *fptr = fopen(marginalsOutput, "w");
-	fprintf(fptr, "%d %d\n", occupancyGrid.width(), occupancyGrid.height());
-
-	for(int i = 0; i < occupancyMarginals.size(); i++){
-		fprintf(fptr, "%lf ", occupancyMarginals[i]);
-	}
-	fclose(fptr);
+	EXPECT_LONGS_EQUAL( (width*height)/pow(resolution,2), occupancyMarginals.size());
 
 
 
