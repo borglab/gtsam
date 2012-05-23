@@ -44,6 +44,14 @@ Marginals::Marginals(const NonlinearFactorGraph& graph, const Values& solution, 
 }
 
 /* ************************************************************************* */
+void Marginals::print(const std::string& str, const KeyFormatter& keyFormatter) const {
+	ordering_.print(str+"Ordering: ", keyFormatter);
+	graph_.print(str+"Graph: ");
+	values_.print(str+"Solution: ", keyFormatter);
+	bayesTree_.print(str+"Bayes Tree: ");
+}
+
+/* ************************************************************************* */
 Matrix Marginals::marginalCovariance(Key variable) const {
   return marginalInformation(variable).inverse();
 }

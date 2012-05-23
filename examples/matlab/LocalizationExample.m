@@ -43,8 +43,26 @@ initialEstimate.print(sprintf('\nInitial estimate:\n  '));
 result = graph.optimize(initialEstimate);
 result.print(sprintf('\nFinal result:\n  '));
 
-%% Use an explicit Optimizer object so we can query the marginals
-% marginals = gtsamMarginals(graph, result);
-% marginals.marginalCovariance(pose2SLAMPoseKey(1))
-% marginals.marginalCovariance(pose2SLAMPoseKey(2))
-% marginals.marginalCovariance(pose2SLAMPoseKey(3))
+%% Query the marginals
+marginals = graph.marginals(result);
+x{1}=gtsamSymbol('x',1); P{1}=marginals.marginalCovariance(x{1}.key)
+x{2}=gtsamSymbol('x',2); P{2}=marginals.marginalCovariance(x{2}.key)
+x{3}=gtsamSymbol('x',3); P{3}=marginals.marginalCovariance(x{3}.key)
+
+%% Plot Trajectory
+figure(1)
+clf
+X=[];Y=[];
+for i=1:3
+   pose_i = result.pose(i);
+   X=[X;pose_i.x];
+   Y=[Y;pose_i.y];
+end
+plot(X,Y,'b*-');
+
+%% Plot Covariance Ellipses
+hold on
+for i=1:3
+   pose_i = result.pose(i);
+   covarianceEllipse([pose_i.x;pose_i.y],P{i},'g')
+end

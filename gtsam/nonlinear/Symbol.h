@@ -18,8 +18,8 @@
 
 #pragma once
 
-#include <list>
-#include <iostream>
+#include <gtsam/nonlinear/Key.h>
+
 #include <boost/mpl/char.hpp>
 #include <boost/format.hpp>
 #include <boost/serialization/nvp.hpp>
@@ -28,7 +28,8 @@
 #include <boost/lambda/construct.hpp>
 #include <boost/lambda/lambda.hpp>
 
-#include <gtsam/nonlinear/Key.h>
+#include <list>
+#include <iostream>
 
 namespace gtsam {
 
@@ -70,8 +71,8 @@ public:
     j_ = key & indexMask;
   }
 
-  /** Cast to integer */
-  operator Key() const {
+  /** return Key (integer) representation */
+  Key key() const {
     const size_t keyBits = sizeof(Key) * 8;
     const size_t chrBits = sizeof(unsigned char) * 8;
     const size_t indexBits = keyBits - chrBits;
@@ -83,9 +84,12 @@ public:
     return key;
   }
 
+  /** Cast to integer */
+  operator Key() const { return key(); }
+
   // Testable Requirements
   void print(const std::string& s = "") const {
-    std::cout << s << ": " << (std::string) (*this) << std::endl;
+    std::cout << s << (std::string) (*this) << std::endl;
   }
   bool equals(const Symbol& expected, double tol = 0.0) const {
     return (*this) == expected;

@@ -206,39 +206,53 @@ string unwrap<string>(const mxArray* array) {
   return str;
 }
 
+// Check for 64-bit, as Mathworks says mxGetScalar only good for 32 bit
+template <typename T>
+T myGetScalar(const mxArray* array) {
+	switch (mxGetClassID(array)) {
+		case mxINT64_CLASS:
+			return (T) *(int64_t*) mxGetData(array);
+		case mxUINT64_CLASS:
+			return (T) *(uint64_t*) mxGetData(array);
+		default:
+			// hope for the best!
+			return (T) mxGetScalar(array);
+	}
+}
+
 // specialization to bool
 template<>
 bool unwrap<bool>(const mxArray* array) {
 	checkScalar(array,"unwrap<bool>");
-  return mxGetScalar(array) != 0.0;
+  return myGetScalar<bool>(array);
 }
 
 // specialization to bool
 template<>
 char unwrap<char>(const mxArray* array) {
 	checkScalar(array,"unwrap<char>");
-  return (char)mxGetScalar(array);
-}
-
-// specialization to size_t
-template<>
-size_t unwrap<size_t>(const mxArray* array) {
-	checkScalar(array,"unwrap<size_t>");
-  return (size_t)mxGetScalar(array);
+  return myGetScalar<char>(array);
 }
 
 // specialization to int
 template<>
 int unwrap<int>(const mxArray* array) {
 	checkScalar(array,"unwrap<int>");
-  return (int)mxGetScalar(array);
+  return myGetScalar<int>(array);
+}
+
+// specialization to size_t
+template<>
+size_t unwrap<size_t>(const mxArray* array) {
+	checkScalar(array, "unwrap<size_t>");
+  return myGetScalar<size_t>(array);
 }
 
 // specialization to double
 template<>
 double unwrap<double>(const mxArray* array) {
 	checkScalar(array,"unwrap<double>");
-  return (double)mxGetScalar(array);
+  return myGetScalar<double>(array);
 }
 
 // specialization to Eigen vector
