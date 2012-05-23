@@ -102,6 +102,12 @@ public:
   Block operator()(Key iVariable, Key jVariable) const {
     return blockView_(indices_[iVariable], indices_[jVariable]); }
 
+  /** Copy constructor */
+  JointMarginal(const JointMarginal& other);
+
+  /** Assignment operator */
+  JointMarginal& operator=(const JointMarginal& rhs);
+
 protected:
   Matrix fullMatrix_;
   BlockView blockView_;
