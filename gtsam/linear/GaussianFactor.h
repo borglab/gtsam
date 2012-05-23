@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include <gtsam/base/Matrix.h>
 #include <gtsam/inference/IndexFactor.h>
 
 #include <string>
@@ -87,6 +88,16 @@ namespace gtsam {
 
     /** Return the dimension of the variable pointed to by the given key iterator */
     virtual size_t getDim(const_iterator variable) const = 0;
+
+    /** Return the augmented information matrix represented by this GaussianFactor.
+     * The augmented information matrix contains the information matrix with an
+     * additional column holding the information vector, and an additional row
+     * holding the transpose of the information vector.  The lower-right entry
+     * contains the constant error term (when \f$ \delta x = 0 \f$).  The
+     * augmented information matrix is described in more detail in HessianFactor,
+     * which in fact stores an augmented information matrix.
+     */
+    virtual Matrix computeInformation() const = 0;
 
     /** Clone a factor (make a deep copy) */
     virtual GaussianFactor::shared_ptr clone() const = 0;

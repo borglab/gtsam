@@ -325,6 +325,11 @@ HessianFactor::constColumn HessianFactor::linearTerm() const {
 }
 
 /* ************************************************************************* */
+Matrix HessianFactor::computeInformation() const {
+  return info_.full().selfadjointView<Eigen::Upper>();
+}
+
+/* ************************************************************************* */
 double HessianFactor::error(const VectorValues& c) const {
 	// error 0.5*(f - 2*x'*g + x'*G*x)
 	const double f = constantTerm();

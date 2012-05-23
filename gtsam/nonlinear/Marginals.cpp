@@ -69,16 +69,9 @@ Matrix Marginals::marginalInformation(Key variable) const {
     marginalFactor = bayesTree_.marginalFactor(index, EliminateQR);
 
   // Get information matrix (only store upper-right triangle)
-  if(typeid(*marginalFactor) == typeid(JacobianFactor)) {
-    JacobianFactor::constABlock A = static_cast<const JacobianFactor&>(*marginalFactor).getA();
-    return A.transpose() * A; // Compute A'A
-  } else if(typeid(*marginalFactor) == typeid(HessianFactor)) {
-    const HessianFactor& hessian = static_cast<const HessianFactor&>(*marginalFactor);
-    const size_t dim = hessian.getDim(hessian.begin());
-    return hessian.info().topLeftCorner(dim,dim).selfadjointView<Eigen::Upper>(); // Take the non-augmented part of the information matrix
-  } else {
-    throw runtime_error("Internal error: Marginals::marginalInformation expected either a JacobianFactor or HessianFactor");
-  }
+  Matrix info = marginalFactor->computeInformation();
+  const int dim = info.rows() - 1;
+  return info.topLeftCorner(dim,dim); // Take the non-augmented part of the information matrix
 }
 
 /* ************************************************************************* */

@@ -271,6 +271,12 @@ namespace gtsam {
     return 0.5 * weighted.dot(weighted);
   }
 
+  /* ************************************************************************* */
+  Matrix JacobianFactor::computeInformation() const {
+    Matrix AbWhitened = Ab_.full();
+    model_->WhitenInPlace(AbWhitened);
+    return AbWhitened.transpose() * AbWhitened;
+  }
 
   /* ************************************************************************* */
   Vector JacobianFactor::operator*(const VectorValues& x) const {

@@ -155,6 +155,16 @@ namespace gtsam {
     Vector error_vector(const VectorValues& c) const; /** (A*x-b)/sigma */
     virtual double error(const VectorValues& c) const; /**  0.5*(A*x-b)'*D*(A*x-b) */
 
+    /** Return the augmented information matrix represented by this GaussianFactor.
+     * The augmented information matrix contains the information matrix with an
+     * additional column holding the information vector, and an additional row
+     * holding the transpose of the information vector.  The lower-right entry
+     * contains the constant error term (when \f$ \delta x = 0 \f$).  The
+     * augmented information matrix is described in more detail in HessianFactor,
+     * which in fact stores an augmented information matrix.
+     */
+    virtual Matrix computeInformation() const;
+
     /** Check if the factor contains no information, i.e. zero rows.  This does
      * not necessarily mean that the factor involves no variables (to check for
      * involving no variables use keys().empty()).
