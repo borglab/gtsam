@@ -251,8 +251,8 @@ ConstSubVector sub(const Vector &v, size_t i1, size_t i2) {
 }
 
 /* ************************************************************************* */
-void subInsert(Vector& big, const Vector& small, size_t i) {
-	big.segment(i, small.size()) = small;
+void subInsert(Vector& fullVector, const Vector& subVector, size_t i) {
+	fullVector.segment(i, subVector.size()) = subVector;
 }
 
 /* ************************************************************************* */

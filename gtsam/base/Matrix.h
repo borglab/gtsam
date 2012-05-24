@@ -201,12 +201,12 @@ Eigen::Block<const MATRIX> sub(const MATRIX& A, size_t i1, size_t i2, size_t j1,
 /**
  * insert a submatrix IN PLACE at a specified location in a larger matrix
  * NOTE: there is no size checking
- * @param large matrix to be updated
- * @param small matrix to be inserted
+ * @param fullMatrix matrix to be updated
+ * @param subMatrix matrix to be inserted
  * @param i is the row of the upper left corner insert location
  * @param j is the column of the upper left corner insert location
  */
-void insertSub(Matrix& big, const Matrix& small, size_t i, size_t j);
+void insertSub(Matrix& fullMatrix, const Matrix& subMatrix, size_t i, size_t j);
 
 /**
  * Extracts a column view from a matrix that avoids a copy

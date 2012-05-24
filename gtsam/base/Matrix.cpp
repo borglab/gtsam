@@ -236,8 +236,8 @@ void save(const Matrix& A, const string &s, const string& filename) {
 }
 
 /* ************************************************************************* */
-void insertSub(Matrix& big, const Matrix& small, size_t i, size_t j) {
-	big.block(i, j, small.rows(), small.cols()) = small;
+void insertSub(Matrix& fullMatrix, const Matrix& subMatrix, size_t i, size_t j) {
+	fullMatrix.block(i, j, subMatrix.rows(), subMatrix.cols()) = subMatrix;
 }
 
 /* ************************************************************************* */

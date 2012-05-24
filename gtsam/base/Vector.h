@@ -209,11 +209,11 @@ ConstSubVector sub(const Vector &v, size_t i1, size_t i2);
 
 /**
  * Inserts a subvector into a vector IN PLACE
- * @param big is the vector to be changed
- * @param small is the vector to insert
+ * @param fullVector is the vector to be changed
+ * @param subVector is the vector to insert
  * @param i is the index where the subvector should be inserted
  */
-void subInsert(Vector& big, const Vector& small, size_t i);
+void subInsert(Vector& fullVector, const Vector& subVector, size_t i);
 
 /**
  * elementwise multiplication
