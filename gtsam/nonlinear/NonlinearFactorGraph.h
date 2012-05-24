@@ -87,6 +87,22 @@ namespace gtsam {
 		boost::shared_ptr<GaussianFactorGraph >
 				linearize(const Values& config, const Ordering& ordering) const;
 
+		/**
+		 * Clone() performs a deep-copy of the graph, including all of the factors
+		 */
+		NonlinearFactorGraph clone() const;
+
+		/**
+		 * Rekey() performs a deep-copy of all of the factors, and changes
+		 * keys according to a mapping.
+		 *
+		 * Keys not specified in the mapping will remain unchanged.
+		 *
+		 * @param rekey_mapping is a map of old->new keys
+		 * @result a cloned graph with updated keys
+		 */
+		NonlinearFactorGraph rekey(const std::map<Key,Key>& rekey_mapping) const;
+
 	private:
 
 		/** Serialization function */

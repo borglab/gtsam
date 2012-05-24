@@ -108,6 +108,43 @@ TEST( Graph, linearize )
 }
 
 /* ************************************************************************* */
+TEST( Graph, clone )
+{
+	Graph fg = createNonlinearFactorGraph();
+	Graph actClone = fg.clone();
+	EXPECT(assert_equal(fg, actClone));
+	for (size_t i=0; i<fg.size(); ++i)
+		EXPECT(fg[i] != actClone[i]);
+}
+
+/* ************************************************************************* */
+TEST( Graph, rekey )
+{
+	Graph init = createNonlinearFactorGraph();
+	map<Key,Key> rekey_mapping;
+	rekey_mapping.insert(make_pair(kl(1), kl(4)));
+	Graph actRekey = init.rekey(rekey_mapping);
+
+	// ensure deep clone
+	LONGS_EQUAL(init.size(), actRekey.size());
+	for (size_t i=0; i<init.size(); ++i)
+			EXPECT(init[i] != actRekey[i]);
+
+	Graph expRekey;
+	// original measurements
+	expRekey.push_back(init[0]);
+	expRekey.push_back(init[1]);
+
+	// updated measurements
+	Point2 z3(0, -1),  z4(-1.5, -1.);
+	SharedDiagonal sigma0_2 = noiseModel::Isotropic::Sigma(2,0.2);
+	expRekey.add(simulated2D::Measurement(z3, sigma0_2, kx(1), kl(4)));
+	expRekey.add(simulated2D::Measurement(z4, sigma0_2, kx(2), kl(4)));
+
+	EXPECT(assert_equal(expRekey, actRekey));
+}
+
+/* ************************************************************************* */
 int main() {
 	TestResult tr;
 	return TestRegistry::runAllTests(tr);
