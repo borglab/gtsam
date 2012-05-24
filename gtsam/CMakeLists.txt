@@ -74,10 +74,7 @@ set(gtsam_srcs
 )
 
 # Create MSVC structure
-file(GLOB_RECURSE all_c_srcs "*.c")
-file(GLOB_RECURSE all_cpp_srcs "*.cpp")
-file(GLOB_RECURSE all_headers "*.h")
-gtsam_assign_source_folders("${all_c_srcs};${all_cpp_srcs};${all_headers}")
+gtsam_assign_all_source_folders()
 
 # Versions
 set(gtsam_version   ${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH})
