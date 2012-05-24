@@ -93,7 +93,8 @@ public:
   /// behavior of std::map)
   Index& operator[](Key key) {
     iterator i=order_.find(key);
-    if(i == order_.end())  throw std::out_of_range(std::string("Attempting to access a key from an ordering that does not contain that key"));
+    if(i == order_.end())  throw std::out_of_range(
+    		std::string("Attempting to access a key from an ordering that does not contain that key:") + DefaultKeyFormatter(key));
     else                   return i->second; }
 
   /// Access the index for the requested key, throws std::out_of_range if the
@@ -101,7 +102,8 @@ public:
   /// behavior of std::map)
   Index operator[](Key key) const {
     const_iterator i=order_.find(key);
-    if(i == order_.end())  throw std::out_of_range(std::string("Attempting to access a key from an ordering that does not contain that key"));
+    if(i == order_.end())  throw std::out_of_range(
+    		std::string("Attempting to access a key from an ordering that does not contain that key:") + DefaultKeyFormatter(key));
     else                   return i->second; }
 
   /** Returns an iterator pointing to the symbol/index pair with the requested,
