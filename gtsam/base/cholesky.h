@@ -34,7 +34,7 @@ struct NegativeMatrixException : public std::exception {
     Matrix A; ///< The original matrix attempted to factor
     Matrix U; ///< The produced upper-triangular factor
     Matrix D; ///< The produced diagonal factor
-    Detail(const Matrix& _A, const Matrix& _U, const Matrix& _D) /**< Detail constructor */ : A(_A), U(_U), D(_D) {}
+    Detail(const Matrix& A, const Matrix& U, const Matrix& D) /**< Detail constructor */ : A(A), U(U), D(D) {}
     void print(const std::string& str = "") const {
       std::cout << str << "\n";
       gtsam::print(A, "  A: ");
