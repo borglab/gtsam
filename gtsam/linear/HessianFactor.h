@@ -269,6 +269,23 @@ namespace gtsam {
     /** Return the complete linear term \f$ g \f$ as described above.
      * @return The linear term \f$ g \f$ */
     constColumn linearTerm() const;
+    
+    /** Return the augmented information matrix represented by this GaussianFactor.
+     * The augmented information matrix contains the information matrix with an
+     * additional column holding the information vector, and an additional row
+     * holding the transpose of the information vector.  The lower-right entry
+     * contains the constant error term (when \f$ \delta x = 0 \f$).  The
+     * augmented information matrix is described in more detail in HessianFactor,
+     * which in fact stores an augmented information matrix.
+     *
+     * For HessianFactor, this is the same as info() except that this function
+     * returns a complete symmetric matrix whereas info() returns a matrix where
+     * only the upper triangle is valid, but should be interpreted as symmetric.
+     * This is because info() returns only a reference to the internal
+     * representation of the augmented information matrix, which stores only the
+     * upper triangle.
+     */
+    virtual Matrix computeInformation() const;
 
     // Friend unit test classes
     friend class ::ConversionConstructorHessianFactorTest;
