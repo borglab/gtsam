@@ -102,7 +102,7 @@ if (GTSAM_BUILD_TESTS)
 endif()
 
 # Find boost
-if(MSVC)
+if(CYGWIN OR MSVC OR WIN32)
   set(Boost_USE_STATIC_LIBS 1)
 endif()
 find_package(Boost 1.40 COMPONENTS serialization system chrono filesystem REQUIRED)
@@ -139,6 +139,10 @@ endif(GTSAM_BUILD_EXAMPLES)
 if (GTSAM_BUILD_UNSTABLE)
     add_subdirectory(gtsam_unstable)
 endif(GTSAM_BUILD_UNSTABLE)
+
+# Make config file
+include(GtsamMakeConfigFile)
+GtsamMakeConfigFile(gtsam)
 
 # Set up CPack
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "GTSAM")
