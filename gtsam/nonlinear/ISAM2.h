@@ -490,6 +490,9 @@ public:
   /** Access the current ordering */
   const Ordering& getOrdering() const { return ordering_; }
 
+  /** Access the nonlinear variable index */
+  const VariableIndex& getVariableIndex() const { return variableIndex_; }
+
   size_t lastAffectedVariableCount;
   size_t lastAffectedFactorCount;
   size_t lastAffectedCliqueCount;
