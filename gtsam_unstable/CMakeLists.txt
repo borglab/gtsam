@@ -7,6 +7,8 @@ set (gtsam_unstable_subdirs
     slam 
 )
 
+add_custom_target(check.unstable COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure)
+
 # assemble core libaries
 foreach(subdir ${gtsam_unstable_subdirs})
     # Build convenience libraries

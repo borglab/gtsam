@@ -16,4 +16,4 @@ set (base_excluded_tests "")
 
 # Add all tests
 gtsam_add_subdir_tests(base_unstable "${base_local_libs}" "${base_full_libs}" "${base_excluded_tests}") 
-
+add_dependencies(check.unstable check.base_unstable)
