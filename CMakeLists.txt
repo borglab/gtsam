@@ -61,6 +61,9 @@ option(GTSAM_INSTALL_MATLAB_EXAMPLES     "Enable/Disable installation of matlab 
 option(GTSAM_INSTALL_MATLAB_TESTS        "Enable/Disable installation of matlab tests"    ON)
 option(GTSAM_INSTALL_WRAP                "Enable/Disable installation of wrap utility" ON)
 
+# Experimental - features disabled by default
+option(GTSAM_ENABLE_BUILD_MEX_BINARIES   "Enable/Disable building of matlab mex files" OFF)
+
 # Flags for choosing default packaging tools
 set(CPACK_SOURCE_GENERATOR "TGZ" CACHE STRING "CPack Default Source Generator")
 set(CPACK_GENERATOR        "TGZ" CACHE STRING "CPack Default Binary Generator")

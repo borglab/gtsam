@@ -47,6 +47,17 @@ add_custom_target(wrap_gtsam ALL COMMAND
     ${EXECUTABLE_OUTPUT_PATH}/wrap ${GTSAM_MEX_BIN_EXTENSION} ${CMAKE_CURRENT_SOURCE_DIR}/../ ${moduleName} ${toolbox_path} "${mexFlags}"
     DEPENDS wrap)
 
+# Build command
+# Experimental: requires matlab to be on your path
+if (GTSAM_ENABLE_BUILD_MEX_BINARIES)
+    # Actually compile the mex files when building the library
+    set(TOOLBOX_MAKE_FLAGS "-j2")    
+    add_custom_target(wrap_gtsam_build 
+        COMMAND make ${TOOLBOX_MAKE_FLAGS} 
+        WORKING_DIRECTORY ${toolbox_path} 
+        DEPENDS wrap_gtsam)
+endif (GTSAM_ENABLE_BUILD_MEX_BINARIES)    
+
 set(GTSAM_TOOLBOX_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/borg/toolbox CACHE DOCSTRING "Path to install matlab toolbox")
 
 if (GTSAM_INSTALL_MATLAB_TOOLBOX)
