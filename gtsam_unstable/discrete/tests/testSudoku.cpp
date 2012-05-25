@@ -14,6 +14,8 @@
 using namespace std;
 using namespace gtsam;
 
+#define PRINT false
+
 class Sudoku: public CSP {
 
 	/// sudoku size
@@ -119,7 +121,7 @@ TEST_UNSAFE( Sudoku, small)
 			0,1, 0,0);
 
 	// Do BP
-	csp.runArcConsistency(4);
+	csp.runArcConsistency(4,10,PRINT);
 
 	// optimize and check
 	CSP::sharedValues solution = csp.optimalAssignment();
@@ -150,7 +152,7 @@ TEST_UNSAFE( Sudoku, easy)
 			5,0,0, 0,3,0, 7,0,0);
 
 	// Do BP
-	sudoku.runArcConsistency(4);
+	sudoku.runArcConsistency(4,10,PRINT);
 
 	// sudoku.printSolution(); // don't do it
 }
@@ -172,7 +174,7 @@ TEST_UNSAFE( Sudoku, extreme)
 			0,0,0, 2,7,5, 9,0,0);
 
 	// Do BP
-	sudoku.runArcConsistency(9,10,false);
+	sudoku.runArcConsistency(9,10,PRINT);
 
 #ifdef METIS
 	VariableIndex index(sudoku);
@@ -201,7 +203,7 @@ TEST_UNSAFE( Sudoku, AJC_3star_Feb8_2012)
 			0,0,0, 1,0,0, 0,3,7);
 
 	// Do BP
-	sudoku.runArcConsistency(9,10,true);
+	sudoku.runArcConsistency(9,10,PRINT);
 
 	//sudoku.printSolution(); // don't do it
 }

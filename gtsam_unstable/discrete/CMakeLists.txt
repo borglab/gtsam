@@ -18,7 +18,8 @@ set (discrete_full_libs
 # Exclude tests that don't work
 set (discrete_excluded_tests 
 "${CMAKE_CURRENT_SOURCE_DIR}/tests/testScheduler.cpp"
-"${CMAKE_CURRENT_SOURCE_DIR}/tests/testCSP.cpp")
+#"${CMAKE_CURRENT_SOURCE_DIR}/tests/testCSP.cpp"
+)
 
 
 # Add all tests

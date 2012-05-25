@@ -21,7 +21,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	void AllDiff::print(const std::string& s) const {
-		std::cout << s << ": AllDiff on ";
+		std::cout << s << "AllDiff on ";
 		BOOST_FOREACH (Index dkey, keys_)
 			std::cout << dkey << " ";
 		std::cout << std::endl;
