@@ -82,7 +82,7 @@ namespace gtsam {
 		/// @{
 
 		// print
-		virtual void print(const std::string& s = "DiscreteFactor") const {
+		virtual void print(const std::string& s = "DiscreteFactor\n") const {
 			IndexFactor::print(s);
 		}
 

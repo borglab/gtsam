@@ -72,7 +72,7 @@ namespace gtsam {
 		bool equals(const DecisionTreeFactor& other, double tol = 1e-9) const;
 
 		// print
-		void print(const std::string& s = "DecisionTreeFactor: ") const;
+		void print(const std::string& s = "DecisionTreeFactor:\n") const;
 
 		/// @}
 		/// @name Standard Interface
