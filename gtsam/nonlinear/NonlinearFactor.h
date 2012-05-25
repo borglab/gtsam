@@ -157,8 +157,14 @@ public:
   /**
    * Creates a shared_ptr clone of the factor - needs to be specialized to allow
    * for subclasses
+   *
+   * By default, throws exception if subclass does not implement the function.
    */
-  virtual shared_ptr clone() const =0;
+  virtual shared_ptr clone() const {
+  	// TODO: choose better exception to throw here
+  	throw std::runtime_error("NonlinearFactor::clone(): Attempting to clone factor with no clone() implemented!");
+  	return shared_ptr();
+  }
 
   /**
    * Creates a shared_ptr clone of the factor with different keys using
