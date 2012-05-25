@@ -489,7 +489,6 @@ class Values {
   Values();
   void print(string s) const;
   void insertPose(int key, const gtsam::Pose2& pose);
-  gtsam::Symbol poseKey(int i);
   gtsam::Pose2 pose(int i);
 };
 
