@@ -149,9 +149,9 @@ TEST( NonlinearOptimizer, SimpleDLOptimizer )
 TEST( NonlinearOptimizer, optimization_method )
 {
   LevenbergMarquardtParams paramsQR;
-  paramsQR.factorization = LevenbergMarquardtParams::QR;
+  paramsQR.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_QR;
   LevenbergMarquardtParams paramsChol;
-  paramsChol.factorization = LevenbergMarquardtParams::CHOLESKY;
+  paramsChol.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
 
 	example::Graph fg = example::createReallyNonlinearFactorGraph();
 

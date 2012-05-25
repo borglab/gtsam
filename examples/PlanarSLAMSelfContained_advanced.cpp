@@ -113,7 +113,7 @@ int main(int argc, char** argv) {
 
 	// first using sequential elimination
 	LevenbergMarquardtParams lmParams;
-	lmParams.elimination = LevenbergMarquardtParams::SEQUENTIAL;
+	lmParams.linearSolverType = LevenbergMarquardtParams::SEQUENTIAL_CHOLESKY;
 	Values resultSequential = LevenbergMarquardtOptimizer(graph, initial, lmParams).optimize();
 	resultSequential.print("final result (solved with a sequential solver)");
 
