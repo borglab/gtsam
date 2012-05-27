@@ -88,6 +88,17 @@ if (GTSAM_BUILD_WRAP)
         ${CMAKE_BINARY_DIR}/wrap/wrap ${GTSAM_MEX_BIN_EXTENSION} ${CMAKE_CURRENT_SOURCE_DIR} ${moduleName} ${toolbox_path} "${mexFlags}"
         DEPENDS wrap)
     
+    # Build command
+    # Experimental: requires matlab to be on your path
+    if (GTSAM_ENABLE_BUILD_MEX_BINARIES)
+        # Actually compile the mex files when building the library
+        set(TOOLBOX_MAKE_FLAGS "-j2")    
+        add_custom_target(wrap_gtsam_unstable_build 
+            COMMAND make ${TOOLBOX_MAKE_FLAGS} 
+            WORKING_DIRECTORY ${toolbox_path} 
+            DEPENDS wrap_gtsam_unstable)
+    endif (GTSAM_ENABLE_BUILD_MEX_BINARIES)    
+    
     if (GTSAM_INSTALL_MATLAB_TOOLBOX)
         # Primary toolbox files
         message(STATUS "Installing Matlab Toolbox to ${GTSAM_TOOLBOX_INSTALL_PATH}")
