@@ -48,7 +48,7 @@ void DoglegOptimizer::iterate(void) {
     GaussianBayesNet::shared_ptr bn = EliminationTree<GaussianFactor>::Create(*linear)->eliminate(params_.getEliminationFunction());
     result = DoglegOptimizerImpl::Iterate(state_.Delta, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, *bn, graph_, state_.values, ordering, state_.error, dlVerbose);
   }
-  else if ( params_.isSPCG() ) {
+  else if ( params_.isCG() ) {
     throw runtime_error("todo: ");
   }
   else {

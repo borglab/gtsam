@@ -41,7 +41,7 @@ void GaussNewtonOptimizer::iterate() {
     else if ( params_.isSequential() ) {
       delta = gtsam::optimize(*EliminationTree<GaussianFactor>::Create(*linear)->eliminate(params_.getEliminationFunction()));
     }
-    else if ( params_.isSPCG() ) {
+    else if ( params_.isCG() ) {
       throw runtime_error("todo: ");
     }
     else {

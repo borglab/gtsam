@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/linear/IterativeOptimizationParameters.h>
 
 namespace gtsam {
 
@@ -30,11 +31,14 @@ public:
     MULTIFRONTAL_QR,
     SEQUENTIAL_CHOLESKY,
     SEQUENTIAL_QR,
-    SPCG
+    CHOLMOD,    /* Experimental Flag */
+    PCG,        /* Experimental Flag */
+    LSPCG       /* Experimental Flag */
   };
 
 	LinearSolverType linearSolverType; ///< The type of linear solver to use in the nonlinear optimizer
   boost::optional<Ordering> ordering; ///< The variable elimination ordering, or empty to use COLAMD (default: empty)
+  boost::optional<IterativeOptimizationParameters::shared_ptr> iterativeParams; ///< The container for iterativeOptimization parameters.
 
   SuccessiveLinearizationParams() : linearSolverType(MULTIFRONTAL_CHOLESKY) {}
 
@@ -55,8 +59,14 @@ public:
     case SEQUENTIAL_QR:
       std::cout << "         linear solver type: SEQUENTIAL QR\n";
       break;
-    case SPCG:
-      std::cout << "         linear solver type: SPCG\n";
+    case CHOLMOD:
+      std::cout << "         linear solver type: CHOLMOD\n";
+      break;
+    case PCG:
+      std::cout << "         linear solver type: PCG\n";
+      break;
+    case LSPCG:
+      std::cout << "         linear solver type: LSPCG\n";
       break;
     default:
       std::cout << "         linear solver type: (invalid)\n";
@@ -79,8 +89,12 @@ public:
     return (linearSolverType == SEQUENTIAL_CHOLESKY) || (linearSolverType == SEQUENTIAL_QR);
   }
 
-  inline bool isSPCG() const {
-    return (linearSolverType == SPCG);
+  inline bool isCholmod() const {
+    return (linearSolverType == CHOLMOD);
+  }
+
+  inline bool isCG() const {
+    return (linearSolverType == PCG || linearSolverType == LSPCG);
   }
 
   GaussianFactorGraph::Eliminate getEliminationFunction() {
