@@ -294,7 +294,7 @@ void Module::matlab_code(const string& toolboxPath,
 
     makeModuleMfile.oss << "echo on" << endl << endl;
     makeModuleMfile.oss << "toolboxpath = mfilename('fullpath');" << endl;
-    makeModuleMfile.oss << "delims = find(toolboxpath == '/');" << endl;
+    makeModuleMfile.oss << "delims = find(toolboxpath == '/' | toolboxpath == '\\');" << endl;
     makeModuleMfile.oss << "toolboxpath = toolboxpath(1:(delims(end)-1));" << endl;
     makeModuleMfile.oss << "clear delims" << endl;
     makeModuleMfile.oss << "addpath(toolboxpath);" << endl << endl;

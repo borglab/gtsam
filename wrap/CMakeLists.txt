@@ -31,6 +31,9 @@ endif(GTSAM_BUILD_TESTS)
 #  [mexFlags]    : extra flags for the mex command
 
 set(mexFlags "-I${Boost_INCLUDE_DIR} -I${CMAKE_INSTALL_PREFIX}/include -I${CMAKE_INSTALL_PREFIX}/include/gtsam -I${CMAKE_INSTALL_PREFIX}/include/gtsam/base -I${CMAKE_INSTALL_PREFIX}/include/gtsam/geometry -I${CMAKE_INSTALL_PREFIX}/include/gtsam/linear -I${CMAKE_INSTALL_PREFIX}/include/gtsam/nonlinear -I${CMAKE_INSTALL_PREFIX}/include/gtsam/slam -L${CMAKE_INSTALL_PREFIX}/lib -lgtsam")
+if(MSVC OR CYGWIN OR WINGW)
+  set(mexFlags "${mexFlags} LINKFLAGS='$LINKFLAGS /LIBPATH:${Boost_LIBRARY_DIRS}'")
+endif()
 set(toolbox_path ${CMAKE_BINARY_DIR}/wrap/gtsam)
 set(moduleName gtsam)
 
@@ -43,8 +46,9 @@ if (NOT EXECUTABLE_OUTPUT_PATH)
 endif()
 
 # Code generation command
+get_property(WRAP_EXE TARGET wrap PROPERTY LOCATION)
 add_custom_target(wrap_gtsam ALL COMMAND 
-    ${EXECUTABLE_OUTPUT_PATH}/wrap ${GTSAM_MEX_BIN_EXTENSION} ${CMAKE_CURRENT_SOURCE_DIR}/../ ${moduleName} ${toolbox_path} "${mexFlags}"
+    ${WRAP_EXE} ${GTSAM_MEX_BIN_EXTENSION} ${CMAKE_CURRENT_SOURCE_DIR}/../ ${moduleName} ${toolbox_path} "${mexFlags}"
     DEPENDS wrap)
 
 # Build command

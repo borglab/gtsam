@@ -300,19 +300,19 @@ class ObjectHandle {
 private:
 	ObjectHandle* signature; // use 'this' as a unique object signature
 	const std::type_info* type; // type checking information
-	shared_ptr<T> t; // object pointer
+	boost::shared_ptr<T> t; // object pointer
 
 public:
 	// Constructor for free-store allocated objects.
 	// Creates shared pointer, will delete if is last one to hold pointer
 	ObjectHandle(T* ptr) :
-		type(&typeid(T)), t(shared_ptr<T> (ptr)) {
+		type(&typeid(T)), t(boost::shared_ptr<T> (ptr)) {
 		signature = this;
 	}
 
 	// Constructor for shared pointers
 	// Creates shared pointer, will delete if is last one to hold pointer
-	ObjectHandle(shared_ptr<T> ptr) :
+	ObjectHandle(boost::shared_ptr<T> ptr) :
 		/*type(&typeid(T)),*/ t(ptr) {
 		signature = this;
 	}
@@ -323,7 +323,7 @@ public:
 	}
 
 	// Get the actual object contained by handle
-	shared_ptr<T> get_object() const {
+	boost::shared_ptr<T> get_object() const {
 		return t;
 	}
 
@@ -419,7 +419,7 @@ mxArray* create_object(const char *classname, mxArray* h) {
  class to matlab.
 */
 template <typename Class>
-mxArray* wrap_shared_ptr(shared_ptr< Class > shared_ptr, const char *classname) {
+mxArray* wrap_shared_ptr(boost::shared_ptr< Class > shared_ptr, const char *classname) {
   ObjectHandle<Class>* handle = new ObjectHandle<Class>(shared_ptr);
   return create_object(classname,handle->to_mex_handle());
 }
@@ -436,7 +436,7 @@ mxArray* wrap_shared_ptr(shared_ptr< Class > shared_ptr, const char *classname) 
  to the object.
 */
 template <typename Class>
-shared_ptr<Class> unwrap_shared_ptr(const mxArray* obj, const string& className) {
+boost::shared_ptr<Class> unwrap_shared_ptr(const mxArray* obj, const string& className) {
     //Why is this here?
 #ifndef UNSAFE_WRAP
   bool isClass = mxIsClass(obj, className.c_str());

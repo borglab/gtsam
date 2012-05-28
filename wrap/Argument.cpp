@@ -46,7 +46,7 @@ void Argument::matlab_unwrap(FileWriter& file, const string& matlabName) const {
 
   if (is_ptr)
 		// A pointer: emit an "unwrap_shared_ptr" call which returns a pointer
-		file.oss << "shared_ptr<" << cppType << "> " << name << " = unwrap_shared_ptr< ";
+		file.oss << "boost::shared_ptr<" << cppType << "> " << name << " = unwrap_shared_ptr< ";
 	else if (is_ref)
 		// A reference: emit an "unwrap_shared_ptr" call and de-reference the pointer
 		file.oss << cppType << "& " << name << " = *unwrap_shared_ptr< ";
