@@ -34,7 +34,7 @@ namespace gtsam {
 
 		// print
 		virtual void print(const std::string& s = "") const {
-			std::cout << s << ": BinaryAllDiff on " << keys_[0] << " and " << keys_[1]
+			std::cout << s << "BinaryAllDiff on " << keys_[0] << " and " << keys_[1]
 					<< std::endl;
 		}
 

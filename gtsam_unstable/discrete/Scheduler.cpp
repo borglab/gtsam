@@ -105,7 +105,6 @@ namespace gtsam {
 
 	/** Add student-specific constraints to the graph */
 	void Scheduler::addStudentSpecificConstraints(size_t i, boost::optional<size_t> slot) {
-#ifdef BROKEN
 		bool debug = ISDEBUG("Scheduler::buildGraph");
 
 		assert(i<nrStudents());
@@ -134,7 +133,7 @@ namespace gtsam {
 				DiscreteKey dummy(0, nrTimeSlots());
 				Potentials::ADT p(dummy & areaKey, available_);
 				Potentials::ADT q = p.choose(0, *slot);
-				Constraint::shared_ptr f(new DecisionTreeFactor(areaKey, q));
+				DiscreteFactor::shared_ptr f(new DecisionTreeFactor(areaKey, q));
 				CSP::push_back(f);
 			} else {
 				CSP::add(s.key_, areaKey, available_);
@@ -144,15 +143,11 @@ namespace gtsam {
 		// add mutex
 		if (debug) cout << "Mutex for faculty" << endl;
 		addAllDiff(s.keys_[0] & s.keys_[1] & s.keys_[2]);
-#else
-				throw runtime_error("addStudentSpecificConstraints is broken");
-#endif
 	}
 
 
 	/** Main routine that builds factor graph */
 	void Scheduler::buildGraph(size_t mutexBound) {
-#ifdef BROKEN
 		bool debug = ISDEBUG("Scheduler::buildGraph");
 
 		if (debug) cout << "Adding student-specific constraints" << endl;
@@ -178,10 +173,6 @@ namespace gtsam {
 				}
 			}
 		}
-#else
-				throw runtime_error("buildGraph is broken");
-#endif
-
 	} // buildGraph
 
 	/** print */

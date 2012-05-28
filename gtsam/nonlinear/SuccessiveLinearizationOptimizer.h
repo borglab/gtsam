@@ -19,47 +19,59 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/linear/IterativeOptimizationParameters.h>
 
 namespace gtsam {
 
 class SuccessiveLinearizationParams : public NonlinearOptimizerParams {
 public:
-  /** See SuccessiveLinearizationParams::elimination */
-  enum Elimination {
-    MULTIFRONTAL,
-    SEQUENTIAL
+  /** See SuccessiveLinearizationParams::linearSolverType */
+  enum LinearSolverType {
+    MULTIFRONTAL_CHOLESKY,
+    MULTIFRONTAL_QR,
+    SEQUENTIAL_CHOLESKY,
+    SEQUENTIAL_QR,
+    CHOLMOD,    /* Experimental Flag */
+    PCG,        /* Experimental Flag */
+    LSPCG       /* Experimental Flag */
   };
 
-  /** See SuccessiveLinearizationParams::factorization */
-  enum Factorization {
-    CHOLESKY,
-    QR,
-  };
-
-  Elimination elimination; ///< The elimination algorithm to use (default: MULTIFRONTAL)
-  Factorization factorization; ///< The numerical factorization (default: Cholesky)
+	LinearSolverType linearSolverType; ///< The type of linear solver to use in the nonlinear optimizer
   boost::optional<Ordering> ordering; ///< The variable elimination ordering, or empty to use COLAMD (default: empty)
+  boost::optional<IterativeOptimizationParameters::shared_ptr> iterativeParams; ///< The container for iterativeOptimization parameters.
 
-  SuccessiveLinearizationParams() :
-    elimination(MULTIFRONTAL), factorization(CHOLESKY) {}
+  SuccessiveLinearizationParams() : linearSolverType(MULTIFRONTAL_CHOLESKY) {}
 
   virtual ~SuccessiveLinearizationParams() {}
 
   virtual void print(const std::string& str = "") const {
     NonlinearOptimizerParams::print(str);
-    if(elimination == MULTIFRONTAL)
-      std::cout << "         elimination method: MULTIFRONTAL\n";
-    else if(elimination == SEQUENTIAL)
-      std::cout << "         elimination method: SEQUENTIAL\n";
-    else
-      std::cout << "         elimination method: (invalid)\n";
-
-    if(factorization == CHOLESKY)
-      std::cout << "       factorization method: CHOLESKY\n";
-    else if(factorization == QR)
-      std::cout << "       factorization method: QR\n";
-    else
-      std::cout << "       factorization method: (invalid)\n";
+    switch ( linearSolverType ) {
+    case MULTIFRONTAL_CHOLESKY:
+      std::cout << "         linear solver type: MULTIFRONTAL CHOLESKY\n";
+      break;
+    case MULTIFRONTAL_QR:
+      std::cout << "         linear solver type: MULTIFRONTAL QR\n";
+      break;
+    case SEQUENTIAL_CHOLESKY:
+      std::cout << "         linear solver type: SEQUENTIAL CHOLESKY\n";
+      break;
+    case SEQUENTIAL_QR:
+      std::cout << "         linear solver type: SEQUENTIAL QR\n";
+      break;
+    case CHOLMOD:
+      std::cout << "         linear solver type: CHOLMOD\n";
+      break;
+    case PCG:
+      std::cout << "         linear solver type: PCG\n";
+      break;
+    case LSPCG:
+      std::cout << "         linear solver type: LSPCG\n";
+      break;
+    default:
+      std::cout << "         linear solver type: (invalid)\n";
+      break;
+    }
 
     if(ordering)
       std::cout << "                   ordering: custom\n";
@@ -69,13 +81,36 @@ public:
     std::cout.flush();
   }
 
-  GaussianFactorGraph::Eliminate getEliminationFunction() const {
-    if(factorization == SuccessiveLinearizationParams::CHOLESKY)
+  inline bool isMultifrontal() const {
+    return (linearSolverType == MULTIFRONTAL_CHOLESKY) || (linearSolverType == MULTIFRONTAL_QR);
+  }
+
+  inline bool isSequential() const {
+    return (linearSolverType == SEQUENTIAL_CHOLESKY) || (linearSolverType == SEQUENTIAL_QR);
+  }
+
+  inline bool isCholmod() const {
+    return (linearSolverType == CHOLMOD);
+  }
+
+  inline bool isCG() const {
+    return (linearSolverType == PCG || linearSolverType == LSPCG);
+  }
+
+  GaussianFactorGraph::Eliminate getEliminationFunction() {
+    switch (linearSolverType) {
+    case MULTIFRONTAL_CHOLESKY:
+    case MULTIFRONTAL_QR:
       return EliminatePreferCholesky;
-    else if(factorization == SuccessiveLinearizationParams::QR)
+
+    case SEQUENTIAL_CHOLESKY:
+    case SEQUENTIAL_QR:
       return EliminateQR;
-    else
+
+    default:
       throw runtime_error("Nonlinear optimization parameter \"factorization\" is invalid");
+      break;
+    }
   }
 };
 

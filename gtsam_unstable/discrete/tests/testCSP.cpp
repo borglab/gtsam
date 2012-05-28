@@ -54,17 +54,17 @@ TEST_UNSAFE( CSP, allInOne)
 	invalid[ID.first] = 0;
 	invalid[UT.first] = 0;
 	invalid[AZ.first] = 0;
-	EXPECT_DOUBLES_EQUAL(0, csp(invalid), 1e-9); // FIXME: fails due to lack of operator() interface
+	EXPECT_DOUBLES_EQUAL(0, csp(invalid), 1e-9);
 
 	// Check a valid combination
 	DiscreteFactor::Values valid;
 	valid[ID.first] = 0;
 	valid[UT.first] = 1;
 	valid[AZ.first] = 0;
-	EXPECT_DOUBLES_EQUAL(1, csp(valid), 1e-9); // FIXME: fails due to lack of operator() interface
+	EXPECT_DOUBLES_EQUAL(1, csp(valid), 1e-9);
 
 	// Just for fun, create the product and check it
-	DecisionTreeFactor product = csp.product(); // FIXME: fails due to lack of product()
+	DecisionTreeFactor product = csp.product();
 	// product.dot("product");
 	DecisionTreeFactor expectedProduct(ID & AZ & UT, "0 1 0 0 0 0 1 0");
 	EXPECT(assert_equal(expectedProduct,product));
@@ -74,7 +74,7 @@ TEST_UNSAFE( CSP, allInOne)
 	CSP::Values expected;
 	insert(expected)(ID.first, 1)(UT.first, 0)(AZ.first, 1);
 	EXPECT(assert_equal(expected,*mpe));
-	EXPECT_DOUBLES_EQUAL(1, csp(*mpe), 1e-9); // FIXME: fails due to lack of operator() interface
+	EXPECT_DOUBLES_EQUAL(1, csp(*mpe), 1e-9);
 }
 
 /* ************************************************************************* */
@@ -122,7 +122,7 @@ TEST_UNSAFE( CSP, WesternUS)
 	(MT.first,1)(WY.first,0)(NM.first,3)(CO.first,2)
 	(ID.first,2)(UT.first,1)(AZ.first,0);
 	EXPECT(assert_equal(expected,*mpe));
-	EXPECT_DOUBLES_EQUAL(1, csp(*mpe), 1e-9); // FIXME: fails due to lack of operator() interface
+	EXPECT_DOUBLES_EQUAL(1, csp(*mpe), 1e-9);
 
 	// Write out the dual graph for hmetis
 #ifdef DUAL
@@ -146,7 +146,7 @@ TEST_UNSAFE( CSP, AllDiff)
 	dkeys += ID,UT,AZ;
 	csp.addAllDiff(dkeys);
 	csp.addSingleValue(AZ,2);
-	//GTSAM_PRINT(csp);
+//	GTSAM_PRINT(csp);
 
 	// Check construction and conversion
 	SingleValue s(AZ,2);
@@ -167,21 +167,21 @@ TEST_UNSAFE( CSP, AllDiff)
 	invalid[ID.first] = 0;
 	invalid[UT.first] = 1;
 	invalid[AZ.first] = 0;
-	EXPECT_DOUBLES_EQUAL(0, csp(invalid), 1e-9); // FIXME: fails due to lack of operator() interface
+	EXPECT_DOUBLES_EQUAL(0, csp(invalid), 1e-9);
 
 	// Check a valid combination
 	DiscreteFactor::Values valid;
 	valid[ID.first] = 0;
 	valid[UT.first] = 1;
 	valid[AZ.first] = 2;
-	EXPECT_DOUBLES_EQUAL(1, csp(valid), 1e-9); // FIXME: fails due to lack of operator() interface
+	EXPECT_DOUBLES_EQUAL(1, csp(valid), 1e-9);
 
 	// Solve
 	CSP::sharedValues mpe = csp.optimalAssignment();
 	CSP::Values expected;
 	insert(expected)(ID.first, 1)(UT.first, 0)(AZ.first, 2);
 	EXPECT(assert_equal(expected,*mpe));
-	EXPECT_DOUBLES_EQUAL(1, csp(*mpe), 1e-9); // FIXME: fails due to lack of operator() interface
+	EXPECT_DOUBLES_EQUAL(1, csp(*mpe), 1e-9);
 
 	// Arc-consistency
 	vector<Domain> domains;

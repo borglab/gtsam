@@ -35,13 +35,18 @@ void GaussNewtonOptimizer::iterate() {
   // Optimize
   VectorValues delta;
   {
-    GaussianFactorGraph::Eliminate eliminationMethod = params_.getEliminationFunction();
-    if(params_.elimination == GaussNewtonParams::MULTIFRONTAL)
-      delta = GaussianJunctionTree(*linear).optimize(eliminationMethod);
-    else if(params_.elimination == GaussNewtonParams::SEQUENTIAL)
-      delta = gtsam::optimize(*EliminationTree<GaussianFactor>::Create(*linear)->eliminate(eliminationMethod));
-    else
+    if ( params_.isMultifrontal() ) {
+      delta = GaussianJunctionTree(*linear).optimize(params_.getEliminationFunction());
+    }
+    else if ( params_.isSequential() ) {
+      delta = gtsam::optimize(*EliminationTree<GaussianFactor>::Create(*linear)->eliminate(params_.getEliminationFunction()));
+    }
+    else if ( params_.isCG() ) {
+      throw runtime_error("todo: ");
+    }
+    else {
       throw runtime_error("Optimization parameter is invalid: GaussNewtonParams::elimination");
+    }
   }
 
   // Maybe show output

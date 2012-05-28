@@ -23,4 +23,4 @@ set (slam_excluded_tests "")
 
 # Add all tests
 gtsam_add_subdir_tests(slam_unstable "${slam_local_libs}" "${slam_full_libs}" "${slam_excluded_tests}") 
-
+add_dependencies(check.unstable check.slam_unstable)

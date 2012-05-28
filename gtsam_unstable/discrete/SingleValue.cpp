@@ -17,8 +17,8 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	void SingleValue::print(const string& s) const {
-		cout << s << ": SingleValue on " << keys_[0] << " (j=" << keys_[0]
-				<< ") with value " << value_ << endl;
+		cout << s << "SingleValue on " << "j=" << keys_[0]
+				<< " with value " << value_ << endl;
 	}
 
 	/* ************************************************************************* */

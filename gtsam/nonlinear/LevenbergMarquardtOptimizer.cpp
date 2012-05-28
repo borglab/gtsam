@@ -34,9 +34,6 @@ void LevenbergMarquardtOptimizer::iterate() {
   // Linearize graph
   GaussianFactorGraph::shared_ptr linear = graph_.linearize(state_.values, *params_.ordering);
 
-  // Get elimination method
-  GaussianFactorGraph::Eliminate eliminationMethod = params_.getEliminationFunction();
-
   // Pull out parameters we'll use
   const NonlinearOptimizerParams::Verbosity nloVerbosity = params_.verbosity;
   const LevenbergMarquardtParams::VerbosityLM lmVerbosity = params_.verbosityLM;
@@ -69,12 +66,18 @@ void LevenbergMarquardtOptimizer::iterate() {
 
       // Optimize
       VectorValues delta;
-      if(params_.elimination == SuccessiveLinearizationParams::MULTIFRONTAL)
-        delta = GaussianJunctionTree(dampedSystem).optimize(eliminationMethod);
-      else if(params_.elimination == SuccessiveLinearizationParams::SEQUENTIAL)
-        delta = gtsam::optimize(*EliminationTree<GaussianFactor>::Create(dampedSystem)->eliminate(eliminationMethod));
-      else
+      if ( params_.isMultifrontal() ) {
+        delta = GaussianJunctionTree(dampedSystem).optimize(params_.getEliminationFunction());
+      }
+      else if ( params_.isSequential() ) {
+        delta = gtsam::optimize(*EliminationTree<GaussianFactor>::Create(dampedSystem)->eliminate(params_.getEliminationFunction()));
+      }
+      else if ( params_.isCG() ) {
+        throw runtime_error("todo: ");
+      }
+      else {
         throw runtime_error("Optimization parameter is invalid: LevenbergMarquardtParams::elimination");
+      }
 
       if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) cout << "linear delta norm = " << delta.vector().norm() << endl;
       if (lmVerbosity >= LevenbergMarquardtParams::TRYDELTA) delta.print("delta");

@@ -41,7 +41,7 @@ SimpleString::SimpleString (const SimpleString& other)
 
 SimpleString SimpleString::operator= (const SimpleString& other)
 {
-	delete buffer_;
+	delete [] buffer_;
 	buffer_ = new char [other.size() + 1];
 	strcpy(buffer_, other.buffer_);
 	return *this;
@@ -50,7 +50,7 @@ SimpleString SimpleString::operator= (const SimpleString& other)
 SimpleString SimpleString::operator+ (const SimpleString& other)
 {
 	SimpleString ret;
-	delete ret.buffer_;
+	delete [] ret.buffer_;
 	ret.buffer_ = new char [size() + other.size() - 1];
 	strcpy(ret.buffer_, buffer_);
 	strcat(ret.buffer_, other.buffer_);

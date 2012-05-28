@@ -49,7 +49,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	void DecisionTreeFactor::print(const string& s) const {
-		cout << s << ":\n";
+		cout << s;
 		IndexFactor::print("IndexFactor:");
 		Potentials::print("Potentials:");
 	}

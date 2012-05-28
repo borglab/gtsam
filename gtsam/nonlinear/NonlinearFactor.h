@@ -157,11 +157,33 @@ public:
   /**
    * Creates a shared_ptr clone of the factor - needs to be specialized to allow
    * for subclasses
+   *
+   * By default, throws exception if subclass does not implement the function.
    */
-  virtual shared_ptr clone() const =0;
+  virtual shared_ptr clone() const {
+  	// TODO: choose better exception to throw here
+  	throw std::runtime_error("NonlinearFactor::clone(): Attempting to clone factor with no clone() implemented!");
+  	return shared_ptr();
+  }
 
   /**
-   * Clones a factor and replaces its keys
+   * Creates a shared_ptr clone of the factor with different keys using
+   * a map from old->new keys
+   */
+  shared_ptr rekey(const std::map<Key,Key>& rekey_mapping) const {
+  	shared_ptr new_factor = clone();
+  	for (size_t i=0; i<new_factor->size(); ++i) {
+  		Key& cur_key = new_factor->keys()[i];
+  		std::map<Key,Key>::const_iterator mapping = rekey_mapping.find(cur_key);
+  		if (mapping != rekey_mapping.end())
+  			cur_key = mapping->second;
+  	}
+  	return new_factor;
+  }
+
+  /**
+   * Clones a factor and fully replaces its keys
+   * @param new_keys is the full replacement set of keys
    */
   shared_ptr rekey(const std::vector<Key>& new_keys) const {
   	assert(new_keys.size() == this->keys().size());

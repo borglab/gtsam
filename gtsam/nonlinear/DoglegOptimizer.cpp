@@ -33,25 +33,25 @@ void DoglegOptimizer::iterate(void) {
   const Ordering& ordering = *params_.ordering;
   GaussianFactorGraph::shared_ptr linear = graph_.linearize(state_.values, ordering);
 
-  // Get elimination method
-  GaussianFactorGraph::Eliminate eliminationMethod = params_.getEliminationFunction();
-
   // Pull out parameters we'll use
   const bool dlVerbose = (params_.verbosityDL > DoglegParams::SILENT);
 
   // Do Dogleg iteration with either Multifrontal or Sequential elimination
   DoglegOptimizerImpl::IterationResult result;
 
-  if(params_.elimination == DoglegParams::MULTIFRONTAL) {
+  if ( params_.isMultifrontal() ) {
     GaussianBayesTree bt;
-    bt.insert(GaussianJunctionTree(*linear).eliminate(eliminationMethod));
+    bt.insert(GaussianJunctionTree(*linear).eliminate(params_.getEliminationFunction()));
     result = DoglegOptimizerImpl::Iterate(state_.Delta, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, bt, graph_, state_.values, ordering, state_.error, dlVerbose);
-
-  } else if(params_.elimination == DoglegParams::SEQUENTIAL) {
-    GaussianBayesNet::shared_ptr bn = EliminationTree<GaussianFactor>::Create(*linear)->eliminate(eliminationMethod);
+  }
+  else if ( params_.isSequential() ) {
+    GaussianBayesNet::shared_ptr bn = EliminationTree<GaussianFactor>::Create(*linear)->eliminate(params_.getEliminationFunction());
     result = DoglegOptimizerImpl::Iterate(state_.Delta, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, *bn, graph_, state_.values, ordering, state_.error, dlVerbose);
-
-  } else {
+  }
+  else if ( params_.isCG() ) {
+    throw runtime_error("todo: ");
+  }
+  else {
     throw runtime_error("Optimization parameter is invalid: DoglegParams::elimination");
   }
 

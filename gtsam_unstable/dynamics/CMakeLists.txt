@@ -23,4 +23,4 @@ set (dynamics_excluded_tests "")
 
 # Add all tests
 gtsam_add_subdir_tests(dynamics_unstable "${dynamics_local_libs}" "${dynamics_full_libs}" "${dynamics_excluded_tests}") 
-
+add_dependencies(check.unstable check.dynamics_unstable)
