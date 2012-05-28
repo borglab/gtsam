@@ -1,3 +1,4 @@
+
 project(GTSAM CXX C)
 cmake_minimum_required(VERSION 2.6)
 
@@ -9,8 +10,12 @@ set (GTSAM_VERSION_PATCH 0)
 # Set the default install path to home
 #set (CMAKE_INSTALL_PREFIX ${HOME} CACHE PATH "Install prefix for library")
 
+set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+# Load build type flags and default to Debug mode
+include(GtsamBuildTypes)
+
 # Use macros for creating tests/timing scripts
-set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${PROJECT_SOURCE_DIR}/cmake")
 include(GtsamTesting)
 include(GtsamPrinting)
 
@@ -24,24 +29,6 @@ if(EXISTS "${PROJECT_SOURCE_DIR}/gtsam_unstable" AND IS_DIRECTORY "${PROJECT_SOU
     set(GTSAM_UNSTABLE_AVAILABLE 1)
 else()
     set(GTSAM_UNSTABLE_AVAILABLE 0)
-endif()
-
-# Load build type flags and default to Debug mode
-include(GtsamBuildTypes)
-
-# Check build types
-if(${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} VERSION_GREATER 2.8 OR ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} VERSION_EQUAL 2.8)
-  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS None Debug Release Timing Profiling RelWithDebInfo MinSizeRel)
-endif()
-string(TOLOWER "${CMAKE_BUILD_TYPE}" cmake_build_type_tolower)
-if(    NOT cmake_build_type_tolower STREQUAL ""
-   AND NOT cmake_build_type_tolower STREQUAL "none"
-   AND NOT cmake_build_type_tolower STREQUAL "debug"
-   AND NOT cmake_build_type_tolower STREQUAL "release"
-   AND NOT cmake_build_type_tolower STREQUAL "timing"
-   AND NOT cmake_build_type_tolower STREQUAL "profiling"
-   AND NOT cmake_build_type_tolower STREQUAL "relwithdebinfo")
-  message(FATAL_ERROR "Unknown build type \"${CMAKE_BUILD_TYPE}\". Allowed values are None, Debug, Release, Timing, Profiling, RelWithDebInfo (case-insensitive).")
 endif()
 
 # Configurable Options
@@ -83,8 +70,8 @@ endif()
 
 # Add the Quaternion Build Flag if requested
 if (GTSAM_USE_QUATERNIONS)
-	set(CMAKE_C_FLAGS            "${CMAKE_C_FLAGS} -DGTSAM_DEFAULT_QUATERNIONS")
-	set(CMAKE_CXX_FLAGS          "${CMAKE_CXX_FLAGS} -DGTSAM_DEFAULT_QUATERNIONS")
+  set(CMAKE_C_FLAGS            "${CMAKE_C_FLAGS} -DGTSAM_DEFAULT_QUATERNIONS")
+  set(CMAKE_CXX_FLAGS          "${CMAKE_CXX_FLAGS} -DGTSAM_DEFAULT_QUATERNIONS")
 endif(GTSAM_USE_QUATERNIONS)
 
 # Avoid building non-installed exes and unit tests when installing
