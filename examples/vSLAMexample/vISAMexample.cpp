@@ -76,11 +76,11 @@ void readAllDataISAM() {
 /**
  * Setup newFactors and initialValues for each new pose and set of measurements at each frame.
  */
-void createNewFactors(shared_ptr<Graph>& newFactors, boost::shared_ptr<Values>& initialValues,
+void createNewFactors(boost::shared_ptr<Graph>& newFactors, boost::shared_ptr<Values>& initialValues,
     int pose_id, const Pose3& pose, const std::vector<Feature2D>& measurements, SharedNoiseModel measurementSigma, shared_ptrK calib) {
 
   // Create a graph of newFactors with new measurements
-  newFactors = shared_ptr<Graph> (new Graph());
+  newFactors = boost::shared_ptr<Graph> (new Graph());
   for (size_t i = 0; i < measurements.size(); i++) {
     newFactors->addMeasurement(
         measurements[i].m_p,
@@ -97,7 +97,7 @@ void createNewFactors(shared_ptr<Graph>& newFactors, boost::shared_ptr<Values>& 
   }
 
   // Create initial values for all nodes in the newFactors
-  initialValues = shared_ptr<Values> (new Values());
+  initialValues = boost::shared_ptr<Values> (new Values());
   initialValues->insert(PoseKey(pose_id), pose);
   for (size_t i = 0; i < measurements.size(); i++) {
     initialValues->insert(PointKey(measurements[i].m_idLandmark), g_landmarks[measurements[i].m_idLandmark]);
@@ -127,8 +127,8 @@ int main(int argc, char* argv[]) {
   typedef std::map<int, std::vector<Feature2D> > FeatureMap;
   BOOST_FOREACH(const FeatureMap::value_type& features, g_measurements) {
     const int poseId = features.first;
-    shared_ptr<Graph> newFactors;
-    shared_ptr<Values> initialValues;
+    boost::shared_ptr<Graph> newFactors;
+    boost::shared_ptr<Values> initialValues;
     createNewFactors(newFactors, initialValues, poseId, g_poses[poseId],
             features.second, measurementSigma, g_calib);
 
