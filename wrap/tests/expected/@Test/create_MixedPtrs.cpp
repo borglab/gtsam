@@ -7,6 +7,6 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
   checkArguments("create_MixedPtrs",nargout,nargin-1,0);
   boost::shared_ptr<Test> self = unwrap_shared_ptr< Test >(in[0],"Test");
   pair< Test, boost::shared_ptr<Test> > result = self->create_MixedPtrs();
-  out[0] = wrap_shared_ptr(make_shared< Test >(result.first),"Test");
+  out[0] = wrap_shared_ptr(boost::make_shared< Test >(result.first),"Test");
   out[1] = wrap_shared_ptr(result.second,"Test");
 }
