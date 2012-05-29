@@ -5,8 +5,8 @@ using namespace geometry;
 void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("return_Test",nargout,nargin-1,1);
-  shared_ptr<Test> self = unwrap_shared_ptr< Test >(in[0],"Test");
-  shared_ptr<Test> value = unwrap_shared_ptr< Test >(in[1], "Test");
+  boost::shared_ptr<Test> self = unwrap_shared_ptr< Test >(in[0],"Test");
+  boost::shared_ptr<Test> value = unwrap_shared_ptr< Test >(in[1], "Test");
   Test result = self->return_Test(value);
   out[0] = wrap_shared_ptr(make_shared< Test >(result),"Test");
 }

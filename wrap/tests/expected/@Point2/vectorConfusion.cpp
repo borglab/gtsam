@@ -4,7 +4,7 @@
 void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("vectorConfusion",nargout,nargin-1,0);
-  shared_ptr<Point2> self = unwrap_shared_ptr< Point2 >(in[0],"Point2");
+  boost::shared_ptr<Point2> self = unwrap_shared_ptr< Point2 >(in[0],"Point2");
   VectorNotEigen result = self->vectorConfusion();
   out[0] = wrap_shared_ptr(make_shared< VectorNotEigen >(result),"VectorNotEigen");
 }

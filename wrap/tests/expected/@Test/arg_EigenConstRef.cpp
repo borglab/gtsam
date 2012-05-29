@@ -5,7 +5,7 @@ using namespace geometry;
 void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("arg_EigenConstRef",nargout,nargin-1,1);
-  shared_ptr<Test> self = unwrap_shared_ptr< Test >(in[0],"Test");
+  boost::shared_ptr<Test> self = unwrap_shared_ptr< Test >(in[0],"Test");
   Matrix& value = *unwrap_shared_ptr< Matrix >(in[1], "Matrix");
   self->arg_EigenConstRef(value);
 }
