@@ -5,7 +5,7 @@ file(GLOB wrap_srcs "*.cpp")
 list(REMOVE_ITEM wrap_srcs wrap.cpp)
 add_library(wrap_lib STATIC ${wrap_srcs})
 add_executable(wrap wrap.cpp)
-target_link_libraries(wrap wrap_lib)
+target_link_libraries(wrap wrap_lib ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY})
 
 # Install wrap binary
 if (GTSAM_INSTALL_WRAP)
