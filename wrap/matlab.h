@@ -106,6 +106,14 @@ mxArray* wrap<char>(char& value) {
   return result;
 }
 
+// specialization to unsigned char
+template<>
+mxArray* wrap<unsigned char>(unsigned char& value) {
+  mxArray *result = scalar(mxUINT32OR64_CLASS);
+  *(unsigned char*)mxGetData(result) = value;
+  return result;
+}
+
 // specialization to bool
 template<>
 mxArray* wrap<bool>(bool& value) {
@@ -227,11 +235,18 @@ bool unwrap<bool>(const mxArray* array) {
   return myGetScalar<bool>(array);
 }
 
-// specialization to bool
+// specialization to char
 template<>
 char unwrap<char>(const mxArray* array) {
 	checkScalar(array,"unwrap<char>");
   return myGetScalar<char>(array);
+}
+
+// specialization to unsigned char
+template<>
+unsigned char unwrap<unsigned char>(const mxArray* array) {
+	checkScalar(array,"unwrap<unsigned char>");
+  return myGetScalar<unsigned char>(array);
 }
 
 // specialization to int

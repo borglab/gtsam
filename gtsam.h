@@ -19,7 +19,7 @@
  *   Arguments to functions any of
  *   	 - Eigen types:       Matrix, Vector
  *   	 - Eigen types and classes as an optionally const reference
- *     - C/C++ basic types: string, bool, size_t, int, double
+ *     - C/C++ basic types: string, bool, size_t, int, double, char
  *     - Any class with which be copied with boost::make_shared() (except Eigen)
  *     - boost::shared_ptr of any object type (except Eigen)
  *   Comments can use either C++ or C style, with multiple lines
