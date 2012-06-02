@@ -35,16 +35,20 @@ int main(int argc, char** argv) {
   // create the graph (defined in planarSlam.h, derived from NonlinearFactorGraph)
 	planarSLAM::Graph graph;
 
+	// Create some keys
+	static Symbol i1('x',1), i2('x',2), i3('x',3);
+	static Symbol j1('l',1), j2('l',2);
+
 	// add a Gaussian prior on pose x_1
 	Pose2 priorMean(0.0, 0.0, 0.0); // prior mean is at origin
 	SharedDiagonal priorNoise(Vector_(3, 0.3, 0.3, 0.1)); // 30cm std on x,y, 0.1 rad on theta
-	graph.addPrior(1, priorMean, priorNoise); // add directly to graph
+	graph.addPrior(i1, priorMean, priorNoise); // add directly to graph
 
 	// add two odometry factors
 	Pose2 odometry(2.0, 0.0, 0.0); // create a measurement for both factors (the same in this case)
 	SharedDiagonal odometryNoise(Vector_(3, 0.2, 0.2, 0.1)); // 20cm std on x,y, 0.1 rad on theta
-	graph.addOdometry(1, 2, odometry, odometryNoise);
-	graph.addOdometry(2, 3, odometry, odometryNoise);
+	graph.addOdometry(i1, i2, odometry, odometryNoise);
+	graph.addOdometry(i2, i3, odometry, odometryNoise);
 
 	// create a noise model for the landmark measurements
 	SharedDiagonal measurementNoise(Vector_(2, 0.1, 0.2)); // 0.1 rad std on bearing, 20cm on range
@@ -58,20 +62,20 @@ int main(int argc, char** argv) {
 		     range32 = 2.0;
 
 	// add bearing/range factors (created by "addBearingRange")
-	graph.addBearingRange(1, 1, bearing11, range11, measurementNoise);
-	graph.addBearingRange(2, 1, bearing21, range21, measurementNoise);
-	graph.addBearingRange(3, 2, bearing32, range32, measurementNoise);
+	graph.addBearingRange(i1, j1, bearing11, range11, measurementNoise);
+	graph.addBearingRange(i2, j1, bearing21, range21, measurementNoise);
+	graph.addBearingRange(i3, j2, bearing32, range32, measurementNoise);
 
 	// print
 	graph.print("Factor graph");
 
 	// create (deliberatly inaccurate) initial estimate
 	planarSLAM::Values initialEstimate;
-	initialEstimate.insertPose(1, Pose2(0.5, 0.0, 0.2));
-	initialEstimate.insertPose(2, Pose2(2.3, 0.1,-0.2));
-	initialEstimate.insertPose(3, Pose2(4.1, 0.1, 0.1));
-	initialEstimate.insertPoint(1, Point2(1.8, 2.1));
-	initialEstimate.insertPoint(2, Point2(4.1, 1.8));
+	initialEstimate.insertPose(i1, Pose2(0.5, 0.0, 0.2));
+	initialEstimate.insertPose(i2, Pose2(2.3, 0.1,-0.2));
+	initialEstimate.insertPose(i3, Pose2(4.1, 0.1, 0.1));
+	initialEstimate.insertPoint(j1, Point2(1.8, 2.1));
+	initialEstimate.insertPoint(j2, Point2(4.1, 1.8));
 
 	initialEstimate.print("Initial estimate:\n  ");
 

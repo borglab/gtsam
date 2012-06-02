@@ -15,28 +15,28 @@
  * @author Alex Cunningham
  */
 
-#include <cmath>
-#include <iostream>
-
-// for all nonlinear keys
-#include <gtsam/nonlinear/Symbol.h>
-
-// for points and poses
-#include <gtsam/geometry/Point2.h>
-#include <gtsam/geometry/Pose2.h>
-
-// for modeling measurement uncertainty - all models included here
-#include <gtsam/linear/NoiseModel.h>
-
 // add in headers for specific factors
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/BearingRangeFactor.h>
 
+// for all nonlinear keys
+#include <gtsam/nonlinear/Symbol.h>
+
 // implementations for structures - needed if self-contained, and these should be included last
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/Marginals.h>
+
+// for modeling measurement uncertainty - all models included here
+#include <gtsam/linear/NoiseModel.h>
+
+// for points and poses
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/geometry/Pose2.h>
+
+#include <cmath>
+#include <iostream>
 
 using namespace std;
 using namespace gtsam;
@@ -52,8 +52,8 @@ using namespace gtsam;
  */
 int main(int argc, char** argv) {
 	// create keys for variables
-	Symbol x1('x',1), x2('x',2), x3('x',3);
-	Symbol l1('l',1), l2('l',2);
+	Symbol i1('x',1), i2('x',2), i3('x',3);
+	Symbol j1('l',1), j2('l',2);
 
 	// create graph container and add factors to it
 	NonlinearFactorGraph graph;
@@ -62,7 +62,7 @@ int main(int argc, char** argv) {
 	// gaussian for prior
 	SharedDiagonal prior_model = noiseModel::Diagonal::Sigmas(Vector_(3, 0.3, 0.3, 0.1));
 	Pose2 prior_measurement(0.0, 0.0, 0.0); // prior at origin
-	PriorFactor<Pose2> posePrior(x1, prior_measurement, prior_model); // create the factor
+	PriorFactor<Pose2> posePrior(i1, prior_measurement, prior_model); // create the factor
 	graph.add(posePrior);  // add the factor to the graph
 
 	/* add odometry */
@@ -70,8 +70,8 @@ int main(int argc, char** argv) {
 	SharedDiagonal odom_model = noiseModel::Diagonal::Sigmas(Vector_(3, 0.2, 0.2, 0.1));
 	Pose2 odom_measurement(2.0, 0.0, 0.0); // create a measurement for both factors (the same in this case)
 	// create between factors to represent odometry
-	BetweenFactor<Pose2> odom12(x1, x2, odom_measurement, odom_model);
-	BetweenFactor<Pose2> odom23(x2, x3, odom_measurement, odom_model);
+	BetweenFactor<Pose2> odom12(i1, i2, odom_measurement, odom_model);
+	BetweenFactor<Pose2> odom23(i2, i3, odom_measurement, odom_model);
 	graph.add(odom12); // add both to graph
 	graph.add(odom23);
 
@@ -88,9 +88,9 @@ int main(int argc, char** argv) {
 		   range32 = 2.0;
 
 	// create bearing/range factors
-	BearingRangeFactor<Pose2, Point2> meas11(x1, l1, bearing11, range11, meas_model);
-	BearingRangeFactor<Pose2, Point2> meas21(x2, l1, bearing21, range21, meas_model);
-	BearingRangeFactor<Pose2, Point2> meas32(x3, l2, bearing32, range32, meas_model);
+	BearingRangeFactor<Pose2, Point2> meas11(i1, j1, bearing11, range11, meas_model);
+	BearingRangeFactor<Pose2, Point2> meas21(i2, j1, bearing21, range21, meas_model);
+	BearingRangeFactor<Pose2, Point2> meas32(i3, j2, bearing32, range32, meas_model);
 
 	// add the factors
 	graph.add(meas11);
@@ -101,11 +101,11 @@ int main(int argc, char** argv) {
 
 	// initialize to noisy points
 	Values initial;
-	initial.insert(x1, Pose2(0.5, 0.0, 0.2));
-	initial.insert(x2, Pose2(2.3, 0.1,-0.2));
-	initial.insert(x3, Pose2(4.1, 0.1, 0.1));
-	initial.insert(l1, Point2(1.8, 2.1));
-	initial.insert(l2, Point2(4.1, 1.8));
+	initial.insert(i1, Pose2(0.5, 0.0, 0.2));
+	initial.insert(i2, Pose2(2.3, 0.1,-0.2));
+	initial.insert(i3, Pose2(4.1, 0.1, 0.1));
+	initial.insert(j1, Point2(1.8, 2.1));
+	initial.insert(j2, Point2(4.1, 1.8));
 
 	initial.print("initial estimate");
 
@@ -126,11 +126,11 @@ int main(int argc, char** argv) {
 
   // Print marginals covariances for all variables
 	Marginals marginals(graph, resultMultifrontal, Marginals::CHOLESKY);
-  print(marginals.marginalCovariance(x1), "x1 covariance");
-  print(marginals.marginalCovariance(x2), "x2 covariance");
-  print(marginals.marginalCovariance(x3), "x3 covariance");
-  print(marginals.marginalCovariance(l1), "l1 covariance");
-  print(marginals.marginalCovariance(l2), "l2 covariance");
+  print(marginals.marginalCovariance(i1), "i1 covariance");
+  print(marginals.marginalCovariance(i2), "i2 covariance");
+  print(marginals.marginalCovariance(i3), "i3 covariance");
+  print(marginals.marginalCovariance(j1), "j1 covariance");
+  print(marginals.marginalCovariance(j2), "j2 covariance");
 
 	return 0;
 }

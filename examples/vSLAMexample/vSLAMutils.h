@@ -17,13 +17,12 @@
 
 #pragma once
 
-#include <map>
-#include <vector>
 #include "Feature2D.h"
 #include "gtsam/geometry/Pose3.h"
 #include "gtsam/geometry/Point3.h"
 #include "gtsam/geometry/Cal3_S2.h"
-
+#include <vector>
+#include <map>
 
 std::map<int, gtsam::Point3> readLandMarks(const std::string& landmarkFile);
 

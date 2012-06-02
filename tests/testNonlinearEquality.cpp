@@ -535,13 +535,13 @@ TEST (testNonlinearEqualityConstraint, stereo_constrained ) {
 	VGraph graph;
 
 	// create equality constraints for poses
-	graph.addPoseConstraint(1, camera1.pose());
-	graph.addPoseConstraint(2, camera2.pose());
+	graph.addPoseConstraint(x1, camera1.pose());
+	graph.addPoseConstraint(x2, camera2.pose());
 
 	// create  factors
 	SharedDiagonal vmodel = noiseModel::Unit::Create(3);
-	graph.addMeasurement(camera1.project(landmark), vmodel, 1, 1, shK);
-	graph.addMeasurement(camera2.project(landmark), vmodel, 2, 2, shK);
+	graph.addMeasurement(camera1.project(landmark), vmodel, x1, l1, shK);
+	graph.addMeasurement(camera2.project(landmark), vmodel, x2, l2, shK);
 
 	// add equality constraint
 	graph.add(Point3Equality(l1, l2));

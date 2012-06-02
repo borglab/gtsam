@@ -30,9 +30,6 @@ namespace pose3SLAM {
 
   using namespace gtsam;
 
-  /// Convenience function for constructing a pose key
-  inline Symbol PoseKey(Index j) { return Symbol('x', j); }
-
   /**
    * Create a circle of n 3D poses tangent to circle of radius R, first pose at (R,0)
    * @param n number of poses
@@ -52,13 +49,13 @@ namespace pose3SLAM {
   struct Graph: public NonlinearFactorGraph {
 
     /// Adds a factor between keys of the same type
-    void addPrior(Index i, const Pose3& p, const SharedNoiseModel& model);
+    void addPrior(Key i, const Pose3& p, const SharedNoiseModel& model);
 
     /// Creates a between factor between keys i and j with a noise model with Pos3 z in the graph
-    void addConstraint(Index i, Index j, const Pose3& z, const SharedNoiseModel& model);
+    void addConstraint(Key i1, Key i2, const Pose3& z, const SharedNoiseModel& model);
 
     /// Creates a hard constraint for key i with the given Pose3 p.
-    void addHardConstraint(Index i, const Pose3& p);
+    void addHardConstraint(Key i, const Pose3& p);
 
     /// Optimize
     Values optimize(const Values& initialEstimate) {

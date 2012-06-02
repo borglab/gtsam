@@ -32,7 +32,7 @@ SharedDiagonal soft_model2_alt = noiseModel::Isotropic::Sigma(2, 0.1);
 SharedDiagonal hard_model1 = noiseModel::Constrained::All(1);
 
 // some simple inequality constraints
-Symbol key(simulated2D::PoseKey(1));
+Symbol key('x',1);
 double mu = 10.0;
 // greater than
 iq2D::PoseXInequality constraint1(key, 1.0, true, mu);

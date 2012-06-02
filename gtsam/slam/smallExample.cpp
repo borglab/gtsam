@@ -17,27 +17,23 @@
  * @author  Frank dellaert
  */
 
-#include <iostream>
-#include <string>
+#include <gtsam/slam/smallExample.h>
+#include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/inference/FactorGraph.h>
+#include <gtsam/base/Matrix.h>
+
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include <iostream>
+#include <string>
+
 using namespace std;
-
-#include <gtsam/base/Matrix.h>
-#include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/slam/smallExample.h>
-
-// template definitions
-#include <gtsam/inference/FactorGraph.h>
-#include <gtsam/nonlinear/Ordering.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 namespace gtsam {
 namespace example {
-
-  using simulated2D::PoseKey;
-  using simulated2D::PointKey;
 
 	typedef boost::shared_ptr<NonlinearFactor> shared;
 
@@ -49,6 +45,7 @@ namespace example {
 	static const Index _l1_=0, _x1_=1, _x2_=2;
 	static const Index _x_=0, _y_=1, _z_=2;
 
+	// Convenience for named keys
 	Key kx(size_t i) { return Symbol('x',i); }
 	Key kl(size_t i) { return Symbol('l',i); }
 
@@ -60,22 +57,22 @@ namespace example {
 
 		// prior on x1
 		Point2 mu;
-		shared f1(new simulated2D::Prior(mu, sigma0_1, PoseKey(1)));
+		shared f1(new simulated2D::Prior(mu, sigma0_1, kx(1)));
 		nlfg->push_back(f1);
 
 		// odometry between x1 and x2
 		Point2 z2(1.5, 0);
-		shared f2(new simulated2D::Odometry(z2, sigma0_1, PoseKey(1), PoseKey(2)));
+		shared f2(new simulated2D::Odometry(z2, sigma0_1, kx(1), kx(2)));
 		nlfg->push_back(f2);
 
 		// measurement between x1 and l1
 		Point2 z3(0, -1);
-		shared f3(new simulated2D::Measurement(z3, sigma0_2, PoseKey(1), PointKey(1)));
+		shared f3(new simulated2D::Measurement(z3, sigma0_2, kx(1), kl(1)));
 		nlfg->push_back(f3);
 
 		// measurement between x2 and l1
 		Point2 z4(-1.5, -1.);
-		shared f4(new simulated2D::Measurement(z4, sigma0_2, PoseKey(2), PointKey(1)));
+		shared f4(new simulated2D::Measurement(z4, sigma0_2, kx(2), kl(1)));
 		nlfg->push_back(f4);
 
 		return nlfg;
@@ -89,9 +86,9 @@ namespace example {
 	/* ************************************************************************* */
 	Values createValues() {
 		Values c;
-		c.insert(PoseKey(1), Point2(0.0, 0.0));
-		c.insert(PoseKey(2), Point2(1.5, 0.0));
-		c.insert(PointKey(1), Point2(0.0, -1.0));
+		c.insert(kx(1), Point2(0.0, 0.0));
+		c.insert(kx(2), Point2(1.5, 0.0));
+		c.insert(kl(1), Point2(0.0, -1.0));
 		return c;
 	}
 
@@ -107,9 +104,9 @@ namespace example {
 	/* ************************************************************************* */
 	boost::shared_ptr<const Values> sharedNoisyValues() {
 		boost::shared_ptr<Values> c(new Values);
-		c->insert(PoseKey(1), Point2(0.1, 0.1));
-		c->insert(PoseKey(2), Point2(1.4, 0.2));
-		c->insert(PointKey(1), Point2(0.1, -1.1));
+		c->insert(kx(1), Point2(0.1, 0.1));
+		c->insert(kx(2), Point2(1.4, 0.2));
+		c->insert(kl(1), Point2(0.1, -1.1));
 		return c;
 	}
 
@@ -223,7 +220,7 @@ namespace example {
 		Vector z = Vector_(2, 1.0, 0.0);
 		double sigma = 0.1;
 		boost::shared_ptr<smallOptimize::UnaryFactor> factor(
-				new smallOptimize::UnaryFactor(z, noiseModel::Isotropic::Sigma(2,sigma), PoseKey(1)));
+				new smallOptimize::UnaryFactor(z, noiseModel::Isotropic::Sigma(2,sigma), kx(1)));
 		fg->push_back(factor);
 		return fg;
 	}
@@ -241,23 +238,23 @@ namespace example {
 
 		// prior on x1
 		Point2 x1(1.0, 0.0);
-		shared prior(new simulated2D::Prior(x1, sigma1_0, PoseKey(1)));
+		shared prior(new simulated2D::Prior(x1, sigma1_0, kx(1)));
 		nlfg.push_back(prior);
-		poses.insert(simulated2D::PoseKey(1), x1);
+		poses.insert(kx(1), x1);
 
 		for (int t = 2; t <= T; t++) {
 			// odometry between x_t and x_{t-1}
 			Point2 odo(1.0, 0.0);
-			shared odometry(new simulated2D::Odometry(odo, sigma1_0, PoseKey(t - 1), PoseKey(t)));
+			shared odometry(new simulated2D::Odometry(odo, sigma1_0, kx(t - 1), kx(t)));
 			nlfg.push_back(odometry);
 
 			// measurement on x_t is like perfect GPS
 			Point2 xt(t, 0);
-			shared measurement(new simulated2D::Prior(xt, sigma1_0, PoseKey(t)));
+			shared measurement(new simulated2D::Prior(xt, sigma1_0, kx(t)));
 			nlfg.push_back(measurement);
 
 			// initial estimate
-			poses.insert(PoseKey(t), xt);
+			poses.insert(kx(t), xt);
 		}
 
 		return make_pair(nlfg, poses);
@@ -418,7 +415,7 @@ namespace example {
 	/* ************************************************************************* */
 	// Create key for simulated planar graph
 	Symbol key(int x, int y) {
-		return PoseKey(1000*x+y);
+		return kx(1000*x+y);
 	}
 
 	/* ************************************************************************* */

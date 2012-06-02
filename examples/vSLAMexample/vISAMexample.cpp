@@ -11,14 +11,12 @@
 
 /**
  * @file    vISAMexample.cpp
- * @brief   An ISAM example for synthesis sequence
- * single camera
+ * @brief   An ISAM example for synthesis sequence, single camera
  * @author  Duy-Nguyen Ta
  */
 
-#include <boost/shared_ptr.hpp>
-#include <boost/foreach.hpp>
-using namespace boost;
+#include "vSLAMutils.h"
+#include "Feature2D.h"
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
@@ -26,13 +24,12 @@ using namespace boost;
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/nonlinear/NonlinearISAM.h>
 
-#include "vSLAMutils.h"
-#include "Feature2D.h"
+#include <boost/shared_ptr.hpp>
+#include <boost/foreach.hpp>
+using namespace boost;
 
 using namespace std;
 using namespace gtsam;
-using namespace visualSLAM;
-using namespace boost;
 
 /* ************************************************************************* */
 #define CALIB_FILE          "calib.txt"
@@ -45,7 +42,7 @@ string g_dataFolder;
 
 // Store groundtruth values, read from files
 shared_ptrK g_calib;
-map<int, Point3> g_landmarks;        // map: <landmark_id, landmark_position>
+map<int, Point3> g_landmarks;       // map: <landmark_id, landmark_position>
 map<int, Pose3> g_poses;            // map: <camera_id, pose>
 std::map<int, std::vector<Feature2D> > g_measurements;    // feature sets detected at each frame
 
@@ -76,31 +73,31 @@ void readAllDataISAM() {
 /**
  * Setup newFactors and initialValues for each new pose and set of measurements at each frame.
  */
-void createNewFactors(shared_ptr<Graph>& newFactors, boost::shared_ptr<Values>& initialValues,
+void createNewFactors(shared_ptr<visualSLAM::Graph>& newFactors, boost::shared_ptr<Values>& initialValues,
     int pose_id, const Pose3& pose, const std::vector<Feature2D>& measurements, SharedNoiseModel measurementSigma, shared_ptrK calib) {
 
   // Create a graph of newFactors with new measurements
-  newFactors = shared_ptr<Graph> (new Graph());
+  newFactors = shared_ptr<visualSLAM::Graph> (new visualSLAM::Graph());
   for (size_t i = 0; i < measurements.size(); i++) {
     newFactors->addMeasurement(
         measurements[i].m_p,
         measurementSigma,
-        pose_id,
-        measurements[i].m_idLandmark,
+        Symbol('x',pose_id),
+        Symbol('l',measurements[i].m_idLandmark),
         calib);
   }
 
   // ... we need priors on the new pose and all new landmarks
   newFactors->addPosePrior(pose_id, pose, poseSigma);
   for (size_t i = 0; i < measurements.size(); i++) {
-    newFactors->addPointPrior(measurements[i].m_idLandmark, g_landmarks[measurements[i].m_idLandmark]);
+    newFactors->addPointPrior(Symbol('x',measurements[i].m_idLandmark), g_landmarks[measurements[i].m_idLandmark]);
   }
 
   // Create initial values for all nodes in the newFactors
   initialValues = shared_ptr<Values> (new Values());
-  initialValues->insert(PoseKey(pose_id), pose);
+  initialValues->insert(Symbol('x',pose_id), pose);
   for (size_t i = 0; i < measurements.size(); i++) {
-    initialValues->insert(PointKey(measurements[i].m_idLandmark), g_landmarks[measurements[i].m_idLandmark]);
+    initialValues->insert(Symbol('l',measurements[i].m_idLandmark), g_landmarks[measurements[i].m_idLandmark]);
   }
 }
 
@@ -127,8 +124,8 @@ int main(int argc, char* argv[]) {
   typedef std::map<int, std::vector<Feature2D> > FeatureMap;
   BOOST_FOREACH(const FeatureMap::value_type& features, g_measurements) {
     const int poseId = features.first;
-    shared_ptr<Graph> newFactors;
-    shared_ptr<Values> initialValues;
+    shared_ptr<visualSLAM::Graph> newFactors;
+    shared_ptr<visualSLAM::Values> initialValues;
     createNewFactors(newFactors, initialValues, poseId, g_poses[poseId],
             features.second, measurementSigma, g_calib);
 

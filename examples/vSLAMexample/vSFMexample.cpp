@@ -11,26 +11,23 @@
 
 /**
  * @file    vSFMexample.cpp
- * @brief   An vSFM example for synthesis sequence
- * single camera
+ * @brief   A visual SLAM example for simulated sequence
  * @author  Duy-Nguyen Ta
  */
 
-#include <boost/shared_ptr.hpp>
-using namespace boost;
+#include "vSLAMutils.h"
+#include "Feature2D.h"
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/slam/visualSLAM.h>
 #include <gtsam/slam/PriorFactor.h>
 
-#include "vSLAMutils.h"
-#include "Feature2D.h"
+#include <boost/shared_ptr.hpp>
+using namespace boost;
 
 using namespace std;
 using namespace gtsam;
-using namespace visualSLAM;
-using namespace boost;
 
 /* ************************************************************************* */
 #define CALIB_FILE          "calib.txt"
@@ -43,9 +40,9 @@ string g_dataFolder;
 
 // Store groundtruth values, read from files
 shared_ptrK g_calib;
-map<int, Point3> g_landmarks;        // map: <landmark_id, landmark_position>
-map<int, Pose3> g_poses;            // map: <camera_id, pose>
-std::vector<Feature2D> g_measurements;    // Feature2D: {camera_id, landmark_id, 2d feature_position}
+map<int, Point3> g_landmarks;          // map: <landmark_id, landmark_position>
+map<int, Pose3> g_poses;               // map: <camera_id, pose>
+std::vector<Feature2D> g_measurements; // Feature2D: {camera_id, landmark_id, 2d feature_position}
 
 // Noise models
 SharedNoiseModel measurementSigma(noiseModel::Isotropic::Sigma(2, 5.0f));
@@ -75,9 +72,9 @@ void readAllData() {
  * by adding and linking 2D features (measurements) detected in each captured image
  * with their corresponding landmarks.
  */
-Graph setupGraph(std::vector<Feature2D>& measurements, SharedNoiseModel measurementSigma, shared_ptrK calib) {
+visualSLAM::Graph setupGraph(std::vector<Feature2D>& measurements, SharedNoiseModel measurementSigma, shared_ptrK calib) {
 
-  Graph g;
+	visualSLAM::Graph g;
 
   cout << "Built graph: " << endl;
   for (size_t i = 0; i < measurements.size(); i++) {
@@ -86,8 +83,8 @@ Graph setupGraph(std::vector<Feature2D>& measurements, SharedNoiseModel measurem
     g.addMeasurement(
         measurements[i].m_p,
         measurementSigma,
-        measurements[i].m_idCamera,
-        measurements[i].m_idLandmark,
+        Symbol('x',measurements[i].m_idCamera),
+        Symbol('l',measurements[i].m_idLandmark),
         calib);
   }
 
@@ -101,15 +98,15 @@ Graph setupGraph(std::vector<Feature2D>& measurements, SharedNoiseModel measurem
  */
 Values initialize(std::map<int, Point3> landmarks, std::map<int, Pose3> poses) {
 
-	Values initValues;
+	visualSLAM::Values initValues;
 
   // Initialize landmarks 3D positions.
   for (map<int, Point3>::iterator lmit = landmarks.begin(); lmit != landmarks.end(); lmit++)
-    initValues.insert(PointKey(lmit->first), lmit->second);
+    initValues.insert(Symbol('l',lmit->first), lmit->second);
 
   // Initialize camera poses.
   for (map<int, Pose3>::iterator poseit = poses.begin(); poseit != poses.end(); poseit++)
-    initValues.insert(PoseKey(poseit->first), poseit->second);
+    initValues.insert(Symbol('x',poseit->first), poseit->second);
 
   return initValues;
 }
@@ -129,7 +126,7 @@ int main(int argc, char* argv[]) {
   readAllData();
 
   // Create a graph using the 2D measurements (features) and the calibration data
-  Graph graph(setupGraph(g_measurements, measurementSigma, g_calib));
+  visualSLAM::Graph graph(setupGraph(g_measurements, measurementSigma, g_calib));
 
   // Create an initial Values structure using groundtruth values as the initial estimates
   Values initialEstimates(initialize(g_landmarks, g_poses));
@@ -139,7 +136,7 @@ int main(int argc, char* argv[]) {
   // Add prior factor for all poses in the graph
   map<int, Pose3>::iterator poseit = g_poses.begin();
   for (; poseit != g_poses.end(); poseit++)
-    graph.addPosePrior(poseit->first, poseit->second, noiseModel::Unit::Create(1));
+    graph.addPosePrior(Symbol('x',poseit->first), poseit->second, noiseModel::Unit::Create(1));
 
   // Optimize the graph
   cout << "*******************************************************" << endl;

@@ -4,13 +4,6 @@
  * @author  Michael Kaess
  */
 
-#include <boost/foreach.hpp>
-#include <boost/assign/std/list.hpp> // for operator +=
-#include <boost/assign.hpp>
-using namespace boost::assign;
-
-#include <CppUnitLite/TestHarness.h>
-
 #include <gtsam/base/debug.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/nonlinear/Ordering.h>
@@ -21,25 +14,31 @@ using namespace boost::assign;
 #include <gtsam/slam/smallExample.h>
 #include <gtsam/slam/planarSLAM.h>
 
+#include <CppUnitLite/TestHarness.h>
+
+#include <boost/foreach.hpp>
+#include <boost/assign/std/list.hpp> // for operator +=
+#include <boost/assign.hpp>
+using namespace boost::assign;
+
 using namespace std;
 using namespace gtsam;
-using namespace example;
 using boost::shared_ptr;
 
 const double tol = 1e-4;
+
+//  SETDEBUG("ISAM2 update", true);
+//  SETDEBUG("ISAM2 update verbose", true);
+//  SETDEBUG("ISAM2 recalculate", true);
+
+// Set up parameters
+SharedDiagonal odoNoise = sharedSigmas(Vector_(3, 0.1, 0.1, M_PI/100.0));
+SharedDiagonal brNoise = sharedSigmas(Vector_(2, M_PI/100.0, 0.1));
 
 ISAM2 createSlamlikeISAM2(
 		boost::optional<Values&> init_values = boost::none,
 		boost::optional<planarSLAM::Graph&> full_graph = boost::none,
 		const ISAM2Params& params = ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false, true)) {
-
-  // Pose and landmark key types from planarSLAM
-  using planarSLAM::PoseKey;
-  using planarSLAM::PointKey;
-
-  // Set up parameters
-  SharedDiagonal odoNoise = sharedSigmas(Vector_(3, 0.1, 0.1, M_PI/100.0));
-  SharedDiagonal brNoise = sharedSigmas(Vector_(2, M_PI/100.0, 0.1));
 
   // These variables will be reused and accumulate factors and values
   ISAM2 isam(params);
@@ -57,8 +56,8 @@ ISAM2 createSlamlikeISAM2(
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(0), Pose2(0.01, 0.01, 0.01));
-    fullinit.insert(PoseKey(0), Pose2(0.01, 0.01, 0.01));
+    init.insert((0), Pose2(0.01, 0.01, 0.01));
+    fullinit.insert((0), Pose2(0.01, 0.01, 0.01));
 
     isam.update(newfactors, init);
   }
@@ -70,8 +69,8 @@ ISAM2 createSlamlikeISAM2(
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
-    fullinit.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    init.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    fullinit.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
 
     isam.update(newfactors, init);
   }
@@ -80,17 +79,17 @@ ISAM2 createSlamlikeISAM2(
   {
     planarSLAM::Graph newfactors;
     newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
-    newfactors.addBearingRange(i, 0, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
-    newfactors.addBearingRange(i, 1, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
+    newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
+    newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(i+1), Pose2(1.01, 0.01, 0.01));
-    init.insert(PointKey(0), Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
-    init.insert(PointKey(1), Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
-    fullinit.insert(PoseKey(i+1), Pose2(1.01, 0.01, 0.01));
-    fullinit.insert(PointKey(0), Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
-    fullinit.insert(PointKey(1), Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
+    init.insert((i+1), Pose2(1.01, 0.01, 0.01));
+    init.insert(100, Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
+    init.insert(101, Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
+    fullinit.insert((i+1), Pose2(1.01, 0.01, 0.01));
+    fullinit.insert(100, Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
+    fullinit.insert(101, Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
 
     isam.update(newfactors, init);
     ++ i;
@@ -103,8 +102,8 @@ ISAM2 createSlamlikeISAM2(
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
-    fullinit.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    init.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    fullinit.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
 
     isam.update(newfactors, init);
   }
@@ -113,13 +112,13 @@ ISAM2 createSlamlikeISAM2(
   {
     planarSLAM::Graph newfactors;
     newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
-    newfactors.addBearingRange(i, 0, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
-    newfactors.addBearingRange(i, 1, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+    newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+    newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(i+1), Pose2(6.9, 0.1, 0.01));
-    fullinit.insert(PoseKey(i+1), Pose2(6.9, 0.1, 0.01));
+    init.insert((i+1), Pose2(6.9, 0.1, 0.01));
+    fullinit.insert((i+1), Pose2(6.9, 0.1, 0.01));
 
     isam.update(newfactors, init);
     ++ i;
@@ -139,10 +138,10 @@ TEST_UNSAFE(ISAM2, AddVariables) {
 
   // Create initial state
   Values theta;
-  theta.insert(planarSLAM::PoseKey(0), Pose2(.1, .2, .3));
-  theta.insert(planarSLAM::PointKey(0), Point2(.4, .5));
+  theta.insert((0), Pose2(.1, .2, .3));
+  theta.insert(100, Point2(.4, .5));
   Values newTheta;
-  newTheta.insert(planarSLAM::PoseKey(1), Pose2(.6, .7, .8));
+  newTheta.insert((1), Pose2(.6, .7, .8));
 
   VectorValues deltaUnpermuted;
   deltaUnpermuted.insert(0, Vector_(3, .1, .2, .3));
@@ -176,21 +175,21 @@ TEST_UNSAFE(ISAM2, AddVariables) {
 
   vector<bool> replacedKeys(2, false);
 
-  Ordering ordering; ordering += planarSLAM::PointKey(0), planarSLAM::PoseKey(0);
+  Ordering ordering; ordering += 100, (0);
 
   ISAM2::Nodes nodes(2);
 
   // Verify initial state
-  LONGS_EQUAL(0, ordering[planarSLAM::PointKey(0)]);
-  LONGS_EQUAL(1, ordering[planarSLAM::PoseKey(0)]);
-  EXPECT(assert_equal(deltaUnpermuted[1], delta[ordering[planarSLAM::PointKey(0)]]));
-  EXPECT(assert_equal(deltaUnpermuted[0], delta[ordering[planarSLAM::PoseKey(0)]]));
+  LONGS_EQUAL(0, ordering[100]);
+  LONGS_EQUAL(1, ordering[(0)]);
+  EXPECT(assert_equal(deltaUnpermuted[1], delta[ordering[100]]));
+  EXPECT(assert_equal(deltaUnpermuted[0], delta[ordering[(0)]]));
 
   // Create expected state
   Values thetaExpected;
-  thetaExpected.insert(planarSLAM::PoseKey(0), Pose2(.1, .2, .3));
-  thetaExpected.insert(planarSLAM::PointKey(0), Point2(.4, .5));
-  thetaExpected.insert(planarSLAM::PoseKey(1), Pose2(.6, .7, .8));
+  thetaExpected.insert((0), Pose2(.1, .2, .3));
+  thetaExpected.insert(100, Point2(.4, .5));
+  thetaExpected.insert((1), Pose2(.6, .7, .8));
 
   VectorValues deltaUnpermutedExpected;
   deltaUnpermutedExpected.insert(0, Vector_(3, .1, .2, .3));
@@ -230,7 +229,7 @@ TEST_UNSAFE(ISAM2, AddVariables) {
 
   vector<bool> replacedKeysExpected(3, false);
 
-  Ordering orderingExpected; orderingExpected += planarSLAM::PointKey(0), planarSLAM::PoseKey(0), planarSLAM::PoseKey(1);
+  Ordering orderingExpected; orderingExpected += 100, (0), (1);
 
   ISAM2::Nodes nodesExpected(
           3, ISAM2::sharedClique());
@@ -255,10 +254,10 @@ TEST_UNSAFE(ISAM2, AddVariables) {
 //  using namespace gtsam::planarSLAM;
 //  typedef GaussianISAM2<Values>::Impl Impl;
 //
-//  Ordering ordering; ordering += PointKey(0), PoseKey(0), PoseKey(1);
+//  Ordering ordering; ordering += (0), (0), (1);
 //  planarSLAM::Graph graph;
-//  graph.addPrior(PoseKey(0), Pose2(), sharedUnit(Pose2::dimension));
-//  graph.addRange(PoseKey(0), PointKey(0), 1.0, sharedUnit(1));
+//  graph.addPrior((0), Pose2(), sharedUnit(Pose2::dimension));
+//  graph.addRange((0), (0), 1.0, sharedUnit(1));
 //
 //  FastSet<Index> expected;
 //  expected.insert(0);
@@ -307,7 +306,7 @@ TEST(ISAM2, optimize2) {
 
   // Create initialization
   Values theta;
-  theta.insert(planarSLAM::PoseKey(0), Pose2(0.01, 0.01, 0.01));
+  theta.insert((0), Pose2(0.01, 0.01, 0.01));
 
   // Create conditional
   Vector d(3); d << -0.1, -0.1, -0.31831;
@@ -318,7 +317,7 @@ TEST(ISAM2, optimize2) {
   GaussianConditional::shared_ptr conditional(new GaussianConditional(0, d, R, Vector::Ones(3)));
 
   // Create ordering
-  Ordering ordering; ordering += planarSLAM::PoseKey(0);
+  Ordering ordering; ordering += (0);
 
   // Expected vector
   VectorValues expected(1, 3);
@@ -353,18 +352,6 @@ bool isam_check(const planarSLAM::Graph& fullgraph, const Values& fullinit, cons
 TEST(ISAM2, slamlike_solution_gaussnewton)
 {
 
-//  SETDEBUG("ISAM2 update", true);
-//  SETDEBUG("ISAM2 update verbose", true);
-//  SETDEBUG("ISAM2 recalculate", true);
-
-  // Pose and landmark key types from planarSLAM
-  using planarSLAM::PoseKey;
-  using planarSLAM::PointKey;
-
-  // Set up parameters
-  SharedDiagonal odoNoise = sharedSigmas(Vector_(3, 0.1, 0.1, M_PI/100.0));
-  SharedDiagonal brNoise = sharedSigmas(Vector_(2, M_PI/100.0, 0.1));
-
   // These variables will be reused and accumulate factors and values
   ISAM2 isam(ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
   Values fullinit;
@@ -380,8 +367,8 @@ TEST(ISAM2, slamlike_solution_gaussnewton)
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(0), Pose2(0.01, 0.01, 0.01));
-    fullinit.insert(PoseKey(0), Pose2(0.01, 0.01, 0.01));
+    init.insert((0), Pose2(0.01, 0.01, 0.01));
+    fullinit.insert((0), Pose2(0.01, 0.01, 0.01));
 
     isam.update(newfactors, init);
   }
@@ -395,8 +382,8 @@ TEST(ISAM2, slamlike_solution_gaussnewton)
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
-    fullinit.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    init.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    fullinit.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
 
     isam.update(newfactors, init);
   }
@@ -405,17 +392,17 @@ TEST(ISAM2, slamlike_solution_gaussnewton)
   {
     planarSLAM::Graph newfactors;
     newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
-    newfactors.addBearingRange(i, 0, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
-    newfactors.addBearingRange(i, 1, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
+    newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
+    newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(i+1), Pose2(1.01, 0.01, 0.01));
-    init.insert(PointKey(0), Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
-    init.insert(PointKey(1), Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
-    fullinit.insert(PoseKey(i+1), Pose2(1.01, 0.01, 0.01));
-    fullinit.insert(PointKey(0), Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
-    fullinit.insert(PointKey(1), Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
+    init.insert((i+1), Pose2(1.01, 0.01, 0.01));
+    init.insert(100, Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
+    init.insert(101, Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
+    fullinit.insert((i+1), Pose2(1.01, 0.01, 0.01));
+    fullinit.insert(100, Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
+    fullinit.insert(101, Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
 
     isam.update(newfactors, init);
     ++ i;
@@ -428,8 +415,8 @@ TEST(ISAM2, slamlike_solution_gaussnewton)
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
-    fullinit.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    init.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    fullinit.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
 
     isam.update(newfactors, init);
   }
@@ -438,13 +425,13 @@ TEST(ISAM2, slamlike_solution_gaussnewton)
   {
     planarSLAM::Graph newfactors;
     newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
-    newfactors.addBearingRange(i, 0, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
-    newfactors.addBearingRange(i, 1, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+    newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+    newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(i+1), Pose2(6.9, 0.1, 0.01));
-    fullinit.insert(PoseKey(i+1), Pose2(6.9, 0.1, 0.01));
+    init.insert((i+1), Pose2(6.9, 0.1, 0.01));
+    fullinit.insert((i+1), Pose2(6.9, 0.1, 0.01));
 
     isam.update(newfactors, init);
     ++ i;
@@ -485,19 +472,6 @@ TEST(ISAM2, slamlike_solution_gaussnewton)
 /* ************************************************************************* */
 TEST(ISAM2, slamlike_solution_dogleg)
 {
-
-//  SETDEBUG("ISAM2 update", true);
-//  SETDEBUG("ISAM2 update verbose", true);
-//  SETDEBUG("ISAM2 recalculate", true);
-
-  // Pose and landmark key types from planarSLAM
-  using planarSLAM::PoseKey;
-  using planarSLAM::PointKey;
-
-  // Set up parameters
-  SharedDiagonal odoNoise = sharedSigmas(Vector_(3, 0.1, 0.1, M_PI/100.0));
-  SharedDiagonal brNoise = sharedSigmas(Vector_(2, M_PI/100.0, 0.1));
-
   // These variables will be reused and accumulate factors and values
   ISAM2 isam(ISAM2Params(ISAM2DoglegParams(1.0), 0.0, 0, false));
   Values fullinit;
@@ -513,8 +487,8 @@ TEST(ISAM2, slamlike_solution_dogleg)
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(0), Pose2(0.01, 0.01, 0.01));
-    fullinit.insert(PoseKey(0), Pose2(0.01, 0.01, 0.01));
+    init.insert((0), Pose2(0.01, 0.01, 0.01));
+    fullinit.insert((0), Pose2(0.01, 0.01, 0.01));
 
     isam.update(newfactors, init);
   }
@@ -528,8 +502,8 @@ TEST(ISAM2, slamlike_solution_dogleg)
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
-    fullinit.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    init.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    fullinit.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
 
     isam.update(newfactors, init);
   }
@@ -538,17 +512,17 @@ TEST(ISAM2, slamlike_solution_dogleg)
   {
     planarSLAM::Graph newfactors;
     newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
-    newfactors.addBearingRange(i, 0, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
-    newfactors.addBearingRange(i, 1, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
+    newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
+    newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(i+1), Pose2(1.01, 0.01, 0.01));
-    init.insert(PointKey(0), Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
-    init.insert(PointKey(1), Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
-    fullinit.insert(PoseKey(i+1), Pose2(1.01, 0.01, 0.01));
-    fullinit.insert(PointKey(0), Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
-    fullinit.insert(PointKey(1), Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
+    init.insert((i+1), Pose2(1.01, 0.01, 0.01));
+    init.insert(100, Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
+    init.insert(101, Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
+    fullinit.insert((i+1), Pose2(1.01, 0.01, 0.01));
+    fullinit.insert(100, Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
+    fullinit.insert(101, Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
 
     isam.update(newfactors, init);
     ++ i;
@@ -561,8 +535,8 @@ TEST(ISAM2, slamlike_solution_dogleg)
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
-    fullinit.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    init.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    fullinit.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
 
     isam.update(newfactors, init);
   }
@@ -571,13 +545,13 @@ TEST(ISAM2, slamlike_solution_dogleg)
   {
     planarSLAM::Graph newfactors;
     newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
-    newfactors.addBearingRange(i, 0, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
-    newfactors.addBearingRange(i, 1, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+    newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+    newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(i+1), Pose2(6.9, 0.1, 0.01));
-    fullinit.insert(PoseKey(i+1), Pose2(6.9, 0.1, 0.01));
+    init.insert((i+1), Pose2(6.9, 0.1, 0.01));
+    fullinit.insert((i+1), Pose2(6.9, 0.1, 0.01));
 
     isam.update(newfactors, init);
     ++ i;
@@ -618,19 +592,6 @@ TEST(ISAM2, slamlike_solution_dogleg)
 /* ************************************************************************* */
 TEST(ISAM2, slamlike_solution_gaussnewton_qr)
 {
-
-//  SETDEBUG("ISAM2 update", true);
-//  SETDEBUG("ISAM2 update verbose", true);
-//  SETDEBUG("ISAM2 recalculate", true);
-
-  // Pose and landmark key types from planarSLAM
-  using planarSLAM::PoseKey;
-  using planarSLAM::PointKey;
-
-  // Set up parameters
-  SharedDiagonal odoNoise = sharedSigmas(Vector_(3, 0.1, 0.1, M_PI/100.0));
-  SharedDiagonal brNoise = sharedSigmas(Vector_(2, M_PI/100.0, 0.1));
-
   // These variables will be reused and accumulate factors and values
   ISAM2 isam(ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false, false, ISAM2Params::QR));
   Values fullinit;
@@ -646,8 +607,8 @@ TEST(ISAM2, slamlike_solution_gaussnewton_qr)
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(0), Pose2(0.01, 0.01, 0.01));
-    fullinit.insert(PoseKey(0), Pose2(0.01, 0.01, 0.01));
+    init.insert((0), Pose2(0.01, 0.01, 0.01));
+    fullinit.insert((0), Pose2(0.01, 0.01, 0.01));
 
     isam.update(newfactors, init);
   }
@@ -661,8 +622,8 @@ TEST(ISAM2, slamlike_solution_gaussnewton_qr)
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
-    fullinit.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    init.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    fullinit.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
 
     isam.update(newfactors, init);
   }
@@ -671,17 +632,17 @@ TEST(ISAM2, slamlike_solution_gaussnewton_qr)
   {
     planarSLAM::Graph newfactors;
     newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
-    newfactors.addBearingRange(i, 0, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
-    newfactors.addBearingRange(i, 1, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
+    newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
+    newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(i+1), Pose2(1.01, 0.01, 0.01));
-    init.insert(PointKey(0), Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
-    init.insert(PointKey(1), Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
-    fullinit.insert(PoseKey(i+1), Pose2(1.01, 0.01, 0.01));
-    fullinit.insert(PointKey(0), Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
-    fullinit.insert(PointKey(1), Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
+    init.insert((i+1), Pose2(1.01, 0.01, 0.01));
+    init.insert(100, Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
+    init.insert(101, Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
+    fullinit.insert((i+1), Pose2(1.01, 0.01, 0.01));
+    fullinit.insert(100, Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
+    fullinit.insert(101, Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
 
     isam.update(newfactors, init);
     ++ i;
@@ -694,8 +655,8 @@ TEST(ISAM2, slamlike_solution_gaussnewton_qr)
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
-    fullinit.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    init.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    fullinit.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
 
     isam.update(newfactors, init);
   }
@@ -704,13 +665,13 @@ TEST(ISAM2, slamlike_solution_gaussnewton_qr)
   {
     planarSLAM::Graph newfactors;
     newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
-    newfactors.addBearingRange(i, 0, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
-    newfactors.addBearingRange(i, 1, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+    newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+    newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(i+1), Pose2(6.9, 0.1, 0.01));
-    fullinit.insert(PoseKey(i+1), Pose2(6.9, 0.1, 0.01));
+    init.insert((i+1), Pose2(6.9, 0.1, 0.01));
+    fullinit.insert((i+1), Pose2(6.9, 0.1, 0.01));
 
     isam.update(newfactors, init);
     ++ i;
@@ -751,19 +712,6 @@ TEST(ISAM2, slamlike_solution_gaussnewton_qr)
 /* ************************************************************************* */
 TEST(ISAM2, slamlike_solution_dogleg_qr)
 {
-
-//  SETDEBUG("ISAM2 update", true);
-//  SETDEBUG("ISAM2 update verbose", true);
-//  SETDEBUG("ISAM2 recalculate", true);
-
-  // Pose and landmark key types from planarSLAM
-  using planarSLAM::PoseKey;
-  using planarSLAM::PointKey;
-
-  // Set up parameters
-  SharedDiagonal odoNoise = sharedSigmas(Vector_(3, 0.1, 0.1, M_PI/100.0));
-  SharedDiagonal brNoise = sharedSigmas(Vector_(2, M_PI/100.0, 0.1));
-
   // These variables will be reused and accumulate factors and values
   ISAM2 isam(ISAM2Params(ISAM2DoglegParams(1.0), 0.0, 0, false, false, ISAM2Params::QR));
   Values fullinit;
@@ -779,8 +727,8 @@ TEST(ISAM2, slamlike_solution_dogleg_qr)
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(0), Pose2(0.01, 0.01, 0.01));
-    fullinit.insert(PoseKey(0), Pose2(0.01, 0.01, 0.01));
+    init.insert((0), Pose2(0.01, 0.01, 0.01));
+    fullinit.insert((0), Pose2(0.01, 0.01, 0.01));
 
     isam.update(newfactors, init);
   }
@@ -794,8 +742,8 @@ TEST(ISAM2, slamlike_solution_dogleg_qr)
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
-    fullinit.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    init.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    fullinit.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
 
     isam.update(newfactors, init);
   }
@@ -804,17 +752,17 @@ TEST(ISAM2, slamlike_solution_dogleg_qr)
   {
     planarSLAM::Graph newfactors;
     newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
-    newfactors.addBearingRange(i, 0, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
-    newfactors.addBearingRange(i, 1, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
+    newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
+    newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(i+1), Pose2(1.01, 0.01, 0.01));
-    init.insert(PointKey(0), Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
-    init.insert(PointKey(1), Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
-    fullinit.insert(PoseKey(i+1), Pose2(1.01, 0.01, 0.01));
-    fullinit.insert(PointKey(0), Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
-    fullinit.insert(PointKey(1), Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
+    init.insert((i+1), Pose2(1.01, 0.01, 0.01));
+    init.insert(100, Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
+    init.insert(101, Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
+    fullinit.insert((i+1), Pose2(1.01, 0.01, 0.01));
+    fullinit.insert(100, Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
+    fullinit.insert(101, Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
 
     isam.update(newfactors, init);
     ++ i;
@@ -827,8 +775,8 @@ TEST(ISAM2, slamlike_solution_dogleg_qr)
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
-    fullinit.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    init.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    fullinit.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
 
     isam.update(newfactors, init);
   }
@@ -837,13 +785,13 @@ TEST(ISAM2, slamlike_solution_dogleg_qr)
   {
     planarSLAM::Graph newfactors;
     newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
-    newfactors.addBearingRange(i, 0, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
-    newfactors.addBearingRange(i, 1, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+    newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+    newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(i+1), Pose2(6.9, 0.1, 0.01));
-    fullinit.insert(PoseKey(i+1), Pose2(6.9, 0.1, 0.01));
+    init.insert((i+1), Pose2(6.9, 0.1, 0.01));
+    fullinit.insert((i+1), Pose2(6.9, 0.1, 0.01));
 
     isam.update(newfactors, init);
     ++ i;
@@ -894,8 +842,8 @@ TEST(ISAM2, clone) {
 
     // Modify original isam
     NonlinearFactorGraph factors;
-    factors.add(BetweenFactor<Pose2>(Symbol('x',0), Symbol('x',10),
-        isam.calculateEstimate<Pose2>(Symbol('x',0)).between(isam.calculateEstimate<Pose2>(Symbol('x',10))), sharedUnit(3)));
+    factors.add(BetweenFactor<Pose2>(0, 10,
+        isam.calculateEstimate<Pose2>(0).between(isam.calculateEstimate<Pose2>(10)), sharedUnit(3)));
     isam.update(factors);
 
     CHECK(assert_equal(createSlamlikeISAM2(), clone2));
@@ -978,21 +926,8 @@ TEST(ISAM2, permute_cached) {
 /* ************************************************************************* */
 TEST(ISAM2, removeFactors)
 {
-
-//  SETDEBUG("ISAM2 update", true);
-//  SETDEBUG("ISAM2 update verbose", true);
-//  SETDEBUG("ISAM2 recalculate", true);
-
   // This test builds a graph in the same way as the "slamlike" test above, but
   // then removes the 2nd-to-last landmark measurement
-
-  // Pose and landmark key types from planarSLAM
-  using planarSLAM::PoseKey;
-  using planarSLAM::PointKey;
-
-  // Set up parameters
-  SharedDiagonal odoNoise = sharedSigmas(Vector_(3, 0.1, 0.1, M_PI/100.0));
-  SharedDiagonal brNoise = sharedSigmas(Vector_(2, M_PI/100.0, 0.1));
 
   // These variables will be reused and accumulate factors and values
   ISAM2 isam(ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
@@ -1009,8 +944,8 @@ TEST(ISAM2, removeFactors)
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(0), Pose2(0.01, 0.01, 0.01));
-    fullinit.insert(PoseKey(0), Pose2(0.01, 0.01, 0.01));
+    init.insert((0), Pose2(0.01, 0.01, 0.01));
+    fullinit.insert((0), Pose2(0.01, 0.01, 0.01));
 
     isam.update(newfactors, init);
   }
@@ -1024,8 +959,8 @@ TEST(ISAM2, removeFactors)
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
-    fullinit.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    init.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    fullinit.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
 
     isam.update(newfactors, init);
   }
@@ -1034,17 +969,17 @@ TEST(ISAM2, removeFactors)
   {
     planarSLAM::Graph newfactors;
     newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
-    newfactors.addBearingRange(i, 0, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
-    newfactors.addBearingRange(i, 1, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
+    newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
+    newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(i+1), Pose2(1.01, 0.01, 0.01));
-    init.insert(PointKey(0), Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
-    init.insert(PointKey(1), Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
-    fullinit.insert(PoseKey(i+1), Pose2(1.01, 0.01, 0.01));
-    fullinit.insert(PointKey(0), Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
-    fullinit.insert(PointKey(1), Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
+    init.insert((i+1), Pose2(1.01, 0.01, 0.01));
+    init.insert(100, Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
+    init.insert(101, Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
+    fullinit.insert((i+1), Pose2(1.01, 0.01, 0.01));
+    fullinit.insert(100, Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
+    fullinit.insert(101, Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
 
     isam.update(newfactors, init);
     ++ i;
@@ -1057,8 +992,8 @@ TEST(ISAM2, removeFactors)
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
-    fullinit.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    init.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    fullinit.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
 
     isam.update(newfactors, init);
   }
@@ -1067,14 +1002,14 @@ TEST(ISAM2, removeFactors)
   {
     planarSLAM::Graph newfactors;
     newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
-    newfactors.addBearingRange(i, 0, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
-    newfactors.addBearingRange(i, 1, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+    newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+    newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
     fullgraph.push_back(newfactors[0]);
     fullgraph.push_back(newfactors[2]); // Don't add measurement on landmark 0
 
     Values init;
-    init.insert(PoseKey(i+1), Pose2(6.9, 0.1, 0.01));
-    fullinit.insert(PoseKey(i+1), Pose2(6.9, 0.1, 0.01));
+    init.insert((i+1), Pose2(6.9, 0.1, 0.01));
+    fullinit.insert((i+1), Pose2(6.9, 0.1, 0.01));
 
     ISAM2Result result = isam.update(newfactors, init);
     ++ i;
@@ -1119,23 +1054,10 @@ TEST(ISAM2, removeFactors)
 }
 
 /* ************************************************************************* */
-TEST(ISAM2, swapFactors)
+TEST_UNSAFE(ISAM2, swapFactors)
 {
-
-//  SETDEBUG("ISAM2 update", true);
-//  SETDEBUG("ISAM2 update verbose", true);
-//  SETDEBUG("ISAM2 recalculate", true);
-
   // This test builds a graph in the same way as the "slamlike" test above, but
   // then swaps the 2nd-to-last landmark measurement with a different one
-
-  // Pose and landmark key types from planarSLAM
-  using planarSLAM::PoseKey;
-  using planarSLAM::PointKey;
-
-  // Set up parameters
-  SharedDiagonal odoNoise = sharedSigmas(Vector_(3, 0.1, 0.1, M_PI/100.0));
-  SharedDiagonal brNoise = sharedSigmas(Vector_(2, M_PI/100.0, 0.1));
 
   Values fullinit;
   planarSLAM::Graph fullgraph;
@@ -1149,8 +1071,8 @@ TEST(ISAM2, swapFactors)
   	fullgraph.remove(swap_idx);
 
   	planarSLAM::Graph swapfactors;
-//  	swapfactors.addBearingRange(10, 0, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise); // original factor
-  	swapfactors.addBearingRange(10, 0, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 5.0, brNoise);
+//  	swapfactors.addBearingRange(10, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise); // original factor
+  	swapfactors.addBearingRange(10, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 5.0, brNoise);
   	fullgraph.push_back(swapfactors);
   	isam.update(swapfactors, Values(), toRemove);
   }
@@ -1191,19 +1113,6 @@ TEST(ISAM2, swapFactors)
 /* ************************************************************************* */
 TEST(ISAM2, constrained_ordering)
 {
-
-//  SETDEBUG("ISAM2 update", true);
-//  SETDEBUG("ISAM2 update verbose", true);
-//  SETDEBUG("ISAM2 recalculate", true);
-
-  // Pose and landmark key types from planarSLAM
-  using planarSLAM::PoseKey;
-  using planarSLAM::PointKey;
-
-  // Set up parameters
-  SharedDiagonal odoNoise = sharedSigmas(Vector_(3, 0.1, 0.1, M_PI/100.0));
-  SharedDiagonal brNoise = sharedSigmas(Vector_(2, M_PI/100.0, 0.1));
-
   // These variables will be reused and accumulate factors and values
   ISAM2 isam(ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
   Values fullinit;
@@ -1211,8 +1120,8 @@ TEST(ISAM2, constrained_ordering)
 
   // We will constrain x3 and x4 to the end
   FastMap<Key, int> constrained;
-  constrained.insert(make_pair(planarSLAM::PoseKey(3), 1));
-  constrained.insert(make_pair(planarSLAM::PoseKey(4), 2));
+  constrained.insert(make_pair((3), 1));
+  constrained.insert(make_pair((4), 2));
 
   // i keeps track of the time step
   size_t i = 0;
@@ -1224,8 +1133,8 @@ TEST(ISAM2, constrained_ordering)
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(0), Pose2(0.01, 0.01, 0.01));
-    fullinit.insert(PoseKey(0), Pose2(0.01, 0.01, 0.01));
+    init.insert((0), Pose2(0.01, 0.01, 0.01));
+    fullinit.insert((0), Pose2(0.01, 0.01, 0.01));
 
     isam.update(newfactors, init);
   }
@@ -1239,8 +1148,8 @@ TEST(ISAM2, constrained_ordering)
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
-    fullinit.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    init.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    fullinit.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
 
     if(i >= 3)
       isam.update(newfactors, init, FastVector<size_t>(), constrained);
@@ -1252,17 +1161,17 @@ TEST(ISAM2, constrained_ordering)
   {
     planarSLAM::Graph newfactors;
     newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
-    newfactors.addBearingRange(i, 0, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
-    newfactors.addBearingRange(i, 1, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
+    newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
+    newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(i+1), Pose2(1.01, 0.01, 0.01));
-    init.insert(PointKey(0), Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
-    init.insert(PointKey(1), Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
-    fullinit.insert(PoseKey(i+1), Pose2(1.01, 0.01, 0.01));
-    fullinit.insert(PointKey(0), Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
-    fullinit.insert(PointKey(1), Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
+    init.insert((i+1), Pose2(1.01, 0.01, 0.01));
+    init.insert(100, Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
+    init.insert(101, Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
+    fullinit.insert((i+1), Pose2(1.01, 0.01, 0.01));
+    fullinit.insert(100, Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
+    fullinit.insert(101, Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
 
     isam.update(newfactors, init, FastVector<size_t>(), constrained);
     ++ i;
@@ -1275,8 +1184,8 @@ TEST(ISAM2, constrained_ordering)
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
-    fullinit.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    init.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    fullinit.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
 
     isam.update(newfactors, init, FastVector<size_t>(), constrained);
   }
@@ -1285,13 +1194,13 @@ TEST(ISAM2, constrained_ordering)
   {
     planarSLAM::Graph newfactors;
     newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
-    newfactors.addBearingRange(i, 0, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
-    newfactors.addBearingRange(i, 1, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+    newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+    newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
-    init.insert(PoseKey(i+1), Pose2(6.9, 0.1, 0.01));
-    fullinit.insert(PoseKey(i+1), Pose2(6.9, 0.1, 0.01));
+    init.insert((i+1), Pose2(6.9, 0.1, 0.01));
+    fullinit.insert((i+1), Pose2(6.9, 0.1, 0.01));
 
     isam.update(newfactors, init, FastVector<size_t>(), constrained);
     ++ i;
@@ -1301,7 +1210,7 @@ TEST(ISAM2, constrained_ordering)
   EXPECT(isam_check(fullgraph, fullinit, isam));
 
   // Check that x3 and x4 are last, but either can come before the other
-  EXPECT(isam.getOrdering()[planarSLAM::PoseKey(3)] == 12 && isam.getOrdering()[planarSLAM::PoseKey(4)] == 13);
+  EXPECT(isam.getOrdering()[(3)] == 12 && isam.getOrdering()[(4)] == 13);
 
   // Check gradient at each node
   typedef ISAM2::sharedClique sharedClique;

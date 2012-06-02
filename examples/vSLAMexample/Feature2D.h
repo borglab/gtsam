@@ -24,7 +24,7 @@ struct Feature2D
 {
 
   gtsam::Point2 m_p;
-  int m_idCamera;            // id of the camera pose that makes this measurement
+  int m_idCamera;         // id of the camera pose that makes this measurement
   int m_idLandmark;       // id of the 3D landmark that it is associated with
 
   Feature2D(int idCamera, int idLandmark, gtsam::Point2 p) :

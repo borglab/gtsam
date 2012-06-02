@@ -11,7 +11,7 @@
 
 /**
  * @file testSerializationSLAM.cpp
- * @brief 
+ * @brief test serialization
  * @author Richard Roberts
  * @date Feb 7, 2012
  */
@@ -109,19 +109,20 @@ BOOST_CLASS_EXPORT(gtsam::Pose2)
 TEST (Serialization, planar_system) {
   using namespace planarSLAM;
   planarSLAM::Values values;
-  values.insert(PointKey(3), Point2(1.0, 2.0));
-  values.insert(PoseKey(4), Pose2(1.0, 2.0, 0.3));
+	Symbol i2('x',2), i3('x',3), i4('x',4), i9('x',9), j3('l',3), j5('l',5), j9('l',9);
+  values.insert(j3, Point2(1.0, 2.0));
+  values.insert(i4, Pose2(1.0, 2.0, 0.3));
 
   SharedNoiseModel model1 = noiseModel::Isotropic::Sigma(1, 0.3);
   SharedNoiseModel model2 = noiseModel::Isotropic::Sigma(2, 0.3);
   SharedNoiseModel model3 = noiseModel::Isotropic::Sigma(3, 0.3);
 
-  Prior prior(PoseKey(3), Pose2(0.1,-0.3, 0.2), model1);
-  Bearing bearing(PoseKey(3), PointKey(5), Rot2::fromDegrees(0.5), model1);
-  Range range(PoseKey(2), PointKey(9), 7.0, model1);
-  BearingRange bearingRange(PoseKey(2), PointKey(3), Rot2::fromDegrees(0.6), 2.0, model2);
-  Odometry odometry(PoseKey(2), PoseKey(3), Pose2(1.0, 2.0, 0.3), model3);
-  Constraint constraint(PoseKey(9), Pose2(2.0,-1.0, 0.2));
+  Prior prior(i3, Pose2(0.1,-0.3, 0.2), model1);
+  Bearing bearing(i3, j5, Rot2::fromDegrees(0.5), model1);
+  Range range(i2, j9, 7.0, model1);
+  BearingRange bearingRange(i2, j3, Rot2::fromDegrees(0.6), 2.0, model2);
+  Odometry odometry(i2, i3, Pose2(1.0, 2.0, 0.3), model3);
+  Constraint constraint(i9, Pose2(2.0,-1.0, 0.2));
 
   Graph graph;
   graph.add(prior);
@@ -132,8 +133,8 @@ TEST (Serialization, planar_system) {
   graph.add(constraint);
 
   // text
-  EXPECT(equalsObj<Symbol>(PoseKey(2)));
-  EXPECT(equalsObj<Symbol>(PointKey(3)));
+  EXPECT(equalsObj<Symbol>(i2));
+  EXPECT(equalsObj<Symbol>(j3));
   EXPECT(equalsObj<planarSLAM::Values>(values));
   EXPECT(equalsObj<Prior>(prior));
   EXPECT(equalsObj<Bearing>(bearing));
@@ -144,8 +145,8 @@ TEST (Serialization, planar_system) {
   EXPECT(equalsObj<Graph>(graph));
 
   // xml
-  EXPECT(equalsXML<Symbol>(PoseKey(2)));
-  EXPECT(equalsXML<Symbol>(PointKey(3)));
+  EXPECT(equalsXML<Symbol>(i2));
+  EXPECT(equalsXML<Symbol>(j3));
   EXPECT(equalsXML<planarSLAM::Values>(values));
   EXPECT(equalsXML<Prior>(prior));
   EXPECT(equalsXML<Bearing>(bearing));
@@ -189,11 +190,11 @@ TEST (Serialization, visual_system) {
   boost::shared_ptr<Cal3_S2> K(new Cal3_S2(cal1));
 
   Graph graph;
-  graph.addMeasurement(Point2(1.0, 2.0), model2, 1, 1, K);
-  graph.addPointConstraint(1, pt1);
-  graph.addPointPrior(1, pt2, model3);
-  graph.addPoseConstraint(1, pose1);
-  graph.addPosePrior(1, pose2, model6);
+  graph.addMeasurement(Point2(1.0, 2.0), model2, x1, l1, K);
+  graph.addPointConstraint(l1, pt1);
+  graph.addPointPrior(l1, pt2, model3);
+  graph.addPoseConstraint(x1, pose1);
+  graph.addPosePrior(x1, pose2, model6);
 
   EXPECT(equalsObj(values));
   EXPECT(equalsObj(graph));

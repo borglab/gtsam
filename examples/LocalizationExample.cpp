@@ -66,9 +66,9 @@ int main(int argc, char** argv) {
 	// Query the marginals
 	Marginals marginals = graph.marginals(result);
 	cout.precision(2);
-  cout << "\nP1:\n" << marginals.marginalCovariance(pose2SLAM::PoseKey(1)) << endl;
-  cout << "\nP2:\n" << marginals.marginalCovariance(pose2SLAM::PoseKey(2)) << endl;
-  cout << "\nP3:\n" << marginals.marginalCovariance(pose2SLAM::PoseKey(3)) << endl;
+  cout << "\nP1:\n" << marginals.marginalCovariance(1) << endl;
+  cout << "\nP2:\n" << marginals.marginalCovariance(2) << endl;
+  cout << "\nP3:\n" << marginals.marginalCovariance(3) << endl;
 
 	return 0;
 }

@@ -28,6 +28,10 @@ using namespace std;
 using namespace gtsam;
 using namespace simulated2DOriented;
 
+// Convenience for named keys
+Key kx(size_t i) { return Symbol('x',i); }
+Key kl(size_t i) { return Symbol('l',i); }
+
 /* ************************************************************************* */
 TEST( simulated2DOriented, Dprior )
 {
@@ -55,11 +59,11 @@ TEST( simulated2DOriented, constructor )
 {
 	Pose2 measurement(0.2, 0.3, 0.1);
 	SharedDiagonal model(Vector_(3, 1., 1., 1.));
-	simulated2DOriented::Odometry factor(measurement, model, simulated2DOriented::PoseKey(1), simulated2DOriented::PoseKey(2));
+	simulated2DOriented::Odometry factor(measurement, model, kx(1), kx(2));
 
 	simulated2DOriented::Values config;
-	config.insert(simulated2DOriented::PoseKey(1), Pose2(1., 0., 0.2));
-	config.insert(simulated2DOriented::PoseKey(2), Pose2(2., 0., 0.1));
+	config.insert(kx(1), Pose2(1., 0., 0.2));
+	config.insert(kx(2), Pose2(2., 0., 0.1));
 	boost::shared_ptr<GaussianFactor> lf = factor.linearize(config, *config.orderingArbitrary());
 }
 

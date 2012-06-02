@@ -34,12 +34,6 @@ namespace visualSLAM {
 
 	using namespace gtsam;
 
-  /// Convenience function for constructing a pose key
-  inline Symbol PoseKey(Index j) { return Symbol('x', j); }
-
-  /// Convenience function for constructing a pose key
-  inline Symbol PointKey(Index j) { return Symbol('l', j); }
-
   /**
    * Typedefs that make up the visualSLAM namespace.
    */
@@ -85,21 +79,21 @@ namespace visualSLAM {
      *  @param K shared pointer to calibration object
      */
     void addMeasurement(const Point2& measured, const SharedNoiseModel& model,
-        Index poseKey, Index pointKey, const shared_ptrK& K);
+        Key poseKey, Key pointKey, const shared_ptrK& K);
 
     /**
      *  Add a constraint on a pose (for now, *must* be satisfied in any Values)
      *  @param key variable key of the camera pose
      *  @param p to which pose to constrain it to
      */
-    void addPoseConstraint(Index poseKey, const Pose3& p = Pose3());
+    void addPoseConstraint(Key poseKey, const Pose3& p = Pose3());
 
     /**
      *  Add a constraint on a point (for now, *must* be satisfied in any Values)
      *  @param key variable key of the landmark
      *  @param p point around which soft prior is defined
      */
-    void addPointConstraint(Index pointKey, const Point3& p = Point3());
+    void addPointConstraint(Key pointKey, const Point3& p = Point3());
 
     /**
      *  Add a prior on a pose
@@ -107,7 +101,7 @@ namespace visualSLAM {
      *  @param p around which soft prior is defined
      *  @param model uncertainty model of this prior
      */
-    void addPosePrior(Index poseKey, const Pose3& p = Pose3(), const SharedNoiseModel& model = noiseModel::Unit::Create(6));
+    void addPosePrior(Key poseKey, const Pose3& p = Pose3(), const SharedNoiseModel& model = noiseModel::Unit::Create(6));
 
     /**
      *  Add a prior on a landmark
@@ -115,7 +109,7 @@ namespace visualSLAM {
      *  @param p to which point to constrain it to
      *  @param model uncertainty model of this prior
      */
-    void addPointPrior(Index pointKey, const Point3& p = Point3(), const SharedNoiseModel& model = noiseModel::Unit::Create(3));
+    void addPointPrior(Key pointKey, const Point3& p = Point3(), const SharedNoiseModel& model = noiseModel::Unit::Create(3));
 
     /**
      *  Add a range prior to a landmark
@@ -124,7 +118,7 @@ namespace visualSLAM {
      *  @param range approximate range to landmark
      *  @param model uncertainty model of this prior
      */
-    void addRangeFactor(Index poseKey, Index pointKey, double range, const SharedNoiseModel& model = noiseModel::Unit::Create(1));
+    void addRangeFactor(Key poseKey, Key pointKey, double range, const SharedNoiseModel& model = noiseModel::Unit::Create(1));
 
     /**
      *  Optimize the graph

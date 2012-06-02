@@ -27,27 +27,26 @@ namespace pose2SLAM {
     Values x;
     double theta = 0, dtheta = 2 * M_PI / n;
     for (size_t i = 0; i < n; i++, theta += dtheta)
-      x.insert(PoseKey(i), Pose2(cos(theta), sin(theta), M_PI_2 + theta));
+      x.insert(i, Pose2(cos(theta), sin(theta), M_PI_2 + theta));
     return x;
   }
 
   /* ************************************************************************* */
-  void Graph::addPrior(Index i, const Pose2& p,
-      const SharedNoiseModel& model) {
-    sharedFactor factor(new Prior(PoseKey(i), p, model));
+  void Graph::addPrior(Key i, const Pose2& p, const SharedNoiseModel& model) {
+    sharedFactor factor(new Prior(i, p, model));
     push_back(factor);
   }
 
   /* ************************************************************************* */
-  void Graph::addPoseConstraint(Index i, const Pose2& p) {
-    sharedFactor factor(new HardConstraint(PoseKey(i), p));
+  void Graph::addPoseConstraint(Key i, const Pose2& p) {
+    sharedFactor factor(new HardConstraint(i, p));
     push_back(factor);
   }
 
   /* ************************************************************************* */
-  void Graph::addOdometry(Index i, Index j, const Pose2& z,
+  void Graph::addOdometry(Key i1, Key i2, const Pose2& z,
       const SharedNoiseModel& model) {
-    sharedFactor factor(new Odometry(PoseKey(i), PoseKey(j), z, model));
+    sharedFactor factor(new Odometry(i1, i2, z, model));
     push_back(factor);
   }
 

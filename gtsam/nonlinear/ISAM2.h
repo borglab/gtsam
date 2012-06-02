@@ -94,8 +94,8 @@ struct ISAM2Params {
    * entries would be added with:
    * \code
      FastMap<char,Vector> thresholds;
-     thresholds[PoseKey::chr()] = Vector_(6, 0.1, 0.1, 0.1, 0.5, 0.5, 0.5); // 0.1 rad rotation threshold, 0.5 m translation threshold
-     thresholds[PointKey::chr()] = Vector_(3, 1.0, 1.0, 1.0);               // 1.0 m landmark position threshold
+     thresholds['x'] = Vector_(6, 0.1, 0.1, 0.1, 0.5, 0.5, 0.5); // 0.1 rad rotation threshold, 0.5 m translation threshold
+     thresholds['l'] = Vector_(3, 1.0, 1.0, 1.0);                // 1.0 m landmark position threshold
      params.relinearizeThreshold = thresholds;
      \endcode
    */

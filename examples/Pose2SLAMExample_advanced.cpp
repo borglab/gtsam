@@ -16,26 +16,23 @@
  * @author Chris Beall
  */
 
-#include <cmath>
-#include <iostream>
-#include <boost/shared_ptr.hpp>
-
 // pull in the Pose2 SLAM domain with all typedefs and helper functions defined
 #include <gtsam/slam/pose2SLAM.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/Marginals.h>
-
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
 
+#include <boost/shared_ptr.hpp>
+#include <cmath>
+#include <iostream>
+
 using namespace std;
 using namespace gtsam;
-using namespace boost;
-using namespace pose2SLAM;
 
 int main(int argc, char** argv) {
 	/* 1. create graph container and add factors to it */
-	Graph graph;
+	pose2SLAM::Graph graph;
 
 	/* 2.a add prior  */
 	// gaussian for prior
@@ -77,8 +74,8 @@ int main(int argc, char** argv) {
 
 	/* Get covariances */
 	Marginals marginals(graph, result, Marginals::CHOLESKY);
-	Matrix covariance1  = marginals.marginalCovariance(PoseKey(1));
-	Matrix covariance2  = marginals.marginalCovariance(PoseKey(2));
+	Matrix covariance1  = marginals.marginalCovariance(1);
+	Matrix covariance2  = marginals.marginalCovariance(2);
 
 	print(covariance1, "Covariance1");
 	print(covariance2, "Covariance2");

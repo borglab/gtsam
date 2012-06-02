@@ -31,10 +31,7 @@ namespace pose2SLAM {
 
   using namespace gtsam;
 
-  /// Convenience function for constructing a pose key
-  inline Symbol PoseKey(Index j) { return Symbol('x', j); }
-
-  /// Values class, inherited from Values, using PoseKeys, mainly used as a convenience for MATLAB wrapper
+  /// Values class, inherited from Values, mainly used as a convenience for MATLAB wrapper
   struct Values: public gtsam::Values {
 
     /// Default constructor
@@ -48,10 +45,10 @@ namespace pose2SLAM {
     // Convenience for MATLAB wrapper, which does not allow for identically named methods
 
     /// get a pose
-    Pose2 pose(Index key) const { return at<Pose2>(PoseKey(key)); }
+    Pose2 pose(Key i) const { return at<Pose2>(i); }
 
     /// insert a pose
-    void insertPose(Index key, const Pose2& pose) { insert(PoseKey(key), pose); }
+    void insertPose(Key i, const Pose2& pose) { insert(i, pose); }
   };
 
   /**
@@ -83,20 +80,18 @@ namespace pose2SLAM {
     /// Creates a NonlinearFactorGraph based on another NonlinearFactorGraph
     Graph(const NonlinearFactorGraph& graph);
 
-    /// Adds a Pose2 prior with a noise model to one of the keys in the nonlinear factor graph
-    void addPrior(Index i, const Pose2& p, const SharedNoiseModel& model);
+    /// Adds a Pose2 prior with mean p and given noise model on pose i
+    void addPrior(Key i, const Pose2& p, const SharedNoiseModel& model);
 
     /// Creates a hard constraint for key i with the given Pose2 p.
-    void addPoseConstraint(Index i, const Pose2& p);
+    void addPoseConstraint(Key i, const Pose2& p);
 
-    /// Creates a between factor between keys i and j with a noise model with Pose2 z in the graph
-    void addOdometry(Index i, Index j, const Pose2& z,
-        const SharedNoiseModel& model);
+    /// Creates an odometry factor between poses with keys i1 and i2
+    void addOdometry(Key i1, Key i2, const Pose2& z, const SharedNoiseModel& model);
 
     /// AddConstraint adds a soft constraint between factor between keys i and j
-    void addConstraint(Index i, Index j, const Pose2& z,
-        const SharedNoiseModel& model) {
-    	addOdometry(i,j,z,model); // same for now
+    void addConstraint(Key i1, Key i2, const Pose2& z, const SharedNoiseModel& model) {
+    	addOdometry(i1,i2,z,model); // same for now
     }
 
     /// Optimize

@@ -125,9 +125,6 @@ TEST( GaussianJunctionTree, optimizeMultiFrontal2)
 
 /* ************************************************************************* */
 TEST(GaussianJunctionTree, slamlike) {
-  using planarSLAM::PoseKey;
-  using planarSLAM::PointKey;
-
   Values init;
   planarSLAM::Graph newfactors;
   planarSLAM::Graph fullgraph;
@@ -137,39 +134,39 @@ TEST(GaussianJunctionTree, slamlike) {
   size_t i = 0;
 
   newfactors = planarSLAM::Graph();
-  newfactors.addPrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
-  init.insert(PoseKey(0), Pose2(0.01, 0.01, 0.01));
+  newfactors.addPrior(kx(0), Pose2(0.0, 0.0, 0.0), odoNoise);
+  init.insert(kx(0), Pose2(0.01, 0.01, 0.01));
   fullgraph.push_back(newfactors);
 
   for( ; i<5; ++i) {
     newfactors = planarSLAM::Graph();
-    newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
-    init.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    newfactors.addOdometry(kx(i), kx(i+1), Pose2(1.0, 0.0, 0.0), odoNoise);
+    init.insert(kx(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
     fullgraph.push_back(newfactors);
   }
 
   newfactors = planarSLAM::Graph();
-  newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
-  newfactors.addBearingRange(i, 0, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
-  newfactors.addBearingRange(i, 1, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
-  init.insert(PoseKey(i+1), Pose2(1.01, 0.01, 0.01));
-  init.insert(PointKey(0), Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
-  init.insert(PointKey(1), Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
+  newfactors.addOdometry(kx(i), kx(i+1), Pose2(1.0, 0.0, 0.0), odoNoise);
+  newfactors.addBearingRange(kx(i), kl(0), Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
+  newfactors.addBearingRange(kx(i), kl(1), Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
+  init.insert(kx(i+1), Pose2(1.01, 0.01, 0.01));
+  init.insert(kl(0), Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
+  init.insert(kl(1), Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
   fullgraph.push_back(newfactors);
   ++ i;
 
   for( ; i<5; ++i) {
     newfactors = planarSLAM::Graph();
-    newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
-    init.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    newfactors.addOdometry(kx(i), kx(i+1), Pose2(1.0, 0.0, 0.0), odoNoise);
+    init.insert(kx(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
     fullgraph.push_back(newfactors);
   }
 
   newfactors = planarSLAM::Graph();
-  newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
-  newfactors.addBearingRange(i, 0, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
-  newfactors.addBearingRange(i, 1, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
-  init.insert(PoseKey(i+1), Pose2(6.9, 0.1, 0.01));
+  newfactors.addOdometry(kx(i), kx(i+1), Pose2(1.0, 0.0, 0.0), odoNoise);
+  newfactors.addBearingRange(kx(i), kl(0), Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+  newfactors.addBearingRange(kx(i), kl(1), Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+  init.insert(kx(i+1), Pose2(6.9, 0.1, 0.01));
   fullgraph.push_back(newfactors);
   ++ i;
 
@@ -195,12 +192,12 @@ TEST(GaussianJunctionTree, simpleMarginal) {
 
   // Create a simple graph
   pose2SLAM::Graph fg;
-  fg.addPrior(0, Pose2(), sharedSigma(3, 10.0));
-  fg.addOdometry(0, 1, Pose2(1.0, 0.0, 0.0), sharedSigmas(Vector_(3, 10.0, 1.0, 1.0)));
+  fg.addPrior(kx(0), Pose2(), sharedSigma(3, 10.0));
+  fg.addOdometry(kx(0), kx(1), Pose2(1.0, 0.0, 0.0), sharedSigmas(Vector_(3, 10.0, 1.0, 1.0)));
 
   Values init;
-  init.insert(pose2SLAM::PoseKey(0), Pose2());
-  init.insert(pose2SLAM::PoseKey(1), Pose2(1.0, 0.0, 0.0));
+  init.insert(kx(0), Pose2());
+  init.insert(kx(1), Pose2(1.0, 0.0, 0.0));
 
   Ordering ordering;
   ordering += kx(1), kx(0);

@@ -54,7 +54,7 @@ TEST(testNonlinearISAM, markov_chain ) {
 			ordering.push_back(secondLast);
 			isam.setOrdering(ordering);
 
-			Ordering expected; expected += PoseKey(0), PoseKey(1), PoseKey(2), PoseKey(4), PoseKey(3);
+			Ordering expected; expected += (0), (1), (2), (4), (3);
 			EXPECT(assert_equal(expected, isam.getOrdering()));
 		}
 
