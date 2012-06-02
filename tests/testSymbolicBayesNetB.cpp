@@ -32,18 +32,18 @@ using namespace std;
 using namespace gtsam;
 using namespace example;
 
-Key kx(size_t i) { return Symbol('x',i); }
-Key kl(size_t i) { return Symbol('l',i); }
+using symbol_shorthand::X;
+using symbol_shorthand::L;
 
 /* ************************************************************************* */
 TEST( SymbolicBayesNet, constructor )
 {
-  Ordering o; o += kx(2),kl(1),kx(1);
+  Ordering o; o += X(2),L(1),X(1);
 	// Create manually
 	IndexConditional::shared_ptr
-		x2(new IndexConditional(o[kx(2)],o[kl(1)], o[kx(1)])),
-		l1(new IndexConditional(o[kl(1)],o[kx(1)])),
-		x1(new IndexConditional(o[kx(1)]));
+		x2(new IndexConditional(o[X(2)],o[L(1)], o[X(1)])),
+		l1(new IndexConditional(o[L(1)],o[X(1)])),
+		x1(new IndexConditional(o[X(1)]));
 	BayesNet<IndexConditional> expected;
 	expected.push_back(x2);
 	expected.push_back(l1);

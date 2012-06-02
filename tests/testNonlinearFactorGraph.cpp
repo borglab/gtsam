@@ -37,8 +37,8 @@ using namespace boost::assign;
 using namespace gtsam;
 using namespace example;
 
-Key kx(size_t i) { return Symbol('x',i); }
-Key kl(size_t i) { return Symbol('l',i); }
+using symbol_shorthand::X;
+using symbol_shorthand::L;
 
 /* ************************************************************************* */
 TEST( Graph, equals )
@@ -68,16 +68,16 @@ TEST( Graph, keys )
 	set<Key> actual = fg.keys();
 	LONGS_EQUAL(3, actual.size());
 	set<Key>::const_iterator it = actual.begin();
-	LONGS_EQUAL(kl(1), *(it++));
-	LONGS_EQUAL(kx(1), *(it++));
-	LONGS_EQUAL(kx(2), *(it++));
+	LONGS_EQUAL(L(1), *(it++));
+	LONGS_EQUAL(X(1), *(it++));
+	LONGS_EQUAL(X(2), *(it++));
 }
 
 /* ************************************************************************* */
 TEST( Graph, GET_ORDERING)
 {
 //  Ordering expected; expected += "x1","l1","x2"; // For starting with x1,x2,l1
-  Ordering expected; expected += kl(1), kx(2), kx(1); // For starting with l1,x1,x2
+  Ordering expected; expected += L(1), X(2), X(1); // For starting with l1,x1,x2
   Graph nlfg = createNonlinearFactorGraph();
   SymbolicFactorGraph::shared_ptr symbolic;
   Ordering::shared_ptr ordering;
@@ -123,7 +123,7 @@ TEST( Graph, rekey )
 {
 	Graph init = createNonlinearFactorGraph();
 	map<Key,Key> rekey_mapping;
-	rekey_mapping.insert(make_pair(kl(1), kl(4)));
+	rekey_mapping.insert(make_pair(L(1), L(4)));
 	Graph actRekey = init.rekey(rekey_mapping);
 
 	// ensure deep clone
@@ -139,8 +139,8 @@ TEST( Graph, rekey )
 	// updated measurements
 	Point2 z3(0, -1),  z4(-1.5, -1.);
 	SharedDiagonal sigma0_2 = noiseModel::Isotropic::Sigma(2,0.2);
-	expRekey.add(simulated2D::Measurement(z3, sigma0_2, kx(1), kl(4)));
-	expRekey.add(simulated2D::Measurement(z4, sigma0_2, kx(2), kl(4)));
+	expRekey.add(simulated2D::Measurement(z3, sigma0_2, X(1), L(4)));
+	expRekey.add(simulated2D::Measurement(z4, sigma0_2, X(2), L(4)));
 
 	EXPECT(assert_equal(expRekey, actRekey));
 }

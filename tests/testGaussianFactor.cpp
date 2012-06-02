@@ -36,11 +36,15 @@ using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
+// Convenience for named keys
+using symbol_shorthand::X;
+using symbol_shorthand::L;
+
 static SharedDiagonal
 	sigma0_1 = sharedSigma(2,0.1), sigma_02 = sharedSigma(2,0.2),
 	constraintModel = noiseModel::Constrained::All(2);
 
-const Key kx1 = Symbol('x',1), kx2 = Symbol('x',2), kl1 = Symbol('l',1);
+const Key kx1 = X(1), kx2 = X(2), kl1 = L(1);
 
 /* ************************************************************************* */
 TEST( GaussianFactor, linearFactor )

@@ -32,6 +32,10 @@ using namespace gtsam;
 using namespace std;
 static double inf = std::numeric_limits<double>::infinity();
 
+// Convenience for named keys
+using symbol_shorthand::X;
+using symbol_shorthand::L;
+
 const Symbol key1('v',1), key2('v',2), key3('v',3), key4('v',4);
 
 /* ************************************************************************* */
@@ -333,9 +337,9 @@ TEST(Values, Symbol_filter) {
   Pose3 pose3(Pose2(0.3, 0.7, 0.9));
 
   Values values;
-  values.insert(Symbol('x',0), pose0);
+  values.insert(X(0), pose0);
   values.insert(Symbol('y',1), pose1);
-  values.insert(Symbol('x',2), pose2);
+  values.insert(X(2), pose2);
   values.insert(Symbol('y',3), pose3);
 
   int i = 0;

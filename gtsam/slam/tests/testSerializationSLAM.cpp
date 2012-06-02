@@ -29,6 +29,10 @@ using namespace std;
 using namespace gtsam;
 using namespace gtsam::serializationTestHelpers;
 
+// Convenience for named keys
+using symbol_shorthand::X;
+using symbol_shorthand::L;
+
 /* Create GUIDs for factors */
 /* ************************************************************************* */
 BOOST_CLASS_EXPORT_GUID(gtsam::JacobianFactor, "gtsam::JacobianFactor");
@@ -49,7 +53,7 @@ BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal");
 TEST (Serialization, smallExample_linear) {
   using namespace example;
 
-  Ordering ordering; ordering += Symbol('x',1),Symbol('x',2),Symbol('l',1);
+  Ordering ordering; ordering += X(1),X(2),L(1);
   GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
   EXPECT(equalsObj(ordering));
   EXPECT(equalsXML(ordering));

@@ -42,8 +42,8 @@ using namespace std;
 using namespace gtsam;
 using namespace example;
 
-Key kx(size_t i) { return Symbol('x',i); }
-Key kl(size_t i) { return Symbol('l',i); }
+using symbol_shorthand::X;
+using symbol_shorthand::L;
 
 /* ************************************************************************* *
  Bayes tree for smoother with "nested dissection" ordering:
@@ -55,20 +55,20 @@ Key kl(size_t i) { return Symbol('l',i); }
 TEST( GaussianJunctionTree, constructor2 )
 {
 	// create a graph
-  Ordering ordering; ordering += kx(1),kx(3),kx(5),kx(7),kx(2),kx(6),kx(4);
+  Ordering ordering; ordering += X(1),X(3),X(5),X(7),X(2),X(6),X(4);
   GaussianFactorGraph fg = createSmoother(7, ordering).first;
 
 	// create an ordering
 	GaussianJunctionTree actual(fg);
 
-	vector<Index> frontal1; frontal1 += ordering[kx(5)], ordering[kx(6)], ordering[kx(4)];
-	vector<Index> frontal2; frontal2 += ordering[kx(3)], ordering[kx(2)];
-	vector<Index> frontal3; frontal3 += ordering[kx(1)];
-	vector<Index> frontal4; frontal4 += ordering[kx(7)];
+	vector<Index> frontal1; frontal1 += ordering[X(5)], ordering[X(6)], ordering[X(4)];
+	vector<Index> frontal2; frontal2 += ordering[X(3)], ordering[X(2)];
+	vector<Index> frontal3; frontal3 += ordering[X(1)];
+	vector<Index> frontal4; frontal4 += ordering[X(7)];
 	vector<Index> sep1;
-	vector<Index> sep2; sep2 += ordering[kx(4)];
-	vector<Index> sep3; sep3 += ordering[kx(2)];
-	vector<Index> sep4; sep4 += ordering[kx(6)];
+	vector<Index> sep2; sep2 += ordering[X(4)];
+	vector<Index> sep3; sep3 += ordering[X(2)];
+	vector<Index> sep4; sep4 += ordering[X(6)];
 	EXPECT(assert_equal(frontal1, actual.root()->frontal));
 	EXPECT(assert_equal(sep1,     actual.root()->separator));
 	LONGS_EQUAL(5,               actual.root()->size());
@@ -103,7 +103,7 @@ TEST( GaussianJunctionTree, optimizeMultiFrontal )
 	VectorValues expected(vector<size_t>(7,2)); // expected solution
 	Vector v = Vector_(2, 0., 0.);
 	for (int i=1; i<=7; i++)
-		expected[ordering[Symbol('x',i)]] = v;
+		expected[ordering[X(i)]] = v;
   EXPECT(assert_equal(expected,actual));
 }
 
@@ -113,7 +113,7 @@ TEST( GaussianJunctionTree, optimizeMultiFrontal2)
 	// create a graph
 	example::Graph nlfg = createNonlinearFactorGraph();
 	Values noisy = createNoisyValues();
-  Ordering ordering; ordering += kx(1),kx(2),kl(1);
+  Ordering ordering; ordering += X(1),X(2),L(1);
 	GaussianFactorGraph fg = *nlfg.linearize(noisy, ordering);
 
 	// optimize the graph
@@ -136,39 +136,39 @@ TEST(GaussianJunctionTree, slamlike) {
   size_t i = 0;
 
   newfactors = planarSLAM::Graph();
-  newfactors.addPrior(kx(0), Pose2(0.0, 0.0, 0.0), odoNoise);
-  init.insert(kx(0), Pose2(0.01, 0.01, 0.01));
+  newfactors.addPrior(X(0), Pose2(0.0, 0.0, 0.0), odoNoise);
+  init.insert(X(0), Pose2(0.01, 0.01, 0.01));
   fullgraph.push_back(newfactors);
 
   for( ; i<5; ++i) {
     newfactors = planarSLAM::Graph();
-    newfactors.addOdometry(kx(i), kx(i+1), Pose2(1.0, 0.0, 0.0), odoNoise);
-    init.insert(kx(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    newfactors.addOdometry(X(i), X(i+1), Pose2(1.0, 0.0, 0.0), odoNoise);
+    init.insert(X(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
     fullgraph.push_back(newfactors);
   }
 
   newfactors = planarSLAM::Graph();
-  newfactors.addOdometry(kx(i), kx(i+1), Pose2(1.0, 0.0, 0.0), odoNoise);
-  newfactors.addBearingRange(kx(i), kl(0), Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
-  newfactors.addBearingRange(kx(i), kl(1), Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
-  init.insert(kx(i+1), Pose2(1.01, 0.01, 0.01));
-  init.insert(kl(0), Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
-  init.insert(kl(1), Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
+  newfactors.addOdometry(X(i), X(i+1), Pose2(1.0, 0.0, 0.0), odoNoise);
+  newfactors.addBearingRange(X(i), L(0), Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
+  newfactors.addBearingRange(X(i), L(1), Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
+  init.insert(X(i+1), Pose2(1.01, 0.01, 0.01));
+  init.insert(L(0), Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
+  init.insert(L(1), Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
   fullgraph.push_back(newfactors);
   ++ i;
 
   for( ; i<5; ++i) {
     newfactors = planarSLAM::Graph();
-    newfactors.addOdometry(kx(i), kx(i+1), Pose2(1.0, 0.0, 0.0), odoNoise);
-    init.insert(kx(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    newfactors.addOdometry(X(i), X(i+1), Pose2(1.0, 0.0, 0.0), odoNoise);
+    init.insert(X(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
     fullgraph.push_back(newfactors);
   }
 
   newfactors = planarSLAM::Graph();
-  newfactors.addOdometry(kx(i), kx(i+1), Pose2(1.0, 0.0, 0.0), odoNoise);
-  newfactors.addBearingRange(kx(i), kl(0), Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
-  newfactors.addBearingRange(kx(i), kl(1), Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
-  init.insert(kx(i+1), Pose2(6.9, 0.1, 0.01));
+  newfactors.addOdometry(X(i), X(i+1), Pose2(1.0, 0.0, 0.0), odoNoise);
+  newfactors.addBearingRange(X(i), L(0), Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+  newfactors.addBearingRange(X(i), L(1), Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+  init.insert(X(i+1), Pose2(6.9, 0.1, 0.01));
   fullgraph.push_back(newfactors);
   ++ i;
 
@@ -194,15 +194,15 @@ TEST(GaussianJunctionTree, simpleMarginal) {
 
   // Create a simple graph
   pose2SLAM::Graph fg;
-  fg.addPrior(kx(0), Pose2(), sharedSigma(3, 10.0));
-  fg.addOdometry(kx(0), kx(1), Pose2(1.0, 0.0, 0.0), sharedSigmas(Vector_(3, 10.0, 1.0, 1.0)));
+  fg.addPrior(X(0), Pose2(), sharedSigma(3, 10.0));
+  fg.addOdometry(X(0), X(1), Pose2(1.0, 0.0, 0.0), sharedSigmas(Vector_(3, 10.0, 1.0, 1.0)));
 
   Values init;
-  init.insert(kx(0), Pose2());
-  init.insert(kx(1), Pose2(1.0, 0.0, 0.0));
+  init.insert(X(0), Pose2());
+  init.insert(X(1), Pose2(1.0, 0.0, 0.0));
 
   Ordering ordering;
-  ordering += kx(1), kx(0);
+  ordering += X(1), X(0);
 
   GaussianFactorGraph gfg = *fg.linearize(init, ordering);
 

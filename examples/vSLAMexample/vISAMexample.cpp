@@ -32,6 +32,10 @@ using boost::shared_ptr;
 using namespace std;
 using namespace gtsam;
 
+// Convenience for named keys
+using symbol_shorthand::X;
+using symbol_shorthand::L;
+
 /* ************************************************************************* */
 #define CALIB_FILE          "calib.txt"
 #define LANDMARKS_FILE      "landmarks.txt"
@@ -83,22 +87,22 @@ void createNewFactors(shared_ptr<visualSLAM::Graph>& newFactors, boost::shared_p
     newFactors->addMeasurement(
         measurements[i].m_p,
         measurementSigma,
-        Symbol('x',pose_id),
-        Symbol('l',measurements[i].m_idLandmark),
+        X(pose_id),
+        L(measurements[i].m_idLandmark),
         calib);
   }
 
   // ... we need priors on the new pose and all new landmarks
   newFactors->addPosePrior(pose_id, pose, poseSigma);
   for (size_t i = 0; i < measurements.size(); i++) {
-    newFactors->addPointPrior(Symbol('x',measurements[i].m_idLandmark), g_landmarks[measurements[i].m_idLandmark]);
+    newFactors->addPointPrior(X(measurements[i].m_idLandmark), g_landmarks[measurements[i].m_idLandmark]);
   }
 
   // Create initial values for all nodes in the newFactors
   initialValues = shared_ptr<Values> (new Values());
-  initialValues->insert(Symbol('x',pose_id), pose);
+  initialValues->insert(X(pose_id), pose);
   for (size_t i = 0; i < measurements.size(); i++) {
-    initialValues->insert(Symbol('l',measurements[i].m_idLandmark), g_landmarks[measurements[i].m_idLandmark]);
+    initialValues->insert(L(measurements[i].m_idLandmark), g_landmarks[measurements[i].m_idLandmark]);
   }
 }
 

@@ -39,8 +39,8 @@ using namespace gtsam;
 
 const double tol = 1e-5;
 
-Key kx(size_t i) { return Symbol('x',i); }
-Key kl(size_t i) { return Symbol('l',i); }
+using symbol_shorthand::X;
+using symbol_shorthand::L;
 
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, iterateLM )
@@ -51,7 +51,7 @@ TEST( NonlinearOptimizer, iterateLM )
 	// config far from minimum
 	Point2 x0(3,0);
 	Values config;
-	config.insert(kx(1), x0);
+	config.insert(X(1), x0);
 
 	// normal iterate
 	GaussNewtonParams gnParams;
@@ -75,18 +75,18 @@ TEST( NonlinearOptimizer, optimize )
 	// test error at minimum
 	Point2 xstar(0,0);
 	Values cstar;
-	cstar.insert(kx(1), xstar);
+	cstar.insert(X(1), xstar);
 	DOUBLES_EQUAL(0.0,fg.error(cstar),0.0);
 
 	// test error at initial = [(1-cos(3))^2 + (sin(3))^2]*50 =
 	Point2 x0(3,3);
 	Values c0;
-	c0.insert(kx(1), x0);
+	c0.insert(X(1), x0);
 	DOUBLES_EQUAL(199.0,fg.error(c0),1e-3);
 
 	// optimize parameters
 	Ordering ord;
-	ord.push_back(kx(1));
+	ord.push_back(X(1));
 
 	// Gauss-Newton
 	GaussNewtonParams gnParams;
@@ -114,7 +114,7 @@ TEST( NonlinearOptimizer, SimpleLMOptimizer )
 
 	Point2 x0(3,3);
 	Values c0;
-	c0.insert(kx(1), x0);
+	c0.insert(X(1), x0);
 
 	Values actual = LevenbergMarquardtOptimizer(fg, c0).optimize();
 	DOUBLES_EQUAL(0,fg.error(actual),tol);
@@ -127,7 +127,7 @@ TEST( NonlinearOptimizer, SimpleGNOptimizer )
 
   Point2 x0(3,3);
   Values c0;
-  c0.insert(kx(1), x0);
+  c0.insert(X(1), x0);
 
   Values actual = GaussNewtonOptimizer(fg, c0).optimize();
 	DOUBLES_EQUAL(0,fg.error(actual),tol);
@@ -140,7 +140,7 @@ TEST( NonlinearOptimizer, SimpleDLOptimizer )
 
   Point2 x0(3,3);
   Values c0;
-  c0.insert(kx(1), x0);
+  c0.insert(X(1), x0);
 
   Values actual = DoglegOptimizer(fg, c0).optimize();
   DOUBLES_EQUAL(0,fg.error(actual),tol);
@@ -158,7 +158,7 @@ TEST( NonlinearOptimizer, optimization_method )
 
 	Point2 x0(3,3);
 	Values c0;
-	c0.insert(kx(1), x0);
+	c0.insert(X(1), x0);
 
 	Values actualMFQR = LevenbergMarquardtOptimizer(fg, c0, paramsQR).optimize();
 	DOUBLES_EQUAL(0,fg.error(actualMFQR),tol);
@@ -171,23 +171,23 @@ TEST( NonlinearOptimizer, optimization_method )
 TEST( NonlinearOptimizer, Factorization )
 {
 	Values config;
-	config.insert(kx(1), Pose2(0.,0.,0.));
-	config.insert(kx(2), Pose2(1.5,0.,0.));
+	config.insert(X(1), Pose2(0.,0.,0.));
+	config.insert(X(2), Pose2(1.5,0.,0.));
 
 	pose2SLAM::Graph graph;
-	graph.addPrior(kx(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10));
-	graph.addOdometry(kx(1),kx(2), Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1));
+	graph.addPrior(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10));
+	graph.addOdometry(X(1),X(2), Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1));
 
 	Ordering ordering;
-	ordering.push_back(kx(1));
-	ordering.push_back(kx(2));
+	ordering.push_back(X(1));
+	ordering.push_back(X(2));
 
 	LevenbergMarquardtOptimizer optimizer(graph, config, ordering);
 	optimizer.iterate();
 
 	Values expected;
-	expected.insert(kx(1), Pose2(0.,0.,0.));
-	expected.insert(kx(2), Pose2(1.,0.,0.));
+	expected.insert(X(1), Pose2(0.,0.,0.));
+	expected.insert(X(2), Pose2(1.,0.,0.));
 	CHECK(assert_equal(expected, optimizer.values(), 1e-5));
 }
 
@@ -202,18 +202,18 @@ TEST(NonlinearOptimizer, NullFactor) {
   // test error at minimum
   Point2 xstar(0,0);
   Values cstar;
-  cstar.insert(kx(1), xstar);
+  cstar.insert(X(1), xstar);
   DOUBLES_EQUAL(0.0,fg.error(cstar),0.0);
 
   // test error at initial = [(1-cos(3))^2 + (sin(3))^2]*50 =
   Point2 x0(3,3);
   Values c0;
-  c0.insert(kx(1), x0);
+  c0.insert(X(1), x0);
   DOUBLES_EQUAL(199.0,fg.error(c0),1e-3);
 
   // optimize parameters
   Ordering ord;
-  ord.push_back(kx(1));
+  ord.push_back(X(1));
 
   // Gauss-Newton
   Values actual1 = GaussNewtonOptimizer(fg, c0, ord).optimize();

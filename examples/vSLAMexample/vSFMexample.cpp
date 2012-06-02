@@ -30,6 +30,10 @@ using boost::shared_ptr;
 using namespace std;
 using namespace gtsam;
 
+// Convenience for named keys
+using symbol_shorthand::X;
+using symbol_shorthand::L;
+
 /* ************************************************************************* */
 #define CALIB_FILE          "calib.txt"
 #define LANDMARKS_FILE      "landmarks.txt"
@@ -84,8 +88,8 @@ visualSLAM::Graph setupGraph(std::vector<Feature2D>& measurements, SharedNoiseMo
     g.addMeasurement(
         measurements[i].m_p,
         measurementSigma,
-        Symbol('x',measurements[i].m_idCamera),
-        Symbol('l',measurements[i].m_idLandmark),
+        X(measurements[i].m_idCamera),
+        L(measurements[i].m_idLandmark),
         calib);
   }
 
@@ -103,11 +107,11 @@ Values initialize(std::map<int, Point3> landmarks, std::map<int, Pose3> poses) {
 
   // Initialize landmarks 3D positions.
   for (map<int, Point3>::iterator lmit = landmarks.begin(); lmit != landmarks.end(); lmit++)
-    initValues.insert(Symbol('l',lmit->first), lmit->second);
+    initValues.insert(L(lmit->first), lmit->second);
 
   // Initialize camera poses.
   for (map<int, Pose3>::iterator poseit = poses.begin(); poseit != poses.end(); poseit++)
-    initValues.insert(Symbol('x',poseit->first), poseit->second);
+    initValues.insert(X(poseit->first), poseit->second);
 
   return initValues;
 }
@@ -137,7 +141,7 @@ int main(int argc, char* argv[]) {
   // Add prior factor for all poses in the graph
   map<int, Pose3>::iterator poseit = g_poses.begin();
   for (; poseit != g_poses.end(); poseit++)
-    graph.addPosePrior(Symbol('x',poseit->first), poseit->second, noiseModel::Unit::Create(1));
+    graph.addPosePrior(X(poseit->first), poseit->second, noiseModel::Unit::Create(1));
 
   // Optimize the graph
   cout << "*******************************************************" << endl;

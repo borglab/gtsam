@@ -35,6 +35,10 @@ using namespace std;
 using namespace gtsam;
 using boost::shared_ptr;
 
+// Convenience for named keys
+using symbol_shorthand::X;
+using symbol_shorthand::L;
+
 /* ************************************************************************* */
 double computeError(const GaussianBayesNet& gbn, const LieVector& values) {
 
@@ -389,11 +393,11 @@ TEST(DoglegOptimizer, Iterate) {
   // config far from minimum
   Point2 x0(3,0);
   boost::shared_ptr<Values> config(new Values);
-  config->insert(Symbol('x',1), x0);
+  config->insert(X(1), x0);
 
   // ordering
   shared_ptr<Ordering> ord(new Ordering());
-  ord->push_back(Symbol('x',1));
+  ord->push_back(X(1));
 
   double Delta = 1.0;
   for(size_t it=0; it<10; ++it) {

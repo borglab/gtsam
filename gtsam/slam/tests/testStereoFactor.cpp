@@ -43,8 +43,8 @@ Point3 p(0, 0, 5);
 static SharedNoiseModel sigma(noiseModel::Unit::Create(1));
 
 // Convenience for named keys
-Key kx(size_t i) { return Symbol('x',i); }
-Key kl(size_t i) { return Symbol('l',i); }
+using symbol_shorthand::X;
+using symbol_shorthand::L;
 
 /* ************************************************************************* */
 TEST( StereoFactor, singlePoint)
@@ -53,18 +53,18 @@ TEST( StereoFactor, singlePoint)
 	boost::shared_ptr<Cal3_S2Stereo> K(new Cal3_S2Stereo(625, 625, 0, 320, 240, 0.5));
 	NonlinearFactorGraph graph;
 
-	graph.add(visualSLAM::PoseConstraint(kx(1),camera1));
+	graph.add(visualSLAM::PoseConstraint(X(1),camera1));
 
 	StereoPoint2 z14(320,320.0-50, 240);
   // arguments: measurement, sigma, cam#, measurement #, K, baseline (m)
-	graph.add(visualSLAM::StereoFactor(z14,sigma, kx(1), kl(1), K));
+	graph.add(visualSLAM::StereoFactor(z14,sigma, X(1), L(1), K));
 
 	// Create a configuration corresponding to the ground truth
 	Values values;
-	values.insert(kx(1), camera1); // add camera at z=6.25m looking towards origin
+	values.insert(X(1), camera1); // add camera at z=6.25m looking towards origin
 
 	Point3 l1(0, 0, 0);
-	values.insert(kl(1), l1);   // add point at origin;
+	values.insert(L(1), l1);   // add point at origin;
 
 	GaussNewtonOptimizer optimizer(graph, values);
 
