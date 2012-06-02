@@ -5,7 +5,8 @@
  * @author Frank Dellaert
  */
 
-#include <gtsam2/discrete/Planner.h>
+//#include <gtsam/discrete/Planner.h>
+#include <gtsam/discrete/DiscreteKey.h>
 #include <CppUnitLite/TestHarness.h>
 #include <iostream>
 #include <fstream>
@@ -18,10 +19,9 @@ TEST_UNSAFE(Planner, allInOne)
 {
 	// A small planning problem
 	// First variable is location
-	DiscreteKey location("location",3),
-			haveRock("haveRock",2), haveSoil("haveSoil",2), haveImage("haveImage",2),
-			commRock("commRock",2), commSoil("commSoil",2), commImage("commImage",2),
-			haveRock("haveRock",2), haveSoil("haveSoil",2), haveImage("haveImage",2);
+	DiscreteKey location(0,3),
+			haveRock(1,2), haveSoil(2,2), haveImage(3,2),
+			commRock(4,2), commSoil(5,2), commImage(6,2);
 
 	// There are 3 actions:
 	// Drive, communicate, sample
