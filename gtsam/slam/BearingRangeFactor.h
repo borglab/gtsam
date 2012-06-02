@@ -66,7 +66,7 @@ namespace gtsam {
 	    		<< keyFormatter(this->key2()) << ")\n";
 	    measuredBearing_.print("  measured bearing");
 	    std::cout << "  measured range: " << measuredRange_ << std::endl;
-	    this->noiseModel_->print("  noise model");
+	    this->noiseModel_->print("  noise model: ");
 	  }
 
 		/** equals */
