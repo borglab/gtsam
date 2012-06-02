@@ -20,6 +20,7 @@
 #include <gtsam/slam/visualSLAM.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/Symbol.h>
 
 #include <CppUnitLite/TestHarness.h>
 #include <boost/shared_ptr.hpp>

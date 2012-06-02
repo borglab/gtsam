@@ -17,14 +17,14 @@
 
 #pragma once
 
-#include <set>
-#include <gtsam/base/FastMap.h>
+#include <gtsam/nonlinear/Key.h>
 #include <gtsam/inference/inference.h>
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/base/FastMap.h>
 
 #include <boost/foreach.hpp>
 #include <boost/assign/list_inserter.hpp>
 #include <boost/pool/pool_alloc.hpp>
+#include <set>
 
 namespace gtsam {
 

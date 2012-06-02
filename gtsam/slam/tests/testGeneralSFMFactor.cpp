@@ -16,23 +16,24 @@
  * @brief unit tests for GeneralSFMFactor
  */
 
-#include <iostream>
-#include <vector>
+#include <gtsam/slam/GeneralSFMFactor.h>
+#include <gtsam/slam/RangeFactor.h>
+#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/linear/VectorValues.h>
+#include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/base/Testable.h>
 
 #include <boost/shared_ptr.hpp>
 #include <CppUnitLite/TestHarness.h>
 using namespace boost;
 
-#include <gtsam/base/Testable.h>
-#include <gtsam/geometry/Cal3_S2.h>
-#include <gtsam/geometry/PinholeCamera.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/linear/VectorValues.h>
-#include <gtsam/nonlinear/NonlinearEquality.h>
-#include <gtsam/slam/GeneralSFMFactor.h>
-#include <gtsam/slam/RangeFactor.h>
-#include <gtsam/slam/PriorFactor.h>
+#include <iostream>
+#include <vector>
 
 using namespace std;
 using namespace gtsam;

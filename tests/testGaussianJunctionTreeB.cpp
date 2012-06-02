@@ -15,9 +15,20 @@
  * @author nikai
  */
 
-#include <iostream>
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/slam/smallExample.h>
+#include <gtsam/slam/planarSLAM.h>
+#include <gtsam/slam/pose2SLAM.h>
+#include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/linear/GaussianJunctionTree.h>
+#include <gtsam/linear/GaussianSequentialSolver.h>
+#include <gtsam/linear/GaussianMultifrontalSolver.h>
+#include <gtsam/inference/BayesTree-inl.h>
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/debug.h>
+#include <gtsam/base/cholesky.h>
+
+#include <CppUnitLite/TestHarness.h>
 
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
@@ -25,16 +36,7 @@
 #include <boost/assign/std/vector.hpp>
 using namespace boost::assign;
 
-#include <gtsam/base/debug.h>
-#include <gtsam/base/cholesky.h>
-#include <gtsam/inference/BayesTree-inl.h>
-#include <gtsam/nonlinear/Ordering.h>
-#include <gtsam/linear/GaussianJunctionTree.h>
-#include <gtsam/linear/GaussianSequentialSolver.h>
-#include <gtsam/linear/GaussianMultifrontalSolver.h>
-#include <gtsam/slam/smallExample.h>
-#include <gtsam/slam/planarSLAM.h>
-#include <gtsam/slam/pose2SLAM.h>
+#include <iostream>
 
 using namespace std;
 using namespace gtsam;

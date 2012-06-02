@@ -15,20 +15,21 @@
  * @author  Michael Kaess
  */
 
-#include <boost/foreach.hpp>
-#include <boost/assign/std/list.hpp> // for operator +=
-using namespace boost::assign;
-
-#include <CppUnitLite/TestHarness.h>
-
-#include <gtsam/geometry/Rot2.h>
+#include <gtsam/slam/smallExample.h>
 #include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/inference/ISAM.h>
 #include <gtsam/linear/GaussianISAM.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
-#include <gtsam/slam/smallExample.h>
+#include <gtsam/inference/ISAM.h>
+#include <gtsam/geometry/Rot2.h>
+
+#include <CppUnitLite/TestHarness.h>
+
+#include <boost/foreach.hpp>
+#include <boost/assign/std/list.hpp> // for operator +=
+using namespace boost::assign;
 
 using namespace std;
 using namespace gtsam;

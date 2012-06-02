@@ -18,6 +18,9 @@
 // pull in the planar SLAM domain with all typedefs and helper functions defined
 #include <gtsam/slam/planarSLAM.h>
 
+// we will use Symbol keys
+#include <gtsam/nonlinear/Symbol.h>
+
 using namespace std;
 using namespace gtsam;
 

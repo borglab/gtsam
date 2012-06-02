@@ -18,13 +18,14 @@
 #include "vSLAMutils.h"
 #include "Feature2D.h"
 
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/slam/visualSLAM.h>
 #include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 
 #include <boost/shared_ptr.hpp>
-using namespace boost;
+using boost::shared_ptr;
 
 using namespace std;
 using namespace gtsam;

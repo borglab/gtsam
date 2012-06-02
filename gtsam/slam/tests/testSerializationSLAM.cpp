@@ -16,12 +16,12 @@
  * @date Feb 7, 2012
  */
 
-#include <gtsam/linear/GaussianISAM.h>
-#include <gtsam/linear/GaussianMultifrontalSolver.h>
 #include <gtsam/slam/smallExample.h>
 #include <gtsam/slam/planarSLAM.h>
 #include <gtsam/slam/visualSLAM.h>
-
+#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/linear/GaussianISAM.h>
+#include <gtsam/linear/GaussianMultifrontalSolver.h>
 #include <gtsam/base/serializationTestHelpers.h>
 #include <CppUnitLite/TestHarness.h>
 

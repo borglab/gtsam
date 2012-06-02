@@ -15,11 +15,12 @@
  * @author Alex Cunningham
  */
 
-#include <CppUnitLite/TestHarness.h>
-
 #include <gtsam/slam/simulated2DConstraints.h>
+#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+
+#include <CppUnitLite/TestHarness.h>
 
 namespace iq2D = simulated2D::inequality_constraints;
 using namespace std;

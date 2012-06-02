@@ -19,6 +19,7 @@
 #include <gtsam/slam/StereoFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
+#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/geometry/StereoCamera.h>
 #include <gtsam/geometry/Pose3.h>
 

@@ -10,28 +10,30 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file testGeneralSFMFactor.cpp
+ * @file testGeneralSFMFactor_Cal3Bundler.cpp
  * @date Dec 27, 2010
  * @author nikai
  * @brief unit tests for GeneralSFMFactor
  */
 
-#include <iostream>
-#include <vector>
+#include <gtsam/slam/GeneralSFMFactor.h>
+#include <gtsam/slam/RangeFactor.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/linear/VectorValues.h>
+#include <gtsam/geometry/Point3.h>
+#include <gtsam/geometry/Cal3Bundler.h>
+#include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/base/Testable.h>
 
 #include <boost/shared_ptr.hpp>
 #include <CppUnitLite/TestHarness.h>
-using namespace boost;
 
-#include <gtsam/base/Testable.h>
-#include <gtsam/geometry/Cal3Bundler.h>
-#include <gtsam/geometry/PinholeCamera.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/linear/VectorValues.h>
-#include <gtsam/nonlinear/NonlinearEquality.h>
-#include <gtsam/slam/GeneralSFMFactor.h>
-#include <gtsam/slam/RangeFactor.h>
+#include <iostream>
+#include <vector>
 
 using namespace std;
 using namespace gtsam;
@@ -146,8 +148,8 @@ vector<GeneralCamera> genCameraVariableCalibration() {
   return X ;
 }
 
-shared_ptr<Ordering> getOrdering(const vector<GeneralCamera>& X, const vector<Point3>& L) {
-  shared_ptr<Ordering> ordering(new Ordering);
+boost::shared_ptr<Ordering> getOrdering(const std::vector<GeneralCamera>& X, const std::vector<Point3>& L) {
+  boost::shared_ptr<Ordering> ordering(new Ordering);
   for ( size_t i = 0 ; i < L.size() ; ++i ) ordering->push_back(Symbol('l', i)) ;
   for ( size_t i = 0 ; i < X.size() ; ++i ) ordering->push_back(Symbol('x', i)) ;
   return ordering ;

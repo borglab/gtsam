@@ -18,10 +18,11 @@
 #include <iostream>
 #include <CppUnitLite/TestHarness.h>
 
+#include <gtsam_unstable/slam/simulated3D.h>
+#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam_unstable/slam/simulated3D.h>
 
 using namespace gtsam;
 using namespace simulated3D;

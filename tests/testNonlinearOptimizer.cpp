@@ -17,6 +17,7 @@
 
 #include <gtsam/slam/smallExample.h>
 #include <gtsam/slam/pose2SLAM.h>
+#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/DoglegOptimizer.h>

@@ -15,20 +15,20 @@
  * @author  Frank Dellaert
  */
 
-#include <boost/assign/std/list.hpp> // for operator +=
-using namespace boost::assign;
-
-#include <CppUnitLite/TestHarness.h>
-
 #include <gtsam/slam/smallExample.h>
+#include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
 #include <gtsam/inference/BayesNet-inl.h>
 #include <gtsam/inference/SymbolicSequentialSolver.h>
-#include <gtsam/nonlinear/Ordering.h>
+
+#include <CppUnitLite/TestHarness.h>
+
+#include <boost/assign/std/list.hpp> // for operator +=
+using namespace boost::assign;
 
 using namespace std;
 using namespace gtsam;
-using namespace example;
 
 Key kx(size_t i) { return Symbol('x',i); }
 Key kl(size_t i) { return Symbol('l',i); }
@@ -45,7 +45,7 @@ TEST( SymbolicFactorGraph, symbolicFactorGraph )
 	expected.push_factor(o[kx(2)],o[kl(1)]);
 
 	// construct it from the factor graph
-	GaussianFactorGraph factorGraph = createGaussianFactorGraph(o);
+	GaussianFactorGraph factorGraph = example::createGaussianFactorGraph(o);
 	SymbolicFactorGraph actual(factorGraph);
 
 	CHECK(assert_equal(expected, actual));
@@ -55,7 +55,7 @@ TEST( SymbolicFactorGraph, symbolicFactorGraph )
 //TEST( SymbolicFactorGraph, findAndRemoveFactors )
 //{
 //	// construct it from the factor graph graph
-//	GaussianFactorGraph factorGraph = createGaussianFactorGraph();
+//	GaussianFactorGraph factorGraph = example::createGaussianFactorGraph();
 //	SymbolicFactorGraph actual(factorGraph);
 //  SymbolicFactor::shared_ptr f1 = actual[0];
 //  SymbolicFactor::shared_ptr f3 = actual[2];
@@ -75,7 +75,7 @@ TEST( SymbolicFactorGraph, symbolicFactorGraph )
 //TEST( SymbolicFactorGraph, factors)
 //{
 //	// create a test graph
-//	GaussianFactorGraph factorGraph = createGaussianFactorGraph();
+//	GaussianFactorGraph factorGraph = example::createGaussianFactorGraph();
 //	SymbolicFactorGraph fg(factorGraph);
 //
 //	// ask for all factor indices connected to x1
@@ -95,7 +95,7 @@ TEST( SymbolicFactorGraph, symbolicFactorGraph )
 //TEST( SymbolicFactorGraph, removeAndCombineFactors )
 //{
 //	// create a test graph
-//	GaussianFactorGraph factorGraph = createGaussianFactorGraph();
+//	GaussianFactorGraph factorGraph = example::createGaussianFactorGraph();
 //	SymbolicFactorGraph fg(factorGraph);
 //
 //  // combine all factors connected to x1
@@ -111,7 +111,7 @@ TEST( SymbolicFactorGraph, symbolicFactorGraph )
 //{
 //  Ordering o; o += kx(1),kl(1),kx(2);
 //	// create a test graph
-//	GaussianFactorGraph factorGraph = createGaussianFactorGraph(o);
+//	GaussianFactorGraph factorGraph = example::createGaussianFactorGraph(o);
 //	SymbolicFactorGraph fg(factorGraph);
 //
 //	// eliminate
@@ -139,7 +139,7 @@ TEST( SymbolicFactorGraph, eliminate )
   expected.push_back(x1);
 
   // create a test graph
-	GaussianFactorGraph factorGraph = createGaussianFactorGraph(o);
+	GaussianFactorGraph factorGraph = example::createGaussianFactorGraph(o);
 	SymbolicFactorGraph fg(factorGraph);
 
 	// eliminate it

@@ -14,15 +14,16 @@
  * @author Alex Cunningham
  */
 
-#include <CppUnitLite/TestHarness.h>
-
-#include <gtsam/geometry/Pose2.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/simulated2DConstraints.h>
 #include <gtsam/slam/visualSLAM.h>
+#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/geometry/Pose2.h>
+
+#include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;

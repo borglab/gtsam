@@ -16,17 +16,17 @@
  * @brief unit tests for simulated2DOriented
  */
 
-#include <iostream>
-#include <CppUnitLite/TestHarness.h>
-
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/slam/simulated2D.h>
 #include <gtsam/slam/simulated2DOriented.h>
+#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/numericalDerivative.h>
 
 using namespace std;
 using namespace gtsam;
-using namespace simulated2DOriented;
+
+#include <iostream>
+#include <CppUnitLite/TestHarness.h>
 
 // Convenience for named keys
 Key kx(size_t i) { return Symbol('x',i); }

@@ -33,7 +33,6 @@
 
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Ordering.h>
-#include <gtsam/nonlinear/Symbol.h>
 
 /**
  * Macro to add a standard clone function to a derived factor

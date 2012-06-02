@@ -26,6 +26,7 @@ using namespace boost::assign;
 #include <gtsam/inference/SymbolicFactorGraph.h>
 #include <gtsam/inference/SymbolicSequentialSolver.h>
 #include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/nonlinear/Symbol.h>
 
 using namespace std;
 using namespace gtsam;

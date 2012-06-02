@@ -32,6 +32,7 @@
 #include <gtsam/slam/simulated2D.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/Symbol.h>
 
 using namespace std;
 using namespace gtsam;

@@ -16,11 +16,12 @@
  * @date Feb 7, 2012
  */
 
+#include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Cal3DS2.h>
 #include <gtsam/geometry/Cal3Bundler.h>
-#include <gtsam/nonlinear/Values.h>
 
 #include <gtsam/base/serializationTestHelpers.h>
 #include <CppUnitLite/TestHarness.h>

@@ -17,6 +17,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
 #include <gtsam/slam/smallExample.h>

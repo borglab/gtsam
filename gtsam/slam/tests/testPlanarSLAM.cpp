@@ -14,16 +14,16 @@
  *  @author Frank Dellaert
  **/
 
+#include <gtsam/slam/planarSLAM.h>
+#include <gtsam/slam/BearingRangeFactor.h>
+#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/base/TestableAssertions.h>
+
 #include <iostream>
 #include <CppUnitLite/TestHarness.h>
 
-#include <gtsam/base/TestableAssertions.h>
-#include <gtsam/slam/planarSLAM.h>
-#include <gtsam/slam/BearingRangeFactor.h>
-
 using namespace std;
 using namespace gtsam;
-using namespace planarSLAM;
 
 // some shared test values
 static Pose2 x1, x2(1, 1, 0), x3(1, 1, M_PI_4);

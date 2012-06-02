@@ -18,6 +18,7 @@
  */
 
 #include <gtsam/slam/smallExample.h>
+#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>

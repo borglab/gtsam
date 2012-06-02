@@ -15,15 +15,17 @@
  * @author  Richard Roberts
  */
 
-#include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/numericalDerivative.h>
-#include <gtsam/inference/BayesTree-inl.h>
+#include <gtsam/slam/pose2SLAM.h>
+#include <gtsam/slam/smallExample.h>
+#include <gtsam/nonlinear/DoglegOptimizerImpl.h>
+#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianBayesTree.h>
-#include <gtsam/nonlinear/DoglegOptimizerImpl.h>
-#include <gtsam/slam/pose2SLAM.h>
-#include <gtsam/slam/smallExample.h>
+#include <gtsam/inference/BayesTree-inl.h>
+#include <gtsam/base/numericalDerivative.h>
+
+#include <CppUnitLite/TestHarness.h>
 
 #include <boost/bind.hpp>
 #include <boost/assign/list_of.hpp> // for 'list_of()'

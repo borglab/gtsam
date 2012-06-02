@@ -17,6 +17,7 @@
  */
 
 #include <gtsam/slam/visualSLAM.h>
+#include <gtsam/nonlinear/Symbol.h>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;

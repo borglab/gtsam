@@ -15,9 +15,16 @@
  *  @author Christian Potthast
  **/
 
-#include <string.h>
-#include <iostream>
-using namespace std;
+#include <gtsam/slam/smallExample.h>
+#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianSequentialSolver.h>
+#include <gtsam/inference/SymbolicFactorGraph.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/base/Testable.h>
+
+#include <CppUnitLite/TestHarness.h>
 
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -26,16 +33,10 @@ using namespace std;
 #include <boost/assign/std/vector.hpp> // for operator +=
 using namespace boost::assign;
 
-#include <CppUnitLite/TestHarness.h>
+#include <string.h>
+#include <iostream>
 
-#include <gtsam/base/Matrix.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/numericalDerivative.h>
-#include <gtsam/inference/SymbolicFactorGraph.h>
-#include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/linear/GaussianSequentialSolver.h>
-#include <gtsam/slam/smallExample.h>
-
+using namespace std;
 using namespace gtsam;
 using namespace example;
 

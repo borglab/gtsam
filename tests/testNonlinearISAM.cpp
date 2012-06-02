@@ -7,6 +7,7 @@
 
 #include <gtsam/linear/Sampler.h>
 #include <gtsam/nonlinear/NonlinearISAM.h>
+#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/slam/planarSLAM.h>
 
 using namespace gtsam;
