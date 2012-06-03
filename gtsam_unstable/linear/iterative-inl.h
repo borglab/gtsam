@@ -18,10 +18,9 @@
 
 #pragma once
 
-#include <boost/shared_ptr.hpp>
-
+#include <gtsam_unstable/linear/iterative.h>
 #include <gtsam/linear/IterativeOptimizationParameters.h>
-#include <gtsam/linear/iterative.h>
+#include <boost/shared_ptr.hpp>
 
 using namespace std;
 

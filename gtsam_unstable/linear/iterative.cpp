@@ -15,13 +15,15 @@
  * @author Frank Dellaert
  * @date Dec 28, 2009
  */
-#include <iostream>
 
+#include <gtsam_unstable/linear/iterative-inl.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/IterativeOptimizationParameters.h>
-#include <gtsam/linear/iterative-inl.h>
+
+
+#include <iostream>
 
 using namespace std;
 
