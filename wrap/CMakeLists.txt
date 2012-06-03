@@ -74,7 +74,9 @@ if (GTSAM_INSTALL_MATLAB_TOOLBOX)
         install(FILES ${matlab_examples} DESTINATION ${GTSAM_TOOLBOX_INSTALL_PATH}/gtsam/examples)
         
         message(STATUS "Installing Matlab Toolbox Examples (Data)")
+        set(data_excludes "${CMAKE_SOURCE_DIR}/examples/Data/.svn")
         file(GLOB matlab_examples_data "${CMAKE_SOURCE_DIR}/examples/Data/*.*")
+        list(REMOVE_ITEM matlab_examples_data ${data_excludes})
         install(FILES ${matlab_examples_data} DESTINATION ${GTSAM_TOOLBOX_INSTALL_PATH}/gtsam/examples/Data)
     endif (GTSAM_INSTALL_MATLAB_EXAMPLES)
     
