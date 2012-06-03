@@ -45,9 +45,9 @@ result.print(sprintf('\nFinal result:\n  '));
 
 %% Query the marginals
 marginals = graph.marginals(result);
-P{1}=marginals.marginalCovariance(1)
-P{2}=marginals.marginalCovariance(2)
-P{3}=marginals.marginalCovariance(3)
+P{1}=marginals.marginalCovariance(1);
+P{2}=marginals.marginalCovariance(2);
+P{3}=marginals.marginalCovariance(3);
 
 %% Plot Trajectory
 figure(1)

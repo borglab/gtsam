@@ -35,7 +35,7 @@ using namespace gtsam;
  */
 int main(int argc, char** argv) {
 
-  // create the graph (defined in pose2SLAM.h, derived from NonlinearFactorGraph)
+	// create the graph (defined in pose2SLAM.h, derived from NonlinearFactorGraph)
 	pose2SLAM::Graph graph;
 
 	// add a Gaussian prior on pose x_1
@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
 	// create (deliberatly inaccurate) initial estimate
 	pose2SLAM::Values initialEstimate;
 	initialEstimate.insertPose(1, Pose2(0.5, 0.0, 0.2));
-	initialEstimate.insertPose(2, Pose2(2.3, 0.1,-0.2));
+	initialEstimate.insertPose(2, Pose2(2.3, 0.1, -0.2));
 	initialEstimate.insertPose(3, Pose2(4.1, 0.1, 0.1));
 	initialEstimate.print("\nInitial estimate:\n  ");
 
@@ -64,11 +64,11 @@ int main(int argc, char** argv) {
 	result.print("\nFinal result:\n  ");
 
 	// Query the marginals
-	Marginals marginals = graph.marginals(result);
 	cout.precision(2);
-  cout << "\nP1:\n" << marginals.marginalCovariance(1) << endl;
-  cout << "\nP2:\n" << marginals.marginalCovariance(2) << endl;
-  cout << "\nP3:\n" << marginals.marginalCovariance(3) << endl;
+	Marginals marginals = graph.marginals(result);
+	cout << "\nP1:\n" << marginals.marginalCovariance(1) << endl;
+	cout << "\nP2:\n" << marginals.marginalCovariance(2) << endl;
+	cout << "\nP3:\n" << marginals.marginalCovariance(3) << endl;
 
 	return 0;
 }

@@ -35,26 +35,22 @@ int main(int argc, char** argv) {
 	pose2SLAM::Graph graph;
 
 	/* 2.a add prior  */
-	// gaussian for prior
-	SharedDiagonal prior_model = noiseModel::Diagonal::Sigmas(Vector_(3, 0.3, 0.3, 0.1));
-	Pose2 prior_measurement(0.0, 0.0, 0.0); // prior at origin
-	graph.addPrior(1, prior_measurement, prior_model); // add directly to graph
+	Pose2 priorMean(0.0, 0.0, 0.0); // prior at origin
+	SharedDiagonal priorNoise(Vector_(3, 0.3, 0.3, 0.1)); // 30cm std on x,y, 0.1 rad on theta
+	graph.addPrior(1, priorMean, priorNoise); // add directly to graph
 
 	/* 2.b add odometry */
-	// general noisemodel for odometry
-	SharedDiagonal odom_model = noiseModel::Diagonal::Sigmas(Vector_(3, 0.2, 0.2, 0.1));
-
-	/* Pose2 measurements take (x,y,theta), where theta is taken from the positive x-axis*/
-	Pose2 odom_measurement(2.0, 0.0, 0.0); // create a measurement for both factors (the same in this case)
-	graph.addOdometry(1, 2, odom_measurement, odom_model);
-	graph.addOdometry(2, 3, odom_measurement, odom_model);
+	SharedDiagonal odometryNoise(Vector_(3, 0.2, 0.2, 0.1)); // 20cm std on x,y, 0.1 rad on theta
+	Pose2 odometry(2.0, 0.0, 0.0); // create a measurement for both factors (the same in this case)
+	graph.addOdometry(1, 2, odometry, odometryNoise);
+	graph.addOdometry(2, 3, odometry, odometryNoise);
 	graph.print("full graph");
 
-  /* 3. Create the data structure to hold the initial estimate to the solution
-   * initialize to noisy points */
+	/* 3. Create the data structure to hold the initial estimate to the solution
+	 * initialize to noisy points */
 	pose2SLAM::Values initial;
 	initial.insertPose(1, Pose2(0.5, 0.0, 0.2));
-	initial.insertPose(2, Pose2(2.3, 0.1,-0.2));
+	initial.insertPose(2, Pose2(2.3, 0.1, -0.2));
 	initial.insertPose(3, Pose2(4.1, 0.1, 0.1));
 	initial.print("initial estimate");
 
@@ -67,15 +63,15 @@ int main(int argc, char** argv) {
 	params.absoluteErrorTol = 1e-15;
 	params.relativeErrorTol = 1e-15;
 	params.ordering = ordering;
-  LevenbergMarquardtOptimizer	optimizer(graph, initial, params);
+	LevenbergMarquardtOptimizer optimizer(graph, initial, params);
 
 	pose2SLAM::Values result = optimizer.optimize();
 	result.print("final result");
 
 	/* Get covariances */
 	Marginals marginals(graph, result, Marginals::CHOLESKY);
-	Matrix covariance1  = marginals.marginalCovariance(1);
-	Matrix covariance2  = marginals.marginalCovariance(2);
+	Matrix covariance1 = marginals.marginalCovariance(1);
+	Matrix covariance2 = marginals.marginalCovariance(2);
 
 	print(covariance1, "Covariance1");
 	print(covariance2, "Covariance2");

@@ -51,17 +51,17 @@ TEST(Marginals, planarSLAMmarginals) {
 
   /* add prior  */
   // gaussian for prior
-  SharedDiagonal prior_model = noiseModel::Diagonal::Sigmas(Vector_(3, 0.3, 0.3, 0.1));
-  Pose2 prior_measurement(0.0, 0.0, 0.0); // prior at origin
-  graph.add(PriorFactor<Pose2>(x1, prior_measurement, prior_model));  // add the factor to the graph
+  SharedDiagonal priorNoise = noiseModel::Diagonal::Sigmas(Vector_(3, 0.3, 0.3, 0.1));
+  Pose2 priorMean(0.0, 0.0, 0.0); // prior at origin
+  graph.add(PriorFactor<Pose2>(x1, priorMean, priorNoise));  // add the factor to the graph
 
   /* add odometry */
   // general noisemodel for odometry
-  SharedDiagonal odom_model = noiseModel::Diagonal::Sigmas(Vector_(3, 0.2, 0.2, 0.1));
-  Pose2 odom_measurement(2.0, 0.0, 0.0); // create a measurement for both factors (the same in this case)
+  SharedDiagonal odometryNoise = noiseModel::Diagonal::Sigmas(Vector_(3, 0.2, 0.2, 0.1));
+  Pose2 odometry(2.0, 0.0, 0.0); // create a measurement for both factors (the same in this case)
   // create between factors to represent odometry
-  graph.add(BetweenFactor<Pose2>(x1, x2, odom_measurement, odom_model));
-  graph.add(BetweenFactor<Pose2>(x2, x3, odom_measurement, odom_model));
+  graph.add(BetweenFactor<Pose2>(x1, x2, odometry, odometryNoise));
+  graph.add(BetweenFactor<Pose2>(x2, x3, odometry, odometryNoise));
 
   /* add measurements */
   // general noisemodel for measurements

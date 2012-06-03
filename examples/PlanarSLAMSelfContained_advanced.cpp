@@ -60,18 +60,18 @@ int main(int argc, char** argv) {
 
 	/* add prior  */
 	// gaussian for prior
-	SharedDiagonal prior_model = noiseModel::Diagonal::Sigmas(Vector_(3, 0.3, 0.3, 0.1));
-	Pose2 prior_measurement(0.0, 0.0, 0.0); // prior at origin
-	PriorFactor<Pose2> posePrior(i1, prior_measurement, prior_model); // create the factor
+	SharedDiagonal priorNoise = noiseModel::Diagonal::Sigmas(Vector_(3, 0.3, 0.3, 0.1));
+	Pose2 priorMean(0.0, 0.0, 0.0); // prior at origin
+	PriorFactor<Pose2> posePrior(i1, priorMean, priorNoise); // create the factor
 	graph.add(posePrior);  // add the factor to the graph
 
 	/* add odometry */
 	// general noisemodel for odometry
-	SharedDiagonal odom_model = noiseModel::Diagonal::Sigmas(Vector_(3, 0.2, 0.2, 0.1));
-	Pose2 odom_measurement(2.0, 0.0, 0.0); // create a measurement for both factors (the same in this case)
+	SharedDiagonal odometryNoise = noiseModel::Diagonal::Sigmas(Vector_(3, 0.2, 0.2, 0.1));
+	Pose2 odometry(2.0, 0.0, 0.0); // create a measurement for both factors (the same in this case)
 	// create between factors to represent odometry
-	BetweenFactor<Pose2> odom12(i1, i2, odom_measurement, odom_model);
-	BetweenFactor<Pose2> odom23(i2, i3, odom_measurement, odom_model);
+	BetweenFactor<Pose2> odom12(i1, i2, odometry, odometryNoise);
+	BetweenFactor<Pose2> odom23(i2, i3, odometry, odometryNoise);
 	graph.add(odom12); // add both to graph
 	graph.add(odom23);
 

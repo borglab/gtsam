@@ -18,24 +18,21 @@
 %  - We have full odometry for measurements
 %  - The robot is on a grid, moving 2 meters each step
 
-%% Create keys for variables
-x1 = 1; x2 = 2; x3 = 3;
-
 %% Create graph container and add factors to it
 graph = pose2SLAMGraph;
 
 %% Add prior
 % gaussian for prior
-prior_model = gtsamSharedNoiseModel_Sigmas([0.3; 0.3; 0.1]);
-prior_measurement = gtsamPose2(0.0, 0.0, 0.0); % prior at origin
-graph.addPrior(x1, prior_measurement, prior_model); % add directly to graph
+priorNoise = gtsamSharedNoiseModel_Sigmas([0.3; 0.3; 0.1]);
+priorMean = gtsamPose2(0.0, 0.0, 0.0); % prior at origin
+graph.addPrior(1, priorMean, priorNoise); % add directly to graph
 
 %% Add odometry
 % general noisemodel for odometry
-odom_model = gtsamSharedNoiseModel_Sigmas([0.2; 0.2; 0.1]);
-odom_measurement = gtsamPose2(2.0, 0.0, 0.0); % create a measurement for both factors (the same in this case)
-graph.addOdometry(x1, x2, odom_measurement, odom_model);
-graph.addOdometry(x2, x3, odom_measurement, odom_model);
+odometryNoise = gtsamSharedNoiseModel_Sigmas([0.2; 0.2; 0.1]);
+odometry = gtsamPose2(2.0, 0.0, 0.0); % create a measurement for both factors (the same in this case)
+graph.addOdometry(1, 2, odometry, odometryNoise);
+graph.addOdometry(2, 3, odometry, odometryNoise);
 
 %% Add measurements
 % general noisemodel for measurements
@@ -46,9 +43,9 @@ graph.print('full graph');
 
 %% Initialize to noisy points
 initialEstimate = pose2SLAMValues;
-initialEstimate.insertPose(x1, gtsamPose2(0.5, 0.0, 0.2));
-initialEstimate.insertPose(x2, gtsamPose2(2.3, 0.1,-0.2));
-initialEstimate.insertPose(x3, gtsamPose2(4.1, 0.1, 0.1));
+initialEstimate.insertPose(1, gtsamPose2(0.5, 0.0, 0.2));
+initialEstimate.insertPose(2, gtsamPose2(2.3, 0.1,-0.2));
+initialEstimate.insertPose(3, gtsamPose2(4.1, 0.1, 0.1));
 
 initialEstimate.print('initial estimate');
 
