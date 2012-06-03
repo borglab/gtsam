@@ -1653,10 +1653,10 @@
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="PlanarSLAMExample_easy.run" path="build/examples" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="PlanarSLAMExample.run" path="build/examples" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
-				<buildArguments>-j2</buildArguments>
-				<buildTarget>PlanarSLAMExample_easy.run</buildTarget>
+				<buildArguments>-j5</buildArguments>
+				<buildTarget>PlanarSLAMExample.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
@@ -1685,10 +1685,10 @@
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="PlanarSLAMSelfContained_advanced.run" path="build/examples" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="PlanarSLAMExample_selfcontained.run" path="build/examples" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
-				<buildArguments>-j2</buildArguments>
-				<buildTarget>PlanarSLAMSelfContained_advanced.run</buildTarget>
+				<buildArguments>-j5</buildArguments>
+				<buildTarget>PlanarSLAMExample_selfcontained.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
@@ -1701,18 +1701,18 @@
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="Pose2SLAMExample_easy.run" path="build/examples" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="Pose2SLAMExample.run" path="build/examples" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
-				<buildArguments>-j2</buildArguments>
-				<buildTarget>Pose2SLAMExample_easy.run</buildTarget>
+				<buildArguments>-j5</buildArguments>
+				<buildTarget>Pose2SLAMExample.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="Pose2SLAMwSPCG_easy.run" path="build/examples" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="Pose2SLAMwSPCG.run" path="build/examples" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
-				<buildArguments>-j2</buildArguments>
-				<buildTarget>Pose2SLAMwSPCG_easy.run</buildTarget>
+				<buildArguments>-j5</buildArguments>
+				<buildTarget>Pose2SLAMwSPCG.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>

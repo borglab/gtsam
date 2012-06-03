@@ -20,7 +20,7 @@ Pose2SLAMwSPCG: solve a simple 3 by 3 grid of Pose2 SLAM problem by using easy S
 Planar SLAM with landmarks
 ==========================
 PlanarSLAMExample: simple robotics example using the pre-built planar SLAM domain
-PlanarSLAMSelfContained_advanced: simple robotics example with all typedefs internal to this script.
+PlanarSLAMExample_selfcontained: simple robotics example with all typedefs internal to this script.
 
 Visual SLAM
 ===========
