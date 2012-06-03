@@ -4,6 +4,7 @@ set (gtsam_unstable_subdirs
     base 
     discrete 
     dynamics
+    linear
     slam 
 )
 
@@ -29,6 +30,7 @@ set(gtsam_unstable_srcs
     ${base_srcs} 
     ${discrete_srcs}
     ${dynamics_srcs}
+    ${linear_srcs}    
     ${slam_srcs} 
 )
 
