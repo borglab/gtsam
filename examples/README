@@ -1,4 +1,4 @@
-This directory contains a number of exapmples that illustrate the use of GTSAM:
+This directory contains a number of examples that illustrate the use of GTSAM:
 
 SimpleRotation:  a super-simple example of optimizing a single rotation according to a single prior
 
