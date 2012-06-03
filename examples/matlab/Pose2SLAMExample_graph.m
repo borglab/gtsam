@@ -13,7 +13,7 @@
 %% Initialize graph, initial estimate, and odometry noise
 model = gtsamSharedNoiseModel_Sigmas([0.05; 0.05; 5*pi/180]);
 [graph,initial]=load2D('../Data/w100-odom.graph',model);
-initial.print('Initial estimate:\n');
+initial.print(sprintf('Initial estimate:\n'));
 
 %% Add a Gaussian prior on pose x_1
 priorMean = gtsamPose2(0.0, 0.0, 0.0); % prior mean is at origin
@@ -27,7 +27,7 @@ plot(initial.xs(),initial.ys(),'g-*'); axis equal
 %% Optimize using Levenberg-Marquardt optimization with an ordering from colamd
 result = graph.optimize(initial);
 hold on; plot(result.xs(),result.ys(),'b-*')
-result.print('\nFinal result:\n');
+result.print(sprintf('\nFinal result:\n'));
 
 %% Plot Covariance Ellipses
 marginals = graph.marginals(result);
