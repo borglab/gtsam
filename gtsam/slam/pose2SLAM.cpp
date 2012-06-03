@@ -32,6 +32,36 @@ namespace pose2SLAM {
   }
 
   /* ************************************************************************* */
+	Vector Values::xs() const {
+		size_t j=0;
+		Vector result(size());
+		ConstFiltered<Pose2> poses = filter<Pose2>();
+		BOOST_FOREACH(const ConstFiltered<Pose2>::KeyValuePair& keyValue, poses)
+			result(j++) = keyValue.value.x();
+		return result;
+	}
+
+  /* ************************************************************************* */
+	Vector Values::ys() const {
+		size_t j=0;
+		Vector result(size());
+		ConstFiltered<Pose2> poses = filter<Pose2>();
+		BOOST_FOREACH(const ConstFiltered<Pose2>::KeyValuePair& keyValue, poses)
+			result(j++) = keyValue.value.y();
+		return result;
+	}
+
+  /* ************************************************************************* */
+	Vector Values::thetas() const {
+		size_t j=0;
+		Vector result(size());
+		ConstFiltered<Pose2> poses = filter<Pose2>();
+		BOOST_FOREACH(const ConstFiltered<Pose2>::KeyValuePair& keyValue, poses)
+			result(j++) = keyValue.value.theta	();
+		return result;
+	}
+
+  /* ************************************************************************* */
   void Graph::addPrior(Key i, const Pose2& p, const SharedNoiseModel& model) {
     sharedFactor factor(new Prior(i, p, model));
     push_back(factor);

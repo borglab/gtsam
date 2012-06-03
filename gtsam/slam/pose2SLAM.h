@@ -41,13 +41,15 @@ namespace pose2SLAM {
         gtsam::Values(values) {
     }
 
-    // Convenience for MATLAB wrapper, which does not allow for identically named methods
+    /// insert a pose
+    void insertPose(Key i, const Pose2& pose) { insert(i, pose); }
 
     /// get a pose
     Pose2 pose(Key i) const { return at<Pose2>(i); }
 
-    /// insert a pose
-    void insertPose(Key i, const Pose2& pose) { insert(i, pose); }
+    Vector xs() const; ///< get all x coordinates in a matrix
+    Vector ys() const; ///< get all y coordinates in a matrix
+    Vector thetas() const; ///< get all orientations in a matrix
   };
 
   /**

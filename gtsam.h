@@ -448,9 +448,12 @@ namespace pose2SLAM {
 class Values {
 	Values();
 	void insertPose(size_t key, const gtsam::Pose2& pose);
-    size_t size() const;
+	size_t size() const;
 	void print(string s) const;
 	gtsam::Pose2 pose(size_t i);
+  Vector xs() const;
+  Vector ys() const;
+  Vector thetas() const;
 };
 
 class Graph {

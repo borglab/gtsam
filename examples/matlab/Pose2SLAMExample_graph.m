@@ -12,7 +12,7 @@
 
 %% Create graph container and add factors to it
 graph = pose2SLAMGraph;
-initialEstimate = pose2SLAMValues;
+initial = pose2SLAMValues;
 odometryNoise = gtsamSharedNoiseModel_Sigmas([0.2; 0.2; 0.1]);
 constraint=gtsamPose2; % identity
 
@@ -27,35 +27,33 @@ if fid < 0
     error('Cannot open the file ');
 end
 
-disp('Reading data from file...')
-lines=textscan(fid,'%s','delimiter','\n');
+columns=textscan(fid,'%s','delimiter','\n');
 fclose(fid);
-n=size(lines{1},1);
+lines=columns{1};
+n=size(lines,1);
 
 for i=1:n
-    text=cell2mat(lines{1}(i));
-    if strcmp('VERTEX2',text(1:7))
-        v = textscan(text,'%s %d %f %f %f',1);
-        initialEstimate.insertPose(v{2}, gtsamPose2(v{3}, v{4}, v{5}));
-    elseif strcmp('EDGE2',text(1:5))
-        e = textscan(text,'%s %d %d %f %f %f',1);
+    line_i=lines{i};
+    if strcmp('VERTEX2',line_i(1:7))
+        v = textscan(line_i,'%s %d %f %f %f',1);
+        initial.insertPose(v{2}, gtsamPose2(v{3}, v{4}, v{5}));
+    elseif strcmp('EDGE2',line_i(1:5))
+        e = textscan(line_i,'%s %d %d %f %f %f',1);
         graph.addOdometry(e{2}, e{3}, gtsamPose2(e{4}, e{5}, e{6}), odometryNoise);
     end
 end
 
 %% Plot Initial Estimate
-figure(1)
-clf
-plotTrajectory(initialEstimate,'r-*')
-hold on
+figure(1);clf
+plot(initial.xs(),initial.ys(),'r-*'); axis equal
 
 addEquivalences=0;
 if addEquivalences
     %% Add equivalence constraints
     for i=1:n
-        text=cell2mat(lines{1}(i));
-        if strcmp('EQUIV',text(1:5))
-            equiv = textscan(text,'%s %d %d',1);
+        line_i=cell2mat(lines(i));
+        if strcmp('EQUIV',line_i(1:5))
+            equiv = textscan(line_i,'%s %d %d',1);
             graph.addOdometry(e{2}, e{3}, constraint, odometryNoise);
         end
     end
@@ -63,8 +61,8 @@ if addEquivalences
 end
 
 %% Optimize using Levenberg-Marquardt optimization with an ordering from colamd
-result = graph.optimize(initialEstimate);
-plotTrajectory(result,'g-*')
+result = graph.optimize(initial);
+hold on; plot(result.xs(),result.ys(),'g-*')
 
 %% Plot Covariance Ellipses
 % marginals = graph.marginals(result);

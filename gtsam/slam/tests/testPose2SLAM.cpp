@@ -41,7 +41,17 @@ static Matrix cov(Matrix_(3, 3,
 	0.0, 0.0, st*st
 	));
 static noiseModel::Gaussian::shared_ptr covariance(noiseModel::Gaussian::Covariance(cov));
-//static noiseModel::Gaussian::shared_ptr I3(noiseModel::Unit::Create(3));
+
+/* ************************************************************************* */
+TEST_UNSAFE( Pose2SLAM, XYT )
+{
+	pose2SLAM::Values values;
+	values.insertPose(1,Pose2(1,2,3));
+	values.insertPose(2,Pose2(4,5,6));
+	EXPECT(assert_equal(Vector_(2,1.0,4.0),values.xs()));
+	EXPECT(assert_equal(Vector_(2,2.0,5.0),values.ys()));
+	EXPECT(assert_equal(Vector_(2,3.0,6.0-2*M_PI),values.thetas()));
+}
 
 /* ************************************************************************* */
 // Test constraint, small displacement
