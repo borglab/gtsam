@@ -11,10 +11,11 @@ errorStateKalmanFilter: simple 1D example of a moving target measured by a accel
 
 2D Pose SLAM 
 ============
-Pose2SLAMExample_easy: A 2D Pose SLAM example using the predefined typedefs in gtsam/slam/pose2SLAM.h
+LocalizationExample.cpp: modeling robot motion
+LocalizationExample2.cpp: example with GPS like measurements
+Pose2SLAMExample: A 2D Pose SLAM example using the predefined typedefs in gtsam/slam/pose2SLAM.h
 Pose2SLAMExample_advanced: same, but uses an Optimizer object
-Pose2SLAMwSPCG_easy: solve a simple 3 by 3 grid of Pose2 SLAM problem by using easy SPCG interface
-Pose2SLAMwSPCG_advanced: solve a simple 3 by 3 grid of Pose2 SLAM problem by using advanced SPCG interface
+Pose2SLAMwSPCG: solve a simple 3 by 3 grid of Pose2 SLAM problem by using easy SPCG interface
 
 Planar SLAM with landmarks
 ==========================
@@ -23,6 +24,7 @@ PlanarSLAMSelfContained_advanced: simple robotics example with all typedefs inte
 
 Visual SLAM
 ===========
+CameraResectioning.cpp: An example of gtsam for solving the camera resectioning problem
 The directory vSLAMexample includes 2 simple examples using GTSAM:
 - vSFMexample using visualSLAM in for structure-from-motion (SFM), and
 - vISAMexample using visualSLAM and ISAM for incremental SLAM updates

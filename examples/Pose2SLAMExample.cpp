@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file Pose2SLAMExample_easy.cpp
+ * @file Pose2SLAMExample.cpp
  * @brief A 2D Pose SLAM example using the predefined typedefs in gtsam/slam/pose2SLAM.h
  * @date Oct 21, 2010
  * @author Yong Dian Jian
