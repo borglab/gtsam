@@ -33,7 +33,9 @@ namespace pose2SLAM {
   /// Values class, inherited from Values, mainly used as a convenience for MATLAB wrapper
   struct Values: public gtsam::Values {
 
-    /// Default constructor
+	  typedef boost::shared_ptr<Values> shared_ptr;
+
+	  /// Default constructor
     Values() {}
 
     /// Copy constructor
@@ -75,7 +77,9 @@ namespace pose2SLAM {
   /// Graph
   struct Graph: public NonlinearFactorGraph {
 
-    /// Default constructor for a NonlinearFactorGraph
+	  typedef boost::shared_ptr<Graph> shared_ptr;
+
+	  /// Default constructor for a NonlinearFactorGraph
     Graph(){}
 
     /// Creates a NonlinearFactorGraph based on another NonlinearFactorGraph
