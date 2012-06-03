@@ -13,7 +13,8 @@
  * @file    inference.h
  * @brief   Contains *generic* inference algorithms that convert between templated
  * graphical models, i.e., factor graphs, Bayes nets, and Bayes trees
- * @author  Frank Dellaert, Richard Roberts
+ * @author  Frank Dellaert
+ * @author  Richard Roberts
  */
 
 #pragma once

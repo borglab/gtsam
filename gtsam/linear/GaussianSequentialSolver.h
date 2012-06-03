@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    SequentialSolver.h
+ * @file    GaussianSequentialSolver.h
  * @brief   Solves a GaussianFactorGraph (i.e. a sparse linear system) using sequential variable elimination.
  * @author  Richard Roberts
  * @date    Oct 19, 2010

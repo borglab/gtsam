@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    EliminationTree.cpp
+ * @file    EliminationTree-inl.h
  * @author  Frank Dellaert
  * @date    Oct 13, 2010
  */

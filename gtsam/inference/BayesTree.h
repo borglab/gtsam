@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    BayesTree
+ * @file    BayesTree.h
  * @brief   Bayes Tree is a tree of cliques of a Bayes Chain
  * @author  Frank Dellaert
  */

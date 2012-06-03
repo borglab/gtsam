@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    GaussianISAM
+ * @file    GaussianISAM.h
  * @brief   Linear ISAM only
  * @author  Michael Kaess
  */

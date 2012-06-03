@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    BayesNet
+ * @file    BayesNet.h
  * @brief   Bayes network
  * @author  Frank Dellaert
  */

@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    NoiseModelFactor.h
- * @brief   Non-linear factor class
+ * @file    NonlinearFactor.h
+ * @brief   Non-linear factor base classes
  * @author  Frank Dellaert
  * @author  Richard Roberts
  */

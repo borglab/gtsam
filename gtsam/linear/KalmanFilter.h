@@ -10,11 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file testKalmanFilter.cpp
- *
- * Simple linear Kalman filter.
- * Implemented using factor graphs, i.e., does Cholesky-based SRIF, really.
- *
+ * @file KalmanFilter.h
+ * @brief Simple linear Kalman filter. Implemented using factor graphs, i.e., does Cholesky-based SRIF, really.
  * @date Sep 3, 2011
  * @author Stephen Williams
  * @author Frank Dellaert
