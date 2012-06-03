@@ -21,6 +21,7 @@
 #include <gtsam/base/cholesky.h> // For NegativeMatrixException
 #include <gtsam/inference/EliminationTree.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
+#include <gtsam/linear/SimpleSPCGSolver.h>
 
 using namespace std;
 
@@ -71,7 +72,8 @@ void LevenbergMarquardtOptimizer::iterate() {
         delta = gtsam::optimize(*EliminationTree<GaussianFactor>::Create(dampedSystem)->eliminate(params_.getEliminationFunction()));
       }
       else if ( params_.isCG() ) {
-        throw runtime_error("todo: ");
+        SimpleSPCGSolver solver(dampedSystem, *params_.iterativeParams);
+        delta = *solver.optimize();
       }
       else {
         throw runtime_error("Optimization parameter is invalid: LevenbergMarquardtParams::elimination");

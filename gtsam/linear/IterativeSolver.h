@@ -9,18 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/**
- * @file IterativeSolver.h
- * @date Oct 24, 2010
- * @author Yong-Dian Jian
- * @brief Base Class for all iterative solvers of linear systems
- */
-
 #pragma once
 
-#include <boost/shared_ptr.hpp>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/IterativeOptimizationParameters.h>
+#include <boost/shared_ptr.hpp>
 
 namespace gtsam {
 
@@ -46,7 +39,7 @@ public:
 
 	virtual VectorValues::shared_ptr optimize () = 0;
 
-	Parameters::shared_ptr parameters() { return parameters_ ; }
+	inline Parameters::shared_ptr parameters() { return parameters_ ; }
 };
 
 }
