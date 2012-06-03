@@ -40,7 +40,7 @@ constraintUncertainty = gtsamSharedNoiseModel_Sigmas([0.2; 0.2; 0.1]);
 graph.addConstraint(5, 2, gtsamPose2(2.0, 0.0, pi/2), constraintUncertainty);
 
 % print
-graph.print(sprintf('/nFactor graph:\n'));
+graph.print(sprintf('\nFactor graph:\n'));
 
 %% Initialize to noisy points
 initialEstimate = pose2SLAMValues;
