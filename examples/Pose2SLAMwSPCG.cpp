@@ -9,6 +9,13 @@
 
  * -------------------------------------------------------------------------- */
 
+/**
+ * @file Pose2SLAMwSPCG.cpp
+ * @brief A 2D Pose SLAM example using the SimpleSPCGSolver.
+ * @author Yong-Dian Jian
+ * @date June 2, 2012
+ */
+
 #include <gtsam/linear/IterativeOptimizationParameters.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/slam/pose2SLAM.h>
@@ -55,6 +62,9 @@ int main(void) {
   cout << "initial error = " << graph.error(initialEstimate) << endl ;
 
   // 4. Single Step Optimization using Levenberg-Marquardt
+  // Note: Although there are many options in IterativeOptimizationParameters,
+  // the SimpleSPCGSolver doesn't actually use all of them at this moment.
+  // More detail in the next release.
   LevenbergMarquardtParams param;
   param.linearSolverType = SuccessiveLinearizationParams::CG;
   param.iterativeParams = boost::make_shared<IterativeOptimizationParameters>();
@@ -63,6 +73,5 @@ int main(void) {
   Values result = optimizer.optimize();
   cout << "final error = " << graph.error(result) << endl;
 
-	return 0 ;
+  return 0 ;
 }
-
