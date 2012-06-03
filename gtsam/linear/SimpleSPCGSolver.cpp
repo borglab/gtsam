@@ -49,7 +49,8 @@ SimpleSPCGSolver::SimpleSPCGSolver(const GaussianFactorGraph &gfg, const Paramet
 
   nVar_ = colSpec.size();
 
-  /* split the factor graph into At (tree) and Ac (constraints) */
+  /* Split the factor graph into At (tree) and Ac (constraints)
+   * Note: This part has to be refined for your graph/application */
   GaussianFactorGraph::shared_ptr At;
   boost::tie(At, Ac_) = this->splitGraph(gfg);
 

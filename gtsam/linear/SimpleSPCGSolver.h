@@ -78,7 +78,8 @@ protected:
   /* return x = Rt^{-1} y + x_t */
   VectorValues::shared_ptr transform(const VectorValues &y);
 
-  /* naively split a gaussian factor graph into tree and constraint parts */
+  /* naively split a gaussian factor graph into tree and constraint parts
+   * Note: This function has to be refined for your graph/application */
   boost::tuple<GaussianFactorGraph::shared_ptr, FactorGraph<JacobianFactor>::shared_ptr>
   splitGraph(const GaussianFactorGraph &gfg);
 
