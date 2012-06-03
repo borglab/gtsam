@@ -32,8 +32,7 @@ public:
     SEQUENTIAL_CHOLESKY,
     SEQUENTIAL_QR,
     CHOLMOD,    /* Experimental Flag */
-    PCG,        /* Experimental Flag */
-    LSPCG       /* Experimental Flag */
+    CG,         /* Experimental Flag */
   };
 
 	LinearSolverType linearSolverType; ///< The type of linear solver to use in the nonlinear optimizer
@@ -62,11 +61,8 @@ public:
     case CHOLMOD:
       std::cout << "         linear solver type: CHOLMOD\n";
       break;
-    case PCG:
-      std::cout << "         linear solver type: PCG\n";
-      break;
-    case LSPCG:
-      std::cout << "         linear solver type: LSPCG\n";
+    case CG:
+      std::cout << "         linear solver type: CG\n";
       break;
     default:
       std::cout << "         linear solver type: (invalid)\n";
@@ -94,16 +90,16 @@ public:
   }
 
   inline bool isCG() const {
-    return (linearSolverType == PCG || linearSolverType == LSPCG);
+    return (linearSolverType == CG);
   }
 
   GaussianFactorGraph::Eliminate getEliminationFunction() {
     switch (linearSolverType) {
     case MULTIFRONTAL_CHOLESKY:
-    case MULTIFRONTAL_QR:
+    case SEQUENTIAL_CHOLESKY:
       return EliminatePreferCholesky;
 
-    case SEQUENTIAL_CHOLESKY:
+    case MULTIFRONTAL_QR:
     case SEQUENTIAL_QR:
       return EliminateQR;
 
