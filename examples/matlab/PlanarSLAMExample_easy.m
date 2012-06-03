@@ -20,24 +20,24 @@
 %  - Landmarks are 2 meters away from the robot trajectory
 
 %% Create keys for variables
-x1 = 1; x2 = 2; x3 = 3;
-l1 = 1; l2 = 2;
+x1 = symbol('x',1); x2 = symbol('x',2); x3 = symbol('x',3);
+l1 = symbol('l',1); l2 = symbol('l',2);
 
 %% Create graph container and add factors to it
 graph = planarSLAMGraph;
 
 %% Add prior
 % gaussian for prior
-prior_model = gtsamSharedNoiseModel_Sigmas([0.3; 0.3; 0.1]);
-prior_measurement = gtsamPose2(0.0, 0.0, 0.0); % prior at origin
-graph.addPrior(x1, prior_measurement, prior_model); % add directly to graph
+priorNoise = gtsamSharedNoiseModel_Sigmas([0.3; 0.3; 0.1]);
+priorMean = gtsamPose2(0.0, 0.0, 0.0); % prior at origin
+graph.addPrior(x1, priorMean, priorNoise); % add directly to graph
 
 %% Add odometry
 % general noisemodel for odometry
-odom_model = gtsamSharedNoiseModel_Sigmas([0.2; 0.2; 0.1]);
-odom_measurement = gtsamPose2(2.0, 0.0, 0.0); % create a measurement for both factors (the same in this case)
-graph.addOdometry(x1, x2, odom_measurement, odom_model);
-graph.addOdometry(x2, x3, odom_measurement, odom_model);
+odometryNoise = gtsamSharedNoiseModel_Sigmas([0.2; 0.2; 0.1]);
+odometry = gtsamPose2(2.0, 0.0, 0.0); % create a measurement for both factors (the same in this case)
+graph.addOdometry(x1, x2, odometry, odometryNoise);
+graph.addOdometry(x2, x3, odometry, odometryNoise);
 
 %% Add measurements
 % general noisemodel for measurements

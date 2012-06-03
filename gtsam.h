@@ -9,7 +9,7 @@
  *   Only one Method/Constructor per line
  *   Methods can return
  *     - Eigen types:       Matrix, Vector
- *     - C/C++ basic types: string, bool, size_t, int, double, char
+ *     - C/C++ basic types: string, bool, size_t, size_t, double, char
  *     - void
  *     - Any class with which be copied with boost::make_shared()
  *     - boost::shared_ptr of any object type
@@ -19,7 +19,7 @@
  *   Arguments to functions any of
  *   	 - Eigen types:       Matrix, Vector
  *   	 - Eigen types and classes as an optionally const reference
- *     - C/C++ basic types: string, bool, size_t, int, double, char
+ *     - C/C++ basic types: string, bool, size_t, size_t, double, char
  *     - Any class with which be copied with boost::make_shared() (except Eigen)
  *     - boost::shared_ptr of any object type (except Eigen)
  *   Comments can use either C++ or C style, with multiple lines
@@ -150,7 +150,7 @@ class Rot3 {
 	static Vector Logmap(const gtsam::Rot3& p);
 	Matrix matrix() const;
 	Matrix transpose() const;
-	gtsam::Point3 column(int index) const;
+	gtsam::Point3 column(size_t index) const;
 	Vector xyz() const;
 	Vector ypr() const;
 	Vector rpy() const;
@@ -173,7 +173,7 @@ class Pose2 {
 	double x() const;
 	double y() const;
 	double theta() const;
-	int dim() const;
+	size_t dim() const;
 	Vector localCoordinates(const gtsam::Pose2& p);
 	gtsam::Pose2 retract(Vector v);
 	gtsam::Pose2 compose(const gtsam::Pose2& p2);
@@ -228,9 +228,12 @@ class CalibratedCamera {
 	static gtsam::Point2 project_to_camera(const gtsam::Point3& cameraPoint);
 };
 
+
 //*************************************************************************
 // inference
 //*************************************************************************
+
+
 
 //*************************************************************************
 // linear
@@ -260,25 +263,25 @@ class SharedNoiseModel {
 
 class VectorValues {
 	VectorValues();
-	VectorValues(int nVars, int varDim);
+	VectorValues(size_t nVars, size_t varDim);
 	void print(string s) const;
 	bool equals(const gtsam::VectorValues& expected, double tol) const;
-	int size() const;
-	void insert(int j, Vector value);
+	size_t size() const;
+	void insert(size_t j, Vector value);
 };
 
 class GaussianConditional {
-	GaussianConditional(int key, Vector d, Matrix R, Vector sigmas);
-	GaussianConditional(int key, Vector d, Matrix R, int name1, Matrix S,
+	GaussianConditional(size_t key, Vector d, Matrix R, Vector sigmas);
+	GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S,
 			Vector sigmas);
-	GaussianConditional(int key, Vector d, Matrix R, int name1, Matrix S,
-			int name2, Matrix T, Vector sigmas);
+	GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S,
+			size_t name2, Matrix T, Vector sigmas);
 	void print(string s) const;
 	bool equals(const gtsam::GaussianConditional &cg, double tol) const;
 };
 
 class GaussianDensity {
-	GaussianDensity(int key, Vector d, Matrix R, Vector sigmas);
+	GaussianDensity(size_t key, Vector d, Matrix R, Vector sigmas);
 	void print(string s) const;
 	Vector mean() const;
 	Matrix information() const;
@@ -302,11 +305,11 @@ class GaussianFactor {
 class JacobianFactor {
 	JacobianFactor();
 	JacobianFactor(Vector b_in);
-	JacobianFactor(int i1, Matrix A1, Vector b,
+	JacobianFactor(size_t i1, Matrix A1, Vector b,
 			const gtsam::SharedDiagonal& model);
-	JacobianFactor(int i1, Matrix A1, int i2, Matrix A2, Vector b,
+	JacobianFactor(size_t i1, Matrix A1, size_t i2, Matrix A2, Vector b,
 			const gtsam::SharedDiagonal& model);
-	JacobianFactor(int i1, Matrix A1, int i2, Matrix A2, int i3, Matrix A3,
+	JacobianFactor(size_t i1, Matrix A1, size_t i2, Matrix A2, size_t i3, Matrix A3,
 			Vector b, const gtsam::SharedDiagonal& model);
 	void print(string s) const;
 	bool equals(const gtsam::GaussianFactor& lf, double tol) const;
@@ -319,11 +322,11 @@ class JacobianFactor {
 class HessianFactor {
 	HessianFactor(const gtsam::HessianFactor& gf);
 	HessianFactor();
-	HessianFactor(int j, Matrix G, Vector g, double f);
-	HessianFactor(int j, Vector mu, Matrix Sigma);
-	HessianFactor(int j1, int j2, Matrix G11, Matrix G12, Vector g1, Matrix G22,
+	HessianFactor(size_t j, Matrix G, Vector g, double f);
+	HessianFactor(size_t j, Vector mu, Matrix Sigma);
+	HessianFactor(size_t j1, size_t j2, Matrix G11, Matrix G12, Vector g1, Matrix G22,
 			Vector g2, double f);
-	HessianFactor(int j1, int j2, int j3, Matrix G11, Matrix G12, Matrix G13,
+	HessianFactor(size_t j1, size_t j2, size_t j3, Matrix G11, Matrix G12, Matrix G13,
 			Vector g1, Matrix G22, Matrix G23, Vector g2, Matrix G33, Vector g3,
 			double f);
 	HessianFactor(const gtsam::GaussianConditional& cg);
@@ -341,16 +344,16 @@ class GaussianFactorGraph {
 	void push_back(gtsam::GaussianFactor* factor);
 	void print(string s) const;
 	bool equals(const gtsam::GaussianFactorGraph& lfgraph, double tol) const;
-	int size() const;
+	size_t size() const;
 
 	// Building the graph
 	void add(gtsam::JacobianFactor* factor);
 	// all these won't work as MATLAB can't handle overloading
 //	void add(Vector b);
-//	void add(int key1, Matrix A1, Vector b, const gtsam::SharedDiagonal& model);
-//	void add(int key1, Matrix A1, int key2, Matrix A2, Vector b,
+//	void add(size_t key1, Matrix A1, Vector b, const gtsam::SharedDiagonal& model);
+//	void add(size_t key1, Matrix A1, size_t key2, Matrix A2, Vector b,
 //			const gtsam::SharedDiagonal& model);
-//	void add(int key1, Matrix A1, int key2, Matrix A2, int key3, Matrix A3,
+//	void add(size_t key1, Matrix A1, size_t key2, Matrix A2, size_t key3, Matrix A3,
 //			Vector b, const gtsam::SharedDiagonal& model);
 //	void add(gtsam::HessianFactor* factor);
 
@@ -375,8 +378,8 @@ class GaussianSequentialSolver {
 			bool useQR);
 	gtsam::GaussianBayesNet* eliminate() const;
 	gtsam::VectorValues* optimize() const;
-	gtsam::GaussianFactor* marginalFactor(int j) const;
-	Matrix marginalCovariance(int j) const;
+	gtsam::GaussianFactor* marginalFactor(size_t j) const;
+	Matrix marginalCovariance(size_t j) const;
 };
 
 class KalmanFilter {
@@ -384,7 +387,7 @@ class KalmanFilter {
 	// gtsam::GaussianDensity* init(Vector x0, const gtsam::SharedDiagonal& P0);
 	gtsam::GaussianDensity* init(Vector x0, Matrix P0);
 	void print(string s) const;
-	static int step(gtsam::GaussianDensity* p);
+	static size_t step(gtsam::GaussianDensity* p);
 	gtsam::GaussianDensity* predict(gtsam::GaussianDensity* p, Matrix F,
 			Matrix B, Vector u, const gtsam::SharedDiagonal& modelQ);
 	gtsam::GaussianDensity* predictQ(gtsam::GaussianDensity* p, Matrix F,
@@ -420,6 +423,7 @@ class NonlinearFactorGraph {
 
 class Values {
 	Values();
+	size_t size() const;
 	void print(string s) const;
 	bool exists(size_t j) const;
 };
@@ -432,57 +436,7 @@ class Marginals {
 	Matrix marginalInformation(size_t variable) const;
 };
 
-} ///\namespace gtsam
-
-//*************************************************************************
-// planarSLAM
-//*************************************************************************
-
-#include <gtsam/slam/planarSLAM.h>
-namespace planarSLAM {
-
-class Values {
-	Values();
-	void print(string s) const;
-	gtsam::Pose2 pose(int key) const;
-	gtsam::Point2 point(int key) const;
-	void insertPose(int key, const gtsam::Pose2& pose);
-	void insertPoint(int key, const gtsam::Point2& point);
-};
-
-class Graph {
-	Graph();
-
-	void print(string s) const;
-
-	double error(const planarSLAM::Values& values) const;
-	gtsam::Ordering* orderingCOLAMD(const planarSLAM::Values& values) const;
-	gtsam::GaussianFactorGraph* linearize(const planarSLAM::Values& values,
-			const gtsam::Ordering& ordering) const;
-
-	void addPrior(int key, const gtsam::Pose2& pose,
-			const gtsam::SharedNoiseModel& noiseModel);
-	void addPoseConstraint(int key, const gtsam::Pose2& pose);
-	void addOdometry(int key1, int key2, const gtsam::Pose2& odometry,
-			const gtsam::SharedNoiseModel& noiseModel);
-	void addBearing(int poseKey, int pointKey, const gtsam::Rot2& bearing,
-			const gtsam::SharedNoiseModel& noiseModel);
-	void addRange(int poseKey, int pointKey, double range,
-			const gtsam::SharedNoiseModel& noiseModel);
-	void addBearingRange(int poseKey, int pointKey, const gtsam::Rot2& bearing,
-			double range, const gtsam::SharedNoiseModel& noiseModel);
-	planarSLAM::Values optimize(const planarSLAM::Values& initialEstimate);
-};
-
-class Odometry {
-	Odometry(int key1, int key2, const gtsam::Pose2& measured,
-			const gtsam::SharedNoiseModel& model);
-	void print(string s) const;
-	gtsam::GaussianFactor* linearize(const planarSLAM::Values& center,
-			const gtsam::Ordering& ordering) const;
-};
-
-} ///\namespace planarSLAM
+}///\namespace gtsam
 
 //*************************************************************************
 // Pose2SLAM
@@ -493,9 +447,10 @@ namespace pose2SLAM {
 
 class Values {
 	Values();
+	void insertPose(size_t key, const gtsam::Pose2& pose);
+    size_t size() const;
 	void print(string s) const;
-	void insertPose(int key, const gtsam::Pose2& pose);
-	gtsam::Pose2 pose(int i);
+	gtsam::Pose2 pose(size_t i);
 };
 
 class Graph {
@@ -508,16 +463,68 @@ class Graph {
 	gtsam::GaussianFactorGraph* linearize(const pose2SLAM::Values& values,
 			const gtsam::Ordering& ordering) const;
 
-	void addPrior(int key, const gtsam::Pose2& pose,
+	void addPrior(size_t key, const gtsam::Pose2& pose,
 			const gtsam::SharedNoiseModel& noiseModel);
-	void addPoseConstraint(int key, const gtsam::Pose2& pose);
-	void addOdometry(int key1, int key2, const gtsam::Pose2& odometry,
+	void addPoseConstraint(size_t key, const gtsam::Pose2& pose);
+	void addOdometry(size_t key1, size_t key2, const gtsam::Pose2& odometry,
+			const gtsam::SharedNoiseModel& noiseModel);
+	void addConstraint(size_t key1, size_t key2, const gtsam::Pose2& odometry,
 			const gtsam::SharedNoiseModel& noiseModel);
 	pose2SLAM::Values optimize(const pose2SLAM::Values& initialEstimate) const;
 	gtsam::Marginals marginals(const pose2SLAM::Values& solution) const;
 };
 
-} ///\namespace pose2SLAM
+}///\namespace pose2SLAM
+
+//*************************************************************************
+// planarSLAM
+//*************************************************************************
+
+#include <gtsam/slam/planarSLAM.h>
+namespace planarSLAM {
+
+class Values {
+	Values();
+	void insertPose(size_t key, const gtsam::Pose2& pose);
+	void insertPoint(size_t key, const gtsam::Point2& point);
+	void print(string s) const;
+	gtsam::Pose2 pose(size_t key) const;
+	gtsam::Point2 point(size_t key) const;
+};
+
+class Graph {
+	Graph();
+
+	void print(string s) const;
+
+	double error(const planarSLAM::Values& values) const;
+	gtsam::Ordering* orderingCOLAMD(const planarSLAM::Values& values) const;
+	gtsam::GaussianFactorGraph* linearize(const planarSLAM::Values& values,
+			const gtsam::Ordering& ordering) const;
+
+	void addPrior(size_t key, const gtsam::Pose2& pose,
+			const gtsam::SharedNoiseModel& noiseModel);
+	void addPoseConstraint(size_t key, const gtsam::Pose2& pose);
+	void addOdometry(size_t key1, size_t key2, const gtsam::Pose2& odometry,
+			const gtsam::SharedNoiseModel& noiseModel);
+	void addBearing(size_t poseKey, size_t pointKey, const gtsam::Rot2& bearing,
+			const gtsam::SharedNoiseModel& noiseModel);
+	void addRange(size_t poseKey, size_t pointKey, double range,
+			const gtsam::SharedNoiseModel& noiseModel);
+	void addBearingRange(size_t poseKey, size_t pointKey, const gtsam::Rot2& bearing,
+			double range, const gtsam::SharedNoiseModel& noiseModel);
+	planarSLAM::Values optimize(const planarSLAM::Values& initialEstimate);
+};
+
+class Odometry {
+	Odometry(size_t key1, size_t key2, const gtsam::Pose2& measured,
+			const gtsam::SharedNoiseModel& model);
+	void print(string s) const;
+	gtsam::GaussianFactor* linearize(const planarSLAM::Values& center,
+			const gtsam::Ordering& ordering) const;
+};
+
+}///\namespace planarSLAM
 
 //*************************************************************************
 // Simulated2D
@@ -528,12 +535,12 @@ namespace simulated2D {
 
 class Values {
 	Values();
-	void insertPose(int i, const gtsam::Point2& p);
-	void insertPoint(int j, const gtsam::Point2& p);
-	int nrPoses() const;
-	int nrPoints() const;
-	gtsam::Point2 pose(int i);
-	gtsam::Point2 point(int j);
+	void insertPose(size_t i, const gtsam::Point2& p);
+	void insertPoint(size_t j, const gtsam::Point2& p);
+	size_t nrPoses() const;
+	size_t nrPoints() const;
+	gtsam::Point2 pose(size_t i);
+	gtsam::Point2 point(size_t j);
 };
 
 class Graph {
@@ -550,12 +557,12 @@ namespace simulated2DOriented {
 
 class Values {
 	Values();
-	void insertPose(int i, const gtsam::Pose2& p);
-	void insertPoint(int j, const gtsam::Point2& p);
-	int nrPoses() const;
-	int nrPoints() const;
-	gtsam::Pose2 pose(int i);
-	gtsam::Point2 point(int j);
+	void insertPose(size_t i, const gtsam::Pose2& p);
+	void insertPoint(size_t j, const gtsam::Point2& p);
+	size_t nrPoses() const;
+	size_t nrPoints() const;
+	gtsam::Pose2 pose(size_t i);
+	gtsam::Point2 point(size_t j);
 };
 
 class Graph {
