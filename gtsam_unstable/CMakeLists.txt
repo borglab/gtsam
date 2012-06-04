@@ -87,7 +87,13 @@ if (GTSAM_BUILD_WRAP)
     
     # Code generation command
     add_custom_target(wrap_gtsam_unstable ALL COMMAND 
-        ${CMAKE_BINARY_DIR}/wrap/wrap ${GTSAM_MEX_BIN_EXTENSION} ${CMAKE_CURRENT_SOURCE_DIR} ${moduleName} ${toolbox_path} "${mexFlags}"
+        ${CMAKE_BINARY_DIR}/wrap/wrap 
+        ${MEX_COMMAND} 
+        ${GTSAM_MEX_BIN_EXTENSION} 
+        ${CMAKE_CURRENT_SOURCE_DIR} 
+        ${moduleName} 
+        ${toolbox_path} 
+        "${mexFlags}"
         DEPENDS wrap)
     
     # Build command
