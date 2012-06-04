@@ -78,7 +78,7 @@ int main(int argc, char* argv[]) {
   	// Update ISAM the first time and obtain the current estimate
   	isam.update(newFactors, initials);
   	currentEstimate = isam.estimate();
-  	cout << "Pose 0 and 1: " << endl;
+  	cout << "Frame 0 and 1: " << endl;
   	currentEstimate.print("Current estimate: ");
   }
 
@@ -103,7 +103,7 @@ int main(int argc, char* argv[]) {
   	isam.update(newFactors, initials);
   	currentEstimate = isam.estimate();
   	cout << "****************************************************" << endl;
-  	cout << "Pose " << i << ": " << endl;
+  	cout << "Frame " << i << ": " << endl;
   	currentEstimate.print("Current estimate: ");
   }
 
