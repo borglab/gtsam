@@ -68,72 +68,142 @@ namespace gtsam {
 //*************************************************************************
 
 class Point2 {
+  // Standard Constructors
 	Point2();
 	Point2(double x, double y);
-	static gtsam::Point2 Expmap(Vector v);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::Point2& pose, double tol) const;
+
+  // Group
+  static gtsam::Point2 identity();
+  gtsam::Point2 inverse() const;
+  gtsam::Point2 compose(const gtsam::Point2& p2) const;
+  gtsam::Point2 between(const gtsam::Point2& p2) const;
+
+  // Manifold
+  static size_t Dim();
+  size_t dim() const;
+  gtsam::Point2 retract(Vector v) const;
+  Vector localCoordinates(const gtsam::Point2& p) const;
+
+  // Lie Group
+  static gtsam::Point2 Expmap(Vector v);
 	static Vector Logmap(const gtsam::Point2& p);
-	void print(string s) const;
-	double x();
-	double y();
-	Vector localCoordinates(const gtsam::Point2& p);
-	gtsam::Point2 compose(const gtsam::Point2& p2);
-	gtsam::Point2 between(const gtsam::Point2& p2);
-	gtsam::Point2 retract(Vector v);
+
+  // Standard Interface
+  double x() const;
+	double y() const;
+  Vector vector() const;
 };
 
 class StereoPoint2 {
+  // Standard Constructors
   StereoPoint2();
   StereoPoint2(double uL, double uR, double v);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::StereoPoint2& point, double tol) const;
+
+  // Group
+  static gtsam::StereoPoint2 identity();
+  gtsam::StereoPoint2 inverse() const;
+  gtsam::StereoPoint2 compose(const gtsam::StereoPoint2& p2) const;
+  gtsam::StereoPoint2 between(const gtsam::StereoPoint2& p2) const;
+
+  // Manifold
+  static size_t Dim();
+  size_t dim() const;
+  gtsam::StereoPoint2 retract(Vector v) const;
+  Vector localCoordinates(const gtsam::StereoPoint2& p) const;
+
+  // Lie Group
   static gtsam::StereoPoint2 Expmap(Vector v);
   static Vector Logmap(const gtsam::StereoPoint2& p);
-  void print(string s) const;
-  Vector localCoordinates(const gtsam::StereoPoint2& p);
-  gtsam::StereoPoint2 compose(const gtsam::StereoPoint2& p2);
-  gtsam::StereoPoint2 between(const gtsam::StereoPoint2& p2);
-  gtsam::StereoPoint2 retract(Vector v);
+
+  // Standard Interface
+  Vector vector() const;
 };
 
 class Point3 {
+  // Standard Constructors
 	Point3();
 	Point3(double x, double y, double z);
 	Point3(Vector v);
-	static gtsam::Point3 Expmap(Vector v);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::Point3& p, double tol) const;
+
+  // Group
+  static gtsam::Point3 identity();
+  gtsam::Point3 inverse() const;
+  gtsam::Point3 compose(const gtsam::Point3& p2) const;
+  gtsam::Point3 between(const gtsam::Point3& p2) const;
+
+  // Manifold
+  static size_t Dim();
+  size_t dim() const;
+  gtsam::Point3 retract(Vector v) const;
+  Vector localCoordinates(const gtsam::Point3& p) const;
+
+  // Lie Group
+  static gtsam::Point3 Expmap(Vector v);
 	static Vector Logmap(const gtsam::Point3& p);
-	void print(string s) const;
-	bool equals(const gtsam::Point3& p, double tol);
+
+  // Standard Interface
 	Vector vector() const;
-	double x();
-	double y();
-	double z();
-	Vector localCoordinates(const gtsam::Point3& p);
-	gtsam::Point3 retract(Vector v);
-	gtsam::Point3 compose(const gtsam::Point3& p2);
-	gtsam::Point3 between(const gtsam::Point3& p2);
+	double x() const;
+	double y() const;
+	double z() const;
 };
 
 class Rot2 {
+  // Standard Constructors and Named Constructors
 	Rot2();
 	Rot2(double theta);
-	static gtsam::Rot2 Expmap(Vector v);
+  static gtsam::Rot2 fromAngle(double theta);
+  static gtsam::Rot2 fromDegrees(double theta);
+  static gtsam::Rot2 fromCosSin(double c, double s);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::Rot2& rot, double tol) const;
+
+  // Group
+  static gtsam::Rot2 identity();
+  static gtsam::Rot2 inverse();
+  gtsam::Rot2 compose(const gtsam::Rot2& p2) const;
+  gtsam::Rot2 between(const gtsam::Rot2& p2) const;
+
+  // Manifold
+  static size_t Dim();
+  size_t dim() const;
+  gtsam::Rot2 retract(Vector v) const;
+  Vector localCoordinates(const gtsam::Rot2& p) const;
+
+  // Lie Group
+  static gtsam::Rot2 Expmap(Vector v);
 	static Vector Logmap(const gtsam::Rot2& p);
-	static gtsam::Rot2 fromAngle(double theta);
-	static gtsam::Rot2 fromDegrees(double theta);
-	static gtsam::Rot2 fromCosSin(double c, double s);
+
+  // Group Action on Point2
+  gtsam::Point2 rotate(const gtsam::Point2& point) const;
+  gtsam::Point2 unrotate(const gtsam::Point2& point) const;
+
+  // Standard Interface
 	static gtsam::Rot2 relativeBearing(const gtsam::Point2& d); // Ignoring derivative
 	static gtsam::Rot2 atan2(double y, double x);
-	void print(string s) const;
-	bool equals(const gtsam::Rot2& rot, double tol) const;
 	double theta() const;
 	double degrees() const;
 	double c() const;
 	double s() const;
-	Vector localCoordinates(const gtsam::Rot2& p);
-	gtsam::Rot2 retract(Vector v);
-	gtsam::Rot2 compose(const gtsam::Rot2& p2);
-	gtsam::Rot2 between(const gtsam::Rot2& p2);
+  Matrix matrix() const;
 };
 
 class Rot3 {
+  // Standard Constructors and Named Constructors
 	Rot3();
 	Rot3(Matrix R);
 	static gtsam::Rot3 Rx(double t);
@@ -147,17 +217,29 @@ class Rot3 {
 	static gtsam::Rot3 ypr(double y, double p, double r);
 	static gtsam::Rot3 quaternion(double w, double x, double y, double z);
 	static gtsam::Rot3 rodriguez(Vector v);
+
+  // Testable
 	void print(string s) const;
 	bool equals(const gtsam::Rot3& rot, double tol) const;
+
+  // Group
 	static gtsam::Rot3 identity();
+  gtsam::Rot3 inverse() const;
 	gtsam::Rot3 compose(const gtsam::Rot3& p2) const;
-	gtsam::Rot3 inverse() const;
 	gtsam::Rot3 between(const gtsam::Rot3& p2) const;
+
+  // Manifold
+  static size_t Dim();
+  size_t dim() const;
+  gtsam::Rot3 retractCayley(Vector v) const;
+  gtsam::Rot3 retract(Vector v) const;
+  Vector localCoordinates(const gtsam::Rot3& p) const;
+
+  // Group Action on Point3
 	gtsam::Point3 rotate(const gtsam::Point3& p) const;
 	gtsam::Point3 unrotate(const gtsam::Point3& p) const;
-	gtsam::Rot3 retractCayley(Vector v) const;
-	gtsam::Rot3 retract(Vector v) const;
-	Vector localCoordinates(const gtsam::Rot3& p) const;
+
+  // Standard Interface
 	static gtsam::Rot3 Expmap(Vector v);
 	static Vector Logmap(const gtsam::Rot3& p);
 	Matrix matrix() const;
@@ -170,30 +252,53 @@ class Rot3 {
 	double pitch() const;
 	double yaw() const;
 //  Vector toQuaternion() const;  // FIXME: Can't cast to Vector properly
+  Matrix matrix() const;
 };
 
 class Pose2 {
+  // Standard Constructor
 	Pose2();
 	Pose2(double x, double y, double theta);
 	Pose2(double theta, const gtsam::Point2& t);
 	Pose2(const gtsam::Rot2& r, const gtsam::Point2& t);
 	Pose2(Vector v);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::Pose2& pose, double tol) const;
+
+  // Group
+  static gtsam::Pose2 identity();
+  gtsam::Pose2 inverse() const;
+  gtsam::Pose2 compose(const gtsam::Pose2& p2) const;
+  gtsam::Pose2 between(const gtsam::Pose2& p2) const;
+
+  // Manifold
+  static size_t Dim();
+  size_t dim() const;
+  gtsam::Pose2 retract(Vector v) const;
+  Vector localCoordinates(const gtsam::Pose2& p) const;
+
+  // Lie Group
 	static gtsam::Pose2 Expmap(Vector v);
 	static Vector Logmap(const gtsam::Pose2& p);
-	void print(string s) const;
-	bool equals(const gtsam::Pose2& pose, double tol) const;
+  Matrix adjointMap() const;
+  Vector adjoint() const;
+  static Matrix wedge();
+
+  // Group Actions on Point2
+  gtsam::Point2 transform_from(const gtsam::Point2& p) const;
+  gtsam::Point2 transform_to(const gtsam::Point2& p) const;
+
+  // Standard Interface
 	double x() const;
 	double y() const;
 	double theta() const;
-	size_t dim() const;
-	Vector localCoordinates(const gtsam::Pose2& p);
-	gtsam::Pose2 retract(Vector v);
-	gtsam::Pose2 compose(const gtsam::Pose2& p2);
-	gtsam::Pose2 between(const gtsam::Pose2& p2);
-	gtsam::Rot2 bearing(const gtsam::Point2& point);
-	double range(const gtsam::Point2& point);
+	gtsam::Rot2 bearing(const gtsam::Point2& point) const;
+	double range(const gtsam::Point2& point) const;
 	gtsam::Point2 translation() const;
 	gtsam::Rot2 rotation() const;
+  Matrix matrix() const;
 };
 
 class Pose3 {
@@ -210,15 +315,15 @@ class Pose3 {
 
 	// Group
 	static gtsam::Pose3 identity();
-	gtsam::Pose3 inverse();
-	gtsam::Pose3 compose(const gtsam::Pose3& p2);
-	gtsam::Pose3 between(const gtsam::Pose3& p2);
+	gtsam::Pose3 inverse() const;
+	gtsam::Pose3 compose(const gtsam::Pose3& p2) const;
+	gtsam::Pose3 between(const gtsam::Pose3& p2) const;
 
 	// Manifold
 	static size_t Dim();
 	size_t dim() const;
-	gtsam::Pose3 retract(Vector v);
-	gtsam::Pose3 retractFirstOrder(Vector v);
+	gtsam::Pose3 retract(Vector v) const;
+	gtsam::Pose3 retractFirstOrder(Vector v) const;
 	Vector localCoordinates(const gtsam::Pose3& T2) const;
 
 	// Lie Group
@@ -245,40 +350,97 @@ class Pose3 {
 };
 
 class Cal3_S2 {
+  // Standard Constructors
   Cal3_S2();
   Cal3_S2(double fx, double fy, double s, double u0, double v0);
 
+  // Testable
   void print(string s) const;
+  bool equals(const gtsam::Cal3_S2& pose, double tol) const;
+
+  // Manifold
+  static size_t Dim();
+  size_t dim() const;
+  gtsam::Cal3_S2 retract(Vector v) const;
+  Vector localCoordinates(const gtsam::Cal3_S2& c) const;
+
+  // Action on Point2
+  gtsam::Point2 calibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
+
+  // Standard Interface
+  double fx() const;
+  double fy() const;
+  double skew() const;
+  double px() const;
+  double py() const;
+  gtsam::Point2 principalPoint() const;
+  Vector vector() const;
+  Matrix matrix() const;
+  Matrix matrix_inverse() const;
 };
 
 class Cal3_S2Stereo {
+  // Standard Constructors
   Cal3_S2Stereo();
   Cal3_S2Stereo(double fx, double fy, double s, double u0, double v0, double b);
 
+  // Testable
   void print(string s) const;
+  bool equals(const gtsam::Cal3_S2Stereo& pose, double tol) const;
+
+  // Manifold
+  static size_t Dim();
+  size_t dim() const;
+  gtsam::Cal3_S2Stereo retract(Vector v) const;
+  Vector localCoordinates(const gtsam::Cal3_S2Stereo& c) const;
+
+  // Action on Point2
+  gtsam::Point2 calibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
+
+  // Standard Interface
+  double fx() const;
+  double fy() const;
+  double skew() const;
+  double px() const;
+  double py() const;
+  gtsam::Point2 principalPoint() const;
+  Vector vector() const;
+  Matrix matrix() const;
+  Matrix matrix_inverse() const;
+  double baseline() const;
 };
 
 class CalibratedCamera {
-
+  // Standard Constructors and Named Constructors
 	CalibratedCamera();
 	CalibratedCamera(const gtsam::Pose3& pose);
 	CalibratedCamera(const Vector& v);
+  gtsam::CalibratedCamera level(const gtsam::Pose2& pose2, double height);
 
+  // Testable
 	void print(string s) const;
 	bool equals(const gtsam::CalibratedCamera& camera, double tol) const;
 
+  // Manifold
+  static size_t Dim();
+  size_t dim() const;
+  gtsam::CalibratedCamera retract(const Vector& d) const;
+  Vector localCoordinates(const gtsam::CalibratedCamera& T2) const;
+
+  // Group
+  gtsam::CalibratedCamera compose(const gtsam::CalibratedCamera& c) const;
+  gtsam::CalibratedCamera inverse() const;
+
+  // Action on Point3
+  gtsam::Point2 project(const gtsam::Point3& point) const;
+  static gtsam::Point2 project_to_camera(const gtsam::Point3& cameraPoint);
+
+  // Standard Interface
 	gtsam::Pose3 pose() const;
-
-	gtsam::CalibratedCamera compose(const gtsam::CalibratedCamera& c) const;
-	gtsam::CalibratedCamera inverse() const;
-	gtsam::CalibratedCamera level(const gtsam::Pose2& pose2, double height);
-	gtsam::CalibratedCamera retract(const Vector& d) const;
-	Vector localCoordinates(const gtsam::CalibratedCamera& T2) const;
-
-	gtsam::Point2 project(const gtsam::Point3& point) const;
-	static gtsam::Point2 project_to_camera(const gtsam::Point3& cameraPoint);
+  double range(const gtsam::Point3& p) const; // TODO: Other overloaded range methods
 };
-
 
 //*************************************************************************
 // inference
