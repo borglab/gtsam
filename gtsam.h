@@ -9,17 +9,17 @@
  *   Only one Method/Constructor per line
  *   Methods can return
  *     - Eigen types:       Matrix, Vector
- *     - C/C++ basic types: string, bool, size_t, size_t, double, char
+ *     - C/C++ basic types: string, bool, size_t, size_t, double, char, unsigned char
  *     - void
  *     - Any class with which be copied with boost::make_shared()
  *     - boost::shared_ptr of any object type
  *   Limitations on methods
  *     - Parsing does not support overloading
- *     - There can only be one method with a given name
+ *     - There can only be one method (static or otherwise) with a given name
  *   Arguments to functions any of
  *   	 - Eigen types:       Matrix, Vector
  *   	 - Eigen types and classes as an optionally const reference
- *     - C/C++ basic types: string, bool, size_t, size_t, double, char
+ *     - C/C++ basic types: string, bool, size_t, size_t, double, char, unsigned char
  *     - Any class with which be copied with boost::make_shared() (except Eigen)
  *     - boost::shared_ptr of any object type (except Eigen)
  *   Comments can use either C++ or C style, with multiple lines
@@ -174,7 +174,7 @@ class Rot2 {
 
   // Group
   static gtsam::Rot2 identity();
-  static gtsam::Rot2 inverse();
+  gtsam::Rot2 inverse();
   gtsam::Rot2 compose(const gtsam::Rot2& p2) const;
   gtsam::Rot2 between(const gtsam::Rot2& p2) const;
 
@@ -284,7 +284,7 @@ class Pose2 {
 	static Vector Logmap(const gtsam::Pose2& p);
   Matrix adjointMap() const;
   Vector adjoint() const;
-  static Matrix wedge();
+  static Matrix wedge(double vx, double vy, double w);
 
   // Group Actions on Point2
   gtsam::Point2 transform_from(const gtsam::Point2& p) const;
