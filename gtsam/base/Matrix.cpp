@@ -236,6 +236,29 @@ void save(const Matrix& A, const string &s, const string& filename) {
 }
 
 /* ************************************************************************* */
+//istream& operator>>(istream& inputStream, Matrix& destinationMatrix) {
+//  destinationMatrix.resize(0,0);
+//  string line;
+//  bool first = true;
+//  while(getline(inputStream, line)) {
+//    // Read coefficients from file
+//    vector<double> coeffs;
+//    std::copy(istream_iterator<double>(stringstream(line)), istream_iterator<double>(), coeffs.end());
+//    if(first) {
+//      destinationMatrix.resize(1,
+//    }
+//    if(coeffs.size() != dimLatent()) {
+//      cout << "Error reading motion file, latent variable dimension does not match file" << endl;
+//      exit(1);
+//    }
+//
+//    // Copy coefficients to alignment matrix
+//    alignment_.conservativeResize(alignment_.rows() + 1, dimLatent());
+//    alignment_.row(alignment_.rows() - 1) = Eigen::Map<Vector>(&coeffs[0], dimLatent()).transpose();
+//  }
+//}
+
+/* ************************************************************************* */
 void insertSub(Matrix& fullMatrix, const Matrix& subMatrix, size_t i, size_t j) {
 	fullMatrix.block(i, j, subMatrix.rows(), subMatrix.cols()) = subMatrix;
 }

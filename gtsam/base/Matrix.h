@@ -184,6 +184,13 @@ void print(const Matrix& A, const std::string& s = "", std::ostream& stream = st
 void save(const Matrix& A, const std::string &s, const std::string& filename);
 
 /**
+ * Read a matrix from an input stream, such as a file.  Entries can be either
+ * tab-, space-, or comma-separated, similar to the format read by the MATLAB
+ * dlmread command.
+ */
+//istream& operator>>(istream& inputStream, Matrix& destinationMatrix);
+
+/**
  * extract submatrix, slice semantics, i.e. range = [i1,i2[ excluding i2
  * @param A matrix
  * @param i1 first row index
