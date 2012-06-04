@@ -197,26 +197,51 @@ class Pose2 {
 };
 
 class Pose3 {
+	// Standard Constructors
 	Pose3();
+	Pose3(const gtsam::Pose3& pose);
 	Pose3(const gtsam::Rot3& r, const gtsam::Point3& t);
-	Pose3(Matrix t);
 	Pose3(const gtsam::Pose2& pose2);
-	static gtsam::Pose3 Expmap(Vector v);
-	static Vector Logmap(const gtsam::Pose3& p);
+	Pose3(Matrix t);
+
+	// Testable
 	void print(string s) const;
 	bool equals(const gtsam::Pose3& pose, double tol) const;
+
+	// Group
+	static gtsam::Pose3 identity();
+	gtsam::Pose3 inverse();
+	gtsam::Pose3 compose(const gtsam::Pose3& p2);
+	gtsam::Pose3 between(const gtsam::Pose3& p2);
+
+	// Manifold
+	static size_t Dim();
+	size_t dim() const;
+	gtsam::Pose3 retract(Vector v);
+	gtsam::Pose3 retractFirstOrder(Vector v);
+	Vector localCoordinates(const gtsam::Pose3& T2) const;
+
+	// Lie Group
+	static gtsam::Pose3 Expmap(Vector v);
+	static Vector Logmap(const gtsam::Pose3& p);
+	Matrix adjointMap() const;
+	Vector adjoint(const Vector& xi) const;
+	static Matrix wedge(double wx, double wy, double wz, double vx, double vy, double vz);
+
+	// Group Action on Point3
+	gtsam::Point3 transform_from(const gtsam::Point3& p) const;
+	gtsam::Point3 transform_to(const gtsam::Point3& p) const;
+
+	// Standard Interface
+	gtsam::Rot3 rotation() const;
+	gtsam::Point3 translation() const;
 	double x() const;
 	double y() const;
 	double z() const;
 	Matrix matrix() const;
-	Matrix adjointMap() const;
-	gtsam::Pose3 compose(const gtsam::Pose3& p2);
-	gtsam::Pose3 between(const gtsam::Pose3& p2);
-	gtsam::Pose3 retract(Vector v);
-	gtsam::Pose3 retractFirstOrder(Vector v);
-	Vector localCoordinates(const gtsam::Pose3& T2) const;
-	gtsam::Point3 translation() const;
-	gtsam::Rot3 rotation() const;
+	gtsam::Pose3 transform_to(const gtsam::Pose3& pose) const;
+	double range(const gtsam::Point3& point);
+	// double range(const gtsam::Pose3& pose);
 };
 
 class Cal3_S2 {

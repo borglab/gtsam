@@ -10,19 +10,24 @@
 % @author Frank Dellaert
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+N = 2500;
+% filename = '../Data/sphere_smallnoise.graph';
+% filename = '../Data/sphere2500_groundtruth.txt';
+filename = '../Data/sphere2500.txt';
+
 %% Initialize graph, initial estimate, and odometry noise
 model = gtsamSharedNoiseModel_Sigmas([0.05; 0.05; 0.05; 5*pi/180; 5*pi/180; 5*pi/180]);
-[graph,initial]=load3D('../Data/sphere_smallnoise.graph',model,100);
-
-%% Fix first pose
+[graph,initial]=load3D(filename,model,true,N);
 first = initial.pose(0);
-graph.addHardConstraint(0, first); % add directly to graph
+graph.addHardConstraint(0, first);
 
 %% Plot Initial Estimate
 figure(1);clf
-plot3(initial.xs(),initial.ys(),initial.zs(),'g-'); hold on
-plot3(first.x(),first.y(),first.z(),'r*'); 
+plot3(first.x(),first.y(),first.z(),'r*'); hold on
+plot3DTrajectory(initial,'g-',false);
 
-%% Optimize using Levenberg-Marquardt optimization with an ordering from colamd
-result = graph.optimize(initial);
-hold on; plot3(result.xs(),result.ys(),result.zs(),'b-');axis equal; 
+%% Read again, now all constraints
+[graph,discard]=load3D(filename,model,false,N);
+graph.addHardConstraint(0, first);
+result = graph.optimize(initial); % start from old result
+plot3DTrajectory(result,'r-',false); axis equal;
