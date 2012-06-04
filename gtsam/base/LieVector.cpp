@@ -15,7 +15,7 @@
  * @author Alex Cunningham
  */
 
-#include <stdarg.h>
+#include <cstdarg>
 #include <gtsam/base/LieVector.h>
 
 using namespace std;
