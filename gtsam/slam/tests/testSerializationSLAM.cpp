@@ -181,7 +181,7 @@ Cal3_S2 cal1(1.0, 2.0, 0.3, 0.1, 0.5);
 /* ************************************************************************* */
 TEST (Serialization, visual_system) {
   using namespace visualSLAM;
-  Values values;
+  visualSLAM::Values values;
   Symbol x1('x',1), x2('x',2);
   Symbol l1('l',1), l2('l',2);
   Pose3 pose1 = pose3, pose2 = pose3.inverse();

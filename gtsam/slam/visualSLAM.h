@@ -46,6 +46,27 @@ namespace visualSLAM {
   typedef GenericProjectionFactor<Pose3, Point3> ProjectionFactor;
   typedef GenericStereoFactor<Pose3, Point3> StereoFactor;
 
+  /// Values class, inherited from Values, mainly used as a convenience for MATLAB wrapper
+  struct Values: public gtsam::Values {
+
+    typedef boost::shared_ptr<Values> shared_ptr;
+
+    /// Default constructor
+    Values() {}
+
+    /// Copy constructor
+    Values(const gtsam::Values& values) :
+        gtsam::Values(values) {
+    }
+
+    /// insert a pose
+    void insertPose(Key i, const Pose3& pose) { insert(i, pose); }
+
+    /// get a pose
+    Pose3 pose(Key i) const { return at<Pose3>(i); }
+
+  };
+
   /**
    * Non-linear factor graph for vanilla visual SLAM
    */
@@ -79,6 +100,17 @@ namespace visualSLAM {
      */
     void addMeasurement(const Point2& measured, const SharedNoiseModel& model,
         Key poseKey, Key pointKey, const shared_ptrK& K);
+
+    /**
+     *  Add a stereo factor measurement
+     *  @param measured the measurement
+     *  @param model the noise model for the measurement
+     *  @param poseKey variable key for the camera pose
+     *  @param pointKey variable key for the landmark
+     *  @param K shared pointer to stereo calibration object
+     */
+    void addStereoMeasurement(const StereoPoint2& measured, const SharedNoiseModel& model,
+        Key poseKey, Key pointKey, const shared_ptrKStereo& K);
 
     /**
      *  Add a constraint on a pose (for now, *must* be satisfied in any Values)

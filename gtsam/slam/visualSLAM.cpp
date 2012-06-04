@@ -28,6 +28,13 @@ namespace visualSLAM {
   }
 
   /* ************************************************************************* */
+  void Graph::addStereoMeasurement(const StereoPoint2& measured, const SharedNoiseModel& model,
+       Key poseKey, Key pointKey, const shared_ptrKStereo& K) {
+    boost::shared_ptr<StereoFactor> factor(new StereoFactor(measured, model, poseKey, pointKey, K));
+    push_back(factor);
+  }
+
+  /* ************************************************************************* */
   void Graph::addPoseConstraint(Key poseKey, const Pose3& p) {
     boost::shared_ptr<PoseConstraint> factor(new PoseConstraint(poseKey, p));
     push_back(factor);
