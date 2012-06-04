@@ -62,7 +62,7 @@ TEST( wrap, check_exception ) {
 
 	string path = topdir + "/wrap/tests";
 	Module module(path.c_str(), "testDependencies",enable_verbose);
-	CHECK_EXCEPTION(module.matlab_code("actual_deps", "mexa64", "-O5"), DependencyMissing);
+	CHECK_EXCEPTION(module.matlab_code("mex", "actual_deps", "mexa64", "-O5"), DependencyMissing);
 }
 
 /* ************************************************************************* */
@@ -214,7 +214,7 @@ TEST( wrap, matlab_code_namespaces ) {
 	// emit MATLAB code
   string exp_path = path + "/tests/expected_namespaces/";
   string act_path = "actual_namespaces/";
-	module.matlab_code("actual_namespaces", "mexa64", "-O5");
+	module.matlab_code("mex", "actual_namespaces", "mexa64", "-O5");
 
 	EXPECT(files_equal(exp_path + "new_ClassD_.cpp"              , act_path + "new_ClassD_.cpp"              ));
 	EXPECT(files_equal(exp_path + "new_ClassD_.m"                , act_path + "new_ClassD_.m"                ));
@@ -268,7 +268,7 @@ TEST( wrap, matlab_code ) {
 
 	// emit MATLAB code
 	// make_geometry will not compile, use make testwrap to generate real make
-	module.matlab_code("actual", "mexa64", "-O5");
+	module.matlab_code("mex", "actual", "mexa64", "-O5");
 
 	EXPECT(files_equal(path + "/tests/expected/@Point2/Point2.m"  , "actual/@Point2/Point2.m"  ));
 	EXPECT(files_equal(path + "/tests/expected/@Point2/x.cpp"     , "actual/@Point2/x.cpp"     ));
