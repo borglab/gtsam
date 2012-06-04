@@ -18,4 +18,3 @@ foreach(example_src ${example_srcs} )
     add_custom_target(${example_bin}.run ${EXECUTABLE_OUTPUT_PATH}${example_bin} ${ARGN})
 endforeach(example_src)
 
-add_subdirectory(vSLAMexample)
