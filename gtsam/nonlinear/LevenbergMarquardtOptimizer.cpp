@@ -72,7 +72,8 @@ void LevenbergMarquardtOptimizer::iterate() {
         delta = gtsam::optimize(*EliminationTree<GaussianFactor>::Create(dampedSystem)->eliminate(params_.getEliminationFunction()));
       }
       else if ( params_.isCG() ) {
-        SimpleSPCGSolver solver(dampedSystem, *params_.iterativeParams);
+        IterativeOptimizationParameters::shared_ptr params(!params_.iterativeParams ? boost::make_shared<IterativeOptimizationParameters>() : params_.iterativeParams);
+        SimpleSPCGSolver solver(dampedSystem, *params);
         delta = *solver.optimize();
       }
       else {

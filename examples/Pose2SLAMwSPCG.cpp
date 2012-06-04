@@ -68,7 +68,6 @@ int main(void) {
   LevenbergMarquardtParams param;
   param.linearSolverType = SuccessiveLinearizationParams::CG;
   param.iterativeParams = boost::make_shared<IterativeOptimizationParameters>();
-
   LevenbergMarquardtOptimizer optimizer(graph, initialEstimate, param);
   Values result = optimizer.optimize();
   cout << "final error = " << graph.error(result) << endl;

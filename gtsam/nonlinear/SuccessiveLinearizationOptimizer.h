@@ -31,13 +31,13 @@ public:
     MULTIFRONTAL_QR,
     SEQUENTIAL_CHOLESKY,
     SEQUENTIAL_QR,
-    CHOLMOD,    /* Experimental Flag */
     CG,         /* Experimental Flag */
+    CHOLMOD,    /* Experimental Flag */
   };
 
 	LinearSolverType linearSolverType; ///< The type of linear solver to use in the nonlinear optimizer
   boost::optional<Ordering> ordering; ///< The variable elimination ordering, or empty to use COLAMD (default: empty)
-  boost::optional<IterativeOptimizationParameters::shared_ptr> iterativeParams; ///< The container for iterativeOptimization parameters.
+  IterativeOptimizationParameters::shared_ptr iterativeParams; ///< The container for iterativeOptimization parameters. used in CG Solvers.
 
   SuccessiveLinearizationParams() : linearSolverType(MULTIFRONTAL_CHOLESKY) {}
 

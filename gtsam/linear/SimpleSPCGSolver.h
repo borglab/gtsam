@@ -55,7 +55,7 @@ protected:
 
 public:
 
-  SimpleSPCGSolver(const GaussianFactorGraph &gfg, const Parameters::shared_ptr &parameters);
+  SimpleSPCGSolver(const GaussianFactorGraph &gfg, const Parameters &parameters);
   virtual ~SimpleSPCGSolver() {}
   virtual VectorValues::shared_ptr optimize () {return optimize(*y0_);}
 

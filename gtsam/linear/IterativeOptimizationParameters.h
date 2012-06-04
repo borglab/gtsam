@@ -113,7 +113,9 @@ struct PreconditionerParameters {
 
     std::cout << "PreconditionerParameters: "
               << "kernel = " << kernelStr[kernel_]
-              << ", type = " << typeStr[type_] << std::endl;
+              << ", type = " << typeStr[type_]
+              << ", verbosity = " << verbosity_
+              << std::endl;
     combinatorial_.print();
   }
 };
@@ -167,6 +169,7 @@ struct ConjugateGradientParameters {
               << ", eps_rel = " << epsilon_rel_
               << ", eps_abs = " << epsilon_abs_
               << ", degree = " << degree_
+              << ", verbosity = " << verbosity_
               << std::endl;
   }
 };
@@ -180,8 +183,8 @@ public:
 
   PreconditionerParameters preconditioner_;
   ConjugateGradientParameters cg_;
-  enum Kernel { PCG = 0, LSPCG } kernel_ ;                /* Iterative Method Kernel */
-  enum Verbosity { SILENT = 0, COMPLEXITY = 1, ERROR = 2} verbosity_ ;  /* Verbosity */
+  enum Kernel { PCG = 0, LSPCG = 1 } kernel_ ;                          ///< Iterative Method Kernel
+  enum Verbosity { SILENT = 0, COMPLEXITY = 1, ERROR = 2} verbosity_ ;  ///< Verbosity
 
 public:
 
@@ -221,7 +224,8 @@ public:
     const std::string kernelStr[2] = {"pcg", "lspcg"};
     std::cout << s << std::endl
               << "IterativeOptimizationParameters: "
-              << "kernel = " << kernelStr[kernel_] << std::endl;
+              << "kernel = " << kernelStr[kernel_]
+              << ", verbosity = " << verbosity_ << std::endl;
     cg_.print();
     preconditioner_.print();
 

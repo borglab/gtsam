@@ -42,7 +42,7 @@ std::vector<size_t> extractColSpec_(const FactorGraph<GaussianFactor>& gfg, cons
   return spec;
 }
 
-SimpleSPCGSolver::SimpleSPCGSolver(const GaussianFactorGraph &gfg, const Parameters::shared_ptr &parameters)
+SimpleSPCGSolver::SimpleSPCGSolver(const GaussianFactorGraph &gfg, const Parameters &parameters)
   : Base(parameters)
 {
   std::vector<size_t> colSpec = extractColSpec_(gfg, VariableIndex(gfg));
@@ -97,13 +97,14 @@ VectorValues::shared_ptr SimpleSPCGSolver::optimize (const VectorValues &initial
   double gamma = s.vector().squaredNorm(), new_gamma = 0.0, alpha = 0.0, beta = 0.0 ;
 
   const double threshold =
-            ::max(parameters_->epsilon_abs(),
-                  parameters_->epsilon() * parameters_->epsilon() * gamma);
-  const size_t iMaxIterations = parameters_->maxIterations();
+            ::max(parameters_.epsilon_abs(),
+                  parameters_.epsilon() * parameters_.epsilon() * gamma);
+  const size_t iMaxIterations = parameters_.maxIterations();
+  const ConjugateGradientParameters::Verbosity verbosity = parameters_.cg_.verbosity();
 
-  if ( parameters_->verbosity() >= IterativeOptimizationParameters::ERROR )
-    cout << "[SimpleSPCGSolver] epsilon = " << parameters_->epsilon()
-         << ", max = " << parameters_->maxIterations()
+  if ( verbosity >= ConjugateGradientParameters::ERROR )
+    cout << "[SimpleSPCGSolver] epsilon = " << parameters_.epsilon()
+         << ", max = " << parameters_.maxIterations()
          << ", ||r0|| = " << std::sqrt(gamma)
          << ", threshold = " << threshold << std::endl;
 
@@ -120,14 +121,14 @@ VectorValues::shared_ptr SimpleSPCGSolver::optimize (const VectorValues &initial
     p.vector() = s.vector() + beta * p.vector();
     gamma = new_gamma ;
 
-    if ( parameters_->verbosity() >= IterativeOptimizationParameters::ERROR) {
+    if ( verbosity >= ConjugateGradientParameters::ERROR) {
       cout << "[SimpleSPCGSolver] iteration " << k << ": a = " << alpha << ": b = " << beta << ", ||r|| = " << std::sqrt(gamma) << endl;
     }
 
     if ( gamma < threshold ) break ;
   } // k
 
-  if ( parameters_->verbosity() >= IterativeOptimizationParameters::ERROR )
+  if ( verbosity >= ConjugateGradientParameters::ERROR )
     cout << "[SimpleSPCGSolver] iteration " << k << ": a = " << alpha << ": b = " << beta << ", ||r|| = " << std::sqrt(gamma) << endl;
 
   /* transform y back to x */
