@@ -43,7 +43,7 @@ TEST(Pose3Graph, optimizeCircle) {
 
 	// Create a hexagon of poses
 	double radius = 10;
-	Values hexagon = pose3SLAM::circle(6,radius);
+	Values hexagon = pose3SLAM::Values::Circle(6,radius);
   Pose3 gT0 = hexagon.at<Pose3>(0), gT1 = hexagon.at<Pose3>(1);
 
 	// create a Pose graph with one equality constraint and one measurement
@@ -179,7 +179,7 @@ TEST( Values, pose3Circle )
 	expected.insert(2, Pose3(R3, Point3(-1, 0, 0)));
 	expected.insert(3, Pose3(R4, Point3( 0,-1, 0)));
 
-	Values actual = pose3SLAM::circle(4,1.0);
+	Values actual = pose3SLAM::Values::Circle(4,1.0);
 	CHECK(assert_equal(expected,actual));
 }
 
@@ -199,7 +199,7 @@ TEST( Values, expmap )
 			0.0,0.0,0.0,  0.1, 0.0, 0.0,
 			0.0,0.0,0.0,  0.1, 0.0, 0.0,
 			0.0,0.0,0.0,  0.1, 0.0, 0.0);
-	Values actual = pose3SLAM::circle(4,1.0).retract(delta, ordering);
+	Values actual = pose3SLAM::Values::Circle(4,1.0).retract(delta, ordering);
 	CHECK(assert_equal(expected,actual));
 }
 

@@ -23,7 +23,7 @@
 namespace pose2SLAM {
 
   /* ************************************************************************* */
-  Values circle(size_t n, double R) {
+  Values Values::Circle(size_t n, double R) {
     Values x;
     double theta = 0, dtheta = 2 * M_PI / n;
     for (size_t i = 0; i < n; i++, theta += dtheta)

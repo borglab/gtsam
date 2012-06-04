@@ -24,7 +24,12 @@
 #include <gtsam/slam/BearingRangeFactor.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/Marginals.h>
 #include <gtsam/geometry/Pose2.h>
+
+/**
+ * @defgroup SLAM
+ */
 
 // Use planarSLAM namespace for specific SLAM instance
 namespace planarSLAM {
@@ -48,9 +53,9 @@ namespace planarSLAM {
   /// A factor between a pose and a point to express difference in rotation and location
   typedef BearingRangeFactor<Pose2, Point2> BearingRange;
 
-  /**
-   * Values class, using specific poses and points
-   * Mainly as a convenience for MATLAB wrapper, which does not allow for identically named methods
+  /*
+   * Values class, inherited from Values, mainly used as a convenience for MATLAB wrapper
+   * @ingroup SLAM
    */
   struct Values: public gtsam::Values {
 
@@ -75,7 +80,10 @@ namespace planarSLAM {
     void insertPoint(Key j, const Point2& point) { insert(j, point); }
   };
 
-  /// Creates a NonlinearFactorGraph with the Values type
+  /**
+   * Graph class, inherited from NonlinearFactorGraph, used as a convenience for MATLAB wrapper
+   * @ingroup SLAM
+   */
   struct Graph: public NonlinearFactorGraph {
 
     /// Default constructor for a NonlinearFactorGraph
@@ -104,6 +112,11 @@ namespace planarSLAM {
 
     /// Optimize
     Values optimize(const Values& initialEstimate) const;
+
+    /// Return a Marginals object
+    Marginals marginals(const Values& solution) const {
+    	return Marginals(*this,solution);
+    }
   };
 
 } // planarSLAM

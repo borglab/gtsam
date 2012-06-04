@@ -195,7 +195,7 @@ TEST_UNSAFE(Pose2SLAM, optimize) {
 TEST_UNSAFE(Pose2SLAM, optimizeThreePoses) {
 
 	// Create a hexagon of poses
-	pose2SLAM::Values hexagon = pose2SLAM::circle(3,1.0);
+	pose2SLAM::Values hexagon = pose2SLAM::Values::Circle(3,1.0);
   Pose2 p0 = hexagon.pose(0), p1 = hexagon.pose(1);
 
 	// create a Pose graph with one equality constraint and one measurement
@@ -231,7 +231,7 @@ TEST_UNSAFE(Pose2SLAM, optimizeThreePoses) {
 TEST_UNSAFE(Pose2SLAM, optimizeCircle) {
 
 	// Create a hexagon of poses
-	pose2SLAM::Values hexagon = pose2SLAM::circle(6,1.0);
+	pose2SLAM::Values hexagon = pose2SLAM::Values::Circle(6,1.0);
   Pose2 p0 = hexagon.pose(0), p1 = hexagon.pose(1);
 
 	// create a Pose graph with one equality constraint and one measurement
@@ -366,7 +366,7 @@ TEST_UNSAFE(Pose2Values, pose2Circle )
 	expected.insert(2, Pose2(-1,  0, - M_PI_2));
 	expected.insert(3, Pose2( 0, -1,   0     ));
 
-	pose2SLAM::Values actual = pose2SLAM::circle(4,1.0);
+	pose2SLAM::Values actual = pose2SLAM::Values::Circle(4,1.0);
 	CHECK(assert_equal(expected,actual));
 }
 
@@ -381,7 +381,7 @@ TEST_UNSAFE(Pose2SLAM, expmap )
 	expected.insert(3, Pose2( 0.1, -1,   0     ));
 
 	// Note expmap coordinates are in local coordinates, so shifting to right requires thought !!!
-	pose2SLAM::Values circle(pose2SLAM::circle(4,1.0));
+	pose2SLAM::Values circle = pose2SLAM::Values::Circle(4,1.0);
   Ordering ordering(*circle.orderingArbitrary());
 	VectorValues delta(circle.dims(ordering));
 	delta[ordering[0]] = Vector_(3, 0.0,-0.1,0.0);

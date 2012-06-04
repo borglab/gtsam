@@ -447,9 +447,10 @@ namespace pose2SLAM {
 
 class Values {
 	Values();
-	void insertPose(size_t key, const gtsam::Pose2& pose);
 	size_t size() const;
 	void print(string s) const;
+	static pose2SLAM::Values Circle(size_t n, double R);
+	void insertPose(size_t key, const gtsam::Pose2& pose);
 	gtsam::Pose2 pose(size_t i);
   Vector xs() const;
   Vector ys() const;
@@ -459,25 +460,78 @@ class Values {
 class Graph {
 	Graph();
 
+	// FactorGraph
 	void print(string s) const;
+	bool equals(const pose2SLAM::Graph& fg, double tol) const;
+	size_t size() const;
+	bool empty() const;
+	void remove(size_t i);
+	size_t nrFactors() const;
 
+	// NonlinearFactorGraph
 	double error(const pose2SLAM::Values& values) const;
+	double probPrime(const pose2SLAM::Values& values) const;
 	gtsam::Ordering* orderingCOLAMD(const pose2SLAM::Values& values) const;
 	gtsam::GaussianFactorGraph* linearize(const pose2SLAM::Values& values,
 			const gtsam::Ordering& ordering) const;
 
-	void addPrior(size_t key, const gtsam::Pose2& pose,
-			const gtsam::SharedNoiseModel& noiseModel);
+	// pose2SLAM-specific
+	void addPrior(size_t key, const gtsam::Pose2& pose, const gtsam::SharedNoiseModel& noiseModel);
 	void addPoseConstraint(size_t key, const gtsam::Pose2& pose);
-	void addOdometry(size_t key1, size_t key2, const gtsam::Pose2& odometry,
-			const gtsam::SharedNoiseModel& noiseModel);
-	void addConstraint(size_t key1, size_t key2, const gtsam::Pose2& odometry,
-			const gtsam::SharedNoiseModel& noiseModel);
+	void addOdometry(size_t key1, size_t key2, const gtsam::Pose2& odometry, const gtsam::SharedNoiseModel& noiseModel);
+	void addConstraint(size_t key1, size_t key2, const gtsam::Pose2& odometry, const gtsam::SharedNoiseModel& noiseModel);
 	pose2SLAM::Values optimize(const pose2SLAM::Values& initialEstimate) const;
 	gtsam::Marginals marginals(const pose2SLAM::Values& solution) const;
 };
 
 }///\namespace pose2SLAM
+
+//*************************************************************************
+// Pose3SLAM
+//*************************************************************************
+
+#include <gtsam/slam/pose3SLAM.h>
+namespace pose3SLAM {
+
+class Values {
+	Values();
+	size_t size() const;
+	void print(string s) const;
+	static pose3SLAM::Values Circle(size_t n, double R);
+	void insertPose(size_t key, const gtsam::Pose3& pose);
+	gtsam::Pose3 pose(size_t i);
+  Vector xs() const;
+  Vector ys() const;
+  Vector zs() const;
+};
+
+class Graph {
+	Graph();
+
+	// FactorGraph
+	void print(string s) const;
+	bool equals(const pose3SLAM::Graph& fg, double tol) const;
+	size_t size() const;
+	bool empty() const;
+	void remove(size_t i);
+	size_t nrFactors() const;
+
+	// NonlinearFactorGraph
+	double error(const pose3SLAM::Values& values) const;
+	double probPrime(const pose3SLAM::Values& values) const;
+	gtsam::Ordering* orderingCOLAMD(const pose3SLAM::Values& values) const;
+	gtsam::GaussianFactorGraph* linearize(const pose3SLAM::Values& values,
+			const gtsam::Ordering& ordering) const;
+
+	// pose3SLAM-specific
+	void addPrior(size_t key, const gtsam::Pose3& p, const gtsam::SharedNoiseModel& model);
+	void addConstraint(size_t key1, size_t key2, const gtsam::Pose3& z, const gtsam::SharedNoiseModel& model);
+	void addHardConstraint(size_t i, const gtsam::Pose3& p);
+	pose3SLAM::Values optimize(const pose3SLAM::Values& initialEstimate) const;
+	gtsam::Marginals marginals(const pose3SLAM::Values& solution) const;
+};
+
+}///\namespace pose3SLAM
 
 //*************************************************************************
 // planarSLAM
@@ -488,9 +542,10 @@ namespace planarSLAM {
 
 class Values {
 	Values();
+	size_t size() const;
+	void print(string s) const;
 	void insertPose(size_t key, const gtsam::Pose2& pose);
 	void insertPoint(size_t key, const gtsam::Point2& point);
-	void print(string s) const;
 	gtsam::Pose2 pose(size_t key) const;
 	gtsam::Point2 point(size_t key) const;
 };
@@ -498,25 +553,30 @@ class Values {
 class Graph {
 	Graph();
 
+	// FactorGraph
 	void print(string s) const;
+	bool equals(const planarSLAM::Graph& fg, double tol) const;
+	size_t size() const;
+	bool empty() const;
+	void remove(size_t i);
+	size_t nrFactors() const;
 
+	// NonlinearFactorGraph
 	double error(const planarSLAM::Values& values) const;
+	double probPrime(const planarSLAM::Values& values) const;
 	gtsam::Ordering* orderingCOLAMD(const planarSLAM::Values& values) const;
 	gtsam::GaussianFactorGraph* linearize(const planarSLAM::Values& values,
 			const gtsam::Ordering& ordering) const;
 
-	void addPrior(size_t key, const gtsam::Pose2& pose,
-			const gtsam::SharedNoiseModel& noiseModel);
+	// planarSLAM-specific
+	void addPrior(size_t key, const gtsam::Pose2& pose, const gtsam::SharedNoiseModel& noiseModel);
 	void addPoseConstraint(size_t key, const gtsam::Pose2& pose);
-	void addOdometry(size_t key1, size_t key2, const gtsam::Pose2& odometry,
-			const gtsam::SharedNoiseModel& noiseModel);
-	void addBearing(size_t poseKey, size_t pointKey, const gtsam::Rot2& bearing,
-			const gtsam::SharedNoiseModel& noiseModel);
-	void addRange(size_t poseKey, size_t pointKey, double range,
-			const gtsam::SharedNoiseModel& noiseModel);
-	void addBearingRange(size_t poseKey, size_t pointKey, const gtsam::Rot2& bearing,
-			double range, const gtsam::SharedNoiseModel& noiseModel);
+	void addOdometry(size_t key1, size_t key2, const gtsam::Pose2& odometry, const gtsam::SharedNoiseModel& noiseModel);
+	void addBearing(size_t poseKey, size_t pointKey, const gtsam::Rot2& bearing, const gtsam::SharedNoiseModel& noiseModel);
+	void addRange(size_t poseKey, size_t pointKey, double range, const gtsam::SharedNoiseModel& noiseModel);
+	void addBearingRange(size_t poseKey, size_t pointKey, const gtsam::Rot2& bearing,double range, const gtsam::SharedNoiseModel& noiseModel);
 	planarSLAM::Values optimize(const planarSLAM::Values& initialEstimate);
+	gtsam::Marginals marginals(const planarSLAM::Values& solution) const;
 };
 
 class Odometry {

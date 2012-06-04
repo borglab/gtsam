@@ -36,19 +36,19 @@ graph.addOdometry(3, 4, gtsamPose2(2.0, 0.0, pi/2), odometryNoise);
 graph.addOdometry(4, 5, gtsamPose2(2.0, 0.0, pi/2), odometryNoise);
 
 %% Add pose constraint
-constraintUncertainty = gtsamSharedNoiseModel_Sigmas([0.2; 0.2; 0.1]);
-graph.addConstraint(5, 2, gtsamPose2(2.0, 0.0, pi/2), constraintUncertainty);
+model = gtsamSharedNoiseModel_Sigmas([0.2; 0.2; 0.1]);
+graph.addConstraint(5, 2, gtsamPose2(2.0, 0.0, pi/2), model);
 
 % print
 graph.print(sprintf('\nFactor graph:\n'));
 
 %% Initialize to noisy points
 initialEstimate = pose2SLAMValues;
-x1 = gtsamPose2(0.5, 0.0, 0.2 ); initialEstimate.insertPose(1, x1);
-x2 = gtsamPose2(2.3, 0.1,-0.2 ); initialEstimate.insertPose(2, x2);
-x3 = gtsamPose2(4.1, 0.1, pi/2); initialEstimate.insertPose(3, x3);
-x4 = gtsamPose2(4.0, 2.0, pi  ); initialEstimate.insertPose(4, x4);
-x5 = gtsamPose2(2.1, 2.1,-pi/2); initialEstimate.insertPose(5, x5);
+initialEstimate.insertPose(1, gtsamPose2(0.5, 0.0, 0.2 ));
+initialEstimate.insertPose(2, gtsamPose2(2.3, 0.1,-0.2 ));
+initialEstimate.insertPose(3, gtsamPose2(4.1, 0.1, pi/2));
+initialEstimate.insertPose(4, gtsamPose2(4.0, 2.0, pi  ));
+initialEstimate.insertPose(5, gtsamPose2(2.1, 2.1,-pi/2));
 initialEstimate.print(sprintf('\nInitial estimate:\n'));
 
 %% Optimize using Levenberg-Marquardt optimization with an ordering from colamd

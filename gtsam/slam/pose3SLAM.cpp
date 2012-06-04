@@ -22,7 +22,7 @@
 namespace pose3SLAM {
 
   /* ************************************************************************* */
-  Values circle(size_t n, double radius) {
+  Values Values::Circle(size_t n, double radius) {
     Values x;
     double theta = 0, dtheta = 2 * M_PI / n;
     // We use aerospace/navlab convention, X forward, Y right, Z down
@@ -40,6 +40,36 @@ namespace pose3SLAM {
     }
     return x;
   }
+
+  /* ************************************************************************* */
+	Vector Values::xs() const {
+		size_t j=0;
+		Vector result(size());
+		ConstFiltered<Pose3> poses = filter<Pose3>();
+		BOOST_FOREACH(const ConstFiltered<Pose3>::KeyValuePair& keyValue, poses)
+			result(j++) = keyValue.value.x();
+		return result;
+	}
+
+  /* ************************************************************************* */
+	Vector Values::ys() const {
+		size_t j=0;
+		Vector result(size());
+		ConstFiltered<Pose3> poses = filter<Pose3>();
+		BOOST_FOREACH(const ConstFiltered<Pose3>::KeyValuePair& keyValue, poses)
+			result(j++) = keyValue.value.y();
+		return result;
+	}
+
+  /* ************************************************************************* */
+	Vector Values::zs() const {
+		size_t j=0;
+		Vector result(size());
+		ConstFiltered<Pose3> poses = filter<Pose3>();
+		BOOST_FOREACH(const ConstFiltered<Pose3>::KeyValuePair& keyValue, poses)
+			result(j++) = keyValue.value.z();
+		return result;
+	}
 
   /* ************************************************************************* */
   void Graph::addPrior(Key i, const Pose3& p, const SharedNoiseModel& model) {
