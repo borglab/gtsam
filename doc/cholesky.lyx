@@ -1,0 +1,170 @@
+#LyX 1.6.7 created this file. For more info see http://www.lyx.org/
+\lyxformat 345
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\language english
+\inputencoding auto
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\paperfontsize default
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_amsmath 1
+\use_esint 1
+\cite_engine basic
+\use_bibtopic false
+\paperorientation portrait
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\defskip medskip
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\author "" 
+\author "" 
+\end_header
+
+\begin_body
+
+\begin_layout Section
+Basic solving with Cholesky
+\end_layout
+
+\begin_layout Standard
+Solving a linear least-squares system:
+\begin_inset Formula \[
+\arg\min_{x}\left\Vert Ax-b\right\Vert ^{2}\]
+
+\end_inset
+
+Set derivative equal to zero:
+\begin_inset Formula \begin{align*}
+0 & =2A^{T}\left(Ax-b\right)\\
+0 & =A^{T}Ax-A^{T}b\end{align*}
+
+\end_inset
+
+For comparison, with QR we do
+\begin_inset Formula \begin{align*}
+0 & =R^{T}Q^{T}QRx-R^{T}Qb\\
+ & =R^{T}Rx-R^{T}Qb\\
+Rx & =Qb\\
+x & =R^{-1}Qb\end{align*}
+
+\end_inset
+
+But with Cholesky we do
+\begin_inset Formula \begin{align*}
+0 & =R^{T}RR^{T}Rx-R^{T}Rb\\
+ & =R^{T}Rx-b\\
+ & =Rx-R^{-T}b\\
+x & =R^{-1}R^{-T}b\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Frontal (rank-deficient) solving with Cholesky
+\end_layout
+
+\begin_layout Standard
+To do multi-frontal elimination, we decompose into rank-deficient conditionals.
+ 
+\begin_inset Formula \[
+\left[\begin{array}{cccccc}
+\cdot & \cdot & \cdot & \cdot & \cdot & \cdot\\
+\cdot & \cdot & \cdot & \cdot & \cdot & \cdot\\
+\cdot & \cdot & \cdot & \cdot & \cdot & \cdot\end{array}\right]\to\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula \[
+\left[\begin{array}{cc}
+R^{T} & 0\\
+S^{T} & C^{T}\end{array}\right]\left[\begin{array}{cc}
+R & S\\
+0 & C\end{array}\right]=\left[\begin{array}{cc}
+F^{T}F & F^{T}G\\
+G^{T}F & G^{T}G\end{array}\right]\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset space ~
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula \[
+R^{T}R=F^{T}F\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset space ~
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula \begin{align*}
+R^{T}S & =F^{T}G\\
+S & =R^{-T}F^{T}G\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset space ~
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula \begin{align*}
+S^{T}S+C^{T}C & =G^{T}G\\
+G^{T}FR^{-1}R^{-T}F^{T}G+C^{T}C & =G^{T}G\\
+G^{T}QRR^{-1}R^{-T}R^{T}Q^{T}G+C^{T}C & =G^{T}G\\
+\textbf{if }R\textbf{ is invertible, }G^{T}G+C^{T}C & =G^{T}G\\
+C^{T}C & =0\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document
