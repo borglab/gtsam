@@ -685,8 +685,8 @@ class Graph {
   void print(string s) const;
 
   double error(const visualSLAM::Values& values) const;
-  gtsam::Ordering* orderingCOLAMD(const pose2SLAM::Values& values) const;
-  gtsam::GaussianFactorGraph* linearize(const pose2SLAM::Values& values,
+  gtsam::Ordering* orderingCOLAMD(const visualSLAM::Values& values) const;
+  gtsam::GaussianFactorGraph* linearize(const visualSLAM::Values& values,
       const gtsam::Ordering& ordering) const;
 
   // Measurements
