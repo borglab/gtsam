@@ -82,6 +82,12 @@ using boost::math::isinf;
 #ifndef M_PI
 #define M_PI (boost::math::constants::pi<double>())
 #endif
+#ifndef M_PI_2
+#define M_PI_2 (boost::math::constants::pi<double>() / 2.0)
+#endif
+#ifndef M_PI_4
+#define M_PI_4 (boost::math::constants::pi<double>() / 4.0)
+#endif
 
 #endif
 
