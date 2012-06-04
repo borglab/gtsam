@@ -201,7 +201,7 @@ class Pose3 {
 	Pose3();
 	Pose3(const gtsam::Pose3& pose);
 	Pose3(const gtsam::Rot3& r, const gtsam::Point3& t);
-	Pose3(const gtsam::Pose2& pose2);
+	Pose3(const gtsam::Pose2& pose2); // FIXME: shadows Pose3(Pose3 pose)
 	Pose3(Matrix t);
 
 	// Testable
@@ -239,7 +239,7 @@ class Pose3 {
 	double y() const;
 	double z() const;
 	Matrix matrix() const;
-	gtsam::Pose3 transform_to(const gtsam::Pose3& pose) const;
+	gtsam::Pose3 transform_to(const gtsam::Pose3& pose) const; // FIXME: shadows other transform_to()
 	double range(const gtsam::Point3& point);
 	// double range(const gtsam::Pose3& pose);
 };

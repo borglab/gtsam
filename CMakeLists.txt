@@ -61,8 +61,12 @@ option(GTSAM_INSTALL_MATLAB_EXAMPLES     "Enable/Disable installation of matlab 
 option(GTSAM_INSTALL_MATLAB_TESTS        "Enable/Disable installation of matlab tests"    ON)
 option(GTSAM_INSTALL_WRAP                "Enable/Disable installation of wrap utility" ON)
 
-# Experimental - features disabled by default
-option(GTSAM_ENABLE_BUILD_MEX_BINARIES   "Enable/Disable building of matlab mex files" OFF)
+# TODO: Check for matlab mex binary before handling building of binaries
+
+# Flags for building/installing mex files
+option(GTSAM_ENABLE_BUILD_MEX_BINARIES     "Enable/Disable building of matlab mex files" OFF)
+option(GTSAM_ENABLE_BUILD_MEX_BINARIES_ALL "Enable/Disable adding building of mex files to ALL target" OFF)
+set(GTSAM_BUILD_MEX_BINARY_FLAGS "-j2" CACHE STRING "Flags for running make on toolbox MEX files")
 
 # Flags for choosing default packaging tools
 set(CPACK_SOURCE_GENERATOR "TGZ" CACHE STRING "CPack Default Source Generator")
@@ -184,6 +188,8 @@ print_config_flag(${GTSAM_INSTALL_MATLAB_TOOLBOX}      "Install matlab toolbox  
 print_config_flag(${GTSAM_INSTALL_MATLAB_EXAMPLES}     "Install matlab examples    ")
 print_config_flag(${GTSAM_INSTALL_MATLAB_TESTS}        "Install matlab tests       ")
 print_config_flag(${GTSAM_INSTALL_WRAP}                "Install wrap utility       ")
+print_config_flag(${GTSAM_ENABLE_BUILD_MEX_BINARIES}   "Build MEX binaries         ")
+print_config_flag(${GTSAM_ENABLE_BUILD_MEX_BINARIES_ALL} "Build MEX binaries on ALL target       ")
 message(STATUS "===============================================================")
 
 # Include CPack *after* all flags

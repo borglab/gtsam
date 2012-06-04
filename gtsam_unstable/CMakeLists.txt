@@ -91,14 +91,19 @@ if (GTSAM_BUILD_WRAP)
         DEPENDS wrap)
     
     # Build command
-    # Experimental: requires matlab to be on your path
     if (GTSAM_ENABLE_BUILD_MEX_BINARIES)
         # Actually compile the mex files when building the library
-        set(TOOLBOX_MAKE_FLAGS "-j2")    
-        add_custom_target(wrap_gtsam_unstable_build 
-            COMMAND make ${TOOLBOX_MAKE_FLAGS} 
-            WORKING_DIRECTORY ${toolbox_path} 
-            DEPENDS wrap_gtsam_unstable)
+        if (GTSAM_ENABLE_BUILD_MEX_BINARIES_ALL)    
+            add_custom_target(wrap_gtsam_unstable_build ALL
+                COMMAND make ${GTSAM_BUILD_MEX_BINARY_FLAGS} 
+                WORKING_DIRECTORY ${toolbox_path} 
+                DEPENDS wrap_gtsam_unstable)
+        else()            
+            add_custom_target(wrap_gtsam_unstable_build
+                COMMAND make ${GTSAM_BUILD_MEX_BINARY_FLAGS} 
+                WORKING_DIRECTORY ${toolbox_path} 
+                DEPENDS wrap_gtsam_unstable)
+        endif()
     endif (GTSAM_ENABLE_BUILD_MEX_BINARIES)    
     
     if (GTSAM_INSTALL_MATLAB_TOOLBOX)

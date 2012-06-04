@@ -30,7 +30,7 @@ endif(GTSAM_BUILD_TESTS)
 #  toolboxPath   : the directory in which to generate the wrappers
 #  [mexFlags]    : extra flags for the mex command
 
-set(mexFlags "-I${Boost_INCLUDE_DIR} -I${CMAKE_INSTALL_PREFIX}/include -I${CMAKE_INSTALL_PREFIX}/include/gtsam -I${CMAKE_INSTALL_PREFIX}/include/gtsam/base -I${CMAKE_INSTALL_PREFIX}/include/gtsam/geometry -I${CMAKE_INSTALL_PREFIX}/include/gtsam/linear -I${CMAKE_INSTALL_PREFIX}/include/gtsam/nonlinear -I${CMAKE_INSTALL_PREFIX}/include/gtsam/slam -L${CMAKE_INSTALL_PREFIX}/lib -lgtsam")
+set(mexFlags "-I${Boost_INCLUDE_DIR} -I${CMAKE_INSTALL_PREFIX}/include -I${CMAKE_INSTALL_PREFIX}/include/gtsam -I${CMAKE_INSTALL_PREFIX}/include/gtsam/base -I${CMAKE_INSTALL_PREFIX}/include/gtsam/geometry -I${CMAKE_INSTALL_PREFIX}/include/gtsam/linear -I${CMAKE_INSTALL_PREFIX}/include/gtsam/discrete -I${CMAKE_INSTALL_PREFIX}/include/gtsam/inference -I${CMAKE_INSTALL_PREFIX}/include/gtsam/nonlinear -I${CMAKE_INSTALL_PREFIX}/include/gtsam/slam -L${CMAKE_INSTALL_PREFIX}/lib -lgtsam")
 set(toolbox_path ${CMAKE_BINARY_DIR}/wrap/gtsam)
 set(moduleName gtsam)
 
@@ -48,20 +48,29 @@ add_custom_target(wrap_gtsam ALL COMMAND
     DEPENDS wrap)
 
 # Build command
-# Experimental: requires matlab to be on your path
 if (GTSAM_ENABLE_BUILD_MEX_BINARIES)
     # Actually compile the mex files when building the library
-    set(TOOLBOX_MAKE_FLAGS "-j2")    
-    add_custom_target(wrap_gtsam_build 
-        COMMAND make ${TOOLBOX_MAKE_FLAGS} 
-        WORKING_DIRECTORY ${toolbox_path} 
-        DEPENDS wrap_gtsam)
+    # TODO: pass correct make flags from parent process
+    message(STATUS "Building Matlab MEX binaries for toolbox with flags ${GTSAM_BUILD_MEX_BINARY_FLAGS}")
+    if (GTSAM_ENABLE_BUILD_MEX_BINARIES_ALL)    
+        add_custom_target(wrap_gtsam_build ALL
+            COMMAND make ${GTSAM_BUILD_MEX_BINARY_FLAGS} 
+            WORKING_DIRECTORY ${toolbox_path} 
+            DEPENDS wrap_gtsam)    
+    else()
+        add_custom_target(wrap_gtsam_build
+            COMMAND make ${GTSAM_BUILD_MEX_BINARY_FLAGS} 
+            WORKING_DIRECTORY ${toolbox_path} 
+            DEPENDS wrap_gtsam)
+    endif()
 endif (GTSAM_ENABLE_BUILD_MEX_BINARIES)    
 
 set(GTSAM_TOOLBOX_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/borg/toolbox CACHE DOCSTRING "Path to install matlab toolbox")
 
 if (GTSAM_INSTALL_MATLAB_TOOLBOX)
     # Primary toolbox files
+    # Note that we copy the entire contents of the folder blindly - this is because 
+    # the generated files won't exist at configuration time
     message(STATUS "Installing Matlab Toolbox to ${GTSAM_TOOLBOX_INSTALL_PATH}")
     install(DIRECTORY DESTINATION ${GTSAM_TOOLBOX_INSTALL_PATH}) # make an empty folder
     # exploit need for trailing slash to specify a full folder, rather than just its contents to copy
@@ -74,9 +83,10 @@ if (GTSAM_INSTALL_MATLAB_TOOLBOX)
         install(FILES ${matlab_examples} DESTINATION ${GTSAM_TOOLBOX_INSTALL_PATH}/gtsam/examples)
         
         message(STATUS "Installing Matlab Toolbox Examples (Data)")
-        set(data_excludes "${CMAKE_SOURCE_DIR}/examples/Data/.svn")
-        file(GLOB matlab_examples_data "${CMAKE_SOURCE_DIR}/examples/Data/*.*")
-        list(REMOVE_ITEM matlab_examples_data ${data_excludes})
+        # Data files: *.graph and *.txt
+        file(GLOB matlab_examples_data_graph "${CMAKE_SOURCE_DIR}/examples/Data/*.graph")
+        file(GLOB matlab_examples_data_txt "${CMAKE_SOURCE_DIR}/examples/Data/*.txt")
+        set(matlab_examples_data ${matlab_examples_data_graph} ${matlab_examples_data_txt}) 
         install(FILES ${matlab_examples_data} DESTINATION ${GTSAM_TOOLBOX_INSTALL_PATH}/gtsam/Data)
     endif (GTSAM_INSTALL_MATLAB_EXAMPLES)
     
