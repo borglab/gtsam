@@ -277,7 +277,7 @@ void verifyReturnTypes(const vector<string>& validtypes, const vector<T>& vt) {
 }
 
 /* ************************************************************************* */
-void Module::matlab_code(const string& toolboxPath, 
+void Module::matlab_code(const string& mexCommand, const string& toolboxPath,
 			 const string& mexExt, const string& mexFlags) const {
     string installCmd = "install -d " + toolboxPath;
     system(installCmd.c_str());
@@ -297,7 +297,7 @@ void Module::matlab_code(const string& toolboxPath,
     makeModuleMfile.oss << "clear delims" << endl;
     makeModuleMfile.oss << "addpath(toolboxpath);" << endl << endl;
 
-    makeModuleMakefile.oss << "\nMEX = mex\n";
+    makeModuleMakefile.oss << "\nMEX = " << mexCommand << "\n";
     makeModuleMakefile.oss << "MEXENDING = " << mexExt << "\n";
     makeModuleMakefile.oss << "mex_flags = " << mexFlags << "\n\n";
 

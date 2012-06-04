@@ -67,6 +67,7 @@ option(GTSAM_INSTALL_WRAP                "Enable/Disable installation of wrap ut
 option(GTSAM_ENABLE_BUILD_MEX_BINARIES     "Enable/Disable building of matlab mex files" OFF)
 option(GTSAM_ENABLE_BUILD_MEX_BINARIES_ALL "Enable/Disable adding building of mex files to ALL target" OFF)
 set(GTSAM_BUILD_MEX_BINARY_FLAGS "-j2" CACHE STRING "Flags for running make on toolbox MEX files")
+set(MEX_COMMAND "mex" CACHE STRING "Command to use for executing mex (if on path, 'mex' will work)")
 
 # Flags for choosing default packaging tools
 set(CPACK_SOURCE_GENERATOR "TGZ" CACHE STRING "CPack Default Source Generator")

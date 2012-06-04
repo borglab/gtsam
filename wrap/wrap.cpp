@@ -31,7 +31,9 @@ using namespace std;
  * @param nameSpace e.g. gtsam
  * @param mexFlags extra arguments for mex script, i.e., include flags etc...
  */
-void generate_matlab_toolbox(const string& mexExt,
+void generate_matlab_toolbox(
+					 const string& mexCommand,
+					 const string& mexExt,
 					 const string& interfacePath,
 			     const string& moduleName,
 			     const string& toolboxPath,
@@ -42,13 +44,14 @@ void generate_matlab_toolbox(const string& mexExt,
   wrap::Module module(interfacePath, moduleName, true);
 
   // Then emit MATLAB code
-  module.matlab_code(toolboxPath,mexExt,mexFlags);
+  module.matlab_code(mexCommand,toolboxPath,mexExt,mexFlags);
 }
 
 /** Displays usage information */
 void usage() {
   cerr << "wrap parses an interface file and produces a MATLAB toolbox" << endl;
   cerr << "usage: wrap mexExtension interfacePath moduleName toolboxPath [mexFlags]" << endl;
+  cerr << "  mexExecutable : command to execute mex if on path, use 'mex'" << endl;
   cerr << "  mexExtension  : OS/CPU-dependent extension for MEX binaries" << endl;
   cerr << "  interfacePath : *absolute* path to directory of module interface file" << endl;
   cerr << "  moduleName    : the name of the module, interface file must be called moduleName.h" << endl;
@@ -61,7 +64,7 @@ void usage() {
  * Typically called from "make all" using appropriate arguments
  */
 int main(int argc, const char* argv[]) {
-  if (argc<6 || argc>7) {
+  if (argc<7 || argc>8) {
   	cerr << "Invalid arguments:\n";
   	for (int i=0; i<argc; ++i)
   		cerr << argv[i] << endl;
@@ -69,6 +72,6 @@ int main(int argc, const char* argv[]) {
   	usage();
   }
   else
-    generate_matlab_toolbox(argv[1],argv[2],argv[3],argv[4],argc==5 ? " " : argv[5]);
+    generate_matlab_toolbox(argv[1],argv[2],argv[3],argv[4],argv[5],argc==6 ? " " : argv[6]);
   return 0;
 }

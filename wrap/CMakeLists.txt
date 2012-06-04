@@ -44,7 +44,13 @@ endif()
 
 # Code generation command
 add_custom_target(wrap_gtsam ALL COMMAND 
-    ${EXECUTABLE_OUTPUT_PATH}/wrap ${GTSAM_MEX_BIN_EXTENSION} ${CMAKE_CURRENT_SOURCE_DIR}/../ ${moduleName} ${toolbox_path} "${mexFlags}"
+    ${EXECUTABLE_OUTPUT_PATH}/wrap 
+    ${MEX_COMMAND}
+    ${GTSAM_MEX_BIN_EXTENSION} 
+    ${CMAKE_CURRENT_SOURCE_DIR}/../ 
+    ${moduleName} 
+    ${toolbox_path} 
+    "${mexFlags}"
     DEPENDS wrap)
 
 # Build command
