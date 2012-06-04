@@ -30,12 +30,6 @@ namespace simulated2D {
 
   // Simulated2D robots have no orientation, just a position
 
-  /// Convenience function for constructing a pose key
-  inline Symbol PoseKey(Index j) { return Symbol('x', j); }
-
-  /// Convenience function for constructing a landmark key
-  inline Symbol PointKey(Index j) { return Symbol('l', j); }
-
   /**
    *  Custom Values class that holds poses and points, mainly used as a convenience for MATLAB wrapper
    */
@@ -57,14 +51,14 @@ namespace simulated2D {
     }
 
     /// Insert a pose
-    void insertPose(Index j, const Point2& p) {
-      insert(PoseKey(j), p);
+    void insertPose(Key i, const Point2& p) {
+      insert(i, p);
       nrPoses_++;
     }
 
     /// Insert a point
-    void insertPoint(Index j, const Point2& p) {
-      insert(PointKey(j), p);
+    void insertPoint(Key j, const Point2& p) {
+      insert(j, p);
       nrPoints_++;
     }
 
@@ -79,13 +73,13 @@ namespace simulated2D {
     }
 
     /// Return pose i
-    Point2 pose(Index j) const {
-      return at<Point2>(PoseKey(j));
+    Point2 pose(Key i) const {
+      return at<Point2>(i);
     }
 
     /// Return point j
-    Point2 point(Index j) const {
-      return at<Point2>(PointKey(j));
+    Point2 point(Key j) const {
+      return at<Point2>(j);
     }
   };
 
@@ -171,8 +165,8 @@ namespace simulated2D {
     Pose measured_; ///< odometry measurement
 
     /// Create odometry
-    GenericOdometry(const Pose& measured, const SharedNoiseModel& model, Key key1, Key key2) :
-          Base(model, key1, key2), measured_(measured) {
+    GenericOdometry(const Pose& measured, const SharedNoiseModel& model, Key i1, Key i2) :
+          Base(model, i1, i2), measured_(measured) {
     }
 
     /// Evaluate error and optionally return derivatives
@@ -215,8 +209,8 @@ namespace simulated2D {
     Landmark measured_; ///< Measurement
 
     /// Create measurement factor
-    GenericMeasurement(const Landmark& measured, const SharedNoiseModel& model, Key poseKey, Key landmarkKey) :
-          Base(model, poseKey, landmarkKey), measured_(measured) {
+    GenericMeasurement(const Landmark& measured, const SharedNoiseModel& model, Key i, Key j) :
+          Base(model, i, j), measured_(measured) {
     }
 
     /// Evaluate error and optionally return derivatives

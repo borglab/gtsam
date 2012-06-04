@@ -17,88 +17,81 @@
  */
 
 #include <gtsam/nonlinear/Symbol.h>
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam/geometry/Cal3_S2.h>
-#include <gtsam/geometry/SimpleCamera.h>
-#include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/geometry/SimpleCamera.h>
+#include <boost/make_shared.hpp>
 
 using namespace gtsam;
+using symbol_shorthand::X;
 
 /**
- * Unary factor for the pose.
+ * Unary factor on the unknown pose, resulting from meauring the projection of
+ * a known 3D point in the image
  */
 class ResectioningFactor: public NoiseModelFactor1<Pose3> {
-  typedef NoiseModelFactor1<Pose3> Base;
+	typedef NoiseModelFactor1<Pose3> Base;
 
-  shared_ptrK K_; // camera's intrinsic parameters
-  Point3 P_; // 3D point on the calibration rig
-  Point2 p_; // 2D measurement of the 3D point
+	shared_ptrK K_; // camera's intrinsic parameters
+	Point3 P_; // 3D point on the calibration rig
+	Point2 p_; // 2D measurement of the 3D point
 
 public:
-  ResectioningFactor(const SharedNoiseModel& model, const Symbol& key,
-      const shared_ptrK& calib, const Point2& p, const Point3& P) :
-    Base(model, key), K_(calib), P_(P), p_(p) {
-  }
 
-  virtual ~ResectioningFactor() {}
+	/// Construct factor given known point P and its projection p
+	ResectioningFactor(const SharedNoiseModel& model, const Key& key,
+			const shared_ptrK& calib, const Point2& p, const Point3& P) :
+			Base(model, key), K_(calib), P_(P), p_(p) {
+	}
 
-  ADD_CLONE_NONLINEAR_FACTOR(ResectioningFactor)
-
-  virtual Vector evaluateError(const Pose3& X, boost::optional<Matrix&> H = boost::none) const {
-    SimpleCamera camera(*K_, X);
-    Point2 reprojectionError(camera.project(P_, H) - p_);
-    return reprojectionError.vector();
-  }
+	/// evaluate the error
+	virtual Vector evaluateError(const Pose3& pose, boost::optional<Matrix&> H =
+			boost::none) const {
+		SimpleCamera camera(*K_, pose);
+		Point2 reprojectionError(camera.project(P_, H) - p_);
+		return reprojectionError.vector();
+	}
 };
 
-/*******************************************************************************/
-/**
- * Camera: f = 1.0, Image: 100x100, center: 50.0, 50.0
+/*******************************************************************************
+ * Camera: f = 1, Image: 100x100, center: 50, 50.0
  * Pose (ground truth): (Xw, -Yw, -Zw, [0,0,2.0]')
  * Known landmarks:
  *    3D Points: (10,10,0) (-10,10,0) (-10,-10,0) (10,-10,0)
  * Perfect measurements:
  *    2D Point:  (55,45)   (45,45)    (45,55)     (55,55)
- */
+ *******************************************************************************/
 int main(int argc, char* argv[]) {
-  /* read camera intrinsic parameters */
-  shared_ptrK calib(new Cal3_S2(1.0, 1.0, 0, 50.0, 50.0));
+	/* read camera intrinsic parameters */
+	shared_ptrK calib(new Cal3_S2(1, 1, 0, 50, 50));
 
-  /* create keys for variables */
-  // we have only 1 variable to solve: the camera pose
-  Symbol X('x',1);
+	/* 1. create graph */
+	NonlinearFactorGraph graph;
 
-  /* 1. create graph */
-  NonlinearFactorGraph graph;
+	/* 2. add factors to the graph */
+	// add measurement factors
+	SharedDiagonal measurementNoise = sharedSigmas(Vector_(2, 0.5, 0.5));
+	boost::shared_ptr<ResectioningFactor> factor;
+	graph.push_back(
+			boost::make_shared<ResectioningFactor>(measurementNoise, X(1), calib,
+					Point2(55, 45), Point3(10, 10, 0)));
+	graph.push_back(
+			boost::make_shared<ResectioningFactor>(measurementNoise, X(1), calib,
+					Point2(45, 45), Point3(-10, 10, 0)));
+	graph.push_back(
+			boost::make_shared<ResectioningFactor>(measurementNoise, X(1), calib,
+					Point2(45, 55), Point3(-10, -10, 0)));
+	graph.push_back(
+			boost::make_shared<ResectioningFactor>(measurementNoise, X(1), calib,
+					Point2(55, 55), Point3(10, -10, 0)));
 
-  /* 2. add factors to the graph */
-  // add measurement factors
-  SharedDiagonal measurementNoise = sharedSigmas(Vector_(2, 0.5, 0.5));
-  boost::shared_ptr<ResectioningFactor> factor;
-  factor = boost::shared_ptr<ResectioningFactor>(new ResectioningFactor(
-      measurementNoise, X, calib, Point2(55.0, 45.0), Point3(10.0, 10.0, 0.0)));
-  graph.push_back(factor);
-  factor = boost::shared_ptr<ResectioningFactor>(new ResectioningFactor(
-      measurementNoise, X, calib, Point2(45.0, 45.0), Point3(-10.0, 10.0, 0.0)));
-  graph.push_back(factor);
-  factor = boost::shared_ptr<ResectioningFactor>(new ResectioningFactor(
-      measurementNoise, X, calib, Point2(45.0, 55.0), Point3(-10.0, -10.0, 0.0)));
-  graph.push_back(factor);
-  factor = boost::shared_ptr<ResectioningFactor>(new ResectioningFactor(
-      measurementNoise, X, calib, Point2(55.0, 55.0), Point3(10.0, -10.0, 0.0)));
-  graph.push_back(factor);
+	/* 3. Create an initial estimate for the camera pose */
+	Values initial;
+	initial.insert(X(1),
+			Pose3(Rot3(1, 0, 0, 0, -1, 0, 0, 0, -1), Point3(0, 0, 2)));
 
-  /* 3. Create an initial estimate for the camera pose */
-  Values initial;
-  initial.insert(X, Pose3(Rot3(1.,0.,0.,
-                               0.,-1.,0.,
-                               0.,0.,-1.), Point3(0.,0.,2.0)));
+	/* 4. Optimize the graph using Levenberg-Marquardt*/
+	Values result = LevenbergMarquardtOptimizer(graph, initial).optimize();
+	result.print("Final result:\n");
 
-  /* 4. Optimize the graph using Levenberg-Marquardt*/
-  Values result = LevenbergMarquardtOptimizer(graph, initial).optimize();
-  result.print("Final result: ");
-
-  return 0;
+	return 0;
 }

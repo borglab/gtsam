@@ -22,7 +22,7 @@
 namespace pose3SLAM {
 
   /* ************************************************************************* */
-  Values circle(size_t n, double radius) {
+  Values Values::Circle(size_t n, double radius) {
     Values x;
     double theta = 0, dtheta = 2 * M_PI / n;
     // We use aerospace/navlab convention, X forward, Y right, Z down
@@ -36,26 +36,56 @@ namespace pose3SLAM {
       Point3 gti(radius*cos(theta), radius*sin(theta), 0);
       Rot3 _0Ri = Rot3::yaw(-theta); // negative yaw goes counterclockwise, with Z down !
       Pose3 gTi(gR0 * _0Ri, gti);
-      x.insert(PoseKey(i), gTi);
+      x.insert(i, gTi);
     }
     return x;
   }
 
   /* ************************************************************************* */
-  void Graph::addPrior(Index i, const Pose3& p, const SharedNoiseModel& model) {
-    sharedFactor factor(new Prior(PoseKey(i), p, model));
+	Vector Values::xs() const {
+		size_t j=0;
+		Vector result(size());
+		ConstFiltered<Pose3> poses = filter<Pose3>();
+		BOOST_FOREACH(const ConstFiltered<Pose3>::KeyValuePair& keyValue, poses)
+			result(j++) = keyValue.value.x();
+		return result;
+	}
+
+  /* ************************************************************************* */
+	Vector Values::ys() const {
+		size_t j=0;
+		Vector result(size());
+		ConstFiltered<Pose3> poses = filter<Pose3>();
+		BOOST_FOREACH(const ConstFiltered<Pose3>::KeyValuePair& keyValue, poses)
+			result(j++) = keyValue.value.y();
+		return result;
+	}
+
+  /* ************************************************************************* */
+	Vector Values::zs() const {
+		size_t j=0;
+		Vector result(size());
+		ConstFiltered<Pose3> poses = filter<Pose3>();
+		BOOST_FOREACH(const ConstFiltered<Pose3>::KeyValuePair& keyValue, poses)
+			result(j++) = keyValue.value.z();
+		return result;
+	}
+
+  /* ************************************************************************* */
+  void Graph::addPrior(Key i, const Pose3& p, const SharedNoiseModel& model) {
+    sharedFactor factor(new Prior(i, p, model));
     push_back(factor);
   }
 
   /* ************************************************************************* */
-  void Graph::addConstraint(Index i, Index j, const Pose3& z, const SharedNoiseModel& model) {
-    sharedFactor factor(new Constraint(PoseKey(i), PoseKey(j), z, model));
+  void Graph::addConstraint(Key i1, Key i2, const Pose3& z, const SharedNoiseModel& model) {
+    sharedFactor factor(new Constraint(i1, i2, z, model));
     push_back(factor);
   }
 
   /* ************************************************************************* */
-  void Graph::addHardConstraint(Index i, const Pose3& p) {
-    sharedFactor factor(new HardConstraint(PoseKey(i), p));
+  void Graph::addHardConstraint(Key i, const Pose3& p) {
+    sharedFactor factor(new HardConstraint(i, p));
     push_back(factor);
   }
 

@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    BayesTreeCliqueBase
+ * @file    BayesTreeCliqueBase-inl.h
  * @brief   Base class for cliques of a BayesTree
  * @author  Richard Roberts and Frank Dellaert
  */

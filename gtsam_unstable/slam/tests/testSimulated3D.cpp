@@ -15,23 +15,28 @@
  * @author Alex Cunningham
  **/
 
-#include <iostream>
-#include <CppUnitLite/TestHarness.h>
-
+#include <gtsam_unstable/slam/simulated3D.h>
+#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam_unstable/slam/simulated3D.h>
+
+#include <CppUnitLite/TestHarness.h>
+
+#include <iostream>
 
 using namespace gtsam;
-using namespace simulated3D;
+
+// Convenience for named keys
+using symbol_shorthand::X;
+using symbol_shorthand::L;
 
 /* ************************************************************************* */
 TEST( simulated3D, Values )
 {
 	Values actual;
-	actual.insert(simulated3D::PointKey(1),Point3(1,1,1));
-	actual.insert(simulated3D::PoseKey(2),Point3(2,2,2));
+	actual.insert(L(1),Point3(1,1,1));
+	actual.insert(X(2),Point3(2,2,2));
 	EXPECT(assert_equal(actual,actual,1e-9));
 }
 

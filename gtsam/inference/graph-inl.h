@@ -10,9 +10,9 @@
  * -------------------------------------------------------------------------- */
 
 /*
- * graph-inl.h
+ * @file graph-inl.h
  * @brief Graph algorithm using boost library
- * @author: Kai Ni
+ * @author Kai Ni
  */
 
 #pragma once

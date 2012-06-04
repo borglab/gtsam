@@ -16,7 +16,14 @@
  *  @author Frank Dellaert
  **/
 
-#include <iostream>
+#include <gtsam/slam/smallExample.h>
+#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/base/Testable.h>
+
+#include <CppUnitLite/TestHarness.h>
 
 #include <boost/tuple/tuple.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
@@ -24,24 +31,20 @@
 #include <boost/assign/std/map.hpp> // for insert
 using namespace boost::assign;
 
-#include <CppUnitLite/TestHarness.h>
-
-#include <gtsam/base/Matrix.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/linear/GaussianConditional.h>
-#include <gtsam/slam/smallExample.h>
-#include <gtsam/nonlinear/Ordering.h>
+#include <iostream>
 
 using namespace std;
 using namespace gtsam;
-using namespace example;
-using namespace boost;
+
+// Convenience for named keys
+using symbol_shorthand::X;
+using symbol_shorthand::L;
 
 static SharedDiagonal
 	sigma0_1 = sharedSigma(2,0.1), sigma_02 = sharedSigma(2,0.2),
 	constraintModel = noiseModel::Constrained::All(2);
 
-const Key kx1 = Symbol('x',1), kx2 = Symbol('x',2), kl1 = Symbol('l',1);
+const Key kx1 = X(1), kx2 = X(2), kl1 = L(1);
 
 /* ************************************************************************* */
 TEST( GaussianFactor, linearFactor )
@@ -53,7 +56,7 @@ TEST( GaussianFactor, linearFactor )
 	JacobianFactor expected(ordering[kx1], -10*I,ordering[kx2], 10*I, b, noiseModel::Unit::Create(2));
 
 	// create a small linear factor graph
-	FactorGraph<JacobianFactor> fg = createGaussianFactorGraph(ordering);
+	FactorGraph<JacobianFactor> fg = example::createGaussianFactorGraph(ordering);
 
 	// get the factor kf2 from the factor graph
 	JacobianFactor::shared_ptr lf = fg[1];
@@ -94,7 +97,7 @@ TEST( GaussianFactor, getDim )
 {
 	// get a factor
   Ordering ordering; ordering += kx1,kx2,kl1;
-  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
+  GaussianFactorGraph fg = example::createGaussianFactorGraph(ordering);
 	GaussianFactor::shared_ptr factor = fg[0];
 
 	// get the size of a variable
@@ -166,13 +169,13 @@ TEST( GaussianFactor, error )
 {
 	// create a small linear factor graph
   Ordering ordering; ordering += kx1,kx2,kl1;
-  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
+  GaussianFactorGraph fg = example::createGaussianFactorGraph(ordering);
 
 	// get the first factor from the factor graph
 	GaussianFactor::shared_ptr lf = fg[0];
 
 	// check the error of the first factor with noisy config
-	VectorValues cfg = createZeroDelta(ordering);
+	VectorValues cfg = example::createZeroDelta(ordering);
 
 	// calculate the error from the factor kf1
 	// note the error is the same as in testNonlinearFactor
@@ -226,7 +229,7 @@ TEST( GaussianFactor, matrix )
 {
 	// create a small linear factor graph
   Ordering ordering; ordering += kx1,kx2,kl1;
-  FactorGraph<JacobianFactor> fg = createGaussianFactorGraph(ordering);
+  FactorGraph<JacobianFactor> fg = example::createGaussianFactorGraph(ordering);
 
 	// get the factor kf2 from the factor graph
 	//GaussianFactor::shared_ptr lf = fg[1]; // NOTE: using the older version
@@ -274,7 +277,7 @@ TEST( GaussianFactor, matrix_aug )
 {
 	// create a small linear factor graph
   Ordering ordering; ordering += kx1,kx2,kl1;
-  FactorGraph<JacobianFactor> fg = createGaussianFactorGraph(ordering);
+  FactorGraph<JacobianFactor> fg = example::createGaussianFactorGraph(ordering);
 
 	// get the factor kf2 from the factor graph
 	//GaussianFactor::shared_ptr lf = fg[1];
@@ -385,7 +388,7 @@ TEST( GaussianFactor, size )
 {
 	// create a linear factor graph
   Ordering ordering; ordering += kx1,kx2,kl1;
-  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
+  GaussianFactorGraph fg = example::createGaussianFactorGraph(ordering);
 
 	// get some factors from the graph
 	boost::shared_ptr<GaussianFactor> factor1 = fg[0];

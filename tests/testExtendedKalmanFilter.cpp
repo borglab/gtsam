@@ -14,15 +14,20 @@
  * @author Stephen Williams
  */
 
-#include <CppUnitLite/TestHarness.h>
-
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/ExtendedKalmanFilter-inl.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/geometry/Point2.h>
 
+#include <CppUnitLite/TestHarness.h>
+
 using namespace gtsam;
+
+// Convenience for named keys
+using symbol_shorthand::X;
+using symbol_shorthand::L;
 
 /* ************************************************************************* */
 TEST( ExtendedKalmanFilter, linear ) {
@@ -413,11 +418,11 @@ TEST( ExtendedKalmanFilter, nonlinear ) {
   Point2 x_predict, x_update;
   for(unsigned int i = 0; i < 10; ++i){
     // Create motion factor
-    NonlinearMotionModel motionFactor(Symbol('x',i), Symbol('x',i+1));
+    NonlinearMotionModel motionFactor(X(i), X(i+1));
     x_predict = ekf.predict(motionFactor);
 
     // Create a measurement factor
-    NonlinearMeasurementModel measurementFactor(Symbol('x',i+1), Vector_(1, z[i]));
+    NonlinearMeasurementModel measurementFactor(X(i+1), Vector_(1, z[i]));
     x_update = ekf.update(measurementFactor);
 
     EXPECT(assert_equal(expected_predict[i],x_predict, 1e-6));

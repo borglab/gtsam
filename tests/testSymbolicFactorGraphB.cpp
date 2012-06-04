@@ -15,37 +15,37 @@
  * @author  Frank Dellaert
  */
 
-#include <boost/assign/std/list.hpp> // for operator +=
-using namespace boost::assign;
-
-#include <CppUnitLite/TestHarness.h>
-
 #include <gtsam/slam/smallExample.h>
+#include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
 #include <gtsam/inference/BayesNet-inl.h>
 #include <gtsam/inference/SymbolicSequentialSolver.h>
-#include <gtsam/nonlinear/Ordering.h>
+
+#include <CppUnitLite/TestHarness.h>
+
+#include <boost/assign/std/list.hpp> // for operator +=
+using namespace boost::assign;
 
 using namespace std;
 using namespace gtsam;
-using namespace example;
 
-Key kx(size_t i) { return Symbol('x',i); }
-Key kl(size_t i) { return Symbol('l',i); }
+using symbol_shorthand::X;
+using symbol_shorthand::L;
 
 /* ************************************************************************* */
 TEST( SymbolicFactorGraph, symbolicFactorGraph )
 {
-  Ordering o; o += kx(1),kl(1),kx(2);
+  Ordering o; o += X(1),L(1),X(2);
 	// construct expected symbolic graph
 	SymbolicFactorGraph expected;
-	expected.push_factor(o[kx(1)]);
-	expected.push_factor(o[kx(1)],o[kx(2)]);
-	expected.push_factor(o[kx(1)],o[kl(1)]);
-	expected.push_factor(o[kx(2)],o[kl(1)]);
+	expected.push_factor(o[X(1)]);
+	expected.push_factor(o[X(1)],o[X(2)]);
+	expected.push_factor(o[X(1)],o[L(1)]);
+	expected.push_factor(o[X(2)],o[L(1)]);
 
 	// construct it from the factor graph
-	GaussianFactorGraph factorGraph = createGaussianFactorGraph(o);
+	GaussianFactorGraph factorGraph = example::createGaussianFactorGraph(o);
 	SymbolicFactorGraph actual(factorGraph);
 
 	CHECK(assert_equal(expected, actual));
@@ -55,11 +55,11 @@ TEST( SymbolicFactorGraph, symbolicFactorGraph )
 //TEST( SymbolicFactorGraph, findAndRemoveFactors )
 //{
 //	// construct it from the factor graph graph
-//	GaussianFactorGraph factorGraph = createGaussianFactorGraph();
+//	GaussianFactorGraph factorGraph = example::createGaussianFactorGraph();
 //	SymbolicFactorGraph actual(factorGraph);
 //  SymbolicFactor::shared_ptr f1 = actual[0];
 //  SymbolicFactor::shared_ptr f3 = actual[2];
-//	actual.findAndRemoveFactors(kx(2));
+//	actual.findAndRemoveFactors(X(2));
 //
 //	// construct expected graph after find_factors_and_remove
 //	SymbolicFactorGraph expected;
@@ -75,17 +75,17 @@ TEST( SymbolicFactorGraph, symbolicFactorGraph )
 //TEST( SymbolicFactorGraph, factors)
 //{
 //	// create a test graph
-//	GaussianFactorGraph factorGraph = createGaussianFactorGraph();
+//	GaussianFactorGraph factorGraph = example::createGaussianFactorGraph();
 //	SymbolicFactorGraph fg(factorGraph);
 //
 //	// ask for all factor indices connected to x1
-//	list<size_t> x1_factors = fg.factors(kx(1));
+//	list<size_t> x1_factors = fg.factors(X(1));
 //	int x1_indices[] = { 0, 1, 2 };
 //	list<size_t> x1_expected(x1_indices, x1_indices + 3);
 //	CHECK(x1_factors==x1_expected);
 //
 //	// ask for all factor indices connected to x2
-//	list<size_t> x2_factors = fg.factors(kx(2));
+//	list<size_t> x2_factors = fg.factors(X(2));
 //	int x2_indices[] = { 1, 3 };
 //	list<size_t> x2_expected(x2_indices, x2_indices + 2);
 //	CHECK(x2_factors==x2_expected);
@@ -95,30 +95,30 @@ TEST( SymbolicFactorGraph, symbolicFactorGraph )
 //TEST( SymbolicFactorGraph, removeAndCombineFactors )
 //{
 //	// create a test graph
-//	GaussianFactorGraph factorGraph = createGaussianFactorGraph();
+//	GaussianFactorGraph factorGraph = example::createGaussianFactorGraph();
 //	SymbolicFactorGraph fg(factorGraph);
 //
 //  // combine all factors connected to x1
-//  SymbolicFactor::shared_ptr actual = removeAndCombineFactors(fg,kx(1));
+//  SymbolicFactor::shared_ptr actual = removeAndCombineFactors(fg,X(1));
 //
 //  // check result
-//  SymbolicFactor expected(kl(1),kx(1),kx(2));
+//  SymbolicFactor expected(L(1),X(1),X(2));
 //  CHECK(assert_equal(expected,*actual));
 //}
 
 ///* ************************************************************************* */
 //TEST( SymbolicFactorGraph, eliminateOne )
 //{
-//  Ordering o; o += kx(1),kl(1),kx(2);
+//  Ordering o; o += X(1),L(1),X(2);
 //	// create a test graph
-//	GaussianFactorGraph factorGraph = createGaussianFactorGraph(o);
+//	GaussianFactorGraph factorGraph = example::createGaussianFactorGraph(o);
 //	SymbolicFactorGraph fg(factorGraph);
 //
 //	// eliminate
-//	IndexConditional::shared_ptr actual = GaussianSequentialSolver::EliminateUntil(fg, o[kx(1)]+1);
+//	IndexConditional::shared_ptr actual = GaussianSequentialSolver::EliminateUntil(fg, o[X(1)]+1);
 //
 //  // create expected symbolic IndexConditional
-//  IndexConditional expected(o[kx(1)],o[kl(1)],o[kx(2)]);
+//  IndexConditional expected(o[X(1)],o[L(1)],o[X(2)]);
 //
 //  CHECK(assert_equal(expected,*actual));
 //}
@@ -126,12 +126,12 @@ TEST( SymbolicFactorGraph, symbolicFactorGraph )
 /* ************************************************************************* */
 TEST( SymbolicFactorGraph, eliminate )
 {
-  Ordering o; o += kx(2),kl(1),kx(1);
+  Ordering o; o += X(2),L(1),X(1);
 
   // create expected Chordal bayes Net
-  IndexConditional::shared_ptr x2(new IndexConditional(o[kx(2)], o[kl(1)], o[kx(1)]));
-  IndexConditional::shared_ptr l1(new IndexConditional(o[kl(1)], o[kx(1)]));
-  IndexConditional::shared_ptr x1(new IndexConditional(o[kx(1)]));
+  IndexConditional::shared_ptr x2(new IndexConditional(o[X(2)], o[L(1)], o[X(1)]));
+  IndexConditional::shared_ptr l1(new IndexConditional(o[L(1)], o[X(1)]));
+  IndexConditional::shared_ptr x1(new IndexConditional(o[X(1)]));
 
   SymbolicBayesNet expected;
   expected.push_back(x2);
@@ -139,7 +139,7 @@ TEST( SymbolicFactorGraph, eliminate )
   expected.push_back(x1);
 
   // create a test graph
-	GaussianFactorGraph factorGraph = createGaussianFactorGraph(o);
+	GaussianFactorGraph factorGraph = example::createGaussianFactorGraph(o);
 	SymbolicFactorGraph fg(factorGraph);
 
 	// eliminate it

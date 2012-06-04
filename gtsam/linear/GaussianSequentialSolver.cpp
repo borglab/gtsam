@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    SequentialSolver.cpp
+ * @file    GaussianSequentialSolver.cpp
  * @author  Richard Roberts
  * @date    Oct 19, 2010
  */

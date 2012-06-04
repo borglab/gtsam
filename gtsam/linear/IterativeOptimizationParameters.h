@@ -96,7 +96,7 @@ struct PreconditionerParameters {
 
   enum Verbosity { SILENT = 0, COMPLEXITY = 1, ERROR = 2} verbosity_ ;  /* Verbosity */
 
-  PreconditionerParameters(): kernel_(CHOLMOD), type_(Combinatorial), verbosity_(SILENT) {}
+  PreconditionerParameters(): kernel_(GTSAM), type_(Combinatorial), verbosity_(SILENT) {}
   PreconditionerParameters(Kernel kernel, const CombinatorialParameters &combinatorial, Verbosity verbosity)
     : kernel_(kernel), type_(Combinatorial), combinatorial_(combinatorial), verbosity_(verbosity) {}
 
@@ -180,13 +180,13 @@ public:
 
   PreconditionerParameters preconditioner_;
   ConjugateGradientParameters cg_;
-  enum Kernel { PCG = 0 /*, PCGPlus*/, LSPCG } kernel_ ;                /* Iterative Method Kernel */
+  enum Kernel { PCG = 0, LSPCG } kernel_ ;                /* Iterative Method Kernel */
   enum Verbosity { SILENT = 0, COMPLEXITY = 1, ERROR = 2} verbosity_ ;  /* Verbosity */
 
 public:
 
   IterativeOptimizationParameters()
-  : preconditioner_(), cg_(), kernel_(PCG), verbosity_(SILENT) {}
+  : preconditioner_(), cg_(), kernel_(LSPCG), verbosity_(SILENT) {}
 
   IterativeOptimizationParameters(const IterativeOptimizationParameters &p) :
     preconditioner_(p.preconditioner_), cg_(p.cg_), kernel_(p.kernel_), verbosity_(p.verbosity_) {}

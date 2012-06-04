@@ -15,15 +15,17 @@
  * @author  Richard Roberts
  */
 
-#include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/numericalDerivative.h>
-#include <gtsam/inference/BayesTree-inl.h>
+#include <gtsam/slam/pose2SLAM.h>
+#include <gtsam/slam/smallExample.h>
+#include <gtsam/nonlinear/DoglegOptimizerImpl.h>
+#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianBayesTree.h>
-#include <gtsam/nonlinear/DoglegOptimizerImpl.h>
-#include <gtsam/slam/pose2SLAM.h>
-#include <gtsam/slam/smallExample.h>
+#include <gtsam/inference/BayesTree-inl.h>
+#include <gtsam/base/numericalDerivative.h>
+
+#include <CppUnitLite/TestHarness.h>
 
 #include <boost/bind.hpp>
 #include <boost/assign/list_of.hpp> // for 'list_of()'
@@ -31,6 +33,10 @@
 
 using namespace std;
 using namespace gtsam;
+
+// Convenience for named keys
+using symbol_shorthand::X;
+using symbol_shorthand::L;
 
 /* ************************************************************************* */
 double computeError(const GaussianBayesNet& gbn, const LieVector& values) {
@@ -386,11 +392,11 @@ TEST(DoglegOptimizer, Iterate) {
   // config far from minimum
   Point2 x0(3,0);
   boost::shared_ptr<Values> config(new Values);
-  config->insert(simulated2D::PoseKey(1), x0);
+  config->insert(X(1), x0);
 
   // ordering
   boost::shared_ptr<Ordering> ord(new Ordering());
-  ord->push_back(simulated2D::PoseKey(1));
+  ord->push_back(X(1));
 
   double Delta = 1.0;
   for(size_t it=0; it<10; ++it) {

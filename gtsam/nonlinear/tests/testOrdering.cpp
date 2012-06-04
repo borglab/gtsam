@@ -14,9 +14,10 @@
  * @author Alex Cunningham
  */
 
-#include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/TestableAssertions.h>
 #include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/base/TestableAssertions.h>
+#include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;

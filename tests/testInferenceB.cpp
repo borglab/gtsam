@@ -17,6 +17,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
 #include <gtsam/slam/smallExample.h>
@@ -24,6 +25,10 @@
 
 using namespace std;
 using namespace gtsam;
+
+// Convenience for named keys
+using symbol_shorthand::X;
+using symbol_shorthand::L;
 
 /* ************************************************************************* */
 // The tests below test the *generic* inference algorithms. Some of these have
@@ -52,23 +57,23 @@ TEST( inference, marginals2)
   SharedDiagonal poseModel(sharedSigma(3, 0.1));
   SharedDiagonal pointModel(sharedSigma(3, 0.1));
 
-  fg.addPrior(0, Pose2(), poseModel);
-  fg.addOdometry(0, 1, Pose2(1.0,0.0,0.0), poseModel);
-  fg.addOdometry(1, 2, Pose2(1.0,0.0,0.0), poseModel);
-  fg.addBearingRange(0, 0, Rot2(), 1.0, pointModel);
-  fg.addBearingRange(1, 0, Rot2(), 1.0, pointModel);
-  fg.addBearingRange(2, 0, Rot2(), 1.0, pointModel);
+  fg.addPrior(X(0), Pose2(), poseModel);
+  fg.addOdometry(X(0), X(1), Pose2(1.0,0.0,0.0), poseModel);
+  fg.addOdometry(X(1), X(2), Pose2(1.0,0.0,0.0), poseModel);
+  fg.addBearingRange(X(0), L(0), Rot2(), 1.0, pointModel);
+  fg.addBearingRange(X(1), L(0), Rot2(), 1.0, pointModel);
+  fg.addBearingRange(X(2), L(0), Rot2(), 1.0, pointModel);
 
   Values init;
-  init.insert(planarSLAM::PoseKey(0), Pose2(0.0,0.0,0.0));
-  init.insert(planarSLAM::PoseKey(1), Pose2(1.0,0.0,0.0));
-  init.insert(planarSLAM::PoseKey(2), Pose2(2.0,0.0,0.0));
-  init.insert(planarSLAM::PointKey(0), Point2(1.0,1.0));
+  init.insert(X(0), Pose2(0.0,0.0,0.0));
+  init.insert(X(1), Pose2(1.0,0.0,0.0));
+  init.insert(X(2), Pose2(2.0,0.0,0.0));
+  init.insert(L(0), Point2(1.0,1.0));
 
   Ordering ordering(*fg.orderingCOLAMD(init));
   FactorGraph<GaussianFactor>::shared_ptr gfg(fg.linearize(init, ordering));
   GaussianMultifrontalSolver solver(*gfg);
-  solver.marginalFactor(ordering[planarSLAM::PointKey(0)]);
+  solver.marginalFactor(ordering[L(0)]);
 }
 
 /* ************************************************************************* */

@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
@@ -27,12 +28,6 @@ namespace simulated2DOriented {
 
   using namespace gtsam;
 
-  /// Convenience function for constructing a pose key
-  inline Symbol PoseKey(Index j) { return Symbol('x', j); }
-
-  /// Convenience function for constructing a landmark key
-  inline Symbol PointKey(Index j) { return Symbol('l', j); }
-
   /// Specialized Values structure with syntactic sugar for
   /// compatibility with matlab
   class Values: public gtsam::Values {
@@ -40,21 +35,23 @@ namespace simulated2DOriented {
   public:
     Values() : nrPoses_(0), nrPoints_(0)  {}
 
-    void insertPose(Index j, const Pose2& p) {
-      insert(PoseKey(j), p);
+    /// insert a pose
+    void insertPose(Key i, const Pose2& p) {
+      insert(i, p);
       nrPoses_++;
     }
 
-    void insertPoint(Index j, const Point2& p) {
-      insert(PointKey(j), p);
+    /// insert a landmark
+    void insertPoint(Key j, const Point2& p) {
+      insert(j, p);
       nrPoints_++;
     }
 
-    int nrPoses() const {	return nrPoses_;	}
-    int nrPoints() const { return nrPoints_;	}
+    int nrPoses() const {	return nrPoses_;	} ///< nr of poses
+    int nrPoints() const { return nrPoints_;	} ///< nr of landmarks
 
-    Pose2 pose(Index j) const { return at<Pose2>(PoseKey(j));	}
-    Point2 point(Index j) const { return at<Point2>(PointKey(j)); }
+    Pose2 pose(Key i) const { return at<Pose2>(i);	} ///< get a pose
+    Point2 point(Key j) const { return at<Point2>(j); } ///< get a landmark
   };
 
   //TODO:: point prior is not implemented right now

@@ -23,7 +23,6 @@
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/nonlinear/Symbol.h>
 
 // \namespace
 
@@ -35,12 +34,6 @@ namespace simulated3D {
  * 3D points, without rotation. The structure and use is based on
  * the simulated2D domain.
  */
-
-  /// Convenience function for constructing a pose key
-  inline Symbol PoseKey(Index j) { return Symbol('x', j); }
-
-  /// Convenience function for constructing a pose key
-  inline Symbol PointKey(Index j) { return Symbol('l', j); }
 
 /**
  * Prior on a single pose
@@ -105,9 +98,8 @@ struct Simulated3DMeasurement: public NoiseModelFactor2<Point3, Point3> {
 	 * @param poseKey is the pose key of the robot
 	 * @param pointKey is the point key for the landmark
 	 */
-	Simulated3DMeasurement(const Point3& measured, const SharedNoiseModel& model,
-	    Key poseKey, Key pointKey) :
-	      NoiseModelFactor2<Point3, Point3>(model, poseKey, pointKey), measured_(measured) {}
+	Simulated3DMeasurement(const Point3& measured, const SharedNoiseModel& model, Key i, Key j) :
+	      NoiseModelFactor2<Point3, Point3>(model, i, j), measured_(measured) {}
 
 	/**
 	 * Error function with optional derivatives

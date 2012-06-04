@@ -10,9 +10,10 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file   inference-inl.h
+ * @file   inference.cpp
  * @brief  inference definitions
- * @author Frank Dellaert, Richard Roberts
+ * @author Frank Dellaert
+ * @author Richard Roberts
  */
 
 #include <gtsam/inference/inference.h>

@@ -30,4 +30,3 @@ foreach(example_src ${example_srcs} )
 
 endforeach(example_src)
 
-add_subdirectory(vSLAMexample)

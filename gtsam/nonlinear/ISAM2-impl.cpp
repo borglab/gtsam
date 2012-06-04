@@ -12,14 +12,16 @@
 /**
  * @file    ISAM2-impl.cpp
  * @brief   Incremental update functionality (ISAM2) for BayesTree, with fluid relinearization.
- * @author  Michael Kaess, Richard Roberts
+ * @author  Michael Kaess
+ * @author  Richard Roberts
  */
 
+#include <gtsam/nonlinear/ISAM2-impl.h>
+#include <gtsam/nonlinear/Symbol.h> // for selective linearization thresholds
+#include <gtsam/base/debug.h>
 #include <functional>
 #include <boost/range/adaptors.hpp>
 #include <boost/range/algorithm.hpp>
-#include <gtsam/nonlinear/ISAM2-impl.h>
-#include <gtsam/base/debug.h>
 
 namespace gtsam {
 

@@ -1,0 +1,53 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file Pose2SLAMExample_graph->cpp
+ * @brief Read graph from file and perform GraphSLAM
+ * @date June 3, 2012
+ * @author Frank Dellaert
+ */
+
+#include <gtsam/slam/dataset.h>
+#include <gtsam/slam/pose2SLAM.h>
+#include <gtsam/nonlinear/Marginals.h>
+#include <boost/tuple/tuple.hpp>
+#include <cmath>
+
+using namespace std;
+using namespace gtsam;
+
+int main(int argc, char** argv) {
+
+	// Read File and create graph and initial estimate
+	// we are in build/examples, data is in examples/Data
+	pose2SLAM::Graph::shared_ptr graph ;
+	pose2SLAM::Values::shared_ptr initial;
+	SharedDiagonal model(Vector_(3, 0.05, 0.05, 5.0*M_PI/180.0));
+	boost::tie(graph,initial) = load2D("../../examples/Data/w100-odom.graph",model);
+	initial->print("Initial estimate:\n");
+
+	// Add a Gaussian prior on first poses
+	Pose2 priorMean(0.0, 0.0, 0.0); // prior at origin
+	SharedDiagonal priorNoise(Vector_(3, 0.01, 0.01, 0.01));
+	graph->addPrior(0, priorMean, priorNoise);
+
+	// Single Step Optimization using Levenberg-Marquardt
+	pose2SLAM::Values result = graph->optimize(*initial);
+	result.print("\nFinal result:\n");
+
+	// Plot the covariance of the last pose
+	Marginals marginals(*graph, result);
+	cout.precision(2);
+  cout << "\nP3:\n" << marginals.marginalCovariance(99) << endl;
+
+return 0;
+}

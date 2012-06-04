@@ -19,7 +19,6 @@
 
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -31,13 +30,15 @@ namespace pose2SLAM {
 
   using namespace gtsam;
 
-  /// Convenience function for constructing a pose key
-  inline Symbol PoseKey(Index j) { return Symbol('x', j); }
-
-  /// Values class, inherited from Values, using PoseKeys, mainly used as a convenience for MATLAB wrapper
+  /*
+   * Values class, inherited from Values, mainly used as a convenience for MATLAB wrapper
+   * @ingroup SLAM
+   */
   struct Values: public gtsam::Values {
 
-    /// Default constructor
+	  typedef boost::shared_ptr<Values> shared_ptr;
+
+	  /// Default constructor
     Values() {}
 
     /// Copy constructor
@@ -45,23 +46,25 @@ namespace pose2SLAM {
         gtsam::Values(values) {
     }
 
-    // Convenience for MATLAB wrapper, which does not allow for identically named methods
-
-    /// get a pose
-    Pose2 pose(Index key) const { return at<Pose2>(PoseKey(key)); }
+    /**
+     * Create a circle of n 2D poses tangent to circle of radius R, first pose at (R,0)
+     * @param n number of poses
+     * @param R radius of circle
+     * @param c character to use for keys
+     * @return circle of n 2D poses
+     */
+    static Values Circle(size_t n, double R);
 
     /// insert a pose
-    void insertPose(Index key, const Pose2& pose) { insert(PoseKey(key), pose); }
-  };
+    void insertPose(Key i, const Pose2& pose) { insert(i, pose); }
 
-  /**
-   * Create a circle of n 2D poses tangent to circle of radius R, first pose at (R,0)
-   * @param n number of poses
-   * @param R radius of circle
-   * @param c character to use for keys
-   * @return circle of n 2D poses
-   */
-  Values circle(size_t n, double R);
+    /// get a pose
+    Pose2 pose(Key i) const { return at<Pose2>(i); }
+
+    Vector xs() const; ///< get all x coordinates in a matrix
+    Vector ys() const; ///< get all y coordinates in a matrix
+    Vector thetas() const; ///< get all orientations in a matrix
+  };
 
   /**
    * List of typedefs for factors
@@ -74,29 +77,32 @@ namespace pose2SLAM {
   /// A factor to add an odometry measurement between two poses.
   typedef BetweenFactor<Pose2> Odometry;
 
-  /// Graph
+  /**
+   * Graph class, inherited from NonlinearFactorGraph, used as a convenience for MATLAB wrapper
+   * @ingroup SLAM
+   */
   struct Graph: public NonlinearFactorGraph {
 
-    /// Default constructor for a NonlinearFactorGraph
+	  typedef boost::shared_ptr<Graph> shared_ptr;
+
+	  /// Default constructor for a NonlinearFactorGraph
     Graph(){}
 
     /// Creates a NonlinearFactorGraph based on another NonlinearFactorGraph
     Graph(const NonlinearFactorGraph& graph);
 
-    /// Adds a Pose2 prior with a noise model to one of the keys in the nonlinear factor graph
-    void addPrior(Index i, const Pose2& p, const SharedNoiseModel& model);
+    /// Adds a Pose2 prior with mean p and given noise model on pose i
+    void addPrior(Key i, const Pose2& p, const SharedNoiseModel& model);
 
     /// Creates a hard constraint for key i with the given Pose2 p.
-    void addPoseConstraint(Index i, const Pose2& p);
+    void addPoseConstraint(Key i, const Pose2& p);
 
-    /// Creates a between factor between keys i and j with a noise model with Pose2 z in the graph
-    void addOdometry(Index i, Index j, const Pose2& z,
-        const SharedNoiseModel& model);
+    /// Creates an odometry factor between poses with keys i1 and i2
+    void addOdometry(Key i1, Key i2, const Pose2& z, const SharedNoiseModel& model);
 
     /// AddConstraint adds a soft constraint between factor between keys i and j
-    void addConstraint(Index i, Index j, const Pose2& z,
-        const SharedNoiseModel& model) {
-    	addOdometry(i,j,z,model); // same for now
+    void addConstraint(Key i1, Key i2, const Pose2& z, const SharedNoiseModel& model) {
+    	addOdometry(i1,i2,z,model); // same for now
     }
 
     /// Optimize

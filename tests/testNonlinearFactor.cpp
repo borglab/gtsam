@@ -32,13 +32,15 @@
 #include <gtsam/slam/simulated2D.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/Symbol.h>
 
 using namespace std;
 using namespace gtsam;
 using namespace example;
 
-using simulated2D::PoseKey;
-using simulated2D::PointKey;
+// Convenience for named keys
+using symbol_shorthand::X;
+using symbol_shorthand::L;
 
 typedef boost::shared_ptr<NonlinearFactor > shared_nlf;
 
@@ -49,11 +51,11 @@ TEST( NonlinearFactor, equals )
 
 	// create two nonlinear2 factors
 	Point2 z3(0.,-1.);
-	simulated2D::Measurement f0(z3, sigma, PoseKey(1),PointKey(1));
+	simulated2D::Measurement f0(z3, sigma, X(1),L(1));
 
 	// measurement between x2 and l1
 	Point2 z4(-1.5, -1.);
-	simulated2D::Measurement f1(z4, sigma, PoseKey(2),PointKey(1));
+	simulated2D::Measurement f1(z4, sigma, X(2),L(1));
 
 	CHECK(assert_equal(f0,f0));
 	CHECK(f0.equals(f0));
@@ -199,16 +201,16 @@ TEST( NonlinearFactor, linearize_constraint1 )
 	SharedDiagonal constraint = noiseModel::Constrained::MixedSigmas(sigmas);
 
 	Point2 mu(1., -1.);
-	Graph::sharedFactor f0(new simulated2D::Prior(mu, constraint, PoseKey(1)));
+	Graph::sharedFactor f0(new simulated2D::Prior(mu, constraint, X(1)));
 
 	Values config;
-	config.insert(simulated2D::PoseKey(1), Point2(1.0, 2.0));
+	config.insert(X(1), Point2(1.0, 2.0));
 	GaussianFactor::shared_ptr actual = f0->linearize(config, *config.orderingArbitrary());
 
 	// create expected
 	Ordering ord(*config.orderingArbitrary());
 	Vector b = Vector_(2, 0., -3.);
-	JacobianFactor expected(ord[PoseKey(1)], Matrix_(2,2, 5.0, 0.0, 0.0, 1.0), b, constraint);
+	JacobianFactor expected(ord[X(1)], Matrix_(2,2, 5.0, 0.0, 0.0, 1.0), b, constraint);
 	CHECK(assert_equal((const GaussianFactor&)expected, *actual));
 }
 
@@ -219,18 +221,18 @@ TEST( NonlinearFactor, linearize_constraint2 )
 	SharedDiagonal constraint = noiseModel::Constrained::MixedSigmas(sigmas);
 
 	Point2 z3(1.,-1.);
-	simulated2D::Measurement f0(z3, constraint, PoseKey(1),PointKey(1));
+	simulated2D::Measurement f0(z3, constraint, X(1),L(1));
 
 	Values config;
-	config.insert(simulated2D::PoseKey(1), Point2(1.0, 2.0));
-	config.insert(simulated2D::PointKey(1), Point2(5.0, 4.0));
+	config.insert(X(1), Point2(1.0, 2.0));
+	config.insert(L(1), Point2(5.0, 4.0));
 	GaussianFactor::shared_ptr actual = f0.linearize(config, *config.orderingArbitrary());
 
 	// create expected
 	Ordering ord(*config.orderingArbitrary());
 	Matrix A = Matrix_(2,2, 5.0, 0.0, 0.0, 1.0);
 	Vector b = Vector_(2, -15., -3.);
-	JacobianFactor expected(ord[PoseKey(1)], -1*A, ord[PointKey(1)], A, b, constraint);
+	JacobianFactor expected(ord[X(1)], -1*A, ord[L(1)], A, b, constraint);
 	CHECK(assert_equal((const GaussianFactor&)expected, *actual));
 }
 
@@ -238,7 +240,7 @@ TEST( NonlinearFactor, linearize_constraint2 )
 class TestFactor4 : public NoiseModelFactor4<LieVector, LieVector, LieVector, LieVector> {
 public:
   typedef NoiseModelFactor4<LieVector, LieVector, LieVector, LieVector> Base;
-  TestFactor4() : Base(sharedSigmas(Vector_(1, 2.0)), PoseKey(1), PoseKey(2), PoseKey(3), PoseKey(4)) {}
+  TestFactor4() : Base(sharedSigmas(Vector_(1, 2.0)), X(1), X(2), X(3), X(4)) {}
 
   virtual Vector
     evaluateError(const LieVector& x1, const LieVector& x2, const LieVector& x3, const LieVector& x4,
@@ -262,13 +264,13 @@ public:
 TEST(NonlinearFactor, NoiseModelFactor4) {
   TestFactor4 tf;
   Values tv;
-  tv.insert(PoseKey(1), LieVector(1, 1.0));
-  tv.insert(PoseKey(2), LieVector(1, 2.0));
-  tv.insert(PoseKey(3), LieVector(1, 3.0));
-  tv.insert(PoseKey(4), LieVector(1, 4.0));
+  tv.insert(X(1), LieVector(1, 1.0));
+  tv.insert(X(2), LieVector(1, 2.0));
+  tv.insert(X(3), LieVector(1, 3.0));
+  tv.insert(X(4), LieVector(1, 4.0));
   EXPECT(assert_equal(Vector_(1, 10.0), tf.unwhitenedError(tv)));
   DOUBLES_EQUAL(25.0/2.0, tf.error(tv), 1e-9);
-  Ordering ordering; ordering += PoseKey(1), PoseKey(2), PoseKey(3), PoseKey(4);
+  Ordering ordering; ordering += X(1), X(2), X(3), X(4);
   JacobianFactor jf(*boost::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv, ordering)));
   LONGS_EQUAL(jf.keys()[0], 0);
   LONGS_EQUAL(jf.keys()[1], 1);
@@ -285,7 +287,7 @@ TEST(NonlinearFactor, NoiseModelFactor4) {
 class TestFactor5 : public NoiseModelFactor5<LieVector, LieVector, LieVector, LieVector, LieVector> {
 public:
   typedef NoiseModelFactor5<LieVector, LieVector, LieVector, LieVector, LieVector> Base;
-  TestFactor5() : Base(sharedSigmas(Vector_(1, 2.0)), PoseKey(1), PoseKey(2), PoseKey(3), PoseKey(4), PoseKey(5)) {}
+  TestFactor5() : Base(sharedSigmas(Vector_(1, 2.0)), X(1), X(2), X(3), X(4), X(5)) {}
 
   virtual Vector
     evaluateError(const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5,
@@ -311,14 +313,14 @@ public:
 TEST(NonlinearFactor, NoiseModelFactor5) {
   TestFactor5 tf;
   Values tv;
-  tv.insert(PoseKey(1), LieVector(1, 1.0));
-  tv.insert(PoseKey(2), LieVector(1, 2.0));
-  tv.insert(PoseKey(3), LieVector(1, 3.0));
-  tv.insert(PoseKey(4), LieVector(1, 4.0));
-  tv.insert(PoseKey(5), LieVector(1, 5.0));
+  tv.insert(X(1), LieVector(1, 1.0));
+  tv.insert(X(2), LieVector(1, 2.0));
+  tv.insert(X(3), LieVector(1, 3.0));
+  tv.insert(X(4), LieVector(1, 4.0));
+  tv.insert(X(5), LieVector(1, 5.0));
   EXPECT(assert_equal(Vector_(1, 15.0), tf.unwhitenedError(tv)));
   DOUBLES_EQUAL(56.25/2.0, tf.error(tv), 1e-9);
-  Ordering ordering; ordering += PoseKey(1), PoseKey(2), PoseKey(3), PoseKey(4), PoseKey(5);
+  Ordering ordering; ordering += X(1), X(2), X(3), X(4), X(5);
   JacobianFactor jf(*boost::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv, ordering)));
   LONGS_EQUAL(jf.keys()[0], 0);
   LONGS_EQUAL(jf.keys()[1], 1);
@@ -337,7 +339,7 @@ TEST(NonlinearFactor, NoiseModelFactor5) {
 class TestFactor6 : public NoiseModelFactor6<LieVector, LieVector, LieVector, LieVector, LieVector, LieVector> {
 public:
   typedef NoiseModelFactor6<LieVector, LieVector, LieVector, LieVector, LieVector, LieVector> Base;
-  TestFactor6() : Base(sharedSigmas(Vector_(1, 2.0)), PoseKey(1), PoseKey(2), PoseKey(3), PoseKey(4), PoseKey(5), PoseKey(6)) {}
+  TestFactor6() : Base(sharedSigmas(Vector_(1, 2.0)), X(1), X(2), X(3), X(4), X(5), X(6)) {}
 
   virtual Vector
     evaluateError(const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5, const X6& x6,
@@ -365,15 +367,15 @@ public:
 TEST(NonlinearFactor, NoiseModelFactor6) {
   TestFactor6 tf;
   Values tv;
-  tv.insert(PoseKey(1), LieVector(1, 1.0));
-  tv.insert(PoseKey(2), LieVector(1, 2.0));
-  tv.insert(PoseKey(3), LieVector(1, 3.0));
-  tv.insert(PoseKey(4), LieVector(1, 4.0));
-  tv.insert(PoseKey(5), LieVector(1, 5.0));
-  tv.insert(PoseKey(6), LieVector(1, 6.0));
+  tv.insert(X(1), LieVector(1, 1.0));
+  tv.insert(X(2), LieVector(1, 2.0));
+  tv.insert(X(3), LieVector(1, 3.0));
+  tv.insert(X(4), LieVector(1, 4.0));
+  tv.insert(X(5), LieVector(1, 5.0));
+  tv.insert(X(6), LieVector(1, 6.0));
   EXPECT(assert_equal(Vector_(1, 21.0), tf.unwhitenedError(tv)));
   DOUBLES_EQUAL(110.25/2.0, tf.error(tv), 1e-9);
-  Ordering ordering; ordering += PoseKey(1), PoseKey(2), PoseKey(3), PoseKey(4), PoseKey(5), PoseKey(6);
+  Ordering ordering; ordering += X(1), X(2), X(3), X(4), X(5), X(6);
   JacobianFactor jf(*boost::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv, ordering)));
   LONGS_EQUAL(jf.keys()[0], 0);
   LONGS_EQUAL(jf.keys()[1], 1);
@@ -395,10 +397,10 @@ TEST(NonlinearFactor, NoiseModelFactor6) {
 TEST( NonlinearFactor, clone_rekey )
 {
 	shared_nlf init(new TestFactor4());
-  EXPECT_LONGS_EQUAL(PoseKey(1), init->keys()[0]);
-  EXPECT_LONGS_EQUAL(PoseKey(2), init->keys()[1]);
-  EXPECT_LONGS_EQUAL(PoseKey(3), init->keys()[2]);
-  EXPECT_LONGS_EQUAL(PoseKey(4), init->keys()[3]);
+  EXPECT_LONGS_EQUAL(X(1), init->keys()[0]);
+  EXPECT_LONGS_EQUAL(X(2), init->keys()[1]);
+  EXPECT_LONGS_EQUAL(X(3), init->keys()[2]);
+  EXPECT_LONGS_EQUAL(X(4), init->keys()[3]);
 
   // Standard clone
   shared_nlf actClone = init->clone();
@@ -407,24 +409,24 @@ TEST( NonlinearFactor, clone_rekey )
 
   // Re-key factor - clones with different keys
   std::vector<Key> new_keys(4);
-  new_keys[0] = PoseKey(5);
-  new_keys[1] = PoseKey(6);
-  new_keys[2] = PoseKey(7);
-  new_keys[3] = PoseKey(8);
+  new_keys[0] = X(5);
+  new_keys[1] = X(6);
+  new_keys[2] = X(7);
+  new_keys[3] = X(8);
   shared_nlf actRekey = init->rekey(new_keys);
   EXPECT(actRekey.get() != init.get()); // Ensure different pointers
 
   // Ensure init is unchanged
-  EXPECT_LONGS_EQUAL(PoseKey(1), init->keys()[0]);
-  EXPECT_LONGS_EQUAL(PoseKey(2), init->keys()[1]);
-  EXPECT_LONGS_EQUAL(PoseKey(3), init->keys()[2]);
-  EXPECT_LONGS_EQUAL(PoseKey(4), init->keys()[3]);
+  EXPECT_LONGS_EQUAL(X(1), init->keys()[0]);
+  EXPECT_LONGS_EQUAL(X(2), init->keys()[1]);
+  EXPECT_LONGS_EQUAL(X(3), init->keys()[2]);
+  EXPECT_LONGS_EQUAL(X(4), init->keys()[3]);
 
   // Check new keys
-  EXPECT_LONGS_EQUAL(PoseKey(5), actRekey->keys()[0]);
-  EXPECT_LONGS_EQUAL(PoseKey(6), actRekey->keys()[1]);
-  EXPECT_LONGS_EQUAL(PoseKey(7), actRekey->keys()[2]);
-  EXPECT_LONGS_EQUAL(PoseKey(8), actRekey->keys()[3]);
+  EXPECT_LONGS_EQUAL(X(5), actRekey->keys()[0]);
+  EXPECT_LONGS_EQUAL(X(6), actRekey->keys()[1]);
+  EXPECT_LONGS_EQUAL(X(7), actRekey->keys()[2]);
+  EXPECT_LONGS_EQUAL(X(8), actRekey->keys()[3]);
 }
 
 /* ************************************************************************* */

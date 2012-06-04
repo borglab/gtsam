@@ -10,28 +10,33 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file testDynamicValues.cpp
+ * @file testValues.cpp
  * @author Richard Roberts
  */
 
-#include <CppUnitLite/TestHarness.h>
-#include <stdexcept>
-#include <limits>
-#include <boost/assign/std/list.hpp> // for operator +=
-using namespace boost::assign;
-
+#include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/LieVector.h>
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam/nonlinear/Values.h>
+
+#include <CppUnitLite/TestHarness.h>
+#include <boost/assign/std/list.hpp> // for operator +=
+using namespace boost::assign;
+#include <stdexcept>
+#include <limits>
 
 using namespace gtsam;
 using namespace std;
 static double inf = std::numeric_limits<double>::infinity();
 
-const Key key1(Symbol('v',1)), key2(Symbol('v',2)), key3(Symbol('v',3)), key4(Symbol('v',4));
+// Convenience for named keys
+using symbol_shorthand::X;
+using symbol_shorthand::L;
+
+const Symbol key1('v',1), key2('v',2), key3('v',3), key4('v',4);
 
 /* ************************************************************************* */
 TEST( Values, equals1 )
@@ -332,9 +337,9 @@ TEST(Values, Symbol_filter) {
   Pose3 pose3(Pose2(0.3, 0.7, 0.9));
 
   Values values;
-  values.insert(Symbol('x',0), pose0);
+  values.insert(X(0), pose0);
   values.insert(Symbol('y',1), pose1);
-  values.insert(Symbol('x',2), pose2);
+  values.insert(X(2), pose2);
   values.insert(Symbol('y',3), pose3);
 
   int i = 0;

@@ -71,10 +71,9 @@ int main(int argc, char** argv) {
 
 	// add unary measurement factors, like GPS, on all three poses
 	SharedDiagonal noiseModel(Vector_(2, 0.1, 0.1)); // 10cm std on x,y
-	Symbol x1('x',1), x2('x',2), x3('x',3);
-	graph.push_back(boost::make_shared<UnaryFactor>(x1, 0, 0, noiseModel));
-	graph.push_back(boost::make_shared<UnaryFactor>(x2, 2, 0, noiseModel));
-	graph.push_back(boost::make_shared<UnaryFactor>(x3, 4, 0, noiseModel));
+	graph.push_back(boost::make_shared<UnaryFactor>(1, 0, 0, noiseModel));
+	graph.push_back(boost::make_shared<UnaryFactor>(2, 2, 0, noiseModel));
+	graph.push_back(boost::make_shared<UnaryFactor>(3, 4, 0, noiseModel));
 
 	// print
 	graph.print("\nFactor graph:\n");
@@ -94,9 +93,9 @@ int main(int argc, char** argv) {
 	// Query the marginals
 	Marginals marginals(graph, result);
 	cout.precision(2);
-  cout << "\nP1:\n" << marginals.marginalCovariance(x1) << endl;
-  cout << "\nP2:\n" << marginals.marginalCovariance(x2) << endl;
-  cout << "\nP3:\n" << marginals.marginalCovariance(x3) << endl;
+  cout << "\nP1:\n" << marginals.marginalCovariance(1) << endl;
+  cout << "\nP2:\n" << marginals.marginalCovariance(2) << endl;
+  cout << "\nP3:\n" << marginals.marginalCovariance(3) << endl;
 
 	return 0;
 }
