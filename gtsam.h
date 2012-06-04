@@ -283,7 +283,7 @@ class Pose2 {
 	static gtsam::Pose2 Expmap(Vector v);
 	static Vector Logmap(const gtsam::Pose2& p);
   Matrix adjointMap() const;
-  Vector adjoint() const;
+  Vector adjoint(const Vector& xi) const;
   static Matrix wedge(double vx, double vy, double w);
 
   // Group Actions on Point2
@@ -389,16 +389,6 @@ class Cal3_S2Stereo {
   void print(string s) const;
   bool equals(const gtsam::Cal3_S2Stereo& pose, double tol) const;
 
-  // Manifold
-  static size_t Dim();
-  size_t dim() const;
-  gtsam::Cal3_S2Stereo retract(Vector v) const;
-  Vector localCoordinates(const gtsam::Cal3_S2Stereo& c) const;
-
-  // Action on Point2
-  gtsam::Point2 calibrate(const gtsam::Point2& p) const;
-  gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
-
   // Standard Interface
   double fx() const;
   double fy() const;
@@ -406,9 +396,6 @@ class Cal3_S2Stereo {
   double px() const;
   double py() const;
   gtsam::Point2 principalPoint() const;
-  Vector vector() const;
-  Matrix matrix() const;
-  Matrix matrix_inverse() const;
   double baseline() const;
 };
 
