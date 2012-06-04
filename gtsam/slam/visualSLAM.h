@@ -26,6 +26,7 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/Marginals.h>
 #include <gtsam/geometry/SimpleCamera.h>
 
 
@@ -62,8 +63,14 @@ namespace visualSLAM {
     /// insert a pose
     void insertPose(Key i, const Pose3& pose) { insert(i, pose); }
 
+    /// insert a point
+    void insertPoint(Key j, const Point3& point) { insert(j, point); }
+
     /// get a pose
     Pose3 pose(Key i) const { return at<Pose3>(i); }
+
+    /// get a point
+    Point3 point(Key j) const { return at<Point3>(j); }
 
   };
 
@@ -99,7 +106,7 @@ namespace visualSLAM {
      *  @param K shared pointer to calibration object
      */
     void addMeasurement(const Point2& measured, const SharedNoiseModel& model,
-        Key poseKey, Key pointKey, const shared_ptrK& K);
+        Key poseKey, Key pointKey, const shared_ptrK K);
 
     /**
      *  Add a stereo factor measurement
@@ -110,7 +117,7 @@ namespace visualSLAM {
      *  @param K shared pointer to stereo calibration object
      */
     void addStereoMeasurement(const StereoPoint2& measured, const SharedNoiseModel& model,
-        Key poseKey, Key pointKey, const shared_ptrKStereo& K);
+        Key poseKey, Key pointKey, const shared_ptrKStereo K);
 
     /**
      *  Add a constraint on a pose (for now, *must* be satisfied in any Values)
@@ -160,6 +167,11 @@ namespace visualSLAM {
      */
     Values optimize(const Values& initialEstimate) {
       return LevenbergMarquardtOptimizer(*this, initialEstimate).optimize();
+    }
+
+    /// Return a Marginals object
+    Marginals marginals(const Values& solution) const {
+      return Marginals(*this,solution);
     }
 
   }; // Graph

@@ -78,7 +78,7 @@ void readAllDataISAM() {
 /**
  * Setup newFactors and initialValues for each new pose and set of measurements at each frame.
  */
-void createNewFactors(shared_ptr<visualSLAM::Graph>& newFactors, boost::shared_ptr<Values>& initialValues,
+void createNewFactors(shared_ptr<visualSLAM::Graph>& newFactors, boost::shared_ptr<visualSLAM::Values>& initialValues,
     int pose_id, const Pose3& pose, const std::vector<Feature2D>& measurements, SharedNoiseModel measurementSigma, shared_ptrK calib) {
 
   // Create a graph of newFactors with new measurements
@@ -99,7 +99,7 @@ void createNewFactors(shared_ptr<visualSLAM::Graph>& newFactors, boost::shared_p
   }
 
   // Create initial values for all nodes in the newFactors
-  initialValues = shared_ptr<Values> (new Values());
+  initialValues = shared_ptr<visualSLAM::Values> (new visualSLAM::Values());
   initialValues->insert(X(pose_id), pose);
   for (size_t i = 0; i < measurements.size(); i++) {
     initialValues->insert(L(measurements[i].m_idLandmark), g_landmarks[measurements[i].m_idLandmark]);

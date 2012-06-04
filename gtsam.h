@@ -81,6 +81,18 @@ class Point2 {
 	gtsam::Point2 retract(Vector v);
 };
 
+class StereoPoint2 {
+  StereoPoint2();
+  StereoPoint2(double uL, double uR, double v);
+  static gtsam::StereoPoint2 Expmap(Vector v);
+  static Vector Logmap(const gtsam::StereoPoint2& p);
+  void print(string s) const;
+  Vector localCoordinates(const gtsam::StereoPoint2& p);
+  gtsam::StereoPoint2 compose(const gtsam::StereoPoint2& p2);
+  gtsam::StereoPoint2 between(const gtsam::StereoPoint2& p2);
+  gtsam::StereoPoint2 retract(Vector v);
+};
+
 class Point3 {
 	Point3();
 	Point3(double x, double y, double z);
@@ -205,6 +217,20 @@ class Pose3 {
 	Vector localCoordinates(const gtsam::Pose3& T2) const;
 	gtsam::Point3 translation() const;
 	gtsam::Rot3 rotation() const;
+};
+
+class Cal3_S2 {
+  Cal3_S2();
+  Cal3_S2(double fx, double fy, double s, double u0, double v0);
+
+  void print(string s) const;
+};
+
+class Cal3_S2Stereo {
+  Cal3_S2Stereo();
+  Cal3_S2Stereo(double fx, double fy, double s, double u0, double v0, double b);
+
+  void print(string s) const;
 };
 
 class CalibratedCamera {
@@ -635,3 +661,51 @@ class Graph {
 // TODO: add factors, etc.
 
 }///\namespace simulated2DOriented
+
+//*************************************************************************
+// VisualSLAM
+//*************************************************************************
+
+#include <gtsam/slam/visualSLAM.h>
+namespace visualSLAM {
+
+class Values {
+  Values();
+  void insertPose(size_t key, const gtsam::Pose3& pose);
+  void insertPoint(size_t key, const gtsam::Point3& pose);
+  size_t size() const;
+  void print(string s) const;
+  gtsam::Pose3 pose(size_t i);
+  gtsam::Point3 point(size_t j);
+};
+
+class Graph {
+  Graph();
+
+  void print(string s) const;
+
+  double error(const pose2SLAM::Values& values) const;
+  gtsam::Ordering* orderingCOLAMD(const pose2SLAM::Values& values) const;
+  gtsam::GaussianFactorGraph* linearize(const pose2SLAM::Values& values,
+      const gtsam::Ordering& ordering) const;
+
+  // Measurements
+  void addMeasurement(const gtsam::Point2& measured, const gtsam::SharedNoiseModel& model,
+      size_t poseKey, size_t pointKey, const gtsam::Cal3_S2* K);
+  void addStereoMeasurement(const gtsam::StereoPoint2& measured, const gtsam::SharedNoiseModel& model,
+      size_t poseKey, size_t pointKey, const gtsam::Cal3_S2Stereo* K);
+
+  // Constraints
+  void addPoseConstraint(size_t poseKey, const gtsam::Pose3& p);
+  void addPointConstraint(size_t pointKey, const gtsam::Point3& p);
+
+  // Priors
+  void addPosePrior(size_t poseKey, const gtsam::Pose3& p, const gtsam::SharedNoiseModel& model);
+  void addPointPrior(size_t pointKey, const gtsam::Point3& p, const gtsam::SharedNoiseModel& model);
+  void addRangeFactor(size_t poseKey, size_t pointKey, double range, const gtsam::SharedNoiseModel& model);
+
+  visualSLAM::Values optimize(const visualSLAM::Values& initialEstimate) const;
+  gtsam::Marginals marginals(const visualSLAM::Values& solution) const;
+};
+
+}///\namespace visualSLAM

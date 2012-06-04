@@ -22,14 +22,14 @@ namespace visualSLAM {
 
   /* ************************************************************************* */
   void Graph::addMeasurement(const Point2& measured, const SharedNoiseModel& model,
-       Key poseKey, Key pointKey, const shared_ptrK& K) {
+       Key poseKey, Key pointKey, const shared_ptrK K) {
     boost::shared_ptr<ProjectionFactor> factor(new ProjectionFactor(measured, model, poseKey, pointKey, K));
     push_back(factor);
   }
 
   /* ************************************************************************* */
   void Graph::addStereoMeasurement(const StereoPoint2& measured, const SharedNoiseModel& model,
-       Key poseKey, Key pointKey, const shared_ptrKStereo& K) {
+       Key poseKey, Key pointKey, const shared_ptrKStereo K) {
     boost::shared_ptr<StereoFactor> factor(new StereoFactor(measured, model, poseKey, pointKey, K));
     push_back(factor);
   }
