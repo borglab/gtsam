@@ -130,9 +130,10 @@ if (GTSAM_BUILD_UNSTABLE)
     add_subdirectory(gtsam_unstable)
 endif(GTSAM_BUILD_UNSTABLE)
 
-# Make config file
+# Make config files
 include(GtsamMakeConfigFile)
-GtsamMakeConfigFile(gtsam)
+GtsamMakeConfigFile(GTSAM gtsam-static)
+GtsamMakeConfigFile(CppUnitLite CppUnitLite)
 
 # Set up CPack
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "GTSAM")

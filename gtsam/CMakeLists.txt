@@ -19,9 +19,10 @@ add_subdirectory(3rdparty)
 
 # build convenience library
 set (3rdparty_srcs 
- 3rdparty/CCOLAMD/Source/ccolamd.c 
- 3rdparty/CCOLAMD/Source/ccolamd_global.c
- 3rdparty/UFconfig/UFconfig.c) 
+ ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CCOLAMD/Source/ccolamd.c 
+ ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CCOLAMD/Source/ccolamd_global.c
+ ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/UFconfig/UFconfig.c)
+gtsam_assign_source_folders("${3rdparty_srcs}") # Create MSVC structure
 if (GTSAM_BUILD_CONVENIENCE_LIBRARIES)
     message(STATUS "Building Convenience Library: ccolamd")
     add_library(ccolamd STATIC ${3rdparty_srcs})
@@ -48,6 +49,7 @@ foreach(subdir ${gtsam_subdirs})
     file(GLOB subdir_srcs "${subdir}/*.cpp")
     file(GLOB subdir_headers "${subdir}/*.h")
     set(subdir_srcs ${subdir_srcs} ${subdir_headers}) # Include header files so they show up in Visual Studio
+    gtsam_assign_source_folders("${subdir_srcs}") # Create MSVC structure
     list(REMOVE_ITEM subdir_srcs ${excluded_sources})
     set(${subdir}_srcs ${subdir_srcs})
     if (GTSAM_BUILD_CONVENIENCE_LIBRARIES)
@@ -72,9 +74,6 @@ set(gtsam_srcs
     ${nonlinear_srcs}
     ${slam_srcs}
 )
-
-# Create MSVC structure
-gtsam_assign_all_source_folders()
 
 # Versions
 set(gtsam_version   ${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH})
