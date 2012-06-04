@@ -852,6 +852,7 @@ class Values {
   void print(string s) const;
   gtsam::Pose3 pose(size_t i);
   gtsam::Point3 point(size_t j);
+  bool exists(size_t key);
 };
 
 class Graph {
