@@ -10,8 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /*
- * testDiscreteFactorGraph.cpp
- *
+ *  @file testDiscreteFactorGraph.cpp
  *  @date Feb 14, 2011
  *  @author Duy-Nguyen Ta
  */
