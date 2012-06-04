@@ -63,13 +63,8 @@ int main(void) {
 
   // 4. Single Step Optimization using Levenberg-Marquardt
   // Note: Although there are many options in IterativeOptimizationParameters,
-  // the SimpleSPCGSolver doesn't actually use all of them at this moment.
-  // More detail in the next release.
-  LevenbergMarquardtParams param;
-  param.linearSolverType = SuccessiveLinearizationParams::CG;
-  param.iterativeParams = boost::make_shared<IterativeOptimizationParameters>();
-  LevenbergMarquardtOptimizer optimizer(graph, initialEstimate, param);
-  Values result = optimizer.optimize();
+  Values result = graph.optimizeSPCG(initialEstimate);
+  result.print("\nFinal result:\n");
   cout << "final error = " << graph.error(result) << endl;
 
   return 0 ;

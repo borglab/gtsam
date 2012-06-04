@@ -107,6 +107,7 @@ namespace pose2SLAM {
 
     /// Optimize
     Values optimize(const Values& initialEstimate) const;
+    Values optimizeSPCG(const Values& initialEstimate) const;
 
     /// Return a Marginals object
     Marginals marginals(const Values& solution) const {

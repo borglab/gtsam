@@ -532,6 +532,7 @@ class Graph {
 	void addOdometry(size_t key1, size_t key2, const gtsam::Pose2& odometry, const gtsam::SharedNoiseModel& noiseModel);
 	void addConstraint(size_t key1, size_t key2, const gtsam::Pose2& odometry, const gtsam::SharedNoiseModel& noiseModel);
 	pose2SLAM::Values optimize(const pose2SLAM::Values& initialEstimate) const;
+	pose2SLAM::Values optimizeSPCG(const pose2SLAM::Values& initialEstimate) const;
 	gtsam::Marginals marginals(const pose2SLAM::Values& solution) const;
 };
 
