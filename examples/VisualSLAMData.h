@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    VisualSLAMSimulatedData.cpp
- * @brief   Generate ground-truth simulated data for VisualSLAM examples (SFM and ISAM2)
+ * @file    VisualSLAMData.cpp
+ * @brief   Generate ground-truth simulated data for VisualSLAM examples
  * @author  Duy-Nguyen Ta
  */
 
@@ -23,7 +23,7 @@
 
 /* ************************************************************************* */
 /**
- * Simulated data for the example:
+ * Simulated data for the visual SLAM examples:
  * - 8 Landmarks:	(10,10,10) (-10,10,10) (-10,-10,10) (10,-10,10)
  *      					(10,10,-10) (-10,10,-10) (-10,-10,-10) (10,-10,-10)
  * - n 90-deg-FoV cameras with the same calibration parameters:

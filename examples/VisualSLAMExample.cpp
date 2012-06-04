@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    VisualSLAMforSFMExample.cpp
+ * @file    VisualSLAMExample.cpp
  * @brief   A visualSLAM example for the structure-from-motion problem on a simulated dataset
  * @author  Duy-Nguyen Ta
  */
@@ -19,7 +19,7 @@
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
-#include "VisualSLAMExampleData.h"
+#include "VisualSLAMData.h"
 
 using namespace std;
 using namespace gtsam;

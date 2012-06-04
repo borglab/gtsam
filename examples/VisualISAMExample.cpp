@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    VisualSLAMwISAM2Example.cpp
+ * @file    VisualISAMExample.cpp
  * @brief   An ISAM example for synthesis sequence, single camera
  * @author  Duy-Nguyen Ta
  */
@@ -19,7 +19,7 @@
 #include <gtsam/nonlinear/NonlinearISAM.h>
 #include <gtsam/slam/visualSLAM.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include "VisualSLAMExampleData.h"
+#include "VisualSLAMData.h"
 
 using namespace std;
 using namespace gtsam;
