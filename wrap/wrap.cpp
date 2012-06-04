@@ -24,6 +24,7 @@ using namespace std;
 
 /**
  * Top-level function to wrap a module
+ * @param mexCommand is a sufficiently qualified command to execute mex within a makefile
  * @param mexExt is the extension for mex binaries for this os/cpu
  * @param interfacePath path to where interface file lives, e.g., borg/gtsam
  * @param moduleName name of the module to be generated e.g. gtsam
@@ -50,7 +51,7 @@ void generate_matlab_toolbox(
 /** Displays usage information */
 void usage() {
   cerr << "wrap parses an interface file and produces a MATLAB toolbox" << endl;
-  cerr << "usage: wrap mexExtension interfacePath moduleName toolboxPath [mexFlags]" << endl;
+  cerr << "usage: wrap mexExecutable mexExtension interfacePath moduleName toolboxPath [mexFlags]" << endl;
   cerr << "  mexExecutable : command to execute mex if on path, use 'mex'" << endl;
   cerr << "  mexExtension  : OS/CPU-dependent extension for MEX binaries" << endl;
   cerr << "  interfacePath : *absolute* path to directory of module interface file" << endl;

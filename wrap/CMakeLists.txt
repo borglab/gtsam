@@ -23,7 +23,8 @@ if (GTSAM_BUILD_TESTS)
 endif(GTSAM_BUILD_TESTS)
 
 # Wrap codegen
-#usage: wrap mexExtension interfacePath moduleName toolboxPath
+#usage: wrap mexExecutable mexExtension interfacePath moduleName toolboxPath [mexFlags]
+#  mexExecutable : command to execute mex if on path, use 'mex'
 #  mexExtension  : OS/CPU-dependent extension for MEX binaries
 #  interfacePath : *absolute* path to directory of module interface file
 #  moduleName    : the name of the module, interface file must be called moduleName.h
