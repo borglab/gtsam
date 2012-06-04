@@ -9,7 +9,7 @@ classdef ClassD < handle
       if nargin ~= 13 && obj.self == 0, error('ClassD constructor failed'); end
     end
     function delete(obj)
-       delete_ClassD(obj)
+       delete_ClassD(obj);
     end
     function display(obj), obj.print(''); end
     function disp(obj), obj.display; end

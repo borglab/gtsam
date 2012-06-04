@@ -1,14 +1,17 @@
 Frank Dellaert
 October 2011
 
-The wrap library wraps the GTSAM library into a MATLAB toolbox.
+The wrap library wraps the GTSAM library into a MATLAB toolbox. 
 
 It was designed to be more general than just wrapping GTSAM, but a small amount of 
 GTSAM specific code exists in matlab.h, the include file that is included by the
-mex files. In addition, the current makefile (Oct 11) is GTSAM specific.
+mex files. The GTSAM-specific functionality consists primarily of handling of
+Eigen Matrix and Vector classes.  
 
-The classes and methods to be wrapped are specified in gtsam.h
-This tool will not wrap arbitrary methods. Please read comments in matlab.h
+For notes on creating a wrap interface, see gtsam.h for what features can be 
+wrapped into a toolbox, as well as the current state of the toolbox for gtsam.
+For more technical details on the interface, please read comments in matlab.h
+
 Some good things to know:
 
 OBJECT CREATION
@@ -24,7 +27,5 @@ METHOD (AND CONSTRUCTOR) ARGUMENTS
   generation of the correct conversion routines unwrap<Vector> and unwrap<Matrix>
 - passing classes as arguments works, provided they are passed by reference.
 	This triggers a call to unwrap_shared_ptr
-- GTSAM specific: keys will be cast automatically from strings via GTSAM_magic. This
-  allows us to not have to declare all key types in MATLAB. Just replace key arguments with
-  the (non-const, non-reference) string type
+
    
