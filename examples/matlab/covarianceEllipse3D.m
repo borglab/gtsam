@@ -6,7 +6,7 @@ function covarianceEllipse3D(c,P)
 %
 % Modified from http://www.mathworks.com/matlabcentral/newsreader/view_thread/42966
 
-[e,s] = eig(P);
+[e,s] = svd(P);
 k = 11.82; 
 radii = k*sqrt(diag(s));
 
@@ -16,10 +16,12 @@ radii = k*sqrt(diag(s));
 % rotate data with orientation matrix U and center M
 data = kron(e(:,1),xc) + kron(e(:,2),yc) + kron(e(:,3),zc);
 n = size(data,2);
-x = data(1:n,:)+c(1); y = data(n+1:2*n,:)+c(2); z = data(2*n+1:end,:)+c(3);
+x = data(1:n,:)+c(1); 
+y = data(n+1:2*n,:)+c(2); 
+z = data(2*n+1:end,:)+c(3);
 
 % now plot the rotated ellipse
-sc = mesh(x,y,z);
+sc = mesh(x,y,z,abs(xc));
 shading interp
 alpha(0.5)
 axis equal

@@ -28,17 +28,17 @@ points = {gtsamPoint3([10 10 10]'),...
     gtsamPoint3([10 -10 -10]')};
 
 % Camera poses on a circle around the cube, pointing at the world origin
-nCameras = 8;
+nCameras = 4;
 r = 30;
 poses = {};
 for i=1:nCameras
-    theta = i*2*pi/nCameras;
-    posei = gtsamPose3(...
+    theta = (i-1)*2*pi/nCameras;
+    pose_i = gtsamPose3(...
                 gtsamRot3([-sin(theta) 0 -cos(theta); 
                             cos(theta) 0 -sin(theta); 
                             0 -1 0]),...
                 gtsamPoint3([r*cos(theta), r*sin(theta), 0]'));
-    poses = [poses {posei}];
+    poses = [poses {pose_i}];
 end
 
 % 2D visual measurements, simulated with Gaussian noise
@@ -61,8 +61,6 @@ pointNoiseSampler = gtsamSharedDiagonal(pointNoiseSigmas);
 poseNoiseSigmas = [0.001 0.001 0.001 0.1 0.1 0.1]';
 poseNoiseSampler = gtsamSharedDiagonal(poseNoiseSigmas);
 
-hold off;
-
 %% Create the graph (defined in visualSLAM.h, derived from NonlinearFactorGraph)
 graph = visualSLAMGraph;
 
@@ -74,11 +72,17 @@ for i=1:size(z,1)
     end
 end
 
-%% Add Gaussian priors for a pose and a landmark to constraint the system
-posePriorNoise  = gtsamSharedNoiseModel_Sigmas(poseNoiseSigmas);
-graph.addPosePrior(symbol('x',1), poses{1}, posePriorNoise);
+%% Add Gaussian priors for a pose and a landmark to constrain the system
+% posePriorNoise  = gtsamSharedNoiseModel_Sigmas(poseNoiseSigmas);
+% graph.addPosePrior(symbol('x',1), poses{1}, posePriorNoise);
 pointPriorNoise  = gtsamSharedNoiseModel_Sigmas(pointNoiseSigmas);
 graph.addPointPrior(symbol('l',1), points{1}, pointPriorNoise);
+pointPriorNoise  = gtsamSharedNoiseModel_Sigmas(pointNoiseSigmas);
+graph.addPointPrior(symbol('l',8), points{8}, pointPriorNoise);
+pointPriorNoise  = gtsamSharedNoiseModel_Sigmas(pointNoiseSigmas);
+graph.addPointPrior(symbol('l',5), points{5}, pointPriorNoise);
+pointPriorNoise  = gtsamSharedNoiseModel_Sigmas(pointNoiseSigmas);
+graph.addPointPrior(symbol('l',4), points{4}, pointPriorNoise);
 
 %% Print the graph
 graph.print(sprintf('\nFactor graph:\n'));
@@ -101,6 +105,7 @@ result.print(sprintf('\nFinal result:\n  '));
 marginals = graph.marginals(result);
 
 %% Plot results with covariance ellipses
+figure(1);clf
 hold on;
 for j=1:size(points,2)
     P = marginals.marginalCovariance(symbol('l',j));
@@ -110,10 +115,9 @@ for j=1:size(points,2)
 end
 
 for i=1:size(poses,2)
-    P = marginals.marginalCovariance(symbol('x',i));
-    posei = result.pose(symbol('x',i))
-    plotCamera(posei,10);
-    posei_t = posei.translation()
-    covarianceEllipse3D([posei_t.x;posei_t.y;posei_t.z],P(4:6,4:6));
+    P = marginals.marginalCovariance(symbol('x',i))
+    pose_i = result.pose(symbol('x',i))
+    plotPose3(pose_i,P,10);
 end
+axis equal
 
