@@ -34,12 +34,12 @@ using namespace tensors;
 /* ************************************************************************* */
 // Indices
 
-Index<3, 'a'> a, _a;
-Index<3, 'b'> b, _b;
-Index<3, 'c'> c, _c;
+tensors::Index<3, 'a'> a, _a;
+tensors::Index<3, 'b'> b, _b;
+tensors::Index<3, 'c'> c, _c;
 
-Index<4, 'A'> A;
-Index<4, 'B'> B;
+tensors::Index<4, 'A'> A;
+tensors::Index<4, 'B'> B;
 
 /* ************************************************************************* */
 // Tensor1
@@ -58,7 +58,7 @@ TEST(Tensor1, Basics)
 	CHECK(assert_equivalent(p(a),q(a))) // projectively equivalent
 
 	// and you can take a norm, typically for normalization to the sphere
-	DOUBLES_EQUAL(sqrt(14),norm(p(a)),1e-9)
+	DOUBLES_EQUAL(sqrt(14.0),norm(p(a)),1e-9)
 }
 
 /* ************************************************************************* */

@@ -25,12 +25,14 @@
 #include <boost/spirit/include/classic_confix.hpp>
 #include <boost/spirit/include/classic_clear_actor.hpp>
 #include <boost/foreach.hpp>
+#include <boost/filesystem.hpp>
 
 #include <iostream>
 
 using namespace std;
 using namespace wrap;
 using namespace BOOST_SPIRIT_CLASSIC_NS;
+namespace fs = boost::filesystem;
 
 typedef rule<BOOST_SPIRIT_CLASSIC_NS::phrase_scanner_t> Rule;
 
@@ -279,8 +281,8 @@ void verifyReturnTypes(const vector<string>& validtypes, const vector<T>& vt) {
 /* ************************************************************************* */
 void Module::matlab_code(const string& mexCommand, const string& toolboxPath,
 			 const string& mexExt, const string& mexFlags) const {
-    string installCmd = "install -d " + toolboxPath;
-    system(installCmd.c_str());
+
+    fs::create_directories(toolboxPath);
 
     // create make m-file
     string matlabMakeFileName = toolboxPath + "/make_" + name + ".m";
@@ -292,7 +294,7 @@ void Module::matlab_code(const string& mexCommand, const string& toolboxPath,
 
     makeModuleMfile.oss << "echo on" << endl << endl;
     makeModuleMfile.oss << "toolboxpath = mfilename('fullpath');" << endl;
-    makeModuleMfile.oss << "delims = find(toolboxpath == '/');" << endl;
+    makeModuleMfile.oss << "delims = find(toolboxpath == '/' | toolboxpath == '\\');" << endl;
     makeModuleMfile.oss << "toolboxpath = toolboxpath(1:(delims(end)-1));" << endl;
     makeModuleMfile.oss << "clear delims" << endl;
     makeModuleMfile.oss << "addpath(toolboxpath);" << endl << endl;
@@ -327,8 +329,7 @@ void Module::matlab_code(const string& mexCommand, const string& toolboxPath,
     BOOST_FOREACH(Class cls, classes) {
       // create directory if needed
       string classPath = toolboxPath + "/@" + cls.qualifiedName();
-      string installCmd = "install -d " + classPath;
-      system(installCmd.c_str());
+      fs::create_directories(classPath);
 
       // create proxy class
       string classFile = classPath + "/" + cls.qualifiedName() + ".m";

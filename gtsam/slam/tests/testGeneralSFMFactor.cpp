@@ -149,8 +149,8 @@ vector<GeneralCamera> genCameraVariableCalibration() {
   return X ;
 }
 
-shared_ptr<Ordering> getOrdering(const vector<GeneralCamera>& cameras, const vector<Point3>& landmarks) {
-  shared_ptr<Ordering> ordering(new Ordering);
+boost::shared_ptr<Ordering> getOrdering(const vector<GeneralCamera>& cameras, const vector<Point3>& landmarks) {
+  boost::shared_ptr<Ordering> ordering(new Ordering);
   for ( size_t i = 0 ; i < landmarks.size() ; ++i ) ordering->push_back(L(i)) ;
   for ( size_t i = 0 ; i < cameras.size() ; ++i ) ordering->push_back(X(i)) ;
   return ordering ;

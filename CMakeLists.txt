@@ -1,3 +1,4 @@
+
 project(GTSAM CXX C)
 cmake_minimum_required(VERSION 2.6)
 
@@ -9,8 +10,12 @@ set (GTSAM_VERSION_PATCH 0)
 # Set the default install path to home
 #set (CMAKE_INSTALL_PREFIX ${HOME} CACHE PATH "Install prefix for library")
 
+set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+# Load build type flags and default to Debug mode
+include(GtsamBuildTypes)
+
 # Use macros for creating tests/timing scripts
-set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${PROJECT_SOURCE_DIR}/cmake")
 include(GtsamTesting)
 include(GtsamPrinting)
 
@@ -26,24 +31,6 @@ else()
     set(GTSAM_UNSTABLE_AVAILABLE 0)
 endif()
 
-# Load build type flags and default to Debug mode
-include(GtsamBuildTypes)
-
-# Check build types
-if(${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} VERSION_GREATER 2.8 OR ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} VERSION_EQUAL 2.8)
-  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS None Debug Release Timing Profiling RelWithDebInfo MinSizeRel)
-endif()
-string(TOLOWER "${CMAKE_BUILD_TYPE}" cmake_build_type_tolower)
-if(    NOT cmake_build_type_tolower STREQUAL ""
-   AND NOT cmake_build_type_tolower STREQUAL "none"
-   AND NOT cmake_build_type_tolower STREQUAL "debug"
-   AND NOT cmake_build_type_tolower STREQUAL "release"
-   AND NOT cmake_build_type_tolower STREQUAL "timing"
-   AND NOT cmake_build_type_tolower STREQUAL "profiling"
-   AND NOT cmake_build_type_tolower STREQUAL "relwithdebinfo")
-  message(FATAL_ERROR "Unknown build type \"${CMAKE_BUILD_TYPE}\". Allowed values are None, Debug, Release, Timing, Profiling, RelWithDebInfo (case-insensitive).")
-endif()
-
 # Configurable Options
 option(GTSAM_BUILD_TESTS                 "Enable/Disable building of tests"          ON)
 option(GTSAM_BUILD_TIMING                "Enable/Disable building of timing scripts" ON)
@@ -52,10 +39,18 @@ if(GTSAM_UNSTABLE_AVAILABLE)
     option(GTSAM_BUILD_UNSTABLE              "Enable/Disable libgtsam_unstable"          OFF)
 endif()
 option(GTSAM_BUILD_WRAP                  "Enable/Disable building of matlab wrap utility (necessary for matlab interface)" ON)
-option(GTSAM_BUILD_SHARED_LIBRARY        "Enable/Disable building of a shared version of gtsam" ON)
+if(MSVC)
+  option(GTSAM_BUILD_SHARED_LIBRARY        "Enable/Disable building of a shared version of gtsam" OFF)
+else()
+  option(GTSAM_BUILD_SHARED_LIBRARY        "Enable/Disable building of a shared version of gtsam" ON)
+endif()
 option(GTSAM_BUILD_STATIC_LIBRARY        "Enable/Disable building of a static version of gtsam" ON)
 option(GTSAM_USE_QUATERNIONS             "Enable/Disable using an internal Quaternion representation for rotations instead of rotation matrices" OFF)
-option(GTSAM_BUILD_CONVENIENCE_LIBRARIES "Enable/Disable use of convenience libraries for faster development rebuilds, but slower install" ON)
+if(MSVC)
+  option(GTSAM_BUILD_CONVENIENCE_LIBRARIES "Enable/Disable use of convenience libraries for faster development rebuilds, but slower install" OFF)
+else()
+  option(GTSAM_BUILD_CONVENIENCE_LIBRARIES "Enable/Disable use of convenience libraries for faster development rebuilds, but slower install" ON)
+endif()
 option(GTSAM_INSTALL_MATLAB_TOOLBOX      "Enable/Disable installation of matlab toolbox"  ON)
 option(GTSAM_INSTALL_MATLAB_EXAMPLES     "Enable/Disable installation of matlab examples" ON)
 option(GTSAM_INSTALL_MATLAB_TESTS        "Enable/Disable installation of matlab tests"    ON)
@@ -80,8 +75,8 @@ endif()
 
 # Add the Quaternion Build Flag if requested
 if (GTSAM_USE_QUATERNIONS)
-	set(CMAKE_C_FLAGS            "${CMAKE_C_FLAGS} -DGTSAM_DEFAULT_QUATERNIONS")
-	set(CMAKE_CXX_FLAGS          "${CMAKE_CXX_FLAGS} -DGTSAM_DEFAULT_QUATERNIONS")
+  set(CMAKE_C_FLAGS            "${CMAKE_C_FLAGS} -DGTSAM_DEFAULT_QUATERNIONS")
+  set(CMAKE_CXX_FLAGS          "${CMAKE_CXX_FLAGS} -DGTSAM_DEFAULT_QUATERNIONS")
 endif(GTSAM_USE_QUATERNIONS)
 
 # Avoid building non-installed exes and unit tests when installing
@@ -102,7 +97,10 @@ if (GTSAM_BUILD_TESTS)
 endif()
 
 # Find boost
-find_package(Boost 1.40 COMPONENTS serialization REQUIRED)
+if(CYGWIN OR MSVC OR WIN32)
+  set(Boost_USE_STATIC_LIBS 1)
+endif()
+find_package(Boost 1.40 COMPONENTS serialization system chrono filesystem thread REQUIRED)
 
 # General build settings
 include_directories(
@@ -136,6 +134,11 @@ endif(GTSAM_BUILD_EXAMPLES)
 if (GTSAM_BUILD_UNSTABLE)
     add_subdirectory(gtsam_unstable)
 endif(GTSAM_BUILD_UNSTABLE)
+
+# Make config files
+include(GtsamMakeConfigFile)
+GtsamMakeConfigFile(GTSAM gtsam-static)
+GtsamMakeConfigFile(CppUnitLite CppUnitLite)
 
 # Set up CPack
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "GTSAM")

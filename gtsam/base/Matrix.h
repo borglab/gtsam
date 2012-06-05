@@ -26,6 +26,7 @@
 #include <gtsam/3rdparty/Eigen/Eigen/QR>
 #include <boost/format.hpp>
 #include <boost/tuple/tuple.hpp>
+#include <boost/math/special_functions/fpclassify.hpp>
 
 /**
  * Matrix is a typedef in the gtsam namespace
@@ -87,7 +88,7 @@ bool equal_with_abs_tol(const Eigen::DenseBase<MATRIX>& A, const Eigen::DenseBas
 
 	for(size_t i=0; i<m1; i++)
 		for(size_t j=0; j<n1; j++) {
-			if(std::isnan(A(i,j)) xor std::isnan(B(i,j)))
+			if(boost::math::isnan(A(i,j)) ^ boost::math::isnan(B(i,j)))
 				return false;
 			else if(fabs(A(i,j) - B(i,j)) > tol)
 				return false;
@@ -183,6 +184,13 @@ void print(const Matrix& A, const std::string& s = "", std::ostream& stream = st
 void save(const Matrix& A, const std::string &s, const std::string& filename);
 
 /**
+ * Read a matrix from an input stream, such as a file.  Entries can be either
+ * tab-, space-, or comma-separated, similar to the format read by the MATLAB
+ * dlmread command.
+ */
+//istream& operator>>(istream& inputStream, Matrix& destinationMatrix);
+
+/**
  * extract submatrix, slice semantics, i.e. range = [i1,i2[ excluding i2
  * @param A matrix
  * @param i1 first row index
@@ -200,12 +208,12 @@ Eigen::Block<const MATRIX> sub(const MATRIX& A, size_t i1, size_t i2, size_t j1,
 /**
  * insert a submatrix IN PLACE at a specified location in a larger matrix
  * NOTE: there is no size checking
- * @param large matrix to be updated
- * @param small matrix to be inserted
+ * @param fullMatrix matrix to be updated
+ * @param subMatrix matrix to be inserted
  * @param i is the row of the upper left corner insert location
  * @param j is the column of the upper left corner insert location
  */
-void insertSub(Matrix& big, const Matrix& small, size_t i, size_t j);
+void insertSub(Matrix& fullMatrix, const Matrix& subMatrix, size_t i, size_t j);
 
 /**
  * Extracts a column view from a matrix that avoids a copy

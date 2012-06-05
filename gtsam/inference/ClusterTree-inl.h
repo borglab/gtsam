@@ -58,7 +58,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class FG>
-	bool ClusterTree<FG>::Cluster::equals(const ClusterTree<FG>::Cluster& other) const {
+	bool ClusterTree<FG>::Cluster::equals(const Cluster& other) const {
 		if (frontal != other.frontal) return false;
 		if (separator != other.separator) return false;
 		if (children_.size() != other.children_.size()) return false;

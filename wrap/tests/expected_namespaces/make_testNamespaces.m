@@ -2,7 +2,7 @@
 echo on
 
 toolboxpath = mfilename('fullpath');
-delims = find(toolboxpath == '/');
+delims = find(toolboxpath == '/' | toolboxpath == '\');
 toolboxpath = toolboxpath(1:(delims(end)-1));
 clear delims
 addpath(toolboxpath);

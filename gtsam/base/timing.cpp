@@ -20,7 +20,6 @@
 #include <stdio.h>
 #include <iostream>
 #include <iomanip>
-#include <sys/time.h>
 #include <stdlib.h>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
@@ -153,15 +152,13 @@ const boost::shared_ptr<TimingOutline>& TimingOutline::child(size_t child, const
 void TimingOutline::tic() {
 	assert(!timerActive_);
 	timerActive_ = true;
-	gettimeofday(&t0_, NULL);
+	t0_ = clock_t::now();
 }
 
 /* ************************************************************************* */
 void TimingOutline::toc() {
-	struct timeval t;
-	gettimeofday(&t, NULL);
 	assert(timerActive_);
-	add(t.tv_sec*1000000 + t.tv_usec - (t0_.tv_sec*1000000 + t0_.tv_usec));
+	add(boost::chrono::duration_cast<duration_t>(clock_t::now() - t0_).count());
 	timerActive_ = false;
 }
 
@@ -244,9 +241,11 @@ void Timing::print() {
 
 /* ************************************************************************* */
 double _tic_() {
-  struct timeval t;
-  gettimeofday(&t, NULL);
-  return ((double)t.tv_sec + ((double)t.tv_usec)/1000000.);
+  typedef boost::chrono::high_resolution_clock clock_t;
+  typedef boost::chrono::duration<double> duration_t;
+
+  clock_t::time_point t = clock_t::now();
+  return boost::chrono::duration_cast< duration_t >(t.time_since_epoch()).count();
 }
 
 /* ************************************************************************* */

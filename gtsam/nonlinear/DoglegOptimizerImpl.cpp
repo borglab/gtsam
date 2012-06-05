@@ -15,6 +15,7 @@
  * @author  Richard Roberts
  */
 
+#include <cmath>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
 
 namespace gtsam {
@@ -27,12 +28,12 @@ VectorValues DoglegOptimizerImpl::ComputeDoglegPoint(
   double DeltaSq = Delta*Delta;
   double x_u_norm_sq = dx_u.vector().squaredNorm();
   double x_n_norm_sq = dx_n.vector().squaredNorm();
-  if(verbose) cout << "Steepest descent magnitude " << sqrt(x_u_norm_sq) << ", Newton's method magnitude " << sqrt(x_n_norm_sq) << endl;
+  if(verbose) cout << "Steepest descent magnitude " << std::sqrt(x_u_norm_sq) << ", Newton's method magnitude " << std::sqrt(x_n_norm_sq) << endl;
   if(DeltaSq < x_u_norm_sq) {
     // Trust region is smaller than steepest descent update
     VectorValues x_d = VectorValues::SameStructure(dx_u);
-    x_d.vector() = dx_u.vector() * sqrt(DeltaSq / x_u_norm_sq);
-    if(verbose) cout << "In steepest descent region with fraction " << sqrt(DeltaSq / x_u_norm_sq) << " of steepest descent magnitude" << endl;
+    x_d.vector() = dx_u.vector() * std::sqrt(DeltaSq / x_u_norm_sq);
+    if(verbose) cout << "In steepest descent region with fraction " << std::sqrt(DeltaSq / x_u_norm_sq) << " of steepest descent magnitude" << endl;
     return x_d;
   } else if(DeltaSq < x_n_norm_sq) {
     // Trust region boundary is between steepest descent point and Newton's method point
@@ -59,7 +60,7 @@ VectorValues DoglegOptimizerImpl::ComputeBlend(double Delta, const VectorValues&
   const double a = uu - 2.*un + nn;
   const double b = 2. * (un - uu);
   const double c = uu - Delta*Delta;
-  double sqrt_b_m4ac = sqrt(b*b - 4*a*c);
+  double sqrt_b_m4ac = std::sqrt(b*b - 4*a*c);
 
   // Compute blending parameter
   double tau1 = (-b + sqrt_b_m4ac) / (2.*a);

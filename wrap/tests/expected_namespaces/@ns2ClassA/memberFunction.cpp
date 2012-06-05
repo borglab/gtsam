@@ -5,7 +5,7 @@
 void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("memberFunction",nargout,nargin-1,0);
-  shared_ptr<ns2::ClassA> self = unwrap_shared_ptr< ns2::ClassA >(in[0],"ns2ClassA");
+  boost::shared_ptr<ns2::ClassA> self = unwrap_shared_ptr< ns2::ClassA >(in[0],"ns2ClassA");
   double result = self->memberFunction();
   out[0] = wrap< double >(result);
 }

@@ -104,7 +104,7 @@ bool files_equal(const string& expected, const string& actual, bool skipheader) 
 
 /* ************************************************************************* */
 string maybe_shared_ptr(bool add, const string& type) {
-  string str = add? "shared_ptr<" : "";
+  string str = add? "boost::shared_ptr<" : "";
   str += type;
   if (add) str += ">";
   return str;

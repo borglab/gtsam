@@ -76,7 +76,7 @@ TEST( planarSLAM, BearingFactor_equals )
 TEST( planarSLAM, RangeFactor )
 {
 	// Create factor
-	double z(sqrt(2) - 0.22); // h(x) - z = 0.22
+	double z(sqrt(2.0) - 0.22); // h(x) - z = 0.22
 	planarSLAM::Range factor(i2, j3, z, sigma);
 
 	// create config
@@ -103,7 +103,7 @@ TEST( planarSLAM, BearingRangeFactor )
 {
 	// Create factor
 	Rot2 r = Rot2::fromAngle(M_PI_4 + 0.1); // h(x) - z = -0.1
-	double b(sqrt(2) - 0.22); // h(x) - z = 0.22
+	double b(sqrt(2.0) - 0.22); // h(x) - z = 0.22
 	planarSLAM::BearingRange factor(i2, j3, r, b, sigma2);
 
 	// create config
@@ -166,7 +166,7 @@ TEST( planarSLAM, constructor )
 	G.addBearing(i2, j3, z1, sigma);
 
 	// Create range factor
-	double z2(sqrt(2) - 0.22); // h(x) - z = 0.22
+	double z2(sqrt(2.0) - 0.22); // h(x) - z = 0.22
 	G.addRange(i2, j3, z2, sigma);
 
 	Vector expected0 = Vector_(3, 0.0, 0.0, 0.0);

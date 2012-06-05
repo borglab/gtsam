@@ -4,7 +4,7 @@
 void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("returnChar",nargout,nargin-1,0);
-  shared_ptr<Point2> self = unwrap_shared_ptr< Point2 >(in[0],"Point2");
+  boost::shared_ptr<Point2> self = unwrap_shared_ptr< Point2 >(in[0],"Point2");
   char result = self->returnChar();
   out[0] = wrap< char >(result);
 }

@@ -19,9 +19,10 @@ add_subdirectory(3rdparty)
 
 # build convenience library
 set (3rdparty_srcs 
- 3rdparty/CCOLAMD/Source/ccolamd.c 
- 3rdparty/CCOLAMD/Source/ccolamd_global.c
- 3rdparty/UFconfig/UFconfig.c) 
+ ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CCOLAMD/Source/ccolamd.c 
+ ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CCOLAMD/Source/ccolamd_global.c
+ ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/UFconfig/UFconfig.c)
+gtsam_assign_source_folders("${3rdparty_srcs}") # Create MSVC structure
 if (GTSAM_BUILD_CONVENIENCE_LIBRARIES)
     message(STATUS "Building Convenience Library: ccolamd")
     add_library(ccolamd STATIC ${3rdparty_srcs})
@@ -46,6 +47,9 @@ endif()
 foreach(subdir ${gtsam_subdirs})
     # Build convenience libraries
     file(GLOB subdir_srcs "${subdir}/*.cpp")
+    file(GLOB subdir_headers "${subdir}/*.h")
+    set(subdir_srcs ${subdir_srcs} ${subdir_headers}) # Include header files so they show up in Visual Studio
+    gtsam_assign_source_folders("${subdir_srcs}") # Create MSVC structure
     list(REMOVE_ITEM subdir_srcs ${excluded_sources})
     set(${subdir}_srcs ${subdir_srcs})
     if (GTSAM_BUILD_CONVENIENCE_LIBRARIES)
@@ -81,22 +85,32 @@ message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
 if (GTSAM_BUILD_STATIC_LIBRARY)
     message(STATUS "Building GTSAM - static")
     add_library(gtsam-static STATIC ${gtsam_srcs})
+	target_link_libraries(gtsam-static ${Boost_LIBRARIES})
     set_target_properties(gtsam-static PROPERTIES 
         OUTPUT_NAME         gtsam
         CLEAN_DIRECT_OUTPUT 1
     	VERSION             ${gtsam_version}
      	SOVERSION           ${gtsam_soversion})
+	if(MSVC)
+	  set_target_properties(gtsam-static PROPERTIES
+	      COMPILE_FLAGS "/MP")
+    endif()
     install(TARGETS gtsam-static ARCHIVE DESTINATION lib)
 endif (GTSAM_BUILD_STATIC_LIBRARY)
 
 if (GTSAM_BUILD_SHARED_LIBRARY)
     message(STATUS "Building GTSAM - shared")
     add_library(gtsam-shared SHARED ${gtsam_srcs})
+	target_link_libraries(gtsam-shared ${Boost_LIBRARIES})
     set_target_properties(gtsam-shared PROPERTIES 
         OUTPUT_NAME         gtsam
         CLEAN_DIRECT_OUTPUT 1
     	VERSION             ${gtsam_version}
      	SOVERSION           ${gtsam_soversion})
-    install(TARGETS gtsam-shared LIBRARY DESTINATION lib )
+	if(MSVC)
+	  set_target_properties(gtsam-shared PROPERTIES
+	      COMPILE_FLAGS "/MP")
+    endif()
+    install(TARGETS gtsam-shared LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
 endif(GTSAM_BUILD_SHARED_LIBRARY)
 

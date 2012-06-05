@@ -348,7 +348,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
     // Reeliminated keys for detailed results
     if(params_.enableDetailedResults) {
       BOOST_FOREACH(Key key, theta_.keys()) {
-      	result.detail->variableStatus[key].isReeliminated = true;
+        result.detail->variableStatus[key].isReeliminated = true;
       }
     }
 
@@ -372,7 +372,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
     // Reeliminated keys for detailed results
     if(params_.enableDetailedResults) {
       BOOST_FOREACH(Index index, affectedAndNewKeys) {
-      	result.detail->variableStatus[inverseOrdering_->at(index)].isReeliminated = true;
+        result.detail->variableStatus[inverseOrdering_->at(index)].isReeliminated = true;
       }
     }
 
@@ -485,7 +485,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
   // Root clique variables for detailed results
   if(params_.enableDetailedResults) {
     BOOST_FOREACH(Index index, this->root()->conditional()->frontals()) {
-    	result.detail->variableStatus[inverseOrdering_->at(index)].inRootClique = true;
+      result.detail->variableStatus[inverseOrdering_->at(index)].inRootClique = true;
     }
   }
 
@@ -572,7 +572,7 @@ ISAM2Result ISAM2::update(
   // Observed keys for detailed results
   if(params_.enableDetailedResults) {
     BOOST_FOREACH(Index index, markedKeys) {
-    	result.detail->variableStatus[inverseOrdering_->at(index)].isObserved = true;
+      result.detail->variableStatus[inverseOrdering_->at(index)].isObserved = true;
     }
   }
   // NOTE: we use assign instead of the iterator constructor here because this
@@ -732,10 +732,10 @@ Values ISAM2::calculateEstimate() const {
   // We use ExpmapMasked here instead of regular expmap because the former
   // handles Permuted<VectorValues>
   tic(1, "Copy Values");
-	Values ret(theta_);
-	toc(1, "Copy Values");
-	tic(2, "getDelta");
-	const Permuted<VectorValues>& delta(getDelta());
+  Values ret(theta_);
+  toc(1, "Copy Values");
+  tic(2, "getDelta");
+  const Permuted<VectorValues>& delta(getDelta());
   toc(2, "getDelta");
   tic(3, "Expmap");
   vector<bool> mask(ordering_.nVars(), true);

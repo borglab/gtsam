@@ -33,7 +33,6 @@
 
 using namespace std;
 using namespace gtsam;
-using boost::shared_ptr;
 
 // Convenience for named keys
 using symbol_shorthand::X;
@@ -387,7 +386,7 @@ TEST(DoglegOptimizer, ComputeDoglegPoint) {
 /* ************************************************************************* */
 TEST(DoglegOptimizer, Iterate) {
   // really non-linear factor graph
-  shared_ptr<example::Graph> fg(new example::Graph(
+  boost::shared_ptr<example::Graph> fg(new example::Graph(
       example::createReallyNonlinearFactorGraph()));
 
   // config far from minimum
@@ -396,7 +395,7 @@ TEST(DoglegOptimizer, Iterate) {
   config->insert(X(1), x0);
 
   // ordering
-  shared_ptr<Ordering> ord(new Ordering());
+  boost::shared_ptr<Ordering> ord(new Ordering());
   ord->push_back(X(1));
 
   double Delta = 1.0;

@@ -73,7 +73,7 @@ GaussianConditional::GaussianConditional(Index key, const Vector& d, const Matri
 			const Matrix& R, const list<pair<Index, Matrix> >& parents, const Vector& sigmas) :
 		IndexConditional(key, GetKeys(parents.size(), parents.begin(), parents.end())), rsd_(matrix_), sigmas_(sigmas) {
   assert(R.rows() <= R.cols());
-  size_t dims[1+parents.size()+1];
+  size_t* dims = (size_t*)alloca(sizeof(size_t)*(1+parents.size()+1)); // FIXME: alloca is bad, just ask Google.
   dims[0] = R.cols();
   size_t j=1;
   std::list<std::pair<Index, Matrix> >::const_iterator parent=parents.begin();
@@ -95,7 +95,7 @@ GaussianConditional::GaussianConditional(const std::list<std::pair<Index, Matrix
     const size_t nrFrontals, const Vector& d, const Vector& sigmas) :
     IndexConditional(GetKeys(terms.size(), terms.begin(), terms.end()), nrFrontals),
     rsd_(matrix_), sigmas_(sigmas) {
-  size_t dims[terms.size()+1];
+  size_t* dims = (size_t*)alloca(sizeof(size_t)*(terms.size()+1)); // FIXME: alloca is bad, just ask Google.
   size_t j=0;
   typedef pair<Index, Matrix> Index_Matrix;
   BOOST_FOREACH(const Index_Matrix& term, terms) {

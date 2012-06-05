@@ -36,9 +36,9 @@ using namespace tensors;
 /* ************************************************************************* */
 // Indices
 
-Index<3, 'a'> a, _a;
-Index<3, 'b'> b, _b;
-Index<3, 'c'> c, _c;
+tensors::Index<3, 'a'> a, _a;
+tensors::Index<3, 'b'> b, _b;
+tensors::Index<3, 'c'> c, _c;
 
 /* ************************************************************************* */
 TEST( Homography2, RealImages)
@@ -120,8 +120,8 @@ Homography2 patchH(const Pose3& tEc) {
 namespace gtsam {
 //	size_t dim(const tensors::Tensor2<3, 3>& H) {return 9;}
 	Vector toVector(const tensors::Tensor2<3, 3>& H) {
-		Index<3, 'T'> _T; // covariant 2D template
-		Index<3, 'C'> I; // contravariant 2D camera
+		tensors::Index<3, 'T'> _T; // covariant 2D template
+		tensors::Index<3, 'C'> I; // contravariant 2D camera
 		return toVector(H(I,_T));
 	}
 	Vector localCoordinates(const tensors::Tensor2<3, 3>& A, const tensors::Tensor2<3, 3>& B) {
@@ -134,8 +134,8 @@ namespace gtsam {
 /* ************************************************************************* */
 TEST( Homography2, patchH)
 {
-	Index<3, 'T'> _T; // covariant 2D template
-	Index<3, 'C'> I; // contravariant 2D camera
+	tensors::Index<3, 'T'> _T; // covariant 2D template
+	tensors::Index<3, 'C'> I; // contravariant 2D camera
 
 	// data[_T][I]
 	double data1[3][3] = {{1,0,0},{0,-1,0},{0,0,10}};
@@ -160,8 +160,8 @@ TEST( Homography2, patchH)
 /* ************************************************************************* */
 TEST( Homography2, patchH2)
 {
-	Index<3, 'T'> _T; // covariant 2D template
-	Index<3, 'C'> I; // contravariant 2D camera
+	tensors::Index<3, 'T'> _T; // covariant 2D template
+	tensors::Index<3, 'C'> I; // contravariant 2D camera
 
 	// data[_T][I]
 	double data1[3][3] = {{1,0,0},{0,-1,0},{0,0,10}};

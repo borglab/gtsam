@@ -16,6 +16,8 @@
  * @created Feb 26, 2012
  */
 
+#include <cmath>
+
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 
 #include <gtsam/base/cholesky.h> // For NegativeMatrixException
@@ -46,7 +48,7 @@ void LevenbergMarquardtOptimizer::iterate() {
     // TODO: replace this dampening with a backsubstitution approach
     GaussianFactorGraph dampedSystem(*linear);
     {
-      double sigma = 1.0 / sqrt(state_.lambda);
+      double sigma = 1.0 / std::sqrt(state_.lambda);
       dampedSystem.reserve(dampedSystem.size() + dimensions_.size());
       // for each of the variables, add a prior
       for(Index j=0; j<dimensions_.size(); ++j) {

@@ -43,7 +43,7 @@ TEST( Rot2, constructors_and_angle)
 TEST( Rot2, unit)
 {
 	EXPECT(assert_equal(Point2(1.0, 0.0), Rot2::fromAngle(0).unit()));
-	EXPECT(assert_equal(Point2(0.0, 1.0), Rot2::fromAngle(M_PI_2).unit()));
+	EXPECT(assert_equal(Point2(0.0, 1.0), Rot2::fromAngle(M_PI/2.0).unit()));
 }
 
 /* ************************************************************************* */
@@ -94,9 +94,9 @@ TEST( Rot2, expmap)
 /* ************************************************************************* */
 TEST(Rot2, logmap)
 {
-	Rot2 rot0(Rot2::fromAngle(M_PI_2));
+	Rot2 rot0(Rot2::fromAngle(M_PI/2.0));
 	Rot2 rot(Rot2::fromAngle(M_PI));
-	Vector expected = Vector_(1, M_PI_2);
+	Vector expected = Vector_(1, M_PI/2.0);
 	Vector actual = rot0.localCoordinates(rot);
 	CHECK(assert_equal(expected, actual));
 }
@@ -146,7 +146,7 @@ TEST( Rot2, relativeBearing )
 
 	// establish relativeBearing is indeed 45 degrees
 	Rot2 actual2 = Rot2::relativeBearing(l2, actualH);
-	CHECK(assert_equal(Rot2::fromAngle(M_PI_4),actual2));
+	CHECK(assert_equal(Rot2::fromAngle(M_PI/4.0),actual2));
 
 	// Check numerical derivative
 	expectedH = numericalDerivative11(relativeBearing_, l2);

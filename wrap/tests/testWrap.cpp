@@ -20,6 +20,7 @@
 #include <fstream>
 #include <sstream>
 #include <boost/assign/std/vector.hpp>
+#include <boost/filesystem.hpp>
 #include <CppUnitLite/TestHarness.h>
 
 #include <wrap/utilities.h>
@@ -28,6 +29,7 @@
 using namespace std;
 using namespace boost::assign;
 using namespace wrap;
+namespace fs = boost::filesystem;
 static bool enable_verbose = false;
 #ifdef TOPSRCDIR
 static string topdir = TOPSRCDIR;
@@ -57,8 +59,7 @@ TEST( wrap, check_exception ) {
 	CHECK_EXCEPTION(Module("/alsonotarealpath", "geometry",enable_verbose), CantOpenFile);
 
 	// clean out previous generated code
-  string cleanCmd = "rm -rf actual_deps";
-  system(cleanCmd.c_str());
+  fs::remove_all("actual_deps");
 
 	string path = topdir + "/wrap/tests";
 	Module module(path.c_str(), "testDependencies",enable_verbose);
@@ -208,8 +209,7 @@ TEST( wrap, matlab_code_namespaces ) {
 	string path = topdir + "/wrap";
 
 	// clean out previous generated code
-  string cleanCmd = "rm -rf actual_namespaces";
-  system(cleanCmd.c_str());
+  fs::remove_all("actual_namespaces");
 
 	// emit MATLAB code
   string exp_path = path + "/tests/expected_namespaces/";
@@ -263,8 +263,7 @@ TEST( wrap, matlab_code ) {
 	string path = topdir + "/wrap";
 
 	// clean out previous generated code
-  string cleanCmd = "rm -rf actual";
-  system(cleanCmd.c_str());
+  fs::remove_all("actual");
 
 	// emit MATLAB code
 	// make_geometry will not compile, use make testwrap to generate real make

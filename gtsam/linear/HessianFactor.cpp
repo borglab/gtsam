@@ -188,7 +188,7 @@ HessianFactor::HessianFactor(const std::vector<Index>& js, const std::vector<Mat
   }
 
   // Create the dims vector
-  size_t dims[variable_count+1];
+  size_t* dims = (size_t*)alloca(sizeof(size_t)*(variable_count+1)); // FIXME: alloca is bad, just ask Google.
   size_t total_size = 0;
   for(unsigned int i = 0; i < variable_count; ++i){
     dims[i] = gs[i].size();
@@ -350,7 +350,7 @@ void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatte
 
 	// First build an array of slots
 	tic(1, "slots");
-	size_t slots[update.size()];
+	size_t* slots = (size_t*)alloca(sizeof(size_t)*update.size()); // FIXME: alloca is bad, just ask Google.
 	size_t slot = 0;
 	BOOST_FOREACH(Index j, update) {
 		slots[slot] = scatter.find(j)->second.slot;
@@ -404,7 +404,7 @@ void HessianFactor::updateATA(const JacobianFactor& update, const Scatter& scatt
 
 	// First build an array of slots
 	tic(1, "slots");
-	size_t slots[update.size()];
+	size_t* slots = (size_t*)alloca(sizeof(size_t)*update.size()); // FIXME: alloca is bad, just ask Google.
 	size_t slot = 0;
 	BOOST_FOREACH(Index j, update) {
 		slots[slot] = scatter.find(j)->second.slot;

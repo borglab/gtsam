@@ -73,7 +73,7 @@ void Method::matlab_wrapper(const string& classPath,
 
   // get class pointer
   // example: shared_ptr<Test> = unwrap_shared_ptr< Test >(in[0], "Test");
-  file.oss << "  shared_ptr<" << cppClassName << "> self = unwrap_shared_ptr< " << cppClassName
+  file.oss << "  boost::shared_ptr<" << cppClassName << "> self = unwrap_shared_ptr< " << cppClassName
       << " >(in[0],\"" << matlabClassName << "\");" << endl;
 
   // unwrap arguments, see Argument.cpp

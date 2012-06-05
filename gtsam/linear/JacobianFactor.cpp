@@ -118,7 +118,7 @@ namespace gtsam {
   	GaussianFactor(GetKeys(terms.size(), terms.begin(), terms.end())),
 		model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_)
   {
-    size_t dims[terms.size()+1];
+    size_t* dims = (size_t*)alloca(sizeof(size_t)*(terms.size()+1)); // FIXME: alloca is bad, just ask Google.
     for(size_t j=0; j<terms.size(); ++j)
       dims[j] = terms[j].second.cols();
     dims[terms.size()] = 1;
@@ -135,7 +135,7 @@ namespace gtsam {
       GaussianFactor(GetKeys(terms.size(), terms.begin(), terms.end())),
     model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_)
   {
-    size_t dims[terms.size()+1];
+    size_t* dims=(size_t*)alloca(sizeof(size_t)*(terms.size()+1)); // FIXME: alloca is bad, just ask Google.
     size_t j=0;
     std::list<std::pair<Index, Matrix> >::const_iterator term=terms.begin();
     for(; term!=terms.end(); ++term,++j)
@@ -494,7 +494,7 @@ namespace gtsam {
 			size_t>& varDims, size_t m) {
 		keys_.resize(variableSlots.size());
 		std::transform(variableSlots.begin(), variableSlots.end(), begin(),
-				bind(&VariableSlots::const_iterator::value_type::first,
+				boost::bind(&VariableSlots::const_iterator::value_type::first,
 						boost::lambda::_1));
 		varDims.push_back(1);
 		Ab_.copyStructureFrom(BlockAb(matrix_, varDims.begin(), varDims.end(), m));

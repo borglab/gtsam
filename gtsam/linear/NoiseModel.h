@@ -20,6 +20,7 @@
 
 #include <boost/serialization/nvp.hpp>
 #include <gtsam/base/Matrix.h>
+#include <cmath>
 
 namespace gtsam {
 
@@ -609,7 +610,7 @@ namespace gtsam {
 		  virtual bool equals(const Base& expected, const double tol=1e-8) const = 0;
 
 		  inline double sqrtWeight(const double &error) const
-		  { return sqrt(weight(error)); }
+		  { return std::sqrt(weight(error)); }
 
       /** produce a weight vector according to an error vector and the implemented
        * robust function */

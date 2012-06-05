@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
   else if (argc == 4)
   	nrTrials = strtoul(argv[3], NULL, 10);
 
-  pair<shared_ptr<pose2SLAM::Graph>, shared_ptr<Values> > data = load2D(dataset(datasetname));
+  pair<boost::shared_ptr<pose2SLAM::Graph>, boost::shared_ptr<Values> > data = load2D(dataset(datasetname));
 
   // Add a prior on the first pose
   if (soft_prior)

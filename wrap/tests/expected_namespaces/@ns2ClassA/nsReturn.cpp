@@ -5,8 +5,8 @@
 void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("nsReturn",nargout,nargin-1,1);
-  shared_ptr<ns2::ClassA> self = unwrap_shared_ptr< ns2::ClassA >(in[0],"ns2ClassA");
+  boost::shared_ptr<ns2::ClassA> self = unwrap_shared_ptr< ns2::ClassA >(in[0],"ns2ClassA");
   double q = unwrap< double >(in[1]);
   ns2::ns3::ClassB result = self->nsReturn(q);
-  out[0] = wrap_shared_ptr(make_shared< ns2::ns3::ClassB >(result),"ns2ns3ClassB");
+  out[0] = wrap_shared_ptr(boost::make_shared< ns2::ns3::ClassB >(result),"ns2ns3ClassB");
 }

@@ -50,7 +50,7 @@ public:
    * Destroy and deallocate this object, only if it was originally allocated using clone_().
    */
   virtual void deallocate_() const {
-    this->~Value();
+    this->Value::~Value();
   	boost::singleton_pool<PoolTag, sizeof(DERIVED)>::free((void*)this);
   }
 

@@ -22,6 +22,7 @@
 #include <vector>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
+#include <boost/chrono.hpp>
 
 class TimingOutline;
 extern boost::shared_ptr<TimingOutline> timingRoot;
@@ -29,6 +30,9 @@ extern boost::weak_ptr<TimingOutline> timingCurrent;
 
 class TimingOutline {
 protected:
+  typedef boost::chrono::high_resolution_clock clock_t;
+  typedef boost::chrono::microseconds duration_t;
+
   size_t t_;
   double t2_ ; /* cache the \sum t_i^2 */
   size_t tIt_;
@@ -39,7 +43,7 @@ protected:
 
   boost::weak_ptr<TimingOutline> parent_;
   std::vector<boost::shared_ptr<TimingOutline> > children_;
-  struct timeval t0_;
+  clock_t::time_point t0_;
   bool timerActive_;
 
   void add(size_t usecs);
