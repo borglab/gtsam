@@ -100,7 +100,7 @@ endif()
 if(CYGWIN OR MSVC OR WIN32)
   set(Boost_USE_STATIC_LIBS 1)
 endif()
-find_package(Boost 1.40 COMPONENTS serialization system chrono filesystem thread REQUIRED)
+find_package(Boost 1.40 COMPONENTS serialization system filesystem thread REQUIRED)
 
 # General build settings
 include_directories(
