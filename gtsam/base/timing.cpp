@@ -30,7 +30,7 @@
 boost::shared_ptr<TimingOutline> timingRoot(new TimingOutline("Total"));
 boost::weak_ptr<TimingOutline> timingCurrent(timingRoot);
 
-Timing timing;
+//Timing timing;
 std::string timingPrefix;
 
 /* ************************************************************************* */
