@@ -81,9 +81,11 @@ namespace visualSLAM {
     /// check if value with specified key exists
     bool exists(Key i) const { return gtsam::Values::exists(i); }
 
-    Vector xs() const; ///< get all x coordinates in a matrix
-    Vector ys() const; ///< get all y coordinates in a matrix
-    Vector zs() const; ///< get all z coordinates in a matrix
+    Vector xs() const; ///< get all pose x coordinates in a matrix
+    Vector ys() const; ///< get all pose y coordinates in a matrix
+    Vector zs() const; ///< get all pose z coordinates in a matrix
+
+    Matrix points() const; ///< get all point coordinates in a matrix
 
   };
 

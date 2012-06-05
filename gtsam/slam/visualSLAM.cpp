@@ -50,6 +50,15 @@ namespace visualSLAM {
     return result;
   }
 
+  Matrix Values::points() const {
+    size_t j=0;
+    ConstFiltered<Point3> points = filter<Point3>();
+    Matrix result(points.size(),3);
+    BOOST_FOREACH(const ConstFiltered<Point3>::KeyValuePair& keyValue, points)
+      result.row(j++) = keyValue.value.vector();
+    return result;
+  }
+
   /* ************************************************************************* */
   void Graph::addMeasurement(const Point2& measured, const SharedNoiseModel& model,
        Key poseKey, Key pointKey, const shared_ptrK K) {
