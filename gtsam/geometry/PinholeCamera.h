@@ -256,13 +256,13 @@ namespace gtsam {
      * backproject a 2-dimensional point to a 3-dimension point
      */
 
-    inline Point3 backproject(const Point2& pi, const double scale) const {
+    inline Point3 backproject(const Point2& pi, double scale) const {
       const Point2 pn = k_.calibrate(pi);
       const Point3 pc(pn.x()*scale, pn.y()*scale, scale);
       return pose_.transform_from(pc);
     }
 
-    inline Point3 backproject_from_camera(const Point2& pi, const double scale) const {
+    inline Point3 backproject_from_camera(const Point2& pi, double scale) const {
       return backproject(pi, scale);
     }
 
