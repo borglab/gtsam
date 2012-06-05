@@ -21,6 +21,36 @@
 namespace visualSLAM {
 
   /* ************************************************************************* */
+  Vector Values::xs() const {
+    size_t j=0;
+    ConstFiltered<Pose3> poses = filter<Pose3>();
+    Vector result(poses.size());
+    BOOST_FOREACH(const ConstFiltered<Pose3>::KeyValuePair& keyValue, poses)
+      result(j++) = keyValue.value.x();
+    return result;
+  }
+
+  /* ************************************************************************* */
+  Vector Values::ys() const {
+    size_t j=0;
+    ConstFiltered<Pose3> poses = filter<Pose3>();
+    Vector result(poses.size());
+    BOOST_FOREACH(const ConstFiltered<Pose3>::KeyValuePair& keyValue, poses)
+      result(j++) = keyValue.value.y();
+    return result;
+  }
+
+  /* ************************************************************************* */
+  Vector Values::zs() const {
+    size_t j=0;
+    ConstFiltered<Pose3> poses = filter<Pose3>();
+    Vector result(poses.size());
+    BOOST_FOREACH(const ConstFiltered<Pose3>::KeyValuePair& keyValue, poses)
+      result(j++) = keyValue.value.z();
+    return result;
+  }
+
+  /* ************************************************************************* */
   void Graph::addMeasurement(const Point2& measured, const SharedNoiseModel& model,
        Key poseKey, Key pointKey, const shared_ptrK K) {
     boost::shared_ptr<ProjectionFactor> factor(new ProjectionFactor(measured, model, poseKey, pointKey, K));
