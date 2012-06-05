@@ -85,7 +85,7 @@ message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
 if (GTSAM_BUILD_STATIC_LIBRARY)
     message(STATUS "Building GTSAM - static")
     add_library(gtsam-static STATIC ${gtsam_srcs})
-	target_link_libraries(gtsam-static ${Boost_SERIALIZATION_LIBRARY})
+	target_link_libraries(gtsam-static ${Boost_LIBRARIES})
     set_target_properties(gtsam-static PROPERTIES 
         OUTPUT_NAME         gtsam
         CLEAN_DIRECT_OUTPUT 1
@@ -101,7 +101,7 @@ endif (GTSAM_BUILD_STATIC_LIBRARY)
 if (GTSAM_BUILD_SHARED_LIBRARY)
     message(STATUS "Building GTSAM - shared")
     add_library(gtsam-shared SHARED ${gtsam_srcs})
-	target_link_libraries(gtsam-shared ${Boost_SERIALIZATION_LIBRARY})
+	target_link_libraries(gtsam-shared ${Boost_LIBRARIES})
     set_target_properties(gtsam-shared PROPERTIES 
         OUTPUT_NAME         gtsam
         CLEAN_DIRECT_OUTPUT 1
