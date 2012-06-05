@@ -674,6 +674,7 @@ class Values {
 	void print(string s) const;
 	static pose2SLAM::Values Circle(size_t n, double R);
 	void insertPose(size_t key, const gtsam::Pose2& pose);
+	void updatePose(size_t key, const gtsam::Pose2& pose);
 	gtsam::Pose2 pose(size_t i);
   Vector xs() const;
   Vector ys() const;
@@ -723,6 +724,7 @@ class Values {
 	void print(string s) const;
 	static pose3SLAM::Values Circle(size_t n, double R);
 	void insertPose(size_t key, const gtsam::Pose3& pose);
+	void updatePose(size_t key, const gtsam::Pose3& pose);
 	gtsam::Pose3 pose(size_t i);
   Vector xs() const;
   Vector ys() const;
@@ -770,6 +772,8 @@ class Values {
 	void print(string s) const;
 	void insertPose(size_t key, const gtsam::Pose2& pose);
 	void insertPoint(size_t key, const gtsam::Point2& point);
+	void updatePose(size_t key, const gtsam::Pose2& pose);
+	void updatePoint(size_t key, const gtsam::Point2& point);
 	gtsam::Pose2 pose(size_t key) const;
 	gtsam::Point2 point(size_t key) const;
 };
@@ -871,6 +875,8 @@ class Values {
   Values();
   void insertPose(size_t key, const gtsam::Pose3& pose);
   void insertPoint(size_t key, const gtsam::Point3& pose);
+  void updatePose(size_t key, const gtsam::Pose3& pose);
+  void updatePoint(size_t key, const gtsam::Point3& pose);
   size_t size() const;
   void print(string s) const;
   gtsam::Pose3 pose(size_t i);

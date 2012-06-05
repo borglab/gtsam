@@ -78,7 +78,13 @@ namespace planarSLAM {
 
     /// insert a point
     void insertPoint(Key j, const Point2& point) { insert(j, point); }
-  };
+
+    /// update a pose
+    void updatePose(Key i, const Pose2& pose) { update(i, pose); }
+
+    /// update a point
+    void updatePoint(Key j, const Point2& point) { update(j, point); }
+};
 
   /**
    * Graph class, inherited from NonlinearFactorGraph, used as a convenience for MATLAB wrapper

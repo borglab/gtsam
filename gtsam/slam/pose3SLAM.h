@@ -57,6 +57,9 @@ namespace pose3SLAM {
     /// insert a pose
     void insertPose(Key i, const Pose3& pose) { insert(i, pose); }
 
+    /// update a pose
+    void updatePose(Key i, const Pose3& pose) { update(i, pose); }
+
     /// get a pose
     Pose3 pose(Key i) const { return at<Pose3>(i); }
 

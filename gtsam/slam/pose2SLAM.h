@@ -58,6 +58,9 @@ namespace pose2SLAM {
     /// insert a pose
     void insertPose(Key i, const Pose2& pose) { insert(i, pose); }
 
+    /// update a pose
+    void updatePose(Key i, const Pose2& pose) { update(i, pose); }
+
     /// get a pose
     Pose2 pose(Key i) const { return at<Pose2>(i); }
 

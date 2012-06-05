@@ -66,6 +66,12 @@ namespace visualSLAM {
     /// insert a point
     void insertPoint(Key j, const Point3& point) { insert(j, point); }
 
+    /// update a pose
+    void updatePose(Key i, const Pose3& pose) { update(i, pose); }
+
+    /// update a point
+    void updatePoint(Key j, const Point3& point) { update(j, point); }
+
     /// get a pose
     Pose3 pose(Key i) const { return at<Pose3>(i); }
 
