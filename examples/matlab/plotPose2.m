@@ -1,6 +1,6 @@
 function plotPose2(p,color,P)
 % plotPose2: show a Pose2, possibly with covariance matrix
-plot(p.x,p.y,[color '.']);
+plot(p.x,p.y,[color '*']);
 c = cos(p.theta);
 s = sin(p.theta);
 quiver(p.x,p.y,c,s,0.1,color);
