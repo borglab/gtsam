@@ -71,6 +71,7 @@ class Point2 {
   // Standard Constructors
 	Point2();
 	Point2(double x, double y);
+	Point2(Vector v);
 
   // Testable
   void print(string s) const;
@@ -426,6 +427,29 @@ class CalibratedCamera {
   // Standard Interface
 	gtsam::Pose3 pose() const;
   double range(const gtsam::Point3& p) const; // TODO: Other overloaded range methods
+};
+
+
+class SimpleCamera {
+  // Standard Constructors and Named Constructors
+	SimpleCamera();
+	SimpleCamera(const gtsam::Pose3& pose, const gtsam::Cal3_S2& k);
+	SimpleCamera(const gtsam::Cal3_S2& k, const gtsam::Pose3& pose);
+
+  // Testable
+	void print(string s) const;
+	bool equals(const gtsam::SimpleCamera& camera, double tol) const;
+
+  // Action on Point3
+	gtsam::Point2 project(const gtsam::Point3& point);
+	static gtsam::Point2 project_to_camera(const gtsam::Point3& cameraPoint);
+
+	// Backprojection
+	gtsam::Point3 backproject(const gtsam::Point2& pi, double scale) const;
+	gtsam::Point3 backproject_from_camera(const gtsam::Point2& pi, double scale) const;
+
+  // Standard Interface
+	gtsam::Pose3 pose() const;
 };
 
 //*************************************************************************
