@@ -28,15 +28,12 @@ namespace gtsam {
 	 *
 	 * The prior vector used in this factor is stored in compressed form, such that
 	 * it only contains values for measurements that are to be compared, and they are in
-	 * the same order as T::Logmap().  The mask will determine which components to extract
+	 * the same order as VALUE::Logmap().  The mask will determine which components to extract
 	 * in the error function.
-	 *
-	 * It takes two template parameters:
-	 *   Key (typically TypedSymbol) is used to look up T's in a Values
-	 *   Values where the T's are stored, typically Values<Key> or a TupleValues<...>
 	 *
 	 * For practical use, it would be good to subclass this factor and have the class type
 	 * construct the mask.
+	 * @tparam VALUE is the type of variable the prior effects
 	 */
 	template<class VALUE>
 	class PartialPriorFactor: public NoiseModelFactor1<VALUE> {
@@ -46,12 +43,15 @@ namespace gtsam {
 
 	protected:
 
+		// Concept checks on the variable type - currently requires Lie
+		GTSAM_CONCEPT_LIE_TYPE(VALUE)
+
 		typedef NoiseModelFactor1<VALUE> Base;
 		typedef PartialPriorFactor<VALUE> This;
 
-		Vector prior_;             ///< measurement on logmap parameters, in compressed form
+		Vector prior_;             ///< measurement on tangent space parameters, in compressed form
 		std::vector<size_t> mask_; ///< indices of values to constrain in compressed prior vector
-		Matrix H_; 								 ///< Constant jacobian - computed at creation
+		Matrix H_; 								 ///< Constant Jacobian - computed at creation
 
 		/** default constructor - only use for serialization */
 		PartialPriorFactor() {}
@@ -111,6 +111,7 @@ namespace gtsam {
 			if (H) (*H) = H_;
 			// FIXME: this was originally the generic retraction - may not produce same results
 			Vector full_logmap = T::Logmap(p);
+//			Vector full_logmap = T::identity().localCoordinates(p); // Alternate implementation
 			Vector masked_logmap = zero(this->dim());
 			for (size_t i=0; i<mask_.size(); ++i)
 				masked_logmap(i) = full_logmap(mask_[i]);
