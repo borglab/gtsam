@@ -30,7 +30,9 @@
 boost::shared_ptr<TimingOutline> timingRoot(new TimingOutline("Total"));
 boost::weak_ptr<TimingOutline> timingCurrent(timingRoot);
 
-//Timing timing;
+#ifdef ENABLE_OLD_TIMING
+Timing timing;
+#endif
 std::string timingPrefix;
 
 /* ************************************************************************* */
@@ -150,15 +152,27 @@ const boost::shared_ptr<TimingOutline>& TimingOutline::child(size_t child, const
 
 /* ************************************************************************* */
 void TimingOutline::tic() {
+#ifdef GTSAM_USING_NEW_BOOST_TIMERS
 	assert(timer_.is_stopped());
   timer_.start();
+#else
+	assert(!timerActive_);
+  timer_.restart();
+  *timerActive_ = true;
+#endif
 }
 
 /* ************************************************************************* */
 void TimingOutline::toc() {
+#ifdef GTSAM_USING_NEW_BOOST_TIMERS
 	assert(!timer_.is_stopped());
   timer_.stop();
 	add((timer_.elapsed().user + timer_.elapsed().system) / 1000);
+#else
+  assert(timerActive_);
+  double elapsed = timer_.elapsed();
+  add(size_t(elapsed * 1000000.0));
+#endif
 }
 
 /* ************************************************************************* */

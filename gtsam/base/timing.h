@@ -22,7 +22,17 @@
 #include <vector>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
+#include <gtsam/base/types.h>
+
+#if BOOST_VERSION >= 104800
+#define GTSAM_USING_NEW_BOOST_TIMERS
+#endif
+
+#ifdef GTSAM_USING_NEW_BOOST_TIMERS
 #include <boost/timer/timer.hpp>
+#else
+#include <boost/timer.hpp>
+#endif
 
 class TimingOutline;
 extern boost::shared_ptr<TimingOutline> timingRoot;
@@ -40,7 +50,12 @@ protected:
 
   boost::weak_ptr<TimingOutline> parent_;
   std::vector<boost::shared_ptr<TimingOutline> > children_;
+#ifdef GTSAM_USING_NEW_BOOST_TIMERS
   boost::timer::cpu_timer timer_;
+#else
+  boost::timer timer_;
+  gtsam::ValueWithDefault<bool,false> timerActive_;
+#endif
 
   void add(size_t usecs);
 
