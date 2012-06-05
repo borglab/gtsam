@@ -34,6 +34,6 @@ marginals = graph.marginals(result);
 for i=1:result.size()-1
     pose_i = result.pose(i);
     P{i}=marginals.marginalCovariance(i);
-    covarianceEllipse([pose_i.x;pose_i.y],P{i},'b')
+    plotPose2(pose_i,'b',P{i})
 end
 fprintf(1,'%.5f %.5f %.5f\n',P{99})
