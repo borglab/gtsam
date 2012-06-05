@@ -39,11 +39,11 @@ initial.insertPose(5, hexagon.pose(5).retract(s*randn(6,1)));
 
 %% Plot Initial Estimate
 figure(1);clf
-plot3(initial.xs(),initial.ys(),initial.zs(),'g-*'); axis equal
+plot3(initial.xs(),initial.ys(),initial.zs(),'g-*');
 
 %% optimize
 result = fg.optimize(initial);
 
 %% Show Result
-hold on; plot3(result.xs(),result.ys(),result.zs(),'b-*')
+hold on; plot3DTrajectory(result,'b-*', true, 0.3); axis equal;
 result.print(sprintf('\nFinal result:\n'));
