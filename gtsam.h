@@ -883,6 +883,10 @@ class Values {
   gtsam::Pose3 pose(size_t i);
   gtsam::Point3 point(size_t j);
   bool exists(size_t key);
+  Vector xs() const;
+  Vector ys() const;
+  Vector zs() const;
+  Matrix points() const;
 };
 
 class Graph {
