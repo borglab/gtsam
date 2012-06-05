@@ -77,7 +77,7 @@ int main(int argc, char** argv) {
 
 	/* add measurements */
 	// general noisemodel for measurements
-	SharedDiagonal meas_model = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.2));
+	SharedDiagonal measurementNoise = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.2));
 
 	// create the measurement values - indices are (pose id, landmark id)
 	Rot2 bearing11 = Rot2::fromDegrees(45),
@@ -88,9 +88,9 @@ int main(int argc, char** argv) {
 		   range32 = 2.0;
 
 	// create bearing/range factors
-	BearingRangeFactor<Pose2, Point2> meas11(i1, j1, bearing11, range11, meas_model);
-	BearingRangeFactor<Pose2, Point2> meas21(i2, j1, bearing21, range21, meas_model);
-	BearingRangeFactor<Pose2, Point2> meas32(i3, j2, bearing32, range32, meas_model);
+	BearingRangeFactor<Pose2, Point2> meas11(i1, j1, bearing11, range11, measurementNoise);
+	BearingRangeFactor<Pose2, Point2> meas21(i2, j1, bearing21, range21, measurementNoise);
+	BearingRangeFactor<Pose2, Point2> meas32(i3, j2, bearing32, range32, measurementNoise);
 
 	// add the factors
 	graph.add(meas11);

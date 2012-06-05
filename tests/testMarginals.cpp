@@ -65,7 +65,7 @@ TEST(Marginals, planarSLAMmarginals) {
 
   /* add measurements */
   // general noisemodel for measurements
-  SharedDiagonal meas_model = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.2));
+  SharedDiagonal measurementNoise = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.2));
 
   // create the measurement values - indices are (pose id, landmark id)
   Rot2 bearing11 = Rot2::fromDegrees(45),
@@ -76,9 +76,9 @@ TEST(Marginals, planarSLAMmarginals) {
        range32 = 2.0;
 
   // create bearing/range factors
-  graph.add(BearingRangeFactor<Pose2, Point2>(x1, l1, bearing11, range11, meas_model));
-  graph.add(BearingRangeFactor<Pose2, Point2>(x2, l1, bearing21, range21, meas_model));
-  graph.add(BearingRangeFactor<Pose2, Point2>(x3, l2, bearing32, range32, meas_model));
+  graph.add(BearingRangeFactor<Pose2, Point2>(x1, l1, bearing11, range11, measurementNoise));
+  graph.add(BearingRangeFactor<Pose2, Point2>(x2, l1, bearing21, range21, measurementNoise));
+  graph.add(BearingRangeFactor<Pose2, Point2>(x3, l2, bearing32, range32, measurementNoise));
 
   // linearization point for marginals
   Values soln;

@@ -38,7 +38,7 @@ graph.addOdometry(2, 3, odometry, odometryNoise);
 
 %% Add measurements
 % general noisemodel for measurements
-meas_model = gtsamSharedNoiseModel_Sigmas([0.1; 0.2]);
+measurementNoise = gtsamSharedNoiseModel_Sigmas([0.1; 0.2]);
 
 % print
 graph.print('full graph');

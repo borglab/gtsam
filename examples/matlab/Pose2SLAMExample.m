@@ -63,7 +63,6 @@ marginals = graph.marginals(result);
 for i=1:result.size()
     pose_i = result.pose(i);
     P{i}=marginals.marginalCovariance(i);
-    fprintf(1,'%.5f %.5f %.5f\n',P{i})
     plotPose2(pose_i,'g',P{i})
 end
 axis equal
