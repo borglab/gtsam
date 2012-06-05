@@ -140,19 +140,13 @@ SharedDiagonal Gaussian::Cholesky(Matrix& Ab, size_t nFrontals) const {
   // TODO: really no rank problems ?
 
   // pre-whiten everything (cheaply if possible)
-  tic("Cholesky: 1 whiten");
   WhitenInPlace(Ab);
-  toc("Cholesky: 1 whiten");
 
   // Form A'*A (todo: this is probably less efficient than possible)
-  tic("Cholesky: 2 A' * A");
   Ab = Ab.transpose() * Ab;
-  toc("Cholesky: 2 A' * A");
 
   // Use Cholesky to factor Ab
-  tic("Cholesky: 3 careful");
   size_t maxrank = choleskyCareful(Ab).first;
-  toc("Cholesky: 3 careful");
 
   // Due to numerical error the rank could appear to be more than the number
   // of variables.  The important part is that it does not includes the

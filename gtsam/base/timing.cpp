@@ -20,7 +20,6 @@
 #include <stdio.h>
 #include <iostream>
 #include <iomanip>
-#include <sys/time.h>
 #include <stdlib.h>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
@@ -48,7 +47,7 @@ void TimingOutline::add(size_t usecs) {
 
 /* ************************************************************************* */
 TimingOutline::TimingOutline(const std::string& label) :
-   t_(0), t2_(0.0), tIt_(0), tMax_(0), tMin_(0), n_(0), label_(label), timerActive_(false) {}
+   t_(0), t2_(0.0), tIt_(0), tMax_(0), tMin_(0), n_(0), label_(label) {}
 
 /* ************************************************************************* */
 size_t TimingOutline::time() const {
@@ -151,18 +150,15 @@ const boost::shared_ptr<TimingOutline>& TimingOutline::child(size_t child, const
 
 /* ************************************************************************* */
 void TimingOutline::tic() {
-	assert(!timerActive_);
-	timerActive_ = true;
-	gettimeofday(&t0_, NULL);
+	assert(timer_.is_stopped());
+  timer_.start();
 }
 
 /* ************************************************************************* */
 void TimingOutline::toc() {
-	struct timeval t;
-	gettimeofday(&t, NULL);
-	assert(timerActive_);
-	add(t.tv_sec*1000000 + t.tv_usec - (t0_.tv_sec*1000000 + t0_.tv_usec));
-	timerActive_ = false;
+	assert(!timer_.is_stopped());
+  timer_.stop();
+	add((timer_.elapsed().user + timer_.elapsed().system) / 1000);
 }
 
 /* ************************************************************************* */
@@ -231,6 +227,8 @@ void toc_(size_t id, const std::string& label) {
 	toc_(id);
 }
 
+#ifdef ENABLE_OLD_TIMING
+
 /* ************************************************************************* */
 // Timing class implementation
 void Timing::print() {
@@ -260,3 +258,5 @@ void ticPop_(const std::string& prefix, const std::string& id) {
   else
     timingPrefix.resize(timingPrefix.size() - prefix.size() - 1);
 }
+
+#endif
