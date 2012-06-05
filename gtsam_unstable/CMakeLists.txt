@@ -80,7 +80,20 @@ if (GTSAM_BUILD_WRAP)
     #  [mexFlags]    : extra flags for the mex command
     
     # TODO: generate these includes programmatically
-    set(mexFlags "-I${Boost_INCLUDE_DIR} -I${CMAKE_INSTALL_PREFIX}/include -I${CMAKE_INSTALL_PREFIX}/include/gtsam_unstable -I${CMAKE_INSTALL_PREFIX}/include/gtsam_unstable/dynamics -I${CMAKE_INSTALL_PREFIX}/include/gtsam_unstable/discrete -L${CMAKE_INSTALL_PREFIX}/lib -lgtsam -lgtsam_unstable")
+    # Choose include flags depending on build process
+    if (GTSAM_BUILD_MEX_BIN)
+        set(MEX_INCLUDE_ROOT ${GTSAM_SOURCE_ROOT_DIR})
+        set(MEX_LIB_ROOT ${CMAKE_BINARY_DIR})
+    else()
+        set(MEX_INCLUDE_ROOT ${CMAKE_INSTALL_PREFIX}/include)
+        set(MEX_LIB_ROOT ${CMAKE_INSTALL_PREFIX}/lib)
+    endif()
+    
+    set(mexFlags "-I${Boost_INCLUDE_DIR} -I${MEX_INCLUDE_ROOT} -I${MEX_INCLUDE_ROOT}/gtsam_unstable -I${MEX_INCLUDE_ROOT}/gtsam_unstable/dynamics -I${MEX_INCLUDE_ROOT}/gtsam_unstable/discrete -L${MEX_LIB_ROOT}/gtsam_unstable -L${MEX_LIB_ROOT}/gtsam -lgtsam -lgtsam_unstable")
+    if(MSVC OR CYGWIN OR WINGW)
+      set(mexFlags "${mexFlags} LINKFLAGS='$LINKFLAGS /LIBPATH:${Boost_LIBRARY_DIRS}'")
+    endif()
+    
     set(toolbox_path ${CMAKE_BINARY_DIR}/wrap/gtsam_unstable)
     set(moduleName gtsam_unstable)
     
@@ -98,9 +111,9 @@ if (GTSAM_BUILD_WRAP)
         DEPENDS wrap)
     
     # Build command
-    if (GTSAM_ENABLE_BUILD_MEX_BINARIES)
+    if (GTSAM_BUILD_MEX_BIN)
         # Actually compile the mex files when building the library
-        if (GTSAM_ENABLE_BUILD_MEX_BINARIES_ALL)    
+        if (GTSAM_INSTALL_MEX_BIN)    
             add_custom_target(wrap_gtsam_unstable_build ALL
                 COMMAND make ${GTSAM_BUILD_MEX_BINARY_FLAGS} 
                 WORKING_DIRECTORY ${toolbox_path} 
@@ -111,7 +124,7 @@ if (GTSAM_BUILD_WRAP)
                 WORKING_DIRECTORY ${toolbox_path} 
                 DEPENDS wrap_gtsam_unstable)
         endif()
-    endif (GTSAM_ENABLE_BUILD_MEX_BINARIES)    
+    endif ()    
     
     if (GTSAM_INSTALL_MATLAB_TOOLBOX)
         # Primary toolbox files

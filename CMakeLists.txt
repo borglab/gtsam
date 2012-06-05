@@ -12,6 +12,10 @@ set (GTSAM_VERSION_PATCH 0)
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+# Record the root dir for gtsam - needed during external builds, e.g., ROS
+set(GTSAM_SOURCE_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+message(STATUS "GTSAM_SOURCE_ROOT_DIR: [${GTSAM_SOURCE_ROOT_DIR}]")
+
 # Load build type flags and default to Debug mode
 include(GtsamBuildTypes)
 
@@ -56,11 +60,13 @@ option(GTSAM_INSTALL_MATLAB_EXAMPLES     "Enable/Disable installation of matlab 
 option(GTSAM_INSTALL_MATLAB_TESTS        "Enable/Disable installation of matlab tests"    ON)
 option(GTSAM_INSTALL_WRAP                "Enable/Disable installation of wrap utility" ON)
 
+set(GTSAM_TOOLBOX_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/borg/toolbox CACHE DOCSTRING "Path to install matlab toolbox")
+
 # TODO: Check for matlab mex binary before handling building of binaries
 
 # Flags for building/installing mex files
-option(GTSAM_ENABLE_BUILD_MEX_BINARIES     "Enable/Disable building of matlab mex files" OFF)
-option(GTSAM_ENABLE_BUILD_MEX_BINARIES_ALL "Enable/Disable adding building of mex files to ALL target" OFF)
+option(GTSAM_BUILD_MEX_BIN     "Enable/Disable building of matlab mex files" OFF)
+option(GTSAM_INSTALL_MEX_BIN   "Enable/Disable installing matlab mex binaries" OFF)
 set(GTSAM_BUILD_MEX_BINARY_FLAGS "-j2" CACHE STRING "Flags for running make on toolbox MEX files")
 set(MEX_COMMAND "mex" CACHE STRING "Command to use for executing mex (if on path, 'mex' will work)")
 
@@ -79,15 +85,10 @@ if (GTSAM_USE_QUATERNIONS)
   set(CMAKE_CXX_FLAGS          "${CMAKE_CXX_FLAGS} -DGTSAM_DEFAULT_QUATERNIONS")
 endif(GTSAM_USE_QUATERNIONS)
 
-# Avoid building non-installed exes and unit tests when installing
-# FIXME: breaks generation and install of matlab toolbox
-# FIXME: can't add install dependencies, so libraries never get built
-#set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY TRUE)
-
-# Alternative version to keep tests from building during make install
-# Use the EXCLUDE_FROM_ALL property on test executables
-option(GTSAM_ENABLE_INSTALL_TEST_FIX "Enable/Disable fix to remove dependency of tests on 'all' target" ON)
-option(GTSAM_ENABLE_INSTALL_EXAMPLE_FIX "Enable/Disable fix to remove dependency of examples on 'all' target" OFF)
+# Flags to determine whether tests and examples are build during 'make install'
+# Note that these remove the targets from the 'all'
+option(GTSAM_DISABLE_TESTS_ON_INSTALL "Disables building tests during install" ON)
+option(GTSAM_DISABLE_EXAMPLES_ON_INSTALL "Disables buildint examples during install" OFF)
 
 # Pull in infrastructure
 if (GTSAM_BUILD_TESTS)
@@ -100,7 +101,7 @@ endif()
 if(CYGWIN OR MSVC OR WIN32)
   set(Boost_USE_STATIC_LIBS 1)
 endif()
-find_package(Boost 1.40 COMPONENTS serialization system filesystem thread REQUIRED)
+find_package(Boost 1.42 COMPONENTS serialization system filesystem thread REQUIRED)
 
 # General build settings
 include_directories(
@@ -155,10 +156,6 @@ set(CPACK_SOURCE_IGNORE_FILES "/build;/\\\\.;/makedoc.sh$;/gtsam_unstable/")
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "gtsam-${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH}")
 #set(CPACK_SOURCE_PACKAGE_FILE_NAME "gtsam-aspn${GTSAM_VERSION_PATCH}") # Used for creating ASPN tarballs
 
-# Record the root dir for gtsam - needed during external builds, e.g., ROS
-set(GTSAM_SOURCE_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-message(STATUS "GTSAM_SOURCE_ROOT_DIR: [${GTSAM_SOURCE_ROOT_DIR}]")
-
 # print configuration variables
 message(STATUS "===============================================================")
 message(STATUS "================  Configuration Options  ======================")
@@ -171,10 +168,10 @@ print_config_flag(${GTSAM_BUILD_SHARED_LIBRARY}        "Build shared GTSAM Libra
 print_config_flag(${GTSAM_BUILD_STATIC_LIBRARY}        "Build static GTSAM Library     ")
 print_config_flag(${GTSAM_BUILD_CONVENIENCE_LIBRARIES} "Build Convenience Libraries    ")
 if(GTSAM_UNSTABLE_AVAILABLE)
-    print_config_flag(${GTSAM_BUILD_UNSTABLE}              "Build libgtsam_unstable        ")
+    print_config_flag(${GTSAM_BUILD_UNSTABLE}           "Build libgtsam_unstable       ")
 endif()
-print_config_flag(${GTSAM_ENABLE_INSTALL_TEST_FIX}     "Tests excluded from all target ")
-print_config_flag(${GTSAM_ENABLE_INSTALL_EXAMPLE_FIX}     "Examples excluded from all target ")
+print_config_flag(${GTSAM_DISABLE_TESTS_ON_INSTALL}     "Tests excluded from all/install target ")
+print_config_flag(${GTSAM_DISABLE_EXAMPLES_ON_INSTALL}  "Examples excluded from all/install target ")
 string(TOUPPER "${CMAKE_BUILD_TYPE}" cmake_build_type_toupper)
 message(STATUS                                       "  Build type                 : ${CMAKE_BUILD_TYPE}")
 message(STATUS                                       "  C compilation flags        : ${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${cmake_build_type_toupper}}")
@@ -192,8 +189,8 @@ print_config_flag(${GTSAM_INSTALL_MATLAB_TOOLBOX}      "Install matlab toolbox  
 print_config_flag(${GTSAM_INSTALL_MATLAB_EXAMPLES}     "Install matlab examples    ")
 print_config_flag(${GTSAM_INSTALL_MATLAB_TESTS}        "Install matlab tests       ")
 print_config_flag(${GTSAM_INSTALL_WRAP}                "Install wrap utility       ")
-print_config_flag(${GTSAM_ENABLE_BUILD_MEX_BINARIES}   "Build MEX binaries         ")
-print_config_flag(${GTSAM_ENABLE_BUILD_MEX_BINARIES_ALL} "Build MEX binaries on ALL target       ")
+print_config_flag(${GTSAM_BUILD_MEX_BIN}               "Build MEX binaries         ")
+print_config_flag(${GTSAM_INSTALL_MEX_BIN}             "Install MEX binaries       ")
 message(STATUS "===============================================================")
 
 # Include CPack *after* all flags

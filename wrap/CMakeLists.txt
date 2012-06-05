@@ -16,7 +16,7 @@ endif(GTSAM_INSTALL_WRAP)
 install(FILES matlab.h DESTINATION include/wrap)
 
 # Build tests
-if (GTSAM_BUILD_TESTS)
+if (GTSAM_BUILD_TESTS) 
     add_definitions(-DTOPSRCDIR="${CMAKE_SOURCE_DIR}")
     set(wrap_local_libs wrap_lib) 
     gtsam_add_subdir_tests("wrap" "${wrap_local_libs}" "${wrap_local_libs}" "") 
@@ -31,7 +31,16 @@ endif(GTSAM_BUILD_TESTS)
 #  toolboxPath   : the directory in which to generate the wrappers
 #  [mexFlags]    : extra flags for the mex command
 
-set(mexFlags "-I${Boost_INCLUDE_DIR} -I${CMAKE_INSTALL_PREFIX}/include -I${CMAKE_INSTALL_PREFIX}/include/gtsam -I${CMAKE_INSTALL_PREFIX}/include/gtsam/base -I${CMAKE_INSTALL_PREFIX}/include/gtsam/geometry -I${CMAKE_INSTALL_PREFIX}/include/gtsam/linear -I${CMAKE_INSTALL_PREFIX}/include/gtsam/discrete -I${CMAKE_INSTALL_PREFIX}/include/gtsam/inference -I${CMAKE_INSTALL_PREFIX}/include/gtsam/nonlinear -I${CMAKE_INSTALL_PREFIX}/include/gtsam/slam -L${CMAKE_INSTALL_PREFIX}/lib -lgtsam")
+# Choose include flags depending on build process
+if (GTSAM_BUILD_MEX_BIN)
+    set(MEX_INCLUDE_ROOT ${GTSAM_SOURCE_ROOT_DIR})
+    set(MEX_LIB_ROOT ${CMAKE_BINARY_DIR})
+else()
+    set(MEX_INCLUDE_ROOT ${CMAKE_INSTALL_PREFIX}/include)
+    set(MEX_LIB_ROOT ${CMAKE_INSTALL_PREFIX}/lib)
+endif()
+
+set(mexFlags "-I${Boost_INCLUDE_DIR} -I${MEX_INCLUDE_ROOT} -I${MEX_INCLUDE_ROOT}/gtsam -I${MEX_INCLUDE_ROOT}/gtsam/base -I${MEX_INCLUDE_ROOT}/gtsam/geometry -I${MEX_INCLUDE_ROOT}/gtsam/linear -I${MEX_INCLUDE_ROOT}/gtsam/discrete -I${MEX_INCLUDE_ROOT}/gtsam/inference -I${MEX_INCLUDE_ROOT}/gtsam/nonlinear -I${MEX_INCLUDE_ROOT}/gtsam/slam -L${MEX_LIB_ROOT}/gtsam -lgtsam")
 if(MSVC OR CYGWIN OR WINGW)
   set(mexFlags "${mexFlags} LINKFLAGS='$LINKFLAGS /LIBPATH:${Boost_LIBRARY_DIRS}'")
 endif()
@@ -59,11 +68,11 @@ add_custom_target(wrap_gtsam ALL COMMAND
     DEPENDS wrap)
 
 # Build command
-if (GTSAM_ENABLE_BUILD_MEX_BINARIES)
+if (GTSAM_BUILD_MEX_BIN)
     # Actually compile the mex files when building the library
     # TODO: pass correct make flags from parent process
     message(STATUS "Building Matlab MEX binaries for toolbox with flags ${GTSAM_BUILD_MEX_BINARY_FLAGS}")
-    if (GTSAM_ENABLE_BUILD_MEX_BINARIES_ALL)    
+    if (GTSAM_INSTALL_MEX_BIN)    
         add_custom_target(wrap_gtsam_build ALL
             COMMAND make ${GTSAM_BUILD_MEX_BINARY_FLAGS} 
             WORKING_DIRECTORY ${toolbox_path} 
@@ -74,9 +83,7 @@ if (GTSAM_ENABLE_BUILD_MEX_BINARIES)
             WORKING_DIRECTORY ${toolbox_path} 
             DEPENDS wrap_gtsam)
     endif()
-endif (GTSAM_ENABLE_BUILD_MEX_BINARIES)    
-
-set(GTSAM_TOOLBOX_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/borg/toolbox CACHE DOCSTRING "Path to install matlab toolbox")
+endif ()    
 
 if (GTSAM_INSTALL_MATLAB_TOOLBOX)
     # Primary toolbox files

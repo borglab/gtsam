@@ -14,7 +14,7 @@ foreach(example_src ${example_srcs} )
     add_executable(${example_bin} ${example_src})
     
     # Disable building during make all/install
-    if (GTSAM_ENABLE_INSTALL_EXAMPLE_FIX)
+    if (GTSAM_DISABLE_EXAMPLES_ON_INSTALL)
         set_target_properties(${example_bin} PROPERTIES EXCLUDE_FROM_ALL ON)
     endif()
     
