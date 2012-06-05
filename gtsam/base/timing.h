@@ -24,6 +24,9 @@
 #include <boost/weak_ptr.hpp>
 #include <gtsam/base/types.h>
 
+// Enabling the new Boost timers introduces dependencies on other Boost
+// libraries so this is disabled for now until we modify the build scripts
+// to link each component or MATLAB wrapper with only the libraries it needs.
 #if 0
 #if BOOST_VERSION >= 104800
 #define GTSAM_USING_NEW_BOOST_TIMERS
