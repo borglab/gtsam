@@ -51,7 +51,7 @@ namespace gtsam {
 
 	public:
 
-		/** @brief negative log likelihood as a function of mean \mu and precision \tau
+		/** @brief negative log likelihood as a function of mean \f$ \mu \f$ and precision \f$ \tau \f$
 		 * @f[
 		 * f(z, \tau, \mu)
 		 * = -\log \left( \frac{\sqrt{\tau}}{\sqrt{2\pi}} \exp(-0.5\tau(z-\mu)^2) \right)

@@ -402,7 +402,7 @@ namespace gtsam {
      * When iterating over the filtered view, only the key-value pairs
      * with a key causing \c filterFcn to return \c true are visited.  Because
      * the object Filtered<Value> returned from filter() is only a
-     * <emph>view</emph> the original Values object must not be deallocated or
+     * <em>view</em> the original Values object must not be deallocated or
      * go out of scope as long as the view is needed.
      * @param filterFcn The function that determines which key-value pairs are
      * included in the filtered view, for which this function returns \c true
@@ -421,7 +421,7 @@ namespace gtsam {
      * template argument \c ValueType and whose key causes the function argument
      * \c filterFcn to return true are visited when iterating over the filtered
      * view.  Because the object Filtered<Value> returned from filter() is only
-     * a <emph>view</emph> the original Values object must not be deallocated or
+     * a <em>view</em> the original Values object must not be deallocated or
      * go out of scope as long as the view is needed.
      * @tparam ValueType The type that the value in a key-value pair must match
      * to be included in the filtered view.  Currently, base classes are not
@@ -445,7 +445,7 @@ namespace gtsam {
      * When iterating over the filtered view, only the key-value pairs
      * with a key causing \c filterFcn to return \c true are visited.  Because
      * the object Filtered<Value> returned from filter() is only a
-     * <emph>view</emph> the original Values object must not be deallocated or
+     * <em>view</em> the original Values object must not be deallocated or
      * go out of scope as long as the view is needed.
      * @param filterFcn The function that determines which key-value pairs are
      * included in the filtered view, for which this function returns \c true
@@ -464,7 +464,7 @@ namespace gtsam {
      * template argument \c ValueType and whose key causes the function argument
      * \c filterFcn to return true are visited when iterating over the filtered
      * view.  Because the object Filtered<Value> returned from filter() is only
-     * a <emph>view</emph> the original Values object must not be deallocated or
+     * a <em>view</em> the original Values object must not be deallocated or
      * go out of scope as long as the view is needed.
      * @tparam ValueType The type that the value in a key-value pair must match
      * to be included in the filtered view.  Currently, base classes are not

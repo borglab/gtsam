@@ -32,8 +32,8 @@ namespace gtsam {
 
 	/**
 	 * A cluster-tree is associated with a factor graph and is defined as in Koller-Friedman:
-	 * each node k represents a subset C_k \sub X, and the tree is family preserving, in that
-	 * each factor f_i is associated with a single cluster and scope(f_i) \sub C_k.
+	 * each node k represents a subset \f$ C_k \sub X \f$, and the tree is family preserving, in that
+	 * each factor \f$ f_i \f$ is associated with a single cluster and \f$ scope(f_i) \sub C_k \f$.
 	 * \nosubgrouping
 	 */
 	template <class FG>

@@ -228,7 +228,6 @@ public:
 
   /**
    * Constructor
-   * @param keys The variables involved in this factor
    */
   template<class ITERATOR>
   NoiseModelFactor(const SharedNoiseModel& noiseModel, ITERATOR beginKeys, ITERATOR endKeys)
@@ -379,14 +378,14 @@ public:
 
   /**
    *  Constructor
-   *  @param z measurement
-   *  @param key by which to look up X value in Values
+   *  @param key1 by which to look up X value in Values
    */
   NoiseModelFactor1(const SharedNoiseModel& noiseModel, Key key1) :
     Base(noiseModel, key1) {}
 
   /** Calls the 1-key specific version of evaluateError, which is pure virtual
-   * so must be implemented in the derived class. */
+   *  so must be implemented in the derived class.
+   */
   virtual Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
     if(this->active(x)) {
       const X& x1 = x.at<X>(keys_[0]);
