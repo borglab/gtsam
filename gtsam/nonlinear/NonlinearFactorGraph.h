@@ -49,7 +49,7 @@ namespace gtsam {
     /** return keys in some random order */
     std::set<Key> keys() const;
 
-		/** unnormalized error */
+		/** unnormalized error, \f$ 0.5 \sum_i (h_i(X_i)-z)^2/\sigma^2 \f$ in the most common case */
 		double error(const Values& c) const;
 
 		/** Unnormalized probability. O(n) */
