@@ -54,3 +54,16 @@ initialEstimate.print(sprintf('\nInitial estimate:\n'));
 %% Optimize using Levenberg-Marquardt optimization with an ordering from colamd
 result = graph.optimize(initialEstimate);
 result.print(sprintf('\nFinal result:\n'));
+
+%% Plot Covariance Ellipses
+figure(1);clf;
+plot(result.xs(),result.ys(),'k*-'); hold on
+plot([result.pose(5).x;result.pose(2).x],[result.pose(5).y;result.pose(2).y],'r-');
+marginals = graph.marginals(result);
+for i=1:result.size()
+    pose_i = result.pose(i);
+    P{i}=marginals.marginalCovariance(i);
+    fprintf(1,'%.5f %.5f %.5f\n',P{i})
+    plotPose2(pose_i,'g',P{i})
+end
+axis equal

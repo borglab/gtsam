@@ -43,26 +43,13 @@ initialEstimate.print(sprintf('\nInitial estimate:\n  '));
 result = graph.optimize(initialEstimate);
 result.print(sprintf('\nFinal result:\n  '));
 
-%% Query the marginals
-marginals = graph.marginals(result);
-P{1}=marginals.marginalCovariance(1);
-P{2}=marginals.marginalCovariance(2);
-P{3}=marginals.marginalCovariance(3);
-
-%% Plot Trajectory
-figure(1)
-clf
-X=[];Y=[];
-for i=1:3
-   pose_i = result.pose(i);
-   X=[X;pose_i.x];
-   Y=[Y;pose_i.y];
-end
-plot(X,Y,'b*-');
-
 %% Plot Covariance Ellipses
-hold on
-for i=1:3
-   pose_i = result.pose(i);
-   covarianceEllipse([pose_i.x;pose_i.y],P{i},'g')
+figure(1);clf;
+plot(result.xs(),result.ys(),'k*-'); hold on
+marginals = graph.marginals(result);
+for i=1:result.size()
+    pose_i = result.pose(i);
+    P{i}=marginals.marginalCovariance(i);
+    plotPose2(pose_i,'g',P{i})
 end
+axis equal
