@@ -85,6 +85,13 @@ namespace pose2SLAM {
     return LevenbergMarquardtOptimizer(*this, initialEstimate).optimize();
   }
 
+  Values Graph::optimizeSPCG(const Values& initialEstimate) const {
+    LevenbergMarquardtParams params;
+    params.linearSolverType = SuccessiveLinearizationParams::CG;
+    return LevenbergMarquardtOptimizer(*this, initialEstimate, params).optimize();
+  }
+
+
   /* ************************************************************************* */
 
 } // pose2SLAM

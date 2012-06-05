@@ -118,7 +118,7 @@ public:
 
   /**
    * Calculate the error of the factor
-   * This is typically equal to log-likelihood, e.g. 0.5(h(x)-z)^2/sigma^2 in case of Gaussian.
+   * This is typically equal to log-likelihood, e.g. \f$ 0.5(h(x)-z)^2/sigma^2 \f$ in case of Gaussian.
    * You can override this for systems with unusual noise models.
    */
   virtual double error(const Values& c) const = 0;

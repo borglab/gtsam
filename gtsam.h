@@ -9,17 +9,17 @@
  *   Only one Method/Constructor per line
  *   Methods can return
  *     - Eigen types:       Matrix, Vector
- *     - C/C++ basic types: string, bool, size_t, size_t, double, char
+ *     - C/C++ basic types: string, bool, size_t, size_t, double, char, unsigned char
  *     - void
  *     - Any class with which be copied with boost::make_shared()
  *     - boost::shared_ptr of any object type
  *   Limitations on methods
  *     - Parsing does not support overloading
- *     - There can only be one method with a given name
+ *     - There can only be one method (static or otherwise) with a given name
  *   Arguments to functions any of
  *   	 - Eigen types:       Matrix, Vector
  *   	 - Eigen types and classes as an optionally const reference
- *     - C/C++ basic types: string, bool, size_t, size_t, double, char
+ *     - C/C++ basic types: string, bool, size_t, size_t, double, char, unsigned char
  *     - Any class with which be copied with boost::make_shared() (except Eigen)
  *     - boost::shared_ptr of any object type (except Eigen)
  *   Comments can use either C++ or C style, with multiple lines
@@ -71,6 +71,7 @@ class Point2 {
   // Standard Constructors
 	Point2();
 	Point2(double x, double y);
+	Point2(Vector v);
 
   // Testable
   void print(string s) const;
@@ -174,7 +175,7 @@ class Rot2 {
 
   // Group
   static gtsam::Rot2 identity();
-  static gtsam::Rot2 inverse();
+  gtsam::Rot2 inverse();
   gtsam::Rot2 compose(const gtsam::Rot2& p2) const;
   gtsam::Rot2 between(const gtsam::Rot2& p2) const;
 
@@ -283,8 +284,8 @@ class Pose2 {
 	static gtsam::Pose2 Expmap(Vector v);
 	static Vector Logmap(const gtsam::Pose2& p);
   Matrix adjointMap() const;
-  Vector adjoint() const;
-  static Matrix wedge();
+  Vector adjoint(const Vector& xi) const;
+  static Matrix wedge(double vx, double vy, double w);
 
   // Group Actions on Point2
   gtsam::Point2 transform_from(const gtsam::Point2& p) const;
@@ -306,7 +307,7 @@ class Pose3 {
 	Pose3();
 	Pose3(const gtsam::Pose3& pose);
 	Pose3(const gtsam::Rot3& r, const gtsam::Point3& t);
-	Pose3(const gtsam::Pose2& pose2);
+	// Pose3(const gtsam::Pose2& pose2); // FIXME: shadows Pose3(Pose3 pose)
 	Pose3(Matrix t);
 
 	// Testable
@@ -344,9 +345,9 @@ class Pose3 {
 	double y() const;
 	double z() const;
 	Matrix matrix() const;
-	gtsam::Pose3 transform_to(const gtsam::Pose3& pose) const;
+	// gtsam::Pose3 transform_to(const gtsam::Pose3& pose) const; // FIXME: shadows other transform_to()
 	double range(const gtsam::Point3& point);
-	// double range(const gtsam::Pose3& pose);
+	// double range(const gtsam::Pose3& pose); // FIXME: shadows other range
 };
 
 class Cal3_S2 {
@@ -389,16 +390,6 @@ class Cal3_S2Stereo {
   void print(string s) const;
   bool equals(const gtsam::Cal3_S2Stereo& pose, double tol) const;
 
-  // Manifold
-  static size_t Dim();
-  size_t dim() const;
-  gtsam::Cal3_S2Stereo retract(Vector v) const;
-  Vector localCoordinates(const gtsam::Cal3_S2Stereo& c) const;
-
-  // Action on Point2
-  gtsam::Point2 calibrate(const gtsam::Point2& p) const;
-  gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
-
   // Standard Interface
   double fx() const;
   double fy() const;
@@ -406,9 +397,6 @@ class Cal3_S2Stereo {
   double px() const;
   double py() const;
   gtsam::Point2 principalPoint() const;
-  Vector vector() const;
-  Matrix matrix() const;
-  Matrix matrix_inverse() const;
   double baseline() const;
 };
 
@@ -440,6 +428,29 @@ class CalibratedCamera {
   // Standard Interface
 	gtsam::Pose3 pose() const;
   double range(const gtsam::Point3& p) const; // TODO: Other overloaded range methods
+};
+
+
+class SimpleCamera {
+  // Standard Constructors and Named Constructors
+	SimpleCamera();
+	SimpleCamera(const gtsam::Pose3& pose, const gtsam::Cal3_S2& k);
+	SimpleCamera(const gtsam::Cal3_S2& k, const gtsam::Pose3& pose);
+
+  // Testable
+	void print(string s) const;
+	bool equals(const gtsam::SimpleCamera& camera, double tol) const;
+
+  // Action on Point3
+	gtsam::Point2 project(const gtsam::Point3& point);
+	static gtsam::Point2 project_to_camera(const gtsam::Point3& cameraPoint);
+
+	// Backprojection
+	gtsam::Point3 backproject(const gtsam::Point2& pi, double scale) const;
+	gtsam::Point3 backproject_from_camera(const gtsam::Point2& pi, double scale) const;
+
+  // Standard Interface
+	gtsam::Pose3 pose() const;
 };
 
 //*************************************************************************
@@ -694,6 +705,7 @@ class Graph {
 	void addOdometry(size_t key1, size_t key2, const gtsam::Pose2& odometry, const gtsam::SharedNoiseModel& noiseModel);
 	void addConstraint(size_t key1, size_t key2, const gtsam::Pose2& odometry, const gtsam::SharedNoiseModel& noiseModel);
 	pose2SLAM::Values optimize(const pose2SLAM::Values& initialEstimate) const;
+	pose2SLAM::Values optimizeSPCG(const pose2SLAM::Values& initialEstimate) const;
 	gtsam::Marginals marginals(const pose2SLAM::Values& solution) const;
 };
 
@@ -864,6 +876,7 @@ class Values {
   void print(string s) const;
   gtsam::Pose3 pose(size_t i);
   gtsam::Point3 point(size_t j);
+  bool exists(size_t key);
 };
 
 class Graph {

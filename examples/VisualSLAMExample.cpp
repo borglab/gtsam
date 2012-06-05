@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    VisualSLAMforSFMExample.cpp
+ * @file    VisualSLAMExample.cpp
  * @brief   A visualSLAM example for the structure-from-motion problem on a simulated dataset
  * @author  Duy-Nguyen Ta
  */
@@ -19,7 +19,7 @@
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
-#include "VisualSLAMExampleData.h"
+#include "VisualSLAMData.h"
 
 using namespace std;
 using namespace gtsam;
@@ -39,18 +39,19 @@ int main(int argc, char* argv[]) {
   /* 2. Add factors to the graph */
   // 2a. Measurement factors
   for (size_t i=0; i<data.poses.size(); ++i) {
-  	for (size_t j=0; j<data.landmarks.size(); ++j)
+  	for (size_t j=0; j<data.points.size(); ++j)
   		graph.addMeasurement(data.z[i][j], data.noiseZ, X(i), L(j), data.sK);
   }
-  // 2b. Prior factor for the first pose to resolve ambiguity (not needed for LevenbergMarquardtOptimizer)
+  // 2b. Prior factor for the first pose and point to constraint the system
   graph.addPosePrior(X(0), data.poses[0], data.noiseX);
+  graph.addPointPrior(L(0), data.points[0], data.noiseL);
 
   /* 3. Initial estimates for variable nodes, simulated by Gaussian noises */
   Values initial;
   for (size_t i=0; i<data.poses.size(); ++i)
   	initial.insert(X(i), data.poses[i]*Pose3::Expmap(data.noiseX->sample()));
-  for (size_t j=0; j<data.landmarks.size(); ++j)
-  	initial.insert(L(j), data.landmarks[j] + Point3(data.noiseL->sample()));
+  for (size_t j=0; j<data.points.size(); ++j)
+  	initial.insert(L(j), data.points[j] + Point3(data.noiseL->sample()));
   initial.print("Intial Estimates: ");
 
   /* 4. Optimize the graph and print results */

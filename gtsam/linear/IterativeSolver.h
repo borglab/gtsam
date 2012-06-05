@@ -11,9 +11,8 @@
 
 #pragma once
 
-#include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/IterativeOptimizationParameters.h>
-#include <boost/shared_ptr.hpp>
+#include <gtsam/linear/VectorValues.h>
 
 namespace gtsam {
 
@@ -21,25 +20,23 @@ class IterativeSolver {
 
 public:
 
-	typedef boost::shared_ptr<IterativeSolver> shared_ptr;
 	typedef IterativeOptimizationParameters Parameters;
 
 protected:
 
-	Parameters::shared_ptr parameters_ ;
+	Parameters parameters_ ;
 
 public:
 
-  IterativeSolver(): parameters_(new Parameters()) {}
+  IterativeSolver(): parameters_() {}
 	IterativeSolver(const IterativeSolver &solver) : parameters_(solver.parameters_) {}
-  IterativeSolver(const Parameters::shared_ptr& parameters) : parameters_(parameters) {}
-	IterativeSolver(const Parameters &parameters) :	parameters_(new Parameters(parameters)) {}
+	IterativeSolver(const Parameters &parameters) :	parameters_(parameters) {}
 
 	virtual ~IterativeSolver() {}
 
 	virtual VectorValues::shared_ptr optimize () = 0;
 
-	inline Parameters::shared_ptr parameters() { return parameters_ ; }
+	inline const Parameters& parameters() const { return parameters_ ; }
 };
 
 }

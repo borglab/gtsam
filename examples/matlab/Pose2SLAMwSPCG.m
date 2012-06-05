@@ -6,10 +6,8 @@
 %
 % See LICENSE for the license information
 %
-% @brief Simple robotics example using the pre-built planar SLAM domain
-% @author Alex Cunningham
-% @author Frank Dellaert
-% @author Chris Beall
+% @brief Simple 2D robotics example using the SimpleSPCGSolver
+% @author Yong-Dian Jian
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Assumptions
@@ -52,18 +50,5 @@ initialEstimate.insertPose(5, gtsamPose2(2.1, 2.1,-pi/2));
 initialEstimate.print(sprintf('\nInitial estimate:\n'));
 
 %% Optimize using Levenberg-Marquardt optimization with an ordering from colamd
-result = graph.optimize(initialEstimate);
+result = graph.optimizeSPCG(initialEstimate);
 result.print(sprintf('\nFinal result:\n'));
-
-%% Plot Covariance Ellipses
-figure(1);clf;
-plot(result.xs(),result.ys(),'k*-'); hold on
-plot([result.pose(5).x;result.pose(2).x],[result.pose(5).y;result.pose(2).y],'r-');
-marginals = graph.marginals(result);
-for i=1:result.size()
-    pose_i = result.pose(i);
-    P{i}=marginals.marginalCovariance(i);
-    fprintf(1,'%.5f %.5f %.5f\n',P{i})
-    plotPose2(pose_i,'g',P{i})
-end
-axis equal

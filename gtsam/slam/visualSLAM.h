@@ -72,6 +72,9 @@ namespace visualSLAM {
     /// get a point
     Point3 point(Key j) const { return at<Point3>(j); }
 
+    /// check if value with specified key exists
+    bool exists(Key i) const { return gtsam::Values::exists(i); }
+
   };
 
   /**

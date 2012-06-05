@@ -40,7 +40,9 @@ struct Module {
 	 bool enable_verbose=true);
 
   /// MATLAB code generation:
-  void matlab_code(const std::string& path, 
+  void matlab_code(
+  		 const std::string& mexCommand,
+  		 const std::string& path,
 		   const std::string& mexExt,
 		   const std::string& mexFlags) const;
 };

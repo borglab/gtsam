@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    VisualSLAMwISAM2Example.cpp
+ * @file    VisualISAMExample.cpp
  * @brief   An ISAM example for synthesis sequence, single camera
  * @author  Duy-Nguyen Ta
  */
@@ -19,7 +19,7 @@
 #include <gtsam/nonlinear/NonlinearISAM.h>
 #include <gtsam/slam/visualSLAM.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include "VisualSLAMExampleData.h"
+#include "VisualSLAMData.h"
 
 using namespace std;
 using namespace gtsam;
@@ -72,8 +72,8 @@ int main(int argc, char* argv[]) {
   	initials.insert(X(1), pose0Init*odoMeasurement);
 
   	// Initial values for the landmarks, simulated with Gaussian noise
-  	for (size_t j=0; j<data.landmarks.size(); ++j)
-  		initials.insert(L(j), data.landmarks[j] + Point3(data.noiseL->sample()));
+  	for (size_t j=0; j<data.points.size(); ++j)
+  		initials.insert(L(j), data.points[j] + Point3(data.noiseL->sample()));
 
   	// Update ISAM the first time and obtain the current estimate
   	isam.update(newFactors, initials);

@@ -71,16 +71,6 @@ public:
 		return project(point, H1, H2);
 	}
 
-	/*
-	 * backproject using left camera calibration, up to scale only
-	 * i.e. does not rely on baseline
-	 */
-	Point3 backproject(const Point2& projection, const double scale) const {
-		Point2 intrinsic = K_->calibrate(projection);
-		Point3 cameraPoint = Point3(intrinsic.x() * scale, intrinsic.y() * scale, scale);;
-		return pose().transform_from(cameraPoint);
-	}
-
 	Point3 backproject(const StereoPoint2& z) const {
 		Vector measured = z.vector();
 		double Z = K_->baseline()*K_->fx()/(measured[0]-measured[1]);

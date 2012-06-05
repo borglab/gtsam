@@ -16,18 +16,17 @@ N = 2500;
 filename = '../Data/sphere2500.txt';
 
 %% Initialize graph, initial estimate, and odometry noise
-model = gtsamSharedNoiseModel_Sigmas([0.05; 0.05; 0.05; 5*pi/180; 5*pi/180; 5*pi/180]);
 [graph,initial]=load3D(filename,model,true,N);
-first = initial.pose(0);
-graph.addHardConstraint(0, first);
+model = gtsamSharedNoiseModel_Sigmas([0.05; 0.05; 0.05; 5*pi/180; 5*pi/180; 5*pi/180]);
 
 %% Plot Initial Estimate
 figure(1);clf
+first = initial.pose(0);
 plot3(first.x(),first.y(),first.z(),'r*'); hold on
 plot3DTrajectory(initial,'g-',false);
 
-%% Read again, now all constraints
-[graph,discard]=load3D(filename,model,false,N);
+%% Read again, now with all constraints, and optimize
+graph = load3D(filename,model,false,N);
 graph.addHardConstraint(0, first);
-result = graph.optimize(initial); % start from old result
+result = graph.optimize(initial);
 plot3DTrajectory(result,'r-',false); axis equal;
