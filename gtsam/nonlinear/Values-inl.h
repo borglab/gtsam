@@ -170,6 +170,16 @@ namespace gtsam {
   };
 
   /* ************************************************************************* */
+  /** Constructor from a Filtered view copies out all values */
+  template<class ValueType>
+  Values::Values(const Values::Filtered<ValueType>& view) {
+    BOOST_FOREACH(const typename Filtered<ValueType>::KeyValuePair& key_value, view) {
+      Key key = key_value.key;
+      insert(key, key_value.value);
+    }
+  }
+
+  /* ************************************************************************* */
   template<class ValueType>
   Values::Values(const Values::ConstFiltered<ValueType>& view) {
     BOOST_FOREACH(const typename ConstFiltered<ValueType>::KeyValuePair& key_value, view) {

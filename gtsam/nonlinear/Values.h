@@ -138,6 +138,10 @@ namespace gtsam {
     /** Copy constructor duplicates all keys and values */
     Values(const Values& other);
 
+    /** Constructor from a Filtered view copies out all values */
+    template<class ValueType>
+    Values(const Filtered<ValueType>& view);
+
     /** Constructor from a Filtered or ConstFiltered view */
     template<class ValueType>
     Values(const ConstFiltered<ValueType>& view);
