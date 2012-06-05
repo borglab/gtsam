@@ -24,8 +24,10 @@
 #include <boost/weak_ptr.hpp>
 #include <gtsam/base/types.h>
 
+#if 0
 #if BOOST_VERSION >= 104800
 #define GTSAM_USING_NEW_BOOST_TIMERS
+#endif
 #endif
 
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
