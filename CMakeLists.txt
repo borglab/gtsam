@@ -115,16 +115,16 @@ link_directories(${Boost_LIBRARY_DIRS})
 # Build CppUnitLite
 add_subdirectory(CppUnitLite)
 
+# Build wrap
+if (GTSAM_BUILD_WRAP)
+    add_subdirectory(wrap)
+endif(GTSAM_BUILD_WRAP)
+
 # Build GTSAM library
 add_subdirectory(gtsam)
 
 # Build Tests
 add_subdirectory(tests)
-
-# Build wrap
-if (GTSAM_BUILD_WRAP)
-    add_subdirectory(wrap)
-endif(GTSAM_BUILD_WRAP)
 
 # Build examples
 if (GTSAM_BUILD_EXAMPLES)

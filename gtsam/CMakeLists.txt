@@ -114,3 +114,24 @@ if (GTSAM_BUILD_SHARED_LIBRARY)
     install(TARGETS gtsam-shared LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
 endif(GTSAM_BUILD_SHARED_LIBRARY)
 
+# Create the matlab toolbox for the gtsam library
+if (GTSAM_BUILD_WRAP)
+    # Set up codegen
+    include(GtsamMatlabWrap)
+    
+    # TODO: generate these includes programmatically
+    # Choose include flags depending on build process
+    if (GTSAM_BUILD_MEX_BIN)
+        set(MEX_INCLUDE_ROOT ${GTSAM_SOURCE_ROOT_DIR})
+        set(MEX_LIB_ROOT ${CMAKE_BINARY_DIR})
+    else()
+        set(MEX_INCLUDE_ROOT ${CMAKE_INSTALL_PREFIX}/include)
+        set(MEX_LIB_ROOT ${CMAKE_INSTALL_PREFIX}/lib)
+    endif()
+    
+    # Generate, build and install toolbox
+    set(mexFlags "-I${Boost_INCLUDE_DIR} -I${MEX_INCLUDE_ROOT} -I${MEX_INCLUDE_ROOT}/gtsam -I${MEX_INCLUDE_ROOT}/gtsam/base -I${MEX_INCLUDE_ROOT}/gtsam/geometry -I${MEX_INCLUDE_ROOT}/gtsam/linear -I${MEX_INCLUDE_ROOT}/gtsam/discrete -I${MEX_INCLUDE_ROOT}/gtsam/inference -I${MEX_INCLUDE_ROOT}/gtsam/nonlinear -I${MEX_INCLUDE_ROOT}/gtsam/slam -L${MEX_LIB_ROOT}/gtsam -lgtsam")
+    
+    # Macro to handle details of setting up targets
+    wrap_library(gtsam "${mexFlags}" "../")
+endif ()

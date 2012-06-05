@@ -30,3 +30,21 @@ foreach(example_src ${example_srcs} )
 
 endforeach(example_src)
 
+# Install matlab components
+if (GTSAM_BUILD_WRAP)
+    if (GTSAM_INSTALL_MATLAB_TOOLBOX)
+        # Examples
+        if (GTSAM_INSTALL_MATLAB_EXAMPLES)
+            message(STATUS "Installing Matlab Toolbox Examples")
+            file(GLOB matlab_examples "${GTSAM_SOURCE_ROOT_DIR}/examples/matlab/*.m")
+            install(FILES ${matlab_examples} DESTINATION ${GTSAM_TOOLBOX_INSTALL_PATH}/gtsam/examples)
+            
+            message(STATUS "Installing Matlab Toolbox Examples (Data)")
+            # Data files: *.graph and *.txt
+            file(GLOB matlab_examples_data_graph "${GTSAM_SOURCE_ROOT_DIR}/examples/Data/*.graph")
+            file(GLOB matlab_examples_data_txt "${GTSAM_SOURCE_ROOT_DIR}/examples/Data/*.txt")
+            set(matlab_examples_data ${matlab_examples_data_graph} ${matlab_examples_data_txt}) 
+            install(FILES ${matlab_examples_data} DESTINATION ${GTSAM_TOOLBOX_INSTALL_PATH}/gtsam/Data)
+        endif (GTSAM_INSTALL_MATLAB_EXAMPLES)
+    endif (GTSAM_INSTALL_MATLAB_TOOLBOX)
+endif ()

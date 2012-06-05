@@ -70,15 +70,6 @@ if (GTSAM_BUILD_WRAP)
     # Set up codegen
     include(GtsamMatlabWrap)
     
-    # Wrap codegen
-    #usage: wrap mexExecutable mexExtension interfacePath moduleName toolboxPath [mexFlags]
-    #  mexExecutable : command to execute mex if on path, use 'mex'
-    #  mexExtension  : OS/CPU-dependent extension for MEX binaries
-    #  interfacePath : *absolute* path to directory of module interface file
-    #  moduleName    : the name of the module, interface file must be called moduleName.h
-    #  toolboxPath   : the directory in which to generate the wrappers
-    #  [mexFlags]    : extra flags for the mex command
-    
     # TODO: generate these includes programmatically
     # Choose include flags depending on build process
     if (GTSAM_BUILD_MEX_BIN)
@@ -89,48 +80,10 @@ if (GTSAM_BUILD_WRAP)
         set(MEX_LIB_ROOT ${CMAKE_INSTALL_PREFIX}/lib)
     endif()
     
+    # Generate, build and install toolbox
     set(mexFlags "-I${Boost_INCLUDE_DIR} -I${MEX_INCLUDE_ROOT} -I${MEX_INCLUDE_ROOT}/gtsam_unstable -I${MEX_INCLUDE_ROOT}/gtsam_unstable/dynamics -I${MEX_INCLUDE_ROOT}/gtsam_unstable/discrete -L${MEX_LIB_ROOT}/gtsam_unstable -L${MEX_LIB_ROOT}/gtsam -lgtsam -lgtsam_unstable")
-    if(MSVC OR CYGWIN OR WINGW)
-      set(mexFlags "${mexFlags} LINKFLAGS='$LINKFLAGS /LIBPATH:${Boost_LIBRARY_DIRS}'")
-    endif()
     
-    set(toolbox_path ${CMAKE_BINARY_DIR}/wrap/gtsam_unstable)
-    set(moduleName gtsam_unstable)
-    
-    find_mexextension()
-    
-    # Code generation command
-    add_custom_target(wrap_gtsam_unstable ALL COMMAND 
-        ${CMAKE_BINARY_DIR}/wrap/wrap 
-        ${MEX_COMMAND} 
-        ${GTSAM_MEX_BIN_EXTENSION} 
-        ${CMAKE_CURRENT_SOURCE_DIR} 
-        ${moduleName} 
-        ${toolbox_path} 
-        "${mexFlags}"
-        DEPENDS wrap)
-    
-    # Build command
-    if (GTSAM_BUILD_MEX_BIN)
-        # Actually compile the mex files when building the library
-        if (GTSAM_INSTALL_MEX_BIN)    
-            add_custom_target(wrap_gtsam_unstable_build ALL
-                COMMAND make ${GTSAM_BUILD_MEX_BINARY_FLAGS} 
-                WORKING_DIRECTORY ${toolbox_path} 
-                DEPENDS wrap_gtsam_unstable)
-        else()            
-            add_custom_target(wrap_gtsam_unstable_build
-                COMMAND make ${GTSAM_BUILD_MEX_BINARY_FLAGS} 
-                WORKING_DIRECTORY ${toolbox_path} 
-                DEPENDS wrap_gtsam_unstable)
-        endif()
-    endif ()    
-    
-    if (GTSAM_INSTALL_MATLAB_TOOLBOX)
-        # Primary toolbox files
-        message(STATUS "Installing Matlab Toolbox to ${GTSAM_TOOLBOX_INSTALL_PATH}")
-        install(DIRECTORY DESTINATION ${GTSAM_TOOLBOX_INSTALL_PATH}) # make an empty folder
-        # exploit need for trailing slash to specify a full folder, rather than just its contents to copy
-        install(DIRECTORY ${toolbox_path} DESTINATION ${GTSAM_TOOLBOX_INSTALL_PATH})
-    endif (GTSAM_INSTALL_MATLAB_TOOLBOX)
+    # Macro to handle details of setting up targets
+    wrap_library(gtsam_unstable "${mexFlags}" "./")
+
 endif(GTSAM_BUILD_WRAP)
