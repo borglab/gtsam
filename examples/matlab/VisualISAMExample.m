@@ -48,9 +48,9 @@ for i=1:nCameras
     % Prior for the first pose or odometry for subsequent poses
     if (i==1)
         newFactors.addPosePrior(symbol('x',1), poses{1}, poseNoise);
-%         for j=1:nPoints
-%             newFactors.addPointPrior(symbol('l',j), points{j}, pointNoise);
-%         end
+        for j=1:nPoints
+            newFactors.addPointPrior(symbol('l',j), points{j}, pointNoise);
+        end
     else
         newFactors.addOdometry(symbol('x',i-1), symbol('x',i), odometry, poseNoise);
     end
@@ -102,7 +102,7 @@ for i=1:nCameras
         end
         axis([-50 50 -50 50 -50 50])
         colormap('hot')
-        print(h,'-dpng',sprintf('VisualISAM_%03d.png',i));
+        %print(h,'-dpng',sprintf('VisualISAM_%03d.png',i));
         
         % Reset newFactors and initialEstimates to prepare for the next 
         % update
