@@ -253,7 +253,6 @@ class Rot3 {
 	double pitch() const;
 	double yaw() const;
 //  Vector toQuaternion() const;  // FIXME: Can't cast to Vector properly
-  Matrix matrix() const;
 };
 
 class Pose2 {
