@@ -450,12 +450,16 @@ class SimpleCamera {
 
   // Standard Interface
 	gtsam::Pose3 pose() const;
+
+	// Convenient generators
+	static gtsam::SimpleCamera lookat(const gtsam::Point3& eye,
+			const gtsam::Point3& target, const gtsam::Point3& upVector,
+			const gtsam::Cal3_S2& k);
 };
 
 //*************************************************************************
 // inference
 //*************************************************************************
-
 
 
 //*************************************************************************
@@ -912,9 +916,19 @@ class Graph {
   void addPosePrior(size_t poseKey, const gtsam::Pose3& p, const gtsam::SharedNoiseModel& model);
   void addPointPrior(size_t pointKey, const gtsam::Point3& p, const gtsam::SharedNoiseModel& model);
   void addRangeFactor(size_t poseKey, size_t pointKey, double range, const gtsam::SharedNoiseModel& model);
+  void addOdometry(size_t poseKey1, size_t poseKey2, const gtsam::Pose3& odometry, const gtsam::SharedNoiseModel& model);
 
   visualSLAM::Values optimize(const visualSLAM::Values& initialEstimate) const;
   gtsam::Marginals marginals(const visualSLAM::Values& solution) const;
+};
+
+class ISAM {
+	ISAM();
+	ISAM(int reorderInterval);
+	void print(string s) const;
+	visualSLAM::Values estimate() const;
+	Matrix marginalCovariance(size_t key) const;
+	void update(const visualSLAM::Graph& newFactors, const visualSLAM::Values& initialValues);
 };
 
 }///\namespace visualSLAM
