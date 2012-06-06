@@ -49,9 +49,9 @@ int main(int argc, char* argv[]) {
   /* 3. Initial estimates for variable nodes, simulated by Gaussian noises */
   Values initial;
   for (size_t i=0; i<data.poses.size(); ++i)
-  	initial.insert(X(i), data.poses[i]*Pose3::Expmap(data.noiseX->sample()));
+  	initial.insert(X(i), data.poses[i]/* *Pose3::Expmap(data.noiseX->sample())*/); // you can add noise if you want
   for (size_t j=0; j<data.points.size(); ++j)
-  	initial.insert(L(j), data.points[j] + Point3(data.noiseL->sample()));
+  	initial.insert(L(j), data.points[j] /*+ Point3(data.noiseL->sample())*/); // you can add noise if you want
   initial.print("Intial Estimates: ");
 
   /* 4. Optimize the graph and print results */

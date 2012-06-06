@@ -53,10 +53,8 @@ int main(int argc, char* argv[]) {
   	// First pose with prior factor
   	newFactors.addPosePrior(X(0), data.poses[0], data.noiseX);
 
-  	// Second pose with odometry measurement, simulated by adding Gaussian noise to the ground-truth.
-  	Pose3 odoMeasurement =  data.odometry*Pose3::Expmap(data.noiseX->sample());
-  	newFactors.push_back( boost::shared_ptr<BetweenFactor<Pose3> >(
-  	  			new BetweenFactor<Pose3>(X(0), X(1), odoMeasurement, data.noiseX)));
+  	// Second pose with odometry measurement
+  	newFactors.addOdometry(X(0), X(1), data.odometry, data.noiseX);
 
   	// Visual measurements at both poses
   	for (size_t i=0; i<2; ++i) {
@@ -67,13 +65,12 @@ int main(int argc, char* argv[]) {
 
   	// Initial values for the first two poses, simulated with Gaussian noise
   	Values initials;
-  	Pose3 pose0Init = data.poses[0]*Pose3::Expmap(data.noiseX->sample());
-  	initials.insert(X(0), pose0Init);
-  	initials.insert(X(1), pose0Init*odoMeasurement);
+  	initials.insert(X(0), data.poses[0]);
+  	initials.insert(X(1), data.poses[0]*data.odometry);
 
-  	// Initial values for the landmarks, simulated with Gaussian noise
+  	// Initial values for the landmarks
   	for (size_t j=0; j<data.points.size(); ++j)
-  		initials.insert(L(j), data.points[j] + Point3(data.noiseL->sample()));
+  		initials.insert(L(j), data.points[j]);
 
   	// Update ISAM the first time and obtain the current estimate
   	isam.update(newFactors, initials);
@@ -87,9 +84,8 @@ int main(int argc, char* argv[]) {
   for (size_t i=2; i<data.poses.size(); ++i) {
   	visualSLAM::Graph newFactors;
   	// Factor for odometry measurements, simulated by adding Gaussian noise to the ground-truth.
-  	Pose3 odoMeasurement =  data.odometry*Pose3::Expmap(data.noiseX->sample());
-  	newFactors.push_back( boost::shared_ptr<BetweenFactor<Pose3> >(
-  			new BetweenFactor<Pose3>(X(i-1), X(i), odoMeasurement, data.noiseX)));
+  	Pose3 odoMeasurement =  data.odometry;
+  	newFactors.addOdometry(X(i-1), X(i), data.odometry, data.noiseX);
   	// Factors for visual measurements
   	for (size_t j=0; j<data.z[i].size(); ++j) {
   		newFactors.addMeasurement(data.z[i][j], data.noiseZ, X(i), L(j), data.sK);
@@ -97,7 +93,7 @@ int main(int argc, char* argv[]) {
 
     // Initial estimates for the new node Xi, simulated by Gaussian noises
   	Values initials;
-  	initials.insert(X(i), currentEstimate.at<Pose3>(X(i-1))*odoMeasurement);
+  	initials.insert(X(i), currentEstimate.at<Pose3>(X(i-1))*data.odometry);
 
   	// update ISAM
   	isam.update(newFactors, initials);

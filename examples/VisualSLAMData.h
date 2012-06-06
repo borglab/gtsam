@@ -66,20 +66,19 @@ struct VisualSLAMExampleData {
 		double theta = 0.0;
 		double r = 30.0;
 		for (int i=0; i<n; ++i, theta += 2*M_PI/n) {
-			data.poses.push_back(gtsam::Pose3(
-					gtsam::Rot3(-sin(theta), 0.0, -cos(theta),
-											cos(theta), 0.0, -sin(theta),
-											0.0, -1.0, 0.0),
-					gtsam::Point3(r*cos(theta), r*sin(theta), 0.0)));
+			Point3 C = gtsam::Point3(r*cos(theta), r*sin(theta), 0.0);
+			SimpleCamera camera = SimpleCamera::lookat(C, Point3(), Point3(0,0,1));
+			data.poses.push_back(camera.pose());
 		}
 		data.odometry = data.poses[0].between(data.poses[1]);
 
-		// Simulated measurements with Gaussian noise
+		// Simulated measurements, possibly with Gaussian noise
 		data.noiseZ = gtsam::sharedSigma(2, 1.0);
 		for (size_t i=0; i<data.poses.size(); ++i) {
 			for (size_t j=0; j<data.points.size(); ++j) {
 				gtsam::SimpleCamera camera(data.poses[i], *data.sK);
-				data.z[i].push_back(camera.project(data.points[j]) + gtsam::Point2(data.noiseZ->sample()));
+				data.z[i].push_back(camera.project(data.points[j])
+						/*+ gtsam::Point2(data.noiseZ->sample()))*/); // you can add noise as desired
 			}
 		}
 		data.noiseX = gtsam::sharedSigmas(gtsam::Vector_(6, 0.001, 0.001, 0.001, 0.1, 0.1, 0.1));
