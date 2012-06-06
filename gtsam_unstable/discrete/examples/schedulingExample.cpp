@@ -8,6 +8,7 @@
 //#define ENABLE_TIMING
 #define ADD_NO_CACHING
 #define ADD_NO_PRUNING
+#define ENABLE_OLD_TIMING
 #include <gtsam_unstable/discrete/Scheduler.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
