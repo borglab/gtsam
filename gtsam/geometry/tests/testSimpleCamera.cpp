@@ -64,6 +64,19 @@ TEST( SimpleCamera, level2)
 }
 
 /* ************************************************************************* */
+TEST( SimpleCamera, lookat)
+{
+	// Create a level camera, looking in Y-direction
+	Point3 C(10.0,0.0,0.0);
+	SimpleCamera camera = SimpleCamera::lookat(C, Point3(), Point3(0.0,0.0,1.0));
+
+	// expected
+	Point3 xc(0,1,0),yc(0,0,-1),zc(-1,0,0);
+	Pose3 expected(Rot3(xc,yc,zc),C);
+  CHECK(assert_equal( camera.pose(), expected));
+}
+
+/* ************************************************************************* */
 TEST( SimpleCamera, project)
 {
   CHECK(assert_equal( camera.project(point1), Point2(-100,  100) ));

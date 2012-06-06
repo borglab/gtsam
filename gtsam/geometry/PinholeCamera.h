@@ -149,16 +149,34 @@ namespace gtsam {
      * (theta 0 = looking in direction of positive X axis)
      */
     static PinholeCamera level(const Pose2& pose2, double height) {
-        return PinholeCamera::level(Calibration(), pose2, height);
+    	return PinholeCamera::level(Calibration(), pose2, height);
     }
 
     static PinholeCamera level(const Calibration &K, const Pose2& pose2, double height) {
-        const double st = sin(pose2.theta()), ct = cos(pose2.theta());
-        const Point3 x(st, -ct, 0), y(0, 0, -1), z(ct, st, 0);
-        const Rot3 wRc(x, y, z);
-        const Point3 t(pose2.x(), pose2.y(), height);
-        const Pose3 pose3(wRc, t);
-        return PinholeCamera(pose3, K);
+    	const double st = sin(pose2.theta()), ct = cos(pose2.theta());
+    	const Point3 x(st, -ct, 0), y(0, 0, -1), z(ct, st, 0);
+    	const Rot3 wRc(x, y, z);
+    	const Point3 t(pose2.x(), pose2.y(), height);
+    	const Pose3 pose3(wRc, t);
+    	return PinholeCamera(pose3, K);
+    }
+
+    /**
+     * Create a camera at the given eye position looking at a target point in the scene
+     * with the specified up direction vector.
+     * @param eye specifies the camera position
+     * @param target the point to look at
+     * @param upVector specifies the camera up direction vector,
+     * 				doesn't need to be on the image plane nor orthogonal to the viewing axis
+     * @param K optional calibration parameter
+     */
+    static PinholeCamera lookat(const Point3& eye, const Point3& target, const Point3& upVector, const Calibration& K = Calibration()) {
+    	Point3 zc = target-eye;
+    	zc = zc/zc.norm();
+    	Point3 xc = (-upVector).cross(zc);	// minus upVector since yc is pointing down
+    	Point3 yc = zc.cross(xc);
+    	Pose3 pose3(Rot3(xc,yc,zc), eye);
+    	return PinholeCamera(pose3, K);
     }
 
     /// @}
