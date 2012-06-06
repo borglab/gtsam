@@ -31,7 +31,7 @@ void StaticMethod::matlab_mfile(const string& toolboxPath, const string& classNa
   // open destination m-file
 	string full_name = className + "_" + name;
   string wrapperFile = toolboxPath + "/" + full_name + ".m";
-  FileWriter file(wrapperFile, verbose);
+  FileWriter file(wrapperFile, verbose, "%");
 
   // generate code
   string returnType = returnVal.matlab_returnType();

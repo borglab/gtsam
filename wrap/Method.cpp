@@ -30,7 +30,7 @@ void Method::matlab_mfile(const string& classPath) const {
 
   // open destination m-file
   string wrapperFile = classPath + "/" + name + ".m";
-  FileWriter file(wrapperFile, verbose_);
+  FileWriter file(wrapperFile, verbose_, "%");
 
   // generate code
   string returnType = returnVal.matlab_returnType();
