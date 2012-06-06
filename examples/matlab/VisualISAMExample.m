@@ -20,7 +20,7 @@ for j=1:nPoints
 end
 
 %% Create camera poses on a circle around the triangle
-nCameras = 30;
+nCameras = 10;
 height = 10;
 r = 30;
 poses = {};
@@ -48,6 +48,9 @@ for i=1:nCameras
     % Prior for the first pose or odometry for subsequent poses
     if (i==1)
         newFactors.addPosePrior(symbol('x',1), poses{1}, poseNoise);
+%         for j=1:nPoints
+%             newFactors.addPointPrior(symbol('l',j), points{j}, pointNoise);
+%         end
     else
         newFactors.addOdometry(symbol('x',i-1), symbol('x',i), odometry, poseNoise);
     end
@@ -67,9 +70,10 @@ for i=1:nCameras
             initialEstimates.insertPoint(symbol('l',j), points{j});
         end
     else
-        %TODO: this might not be suboptimal since "result" is not the fully
+        %TODO: this might be suboptimal since "result" is not the fully
         %optimized result
-        prevPose = result.pose(symbol('x',i-1));
+        if (i==2), prevPose = poses{1};
+        else, prevPose = result.pose(symbol('x',i-1)); end
         initialEstimates.insertPose(symbol('x',i), prevPose.compose(odometry));
     end
 
@@ -82,7 +86,7 @@ for i=1:nCameras
         result = isam.estimate();
 
         % Plot first result
-        figure(1);clf
+        h=figure(1);clf
         hold on;
         for j=1:size(points,2)
             P = isam.marginalCovariance(symbol('l',j));
@@ -97,6 +101,8 @@ for i=1:nCameras
             plotPose3(pose_ii,P,10);
         end
         axis([-50 50 -50 50 -50 50])
+        colormap('hot')
+        print(h,'-dpng',sprintf('VisualISAM_%03d.png',i));
         
         % Reset newFactors and initialEstimates to prepare for the next 
         % update
