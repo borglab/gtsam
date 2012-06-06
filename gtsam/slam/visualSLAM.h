@@ -27,8 +27,8 @@
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/Marginals.h>
+#include <gtsam/nonlinear/NonlinearISAM.h>
 #include <gtsam/geometry/SimpleCamera.h>
-
 
 namespace visualSLAM {
 
@@ -174,6 +174,15 @@ namespace visualSLAM {
     void addRangeFactor(Key poseKey, Key pointKey, double range, const SharedNoiseModel& model = noiseModel::Unit::Create(1));
 
     /**
+     *  Add an odometry between two poses
+     *  @param x1 variable key of the first camera pose
+     *  @param x2 variable key of the second camera pose
+     *  @param odometry measurement from x1 to x2 (x1.between(x2))
+     *  @param model uncertainty model of this measurement
+     */
+    void addOdometry(Key x1, Key x2, const Pose3& odometry, const SharedNoiseModel& model);
+
+    /**
      *  Optimize the graph
      *  @param initialEstimate initial estimate of all variables in the graph
      *  @param pointKey variable key of the landmark
@@ -190,5 +199,10 @@ namespace visualSLAM {
     }
 
   }; // Graph
+
+  /**
+   * Non-linear ISAM for vanilla incremental visual SLAM inference
+   */
+  typedef gtsam::NonlinearISAM<Graph> ISAM;
 
 } // namespaces

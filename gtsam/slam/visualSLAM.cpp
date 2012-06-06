@@ -16,7 +16,7 @@
  */
 
 #include <gtsam/slam/visualSLAM.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/slam/BetweenFactor.h>
 
 namespace visualSLAM {
 
@@ -103,5 +103,9 @@ namespace visualSLAM {
   }
 
   /* ************************************************************************* */
+  void Graph::addOdometry(Key x1, Key x2, const Pose3& odometry, const SharedNoiseModel& model) {
+    push_back(boost::shared_ptr<BetweenFactor<Pose3> >(new BetweenFactor<Pose3>(x1, x2, odometry, model)));
+  }
 
+  /* ************************************************************************* */
 }
