@@ -69,6 +69,22 @@ int main(int argc, char** argv) {
 	DiscreteFactor::sharedValues optimalDecoding = solver.optimize();
 	optimalDecoding->print("\noptimalDecoding");
 
+	// "Inference" Computing marginals
+	cout << "\nComputing Node Marginals .." << endl;
+	Vector margProbs;
+
+	margProbs = solver.marginalProbabilities(Cathy);
+	print(margProbs, "Cathy's Node Marginal:");
+
+	margProbs = solver.marginalProbabilities(Heather);
+	print(margProbs, "Heather's Node Marginal");
+
+	margProbs = solver.marginalProbabilities(Mark);
+	print(margProbs, "Mark's Node Marginal");
+
+	margProbs = solver.marginalProbabilities(Allison);
+	print(margProbs, "Allison's Node Marginal");
+
 	return 0;
 }
 
