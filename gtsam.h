@@ -232,7 +232,7 @@ class Rot3 {
   // Manifold
   static size_t Dim();
   size_t dim() const;
-  gtsam::Rot3 retractCayley(Vector v) const;
+  // gtsam::Rot3 retractCayley(Vector v) const; // not in Quaternion branch
   gtsam::Rot3 retract(Vector v) const;
   Vector localCoordinates(const gtsam::Rot3& p) const;
 
