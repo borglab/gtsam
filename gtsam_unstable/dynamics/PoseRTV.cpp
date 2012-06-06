@@ -258,7 +258,7 @@ PoseRTV PoseRTV::transformed_from(const Pose3& trans,
 	}
 
 	if (Dtrans) {
-		*Dtrans = numericalDerivative22(transformed_from_, *this, trans, 1e-6);
+		*Dtrans = numericalDerivative22(transformed_from_, *this, trans, 1e-8);
 		//
 		//		*Dtrans = zeros(9,6);
 		//		// directly affecting the pose
