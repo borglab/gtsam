@@ -8,7 +8,6 @@
 #define ENABLE_TIMING
 #define ADD_NO_CACHING
 #define ADD_NO_PRUNING
-#define ENABLE_OLD_TIMING
 #include <gtsam_unstable/discrete/Scheduler.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
@@ -179,9 +178,9 @@ void solveStaged(size_t addMutex = 2) {
 		scheduler.buildGraph(addMutex);
 
 		// Do EXACT INFERENCE
-		tic_("eliminate");
+		tic_(3,"eliminate");
 		DiscreteBayesNet::shared_ptr chordal = scheduler.eliminate();
-		toc_("eliminate");
+		toc_(3,"eliminate");
 
 		// find root node
 		DiscreteConditional::shared_ptr root = *(chordal->rbegin());

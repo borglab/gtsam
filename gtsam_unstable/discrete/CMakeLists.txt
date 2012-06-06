@@ -27,8 +27,8 @@ add_dependencies(check.unstable check.discrete_unstable)
 
 # List examples to build - comment out here to exclude from compilation
 set(discrete_unstable_examples
-#schedulingExample
-#schedulingQuals12
+schedulingExample
+schedulingQuals12
 )
 
 if (GTSAM_BUILD_EXAMPLES)
