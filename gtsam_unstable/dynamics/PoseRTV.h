@@ -153,6 +153,20 @@ public:
 			boost::optional<Matrix&> Dglobal=boost::none,
 			boost::optional<Matrix&> Dtrans=boost::none) const;
 
+	// Utility functions
+
+	/// RRTMbn - Function computes the rotation rate transformation matrix from
+	/// body axis rates to euler angle (global) rates
+	static Matrix RRTMbn(const Vector& euler);
+
+	static Matrix RRTMbn(const Rot3& att);
+
+	/// RRTMnb - Function computes the rotation rate transformation matrix from
+	/// euler angle rates to body axis rates
+	static Matrix RRTMnb(const Vector& euler);
+
+	static Matrix RRTMnb(const Rot3& att);
+
 private:
 	/** Serialization function */
 	friend class boost::serialization::access;

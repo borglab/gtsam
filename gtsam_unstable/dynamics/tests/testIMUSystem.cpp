@@ -6,7 +6,6 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <gtsam_unstable/dynamics/imuSystem.h>
-#include <gtsam_unstable/dynamics/imu_examples.h>
 
 using namespace gtsam;
 using namespace imu;
@@ -135,38 +134,6 @@ TEST( testIMUSystem, optimize_chain_fullfactor ) {
 //	EXPECT(assert_equal(true_values, actual, tol)); // FAIL
 }
 
-///* ************************************************************************* */
-//TEST( testIMUSystem, imu_factor_basics ) {
-//	using namespace examples;
-//	PoseKey x1(1), x2(2);
-//	SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector_(6, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6));
-//	IMUMeasurement factor(frame5000::accel, frame5000::gyro, frame5000::dt, x1, x2, model);
-//
-//	EXPECT(assert_equal(x1, factor.key1()));
-//	EXPECT(assert_equal(x2, factor.key2()));
-//	EXPECT(assert_equal(frame5000::accel, factor.accel(), tol));
-//	EXPECT(assert_equal(frame5000::gyro, factor.gyro(), tol));
-//	Vector full_meas = concatVectors(2, &frame5000::accel, &frame5000::gyro);
-//	EXPECT(assert_equal(full_meas, factor.z(), tol));
-//}
-//
-///* ************************************************************************* */
-//TEST( testIMUSystem, imu_factor_predict_function ) {
-//	using namespace examples;
-//	PoseKey x1(1), x2(2);
-//	SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector_(6, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6));
-//	IMUMeasurement factor(frame5000::accel, frame5000::gyro, frame5000::dt, x1, x2, model);
-//
-//	// verify zero error
-//	Vector actZeroError = factor.evaluateError(frame5000::init, frame5000::final);
-//	EXPECT(assert_equal(zero(6), actZeroError, tol));
-//
-//	// verify nonzero error - z-h(x)
-//	Vector actError = factor.evaluateError(frame10000::init, frame10000::final);
-//	Vector meas10k = concatVectors(2, &frame10000::accel, &frame10000::gyro);
-//	EXPECT(assert_equal(factor.z() - meas10k, actError, tol));
-//}
-
 /* ************************************************************************* */
 TEST( testIMUSystem, linear_trajectory) {
 	// create a linear trajectory of poses
@@ -195,7 +162,6 @@ TEST( testIMUSystem, linear_trajectory) {
 		init_traj.insert(xB, PoseRTV());
 	}
 //	EXPECT_DOUBLES_EQUAL(0, graph.error(true_traj), 1e-5); // FAIL
-
 }
 
 /* ************************************************************************* */

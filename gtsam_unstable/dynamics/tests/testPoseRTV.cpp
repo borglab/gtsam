@@ -9,7 +9,6 @@
 #include <gtsam/base/numericalDerivative.h>
 
 #include <gtsam_unstable/dynamics/PoseRTV.h>
-#include <gtsam_unstable/dynamics/imu_examples.h>
 
 using namespace gtsam;
 
@@ -119,85 +118,6 @@ TEST( testPoseRTV, dynamics_identities ) {
 //	EXPECT(assert_equal(x4.translation(), x3.imuPrediction(x4, dt).second, tol));
 }
 
-///* ************************************************************************* */
-//TEST( testPoseRTV, constant_velocity ) {
-//	double dt = 1.0;
-//	PoseRTV  init(Rot3(), Point3(1.0, 2.0, 3.0), Vector_(3, 0.5, 0.0, 0.0));
-//	PoseRTV final(Rot3(), Point3(1.5, 2.0, 3.0), Vector_(3, 0.5, 0.0, 0.0));
-//
-//	// constant velocity, so gyro is zero, but accel includes gravity
-//	Vector accel = delta(3, 2, -9.81), gyro = zero(3);
-//
-//  // perform integration
-//  PoseRTV actFinal = init.integrate(accel, gyro, dt);
-//  EXPECT(assert_equal(final, actFinal, tol));
-//
-//  // perform prediction
-//  Vector actAccel, actGyro;
-//  boost::tie(actAccel, actGyro) = init.predict(final, dt);
-//  EXPECT(assert_equal(accel, actAccel, tol));
-//  EXPECT(assert_equal(gyro, actGyro, tol));
-//}
-//
-///* ************************************************************************* */
-//TEST( testPoseRTV, frame10000_imu ) {
-//	using namespace examples;
-//
-//  // perform integration
-//  PoseRTV actFinal = frame10000::init.integrate(frame10000::accel, frame10000::gyro, frame10000::dt);
-//  EXPECT(assert_equal(frame10000::final, actFinal, tol));
-//
-//  // perform prediction
-//  Vector actAccel, actGyro;
-//  boost::tie(actAccel, actGyro) = frame10000::init.predict(frame10000::final, frame10000::dt);
-//  EXPECT(assert_equal(frame10000::accel, actAccel, tol));
-//  EXPECT(assert_equal(frame10000::gyro, actGyro, tol));
-//}
-//
-///* ************************************************************************* */
-//TEST( testPoseRTV, frame5000_imu ) {
-//	using namespace examples;
-//
-//  // perform integration
-//  PoseRTV actFinal = frame5000::init.integrate(frame5000::accel, frame5000::gyro, frame5000::dt);
-//  EXPECT(assert_equal(frame5000::final, actFinal, tol));
-//
-//  // perform prediction
-//  Vector actAccel, actGyro;
-//  boost::tie(actAccel, actGyro) = frame5000::init.predict(frame5000::final, frame5000::dt);
-//  EXPECT(assert_equal(frame5000::accel, actAccel, tol));
-//  EXPECT(assert_equal(frame5000::gyro, actGyro, tol));
-//}
-//
-///* ************************************************************************* */
-//TEST( testPoseRTV, time4_imu ) {
-//	using namespace examples::flying400;
-//
-//  // perform integration
-//  PoseRTV actFinal = init.integrate(accel, gyro, dt);
-//  EXPECT(assert_equal(final, actFinal, tol));
-//
-//  // perform prediction
-//  Vector actAccel, actGyro;
-//  boost::tie(actAccel, actGyro) = init.predict(final, dt);
-//  EXPECT(assert_equal(accel, actAccel, tol));
-//  EXPECT(assert_equal(gyro, actGyro, tol));
-//}
-//
-///* ************************************************************************* */
-//TEST( testPoseRTV, time65_imu ) {
-//	using namespace examples::flying650;
-//
-//  // perform integration
-//  PoseRTV actFinal = init.integrate(accel, gyro, dt);
-//  EXPECT(assert_equal(final, actFinal, tol));
-//
-//  // perform prediction
-//  Vector actAccel, actGyro;
-//  boost::tie(actAccel, actGyro) = init.predict(final, dt);
-//  EXPECT(assert_equal(accel, actAccel, tol));
-//  EXPECT(assert_equal(gyro, actGyro, tol));
-//}
 
 /* ************************************************************************* */
 double range_proxy(const PoseRTV& A, const PoseRTV& B) { return A.range(B); }
@@ -258,131 +178,18 @@ TEST( testPoseRTV, transformed_from_2 ) {
 }
 
 /* ************************************************************************* */
-// ground robot maximums
-//const static double ground_max_accel = 1.0; // m/s^2
-//const static double ground_mag_vel =   5.0; // m/s - fixed in simulator
+TEST(testPoseRTV, RRTMbn) {
+	EXPECT(assert_equal(Matrix::Identity(3,3), PoseRTV::RRTMbn(zero(3)), tol));
+	EXPECT(assert_equal(Matrix::Identity(3,3), PoseRTV::RRTMbn(Rot3()), tol));
+	EXPECT(assert_equal(PoseRTV::RRTMbn(Vector_(3, 0.3, 0.2, 0.1)), PoseRTV::RRTMbn(Rot3::ypr(0.1, 0.2, 0.3)), tol));
+}
 
-///* ************************************************************************* */
-//TEST(testPoseRTV, flying_integration650) {
-//	using namespace examples;
-//	const PoseRTV &x1 = flying650::init, &x2 = flying650::final;
-//	Vector accel = flying650::accel, gyro = flying650::gyro;
-//	double dt = flying650::dt;
-//
-//	// control inputs
-//	double pitch_rate = gyro(1),
-//			   heading_rate = gyro(2),
-//			   lift_control = 0.0; /// FIXME: need to find this value
-//
-//	PoseRTV actual_x2;
-//	actual_x2 = x1.flyingDynamics(pitch_rate, heading_rate, lift_control, dt);
-//
-//	// FIXME: enable remaining components when there the lift control value is known
-//	EXPECT(assert_equal(x2.R(), actual_x2.R(), tol));
-////	EXPECT(assert_equal(x2.t(), actual_x2.t(), tol));
-////	EXPECT(assert_equal(x2.v(), actual_x2.v(), tol));
-//}
-
-///* ************************************************************************* */
-//TEST(testPoseRTV, imu_prediction650) {
-//	using namespace examples;
-//	const PoseRTV &x1 = flying650::init, &x2 = flying650::final;
-//	Vector accel = flying650::accel, gyro = flying650::gyro;
-//	double dt = flying650::dt;
-//
-//	// given states, predict the imu measurement and t2 (velocity constraint)
-//	Vector actual_imu;
-//	Point3 actual_t2;
-//	boost::tie(actual_imu, actual_t2) = x1.imuPrediction(x2, dt);
-//
-//	EXPECT(assert_equal(x2.t(), actual_t2, tol));
-//	EXPECT(assert_equal(accel, actual_imu.head(3), tol));
-//	EXPECT(assert_equal(gyro, actual_imu.tail(3), tol));
-//}
-//
-///* ************************************************************************* */
-//TEST(testPoseRTV, imu_prediction39) {
-//	// This case was a known failure case for gyro prediction, returning [9.39091; 0.204952; 625.63] using
-//	// the general approach for reverse-engineering the gyro updates
-//	using namespace examples;
-//	const PoseRTV &x1 = flying39::init, &x2 = flying39::final;
-//	Vector accel = flying39::accel, gyro = flying39::gyro;
-//	double dt = flying39::dt;
-//
-//	// given states, predict the imu measurement and t2 (velocity constraint)
-//	Vector actual_imu;
-//	Point3 actual_t2;
-//	boost::tie(actual_imu, actual_t2) = x1.imuPrediction(x2, dt);
-//
-//	EXPECT(assert_equal(x2.t(), actual_t2, tol));
-//	EXPECT(assert_equal(accel, actual_imu.head(3), tol));
-//	EXPECT(assert_equal(gyro, actual_imu.tail(3), tol));
-//}
-//
-///* ************************************************************************* */
-//TEST(testPoseRTV, ground_integration200) {
-//	using namespace examples;
-//	const PoseRTV &x1 = ground200::init, &x2 = ground200::final;
-//	Vector accel = ground200::accel, gyro = ground200::gyro;
-//	double dt = ground200::dt;
-//
-//	// integrates from one pose to the next with known measurements
-//	// No heading change in this example
-//	// Hits maximum accel bound in this example
-//
-//	PoseRTV actual_x2;
-//	actual_x2 = x1.planarDynamics(ground_mag_vel, gyro(2), ground_max_accel, dt);
-//
-//	EXPECT(assert_equal(x2, actual_x2, tol));
-//}
-//
-///* ************************************************************************* */
-//TEST(testPoseRTV, ground_prediction200) {
-//	using namespace examples;
-//	const PoseRTV &x1 = ground200::init, &x2 = ground200::final;
-//	Vector accel = ground200::accel, gyro = ground200::gyro;
-//	double dt = ground200::dt;
-//
-//	// given states, predict the imu measurement and t2 (velocity constraint)
-//	Vector actual_imu;
-//	Point3 actual_t2;
-//	boost::tie(actual_imu, actual_t2) = x1.imuPrediction(x2, dt);
-//
-//	EXPECT(assert_equal(x2.t(), actual_t2, tol));
-//	EXPECT(assert_equal(accel, actual_imu.head(3), tol));
-//	EXPECT(assert_equal(gyro, actual_imu.tail(3), tol));
-//}
-//
-///* ************************************************************************* */
-//TEST(testPoseRTV, ground_integration600) {
-//	using namespace examples;
-//	const PoseRTV &x1 = ground600::init, &x2 = ground600::final;
-//	Vector accel = ground600::accel, gyro = ground600::gyro;
-//	double dt = ground600::dt;
-//
-//	// integrates from one pose to the next with known measurements
-//	PoseRTV actual_x2;
-//	actual_x2 = x1.planarDynamics(ground_mag_vel, gyro(2), ground_max_accel, dt);
-//
-//	EXPECT(assert_equal(x2, actual_x2, tol));
-//}
-//
-///* ************************************************************************* */
-//TEST(testPoseRTV, ground_prediction600) {
-//	using namespace examples;
-//	const PoseRTV &x1 = ground600::init, &x2 = ground600::final;
-//	Vector accel = ground600::accel, gyro = ground600::gyro;
-//	double dt = ground600::dt;
-//
-//	// given states, predict the imu measurement and t2 (velocity constraint)
-//	Vector actual_imu;
-//	Point3 actual_t2;
-//	boost::tie(actual_imu, actual_t2) = x1.imuPrediction(x2, dt);
-//
-//	EXPECT(assert_equal(x2.t(), actual_t2, tol));
-//	EXPECT(assert_equal(accel, actual_imu.head(3), tol));
-//	EXPECT(assert_equal(gyro, actual_imu.tail(3), tol));
-//}
+/* ************************************************************************* */
+TEST(testPoseRTV, RRTMnb) {
+	EXPECT(assert_equal(Matrix::Identity(3,3), PoseRTV::RRTMnb(zero(3)), tol));
+	EXPECT(assert_equal(Matrix::Identity(3,3), PoseRTV::RRTMnb(Rot3()), tol));
+	EXPECT(assert_equal(PoseRTV::RRTMnb(Vector_(3, 0.3, 0.2, 0.1)), PoseRTV::RRTMnb(Rot3::ypr(0.1, 0.2, 0.3)), tol));
+}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

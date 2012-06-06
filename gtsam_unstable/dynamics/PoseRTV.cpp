@@ -10,7 +10,6 @@
 #include <gtsam/base/Lie-inl.h>
 #include <gtsam/geometry/Pose2.h>
 
-#include <gtsam_unstable/dynamics/inertialUtils.h>
 #include <gtsam_unstable/dynamics/PoseRTV.h>
 
 namespace gtsam {
@@ -201,7 +200,7 @@ Vector PoseRTV::imuPrediction(const PoseRTV& x2, double dt) const {
 	// rotation rates
 	// just using euler angles based on matlab code
 	// FIXME: this is silly - we shouldn't use differences in Euler angles
-	Matrix Enb = dynamics::RRTMnb(r1);
+	Matrix Enb = RRTMnb(r1);
 	Vector euler1 = r1.xyz(), euler2 = r2.xyz();
 	Vector dR = euler2 - euler1;
 
@@ -276,4 +275,39 @@ PoseRTV PoseRTV::transformed_from(const Pose3& trans,
 	return PoseRTV(newpose, newvel);
 }
 
+/* ************************************************************************* */
+Matrix PoseRTV::RRTMbn(const Vector& euler) {
+	assert(euler.size() == 3);
+	const double s1 = sin(euler(1-1)), c1 = cos(euler(1-1));
+	const double t2 = tan(euler(2-1)), c2 = cos(euler(2-1));
+	Matrix Ebn(3,3);
+	Ebn << 1.0, s1 * t2, c1 * t2,
+			   0.0,      c1,     -s1,
+			   0.0, s1 / c2, c1 / c2;
+	return Ebn;
+}
+
+/* ************************************************************************* */
+Matrix PoseRTV::RRTMbn(const Rot3& att) {
+	return PoseRTV::RRTMbn(att.rpy());
+}
+
+/* ************************************************************************* */
+Matrix PoseRTV::RRTMnb(const Vector& euler) {
+	assert(euler.size() == 3);
+	Matrix Enb(3,3);
+	const double s1 = sin(euler(1-1)), c1 = cos(euler(1-1));
+	const double s2 = sin(euler(2-1)), c2 = cos(euler(2-1));
+	Enb << 1.0, 0.0,   -s2,
+         0.0,  c1, s1*c2,
+         0.0, -s1, c1*c2;
+	return Enb;
+}
+
+/* ************************************************************************* */
+Matrix PoseRTV::RRTMnb(const Rot3& att) {
+	return PoseRTV::RRTMnb(att.rpy());
+}
+
+/* ************************************************************************* */
 } // \namespace gtsam
