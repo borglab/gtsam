@@ -20,23 +20,11 @@ class IterativeSolver {
 
 public:
 
-	typedef IterativeOptimizationParameters Parameters;
-
-protected:
-
-	Parameters parameters_ ;
-
-public:
-
-  IterativeSolver(): parameters_() {}
-	IterativeSolver(const IterativeSolver &solver) : parameters_(solver.parameters_) {}
-	IterativeSolver(const Parameters &parameters) :	parameters_(parameters) {}
-
+  IterativeSolver(){}
 	virtual ~IterativeSolver() {}
 
 	virtual VectorValues::shared_ptr optimize () = 0;
-
-	inline const Parameters& parameters() const { return parameters_ ; }
+	virtual const IterativeOptimizationParameters& _params() const = 0;
 };
 
 }

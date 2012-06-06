@@ -43,7 +43,7 @@ std::vector<size_t> extractColSpec_(const FactorGraph<GaussianFactor>& gfg, cons
 }
 
 SimpleSPCGSolver::SimpleSPCGSolver(const GaussianFactorGraph &gfg, const Parameters &parameters)
-  : Base(parameters)
+  : Base(), parameters_(parameters)
 {
   std::vector<size_t> colSpec = extractColSpec_(gfg, VariableIndex(gfg));
 

@@ -39,6 +39,7 @@ class SimpleSPCGSolver : public IterativeSolver {
 public:
 
   typedef IterativeSolver Base;
+  typedef IterativeOptimizationParameters Parameters;
   typedef boost::shared_ptr<IterativeSolver> shared_ptr;
 
 protected:
@@ -52,12 +53,14 @@ protected:
   VectorValues::shared_ptr by_;                 ///< \f$ [\bar{b_y} ; 0 ] \f$
   VectorValues::shared_ptr tmpY_;               ///< buffer for the column vectors
   VectorValues::shared_ptr tmpB_;               ///< buffer for the row vectors
+  Parameters parameters_;                       ///< Parameters for iterative method
 
 public:
 
   SimpleSPCGSolver(const GaussianFactorGraph &gfg, const Parameters &parameters);
   virtual ~SimpleSPCGSolver() {}
   virtual VectorValues::shared_ptr optimize () {return optimize(*y0_);}
+  virtual const IterativeOptimizationParameters& _params() const { return parameters_; }
 
 protected:
 
@@ -85,7 +88,6 @@ protected:
    * Note: This function has to be refined for your graph/application */
   boost::tuple<GaussianFactorGraph::shared_ptr, FactorGraph<JacobianFactor>::shared_ptr>
   splitGraph(const GaussianFactorGraph &gfg);
-
 };
 
 }
