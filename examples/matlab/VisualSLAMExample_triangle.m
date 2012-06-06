@@ -10,26 +10,17 @@
 % @author Duy-Nguyen Ta
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% Assumptions
-%  - Landmarks as 8 vertices of a cube: (10,10,10) (-10,10,10) etc...
-%  - Cameras are on a circle around the cube, pointing at the world origin
-%  - Each camera sees all landmarks. 
-%  - Visual measurements as 2D points are given, corrupted by Gaussian noise.
+%% Create a triangle target, just 3 points on a plane
+r = 10;
+points = {};
+for j=1:3
+    theta = (j-1)*2*pi/3;
+    points{j} = gtsamPoint3([r*cos(theta), r*sin(theta), 0]');
+end
 
-%% Generate simulated data
-% 3D landmarks as vertices of a cube
-points = {gtsamPoint3([10 10 10]'),...
-    gtsamPoint3([-10 10 10]'),...
-    gtsamPoint3([-10 -10 10]'),...
-    gtsamPoint3([10 -10 10]'),...
-    gtsamPoint3([10 10 -10]'),...
-    gtsamPoint3([-10 10 -10]'),...
-    gtsamPoint3([-10 -10 -10]'),...
-    gtsamPoint3([10 -10 -10]')};
-
-% Camera poses on a circle around the cube, pointing at the world origin
+%% Create camera poses on a circle around the triangle
 nCameras = 6;
-height = 0;
+height = 10;
 r = 30;
 poses = {};
 for i=1:nCameras
@@ -39,29 +30,26 @@ for i=1:nCameras
     poses{i} = camera.pose();
 end
 
-measurementNoiseSigma = 1.0;
-pointNoiseSigma = 0.1;
-poseNoiseSigmas = [0.001 0.001 0.001 0.1 0.1 0.1]';
-
 %% Create the graph (defined in visualSLAM.h, derived from NonlinearFactorGraph)
 graph = visualSLAMGraph;
 
 %% Add factors for all measurements
-measurementNoise = gtsamSharedNoiseModel_Sigma(2,measurementNoiseSigma);
 K = gtsamCal3_S2(500,500,0,640/2,480/2);
+measurementNoiseSigma=1; % in pixels
+measurementNoise = gtsamSharedNoiseModel_Sigma(2,measurementNoiseSigma);
 for i=1:nCameras
     camera = gtsamSimpleCamera(K,poses{i});
-    for j=1:size(points,2)
+    for j=1:3
         zij = camera.project(points{j}); % you can add noise here if desired
         graph.addMeasurement(zij, measurementNoise, symbol('x',i), symbol('l',j), K);
     end
 end
 
-%% Add Gaussian priors for a pose and a landmark to constrain the system
-posePriorNoise  = gtsamSharedNoiseModel_Sigmas(poseNoiseSigmas);
-graph.addPosePrior(symbol('x',1), poses{1}, posePriorNoise);
-pointPriorNoise  = gtsamSharedNoiseModel_Sigma(3,pointNoiseSigma);
-graph.addPointPrior(symbol('l',1), points{1}, pointPriorNoise);
+%% Add Gaussian priors for 3 points to constrain the system
+pointPriorNoise  = gtsamSharedNoiseModel_Sigma(3,0.1);
+for j=1:3
+    graph.addPointPrior(symbol('l',j), points{j}, pointPriorNoise);
+end
 
 %% Print the graph
 graph.print(sprintf('\nFactor graph:\n'));
