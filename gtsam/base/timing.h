@@ -97,19 +97,6 @@ inline void tictoc_finishedIteration_() {
   timingRoot->finishedIteration();
 }
 
-#ifdef ENABLE_TIMING
-inline void tic(size_t id, const std::string& label) { tic_(id, label); }
-inline void toc(size_t id) { toc_(id); }
-inline void toc(size_t id, const std::string& label) { toc_(id, label); }
-inline void tictoc_finishedIteration() { tictoc_finishedIteration_(); }
-#else
-inline void tic(size_t, const char*) {}
-inline void toc(size_t) {}
-inline void toc(size_t, const char*) {}
-inline void tictoc_finishedIteration() {}
-#endif
-
-
 inline void tictoc_print_() {
   timingRoot->print();
 }
@@ -118,6 +105,21 @@ inline void tictoc_print_() {
 inline void tictoc_print2_() {
   timingRoot->print2();
 }
+
+#ifdef ENABLE_TIMING
+inline void tic(size_t id, const std::string& label) { tic_(id, label); }
+inline void toc(size_t id) { toc_(id); }
+inline void toc(size_t id, const std::string& label) { toc_(id, label); }
+inline void tictoc_finishedIteration() { tictoc_finishedIteration_(); }
+inline void tictoc_print() { tictoc_print_(); }
+#else
+inline void tic(size_t, const char*) {}
+inline void toc(size_t) {}
+inline void toc(size_t, const char*) {}
+inline void tictoc_finishedIteration() {}
+inline void tictoc_print() {}
+#endif
+
 
 #ifdef ENABLE_OLD_TIMING
 
@@ -210,7 +212,6 @@ inline double tic(const std::string& id) { return tic_(id); }
 inline double toc(const std::string& id) { return toc_(id); }
 inline void ticPush(const std::string& prefix, const std::string& id) { ticPush_(prefix, id); }
 inline void ticPop(const std::string& prefix, const std::string& id) { ticPop_(prefix, id); }
-inline void tictoc_print() { tictoc_print_(); }
 #else
 inline double _tic() {return 0.;}
 inline double _toc(double) {return 0.;}
@@ -218,7 +219,6 @@ inline double tic(const std::string&) {return 0.;}
 inline double toc(const std::string&) {return 0.;}
 inline void ticPush(const std::string&, const std::string&) {}
 inline void ticPop(const std::string&, const std::string&) {}
-inline void tictoc_print() {}
 #endif
 
 #endif
