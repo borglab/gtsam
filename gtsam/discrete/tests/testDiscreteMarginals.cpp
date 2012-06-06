@@ -25,7 +25,7 @@ using namespace gtsam;
 
 /* ************************************************************************* */
 
-TEST( DiscreteMarginals, UGM_small ) {
+TEST_UNSAFE( DiscreteMarginals, UGM_small ) {
   size_t nrStates = 2;
   DiscreteKey Cathy(1, nrStates), Heather(2, nrStates), Mark(3, nrStates),
       Allison(4, nrStates);
@@ -43,14 +43,14 @@ TEST( DiscreteMarginals, UGM_small ) {
   graph.add(Mark & Allison, "2 1 1 2");
 
   DiscreteMarginals marginals(graph);
-
   DiscreteFactor::shared_ptr actualC = marginals(Cathy.first);
   DiscreteFactor::Values values;
-  values[Cathy.first] = 0;
-  EXPECT_DOUBLES_EQUAL( 1.944, (*actualC)(values), 1e-9);
 
-  Vector actualCvector = marginals.marginalProbabilities(Cathy.first);
-  EXPECT(assert_equal(Vector_(2,0.7,0.3), actualCvector, 1e-9));
+  values[Cathy.first] = 0;
+  EXPECT_DOUBLES_EQUAL( 0.359631, (*actualC)(values), 1e-6);
+
+  Vector actualCvector = marginals.marginalProbabilities(Cathy);
+  EXPECT(assert_equal(Vector_(2, 0.359631, 0.640369), actualCvector, 1e-6));
 }
 
 /* ************************************************************************* */
