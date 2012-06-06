@@ -1,11 +1,13 @@
-function plotPose2(p,color,P)
+function plotPose2(pose,color,P,axisLength)
 % plotPose2: show a Pose2, possibly with covariance matrix
-plot(p.x,p.y,[color '*']);
-c = cos(p.theta);
-s = sin(p.theta);
-quiver(p.x,p.y,c,s,0.1,color);
+if nargin<4,axisLength=0.1;end
+
+plot(pose.x,pose.y,[color '*']);
+c = cos(pose.theta);
+s = sin(pose.theta);
+quiver(pose.x,pose.y,c,s,axisLength,color);
 if nargin>2
     pPp = P(1:2,1:2); % covariance matrix in pose coordinate frame    
     gRp = [c -s;s c]; % rotation from pose to global
-    covarianceEllipse([p.x;p.y],gRp*pPp*gRp',color);
+    covarianceEllipse([pose.x;pose.y],gRp*pPp*gRp',color);
 end
