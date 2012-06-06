@@ -127,6 +127,11 @@ namespace gtsam {
 		 */
 		shared_ptr combine(size_t nrFrontals, ADT::Binary op) const;
 
+		void permuteWithInverse(const Permutation& inversePermutation){
+			DiscreteFactor::permuteWithInverse(inversePermutation);
+			Potentials::permute(inversePermutation);
+		}
+
 		/// @}
 	};
 // DecisionTreeFactor

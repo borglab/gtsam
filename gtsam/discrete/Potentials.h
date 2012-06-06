@@ -20,6 +20,7 @@
 #include <gtsam/discrete/AlgebraicDecisionTree.h>
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/base/types.h>
+#include <gtsam/inference/Permutation.h>
 
 #include <boost/shared_ptr.hpp>
 #include <set>
@@ -67,6 +68,13 @@ namespace gtsam {
 		void print(const std::string& s = "Potentials: ") const;
 
 		size_t cardinality(Index j) const { return cardinalities_.at(j);}
+
+		/*
+		 * @brief Permutes the keys in Potentials
+		 *
+		 * This permutes the Indices and performs necessary re-ordering of ADD.
+		 */
+		void permute(const Permutation& perm);
 
 	}; // Potentials
 

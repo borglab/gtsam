@@ -46,9 +46,9 @@ namespace gtsam {
 			const DecisionTreeFactor& marginal) :
 			IndexConditional(joint.keys(), joint.size() - marginal.size()), Potentials(
 					ISDEBUG("DiscreteConditional::COUNT") ? joint : joint / marginal) {
-		assert(nrFrontals() == 1);
+//		assert(nrFrontals() == 1);
 		if (ISDEBUG("DiscreteConditional::DiscreteConditional")) cout
-				<< (firstFrontalKey()) << endl;
+				<< (firstFrontalKey()) << endl;	//TODO Print all keys
 	}
 
 	/* ******************************************************************************** */
@@ -75,10 +75,47 @@ namespace gtsam {
 
 	/* ******************************************************************************** */
 	void DiscreteConditional::solveInPlace(Values& values) const {
-		assert(nrFrontals() == 1);
-		Index j = (firstFrontalKey());
-		size_t mpe = solve(values); // Solve for variable
-		values[j] = mpe; // store result in partial solution
+//		assert(nrFrontals() == 1);
+//		Index j = (firstFrontalKey());
+//		size_t mpe = solve(values); // Solve for variable
+//		values[j] = mpe; // store result in partial solution
+
+		// TODO: is this really the fastest way? I think it is.
+		ADT pFS = choose(values); // P(F|S=parentsValues)
+
+		// Initialize
+		Values mpe;
+		Values frontalVals;
+		BOOST_FOREACH(Index j, frontals()) {
+			frontalVals[j] = 0;
+		}
+		double maxP = 0;
+
+		while (1) {
+			double pValueS = pFS(frontalVals); // P(F=value|S=parentsValues)
+			// Update MPE solution if better
+			if (pValueS > maxP) {
+				maxP = pValueS;
+				mpe = frontalVals;
+			}
+
+			size_t j = 0;
+			for (j = 0; j < nrFrontals(); j++) {
+				Index idx = frontals()[j];
+				frontalVals[idx]++;
+				if (frontalVals[idx] < cardinality(idx))
+					break;
+				//Wrap condition
+				frontalVals[idx] = 0;
+			}
+			if (j == nrFrontals())
+				break;
+		}
+
+		//set values (inPlace) to mpe
+		BOOST_FOREACH(Index j, frontals()) {
+			values[j] = mpe[j];
+		}
 	}
 
 	/* ******************************************************************************** */

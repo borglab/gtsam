@@ -60,5 +60,28 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
+	void Potentials::permute(const Permutation& permutation) {
+		// Permute the _cardinalities (TODO: Inefficient Consider Improving)
+		DiscreteKeys keys;
+		map<Index, Index> ordering;
+
+		// Get the orginal keys from cardinalities_
+		BOOST_FOREACH(const DiscreteKey& key, cardinalities_)
+			keys & key;
+
+		// Perform Permutation
+		BOOST_FOREACH(DiscreteKey& key, keys) {
+			ordering[key.first] = permutation[key.first];
+			//cout << key.first << " -> " << ordering[key.first] << endl;
+			key.first = ordering[key.first];
+		}
+
+		// Change *this
+		AlgebraicDecisionTree<Index> permuted((*this), ordering);
+		*this = permuted;
+		cardinalities_ = keys.cardinalities();
+	}
+
+	/* ************************************************************************* */
 
 } // namespace gtsam

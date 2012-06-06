@@ -98,6 +98,14 @@ namespace gtsam {
 
 		virtual operator DecisionTreeFactor() const = 0;
 
+		/**
+		 * Permutes the factor, but for efficiency requires the permutation
+		 * to already be inverted.
+		 */
+		virtual void permuteWithInverse(const Permutation& inversePermutation){
+			IndexFactor::permuteWithInverse(inversePermutation);
+		}
+
 		/// @}
 	};
 // DiscreteFactor

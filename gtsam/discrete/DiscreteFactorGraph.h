@@ -86,7 +86,6 @@ public:
 			if (factors_[i] != NULL) factors_[i]->print(ss.str());
 		}
 	}
-
 };
 // DiscreteFactorGraph
 
