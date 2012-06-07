@@ -245,8 +245,8 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 
 	/**
    * static function that combines two factor graphs
-   * @param const &fg1 Linear factor graph
-   * @param const &fg2 Linear factor graph
+   * @param fg1 Linear factor graph
+   * @param fg2 Linear factor graph
    * @return a new combined factor graph
    */
 	template<class FACTORGRAPH>

@@ -229,7 +229,7 @@ protected:
 };
 
 /** Check whether the relative error decrease is less than relativeErrorTreshold,
- * the absolute error decrease is less than absoluteErrorTreshold, <emph>or</emph>
+ * the absolute error decrease is less than absoluteErrorTreshold, <em>or</em>
  * the error itself is less than errorThreshold.
  */
 bool checkConvergence(double relativeErrorTreshold,

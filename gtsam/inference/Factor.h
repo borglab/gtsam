@@ -45,7 +45,7 @@ template<class KEY> class Conditional;
  * typedefs to refer to the associated conditional and shared_ptr types of the
  * derived class.  See IndexFactor, JacobianFactor, etc. for examples.
  *
- * This class is \bold{not} virtual for performance reasons - derived symbolic classes,
+ * This class is \b not virtual for performance reasons - derived symbolic classes,
  * IndexFactor and IndexConditional, need to be created and destroyed quickly
  * during symbolic elimination.  GaussianFactor and NonlinearFactor are virtual.
  * \nosubgrouping

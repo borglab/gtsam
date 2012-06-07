@@ -83,7 +83,7 @@ namespace gtsam {
 		/**
 		 * Named constructor with derivative
 		 * Calculate relative bearing to a landmark in local coordinate frame
-		 * @param point 2D location of landmark
+		 * @param d 2D location of landmark
 		 * @param H optional reference for Jacobian
 		 * @return 2D rotation \in SO(2)
 		 */

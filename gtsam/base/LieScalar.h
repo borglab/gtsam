@@ -36,7 +36,7 @@ namespace gtsam {
 		/** access the underlying value */
 		double value() const { return d_; }
 
-		/** print @param s optional string naming the object */
+		/** print @param name optional string naming the object */
 		inline void print(const std::string& name="") const {
 	    std::cout << name << ": " << d_ << std::endl;
 		}

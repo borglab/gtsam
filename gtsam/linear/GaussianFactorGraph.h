@@ -151,9 +151,9 @@ namespace gtsam {
     }
 
     /**
-     * static function that combines two factor graphs
-     * @param const &lfg1 Linear factor graph
-     * @param const &lfg2 Linear factor graph
+     * Static function that combines two factor graphs.
+     * @param lfg1 Linear factor graph
+     * @param lfg2 Linear factor graph
      * @return a new combined factor graph
      */
     static GaussianFactorGraph combine2(const GaussianFactorGraph& lfg1,

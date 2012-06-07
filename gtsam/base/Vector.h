@@ -73,8 +73,8 @@ Vector Vector_(const std::vector<double>& data);
 
 /**
  * Create vector initialized to a constant value
- * @param size
- * @param constant value
+ * @param n is the size of the vector
+ * @param value is a constant value to insert into the vector
  */
 Vector repeat(size_t n, double value);
 
@@ -82,7 +82,7 @@ Vector repeat(size_t n, double value);
  * Create basis vector of dimension n,
  * with a constant in spot i
  * @param n is the size of the vector
- * @param index of the one
+ * @param i index of the one
  * @param value is the value to insert into the vector
  * @return delta vector
  */
@@ -92,20 +92,20 @@ Vector delta(size_t n, size_t i, double value);
  * Create basis vector of dimension n,
  * with one in spot i
  * @param n is the size of the vector
- * @param index of the one
+ * @param i index of the one
  * @return basis vector
  */
 inline Vector basis(size_t n, size_t i) { return delta(n, i, 1.0); }
 
 /**
  * Create zero vector
- * @param size
+ * @param n size
  */
 inline Vector zero(size_t n) { return Vector::Zero(n);}
 
 /**
  * Create vector initialized to ones
- * @param size
+ * @param n size
  */
 inline Vector ones(size_t n) { return Vector::Ones(n); }
 	
@@ -249,35 +249,35 @@ double sum(const Vector &a);
 /**
  * Calculates L2 norm for a vector
  * modeled after boost.ublas for compatibility
- * @param vector
+ * @param v vector
  * @return the L2 norm
  */
 double norm_2(const Vector& v);
 
 /**
- * elementwise reciprocal of vector elements
+ * Elementwise reciprocal of vector elements
  * @param a vector
  * @return [1/a(i)]
  */
 Vector reciprocal(const Vector &a);
 
 /**
- * elementwise sqrt of vector elements
- * @param a vector
+ * Elementwise sqrt of vector elements
+ * @param v is a vector
  * @return [sqrt(a(i))]
  */
 Vector esqrt(const Vector& v);
 
 /**
- * absolut values of vector elements
- * @param a vector
+ * Absolute values of vector elements
+ * @param v is a vector
  * @return [abs(a(i))]
  */
 Vector abs(const Vector& v);
 
 /**
- * return the max element of a vector
- * @param a vector
+ * Return the max element of a vector
+ * @param a is a vector
  * @return max(a)
  */
 double max(const Vector &a);
@@ -300,13 +300,13 @@ inline double inner_prod(const V1 &a, const V2& b) {
 
 /**
  * BLAS Level 1 scal: x <- alpha*x
- * @DEPRECIATED: use operators instead
+ * \deprecated: use operators instead
  */
 inline void scal(double alpha, Vector& x) { x *= alpha; }
 
 /**
  * BLAS Level 1 axpy: y <- alpha*x + y
- * @DEPRECIATED: use operators instead
+ * \deprecated: use operators instead
  */
 template<class V1, class V2>
 inline void axpy(double alpha, const V1& x, V2& y) {

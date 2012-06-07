@@ -55,7 +55,7 @@ namespace gtsam {
 	}
 
 	/** Compute the marginal of a single variable
-	 * 	@param KEY DiscreteKey of the Variable
+	 * 	@param key DiscreteKey of the Variable
 	 * 	@return Vector of marginal probabilities
 	 */
 	Vector marginalProbabilities(const DiscreteKey& key) const {

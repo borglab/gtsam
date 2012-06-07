@@ -394,7 +394,7 @@ namespace gtsam {
    * such that A = R*Q = R*Qz'*Qy'*Qx'. When A is a rotation matrix, R will
    * be the identity and Q is a yaw-pitch-roll decomposition of A.
    * The implementation uses Givens rotations and is based on Hartley-Zisserman.
-   * @param a 3 by 3 matrix A=RQ
+   * @param A 3 by 3 matrix A=RQ
    * @return an upper triangular matrix R
    * @return a vector [thetax, thetay, thetaz] in radians.
    */

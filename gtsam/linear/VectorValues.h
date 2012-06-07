@@ -147,7 +147,7 @@ namespace gtsam {
 
     /** Insert a vector \c value with index \c j.
      * Causes reallocation. Can be used to insert values in any order, but
-     * throws an invalid_argument exception if the index \j is already used.
+     * throws an invalid_argument exception if the index \c j is already used.
      * @param value The vector to be inserted.
      * @param j The index with which the value will be associated.
      */
@@ -171,10 +171,10 @@ namespace gtsam {
     /** equals required by Testable for unit testing */
     bool equals(const VectorValues& x, double tol = 1e-9) const;
 
-    /// @}
+    /// @{
     /// \anchor AdvancedConstructors
     /// @name Advanced Constructors
-    /// @{
+    /// @}
 
     /** Construct from a container of variable dimensions (in variable order), without initializing any values. */
     template<class CONTAINER>

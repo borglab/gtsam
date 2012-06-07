@@ -157,7 +157,7 @@ public:
  * disconnected graphs, a workaround is to create zero-information factors to
  * bridge the disconnects.  To do this, create any factor type (e.g.
  * BetweenFactor or RangeFactor) with the noise model
- * <tt>\ref sharedPrecision(dim, 0.0)</tt>, where \c dim is the appropriate
+ * <tt>sharedPrecision(dim, 0.0)</tt>, where \c dim is the appropriate
  * dimensionality for that factor.
  */
 struct DisconnectedGraphException : public std::exception {

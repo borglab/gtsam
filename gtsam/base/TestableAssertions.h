@@ -81,7 +81,7 @@ bool assert_equal(const V& expected, const boost::optional<const V&>& actual, do
 
 /**
  * Version of assert_equals to work with vectors
- * @DEPRECIATED: use container equals instead
+ * \deprecated: use container equals instead
  */
 template<class V>
 bool assert_equal(const std::vector<V>& expected, const std::vector<V>& actual, double tol = 1e-9) {

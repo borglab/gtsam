@@ -13,7 +13,7 @@
  * @file    GaussNewtonOptimizer.h
  * @brief   
  * @author  Richard Roberts
- * @created Feb 26, 2012
+ * @date 	Feb 26, 2012
  */
 
 #pragma once

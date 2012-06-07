@@ -217,8 +217,8 @@ void insertSub(Matrix& fullMatrix, const Matrix& subMatrix, size_t i, size_t j);
 
 /**
  * Extracts a column view from a matrix that avoids a copy
- * @param matrix to extract column from
- * @param index of the column
+ * @param A matrix to extract column from
+ * @param j index of the column
  * @return a const view of the matrix
  */
 template<class MATRIX>
@@ -228,8 +228,8 @@ const typename MATRIX::ConstColXpr column(const MATRIX& A, size_t j) {
 
 /**
  * Extracts a row view from a matrix that avoids a copy
- * @param matrix to extract row from
- * @param index of the row
+ * @param A matrix to extract row from
+ * @param j index of the row
  * @return a const view of the matrix
  */
 template<class MATRIX>
@@ -362,7 +362,7 @@ Vector backSubstituteUpper(const Vector& b, const Matrix& U, bool unit=false);
  * @param unit, set true if unit triangular
  * @return the solution x of L*x=b
  */ 
-Vector backSubstituteLower(const Matrix& L, const Vector& d, bool unit=false);
+Vector backSubstituteLower(const Matrix& L, const Vector& b, bool unit=false);
 
 /**
  * create a matrix by stacking other matrices

@@ -13,7 +13,7 @@
  * @file   JacobianFactorGraph.cpp
  * @date   Jun 6, 2012
  * @brief  Linear Algebra Operations for a JacobianFactorGraph
- * @Author Yong Dian Jian
+ * @author Yong Dian Jian
  */
 #pragma once
 

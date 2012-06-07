@@ -52,7 +52,7 @@ struct LieVector : public Vector, public DerivedValue<LieVector> {
 		return static_cast<Vector>(*this);
 	}
 
-	/** print @param s optional string naming the object */
+	/** print @param name optional string naming the object */
 	inline void print(const std::string& name="") const {
 		gtsam::print(vector(), name);
 	}

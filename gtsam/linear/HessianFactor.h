@@ -237,7 +237,7 @@ namespace gtsam {
     /** Return the number of columns and rows of the Hessian matrix */
     size_t rows() const { return info_.rows(); }
 
-    /** Return a view of the block at (j1,j2) of the <emph>upper-triangular part</emph> of the
+    /** Return a view of the block at (j1,j2) of the <em>upper-triangular part</em> of the
      * information matrix \f$ H \f$, no data is copied.  See HessianFactor class documentation
      * above to explain that only the upper-triangular part of the information matrix is stored
      * and returned by this function.
@@ -249,7 +249,7 @@ namespace gtsam {
      */
     constBlock info(const_iterator j1, const_iterator j2) const { return info_(j1-begin(), j2-begin()); }
 
-    /** Return the <emph>upper-triangular part</emph> of the full *augmented* information matrix,
+    /** Return the <em>upper-triangular part</em> of the full *augmented* information matrix,
      * as described above.  See HessianFactor class documentation above to explain that only the
      * upper-triangular part of the information matrix is stored and returned by this function.
      */
