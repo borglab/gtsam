@@ -62,7 +62,7 @@ if (GTSAM_UNSTABLE_BUILD_SHARED_LIBRARY)
     	VERSION             ${gtsam_unstable_version}
      	SOVERSION           ${gtsam_unstable_soversion})
     target_link_libraries(gtsam_unstable-shared gtsam-shared)
-    install(TARGETS gtsam_unstable-shared LIBRARY DESTINATION lib )
+    install(TARGETS gtsam_unstable-shared LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
 endif(GTSAM_UNSTABLE_BUILD_SHARED_LIBRARY)
 
 # Wrap version for gtsam_unstable
