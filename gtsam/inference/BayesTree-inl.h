@@ -81,9 +81,9 @@ namespace gtsam {
 		string parent = out.str();
 		parent += "[label=\"";
 
-		BOOST_FOREACH(boost::shared_ptr<CONDITIONAL> c, clique->conditionals_) {
+		BOOST_FOREACH(Index index, clique->conditional_->frontals()) {
 			if(!first) parent += ","; first = false;
-			parent += (string(c->key())).c_str();
+			parent +=  (boost::format("%1%")%index).str();;
 		}
 
 		if( clique != root_){
@@ -92,7 +92,7 @@ namespace gtsam {
 		}
 
 		first = true;
-		BOOST_FOREACH(Index sep, clique->separator_) {
+		BOOST_FOREACH(Index sep, clique->conditional_->parents()) {
 			if(!first) parent += ","; first = false;
 			parent += (boost::format("%1%")%sep).str();
 		}
