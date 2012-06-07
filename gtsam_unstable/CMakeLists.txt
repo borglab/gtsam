@@ -53,6 +53,7 @@ set_target_properties(gtsam_unstable-static PROPERTIES
 	VERSION             ${gtsam_unstable_version}
  	SOVERSION           ${gtsam_unstable_soversion})
 target_link_libraries(gtsam_unstable-static gtsam-static)
+set(gtsam_unstable-lib "gtsam_unstable-static")
 install(TARGETS gtsam_unstable-static ARCHIVE DESTINATION lib)
 
 if (GTSAM_UNSTABLE_BUILD_SHARED_LIBRARY)

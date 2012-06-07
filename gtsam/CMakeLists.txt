@@ -92,6 +92,7 @@ if (GTSAM_BUILD_STATIC_LIBRARY)
     	VERSION             ${gtsam_version}
      	SOVERSION           ${gtsam_soversion})
     install(TARGETS gtsam-static ARCHIVE DESTINATION lib)
+    set(gtsam-lib "gtsam-static")
 endif (GTSAM_BUILD_STATIC_LIBRARY)
 
 if (GTSAM_BUILD_SHARED_LIBRARY)
@@ -104,6 +105,9 @@ if (GTSAM_BUILD_SHARED_LIBRARY)
     	VERSION             ${gtsam_version}
      	SOVERSION           ${gtsam_soversion})
     install(TARGETS gtsam-shared LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
+    if (NOT GTSAM_BUILD_STATIC_LIBRARY)
+        set(gtsam-lib "gtsam-shared")
+    endif()
 endif(GTSAM_BUILD_SHARED_LIBRARY)
 
 # Create the matlab toolbox for the gtsam library
