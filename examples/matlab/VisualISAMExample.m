@@ -24,10 +24,11 @@ nCameras = 10;
 height = 10;
 r = 30;
 poses = {};
+K = gtsamCal3_S2(500,500,0,640/2,480/2);
 for i=1:nCameras
     theta = (i-1)*2*pi/nCameras;
     t = gtsamPoint3([r*cos(theta), r*sin(theta), height]');
-    camera = gtsamSimpleCamera_lookat(t, gtsamPoint3(), gtsamPoint3([0,0,1]'), gtsamCal3_S2())
+    camera = gtsamSimpleCamera_lookat(t, gtsamPoint3, gtsamPoint3([0,0,1]'), K)
     poses{i} = camera.pose();
 end
 odometry = poses{1}.between(poses{2});
@@ -35,7 +36,6 @@ odometry = poses{1}.between(poses{2});
 poseNoise = gtsamSharedNoiseModel_Sigmas([0.001 0.001 0.001 0.1 0.1 0.1]');
 pointNoise = gtsamSharedNoiseModel_Sigma(3, 0.1);
 measurementNoise = gtsamSharedNoiseModel_Sigma(2, 1.0);
-K = gtsamCal3_S2(50,50,0,50,50);
 
 %% Create an ISAM object for inference
 isam = visualSLAMISAM;

@@ -23,10 +23,11 @@ nCameras = 6;
 height = 10;
 r = 30;
 poses = {};
+K = gtsamCal3_S2(500,500,0,640/2,480/2);
 for i=1:nCameras
     theta = (i-1)*2*pi/nCameras;
     t = gtsamPoint3([r*cos(theta), r*sin(theta), height]');
-    camera = gtsamSimpleCamera_lookat(t, gtsamPoint3(), gtsamPoint3([0,0,1]'), gtsamCal3_S2())
+    camera = gtsamSimpleCamera_lookat(t, gtsamPoint3, gtsamPoint3([0,0,1]'), K)
     poses{i} = camera.pose();
 end
 
@@ -34,7 +35,6 @@ end
 graph = visualSLAMGraph;
 
 %% Add factors for all measurements
-K = gtsamCal3_S2(500,500,0,640/2,480/2);
 measurementNoiseSigma=1; % in pixels
 measurementNoise = gtsamSharedNoiseModel_Sigma(2,measurementNoiseSigma);
 for i=1:nCameras
