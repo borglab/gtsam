@@ -20,7 +20,7 @@ for j=1:nPoints
 end
 
 %% Create camera cameras on a circle around the triangle
-nCameras = 30;
+nCameras = 10;
 height = 10;
 r = 30;
 cameras = {};
@@ -32,12 +32,13 @@ for i=1:nCameras
 end
 odometry = cameras{1}.pose.between(cameras{2}.pose);
 
-poseNoise = gtsamSharedNoiseModel_Sigmas([0.001 0.001 0.001 0.5 0.5 0.5]');
+posepriorNoise = gtsamSharedNoiseModel_Sigmas([0.001 0.001 0.001 5.0 5.0 5.0]');
+odometryNoise = gtsamSharedNoiseModel_Sigmas([0.001 0.001 0.001 2.0 2.0 2.0]');
 pointNoise = gtsamSharedNoiseModel_Sigma(3, 0.1);
 measurementNoise = gtsamSharedNoiseModel_Sigma(2, 1.0);
 
 %% Create an ISAM object for inference
-isam = visualSLAMISAM(5);
+isam = visualSLAMISAM(2);
 
 %% Update ISAM
 newFactors = visualSLAMGraph;
@@ -47,12 +48,10 @@ for i=1:nCameras
     
     % Prior for the first pose or odometry for subsequent cameras
     if (i==1)
-        newFactors.addPosePrior(symbol('x',1), cameras{1}.pose, poseNoise);
-        for j=1:nPoints
-            newFactors.addPointPrior(symbol('l',j), points{j}, pointNoise);
-        end
+        newFactors.addPosePrior(symbol('x',1), cameras{1}.pose, posepriorNoise);
+        newFactors.addPointPrior(symbol('l',1), points{1}, pointNoise);
     else
-        newFactors.addOdometry(symbol('x',i-1), symbol('x',i), odometry, poseNoise);
+        newFactors.addOdometry(symbol('x',i-1), symbol('x',i), odometry, odometryNoise);
     end
 
     % Visual measurement factors
@@ -65,14 +64,14 @@ for i=1:nCameras
     % the first frame.
     if (i==1)
         initialEstimates.insertPose(symbol('x',i), cameras{i}.pose);
-        for j=1:size(points,2)
+        for j=1:nPoints
             initialEstimates.insertPoint(symbol('l',j), points{j});
         end
     else
         %TODO: this might be suboptimal since "result" is not the fully
         %optimized result
         if (i==2), prevPose = cameras{1}.pose;
-        else, prevPose = result.pose(symbol('x',i-1)); end
+        else prevPose = result.pose(symbol('x',i-1)); end
         initialEstimates.insertPose(symbol('x',i), prevPose.compose(odometry));
     end
 
@@ -83,16 +82,16 @@ for i=1:nCameras
         result = isam.estimate();
 
         % Plot results
-        h=figure(1);
-        hold on;
-        for j=1:size(points,2)
+        h=figure(1); clf;
+        hold on; 
+        for j=1:nPoints
             P = isam.marginalCovariance(symbol('l',j));
             point_j = result.point(symbol('l',j));
             plot3(point_j.x, point_j.y, point_j.z,'marker','o');
             covarianceEllipse3D([point_j.x;point_j.y;point_j.z],P);
         end
 
-        for ii=i-1:i
+        for ii=1:i
             P = isam.marginalCovariance(symbol('x',ii));
             pose_ii = result.pose(symbol('x',ii));
             plotPose3(pose_ii,P,10);
