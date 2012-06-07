@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
 
   /* 1. Create a NonlinearISAM which will be relinearized and reordered after every "relinearizeInterval" updates */
   int relinearizeInterval = 3;
-  NonlinearISAM<> isam(relinearizeInterval);
+  NonlinearISAM isam(relinearizeInterval);
 
   /* 2. At each frame (poseId) with new camera pose and set of associated measurements,
    * create a graph of new factors and update ISAM */
