@@ -23,7 +23,9 @@
 
 namespace gtsam {
 
-/* parameters for the conjugate gradient method */
+/**
+ * parameters for the conjugate gradient method
+ */
 struct ConjugateGradientParameters {
 
   size_t minIterations_;  ///< minimum number of cg iterations
@@ -78,7 +80,9 @@ struct ConjugateGradientParameters {
   }
 };
 
-/* parameters for iterative linear solvers */
+/**
+ * parameters for iterative linear solvers
+ */
 class IterativeOptimizationParameters {
 
 public:
