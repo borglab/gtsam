@@ -10,18 +10,27 @@
 % @author Duy-Nguyen Ta
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if 0
-    %% Create a triangle target, just 3 points on a plane
+clear
+
+%% Set Options here
+TRIANGLE = false;
+NCAMERAS = 10;
+SHOW_IMAGES = false;
+HARD_CONSTRAINT = false;
+POINT_PRIORS = false;
+BATCH_INIT = true;
+ALWAYS_RELINEARIZE = false;
+DRAW_TRUE_POSES = true;
+
+%% Generate simulated data
+if TRIANGLE % Create a triangle target, just 3 points on a plane
     nPoints = 3;
     r = 10;
-    points = {};
     for j=1:nPoints
         theta = (j-1)*2*pi/nPoints;
         points{j} = gtsamPoint3([r*cos(theta), r*sin(theta), 0]');
     end
-else
-    %% Generate simulated data
-    % 3D landmarks as vertices of a cube
+else % 3D landmarks as vertices of a cube
     nPoints = 8;
     points = {gtsamPoint3([10 10 10]'),...
         gtsamPoint3([-10 10 10]'),...
@@ -34,45 +43,56 @@ else
 end
 
 %% Create camera cameras on a circle around the triangle
-nCameras = 10;
-height = 0;
-r = 30;
-cameras = {};
+height = 10; r = 40;
 K = gtsamCal3_S2(500,500,0,640/2,480/2);
-for i=1:nCameras
-    theta = (i-1)*2*pi/nCameras;
+for i=1:NCAMERAS
+    theta = (i-1)*2*pi/NCAMERAS;
     t = gtsamPoint3([r*cos(theta), r*sin(theta), height]');
     cameras{i} = gtsamSimpleCamera_lookat(t, gtsamPoint3, gtsamPoint3([0,0,1]'), K);
+    if SHOW_IMAGES % show images
+        figure(i);clf;hold on
+        for j=1:nPoints
+            zij = cameras{i}.project(points{j});
+            plot(zij.x,zij.y,'*');
+            axis([1 640 1 480]);
+        end
+    end
 end
 odometry = cameras{1}.pose.between(cameras{2}.pose);
 
+
+%% Set Noise parameters
 poseNoise = gtsamSharedNoiseModel_Sigmas([0.001 0.001 0.001 0.1 0.1 0.1]');
 odometryNoise = gtsamSharedNoiseModel_Sigmas([0.001 0.001 0.001 0.1 0.1 0.1]');
 pointNoise = gtsamSharedNoiseModel_Sigma(3, 0.1);
 measurementNoise = gtsamSharedNoiseModel_Sigma(2, 1.0);
 
 %% Initialize iSAM
-isam = visualSLAMISAM(2);
+isam = visualSLAMISAM;
 newFactors = visualSLAMGraph;
 initialEstimates = visualSLAMValues;
-if 1 % add hard constraint
-    newFactors.addPoseConstraint(symbol('x',1),cameras{1}.pose);
+i1 = symbol('x',1);
+camera1 = cameras{1};
+pose1 = camera1.pose;
+if HARD_CONSTRAINT % add hard constraint
+    newFactors.addPoseConstraint(i1,pose1);
 else
-    newFactors.addPosePrior(symbol('x',1), cameras{1}.pose, poseNoise);
+    newFactors.addPosePrior(i1,pose1, poseNoise);
 end
-initialEstimates.insertPose(symbol('x',1), cameras{1}.pose);
+initialEstimates.insertPose(i1,pose1);
 % Add visual measurement factors from first pose
 for j=1:nPoints
-    if 0 % add point priors
-    	newFactors.addPointPrior(symbol('l',j), points{j}, pointNoise);
+    jj = symbol('l',j);
+    if POINT_PRIORS % add point priors
+        newFactors.addPointPrior(jj, points{j}, pointNoise);
     end
-    zij = cameras{i}.project(points{j});
-    newFactors.addMeasurement(zij, measurementNoise, symbol('x',1), symbol('l',j), K);
-    initialEstimates.insertPoint(symbol('l',j), points{j});
+    zij = camera1.project(points{j});
+    newFactors.addMeasurement(zij, measurementNoise, i1, jj, K);
+    initialEstimates.insertPoint(jj, points{j});
 end
 
 %% Run iSAM Loop
-for i=2:nCameras
+for i=2:NCAMERAS
     
     %% Add odometry
     newFactors.addOdometry(symbol('x',i-1), symbol('x',i), odometry, odometryNoise);
@@ -90,16 +110,19 @@ for i=2:nCameras
     initialEstimates.insertPose(symbol('x',i), prevPose.compose(odometry));
     
     %% Update ISAM
+    if BATCH_INIT & (i==2) % Do a full optimize for first two poses
+        initialEstimates
+        fullyOptimized = newFactors.optimize(initialEstimates)
+        initialEstimates = fullyOptimized;
+    end
     isam.update(newFactors, initialEstimates);
     result = isam.estimate();
-    if 0 % re-linearize
+    if ALWAYS_RELINEARIZE % re-linearize
         isam.reorder_relinearize();
     end
     
     %% Plot results
-    P1 = isam.marginalCovariance(symbol('x',1));
-    sqrt(diag(P1))
-    h=figure(1);clf
+    figure(NCAMERAS+1);clf
     hold on;
     for j=1:size(points,2)
         P = isam.marginalCovariance(symbol('l',j));
@@ -111,7 +134,7 @@ for i=2:nCameras
         P = isam.marginalCovariance(symbol('x',ii));
         pose_ii = result.pose(symbol('x',ii));
         plotPose3(pose_ii,P,10);
-        if 1 % show ground truth
+        if DRAW_TRUE_POSES % show ground truth
             plotPose3(cameras{ii}.pose,0.001*eye(6),10);
         end
     end
