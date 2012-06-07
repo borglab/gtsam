@@ -19,7 +19,7 @@
 #include <gtsam_unstable/linear/iterative-inl.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/JacobianFactorGraph.h>
 #include <gtsam/linear/IterativeOptimizationParameters.h>
 
 
