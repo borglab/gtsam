@@ -29,15 +29,16 @@
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/make_shared.hpp>
-#include <boost/lambda/bind.hpp>
-#include <boost/lambda/lambda.hpp>
+#include <boost/bind.hpp>
+//#include <boost/lambda/bind.hpp>
+//#include <boost/lambda/lambda.hpp>
 
 #include <cmath>
 #include <sstream>
 #include <stdexcept>
 
 using namespace std;
-using namespace boost::lambda;
+//using namespace boost::lambda;
 
 namespace gtsam {
 
@@ -163,7 +164,7 @@ namespace gtsam {
     size_t maxrank;
     try {
       maxrank = choleskyCareful(matrix_).first;
-    } catch(const CarefulCholeskyNegativeMatrixException& e) {
+    } catch(const CarefulCholeskyNegativeMatrixException&) {
       cout <<
           "Attempting to convert a HessianFactor to a JacobianFactor, but for this\n"
           "HessianFactor it is not possible because either the Hessian is negative or\n"
@@ -494,8 +495,7 @@ namespace gtsam {
 			size_t>& varDims, size_t m) {
 		keys_.resize(variableSlots.size());
 		std::transform(variableSlots.begin(), variableSlots.end(), begin(),
-				boost::bind(&VariableSlots::const_iterator::value_type::first,
-						boost::lambda::_1));
+				boost::bind(&VariableSlots::const_iterator::value_type::first, _1));
 		varDims.push_back(1);
 		Ab_.copyStructureFrom(BlockAb(matrix_, varDims.begin(), varDims.end(), m));
 		firstNonzeroBlocks_.resize(m);

@@ -27,14 +27,12 @@
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/format.hpp>
-#include <boost/bind.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 
 #include <stdio.h>
 #include <list>
 #include <sstream>
 #include <stdexcept>
-#include <functional>
 
 using namespace std;
 
@@ -103,11 +101,15 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class DERIVED, class KEY>
 	typename DERIVED::shared_ptr Combine(const FactorGraph<DERIVED>& factors,
-			const FastMap<KEY, std::vector<KEY> >& variableSlots) {
+    const FastMap<KEY, std::vector<KEY> >& variableSlots) {
+
 		typedef const pair<const KEY, std::vector<KEY> > KeySlotPair;
+    // Local functional for getting keys out of key-value pairs
+    struct Local { static KEY FirstOf(const KeySlotPair& pr) { return pr.first; } };
+
 		return typename DERIVED::shared_ptr(new DERIVED(
-		    boost::make_transform_iterator(variableSlots.begin(), boost::bind(&KeySlotPair::first, _1)),
-		    boost::make_transform_iterator(variableSlots.end(), boost::bind(&KeySlotPair::first, _1))));
+		    boost::make_transform_iterator(variableSlots.begin(), &Local::FirstOf),
+		    boost::make_transform_iterator(variableSlots.end(), &Local::FirstOf)));
 	}
 
   /* ************************************************************************* */
