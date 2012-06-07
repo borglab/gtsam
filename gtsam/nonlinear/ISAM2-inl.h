@@ -23,8 +23,6 @@
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/linear/JacobianFactor.h>
 
-#include <boost/bind.hpp>
-
 namespace gtsam {
 
 using namespace std;

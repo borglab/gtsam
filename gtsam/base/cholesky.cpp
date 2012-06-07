@@ -16,16 +16,14 @@
  * @date    Nov 5, 2010
  */
 
-#include <functional>
-#include <boost/format.hpp>
-#include <boost/bind.hpp>
-
 #include <gtsam/base/debug.h>
 #include <gtsam/base/cholesky.h>
 #include <gtsam/base/timing.h>
 
 #include <gtsam/3rdparty/Eigen/Eigen/Core>
 #include <gtsam/3rdparty/Eigen/Eigen/Dense>
+
+#include <boost/format.hpp>
 
 using namespace std;
 

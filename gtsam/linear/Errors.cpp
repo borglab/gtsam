@@ -17,7 +17,6 @@
  * @author  Christian Potthast
  */
 
-#include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <gtsam/linear/Errors.h>
 
@@ -56,7 +55,6 @@ struct equalsVector : public std::binary_function<const Vector&, const Vector&, 
 bool Errors::equals(const Errors& expected, double tol) const {
 	if( size() != expected.size() ) return false;
 	return equal(begin(),end(),expected.begin(),equalsVector(tol));
-	// TODO: use boost::bind(&equal_with_abs_tol,_1, _2,tol)
 }
 
 /* ************************************************************************* */
