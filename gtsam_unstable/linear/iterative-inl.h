@@ -34,10 +34,10 @@ namespace gtsam {
 		typedef IterativeOptimizationParameters Parameters;
 		const Parameters &parameters_;
 
-		int k;
-		bool steepest;
-		V g, d;
-		double gamma, threshold;
+		int k;                     ///< iteration
+		bool steepest;             ///< flag to indicate we are doing steepest descent
+		V g, d;                    ///< gradient g and search direction d for CG
+		double gamma, threshold;   ///< gamma (squared L2 norm of g) and convergence threshold
 		E Ad;
 
 		/* ************************************************************************* */
