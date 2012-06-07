@@ -19,19 +19,18 @@ for j=1:nPoints
     points{j} = gtsamPoint3([r*cos(theta), r*sin(theta), 0]');
 end
 
-%% Create camera poses on a circle around the triangle
+%% Create camera cameras on a circle around the triangle
 nCameras = 10;
 height = 10;
 r = 30;
-poses = {};
+cameras = {};
 K = gtsamCal3_S2(500,500,0,640/2,480/2);
 for i=1:nCameras
     theta = (i-1)*2*pi/nCameras;
     t = gtsamPoint3([r*cos(theta), r*sin(theta), height]');
-    camera = gtsamSimpleCamera_lookat(t, gtsamPoint3, gtsamPoint3([0,0,1]'), K)
-    poses{i} = camera.pose();
+    cameras{i} = gtsamSimpleCamera_lookat(t, gtsamPoint3, gtsamPoint3([0,0,1]'), K);
 end
-odometry = poses{1}.between(poses{2});
+odometry = cameras{1}.pose.between(cameras{2}.pose);
 
 poseNoise = gtsamSharedNoiseModel_Sigmas([0.001 0.001 0.001 0.1 0.1 0.1]');
 pointNoise = gtsamSharedNoiseModel_Sigma(3, 0.1);
@@ -45,9 +44,9 @@ newFactors = visualSLAMGraph;
 initialEstimates = visualSLAMValues;
 for i=1:nCameras
     
-    % Prior for the first pose or odometry for subsequent poses
+    % Prior for the first pose or odometry for subsequent cameras
     if (i==1)
-        newFactors.addPosePrior(symbol('x',1), poses{1}, poseNoise);
+        newFactors.addPosePrior(symbol('x',1), cameras{1}.pose, poseNoise);
         for j=1:nPoints
             newFactors.addPointPrior(symbol('l',j), points{j}, pointNoise);
         end
@@ -57,22 +56,21 @@ for i=1:nCameras
 
     % Visual measurement factors
     for j=1:nPoints
-        camera = gtsamSimpleCamera(K,poses{i});
-        zij = camera.project(points{j});
+        zij = cameras{i}.project(points{j});
         newFactors.addMeasurement(zij, measurementNoise, symbol('x',i), symbol('l',j), K);
     end
     
     % Initial estimates for the new pose. Also initialize points while in 
     % the first frame.
     if (i==1)
-        initialEstimates.insertPose(symbol('x',i), poses{i});
+        initialEstimates.insertPose(symbol('x',i), cameras{i}.pose);
         for j=1:size(points,2)
             initialEstimates.insertPoint(symbol('l',j), points{j});
         end
     else
         %TODO: this might be suboptimal since "result" is not the fully
         %optimized result
-        if (i==2), prevPose = poses{1};
+        if (i==2), prevPose = cameras{1}.pose;
         else, prevPose = result.pose(symbol('x',i-1)); end
         initialEstimates.insertPose(symbol('x',i), prevPose.compose(odometry));
     end

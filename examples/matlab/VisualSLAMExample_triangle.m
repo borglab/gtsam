@@ -18,17 +18,16 @@ for j=1:3
     points{j} = gtsamPoint3([r*cos(theta), r*sin(theta), 0]');
 end
 
-%% Create camera poses on a circle around the triangle
+%% Create camera cameras on a circle around the triangle
 nCameras = 6;
 height = 10;
 r = 30;
-poses = {};
+cameras = {};
 K = gtsamCal3_S2(500,500,0,640/2,480/2);
 for i=1:nCameras
     theta = (i-1)*2*pi/nCameras;
     t = gtsamPoint3([r*cos(theta), r*sin(theta), height]');
-    camera = gtsamSimpleCamera_lookat(t, gtsamPoint3, gtsamPoint3([0,0,1]'), K)
-    poses{i} = camera.pose();
+    cameras{i} = gtsamSimpleCamera_lookat(t, gtsamPoint3, gtsamPoint3([0,0,1]'), K)
 end
 
 %% Create the graph (defined in visualSLAM.h, derived from NonlinearFactorGraph)
@@ -38,9 +37,8 @@ graph = visualSLAMGraph;
 measurementNoiseSigma=1; % in pixels
 measurementNoise = gtsamSharedNoiseModel_Sigma(2,measurementNoiseSigma);
 for i=1:nCameras
-    camera = gtsamSimpleCamera(K,poses{i});
     for j=1:3
-        zij = camera.project(points{j}); % you can add noise here if desired
+        zij = cameras{i}.project(points{j}); % you can add noise here if desired
         graph.addMeasurement(zij, measurementNoise, symbol('x',i), symbol('l',j), K);
     end
 end
@@ -54,10 +52,10 @@ end
 %% Print the graph
 graph.print(sprintf('\nFactor graph:\n'));
 
-%% Initialize to noisy poses and points
+%% Initialize to noisy cameras and points
 initialEstimate = visualSLAMValues;
-for i=1:size(poses,2)
-    initialEstimate.insertPose(symbol('x',i), poses{i});
+for i=1:size(cameras,2)
+    initialEstimate.insertPose(symbol('x',i), cameras{i}.pose);
 end
 for j=1:size(points,2)
     initialEstimate.insertPoint(symbol('l',j), points{j});
@@ -79,10 +77,11 @@ for j=1:size(points,2)
     covarianceEllipse3D([point_j.x;point_j.y;point_j.z],P);
 end
 
-for i=1:size(poses,2)
+for i=1:size(cameras,2)
     P = marginals.marginalCovariance(symbol('x',i))
     pose_i = result.pose(symbol('x',i))
     plotPose3(pose_i,P,10);
 end
+axis([-20 20 -20 20 -1 15]);
 axis equal
-
+view(-37,40)
