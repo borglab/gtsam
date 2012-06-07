@@ -935,6 +935,7 @@ class ISAM {
 	ISAM();
 	ISAM(int reorderInterval);
   void print(string s) const;
+  void printStats() const;
   void saveGraph(string s) const;
 	visualSLAM::Values estimate() const;
   Matrix marginalCovariance(size_t key) const;

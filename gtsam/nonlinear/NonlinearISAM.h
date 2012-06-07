@@ -93,6 +93,9 @@ public:
 	/** prints out all contents of the system */
 	void print(const std::string& s="") const;
 
+	/** prints out clique statistics */
+	void printStats() const;
+
   /** saves the Tree to a text file in GraphViz format */
   void saveGraph(const std::string& s) const;
 

@@ -17,16 +17,15 @@
 
 #pragma once
 
-#include <iostream>
-
-#include <boost/foreach.hpp>
-
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/inference/ISAM-inl.h>
 #include <gtsam/nonlinear/Ordering.h>
 
-using namespace std;
-using namespace gtsam;
+#include <boost/foreach.hpp>
+
+#include <iostream>
+
+namespace gtsam {
 
 /* ************************************************************************* */
 template<class GRAPH>
@@ -71,7 +70,7 @@ void NonlinearISAM<GRAPH>::update(const Factors& newFactors,
 template<class GRAPH>
 void NonlinearISAM<GRAPH>::reorder_relinearize() {
 
-//  cout << "Reordering, relinearizing..." << endl;
+//  std::cout << "Reordering, relinearizing..." << std::endl;
 
   if(factors_.size() > 0) {
     // Obtain the new linearization point
@@ -112,10 +111,26 @@ Matrix NonlinearISAM<GRAPH>::marginalCovariance(Key key) const {
 /* ************************************************************************* */
 template<class GRAPH>
 void NonlinearISAM<GRAPH>::print(const std::string& s) const {
-	cout << "ISAM - " << s << ":" << endl;
-	cout << "  ReorderInterval: " << reorderInterval_ << " Current Count: " << reorderCounter_ << endl;
+	std::cout << "ISAM - " << s << ":" << std::endl;
+	std::cout << "  ReorderInterval: " << reorderInterval_ << " Current Count: " << reorderCounter_ << std::endl;
 	isam_.print("GaussianISAM");
 	linPoint_.print("Linearization Point");
 	ordering_.print("System Ordering");
 	factors_.print("Nonlinear Graph");
 }
+
+/* ************************************************************************* */
+template<class GRAPH>
+void NonlinearISAM<GRAPH>::printStats() const {
+  gtsam::GaussianISAM::CliqueData data = isam_.getCliqueData();
+  gtsam::GaussianISAM::CliqueStats stats = data.getStats();
+  std::cout << "\navg Conditional Size: " << stats.avgConditionalSize;
+  std::cout << "\nmax Conditional Size: " << stats.maxConditionalSize;
+  std::cout << "\navg Separator Size: " << stats.avgSeparatorSize;
+  std::cout << "\nmax Separator Size: " << stats.maxSeparatorSize;
+  std::cout << std::endl;
+}
+
+/* ************************************************************************* */
+
+}///\ namespace gtsam

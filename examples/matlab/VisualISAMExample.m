@@ -26,6 +26,7 @@ ALWAYS_RELINEARIZE = false;
 
 %% Display Options
 SAVE_GRAPH = false;
+PRINT_STATS = true;
 DRAW_INTERVAL = 20;
 CAMERA_INTERVAL = 1;
 DRAW_TRUE_POSES = false;
@@ -139,6 +140,9 @@ for i=2:NCAMERAS
     
     if SAVE_GRAPH
         isam.saveGraph(sprintf('VisualiSAM.dot',i));
+    end
+    if PRINT_STATS
+        isam.printStats();
     end
     if mod(i,DRAW_INTERVAL)==0
         %% Plot results
