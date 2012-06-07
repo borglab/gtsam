@@ -69,7 +69,7 @@ namespace gtsam {
 
 		size_t cardinality(Index j) const { return cardinalities_.at(j);}
 
-		/*
+		/**
 		 * @brief Permutes the keys in Potentials
 		 *
 		 * This permutes the Indices and performs necessary re-ordering of ADD.
