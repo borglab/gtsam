@@ -21,6 +21,7 @@
 
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/discrete/DiscreteSequentialSolver.h>
+#include <gtsam/discrete/DiscreteMarginals.h>
 
 #include <iomanip>
 
@@ -74,11 +75,15 @@ int main(int argc, char** argv) {
 	optimalDecoding->print("\nMost Probable Explanation (optimalDecoding)\n");
 
 	// "Inference" Computing marginals for each node
+	// Here we'll make use of DiscreteMarginals class, which makes use of
+	// bayes-tree based shortcut evaluation of marginals
+	DiscreteMarginals marginals(graph);
+
 	cout << "\nComputing Node Marginals .." << endl;
 	for (vector<DiscreteKey>::iterator itr = nodes.begin(); itr != nodes.end();
 			++itr) {
 		//Compute the marginal
-		Vector margProbs = solver.marginalProbabilities(*itr);
+		Vector margProbs = marginals.marginalProbabilities(*itr);
 
 		//Print the marginals
 		cout << "Node#" << setw(4) << itr->first << " :  ";
