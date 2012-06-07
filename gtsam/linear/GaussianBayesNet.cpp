@@ -19,7 +19,7 @@
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 
-#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/JacobianFactorGraph.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/VectorValues.h>
 

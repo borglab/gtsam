@@ -19,6 +19,7 @@
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
+#include <gtsam/linear/JacobianFactorGraph.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/Matrix.h>
