@@ -44,8 +44,6 @@ namespace gtsam {
 		typedef JunctionTree<DiscreteFactorGraph> DiscreteJT;
 		GenericMultifrontalSolver<DiscreteFactor, DiscreteJT> solver(graph);
 		bayesTree_ = *solver.eliminate(&EliminateDiscrete);
-		//bayesTree_.print();
-		cout << "Discrete Marginal Constructor Finished" << endl;
 	}
 
 	/** Compute the marginal of a single variable */

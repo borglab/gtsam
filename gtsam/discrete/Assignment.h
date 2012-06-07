@@ -29,7 +29,7 @@ namespace gtsam {
 	 * Assigns to each label a value. Implemented as a simple map.
 	 * A discrete factor takes an Assignment and returns a value.
 	 */
-	template <class L>
+	template<class L>
 	class Assignment: public std::map<L, size_t> {
 	public:
 		void print(const std::string& s = "Assignment: ") const {
@@ -42,6 +42,6 @@ namespace gtsam {
 		bool equals(const Assignment& other, double tol = 1e-9) const {
 			return (*this == other);
 		}
-	};
+	}; //Assignment
 
 } // namespace gtsam
