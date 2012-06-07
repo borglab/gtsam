@@ -5,6 +5,7 @@ set (gtsam_unstable_subdirs
     discrete 
     dynamics
     linear
+    nonlinear
     slam 
 )
 
