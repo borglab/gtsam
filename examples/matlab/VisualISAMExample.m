@@ -12,15 +12,25 @@
 
 clear
 
-%% Set Options here
+%% Data Options
 TRIANGLE = false;
-NCAMERAS = 10;
+NCAMERAS = 20;
 SHOW_IMAGES = false;
+
+%% iSAM Options
 HARD_CONSTRAINT = false;
 POINT_PRIORS = false;
 BATCH_INIT = true;
+REORDER_INTERVAL=10;
 ALWAYS_RELINEARIZE = false;
-DRAW_TRUE_POSES = true;
+
+%% Display Options
+SAVE_GRAPH = false;
+DRAW_INTERVAL = 20;
+CAMERA_INTERVAL = 1;
+DRAW_TRUE_POSES = false;
+SAVE_FIGURES = false;
+SAVE_GRAPHS = false;
 
 %% Generate simulated data
 if TRIANGLE % Create a triangle target, just 3 points on a plane
@@ -50,7 +60,8 @@ for i=1:NCAMERAS
     t = gtsamPoint3([r*cos(theta), r*sin(theta), height]');
     cameras{i} = gtsamSimpleCamera_lookat(t, gtsamPoint3, gtsamPoint3([0,0,1]'), K);
     if SHOW_IMAGES % show images
-        figure(i);clf;hold on
+        figure(2+i);clf;hold on
+        set(2+i,'NumberTitle','off','Name',sprintf('Camera %d',i));
         for j=1:nPoints
             zij = cameras{i}.project(points{j});
             plot(zij.x,zij.y,'*');
@@ -68,7 +79,7 @@ pointNoise = gtsamSharedNoiseModel_Sigma(3, 0.1);
 measurementNoise = gtsamSharedNoiseModel_Sigma(2, 1.0);
 
 %% Initialize iSAM
-isam = visualSLAMISAM;
+isam = visualSLAMISAM(REORDER_INTERVAL);
 newFactors = visualSLAMGraph;
 initialEstimates = visualSLAMValues;
 i1 = symbol('x',1);
@@ -92,6 +103,8 @@ for j=1:nPoints
 end
 
 %% Run iSAM Loop
+figure(1);clf;hold on;
+set(1,'NumberTitle','off','Name','iSAM timing');
 for i=2:NCAMERAS
     
     %% Add odometry
@@ -115,33 +128,51 @@ for i=2:NCAMERAS
         fullyOptimized = newFactors.optimize(initialEstimates)
         initialEstimates = fullyOptimized;
     end
+    figure(1);tic;
     isam.update(newFactors, initialEstimates);
+    t=toc; plot(i,t,'r.'); tic
     result = isam.estimate();
+    t=toc; plot(i,t,'g.');
     if ALWAYS_RELINEARIZE % re-linearize
         isam.reorder_relinearize();
     end
     
-    %% Plot results
-    figure(NCAMERAS+1);clf
-    hold on;
-    for j=1:size(points,2)
-        P = isam.marginalCovariance(symbol('l',j));
-        point_j = result.point(symbol('l',j));
-        plot3(point_j.x, point_j.y, point_j.z,'marker','o');
-        covarianceEllipse3D([point_j.x;point_j.y;point_j.z],P);
+    if SAVE_GRAPH
+        isam.saveGraph(sprintf('VisualiSAM.dot',i));
     end
-    for ii=1:i
-        P = isam.marginalCovariance(symbol('x',ii));
-        pose_ii = result.pose(symbol('x',ii));
-        plotPose3(pose_ii,P,10);
-        if DRAW_TRUE_POSES % show ground truth
-            plotPose3(cameras{ii}.pose,0.001*eye(6),10);
+    if mod(i,DRAW_INTERVAL)==0
+        %% Plot results
+        tic
+        h=figure(2);clf
+        set(1,'NumberTitle','off','Name','Visual iSAM');
+        hold on;
+        for j=1:size(points,2)
+            P = isam.marginalCovariance(symbol('l',j));
+            point_j = result.point(symbol('l',j));
+            plot3(point_j.x, point_j.y, point_j.z,'marker','o');
+            covarianceEllipse3D([point_j.x;point_j.y;point_j.z],P);
+        end
+        for ii=1:CAMERA_INTERVAL:i
+            P = isam.marginalCovariance(symbol('x',ii));
+            pose_ii = result.pose(symbol('x',ii));
+            plotPose3(pose_ii,P,10);
+            if DRAW_TRUE_POSES % show ground truth
+                plotPose3(cameras{ii}.pose,0.001*eye(6),10);
+            end
+        end
+        axis([-40 40 -40 40 -10 20]);axis equal
+        view(3)
+        colormap('hot')
+        figure(2);
+        t=toc;
+        if DRAW_INTERVAL~=NCAMERAS, plot(i,t,'b.'); end
+        if SAVE_FIGURES
+            print(h,'-dpng',sprintf('VisualiSAM%03d.png',i));
+        end
+        if SAVE_GRAPHS
+            isam.saveGraph(sprintf('VisualiSAM%03d.dot',i));
         end
     end
-    axis([-40 40 -40 40 -10 20]);axis equal
-    view(2)
-    colormap('hot')
-    %print(h,'-dpng',sprintf('VisualISAM_%03d.png',i));
     
     %% Reset newFactors and initialEstimates to prepare for the next update
     newFactors = visualSLAMGraph;
