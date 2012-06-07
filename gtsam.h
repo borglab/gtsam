@@ -600,6 +600,14 @@ class GaussianFactorGraph {
 	Matrix denseHessian() const;
 };
 
+class GaussianISAM {
+  GaussianISAM();
+  gtsam::GaussianFactor* marginalFactor(size_t j) const;
+  gtsam::GaussianBayesNet* marginalBayesNet(size_t key) const;
+  Matrix marginalCovariance(size_t key) const;
+  gtsam::GaussianBayesNet* jointBayesNet(size_t key1, size_t key2) const;
+};
+
 class GaussianSequentialSolver {
 	GaussianSequentialSolver(const gtsam::GaussianFactorGraph& graph,
 			bool useQR);
@@ -925,10 +933,15 @@ class Graph {
 class ISAM {
 	ISAM();
 	ISAM(int reorderInterval);
-	void print(string s) const;
 	visualSLAM::Values estimate() const;
-	Matrix marginalCovariance(size_t key) const;
-	void update(const visualSLAM::Graph& newFactors, const visualSLAM::Values& initialValues);
+  Matrix marginalCovariance(size_t key) const;
+  int reorderInterval() const;
+  int reorderCounter() const;
+  void print(string s) const;
+  void update(const visualSLAM::Graph& newFactors, const visualSLAM::Values& initialValues);
+  void reorder_relinearize();
+  void addKey(size_t key);
+  void setOrdering(const gtsam::Ordering& new_ordering);
 };
 
 }///\namespace visualSLAM
