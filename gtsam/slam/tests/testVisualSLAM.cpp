@@ -81,7 +81,7 @@ visualSLAM::Graph testGraph() {
 }
 
 /* ************************************************************************* */
-TEST( Graph, optimizeLM)
+TEST( VisualSLAM, optimizeLM)
 {
   // build a graph
   visualSLAM::Graph graph(testGraph());
@@ -119,7 +119,7 @@ TEST( Graph, optimizeLM)
 
 
 /* ************************************************************************* */
-TEST( Graph, optimizeLM2)
+TEST( VisualSLAM, optimizeLM2)
 {
   // build a graph
   visualSLAM::Graph graph(testGraph());
@@ -156,7 +156,7 @@ TEST( Graph, optimizeLM2)
 
 
 /* ************************************************************************* */
-TEST( Graph, CHECK_ORDERING)
+TEST( VisualSLAM, CHECK_ORDERING)
 {
   // build a graph
   visualSLAM::Graph graph = testGraph();
@@ -188,28 +188,38 @@ TEST( Graph, CHECK_ORDERING)
 }
 
 /* ************************************************************************* */
-TEST( Values, update_with_large_delta) {
-	// this test ensures that if the update for delta is larger than
-	// the size of the config, it only updates existing variables
-	Values init;
-	init.insert(X(1), Pose3());
-	init.insert(L(1), Point3(1.0, 2.0, 3.0));
+TEST( VisualSLAM, update_with_large_delta) {
+  // this test ensures that if the update for delta is larger than
+  // the size of the config, it only updates existing variables
+  Values init;
+  init.insert(X(1), Pose3());
+  init.insert(L(1), Point3(1.0, 2.0, 3.0));
 
-	Values expected;
-	expected.insert(X(1), Pose3(Rot3(), Point3(0.1, 0.1, 0.1)));
-	expected.insert(L(1), Point3(1.1, 2.1, 3.1));
+  Values expected;
+  expected.insert(X(1), Pose3(Rot3(), Point3(0.1, 0.1, 0.1)));
+  expected.insert(L(1), Point3(1.1, 2.1, 3.1));
 
-	Ordering largeOrdering;
-	Values largeValues = init;
-	largeValues.insert(X(2), Pose3());
-	largeOrdering += X(1),L(1),X(2);
-	VectorValues delta(largeValues.dims(largeOrdering));
-	delta[largeOrdering[X(1)]] = Vector_(6, 0.0, 0.0, 0.0, 0.1, 0.1, 0.1);
-	delta[largeOrdering[L(1)]] = Vector_(3, 0.1, 0.1, 0.1);
-	delta[largeOrdering[X(2)]] = Vector_(6, 0.0, 0.0, 0.0, 100.1, 4.1, 9.1);
-	Values actual = init.retract(delta, largeOrdering);
+  Ordering largeOrdering;
+  Values largeValues = init;
+  largeValues.insert(X(2), Pose3());
+  largeOrdering += X(1),L(1),X(2);
+  VectorValues delta(largeValues.dims(largeOrdering));
+  delta[largeOrdering[X(1)]] = Vector_(6, 0.0, 0.0, 0.0, 0.1, 0.1, 0.1);
+  delta[largeOrdering[L(1)]] = Vector_(3, 0.1, 0.1, 0.1);
+  delta[largeOrdering[X(2)]] = Vector_(6, 0.0, 0.0, 0.0, 100.1, 4.1, 9.1);
+  Values actual = init.retract(delta, largeOrdering);
 
-	CHECK(assert_equal(expected,actual));
+  CHECK(assert_equal(expected,actual));
+}
+
+/* ************************************************************************* */
+TEST( VisualSLAM, dataAssociation) {
+  visualSLAM::ISAM isam;
+  // add two landmarks
+  // add two cameras and constraint and odometry
+//  std::pair<visualSLAM::Values,GaussianBayesNet> actualJoint = isam.jointPrediction(); // 4*4
+  //  std::pair<visualSLAM::Values,GaussianBayesNet> actualMarginals = isam.individualPredictions(); // 2 times 2*2
+  //  std::pair<visualSLAM::Values,GaussianBayesNet> actualChowLiu = isam.chowLiuPredictions(); // 2 times 2*2
 }
 
 /* ************************************************************************* */
