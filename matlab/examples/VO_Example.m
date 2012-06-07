@@ -12,7 +12,7 @@
 
 %% Load calibration
 % format: fx fy skew cx cy baseline
-calib = dlmread('../Data/VO_calibration.txt');
+calib = dlmread('../../examples/Data/VO_calibration.txt');
 K = gtsamCal3_S2Stereo(calib(1), calib(2), calib(3), calib(4), calib(5), calib(6));
 stereo_model = gtsamSharedNoiseModel_Sigmas([1.0; 1.0; 1.0]);
 
@@ -24,7 +24,7 @@ initial = visualSLAMValues;
 %% load the initial poses from VO
 % row format: camera_id 4x4 pose (row, major)
 fprintf(1,'Reading data\n');
-cameras = dlmread('../Data/VO_camera_poses.txt');
+cameras = dlmread('../../examples/Data/VO_camera_poses.txt');
 for i=1:size(cameras,1)
     pose = gtsamPose3(reshape(cameras(i,2:17),4,4)');
     initial.insertPose(symbol('x',cameras(i,1)),pose);
@@ -32,7 +32,7 @@ end
 
 %% load stereo measurements and initialize landmarks
 % camera_id landmark_id uL uR v X Y Z
-measurements = dlmread('../Data/VO_stereo_factors.txt');
+measurements = dlmread('../../examples/Data/VO_stereo_factors.txt');
 
 fprintf(1,'Creating Graph\n'); tic
 for i=1:size(measurements,1)

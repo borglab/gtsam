@@ -11,13 +11,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 N = 2500;
-% filename = '../Data/sphere_smallnoise.graph';
-% filename = '../Data/sphere2500_groundtruth.txt';
-filename = '../Data/sphere2500.txt';
+% filename = '../../examples/Data/sphere_smallnoise.graph';
+% filename = '../../examples/Data/sphere2500_groundtruth.txt';
+filename = '../../examples/Data/sphere2500.txt';
 
 %% Initialize graph, initial estimate, and odometry noise
-[graph,initial]=load3D(filename,model,true,N);
 model = gtsamSharedNoiseModel_Sigmas([0.05; 0.05; 0.05; 5*pi/180; 5*pi/180; 5*pi/180]);
+[graph,initial]=load3D(filename,model,true,N);
 
 %% Plot Initial Estimate
 figure(1);clf

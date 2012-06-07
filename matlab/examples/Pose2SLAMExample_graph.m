@@ -12,7 +12,7 @@
 
 %% Initialize graph, initial estimate, and odometry noise
 model = gtsamSharedNoiseModel_Sigmas([0.05; 0.05; 5*pi/180]);
-[graph,initial]=load2D('../Data/w100-odom.graph',model);
+[graph,initial]=load2D('../../examples/Data/w100-odom.graph',model);
 initial.print(sprintf('Initial estimate:\n'));
 
 %% Add a Gaussian prior on pose x_1
