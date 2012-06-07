@@ -40,15 +40,3 @@ if (GTSAM_BUILD_TIMING)
     "${tests_local_libs}" "gtsam-static;CppUnitLite" "${tests_exclude}"   # Pass in linking and exclusion lists
     ${is_test})
 endif (GTSAM_BUILD_TIMING)
-
-# Install matlab components
-if (GTSAM_BUILD_WRAP)
-    if (GTSAM_INSTALL_MATLAB_TOOLBOX)
-        # Tests
-        if (GTSAM_INSTALL_MATLAB_TESTS)
-            message(STATUS "Installing Matlab Toolbox Tests")
-            file(GLOB matlab_tests "${GTSAM_SOURCE_ROOT_DIR}/tests/matlab/*.m")
-            install(FILES ${matlab_tests} DESTINATION ${GTSAM_TOOLBOX_INSTALL_PATH}/gtsam/tests)
-        endif ()
-    endif ()
-endif ()

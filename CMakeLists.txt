@@ -131,6 +131,9 @@ if (GTSAM_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif(GTSAM_BUILD_EXAMPLES)
 
+# Matlab toolbox
+add_subdirectory(matlab)
+
 # Build gtsam_unstable
 if (GTSAM_BUILD_UNSTABLE)
     add_subdirectory(gtsam_unstable)
