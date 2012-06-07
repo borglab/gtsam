@@ -40,14 +40,8 @@ graph.addOdometry(i2, i3, odometry, odometryNoise);
 %% Add bearing/range measurement factors
 degrees = pi/180;
 noiseModel = gtsamSharedNoiseModel_Sigmas([0.1; 0.2]);
-if 1
-    graph.addBearingRange(i1, j1, gtsamRot2(45*degrees), sqrt(4+4), noiseModel);
-    graph.addBearingRange(i2, j1, gtsamRot2(90*degrees), 2, noiseModel);
-else
-    bearingModel = gtsamSharedNoiseModel_Sigmas(0.1);    
-    graph.addBearing(i1, j1, gtsamRot2(45*degrees), bearingModel);
-    graph.addBearing(i2, j1, gtsamRot2(90*degrees), bearingModel);
-end
+graph.addBearingRange(i1, j1, gtsamRot2(45*degrees), sqrt(4+4), noiseModel);
+graph.addBearingRange(i2, j1, gtsamRot2(90*degrees), 2, noiseModel);
 graph.addBearingRange(i3, j2, gtsamRot2(90*degrees), 2, noiseModel);
 
 % print

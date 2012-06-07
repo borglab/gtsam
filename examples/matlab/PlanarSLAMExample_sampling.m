@@ -34,7 +34,7 @@ else
     graph.addBearing(i1, j1, gtsamRot2(45*degrees), bearingModel);
     graph.addBearing(i2, j1, gtsamRot2(90*degrees), bearingModel);
 end
-graph.addBearingRange(i3, j2, gtsamRot2(90*degrees), 2, noiseModel);
+graph.addBearingRange(i3, j2, gtsamRot2(90*degrees), 2, noiseModel);    
 
 %% Initialize MCMC sampler with ground truth
 sample = planarSLAMValues;
