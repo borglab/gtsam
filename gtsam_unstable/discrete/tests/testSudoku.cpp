@@ -75,7 +75,7 @@ public:
 		}
 
 		// add box constraints
-		size_t N = sqrt(n), i0 = 0;
+		size_t N = (size_t)sqrt(double(n)), i0 = 0;
 		for (size_t I = 0; I < N; I++) {
 			size_t j0 = 0;
 			for (size_t J = 0; J < N; J++) {
