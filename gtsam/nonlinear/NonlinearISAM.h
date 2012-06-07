@@ -24,12 +24,7 @@ namespace gtsam {
 /**
  * Wrapper class to manage ISAM in a nonlinear context
  */
-template<class GRAPH = gtsam::NonlinearFactorGraph >
 class NonlinearISAM {
-public:
-
-	typedef GRAPH Factors;
-
 protected:
 
 	/** The internal iSAM object */
@@ -42,7 +37,7 @@ protected:
 	gtsam::Ordering ordering_;
 
 	/** The original factors, used when relinearizing */
-	Factors factors_;
+	NonlinearFactorGraph factors_;
 
 	/** The reordering interval and counter */
 	int reorderInterval_;
@@ -84,7 +79,7 @@ public:
 	const gtsam::Ordering& getOrdering() const { return ordering_; }
 
 	/** get underlying nonlinear graph */
-	const Factors& getFactorsUnsafe() const { return factors_; }
+	const NonlinearFactorGraph& getFactorsUnsafe() const { return factors_; }
 
 		/** get counters */
 	int reorderInterval() const { return reorderInterval_; }	///<TODO: comment
@@ -104,7 +99,7 @@ public:
 	/// @{
 
 	/** Add new factors along with their initial linearization points */
-	void update(const Factors& newFactors, const Values& initialValues);
+	void update(const NonlinearFactorGraph& newFactors, const Values& initialValues);
 
 	/** Relinearization and reordering of variables */
 	void reorder_relinearize();
@@ -121,4 +116,3 @@ public:
 
 } // \namespace gtsam
 
-#include <gtsam/nonlinear/NonlinearISAM-inl.h>

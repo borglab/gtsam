@@ -15,7 +15,7 @@
  * @author Viorela Ila and Richard Roberts
  */
 
-#pragma once
+#include <gtsam/nonlinear/NonlinearISAM.h>
 
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/inference/ISAM-inl.h>
@@ -28,14 +28,12 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-template<class GRAPH>
-void NonlinearISAM<GRAPH>::saveGraph(const std::string& s) const {
+void NonlinearISAM::saveGraph(const std::string& s) const {
   isam_.saveGraph(s);
 }
 
 /* ************************************************************************* */
-template<class GRAPH>
-void NonlinearISAM<GRAPH>::update(const Factors& newFactors,
+void NonlinearISAM::update(const NonlinearFactorGraph& newFactors,
 		const Values& initialValues) {
 
   if(newFactors.size() > 0) {
@@ -54,12 +52,12 @@ void NonlinearISAM<GRAPH>::update(const Factors& newFactors,
 
     // Augment ordering
     // FIXME: should just loop over new values
-    BOOST_FOREACH(const typename Factors::sharedFactor& factor, newFactors)
+    BOOST_FOREACH(const NonlinearFactorGraph::sharedFactor& factor, newFactors)
       BOOST_FOREACH(Key key, factor->keys())
         ordering_.tryInsert(key, ordering_.nVars()); // will do nothing if already present
 
     boost::shared_ptr<GaussianFactorGraph> linearizedNewFactors(
-        newFactors.linearize(linPoint_, ordering_)->template dynamicCastFactors<GaussianFactorGraph>());
+        newFactors.linearize(linPoint_, ordering_)->dynamicCastFactors<GaussianFactorGraph>());
 
     // Update ISAM
     isam_.update(*linearizedNewFactors);
@@ -67,8 +65,7 @@ void NonlinearISAM<GRAPH>::update(const Factors& newFactors,
 }
 
 /* ************************************************************************* */
-template<class GRAPH>
-void NonlinearISAM<GRAPH>::reorder_relinearize() {
+void NonlinearISAM::reorder_relinearize() {
 
 //  std::cout << "Reordering, relinearizing..." << std::endl;
 
@@ -83,7 +80,7 @@ void NonlinearISAM<GRAPH>::reorder_relinearize() {
 
     // Create a linear factor graph at the new linearization point
     boost::shared_ptr<GaussianFactorGraph> gfg(
-        factors_.linearize(newLinPoint, ordering_)->template dynamicCastFactors<GaussianFactorGraph>());
+        factors_.linearize(newLinPoint, ordering_)->dynamicCastFactors<GaussianFactorGraph>());
 
     // Just recreate the whole BayesTree
     isam_.update(*gfg);
@@ -94,8 +91,7 @@ void NonlinearISAM<GRAPH>::reorder_relinearize() {
 }
 
 /* ************************************************************************* */
-template<class GRAPH>
-Values NonlinearISAM<GRAPH>::estimate() const {
+Values NonlinearISAM::estimate() const {
   if(isam_.size() > 0)
     return linPoint_.retract(optimize(isam_), ordering_);
   else
@@ -103,14 +99,12 @@ Values NonlinearISAM<GRAPH>::estimate() const {
 }
 
 /* ************************************************************************* */
-template<class GRAPH>
-Matrix NonlinearISAM<GRAPH>::marginalCovariance(Key key) const {
+Matrix NonlinearISAM::marginalCovariance(Key key) const {
 	return isam_.marginalCovariance(ordering_[key]);
 }
 
 /* ************************************************************************* */
-template<class GRAPH>
-void NonlinearISAM<GRAPH>::print(const std::string& s) const {
+void NonlinearISAM::print(const std::string& s) const {
 	std::cout << "ISAM - " << s << ":" << std::endl;
 	std::cout << "  ReorderInterval: " << reorderInterval_ << " Current Count: " << reorderCounter_ << std::endl;
 	isam_.print("GaussianISAM");
@@ -120,8 +114,7 @@ void NonlinearISAM<GRAPH>::print(const std::string& s) const {
 }
 
 /* ************************************************************************* */
-template<class GRAPH>
-void NonlinearISAM<GRAPH>::printStats() const {
+void NonlinearISAM::printStats() const {
   gtsam::GaussianISAM::CliqueData data = isam_.getCliqueData();
   gtsam::GaussianISAM::CliqueStats stats = data.getStats();
   std::cout << "\navg Conditional Size: " << stats.avgConditionalSize;

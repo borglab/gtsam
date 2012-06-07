@@ -203,6 +203,6 @@ namespace visualSLAM {
   /**
    * Non-linear ISAM for vanilla incremental visual SLAM inference
    */
-  typedef gtsam::NonlinearISAM<Graph> ISAM;
+  typedef gtsam::NonlinearISAM ISAM;
 
 } // namespaces

@@ -13,7 +13,7 @@
 using namespace gtsam;
 using namespace planarSLAM;
 
-typedef NonlinearISAM<> PlanarISAM;
+typedef NonlinearISAM PlanarISAM;
 
 const double tol=1e-5;
 
