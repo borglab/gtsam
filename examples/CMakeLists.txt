@@ -36,7 +36,10 @@ if (GTSAM_BUILD_WRAP)
         # Examples
         if (GTSAM_INSTALL_MATLAB_EXAMPLES)
             message(STATUS "Installing Matlab Toolbox Examples")
-            file(GLOB matlab_examples "${GTSAM_SOURCE_ROOT_DIR}/examples/matlab/*.m")
+            # Matlab files: *.m and *.fig
+            file(GLOB matlab_examples_m "${GTSAM_SOURCE_ROOT_DIR}/examples/matlab/*.m")
+            file(GLOB matlab_examples_fig "${GTSAM_SOURCE_ROOT_DIR}/examples/matlab/*.fig")
+            set(matlab_examples ${matlab_examples_m} ${matlab_examples_fig})
             install(FILES ${matlab_examples} DESTINATION ${GTSAM_TOOLBOX_INSTALL_PATH}/gtsam/examples)
             
             message(STATUS "Installing Matlab Toolbox Examples (Data)")
