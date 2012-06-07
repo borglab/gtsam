@@ -9,11 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * JacobianFactorGraph.cpp
- *
- *  Created on: Jun 6, 2012
- *      Author: ydjian
+/**
+ * @file   JacobianFactorGraph.cpp
+ * @date   Jun 6, 2012
+ * @brief  Linear Algebra Operations for a JacobianFactorGraph
+ * @Author Yong Dian Jian
  */
 #pragma once
 
@@ -23,10 +23,6 @@
 #include <gtsam/linear/VectorValues.h>
 
 namespace gtsam {
-
-  /**
-   * Linear Algebra Operations for the JacobianFactorGraph
-   */
 
   /** return A*x */
   Errors operator*(const FactorGraph<JacobianFactor>& fg, const VectorValues& x);

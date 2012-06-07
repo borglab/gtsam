@@ -1,8 +1,7 @@
-/*
- * JacobianFactorGraph.cpp
- *
- *  Created on: Jun 6, 2012
- *      Author: ydjian
+/**
+ * @file   JacobianFactorGraph.h
+ * @date   Jun 6, 2012
+ * @Author Yong Dian Jian
  */
 
 #include <gtsam/linear/JacobianFactorGraph.h>
