@@ -174,6 +174,7 @@ namespace gtsam {
     	Point3 zc = target-eye;
     	zc = zc/zc.norm();
     	Point3 xc = (-upVector).cross(zc);	// minus upVector since yc is pointing down
+    	xc = xc/xc.norm();
     	Point3 yc = zc.cross(xc);
     	Pose3 pose3(Rot3(xc,yc,zc), eye);
     	return PinholeCamera(pose3, K);

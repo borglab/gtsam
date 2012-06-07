@@ -74,6 +74,16 @@ TEST( SimpleCamera, lookat)
 	Point3 xc(0,1,0),yc(0,0,-1),zc(-1,0,0);
 	Pose3 expected(Rot3(xc,yc,zc),C);
   CHECK(assert_equal( camera.pose(), expected));
+
+
+  Point3 C2(30.0,0.0,10.0);
+  SimpleCamera camera2 = SimpleCamera::lookat(C2, Point3(), Point3(0.0,0.0,1.0));
+
+  Matrix R = camera2.pose().rotation().matrix();
+  Matrix I = trans(R)*R;
+  gtsam::print(I,"I=");
+  CHECK(assert_equal(I, eye(3)));
+
 }
 
 /* ************************************************************************* */
