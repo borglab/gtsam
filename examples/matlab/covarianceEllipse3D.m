@@ -21,7 +21,7 @@ y = data(n+1:2*n,:)+c(2);
 z = data(2*n+1:end,:)+c(3);
 
 % now plot the rotated ellipse
-sc = mesh(x,y,z,abs(xc));
+sc = surf(x,y,z,abs(xc));
 shading interp
 alpha(0.5)
 axis equal
