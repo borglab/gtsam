@@ -111,6 +111,11 @@ namespace gtsam {
 		/// sample in place, stores result in partial solution
 		void sampleInPlace(Values& parentsValues) const;
 
+		/**
+		 * Permutes both IndexConditional and Potentials.
+		 */
+		void permuteWithInverse(const Permutation& inversePermutation);
+
 		/// @}
 
 	};

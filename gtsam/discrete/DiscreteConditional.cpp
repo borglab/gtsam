@@ -192,7 +192,14 @@ namespace gtsam {
 		return sampled;
 
 		return 0;
-		}
+	}
+
+	/* ******************************************************************************** */
+	void DiscreteConditional::permuteWithInverse(const Permutation& inversePermutation){
+		IndexConditional::permuteWithInverse(inversePermutation);
+		Potentials::permute(inversePermutation);
+	}
+
 
 /* ******************************************************************************** */
 
