@@ -602,6 +602,7 @@ class GaussianFactorGraph {
 
 class GaussianISAM {
   GaussianISAM();
+  void saveGraph(string s) const;
   gtsam::GaussianFactor* marginalFactor(size_t j) const;
   gtsam::GaussianBayesNet* marginalBayesNet(size_t key) const;
   Matrix marginalCovariance(size_t key) const;
@@ -933,11 +934,12 @@ class Graph {
 class ISAM {
 	ISAM();
 	ISAM(int reorderInterval);
+  void print(string s) const;
+  void saveGraph(string s) const;
 	visualSLAM::Values estimate() const;
   Matrix marginalCovariance(size_t key) const;
   int reorderInterval() const;
   int reorderCounter() const;
-  void print(string s) const;
   void update(const visualSLAM::Graph& newFactors, const visualSLAM::Values& initialValues);
   void reorder_relinearize();
   void addKey(size_t key);

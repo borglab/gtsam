@@ -30,6 +30,12 @@ using namespace gtsam;
 
 /* ************************************************************************* */
 template<class GRAPH>
+void NonlinearISAM<GRAPH>::saveGraph(const std::string& s) const {
+  isam_.saveGraph(s);
+}
+
+/* ************************************************************************* */
+template<class GRAPH>
 void NonlinearISAM<GRAPH>::update(const Factors& newFactors,
 		const Values& initialValues) {
 
