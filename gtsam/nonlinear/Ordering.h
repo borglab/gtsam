@@ -217,7 +217,7 @@ public:
 	/// @{
 
   /** print (from Testable) for testing and debugging */
-  void print(const std::string& str = "Ordering:", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+  void print(const std::string& str = "Ordering:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
   /** equals (from Testable) for testing and debugging */
   bool equals(const Ordering& rhs, double tol = 0.0) const;

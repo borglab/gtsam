@@ -41,13 +41,9 @@ void Ordering::permuteWithInverse(const Permutation& inversePermutation) {
 
 /* ************************************************************************* */
 void Ordering::print(const string& str, const KeyFormatter& keyFormatter) const {
-  cout << str << " ";
-  BOOST_FOREACH(const Ordering::value_type& key_order, *this) {
-    if(key_order != *begin())
-      cout << ", ";
-    cout << keyFormatter(key_order.first) << ":" << key_order.second;
-  }
-  cout << endl;
+  cout << str;
+  BOOST_FOREACH(const Ordering::value_type& key_order, *this)
+    cout << keyFormatter(key_order.first) << ":" << key_order.second << endl;
 }
 
 /* ************************************************************************* */
