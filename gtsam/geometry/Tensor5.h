@@ -23,7 +23,7 @@ namespace tensors {
 
 	/**
 	 * Rank 5 Tensor
-	 * @ingroup tensors
+	 * @addtogroup tensors
 	 * \nosubgrouping
 	 */
 	template<int N1, int N2, int N3, int N4, int N5>

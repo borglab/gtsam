@@ -25,7 +25,7 @@ namespace tensors {
 
 	/**
 	 * templated class to interface to an object A as a rank 5 tensor
-	 * @ingroup tensors
+	 * @addtogroup tensors
 	 * \nosubgrouping
 	 */
 	template<class A, class I, class J, class K, class L, class M> class Tensor5Expression {

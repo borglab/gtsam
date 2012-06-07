@@ -36,15 +36,14 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class F, class JT>
 	GenericMultifrontalSolver<F, JT>::GenericMultifrontalSolver(
-			const typename FactorGraph<F>::shared_ptr& graph,
+			const sharedGraph& graph,
 			const VariableIndex::shared_ptr& variableIndex) :
 			structure_(variableIndex), junctionTree_(new JT(*graph, *structure_)) {
 	}
 
 	/* ************************************************************************* */
 	template<class F, class JT>
-	void GenericMultifrontalSolver<F, JT>::replaceFactors(
-			const typename FactorGraph<F>::shared_ptr& graph) {
+	void GenericMultifrontalSolver<F, JT>::replaceFactors(const sharedGraph& graph) {
 		junctionTree_.reset(new JT(*graph, *structure_));
 	}
 

@@ -47,7 +47,7 @@ namespace gtsam {
 	 * except that in the JunctionTree, at each node multiple variables are eliminated at a time.
 	 *
 	 *
-	 * \ingroup Multifrontal
+	 * \addtogroup Multifrontal
 	 * \nosubgrouping
 	 */
 	template<class FG, class BTCLIQUE=typename BayesTree<typename FG::FactorType::ConditionalType>::Clique>

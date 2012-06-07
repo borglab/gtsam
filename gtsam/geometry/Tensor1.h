@@ -23,7 +23,7 @@ namespace tensors {
 
 	/**
 	 * A rank 1 tensor. Actually stores data.
-	 * @ingroup tensors
+	 * @addtogroup tensors
 	 * \nosubgrouping
 	 */
 	template<int N>

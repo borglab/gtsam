@@ -27,7 +27,7 @@ namespace gtsam {
 
 	/**
 	 * A fast implementation of disjoint set forests that uses vector as underly data structure.
-	 * @ingroup base
+	 * @addtogroup base
 	 */
 	class DSFVector {
 

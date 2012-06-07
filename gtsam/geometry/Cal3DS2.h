@@ -25,7 +25,7 @@ namespace gtsam {
 
 /**
  * @brief Calibration of a camera with radial distortion
- * @ingroup geometry
+ * @addtogroup geometry
  * \nosubgrouping
  */
 class Cal3DS2 : public DerivedValue<Cal3DS2> {

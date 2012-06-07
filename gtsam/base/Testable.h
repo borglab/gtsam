@@ -46,7 +46,7 @@ namespace gtsam {
 	 * tests and in generic algorithms.
 	 *
 	 * See macros for details on using this structure
-	 * @ingroup base
+	 * @addtogroup base
 	 * @tparam T is the type this constrains to be testable - assumes print() and equals()
 	 */
 	template <class T>

@@ -25,7 +25,7 @@ namespace gtsam {
 
 /**
  * @brief Calibration used by Bundler
- * @ingroup geometry
+ * @addtogroup geometry
  * \nosubgrouping
  */
 class Cal3Bundler : public DerivedValue<Cal3Bundler> {

@@ -28,7 +28,7 @@ namespace gtsam {
 	/**
 	 * Rotation matrix
 	 * NOTE: the angle theta is in radians unless explicitly stated
-	 * @ingroup geometry
+	 * @addtogroup geometry
 	 * \nosubgrouping
 	 */
 	class Rot2 : public DerivedValue<Rot2> {

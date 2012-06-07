@@ -14,7 +14,7 @@
  * @brief Tensor expression templates based on http://www.gps.caltech.edu/~walter/FTensor/FTensor.pdf
  * @date Feb 10, 2010
  * @author Frank Dellaert
- * @defgroup tensors
+ * @addtogroup tensors
  */
 
 #pragma once

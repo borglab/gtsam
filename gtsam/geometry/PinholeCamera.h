@@ -33,7 +33,7 @@ namespace gtsam {
 
   /**
    * A pinhole camera class that has a Pose3 and a Calibration.
-   * @ingroup geometry
+   * @addtogroup geometry
    * \nosubgrouping
    */
   template <typename Calibration>

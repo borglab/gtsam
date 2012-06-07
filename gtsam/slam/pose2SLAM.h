@@ -32,7 +32,7 @@ namespace pose2SLAM {
 
   /*
    * Values class, inherited from Values, mainly used as a convenience for MATLAB wrapper
-   * @ingroup SLAM
+   * @addtogroup SLAM
    */
   struct Values: public gtsam::Values {
 
@@ -82,7 +82,7 @@ namespace pose2SLAM {
 
   /**
    * Graph class, inherited from NonlinearFactorGraph, used as a convenience for MATLAB wrapper
-   * @ingroup SLAM
+   * @addtogroup SLAM
    */
   struct Graph: public NonlinearFactorGraph {
 

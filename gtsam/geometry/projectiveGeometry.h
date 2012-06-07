@@ -25,21 +25,21 @@ namespace gtsam {
 
 	/**
 	 * 2D Point in homogeneous coordinates
-	 * @ingroup geometry
+	 * @addtogroup geometry
 	 */
 	typedef tensors::Tensor1<3> Point2h;
 	Point2h point2h(double x, double y, double w); ///< create Point2h
 
 	/**
 	 * 2D Line in homogeneous coordinates
-	 * @ingroup geometry
+	 * @addtogroup geometry
 	 */
 	typedef tensors::Tensor1<3> Line2h;
 	Line2h line2h(double a, double b, double c); ///< create Line2h
 
 	/**
 	 * 2D (homegeneous) Point correspondence
-	 * @ingroup geometry
+	 * @addtogroup geometry
 	 */
 	struct Correspondence {
 		Point2h first;  ///< First point
@@ -63,19 +63,19 @@ namespace gtsam {
 
 	/**
 	 * 2D-2D Homography
-	 * @ingroup geometry
+	 * @addtogroup geometry
 	 */
 	typedef tensors::Tensor2<3, 3> Homography2;
 
 	/**
 	 * Fundamental Matrix
-	 * @ingroup geometry
+	 * @addtogroup geometry
 	 */
 	typedef tensors::Tensor2<3, 3> FundamentalMatrix;
 
 	/**
 	 * Triplet of (homogeneous) 2D points
-	 * @ingroup geometry
+	 * @addtogroup geometry
 	 */
 	struct Triplet {
 		Point2h first;  ///< First point
@@ -97,27 +97,27 @@ namespace gtsam {
 
 	/**
 	 * Trifocal Tensor
-	 * @ingroup geometry
+	 * @addtogroup geometry
 	 */
 	typedef tensors::Tensor3<3, 3, 3> TrifocalTensor;
 
 	/**
 	 * 3D Point in homogeneous coordinates
-	 * @ingroup geometry
+	 * @addtogroup geometry
 	 */
 	typedef tensors::Tensor1<4> Point3h;
 	Point3h point3h(double X, double Y, double Z, double W); ///< create Point3h
 
 	/**
 	 * 3D Plane in homogeneous coordinates
-	 * @ingroup geometry
+	 * @addtogroup geometry
 	 */
 	typedef tensors::Tensor1<4> Plane3h;
 	Plane3h plane3h(double a, double b, double c, double d); ///< create Plane3h
 
 	/**
 	 * 3D to 2D projective camera
-	 * @ingroup geometry
+	 * @addtogroup geometry
 	 */
 	typedef tensors::Tensor2<3, 4> ProjectiveCamera;
 

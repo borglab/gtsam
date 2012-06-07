@@ -28,11 +28,7 @@
 namespace gtsam {
 
 /**
- * @defgroup ISAM2
- */
-
-/**
- * @ingroup ISAM2
+ * @addtogroup ISAM2
  * Parameters for ISAM2 using Gauss-Newton optimization.  Either this class or
  * ISAM2DoglegParams should be specified as the optimizationParams in
  * ISAM2Params, which should in turn be passed to ISAM2(const ISAM2Params&).
@@ -47,7 +43,7 @@ struct ISAM2GaussNewtonParams {
 };
 
 /**
- * @ingroup ISAM2
+ * @addtogroup ISAM2
  * Parameters for ISAM2 using Dogleg optimization.  Either this class or
  * ISAM2GaussNewtonParams should be specified as the optimizationParams in
  * ISAM2Params, which should in turn be passed to ISAM2(const ISAM2Params&).
@@ -69,7 +65,7 @@ struct ISAM2DoglegParams {
 };
 
 /**
- * @ingroup ISAM2
+ * @addtogroup ISAM2
  * Parameters for the ISAM2 algorithm.  Default parameter values are listed below.
  */
 struct ISAM2Params {
@@ -147,7 +143,7 @@ struct ISAM2Params {
 };
 
 /**
- * @ingroup ISAM2
+ * @addtogroup ISAM2
  * This struct is returned from ISAM2::update() and contains information about
  * the update that is useful for determining whether the solution is
  * converging, and about how much work was required for the update.  See member
@@ -315,7 +311,7 @@ private:
 };
 
 /**
- * @ingroup ISAM2
+ * @addtogroup ISAM2
  * Implementation of the full ISAM2 algorithm for incremental nonlinear optimization.
  *
  * The typical cycle of using this class to create an instance by providing ISAM2Params

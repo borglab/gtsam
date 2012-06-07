@@ -30,7 +30,7 @@ namespace gtsam {
  * pool_allocator instead of the default STL allocator.  This is just a
  * convenience to avoid having lengthy types in the code.  Through timing,
  * we've seen that the pool_allocator can lead to speedups of several %
- * @ingroup base
+ * @addtogroup base
  */
 template<typename VALUE>
 class FastVector: public std::vector<VALUE, boost::pool_allocator<VALUE> > {

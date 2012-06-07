@@ -51,9 +51,9 @@ namespace gtsam {
 		return data;
 	}
 
+  /* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
-	void BayesTree<CONDITIONAL,CLIQUE>::getCliqueData(CliqueData& data,
-			typename BayesTree<CONDITIONAL,CLIQUE>::sharedClique clique) const {
+	void BayesTree<CONDITIONAL,CLIQUE>::getCliqueData(CliqueData& data, sharedClique clique) const {
 		data.conditionalSizes.push_back((*clique)->nrFrontals());
 		data.separatorSizes.push_back((*clique)->nrParents());
 		BOOST_FOREACH(sharedClique c, clique->children_) {
@@ -64,7 +64,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
 	void BayesTree<CONDITIONAL,CLIQUE>::saveGraph(const std::string &s) const {
-		if (!root_.get()) throw invalid_argument("the root of bayes tree has not been initialized!");
+		if (!root_.get()) throw invalid_argument("the root of Bayes tree has not been initialized!");
 		ofstream of(s.c_str());
 		of<< "digraph G{\n";
 		saveGraph(of, root_);
@@ -73,9 +73,7 @@ namespace gtsam {
 	}
 
 	template<class CONDITIONAL, class CLIQUE>
-	void BayesTree<CONDITIONAL,CLIQUE>::saveGraph(ostream &s,
-			typename BayesTree<CONDITIONAL,CLIQUE>::sharedClique clique,
-			int parentnum) const {
+	void BayesTree<CONDITIONAL,CLIQUE>::saveGraph(ostream &s, sharedClique clique, int parentnum) const {
 		static int num = 0;
 		bool first = true;
 		std::stringstream out;

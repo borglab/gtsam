@@ -35,27 +35,27 @@ void optimizeInPlace(const GaussianBayesTree& bayesTree, VectorValues& result) {
 }
 
 /* ************************************************************************* */
-VectorValues optimizeGradientSearch(const GaussianBayesTree& Rd) {
+VectorValues optimizeGradientSearch(const GaussianBayesTree& bayesTree) {
   tic(0, "Allocate VectorValues");
-  VectorValues grad = *allocateVectorValues(Rd);
+  VectorValues grad = *allocateVectorValues(bayesTree);
   toc(0, "Allocate VectorValues");
 
-  optimizeGradientSearchInPlace(Rd, grad);
+  optimizeGradientSearchInPlace(bayesTree, grad);
 
   return grad;
 }
 
 /* ************************************************************************* */
-void optimizeGradientSearchInPlace(const GaussianBayesTree& Rd, VectorValues& grad) {
+void optimizeGradientSearchInPlace(const GaussianBayesTree& bayesTree, VectorValues& grad) {
   tic(1, "Compute Gradient");
   // Compute gradient (call gradientAtZero function, which is defined for various linear systems)
-  gradientAtZero(Rd, grad);
+  gradientAtZero(bayesTree, grad);
   double gradientSqNorm = grad.dot(grad);
   toc(1, "Compute Gradient");
 
   tic(2, "Compute R*g");
   // Compute R * g
-  FactorGraph<JacobianFactor> Rd_jfg(Rd);
+  FactorGraph<JacobianFactor> Rd_jfg(bayesTree);
   Errors Rg = Rd_jfg * grad;
   toc(2, "Compute R*g");
 

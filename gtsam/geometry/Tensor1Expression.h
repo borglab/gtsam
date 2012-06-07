@@ -29,7 +29,7 @@ namespace tensors {
 	 * Templated class to provide a rank 1 tensor interface to a class.
 	 * This class does not store any data but the result of an expression.
 	 * It is associated with an index.
-	 * @ingroup tensors
+	 * @addtogroup tensors
 	 * \nosubgrouping
 	 */
 	template<class A, class I> class Tensor1Expression {

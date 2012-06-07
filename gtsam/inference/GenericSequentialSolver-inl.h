@@ -41,7 +41,7 @@ namespace gtsam {
 	template<class FACTOR>
 	GenericSequentialSolver<FACTOR>::GenericSequentialSolver(
 			const sharedFactorGraph& factorGraph,
-			const VariableIndex::shared_ptr& variableIndex) :
+			const boost::shared_ptr<VariableIndex>& variableIndex) :
 			factors_(factorGraph), structure_(variableIndex),
 			eliminationTree_(EliminationTree<FACTOR>::Create(*factors_, *structure_)) {
 	}

@@ -23,7 +23,7 @@ namespace gtsam {
 
 	/**
 	 * @brief The most common 5DOF 3D->2D calibration, stereo version
-	 * @ingroup geometry
+	 * @addtogroup geometry
 	 * \nosubgrouping
 	 */
 	class Cal3_S2Stereo {

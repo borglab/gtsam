@@ -42,7 +42,7 @@ struct FastSetTestableHelper;
  * fast_pool_allocator instead of the default STL allocator.  This is just a
  * convenience to avoid having lengthy types in the code.  Through timing,
  * we've seen that the fast_pool_allocator can lead to speedups of several %.
- * @ingroup base
+ * @addtogroup base
  */
 template<typename VALUE, class ENABLE = void>
 class FastSet: public std::set<VALUE, std::less<VALUE>, boost::fast_pool_allocator<VALUE> > {

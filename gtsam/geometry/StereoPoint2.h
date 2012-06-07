@@ -25,7 +25,7 @@ namespace gtsam {
 
 	/**
 	 * A 2D stereo point, v will be same for rectified images
-	 * @ingroup geometry
+	 * @addtogroup geometry
 	 * \nosubgrouping
 	 */
 	class StereoPoint2 : public DerivedValue<StereoPoint2> {

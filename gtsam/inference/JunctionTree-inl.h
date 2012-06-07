@@ -72,7 +72,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class FG, class BTCLIQUE>
   typename JunctionTree<FG,BTCLIQUE>::sharedClique JunctionTree<FG,BTCLIQUE>::distributeFactors(
-      const FG& fg, const typename SymbolicBayesTree::sharedClique& bayesClique) {
+      const FG& fg, const SymbolicBayesTree::sharedClique& bayesClique) {
 
     // Build "target" index.  This is an index for each variable of the factors
     // that involve this variable as their *lowest-ordered* variable.  For each

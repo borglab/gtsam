@@ -25,13 +25,14 @@
 
 namespace gtsam {
 
+/// A Bayes Tree representing a Gaussian density
 typedef BayesTree<GaussianConditional> GaussianBayesTree;
 
 /// optimize the BayesTree, starting from the root
 VectorValues optimize(const GaussianBayesTree& bayesTree);
 
 /// recursively optimize this conditional and all subtrees
-void optimizeInPlace(const GaussianBayesTree& clique, VectorValues& result);
+void optimizeInPlace(const GaussianBayesTree& bayesTree, VectorValues& result);
 
 namespace internal {
 template<class BAYESTREE>
@@ -63,10 +64,10 @@ void optimizeInPlace(const typename BAYESTREE::sharedClique& clique, VectorValue
  *
  * \f[ \delta x = \hat\alpha g = \frac{-g^T g}{(R g)^T(R g)} \f]
  */
-VectorValues optimizeGradientSearch(const GaussianBayesTree& bn);
+VectorValues optimizeGradientSearch(const GaussianBayesTree& bayesTree);
 
 /** In-place version of optimizeGradientSearch requiring pre-allocated VectorValues \c x */
-void optimizeGradientSearchInPlace(const GaussianBayesTree& bn, VectorValues& grad);
+void optimizeGradientSearchInPlace(const GaussianBayesTree& bayesTree, VectorValues& grad);
 
 /**
  * Compute the gradient of the energy function,

@@ -32,7 +32,7 @@ namespace gtsam {
 
   /**
    * A 3D pose (R,t) : (Rot3,Point3)
-   * @ingroup geometry
+   * @addtogroup geometry
    * \nosubgrouping
    */
   class Pose3 : public DerivedValue<Pose3> {

@@ -27,10 +27,6 @@
 #include <gtsam/nonlinear/Marginals.h>
 #include <gtsam/geometry/Pose2.h>
 
-/**
- * @defgroup SLAM
- */
-
 // Use planarSLAM namespace for specific SLAM instance
 namespace planarSLAM {
 
@@ -55,7 +51,7 @@ namespace planarSLAM {
 
   /*
    * Values class, inherited from Values, mainly used as a convenience for MATLAB wrapper
-   * @ingroup SLAM
+   * @addtogroup SLAM
    */
   struct Values: public gtsam::Values {
 
@@ -88,7 +84,7 @@ namespace planarSLAM {
 
   /**
    * Graph class, inherited from NonlinearFactorGraph, used as a convenience for MATLAB wrapper
-   * @ingroup SLAM
+   * @addtogroup SLAM
    */
   struct Graph: public NonlinearFactorGraph {
 

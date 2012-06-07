@@ -26,7 +26,7 @@ namespace tensors {
 
 	/**
 	 * Templated class to hold a rank 2 tensor expression.
-	 * @ingroup tensors
+	 * @addtogroup tensors
 	 * \nosubgrouping
 	 */
 	template<class A, class I, class J> class Tensor2Expression {

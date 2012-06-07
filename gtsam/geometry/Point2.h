@@ -29,7 +29,7 @@ namespace gtsam {
  * A 2D point
  * Complies with the Testable Concept
  * Functional, so no set functions: once created, a point is constant.
- * @ingroup geometry
+ * @addtogroup geometry
  * \nosubgrouping
  */
 class Point2 : public DerivedValue<Point2> {

@@ -33,7 +33,7 @@ namespace gtsam {
 	 * A Calibrated camera class [R|-R't], calibration K=I.
 	 * If calibration is known, it is more computationally efficient
 	 * to calibrate the measurements rather than try to predict in pixels.
-	 * @ingroup geometry
+	 * @addtogroup geometry
 	 * \nosubgrouping
 	 */
 	class CalibratedCamera : public DerivedValue<CalibratedCamera> {

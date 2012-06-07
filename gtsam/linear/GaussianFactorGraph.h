@@ -202,7 +202,7 @@ namespace gtsam {
 
   /**
    * Combine and eliminate several factors.
-   * \ingroup LinearSolving
+   * \addtogroup LinearSolving
    */
 	JacobianFactor::shared_ptr CombineJacobians(
 			const FactorGraph<JacobianFactor>& factors,
@@ -223,7 +223,7 @@ namespace gtsam {
 	 * @param nrFrontals Number of frontal variables to eliminate.
 	 * @return The conditional and remaining factor
 
-   * \ingroup LinearSolving
+   * \addtogroup LinearSolving
 	 */
 	GaussianFactorGraph::EliminationResult EliminateJacobians(const FactorGraph<
 			JacobianFactor>& factors, size_t nrFrontals = 1);
@@ -238,7 +238,7 @@ namespace gtsam {
 	 * @param nrFrontals Number of frontal variables to eliminate.
 	 * @return The conditional and remaining factor
 
-   * \ingroup LinearSolving
+   * \addtogroup LinearSolving
 	 */
   GaussianFactorGraph::EliminationResult EliminateQR(const FactorGraph<
 			GaussianFactor>& factors, size_t nrFrontals = 1);
@@ -260,7 +260,7 @@ namespace gtsam {
    * @param nrFrontals Number of frontal variables to eliminate.
    * @return The conditional and remaining factor
 
-   * \ingroup LinearSolving
+   * \addtogroup LinearSolving
    */
   GaussianFactorGraph::EliminationResult EliminatePreferCholesky(const FactorGraph<
 			GaussianFactor>& factors, size_t nrFrontals = 1);
@@ -281,7 +281,7 @@ namespace gtsam {
    * @param nrFrontals Number of frontal variables to eliminate.
    * @return The conditional and remaining factor
 
-   * \ingroup LinearSolving
+   * \addtogroup LinearSolving
    */
   GaussianFactorGraph::EliminationResult EliminateCholesky(const FactorGraph<
 			GaussianFactor>& factors, size_t nrFrontals = 1);

@@ -48,7 +48,7 @@ namespace gtsam {
    * @brief A 3D rotation represented as a rotation matrix if the preprocessor
    * symbol GTSAM_DEFAULT_QUATERNIONS is not defined, or as a quaternion if it
    * is defined.
-   * @ingroup geometry
+   * @addtogroup geometry
    * \nosubgrouping
    */
   class Rot3 : public DerivedValue<Rot3> {

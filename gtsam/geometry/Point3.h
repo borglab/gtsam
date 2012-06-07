@@ -32,7 +32,7 @@ namespace gtsam {
 
   /**
    * A 3D point
-   * @ingroup geometry
+   * @addtogroup geometry
    * \nosubgrouping
    */
   class Point3 : public DerivedValue<Point3> {

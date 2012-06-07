@@ -40,7 +40,7 @@ template<class MATRIX> class SymmetricBlockView;
  * all rows, rowEnd() should be set to the number of rows in the matrix (i.e.
  * one after the last true row index).
  *
- * @ingroup base
+ * @addtogroup base
  */
 template<class MATRIX>
 class VerticalBlockView {
@@ -330,7 +330,7 @@ private:
  * change the apparent matrix view.  firstBlock() determines the block that
  * appears to have index 0 for all operations (except re-setting firstBlock()).
  *
- * @ingroup base
+ * @addtogroup base
  */
 template<class MATRIX>
 class SymmetricBlockView {
