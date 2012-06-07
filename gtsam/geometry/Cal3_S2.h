@@ -75,9 +75,7 @@ namespace gtsam {
 		/// @{
 
 		/// print with optional string
-		void print(const std::string& s = "") const {
-			gtsam::print(matrix(), s);
-		}
+		void print(const std::string& s = "Cal3_S2") const;
 
 		/// Check if equal up to specified tolerance
 		bool equals(const Cal3_S2& K, double tol = 10e-9) const;

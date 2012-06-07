@@ -40,7 +40,7 @@ namespace gtsam {
   class PinholeCamera : public DerivedValue<PinholeCamera<Calibration> > {
   private:
     Pose3 pose_;
-    Calibration k_;
+    Calibration K_;
 
   public:
 
@@ -54,10 +54,10 @@ namespace gtsam {
     explicit PinholeCamera(const Pose3& pose):pose_(pose){}
 
     /** constructor with pose and calibration */
-    PinholeCamera(const Pose3& pose, const Calibration& k):pose_(pose),k_(k) {}
+    PinholeCamera(const Pose3& pose, const Calibration& k):pose_(pose),K_(k) {}
 
     /** alternative constructor with pose and calibration */
-    PinholeCamera(const Calibration& k, const Pose3& pose):pose_(pose),k_(k) {}
+    PinholeCamera(const Calibration& k, const Pose3& pose):pose_(pose),K_(k) {}
 
     /// @}
     /// @name Advanced Constructors
@@ -66,11 +66,11 @@ namespace gtsam {
     explicit PinholeCamera(const Vector &v){
       pose_ = Pose3::Expmap(v.head(Pose3::Dim()));
       if ( v.size() > Pose3::Dim()) {
-        k_ = Calibration(v.tail(Calibration::Dim()));
+        K_ = Calibration(v.tail(Calibration::Dim()));
       }
     }
 
-    PinholeCamera(const Vector &v, const Vector &k) : pose_(Pose3::Expmap(v)),k_(k){}
+    PinholeCamera(const Vector &v, const Vector &k) : pose_(Pose3::Expmap(v)),K_(k){}
 
     /// @}
     /// @name Standard Interface
@@ -85,19 +85,19 @@ namespace gtsam {
     inline const Pose3& pose() const {  return pose_; }
 
     /// return calibration
-    inline Calibration& calibration() {  return k_; }
+    inline Calibration& calibration() {  return K_; }
 
     /// return calibration
-    inline const Calibration& calibration() const {  return k_; }
+    inline const Calibration& calibration() const {  return K_; }
 
     /// compose two cameras
     inline const PinholeCamera compose(const Pose3 &c) const {
-    	return PinholeCamera( pose_ * c, k_ ) ;
+    	return PinholeCamera( pose_ * c, K_ ) ;
     }
 
     /// inverse
     inline const PinholeCamera inverse() const {
-    	return PinholeCamera( pose_.inverse(), k_ ) ;
+    	return PinholeCamera( pose_.inverse(), K_ ) ;
     }
 
   	/// @}
@@ -107,13 +107,13 @@ namespace gtsam {
     /// assert equality up to a tolerance
     bool equals (const PinholeCamera &camera, double tol = 1e-9) const {
     	return pose_.equals(camera.pose(), tol) &&
-    	       k_.equals(camera.calibration(), tol) ;
+    	       K_.equals(camera.calibration(), tol) ;
     }
 
     /// print
-    void print(const std::string& s = "") const {
-      pose_.print("pose3");
-      k_.print("calibration");
+    void print(const std::string& s = "PinholeCamera") const {
+      pose_.print(s+".pose");
+      K_.print(s+".calibration");
     }
 
   	/// @}
@@ -138,7 +138,7 @@ namespace gtsam {
     }
 
     /// Lie group dimensionality
-    inline size_t dim() const { return pose_.dim() + k_.dim(); }
+    inline size_t dim() const { return pose_.dim() + K_.dim(); }
 
     /// Lie group dimensionality
     inline static size_t Dim() { return Pose3::Dim() + Calibration::Dim(); }
@@ -202,7 +202,7 @@ namespace gtsam {
     inline std::pair<Point2,bool> projectSafe(const Point3& pw) const {
       const Point3 pc = pose_.transform_to(pw) ;
       const Point2 pn = project_to_camera(pc) ;
-      return std::make_pair(k_.uncalibrate(pn), pc.z()>0);
+      return std::make_pair(K_.uncalibrate(pn), pc.z()>0);
     }
 
     /** project a point from world coordinate to the image
@@ -220,7 +220,7 @@ namespace gtsam {
         const Point3 pc = pose_.transform_to(pw) ;
         if ( pc.z() <= 0 ) throw CheiralityException();
         const Point2 pn = project_to_camera(pc) ;
-        return k_.uncalibrate(pn);
+        return K_.uncalibrate(pn);
       }
 
       // world to camera coordinate
@@ -234,7 +234,7 @@ namespace gtsam {
 
       // uncalibration
       Matrix Hk, Hi; // 2*2
-      const Point2 pi = k_.uncalibrate(pn, Hk, Hi);
+      const Point2 pi = K_.uncalibrate(pn, Hk, Hi);
 
       // chain the jacobian matrices
       const Matrix tmp = Hi*Hn ;
@@ -257,7 +257,7 @@ namespace gtsam {
         const Point3 pc = pose_.transform_to(pw) ;
         if ( pc.z() <= 0 ) throw CheiralityException();
         const Point2 pn = project_to_camera(pc) ;
-        return k_.uncalibrate(pn);
+        return K_.uncalibrate(pn);
       }
 
       Matrix Htmp1, Htmp2, Htmp3;
@@ -276,7 +276,7 @@ namespace gtsam {
      */
 
     inline Point3 backproject(const Point2& pi, double scale) const {
-      const Point2 pn = k_.calibrate(pi);
+      const Point2 pn = K_.calibrate(pi);
       const Point3 pc(pn.x()*scale, pn.y()*scale, scale);
       return pose_.transform_from(pc);
     }
@@ -297,8 +297,8 @@ namespace gtsam {
       if(H1) {
         // Add columns of zeros to Jacobian for calibration
         Matrix& H1r(*H1);
-        H1r.conservativeResize(Eigen::NoChange, pose_.dim() + k_.dim());
-        H1r.block(0, pose_.dim(), 1, k_.dim()) = Matrix::Zero(1, k_.dim());
+        H1r.conservativeResize(Eigen::NoChange, pose_.dim() + K_.dim());
+        H1r.block(0, pose_.dim(), 1, K_.dim()) = Matrix::Zero(1, K_.dim());
       }
       return result;
     }
@@ -315,8 +315,8 @@ namespace gtsam {
       if(H1) {
         // Add columns of zeros to Jacobian for calibration
         Matrix& H1r(*H1);
-        H1r.conservativeResize(Eigen::NoChange, pose_.dim() + k_.dim());
-        H1r.block(0, pose_.dim(), 1, k_.dim()) = Matrix::Zero(1, k_.dim());
+        H1r.conservativeResize(Eigen::NoChange, pose_.dim() + K_.dim());
+        H1r.block(0, pose_.dim(), 1, K_.dim()) = Matrix::Zero(1, K_.dim());
       }
       return result;
     }
@@ -334,8 +334,8 @@ namespace gtsam {
       if(H1) {
         // Add columns of zeros to Jacobian for calibration
         Matrix& H1r(*H1);
-        H1r.conservativeResize(Eigen::NoChange, pose_.dim() + k_.dim());
-        H1r.block(0, pose_.dim(), 1, k_.dim()) = Matrix::Zero(1, k_.dim());
+        H1r.conservativeResize(Eigen::NoChange, pose_.dim() + K_.dim());
+        H1r.block(0, pose_.dim(), 1, K_.dim()) = Matrix::Zero(1, K_.dim());
       }
       if(H2) {
         // Add columns of zeros to Jacobian for calibration
@@ -368,7 +368,7 @@ private:
       void serialize(Archive & ar, const unsigned int version) {
       	ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Value);
         ar & BOOST_SERIALIZATION_NVP(pose_);
-        ar & BOOST_SERIALIZATION_NVP(k_);
+        ar & BOOST_SERIALIZATION_NVP(K_);
       }
       /// @}
   };
