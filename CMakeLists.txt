@@ -67,7 +67,7 @@ set(GTSAM_TOOLBOX_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/borg/toolbox CACHE DOCSTR
 # Flags for building/installing mex files
 option(GTSAM_BUILD_MEX_BIN     "Enable/Disable building of matlab mex files" OFF)
 option(GTSAM_INSTALL_MEX_BIN   "Enable/Disable installing matlab mex binaries" OFF)
-set(GTSAM_BUILD_MEX_BINARY_FLAGS "-j2" CACHE STRING "Flags for running make on toolbox MEX files")
+set(GTSAM_BUILD_MEX_BINARY_FLAGS "" CACHE STRING "Flags for running make on toolbox MEX files")
 set(MEX_COMMAND "mex" CACHE STRING "Command to use for executing mex (if on path, 'mex' will work)")
 
 # Flags for choosing default packaging tools
