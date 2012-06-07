@@ -60,8 +60,8 @@ namespace gtsam {
 			// TODO: Sudoku specific hack
 			if (print) {
 				if (cardinality == 9 && n == 81) {
-					for (size_t i = 0, v = 0; i < (size_t)sqrt(double(n)); i++) {
-						for (size_t j = 0; j < (size_t)sqrt(double(n)); j++, v++) {
+					for (size_t i = 0, v = 0; i < (size_t)std::sqrt((double)n); i++) {
+						for (size_t j = 0; j < (size_t)std::sqrt((double)n); j++, v++) {
 							if (changed[v]) cout << "*";
 							domains[v].print();
 							cout << "\t";
