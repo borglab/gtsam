@@ -13,9 +13,7 @@ function VisualISAMPlot( results, data )
         covarianceEllipse3D([point_j.x;point_j.y;point_j.z],results.Ppoints{j});
     end
     
-    axis([-35 35 -35 35 -35 35])
-    view([36 34])
-    colormap('hot')
+    axis([-35 35 -35 35 -15 15])
     
     hold off;
 end

@@ -105,6 +105,9 @@ function handles=initialize(handles)
     handles.results{2}.estimates
     cla(handles.resultAxes);
 	VisualISAMPlot(handles.results{handles.frame_i}, handles.data)
+    view([36 34])
+    colormap('hot')
+
 
 % --- Executes on button press in intializeButton.
 function intializeButton_Callback(hObject, eventdata, handles)
