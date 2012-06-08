@@ -22,7 +22,7 @@ function varargout = VisualISAM_gui(varargin)
 
 % Edit the above text to modify the response to help VisualISAM_gui
 
-% Last Modified by GUIDE v2.5 07-Jun-2012 23:43:22
+% Last Modified by GUIDE v2.5 08-Jun-2012 03:28:25
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -58,13 +58,15 @@ function VisualISAM_gui_OpeningFcn(hObject, eventdata, handles, varargin)
 % handles.results = visualSLAMValues;
 
 % Choose default command line output for VisualISAM_gui
+handles.selectedDataset = 'triangle';
+handles = initialize(handles);
 handles.output = hObject;
 
 % Update handles structure
 guidata(hObject, handles);
 
 % UIWAIT makes VisualISAM_gui wait for user response (see UIRESUME)
-% uiwait(handles.figure1);
+% uiwait(handles.Dataset);
 
 
 % --- Outputs from this function are returned to the command line.
@@ -86,16 +88,30 @@ function generateButton_Callback(hObject, eventdata, handles)
     handles.data = VisualISAMData_triangle();
     guidata(hObject,handles)
 
+% --- Initialize a new dataset
+function handles=initialize(handles)
+    handles.selectedDataset
+    switch handles.selectedDataset
+        case 'cube' 
+            handles.data = VisualISAMData_cube();
+        case 'triangle'
+            handles.data = VisualISAMData_triangle();
+    end
+    handles.data
+    handles.results = {}
+    [handles.isam handles.results{2}] = VisualISAMInitialize(handles.data);
+    handles.frame_i=2;
+    sprintf('Frame 1,2:')
+    handles.results{2}.estimates
+    cla(handles.resultAxes);
+	VisualISAMPlot(handles.results{handles.frame_i}, handles.data)
 
 % --- Executes on button press in intializeButton.
 function intializeButton_Callback(hObject, eventdata, handles)
 % hObject    handle to intializeButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-    [handles.isam handles.results] = VisualISAMInitialize(handles.data);
-    handles.frame_i=3;
-    sprintf('Frame 1,2:')
-    handles.results
+    handles=initialize(handles)
     guidata(hObject,handles)
     
 
@@ -104,24 +120,22 @@ function stepButton_Callback(hObject, eventdata, handles)
 % hObject    handle to stepButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-    handles.frame_i
-    handles.results
     if (handles.frame_i<size(handles.data.cameras,2))
-        [handles.isam handles.results] = VisualISAMStep(handles.frame_i, handles.isam, handles.data, handles.results); 
         handles.frame_i = handles.frame_i+1;
-        handles.results
+        sprintf('Frame %d:', handles.frame_i)
+        if (handles.frame_i > size(handles.results,2))
+            [handles.isam handles.results{handles.frame_i}] = ...
+                VisualISAMStep(handles.frame_i, handles.isam, ...
+                    handles.data, handles.results{handles.frame_i-1}); 
+        end
+        handles.results{handles.frame_i}.estimates
+        cla(handles.resultAxes);
+        VisualISAMPlot(handles.results{handles.frame_i}, handles.data)
         guidata(hObject,handles)
     else
+        sprintf('Frame %d:', handles.frame_i) 
         sprintf('No more frame!')
     end
-    
-
-% --- Executes on button press in clearButton.
-function clearButton_Callback(hObject, eventdata, handles)
-% hObject    handle to clearButton (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-    clear;
     
 
 function edit1_Callback(hObject, eventdata, handles)
@@ -154,7 +168,11 @@ function popupmenu1_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns popupmenu1 contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupmenu1
-
+    str = cellstr(get(hObject,'String'));
+    sel = get(hObject,'Value');
+    handles.selectedDataset = str{sel}
+    handles=initialize(handles)
+    guidata(hObject, handles);
 
 % --- Executes during object creation, after setting all properties.
 function popupmenu1_CreateFcn(hObject, eventdata, handles)
@@ -170,7 +188,211 @@ end
 
 
 % --- Executes during object creation, after setting all properties.
-function figure1_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to figure1 (see GCBO)
+function Dataset_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Dataset (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
+
+
+% --- Executes on button press in backButton.
+function backButton_Callback(hObject, eventdata, handles)
+% hObject    handle to backButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    if (handles.frame_i>2)
+        handles.frame_i = handles.frame_i-1;
+        sprintf('Frame %d:', handles.frame_i)
+        handles.results{handles.frame_i}.estimates
+        cla(handles.resultAxes);
+        VisualISAMPlot(handles.results{handles.frame_i}, handles.data)
+        guidata(hObject,handles)
+    else
+        sprintf('No more frame!');
+    end
+
+% --- Executes on button press in runButton.
+function runButton_Callback(hObject, eventdata, handles)
+% hObject    handle to runButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    for i=handles.frame_i+1:size(handles.data.cameras,2)
+        if (i > size(handles.results,2))
+            [handles.isam handles.results{i}] = ...
+                VisualISAMStep(i, handles.isam, ...
+                    handles.data, handles.results{i-1}); 
+        end
+        handles.results{i}.estimates
+        cla(handles.resultAxes);
+        VisualISAMPlot(handles.results{i}, handles.data)
+    end
+    handles.frame_i = size(handles.data.cameras,2);
+	sprintf('Frame %d:', handles.frame_i)
+    guidata(hObject,handles)
+    
+
+% --- Executes on button press in stopButton.
+function stopButton_Callback(hObject, eventdata, handles)
+% hObject    handle to stopButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    sprintf('Not yet implemented')
+
+
+function edit8_Callback(hObject, eventdata, handles)
+% hObject    handle to edit8 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit8 as text
+%        str2double(get(hObject,'String')) returns contents of edit8 as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit8_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit8 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function odoTrans_Callback(hObject, eventdata, handles)
+% hObject    handle to odoTrans (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of odoTrans as text
+%        str2double(get(hObject,'String')) returns contents of odoTrans as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function odoTrans_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to odoTrans (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function measNoise_Callback(hObject, eventdata, handles)
+% hObject    handle to measNoise (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of measNoise as text
+%        str2double(get(hObject,'String')) returns contents of measNoise as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function measNoise_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to measNoise (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function posePriorRot_Callback(hObject, eventdata, handles)
+% hObject    handle to posePriorRot (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of posePriorRot as text
+%        str2double(get(hObject,'String')) returns contents of posePriorRot as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function posePriorRot_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to posePriorRot (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function posePriorTrans_Callback(hObject, eventdata, handles)
+% hObject    handle to posePriorTrans (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of posePriorTrans as text
+%        str2double(get(hObject,'String')) returns contents of posePriorTrans as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function posePriorTrans_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to posePriorTrans (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function pointPrior_Callback(hObject, eventdata, handles)
+% hObject    handle to pointPrior (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of pointPrior as text
+%        str2double(get(hObject,'String')) returns contents of pointPrior as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function pointPrior_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to pointPrior (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function odoRot_Callback(hObject, eventdata, handles)
+% hObject    handle to odoRot (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of odoRot as text
+%        str2double(get(hObject,'String')) returns contents of odoRot as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function odoRot_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to odoRot (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end

@@ -14,11 +14,18 @@ function [ isam, results ] = VisualISAMStep( frame_i, isam, data, prevResults )
     
     %% Initial estimates for new variables
     initials = visualSLAMValues;
-    prevPose = prevResults.pose(symbol('x',frame_i-1));
+    prevPose = prevResults.estimates.pose(symbol('x',frame_i-1));
     initials.insertPose(symbol('x',frame_i), prevPose.compose(odometry));
         
     isam.update(newFactors, initials);
-    results = isam.estimate();
-
+    results.frame_i = frame_i;
+    results.estimates = isam.estimate();
+    for i=1:frame_i
+        results.Pposes{i} = isam.marginalCovariance(symbol('x',i));
+    end
+    
+    for j=1:size(data.points,2)
+        results.Ppoints{j} = isam.marginalCovariance(symbol('l',j));
+    end
 end
 

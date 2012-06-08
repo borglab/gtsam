@@ -28,6 +28,14 @@ function [ isam, results ] = VisualISAMInitialize( data, reorderInterval )
     
     %% Update ISAM
     isam.update(newFactors, initials);
-    results = isam.estimate();
+    results.frame_i = 2;
+    results.estimates = isam.estimate();
+    for i=1:2
+        results.Pposes{i} = isam.marginalCovariance(symbol('x',i));
+    end
+    
+    for j=1:size(data.points,2)
+        results.Ppoints{j} = isam.marginalCovariance(symbol('l',j));
+    end
 end
 
