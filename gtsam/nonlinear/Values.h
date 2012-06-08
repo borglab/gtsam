@@ -37,16 +37,16 @@
 #include <boost/bind.hpp>
 #include <boost/ptr_container/serialize_ptr_map.hpp>
 #include <boost/iterator_adaptors.hpp>
-#include <boost/lambda/lambda.hpp>
 
 #include <string>
 #include <utility>
 
 namespace gtsam {
 
-  // Forward declarations
+  // Forward declarations / utilities
   class ValueCloneAllocator;
   class ValueAutomaticCasting;
+  template<typename T> static bool _truePredicate(const T&) { return true; }
 
 /**
   * A non-templated config holding any types of Manifold-group elements.  A
@@ -300,7 +300,7 @@ namespace gtsam {
      */
     template<class ValueType>
     Filtered<ValueType>
-    filter(const boost::function<bool(Key)>& filterFcn = (boost::lambda::_1, true));
+    filter(const boost::function<bool(Key)>& filterFcn = &_truePredicate);
 
     /**
      * Return a filtered view of this Values class, without copying any data.
@@ -338,7 +338,7 @@ namespace gtsam {
      */
     template<class ValueType>
     ConstFiltered<ValueType>
-    filter(const boost::function<bool(Key)>& filterFcn = (boost::lambda::_1, true)) const;
+    filter(const boost::function<bool(Key)>& filterFcn = _truePredicate()) const;
 
   private:
     // Filters based on ValueType (if not Value) and also based on the user-
@@ -380,13 +380,13 @@ namespace gtsam {
     mutable std::string message_;
 
   public:
-    /// Construct with the key-value pair attemped to be added
+    /// Construct with the key-value pair attempted to be added
     ValuesKeyAlreadyExists(Key key) throw() :
       key_(key) {}
 
     virtual ~ValuesKeyAlreadyExists() throw() {}
 
-    /// The duplicate key that was attemped to be added
+    /// The duplicate key that was attempted to be added
     Key key() const throw() { return key_; }
 
     /// The message to be displayed to the user
