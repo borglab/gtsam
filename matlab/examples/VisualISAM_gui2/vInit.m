@@ -25,7 +25,7 @@ for j=1:handles.nPoints
     handles.initialEstimates.insertPoint(jj, handles.points{j});
 end
 
-handles.frame_i = 2;
+handles.frame_i = 1;
 
 end
 
