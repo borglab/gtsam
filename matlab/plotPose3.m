@@ -20,7 +20,7 @@ L = [C zAxis]';
 line(L(:,1),L(:,2),L(:,3),'Color','b');
 
 % plot the covariance
-if nargin>2
+if (nargin>2) && (~isempty(P))
     pPp = P(4:6,4:6); % covariance matrix in pose coordinate frame    
     gPp = gRp*pPp*gRp'; % convert the covariance matrix to global coordinate frame
     covarianceEllipse3D(C,gPp);  
