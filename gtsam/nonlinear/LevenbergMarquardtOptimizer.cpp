@@ -24,6 +24,7 @@
 #include <gtsam/inference/EliminationTree.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
 #include <gtsam/linear/SimpleSPCGSolver.h>
+#include <gtsam/linear/SubgraphSolver.h>
 
 using namespace std;
 
@@ -74,8 +75,15 @@ void LevenbergMarquardtOptimizer::iterate() {
         delta = gtsam::optimize(*EliminationTree<GaussianFactor>::Create(dampedSystem)->eliminate(params_.getEliminationFunction()));
       }
       else if ( params_.isCG() ) {
-        IterativeOptimizationParameters::shared_ptr params(!params_.iterativeParams ? boost::make_shared<IterativeOptimizationParameters>() : params_.iterativeParams);
+
+        ConjugateGradientParameters::shared_ptr params (!params_.iterativeParams ?
+          boost::make_shared<ConjugateGradientParameters>() :
+          boost::dynamic_pointer_cast<ConjugateGradientParameters>(params_.iterativeParams));
+
+        if ( !params ) throw runtime_error("LMSolver: spcg parameter dynamic casting failed");
+
         SimpleSPCGSolver solver(dampedSystem, *params);
+        //SubgraphSolver solver(dampedSystem, *params);
         delta = *solver.optimize();
       }
       else {

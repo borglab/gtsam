@@ -20,7 +20,7 @@
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/linear/JacobianFactorGraph.h>
-#include <gtsam/linear/IterativeOptimizationParameters.h>
+#include <gtsam/linear/IterativeSolver.h>
 
 
 #include <iostream>
@@ -38,31 +38,31 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 
-	Vector steepestDescent(const System& Ab, const Vector& x, const IterativeOptimizationParameters & parameters) {
+	Vector steepestDescent(const System& Ab, const Vector& x, const ConjugateGradientParameters & parameters) {
 		return conjugateGradients<System, Vector, Vector> (Ab, x, parameters, true);
 	}
 
-	Vector conjugateGradientDescent(const System& Ab, const Vector& x, const IterativeOptimizationParameters & parameters) {
+	Vector conjugateGradientDescent(const System& Ab, const Vector& x, const ConjugateGradientParameters & parameters) {
 		return conjugateGradients<System, Vector, Vector> (Ab, x, parameters);
 	}
 
 	/* ************************************************************************* */
-	Vector steepestDescent(const Matrix& A, const Vector& b, const Vector& x, const IterativeOptimizationParameters & parameters) {
+	Vector steepestDescent(const Matrix& A, const Vector& b, const Vector& x, const ConjugateGradientParameters & parameters) {
 		System Ab(A, b);
 		return conjugateGradients<System, Vector, Vector> (Ab, x, parameters, true);
 	}
 
-	Vector conjugateGradientDescent(const Matrix& A, const Vector& b, const Vector& x, const IterativeOptimizationParameters & parameters) {
+	Vector conjugateGradientDescent(const Matrix& A, const Vector& b, const Vector& x, const ConjugateGradientParameters & parameters) {
 		System Ab(A, b);
 		return conjugateGradients<System, Vector, Vector> (Ab, x, parameters);
 	}
 
 	/* ************************************************************************* */
-	VectorValues steepestDescent(const FactorGraph<JacobianFactor>& fg, const VectorValues& x, const IterativeOptimizationParameters & parameters) {
+	VectorValues steepestDescent(const FactorGraph<JacobianFactor>& fg, const VectorValues& x, const ConjugateGradientParameters & parameters) {
 		return conjugateGradients<FactorGraph<JacobianFactor>, VectorValues, Errors> (fg, x, parameters, true);
 	}
 
-	VectorValues conjugateGradientDescent(const FactorGraph<JacobianFactor>& fg, const VectorValues& x, const IterativeOptimizationParameters & parameters) {
+	VectorValues conjugateGradientDescent(const FactorGraph<JacobianFactor>& fg, const VectorValues& x, const ConjugateGradientParameters & parameters) {
 		return conjugateGradients<FactorGraph<JacobianFactor>, VectorValues, Errors> (fg, x, parameters);
 	}
 

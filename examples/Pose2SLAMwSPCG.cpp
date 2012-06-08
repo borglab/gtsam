@@ -16,7 +16,6 @@
  * @date June 2, 2012
  */
 
-#include <gtsam/linear/IterativeOptimizationParameters.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/slam/pose2SLAM.h>
 

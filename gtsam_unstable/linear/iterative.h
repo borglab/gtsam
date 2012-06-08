@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -20,7 +20,7 @@
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/linear/VectorValues.h>
-#include <gtsam/linear/IterativeOptimizationParameters.h>
+#include <gtsam/linear/ConjugateGradientSolver.h>
 
 namespace gtsam {
 
@@ -105,7 +105,7 @@ namespace gtsam {
 	Vector conjugateGradientDescent(
 			const System& Ab,
 			const Vector& x,
-			const IterativeOptimizationParameters & parameters);
+			const ConjugateGradientParameters & parameters);
 
 	/** convenience calls using matrices, will create System class internally: */
 
@@ -116,7 +116,7 @@ namespace gtsam {
 			const Matrix& A,
 			const Vector& b,
 			const Vector& x,
-			const IterativeOptimizationParameters & parameters);
+			const ConjugateGradientParameters & parameters);
 
 	/**
 	 * Method of conjugate gradients (CG), Matrix version
@@ -125,7 +125,7 @@ namespace gtsam {
 			const Matrix& A,
 			const Vector& b,
 			const Vector& x,
-			const IterativeOptimizationParameters & parameters);
+			const ConjugateGradientParameters & parameters);
 
 	class GaussianFactorGraph;
 
@@ -135,7 +135,7 @@ namespace gtsam {
 	VectorValues steepestDescent(
 			const GaussianFactorGraph& fg,
 			const VectorValues& x,
-			const IterativeOptimizationParameters & parameters);
+			const ConjugateGradientParameters & parameters);
 
 	/**
 	 * Method of conjugate gradients (CG), Gaussian Factor Graph version
@@ -143,7 +143,7 @@ namespace gtsam {
 	VectorValues conjugateGradientDescent(
 			const GaussianFactorGraph& fg,
 			const VectorValues& x,
-			const IterativeOptimizationParameters & parameters);
+			const ConjugateGradientParameters & parameters);
 
 
 } // namespace gtsam

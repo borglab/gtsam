@@ -19,7 +19,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
-#include <gtsam/linear/IterativeOptimizationParameters.h>
+#include <gtsam/linear/IterativeSolver.h>
 
 namespace gtsam {
 

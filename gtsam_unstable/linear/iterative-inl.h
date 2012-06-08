@@ -19,7 +19,7 @@
 #pragma once
 
 #include <gtsam_unstable/linear/iterative.h>
-#include <gtsam/linear/IterativeOptimizationParameters.h>
+#include <gtsam/linear/ConjugateGradientSolver.h>
 #include <boost/shared_ptr.hpp>
 
 namespace gtsam {
@@ -29,7 +29,7 @@ namespace gtsam {
 	template<class S, class V, class E>
 	struct CGState {
 
-		typedef IterativeOptimizationParameters Parameters;
+		typedef ConjugateGradientParameters Parameters;
 		const Parameters &parameters_;
 
 		int k;                     ///< iteration
@@ -91,7 +91,7 @@ namespace gtsam {
 
 			// check for convergence
 			double new_gamma = dot(g, g);
-			if (parameters_.verbosity() != IterativeOptimizationParameters::SILENT)
+			if (parameters_.verbosity() != ConjugateGradientParameters::SILENT)
 			  std::cout << "iteration " << k << ": alpha = " << alpha
 				     << ", dotg = " << new_gamma << std::endl;
 			if (new_gamma < threshold) return true;
@@ -121,18 +121,18 @@ namespace gtsam {
 	V conjugateGradients(
 			const S& Ab,
 			V x,
-			const IterativeOptimizationParameters &parameters,
+			const ConjugateGradientParameters &parameters,
 			bool steepest = false) {
 
 		CGState<S, V, E> state(Ab, x, parameters, steepest);
-		if (parameters.verbosity() != IterativeOptimizationParameters::SILENT)
+		if (parameters.verbosity() != ConjugateGradientParameters::SILENT)
 		  std::cout << "CG: epsilon = " << parameters.epsilon()
 				 << ", maxIterations = " << parameters.maxIterations()
 				 << ", ||g0||^2 = " << state.gamma
 				 << ", threshold = " << state.threshold << std::endl;
 
 		if ( state.gamma < state.threshold ) {
-			if (parameters.verbosity() != IterativeOptimizationParameters::SILENT)
+			if (parameters.verbosity() != ConjugateGradientParameters::SILENT)
 			  std::cout << "||g0||^2 < threshold, exiting immediately !" << std::endl;
 
 			return x;

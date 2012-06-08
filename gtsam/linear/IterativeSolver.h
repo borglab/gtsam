@@ -11,20 +11,49 @@
 
 #pragma once
 
-#include <gtsam/linear/IterativeOptimizationParameters.h>
 #include <gtsam/linear/VectorValues.h>
 
 namespace gtsam {
 
-class IterativeSolver {
+  /**
+   * parameters for iterative linear solvers
+   */
+  class IterativeOptimizationParameters {
 
-public:
+  public:
 
-  IterativeSolver(){}
-	virtual ~IterativeSolver() {}
+    typedef boost::shared_ptr<IterativeOptimizationParameters> shared_ptr;
 
-	virtual VectorValues::shared_ptr optimize () = 0;
-	virtual const IterativeOptimizationParameters& _params() const = 0;
-};
+    enum Kernel { PCG = 0, LSPCG = 1 } kernel_ ;                          ///< Iterative Method Kernel
+    enum Verbosity { SILENT = 0, COMPLEXITY = 1, ERROR = 2} verbosity_ ;  ///< Verbosity
+
+  public:
+
+    IterativeOptimizationParameters(const IterativeOptimizationParameters &p)
+      : kernel_(p.kernel_), verbosity_(p.verbosity_) {}
+
+    IterativeOptimizationParameters(Kernel kernel = LSPCG, Verbosity verbosity = SILENT)
+      : kernel_(kernel), verbosity_(verbosity) {}
+
+    virtual ~IterativeOptimizationParameters() {}
+
+    /* general interface */
+    inline Kernel kernel() const { return kernel_; }
+    inline Verbosity verbosity() const { return verbosity_; }
+
+    void print() const {
+      const std::string kernelStr[2] = {"pcg", "lspcg"};
+      std::cout << "IterativeOptimizationParameters: "
+                << "kernel = " << kernelStr[kernel_]
+                << ", verbosity = " << verbosity_ << std::endl;
+    }
+  };
+
+  class IterativeSolver {
+  public:
+    IterativeSolver(){}
+    virtual ~IterativeSolver() {}
+    virtual VectorValues::shared_ptr optimize () = 0;
+  };
 
 }

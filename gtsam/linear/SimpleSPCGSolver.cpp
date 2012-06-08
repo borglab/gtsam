@@ -9,11 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-#include <gtsam/linear/SimpleSPCGSolver.h>
+#include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/JacobianFactorGraph.h>
+#include <gtsam/linear/SimpleSPCGSolver.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/inference/EliminationTree.h>
 #include <boost/foreach.hpp>
@@ -100,7 +100,7 @@ VectorValues::shared_ptr SimpleSPCGSolver::optimize (const VectorValues &initial
             std::max(parameters_.epsilon_abs(),
                   parameters_.epsilon() * parameters_.epsilon() * gamma);
   const size_t iMaxIterations = parameters_.maxIterations();
-  const ConjugateGradientParameters::Verbosity verbosity = parameters_.cg_.verbosity();
+  const Parameters::Verbosity verbosity = parameters_.verbosity();
 
   if ( verbosity >= ConjugateGradientParameters::ERROR )
     std::cout << "[SimpleSPCGSolver] epsilon = " << parameters_.epsilon()

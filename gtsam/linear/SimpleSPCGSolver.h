@@ -11,9 +11,10 @@
 
 #pragma once
 
-#include <gtsam/linear/IterativeSolver.h>
+#include <gtsam/linear/ConjugateGradientSolver.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/IterativeSolver.h>
 #include <gtsam/linear/JacobianFactor.h>
 
 namespace gtsam {
@@ -39,7 +40,7 @@ class SimpleSPCGSolver : public IterativeSolver {
 public:
 
   typedef IterativeSolver Base;
-  typedef IterativeOptimizationParameters Parameters;
+  typedef ConjugateGradientParameters Parameters;
   typedef boost::shared_ptr<IterativeSolver> shared_ptr;
 
 protected:
@@ -60,7 +61,6 @@ public:
   SimpleSPCGSolver(const GaussianFactorGraph &gfg, const Parameters &parameters);
   virtual ~SimpleSPCGSolver() {}
   virtual VectorValues::shared_ptr optimize () {return optimize(*y0_);}
-  virtual const IterativeOptimizationParameters& _params() const { return parameters_; }
 
 protected:
 
