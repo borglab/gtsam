@@ -67,8 +67,7 @@ namespace gtsam {
 	IndexFactor::shared_ptr CombineSymbolic(
 			const FactorGraph<IndexFactor>& factors, const FastMap<Index,
 					std::vector<Index> >& variableSlots) {
-		IndexFactor::shared_ptr combined(Combine<IndexFactor, Index> (factors,
-				variableSlots));
+		IndexFactor::shared_ptr combined(Combine<IndexFactor, Index> (factors, variableSlots));
 //		combined->assertInvariants();
 		return combined;
 	}

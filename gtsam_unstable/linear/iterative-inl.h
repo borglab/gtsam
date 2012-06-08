@@ -50,7 +50,7 @@ namespace gtsam {
 
 			// init gamma and calculate threshold
 			gamma = dot(g,g) ;
-			threshold = ::max(parameters_.epsilon_abs(), parameters_.epsilon() * parameters_.epsilon() * gamma);
+			threshold = std::max(parameters_.epsilon_abs(), parameters_.epsilon() * parameters_.epsilon() * gamma);
 
 			// Allocate and calculate A*d for first iteration
 			if (gamma > parameters_.epsilon_abs()) Ad = Ab * d;
@@ -59,10 +59,10 @@ namespace gtsam {
 		/* ************************************************************************* */
 		// print
 		void print(const V& x) {
-			cout << "iteration = " << k << endl;
+		  std::cout << "iteration = " << k << std::endl;
 			gtsam::print(x,"x");
 			gtsam::print(g, "g");
-			cout << "dotg = " << gamma << endl;
+			std::cout << "dotg = " << gamma << std::endl;
 			gtsam::print(d, "d");
 			gtsam::print(Ad, "Ad");
 		}
@@ -92,8 +92,8 @@ namespace gtsam {
 			// check for convergence
 			double new_gamma = dot(g, g);
 			if (parameters_.verbosity() != IterativeOptimizationParameters::SILENT)
-				cout << "iteration " << k << ": alpha = " << alpha
-				     << ", dotg = " << new_gamma << endl;
+			  std::cout << "iteration " << k << ": alpha = " << alpha
+				     << ", dotg = " << new_gamma << std::endl;
 			if (new_gamma < threshold) return true;
 
 			// calculate new search direction
@@ -126,14 +126,14 @@ namespace gtsam {
 
 		CGState<S, V, E> state(Ab, x, parameters, steepest);
 		if (parameters.verbosity() != IterativeOptimizationParameters::SILENT)
-			cout << "CG: epsilon = " << parameters.epsilon()
+		  std::cout << "CG: epsilon = " << parameters.epsilon()
 				 << ", maxIterations = " << parameters.maxIterations()
 				 << ", ||g0||^2 = " << state.gamma
-				 << ", threshold = " << state.threshold << endl;
+				 << ", threshold = " << state.threshold << std::endl;
 
 		if ( state.gamma < state.threshold ) {
 			if (parameters.verbosity() != IterativeOptimizationParameters::SILENT)
-				cout << "||g0||^2 < threshold, exiting immediately !" << endl;
+			  std::cout << "||g0||^2 < threshold, exiting immediately !" << std::endl;
 
 			return x;
 		}

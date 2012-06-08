@@ -101,7 +101,7 @@ namespace gtsam {
 	typename DERIVED::shared_ptr Combine(const FactorGraph<DERIVED>& factors,
     const FastMap<KEY, std::vector<KEY> >& variableSlots) {
 
-		typedef const pair<const KEY, std::vector<KEY> > KeySlotPair;
+		typedef const std::pair<const KEY, std::vector<KEY> > KeySlotPair;
     // Local functional for getting keys out of key-value pairs
     struct Local { static KEY FirstOf(const KeySlotPair& pr) { return pr.first; } };
 

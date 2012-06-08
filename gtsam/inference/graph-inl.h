@@ -70,7 +70,7 @@ SDGraph<KEY> toBoostGraph(const G& graph) {
 
 	for(itFactor=graph.begin(); itFactor!=graph.end(); itFactor++) {
 		if ((*itFactor)->keys().size() > 2)
-			throw(invalid_argument("toBoostGraph: only support factors with at most two keys"));
+			throw(std::invalid_argument("toBoostGraph: only support factors with at most two keys"));
 
 		if ((*itFactor)->keys().size() == 1)
 			continue;
@@ -131,7 +131,7 @@ predecessorMap2Graph(const PredecessorMap<KEY>& p_map) {
 	}
 
 	if (!foundRoot)
-		throw invalid_argument("predecessorMap2Graph: invalid predecessor map!");
+		throw std::invalid_argument("predecessorMap2Graph: invalid predecessor map!");
 	else
 	  return boost::tuple<G, V, std::map<KEY, V> >(g, root, key2vertex);
 }
@@ -171,7 +171,7 @@ boost::shared_ptr<Values> composePoses(const G& graph, const PredecessorMap<KEY>
 
 	PoseGraph g;
 	PoseVertex root;
-	map<KEY, PoseVertex> key2vertex;
+	std::map<KEY, PoseVertex> key2vertex;
 	boost::tie(g, root, key2vertex) =
 			predecessorMap2Graph<PoseGraph, PoseVertex, KEY>(tree);
 
@@ -181,7 +181,7 @@ boost::shared_ptr<Values> composePoses(const G& graph, const PredecessorMap<KEY>
 	BOOST_FOREACH(typename G::sharedFactor nl_factor, graph) {
 
 		if (nl_factor->keys().size() > 2)
-			throw invalid_argument("composePoses: only support factors with at most two keys");
+			throw std::invalid_argument("composePoses: only support factors with at most two keys");
 
 		// e.g. in pose2graph, nonlinear factor needs to be converted to pose2factor
 		boost::shared_ptr<Factor> factor = boost::dynamic_pointer_cast<Factor>(nl_factor);
@@ -196,7 +196,7 @@ boost::shared_ptr<Values> composePoses(const G& graph, const PredecessorMap<KEY>
 		POSE l1Xl2 = factor->measured();
 		boost::tie(edge12, found1) = boost::edge(v1, v2, g);
 		boost::tie(edge21, found2) = boost::edge(v2, v1, g);
-		if (found1 && found2) throw invalid_argument ("composePoses: invalid spanning tree");
+		if (found1 && found2) throw std::invalid_argument ("composePoses: invalid spanning tree");
 		if (!found1 && !found2) continue;
 		if (found1)
 			boost::put(boost::edge_weight, g, edge12, l1Xl2);
@@ -223,13 +223,13 @@ PredecessorMap<KEY> findMinimumSpanningTree(const G& fg) {
 	SDGraph<KEY> g = gtsam::toBoostGraph<G, FACTOR2, KEY>(fg);
 
 	// find minimum spanning tree
-	vector<typename SDGraph<KEY>::Vertex> p_map(boost::num_vertices(g));
+	std::vector<typename SDGraph<KEY>::Vertex> p_map(boost::num_vertices(g));
 	prim_minimum_spanning_tree(g, &p_map[0]);
 
 	// convert edge to string pairs
 	PredecessorMap<KEY> tree;
 	typename SDGraph<KEY>::vertex_iterator itVertex = boost::vertices(g).first;
-	typename vector<typename SDGraph<KEY>::Vertex>::iterator vi;
+	typename std::vector<typename SDGraph<KEY>::Vertex>::iterator vi;
 	for (vi = p_map.begin(); vi != p_map.end(); itVertex++, vi++) {
 		KEY key = boost::get(boost::vertex_name, g, *itVertex);
 		KEY parent = boost::get(boost::vertex_name, g, *vi);
@@ -248,7 +248,7 @@ void split(const G& g, const PredecessorMap<KEY>& tree, G& Ab1, G& Ab2) {
 	BOOST_FOREACH(const F& factor, g)
 	{
 		if (factor->keys().size() > 2)
-			throw(invalid_argument("split: only support factors with at most two keys"));
+			throw(std::invalid_argument("split: only support factors with at most two keys"));
 
 		if (factor->keys().size() == 1) {
 			Ab1.push_back(factor);
