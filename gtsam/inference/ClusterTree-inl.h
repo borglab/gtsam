@@ -61,8 +61,8 @@ namespace gtsam {
 		if (separator != other.separator) return false;
 		if (children_.size() != other.children_.size()) return false;
 
-		typename list<shared_ptr>::const_iterator it1 = children_.begin();
-		typename list<shared_ptr>::const_iterator it2 = other.children_.begin();
+		typename std::list<shared_ptr>::const_iterator it1 = children_.begin();
+		typename std::list<shared_ptr>::const_iterator it2 = other.children_.begin();
 		for (; it1 != children_.end(); it1++, it2++)
 			if (!(*it1)->equals(**it2)) return false;
 

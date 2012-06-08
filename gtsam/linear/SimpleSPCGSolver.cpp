@@ -97,13 +97,13 @@ VectorValues::shared_ptr SimpleSPCGSolver::optimize (const VectorValues &initial
   double gamma = s.vector().squaredNorm(), new_gamma = 0.0, alpha = 0.0, beta = 0.0 ;
 
   const double threshold =
-            ::max(parameters_.epsilon_abs(),
+            std::max(parameters_.epsilon_abs(),
                   parameters_.epsilon() * parameters_.epsilon() * gamma);
   const size_t iMaxIterations = parameters_.maxIterations();
   const ConjugateGradientParameters::Verbosity verbosity = parameters_.cg_.verbosity();
 
   if ( verbosity >= ConjugateGradientParameters::ERROR )
-    cout << "[SimpleSPCGSolver] epsilon = " << parameters_.epsilon()
+    std::cout << "[SimpleSPCGSolver] epsilon = " << parameters_.epsilon()
          << ", max = " << parameters_.maxIterations()
          << ", ||r0|| = " << std::sqrt(gamma)
          << ", threshold = " << threshold << std::endl;
@@ -122,14 +122,14 @@ VectorValues::shared_ptr SimpleSPCGSolver::optimize (const VectorValues &initial
     gamma = new_gamma ;
 
     if ( verbosity >= ConjugateGradientParameters::ERROR) {
-      cout << "[SimpleSPCGSolver] iteration " << k << ": a = " << alpha << ": b = " << beta << ", ||r|| = " << std::sqrt(gamma) << endl;
+      std::cout << "[SimpleSPCGSolver] iteration " << k << ": a = " << alpha << ": b = " << beta << ", ||r|| = " << std::sqrt(gamma) << std::endl;
     }
 
     if ( gamma < threshold ) break ;
   } // k
 
   if ( verbosity >= ConjugateGradientParameters::ERROR )
-    cout << "[SimpleSPCGSolver] iteration " << k << ": a = " << alpha << ": b = " << beta << ", ||r|| = " << std::sqrt(gamma) << endl;
+    std::cout << "[SimpleSPCGSolver] iteration " << k << ": a = " << alpha << ": b = " << beta << ", ||r|| = " << std::sqrt(gamma) << std::endl;
 
   /* transform y back to x */
   return this->transform(*x);

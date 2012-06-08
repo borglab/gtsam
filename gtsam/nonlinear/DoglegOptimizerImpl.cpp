@@ -18,6 +18,8 @@
 #include <cmath>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
 
+using namespace std;
+
 namespace gtsam {
 /* ************************************************************************* */
 VectorValues DoglegOptimizerImpl::ComputeDoglegPoint(

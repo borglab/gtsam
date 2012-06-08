@@ -7,6 +7,7 @@
 
 #include <gtsam_unstable/dynamics/imuSystem.h>
 
+using namespace std;
 using namespace gtsam;
 using namespace imu;
 

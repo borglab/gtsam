@@ -11,6 +11,8 @@
 #include <gtsam/base/Testable.h>
 #include <boost/foreach.hpp>
 
+using namespace std;
+
 namespace gtsam {
 
 	/// Find the best total assignment - can be expensive

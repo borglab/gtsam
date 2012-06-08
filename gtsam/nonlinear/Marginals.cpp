@@ -21,6 +21,8 @@
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
 #include <gtsam/nonlinear/Marginals.h>
 
+using namespace std;
+
 namespace gtsam {
 
 /* ************************************************************************* */

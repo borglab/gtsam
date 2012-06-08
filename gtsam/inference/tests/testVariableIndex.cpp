@@ -22,6 +22,7 @@
 #include <gtsam/inference/VariableIndex.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
 
+using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */

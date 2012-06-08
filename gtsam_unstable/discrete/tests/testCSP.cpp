@@ -7,6 +7,8 @@
 
 #include <gtsam_unstable/discrete/CSP.h>
 #include <gtsam_unstable/discrete/Domain.h>
+#include <boost/assign/std/map.hpp>
+using boost::assign::insert;
 #include <CppUnitLite/TestHarness.h>
 #include <iostream>
 #include <fstream>

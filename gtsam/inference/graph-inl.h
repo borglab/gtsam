@@ -42,7 +42,7 @@ public:
 
 /* ************************************************************************* */
 template<class KEY>
-list<KEY> predecessorMap2Keys(const PredecessorMap<KEY>& p_map) {
+std::list<KEY> predecessorMap2Keys(const PredecessorMap<KEY>& p_map) {
 
 	typedef typename SGraph<KEY>::Vertex SVertex;
 
@@ -102,7 +102,7 @@ SDGraph<KEY> toBoostGraph(const G& graph) {
 
 /* ************************************************************************* */
 template<class G, class V, class KEY>
-boost::tuple<G, V, map<KEY,V> >
+boost::tuple<G, V, std::map<KEY,V> >
 predecessorMap2Graph(const PredecessorMap<KEY>& p_map) {
 
 	G g;

@@ -41,7 +41,7 @@ struct VisualSLAMExampleData {
 	std::vector<gtsam::Pose3> poses;          // ground-truth camera poses
 	gtsam::Pose3 odometry;								// ground-truth odometry between 2 consecutive poses (simulated data for iSAM)
 	std::vector<gtsam::Point3> points;     // ground-truth landmarks
-	std::map<int, vector<gtsam::Point2> > z;	// 2D measurements of landmarks in each camera frame
+	std::map<int, std::vector<gtsam::Point2> > z;	// 2D measurements of landmarks in each camera frame
 	gtsam::SharedDiagonal noiseZ; 			// measurement noise (noiseModel::Isotropic::Sigma(2, 5.0f));
 	gtsam::SharedDiagonal noiseX; 			// noise for camera poses
 	gtsam::SharedDiagonal noiseL; 			// noise for landmarks

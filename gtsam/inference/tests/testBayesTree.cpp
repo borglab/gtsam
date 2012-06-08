@@ -30,6 +30,7 @@ using namespace boost::assign;
 #include <gtsam/inference/IndexFactor.h>
 #include <gtsam/inference/SymbolicSequentialSolver.h>
 
+using namespace std;
 using namespace gtsam;
 
 typedef BayesTree<IndexConditional> SymbolicBayesTree;
