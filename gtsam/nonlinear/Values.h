@@ -300,7 +300,7 @@ namespace gtsam {
      */
     template<class ValueType>
     Filtered<ValueType>
-    filter(const boost::function<bool(Key)>& filterFcn = &_truePredicate);
+    filter(const boost::function<bool(Key)>& filterFcn = &_truePredicate<Key>);
 
     /**
      * Return a filtered view of this Values class, without copying any data.
@@ -338,7 +338,7 @@ namespace gtsam {
      */
     template<class ValueType>
     ConstFiltered<ValueType>
-    filter(const boost::function<bool(Key)>& filterFcn = _truePredicate) const;
+    filter(const boost::function<bool(Key)>& filterFcn = &_truePredicate<Key>) const;
 
   private:
     // Filters based on ValueType (if not Value) and also based on the user-
