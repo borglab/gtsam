@@ -128,7 +128,7 @@ if (GTSAM_BUILD_WRAP)
     endif()
     
     # Generate, build and install toolbox
-    set(mexFlags "${GTSAM_BUILD_MEX_BINARY_FLAGS} -I${Boost_INCLUDE_DIR} -I${MEX_INCLUDE_ROOT} -I${MEX_INCLUDE_ROOT}/gtsam -I${MEX_INCLUDE_ROOT}/gtsam/base -I${MEX_INCLUDE_ROOT}/gtsam/geometry -I${MEX_INCLUDE_ROOT}/gtsam/linear -I${MEX_INCLUDE_ROOT}/gtsam/discrete -I${MEX_INCLUDE_ROOT}/gtsam/inference -I${MEX_INCLUDE_ROOT}/gtsam/nonlinear -I${MEX_INCLUDE_ROOT}/gtsam/slam -L${GTSAM_LIB_DIR} -lgtsam")
+    set(mexFlags "${GTSAM_BUILD_MEX_BINARY_FLAGS} ${CMAKE_CXX_FLAGS} -I${Boost_INCLUDE_DIR} -I${MEX_INCLUDE_ROOT} -I${MEX_INCLUDE_ROOT}/gtsam -I${MEX_INCLUDE_ROOT}/gtsam/base -I${MEX_INCLUDE_ROOT}/gtsam/geometry -I${MEX_INCLUDE_ROOT}/gtsam/linear -I${MEX_INCLUDE_ROOT}/gtsam/discrete -I${MEX_INCLUDE_ROOT}/gtsam/inference -I${MEX_INCLUDE_ROOT}/gtsam/nonlinear -I${MEX_INCLUDE_ROOT}/gtsam/slam -L${GTSAM_LIB_DIR} -lgtsam")
     
     # Macro to handle details of setting up targets
     wrap_library(gtsam "${mexFlags}" "../")
