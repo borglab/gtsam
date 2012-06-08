@@ -44,7 +44,7 @@ namespace gtsam {
   bool BayesNet<CONDITIONAL>::equals(const BayesNet& cbn, double tol) const {
     if (size() != cbn.size())
       return false;
-    return equal(conditionals_.begin(), conditionals_.end(),
+    return std::equal(conditionals_.begin(), conditionals_.end(),
         cbn.conditionals_.begin(), equals_star<CONDITIONAL>(tol));
   }
 

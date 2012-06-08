@@ -35,8 +35,6 @@
 using boost::assign::operator+=;
 #include <boost/format.hpp>
 
-namespace lam = boost::lambda;
-
 namespace gtsam {
 
 	/* ************************************************************************* */
