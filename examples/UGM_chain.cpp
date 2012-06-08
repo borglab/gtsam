@@ -22,6 +22,7 @@
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/discrete/DiscreteSequentialSolver.h>
 #include <gtsam/discrete/DiscreteMarginals.h>
+#include <gtsam/base/timing.h>
 
 #include <iomanip>
 
@@ -31,7 +32,7 @@ using namespace gtsam;
 int main(int argc, char** argv) {
 
     // Set Number of Nodes in the Graph
-    const int nrNodes = 50;
+    const int nrNodes = 60;
 
 	// Each node takes 1 of 7 possible states denoted by 0-6 in following order:
 	// ["VideoGames"	"Industry"	"GradSchool"  "VideoGames(with PhD)"
@@ -75,11 +76,27 @@ int main(int argc, char** argv) {
 	optimalDecoding->print("\nMost Probable Explanation (optimalDecoding)\n");
 
 	// "Inference" Computing marginals for each node
+
+
+	cout << "\nComputing Node Marginals ..(Sequential Elimination)" << endl;
+	tic_(1, "Sequential");
+	for (vector<DiscreteKey>::iterator itr = nodes.begin(); itr != nodes.end();
+			++itr) {
+		//Compute the marginal
+		Vector margProbs = solver.marginalProbabilities(*itr);
+
+		//Print the marginals
+		cout << "Node#" << setw(4) << itr->first << " :  ";
+		print(margProbs);
+	}
+	toc_(1, "Sequential");
+
 	// Here we'll make use of DiscreteMarginals class, which makes use of
 	// bayes-tree based shortcut evaluation of marginals
 	DiscreteMarginals marginals(graph);
 
-	cout << "\nComputing Node Marginals .." << endl;
+	cout << "\nComputing Node Marginals ..(BayesTree based)" << endl;
+	tic_(2, "Multifrontal");
 	for (vector<DiscreteKey>::iterator itr = nodes.begin(); itr != nodes.end();
 			++itr) {
 		//Compute the marginal
@@ -88,9 +105,10 @@ int main(int argc, char** argv) {
 		//Print the marginals
 		cout << "Node#" << setw(4) << itr->first << " :  ";
 		print(margProbs);
-		cout << endl;
 	}
+	toc_(2, "Multifrontal");
 
+	tictoc_print_();
 	return 0;
 }
 
