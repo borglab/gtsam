@@ -108,7 +108,7 @@ namespace gtsam {
 		JunctionTree(const FG& factorGraph);
 
 		/** Construct from a factor graph and pre-computed variable index.
-		 * @param factorGraph The factor graph for which to build the junction tree
+		 * @param fg The factor graph for which to build the junction tree
 		 * @param structure The set of factors involving each variable.  If this is not
 		 * precomputed, you can call the JunctionTree(const FG&)
 		 * constructor instead.

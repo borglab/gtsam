@@ -130,7 +130,7 @@ namespace gtsam {
     /** Construct shared_ptr from a FactorGraph<FACTOR>::EliminationResult.  In this class
      * the conditional part is kept and the factor part is ignored, but in derived clique
      * types, such as ISAM2Clique, the factor part is kept as a cached factor.
-     * @param An elimination result, which is a pair<CONDITIONAL,FACTOR>
+     * @param result An elimination result, which is a pair<CONDITIONAL,FACTOR>
      */
      static derived_ptr Create(const std::pair<sharedConditional, boost::shared_ptr<typename ConditionalType::FactorType> >& result) { return boost::make_shared<DerivedType>(result); }
 

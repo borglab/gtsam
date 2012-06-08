@@ -91,7 +91,7 @@ struct ISAM2::Impl {
   /**
    * Apply expmap to the given values, but only for indices appearing in
    * \c markedRelinMask.  Values are expmapped in-place.
-   * \param [in][out] values The value to expmap in-place
+   * \param [in, out] values The value to expmap in-place
    * \param delta The linear delta with which to expmap
    * \param ordering The ordering
    * \param mask Mask on linear indices, only \c true entries are expmapped

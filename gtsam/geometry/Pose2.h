@@ -226,7 +226,7 @@ public:
 	/**
 	 * Calculate bearing to a landmark
 	 * @param point 2D location of landmark
-	 * @return 2D rotation \in SO(2)
+	 * @return 2D rotation \f$ \in SO(2) \f$
 	 */
 	Rot2 bearing(const Point2& point,
 			boost::optional<Matrix&> H1=boost::none,
@@ -235,7 +235,7 @@ public:
 	/**
 	 * Calculate bearing to another pose
 	 * @param point SO(2) location of other pose
-	 * @return 2D rotation \in SO(2)
+	 * @return 2D rotation \f$ \in SO(2) \f$
 	 */
 	Rot2 bearing(const Pose2& point,
 			boost::optional<Matrix&> H1=boost::none,
