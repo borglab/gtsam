@@ -25,4 +25,5 @@ for j=1:nPoints
 end
 
 frame_i = 1
+result = initialEstimates;
 cla;

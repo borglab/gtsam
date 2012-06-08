@@ -53,11 +53,8 @@ function VisualISAM_gui_OpeningFcn(hObject, eventdata, handles, varargin)
 % varargin   command line arguments to VisualISAM_gui (see VARARGIN)
 
 % Choose default command line output for VisualISAM_gui
-VisualISAMGlobalVars
-VisualISAMInitOptions
-VisualISAMGenerateData
-
 handles.output = hObject;
+VisualISAMInitOptions
 
 % Update handles structure
 guidata(hObject, handles);
@@ -65,6 +62,11 @@ guidata(hObject, handles);
 % UIWAIT makes VisualISAM_gui wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
 
+
+function showFramei(hObject, handles)
+    VisualISAMGlobalVars
+    set(handles.frameStatus, 'String', sprintf('Frame: %d',frame_i));
+    guidata(hObject, handles);
 
 % --- Outputs from this function are returned to the command line.
 function varargout = VisualISAM_gui_OutputFcn(hObject, eventdata, handles) 
@@ -81,12 +83,13 @@ function intializeButton_Callback(hObject, eventdata, handles)
 % hObject    handle to intializeButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-    sprintf('init button')
     VisualISAMGlobalVars
     DRAW_INTERVAL = str2num(get(handles.drawInterval,'String')) ;
     NCAMERAS = str2num(get(handles.numCamEdit,'String')) ;
     VisualISAMGenerateData
     VisualISAMInitialize
+    VisualISAMPlot
+    showFramei(hObject, handles)
     
 % --- Executes on button press in stepButton.
 function stepButton_Callback(hObject, eventdata, handles)
@@ -96,8 +99,11 @@ function stepButton_Callback(hObject, eventdata, handles)
     VisualISAMGlobalVars
     if (frame_i<NCAMERAS)
         frame_i = frame_i+1;
-        sprintf('Frame %d:', frame_i)
+        showFramei(hObject, handles)
         VisualISAMStep
+        if mod(frame_i,DRAW_INTERVAL)==0
+            VisualISAMPlot
+        end
     end
 
 % --- Executes on selection change in popupmenu1.
@@ -117,8 +123,7 @@ function popupmenu1_Callback(hObject, eventdata, handles)
         case 'cube'
             TRIANGLE = false
     end
-    VisualISAMGenerateData
-    VisualISAMInitialize
+    
 
 % --- Executes during object creation, after setting all properties.
 function popupmenu1_CreateFcn(hObject, eventdata, handles)
@@ -133,13 +138,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-% --- Executes on button press in backButton.
-function backButton_Callback(hObject, eventdata, handles)
-% hObject    handle to backButton (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-    sprintf('Not yet implemented')
-
 % --- Executes on button press in runButton.
 function runButton_Callback(hObject, eventdata, handles)
 % hObject    handle to runButton (see GCBO)
@@ -147,6 +145,7 @@ function runButton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
     sprintf('Not yet implemented')
 
+    
 % --- Executes on button press in stopButton.
 function stopButton_Callback(hObject, eventdata, handles)
 % hObject    handle to stopButton (see GCBO)
@@ -194,8 +193,7 @@ function numCamEdit_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of numCamEdit as a double
     VisualISAMGlobalVars
 	NCAMERAS = str2num(get(hObject,'String')) ;
-    VisualISAMGenerateData
-    VisualISAMInitialize
+    
 
 % --- Executes during object creation, after setting all properties.
 function numCamEdit_CreateFcn(hObject, eventdata, handles)

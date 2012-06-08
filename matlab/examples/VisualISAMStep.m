@@ -37,9 +37,6 @@ end
 if PRINT_STATS
     isam.printStats();
 end
-if mod(frame_i,DRAW_INTERVAL)==0
-    VisualISAMPlot
-end
 
 %% Reset newFactors and initialEstimates to prepare for the next update
 newFactors = visualSLAMGraph;

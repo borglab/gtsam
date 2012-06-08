@@ -1,0 +1,2 @@
+VisualISAMInitOptions
+VisualISAM_gui
