@@ -101,7 +101,7 @@ endif()
 if(CYGWIN OR MSVC OR WIN32)
   set(Boost_USE_STATIC_LIBS 1)
 endif()
-find_package(Boost 1.42 COMPONENTS serialization REQUIRED)
+find_package(Boost 1.43 COMPONENTS serialization REQUIRED)
 
 # General build settings
 include_directories(
@@ -155,7 +155,8 @@ set(CPACK_PACKAGE_VERSION_MINOR ${GTSAM_VERSION_MINOR})
 set(CPACK_PACKAGE_VERSION_PATCH ${GTSAM_VERSION_PATCH})
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")
 set(CPACK_INSTALLED_DIRECTORIES "doc;.") # Include doc directory
-set(CPACK_SOURCE_IGNORE_FILES "/build;/\\\\.;/makedoc.sh$;/gtsam_unstable/")
+set(CPACK_SOURCE_IGNORE_FILES "/build;/\\\\.;/makedoc.sh$")
+set(CPACK_SOURCE_IGNORE_FILES "${CPACK_SOURCE_IGNORE_FILES}" "/gtsam_unstable/")
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "gtsam-${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH}")
 #set(CPACK_SOURCE_PACKAGE_FILE_NAME "gtsam-aspn${GTSAM_VERSION_PATCH}") # Used for creating ASPN tarballs
 
