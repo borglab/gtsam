@@ -49,21 +49,17 @@ int main(int argc, char** argv) {
 
 	// Print the UGM distribution
 	cout << "\nUGM distribution:" << endl;
-	for (size_t a = 0; a < nrStates; a++)
-		for (size_t m = 0; m < nrStates; m++)
-			for (size_t h = 0; h < nrStates; h++)
-				for (size_t c = 0; c < nrStates; c++) {
-					DiscreteFactor::Values values;
-					values[1] = c;
-					values[2] = h;
-					values[3] = m;
-					values[4] = a;
-					double prodPot = graph(values);
-					cout << c << " " << h << " " << m << " " << a << " :\t"
-							<< prodPot << "\t" << prodPot/3790 << endl;
-				}
+	vector<DiscreteFactor::Values> allPosbValues = cartesianProduct(
+			Cathy & Heather & Mark & Allison);
+	for (size_t i = 0; i < allPosbValues.size(); ++i) {
+		DiscreteFactor::Values values = allPosbValues[i];
+		double prodPot = graph(values);
+		cout << values[Cathy.first] << " " << values[Heather.first] << " "
+				<< values[Mark.first] << " " << values[Allison.first] << " :\t"
+				<< prodPot << "\t" << prodPot / 3790 << endl;
+	}
 
-	// "Decoding", i.e., configuration with largest value
+	// "Decoding", i.e., configuration with largest value (MPE)
 	// We use sequential variable elimination
 	DiscreteSequentialSolver solver(graph);
 	DiscreteFactor::sharedValues optimalDecoding = solver.optimize();

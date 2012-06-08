@@ -75,41 +75,38 @@ namespace gtsam {
 
 	/* ******************************************************************************** */
 	void DiscreteConditional::solveInPlace(Values& values) const {
+//		OLD
 //		assert(nrFrontals() == 1);
 //		Index j = (firstFrontalKey());
 //		size_t mpe = solve(values); // Solve for variable
 //		values[j] = mpe; // store result in partial solution
+//		OLD
 
 		// TODO: is this really the fastest way? I think it is.
+
+		//The following is to make make adjustment for nFrontals \neq 1
 		ADT pFS = choose(values); // P(F|S=parentsValues)
 
 		// Initialize
 		Values mpe;
-		Values frontalVals;
-		BOOST_FOREACH(Index j, frontals()) {
-			frontalVals[j] = 0;
-		}
 		double maxP = 0;
 
-		while (1) {
+		DiscreteKeys keys;
+		BOOST_FOREACH(Index idx, frontals()) {
+			DiscreteKey dk(idx,cardinality(idx));
+			keys & dk;
+		}
+		// Get all Possible Configurations
+		vector<Values> allPosbValues = cartesianProduct(keys);
+
+		// Find the MPE
+		BOOST_FOREACH(Values& frontalVals, allPosbValues) {
 			double pValueS = pFS(frontalVals); // P(F=value|S=parentsValues)
 			// Update MPE solution if better
 			if (pValueS > maxP) {
 				maxP = pValueS;
 				mpe = frontalVals;
 			}
-
-			size_t j = 0;
-			for (j = 0; j < nrFrontals(); j++) {
-				Index idx = frontals()[j];
-				frontalVals[idx]++;
-				if (frontalVals[idx] < cardinality(idx))
-					break;
-				//Wrap condition
-				frontalVals[idx] = 0;
-			}
-			if (j == nrFrontals())
-				break;
 		}
 
 		//set values (inPlace) to mpe
@@ -197,7 +194,7 @@ namespace gtsam {
 	/* ******************************************************************************** */
 	void DiscreteConditional::permuteWithInverse(const Permutation& inversePermutation){
 		IndexConditional::permuteWithInverse(inversePermutation);
-		Potentials::permute(inversePermutation);
+		Potentials::permuteWithInverse(inversePermutation);
 	}
 
 

@@ -13,7 +13,7 @@
  * @file small.cpp
  * @brief UGM (undirected graphical model) examples: chain
  * @author Frank Dellaert
- * @author Abhijit
+ * @author Abhijit Kundu
  *
  * See http://www.di.ens.fr/~mschmidt/Software/UGM/chain.html
  * for more explanation. This code demos the same example using GTSAM.

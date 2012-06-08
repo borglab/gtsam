@@ -73,8 +73,10 @@ namespace gtsam {
 		 * @brief Permutes the keys in Potentials
 		 *
 		 * This permutes the Indices and performs necessary re-ordering of ADD.
+		 * This is virtual so that derived types e.g. DecisionTreeFactor can
+		 * re-implement it.
 		 */
-		void permute(const Permutation& perm);
+		virtual void permuteWithInverse(const Permutation& inversePermutation);
 
 	}; // Potentials
 

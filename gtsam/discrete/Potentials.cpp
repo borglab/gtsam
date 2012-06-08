@@ -60,7 +60,7 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	void Potentials::permute(const Permutation& permutation) {
+	void Potentials::permuteWithInverse(const Permutation& permutation) {
 		// Permute the _cardinalities (TODO: Inefficient Consider Improving)
 		DiscreteKeys keys;
 		map<Index, Index> ordering;
@@ -72,7 +72,6 @@ namespace gtsam {
 		// Perform Permutation
 		BOOST_FOREACH(DiscreteKey& key, keys) {
 			ordering[key.first] = permutation[key.first];
-			//cout << key.first << " -> " << ordering[key.first] << endl;
 			key.first = ordering[key.first];
 		}
 

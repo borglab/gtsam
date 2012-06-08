@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /*
- * @ file testDiscreteMarginals.cpp
- * @date Feb 14, 2011
+ * @file testDiscreteMarginals.cpp
+ * @date Jun 7, 2012
  * @author Abhijit Kundu
  * @author Richard Roberts
  * @author Frank Dellaert
