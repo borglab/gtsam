@@ -338,7 +338,7 @@ namespace gtsam {
      */
     template<class ValueType>
     ConstFiltered<ValueType>
-    filter(const boost::function<bool(Key)>& filterFcn = _truePredicate()) const;
+    filter(const boost::function<bool(Key)>& filterFcn = _truePredicate) const;
 
   private:
     // Filters based on ValueType (if not Value) and also based on the user-
