@@ -19,18 +19,14 @@
 
 #pragma once
 
-#include <gtsam/base/timing.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
 #include <gtsam/inference/VariableSlots.h>
 #include <gtsam/inference/EliminationTree.h>
+#include <gtsam/base/timing.h>
 
 #include <boost/foreach.hpp>
-#include <boost/lambda/bind.hpp>
-#include <boost/lambda/lambda.hpp>
 
 namespace gtsam {
-
-  using namespace std;
 
   /* ************************************************************************* */
   template <class FG, class BTCLIQUE>

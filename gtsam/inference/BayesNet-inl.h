@@ -19,57 +19,61 @@
 
 #include <gtsam/base/Testable.h>
 
-#include <iostream>
-#include <fstream>
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/format.hpp>
-#include <boost/lambda/bind.hpp>
-#include <boost/lambda/lambda.hpp>
 
 #include <boost/assign/std/vector.hpp> // for +=
 using namespace boost::assign;
 
-using namespace std;
+#include <iostream>
+#include <fstream>
 
 namespace gtsam {
 
-	/* ************************************************************************* */
-	template<class CONDITIONAL>
-	void BayesNet<CONDITIONAL>::print(const string& s) const {
-		cout << s;
-		BOOST_REVERSE_FOREACH(sharedConditional conditional,conditionals_)
-			conditional->print();
-	}
-
-	/* ************************************************************************* */
-	template<class CONDITIONAL>
-	bool BayesNet<CONDITIONAL>::equals(const BayesNet& cbn, double tol) const {
-		if(size() != cbn.size()) return false;
-		return equal(conditionals_.begin(),conditionals_.end(),cbn.conditionals_.begin(),equals_star<CONDITIONAL>(tol));
-	}
-
   /* ************************************************************************* */
-	template<class CONDITIONAL>
-	typename BayesNet<CONDITIONAL>::const_iterator BayesNet<CONDITIONAL>::find(Index key) const {
-	  for(const_iterator it = begin(); it != end(); ++it)
-	    if(std::find((*it)->beginFrontals(), (*it)->endFrontals(), key) != (*it)->endFrontals())
-	      return it;
-	  return end();
-	}
+  template<class CONDITIONAL>
+  void BayesNet<CONDITIONAL>::print(const std::string& s) const {
+    std::cout << s;
+    BOOST_REVERSE_FOREACH(sharedConditional conditional,conditionals_)
+      conditional->print();
+  }
 
   /* ************************************************************************* */
   template<class CONDITIONAL>
-  typename BayesNet<CONDITIONAL>::iterator BayesNet<CONDITIONAL>::find(Index key) {
-    for(iterator it = begin(); it != end(); ++it)
-      if(std::find((*it)->beginFrontals(), (*it)->endFrontals(), key) != (*it)->endFrontals())
+  bool BayesNet<CONDITIONAL>::equals(const BayesNet& cbn, double tol) const {
+    if (size() != cbn.size())
+      return false;
+    return equal(conditionals_.begin(), conditionals_.end(),
+        cbn.conditionals_.begin(), equals_star<CONDITIONAL>(tol));
+  }
+
+  /* ************************************************************************* */
+  template<class CONDITIONAL>
+  typename BayesNet<CONDITIONAL>::const_iterator BayesNet<CONDITIONAL>::find(
+      Index key) const {
+    for (const_iterator it = begin(); it != end(); ++it)
+      if (std::find((*it)->beginFrontals(), (*it)->endFrontals(), key)
+          != (*it)->endFrontals())
         return it;
     return end();
   }
 
   /* ************************************************************************* */
   template<class CONDITIONAL>
-	void BayesNet<CONDITIONAL>::permuteWithInverse(const Permutation& inversePermutation) {
+  typename BayesNet<CONDITIONAL>::iterator BayesNet<CONDITIONAL>::find(
+      Index key) {
+    for (iterator it = begin(); it != end(); ++it)
+      if (std::find((*it)->beginFrontals(), (*it)->endFrontals(), key)
+          != (*it)->endFrontals())
+        return it;
+    return end();
+  }
+
+  /* ************************************************************************* */
+  template<class CONDITIONAL>
+  void BayesNet<CONDITIONAL>::permuteWithInverse(
+      const Permutation& inversePermutation) {
     BOOST_FOREACH(sharedConditional conditional, conditionals_) {
       conditional->permuteWithInverse(inversePermutation);
     }
@@ -77,52 +81,54 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class CONDITIONAL>
-  bool BayesNet<CONDITIONAL>::permuteSeparatorWithInverse(const Permutation& inversePermutation) {
+  bool BayesNet<CONDITIONAL>::permuteSeparatorWithInverse(
+      const Permutation& inversePermutation) {
     bool separatorChanged = false;
     BOOST_FOREACH(sharedConditional conditional, conditionals_) {
-      if(conditional->permuteSeparatorWithInverse(inversePermutation))
+      if (conditional->permuteSeparatorWithInverse(inversePermutation))
         separatorChanged = true;
     }
     return separatorChanged;
   }
 
-	/* ************************************************************************* */
-	template<class CONDITIONAL>
-	void BayesNet<CONDITIONAL>::push_back(const BayesNet<CONDITIONAL> bn) {
-		BOOST_FOREACH(sharedConditional conditional,bn.conditionals_)
-			push_back(conditional);
-	}
-
-	/* ************************************************************************* */
-	template<class CONDITIONAL>
-	void BayesNet<CONDITIONAL>::push_front(const BayesNet<CONDITIONAL> bn) {
-		BOOST_FOREACH(sharedConditional conditional,bn.conditionals_)
-			push_front(conditional);
-	}
+  /* ************************************************************************* */
+  template<class CONDITIONAL>
+  void BayesNet<CONDITIONAL>::push_back(const BayesNet<CONDITIONAL> bn) {
+    BOOST_FOREACH(sharedConditional conditional,bn.conditionals_)
+      push_back(conditional);
+  }
 
   /* ************************************************************************* */
   template<class CONDITIONAL>
-	void BayesNet<CONDITIONAL>::popLeaf(iterator conditional) {
+  void BayesNet<CONDITIONAL>::push_front(const BayesNet<CONDITIONAL> bn) {
+    BOOST_FOREACH(sharedConditional conditional,bn.conditionals_)
+      push_front(conditional);
+  }
+
+  /* ************************************************************************* */
+  template<class CONDITIONAL>
+  void BayesNet<CONDITIONAL>::popLeaf(iterator conditional) {
 #ifndef NDEBUG
     BOOST_FOREACH(typename CONDITIONAL::shared_ptr checkConditional, conditionals_) {
       BOOST_FOREACH(Index key, (*conditional)->frontals()) {
         if(std::find(checkConditional->beginParents(), checkConditional->endParents(), key) != checkConditional->endParents())
-          throw std::invalid_argument(
-              "Debug mode exception:  in BayesNet::popLeaf, the requested conditional is not a leaf.");
+        throw std::invalid_argument(
+            "Debug mode exception:  in BayesNet::popLeaf, the requested conditional is not a leaf.");
       }
     }
 #endif
     conditionals_.erase(conditional);
-	}
+  }
 
-	/* ************************************************************************* */
-	template<class CONDITIONAL>
-	FastList<Index> BayesNet<CONDITIONAL>::ordering() const {
-		FastList<Index> ord;
-		BOOST_FOREACH(sharedConditional conditional,conditionals_)
-		   ord.insert(ord.begin(), conditional->beginFrontals(), conditional->endFrontals());
-		return ord;
-	}
+  /* ************************************************************************* */
+  template<class CONDITIONAL>
+  FastList<Index> BayesNet<CONDITIONAL>::ordering() const {
+    FastList<Index> ord;
+    BOOST_FOREACH(sharedConditional conditional,conditionals_)
+      ord.insert(ord.begin(), conditional->beginFrontals(),
+          conditional->endFrontals());
+    return ord;
+  }
 
 //	/* ************************************************************************* */
 //	template<class CONDITIONAL>
@@ -139,21 +145,22 @@ namespace gtsam {
 //		of.close();
 //	}
 //
-	/* ************************************************************************* */
+  /* ************************************************************************* */
 
-	template<class CONDITIONAL>
-	typename BayesNet<CONDITIONAL>::sharedConditional
-	BayesNet<CONDITIONAL>::operator[](Index key) const {
-	  BOOST_FOREACH(typename CONDITIONAL::shared_ptr conditional, conditionals_) {
-	    typename CONDITIONAL::const_iterator it = std::find(conditional->beginFrontals(), conditional->endFrontals(), key);
-      if (it!=conditional->endFrontals()) {
+  template<class CONDITIONAL>
+  typename BayesNet<CONDITIONAL>::sharedConditional BayesNet<CONDITIONAL>::operator[](
+      Index key) const {
+    BOOST_FOREACH(typename CONDITIONAL::shared_ptr conditional, conditionals_) {
+      typename CONDITIONAL::const_iterator it = std::find(
+          conditional->beginFrontals(), conditional->endFrontals(), key);
+      if (it != conditional->endFrontals()) {
         return conditional;
       }
-	  }
-		throw(invalid_argument((boost::format(
-		    "BayesNet::operator['%1%']: not found") % key).str()));
-	}
+    }
+    throw(std::invalid_argument(
+        (boost::format("BayesNet::operator['%1%']: not found") % key).str()));
+  }
 
-	/* ************************************************************************* */
+/* ************************************************************************* */
 
 } // namespace gtsam

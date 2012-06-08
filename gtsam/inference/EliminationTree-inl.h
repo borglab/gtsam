@@ -24,13 +24,11 @@
 #include <gtsam/inference/IndexConditional.h>
 
 #include <boost/foreach.hpp>
-#include <boost/lambda/lambda.hpp>
 #include <boost/static_assert.hpp>
+
 #include <iostream>
 #include <set>
 #include <vector>
-
-using namespace std;
 
 namespace gtsam {
 
@@ -41,7 +39,7 @@ typename EliminationTree<FACTOR>::sharedFactor EliminationTree<FACTOR>::eliminat
 
   static const bool debug = false;
 
-  if(debug) cout << "ETree: eliminating " << this->key_ << endl;
+  if(debug) std::cout << "ETree: eliminating " << this->key_ << std::endl;
 
   // Create the list of factors to be eliminated, initially empty, and reserve space
   FactorGraph<FACTOR> factors;
@@ -60,7 +58,7 @@ typename EliminationTree<FACTOR>::sharedFactor EliminationTree<FACTOR>::eliminat
 				eliminated(function(factors, 1));
   conditionals[this->key_] = eliminated.first;
 
-  if(debug) cout << "Eliminated " << this->key_ << " to get:\n";
+  if(debug) std::cout << "Eliminated " << this->key_ << " to get:\n";
   if(debug) eliminated.first->print("Conditional: ");
   if(debug) eliminated.second->print("Factor: ");
 
@@ -69,17 +67,17 @@ typename EliminationTree<FACTOR>::sharedFactor EliminationTree<FACTOR>::eliminat
 
 /* ************************************************************************* */
 template<class FACTOR>
-vector<Index> EliminationTree<FACTOR>::ComputeParents(const VariableIndex& structure) {
+std::vector<Index> EliminationTree<FACTOR>::ComputeParents(const VariableIndex& structure) {
 
   // Number of factors and variables
   const size_t m = structure.nFactors();
   const size_t n = structure.size();
 
-  static const Index none = numeric_limits<Index>::max();
+  static const Index none = std::numeric_limits<Index>::max();
 
   // Allocate result parent vector and vector of last factor columns
-  vector<Index> parents(n, none);
-  vector<Index> prevCol(m, none);
+  std::vector<Index> parents(n, none);
+  std::vector<Index> prevCol(m, none);
 
   // for column j \in 1 to n do
   for (Index j = 0; j < n; j++) {
@@ -111,17 +109,17 @@ typename EliminationTree<FACTOR>::shared_ptr EliminationTree<FACTOR>::Create(
 
   tic(1, "ET ComputeParents");
   // Compute the tree structure
-  vector<Index> parents(ComputeParents(structure));
+  std::vector<Index> parents(ComputeParents(structure));
   toc(1, "ET ComputeParents");
 
   // Number of variables
   const size_t n = structure.size();
 
-  static const Index none = numeric_limits<Index>::max();
+  static const Index none = std::numeric_limits<Index>::max();
 
   // Create tree structure
   tic(2, "assemble tree");
-  vector<shared_ptr> trees(n);
+  std::vector<shared_ptr> trees(n);
   for (Index k = 1; k <= n; k++) {
     Index j = n - k;  // Start at the last variable and loop down to 0
     trees[j].reset(new EliminationTree(j));  // Create a new node on this variable
@@ -169,7 +167,7 @@ EliminationTree<FACTOR>::Create(const FactorGraph<DERIVEDFACTOR>& factorGraph) {
 /* ************************************************************************* */
 template<class FACTORGRAPH>
 void EliminationTree<FACTORGRAPH>::print(const std::string& name) const {
-  cout << name << " (" << key_ << ")" << endl;
+  std::cout << name << " (" << key_ << ")" << std::endl;
   BOOST_FOREACH(const sharedFactor& factor, factors_) {
     factor->print(name + "  "); }
   BOOST_FOREACH(const shared_ptr& child, subTrees_) {

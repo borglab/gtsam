@@ -26,21 +26,15 @@
 #include <gtsam/inference/inference.h>
 #include <gtsam/inference/GenericSequentialSolver.h>
 
-#include <iostream>
-#include <algorithm>
-
 #include <boost/foreach.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
 #include <boost/format.hpp>
-#include <boost/lambda/lambda.hpp>
-#include <boost/iterator/transform_iterator.hpp>
+
 #include <fstream>
-using namespace boost::assign;
-namespace lam = boost::lambda;
+#include <iostream>
+#include <algorithm>
 
 namespace gtsam {
-
-	using namespace std;
 
 	/* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
@@ -64,8 +58,8 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
 	void BayesTree<CONDITIONAL,CLIQUE>::saveGraph(const std::string &s) const {
-		if (!root_.get()) throw invalid_argument("the root of Bayes tree has not been initialized!");
-		ofstream of(s.c_str());
+		if (!root_.get()) throw std::invalid_argument("the root of Bayes tree has not been initialized!");
+		std::ofstream of(s.c_str());
 		of<< "digraph G{\n";
 		saveGraph(of, root_);
 		of<<"}";
@@ -73,12 +67,12 @@ namespace gtsam {
 	}
 
 	template<class CONDITIONAL, class CLIQUE>
-	void BayesTree<CONDITIONAL,CLIQUE>::saveGraph(ostream &s, sharedClique clique, int parentnum) const {
+	void BayesTree<CONDITIONAL,CLIQUE>::saveGraph(std::ostream &s, sharedClique clique, int parentnum) const {
 		static int num = 0;
 		bool first = true;
 		std::stringstream out;
 		out << num;
-		string parent = out.str();
+		std::string parent = out.str();
 		parent += "[label=\"";
 
 		BOOST_FOREACH(Index index, clique->conditional_->frontals()) {
@@ -136,7 +130,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
 	void BayesTree<CONDITIONAL,CLIQUE>::Cliques::print(const std::string& s) const {
-		cout << s << ":\n";
+	  std::cout << s << ":\n";
 		BOOST_FOREACH(sharedClique clique, *this)
 				clique->printTree();
 	}
@@ -175,7 +169,7 @@ namespace gtsam {
   /* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
 	typename BayesTree<CONDITIONAL,CLIQUE>::sharedClique BayesTree<CONDITIONAL,CLIQUE>::addClique(
-	    const sharedConditional& conditional, list<sharedClique>& child_cliques) {
+	    const sharedConditional& conditional, std::list<sharedClique>& child_cliques) {
 		sharedClique new_clique(new Clique(conditional));
 		nodes_.resize(std::max(conditional->lastFrontalKey()+1, nodes_.size()));
 		BOOST_FOREACH(Index key, conditional->frontals())
@@ -290,10 +284,10 @@ namespace gtsam {
 	template<class CONDITIONAL, class CLIQUE>
 	BayesTree<CONDITIONAL,CLIQUE>::BayesTree(const BayesNet<CONDITIONAL>& bayesNet, std::list<BayesTree<CONDITIONAL,CLIQUE> > subtrees) {
 		if (bayesNet.size() == 0)
-			throw invalid_argument("BayesTree::insert: empty bayes net!");
+			throw std::invalid_argument("BayesTree::insert: empty bayes net!");
 
 		// get the roots of child subtrees and merge their nodes_
-		list<sharedClique> childRoots;
+		std::list<sharedClique> childRoots;
 		typedef BayesTree<CONDITIONAL,CLIQUE> Tree;
 		BOOST_FOREACH(const Tree& subtree, subtrees) {
 			nodes_.insert(subtree.nodes_.begin(), subtree.nodes_.end());
@@ -329,12 +323,12 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
-	void BayesTree<CONDITIONAL,CLIQUE>::print(const string& s) const {
+	void BayesTree<CONDITIONAL,CLIQUE>::print(const std::string& s) const {
 		if (root_.use_count() == 0) {
 			printf("WARNING: BayesTree.print encountered a forest...\n");
 			return;
 		}
-		cout << s << ": clique size == " << size() << ", node size == " << nodes_.size() <<  endl;
+		std::cout << s << ": clique size == " << size() << ", node size == " << nodes_.size() <<  std::endl;
 		if (nodes_.empty()) return;
 		root_->printTree("");
 	}
@@ -379,7 +373,7 @@ namespace gtsam {
 
 		// if no parents, start a new root clique
 		if (parents.empty()) {
-		  if(debug) cout << "No parents so making root" << endl;
+		  if(debug) std::cout << "No parents so making root" << std::endl;
 		  bayesTree.root_ = bayesTree.addClique(conditional);
 			return;
 		}
@@ -387,13 +381,13 @@ namespace gtsam {
 		// otherwise, find the parent clique by using the index data structure
 		// to find the lowest-ordered parent
 		Index parentRepresentative = bayesTree.findParentClique(parents);
-		if(debug) cout << "First-eliminated parent is " << parentRepresentative << ", have " << bayesTree.nodes_.size() << " nodes." << endl;
+		if(debug) std::cout << "First-eliminated parent is " << parentRepresentative << ", have " << bayesTree.nodes_.size() << " nodes." << std::endl;
 		sharedClique parent_clique = bayesTree[parentRepresentative];
 		if(debug) parent_clique->print("Parent clique is ");
 
 		// if the parents and parent clique have the same size, add to parent clique
 		if ((*parent_clique)->size() == size_t(parents.size())) {
-		  if(debug) cout << "Adding to parent clique" << endl;
+		  if(debug) std::cout << "Adding to parent clique" << std::endl;
 #ifndef NDEBUG
 		  // Debug check that the parent keys of the new conditional match the keys
 		  // currently in the clique.
@@ -408,7 +402,7 @@ namespace gtsam {
 #endif
 		  addToCliqueFront(bayesTree, conditional, parent_clique);
 		} else {
-		  if(debug) cout << "Starting new clique" << endl;
+		  if(debug) std::cout << "Starting new clique" << std::endl;
 		  // otherwise, start a new clique and add it to the tree
 		  bayesTree.addClique(conditional,parent_clique);
 		}
@@ -418,10 +412,10 @@ namespace gtsam {
 	//TODO: remove this function after removing TSAM.cpp
 	template<class CONDITIONAL, class CLIQUE>
 	typename BayesTree<CONDITIONAL,CLIQUE>::sharedClique BayesTree<CONDITIONAL,CLIQUE>::insert(
-	    const sharedConditional& clique, list<sharedClique>& children, bool isRootClique) {
+	    const sharedConditional& clique, std::list<sharedClique>& children, bool isRootClique) {
 
 		if (clique->nrFrontals() == 0)
-			throw invalid_argument("BayesTree::insert: empty clique!");
+			throw std::invalid_argument("BayesTree::insert: empty clique!");
 
 		// create a new clique and add all the conditionals to the clique
 		sharedClique new_clique = addClique(clique, children);
@@ -512,7 +506,7 @@ namespace gtsam {
 		FactorGraph<FactorType> p_C1C2(C1->joint(C2, root_, function));
 
 		// eliminate remaining factor graph to get requested joint
-		vector<Index> key12(2); key12[0] = key1; key12[1] = key2;
+		std::vector<Index> key12(2); key12[0] = key1; key12[1] = key2;
 		GenericSequentialSolver<FactorType> solver(p_C1C2);
 		return solver.jointFactorGraph(key12,function);
 	}
