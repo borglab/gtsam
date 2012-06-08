@@ -24,20 +24,20 @@
 #include <boost/format.hpp>
 
 #include <boost/assign/std/vector.hpp> // for +=
-using namespace boost::assign;
+using boost::assign::operator+=;
 
 #include <iostream>
 #include <fstream>
 
 namespace gtsam {
 
-  /* ************************************************************************* */
-  template<class CONDITIONAL>
-  void BayesNet<CONDITIONAL>::print(const std::string& s) const {
-    std::cout << s;
-    BOOST_REVERSE_FOREACH(sharedConditional conditional,conditionals_)
-      conditional->print();
-  }
+	/* ************************************************************************* */
+	template<class CONDITIONAL>
+	void BayesNet<CONDITIONAL>::print(const std::string& s) const {
+		std::cout << s;
+		BOOST_REVERSE_FOREACH(sharedConditional conditional, conditionals_)
+			conditional->print();
+	}
 
   /* ************************************************************************* */
   template<class CONDITIONAL>

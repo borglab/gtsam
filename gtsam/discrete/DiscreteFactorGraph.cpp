@@ -64,7 +64,7 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	pair<DiscreteConditional::shared_ptr, DecisionTreeFactor::shared_ptr>  //
+	std::pair<DiscreteConditional::shared_ptr, DecisionTreeFactor::shared_ptr>  //
 	EliminateDiscrete(const FactorGraph<DiscreteFactor>& factors, size_t num) {
 
 		// PRODUCT: multiply all factors
@@ -87,7 +87,7 @@ namespace gtsam {
 		toc(3, "divide");
 		tictoc_finishedIteration();
 
-		return make_pair(cond, sum);
+		return std::make_pair(cond, sum);
 	}
 
 /* ************************************************************************* */

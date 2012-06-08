@@ -66,7 +66,7 @@ namespace gtsam {
 				Index j = (key);
 				size_t value = parentsValues.at(j);
 				pFS = pFS.choose(j, value);
-			} catch (exception& e) {
+			} catch (exception&) {
 				throw runtime_error(
 						"DiscreteConditional::choose: parent value missing");
 			};

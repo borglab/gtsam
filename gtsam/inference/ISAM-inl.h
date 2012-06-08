@@ -19,15 +19,12 @@
 
 #include <boost/foreach.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
-using namespace boost::assign;
 
 #include <gtsam/inference/Conditional.h>
 #include <gtsam/inference/BayesTree.h>
 #include <gtsam/inference/GenericMultifrontalSolver.h>
 
 namespace gtsam {
-
-  using namespace std;
 
   /* ************************************************************************* */
   template<class CONDITIONAL>

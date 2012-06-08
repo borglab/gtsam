@@ -26,13 +26,16 @@
 #include <gtsam/inference/inference.h>
 #include <gtsam/inference/GenericSequentialSolver.h>
 
-#include <boost/foreach.hpp>
-#include <boost/assign/std/list.hpp> // for operator +=
-#include <boost/format.hpp>
-
 #include <fstream>
 #include <iostream>
 #include <algorithm>
+
+#include <boost/foreach.hpp>
+#include <boost/assign/std/list.hpp> // for operator +=
+using boost::assign::operator+=;
+#include <boost/format.hpp>
+
+namespace lam = boost::lambda;
 
 namespace gtsam {
 
@@ -328,7 +331,7 @@ namespace gtsam {
 			printf("WARNING: BayesTree.print encountered a forest...\n");
 			return;
 		}
-		std::cout << s << ": clique size == " << size() << ", node size == " << nodes_.size() <<  std::endl;
+		std::cout << s << ": clique size == " << size() << ", node size == " << nodes_.size() << std::endl;
 		if (nodes_.empty()) return;
 		root_->printTree("");
 	}

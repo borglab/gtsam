@@ -27,6 +27,7 @@
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/assign/std/vector.hpp>
+using boost::assign::operator+=;
 #include <boost/unordered_set.hpp>
 #include <boost/noncopyable.hpp>
 
@@ -36,8 +37,6 @@
 #include <sstream>
 
 namespace gtsam {
-
-	using namespace boost::assign;
 
 	/*********************************************************************************/
 	// Node

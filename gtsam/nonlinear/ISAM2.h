@@ -246,7 +246,7 @@ struct ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique, GaussianConditional
 
   /** Construct from a conditional */
   ISAM2Clique(const sharedConditional& conditional) : Base(conditional) {
-    throw runtime_error("ISAM2Clique should always be constructed with the elimination result constructor"); }
+    throw std::runtime_error("ISAM2Clique should always be constructed with the elimination result constructor"); }
 
   /** Construct from an elimination result */
   ISAM2Clique(const std::pair<sharedConditional, boost::shared_ptr<ConditionalType::FactorType> >& result) :
@@ -260,7 +260,7 @@ struct ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique, GaussianConditional
 
   /** Produce a deep copy, copying the cached factor and gradient contribution */
   shared_ptr clone() const {
-    shared_ptr copy(new ISAM2Clique(make_pair(
+    shared_ptr copy(new ISAM2Clique(std::make_pair(
         sharedConditional(new ConditionalType(*Base::conditional_)),
         cachedFactor_ ? cachedFactor_->clone() : Base::FactorType::shared_ptr())));
     copy->gradientContribution_ = gradientContribution_;
@@ -283,7 +283,7 @@ struct ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique, GaussianConditional
     if(cachedFactor_)
       cachedFactor_->print(s + "Cached: ");
     else
-      cout << s << "Cached empty" << endl;
+      std::cout << s << "Cached empty" << std::endl;
     if(gradientContribution_.rows() != 0)
       gtsam::print(gradientContribution_, "Gradient contribution: ");
   }

@@ -22,8 +22,6 @@
 
 namespace gtsam {
 
-using namespace std;
-
 struct ISAM2::Impl {
 
   struct PartialSolveResult {
@@ -49,7 +47,7 @@ struct ISAM2::Impl {
    * @param keyFormatter Formatter for printing nonlinear keys during debugging
    */
   static void AddVariables(const Values& newTheta, Values& theta, Permuted<VectorValues>& delta,
-      Permuted<VectorValues>& deltaNewton, Permuted<VectorValues>& deltaGradSearch, vector<bool>& replacedKeys,
+      Permuted<VectorValues>& deltaNewton, Permuted<VectorValues>& deltaGradSearch, std::vector<bool>& replacedKeys,
       Ordering& ordering, Base::Nodes& nodes, const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
   /**
@@ -88,7 +86,7 @@ struct ISAM2::Impl {
    *
    * Alternatively could we trace up towards the root for each variable here?
    */
-  static void FindAll(ISAM2Clique::shared_ptr clique, FastSet<Index>& keys, const vector<bool>& markedMask);
+  static void FindAll(ISAM2Clique::shared_ptr clique, FastSet<Index>& keys, const std::vector<bool>& markedMask);
 
   /**
    * Apply expmap to the given values, but only for indices appearing in

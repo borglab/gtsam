@@ -100,7 +100,7 @@ public:
   virtual void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     std::cout << s << "keys = { ";
     BOOST_FOREACH(Key key, this->keys()) { std::cout << keyFormatter(key) << " "; }
-    std::cout << "}" << endl;
+    std::cout << "}" << std::endl;
   }
 
   /** Check if two factors are equal */

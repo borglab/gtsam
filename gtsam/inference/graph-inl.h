@@ -24,8 +24,6 @@
 
 #include <gtsam/inference/graph.h>
 
-using namespace std;
-
 #define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL)
 
 namespace gtsam {
@@ -66,7 +64,7 @@ SDGraph<KEY> toBoostGraph(const G& graph) {
 	// convert the factor graph to boost graph
 	SDGraph<KEY> g;
 	typedef typename boost::graph_traits<SDGraph<KEY> >::vertex_descriptor BoostVertex;
-	map<KEY, BoostVertex> key2vertex;
+	std::map<KEY, BoostVertex> key2vertex;
 	BoostVertex v1, v2;
 	typename G::const_iterator itFactor;
 
@@ -108,7 +106,7 @@ boost::tuple<G, V, map<KEY,V> >
 predecessorMap2Graph(const PredecessorMap<KEY>& p_map) {
 
 	G g;
-	map<KEY, V> key2vertex;
+	std::map<KEY, V> key2vertex;
 	V v1, v2, root;
 	KEY child, parent;
 	bool foundRoot = false;

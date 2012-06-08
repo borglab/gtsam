@@ -79,7 +79,7 @@ namespace gtsam {
 
     // Two stages - first build an array of the lowest-ordered variable in each
     // factor and find the last variable to be eliminated.
-    vector<Index> lowestOrdered(fg.size(), numeric_limits<Index>::max());
+    std::vector<Index> lowestOrdered(fg.size(), std::numeric_limits<Index>::max());
     Index maxVar = 0;
     for(size_t i=0; i<fg.size(); ++i)
       if(fg[i]) {
@@ -92,9 +92,9 @@ namespace gtsam {
 
     // Now add each factor to the list corresponding to its lowest-ordered
     // variable.
-    vector<FastList<size_t> > targets(maxVar+1);
+    std::vector<FastList<size_t> > targets(maxVar+1);
     for(size_t i=0; i<lowestOrdered.size(); ++i)
-      if(lowestOrdered[i] != numeric_limits<Index>::max())
+      if(lowestOrdered[i] != std::numeric_limits<Index>::max())
         targets[lowestOrdered[i]].push_back(i);
 
     // Now call the recursive distributeFactors
@@ -141,7 +141,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class FG, class BTCLIQUE>
-	pair<typename JunctionTree<FG,BTCLIQUE>::BTClique::shared_ptr,
+	std::pair<typename JunctionTree<FG,BTCLIQUE>::BTClique::shared_ptr,
 			typename FG::sharedFactor> JunctionTree<FG,BTCLIQUE>::eliminateOneClique(
 			typename FG::Eliminate function,
 			const boost::shared_ptr<const Clique>& current) const {
@@ -151,9 +151,9 @@ namespace gtsam {
     fg.push_back(*current); // add the local factors
 
     // receive the factors from the child and its clique point
-    list<typename BTClique::shared_ptr> children;
+    std::list<typename BTClique::shared_ptr> children;
     BOOST_FOREACH(const boost::shared_ptr<const Clique>& child, current->children()) {
-      pair<typename BTClique::shared_ptr, typename FG::sharedFactor> tree_factor(
+      std::pair<typename BTClique::shared_ptr, typename FG::sharedFactor> tree_factor(
           eliminateOneClique(function, child));
       children.push_back(tree_factor.first);
       fg.push_back(tree_factor.second);
@@ -181,7 +181,7 @@ namespace gtsam {
     }
     toc(3, "Update tree");
 
-    return make_pair(new_clique, eliminated.second);
+    return std::make_pair(new_clique, eliminated.second);
   }
 
   /* ************************************************************************* */
@@ -190,9 +190,9 @@ namespace gtsam {
 			typename FG::Eliminate function) const {
 		if (this->root()) {
 			tic(2, "JT eliminate");
-			pair<typename BTClique::shared_ptr, typename FG::sharedFactor> ret =
+			std::pair<typename BTClique::shared_ptr, typename FG::sharedFactor> ret =
 					this->eliminateOneClique(function, this->root());
-			if (ret.second->size() != 0) throw runtime_error(
+			if (ret.second->size() != 0) throw std::runtime_error(
 					"JuntionTree::eliminate: elimination failed because of factors left over!");
 			toc(2, "JT eliminate");
 			return ret.first;

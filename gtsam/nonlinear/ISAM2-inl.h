@@ -25,8 +25,6 @@
 
 namespace gtsam {
 
-using namespace std;
-
 /* ************************************************************************* */
 template<class VALUE>
 VALUE ISAM2::calculateEstimate(Key key) const {
@@ -39,7 +37,7 @@ VALUE ISAM2::calculateEstimate(Key key) const {
 namespace internal {
 template<class CLIQUE>
 void optimizeWildfire(const boost::shared_ptr<CLIQUE>& clique, double threshold,
-    vector<bool>& changed, const vector<bool>& replaced, Permuted<VectorValues>& delta, int& count) {
+    std::vector<bool>& changed, const std::vector<bool>& replaced, Permuted<VectorValues>& delta, int& count) {
   // if none of the variables in this clique (frontal and separator!) changed
   // significantly, then by the running intersection property, none of the
   // cliques in the children need to be processed
@@ -68,7 +66,7 @@ void optimizeWildfire(const boost::shared_ptr<CLIQUE>& clique, double threshold,
   if(recalculate) {
 
     // Temporary copy of the original values, to check how much they change
-    vector<Vector> originalValues((*clique)->nrFrontals());
+    std::vector<Vector> originalValues((*clique)->nrFrontals());
     GaussianConditional::const_iterator it;
     for(it = (*clique)->beginFrontals(); it!=(*clique)->endFrontals(); it++) {
       originalValues[it - (*clique)->beginFrontals()] = delta[*it];
@@ -116,8 +114,8 @@ void optimizeWildfire(const boost::shared_ptr<CLIQUE>& clique, double threshold,
 
 /* ************************************************************************* */
 template<class CLIQUE>
-int optimizeWildfire(const boost::shared_ptr<CLIQUE>& root, double threshold, const vector<bool>& keys, Permuted<VectorValues>& delta) {
-  vector<bool> changed(keys.size(), false);
+int optimizeWildfire(const boost::shared_ptr<CLIQUE>& root, double threshold, const std::vector<bool>& keys, Permuted<VectorValues>& delta) {
+  std::vector<bool> changed(keys.size(), false);
   int count = 0;
   // starting from the root, call optimize on each conditional
   if(root)

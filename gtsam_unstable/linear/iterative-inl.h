@@ -22,8 +22,6 @@
 #include <gtsam/linear/IterativeOptimizationParameters.h>
 #include <boost/shared_ptr.hpp>
 
-using namespace std;
-
 namespace gtsam {
 
 	/* ************************************************************************* */

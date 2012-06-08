@@ -97,8 +97,8 @@ namespace gtsam {
 			} catch( CheiralityException& e) {
 			  if (H1) *H1 = zeros(2,6);
 			  if (H2) *H2 = zeros(2,3);
-			  cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2()) <<
-			      " moved behind camera " << DefaultKeyFormatter(this->key1()) << endl;
+			  std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2()) <<
+			      " moved behind camera " << DefaultKeyFormatter(this->key1()) << std::endl;
 			  return ones(2) * 2.0 * K_->fx();
 			}
 		}

@@ -34,17 +34,15 @@
 #include <sstream>
 #include <stdexcept>
 
-using namespace std;
-
 namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class FACTOR>
-	void FactorGraph<FACTOR>::print(const string& s) const {
-		cout << s << endl;
-		cout << "size: " << size() << endl;
+	void FactorGraph<FACTOR>::print(const std::string& s) const {
+		std::cout << s << std::endl;
+		std::cout << "size: " << size() << std::endl;
 		for (size_t i = 0; i < factors_.size(); i++) {
-			stringstream ss;
+			std::stringstream ss;
 			ss << "factor " << i << ": ";
 			if (factors_[i] != NULL) factors_[i]->print(ss.str());
 		}
@@ -79,7 +77,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class FACTOR>
 	void FactorGraph<FACTOR>::replace(size_t index, sharedFactor factor) {
-		if (index >= factors_.size()) throw invalid_argument(boost::str(
+		if (index >= factors_.size()) throw std::invalid_argument(boost::str(
 				boost::format("Factor graph does not contain a factor with index %d.")
 						% index));
 		// Replace the factor
@@ -115,7 +113,7 @@ namespace gtsam {
   /* ************************************************************************* */
 	template<class FACTOR, class CONDITIONAL, class CLIQUE>
 	void _FactorGraph_BayesTree_adder(
-	    vector<typename FactorGraph<FACTOR>::sharedFactor>& factors,
+	    std::vector<typename FactorGraph<FACTOR>::sharedFactor>& factors,
 	    const typename BayesTree<CONDITIONAL,CLIQUE>::sharedClique& clique) {
 
 	  if(clique) {

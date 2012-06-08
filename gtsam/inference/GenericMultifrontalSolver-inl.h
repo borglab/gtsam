@@ -21,8 +21,6 @@
 #include <gtsam/inference/JunctionTree.h>
 #include <gtsam/inference/BayesNet-inl.h>
 
-using namespace std;
-
 namespace gtsam {
 
 	/* ************************************************************************* */
@@ -69,7 +67,7 @@ namespace gtsam {
 
 		// We currently have code written only for computing the
 
-		if (js.size() != 2) throw domain_error(
+		if (js.size() != 2) throw std::domain_error(
 				"*MultifrontalSolver::joint(js) currently can only compute joint marginals\n"
 						"for exactly two variables.  You can call marginal to compute the\n"
 						"marginal for one variable.  *SequentialSolver::joint(js) can compute the\n"
