@@ -25,6 +25,7 @@ end
 height = 10; r = 40;
 K = gtsamCal3_S2(500,500,0,640/2,480/2);
 cameras = {};
+gui = gcf;
 for i=1:NCAMERAS
     theta = (i-1)*2*pi/NCAMERAS;
     t = gtsamPoint3([r*cos(theta), r*sin(theta), height]');
@@ -39,6 +40,7 @@ for i=1:NCAMERAS
         end
     end
 end
+figure(gui);
 odometry = cameras{1}.pose.between(cameras{2}.pose);
 
 

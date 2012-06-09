@@ -1,2 +1,2 @@
-VisualISAMInitOptions
+VisualISAMGlobalVars
 VisualISAM_gui
