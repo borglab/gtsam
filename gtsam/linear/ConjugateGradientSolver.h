@@ -37,13 +37,16 @@ struct ConjugateGradientParameters : public IterativeOptimizationParameters {
   } blas_kernel_;
 
   ConjugateGradientParameters()
-  : minIterations_(1), maxIterations_(500), reset_(501), epsilon_rel_(1e-3), epsilon_abs_(1e-3),
-    blas_kernel_(GTSAM) {}
+  : minIterations_(1), maxIterations_(500), reset_(501), epsilon_rel_(1e-3), epsilon_abs_(1e-3), blas_kernel_(GTSAM) {}
 
   ConjugateGradientParameters(size_t minIterations, size_t maxIterations, size_t reset,
     double epsilon_rel, double epsilon_abs, BLASKernel blas = GTSAM)
     : minIterations_(minIterations), maxIterations_(maxIterations), reset_(reset),
       epsilon_rel_(epsilon_rel), epsilon_abs_(epsilon_abs), blas_kernel_(blas) {}
+
+  ConjugateGradientParameters(const ConjugateGradientParameters &p)
+    : minIterations_(p.minIterations_), maxIterations_(p.maxIterations_), reset_(p.reset_),
+      epsilon_rel_(p.epsilon_rel_), epsilon_abs_(p.epsilon_abs_), blas_kernel_(p.blas_kernel_) {}
 
   /* general interface */
   inline size_t minIterations() const { return minIterations_; }

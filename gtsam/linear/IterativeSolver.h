@@ -23,15 +23,15 @@ namespace gtsam {
   public:
 
     typedef boost::shared_ptr<IterativeOptimizationParameters> shared_ptr;
-    enum Kernel { CG = 0 } kernel_ ;                                      ///< Iterative Method Kernel
-    enum Verbosity { SILENT = 0, COMPLEXITY = 1, ERROR = 2} verbosity_ ;  ///< Verbosity
+    enum Kernel { CG = 0 } kernel_ ;                                          ///< Iterative Method Kernel
+    enum Verbosity { SILENT, ERROR } verbosity_;
 
   public:
 
     IterativeOptimizationParameters(const IterativeOptimizationParameters &p)
       : kernel_(p.kernel_), verbosity_(p.verbosity_) {}
 
-    IterativeOptimizationParameters(Kernel kernel = CG, Verbosity verbosity = SILENT)
+    IterativeOptimizationParameters(const Kernel kernel = CG, const Verbosity verbosity = SILENT)
       : kernel_(kernel), verbosity_(verbosity) {}
 
     virtual ~IterativeOptimizationParameters() {}
