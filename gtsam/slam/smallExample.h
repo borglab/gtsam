@@ -21,9 +21,10 @@
 
 #pragma once
 
-#include <boost/tuple/tuple.hpp>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/slam/simulated2D.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/linear/JacobianFactorGraph.h>
+#include <boost/tuple/tuple.hpp>
 
 namespace gtsam {
 	namespace example {
@@ -65,7 +66,7 @@ namespace gtsam {
 		 * create a linear factor graph
 		 * The non-linear graph above evaluated at NoisyValues
 		 */
-		FactorGraph<JacobianFactor> createGaussianFactorGraph(const Ordering& ordering);
+		JacobianFactorGraph createGaussianFactorGraph(const Ordering& ordering);
 
 		/**
 		 * create small Chordal Bayes Net x <- y
@@ -99,21 +100,21 @@ namespace gtsam {
 		 * Creates a simple constrained graph with one linear factor and
 		 * one binary equality constraint that sets x = y
 		 */
-		FactorGraph<JacobianFactor> createSimpleConstraintGraph();
+		JacobianFactorGraph createSimpleConstraintGraph();
 		VectorValues createSimpleConstraintValues();
 
 		/**
 		 * Creates a simple constrained graph with one linear factor and
 		 * one binary constraint.
 		 */
-		FactorGraph<JacobianFactor> createSingleConstraintGraph();
+		JacobianFactorGraph createSingleConstraintGraph();
 		VectorValues createSingleConstraintValues();
 
 		/**
 		 * Creates a constrained graph with a linear factor and two
 		 * binary constraints that share a node
 		 */
-		FactorGraph<JacobianFactor> createMultiConstraintGraph();
+		JacobianFactorGraph createMultiConstraintGraph();
 		VectorValues createMultiConstraintValues();
 
 		/* ******************************************************* */
@@ -129,7 +130,7 @@ namespace gtsam {
 		 * -x11-x21-x31
 		 * with x11 clamped at (1,1), and others related by 2D odometry.
 		 */
-		boost::tuple<FactorGraph<GaussianFactor>, Ordering, VectorValues> planarGraph(size_t N);
+		boost::tuple<GaussianFactorGraph, VectorValues> planarGraph(size_t N);
 
 		/*
 		 * Create canonical ordering for planar graph that also works for tree
@@ -146,8 +147,8 @@ namespace gtsam {
 		 *   |
 		 * -x11-x21-x31
 		 */
-		std::pair<FactorGraph<JacobianFactor>, FactorGraph<JacobianFactor> > splitOffPlanarTree(
-				size_t N, const FactorGraph<JacobianFactor>& original);
+		std::pair<JacobianFactorGraph, JacobianFactorGraph > splitOffPlanarTree(
+				size_t N, const JacobianFactorGraph& original);
 
 	} // example
 } // gtsam

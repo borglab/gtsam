@@ -43,10 +43,8 @@ double timeKalmanSmoother(int T) {
 // Create a planar factor graph and optimize
 // todo: use COLAMD ordering again (removed when linear baked-in ordering added)
 double timePlanarSmoother(int N, bool old = true) {
-	boost::tuple<GaussianFactorGraph, Ordering, VectorValues> pg = planarGraph(N);
+	boost::tuple<GaussianFactorGraph, VectorValues> pg = planarGraph(N);
   GaussianFactorGraph& fg(pg.get<0>());
-//  Ordering& ordering(pg.get<1>());
-//  VectorValues& config(pg.get<2>());
 	clock_t start = clock();
 	GaussianSequentialSolver(fg).optimize();
 	clock_t end = clock ();
@@ -58,10 +56,8 @@ double timePlanarSmoother(int N, bool old = true) {
 // Create a planar factor graph and eliminate
 // todo: use COLAMD ordering again (removed when linear baked-in ordering added)
 double timePlanarSmootherEliminate(int N, bool old = true) {
-  boost::tuple<GaussianFactorGraph, Ordering, VectorValues> pg = planarGraph(N);
+  boost::tuple<GaussianFactorGraph, VectorValues> pg = planarGraph(N);
   GaussianFactorGraph& fg(pg.get<0>());
-//  Ordering& ordering(pg.get<1>());
-//  VectorValues& config(pg.get<2>());
 	clock_t start = clock();
 	GaussianSequentialSolver(fg).eliminate();
 	clock_t end = clock ();

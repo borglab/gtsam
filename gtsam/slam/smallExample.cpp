@@ -135,7 +135,7 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	FactorGraph<JacobianFactor> createGaussianFactorGraph(const Ordering& ordering) {
+	JacobianFactorGraph createGaussianFactorGraph(const Ordering& ordering) {
 		// Create empty graph
 		GaussianFactorGraph fg;
 
@@ -153,7 +153,7 @@ namespace example {
 		// measurement between x2 and l1: l1-x2=[-0.2;0.3]
 		fg.add(ordering[X(2)], -5*eye(2), ordering[L(1)], 5*eye(2), Vector_(2, -1.0, 1.5), unit2);
 
-		return *fg.dynamicCastFactors<FactorGraph<JacobianFactor> >();
+		return *fg.dynamicCastFactors<JacobianFactorGraph >();
 	}
 
 	/* ************************************************************************* */
@@ -272,7 +272,7 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	FactorGraph<JacobianFactor> createSimpleConstraintGraph() {
+	JacobianFactorGraph createSimpleConstraintGraph() {
 		// create unary factor
 		// prior on _x_, mean = [1,-1], sigma=0.1
 		Matrix Ax = eye(2);
@@ -292,7 +292,7 @@ namespace example {
 				constraintModel));
 
 		// construct the graph
-		FactorGraph<JacobianFactor> fg;
+		JacobianFactorGraph fg;
 		fg.push_back(f1);
 		fg.push_back(f2);
 
@@ -309,7 +309,7 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	FactorGraph<JacobianFactor> createSingleConstraintGraph() {
+	JacobianFactorGraph createSingleConstraintGraph() {
 		// create unary factor
 		// prior on _x_, mean = [1,-1], sigma=0.1
 		Matrix Ax = eye(2);
@@ -334,7 +334,7 @@ namespace example {
 				constraintModel));
 
 		// construct the graph
-		FactorGraph<JacobianFactor> fg;
+		JacobianFactorGraph fg;
 		fg.push_back(f1);
 		fg.push_back(f2);
 
@@ -350,7 +350,7 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	FactorGraph<JacobianFactor> createMultiConstraintGraph() {
+	JacobianFactorGraph createMultiConstraintGraph() {
 		// unary factor 1
 		Matrix A = eye(2);
 		Vector b = Vector_(2, -2.0, 2.0);
@@ -395,7 +395,7 @@ namespace example {
 				constraintModel));
 
 		// construct the graph
-		FactorGraph<JacobianFactor> fg;
+		JacobianFactorGraph fg;
 		fg.push_back(lf1);
 		fg.push_back(lc1);
 		fg.push_back(lc2);
@@ -420,7 +420,7 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	boost::tuple<FactorGraph<GaussianFactor>, Ordering, VectorValues> planarGraph(size_t N) {
+	boost::tuple<GaussianFactorGraph, VectorValues> planarGraph(size_t N) {
 
 		// create empty graph
 		NonlinearFactorGraph nlfg;
@@ -457,7 +457,7 @@ namespace example {
 				xtrue[ordering[key(x, y)]] = Point2(x,y).vector();
 
 		// linearize around zero
-		return boost::make_tuple(*nlfg.linearize(zeros, ordering), ordering, xtrue);
+		return boost::make_tuple(*nlfg.linearize(zeros, ordering), xtrue);
 	}
 
 	/* ************************************************************************* */
@@ -470,9 +470,9 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	pair<FactorGraph<JacobianFactor>, FactorGraph<JacobianFactor> > splitOffPlanarTree(size_t N,
-			const FactorGraph<JacobianFactor>& original) {
-		FactorGraph<JacobianFactor> T, C;
+	pair<JacobianFactorGraph, JacobianFactorGraph > splitOffPlanarTree(size_t N,
+			const JacobianFactorGraph& original) {
+		JacobianFactorGraph T, C;
 
 		// Add the x11 constraint to the tree
 		T.push_back(original[0]);
