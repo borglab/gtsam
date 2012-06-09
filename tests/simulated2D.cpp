@@ -10,30 +10,40 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    simulated2DOriented
+ * @file    simulated2D.cpp
  * @brief   measurement functions and derivatives for simulated 2D robot
  * @author  Frank Dellaert
  */
 
-#include <gtsam/slam/simulated2DOriented.h>
+#include <tests/simulated2D.h>
 
-namespace simulated2DOriented {
+namespace simulated2D {
 
-  static Matrix I = gtsam::eye(3);
+  static Matrix I = gtsam::eye(2);
 
   /* ************************************************************************* */
-  Pose2 prior(const Pose2& x, boost::optional<Matrix&> H) {
+  Point2 prior(const Point2& x, boost::optional<Matrix&> H) {
     if (H) *H = I;
     return x;
   }
 
   /* ************************************************************************* */
-  Pose2 odo(const Pose2& x1, const Pose2& x2, boost::optional<Matrix&> H1,
+  Point2 odo(const Point2& x1, const Point2& x2, boost::optional<Matrix&> H1,
       boost::optional<Matrix&> H2) {
-    return x1.between(x2, H1, H2);
+    if (H1) *H1 = -I;
+    if (H2) *H2 = I;
+    return x2 - x1;
+  }
+
+  /* ************************************************************************* */
+  Point2 mea(const Point2& x, const Point2& l, boost::optional<Matrix&> H1,
+      boost::optional<Matrix&> H2) {
+    if (H1) *H1 = -I;
+    if (H2) *H2 = I;
+    return l - x;
   }
 
 /* ************************************************************************* */
 
-} // namespace simulated2DOriented
+} // namespace simulated2D
 

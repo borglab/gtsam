@@ -16,7 +16,8 @@
  * @date Feb 7, 2012
  */
 
-#include <gtsam/slam/smallExample.h>
+#include <tests/smallExample.h>
+
 #include <gtsam/slam/planarSLAM.h>
 #include <gtsam/slam/visualSLAM.h>
 #include <gtsam/nonlinear/Symbol.h>

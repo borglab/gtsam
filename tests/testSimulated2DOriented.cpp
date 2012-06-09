@@ -16,8 +16,8 @@
  * @brief unit tests for simulated2DOriented
  */
 
-#include <gtsam/slam/simulated2D.h>
-#include <gtsam/slam/simulated2DOriented.h>
+#include <tests/simulated2D.h>
+#include <tests/simulated2DOriented.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>

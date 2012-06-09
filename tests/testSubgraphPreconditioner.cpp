@@ -16,7 +16,7 @@
  **/
 
 #include <gtsam_unstable/linear/iterative.h>
-#include <gtsam/slam/smallExample.h>
+#include <tests/smallExample.h>
 #include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/linear/JacobianFactorGraph.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>

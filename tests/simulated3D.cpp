@@ -15,7 +15,7 @@
 * @author Alex Cunningham
 **/
 
-#include <gtsam_unstable/slam/simulated3D.h>
+#include <tests/simulated3D.h>
 
 namespace gtsam {
 

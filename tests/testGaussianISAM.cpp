@@ -15,7 +15,7 @@
  * @author  Michael Kaess
  */
 
-#include <gtsam/slam/smallExample.h>
+#include <tests/smallExample.h>
 #include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/linear/GaussianBayesNet.h>

@@ -22,7 +22,7 @@ using namespace boost::assign;
 #include <CppUnitLite/TestHarness.h>
 
 #include <gtsam/base/Testable.h>
-#include <gtsam/slam/smallExample.h>
+#include <tests/smallExample.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
 #include <gtsam/inference/SymbolicSequentialSolver.h>
 #include <gtsam/nonlinear/Ordering.h>

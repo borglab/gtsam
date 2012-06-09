@@ -6,7 +6,6 @@ set (gtsam_unstable_subdirs
     dynamics
     linear
     nonlinear
-    slam 
 )
 
 add_custom_target(check.unstable COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure)
@@ -33,7 +32,6 @@ set(gtsam_unstable_srcs
     ${dynamics_srcs}
     ${linear_srcs}    
     ${nonlinear_srcs}
-    ${slam_srcs} 
 )
 
 option (GTSAM_UNSTABLE_BUILD_SHARED_LIBRARY "Enable/Disable building of a shared version of gtsam_unstable" ON)

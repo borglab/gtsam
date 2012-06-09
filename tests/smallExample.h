@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include <gtsam/slam/simulated2D.h>
+#include <tests/simulated2D.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/linear/JacobianFactorGraph.h>
 #include <boost/tuple/tuple.hpp>

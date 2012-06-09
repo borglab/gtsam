@@ -19,7 +19,7 @@
 #include <boost/foreach.hpp>
 #include <boost/assign/std/list.hpp> // for operator += in Ordering
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam/slam/smallExample.h>
+#include <tests/smallExample.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 
 using namespace std;

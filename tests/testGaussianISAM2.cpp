@@ -12,7 +12,7 @@
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/JacobianFactorGraph.h>
 #include <gtsam/nonlinear/ISAM2.h>
-#include <gtsam/slam/smallExample.h>
+#include <tests/smallExample.h>
 #include <gtsam/slam/planarSLAM.h>
 
 #include <CppUnitLite/TestHarness.h>

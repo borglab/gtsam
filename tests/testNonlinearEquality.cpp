@@ -14,8 +14,9 @@
  * @author Alex Cunningham
  */
 
+#include <tests/simulated2DConstraints.h>
+
 #include <gtsam/slam/PriorFactor.h>
-#include <gtsam/slam/simulated2DConstraints.h>
 #include <gtsam/slam/visualSLAM.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>

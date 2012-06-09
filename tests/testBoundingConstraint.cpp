@@ -15,7 +15,7 @@
  * @author Alex Cunningham
  */
 
-#include <gtsam/slam/simulated2DConstraints.h>
+#include <tests/simulated2DConstraints.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>

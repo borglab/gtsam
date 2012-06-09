@@ -16,7 +16,7 @@
  */
 
 #include <gtsam/slam/pose2SLAM.h>
-#include <gtsam/slam/smallExample.h>
+#include <tests/smallExample.h>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/linear/JacobianFactor.h>

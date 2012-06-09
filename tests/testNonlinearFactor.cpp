@@ -28,8 +28,8 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/LieVector.h>
-#include <gtsam/slam/smallExample.h>
-#include <gtsam/slam/simulated2D.h>
+#include <tests/smallExample.h>
+#include <tests/simulated2D.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Symbol.h>

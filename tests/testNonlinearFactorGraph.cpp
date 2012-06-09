@@ -29,7 +29,7 @@ using namespace boost::assign;
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Matrix.h>
-#include <gtsam/slam/smallExample.h>
+#include <tests/smallExample.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Symbol.h>

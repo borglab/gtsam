@@ -21,7 +21,7 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/slam/simulated2D.h>
+#include <tests/simulated2D.h>
 
 using namespace std;
 using namespace gtsam;

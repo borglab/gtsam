@@ -15,7 +15,7 @@
  * @author nikai
  */
 
-#include <gtsam/slam/smallExample.h>
+#include <tests/smallExample.h>
 #include <gtsam/slam/planarSLAM.h>
 #include <gtsam/slam/pose2SLAM.h>
 #include <gtsam/nonlinear/Ordering.h>

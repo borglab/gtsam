@@ -834,7 +834,7 @@ class Odometry {
 // Simulated2D
 //*************************************************************************
 
-#include <gtsam/slam/simulated2D.h>
+#include <tests/simulated2D.h>
 namespace simulated2D {
 
 class Values {
@@ -856,7 +856,7 @@ class Graph {
 }///\namespace simulated2D
 
 // Simulated2DOriented Example Domain
-#include <gtsam/slam/simulated2DOriented.h>
+#include <tests/simulated2DOriented.h>
 namespace simulated2DOriented {
 
 class Values {

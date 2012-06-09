@@ -15,7 +15,7 @@
  * @author  Frank Dellaert
  */
 
-#include <gtsam/slam/smallExample.h>
+#include <tests/smallExample.h>
 #include <gtsam/slam/pose2SLAM.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
