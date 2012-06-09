@@ -113,13 +113,13 @@ predecessorMap2Graph(const PredecessorMap<KEY>& p_map) {
 	FOREACH_PAIR(child, parent, p_map) {
 		if (key2vertex.find(child) == key2vertex.end()) {
 			 v1 = add_vertex(child, g);
-			 key2vertex.insert(make_pair(child, v1));
+			 key2vertex.insert(std::make_pair(child, v1));
 		 } else
 			 v1 = key2vertex[child];
 
 		if (key2vertex.find(parent) == key2vertex.end()) {
 			 v2 = add_vertex(parent, g);
-			 key2vertex.insert(make_pair(parent, v2));
+			 key2vertex.insert(std::make_pair(parent, v2));
 		 } else
 			 v2 = key2vertex[parent];
 
