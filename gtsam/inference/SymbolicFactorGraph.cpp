@@ -15,12 +15,12 @@
  * @author Frank Dellaert
  */
 
-#include <boost/make_shared.hpp>
-
 #include <gtsam/inference/SymbolicFactorGraph.h>
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/EliminationTree.h>
 #include <gtsam/inference/IndexConditional.h>
+
+#include <boost/make_shared.hpp>
 
 namespace gtsam {
 
@@ -32,26 +32,22 @@ namespace gtsam {
 
 	/* ************************************************************************* */
   void SymbolicFactorGraph::push_factor(Index key) {
-    boost::shared_ptr<IndexFactor> factor(new IndexFactor(key));
-    push_back(factor);
+    push_back(boost::make_shared<IndexFactor>(key));
   }
 
   /** Push back binary factor */
   void SymbolicFactorGraph::push_factor(Index key1, Index key2) {
-    boost::shared_ptr<IndexFactor> factor(new IndexFactor(key1,key2));
-    push_back(factor);
+    push_back(boost::make_shared<IndexFactor>(key1,key2));
   }
 
   /** Push back ternary factor */
   void SymbolicFactorGraph::push_factor(Index key1, Index key2, Index key3) {
-    boost::shared_ptr<IndexFactor> factor(new IndexFactor(key1,key2,key3));
-    push_back(factor);
+    push_back(boost::make_shared<IndexFactor>(key1,key2,key3));
   }
 
   /** Push back 4-way factor */
   void SymbolicFactorGraph::push_factor(Index key1, Index key2, Index key3, Index key4) {
-    boost::shared_ptr<IndexFactor> factor(new IndexFactor(key1,key2,key3,key4));
-    push_back(factor);
+    push_back(boost::make_shared<IndexFactor>(key1,key2,key3,key4));
   }
 
   /* ************************************************************************* */
@@ -66,7 +62,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	IndexFactor::shared_ptr CombineSymbolic(
 			const FactorGraph<IndexFactor>& factors, const FastMap<Index,
-					std::vector<Index> >& variableSlots) {
+					vector<Index> >& variableSlots) {
 		IndexFactor::shared_ptr combined(Combine<IndexFactor, Index> (factors, variableSlots));
 //		combined->assertInvariants();
 		return combined;
@@ -84,12 +80,9 @@ namespace gtsam {
 		if (keys.size() < 1) throw invalid_argument(
 				"IndexFactor::CombineAndEliminate called on factors with no variables.");
 
-		pair<IndexConditional::shared_ptr, IndexFactor::shared_ptr> result;
-		std::vector<Index> newKeys(keys.begin(),keys.end());
-    result.first.reset(new IndexConditional(newKeys, nrFrontals));
-		result.second.reset(new IndexFactor(newKeys.begin()+nrFrontals, newKeys.end()));
-
-		return result;
+		vector<Index> newKeys(keys.begin(), keys.end());
+		return make_pair(new IndexConditional(newKeys, nrFrontals),
+				new IndexFactor(newKeys.begin() + nrFrontals, newKeys.end()));
 	}
 
 	/* ************************************************************************* */

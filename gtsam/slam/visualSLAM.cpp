@@ -17,6 +17,9 @@
 
 #include <gtsam/slam/visualSLAM.h>
 #include <gtsam/slam/BetweenFactor.h>
+#include <boost/make_shared.hpp>
+
+using boost::make_shared;
 
 namespace visualSLAM {
 
@@ -62,49 +65,43 @@ namespace visualSLAM {
   /* ************************************************************************* */
   void Graph::addMeasurement(const Point2& measured, const SharedNoiseModel& model,
        Key poseKey, Key pointKey, const shared_ptrK K) {
-    boost::shared_ptr<ProjectionFactor> factor(new ProjectionFactor(measured, model, poseKey, pointKey, K));
-    push_back(factor);
+    push_back(make_shared<ProjectionFactor>(measured, model, poseKey, pointKey, K));
   }
 
   /* ************************************************************************* */
   void Graph::addStereoMeasurement(const StereoPoint2& measured, const SharedNoiseModel& model,
        Key poseKey, Key pointKey, const shared_ptrKStereo K) {
-    boost::shared_ptr<StereoFactor> factor(new StereoFactor(measured, model, poseKey, pointKey, K));
-    push_back(factor);
+  	push_back(make_shared<StereoFactor>(measured, model, poseKey, pointKey, K));
   }
 
   /* ************************************************************************* */
   void Graph::addPoseConstraint(Key poseKey, const Pose3& p) {
-    boost::shared_ptr<PoseConstraint> factor(new PoseConstraint(poseKey, p));
-    push_back(factor);
+  	push_back(make_shared<PoseConstraint>(poseKey, p));
   }
 
   /* ************************************************************************* */
   void Graph::addPointConstraint(Key pointKey, const Point3& p) {
-    boost::shared_ptr<PointConstraint> factor(new PointConstraint(pointKey, p));
-    push_back(factor);
+  	push_back(make_shared<PointConstraint>(pointKey, p));
   }
 
   /* ************************************************************************* */
   void Graph::addPosePrior(Key poseKey, const Pose3& p, const SharedNoiseModel& model) {
-    boost::shared_ptr<PosePrior> factor(new PosePrior(poseKey, p, model));
-    push_back(factor);
+  	push_back(make_shared<PosePrior>(poseKey, p, model));
   }
 
   /* ************************************************************************* */
   void Graph::addPointPrior(Key pointKey, const Point3& p, const SharedNoiseModel& model) {
-    boost::shared_ptr<PointPrior> factor(new PointPrior(pointKey, p, model));
-    push_back(factor);
+  	push_back(make_shared<PointPrior>(pointKey, p, model));
   }
 
   /* ************************************************************************* */
   void Graph::addRangeFactor(Key poseKey, Key pointKey, double range, const SharedNoiseModel& model) {
-    push_back(boost::shared_ptr<RangeFactor>(new RangeFactor(poseKey, pointKey, range, model)));
+    push_back(make_shared<RangeFactor>(poseKey, pointKey, range, model));
   }
 
   /* ************************************************************************* */
   void Graph::addOdometry(Key x1, Key x2, const Pose3& odometry, const SharedNoiseModel& model) {
-    push_back(boost::shared_ptr<BetweenFactor<Pose3> >(new BetweenFactor<Pose3>(x1, x2, odometry, model)));
+    push_back(make_shared<BetweenFactor<Pose3> >(x1, x2, odometry, model));
   }
 
   /* ************************************************************************* */

@@ -22,6 +22,7 @@
 #include <gtsam/base/FastSet.h>
 
 #include <boost/foreach.hpp>
+#include <boost/make_shared.hpp>
 
 using namespace std;
 
@@ -94,8 +95,7 @@ namespace gtsam {
 			Index j = keys()[i];
 			dkeys.push_back(DiscreteKey(j,cardinality(j)));
 		}
-		shared_ptr f(new DecisionTreeFactor(dkeys, result));
-		return f;
+		return boost::make_shared<DecisionTreeFactor>(dkeys, result);
 	}
 
 /* ************************************************************************* */
