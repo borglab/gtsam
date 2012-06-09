@@ -33,7 +33,7 @@ SharedDiagonal soft_model2_alt = noiseModel::Isotropic::Sigma(2, 0.1);
 SharedDiagonal hard_model1 = noiseModel::Constrained::All(1);
 
 // some simple inequality constraints
-Symbol key('x',1);
+gtsam::Key key = 1;
 double mu = 10.0;
 // greater than
 iq2D::PoseXInequality constraint1(key, 1.0, true, mu);
@@ -169,23 +169,22 @@ TEST( testBoundingConstraint, unary_simple_optimization2) {
 	Point2 start_pt(2.0, 3.0);
 
 	NonlinearFactorGraph graph;
-	Symbol x1('x',1);
-	graph.add(iq2D::PoseXInequality(x1, 1.0, false));
-	graph.add(iq2D::PoseYInequality(x1, 2.0, false));
-	graph.add(simulated2D::Prior(start_pt, soft_model2, x1));
+	graph.add(iq2D::PoseXInequality(key, 1.0, false));
+	graph.add(iq2D::PoseYInequality(key, 2.0, false));
+	graph.add(simulated2D::Prior(start_pt, soft_model2, key));
 
 	Values initValues;
-	initValues.insert(x1, start_pt);
+	initValues.insert(key, start_pt);
 
 	Values actual = LevenbergMarquardtOptimizer(graph, initValues).optimize();
 	Values expected;
-	expected.insert(x1, goal_pt);
+	expected.insert(key, goal_pt);
 	CHECK(assert_equal(expected, actual, tol));
 }
 
 /* ************************************************************************* */
 TEST( testBoundingConstraint, MaxDistance_basics) {
-	Symbol key1('x',1), key2('x',2);
+	gtsam::Key key1 = 1, key2 = 2;
 	Point2 pt1, pt2(1.0, 0.0), pt3(2.0, 0.0), pt4(3.0, 0.0);
 	iq2D::PoseMaxDistConstraint rangeBound(key1, key2, 2.0, mu);
 	EXPECT_DOUBLES_EQUAL(2.0, rangeBound.threshold(), tol);

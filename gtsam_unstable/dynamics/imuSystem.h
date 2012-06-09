@@ -6,11 +6,6 @@
 
 #pragma once
 
-#include <boost/shared_ptr.hpp>
-
-#include <gtsam/nonlinear/Values.h>
-#include <gtsam/nonlinear/Key.h>
-#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/RangeFactor.h>
@@ -34,11 +29,6 @@
  */
 namespace imu {
 
-using namespace gtsam;
-
-// Values: just poses
-inline Symbol PoseKey(Index j) { return Symbol('x', j); }
-
 struct Values : public gtsam::Values {
 	typedef gtsam::Values Base;
 
@@ -46,39 +36,39 @@ struct Values : public gtsam::Values {
 	Values(const Values& values) : Base(values) {}
 	Values(const Base& values) : Base(values) {}
 
-	void insertPose(Index key, const PoseRTV& pose) { insert(PoseKey(key), pose); }
-	PoseRTV pose(Index key) const { return at<PoseRTV>(PoseKey(key)); }
+	void insertPose(gtsam::Key key, const gtsam::PoseRTV& pose) { insert(key, pose); }
+	gtsam::PoseRTV pose(gtsam::Key key) const { return at<gtsam::PoseRTV>(key); }
 };
 
 // factors
-typedef IMUFactor<PoseRTV> IMUMeasurement; // IMU between measurements
-typedef FullIMUFactor<PoseRTV> FullIMUMeasurement; // Full-state IMU between measurements
-typedef BetweenFactor<PoseRTV> Between;   // full odometry (including velocity)
-typedef NonlinearEquality<PoseRTV> Constraint;
-typedef PriorFactor<PoseRTV> Prior;
-typedef RangeFactor<PoseRTV, PoseRTV> Range;
+typedef gtsam::IMUFactor<gtsam::PoseRTV> IMUMeasurement; // IMU between measurements
+typedef gtsam::FullIMUFactor<gtsam::PoseRTV> FullIMUMeasurement; // Full-state IMU between measurements
+typedef gtsam::BetweenFactor<gtsam::PoseRTV> Between;   // full odometry (including velocity)
+typedef gtsam::NonlinearEquality<gtsam::PoseRTV> Constraint;
+typedef gtsam::PriorFactor<gtsam::PoseRTV> Prior;
+typedef gtsam::RangeFactor<gtsam::PoseRTV, gtsam::PoseRTV> Range;
 
 // graph components
-struct Graph : public NonlinearFactorGraph {
-	typedef NonlinearFactorGraph Base;
+struct Graph : public gtsam::NonlinearFactorGraph {
+	typedef gtsam::NonlinearFactorGraph Base;
 
 	Graph() {}
 	Graph(const Base& graph) : Base(graph) {}
 	Graph(const Graph& graph) : Base(graph) {}
 
 	// prior factors
-	void addPrior(size_t key, const PoseRTV& pose, const SharedNoiseModel& noiseModel);
-	void addConstraint(size_t key, const PoseRTV& pose);
-	void addHeightPrior(size_t key, double z, const SharedNoiseModel& noiseModel);
+	void addPrior(size_t key, const gtsam::PoseRTV& pose, const gtsam::SharedNoiseModel& noiseModel);
+	void addConstraint(size_t key, const gtsam::PoseRTV& pose);
+	void addHeightPrior(size_t key, double z, const gtsam::SharedNoiseModel& noiseModel);
 
 	// inertial factors
-	void addFullIMUMeasurement(size_t key1, size_t key2, const Vector& accel, const Vector& gyro, double dt, const SharedNoiseModel& noiseModel);
-	void addIMUMeasurement(size_t key1, size_t key2, const Vector& accel, const Vector& gyro, double dt, const SharedNoiseModel& noiseModel);
-	void addVelocityConstraint(size_t key1, size_t key2, double dt, const SharedNoiseModel& noiseModel);
+	void addFullIMUMeasurement(size_t key1, size_t key2, const gtsam::Vector& accel, const gtsam::Vector& gyro, double dt, const gtsam::SharedNoiseModel& noiseModel);
+	void addIMUMeasurement(size_t key1, size_t key2, const gtsam::Vector& accel, const gtsam::Vector& gyro, double dt, const gtsam::SharedNoiseModel& noiseModel);
+	void addVelocityConstraint(size_t key1, size_t key2, double dt, const gtsam::SharedNoiseModel& noiseModel);
 
 	// other measurements
-	void addBetween(size_t key1, size_t key2, const PoseRTV& z, const SharedNoiseModel& noiseModel);
-	void addRange(size_t key1, size_t key2, double z, const SharedNoiseModel& noiseModel);
+	void addBetween(size_t key1, size_t key2, const gtsam::PoseRTV& z, const gtsam::SharedNoiseModel& noiseModel);
+	void addRange(size_t key1, size_t key2, double z, const gtsam::SharedNoiseModel& noiseModel);
 
 	// optimization
 	Values optimize(const Values& init) const;

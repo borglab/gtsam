@@ -25,6 +25,8 @@ using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
+Key aKey = gtsam::symbol_shorthand::X(4); // FIXME: throws index too large exception in Symbol.key()
+
 /* ************************************************************************* */
 TEST(Key, KeySymbolConversion) {
   Symbol original('j', 4);

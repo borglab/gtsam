@@ -3,6 +3,8 @@
  * @author Alex Cunningham
  */
 
+#include <iostream>
+
 #include <CppUnitLite/TestHarness.h>
 
 #include <gtsam_unstable/dynamics/imuSystem.h>
@@ -13,9 +15,8 @@ using namespace imu;
 
 const double tol=1e-5;
 
+static const Key x0 = 0, x1 = 1, x2 = 2, x3 = 3, x4 = 4;
 static const Vector g = delta(3, 2, -9.81);
-
-Key x1 = PoseKey(1), x2 = PoseKey(2), x3 = PoseKey(3), x4 = PoseKey(4);
 
 /* ************************************************************************* */
 TEST(testIMUSystem, instantiations) {
@@ -149,14 +150,14 @@ TEST( testIMUSystem, linear_trajectory) {
 	imu::Values true_traj, init_traj;
 	Graph graph;
 
-	graph.add(Constraint(PoseKey(0), start));
-	true_traj.insert(PoseKey(0), start);
-	init_traj.insert(PoseKey(0), start);
+	graph.add(Constraint(x0, start));
+	true_traj.insert(x0, start);
+	init_traj.insert(x0, start);
 
 	size_t nrPoses = 10;
 	PoseRTV cur_pose = start;
 	for (size_t i=1; i<nrPoses; ++i) {
-		Key xA = PoseKey(i-1), xB = PoseKey(i);
+		Key xA = i-1, xB = i;
 		cur_pose = cur_pose.generalDynamics(accel, gyro, dt);
 		graph.add(FullIMUMeasurement(accel - g, gyro, dt, xA, xB, model));
 		true_traj.insert(xB, cur_pose);

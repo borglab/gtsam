@@ -44,11 +44,12 @@ static SharedDiagonal
 	sigma0_1 = sharedSigma(2,0.1), sigma_02 = sharedSigma(2,0.2),
 	constraintModel = noiseModel::Constrained::All(2);
 
-const Key kx1 = X(1), kx2 = X(2), kl1 = L(1);
+//const Key kx1 = X(1), kx2 = X(2), kl1 = L(1); // FIXME: throws exception
 
 /* ************************************************************************* */
 TEST( GaussianFactor, linearFactor )
 {
+	const Key kx1 = X(1), kx2 = X(2), kl1 = L(1);
   Ordering ordering; ordering += kx1,kx2,kl1;
 
   Matrix I = eye(2);
@@ -95,6 +96,7 @@ TEST( GaussianFactor, linearFactor )
 /* ************************************************************************* */
 TEST( GaussianFactor, getDim )
 {
+	const Key kx1 = X(1), kx2 = X(2), kl1 = L(1);
 	// get a factor
   Ordering ordering; ordering += kx1,kx2,kl1;
   GaussianFactorGraph fg = example::createGaussianFactorGraph(ordering);
@@ -167,6 +169,7 @@ TEST( GaussianFactor, getDim )
 /* ************************************************************************* */
 TEST( GaussianFactor, error )
 {
+	const Key kx1 = X(1), kx2 = X(2), kl1 = L(1);
 	// create a small linear factor graph
   Ordering ordering; ordering += kx1,kx2,kl1;
   GaussianFactorGraph fg = example::createGaussianFactorGraph(ordering);
@@ -227,6 +230,7 @@ TEST( GaussianFactor, error )
 /* ************************************************************************* */
 TEST( GaussianFactor, matrix )
 {
+	const Key kx1 = X(1), kx2 = X(2), kl1 = L(1);
 	// create a small linear factor graph
   Ordering ordering; ordering += kx1,kx2,kl1;
   FactorGraph<JacobianFactor> fg = example::createGaussianFactorGraph(ordering);
@@ -275,6 +279,7 @@ TEST( GaussianFactor, matrix )
 /* ************************************************************************* */
 TEST( GaussianFactor, matrix_aug )
 {
+	const Key kx1 = X(1), kx2 = X(2), kl1 = L(1);
 	// create a small linear factor graph
   Ordering ordering; ordering += kx1,kx2,kl1;
   FactorGraph<JacobianFactor> fg = example::createGaussianFactorGraph(ordering);
@@ -387,6 +392,7 @@ void print(const list<T>& i) {
 TEST( GaussianFactor, size )
 {
 	// create a linear factor graph
+	const Key kx1 = X(1), kx2 = X(2), kl1 = L(1);
   Ordering ordering; ordering += kx1,kx2,kl1;
   GaussianFactorGraph fg = example::createGaussianFactorGraph(ordering);
 
