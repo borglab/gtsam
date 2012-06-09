@@ -19,17 +19,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/Key.h>
-
-#include <boost/mpl/char.hpp>
-#include <boost/format.hpp>
 #include <boost/serialization/nvp.hpp>
-#include <boost/function.hpp>
-#include <boost/lambda/bind.hpp>
-#include <boost/lambda/construct.hpp>
-#include <boost/lambda/lambda.hpp>
-
-#include <list>
-#include <iostream>
 
 namespace gtsam {
 
@@ -45,6 +35,7 @@ protected:
   size_t j_;
 
 public:
+
   /** Default constructor */
   Symbol() :
     c_(0), j_(0) {
@@ -61,39 +52,19 @@ public:
   }
 
   /** Constructor that decodes an integer Key */
-  Symbol(Key key) {
-    const size_t keyBits = sizeof(Key) * 8;
-    const size_t chrBits = sizeof(unsigned char) * 8;
-    const size_t indexBits = keyBits - chrBits;
-    const Key chrMask = Key(std::numeric_limits<unsigned char>::max()) << indexBits;
-    const Key indexMask = ~chrMask;
-    c_ = (unsigned char)((key & chrMask) >> indexBits);
-    j_ = key & indexMask;
-  }
+  Symbol(Key key);
 
   /** return Key (integer) representation */
-  Key key() const {
-    const size_t keyBits = sizeof(Key) * 8;
-    const size_t chrBits = sizeof(unsigned char) * 8;
-    const size_t indexBits = keyBits - chrBits;
-    const Key chrMask = Key(std::numeric_limits<unsigned char>::max()) << indexBits;
-    const Key indexMask = ~chrMask;
-    if(j_ > indexMask)
-      throw std::invalid_argument("Symbol index is too large");
-    Key key = (Key(c_) << indexBits) | j_;
-    return key;
-  }
+  Key key() const;
 
   /** Cast to integer */
   operator Key() const { return key(); }
 
-  // Testable Requirements
-  void print(const std::string& s = "") const {
-    std::cout << s << (std::string) (*this) << std::endl;
-  }
-  bool equals(const Symbol& expected, double tol = 0.0) const {
-    return (*this) == expected;
-  }
+  /// Print
+  void print(const std::string& s = "") const;
+
+  /// Check equality
+  bool equals(const Symbol& expected, double tol = 0.0) const;
 
   /** Retrieve key character */
   unsigned char chr() const {
@@ -106,23 +77,29 @@ public:
   }
 
   /** Create a string from the key */
-  operator std::string() const {
-    return str(boost::format("%c%d") % c_ % j_);
-  }
+  operator std::string() const;
 
   /** Comparison for use in maps */
   bool operator<(const Symbol& comp) const {
     return c_ < comp.c_ || (comp.c_ == c_ && j_ < comp.j_);
   }
+
+  /** Comparison for use in maps */
   bool operator==(const Symbol& comp) const {
     return comp.c_ == c_ && comp.j_ == j_;
   }
+
+  /** Comparison for use in maps */
   bool operator==(Key comp) const {
     return comp == (Key)(*this);
   }
+
+  /** Comparison for use in maps */
   bool operator!=(const Symbol& comp) const {
     return comp.c_ != c_ || comp.j_ != j_;
   }
+
+  /** Comparison for use in maps */
   bool operator!=(Key comp) const {
     return comp != (Key)(*this);
   }
@@ -132,10 +109,7 @@ public:
    * Values::filter() function to retrieve all key-value pairs with the
    * requested character.
    */
-  static boost::function<bool(Key)> ChrTest(unsigned char c) {
-    namespace bl = boost::lambda;
-    return bl::bind(&Symbol::chr, bl::bind(bl::constructor<Symbol>(), bl::_1)) == c;
-  }
+  static boost::function<bool(Key)> ChrTest(unsigned char c);
 
 private:
 
