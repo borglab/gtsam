@@ -95,7 +95,7 @@ namespace gtsam {
 		// Permute the factors - NOTE that this permutes the original factors, not
 		// copies.  Other parts of the code may hold shared_ptr's to these factors so
 		// we must undo the permutation before returning.
-		BOOST_FOREACH(const typename FACTOR::shared_ptr& factor, *factors_)
+		BOOST_FOREACH(const typename boost::shared_ptr<FACTOR>& factor, *factors_)
 						if (factor) factor->permuteWithInverse(*permutationInverse);
 
 		// Eliminate all variables
@@ -103,7 +103,7 @@ namespace gtsam {
 			bayesNet(EliminationTree<FACTOR>::Create(*factors_)->eliminate(function));
 
 		// Undo the permuation on the original factors and on the structure.
-		BOOST_FOREACH(const typename FACTOR::shared_ptr& factor, *factors_)
+		BOOST_FOREACH(const typename boost::shared_ptr<FACTOR>& factor, *factors_)
 					if (factor) factor->permuteWithInverse(*permutation);
 
 		// Take the joint marginal from the Bayes net.
@@ -116,7 +116,7 @@ namespace gtsam {
 			joint->push_back((*(conditional++))->toFactor());
 
 		// Undo the permutation on the eliminated joint marginal factors
-		BOOST_FOREACH(const typename FACTOR::shared_ptr& factor, *joint)
+		BOOST_FOREACH(const typename boost::shared_ptr<FACTOR>& factor, *joint)
 						factor->permuteWithInverse(*permutation);
 
 		return joint;
@@ -124,7 +124,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class FACTOR>
-	typename FACTOR::shared_ptr //
+	typename boost::shared_ptr<FACTOR> //
 	GenericSequentialSolver<FACTOR>::marginalFactor(Index j, Eliminate function) const {
 		// Create a container for the one variable index
 		std::vector<Index> js(1);

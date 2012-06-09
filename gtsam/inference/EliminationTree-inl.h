@@ -132,7 +132,7 @@ typename EliminationTree<FACTOR>::shared_ptr EliminationTree<FACTOR>::Create(
 
   // Hang factors in right places
   tic(3, "hang factors");
-  BOOST_FOREACH(const typename DERIVEDFACTOR::shared_ptr& derivedFactor, factorGraph) {
+  BOOST_FOREACH(const typename boost::shared_ptr<DERIVEDFACTOR>& derivedFactor, factorGraph) {
     // Here we upwards-cast to the factor type of this EliminationTree.  This
     // allows performing symbolic elimination on, for example, GaussianFactors.
     if(derivedFactor) {

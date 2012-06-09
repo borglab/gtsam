@@ -102,7 +102,7 @@ namespace gtsam {
 		 * Compute the marginal density over a variable, by integrating out
 		 * all of the other variables.  This function returns the result as a factor.
 		 */
-		typename FACTOR::shared_ptr marginalFactor(Index j,
+		typename boost::shared_ptr<FACTOR> marginalFactor(Index j,
 				Eliminate function) const;
 
 		/// @}

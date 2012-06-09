@@ -31,7 +31,8 @@ namespace inference {
 
 /* ************************************************************************* */
 template<typename CONSTRAINED>
-Permutation::shared_ptr PermutationCOLAMD(const VariableIndex& variableIndex, const CONSTRAINED& constrainLast) {
+Permutation::shared_ptr PermutationCOLAMD(
+		const VariableIndex& variableIndex, const CONSTRAINED& constrainLast) {
 
   std::vector<int> cmember(variableIndex.size(), 0);
 
@@ -55,10 +56,14 @@ inline Permutation::shared_ptr PermutationCOLAMD(const VariableIndex& variableIn
 
 /* ************************************************************************* */
 template<class Graph>
-typename Graph::FactorizationResult eliminate(const Graph& factorGraph, const std::vector<typename Graph::KeyType>& variables,
-    const typename Graph::Eliminate& eliminateFcn, boost::optional<const VariableIndex&> variableIndex_) {
+std::pair<typename Graph::sharedConditional, Graph> eliminate(
+		const Graph& factorGraph,
+		const std::vector<typename Graph::KeyType>& variables,
+		const typename Graph::Eliminate& eliminateFcn,
+		boost::optional<const VariableIndex&> variableIndex_) {
 
-  const VariableIndex& variableIndex = variableIndex_ ? *variableIndex_ : VariableIndex(factorGraph);
+  const VariableIndex& variableIndex =
+					variableIndex_ ? *variableIndex_ : VariableIndex(factorGraph);
 
   // First find the involved factors
   Graph involvedFactors;
@@ -108,13 +113,11 @@ typename Graph::FactorizationResult eliminate(const Graph& factorGraph, const st
   if(remainingFactor->size() != 0)
   	remainingGraph.push_back(remainingFactor);
 
-  return typename Graph::FactorizationResult(conditional, remainingGraph);
+  return std::make_pair(conditional, remainingGraph);
 
-}
+} // eliminate
 
-
-}
-
-}
+} // namespace inference
+} // namespace gtsam
 
 

@@ -21,13 +21,12 @@
 
 #pragma once
 
-#include <boost/foreach.hpp>
-#include <boost/serialization/nvp.hpp>
-#include <boost/function.hpp>
-
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/FastMap.h>
 #include <gtsam/inference/BayesNet.h>
+
+#include <boost/serialization/nvp.hpp>
+#include <boost/function.hpp>
 
 namespace gtsam {
 
@@ -41,30 +40,28 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 	 */
 	template<class FACTOR>
 	class FactorGraph {
+
 	public:
-	  typedef FACTOR FactorType;
-	  typedef typename FACTOR::KeyType KeyType;
-	  typedef boost::shared_ptr<FactorGraph<FACTOR> > shared_ptr;
-		typedef typename boost::shared_ptr<FACTOR> sharedFactor;
+
+		typedef FACTOR FactorType;  ///< factor type
+		typedef typename FACTOR::KeyType KeyType; ///< type of Keys we use to index factors with
+		typedef boost::shared_ptr<FACTOR> sharedFactor;  ///< Shared pointer to a factor
+		typedef boost::shared_ptr<typename FACTOR::ConditionalType> sharedConditional;  ///< Shared pointer to a conditional
+
+		typedef FactorGraph<FACTOR> This;  ///< Typedef for this class
+		typedef boost::shared_ptr<This> shared_ptr;  ///< Shared pointer for this class
 		typedef typename std::vector<sharedFactor>::iterator iterator;
 		typedef typename std::vector<sharedFactor>::const_iterator const_iterator;
 
-	  /** typedef for elimination result */
-	  typedef std::pair<
-				boost::shared_ptr<typename FACTOR::ConditionalType>,
-				typename FACTOR::shared_ptr> EliminationResult;
+		/** typedef for elimination result */
+		typedef std::pair<sharedConditional, sharedFactor> EliminationResult;
 
-	  /** typedef for an eliminate subroutine */
-	  typedef boost::function<EliminationResult(const FactorGraph<FACTOR>&, size_t)> Eliminate;
-
-	  /** Typedef for the result of factorization */
-	  typedef std::pair<
-	      boost::shared_ptr<typename FACTOR::ConditionalType>,
-	      FactorGraph<FACTOR> > FactorizationResult;
+		/** typedef for an eliminate subroutine */
+		typedef boost::function<EliminationResult(const This&, size_t)> Eliminate;
 
 	protected:
 
-	  /** concept check */
+	  /** concept check, makes sure FACTOR defines print and equals */
 	  GTSAM_CONCEPT_TESTABLE_TYPE(FACTOR)
 
     /** Collection of factors */
@@ -82,7 +79,11 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 		/// @name Advanced Constructors
 		/// @{
 
-		/** convert from Bayes net */
+	  /**
+	   * @brief Constructor from a Bayes net
+	   * @param bayesNet the Bayes net to convert, type CONDITIONAL must yield compatible factor
+	   * @return a factor graph with all the conditionals, as factors
+	   */
 		template<class CONDITIONAL>
 		FactorGraph(const BayesNet<CONDITIONAL>& bayesNet);
 
@@ -113,7 +114,7 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 		}
 
 		/** push back many factors */
-		void push_back(const FactorGraph<FACTOR>& factors) {
+		void push_back(const This& factors) {
 			factors_.insert(end(), factors.begin(), factors.end());
 		}
 
@@ -123,9 +124,14 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 			factors_.insert(end(), firstFactor, lastFactor);
 		}
 
-    /** push back many factors stored in a vector*/
+	  /**
+	   * @brief Add a vector of derived factors
+	   * @param factors to add
+	   */
     template<typename DERIVEDFACTOR>
-    void push_back(const std::vector<boost::shared_ptr<DERIVEDFACTOR> >& factors);
+    void push_back(const std::vector<typename boost::shared_ptr<DERIVEDFACTOR> >& factors) {
+			factors_.insert(end(), factors.begin(), factors.end());
+		}
 
 		/// @}
   	/// @name Testable
@@ -135,7 +141,7 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 		void print(const std::string& s = "FactorGraph") const;
 
 		/** Check equality */
-		bool equals(const FactorGraph<FACTOR>& fg, double tol = 1e-9) const;
+		bool equals(const This& fg, double tol = 1e-9) const;
 
 		/// @}
 		/// @name Standard Interface
@@ -251,31 +257,6 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
    */
 	template<class FACTORGRAPH>
 	FACTORGRAPH combine(const FACTORGRAPH& fg1, const FACTORGRAPH& fg2);
-
-	/*
-	 * These functions are defined here because they are templated on an
-	 * additional parameter.  Putting them in the -inl.h file would mean these
-	 * would have to be explicitly instantiated for any possible derived factor
-	 * type.
-	 */
-
-  /* ************************************************************************* */
-  template<class FACTOR>
-  template<class CONDITIONAL>
-  FactorGraph<FACTOR>::FactorGraph(const BayesNet<CONDITIONAL>& bayesNet) {
-    factors_.reserve(bayesNet.size());
-    BOOST_FOREACH(const typename CONDITIONAL::shared_ptr& cond, bayesNet) {
-      this->push_back(cond->toFactor());
-    }
-  }
-
-  /* ************************************************************************* */
-  template<class FACTOR>
-  template<class DERIVEDFACTOR>
-  void FactorGraph<FACTOR>::push_back(const std::vector<boost::shared_ptr<DERIVEDFACTOR> >& factors) {
-    BOOST_FOREACH(const boost::shared_ptr<DERIVEDFACTOR>& factor, factors)
-      this->push_back(factor);
-  }
 
 } // namespace gtsam
 

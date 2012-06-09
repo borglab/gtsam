@@ -52,7 +52,7 @@ public:
 
 	typedef EliminationTree<FACTOR> This; ///< This class
   typedef boost::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
-  typedef typename FACTOR::shared_ptr sharedFactor; ///< Shared pointer to a factor
+	typedef typename boost::shared_ptr<FACTOR> sharedFactor;  ///< Shared pointer to a factor
   typedef gtsam::BayesNet<typename FACTOR::ConditionalType> BayesNet; ///< The BayesNet corresponding to FACTOR
 
   /** Typedef for an eliminate subroutine */

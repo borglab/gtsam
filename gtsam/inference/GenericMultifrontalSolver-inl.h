@@ -78,7 +78,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class F, class JT>
-	typename F::shared_ptr GenericMultifrontalSolver<F, JT>::marginalFactor(
+	typename boost::shared_ptr<F> GenericMultifrontalSolver<F, JT>::marginalFactor(
 			Index j, Eliminate function) const {
 		return eliminate(function)->marginalFactor(j, function);
 	}

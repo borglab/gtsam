@@ -200,14 +200,16 @@ TEST( GaussianFactorGraph, eliminateOne_x1 )
   Ordering ordering; ordering += X(1),L(1),X(2);
   GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
 
-  GaussianFactorGraph::FactorizationResult result = inference::eliminateOne(fg, 0, EliminateQR);
+  GaussianConditional::shared_ptr conditional;
+  GaussianFactorGraph remaining;
+  boost::tie(conditional,remaining) = inference::eliminateOne(fg, 0, EliminateQR);
 
   // create expected Conditional Gaussian
   Matrix I = 15*eye(2), R11 = I, S12 = -0.111111*I, S13 = -0.444444*I;
   Vector d = Vector_(2, -0.133333, -0.0222222), sigma = ones(2);
   GaussianConditional expected(ordering[X(1)],15*d,R11,ordering[L(1)],S12,ordering[X(2)],S13,sigma);
 
-  EXPECT(assert_equal(expected,*result.first,tol));
+  EXPECT(assert_equal(expected,*conditional,tol));
 }
 
 /* ************************************************************************* */
@@ -247,9 +249,9 @@ TEST( GaussianFactorGraph, eliminateOne_x1_fast )
 {
   Ordering ordering; ordering += X(1),L(1),X(2);
   GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
-  GaussianFactorGraph::FactorizationResult result = inference::eliminateOne(fg, ordering[X(1)], EliminateQR);
-  GaussianConditional::shared_ptr conditional = result.first;
-  GaussianFactorGraph remaining = result.second;
+  GaussianConditional::shared_ptr conditional;
+  GaussianFactorGraph remaining;
+  boost::tie(conditional,remaining) = inference::eliminateOne(fg, ordering[X(1)], EliminateQR);
 
   // create expected Conditional Gaussian
   Matrix I = 15*eye(2), R11 = I, S12 = -0.111111*I, S13 = -0.444444*I;

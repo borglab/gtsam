@@ -45,7 +45,7 @@ namespace gtsam {
   template<class FACTOR>
   boost::shared_ptr<Errors> gaussianErrors_(const FactorGraph<FACTOR>& fg, const VectorValues& x) {
     boost::shared_ptr<Errors> e(new Errors);
-    BOOST_FOREACH(const typename FACTOR::shared_ptr& factor, fg) {
+    BOOST_FOREACH(const typename boost::shared_ptr<FACTOR>& factor, fg) {
       e->push_back(factor->error_vector(x));
     }
     return e;

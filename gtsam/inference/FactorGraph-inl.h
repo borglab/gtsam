@@ -37,6 +37,16 @@
 namespace gtsam {
 
 	/* ************************************************************************* */
+  template<class FACTOR>
+  template<class CONDITIONAL>
+  FactorGraph<FACTOR>::FactorGraph(const BayesNet<CONDITIONAL>& bayesNet) {
+    factors_.reserve(bayesNet.size());
+    BOOST_FOREACH(const typename CONDITIONAL::shared_ptr& cond, bayesNet) {
+      this->push_back(cond->toFactor());
+    }
+  }
+
+	/* ************************************************************************* */
 	template<class FACTOR>
 	void FactorGraph<FACTOR>::print(const std::string& s) const {
 		std::cout << s << std::endl;
@@ -50,7 +60,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class FACTOR>
-	bool FactorGraph<FACTOR>::equals(const FactorGraph<FACTOR>& fg, double tol) const {
+	bool FactorGraph<FACTOR>::equals(const This& fg, double tol) const {
 		/** check whether the two factor graphs have the same number of factors_ */
 		if (factors_.size() != fg.size()) return false;
 
@@ -111,20 +121,20 @@ namespace gtsam {
 	}
 
   /* ************************************************************************* */
+	// Recursive function to add factors in cliques to vector of factors_io
 	template<class FACTOR, class CONDITIONAL, class CLIQUE>
 	void _FactorGraph_BayesTree_adder(
-	    std::vector<typename FactorGraph<FACTOR>::sharedFactor>& factors,
+	    std::vector<typename boost::shared_ptr<FACTOR> >& factors_io,
 	    const typename BayesTree<CONDITIONAL,CLIQUE>::sharedClique& clique) {
 
 	  if(clique) {
 	    // Add factor from this clique
-	    factors.push_back((*clique)->toFactor());
+	  	factors_io.push_back((*clique)->toFactor());
 
 	    // Traverse children
 	    typedef typename BayesTree<CONDITIONAL,CLIQUE>::sharedClique sharedClique;
-	    BOOST_FOREACH(const sharedClique& child, clique->children()) {
-	      _FactorGraph_BayesTree_adder<FACTOR,CONDITIONAL,CLIQUE>(factors, child);
-	    }
+	    BOOST_FOREACH(const sharedClique& child, clique->children())
+	      _FactorGraph_BayesTree_adder<FACTOR,CONDITIONAL,CLIQUE>(factors_io, child);
 	  }
 	}
 
