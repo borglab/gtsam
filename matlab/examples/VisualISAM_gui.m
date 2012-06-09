@@ -22,7 +22,7 @@ function varargout = VisualISAM_gui(varargin)
 
 % Edit the above text to modify the response to help VisualISAM_gui
 
-% Last Modified by GUIDE v2.5 08-Jun-2012 16:03:16
+% Last Modified by GUIDE v2.5 08-Jun-2012 23:53:47
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -53,8 +53,8 @@ function VisualISAM_gui_OpeningFcn(hObject, eventdata, handles, varargin)
 % varargin   command line arguments to VisualISAM_gui (see VARARGIN)
 
 % Choose default command line output for VisualISAM_gui
+initOptions(handles)
 handles.output = hObject;
-VisualISAMInitOptions
 
 % Update handles structure
 guidata(hObject, handles);
@@ -62,11 +62,51 @@ guidata(hObject, handles);
 % UIWAIT makes VisualISAM_gui wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
 
-
 function showFramei(hObject, handles)
     VisualISAMGlobalVars
     set(handles.frameStatus, 'String', sprintf('Frame: %d',frame_i));
+    drawnow
     guidata(hObject, handles);
+    
+function showWaiting(handles, status)
+    set(handles.waitingStatus,'String', status);
+    drawnow
+    guidata(handles.waitingStatus, handles);
+    
+function triangle = chooseDataset(handles)
+	str = cellstr(get(handles.dataset,'String'));
+    sel = get(handles.dataset,'Value');
+    switch str{sel}
+        case 'triangle'
+            triangle = true;
+        case 'cube'
+            triangle = false;
+    end
+    
+function initOptions(handles)
+    VisualISAMGlobalVars
+    %% Setting data options
+    TRIANGLE = chooseDataset(handles)
+    NCAMERAS = str2num(get(handles.numCamEdit,'String')) 
+    SHOW_IMAGES = get(handles.showImagesCB,'Value')
+
+    %% iSAM Options
+    HARD_CONSTRAINT = get(handles.hardConstraintCB,'Value')
+    POINT_PRIORS = get(handles.pointPriorsCB,'Value')
+    set(handles.batchInitCB,'Value',1);
+    drawnow
+    BATCH_INIT = get(handles.batchInitCB,'Value')
+    REORDER_INTERVAL = str2num(get(handles.numCamEdit,'String')) 
+    ALWAYS_RELINEARIZE = get(handles.alwaysRelinearizeCB,'Value')
+
+    %% Display Options
+    SAVE_GRAPH = get(handles.saveGraphCB,'Value')
+    PRINT_STATS = get(handles.printStatsCB,'Value')
+    DRAW_INTERVAL = str2num(get(handles.drawInterval,'String'))
+    CAMERA_INTERVAL = str2num(get(handles.cameraIntervalEdit,'String')) 
+    DRAW_TRUE_POSES = get(handles.drawTruePosesCB,'Value')
+    SAVE_FIGURES = get(handles.saveFiguresCB,'Value')
+    SAVE_GRAPHS = get(handles.saveGraphsCB,'Value')
 
 % --- Outputs from this function are returned to the command line.
 function varargout = VisualISAM_gui_OutputFcn(hObject, eventdata, handles) 
@@ -84,12 +124,12 @@ function intializeButton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
     VisualISAMGlobalVars
-    DRAW_INTERVAL = str2num(get(handles.drawInterval,'String')) ;
-    NCAMERAS = str2num(get(handles.numCamEdit,'String')) ;
+    initOptions(handles)
     VisualISAMGenerateData
     VisualISAMInitialize
     VisualISAMPlot
     showFramei(hObject, handles)
+    
     
 % --- Executes on button press in stepButton.
 function stepButton_Callback(hObject, eventdata, handles)
@@ -102,32 +142,25 @@ function stepButton_Callback(hObject, eventdata, handles)
         showFramei(hObject, handles)
         VisualISAMStep
         if mod(frame_i,DRAW_INTERVAL)==0
+            showWaiting(handles, 'Computing marginals...');
             VisualISAMPlot
+            showWaiting(handles, '');
         end
     end
 
-% --- Executes on selection change in popupmenu1.
-function popupmenu1_Callback(hObject, eventdata, handles)
-% hObject    handle to popupmenu1 (see GCBO)
+% --- Executes on selection change in dataset.
+function dataset_Callback(hObject, eventdata, handles)
+% hObject    handle to dataset (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu1 contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from popupmenu1
-    global TRIANGLE
-    str = cellstr(get(hObject,'String'));
-    sel = get(hObject,'Value');
-    switch str{sel}
-        case 'triangle'
-            TRIANGLE = true
-        case 'cube'
-            TRIANGLE = false
-    end
+% Hints: contents = cellstr(get(hObject,'String')) returns dataset contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from dataset
     
 
 % --- Executes during object creation, after setting all properties.
-function popupmenu1_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to popupmenu1 (see GCBO)
+function dataset_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to dataset (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -143,16 +176,17 @@ function runButton_Callback(hObject, eventdata, handles)
 % hObject    handle to runButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-    sprintf('Not yet implemented')
-
-    
-% --- Executes on button press in stopButton.
-function stopButton_Callback(hObject, eventdata, handles)
-% hObject    handle to stopButton (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-    sprintf('Not yet implemented')
-
+    VisualISAMGlobalVars
+    while (frame_i<NCAMERAS)
+        frame_i = frame_i+1;
+        showFramei(hObject, handles)
+        VisualISAMStep
+        if mod(frame_i,DRAW_INTERVAL)==0
+            showWaiting(handles, 'Computing marginals...');
+            VisualISAMPlot
+            showWaiting(handles, '');
+        end
+    end
 
 % --- Executes on button press in plotButton.
 function plotButton_Callback(hObject, eventdata, handles)
@@ -161,16 +195,6 @@ function plotButton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
     VisualISAMPlot;
 
-
-function drawInterval_Callback(hObject, eventdata, handles)
-% hObject    handle to drawInterval (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of drawInterval as text
-%        str2double(get(hObject,'String')) returns contents of drawInterval as a double
-    VisualISAMGlobalVars
-    DRAW_INTERVAL = str2num(get(hObject,'String')) ;
 
 % --- Executes during object creation, after setting all properties.
 function drawInterval_CreateFcn(hObject, eventdata, handles)
@@ -184,16 +208,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
-function numCamEdit_Callback(hObject, eventdata, handles)
-% hObject    handle to numCamEdit (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of numCamEdit as text
-%        str2double(get(hObject,'String')) returns contents of numCamEdit as a double
-    VisualISAMGlobalVars
-	NCAMERAS = str2num(get(hObject,'String')) ;
-    
 
 % --- Executes during object creation, after setting all properties.
 function numCamEdit_CreateFcn(hObject, eventdata, handles)
@@ -208,19 +222,35 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-
-function edit5_Callback(hObject, eventdata, handles)
-% hObject    handle to edit5 (see GCBO)
+% --- Executes during object creation, after setting all properties.
+function reorderIntervalText_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to reorderIntervalText (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+% handles    empty - handles not created until after all CreateFcns called
 
-% Hints: get(hObject,'String') returns contents of edit5 as text
-%        str2double(get(hObject,'String')) returns contents of edit5 as a double
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
 
 
 % --- Executes during object creation, after setting all properties.
-function edit5_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit5 (see GCBO)
+function cameraIntervalEdit_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to cameraIntervalEdit (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes during object creation, after setting all properties.
+function reorderIntervalEdit_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to reorderIntervalEdit (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -232,26 +262,22 @@ end
 
 
 
-function edit6_Callback(hObject, eventdata, handles)
-% hObject    handle to edit6 (see GCBO)
+function numCamEdit_Callback(hObject, eventdata, handles)
+% hObject    handle to numCamEdit (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit6 as text
-%        str2double(get(hObject,'String')) returns contents of edit6 as a double
+% Hints: get(hObject,'String') returns contents of numCamEdit as text
+%        str2double(get(hObject,'String')) returns contents of numCamEdit as a double
 
 
-% --- Executes during object creation, after setting all properties.
-function edit6_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit6 (see GCBO)
+% --- Executes on button press in showImagesCB.
+function showImagesCB_Callback(hObject, eventdata, handles)
+% hObject    handle to showImagesCB (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
+% handles    structure with handles and user data (see GUIDATA)
 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
+% Hint: get(hObject,'Value') returns toggle state of showImagesCB
 
 
 % --- Executes on button press in hardConstraintCB.
@@ -261,16 +287,15 @@ function hardConstraintCB_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of hardConstraintCB
-    VisualISAMGlobalVars
-    HARD_CONSTRAINT = get(hObject, 'Value')
 
-% --- Executes on button press in pointPriorCB.
-function pointPriorCB_Callback(hObject, eventdata, handles)
-% hObject    handle to pointPriorCB (see GCBO)
+
+% --- Executes on button press in pointPriorsCB.
+function pointPriorsCB_Callback(hObject, eventdata, handles)
+% hObject    handle to pointPriorsCB (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of pointPriorCB
+% Hint: get(hObject,'Value') returns toggle state of pointPriorsCB
 
 
 % --- Executes on button press in batchInitCB.
@@ -292,26 +317,13 @@ function alwaysRelinearizeCB_Callback(hObject, eventdata, handles)
 
 
 
-function edit11_Callback(hObject, eventdata, handles)
-% hObject    handle to edit11 (see GCBO)
+function drawInterval_Callback(hObject, eventdata, handles)
+% hObject    handle to drawInterval (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit11 as text
-%        str2double(get(hObject,'String')) returns contents of edit11 as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function edit11_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit11 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
+% Hints: get(hObject,'String') returns contents of drawInterval as text
+%        str2double(get(hObject,'String')) returns contents of drawInterval as a double
 
 
 
@@ -322,19 +334,6 @@ function cameraIntervalEdit_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of cameraIntervalEdit as text
 %        str2double(get(hObject,'String')) returns contents of cameraIntervalEdit as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function cameraIntervalEdit_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to cameraIntervalEdit (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
 
 
 % --- Executes on button press in saveGraphCB.
@@ -380,12 +379,3 @@ function saveGraphsCB_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of saveGraphsCB
-
-
-% --- Executes on button press in showImagesCB.
-function showImagesCB_Callback(hObject, eventdata, handles)
-% hObject    handle to showImagesCB (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of showImagesCB

@@ -1,5 +1,4 @@
 VisualISAMGlobalVars
-sprintf('vData...')
 
 %% Generate simulated data
 points = {};

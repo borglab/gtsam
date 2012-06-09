@@ -37,9 +37,13 @@ sprintf('Done!')
 t=toc;
 % if DRAW_INTERVAL~=NCAMERAS, plot(frame_i,t,'b.'); end
 if SAVE_FIGURES
-    print(h,'-dpng',sprintf('VisualiSAM%03d.png',frame_i));
+    fig2 = figure('visible','off');
+    newax = copyobj(h,fig2);
+    colormap(fig2,'hot');
+    set(newax, 'units', 'normalized', 'position', [0.13 0.11 0.775 0.815]);
+    print(fig2,'-dpng',sprintf('VisualiSAM%03d.png',frame_i));
 end
-if SAVE_GRAPHS
+if SAVE_GRAPHS && (frame_i>1)
     isam.saveGraph(sprintf('VisualiSAM%03d.dot',frame_i));
 end
 
