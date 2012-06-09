@@ -51,11 +51,14 @@ public:
 
 	virtual ~FullIMUFactor() {}
 
-	ADD_CLONE_NONLINEAR_FACTOR(This)
+	/// @return a deep copy of this factor
+	virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+		return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+				gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
 	/** Check if two factors are equal */
 	virtual bool equals(const NonlinearFactor& e, double tol = 1e-9) const {
-	  const This* const f = dynamic_cast<const This*>(&e);
+		const This* const f = dynamic_cast<const This*>(&e);
 		return f && Base::equals(e) &&
 				equal_with_abs_tol(accel_, f->accel_, tol) &&
 				equal_with_abs_tol(gyro_, f->gyro_, tol) &&

@@ -47,8 +47,6 @@ public:
     if (H) (*H) = Matrix_(2,3, 1.0,0.0,0.0, 0.0,1.0,0.0);
     return Vector_(2, q.x() - mx_, q.y() - my_);
   }
-
-  ADD_CLONE_NONLINEAR_FACTOR(UnaryFactor)
 };
 
 /**

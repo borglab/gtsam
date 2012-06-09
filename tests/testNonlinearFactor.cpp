@@ -257,7 +257,9 @@ public:
     return (Vector(1) << x1 + x2 + x3 + x4).finished();
   }
 
-  ADD_CLONE_NONLINEAR_FACTOR(TestFactor4)
+	virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+	  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+	      gtsam::NonlinearFactor::shared_ptr(new TestFactor4(*this))); }
 };
 
 /* ************************************ */
@@ -305,8 +307,6 @@ public:
     }
     return (Vector(1) << x1 + x2 + x3 + x4 + x5).finished();
   }
-
-  ADD_CLONE_NONLINEAR_FACTOR(TestFactor5)
 };
 
 /* ************************************ */
@@ -360,7 +360,6 @@ public:
     return (Vector(1) << x1 + x2 + x3 + x4 + x5 + x6).finished();
   }
 
-  ADD_CLONE_NONLINEAR_FACTOR(TestFactor6)
 };
 
 /* ************************************ */

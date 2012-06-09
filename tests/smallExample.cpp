@@ -210,8 +210,6 @@ namespace example {
 				return (h(x) - z_).vector();
 			}
 
-			ADD_CLONE_NONLINEAR_FACTOR(UnaryFactor)
-
 		};
 
 	}

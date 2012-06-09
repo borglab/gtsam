@@ -118,7 +118,10 @@ namespace simulated2DOriented {
       return measured_.localCoordinates(odo(x1, x2, H1, H2));
     }
 
-    ADD_CLONE_NONLINEAR_FACTOR(This)
+		/// @return a deep copy of this factor
+    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+		  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+		      gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   };
 

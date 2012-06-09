@@ -70,7 +70,10 @@ namespace gtsam {
 		/** Virtual destructor */
 		virtual ~GenericProjectionFactor() {}
 
-		ADD_CLONE_NONLINEAR_FACTOR(This)
+		/// @return a deep copy of this factor
+    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+		  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+		      gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
 		/**
 		 * print

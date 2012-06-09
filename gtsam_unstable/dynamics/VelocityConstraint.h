@@ -72,7 +72,10 @@ public:
 
 	virtual ~VelocityConstraint() {}
 
-	ADD_CLONE_NONLINEAR_FACTOR(VelocityConstraint)
+	/// @return a deep copy of this factor
+	virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+		return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+				gtsam::NonlinearFactor::shared_ptr(new VelocityConstraint(*this))); }
 
 	/**
 	 * Calculates the error for trapezoidal model given

@@ -135,7 +135,10 @@ namespace simulated2D {
 
     virtual ~GenericPrior() {}
 
-    ADD_CLONE_NONLINEAR_FACTOR(This)
+		/// @return a deep copy of this factor
+    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+		  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+		      gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   private:
 
@@ -178,7 +181,10 @@ namespace simulated2D {
 
     virtual ~GenericOdometry() {}
 
-    ADD_CLONE_NONLINEAR_FACTOR(This)
+		/// @return a deep copy of this factor
+    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+		  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+		      gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   private:
 
@@ -222,7 +228,10 @@ namespace simulated2D {
 
     virtual ~GenericMeasurement() {}
 
-    ADD_CLONE_NONLINEAR_FACTOR(This)
+		/// @return a deep copy of this factor
+    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+		  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+		      gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   private:
 

@@ -161,7 +161,10 @@ namespace gtsam {
 			return GaussianFactor::shared_ptr(new JacobianFactor(ordering[this->key()], A, b, model));
 		}
 
-		ADD_CLONE_NONLINEAR_FACTOR(This)
+		/// @return a deep copy of this factor
+    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+		  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+		      gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
 		/// @}
 
@@ -212,7 +215,10 @@ namespace gtsam {
 
 		virtual ~NonlinearEquality1() {}
 
-		ADD_CLONE_NONLINEAR_FACTOR(This)
+		/// @return a deep copy of this factor
+    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+		  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+		      gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
 		/** g(x) with optional derivative */
 		Vector evaluateError(const X& x1, boost::optional<Matrix&> H = boost::none) const {
@@ -269,7 +275,10 @@ namespace gtsam {
 			: Base(noiseModel::Constrained::All(X::Dim(), fabs(mu)), key1, key2) {}
 		virtual ~NonlinearEquality2() {}
 
-		ADD_CLONE_NONLINEAR_FACTOR(This)
+		/// @return a deep copy of this factor
+		virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+		  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+		      gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
 		/** g(x) with optional derivative2 */
 		Vector evaluateError(const X& x1, const X& x2,
