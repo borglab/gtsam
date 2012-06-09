@@ -87,6 +87,16 @@ Errors Errors::operator-(const Errors& b) const {
 }
 
 /* ************************************************************************* */
+Errors Errors::operator-() const {
+  Errors result;
+  BOOST_FOREACH(const Vector& ai, *this)
+    result.push_back(-ai);
+  return result;
+}
+
+
+
+/* ************************************************************************* */
 double dot(const Errors& a, const Errors& b) {
 #ifndef NDEBUG
 	size_t m = a.size();

@@ -106,6 +106,12 @@ namespace gtsam {
    * */
   void optimizeGradientSearchInPlace(const GaussianBayesNet& bn, VectorValues& grad);
 
+  /**
+   * Backsubstitute
+   * gy=inv(R*inv(Sigma))*gx
+   */
+  VectorValues backSubstitute(const GaussianBayesNet& bn, const VectorValues& gx);
+
 	/**
 	 * Transpose Backsubstitute
 	 * gy=inv(L)*gx by solving L*gy=gx.

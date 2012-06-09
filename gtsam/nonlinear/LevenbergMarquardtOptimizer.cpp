@@ -76,15 +76,19 @@ void LevenbergMarquardtOptimizer::iterate() {
       }
       else if ( params_.isCG() ) {
 
-        ConjugateGradientParameters::shared_ptr params (!params_.iterativeParams ?
-          boost::make_shared<ConjugateGradientParameters>() :
-          boost::dynamic_pointer_cast<ConjugateGradientParameters>(params_.iterativeParams));
+        if ( !params_.iterativeParams ) throw runtime_error("LMSolver: cg parameter has to be assigned ...");
 
-        if ( !params ) throw runtime_error("LMSolver: spcg parameter dynamic casting failed");
-
-        SimpleSPCGSolver solver(dampedSystem, *params);
-        //SubgraphSolver solver(dampedSystem, *params);
-        delta = *solver.optimize();
+        if ( boost::dynamic_pointer_cast<SimpleSPCGSolverParameters>(params_.iterativeParams)) {
+          SimpleSPCGSolver solver (dampedSystem, *boost::dynamic_pointer_cast<SimpleSPCGSolverParameters>(params_.iterativeParams));
+          delta = *solver.optimize();
+        }
+        else if ( boost::dynamic_pointer_cast<SubgraphSolverParameters>(params_.iterativeParams) ) {
+          SubgraphSolver solver (dampedSystem, *boost::dynamic_pointer_cast<SubgraphSolverParameters>(params_.iterativeParams));
+          delta = *solver.optimize();
+        }
+        else {
+          throw runtime_error("LMSolver: special cg parameter type is not handled in LM solver ...");
+        }
       }
       else {
         throw runtime_error("Optimization parameter is invalid: LevenbergMarquardtParams::elimination");

@@ -100,6 +100,24 @@ void optimizeInPlace(const GaussianBayesNet& bn, VectorValues& x) {
 }
 
 /* ************************************************************************* */
+VectorValues backSubstitute(const GaussianBayesNet& bn, const VectorValues& input) {
+  VectorValues output = input;
+  BOOST_REVERSE_FOREACH(const boost::shared_ptr<const GaussianConditional> cg, bn) {
+    const Index key = *(cg->beginFrontals());
+    Vector xS = internal::extractVectorValuesSlices(output, cg->beginParents(), cg->endParents());
+    xS = input[key] - cg->get_S() * xS;
+    output[key] = cg->get_R().triangularView<Eigen::Upper>().solve(xS);
+  }
+
+  BOOST_FOREACH(const boost::shared_ptr<const GaussianConditional> cg, bn) {
+    cg->scaleFrontalsBySigma(output);
+  }
+
+  return output;
+}
+
+
+/* ************************************************************************* */
 // gy=inv(L)*gx by solving L*gy=gx.
 // gy=inv(R'*inv(Sigma))*gx
 // gz'*R'=gx', gy = gz.*sigmas

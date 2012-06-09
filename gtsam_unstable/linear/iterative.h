@@ -44,6 +44,7 @@ namespace gtsam {
 	 * Needed to run Conjugate Gradients on matrices
 	 * */
 	class System {
+
 	private:
 		const Matrix& A_;
 		const Vector& b_;

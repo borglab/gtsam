@@ -96,9 +96,7 @@ VectorValues::shared_ptr SimpleSPCGSolver::optimize (const VectorValues &initial
 
   double gamma = s.vector().squaredNorm(), new_gamma = 0.0, alpha = 0.0, beta = 0.0 ;
 
-  const double threshold =
-            std::max(parameters_.epsilon_abs(),
-                  parameters_.epsilon() * parameters_.epsilon() * gamma);
+  const double threshold = std::max(parameters_.epsilon_abs(), parameters_.epsilon() * parameters_.epsilon() * gamma);
   const size_t iMaxIterations = parameters_.maxIterations();
   const Parameters::Verbosity verbosity = parameters_.verbosity();
 
@@ -216,10 +214,6 @@ SimpleSPCGSolver::splitGraph(const GaussianFactorGraph &gfg) {
     if ( augment ) At->push_back(gf);
     else Ac->push_back(boost::dynamic_pointer_cast<JacobianFactor>(gf));
   }
-
-//  gfg.print("gfg");
-//  At->print("At");
-//  Ac->print("Ac");
 
   return boost::tie(At, Ac);
 }

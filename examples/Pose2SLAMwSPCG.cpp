@@ -16,6 +16,8 @@
  * @date June 2, 2012
  */
 
+#include <gtsam/linear/SimpleSPCGSolver.h>
+#include <gtsam/linear/SubgraphSolver.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/slam/pose2SLAM.h>
 
@@ -61,10 +63,26 @@ int main(void) {
   cout << "initial error = " << graph.error(initialEstimate) << endl ;
 
   // 4. Single Step Optimization using Levenberg-Marquardt
-  // Note: Although there are many options in IterativeOptimizationParameters,
-  Values result = graph.optimizeSPCG(initialEstimate);
-  result.print("\nFinal result:\n");
-  cout << "final error = " << graph.error(result) << endl;
+  LevenbergMarquardtParams param;
+  param.verbosity = NonlinearOptimizerParams::ERROR;
+  param.verbosityLM = LevenbergMarquardtParams::LAMBDA;
+  param.linearSolverType = SuccessiveLinearizationParams::CG;
+
+  {
+    param.iterativeParams = boost::make_shared<SimpleSPCGSolverParameters>();
+    LevenbergMarquardtOptimizer optimizer(graph, initialEstimate, param);
+    Values result = optimizer.optimize();
+    result.print("\nFinal result:\n");
+    cout << "simple spcg solver final error = " << graph.error(result) << endl;
+  }
+
+  {
+    param.iterativeParams = boost::make_shared<SubgraphSolverParameters>();
+    LevenbergMarquardtOptimizer optimizer(graph, initialEstimate, param);
+    Values result = optimizer.optimize();
+    result.print("\nFinal result:\n");
+    cout << "subgraph solver final error = " << graph.error(result) << endl;
+  }
 
   return 0 ;
 }

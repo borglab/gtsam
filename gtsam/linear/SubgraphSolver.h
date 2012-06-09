@@ -19,6 +19,11 @@
 
 namespace gtsam {
 
+struct SubgraphSolverParameters : public ConjugateGradientParameters {
+  typedef ConjugateGradientParameters Base;
+  SubgraphSolverParameters() : Base() {}
+};
+
 /**
  * A linear system solver using subgraph preconditioning conjugate gradient
  */
@@ -27,18 +32,17 @@ class SubgraphSolver : public IterativeSolver {
 
 public:
 
-  typedef ConjugateGradientParameters Parameters;
+  typedef SubgraphSolverParameters Parameters;
+
+protected:
 
 	Parameters parameters_;
-
 	SubgraphPreconditioner::shared_ptr pc_;  ///< preconditioner object
 
 public:
 
 	SubgraphSolver(const GaussianFactorGraph &gfg, const Parameters &parameters);
-
   virtual ~SubgraphSolver() {}
-
   virtual VectorValues::shared_ptr optimize () ;
 
 protected:

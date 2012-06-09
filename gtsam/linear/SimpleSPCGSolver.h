@@ -19,6 +19,11 @@
 
 namespace gtsam {
 
+struct SimpleSPCGSolverParameters : public ConjugateGradientParameters {
+  typedef ConjugateGradientParameters Base;
+  SimpleSPCGSolverParameters() : Base() {}
+};
+
 /**
  * This class gives a simple implementation to the SPCG solver presented in Dellaert et al in IROS'10.
  *
@@ -40,7 +45,7 @@ class SimpleSPCGSolver : public IterativeSolver {
 public:
 
   typedef IterativeSolver Base;
-  typedef ConjugateGradientParameters Parameters;
+  typedef SimpleSPCGSolverParameters Parameters;
   typedef boost::shared_ptr<IterativeSolver> shared_ptr;
 
 protected:

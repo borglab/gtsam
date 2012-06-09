@@ -42,8 +42,8 @@ namespace gtsam {
 	private:
 		sharedFG Ab1_, Ab2_;
 		sharedBayesNet Rc1_;
-		sharedValues xbar_;
-		sharedErrors b2bar_; /** b2 - A2*xbar */
+		sharedValues xbar_;  ///< A1 \ b1
+		sharedErrors b2bar_; ///< A2*xbar - b2
 
 	public:
 
@@ -65,6 +65,9 @@ namespace gtsam {
 
 		/** Access Rc1 */
 		const sharedBayesNet& Rc1() const { return Rc1_; }
+
+		/** Access b2bar */
+		const sharedErrors b2bar() const { return b2bar_; }
 
 	    /**
 	     * Add zero-mean i.i.d. Gaussian prior terms to each variable

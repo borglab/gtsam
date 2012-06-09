@@ -61,9 +61,7 @@ SubgraphSolver::SubgraphSolver(const GaussianFactorGraph &gfg, const Parameters 
 
 VectorValues::shared_ptr SubgraphSolver::optimize() {
 
-  // preconditioned conjugate gradient
-  VectorValues zeros = pc_->zero();
-  VectorValues ybar = conjugateGradients<SubgraphPreconditioner, VectorValues, Errors> (*pc_, zeros, parameters_);
+  VectorValues ybar = conjugateGradients<SubgraphPreconditioner, VectorValues, Errors>(*pc_, pc_->zero(), parameters_);
 
   boost::shared_ptr<VectorValues> xbar = boost::make_shared<VectorValues>() ;
   *xbar = pc_->x(ybar);

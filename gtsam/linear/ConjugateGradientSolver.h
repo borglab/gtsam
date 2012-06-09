@@ -36,16 +36,14 @@ struct ConjugateGradientParameters : public IterativeOptimizationParameters {
     SBM_MT            ///< Sparse Block Matrix Multithreaded
   } blas_kernel_;
 
-  enum Verbosity { SILENT = 0, COMPLEXITY = 1, ERROR = 2} verbosity_ ;  /* Verbosity */
-
   ConjugateGradientParameters()
   : minIterations_(1), maxIterations_(500), reset_(501), epsilon_rel_(1e-3), epsilon_abs_(1e-3),
-    blas_kernel_(GTSAM), verbosity_(SILENT) {}
+    blas_kernel_(GTSAM) {}
 
   ConjugateGradientParameters(size_t minIterations, size_t maxIterations, size_t reset,
-    double epsilon_rel, double epsilon_abs, BLASKernel blas = GTSAM, Verbosity verbosity = SILENT)
+    double epsilon_rel, double epsilon_abs, BLASKernel blas = GTSAM)
     : minIterations_(minIterations), maxIterations_(maxIterations), reset_(reset),
-      epsilon_rel_(epsilon_rel), epsilon_abs_(epsilon_abs), blas_kernel_(blas), verbosity_(verbosity) {}
+      epsilon_rel_(epsilon_rel), epsilon_abs_(epsilon_abs), blas_kernel_(blas) {}
 
   /* general interface */
   inline size_t minIterations() const { return minIterations_; }
@@ -55,7 +53,6 @@ struct ConjugateGradientParameters : public IterativeOptimizationParameters {
   inline double epsilon_rel() const { return epsilon_rel_; }
   inline double epsilon_abs() const { return epsilon_abs_; }
   inline BLASKernel blas_kernel() const { return blas_kernel_; }
-  inline Verbosity verbosity() const { return verbosity_; }
 
   void print() const {
     const std::string blasStr[3] = {"gtsam", "sbm", "sbm-mt"};
@@ -67,7 +64,6 @@ struct ConjugateGradientParameters : public IterativeOptimizationParameters {
               << ", resetIter = " << reset_
               << ", eps_rel = " << epsilon_rel_
               << ", eps_abs = " << epsilon_abs_
-              << ", verbosity = " << verbosity_
               << std::endl;
   }
 };

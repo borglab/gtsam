@@ -23,8 +23,7 @@ namespace gtsam {
   public:
 
     typedef boost::shared_ptr<IterativeOptimizationParameters> shared_ptr;
-
-    enum Kernel { PCG = 0, LSPCG = 1 } kernel_ ;                          ///< Iterative Method Kernel
+    enum Kernel { CG = 0 } kernel_ ;                                      ///< Iterative Method Kernel
     enum Verbosity { SILENT = 0, COMPLEXITY = 1, ERROR = 2} verbosity_ ;  ///< Verbosity
 
   public:
@@ -32,7 +31,7 @@ namespace gtsam {
     IterativeOptimizationParameters(const IterativeOptimizationParameters &p)
       : kernel_(p.kernel_), verbosity_(p.verbosity_) {}
 
-    IterativeOptimizationParameters(Kernel kernel = LSPCG, Verbosity verbosity = SILENT)
+    IterativeOptimizationParameters(Kernel kernel = CG, Verbosity verbosity = SILENT)
       : kernel_(kernel), verbosity_(verbosity) {}
 
     virtual ~IterativeOptimizationParameters() {}
@@ -42,7 +41,7 @@ namespace gtsam {
     inline Verbosity verbosity() const { return verbosity_; }
 
     void print() const {
-      const std::string kernelStr[2] = {"pcg", "lspcg"};
+      const std::string kernelStr[1] = {"cg"};
       std::cout << "IterativeOptimizationParameters: "
                 << "kernel = " << kernelStr[kernel_]
                 << ", verbosity = " << verbosity_ << std::endl;
