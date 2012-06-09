@@ -16,8 +16,6 @@
  * @author: Richard Roberts
  */
 
-#pragma once
-
 #include <gtsam/nonlinear/Symbol.h>
 
 #include <boost/mpl/char.hpp>
@@ -27,47 +25,50 @@
 #include <boost/lambda/construct.hpp>
 #include <boost/lambda/lambda.hpp>
 
+#include <limits.h>
 #include <list>
 #include <iostream>
 
 namespace gtsam {
 
-  static const size_t keyBits = sizeof(Key) * 8;
-  static const size_t chrBits = sizeof(unsigned char) * 8;
-  static const size_t indexBits = keyBits - chrBits;
-  static const Key chrMask = Key(std::numeric_limits<unsigned char>::max())
-      << indexBits;
-  static const Key indexMask = ~chrMask;
+static const size_t keyBits = sizeof(Key) * 8;
+static const size_t chrBits = sizeof(unsigned char) * 8;
+static const size_t indexBits = keyBits - chrBits;
+static const Key chrMask = Key(UCHAR_MAX)	<< indexBits; // For some reason, std::numeric_limits<unsigned char>::max() fails
+static const Key indexMask = ~chrMask;
 
-  Symbol::Symbol(Key key) {
-    c_ = (unsigned char) ((key & chrMask) >> indexBits);
-    j_ = key & indexMask;
-  }
+Symbol::Symbol(Key key) {
+	c_ = (unsigned char) ((key & chrMask) >> indexBits);
+	j_ = key & indexMask;
+}
 
-  Key Symbol::key() const {
-    if (j_ > indexMask)
-      throw std::invalid_argument("Symbol index is too large");
-    Key key = (Key(c_) << indexBits) | j_;
-    return key;
-  }
+Key Symbol::key() const {
+	if (j_ > indexMask) {
+		boost::format msg("Symbol index is too large, j=%d, indexMask=%d");
+		msg % j_ % indexMask;
+		throw std::invalid_argument(msg.str());
+	}
+	Key key = (Key(c_) << indexBits) | j_;
+	return key;
+}
 
-  void Symbol::print(const std::string& s) const {
-    std::cout << s << (std::string) (*this) << std::endl;
-  }
+void Symbol::print(const std::string& s) const {
+	std::cout << s << (std::string) (*this) << std::endl;
+}
 
-  bool Symbol::equals(const Symbol& expected, double tol) const {
-    return (*this) == expected;
-  }
+bool Symbol::equals(const Symbol& expected, double tol) const {
+	return (*this) == expected;
+}
 
-  Symbol::operator std::string() const {
-    return str(boost::format("%c%d") % c_ % j_);
-  }
+Symbol::operator std::string() const {
+	return str(boost::format("%c%d") % c_ % j_);
+}
 
-  boost::function<bool(Key)> Symbol::ChrTest(unsigned char c) {
-    namespace bl = boost::lambda;
-    return bl::bind(&Symbol::chr, bl::bind(bl::constructor<Symbol>(), bl::_1))
-        == c;
-  }
+boost::function<bool(Key)> Symbol::ChrTest(unsigned char c) {
+	namespace bl = boost::lambda;
+	return bl::bind(&Symbol::chr, bl::bind(bl::constructor<Symbol>(), bl::_1))
+	== c;
+}
 
 } // namespace gtsam
 

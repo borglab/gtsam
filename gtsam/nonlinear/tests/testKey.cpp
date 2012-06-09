@@ -21,11 +21,11 @@ using namespace boost::assign;
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/nonlinear/Symbol.h>
-	
+
 using namespace std;
 using namespace gtsam;
 
-Key aKey = gtsam::symbol_shorthand::X(4); // FIXME: throws index too large exception in Symbol.key()
+Key aKey = gtsam::symbol_shorthand::X(4);
 
 /* ************************************************************************* */
 TEST(Key, KeySymbolConversion) {
