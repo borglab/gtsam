@@ -24,17 +24,19 @@
 
 namespace gtsam {
 
+  typedef FactorGraph<JacobianFactor> JacobianFactorGraph;
+
   /** return A*x */
-  Errors operator*(const FactorGraph<JacobianFactor>& fg, const VectorValues& x);
+  Errors operator*(const JacobianFactorGraph& fg, const VectorValues& x);
 
   /** In-place version e <- A*x that overwrites e. */
-  void multiplyInPlace(const FactorGraph<JacobianFactor>& fg, const VectorValues& x, Errors& e);
+  void multiplyInPlace(const JacobianFactorGraph& fg, const VectorValues& x, Errors& e);
 
   /** In-place version e <- A*x that takes an iterator. */
-  void multiplyInPlace(const FactorGraph<JacobianFactor>& fg, const VectorValues& x, const Errors::iterator& e);
+  void multiplyInPlace(const JacobianFactorGraph& fg, const VectorValues& x, const Errors::iterator& e);
 
   /** x += alpha*A'*e */
-  void transposeMultiplyAdd(const FactorGraph<JacobianFactor>& fg, double alpha, const Errors& e, VectorValues& x);
+  void transposeMultiplyAdd(const JacobianFactorGraph& fg, double alpha, const Errors& e, VectorValues& x);
 
   /**
    * Compute the gradient of the energy function,
@@ -45,7 +47,7 @@ namespace gtsam {
    * @param x0 The center about which to compute the gradient
    * @return The gradient as a VectorValues
    */
-  VectorValues gradient(const FactorGraph<JacobianFactor>& fg, const VectorValues& x0);
+  VectorValues gradient(const JacobianFactorGraph& fg, const VectorValues& x0);
 
   /**
    * Compute the gradient of the energy function,
@@ -56,11 +58,11 @@ namespace gtsam {
    * @param [output] g A VectorValues to store the gradient, which must be preallocated, see allocateVectorValues
    * @return The gradient as a VectorValues
    */
-  void gradientAtZero(const FactorGraph<JacobianFactor>& fg, VectorValues& g);
+  void gradientAtZero(const JacobianFactorGraph& fg, VectorValues& g);
 
   /* matrix-vector operations */
-  void residual(const FactorGraph<JacobianFactor>& fg, const VectorValues &x, VectorValues &r);
-  void multiply(const FactorGraph<JacobianFactor>& fg, const VectorValues &x, VectorValues &r);
-  void transposeMultiply(const FactorGraph<JacobianFactor>& fg, const VectorValues &r, VectorValues &x);
+  void residual(const JacobianFactorGraph& fg, const VectorValues &x, VectorValues &r);
+  void multiply(const JacobianFactorGraph& fg, const VectorValues &x, VectorValues &r);
+  void transposeMultiply(const JacobianFactorGraph& fg, const VectorValues &r, VectorValues &x);
 
 }

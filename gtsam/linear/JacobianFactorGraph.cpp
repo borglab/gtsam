@@ -10,7 +10,7 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-Errors operator*(const FactorGraph<JacobianFactor>& fg, const VectorValues& x) {
+Errors operator*(const JacobianFactorGraph& fg, const VectorValues& x) {
   Errors e;
   BOOST_FOREACH(const JacobianFactor::shared_ptr& Ai, fg) {
     e.push_back((*Ai)*x);
@@ -19,12 +19,12 @@ Errors operator*(const FactorGraph<JacobianFactor>& fg, const VectorValues& x) {
 }
 
 /* ************************************************************************* */
-void multiplyInPlace(const FactorGraph<JacobianFactor>& fg, const VectorValues& x, Errors& e) {
+void multiplyInPlace(const JacobianFactorGraph& fg, const VectorValues& x, Errors& e) {
   multiplyInPlace(fg,x,e.begin());
 }
 
 /* ************************************************************************* */
-void multiplyInPlace(const FactorGraph<JacobianFactor>& fg, const VectorValues& x, const Errors::iterator& e) {
+void multiplyInPlace(const JacobianFactorGraph& fg, const VectorValues& x, const Errors::iterator& e) {
   Errors::iterator ei = e;
   BOOST_FOREACH(const JacobianFactor::shared_ptr& Ai, fg) {
     *ei = (*Ai)*x;
@@ -35,7 +35,7 @@ void multiplyInPlace(const FactorGraph<JacobianFactor>& fg, const VectorValues& 
 
 /* ************************************************************************* */
 // x += alpha*A'*e
-void transposeMultiplyAdd(const FactorGraph<JacobianFactor>& fg, double alpha, const Errors& e, VectorValues& x) {
+void transposeMultiplyAdd(const JacobianFactorGraph& fg, double alpha, const Errors& e, VectorValues& x) {
   // For each factor add the gradient contribution
   Errors::const_iterator ei = e.begin();
   BOOST_FOREACH(const JacobianFactor::shared_ptr& Ai, fg) {
@@ -44,7 +44,7 @@ void transposeMultiplyAdd(const FactorGraph<JacobianFactor>& fg, double alpha, c
 }
 
 /* ************************************************************************* */
-VectorValues gradient(const FactorGraph<JacobianFactor>& fg, const VectorValues& x0) {
+VectorValues gradient(const JacobianFactorGraph& fg, const VectorValues& x0) {
   // It is crucial for performance to make a zero-valued clone of x
   VectorValues g = VectorValues::Zero(x0);
   Errors e;
@@ -56,7 +56,7 @@ VectorValues gradient(const FactorGraph<JacobianFactor>& fg, const VectorValues&
 }
 
 /* ************************************************************************* */
-void gradientAtZero(const FactorGraph<JacobianFactor>& fg, VectorValues& g) {
+void gradientAtZero(const JacobianFactorGraph& fg, VectorValues& g) {
   // Zero-out the gradient
   g.setZero();
   Errors e;
@@ -67,7 +67,7 @@ void gradientAtZero(const FactorGraph<JacobianFactor>& fg, VectorValues& g) {
 }
 
 /* ************************************************************************* */
-void residual(const FactorGraph<JacobianFactor>& fg, const VectorValues &x, VectorValues &r) {
+void residual(const JacobianFactorGraph& fg, const VectorValues &x, VectorValues &r) {
   Index i = 0 ;
   BOOST_FOREACH(const JacobianFactor::shared_ptr& factor, fg) {
     r[i] = factor->getb();
@@ -79,7 +79,7 @@ void residual(const FactorGraph<JacobianFactor>& fg, const VectorValues &x, Vect
 }
 
 /* ************************************************************************* */
-void multiply(const FactorGraph<JacobianFactor>& fg, const VectorValues &x, VectorValues &r) {
+void multiply(const JacobianFactorGraph& fg, const VectorValues &x, VectorValues &r) {
   r.vector() = Vector::Zero(r.dim());
   Index i = 0;
   BOOST_FOREACH(const JacobianFactor::shared_ptr& factor, fg) {
@@ -92,7 +92,7 @@ void multiply(const FactorGraph<JacobianFactor>& fg, const VectorValues &x, Vect
 }
 
 /* ************************************************************************* */
-void transposeMultiply(const FactorGraph<JacobianFactor>& fg, const VectorValues &r, VectorValues &x) {
+void transposeMultiply(const JacobianFactorGraph& fg, const VectorValues &r, VectorValues &x) {
   x.vector() = Vector::Zero(x.dim());
   Index i = 0;
   BOOST_FOREACH(const JacobianFactor::shared_ptr& factor, fg) {
@@ -102,6 +102,6 @@ void transposeMultiply(const FactorGraph<JacobianFactor>& fg, const VectorValues
     ++i;
   }
 }
-}
+} // namespace
 
 
