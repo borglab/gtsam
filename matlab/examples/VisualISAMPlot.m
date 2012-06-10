@@ -1,4 +1,4 @@
-function VisualISAMPlot(data, isam, result, options)
+function VisualISAMPlot(truth, data, isam, result, options)
 % VisualISAMPlot: plot current state of visualSLAM::iSAM object
 % Authors: Duy Nguyen Ta and Frank Dellaert
 
@@ -29,7 +29,7 @@ for i=1:options.cameraInterval:M
         plotPose3(pose_i,P,10);
     end
     if options.drawTruePoses % show ground truth
-        plotPose3(data.cameras{i}.pose,[],10);
+        plotPose3(truth.cameras{i}.pose,[],10);
     end
 end
 

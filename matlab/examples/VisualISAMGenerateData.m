@@ -1,19 +1,18 @@
-function data = VisualISAMGenerateData(options)
+function [data,truth] = VisualISAMGenerateData(options)
 % VisualISAMGenerateData: create data for viusalSLAM::iSAM examples
 % Authors: Duy Nguyen Ta and Frank Dellaert
 
 %% Generate simulated data
-data.points = {};
 if options.triangle % Create a triangle target, just 3 points on a plane
-    nPoints = 3;
+    nrPoints = 3;
     r = 10;
-    for j=1:nPoints
-        theta = (j-1)*2*pi/nPoints;
-        data.points{j} = gtsamPoint3([r*cos(theta), r*sin(theta), 0]');
+    for j=1:nrPoints
+        theta = (j-1)*2*pi/nrPoints;
+        truth.points{j} = gtsamPoint3([r*cos(theta), r*sin(theta), 0]');
     end
 else % 3D landmarks as vertices of a cube
-    nPoints = 8;
-    data.points = {gtsamPoint3([10 10 10]'),...
+    nrPoints = 8;
+    truth.points = {gtsamPoint3([10 10 10]'),...
         gtsamPoint3([-10 10 10]'),...
         gtsamPoint3([-10 -10 10]'),...
         gtsamPoint3([10 -10 10]'),...
@@ -25,12 +24,16 @@ end
 
 %% Create camera cameras on a circle around the triangle
 height = 10; r = 40;
-data.K = gtsamCal3_S2(500,500,0,640/2,480/2);
-data.cameras = {};
+truth.K = gtsamCal3_S2(500,500,0,640/2,480/2);
+data.K = truth.K;
 for i=1:options.nrCameras
     theta = (i-1)*2*pi/options.nrCameras;
     t = gtsamPoint3([r*cos(theta), r*sin(theta), height]');
-    data.cameras{i} = gtsamSimpleCamera_lookat(t, gtsamPoint3, gtsamPoint3([0,0,1]'), data.K);
+    truth.cameras{i} = gtsamSimpleCamera_lookat(t, gtsamPoint3, gtsamPoint3([0,0,1]'), truth.K);
+    % Create measurements
+    for j=1:nrPoints
+        data.z{i,j} = truth.cameras{i}.project(truth.points{j});
+    end    
 end
 
 %% show images if asked
@@ -39,8 +42,8 @@ if options.showImages
     for i=1:options.nrCameras
         figure(2+i);clf;hold on
         set(2+i,'NumberTitle','off','Name',sprintf('Camera %d',i));
-        for j=1:nPoints
-            zij = data.cameras{i}.project(data.points{j});
+        for j=1:nrPoints
+            zij = truth.cameras{i}.project(truth.points{j});
             plot(zij.x,zij.y,'*');
             axis([1 640 1 480]);
         end
@@ -49,4 +52,7 @@ if options.showImages
 end
 
 %% Calculate odometry between cameras
-data.odometry = data.cameras{1}.pose.between(data.cameras{2}.pose);
+odometry = truth.cameras{1}.pose.between(truth.cameras{2}.pose);
+for i=1:options.nrCameras-1
+    data.odometry{i}=odometry;
+end

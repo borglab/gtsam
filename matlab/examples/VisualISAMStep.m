@@ -9,17 +9,17 @@ initialEstimates = visualSLAMValues;
 
 %% Add odometry
 i = double(result.nrPoses)+1;
-newFactors.addOdometry(symbol('x',i-1), symbol('x',i), data.odometry, noiseModels.odometry);
+odometry = data.odometry{i-1};
+newFactors.addOdometry(symbol('x',i-1), symbol('x',i), odometry, noiseModels.odometry);
 
 %% Add visual measurement factors
-for j=1:size(data.points,2)
-    zij = data.cameras{i}.project(data.points{j});
-    newFactors.addMeasurement(zij, noiseModels.measurement, symbol('x',i), symbol('l',j), data.K);
+for j=1:size(data.z,2)
+    newFactors.addMeasurement(data.z{i,j}, noiseModels.measurement, symbol('x',i), symbol('l',j), data.K);
 end
 
 %% Initial estimates for the new pose.
 prevPose = result.pose(symbol('x',i-1));
-initialEstimates.insertPose(symbol('x',i), prevPose.compose(data.odometry));
+initialEstimates.insertPose(symbol('x',i), prevPose.compose(odometry));
 
 %% Update ISAM
 % figure(1);tic;
