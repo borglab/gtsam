@@ -71,21 +71,15 @@ end
 
 function initOptions(handles)
 
-global TRIANGLE NCAMERAS SHOW_IMAGES
 global HARD_CONSTRAINT POINT_PRIORS BATCH_INIT REORDER_INTERVAL ALWAYS_RELINEARIZE
 global SAVE_GRAPH PRINT_STATS DRAW_INTERVAL CAMERA_INTERVAL DRAW_TRUE_POSES
-global SAVE_FIGURES SAVE_GRAPHS
-
-% Setting data options
-TRIANGLE = chooseDataset(handles);
-NCAMERAS = str2num(get(handles.numCamEdit,'String'));
-SHOW_IMAGES = get(handles.showImagesCB,'Value');
+global SAVE_FIGURES SAVE_GRAPHS SHOW_TIMING
 
 % iSAM Options
 HARD_CONSTRAINT = get(handles.hardConstraintCB,'Value');
 POINT_PRIORS = get(handles.pointPriorsCB,'Value');
 BATCH_INIT = get(handles.batchInitCB,'Value');
-REORDER_INTERVAL = str2num(get(handles.numCamEdit,'String'));
+REORDER_INTERVAL = str2num(get(handles.reorderIntervalEdit,'String'));
 ALWAYS_RELINEARIZE = get(handles.alwaysRelinearizeCB,'Value');
 
 % Display Options
@@ -96,7 +90,7 @@ CAMERA_INTERVAL = str2num(get(handles.cameraIntervalEdit,'String'));
 DRAW_TRUE_POSES = get(handles.drawTruePosesCB,'Value');
 SAVE_FIGURES = get(handles.saveFiguresCB,'Value');
 SAVE_GRAPHS = get(handles.saveGraphsCB,'Value');
-
+SHOW_TIMING = false;
 
 %----------------------------------------------------------
 % Callback functions for GUI elements
@@ -227,8 +221,19 @@ function saveGraphsCB_Callback(hObject, ~, handles)
 
 % --- Executes on button press in intializeButton.
 function intializeButton_Callback(hObject, ~, handles)
+
+global data
+
+% initialize global options
 initOptions(handles)
-VisualISAMGenerateData
+
+% Generate Data
+options.triangle = chooseDataset(handles);
+options.nrCameras = str2num(get(handles.numCamEdit,'String'));
+showImages = get(handles.showImagesCB,'Value');
+data = VisualISAMGenerateData(options, showImages);
+
+% Initialize and plot
 VisualISAMInitialize
 VisualISAMPlot
 showFramei(hObject, handles)
@@ -236,8 +241,8 @@ showFramei(hObject, handles)
 
 % --- Executes on button press in runButton.
 function runButton_Callback(hObject, ~, handles)
-global frame_i NCAMERAS DRAW_INTERVAL
-while (frame_i<NCAMERAS)
+global frame_i data DRAW_INTERVAL
+while (frame_i<size(data.cameras,2))
     frame_i = frame_i+1;
     showFramei(hObject, handles)
     VisualISAMStep
@@ -251,8 +256,8 @@ end
 
 % --- Executes on button press in stepButton.
 function stepButton_Callback(hObject, ~, handles)
-global frame_i NCAMERAS DRAW_INTERVAL
-if (frame_i<NCAMERAS)
+global frame_i data DRAW_INTERVAL
+if (frame_i<size(data.cameras,2))
     frame_i = frame_i+1;
     showFramei(hObject, handles)
     VisualISAMStep

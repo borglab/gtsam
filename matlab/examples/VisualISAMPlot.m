@@ -2,17 +2,16 @@
 % Authors: Duy Nguyen Ta and Frank Dellaert
 
 % global variables, input
-global points cameras frame_i isam result
+global data frame_i isam result
 
 % options
 global CAMERA_INTERVAL DRAW_TRUE_POSES SAVE_FIGURES SAVE_GRAPHS
 
 %% Plot results
-tic
 h=gca;
 cla(h);
 hold on;
-for j=1:size(points,2)
+for j=1:size(data.points,2)
     point_j = result.point(symbol('l',j));
     plot3(point_j.x, point_j.y, point_j.z,'marker','o');
     if (frame_i>1) 
@@ -29,15 +28,13 @@ for ii=1:CAMERA_INTERVAL:frame_i
     end
     plotPose3(pose_ii,P,10);
     if DRAW_TRUE_POSES % show ground truth
-        plotPose3(cameras{ii}.pose,0.001*eye(6),10);
+        plotPose3(data.cameras{ii}.pose,0.001*eye(6),10);
     end
 end
 axis([-40 40 -40 40 -10 20]);axis equal
 view(3)
 colormap('hot')
 
-t=toc;
-% if DRAW_INTERVAL~=NCAMERAS, plot(frame_i,t,'b.'); end
 if SAVE_FIGURES
     fig2 = figure('visible','off');
     newax = copyobj(h,fig2);

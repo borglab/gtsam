@@ -11,15 +11,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Global variables used in VisualISAMExample
-global TRIANGLE NCAMERAS SHOW_IMAGES 
+global data
 global HARD_CONSTRAINT POINT_PRIORS BATCH_INIT REORDER_INTERVAL ALWAYS_RELINEARIZE 
 global SAVE_GRAPH PRINT_STATS DRAW_INTERVAL CAMERA_INTERVAL DRAW_TRUE_POSES 
 global SAVE_FIGURES SAVE_GRAPHS 
-
-%% Setting data options
-TRIANGLE = true;
-NCAMERAS = 10;
-SHOW_IMAGES = false;
 
 %% iSAM Options
 HARD_CONSTRAINT = false;
@@ -37,14 +32,19 @@ DRAW_TRUE_POSES = false;
 SAVE_FIGURES = false;
 SAVE_GRAPHS = false;
 
-%% Generate data and initialize iSAM with the first pose and points
-VisualISAMGenerateData
+%% Generate data
+options.triangle = true;
+options.nrCameras = 10;
+showImages = false;
+data = VisualISAMGenerateData(options,showImages);
+
+%% Initialize iSAM with the first pose and points
 VisualISAMInitialize
 figure;
 VisualISAMPlot
 
 %% Main loop for iSAM: stepping through all poses
-for frame_i=2:NCAMERAS
+for frame_i=2:options.nrCameras
     VisualISAMStep
     if mod(frame_i,DRAW_INTERVAL)==0
         VisualISAMPlot

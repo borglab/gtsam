@@ -3,8 +3,8 @@ function VisualISAMStep
 % Authors: Duy Nguyen Ta and Frank Dellaert
 
 % global variables, input
-global frame_i odometry odometryNoise newFactors initialEstimates
-global points cameras measurementNoise K
+global frame_i odometryNoise measurementNoise newFactors initialEstimates
+global data
 
 % global variables, input/output
 global isam
@@ -25,18 +25,18 @@ if frame_i > 2
 end
 
 %% Add odometry
-newFactors.addOdometry(symbol('x',frame_i-1), symbol('x',frame_i), odometry, odometryNoise);
+newFactors.addOdometry(symbol('x',frame_i-1), symbol('x',frame_i), data.odometry, odometryNoise);
 
 %% Add visual measurement factors
-for j=1:size(points,2)
-    zij = cameras{frame_i}.project(points{j});
-    newFactors.addMeasurement(zij, measurementNoise, symbol('x',frame_i), symbol('l',j), K);
+for j=1:size(data.points,2)
+    zij = data.cameras{frame_i}.project(data.points{j});
+    newFactors.addMeasurement(zij, measurementNoise, symbol('x',frame_i), symbol('l',j), data.K);
 end
 
-%% Initial estimates for the new pose. Also initialize points while in the first frame.
-if (frame_i==2), prevPose = cameras{1}.pose;
+%% Initial estimates for the new pose. Also initialize data.points while in the first frame.
+if (frame_i==2), prevPose = data.cameras{1}.pose;
 else, prevPose = result.pose(symbol('x',frame_i-1)); end
-initialEstimates.insertPose(symbol('x',frame_i), prevPose.compose(odometry));
+initialEstimates.insertPose(symbol('x',frame_i), prevPose.compose(data.odometry));
 
 %% Update ISAM
 if BATCH_INIT & (frame_i==2) % Do a full optimize for first two poses
