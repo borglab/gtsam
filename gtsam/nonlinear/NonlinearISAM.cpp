@@ -25,10 +25,12 @@
 
 #include <iostream>
 
+using namespace std;
+
 namespace gtsam {
 
 /* ************************************************************************* */
-void NonlinearISAM::saveGraph(const std::string& s) const {
+void NonlinearISAM::saveGraph(const string& s) const {
   isam_.saveGraph(s);
 }
 
@@ -67,7 +69,7 @@ void NonlinearISAM::update(const NonlinearFactorGraph& newFactors,
 /* ************************************************************************* */
 void NonlinearISAM::reorder_relinearize() {
 
-//  std::cout << "Reordering, relinearizing..." << std::endl;
+//  cout << "Reordering, relinearizing..." << endl;
 
   if(factors_.size() > 0) {
     // Obtain the new linearization point
@@ -104,24 +106,23 @@ Matrix NonlinearISAM::marginalCovariance(Key key) const {
 }
 
 /* ************************************************************************* */
-void NonlinearISAM::print(const std::string& s) const {
-	std::cout << "ISAM - " << s << ":" << std::endl;
-	std::cout << "  ReorderInterval: " << reorderInterval_ << " Current Count: " << reorderCounter_ << std::endl;
-	isam_.print("GaussianISAM");
-	linPoint_.print("Linearization Point");
-	ordering_.print("System Ordering");
-	factors_.print("Nonlinear Graph");
+void NonlinearISAM::print(const string& s) const {
+	cout s << "ReorderInterval: " << reorderInterval_ << " Current Count: " << reorderCounter_ << endl;
+	isam_.print("GaussianISAM:\n");
+	linPoint_.print("Linearization Point:\n");
+	ordering_.print("System Ordering:\n");
+	factors_.print("Nonlinear Graph:\n");
 }
 
 /* ************************************************************************* */
 void NonlinearISAM::printStats() const {
   gtsam::GaussianISAM::CliqueData data = isam_.getCliqueData();
   gtsam::GaussianISAM::CliqueStats stats = data.getStats();
-  std::cout << "\navg Conditional Size: " << stats.avgConditionalSize;
-  std::cout << "\nmax Conditional Size: " << stats.maxConditionalSize;
-  std::cout << "\navg Separator Size: " << stats.avgSeparatorSize;
-  std::cout << "\nmax Separator Size: " << stats.maxSeparatorSize;
-  std::cout << std::endl;
+  cout << "\navg Conditional Size: " << stats.avgConditionalSize;
+  cout << "\nmax Conditional Size: " << stats.maxConditionalSize;
+  cout << "\navg Separator Size: " << stats.avgSeparatorSize;
+  cout << "\nmax Separator Size: " << stats.maxSeparatorSize;
+  cout << endl;
 }
 
 /* ************************************************************************* */
