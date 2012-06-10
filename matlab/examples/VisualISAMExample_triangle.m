@@ -11,7 +11,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Global variables used in VisualISAMExample
-global data
+global data isam frame_i result
+global poseNoise odometryNoise pointNoise measurementNoise
 global HARD_CONSTRAINT POINT_PRIORS BATCH_INIT REORDER_INTERVAL ALWAYS_RELINEARIZE 
 global SAVE_GRAPH PRINT_STATS DRAW_INTERVAL CAMERA_INTERVAL DRAW_TRUE_POSES 
 global SAVE_FIGURES SAVE_GRAPHS 
@@ -44,7 +45,7 @@ figure;
 VisualISAMPlot
 
 %% Main loop for iSAM: stepping through all poses
-for frame_i=2:options.nrCameras
+for frame_i=3:options.nrCameras
     VisualISAMStep
     if mod(frame_i,DRAW_INTERVAL)==0
         VisualISAMPlot

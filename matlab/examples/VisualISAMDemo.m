@@ -8,7 +8,7 @@ global SAVE_GRAPH PRINT_STATS DRAW_INTERVAL CAMERA_INTERVAL DRAW_TRUE_POSES
 global SAVE_FIGURES SAVE_GRAPHS SHOW_TIMING
 global data
 global poseNoise pointNoise odometryNoise measurementNoise
-global frame_i isam newFactors initialEstimates result
+global frame_i isam result
 
 % Start GUI
 VisualISAM_gui

@@ -6,6 +6,7 @@ global data frame_i isam result
 
 % options
 global CAMERA_INTERVAL DRAW_TRUE_POSES SAVE_FIGURES SAVE_GRAPHS
+global SAVE_GRAPH PRINT_STATS
 
 %% Plot results
 h=gca;
@@ -44,6 +45,14 @@ if SAVE_FIGURES
 end
 if SAVE_GRAPHS && (frame_i>1)
     isam.saveGraph(sprintf('VisualiSAM%03d.dot',frame_i));
+end
+
+if SAVE_GRAPH
+    isam.saveGraph(sprintf('VisualiSAM.dot',frame_i));
+end
+
+if PRINT_STATS
+    isam.printStats();
 end
 
 drawnow
