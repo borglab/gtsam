@@ -1,37 +1,20 @@
 function varargout = VisualISAM_gui(varargin)
-% VISUALISAM_GUI MATLAB code for VisualISAM_gui.fig
-%      VISUALISAM_GUI, by itself, creates a new VISUALISAM_GUI or raises the existing
-%      singleton*.
-%
-%      H = VISUALISAM_GUI returns the handle to a new VISUALISAM_GUI or the handle to
-%      the existing singleton*.
-%
-%      VISUALISAM_GUI('CALLBACK',hObject,~,handles,...) calls the local
-%      function named CALLBACK in VISUALISAM_GUI.M with the given input arguments.
-%
-%      VISUALISAM_GUI('Property','Value',...) creates a new VISUALISAM_GUI or raises the
-%      existing singleton*.  Starting from the left, property value pairs are
-%      applied to the GUI before VisualISAM_gui_OpeningFcn gets called.  An
-%      unrecognized property name or invalid value makes property application
-%      stop.  All inputs are passed to VisualISAM_gui_OpeningFcn via varargin.
-%
-%      *See GUI Options on GUIDE's Tools menu.  Choose "GUI allows only one
-%      instance to run (singleton)".
-%
-% See also: GUIDE, GUIDATA, GUIHANDLES
-
-% Edit the above text to modify the response to help VisualISAM_gui
+% VisualISAM_gui: runs VisualSLAM iSAM demo in GUI
+%   Interface is defined by VisualISAM_gui.fig
+%   You can run this file directly, but won't have access to globals
+%   By running ViusalISAMDemo, you see all variables in command prompt
+% Authors: Duy Nguyen Ta
 
 % Last Modified by GUIDE v2.5 09-Jun-2012 00:56:47
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
-                   'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @VisualISAM_gui_OpeningFcn, ...
-                   'gui_OutputFcn',  @VisualISAM_gui_OutputFcn, ...
-                   'gui_LayoutFcn',  [] , ...
-                   'gui_Callback',   []);
+    'gui_Singleton',  gui_Singleton, ...
+    'gui_OpeningFcn', @VisualISAM_gui_OpeningFcn, ...
+    'gui_OutputFcn',  @VisualISAM_gui_OutputFcn, ...
+    'gui_LayoutFcn',  [] , ...
+    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
     gui_State.gui_Callback = str2func(varargin{1});
 end
@@ -55,11 +38,8 @@ handles.output = hObject;
 % Update handles structure
 guidata(hObject, handles);
 
-% UIWAIT makes VisualISAM_gui wait for user response (see UIRESUME)
-% uiwait(handles.figure1);
-
 % --- Outputs from this function are returned to the command line.
-function varargout = VisualISAM_gui_OutputFcn(hObject, ~, handles) 
+function varargout = VisualISAM_gui_OutputFcn(hObject, ~, handles)
 % varargout  cell array for returning output args (see VARARGOUT);
 % Get default command line output from handles structure
 varargout{1} = handles.output;
@@ -69,49 +49,54 @@ varargout{1} = handles.output;
 % Convenient functions
 %----------------------------------------------------------
 function showFramei(hObject, handles)
-    VisualISAMGlobalVars
-    set(handles.frameStatus, 'String', sprintf('Frame: %d',frame_i));
-    drawnow
-    guidata(hObject, handles);
-    
+global frame_i
+set(handles.frameStatus, 'String', sprintf('Frame: %d',frame_i));
+drawnow
+guidata(hObject, handles);
+
 function showWaiting(handles, status)
-    set(handles.waitingStatus,'String', status);
-    drawnow
-    guidata(handles.waitingStatus, handles);
-    
+set(handles.waitingStatus,'String', status);
+drawnow
+guidata(handles.waitingStatus, handles);
+
 function triangle = chooseDataset(handles)
-	str = cellstr(get(handles.dataset,'String'));
-    sel = get(handles.dataset,'Value');
-    switch str{sel}
-        case 'triangle'
-            triangle = true;
-        case 'cube'
-            triangle = false;
-    end
-    
+str = cellstr(get(handles.dataset,'String'));
+sel = get(handles.dataset,'Value');
+switch str{sel}
+    case 'triangle'
+        triangle = true;
+    case 'cube'
+        triangle = false;
+end
+
 function initOptions(handles)
-    VisualISAMGlobalVars
-    % Setting data options
-    TRIANGLE = chooseDataset(handles)
-    NCAMERAS = str2num(get(handles.numCamEdit,'String')) 
-    SHOW_IMAGES = get(handles.showImagesCB,'Value')
 
-    % iSAM Options
-    HARD_CONSTRAINT = get(handles.hardConstraintCB,'Value')
-    POINT_PRIORS = get(handles.pointPriorsCB,'Value')
-    BATCH_INIT = get(handles.batchInitCB,'Value')
-    REORDER_INTERVAL = str2num(get(handles.numCamEdit,'String')) 
-    ALWAYS_RELINEARIZE = get(handles.alwaysRelinearizeCB,'Value')
+global TRIANGLE NCAMERAS SHOW_IMAGES
+global HARD_CONSTRAINT POINT_PRIORS BATCH_INIT REORDER_INTERVAL ALWAYS_RELINEARIZE
+global SAVE_GRAPH PRINT_STATS DRAW_INTERVAL CAMERA_INTERVAL DRAW_TRUE_POSES
+global SAVE_FIGURES SAVE_GRAPHS
 
-    % Display Options
-    SAVE_GRAPH = get(handles.saveGraphCB,'Value')
-    PRINT_STATS = get(handles.printStatsCB,'Value')
-    DRAW_INTERVAL = str2num(get(handles.drawInterval,'String'))
-    CAMERA_INTERVAL = str2num(get(handles.cameraIntervalEdit,'String')) 
-    DRAW_TRUE_POSES = get(handles.drawTruePosesCB,'Value')
-    SAVE_FIGURES = get(handles.saveFiguresCB,'Value')
-    SAVE_GRAPHS = get(handles.saveGraphsCB,'Value')
-    
+% Setting data options
+TRIANGLE = chooseDataset(handles);
+NCAMERAS = str2num(get(handles.numCamEdit,'String'));
+SHOW_IMAGES = get(handles.showImagesCB,'Value');
+
+% iSAM Options
+HARD_CONSTRAINT = get(handles.hardConstraintCB,'Value');
+POINT_PRIORS = get(handles.pointPriorsCB,'Value');
+BATCH_INIT = get(handles.batchInitCB,'Value');
+REORDER_INTERVAL = str2num(get(handles.numCamEdit,'String'));
+ALWAYS_RELINEARIZE = get(handles.alwaysRelinearizeCB,'Value');
+
+% Display Options
+SAVE_GRAPH = get(handles.saveGraphCB,'Value');
+PRINT_STATS = get(handles.printStatsCB,'Value');
+DRAW_INTERVAL = str2num(get(handles.drawInterval,'String'));
+CAMERA_INTERVAL = str2num(get(handles.cameraIntervalEdit,'String'));
+DRAW_TRUE_POSES = get(handles.drawTruePosesCB,'Value');
+SAVE_FIGURES = get(handles.saveFiguresCB,'Value');
+SAVE_GRAPHS = get(handles.saveGraphsCB,'Value');
+
 
 %----------------------------------------------------------
 % Callback functions for GUI elements
@@ -130,7 +115,7 @@ end
 function dataset_Callback(hObject, ~, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns dataset contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from dataset
-    
+
 
 % --- Executes during object creation, after setting all properties.
 function numCamEdit_CreateFcn(hObject, ~, handles)
@@ -161,13 +146,13 @@ function pointPriorsCB_Callback(hObject, ~, handles)
 
 % --- Executes during object creation, after setting all properties.
 function batchInitCB_CreateFcn(hObject, eventdata, handles)
-    set(hObject,'Value',1);
-    
+set(hObject,'Value',1);
+
 % --- Executes on button press in batchInitCB.
 function batchInitCB_Callback(hObject, ~, handles)
 % Hint: get(hObject,'Value') returns toggle state of batchInitCB
 
-    
+
 % --- Executes on button press in alwaysRelinearizeCB.
 function alwaysRelinearizeCB_Callback(hObject, ~, handles)
 % Hint: get(hObject,'Value') returns toggle state of alwaysRelinearizeCB
@@ -242,48 +227,45 @@ function saveGraphsCB_Callback(hObject, ~, handles)
 
 % --- Executes on button press in intializeButton.
 function intializeButton_Callback(hObject, ~, handles)
-    VisualISAMGlobalVars
-    initOptions(handles)
-    VisualISAMGenerateData
-    VisualISAMInitialize
-    VisualISAMPlot
-    showFramei(hObject, handles)
-    
-    
+initOptions(handles)
+VisualISAMGenerateData
+VisualISAMInitialize
+VisualISAMPlot
+showFramei(hObject, handles)
+
+
 % --- Executes on button press in runButton.
 function runButton_Callback(hObject, ~, handles)
-    VisualISAMGlobalVars
-    while (frame_i<NCAMERAS)
-        frame_i = frame_i+1;
-        showFramei(hObject, handles)
-        VisualISAMStep
-        if mod(frame_i,DRAW_INTERVAL)==0
-            showWaiting(handles, 'Computing marginals...');
-            VisualISAMPlot
-            showWaiting(handles, '');
-        end
+global frame_i NCAMERAS DRAW_INTERVAL
+while (frame_i<NCAMERAS)
+    frame_i = frame_i+1;
+    showFramei(hObject, handles)
+    VisualISAMStep
+    if mod(frame_i,DRAW_INTERVAL)==0
+        showWaiting(handles, 'Computing marginals...');
+        VisualISAMPlot
+        showWaiting(handles, '');
     end
-    
-    
+end
+
+
 % --- Executes on button press in stepButton.
 function stepButton_Callback(hObject, ~, handles)
-    VisualISAMGlobalVars
-    if (frame_i<NCAMERAS)
-        frame_i = frame_i+1;
-        showFramei(hObject, handles)
-        VisualISAMStep
-        if mod(frame_i,DRAW_INTERVAL)==0
-            showWaiting(handles, 'Computing marginals...');
-            VisualISAMPlot
-            showWaiting(handles, '');
-        end
-    end
+global frame_i NCAMERAS DRAW_INTERVAL
+if (frame_i<NCAMERAS)
+    frame_i = frame_i+1;
+    showFramei(hObject, handles)
+    VisualISAMStep
+    showWaiting(handles, 'Computing marginals...');
+    VisualISAMPlot
+    showWaiting(handles, '');
+end
 
 % --- Executes on button press in plotButton.
 function plotButton_Callback(hObject, ~, handles)
-    showWaiting(handles, 'Computing marginals...');
-    VisualISAMPlot;
-    showWaiting(handles, '');
+showWaiting(handles, 'Computing marginals...');
+VisualISAMPlot;
+showWaiting(handles, '');
 
 
 

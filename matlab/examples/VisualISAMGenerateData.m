@@ -1,4 +1,12 @@
-VisualISAMGlobalVars
+% VisualISAMGenerateData: create data for viusalSLAM::iSAM examples
+% Authors: Duy Nguyen Ta and Frank Dellaert
+
+% options
+global TRIANGLE NCAMERAS SHOW_IMAGES
+
+% global outputs
+global points cameras K odometry
+global poseNoise odometryNoise pointNoise measurementNoise % data ?
 
 %% Generate simulated data
 points = {};

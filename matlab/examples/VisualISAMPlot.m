@@ -1,13 +1,17 @@
-VisualISAMGlobalVars
+% VisualISAMPlot: plot current state of visualSLAM::iSAM object
+% Authors: Duy Nguyen Ta and Frank Dellaert
+
+% global variables, input
+global points cameras frame_i isam result
+
+% options
+global CAMERA_INTERVAL DRAW_TRUE_POSES SAVE_FIGURES SAVE_GRAPHS
 
 %% Plot results
 tic
-%     h=figure(2);clf
-%     set(1,'NumberTitle','off','Name','Visual iSAM');
 h=gca;
 cla(h);
 hold on;
-sprintf('Computing marginals and plotting. Please wait...')
 for j=1:size(points,2)
     point_j = result.point(symbol('l',j));
     plot3(point_j.x, point_j.y, point_j.z,'marker','o');
@@ -21,7 +25,7 @@ for ii=1:CAMERA_INTERVAL:frame_i
     if (frame_i>1)
         P = isam.marginalCovariance(symbol('x',ii));
     else 
-        P = []
+        P = [];
     end
     plotPose3(pose_ii,P,10);
     if DRAW_TRUE_POSES % show ground truth
@@ -31,9 +35,7 @@ end
 axis([-40 40 -40 40 -10 20]);axis equal
 view(3)
 colormap('hot')
-sprintf('Done!')
 
-%     figure(2);
 t=toc;
 % if DRAW_INTERVAL~=NCAMERAS, plot(frame_i,t,'b.'); end
 if SAVE_FIGURES
