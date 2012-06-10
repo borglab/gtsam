@@ -36,7 +36,7 @@
 
 /**
  * Macro to add a standard clone function to a derived factor
- * @DEPRECIATED: will go away shortly - just add the clone function directly
+ * @DEPRECATED: will go away shortly - just add the clone function directly
  */
 #define ADD_CLONE_NONLINEAR_FACTOR(Derived) \
   virtual gtsam::NonlinearFactor::shared_ptr clone() const { \
