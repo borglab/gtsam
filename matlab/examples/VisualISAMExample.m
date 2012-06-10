@@ -10,10 +10,6 @@
 % @author Duy-Nguyen Ta
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% Global variables used in VisualISAMExample
-global options data isam result frame_i
-global poseNoise odometryNoise pointNoise measurementNoise
-
 % Data Options
 options.triangle = false;
 options.nrCameras = 20;
@@ -39,13 +35,13 @@ options.saveDotFiles = false;
 data = VisualISAMGenerateData(options);
 
 %% Initialize iSAM with the first pose and points
-VisualISAMInitialize(options)
+[noiseModels,isam,result] = VisualISAMInitialize(data,options);
 figure(1);
 VisualISAMPlot(data, isam, result, options)
 
 %% Main loop for iSAM: stepping through all poses
 for frame_i=3:options.nrCameras
-    VisualISAMStep
+    [isam,result] = VisualISAMStep(data,noiseModels,isam,result,options);
     if mod(frame_i,options.drawInterval)==0
         VisualISAMPlot(data, isam, result, options)
     end

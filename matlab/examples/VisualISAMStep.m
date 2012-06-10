@@ -1,15 +1,6 @@
-function VisualISAMStep
+function [isam,result] = VisualISAMStep(data,noiseModels,isam,result,options);
 % VisualISAMStep: execute one update step of visualSLAM::iSAM object
 % Authors: Duy Nguyen Ta and Frank Dellaert
-
-% global variables, input
-global options data odometryNoise measurementNoise frame_i
-
-% global variables, input/output
-global isam
-
-% global variables, output
-global result
 
 % iSAM expects us to give it a new set of factors 
 % along with initial estimates for any new variables introduced.
@@ -17,17 +8,18 @@ newFactors = visualSLAMGraph;
 initialEstimates = visualSLAMValues;
 
 %% Add odometry
-newFactors.addOdometry(symbol('x',frame_i-1), symbol('x',frame_i), data.odometry, odometryNoise);
+i = double(result.nrPoses)+1;
+newFactors.addOdometry(symbol('x',i-1), symbol('x',i), data.odometry, noiseModels.odometry);
 
 %% Add visual measurement factors
 for j=1:size(data.points,2)
-    zij = data.cameras{frame_i}.project(data.points{j});
-    newFactors.addMeasurement(zij, measurementNoise, symbol('x',frame_i), symbol('l',j), data.K);
+    zij = data.cameras{i}.project(data.points{j});
+    newFactors.addMeasurement(zij, noiseModels.measurement, symbol('x',i), symbol('l',j), data.K);
 end
 
 %% Initial estimates for the new pose.
-prevPose = result.pose(symbol('x',frame_i-1));
-initialEstimates.insertPose(symbol('x',frame_i), prevPose.compose(data.odometry));
+prevPose = result.pose(symbol('x',i-1));
+initialEstimates.insertPose(symbol('x',i), prevPose.compose(data.odometry));
 
 %% Update ISAM
 % figure(1);tic;

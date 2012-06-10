@@ -224,28 +224,28 @@ function saveGraphsCB_Callback(hObject, ~, handles)
 % --- Executes on button press in intializeButton.
 function intializeButton_Callback(hObject, ~, handles)
 
-global options data isam result
+global frame_i data noiseModels isam result options
 
 % initialize global options
-global options
 initOptions(handles)
 
 % Generate Data
 data = VisualISAMGenerateData(options);
 
 % Initialize and plot
-VisualISAMInitialize(options)
+[noiseModels,isam,result] = VisualISAMInitialize(data,options);
 VisualISAMPlot(data, isam, result, options)
+frame_i = 2;
 showFramei(hObject, handles)
 
 
 % --- Executes on button press in runButton.
 function runButton_Callback(hObject, ~, handles)
-global options data frame_i isam result
+global frame_i data noiseModels isam result options
 while (frame_i<size(data.cameras,2))
     frame_i = frame_i+1;
     showFramei(hObject, handles)
-    VisualISAMStep
+    [isam,result] = VisualISAMStep(data,noiseModels,isam,result,options);
     if mod(frame_i,options.drawInterval)==0
         showWaiting(handles, 'Computing marginals...');
         VisualISAMPlot(data, isam, result, options)
@@ -256,11 +256,11 @@ end
 
 % --- Executes on button press in stepButton.
 function stepButton_Callback(hObject, ~, handles)
-global options data frame_i isam result
+global frame_i data noiseModels isam result options
 if (frame_i<size(data.cameras,2))
     frame_i = frame_i+1;
     showFramei(hObject, handles)
-    VisualISAMStep
+    [isam,result] = VisualISAMStep(data,noiseModels,isam,result,options);
     showWaiting(handles, 'Computing marginals...');
     VisualISAMPlot(data, isam, result, options)
     showWaiting(handles, '');
@@ -269,7 +269,8 @@ end
 % --- Executes on button press in plotButton.
 function plotButton_Callback(hObject, ~, handles)
 showWaiting(handles, 'Computing marginals...');
-VisualISAMPlot;
+global options data isam result
+VisualISAMPlot(data, isam, result, options);
 showWaiting(handles, '');
 
 

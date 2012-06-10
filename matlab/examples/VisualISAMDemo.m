@@ -3,9 +3,7 @@
 
 % Make sure global variables are visible on command prompt
 % so you can examine how they change as you step through
-global data
-global poseNoise pointNoise odometryNoise measurementNoise
-global frame_i isam result
+global frame_i data noiseModels isam result options
 
 % Start GUI
 VisualISAM_gui
