@@ -107,7 +107,7 @@ Matrix NonlinearISAM::marginalCovariance(Key key) const {
 
 /* ************************************************************************* */
 void NonlinearISAM::print(const string& s) const {
-	cout s << "ReorderInterval: " << reorderInterval_ << " Current Count: " << reorderCounter_ << endl;
+	cout << s << "ReorderInterval: " << reorderInterval_ << " Current Count: " << reorderCounter_ << endl;
 	isam_.print("GaussianISAM:\n");
 	linPoint_.print("Linearization Point:\n");
 	ordering_.print("System Ordering:\n");
