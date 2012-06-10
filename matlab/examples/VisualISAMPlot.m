@@ -1,58 +1,62 @@
+function VisualISAMPlot(data, isam, result, options)
 % VisualISAMPlot: plot current state of visualSLAM::iSAM object
 % Authors: Duy Nguyen Ta and Frank Dellaert
 
-% global variables, input
-global data frame_i isam result
+M = double(result.nrPoses);
+N = double(result.nrPoints);
 
-% options
-global CAMERA_INTERVAL DRAW_TRUE_POSES SAVE_FIGURES SAVE_GRAPHS
-global SAVE_GRAPH PRINT_STATS
-
-%% Plot results
 h=gca;
 cla(h);
 hold on;
-for j=1:size(data.points,2)
-    point_j = result.point(symbol('l',j));
+
+%% Plot points
+for j=1:N
+    jj = symbol('l',j);
+    point_j = result.point(jj);
     plot3(point_j.x, point_j.y, point_j.z,'marker','o');
-    if (frame_i>1) 
-        P = isam.marginalCovariance(symbol('l',j));
-        covarianceEllipse3D([point_j.x;point_j.y;point_j.z],P); 
+    P = isam.marginalCovariance(jj);
+    covarianceEllipse3D([point_j.x;point_j.y;point_j.z],P);
+end
+
+%% Plot cameras
+for i=1:options.cameraInterval:M
+    ii = symbol('x',i);
+    pose_i = result.pose(ii);
+    if options.hardConstraint & (i==1)
+        plotPose3(pose_i,[],10);
+    else
+        P = isam.marginalCovariance(ii);
+        plotPose3(pose_i,P,10);
+    end
+    if options.drawTruePoses % show ground truth
+        plotPose3(data.cameras{i}.pose,[],10);
     end
 end
-for ii=1:CAMERA_INTERVAL:frame_i
-    pose_ii = result.pose(symbol('x',ii));
-    if (frame_i>1)
-        P = isam.marginalCovariance(symbol('x',ii));
-    else 
-        P = [];
-    end
-    plotPose3(pose_ii,P,10);
-    if DRAW_TRUE_POSES % show ground truth
-        plotPose3(data.cameras{ii}.pose,0.001*eye(6),10);
-    end
-end
+
+%% draw
 axis([-40 40 -40 40 -10 20]);axis equal
 view(3)
 colormap('hot')
+drawnow
 
-if SAVE_FIGURES
+%% do various optional things
+
+if options.saveFigures
     fig2 = figure('visible','off');
     newax = copyobj(h,fig2);
     colormap(fig2,'hot');
     set(newax, 'units', 'normalized', 'position', [0.13 0.11 0.775 0.815]);
-    print(fig2,'-dpng',sprintf('VisualiSAM%03d.png',frame_i));
-end
-if SAVE_GRAPHS && (frame_i>1)
-    isam.saveGraph(sprintf('VisualiSAM%03d.dot',frame_i));
+    print(fig2,'-dpng',sprintf('VisualiSAM%03d.png',M));
 end
 
-if SAVE_GRAPH
-    isam.saveGraph(sprintf('VisualiSAM.dot',frame_i));
+if options.saveDotFiles
+    isam.saveGraph(sprintf('VisualiSAM%03d.dot',M));
 end
 
-if PRINT_STATS
+if options.saveDotFile
+    isam.saveGraph(sprintf('VisualiSAM.dot'));
+end
+
+if options.printStats
     isam.printStats();
 end
-
-drawnow

@@ -1,7 +1,6 @@
-function data = VisualISAMGenerateData(options, showImages)
+function data = VisualISAMGenerateData(options)
 % VisualISAMGenerateData: create data for viusalSLAM::iSAM examples
 % Authors: Duy Nguyen Ta and Frank Dellaert
-if nargin<2, showImages=false; end
 
 %% Generate simulated data
 data.points = {};
@@ -35,7 +34,7 @@ for i=1:options.nrCameras
 end
 
 %% show images if asked
-if showImages
+if options.showImages
     gui = gcf;
     for i=1:options.nrCameras
         figure(2+i);clf;hold on

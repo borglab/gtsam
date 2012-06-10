@@ -3,17 +3,13 @@ function VisualISAMStep
 % Authors: Duy Nguyen Ta and Frank Dellaert
 
 % global variables, input
-global frame_i odometryNoise measurementNoise
-global data
+global options data odometryNoise measurementNoise frame_i
 
 % global variables, input/output
 global isam
 
 % global variables, output
 global result
-
-% options
-global SHOW_TIMING ALWAYS_RELINEARIZE 
 
 % iSAM expects us to give it a new set of factors 
 % along with initial estimates for any new variables introduced.
@@ -40,6 +36,6 @@ isam.update(newFactors, initialEstimates);
 result = isam.estimate();
 % t=toc; plot(frame_i,t,'g.');
 
-if ALWAYS_RELINEARIZE % re-linearize
+if options.alwaysRelinearize % re-linearize
     isam.reorder_relinearize();
 end

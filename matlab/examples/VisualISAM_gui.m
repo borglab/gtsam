@@ -71,26 +71,28 @@ end
 
 function initOptions(handles)
 
-global HARD_CONSTRAINT POINT_PRIORS BATCH_INIT REORDER_INTERVAL ALWAYS_RELINEARIZE
-global SAVE_GRAPH PRINT_STATS DRAW_INTERVAL CAMERA_INTERVAL DRAW_TRUE_POSES
-global SAVE_FIGURES SAVE_GRAPHS SHOW_TIMING
+global options
+
+% Data options
+options.triangle = chooseDataset(handles);
+options.nrCameras = str2num(get(handles.numCamEdit,'String'));
+options.showImages = get(handles.showImagesCB,'Value');
 
 % iSAM Options
-HARD_CONSTRAINT = get(handles.hardConstraintCB,'Value');
-POINT_PRIORS = get(handles.pointPriorsCB,'Value');
-BATCH_INIT = get(handles.batchInitCB,'Value');
-REORDER_INTERVAL = str2num(get(handles.reorderIntervalEdit,'String'));
-ALWAYS_RELINEARIZE = get(handles.alwaysRelinearizeCB,'Value');
+options.hardConstraint = get(handles.hardConstraintCB,'Value');
+options.pointPriors = get(handles.pointPriorsCB,'Value');
+options.batchInitialization = get(handles.batchInitCB,'Value');
+options.reorderInterval = str2num(get(handles.reorderIntervalEdit,'String'));
+options.alwaysRelinearize = get(handles.alwaysRelinearizeCB,'Value');
 
 % Display Options
-SAVE_GRAPH = get(handles.saveGraphCB,'Value');
-PRINT_STATS = get(handles.printStatsCB,'Value');
-DRAW_INTERVAL = str2num(get(handles.drawInterval,'String'));
-CAMERA_INTERVAL = str2num(get(handles.cameraIntervalEdit,'String'));
-DRAW_TRUE_POSES = get(handles.drawTruePosesCB,'Value');
-SAVE_FIGURES = get(handles.saveFiguresCB,'Value');
-SAVE_GRAPHS = get(handles.saveGraphsCB,'Value');
-SHOW_TIMING = false;
+options.saveDotFile = get(handles.saveGraphCB,'Value');
+options.printStats = get(handles.printStatsCB,'Value');
+options.drawInterval = str2num(get(handles.drawInterval,'String'));
+options.cameraInterval = str2num(get(handles.cameraIntervalEdit,'String'));
+options.drawTruePoses = get(handles.drawTruePosesCB,'Value');
+options.saveFigures = get(handles.saveFiguresCB,'Value');
+options.saveDotFiles = get(handles.saveGraphsCB,'Value');
 
 %----------------------------------------------------------
 % Callback functions for GUI elements
@@ -222,33 +224,31 @@ function saveGraphsCB_Callback(hObject, ~, handles)
 % --- Executes on button press in intializeButton.
 function intializeButton_Callback(hObject, ~, handles)
 
-global data
+global options data isam result
 
 % initialize global options
+global options
 initOptions(handles)
 
 % Generate Data
-options.triangle = chooseDataset(handles);
-options.nrCameras = str2num(get(handles.numCamEdit,'String'));
-showImages = get(handles.showImagesCB,'Value');
-data = VisualISAMGenerateData(options, showImages);
+data = VisualISAMGenerateData(options);
 
 % Initialize and plot
-VisualISAMInitialize
-VisualISAMPlot
+VisualISAMInitialize(options)
+VisualISAMPlot(data, isam, result, options)
 showFramei(hObject, handles)
 
 
 % --- Executes on button press in runButton.
 function runButton_Callback(hObject, ~, handles)
-global frame_i data DRAW_INTERVAL
+global options data frame_i isam result
 while (frame_i<size(data.cameras,2))
     frame_i = frame_i+1;
     showFramei(hObject, handles)
     VisualISAMStep
-    if mod(frame_i,DRAW_INTERVAL)==0
+    if mod(frame_i,options.drawInterval)==0
         showWaiting(handles, 'Computing marginals...');
-        VisualISAMPlot
+        VisualISAMPlot(data, isam, result, options)
         showWaiting(handles, '');
     end
 end
@@ -256,13 +256,13 @@ end
 
 % --- Executes on button press in stepButton.
 function stepButton_Callback(hObject, ~, handles)
-global frame_i data DRAW_INTERVAL
+global options data frame_i isam result
 if (frame_i<size(data.cameras,2))
     frame_i = frame_i+1;
     showFramei(hObject, handles)
     VisualISAMStep
     showWaiting(handles, 'Computing marginals...');
-    VisualISAMPlot
+    VisualISAMPlot(data, isam, result, options)
     showWaiting(handles, '');
 end
 

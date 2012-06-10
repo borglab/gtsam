@@ -11,43 +11,42 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Global variables used in VisualISAMExample
-global data isam frame_i result
+global options data isam result frame_i
 global poseNoise odometryNoise pointNoise measurementNoise
-global HARD_CONSTRAINT POINT_PRIORS BATCH_INIT REORDER_INTERVAL ALWAYS_RELINEARIZE 
-global SAVE_GRAPH PRINT_STATS DRAW_INTERVAL CAMERA_INTERVAL DRAW_TRUE_POSES 
-global SAVE_FIGURES SAVE_GRAPHS 
 
-%% iSAM Options
-HARD_CONSTRAINT = false;
-POINT_PRIORS = false;
-BATCH_INIT = true;
-REORDER_INTERVAL = 10;
-ALWAYS_RELINEARIZE = false;
-
-%% Display Options
-SAVE_GRAPH = false;
-PRINT_STATS = false;
-DRAW_INTERVAL = 5;
-CAMERA_INTERVAL = 1;
-DRAW_TRUE_POSES = false;
-SAVE_FIGURES = false;
-SAVE_GRAPHS = false;
-
-%% Generate data
+% Data Options
 options.triangle = true;
 options.nrCameras = 10;
-showImages = false;
-data = VisualISAMGenerateData(options,showImages);
+options.showImages = false;
+
+% iSAM Options
+options.hardConstraint = false;
+options.pointPriors = false;
+options.batchInitialization = true;
+options.reorderInterval = 10;
+options.alwaysRelinearize = false;
+
+% Display Options
+options.saveDotFile = false;
+options.printStats = false;
+options.drawInterval = 5;
+options.cameraInterval = 1;
+options.drawTruePoses = false;
+options.saveFigures = false;
+options.saveDotFiles = false;
+
+%% Generate data
+data = VisualISAMGenerateData(options);
 
 %% Initialize iSAM with the first pose and points
-VisualISAMInitialize
-figure;
-VisualISAMPlot
+VisualISAMInitialize(options)
+figure(1);
+VisualISAMPlot(data, isam, result, options)
 
 %% Main loop for iSAM: stepping through all poses
 for frame_i=3:options.nrCameras
     VisualISAMStep
-    if mod(frame_i,DRAW_INTERVAL)==0
-        VisualISAMPlot
+    if mod(frame_i,options.drawInterval)==0
+        VisualISAMPlot(data, isam, result, options)
     end
 end
