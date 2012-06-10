@@ -100,7 +100,7 @@ public:
 	virtual void print(const std::string& s="", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
 	/** equals function with optional tolerance */
-	virtual bool equals(const LinearizedFactor& other, double tol = 1e-9) const;
+	virtual bool equals(const NonlinearFactor& other, double tol = 1e-9) const;
 
 	// access functions
 

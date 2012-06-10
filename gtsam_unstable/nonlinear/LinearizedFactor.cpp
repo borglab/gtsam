@@ -129,16 +129,17 @@ void LinearizedFactor::print(const std::string& s, const KeyFormatter& keyFormat
 }
 
 /* ************************************************************************* */
-bool LinearizedFactor::equals(const LinearizedFactor& other, double tol) const {
-	if (!Base::equals(other, tol)
-			|| !lin_points_.equals(other.lin_points_, tol)
-			|| !equal_with_abs_tol(b_, other.b_, tol)
-			|| !model_->equals(*other.model_, tol)
-			|| matrices_.size() != other.matrices_.size())
+bool LinearizedFactor::equals(const NonlinearFactor& other, double tol) const {
+  const LinearizedFactor* e = dynamic_cast<const LinearizedFactor*>(&other);
+	if (!e || !Base::equals(other, tol)
+			|| !lin_points_.equals(e->lin_points_, tol)
+			|| !equal_with_abs_tol(b_, e->b_, tol)
+			|| !model_->equals(*e->model_, tol)
+			|| matrices_.size() != e->matrices_.size())
 		return false;
 
-	KeyMatrixMap::const_iterator map1 = matrices_.begin(), map2 = other.matrices_.begin();
-	for (; map1 != matrices_.end(), map2 != other.matrices_.end(); ++map1, ++map2)
+	KeyMatrixMap::const_iterator map1 = matrices_.begin(), map2 = e->matrices_.begin();
+	for (; map1 != matrices_.end(), map2 != e->matrices_.end(); ++map1, ++map2)
 		if ((map1->first != map2->first) || !equal_with_abs_tol(map1->second, map2->second, tol))
 			return false;
 	return true;
