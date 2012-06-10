@@ -24,6 +24,20 @@ using boost::make_shared;
 namespace visualSLAM {
 
   /* ************************************************************************* */
+  size_t Values::nrPoses() const {
+  	// TODO, is there a better way?
+    ConstFiltered<Pose3> poses = filter<Pose3>();
+    return poses.size();
+  }
+
+  /* ************************************************************************* */
+  size_t Values::nrPoints() const {
+  	// TODO, is there a better way?
+    ConstFiltered<Point3> points = filter<Point3>();
+    return points.size();
+  }
+
+  /* ************************************************************************* */
   Vector Values::xs() const {
     size_t j=0;
     ConstFiltered<Pose3> poses = filter<Pose3>();
@@ -53,6 +67,7 @@ namespace visualSLAM {
     return result;
   }
 
+  /* ************************************************************************* */
   Matrix Values::points() const {
     size_t j=0;
     ConstFiltered<Point3> points = filter<Point3>();

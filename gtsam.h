@@ -891,6 +891,8 @@ class Values {
   void updatePose(size_t key, const gtsam::Pose3& pose);
   void updatePoint(size_t key, const gtsam::Point3& pose);
   size_t size() const;
+  size_t nrPoses() const;
+  size_t nrPoints() const;
   void print(string s) const;
   gtsam::Pose3 pose(size_t i);
   gtsam::Point3 point(size_t j);

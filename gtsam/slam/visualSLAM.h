@@ -72,6 +72,12 @@ namespace visualSLAM {
     /// update a point
     void updatePoint(Key j, const Point3& point) { update(j, point); }
 
+    /// get number of poses
+    size_t nrPoses() const;
+
+    /// get number of points
+    size_t nrPoints() const;
+
     /// get a pose
     Pose3 pose(Key i) const { return at<Pose3>(i); }
 
