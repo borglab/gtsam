@@ -18,6 +18,7 @@ namespace gtsam {
 /**
  * parameters for the conjugate gradient method
  */
+
 struct ConjugateGradientParameters : public IterativeOptimizationParameters {
 
   typedef IterativeOptimizationParameters Base;
@@ -45,7 +46,7 @@ struct ConjugateGradientParameters : public IterativeOptimizationParameters {
       epsilon_rel_(epsilon_rel), epsilon_abs_(epsilon_abs), blas_kernel_(blas) {}
 
   ConjugateGradientParameters(const ConjugateGradientParameters &p)
-    : minIterations_(p.minIterations_), maxIterations_(p.maxIterations_), reset_(p.reset_),
+    : Base(p), minIterations_(p.minIterations_), maxIterations_(p.maxIterations_), reset_(p.reset_),
       epsilon_rel_(p.epsilon_rel_), epsilon_abs_(p.epsilon_abs_), blas_kernel_(p.blas_kernel_) {}
 
   /* general interface */
