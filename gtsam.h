@@ -442,6 +442,7 @@ class SimpleCamera {
 
   // Action on Point3
 	gtsam::Point2 project(const gtsam::Point3& point);
+	pair<gtsam::Point2,bool> projectSafe(const gtsam::Point3& pw) const;
 	static gtsam::Point2 project_to_camera(const gtsam::Point3& cameraPoint);
 
 	// Backprojection
