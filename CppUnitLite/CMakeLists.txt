@@ -3,7 +3,7 @@
 file(GLOB cppunitlite_headers "*.h")
 file(GLOB cppunitlite_src "*.cpp")
 
-add_library(CppUnitLite STATIC ${cppunitlite_src})
+add_library(CppUnitLite STATIC ${cppunitlite_src} ${cppunitlite_headers})
 
 gtsam_assign_source_folders("${cppunitlite_headers};${cppunitlite_src}") # MSVC project structure
 
