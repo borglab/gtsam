@@ -25,6 +25,10 @@ set (tests_exclude
     #"${CMAKE_CURRENT_SOURCE_DIR}/testOccupancyGrid.cpp"
 )
 
+if(MSVC)
+  add_definitions("/bigobj") # testSerializationSLAM needs this
+endif()
+
 # Build tests
 if (GTSAM_BUILD_TESTS)
     # Subdirectory target for tests
