@@ -149,5 +149,5 @@ namespace gtsam {
 
 } // namespace gtsam
 
-#include <gtsam_unstable/linear/iterative-inl.h>
+#include <gtsam/linear/iterative-inl.h>
 

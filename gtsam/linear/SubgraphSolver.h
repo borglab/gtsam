@@ -19,7 +19,8 @@
 
 namespace gtsam {
 
-struct SubgraphSolverParameters : public ConjugateGradientParameters {
+class SubgraphSolverParameters : public ConjugateGradientParameters {
+public:
   typedef ConjugateGradientParameters Base;
   SubgraphSolverParameters() : Base() {}
 };

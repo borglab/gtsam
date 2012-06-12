@@ -19,7 +19,9 @@ namespace gtsam {
  * parameters for the conjugate gradient method
  */
 
-struct ConjugateGradientParameters : public IterativeOptimizationParameters {
+class ConjugateGradientParameters : public IterativeOptimizationParameters {
+
+public:
 
   typedef IterativeOptimizationParameters Base;
   typedef boost::shared_ptr<ConjugateGradientParameters> shared_ptr;

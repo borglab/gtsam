@@ -15,9 +15,9 @@
  *  @author Frank Dellaert
  **/
 
-#include <gtsam_unstable/linear/iterative.h>
 #include <tests/smallExample.h>
 #include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/linear/iterative.h>
 #include <gtsam/linear/JacobianFactorGraph.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>

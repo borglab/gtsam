@@ -262,6 +262,11 @@ namespace gtsam {
       return gtsam::dot(this->values_, V.values_);
     }
 
+    /** Vector L2 norm */
+    inline double norm() const {
+      return this->vector().norm();
+    }
+
     /**
      * + operator does element-wise addition.  Both VectorValues must have the
      * same structure (checked when NDEBUG is not defined).

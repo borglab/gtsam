@@ -5,15 +5,13 @@
  * @date   Jun 11, 2012
  */
 
-#include <cmath>
-
 #include <gtsam/nonlinear/GradientDescentOptimizer.h>
 #include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/linear/JacobianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
 
-#include <gtsam_unstable/linear/iterative.h>
+#include <cmath>
 
 using namespace std;
 
@@ -30,7 +28,7 @@ void gradientInPlace(const NonlinearFactorGraph &nfg, const Values &values, cons
   const FactorGraph<JacobianFactor>::shared_ptr jfg = linear->dynamicCastFactors<FactorGraph<JacobianFactor> >();
 
   // compute the gradient direction
-  gtsam::gradientAtZero(*jfg, g);
+  gradientAtZero(*jfg, g);
 }
 
 
@@ -112,9 +110,27 @@ void GradientDescentOptimizer::iterate() {
       std::cout << "minStep = " << minStep << ", maxStep = " << maxStep << ", newStep = "  << newStep << ", newError = " << newError << std::endl;
     }
   }
-
   // Increment the iteration counter
   ++state_.iterations;
+}
+
+double GradientDescentOptimizer2::System::error(const State &state) const {
+  return graph_.error(state);
+}
+
+GradientDescentOptimizer2::System::Gradient GradientDescentOptimizer2::System::gradient(const State &state) const {
+  Gradient result = state.zeroVectors(ordering_);
+  gradientInPlace(graph_, state, ordering_, result);
+  return result;
+}
+GradientDescentOptimizer2::System::State GradientDescentOptimizer2::System::advance(const State &current, const double alpha, const Gradient &g) const {
+  Gradient step = g;
+  step.vector() *= alpha;
+  return current.retract(step, ordering_);
+}
+
+Values GradientDescentOptimizer2::optimize() {
+  return gradientDescent<System, Values>(System(graph_, *ordering_), initialEstimate_, params_);
 }
 
 } /* namespace gtsam */

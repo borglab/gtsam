@@ -16,7 +16,7 @@
  * @date Dec 28, 2009
  */
 
-#include <gtsam_unstable/linear/iterative-inl.h>
+#include <gtsam/linear/iterative-inl.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/linear/JacobianFactorGraph.h>

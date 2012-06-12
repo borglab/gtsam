@@ -13,13 +13,12 @@
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/iterative-inl.h>
 #include <gtsam/linear/JacobianFactorGraph.h>
 #include <gtsam/linear/SubgraphSolver.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/inference/graph-inl.h>
 #include <gtsam/inference/EliminationTree.h>
-
-#include <gtsam_unstable/linear/iterative-inl.h>
 
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
