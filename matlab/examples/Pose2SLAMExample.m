@@ -56,7 +56,7 @@ result = graph.optimize(initialEstimate);
 result.print(sprintf('\nFinal result:\n'));
 
 %% Plot Covariance Ellipses
-figure(1);clf;
+cla;
 plot(result.xs(),result.ys(),'k*-'); hold on
 plot([result.pose(5).x;result.pose(2).x],[result.pose(5).y;result.pose(2).y],'r-');
 marginals = graph.marginals(result);

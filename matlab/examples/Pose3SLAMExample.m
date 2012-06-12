@@ -38,7 +38,7 @@ initial.insertPose(4, hexagon.pose(4).retract(s*randn(6,1)));
 initial.insertPose(5, hexagon.pose(5).retract(s*randn(6,1)));
 
 %% Plot Initial Estimate
-figure(1);clf
+cla
 plot3(initial.xs(),initial.ys(),initial.zs(),'g-*');
 
 %% optimize

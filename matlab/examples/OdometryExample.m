@@ -44,7 +44,7 @@ result = graph.optimize(initialEstimate);
 result.print(sprintf('\nFinal result:\n  '));
 
 %% Plot Covariance Ellipses
-figure(1);clf;
+cla;
 plot(result.xs(),result.ys(),'k*-'); hold on
 marginals = graph.marginals(result);
 for i=1:result.size()
