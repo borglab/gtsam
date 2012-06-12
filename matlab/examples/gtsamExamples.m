@@ -57,11 +57,6 @@ handles.output = hObject;
 % Update handles structure
 guidata(hObject, handles);
 
-% This sets up the initial plot - only do when we are invisible
-% so window can get raised using gtsamExamples.
-if strcmp(get(hObject,'Visible'),'off')
-    plot(rand(5));
-end
 
 % --- Outputs from this function are returned to the command line.
 function varargout = gtsamExamples_OutputFcn(hObject, eventdata, handles)
@@ -96,7 +91,10 @@ echo off
 
 % --- Executes on button press in Localization.
 function Localization_Callback(hObject, eventdata, handles)
-fprintf(1,'LocalizationExample not implemented yet\n');
+axes(handles.axes3);
+echo on
+LocalizationExample;
+echo off
 
 % --- Executes on button press in Pose2SLAM.
 function Pose2SLAM_Callback(hObject, eventdata, handles)

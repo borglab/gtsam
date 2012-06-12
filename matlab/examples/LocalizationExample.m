@@ -18,16 +18,18 @@
 %% Create the graph (defined in pose2SLAM.h, derived from NonlinearFactorGraph)
 graph = pose2SLAMGraph;
 
-%% Add a Gaussian prior on pose x_1
-priorMean = gtsamPose2(0.0, 0.0, 0.0); % prior mean is at origin
-priorNoise = gtsamSharedNoiseModel_Sigmas([0.3; 0.3; 0.1]); % 30cm std on x,y, 0.1 rad on theta
-graph.addPrior(1, priorMean, priorNoise); % add directly to graph
-
 %% Add two odometry factors
 odometry = gtsamPose2(2.0, 0.0, 0.0); % create a measurement for both factors (the same in this case)
 odometryNoise = gtsamSharedNoiseModel_Sigmas([0.2; 0.2; 0.1]); % 20cm std on x,y, 0.1 rad on theta
 graph.addOdometry(1, 2, odometry, odometryNoise);
 graph.addOdometry(2, 3, odometry, odometryNoise);
+
+%% Add three "GPS" measurements
+% We use Pose2 Priors here with high variance on theta
+noiseModel = gtsamSharedNoiseModel_Sigmas([0.1; 0.1; 10]);
+graph.addPrior(1, gtsamPose2(0.0, 0.0, 0.0), noiseModel);
+graph.addPrior(2, gtsamPose2(2.0, 0.0, 0.0), noiseModel);
+graph.addPrior(3, gtsamPose2(4.0, 0.0, 0.0), noiseModel);
 
 %% print
 graph.print(sprintf('\nFactor graph:\n'));
