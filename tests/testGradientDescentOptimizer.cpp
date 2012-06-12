@@ -88,7 +88,7 @@ TEST(optimize, GradientDescentOptimizer2) {
   // Single Step Optimization using Levenberg-Marquardt
   GradientDescentParams2 param;
   param.maxIterations = 500;    /* requires a larger number of iterations to converge */
-  param.verbosity = NonlinearOptimizerParams::ERROR;
+  param.verbosity = NonlinearOptimizerParams::SILENT;
 
 
   GradientDescentOptimizer2 optimizer(graph, initialEstimate, param);
