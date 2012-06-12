@@ -36,7 +36,7 @@ options.saveDotFiles = false;
 
 %% Initialize iSAM with the first pose and points
 [noiseModels,isam,result] = VisualISAMInitialize(data,truth,options);
-figure(1);
+cla;
 VisualISAMPlot(truth, data, isam, result, options)
 
 %% Main loop for iSAM: stepping through all poses

@@ -80,7 +80,7 @@ result.print(sprintf('\nFinal result:\n  '));
 
 %% Plot results with covariance ellipses
 marginals = graph.marginals(result);
-figure(1);clf
+cla
 hold on;
 for j=1:size(points,2)
     P = marginals.marginalCovariance(symbol('l',j));
