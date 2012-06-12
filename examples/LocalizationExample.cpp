@@ -11,7 +11,7 @@
 
 /**
  * @file LocalizationExample.cpp
- * @brief Simple robot localization example
+ * @brief Simple robot localization example, with three "GPS-like" measurements
  * @author Frank Dellaert
  */
 

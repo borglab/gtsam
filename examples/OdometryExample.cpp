@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file LocalizationExample.cpp
- * @brief Simple robot localization example
+ * @file OdometryExample.cpp
+ * @brief Simple robot motion example, with prior and two odometry measurements
  * @author Frank Dellaert
  */
 
