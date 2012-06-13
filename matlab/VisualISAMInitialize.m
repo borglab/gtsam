@@ -17,10 +17,12 @@ newFactors = visualSLAMGraph;
 initialEstimates = visualSLAMValues;
 for i=1:2
     ii = symbol('x',i);
-    if i==1 && options.hardConstraint % add hard constraint
-        newFactors.addPoseConstraint(ii,truth.cameras{1}.pose);
-    else
-        newFactors.addPosePrior(ii,truth.cameras{i}.pose, noiseModels.pose);
+    if i==1
+        if options.hardConstraint % add hard constraint
+            newFactors.addPoseConstraint(ii,truth.cameras{1}.pose);
+        else
+            newFactors.addPosePrior(ii,truth.cameras{i}.pose, noiseModels.pose);
+        end
     end
     initialEstimates.insertPose(ii,truth.cameras{i}.pose);
 end
@@ -41,6 +43,9 @@ for i=1:2
         end
     end
 end
+
+%% Add odometry between frames 1 and 2
+newFactors.addOdometry(symbol('x',1), symbol('x',2), data.odometry{1}, noiseModels.odometry);
 
 %% Update ISAM
 if options.batchInitialization % Do a full optimize for first two poses
