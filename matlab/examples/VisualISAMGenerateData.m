@@ -32,7 +32,9 @@ for i=1:options.nrCameras
     truth.cameras{i} = gtsamSimpleCamera_lookat(t, gtsamPoint3, gtsamPoint3([0,0,1]'), truth.K);
     % Create measurements
     for j=1:nrPoints
-        data.z{i,j} = truth.cameras{i}.project(truth.points{j});
+        % All landmarks seen in every frame
+        data.Z{i}{j} = truth.cameras{i}.project(truth.points{j});
+        data.J{i}{j} = j;
     end    
 end
 

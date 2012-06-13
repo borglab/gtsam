@@ -33,9 +33,10 @@ graph = visualSLAMGraph;
 
 %% Add factors for all measurements
 measurementNoise = gtsamSharedNoiseModel_Sigma(2,measurementNoiseSigma);
-for i=1:size(data.z,1)
-    for j=1:size(data.z,2)
-        graph.addMeasurement(data.z{i,j}, measurementNoise, symbol('x',i), symbol('l',j), data.K);
+for i=1:length(data.Z)
+    for k=1:length(data.Z{i})
+        j = data.J{i}{k};
+        graph.addMeasurement(data.Z{i}{k}, measurementNoise, symbol('x',i), symbol('l',j), data.K);
     end
 end
 

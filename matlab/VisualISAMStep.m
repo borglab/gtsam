@@ -1,4 +1,4 @@
-function [isam,result] = VisualISAMStep(data,noiseModels,isam,result,options);
+function [isam,result] = VisualISAMStep(data,noiseModels,isam,result,truth, options)
 % VisualISAMStep: execute one update step of visualSLAM::iSAM object
 % Authors: Duy Nguyen Ta and Frank Dellaert
 
@@ -12,9 +12,17 @@ i = result.nrPoses+1;
 odometry = data.odometry{i-1};
 newFactors.addOdometry(symbol('x',i-1), symbol('x',i), odometry, noiseModels.odometry);
 
-%% Add visual measurement factors
-for j=1:size(data.z,2)
-    newFactors.addMeasurement(data.z{i,j}, noiseModels.measurement, symbol('x',i), symbol('l',j), data.K);
+%% Add visual measurement factors and initializations as necessary
+for k=1:length(data.Z{i})
+    zij = data.Z{i}{k};
+    j = data.J{i}{k};
+    jj = symbol('l', j);
+    newFactors.addMeasurement(zij, noiseModels.measurement, symbol('x',i), jj, data.K);
+    % TODO: initialize with something other than truth
+    if ~result.exists(jj) && ~initialEstimates.exists(jj)
+        lmInit = truth.points{j};
+        initialEstimates.insertPoint(jj, lmInit);
+    end
 end
 
 %% Initial estimates for the new pose.

@@ -41,7 +41,7 @@ VisualISAMPlot(truth, data, isam, result, options)
 
 %% Main loop for iSAM: stepping through all poses
 for frame_i=3:options.nrCameras
-    [isam,result] = VisualISAMStep(data,noiseModels,isam,result,options);
+    [isam,result] = VisualISAMStep(data,noiseModels,isam,result,truth,options);
     if mod(frame_i,options.drawInterval)==0
         VisualISAMPlot(truth, data, isam, result, options)
     end
