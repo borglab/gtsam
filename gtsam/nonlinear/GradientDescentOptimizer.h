@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <gtsam/base/manifold.h>
+#include <gtsam/base/Manifold.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 
 namespace gtsam {
