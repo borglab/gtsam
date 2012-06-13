@@ -32,8 +32,12 @@ string Argument::matlabClass(const string& delim) const {
 	result += ns + delim;
 	if (type=="string" || type=="unsigned char" || type=="char")
 		return result + "char";
-	if (type=="bool" || type=="int" || type=="size_t" || type=="Vector" || type=="Matrix")
-		return result + "double";
+  if (type=="Vector" || type=="Matrix")
+    return result + "double";
+  if (type=="int" || type=="size_t")
+    return result + "numeric";
+  if (type=="bool")
+    return result + "logical";
 	return result + type;
 }
 
