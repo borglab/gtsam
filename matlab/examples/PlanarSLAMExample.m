@@ -84,5 +84,7 @@ end
 plot([pose{1}.x;point{1}.x],[pose{1}.y;point{1}.y],'c-');
 plot([pose{2}.x;point{1}.x],[pose{2}.y;point{1}.y],'c-');
 plot([pose{3}.x;point{2}.x],[pose{3}.y;point{2}.y],'c-');
+axis([-0.6 4.8 -1 1])
 axis equal
+view(2)
 

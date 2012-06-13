@@ -47,6 +47,7 @@ result.print(sprintf('\nFinal result:\n  '));
 cla;
 plot(result.xs(),result.ys(),'k*-'); hold on
 marginals = graph.marginals(result);
+P={};
 for i=1:result.size()
     pose_i = result.pose(i);
     P{i}=marginals.marginalCovariance(i);
@@ -54,3 +55,4 @@ for i=1:result.size()
 end
 axis([-0.6 4.8 -1 1])
 axis equal
+view(2)

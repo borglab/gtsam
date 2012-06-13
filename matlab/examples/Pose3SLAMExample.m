@@ -45,5 +45,9 @@ plot3(initial.xs(),initial.ys(),initial.zs(),'g-*');
 result = fg.optimize(initial);
 
 %% Show Result
-hold on; plot3DTrajectory(result,'b-*', true, 0.3); axis equal;
+hold on; plot3DTrajectory(result,'b-*', true, 0.3);
+axis([-2 2 -2 2 -1 1]);
+axis equal
+view(-37,40)
+colormap hot
 result.print(sprintf('\nFinal result:\n'));

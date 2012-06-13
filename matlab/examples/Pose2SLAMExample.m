@@ -60,9 +60,12 @@ cla;
 plot(result.xs(),result.ys(),'k*-'); hold on
 plot([result.pose(5).x;result.pose(2).x],[result.pose(5).y;result.pose(2).y],'r-');
 marginals = graph.marginals(result);
+P={};
 for i=1:result.size()
     pose_i = result.pose(i);
     P{i}=marginals.marginalCovariance(i);
     plotPose2(pose_i,'g',P{i})
 end
+axis([-0.6 4.8 -1 1])
 axis equal
+view(2)

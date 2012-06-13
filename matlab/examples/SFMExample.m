@@ -78,7 +78,6 @@ for i=1:result.nrPoses
     pose_i = result.pose(symbol('x',i));
     plotPose3(pose_i,P,10);
 end
-axis([-35 35 -35 35 -15 15]);
-axis equal
-view(-37,40)
-colormap hot
+axis([-40 40 -40 40 -10 20]);axis equal
+view(3)
+colormap('hot')
