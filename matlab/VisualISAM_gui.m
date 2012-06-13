@@ -245,7 +245,7 @@ global frame_i truth data noiseModels isam result options
 while (frame_i<size(truth.cameras,2))
     frame_i = frame_i+1;
     showFramei(hObject, handles)
-    [isam,result] = VisualISAMStep(data,noiseModels,isam,result,options);
+    [isam,result] = VisualISAMStep(data,noiseModels,isam,result,truth,options);
     if mod(frame_i,options.drawInterval)==0
         showWaiting(handles, 'Computing marginals...');
         VisualISAMPlot(truth, data, isam, result, options)
@@ -260,7 +260,7 @@ global frame_i truth data noiseModels isam result options
 if (frame_i<size(truth.cameras,2))
     frame_i = frame_i+1;
     showFramei(hObject, handles)
-    [isam,result] = VisualISAMStep(data,noiseModels,isam,result,options);
+    [isam,result] = VisualISAMStep(data,noiseModels,isam,result,truth,options);
     showWaiting(handles, 'Computing marginals...');
     VisualISAMPlot(truth, data, isam, result, options)
     showWaiting(handles, '');
