@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <gtsam/base/manifold.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 
 namespace gtsam {
@@ -174,6 +175,8 @@ double lineSearch(const S &system, const V currentValues, const W &gradient) {
 
 template <class S, class V>
 V conjugateGradient(const S &system, const V &initial, const NonlinearOptimizerParams &params, const bool gradientDescent) {
+
+  GTSAM_CONCEPT_MANIFOLD_TYPE(V);
 
   // check if we're already close enough
   double currentError = system.error(initial);
