@@ -659,6 +659,7 @@ class Ordering {
 
 class NonlinearFactorGraph {
 	NonlinearFactorGraph();
+  void print(string s) const;
 };
 
 class Values {
@@ -975,6 +976,12 @@ class ISAM {
   void reorder_relinearize();
   void addKey(size_t key);
   void setOrdering(const gtsam::Ordering& new_ordering);
+
+  // These might be expensive as instead of a reference the wrapper will make a copy
+  gtsam::GaussianISAM bayesTree() const;
+  visualSLAM::Values getLinearizationPoint() const;
+  gtsam::Ordering getOrdering() const;
+  gtsam::NonlinearFactorGraph getFactorsUnsafe() const;
 };
 
 }///\namespace visualSLAM
