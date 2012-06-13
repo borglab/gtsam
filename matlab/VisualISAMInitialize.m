@@ -1,6 +1,6 @@
 function [noiseModels,isam,result] = VisualInitialize(data,truth,options)
 % VisualInitialize: initialize visualSLAM::iSAM object and noise parameters
-% Authors: Duy Nguyen Ta and Frank Dellaert
+% Authors: Duy Nguyen Ta, Frank Dellaert and Alex Cunningham
 
 %% Initialize iSAM
 isam = visualSLAMISAM(options.reorderInterval);
@@ -25,23 +25,23 @@ for i=1:2
     initialEstimates.insertPose(ii,truth.cameras{i}.pose);
 end
 
-%% Add visual measurement factors from two first poses
+%% Add visual measurement factors from two first poses and initialize observed landmarks
 for i=1:2
     ii = symbol('x',i);
     for j=1:size(data.z,2)
         jj = symbol('l',j);
-        newFactors.addMeasurement(data.z{i,j}, noiseModels.measurement, ii, jj, data.K);
+        % Must check whether a landmark was actually observed
+        if ~isempty(data.z{i,j})
+            newFactors.addMeasurement(data.z{i,j}, noiseModels.measurement, ii, jj, data.K);
+            % TODO: initial estimates should not be from ground truth!
+            if ~initialEstimates.exists(jj)
+                initialEstimates.insertPoint(jj, truth.points{j});
+            end
+            if options.pointPriors % add point priors
+                newFactors.addPointPrior(jj, truth.points{j}, noiseModels.point);
+            end
+        end
     end
-end
-
-%% Initialize points, possibly add priors on them
-% TODO: should not be from ground truth!
-for j=1:size(data.z,2)
-    jj = symbol('l',j);
-    if options.pointPriors % add point priors
-        newFactors.addPointPrior(jj, truth.points{j}, noiseModels.point);
-    end
-    initialEstimates.insertPoint(jj, truth.points{j});
 end
 
 %% Update ISAM

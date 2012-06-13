@@ -11,11 +11,14 @@ hold on;
 
 %% Plot points
 for j=1:N
+    %% TODO: use the actual set of keys present
     jj = symbol('l',j);
-    point_j = result.point(jj);
-    plot3(point_j.x, point_j.y, point_j.z,'marker','o');
-    P = isam.marginalCovariance(jj);
-    covarianceEllipse3D([point_j.x;point_j.y;point_j.z],P);
+    if result.exists(jj)
+        point_j = result.point(jj);
+        plot3(point_j.x, point_j.y, point_j.z,'marker','o');
+        P = isam.marginalCovariance(jj);
+        covarianceEllipse3D([point_j.x;point_j.y;point_j.z],P);
+    end
 end
 
 %% Plot cameras
