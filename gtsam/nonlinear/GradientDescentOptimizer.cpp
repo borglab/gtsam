@@ -85,7 +85,11 @@ void GradientDescentOptimizer::iterate() {
     const double testError = graph_.error(testValues);
 
     // update the working range
-    if ( testError < newError ) {
+    if ( testError >= newError ) {
+      if ( flag ) maxStep = testStep;
+      else minStep = testStep;
+    }
+    else {
       if ( flag ) {
         minStep = newStep;
         newStep = testStep;
@@ -97,14 +101,6 @@ void GradientDescentOptimizer::iterate() {
         newError = testError;
       }
     }
-    else {
-      if ( flag ) {
-        maxStep = testStep;
-      }
-      else {
-        minStep = testStep;
-      }
-    }
 
     if ( nloVerbosity ) {
       std::cout << "minStep = " << minStep << ", maxStep = " << maxStep << ", newStep = "  << newStep << ", newError = " << newError << std::endl;
@@ -114,23 +110,23 @@ void GradientDescentOptimizer::iterate() {
   ++state_.iterations;
 }
 
-double GradientDescentOptimizer2::System::error(const State &state) const {
+double ConjugateGradientOptimizer::System::error(const State &state) const {
   return graph_.error(state);
 }
 
-GradientDescentOptimizer2::System::Gradient GradientDescentOptimizer2::System::gradient(const State &state) const {
+ConjugateGradientOptimizer::System::Gradient ConjugateGradientOptimizer::System::gradient(const State &state) const {
   Gradient result = state.zeroVectors(ordering_);
   gradientInPlace(graph_, state, ordering_, result);
   return result;
 }
-GradientDescentOptimizer2::System::State GradientDescentOptimizer2::System::advance(const State &current, const double alpha, const Gradient &g) const {
+ConjugateGradientOptimizer::System::State ConjugateGradientOptimizer::System::advance(const State &current, const double alpha, const Gradient &g) const {
   Gradient step = g;
   step.vector() *= alpha;
   return current.retract(step, ordering_);
 }
 
-Values GradientDescentOptimizer2::optimize() {
-  return gradientDescent<System, Values>(System(graph_, *ordering_), initialEstimate_, params_);
+Values ConjugateGradientOptimizer::optimize() {
+  return conjugateGradient<System, Values>(System(graph_, *ordering_), initialEstimate_, params_, !cg_);
 }
 
 } /* namespace gtsam */

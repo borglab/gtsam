@@ -274,6 +274,12 @@ namespace gtsam {
     VectorValues operator+(const VectorValues& c) const;
 
     /**
+     * + operator does element-wise subtraction.  Both VectorValues must have the
+     * same structure (checked when NDEBUG is not defined).
+     */
+    VectorValues operator-(const VectorValues& c) const;
+
+    /**
      * += operator does element-wise addition.  Both VectorValues must have the
      * same structure (checked when NDEBUG is not defined).
      */
@@ -301,6 +307,16 @@ namespace gtsam {
     void copyStructureFrom(const VectorValues& other);
 
   public:
+
+    /**
+     * scale a vector by a scalar
+     */
+    friend VectorValues operator*(const double a, const VectorValues &V) {
+      VectorValues result(VectorValues::SameStructure(V));
+      result.values_ = a * V.values_;
+      return result;
+    }
+
     /// TODO: linear algebra interface seems to have been added for SPCG.
     friend size_t dim(const VectorValues& V) {
       return V.dim();

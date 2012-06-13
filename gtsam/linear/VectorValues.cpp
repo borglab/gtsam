@@ -152,6 +152,14 @@ VectorValues VectorValues::operator+(const VectorValues& c) const {
 }
 
 /* ************************************************************************* */
+VectorValues VectorValues::operator-(const VectorValues& c) const {
+  assert(this->hasSameStructure(c));
+  VectorValues result(SameStructure(c));
+  result.values_ = this->values_ - c.values_;
+  return result;
+}
+
+/* ************************************************************************* */
 void VectorValues::operator+=(const VectorValues& c) {
 	assert(this->hasSameStructure(c));
 	this->values_ += c.values_;

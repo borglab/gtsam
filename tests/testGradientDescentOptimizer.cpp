@@ -62,18 +62,41 @@ TEST(optimize, GradientDescentOptimizer) {
   // cout << "initial error = " << graph.error(initialEstimate) << endl ;
 
   // Single Step Optimization using Levenberg-Marquardt
-  GradientDescentParams param;
+  NonlinearOptimizerParams param;
   param.maxIterations = 500;    /* requires a larger number of iterations to converge */
   param.verbosity = NonlinearOptimizerParams::SILENT;
 
   GradientDescentOptimizer optimizer(graph, initialEstimate, param);
   Values result = optimizer.optimize();
-  // cout << "solver final error = " << graph.error(result) << endl;
+//  cout << "gd1 solver final error = " << graph.error(result) << endl;
 
   /* the optimality of the solution is not comparable to the */
   DOUBLES_EQUAL(0.0, graph.error(result), 1e-2);
 
   CHECK(1);
+}
+
+/* ************************************************************************* */
+TEST(optimize, ConjugateGradientOptimizer) {
+
+  pose2SLAM::Graph graph ;
+  pose2SLAM::Values initialEstimate;
+
+  boost::tie(graph, initialEstimate) = generateProblem();
+//  cout << "initial error = " << graph.error(initialEstimate) << endl ;
+
+  // Single Step Optimization using Levenberg-Marquardt
+  NonlinearOptimizerParams param;
+  param.maxIterations = 500;    /* requires a larger number of iterations to converge */
+  param.verbosity = NonlinearOptimizerParams::SILENT;
+
+
+  ConjugateGradientOptimizer optimizer(graph, initialEstimate, param, true);
+  Values result = optimizer.optimize();
+//  cout << "cg final error = " << graph.error(result) << endl;
+
+  /* the optimality of the solution is not comparable to the */
+  DOUBLES_EQUAL(0.0, graph.error(result), 1e-2);
 }
 
 /* ************************************************************************* */
@@ -86,18 +109,21 @@ TEST(optimize, GradientDescentOptimizer2) {
 //  cout << "initial error = " << graph.error(initialEstimate) << endl ;
 
   // Single Step Optimization using Levenberg-Marquardt
-  GradientDescentParams2 param;
+  NonlinearOptimizerParams param;
   param.maxIterations = 500;    /* requires a larger number of iterations to converge */
   param.verbosity = NonlinearOptimizerParams::SILENT;
 
 
-  GradientDescentOptimizer2 optimizer(graph, initialEstimate, param);
+  ConjugateGradientOptimizer optimizer(graph, initialEstimate, param, false);
   Values result = optimizer.optimize();
-//  cout << "solver final error = " << graph.error(result) << endl;
+//  cout << "gd2 solver final error = " << graph.error(result) << endl;
 
   /* the optimality of the solution is not comparable to the */
   DOUBLES_EQUAL(0.0, graph.error(result), 1e-2);
 }
+
+
+
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

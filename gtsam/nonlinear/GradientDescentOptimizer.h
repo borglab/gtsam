@@ -13,19 +13,6 @@ namespace gtsam {
 
 /* an implementation of gradient-descent method using the NLO interface */
 
-class GradientDescentParams : public NonlinearOptimizerParams {
-
-public:
-  typedef NonlinearOptimizerParams Base;
-
-  GradientDescentParams():Base() {}
-  virtual void print(const std::string& str = "") const {
-    Base::print(str);
-  }
-
-  virtual ~GradientDescentParams() {}
-};
-
 class GradientDescentState : public NonlinearOptimizerState {
 
 public:
@@ -43,7 +30,7 @@ public:
   typedef boost::shared_ptr<GradientDescentOptimizer> shared_ptr;
   typedef NonlinearOptimizer Base;
   typedef GradientDescentState States;
-  typedef GradientDescentParams Parameters;
+  typedef NonlinearOptimizerParams Parameters;
 
 protected:
 
@@ -70,15 +57,11 @@ protected:
 };
 
 
-#include <gtsam/linear/IterativeSolver.h>
+/**
+ *  An implementation of the nonlinear cg method using the template below
+ */
 
-/* Yet another implementation of the gradient-descent method using the iterative.h interface */
-class GradientDescentParams2 : public NonlinearOptimizerParams {
-public:
-  GradientDescentParams2(){}
-};
-
-class GradientDescentOptimizer2 {
+class ConjugateGradientOptimizer {
 
   class System {
 
@@ -102,8 +85,8 @@ class GradientDescentOptimizer2 {
 
 public:
 
-  typedef GradientDescentParams2 Parameters;
-  typedef boost::shared_ptr<GradientDescentOptimizer2> shared_ptr;
+  typedef NonlinearOptimizerParams Parameters;
+  typedef boost::shared_ptr<ConjugateGradientOptimizer> shared_ptr;
 
 protected:
 
@@ -112,20 +95,25 @@ protected:
   Parameters params_;
   Ordering::shared_ptr ordering_;
   VectorValues::shared_ptr gradient_;
+  bool cg_;
 
 public:
 
-  GradientDescentOptimizer2(const NonlinearFactorGraph& graph, const Values& initialValues, const Parameters& params = Parameters())
+  ConjugateGradientOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues,
+                             const Parameters& params = Parameters(), const bool cg = true)
     : graph_(graph), initialEstimate_(initialValues), params_(params),
       ordering_(initialValues.orderingArbitrary()),
-      gradient_(new VectorValues(initialValues.zeroVectors(*ordering_))) {}
+      gradient_(new VectorValues(initialValues.zeroVectors(*ordering_))),
+      cg_(cg) {}
 
-  virtual ~GradientDescentOptimizer2() {}
+  virtual ~ConjugateGradientOptimizer() {}
 
   virtual Values optimize () ;
 };
 
-
+/**
+ * Implement the golden-section line search algorithm
+ */
 template <class S, class V, class W>
 double lineSearch(const S &system, const V currentValues, const W &gradient) {
 
@@ -171,37 +159,62 @@ double lineSearch(const S &system, const V currentValues, const W &gradient) {
       }
     }
   }
-
   return 0.0;
 }
 
-template <class S, class V>
-V gradientDescent(const S &system, const V &initial, const NonlinearOptimizerParams &params) {
+/**
+ * Implement the nonlinear conjugate gradient method using the Polak-Ribieve formula suggested in
+ * http://en.wikipedia.org/wiki/Nonlinear_conjugate_gradient_method.
+ *
+ * The S (system) class requires three member functions: error(state), gradient(state) and
+ * advance(state, step-size, direction). The V class denotes the state or the solution.
+ *
+ * The last parameter is a switch between gradient-descent and conjugate gradient
+ */
 
-  V currentValues = initial, prevValues;
-  double currentError = system.error(currentValues), prevError;
-  Index iteration = 0;
+template <class S, class V>
+V conjugateGradient(const S &system, const V &initial, const NonlinearOptimizerParams &params, const bool gradientDescent) {
 
   // check if we're already close enough
+  double currentError = system.error(initial);
   if(currentError <= params.errorTol) {
     if (params.verbosity >= NonlinearOptimizerParams::ERROR)
       std::cout << "Exiting, as error = " << currentError << " < " << params.errorTol << std::endl;
-    return currentValues;
+    return initial;
   }
+
+  V currentValues = initial;
+  typename S::Gradient currentGradient = system.gradient(currentValues), prevGradient,
+                       direction = currentGradient;
+
+  /* do one step of gradient descent */
+  V prevValues = currentValues; double prevError = currentError;
+  double alpha = lineSearch(system, currentValues, direction);
+  currentValues = system.advance(prevValues, alpha, direction);
+  currentError = system.error(currentValues);
+  Index iteration = 0;
 
   // Maybe show output
   if (params.verbosity >= NonlinearOptimizerParams::ERROR) std::cout << "Initial error: " << currentError << std::endl;
 
   // Iterative loop
   do {
-    // Do next iteration
-    const typename S::Gradient gradient = system.gradient(currentValues);
-    const double alpha = lineSearch(system, currentValues, gradient);
 
-    prevValues = currentValues;
-    prevError = currentError;
+    if ( gradientDescent == true) {
+      direction = system.gradient(currentValues);
+    }
+    else {
+      prevGradient = currentGradient;
+      currentGradient = system.gradient(currentValues);
+      const double beta = std::max(0.0, currentGradient.dot(currentGradient-prevGradient)/currentGradient.dot(currentGradient));
+      direction = currentGradient + (beta*direction);
+    }
 
-    currentValues = system.advance(prevValues, alpha, gradient);
+    alpha = lineSearch(system, currentValues, direction);
+
+    prevValues = currentValues; prevError = currentError;
+
+    currentValues = system.advance(prevValues, alpha, direction);
     currentError = system.error(currentValues);
 
     // Maybe show output
@@ -216,5 +229,10 @@ V gradientDescent(const S &system, const V &initial, const NonlinearOptimizerPar
 
   return currentValues;
 }
+
+
+
+
+
 
 }
