@@ -6,7 +6,7 @@
 % 
 % See LICENSE for the license information
 %
-% @brief A simple visual SLAM example for structure from motion
+% @brief A structure from motion example
 % @author Duy-Nguyen Ta
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
