@@ -16,28 +16,13 @@
 %  - Each camera sees all landmarks. 
 %  - Visual measurements as 2D points are given, corrupted by Gaussian noise.
 
-%% Generate simulated data
-% 3D landmarks as vertices of a cube
-points = {gtsamPoint3([10 10 10]'),...
-    gtsamPoint3([-10 10 10]'),...
-    gtsamPoint3([-10 -10 10]'),...
-    gtsamPoint3([10 -10 10]'),...
-    gtsamPoint3([10 10 -10]'),...
-    gtsamPoint3([-10 10 -10]'),...
-    gtsamPoint3([-10 -10 -10]'),...
-    gtsamPoint3([10 -10 -10]')};
+% Data Options
+options.triangle = false;
+options.nrCameras = 10;
+options.showImages = false;
 
-% Camera cameras on a circle around the cube, pointing at the world origin
-nCameras = 6;
-height = 0;
-r = 30;
-cameras = {};
-K = gtsamCal3_S2(500,500,0,640/2,480/2);
-for i=1:nCameras
-    theta = (i-1)*2*pi/nCameras;
-    t = gtsamPoint3([r*cos(theta), r*sin(theta), height]');
-    cameras{i} = gtsamSimpleCamera_lookat(t, gtsamPoint3, gtsamPoint3([0,0,1]'), K);
-end
+%% Generate data
+[data,truth] = VisualISAMGenerateData(options);
 
 measurementNoiseSigma = 1.0;
 pointNoiseSigma = 0.1;
@@ -48,29 +33,28 @@ graph = visualSLAMGraph;
 
 %% Add factors for all measurements
 measurementNoise = gtsamSharedNoiseModel_Sigma(2,measurementNoiseSigma);
-for i=1:nCameras
-    for j=1:size(points,2)
-        zij = cameras{i}.project(points{j}); % you can add noise here if desired
-        graph.addMeasurement(zij, measurementNoise, symbol('x',i), symbol('l',j), K);
+for i=1:size(data.z,1)
+    for j=1:size(data.z,2)
+        graph.addMeasurement(data.z{i,j}, measurementNoise, symbol('x',i), symbol('l',j), data.K);
     end
 end
 
 %% Add Gaussian priors for a pose and a landmark to constrain the system
 posePriorNoise  = gtsamSharedNoiseModel_Sigmas(poseNoiseSigmas);
-graph.addPosePrior(symbol('x',1), cameras{1}.pose, posePriorNoise);
+graph.addPosePrior(symbol('x',1), truth.cameras{1}.pose, posePriorNoise);
 pointPriorNoise  = gtsamSharedNoiseModel_Sigma(3,pointNoiseSigma);
-graph.addPointPrior(symbol('l',1), points{1}, pointPriorNoise);
+graph.addPointPrior(symbol('l',1), truth.points{1}, pointPriorNoise);
 
 %% Print the graph
 graph.print(sprintf('\nFactor graph:\n'));
 
-%% Initialize to noisy cameras and points
+%% Initialize cameras and points to ground truth in this example
 initialEstimate = visualSLAMValues;
-for i=1:size(cameras,2)
-    initialEstimate.insertPose(symbol('x',i), cameras{i}.pose);
+for i=1:size(truth.cameras,2)
+    initialEstimate.insertPose(symbol('x',i), truth.cameras{i}.pose);
 end
-for j=1:size(points,2)
-    initialEstimate.insertPoint(symbol('l',j), points{j});
+for j=1:size(truth.points,2)
+    initialEstimate.insertPoint(symbol('l',j), truth.points{j});
 end
 initialEstimate.print(sprintf('\nInitial estimate:\n  '));
 
@@ -82,18 +66,19 @@ result.print(sprintf('\nFinal result:\n  '));
 marginals = graph.marginals(result);
 cla
 hold on;
-for j=1:size(points,2)
+for j=1:result.nrPoints
     P = marginals.marginalCovariance(symbol('l',j));
     point_j = result.point(symbol('l',j));
 	plot3(point_j.x, point_j.y, point_j.z,'marker','o');
     covarianceEllipse3D([point_j.x;point_j.y;point_j.z],P);
 end
 
-for i=1:size(cameras,2)
-    P = marginals.marginalCovariance(symbol('x',i))
-    pose_i = result.pose(symbol('x',i))
+for i=1:result.nrPoses
+    P = marginals.marginalCovariance(symbol('x',i));
+    pose_i = result.pose(symbol('x',i));
     plotPose3(pose_i,P,10);
 end
 axis([-35 35 -35 35 -15 15]);
 axis equal
 view(-37,40)
+colormap hot
