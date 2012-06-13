@@ -8,7 +8,7 @@ newFactors = visualSLAMGraph;
 initialEstimates = visualSLAMValues;
 
 %% Add odometry
-i = double(result.nrPoses)+1;
+i = result.nrPoses+1;
 odometry = data.odometry{i-1};
 newFactors.addOdometry(symbol('x',i-1), symbol('x',i), odometry, noiseModels.odometry);
 

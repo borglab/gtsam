@@ -2,8 +2,8 @@ function VisualISAMPlot(truth, data, isam, result, options)
 % VisualISAMPlot: plot current state of visualSLAM::iSAM object
 % Authors: Duy Nguyen Ta and Frank Dellaert
 
-M = double(result.nrPoses);
-N = double(result.nrPoints);
+M = result.nrPoses;
+N = result.nrPoints;
 
 h=gca;
 cla(h);
