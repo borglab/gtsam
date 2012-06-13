@@ -643,8 +643,11 @@ class KalmanFilter {
 
 class Symbol {
 	Symbol(char c, size_t j);
+	Symbol(size_t k);
 	void print(string s) const;
 	size_t key() const;
+	size_t index() const;
+	char chr() const;
 };
 
 class Ordering {
@@ -663,6 +666,27 @@ class Values {
 	size_t size() const;
 	void print(string s) const;
 	bool exists(size_t j) const;
+};
+
+// Actually a FastList<Key>
+#include <gtsam/nonlinear/Values.h>
+class KeyList {
+	KeyList();
+	KeyList(const gtsam::KeyList& other);
+
+	// Note: no print function
+	size_t size() const;
+};
+
+// Actually a KeyVector<Key>
+#include <gtsam/nonlinear/Values.h>
+class KeyVector {
+	KeyVector();
+	KeyVector(const gtsam::KeyVector& other);
+
+	// Note: no print function
+	size_t size() const;
+	size_t at(size_t i) const;
 };
 
 class Marginals {
@@ -899,6 +923,7 @@ class Values {
   gtsam::Point3 point(size_t j);
   visualSLAM::Values allPoses() const;
   visualSLAM::Values allPoints() const;
+  gtsam::KeyVector keys() const; // Note the switch to KeyVector, rather than KeyList
   bool exists(size_t key);
   Vector xs() const;
   Vector ys() const;

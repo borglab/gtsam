@@ -26,6 +26,7 @@
 
 #include <gtsam/base/Value.h>
 #include <gtsam/base/FastMap.h>
+#include <gtsam/base/FastVector.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/Ordering.h>
 
@@ -43,12 +44,16 @@
 
 namespace gtsam {
 
+	// Useful typedefs for operations with Values - allow for matlab interfaces
+	typedef FastList<Key> KeyList;
+	typedef FastVector<Key> KeyVector;
+
   // Forward declarations / utilities
   class ValueCloneAllocator;
   class ValueAutomaticCasting;
   template<typename T> static bool _truePredicate(const T&) { return true; }
 
-/**
+  /**
   * A non-templated config holding any types of Manifold-group elements.  A
   * values structure is a map from keys to values. It is used to specify the
   * value of a bunch of variables in a factor graph. A Values is a values
@@ -238,7 +243,7 @@ namespace gtsam {
      * Returns a set of keys in the config
      * Note: by construction, the list is ordered
      */
-    FastList<Key> keys() const;
+    KeyList keys() const;
 
     /** Replace all keys and variables */
     Values& operator=(const Values& rhs);
