@@ -897,6 +897,8 @@ class Values {
   void print(string s) const;
   gtsam::Pose3 pose(size_t i);
   gtsam::Point3 point(size_t j);
+  visualSLAM::Values allPoses() const;
+  visualSLAM::Values allPoints() const;
   bool exists(size_t key);
   Vector xs() const;
   Vector ys() const;

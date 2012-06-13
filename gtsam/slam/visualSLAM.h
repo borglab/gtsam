@@ -51,6 +51,8 @@ namespace visualSLAM {
   struct Values: public gtsam::Values {
 
     typedef boost::shared_ptr<Values> shared_ptr;
+    typedef gtsam::Values::ConstFiltered<Pose3> PoseFiltered;
+    typedef gtsam::Values::ConstFiltered<Point3> PointFiltered;
 
     /// Default constructor
     Values() {}
@@ -58,6 +60,16 @@ namespace visualSLAM {
     /// Copy constructor
     Values(const gtsam::Values& values) :
         gtsam::Values(values) {
+    }
+
+    /// Constructor from filtered values view of poses
+    Values(const PoseFiltered& view) :
+    		gtsam::Values(view) {
+    }
+
+    /// Constructor from filtered values view of points
+    Values(const PointFiltered& view) :
+    	gtsam::Values(view) {
     }
 
     /// insert a pose
@@ -83,6 +95,12 @@ namespace visualSLAM {
 
     /// get a point
     Point3 point(Key j) const { return at<Point3>(j); }
+
+    /// get a const view containing only poses
+    PoseFiltered allPoses() const { return this->filter<Pose3>(); }
+
+    /// get a const view containing only points
+    PointFiltered allPoints() const { return this->filter<Point3>(); }
 
     /// check if value with specified key exists
     bool exists(Key i) const { return gtsam::Values::exists(i); }

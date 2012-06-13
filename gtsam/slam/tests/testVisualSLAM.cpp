@@ -223,5 +223,20 @@ TEST( VisualSLAM, dataAssociation) {
 }
 
 /* ************************************************************************* */
+TEST( VisualSLAM, filteredValues) {
+	visualSLAM::Values full;
+	full.insert(X(1), Pose3(Pose2(1.0, 2.0, 0.3)));
+	full.insert(L(1), Point3(1.0, 2.0, 3.0));
+
+	visualSLAM::Values actPoses(full.allPoses());
+	visualSLAM::Values expPoses; expPoses.insert(X(1), Pose3(Pose2(1.0, 2.0, 0.3)));
+  EXPECT(assert_equal(expPoses, actPoses));
+
+  visualSLAM::Values actPoints(full.allPoints());
+  visualSLAM::Values expPoints; expPoints.insert(L(1), Point3(1.0, 2.0, 3.0));
+  EXPECT(assert_equal(expPoints, actPoints));
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
