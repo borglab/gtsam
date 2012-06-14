@@ -46,7 +46,7 @@ namespace gtsam {
     /** print just calls base class */
     void print(const std::string& str = "NonlinearFactorGraph: ", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
-    /** return keys in some random order */
+    /** return keys as an ordered set - ordering is by key value */
     std::set<Key> keys() const;
 
 		/** unnormalized error, \f$ 0.5 \sum_i (h_i(X_i)-z)^2/\sigma^2 \f$ in the most common case */
