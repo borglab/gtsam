@@ -108,7 +108,6 @@ public:
       cg_(cg) {}
 
   virtual ~ConjugateGradientOptimizer() {}
-
   virtual Values optimize () ;
 };
 
@@ -223,8 +222,7 @@ V conjugateGradient(const S &system, const V &initial, const NonlinearOptimizerP
     // Maybe show output
     if(params.verbosity >= NonlinearOptimizerParams::ERROR) std::cout << "currentError: " << currentError << std::endl;
   } while( ++iteration < params.maxIterations &&
-           !checkConvergence(params.relativeErrorTol, params.absoluteErrorTol,
-            params.errorTol, prevError, currentError, params.verbosity));
+           !checkConvergence(params.relativeErrorTol, params.absoluteErrorTol, params.errorTol, prevError, currentError, params.verbosity));
 
   // Printing if verbose
   if (params.verbosity >= NonlinearOptimizerParams::ERROR && iteration >= params.maxIterations)

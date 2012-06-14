@@ -36,8 +36,7 @@ namespace gtsam {
 	 * @param steepest flag, if true does steepest descent, not CG
 	 * */
 	template<class S, class V, class E>
-	V conjugateGradients(const S& Ab, V x, bool verbose, double epsilon,
-			size_t maxIterations, bool steepest = false);
+	V conjugateGradients(const S& Ab, V x, bool verbose, double epsilon, size_t maxIterations, bool steepest = false);
 
 	/**
 	 * Helper class encapsulating the combined system |Ax-b_|^2

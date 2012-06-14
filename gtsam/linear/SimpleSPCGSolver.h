@@ -65,11 +65,11 @@ public:
 
   SimpleSPCGSolver(const GaussianFactorGraph &gfg, const Parameters &parameters);
   virtual ~SimpleSPCGSolver() {}
-  virtual VectorValues::shared_ptr optimize () {return optimize(*y0_);}
+  virtual VectorValues optimize () {return optimize(*y0_);}
 
 protected:
 
-  VectorValues::shared_ptr optimize (const VectorValues &initial);
+  VectorValues optimize (const VectorValues &initial);
 
   /** output = \f$ [\bar{b_y} ; 0 ] - [A_c R_t^{-1} ; I] \f$ input */
   void residual(const VectorValues &input, VectorValues &output);
@@ -87,7 +87,7 @@ protected:
   void transposeBackSubstitute(const VectorValues &rhs, VectorValues &sol) ;
 
   /** return \f$ R_t^{-1} y + x_t \f$ */
-  VectorValues::shared_ptr transform(const VectorValues &y);
+  VectorValues transform(const VectorValues &y);
 
   /** naively split a gaussian factor graph into tree and constraint parts
    * Note: This function has to be refined for your graph/application */

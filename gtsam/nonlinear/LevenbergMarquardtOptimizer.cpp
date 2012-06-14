@@ -80,11 +80,11 @@ void LevenbergMarquardtOptimizer::iterate() {
 
         if ( boost::dynamic_pointer_cast<SimpleSPCGSolverParameters>(params_.iterativeParams)) {
           SimpleSPCGSolver solver (dampedSystem, *boost::dynamic_pointer_cast<SimpleSPCGSolverParameters>(params_.iterativeParams));
-          delta = *solver.optimize();
+          delta = solver.optimize();
         }
         else if ( boost::dynamic_pointer_cast<SubgraphSolverParameters>(params_.iterativeParams) ) {
           SubgraphSolver solver (dampedSystem, *boost::dynamic_pointer_cast<SubgraphSolverParameters>(params_.iterativeParams));
-          delta = *solver.optimize();
+          delta = solver.optimize();
         }
         else {
           throw runtime_error("LMSolver: special cg parameter type is not handled in LM solver ...");

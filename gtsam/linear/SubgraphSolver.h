@@ -44,7 +44,7 @@ public:
 
 	SubgraphSolver(const GaussianFactorGraph &gfg, const Parameters &parameters);
   virtual ~SubgraphSolver() {}
-  virtual VectorValues::shared_ptr optimize () ;
+  virtual VectorValues optimize () ;
 
 protected:
 

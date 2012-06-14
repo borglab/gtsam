@@ -52,7 +52,7 @@ namespace gtsam {
   public:
     IterativeSolver(){}
     virtual ~IterativeSolver() {}
-    virtual VectorValues::shared_ptr optimize () = 0;
+    virtual VectorValues optimize () = 0;
   };
 
 }

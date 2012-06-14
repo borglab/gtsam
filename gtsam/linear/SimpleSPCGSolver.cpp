@@ -82,7 +82,7 @@ SimpleSPCGSolver::SimpleSPCGSolver(const GaussianFactorGraph &gfg, const Paramet
 }
 
 /* implements the CGLS method in Section 7.4 of Bjork's book */
-VectorValues::shared_ptr SimpleSPCGSolver::optimize (const VectorValues &initial) {
+VectorValues SimpleSPCGSolver::optimize (const VectorValues &initial) {
 
   VectorValues::shared_ptr x(new VectorValues(initial));
   VectorValues r = VectorValues::Zero(*by_),
@@ -180,10 +180,10 @@ void SimpleSPCGSolver::transposeBackSubstitute(const VectorValues &input, Vector
   }
 }
 
-VectorValues::shared_ptr SimpleSPCGSolver::transform(const VectorValues &y) {
-  VectorValues::shared_ptr x = boost::make_shared<VectorValues>(VectorValues::Zero(y));
-  this->backSubstitute(y, *x);
-  axpy(1.0, *xt_, *x);
+VectorValues SimpleSPCGSolver::transform(const VectorValues &y) {
+  VectorValues x = VectorValues::Zero(y);
+  this->backSubstitute(y, x);
+  axpy(1.0, *xt_, x);
   return x;
 }
 

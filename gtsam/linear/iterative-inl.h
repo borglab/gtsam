@@ -79,6 +79,7 @@ namespace gtsam {
 		/* ************************************************************************* */
 		// take a step, return true if converged
 		bool step(const S& Ab, V& x) {
+
 			if ((++k) >= ((int)parameters_.maxIterations())) return true;
 
 			//---------------------------------->
@@ -91,9 +92,12 @@ namespace gtsam {
 
 			// check for convergence
 			double new_gamma = dot(g, g);
+
 			if (parameters_.verbosity() != ConjugateGradientParameters::SILENT)
 			  std::cout << "iteration " << k << ": alpha = " << alpha
-				     << ", dotg = " << new_gamma << std::endl;
+			            << ", dotg = " << new_gamma
+			            << std::endl;
+
 			if (new_gamma < threshold) return true;
 
 			// calculate new search direction
@@ -124,9 +128,10 @@ namespace gtsam {
 
 		if (parameters.verbosity() != ConjugateGradientParameters::SILENT)
 		  std::cout << "CG: epsilon = " << parameters.epsilon()
-				 << ", maxIterations = " << parameters.maxIterations()
-				 << ", ||g0||^2 = " << state.gamma
-				 << ", threshold = " << state.threshold << std::endl;
+				        << ", maxIterations = " << parameters.maxIterations()
+				        << ", ||g0||^2 = " << state.gamma
+				        << ", threshold = " << state.threshold
+				        << std::endl;
 
 		if ( state.gamma < state.threshold ) {
 			if (parameters.verbosity() != ConjugateGradientParameters::SILENT)
