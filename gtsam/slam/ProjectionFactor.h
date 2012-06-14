@@ -29,13 +29,13 @@ namespace gtsam {
 	 * Non-linear factor for a constraint derived from a 2D measurement. The calibration is known here.
 	 * i.e. the main building block for visual SLAM.
 	 */
-	template<class POSE, class LANDMARK>
+	template<class POSE, class LANDMARK, class CALIBRATION = Cal3_S2>
 	class GenericProjectionFactor: public NoiseModelFactor2<POSE, LANDMARK> {
 	protected:
 
 		// Keep a copy of measurement and calibration for I/O
-		Point2 measured_;					  		///< 2D measurement
-		boost::shared_ptr<Cal3_S2> K_;  ///< shared pointer to calibration object
+		Point2 measured_;					  		    ///< 2D measurement
+		boost::shared_ptr<CALIBRATION> K_;  ///< shared pointer to calibration object
 
 	public:
 
@@ -43,14 +43,13 @@ namespace gtsam {
 		typedef NoiseModelFactor2<POSE, LANDMARK> Base;
 
 		/// shorthand for this class
-		typedef GenericProjectionFactor<POSE, LANDMARK> This;
+		typedef GenericProjectionFactor<POSE, LANDMARK, CALIBRATION> This;
 
 		/// shorthand for a smart pointer to a factor
 		typedef boost::shared_ptr<This> shared_ptr;
 
 		/// Default constructor
-		GenericProjectionFactor() :
-				K_(new Cal3_S2(444, 555, 666, 777, 888)) {
+		GenericProjectionFactor() {
 		}
 
 		/**
@@ -94,7 +93,7 @@ namespace gtsam {
 		Vector evaluateError(const Pose3& pose, const Point3& point,
 				boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const {
 			try {
-	      SimpleCamera camera(*K_, pose);
+	      PinholeCamera<CALIBRATION> camera(*K_, pose);
 			  Point2 reprojectionError(camera.project(point, H1, H2) - measured_);
 	      return reprojectionError.vector();
 			} catch( CheiralityException& e) {
@@ -112,7 +111,7 @@ namespace gtsam {
     }
 
     /** return the calibration object */
-    inline const Cal3_S2::shared_ptr calibration() const {
+    inline const boost::shared_ptr<CALIBRATION> calibration() const {
       return K_;
     }
 

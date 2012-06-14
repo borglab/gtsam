@@ -18,6 +18,7 @@
 
 #include <gtsam/slam/visualSLAM.h>
 #include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/geometry/Cal3DS2.h>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
@@ -41,8 +42,14 @@ using symbol_shorthand::X;
 using symbol_shorthand::L;
 
 /* ************************************************************************* */
-TEST( ProjectionFactor, error )
+TEST( ProjectionFactor, nonStandard )
 {
+  GenericProjectionFactor<Pose3, Point3, Cal3DS2> f;
+}
+
+/* ************************************************************************* */
+TEST( ProjectionFactor, error )
+  {
 	// Create the factor with a measurement that is 3 pixels off in x
 	Point2 z(323.,240.);
 	int i=1, j=1;
