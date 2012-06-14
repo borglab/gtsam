@@ -5,7 +5,7 @@ function varargout = VisualISAM_gui(varargin)
 %   By running ViusalISAMDemo, you see all variables in command prompt
 % Authors: Duy Nguyen Ta
 
-% Last Modified by GUIDE v2.5 09-Jun-2012 00:56:47
+% Last Modified by GUIDE v2.5 13-Jun-2012 23:15:43
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -265,16 +265,3 @@ if (frame_i<size(truth.cameras,2))
     VisualISAMPlot(truth, data, isam, result, options)
     showWaiting(handles, '');
 end
-
-% --- Executes on button press in plotButton.
-function plotButton_Callback(hObject, ~, handles)
-showWaiting(handles, 'Computing marginals...');
-global options data truth isam result
-VisualISAMPlot(truth, data, isam, result, options);
-showWaiting(handles, '');
-
-
-
-
-
-

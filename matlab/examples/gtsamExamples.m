@@ -57,6 +57,7 @@ handles.output = hObject;
 % Update handles structure
 guidata(hObject, handles);
 
+OdometryExample;
 
 % --- Outputs from this function are returned to the command line.
 function varargout = gtsamExamples_OutputFcn(hObject, eventdata, handles)
