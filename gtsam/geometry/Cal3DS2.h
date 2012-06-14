@@ -34,7 +34,7 @@ private:
 
 	double fx_, fy_, s_, u0_, v0_ ; // focal length, skew and principal point
 	double k1_, k2_ ; // radial 2nd-order and 4th-order
-	double k3_, k4_ ; // tagential distortion
+	double k3_, k4_ ; // tangential distortion
 
 	// K = [ fx s u0 ; 0 fy v0 ; 0 0 1 ]
 	// r = Pn.x^2 + Pn.y^2
@@ -76,31 +76,46 @@ public:
   /// @name Standard Interface
   /// @{
 
-	///TODO: comment
+  /// focal length x
+  inline double fx() const { return fx_;}
+
+  /// focal length x
+  inline double fy() const { return fy_;}
+
+  /// skew
+  inline double skew() const { return s_;}
+
+  /// image center in x
+  inline double px() const { return u0_;}
+
+  /// image center in y
+  inline double py() const { return v0_;}
+
+	/// Convert ideal point p (in intrinsic coordinates) into pixel coordinates
 	Point2 uncalibrate(const Point2& p,
 			boost::optional<Matrix&> H1 = boost::none,
 			boost::optional<Matrix&> H2 = boost::none) const ;
 
-	///TODO: comment
+	/// Derivative of uncalibrate wrpt intrinsic coordinates
 	Matrix D2d_intrinsic(const Point2& p) const ;
 
-	///TODO: comment
+  /// Derivative of uncalibrate wrpt the calibration parameters
 	Matrix D2d_calibration(const Point2& p) const ;
 
 	/// @}
 	/// @name Manifold
 	/// @{
 
-	///TODO: comment
+	/// Given delta vector, update calibration
 	Cal3DS2 retract(const Vector& d) const ;
 
-	///TODO: comment
+	/// Given a different calibration, calculate update to obtain it
 	Vector localCoordinates(const Cal3DS2& T2) const ;
 
-	///TODO: comment
+	/// Return dimensions of calibration manifold object
 	virtual size_t dim() const { return 9 ; } //TODO: make a final dimension variable (also, usually size_t in other classes e.g. Pose2)
 
-	///TODO: comment
+	/// Return dimensions of calibration manifold object
 	static size_t Dim() { return 9; }	//TODO: make a final dimension variable
 
 private:
