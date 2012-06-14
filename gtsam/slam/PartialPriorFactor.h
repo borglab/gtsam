@@ -66,9 +66,6 @@ namespace gtsam {
 
 	public:
 
-		// shorthand for a smart pointer to a factor
-		typedef typename boost::shared_ptr<PartialPriorFactor> shared_ptr;
-
 		virtual ~PartialPriorFactor() {}
 
 		/** Single Element Constructor: acts on a single parameter specified by idx */

@@ -2,9 +2,11 @@
 # and also build tests 
 set (gtsam_unstable_subdirs
     base 
-    discrete 
+    discrete
+#    linear 
     dynamics
     nonlinear
+    slam
 )
 
 add_custom_target(check.unstable COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure)
@@ -14,7 +16,7 @@ foreach(subdir ${gtsam_unstable_subdirs})
     # Build convenience libraries
     file(GLOB subdir_srcs "${subdir}/*.cpp")
     set(${subdir}_srcs ${subdir_srcs})
-    if (GTSAM_BUILD_CONVENIENCE_LIBRARIES)
+    if (subdir_srcs AND GTSAM_BUILD_CONVENIENCE_LIBRARIES)
         message(STATUS "Building Convenience Library: ${subdir}_unstable")
         add_library("${subdir}_unstable" STATIC ${subdir_srcs})
     endif()
@@ -29,8 +31,9 @@ set(gtsam_unstable_srcs
     ${base_srcs} 
     ${discrete_srcs}
     ${dynamics_srcs}
-    ${linear_srcs}    
+    #${linear_srcs}    
     ${nonlinear_srcs}
+    ${slam_srcs}
 )
 
 option (GTSAM_UNSTABLE_BUILD_SHARED_LIBRARY "Enable/Disable building of a shared version of gtsam_unstable" ON)
