@@ -869,56 +869,6 @@ class Odometry {
 }///\namespace planarSLAM
 
 //*************************************************************************
-// Simulated2D
-//*************************************************************************
-
-// FIXME: Simulated* domains are not actually installed, so this should be removed
-// from the toolbox
-
-#include <tests/simulated2D.h>
-namespace simulated2D {
-
-class Values {
-	Values();
-	void insertPose(size_t i, const gtsam::Point2& p);
-	void insertPoint(size_t j, const gtsam::Point2& p);
-	size_t nrPoses() const;
-	size_t nrPoints() const;
-	gtsam::Point2 pose(size_t i);
-	gtsam::Point2 point(size_t j);
-};
-
-class Graph {
-	Graph();
-};
-
-// TODO: add factors, etc.
-
-}///\namespace simulated2D
-
-// Simulated2DOriented Example Domain
-#include <tests/simulated2DOriented.h>
-namespace simulated2DOriented {
-
-class Values {
-	Values();
-	void insertPose(size_t i, const gtsam::Pose2& p);
-	void insertPoint(size_t j, const gtsam::Point2& p);
-	size_t nrPoses() const;
-	size_t nrPoints() const;
-	gtsam::Pose2 pose(size_t i);
-	gtsam::Point2 point(size_t j);
-};
-
-class Graph {
-	Graph();
-};
-
-// TODO: add factors, etc.
-
-}///\namespace simulated2DOriented
-
-//*************************************************************************
 // VisualSLAM
 //*************************************************************************
 
