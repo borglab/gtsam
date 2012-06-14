@@ -134,7 +134,10 @@ echo off
 
 % --- Executes on button press in StereoVO.
 function StereoVO_Callback(hObject, eventdata, handles)
-fprintf(1,'StereoVOExample not implemented yet\n');
+axes(handles.axes3);
+echo on
+StereoVOExample
+echo off
 
 % --- Executes on button press in Future.
 function Future_Callback(hObject, eventdata, handles)

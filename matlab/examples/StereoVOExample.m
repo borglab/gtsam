@@ -60,7 +60,7 @@ result = graph.optimize(initialEstimate);
 toc
 
 %% visualize initial trajectory, final trajectory, and final points
-figure(1); clf; hold on;
+cla; hold on;
 
 % initial trajectory in red (rotated so Z is up)
 plot3(initialEstimate.zs(),-initialEstimate.xs(),-initialEstimate.ys(), '-*r','LineWidth',2);
@@ -73,5 +73,6 @@ xlabel('X (m)'); ylabel('Y (m)'); zlabel('Z (m)');
 points = result.points();
 plot3(points(:,3),-points(:,1),-points(:,2),'.');
 
+axis([-4 4 -4 4 -4 4]);
 axis equal
 view(3)
