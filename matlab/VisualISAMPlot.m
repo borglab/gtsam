@@ -10,9 +10,10 @@ cla(h);
 hold on;
 
 %% Plot points
-for k=1:length(data.J{M})
-    j = data.J{M}{k};
-    jj = symbol('l', j);
+% Can't use data because current frame might not see all points
+pointKeys = result.allPoints().keys();
+for j=0:N-1  % NOTE: uses indexing directly from a C++ vector, so zero-indexed
+    jj = pointKeys.at(j);
     point_j = result.point(jj);
     plot3(point_j.x, point_j.y, point_j.z,'marker','o');
     P = isam.marginalCovariance(jj);
