@@ -662,6 +662,15 @@ class NonlinearFactorGraph {
   void print(string s) const;
 };
 
+class NonlinearFactor {
+//	NonlinearFactor(); // FIXME: don't use this - creates an abstract class
+	void print(string s) const;
+	void equals(const gtsam::NonlinearFactor& other, double tol) const;
+	gtsam::KeyVector keys() const;
+	size_t size() const;
+	size_t dim() const;
+};
+
 class Values {
 	Values();
 	size_t size() const;
@@ -730,6 +739,7 @@ class Graph {
 	bool empty() const;
 	void remove(size_t i);
 	size_t nrFactors() const;
+	gtsam::NonlinearFactor* at(size_t i) const;
 
 	// NonlinearFactorGraph
 	double error(const pose2SLAM::Values& values) const;
@@ -780,6 +790,7 @@ class Graph {
 	bool empty() const;
 	void remove(size_t i);
 	size_t nrFactors() const;
+	gtsam::NonlinearFactor* at(size_t i) const;
 
 	// NonlinearFactorGraph
 	double error(const pose3SLAM::Values& values) const;
@@ -827,6 +838,7 @@ class Graph {
 	bool empty() const;
 	void remove(size_t i);
 	size_t nrFactors() const;
+	gtsam::NonlinearFactor* at(size_t i) const;
 
 	// NonlinearFactorGraph
 	double error(const planarSLAM::Values& values) const;
@@ -859,6 +871,9 @@ class Odometry {
 //*************************************************************************
 // Simulated2D
 //*************************************************************************
+
+// FIXME: Simulated* domains are not actually installed, so this should be removed
+// from the toolbox
 
 #include <tests/simulated2D.h>
 namespace simulated2D {
@@ -935,7 +950,14 @@ class Values {
 class Graph {
   Graph();
 
-  void print(string s) const;
+	// FactorGraph
+	void print(string s) const;
+	bool equals(const visualSLAM::Graph& fg, double tol) const;
+	size_t size() const;
+	bool empty() const;
+	void remove(size_t i);
+	size_t nrFactors() const;
+	gtsam::NonlinearFactor* at(size_t i) const;
 
   double error(const visualSLAM::Values& values) const;
   gtsam::Ordering* orderingCOLAMD(const visualSLAM::Values& values) const;

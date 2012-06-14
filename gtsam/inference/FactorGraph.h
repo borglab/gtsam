@@ -157,8 +157,10 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 		operator const std::vector<sharedFactor>&() const { return factors_; }
 
 		/** Get a specific factor by index */
-		const sharedFactor operator[](size_t i) const { assert(i<factors_.size()); return factors_[i]; }
-		sharedFactor& operator[](size_t i) { assert(i<factors_.size()); return factors_[i]; }
+		const sharedFactor at(size_t i) const { assert(i<factors_.size()); return factors_[i]; }
+		sharedFactor& at(size_t i) { assert(i<factors_.size()); return factors_[i]; }
+		const sharedFactor operator[](size_t i) const { return at(i); }
+		sharedFactor& operator[](size_t i) { return at(i); }
 
 		/** STL begin, so we can use BOOST_FOREACH */
 		const_iterator begin() const { return factors_.begin();}
