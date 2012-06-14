@@ -36,7 +36,7 @@ measurementNoise = gtsamSharedNoiseModel_Sigma(2,measurementNoiseSigma);
 for i=1:length(data.Z)
     for k=1:length(data.Z{i})
         j = data.J{i}{k};
-        graph.addMeasurement(data.Z{i}{k}, measurementNoise, symbol('x',i), symbol('l',j), data.K);
+        graph.addMeasurement(data.Z{i}{k}, measurementNoise, symbol('x',i), symbol('p',j), data.K);
     end
 end
 
@@ -44,7 +44,7 @@ end
 posePriorNoise  = gtsamSharedNoiseModel_Sigmas(poseNoiseSigmas);
 graph.addPosePrior(symbol('x',1), truth.cameras{1}.pose, posePriorNoise);
 pointPriorNoise  = gtsamSharedNoiseModel_Sigma(3,pointNoiseSigma);
-graph.addPointPrior(symbol('l',1), truth.points{1}, pointPriorNoise);
+graph.addPointPrior(symbol('p',1), truth.points{1}, pointPriorNoise);
 
 %% Print the graph
 graph.print(sprintf('\nFactor graph:\n'));
@@ -55,7 +55,7 @@ for i=1:size(truth.cameras,2)
     initialEstimate.insertPose(symbol('x',i), truth.cameras{i}.pose);
 end
 for j=1:size(truth.points,2)
-    initialEstimate.insertPoint(symbol('l',j), truth.points{j});
+    initialEstimate.insertPoint(symbol('p',j), truth.points{j});
 end
 initialEstimate.print(sprintf('\nInitial estimate:\n  '));
 
@@ -68,8 +68,8 @@ marginals = graph.marginals(result);
 cla
 hold on;
 for j=1:result.nrPoints
-    P = marginals.marginalCovariance(symbol('l',j));
-    point_j = result.point(symbol('l',j));
+    P = marginals.marginalCovariance(symbol('p',j));
+    point_j = result.point(symbol('p',j));
 	plot3(point_j.x, point_j.y, point_j.z,'marker','o');
     covarianceEllipse3D([point_j.x;point_j.y;point_j.z],P);
 end
