@@ -10,6 +10,12 @@ class gtsam::SharedNoiseModel;
 
 namespace gtsam {
 
+#include <gtsam_unstable/base/Dummy.h>
+class Dummy {
+  Dummy();
+  void print(string s) const;
+};
+
 #include <gtsam_unstable/dynamics/PoseRTV.h>
 class PoseRTV {
 	PoseRTV();
