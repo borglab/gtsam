@@ -61,6 +61,10 @@ toc
 
 %% visualize initial trajectory, final trajectory, and final points
 cla; hold on;
+axis normal
+axis([-1 6 -2 2 -1.5 1.5]);
+axis equal
+view(-38,12)
 
 % initial trajectory in red (rotated so Z is up)
 plot3(initialEstimate.zs(),-initialEstimate.xs(),-initialEstimate.ys(), '-*r','LineWidth',2);
@@ -71,8 +75,5 @@ xlabel('X (m)'); ylabel('Y (m)'); zlabel('Z (m)');
 
 % optimized 3D points (rotated so Z is up)
 points = result.points();
-plot3(points(:,3),-points(:,1),-points(:,2),'.');
+plot3(points(:,3),-points(:,1),-points(:,2),'*');
 
-axis([-4 4 -4 4 -4 4]);
-axis equal
-view(3)
