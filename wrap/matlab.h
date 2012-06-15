@@ -321,20 +321,21 @@ public:
 	// Constructor for free-store allocated objects.
 	// Creates shared pointer, will delete if is last one to hold pointer
 	ObjectHandle(T* ptr) :
-		type(&typeid(T)), t(boost::shared_ptr<T> (ptr)) {
+		type(&typeid(T)), t(ptr) {
 		signature = this;
 	}
 
 	// Constructor for shared pointers
 	// Creates shared pointer, will delete if is last one to hold pointer
-	ObjectHandle(boost::shared_ptr<T> ptr) :
-		/*type(&typeid(T)),*/ t(ptr) {
+	ObjectHandle(boost::shared_ptr<T> shared_ptr) :
+		/*type(&typeid(T)),*/ t(shared_ptr) {
 		signature = this;
 	}
 
 	~ObjectHandle() {
 		// object is in shared_ptr, will be automatically deleted
 		signature = 0; // destroy signature
+    // std::cout << "ObjectHandle destructor" << std::endl;
 	}
 
 	// Get the actual object contained by handle
