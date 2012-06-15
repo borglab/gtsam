@@ -28,7 +28,6 @@ namespace gtsam {
     }
     ~Dummy() {
       std::cout << "Dummy destructor " << id << std::endl;
-      gDummyCount--;
     }
     void print(const std::string& s="") const {
       std::cout << s << "Dummy " << id << std::endl;
