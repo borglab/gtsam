@@ -32,24 +32,14 @@ public:
   double epsilon_rel_;    ///< threshold for relative error decrease
   double epsilon_abs_;    ///< threshold for absolute error decrease
 
-  /* Matrix Operation Kernel */
-  enum BLASKernel {
-    GTSAM = 0,        ///< Jacobian Factor Graph of GTSAM
-    SBM,              ///< Sparse Block Matrix
-    SBM_MT            ///< Sparse Block Matrix Multithreaded
-  } blas_kernel_;
-
   ConjugateGradientParameters()
-  : minIterations_(1), maxIterations_(500), reset_(501), epsilon_rel_(1e-3), epsilon_abs_(1e-3), blas_kernel_(GTSAM) {}
+  : minIterations_(1), maxIterations_(500), reset_(501), epsilon_rel_(1e-3), epsilon_abs_(1e-3){}
 
-  ConjugateGradientParameters(size_t minIterations, size_t maxIterations, size_t reset,
-    double epsilon_rel, double epsilon_abs, BLASKernel blas = GTSAM)
-    : minIterations_(minIterations), maxIterations_(maxIterations), reset_(reset),
-      epsilon_rel_(epsilon_rel), epsilon_abs_(epsilon_abs), blas_kernel_(blas) {}
+  ConjugateGradientParameters(size_t minIterations, size_t maxIterations, size_t reset, double epsilon_rel, double epsilon_abs)
+    : minIterations_(minIterations), maxIterations_(maxIterations), reset_(reset), epsilon_rel_(epsilon_rel), epsilon_abs_(epsilon_abs){}
 
   ConjugateGradientParameters(const ConjugateGradientParameters &p)
-    : Base(p), minIterations_(p.minIterations_), maxIterations_(p.maxIterations_), reset_(p.reset_),
-      epsilon_rel_(p.epsilon_rel_), epsilon_abs_(p.epsilon_abs_), blas_kernel_(p.blas_kernel_) {}
+    : Base(p), minIterations_(p.minIterations_), maxIterations_(p.maxIterations_), reset_(p.reset_), epsilon_rel_(p.epsilon_rel_), epsilon_abs_(p.epsilon_abs_) {}
 
   /* general interface */
   inline size_t minIterations() const { return minIterations_; }
@@ -58,14 +48,11 @@ public:
   inline double epsilon() const { return epsilon_rel_; }
   inline double epsilon_rel() const { return epsilon_rel_; }
   inline double epsilon_abs() const { return epsilon_abs_; }
-  inline BLASKernel blas_kernel() const { return blas_kernel_; }
 
   void print() const {
-    const std::string blasStr[3] = {"gtsam", "sbm", "sbm-mt"};
     Base::print();
     std::cout << "ConjugateGradientParameters: "
-              << "blas = " << blasStr[blas_kernel_]
-              << ", minIter = " << minIterations_
+              << "minIter = " << minIterations_
               << ", maxIter = " << maxIterations_
               << ", resetIter = " << reset_
               << ", eps_rel = " << epsilon_rel_
