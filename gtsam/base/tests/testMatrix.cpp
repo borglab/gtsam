@@ -1052,32 +1052,55 @@ TEST( matrix, svd3 )
 /* ************************************************************************* */
 TEST( matrix, svd4 )
 {
-	Matrix U, V;
-	Vector s;
+  Matrix U, V;
+  Vector s;
 
-	Matrix A = Matrix_(3,2,
-	    0.8147,    0.9134,
-	    0.9058,    0.6324,
-	    0.1270,    0.0975);
+  Matrix A = Matrix_(3,2,
+      0.8147,    0.9134,
+      0.9058,    0.6324,
+      0.1270,    0.0975);
 
-	Matrix expectedU = Matrix_(3,2,
-	   0.7397,   0.6724,
-	   0.6659,   -0.7370,
-	   0.0970,   -0.0689);
+  Matrix expectedU = Matrix_(3,2,
+     0.7397,   0.6724,
+     0.6659,   -0.7370,
+     0.0970,   -0.0689);
 
-	Vector expected_s = Vector_(2, 1.6455, 0.1910);
+  Vector expected_s = Vector_(2, 1.6455, 0.1910);
 
-	Matrix expectedV = Matrix_(2,2,
-	   0.7403,   -0.6723,
-	   0.6723,   0.7403);
+  Matrix expectedV = Matrix_(2,2,
+     0.7403,   -0.6723,
+     0.6723,   0.7403);
 
-	svd(A, U, s, V);
-	Matrix reconstructed = U * diag(s) * trans(V);
+  svd(A, U, s, V);
+  Matrix reconstructed = U * diag(s) * trans(V);
 
-	EXPECT(assert_equal(A, reconstructed, 1e-4));
-	EXPECT(assert_equal(expectedU,U, 1e-3));
-	EXPECT(assert_equal(expected_s,s, 1e-4));
-	EXPECT(assert_equal(expectedV,V, 1e-4));
+  EXPECT(assert_equal(A, reconstructed, 1e-4));
+  EXPECT(assert_equal(expectedU,U, 1e-3));
+  EXPECT(assert_equal(expected_s,s, 1e-4));
+  EXPECT(assert_equal(expectedV,V, 1e-4));
+}
+
+/* ************************************************************************* */
+TEST( matrix, DLT )
+{
+  Matrix A = Matrix_(8,9,
+      0.21,        -0.42,       -10.71,         0.18,        -0.36,        -9.18,        -0.61,         1.22,        31.11,
+      0.44,        -0.66,       -15.84,         0.34,        -0.51,       -12.24,        -1.64,         2.46,        59.04,
+      0.69,        -8.28,       -12.19,        -0.48,         5.76,         8.48,        -1.89,        22.68,        33.39,
+      0.96,         -8.4,       -17.76,         -0.6,         5.25,         11.1,        -3.36,         29.4,        62.16,
+      1.25,          0.3,         2.75,         -3.5,        -0.84,         -7.7,        16.25,          3.9,        35.75,
+      1.56,         0.42,         4.56,        -3.38,        -0.91,        -9.88,        22.36,         6.02,        65.36,
+      1.89,         2.24,         3.99,         3.24,         3.84,         6.84,        18.09,        21.44,        38.19,
+      2.24,         2.48,         6.24,         3.08,         3.41,         8.58,        24.64,        27.28,        68.64
+  );
+  int rank;
+  double error;
+  Vector actual;
+  boost::tie(rank,error,actual) = DLT(A);
+  Vector expected = Vector_(9, -0.0, 0.2357, 0.4714, -0.2357, 0.0, - 0.4714,-0.4714, 0.4714, 0.0);
+  EXPECT_LONGS_EQUAL(8,rank);
+  EXPECT_DOUBLES_EQUAL(0,error,1e-8);
+  EXPECT(assert_equal(expected, actual, 1e-4));
 }
 
 /* ************************************************************************* */

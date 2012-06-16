@@ -671,31 +671,21 @@ void svd(const Matrix& A, Matrix& U, Vector& S, Matrix& V) {
 boost::tuple<int, double, Vector> DLT(const Matrix& A, double rank_tol) {
 
 	// Check size of A
-	int m = A.rows(), n = A.cols();
-	if (m < n) throw invalid_argument(
-			"DLT: m<n, pad A with zero rows if needed.");
+	int n = A.rows(), p = A.cols(), m = min(n,p);
 
 	// Do SVD on A
-	Matrix U, V;
-	Vector S;
-//	static const bool sort = false;
-	svd(A, U, S, V); // TODO: is it a problem for this to be sorted?
+  Eigen::JacobiSVD<Matrix> svd(A, Eigen::ComputeFullV);
+  Vector s = svd.singularValues();
+  Matrix V = svd.matrixV();
 
 	// Find rank
 	int rank = 0;
-	for (int j = 0; j < n; j++)
-		if (S(j) > rank_tol) rank++;
-	// Find minimum singular value and corresponding column index
-	int min_j = n - 1;
-	double min_S = S(min_j);
-	for (int j = 0; j < n - 1; j++)
-		if (S(j) < min_S) {
-			min_j = j;
-			min_S = S(j);
-		}
+	for (int j = 0; j < m; j++)
+		if (s(j) > rank_tol) rank++;
 
-	// Return rank, minimum singular value, and corresponding column of V
-	return boost::tuple<int, double, Vector>(rank, min_S, Vector(column(V, min_j)));
+	// Return rank, error, and corresponding column of V
+	double error = m<p ? 0 : s(m-1);
+	return boost::tuple<int, double, Vector>(rank, error, Vector(column(V, p-1)));
 }
 
 /* ************************************************************************* */
