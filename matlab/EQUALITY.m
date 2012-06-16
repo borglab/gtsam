@@ -1,12 +1,14 @@
-function EQUALITY(name,A,B,tol)
+function EQUALITY(name,expected,actual,tol)
 % test equality of two vectors/matrices up to tolerance
 
 if nargin<4,tol=1e-9;end
 
-assertion = size(A)==size(B);
+assertion = size(expected)==size(actual);
 if assertion
-    assertion = all(abs(A-B)<tol);
+    assertion = all(abs(expected-actual)<tol);
 end
 if (assertion~=1)
-  error(['EQUALITY ' name ' fails']);
+  warning(['EQUALITY ' name ' fails']);
+  expected
+  actual
 end
