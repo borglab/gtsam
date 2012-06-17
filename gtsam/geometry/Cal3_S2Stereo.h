@@ -68,6 +68,12 @@ namespace gtsam {
     /// @name Standard Interface
     /// @{
 
+		/// return calibration, same for left and right
+		const Cal3_S2& calibration() const { return K_;}
+
+		/// return calibration matrix K, same for left and right
+		Matrix matrix() const { return K_.matrix();}
+
 		/// focal length x
 		inline double fx() const { return K_.fx();}
 
@@ -84,9 +90,7 @@ namespace gtsam {
 		inline double py() const { return K_.py();}
 
 		/// return the principal point
-		Point2 principalPoint() const {
-			return K_.principalPoint();
-		}
+		Point2 principalPoint() const { return K_.principalPoint();}
 
 		/// return baseline
 		inline double baseline() const { return b_; }
