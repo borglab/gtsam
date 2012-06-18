@@ -104,10 +104,10 @@ namespace gtsam {
     /// Rotation around X axis as in http://en.wikipedia.org/wiki/Rotation_matrix, counterclockwise when looking from unchanging axis.
     static Rot3 Rx(double t);
 
-    /// Rotation around X axis as in http://en.wikipedia.org/wiki/Rotation_matrix, counterclockwise when looking from unchanging axis.
+    /// Rotation around Y axis as in http://en.wikipedia.org/wiki/Rotation_matrix, counterclockwise when looking from unchanging axis.
     static Rot3 Ry(double t);
 
-    /// Rotation around X axis as in http://en.wikipedia.org/wiki/Rotation_matrix, counterclockwise when looking from unchanging axis.
+    /// Rotation around Z axis as in http://en.wikipedia.org/wiki/Rotation_matrix, counterclockwise when looking from unchanging axis.
     static Rot3 Rz(double t);
 
     /// Rotations around Z, Y, then X axes as in http://en.wikipedia.org/wiki/Rotation_matrix, counterclockwise when looking from unchanging axis.
@@ -119,31 +119,17 @@ namespace gtsam {
       return RzRyRx(xyz(0), xyz(1), xyz(2));
     }
 
-    /**
-     * Positive yaw is to right (as in aircraft heading).
-     * Tait-Bryan system from Spatial Reference Model (SRM) (x,y,z) = (roll,pitch,yaw)
-     * as described in http://www.sedris.org/wg8home/Documents/WG80462.pdf.
-     * Assumes vehicle coordinate frame X forward, Y right, Z down.
-     */
+    /// Positive yaw is to right (as in aircraft heading). See ypr
     static Rot3 yaw  (double t) { return Rz(t); }
 
-    /**
-     * Positive pitch is up (increasing aircraft altitude).
-     * Tait-Bryan system from Spatial Reference Model (SRM) (x,y,z) = (roll,pitch,yaw)
-     * as described in http://www.sedris.org/wg8home/Documents/WG80462.pdf.
-     * Assumes vehicle coordinate frame X forward, Y right, Z down.
-     */
+    /// Positive pitch is up (increasing aircraft altitude).See ypr
     static Rot3 pitch(double t) { return Ry(t); }
 
-    /**
-     * Positive roll is to right (increasing yaw in aircraft).
-     * Tait-Bryan system from Spatial Reference Model (SRM) (x,y,z) = (roll,pitch,yaw)
-     * as described in http://www.sedris.org/wg8home/Documents/WG80462.pdf.
-     * Assumes vehicle coordinate frame X forward, Y right, Z down.
-     */
+    //// Positive roll is to right (increasing yaw in aircraft).
     static Rot3 roll (double t) { return Rx(t); }
 
-    /** Returns rotation nRb from body to nav frame.
+    /**
+     * Returns rotation nRb from body to nav frame.
      * Positive yaw is to right (as in aircraft heading).
      * Positive pitch is up (increasing aircraft altitude).
      * Positive roll is to right (increasing yaw in aircraft).
