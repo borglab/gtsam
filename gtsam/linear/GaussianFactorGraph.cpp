@@ -160,9 +160,18 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	Matrix GaussianFactorGraph::denseJacobian() const {
+    // Convert to Jacobians
+    FactorGraph<JacobianFactor> jfg;
+    jfg.reserve(this->size());
+    BOOST_FOREACH(const sharedFactor& factor, *this) {
+      if(boost::shared_ptr<JacobianFactor> jf =
+        boost::dynamic_pointer_cast<JacobianFactor>(factor))
+        jfg.push_back(jf);
+      else
+        jfg.push_back(boost::make_shared<JacobianFactor>(*factor));
+    }
 		// combine all factors
-		JacobianFactor combined(*CombineJacobians(*convertCastFactors<FactorGraph<
-				JacobianFactor> > (), VariableSlots(*this)));
+		JacobianFactor combined(*CombineJacobians(jfg, VariableSlots(*this)));
 		return combined.matrix_augmented();
 	}
 

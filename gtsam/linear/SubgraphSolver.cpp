@@ -52,10 +52,29 @@ SubgraphSolver::SubgraphSolver(const GaussianFactorGraph &gfg, const Parameters 
   GaussianBayesNet::shared_ptr Rc1 = EliminationTree<GaussianFactor>::Create(*Ab1)->eliminate(&EliminateQR);
   VectorValues::shared_ptr xbar(new VectorValues(gtsam::optimize(*Rc1)));
 
-  pc_ = boost::make_shared<SubgraphPreconditioner>(
-      Ab1->dynamicCastFactors<FactorGraph<JacobianFactor> >(),
-      Ab2->dynamicCastFactors<FactorGraph<JacobianFactor> >(),
-      Rc1, xbar);
+  // Convert or cast Ab1 to JacobianFactors
+  boost::shared_ptr<FactorGraph<JacobianFactor> > Ab1Jacobians = boost::make_shared<FactorGraph<JacobianFactor> >();
+  Ab1Jacobians->reserve(Ab1->size());
+  BOOST_FOREACH(const boost::shared_ptr<GaussianFactor>& factor, *Ab1) {
+    if(boost::shared_ptr<JacobianFactor> jf =
+      boost::dynamic_pointer_cast<JacobianFactor>(factor))
+      Ab1Jacobians->push_back(jf);
+    else
+      Ab1Jacobians->push_back(boost::make_shared<JacobianFactor>(*factor));
+  }
+
+  // Convert or cast Ab2 to JacobianFactors
+  boost::shared_ptr<FactorGraph<JacobianFactor> > Ab2Jacobians = boost::make_shared<FactorGraph<JacobianFactor> >();
+  Ab1Jacobians->reserve(Ab2->size());
+  BOOST_FOREACH(const boost::shared_ptr<GaussianFactor>& factor, *Ab2) {
+    if(boost::shared_ptr<JacobianFactor> jf =
+      boost::dynamic_pointer_cast<JacobianFactor>(factor))
+      Ab2Jacobians->push_back(jf);
+    else
+      Ab2Jacobians->push_back(boost::make_shared<JacobianFactor>(*factor));
+  }
+
+  pc_ = boost::make_shared<SubgraphPreconditioner>(Ab1Jacobians, Ab2Jacobians, Rc1, xbar);
 }
 
 VectorValues SubgraphSolver::optimize() {

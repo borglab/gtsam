@@ -102,6 +102,9 @@ namespace gtsam {
     /** Copy constructor */
     JacobianFactor(const JacobianFactor& gf);
 
+    /** Convert from other GaussianFactor */
+    JacobianFactor(const GaussianFactor& gf);
+
     /** default constructor for I/O */
     JacobianFactor();
 

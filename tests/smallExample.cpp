@@ -138,23 +138,23 @@ namespace example {
 	/* ************************************************************************* */
 	JacobianFactorGraph createGaussianFactorGraph(const Ordering& ordering) {
 		// Create empty graph
-		GaussianFactorGraph fg;
+		JacobianFactorGraph fg;
 
 		SharedDiagonal unit2 = noiseModel::Unit::Create(2);
 
 		// linearized prior on x1: c[_x1_]+x1=0 i.e. x1=-c[_x1_]
-		fg.add(ordering[X(1)], 10*eye(2), -1.0*ones(2), unit2);
+		fg.push_back(boost::make_shared<JacobianFactor>(ordering[X(1)], 10*eye(2), -1.0*ones(2), unit2));
 
 		// odometry between x1 and x2: x2-x1=[0.2;-0.1]
-		fg.add(ordering[X(1)], -10*eye(2),ordering[X(2)], 10*eye(2), Vector_(2, 2.0, -1.0), unit2);
+		fg.push_back(boost::make_shared<JacobianFactor>(ordering[X(1)], -10*eye(2),ordering[X(2)], 10*eye(2), Vector_(2, 2.0, -1.0), unit2));
 
     // measurement between x1 and l1: l1-x1=[0.0;0.2]
-		fg.add(ordering[X(1)], -5*eye(2), ordering[L(1)], 5*eye(2), Vector_(2, 0.0, 1.0), unit2);
+		fg.push_back(boost::make_shared<JacobianFactor>(ordering[X(1)], -5*eye(2), ordering[L(1)], 5*eye(2), Vector_(2, 0.0, 1.0), unit2));
 
 		// measurement between x2 and l1: l1-x2=[-0.2;0.3]
-		fg.add(ordering[X(2)], -5*eye(2), ordering[L(1)], 5*eye(2), Vector_(2, -1.0, 1.5), unit2);
+		fg.push_back(boost::make_shared<JacobianFactor>(ordering[X(2)], -5*eye(2), ordering[L(1)], 5*eye(2), Vector_(2, -1.0, 1.5), unit2));
 
-		return *fg.dynamicCastFactors<JacobianFactorGraph >();
+		return fg;
 	}
 
 	/* ************************************************************************* */

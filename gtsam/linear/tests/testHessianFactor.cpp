@@ -414,10 +414,20 @@ TEST_UNSAFE(HessianFactor, CombineAndEliminate)
   // create expected Hessian after elimination
   HessianFactor expectedCholeskyFactor(expectedFactor);
 
-  GaussianFactorGraph::EliminationResult actualCholesky = EliminateCholesky(
-			*gfg.convertCastFactors<FactorGraph<HessianFactor> > (), 1);
-	HessianFactor::shared_ptr actualFactor = boost::dynamic_pointer_cast<
-			HessianFactor>(actualCholesky.second);
+  // Convert all factors to hessians
+  FactorGraph<HessianFactor> hessians;
+  BOOST_FOREACH(const GaussianFactorGraph::sharedFactor& factor, gfg) {
+    if(boost::shared_ptr<HessianFactor> hf = boost::dynamic_pointer_cast<HessianFactor>(factor))
+      hessians.push_back(hf);
+    else if(boost::shared_ptr<JacobianFactor> jf = boost::dynamic_pointer_cast<JacobianFactor>(factor))
+      hessians.push_back(boost::make_shared<HessianFactor>(*jf));
+    else
+      CHECK(false);
+  }
+
+  // Eliminate
+  GaussianFactorGraph::EliminationResult actualCholesky = EliminateCholesky(gfg, 1);
+	HessianFactor::shared_ptr actualFactor = boost::dynamic_pointer_cast<HessianFactor>(actualCholesky.second);
 
 	EXPECT(assert_equal(*expectedBN, *actualCholesky.first, 1e-6));
   EXPECT(assert_equal(expectedCholeskyFactor, *actualFactor, 1e-6));

@@ -92,11 +92,5 @@ typedef boost::shared_ptr<SymbolicFactorGraph> shared;
 //}
 
 /* ************************************************************************* */
-TEST(FactorGraph, dynamic_factor_cast) {
-  FactorGraph<IndexFactor> fg;
-  fg.dynamicCastFactors<FactorGraph<IndexFactor> >();
-}
-
-/* ************************************************************************* */
 int main() {	TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

@@ -200,39 +200,6 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 		/** return the number valid factors */
 		size_t nrFactors() const;
 
-		/** dynamic_cast the factor pointers down or up the class hierarchy */
-		template<class RELATED>
-		typename RELATED::shared_ptr dynamicCastFactors() const {
-		  typename RELATED::shared_ptr ret(new RELATED);
-		  ret->reserve(this->size());
-		  BOOST_FOREACH(const sharedFactor& factor, *this) {
-		    typename RELATED::FactorType::shared_ptr castedFactor(boost::dynamic_pointer_cast<typename RELATED::FactorType>(factor));
-		    if(castedFactor)
-		      ret->push_back(castedFactor);
-		    else
-		      throw std::invalid_argument("In FactorGraph<FACTOR>::dynamic_factor_cast(), dynamic_cast failed, meaning an invalid cast was requested.");
-		  }
-		  return ret;
-		}
-
-		/**
-		 * dynamic_cast factor pointers if possible, otherwise convert with a
-		 * constructor of the target type.
-		 */
-		template<class TARGET>
-		typename TARGET::shared_ptr convertCastFactors() const {
-      typename TARGET::shared_ptr ret(new TARGET);
-      ret->reserve(this->size());
-      BOOST_FOREACH(const sharedFactor& factor, *this) {
-        typename TARGET::FactorType::shared_ptr castedFactor(boost::dynamic_pointer_cast<typename TARGET::FactorType>(factor));
-        if(castedFactor)
-          ret->push_back(castedFactor);
-        else
-          ret->push_back(typename TARGET::FactorType::shared_ptr(new typename TARGET::FactorType(*factor)));
-      }
-      return ret;
-    }
-
 	private:
 
 		/** Serialization function */

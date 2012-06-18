@@ -67,6 +67,18 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  JacobianFactor::JacobianFactor(const GaussianFactor& gf) : Ab_(matrix_) {
+    // Copy the matrix data depending on what type of factor we're copying from
+    if(const JacobianFactor* rhs = dynamic_cast<const JacobianFactor*>(&gf))
+      *this = JacobianFactor(*rhs);
+    else if(const HessianFactor* rhs = dynamic_cast<const HessianFactor*>(&gf))
+      *this = JacobianFactor(*rhs);
+    else
+      throw std::invalid_argument("In JacobianFactor(const GaussianFactor& rhs), rhs is neither a JacobianFactor nor a HessianFactor");
+    assertInvariants();
+  }
+
+  /* ************************************************************************* */
   JacobianFactor::JacobianFactor() : Ab_(matrix_) { assertInvariants(); }
 
   /* ************************************************************************* */

@@ -50,10 +50,8 @@ TEST(GaussianFactorGraph, initialization) {
 	fg.add(0, -5*eye(2), 2, 5*eye(2), Vector_(2, 0.0, 1.0), unit2);
 	fg.add(1, -5*eye(2), 2, 5*eye(2), Vector_(2, -1.0, 1.5), unit2);
 
-	FactorGraph<JacobianFactor> graph = *fg.dynamicCastFactors<FactorGraph<JacobianFactor> >();
-
-	EXPECT_LONGS_EQUAL(4, graph.size());
-	JacobianFactor factor = *graph[0];
+	EXPECT_LONGS_EQUAL(4, fg.size());
+	JacobianFactor factor = *boost::dynamic_pointer_cast<JacobianFactor>(fg[0]);
 
 	// Test sparse, which takes a vector and returns a matrix, used in MATLAB
 	// Note that this the augmented vector and the RHS is in column 7
@@ -155,8 +153,14 @@ TEST(GaussianFactorGraph, Combine2)
   gfg.add(0, A10, 1, A11, b1, noiseModel::Diagonal::Sigmas(s1, true));
   gfg.add(1, A21, b2, noiseModel::Diagonal::Sigmas(s2, true));
 
-  JacobianFactor actual = *CombineJacobians(*gfg.dynamicCastFactors<FactorGraph<
-			JacobianFactor> > (), VariableSlots(gfg));
+  // Convert to Jacobians, inefficient copy of all factors instead of selectively converting only Hessians
+  FactorGraph<JacobianFactor> jacobians;
+  BOOST_FOREACH(const GaussianFactorGraph::sharedFactor& factor, gfg) {
+    jacobians.push_back(boost::make_shared<JacobianFactor>(*factor));
+  }
+
+  // Combine Jacobians into a single dense factor
+  JacobianFactor actual = *CombineJacobians(jacobians, VariableSlots(gfg));
 
   Matrix zero3x3 = zeros(3,3);
   Matrix A0 = gtsam::stack(3, &A10, &zero3x3, &zero3x3);
@@ -213,8 +217,7 @@ TEST(GaussianFactor, CombineAndEliminate)
 
   GaussianConditional::shared_ptr actualBN;
 	GaussianFactor::shared_ptr actualFactor;
-	boost::tie(actualBN, actualFactor) = //
-			EliminateQR(*gfg.dynamicCastFactors<FactorGraph<JacobianFactor> > (), 1);
+	boost::tie(actualBN, actualFactor) = EliminateQR(gfg, 1);
 	JacobianFactor::shared_ptr actualJacobian = boost::dynamic_pointer_cast<
 			JacobianFactor>(actualFactor);
 
@@ -410,9 +413,14 @@ TEST(GaussianFactor, eliminateFrontals)
   Matrix actualDense = factors.denseJacobian();
   EXPECT(assert_equal(2.0 * Ab, actualDense));
 
+  // Convert to Jacobians, inefficient copy of all factors instead of selectively converting only Hessians
+  FactorGraph<JacobianFactor> jacobians;
+  BOOST_FOREACH(const GaussianFactorGraph::sharedFactor& factor, factors) {
+    jacobians.push_back(boost::make_shared<JacobianFactor>(*factor));
+  }
+
   // Create combined factor
-  JacobianFactor combined(*CombineJacobians(*factors.dynamicCastFactors<FactorGraph<
-			JacobianFactor> > (), VariableSlots(factors)));
+  JacobianFactor combined(*CombineJacobians(jacobians, VariableSlots(factors)));
 
   // Copies factors as they will be eliminated in place
   JacobianFactor actualFactor_QR = combined;

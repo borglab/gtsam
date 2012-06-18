@@ -80,7 +80,7 @@ public:
 	GaussianConditional();
 
 	/** constructor */
-	GaussianConditional(Index key);
+	explicit GaussianConditional(Index key);
 
 	/** constructor with no parents
 	 * |Rx-d|

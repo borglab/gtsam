@@ -197,10 +197,10 @@ namespace gtsam {
         const std::vector<Vector>& gs, double f);
 
     /** Construct from Conditional Gaussian */
-    HessianFactor(const GaussianConditional& cg);
+    explicit HessianFactor(const GaussianConditional& cg);
 
     /** Convert from a JacobianFactor (computes A^T * A) or HessianFactor */
-    HessianFactor(const GaussianFactor& factor);
+    explicit HessianFactor(const GaussianFactor& factor);
 
     /** Special constructor used in EliminateCholesky which combines the given factors */
     HessianFactor(const FactorGraph<GaussianFactor>& factors,

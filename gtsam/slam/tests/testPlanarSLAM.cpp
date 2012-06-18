@@ -174,12 +174,10 @@ TEST( planarSLAM, constructor )
 	Vector expected2 = Vector_(1, -0.1);
 	Vector expected3 = Vector_(1, 0.22);
 	// Get NoiseModelFactors
-	FactorGraph<NoiseModelFactor > GNM =
-	    *G.dynamicCastFactors<FactorGraph<NoiseModelFactor > >();
-	EXPECT(assert_equal(expected0, GNM[0]->unwhitenedError(c)));
-  EXPECT(assert_equal(expected1, GNM[1]->unwhitenedError(c)));
-  EXPECT(assert_equal(expected2, GNM[2]->unwhitenedError(c)));
-  EXPECT(assert_equal(expected3, GNM[3]->unwhitenedError(c)));
+	EXPECT(assert_equal(expected0, boost::dynamic_pointer_cast<NoiseModelFactor>(G[0])->unwhitenedError(c)));
+  EXPECT(assert_equal(expected1, boost::dynamic_pointer_cast<NoiseModelFactor>(G[1])->unwhitenedError(c)));
+  EXPECT(assert_equal(expected2, boost::dynamic_pointer_cast<NoiseModelFactor>(G[2])->unwhitenedError(c)));
+  EXPECT(assert_equal(expected3, boost::dynamic_pointer_cast<NoiseModelFactor>(G[3])->unwhitenedError(c)));
 }
 
 /* ************************************************************************* */

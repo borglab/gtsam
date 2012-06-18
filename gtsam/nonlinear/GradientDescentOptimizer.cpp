@@ -25,10 +25,16 @@ void gradientInPlace(const NonlinearFactorGraph &nfg, const Values &values, cons
 
   // Linearize graph
   GaussianFactorGraph::shared_ptr linear = nfg.linearize(values, ordering);
-  const FactorGraph<JacobianFactor>::shared_ptr jfg = linear->dynamicCastFactors<FactorGraph<JacobianFactor> >();
+  FactorGraph<JacobianFactor> jfg;  jfg.reserve(linear->size());
+  BOOST_FOREACH(const GaussianFactorGraph::sharedFactor& factor, *linear) {
+    if(boost::shared_ptr<JacobianFactor> jf = boost::dynamic_pointer_cast<JacobianFactor>(factor))
+      jfg.push_back((jf));
+    else
+      jfg.push_back(boost::make_shared<JacobianFactor>(*factor));
+  }
 
   // compute the gradient direction
-  gradientAtZero(*jfg, g);
+  gradientAtZero(jfg, g);
 }
 
 
