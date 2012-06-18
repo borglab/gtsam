@@ -54,23 +54,84 @@ namespace gtsam {
     explicit PinholeCamera(const Pose3& pose):pose_(pose){}
 
     /** constructor with pose and calibration */
-    PinholeCamera(const Pose3& pose, const Calibration& k):pose_(pose),K_(k) {}
+    PinholeCamera(const Pose3& pose, const Calibration& K):pose_(pose),K_(K) {}
 
     /** alternative constructor with pose and calibration */
-    PinholeCamera(const Calibration& k, const Pose3& pose):pose_(pose),K_(k) {}
+    PinholeCamera(const Calibration& K, const Pose3& pose):pose_(pose),K_(K) {}
+
+    /// @}
+    /// @name Named Constructors
+    /// @{
+
+    /**
+     * Create a level camera at the given 2D pose and height
+     * @param pose2 specifies the location and viewing direction
+     * (theta 0 = looking in direction of positive X axis)
+     * @param height camera height
+     */
+    static PinholeCamera level(const Calibration &K, const Pose2& pose2, double height) {
+      const double st = sin(pose2.theta()), ct = cos(pose2.theta());
+      const Point3 x(st, -ct, 0), y(0, 0, -1), z(ct, st, 0);
+      const Rot3 wRc(x, y, z);
+      const Point3 t(pose2.x(), pose2.y(), height);
+      const Pose3 pose3(wRc, t);
+      return PinholeCamera(pose3, K);
+    }
+
+    /// PinholeCamera::level with default calibration
+    static PinholeCamera level(const Pose2& pose2, double height) {
+      return PinholeCamera::level(Calibration(), pose2, height);
+    }
+
+    /**
+     * Create a camera at the given eye position looking at a target point in the scene
+     * with the specified up direction vector.
+     * @param eye specifies the camera position
+     * @param target the point to look at
+     * @param upVector specifies the camera up direction vector,
+     *        doesn't need to be on the image plane nor orthogonal to the viewing axis
+     * @param K optional calibration parameter
+     */
+    static PinholeCamera lookat(const Point3& eye, const Point3& target, const Point3& upVector, const Calibration& K = Calibration()) {
+      Point3 zc = target-eye;
+      zc = zc/zc.norm();
+      Point3 xc = (-upVector).cross(zc);  // minus upVector since yc is pointing down
+      xc = xc/xc.norm();
+      Point3 yc = zc.cross(xc);
+      Pose3 pose3(Rot3(xc,yc,zc), eye);
+      return PinholeCamera(pose3, K);
+    }
 
     /// @}
     /// @name Advanced Constructors
     /// @{
 
-    explicit PinholeCamera(const Vector &v){
+    explicit PinholeCamera(const Vector &v) {
       pose_ = Pose3::Expmap(v.head(Pose3::Dim()));
-      if ( v.size() > Pose3::Dim()) {
+      if (v.size() > Pose3::Dim()) {
         K_ = Calibration(v.tail(Calibration::Dim()));
       }
     }
 
-    PinholeCamera(const Vector &v, const Vector &k) : pose_(Pose3::Expmap(v)),K_(k){}
+    PinholeCamera(const Vector &v, const Vector &K) :
+        pose_(Pose3::Expmap(v)), K_(K) {
+    }
+
+    /// @}
+    /// @name Testable
+    /// @{
+
+    /// assert equality up to a tolerance
+    bool equals (const PinholeCamera &camera, double tol = 1e-9) const {
+      return pose_.equals(camera.pose(), tol) &&
+             K_.equals(camera.calibration(), tol) ;
+    }
+
+    /// print
+    void print(const std::string& s = "PinholeCamera") const {
+      pose_.print(s+".pose");
+      K_.print(s+".calibration");
+    }
 
     /// @}
     /// @name Standard Interface
@@ -90,30 +151,18 @@ namespace gtsam {
     /// return calibration
     inline const Calibration& calibration() const {  return K_; }
 
-    /// compose two cameras
+    /// @}
+    /// @name Group ?? Frank says this might not make sense
+    /// @{
+
+    /// compose two cameras: TODO Frank says this might not make sense
     inline const PinholeCamera compose(const Pose3 &c) const {
-    	return PinholeCamera( pose_ * c, K_ ) ;
+      return PinholeCamera( pose_ * c, K_ ) ;
     }
 
-    /// inverse
+    /// compose two cameras: TODO Frank says this might not make sense
     inline const PinholeCamera inverse() const {
-    	return PinholeCamera( pose_.inverse(), K_ ) ;
-    }
-
-  	/// @}
-  	/// @name Testable
-  	/// @{
-
-    /// assert equality up to a tolerance
-    bool equals (const PinholeCamera &camera, double tol = 1e-9) const {
-    	return pose_.equals(camera.pose(), tol) &&
-    	       K_.equals(camera.calibration(), tol) ;
-    }
-
-    /// print
-    void print(const std::string& s = "PinholeCamera") const {
-      pose_.print(s+".pose");
-      K_.print(s+".calibration");
+      return PinholeCamera( pose_.inverse(), K_ ) ;
     }
 
   	/// @}
@@ -137,58 +186,21 @@ namespace gtsam {
       return d;
     }
 
-    /// Lie group dimensionality
+    /// Manifold dimension
     inline size_t dim() const { return pose_.dim() + K_.dim(); }
 
-    /// Lie group dimensionality
+    /// Manifold dimension
     inline static size_t Dim() { return Pose3::Dim() + Calibration::Dim(); }
-
-    /**
-     * Create a level camera at the given 2D pose and height
-     * @param pose2 specifies the location and viewing direction
-     * (theta 0 = looking in direction of positive X axis)
-     */
-    static PinholeCamera level(const Pose2& pose2, double height) {
-    	return PinholeCamera::level(Calibration(), pose2, height);
-    }
-
-    static PinholeCamera level(const Calibration &K, const Pose2& pose2, double height) {
-    	const double st = sin(pose2.theta()), ct = cos(pose2.theta());
-    	const Point3 x(st, -ct, 0), y(0, 0, -1), z(ct, st, 0);
-    	const Rot3 wRc(x, y, z);
-    	const Point3 t(pose2.x(), pose2.y(), height);
-    	const Pose3 pose3(wRc, t);
-    	return PinholeCamera(pose3, K);
-    }
-
-    /**
-     * Create a camera at the given eye position looking at a target point in the scene
-     * with the specified up direction vector.
-     * @param eye specifies the camera position
-     * @param target the point to look at
-     * @param upVector specifies the camera up direction vector,
-     * 				doesn't need to be on the image plane nor orthogonal to the viewing axis
-     * @param K optional calibration parameter
-     */
-    static PinholeCamera lookat(const Point3& eye, const Point3& target, const Point3& upVector, const Calibration& K = Calibration()) {
-    	Point3 zc = target-eye;
-    	zc = zc/zc.norm();
-    	Point3 xc = (-upVector).cross(zc);	// minus upVector since yc is pointing down
-    	xc = xc/xc.norm();
-    	Point3 yc = zc.cross(xc);
-    	Pose3 pose3(Rot3(xc,yc,zc), eye);
-    	return PinholeCamera(pose3, K);
-    }
 
     /// @}
     /// @name Transformations and measurement functions
     /// @{
 
     /**
-    * projects a 3-dimensional point in camera coordinates into the
-    * camera and returns a 2-dimensional point, no calibration applied
-    * With optional 2by3 derivative
-    */
+     * projects a 3-dimensional point in camera coordinates into the
+     * camera and returns a 2-dimensional point, no calibration applied
+     * With optional 2by3 derivative
+     */
     inline static Point2 project_to_camera(const Point3& P,
                              boost::optional<Matrix&> H1 = boost::none){
       if (H1) {
@@ -271,18 +283,16 @@ namespace gtsam {
       return pi;
     }
 
-    /**
-     * backproject a 2-dimensional point to a 3-dimension point
-     */
-
-    inline Point3 backproject(const Point2& pi, double scale) const {
-      const Point2 pn = K_.calibrate(pi);
-      const Point3 pc(pn.x()*scale, pn.y()*scale, scale);
+    /// backproject a 2-dimensional point to a 3-dimensional point at given depth
+    inline Point3 backproject(const Point2& p, double depth) const {
+      const Point2 pn = K_.calibrate(p);
+      const Point3 pc(pn.x()*depth, pn.y()*depth, depth);
       return pose_.transform_from(pc);
     }
 
-    inline Point3 backproject_from_camera(const Point2& pi, double scale) const {
-      return backproject(pi, scale);
+    /// backproject a 2-dimensional point to a 3-dimensional point at given depth
+    inline Point3 backproject_from_camera(const Point2& p, double depth) const {
+      return backproject(p, depth);
     }
 
     /**

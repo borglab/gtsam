@@ -461,29 +461,37 @@ class CalibratedCamera {
 class SimpleCamera {
   // Standard Constructors and Named Constructors
 	SimpleCamera();
-	SimpleCamera(const gtsam::Pose3& pose, const gtsam::Cal3_S2& k);
-	SimpleCamera(const gtsam::Cal3_S2& k, const gtsam::Pose3& pose);
+  SimpleCamera(const gtsam::Pose3& pose);
+  SimpleCamera(const gtsam::Pose3& pose, const gtsam::Cal3_S2& K);
+  static gtsam::SimpleCamera level(const gtsam::Cal3_S2& K,
+      const gtsam::Pose2& pose, double height);
+  static gtsam::SimpleCamera level(const gtsam::Pose2& pose, double height);
+  static gtsam::SimpleCamera lookat(const gtsam::Point3& eye,
+      const gtsam::Point3& target, const gtsam::Point3& upVector,
+      const gtsam::Cal3_S2& K);
 
   // Testable
 	void print(string s) const;
 	bool equals(const gtsam::SimpleCamera& camera, double tol) const;
 
-  // Action on Point3
-	gtsam::Point2 project(const gtsam::Point3& point);
-	pair<gtsam::Point2,bool> projectSafe(const gtsam::Point3& pw) const;
-	static gtsam::Point2 project_to_camera(const gtsam::Point3& cameraPoint);
-
-	// Backprojection
-	gtsam::Point3 backproject(const gtsam::Point2& pi, double scale) const;
-	gtsam::Point3 backproject_from_camera(const gtsam::Point2& pi, double scale) const;
-
   // Standard Interface
-	gtsam::Pose3 pose() const;
+  gtsam::Pose3 pose() const;
+  gtsam::Cal3_S2 calibration();
 
-	// Convenient generators
-	static gtsam::SimpleCamera lookat(const gtsam::Point3& eye,
-			const gtsam::Point3& target, const gtsam::Point3& upVector,
-			const gtsam::Cal3_S2& k);
+	// Manifold
+  gtsam::SimpleCamera retract(const Vector& d) const;
+  Vector localCoordinates(const gtsam::SimpleCamera& T2) const;
+  size_t dim() const;
+  static size_t Dim();
+
+  // Transformations and measurement functions
+  static gtsam::Point2 project_to_camera(const gtsam::Point3& cameraPoint);
+  pair<gtsam::Point2,bool> projectSafe(const gtsam::Point3& pw) const;
+	gtsam::Point2 project(const gtsam::Point3& point);
+	gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
+	gtsam::Point3 backproject_from_camera(const gtsam::Point2& p, double depth) const;
+  double range(const gtsam::Point3& point);
+  // double range(const gtsam::Pose3& point); // FIXME, overload
 };
 
 //*************************************************************************
