@@ -86,7 +86,7 @@ public:
 	int reorderCounter() const { return reorderCounter_; }		///<TODO: comment
 
 	/** prints out all contents of the system */
-	void print(const std::string& s="") const;
+	void print(const std::string& s="", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
 	/** prints out clique statistics */
 	void printStats() const;

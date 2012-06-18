@@ -104,12 +104,12 @@ Matrix NonlinearISAM::marginalCovariance(Key key) const {
 }
 
 /* ************************************************************************* */
-void NonlinearISAM::print(const string& s) const {
+void NonlinearISAM::print(const string& s, const KeyFormatter& keyFormatter) const {
 	cout << s << "ReorderInterval: " << reorderInterval_ << " Current Count: " << reorderCounter_ << endl;
 	isam_.print("GaussianISAM:\n");
-	linPoint_.print("Linearization Point:\n");
-	ordering_.print("System Ordering:\n");
-	factors_.print("Nonlinear Graph:\n");
+	linPoint_.print("Linearization Point:\n", keyFormatter);
+	ordering_.print("System Ordering:\n", keyFormatter);
+	factors_.print("Nonlinear Graph:\n", keyFormatter);
 }
 
 /* ************************************************************************* */
