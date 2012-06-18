@@ -63,6 +63,34 @@ namespace gtsam {
 // base
 //*************************************************************************
 
+class LieVector {
+	// Standard constructors
+	LieVector();
+	LieVector(Vector v);
+
+	// Standard interface
+	Vector vector() const;
+
+	// Testable
+	void print(string s) const;
+	bool equals(const gtsam::LieVector& expected, double tol) const;
+
+	// Group
+	static gtsam::LieVector identity();
+	gtsam::LieVector inverse() const;
+	gtsam::LieVector compose(const gtsam::LieVector& p) const;
+	gtsam::LieVector between(const gtsam::LieVector& l2) const;
+
+	// Manifold
+	size_t dim() const;
+	gtsam::LieVector retract(Vector v) const;
+	Vector localCoordinates(const gtsam::LieVector& t2) const;
+
+	// Lie group
+	static gtsam::LieVector Expmap(Vector v);
+	static Vector Logmap(const gtsam::LieVector& p);
+};
+
 //*************************************************************************
 // geometry
 //*************************************************************************
