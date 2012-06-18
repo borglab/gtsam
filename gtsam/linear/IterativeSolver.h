@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
 
 namespace gtsam {
@@ -50,8 +51,12 @@ namespace gtsam {
 
   class IterativeSolver {
   public:
+    typedef boost::shared_ptr<IterativeSolver> shared_ptr;
     IterativeSolver(){}
     virtual ~IterativeSolver() {}
+
+    /* update interface to the nonlinear optimizer  */
+    virtual void replaceFactors(const GaussianFactorGraph::shared_ptr &factorGraph, const double lambda) {}
     virtual VectorValues optimize () = 0;
   };
 
