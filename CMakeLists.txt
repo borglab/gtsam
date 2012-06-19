@@ -11,6 +11,7 @@ set (GTSAM_VERSION_PATCH 0)
 #set (CMAKE_INSTALL_PREFIX ${HOME} CACHE PATH "Install prefix for library")
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(GtsamMakeConfigFile)
 
 # Record the root dir for gtsam - needed during external builds, e.g., ROS
 set(GTSAM_SOURCE_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -139,10 +140,9 @@ if (GTSAM_BUILD_UNSTABLE)
     add_subdirectory(gtsam_unstable)
 endif(GTSAM_BUILD_UNSTABLE)
 
-# Make config files
-include(GtsamMakeConfigFile)
-GtsamMakeConfigFile(GTSAM gtsam-static)
-GtsamMakeConfigFile(CppUnitLite CppUnitLite)
+# Install config and export files
+GtsamMakeConfigFile(GTSAM)
+export(TARGETS ${GTSAM_EXPORTED_TARGETS} FILE GTSAM-exports.cmake)
 
 # Set up CPack
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "GTSAM")

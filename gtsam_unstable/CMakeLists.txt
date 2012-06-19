@@ -54,7 +54,9 @@ set_target_properties(gtsam_unstable-static PROPERTIES
  	SOVERSION           ${gtsam_unstable_soversion})
 target_link_libraries(gtsam_unstable-static gtsam-static)
 set(gtsam_unstable-lib "gtsam_unstable-static")
-install(TARGETS gtsam_unstable-static ARCHIVE DESTINATION lib)
+install(TARGETS gtsam_unstable-static EXPORT GTSAM-exports ARCHIVE DESTINATION lib)
+list(APPEND GTSAM_EXPORTED_TARGETS gtsam_unstable-static)
+set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
 
 if (GTSAM_UNSTABLE_BUILD_SHARED_LIBRARY)
     message(STATUS "Building GTSAM_UNSTABLE - shared")
@@ -65,7 +67,9 @@ if (GTSAM_UNSTABLE_BUILD_SHARED_LIBRARY)
     	VERSION             ${gtsam_unstable_version}
      	SOVERSION           ${gtsam_unstable_soversion})
     target_link_libraries(gtsam_unstable-shared gtsam-shared)
-    install(TARGETS gtsam_unstable-shared LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
+    install(TARGETS gtsam_unstable-shared EXPORT GTSAM-exports LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
+    list(APPEND GTSAM_EXPORTED_TARGETS gtsam_unstable-shared)
+    set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
 endif(GTSAM_UNSTABLE_BUILD_SHARED_LIBRARY)
 
 # Wrap version for gtsam_unstable

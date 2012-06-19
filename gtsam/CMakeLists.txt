@@ -91,7 +91,9 @@ if (GTSAM_BUILD_STATIC_LIBRARY)
         CLEAN_DIRECT_OUTPUT 1
     	VERSION             ${gtsam_version}
      	SOVERSION           ${gtsam_soversion})
-    install(TARGETS gtsam-static ARCHIVE DESTINATION lib)
+    install(TARGETS gtsam-static EXPORT GTSAM-exports ARCHIVE DESTINATION lib)
+    list(APPEND GTSAM_EXPORTED_TARGETS gtsam-static)
+    set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
     set(gtsam-lib "gtsam-static")
 endif (GTSAM_BUILD_STATIC_LIBRARY)
 
@@ -104,7 +106,9 @@ if (GTSAM_BUILD_SHARED_LIBRARY)
         CLEAN_DIRECT_OUTPUT 1
     	VERSION             ${gtsam_version}
      	SOVERSION           ${gtsam_soversion})
-    install(TARGETS gtsam-shared LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
+    install(TARGETS gtsam-shared EXPORT GTSAM-exports LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
+    list(APPEND GTSAM_EXPORTED_TARGETS gtsam-shared)
+    set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
     if (NOT GTSAM_BUILD_STATIC_LIBRARY)
         set(gtsam-lib "gtsam-shared")
     endif()
