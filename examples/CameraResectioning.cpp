@@ -46,7 +46,7 @@ public:
 	/// evaluate the error
 	virtual Vector evaluateError(const Pose3& pose, boost::optional<Matrix&> H =
 			boost::none) const {
-		SimpleCamera camera(*K_, pose);
+		SimpleCamera camera(pose, *K_);
 		Point2 reprojectionError(camera.project(P_, H) - p_);
 		return reprojectionError.vector();
 	}

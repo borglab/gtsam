@@ -524,9 +524,9 @@ TEST (testNonlinearEqualityConstraint, stereo_constrained ) {
 			0.0, 0.0, 1.0,
 			0.0, -1.0, 0.0));
 	Pose3 pose1(faceDownY, Point3()); // origin, left camera
-	SimpleCamera camera1(K, pose1);
+	SimpleCamera camera1(pose1, K);
 	Pose3 pose2(faceDownY, Point3(2.0, 0.0, 0.0)); // 2 units to the left
-	SimpleCamera camera2(K, pose2);
+	SimpleCamera camera2(pose2, K);
 	Point3 landmark(1.0, 5.0, 0.0); //centered between the cameras, 5 units away
 
 	// keys

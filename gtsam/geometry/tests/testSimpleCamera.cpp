@@ -35,7 +35,7 @@ const Pose3 pose1(Matrix_(3,3,
 				      ),
 			      Point3(0,0,0.5));
  
-const SimpleCamera camera(K, pose1);
+const SimpleCamera camera(pose1, K);
 
 const Point3 point1(-0.08,-0.08, 0.0);
 const Point3 point2(-0.08, 0.08, 0.0);
@@ -106,7 +106,7 @@ TEST( SimpleCamera, backproject2)
 {
 	Point3 origin;
 	Rot3 rot(1., 0., 0., 0., 0., 1., 0., -1., 0.); // a camera looking down
-	SimpleCamera camera(K, Pose3(rot, origin));
+	SimpleCamera camera(Pose3(rot, origin), K);
 
 	Point3 actual = camera.backproject(Point2(), 1.);
 	Point3 expected(0., 1., 0.);
@@ -119,7 +119,7 @@ TEST( SimpleCamera, backproject2)
 
 /* ************************************************************************* */
 Point2 project2(const Pose3& pose, const Point3& point) {
-	return SimpleCamera(K,pose).project(point);
+	return SimpleCamera(pose,K).project(point);
 }
 
 TEST( SimpleCamera, Dproject_point_pose)

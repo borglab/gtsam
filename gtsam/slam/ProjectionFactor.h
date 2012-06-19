@@ -93,7 +93,7 @@ namespace gtsam {
 		Vector evaluateError(const Pose3& pose, const Point3& point,
 				boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const {
 			try {
-	      PinholeCamera<CALIBRATION> camera(*K_, pose);
+	      PinholeCamera<CALIBRATION> camera(pose, *K_);
 			  Point2 reprojectionError(camera.project(point, H1, H2) - measured_);
 	      return reprojectionError.vector();
 			} catch( CheiralityException& e) {

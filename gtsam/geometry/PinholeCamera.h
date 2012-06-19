@@ -56,9 +56,6 @@ namespace gtsam {
     /** constructor with pose and calibration */
     PinholeCamera(const Pose3& pose, const Calibration& K):pose_(pose),K_(K) {}
 
-    /** alternative constructor with pose and calibration */
-    PinholeCamera(const Calibration& K, const Pose3& pose):pose_(pose),K_(K) {}
-
     /// @}
     /// @name Named Constructors
     /// @{
@@ -288,11 +285,6 @@ namespace gtsam {
       const Point2 pn = K_.calibrate(p);
       const Point3 pc(pn.x()*depth, pn.y()*depth, depth);
       return pose_.transform_from(pc);
-    }
-
-    /// backproject a 2-dimensional point to a 3-dimensional point at given depth
-    inline Point3 backproject_from_camera(const Point2& p, double depth) const {
-      return backproject(p, depth);
     }
 
     /**
