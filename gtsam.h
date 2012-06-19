@@ -16,6 +16,8 @@
  *   Limitations on methods
  *     - Parsing does not support overloading
  *     - There can only be one method (static or otherwise) with a given name
+ *   Methods must start with a lowercase letter
+ *   Static methods must start with a letter (upper or lowercase) and use the "static" keyword
  *   Arguments to functions any of
  *   	 - Eigen types:       Matrix, Vector
  *   	 - Eigen types and classes as an optionally const reference
@@ -35,8 +37,6 @@
  *   Using namespace
  *   	 - To use a namespace (e.g., generate a "using namespace x" line in cpp files), add "using namespace x;"
  *   	 - This declaration applies to all classes *after* the declaration, regardless of brackets
- *   Methods must start with a lowercase letter
- *   Static methods must start with a letter (upper or lowercase) and use the "static" keyword
  *   Includes in C++ wrappers
  *   	 - By default, the include will be <[classname].h>
  *   	 - All namespaces must have angle brackets: <path>
@@ -503,6 +503,52 @@ class SimpleCamera {
 // linear
 //*************************************************************************
 
+#include <gtsam/linear/NoiseModel.h>
+namespace noiseModel {
+class Gaussian {
+	static gtsam::noiseModel::Gaussian* SqrtInformation(Matrix R);
+	static gtsam::noiseModel::Gaussian* Covariance(Matrix R);
+//	Matrix R() const;		// FIXME: cannot parse!!!
+	void print(string s) const;
+};
+
+class Diagonal {
+	static gtsam::noiseModel::Diagonal* Sigmas(Vector sigmas);
+	static gtsam::noiseModel::Diagonal* Variances(Vector variances);
+	static gtsam::noiseModel::Diagonal* Precisions(Vector precisions);
+	Vector sample() const;
+//	Matrix R() const;		// FIXME: cannot parse!!!
+	void print(string s) const;
+};
+
+class Isotropic {
+	static gtsam::noiseModel::Isotropic* Sigma(size_t dim, double sigma);
+	static gtsam::noiseModel::Isotropic* Variance(size_t dim, double varianace);
+	static gtsam::noiseModel::Isotropic* Precision(size_t dim, double precision);
+	Vector sample() const;
+	void print(string s) const;
+};
+
+class Unit {
+	static gtsam::noiseModel::Unit* Create(size_t dim);
+	void print(string s) const;
+};
+}///\namespace noiseModel
+
+// TODO: smart flag not supported. Default argument is not wrapped properly yet
+class SharedNoiseModel {
+	static gtsam::SharedNoiseModel SqrtInformation(Matrix R);
+	static gtsam::SharedNoiseModel Covariance(Matrix covariance);
+	static gtsam::SharedNoiseModel Sigmas(Vector sigmas);
+	static gtsam::SharedNoiseModel Variances(Vector variances);
+	static gtsam::SharedNoiseModel Precisions(Vector precisions);
+	static gtsam::SharedNoiseModel Sigma(size_t dim, double sigma);
+	static gtsam::SharedNoiseModel Variance(size_t dim, double variance);
+	static gtsam::SharedNoiseModel Precision(size_t dim, double precision);
+	static gtsam::SharedNoiseModel Unit(size_t dim);
+	void print(string s) const;
+};
+
 class SharedGaussian {
 	SharedGaussian(Matrix covariance);
 	void print(string s) const;
@@ -512,17 +558,6 @@ class SharedDiagonal {
 	SharedDiagonal(Vector sigmas);
 	void print(string s) const;
 	Vector sample() const;
-};
-
-class SharedNoiseModel {
-	static gtsam::SharedNoiseModel Sigmas(Vector sigmas);
-	static gtsam::SharedNoiseModel Sigma(size_t dim, double sigma);
-	static gtsam::SharedNoiseModel Precisions(Vector precisions);
-	static gtsam::SharedNoiseModel Precision(size_t dim, double precision);
-	static gtsam::SharedNoiseModel Unit(size_t dim);
-	static gtsam::SharedNoiseModel SqrtInformation(Matrix R);
-	static gtsam::SharedNoiseModel Covariance(Matrix covariance);
-	void print(string s) const;
 };
 
 class VectorValues {
