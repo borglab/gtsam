@@ -188,6 +188,10 @@ TEST( Tensor2, reshape2 )
 {
 	Tensor2<3,4> actual = reshape2<3,4>(camera::vector);
 	CHECK(assert_equality(camera::M(a,A),actual(a,A)));
+
+	// reshape Matrix to rank 2 tensor
+	Tensor2<3,4> actual_m = reshape2matrix<3,4>(camera::matrix);
+	CHECK(assert_equality(camera::M(a,A), actual_m(a,A)));
 }
 
 /* ************************************************************************* */

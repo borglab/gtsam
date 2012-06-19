@@ -60,6 +60,18 @@ namespace gtsam {
 		return tensors::Tensor2<N1, N2>(data);
 	}
 
+  /** Reshape Matrix into rank 2 tensor */
+  template<int N1, int N2>
+  tensors::Tensor2<N1, N2> reshape2matrix(const Matrix& m) {
+    if (m.rows() * m.cols() != N1 * N2) throw std::invalid_argument(
+        "reshape2: incompatible dimensions");
+    double data[N2][N1];
+    for (int j = 0; j < N2; j++)
+      for (int i = 0; i < N1; i++)
+        data[j][i] = m(j,i);
+    return tensors::Tensor2<N1, N2>(data);
+  }
+
 	/** Reshape rank 3 tensor into Matrix */
 	template<class A, class I, class J, class K>
 	Matrix reshape(const tensors::Tensor3Expression<A, I, J, K>& T, int m, int n) {
