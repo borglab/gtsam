@@ -66,7 +66,6 @@ public:
    * copies the objects.
    * @param graph The nonlinear factor graph to optimize
    * @param initialValues The initial variable assignments
-   * @param params The optimization parameters
    */
   GaussNewtonOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues, const Ordering& ordering) :
         NonlinearOptimizer(graph), state_(graph, initialValues) {

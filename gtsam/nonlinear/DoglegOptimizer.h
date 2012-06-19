@@ -101,7 +101,6 @@ public:
    * copies the objects.
    * @param graph The nonlinear factor graph to optimize
    * @param initialValues The initial variable assignments
-   * @param params The optimization parameters
    */
   DoglegOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues, const Ordering& ordering) :
         NonlinearOptimizer(graph) {
