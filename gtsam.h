@@ -465,7 +465,7 @@ class SimpleCamera {
   SimpleCamera(const gtsam::Pose3& pose, const gtsam::Cal3_S2& K);
   static gtsam::SimpleCamera level(const gtsam::Cal3_S2& K,
       const gtsam::Pose2& pose, double height);
-  static gtsam::SimpleCamera level(const gtsam::Pose2& pose, double height);
+  // static gtsam::SimpleCamera level(const gtsam::Pose2& pose, double height); // FIXME overload
   static gtsam::SimpleCamera lookat(const gtsam::Point3& eye,
       const gtsam::Point3& target, const gtsam::Point3& upVector,
       const gtsam::Cal3_S2& K);
