@@ -19,8 +19,10 @@
 
 #include <gtsam/linear/Errors.h>
 #include <gtsam/inference/FactorGraph.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/VectorValues.h>
+#include <boost/shared_ptr.hpp>
 
 namespace gtsam {
 
@@ -64,5 +66,8 @@ namespace gtsam {
   void residual(const JacobianFactorGraph& fg, const VectorValues &x, VectorValues &r);
   void multiply(const JacobianFactorGraph& fg, const VectorValues &x, VectorValues &r);
   void transposeMultiply(const JacobianFactorGraph& fg, const VectorValues &r, VectorValues &x);
+
+  /** dynamic_cast the gaussian factors down to jacobian factors */
+  JacobianFactorGraph::shared_ptr dynamicCastFactors(const GaussianFactorGraph &gfg);
 
 }

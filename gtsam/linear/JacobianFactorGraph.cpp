@@ -102,6 +102,21 @@ void transposeMultiply(const JacobianFactorGraph& fg, const VectorValues &r, Vec
     ++i;
   }
 }
+
+/* ************************************************************************* */
+JacobianFactorGraph::shared_ptr dynamicCastFactors(const GaussianFactorGraph &gfg) {
+  JacobianFactorGraph::shared_ptr jfg(new JacobianFactorGraph());
+  jfg->reserve(gfg.size());
+  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, gfg) {
+    JacobianFactor::shared_ptr castedFactor(boost::dynamic_pointer_cast<JacobianFactor>(factor));
+    if(castedFactor) jfg->push_back(castedFactor);
+    else throw std::invalid_argument("dynamicCastFactors(), dynamic_cast failed, meaning an invalid cast was requested.");
+  }
+  return jfg;
+}
+
+
+
 } // namespace
 
 
