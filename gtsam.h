@@ -1001,7 +1001,7 @@ class Graph {
   void addRangeFactor(size_t poseKey, size_t pointKey, double range, const gtsam::SharedNoiseModel& model);
   void addOdometry(size_t poseKey1, size_t poseKey2, const gtsam::Pose3& odometry, const gtsam::SharedNoiseModel& model);
 
-  visualSLAM::Values optimize(const visualSLAM::Values& initialEstimate) const;
+  visualSLAM::Values optimize(const visualSLAM::Values& initialEstimate, size_t verbosity) const;
   gtsam::Marginals marginals(const visualSLAM::Values& solution) const;
 };
 
