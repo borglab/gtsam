@@ -21,9 +21,14 @@
 
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/linear/NoiseModel.h>
 
 using gtsam::Vector;
 using gtsam::Matrix;
+using gtsam::noiseModel::Gaussian;
+using gtsam::noiseModel::Diagonal;
+using gtsam::noiseModel::Isotropic;
+using gtsam::noiseModel::Unit;
 
 extern "C" {
 #include <mex.h>
@@ -453,8 +458,9 @@ mxArray* wrap_shared_ptr(boost::shared_ptr< Class > shared_ptr, const char *clas
 */
 template <typename Class>
 boost::shared_ptr<Class> unwrap_shared_ptr(const mxArray* obj, const string& className) {
-    //Why is this here?
-#ifndef UNSAFE_WRAP
+	#ifndef UNSAFE_WRAP
+  // Useful code to check argument type
+	// Problem, does not support inheritance
   bool isClass = mxIsClass(obj, className.c_str());
   if (!isClass) {
     mexPrintf("Expected %s, got %s\n", className.c_str(), mxGetClassName(obj));
@@ -466,6 +472,65 @@ boost::shared_ptr<Class> unwrap_shared_ptr(const mxArray* obj, const string& cla
   ObjectHandle<Class>* handle = ObjectHandle<Class>::from_mex_handle(mxh);
   return handle->get_object();
 }
+
+/*
+ * Specialized template for noise model. Checking their derived types properly
+ */
+// Isotropic
+template <>
+boost::shared_ptr<Isotropic> unwrap_shared_ptr(const mxArray* obj, const string& className) {
+#ifndef UNSAFE_WRAP
+  bool isIsotropic = mxIsClass(obj, "gtsamnoiseModelIsotropic");
+  bool isUnit = mxIsClass(obj, "gtsamnoiseModelUnit");
+  if (!isIsotropic && !isUnit) {
+    mexPrintf("Expected Isotropic or derived classes, got %s\n", mxGetClassName(obj));
+    error("Argument has wrong type.");
+  }
+#endif
+  mxArray* mxh = mxGetProperty(obj,0,"self");
+  if (mxh==NULL) error("unwrap_reference: invalid wrap object");
+  ObjectHandle<Isotropic>* handle = ObjectHandle<Isotropic>::from_mex_handle(mxh);
+  return handle->get_object();
+}
+
+// Diagonal
+template <>
+boost::shared_ptr<Diagonal> unwrap_shared_ptr(const mxArray* obj, const string& className) {
+#ifndef UNSAFE_WRAP
+	bool isDiagonal = mxIsClass(obj, "gtsamnoiseModelDiagonal");
+  bool isIsotropic = mxIsClass(obj, "gtsamnoiseModelIsotropic");
+  bool isUnit = mxIsClass(obj, "gtsamnoiseModelUnit");
+  if (!isDiagonal && !isIsotropic && !isUnit ) {
+    mexPrintf("Expected Diagonal or derived classes, got %s\n", mxGetClassName(obj));
+    error("Argument has wrong type.");
+  }
+#endif
+  mxArray* mxh = mxGetProperty(obj,0,"self");
+  if (mxh==NULL) error("unwrap_reference: invalid wrap object");
+  ObjectHandle<Isotropic>* handle = ObjectHandle<Isotropic>::from_mex_handle(mxh);
+  return handle->get_object();
+}
+
+// Gaussian
+template <>
+boost::shared_ptr<Gaussian> unwrap_shared_ptr(const mxArray* obj, const string& className) {
+#ifndef UNSAFE_WRAP
+	bool isGaussian = mxIsClass(obj, "gtsamnoiseModelGaussian");
+	bool isDiagonal = mxIsClass(obj, "gtsamnoiseModelDiagonal");
+  bool isIsotropic = mxIsClass(obj, "gtsamnoiseModelIsotropic");
+  bool isUnit = mxIsClass(obj, "gtsamnoiseModelUnit");
+  if (!isGaussian && !isDiagonal && !isIsotropic && !isUnit) {
+    mexPrintf("Expected Gaussian or derived classes, got %s\n", mxGetClassName(obj));
+    error("Argument has wrong type.");
+  }
+#endif
+  mxArray* mxh = mxGetProperty(obj,0,"self");
+  if (mxh==NULL) error("unwrap_reference: invalid wrap object");
+  ObjectHandle<Isotropic>* handle = ObjectHandle<Isotropic>::from_mex_handle(mxh);
+  return handle->get_object();
+}
+
+//end specialized templates
 
 template <typename Class>
 void delete_shared_ptr(const mxArray* obj, const string& className) {
