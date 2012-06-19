@@ -112,6 +112,8 @@ namespace gtsam {
 		 * as indeed
 		 *   |y|^2 = y'*y = x'*R'*R*x
 		 * Various derived classes are available that are more efficient.
+		 * The named constructors return a shared_ptr because, when the smart flag is true,
+		 * the underlying object might be a derived class such as Diagonal.
 		 */
 		class Gaussian: public Base {
 
@@ -274,8 +276,8 @@ namespace gtsam {
 			 * A diagonal noise model created by specifying a Vector of precisions, i.e.
 			 * i.e. the diagonal of the information matrix, i.e., weights
 			 */
-			static shared_ptr Precisions(const Vector& precisions) {
-				return Variances(reciprocal(precisions));
+			static shared_ptr Precisions(const Vector& precisions, bool smart = false) {
+				return Variances(reciprocal(precisions), smart);
 			}
 
 			virtual void print(const std::string& name) const;
@@ -496,9 +498,7 @@ namespace gtsam {
 			/**
 			 * An isotropic noise model created by specifying a standard devation sigma
 			 */
-			static shared_ptr Sigma(size_t dim, double sigma) {
-				return shared_ptr(new Isotropic(dim, sigma));
-			}
+			static shared_ptr Sigma(size_t dim, double sigma, bool smart = false);
 
 			/**
 			 * An isotropic noise model created by specifying a variance = sigma^2.
@@ -509,8 +509,8 @@ namespace gtsam {
 			/**
 			 * An isotropic noise model created by specifying a precision
 			 */
-			static shared_ptr Precision(size_t dim, double precision)  {
-				return Variance(dim, 1.0/precision);
+			static shared_ptr Precision(size_t dim, double precision, bool smart = false)  {
+				return Variance(dim, 1.0/precision, smart);
 			}
 
 			virtual void print(const std::string& name) const;

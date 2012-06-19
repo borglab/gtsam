@@ -423,6 +423,12 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
 /* ************************************************************************* */
 // Isotropic
 /* ************************************************************************* */
+Isotropic::shared_ptr Isotropic::Sigma(size_t dim, double sigma, bool smart)  {
+	if (smart && fabs(sigma-1.0)<1e-9) return Unit::Create(dim);
+	return shared_ptr(new Isotropic(dim, sigma));
+}
+
+/* ************************************************************************* */
 Isotropic::shared_ptr Isotropic::Variance(size_t dim, double variance, bool smart)  {
 	if (smart && fabs(variance-1.0)<1e-9) return Unit::Create(dim);
 	return shared_ptr(new Isotropic(dim, sqrt(variance)));
