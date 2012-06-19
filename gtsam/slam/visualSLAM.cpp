@@ -17,6 +17,7 @@
 
 #include <gtsam/slam/visualSLAM.h>
 #include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <boost/make_shared.hpp>
 
 using boost::make_shared;
@@ -119,5 +120,12 @@ namespace visualSLAM {
     push_back(make_shared<BetweenFactor<Pose3> >(x1, x2, odometry, model));
   }
 
+  /* ************************************************************************* */
+  Values Graph::optimize(const Values& initialEstimate, size_t verbosity) const {
+    LevenbergMarquardtParams params;
+    params.verbosity = (NonlinearOptimizerParams::Verbosity)verbosity;
+    LevenbergMarquardtOptimizer optimizer(*this, initialEstimate,params);
+    return optimizer.optimize();
+  }
   /* ************************************************************************* */
 }

@@ -20,14 +20,16 @@
 #pragma once
 
 #include <gtsam/slam/PriorFactor.h>
-#include <gtsam/slam/ProjectionFactor.h>
-#include <gtsam/slam/StereoFactor.h>
 #include <gtsam/slam/RangeFactor.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/NonlinearEquality.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/slam/StereoFactor.h>
+#include <gtsam/slam/ProjectionFactor.h>
+
 #include <gtsam/nonlinear/Marginals.h>
 #include <gtsam/nonlinear/NonlinearISAM.h>
+#include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+
 #include <gtsam/geometry/SimpleCamera.h>
 
 namespace visualSLAM {
@@ -213,9 +215,7 @@ namespace visualSLAM {
      *  @param range approximate range to landmark
      *  @param model uncertainty model of this prior
      */
-    Values optimize(const Values& initialEstimate) {
-      return LevenbergMarquardtOptimizer(*this, initialEstimate).optimize();
-    }
+    Values optimize(const Values& initialEstimate, size_t verbosity) const;
 
     /// Return a Marginals object
     Marginals marginals(const Values& solution) const {

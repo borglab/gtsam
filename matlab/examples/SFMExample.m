@@ -49,18 +49,20 @@ graph.addPointPrior(symbol('p',1), truth.points{1}, pointPriorNoise);
 %% Print the graph
 graph.print(sprintf('\nFactor graph:\n'));
 
-%% Initialize cameras and points to ground truth in this example
+%% Initialize cameras and points close to ground truth in this example
 initialEstimate = visualSLAMValues;
 for i=1:size(truth.cameras,2)
-    initialEstimate.insertPose(symbol('x',i), truth.cameras{i}.pose);
+    pose_i = truth.cameras{i}.pose.retract(0.1*randn(6,1));
+    initialEstimate.insertPose(symbol('x',i), pose_i);
 end
 for j=1:size(truth.points,2)
-    initialEstimate.insertPoint(symbol('p',j), truth.points{j});
+    point_j = truth.points{j}.retract(0.1*randn(3,1));
+    initialEstimate.insertPoint(symbol('p',j), point_j);
 end
 initialEstimate.print(sprintf('\nInitial estimate:\n  '));
 
 %% Optimize using Levenberg-Marquardt optimization with an ordering from colamd
-result = graph.optimize(initialEstimate);
+result = graph.optimize(initialEstimate,1);
 result.print(sprintf('\nFinal result:\n  '));
 
 %% Plot results with covariance ellipses

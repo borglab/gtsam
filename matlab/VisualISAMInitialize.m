@@ -49,7 +49,7 @@ newFactors.addOdometry(symbol('x',1), symbol('x',2), data.odometry{1}, noiseMode
 
 %% Update ISAM
 if options.batchInitialization % Do a full optimize for first two poses
-    fullyOptimized = newFactors.optimize(initialEstimates);
+    fullyOptimized = newFactors.optimize(initialEstimates,0);
     isam.update(newFactors, fullyOptimized);
 else
     isam.update(newFactors, initialEstimates);
