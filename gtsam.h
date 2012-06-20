@@ -489,7 +489,6 @@ class SimpleCamera {
   pair<gtsam::Point2,bool> projectSafe(const gtsam::Point3& pw) const;
 	gtsam::Point2 project(const gtsam::Point3& point);
 	gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
-	gtsam::Point3 backproject_from_camera(const gtsam::Point2& p, double depth) const;
   double range(const gtsam::Point3& point);
   // double range(const gtsam::Pose3& point); // FIXME, overload
 };
