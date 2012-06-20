@@ -10,10 +10,9 @@
  * -------------------------------------------------------------------------- */
 
 /*
- * DerivedValue.h
- *
- *  Created on: Jan 26, 2012
- *      Author: thduynguyen
+ * @file DerivedValue.h
+ * @date Jan 26, 2012
+ * @author Duy Nguyen Ta
  */
 
 #pragma once

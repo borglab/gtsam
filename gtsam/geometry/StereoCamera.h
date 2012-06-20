@@ -30,13 +30,17 @@ namespace gtsam {
  * A stereo camera class, parameterize by left camera pose and stereo calibration
  * @addtogroup geometry
  */
-class StereoCamera {
+class StereoCamera  : public DerivedValue<StereoCamera> {
 
 private:
 	Pose3 leftCamPose_;
 	Cal3_S2Stereo::shared_ptr K_;
 
 public:
+
+	/// @name Standard Constructors
+	/// @{
+
 	StereoCamera() {
 	}
 
@@ -45,6 +49,54 @@ public:
 	const Cal3_S2Stereo::shared_ptr calibration() const {
 		return K_;
 	}
+
+  /// @}
+  /// @name Testable
+  /// @{
+
+	void print(const std::string& s = "") const {
+		leftCamPose_.print(s + ".camera.");
+		K_->print(s + ".calibration.");
+	}
+
+	bool equals(const StereoCamera &camera, double tol = 1e-9) const {
+		return leftCamPose_.equals(camera.leftCamPose_, tol) && K_->equals(
+				*camera.K_, tol);
+	}
+
+  /// @}
+  /// @name Manifold
+  /// @{
+
+	/** Dimensionality of the tangent space */
+	inline size_t dim() const {
+		return 6;
+	}
+
+	/** Dimensionality of the tangent space */
+	static inline size_t Dim() {
+		return 6;
+	}
+
+	/// Updates a with tangent space delta
+	inline StereoCamera retract(const Vector& v) const {
+		return StereoCamera(pose().retract(v), K_);
+	}
+
+	/// Local coordinates of manifold neighborhood around current value
+	inline Vector localCoordinates(const StereoCamera& t2) const {
+		return Vector(leftCamPose_.localCoordinates(t2.leftCamPose_));
+	}
+
+	Pose3 between(const StereoCamera &camera,
+			boost::optional<Matrix&> H1=boost::none,
+			boost::optional<Matrix&> H2=boost::none) const {
+		return leftCamPose_.between(camera.pose(), H1, H2);
+	}
+
+  /// @}
+	/// @name Standard Interface
+	/// @{
 
 	const Pose3& pose() const {
 		return leftCamPose_;
@@ -80,40 +132,7 @@ public:
 		return world_point;
 	}
 
-	/** Dimensionality of the tangent space */
-	inline size_t dim() const {
-		return 6;
-	}
-
-	/** Dimensionality of the tangent space */
-	static inline size_t Dim() {
-		return 6;
-	}
-
-	bool equals(const StereoCamera &camera, double tol = 1e-9) const {
-		return leftCamPose_.equals(camera.leftCamPose_, tol) && K_->equals(
-				*camera.K_, tol);
-	}
-
-	// Manifold requirements - use existing expmap/logmap
-	inline StereoCamera retract(const Vector& v) const {
-		return StereoCamera(pose().retract(v), K_);
-	}
-
-	inline Vector localCoordinates(const StereoCamera& t2) const {
-		return Vector(leftCamPose_.localCoordinates(t2.leftCamPose_));
-	}
-
-	Pose3 between(const StereoCamera &camera,
-			boost::optional<Matrix&> H1=boost::none,
-			boost::optional<Matrix&> H2=boost::none) const {
-		return leftCamPose_.between(camera.pose(), H1, H2);
-	}
-
-	void print(const std::string& s = "") const {
-		leftCamPose_.print(s + ".camera.");
-		K_->print(s + ".calibration.");
-	}
+	/// @}
 
 private:
 	/** utility functions */
