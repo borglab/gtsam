@@ -40,6 +40,10 @@ namespace gtsam {
  * arguments supplied through the square-bracket [] operator through the
  * permutation.  Note that this helper class stores a reference to the original
  * container.
+ *
+ * Permutations can be considered to a 1-1 mapping from an original set of indices
+ * to a different set of indices.  Permutations can be composed and inverted
+ * in order to create new indexing for a structure.
  * \nosubgrouping
  */
 class Permutation {

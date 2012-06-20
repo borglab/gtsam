@@ -38,7 +38,11 @@ namespace gtsam {
 				const VariableIndex& variableIndex);
 
 		/**
-		 * Compute a permutation (variable ordering) using constrained colamd
+		 * Compute a permutation (variable ordering) using constrained colamd to move
+		 * a set of variables to the end of the ordering
+		 * @param variableIndex is the variable index lookup from a graph
+		 * @param constrainlast is a vector of keys that should be constrained
+		 * @tparam constrainLast is a std::vector (or similar structure)
 		 */
 		template<typename CONSTRAINED>
 		Permutation::shared_ptr PermutationCOLAMD(
@@ -46,6 +50,13 @@ namespace gtsam {
 
 		/**
 		 * Compute a CCOLAMD permutation using the constraint groups in cmember.
+		 *
+		 * @param variableIndex is the variable structure from a graph
+		 * @param cmember is the constraint group list for each variable, where
+		 * 0 is the default, unconstrained group, and higher numbers move further to
+		 * the back of the list
+		 *
+		 * AGC: does cmember change?
 		 */
 		Permutation::shared_ptr PermutationCOLAMD_(
 				const VariableIndex& variableIndex, std::vector<int>& cmember);
@@ -82,8 +93,8 @@ namespace gtsam {
 			return eliminate(factorGraph, variables, eliminateFcn, variableIndex);
 		}
 
-	} // namespace inference
+	} // \namespace inference
 
-} // namespace gtsam
+} // \namespace gtsam
 
 #include <gtsam/inference/inference-inl.h>

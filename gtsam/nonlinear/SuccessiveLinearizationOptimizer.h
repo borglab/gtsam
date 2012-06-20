@@ -105,6 +105,7 @@ public:
 
     default:
       throw std::runtime_error("Nonlinear optimization parameter \"factorization\" is invalid");
+      return EliminateQR;
       break;
     }
   }

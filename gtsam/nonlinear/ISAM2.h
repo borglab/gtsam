@@ -232,8 +232,12 @@ struct ISAM2Result {
   boost::optional<DetailedResults> detail;
 };
 
-struct ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique, GaussianConditional> {
-
+/**
+ * Specialized Clique structure for ISAM2, incorporating caching and gradient contribution
+ * TODO: more documentation
+ */
+class ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique, GaussianConditional> {
+public:
   typedef ISAM2Clique This;
   typedef BayesTreeCliqueBase<This,GaussianConditional> Base;
   typedef boost::shared_ptr<This> shared_ptr;
@@ -268,7 +272,7 @@ struct ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique, GaussianConditional
   }
 
   /** Access the cached factor */
-   Base::FactorType::shared_ptr& cachedFactor() { return cachedFactor_; }
+  Base::FactorType::shared_ptr& cachedFactor() { return cachedFactor_; }
 
   /** Access the gradient contribution */
   const Vector& gradientContribution() const { return gradientContribution_; }
@@ -300,6 +304,7 @@ struct ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique, GaussianConditional
   }
 
 private:
+
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -308,7 +313,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(cachedFactor_);
     ar & BOOST_SERIALIZATION_NVP(gradientContribution_);
   }
-};
+}; // \struct ISAM2Clique
 
 /**
  * @addtogroup ISAM2
@@ -442,6 +447,8 @@ public:
    * @param force_relinearize Relinearize any variables whose delta magnitude is sufficiently
    * large (Params::relinearizeThreshold), regardless of the relinearization interval
    * (Params::relinearizeSkip).
+   * @param constrainedKeys is an optional map of keys to group labels, such that a variable can
+   * be constrained to a particular grouping in the BayesTree
    * @return An ISAM2Result struct containing information about the update
    */
   ISAM2Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values(),
@@ -450,7 +457,7 @@ public:
       bool force_relinearize = false);
 
   /** Access the current linearization point */
-  const Values& getLinearizationPoint() const {return theta_;}
+  const Values& getLinearizationPoint() const { return theta_; }
 
   /** Compute an estimate from the incomplete linear delta computed during the last update.
    * This delta is incomplete because it was not updated below wildfire_threshold.  If only
@@ -496,7 +503,7 @@ public:
   mutable size_t lastBacksubVariableCount;
   size_t lastNnzTop;
 
-  ISAM2Params params() const { return params_; }
+  const ISAM2Params& params() const { return params_; }
 
   //@}
 
