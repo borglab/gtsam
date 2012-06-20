@@ -299,7 +299,7 @@ namespace tensors {
 	const Tensor2Expression<B, I, J>& actual, double tol = 1e-9) {
 		if (actual.equivalent(expected, tol))
 			return true;
-		std::cout << "Not equal:\n";
+		std::cout << "Not equivalent:\n";
 		expected.print("expected:\n");
 		actual.print("actual:\n");
 		return false;
