@@ -49,6 +49,22 @@ Permutation::shared_ptr PermutationCOLAMD(
 }
 
 /* ************************************************************************* */
+template<typename CONSTRAINED_MAP>
+Permutation::shared_ptr PermutationCOLAMDGrouped(
+		const VariableIndex& variableIndex, const CONSTRAINED_MAP& constraints) {
+  std::vector<int> cmember(variableIndex.size(), 0);
+
+	typedef typename CONSTRAINED_MAP::value_type constraint_pair;
+  BOOST_FOREACH(const constraint_pair& p, constraints) {
+  	assert(p.first < variableIndex.size());
+  	// FIXME: check that no groups are skipped
+  	cmember[p.first] = p.second;
+  }
+
+  return PermutationCOLAMD_(variableIndex, cmember);
+}
+
+/* ************************************************************************* */
 inline Permutation::shared_ptr PermutationCOLAMD(const VariableIndex& variableIndex) {
   std::vector<int> cmember(variableIndex.size(), 0);
   return PermutationCOLAMD_(variableIndex, cmember);

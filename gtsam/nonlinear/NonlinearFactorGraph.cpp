@@ -83,9 +83,34 @@ Ordering::shared_ptr NonlinearFactorGraph::orderingCOLAMD(
 
 	// Permute the Ordering with the COLAMD ordering
 	ordering->permuteWithInverse(*colamdPerm->inverse());
+	return ordering;
+}
 
-	// Return the Ordering and VariableIndex to be re-used during linearization
-	// and elimination
+/* ************************************************************************* */
+Ordering::shared_ptr NonlinearFactorGraph::orderingCOLAMDConstrained(const Values& config,
+		const std::map<Key, int>& constraints) const {
+	// Create symbolic graph and initial (iterator) ordering
+	SymbolicFactorGraph::shared_ptr symbolic;
+	Ordering::shared_ptr ordering;
+	boost::tie(symbolic, ordering) = this->symbolic(config);
+
+	// Compute the VariableIndex (column-wise index)
+	VariableIndex variableIndex(*symbolic, ordering->size());
+	if (config.size() != variableIndex.size()) throw std::runtime_error(
+			"orderingCOLAMD: some variables in the graph are not constrained!");
+
+	// Create a constraint list with correct indices
+	typedef std::map<Key, int>::value_type constraint_type;
+	std::map<Index, int> index_constraints;
+	BOOST_FOREACH(const constraint_type& p, constraints)
+		index_constraints[ordering->at(p.first)] = p.second;
+
+	// Compute a constrained fill-reducing ordering with COLAMD
+	Permutation::shared_ptr colamdPerm(inference::PermutationCOLAMDGrouped(
+			variableIndex, index_constraints));
+
+	// Permute the Ordering with the COLAMD ordering
+	ordering->permuteWithInverse(*colamdPerm->inverse());
 	return ordering;
 }
 

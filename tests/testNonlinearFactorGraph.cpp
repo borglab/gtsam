@@ -83,7 +83,14 @@ TEST( Graph, GET_ORDERING)
   Ordering::shared_ptr ordering;
   boost::tie(symbolic, ordering) = nlfg.symbolic(createNoisyValues());
   Ordering actual = *nlfg.orderingCOLAMD(createNoisyValues());
-  CHECK(assert_equal(expected,actual));
+  EXPECT(assert_equal(expected,actual));
+
+  // Constrained ordering - put x2 at the end
+  std::map<Key, int> constraints;
+  constraints[X(2)] = 1;
+  Ordering actualConstrained = *nlfg.orderingCOLAMDConstrained(createNoisyValues(), constraints);
+  Ordering expectedConstrained; expectedConstrained += L(1), X(1), X(2);
+  EXPECT(assert_equal(expectedConstrained, actualConstrained));
 }
 
 /* ************************************************************************* */
@@ -146,8 +153,5 @@ TEST( Graph, rekey )
 }
 
 /* ************************************************************************* */
-int main() {
-	TestResult tr;
-	return TestRegistry::runAllTests(tr);
-}
+int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

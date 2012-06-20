@@ -75,11 +75,20 @@ namespace gtsam {
 		symbolic(const Values& config) const;
 
     /**
-     * Compute a fill-reducing ordering using COLAMD.  This returns the
-     * ordering and a VariableIndex, which can later be re-used to save
-     * computation.
+     * Compute a fill-reducing ordering using COLAMD.
      */
 		Ordering::shared_ptr orderingCOLAMD(const Values& config) const;
+
+		/**
+		 * Compute a fill-reducing ordering with constraints using CCOLAMD
+		 *
+		 * @param constraints is a map of Key->group, where 0 is unconstrained, and higher
+		 * group numbers are further back in the ordering. Only keys with nonzero group
+		 * indices need to appear in the constraints, unconstrained is assumed for all
+		 * other variables
+		 */
+	  Ordering::shared_ptr orderingCOLAMDConstrained(const Values& config,
+	  		const std::map<Key, int>& constraints) const;
 
 		/**
 		 * linearize a nonlinear factor graph

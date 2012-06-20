@@ -82,5 +82,37 @@ TEST(inference, constrained_ordering) {
 }
 
 /* ************************************************************************* */
+TEST(inference, grouped_constrained_ordering) {
+  SymbolicFactorGraph sfg;
+
+  // create graph with constrained groups:
+  // 1: 2, 4
+  // 2: 5
+  sfg.push_factor(0,1);
+  sfg.push_factor(1,2);
+  sfg.push_factor(2,3);
+  sfg.push_factor(3,4);
+  sfg.push_factor(4,5);
+
+  VariableIndex variableIndex(sfg);
+
+  // constrained version - push one set to the end
+  FastMap<size_t, int> constraints;
+  constraints[2] = 1;
+  constraints[4] = 1;
+  constraints[5] = 2;
+
+  Permutation::shared_ptr actConstrained(inference::PermutationCOLAMDGrouped(variableIndex, constraints));
+  Permutation expConstrained(6);
+  expConstrained[0] = 0;
+  expConstrained[1] = 1;
+  expConstrained[2] = 3;
+  expConstrained[3] = 2;
+  expConstrained[4] = 4;
+  expConstrained[5] = 5;
+  EXPECT(assert_equal(expConstrained, *actConstrained));
+}
+
+/* ************************************************************************* */
 int main() {  TestResult tr;  return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
