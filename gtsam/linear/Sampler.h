@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file Sampler.h
  * @brief sampling that can be parameterized using a NoiseModel to generate samples from
+ * @file Sampler.h
  * the given distribution
  * @author Alex Cunningham
  */
@@ -88,4 +88,4 @@ protected:
 
 };
 
-}
+} // \namespace gtsam

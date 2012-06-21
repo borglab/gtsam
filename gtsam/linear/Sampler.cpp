@@ -18,7 +18,6 @@
 #include <boost/random/variate_generator.hpp>
 
 #include <gtsam/linear/Sampler.h>
-
 namespace gtsam {
 
 /* ************************************************************************* */
