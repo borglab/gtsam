@@ -557,9 +557,26 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
-  template<class CONTAINER>
-  void BayesTree<CONDITIONAL,CLIQUE>::removeTop(const CONTAINER& keys,
+	void BayesTree<CONDITIONAL, CLIQUE>::deleteCachedShorcuts(const sharedClique& subtree) {
+		// Check if subtree exists
+		if (subtree) {
+			//Delete CachedShortcut for this clique
+			subtree->resetCachedShortcut();
+			// Recursive call over all child cliques
+			BOOST_FOREACH(sharedClique& childClique, subtree->children()) {
+				deleteCachedShorcuts(childClique);
+			}
+		}
+	}
+
+	/* ************************************************************************* */
+	template<class CONDITIONAL, class CLIQUE>
+	template<class CONTAINER>
+	void BayesTree<CONDITIONAL,CLIQUE>::removeTop(const CONTAINER& keys,
   		BayesNet<CONDITIONAL>& bn, typename BayesTree<CONDITIONAL,CLIQUE>::Cliques& orphans) {
+
+		//TODO: Improve this
+		deleteCachedShorcuts(this->root_);
 
 		// process each key of the new factor
 	  BOOST_FOREACH(const Index& key, keys) {

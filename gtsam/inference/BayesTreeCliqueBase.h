@@ -80,6 +80,9 @@ namespace gtsam {
     derived_weak_ptr parent_;
     std::list<derived_ptr> children_;
 
+    /// This stores the Cached Shortcut value
+    mutable boost::optional<BayesNet<ConditionalType> > cachedShortcut_;
+
   	/// @name Testable
   	/// @{
 
@@ -150,14 +153,13 @@ namespace gtsam {
     bool permuteSeparatorWithInverse(const Permutation& inversePermutation);
 
     /** return the conditional P(S|Root) on the separator given the root */
-    // TODO: create a cached version
-    BayesNet<ConditionalType> shortcut(derived_ptr root, Eliminate function);
+    BayesNet<ConditionalType> shortcut(derived_ptr root, Eliminate function) const;
 
     /** return the marginal P(C) of the clique */
-    FactorGraph<FactorType> marginal(derived_ptr root, Eliminate function);
+    FactorGraph<FactorType> marginal(derived_ptr root, Eliminate function) const;
 
     /** return the joint P(C1,C2), where C1==this. TODO: not a method? */
-    FactorGraph<FactorType> joint(derived_ptr C2, derived_ptr root, Eliminate function);
+    FactorGraph<FactorType> joint(derived_ptr C2, derived_ptr root, Eliminate function) const;
 
     friend class BayesTree<ConditionalType, DerivedType>;
 
@@ -165,6 +167,9 @@ namespace gtsam {
 
     ///TODO: comment
     void assertInvariants() const;
+
+    /// Reset the computed shortcut of this clique. Used by friend BayesTree
+    void resetCachedShortcut() { cachedShortcut_ = boost::none; }
 
   private:
 

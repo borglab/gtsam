@@ -280,6 +280,12 @@ namespace gtsam {
 		sharedClique insert(const sharedConditional& clique,
 				std::list<sharedClique>& children, bool isRootClique = false);
 
+		/**
+		 * This deletes the cached shortcuts of all cliques in a subtree. This is
+		 * performed when the bayes tree is modified.
+		 */
+		void deleteCachedShorcuts(const sharedClique& subtree);
+
   private:
 
     /** deep copy to another tree */
