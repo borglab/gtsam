@@ -43,6 +43,12 @@ namespace gtsam {
     SymbolicMultifrontalSolver(const SymbolicFactorGraph::shared_ptr& factorGraph,
         const VariableIndex::shared_ptr& variableIndex) : Base(factorGraph, variableIndex) {};
 
+    /** Print to cout */
+    void print(const std::string& name = "SymbolicMultifrontalSolver: ") const { Base::print(name); };
+
+    /** Test whether is equal to another */
+    bool equals(const SymbolicMultifrontalSolver& other, double tol = 1e-9) const { return Base::equals(other, tol); };
+
     /**
      * Eliminate the factor graph sequentially.  Uses a column elimination tree
      * to recursively eliminate.

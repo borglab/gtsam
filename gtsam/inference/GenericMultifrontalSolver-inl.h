@@ -39,6 +39,22 @@ namespace gtsam {
 			structure_(variableIndex), junctionTree_(new JT(*graph, *structure_)) {
 	}
 
+  /* ************************************************************************* */
+	template<class F, class JT>
+  void GenericMultifrontalSolver<F, JT>::print(const std::string& s) const {
+    this->structure_->print(s + " structure:\n");
+    this->junctionTree_->print(s + " jtree:");
+  }
+
+  /* ************************************************************************* */
+	template<class F, class JT>
+  bool GenericMultifrontalSolver<F, JT>::equals(
+      const GenericMultifrontalSolver& expected, double tol) const {
+    if (!this->structure_->equals(*expected.structure_, tol)) return false;
+    if (!this->junctionTree_->equals(*expected.junctionTree_, tol)) return false;
+    return true;
+  }
+
 	/* ************************************************************************* */
 	template<class F, class JT>
 	void GenericMultifrontalSolver<F, JT>::replaceFactors(const sharedGraph& graph) {

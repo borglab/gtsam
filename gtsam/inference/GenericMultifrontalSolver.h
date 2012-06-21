@@ -72,7 +72,17 @@ namespace gtsam {
 		GenericMultifrontalSolver(const sharedGraph& factorGraph,
 				const VariableIndex::shared_ptr& variableIndex);
 
-		/// @}
+    /// @}
+    /// @name Testable
+    /// @{
+
+    /** Print to cout */
+    void print(const std::string& name = "GenericMultifrontalSolver: ") const;
+
+    /** Test whether is equal to another */
+    bool equals(const GenericMultifrontalSolver& other, double tol = 1e-9) const;
+
+    /// @}
 		/// @name Standard Interface
 		/// @{
 
