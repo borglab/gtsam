@@ -53,6 +53,7 @@ void NonlinearISAM::update(const NonlinearFactorGraph& newFactors,
     linPoint_.insert(initialValues);
 
     // Augment ordering
+    // TODO: allow for ordering constraints within the new variables
     // FIXME: should just loop over new values
     BOOST_FOREACH(const NonlinearFactorGraph::sharedFactor& factor, newFactors)
       BOOST_FOREACH(Key key, factor->keys())
@@ -77,9 +78,11 @@ void NonlinearISAM::reorder_relinearize() {
     isam_.clear();
 
     // Compute an ordering
+    // TODO: allow for constrained ordering here
     ordering_ = *factors_.orderingCOLAMD(newLinPoint);
 
     // Create a linear factor graph at the new linearization point
+    // TODO: decouple relinearization and reordering to avoid
     boost::shared_ptr<GaussianFactorGraph> gfg = factors_.linearize(newLinPoint, ordering_);
 
     // Just recreate the whole BayesTree

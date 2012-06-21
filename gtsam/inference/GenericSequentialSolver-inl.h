@@ -96,7 +96,7 @@ namespace gtsam {
 		// copies.  Other parts of the code may hold shared_ptr's to these factors so
 		// we must undo the permutation before returning.
 		BOOST_FOREACH(const typename boost::shared_ptr<FACTOR>& factor, *factors_)
-						if (factor) factor->permuteWithInverse(*permutationInverse);
+			if (factor) factor->permuteWithInverse(*permutationInverse);
 
 		// Eliminate all variables
 		typename BayesNet<typename FACTOR::ConditionalType>::shared_ptr
@@ -104,20 +104,20 @@ namespace gtsam {
 
 		// Undo the permuation on the original factors and on the structure.
 		BOOST_FOREACH(const typename boost::shared_ptr<FACTOR>& factor, *factors_)
-					if (factor) factor->permuteWithInverse(*permutation);
+			if (factor) factor->permuteWithInverse(*permutation);
 
 		// Take the joint marginal from the Bayes net.
 		sharedFactorGraph joint(new FactorGraph<FACTOR> );
 		joint->reserve(js.size());
 		typename BayesNet<typename FACTOR::ConditionalType>::const_reverse_iterator
-				conditional = bayesNet->rbegin();
+			conditional = bayesNet->rbegin();
 
 		for (size_t i = 0; i < js.size(); ++i)
 			joint->push_back((*(conditional++))->toFactor());
 
 		// Undo the permutation on the eliminated joint marginal factors
 		BOOST_FOREACH(const typename boost::shared_ptr<FACTOR>& factor, *joint)
-						factor->permuteWithInverse(*permutation);
+			factor->permuteWithInverse(*permutation);
 
 		return joint;
 	}

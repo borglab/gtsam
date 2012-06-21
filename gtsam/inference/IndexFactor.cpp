@@ -58,7 +58,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	void IndexFactor::permuteWithInverse(const Permutation& inversePermutation) {
 		BOOST_FOREACH(Index& key, keys())
-						key = inversePermutation[key];
+			key = inversePermutation[key];
 		assertInvariants();
 	}
 	/* ************************************************************************* */

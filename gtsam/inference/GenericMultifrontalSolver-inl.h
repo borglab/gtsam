@@ -47,13 +47,16 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class FACTOR, class JUNCTIONTREE>
-	typename BayesTree<typename FACTOR::ConditionalType>::shared_ptr GenericMultifrontalSolver<FACTOR, JUNCTIONTREE>::eliminate(Eliminate function) const {
+	typename BayesTree<typename FACTOR::ConditionalType>::shared_ptr
+	GenericMultifrontalSolver<FACTOR, JUNCTIONTREE>::eliminate(Eliminate function) const {
 
 		// eliminate junction tree, returns pointer to root
-		typename BayesTree<typename FACTOR::ConditionalType>::sharedClique root = junctionTree_->eliminate(function);
+		typename BayesTree<typename FACTOR::ConditionalType>::sharedClique
+			root = junctionTree_->eliminate(function);
 
 		// create an empty Bayes tree and insert root clique
-		typename BayesTree<typename FACTOR::ConditionalType>::shared_ptr bayesTree(new BayesTree<typename FACTOR::ConditionalType>);
+		typename BayesTree<typename FACTOR::ConditionalType>::shared_ptr
+			bayesTree(new BayesTree<typename FACTOR::ConditionalType>);
 		bayesTree->insert(root);
 
 		// return the Bayes tree
@@ -65,7 +68,8 @@ namespace gtsam {
 	typename FactorGraph<F>::shared_ptr GenericMultifrontalSolver<F, JT>::jointFactorGraph(
 			const std::vector<Index>& js, Eliminate function) const {
 
-		// We currently have code written only for computing the
+		// FIXME: joint for arbitrary sets of variables not present
+		// TODO: develop and implement theory for shortcuts of more than two variables
 
 		if (js.size() != 2) throw std::domain_error(
 				"*MultifrontalSolver::joint(js) currently can only compute joint marginals\n"
