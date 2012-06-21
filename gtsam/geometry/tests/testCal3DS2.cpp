@@ -25,8 +25,8 @@ using namespace gtsam;
 GTSAM_CONCEPT_TESTABLE_INST(Cal3DS2)
 GTSAM_CONCEPT_MANIFOLD_INST(Cal3DS2)
 
-Cal3DS2 K(500, 100, 0.1, 320, 240, 1e-3, 2.0*1e-3, 3.0*1e-3, 4.0*1e-3);
-Point2 p(2,3);
+static Cal3DS2 K(500, 100, 0.1, 320, 240, 1e-3, 2.0*1e-3, 3.0*1e-3, 4.0*1e-3);
+static Point2 p(2,3);
 
 /* ************************************************************************* */
 TEST( Cal3DS2, calibrate)

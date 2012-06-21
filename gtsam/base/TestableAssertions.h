@@ -30,7 +30,7 @@ namespace gtsam {
 /**
  * Equals testing for basic types
  */
-bool assert_equal(const Index& expected, const Index& actual, double tol = 0.0) {
+static bool assert_equal(const Index& expected, const Index& actual, double tol = 0.0) {
   if(expected != actual) {
     std::cout << "Not equal:\nexpected: " << expected << "\nactual: " << actual << std::endl;
     return false;
@@ -327,7 +327,7 @@ bool assert_container_equality(const V& expected, const V& actual) {
 /**
  * Compare strings for unit tests
  */
-bool assert_equal(const std::string& expected, const std::string& actual) {
+static bool assert_equal(const std::string& expected, const std::string& actual) {
 	if (expected == actual)
 		return true;
 	printf("Not equal:\n");

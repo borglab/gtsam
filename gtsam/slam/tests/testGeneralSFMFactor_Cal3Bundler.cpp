@@ -66,7 +66,7 @@ public:
 
 };
 
-double getGaussian()
+static double getGaussian()
 {
     double S,V1,V2;
     // Use Box-Muller method to create gauss noise from uniform noise
@@ -81,10 +81,10 @@ double getGaussian()
     return sqrt(-2.0f * (double)log(S) / S) * V1;
 }
 
-const SharedNoiseModel sigma1(noiseModel::Unit::Create(1));
+static const SharedNoiseModel sigma1(noiseModel::Unit::Create(1));
 
 /* ************************************************************************* */
-TEST( GeneralSFMFactor, equals )
+TEST( GeneralSFMFactor_Cal3Bundler, equals )
 {
   // Create two identical factors and make sure they're equal
   Vector z = Vector_(2,323.,240.);
@@ -100,7 +100,7 @@ TEST( GeneralSFMFactor, equals )
 }
 
 /* ************************************************************************* */
-TEST( GeneralSFMFactor, error ) {
+TEST( GeneralSFMFactor_Cal3Bundler, error ) {
   Point2 z(3.,0.);
   const SharedNoiseModel sigma(noiseModel::Unit::Create(1));
   boost::shared_ptr<Projection>
@@ -119,7 +119,7 @@ TEST( GeneralSFMFactor, error ) {
 static const double baseline = 5.0 ;
 
 /* ************************************************************************* */
-vector<Point3> genPoint3() {
+static vector<Point3> genPoint3() {
   const double z = 5;
   vector<Point3> landmarks ;
   landmarks.push_back(Point3 (-1.0,-1.0, z));
@@ -137,14 +137,14 @@ vector<Point3> genPoint3() {
   return landmarks ;
 }
 
-vector<GeneralCamera> genCameraDefaultCalibration() {
+static vector<GeneralCamera> genCameraDefaultCalibration() {
   vector<GeneralCamera> cameras ;
   cameras.push_back(GeneralCamera(Pose3(eye(3),Point3(-baseline/2.0, 0.0, 0.0))));
   cameras.push_back(GeneralCamera(Pose3(eye(3),Point3( baseline/2.0, 0.0, 0.0))));
   return cameras ;
 }
 
-vector<GeneralCamera> genCameraVariableCalibration() {
+static vector<GeneralCamera> genCameraVariableCalibration() {
   const Cal3Bundler K(500,1e-3,1e-3);
   vector<GeneralCamera> cameras ;
   cameras.push_back(GeneralCamera(Pose3(eye(3),Point3(-baseline/2.0, 0.0, 0.0)), K));
@@ -152,7 +152,7 @@ vector<GeneralCamera> genCameraVariableCalibration() {
   return cameras ;
 }
 
-boost::shared_ptr<Ordering> getOrdering(const std::vector<GeneralCamera>& cameras, const std::vector<Point3>& landmarks) {
+static boost::shared_ptr<Ordering> getOrdering(const std::vector<GeneralCamera>& cameras, const std::vector<Point3>& landmarks) {
   boost::shared_ptr<Ordering> ordering(new Ordering);
   for ( size_t i = 0 ; i < landmarks.size() ; ++i ) ordering->push_back(L(i)) ;
   for ( size_t i = 0 ; i < cameras.size() ; ++i ) ordering->push_back(X(i)) ;
@@ -160,7 +160,7 @@ boost::shared_ptr<Ordering> getOrdering(const std::vector<GeneralCamera>& camera
 }
 
 /* ************************************************************************* */
-TEST( GeneralSFMFactor, optimize_defaultK ) {
+TEST( GeneralSFMFactor_Cal3Bundler, optimize_defaultK ) {
 
   vector<Point3> landmarks = genPoint3();
   vector<GeneralCamera> cameras = genCameraDefaultCalibration();
@@ -199,7 +199,7 @@ TEST( GeneralSFMFactor, optimize_defaultK ) {
 }
 
 /* ************************************************************************* */
-TEST( GeneralSFMFactor, optimize_varK_SingleMeasurementError ) {
+TEST( GeneralSFMFactor_Cal3Bundler, optimize_varK_SingleMeasurementError ) {
   vector<Point3> landmarks = genPoint3();
   vector<GeneralCamera> cameras = genCameraVariableCalibration();
   // add measurement with noise
@@ -242,7 +242,7 @@ TEST( GeneralSFMFactor, optimize_varK_SingleMeasurementError ) {
 }
 
 /* ************************************************************************* */
-TEST( GeneralSFMFactor, optimize_varK_FixCameras ) {
+TEST( GeneralSFMFactor_Cal3Bundler, optimize_varK_FixCameras ) {
 
   vector<Point3> landmarks = genPoint3();
   vector<GeneralCamera> cameras = genCameraVariableCalibration();
@@ -283,7 +283,7 @@ TEST( GeneralSFMFactor, optimize_varK_FixCameras ) {
 }
 
 /* ************************************************************************* */
-TEST( GeneralSFMFactor, optimize_varK_FixLandmarks ) {
+TEST( GeneralSFMFactor_Cal3Bundler, optimize_varK_FixLandmarks ) {
 
   vector<Point3> landmarks = genPoint3();
   vector<GeneralCamera> cameras = genCameraVariableCalibration();
@@ -336,7 +336,7 @@ TEST( GeneralSFMFactor, optimize_varK_FixLandmarks ) {
 }
 
 /* ************************************************************************* */
-TEST( GeneralSFMFactor, optimize_varK_BA ) {
+TEST( GeneralSFMFactor_Cal3Bundler, optimize_varK_BA ) {
   vector<Point3> landmarks = genPoint3();
   vector<GeneralCamera> cameras = genCameraVariableCalibration();
 

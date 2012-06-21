@@ -65,7 +65,7 @@ public:
 
 };
 
-double getGaussian()
+static double getGaussian()
 {
     double S,V1,V2;
     // Use Box-Muller method to create gauss noise from uniform noise
@@ -80,7 +80,7 @@ double getGaussian()
     return sqrt(-2.0f * (double)log(S) / S) * V1;
 }
 
-const SharedNoiseModel sigma1(noiseModel::Unit::Create(1));
+static const SharedNoiseModel sigma1(noiseModel::Unit::Create(1));
 
 /* ************************************************************************* */
 TEST( GeneralSFMFactor, equals )
@@ -116,7 +116,7 @@ TEST( GeneralSFMFactor, error ) {
 static const double baseline = 5.0 ;
 
 /* ************************************************************************* */
-vector<Point3> genPoint3() {
+static vector<Point3> genPoint3() {
   const double z = 5;
   vector<Point3> landmarks ;
   landmarks.push_back(Point3 (-1.0,-1.0, z));
@@ -134,14 +134,14 @@ vector<Point3> genPoint3() {
   return landmarks ;
 }
 
-vector<GeneralCamera> genCameraDefaultCalibration() {
+static vector<GeneralCamera> genCameraDefaultCalibration() {
   vector<GeneralCamera> X ;
   X.push_back(GeneralCamera(Pose3(eye(3),Point3(-baseline/2.0, 0.0, 0.0))));
   X.push_back(GeneralCamera(Pose3(eye(3),Point3( baseline/2.0, 0.0, 0.0))));
   return X ;
 }
 
-vector<GeneralCamera> genCameraVariableCalibration() {
+static vector<GeneralCamera> genCameraVariableCalibration() {
   const Cal3_S2 K(640,480,0.01,320,240);
   vector<GeneralCamera> X ;
   X.push_back(GeneralCamera(Pose3(eye(3),Point3(-baseline/2.0, 0.0, 0.0)), K));
@@ -149,7 +149,7 @@ vector<GeneralCamera> genCameraVariableCalibration() {
   return X ;
 }
 
-boost::shared_ptr<Ordering> getOrdering(const vector<GeneralCamera>& cameras, const vector<Point3>& landmarks) {
+static boost::shared_ptr<Ordering> getOrdering(const vector<GeneralCamera>& cameras, const vector<Point3>& landmarks) {
   boost::shared_ptr<Ordering> ordering(new Ordering);
   for ( size_t i = 0 ; i < landmarks.size() ; ++i ) ordering->push_back(L(i)) ;
   for ( size_t i = 0 ; i < cameras.size() ; ++i ) ordering->push_back(X(i)) ;

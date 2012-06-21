@@ -27,19 +27,19 @@ using namespace gtsam;
 
 GTSAM_CONCEPT_MANIFOLD_INST(CalibratedCamera)
 
-const Pose3 pose1(Matrix_(3,3,
+static const Pose3 pose1(Matrix_(3,3,
 				      1., 0., 0.,
 				      0.,-1., 0.,
 				      0., 0.,-1.
 				      ),
 			      Point3(0,0,0.5));
  
-const CalibratedCamera camera(pose1);
+static const CalibratedCamera camera(pose1);
 
-const Point3 point1(-0.08,-0.08, 0.0);
-const Point3 point2(-0.08, 0.08, 0.0);
-const Point3 point3( 0.08, 0.08, 0.0);
-const Point3 point4( 0.08,-0.08, 0.0);
+static const Point3 point1(-0.08,-0.08, 0.0);
+static const Point3 point2(-0.08, 0.08, 0.0);
+static const Point3 point3( 0.08, 0.08, 0.0);
+static const Point3 point4( 0.08,-0.08, 0.0);
 
 /* ************************************************************************* */
 TEST( CalibratedCamera, constructor)
@@ -95,7 +95,7 @@ TEST( CalibratedCamera, Dproject_to_camera1) {
 }
 
 /* ************************************************************************* */
-Point2 project2(const Pose3& pose, const Point3& point) {
+static Point2 project2(const Pose3& pose, const Point3& point) {
 	return CalibratedCamera(pose).project(point);
 }
 

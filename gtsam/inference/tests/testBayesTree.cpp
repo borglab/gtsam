@@ -62,7 +62,7 @@ static const Index _x3_=0, _x2_=1;
 /* ************************************************************************* */
 // Conditionals for ASIA example from the tutorial with A and D evidence
 static const Index _X_=0, _T_=1, _S_=2, _E_=3, _L_=4, _B_=5;
-IndexConditional::shared_ptr
+static IndexConditional::shared_ptr
 	B(new IndexConditional(_B_)),
 	L(new IndexConditional(_L_, _B_)),
 	E(new IndexConditional(_E_, _L_, _B_)),
@@ -71,11 +71,11 @@ IndexConditional::shared_ptr
 	X(new IndexConditional(_X_, _E_));
 
 // Cliques
-IndexConditional::shared_ptr
+static IndexConditional::shared_ptr
   ELB(IndexConditional::FromKeys(cref_list_of<3>(_E_)(_L_)(_B_), 3));
 
 // Bayes Tree for Asia example
-SymbolicBayesTree createAsiaSymbolicBayesTree() {
+static SymbolicBayesTree createAsiaSymbolicBayesTree() {
 	SymbolicBayesTree bayesTree;
 //	Ordering asiaOrdering; asiaOrdering += _X_, _T_, _S_, _E_, _L_, _B_;
 	SymbolicBayesTree::insert(bayesTree, B);

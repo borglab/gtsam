@@ -26,21 +26,21 @@
 using namespace std;
 using namespace gtsam;
 
-const Cal3_S2 K(625, 625, 0, 0, 0);
+static const Cal3_S2 K(625, 625, 0, 0, 0);
 
-const Pose3 pose1(Matrix_(3,3,
+static const Pose3 pose1(Matrix_(3,3,
 				      1., 0., 0.,
 				      0.,-1., 0.,
 				      0., 0.,-1.
 				      ),
 			      Point3(0,0,0.5));
  
-const SimpleCamera camera(pose1, K);
+static const SimpleCamera camera(pose1, K);
 
-const Point3 point1(-0.08,-0.08, 0.0);
-const Point3 point2(-0.08, 0.08, 0.0);
-const Point3 point3( 0.08, 0.08, 0.0);
-const Point3 point4( 0.08,-0.08, 0.0);
+static const Point3 point1(-0.08,-0.08, 0.0);
+static const Point3 point2(-0.08, 0.08, 0.0);
+static const Point3 point3( 0.08, 0.08, 0.0);
+static const Point3 point4( 0.08,-0.08, 0.0);
 
 /* ************************************************************************* */
 TEST( SimpleCamera, constructor)
@@ -118,7 +118,7 @@ TEST( SimpleCamera, backproject2)
 }
 
 /* ************************************************************************* */
-Point2 project2(const Pose3& pose, const Point3& point) {
+static Point2 project2(const Pose3& pose, const Point3& point) {
 	return SimpleCamera(pose,K).project(point);
 }
 

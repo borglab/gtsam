@@ -156,7 +156,7 @@ TEST(Pose3, expmap_c)
 #endif
 
 /* ************************************************************************* */
-TEST(Pose3, expmap_c_full)
+TEST(Pose2, expmap_c_full)
 {
   double w=0.3;
 	Vector xi = Vector_(3, 0.0, w, w);
@@ -191,7 +191,7 @@ TEST(Pose2, logmap_full) {
 }
 
 /* ************************************************************************* */
-Point2 transform_to_proxy(const Pose2& pose, const Point2& point) {
+static Point2 transform_to_proxy(const Pose2& pose, const Point2& point) {
 	return pose.transform_to(point);
 }
 
@@ -220,7 +220,7 @@ TEST( Pose2, transform_to )
 }
 
 /* ************************************************************************* */
-Point2 transform_from_proxy(const Pose2& pose, const Point2& point) {
+static Point2 transform_from_proxy(const Pose2& pose, const Point2& point) {
 	return pose.transform_from(point);
 }
 

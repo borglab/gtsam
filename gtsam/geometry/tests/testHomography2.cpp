@@ -36,9 +36,9 @@ using namespace tensors;
 /* ************************************************************************* */
 // Indices
 
-tensors::Index<3, 'a'> a, _a;
-tensors::Index<3, 'b'> b, _b;
-tensors::Index<3, 'c'> c, _c;
+static tensors::Index<3, 'a'> a, _a;
+static tensors::Index<3, 'b'> b, _b;
+static tensors::Index<3, 'c'> c, _c;
 
 /* ************************************************************************* */
 TEST( Homography2, RealImages)
