@@ -3,12 +3,17 @@ function EQUALITY(name,expected,actual,tol)
 
 if nargin<4,tol=1e-9;end
 
-assertion = size(expected)==size(actual);
-if assertion
-    assertion = all(abs(expected-actual)<tol);
-end
-if (assertion~=1)
-  warning(['EQUALITY ' name ' fails']);
-  expected
-  actual
+sameSize = size(expected)==size(actual);
+if all(sameSize)
+    equal = abs(expected-actual)<tol;
+    if ~all(equal)
+        warning(['EQUALITY ' name ' fails']);
+        expected
+        actual
+        abs(expected-actual)
+    end
+else
+    warning(['EQUALITY ' name ' fails: non-matching size']);
+    size(expected)
+    size(actual)
 end
