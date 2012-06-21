@@ -86,10 +86,24 @@ public:
 	/// @{
 
   /**
-   * Permute the given variable, i.e. determine it's new index after the
-   * permutation.
+   * Return the new index of the supplied variable after the permutation
    */
   Index operator[](Index variable) const { check(variable); return rangeIndices_[variable]; }
+
+  /**
+   * Return the new index of the supplied variable after the permutation. This version allows modification.
+   */
+  Index& operator[](Index variable) { check(variable); return rangeIndices_[variable]; }
+
+  /**
+   * Return the new index of the supplied variable after the permutation. Synonym for operator[](Index).
+   */
+  Index at(Index variable) const { return operator[](variable); }
+
+  /**
+   * Return the new index of the supplied variable after the permutation. This version allows modification.   Synonym for operator[](Index).
+   */
+  Index& at(Index variable) { return operator[](variable); }
 
   /**
    * The number of variables in the range of this permutation, i.e. the output
@@ -145,10 +159,6 @@ public:
 	/// @name Advanced Interface
 	/// @{
 
-  /**
-   * TODO: comment
-   */
-  Index& operator[](Index variable) { check(variable); return rangeIndices_[variable]; }
 
   /**
    * A partial permutation, reorders the variables selected by selector through
