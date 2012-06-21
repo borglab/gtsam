@@ -22,23 +22,29 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-Sampler::Sampler(const SharedDiagonal& model, int32_t seed)
-	: sigmas_(model->sigmas()), generator_(static_cast<unsigned>(seed))
+Sampler::Sampler(const noiseModel::Diagonal::shared_ptr& model, int32_t seed)
+	: model_(model), generator_(static_cast<unsigned>(seed))
 {
 }
 
 /* ************************************************************************* */
 Sampler::Sampler(const Vector& sigmas, int32_t seed)
-	: sigmas_(sigmas), generator_(static_cast<unsigned>(seed))
+: model_(noiseModel::Diagonal::Sigmas(sigmas, true)), generator_(static_cast<unsigned>(seed))
 {
 }
 
 /* ************************************************************************* */
-Vector Sampler::sample() {
-	size_t d = dim();
+Sampler::Sampler(int32_t seed)
+: generator_(static_cast<unsigned>(seed))
+{
+}
+
+/* ************************************************************************* */
+Vector Sampler::sampleDiagonal(const Vector& sigmas) {
+	size_t d = sigmas.size();
 	Vector result(d);
 	for (size_t i = 0; i < d; i++) {
-		double sigma = sigmas_(i);
+		double sigma = sigmas(i);
 
 		// handle constrained case separately
 		if (sigma == 0.0) {
@@ -52,5 +58,20 @@ Vector Sampler::sample() {
 	}
 	return result;
 }
+
+/* ************************************************************************* */
+Vector Sampler::sample() {
+	assert(model_.get());
+	const Vector& sigmas = model_->sigmas();
+	return sampleDiagonal(sigmas);
+}
+
+/* ************************************************************************* */
+Vector Sampler::sample(const noiseModel::Diagonal::shared_ptr& model) {
+	assert(model.get());
+	const Vector& sigmas = model->sigmas();
+	return sampleDiagonal(sigmas);
+}
+/* ************************************************************************* */
 
 } // \namespace gtsam
