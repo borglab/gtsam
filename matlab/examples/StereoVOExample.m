@@ -56,7 +56,7 @@ initialEstimate.insertPoint(l3, gtsamPoint3( 0,-.5, 5));
 
 %% optimize
 fprintf(1,'Optimizing\n'); tic
-result = graph.optimize(initialEstimate);
+result = graph.optimize(initialEstimate,1);
 toc
 
 %% visualize initial trajectory, final trajectory, and final points
