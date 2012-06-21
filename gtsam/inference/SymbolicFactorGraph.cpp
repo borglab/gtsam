@@ -27,10 +27,14 @@ namespace gtsam {
 	using namespace std;
 
   /* ************************************************************************* */
-	SymbolicFactorGraph::SymbolicFactorGraph(const BayesNet<IndexConditional>& bayesNet) :
+	SymbolicFactorGraph::SymbolicFactorGraph(const SymbolicBayesNet& bayesNet) :
 	    FactorGraph<IndexFactor>(bayesNet) {}
 
-	/* ************************************************************************* */
+  /* ************************************************************************* */
+  SymbolicFactorGraph::SymbolicFactorGraph(const SymbolicBayesTree& bayesTree) :
+      FactorGraph<IndexFactor>(bayesTree) {}
+
+  /* ************************************************************************* */
   void SymbolicFactorGraph::push_factor(Index key) {
     push_back(boost::make_shared<IndexFactor>(key));
   }

@@ -23,12 +23,14 @@
 
 namespace gtsam { template<class FACTOR> class EliminationTree; }
 namespace gtsam { template<class CONDITIONAL> class BayesNet; }
+namespace gtsam { template<class CONDITIONAL, class CLIQUE> class BayesTree; }
 namespace gtsam { class IndexConditional; }
 
 namespace gtsam {
 
+  typedef EliminationTree<IndexFactor> SymbolicEliminationTree;
 	typedef BayesNet<IndexConditional> SymbolicBayesNet;
-	typedef EliminationTree<IndexFactor> SymbolicEliminationTree;
+	typedef BayesTree<IndexConditional> SymbolicBayesTree;
 
 	/** Symbolic IndexFactor Graph
 	 *  \nosubgrouping
@@ -45,7 +47,10 @@ namespace gtsam {
 		}
 
 		/** Construct from a BayesNet */
-		SymbolicFactorGraph(const BayesNet<IndexConditional>& bayesNet);
+		SymbolicFactorGraph(const SymbolicBayesNet& bayesNet);
+
+    /** Construct from a BayesTree */
+    SymbolicFactorGraph(const SymbolicBayesTree& bayesTree);
 
 		/**
 		 * Construct from a factor graph of any type
