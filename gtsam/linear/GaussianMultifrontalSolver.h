@@ -100,6 +100,8 @@ public:
    * Compute the marginal joint over a set of variables, by integrating out
    * all of the other variables.  This function returns the result as a factor
    * graph.
+   *
+   * NOTE: This function is limited to computing a joint on 2 variables
    */
   GaussianFactorGraph::shared_ptr jointFactorGraph(const std::vector<Index>& js) const;
 

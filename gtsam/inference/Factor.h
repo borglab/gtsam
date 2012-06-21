@@ -36,7 +36,7 @@ template<class KEY> class Conditional;
  * which will be the type used to label variables.  Key types currently in use
  * in gtsam are Index with symbolic (IndexFactor, SymbolicFactorGraph) and
  * Gaussian factors (GaussianFactor, JacobianFactor, HessianFactor, GaussianFactorGraph),
- * and Symbol with nonlinear factors (NonlinearFactor, NonlinearFactorGraph).
+ * and Key with nonlinear factors (NonlinearFactor, NonlinearFactorGraph).
  * though currently only IndexFactor and IndexConditional derive from this
  * class, using Index keys.  This class does not store any data other than its
  * keys.  Derived classes store data such as matrices and probability tables.
