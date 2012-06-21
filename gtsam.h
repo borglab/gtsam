@@ -496,7 +496,182 @@ class SimpleCamera {
 //*************************************************************************
 // inference
 //*************************************************************************
+class Permutation {
+	// Standard Constructors and Named Constructors
+	Permutation();
+	Permutation(size_t nVars);
+	static gtsam::Permutation Identity(size_t nVars);
+	// FIXME: Cannot currently wrap std::vector
+	//static gtsam::Permutation PullToFront(const vector<size_t>& toFront, size_t size, bool filterDuplicates);
+	//static gtsam::Permutation PushToBack(const vector<size_t>& toBack, size_t size, bool filterDuplicates = false);
 
+	// Testable
+	void print(string s) const;
+	bool equals(const gtsam::Permutation& rhs, double tol) const;
+
+	// Standard interface
+	size_t at(size_t variable) const;
+	size_t size() const;
+	bool empty() const;
+	void resize(size_t newSize);
+	gtsam::Permutation* permute(const gtsam::Permutation& permutation) const;
+	gtsam::Permutation* inverse() const;
+};
+
+class IndexFactor {
+  // Standard Constructors and Named Constructors
+  IndexFactor();
+  IndexFactor(size_t j);
+  IndexFactor(size_t j1, size_t j2);
+  IndexFactor(size_t j1, size_t j2, size_t j3);
+  IndexFactor(size_t j1, size_t j2, size_t j3, size_t j4);
+  IndexFactor(size_t j1, size_t j2, size_t j3, size_t j4, size_t j5);
+  IndexFactor(size_t j1, size_t j2, size_t j3, size_t j4, size_t j5, size_t j6);
+  // FIXME: Must wrap std::set<Index> for this to work
+  //IndexFactor(const std::set<Index>& js);
+
+  // From Factor
+  size_t size() const;
+  void print(string s) const;
+  bool equals(const gtsam::IndexFactor& other, double tol) const;
+  // FIXME: Need to wrap std::vector<KeyType>
+  //std::vector<KeyType>& keys();
+};
+
+class IndexConditional {
+  // Standard Constructors and Named Constructors
+  IndexConditional();
+  IndexConditional(size_t key);
+  IndexConditional(size_t key, size_t parent);
+  IndexConditional(size_t key, size_t parent1, size_t parent2);
+  IndexConditional(size_t key, size_t parent1, size_t parent2, size_t parent3);
+  // FIXME: Must wrap std::vector<KeyType> for this to work
+  //IndexFactor(size_t key, const std::vector<KeyType>& parents);
+  //IndexConditional(const std::vector<Index>& keys, size_t nrFrontals);
+  //template<class KEYS> static shared_ptr FromKeys(const KEYS& keys, size_t nrFrontals);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::IndexConditional& other, double tol) const;
+
+  // Standard interface
+  size_t nrFrontals() const;
+  size_t nrParents() const;
+  gtsam::IndexFactor* toFactor() const;
+};
+
+#include <gtsam/inference/SymbolicFactorGraph.h>
+class SymbolicBayesNet {
+  // Standard Constructors and Named Constructors
+  SymbolicBayesNet();
+  SymbolicBayesNet(const gtsam::SymbolicBayesNet& bn);
+  SymbolicBayesNet(const gtsam::IndexConditional* conditional);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::SymbolicBayesNet& other, double tol) const;
+
+  // Standard interface
+  size_t size() const;
+  void push_back(const gtsam::IndexConditional* conditional);
+  // FIXME: cannot overload functions
+  //void push_back(const SymbolicBayesNet bn);
+  void push_front(const gtsam::IndexConditional* conditional);
+  // FIXME: cannot overload functions
+  //void push_front(const SymbolicBayesNet bn);
+  void pop_front();
+  void permuteWithInverse(const gtsam::Permutation& inversePermutation);
+  bool permuteSeparatorWithInverse(const gtsam::Permutation& inversePermutation);
+};
+
+#include <gtsam/inference/SymbolicFactorGraph.h>
+class SymbolicBayesTree {
+  // Standard Constructors and Named Constructors
+  SymbolicBayesTree();
+  SymbolicBayesTree(const gtsam::SymbolicBayesNet& bn);
+  SymbolicBayesTree(const gtsam::SymbolicBayesTree& other);
+  // FIXME: wrap needs to understand std::list
+  //SymbolicBayesTree(const gtsam::SymbolicBayesNet& bayesNet, std::list<gtsam::SymbolicBayesTree> subtrees);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::SymbolicBayesTree& other, double tol) const;
+
+  // Standard interface
+  size_t size() const;
+  void saveGraph(string s) const;
+  void clear();
+  // TODO: There are many other BayesTree member functions which might be of use
+};
+
+class SymbolicFactorGraph {
+  // Standard Constructors and Named Constructors
+  SymbolicFactorGraph();
+  SymbolicFactorGraph(const gtsam::SymbolicBayesNet& bayesNet);
+  SymbolicFactorGraph(const gtsam::SymbolicBayesTree& bayesTree);
+
+  // From FactorGraph
+  void push_back(gtsam::IndexFactor* factor);
+  void print(string s) const;
+  bool equals(const gtsam::SymbolicFactorGraph& rhs, double tol) const;
+  size_t size() const;
+
+  // Standard interface
+  // FIXME: Must wrap FastSet<Index> for this to work
+  //FastSet<Index> keys() const;
+};
+
+class SymbolicSequentialSolver {
+  // Standard Constructors and Named Constructors
+  SymbolicSequentialSolver(const gtsam::SymbolicFactorGraph& factorGraph);
+  SymbolicSequentialSolver(const gtsam::SymbolicFactorGraph* factorGraph, const gtsam::VariableIndex* variableIndex);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::SymbolicSequentialSolver& rhs, double tol) const;
+
+  // Standard interface
+  gtsam::SymbolicBayesNet* eliminate() const;
+};
+
+class SymbolicMultifrontalSolver {
+  // Standard Constructors and Named Constructors
+  SymbolicMultifrontalSolver(const gtsam::SymbolicFactorGraph& factorGraph);
+  SymbolicMultifrontalSolver(const gtsam::SymbolicFactorGraph* factorGraph, const gtsam::VariableIndex* variableIndex);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::SymbolicMultifrontalSolver& rhs, double tol) const;
+
+  // Standard interface
+  gtsam::SymbolicBayesTree* eliminate() const;
+};
+
+#include <gtsam/inference/SymbolicFactorGraph.h>
+class VariableIndex {
+  // Standard Constructors and Named Constructors
+  VariableIndex();
+  // FIXME: Handle templates somehow
+  //template<class FactorGraph> VariableIndex(const FactorGraph& factorGraph, size_t nVariables);
+  //template<class FactorGraph> VariableIndex(const FactorGraph& factorGraph);
+  VariableIndex(const gtsam::SymbolicFactorGraph& factorGraph);
+  VariableIndex(const gtsam::SymbolicFactorGraph& factorGraph, size_t nVariables);
+//  VariableIndex(const gtsam::GaussianFactorGraph& factorGraph);
+//  VariableIndex(const gtsam::GaussianFactorGraph& factorGraph, size_t nVariables);
+//  VariableIndex(const gtsam::NonlinearFactorGraph& factorGraph);
+//  VariableIndex(const gtsam::NonlinearFactorGraph& factorGraph, size_t nVariables);
+  VariableIndex(const gtsam::VariableIndex& other);
+
+  // Testable
+  bool equals(const gtsam::VariableIndex& other, double tol) const;
+  void print(string s) const;
+
+  // Standard interface
+  size_t size() const;
+  size_t nFactors() const;
+  size_t nEntries() const;
+  void permute(const gtsam::Permutation& permutation);
+};
 
 //*************************************************************************
 // linear
@@ -721,10 +896,23 @@ class Symbol {
 };
 
 class Ordering {
-	Ordering();
+  // Standard Constructors and Named Constructors
+  Ordering();
+
+	// Testable
 	void print(string s) const;
 	bool equals(const gtsam::Ordering& ord, double tol) const;
-	void push_back(size_t key);
+
+	// Standard interface
+	size_t nVars() const;
+  size_t size() const;
+  size_t at(size_t key) const;
+  bool exists(size_t key) const;
+  void insert(size_t key, size_t order);
+  void push_back(size_t key);
+  void permuteWithInverse(const gtsam::Permutation& inversePermutation);
+  // FIXME: Wrap InvertedMap as well
+  //InvertedMap invert() const;
 };
 
 class NonlinearFactorGraph {
@@ -738,7 +926,8 @@ class NonlinearFactor {
 	void equals(const gtsam::NonlinearFactor& other, double tol) const;
 	gtsam::KeyVector keys() const;
 	size_t size() const;
-	size_t dim() const;
+	// FIXME: NonlinearFactor does not have a dim() member function
+	//size_t dim() const;
 };
 
 class Values {
