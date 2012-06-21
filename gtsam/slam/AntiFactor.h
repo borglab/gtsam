@@ -78,9 +78,6 @@ namespace gtsam {
 	   */
 	  double error(const Values& c) const { return -factor_->error(c); }
 
-	  /** get the dimension of the factor (same as the original factor) */
-	  size_t dim() const { return factor_->dim(); }
-
 	  /**
 	   * Checks whether this factor should be used based on a set of values.
 	   * The AntiFactor will have the same 'active' profile as the original factor.
