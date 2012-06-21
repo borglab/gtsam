@@ -154,6 +154,38 @@ TEST( VisualSLAM, optimizeLM2)
   CHECK(assert_equal(initialEstimate, optimizer.values()));
 }
 
+/* ************************************************************************* */
+TEST( VisualSLAM, LMoptimizer)
+{
+  // build a graph
+  visualSLAM::Graph graph(testGraph());
+  // add 2 camera constraints
+  graph.addPoseConstraint(X(1), camera1);
+  graph.addPoseConstraint(X(2), camera2);
+
+  // Create an initial values structure corresponding to the ground truth
+  Values initialEstimate;
+  initialEstimate.insert(X(1), camera1);
+  initialEstimate.insert(X(2), camera2);
+  initialEstimate.insert(L(1), landmark1);
+  initialEstimate.insert(L(2), landmark2);
+  initialEstimate.insert(L(3), landmark3);
+  initialEstimate.insert(L(4), landmark4);
+
+  // Create an optimizer and check its error
+  // We expect the initial to be zero because config is the ground truth
+  LevenbergMarquardtOptimizer optimizer = graph.optimizer(initialEstimate);
+  DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
+
+  // Iterate once, and the config should not have changed because we started
+  // with the ground truth
+  optimizer.iterate();
+  DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
+
+  // check if correct
+  CHECK(assert_equal(initialEstimate, optimizer.values()));
+}
+
 
 /* ************************************************************************* */
 TEST( VisualSLAM, CHECK_ORDERING)

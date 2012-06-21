@@ -61,8 +61,18 @@ for j=1:size(truth.points,2)
 end
 initialEstimate.print(sprintf('\nInitial estimate:\n  '));
 
-%% Optimize using Levenberg-Marquardt optimization with an ordering from colamd
-result = graph.optimize(initialEstimate,1);
+%% One-shot Optimize using Levenberg-Marquardt optimization with an ordering from colamd
+%result = graph.optimize(initialEstimate,1);
+%result.print(sprintf('\nFinal result:\n  '));
+
+%% Fine grain optimization, allowing user to iterate step by step
+
+parameters = gtsamLevenbergMarquardtParams(1e-5, 1e-5, 0, 2);
+optimizer = graph.optimizer(initialEstimate, parameters);
+for i=1:5
+    optimizer.iterate();
+end
+result = optimizer.values();
 result.print(sprintf('\nFinal result:\n  '));
 
 %% Plot results with covariance ellipses

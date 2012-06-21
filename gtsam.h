@@ -777,6 +777,13 @@ class Marginals {
 	Matrix marginalInformation(size_t variable) const;
 };
 
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+class LevenbergMarquardtParams {
+  LevenbergMarquardtParams();
+  LevenbergMarquardtParams(double initial, double factor, double bound, size_t verbose);
+  void print(string s) const;
+};
+
 }///\namespace gtsam
 
 //*************************************************************************
@@ -1002,6 +1009,7 @@ class Graph {
 
   visualSLAM::Values optimize(const visualSLAM::Values& initialEstimate, size_t verbosity) const;
   gtsam::Marginals marginals(const visualSLAM::Values& solution) const;
+  visualSLAM::LevenbergMarquardtOptimizer optimizer(const visualSLAM::Values& initialEstimate, const gtsam::LevenbergMarquardtParams& parameters) const;
 };
 
 class ISAM {
@@ -1024,6 +1032,15 @@ class ISAM {
   visualSLAM::Values getLinearizationPoint() const;
   gtsam::Ordering getOrdering() const;
   gtsam::NonlinearFactorGraph getFactorsUnsafe() const;
+};
+
+class LevenbergMarquardtOptimizer {
+  double lambda() const;
+  void iterate();
+  visualSLAM::Values optimize();
+  double error() const;
+  size_t iterations() const;
+  visualSLAM::Values values() const;
 };
 
 }///\namespace visualSLAM

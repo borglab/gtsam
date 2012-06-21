@@ -29,6 +29,7 @@
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 
 #include <gtsam/geometry/SimpleCamera.h>
 
@@ -216,6 +217,16 @@ namespace visualSLAM {
      *  @param model uncertainty model of this prior
      */
     Values optimize(const Values& initialEstimate, size_t verbosity) const;
+
+    /**
+     *  Setup and return a LevenbargMarquardtOptimizer
+     *  @param initialEstimate initial estimate of all variables in the graph
+     *  @param parameters optimizer's parameters
+     *  @return a LevenbergMarquardtOptimizer object, which you can use to control the optimization process
+     */
+    LevenbergMarquardtOptimizer optimizer(const Values& initialEstimate, const LevenbergMarquardtParams& parameters = LevenbergMarquardtParams()) const {
+      return LevenbergMarquardtOptimizer((*this), initialEstimate, parameters);
+    }
 
     /// Return a Marginals object
     Marginals marginals(const Values& solution) const {

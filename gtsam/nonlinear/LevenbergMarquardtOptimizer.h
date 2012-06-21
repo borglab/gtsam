@@ -33,7 +33,7 @@ class LevenbergMarquardtParams : public SuccessiveLinearizationParams {
 public:
   /** See LevenbergMarquardtParams::lmVerbosity */
   enum VerbosityLM {
-    SILENT,
+    SILENT = 0,
     LAMBDA,
     TRYLAMBDA,
     TRYCONFIG,
@@ -49,6 +49,9 @@ public:
   LevenbergMarquardtParams() :
     lambdaInitial(1e-5), lambdaFactor(10.0), lambdaUpperBound(1e5), verbosityLM(SILENT) {}
 
+  LevenbergMarquardtParams(double initial, double factor, double bound, size_t verbose) :
+    lambdaInitial(initial), lambdaFactor(factor), lambdaUpperBound(bound), verbosityLM(VerbosityLM(verbose)) {}
+
   virtual ~LevenbergMarquardtParams() {}
 
   virtual void print(const std::string& str = "") const {
@@ -56,6 +59,7 @@ public:
     std::cout << "              lambdaInitial: " << lambdaInitial << "\n";
     std::cout << "               lambdaFactor: " << lambdaFactor << "\n";
     std::cout << "           lambdaUpperBound: " << lambdaUpperBound << "\n";
+    std::cout << "                verbosityLM: " << verbosityLM << "\n";
     std::cout.flush();
   }
 };
