@@ -85,5 +85,10 @@ int main(void) {
     cout << "subgraph solver final error = " << graph.error(result) << endl;
   }
 
+  {
+  	Values result = graph.optimizeSPCG(initialEstimate);
+  	result.print("\nFinal result:\n");
+  }
+
   return 0 ;
 }

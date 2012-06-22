@@ -49,6 +49,7 @@ initialEstimate.insertPose(5, gtsamPose2(2.1, 2.1,-pi/2));
 
 %% Optimize using Levenberg-Marquardt optimization with an ordering from colamd
 result = graph.optimize(initialEstimate);
+resultSPCG = graph.optimizeSPCG(initialEstimate);
 
 %% Plot Covariance Ellipses
 marginals = graph.marginals(result);
@@ -56,5 +57,8 @@ P = marginals.marginalCovariance(1);
 
 pose_1 = result.pose(1);
 CHECK('pose_1.equals(gtsamPose2,1e-4)',pose_1.equals(gtsamPose2,1e-4));
+
+poseSPCG_1 = resultSPCG.pose(1);
+CHECK('poseSPCG_1.equals(gtsamPose2,1e-4)',poseSPCG_1.equals(gtsamPose2,1e-4));
 
 

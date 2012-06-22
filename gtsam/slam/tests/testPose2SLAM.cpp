@@ -17,6 +17,7 @@
 #include <gtsam/slam/pose2SLAM.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/base/numericalDerivative.h>
 using namespace gtsam;
@@ -188,6 +189,36 @@ TEST_UNSAFE(Pose2SLAM, optimize) {
 	Matrix expectedP1 = cov; // the second pose really should have just the noise covariance
 	Matrix actualP1 = marginals.marginalCovariance(1);
 	EQUALITY(expectedP1, actualP1);
+}
+
+/* ************************************************************************* */
+TEST_UNSAFE(Pose2SLAM, optimizeSPCG) {
+
+	// create a Pose graph with one equality constraint and one measurement
+  pose2SLAM::Graph fg;
+  fg.addPrior(0, Pose2(0,0,0), noiseModel::Diagonal::Sigmas(Vector_(3,3.0,3.0,1.0)));
+  fg.addOdometry(0, 1, Pose2(1,2,M_PI_2), covariance);
+
+  // [Duy] For some unknown reason, SPCG needs this constraint to work. GaussNewton doesn't need this.
+  fg.addConstraint(0, 1, Pose2(1,2,M_PI_2), noiseModel::Diagonal::Sigmas(Vector_(3, 0.2, 0.2, 0.1)));
+
+  // Create initial config
+  Values initial;
+  initial.insert(0, Pose2(0,0,0));
+  initial.insert(1, Pose2(0,0,0));
+
+  // Optimize using SPCG
+  Values actual = fg.optimizeSPCG(initial);
+
+  // Try GaussNewton without the above constraint to see if the problem is underconstrained. Still works!
+  Values actual2 = GaussNewtonOptimizer(fg, initial).optimize();
+
+  // Check with expected config
+  Values expected;
+  expected.insert(0, Pose2(0,0,0));
+  expected.insert(1, Pose2(1,2,M_PI_2));
+  CHECK(assert_equal(expected, actual));
+  CHECK(assert_equal(expected, actual2));
 }
 
 /* ************************************************************************* */

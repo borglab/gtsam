@@ -15,6 +15,7 @@
  *  @author Frank Dellaert
  **/
 
+#include <gtsam/linear/SimpleSPCGSolver.h>
 #include <gtsam/slam/pose2SLAM.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 
@@ -88,6 +89,7 @@ namespace pose2SLAM {
   Values Graph::optimizeSPCG(const Values& initialEstimate) const {
     LevenbergMarquardtParams params;
     params.linearSolverType = SuccessiveLinearizationParams::CG;
+    params.iterativeParams = boost::make_shared<SimpleSPCGSolverParameters>();
     return LevenbergMarquardtOptimizer(*this, initialEstimate, params).optimize();
   }
 
