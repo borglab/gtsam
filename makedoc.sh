@@ -9,5 +9,5 @@ PATH=$PATH:/Applications/Doxygen.app/Contents/Resources
 # directory, so that the output 'doc' goes in the gtsam directory.
 
 GTSAM_DIR=$(dirname "$0")
-cd $GTSAM_DIR
+cd $GTSAM_DIR/doc
 doxygen
