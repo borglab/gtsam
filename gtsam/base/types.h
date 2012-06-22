@@ -73,10 +73,14 @@ namespace gtsam {
 
 #ifdef _MSC_VER
 
+// Define some common g++ functions and macros that MSVC does not have
+
 #include <boost/math/special_functions/fpclassify.hpp>
-using boost::math::isfinite;
-using boost::math::isnan;
-using boost::math::isinf;
+namespace std {
+  using boost::math::isfinite;
+  using boost::math::isnan;
+  using boost::math::isinf;
+}
 
 #include <boost/math/constants/constants.hpp>
 #ifndef M_PI
