@@ -39,14 +39,14 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	AllDiff::operator DecisionTreeFactor() const {
+	DecisionTreeFactor AllDiff::toDecisionTreeFactor() const {
 		// We will do this by converting the allDif into many BinaryAllDiff constraints
 		DecisionTreeFactor converted;
 		size_t nrKeys = keys_.size();
 		for (size_t i1 = 0; i1 < nrKeys; i1++)
 			for (size_t i2 = i1 + 1; i2 < nrKeys; i2++) {
 				BinaryAllDiff binary12(discreteKey(i1),discreteKey(i2));
-				converted = converted * binary12;
+				converted = converted * binary12.toDecisionTreeFactor();
 			}
 		return converted;
 	}
@@ -54,7 +54,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	DecisionTreeFactor AllDiff::operator*(const DecisionTreeFactor& f) const {
 		// TODO: can we do this more efficiently?
-		return DecisionTreeFactor(*this) * f;
+		return toDecisionTreeFactor() * f;
 	}
 
 	/* ************************************************************************* */

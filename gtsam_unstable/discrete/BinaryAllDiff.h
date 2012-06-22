@@ -44,7 +44,7 @@ namespace gtsam {
 		}
 
 		/// Convert into a decisiontree
-		virtual operator DecisionTreeFactor() const {
+		virtual DecisionTreeFactor toDecisionTreeFactor() const {
 			DiscreteKeys keys;
 			keys.push_back(DiscreteKey(keys_[0],cardinality0_));
 			keys.push_back(DiscreteKey(keys_[1],cardinality1_));
@@ -59,7 +59,7 @@ namespace gtsam {
 		/// Multiply into a decisiontree
 		virtual DecisionTreeFactor operator*(const DecisionTreeFactor& f) const {
 			// TODO: can we do this more efficiently?
-			return DecisionTreeFactor(*this) * f;
+			return toDecisionTreeFactor() * f;
 		}
 
 		/*

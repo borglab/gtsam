@@ -96,7 +96,7 @@ namespace gtsam {
 		/// Multiply in a DecisionTreeFactor and return the result as DecisionTreeFactor
 		virtual DecisionTreeFactor operator*(const DecisionTreeFactor&) const = 0;
 
-		virtual operator DecisionTreeFactor() const = 0;
+		virtual DecisionTreeFactor toDecisionTreeFactor() const = 0;
 
 		/**
 		 * Permutes the factor, but for efficiency requires the permutation

@@ -27,12 +27,12 @@ TEST_UNSAFE( BinaryAllDif, allInOne)
 	// Check construction and conversion
 	BinaryAllDiff c1(ID, UT);
 	DecisionTreeFactor f1(ID & UT, "0 1 1 0");
-	EXPECT(assert_equal(f1,(DecisionTreeFactor)c1));
+	EXPECT(assert_equal(f1,c1.toDecisionTreeFactor()));
 
 	// Check construction and conversion
 	BinaryAllDiff c2(UT, AZ);
 	DecisionTreeFactor f2(UT & AZ, "0 1 1 0");
-	EXPECT(assert_equal(f2,(DecisionTreeFactor)c2));
+	EXPECT(assert_equal(f2,c2.toDecisionTreeFactor()));
 
 	DecisionTreeFactor f3 = f1*f2;
 	EXPECT(assert_equal(f3,c1*f2));
@@ -153,11 +153,11 @@ TEST_UNSAFE( CSP, AllDiff)
 	// Check construction and conversion
 	SingleValue s(AZ,2);
 	DecisionTreeFactor f1(AZ,"0 0 1");
-	EXPECT(assert_equal(f1,(DecisionTreeFactor)s));
+	EXPECT(assert_equal(f1,s.toDecisionTreeFactor()));
 
 	// Check construction and conversion
 	AllDiff alldiff(dkeys);
-	DecisionTreeFactor actual = (DecisionTreeFactor)alldiff;
+	DecisionTreeFactor actual = alldiff.toDecisionTreeFactor();
 //	GTSAM_PRINT(actual);
 //	actual.dot("actual");
 	DecisionTreeFactor f2(ID & AZ & UT,
@@ -202,16 +202,16 @@ TEST_UNSAFE( CSP, AllDiff)
 	known[AZ.first] = 2;
 	DiscreteFactor::shared_ptr reduced1 = alldiff.partiallyApply(known);
 	DecisionTreeFactor f3(ID & UT, "0 1 1  1 0 1  1 1 0");
-	EXPECT(assert_equal(f3,reduced1->operator DecisionTreeFactor()));
+	EXPECT(assert_equal(f3,reduced1->toDecisionTreeFactor()));
 	DiscreteFactor::shared_ptr reduced2 = singleValue.partiallyApply(known);
 	DecisionTreeFactor f4(AZ, "0 0 1");
-	EXPECT(assert_equal(f4,reduced2->operator DecisionTreeFactor()));
+	EXPECT(assert_equal(f4,reduced2->toDecisionTreeFactor()));
 
 	// Parial application, version 2
 	DiscreteFactor::shared_ptr reduced3 = alldiff.partiallyApply(domains);
-	EXPECT(assert_equal(f3,reduced3->operator DecisionTreeFactor()));
+	EXPECT(assert_equal(f3,reduced3->toDecisionTreeFactor()));
 	DiscreteFactor::shared_ptr reduced4 = singleValue.partiallyApply(domains);
-	EXPECT(assert_equal(f4,reduced4->operator DecisionTreeFactor()));
+	EXPECT(assert_equal(f4,reduced4->toDecisionTreeFactor()));
 
 	// full arc-consistency test
 	csp.runArcConsistency(nrColors);

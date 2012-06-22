@@ -61,8 +61,8 @@ public:
 		throw runtime_error("operator * not implemented");
 	}
 
-	virtual operator DecisionTreeFactor() const{
-		throw runtime_error("operator DecisionTreeFactor not implemented");
+	virtual DecisionTreeFactor toDecisionTreeFactor() const{
+		throw runtime_error("DecisionTreeFactor toDecisionTreeFactor not implemented");
 	}
 };
 

@@ -139,7 +139,7 @@ bool LinearizedFactor::equals(const NonlinearFactor& other, double tol) const {
 		return false;
 
 	KeyMatrixMap::const_iterator map1 = matrices_.begin(), map2 = e->matrices_.begin();
-	for (; map1 != matrices_.end(), map2 != e->matrices_.end(); ++map1, ++map2)
+	for (; map1 != matrices_.end() && map2 != e->matrices_.end(); ++map1, ++map2)
 		if ((map1->first != map2->first) || !equal_with_abs_tol(map1->second, map2->second, tol))
 			return false;
 	return true;

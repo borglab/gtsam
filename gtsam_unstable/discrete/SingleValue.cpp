@@ -27,7 +27,7 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	SingleValue::operator DecisionTreeFactor() const {
+	DecisionTreeFactor SingleValue::toDecisionTreeFactor() const {
 		DiscreteKeys keys;
 		keys += DiscreteKey(keys_[0],cardinality_);
 		vector<double> table;
@@ -40,7 +40,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	DecisionTreeFactor SingleValue::operator*(const DecisionTreeFactor& f) const {
 		// TODO: can we do this more efficiently?
-		return DecisionTreeFactor(*this) * f;
+		return toDecisionTreeFactor() * f;
 	}
 
 	/* ************************************************************************* */

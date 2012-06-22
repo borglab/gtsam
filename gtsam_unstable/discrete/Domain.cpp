@@ -29,7 +29,7 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	Domain::operator DecisionTreeFactor() const {
+	DecisionTreeFactor Domain::toDecisionTreeFactor() const {
 		DiscreteKeys keys;
 		keys += DiscreteKey(keys_[0],cardinality_);
 		vector<double> table;
@@ -42,7 +42,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	DecisionTreeFactor Domain::operator*(const DecisionTreeFactor& f) const {
 		// TODO: can we do this more efficiently?
-		return DecisionTreeFactor(*this) * f;
+		return toDecisionTreeFactor() * f;
 	}
 
 	/* ************************************************************************* */

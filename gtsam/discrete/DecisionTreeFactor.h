@@ -94,7 +94,7 @@ namespace gtsam {
 		}
 
 		/// Convert into a decisiontree
-		virtual operator DecisionTreeFactor() const {
+		virtual DecisionTreeFactor toDecisionTreeFactor() const {
 			return *this;
 		}
 
