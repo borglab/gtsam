@@ -188,7 +188,7 @@ void save(const Matrix& A, const std::string &s, const std::string& filename);
  * tab-, space-, or comma-separated, similar to the format read by the MATLAB
  * dlmread command.
  */
-//istream& operator>>(istream& inputStream, Matrix& destinationMatrix);
+istream& operator>>(istream& inputStream, Matrix& destinationMatrix);
 
 /**
  * extract submatrix, slice semantics, i.e. range = [i1,i2[ excluding i2

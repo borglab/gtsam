@@ -17,6 +17,7 @@
  **/
 
 #include <iostream>
+#include <sstream>
 #include <CppUnitLite/TestHarness.h>
 #include <boost/tuple/tuple.hpp>
 #include <boost/foreach.hpp>
@@ -259,6 +260,26 @@ TEST( matrix, insert_sub )
 			0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 
 	EXPECT(assert_equal(expected, big));
+}
+
+/* ************************************************************************* */
+TEST( matrix, stream_read ) {
+  Matrix expected = Matrix_(3,4,
+    1.1, 2.3, 4.2, 7.6,
+    -0.3, -8e-2, 5.1, 9.0,
+    1.2, 3.4, 4.5, 6.7);
+
+  string matrixAsString = 
+    "1.1 2.3 4.2 7.6\n"
+    "-0.3 -8e-2 5.1    9.0\n\r" // Test extra spaces and windows newlines
+    "1.2 \t 3.4 4.5 6.7"; // Test tab as separator
+
+  stringstream asStream(matrixAsString, ios::in);
+
+  Matrix actual;
+  asStream >> actual;
+
+  EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */

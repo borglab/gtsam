@@ -19,6 +19,7 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/base/Vector.h>
+#include <gtsam/base/FastList.h>
 
 #include <gtsam/3rdparty/Eigen/Eigen/Dense>
 #include <gtsam/3rdparty/Eigen/Eigen/SVD>
@@ -236,27 +237,33 @@ void save(const Matrix& A, const string &s, const string& filename) {
 }
 
 /* ************************************************************************* */
-//istream& operator>>(istream& inputStream, Matrix& destinationMatrix) {
-//  destinationMatrix.resize(0,0);
-//  string line;
-//  bool first = true;
-//  while(getline(inputStream, line)) {
-//    // Read coefficients from file
-//    vector<double> coeffs;
-//    std::copy(istream_iterator<double>(stringstream(line)), istream_iterator<double>(), coeffs.end());
-//    if(first) {
-//      destinationMatrix.resize(1,
-//    }
-//    if(coeffs.size() != dimLatent()) {
-//      cout << "Error reading motion file, latent variable dimension does not match file" << endl;
-//      exit(1);
-//    }
-//
-//    // Copy coefficients to alignment matrix
-//    alignment_.conservativeResize(alignment_.rows() + 1, dimLatent());
-//    alignment_.row(alignment_.rows() - 1) = Eigen::Map<Vector>(&coeffs[0], dimLatent()).transpose();
-//  }
-//}
+istream& operator>>(istream& inputStream, Matrix& destinationMatrix) {
+  string line;
+  FastList<vector<double> > coeffs;
+  bool first = true;
+  size_t width = 0;
+  size_t height = 0;
+  while(getline(inputStream, line)) {
+    // Read coefficients from file
+    coeffs.push_back(vector<double>());
+    if(!first)
+      coeffs.back().reserve(width);
+    std::copy(istream_iterator<double>(stringstream(line)), istream_iterator<double>(),
+      back_insert_iterator<vector<double> >(coeffs.back()));
+    if(first)
+      width = coeffs.back().size();
+    if(coeffs.size() != width)
+      throw runtime_error("Error reading matrix from input stream, inconsistent numbers of elements in rows");
+    ++ height;
+  }
+
+  // Copy coefficients to matrix
+  destinationMatrix.resize(height, width);
+  int row = 0;
+  BOOST_FOREACH(const vector<double>& rowVec, coeffs) {
+    destinationMatrix.row(row) = Eigen::Map<const Eigen::RowVectorXd>(&rowVec[0], width);
+  }
+}
 
 /* ************************************************************************* */
 void insertSub(Matrix& fullMatrix, const Matrix& subMatrix, size_t i, size_t j) {
