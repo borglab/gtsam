@@ -86,6 +86,7 @@ namespace gtsam {
     size_t dims[] = { 1 };
     Ab_.copyStructureFrom(BlockAb(matrix_, dims, dims+1, b_in.size()));
     getb() = b_in;
+    model_ = noiseModel::Unit::Create(this->rows());
     assertInvariants();
   }
 
@@ -93,6 +94,10 @@ namespace gtsam {
   JacobianFactor::JacobianFactor(Index i1, const Matrix& A1,
       const Vector& b, const SharedDiagonal& model) :
       GaussianFactor(i1), model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_) {
+
+    if(model->dim() != b.size())
+      throw InvalidNoiseModel(b.size(), model->dim());
+
     size_t dims[] = { A1.cols(), 1};
     Ab_.copyStructureFrom(BlockAb(matrix_, dims, dims+2, b.size()));
     Ab_(0) = A1;
@@ -104,6 +109,10 @@ namespace gtsam {
   JacobianFactor::JacobianFactor(Index i1, const Matrix& A1, Index i2, const Matrix& A2,
       const Vector& b, const SharedDiagonal& model) :
       GaussianFactor(i1,i2), model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_) {
+
+    if(model->dim() != b.size())
+      throw InvalidNoiseModel(b.size(), model->dim());
+
     size_t dims[] = { A1.cols(), A2.cols(), 1};
     Ab_.copyStructureFrom(BlockAb(matrix_, dims, dims+3, b.size()));
     Ab_(0) = A1;
@@ -116,6 +125,10 @@ namespace gtsam {
   JacobianFactor::JacobianFactor(Index i1, const Matrix& A1, Index i2, const Matrix& A2,
       Index i3, const Matrix& A3, const Vector& b, const SharedDiagonal& model) :
       GaussianFactor(i1,i2,i3), model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_) {
+
+    if(model->dim() != b.size())
+      throw InvalidNoiseModel(b.size(), model->dim());
+
     size_t dims[] = { A1.cols(), A2.cols(), A3.cols(), 1};
     Ab_.copyStructureFrom(BlockAb(matrix_, dims, dims+4, b.size()));
     Ab_(0) = A1;
@@ -131,6 +144,10 @@ namespace gtsam {
   	GaussianFactor(GetKeys(terms.size(), terms.begin(), terms.end())),
 		model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_)
   {
+
+    if(model->dim() != b.size())
+      throw InvalidNoiseModel(b.size(), model->dim());
+
     size_t* dims = (size_t*)alloca(sizeof(size_t)*(terms.size()+1)); // FIXME: alloca is bad, just ask Google.
     for(size_t j=0; j<terms.size(); ++j)
       dims[j] = terms[j].second.cols();
@@ -148,6 +165,10 @@ namespace gtsam {
       GaussianFactor(GetKeys(terms.size(), terms.begin(), terms.end())),
     model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_)
   {
+
+    if(model->dim() != b.size())
+      throw InvalidNoiseModel(b.size(), model->dim());
+
     size_t* dims=(size_t*)alloca(sizeof(size_t)*(terms.size()+1)); // FIXME: alloca is bad, just ask Google.
     size_t j=0;
     std::list<std::pair<Index, Matrix> >::const_iterator term=terms.begin();
@@ -542,10 +563,23 @@ namespace gtsam {
 
   /* ************************************************************************* */
 	void JacobianFactor::setModel(bool anyConstrained, const Vector& sigmas) {
+    if(sigmas.size() != this->rows())
+      throw InvalidNoiseModel(this->rows(), sigmas.size());
 		if (anyConstrained)
 			model_ = noiseModel::Constrained::MixedSigmas(sigmas);
 		else
 			model_ = noiseModel::Diagonal::Sigmas(sigmas);
 	}
+
+  /* ************************************************************************* */
+  const char* JacobianFactor::InvalidNoiseModel::what() throw() {
+    if(description_.empty())
+      description_ = (boost::format(
+        "A JacobianFactor was attempted to be constructed or modified to use a\n"
+        "noise model of incompatible dimension.  The JacobianFactor has\n"
+        "dimensionality (i.e. length of error vector) %d but the provided noise\n"
+        "model has dimensionality %d.") % factorDims % noiseModelDims).str();
+    return description_.c_str();
+  }
 
 }

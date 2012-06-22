@@ -299,6 +299,23 @@ namespace gtsam {
     /** Assert invariants after elimination */
     void assertInvariants() const;
 
+    /** An exception indicating that the noise model dimension passed into the
+     * JacobianFactor has a different dimensionality than the factor. */
+    class InvalidNoiseModel : std::exception {
+    public:
+      const size_t factorDims; ///< The dimensionality of the factor
+      const size_t noiseModelDims; ///< The dimensionality of the noise model
+
+      InvalidNoiseModel(size_t factorDims, size_t noiseModelDims) :
+          factorDims(factorDims), noiseModelDims(noiseModelDims) {}
+      virtual ~InvalidNoiseModel() throw() {}
+
+      virtual const char* what() throw();
+
+    private:
+      mutable std::string description_;
+    };
+
   private:
 
     // Friend HessianFactor to facilitate conversion constructors
@@ -321,5 +338,6 @@ namespace gtsam {
     }
 
   }; // JacobianFactor
+
 } // gtsam
 
