@@ -26,6 +26,7 @@ namespace gtsam { // note, deliberately not in noiseModel namespace
   	/// @{
 
     SharedNoiseModel() {}
+    SharedNoiseModel(const noiseModel::Base::shared_ptr& p): Base(p) {}
     SharedNoiseModel(const noiseModel::Robust::shared_ptr& p): Base(p) {}
     SharedNoiseModel(const noiseModel::Gaussian::shared_ptr& p): Base(p) {}
     SharedNoiseModel(const noiseModel::Diagonal::shared_ptr& p): Base(p) {}
