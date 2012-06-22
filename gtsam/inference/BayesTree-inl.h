@@ -575,9 +575,6 @@ namespace gtsam {
 	void BayesTree<CONDITIONAL,CLIQUE>::removeTop(const CONTAINER& keys,
   		BayesNet<CONDITIONAL>& bn, typename BayesTree<CONDITIONAL,CLIQUE>::Cliques& orphans) {
 
-		//TODO: Improve this
-		deleteCachedShorcuts(this->root_);
-
 		// process each key of the new factor
 	  BOOST_FOREACH(const Index& key, keys) {
 
@@ -590,6 +587,11 @@ namespace gtsam {
 	      }
 	    }
 	  }
+
+	  // Delete cachedShorcuts for each orphan subtree
+	  //TODO: Consider Improving
+	  BOOST_FOREACH(sharedClique& orphan, orphans)
+	  	deleteCachedShorcuts(orphan);
 	}
 
   /* ************************************************************************* */

@@ -75,13 +75,13 @@ namespace gtsam {
 
    	/// @}
 
+    /// This stores the Cached Shortcut value
+    mutable boost::optional<BayesNet<ConditionalType> > cachedShortcut_;
+
   public:
     sharedConditional conditional_;
     derived_weak_ptr parent_;
     std::list<derived_ptr> children_;
-
-    /// This stores the Cached Shortcut value
-    mutable boost::optional<BayesNet<ConditionalType> > cachedShortcut_;
 
   	/// @name Testable
   	/// @{
@@ -114,7 +114,7 @@ namespace gtsam {
     /** The arrow operator accesses the conditional */
     const ConditionalType* operator->() const { return conditional_.get(); }
 
-    ///TODO: comment
+    /** return the const reference of children */
     const std::list<derived_ptr>& children() const { return children_; }
 
   	/// @}
@@ -124,7 +124,7 @@ namespace gtsam {
     /** The arrow operator accesses the conditional */
     ConditionalType* operator->() { return conditional_.get(); }
 
-    /** return the const reference of children */
+    /** return the reference of children non-const version*/
     std::list<derived_ptr>& children() { return children_; }
 
     /** Construct shared_ptr from a conditional, leaving parent and child pointers uninitialized */
