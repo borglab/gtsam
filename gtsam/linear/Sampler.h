@@ -20,6 +20,8 @@
 
 #include <gtsam/linear/NoiseModel.h>
 
+#include <boost/random/linear_congruential.hpp>
+
 namespace gtsam {
 
 /**
@@ -79,7 +81,7 @@ public:
 	 *
 	 * NOTE: not const due to need to update the underlying generator
 	 */
-	Vector sample(const noiseModel::Diagonal::shared_ptr& model);
+	Vector sampleNewModel(const noiseModel::Diagonal::shared_ptr& model);
 
 protected:
 

@@ -66,7 +66,7 @@ Vector Sampler::sample() {
 }
 
 /* ************************************************************************* */
-Vector Sampler::sample(const noiseModel::Diagonal::shared_ptr& model) {
+Vector Sampler::sampleNewModel(const noiseModel::Diagonal::shared_ptr& model) {
 	assert(model.get());
 	const Vector& sigmas = model->sigmas();
 	return sampleDiagonal(sigmas);

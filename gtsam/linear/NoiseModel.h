@@ -299,11 +299,6 @@ namespace gtsam {
 			double invsigma(size_t i) const;
 
 			/**
-			 * generate random variate
-			 */
-			virtual Vector sample() const;
-
-			/**
 			 * Return R itself, but note that Whiten(H) is cheaper than R*H
 			 */
 			virtual Matrix R() const {
@@ -524,11 +519,6 @@ namespace gtsam {
 			 * Return standard deviation
 			 */
 			inline double sigma() const { return sigma_; }
-
-			/**
-			 * generate random variate
-			 */
-			virtual Vector sample() const;
 
 		private:
 			/** Serialization function */

@@ -256,18 +256,6 @@ void Diagonal::WhitenInPlace(Matrix& H) const {
 }
 
 /* ************************************************************************* */
-Vector Diagonal::sample() const {
-	Vector result(dim_);
-	for (size_t i = 0; i < dim_; i++) {
-		typedef boost::normal_distribution<double> Normal;
-		Normal dist(0.0, this->sigmas_(i));
-		boost::variate_generator<boost::minstd_rand&, Normal> norm(generator, dist);
-		result(i) = norm();
-	}
-	return result;
-}
-
-/* ************************************************************************* */
 // Constrained
 /* ************************************************************************* */
 Constrained::shared_ptr Constrained::MixedSigmas(const Vector& mu, const Vector& sigmas, bool smart) {
@@ -462,18 +450,6 @@ Matrix Isotropic::Whiten(const Matrix& H) const {
 /* ************************************************************************* */
 void Isotropic::WhitenInPlace(Matrix& H) const {
 	H *= invsigma_;
-}
-
-/* ************************************************************************* */
-// faster version
-Vector Isotropic::sample() const {
-	typedef boost::normal_distribution<double> Normal;
-	Normal dist(0.0, this->sigma_);
-	boost::variate_generator<boost::minstd_rand&, Normal> norm(generator, dist);
-	Vector result(dim_);
-	for (size_t i = 0; i < dim_; i++)
-		result(i) = norm();
-	return result;
 }
 
 /* ************************************************************************* */

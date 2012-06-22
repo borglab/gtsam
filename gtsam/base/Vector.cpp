@@ -23,12 +23,10 @@
 #include <sstream>
 #include <iomanip>
 #include <cmath>
+#include <stdexcept>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <cstdio>
-
-#include <boost/random/normal_distribution.hpp>
-#include <boost/random/variate_generator.hpp>
 
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/types.h>
@@ -38,8 +36,6 @@
 //#endif
 
 using namespace std;
-
-boost::minstd_rand generator(42u);
 
 namespace gtsam {
 
@@ -430,19 +426,6 @@ Vector concatVectors(size_t nrVectors, ...)
 	}
 	va_end(ap);
 	return concatVectors(vs);
-}
-
-/* ************************************************************************* */
-Vector rand_vector_norm(size_t dim, double mean, double sigma)
-{
-	boost::normal_distribution<double> norm_dist(mean, sigma);
-	boost::variate_generator<boost::minstd_rand&, boost::normal_distribution<double> > norm(generator, norm_dist);
-
-	Vector v(dim);
-	for(int i = 0; i<v.size(); ++i)
-		v(i) = norm();
-
-	return v;
 }
 
 /* ************************************************************************* */

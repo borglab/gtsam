@@ -22,19 +22,9 @@
 
 #include <list>
 #include <vector>
+#include <iostream>
 #include <gtsam/base/types.h>
 #include <gtsam/3rdparty/Eigen/Eigen/Dense>
-#include <boost/random/linear_congruential.hpp>
-
-/**
- * Static random number generator - needs to maintain a state
- * over time, hence the static generator.  Be careful in
- * cases where multiple processes (as is frequently the case with
- * multi-robot scenarios) are using the sample() facilities
- * in NoiseModel, as they will each have the same seed.
- */
-// FIXME: make this go away - use the Sampler class instead
-extern boost::minstd_rand generator;
 
 namespace gtsam {
 
@@ -357,20 +347,6 @@ Vector concatVectors(const std::list<Vector>& vs);
  * concatenate Vectors
  */
 Vector concatVectors(size_t nrVectors, ...);
-
-/**
- * random vector
- */
-Vector rand_vector_norm(size_t dim, double mean = 0, double sigma = 1);
-
-/**
- * Sets the generator to use a different seed value.
- * Default argument resets the RNG
- * @param seed is the new seed
- */
-inline void seedRNG(unsigned int seed = 42u) {
-	generator.seed(seed);
-}
 
 } // namespace gtsam
 

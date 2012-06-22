@@ -24,6 +24,7 @@
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
 #include <numeric>
+#include <stdexcept>
 
 namespace gtsam {
 

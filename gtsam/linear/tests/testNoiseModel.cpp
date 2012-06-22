@@ -131,15 +131,6 @@ TEST(NoiseModel, equals)
 	EXPECT(assert_inequal(*i1,*i2));
 }
 
-/* ************************************************************************* */
-TEST(NoiseModel, sample)
-{
-	Vector s = Vector_(3,1.0,2.0,3.0);
-	SharedDiagonal model = sharedSigmas(s);
-	Vector v = model->sample();
-	// no check as no way yet to set random seed
-}
-
 // TODO enable test once a mechanism for smart constraints exists
 ///* ************************************************************************* */
 //TEST(NoiseModel, ConstrainedSmart )
@@ -346,8 +337,5 @@ TEST(NoiseModel, robustNoise)
 }
 
 /* ************************************************************************* */
-int main() {
-	TestResult tr;
-	return TestRegistry::runAllTests(tr);
-}
+int main() {	TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

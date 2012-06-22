@@ -690,7 +690,6 @@ class Diagonal {
 	static gtsam::noiseModel::Diagonal* Sigmas(Vector sigmas);
 	static gtsam::noiseModel::Diagonal* Variances(Vector variances);
 	static gtsam::noiseModel::Diagonal* Precisions(Vector precisions);
-	Vector sample() const;
 //	Matrix R() const;		// FIXME: cannot parse!!!
 	void print(string s) const;
 };
@@ -699,7 +698,6 @@ class Isotropic {
 	static gtsam::noiseModel::Isotropic* Sigma(size_t dim, double sigma);
 	static gtsam::noiseModel::Isotropic* Variance(size_t dim, double varianace);
 	static gtsam::noiseModel::Isotropic* Precision(size_t dim, double precision);
-	Vector sample() const;
 	void print(string s) const;
 };
 
@@ -731,7 +729,19 @@ class SharedGaussian {
 class SharedDiagonal {
 	SharedDiagonal(Vector sigmas);
 	void print(string s) const;
-	Vector sample() const;
+};
+
+class Sampler {
+	Sampler(gtsam::noiseModel::Diagonal* model, int seed);
+	Sampler(Vector sigmas, int seed);
+	Sampler(int seed);
+
+	size_t dim() const;
+	Vector sigmas() const;
+	gtsam::noiseModel::Diagonal* model() const;
+
+	Vector sample();
+	Vector sampleNewModel(gtsam::noiseModel::Diagonal* model);
 };
 
 class VectorValues {
@@ -926,7 +936,7 @@ class NonlinearFactor {
 	void equals(const gtsam::NonlinearFactor& other, double tol) const;
 	gtsam::KeyVector keys() const;
 	size_t size() const;
-	size_t dim() const;
+//	size_t dim() const; // FIXME: Doesn't link
 };
 
 class Values {
