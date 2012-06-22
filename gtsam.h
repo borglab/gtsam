@@ -926,8 +926,7 @@ class NonlinearFactor {
 	void equals(const gtsam::NonlinearFactor& other, double tol) const;
 	gtsam::KeyVector keys() const;
 	size_t size() const;
-	// FIXME: NonlinearFactor does not have a dim() member function
-	//size_t dim() const;
+	size_t dim() const;
 };
 
 class Values {
