@@ -33,8 +33,6 @@ using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
-typedef BayesTree<IndexConditional> SymbolicBayesTree;
-
 ///* ************************************************************************* */
 //// SLAM example from RSS sqrtSAM paper
 static const Index _x3_=0, _x2_=1;

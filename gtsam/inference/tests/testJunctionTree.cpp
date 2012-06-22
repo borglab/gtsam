@@ -35,7 +35,6 @@ using namespace gtsam;
 using namespace std;
 
 typedef JunctionTree<SymbolicFactorGraph> SymbolicJunctionTree;
-typedef BayesTree<IndexConditional> SymbolicBayesTree;
 
 /* ************************************************************************* *
  * x1 - x2 - x3 - x4
