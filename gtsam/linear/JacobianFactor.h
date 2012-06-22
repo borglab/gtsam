@@ -310,7 +310,7 @@ namespace gtsam {
           factorDims(factorDims), noiseModelDims(noiseModelDims) {}
       virtual ~InvalidNoiseModel() throw() {}
 
-      virtual const char* what() throw();
+      virtual const char* what() const throw();
 
     private:
       mutable std::string description_;

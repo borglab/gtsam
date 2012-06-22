@@ -572,7 +572,7 @@ namespace gtsam {
 	}
 
   /* ************************************************************************* */
-  const char* JacobianFactor::InvalidNoiseModel::what() throw() {
+  const char* JacobianFactor::InvalidNoiseModel::what() const throw() {
     if(description_.empty())
       description_ = (boost::format(
         "A JacobianFactor was attempted to be constructed or modified to use a\n"
