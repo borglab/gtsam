@@ -124,6 +124,9 @@ public:
    */
   virtual double error(const Values& c) const = 0;
 
+  /** get the dimension of the factor (number of rows on linearization) */
+  virtual size_t dim() const = 0;
+
 	/**
 	 * Checks whether a factor should be used based on a set of values.
 	 * This is primarily used to implment inequality constraints that
