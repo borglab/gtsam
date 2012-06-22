@@ -27,6 +27,7 @@
 
 using namespace std;
 using namespace gtsam;
+using namespace gtsam::noiseModel;
 
 /**
  * UnaryFactor
@@ -63,12 +64,12 @@ int main(int argc, char** argv) {
 
 	// add two odometry factors
 	Pose2 odometry(2.0, 0.0, 0.0); // create a measurement for both factors (the same in this case)
-	SharedDiagonal odometryNoise(Vector_(3, 0.2, 0.2, 0.1)); // 20cm std on x,y, 0.1 rad on theta
+	SharedDiagonal odometryNoise = Diagonal::Sigmas(Vector_(3, 0.2, 0.2, 0.1)); // 20cm std on x,y, 0.1 rad on theta
 	graph.addOdometry(1, 2, odometry, odometryNoise);
 	graph.addOdometry(2, 3, odometry, odometryNoise);
 
 	// add unary measurement factors, like GPS, on all three poses
-	SharedDiagonal noiseModel(Vector_(2, 0.1, 0.1)); // 10cm std on x,y
+	SharedDiagonal noiseModel = Diagonal::Sigmas(Vector_(2, 0.1, 0.1)); // 10cm std on x,y
 	graph.push_back(boost::make_shared<UnaryFactor>(1, 0, 0, noiseModel));
 	graph.push_back(boost::make_shared<UnaryFactor>(2, 2, 0, noiseModel));
 	graph.push_back(boost::make_shared<UnaryFactor>(3, 4, 0, noiseModel));

@@ -240,7 +240,7 @@ TEST( NonlinearFactor, linearize_constraint2 )
 class TestFactor4 : public NoiseModelFactor4<LieVector, LieVector, LieVector, LieVector> {
 public:
   typedef NoiseModelFactor4<LieVector, LieVector, LieVector, LieVector> Base;
-  TestFactor4() : Base(sharedSigmas(Vector_(1, 2.0)), X(1), X(2), X(3), X(4)) {}
+  TestFactor4() : Base(noiseModel::Diagonal::Sigmas(Vector_(1, 2.0)), X(1), X(2), X(3), X(4)) {}
 
   virtual Vector
     evaluateError(const LieVector& x1, const LieVector& x2, const LieVector& x3, const LieVector& x4,
@@ -289,7 +289,7 @@ TEST(NonlinearFactor, NoiseModelFactor4) {
 class TestFactor5 : public NoiseModelFactor5<LieVector, LieVector, LieVector, LieVector, LieVector> {
 public:
   typedef NoiseModelFactor5<LieVector, LieVector, LieVector, LieVector, LieVector> Base;
-  TestFactor5() : Base(sharedSigmas(Vector_(1, 2.0)), X(1), X(2), X(3), X(4), X(5)) {}
+  TestFactor5() : Base(noiseModel::Diagonal::Sigmas(Vector_(1, 2.0)), X(1), X(2), X(3), X(4), X(5)) {}
 
   virtual Vector
     evaluateError(const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5,
@@ -339,7 +339,7 @@ TEST(NonlinearFactor, NoiseModelFactor5) {
 class TestFactor6 : public NoiseModelFactor6<LieVector, LieVector, LieVector, LieVector, LieVector, LieVector> {
 public:
   typedef NoiseModelFactor6<LieVector, LieVector, LieVector, LieVector, LieVector, LieVector> Base;
-  TestFactor6() : Base(sharedSigmas(Vector_(1, 2.0)), X(1), X(2), X(3), X(4), X(5), X(6)) {}
+  TestFactor6() : Base(noiseModel::Diagonal::Sigmas(Vector_(1, 2.0)), X(1), X(2), X(3), X(4), X(5), X(6)) {}
 
   virtual Vector
     evaluateError(const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5, const X6& x6,

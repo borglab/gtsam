@@ -24,6 +24,7 @@
 
 using namespace std;
 using namespace gtsam;
+using namespace gtsam::noiseModel;
 
 int main(int argc, char** argv) {
 
@@ -31,13 +32,13 @@ int main(int argc, char** argv) {
 	// we are in build/examples, data is in examples/Data
 	pose2SLAM::Graph::shared_ptr graph ;
 	pose2SLAM::Values::shared_ptr initial;
-	SharedDiagonal model(Vector_(3, 0.05, 0.05, 5.0*M_PI/180.0));
+	SharedDiagonal model = Diagonal::Sigmas(Vector_(3, 0.05, 0.05, 5.0*M_PI/180.0));
 	boost::tie(graph,initial) = load2D("../../examples/Data/w100-odom.graph",model);
 	initial->print("Initial estimate:\n");
 
 	// Add a Gaussian prior on first poses
 	Pose2 priorMean(0.0, 0.0, 0.0); // prior at origin
-	SharedDiagonal priorNoise(Vector_(3, 0.01, 0.01, 0.01));
+	SharedDiagonal priorNoise = Diagonal::Sigmas(Vector_(3, 0.01, 0.01, 0.01));
 	graph->addPrior(0, priorMean, priorNoise);
 
 	// Single Step Optimization using Levenberg-Marquardt

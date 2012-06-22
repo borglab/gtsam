@@ -33,8 +33,8 @@ const double tol = 1e-4;
 //  SETDEBUG("ISAM2 recalculate", true);
 
 // Set up parameters
-SharedDiagonal odoNoise = sharedSigmas(Vector_(3, 0.1, 0.1, M_PI/100.0));
-SharedDiagonal brNoise = sharedSigmas(Vector_(2, M_PI/100.0, 0.1));
+SharedDiagonal odoNoise = noiseModel::Diagonal::Sigmas(Vector_(3, 0.1, 0.1, M_PI/100.0));
+SharedDiagonal brNoise = noiseModel::Diagonal::Sigmas(Vector_(2, M_PI/100.0, 0.1));
 
 ISAM2 createSlamlikeISAM2(
 		boost::optional<Values&> init_values = boost::none,
@@ -257,8 +257,8 @@ TEST_UNSAFE(ISAM2, AddVariables) {
 //
 //  Ordering ordering; ordering += (0), (0), (1);
 //  planarSLAM::Graph graph;
-//  graph.addPrior((0), Pose2(), sharedUnit(Pose2::dimension));
-//  graph.addRange((0), (0), 1.0, sharedUnit(1));
+//  graph.addPrior((0), Pose2(), noiseModel::Unit::Create(Pose2::dimension));
+//  graph.addRange((0), (0), 1.0, noiseModel::Unit::Create(1));
 //
 //  FastSet<Index> expected;
 //  expected.insert(0);
@@ -844,7 +844,7 @@ TEST(ISAM2, clone) {
     // Modify original isam
     NonlinearFactorGraph factors;
     factors.add(BetweenFactor<Pose2>(0, 10,
-        isam.calculateEstimate<Pose2>(0).between(isam.calculateEstimate<Pose2>(10)), sharedUnit(3)));
+        isam.calculateEstimate<Pose2>(0).between(isam.calculateEstimate<Pose2>(10)), noiseModel::Unit::Create(3)));
     isam.update(factors);
 
     CHECK(assert_equal(createSlamlikeISAM2(), clone2));

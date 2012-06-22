@@ -24,11 +24,10 @@
 
 namespace gtsam {
 
-	class SharedDiagonal; // forward declare
-
 	/// All noise models live in the noiseModel namespace
 	namespace noiseModel {
 
+		// Forward declaration
 		class Gaussian;
 		class Diagonal;
 		class Constrained;
@@ -157,7 +156,7 @@ namespace gtsam {
 			 * A Gaussian noise model created by specifying a covariance matrix.
 			 * @param smart check if can be simplified to derived class
 			 */
-			static shared_ptr Covariance(const Matrix& covariance, bool smart=false);
+			static shared_ptr Covariance(const Matrix& covariance, bool smart = true);
 
 			virtual void print(const std::string& name) const;
 			virtual bool equals(const Base& expected, double tol=1e-9) const;
@@ -199,13 +198,13 @@ namespace gtsam {
 			 * @param Ab is the m*(n+1) augmented system matrix [A b]
 			 * @return in-place QR factorization [R d]. Below-diagonal is undefined !!!!!
 			 */
-			virtual SharedDiagonal QR(Matrix& Ab) const;
+			virtual boost::shared_ptr<Diagonal> QR(Matrix& Ab) const;
 
 			/**
 			 * Cholesky factorization
 			 * FIXME: this is never used anywhere
 			 */
-			virtual SharedDiagonal Cholesky(Matrix& Ab, size_t nFrontals) const;
+			virtual boost::shared_ptr<Diagonal> Cholesky(Matrix& Ab, size_t nFrontals) const;
 
 			/**
 			 * Return R itself, but note that Whiten(H) is cheaper than R*H
@@ -263,20 +262,20 @@ namespace gtsam {
 			 * A diagonal noise model created by specifying a Vector of sigmas, i.e.
 			 * standard devations, the diagonal of the square root covariance matrix.
 			 */
-			static shared_ptr Sigmas(const Vector& sigmas, bool smart=false);
+			static shared_ptr Sigmas(const Vector& sigmas, bool smart = true);
 
 			/**
 			 * A diagonal noise model created by specifying a Vector of variances, i.e.
 			 * i.e. the diagonal of the covariance matrix.
 			 * @param smart check if can be simplified to derived class
 			 */
-			static shared_ptr Variances(const Vector& variances, bool smart = false);
+			static shared_ptr Variances(const Vector& variances, bool smart = true);
 
 			/**
 			 * A diagonal noise model created by specifying a Vector of precisions, i.e.
 			 * i.e. the diagonal of the information matrix, i.e., weights
 			 */
-			static shared_ptr Precisions(const Vector& precisions, bool smart = false) {
+			static shared_ptr Precisions(const Vector& precisions, bool smart = true) {
 				return Variances(reciprocal(precisions), smart);
 			}
 
@@ -365,13 +364,13 @@ namespace gtsam {
 			 * standard devations, some of which might be zero
 			 */
 			static shared_ptr MixedSigmas(const Vector& mu, const Vector& sigmas,
-					bool smart = false);
+					bool smart = true);
 
 			/**
 			 * A diagonal noise model created by specifying a Vector of
 			 * standard devations, some of which might be zero
 			 */
-			static shared_ptr MixedSigmas(const Vector& sigmas, bool smart = false) {
+			static shared_ptr MixedSigmas(const Vector& sigmas, bool smart = true) {
 				return MixedSigmas(repeat(sigmas.size(), 1000.0), sigmas, smart);
 			}
 
@@ -380,7 +379,7 @@ namespace gtsam {
 			 * standard devations, some of which might be zero
 			 */
 			static shared_ptr MixedSigmas(double m, const Vector& sigmas,
-					bool smart = false) {
+					bool smart = true) {
 				return MixedSigmas(repeat(sigmas.size(), m), sigmas, smart);
 			}
 
@@ -442,7 +441,7 @@ namespace gtsam {
 			/**
 			 * Apply QR factorization to the system [A b], taking into account constraints
 			 */
-			virtual SharedDiagonal QR(Matrix& Ab) const;
+			virtual Diagonal::shared_ptr QR(Matrix& Ab) const;
 
 			/**
 			 * Check constrained is always true
@@ -493,18 +492,18 @@ namespace gtsam {
 			/**
 			 * An isotropic noise model created by specifying a standard devation sigma
 			 */
-			static shared_ptr Sigma(size_t dim, double sigma, bool smart = false);
+			static shared_ptr Sigma(size_t dim, double sigma, bool smart = true);
 
 			/**
 			 * An isotropic noise model created by specifying a variance = sigma^2.
 			 * @param smart check if can be simplified to derived class
 			 */
-			static shared_ptr Variance(size_t dim, double variance, bool smart = false);
+			static shared_ptr Variance(size_t dim, double variance, bool smart = true);
 
 			/**
 			 * An isotropic noise model created by specifying a precision
 			 */
-			static shared_ptr Precision(size_t dim, double precision, bool smart = false)  {
+			static shared_ptr Precision(size_t dim, double precision, bool smart = true)  {
 				return Variance(dim, 1.0/precision, smart);
 			}
 
@@ -717,6 +716,13 @@ namespace gtsam {
 		};
 
 	} // namespace noiseModel
+
+	/** Note, deliberately not in noiseModel namespace.
+	 * Deprecated. Only for compatibility with previous version.
+	 */
+	typedef noiseModel::Base::shared_ptr SharedNoiseModel;
+	typedef noiseModel::Gaussian::shared_ptr SharedGaussian;
+	typedef noiseModel::Diagonal::shared_ptr SharedDiagonal;
 
 } // namespace gtsam
 

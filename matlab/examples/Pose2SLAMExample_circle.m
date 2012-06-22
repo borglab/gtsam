@@ -19,7 +19,7 @@ p1 = hexagon.pose(1);
 fg = pose2SLAMGraph;
 fg.addPoseConstraint(0, p0);
 delta = p0.between(p1);
-covariance = gtsamSharedNoiseModel_Sigmas([0.05; 0.05; 5*pi/180]);
+covariance = gtsamnoiseModelDiagonal_Sigmas([0.05; 0.05; 5*pi/180]);
 fg.addOdometry(0,1, delta, covariance);
 fg.addOdometry(1,2, delta, covariance);
 fg.addOdometry(2,3, delta, covariance);

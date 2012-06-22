@@ -25,20 +25,20 @@ graph = pose2SLAMGraph;
 
 %% Add prior
 % gaussian for prior
-priorNoise = gtsamSharedNoiseModel_Sigmas([0.3; 0.3; 0.1]);
+priorNoise = gtsamnoiseModelDiagonal_Sigmas([0.3; 0.3; 0.1]);
 priorMean = gtsamPose2(0.0, 0.0, 0.0); % prior at origin
 graph.addPrior(1, priorMean, priorNoise); % add directly to graph
 
 %% Add odometry
 % general noisemodel for odometry
-odometryNoise = gtsamSharedNoiseModel_Sigmas([0.2; 0.2; 0.1]);
+odometryNoise = gtsamnoiseModelDiagonal_Sigmas([0.2; 0.2; 0.1]);
 odometry = gtsamPose2(2.0, 0.0, 0.0); % create a measurement for both factors (the same in this case)
 graph.addOdometry(1, 2, odometry, odometryNoise);
 graph.addOdometry(2, 3, odometry, odometryNoise);
 
 %% Add measurements
 % general noisemodel for measurements
-measurementNoise = gtsamSharedNoiseModel_Sigmas([0.1; 0.2]);
+measurementNoise = gtsamnoiseModelDiagonal_Sigmas([0.1; 0.2]);
 
 % print
 graph.print('full graph');

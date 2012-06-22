@@ -44,9 +44,6 @@ graph.addBearingRange(i1, j1, gtsamRot2(45*degrees), sqrt(4+4), noiseModel);
 graph.addBearingRange(i2, j1, gtsamRot2(90*degrees), 2, noiseModel);
 graph.addBearingRange(i3, j2, gtsamRot2(90*degrees), 2, noiseModel);
 
-% print
-graph.print(sprintf('\nFull graph:\n'));
-
 %% Initialize to noisy points
 initialEstimate = planarSLAMValues;
 initialEstimate.insertPose(i1, gtsamPose2(0.5, 0.0, 0.2));
@@ -55,37 +52,17 @@ initialEstimate.insertPose(i3, gtsamPose2(4.1, 0.1, 0.1));
 initialEstimate.insertPoint(j1, gtsamPoint2(1.8, 2.1));
 initialEstimate.insertPoint(j2, gtsamPoint2(4.1, 1.8));
 
-initialEstimate.print(sprintf('\nInitial estimate:\n'));
-
 %% Optimize using Levenberg-Marquardt optimization with an ordering from colamd
 result = graph.optimize(initialEstimate);
-result.print(sprintf('\nFinal result:\n'));
-
-%% Plot Covariance Ellipses
-cla;hold on
 marginals = graph.marginals(result);
-for i=1:3
-    key = symbol('x',i);
-    pose{i} = result.pose(key);
-    P{i}=marginals.marginalCovariance(key);
-    if i>1
-        plot([pose{i-1}.x;pose{i}.x],[pose{i-1}.y;pose{i}.y],'r-');
-    end
-end
-for i=1:3
-    plotPose2(pose{i},'g',P{i})
-end
-point = {};
-for j=1:2
-    key = symbol('l',j);
-    point{j} = result.point(key);
-    Q{j}=marginals.marginalCovariance(key);
-    plotPoint2(point{j},'b',Q{j})
-end
-plot([pose{1}.x;point{1}.x],[pose{1}.y;point{1}.y],'c-');
-plot([pose{2}.x;point{1}.x],[pose{2}.y;point{1}.y],'c-');
-plot([pose{3}.x;point{2}.x],[pose{3}.y;point{2}.y],'c-');
-axis([-0.6 4.8 -1 1])
-axis equal
-view(2)
+
+%% Check first pose and point equality
+pose_1 = result.pose(symbol('x',1));
+marginals.marginalCovariance(symbol('x',1));
+CHECK('pose_1.equals(gtsamPose2,1e-4)',pose_1.equals(gtsamPose2,1e-4));
+
+point_1 = result.point(symbol('l',1));
+marginals.marginalCovariance(symbol('l',1));
+CHECK('point_1.equals(gtsamPoint2(2,2),1e-4)',point_1.equals(gtsamPoint2(2,2),1e-4));
+
 

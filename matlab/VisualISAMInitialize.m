@@ -6,10 +6,10 @@ function [noiseModels,isam,result] = VisualISAMInitialize(data,truth,options)
 isam = visualSLAMISAM(options.reorderInterval);
 
 %% Set Noise parameters
-noiseModels.pose = gtsamSharedNoiseModel_Sigmas([0.001 0.001 0.001 0.1 0.1 0.1]');
-noiseModels.odometry = gtsamSharedNoiseModel_Sigmas([0.001 0.001 0.001 0.1 0.1 0.1]');
-noiseModels.point = gtsamSharedNoiseModel_Sigma(3, 0.1);
-noiseModels.measurement = gtsamSharedNoiseModel_Sigma(2, 1.0);
+noiseModels.pose = gtsamnoiseModelDiagonal_Sigmas([0.001 0.001 0.001 0.1 0.1 0.1]');
+noiseModels.odometry = gtsamnoiseModelDiagonal_Sigmas([0.001 0.001 0.001 0.1 0.1 0.1]');
+noiseModels.point = gtsamnoiseModelIsotropic_Sigma(3, 0.1);
+noiseModels.measurement = gtsamnoiseModelIsotropic_Sigma(2, 1.0);
 
 %% Add constraints/priors
 % TODO: should not be from ground truth!
@@ -62,5 +62,3 @@ result = isam.estimate();
 if options.alwaysRelinearize % re-linearize
     isam.reorder_relinearize();
 end
-
-cla;

@@ -38,7 +38,7 @@ static const Index x2=0, x1=1, x3=2, x4=3;
 GaussianFactorGraph createChain() {
 
   typedef GaussianFactorGraph::sharedFactor Factor;
-  SharedDiagonal model(Vector_(1, 0.5));
+  SharedDiagonal model = noiseModel::Isotropic::Sigma(1, 0.5);
   Factor factor1(new JacobianFactor(x2, Matrix_(1,1,1.), x1, Matrix_(1,1,1.), Vector_(1,1.),  model));
   Factor factor2(new JacobianFactor(x2, Matrix_(1,1,1.), x3, Matrix_(1,1,1.), Vector_(1,1.),  model));
   Factor factor3(new JacobianFactor(x3, Matrix_(1,1,1.), x4, Matrix_(1,1,1.), Vector_(1,1.),  model));

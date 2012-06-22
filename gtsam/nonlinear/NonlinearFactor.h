@@ -28,7 +28,7 @@
 
 #include <gtsam/inference/Factor-inl.h>
 #include <gtsam/inference/IndexFactor.h>
-#include <gtsam/linear/SharedNoiseModel.h>
+#include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/JacobianFactor.h>
 
 #include <gtsam/nonlinear/Values.h>

@@ -22,9 +22,6 @@
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianISAM.h>
 #include <gtsam/linear/NoiseModel.h>
-#include <gtsam/linear/SharedNoiseModel.h>
-#include <gtsam/linear/SharedDiagonal.h>
-#include <gtsam/linear/SharedGaussian.h>
 
 #include <gtsam/base/serializationTestHelpers.h>
 #include <CppUnitLite/TestHarness.h>

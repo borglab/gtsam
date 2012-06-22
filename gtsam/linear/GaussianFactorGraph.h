@@ -31,8 +31,6 @@
 
 namespace gtsam {
 
-	class SharedDiagonal;
-
   /** return A*x-b
    * \todo Make this a member function - affects SubgraphPreconditioner */
   template<class FACTOR>

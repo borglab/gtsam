@@ -37,6 +37,8 @@ using namespace std;
 namespace gtsam {
 namespace example {
 
+	using namespace gtsam::noiseModel;
+
 	typedef boost::shared_ptr<NonlinearFactor> shared;
 
 	static SharedDiagonal sigma1_0 = noiseModel::Isotropic::Sigma(2,1.0);
@@ -425,14 +427,14 @@ namespace example {
 		NonlinearFactorGraph nlfg;
 
 		// Create almost hard constraint on x11, sigma=0 will work for PCG not for normal
-		shared constraint(new simulated2D::Prior(Point2(1.0, 1.0), sharedSigma(2,1e-3), key(1,1)));
+		shared constraint(new simulated2D::Prior(Point2(1.0, 1.0), Isotropic::Sigma(2,1e-3), key(1,1)));
 		nlfg.push_back(constraint);
 
 		// Create horizontal constraints, 1...N*(N-1)
 		Point2 z1(1.0, 0.0); // move right
 		for (size_t x = 1; x < N; x++)
 			for (size_t y = 1; y <= N; y++) {
-				shared f(new simulated2D::Odometry(z1, sharedSigma(2,0.01), key(x, y), key(x + 1, y)));
+				shared f(new simulated2D::Odometry(z1, Isotropic::Sigma(2,0.01), key(x, y), key(x + 1, y)));
 				nlfg.push_back(f);
 			}
 
@@ -440,7 +442,7 @@ namespace example {
 		Point2 z2(0.0, 1.0); // move up
 		for (size_t x = 1; x <= N; x++)
 			for (size_t y = 1; y < N; y++) {
-				shared f(new simulated2D::Odometry(z2, sharedSigma(2,0.01), key(x, y), key(x, y + 1)));
+				shared f(new simulated2D::Odometry(z2, Isotropic::Sigma(2,0.01), key(x, y), key(x, y + 1)));
 				nlfg.push_back(f);
 			}
 

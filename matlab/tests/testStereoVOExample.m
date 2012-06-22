@@ -50,30 +50,17 @@ initialEstimate = visualSLAMValues;
 initialEstimate.insertPose(x1, first_pose);
 % noisy estimate for pose 2
 initialEstimate.insertPose(x2, gtsamPose3(gtsamRot3(), gtsamPoint3(0.1,-.1,1.1)));
-initialEstimate.insertPoint(l1, gtsamPoint3( 1,  1, 5));
+expected_l1 = gtsamPoint3( 1,  1, 5);
+initialEstimate.insertPoint(l1, expected_l1);
 initialEstimate.insertPoint(l2, gtsamPoint3(-1,  1, 5));
 initialEstimate.insertPoint(l3, gtsamPoint3( 0,-.5, 5));
 
 %% optimize
-fprintf(1,'Optimizing\n'); tic
-result = graph.optimize(initialEstimate,1);
-toc
+result = graph.optimize(initialEstimate,0);
 
-%% visualize initial trajectory, final trajectory, and final points
-cla; hold on;
-axis normal
-axis([-1 6 -2 2 -1.5 1.5]);
-axis equal
-view(-38,12)
+%% check equality for the first pose and point
+pose_x1 = result.pose(x1);
+CHECK('pose_x1.equals(first_pose,1e-4)',pose_x1.equals(first_pose,1e-4));
 
-% initial trajectory in red (rotated so Z is up)
-plot3(initialEstimate.zs(),-initialEstimate.xs(),-initialEstimate.ys(), '-*r','LineWidth',2);
-
-% final trajectory in green (rotated so Z is up)
-plot3(result.zs(),-result.xs(),-result.ys(), '-*g','LineWidth',2);
-xlabel('X (m)'); ylabel('Y (m)'); zlabel('Z (m)');
-
-% optimized 3D points (rotated so Z is up)
-points = result.points();
-plot3(points(:,3),-points(:,1),-points(:,2),'*');
-
+point_l1 = result.point(l1);
+CHECK('point_1.equals(expected_l1,1e-4)',point_l1.equals(expected_l1,1e-4));

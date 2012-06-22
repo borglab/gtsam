@@ -18,15 +18,13 @@
  */
 
 #include <gtsam/linear/GaussianDensity.h>
+#include <gtsam/linear/NoiseModel.h>
 
 #ifndef KALMANFILTER_DEFAULT_FACTORIZATION
 #define KALMANFILTER_DEFAULT_FACTORIZATION QR
 #endif
 
 namespace gtsam {
-
-	class SharedDiagonal;
-	class SharedGaussian;
 
 	/**
 	 * Kalman Filter class

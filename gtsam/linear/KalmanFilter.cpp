@@ -23,7 +23,6 @@
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/KalmanFilter.h>
-#include <gtsam/linear/SharedGaussian.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/base/Testable.h>
 

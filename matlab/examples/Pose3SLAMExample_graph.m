@@ -16,7 +16,7 @@ N = 2500;
 filename = '../../examples/Data/sphere2500.txt';
 
 %% Initialize graph, initial estimate, and odometry noise
-model = gtsamSharedNoiseModel_Sigmas([0.05; 0.05; 0.05; 5*pi/180; 5*pi/180; 5*pi/180]);
+model = gtsamnoiseModelDiagonal_Sigmas([0.05; 0.05; 0.05; 5*pi/180; 5*pi/180; 5*pi/180]);
 [graph,initial]=load3D(filename,model,true,N);
 
 %% Plot Initial Estimate

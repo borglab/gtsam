@@ -234,6 +234,7 @@ initOptions(handles)
 
 % Initialize and plot
 [noiseModels,isam,result] = VisualISAMInitialize(data,truth,options);
+cla
 VisualISAMPlot(truth, data, isam, result, options)
 frame_i = 2;
 showFramei(hObject, handles)

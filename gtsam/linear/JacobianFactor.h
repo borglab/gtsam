@@ -19,7 +19,7 @@
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/Errors.h>
-#include <gtsam/linear/SharedDiagonal.h>
+#include <gtsam/linear/NoiseModel.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/base/blockMatrices.h>
 #include <gtsam/base/types.h>

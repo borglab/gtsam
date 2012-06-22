@@ -25,6 +25,7 @@
 
 using gtsam::Vector;
 using gtsam::Matrix;
+using gtsam::noiseModel::Base;
 using gtsam::noiseModel::Gaussian;
 using gtsam::noiseModel::Diagonal;
 using gtsam::noiseModel::Isotropic;
@@ -483,7 +484,7 @@ boost::shared_ptr<Isotropic> unwrap_shared_ptr(const mxArray* obj, const string&
   bool isIsotropic = mxIsClass(obj, "gtsamnoiseModelIsotropic");
   bool isUnit = mxIsClass(obj, "gtsamnoiseModelUnit");
   if (!isIsotropic && !isUnit) {
-    mexPrintf("Expected Isotropic or derived classes, got %s\n", mxGetClassName(obj));
+    mexPrintf("Expected gtsamnoiseModelIsotropic or derived classes, got %s\n", mxGetClassName(obj));
     error("Argument has wrong type.");
   }
 #endif
@@ -501,7 +502,7 @@ boost::shared_ptr<Diagonal> unwrap_shared_ptr(const mxArray* obj, const string& 
   bool isIsotropic = mxIsClass(obj, "gtsamnoiseModelIsotropic");
   bool isUnit = mxIsClass(obj, "gtsamnoiseModelUnit");
   if (!isDiagonal && !isIsotropic && !isUnit ) {
-    mexPrintf("Expected Diagonal or derived classes, got %s\n", mxGetClassName(obj));
+    mexPrintf("Expected gtsamnoiseModelDiagonal or derived classes, got %s\n", mxGetClassName(obj));
     error("Argument has wrong type.");
   }
 #endif
@@ -520,7 +521,27 @@ boost::shared_ptr<Gaussian> unwrap_shared_ptr(const mxArray* obj, const string& 
   bool isIsotropic = mxIsClass(obj, "gtsamnoiseModelIsotropic");
   bool isUnit = mxIsClass(obj, "gtsamnoiseModelUnit");
   if (!isGaussian && !isDiagonal && !isIsotropic && !isUnit) {
-    mexPrintf("Expected Gaussian or derived classes, got %s\n", mxGetClassName(obj));
+    mexPrintf("Expected gtsamnoiseModelGaussian or derived classes, got %s\n", mxGetClassName(obj));
+    error("Argument has wrong type.");
+  }
+#endif
+  mxArray* mxh = mxGetProperty(obj,0,"self");
+  if (mxh==NULL) error("unwrap_reference: invalid wrap object");
+  ObjectHandle<Isotropic>* handle = ObjectHandle<Isotropic>::from_mex_handle(mxh);
+  return handle->get_object();
+}
+
+// Base
+template <>
+boost::shared_ptr<Base> unwrap_shared_ptr(const mxArray* obj, const string& className) {
+#ifndef UNSAFE_WRAP
+	bool isBase = mxIsClass(obj, "gtsamnoiseModelBase");
+	bool isGaussian = mxIsClass(obj, "gtsamnoiseModelGaussian");
+	bool isDiagonal = mxIsClass(obj, "gtsamnoiseModelDiagonal");
+  bool isIsotropic = mxIsClass(obj, "gtsamnoiseModelIsotropic");
+  bool isUnit = mxIsClass(obj, "gtsamnoiseModelUnit");
+  if (!isBase && !isGaussian && !isDiagonal && !isIsotropic && !isUnit) {
+    mexPrintf("Expected gtsamnoiseModelBase or derived classes, got %s\n", mxGetClassName(obj));
     error("Argument has wrong type.");
   }
 #endif

@@ -679,6 +679,9 @@ class VariableIndex {
 
 #include <gtsam/linear/NoiseModel.h>
 namespace noiseModel {
+class Base {
+};
+
 class Gaussian {
 	static gtsam::noiseModel::Gaussian* SqrtInformation(Matrix R);
 	static gtsam::noiseModel::Gaussian* Covariance(Matrix R);
@@ -707,29 +710,6 @@ class Unit {
 };
 }///\namespace noiseModel
 
-// TODO: smart flag not supported. Default argument is not wrapped properly yet
-class SharedNoiseModel {
-	static gtsam::SharedNoiseModel SqrtInformation(Matrix R);
-	static gtsam::SharedNoiseModel Covariance(Matrix covariance);
-	static gtsam::SharedNoiseModel Sigmas(Vector sigmas);
-	static gtsam::SharedNoiseModel Variances(Vector variances);
-	static gtsam::SharedNoiseModel Precisions(Vector precisions);
-	static gtsam::SharedNoiseModel Sigma(size_t dim, double sigma);
-	static gtsam::SharedNoiseModel Variance(size_t dim, double variance);
-	static gtsam::SharedNoiseModel Precision(size_t dim, double precision);
-	static gtsam::SharedNoiseModel Unit(size_t dim);
-	void print(string s) const;
-};
-
-class SharedGaussian {
-	SharedGaussian(Matrix covariance);
-	void print(string s) const;
-};
-
-class SharedDiagonal {
-	SharedDiagonal(Vector sigmas);
-	void print(string s) const;
-};
 
 class Sampler {
 	Sampler(gtsam::noiseModel::Diagonal* model, int seed);
@@ -789,11 +769,11 @@ class JacobianFactor {
 	JacobianFactor();
 	JacobianFactor(Vector b_in);
 	JacobianFactor(size_t i1, Matrix A1, Vector b,
-			const gtsam::SharedDiagonal& model);
+			const gtsam::noiseModel::Diagonal* model);
 	JacobianFactor(size_t i1, Matrix A1, size_t i2, Matrix A2, Vector b,
-			const gtsam::SharedDiagonal& model);
+			const gtsam::noiseModel::Diagonal* model);
 	JacobianFactor(size_t i1, Matrix A1, size_t i2, Matrix A2, size_t i3, Matrix A3,
-			Vector b, const gtsam::SharedDiagonal& model);
+			Vector b, const gtsam::noiseModel::Diagonal* model);
 	void print(string s) const;
 	bool equals(const gtsam::GaussianFactor& lf, double tol) const;
 	bool empty() const;
@@ -881,13 +861,13 @@ class KalmanFilter {
 	void print(string s) const;
 	static size_t step(gtsam::GaussianDensity* p);
 	gtsam::GaussianDensity* predict(gtsam::GaussianDensity* p, Matrix F,
-			Matrix B, Vector u, const gtsam::SharedDiagonal& modelQ);
+			Matrix B, Vector u, const gtsam::noiseModel::Diagonal* modelQ);
 	gtsam::GaussianDensity* predictQ(gtsam::GaussianDensity* p, Matrix F,
 			Matrix B, Vector u, Matrix Q);
 	gtsam::GaussianDensity* predict2(gtsam::GaussianDensity* p, Matrix A0,
-			Matrix A1, Vector b, const gtsam::SharedDiagonal& model);
+			Matrix A1, Vector b, const gtsam::noiseModel::Diagonal* model);
 	gtsam::GaussianDensity* update(gtsam::GaussianDensity* p, Matrix H,
-			Vector z, const gtsam::SharedDiagonal& model);
+			Vector z, const gtsam::noiseModel::Diagonal* model);
 	gtsam::GaussianDensity* updateQ(gtsam::GaussianDensity* p, Matrix H,
 			Vector z, Matrix Q);
 };
@@ -1024,10 +1004,10 @@ class Graph {
 			const gtsam::Ordering& ordering) const;
 
 	// pose2SLAM-specific
-	void addPrior(size_t key, const gtsam::Pose2& pose, const gtsam::SharedNoiseModel& noiseModel);
+	void addPrior(size_t key, const gtsam::Pose2& pose, const gtsam::noiseModel::Base* noiseModel);
 	void addPoseConstraint(size_t key, const gtsam::Pose2& pose);
-	void addOdometry(size_t key1, size_t key2, const gtsam::Pose2& odometry, const gtsam::SharedNoiseModel& noiseModel);
-	void addConstraint(size_t key1, size_t key2, const gtsam::Pose2& odometry, const gtsam::SharedNoiseModel& noiseModel);
+	void addOdometry(size_t key1, size_t key2, const gtsam::Pose2& odometry, const gtsam::noiseModel::Base* noiseModel);
+	void addConstraint(size_t key1, size_t key2, const gtsam::Pose2& odometry, const gtsam::noiseModel::Base* noiseModel);
 	pose2SLAM::Values optimize(const pose2SLAM::Values& initialEstimate) const;
 	pose2SLAM::Values optimizeSPCG(const pose2SLAM::Values& initialEstimate) const;
 	gtsam::Marginals marginals(const pose2SLAM::Values& solution) const;
@@ -1075,8 +1055,8 @@ class Graph {
 			const gtsam::Ordering& ordering) const;
 
 	// pose3SLAM-specific
-	void addPrior(size_t key, const gtsam::Pose3& p, const gtsam::SharedNoiseModel& model);
-	void addConstraint(size_t key1, size_t key2, const gtsam::Pose3& z, const gtsam::SharedNoiseModel& model);
+	void addPrior(size_t key, const gtsam::Pose3& p, const gtsam::noiseModel::Base* model);
+	void addConstraint(size_t key1, size_t key2, const gtsam::Pose3& z, const gtsam::noiseModel::Base* model);
 	void addHardConstraint(size_t i, const gtsam::Pose3& p);
 	pose3SLAM::Values optimize(const pose3SLAM::Values& initialEstimate) const;
 	gtsam::Marginals marginals(const pose3SLAM::Values& solution) const;
@@ -1123,19 +1103,19 @@ class Graph {
 			const gtsam::Ordering& ordering) const;
 
 	// planarSLAM-specific
-	void addPrior(size_t key, const gtsam::Pose2& pose, const gtsam::SharedNoiseModel& noiseModel);
+	void addPrior(size_t key, const gtsam::Pose2& pose, const gtsam::noiseModel::Base* noiseModel);
 	void addPoseConstraint(size_t key, const gtsam::Pose2& pose);
-	void addOdometry(size_t key1, size_t key2, const gtsam::Pose2& odometry, const gtsam::SharedNoiseModel& noiseModel);
-	void addBearing(size_t poseKey, size_t pointKey, const gtsam::Rot2& bearing, const gtsam::SharedNoiseModel& noiseModel);
-	void addRange(size_t poseKey, size_t pointKey, double range, const gtsam::SharedNoiseModel& noiseModel);
-	void addBearingRange(size_t poseKey, size_t pointKey, const gtsam::Rot2& bearing,double range, const gtsam::SharedNoiseModel& noiseModel);
+	void addOdometry(size_t key1, size_t key2, const gtsam::Pose2& odometry, const gtsam::noiseModel::Base* noiseModel);
+	void addBearing(size_t poseKey, size_t pointKey, const gtsam::Rot2& bearing, const gtsam::noiseModel::Base* noiseModel);
+	void addRange(size_t poseKey, size_t pointKey, double range, const gtsam::noiseModel::Base* noiseModel);
+	void addBearingRange(size_t poseKey, size_t pointKey, const gtsam::Rot2& bearing,double range, const gtsam::noiseModel::Base* noiseModel);
 	planarSLAM::Values optimize(const planarSLAM::Values& initialEstimate);
 	gtsam::Marginals marginals(const planarSLAM::Values& solution) const;
 };
 
 class Odometry {
 	Odometry(size_t key1, size_t key2, const gtsam::Pose2& measured,
-			const gtsam::SharedNoiseModel& model);
+			const gtsam::noiseModel::Base* model);
 	void print(string s) const;
 	gtsam::GaussianFactor* linearize(const planarSLAM::Values& center,
 			const gtsam::Ordering& ordering) const;
@@ -1190,9 +1170,9 @@ class Graph {
       const gtsam::Ordering& ordering) const;
 
   // Measurements
-  void addMeasurement(const gtsam::Point2& measured, const gtsam::SharedNoiseModel& model,
+  void addMeasurement(const gtsam::Point2& measured, const gtsam::noiseModel::Base* model,
       size_t poseKey, size_t pointKey, const gtsam::Cal3_S2* K);
-  void addStereoMeasurement(const gtsam::StereoPoint2& measured, const gtsam::SharedNoiseModel& model,
+  void addStereoMeasurement(const gtsam::StereoPoint2& measured, const gtsam::noiseModel::Base* model,
       size_t poseKey, size_t pointKey, const gtsam::Cal3_S2Stereo* K);
 
   // Constraints
@@ -1200,10 +1180,10 @@ class Graph {
   void addPointConstraint(size_t pointKey, const gtsam::Point3& p);
 
   // Priors
-  void addPosePrior(size_t poseKey, const gtsam::Pose3& p, const gtsam::SharedNoiseModel& model);
-  void addPointPrior(size_t pointKey, const gtsam::Point3& p, const gtsam::SharedNoiseModel& model);
-  void addRangeFactor(size_t poseKey, size_t pointKey, double range, const gtsam::SharedNoiseModel& model);
-  void addOdometry(size_t poseKey1, size_t poseKey2, const gtsam::Pose3& odometry, const gtsam::SharedNoiseModel& model);
+  void addPosePrior(size_t poseKey, const gtsam::Pose3& p, const gtsam::noiseModel::Base* model);
+  void addPointPrior(size_t pointKey, const gtsam::Point3& p, const gtsam::noiseModel::Base* model);
+  void addRangeFactor(size_t poseKey, size_t pointKey, double range, const gtsam::noiseModel::Base* model);
+  void addOdometry(size_t poseKey1, size_t poseKey2, const gtsam::Pose3& odometry, const gtsam::noiseModel::Base* model);
 
   visualSLAM::Values optimize(const visualSLAM::Values& initialEstimate, size_t verbosity) const;
   gtsam::Marginals marginals(const visualSLAM::Values& solution) const;

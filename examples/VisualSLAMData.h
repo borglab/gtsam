@@ -73,7 +73,7 @@ struct VisualSLAMExampleData {
 		data.odometry = data.poses[0].between(data.poses[1]);
 
 		// Simulated measurements, possibly with Gaussian noise
-		data.noiseZ = gtsam::sharedSigma(2, 1.0);
+		data.noiseZ = gtsam::noiseModel::Isotropic::Sigma(2, 1.0);
 		for (size_t i=0; i<data.poses.size(); ++i) {
 			for (size_t j=0; j<data.points.size(); ++j) {
 				gtsam::SimpleCamera camera(data.poses[i], *data.sK);
@@ -81,8 +81,8 @@ struct VisualSLAMExampleData {
 						/*+ gtsam::Point2(data.noiseZ->sample()))*/); // you can add noise as desired
 			}
 		}
-		data.noiseX = gtsam::sharedSigmas(gtsam::Vector_(6, 0.001, 0.001, 0.001, 0.1, 0.1, 0.1));
-		data.noiseL = gtsam::sharedSigma(3, 0.1);
+		data.noiseX = gtsam::noiseModel::Diagonal::Sigmas(gtsam::Vector_(6, 0.001, 0.001, 0.001, 0.1, 0.1, 0.1));
+		data.noiseL = gtsam::noiseModel::Isotropic::Sigma(3, 0.1);
 
 		return data;
 	}

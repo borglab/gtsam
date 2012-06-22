@@ -130,8 +130,8 @@ TEST(GaussianJunctionTree, slamlike) {
   Values init;
   planarSLAM::Graph newfactors;
   planarSLAM::Graph fullgraph;
-  SharedDiagonal odoNoise = sharedSigmas(Vector_(3, 0.1, 0.1, M_PI/100.0));
-  SharedDiagonal brNoise = sharedSigmas(Vector_(2, M_PI/100.0, 0.1));
+  SharedDiagonal odoNoise = noiseModel::Diagonal::Sigmas(Vector_(3, 0.1, 0.1, M_PI/100.0));
+  SharedDiagonal brNoise = noiseModel::Diagonal::Sigmas(Vector_(2, M_PI/100.0, 0.1));
 
   size_t i = 0;
 
@@ -194,8 +194,8 @@ TEST(GaussianJunctionTree, simpleMarginal) {
 
   // Create a simple graph
   pose2SLAM::Graph fg;
-  fg.addPrior(X(0), Pose2(), sharedSigma(3, 10.0));
-  fg.addOdometry(X(0), X(1), Pose2(1.0, 0.0, 0.0), sharedSigmas(Vector_(3, 10.0, 1.0, 1.0)));
+  fg.addPrior(X(0), Pose2(), noiseModel::Isotropic::Sigma(3, 10.0));
+  fg.addOdometry(X(0), X(1), Pose2(1.0, 0.0, 0.0), noiseModel::Diagonal::Sigmas(Vector_(3, 10.0, 1.0, 1.0)));
 
   Values init;
   init.insert(X(0), Pose2());

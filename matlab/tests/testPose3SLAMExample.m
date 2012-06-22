@@ -37,17 +37,10 @@ initial.insertPose(3, hexagon.pose(3).retract(s*randn(6,1)));
 initial.insertPose(4, hexagon.pose(4).retract(s*randn(6,1)));
 initial.insertPose(5, hexagon.pose(5).retract(s*randn(6,1)));
 
-%% Plot Initial Estimate
-cla
-plot3(initial.xs(),initial.ys(),initial.zs(),'g-*');
-
 %% optimize
 result = fg.optimize(initial);
 
-%% Show Result
-hold on; plot3DTrajectory(result,'b-*', true, 0.3);
-axis([-2 2 -2 2 -1 1]);
-axis equal
-view(-37,40)
-colormap hot
-result.print(sprintf('\nFinal result:\n'));
+pose_1 = result.pose(1);
+CHECK('pose_1.equals(gtsamPose3,1e-4)',pose_1.equals(p1,1e-4));
+
+

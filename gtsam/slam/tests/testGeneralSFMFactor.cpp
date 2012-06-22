@@ -371,7 +371,7 @@ TEST( GeneralSFMFactor, optimize_varK_BA ) {
   graph.addCameraConstraint(0, cameras[0]);
 
   // Constrain the scale of the problem with a soft range factor of 1m between the cameras
-  graph.add(RangeFactor<GeneralCamera,GeneralCamera>(X(0), X(1), 2.0, sharedSigma(1, 10.0)));
+  graph.add(RangeFactor<GeneralCamera,GeneralCamera>(X(0), X(1), 2.0, noiseModel::Isotropic::Sigma(1, 10.0)));
 
   const double reproj_error = 1e-5 ;
 
@@ -386,8 +386,8 @@ TEST(GeneralSFMFactor, GeneralCameraPoseRange) {
   // Tests range factor between a GeneralCamera and a Pose3
   Graph graph;
   graph.addCameraConstraint(0, GeneralCamera());
-  graph.add(RangeFactor<GeneralCamera, Pose3>(X(0), X(1), 2.0, sharedSigma(1, 1.0)));
-  graph.add(PriorFactor<Pose3>(X(1), Pose3(Rot3(), Point3(1.0, 0.0, 0.0)), sharedSigma(6, 1.0)));
+  graph.add(RangeFactor<GeneralCamera, Pose3>(X(0), X(1), 2.0, noiseModel::Isotropic::Sigma(1, 1.0)));
+  graph.add(PriorFactor<Pose3>(X(1), Pose3(Rot3(), Point3(1.0, 0.0, 0.0)), noiseModel::Isotropic::Sigma(6, 1.0)));
 
   Values init;
   init.insert(X(0), GeneralCamera());
@@ -410,9 +410,9 @@ TEST(GeneralSFMFactor, GeneralCameraPoseRange) {
 TEST(GeneralSFMFactor, CalibratedCameraPoseRange) {
   // Tests range factor between a CalibratedCamera and a Pose3
   NonlinearFactorGraph graph;
-  graph.add(PriorFactor<CalibratedCamera>(X(0), CalibratedCamera(), sharedSigma(6, 1.0)));
-  graph.add(RangeFactor<CalibratedCamera, Pose3>(X(0), X(1), 2.0, sharedSigma(1, 1.0)));
-  graph.add(PriorFactor<Pose3>(X(1), Pose3(Rot3(), Point3(1.0, 0.0, 0.0)), sharedSigma(6, 1.0)));
+  graph.add(PriorFactor<CalibratedCamera>(X(0), CalibratedCamera(), noiseModel::Isotropic::Sigma(6, 1.0)));
+  graph.add(RangeFactor<CalibratedCamera, Pose3>(X(0), X(1), 2.0, noiseModel::Isotropic::Sigma(1, 1.0)));
+  graph.add(PriorFactor<Pose3>(X(1), Pose3(Rot3(), Point3(1.0, 0.0, 0.0)), noiseModel::Isotropic::Sigma(6, 1.0)));
 
   Values init;
   init.insert(X(0), CalibratedCamera());

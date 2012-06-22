@@ -23,6 +23,7 @@
 
 using namespace std;
 using namespace gtsam;
+using namespace gtsam::noiseModel;
 
 /**
  * Example of a simple 2D planar slam example with landmarls
@@ -44,17 +45,17 @@ int main(int argc, char** argv) {
 
 	// add a Gaussian prior on pose x_1
 	Pose2 priorMean(0.0, 0.0, 0.0); // prior mean is at origin
-	SharedDiagonal priorNoise(Vector_(3, 0.3, 0.3, 0.1)); // 30cm std on x,y, 0.1 rad on theta
+	SharedDiagonal priorNoise = Diagonal::Sigmas(Vector_(3, 0.3, 0.3, 0.1)); // 30cm std on x,y, 0.1 rad on theta
 	graph.addPrior(i1, priorMean, priorNoise); // add directly to graph
 
 	// add two odometry factors
 	Pose2 odometry(2.0, 0.0, 0.0); // create a measurement for both factors (the same in this case)
-	SharedDiagonal odometryNoise(Vector_(3, 0.2, 0.2, 0.1)); // 20cm std on x,y, 0.1 rad on theta
+	SharedDiagonal odometryNoise  = Diagonal::Sigmas(Vector_(3, 0.2, 0.2, 0.1)); // 20cm std on x,y, 0.1 rad on theta
 	graph.addOdometry(i1, i2, odometry, odometryNoise);
 	graph.addOdometry(i2, i3, odometry, odometryNoise);
 
 	// create a noise model for the landmark measurements
-	SharedDiagonal measurementNoise(Vector_(2, 0.1, 0.2)); // 0.1 rad std on bearing, 20cm on range
+	SharedDiagonal measurementNoise = Diagonal::Sigmas(Vector_(2, 0.1, 0.2)); // 0.1 rad std on bearing, 20cm on range
 
 	// create the measurement values - indices are (pose id, landmark id)
 	Rot2 bearing11 = Rot2::fromDegrees(45),

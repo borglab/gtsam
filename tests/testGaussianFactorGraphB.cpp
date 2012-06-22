@@ -269,7 +269,7 @@ TEST( GaussianFactorGraph, eliminateOne_x1_fast )
                             0.,  -2.357022603955159,
             7.071067811865475,                   0.,
                             0.,   7.071067811865475),
-     Vector_(4, -0.707106781186547, 0.942809041582063, 0.707106781186547, -1.414213562373094), sharedUnit(4));
+     Vector_(4, -0.707106781186547, 0.942809041582063, 0.707106781186547, -1.414213562373094), noiseModel::Unit::Create(4));
 
   EXPECT(assert_equal(expected,*conditional,tol));
   EXPECT(assert_equal((const GaussianFactor&)expectedFactor,*remaining.back(),tol));
@@ -370,7 +370,7 @@ TEST( GaussianFactorGraph, eliminateAll )
 //  GaussianFactorGraph expected = createGaussianFactorGraph(ordering);
 //  Matrix A = eye(2);
 //  Vector b = zero(2);
-//  SharedDiagonal sigma = sharedSigma(2,3.0);
+//  SharedDiagonal sigma = noiseModel::Isotropic::Sigma(2,3.0);
 //  expected.push_back(GaussianFactor::shared_ptr(new JacobianFactor(ordering[L(1)],A,b,sigma)));
 //  expected.push_back(GaussianFactor::shared_ptr(new JacobianFactor(ordering[X(1)],A,b,sigma)));
 //  expected.push_back(GaussianFactor::shared_ptr(new JacobianFactor(ordering[X(2)],A,b,sigma)));
@@ -768,7 +768,7 @@ TEST( GaussianFactorGraph, elimination )
 	GaussianFactorGraph fg;
 	Matrix Ap = eye(1), An = eye(1) * -1;
 	Vector b = Vector_(1, 0.0);
-  SharedDiagonal sigma = sharedSigma(1,2.0);
+  SharedDiagonal sigma = noiseModel::Isotropic::Sigma(1,2.0);
 	fg.add(ord[X(1)], An, ord[X(2)], Ap, b, sigma);
 	fg.add(ord[X(1)], Ap, b, sigma);
 	fg.add(ord[X(2)], Ap, b, sigma);
@@ -873,7 +873,7 @@ TEST( GaussianFactorGraph, constrained_multi1 )
 
 /* ************************************************************************* */
 
-SharedDiagonal model = sharedSigma(2,1);
+SharedDiagonal model = noiseModel::Isotropic::Sigma(2,1);
 
 // SL-FIX TEST( GaussianFactorGraph, findMinimumSpanningTree )
 //{
@@ -922,7 +922,7 @@ SharedDiagonal model = sharedSigma(2,1);
 TEST(GaussianFactorGraph, replace)
 {
   Ordering ord; ord += X(1),X(2),X(3),X(4),X(5),X(6);
-	SharedDiagonal noise(sharedSigma(3, 1.0));
+	SharedDiagonal noise(noiseModel::Isotropic::Sigma(3, 1.0));
 
 	GaussianFactorGraph::sharedFactor f1(new JacobianFactor(
 	    ord[X(1)], eye(3,3), ord[X(2)], eye(3,3), zero(3), noise));

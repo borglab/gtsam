@@ -29,7 +29,6 @@
 #include <gtsam/base/timing.h>
 #include <gtsam/base/cholesky.h>
 #include <gtsam/linear/NoiseModel.h>
-#include <gtsam/linear/SharedDiagonal.h>
 
 static double inf = std::numeric_limits<double>::infinity();
 using namespace std;

@@ -29,6 +29,7 @@
 
 using namespace std;
 using namespace gtsam;
+using namespace gtsam::noiseModel;
 
 int main(int argc, char** argv) {
 	/* 1. create graph container and add factors to it */
@@ -36,11 +37,11 @@ int main(int argc, char** argv) {
 
 	/* 2.a add prior  */
 	Pose2 priorMean(0.0, 0.0, 0.0); // prior at origin
-	SharedDiagonal priorNoise(Vector_(3, 0.3, 0.3, 0.1)); // 30cm std on x,y, 0.1 rad on theta
+	SharedDiagonal priorNoise = Diagonal::Sigmas(Vector_(3, 0.3, 0.3, 0.1)); // 30cm std on x,y, 0.1 rad on theta
 	graph.addPrior(1, priorMean, priorNoise); // add directly to graph
 
 	/* 2.b add odometry */
-	SharedDiagonal odometryNoise(Vector_(3, 0.2, 0.2, 0.1)); // 20cm std on x,y, 0.1 rad on theta
+	SharedDiagonal odometryNoise = Diagonal::Sigmas(Vector_(3, 0.2, 0.2, 0.1)); // 20cm std on x,y, 0.1 rad on theta
 	Pose2 odometry(2.0, 0.0, 0.0); // create a measurement for both factors (the same in this case)
 	graph.addOdometry(1, 2, odometry, odometryNoise);
 	graph.addOdometry(2, 3, odometry, odometryNoise);

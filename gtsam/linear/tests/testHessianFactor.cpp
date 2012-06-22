@@ -93,7 +93,7 @@ TEST(HessianFactor, ConversionConstructor) {
   vector<pair<Index, Matrix> > meas;
   meas.push_back(make_pair(0, Ax2));
   meas.push_back(make_pair(1, Al1x1));
-  JacobianFactor combined(meas, b2, sigmas);
+  JacobianFactor combined(meas, b2, noiseModel::Diagonal::Sigmas(sigmas));
 
   HessianFactor actual(combined);
 
@@ -468,7 +468,7 @@ TEST(HessianFactor, eliminate2 )
   vector<pair<Index, Matrix> > meas;
   meas.push_back(make_pair(0, Ax2));
   meas.push_back(make_pair(1, Al1x1));
-  JacobianFactor combined(meas, b2, sigmas);
+  JacobianFactor combined(meas, b2, noiseModel::Diagonal::Sigmas(sigmas));
 
   // eliminate the combined factor
   HessianFactor::shared_ptr combinedLF_Chol(new HessianFactor(combined));
@@ -502,7 +502,7 @@ TEST(HessianFactor, eliminate2 )
       0.00, 1.00, +0.00, -1.00
   )/sigma;
   Vector b1 = Vector_(2,0.0,0.894427);
-  JacobianFactor expectedLF(1, Bl1x1, b1, repeat(2,1.0));
+  JacobianFactor expectedLF(1, Bl1x1, b1, noiseModel::Isotropic::Sigma(2,1.0));
   EXPECT(assert_equal(HessianFactor(expectedLF), *actualFactor, 1.5e-3));
 }
 

@@ -18,8 +18,7 @@
  */
 
 #include <gtsam/linear/KalmanFilter.h>
-#include <gtsam/linear/SharedDiagonal.h>
-#include <gtsam/linear/SharedGaussian.h>
+#include <gtsam/linear/NoiseModel.h>
 #include <gtsam/base/Testable.h>
 #include <CppUnitLite/TestHarness.h>
 

@@ -11,13 +11,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Initialize graph, initial estimate, and odometry noise
-model = gtsamSharedNoiseModel_Sigmas([0.05; 0.05; 5*pi/180]);
+model = gtsamnoiseModelDiagonal_Sigmas([0.05; 0.05; 5*pi/180]);
 [graph,initial]=load2D('../../examples/Data/w100-odom.graph',model);
 initial.print(sprintf('Initial estimate:\n'));
 
 %% Add a Gaussian prior on pose x_1
 priorMean = gtsamPose2(0.0, 0.0, 0.0); % prior mean is at origin
-priorNoise = gtsamSharedNoiseModel_Sigmas([0.01; 0.01; 0.01]);
+priorNoise = gtsamnoiseModelDiagonal_Sigmas([0.01; 0.01; 0.01]);
 graph.addPrior(0, priorMean, priorNoise); % add directly to graph
 
 %% Plot Initial Estimate
@@ -31,6 +31,7 @@ result.print(sprintf('\nFinal result:\n'));
 
 %% Plot Covariance Ellipses
 marginals = graph.marginals(result);
+P={};
 for i=1:result.size()-1
     pose_i = result.pose(i);
     P{i}=marginals.marginalCovariance(i);

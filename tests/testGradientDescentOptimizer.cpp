@@ -26,18 +26,18 @@ boost::tuple<pose2SLAM::Graph, Values> generateProblem() {
 
   // 2a. Add Gaussian prior
   Pose2 priorMean(0.0, 0.0, 0.0); // prior at origin
-  SharedDiagonal priorNoise(Vector_(3, 0.3, 0.3, 0.1));
+  SharedDiagonal priorNoise = noiseModel::Diagonal::Sigmas(Vector_(3, 0.3, 0.3, 0.1));
   graph.addPrior(1, priorMean, priorNoise);
 
   // 2b. Add odometry factors
-  SharedDiagonal odometryNoise(Vector_(3, 0.2, 0.2, 0.1));
+  SharedDiagonal odometryNoise = noiseModel::Diagonal::Sigmas(Vector_(3, 0.2, 0.2, 0.1));
   graph.addOdometry(1, 2, Pose2(2.0, 0.0, 0.0   ), odometryNoise);
   graph.addOdometry(2, 3, Pose2(2.0, 0.0, M_PI_2), odometryNoise);
   graph.addOdometry(3, 4, Pose2(2.0, 0.0, M_PI_2), odometryNoise);
   graph.addOdometry(4, 5, Pose2(2.0, 0.0, M_PI_2), odometryNoise);
 
   // 2c. Add pose constraint
-  SharedDiagonal constraintUncertainty(Vector_(3, 0.2, 0.2, 0.1));
+  SharedDiagonal constraintUncertainty = noiseModel::Diagonal::Sigmas(Vector_(3, 0.2, 0.2, 0.1));
   graph.addConstraint(5, 2, Pose2(2.0, 0.0, M_PI_2), constraintUncertainty);
 
   // 3. Create the data structure to hold the initialEstimate estinmate to the solution

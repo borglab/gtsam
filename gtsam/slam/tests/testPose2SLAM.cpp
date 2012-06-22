@@ -393,7 +393,7 @@ TEST_UNSAFE(Pose2SLAM, expmap )
 }
 
 // Common measurement covariance
-static SharedNoiseModel sigmas = sharedSigmas(Vector_(3,sx,sy,st));
+static SharedNoiseModel sigmas = noiseModel::Diagonal::Sigmas(Vector_(3,sx,sy,st));
 
 /* ************************************************************************* */
 // Very simple test establishing Ax-b \approx z-h(x)

@@ -373,9 +373,9 @@ TEST_UNSAFE(BayesTree, simpleMarginal)
 
   Matrix A12 = Rot2::fromDegrees(45.0).matrix();
 
-  gfg.add(0, eye(2), zero(2), sharedSigma(2, 1.0));
-  gfg.add(0, -eye(2), 1, eye(2), ones(2), sharedSigma(2, 1.0));
-  gfg.add(1, -eye(2), 2, A12, ones(2), sharedSigma(2, 1.0));
+  gfg.add(0, eye(2), zero(2), noiseModel::Isotropic::Sigma(2, 1.0));
+  gfg.add(0, -eye(2), 1, eye(2), ones(2), noiseModel::Isotropic::Sigma(2, 1.0));
+  gfg.add(1, -eye(2), 2, A12, ones(2), noiseModel::Isotropic::Sigma(2, 1.0));
 
   Matrix expected(GaussianSequentialSolver(gfg).marginalCovariance(2));
   Matrix actual(GaussianMultifrontalSolver(gfg).marginalCovariance(2));

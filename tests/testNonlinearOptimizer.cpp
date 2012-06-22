@@ -232,9 +232,9 @@ TEST(NonlinearOptimizer, NullFactor) {
 TEST(NonlinearOptimizer, MoreOptimization) {
 
   NonlinearFactorGraph fg;
-  fg.add(PriorFactor<Pose2>(0, Pose2(0,0,0), sharedSigma(3,1)));
-  fg.add(BetweenFactor<Pose2>(0, 1, Pose2(1,0,M_PI/2), sharedSigma(3,1)));
-  fg.add(BetweenFactor<Pose2>(1, 2, Pose2(1,0,M_PI/2), sharedSigma(3,1)));
+  fg.add(PriorFactor<Pose2>(0, Pose2(0,0,0), noiseModel::Isotropic::Sigma(3,1)));
+  fg.add(BetweenFactor<Pose2>(0, 1, Pose2(1,0,M_PI/2), noiseModel::Isotropic::Sigma(3,1)));
+  fg.add(BetweenFactor<Pose2>(1, 2, Pose2(1,0,M_PI/2), noiseModel::Isotropic::Sigma(3,1)));
 
   Values init;
   init.insert(0, Pose2(3,4,-M_PI));

@@ -29,7 +29,7 @@ using namespace gtsam;
 static const Index _x0_=0, _x1_=1, _x2_=2, _x3_=3, _x4_=4, _x_=5, _y_=6, _l1_=7, _l11_=8;
 
 static SharedDiagonal
-	sigma0_1 = sharedSigma(2,0.1), sigma_02 = sharedSigma(2,0.2),
+	sigma0_1 = noiseModel::Isotropic::Sigma(2,0.1), sigma_02 = noiseModel::Isotropic::Sigma(2,0.2),
 	constraintModel = noiseModel::Constrained::All(2);
 
 /* ************************************************************************* */
@@ -76,7 +76,7 @@ TEST(JacobianFactor, constructor2)
 JacobianFactor construct() {
   Matrix A = Matrix_(2,2, 1.,2.,3.,4.);
   Vector b = Vector_(2, 1.0, 2.0);
-  SharedDiagonal s = sharedSigmas(Vector_(2, 3.0, 4.0));
+  SharedDiagonal s = noiseModel::Diagonal::Sigmas(Vector_(2, 3.0, 4.0));
   JacobianFactor::shared_ptr shared(
       new JacobianFactor(0, A, b, s));
   return *shared;
@@ -86,7 +86,7 @@ TEST(JacobianFactor, return_value)
 {
   Matrix A = Matrix_(2,2, 1.,2.,3.,4.);
   Vector b = Vector_(2, 1.0, 2.0);
-  SharedDiagonal s = sharedSigmas(Vector_(2, 3.0, 4.0));
+  SharedDiagonal s = noiseModel::Diagonal::Sigmas(Vector_(2, 3.0, 4.0));
   JacobianFactor copied = construct();
   EXPECT(assert_equal(b, copied.getb()));
   EXPECT(assert_equal(*s, *copied.get_model()));
@@ -107,7 +107,7 @@ TEST(JabobianFactor, Hessian_conversion) {
       1.2530,   2.1508,   -0.8779,  -1.8755,
            0,   2.5858,    0.4789,  -2.3943).finished(),
       (Vector(2) << -6.2929, -5.7941).finished(),
-      sharedUnit(2));
+      noiseModel::Unit::Create(2));
 
   JacobianFactor actual(hessian);
 
@@ -202,7 +202,7 @@ TEST(JacobianFactor, eliminate2 )
 	vector<pair<Index, Matrix> > meas;
 	meas.push_back(make_pair(_x2_, Ax2));
 	meas.push_back(make_pair(_l11_, Al1x1));
-	JacobianFactor combined(meas, b2, sigmas);
+	JacobianFactor combined(meas, b2, noiseModel::Diagonal::Sigmas(sigmas));
 
 	// eliminate the combined factor
 	GaussianConditional::shared_ptr actualCG_QR;
@@ -236,7 +236,7 @@ TEST(JacobianFactor, eliminate2 )
 			0.00, 1.00, +0.00, -1.00
 	)/sigma;
 	Vector b1 = Vector_(2,0.0,0.894427);
-	JacobianFactor expectedLF(_l11_, Bl1x1, b1, repeat(2,1.0));
+	JacobianFactor expectedLF(_l11_, Bl1x1, b1, noiseModel::Isotropic::Sigma(2,1.0));
 	EXPECT(assert_equal(expectedLF,*actualLF_QR,1e-3));
 }
 
@@ -304,7 +304,7 @@ TEST(JacobianFactor, CONSTRUCTOR_GaussianConditional )
 	// Call the constructor we are testing !
 	JacobianFactor actualLF(*CG);
 
-	JacobianFactor expectedLF(_x2_,R11,_l11_,S12,d, sigmas);
+	JacobianFactor expectedLF(_x2_,R11,_l11_,S12,d, noiseModel::Diagonal::Sigmas(sigmas));
 	EXPECT(assert_equal(expectedLF,actualLF,1e-5));
 }
 

@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
     blockGfgs.reserve(nTrials);
     for(size_t trial=0; trial<nTrials; ++trial) {
       blockGfgs.push_back(GaussianFactorGraph());
-      SharedDiagonal noise = sharedSigma(blockdim, 1.0);
+      SharedDiagonal noise = noiseModel::Isotropic::Sigma(blockdim, 1.0);
       for(size_t i=0; i<nBlocks; ++i) {
         // Generate a random Gaussian factor
         Matrix A(blockdim, vardim);
@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
     vector<GaussianFactorGraph> combGfgs;
     for(size_t trial=0; trial<nTrials; ++trial) {
       combGfgs.push_back(GaussianFactorGraph());
-      SharedDiagonal noise = sharedSigma(blockdim, 1.0);
+      SharedDiagonal noise = noiseModel::Isotropic::Sigma(blockdim, 1.0);
 
       Matrix Acomb(blockdim*nBlocks, vardim);
       Vector bcomb(blockdim*nBlocks);
@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
           bcomb(blockdim*i+j) = rg();
       }
       combGfgs[trial].push_back(JacobianFactor::shared_ptr(new JacobianFactor(key, Acomb, bcomb,
-          sharedSigma(blockdim*nBlocks, 1.0))));
+          noiseModel::Isotropic::Sigma(blockdim*nBlocks, 1.0))));
     }
     combbuild = timer.elapsed();
     cout << combbuild << " s" << endl;

@@ -10,25 +10,16 @@
 % @author Duy-Nguyen Ta
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% Assumptions
-%  - Landmarks as 8 vertices of a cube: (10,10,10) (-10,10,10) etc...
-%  - Cameras are on a circle around the cube, pointing at the world origin
-%  - Each camera sees all landmarks. 
-%  - Visual measurements as 2D points are given, corrupted by Gaussian noise.
-
-% Data Options
 options.triangle = false;
 options.nrCameras = 10;
 options.showImages = false;
 
-%% Generate data
 [data,truth] = VisualISAMGenerateData(options);
 
 measurementNoiseSigma = 1.0;
 pointNoiseSigma = 0.1;
 poseNoiseSigmas = [0.001 0.001 0.001 0.1 0.1 0.1]';
 
-%% Create the graph (defined in visualSLAM.h, derived from NonlinearFactorGraph)
 graph = visualSLAMGraph;
 
 %% Add factors for all measurements
@@ -40,57 +31,42 @@ for i=1:length(data.Z)
     end
 end
 
-%% Add Gaussian priors for a pose and a landmark to constrain the system
 posePriorNoise  = gtsamnoiseModelDiagonal_Sigmas(poseNoiseSigmas);
 graph.addPosePrior(symbol('x',1), truth.cameras{1}.pose, posePriorNoise);
 pointPriorNoise  = gtsamnoiseModelIsotropic_Sigma(3,pointNoiseSigma);
 graph.addPointPrior(symbol('p',1), truth.points{1}, pointPriorNoise);
 
-%% Print the graph
-graph.print(sprintf('\nFactor graph:\n'));
-
-%% Initialize cameras and points close to ground truth in this example
+%% Initial estimate
 initialEstimate = visualSLAMValues;
 for i=1:size(truth.cameras,2)
-    pose_i = truth.cameras{i}.pose.retract(0.1*randn(6,1));
+    pose_i = truth.cameras{i}.pose;
     initialEstimate.insertPose(symbol('x',i), pose_i);
 end
 for j=1:size(truth.points,2)
-    point_j = truth.points{j}.retract(0.1*randn(3,1));
+    point_j = truth.points{j};
     initialEstimate.insertPoint(symbol('p',j), point_j);
 end
-initialEstimate.print(sprintf('\nInitial estimate:\n  '));
 
-%% One-shot Optimize using Levenberg-Marquardt optimization with an ordering from colamd
-%result = graph.optimize(initialEstimate,1);
-%result.print(sprintf('\nFinal result:\n  '));
-
-%% Fine grain optimization, allowing user to iterate step by step
-
-parameters = gtsamLevenbergMarquardtParams(1e-5, 1e-5, 0, 2);
+%% Optimization
+parameters = gtsamLevenbergMarquardtParams(1e-5, 1e-5, 0, 0);
 optimizer = graph.optimizer(initialEstimate, parameters);
 for i=1:5
     optimizer.iterate();
 end
 result = optimizer.values();
-result.print(sprintf('\nFinal result:\n  '));
 
-%% Plot results with covariance ellipses
+%% Marginalization
 marginals = graph.marginals(result);
-cla
-hold on;
-for j=1:result.nrPoints
-    P = marginals.marginalCovariance(symbol('p',j));
-    point_j = result.point(symbol('p',j));
-	plot3(point_j.x, point_j.y, point_j.z,'marker','o');
-    covarianceEllipse3D([point_j.x;point_j.y;point_j.z],P);
+marginals.marginalCovariance(symbol('p',1));
+marginals.marginalCovariance(symbol('x',1));
+
+%% Check optimized results, should be equal to ground truth
+for i=1:size(truth.cameras,2)
+    pose_i = result.pose(symbol('x',i));
+    CHECK('pose_i.equals(truth.cameras{i}.pose,1e-5)',pose_i.equals(truth.cameras{i}.pose,1e-5))
 end
 
-for i=1:result.nrPoses
-    P = marginals.marginalCovariance(symbol('x',i));
-    pose_i = result.pose(symbol('x',i));
-    plotPose3(pose_i,P,10);
+for j=1:size(truth.points,2)
+    point_j = result.point(symbol('p',j));
+    CHECK('point_j.equals(truth.points{j},1e-5)',point_j.equals(truth.points{j},1e-5))
 end
-axis([-40 40 -40 40 -10 20]);axis equal
-view(3)
-colormap('hot')
