@@ -97,7 +97,7 @@ int main(int argc, char **argv) {
 	DecisionTreeFactor probSW = jointFG.product();
 
 	//Step2: Compute P(W)
-	DecisionTreeFactor probW = *solver.marginalFactor(WetGrass.first);
+	DiscreteFactor::shared_ptr probW = solver.marginalFactor(WetGrass.first);
 
 	//Step3: Computer P(S | W=1) = P(S,W=1)/P(W=1)
 	DiscreteFactor::Values values;
@@ -105,11 +105,11 @@ int main(int argc, char **argv) {
 
 	//print P(S=0|W=1)
 	values[Sprinkler.first] = 0;
-	cout << "P(S=0|W=1) = " << probSW(values)/probW(values) << endl;
+	cout << "P(S=0|W=1) = " << probSW(values)/(*probW)(values) << endl;
 
 	//print P(S=1|W=1)
 	values[Sprinkler.first] = 1;
-	cout << "P(S=1|W=1) = " << probSW(values)/probW(values) << endl;
+	cout << "P(S=1|W=1) = " << probSW(values)/(*probW)(values) << endl;
 
 	// TODO: Method 2 : One way is to modify the factor graph to
 	// incorporate the evidence node and compute the marginal
