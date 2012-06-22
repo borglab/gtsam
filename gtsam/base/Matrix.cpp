@@ -248,11 +248,12 @@ istream& operator>>(istream& inputStream, Matrix& destinationMatrix) {
     coeffs.push_back(vector<double>());
     if(!first)
       coeffs.back().reserve(width);
-    std::copy(istream_iterator<double>(stringstream(line)), istream_iterator<double>(),
+    stringstream lineStream(line);
+    std::copy(istream_iterator<double>(lineStream), istream_iterator<double>(),
       back_insert_iterator<vector<double> >(coeffs.back()));
     if(first)
       width = coeffs.back().size();
-    if(coeffs.size() != width)
+    if(coeffs.back().size() != width)
       throw runtime_error("Error reading matrix from input stream, inconsistent numbers of elements in rows");
     ++ height;
   }
@@ -262,7 +263,10 @@ istream& operator>>(istream& inputStream, Matrix& destinationMatrix) {
   int row = 0;
   BOOST_FOREACH(const vector<double>& rowVec, coeffs) {
     destinationMatrix.row(row) = Eigen::Map<const Eigen::RowVectorXd>(&rowVec[0], width);
+    ++ row;
   }
+
+  return inputStream;
 }
 
 /* ************************************************************************* */
