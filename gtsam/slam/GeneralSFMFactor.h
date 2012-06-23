@@ -97,8 +97,8 @@ namespace gtsam {
 			  if (H2) *H2 = zeros(2, point.dim());
 //			  cout << e.what() << ": Landmark "<< this->key2_.index()
 //			  								 << " behind Camera " << this->key1_.index() << endl;
-			  return zero(2);
 			}
+		  return zero(2);
 		}
 
 		/** return the measured */

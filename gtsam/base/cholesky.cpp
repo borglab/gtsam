@@ -32,7 +32,6 @@ namespace gtsam {
   static const double negativePivotThreshold = -1e-1;
   static const double zeroPivotThreshold = 1e-6;
   static const double underconstrainedPrior = 1e-5;
-  static const bool dampUnderconstrained = false;
 
 /* ************************************************************************* */
 static inline bool choleskyStep(Matrix& ATA, size_t k, size_t order) {

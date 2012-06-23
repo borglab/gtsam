@@ -26,11 +26,9 @@
 using namespace std;
 using namespace gtsam;
 
-static const Index _x0_=0, _x1_=1, _x2_=2, _x3_=3, _x4_=4, _x_=5, _y_=6, _l1_=7, _l11_=8;
+static const Index _x0_=0, _x1_=1, _x2_=2,  _x_=5, _y_=6, _l11_=8;
 
-static SharedDiagonal
-	sigma0_1 = noiseModel::Isotropic::Sigma(2,0.1), sigma_02 = noiseModel::Isotropic::Sigma(2,0.2),
-	constraintModel = noiseModel::Constrained::All(2);
+static SharedDiagonal 	constraintModel = noiseModel::Constrained::All(2);
 
 /* ************************************************************************* */
 TEST(JacobianFactor, constructor)
@@ -140,6 +138,8 @@ TEST(JacobianFactor, error) {
 #ifdef BROKEN
 TEST(JacobianFactor, operators )
 {
+	SharedDiagonal	sigma0_1 = noiseModel::Isotropic::Sigma(2,0.1);
+
 	Matrix I = eye(2);
 	Vector b = Vector_(2,0.2,-0.1);
 	JacobianFactor lf(_x1_, -I, _x2_, I, b, sigma0_1);

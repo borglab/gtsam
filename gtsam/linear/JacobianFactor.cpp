@@ -95,7 +95,7 @@ namespace gtsam {
       const Vector& b, const SharedDiagonal& model) :
       GaussianFactor(i1), model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_) {
 
-    if(model->dim() != b.size())
+    if(model->dim() != (size_t) b.size())
       throw InvalidNoiseModel(b.size(), model->dim());
 
     size_t dims[] = { A1.cols(), 1};
@@ -110,7 +110,7 @@ namespace gtsam {
       const Vector& b, const SharedDiagonal& model) :
       GaussianFactor(i1,i2), model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_) {
 
-    if(model->dim() != b.size())
+    if(model->dim() != (size_t) b.size())
       throw InvalidNoiseModel(b.size(), model->dim());
 
     size_t dims[] = { A1.cols(), A2.cols(), 1};
@@ -126,7 +126,7 @@ namespace gtsam {
       Index i3, const Matrix& A3, const Vector& b, const SharedDiagonal& model) :
       GaussianFactor(i1,i2,i3), model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_) {
 
-    if(model->dim() != b.size())
+    if(model->dim() != (size_t) b.size())
       throw InvalidNoiseModel(b.size(), model->dim());
 
     size_t dims[] = { A1.cols(), A2.cols(), A3.cols(), 1};
@@ -145,7 +145,7 @@ namespace gtsam {
 		model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_)
   {
 
-    if(model->dim() != b.size())
+    if(model->dim() != (size_t) b.size())
       throw InvalidNoiseModel(b.size(), model->dim());
 
     size_t* dims = (size_t*)alloca(sizeof(size_t)*(terms.size()+1)); // FIXME: alloca is bad, just ask Google.
@@ -166,7 +166,7 @@ namespace gtsam {
     model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_)
   {
 
-    if(model->dim() != b.size())
+    if(model->dim() != (size_t) b.size())
       throw InvalidNoiseModel(b.size(), model->dim());
 
     size_t* dims=(size_t*)alloca(sizeof(size_t)*(terms.size()+1)); // FIXME: alloca is bad, just ask Google.
@@ -563,7 +563,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
 	void JacobianFactor::setModel(bool anyConstrained, const Vector& sigmas) {
-    if(sigmas.size() != this->rows())
+    if((size_t) sigmas.size() != this->rows())
       throw InvalidNoiseModel(this->rows(), sigmas.size());
 		if (anyConstrained)
 			model_ = noiseModel::Constrained::MixedSigmas(sigmas);
