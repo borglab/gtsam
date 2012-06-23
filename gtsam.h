@@ -16,6 +16,7 @@
  *   Limitations on methods
  *     - Parsing does not support overloading
  *     - There can only be one method (static or otherwise) with a given name
+ *     - Constness has no effect
  *   Methods must start with a lowercase letter
  *   Static methods must start with a letter (upper or lowercase) and use the "static" keyword
  *   Arguments to functions any of
