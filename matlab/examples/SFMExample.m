@@ -61,14 +61,14 @@ for j=1:size(truth.points,2)
 end
 initialEstimate.print(sprintf('\nInitial estimate:\n  '));
 
-%% One-shot Optimize using Levenberg-Marquardt optimization with an ordering from colamd
-%result = graph.optimize(initialEstimate,1);
-%result.print(sprintf('\nFinal result:\n  '));
-
 %% Fine grain optimization, allowing user to iterate step by step
 
-parameters = gtsamLevenbergMarquardtParams(1e-5, 1e-5, 0, 2);
+parameters = gtsamLevenbergMarquardtParams(1e-5, 1e-5, 0, 0);
+parameters.setlambdaInitial(1.0);
+parameters.setVerbosityLM('trylambda');
+
 optimizer = graph.optimizer(initialEstimate, parameters);
+
 for i=1:5
     optimizer.iterate();
 end

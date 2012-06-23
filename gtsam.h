@@ -961,6 +961,15 @@ class LevenbergMarquardtParams {
   LevenbergMarquardtParams();
   LevenbergMarquardtParams(double initial, double factor, double bound, size_t verbose);
   void print(string s) const;
+  double getlambdaInitial() const ;
+  double getlambdaFactor() const ;
+  double getlambdaUpperBound() const;
+  string getVerbosityLM() const ;
+
+  void setlambdaInitial(double value);
+  void setlambdaFactor(double value);
+  void setlambdaUpperBound(double value);
+  void setVerbosityLM(string s);
 };
 
 }///\namespace gtsam

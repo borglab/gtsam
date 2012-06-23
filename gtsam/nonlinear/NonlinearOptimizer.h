@@ -48,18 +48,24 @@ public:
     maxIterations(100.0), relativeErrorTol(1e-5), absoluteErrorTol(1e-5),
     errorTol(0.0), verbosity(SILENT) {}
 
-  virtual void print(const std::string& str = "") const {
-    std::cout << str << "\n";
-    std::cout << "relative decrease threshold: " << relativeErrorTol << "\n";
-    std::cout << "absolute decrease threshold: " << absoluteErrorTol << "\n";
-    std::cout << "      total error threshold: " << errorTol << "\n";
-    std::cout << "         maximum iterations: " << maxIterations << "\n";
-    std::cout << "            verbosity level: " << verbosity << std::endl;
-  }
-
   virtual ~NonlinearOptimizerParams() {}
-};
+  virtual void print(const std::string& str = "") const ;
 
+  inline double getMaxIterations() const { return maxIterations; }
+  inline double getRelativeErrorTol() const { return relativeErrorTol; }
+  inline double getAbsoluteErrorTol() const { return absoluteErrorTol; }
+  inline double getErrorTol() const { return errorTol; }
+  inline std::string getVerbosity() const { return verbosityTranslator(verbosity); }
+
+  inline void setMaxIterations(double value) { maxIterations = value; }
+  inline void setRelativeErrorTol(double value) { relativeErrorTol = value; }
+  inline void setAbsoluteErrorTol(double value) { absoluteErrorTol = value; }
+  inline void setErrorTol(double value) { errorTol  = value ; }
+  inline void setVerbosity(const std::string &src) { verbosity = verbosityTranslator(src); }
+
+  Verbosity verbosityTranslator(const std::string &s) const;
+  std::string verbosityTranslator(Verbosity value) const;
+};
 
 /**
  * Base class for a nonlinear optimization state, including the current estimate

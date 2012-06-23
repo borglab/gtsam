@@ -53,15 +53,20 @@ public:
     lambdaInitial(initial), lambdaFactor(factor), lambdaUpperBound(bound), verbosityLM(VerbosityLM(verbose)) {}
 
   virtual ~LevenbergMarquardtParams() {}
+  virtual void print(const std::string& str = "") const;
 
-  virtual void print(const std::string& str = "") const {
-    SuccessiveLinearizationParams::print(str);
-    std::cout << "              lambdaInitial: " << lambdaInitial << "\n";
-    std::cout << "               lambdaFactor: " << lambdaFactor << "\n";
-    std::cout << "           lambdaUpperBound: " << lambdaUpperBound << "\n";
-    std::cout << "                verbosityLM: " << verbosityLM << "\n";
-    std::cout.flush();
-  }
+  inline double getlambdaInitial() const { return lambdaInitial; }
+  inline double getlambdaFactor() const { return lambdaFactor; }
+  inline double getlambdaUpperBound() const { return lambdaUpperBound; }
+  inline std::string getVerbosityLM() const { return verbosityLMTranslator(verbosityLM); }
+
+  inline void setlambdaInitial(double value) { lambdaInitial = value; }
+  inline void setlambdaFactor(double value) { lambdaFactor = value; }
+  inline void setlambdaUpperBound(double value) { lambdaUpperBound = value; }
+  inline void setVerbosityLM(const std::string &s) { verbosityLM = verbosityLMTranslator(s); }
+
+  VerbosityLM verbosityLMTranslator(const std::string &s) const;
+  std::string verbosityLMTranslator(VerbosityLM value) const;
 };
 
 /**

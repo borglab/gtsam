@@ -19,10 +19,48 @@
 #include <iostream>
 #include <iomanip>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
-
+#include <boost/algorithm/string.hpp>
 using namespace std;
 
 namespace gtsam {
+
+/* ************************************************************************* */
+NonlinearOptimizerParams::Verbosity NonlinearOptimizerParams::verbosityTranslator(const std::string &src) const {
+  std::string s = src;  boost::algorithm::to_upper(s);
+  if (s == "SILENT") return NonlinearOptimizerParams::SILENT;
+  if (s == "ERROR") return NonlinearOptimizerParams::ERROR;
+  if (s == "VALUES") return NonlinearOptimizerParams::VALUES;
+  if (s == "DELTA") return NonlinearOptimizerParams::DELTA;
+  if (s == "LINEAR") return NonlinearOptimizerParams::LINEAR;
+
+  /* default is silent */
+  return NonlinearOptimizerParams::SILENT;
+}
+
+/* ************************************************************************* */
+std::string NonlinearOptimizerParams::verbosityTranslator(Verbosity value) const {
+  std::string s;
+  switch (value) {
+  case NonlinearOptimizerParams::SILENT:  s = "SILENT"; break;
+  case NonlinearOptimizerParams::ERROR:   s = "ERROR"; break;
+  case NonlinearOptimizerParams::VALUES:  s = "VALUES"; break;
+  case NonlinearOptimizerParams::DELTA:   s = "DELTA"; break;
+  case NonlinearOptimizerParams::LINEAR:  s = "LINEAR"; break;
+  default:                                s = "UNDEFINED"; break;
+  }
+  return s;
+}
+
+/* ************************************************************************* */
+void NonlinearOptimizerParams::print(const std::string& str) const {
+  std::cout << str << "\n";
+  std::cout << "relative decrease threshold: " << relativeErrorTol << "\n";
+  std::cout << "absolute decrease threshold: " << absoluteErrorTol << "\n";
+  std::cout << "      total error threshold: " << errorTol << "\n";
+  std::cout << "         maximum iterations: " << maxIterations << "\n";
+  std::cout << "                  verbosity: " << verbosityTranslator(verbosity) << "\n";
+  std::cout.flush();
+}
 
 /* ************************************************************************* */
 void NonlinearOptimizer::defaultOptimize() {

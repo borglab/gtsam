@@ -25,10 +25,51 @@
 #include <gtsam/linear/GaussianJunctionTree.h>
 #include <gtsam/linear/SimpleSPCGSolver.h>
 #include <gtsam/linear/SubgraphSolver.h>
+#include <boost/algorithm/string.hpp>
+#include <string>
 
 using namespace std;
 
 namespace gtsam {
+
+/* ************************************************************************* */
+LevenbergMarquardtParams::VerbosityLM LevenbergMarquardtParams::verbosityLMTranslator(const std::string &src) const {
+  std::string s = src;  boost::algorithm::to_upper(s);
+  if (s == "SILENT") return LevenbergMarquardtParams::SILENT;
+  if (s == "LAMBDA") return LevenbergMarquardtParams::LAMBDA;
+  if (s == "TRYLAMBDA") return LevenbergMarquardtParams::TRYLAMBDA;
+  if (s == "TRYCONFIG") return LevenbergMarquardtParams::TRYCONFIG;
+  if (s == "TRYDELTA") return LevenbergMarquardtParams::TRYDELTA;
+  if (s == "DAMPED") return LevenbergMarquardtParams::DAMPED;
+
+  /* default is silent */
+  return LevenbergMarquardtParams::SILENT;
+}
+
+/* ************************************************************************* */
+std::string LevenbergMarquardtParams::verbosityLMTranslator(VerbosityLM value) const {
+  std::string s;
+  switch (value) {
+  case LevenbergMarquardtParams::SILENT:    s = "SILENT" ;     break;
+  case LevenbergMarquardtParams::LAMBDA:    s = "LAMBDA" ;     break;
+  case LevenbergMarquardtParams::TRYLAMBDA: s = "TRYLAMBDA" ;  break;
+  case LevenbergMarquardtParams::TRYCONFIG: s = "TRYCONFIG" ;  break;
+  case LevenbergMarquardtParams::TRYDELTA:  s = "TRYDELTA" ;   break;
+  case LevenbergMarquardtParams::DAMPED:    s = "DAMPED" ;     break;
+  default:                                  s = "UNDEFINED" ;  break;
+  }
+  return s;
+}
+
+/* ************************************************************************* */
+void LevenbergMarquardtParams::print(const std::string& str) const {
+  SuccessiveLinearizationParams::print(str);
+  std::cout << "              lambdaInitial: " << lambdaInitial << "\n";
+  std::cout << "               lambdaFactor: " << lambdaFactor << "\n";
+  std::cout << "           lambdaUpperBound: " << lambdaUpperBound << "\n";
+  std::cout << "                verbosityLM: " << verbosityLMTranslator(verbosityLM) << "\n";
+  std::cout.flush();
+}
 
 /* ************************************************************************* */
 void LevenbergMarquardtOptimizer::iterate() {
