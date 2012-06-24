@@ -34,15 +34,15 @@ void Method::matlab_mfile(const string& classPath) const {
 
   // generate code
   string returnType = returnVal.matlab_returnType();
+  file.oss << "% " << returnType << " = obj." << name << "(" << args.names() << ")" << endl;
   file.oss << "function " << returnType << " = " << name << "(obj";
   if (args.size()) file.oss << "," << args.names();
   file.oss << ")" << endl;
-  file.oss << "% usage: obj." << name << "(" << args.names() << ")" << endl;
   file.oss << "  error('need to compile " << name << ".cpp');" << endl;
   file.oss << "end" << endl;
 
   // close file
-  file.emit(true);
+  file.emit(false);
 }
 
 /* ************************************************************************* */
