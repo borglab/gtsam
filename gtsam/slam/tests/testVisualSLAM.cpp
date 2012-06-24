@@ -73,10 +73,10 @@ visualSLAM::Graph testGraph() {
   g.addMeasurement(z12, sigma, X(1), L(2), sK);
   g.addMeasurement(z13, sigma, X(1), L(3), sK);
   g.addMeasurement(z14, sigma, X(1), L(4), sK);
-  g.addMeasurement(z21, sigma, X(1), L(1), sK);
-  g.addMeasurement(z22, sigma, X(1), L(2), sK);
-  g.addMeasurement(z23, sigma, X(1), L(3), sK);
-  g.addMeasurement(z24, sigma, X(1), L(4), sK);
+  g.addMeasurement(z21, sigma, X(2), L(1), sK);
+  g.addMeasurement(z22, sigma, X(2), L(2), sK);
+  g.addMeasurement(z23, sigma, X(2), L(3), sK);
+  g.addMeasurement(z24, sigma, X(2), L(4), sK);
   return g;
 }
 
@@ -93,7 +93,7 @@ TEST( VisualSLAM, optimizeLM)
   // Create an initial values structure corresponding to the ground truth
   Values initialEstimate;
   initialEstimate.insert(X(1), camera1);
-  initialEstimate.insert(X(1), camera2);
+  initialEstimate.insert(X(2), camera2);
   initialEstimate.insert(L(1), landmark1);
   initialEstimate.insert(L(2), landmark2);
   initialEstimate.insert(L(3), landmark3);
@@ -101,7 +101,7 @@ TEST( VisualSLAM, optimizeLM)
 
   // Create an ordering of the variables
   Ordering ordering;
-  ordering += L(1),L(2),L(3),L(4),X(1),X(1);
+  ordering += L(1),L(2),L(3),L(4),X(1),X(2);
 
   // Create an optimizer and check its error
   // We expect the initial to be zero because config is the ground truth
@@ -125,12 +125,12 @@ TEST( VisualSLAM, optimizeLM2)
   visualSLAM::Graph graph(testGraph());
 	// add 2 camera constraints
   graph.addPoseConstraint(X(1), camera1);
-  graph.addPoseConstraint(X(1), camera2);
+  graph.addPoseConstraint(X(2), camera2);
 
   // Create an initial values structure corresponding to the ground truth
   Values initialEstimate;
   initialEstimate.insert(X(1), camera1);
-  initialEstimate.insert(X(1), camera2);
+  initialEstimate.insert(X(2), camera2);
   initialEstimate.insert(L(1), landmark1);
   initialEstimate.insert(L(2), landmark2);
   initialEstimate.insert(L(3), landmark3);
@@ -138,17 +138,17 @@ TEST( VisualSLAM, optimizeLM2)
 
   // Create an ordering of the variables
   Ordering ordering;
-  ordering += L(1),L(2),L(3),L(4),X(1),X(1);
+  ordering += L(1),L(2),L(3),L(4),X(1),X(2);
 
   // Create an optimizer and check its error
   // We expect the initial to be zero because config is the ground truth
   LevenbergMarquardtOptimizer optimizer(graph, initialEstimate, ordering);
-  DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
+  EXPECT_DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
 
   // Iterate once, and the config should not have changed because we started
   // with the ground truth
   optimizer.iterate();
-  DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
+  EXPECT_DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
 
   // check if correct
   CHECK(assert_equal(initialEstimate, optimizer.values()));
@@ -161,12 +161,12 @@ TEST( VisualSLAM, LMoptimizer)
   visualSLAM::Graph graph(testGraph());
   // add 2 camera constraints
   graph.addPoseConstraint(X(1), camera1);
-  graph.addPoseConstraint(X(1), camera2);
+  graph.addPoseConstraint(X(2), camera2);
 
   // Create an initial values structure corresponding to the ground truth
   Values initialEstimate;
   initialEstimate.insert(X(1), camera1);
-  initialEstimate.insert(X(1), camera2);
+  initialEstimate.insert(X(2), camera2);
   initialEstimate.insert(L(1), landmark1);
   initialEstimate.insert(L(2), landmark2);
   initialEstimate.insert(L(3), landmark3);
@@ -175,12 +175,12 @@ TEST( VisualSLAM, LMoptimizer)
   // Create an optimizer and check its error
   // We expect the initial to be zero because config is the ground truth
   LevenbergMarquardtOptimizer optimizer = graph.optimizer(initialEstimate);
-  DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
+  EXPECT_DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
 
   // Iterate once, and the config should not have changed because we started
   // with the ground truth
   optimizer.iterate();
-  DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
+  EXPECT_DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
 
   // check if correct
   CHECK(assert_equal(initialEstimate, optimizer.values()));
@@ -194,12 +194,12 @@ TEST( VisualSLAM, CHECK_ORDERING)
   visualSLAM::Graph graph = testGraph();
   // add 2 camera constraints
   graph.addPoseConstraint(X(1), camera1);
-  graph.addPoseConstraint(X(1), camera2);
+  graph.addPoseConstraint(X(2), camera2);
 
   // Create an initial values structure corresponding to the ground truth
   Values initialEstimate;
   initialEstimate.insert(X(1), camera1);
-  initialEstimate.insert(X(1), camera2);
+  initialEstimate.insert(X(2), camera2);
   initialEstimate.insert(L(1), landmark1);
   initialEstimate.insert(L(2), landmark2);
   initialEstimate.insert(L(3), landmark3);
@@ -208,12 +208,12 @@ TEST( VisualSLAM, CHECK_ORDERING)
   // Create an optimizer and check its error
   // We expect the initial to be zero because config is the ground truth
   LevenbergMarquardtOptimizer optimizer(graph, initialEstimate);
-  DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
+  EXPECT_DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
 
   // Iterate once, and the config should not have changed because we started
   // with the ground truth
   optimizer.iterate();
-  DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
+  EXPECT_DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
 
   // check if correct
   CHECK(assert_equal(initialEstimate, optimizer.values()));
@@ -233,12 +233,12 @@ TEST( VisualSLAM, update_with_large_delta) {
 
   Ordering largeOrdering;
   Values largeValues = init;
-  largeValues.insert(X(1), Pose3());
-  largeOrdering += X(1),L(1),X(1);
+  largeValues.insert(X(2), Pose3());
+  largeOrdering += X(1),L(1),X(2);
   VectorValues delta(largeValues.dims(largeOrdering));
   delta[largeOrdering[X(1)]] = Vector_(6, 0.0, 0.0, 0.0, 0.1, 0.1, 0.1);
   delta[largeOrdering[L(1)]] = Vector_(3, 0.1, 0.1, 0.1);
-  delta[largeOrdering[X(1)]] = Vector_(6, 0.0, 0.0, 0.0, 100.1, 4.1, 9.1);
+  delta[largeOrdering[X(2)]] = Vector_(6, 0.0, 0.0, 0.0, 100.1, 4.1, 9.1);
   Values actual = init.retract(delta, largeOrdering);
 
   CHECK(assert_equal(expected,actual));
