@@ -238,6 +238,76 @@ TEST( BayesTree, removePath3 )
   CHECK(assert_equal(expectedOrphans, orphans));
 }
 
+void getAllCliques(const SymbolicBayesTree::sharedClique& subtree, SymbolicBayesTree::Cliques& cliques)	{
+	// Check if subtree exists
+	if (subtree) {
+		cliques.push_back(subtree);
+		// Recursive call over all child cliques
+		BOOST_FOREACH(SymbolicBayesTree::sharedClique& childClique, subtree->children()) {
+			getAllCliques(childClique,cliques);
+		}
+	}
+}
+
+/* ************************************************************************* */
+TEST( BayesTree, shortcutCheck )
+{
+  const Index _A_=6, _B_=5, _C_=4, _D_=3, _E_=2, _F_=1, _G_=0;
+	IndexConditional::shared_ptr
+			A(new IndexConditional(_A_)),
+			B(new IndexConditional(_B_, _A_)),
+			C(new IndexConditional(_C_, _A_)),
+			D(new IndexConditional(_D_, _C_)),
+			E(new IndexConditional(_E_, _B_)),
+			F(new IndexConditional(_F_, _E_)),
+			G(new IndexConditional(_G_, _F_));
+	SymbolicBayesTree bayesTree;
+//	Ordering ord; ord += _A_,_B_,_C_,_D_,_E_,_F_;
+	SymbolicBayesTree::insert(bayesTree, A);
+	SymbolicBayesTree::insert(bayesTree, B);
+	SymbolicBayesTree::insert(bayesTree, C);
+	SymbolicBayesTree::insert(bayesTree, D);
+	SymbolicBayesTree::insert(bayesTree, E);
+	SymbolicBayesTree::insert(bayesTree, F);
+	SymbolicBayesTree::insert(bayesTree, G);
+
+	//bayesTree.print("BayesTree");
+	//bayesTree.saveGraph("BT1.dot");
+
+	SymbolicBayesTree::sharedClique rootClique= bayesTree.root();
+	//rootClique->printTree();
+	SymbolicBayesTree::Cliques allCliques;
+	getAllCliques(rootClique,allCliques);
+
+	BayesNet<IndexConditional> bn;
+	BOOST_FOREACH(SymbolicBayesTree::sharedClique& clique, allCliques) {
+		//clique->print("Clique#");
+		bn = clique->shortcut(rootClique, &EliminateSymbolic);
+		//bn.print("Shortcut:\n");
+		//cout << endl;
+	}
+
+	// Check if all the cached shortcuts are cleared
+	rootClique->deleteCachedShorcuts();
+	BOOST_FOREACH(SymbolicBayesTree::sharedClique& clique, allCliques) {
+		bool notCleared = clique->cachedShortcut();
+		CHECK( notCleared == false);
+	}
+
+//	BOOST_FOREACH(SymbolicBayesTree::sharedClique& clique, allCliques) {
+//		clique->print("Clique#");
+//		if(clique->cachedShortcut()){
+//			bn = clique->cachedShortcut().get();
+//			bn.print("Shortcut:\n");
+//		}
+//		else
+//			cout << "Not Initialized" << endl;
+//		cout << endl;
+//	}
+}
+
+
+
 /* ************************************************************************* */
 TEST( BayesTree, removeTop )
 {

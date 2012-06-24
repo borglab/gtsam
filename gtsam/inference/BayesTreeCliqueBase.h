@@ -161,6 +161,15 @@ namespace gtsam {
     /** return the joint P(C1,C2), where C1==this. TODO: not a method? */
     FactorGraph<FactorType> joint(derived_ptr C2, derived_ptr root, Eliminate function) const;
 
+    /**
+     * This deletes the cached shortcuts of all cliques (subtree) below this clique.
+     * This is performed when the bayes tree is modified.
+     */
+    void deleteCachedShorcuts();
+
+    /** return cached shortcut of the clique */
+    const boost::optional<BayesNet<ConditionalType> > cachedShortcut() const { return cachedShortcut_; }
+
     friend class BayesTree<ConditionalType, DerivedType>;
 
   protected:

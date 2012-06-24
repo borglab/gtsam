@@ -265,4 +265,15 @@ namespace gtsam {
     return *solver.jointFactorGraph(keys12vector, function);
   }
 
+	/* ************************************************************************* */
+	template<class DERIVED, class CONDITIONAL>
+	void BayesTreeCliqueBase<DERIVED, CONDITIONAL>::deleteCachedShorcuts() {
+		//Delete CachedShortcut for this clique
+		this->resetCachedShortcut();
+		// Recursive call over all child cliques
+		BOOST_FOREACH(derived_ptr& child, children_) {
+			child->deleteCachedShorcuts();
+		}
+	}
+
 }
