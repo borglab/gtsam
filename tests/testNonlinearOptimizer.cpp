@@ -175,7 +175,7 @@ TEST( NonlinearOptimizer, Factorization )
 	config.insert(X(2), Pose2(1.5,0.,0.));
 
 	pose2SLAM::Graph graph;
-	graph.addPrior(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10));
+	graph.addPosePrior(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10));
 	graph.addRelativePose(X(1),X(2), Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1));
 
 	Ordering ordering;
