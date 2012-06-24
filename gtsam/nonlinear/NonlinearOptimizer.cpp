@@ -103,6 +103,18 @@ void NonlinearOptimizer::defaultOptimize() {
 }
 
 /* ************************************************************************* */
+const Values& NonlinearOptimizer::optimizeSafely() {
+	static const Values empty;
+	try {
+		defaultOptimize();
+		return values();
+	} catch (...) {
+		// uncaught exception, returning empty result
+		return empty;
+	}
+}
+
+/* ************************************************************************* */
 bool checkConvergence(double relativeErrorTreshold, double absoluteErrorTreshold,
     double errorThreshold, double currentError, double newError,
     NonlinearOptimizerParams::Verbosity verbosity) {
@@ -143,6 +155,7 @@ bool checkConvergence(double relativeErrorTreshold, double absoluteErrorTreshold
 	}
 	return converged;
 }
+/* ************************************************************************* */
 
 
 }

@@ -175,6 +175,22 @@ Values::const_shared_ptr result = DoglegOptimizer(graph, initialValues, params).
  */
 class NonlinearOptimizer {
 
+protected:
+
+  NonlinearFactorGraph graph_;
+
+  /** A default implementation of the optimization loop, which calls iterate()
+   * until checkConvergence returns true.
+   */
+  void defaultOptimize();
+
+  virtual const NonlinearOptimizerState& _state() const = 0;
+
+  virtual const NonlinearOptimizerParams& _params() const = 0;
+
+  /** Constructor for initial construction of base classes. */
+  NonlinearOptimizer(const NonlinearFactorGraph& graph) : graph_(graph) {}
+
 public:
 
   /** A shared pointer to this class */
@@ -194,10 +210,21 @@ public:
    */
   virtual const Values& optimize() { defaultOptimize(); return values(); }
 
+	/**
+	 * Optimize, but return empty result if any uncaught exception is thrown
+	 * Intended for MATLAB. In C++, use above and catch exceptions.
+	 * No message is printed: it is up to the caller to check the result
+	 * @param optimizer a non-linear optimizer
+	 */
+	const Values& optimizeSafely();
+
+	/// return error
   double error() const { return _state().error; }
 
+  /// return number of iterations
   unsigned int iterations() const { return _state().iterations; }
 
+  /// return values
   const Values& values() const { return _state().values; }
 
   /// @}
@@ -215,23 +242,6 @@ public:
   virtual void iterate() = 0;
 
   /// @}
-
-protected:
-
-  NonlinearFactorGraph graph_;
-
-  /** A default implementation of the optimization loop, which calls iterate()
-   * until checkConvergence returns true.
-   */
-  void defaultOptimize();
-
-  virtual const NonlinearOptimizerState& _state() const = 0;
-
-  virtual const NonlinearOptimizerParams& _params() const = 0;
-
-  /** Constructor for initial construction of base classes. */
-  NonlinearOptimizer(const NonlinearFactorGraph& graph) : graph_(graph) {}
-
 };
 
 /** Check whether the relative error decrease is less than relativeErrorTreshold,
