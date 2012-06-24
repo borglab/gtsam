@@ -19,10 +19,8 @@
 
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/Marginals.h>
+#include <gtsam/nonlinear/EasyFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/geometry/Pose3.h>
 
 /// Use pose3SLAM namespace for specific SLAM instance
@@ -63,9 +61,6 @@ namespace pose3SLAM {
     /// get a pose
     Pose3 pose(Key i) const { return at<Pose3>(i); }
 
-    /// check if value with specified key exists
-    bool exists(Key i) const { return gtsam::Values::exists(i); }
-
     Matrix translations() const; ///< get all pose translations coordinates in a matrix
   };
 
@@ -73,7 +68,14 @@ namespace pose3SLAM {
    * Graph class, inherited from NonlinearFactorGraph, used as a convenience for MATLAB wrapper
    * @addtogroup SLAM
    */
-  struct Graph: public NonlinearFactorGraph {
+  struct Graph: public EasyFactorGraph {
+
+	  /// Default constructor
+    Graph(){}
+
+    /// Copy constructor given any other NonlinearFactorGraph
+    Graph(const NonlinearFactorGraph& graph):
+    	EasyFactorGraph(graph) {}
 
     /**
      *  Add a prior on a pose
@@ -98,32 +100,6 @@ namespace pose3SLAM {
      *  @param model uncertainty model of this measurement
      */
     void addRelativePose(Key x1, Key x2, const Pose3& z, const SharedNoiseModel& model);
-
-    /**
-     *  Optimize the graph
-     *  @param initialEstimate initial estimate of all variables in the graph
-     *  @param pointKey variable key of the landmark
-     *  @param range approximate range to landmark
-     *  @param model uncertainty model of this prior
-     */
-    Values optimize(const Values& initialEstimate, size_t verbosity=NonlinearOptimizerParams::SILENT) const;
-
-    /**
-     *  Setup and return a LevenbargMarquardtOptimizer
-     *  @param initialEstimate initial estimate of all variables in the graph
-     *  @param parameters optimizer's parameters
-     *  @return a LevenbergMarquardtOptimizer object, which you can use to control the optimization process
-     */
-    LevenbergMarquardtOptimizer optimizer(const Values& initialEstimate,
-				const LevenbergMarquardtParams& parameters = LevenbergMarquardtParams()) const {
-			return LevenbergMarquardtOptimizer((*this), initialEstimate, parameters);
-		}
-
-    /// Return a Marginals object
-    Marginals marginals(const Values& solution) const {
-      return Marginals(*this,solution);
-    }
-
   };
 
 } // pose3SLAM

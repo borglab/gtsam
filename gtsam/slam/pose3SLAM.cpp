@@ -69,13 +69,5 @@ namespace pose3SLAM {
   }
 
   /* ************************************************************************* */
-  Values Graph::optimize(const Values& initialEstimate, size_t verbosity) const {
-    LevenbergMarquardtParams params;
-    params.verbosity = (NonlinearOptimizerParams::Verbosity)verbosity;
-    LevenbergMarquardtOptimizer optimizer(*this, initialEstimate,params);
-    return optimizer.optimize();
-  }
-
-  /* ************************************************************************* */
 
 } // pose3SLAM

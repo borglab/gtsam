@@ -23,9 +23,6 @@
 #include <gtsam/slam/RangeFactor.h>
 #include <gtsam/slam/BearingFactor.h>
 #include <gtsam/slam/BearingRangeFactor.h>
-#include <gtsam/nonlinear/NonlinearEquality.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/Marginals.h>
 #include <gtsam/geometry/Pose2.h>
 
 // Use planarSLAM namespace for specific SLAM instance
@@ -84,10 +81,10 @@ namespace planarSLAM {
    */
   struct Graph: public pose2SLAM::Graph {
 
-    /// Default constructor for a NonlinearFactorGraph
+    /// Default constructor
     Graph(){}
 
-    /// Creates a NonlinearFactorGraph based on another NonlinearFactorGraph
+    /// Copy constructor given any other NonlinearFactorGraph
     Graph(const NonlinearFactorGraph& graph):
   		pose2SLAM::Graph(graph) {}
 

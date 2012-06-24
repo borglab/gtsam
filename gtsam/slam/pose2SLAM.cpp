@@ -15,7 +15,6 @@
  *  @author Frank Dellaert
  **/
 
-#include <gtsam/linear/SimpleSPCGSolver.h>
 #include <gtsam/slam/pose2SLAM.h>
 
 // Use pose2SLAM namespace for specific SLAM instance
@@ -60,23 +59,6 @@ namespace pose2SLAM {
       const SharedNoiseModel& model) {
     sharedFactor factor(new BetweenFactor<Pose2>(i1, i2, z, model));
     push_back(factor);
-  }
-
-  /* ************************************************************************* */
-  Values Graph::optimize(const Values& initialEstimate, size_t verbosity) const {
-    LevenbergMarquardtParams params;
-    params.verbosity = (NonlinearOptimizerParams::Verbosity)verbosity;
-    LevenbergMarquardtOptimizer optimizer(*this, initialEstimate,params);
-    return optimizer.optimize();
-  }
-
-  /* ************************************************************************* */
-  Values Graph::optimizeSPCG(const Values& initialEstimate, size_t verbosity) const {
-    LevenbergMarquardtParams params;
-    params.verbosity = (NonlinearOptimizerParams::Verbosity)verbosity;
-    params.linearSolverType = SuccessiveLinearizationParams::CG;
-    params.iterativeParams = boost::make_shared<SimpleSPCGSolverParameters>();
-    return LevenbergMarquardtOptimizer(*this, initialEstimate, params).optimize();
   }
 
   /* ************************************************************************* */

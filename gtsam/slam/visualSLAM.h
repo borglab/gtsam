@@ -24,7 +24,6 @@
 #include <gtsam/slam/StereoFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/nonlinear/NonlinearISAM.h>
-#include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/geometry/SimpleCamera.h>
 
 namespace visualSLAM {
@@ -76,20 +75,17 @@ namespace visualSLAM {
   /**
    * Non-linear factor graph for vanilla visual SLAM
    */
-  class Graph: public pose3SLAM::Graph {
+  struct Graph: public pose3SLAM::Graph {
 
-  public:
   	/// shared pointer to this type of graph
     typedef boost::shared_ptr<Graph> shared_graph;
 
-    /// default constructor is empty graph
-    Graph() {
-    }
+	  /// Default constructor
+    Graph(){}
 
-    /// print out graph
-    void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-      NonlinearFactorGraph::print(s, keyFormatter);
-    }
+    /// Copy constructor given any other NonlinearFactorGraph
+    Graph(const NonlinearFactorGraph& graph):
+    	pose3SLAM::Graph(graph) {}
 
     /// check if two graphs are equal
     bool equals(const Graph& p, double tol = 1e-9) const {

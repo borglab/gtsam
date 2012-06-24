@@ -19,11 +19,8 @@
 
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/EasyFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/nonlinear/Marginals.h>
 #include <gtsam/geometry/Pose2.h>
 
 // Use pose2SLAM namespace for specific SLAM instance
@@ -77,16 +74,16 @@ namespace pose2SLAM {
    * Graph class, inherited from NonlinearFactorGraph, used as a convenience for MATLAB wrapper
    * @addtogroup SLAM
    */
-  struct Graph: public NonlinearFactorGraph {
+  struct Graph: public EasyFactorGraph {
 
 	  typedef boost::shared_ptr<Graph> shared_ptr;
 
-	  /// Default constructor for a NonlinearFactorGraph
+	  /// Default constructor
     Graph(){}
 
-    /// Creates a NonlinearFactorGraph based on another NonlinearFactorGraph
+    /// Copy constructor given any other NonlinearFactorGraph
     Graph(const NonlinearFactorGraph& graph):
-    	NonlinearFactorGraph(graph) {}
+    	EasyFactorGraph(graph) {}
 
     /// Creates a hard constraint for key i with the given Pose2 p.
     void addPoseConstraint(Key i, const Pose2& p);
@@ -96,18 +93,6 @@ namespace pose2SLAM {
 
     /// Creates an relative pose factor between poses with keys i1 and i2
     void addRelativePose(Key i1, Key i2, const Pose2& z, const SharedNoiseModel& model);
-
-    /// Optimize
-    Values optimize(const Values& initialEstimate, size_t verbosity=NonlinearOptimizerParams::SILENT) const;
-
-    /// Optimize using subgraph preconditioning
-    Values optimizeSPCG(const Values& initialEstimate, size_t verbosity=NonlinearOptimizerParams::SILENT) const;
-
-    /// Return a Marginals object
-    Marginals marginals(const Values& solution) const {
-    	return Marginals(*this,solution);
-    }
-
   };
 
 } // pose2SLAM

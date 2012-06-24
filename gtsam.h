@@ -997,6 +997,8 @@ class Values {
 
 class Graph {
 	Graph();
+  Graph(const gtsam::NonlinearFactorGraph& graph);
+  Graph(const pose2SLAM::Graph& graph);
 
 	// FactorGraph
 	void print(string s) const;
@@ -1017,7 +1019,7 @@ class Graph {
 	// pose2SLAM-specific
 	void addPoseConstraint(size_t key, const gtsam::Pose2& pose);
 	void addPosePrior(size_t key, const gtsam::Pose2& pose, const gtsam::noiseModel::Base* noiseModel);
-	void addRelativePose(size_t key1, size_t key2, const gtsam::Pose2& odometry, const gtsam::noiseModel::Base* noiseModel);
+	void addRelativePose(size_t key1, size_t key2, const gtsam::Pose2& relativePoseMeasurement, const gtsam::noiseModel::Base* noiseModel);
 	pose2SLAM::Values optimize(const pose2SLAM::Values& initialEstimate, size_t verbosity) const;
 	pose2SLAM::Values optimizeSPCG(const pose2SLAM::Values& initialEstimate, size_t verbosity) const;
 	gtsam::Marginals marginals(const pose2SLAM::Values& solution) const;
@@ -1048,6 +1050,8 @@ class Values {
 
 class Graph {
 	Graph();
+  Graph(const gtsam::NonlinearFactorGraph& graph);
+  Graph(const pose3SLAM::Graph& graph);
 
 	// FactorGraph
 	void print(string s) const;
@@ -1115,6 +1119,9 @@ class Values {
 
 class Graph {
 	Graph();
+  Graph(const gtsam::NonlinearFactorGraph& graph);
+  Graph(const pose2SLAM::Graph& graph);
+  Graph(const planarSLAM::Graph& graph);
 
 	// FactorGraph
 	void print(string s) const;
@@ -1135,7 +1142,7 @@ class Graph {
 	// pose2SLAM-inherited
 	void addPoseConstraint(size_t key, const gtsam::Pose2& pose);
 	void addPosePrior(size_t key, const gtsam::Pose2& pose, const gtsam::noiseModel::Base* noiseModel);
-	void addRelativePose(size_t key1, size_t key2, const gtsam::Pose2& odometry, const gtsam::noiseModel::Base* noiseModel);
+	void addRelativePose(size_t key1, size_t key2, const gtsam::Pose2& relativePoseMeasurement, const gtsam::noiseModel::Base* noiseModel);
 	planarSLAM::Values optimize(const planarSLAM::Values& initialEstimate, size_t verbosity) const;
 	planarSLAM::Values optimizeSPCG(const planarSLAM::Values& initialEstimate, size_t verbosity) const;
 	gtsam::Marginals marginals(const planarSLAM::Values& solution) const;
@@ -1197,6 +1204,9 @@ class Values {
 
 class Graph {
   Graph();
+  Graph(const gtsam::NonlinearFactorGraph& graph);
+  Graph(const pose3SLAM::Graph& graph);
+  Graph(const visualSLAM::Graph& graph);
 
 	// FactorGraph
 	void print(string s) const;
@@ -1258,6 +1268,7 @@ class LevenbergMarquardtOptimizer {
   double lambda() const;
   void iterate();
   visualSLAM::Values optimize();
+  visualSLAM::Values optimizeSafely();
   double error() const;
   size_t iterations() const;
   visualSLAM::Values values() const;
