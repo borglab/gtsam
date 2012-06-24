@@ -158,7 +158,7 @@ pair<pose2SLAM::Graph::shared_ptr, pose2SLAM::Values::shared_ptr> load2D(
 				poses->insert(id2, poses->at<Pose2>(id1) * l1Xl2);
 
 			pose2SLAM::Graph::sharedFactor factor(
-					new pose2SLAM::Odometry(id1, id2, l1Xl2, *model));
+					new BetweenFactor<Pose2>(id1, id2, l1Xl2, *model));
 			graph->push_back(factor);
 		}
 		is.ignore(LINESIZE, '\n');
@@ -189,8 +189,8 @@ void save2D(const pose2SLAM::Graph& graph, const Values& config,
 	Matrix RR = trans(R) * R; //prod(trans(R),R);
 	BOOST_FOREACH(boost::shared_ptr<NonlinearFactor> factor_, graph)
 	{
-		boost::shared_ptr<pose2SLAM::Odometry> factor =
-				boost::dynamic_pointer_cast<pose2SLAM::Odometry>(factor_);
+		boost::shared_ptr<BetweenFactor<Pose2> > factor =
+				boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor_);
 		if (!factor)
 			continue;
 

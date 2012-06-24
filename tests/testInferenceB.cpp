@@ -58,9 +58,9 @@ TEST( inference, marginals2)
   SharedDiagonal poseModel(noiseModel::Isotropic::Sigma(3, 0.1));
   SharedDiagonal pointModel(noiseModel::Isotropic::Sigma(3, 0.1));
 
-  fg.addPrior(X(0), Pose2(), poseModel);
-  fg.addOdometry(X(0), X(1), Pose2(1.0,0.0,0.0), poseModel);
-  fg.addOdometry(X(1), X(2), Pose2(1.0,0.0,0.0), poseModel);
+  fg.addPosePrior(X(0), Pose2(), poseModel);
+  fg.addRelativePose(X(0), X(1), Pose2(1.0,0.0,0.0), poseModel);
+  fg.addRelativePose(X(1), X(2), Pose2(1.0,0.0,0.0), poseModel);
   fg.addBearingRange(X(0), L(0), Rot2(), 1.0, pointModel);
   fg.addBearingRange(X(1), L(0), Rot2(), 1.0, pointModel);
   fg.addBearingRange(X(2), L(0), Rot2(), 1.0, pointModel);

@@ -16,11 +16,11 @@ i1 = symbol('x',1); i2 = symbol('x',2); i3 = symbol('x',3);
 graph = planarSLAMGraph;
 priorMean = gtsamPose2(0.0, 0.0, 0.0); % prior at origin
 priorNoise = gtsamnoiseModelDiagonal_Sigmas([0.3; 0.3; 0.1]);
-graph.addPrior(i1, priorMean, priorNoise); % add directly to graph
+graph.addPosePrior(i1, priorMean, priorNoise); % add directly to graph
 odometry = gtsamPose2(2.0, 0.0, 0.0);
 odometryNoise = gtsamnoiseModelDiagonal_Sigmas([0.2; 0.2; 0.1]);
-graph.addOdometry(i1, i2, odometry, odometryNoise);
-graph.addOdometry(i2, i3, odometry, odometryNoise);
+graph.addRelativePose(i1, i2, odometry, odometryNoise);
+graph.addRelativePose(i2, i3, odometry, odometryNoise);
 
 %% Except, for measurements we offer a choice
 j1 = symbol('l',1); j2 = symbol('l',2);

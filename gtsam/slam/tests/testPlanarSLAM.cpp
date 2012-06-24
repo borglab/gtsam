@@ -38,7 +38,7 @@ SharedNoiseModel
 /* ************************************************************************* */
 TEST( planarSLAM, PriorFactor_equals )
 {
-	planarSLAM::Prior factor1(i2, x1, I3), factor2(i2, x2, I3);
+	PriorFactor<Pose2> factor1(i2, x1, I3), factor2(i2, x2, I3);
 	EXPECT(assert_equal(factor1, factor1, 1e-5));
 	EXPECT(assert_equal(factor2, factor2, 1e-5));
 	EXPECT(assert_inequal(factor1, factor2, 1e-5));
@@ -49,7 +49,7 @@ TEST( planarSLAM, BearingFactor )
 {
 	// Create factor
 	Rot2 z = Rot2::fromAngle(M_PI_4 + 0.1); // h(x) - z = -0.1
-	planarSLAM::Bearing factor(i2, j3, z, sigma);
+	BearingFactor<Pose2, Point2> factor(i2, j3, z, sigma);
 
 	// create config
 	planarSLAM::Values c;
@@ -64,7 +64,7 @@ TEST( planarSLAM, BearingFactor )
 /* ************************************************************************* */
 TEST( planarSLAM, BearingFactor_equals )
 {
-	planarSLAM::Bearing
+	BearingFactor<Pose2, Point2>
 		factor1(i2, j3, Rot2::fromAngle(0.1), sigma),
 		factor2(i2, j3, Rot2::fromAngle(2.3), sigma);
 	EXPECT(assert_equal(factor1, factor1, 1e-5));
@@ -77,7 +77,7 @@ TEST( planarSLAM, RangeFactor )
 {
 	// Create factor
 	double z(sqrt(2.0) - 0.22); // h(x) - z = 0.22
-	planarSLAM::Range factor(i2, j3, z, sigma);
+	RangeFactor<Pose2, Point2> factor(i2, j3, z, sigma);
 
 	// create config
 	planarSLAM::Values c;
@@ -92,7 +92,7 @@ TEST( planarSLAM, RangeFactor )
 /* ************************************************************************* */
 TEST( planarSLAM, RangeFactor_equals )
 {
-	planarSLAM::Range factor1(i2, j3, 1.2, sigma), factor2(i2, j3, 7.2, sigma);
+	RangeFactor<Pose2, Point2> factor1(i2, j3, 1.2, sigma), factor2(i2, j3, 7.2, sigma);
 	EXPECT(assert_equal(factor1, factor1, 1e-5));
 	EXPECT(assert_equal(factor2, factor2, 1e-5));
 	EXPECT(assert_inequal(factor1, factor2, 1e-5));
@@ -104,7 +104,7 @@ TEST( planarSLAM, BearingRangeFactor )
 	// Create factor
 	Rot2 r = Rot2::fromAngle(M_PI_4 + 0.1); // h(x) - z = -0.1
 	double b(sqrt(2.0) - 0.22); // h(x) - z = 0.22
-	planarSLAM::BearingRange factor(i2, j3, r, b, sigma2);
+	BearingRangeFactor<Pose2, Point2> factor(i2, j3, r, b, sigma2);
 
 	// create config
 	planarSLAM::Values c;
@@ -119,7 +119,7 @@ TEST( planarSLAM, BearingRangeFactor )
 /* ************************************************************************* */
 TEST( planarSLAM, BearingRangeFactor_equals )
 {
-	planarSLAM::BearingRange
+	BearingRangeFactor<Pose2, Point2>
 		factor1(i2, j3, Rot2::fromAngle(0.1), 7.3,  sigma2),
 		factor2(i2, j3, Rot2::fromAngle(3), 2.0, sigma2);
 	EXPECT(assert_equal(factor1, factor1, 1e-5));
@@ -137,7 +137,7 @@ TEST( planarSLAM, BearingRangeFactor_poses )
 /* ************************************************************************* */
 TEST( planarSLAM, PoseConstraint_equals )
 {
-	planarSLAM::Constraint factor1(i2, x2), factor2(i2, x3);
+	NonlinearEquality<Pose2> factor1(i2, x2), factor2(i2, x3);
 	EXPECT(assert_equal(factor1, factor1, 1e-5));
 	EXPECT(assert_equal(factor2, factor2, 1e-5));
 	EXPECT(assert_inequal(factor1, factor2, 1e-5));
@@ -159,7 +159,7 @@ TEST( planarSLAM, constructor )
 	G.addPoseConstraint(i2, x2); // make it feasible :-)
 
 	// Add odometry
-	G.addOdometry(i2, i3, Pose2(0, 0, M_PI_4), I3);
+	G.addRelativePose(i2, i3, Pose2(0, 0, M_PI_4), I3);
 
 	// Create bearing factor
 	Rot2 z1 = Rot2::fromAngle(M_PI_4 + 0.1); // h(x) - z = -0.1

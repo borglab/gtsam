@@ -17,15 +17,15 @@ p1 = hexagon.pose(1);
 
 %% create a Pose graph with one equality constraint and one measurement
 fg = pose3SLAMGraph;
-fg.addHardConstraint(0, p0);
+fg.addPoseConstraint(0, p0);
 delta = p0.between(p1);
 covariance = gtsamnoiseModelDiagonal_Sigmas([0.05; 0.05; 0.05; 5*pi/180; 5*pi/180; 5*pi/180]);
-fg.addConstraint(0,1, delta, covariance);
-fg.addConstraint(1,2, delta, covariance);
-fg.addConstraint(2,3, delta, covariance);
-fg.addConstraint(3,4, delta, covariance);
-fg.addConstraint(4,5, delta, covariance);
-fg.addConstraint(5,0, delta, covariance);
+fg.addRelativePose(0,1, delta, covariance);
+fg.addRelativePose(1,2, delta, covariance);
+fg.addRelativePose(2,3, delta, covariance);
+fg.addRelativePose(3,4, delta, covariance);
+fg.addRelativePose(4,5, delta, covariance);
+fg.addRelativePose(5,0, delta, covariance);
 
 %% Create initial config
 initial = pose3SLAMValues;
@@ -39,10 +39,11 @@ initial.insertPose(5, hexagon.pose(5).retract(s*randn(6,1)));
 
 %% Plot Initial Estimate
 cla
-plot3(initial.xs(),initial.ys(),initial.zs(),'g-*');
+T=initial.translations();
+plot3(T(:,1),T(:,2),T(:,3),'g-*');
 
 %% optimize
-result = fg.optimize(initial);
+result = fg.optimize(initial,1);
 
 %% Show Result
 hold on; plot3DTrajectory(result,'b-*', true, 0.3);

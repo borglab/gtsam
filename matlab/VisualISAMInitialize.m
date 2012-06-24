@@ -45,7 +45,7 @@ for i=1:2
 end
 
 %% Add odometry between frames 1 and 2
-newFactors.addOdometry(symbol('x',1), symbol('x',2), data.odometry{1}, noiseModels.odometry);
+newFactors.addRelativePose(symbol('x',1), symbol('x',2), data.odometry{1}, noiseModels.odometry);
 
 %% Update ISAM
 if options.batchInitialization % Do a full optimize for first two poses

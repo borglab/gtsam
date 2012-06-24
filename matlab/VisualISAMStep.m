@@ -10,7 +10,7 @@ initialEstimates = visualSLAMValues;
 %% Add odometry
 i = result.nrPoses+1;
 odometry = data.odometry{i-1};
-newFactors.addOdometry(symbol('x',i-1), symbol('x',i), odometry, noiseModels.odometry);
+newFactors.addRelativePose(symbol('x',i-1), symbol('x',i), odometry, noiseModels.odometry);
 
 %% Add visual measurement factors and initializations as necessary
 for k=1:length(data.Z{i})

@@ -21,13 +21,13 @@ graph = pose2SLAMGraph;
 %% Add a Gaussian prior on pose x_1
 priorMean = gtsamPose2(0.0, 0.0, 0.0); % prior mean is at origin
 priorNoise = gtsamnoiseModelDiagonal_Sigmas([0.3; 0.3; 0.1]); % 30cm std on x,y, 0.1 rad on theta
-graph.addPrior(1, priorMean, priorNoise); % add directly to graph
+graph.addPosePrior(1, priorMean, priorNoise); % add directly to graph
 
 %% Add two odometry factors
 odometry = gtsamPose2(2.0, 0.0, 0.0); % create a measurement for both factors (the same in this case)
 odometryNoise = gtsamnoiseModelDiagonal_Sigmas([0.2; 0.2; 0.1]); % 20cm std on x,y, 0.1 rad on theta
-graph.addOdometry(1, 2, odometry, odometryNoise);
-graph.addOdometry(2, 3, odometry, odometryNoise);
+graph.addRelativePose(1, 2, odometry, odometryNoise);
+graph.addRelativePose(2, 3, odometry, odometryNoise);
 
 %% print
 graph.print(sprintf('\nFactor graph:\n'));
@@ -40,12 +40,13 @@ initialEstimate.insertPose(3, gtsamPose2(4.1, 0.1, 0.1));
 initialEstimate.print(sprintf('\nInitial estimate:\n  '));
 
 %% Optimize using Levenberg-Marquardt optimization with an ordering from colamd
-result = graph.optimize(initialEstimate);
+result = graph.optimize(initialEstimate,1);
 result.print(sprintf('\nFinal result:\n  '));
 
 %% Plot Covariance Ellipses
 cla;
-plot(result.xs(),result.ys(),'k*-'); hold on
+X=result.poses();
+plot(X(:,1),X(:,2),'k*-'); hold on
 marginals = graph.marginals(result);
 P={};
 for i=1:result.size()

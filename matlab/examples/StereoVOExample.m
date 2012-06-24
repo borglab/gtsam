@@ -67,13 +67,15 @@ axis equal
 view(-38,12)
 
 % initial trajectory in red (rotated so Z is up)
-plot3(initialEstimate.zs(),-initialEstimate.xs(),-initialEstimate.ys(), '-*r','LineWidth',2);
+T=initialEstimate.translations;
+plot3(T(:,3),-T(:,1),-T(:,2), '-*r','LineWidth',2);
 
 % final trajectory in green (rotated so Z is up)
-plot3(result.zs(),-result.xs(),-result.ys(), '-*g','LineWidth',2);
+T=result.translations;
+plot3(T(:,3),-T(:,1),-T(:,2), '-*g','LineWidth',2);
 xlabel('X (m)'); ylabel('Y (m)'); zlabel('Z (m)');
 
 % optimized 3D points (rotated so Z is up)
-points = result.points();
-plot3(points(:,3),-points(:,1),-points(:,2),'*');
+P = result.points();
+plot3(P(:,3),-P(:,1),-P(:,2),'*');
 

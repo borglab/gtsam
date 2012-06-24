@@ -29,13 +29,13 @@ graph = planarSLAMGraph;
 %% Add prior
 priorMean = gtsamPose2(0.0, 0.0, 0.0); % prior at origin
 priorNoise = gtsamnoiseModelDiagonal_Sigmas([0.3; 0.3; 0.1]);
-graph.addPrior(i1, priorMean, priorNoise); % add directly to graph
+graph.addPosePrior(i1, priorMean, priorNoise); % add directly to graph
 
 %% Add odometry
 odometry = gtsamPose2(2.0, 0.0, 0.0);
 odometryNoise = gtsamnoiseModelDiagonal_Sigmas([0.2; 0.2; 0.1]);
-graph.addOdometry(i1, i2, odometry, odometryNoise);
-graph.addOdometry(i2, i3, odometry, odometryNoise);
+graph.addRelativePose(i1, i2, odometry, odometryNoise);
+graph.addRelativePose(i2, i3, odometry, odometryNoise);
 
 %% Add bearing/range measurement factors
 degrees = pi/180;
@@ -58,7 +58,7 @@ initialEstimate.insertPoint(j2, gtsamPoint2(4.1, 1.8));
 initialEstimate.print(sprintf('\nInitial estimate:\n'));
 
 %% Optimize using Levenberg-Marquardt optimization with an ordering from colamd
-result = graph.optimize(initialEstimate);
+result = graph.optimize(initialEstimate,1);
 result.print(sprintf('\nFinal result:\n'));
 
 %% Plot Covariance Ellipses

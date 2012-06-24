@@ -119,7 +119,7 @@ public:
 	}
 
 	///add a prior
-	void addPrior(Index cell, double prior){
+	void addPosePrior(Index cell, double prior){
 		size_t numStates = 2;
 		DiscreteKey key(cell, numStates);
 
@@ -295,7 +295,7 @@ TEST_UNSAFE( OccupancyGrid, Test1) {
 	Pose2 pose(0,0,0);
 	double range = 1;
 
-	occupancyGrid.addPrior(0, 0.7);
+	occupancyGrid.addPosePrior(0, 0.7);
 	EXPECT_LONGS_EQUAL(1, occupancyGrid.size());
 
 	occupancyGrid.addLaser(pose, range);

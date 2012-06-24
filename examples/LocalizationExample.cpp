@@ -65,8 +65,8 @@ int main(int argc, char** argv) {
 	// add two odometry factors
 	Pose2 odometry(2.0, 0.0, 0.0); // create a measurement for both factors (the same in this case)
 	SharedDiagonal odometryNoise = Diagonal::Sigmas(Vector_(3, 0.2, 0.2, 0.1)); // 20cm std on x,y, 0.1 rad on theta
-	graph.addOdometry(1, 2, odometry, odometryNoise);
-	graph.addOdometry(2, 3, odometry, odometryNoise);
+	graph.addRelativePose(1, 2, odometry, odometryNoise);
+	graph.addRelativePose(2, 3, odometry, odometryNoise);
 
 	// add unary measurement factors, like GPS, on all three poses
 	SharedDiagonal noiseModel = Diagonal::Sigmas(Vector_(2, 0.1, 0.1)); // 10cm std on x,y

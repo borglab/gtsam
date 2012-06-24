@@ -41,6 +41,8 @@ static shared_ptrK sK(new Cal3_S2(K));
 using symbol_shorthand::X;
 using symbol_shorthand::L;
 
+typedef GenericProjectionFactor<Pose3, Point3> MyProjectionFactor;
+
 /* ************************************************************************* */
 TEST( ProjectionFactor, nonStandard )
 {
@@ -53,8 +55,8 @@ TEST( ProjectionFactor, error )
 	// Create the factor with a measurement that is 3 pixels off in x
 	Point2 z(323.,240.);
 	int i=1, j=1;
-	boost::shared_ptr<visualSLAM::ProjectionFactor>
-	factor(new visualSLAM::ProjectionFactor(z, sigma, X(i), L(j), sK));
+	boost::shared_ptr<MyProjectionFactor>
+	factor(new MyProjectionFactor(z, sigma, X(i), L(j), sK));
 
 	// For the following values structure, the factor predicts 320,240
 	Values config;
@@ -102,11 +104,11 @@ TEST( ProjectionFactor, equals )
 	// Create two identical factors and make sure they're equal
 	Vector z = Vector_(2,323.,240.);
 	int i=1, j=1;
-	boost::shared_ptr<visualSLAM::ProjectionFactor>
-	  factor1(new visualSLAM::ProjectionFactor(z, sigma, X(i), L(j), sK));
+	boost::shared_ptr<MyProjectionFactor>
+	  factor1(new MyProjectionFactor(z, sigma, X(i), L(j), sK));
 
-	boost::shared_ptr<visualSLAM::ProjectionFactor>
-		factor2(new visualSLAM::ProjectionFactor(z, sigma, X(i), L(j), sK));
+	boost::shared_ptr<MyProjectionFactor>
+		factor2(new MyProjectionFactor(z, sigma, X(i), L(j), sK));
 
 	CHECK(assert_equal(*factor1, *factor2));
 }

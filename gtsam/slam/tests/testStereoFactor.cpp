@@ -46,6 +46,8 @@ static SharedNoiseModel sigma(noiseModel::Unit::Create(1));
 using symbol_shorthand::X;
 using symbol_shorthand::L;
 
+typedef GenericStereoFactor<Pose3, Point3> MyStereoFactor;
+
 /* ************************************************************************* */
 TEST( StereoFactor, singlePoint)
 {
@@ -53,11 +55,11 @@ TEST( StereoFactor, singlePoint)
 	boost::shared_ptr<Cal3_S2Stereo> K(new Cal3_S2Stereo(625, 625, 0, 320, 240, 0.5));
 	NonlinearFactorGraph graph;
 
-	graph.add(visualSLAM::PoseConstraint(X(1),camera1));
+	graph.add(NonlinearEquality<Pose3>(X(1),camera1));
 
 	StereoPoint2 z14(320,320.0-50, 240);
   // arguments: measurement, sigma, cam#, measurement #, K, baseline (m)
-	graph.add(visualSLAM::StereoFactor(z14,sigma, X(1), L(1), K));
+	graph.add(MyStereoFactor(z14,sigma, X(1), L(1), K));
 
 	// Create a configuration corresponding to the ground truth
 	Values values;

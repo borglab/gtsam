@@ -3,7 +3,8 @@ function plot3DTrajectory(values,style,frames,scale)
 if nargin<3,frames=false;end
 if nargin<4,scale=0;end
 
-plot3(values.xs(),values.ys(),values.zs(),style); hold on
+T=values.translations()
+plot3(T(:,1),T(:,2),T(:,3),style); hold on
 if frames
     N=values.size;
     for i=0:N-1

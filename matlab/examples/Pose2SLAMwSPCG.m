@@ -35,7 +35,7 @@ graph.addOdometry(4, 5, gtsamPose2(2.0, 0.0, pi/2), odometryNoise);
 
 %% Add pose constraint
 model = gtsamnoiseModelDiagonal_Sigmas([0.2; 0.2; 0.1]);
-graph.addConstraint(5, 2, gtsamPose2(2.0, 0.0, pi/2), model);
+graph.addRelativePose(5, 2, gtsamPose2(2.0, 0.0, pi/2), model);
 
 % print
 graph.print(sprintf('\nFactor graph:\n'));

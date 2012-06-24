@@ -136,19 +136,19 @@ TEST(GaussianJunctionTree, slamlike) {
   size_t i = 0;
 
   newfactors = planarSLAM::Graph();
-  newfactors.addPrior(X(0), Pose2(0.0, 0.0, 0.0), odoNoise);
+  newfactors.addPosePrior(X(0), Pose2(0.0, 0.0, 0.0), odoNoise);
   init.insert(X(0), Pose2(0.01, 0.01, 0.01));
   fullgraph.push_back(newfactors);
 
   for( ; i<5; ++i) {
     newfactors = planarSLAM::Graph();
-    newfactors.addOdometry(X(i), X(i+1), Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addRelativePose(X(i), X(i+1), Pose2(1.0, 0.0, 0.0), odoNoise);
     init.insert(X(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
     fullgraph.push_back(newfactors);
   }
 
   newfactors = planarSLAM::Graph();
-  newfactors.addOdometry(X(i), X(i+1), Pose2(1.0, 0.0, 0.0), odoNoise);
+  newfactors.addRelativePose(X(i), X(i+1), Pose2(1.0, 0.0, 0.0), odoNoise);
   newfactors.addBearingRange(X(i), L(0), Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
   newfactors.addBearingRange(X(i), L(1), Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
   init.insert(X(i+1), Pose2(1.01, 0.01, 0.01));
@@ -159,13 +159,13 @@ TEST(GaussianJunctionTree, slamlike) {
 
   for( ; i<5; ++i) {
     newfactors = planarSLAM::Graph();
-    newfactors.addOdometry(X(i), X(i+1), Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addRelativePose(X(i), X(i+1), Pose2(1.0, 0.0, 0.0), odoNoise);
     init.insert(X(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
     fullgraph.push_back(newfactors);
   }
 
   newfactors = planarSLAM::Graph();
-  newfactors.addOdometry(X(i), X(i+1), Pose2(1.0, 0.0, 0.0), odoNoise);
+  newfactors.addRelativePose(X(i), X(i+1), Pose2(1.0, 0.0, 0.0), odoNoise);
   newfactors.addBearingRange(X(i), L(0), Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
   newfactors.addBearingRange(X(i), L(1), Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
   init.insert(X(i+1), Pose2(6.9, 0.1, 0.01));
@@ -194,8 +194,8 @@ TEST(GaussianJunctionTree, simpleMarginal) {
 
   // Create a simple graph
   pose2SLAM::Graph fg;
-  fg.addPrior(X(0), Pose2(), noiseModel::Isotropic::Sigma(3, 10.0));
-  fg.addOdometry(X(0), X(1), Pose2(1.0, 0.0, 0.0), noiseModel::Diagonal::Sigmas(Vector_(3, 10.0, 1.0, 1.0)));
+  fg.addPosePrior(X(0), Pose2(), noiseModel::Isotropic::Sigma(3, 10.0));
+  fg.addRelativePose(X(0), X(1), Pose2(1.0, 0.0, 0.0), noiseModel::Diagonal::Sigmas(Vector_(3, 10.0, 1.0, 1.0)));
 
   Values init;
   init.insert(X(0), Pose2());

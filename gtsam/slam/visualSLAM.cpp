@@ -39,36 +39,6 @@ namespace visualSLAM {
   }
 
   /* ************************************************************************* */
-  Vector Values::xs() const {
-    size_t j=0;
-    ConstFiltered<Pose3> poses = filter<Pose3>();
-    Vector result(poses.size());
-    BOOST_FOREACH(const ConstFiltered<Pose3>::KeyValuePair& keyValue, poses)
-      result(j++) = keyValue.value.x();
-    return result;
-  }
-
-  /* ************************************************************************* */
-  Vector Values::ys() const {
-    size_t j=0;
-    ConstFiltered<Pose3> poses = filter<Pose3>();
-    Vector result(poses.size());
-    BOOST_FOREACH(const ConstFiltered<Pose3>::KeyValuePair& keyValue, poses)
-      result(j++) = keyValue.value.y();
-    return result;
-  }
-
-  /* ************************************************************************* */
-  Vector Values::zs() const {
-    size_t j=0;
-    ConstFiltered<Pose3> poses = filter<Pose3>();
-    Vector result(poses.size());
-    BOOST_FOREACH(const ConstFiltered<Pose3>::KeyValuePair& keyValue, poses)
-      result(j++) = keyValue.value.z();
-    return result;
-  }
-
-  /* ************************************************************************* */
   Matrix Values::points() const {
     size_t j=0;
     ConstFiltered<Point3> points = filter<Point3>();
@@ -79,53 +49,31 @@ namespace visualSLAM {
   }
 
   /* ************************************************************************* */
+  void Graph::addPointConstraint(Key pointKey, const Point3& p) {
+  	push_back(make_shared<NonlinearEquality<Point3> >(pointKey, p));
+  }
+
+  /* ************************************************************************* */
+  void Graph::addPointPrior(Key pointKey, const Point3& p, const SharedNoiseModel& model) {
+  	push_back(make_shared<PriorFactor<Point3> >(pointKey, p, model));
+  }
+
+  /* ************************************************************************* */
   void Graph::addMeasurement(const Point2& measured, const SharedNoiseModel& model,
        Key poseKey, Key pointKey, const shared_ptrK K) {
-    push_back(make_shared<ProjectionFactor>(measured, model, poseKey, pointKey, K));
+    push_back(make_shared<GenericProjectionFactor<Pose3, Point3> >(measured, model, poseKey, pointKey, K));
   }
 
   /* ************************************************************************* */
   void Graph::addStereoMeasurement(const StereoPoint2& measured, const SharedNoiseModel& model,
        Key poseKey, Key pointKey, const shared_ptrKStereo K) {
-  	push_back(make_shared<StereoFactor>(measured, model, poseKey, pointKey, K));
-  }
-
-  /* ************************************************************************* */
-  void Graph::addPoseConstraint(Key poseKey, const Pose3& p) {
-  	push_back(make_shared<PoseConstraint>(poseKey, p));
-  }
-
-  /* ************************************************************************* */
-  void Graph::addPointConstraint(Key pointKey, const Point3& p) {
-  	push_back(make_shared<PointConstraint>(pointKey, p));
-  }
-
-  /* ************************************************************************* */
-  void Graph::addPosePrior(Key poseKey, const Pose3& p, const SharedNoiseModel& model) {
-  	push_back(make_shared<PosePrior>(poseKey, p, model));
-  }
-
-  /* ************************************************************************* */
-  void Graph::addPointPrior(Key pointKey, const Point3& p, const SharedNoiseModel& model) {
-  	push_back(make_shared<PointPrior>(pointKey, p, model));
+  	push_back(make_shared<GenericStereoFactor<Pose3, Point3> >(measured, model, poseKey, pointKey, K));
   }
 
   /* ************************************************************************* */
   void Graph::addRangeFactor(Key poseKey, Key pointKey, double range, const SharedNoiseModel& model) {
-    push_back(make_shared<RangeFactor>(poseKey, pointKey, range, model));
+    push_back(make_shared<gtsam::RangeFactor<Pose3, Point3> >(poseKey, pointKey, range, model));
   }
 
-  /* ************************************************************************* */
-  void Graph::addOdometry(Key x1, Key x2, const Pose3& odometry, const SharedNoiseModel& model) {
-    push_back(make_shared<BetweenFactor<Pose3> >(x1, x2, odometry, model));
-  }
-
-  /* ************************************************************************* */
-  Values Graph::optimize(const Values& initialEstimate, size_t verbosity) const {
-    LevenbergMarquardtParams params;
-    params.verbosity = (NonlinearOptimizerParams::Verbosity)verbosity;
-    LevenbergMarquardtOptimizer optimizer(*this, initialEstimate,params);
-    return optimizer.optimize();
-  }
   /* ************************************************************************* */
 }

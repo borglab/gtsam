@@ -27,14 +27,14 @@ graph = pose2SLAMGraph;
 % gaussian for prior
 priorNoise = gtsamnoiseModelDiagonal_Sigmas([0.3; 0.3; 0.1]);
 priorMean = gtsamPose2(0.0, 0.0, 0.0); % prior at origin
-graph.addPrior(1, priorMean, priorNoise); % add directly to graph
+graph.addPosePrior(1, priorMean, priorNoise); % add directly to graph
 
 %% Add odometry
 % general noisemodel for odometry
 odometryNoise = gtsamnoiseModelDiagonal_Sigmas([0.2; 0.2; 0.1]);
 odometry = gtsamPose2(2.0, 0.0, 0.0); % create a measurement for both factors (the same in this case)
-graph.addOdometry(1, 2, odometry, odometryNoise);
-graph.addOdometry(2, 3, odometry, odometryNoise);
+graph.addRelativePose(1, 2, odometry, odometryNoise);
+graph.addRelativePose(2, 3, odometry, odometryNoise);
 
 %% Add measurements
 % general noisemodel for measurements
@@ -60,7 +60,7 @@ initialEstimate.print('initial estimate');
 %result.print('final result');
 
 %% Optimize using Levenberg-Marquardt optimization with an ordering from colamd
-result = graph.optimize(initialEstimate);
+result = graph.optimize(initialEstimate,1);
 result.print('final result');
 
 %% Get the corresponding dense matrix

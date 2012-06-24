@@ -79,9 +79,9 @@ TEST( Graph, composePoses )
 	SharedNoiseModel cov = noiseModel::Unit::Create(3);
 	Pose2 p1(1.0, 2.0, 0.3), p2(4.0, 5.0, 0.6), p3(7.0, 8.0, 0.9), p4(2.0, 2.0, 2.9);
 	Pose2 p12=p1.between(p2), p23=p2.between(p3), p43=p4.between(p3);
-	graph.addOdometry(1,2, p12, cov);
-	graph.addOdometry(2,3, p23, cov);
-	graph.addOdometry(4,3, p43, cov);
+	graph.addRelativePose(1,2, p12, cov);
+	graph.addRelativePose(2,3, p23, cov);
+	graph.addRelativePose(4,3, p43, cov);
 
 	PredecessorMap<Key> tree;
 	tree.insert(1,2);

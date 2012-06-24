@@ -22,49 +22,39 @@
 namespace planarSLAM {
 
   /* ************************************************************************* */
-  Graph::Graph(const NonlinearFactorGraph& graph) :
-      NonlinearFactorGraph(graph) {}
-
-  /* ************************************************************************* */
-  void Graph::addPrior(Key i, const Pose2& p, const SharedNoiseModel& model) {
-    sharedFactor factor(new Prior(i, p, model));
-    push_back(factor);
+  Matrix Values::points() const {
+    size_t j=0;
+    ConstFiltered<Point2> points = filter<Point2>();
+    Matrix result(points.size(),2);
+    BOOST_FOREACH(const ConstFiltered<Point2>::KeyValuePair& keyValue, points)
+      result.row(j++) = keyValue.value.vector();
+    return result;
   }
 
   /* ************************************************************************* */
-  void Graph::addPoseConstraint(Key i, const Pose2& p) {
-    sharedFactor factor(new Constraint(i, p));
-    push_back(factor);
+  void Graph::addPointConstraint(Key pointKey, const Point2& p) {
+  	push_back(boost::make_shared<NonlinearEquality<Point2> >(pointKey, p));
   }
 
   /* ************************************************************************* */
-  void Graph::addOdometry(Key i1, Key i2, const Pose2& odometry, const SharedNoiseModel& model) {
-    sharedFactor factor(new Odometry(i1, i2, odometry, model));
-    push_back(factor);
+  void Graph::addPointPrior(Key pointKey, const Point2& p, const SharedNoiseModel& model) {
+  	push_back(boost::make_shared<PriorFactor<Point2> >(pointKey, p, model));
   }
 
   /* ************************************************************************* */
   void Graph::addBearing(Key i, Key j, const Rot2& z, const SharedNoiseModel& model) {
-    sharedFactor factor(new Bearing(i, j, z, model));
-    push_back(factor);
+    push_back(boost::make_shared<BearingFactor<Pose2, Point2> >(i, j, z, model));
   }
 
   /* ************************************************************************* */
   void Graph::addRange(Key i, Key j, double z, const SharedNoiseModel& model) {
-    sharedFactor factor(new Range(i, j, z, model));
-    push_back(factor);
+    push_back(boost::make_shared<RangeFactor<Pose2, Point2> >(i, j, z, model));
   }
 
   /* ************************************************************************* */
   void Graph::addBearingRange(Key i, Key j, const Rot2& z1,
       double z2, const SharedNoiseModel& model) {
-    sharedFactor factor(new BearingRange(i, j, z1, z2, model));
-    push_back(factor);
-  }
-
-  /* ************************************************************************* */
-  Values Graph::optimize(const Values& initialEstimate) const {
-    return LevenbergMarquardtOptimizer(*this, initialEstimate).optimize();
+    push_back(boost::make_shared<BearingRangeFactor<Pose2, Point2> >(i, j, z1, z2, model));
   }
 
   /* ************************************************************************* */

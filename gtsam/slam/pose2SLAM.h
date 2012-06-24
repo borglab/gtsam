@@ -22,13 +22,14 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/Marginals.h>
 #include <gtsam/geometry/Pose2.h>
 
 // Use pose2SLAM namespace for specific SLAM instance
 namespace pose2SLAM {
 
-  using namespace gtsam;
+	using namespace gtsam;
 
   /*
    * Values class, inherited from Values, mainly used as a convenience for MATLAB wrapper
@@ -64,21 +65,13 @@ namespace pose2SLAM {
     /// get a pose
     Pose2 pose(Key i) const { return at<Pose2>(i); }
 
-    Vector xs() const; ///< get all x coordinates in a matrix
-    Vector ys() const; ///< get all y coordinates in a matrix
-    Vector thetas() const; ///< get all orientations in a matrix
+    /// get all [x,y,theta] coordinates in a 3*m matrix
+    Matrix poses() const;
   };
 
   /**
    * List of typedefs for factors
    */
-
-  /// A hard constraint to enforce a specific value for a pose
-  typedef NonlinearEquality<Pose2> HardConstraint;
-  /// A prior factor on a pose with Pose2 data type.
-  typedef PriorFactor<Pose2> Prior;
-  /// A factor to add an odometry measurement between two poses.
-  typedef BetweenFactor<Pose2> Odometry;
 
   /**
    * Graph class, inherited from NonlinearFactorGraph, used as a convenience for MATLAB wrapper
@@ -92,25 +85,23 @@ namespace pose2SLAM {
     Graph(){}
 
     /// Creates a NonlinearFactorGraph based on another NonlinearFactorGraph
-    Graph(const NonlinearFactorGraph& graph);
-
-    /// Adds a Pose2 prior with mean p and given noise model on pose i
-    void addPrior(Key i, const Pose2& p, const SharedNoiseModel& model);
+    Graph(const NonlinearFactorGraph& graph):
+    	NonlinearFactorGraph(graph) {}
 
     /// Creates a hard constraint for key i with the given Pose2 p.
     void addPoseConstraint(Key i, const Pose2& p);
 
-    /// Creates an odometry factor between poses with keys i1 and i2
-    void addOdometry(Key i1, Key i2, const Pose2& z, const SharedNoiseModel& model);
+    /// Adds a Pose2 prior with mean p and given noise model on pose i
+    void addPosePrior(Key i, const Pose2& p, const SharedNoiseModel& model);
 
-    /// AddConstraint adds a soft constraint between factor between keys i and j
-    void addConstraint(Key i1, Key i2, const Pose2& z, const SharedNoiseModel& model) {
-    	addOdometry(i1,i2,z,model); // same for now
-    }
+    /// Creates an relative pose factor between poses with keys i1 and i2
+    void addRelativePose(Key i1, Key i2, const Pose2& z, const SharedNoiseModel& model);
 
     /// Optimize
-    Values optimize(const Values& initialEstimate) const;
-    Values optimizeSPCG(const Values& initialEstimate) const;
+    Values optimize(const Values& initialEstimate, size_t verbosity=NonlinearOptimizerParams::SILENT) const;
+
+    /// Optimize using subgraph preconditioning
+    Values optimizeSPCG(const Values& initialEstimate, size_t verbosity=NonlinearOptimizerParams::SILENT) const;
 
     /// Return a Marginals object
     Marginals marginals(const Values& solution) const {
@@ -121,5 +112,11 @@ namespace pose2SLAM {
 
 } // pose2SLAM
 
-
-
+/**
+ * Backwards compatibility and wrap use only, avoid using
+ */
+namespace pose2SLAM {
+	typedef gtsam::NonlinearEquality<Pose2> HardConstraint;	 ///< \deprecated typedef for backwards compatibility
+	typedef gtsam::PriorFactor<Pose2> Prior;	                 ///< \deprecated typedef for backwards compatibility
+	typedef gtsam::BetweenFactor<Pose2> Odometry;	           ///< \deprecated typedef for backwards compatibility
+}

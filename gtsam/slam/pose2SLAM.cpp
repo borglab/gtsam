@@ -17,7 +17,6 @@
 
 #include <gtsam/linear/SimpleSPCGSolver.h>
 #include <gtsam/slam/pose2SLAM.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 
 // Use pose2SLAM namespace for specific SLAM instance
 
@@ -33,66 +32,52 @@ namespace pose2SLAM {
   }
 
   /* ************************************************************************* */
-	Vector Values::xs() const {
+	Matrix Values::poses() const {
 		size_t j=0;
-		Vector result(size());
 		ConstFiltered<Pose2> poses = filter<Pose2>();
-		BOOST_FOREACH(const ConstFiltered<Pose2>::KeyValuePair& keyValue, poses)
-			result(j++) = keyValue.value.x();
+    Matrix result(poses.size(),3);
+		BOOST_FOREACH(const ConstFiltered<Pose2>::KeyValuePair& keyValue, poses) {
+			const Pose2& r = keyValue.value;
+			result.row(j++) = Matrix_(1,3, r.x(), r.y(), r.theta());
+		}
 		return result;
 	}
-
-  /* ************************************************************************* */
-	Vector Values::ys() const {
-		size_t j=0;
-		Vector result(size());
-		ConstFiltered<Pose2> poses = filter<Pose2>();
-		BOOST_FOREACH(const ConstFiltered<Pose2>::KeyValuePair& keyValue, poses)
-			result(j++) = keyValue.value.y();
-		return result;
-	}
-
-  /* ************************************************************************* */
-	Vector Values::thetas() const {
-		size_t j=0;
-		Vector result(size());
-		ConstFiltered<Pose2> poses = filter<Pose2>();
-		BOOST_FOREACH(const ConstFiltered<Pose2>::KeyValuePair& keyValue, poses)
-			result(j++) = keyValue.value.theta	();
-		return result;
-	}
-
-  /* ************************************************************************* */
-  void Graph::addPrior(Key i, const Pose2& p, const SharedNoiseModel& model) {
-    sharedFactor factor(new Prior(i, p, model));
-    push_back(factor);
-  }
 
   /* ************************************************************************* */
   void Graph::addPoseConstraint(Key i, const Pose2& p) {
-    sharedFactor factor(new HardConstraint(i, p));
+    sharedFactor factor(new NonlinearEquality<Pose2>(i, p));
     push_back(factor);
   }
 
   /* ************************************************************************* */
-  void Graph::addOdometry(Key i1, Key i2, const Pose2& z,
+  void Graph::addPosePrior(Key i, const Pose2& p, const SharedNoiseModel& model) {
+    sharedFactor factor(new PriorFactor<Pose2>(i, p, model));
+    push_back(factor);
+  }
+
+  /* ************************************************************************* */
+  void Graph::addRelativePose(Key i1, Key i2, const Pose2& z,
       const SharedNoiseModel& model) {
-    sharedFactor factor(new Odometry(i1, i2, z, model));
+    sharedFactor factor(new BetweenFactor<Pose2>(i1, i2, z, model));
     push_back(factor);
   }
 
   /* ************************************************************************* */
-  Values Graph::optimize(const Values& initialEstimate) const {
-    return LevenbergMarquardtOptimizer(*this, initialEstimate).optimize();
+  Values Graph::optimize(const Values& initialEstimate, size_t verbosity) const {
+    LevenbergMarquardtParams params;
+    params.verbosity = (NonlinearOptimizerParams::Verbosity)verbosity;
+    LevenbergMarquardtOptimizer optimizer(*this, initialEstimate,params);
+    return optimizer.optimize();
   }
 
-  Values Graph::optimizeSPCG(const Values& initialEstimate) const {
+  /* ************************************************************************* */
+  Values Graph::optimizeSPCG(const Values& initialEstimate, size_t verbosity) const {
     LevenbergMarquardtParams params;
+    params.verbosity = (NonlinearOptimizerParams::Verbosity)verbosity;
     params.linearSolverType = SuccessiveLinearizationParams::CG;
     params.iterativeParams = boost::make_shared<SimpleSPCGSolverParameters>();
     return LevenbergMarquardtOptimizer(*this, initialEstimate, params).optimize();
   }
-
 
   /* ************************************************************************* */
 

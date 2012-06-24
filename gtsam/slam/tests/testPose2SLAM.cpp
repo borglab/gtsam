@@ -32,7 +32,7 @@ using namespace boost::assign;
 #include <iostream>
 using namespace std;
 
-typedef pose2SLAM::Odometry Pose2Factor;
+typedef BetweenFactor<Pose2> Pose2Factor;
 
 // common measurement covariance
 static double sx=0.5, sy=0.5,st=0.1;
@@ -49,9 +49,8 @@ TEST_UNSAFE( Pose2SLAM, XYT )
 	pose2SLAM::Values values;
 	values.insertPose(1,Pose2(1,2,3));
 	values.insertPose(2,Pose2(4,5,6));
-	EXPECT(assert_equal(Vector_(2,1.0,4.0),values.xs()));
-	EXPECT(assert_equal(Vector_(2,2.0,5.0),values.ys()));
-	EXPECT(assert_equal(Vector_(2,3.0,6.0-2*M_PI),values.thetas()));
+	Matrix expected = Matrix_(2,3, 1.0,2.0,3.0, 4.0,5.0,6.0-2*M_PI);
+	EXPECT(assert_equal(expected,values.poses()));
 }
 
 /* ************************************************************************* */
@@ -106,7 +105,7 @@ TEST_UNSAFE( Pose2SLAM, constructor )
 	// create a factor between unknown poses p1 and p2
 	Pose2 measured(2,2,M_PI_2);
 	pose2SLAM::Graph graph;
-	graph.addOdometry(1,2,measured, covariance);
+	graph.addRelativePose(1,2,measured, covariance);
 	// get the size of the graph
 	size_t actual = graph.size();
 	// verify
@@ -121,7 +120,7 @@ TEST_UNSAFE( Pose2SLAM, linearization )
 	Pose2 measured(2,2,M_PI_2);
 	Pose2Factor constraint(1, 2, measured, covariance);
 	pose2SLAM::Graph graph;
-	graph.addOdometry(1,2,measured, covariance);
+	graph.addRelativePose(1,2,measured, covariance);
 
 	// Choose a linearization point
 	Pose2 p1(1.1,2,M_PI_2); // robot at (1.1,2) looking towards y (ground truth is at 1,2, see testPose2)
@@ -159,7 +158,7 @@ TEST_UNSAFE(Pose2SLAM, optimize) {
 	// create a Pose graph with one equality constraint and one measurement
   pose2SLAM::Graph fg;
   fg.addPoseConstraint(0, Pose2(0,0,0));
-  fg.addOdometry(0, 1, Pose2(1,2,M_PI_2), covariance);
+  fg.addRelativePose(0, 1, Pose2(1,2,M_PI_2), covariance);
 
   // Create initial config
   Values initial;
@@ -196,11 +195,11 @@ TEST_UNSAFE(Pose2SLAM, optimizeSPCG) {
 
 	// create a Pose graph with one equality constraint and one measurement
   pose2SLAM::Graph fg;
-  fg.addPrior(0, Pose2(0,0,0), noiseModel::Diagonal::Sigmas(Vector_(3,3.0,3.0,1.0)));
-  fg.addOdometry(0, 1, Pose2(1,2,M_PI_2), covariance);
+  fg.addPosePrior(0, Pose2(0,0,0), noiseModel::Diagonal::Sigmas(Vector_(3,3.0,3.0,1.0)));
+  fg.addRelativePose(0, 1, Pose2(1,2,M_PI_2), covariance);
 
   // [Duy] For some unknown reason, SPCG needs this constraint to work. GaussNewton doesn't need this.
-  fg.addConstraint(0, 1, Pose2(1,2,M_PI_2), noiseModel::Diagonal::Sigmas(Vector_(3, 0.2, 0.2, 0.1)));
+  fg.addRelativePose(0, 1, Pose2(1,2,M_PI_2), noiseModel::Diagonal::Sigmas(Vector_(3, 0.2, 0.2, 0.1)));
 
   // Create initial config
   Values initial;
@@ -208,7 +207,7 @@ TEST_UNSAFE(Pose2SLAM, optimizeSPCG) {
   initial.insert(1, Pose2(0,0,0));
 
   // Optimize using SPCG
-  Values actual = fg.optimizeSPCG(initial);
+  Values actual = fg.optimizeSPCG(initial,0);
 
   // Try GaussNewton without the above constraint to see if the problem is underconstrained. Still works!
   Values actual2 = GaussNewtonOptimizer(fg, initial).optimize();
@@ -233,9 +232,9 @@ TEST_UNSAFE(Pose2SLAM, optimizeThreePoses) {
   pose2SLAM::Graph fg;
   fg.addPoseConstraint(0, p0);
   Pose2 delta = p0.between(p1);
-  fg.addOdometry(0, 1, delta, covariance);
-  fg.addOdometry(1, 2, delta, covariance);
-  fg.addOdometry(2, 0, delta, covariance);
+  fg.addRelativePose(0, 1, delta, covariance);
+  fg.addRelativePose(1, 2, delta, covariance);
+  fg.addRelativePose(2, 0, delta, covariance);
 
   // Create initial config
   pose2SLAM::Values initial;
@@ -269,12 +268,12 @@ TEST_UNSAFE(Pose2SLAM, optimizeCircle) {
   pose2SLAM::Graph fg;
   fg.addPoseConstraint(0, p0);
   Pose2 delta = p0.between(p1);
-  fg.addOdometry(0,1, delta, covariance);
-  fg.addOdometry(1,2, delta, covariance);
-  fg.addOdometry(2,3, delta, covariance);
-  fg.addOdometry(3,4, delta, covariance);
-  fg.addOdometry(4,5, delta, covariance);
-  fg.addOdometry(5,0, delta, covariance);
+  fg.addRelativePose(0,1, delta, covariance);
+  fg.addRelativePose(1,2, delta, covariance);
+  fg.addRelativePose(2,3, delta, covariance);
+  fg.addRelativePose(3,4, delta, covariance);
+  fg.addRelativePose(4,5, delta, covariance);
+  fg.addRelativePose(5,0, delta, covariance);
 
   // Create initial config
   pose2SLAM::Values initial;
@@ -357,9 +356,9 @@ TEST_UNSAFE(Pose2SLAM, optimize2) {
 ///* ************************************************************************* */
 // SL-NEEDED? TEST_UNSAFE(Pose2SLAM, findMinimumSpanningTree) {
 //	pose2SLAM::Graph G, T, C;
-//	G.addConstraint(1, 2, Pose2(0.,0.,0.), I3);
-//	G.addConstraint(1, 3, Pose2(0.,0.,0.), I3);
-//	G.addConstraint(2, 3, Pose2(0.,0.,0.), I3);
+//	G.addPoseConstraint(1, 2, Pose2(0.,0.,0.), I3);
+//	G.addPoseConstraint(1, 3, Pose2(0.,0.,0.), I3);
+//	G.addPoseConstraint(2, 3, Pose2(0.,0.,0.), I3);
 //
 //	PredecessorMap<pose2SLAM::pose2SLAM::PoseKey> tree =
 //			G.findMinimumSpanningTree<pose2SLAM::pose2SLAM::PoseKey, Pose2Factor>();
@@ -371,9 +370,9 @@ TEST_UNSAFE(Pose2SLAM, optimize2) {
 ///* ************************************************************************* */
 // SL-NEEDED? TEST_UNSAFE(Pose2SLAM, split) {
 //	pose2SLAM::Graph G, T, C;
-//	G.addConstraint(1, 2, Pose2(0.,0.,0.), I3);
-//	G.addConstraint(1, 3, Pose2(0.,0.,0.), I3);
-//	G.addConstraint(2, 3, Pose2(0.,0.,0.), I3);
+//	G.addPoseConstraint(1, 2, Pose2(0.,0.,0.), I3);
+//	G.addPoseConstraint(1, 3, Pose2(0.,0.,0.), I3);
+//	G.addPoseConstraint(2, 3, Pose2(0.,0.,0.), I3);
 //
 //	PredecessorMap<pose2SLAM::pose2SLAM::PoseKey> tree;
 //	tree.insert(1,2);
@@ -436,7 +435,7 @@ TEST_UNSAFE( Pose2Prior, error )
 	x0.insert(1, p1);
 
 	// Create factor
-	pose2SLAM::Prior factor(1, p1, sigmas);
+	PriorFactor<Pose2> factor(1, p1, sigmas);
 
 	// Actual linearization
 	Ordering ordering(*x0.orderingArbitrary());
@@ -463,7 +462,7 @@ TEST_UNSAFE( Pose2Prior, error )
 /* ************************************************************************* */
 // common Pose2Prior for tests below
 static gtsam::Pose2 priorVal(2,2,M_PI_2);
-static pose2SLAM::Prior priorFactor(1, priorVal, sigmas);
+static PriorFactor<Pose2> priorFactor(1, priorVal, sigmas);
 
 /* ************************************************************************* */
 // The error |A*dx-b| approximates (h(x0+dx)-z) = -error_vector

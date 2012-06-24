@@ -48,16 +48,16 @@ TEST(Pose3Graph, optimizeCircle) {
 
 	// create a Pose graph with one equality constraint and one measurement
   pose3SLAM::Graph fg;
-  fg.addHardConstraint(0, gT0);
+  fg.addPoseConstraint(0, gT0);
   Pose3 _0T1 = gT0.between(gT1); // inv(gT0)*gT1
   double theta = M_PI/3.0;
   CHECK(assert_equal(Pose3(Rot3::yaw(-theta),Point3(radius*sin(theta),-radius*cos(theta),0)),_0T1));
-  fg.addConstraint(0,1, _0T1, covariance);
-  fg.addConstraint(1,2, _0T1, covariance);
-  fg.addConstraint(2,3, _0T1, covariance);
-  fg.addConstraint(3,4, _0T1, covariance);
-  fg.addConstraint(4,5, _0T1, covariance);
-  fg.addConstraint(5,0, _0T1, covariance);
+  fg.addRelativePose(0,1, _0T1, covariance);
+  fg.addRelativePose(1,2, _0T1, covariance);
+  fg.addRelativePose(2,3, _0T1, covariance);
+  fg.addRelativePose(3,4, _0T1, covariance);
+  fg.addRelativePose(4,5, _0T1, covariance);
+  fg.addRelativePose(5,0, _0T1, covariance);
 
   // Create initial config
   Values initial;
@@ -121,7 +121,7 @@ TEST( Pose3Factor, error )
 
 	// Create factor
 	SharedNoiseModel I6(noiseModel::Unit::Create(6));
-	pose3SLAM::Constraint factor(1, 2, z, I6);
+	BetweenFactor<Pose3> factor(1, 2, z, I6);
 
 	// Create config
 	Values x;

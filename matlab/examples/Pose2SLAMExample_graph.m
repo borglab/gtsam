@@ -18,7 +18,7 @@ initial.print(sprintf('Initial estimate:\n'));
 %% Add a Gaussian prior on pose x_1
 priorMean = gtsamPose2(0.0, 0.0, 0.0); % prior mean is at origin
 priorNoise = gtsamnoiseModelDiagonal_Sigmas([0.01; 0.01; 0.01]);
-graph.addPrior(0, priorMean, priorNoise); % add directly to graph
+graph.addPosePrior(0, priorMean, priorNoise); % add directly to graph
 
 %% Plot Initial Estimate
 figure(1);clf

@@ -54,7 +54,7 @@ int main(int argc, char* argv[]) {
   	newFactors.addPosePrior(X(0), data.poses[0], data.noiseX);
 
   	// Second pose with odometry measurement
-  	newFactors.addOdometry(X(0), X(1), data.odometry, data.noiseX);
+  	newFactors.addRelativePose(X(0), X(1), data.odometry, data.noiseX);
 
   	// Visual measurements at both poses
   	for (size_t i=0; i<2; ++i) {
@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
   	visualSLAM::Graph newFactors;
   	// Factor for odometry measurements, simulated by adding Gaussian noise to the ground-truth.
   	Pose3 odoMeasurement =  data.odometry;
-  	newFactors.addOdometry(X(i-1), X(i), data.odometry, data.noiseX);
+  	newFactors.addRelativePose(X(i-1), X(i), data.odometry, data.noiseX);
   	// Factors for visual measurements
   	for (size_t j=0; j<data.z[i].size(); ++j) {
   		newFactors.addMeasurement(data.z[i][j], data.noiseZ, X(i), L(j), data.sK);

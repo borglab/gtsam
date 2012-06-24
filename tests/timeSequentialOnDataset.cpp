@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
 
   // Add a prior on the first pose
   if (soft_prior)
-  	data.first->addPrior(0, Pose2(), noiseModel::Isotropic::Sigma(Pose2::Dim(), 0.0005));
+  	data.first->addPosePrior(0, Pose2(), noiseModel::Isotropic::Sigma(Pose2::Dim(), 0.0005));
   else
   	data.first->addPoseConstraint(0, Pose2());
 

@@ -41,7 +41,7 @@ TEST(testNonlinearISAM, markov_chain ) {
 	Pose2 z(1.0, 2.0, 0.1);
 	for (size_t i=1; i<=nrPoses; ++i) {
 		Graph new_factors;
-		new_factors.addOdometry(i-1, i, z, model);
+		new_factors.addRelativePose(i-1, i, z, model);
 		planarSLAM::Values new_init;
 
 		// perform a check on changing orderings

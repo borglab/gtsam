@@ -20,12 +20,12 @@ fg = pose2SLAMGraph;
 fg.addPoseConstraint(0, p0);
 delta = p0.between(p1);
 covariance = gtsamnoiseModelDiagonal_Sigmas([0.05; 0.05; 5*pi/180]);
-fg.addOdometry(0,1, delta, covariance);
-fg.addOdometry(1,2, delta, covariance);
-fg.addOdometry(2,3, delta, covariance);
-fg.addOdometry(3,4, delta, covariance);
-fg.addOdometry(4,5, delta, covariance);
-fg.addOdometry(5,0, delta, covariance);
+fg.addRelativePose(0,1, delta, covariance);
+fg.addRelativePose(1,2, delta, covariance);
+fg.addRelativePose(2,3, delta, covariance);
+fg.addRelativePose(3,4, delta, covariance);
+fg.addRelativePose(4,5, delta, covariance);
+fg.addRelativePose(5,0, delta, covariance);
 
 %% Create initial config
 initial = pose2SLAMValues;

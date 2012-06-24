@@ -32,18 +32,18 @@ int main(int argc, char** argv) {
 	// 2a. Add Gaussian prior
 	Pose2 priorMean(0.0, 0.0, 0.0); // prior at origin
 	SharedDiagonal priorNoise = Diagonal::Sigmas(Vector_(3, 0.3, 0.3, 0.1));
-	graph.addPrior(1, priorMean, priorNoise);
+	graph.addPosePrior(1, priorMean, priorNoise);
 
 	// 2b. Add odometry factors
 	SharedDiagonal odometryNoise = Diagonal::Sigmas(Vector_(3, 0.2, 0.2, 0.1));
-	graph.addOdometry(1, 2, Pose2(2.0, 0.0, 0.0), odometryNoise);
-	graph.addOdometry(2, 3, Pose2(2.0, 0.0, M_PI_2), odometryNoise);
-	graph.addOdometry(3, 4, Pose2(2.0, 0.0, M_PI_2), odometryNoise);
-	graph.addOdometry(4, 5, Pose2(2.0, 0.0, M_PI_2), odometryNoise);
+	graph.addRelativePose(1, 2, Pose2(2.0, 0.0, 0.0), odometryNoise);
+	graph.addRelativePose(2, 3, Pose2(2.0, 0.0, M_PI_2), odometryNoise);
+	graph.addRelativePose(3, 4, Pose2(2.0, 0.0, M_PI_2), odometryNoise);
+	graph.addRelativePose(4, 5, Pose2(2.0, 0.0, M_PI_2), odometryNoise);
 
 	// 2c. Add pose constraint
 	SharedDiagonal model = Diagonal::Sigmas(Vector_(3, 0.2, 0.2, 0.1));
-	graph.addConstraint(5, 2, Pose2(2.0, 0.0, M_PI_2), model);
+	graph.addRelativePose(5, 2, Pose2(2.0, 0.0, M_PI_2), model);
 
 	// print
 	graph.print("\nFactor graph:\n");

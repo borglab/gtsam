@@ -96,8 +96,8 @@ TEST( AntiFactor, EquivalentBayesNet)
   SharedNoiseModel sigma(noiseModel::Unit::Create(Pose3::Dim()));
 
 	boost::shared_ptr<pose3SLAM::Graph> graph(new pose3SLAM::Graph());
-	graph->addPrior(1, pose1, sigma);
-	graph->addConstraint(1, 2, pose1.between(pose2), sigma);
+	graph->addPosePrior(1, pose1, sigma);
+	graph->addRelativePose(1, 2, pose1.between(pose2), sigma);
 
 	// Create a configuration corresponding to the ground truth
 	boost::shared_ptr<Values> values(new Values());
@@ -115,7 +115,7 @@ TEST( AntiFactor, EquivalentBayesNet)
   VectorValues expectedDeltas = optimize(*expectedBayesNet);
 
 	// Add an additional factor between Pose1 and Pose2
-  pose3SLAM::Constraint::shared_ptr f1(new pose3SLAM::Constraint(1, 2, z, sigma));
+  BetweenFactor<Pose3>::shared_ptr f1(new BetweenFactor<Pose3>(1, 2, z, sigma));
   graph->push_back(f1);
 
   // Add the corresponding AntiFactor between Pose1 and Pose2

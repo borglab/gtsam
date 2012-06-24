@@ -53,7 +53,7 @@ ISAM2 createSlamlikeISAM2(
   // Add a prior at time 0 and update isam
   {
     planarSLAM::Graph newfactors;
-    newfactors.addPrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
+    newfactors.addPosePrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -66,7 +66,7 @@ ISAM2 createSlamlikeISAM2(
   // Add odometry from time 0 to time 5
   for( ; i<5; ++i) {
     planarSLAM::Graph newfactors;
-    newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -79,7 +79,7 @@ ISAM2 createSlamlikeISAM2(
   // Add odometry from time 5 to 6 and landmark measurement at time 5
   {
     planarSLAM::Graph newfactors;
-    newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
     newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
     fullgraph.push_back(newfactors);
@@ -99,7 +99,7 @@ ISAM2 createSlamlikeISAM2(
   // Add odometry from time 6 to time 10
   for( ; i<10; ++i) {
     planarSLAM::Graph newfactors;
-    newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -112,7 +112,7 @@ ISAM2 createSlamlikeISAM2(
   // Add odometry from time 10 to 11 and landmark measurement at time 10
   {
     planarSLAM::Graph newfactors;
-    newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
     newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
     fullgraph.push_back(newfactors);
@@ -257,7 +257,7 @@ TEST_UNSAFE(ISAM2, AddVariables) {
 //
 //  Ordering ordering; ordering += (0), (0), (1);
 //  planarSLAM::Graph graph;
-//  graph.addPrior((0), Pose2(), noiseModel::Unit::Create(Pose2::dimension));
+//  graph.addPosePrior((0), Pose2(), noiseModel::Unit::Create(Pose2::dimension));
 //  graph.addRange((0), (0), 1.0, noiseModel::Unit::Create(1));
 //
 //  FastSet<Index> expected;
@@ -364,7 +364,7 @@ TEST(ISAM2, slamlike_solution_gaussnewton)
   // Add a prior at time 0 and update isam
   {
     planarSLAM::Graph newfactors;
-    newfactors.addPrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
+    newfactors.addPosePrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -379,7 +379,7 @@ TEST(ISAM2, slamlike_solution_gaussnewton)
   // Add odometry from time 0 to time 5
   for( ; i<5; ++i) {
     planarSLAM::Graph newfactors;
-    newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -392,7 +392,7 @@ TEST(ISAM2, slamlike_solution_gaussnewton)
   // Add odometry from time 5 to 6 and landmark measurement at time 5
   {
     planarSLAM::Graph newfactors;
-    newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
     newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
     fullgraph.push_back(newfactors);
@@ -412,7 +412,7 @@ TEST(ISAM2, slamlike_solution_gaussnewton)
   // Add odometry from time 6 to time 10
   for( ; i<10; ++i) {
     planarSLAM::Graph newfactors;
-    newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -425,7 +425,7 @@ TEST(ISAM2, slamlike_solution_gaussnewton)
   // Add odometry from time 10 to 11 and landmark measurement at time 10
   {
     planarSLAM::Graph newfactors;
-    newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
     newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
     fullgraph.push_back(newfactors);
@@ -484,7 +484,7 @@ TEST(ISAM2, slamlike_solution_dogleg)
   // Add a prior at time 0 and update isam
   {
     planarSLAM::Graph newfactors;
-    newfactors.addPrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
+    newfactors.addPosePrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -499,7 +499,7 @@ TEST(ISAM2, slamlike_solution_dogleg)
   // Add odometry from time 0 to time 5
   for( ; i<5; ++i) {
     planarSLAM::Graph newfactors;
-    newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -512,7 +512,7 @@ TEST(ISAM2, slamlike_solution_dogleg)
   // Add odometry from time 5 to 6 and landmark measurement at time 5
   {
     planarSLAM::Graph newfactors;
-    newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
     newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
     fullgraph.push_back(newfactors);
@@ -532,7 +532,7 @@ TEST(ISAM2, slamlike_solution_dogleg)
   // Add odometry from time 6 to time 10
   for( ; i<10; ++i) {
     planarSLAM::Graph newfactors;
-    newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -545,7 +545,7 @@ TEST(ISAM2, slamlike_solution_dogleg)
   // Add odometry from time 10 to 11 and landmark measurement at time 10
   {
     planarSLAM::Graph newfactors;
-    newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
     newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
     fullgraph.push_back(newfactors);
@@ -604,7 +604,7 @@ TEST(ISAM2, slamlike_solution_gaussnewton_qr)
   // Add a prior at time 0 and update isam
   {
     planarSLAM::Graph newfactors;
-    newfactors.addPrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
+    newfactors.addPosePrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -619,7 +619,7 @@ TEST(ISAM2, slamlike_solution_gaussnewton_qr)
   // Add odometry from time 0 to time 5
   for( ; i<5; ++i) {
     planarSLAM::Graph newfactors;
-    newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -632,7 +632,7 @@ TEST(ISAM2, slamlike_solution_gaussnewton_qr)
   // Add odometry from time 5 to 6 and landmark measurement at time 5
   {
     planarSLAM::Graph newfactors;
-    newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
     newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
     fullgraph.push_back(newfactors);
@@ -652,7 +652,7 @@ TEST(ISAM2, slamlike_solution_gaussnewton_qr)
   // Add odometry from time 6 to time 10
   for( ; i<10; ++i) {
     planarSLAM::Graph newfactors;
-    newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -665,7 +665,7 @@ TEST(ISAM2, slamlike_solution_gaussnewton_qr)
   // Add odometry from time 10 to 11 and landmark measurement at time 10
   {
     planarSLAM::Graph newfactors;
-    newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
     newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
     fullgraph.push_back(newfactors);
@@ -724,7 +724,7 @@ TEST(ISAM2, slamlike_solution_dogleg_qr)
   // Add a prior at time 0 and update isam
   {
     planarSLAM::Graph newfactors;
-    newfactors.addPrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
+    newfactors.addPosePrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -739,7 +739,7 @@ TEST(ISAM2, slamlike_solution_dogleg_qr)
   // Add odometry from time 0 to time 5
   for( ; i<5; ++i) {
     planarSLAM::Graph newfactors;
-    newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -752,7 +752,7 @@ TEST(ISAM2, slamlike_solution_dogleg_qr)
   // Add odometry from time 5 to 6 and landmark measurement at time 5
   {
     planarSLAM::Graph newfactors;
-    newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
     newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
     fullgraph.push_back(newfactors);
@@ -772,7 +772,7 @@ TEST(ISAM2, slamlike_solution_dogleg_qr)
   // Add odometry from time 6 to time 10
   for( ; i<10; ++i) {
     planarSLAM::Graph newfactors;
-    newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -785,7 +785,7 @@ TEST(ISAM2, slamlike_solution_dogleg_qr)
   // Add odometry from time 10 to 11 and landmark measurement at time 10
   {
     planarSLAM::Graph newfactors;
-    newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
     newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
     fullgraph.push_back(newfactors);
@@ -941,7 +941,7 @@ TEST(ISAM2, removeFactors)
   // Add a prior at time 0 and update isam
   {
     planarSLAM::Graph newfactors;
-    newfactors.addPrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
+    newfactors.addPosePrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -956,7 +956,7 @@ TEST(ISAM2, removeFactors)
   // Add odometry from time 0 to time 5
   for( ; i<5; ++i) {
     planarSLAM::Graph newfactors;
-    newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -969,7 +969,7 @@ TEST(ISAM2, removeFactors)
   // Add odometry from time 5 to 6 and landmark measurement at time 5
   {
     planarSLAM::Graph newfactors;
-    newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
     newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
     fullgraph.push_back(newfactors);
@@ -989,7 +989,7 @@ TEST(ISAM2, removeFactors)
   // Add odometry from time 6 to time 10
   for( ; i<10; ++i) {
     planarSLAM::Graph newfactors;
-    newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -1002,7 +1002,7 @@ TEST(ISAM2, removeFactors)
   // Add odometry from time 10 to 11 and landmark measurement at time 10
   {
     planarSLAM::Graph newfactors;
-    newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
     newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
     fullgraph.push_back(newfactors[0]);
@@ -1130,7 +1130,7 @@ TEST(ISAM2, constrained_ordering)
   // Add a prior at time 0 and update isam
   {
     planarSLAM::Graph newfactors;
-    newfactors.addPrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
+    newfactors.addPosePrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -1145,7 +1145,7 @@ TEST(ISAM2, constrained_ordering)
   // Add odometry from time 0 to time 5
   for( ; i<5; ++i) {
     planarSLAM::Graph newfactors;
-    newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -1161,7 +1161,7 @@ TEST(ISAM2, constrained_ordering)
   // Add odometry from time 5 to 6 and landmark measurement at time 5
   {
     planarSLAM::Graph newfactors;
-    newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
     newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
     fullgraph.push_back(newfactors);
@@ -1181,7 +1181,7 @@ TEST(ISAM2, constrained_ordering)
   // Add odometry from time 6 to time 10
   for( ; i<10; ++i) {
     planarSLAM::Graph newfactors;
-    newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -1194,7 +1194,7 @@ TEST(ISAM2, constrained_ordering)
   // Add odometry from time 10 to 11 and landmark measurement at time 10
   {
     planarSLAM::Graph newfactors;
-    newfactors.addOdometry(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
     newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
     fullgraph.push_back(newfactors);

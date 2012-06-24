@@ -25,19 +25,19 @@ graph = pose2SLAMGraph;
 % gaussian for prior
 priorMean = gtsamPose2(0.0, 0.0, 0.0); % prior at origin
 priorNoise = gtsamnoiseModelDiagonal_Sigmas([0.3; 0.3; 0.1]);
-graph.addPrior(1, priorMean, priorNoise); % add directly to graph
+graph.addPosePrior(1, priorMean, priorNoise); % add directly to graph
 
 %% Add odometry
 % general noisemodel for odometry
 odometryNoise = gtsamnoiseModelDiagonal_Sigmas([0.2; 0.2; 0.1]);
-graph.addOdometry(1, 2, gtsamPose2(2.0, 0.0, 0.0 ), odometryNoise);
-graph.addOdometry(2, 3, gtsamPose2(2.0, 0.0, pi/2), odometryNoise);
-graph.addOdometry(3, 4, gtsamPose2(2.0, 0.0, pi/2), odometryNoise);
-graph.addOdometry(4, 5, gtsamPose2(2.0, 0.0, pi/2), odometryNoise);
+graph.addRelativePose(1, 2, gtsamPose2(2.0, 0.0, 0.0 ), odometryNoise);
+graph.addRelativePose(2, 3, gtsamPose2(2.0, 0.0, pi/2), odometryNoise);
+graph.addRelativePose(3, 4, gtsamPose2(2.0, 0.0, pi/2), odometryNoise);
+graph.addRelativePose(4, 5, gtsamPose2(2.0, 0.0, pi/2), odometryNoise);
 
 %% Add pose constraint
 model = gtsamnoiseModelDiagonal_Sigmas([0.2; 0.2; 0.1]);
-graph.addConstraint(5, 2, gtsamPose2(2.0, 0.0, pi/2), model);
+graph.addRelativePose(5, 2, gtsamPose2(2.0, 0.0, pi/2), model);
 
 %% Initialize to noisy points
 initialEstimate = pose2SLAMValues;
@@ -48,8 +48,8 @@ initialEstimate.insertPose(4, gtsamPose2(4.0, 2.0, pi  ));
 initialEstimate.insertPose(5, gtsamPose2(2.1, 2.1,-pi/2));
 
 %% Optimize using Levenberg-Marquardt optimization with an ordering from colamd
-result = graph.optimize(initialEstimate);
-resultSPCG = graph.optimizeSPCG(initialEstimate);
+result = graph.optimize(initialEstimate,0);
+resultSPCG = graph.optimizeSPCG(initialEstimate,0);
 
 %% Plot Covariance Ellipses
 marginals = graph.marginals(result);

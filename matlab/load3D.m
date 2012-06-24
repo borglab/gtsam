@@ -41,7 +41,7 @@ for i=1:n
                 t = gtsamPoint3(e{4}, e{5}, e{6});
                 R = gtsamRot3_ypr(e{9}, e{8}, e{7});
                 dpose = gtsamPose3(R,t);
-                graph.addConstraint(i1, i2, dpose, model);
+                graph.addRelativePose(i1, i2, dpose, model);
                 if successive
                     if i2>i1
                         initial.insertPose(i2,initial.pose(i1).compose(dpose));

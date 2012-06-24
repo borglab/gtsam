@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <gtsam/slam/pose2SLAM.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/RangeFactor.h>
@@ -33,75 +34,50 @@ namespace planarSLAM {
   using namespace gtsam;
 
   /*
-   * List of typedefs for factors
-   */
-
-  /// A hard constraint for poses to enforce particular values
-  typedef NonlinearEquality<Pose2> Constraint;
-  /// A prior factor to bias the value of a pose
-  typedef PriorFactor<Pose2> Prior;
-  /// A factor between two poses set with a Pose2
-  typedef BetweenFactor<Pose2> Odometry;
-  /// A factor between a pose and a point to express difference in rotation (set with a Rot2)
-  typedef BearingFactor<Pose2, Point2> Bearing;
-  /// A factor between a pose and a point to express distance between them (set with a double)
-  typedef RangeFactor<Pose2, Point2> Range;
-  /// A factor between a pose and a point to express difference in rotation and location
-  typedef BearingRangeFactor<Pose2, Point2> BearingRange;
-
-  /*
-   * Values class, inherited from Values, mainly used as a convenience for MATLAB wrapper
+   * Values class, inherited from pose2SLAM::Values, mainly used as a convenience for MATLAB wrapper
    * @addtogroup SLAM
    */
-  struct Values: public gtsam::Values {
+  struct Values: public pose2SLAM::Values {
 
     /// Default constructor
     Values() {}
 
     /// Copy constructor
     Values(const gtsam::Values& values) :
-      gtsam::Values(values) {
+    	pose2SLAM::Values(values) {
     }
-
-    /// get a pose
-    Pose2 pose(Key i) const { return at<Pose2>(i); }
 
     /// get a point
     Point2 point(Key j) const { return at<Point2>(j); }
 
-    /// insert a pose
-    void insertPose(Key i, const Pose2& pose) { insert(i, pose); }
-
     /// insert a point
     void insertPoint(Key j, const Point2& point) { insert(j, point); }
 
-    /// update a pose
-    void updatePose(Key i, const Pose2& pose) { update(i, pose); }
-
     /// update a point
     void updatePoint(Key j, const Point2& point) { update(j, point); }
+
+    /// get all [x,y] coordinates in a 2*n matrix
+    Matrix points() const;
 };
 
   /**
    * Graph class, inherited from NonlinearFactorGraph, used as a convenience for MATLAB wrapper
    * @addtogroup SLAM
    */
-  struct Graph: public NonlinearFactorGraph {
+  struct Graph: public pose2SLAM::Graph {
 
     /// Default constructor for a NonlinearFactorGraph
     Graph(){}
 
     /// Creates a NonlinearFactorGraph based on another NonlinearFactorGraph
-    Graph(const NonlinearFactorGraph& graph);
+    Graph(const NonlinearFactorGraph& graph):
+  		pose2SLAM::Graph(graph) {}
 
-    /// Biases the value of pose key with Pose2 p given a noise model
-    void addPrior(Key i, const Pose2& pose, const SharedNoiseModel& noiseModel);
+    /// Creates a hard constraint on a point
+    void addPointConstraint(Key j, const Point2& p);
 
-    /// Creates a hard constraint on the ith pose
-    void addPoseConstraint(Key i, const Pose2& pose);
-
-    /// Creates an odometry factor between poses with keys i1 and i2
-    void addOdometry(Key i1, Key i2, const Pose2& odometry, const SharedNoiseModel& model);
+    /// Adds a prior with mean p and given noise model on point j
+    void addPointPrior(Key j, const Point2& p, const SharedNoiseModel& model);
 
     /// Creates a bearing measurement from pose i to point j
     void addBearing(Key i, Key j, const Rot2& bearing, const SharedNoiseModel& model);
@@ -111,16 +87,21 @@ namespace planarSLAM {
 
     /// Creates a range/bearing measurement from pose i to point j
     void addBearingRange(Key i, Key j, const Rot2& bearing, double range, const SharedNoiseModel& model);
-
-    /// Optimize
-    Values optimize(const Values& initialEstimate) const;
-
-    /// Return a Marginals object
-    Marginals marginals(const Values& solution) const {
-    	return Marginals(*this,solution);
-    }
   };
 
 } // planarSLAM
+
+
+/**
+ * Backwards compatibility and wrap use only, avoid using
+ */
+namespace planarSLAM {
+	typedef gtsam::NonlinearEquality<Pose2> Constraint; ///< \deprecated typedef for backwards compatibility
+	typedef gtsam::PriorFactor<Pose2> Prior; ///< \deprecated typedef for backwards compatibility
+	typedef gtsam::BetweenFactor<Pose2> Odometry; ///< \deprecated typedef for backwards compatibility
+	typedef gtsam::BearingFactor<Pose2, Point2> Bearing; ///< \deprecated typedef for backwards compatibility
+	typedef gtsam::RangeFactor<Pose2, Point2> Range; ///< \deprecated typedef for backwards compatibility
+	typedef gtsam::BearingRangeFactor<Pose2, Point2> BearingRange; ///< \deprecated typedef for backwards compatibility
+}
 
 

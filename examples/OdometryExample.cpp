@@ -42,13 +42,13 @@ int main(int argc, char** argv) {
 	// add a Gaussian prior on pose x_1
 	Pose2 priorMean(0.0, 0.0, 0.0); // prior mean is at origin
 	SharedDiagonal priorNoise = Diagonal::Sigmas(Vector_(3, 0.3, 0.3, 0.1)); // 30cm std on x,y, 0.1 rad on theta
-	graph.addPrior(1, priorMean, priorNoise); // add directly to graph
+	graph.addPosePrior(1, priorMean, priorNoise); // add directly to graph
 
 	// add two odometry factors
 	Pose2 odometry(2.0, 0.0, 0.0); // create a measurement for both factors (the same in this case)
 	SharedDiagonal odometryNoise = Diagonal::Sigmas(Vector_(3, 0.2, 0.2, 0.1)); // 20cm std on x,y, 0.1 rad on theta
-	graph.addOdometry(1, 2, odometry, odometryNoise);
-	graph.addOdometry(2, 3, odometry, odometryNoise);
+	graph.addRelativePose(1, 2, odometry, odometryNoise);
+	graph.addRelativePose(2, 3, odometry, odometryNoise);
 
 	// print
 	graph.print("\nFactor graph:\n");

@@ -42,51 +42,38 @@ namespace pose3SLAM {
   }
 
   /* ************************************************************************* */
-	Vector Values::xs() const {
-		size_t j=0;
-		Vector result(size());
-		ConstFiltered<Pose3> poses = filter<Pose3>();
-		BOOST_FOREACH(const ConstFiltered<Pose3>::KeyValuePair& keyValue, poses)
-			result(j++) = keyValue.value.x();
-		return result;
-	}
+  Matrix Values::translations() const {
+    size_t j=0;
+    ConstFiltered<Pose3> poses = filter<Pose3>();
+    Matrix result(poses.size(),3);
+    BOOST_FOREACH(const ConstFiltered<Pose3>::KeyValuePair& keyValue, poses)
+      result.row(j++) = keyValue.value.translation().vector();
+    return result;
+  }
 
   /* ************************************************************************* */
-	Vector Values::ys() const {
-		size_t j=0;
-		Vector result(size());
-		ConstFiltered<Pose3> poses = filter<Pose3>();
-		BOOST_FOREACH(const ConstFiltered<Pose3>::KeyValuePair& keyValue, poses)
-			result(j++) = keyValue.value.y();
-		return result;
-	}
-
-  /* ************************************************************************* */
-	Vector Values::zs() const {
-		size_t j=0;
-		Vector result(size());
-		ConstFiltered<Pose3> poses = filter<Pose3>();
-		BOOST_FOREACH(const ConstFiltered<Pose3>::KeyValuePair& keyValue, poses)
-			result(j++) = keyValue.value.z();
-		return result;
-	}
-
-  /* ************************************************************************* */
-  void Graph::addPrior(Key i, const Pose3& p, const SharedNoiseModel& model) {
-    sharedFactor factor(new Prior(i, p, model));
+  void Graph::addPoseConstraint(Key i, const Pose3& p) {
+    sharedFactor factor(new NonlinearEquality<Pose3>(i, p));
     push_back(factor);
   }
 
   /* ************************************************************************* */
-  void Graph::addConstraint(Key i1, Key i2, const Pose3& z, const SharedNoiseModel& model) {
-    sharedFactor factor(new Constraint(i1, i2, z, model));
+  void Graph::addPosePrior(Key i, const Pose3& p, const SharedNoiseModel& model) {
+    sharedFactor factor(new PriorFactor<Pose3>(i, p, model));
     push_back(factor);
   }
 
   /* ************************************************************************* */
-  void Graph::addHardConstraint(Key i, const Pose3& p) {
-    sharedFactor factor(new HardConstraint(i, p));
-    push_back(factor);
+  void Graph::addRelativePose(Key i1, Key i2, const Pose3& z, const SharedNoiseModel& model) {
+    push_back(boost::make_shared<BetweenFactor<Pose3> >(i1, i2, z, model));
+  }
+
+  /* ************************************************************************* */
+  Values Graph::optimize(const Values& initialEstimate, size_t verbosity) const {
+    LevenbergMarquardtParams params;
+    params.verbosity = (NonlinearOptimizerParams::Verbosity)verbosity;
+    LevenbergMarquardtOptimizer optimizer(*this, initialEstimate,params);
+    return optimizer.optimize();
   }
 
   /* ************************************************************************* */

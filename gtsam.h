@@ -989,9 +989,7 @@ class Values {
 	void insertPose(size_t key, const gtsam::Pose2& pose);
 	void updatePose(size_t key, const gtsam::Pose2& pose);
 	gtsam::Pose2 pose(size_t i);
-  Vector xs() const;
-  Vector ys() const;
-  Vector thetas() const;
+  Matrix poses() const;
 };
 
 class Graph {
@@ -1014,12 +1012,11 @@ class Graph {
 			const gtsam::Ordering& ordering) const;
 
 	// pose2SLAM-specific
-	void addPrior(size_t key, const gtsam::Pose2& pose, const gtsam::noiseModel::Base* noiseModel);
 	void addPoseConstraint(size_t key, const gtsam::Pose2& pose);
-	void addOdometry(size_t key1, size_t key2, const gtsam::Pose2& odometry, const gtsam::noiseModel::Base* noiseModel);
-	void addConstraint(size_t key1, size_t key2, const gtsam::Pose2& odometry, const gtsam::noiseModel::Base* noiseModel);
-	pose2SLAM::Values optimize(const pose2SLAM::Values& initialEstimate) const;
-	pose2SLAM::Values optimizeSPCG(const pose2SLAM::Values& initialEstimate) const;
+	void addPosePrior(size_t key, const gtsam::Pose2& pose, const gtsam::noiseModel::Base* noiseModel);
+	void addRelativePose(size_t key1, size_t key2, const gtsam::Pose2& odometry, const gtsam::noiseModel::Base* noiseModel);
+	pose2SLAM::Values optimize(const pose2SLAM::Values& initialEstimate, size_t verbosity) const;
+	pose2SLAM::Values optimizeSPCG(const pose2SLAM::Values& initialEstimate, size_t verbosity) const;
 	gtsam::Marginals marginals(const pose2SLAM::Values& solution) const;
 };
 
@@ -1036,13 +1033,12 @@ class Values {
 	Values();
 	size_t size() const;
 	void print(string s) const;
+
 	static pose3SLAM::Values Circle(size_t n, double R);
 	void insertPose(size_t key, const gtsam::Pose3& pose);
 	void updatePose(size_t key, const gtsam::Pose3& pose);
 	gtsam::Pose3 pose(size_t i);
-  Vector xs() const;
-  Vector ys() const;
-  Vector zs() const;
+  Matrix translations() const;
 };
 
 class Graph {
@@ -1065,10 +1061,11 @@ class Graph {
 			const gtsam::Ordering& ordering) const;
 
 	// pose3SLAM-specific
-	void addPrior(size_t key, const gtsam::Pose3& p, const gtsam::noiseModel::Base* model);
-	void addConstraint(size_t key1, size_t key2, const gtsam::Pose3& z, const gtsam::noiseModel::Base* model);
-	void addHardConstraint(size_t i, const gtsam::Pose3& p);
-	pose3SLAM::Values optimize(const pose3SLAM::Values& initialEstimate) const;
+	void addPoseConstraint(size_t i, const gtsam::Pose3& p);
+	void addPosePrior(size_t key, const gtsam::Pose3& p, const gtsam::noiseModel::Base* model);
+	void addRelativePose(size_t key1, size_t key2, const gtsam::Pose3& z, const gtsam::noiseModel::Base* model);
+	pose3SLAM::Values optimize(const pose3SLAM::Values& initialEstimate, size_t verbosity) const;
+	// FIXME gtsam::LevenbergMarquardtOptimizer optimizer(const pose3SLAM::Values& initialEstimate, const gtsam::LevenbergMarquardtParams& parameters) const;
 	gtsam::Marginals marginals(const pose3SLAM::Values& solution) const;
 };
 
@@ -1085,12 +1082,17 @@ class Values {
 	Values();
 	size_t size() const;
 	void print(string s) const;
+
+	static planarSLAM::Values Circle(size_t n, double R);
 	void insertPose(size_t key, const gtsam::Pose2& pose);
-	void insertPoint(size_t key, const gtsam::Point2& point);
 	void updatePose(size_t key, const gtsam::Pose2& pose);
+	gtsam::Pose2 pose(size_t i);
+  Matrix poses() const;
+
+  void insertPoint(size_t key, const gtsam::Point2& point);
 	void updatePoint(size_t key, const gtsam::Point2& point);
-	gtsam::Pose2 pose(size_t key) const;
 	gtsam::Point2 point(size_t key) const;
+  Matrix points() const;
 };
 
 class Graph {
@@ -1112,15 +1114,20 @@ class Graph {
 	gtsam::GaussianFactorGraph* linearize(const planarSLAM::Values& values,
 			const gtsam::Ordering& ordering) const;
 
-	// planarSLAM-specific
-	void addPrior(size_t key, const gtsam::Pose2& pose, const gtsam::noiseModel::Base* noiseModel);
+	// pose2SLAM-inherited
 	void addPoseConstraint(size_t key, const gtsam::Pose2& pose);
-	void addOdometry(size_t key1, size_t key2, const gtsam::Pose2& odometry, const gtsam::noiseModel::Base* noiseModel);
+	void addPosePrior(size_t key, const gtsam::Pose2& pose, const gtsam::noiseModel::Base* noiseModel);
+	void addRelativePose(size_t key1, size_t key2, const gtsam::Pose2& odometry, const gtsam::noiseModel::Base* noiseModel);
+	planarSLAM::Values optimize(const planarSLAM::Values& initialEstimate, size_t verbosity) const;
+	planarSLAM::Values optimizeSPCG(const planarSLAM::Values& initialEstimate, size_t verbosity) const;
+	gtsam::Marginals marginals(const planarSLAM::Values& solution) const;
+
+	// planarSLAM-specific
+  void addPointConstraint(size_t pointKey, const gtsam::Point2& p);
+  void addPointPrior(size_t pointKey, const gtsam::Point2& p, const gtsam::noiseModel::Base* model);
 	void addBearing(size_t poseKey, size_t pointKey, const gtsam::Rot2& bearing, const gtsam::noiseModel::Base* noiseModel);
 	void addRange(size_t poseKey, size_t pointKey, double range, const gtsam::noiseModel::Base* noiseModel);
 	void addBearingRange(size_t poseKey, size_t pointKey, const gtsam::Rot2& bearing,double range, const gtsam::noiseModel::Base* noiseModel);
-	planarSLAM::Values optimize(const planarSLAM::Values& initialEstimate);
-	gtsam::Marginals marginals(const planarSLAM::Values& solution) const;
 };
 
 class Odometry {
@@ -1142,23 +1149,26 @@ namespace visualSLAM {
 
 class Values {
   Values();
-  void insertPose(size_t key, const gtsam::Pose3& pose);
-  void insertPoint(size_t key, const gtsam::Point3& pose);
-  void updatePose(size_t key, const gtsam::Pose3& pose);
-  void updatePoint(size_t key, const gtsam::Point3& pose);
   size_t size() const;
+  void print(string s) const;
+  bool exists(size_t key);
+  gtsam::KeyVector keys() const; // Note the switch to KeyVector, rather than KeyList
+
+  // pose3SLAM inherited
+	static visualSLAM::Values Circle(size_t n, double R);
+	void insertPose(size_t key, const gtsam::Pose3& pose);
+	void updatePose(size_t key, const gtsam::Pose3& pose);
+	gtsam::Pose3 pose(size_t i);
+  Matrix translations() const;
+
+  // visualSLAM specific
+  void insertPoint(size_t key, const gtsam::Point3& pose);
+  void updatePoint(size_t key, const gtsam::Point3& pose);
   size_t nrPoses() const;
   size_t nrPoints() const;
-  void print(string s) const;
-  gtsam::Pose3 pose(size_t i);
   gtsam::Point3 point(size_t j);
   visualSLAM::Values allPoses() const;
   visualSLAM::Values allPoints() const;
-  gtsam::KeyVector keys() const; // Note the switch to KeyVector, rather than KeyList
-  bool exists(size_t key);
-  Vector xs() const;
-  Vector ys() const;
-  Vector zs() const;
   Matrix points() const;
 };
 
@@ -1179,25 +1189,24 @@ class Graph {
   gtsam::GaussianFactorGraph* linearize(const visualSLAM::Values& values,
       const gtsam::Ordering& ordering) const;
 
+	// pose3SLAM-inherited
+	void addPoseConstraint(size_t i, const gtsam::Pose3& p);
+	void addPosePrior(size_t key, const gtsam::Pose3& p, const gtsam::noiseModel::Base* model);
+	void addRelativePose(size_t key1, size_t key2, const gtsam::Pose3& z, const gtsam::noiseModel::Base* model);
+	visualSLAM::Values optimize(const visualSLAM::Values& initialEstimate, size_t verbosity) const;
+	visualSLAM::LevenbergMarquardtOptimizer optimizer(const visualSLAM::Values& initialEstimate, const gtsam::LevenbergMarquardtParams& parameters) const;
+	gtsam::Marginals marginals(const visualSLAM::Values& solution) const;
+
+	// Priors and constraints
+  void addPointConstraint(size_t pointKey, const gtsam::Point3& p);
+  void addPointPrior(size_t pointKey, const gtsam::Point3& p, const gtsam::noiseModel::Base* model);
+  void addRangeFactor(size_t poseKey, size_t pointKey, double range, const gtsam::noiseModel::Base* model);
+
   // Measurements
   void addMeasurement(const gtsam::Point2& measured, const gtsam::noiseModel::Base* model,
       size_t poseKey, size_t pointKey, const gtsam::Cal3_S2* K);
   void addStereoMeasurement(const gtsam::StereoPoint2& measured, const gtsam::noiseModel::Base* model,
       size_t poseKey, size_t pointKey, const gtsam::Cal3_S2Stereo* K);
-
-  // Constraints
-  void addPoseConstraint(size_t poseKey, const gtsam::Pose3& p);
-  void addPointConstraint(size_t pointKey, const gtsam::Point3& p);
-
-  // Priors
-  void addPosePrior(size_t poseKey, const gtsam::Pose3& p, const gtsam::noiseModel::Base* model);
-  void addPointPrior(size_t pointKey, const gtsam::Point3& p, const gtsam::noiseModel::Base* model);
-  void addRangeFactor(size_t poseKey, size_t pointKey, double range, const gtsam::noiseModel::Base* model);
-  void addOdometry(size_t poseKey1, size_t poseKey2, const gtsam::Pose3& odometry, const gtsam::noiseModel::Base* model);
-
-  visualSLAM::Values optimize(const visualSLAM::Values& initialEstimate, size_t verbosity) const;
-  gtsam::Marginals marginals(const visualSLAM::Values& solution) const;
-  visualSLAM::LevenbergMarquardtOptimizer optimizer(const visualSLAM::Values& initialEstimate, const gtsam::LevenbergMarquardtParams& parameters) const;
 };
 
 class ISAM {
