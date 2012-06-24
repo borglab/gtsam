@@ -181,6 +181,36 @@ TEST( planarSLAM, constructor )
 }
 
 /* ************************************************************************* */
+TEST( planarSLAM, keys_and_view )
+{
+	// create config
+	planarSLAM::Values c;
+	c.insert(i2, x2);
+	c.insert(i3, x3);
+	c.insert(j3, l3);
+	LONGS_EQUAL(2,c.nrPoses());
+	LONGS_EQUAL(1,c.nrPoints());
+	{
+	FastList<Key> expected, actual;
+	expected += j3, i2, i3;
+	actual = c.keys();
+	CHECK(expected == actual);
+	}
+	{
+	FastList<Key> expected, actual;
+	expected += i2, i3;
+	actual = c.poseKeys();
+	CHECK(expected == actual);
+	}
+	{
+	FastList<Key> expected, actual;
+	expected += j3;
+	actual = c.pointKeys();
+	CHECK(expected == actual);
+	}
+}
+
+/* ************************************************************************* */
 int main() {
 	TestResult tr;
 	return TestRegistry::runAllTests(tr);

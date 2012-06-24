@@ -47,14 +47,18 @@ namespace visualSLAM {
     }
 
     /// Constructor from filtered values view of poses
-    Values(const PoseFiltered& view) :
-    	pose3SLAM::Values(view) {
-    }
+    Values(const PoseFiltered& view) : pose3SLAM::Values(view) {}
 
     /// Constructor from filtered values view of points
-    Values(const PointFiltered& view) :
-    	pose3SLAM::Values(view) {
-    }
+    Values(const PointFiltered& view) : pose3SLAM::Values(view) {}
+
+    PoseFiltered allPoses() const { return this->filter<Pose3>(); } ///< pose view
+    size_t  nrPoses()  const { return allPoses().size(); } ///< get number of poses
+    KeyList poseKeys() const { return allPoses().keys(); } ///< get keys to poses only
+
+    PointFiltered allPoints() const { return this->filter<Point3>(); } ///< point view
+    size_t  nrPoints()  const { return allPoints().size(); } ///< get number of points
+    KeyList pointKeys() const { return allPoints().keys(); } ///< get keys to points only
 
     /// insert a point
     void insertPoint(Key j, const Point3& point) { insert(j, point); }
@@ -62,20 +66,8 @@ namespace visualSLAM {
     /// update a point
     void updatePoint(Key j, const Point3& point) { update(j, point); }
 
-    /// get number of poses
-    size_t nrPoses() const;
-
-    /// get number of points
-    size_t nrPoints() const;
-
     /// get a point
     Point3 point(Key j) const { return at<Point3>(j); }
-
-    /// get a const view containing only poses
-    PoseFiltered allPoses() const { return this->filter<Pose3>(); }
-
-    /// get a const view containing only points
-    PointFiltered allPoints() const { return this->filter<Point3>(); }
 
     Matrix points() const; ///< get all point coordinates in a matrix
 

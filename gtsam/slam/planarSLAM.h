@@ -39,6 +39,10 @@ namespace planarSLAM {
    */
   struct Values: public pose2SLAM::Values {
 
+    typedef boost::shared_ptr<Values> shared_ptr;
+    typedef gtsam::Values::ConstFiltered<Pose2> PoseFiltered;
+    typedef gtsam::Values::ConstFiltered<Point2> PointFiltered;
+
     /// Default constructor
     Values() {}
 
@@ -47,14 +51,28 @@ namespace planarSLAM {
     	pose2SLAM::Values(values) {
     }
 
-    /// get a point
-    Point2 point(Key j) const { return at<Point2>(j); }
+    /// Constructor from filtered values view of poses
+    Values(const PoseFiltered& view) : pose2SLAM::Values(view) {}
+
+    /// Constructor from filtered values view of points
+    Values(const PointFiltered& view) : pose2SLAM::Values(view) {}
+
+    PoseFiltered allPoses() const { return this->filter<Pose2>(); } ///< pose view
+    size_t  nrPoses()  const { return allPoses().size(); } ///< get number of poses
+    KeyList poseKeys() const { return allPoses().keys(); } ///< get keys to poses only
+
+    PointFiltered allPoints() const { return this->filter<Point2>(); } ///< point view
+    size_t  nrPoints()  const { return allPoints().size(); } ///< get number of points
+    KeyList pointKeys() const { return allPoints().keys(); } ///< get keys to points only
 
     /// insert a point
     void insertPoint(Key j, const Point2& point) { insert(j, point); }
 
     /// update a point
     void updatePoint(Key j, const Point2& point) { update(j, point); }
+
+    /// get a point
+    Point2 point(Key j) const { return at<Point2>(j); }
 
     /// get all [x,y] coordinates in a 2*n matrix
     Matrix points() const;

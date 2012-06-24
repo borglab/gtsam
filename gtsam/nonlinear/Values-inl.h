@@ -156,6 +156,13 @@ namespace gtsam {
       return i;
     }
 
+    FastList<Key> keys() const {
+      FastList<Key> result;
+      for(const_iterator it = begin(); it != end(); ++it)
+        result.push_back(it->key);
+      return result;
+    }
+
   private:
     friend class Values;
     const_iterator begin_;

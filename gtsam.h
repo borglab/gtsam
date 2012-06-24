@@ -985,6 +985,9 @@ class Values {
 	Values();
 	size_t size() const;
 	void print(string s) const;
+  bool exists(size_t key);
+  gtsam::KeyVector keys() const; // Note the switch to KeyVector, rather than KeyList
+
 	static pose2SLAM::Values Circle(size_t n, double R);
 	void insertPose(size_t key, const gtsam::Pose2& pose);
 	void updatePose(size_t key, const gtsam::Pose2& pose);
@@ -1033,6 +1036,8 @@ class Values {
 	Values();
 	size_t size() const;
 	void print(string s) const;
+  bool exists(size_t key);
+  gtsam::KeyVector keys() const; // Note the switch to KeyVector, rather than KeyList
 
 	static pose3SLAM::Values Circle(size_t n, double R);
 	void insertPose(size_t key, const gtsam::Pose3& pose);
@@ -1082,12 +1087,25 @@ class Values {
 	Values();
 	size_t size() const;
 	void print(string s) const;
+  bool exists(size_t key);
+  gtsam::KeyVector keys() const; // Note the switch to KeyVector, rather than KeyList
 
-	static planarSLAM::Values Circle(size_t n, double R);
+  // inherited from pose2SLAM
+  static planarSLAM::Values Circle(size_t n, double R);
 	void insertPose(size_t key, const gtsam::Pose2& pose);
 	void updatePose(size_t key, const gtsam::Pose2& pose);
 	gtsam::Pose2 pose(size_t i);
   Matrix poses() const;
+
+  // Access to poses
+  planarSLAM::Values allPoses() const;
+  size_t nrPoses() const;
+  gtsam::KeyVector poseKeys() const; // Note the switch to KeyVector, rather than KeyList
+
+  // Access to points
+  planarSLAM::Values allPoints() const;
+  size_t nrPoints() const;
+  gtsam::KeyVector pointKeys() const; // Note the switch to KeyVector, rather than KeyList
 
   void insertPoint(size_t key, const gtsam::Point2& point);
 	void updatePoint(size_t key, const gtsam::Point2& point);
@@ -1161,14 +1179,19 @@ class Values {
 	gtsam::Pose3 pose(size_t i);
   Matrix translations() const;
 
-  // visualSLAM specific
+  // Access to poses
+  visualSLAM::Values allPoses() const;
+  size_t nrPoses() const;
+  gtsam::KeyVector poseKeys() const; // Note the switch to KeyVector, rather than KeyList
+
+  // Access to points
+  visualSLAM::Values allPoints() const;
+  size_t nrPoints() const;
+  gtsam::KeyVector pointKeys() const; // Note the switch to KeyVector, rather than KeyList
+
   void insertPoint(size_t key, const gtsam::Point3& pose);
   void updatePoint(size_t key, const gtsam::Point3& pose);
-  size_t nrPoses() const;
-  size_t nrPoints() const;
   gtsam::Point3 point(size_t j);
-  visualSLAM::Values allPoses() const;
-  visualSLAM::Values allPoints() const;
   Matrix points() const;
 };
 

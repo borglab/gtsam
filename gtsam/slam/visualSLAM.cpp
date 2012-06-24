@@ -25,23 +25,9 @@ using boost::make_shared;
 namespace visualSLAM {
 
   /* ************************************************************************* */
-  size_t Values::nrPoses() const {
-  	// TODO, is there a better way?
-    ConstFiltered<Pose3> poses = filter<Pose3>();
-    return poses.size();
-  }
-
-  /* ************************************************************************* */
-  size_t Values::nrPoints() const {
-  	// TODO, is there a better way?
-    ConstFiltered<Point3> points = filter<Point3>();
-    return points.size();
-  }
-
-  /* ************************************************************************* */
   Matrix Values::points() const {
     size_t j=0;
-    ConstFiltered<Point3> points = filter<Point3>();
+    ConstFiltered<Point3> points = allPoints();
     Matrix result(points.size(),3);
     BOOST_FOREACH(const ConstFiltered<Point3>::KeyValuePair& keyValue, points)
       result.row(j++) = keyValue.value.vector();
