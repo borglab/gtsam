@@ -49,14 +49,14 @@ namespace gtsam {
 		 *  @param initialEstimate initial estimate of all variables in the graph
 		 *  @param verbosity unsigned specifying verbosity level
 		 */
-		const Values& optimize(const Values& initialEstimate, size_t verbosity = 0) const;
+		Values optimize(const Values& initialEstimate, size_t verbosity = 0) const;
 
 		/**
 		 *  Safely optimize using subgraph preconditioning
 		 *  @param initialEstimate initial estimate of all variables in the graph
 		 *  @param verbosity unsigned specifying verbosity level
 		 */
-		const Values& optimizeSPCG(const Values& initialEstimate, size_t verbosity = 0) const;
+		Values optimizeSPCG(const Values& initialEstimate, size_t verbosity = 0) const;
 
 		/**
 		 *  Return a Marginals object, so you can query marginals

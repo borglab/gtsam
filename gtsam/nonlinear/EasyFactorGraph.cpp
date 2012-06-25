@@ -33,14 +33,14 @@ namespace gtsam {
 		return LevenbergMarquardtOptimizer((*this), initialEstimate, p);
 	}
 
-	const Values& EasyFactorGraph::optimize(const Values& initialEstimate,
+	Values EasyFactorGraph::optimize(const Values& initialEstimate,
 			size_t verbosity) const {
 		LevenbergMarquardtParams p;
 		p.verbosity = (NonlinearOptimizerParams::Verbosity) verbosity;
 		return optimizer(initialEstimate, p).optimizeSafely();
 	}
 
-	const Values& EasyFactorGraph::optimizeSPCG(const Values& initialEstimate,
+	Values EasyFactorGraph::optimizeSPCG(const Values& initialEstimate,
 			size_t verbosity) const {
 		LevenbergMarquardtParams p;
 		p.verbosity = (NonlinearOptimizerParams::Verbosity) verbosity;
