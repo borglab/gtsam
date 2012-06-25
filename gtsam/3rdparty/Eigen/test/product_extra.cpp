@@ -153,11 +153,11 @@ void zero_sized_objects()
 void test_product_extra()
 {
   for(int i = 0; i < g_repeat; i++) {
-    CALL_SUBTEST_1( product_extra(MatrixXf(internal::random<int>(1,320), internal::random<int>(1,320))) );
-    CALL_SUBTEST_2( product_extra(MatrixXd(internal::random<int>(1,320), internal::random<int>(1,320))) );
+    CALL_SUBTEST_1( product_extra(MatrixXf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+    CALL_SUBTEST_2( product_extra(MatrixXd(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
     CALL_SUBTEST_2( mat_mat_scalar_scalar_product() );
-    CALL_SUBTEST_3( product_extra(MatrixXcf(internal::random<int>(1,150), internal::random<int>(1,150))) );
-    CALL_SUBTEST_4( product_extra(MatrixXcd(internal::random<int>(1,150), internal::random<int>(1,150))) );
+    CALL_SUBTEST_3( product_extra(MatrixXcf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2), internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2))) );
+    CALL_SUBTEST_4( product_extra(MatrixXcd(internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2), internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2))) );
     CALL_SUBTEST_5( zero_sized_objects() );
   }
 }

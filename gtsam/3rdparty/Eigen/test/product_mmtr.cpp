@@ -72,9 +72,9 @@ void test_product_mmtr()
 {
   for(int i = 0; i < g_repeat ; i++)
   {
-    CALL_SUBTEST_1((mmtr<float>(internal::random<int>(1,320))));
-    CALL_SUBTEST_2((mmtr<double>(internal::random<int>(1,320))));
-    CALL_SUBTEST_3((mmtr<std::complex<float> >(internal::random<int>(1,200))));
-    CALL_SUBTEST_4((mmtr<std::complex<double> >(internal::random<int>(1,200))));
+    CALL_SUBTEST_1((mmtr<float>(internal::random<int>(1,EIGEN_TEST_MAX_SIZE))));
+    CALL_SUBTEST_2((mmtr<double>(internal::random<int>(1,EIGEN_TEST_MAX_SIZE))));
+    CALL_SUBTEST_3((mmtr<std::complex<float> >(internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2))));
+    CALL_SUBTEST_4((mmtr<std::complex<double> >(internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2))));
   }
 }

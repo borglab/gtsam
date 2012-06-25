@@ -33,8 +33,8 @@ int main()
   bench<Action_atv_product<ublas_interface<REAL_TYPE> > >(MIN_MV,MAX_MV,NB_POINT);
 
   bench<Action_matrix_matrix_product<ublas_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
-  bench<Action_ata_product<ublas_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
-  bench<Action_aat_product<ublas_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
+//   bench<Action_ata_product<ublas_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
+//   bench<Action_aat_product<ublas_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
 
   bench<Action_trisolve<ublas_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
 

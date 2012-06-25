@@ -43,7 +43,7 @@ template<typename ArrayType> void array(const ArrayType& m)
   RowVectorType rv1 = RowVectorType::Random(cols);
 
   Scalar  s1 = internal::random<Scalar>(),
-          s2 = internal::random<Scalar>();          
+          s2 = internal::random<Scalar>();
 
   // scalar addition
   VERIFY_IS_APPROX(m1 + s1, s1 + m1);
@@ -149,6 +149,12 @@ template<typename ArrayType> void comparisons(const ArrayType& m)
   // count
   VERIFY(((m1.abs()+1)>RealScalar(0.1)).count() == rows*cols);
 
+  // and/or
+  VERIFY( (m1<RealScalar(0) && m1>RealScalar(0)).count() == 0);
+  VERIFY( (m1<RealScalar(0) || m1>=RealScalar(0)).count() == rows*cols);
+  RealScalar a = m1.abs().mean();
+  VERIFY( (m1<-a || m1>a).count() == (m1.abs()>a).count());
+
   typedef Array<typename ArrayType::Index, Dynamic, 1> ArrayOfIndices;
 
   // TODO allows colwise/rowwise for array
@@ -169,7 +175,9 @@ template<typename ArrayType> void array_real(const ArrayType& m)
              m2 = ArrayType::Random(rows, cols),
              m3(rows, cols);
 
-  // these these are mostly to check possible compilation issues.
+  Scalar  s1 = internal::random<Scalar>();
+
+  // these tests are mostly to check possible compilation issues.
   VERIFY_IS_APPROX(m1.sin(), std::sin(m1));
   VERIFY_IS_APPROX(m1.sin(), internal::sin(m1));
   VERIFY_IS_APPROX(m1.cos(), std::cos(m1));
@@ -180,7 +188,7 @@ template<typename ArrayType> void array_real(const ArrayType& m)
   VERIFY_IS_APPROX(m1.acos(), internal::acos(m1));
   VERIFY_IS_APPROX(m1.tan(), std::tan(m1));
   VERIFY_IS_APPROX(m1.tan(), internal::tan(m1));
-
+  
   VERIFY_IS_APPROX(internal::cos(m1+RealScalar(3)*m2), internal::cos((m1+RealScalar(3)*m2).eval()));
   VERIFY_IS_APPROX(std::cos(m1+RealScalar(3)*m2), std::cos((m1+RealScalar(3)*m2).eval()));
 
@@ -203,9 +211,67 @@ template<typename ArrayType> void array_real(const ArrayType& m)
 
   VERIFY_IS_APPROX(m1.pow(2), m1.square());
   VERIFY_IS_APPROX(std::pow(m1,2), m1.square());
+
+  ArrayType exponents = ArrayType::Constant(rows, cols, RealScalar(2));
+  VERIFY_IS_APPROX(std::pow(m1,exponents), m1.square());
+
   m3 = m1.abs();
   VERIFY_IS_APPROX(m3.pow(RealScalar(0.5)), m3.sqrt());
   VERIFY_IS_APPROX(std::pow(m3,RealScalar(0.5)), m3.sqrt());
+
+  // scalar by array division
+  const RealScalar tiny = std::sqrt(std::numeric_limits<RealScalar>::epsilon());
+  s1 += Scalar(tiny);
+  m1 += ArrayType::Constant(rows,cols,Scalar(tiny));
+  VERIFY_IS_APPROX(s1/m1, s1 * m1.inverse());
+}
+
+template<typename ArrayType> void array_complex(const ArrayType& m)
+{
+  typedef typename ArrayType::Index Index;
+
+  Index rows = m.rows();
+  Index cols = m.cols();
+
+  ArrayType m1 = ArrayType::Random(rows, cols),
+            m2(rows, cols);
+
+  for (Index i = 0; i < m.rows(); ++i)
+    for (Index j = 0; j < m.cols(); ++j)
+      m2(i,j) = std::sqrt(m1(i,j));
+
+  VERIFY_IS_APPROX(m1.sqrt(), m2);
+  VERIFY_IS_APPROX(m1.sqrt(), std::sqrt(m1));
+  VERIFY_IS_APPROX(m1.sqrt(), internal::sqrt(m1));
+}
+
+template<typename ArrayType> void min_max(const ArrayType& m)
+{
+  typedef typename ArrayType::Index Index;
+  typedef typename ArrayType::Scalar Scalar;
+
+  Index rows = m.rows();
+  Index cols = m.cols();
+
+  ArrayType m1 = ArrayType::Random(rows, cols);
+
+  // min/max with array
+  Scalar maxM1 = m1.maxCoeff();
+  Scalar minM1 = m1.minCoeff();
+
+  VERIFY_IS_APPROX(ArrayType::Constant(rows,cols, minM1), (m1.min)(ArrayType::Constant(rows,cols, minM1)));
+  VERIFY_IS_APPROX(m1, (m1.min)(ArrayType::Constant(rows,cols, maxM1)));
+
+  VERIFY_IS_APPROX(ArrayType::Constant(rows,cols, maxM1), (m1.max)(ArrayType::Constant(rows,cols, maxM1)));
+  VERIFY_IS_APPROX(m1, (m1.max)(ArrayType::Constant(rows,cols, minM1)));
+
+  // min/max with scalar input
+  VERIFY_IS_APPROX(ArrayType::Constant(rows,cols, minM1), (m1.min)( minM1));
+  VERIFY_IS_APPROX(m1, (m1.min)( maxM1));
+
+  VERIFY_IS_APPROX(ArrayType::Constant(rows,cols, maxM1), (m1.max)( maxM1));
+  VERIFY_IS_APPROX(m1, (m1.max)( minM1));
+
 }
 
 void test_array()
@@ -214,22 +280,32 @@ void test_array()
     CALL_SUBTEST_1( array(Array<float, 1, 1>()) );
     CALL_SUBTEST_2( array(Array22f()) );
     CALL_SUBTEST_3( array(Array44d()) );
-    CALL_SUBTEST_4( array(ArrayXXcf(3, 3)) );
-    CALL_SUBTEST_5( array(ArrayXXf(8, 12)) );
-    CALL_SUBTEST_6( array(ArrayXXi(8, 12)) );
+    CALL_SUBTEST_4( array(ArrayXXcf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+    CALL_SUBTEST_5( array(ArrayXXf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+    CALL_SUBTEST_6( array(ArrayXXi(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
   }
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( comparisons(Array<float, 1, 1>()) );
     CALL_SUBTEST_2( comparisons(Array22f()) );
     CALL_SUBTEST_3( comparisons(Array44d()) );
-    CALL_SUBTEST_5( comparisons(ArrayXXf(8, 12)) );
-    CALL_SUBTEST_6( comparisons(ArrayXXi(8, 12)) );
+    CALL_SUBTEST_5( comparisons(ArrayXXf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+    CALL_SUBTEST_6( comparisons(ArrayXXi(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+  }
+  for(int i = 0; i < g_repeat; i++) {
+    CALL_SUBTEST_1( min_max(Array<float, 1, 1>()) );
+    CALL_SUBTEST_2( min_max(Array22f()) );
+    CALL_SUBTEST_3( min_max(Array44d()) );
+    CALL_SUBTEST_5( min_max(ArrayXXf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+    CALL_SUBTEST_6( min_max(ArrayXXi(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
   }
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( array_real(Array<float, 1, 1>()) );
     CALL_SUBTEST_2( array_real(Array22f()) );
     CALL_SUBTEST_3( array_real(Array44d()) );
-    CALL_SUBTEST_5( array_real(ArrayXXf(8, 12)) );
+    CALL_SUBTEST_5( array_real(ArrayXXf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+  }
+  for(int i = 0; i < g_repeat; i++) {
+    CALL_SUBTEST_4( array_complex(ArrayXXcf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
   }
 
   VERIFY((internal::is_same< internal::global_math_functions_filtering_base<int>::type, int >::value));

@@ -151,21 +151,21 @@ int EIGEN_BLAS_FUNC(trmv)(char *uplo, char *opa, char *diag, int *n, RealScalar 
     for(int k=0; k<16; ++k)
       func[k] = 0;
 
-    func[NOTR  | (UP << 2) | (NUNIT << 3)] = (internal::product_triangular_matrix_vector<int,Upper|0,       Scalar,false,Scalar,false,ColMajor>::run);
-    func[TR    | (UP << 2) | (NUNIT << 3)] = (internal::product_triangular_matrix_vector<int,Lower|0,       Scalar,false,Scalar,false,RowMajor>::run);
-    func[ADJ   | (UP << 2) | (NUNIT << 3)] = (internal::product_triangular_matrix_vector<int,Lower|0,       Scalar,Conj, Scalar,false,RowMajor>::run);
+    func[NOTR  | (UP << 2) | (NUNIT << 3)] = (internal::triangular_matrix_vector_product<int,Upper|0,       Scalar,false,Scalar,false,ColMajor>::run);
+    func[TR    | (UP << 2) | (NUNIT << 3)] = (internal::triangular_matrix_vector_product<int,Lower|0,       Scalar,false,Scalar,false,RowMajor>::run);
+    func[ADJ   | (UP << 2) | (NUNIT << 3)] = (internal::triangular_matrix_vector_product<int,Lower|0,       Scalar,Conj, Scalar,false,RowMajor>::run);
 
-    func[NOTR  | (LO << 2) | (NUNIT << 3)] = (internal::product_triangular_matrix_vector<int,Lower|0,       Scalar,false,Scalar,false,ColMajor>::run);
-    func[TR    | (LO << 2) | (NUNIT << 3)] = (internal::product_triangular_matrix_vector<int,Upper|0,       Scalar,false,Scalar,false,RowMajor>::run);
-    func[ADJ   | (LO << 2) | (NUNIT << 3)] = (internal::product_triangular_matrix_vector<int,Upper|0,       Scalar,Conj, Scalar,false,RowMajor>::run);
+    func[NOTR  | (LO << 2) | (NUNIT << 3)] = (internal::triangular_matrix_vector_product<int,Lower|0,       Scalar,false,Scalar,false,ColMajor>::run);
+    func[TR    | (LO << 2) | (NUNIT << 3)] = (internal::triangular_matrix_vector_product<int,Upper|0,       Scalar,false,Scalar,false,RowMajor>::run);
+    func[ADJ   | (LO << 2) | (NUNIT << 3)] = (internal::triangular_matrix_vector_product<int,Upper|0,       Scalar,Conj, Scalar,false,RowMajor>::run);
 
-    func[NOTR  | (UP << 2) | (UNIT  << 3)] = (internal::product_triangular_matrix_vector<int,Upper|UnitDiag,Scalar,false,Scalar,false,ColMajor>::run);
-    func[TR    | (UP << 2) | (UNIT  << 3)] = (internal::product_triangular_matrix_vector<int,Lower|UnitDiag,Scalar,false,Scalar,false,RowMajor>::run);
-    func[ADJ   | (UP << 2) | (UNIT  << 3)] = (internal::product_triangular_matrix_vector<int,Lower|UnitDiag,Scalar,Conj, Scalar,false,RowMajor>::run);
+    func[NOTR  | (UP << 2) | (UNIT  << 3)] = (internal::triangular_matrix_vector_product<int,Upper|UnitDiag,Scalar,false,Scalar,false,ColMajor>::run);
+    func[TR    | (UP << 2) | (UNIT  << 3)] = (internal::triangular_matrix_vector_product<int,Lower|UnitDiag,Scalar,false,Scalar,false,RowMajor>::run);
+    func[ADJ   | (UP << 2) | (UNIT  << 3)] = (internal::triangular_matrix_vector_product<int,Lower|UnitDiag,Scalar,Conj, Scalar,false,RowMajor>::run);
 
-    func[NOTR  | (LO << 2) | (UNIT  << 3)] = (internal::product_triangular_matrix_vector<int,Lower|UnitDiag,Scalar,false,Scalar,false,ColMajor>::run);
-    func[TR    | (LO << 2) | (UNIT  << 3)] = (internal::product_triangular_matrix_vector<int,Upper|UnitDiag,Scalar,false,Scalar,false,RowMajor>::run);
-    func[ADJ   | (LO << 2) | (UNIT  << 3)] = (internal::product_triangular_matrix_vector<int,Upper|UnitDiag,Scalar,Conj, Scalar,false,RowMajor>::run);
+    func[NOTR  | (LO << 2) | (UNIT  << 3)] = (internal::triangular_matrix_vector_product<int,Lower|UnitDiag,Scalar,false,Scalar,false,ColMajor>::run);
+    func[TR    | (LO << 2) | (UNIT  << 3)] = (internal::triangular_matrix_vector_product<int,Upper|UnitDiag,Scalar,false,Scalar,false,RowMajor>::run);
+    func[ADJ   | (LO << 2) | (UNIT  << 3)] = (internal::triangular_matrix_vector_product<int,Upper|UnitDiag,Scalar,Conj, Scalar,false,RowMajor>::run);
 
     init = true;
   }
@@ -271,6 +271,7 @@ int EIGEN_BLAS_FUNC(gbmv)(char *trans, int *m, int *n, int *kl, int *ku, RealSca
   return 0;
 }
 
+#if 0
 /**  TBMV  performs one of the matrix-vector operations
   *
   *     x := A*x,   or   x := A'*x,
@@ -278,10 +279,56 @@ int EIGEN_BLAS_FUNC(gbmv)(char *trans, int *m, int *n, int *kl, int *ku, RealSca
   *  where x is an n element vector and  A is an n by n unit, or non-unit,
   *  upper or lower triangular band matrix, with ( k + 1 ) diagonals.
   */
-// int EIGEN_BLAS_FUNC(tbmv)(char *uplo, char *trans, char *diag, int *n, int *k, RealScalar *a, int *lda, RealScalar *x, int *incx)
-// {
-//   return 1;
-// }
+int EIGEN_BLAS_FUNC(tbmv)(char *uplo, char *opa, char *diag, int *n, int *k, RealScalar *pa, int *lda, RealScalar *px, int *incx)
+{
+  Scalar* a = reinterpret_cast<Scalar*>(pa);
+  Scalar* x = reinterpret_cast<Scalar*>(px);
+  int coeff_rows = *k + 1;
+  
+  int info = 0;
+       if(UPLO(*uplo)==INVALID)                                       info = 1;
+  else if(OP(*opa)==INVALID)                                          info = 2;
+  else if(DIAG(*diag)==INVALID)                                       info = 3;
+  else if(*n<0)                                                       info = 4;
+  else if(*k<0)                                                       info = 5;
+  else if(*lda<coeff_rows)                                            info = 7;
+  else if(*incx==0)                                                   info = 9;
+  if(info)
+    return xerbla_(SCALAR_SUFFIX_UP"TBMV ",&info,6);
+  
+  if(*n==0)
+    return 0;
+  
+  int actual_n = *n;
+  
+  Scalar* actual_x = get_compact_vector(x,actual_n,*incx);
+  
+  MatrixType mat_coeffs(a,coeff_rows,*n,*lda);
+  
+  int ku = UPLO(*uplo)==UPPER ? *k : 0;
+  int kl = UPLO(*uplo)==LOWER ? *k : 0;
+  
+  for(int j=0; j<*n; ++j)
+  {
+    int start = std::max(0,j - ku);
+    int end = std::min((*m)-1,j + kl);
+    int len = end - start + 1;
+    int offset = (ku) - j + start;
+    
+    if(OP(*trans)==NOTR)
+      vector(actual_y+start,len) += (alpha*actual_x[j]) * mat_coeffs.col(j).segment(offset,len);
+    else if(OP(*trans)==TR)
+      actual_y[j] += alpha * ( mat_coeffs.col(j).segment(offset,len).transpose() * vector(actual_x+start,len) ).value();
+    else
+      actual_y[j] += alpha * ( mat_coeffs.col(j).segment(offset,len).adjoint()   * vector(actual_x+start,len) ).value();
+  }    
+  
+  if(actual_x!=x) delete[] actual_x;
+  if(actual_y!=y) delete[] copy_back(actual_y,y,actual_m,*incy);
+  
+  return 0;
+}
+#endif
 
 /**  DTBSV  solves one of the systems of equations
   *
@@ -294,10 +341,68 @@ int EIGEN_BLAS_FUNC(gbmv)(char *trans, int *m, int *n, int *kl, int *ku, RealSca
   *  No test for singularity or near-singularity is included in this
   *  routine. Such tests must be performed before calling this routine.
   */
-// int EIGEN_BLAS_FUNC(tbsv)(char *uplo, char *trans, char *diag, int *n, int *k, RealScalar *a, int *lda, RealScalar *x, int *incx)
-// {
-//   return 1;
-// }
+int EIGEN_BLAS_FUNC(tbsv)(char *uplo, char *op, char *diag, int *n, int *k, RealScalar *pa, int *lda, RealScalar *px, int *incx)
+{
+  typedef void (*functype)(int, int, const Scalar *, int, Scalar *);
+  static functype func[16];
+
+  static bool init = false;
+  if(!init)
+  {
+    for(int k=0; k<16; ++k)
+      func[k] = 0;
+
+    func[NOTR  | (UP << 2) | (NUNIT << 3)] = (internal::band_solve_triangular_selector<int,Upper|0,       Scalar,false,Scalar,ColMajor>::run);
+    func[TR    | (UP << 2) | (NUNIT << 3)] = (internal::band_solve_triangular_selector<int,Lower|0,       Scalar,false,Scalar,RowMajor>::run);
+    func[ADJ   | (UP << 2) | (NUNIT << 3)] = (internal::band_solve_triangular_selector<int,Lower|0,       Scalar,Conj, Scalar,RowMajor>::run);
+
+    func[NOTR  | (LO << 2) | (NUNIT << 3)] = (internal::band_solve_triangular_selector<int,Lower|0,       Scalar,false,Scalar,ColMajor>::run);
+    func[TR    | (LO << 2) | (NUNIT << 3)] = (internal::band_solve_triangular_selector<int,Upper|0,       Scalar,false,Scalar,RowMajor>::run);
+    func[ADJ   | (LO << 2) | (NUNIT << 3)] = (internal::band_solve_triangular_selector<int,Upper|0,       Scalar,Conj, Scalar,RowMajor>::run);
+
+    func[NOTR  | (UP << 2) | (UNIT  << 3)] = (internal::band_solve_triangular_selector<int,Upper|UnitDiag,Scalar,false,Scalar,ColMajor>::run);
+    func[TR    | (UP << 2) | (UNIT  << 3)] = (internal::band_solve_triangular_selector<int,Lower|UnitDiag,Scalar,false,Scalar,RowMajor>::run);
+    func[ADJ   | (UP << 2) | (UNIT  << 3)] = (internal::band_solve_triangular_selector<int,Lower|UnitDiag,Scalar,Conj, Scalar,RowMajor>::run);
+
+    func[NOTR  | (LO << 2) | (UNIT  << 3)] = (internal::band_solve_triangular_selector<int,Lower|UnitDiag,Scalar,false,Scalar,ColMajor>::run);
+    func[TR    | (LO << 2) | (UNIT  << 3)] = (internal::band_solve_triangular_selector<int,Upper|UnitDiag,Scalar,false,Scalar,RowMajor>::run);
+    func[ADJ   | (LO << 2) | (UNIT  << 3)] = (internal::band_solve_triangular_selector<int,Upper|UnitDiag,Scalar,Conj, Scalar,RowMajor>::run);
+
+    init = true;
+  }
+
+  Scalar* a = reinterpret_cast<Scalar*>(pa);
+  Scalar* x = reinterpret_cast<Scalar*>(px);
+  int coeff_rows = *k+1;
+  
+  int info = 0;
+       if(UPLO(*uplo)==INVALID)                                       info = 1;
+  else if(OP(*op)==INVALID)                                           info = 2;
+  else if(DIAG(*diag)==INVALID)                                       info = 3;
+  else if(*n<0)                                                       info = 4;
+  else if(*k<0)                                                       info = 5;
+  else if(*lda<coeff_rows)                                            info = 7;
+  else if(*incx==0)                                                   info = 9;
+  if(info)
+    return xerbla_(SCALAR_SUFFIX_UP"TBSV ",&info,6);
+  
+  if(*n==0 || (*k==0 && DIAG(*diag)==UNIT))
+    return 0;
+  
+  int actual_n = *n;
+ 
+  Scalar* actual_x = get_compact_vector(x,actual_n,*incx);
+  
+  int code = OP(*op) | (UPLO(*uplo) << 2) | (DIAG(*diag) << 3);
+  if(code>=16 || func[code]==0)
+    return 0;
+
+  func[code](*n, *k, a, *lda, actual_x);
+  
+  if(actual_x!=x) delete[] copy_back(actual_x,x,actual_n,*incx);
+  
+  return 0;
+}
 
 /**  DTPMV  performs one of the matrix-vector operations
   *

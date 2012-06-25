@@ -108,7 +108,7 @@ ALWAYS_DETAILED_SEC    = NO
 # members were ordinary class members. Constructors, destructors and assignment
 # operators of the base classes will not be shown.
 
-INLINE_INHERITED_MEMB  = NO
+INLINE_INHERITED_MEMB  = YES
 
 # If the FULL_PATH_NAMES tag is set to YES then Doxygen will prepend the full
 # path before files name in the file list and in the header files. If set
@@ -206,7 +206,6 @@ ALIASES                = "only_for_vectors=This is only for vectors (either row-
                          "qr_module=This is defined in the %QR module. \code #include <Eigen/QR> \endcode" \
                          "svd_module=This is defined in the %SVD module. \code #include <Eigen/SVD> \endcode" \
                          "label=\bug" \
-                         "redstar=<a href='#warningarraymodule' style='color:red;text-decoration: none;'>*</a>" \
                          "matrixworld=<a href='#matrixonly' style='color:green;text-decoration: none;'>*</a>" \
                          "arrayworld=<a href='#arrayonly' style='color:blue;text-decoration: none;'>*</a>" \
                          "note_about_arbitrary_choice_of_solution=If there exists more than one solution, this method will arbitrarily choose one." \
@@ -303,7 +302,7 @@ TYPEDEF_HIDES_STRUCT   = NO
 # Private class members and static file members will be hidden unless
 # the EXTRACT_PRIVATE and EXTRACT_STATIC tags are set to YES
 
-EXTRACT_ALL            = NO
+EXTRACT_ALL            = YES
 
 # If the EXTRACT_PRIVATE tag is set to YES all private members of a class
 # will be included in the documentation.
@@ -561,8 +560,7 @@ WARN_LOGFILE           =
 # with spaces.
 
 INPUT                  = "${Eigen_SOURCE_DIR}/Eigen" \
-                         "${Eigen_SOURCE_DIR}/doc" \
-                         "${Eigen_BINARY_DIR}/doc"
+                         "${Eigen_SOURCE_DIR}/doc"
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is
@@ -585,13 +583,17 @@ FILE_PATTERNS          = *
 # should be searched for input files as well. Possible values are YES and NO.
 # If left blank NO is used.
 
-RECURSIVE              = NO
+RECURSIVE              = YES
 
 # The EXCLUDE tag can be used to specify files and/or directories that should
 # excluded from the INPUT source files. This way you can easily exclude a
 # subdirectory from a directory tree whose root is specified with the INPUT tag.
 
-EXCLUDE                =
+EXCLUDE                = "${Eigen_SOURCE_DIR}/Eigen/Eigen2Support" \
+                         "${Eigen_SOURCE_DIR}/Eigen/src/Eigen2Support" \
+                         "${Eigen_SOURCE_DIR}/doc/examples" \
+                         "${Eigen_SOURCE_DIR}/doc/special_examples" \
+                         "${Eigen_SOURCE_DIR}/doc/snippets" 
 
 # The EXCLUDE_SYMLINKS tag can be used select whether or not files or
 # directories that are symbolic links (a Unix filesystem feature) are excluded
@@ -627,10 +629,8 @@ EXCLUDE_PATTERNS       =  CMake* \
 # wildcard * is used, a substring. Examples: ANamespace, AClass,
 # AClass::ANamespace, ANamespace::*Test
 
-# This is used to clean up the "class hierarchy" page
-
-EXCLUDE_SYMBOLS        = EigenBase<* SparseMatrixBase<* DenseBase<* MatrixBase<* Matrix<* \
-                         ProductReturnType<* RotationBase<* Stride<* BandMatrix<* Block<*
+# This could used to clean up the "class hierarchy" page
+EXCLUDE_SYMBOLS        = internal::* Flagged* *InnerIterator* DenseStorage<*
 
 # The EXAMPLE_PATH tag can be used to specify one or more files or
 # directories that contain example code fragments that are included (see
@@ -639,7 +639,9 @@ EXCLUDE_SYMBOLS        = EigenBase<* SparseMatrixBase<* DenseBase<* MatrixBase<*
 EXAMPLE_PATH           = "${Eigen_SOURCE_DIR}/doc/snippets" \
                          "${Eigen_BINARY_DIR}/doc/snippets" \
                          "${Eigen_SOURCE_DIR}/doc/examples" \
-                         "${Eigen_BINARY_DIR}/doc/examples"
+                         "${Eigen_BINARY_DIR}/doc/examples" \
+                         "${Eigen_SOURCE_DIR}/doc/special_examples" \
+                         "${Eigen_BINARY_DIR}/doc/special_examples"
 
 # If the value of the EXAMPLE_PATH tag contains directories, you can use the
 # EXAMPLE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp
@@ -1229,7 +1231,8 @@ EXPAND_AS_DEFINED      = EIGEN_MAKE_TYPEDEFS \
                          EIGEN_CWISE_BINOP_RETURN_TYPE \
                          EIGEN_CWISE_PRODUCT_RETURN_TYPE \
                          EIGEN_CURRENT_STORAGE_BASE_CLASS \
-                         _EIGEN_GENERIC_PUBLIC_INTERFACE
+                         _EIGEN_GENERIC_PUBLIC_INTERFACE \
+                         EIGEN2_SUPPORT
 
 # If the SKIP_FUNCTION_MACROS tag is set to YES (the default) then
 # doxygen's preprocessor will remove all function-like macros that are alone

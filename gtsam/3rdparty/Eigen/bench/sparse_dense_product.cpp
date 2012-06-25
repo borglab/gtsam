@@ -4,7 +4,7 @@
 // -DNOGMM -DNOMTL -DCSPARSE
 // -I /home/gael/Coding/LinearAlgebra/CSparse/Include/ /home/gael/Coding/LinearAlgebra/CSparse/Lib/libcsparse.a
 #ifndef SIZE
-#define SIZE 10000
+#define SIZE 650000
 #endif
 
 #ifndef DENSITY
@@ -62,7 +62,8 @@ int main(int argc, char *argv[])
   BenchTimer timer;
   for (float density = DENSITY; density>=MINDENSITY; density*=0.5)
   {
-    fillMatrix(density, rows, cols, sm1);
+    //fillMatrix(density, rows, cols, sm1);
+    fillMatrix2(7, rows, cols, sm1);
 
     // dense matrices
     #ifdef DENSEMATRIX
@@ -76,14 +77,14 @@ int main(int argc, char *argv[])
       for (int k=0; k<REPEAT; ++k)
         v2 = m1 * v1;
       timer.stop();
-      std::cout << "   a * v:\t" << timer.value() << endl;
+      std::cout << "   a * v:\t" << timer.best() << "  " << double(REPEAT)/timer.best() << " * / sec " << endl;
 
       timer.reset();
       timer.start();
       for (int k=0; k<REPEAT; ++k)
         v2 = m1.transpose() * v1;
       timer.stop();
-      std::cout << "   a' * v:\t" << timer.value() << endl;
+      std::cout << "   a' * v:\t" << timer.best() << endl;
     }
     #endif
 
@@ -92,12 +93,12 @@ int main(int argc, char *argv[])
       std::cout << "Eigen sparse\t" << sm1.nonZeros()/float(sm1.rows()*sm1.cols())*100 << "%\n";
 
       BENCH(asm("#myc"); v2 = sm1 * v1; asm("#myd");)
-      std::cout << "   a * v:\t" << timer.value() << endl;
+      std::cout << "   a * v:\t" << timer.best()/REPEAT << "  " << double(REPEAT)/timer.best(REAL_TIMER) << " * / sec " << endl;
 
 
       BENCH( { asm("#mya"); v2 = sm1.transpose() * v1; asm("#myb"); })
 
-      std::cout << "   a' * v:\t" << timer.value() << endl;
+      std::cout << "   a' * v:\t" << timer.best()/REPEAT << endl;
     }
 
 //     {
@@ -128,6 +129,28 @@ int main(int argc, char *argv[])
 
       BENCH( gmm::mult(gmm::transposed(m1), gmmV1, gmmV2); )
       std::cout << "   a' * v:\t" << timer.value() << endl;
+    }
+    #endif
+    
+    #ifndef NOUBLAS
+    {
+      std::cout << "ublas sparse\t" << density*100 << "%\n";
+      UBlasSparse m1(rows,cols);
+      eiToUblas(sm1, m1);
+      
+      boost::numeric::ublas::vector<Scalar> uv1, uv2;
+      eiToUblasVec(v1,uv1);
+      eiToUblasVec(v2,uv2);
+
+//       std::vector<Scalar> gmmV1(cols), gmmV2(cols);
+//       Map<Matrix<Scalar,Dynamic,1> >(&gmmV1[0], cols) = v1;
+//       Map<Matrix<Scalar,Dynamic,1> >(&gmmV2[0], cols) = v2;
+
+      BENCH( uv2 = boost::numeric::ublas::prod(m1, uv1); )
+      std::cout << "   a * v:\t" << timer.value() << endl;
+
+//       BENCH( boost::ublas::prod(gmm::transposed(m1), gmmV1, gmmV2); )
+//       std::cout << "   a' * v:\t" << timer.value() << endl;
     }
     #endif
 

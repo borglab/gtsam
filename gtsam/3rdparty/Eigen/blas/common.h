@@ -32,16 +32,8 @@
 #error the token SCALAR must be defined to compile this file
 #endif
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
+#include <Eigen/src/misc/blas.h>
 
-#include "../bench/btl/libs/C_BLAS/blas.h"
-
-#ifdef __cplusplus
-}
-#endif
 
 #define NOTR    0
 #define TR      1
@@ -93,6 +85,12 @@ inline bool check_uplo(const char* uplo)
 
 #include <Eigen/Core>
 #include <Eigen/Jacobi>
+
+
+namespace Eigen {
+#include "BandTriangularSolver.h"
+}
+
 using namespace Eigen;
 
 typedef SCALAR Scalar;

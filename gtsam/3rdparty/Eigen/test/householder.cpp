@@ -130,9 +130,9 @@ void test_householder()
     CALL_SUBTEST_2( householder(Matrix<float,2,3>()) );
     CALL_SUBTEST_3( householder(Matrix<double,3,5>()) );
     CALL_SUBTEST_4( householder(Matrix<float,4,4>()) );
-    CALL_SUBTEST_5( householder(MatrixXd(10,12)) );
-    CALL_SUBTEST_6( householder(MatrixXcf(16,17)) );
-    CALL_SUBTEST_7( householder(MatrixXf(25,7)) );
+    CALL_SUBTEST_5( householder(MatrixXd(internal::random<int>(1,EIGEN_TEST_MAX_SIZE),internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+    CALL_SUBTEST_6( householder(MatrixXcf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE),internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+    CALL_SUBTEST_7( householder(MatrixXf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE),internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
     CALL_SUBTEST_8( householder(Matrix<double,1,1>()) );
   }
 }

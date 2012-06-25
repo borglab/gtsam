@@ -123,7 +123,7 @@ public :
     gmm::lower_tri_solve(L, X, false);
   }
 
-  static inline void lu_decomp(const gene_matrix & X, gene_matrix & R, int N){
+  static inline void partial_lu_decomp(const gene_matrix & X, gene_matrix & R, int N){
     gmm::copy(X,R);
     std::vector<int> ipvt(N);
     gmm::lu_factor(R, ipvt);

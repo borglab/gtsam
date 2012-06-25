@@ -144,6 +144,9 @@ You need an eigendecomposition here, see available such decompositions on \ref T
 Make sure to check if your matrix is self-adjoint, as is often the case in these problems. Here's an example using
 SelfAdjointEigenSolver, it could easily be adapted to general matrices using EigenSolver or ComplexEigenSolver.
 
+The computation of eigenvalues and eigenvectors does not necessarily converge, but such failure to converge is
+very rare. The call to info() is to check for this possibility.
+
 <table class="example">
 <tr><th>Example:</th><th>Output:</th></tr>
 <tr>

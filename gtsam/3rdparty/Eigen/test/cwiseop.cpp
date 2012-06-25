@@ -60,11 +60,8 @@ template<typename MatrixType> void cwiseops(const MatrixType& m)
              mzero = MatrixType::Zero(rows, cols),
              mones = MatrixType::Ones(rows, cols),
              identity = Matrix<Scalar, MatrixType::RowsAtCompileTime, MatrixType::RowsAtCompileTime>
-                              ::Identity(rows, rows),
-             square = Matrix<Scalar, MatrixType::RowsAtCompileTime, MatrixType::RowsAtCompileTime>::Random(rows, rows);
-  VectorType v1 = VectorType::Random(rows),
-             v2 = VectorType::Random(rows),
-             vzero = VectorType::Zero(rows),
+                              ::Identity(rows, rows);
+  VectorType vzero = VectorType::Zero(rows),
              vones = VectorType::Ones(rows),
              v3(rows);
 
@@ -175,9 +172,9 @@ void test_cwiseop()
   for(int i = 0; i < g_repeat ; i++) {
     CALL_SUBTEST_1( cwiseops(Matrix<float, 1, 1>()) );
     CALL_SUBTEST_2( cwiseops(Matrix4d()) );
-    CALL_SUBTEST_3( cwiseops(MatrixXf(3, 3)) );
-    CALL_SUBTEST_4( cwiseops(MatrixXf(22, 22)) );
-    CALL_SUBTEST_5( cwiseops(MatrixXi(8, 12)) );
-    CALL_SUBTEST_6( cwiseops(MatrixXd(20, 20)) );
+    CALL_SUBTEST_3( cwiseops(MatrixXf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+    CALL_SUBTEST_4( cwiseops(MatrixXf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+    CALL_SUBTEST_5( cwiseops(MatrixXi(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+    CALL_SUBTEST_6( cwiseops(MatrixXd(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
   }
 }

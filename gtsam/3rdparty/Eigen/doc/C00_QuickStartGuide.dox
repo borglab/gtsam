@@ -25,6 +25,10 @@ There is no library to link to. The only thing that you need to keep in mind whe
 
 \code g++ -I /path/to/eigen/ my_program.cpp -o my_program \endcode
 
+On Linux or Mac OS X, another option is to symlink or copy the Eigen folder into /usr/local/include/. This way, you can compile the program with:
+
+\code g++ my_program.cpp -o my_program \endcode
+
 When you run the program, it produces the following output:
 
 \include QuickStart_example.out

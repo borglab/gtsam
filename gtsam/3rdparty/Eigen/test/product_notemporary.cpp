@@ -141,13 +141,13 @@ void test_product_notemporary()
 {
   int s;
   for(int i = 0; i < g_repeat; i++) {
-    s = internal::random<int>(16,320);
+    s = internal::random<int>(16,EIGEN_TEST_MAX_SIZE);
     CALL_SUBTEST_1( product_notemporary(MatrixXf(s, s)) );
-    s = internal::random<int>(16,320);
+    s = internal::random<int>(16,EIGEN_TEST_MAX_SIZE);
     CALL_SUBTEST_2( product_notemporary(MatrixXd(s, s)) );
-    s = internal::random<int>(16,120);
+    s = internal::random<int>(16,EIGEN_TEST_MAX_SIZE/2);
     CALL_SUBTEST_3( product_notemporary(MatrixXcf(s,s)) );
-    s = internal::random<int>(16,120);
+    s = internal::random<int>(16,EIGEN_TEST_MAX_SIZE/2);
     CALL_SUBTEST_4( product_notemporary(MatrixXcd(s,s)) );
   }
 }

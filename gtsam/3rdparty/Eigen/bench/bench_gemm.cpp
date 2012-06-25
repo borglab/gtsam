@@ -161,10 +161,11 @@ int main(int argc, char ** argv)
   A a(m,p); a.setRandom();
   B b(p,n); b.setRandom();
   C c(m,n); c.setOnes();
+  C rc = c;
 
   std::cout << "Matrix sizes = " << m << "x" << p << " * " << p << "x" << n << "\n";
   std::ptrdiff_t mc(m), nc(n), kc(p);
-  computeProductBlockingSizes<Scalar,Scalar>(kc, mc, nc);
+  internal::computeProductBlockingSizes<Scalar,Scalar>(kc, mc, nc);
   std::cout << "blocking size (mc x kc) = " << mc << " x " << kc << "\n";
 
   C r = c;
@@ -188,23 +189,22 @@ int main(int argc, char ** argv)
     blas_gemm(a,b,r);
     c.noalias() += a * b;
     if(!r.isApprox(c)) std::cerr << "Warning, your product is crap!\n\n";
-//     std::cerr << r << "\n\n" << c << "\n\n";
   #else
     gemm(a,b,c);
     r.noalias() += a.cast<Scalar>() * b.cast<Scalar>();
     if(!r.isApprox(c)) std::cerr << "Warning, your product is crap!\n\n";
-//     std::cerr << c << "\n\n";
-//     std::cerr << r << "\n\n";
   #endif
 
   #ifdef HAVE_BLAS
   BenchTimer tblas;
+  c = rc;
   BENCH(tblas, tries, rep, blas_gemm(a,b,c));
   std::cout << "blas  cpu         " << tblas.best(CPU_TIMER)/rep  << "s  \t" << (double(m)*n*p*rep*2/tblas.best(CPU_TIMER))*1e-9  <<  " GFLOPS \t(" << tblas.total(CPU_TIMER)  << "s)\n";
   std::cout << "blas  real        " << tblas.best(REAL_TIMER)/rep << "s  \t" << (double(m)*n*p*rep*2/tblas.best(REAL_TIMER))*1e-9 <<  " GFLOPS \t(" << tblas.total(REAL_TIMER) << "s)\n";
   #endif
 
   BenchTimer tmt;
+  c = rc;
   BENCH(tmt, tries, rep, gemm(a,b,c));
   std::cout << "eigen cpu         " << tmt.best(CPU_TIMER)/rep  << "s  \t" << (double(m)*n*p*rep*2/tmt.best(CPU_TIMER))*1e-9  <<  " GFLOPS \t(" << tmt.total(CPU_TIMER)  << "s)\n";
   std::cout << "eigen real        " << tmt.best(REAL_TIMER)/rep << "s  \t" << (double(m)*n*p*rep*2/tmt.best(REAL_TIMER))*1e-9 <<  " GFLOPS \t(" << tmt.total(REAL_TIMER) << "s)\n";
@@ -213,8 +213,9 @@ int main(int argc, char ** argv)
   if(procs>1)
   {
     BenchTimer tmono;
-    //omp_set_num_threads(1);
-    Eigen::setNbThreads(1);
+    omp_set_num_threads(1);
+    Eigen::internal::setNbThreads(1);
+    c = rc;
     BENCH(tmono, tries, rep, gemm(a,b,c));
     std::cout << "eigen mono cpu    " << tmono.best(CPU_TIMER)/rep  << "s  \t" << (double(m)*n*p*rep*2/tmono.best(CPU_TIMER))*1e-9  <<  " GFLOPS \t(" << tmono.total(CPU_TIMER)  << "s)\n";
     std::cout << "eigen mono real   " << tmono.best(REAL_TIMER)/rep << "s  \t" << (double(m)*n*p*rep*2/tmono.best(REAL_TIMER))*1e-9 <<  " GFLOPS \t(" << tmono.total(REAL_TIMER) << "s)\n";

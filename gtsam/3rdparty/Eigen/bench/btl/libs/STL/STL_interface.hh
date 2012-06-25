@@ -78,18 +78,18 @@ public :
         cible[i][j]=source[i][j];
   }
 
-  static inline void ata_product(const gene_matrix & A, gene_matrix & X, int N)
-  {
-    real somme;
-    for (int j=0;j<N;j++){
-      for (int i=0;i<N;i++){
-        somme=0.0;
-        for (int k=0;k<N;k++)
-          somme += A[i][k]*A[j][k];
-        X[j][i]=somme;
-      }
-    }
-  }
+//   static inline void ata_product(const gene_matrix & A, gene_matrix & X, int N)
+//   {
+//     real somme;
+//     for (int j=0;j<N;j++){
+//       for (int i=0;i<N;i++){
+//         somme=0.0;
+//         for (int k=0;k<N;k++)
+//           somme += A[i][k]*A[j][k];
+//         X[j][i]=somme;
+//       }
+//     }
+//   }
 
   static inline void aat_product(const gene_matrix & A, gene_matrix & X, int N)
   {
@@ -97,10 +97,13 @@ public :
     for (int j=0;j<N;j++){
       for (int i=0;i<N;i++){
         somme=0.0;
-        for (int k=0;k<N;k++){
-          somme+=A[k][i]*A[k][j];
+        if(i>=j)
+        {
+          for (int k=0;k<N;k++){
+            somme+=A[k][i]*A[k][j];
+          }
+          X[j][i]=somme;
         }
-        X[j][i]=somme;
       }
     }
   }

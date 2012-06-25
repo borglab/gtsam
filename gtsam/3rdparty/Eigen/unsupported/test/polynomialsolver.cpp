@@ -27,10 +27,6 @@
 #include <iostream>
 #include <algorithm>
 
-#ifdef HAS_GSL
-#include "gsl_helper.h"
-#endif
-
 using namespace std;
 
 namespace Eigen {
@@ -72,32 +68,6 @@ bool aux_evalSolver( const POLYNOMIAL& pols, SOLVER& psolve )
     cerr << "Abs value of the polynomial at the roots: " << evr.transpose() << endl;
     cerr << endl;
   }
-
-  #ifdef HAS_GSL
-  if (internal::is_same< Scalar, double>::value)
-  {
-    typedef GslTraits<Scalar> Gsl;
-    RootsType gslRoots(deg);
-    Gsl::eigen_poly_solve( pols, gslRoots );
-    EvalRootsType gslEvr( deg );
-    for( int i=0; i<gslRoots.size(); ++i )
-    {
-      gslEvr[i] = std::abs( poly_eval( pols, gslRoots[i] ) );
-    }
-    bool gslEvalToZero = gslEvr.isZero( test_precision<Scalar>() );
-    if( !evalToZero )
-    {
-      if( !gslEvalToZero ){
-        cerr << "GSL also failed" << endl; }
-      else{
-        cerr << "GSL did NOT failed" << endl; }
-      cerr << "GSL roots found: " << gslRoots.transpose() << endl;
-      cerr << "Abs value of the polynomial at the GSL roots: " << gslEvr.transpose() << endl;
-      cerr << endl;
-    }
-  }
-  #endif //< HAS_GSL
-
 
   std::vector<Scalar> rootModuli( roots.size() );
   Map< EvalRootsType > aux( &rootModuli[0], roots.size() );

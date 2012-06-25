@@ -143,5 +143,5 @@ void test_mixingtypes()
 {
   CALL_SUBTEST_1(mixingtypes<3>());
   CALL_SUBTEST_2(mixingtypes<4>());
-  CALL_SUBTEST_3(mixingtypes<Dynamic>(internal::random<int>(1,310)));
+  CALL_SUBTEST_3(mixingtypes<Dynamic>(internal::random<int>(1,EIGEN_TEST_MAX_SIZE)));
 }

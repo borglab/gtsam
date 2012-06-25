@@ -41,7 +41,6 @@ template<typename MatrixType> void inverse(const MatrixType& m)
 
   MatrixType m1(rows, cols),
              m2(rows, cols),
-             mzero = MatrixType::Zero(rows, cols),
              identity = MatrixType::Identity(rows, rows);
   createRandomPIMatrixOfRank(rows,rows,rows,m1);
   m2 = m1.inverse();
@@ -114,4 +113,5 @@ void test_inverse()
     CALL_SUBTEST_7( inverse(Matrix4d()) );
     CALL_SUBTEST_7( inverse(Matrix<double,4,4,DontAlign>()) );
   }
+  EIGEN_UNUSED_VARIABLE(s)
 }

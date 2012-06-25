@@ -41,8 +41,8 @@ EIGEN_LAPACK_FUNC(potrf,(char* uplo, int *n, RealScalar *pa, int *lda, int *info
   Scalar* a = reinterpret_cast<Scalar*>(pa);
   MatrixType A(a,*n,*n,*lda);
   int ret;
-  if(UPLO(*uplo)==UP) ret = internal::llt_inplace<Upper>::blocked(A);
-  else                ret = internal::llt_inplace<Lower>::blocked(A);
+  if(UPLO(*uplo)==UP) ret = internal::llt_inplace<Scalar, Upper>::blocked(A);
+  else                ret = internal::llt_inplace<Scalar, Lower>::blocked(A);
 
   if(ret>=0)
     *info = ret+1;

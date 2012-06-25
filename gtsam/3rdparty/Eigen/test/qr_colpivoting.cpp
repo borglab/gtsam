@@ -30,7 +30,7 @@ template<typename MatrixType> void qr()
 {
   typedef typename MatrixType::Index Index;
 
-  Index rows = internal::random<Index>(2,200), cols = internal::random<Index>(2,200), cols2 = internal::random<Index>(2,200);
+  Index rows = internal::random<Index>(2,EIGEN_TEST_MAX_SIZE), cols = internal::random<Index>(2,EIGEN_TEST_MAX_SIZE), cols2 = internal::random<Index>(2,EIGEN_TEST_MAX_SIZE);
   Index rank = internal::random<Index>(1, (std::min)(rows, cols)-1);
 
   typedef typename MatrixType::Scalar Scalar;

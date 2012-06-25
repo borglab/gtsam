@@ -131,6 +131,12 @@ void jacobisvd_test_all_computation_options(const MatrixType& m)
     jacobisvd_solve<MatrixType, QRPreconditioner>(m, ComputeFullU | ComputeThinV);
     jacobisvd_solve<MatrixType, QRPreconditioner>(m, ComputeThinU | ComputeFullV);
     jacobisvd_solve<MatrixType, QRPreconditioner>(m, ComputeThinU | ComputeThinV);
+
+    // test reconstruction
+    typedef typename MatrixType::Index Index;
+    Index diagSize = (std::min)(m.rows(), m.cols());
+    JacobiSVD<MatrixType, QRPreconditioner> svd(m, ComputeThinU | ComputeThinV);
+    VERIFY_IS_APPROX(m, svd.matrixU().leftCols(diagSize) * svd.singularValues().asDiagonal() * svd.matrixV().leftCols(diagSize).adjoint());
   }
 }
 
@@ -248,9 +254,17 @@ void jacobisvd_inf_nan()
 // matrices containing denormal numbers.
 void jacobisvd_bug286()
 {
+#if defined __INTEL_COMPILER
+// shut up warning #239: floating point underflow
+#pragma warning push
+#pragma warning disable 239
+#endif
   Matrix2d M;
   M << -7.90884e-313, -4.94e-324,
                  0, 5.60844e-313;
+#if defined __INTEL_COMPILER
+#pragma warning pop
+#endif
   JacobiSVD<Matrix2d> svd;
   svd.compute(M); // just check we don't loop indefinitely
 }
@@ -333,8 +347,8 @@ void test_jacobisvd()
     CALL_SUBTEST_7( jacobisvd_inf_nan<MatrixXf>() );
   }
 
-  CALL_SUBTEST_7(( jacobisvd<MatrixXf>(MatrixXf(internal::random<int>(100, 150), internal::random<int>(100, 150))) ));
-  CALL_SUBTEST_8(( jacobisvd<MatrixXcd>(MatrixXcd(internal::random<int>(80, 100), internal::random<int>(80, 100))) ));
+  CALL_SUBTEST_7(( jacobisvd<MatrixXf>(MatrixXf(internal::random<int>(EIGEN_TEST_MAX_SIZE/4, EIGEN_TEST_MAX_SIZE/2), internal::random<int>(EIGEN_TEST_MAX_SIZE/4, EIGEN_TEST_MAX_SIZE/2))) ));
+  CALL_SUBTEST_8(( jacobisvd<MatrixXcd>(MatrixXcd(internal::random<int>(EIGEN_TEST_MAX_SIZE/4, EIGEN_TEST_MAX_SIZE/3), internal::random<int>(EIGEN_TEST_MAX_SIZE/4, EIGEN_TEST_MAX_SIZE/3))) ));
 
   // test matrixbase method
   CALL_SUBTEST_1(( jacobisvd_method<Matrix2cd>() ));

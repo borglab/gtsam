@@ -88,9 +88,7 @@ template<typename Scalar, int Size> void orthomethods(int size=Size)
   typedef Matrix<Scalar,Size,3> MatrixN3;
   typedef Matrix<Scalar,3,1> Vector3;
 
-  VectorType v0 = VectorType::Random(size),
-             v1 = VectorType::Random(size),
-             v2 = VectorType::Random(size);
+  VectorType v0 = VectorType::Random(size);
 
   // unitOrthogonal
   VERIFY_IS_MUCH_SMALLER_THAN(v0.unitOrthogonal().dot(v0), Scalar(1));

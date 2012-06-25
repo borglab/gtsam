@@ -42,12 +42,8 @@ template<typename MatrixType> void block(const MatrixType& m)
              m1_copy = m1,
              m2 = MatrixType::Random(rows, cols),
              m3(rows, cols),
-             mzero = MatrixType::Zero(rows, cols),
              ones = MatrixType::Ones(rows, cols);
-  VectorType v1 = VectorType::Random(rows),
-             v2 = VectorType::Random(rows),
-             v3 = VectorType::Random(rows),
-             vzero = VectorType::Zero(rows);
+  VectorType v1 = VectorType::Random(rows);
 
   Scalar s1 = internal::random<Scalar>();
 

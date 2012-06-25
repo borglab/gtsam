@@ -62,8 +62,13 @@ void test_zerosized()
   zeroSizedMatrix<Matrix3i>();
   zeroSizedMatrix<Matrix<float, 2, Dynamic> >();
   zeroSizedMatrix<MatrixXf>();
+  zeroSizedMatrix<Matrix<float, 0, 0> >();
+  zeroSizedMatrix<Matrix<float, Dynamic, 0, 0, 0, 0> >();
+  zeroSizedMatrix<Matrix<float, 0, Dynamic, 0, 0, 0> >();
+  zeroSizedMatrix<Matrix<float, Dynamic, Dynamic, 0, 0, 0> >();
   
   zeroSizedVector<Vector2d>();
   zeroSizedVector<Vector3i>();
   zeroSizedVector<VectorXf>();
+  zeroSizedVector<Matrix<float, 0, 1> >();
 }

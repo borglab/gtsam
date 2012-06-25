@@ -40,6 +40,7 @@ template<typename LineType> void parametrizedline(const LineType& _line)
   typedef Matrix<Scalar, LineType::AmbientDimAtCompileTime, 1> VectorType;
   typedef Matrix<Scalar, LineType::AmbientDimAtCompileTime,
                          LineType::AmbientDimAtCompileTime> MatrixType;
+  typedef Hyperplane<Scalar,LineType::AmbientDimAtCompileTime> HyperplaneType;
 
   VectorType p0 = VectorType::Random(dim);
   VectorType p1 = VectorType::Random(dim);
@@ -64,6 +65,16 @@ template<typename LineType> void parametrizedline(const LineType& _line)
   VERIFY_IS_APPROX(hp1f.template cast<Scalar>(),l0);
   ParametrizedLine<Scalar,Dim> hp1d = l0.template cast<Scalar>();
   VERIFY_IS_APPROX(hp1d.template cast<Scalar>(),l0);
+
+  // intersections
+  VectorType p2 = VectorType::Random(dim);
+  VectorType n2 = VectorType::Random(dim).normalized();
+  HyperplaneType hp(p2,n2);
+  Scalar t = l0.intersectionParameter(hp);
+  VectorType pi = l0.pointAt(t);
+  VERIFY_IS_MUCH_SMALLER_THAN(hp.signedDistance(pi), RealScalar(1));
+  VERIFY_IS_MUCH_SMALLER_THAN(l0.distance(pi), RealScalar(1));
+  VERIFY_IS_APPROX(l0.intersectionPoint(hp), pi);
 }
 
 template<typename Scalar> void parametrizedline_alignment()

@@ -101,9 +101,9 @@ void test_diagonalmatrices()
     CALL_SUBTEST_3( diagonalmatrices(Matrix<double,3,3,RowMajor>()) );
     CALL_SUBTEST_4( diagonalmatrices(Matrix4d()) );
     CALL_SUBTEST_5( diagonalmatrices(Matrix<float,4,4,RowMajor>()) );
-    CALL_SUBTEST_6( diagonalmatrices(MatrixXcf(3, 5)) );
-    CALL_SUBTEST_7( diagonalmatrices(MatrixXi(10, 8)) );
-    CALL_SUBTEST_8( diagonalmatrices(Matrix<double,Dynamic,Dynamic,RowMajor>(20, 20)) );
-    CALL_SUBTEST_9( diagonalmatrices(MatrixXf(21, 24)) );
+    CALL_SUBTEST_6( diagonalmatrices(MatrixXcf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+    CALL_SUBTEST_7( diagonalmatrices(MatrixXi(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+    CALL_SUBTEST_8( diagonalmatrices(Matrix<double,Dynamic,Dynamic,RowMajor>(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+    CALL_SUBTEST_9( diagonalmatrices(MatrixXf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
   }
 }

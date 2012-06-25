@@ -74,10 +74,10 @@ void test_diagonal()
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( diagonal(Matrix<float, 1, 1>()) );
     CALL_SUBTEST_2( diagonal(Matrix4d()) );
-    CALL_SUBTEST_2( diagonal(MatrixXcf(3, 3)) );
-    CALL_SUBTEST_2( diagonal(MatrixXi(8, 12)) );
-    CALL_SUBTEST_2( diagonal(MatrixXcd(20, 20)) );
-    CALL_SUBTEST_1( diagonal(MatrixXf(21, 19)) );
+    CALL_SUBTEST_2( diagonal(MatrixXcf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+    CALL_SUBTEST_2( diagonal(MatrixXi(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+    CALL_SUBTEST_2( diagonal(MatrixXcd(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+    CALL_SUBTEST_1( diagonal(MatrixXf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
     CALL_SUBTEST_1( diagonal(Matrix<float,Dynamic,4>(3, 4)) );
   }
 }

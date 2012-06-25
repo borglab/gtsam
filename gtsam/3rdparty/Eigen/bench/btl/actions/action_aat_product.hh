@@ -87,7 +87,7 @@ public :
   }
 
   double nb_op_base( void ){
-    return 2.0*_size*_size*_size;
+    return double(_size)*double(_size)*double(_size);
   }
 
   inline void initialize( void ){

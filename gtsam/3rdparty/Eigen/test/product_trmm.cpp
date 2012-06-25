@@ -24,70 +24,100 @@
 
 #include "main.h"
 
-template<typename Scalar> void trmm(int size,int /*othersize*/)
+template<typename Scalar, int Mode, int TriOrder, int OtherOrder, int ResOrder, int OtherCols>
+void trmm(int rows=internal::random<int>(1,EIGEN_TEST_MAX_SIZE),
+          int cols=internal::random<int>(1,EIGEN_TEST_MAX_SIZE),
+          int otherCols = OtherCols==Dynamic?internal::random<int>(1,EIGEN_TEST_MAX_SIZE):OtherCols)
 {
   typedef typename NumTraits<Scalar>::Real RealScalar;
 
-  typedef Matrix<Scalar,Dynamic,Dynamic,ColMajor> MatrixColMaj;
-  typedef Matrix<Scalar,Dynamic,Dynamic,RowMajor> MatrixRowMaj;
+  typedef Matrix<Scalar,Dynamic,Dynamic,TriOrder> TriMatrix;
+  typedef Matrix<Scalar,Dynamic,OtherCols,OtherCols==1?ColMajor:OtherOrder> OnTheRight;
+  typedef Matrix<Scalar,OtherCols,Dynamic,OtherCols==1?RowMajor:OtherOrder> OnTheLeft;
+  
+  typedef Matrix<Scalar,Dynamic,OtherCols,OtherCols==1?ColMajor:ResOrder> ResXS;
+  typedef Matrix<Scalar,OtherCols,Dynamic,OtherCols==1?RowMajor:ResOrder> ResSX;
 
-  DenseIndex rows = size;
-  DenseIndex cols = internal::random<DenseIndex>(1,size);
-
-  MatrixColMaj  triV(rows,cols), triH(cols,rows), upTri(cols,rows), loTri(rows,cols),
-                unitUpTri(cols,rows), unitLoTri(rows,cols), strictlyUpTri(cols,rows), strictlyLoTri(rows,cols);
-  MatrixColMaj  ge1(rows,cols), ge2(cols,rows), ge3;
-  MatrixRowMaj  rge3;
+  TriMatrix  mat(rows,cols), tri(rows,cols), triTr(cols,rows);
+  
+  OnTheRight  ge_right(cols,otherCols);
+  OnTheLeft   ge_left(otherCols,rows);
+  ResSX       ge_sx, ge_sx_save;
+  ResXS       ge_xs, ge_xs_save;
 
   Scalar s1 = internal::random<Scalar>(),
          s2 = internal::random<Scalar>();
 
-  triV.setRandom();
-  triH.setRandom();
-  loTri = triV.template triangularView<Lower>();
-  upTri = triH.template triangularView<Upper>();
-  unitLoTri = triV.template triangularView<UnitLower>();
-  unitUpTri = triH.template triangularView<UnitUpper>();
-  strictlyLoTri = triV.template triangularView<StrictlyLower>();
-  strictlyUpTri = triH.template triangularView<StrictlyUpper>();
-  ge1.setRandom();
-  ge2.setRandom();
+  mat.setRandom();
+  tri = mat.template triangularView<Mode>();
+  triTr = mat.transpose().template triangularView<Mode>();
+  ge_right.setRandom();
+  ge_left.setRandom();
 
-  VERIFY_IS_APPROX( ge3 = triV.template triangularView<Lower>() * ge2, loTri * ge2);
-  VERIFY_IS_APPROX( ge3 = ge2 * triV.template triangularView<Lower>(), ge2 * loTri);
-  VERIFY_IS_APPROX( ge3 = triH.template triangularView<Upper>() * ge1, upTri * ge1);
-  VERIFY_IS_APPROX( ge3 = ge1 * triH.template triangularView<Upper>(), ge1 * upTri);
-  VERIFY_IS_APPROX( ge3 = (s1*triV.adjoint()).template triangularView<Upper>() * (s2*ge1), s1*loTri.adjoint() * (s2*ge1));
-  VERIFY_IS_APPROX( ge3 = ge1 * triV.adjoint().template triangularView<Upper>(), ge1 * loTri.adjoint());
-  VERIFY_IS_APPROX( ge3 = triH.adjoint().template triangularView<Lower>() * ge2, upTri.adjoint() * ge2);
-  VERIFY_IS_APPROX( ge3 = ge2 * triH.adjoint().template triangularView<Lower>(), ge2 * upTri.adjoint());
-  VERIFY_IS_APPROX( ge3 = triV.template triangularView<Lower>() * ge1.adjoint(), loTri * ge1.adjoint());
-  VERIFY_IS_APPROX( ge3 = ge1.adjoint() * triV.template triangularView<Lower>(), ge1.adjoint() * loTri);
-  VERIFY_IS_APPROX( ge3 = triH.template triangularView<Upper>() * ge2.adjoint(), upTri * ge2.adjoint());
-  VERIFY_IS_APPROX(rge3.noalias() = triH.template triangularView<Upper>() * ge2.adjoint(), upTri * ge2.adjoint());
-  VERIFY_IS_APPROX( ge3 = (s1*triV).adjoint().template triangularView<Upper>() * ge2.adjoint(), internal::conj(s1) * loTri.adjoint() * ge2.adjoint());
-  VERIFY_IS_APPROX(rge3.noalias() = triV.adjoint().template triangularView<Upper>() * ge2.adjoint(), loTri.adjoint() * ge2.adjoint());
-  VERIFY_IS_APPROX( ge3 = triH.adjoint().template triangularView<Lower>() * ge1.adjoint(), upTri.adjoint() * ge1.adjoint());
-  VERIFY_IS_APPROX(rge3.noalias() = triH.adjoint().template triangularView<Lower>() * ge1.adjoint(), upTri.adjoint() * ge1.adjoint());
-
-  VERIFY_IS_APPROX( ge3 = triV.template triangularView<UnitLower>() * ge2, unitLoTri * ge2);
-  VERIFY_IS_APPROX( rge3.noalias() = ge2 * triV.template triangularView<UnitLower>(), ge2 * unitLoTri);
-  VERIFY_IS_APPROX( ge3 = ge2 * triV.template triangularView<UnitLower>(), ge2 * unitLoTri);
-  VERIFY_IS_APPROX( ge3 = (s1*triV).adjoint().template triangularView<UnitUpper>() * ge2.adjoint(), internal::conj(s1) * unitLoTri.adjoint() * ge2.adjoint());
-
-  VERIFY_IS_APPROX( ge3 = triV.template triangularView<StrictlyLower>() * ge2, strictlyLoTri * ge2);
-  VERIFY_IS_APPROX( rge3.noalias() = ge2 * triV.template triangularView<StrictlyLower>(), ge2 * strictlyLoTri);
-  VERIFY_IS_APPROX( ge3 = ge2 * triV.template triangularView<StrictlyLower>(), ge2 * strictlyLoTri);
-  VERIFY_IS_APPROX( ge3 = (s1*triV).adjoint().template triangularView<StrictlyUpper>() * ge2.adjoint(), internal::conj(s1) * strictlyLoTri.adjoint() * ge2.adjoint());
+  VERIFY_IS_APPROX( ge_xs = mat.template triangularView<Mode>() * ge_right, tri * ge_right);
+  VERIFY_IS_APPROX( ge_sx = ge_left * mat.template triangularView<Mode>(), ge_left * tri);
+  
+  VERIFY_IS_APPROX( ge_xs.noalias() = mat.template triangularView<Mode>() * ge_right, tri * ge_right);
+  VERIFY_IS_APPROX( ge_sx.noalias() = ge_left * mat.template triangularView<Mode>(), ge_left * tri);
+  
+  VERIFY_IS_APPROX( ge_xs.noalias() = (s1*mat.adjoint()).template triangularView<Mode>() * (s2*ge_left.transpose()), s1*triTr.conjugate() * (s2*ge_left.transpose()));
+  VERIFY_IS_APPROX( ge_sx.noalias() = ge_right.transpose() * mat.adjoint().template triangularView<Mode>(), ge_right.transpose() * triTr.conjugate());
+  
+  VERIFY_IS_APPROX( ge_xs.noalias() = (s1*mat.adjoint()).template triangularView<Mode>() * (s2*ge_left.adjoint()), s1*triTr.conjugate() * (s2*ge_left.adjoint()));
+  VERIFY_IS_APPROX( ge_sx.noalias() = ge_right.adjoint() * mat.adjoint().template triangularView<Mode>(), ge_right.adjoint() * triTr.conjugate());
+  
+  ge_xs_save = ge_xs;
+  VERIFY_IS_APPROX( (ge_xs_save + s1*triTr.conjugate() * (s2*ge_left.adjoint())).eval(), ge_xs.noalias() += (s1*mat.adjoint()).template triangularView<Mode>() * (s2*ge_left.adjoint()) );
+  ge_sx_save = ge_sx;
+  VERIFY_IS_APPROX( ge_sx_save - (ge_right.adjoint() * (-s1 * triTr).conjugate()).eval(), ge_sx.noalias() -= (ge_right.adjoint() * (-s1 * mat).adjoint().template triangularView<Mode>()).eval());
+  
+  VERIFY_IS_APPROX( ge_xs = (s1*mat).adjoint().template triangularView<Mode>() * ge_left.adjoint(), internal::conj(s1) * triTr.conjugate() * ge_left.adjoint());
+  
+  // TODO check with sub-matrix expressions ?
 }
+
+template<typename Scalar, int Mode, int TriOrder>
+void trmv(int rows=internal::random<int>(1,EIGEN_TEST_MAX_SIZE), int cols=internal::random<int>(1,EIGEN_TEST_MAX_SIZE))
+{
+  trmm<Scalar,Mode,TriOrder,ColMajor,ColMajor,1>(rows,cols,1);
+}
+
+template<typename Scalar, int Mode, int TriOrder, int OtherOrder, int ResOrder>
+void trmm(int rows=internal::random<int>(1,EIGEN_TEST_MAX_SIZE), int cols=internal::random<int>(1,EIGEN_TEST_MAX_SIZE), int otherCols = internal::random<int>(1,EIGEN_TEST_MAX_SIZE))
+{
+  trmm<Scalar,Mode,TriOrder,OtherOrder,ResOrder,Dynamic>(rows,cols,otherCols);
+}
+
+#define CALL_ALL_ORDERS(NB,SCALAR,MODE)                                             \
+  EIGEN_CAT(CALL_SUBTEST_,NB)((trmm<SCALAR, MODE, ColMajor,ColMajor,ColMajor>()));  \
+  EIGEN_CAT(CALL_SUBTEST_,NB)((trmm<SCALAR, MODE, ColMajor,ColMajor,RowMajor>()));  \
+  EIGEN_CAT(CALL_SUBTEST_,NB)((trmm<SCALAR, MODE, ColMajor,RowMajor,ColMajor>()));  \
+  EIGEN_CAT(CALL_SUBTEST_,NB)((trmm<SCALAR, MODE, ColMajor,RowMajor,RowMajor>()));  \
+  EIGEN_CAT(CALL_SUBTEST_,NB)((trmm<SCALAR, MODE, RowMajor,ColMajor,ColMajor>()));  \
+  EIGEN_CAT(CALL_SUBTEST_,NB)((trmm<SCALAR, MODE, RowMajor,ColMajor,RowMajor>()));  \
+  EIGEN_CAT(CALL_SUBTEST_,NB)((trmm<SCALAR, MODE, RowMajor,RowMajor,ColMajor>()));  \
+  EIGEN_CAT(CALL_SUBTEST_,NB)((trmm<SCALAR, MODE, RowMajor,RowMajor,RowMajor>()));  \
+  \
+  EIGEN_CAT(CALL_SUBTEST_1,NB)((trmv<SCALAR, MODE, ColMajor>()));                   \
+  EIGEN_CAT(CALL_SUBTEST_1,NB)((trmv<SCALAR, MODE, RowMajor>()));
+
+  
+#define CALL_ALL(NB,SCALAR)                 \
+  CALL_ALL_ORDERS(EIGEN_CAT(1,NB),SCALAR,Upper)          \
+  CALL_ALL_ORDERS(EIGEN_CAT(2,NB),SCALAR,UnitUpper)      \
+  CALL_ALL_ORDERS(EIGEN_CAT(3,NB),SCALAR,StrictlyUpper)  \
+  CALL_ALL_ORDERS(EIGEN_CAT(1,NB),SCALAR,Lower)          \
+  CALL_ALL_ORDERS(EIGEN_CAT(2,NB),SCALAR,UnitLower)      \
+  CALL_ALL_ORDERS(EIGEN_CAT(3,NB),SCALAR,StrictlyLower)
+  
 
 void test_product_trmm()
 {
   for(int i = 0; i < g_repeat ; i++)
   {
-    CALL_SUBTEST_1((trmm<float>(internal::random<int>(1,320),internal::random<int>(1,320))));
-    CALL_SUBTEST_2((trmm<double>(internal::random<int>(1,320),internal::random<int>(1,320))));
-    CALL_SUBTEST_3((trmm<std::complex<float> >(internal::random<int>(1,200),internal::random<int>(1,200))));
-    CALL_SUBTEST_4((trmm<std::complex<double> >(internal::random<int>(1,200),internal::random<int>(1,200))));
+    CALL_ALL(1,float);                //  EIGEN_SUFFIXES;11;111;21;121;31;131
+    CALL_ALL(2,double);               //  EIGEN_SUFFIXES;12;112;22;122;32;132
+    CALL_ALL(3,std::complex<float>);  //  EIGEN_SUFFIXES;13;113;23;123;33;133
+    CALL_ALL(4,std::complex<double>); //  EIGEN_SUFFIXES;14;114;24;124;34;134
   }
 }

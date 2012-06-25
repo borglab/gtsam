@@ -39,8 +39,7 @@ template<typename MatrixType> void linearStructure(const MatrixType& m)
   // to test it, hence I consider that we will have tested Random.h
   MatrixType m1 = MatrixType::Random(rows, cols),
              m2 = MatrixType::Random(rows, cols),
-             m3(rows, cols),
-             mzero = MatrixType::Zero(rows, cols);
+             m3(rows, cols);
 
   Scalar s1 = internal::random<Scalar>();
   while (internal::abs(s1)<1e-3) s1 = internal::random<Scalar>();
@@ -90,10 +89,10 @@ void test_linearstructure()
     CALL_SUBTEST_2( linearStructure(Matrix2f()) );
     CALL_SUBTEST_3( linearStructure(Vector3d()) );
     CALL_SUBTEST_4( linearStructure(Matrix4d()) );
-    CALL_SUBTEST_5( linearStructure(MatrixXcf(3, 3)) );
-    CALL_SUBTEST_6( linearStructure(MatrixXf(8, 12)) );
-    CALL_SUBTEST_7( linearStructure(MatrixXi(8, 12)) );
-    CALL_SUBTEST_8( linearStructure(MatrixXcd(20, 20)) );
-    CALL_SUBTEST_9( linearStructure(ArrayXXf(12, 8)) );
+    CALL_SUBTEST_5( linearStructure(MatrixXcf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2), internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2))) );
+    CALL_SUBTEST_6( linearStructure(MatrixXf (internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+    CALL_SUBTEST_7( linearStructure(MatrixXi (internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+    CALL_SUBTEST_8( linearStructure(MatrixXcd(internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2), internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2))) );
+    CALL_SUBTEST_9( linearStructure(ArrayXXf (internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
   }
 }

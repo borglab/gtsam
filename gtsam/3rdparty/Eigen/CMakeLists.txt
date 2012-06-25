@@ -64,6 +64,10 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 find_package(StandardMathLibrary)
 
+
+set(EIGEN_TEST_CUSTOM_LINKER_FLAGS  "" CACHE STRING "Additional linker flags when linking unit tests.")
+set(EIGEN_TEST_CUSTOM_CXX_FLAGS     "" CACHE STRING "Additional compiler flags when compiling unit tests.")
+
 set(EIGEN_STANDARD_LIBRARIES_TO_LINK_TO "")
 
 if(NOT STANDARD_MATH_LIBRARY_FOUND)
@@ -102,6 +106,8 @@ if(EIGEN_DEFAULT_TO_ROW_MAJOR)
 endif()
 
 add_definitions("-DEIGEN_PERMANENTLY_DISABLE_STUPID_WARNINGS")
+
+set(EIGEN_TEST_MAX_SIZE "320" CACHE STRING "Maximal matrix/vector size, default is 320")
 
 if(CMAKE_COMPILER_IS_GNUCXX)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wnon-virtual-dtor -Wno-long-long -ansi -Wundef -Wcast-align -Wchar-subscripts -Wall -W -Wpointer-arith -Wwrite-strings -Wformat-security -fexceptions -fno-check-new -fno-common -fstrict-aliasing")
@@ -158,7 +164,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 
   option(EIGEN_TEST_NEON "Enable/Disable Neon in tests/examples" OFF)
   if(EIGEN_TEST_NEON)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfloat-abi=softfp -mfpu=neon -mcpu=cortex-a8")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon -mcpu=cortex-a8")
     message(STATUS "Enabling NEON in tests/examples")
   endif()
 
@@ -301,44 +307,9 @@ add_subdirectory(Eigen)
 
 add_subdirectory(doc EXCLUDE_FROM_ALL)
 
-add_custom_target(buildtests)
-add_custom_target(check COMMAND "ctest")
-add_dependencies(check buildtests)
-
-# CMake/Ctest does not allow us to change the build command,
-# so we have to workaround by directly editing the generated DartConfiguration.tcl file
-# save CMAKE_MAKE_PROGRAM
-set(CMAKE_MAKE_PROGRAM_SAVE ${CMAKE_MAKE_PROGRAM})
-# and set a fake one
-set(CMAKE_MAKE_PROGRAM "@EIGEN_MAKECOMMAND_PLACEHOLDER@")
-
-include(CTest)
+include(EigenConfigureTesting)
+# fixme, not sure this line is still needed:
 enable_testing() # must be called from the root CMakeLists, see man page
-include(EigenTesting)
-ei_init_testing()
-
-# overwrite default DartConfiguration.tcl
-# The worarounds are different for each version of the MSVC IDE
-if(MSVC_IDE)
-  if(MSVC_VERSION EQUAL 1600) # MSVC 2010
-    set(EIGEN_MAKECOMMAND_PLACEHOLDER "${CMAKE_MAKE_PROGRAM_SAVE} buildtests.vcxproj /p:Configuration=\${CTEST_CONFIGURATION_TYPE} \n # ")
-  else() # MSVC 2008 (TODO check MSVC 2005)
-    set(EIGEN_MAKECOMMAND_PLACEHOLDER "${CMAKE_MAKE_PROGRAM_SAVE} /project buildtests")
-  endif()
-else()
-  # for make and nmake
-  set(EIGEN_MAKECOMMAND_PLACEHOLDER "${CMAKE_MAKE_PROGRAM_SAVE} buildtests")
-endif()
-
-configure_file(${CMAKE_BINARY_DIR}/DartConfiguration.tcl ${CMAKE_BINARY_DIR}/DartConfiguration.tcl)
-# restore default CMAKE_MAKE_PROGRAM
-set(CMAKE_MAKE_PROGRAM ${CMAKE_MAKE_PROGRAM_SAVE})
-# un-set temporary variables so that it is like they never existed.
-# CMake 2.6.3 introduces the more logical unset() syntax for this.
-set(CMAKE_MAKE_PROGRAM_SAVE)
-set(EIGEN_MAKECOMMAND_PLACEHOLDER)
-
-configure_file(${CMAKE_SOURCE_DIR}/CTestCustom.cmake.in ${CMAKE_BINARY_DIR}/CTestCustom.cmake)
 
 
 if(EIGEN_LEAVE_TEST_IN_ALL_TARGET)
@@ -347,15 +318,13 @@ else()
   add_subdirectory(test EXCLUDE_FROM_ALL)
 endif()
 
-if(NOT MSVC)
-  if(EIGEN_LEAVE_TEST_IN_ALL_TARGET)
-    add_subdirectory(blas)
-    add_subdirectory(lapack)
-  else()
-    add_subdirectory(blas EXCLUDE_FROM_ALL)
-    add_subdirectory(lapack EXCLUDE_FROM_ALL)
-  endif()
-endif(NOT MSVC)
+if(EIGEN_LEAVE_TEST_IN_ALL_TARGET)
+  add_subdirectory(blas)
+  add_subdirectory(lapack)
+else()
+  add_subdirectory(blas EXCLUDE_FROM_ALL)
+  add_subdirectory(lapack EXCLUDE_FROM_ALL)
+endif()
 
 add_subdirectory(unsupported)
 
@@ -368,6 +337,10 @@ add_subdirectory(scripts EXCLUDE_FROM_ALL)
 if(EIGEN_BUILD_BTL)
   add_subdirectory(bench/btl EXCLUDE_FROM_ALL)
 endif(EIGEN_BUILD_BTL)
+
+if(NOT WIN32)
+  add_subdirectory(bench/spbench EXCLUDE_FROM_ALL)
+endif(NOT WIN32)
 
 ei_testing_print_summary()
 

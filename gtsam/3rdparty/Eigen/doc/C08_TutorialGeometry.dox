@@ -45,16 +45,17 @@ But note that unfortunately, because of how C++ works, you can \b not do this:
 Rotation2D<float> rot2(angle_in_radian);\endcode</td></tr>
 <tr class="alt"><td>
 3D rotation as an \ref AngleAxis "angle + axis"</td><td>\code
-AngleAxis<float> aa(angle_in_radian, Vector3f(ax,ay,az));\endcode</td></tr>
+AngleAxis<float> aa(angle_in_radian, Vector3f(ax,ay,az));\endcode
+<span class="note">The axis vector must be normalized.</span></td></tr>
 <tr><td>
 3D rotation as a \ref Quaternion "quaternion"</td><td>\code
 Quaternion<float> q;  q = AngleAxis<float>(angle_in_radian, axis);\endcode</td></tr>
 <tr class="alt"><td>
 N-D Scaling</td><td>\code
-Scaling<float,2>(sx, sy)
-Scaling<float,3>(sx, sy, sz)
-Scaling<float,N>(s)
-Scaling<float,N>(vecN)\endcode</td></tr>
+Scaling(sx, sy)
+Scaling(sx, sy, sz)
+Scaling(s)
+Scaling(vecN)\endcode</td></tr>
 <tr><td>
 N-D Translation</td><td>\code
 Translation<float,2>(tx, ty)
@@ -64,13 +65,13 @@ Translation<float,N>(vecN)\endcode</td></tr>
 <tr class="alt"><td>
 N-D \ref TutorialGeoTransform "Affine transformation"</td><td>\code
 Transform<float,N,Affine> t = concatenation_of_any_transformations;
-Transform<float,3,Affine> t = Translation3f(p) * AngleAxisf(a,axis) * Scaling3f(s);\endcode</td></tr>
+Transform<float,3,Affine> t = Translation3f(p) * AngleAxisf(a,axis) * Scaling(s);\endcode</td></tr>
 <tr><td>
 N-D Linear transformations \n
 <em class=note>(pure rotations, \n scaling, etc.)</em></td><td>\code
 Matrix<float,N> t = concatenation_of_rotations_and_scalings;
-Matrix<float,2> t = Rotation2Df(a) * Scaling2f(s);
-Matrix<float,3> t = AngleAxisf(a,axis) * Scaling3f(s);\endcode</td></tr>
+Matrix<float,2> t = Rotation2Df(a) * Scaling(s);
+Matrix<float,3> t = AngleAxisf(a,axis) * Scaling(s);\endcode</td></tr>
 </table>
 
 <strong>Notes on rotations</strong>\n To transform more than a single vector the preferred
@@ -92,8 +93,8 @@ Rotation2Df r;  r  = Matrix2f(..);       // assumes a pure rotation matrix
 AngleAxisf aa;  aa = Quaternionf(..);
 AngleAxisf aa;  aa = Matrix3f(..);       // assumes a pure rotation matrix
 Matrix2f m;     m  = Rotation2Df(..);
-Matrix3f m;     m  = Quaternionf(..);       Matrix3f m;   m = Scaling3f(..);
-Affine3f m;     m  = AngleAxis3f(..);       Affine3f m;   m = Scaling3f(..);
+Matrix3f m;     m  = Quaternionf(..);       Matrix3f m;   m = Scaling(..);
+Affine3f m;     m  = AngleAxis3f(..);       Affine3f m;   m = Scaling(..);
 Affine3f m;     m  = Translation3f(..);     Affine3f m;   m = Matrix3f(..);
 \endcode</td></tr>
 </table>
@@ -207,10 +208,10 @@ t.scale(s);
 t.prescale(Vector_(sx,sy,..));
 t.prescale(s);
 \endcode</td><td>\code
-t *= Scaling_(sx,sy,..);
-t *= Scaling_(s);
-t = Scaling_(sx,sy,..) * t;
-t = Scaling_(s) * t;
+t *= Scaling(sx,sy,..);
+t *= Scaling(s);
+t = Scaling(sx,sy,..) * t;
+t = Scaling(s) * t;
 \endcode</td></tr>
 <tr class="alt"><td>Shear transformation \n ( \b 2D \b only ! )</td><td>\code
 t.shear(sx,sy);
@@ -224,7 +225,7 @@ Note that in both API, any many transformations can be concatenated in a single 
 t.pretranslate(..).rotate(..).translate(..).scale(..);
 \endcode</td></tr>
 <tr><td>\code
-t = Translation_(..) * t * RotationType(..) * Translation_(..) * Scaling_(..);
+t = Translation_(..) * t * RotationType(..) * Translation_(..) * Scaling(..);
 \endcode</td></tr>
 </table>
 

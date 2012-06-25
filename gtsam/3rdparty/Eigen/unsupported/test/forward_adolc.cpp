@@ -23,10 +23,19 @@
 // Eigen. If not, see <http://www.gnu.org/licenses/>.
 
 #include "main.h"
+#include <Eigen/Dense>
+
 #define NUMBER_DIRECTIONS 16
 #include <unsupported/Eigen/AdolcForward>
 
 int adtl::ADOLC_numDir;
+
+template<typename Vector>
+EIGEN_DONT_INLINE typename Vector::Scalar foo(const Vector& p)
+{
+  typedef typename Vector::Scalar Scalar;
+  return (p-Vector(Scalar(-1),Scalar(1.))).norm() + (p.array().sqrt().abs() * p.array().sin()).sum() + p.dot(p);
+}
 
 template<typename _Scalar, int NX=Dynamic, int NY=Dynamic>
 struct TestFunc1
@@ -137,5 +146,13 @@ void test_forward_adolc()
     CALL_SUBTEST(( adolc_forward_jacobian(TestFunc1<double,3,2>()) ));
     CALL_SUBTEST(( adolc_forward_jacobian(TestFunc1<double,3,3>()) ));
     CALL_SUBTEST(( adolc_forward_jacobian(TestFunc1<double>(3,3)) ));
+  }
+
+  {
+    // simple instanciation tests
+    Matrix<adtl::adouble,2,1> x;
+    foo(x);
+    Matrix<adtl::adouble,Dynamic,Dynamic> A(4,4);;
+    A.selfadjointView<Lower>().eigenvalues();
   }
 }

@@ -34,12 +34,15 @@ For a first contact with Eigen, the best place is to have a look at the \ref Get
     - \ref TopicLazyEvaluation
     - \ref TopicLinearAlgebraDecompositions
     - \ref TopicCustomizingEigen
+    - \ref TopicMultiThreading
     - \ref TopicPreprocessorDirectives
     - \ref TopicStorageOrders
     - \ref TopicInsideEigenExample
     - \ref TopicWritingEfficientProductExpression
     - \ref TopicClassHierarchy
     - \ref TopicFunctionTakingEigenTypes
+    - \ref TopicTemplateKeyword
+    - \ref TopicUsingIntelMKL
   - <b>Topics related to alignment issues</b>
     - \ref TopicUnalignedArrayAssert
     - \ref TopicFixedSizeVectorizable

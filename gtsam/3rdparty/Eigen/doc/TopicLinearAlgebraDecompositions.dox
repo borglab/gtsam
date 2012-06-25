@@ -34,7 +34,7 @@ namespace Eigen {
         <td>-</td>
         <td>Yes</td>
         <td>Excellent</td>
-        <td>Blocking</td>
+        <td>Blocking, Implicit MT</td>
     </tr>
 
     <tr class="alt">
@@ -94,7 +94,7 @@ namespace Eigen {
         <td>-</td>
         <td>Yes</td>
         <td>Excellent</td>
-        <td>Blocking \n <em>Soon: meta unroller</em></td>
+        <td>Blocking</td>
     </tr>
 
     <tr>
@@ -132,7 +132,7 @@ namespace Eigen {
         <td>Eigenvalues/vectors</td>
         <td>-</td>
         <td>Good</td>
-        <td><em>Soon: specializations for 2x2 and 3x3</em></td>
+        <td><em>Closed forms for 2x2 and 3x3</em></td>
     </tr>
 
     <tr>
@@ -245,6 +245,10 @@ namespace Eigen {
 
   <dt><b>Blocking</b></dt>
     <dd>Means the algorithm can work per block, whence guaranteeing a good scaling of the performance for large matrices.</dd>
+  <dt><b>Implicit Multi Threading (MT)</b></dt>
+    <dd>Means the algorithm can take advantage of multicore processors via OpenMP. "Implicit" means the algortihm itself is not parallelized, but that it relies on parallelized matrix-matrix product rountines.</dd>
+  <dt><b>Explicit Multi Threading (MT)</b></dt>
+    <dd>Means the algorithm is explicitely parallelized to take advantage of multicore processors via OpenMP.</dd>
   <dt><b>Meta-unroller</b></dt>
     <dd>Means the algorithm is automatically and explicitly unrolled for very small fixed size matrices.</dd>
   <dt><b></b></dt>
