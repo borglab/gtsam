@@ -34,7 +34,6 @@
 #include <gtsam/inference/BayesTreeCliqueBase.h>
 #include <gtsam/inference/IndexConditional.h>
 #include <gtsam/linear/VectorValues.h>
-#include <gtsam/nonlinear/Key.h>
 
 namespace gtsam {
 
