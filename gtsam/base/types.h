@@ -21,10 +21,16 @@
 
 #include <cstddef>
 
+#include <boost/function/function1.hpp>
+
 namespace gtsam {
 
 	/// Integer variable index type
 	typedef size_t Index;
+
+  /** A function to convert indices to strings, for example by translating back
+   * to a nonlinear key and then to a Symbol. */
+  typedef boost::function<std::string(Index)> IndexFormatter;
 
 	/**
 	 * Helper class that uses templates to select between two types based on
