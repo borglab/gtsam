@@ -58,17 +58,17 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
-	void BayesTree<CONDITIONAL,CLIQUE>::saveGraph(const std::string &s) const {
+	void BayesTree<CONDITIONAL,CLIQUE>::saveGraph(const std::string &s, const IndexFormatter& indexFormatter) const {
 		if (!root_.get()) throw std::invalid_argument("the root of Bayes tree has not been initialized!");
 		std::ofstream of(s.c_str());
 		of<< "digraph G{\n";
-		saveGraph(of, root_);
+		saveGraph(of, root_, indexFormatter);
 		of<<"}";
 		of.close();
 	}
 
 	template<class CONDITIONAL, class CLIQUE>
-	void BayesTree<CONDITIONAL,CLIQUE>::saveGraph(std::ostream &s, sharedClique clique, int parentnum) const {
+	void BayesTree<CONDITIONAL,CLIQUE>::saveGraph(std::ostream &s, sharedClique clique, const IndexFormatter& indexFormatter, int parentnum) const {
 		static int num = 0;
 		bool first = true;
 		std::stringstream out;
@@ -78,7 +78,7 @@ namespace gtsam {
 
 		BOOST_FOREACH(Index index, clique->conditional_->frontals()) {
 			if(!first) parent += ","; first = false;
-			parent +=  (boost::format("%1%")%index).str();;
+			parent += indexFormatter(index);
 		}
 
 		if( clique != root_){
@@ -89,7 +89,7 @@ namespace gtsam {
 		first = true;
 		BOOST_FOREACH(Index sep, clique->conditional_->parents()) {
 			if(!first) parent += ","; first = false;
-			parent += (boost::format("%1%")%sep).str();
+			parent += indexFormatter(sep);
 		}
 		parent += "\"];\n";
 		s << parent;
@@ -97,7 +97,7 @@ namespace gtsam {
 
 		BOOST_FOREACH(sharedClique c, clique->children_) {
 			num++;
-			saveGraph(s, c, parentnum);
+			saveGraph(s, c, indexFormatter, parentnum);
 		}
 	}
 

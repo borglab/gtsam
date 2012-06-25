@@ -25,6 +25,7 @@
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include <gtsam/base/types.h>
 #include <gtsam/base/FastVector.h>
@@ -33,6 +34,7 @@
 #include <gtsam/inference/BayesTreeCliqueBase.h>
 #include <gtsam/inference/IndexConditional.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/nonlinear/Key.h>
 
 namespace gtsam {
 
@@ -97,7 +99,7 @@ namespace gtsam {
 		Nodes nodes_;
 
 		/** private helper method for saving the Tree to a text file in GraphViz format */
-		void saveGraph(std::ostream &s, sharedClique clique,
+		void saveGraph(std::ostream &s, sharedClique clique, const IndexFormatter& indexFormatter,
 				int parentnum = 0) const;
 
 		/** Gather data on a single clique */
@@ -232,7 +234,7 @@ namespace gtsam {
 		 */
 
 		/** saves the Tree to a text file in GraphViz format */
-		void saveGraph(const std::string& s) const;
+		void saveGraph(const std::string& s, const IndexFormatter& indexFormatter = &boost::lexical_cast<std::string, Index>) const;
 
 		/// @}
 		/// @name Advanced Interface

@@ -92,7 +92,7 @@ public:
 	void printStats() const;
 
   /** saves the Tree to a text file in GraphViz format */
-  void saveGraph(const std::string& s) const;
+  void saveGraph(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
 	/// @}
 	/// @name Advanced Interface
