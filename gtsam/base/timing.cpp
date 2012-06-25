@@ -172,6 +172,7 @@ void TimingOutline::toc() {
   assert(timerActive_);
   double elapsed = timer_.elapsed();
   add(size_t(elapsed * 1000000.0));
+  *timerActive_ = false;
 #endif
 }
 
