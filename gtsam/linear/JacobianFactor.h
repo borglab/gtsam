@@ -151,7 +151,8 @@ namespace gtsam {
     }
 
     // Implementing Testable interface
-    virtual void print(const std::string& s = "") const;
+    virtual void print(const std::string& s = "",
+    		const IndexFormatter& formatter = &(boost::lexical_cast<std::string, Index>)) const;
     virtual bool equals(const GaussianFactor& lf, double tol = 1e-9) const;
 
     Vector unweighted_error(const VectorValues& c) const; /** (A*x-b) */

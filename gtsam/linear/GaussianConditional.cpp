@@ -129,16 +129,16 @@ GaussianConditional& GaussianConditional::operator=(const GaussianConditional& r
 }
 
 /* ************************************************************************* */
-void GaussianConditional::print(const string &s) const
+void GaussianConditional::print(const string &s, const IndexFormatter& formatter) const
 {
   cout << s << ": density on ";
   for(const_iterator it = beginFrontals(); it != endFrontals(); ++it) {
-  	cout << (boost::format("[%1%]")%(*it)).str() << " ";
+  	cout << (boost::format("[%1%]")%(formatter(*it))).str() << " ";
   }
   cout << endl;
   gtsam::print(Matrix(get_R()),"R");
   for(const_iterator it = beginParents() ; it != endParents() ; ++it ) {
-    gtsam::print(Matrix(get_S(it)), (boost::format("A[%1%]")%(*it)).str());
+    gtsam::print(Matrix(get_S(it)), (boost::format("A[%1%]")%(formatter(*it))).str());
   }
   gtsam::print(Vector(get_d()),"d");
   gtsam::print(sigmas_,"sigmas");

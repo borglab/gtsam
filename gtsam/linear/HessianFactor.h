@@ -218,7 +218,8 @@ namespace gtsam {
 		}
 
     /** Print the factor for debugging and testing (implementing Testable) */
-    virtual void print(const std::string& s = "") const;
+    virtual void print(const std::string& s = "",
+    		const IndexFormatter& formatter = &(boost::lexical_cast<std::string, Index>)) const;
 
     /** Compare to another factor for testing (implementing Testable) */
     virtual bool equals(const GaussianFactor& lf, double tol = 1e-9) const;

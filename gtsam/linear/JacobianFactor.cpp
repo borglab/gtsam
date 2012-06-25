@@ -244,15 +244,15 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  void JacobianFactor::print(const string& s) const {
+  void JacobianFactor::print(const string& s, const IndexFormatter& formatter) const {
     cout << s << "\n";
     if (empty()) {
       cout << " empty, keys: ";
-      BOOST_FOREACH(const Index& key, keys()) { cout << key << " "; }
+      BOOST_FOREACH(const Index& key, keys()) { cout << formatter(key) << " "; }
       cout << endl;
     } else {
       for(const_iterator key=begin(); key!=end(); ++key)
-      	cout << boost::format("A[%1%]=\n")%*key << getA(key) << endl;
+      	cout << boost::format("A[%1%]=\n")%formatter(*key) << getA(key) << endl;
       cout << "b=" << getb() << endl;
       model_->print("model");
     }

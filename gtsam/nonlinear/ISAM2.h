@@ -254,7 +254,8 @@ public:
 
   /** Construct from an elimination result */
   ISAM2Clique(const std::pair<sharedConditional, boost::shared_ptr<ConditionalType::FactorType> >& result) :
-    Base(result.first), cachedFactor_(result.second), gradientContribution_(result.first->get_R().cols() + result.first->get_S().cols()) {
+    Base(result.first), cachedFactor_(result.second),
+    gradientContribution_(result.first->get_R().cols() + result.first->get_S().cols()) {
     // Compute gradient contribution
     const ConditionalType& conditional(*result.first);
     // Rewrite -(R * P')'*d   as   -(d' * R * P')'   for computational speed reasons
@@ -278,14 +279,18 @@ public:
   const Vector& gradientContribution() const { return gradientContribution_; }
 
   bool equals(const This& other, double tol=1e-9) const {
-    return Base::equals(other) && ((!cachedFactor_ && !other.cachedFactor_) || (cachedFactor_ && other.cachedFactor_ && cachedFactor_->equals(*other.cachedFactor_, tol)));
+    return Base::equals(other) &&
+    		((!cachedFactor_ && !other.cachedFactor_)
+    				|| (cachedFactor_ && other.cachedFactor_
+    						&& cachedFactor_->equals(*other.cachedFactor_, tol)));
   }
 
   /** print this node */
-  void print(const std::string& s = "") const {
-    Base::print(s);
+  void print(const std::string& s = "",
+  		const IndexFormatter& formatter = &(boost::lexical_cast<std::string, Index>)) const {
+    Base::print(s,formatter);
     if(cachedFactor_)
-      cachedFactor_->print(s + "Cached: ");
+      cachedFactor_->print(s + "Cached: ", formatter);
     else
       std::cout << s << "Cached empty" << std::endl;
     if(gradientContribution_.rows() != 0)

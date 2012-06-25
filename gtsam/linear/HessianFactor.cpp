@@ -292,11 +292,11 @@ HessianFactor& HessianFactor::operator=(const HessianFactor& rhs) {
 }
 
 /* ************************************************************************* */
-void HessianFactor::print(const std::string& s) const {
+void HessianFactor::print(const std::string& s, const IndexFormatter& formatter) const {
 	cout << s << "\n";
 	cout << " keys: ";
 	for(const_iterator key=this->begin(); key!=this->end(); ++key)
-		cout << *key << "(" << this->getDim(key) << ") ";
+		cout << formatter(*key) << "(" << this->getDim(key) << ") ";
 	cout << "\n";
 	gtsam::print(Matrix(info_.range(0,info_.nBlocks(), 0,info_.nBlocks()).selfadjointView<Eigen::Upper>()), "Ab^T * Ab: ");
 }

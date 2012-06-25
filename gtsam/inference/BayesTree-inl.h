@@ -130,10 +130,10 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
-	void BayesTree<CONDITIONAL,CLIQUE>::Cliques::print(const std::string& s) const {
+	void BayesTree<CONDITIONAL,CLIQUE>::Cliques::print(const std::string& s, const IndexFormatter& indexFormatter) const {
 	  std::cout << s << ":\n";
 		BOOST_FOREACH(sharedClique clique, *this)
-				clique->printTree();
+				clique->printTree("", indexFormatter);
 	}
 
 	/* ************************************************************************* */
@@ -324,14 +324,14 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
-	void BayesTree<CONDITIONAL,CLIQUE>::print(const std::string& s) const {
+	void BayesTree<CONDITIONAL,CLIQUE>::print(const std::string& s, const IndexFormatter& indexFormatter) const {
 		if (root_.use_count() == 0) {
 			printf("WARNING: BayesTree.print encountered a forest...\n");
 			return;
 		}
 		std::cout << s << ": clique size == " << size() << ", node size == " << nodes_.size() << std::endl;
 		if (nodes_.empty()) return;
-		root_->printTree("");
+		root_->printTree("", indexFormatter);
 	}
 
 	/* ************************************************************************* */

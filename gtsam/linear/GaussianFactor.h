@@ -23,6 +23,8 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/inference/IndexFactor.h>
 
+#include <boost/lexical_cast.hpp>
+
 #include <string>
 #include <utility>
 
@@ -81,7 +83,9 @@ namespace gtsam {
     typedef boost::shared_ptr<GaussianFactor> shared_ptr;
 
     // Implementing Testable interface
-    virtual void print(const std::string& s = "") const = 0;
+    virtual void print(const std::string& s = "",
+    		const IndexFormatter& formatter = &(boost::lexical_cast<std::string, Index>)) const = 0;
+
     virtual bool equals(const GaussianFactor& lf, double tol = 1e-9) const = 0;
 
     virtual double error(const VectorValues& c) const = 0; /**  0.5*(A*x-b)'*D*(A*x-b) */

@@ -138,7 +138,8 @@ public:
 	GaussianConditional& operator=(const GaussianConditional& rhs);
 
 	/** print */
-	void print(const std::string& = "GaussianConditional") const;
+	void print(const std::string& = "GaussianConditional",
+			const IndexFormatter& formatter = &(boost::lexical_cast<std::string, Index>)) const;
 
 	/** equals function */
 	bool equals(const GaussianConditional &cg, double tol = 1e-9) const;

@@ -70,7 +70,8 @@ namespace gtsam {
 
 		// A convenience class for a list of shared cliques
 		struct Cliques : public std::list<sharedClique> {
-			void print(const std::string& s = "Cliques") const;
+			void print(const std::string& s = "Cliques",
+					const IndexFormatter& indexFormatter = &(boost::lexical_cast<std::string, Index>)) const;
 			bool equals(const Cliques& other, double tol = 1e-9) const;
 		};
 
@@ -175,7 +176,8 @@ namespace gtsam {
 		bool equals(const BayesTree<CONDITIONAL,CLIQUE>& other, double tol = 1e-9) const;
 
 		/** print */
-		void print(const std::string& s = "") const;
+		void print(const std::string& s = "",
+				const IndexFormatter& indexFormatter = &(boost::lexical_cast<std::string, Index>) ) const;
 
 		/// @}
 		/// @name Standard Interface

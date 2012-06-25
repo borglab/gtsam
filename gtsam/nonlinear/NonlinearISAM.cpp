@@ -31,19 +31,6 @@ namespace gtsam {
 
 
 /* ************************************************************************* */
-// Create an index formatter that looks up the Key in an inverse ordering, then
-// formats the key using the provided key formatter, used in saveGraph.
-struct OrderingIndexFormatter {
-  Ordering::InvertedMap inverseOrdering;
-  const KeyFormatter& keyFormatter;
-  OrderingIndexFormatter(const Ordering& ordering, const KeyFormatter& keyFormatter) :
-      inverseOrdering(ordering.invert()), keyFormatter(keyFormatter) {}
-  string operator()(Index index) {
-    return keyFormatter(inverseOrdering.at(index));
-  }
-};
-
-/* ************************************************************************* */
 void NonlinearISAM::saveGraph(const string& s, const KeyFormatter& keyFormatter) const {
   isam_.saveGraph(s, OrderingIndexFormatter(ordering_, keyFormatter));
 }

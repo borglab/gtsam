@@ -258,5 +258,17 @@ public:
   bool equals(const Unordered &t, double tol=0) const;
 };
 
-}
+// Create an index formatter that looks up the Key in an inverse ordering, then
+// formats the key using the provided key formatter, used in saveGraph.
+struct OrderingIndexFormatter {
+  Ordering::InvertedMap inverseOrdering;
+  const KeyFormatter& keyFormatter;
+  OrderingIndexFormatter(const Ordering& ordering, const KeyFormatter& keyFormatter) :
+      inverseOrdering(ordering.invert()), keyFormatter(keyFormatter) {}
+  std::string operator()(Index index) {
+    return keyFormatter(inverseOrdering.at(index));
+  }
+};
+
+} // \namespace gtsam
 

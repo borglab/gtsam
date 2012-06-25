@@ -50,8 +50,8 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class DERIVED, class CONDITIONAL>
-  void BayesTreeCliqueBase<DERIVED,CONDITIONAL>::print(const std::string& s) const {
-    conditional_->print(s);
+  void BayesTreeCliqueBase<DERIVED,CONDITIONAL>::print(const std::string& s, const IndexFormatter& indexFormatter) const {
+    conditional_->print(s, indexFormatter);
   }
 
   /* ************************************************************************* */
@@ -65,10 +65,10 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class DERIVED, class CONDITIONAL>
-  void BayesTreeCliqueBase<DERIVED,CONDITIONAL>::printTree(const std::string& indent) const {
-    asDerived(this)->print(indent);
+  void BayesTreeCliqueBase<DERIVED,CONDITIONAL>::printTree(const std::string& indent, const IndexFormatter& indexFormatter) const {
+    asDerived(this)->print(indent, indexFormatter);
     BOOST_FOREACH(const derived_ptr& child, children_)
-      child->printTree(indent+"  ");
+      child->printTree(indent+"  ", indexFormatter);
   }
 
   /* ************************************************************************* */
