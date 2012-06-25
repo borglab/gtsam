@@ -233,7 +233,7 @@ namespace gtsam {
 		 */
 
 		/** saves the Tree to a text file in GraphViz format */
-		void saveGraph(const std::string& s, const IndexFormatter& indexFormatter = &boost::lexical_cast<std::string, Index>) const;
+		void saveGraph(const std::string& s, const IndexFormatter& indexFormatter = &(boost::lexical_cast<std::string, Index>) ) const;
 
 		/// @}
 		/// @name Advanced Interface
