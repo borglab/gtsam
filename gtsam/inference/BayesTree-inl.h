@@ -67,6 +67,7 @@ namespace gtsam {
 		of.close();
 	}
 
+	/* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
 	void BayesTree<CONDITIONAL,CLIQUE>::saveGraph(std::ostream &s, sharedClique clique, const IndexFormatter& indexFormatter, int parentnum) const {
 		static int num = 0;
@@ -101,7 +102,7 @@ namespace gtsam {
 		}
 	}
 
-
+	/* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
 	typename BayesTree<CONDITIONAL,CLIQUE>::CliqueStats
 	BayesTree<CONDITIONAL,CLIQUE>::CliqueData::getStats() const {
