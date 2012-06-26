@@ -262,7 +262,7 @@ namespace gtsam {
 			 * A diagonal noise model created by specifying a Vector of sigmas, i.e.
 			 * standard devations, the diagonal of the square root covariance matrix.
 			 */
-			static shared_ptr Sigmas(const Vector& sigmas, bool smart = true);
+			static shared_ptr Sigmas(const Vector& sigmas, bool smart = false);
 
 			/**
 			 * A diagonal noise model created by specifying a Vector of variances, i.e.

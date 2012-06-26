@@ -10,8 +10,9 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file Method.ccp
+ * @file StaticMethod.ccp
  * @author Frank Dellaert
+ * @author Andrew Melim
  **/
 
 #include <iostream>
@@ -62,6 +63,15 @@ void StaticMethod::matlab_wrapper(const string& toolboxPath, const string& class
   generateIncludes(file, className, includes);
   generateUsingNamespace(file, using_namespaces);
 
+  if(returnVal.isPair)
+  {
+    file.oss << "typedef boost::shared_ptr<"  << returnVal.qualifiedType1("::")  << "> Shared" <<  returnVal.type1 << ";"<< endl;
+    file.oss << "typedef boost::shared_ptr<"  << returnVal.qualifiedType2("::")  << "> Shared" <<  returnVal.type2 << ";"<< endl;
+  }
+  else
+    file.oss << "typedef boost::shared_ptr<"  << returnVal.qualifiedType1("::")  << "> Shared" <<  returnVal.type1 << ";"<< endl;
+
+  file.oss << "typedef boost::shared_ptr<"  << cppClassName  << "> Shared;" << endl;
   // call
   file.oss << "void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])\n";
   // start

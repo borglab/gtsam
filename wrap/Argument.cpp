@@ -12,6 +12,7 @@
 /**
  * @file Argument.ccp
  * @author Frank Dellaert
+ * @author Andrew Melim
  **/
 
 #include <iostream>
@@ -53,14 +54,14 @@ void Argument::matlab_unwrap(FileWriter& file, const string& matlabName) const {
 		file.oss << "boost::shared_ptr<" << cppType << "> " << name << " = unwrap_shared_ptr< ";
 	else if (is_ref)
 		// A reference: emit an "unwrap_shared_ptr" call and de-reference the pointer
-		file.oss << cppType << "& " << name << " = *unwrap_shared_ptr< ";
+		file.oss << "    " << cppType << "& " << name << " = *unwrap_shared_ptr< ";
 	else
 		// Not a pointer or a reference: emit an "unwrap" call
 		// unwrap is specified in matlab.h as a series of template specializations
 		// that know how to unpack the expected MATLAB object
 		// example: double tol = unwrap< double >(in[2]);
 		// example: Vector v = unwrap< Vector >(in[1]);
-		file.oss << cppType << " " << name << " = unwrap< ";
+		file.oss << "    " << cppType << " " << name << " = unwrap< ";
 
 	file.oss << cppType << " >(" << matlabName;
   if (is_ptr || is_ref) file.oss << ", \"" << matlabType << "\"";
@@ -126,3 +127,4 @@ void ArgumentList::matlab_unwrap(FileWriter& file, int start) const {
 }
 
 /* ************************************************************************* */
+

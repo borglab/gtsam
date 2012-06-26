@@ -10,8 +10,9 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file utilities.ccp
+ * @file utilities.h
  * @author Frank Dellaert
+ * @author Andrew Melim
  **/
 
 #pragma once
@@ -84,7 +85,7 @@ bool assert_equal(const std::string& expected, const std::string& actual);
 bool assert_equal(const std::vector<std::string>& expected, const std::vector<std::string>& actual);
 
 // auxiliary function to wrap an argument into a shared_ptr template
-std::string maybe_shared_ptr(bool add, const std::string& type);
+std::string maybe_shared_ptr(bool add, const std::string& qtype, const std::string& type);
 
 /**
  * Creates the "using namespace [name];" declarations

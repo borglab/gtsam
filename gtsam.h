@@ -497,7 +497,7 @@ class SimpleCamera {
 //*************************************************************************
 // inference
 //*************************************************************************
-class Permutation {
+/*class Permutation {
 	// Standard Constructors and Named Constructors
 	Permutation();
 	Permutation(size_t nVars);
@@ -511,12 +511,12 @@ class Permutation {
 	bool equals(const gtsam::Permutation& rhs, double tol) const;
 
 	// Standard interface
-	size_t at(size_t variable) const;
+	//size_t at(size_t variable) const;
 	size_t size() const;
 	bool empty() const;
 	void resize(size_t newSize);
-	gtsam::Permutation* permute(const gtsam::Permutation& permutation) const;
-	gtsam::Permutation* inverse() const;
+	//gtsam::Permutation permute(const gtsam::Permutation& permutation) const;
+	//gtsam::Permutation inverse() const;
 };
 
 class IndexFactor {
@@ -541,24 +541,24 @@ class IndexFactor {
 
 class IndexConditional {
   // Standard Constructors and Named Constructors
-  IndexConditional();
-  IndexConditional(size_t key);
-  IndexConditional(size_t key, size_t parent);
-  IndexConditional(size_t key, size_t parent1, size_t parent2);
-  IndexConditional(size_t key, size_t parent1, size_t parent2, size_t parent3);
+  //IndexConditional();
+  //IndexConditional(size_t key);
+  //IndexConditional(size_t key, size_t parent);
+  //IndexConditional(size_t key, size_t parent1, size_t parent2);
+  //IndexConditional(size_t key, size_t parent1, size_t parent2, size_t parent3);
   // FIXME: Must wrap std::vector<KeyType> for this to work
   //IndexFactor(size_t key, const std::vector<KeyType>& parents);
   //IndexConditional(const std::vector<Index>& keys, size_t nrFrontals);
   //template<class KEYS> static shared_ptr FromKeys(const KEYS& keys, size_t nrFrontals);
 
   // Testable
-  void print(string s) const;
-  bool equals(const gtsam::IndexConditional& other, double tol) const;
+  //void print(string s) const;
+  //bool equals(const gtsam::IndexConditional& other, double tol) const;
 
   // Standard interface
-  size_t nrFrontals() const;
-  size_t nrParents() const;
-  gtsam::IndexFactor* toFactor() const;
+  //size_t nrFrontals() const;
+  //size_t nrParents() const;
+  //gtsam::IndexFactor* toFactor() const;
 };
 
 #include <gtsam/inference/SymbolicFactorGraph.h>
@@ -672,7 +672,7 @@ class VariableIndex {
   size_t nFactors() const;
   size_t nEntries() const;
   void permute(const gtsam::Permutation& permutation);
-};
+};*/
 
 //*************************************************************************
 // linear
@@ -681,11 +681,12 @@ class VariableIndex {
 #include <gtsam/linear/NoiseModel.h>
 namespace noiseModel {
 class Base {
+	void print(string s) const;
 };
 
 class Gaussian {
-	static gtsam::noiseModel::Gaussian* SqrtInformation(Matrix R);
-	static gtsam::noiseModel::Gaussian* Covariance(Matrix R);
+	//static gtsam::noiseModel::Gaussian* SqrtInformation(Matrix R);
+	//static gtsam::noiseModel::Gaussian* Covariance(Matrix R);
 //	Matrix R() const;		// FIXME: cannot parse!!!
 	void print(string s) const;
 };
@@ -712,7 +713,7 @@ class Unit {
 }///\namespace noiseModel
 
 
-class Sampler {
+/*class Sampler {
 	Sampler(gtsam::noiseModel::Diagonal* model, int seed);
 	Sampler(Vector sigmas, int seed);
 	Sampler(int seed);
@@ -723,7 +724,7 @@ class Sampler {
 
 	Vector sample();
 	Vector sampleNewModel(gtsam::noiseModel::Diagonal* model);
-};
+};*/
 
 class VectorValues {
 	VectorValues();
@@ -897,11 +898,11 @@ class Ordering {
 	// Standard interface
 	size_t nVars() const;
   size_t size() const;
-  size_t at(size_t key) const;
+  size_t at(size_t key);
   bool exists(size_t key) const;
   void insert(size_t key, size_t order);
   void push_back(size_t key);
-  void permuteWithInverse(const gtsam::Permutation& inversePermutation);
+  //void permuteWithInverse(const gtsam::Permutation& inversePermutation);
   // FIXME: Wrap InvertedMap as well
   //InvertedMap invert() const;
 };
@@ -958,9 +959,9 @@ class Marginals {
 
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 class LevenbergMarquardtParams {
-  LevenbergMarquardtParams();
+  /*LevenbergMarquardtParams();
   LevenbergMarquardtParams(double initial, double factor, double bound, size_t verbose);
-  void print(string s) const;
+  void print(string s) const;*/
   double getlambdaInitial() const ;
   double getlambdaFactor() const ;
   double getlambdaUpperBound() const;

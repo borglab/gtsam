@@ -61,6 +61,15 @@ void Method::matlab_wrapper(const string& classPath,
   generateIncludes(file, className, includes);
   generateUsingNamespace(file, using_namespaces);
 
+  if(returnVal.isPair)
+  {
+    file.oss << "typedef boost::shared_ptr<"  << returnVal.qualifiedType1("::")  << "> Shared" <<  returnVal.type1 << ";"<< endl;
+    file.oss << "typedef boost::shared_ptr<"  << returnVal.qualifiedType2("::")  << "> Shared" <<  returnVal.type2 << ";"<< endl;
+  }
+  else
+    file.oss << "typedef boost::shared_ptr<"  << returnVal.qualifiedType1("::")  << "> Shared" <<  returnVal.type1 << ";"<< endl;
+
+  file.oss << "typedef boost::shared_ptr<"  << cppClassName  << "> Shared;" << endl;
   // call
   file.oss << "void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])\n";
   // start
@@ -73,9 +82,9 @@ void Method::matlab_wrapper(const string& classPath,
 
   // get class pointer
   // example: shared_ptr<Test> = unwrap_shared_ptr< Test >(in[0], "Test");
-  file.oss << "  boost::shared_ptr<" << cppClassName << "> self = unwrap_shared_ptr< " << cppClassName
-      << " >(in[0],\"" << matlabClassName << "\");" << endl;
-
+  file.oss << "  mxArray* mxh = mxGetProperty(in[0],0,\"self\");" << endl;
+  file.oss << "  Shared* self = *reinterpret_cast<Shared**> (mxGetPr(mxh));" << endl; 
+  file.oss << "  Shared obj = *self;" << endl;
   // unwrap arguments, see Argument.cpp
   args.matlab_unwrap(file,1);
 
@@ -84,7 +93,7 @@ void Method::matlab_wrapper(const string& classPath,
   file.oss << "  ";
   if (returnVal.type1!="void")
     file.oss << returnVal.return_type(true,ReturnValue::pair) << " result = ";
-  file.oss << "self->" << name << "(" << args.names() << ");\n";
+  file.oss << "obj->" << name << "(" << args.names() << ");\n";
 
   // wrap result
   // example: out[0]=wrap<bool>(result);

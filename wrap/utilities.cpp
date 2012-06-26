@@ -12,6 +12,7 @@
 /**
  * @file utilities.ccp
  * @author Frank Dellaert
+ * @author Andrew Melim
  **/
 
 #include <iostream>
@@ -103,10 +104,12 @@ bool files_equal(const string& expected, const string& actual, bool skipheader) 
 }
 
 /* ************************************************************************* */
-string maybe_shared_ptr(bool add, const string& type) {
-  string str = add? "boost::shared_ptr<" : "";
-  str += type;
-  if (add) str += ">";
+string maybe_shared_ptr(bool add, const string& qtype, const string& type) {
+  string str = add? "Shared" : "";
+  if (add) str += type; 
+  else str += qtype;
+
+  //if (add) str += ">";
   return str;
 }
 
@@ -121,6 +124,7 @@ void generateUsingNamespace(FileWriter& file, const vector<string>& using_namesp
 void generateIncludes(FileWriter& file, const string& class_name,
 		const vector<string>& includes) {
 	file.oss << "#include <wrap/matlab.h>" << endl;
+	file.oss << "#include <set>" << endl;
 	bool added_include = false;
 	BOOST_FOREACH(const string& s, includes) {
 		if (!s.empty()) {
@@ -133,5 +137,6 @@ void generateIncludes(FileWriter& file, const string& class_name,
 }
 
 /* ************************************************************************* */
+
 
 } // \namespace wrap
