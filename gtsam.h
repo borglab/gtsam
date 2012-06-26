@@ -921,6 +921,11 @@ class NonlinearFactor {
 //	size_t dim() const; // FIXME: Doesn't link
 };
 
+class EasyFactorGraph {
+    EasyFactorGraph();
+    void print(string s) const;
+};
+
 class Values {
 	Values();
 	size_t size() const;
@@ -937,7 +942,7 @@ class KeyList {
 	// Note: no print function
 	size_t size() const;
 };
-
+// FIXME 
 // Actually a KeyVector<Key>
 #include <gtsam/nonlinear/Values.h>
 class KeyVector {
@@ -959,9 +964,9 @@ class Marginals {
 
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 class LevenbergMarquardtParams {
-  /*LevenbergMarquardtParams();
+  LevenbergMarquardtParams();
   LevenbergMarquardtParams(double initial, double factor, double bound, size_t verbose);
-  void print(string s) const;*/
+  void print(string s) const;
   double getlambdaInitial() const ;
   double getlambdaFactor() const ;
   double getlambdaUpperBound() const;
@@ -1075,7 +1080,7 @@ class Graph {
 	void addPosePrior(size_t key, const gtsam::Pose3& p, const gtsam::noiseModel::Base* model);
 	void addRelativePose(size_t key1, size_t key2, const gtsam::Pose3& z, const gtsam::noiseModel::Base* model);
 	pose3SLAM::Values optimize(const pose3SLAM::Values& initialEstimate, size_t verbosity) const;
-	// FIXME gtsam::LevenbergMarquardtOptimizer optimizer(const pose3SLAM::Values& initialEstimate, const gtsam::LevenbergMarquardtParams& parameters) const;
+	//gtsam::LevenbergMarquardtOptimizer optimizer(const pose3SLAM::Values& initialEstimate, const gtsam::LevenbergMarquardtParams& parameters) const;
 	gtsam::Marginals marginals(const pose3SLAM::Values& solution) const;
 };
 
