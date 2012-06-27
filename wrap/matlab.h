@@ -341,7 +341,6 @@ mxArray* create_collect_object(const char *classname, mxArray* h){
   mxArray* dummy[14] = {h,h,h,h,h, h,h,h,h,h, h,h,h,h};
   mexCallMATLAB(1,&result,14,dummy,classname);
   mxSetProperty(result, 0, "self", h);
-  cout << "Return collect" << endl;
   return result;
 }
 
@@ -354,7 +353,6 @@ template <typename Class>
 mxArray* wrap_shared_ptr(boost::shared_ptr< Class >* shared_ptr, const char *classname) {
   mxArray* mxh = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
   *reinterpret_cast<boost::shared_ptr<Class>**> (mxGetPr(mxh)) = shared_ptr;
-  cout << "wrapped:" << mxh << endl << "end wrap" << endl;
   //return mxh;
   return create_object(classname, mxh);
 }
@@ -363,23 +361,19 @@ template <typename Class>
 mxArray* wrap_collect_shared_ptr(boost::shared_ptr< Class >* shared_ptr, const char *classname) {
   mxArray* mxh = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
   *reinterpret_cast<boost::shared_ptr<Class>**> (mxGetPr(mxh)) = shared_ptr;
-  cout << "wrapped:" << mxh << endl << "end wrap" << endl;
   //return mxh;
   return create_collect_object(classname, mxh);
 }
 
 template <typename Class>
 boost::shared_ptr<Class> unwrap_shared_ptr(const mxArray* obj, const string& className) {
-    cout << "UNWRAP CALL" << endl;
 
   mxArray* mxh = mxGetProperty(obj,0,"self");
   if (mxGetClassID(mxh) != mxUINT32OR64_CLASS || mxIsComplex(mxh)
     || mxGetM(mxh) != 1 || mxGetN(mxh) != 1) error(
     "Parameter is not an Shared type.");
 
-  cout << "unwrapped:" << mxh << endl;
   boost::shared_ptr<Class>* spp = *reinterpret_cast<boost::shared_ptr<Class>**> (mxGetPr(mxh));
-  cout << "unwrapped:" << spp << endl;
   return *spp;
 }
 

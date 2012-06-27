@@ -129,7 +129,7 @@ void Constructor::matlab_wrapper(const string& toolboxPath,
   file.oss << "    if(nargin > 1) {" << endl;
   file.oss << "      collector.insert(self);" << endl;
   //TODO: Add verbosity flag
-  file.oss << "      std::cout << \"Collected\" << collector.size() << std::endl;" << endl;
+  //file.oss << "      std::cout << \"Collected\" << collector.size() << std::endl;" << endl;
   file.oss << "    }" << endl;
   file.oss << "    else if(collector.erase(self))" << endl;
   file.oss << "      delete self;" << endl;

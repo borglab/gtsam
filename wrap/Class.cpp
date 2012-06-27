@@ -59,7 +59,8 @@ void Class::matlab_proxy(const string& classFile) const {
   // deconstructor
   file.oss << "    function delete(obj)" << endl;
   file.oss << "      if obj.self ~= 0" << endl;
-  file.oss << "        fprintf(1,'MATLAB class deleting %x',obj.self);" << endl;
+  //TODO: Add verbosity flag
+  //file.oss << "        fprintf(1,'MATLAB class deleting %x',obj.self);" << endl;
   file.oss << "        new_" << matlabName << "_(obj.self);" << endl;
   file.oss << "        obj.self = 0;" << endl;
   file.oss << "      end" << endl;

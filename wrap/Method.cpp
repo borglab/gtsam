@@ -63,11 +63,14 @@ void Method::matlab_wrapper(const string& classPath,
 
   if(returnVal.isPair)
   {
-    file.oss << "typedef boost::shared_ptr<"  << returnVal.qualifiedType1("::")  << "> Shared" <<  returnVal.type1 << ";"<< endl;
-    file.oss << "typedef boost::shared_ptr<"  << returnVal.qualifiedType2("::")  << "> Shared" <<  returnVal.type2 << ";"<< endl;
+      if(returnVal.category1 == ReturnValue::CLASS)
+        file.oss << "typedef boost::shared_ptr<"  << returnVal.qualifiedType1("::")  << "> Shared" <<  returnVal.type1 << ";"<< endl;
+      if(returnVal.category2 == ReturnValue::CLASS)
+        file.oss << "typedef boost::shared_ptr<"  << returnVal.qualifiedType2("::")  << "> Shared" <<  returnVal.type2 << ";"<< endl;
   }
   else
-    file.oss << "typedef boost::shared_ptr<"  << returnVal.qualifiedType1("::")  << "> Shared" <<  returnVal.type1 << ";"<< endl;
+      if(returnVal.category1 == ReturnValue::CLASS)
+        file.oss << "typedef boost::shared_ptr<"  << returnVal.qualifiedType1("::")  << "> Shared" <<  returnVal.type1 << ";"<< endl;
 
   file.oss << "typedef boost::shared_ptr<"  << cppClassName  << "> Shared;" << endl;
   // call
