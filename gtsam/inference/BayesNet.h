@@ -90,6 +90,9 @@ public:
   /** print */
   void print(const std::string& s = "") const;
 
+  /** print statistics */
+  void printStats(const std::string& s = "") const;
+
   /** check equality */
   bool equals(const BayesNet& other, double tol = 1e-9) const;
 

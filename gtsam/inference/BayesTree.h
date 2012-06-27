@@ -81,6 +81,7 @@ namespace gtsam {
 			std::size_t maxConditionalSize;
 			double avgSeparatorSize;
 			std::size_t maxSeparatorSize;
+			void print(const std::string& s = "") const ;
 		};
 
 		/** store all the sizes  */

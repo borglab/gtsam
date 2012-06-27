@@ -118,13 +118,7 @@ void NonlinearISAM::print(const string& s, const KeyFormatter& keyFormatter) con
 
 /* ************************************************************************* */
 void NonlinearISAM::printStats() const {
-  gtsam::GaussianISAM::CliqueData data = isam_.getCliqueData();
-  gtsam::GaussianISAM::CliqueStats stats = data.getStats();
-  cout << "\navg Conditional Size: " << stats.avgConditionalSize;
-  cout << "\nmax Conditional Size: " << stats.maxConditionalSize;
-  cout << "\navg Separator Size: " << stats.avgSeparatorSize;
-  cout << "\nmax Separator Size: " << stats.maxSeparatorSize;
-  cout << endl;
+  isam_.getCliqueData().getStats().print();
 }
 
 /* ************************************************************************* */

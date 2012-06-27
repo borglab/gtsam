@@ -102,6 +102,18 @@ namespace gtsam {
 		}
 	}
 
+
+	/* ************************************************************************* */
+  template<class CONDITIONAL, class CLIQUE>
+  void BayesTree<CONDITIONAL,CLIQUE>::CliqueStats::print(const std::string& s) const {
+    std::cout << s
+              <<"\navg Conditional Size: " << avgConditionalSize
+              << "\nmax Conditional Size: " << maxConditionalSize
+              << "\navg Separator Size: " << avgSeparatorSize
+              << "\nmax Separator Size: " << maxSeparatorSize
+              << std::endl;
+  }
+
 	/* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
 	typename BayesTree<CONDITIONAL,CLIQUE>::CliqueStats
