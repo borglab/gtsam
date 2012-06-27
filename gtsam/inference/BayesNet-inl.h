@@ -52,8 +52,8 @@ namespace gtsam {
       total += conditional->size();
     }
     std::cout << s
-              << "maximum clique size = " << max_size << std::endl
-              << "average clique size = " << total / n << std::endl
+              << "maximum conditional size = " << max_size << std::endl
+              << "average conditional size = " << total / n << std::endl
               << "density = " << 100.0 * total / (double) (n*(n+1)/2) << " %" << std::endl
               << std::endl;
   }
