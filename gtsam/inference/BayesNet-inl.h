@@ -26,6 +26,7 @@
 #include <boost/assign/std/vector.hpp> // for +=
 using boost::assign::operator+=;
 
+#include <algorithm>
 #include <iostream>
 #include <fstream>
 
@@ -33,11 +34,29 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class CONDITIONAL>
-	void BayesNet<CONDITIONAL>::print(const std::string& s) const {
+	void BayesNet<CONDITIONAL>::print(const std::string& s,
+			const boost::function<std::string(KeyType)>& formatter) const {
 		std::cout << s;
 		BOOST_REVERSE_FOREACH(sharedConditional conditional, conditionals_)
-			conditional->print();
+			conditional->print("Conditional", formatter);
 	}
+
+  /* ************************************************************************* */
+  template<class CONDITIONAL>
+  void BayesNet<CONDITIONAL>::printStats(const std::string& s) const {
+
+    const size_t n = conditionals_.size();
+    size_t max_size = 0;
+    size_t total = 0;
+    BOOST_REVERSE_FOREACH(sharedConditional conditional, conditionals_) {
+      max_size = std::max(max_size, conditional->size());
+      total += conditional->size();
+    }
+    std::cout << s
+              << "maximum conditional size = " << max_size << std::endl
+              << "average conditional size = " << total / n << std::endl
+              << "density = " << 100.0 * total / (double) (n*(n+1)/2) << " %" << std::endl;
+  }
 
   /* ************************************************************************* */
   template<class CONDITIONAL>

@@ -54,7 +54,8 @@ namespace gtsam {
 		}
 
 		/// print
-		void print(const std::string& = "GaussianDensity") const;
+		void print(const std::string& = "GaussianDensity",
+				const IndexFormatter& formatter = &(boost::lexical_cast<std::string, Index>)) const;
 
 		/// Mean \f$ \mu = R^{-1} d \f$
 		Vector mean() const;

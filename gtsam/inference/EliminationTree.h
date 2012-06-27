@@ -54,6 +54,8 @@ public:
   typedef boost::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
 	typedef typename boost::shared_ptr<FACTOR> sharedFactor;  ///< Shared pointer to a factor
   typedef gtsam::BayesNet<typename FACTOR::ConditionalType> BayesNet; ///< The BayesNet corresponding to FACTOR
+  typedef FACTOR Factor;
+  typedef typename FACTOR::KeyType KeyType;
 
   /** Typedef for an eliminate subroutine */
   typedef typename FactorGraph<FACTOR>::Eliminate Eliminate;
@@ -67,7 +69,7 @@ private:
   typedef FastList<shared_ptr> SubTrees;
   typedef std::vector<typename FACTOR::ConditionalType::shared_ptr> Conditionals;
 
-  Index key_; ///< index associated with root
+  Index key_; ///< index associated with root // FIXME: doesn't this require that "Index" is the type of keys in the generic factor?
   Factors factors_; ///< factors associated with root
   SubTrees subTrees_; ///< sub-trees
 
@@ -141,7 +143,8 @@ public:
 	/// @{
 
   /** Print the tree to cout */
-  void print(const std::string& name = "EliminationTree: ") const;
+  void print(const std::string& name = "EliminationTree: ",
+  		const boost::function<std::string(KeyType)>& formatter = &(boost::lexical_cast<std::string, KeyType>)) const;
 
   /** Test whether the tree is equal to another */
   bool equals(const EliminationTree& other, double tol = 1e-9) const;

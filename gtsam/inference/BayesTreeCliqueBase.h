@@ -117,6 +117,9 @@ namespace gtsam {
     /** return the const reference of children */
     const std::list<derived_ptr>& children() const { return children_; }
 
+    /** return a shared_ptr to the parent clique */
+    derived_ptr parent() const { return parent_.lock(); }
+
   	/// @}
   	/// @name Advanced Interface
   	/// @{
