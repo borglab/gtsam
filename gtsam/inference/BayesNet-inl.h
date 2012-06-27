@@ -43,7 +43,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class CONDITIONAL>
   void BayesNet<CONDITIONAL>::printStats(const std::string& s) const {
-    std::cout << s;
+
     const size_t n = conditionals_.size();
     size_t max_size = 0;
     size_t total = 0;
