@@ -110,8 +110,7 @@ namespace gtsam {
               <<"avg Conditional Size: " << avgConditionalSize << std::endl
               << "max Conditional Size: " << maxConditionalSize << std::endl
               << "avg Separator Size: " << avgSeparatorSize << std::endl
-              << "max Separator Size: " << maxSeparatorSize << std::endl
-              << std::endl;
+              << "max Separator Size: " << maxSeparatorSize << std::endl;
   }
 
 	/* ************************************************************************* */

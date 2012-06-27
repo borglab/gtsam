@@ -54,8 +54,7 @@ namespace gtsam {
     std::cout << s
               << "maximum conditional size = " << max_size << std::endl
               << "average conditional size = " << total / n << std::endl
-              << "density = " << 100.0 * total / (double) (n*(n+1)/2) << " %" << std::endl
-              << std::endl;
+              << "density = " << 100.0 * total / (double) (n*(n+1)/2) << " %" << std::endl;
   }
 
   /* ************************************************************************* */
