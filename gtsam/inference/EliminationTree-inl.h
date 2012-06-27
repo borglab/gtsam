@@ -166,12 +166,13 @@ EliminationTree<FACTOR>::Create(const FactorGraph<DERIVEDFACTOR>& factorGraph) {
 
 /* ************************************************************************* */
 template<class FACTORGRAPH>
-void EliminationTree<FACTORGRAPH>::print(const std::string& name) const {
-  std::cout << name << " (" << key_ << ")" << std::endl;
+void EliminationTree<FACTORGRAPH>::print(const std::string& name,
+		const boost::function<std::string(KeyType)>& formatter) const {
+  std::cout << name << " (" << formatter(key_) << ")" << std::endl;
   BOOST_FOREACH(const sharedFactor& factor, factors_) {
-    factor->print(name + "  "); }
+    factor->print(name + "  ", formatter); }
   BOOST_FOREACH(const shared_ptr& child, subTrees_) {
-    child->print(name + "  "); }
+    child->print(name + "  ", formatter); }
 }
 
 /* ************************************************************************* */

@@ -25,6 +25,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include <gtsam/base/types.h>
 
@@ -38,6 +39,9 @@ namespace gtsam {
 	 */
 	template <class FG>
 	class ClusterTree {
+	public:
+		// Access to factor types
+		typedef typename FG::KeyType KeyType;
 
 	protected:
 
@@ -74,10 +78,10 @@ namespace gtsam {
       Cluster(FRONTALIT firstFrontal, FRONTALIT lastFrontal, SEPARATORIT firstSeparator, SEPARATORIT lastSeparator);
 
 			/// print
-			void print(const std::string& indent) const;
+			void print(const std::string& indent, const boost::function<std::string(KeyType)>& formatter = &(boost::lexical_cast<std::string, KeyType>)) const;
 
 			/// print the enire tree
-			void printTree(const std::string& indent) const;
+			void printTree(const std::string& indent, const boost::function<std::string(KeyType)>& formatter = &(boost::lexical_cast<std::string, KeyType>)) const;
 
 			/// check equality
 			bool equals(const Cluster& other) const;
@@ -123,7 +127,7 @@ namespace gtsam {
   	/// @{
 
 		/// print the object
-		void print(const std::string& str="") const;
+		void print(const std::string& str="", const boost::function<std::string(KeyType)>& formatter = &(boost::lexical_cast<std::string, KeyType>)) const;
 
 		/** check equality */
 		bool equals(const ClusterTree<FG>& other, double tol = 1e-9) const;

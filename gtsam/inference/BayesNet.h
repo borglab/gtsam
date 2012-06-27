@@ -23,6 +23,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <boost/assign/list_inserter.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include <gtsam/base/types.h>
 #include <gtsam/base/FastList.h>
@@ -48,6 +49,7 @@ public:
   typedef typename boost::shared_ptr<BayesNet<CONDITIONAL> > shared_ptr;
 
   /** We store shared pointers to Conditional densities */
+  typedef typename CONDITIONAL::KeyType KeyType;
   typedef typename boost::shared_ptr<CONDITIONAL> sharedConditional;
   typedef typename boost::shared_ptr<const CONDITIONAL> const_sharedConditional;
   typedef typename std::list<sharedConditional> Conditionals;
@@ -88,7 +90,8 @@ public:
 	/// @{
 
   /** print */
-  void print(const std::string& s = "") const;
+  void print(const std::string& s = "",
+  		const boost::function<std::string(KeyType)>& formatter = &(boost::lexical_cast<std::string, KeyType>)) const;
 
   /** print statistics */
   void printStats(const std::string& s = "") const;

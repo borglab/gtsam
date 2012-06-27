@@ -64,6 +64,18 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
+	void DiscreteFactorGraph::print(const std::string& s,
+			const IndexFormatter& formatter) const {
+		std::cout << s << std::endl;
+		std::cout << "size: " << size() << std::endl;
+		for (size_t i = 0; i < factors_.size(); i++) {
+			std::stringstream ss;
+			ss << "factor " << i << ": ";
+			if (factors_[i] != NULL) factors_[i]->print(ss.str(), formatter);
+		}
+	}
+
+	/* ************************************************************************* */
 	std::pair<DiscreteConditional::shared_ptr, DecisionTreeFactor::shared_ptr>  //
 	EliminateDiscrete(const FactorGraph<DiscreteFactor>& factors, size_t num) {
 
@@ -89,6 +101,7 @@ namespace gtsam {
 
 		return std::make_pair(cond, sum);
 	}
+
 
 /* ************************************************************************* */
 } // namespace

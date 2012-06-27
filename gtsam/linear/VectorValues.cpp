@@ -77,10 +77,10 @@ void VectorValues::insert(Index j, const Vector& value) {
 }
 
 /* ************************************************************************* */
-void VectorValues::print(const std::string& str) const {
+void VectorValues::print(const std::string& str, const IndexFormatter& formatter) const {
 	std::cout << str << ": " << size() << " elements\n";
 	for (Index var = 0; var < size(); ++var)
-		std::cout << "  " << var << ": \n" << operator[](var) << "\n";
+		std::cout << "  " << formatter(var) << ": \n" << operator[](var) << "\n";
 	std::cout.flush();
 }
 

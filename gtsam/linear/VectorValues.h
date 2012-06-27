@@ -21,6 +21,7 @@
 #include <gtsam/base/types.h>
 #include <gtsam/inference/Permutation.h>
 
+#include <boost/lexical_cast.hpp>
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
 #include <numeric>
@@ -159,15 +160,16 @@ namespace gtsam {
 
     iterator begin()                      { chk(); return maps_.begin(); }  ///< Iterator over variables
     const_iterator begin() const          { chk(); return maps_.begin(); }  ///< Iterator over variables
-    iterator end()                        { chk(); return maps_.end(); }    ///< Iterator over variables
+    iterator end()                         { chk(); return maps_.end(); }    ///< Iterator over variables
     const_iterator end() const            { chk(); return maps_.end(); }    ///< Iterator over variables
-    reverse_iterator rbegin()             { chk(); return maps_.rbegin(); } ///< Reverse iterator over variables
+    reverse_iterator rbegin()              { chk(); return maps_.rbegin(); } ///< Reverse iterator over variables
     const_reverse_iterator rbegin() const { chk(); return maps_.rbegin(); } ///< Reverse iterator over variables
-    reverse_iterator rend()               { chk(); return maps_.rend(); }   ///< Reverse iterator over variables
+    reverse_iterator rend()                { chk(); return maps_.rend(); }   ///< Reverse iterator over variables
     const_reverse_iterator rend() const   { chk(); return maps_.rend(); }   ///< Reverse iterator over variables
 
     /** print required by Testable for unit testing */
-    void print(const std::string& str = "VectorValues: ") const;
+    void print(const std::string& str = "VectorValues: ",
+    		const IndexFormatter& formatter = &(boost::lexical_cast<std::string, Index>)) const;
 
     /** equals required by Testable for unit testing */
     bool equals(const VectorValues& x, double tol = 1e-9) const;

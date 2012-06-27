@@ -82,8 +82,10 @@ namespace gtsam {
 		/// @{
 
 		// print
-		virtual void print(const std::string& s = "DiscreteFactor\n") const {
-			IndexFactor::print(s);
+		virtual void print(const std::string& s = "DiscreteFactor\n",
+				const boost::function<std::string(Index)>& formatter
+				= &(boost::lexical_cast<std::string, Index>)) const {
+			IndexFactor::print(s,formatter);
 		}
 
 		/// @}
