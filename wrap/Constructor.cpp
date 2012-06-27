@@ -107,14 +107,13 @@ void Constructor::matlab_wrapper(const string& toolboxPath,
   file.oss << "{" << endl;
   file.oss << "  void operator() (Shared* p)" << endl;
   file.oss << "  {" << endl;
-  file.oss << "    delete p;" << endl;
+  file.oss << "    collector.erase(p);" << endl;
   file.oss << "  }" << endl;
   file.oss << "};" << endl;
   file.oss << endl;
 
   //Generate cleanup function
   file.oss << "void cleanup(void) {" << endl;
-  file.oss << "  mexPrintf(\"MEX-file new_gtsamDummy_ is terminating\");" << endl;
   file.oss << "  std::for_each( collector.begin(), collector.end(), Destruct() );" << endl;
   file.oss << "}" << endl;
 
@@ -129,13 +128,13 @@ void Constructor::matlab_wrapper(const string& toolboxPath,
   file.oss << "  if(self) {" << endl;
   file.oss << "    if(nargin > 1) {" << endl;
   file.oss << "      collector.insert(self);" << endl;
+  //TODO: Add verbosity flag
   file.oss << "      std::cout << \"Collected\" << collector.size() << std::endl;" << endl;
   file.oss << "    }" << endl;
   file.oss << "    else if(collector.erase(self))" << endl;
   file.oss << "      delete self;" << endl;
   file.oss << "  } else {" << endl;
   file.oss << "    int nc = unwrap<int>(in[1]);" << endl;
-  file.oss << "    mexPrintf(\"MEX-file constructor\");" << endl << endl;;
 
   int i = 0;
   BOOST_FOREACH(ArgumentList al, args_list)
