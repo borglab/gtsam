@@ -237,6 +237,13 @@ namespace gtsam {
     /** Return the number of columns and rows of the Hessian matrix */
     size_t rows() const { return info_.rows(); }
 
+    /**
+     * Construct the corresponding anti-factor to negate information
+     * stored stored in this factor.
+     * @return a HessianFactor with negated Hessian matrices
+     */
+    virtual GaussianFactor::shared_ptr negate() const;
+
     /** Return a view of the block at (j1,j2) of the <em>upper-triangular part</em> of the
      * information matrix \f$ H \f$, no data is copied.  See HessianFactor class documentation
      * above to explain that only the upper-triangular part of the information matrix is stored

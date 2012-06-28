@@ -169,6 +169,13 @@ namespace gtsam {
      */
     virtual Matrix computeInformation() const;
 
+    /**
+     * Construct the corresponding anti-factor to negate information
+     * stored stored in this factor.
+     * @return a HessianFactor with negated Hessian matrices
+     */
+    virtual GaussianFactor::shared_ptr negate() const;
+
     /** Check if the factor contains no information, i.e. zero rows.  This does
      * not necessarily mean that the factor involves no variables (to check for
      * involving no variables use keys().empty()).

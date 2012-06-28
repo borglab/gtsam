@@ -386,6 +386,12 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  GaussianFactor::shared_ptr JacobianFactor::negate() const {
+  	HessianFactor hessian(*this);
+  	return hessian.negate();
+  }
+
+  /* ************************************************************************* */
   GaussianConditional::shared_ptr JacobianFactor::eliminateFirst() {
     return this->eliminate(1);
   }
