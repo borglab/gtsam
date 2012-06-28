@@ -115,6 +115,13 @@ namespace gtsam {
     	IndexFactor::permuteWithInverse(inversePermutation);
     }
 
+    /**
+     * Construct the corresponding anti-factor to negate information
+     * stored stored in this factor.
+     * @return a HessianFactor with negated Hessian matrices
+     */
+    virtual GaussianFactor::shared_ptr negate() const = 0;
+
   private:
     /** Serialization function */
     friend class boost::serialization::access;

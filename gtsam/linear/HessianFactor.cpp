@@ -511,4 +511,24 @@ GaussianConditional::shared_ptr HessianFactor::splitEliminatedFactor(size_t nrFr
   return conditional;
 }
 
+/* ************************************************************************* */
+GaussianFactor::shared_ptr HessianFactor::negate() const {
+  // Copy Hessian Blocks from Hessian factor and invert
+  std::vector<Index> js;
+  std::vector<Matrix> Gs;
+  std::vector<Vector> gs;
+  double f;
+  js.insert(js.end(), begin(), end());
+  for(size_t i = 0; i < js.size(); ++i){
+    for(size_t j = i; j < js.size(); ++j){
+      Gs.push_back( -info(begin()+i, begin()+j) );
+    }
+    gs.push_back( -linearTerm(begin()+i) );
+  }
+  f = -constantTerm();
+
+  // Create the Anti-Hessian Factor from the negated blocks
+  return HessianFactor::shared_ptr(new HessianFactor(js, Gs, gs, f));
+}
+
 } // gtsam

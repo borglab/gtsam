@@ -99,30 +99,8 @@ namespace gtsam {
 	    // Generate the linearized factor from the contained nonlinear factor
 	    GaussianFactor::shared_ptr gaussianFactor = factor_->linearize(c, ordering);
 
-	    // Cast the GaussianFactor to a Hessian
-	    HessianFactor::shared_ptr hessianFactor = boost::dynamic_pointer_cast<HessianFactor>(gaussianFactor);
-
-	    // If the cast fails, convert it to a Hessian
-	    if(!hessianFactor){
-	      hessianFactor = HessianFactor::shared_ptr(new HessianFactor(*gaussianFactor));
-	    }
-
-	    // Copy Hessian Blocks from Hessian factor and invert
-	    std::vector<Index> js;
-	    std::vector<Matrix> Gs;
-	    std::vector<Vector> gs;
-	    double f;
-	    js.insert(js.end(), hessianFactor->begin(), hessianFactor->end());
-	    for(size_t i = 0; i < js.size(); ++i){
-	      for(size_t j = i; j < js.size(); ++j){
-	        Gs.push_back( -hessianFactor->info(hessianFactor->begin()+i, hessianFactor->begin()+j) );
-	      }
-	      gs.push_back( -hessianFactor->linearTerm(hessianFactor->begin()+i) );
-	    }
-	    f = -hessianFactor->constantTerm();
-
-	    // Create the Anti-Hessian Factor from the negated blocks
-	    return HessianFactor::shared_ptr(new HessianFactor(js, Gs, gs, f));
+	    // return the negated version of the factor
+	    return gaussianFactor->negate();
 	  }
 
 
