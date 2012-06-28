@@ -918,7 +918,7 @@ class NonlinearFactor {
 	void equals(const gtsam::NonlinearFactor& other, double tol) const;
 	gtsam::KeyVector keys() const;
 	size_t size() const;
-//	size_t dim() const; // FIXME: Doesn't link
+	size_t dim() const;
 };
 
 class EasyFactorGraph {
