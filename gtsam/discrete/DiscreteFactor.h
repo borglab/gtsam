@@ -83,8 +83,8 @@ namespace gtsam {
 
 		// print
 		virtual void print(const std::string& s = "DiscreteFactor\n",
-				const boost::function<std::string(Index)>& formatter
-				= &(boost::lexical_cast<std::string, Index>)) const {
+				const IndexFormatter& formatter
+				=DefaultIndexFormatter) const {
 			IndexFactor::print(s,formatter);
 		}
 

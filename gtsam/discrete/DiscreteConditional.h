@@ -64,8 +64,8 @@ namespace gtsam {
 
 		/** GTSAM-style print */
 		void print(const std::string& s = "Discrete Conditional: ",
-				const boost::function<std::string(Index)>& formatter
-				= &(boost::lexical_cast<std::string, Index>)) const {
+				const IndexFormatter& formatter
+				=DefaultIndexFormatter) const {
 			std::cout << s << std::endl;
 			IndexConditional::print(s, formatter);
 			Potentials::print(s);

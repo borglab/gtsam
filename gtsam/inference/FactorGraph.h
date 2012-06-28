@@ -139,7 +139,7 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 
 		/** print out graph */
 		void print(const std::string& s = "FactorGraph",
-				const boost::function<std::string(KeyType)>& formatter = &(boost::lexical_cast<std::string, KeyType>)) const;
+				const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
 		/** Check equality */
 		bool equals(const This& fg, double tol = 1e-9) const;

@@ -35,7 +35,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class CONDITIONAL>
 	void BayesNet<CONDITIONAL>::print(const std::string& s,
-			const boost::function<std::string(KeyType)>& formatter) const {
+			const IndexFormatter& formatter) const {
 		std::cout << s;
 		BOOST_REVERSE_FOREACH(sharedConditional conditional, conditionals_)
 			conditional->print("Conditional", formatter);

@@ -91,7 +91,7 @@ public:
 
   /** print */
   void print(const std::string& s = "",
-  		const boost::function<std::string(KeyType)>& formatter = &(boost::lexical_cast<std::string, KeyType>)) const;
+  		const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
   /** print statistics */
   void printStats(const std::string& s = "") const;

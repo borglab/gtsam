@@ -27,6 +27,7 @@
 #include <boost/foreach.hpp>
 #include <boost/function/function1.hpp>
 #include <boost/lexical_cast.hpp>
+#include <gtsam/base/types.h>
 #include <gtsam/base/FastMap.h>
 
 namespace gtsam {
@@ -193,7 +194,7 @@ public:
 
   /// print
   void print(const std::string& s = "Factor",
-  		const boost::function<std::string(KeyType)>& formatter = &(boost::lexical_cast<std::string, KeyType>)) const;
+  		const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
   /// check equality
   bool equals(const This& other, double tol = 1e-9) const;
