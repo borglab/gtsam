@@ -125,6 +125,13 @@ struct ISAM2Params {
 
   bool enableDetailedResults; ///< Whether to compute and return ISAM2Result::detailedResults, this can increase running time (default: false)
 
+  /** Check variables for relinearization in tree-order, stopping the check once a variable does not need to be relinearized (default: false).
+   * This can improve speed by only checking a small part of the top of the tree. However, variables below the check cut-off can accumulate
+   * significant deltas without triggering relinearization. This is particularly useful in exploration scenarios where real-time performance
+   * is desired over correctness. Use with caution.
+   */
+  bool enablePartialRelinearizationCheck;
+
   /** Specify parameters as constructor arguments */
   ISAM2Params(
       OptimizationParams _optimizationParams = ISAM2GaussNewtonParams(), ///< see ISAM2Params::optimizationParams
@@ -139,7 +146,7 @@ struct ISAM2Params {
       relinearizeSkip(_relinearizeSkip), enableRelinearization(_enableRelinearization),
       evaluateNonlinearError(_evaluateNonlinearError), factorization(_factorization),
       cacheLinearizedFactors(_cacheLinearizedFactors), keyFormatter(_keyFormatter),
-      enableDetailedResults(false) {}
+      enableDetailedResults(false), enablePartialRelinearizationCheck(false) {}
 };
 
 /**

@@ -68,7 +68,21 @@ struct ISAM2::Impl {
    * @return The set of variable indices in delta whose magnitude is greater than or
    * equal to relinearizeThreshold
    */
-  static FastSet<Index> CheckRelinearization(const Permuted<VectorValues>& delta, const Ordering& ordering,
+  static FastSet<Index> CheckRelinearizationFull(const Permuted<VectorValues>& delta, const Ordering& ordering,
+      const ISAM2Params::RelinearizationThreshold& relinearizeThreshold, const KeyFormatter& keyFormatter = DefaultKeyFormatter);
+
+  /**
+   * Find the set of variables to be relinearized according to relinearizeThreshold.
+   * This check is performed recursively, starting at the top of the tree. Once a
+   * variable in the tree does not need to be relinearized, no further checks in
+   * that branch are performed. This is an approximation of the Full version, designed
+   * to save time at the expense of accuracy.
+   * @param delta The linear delta to check against the threshold
+   * @param keyFormatter Formatter for printing nonlinear keys during debugging
+   * @return The set of variable indices in delta whose magnitude is greater than or
+   * equal to relinearizeThreshold
+   */
+  static FastSet<Index> CheckRelinearizationPartial(const ISAM2Clique::shared_ptr& root, const Permuted<VectorValues>& delta, const Ordering& ordering,
       const ISAM2Params::RelinearizationThreshold& relinearizeThreshold, const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
   /**
