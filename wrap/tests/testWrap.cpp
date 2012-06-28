@@ -83,7 +83,7 @@ TEST( wrap, parse ) {
 	{
 		Class cls = module.classes.at(0);
 		EXPECT(assert_equal("Point2", cls.name));
-		EXPECT_LONGS_EQUAL(2, cls.constructors.size());
+		EXPECT_LONGS_EQUAL(2, cls.constructor.args_list.size());
 		EXPECT_LONGS_EQUAL(7, cls.methods.size());
 		EXPECT_LONGS_EQUAL(0, cls.static_methods.size());
 		EXPECT_LONGS_EQUAL(0, cls.namespaces.size());
@@ -94,18 +94,18 @@ TEST( wrap, parse ) {
 	{
 		Class cls = module.classes.at(1);
 		EXPECT(assert_equal("Point3", cls.name));
-		EXPECT_LONGS_EQUAL(1, cls.constructors.size());
+		EXPECT_LONGS_EQUAL(1, cls.constructor.args_list.size());
 		EXPECT_LONGS_EQUAL(1, cls.methods.size());
 		EXPECT_LONGS_EQUAL(2, cls.static_methods.size());
 		EXPECT_LONGS_EQUAL(0, cls.namespaces.size());
 		EXPECT(assert_equal(exp_using2, cls.using_namespaces));
 
 		// first constructor takes 3 doubles
-		Constructor c1 = cls.constructors.front();
-		EXPECT_LONGS_EQUAL(3, c1.args.size());
+		ArgumentList c1 = cls.constructor.args_list.front();
+		EXPECT_LONGS_EQUAL(3, c1.size());
 
 		// check first double argument
-		Argument a1 = c1.args.front();
+		Argument a1 = c1.front();
 		EXPECT(!a1.is_const);
 		EXPECT(assert_equal("double", a1.type));
 		EXPECT(!a1.is_ref);
@@ -123,7 +123,7 @@ TEST( wrap, parse ) {
 	{
 		LONGS_EQUAL(3, module.classes.size());
 		Class testCls = module.classes.at(2);
-		EXPECT_LONGS_EQUAL( 2, testCls.constructors.size());
+		EXPECT_LONGS_EQUAL( 2, testCls.constructor.args_list.size());
 		EXPECT_LONGS_EQUAL(19, testCls.methods.size());
 		EXPECT_LONGS_EQUAL( 0, testCls.static_methods.size());
 		EXPECT_LONGS_EQUAL( 0, testCls.namespaces.size());
@@ -228,18 +228,6 @@ TEST( wrap, matlab_code_namespaces ) {
 	EXPECT(files_equal(exp_path + "new_ns2ClassC_.m"             , act_path + "new_ns2ClassC_.m"             ));
 	EXPECT(files_equal(exp_path + "new_ns2ns3ClassB_.cpp"        , act_path + "new_ns2ns3ClassB_.cpp"        ));
 	EXPECT(files_equal(exp_path + "new_ns2ns3ClassB_.m"          , act_path + "new_ns2ns3ClassB_.m"          ));
-	EXPECT(files_equal(exp_path + "delete_ClassD.cpp"              , act_path + "delete_ClassD.cpp"              ));
-	EXPECT(files_equal(exp_path + "delete_ClassD.m"                , act_path + "delete_ClassD.m"                ));
-	EXPECT(files_equal(exp_path + "delete_ns1ClassA.cpp"           , act_path + "delete_ns1ClassA.cpp"           ));
-	EXPECT(files_equal(exp_path + "delete_ns1ClassA.m"             , act_path + "delete_ns1ClassA.m"             ));
-	EXPECT(files_equal(exp_path + "delete_ns1ClassB.cpp"           , act_path + "delete_ns1ClassB.cpp"           ));
-	EXPECT(files_equal(exp_path + "delete_ns1ClassB.m"             , act_path + "delete_ns1ClassB.m"             ));
-	EXPECT(files_equal(exp_path + "delete_ns2ClassA.cpp"           , act_path + "delete_ns2ClassA.cpp"           ));
-	EXPECT(files_equal(exp_path + "delete_ns2ClassA.m"             , act_path + "delete_ns2ClassA.m"             ));
-	EXPECT(files_equal(exp_path + "delete_ns2ClassC.cpp"           , act_path + "delete_ns2ClassC.cpp"           ));
-	EXPECT(files_equal(exp_path + "delete_ns2ClassC.m"             , act_path + "delete_ns2ClassC.m"             ));
-	EXPECT(files_equal(exp_path + "delete_ns2ns3ClassB.cpp"        , act_path + "delete_ns2ns3ClassB.cpp"        ));
-	EXPECT(files_equal(exp_path + "delete_ns2ns3ClassB.m"          , act_path + "delete_ns2ns3ClassB.m"          ));
 	EXPECT(files_equal(exp_path + "ns2ClassA_afunction.cpp"      , act_path + "ns2ClassA_afunction.cpp"      ));
 	EXPECT(files_equal(exp_path + "ns2ClassA_afunction.m"        , act_path + "ns2ClassA_afunction.m"        ));
 
@@ -268,34 +256,82 @@ TEST( wrap, matlab_code ) {
 	// emit MATLAB code
 	// make_geometry will not compile, use make testwrap to generate real make
 	module.matlab_code("mex", "actual", "mexa64", "-O5");
+  string epath = path + "/tests/expected/";
+  string apath = "actual/";
 
-	EXPECT(files_equal(path + "/tests/expected/@Point2/Point2.m"  , "actual/@Point2/Point2.m"  ));
-	EXPECT(files_equal(path + "/tests/expected/@Point2/x.cpp"     , "actual/@Point2/x.cpp"     ));
-	EXPECT(files_equal(path + "/tests/expected/@Point3/Point3.m"  , "actual/@Point3/Point3.m"  ));
-	EXPECT(files_equal(path + "/tests/expected/new_Point3_ddd.m"  , "actual/new_Point3_ddd.m"  ));
-	EXPECT(files_equal(path + "/tests/expected/new_Point3_ddd.cpp", "actual/new_Point3_ddd.cpp"));
-	EXPECT(files_equal(path + "/tests/expected/Point3_staticFunction.m"  , "actual/Point3_staticFunction.m"  ));
-	EXPECT(files_equal(path + "/tests/expected/Point3_staticFunction.cpp", "actual/Point3_staticFunction.cpp"));
-	EXPECT(files_equal(path + "/tests/expected/@Point3/norm.m"    , "actual/@Point3/norm.m"    ));
-	EXPECT(files_equal(path + "/tests/expected/@Point3/norm.cpp"  , "actual/@Point3/norm.cpp"  ));
+	EXPECT(files_equal(epath + "Makefile"                     , apath + "Makefile"                     ));
+	EXPECT(files_equal(epath + "make_geometry.m"              , apath + "make_geometry.m"              ));
+	EXPECT(files_equal(epath + "new_Point2_.cpp"              , apath + "new_Point2_.cpp"              ));
+	EXPECT(files_equal(epath + "new_Point2_.m"                , apath + "new_Point2_.m"                ));
+	EXPECT(files_equal(epath + "new_Point3_.cpp"              , apath + "new_Point3_.cpp"              ));
+	EXPECT(files_equal(epath + "new_Point3_.m"                , apath + "new_Point3_.m"                ));
+	EXPECT(files_equal(epath + "new_Test_.cpp"                , apath + "new_Test_.cpp"                ));
+	EXPECT(files_equal(epath + "new_Test_.m"                  , apath + "new_Test_.m"                  ));
 
-	EXPECT(files_equal(path + "/tests/expected/new_Test_.cpp"           , "actual/new_Test_.cpp"           ));
-	EXPECT(files_equal(path + "/tests/expected/delete_Test.cpp"           , "actual/delete_Test.cpp"           ));
-	EXPECT(files_equal(path + "/tests/expected/delete_Test.m"           , "actual/delete_Test.m"           ));
-	EXPECT(files_equal(path + "/tests/expected/@Test/Test.m"            , "actual/@Test/Test.m"            ));
-	EXPECT(files_equal(path + "/tests/expected/@Test/return_string.cpp" , "actual/@Test/return_string.cpp" ));
-	EXPECT(files_equal(path + "/tests/expected/@Test/return_pair.cpp"   , "actual/@Test/return_pair.cpp"   ));
-	EXPECT(files_equal(path + "/tests/expected/@Test/create_MixedPtrs.cpp", "actual/@Test/create_MixedPtrs.cpp"));
-	EXPECT(files_equal(path + "/tests/expected/@Test/return_field.cpp"  , "actual/@Test/return_field.cpp"  ));
-	EXPECT(files_equal(path + "/tests/expected/@Test/return_TestPtr.cpp", "actual/@Test/return_TestPtr.cpp"));
-	EXPECT(files_equal(path + "/tests/expected/@Test/return_Test.cpp"   , "actual/@Test/return_Test.cpp"   ));
-	EXPECT(files_equal(path + "/tests/expected/@Test/return_Point2Ptr.cpp", "actual/@Test/return_Point2Ptr.cpp"));
-	EXPECT(files_equal(path + "/tests/expected/@Test/return_ptrs.cpp"   , "actual/@Test/return_ptrs.cpp"   ));
-	EXPECT(files_equal(path + "/tests/expected/@Test/print.m"           , "actual/@Test/print.m"           ));
-	EXPECT(files_equal(path + "/tests/expected/@Test/print.cpp"         , "actual/@Test/print.cpp"         ));
+	EXPECT(files_equal(epath + "Point3_staticFunction.cpp"    , apath + "Point3_staticFunction.cpp"    ));
+	EXPECT(files_equal(epath + "Point3_staticFunction.m"      , apath + "Point3_staticFunction.m"      ));
+	EXPECT(files_equal(epath + "Point3_StaticFunctionRet.cpp" , apath + "Point3_StaticFunctionRet.cpp" ));
+	EXPECT(files_equal(epath + "Point3_StaticFunctionRet.m"   , apath + "Point3_StaticFunctionRet.m"   ));
 
-	EXPECT(files_equal(path + "/tests/expected/make_geometry.m", "actual/make_geometry.m"));
-	EXPECT(files_equal(path + "/tests/expected/Makefile"       , "actual/Makefile"       ));
+	EXPECT(files_equal(epath + "@Point2/argChar.cpp"          , apath + "@Point2/argChar.cpp"          ));
+	EXPECT(files_equal(epath + "@Point2/argChar.m"            , apath + "@Point2/argChar.m"            ));
+	EXPECT(files_equal(epath + "@Point2/argUChar.cpp"         , apath + "@Point2/argUChar.cpp"         ));
+	EXPECT(files_equal(epath + "@Point2/argUChar.m"           , apath + "@Point2/argUChar.m"           ));
+	EXPECT(files_equal(epath + "@Point2/dim.cpp"              , apath + "@Point2/dim.cpp"              ));
+	EXPECT(files_equal(epath + "@Point2/dim.m"                , apath + "@Point2/dim.m"                ));
+	EXPECT(files_equal(epath + "@Point2/Point2.m"             , apath + "@Point2/Point2.m"             ));
+	EXPECT(files_equal(epath + "@Point2/returnChar.cpp"       , apath + "@Point2/returnChar.cpp"       ));
+	EXPECT(files_equal(epath + "@Point2/returnChar.m"         , apath + "@Point2/returnChar.m"         ));
+	EXPECT(files_equal(epath + "@Point2/vectorConfusion.cpp"  , apath + "@Point2/vectorConfusion.cpp"  ));
+	EXPECT(files_equal(epath + "@Point2/vectorConfusion.m"    , apath + "@Point2/vectorConfusion.m"    ));
+	EXPECT(files_equal(epath + "@Point2/x.cpp"                , apath + "@Point2/x.cpp"                ));
+	EXPECT(files_equal(epath + "@Point2/x.m"                  , apath + "@Point2/x.m"                  ));
+	EXPECT(files_equal(epath + "@Point2/y.cpp"                , apath + "@Point2/y.cpp"                ));
+	EXPECT(files_equal(epath + "@Point2/y.m"                  , apath + "@Point2/y.m"                  ));
+	EXPECT(files_equal(epath + "@Point3/norm.cpp"             , apath + "@Point3/norm.cpp"             ));
+	EXPECT(files_equal(epath + "@Point3/norm.m"               , apath + "@Point3/norm.m"               ));
+	EXPECT(files_equal(epath + "@Point3/Point3.m"             , apath + "@Point3/Point3.m"             ));
+
+	EXPECT(files_equal(epath + "@Test/arg_EigenConstRef.cpp"  , apath + "@Test/arg_EigenConstRef.cpp"  ));
+	EXPECT(files_equal(epath + "@Test/arg_EigenConstRef.m"    , apath + "@Test/arg_EigenConstRef.m"    ));
+	EXPECT(files_equal(epath + "@Test/create_MixedPtrs.cpp"   , apath + "@Test/create_MixedPtrs.cpp"   ));
+	EXPECT(files_equal(epath + "@Test/create_MixedPtrs.m"     , apath + "@Test/create_MixedPtrs.m"     ));
+	EXPECT(files_equal(epath + "@Test/create_ptrs.cpp"        , apath + "@Test/create_ptrs.cpp"        ));
+	EXPECT(files_equal(epath + "@Test/create_ptrs.m"          , apath + "@Test/create_ptrs.m"          ));
+	EXPECT(files_equal(epath + "@Test/print.cpp"              , apath + "@Test/print.cpp"              ));
+	EXPECT(files_equal(epath + "@Test/print.m"                , apath + "@Test/print.m"                ));
+	EXPECT(files_equal(epath + "@Test/return_bool.cpp"        , apath + "@Test/return_bool.cpp"        ));
+	EXPECT(files_equal(epath + "@Test/return_bool.m"          , apath + "@Test/return_bool.m"          ));
+	EXPECT(files_equal(epath + "@Test/return_double.cpp"      , apath + "@Test/return_double.cpp"      ));
+	EXPECT(files_equal(epath + "@Test/return_double.m"        , apath + "@Test/return_double.m"        ));
+	EXPECT(files_equal(epath + "@Test/return_field.cpp"       , apath + "@Test/return_field.cpp"       ));
+	EXPECT(files_equal(epath + "@Test/return_field.m"         , apath + "@Test/return_field.m"         ));
+	EXPECT(files_equal(epath + "@Test/return_int.cpp"         , apath + "@Test/return_int.cpp"         ));
+	EXPECT(files_equal(epath + "@Test/return_int.m"           , apath + "@Test/return_int.m"           ));
+	EXPECT(files_equal(epath + "@Test/return_matrix1.cpp"     , apath + "@Test/return_matrix1.cpp"     ));
+	EXPECT(files_equal(epath + "@Test/return_matrix1.m"       , apath + "@Test/return_matrix1.m"       ));
+	EXPECT(files_equal(epath + "@Test/return_matrix2.cpp"     , apath + "@Test/return_matrix2.cpp"     ));
+	EXPECT(files_equal(epath + "@Test/return_matrix2.m"       , apath + "@Test/return_matrix2.m"       ));
+	EXPECT(files_equal(epath + "@Test/return_pair.cpp"        , apath + "@Test/return_pair.cpp"        ));
+	EXPECT(files_equal(epath + "@Test/return_pair.m"          , apath + "@Test/return_pair.m"          ));
+	EXPECT(files_equal(epath + "@Test/return_Point2Ptr.cpp"   , apath + "@Test/return_Point2Ptr.cpp"   ));
+	EXPECT(files_equal(epath + "@Test/return_Point2Ptr.m"     , apath + "@Test/return_Point2Ptr.m"     ));
+	EXPECT(files_equal(epath + "@Test/return_ptrs.cpp"        , apath + "@Test/return_ptrs.cpp"        ));
+	EXPECT(files_equal(epath + "@Test/return_ptrs.m"          , apath + "@Test/return_ptrs.m"          ));
+	EXPECT(files_equal(epath + "@Test/return_size_t.cpp"      , apath + "@Test/return_size_t.cpp"      ));
+	EXPECT(files_equal(epath + "@Test/return_size_t.m"        , apath + "@Test/return_size_t.m"        ));
+	EXPECT(files_equal(epath + "@Test/return_string.cpp"      , apath + "@Test/return_string.cpp"      ));
+	EXPECT(files_equal(epath + "@Test/return_string.m"        , apath + "@Test/return_string.m"        ));
+	EXPECT(files_equal(epath + "@Test/return_Test.cpp"        , apath + "@Test/return_Test.cpp"        ));
+	EXPECT(files_equal(epath + "@Test/return_Test.m"          , apath + "@Test/return_Test.m"          ));
+	EXPECT(files_equal(epath + "@Test/return_TestPtr.cpp"     , apath + "@Test/return_TestPtr.cpp"     ));
+	EXPECT(files_equal(epath + "@Test/return_TestPtr.m"       , apath + "@Test/return_TestPtr.m"       ));
+	EXPECT(files_equal(epath + "@Test/return_vector1.cpp"     , apath + "@Test/return_vector1.cpp"     ));
+	EXPECT(files_equal(epath + "@Test/return_vector1.m"       , apath + "@Test/return_vector1.m"       ));
+	EXPECT(files_equal(epath + "@Test/return_vector2.cpp"     , apath + "@Test/return_vector2.cpp"     ));
+	EXPECT(files_equal(epath + "@Test/return_vector2.m"       , apath + "@Test/return_vector2.m"       ));
+	EXPECT(files_equal(epath + "@Test/Test.m"                 , apath + "@Test/Test.m"                 ));
+
 }
 
 /* ************************************************************************* */

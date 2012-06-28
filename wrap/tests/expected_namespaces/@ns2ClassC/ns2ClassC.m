@@ -5,11 +5,15 @@ classdef ns2ClassC < handle
   end
   methods
     function obj = ns2ClassC(varargin)
-      if (nargin == 0), obj.self = new_ns2ClassC_(); end
-      if nargin ~= 13 && obj.self == 0, error('ns2ClassC constructor failed'); end
+      if (nargin == 0), obj.self = new_ns2ClassC_(0,0); end
+      if nargin ==14, new_ns2ClassC_(varargin{1},0); end
+      if nargin ~= 13 && nargin ~= 14 && obj.self == 0, error('ns2ClassC constructor failed'); end
     end
     function delete(obj)
-       delete_ns2ClassC(obj);
+      if obj.self ~= 0
+        new_ns2ClassC_(obj.self);
+        obj.self = 0;
+      end
     end
     function display(obj), obj.print(''); end
     function disp(obj), obj.display; end

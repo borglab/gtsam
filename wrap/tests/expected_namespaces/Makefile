@@ -9,24 +9,18 @@ all: ns1ClassA ns1ClassB ns2ClassA ns2ns3ClassB ns2ClassC ClassD
 # ns1ClassA
 new_ns1ClassA_.$(MEXENDING): new_ns1ClassA_.cpp
 	$(MEX) $(mex_flags) new_ns1ClassA_.cpp  -output new_ns1ClassA_
-delete_ns1ClassA.$(MEXENDING): delete_ns1ClassA.cpp
-	$(MEX) $(mex_flags) delete_ns1ClassA.cpp  -output delete_ns1ClassA
 
-ns1ClassA: new_ns1ClassA_.$(MEXENDING) delete_ns1ClassA.$(MEXENDING) 
+ns1ClassA: new_ns1ClassA_.$(MEXENDING) 
 
 # ns1ClassB
 new_ns1ClassB_.$(MEXENDING): new_ns1ClassB_.cpp
 	$(MEX) $(mex_flags) new_ns1ClassB_.cpp  -output new_ns1ClassB_
-delete_ns1ClassB.$(MEXENDING): delete_ns1ClassB.cpp
-	$(MEX) $(mex_flags) delete_ns1ClassB.cpp  -output delete_ns1ClassB
 
-ns1ClassB: new_ns1ClassB_.$(MEXENDING) delete_ns1ClassB.$(MEXENDING) 
+ns1ClassB: new_ns1ClassB_.$(MEXENDING) 
 
 # ns2ClassA
 new_ns2ClassA_.$(MEXENDING): new_ns2ClassA_.cpp
 	$(MEX) $(mex_flags) new_ns2ClassA_.cpp  -output new_ns2ClassA_
-delete_ns2ClassA.$(MEXENDING): delete_ns2ClassA.cpp
-	$(MEX) $(mex_flags) delete_ns2ClassA.cpp  -output delete_ns2ClassA
 ns2ClassA_afunction.$(MEXENDING): ns2ClassA_afunction.cpp
 	$(MEX) $(mex_flags) ns2ClassA_afunction.cpp  -output ns2ClassA_afunction
 @ns2ClassA/memberFunction.$(MEXENDING): @ns2ClassA/memberFunction.cpp
@@ -36,31 +30,25 @@ ns2ClassA_afunction.$(MEXENDING): ns2ClassA_afunction.cpp
 @ns2ClassA/nsReturn.$(MEXENDING): @ns2ClassA/nsReturn.cpp
 	$(MEX) $(mex_flags) @ns2ClassA/nsReturn.cpp  -output @ns2ClassA/nsReturn
 
-ns2ClassA: new_ns2ClassA_.$(MEXENDING) delete_ns2ClassA.$(MEXENDING) ns2ClassA_afunction.$(MEXENDING) @ns2ClassA/memberFunction.$(MEXENDING) @ns2ClassA/nsArg.$(MEXENDING) @ns2ClassA/nsReturn.$(MEXENDING) 
+ns2ClassA: new_ns2ClassA_.$(MEXENDING) ns2ClassA_afunction.$(MEXENDING) @ns2ClassA/memberFunction.$(MEXENDING) @ns2ClassA/nsArg.$(MEXENDING) @ns2ClassA/nsReturn.$(MEXENDING) 
 
 # ns2ns3ClassB
 new_ns2ns3ClassB_.$(MEXENDING): new_ns2ns3ClassB_.cpp
 	$(MEX) $(mex_flags) new_ns2ns3ClassB_.cpp  -output new_ns2ns3ClassB_
-delete_ns2ns3ClassB.$(MEXENDING): delete_ns2ns3ClassB.cpp
-	$(MEX) $(mex_flags) delete_ns2ns3ClassB.cpp  -output delete_ns2ns3ClassB
 
-ns2ns3ClassB: new_ns2ns3ClassB_.$(MEXENDING) delete_ns2ns3ClassB.$(MEXENDING) 
+ns2ns3ClassB: new_ns2ns3ClassB_.$(MEXENDING) 
 
 # ns2ClassC
 new_ns2ClassC_.$(MEXENDING): new_ns2ClassC_.cpp
 	$(MEX) $(mex_flags) new_ns2ClassC_.cpp  -output new_ns2ClassC_
-delete_ns2ClassC.$(MEXENDING): delete_ns2ClassC.cpp
-	$(MEX) $(mex_flags) delete_ns2ClassC.cpp  -output delete_ns2ClassC
 
-ns2ClassC: new_ns2ClassC_.$(MEXENDING) delete_ns2ClassC.$(MEXENDING) 
+ns2ClassC: new_ns2ClassC_.$(MEXENDING) 
 
 # ClassD
 new_ClassD_.$(MEXENDING): new_ClassD_.cpp
 	$(MEX) $(mex_flags) new_ClassD_.cpp  -output new_ClassD_
-delete_ClassD.$(MEXENDING): delete_ClassD.cpp
-	$(MEX) $(mex_flags) delete_ClassD.cpp  -output delete_ClassD
 
-ClassD: new_ClassD_.$(MEXENDING) delete_ClassD.$(MEXENDING) 
+ClassD: new_ClassD_.$(MEXENDING) 
 
 
 
