@@ -78,10 +78,10 @@ namespace gtsam {
       Cluster(FRONTALIT firstFrontal, FRONTALIT lastFrontal, SEPARATORIT firstSeparator, SEPARATORIT lastSeparator);
 
 			/// print
-			void print(const std::string& indent, const boost::function<std::string(KeyType)>& formatter = &(boost::lexical_cast<std::string, KeyType>)) const;
+			void print(const std::string& indent, const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
 			/// print the enire tree
-			void printTree(const std::string& indent, const boost::function<std::string(KeyType)>& formatter = &(boost::lexical_cast<std::string, KeyType>)) const;
+			void printTree(const std::string& indent, const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
 			/// check equality
 			bool equals(const Cluster& other) const;
@@ -127,7 +127,7 @@ namespace gtsam {
   	/// @{
 
 		/// print the object
-		void print(const std::string& str="", const boost::function<std::string(KeyType)>& formatter = &(boost::lexical_cast<std::string, KeyType>)) const;
+		void print(const std::string& str="", const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
 		/** check equality */
 		bool equals(const ClusterTree<FG>& other, double tol = 1e-9) const;

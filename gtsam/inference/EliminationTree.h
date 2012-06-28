@@ -144,7 +144,7 @@ public:
 
   /** Print the tree to cout */
   void print(const std::string& name = "EliminationTree: ",
-  		const boost::function<std::string(KeyType)>& formatter = &(boost::lexical_cast<std::string, KeyType>)) const;
+  		const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
   /** Test whether the tree is equal to another */
   bool equals(const EliminationTree& other, double tol = 1e-9) const;

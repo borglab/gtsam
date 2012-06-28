@@ -72,7 +72,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class FG>
 	void ClusterTree<FG>::Cluster::print(const std::string& indent,
-			const boost::function<std::string(KeyType)>& formatter) const {
+			const IndexFormatter& formatter) const {
 		std::cout << indent;
 		BOOST_FOREACH(const Index key, frontal)
 						std::cout << formatter(key) << " ";
@@ -85,7 +85,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class FG>
 	void ClusterTree<FG>::Cluster::printTree(const std::string& indent,
-			const boost::function<std::string(KeyType)>& formatter) const {
+			const IndexFormatter& formatter) const {
 		print(indent, formatter);
 		BOOST_FOREACH(const shared_ptr& child, children_)
 						child->printTree(indent + "  ", formatter);
@@ -96,7 +96,7 @@ namespace gtsam {
 	 * ************************************************************************* */
 	template<class FG>
 	void ClusterTree<FG>::print(const std::string& str,
-			const boost::function<std::string(KeyType)>& formatter) const {
+			const IndexFormatter& formatter) const {
 		std::cout << str << std::endl;
 		if (root_) root_->printTree("", formatter);
 	}

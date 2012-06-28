@@ -287,7 +287,7 @@ public:
 
   /** print this node */
   void print(const std::string& s = "",
-  		const IndexFormatter& formatter = &(boost::lexical_cast<std::string, Index>)) const {
+  		const IndexFormatter& formatter = DefaultIndexFormatter) const {
     Base::print(s,formatter);
     if(cachedFactor_)
       cachedFactor_->print(s + "Cached: ", formatter);

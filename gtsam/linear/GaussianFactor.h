@@ -84,7 +84,7 @@ namespace gtsam {
 
     // Implementing Testable interface
     virtual void print(const std::string& s = "",
-    		const IndexFormatter& formatter = &(boost::lexical_cast<std::string, Index>)) const = 0;
+    		const IndexFormatter& formatter = DefaultIndexFormatter) const = 0;
 
     virtual bool equals(const GaussianFactor& lf, double tol = 1e-9) const = 0;
 

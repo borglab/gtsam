@@ -169,7 +169,7 @@ namespace gtsam {
 
     /** print required by Testable for unit testing */
     void print(const std::string& str = "VectorValues: ",
-    		const IndexFormatter& formatter = &(boost::lexical_cast<std::string, Index>)) const;
+    		const IndexFormatter& formatter =DefaultIndexFormatter) const;
 
     /** equals required by Testable for unit testing */
     bool equals(const VectorValues& x, double tol = 1e-9) const;

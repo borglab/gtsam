@@ -78,7 +78,7 @@ public:
 
 	/// print
 	void print(const std::string& s = "DiscreteFactorGraph",
-			const IndexFormatter& formatter = &(boost::lexical_cast<std::string, Index>)) const;
+			const IndexFormatter& formatter =DefaultIndexFormatter) const;
 };
 // DiscreteFactorGraph
 

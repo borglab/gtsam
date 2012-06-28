@@ -93,10 +93,10 @@ namespace gtsam {
     }
 
     /** print this node */
-    void print(const std::string& s = "", const IndexFormatter& indexFormatter = &(boost::lexical_cast<std::string, Index>) ) const;
+    void print(const std::string& s = "", const IndexFormatter& indexFormatter = DefaultIndexFormatter ) const;
 
     /** print this node and entire subtree below it */
-    void printTree(const std::string& indent="", const IndexFormatter& indexFormatter = &(boost::lexical_cast<std::string, Index>) ) const;
+    void printTree(const std::string& indent="", const IndexFormatter& indexFormatter = DefaultIndexFormatter ) const;
 
   	/// @}
   	/// @name Standard Interface

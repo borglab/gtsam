@@ -71,7 +71,7 @@ namespace gtsam {
 		// A convenience class for a list of shared cliques
 		struct Cliques : public std::list<sharedClique> {
 			void print(const std::string& s = "Cliques",
-					const IndexFormatter& indexFormatter = &(boost::lexical_cast<std::string, Index>)) const;
+					const IndexFormatter& indexFormatter = DefaultIndexFormatter) const;
 			bool equals(const Cliques& other, double tol = 1e-9) const;
 		};
 
@@ -178,7 +178,7 @@ namespace gtsam {
 
 		/** print */
 		void print(const std::string& s = "",
-				const IndexFormatter& indexFormatter = &(boost::lexical_cast<std::string, Index>) ) const;
+				const IndexFormatter& indexFormatter = DefaultIndexFormatter ) const;
 
 		/// @}
 		/// @name Standard Interface
@@ -236,7 +236,7 @@ namespace gtsam {
 		 */
 
 		/** saves the Tree to a text file in GraphViz format */
-		void saveGraph(const std::string& s, const IndexFormatter& indexFormatter = &(boost::lexical_cast<std::string, Index>) ) const;
+		void saveGraph(const std::string& s, const IndexFormatter& indexFormatter = DefaultIndexFormatter ) const;
 
 		/// @}
 		/// @name Advanced Interface

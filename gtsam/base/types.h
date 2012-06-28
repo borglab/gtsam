@@ -21,6 +21,7 @@
 
 #include <cstddef>
 
+#include <string>
 #include <boost/function/function1.hpp>
 
 namespace gtsam {
@@ -31,6 +32,11 @@ namespace gtsam {
   /** A function to convert indices to strings, for example by translating back
    * to a nonlinear key and then to a Symbol. */
   typedef boost::function<std::string(Index)> IndexFormatter;
+
+  std::string _defaultIndexFormatter(Index j);
+
+  /** The default IndexFormatter outputs the index */
+  static const IndexFormatter DefaultIndexFormatter = &_defaultIndexFormatter;
 
 	/**
 	 * Helper class that uses templates to select between two types based on

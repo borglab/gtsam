@@ -131,8 +131,7 @@ public:
 	/// @{
 
   /** print with optional formatter */
-  void print(const std::string& s = "Conditional",
-  		const boost::function<std::string(KEY)>& formatter = &(boost::lexical_cast<std::string, KEY>) ) const;
+  void print(const std::string& s = "Conditional", const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
   /** check equality */
   template<class DERIVED>
@@ -201,7 +200,7 @@ private:
 
 /* ************************************************************************* */
 template<typename KEY>
-void Conditional<KEY>::print(const std::string& s, const boost::function<std::string(KEY)>& formatter) const {
+void Conditional<KEY>::print(const std::string& s, const IndexFormatter& formatter) const {
   std::cout << s << " P(";
   BOOST_FOREACH(KeyType key, frontals()) std::cout << " " << formatter(key);
   	if (nrParents()>0) std::cout << " |";

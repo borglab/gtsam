@@ -167,7 +167,7 @@ EliminationTree<FACTOR>::Create(const FactorGraph<DERIVEDFACTOR>& factorGraph) {
 /* ************************************************************************* */
 template<class FACTORGRAPH>
 void EliminationTree<FACTORGRAPH>::print(const std::string& name,
-		const boost::function<std::string(KeyType)>& formatter) const {
+		const IndexFormatter& formatter) const {
   std::cout << name << " (" << formatter(key_) << ")" << std::endl;
   BOOST_FOREACH(const sharedFactor& factor, factors_) {
     factor->print(name + "  ", formatter); }
