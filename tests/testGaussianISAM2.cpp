@@ -1243,5 +1243,128 @@ TEST(ISAM2, constrained_ordering)
 }
 
 /* ************************************************************************* */
+TEST(ISAM2, slamlike_solution_partial_relinearization_check)
+{
+
+  // These variables will be reused and accumulate factors and values
+  ISAM2Params params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false);
+  params.enablePartialRelinearizationCheck = true;
+  ISAM2 isam(params);
+  Values fullinit;
+  planarSLAM::Graph fullgraph;
+
+  // i keeps track of the time step
+  size_t i = 0;
+
+  // Add a prior at time 0 and update isam
+  {
+    planarSLAM::Graph newfactors;
+    newfactors.addPosePrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
+    fullgraph.push_back(newfactors);
+
+    Values init;
+    init.insert((0), Pose2(0.01, 0.01, 0.01));
+    fullinit.insert((0), Pose2(0.01, 0.01, 0.01));
+
+    isam.update(newfactors, init);
+  }
+
+  CHECK(isam_check(fullgraph, fullinit, isam));
+
+  // Add odometry from time 0 to time 5
+  for( ; i<5; ++i) {
+    planarSLAM::Graph newfactors;
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    fullgraph.push_back(newfactors);
+
+    Values init;
+    init.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    fullinit.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+
+    isam.update(newfactors, init);
+  }
+
+  // Add odometry from time 5 to 6 and landmark measurement at time 5
+  {
+    planarSLAM::Graph newfactors;
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
+    newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
+    fullgraph.push_back(newfactors);
+
+    Values init;
+    init.insert((i+1), Pose2(1.01, 0.01, 0.01));
+    init.insert(100, Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
+    init.insert(101, Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
+    fullinit.insert((i+1), Pose2(1.01, 0.01, 0.01));
+    fullinit.insert(100, Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
+    fullinit.insert(101, Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
+
+    isam.update(newfactors, init);
+    ++ i;
+  }
+
+  // Add odometry from time 6 to time 10
+  for( ; i<10; ++i) {
+    planarSLAM::Graph newfactors;
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    fullgraph.push_back(newfactors);
+
+    Values init;
+    init.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+    fullinit.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+
+    isam.update(newfactors, init);
+  }
+
+  // Add odometry from time 10 to 11 and landmark measurement at time 10
+  {
+    planarSLAM::Graph newfactors;
+    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+    newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+    fullgraph.push_back(newfactors);
+
+    Values init;
+    init.insert((i+1), Pose2(6.9, 0.1, 0.01));
+    fullinit.insert((i+1), Pose2(6.9, 0.1, 0.01));
+
+    isam.update(newfactors, init);
+    ++ i;
+  }
+
+  // Compare solutions
+  CHECK(isam_check(fullgraph, fullinit, isam));
+
+  // Check gradient at each node
+  typedef ISAM2::sharedClique sharedClique;
+  BOOST_FOREACH(const sharedClique& clique, isam.nodes()) {
+    // Compute expected gradient
+    FactorGraph<JacobianFactor> jfg;
+    jfg.push_back(JacobianFactor::shared_ptr(new JacobianFactor(*clique->conditional())));
+    VectorValues expectedGradient(*allocateVectorValues(isam));
+    gradientAtZero(jfg, expectedGradient);
+    // Compare with actual gradients
+    int variablePosition = 0;
+    for(GaussianConditional::const_iterator jit = clique->conditional()->begin(); jit != clique->conditional()->end(); ++jit) {
+      const int dim = clique->conditional()->dim(jit);
+      Vector actual = clique->gradientContribution().segment(variablePosition, dim);
+      EXPECT(assert_equal(expectedGradient[*jit], actual));
+      variablePosition += dim;
+    }
+    LONGS_EQUAL(clique->gradientContribution().rows(), variablePosition);
+  }
+
+  // Check gradient
+  VectorValues expectedGradient(*allocateVectorValues(isam));
+  gradientAtZero(FactorGraph<JacobianFactor>(isam), expectedGradient);
+  VectorValues expectedGradient2(gradient(FactorGraph<JacobianFactor>(isam), VectorValues::Zero(expectedGradient)));
+  VectorValues actualGradient(*allocateVectorValues(isam));
+  gradientAtZero(isam, actualGradient);
+  EXPECT(assert_equal(expectedGradient2, expectedGradient));
+  EXPECT(assert_equal(expectedGradient, actualGradient));
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */

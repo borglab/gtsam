@@ -82,7 +82,7 @@ FastSet<Index> ISAM2::Impl::IndicesFromFactors(const Ordering& ordering, const N
 }
 
 /* ************************************************************************* */
-FastSet<Index> ISAM2::Impl::CheckRelinearization(const Permuted<VectorValues>& delta, const Ordering& ordering,
+FastSet<Index> ISAM2::Impl::CheckRelinearizationFull(const Permuted<VectorValues>& delta, const Ordering& ordering,
     const ISAM2Params::RelinearizationThreshold& relinearizeThreshold, const KeyFormatter& keyFormatter) {
   FastSet<Index> relinKeys;
 
@@ -103,6 +103,77 @@ FastSet<Index> ISAM2::Impl::CheckRelinearization(const Permuted<VectorValues>& d
         throw std::invalid_argument("Relinearization threshold vector dimensionality passed into iSAM2 parameters does not match actual variable dimensionality");
       if((delta[j].array().abs() > threshold.array()).any())
         relinKeys.insert(j);
+    }
+  }
+
+  return relinKeys;
+}
+
+/* ************************************************************************* */
+void CheckRelinearizationRecursiveDouble(FastSet<Index>& relinKeys, double threshold, const Permuted<VectorValues>& delta, const ISAM2Clique::shared_ptr& clique) {
+
+  // Check the current clique for relinearization
+  bool relinearize = false;
+  BOOST_FOREACH(Index var, clique->conditional()->keys()) {
+    double maxDelta = delta[var].lpNorm<Eigen::Infinity>();
+    if(maxDelta >= threshold) {
+      relinKeys.insert(var);
+      relinearize = true;
+    }
+  }
+
+  // If this node was relinearized, also check its children
+  if(relinearize) {
+    BOOST_FOREACH(const ISAM2Clique::shared_ptr& child, clique->children()) {
+      CheckRelinearizationRecursiveDouble(relinKeys, threshold, delta, child);
+    }
+  }
+}
+
+/* ************************************************************************* */
+void CheckRelinearizationRecursiveMap(FastSet<Index>& relinKeys, const FastMap<char,Vector>& thresholds, const Permuted<VectorValues>& delta, const Ordering::InvertedMap& decoder, const ISAM2Clique::shared_ptr& clique) {
+
+  // Check the current clique for relinearization
+  bool relinearize = false;
+  BOOST_FOREACH(Index var, clique->conditional()->keys()) {
+
+    // Lookup the key associated with this index
+    Key key = decoder.at(var);
+
+    // Find the threshold for this variable type
+    const Vector& threshold = thresholds.find(Symbol(key).chr())->second;
+
+    // Verify the threshold vector matches the actual variable size
+    if(threshold.rows() != delta[var].rows())
+      throw std::invalid_argument("Relinearization threshold vector dimensionality passed into iSAM2 parameters does not match actual variable dimensionality");
+
+    // Check for relinearization
+    if((delta[var].array().abs() > threshold.array()).any()) {
+      relinKeys.insert(var);
+      relinearize = true;
+    }
+  }
+
+  // If this node was relinearized, also check its children
+  if(relinearize) {
+    BOOST_FOREACH(const ISAM2Clique::shared_ptr& child, clique->children()) {
+      CheckRelinearizationRecursiveMap(relinKeys, thresholds, delta, decoder, child);
+    }
+  }
+}
+
+/* ************************************************************************* */
+FastSet<Index> ISAM2::Impl::CheckRelinearizationPartial(const ISAM2Clique::shared_ptr& root, const Permuted<VectorValues>& delta, const Ordering& ordering,
+    const ISAM2Params::RelinearizationThreshold& relinearizeThreshold, const KeyFormatter& keyFormatter) {
+
+  FastSet<Index> relinKeys;
+
+  if(root) {
+    if(relinearizeThreshold.type() == typeid(double)) {
+      CheckRelinearizationRecursiveDouble(relinKeys, boost::get<double>(relinearizeThreshold), delta, root);
+    } else if(relinearizeThreshold.type() == typeid(FastMap<char,Vector>)) {
+      Ordering::InvertedMap decoder = ordering.invert();
+      CheckRelinearizationRecursiveMap(relinKeys, boost::get<FastMap<char,Vector> >(relinearizeThreshold), delta, decoder, root);
     }
   }
 

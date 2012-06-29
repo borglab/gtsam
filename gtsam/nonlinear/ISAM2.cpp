@@ -588,8 +588,11 @@ ISAM2Result ISAM2::update(
     tic(5,"gather relinearize keys");
     vector<bool> markedRelinMask(ordering_.nVars(), false);
     // 4. Mark keys in \Delta above threshold \beta: J=\{\Delta_{j}\in\Delta|\Delta_{j}\geq\beta\}.
-    relinKeys = Impl::CheckRelinearization(delta_, ordering_, params_.relinearizeThreshold);
-    if(disableReordering) relinKeys = Impl::CheckRelinearization(delta_, ordering_, 0.0); // This is used for debugging
+    if(params_.enablePartialRelinearizationCheck)
+      relinKeys = Impl::CheckRelinearizationPartial(root_, delta_, ordering_, params_.relinearizeThreshold);
+    else
+      relinKeys = Impl::CheckRelinearizationFull(delta_, ordering_, params_.relinearizeThreshold);
+    if(disableReordering) relinKeys = Impl::CheckRelinearizationFull(delta_, ordering_, 0.0); // This is used for debugging
 
     // Above relin threshold keys for detailed results
     if(params_.enableDetailedResults) {
