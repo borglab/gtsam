@@ -168,12 +168,13 @@ FastSet<Index> ISAM2::Impl::CheckRelinearizationPartial(const ISAM2Clique::share
 
   FastSet<Index> relinKeys;
 
-  if(relinearizeThreshold.type() == typeid(double)) {
-    CheckRelinearizationRecursiveDouble(relinKeys, boost::get<double>(relinearizeThreshold), delta, root);
-
-  } else if(relinearizeThreshold.type() == typeid(FastMap<char,Vector>)) {
-    Ordering::InvertedMap decoder = ordering.invert();
-    CheckRelinearizationRecursiveMap(relinKeys, boost::get<FastMap<char,Vector> >(relinearizeThreshold), delta, decoder, root);
+  if(root) {
+    if(relinearizeThreshold.type() == typeid(double)) {
+      CheckRelinearizationRecursiveDouble(relinKeys, boost::get<double>(relinearizeThreshold), delta, root);
+    } else if(relinearizeThreshold.type() == typeid(FastMap<char,Vector>)) {
+      Ordering::InvertedMap decoder = ordering.invert();
+      CheckRelinearizationRecursiveMap(relinKeys, boost::get<FastMap<char,Vector> >(relinearizeThreshold), delta, decoder, root);
+    }
   }
 
   return relinKeys;
