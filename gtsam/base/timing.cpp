@@ -207,7 +207,7 @@ void toc_(size_t id) {
 		!= current->parent_.lock()->children_.end())
 			std::cout << "gtsam timing:  Incorrect ID passed to toc, expected "
 			<< std::find(current->parent_.lock()->children_.begin(), current->parent_.lock()->children_.end(), current) - current->parent_.lock()->children_.begin()
-			<< ", got " << id << std::endl;
+			<< " \"" << current->label_ << "\", got " << id << std::endl;
 		else
 			std::cout << "gtsam timing:  Incorrect ID passed to toc, id " << id << " does not exist" << std::endl;
 		timingRoot->print();
