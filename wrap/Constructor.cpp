@@ -128,8 +128,8 @@ void Constructor::matlab_wrapper(const string& toolboxPath,
   file.oss << "  if(self) {" << endl;
   file.oss << "    if(nargin > 1) {" << endl;
   file.oss << "      collector.insert(self);" << endl;
-  //TODO: Add verbosity flag
-  //file.oss << "      std::cout << \"Collected\" << collector.size() << std::endl;" << endl;
+  if(verbose_)
+    file.oss << "      std::cout << \"Collected\" << collector.size() << std::endl;" << endl;
   file.oss << "    }" << endl;
   file.oss << "    else if(collector.erase(self))" << endl;
   file.oss << "      delete self;" << endl;
@@ -148,7 +148,8 @@ void Constructor::matlab_wrapper(const string& toolboxPath,
   
   //file.oss << "    self = construct(nc, in);" << endl;
   file.oss << "    collector.insert(self);" << endl;
-  file.oss << "    std::cout << \"constructed \" << self << \", size=\" << collector.size() << std::endl;" << endl;
+  if(verbose_)
+    file.oss << "    std::cout << \"constructed \" << self << \", size=\" << collector.size() << std::endl;" << endl;
   file.oss << "    out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);" << endl;
   file.oss << "    *reinterpret_cast<Shared**> (mxGetPr(out[0])) = self;" << endl;
   file.oss << "  }" << endl;

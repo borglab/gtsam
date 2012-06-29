@@ -28,12 +28,11 @@ namespace wrap {
 struct Constructor {
 
 	/// Constructor creates an empty class
-	Constructor(bool verbose = true) :
+	Constructor(bool verbose = false) :
 			verbose_(verbose) {
 	}
 
 	// Then the instance variables are set directly by the Module constructor
-	// TODO:Vector of argument lists?
     std::vector<ArgumentList> args_list;
 	std::string name;
 	bool verbose_;

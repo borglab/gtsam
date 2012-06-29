@@ -42,7 +42,7 @@ void generate_matlab_toolbox(
 {
   // Parse interface file into class object
 	// This recursively creates Class objects, Method objects, etc...
-  wrap::Module module(interfacePath, moduleName, true);
+  wrap::Module module(interfacePath, moduleName, false);
 
   // Then emit MATLAB code
   module.matlab_code(mexCommand,toolboxPath,mexExt,mexFlags);
