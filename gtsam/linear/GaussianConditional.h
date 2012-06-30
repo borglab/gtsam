@@ -196,23 +196,6 @@ public:
    */
   void solveInPlace(VectorValues& x) const;
 
-  /**
-   * Solves a conditional Gaussian and writes the solution into the entries of
-   * \c x for each frontal variable of the conditional (version for permuted
-   * VectorValues).  The parents are assumed to have already been solved in
-   * and their values are read from \c x.  This function works for multiple
-   * frontal variables.
-   *
-   * Given the Gaussian conditional with log likelihood \f$ |R x_f - (d - S x_s)|^2,
-   * where \f$ f \f$ are the frontal variables and \f$ s \f$ are the separator
-   * variables of this conditional, this solve function computes
-   * \f$ x_f = R^{-1} (d - S x_s) \f$ using back-substitution.
-   *
-   * @param x VectorValues structure with solved parents \f$ x_s \f$, and into which the
-   * solution \f$ x_f \f$ will be written.
-   */
-  void solveInPlace(Permuted<VectorValues>& x) const;
-
   // functions for transpose backsubstitution
 
   /**

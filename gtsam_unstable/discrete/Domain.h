@@ -66,7 +66,8 @@ namespace gtsam {
 		}
 
 		// print
-		virtual void print(const std::string& s = "") const;
+		virtual void print(const std::string& s = "",
+				const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
 		bool contains(size_t value) const {
 			return values_.count(value)>0;

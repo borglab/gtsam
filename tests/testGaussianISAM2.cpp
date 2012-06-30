@@ -139,112 +139,69 @@ TEST_UNSAFE(ISAM2, AddVariables) {
 
   // Create initial state
   Values theta;
-  theta.insert((0), Pose2(.1, .2, .3));
+  theta.insert(0, Pose2(.1, .2, .3));
   theta.insert(100, Point2(.4, .5));
   Values newTheta;
-  newTheta.insert((1), Pose2(.6, .7, .8));
+  newTheta.insert(1, Pose2(.6, .7, .8));
 
-  VectorValues deltaUnpermuted;
-  deltaUnpermuted.insert(0, Vector_(3, .1, .2, .3));
-  deltaUnpermuted.insert(1, Vector_(2, .4, .5));
+  VectorValues delta;
+  delta.insert(0, Vector_(3, .1, .2, .3));
+  delta.insert(1, Vector_(2, .4, .5));
 
-  Permutation permutation(2);
-  permutation[0] = 1;
-  permutation[1] = 0;
+  VectorValues deltaNewton;
+  deltaNewton.insert(0, Vector_(3, .1, .2, .3));
+  deltaNewton.insert(1, Vector_(2, .4, .5));
 
-  Permuted<VectorValues> delta(permutation, deltaUnpermuted);
-
-  VectorValues deltaNewtonUnpermuted;
-  deltaNewtonUnpermuted.insert(0, Vector_(3, .1, .2, .3));
-  deltaNewtonUnpermuted.insert(1, Vector_(2, .4, .5));
-
-  Permutation permutationNewton(2);
-  permutationNewton[0] = 1;
-  permutationNewton[1] = 0;
-
-  Permuted<VectorValues> deltaNewton(permutationNewton, deltaNewtonUnpermuted);
-
-  VectorValues deltaRgUnpermuted;
-  deltaRgUnpermuted.insert(0, Vector_(3, .1, .2, .3));
-  deltaRgUnpermuted.insert(1, Vector_(2, .4, .5));
-
-  Permutation permutationRg(2);
-  permutationRg[0] = 1;
-  permutationRg[1] = 0;
-
-  Permuted<VectorValues> deltaRg(permutationRg, deltaRgUnpermuted);
+  VectorValues deltaRg;
+  deltaRg.insert(0, Vector_(3, .1, .2, .3));
+  deltaRg.insert(1, Vector_(2, .4, .5));
 
   vector<bool> replacedKeys(2, false);
 
-  Ordering ordering; ordering += 100, (0);
+  Ordering ordering; ordering += 100, 0;
 
   ISAM2::Nodes nodes(2);
 
   // Verify initial state
   LONGS_EQUAL(0, ordering[100]);
-  LONGS_EQUAL(1, ordering[(0)]);
-  EXPECT(assert_equal(deltaUnpermuted[1], delta[ordering[100]]));
-  EXPECT(assert_equal(deltaUnpermuted[0], delta[ordering[(0)]]));
+  LONGS_EQUAL(1, ordering[0]);
+  EXPECT(assert_equal(delta[0], delta[ordering[100]]));
+  EXPECT(assert_equal(delta[1], delta[ordering[0]]));
 
   // Create expected state
   Values thetaExpected;
-  thetaExpected.insert((0), Pose2(.1, .2, .3));
+  thetaExpected.insert(0, Pose2(.1, .2, .3));
   thetaExpected.insert(100, Point2(.4, .5));
-  thetaExpected.insert((1), Pose2(.6, .7, .8));
+  thetaExpected.insert(1, Pose2(.6, .7, .8));
 
-  VectorValues deltaUnpermutedExpected;
-  deltaUnpermutedExpected.insert(0, Vector_(3, .1, .2, .3));
-  deltaUnpermutedExpected.insert(1, Vector_(2, .4, .5));
-  deltaUnpermutedExpected.insert(2, Vector_(3, 0.0, 0.0, 0.0));
+  VectorValues deltaExpected;
+  deltaExpected.insert(0, Vector_(3, .1, .2, .3));
+  deltaExpected.insert(1, Vector_(2, .4, .5));
+  deltaExpected.insert(2, Vector_(3, 0.0, 0.0, 0.0));
 
-  Permutation permutationExpected(3);
-  permutationExpected[0] = 1;
-  permutationExpected[1] = 0;
-  permutationExpected[2] = 2;
+  VectorValues deltaNewtonExpected;
+  deltaNewtonExpected.insert(0, Vector_(3, .1, .2, .3));
+  deltaNewtonExpected.insert(1, Vector_(2, .4, .5));
+  deltaNewtonExpected.insert(2, Vector_(3, 0.0, 0.0, 0.0));
 
-  Permuted<VectorValues> deltaExpected(permutationExpected, deltaUnpermutedExpected);
-
-  VectorValues deltaNewtonUnpermutedExpected;
-  deltaNewtonUnpermutedExpected.insert(0, Vector_(3, .1, .2, .3));
-  deltaNewtonUnpermutedExpected.insert(1, Vector_(2, .4, .5));
-  deltaNewtonUnpermutedExpected.insert(2, Vector_(3, 0.0, 0.0, 0.0));
-
-  Permutation permutationNewtonExpected(3);
-  permutationNewtonExpected[0] = 1;
-  permutationNewtonExpected[1] = 0;
-  permutationNewtonExpected[2] = 2;
-
-  Permuted<VectorValues> deltaNewtonExpected(permutationNewtonExpected, deltaNewtonUnpermutedExpected);
-
-  VectorValues deltaRgUnpermutedExpected;
-  deltaRgUnpermutedExpected.insert(0, Vector_(3, .1, .2, .3));
-  deltaRgUnpermutedExpected.insert(1, Vector_(2, .4, .5));
-  deltaRgUnpermutedExpected.insert(2, Vector_(3, 0.0, 0.0, 0.0));
-
-  Permutation permutationRgExpected(3);
-  permutationRgExpected[0] = 1;
-  permutationRgExpected[1] = 0;
-  permutationRgExpected[2] = 2;
-
-  Permuted<VectorValues> deltaRgExpected(permutationRgExpected, deltaRgUnpermutedExpected);
+  VectorValues deltaRgExpected;
+  deltaRgExpected.insert(0, Vector_(3, .1, .2, .3));
+  deltaRgExpected.insert(1, Vector_(2, .4, .5));
+  deltaRgExpected.insert(2, Vector_(3, 0.0, 0.0, 0.0));
 
   vector<bool> replacedKeysExpected(3, false);
 
-  Ordering orderingExpected; orderingExpected += 100, (0), (1);
+  Ordering orderingExpected; orderingExpected += 100, 0, 1;
 
-  ISAM2::Nodes nodesExpected(
-          3, ISAM2::sharedClique());
+  ISAM2::Nodes nodesExpected(3, ISAM2::sharedClique());
 
   // Expand initial state
   ISAM2::Impl::AddVariables(newTheta, theta, delta, deltaNewton, deltaRg, replacedKeys, ordering, nodes);
 
   EXPECT(assert_equal(thetaExpected, theta));
-  EXPECT(assert_equal(deltaUnpermutedExpected, deltaUnpermuted));
-  EXPECT(assert_equal(deltaExpected.permutation(), delta.permutation()));
-  EXPECT(assert_equal(deltaNewtonUnpermutedExpected, deltaNewtonUnpermuted));
-  EXPECT(assert_equal(deltaNewtonExpected.permutation(), deltaNewton.permutation()));
-  EXPECT(assert_equal(deltaRgUnpermutedExpected, deltaRgUnpermuted));
-  EXPECT(assert_equal(deltaRgExpected.permutation(), deltaRg.permutation()));
+  EXPECT(assert_equal(deltaExpected, delta));
+  EXPECT(assert_equal(deltaNewtonExpected, deltaNewton));
+  EXPECT(assert_equal(deltaRgExpected, deltaRg));
   EXPECT(assert_container_equality(replacedKeysExpected, replacedKeys));
   EXPECT(assert_equal(orderingExpected, ordering));
 }

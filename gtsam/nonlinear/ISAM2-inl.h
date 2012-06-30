@@ -37,7 +37,7 @@ VALUE ISAM2::calculateEstimate(Key key) const {
 namespace internal {
 template<class CLIQUE>
 void optimizeWildfire(const boost::shared_ptr<CLIQUE>& clique, double threshold,
-    std::vector<bool>& changed, const std::vector<bool>& replaced, Permuted<VectorValues>& delta, int& count) {
+    std::vector<bool>& changed, const std::vector<bool>& replaced, VectorValues& delta, int& count) {
   // if none of the variables in this clique (frontal and separator!) changed
   // significantly, then by the running intersection property, none of the
   // cliques in the children need to be processed
@@ -114,7 +114,7 @@ void optimizeWildfire(const boost::shared_ptr<CLIQUE>& clique, double threshold,
 
 /* ************************************************************************* */
 template<class CLIQUE>
-int optimizeWildfire(const boost::shared_ptr<CLIQUE>& root, double threshold, const std::vector<bool>& keys, Permuted<VectorValues>& delta) {
+int optimizeWildfire(const boost::shared_ptr<CLIQUE>& root, double threshold, const std::vector<bool>& keys, VectorValues& delta) {
   std::vector<bool> changed(keys.size(), false);
   int count = 0;
   // starting from the root, call optimize on each conditional

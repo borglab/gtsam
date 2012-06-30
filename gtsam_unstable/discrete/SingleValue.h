@@ -42,7 +42,8 @@ namespace gtsam {
 		}
 
 		// print
-		virtual void print(const std::string& s = "") const;
+		virtual void print(const std::string& s = "",
+				const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
 		/// Calculate value
 		virtual double operator()(const Values& values) const;

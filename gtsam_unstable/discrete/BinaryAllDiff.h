@@ -33,9 +33,10 @@ namespace gtsam {
 		}
 
 		// print
-		virtual void print(const std::string& s = "") const {
-			std::cout << s << "BinaryAllDiff on " << keys_[0] << " and " << keys_[1]
-					<< std::endl;
+		virtual void print(const std::string& s = "",
+				const IndexFormatter& formatter = DefaultIndexFormatter) const {
+			std::cout << s << "BinaryAllDiff on " << formatter(keys_[0]) << " and "
+					<< formatter(keys_[1]) << std::endl;
 		}
 
 		/// Calculate value

@@ -134,6 +134,26 @@ TEST( SimpleCamera, Dproject_point_pose)
 }
 
 /* ************************************************************************* */
+TEST( SimpleCamera, simpleCamera)
+{
+	Cal3_S2 K(468.2,427.2,91.2,300,200);
+	Rot3 R(
+			0.41380,0.90915,0.04708,
+			-0.57338,0.22011,0.78917,
+			0.70711,-0.35355,0.61237);
+	Point3 T(1000,2000,1500);
+	SimpleCamera expected(Pose3(R.inverse(),T),K);
+	// H&Z example, 2nd edition, page 163
+	Matrix P = Matrix_(3,4,
+			3.53553e2, 3.39645e2, 2.77744e2, -1.44946e6,
+			-1.03528e2, 2.33212e1, 4.59607e2, -6.32525e5,
+			7.07107e-1, -3.53553e-1,6.12372e-1, -9.18559e2);
+	SimpleCamera actual = simpleCamera(P);
+	// Note precision of numbers given in book
+	CHECK(assert_equal(expected, actual,1e-1));
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
 

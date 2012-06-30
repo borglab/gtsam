@@ -28,18 +28,18 @@
 using namespace std;
 using namespace gtsam;
 
-Pose3 camera1(Matrix_(3,3,
+static Pose3 camera1(Matrix_(3,3,
 		       1., 0., 0.,
 		       0.,-1., 0.,
 		       0., 0.,-1.
 		       ),
 	      Point3(0,0,6.25));
 
-Cal3_S2Stereo::shared_ptr K(new Cal3_S2Stereo(1500, 1500, 0, 320, 240, 0.5));
-StereoCamera stereoCam(Pose3(), K);
+static Cal3_S2Stereo::shared_ptr K(new Cal3_S2Stereo(1500, 1500, 0, 320, 240, 0.5));
+static StereoCamera stereoCam(Pose3(), K);
 
 // point X Y Z in meters
-Point3 p(0, 0, 5);
+static Point3 p(0, 0, 5);
 static SharedNoiseModel sigma(noiseModel::Unit::Create(1));
 
 // Convenience for named keys

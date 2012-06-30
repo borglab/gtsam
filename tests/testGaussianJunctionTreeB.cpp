@@ -52,7 +52,7 @@ using symbol_shorthand::L;
 	 C3		    x1 : x2
 	 C4		  x7 : x6
 */
-TEST( GaussianJunctionTree, constructor2 )
+TEST( GaussianJunctionTreeB, constructor2 )
 {
 	// create a graph
   Ordering ordering; ordering += X(1),X(3),X(5),X(7),X(2),X(6),X(4);
@@ -88,7 +88,7 @@ TEST( GaussianJunctionTree, constructor2 )
 }
 
 /* ************************************************************************* */
-TEST( GaussianJunctionTree, optimizeMultiFrontal )
+TEST( GaussianJunctionTreeB, optimizeMultiFrontal )
 {
 	// create a graph
   GaussianFactorGraph fg;
@@ -108,7 +108,7 @@ TEST( GaussianJunctionTree, optimizeMultiFrontal )
 }
 
 /* ************************************************************************* */
-TEST( GaussianJunctionTree, optimizeMultiFrontal2)
+TEST( GaussianJunctionTreeB, optimizeMultiFrontal2)
 {
 	// create a graph
 	example::Graph nlfg = createNonlinearFactorGraph();
@@ -126,7 +126,7 @@ TEST( GaussianJunctionTree, optimizeMultiFrontal2)
 }
 
 /* ************************************************************************* */
-TEST(GaussianJunctionTree, slamlike) {
+TEST(GaussianJunctionTreeB, slamlike) {
   Values init;
   planarSLAM::Graph newfactors;
   planarSLAM::Graph fullgraph;
@@ -188,7 +188,7 @@ TEST(GaussianJunctionTree, slamlike) {
 }
 
 /* ************************************************************************* */
-TEST(GaussianJunctionTree, simpleMarginal) {
+TEST(GaussianJunctionTreeB, simpleMarginal) {
 
   typedef BayesTree<GaussianConditional> GaussianBayesTree;
 

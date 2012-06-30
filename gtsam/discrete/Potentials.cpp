@@ -51,10 +51,11 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	void Potentials::print(const string&s) const {
+	void Potentials::print(const string& s,
+			const IndexFormatter& formatter) const {
 		cout << s << "\n  Cardinalities: ";
 		BOOST_FOREACH(const DiscreteKey& key, cardinalities_)
-			cout << key.first << "=" << key.second << " ";
+			cout << formatter(key.first) << "=" << formatter(key.second) << " ";
 		cout << endl;
 		ADT::print(" ");
 	}

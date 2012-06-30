@@ -149,7 +149,7 @@ TEST( schedulingExample, test)
 /* ************************************************************************* */
 TEST( schedulingExample, smallFromFile)
 {
-	string path("../../../gtsam_unstable/discrete/examples/");
+	string path(TOPSRCDIR "/gtsam_unstable/discrete/examples/");
 	Scheduler s(2, path + "small.csv");
 
 	// add areas

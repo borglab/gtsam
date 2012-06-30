@@ -85,8 +85,8 @@ namespace gtsam {
 				"IndexFactor::CombineAndEliminate called on factors with no variables.");
 
 		vector<Index> newKeys(keys.begin(), keys.end());
-		return make_pair(new IndexConditional(newKeys, nrFrontals),
-				new IndexFactor(newKeys.begin() + nrFrontals, newKeys.end()));
+		return make_pair(boost::make_shared<IndexConditional>(newKeys, nrFrontals),
+				boost::make_shared<IndexFactor>(newKeys.begin() + nrFrontals, newKeys.end()));
 	}
 
 	/* ************************************************************************* */

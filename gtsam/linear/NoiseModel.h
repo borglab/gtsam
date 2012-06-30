@@ -19,6 +19,8 @@
 #pragma once
 
 #include <boost/serialization/nvp.hpp>
+#include <boost/serialization/shared_ptr.hpp>
+#include <boost/serialization/optional.hpp>
 #include <gtsam/base/Matrix.h>
 #include <cmath>
 

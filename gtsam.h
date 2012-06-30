@@ -671,7 +671,7 @@ class VariableIndex {
   size_t size() const;
   size_t nFactors() const;
   size_t nEntries() const;
-  void permute(const gtsam::Permutation& permutation);
+  void permuteInPlace(const gtsam::Permutation& permutation);
 };*/
 
 //*************************************************************************

@@ -22,9 +22,11 @@
 #include <boost/foreach.hpp>
 
 #include <gtsam/base/FastList.h>
-#include <gtsam/inference/Permutation.h>
+#include <gtsam/base/types.h>
 
 namespace gtsam {
+
+	class Permutation;
 
 /**
  * The VariableIndex class computes and stores the block column structure of a
@@ -44,8 +46,7 @@ public:
   typedef Factors::const_iterator Factor_const_iterator;
 
 protected:
-  std::vector<Factors> indexUnpermuted_;
-  Permuted<std::vector<Factors> > index_; // Permuted view of indexUnpermuted.
+  std::vector<Factors> index_;
   size_t nFactors_; // Number of factors in the original factor graph.
   size_t nEntries_; // Sum of involved variable counts of each factor.
 
@@ -55,7 +56,7 @@ public:
 	/// @{
 
   /** Default constructor, creates an empty VariableIndex */
-  VariableIndex() : index_(indexUnpermuted_), nFactors_(0), nEntries_(0) {}
+  VariableIndex() : nFactors_(0), nEntries_(0) {}
 
   /**
    * Create a VariableIndex that computes and stores the block column structure
@@ -69,16 +70,6 @@ public:
    * of a factor graph.
    */
   template<class FactorGraph> VariableIndex(const FactorGraph& factorGraph);
-
-  /**
-   * Copy constructor
-   */
-  VariableIndex(const VariableIndex& other);
-
-  /**
-   * Assignment operator
-   */
-  VariableIndex& operator=(const VariableIndex& rhs);
 
 	/// @}
 	/// @name Standard Interface
@@ -120,9 +111,6 @@ public:
 	/// @name Advanced Interface
 	/// @{
 
-  /** Access a list of factors by variable */
-  Factors& operator[](Index variable) { checkVar(variable); return index_[variable]; }
-
   /**
    * Augment the variable index with new factors.  This can be used when
    * solving problems incrementally.
@@ -137,11 +125,8 @@ public:
    */
   template<typename CONTAINER, class FactorGraph> void remove(const CONTAINER& indices, const FactorGraph& factors);
 
-  /**
-   * Apply a variable permutation.  Does not rearrange data, just permutes
-   * future lookups by variable.
-   */
-  void permute(const Permutation& permutation);
+	/// Permute the variables in the VariableIndex according to the given permutation
+	void permuteInPlace(const Permutation& permutation);
 
 protected:
   Factor_iterator factorsBegin(Index variable) { checkVar(variable); return index_[variable].begin(); }	  ///<TODO: comment
@@ -150,13 +135,13 @@ protected:
   Factor_const_iterator factorsBegin(Index variable) const { checkVar(variable); return index_[variable].begin(); }	///<TODO: comment
   Factor_const_iterator factorsEnd(Index variable) const { checkVar(variable); return index_[variable].end(); }			///<TODO: comment
 
-  ///TODO: comment
-  VariableIndex(size_t nVars) : indexUnpermuted_(nVars), index_(indexUnpermuted_), nFactors_(0), nEntries_(0) {}
+  /// Internal constructor to allocate a VariableIndex of the requested size
+  VariableIndex(size_t nVars) : index_(nVars), nFactors_(0), nEntries_(0) {}
 
-  ///TODO: comment
+  /// Internal check of the validity of a variable
   void checkVar(Index variable) const { assert(variable < index_.size()); }
 
-  ///TODO: comment
+  /// Internal function to populate the variable index from a factor graph
   template<class FactorGraph> void fill(const FactorGraph& factorGraph);
 
 	/// @}
@@ -183,7 +168,7 @@ void VariableIndex::fill(const FactorGraph& factorGraph) {
 /* ************************************************************************* */
 template<class FactorGraph>
 VariableIndex::VariableIndex(const FactorGraph& factorGraph) :
-    index_(indexUnpermuted_), nFactors_(0), nEntries_(0) {
+    nFactors_(0), nEntries_(0) {
 
   // If the factor graph is empty, return an empty index because inside this
   // if block we assume at least one factor.
@@ -200,8 +185,7 @@ VariableIndex::VariableIndex(const FactorGraph& factorGraph) :
     }
 
     // Allocate array
-    index_.container().resize(maxVar+1);
-    index_.permutation() = Permutation::Identity(maxVar+1);
+    index_.resize(maxVar+1);
 
     fill(factorGraph);
   }
@@ -210,7 +194,7 @@ VariableIndex::VariableIndex(const FactorGraph& factorGraph) :
 /* ************************************************************************* */
 template<class FactorGraph>
 VariableIndex::VariableIndex(const FactorGraph& factorGraph, Index nVariables) :
-    indexUnpermuted_(nVariables), index_(indexUnpermuted_), nFactors_(0), nEntries_(0) {
+    index_(nVariables), nFactors_(0), nEntries_(0) {
   fill(factorGraph);
 }
 
@@ -232,11 +216,7 @@ void VariableIndex::augment(const FactorGraph& factors) {
     }
 
     // Allocate index
-    Index originalSize = index_.size();
-    index_.container().resize(std::max(index_.size(), maxVar+1));
-    index_.permutation().resize(index_.container().size());
-    for(Index var=originalSize; var<index_.permutation().size(); ++var)
-      index_.permutation()[var] = var;
+    index_.resize(std::max(index_.size(), maxVar+1));
 
     // Augment index mapping from variable id to factor index
     size_t orignFactors = nFactors_;

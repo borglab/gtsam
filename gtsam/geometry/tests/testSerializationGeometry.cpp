@@ -36,37 +36,20 @@ using namespace gtsam;
 using namespace gtsam::serializationTestHelpers;
 
 /* ************************************************************************* */
-// Export all classes derived from Value
-BOOST_CLASS_EXPORT(gtsam::Cal3_S2)
-BOOST_CLASS_EXPORT(gtsam::Cal3_S2Stereo)
-BOOST_CLASS_EXPORT(gtsam::Cal3Bundler)
-BOOST_CLASS_EXPORT(gtsam::CalibratedCamera)
-BOOST_CLASS_EXPORT(gtsam::Point2)
-BOOST_CLASS_EXPORT(gtsam::Point3)
-BOOST_CLASS_EXPORT(gtsam::Pose2)
-BOOST_CLASS_EXPORT(gtsam::Pose3)
-BOOST_CLASS_EXPORT(gtsam::Rot2)
-BOOST_CLASS_EXPORT(gtsam::Rot3)
-BOOST_CLASS_EXPORT(gtsam::PinholeCamera<Cal3_S2>)
-BOOST_CLASS_EXPORT(gtsam::PinholeCamera<Cal3DS2>)
-BOOST_CLASS_EXPORT(gtsam::PinholeCamera<Cal3Bundler>)
-BOOST_CLASS_EXPORT(gtsam::StereoPoint2)
+static Point3 pt3(1.0, 2.0, 3.0);
+static Rot3 rt3 = Rot3::RzRyRx(1.0, 3.0, 2.0);
+static Pose3 pose3(rt3, pt3);
 
-/* ************************************************************************* */
-Point3 pt3(1.0, 2.0, 3.0);
-Rot3 rt3 = Rot3::RzRyRx(1.0, 3.0, 2.0);
-Pose3 pose3(rt3, pt3);
+static Cal3_S2 cal1(1.0, 2.0, 0.3, 0.1, 0.5);
+static Cal3DS2 cal2(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0);
+static Cal3Bundler cal3(1.0, 2.0, 3.0);
+static Cal3_S2Stereo cal4(1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
+static Cal3_S2Stereo::shared_ptr cal4ptr(new Cal3_S2Stereo(cal4));
+static CalibratedCamera cal5(Pose3(rt3, pt3));
 
-Cal3_S2 cal1(1.0, 2.0, 0.3, 0.1, 0.5);
-Cal3DS2 cal2(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0);
-Cal3Bundler cal3(1.0, 2.0, 3.0);
-Cal3_S2Stereo cal4(1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
-Cal3_S2Stereo::shared_ptr cal4ptr(new Cal3_S2Stereo(cal4));
-CalibratedCamera cal5(Pose3(rt3, pt3));
-
-PinholeCamera<Cal3_S2> cam1(pose3, cal1);
-StereoCamera cam2(pose3, cal4ptr);
-StereoPoint2 spt(1.0, 2.0, 3.0);
+static PinholeCamera<Cal3_S2> cam1(pose3, cal1);
+static StereoCamera cam2(pose3, cal4ptr);
+static StereoPoint2 spt(1.0, 2.0, 3.0);
 
 /* ************************************************************************* */
 TEST (Serialization, text_geometry) {

@@ -65,7 +65,8 @@ namespace gtsam {
 
 		// Testable
 		bool equals(const Potentials& other, double tol = 1e-9) const;
-		void print(const std::string& s = "Potentials: ") const;
+		void print(const std::string& s = "Potentials: ",
+				const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
 		size_t cardinality(Index j) const { return cardinalities_.at(j);}
 

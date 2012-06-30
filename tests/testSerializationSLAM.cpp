@@ -174,10 +174,10 @@ BOOST_CLASS_EXPORT_GUID(visualSLAM::StereoFactor,    "gtsam::visualSLAM::StereoF
 BOOST_CLASS_EXPORT(gtsam::Pose3)
 BOOST_CLASS_EXPORT(gtsam::Point3)
 
-Point3 pt3(1.0, 2.0, 3.0);
-Rot3 rt3 = Rot3::RzRyRx(1.0, 3.0, 2.0);
-Pose3 pose3(rt3, pt3);
-Cal3_S2 cal1(1.0, 2.0, 0.3, 0.1, 0.5);
+static Point3 pt3(1.0, 2.0, 3.0);
+static Rot3 rt3 = Rot3::RzRyRx(1.0, 3.0, 2.0);
+static Pose3 pose3(rt3, pt3);
+static Cal3_S2 cal1(1.0, 2.0, 0.3, 0.1, 0.5);
 
 /* ************************************************************************* */
 TEST (Serialization, visual_system) {

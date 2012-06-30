@@ -34,7 +34,8 @@ namespace gtsam {
 		AllDiff(const DiscreteKeys& dkeys);
 
 		// print
-		virtual void print(const std::string& s = "") const;
+		virtual void print(const std::string& s = "",
+				const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
 		/// Calculate value = expensive !
 		virtual double operator()(const Values& values) const;

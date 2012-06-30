@@ -47,13 +47,13 @@ typedef PinholeCamera<Cal3DS2>        PinholeCal3DS2;
 typedef PinholeCamera<Cal3Bundler>    PinholeCal3Bundler;
 
 /* ************************************************************************* */
-Point3 pt3(1.0, 2.0, 3.0);
-Rot3 rt3 = Rot3::RzRyRx(1.0, 3.0, 2.0);
-Pose3 pose3(rt3, pt3);
+static Point3 pt3(1.0, 2.0, 3.0);
+static Rot3 rt3 = Rot3::RzRyRx(1.0, 3.0, 2.0);
+static Pose3 pose3(rt3, pt3);
 
-Cal3_S2 cal1(1.0, 2.0, 0.3, 0.1, 0.5);
-Cal3DS2 cal2(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0);
-Cal3Bundler cal3(1.0, 2.0, 3.0);
+static Cal3_S2 cal1(1.0, 2.0, 0.3, 0.1, 0.5);
+static Cal3DS2 cal2(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0);
+static Cal3Bundler cal3(1.0, 2.0, 3.0);
 
 TEST (Serialization, TemplatedValues) {
   Values values;
