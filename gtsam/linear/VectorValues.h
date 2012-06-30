@@ -19,7 +19,6 @@
 
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/types.h>
-#include <gtsam/inference/Permutation.h>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/foreach.hpp>
@@ -28,6 +27,9 @@
 #include <stdexcept>
 
 namespace gtsam {
+
+	// Forward declarations
+	class Permutation;
 
   /**
    * This class represents a collection of vector-valued variables associated
@@ -288,10 +290,11 @@ namespace gtsam {
      */
     void operator+=(const VectorValues& c);
 
-    /** Assignment operator from Permuted<VectorValues>, requires the dimensions
-     * of the assignee to already be properly pre-allocated.
-     */
-    VectorValues& operator=(const Permuted<VectorValues>& rhs);
+		/**
+		 * Permute the entries of this VectorValues, returns a new VectorValues as
+		 * the result.
+		 */
+		VectorValues permute(const Permutation& permutation) const;
 
     /// @}
 

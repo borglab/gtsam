@@ -347,26 +347,16 @@ protected:
   /** VariableIndex lets us look up factors by involved variable and keeps track of dimensions */
   VariableIndex variableIndex_;
 
-  /** The linear delta from the last linear solution, an update to the estimate in theta */
-  VectorValues deltaUnpermuted_;
+  /** The linear delta from the last linear solution, an update to the estimate in theta
+	 *
+	 * This is \c mutable because it is a "cached" variable - it is not updated
+	 * until either requested with getDelta() or calculateEstimate(), or needed
+	 * during update() to evaluate whether to relinearize variables.
+	 */
+  mutable VectorValues delta_;
 
-  /** The permutation through which the deltaUnpermuted_ is
-   * referenced.
-   *
-   * Permuting Vector entries would be slow, so for performance we
-   * instead maintain this permutation through which we access the linear delta
-   * indirectly
-   *
-   * This is \c mutable because it is a "cached" variable - it is not updated
-   * until either requested with getDelta() or calculateEstimate(), or needed
-   * during update() to evaluate whether to relinearize variables.
-   */
-  mutable Permuted<VectorValues> delta_;
-
-  VectorValues deltaNewtonUnpermuted_;
-  mutable Permuted<VectorValues> deltaNewton_;
-  VectorValues RgProdUnpermuted_;
-  mutable Permuted<VectorValues> RgProd_;
+  mutable VectorValues deltaNewton_;
+  mutable VectorValues RgProd_;
   mutable bool deltaDoglegUptodate_;
 
   /** Indicates whether the current delta is up-to-date, only used
@@ -497,7 +487,7 @@ public:
   Values calculateBestEstimate() const;
 
   /** Access the current delta, computed during the last call to update */
-  const Permuted<VectorValues>& getDelta() const;
+  const VectorValues& getDelta() const;
 
   /** Access the set of nonlinear factors */
   const NonlinearFactorGraph& getFactorsUnsafe() const { return nonlinearFactors_; }
@@ -555,7 +545,7 @@ void optimizeInPlace(const ISAM2& isam, VectorValues& delta);
 /// @return The number of variables that were solved for
 template<class CLIQUE>
 int optimizeWildfire(const boost::shared_ptr<CLIQUE>& root,
-    double threshold, const std::vector<bool>& replaced, Permuted<VectorValues>& delta);
+    double threshold, const std::vector<bool>& replaced, VectorValues& delta);
 
 /**
  * Optimize along the gradient direction, with a closed-form computation to

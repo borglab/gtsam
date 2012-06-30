@@ -41,7 +41,6 @@ static const double batchThreshold = 0.65;
 
 /* ************************************************************************* */
 ISAM2::ISAM2(const ISAM2Params& params):
-    delta_(deltaUnpermuted_), deltaNewton_(deltaNewtonUnpermuted_), RgProd_(RgProdUnpermuted_),
     deltaDoglegUptodate_(true), deltaUptodate_(true), params_(params) {
   if(params_.optimizationParams.type() == typeid(ISAM2DoglegParams))
     doglegDelta_ = boost::get<ISAM2DoglegParams>(params_.optimizationParams).initialDelta;
@@ -49,15 +48,13 @@ ISAM2::ISAM2(const ISAM2Params& params):
 
 /* ************************************************************************* */
 ISAM2::ISAM2():
-    delta_(deltaUnpermuted_), deltaNewton_(deltaNewtonUnpermuted_), RgProd_(RgProdUnpermuted_),
     deltaDoglegUptodate_(true), deltaUptodate_(true) {
   if(params_.optimizationParams.type() == typeid(ISAM2DoglegParams))
     doglegDelta_ = boost::get<ISAM2DoglegParams>(params_.optimizationParams).initialDelta;
 }
 
 /* ************************************************************************* */
-ISAM2::ISAM2(const ISAM2& other):
-    delta_(deltaUnpermuted_), deltaNewton_(deltaNewtonUnpermuted_), RgProd_(RgProdUnpermuted_) {
+ISAM2::ISAM2(const ISAM2& other) {
   *this = other;
 }
 
@@ -308,12 +305,12 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
 
     // Reorder
     tic(2,"permute global variable index");
-    variableIndex_.permute(*colamd);
+    variableIndex_.permuteInPlace(*colamd);
     toc(2,"permute global variable index");
     tic(3,"permute delta");
-    delta_.permute(*colamd);
-    deltaNewton_.permute(*colamd);
-    RgProd_.permute(*colamd);
+    delta_ = delta_.permute(*colamd);
+    deltaNewton_ = deltaNewton_.permute(*colamd);
+    RgProd_ = RgProd_.permute(*colamd);
     toc(3,"permute delta");
     tic(4,"permute ordering");
     ordering_.permuteWithInverse(*colamdInverse);
@@ -429,12 +426,12 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
     // re-eliminate.  The reordered variables are also mentioned in the
     // orphans and the leftover cached factors.
     tic(3,"permute global variable index");
-    variableIndex_.permute(partialSolveResult.fullReordering);
+    variableIndex_.permuteInPlace(partialSolveResult.fullReordering);
     toc(3,"permute global variable index");
     tic(4,"permute delta");
-    delta_.permute(partialSolveResult.fullReordering);
-    deltaNewton_.permute(partialSolveResult.fullReordering);
-    RgProd_.permute(partialSolveResult.fullReordering);
+    delta_ = delta_.permute(partialSolveResult.fullReordering);
+    deltaNewton_ = deltaNewton_.permute(partialSolveResult.fullReordering);
+    RgProd_ = RgProd_.permute(partialSolveResult.fullReordering);
     toc(4,"permute delta");
     tic(5,"permute ordering");
     ordering_.permuteWithInverse(partialSolveResult.fullReorderingInverse);
@@ -723,8 +720,7 @@ void ISAM2::updateDelta(bool forceFullSolve) const {
     tic(2, "Copy dx_d");
     // Update Delta and linear step
     doglegDelta_ = doglegResult.Delta;
-    delta_.permutation() = Permutation::Identity(delta_.size());  // Dogleg solves for the full delta so there is no permutation
-    delta_.container() = doglegResult.dx_d; // Copy the VectorValues containing with the linear solution
+    delta_ = doglegResult.dx_d; // Copy the VectorValues containing with the linear solution
     toc(2, "Copy dx_d");
   }
 
@@ -739,7 +735,7 @@ Values ISAM2::calculateEstimate() const {
   Values ret(theta_);
   toc(1, "Copy Values");
   tic(2, "getDelta");
-  const Permuted<VectorValues>& delta(getDelta());
+  const VectorValues& delta(getDelta());
   toc(2, "getDelta");
   tic(3, "Expmap");
   vector<bool> mask(ordering_.nVars(), true);
@@ -756,7 +752,7 @@ Values ISAM2::calculateBestEstimate() const {
 }
 
 /* ************************************************************************* */
-const Permuted<VectorValues>& ISAM2::getDelta() const {
+const VectorValues& ISAM2::getDelta() const {
   if(!deltaUptodate_)
     updateDelta();
   return delta_;
@@ -829,7 +825,7 @@ void optimizeGradientSearchInPlace(const ISAM2& isam, VectorValues& grad) {
 
   tic(3, "Compute minimizing step size");
   // Compute minimizing step size
-  double RgNormSq = isam.RgProd_.container().vector().squaredNorm();
+  double RgNormSq = isam.RgProd_.vector().squaredNorm();
   double step = -gradientSqNorm / RgNormSq;
   toc(3, "Compute minimizing step size");
 

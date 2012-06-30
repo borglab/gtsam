@@ -421,52 +421,31 @@ TEST(VectorValues, hasSameStructure) {
   EXPECT(!v1.hasSameStructure(VectorValues()));
 }
 
+
 /* ************************************************************************* */
-TEST(VectorValues, permuted_combined) {
-  Vector v1 = Vector_(3, 1.0,2.0,3.0);
-  Vector v2 = Vector_(2, 4.0,5.0);
-  Vector v3 = Vector_(4, 6.0,7.0,8.0,9.0);
+TEST(VectorValues, permute) {
 
-  vector<size_t> dims(3); dims[0]=3; dims[1]=2; dims[2]=4;
-  VectorValues combined(dims);
-  combined[0] = v1;
-  combined[1] = v2;
-  combined[2] = v3;
+	VectorValues original;
+	original.insert(0, Vector_(1, 1.0));
+	original.insert(1, Vector_(2, 2.0, 3.0));
+	original.insert(2, Vector_(2, 4.0, 5.0));
+	original.insert(3, Vector_(2, 6.0, 7.0));
 
-  Permutation perm1(3);
-  perm1[0] = 1;
-  perm1[1] = 2;
-  perm1[2] = 0;
+	VectorValues expected;
+	expected.insert(0, Vector_(2, 4.0, 5.0)); // from 2
+	expected.insert(1, Vector_(1, 1.0)); // from 0
+	expected.insert(2, Vector_(2, 6.0, 7.0)); // from 3
+	expected.insert(3, Vector_(2, 2.0, 3.0)); // from 1
 
-  Permutation perm2(3);
-  perm2[0] = 1;
-  perm2[1] = 2;
-  perm2[2] = 0;
+	Permutation permutation(4);
+	permutation[0] = 2;
+	permutation[1] = 0;
+	permutation[2] = 3;
+	permutation[3] = 1;
 
-  Permuted<VectorValues> permuted1(combined);
-  CHECK(assert_equal(v1, permuted1[0]))
-  CHECK(assert_equal(v2, permuted1[1]))
-  CHECK(assert_equal(v3, permuted1[2]))
+	VectorValues actual = original.permute(permutation);
 
-  permuted1.permute(perm1);
-  CHECK(assert_equal(v1, permuted1[2]))
-  CHECK(assert_equal(v2, permuted1[0]))
-  CHECK(assert_equal(v3, permuted1[1]))
-
-  permuted1.permute(perm2);
-  CHECK(assert_equal(v1, permuted1[1]))
-  CHECK(assert_equal(v2, permuted1[2]))
-  CHECK(assert_equal(v3, permuted1[0]))
-
-  Permuted<VectorValues> permuted2(perm1, combined);
-  CHECK(assert_equal(v1, permuted2[2]))
-  CHECK(assert_equal(v2, permuted2[0]))
-  CHECK(assert_equal(v3, permuted2[1]))
-
-  permuted2.permute(perm2);
-  CHECK(assert_equal(v1, permuted2[1]))
-  CHECK(assert_equal(v2, permuted2[2]))
-  CHECK(assert_equal(v3, permuted2[0]))
+	EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */

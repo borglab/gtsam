@@ -183,33 +183,17 @@ JacobianFactor::shared_ptr GaussianConditional::toFactor() const {
 }
 
 /* ************************************************************************* */
-template<class VALUES>
-inline static void doSolveInPlace(const GaussianConditional& conditional, VALUES& x) {
-
-  // Helper function to solve-in-place on a VectorValues or Permuted<VectorValues>,
-  // called by GaussianConditional::solveInPlace(VectorValues&) and by
-  // GaussianConditional::solveInPlace(Permuted<VectorValues>&).
-
-  static const bool debug = false;
-  if(debug) conditional.print("Solving conditional in place");
-  Vector xS = internal::extractVectorValuesSlices(x, conditional.beginParents(), conditional.endParents());
-  xS = conditional.get_d() - conditional.get_S() * xS;
-  Vector soln = conditional.get_R().triangularView<Eigen::Upper>().solve(xS);
-  if(debug) {
-    gtsam::print(Matrix(conditional.get_R()), "Calling backSubstituteUpper on ");
-    gtsam::print(soln, "full back-substitution solution: ");
-  }
-  internal::writeVectorValuesSlices(soln, x, conditional.beginFrontals(), conditional.endFrontals());
-}
-
-/* ************************************************************************* */
 void GaussianConditional::solveInPlace(VectorValues& x) const {
-  doSolveInPlace(*this, x); // Call helper version above
-}
-
-/* ************************************************************************* */
-void GaussianConditional::solveInPlace(Permuted<VectorValues>& x) const {
-  doSolveInPlace(*this, x); // Call helper version above
+	static const bool debug = false;
+	if(debug) this->print("Solving conditional in place");
+	Vector xS = internal::extractVectorValuesSlices(x, this->beginParents(), this->endParents());
+	xS = this->get_d() - this->get_S() * xS;
+	Vector soln = this->get_R().triangularView<Eigen::Upper>().solve(xS);
+	if(debug) {
+		gtsam::print(Matrix(this->get_R()), "Calling backSubstituteUpper on ");
+		gtsam::print(soln, "full back-substitution solution: ");
+	}
+	internal::writeVectorValuesSlices(soln, x, this->beginFrontals(), this->endFrontals());
 }
 
 /* ************************************************************************* */

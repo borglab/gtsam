@@ -29,8 +29,8 @@ namespace gtsam {
 
 /* ************************************************************************* */
 void ISAM2::Impl::AddVariables(
-    const Values& newTheta, Values& theta, Permuted<VectorValues>& delta,
-    Permuted<VectorValues>& deltaNewton, Permuted<VectorValues>& deltaGradSearch, vector<bool>& replacedKeys,
+    const Values& newTheta, Values& theta, VectorValues& delta,
+    VectorValues& deltaNewton, VectorValues& deltaGradSearch, vector<bool>& replacedKeys,
     Ordering& ordering, Base::Nodes& nodes, const KeyFormatter& keyFormatter) {
   const bool debug = ISDEBUG("ISAM2 AddVariables");
 
@@ -40,28 +40,21 @@ void ISAM2::Impl::AddVariables(
   std::vector<Index> dims(newTheta.dims(*newTheta.orderingArbitrary()));
   if(debug) cout << "New variables have total dimensionality " << accumulate(dims.begin(), dims.end(), 0) << endl;
   const size_t newDim = accumulate(dims.begin(), dims.end(), 0);
-  const size_t originalDim = delta->dim();
-  const size_t originalnVars = delta->size();
-  delta.container().append(dims);
-  delta.container().vector().segment(originalDim, newDim).operator=(Vector::Zero(newDim));
-  delta.permutation().resize(originalnVars + newTheta.size());
-  deltaNewton.container().append(dims);
-  deltaNewton.container().vector().segment(originalDim, newDim).operator=(Vector::Zero(newDim));
-  deltaNewton.permutation().resize(originalnVars + newTheta.size());
-  deltaGradSearch.container().append(dims);
-  deltaGradSearch.container().vector().segment(originalDim, newDim).operator=(Vector::Zero(newDim));
-  deltaGradSearch.permutation().resize(originalnVars + newTheta.size());
+  const size_t originalDim = delta.dim();
+  const size_t originalnVars = delta.size();
+  delta.append(dims);
+  delta.vector().segment(originalDim, newDim).operator=(Vector::Zero(newDim));
+  deltaNewton.append(dims);
+  deltaNewton.vector().segment(originalDim, newDim).operator=(Vector::Zero(newDim));
+  deltaGradSearch.append(dims);
+  deltaGradSearch.vector().segment(originalDim, newDim).operator=(Vector::Zero(newDim));
   {
     Index nextVar = originalnVars;
     BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, newTheta) {
-      delta.permutation()[nextVar] = nextVar;
-      deltaNewton.permutation()[nextVar] = nextVar;
-      deltaGradSearch.permutation()[nextVar] = nextVar;
       ordering.insert(key_value.key, nextVar);
       if(debug) cout << "Adding variable " << keyFormatter(key_value.key) << " with order " << nextVar << endl;
       ++ nextVar;
     }
-    assert(delta.permutation().size() == delta.container().size());
     assert(ordering.nVars() == delta.size());
     assert(ordering.size() == delta.size());
   }
@@ -82,7 +75,7 @@ FastSet<Index> ISAM2::Impl::IndicesFromFactors(const Ordering& ordering, const N
 }
 
 /* ************************************************************************* */
-FastSet<Index> ISAM2::Impl::CheckRelinearizationFull(const Permuted<VectorValues>& delta, const Ordering& ordering,
+FastSet<Index> ISAM2::Impl::CheckRelinearizationFull(const VectorValues& delta, const Ordering& ordering,
     const ISAM2Params::RelinearizationThreshold& relinearizeThreshold, const KeyFormatter& keyFormatter) {
   FastSet<Index> relinKeys;
 
@@ -110,7 +103,7 @@ FastSet<Index> ISAM2::Impl::CheckRelinearizationFull(const Permuted<VectorValues
 }
 
 /* ************************************************************************* */
-void CheckRelinearizationRecursiveDouble(FastSet<Index>& relinKeys, double threshold, const Permuted<VectorValues>& delta, const ISAM2Clique::shared_ptr& clique) {
+void CheckRelinearizationRecursiveDouble(FastSet<Index>& relinKeys, double threshold, const VectorValues& delta, const ISAM2Clique::shared_ptr& clique) {
 
   // Check the current clique for relinearization
   bool relinearize = false;
@@ -131,7 +124,7 @@ void CheckRelinearizationRecursiveDouble(FastSet<Index>& relinKeys, double thres
 }
 
 /* ************************************************************************* */
-void CheckRelinearizationRecursiveMap(FastSet<Index>& relinKeys, const FastMap<char,Vector>& thresholds, const Permuted<VectorValues>& delta, const Ordering::InvertedMap& decoder, const ISAM2Clique::shared_ptr& clique) {
+void CheckRelinearizationRecursiveMap(FastSet<Index>& relinKeys, const FastMap<char,Vector>& thresholds, const VectorValues& delta, const Ordering::InvertedMap& decoder, const ISAM2Clique::shared_ptr& clique) {
 
   // Check the current clique for relinearization
   bool relinearize = false;
@@ -163,7 +156,7 @@ void CheckRelinearizationRecursiveMap(FastSet<Index>& relinKeys, const FastMap<c
 }
 
 /* ************************************************************************* */
-FastSet<Index> ISAM2::Impl::CheckRelinearizationPartial(const ISAM2Clique::shared_ptr& root, const Permuted<VectorValues>& delta, const Ordering& ordering,
+FastSet<Index> ISAM2::Impl::CheckRelinearizationPartial(const ISAM2Clique::shared_ptr& root, const VectorValues& delta, const Ordering& ordering,
     const ISAM2Params::RelinearizationThreshold& relinearizeThreshold, const KeyFormatter& keyFormatter) {
 
   FastSet<Index> relinKeys;
@@ -201,8 +194,8 @@ void ISAM2::Impl::FindAll(ISAM2Clique::shared_ptr clique, FastSet<Index>& keys, 
 }
 
 /* ************************************************************************* */
-void ISAM2::Impl::ExpmapMasked(Values& values, const Permuted<VectorValues>& delta, const Ordering& ordering,
-    const vector<bool>& mask, boost::optional<Permuted<VectorValues>&> invalidateIfDebug, const KeyFormatter& keyFormatter) {
+void ISAM2::Impl::ExpmapMasked(Values& values, const VectorValues& delta, const Ordering& ordering,
+    const vector<bool>& mask, boost::optional<VectorValues&> invalidateIfDebug, const KeyFormatter& keyFormatter) {
   // If debugging, invalidate if requested, otherwise do not invalidate.
   // Invalidating means setting expmapped entries to Inf, to trigger assertions
   // if we try to re-use them.
@@ -304,7 +297,7 @@ ISAM2::Impl::PartialSolve(GaussianFactorGraph& factors,
   toc(4,"ccolamd permutations");
 
   tic(5,"permute affected variable index");
-  affectedFactorsIndex.permute(*affectedColamd);
+  affectedFactorsIndex.permuteInPlace(*affectedColamd);
   toc(5,"permute affected variable index");
 
   tic(6,"permute affected factors");
@@ -354,25 +347,13 @@ inline static void optimizeInPlace(const boost::shared_ptr<ISAM2Clique>& clique,
 }
 
 /* ************************************************************************* */
-size_t ISAM2::Impl::UpdateDelta(const boost::shared_ptr<ISAM2Clique>& root, std::vector<bool>& replacedKeys, Permuted<VectorValues>& delta, double wildfireThreshold) {
+size_t ISAM2::Impl::UpdateDelta(const boost::shared_ptr<ISAM2Clique>& root, std::vector<bool>& replacedKeys, VectorValues& delta, double wildfireThreshold) {
 
   size_t lastBacksubVariableCount;
 
   if (wildfireThreshold <= 0.0) {
     // Threshold is zero or less, so do a full recalculation
-    // Collect dimensions and allocate new VectorValues
-    vector<size_t> dims(delta.size());
-    for(size_t j=0; j<delta.size(); ++j)
-      dims[j] = delta->dim(j);
-    VectorValues newDelta(dims);
-
-    // Optimize full solution delta
-    internal::optimizeInPlace(root, newDelta);
-
-    // Copy solution into delta
-    delta.permutation() = Permutation::Identity(delta.size());
-    delta.container() = newDelta;
-
+    internal::optimizeInPlace(root, delta);
     lastBacksubVariableCount = delta.size();
 
   } else {
@@ -380,8 +361,8 @@ size_t ISAM2::Impl::UpdateDelta(const boost::shared_ptr<ISAM2Clique>& root, std:
     lastBacksubVariableCount = optimizeWildfire(root, wildfireThreshold, replacedKeys, delta); // modifies delta_
 
 #ifndef NDEBUG
-    for(size_t j=0; j<delta.container().size(); ++j)
-      assert(delta.container()[j].unaryExpr(ptr_fun(isfinite<double>)).all());
+    for(size_t j=0; j<delta.size(); ++j)
+      assert(delta[j].unaryExpr(ptr_fun(isfinite<double>)).all());
 #endif
   }
 
@@ -394,7 +375,7 @@ size_t ISAM2::Impl::UpdateDelta(const boost::shared_ptr<ISAM2Clique>& root, std:
 /* ************************************************************************* */
 namespace internal {
 void updateDoglegDeltas(const boost::shared_ptr<ISAM2Clique>& clique, std::vector<bool>& replacedKeys,
-    const VectorValues& grad, Permuted<VectorValues>& deltaNewton, Permuted<VectorValues>& RgProd, size_t& varsUpdated) {
+    const VectorValues& grad, VectorValues& deltaNewton, VectorValues& RgProd, size_t& varsUpdated) {
 
   // Check if any frontal or separator keys were recalculated, if so, we need
   // update deltas and recurse to children, but if not, we do not need to
@@ -433,7 +414,7 @@ void updateDoglegDeltas(const boost::shared_ptr<ISAM2Clique>& clique, std::vecto
 
 /* ************************************************************************* */
 size_t ISAM2::Impl::UpdateDoglegDeltas(const ISAM2& isam, double wildfireThreshold, std::vector<bool>& replacedKeys,
-    Permuted<VectorValues>& deltaNewton, Permuted<VectorValues>& RgProd) {
+    VectorValues& deltaNewton, VectorValues& RgProd) {
 
   // Get gradient
   VectorValues grad = *allocateVectorValues(isam);
