@@ -41,7 +41,6 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       self = new Shared(new Point2(x,y));
     }
     collector.insert(self);
-    std::cout << "constructed " << self << ", size=" << collector.size() << std::endl;
     out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
     *reinterpret_cast<Shared**> (mxGetPr(out[0])) = self;
   }

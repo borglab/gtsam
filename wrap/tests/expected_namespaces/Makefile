@@ -2,50 +2,51 @@
 
 MEX = mex
 MEXENDING = mexa64
+PATH_TO_WRAP = /not_really_a_real_path/borg/gtsam/wrap
 mex_flags = -O5
 
 all: ns1ClassA ns1ClassB ns2ClassA ns2ns3ClassB ns2ClassC ClassD 
 
 # ns1ClassA
-new_ns1ClassA_.$(MEXENDING): new_ns1ClassA_.cpp
+new_ns1ClassA_.$(MEXENDING): new_ns1ClassA_.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) new_ns1ClassA_.cpp  -output new_ns1ClassA_
 
 ns1ClassA: new_ns1ClassA_.$(MEXENDING) 
 
 # ns1ClassB
-new_ns1ClassB_.$(MEXENDING): new_ns1ClassB_.cpp
+new_ns1ClassB_.$(MEXENDING): new_ns1ClassB_.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) new_ns1ClassB_.cpp  -output new_ns1ClassB_
 
 ns1ClassB: new_ns1ClassB_.$(MEXENDING) 
 
 # ns2ClassA
-new_ns2ClassA_.$(MEXENDING): new_ns2ClassA_.cpp
+new_ns2ClassA_.$(MEXENDING): new_ns2ClassA_.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) new_ns2ClassA_.cpp  -output new_ns2ClassA_
-ns2ClassA_afunction.$(MEXENDING): ns2ClassA_afunction.cpp
+ns2ClassA_afunction.$(MEXENDING): ns2ClassA_afunction.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) ns2ClassA_afunction.cpp  -output ns2ClassA_afunction
-@ns2ClassA/memberFunction.$(MEXENDING): @ns2ClassA/memberFunction.cpp
+@ns2ClassA/memberFunction.$(MEXENDING): @ns2ClassA/memberFunction.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @ns2ClassA/memberFunction.cpp  -output @ns2ClassA/memberFunction
-@ns2ClassA/nsArg.$(MEXENDING): @ns2ClassA/nsArg.cpp
+@ns2ClassA/nsArg.$(MEXENDING): @ns2ClassA/nsArg.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @ns2ClassA/nsArg.cpp  -output @ns2ClassA/nsArg
-@ns2ClassA/nsReturn.$(MEXENDING): @ns2ClassA/nsReturn.cpp
+@ns2ClassA/nsReturn.$(MEXENDING): @ns2ClassA/nsReturn.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @ns2ClassA/nsReturn.cpp  -output @ns2ClassA/nsReturn
 
 ns2ClassA: new_ns2ClassA_.$(MEXENDING) ns2ClassA_afunction.$(MEXENDING) @ns2ClassA/memberFunction.$(MEXENDING) @ns2ClassA/nsArg.$(MEXENDING) @ns2ClassA/nsReturn.$(MEXENDING) 
 
 # ns2ns3ClassB
-new_ns2ns3ClassB_.$(MEXENDING): new_ns2ns3ClassB_.cpp
+new_ns2ns3ClassB_.$(MEXENDING): new_ns2ns3ClassB_.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) new_ns2ns3ClassB_.cpp  -output new_ns2ns3ClassB_
 
 ns2ns3ClassB: new_ns2ns3ClassB_.$(MEXENDING) 
 
 # ns2ClassC
-new_ns2ClassC_.$(MEXENDING): new_ns2ClassC_.cpp
+new_ns2ClassC_.$(MEXENDING): new_ns2ClassC_.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) new_ns2ClassC_.cpp  -output new_ns2ClassC_
 
 ns2ClassC: new_ns2ClassC_.$(MEXENDING) 
 
 # ClassD
-new_ClassD_.$(MEXENDING): new_ClassD_.cpp
+new_ClassD_.$(MEXENDING): new_ClassD_.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) new_ClassD_.cpp  -output new_ClassD_
 
 ClassD: new_ClassD_.$(MEXENDING) 

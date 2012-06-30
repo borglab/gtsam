@@ -29,7 +29,7 @@ using namespace std;
  * @param interfacePath path to where interface file lives, e.g., borg/gtsam
  * @param moduleName name of the module to be generated e.g. gtsam
  * @param toolboxPath path where the toolbox should be generated, e.g. borg/gtsam/build
- * @param nameSpace e.g. gtsam
+ * @param headerPath is the path to matlab.h
  * @param mexFlags extra arguments for mex script, i.e., include flags etc...
  */
 void generate_matlab_toolbox(
@@ -58,6 +58,7 @@ void usage() {
   cerr << "  interfacePath : *absolute* path to directory of module interface file" << endl;
   cerr << "  moduleName    : the name of the module, interface file must be called moduleName.h" << endl;
   cerr << "  toolboxPath   : the directory in which to generate the wrappers" << endl;
+  cerr << "  headerPath    : path to matlab.h" << endl;
   cerr << "  [mexFlags]    : extra flags for the mex command" << endl;
 }
 
