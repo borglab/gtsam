@@ -77,7 +77,8 @@ void readAllDataISAM() {
  * Setup newFactors and initialValues for each new pose and set of measurements at each frame.
  */
 void createNewFactors(shared_ptr<Graph>& newFactors, boost::shared_ptr<Values>& initialValues,
-    int pose_id, const Pose3& pose, const std::vector<Feature2D>& measurements, SharedNoiseModel measurementSigma, shared_ptrK calib) {
+    const Values& currentEstimate, int pose_id, const Pose3& pose,
+    const std::vector<Feature2D>& measurements, SharedNoiseModel measurementSigma, shared_ptrK calib) {
 
   // Create a graph of newFactors with new measurements
   newFactors = shared_ptr<Graph> (new Graph());
@@ -90,17 +91,18 @@ void createNewFactors(shared_ptr<Graph>& newFactors, boost::shared_ptr<Values>& 
         calib);
   }
 
-  // ... we need priors on the new pose and all new landmarks
-  newFactors->addPosePrior(pose_id, pose, poseSigma);
-  for (size_t i = 0; i < measurements.size(); i++) {
-    newFactors->addPointPrior(measurements[i].m_idLandmark, g_landmarks[measurements[i].m_idLandmark]);
-  }
+  // Add prior on the first pose
+  if(pose_id == 0)
+    newFactors->addPosePrior(pose_id, Pose3(), poseSigma);
 
-  // Create initial values for all nodes in the newFactors
+  // Create initial values for all new variables and add priors on new landmarks
   initialValues = shared_ptr<Values> (new Values());
   initialValues->insert(PoseKey(pose_id), pose);
   for (size_t i = 0; i < measurements.size(); i++) {
-    initialValues->insert(PointKey(measurements[i].m_idLandmark), g_landmarks[measurements[i].m_idLandmark]);
+    if(!currentEstimate.exists(PointKey(measurements[i].m_idLandmark))) {
+      initialValues->insert(PointKey(measurements[i].m_idLandmark), g_landmarks[measurements[i].m_idLandmark]);
+      newFactors->addPointPrior(measurements[i].m_idLandmark, g_landmarks[measurements[i].m_idLandmark]);
+    }
   }
 }
 
@@ -125,15 +127,16 @@ int main(int argc, char* argv[]) {
   // At each frame (poseId) with new camera pose and set of associated measurements,
   // create a graph of new factors and update ISAM
   typedef std::map<int, std::vector<Feature2D> > FeatureMap;
+  Values currentEstimate = isam.estimate();
   BOOST_FOREACH(const FeatureMap::value_type& features, g_measurements) {
     const int poseId = features.first;
     shared_ptr<Graph> newFactors;
     shared_ptr<Values> initialValues;
-    createNewFactors(newFactors, initialValues, poseId, g_poses[poseId],
+    createNewFactors(newFactors, initialValues, currentEstimate, poseId, g_poses[poseId],
             features.second, measurementSigma, g_calib);
 
     isam.update(*newFactors, *initialValues);
-    Values currentEstimate = isam.estimate();
+    currentEstimate = isam.estimate();
     cout << "****************************************************" << endl;
     currentEstimate.print("Current estimate: ");
   }
