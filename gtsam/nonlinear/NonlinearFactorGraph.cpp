@@ -54,8 +54,8 @@ double NonlinearFactorGraph::error(const Values& c) const {
 }
 
 /* ************************************************************************* */
-std::set<Key> NonlinearFactorGraph::keys() const {
-	std::set<Key> keys;
+FastSet<Key> NonlinearFactorGraph::keys() const {
+	FastSet<Key> keys;
 	BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
 		if(factor)
 			keys.insert(factor->begin(), factor->end());

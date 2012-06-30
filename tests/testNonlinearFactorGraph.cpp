@@ -65,9 +65,9 @@ TEST( Graph, error )
 TEST( Graph, keys )
 {
 	Graph fg = createNonlinearFactorGraph();
-	set<Key> actual = fg.keys();
+	FastSet<Key> actual = fg.keys();
 	LONGS_EQUAL(3, actual.size());
-	set<Key>::const_iterator it = actual.begin();
+	FastSet<Key>::const_iterator it = actual.begin();
 	LONGS_EQUAL(L(1), *(it++));
 	LONGS_EQUAL(X(1), *(it++));
 	LONGS_EQUAL(X(2), *(it++));
