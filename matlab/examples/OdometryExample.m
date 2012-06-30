@@ -29,7 +29,6 @@ odometryNoise = gtsamnoiseModelDiagonal_Sigmas([0.2; 0.2; 0.1]); % 20cm std on x
 graph.addRelativePose(1, 2, odometry, odometryNoise);
 graph.addRelativePose(2, 3, odometry, odometryNoise);
 
-pause
 %% print
 graph.print(sprintf('\nFactor graph:\n'));
 
