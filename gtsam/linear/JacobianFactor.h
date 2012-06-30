@@ -84,7 +84,7 @@ namespace gtsam {
 
   protected:
 
-    SharedDiagonal model_; // Gaussian noise model with diagonal covariance matrix
+    noiseModel::Diagonal::shared_ptr model_; // Gaussian noise model with diagonal covariance matrix
     std::vector<size_t> firstNonzeroBlocks_;
     AbMatrix matrix_; // the full matrix corresponding to the factor
     BlockAb Ab_;      // the block view of the full matrix
