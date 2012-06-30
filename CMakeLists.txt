@@ -63,6 +63,7 @@ option(GTSAM_INSTALL_MATLAB_TESTS        "Enable/Disable installation of matlab 
 option(GTSAM_INSTALL_WRAP                "Enable/Disable installation of wrap utility" ON)
 
 set(GTSAM_TOOLBOX_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/borg/toolbox CACHE DOCSTRING "Path to install matlab toolbox")
+set(GTSAM_WRAP_HEADER_PATH ${PROJECT_SOURCE_DIR}/wrap CACHE DOCSTRING "Path to directory of matlab.h")
 
 # TODO: Check for matlab mex binary before handling building of binaries
 
