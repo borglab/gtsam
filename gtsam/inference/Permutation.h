@@ -133,8 +133,8 @@ public:
   static Permutation PullToFront(const std::vector<Index>& toFront, size_t size, bool filterDuplicates = false);
 
   /**
-   * Create a permutation that pulls the given variables to the front while
-   * pushing the rest to the back.
+   * Create a permutation that pushes the given variables to the back while
+   * pulling the rest to the front.
    */
   static Permutation PushToBack(const std::vector<Index>& toBack, size_t size, bool filterDuplicates = false);
 
@@ -153,6 +153,17 @@ public:
 
   const_iterator begin() const { return rangeIndices_.begin(); }	///< Iterate through the indices
   const_iterator end() const { return rangeIndices_.end(); }			///< Iterate through the indices
+
+	/** Apply the permutation to a collection, which must have operator[] defined.
+	 * Note that permutable gtsam data structures typically have their own
+	 * permute function to apply a permutation.  Permutation::applyToCollection is
+	 * a generic function, e.g. for STL classes.
+	 * @param input The input collection.
+	 * @param output The preallocated output collection, which is assigned output[i] = input[permutation[i]]
+	 */
+	template<typename INPUT_COLLECTION, typename OUTPUT_COLLECTION>
+	void applyToCollection(OUTPUT_COLLECTION& output, const INPUT_COLLECTION& input) const {
+		for(size_t i = 0; i < output.size(); ++i) output[i] = input[(*this)[i]]; }
 
 
 	/// @}
