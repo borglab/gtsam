@@ -41,10 +41,10 @@ using symbol_shorthand::L;
 /* ************************************************************************* */
 // Some numbers that should be consistent among all smoother tests
 
-double sigmax1 = 0.786153, sigmax2 = 1.0/1.47292, sigmax3 = 0.671512, sigmax4 =
+static double sigmax1 = 0.786153, sigmax2 = 1.0/1.47292, sigmax3 = 0.671512, sigmax4 =
 		0.669534, sigmax5 = sigmax3, sigmax6 = sigmax2, sigmax7 = sigmax1;
 
-const double tol = 1e-4;
+static const double tol = 1e-4;
 
 /* ************************************************************************* */
 TEST_UNSAFE( ISAM, iSAM_smoother )

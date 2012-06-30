@@ -35,7 +35,7 @@ using namespace gtsam;
 
 static const Index x2=0, x1=1, x3=2, x4=3;
 
-GaussianFactorGraph createChain() {
+static GaussianFactorGraph createChain() {
 
   typedef GaussianFactorGraph::sharedFactor Factor;
   SharedDiagonal model = noiseModel::Isotropic::Sigma(1, 0.5);

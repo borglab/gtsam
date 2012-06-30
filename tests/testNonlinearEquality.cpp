@@ -37,7 +37,7 @@ typedef PriorFactor<Pose2> PosePrior;
 typedef NonlinearEquality<Pose2> PoseNLE;
 typedef boost::shared_ptr<PoseNLE> shared_poseNLE;
 
-Symbol key('x',1);
+static Symbol key('x',1);
 
 /* ************************************************************************* */
 TEST ( NonlinearEquality, linearization ) {
@@ -241,8 +241,8 @@ TEST ( NonlinearEquality, allow_error_optimize_with_factors ) {
 }
 
 /* ************************************************************************* */
-SharedDiagonal hard_model = noiseModel::Constrained::All(2);
-SharedDiagonal soft_model = noiseModel::Isotropic::Sigma(2, 1.0);
+static SharedDiagonal hard_model = noiseModel::Constrained::All(2);
+static SharedDiagonal soft_model = noiseModel::Isotropic::Sigma(2, 1.0);
 
 /* ************************************************************************* */
 TEST( testNonlinearEqualityConstraint, unary_basics ) {
@@ -504,10 +504,10 @@ TEST (testNonlinearEqualityConstraint, map_warp ) {
 }
 
 // make a realistic calibration matrix
-double fov = 60; // degrees
-size_t w=640,h=480;
-Cal3_S2 K(fov,w,h);
-boost::shared_ptr<Cal3_S2> shK(new Cal3_S2(K));
+static double fov = 60; // degrees
+static size_t w=640,h=480;
+static Cal3_S2 K(fov,w,h);
+static boost::shared_ptr<Cal3_S2> shK(new Cal3_S2(K));
 
 // typedefs for visual SLAM example
 typedef visualSLAM::Graph VGraph;
