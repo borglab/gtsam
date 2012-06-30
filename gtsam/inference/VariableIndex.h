@@ -216,7 +216,6 @@ void VariableIndex::augment(const FactorGraph& factors) {
     }
 
     // Allocate index
-    Index originalSize = index_.size();
     index_.resize(std::max(index_.size(), maxVar+1));
 
     // Augment index mapping from variable id to factor index
