@@ -206,7 +206,7 @@ struct ISAM2Result {
    * factors passed as \c newFactors to ISAM2::update().  These indices may be
    * used later to refer to the factors in order to remove them.
    */
-  FastVector<size_t> newFactorsIndices;
+  std::vector<size_t> newFactorsIndices;
 
   /** A struct holding detailed results, which must be enabled with
    * ISAM2Params::enableDetailedResults.
