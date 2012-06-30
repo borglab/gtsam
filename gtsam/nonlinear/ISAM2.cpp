@@ -249,6 +249,9 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
   this->removeTop(markedKeys, affectedBayesNet, orphans);
   toc(1, "removetop");
 
+	// Now that the top is removed, correct the size of the Nodes index
+	this->nodes_.resize(delta_.size());
+
   if(debug) affectedBayesNet.print("Removed top: ");
   if(debug) orphans.print("Orphans: ");
 
@@ -266,6 +269,14 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
   // ordering provides all keys in conditionals, there cannot be others because path to root included
   tic(2,"affectedKeys");
   FastList<Index> affectedKeys = affectedBayesNet.ordering();
+	// The removed top also contained removed variables, which will be ordered
+	// higher than the number of variables in the system since unused variables
+	// were already removed in ISAM2::update.
+	for(FastList<Index>::iterator key = affectedKeys.begin(); key != affectedKeys.end(); )
+		if(*key >= delta_.size())
+			affectedKeys.erase(key++);
+		else
+			++key;
   toc(2,"affectedKeys");
 
   boost::shared_ptr<FastSet<Index> > affectedKeysSet(new FastSet<Index>()); // Will return this result
@@ -539,15 +550,46 @@ ISAM2Result ISAM2::update(
   BOOST_FOREACH(size_t index, removeFactorIndices) {
     removeFactors.push_back(nonlinearFactors_[index]);
     nonlinearFactors_.remove(index);
+		if(params_.cacheLinearizedFactors)
+			linearFactors_.remove(index);
   }
 
   // Remove removed factors from the variable index so we do not attempt to relinearize them
   variableIndex_.remove(removeFactorIndices, *removeFactors.symbolic(ordering_));
+
+	// We now need to start keeping track of the marked keys involved in added or
+	// removed factors.
+	FastSet<Index> markedKeys;
+
+	// Remove unused keys and add keys from removed factors that are still used
+	// in other factors to markedKeys.
+	{
+		// Get keys from removed factors
+		FastSet<Key> removedFactorSymbKeys = removeFactors.keys();
+
+		// For each key, if still used in other factors, add to markedKeys to be
+		// recalculated, or if not used, add to unusedKeys to be removed from the
+		// system.  Note that unusedKeys stores Key while markedKeys stores Index.
+		FastSet<Key> unusedKeys;
+		BOOST_FOREACH(Key key, removedFactorSymbKeys) {
+			Index index = ordering_[key];
+			if(variableIndex_[index].empty())
+				unusedKeys.insert(key);
+			else
+				markedKeys.insert(index);
+		}
+
+		// Remove unused keys.  We must hold on to the new nodes index for now
+		// instead of placing it into the tree because removeTop will need to
+		// update it.
+		Impl::RemoveVariables(unusedKeys, root_, theta_, variableIndex_, delta_, deltaNewton_, RgProd_,
+			deltaReplacedMask_, ordering_, Base::nodes_, linearFactors_);
+	}
   toc(1,"push_back factors");
 
   tic(2,"add new variables");
   // 2. Initialize any new variables \Theta_{new} and add \Theta:=\Theta\cup\Theta_{new}.
-  Impl::AddVariables(newTheta, theta_, delta_, deltaNewton_, RgProd_, deltaReplacedMask_, ordering_, Base::nodes_);
+  Impl::AddVariables(newTheta, theta_, delta_, deltaNewton_, RgProd_, deltaReplacedMask_, ordering_);
   // New keys for detailed results
   if(params_.enableDetailedResults) {
     inverseOrdering_ = ordering_.invert();
@@ -561,13 +603,12 @@ ISAM2Result ISAM2::update(
 
   tic(4,"gather involved keys");
   // 3. Mark linear update
-  FastSet<Index> markedKeys = Impl::IndicesFromFactors(ordering_, newFactors); // Get keys from new factors
-  // Also mark keys involved in removed factors
-  {
-    FastSet<Index> markedRemoveKeys = Impl::IndicesFromFactors(ordering_, removeFactors); // Get keys involved in removed factors
-    markedKeys.insert(markedRemoveKeys.begin(), markedRemoveKeys.end()); // Add to the overall set of marked keys
-  }
-  // Observed keys for detailed results
+	{
+		FastSet<Index> newFactorIndices = Impl::IndicesFromFactors(ordering_, newFactors); // Get keys from new factors
+		markedKeys.insert(newFactorIndices.begin(), newFactorIndices.end());
+	}
+
+	// Observed keys for detailed results
   if(params_.enableDetailedResults) {
     BOOST_FOREACH(Index index, markedKeys) {
       result.detail->variableStatus[inverseOrdering_->at(index)].isObserved = true;

@@ -31,7 +31,7 @@ namespace gtsam {
 void ISAM2::Impl::AddVariables(
     const Values& newTheta, Values& theta, VectorValues& delta,
     VectorValues& deltaNewton, VectorValues& deltaGradSearch, vector<bool>& replacedKeys,
-    Ordering& ordering, Base::Nodes& nodes, const KeyFormatter& keyFormatter) {
+    Ordering& ordering, const KeyFormatter& keyFormatter) {
   const bool debug = ISDEBUG("ISAM2 AddVariables");
 
   theta.insert(newTheta);
@@ -58,15 +58,15 @@ void ISAM2::Impl::AddVariables(
     assert(ordering.nVars() == delta.size());
     assert(ordering.size() == delta.size());
   }
-  assert(ordering.nVars() >= nodes.size());
   replacedKeys.resize(ordering.nVars(), false);
-  nodes.resize(ordering.nVars());
 }
 
 /* ************************************************************************* */
-void ISAM2::Impl::RemoveVariables(const FastSet<Key>& unusedKeys, Values& theta, VariableIndex& variableIndex,
-   VectorValues& delta, VectorValues& deltaNewton, VectorValues& deltaGradSearch,
-   std::vector<bool>& replacedKeys, Ordering& ordering, Base::Nodes& nodes) {
+void ISAM2::Impl::RemoveVariables(const FastSet<Key>& unusedKeys, const ISAM2Clique::shared_ptr& root,
+																	Values& theta, VariableIndex& variableIndex,
+																	VectorValues& delta, VectorValues& deltaNewton, VectorValues& deltaGradSearch,
+																	std::vector<bool>& replacedKeys, Ordering& ordering, Base::Nodes& nodes,
+																	GaussianFactorGraph& linearFactors) {
 
 		 // Get indices of unused keys
 		 vector<Index> unusedIndices;  unusedIndices.reserve(unusedKeys.size());
@@ -96,15 +96,17 @@ void ISAM2::Impl::RemoveVariables(const FastSet<Key>& unusedKeys, Values& theta,
 			 VectorValues newDeltaNewton(dims);
 			 VectorValues newDeltaGradSearch(dims);
 			 std::vector<bool> newReplacedKeys(replacedKeys.size() - unusedIndices.size());
-			 Base::Nodes newNodes(nodes.size() - unusedIndices.size());
+			 Base::Nodes newNodes(nodes.size()); // We still keep unused keys at the end until later in ISAM2::recalculate
 
-			 for(size_t j = 0; j < newNodes.size(); ++j) {
+			 for(size_t j = 0; j < dims.size(); ++j) {
 				 newDelta[j] = delta[unusedToEnd[j]];
 				 newDeltaNewton[j] = deltaNewton[unusedToEnd[j]];
 				 newDeltaGradSearch[j] = deltaGradSearch[unusedToEnd[j]];
 				 newReplacedKeys[j] = replacedKeys[unusedToEnd[j]];
-				 newNodes[j] = nodes[unusedToEnd[j]];
 			 }
+
+			 // Permute the nodes index so the unused variables are the end
+			 unusedToEnd.applyToCollection(newNodes, nodes);
 
 			 // Swap the new data structures with the outputs of this function
 			 delta.swap(newDelta);
@@ -120,6 +122,11 @@ void ISAM2::Impl::RemoveVariables(const FastSet<Key>& unusedKeys, Values& theta,
 		   ordering.pop_back(key);
 			 theta.erase(key);
 		 }
+
+		 // Finally, permute references to variables
+		 if(root)
+			 root->permuteWithInverse(unusedToEndInverse);
+		 linearFactors.permuteWithInverse(unusedToEndInverse);
 }
 
 /* ************************************************************************* */
