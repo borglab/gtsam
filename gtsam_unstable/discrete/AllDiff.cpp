@@ -20,10 +20,11 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	void AllDiff::print(const std::string& s) const {
+	void AllDiff::print(const std::string& s,
+			const IndexFormatter& formatter) const {
 		std::cout << s << "AllDiff on ";
 		BOOST_FOREACH (Index dkey, keys_)
-			std::cout << dkey << " ";
+			std::cout << formatter(dkey) << " ";
 		std::cout << std::endl;
 	}
 
