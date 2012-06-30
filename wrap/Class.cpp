@@ -152,7 +152,8 @@ void Class::makefile_fragment(FileWriter& file) const {
   }
 
   BOOST_FOREACH(const string& file_base, file_names) {
-  	file.oss << file_base << ".$(MEXENDING): " << file_base << ".cpp" << endl;
+  	file.oss << file_base << ".$(MEXENDING): " << file_base << ".cpp";
+  	file.oss << " $(PATH_TO_WRAP)/matlab.h" << endl;
   	file.oss << "\t$(MEX) $(mex_flags) " << file_base << ".cpp  -output " << file_base << endl;
   }
 

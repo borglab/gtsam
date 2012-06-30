@@ -44,6 +44,7 @@ struct Module {
   		 const std::string& mexCommand,
   		 const std::string& path,
 		   const std::string& mexExt,
+		   const std::string& headerPath,
 		   const std::string& mexFlags) const;
 };
 

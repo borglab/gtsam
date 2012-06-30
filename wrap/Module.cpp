@@ -287,7 +287,7 @@ void verifyReturnTypes(const vector<string>& validtypes, const vector<T>& vt) {
 
 /* ************************************************************************* */
 void Module::matlab_code(const string& mexCommand, const string& toolboxPath,
-			 const string& mexExt, const string& mexFlags) const {
+			 const string& mexExt, const string& headerPath,const string& mexFlags) const {
 
     fs::create_directories(toolboxPath);
 
@@ -308,6 +308,7 @@ void Module::matlab_code(const string& mexCommand, const string& toolboxPath,
 
     makeModuleMakefile.oss << "\nMEX = " << mexCommand << "\n";
     makeModuleMakefile.oss << "MEXENDING = " << mexExt << "\n";
+    makeModuleMakefile.oss << "PATH_TO_WRAP = " << headerPath << "\n";
     makeModuleMakefile.oss << "mex_flags = " << mexFlags << "\n\n";
 
     // Dependency check list

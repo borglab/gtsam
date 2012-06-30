@@ -38,14 +38,15 @@ void generate_matlab_toolbox(
 					 const string& interfacePath,
 			     const string& moduleName,
 			     const string& toolboxPath,
-			     const string& mexFlags) 
+			     const string& headerPath,
+			     const string& mexFlags)
 {
   // Parse interface file into class object
 	// This recursively creates Class objects, Method objects, etc...
   wrap::Module module(interfacePath, moduleName, false);
 
   // Then emit MATLAB code
-  module.matlab_code(mexCommand,toolboxPath,mexExt,mexFlags);
+  module.matlab_code(mexCommand,toolboxPath,mexExt,headerPath,mexFlags);
 }
 
 /** Displays usage information */
@@ -73,6 +74,6 @@ int main(int argc, const char* argv[]) {
   	usage();
   }
   else
-    generate_matlab_toolbox(argv[1],argv[2],argv[3],argv[4],argv[5],argc==6 ? " " : argv[6]);
+    generate_matlab_toolbox(argv[1],argv[2],argv[3],argv[4],argv[5],argv[6],argc==7 ? " " : argv[7]);
   return 0;
 }
