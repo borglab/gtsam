@@ -6,6 +6,7 @@
 
 #include <gtsam/base/debug.h>
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/inference/SymbolicFactorGraph.h>
 #include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
@@ -204,6 +205,93 @@ TEST_UNSAFE(ISAM2, AddVariables) {
   EXPECT(assert_equal(deltaRgExpected, deltaRg));
   EXPECT(assert_container_equality(replacedKeysExpected, replacedKeys));
   EXPECT(assert_equal(orderingExpected, ordering));
+}
+/* ************************************************************************* */
+TEST_UNSAFE(ISAM2, RemoveVariables) {
+
+	// Create initial state
+	Values theta;
+	theta.insert(0, Pose2(.1, .2, .3));
+	theta.insert(1, Pose2(.6, .7, .8));
+	theta.insert(100, Point2(.4, .5));
+
+	SymbolicFactorGraph sfg;
+	sfg.push_back(boost::make_shared<IndexFactor>(Index(0), Index(2)));
+	sfg.push_back(boost::make_shared<IndexFactor>(Index(0), Index(1)));
+	VariableIndex variableIndex(sfg);
+
+	VectorValues delta;
+	delta.insert(0, Vector_(3, .1, .2, .3));
+	delta.insert(1, Vector_(3, .4, .5, .6));
+	delta.insert(2, Vector_(2, .7, .8));
+
+	VectorValues deltaNewton;
+	deltaNewton.insert(0, Vector_(3, .1, .2, .3));
+	deltaNewton.insert(1, Vector_(3, .4, .5, .6));
+	deltaNewton.insert(2, Vector_(2, .7, .8));
+
+	VectorValues deltaRg;
+	deltaRg.insert(0, Vector_(3, .1, .2, .3));
+	deltaRg.insert(1, Vector_(3, .4, .5, .6));
+	deltaRg.insert(2, Vector_(2, .7, .8));
+
+	vector<bool> replacedKeys(3, false);
+	replacedKeys[0] = true;
+	replacedKeys[1] = false;
+	replacedKeys[2] = true;
+
+	Ordering ordering; ordering += 100, 1, 0;
+
+	ISAM2::Nodes nodes(3);
+
+	// Verify initial state
+	LONGS_EQUAL(0, ordering[100]);
+	LONGS_EQUAL(1, ordering[1]);
+	LONGS_EQUAL(2, ordering[0]);
+
+	// Create expected state
+	Values thetaExpected;
+	thetaExpected.insert(0, Pose2(.1, .2, .3));
+	thetaExpected.insert(100, Point2(.4, .5));
+
+	SymbolicFactorGraph sfgRemoved;
+	sfgRemoved.push_back(boost::make_shared<IndexFactor>(Index(0), Index(1)));
+	sfgRemoved.push_back(SymbolicFactorGraph::sharedFactor()); // Add empty factor to keep factor indices consistent
+	VariableIndex variableIndexExpected(sfgRemoved);
+
+	VectorValues deltaExpected;
+	deltaExpected.insert(0, Vector_(3, .1, .2, .3));
+	deltaExpected.insert(1, Vector_(2, .7, .8));
+
+	VectorValues deltaNewtonExpected;
+	deltaNewtonExpected.insert(0, Vector_(3, .1, .2, .3));
+	deltaNewtonExpected.insert(1, Vector_(2, .7, .8));
+
+	VectorValues deltaRgExpected;
+	deltaRgExpected.insert(0, Vector_(3, .1, .2, .3));
+	deltaRgExpected.insert(1, Vector_(2, .7, .8));
+
+	vector<bool> replacedKeysExpected(2, true);
+
+	Ordering orderingExpected; orderingExpected += 100, 0;
+
+	ISAM2::Nodes nodesExpected(2);
+
+	// Expand initial state
+	FastSet<Key> unusedKeys;
+	unusedKeys.insert(1);
+	vector<size_t> removedFactorsI; removedFactorsI.push_back(1);
+	SymbolicFactorGraph removedFactors; removedFactors.push_back(sfg[1]);
+	variableIndex.remove(removedFactorsI, removedFactors);
+	ISAM2::Impl::RemoveVariables(unusedKeys, theta, variableIndex, delta, deltaNewton, deltaRg, replacedKeys, ordering, nodes);
+
+	EXPECT(assert_equal(thetaExpected, theta));
+	EXPECT(assert_equal(variableIndexExpected, variableIndex));
+	EXPECT(assert_equal(deltaExpected, delta));
+	EXPECT(assert_equal(deltaNewtonExpected, deltaNewton));
+	EXPECT(assert_equal(deltaRgExpected, deltaRg));
+	EXPECT(assert_container_equality(replacedKeysExpected, replacedKeys));
+	EXPECT(assert_equal(orderingExpected, ordering));
 }
 
 /* ************************************************************************* */
@@ -1010,6 +1098,134 @@ TEST(ISAM2, removeFactors)
   EXPECT(assert_equal(expectedGradient2, expectedGradient));
   EXPECT(assert_equal(expectedGradient, actualGradient));
 }
+
+/* ************************************************************************* */
+//TEST(ISAM2, removeVariables)
+//{
+//
+//	// These variables will be reused and accumulate factors and values
+//	ISAM2 isam(ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
+//	Values fullinit;
+//	planarSLAM::Graph fullgraph;
+//
+//	vector<size_t> factorsToRemove;
+//
+//	// i keeps track of the time step
+//	size_t i = 0;
+//
+//	// Add a prior at time 0 and update isam
+//	{
+//		planarSLAM::Graph newfactors;
+//		newfactors.addPosePrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
+//		fullgraph.push_back(newfactors);
+//
+//		Values init;
+//		init.insert((0), Pose2(0.01, 0.01, 0.01));
+//		fullinit.insert((0), Pose2(0.01, 0.01, 0.01));
+//
+//		isam.update(newfactors, init);
+//	}
+//
+//	CHECK(isam_check(fullgraph, fullinit, isam));
+//
+//	// Add odometry from time 0 to time 5
+//	for( ; i<5; ++i) {
+//		planarSLAM::Graph newfactors;
+//		newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+//		fullgraph.push_back(newfactors);
+//
+//		Values init;
+//		init.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+//		fullinit.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+//
+//		isam.update(newfactors, init);
+//	}
+//
+//	// Add odometry from time 5 to 6 and landmark measurement at time 5
+//	{
+//		planarSLAM::Graph newfactors;
+//		newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+//		newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
+//		newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
+//		fullgraph.push_back(newfactors);
+//
+//		Values init;
+//		init.insert((i+1), Pose2(1.01, 0.01, 0.01));
+//		init.insert(100, Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
+//		init.insert(101, Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
+//		fullinit.insert((i+1), Pose2(1.01, 0.01, 0.01));
+//		fullinit.insert(100, Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
+//		fullinit.insert(101, Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
+//
+//		ISAM2Result result = isam.update(newfactors, init);
+//		factorsToRemove.push_back(result.newFactorsIndices[1]);
+//		++ i;
+//	}
+//
+//	// Add odometry from time 6 to time 10
+//	for( ; i<10; ++i) {
+//		planarSLAM::Graph newfactors;
+//		newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+//		fullgraph.push_back(newfactors);
+//
+//		Values init;
+//		init.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+//		fullinit.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
+//
+//		isam.update(newfactors, init);
+//	}
+//
+//	// Add odometry from time 10 to 11 and landmark measurement at time 10
+//	{
+//		planarSLAM::Graph newfactors;
+//		newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+//		newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+//		newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+//		fullgraph.push_back(newfactors);
+//
+//		Values init;
+//		init.insert((i+1), Pose2(6.9, 0.1, 0.01));
+//		fullinit.insert((i+1), Pose2(6.9, 0.1, 0.01));
+//
+//		ISAM2Result result = isam.update(newfactors, init);
+//		factorsToRemove.push_back(result.newFactorsIndices[1]);
+//		++ i;
+//	}
+//
+//	// Compare solutions
+//	fullgraph.remove(factorsToRemove[0]);
+//	fullgraph.remove(factorsToRemove[1]);
+//	fullinit.erase(100);
+//	CHECK(isam_check(fullgraph, fullinit, isam));
+//
+//	// Check gradient at each node
+//	typedef ISAM2::sharedClique sharedClique;
+//	BOOST_FOREACH(const sharedClique& clique, isam.nodes()) {
+//		// Compute expected gradient
+//		FactorGraph<JacobianFactor> jfg;
+//		jfg.push_back(JacobianFactor::shared_ptr(new JacobianFactor(*clique->conditional())));
+//		VectorValues expectedGradient(*allocateVectorValues(isam));
+//		gradientAtZero(jfg, expectedGradient);
+//		// Compare with actual gradients
+//		int variablePosition = 0;
+//		for(GaussianConditional::const_iterator jit = clique->conditional()->begin(); jit != clique->conditional()->end(); ++jit) {
+//			const int dim = clique->conditional()->dim(jit);
+//			Vector actual = clique->gradientContribution().segment(variablePosition, dim);
+//			EXPECT(assert_equal(expectedGradient[*jit], actual));
+//			variablePosition += dim;
+//		}
+//		LONGS_EQUAL(clique->gradientContribution().rows(), variablePosition);
+//	}
+//
+//	// Check gradient
+//	VectorValues expectedGradient(*allocateVectorValues(isam));
+//	gradientAtZero(FactorGraph<JacobianFactor>(isam), expectedGradient);
+//	VectorValues expectedGradient2(gradient(FactorGraph<JacobianFactor>(isam), VectorValues::Zero(expectedGradient)));
+//	VectorValues actualGradient(*allocateVectorValues(isam));
+//	gradientAtZero(isam, actualGradient);
+//	EXPECT(assert_equal(expectedGradient2, expectedGradient));
+//	EXPECT(assert_equal(expectedGradient, actualGradient));
+//}
 
 /* ************************************************************************* */
 TEST_UNSAFE(ISAM2, swapFactors)

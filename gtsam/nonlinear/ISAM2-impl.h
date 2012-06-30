@@ -51,6 +51,13 @@ struct ISAM2::Impl {
       Ordering& ordering, Base::Nodes& nodes, const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 	  
   /**
+   * Remove variables from the ISAM2 system.
+   */
+	static void RemoveVariables(const FastSet<Key>& unusedKeys, Values& theta, VariableIndex& variableIndex,
+		VectorValues& delta, VectorValues& deltaNewton, VectorValues& deltaGradSearch,
+		std::vector<bool>& replacedKeys, Ordering& ordering, Base::Nodes& nodes);
+
+  /**
    * Extract the set of variable indices from a NonlinearFactorGraph.  For each Symbol
    * in each NonlinearFactor, obtains the index by calling ordering[symbol].
    * @param ordering The current ordering from which to obtain the variable indices
