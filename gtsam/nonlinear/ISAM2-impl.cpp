@@ -200,7 +200,7 @@ void ISAM2::Impl::ExpmapMasked(Values& values, const VectorValues& delta, const 
   // Invalidating means setting expmapped entries to Inf, to trigger assertions
   // if we try to re-use them.
 #ifdef NDEBUG
-  invalidateIfDebug = boost::optional<Permuted<VectorValues>&>();
+  invalidateIfDebug = boost::none;
 #endif
 
   assert(values.size() == ordering.nVars());
