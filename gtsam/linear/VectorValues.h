@@ -134,6 +134,9 @@ namespace gtsam {
     /** Return the summed dimensionality of all variables. */
     size_t dim() const { return values_.rows(); }
 
+		/** Return the dimension of each vector in this container */
+		std::vector<size_t> dims() const;
+
     /** Check whether a variable with index \c j exists. */
     bool exists(Index j) const { return j < size() && maps_[j].rows() > 0; }
 
@@ -295,6 +298,11 @@ namespace gtsam {
 		 * the result.
 		 */
 		VectorValues permute(const Permutation& permutation) const;
+
+		/**
+		 * Swap the data in this VectorValues with another.
+		 */
+		void swap(VectorValues& other);
 
     /// @}
 
