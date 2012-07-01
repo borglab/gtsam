@@ -119,6 +119,11 @@ public:
 
   /**
    * Remove entries corresponding to the specified factors.
+	 * NOTE: We intentionally do not decrement nFactors_ because the factor
+	 * indices need to remain consistent.  Removing factors from a factor graph
+	 * does not shift the indices of other factors.  Also, we keep nFactors_
+	 * one greater than the highest-numbered factor referenced in a VariableIndex.
+	 *
    * @param indices The indices of the factors to remove, which must match \c factors
    * @param factors The factors being removed, which must symbolically correspond
    * exactly to the factors with the specified \c indices that were added.
@@ -127,6 +132,12 @@ public:
 
 	/// Permute the variables in the VariableIndex according to the given permutation
 	void permuteInPlace(const Permutation& permutation);
+
+	/** Remove unused empty variables at the end of the ordering (in debug mode
+	 * verifies they are empty).
+	 * @param nToRemove The number of unused variables at the end to remove
+	 */
+	void removeUnusedAtEnd(size_t nToRemove);
 
 protected:
   Factor_iterator factorsBegin(Index variable) { checkVar(variable); return index_[variable].begin(); }	  ///<TODO: comment
@@ -235,6 +246,10 @@ void VariableIndex::augment(const FactorGraph& factors) {
 /* ************************************************************************* */
 template<typename CONTAINER, class FactorGraph>
 void VariableIndex::remove(const CONTAINER& indices, const FactorGraph& factors) {
+	// NOTE: We intentionally do not decrement nFactors_ because the factor
+	// indices need to remain consistent.  Removing factors from a factor graph
+	// does not shift the indices of other factors.  Also, we keep nFactors_
+	// one greater than the highest-numbered factor referenced in a VariableIndex.
   for(size_t fi=0; fi<factors.size(); ++fi)
     if(factors[fi]) {
       for(size_t ji = 0; ji < factors[fi]->keys().size(); ++ji) {

@@ -46,6 +46,14 @@ VectorValues VectorValues::Zero(const VectorValues& x) {
 }
 
 /* ************************************************************************* */
+vector<size_t> VectorValues::dims() const {
+  std::vector<size_t> result(this->size());
+	for(Index j = 0; j < this->size(); ++j)
+		result[j] = this->dim(j);
+	return result;
+}
+
+/* ************************************************************************* */
 void VectorValues::insert(Index j, const Vector& value) {
   // Make sure j does not already exist
   if(exists(j))
@@ -186,6 +194,12 @@ VectorValues VectorValues::permute(const Permutation& permutation) const {
 	}
 
 	return lhs;
+}
+
+/* ************************************************************************* */
+void VectorValues::swap(VectorValues& other) {
+	this->values_.swap(other.values_);
+	this->maps_.swap(other.maps_);
 }
 
 }

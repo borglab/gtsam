@@ -76,4 +76,15 @@ void VariableIndex::permuteInPlace(const Permutation& permutation) {
 	index_.swap(newIndex);
 }
 
+/* ************************************************************************* */
+void VariableIndex::removeUnusedAtEnd(size_t nToRemove) {
+#ifndef NDEBUG
+	for(size_t i = this->size() - nToRemove; i < this->size(); ++i)
+		if(!(*this)[i].empty())
+			throw std::invalid_argument("Attempting to remove non-empty variables with VariableIndex::removeUnusedAtEnd()");
+#endif
+
+	index_.resize(this->size() - nToRemove);
+}
+
 }
