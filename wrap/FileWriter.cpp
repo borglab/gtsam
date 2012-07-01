@@ -46,6 +46,10 @@ void FileWriter::emit(bool add_header, bool force_overwrite) const {
 		ofs << new_contents;
 		ofs.close();
 		if (verbose_) cerr << " ...complete" << endl;
+
+		// Add small message whenever writing a new file and not running in full verbose mode
+		if (!verbose_)
+			cout << "wrap: generating " << filename_ << endl;
 	} else {
 		if (verbose_) cerr << " ...no update" << endl;
 	}
