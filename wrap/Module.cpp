@@ -26,8 +26,10 @@
 #include <boost/spirit/include/classic_clear_actor.hpp>
 #include <boost/foreach.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include <iostream>
+#include <algorithm>
 
 using namespace std;
 using namespace wrap;
@@ -52,8 +54,9 @@ Module::Module(const string& interfacePath,
 	ReturnValue retVal0, retVal;
   Argument arg0, arg;
   ArgumentList args0, args;
+  vector<string> arg_dup; ///keep track of duplicates
   Constructor constructor0(enable_verbose), constructor(enable_verbose);
-  Deconstructor deconstructor0(enable_verbose), deconstructor(enable_verbose);
+  //Deconstructor deconstructor0(enable_verbose), deconstructor(enable_verbose);
   Method method0(enable_verbose), method(enable_verbose);
   StaticMethod static_method0(enable_verbose), static_method(enable_verbose);
   Class cls0(enable_verbose),cls(enable_verbose);
@@ -118,11 +121,12 @@ Module::Module(const string& interfacePath,
 
   Rule constructor_p = 
     (className_p >> '(' >> argumentList_p >> ')' >> ';' >> !comments_p)
-    [assign_a(constructor.args,args)]
-    [assign_a(constructor.name,cls.name)]
-    [assign_a(args,args0)]
-    [push_back_a(cls.constructors, constructor)]
-    [assign_a(constructor,constructor0)];
+    [push_back_a(constructor.args_list, args)]
+    [assign_a(args,args0)];
+    //[assign_a(constructor.args,args)]
+    //[assign_a(constructor.name,cls.name)]
+    //[push_back_a(cls.constructors, constructor)]
+    //[assign_a(constructor,constructor0)];
 
   Rule namespace_ret_p = namespace_name_p[push_back_a(namespaces_return)] >> str_p("::");
 
@@ -184,13 +188,16 @@ Module::Module(const string& interfacePath,
       >> '{'
   		>> *(functions_p | comments_p)
   		>> str_p("};"))
+        [assign_a(constructor.name, cls.name)]
+        [assign_a(cls.constructor, constructor)]
   		[assign_a(cls.namespaces, namespaces)]
   		 [assign_a(cls.using_namespaces, using_namespace_current)]
   		[append_a(cls.includes, namespace_includes)]
-        [assign_a(deconstructor.name,cls.name)]
-        [assign_a(cls.d, deconstructor)]
+        //[assign_a(deconstructor.name,cls.name)]
+        //[assign_a(cls.d, deconstructor)]
   		[push_back_a(classes,cls)]
-        [assign_a(deconstructor,deconstructor0)]
+        //[assign_a(deconstructor,deconstructor0)]
+        [assign_a(constructor, constructor0)]
   		[assign_a(cls,cls0)];
 
 	Rule namespace_def_p =
@@ -280,7 +287,7 @@ void verifyReturnTypes(const vector<string>& validtypes, const vector<T>& vt) {
 
 /* ************************************************************************* */
 void Module::matlab_code(const string& mexCommand, const string& toolboxPath,
-			 const string& mexExt, const string& mexFlags) const {
+			 const string& mexExt, const string& headerPath,const string& mexFlags) const {
 
     fs::create_directories(toolboxPath);
 
@@ -301,6 +308,7 @@ void Module::matlab_code(const string& mexCommand, const string& toolboxPath,
 
     makeModuleMakefile.oss << "\nMEX = " << mexCommand << "\n";
     makeModuleMakefile.oss << "MEXENDING = " << mexExt << "\n";
+    makeModuleMakefile.oss << "PATH_TO_WRAP = " << headerPath << "\n";
     makeModuleMakefile.oss << "mex_flags = " << mexFlags << "\n\n";
 
     // Dependency check list
@@ -336,7 +344,7 @@ void Module::matlab_code(const string& mexCommand, const string& toolboxPath,
       cls.matlab_proxy(classFile);
 
       // verify all of the function arguments
-      verifyArguments<Constructor>(validTypes, cls.constructors);
+      //TODO:verifyArguments<ArgumentList>(validTypes, cls.constructor.args_list);
       verifyArguments<StaticMethod>(validTypes, cls.static_methods);
       verifyArguments<Method>(validTypes, cls.methods);
 
@@ -350,7 +358,7 @@ void Module::matlab_code(const string& mexCommand, const string& toolboxPath,
       cls.matlab_methods(classPath);
 
       // create deconstructor
-      cls.matlab_deconstructor(toolboxPath);
+      //cls.matlab_deconstructor(toolboxPath);
 
       // add lines to make m-file
       makeModuleMfile.oss << "%% " << cls.qualifiedName() << endl;

@@ -33,8 +33,8 @@ initialEstimate.insertPose(3, gtsamPose2(4.1, 0.1, 0.1));
 %% Optimize using Levenberg-Marquardt optimization with an ordering from colamd
 result = graph.optimize(initialEstimate,0);
 marginals = graph.marginals(result);
-marginals.marginalCovariance(i);
+marginals.marginalCovariance(1);
 
 %% Check first pose equality
-pose_i = result.pose(1);
+pose_1 = result.pose(1);
 CHECK('pose_1.equals(gtsamPose2,1e-4)',pose_1.equals(gtsamPose2,1e-4));

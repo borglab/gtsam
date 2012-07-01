@@ -2,95 +2,86 @@
 
 MEX = mex
 MEXENDING = mexa64
+PATH_TO_WRAP = /not_really_a_real_path/borg/gtsam/wrap
 mex_flags = -O5
 
 all: Point2 Point3 Test 
 
 # Point2
-new_Point2_.$(MEXENDING): new_Point2_.cpp
+new_Point2_.$(MEXENDING): new_Point2_.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) new_Point2_.cpp  -output new_Point2_
-new_Point2_dd.$(MEXENDING): new_Point2_dd.cpp
-	$(MEX) $(mex_flags) new_Point2_dd.cpp  -output new_Point2_dd
-delete_Point2.$(MEXENDING): delete_Point2.cpp
-	$(MEX) $(mex_flags) delete_Point2.cpp  -output delete_Point2
-@Point2/x.$(MEXENDING): @Point2/x.cpp
+@Point2/x.$(MEXENDING): @Point2/x.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Point2/x.cpp  -output @Point2/x
-@Point2/y.$(MEXENDING): @Point2/y.cpp
+@Point2/y.$(MEXENDING): @Point2/y.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Point2/y.cpp  -output @Point2/y
-@Point2/dim.$(MEXENDING): @Point2/dim.cpp
+@Point2/dim.$(MEXENDING): @Point2/dim.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Point2/dim.cpp  -output @Point2/dim
-@Point2/returnChar.$(MEXENDING): @Point2/returnChar.cpp
+@Point2/returnChar.$(MEXENDING): @Point2/returnChar.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Point2/returnChar.cpp  -output @Point2/returnChar
-@Point2/argChar.$(MEXENDING): @Point2/argChar.cpp
+@Point2/argChar.$(MEXENDING): @Point2/argChar.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Point2/argChar.cpp  -output @Point2/argChar
-@Point2/argUChar.$(MEXENDING): @Point2/argUChar.cpp
+@Point2/argUChar.$(MEXENDING): @Point2/argUChar.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Point2/argUChar.cpp  -output @Point2/argUChar
-@Point2/vectorConfusion.$(MEXENDING): @Point2/vectorConfusion.cpp
+@Point2/vectorConfusion.$(MEXENDING): @Point2/vectorConfusion.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Point2/vectorConfusion.cpp  -output @Point2/vectorConfusion
 
-Point2: new_Point2_.$(MEXENDING) new_Point2_dd.$(MEXENDING) delete_Point2.$(MEXENDING) @Point2/x.$(MEXENDING) @Point2/y.$(MEXENDING) @Point2/dim.$(MEXENDING) @Point2/returnChar.$(MEXENDING) @Point2/argChar.$(MEXENDING) @Point2/argUChar.$(MEXENDING) @Point2/vectorConfusion.$(MEXENDING) 
+Point2: new_Point2_.$(MEXENDING) @Point2/x.$(MEXENDING) @Point2/y.$(MEXENDING) @Point2/dim.$(MEXENDING) @Point2/returnChar.$(MEXENDING) @Point2/argChar.$(MEXENDING) @Point2/argUChar.$(MEXENDING) @Point2/vectorConfusion.$(MEXENDING) 
 
 # Point3
-new_Point3_ddd.$(MEXENDING): new_Point3_ddd.cpp
-	$(MEX) $(mex_flags) new_Point3_ddd.cpp  -output new_Point3_ddd
-delete_Point3.$(MEXENDING): delete_Point3.cpp
-	$(MEX) $(mex_flags) delete_Point3.cpp  -output delete_Point3
-Point3_staticFunction.$(MEXENDING): Point3_staticFunction.cpp
+new_Point3_.$(MEXENDING): new_Point3_.cpp $(PATH_TO_WRAP)/matlab.h
+	$(MEX) $(mex_flags) new_Point3_.cpp  -output new_Point3_
+Point3_staticFunction.$(MEXENDING): Point3_staticFunction.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) Point3_staticFunction.cpp  -output Point3_staticFunction
-Point3_StaticFunctionRet.$(MEXENDING): Point3_StaticFunctionRet.cpp
+Point3_StaticFunctionRet.$(MEXENDING): Point3_StaticFunctionRet.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) Point3_StaticFunctionRet.cpp  -output Point3_StaticFunctionRet
-@Point3/norm.$(MEXENDING): @Point3/norm.cpp
+@Point3/norm.$(MEXENDING): @Point3/norm.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Point3/norm.cpp  -output @Point3/norm
 
-Point3: new_Point3_ddd.$(MEXENDING) delete_Point3.$(MEXENDING) Point3_staticFunction.$(MEXENDING) Point3_StaticFunctionRet.$(MEXENDING) @Point3/norm.$(MEXENDING) 
+Point3: new_Point3_.$(MEXENDING) Point3_staticFunction.$(MEXENDING) Point3_StaticFunctionRet.$(MEXENDING) @Point3/norm.$(MEXENDING) 
 
 # Test
-new_Test_.$(MEXENDING): new_Test_.cpp
+new_Test_.$(MEXENDING): new_Test_.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) new_Test_.cpp  -output new_Test_
-new_Test_dM.$(MEXENDING): new_Test_dM.cpp
-	$(MEX) $(mex_flags) new_Test_dM.cpp  -output new_Test_dM
-delete_Test.$(MEXENDING): delete_Test.cpp
-	$(MEX) $(mex_flags) delete_Test.cpp  -output delete_Test
-@Test/return_pair.$(MEXENDING): @Test/return_pair.cpp
+@Test/return_pair.$(MEXENDING): @Test/return_pair.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Test/return_pair.cpp  -output @Test/return_pair
-@Test/return_bool.$(MEXENDING): @Test/return_bool.cpp
+@Test/return_bool.$(MEXENDING): @Test/return_bool.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Test/return_bool.cpp  -output @Test/return_bool
-@Test/return_size_t.$(MEXENDING): @Test/return_size_t.cpp
+@Test/return_size_t.$(MEXENDING): @Test/return_size_t.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Test/return_size_t.cpp  -output @Test/return_size_t
-@Test/return_int.$(MEXENDING): @Test/return_int.cpp
+@Test/return_int.$(MEXENDING): @Test/return_int.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Test/return_int.cpp  -output @Test/return_int
-@Test/return_double.$(MEXENDING): @Test/return_double.cpp
+@Test/return_double.$(MEXENDING): @Test/return_double.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Test/return_double.cpp  -output @Test/return_double
-@Test/return_string.$(MEXENDING): @Test/return_string.cpp
+@Test/return_string.$(MEXENDING): @Test/return_string.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Test/return_string.cpp  -output @Test/return_string
-@Test/return_vector1.$(MEXENDING): @Test/return_vector1.cpp
+@Test/return_vector1.$(MEXENDING): @Test/return_vector1.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Test/return_vector1.cpp  -output @Test/return_vector1
-@Test/return_matrix1.$(MEXENDING): @Test/return_matrix1.cpp
+@Test/return_matrix1.$(MEXENDING): @Test/return_matrix1.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Test/return_matrix1.cpp  -output @Test/return_matrix1
-@Test/return_vector2.$(MEXENDING): @Test/return_vector2.cpp
+@Test/return_vector2.$(MEXENDING): @Test/return_vector2.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Test/return_vector2.cpp  -output @Test/return_vector2
-@Test/return_matrix2.$(MEXENDING): @Test/return_matrix2.cpp
+@Test/return_matrix2.$(MEXENDING): @Test/return_matrix2.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Test/return_matrix2.cpp  -output @Test/return_matrix2
-@Test/arg_EigenConstRef.$(MEXENDING): @Test/arg_EigenConstRef.cpp
+@Test/arg_EigenConstRef.$(MEXENDING): @Test/arg_EigenConstRef.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Test/arg_EigenConstRef.cpp  -output @Test/arg_EigenConstRef
-@Test/return_field.$(MEXENDING): @Test/return_field.cpp
+@Test/return_field.$(MEXENDING): @Test/return_field.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Test/return_field.cpp  -output @Test/return_field
-@Test/return_TestPtr.$(MEXENDING): @Test/return_TestPtr.cpp
+@Test/return_TestPtr.$(MEXENDING): @Test/return_TestPtr.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Test/return_TestPtr.cpp  -output @Test/return_TestPtr
-@Test/return_Test.$(MEXENDING): @Test/return_Test.cpp
+@Test/return_Test.$(MEXENDING): @Test/return_Test.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Test/return_Test.cpp  -output @Test/return_Test
-@Test/return_Point2Ptr.$(MEXENDING): @Test/return_Point2Ptr.cpp
+@Test/return_Point2Ptr.$(MEXENDING): @Test/return_Point2Ptr.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Test/return_Point2Ptr.cpp  -output @Test/return_Point2Ptr
-@Test/create_ptrs.$(MEXENDING): @Test/create_ptrs.cpp
+@Test/create_ptrs.$(MEXENDING): @Test/create_ptrs.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Test/create_ptrs.cpp  -output @Test/create_ptrs
-@Test/create_MixedPtrs.$(MEXENDING): @Test/create_MixedPtrs.cpp
+@Test/create_MixedPtrs.$(MEXENDING): @Test/create_MixedPtrs.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Test/create_MixedPtrs.cpp  -output @Test/create_MixedPtrs
-@Test/return_ptrs.$(MEXENDING): @Test/return_ptrs.cpp
+@Test/return_ptrs.$(MEXENDING): @Test/return_ptrs.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Test/return_ptrs.cpp  -output @Test/return_ptrs
-@Test/print.$(MEXENDING): @Test/print.cpp
+@Test/print.$(MEXENDING): @Test/print.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Test/print.cpp  -output @Test/print
 
-Test: new_Test_.$(MEXENDING) new_Test_dM.$(MEXENDING) delete_Test.$(MEXENDING) @Test/return_pair.$(MEXENDING) @Test/return_bool.$(MEXENDING) @Test/return_size_t.$(MEXENDING) @Test/return_int.$(MEXENDING) @Test/return_double.$(MEXENDING) @Test/return_string.$(MEXENDING) @Test/return_vector1.$(MEXENDING) @Test/return_matrix1.$(MEXENDING) @Test/return_vector2.$(MEXENDING) @Test/return_matrix2.$(MEXENDING) @Test/arg_EigenConstRef.$(MEXENDING) @Test/return_field.$(MEXENDING) @Test/return_TestPtr.$(MEXENDING) @Test/return_Test.$(MEXENDING) @Test/return_Point2Ptr.$(MEXENDING) @Test/create_ptrs.$(MEXENDING) @Test/create_MixedPtrs.$(MEXENDING) @Test/return_ptrs.$(MEXENDING) @Test/print.$(MEXENDING) 
+Test: new_Test_.$(MEXENDING) @Test/return_pair.$(MEXENDING) @Test/return_bool.$(MEXENDING) @Test/return_size_t.$(MEXENDING) @Test/return_int.$(MEXENDING) @Test/return_double.$(MEXENDING) @Test/return_string.$(MEXENDING) @Test/return_vector1.$(MEXENDING) @Test/return_matrix1.$(MEXENDING) @Test/return_vector2.$(MEXENDING) @Test/return_matrix2.$(MEXENDING) @Test/arg_EigenConstRef.$(MEXENDING) @Test/return_field.$(MEXENDING) @Test/return_TestPtr.$(MEXENDING) @Test/return_Test.$(MEXENDING) @Test/return_Point2Ptr.$(MEXENDING) @Test/create_ptrs.$(MEXENDING) @Test/create_MixedPtrs.$(MEXENDING) @Test/return_ptrs.$(MEXENDING) @Test/print.$(MEXENDING) 
 
 
 

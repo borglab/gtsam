@@ -5,11 +5,15 @@ classdef ns1ClassB < handle
   end
   methods
     function obj = ns1ClassB(varargin)
-      if (nargin == 0), obj.self = new_ns1ClassB_(); end
-      if nargin ~= 13 && obj.self == 0, error('ns1ClassB constructor failed'); end
+      if (nargin == 0), obj.self = new_ns1ClassB_(0,0); end
+      if nargin ==14, new_ns1ClassB_(varargin{1},0); end
+      if nargin ~= 13 && nargin ~= 14 && obj.self == 0, error('ns1ClassB constructor failed'); end
     end
     function delete(obj)
-       delete_ns1ClassB(obj);
+      if obj.self ~= 0
+        new_ns1ClassB_(obj.self);
+        obj.self = 0;
+      end
     end
     function display(obj), obj.print(''); end
     function disp(obj), obj.display; end

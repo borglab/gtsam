@@ -41,6 +41,8 @@ extern "C" {
 #include <list>
 #include <string>
 #include <sstream>
+#include <typeinfo>
+#include <set>
 
 using namespace std;
 using namespace boost; // not usual, but for conciseness of generated code
@@ -311,113 +313,6 @@ gtsam::Matrix unwrap< gtsam::Matrix >(const mxArray* array) {
   return A;
 }
 
-//*****************************************************************************
-// Shared Pointer Handle
-// inspired by mexhandle, but using shared_ptr
-//*****************************************************************************
-
-template<typename T>
-class ObjectHandle {
-private:
-	ObjectHandle* signature; // use 'this' as a unique object signature
-	const std::type_info* type; // type checking information
-	boost::shared_ptr<T> t; // object pointer
-
-public:
-	// Constructor for free-store allocated objects.
-	// Creates shared pointer, will delete if is last one to hold pointer
-	ObjectHandle(T* ptr) :
-		type(&typeid(T)), t(ptr) {
-		signature = this;
-	}
-
-	// Constructor for shared pointers
-	// Creates shared pointer, will delete if is last one to hold pointer
-	ObjectHandle(boost::shared_ptr<T> shared_ptr) :
-		/*type(&typeid(T)),*/ t(shared_ptr) {
-		signature = this;
-	}
-
-	~ObjectHandle() {
-		// object is in shared_ptr, will be automatically deleted
-		signature = 0; // destroy signature
-    // std::cout << "ObjectHandle destructor" << std::endl;
-	}
-
-	// Get the actual object contained by handle
-	boost::shared_ptr<T> get_object() const {
-		return t;
-	}
-
-	// Print the mexhandle for debugging
-	void print(const char* str) {
-		mexPrintf("mexhandle %s:\n", str);
-		mexPrintf("  signature = %d:\n", signature);
-		mexPrintf("  pointer   = %d:\n", t.get());
-	}
-
-	// Convert ObjectHandle<T> to a mxArray handle (to pass back from mex-function).
-	// Create a numeric array as handle for an ObjectHandle.
-	// We ASSUME we can store object pointer in the mxUINT32 element of mxArray.
-	mxArray* to_mex_handle() {
-		mxArray* handle = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
-		*reinterpret_cast<ObjectHandle<T>**> (mxGetPr(handle)) = this;
-		return handle;
-	}
-
-	string type_name() const {
-		return type->name();
-	}
-
-	// Convert mxArray (passed to mex-function) to an ObjectHandle<T>.
-	// Import a handle from MatLab as a mxArray of UINT32. Check that
-	// it is actually a pointer to an ObjectHandle<T>.
-	static ObjectHandle* from_mex_handle(const mxArray* handle) {
-		if (mxGetClassID(handle) != mxUINT32OR64_CLASS || mxIsComplex(handle)
-				|| mxGetM(handle) != 1 || mxGetN(handle) != 1) error(
-				"Parameter is not an ObjectHandle type.");
-
-		// We *assume* we can store ObjectHandle<T> pointer in the mxUINT32 of handle
-		ObjectHandle* obj = *reinterpret_cast<ObjectHandle**> (mxGetPr(handle));
-
-		if (!obj) // gross check to see we don't have an invalid pointer
-		error("Parameter is NULL. It does not represent an ObjectHandle object.");
-		// TODO: change this for max-min check for pointer values
-
-		if (obj->signature != obj) // check memory has correct signature
-		error("Parameter does not represent an ObjectHandle object.");
-
-		/*
-		 if (*(obj->type) != typeid(T)) { // check type
-		 mexPrintf("Given: <%s>, Required: <%s>.\n", obj->type_name(), typeid(T).name());
-		 error("Given ObjectHandle does not represent the correct type.");
-		 }
-		 */
-
-		return obj;
-	}
-
-};
-
-//*****************************************************************************
-// wrapping C++ objects in a MATLAB proxy class
-//*****************************************************************************
-
-/* 
- For every C++ class Class, a matlab proxy class @Class/Class.m object
- is created. Its constructor will check which of the C++ constructors
- needs to be called, based on nr of arguments. It then calls the
- corresponding mex function new_Class_signature, which will create a
- C++ object using new, and pass the pointer to wrap_constructed
- (below). This creates a mexhandle and returns it to the proxy class
- constructor, which assigns it to self. Matlab owns this handle now.
-*/
-template <typename Class>
-mxArray* wrap_constructed(Class* pointer, const char *classname) {
-  ObjectHandle<Class>* handle = new ObjectHandle<Class>(pointer);
-  return handle->to_mex_handle();
-}
-
 /*
  [create_object] creates a MATLAB proxy class object with a mexhandle
  in the self property. Matlab does not allow the creation of matlab
@@ -436,137 +331,48 @@ mxArray* create_object(const char *classname, mxArray* h) {
 }
 
 /*
+ * Similar to create object, this also collects the shared_ptr in addition
+ * to creating the dummy object. Mainly used for static constructor methods
+ * which don't have direct access to the function.
+ */
+mxArray* create_collect_object(const char *classname, mxArray* h){
+  mxArray *result;
+  //First arg is a flag to collect
+  mxArray* dummy[14] = {h,h,h,h,h, h,h,h,h,h, h,h,h,h};
+  mexCallMATLAB(1,&result,14,dummy,classname);
+  mxSetProperty(result, 0, "self", h);
+  return result;
+}
+
+/*
  When the user calls a method that returns a shared pointer, we create
  an ObjectHandle from the shared_pointer and return it as a proxy
  class to matlab.
 */
 template <typename Class>
-mxArray* wrap_shared_ptr(boost::shared_ptr< Class > shared_ptr, const char *classname) {
-  ObjectHandle<Class>* handle = new ObjectHandle<Class>(shared_ptr);
-  return create_object(classname,handle->to_mex_handle());
+mxArray* wrap_shared_ptr(boost::shared_ptr< Class >* shared_ptr, const char *classname) {
+  mxArray* mxh = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+  *reinterpret_cast<boost::shared_ptr<Class>**> (mxGetPr(mxh)) = shared_ptr;
+  //return mxh;
+  return create_object(classname, mxh);
 }
 
-//*****************************************************************************
-// unwrapping a MATLAB proxy class to a C++ object reference
-//*****************************************************************************
+template <typename Class>
+mxArray* wrap_collect_shared_ptr(boost::shared_ptr< Class >* shared_ptr, const char *classname) {
+  mxArray* mxh = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+  *reinterpret_cast<boost::shared_ptr<Class>**> (mxGetPr(mxh)) = shared_ptr;
+  //return mxh;
+  return create_collect_object(classname, mxh);
+}
 
-/*
- Besides the basis types, the only other argument type allowed is a
- shared pointer to a C++ object. In this case, matlab needs to pass a
- proxy class object to the mex function. [unwrap_shared_ptr] extracts
- the ObjectHandle from the self property, and returns a shared pointer
- to the object.
-*/
 template <typename Class>
 boost::shared_ptr<Class> unwrap_shared_ptr(const mxArray* obj, const string& className) {
-	#ifndef UNSAFE_WRAP
-  // Useful code to check argument type
-	// Problem, does not support inheritance
-  bool isClass = mxIsClass(obj, className.c_str());
-  if (!isClass) {
-    mexPrintf("Expected %s, got %s\n", className.c_str(), mxGetClassName(obj));
-    error("Argument has wrong type.");
-  }
-#endif
+
   mxArray* mxh = mxGetProperty(obj,0,"self");
-  if (mxh==NULL) error("unwrap_reference: invalid wrap object");
-  ObjectHandle<Class>* handle = ObjectHandle<Class>::from_mex_handle(mxh);
-  return handle->get_object();
+  if (mxGetClassID(mxh) != mxUINT32OR64_CLASS || mxIsComplex(mxh)
+    || mxGetM(mxh) != 1 || mxGetN(mxh) != 1) error(
+    "Parameter is not an Shared type.");
+
+  boost::shared_ptr<Class>* spp = *reinterpret_cast<boost::shared_ptr<Class>**> (mxGetPr(mxh));
+  return *spp;
 }
-
-/*
- * Specialized template for noise model. Checking their derived types properly
- */
-// Isotropic
-template <>
-boost::shared_ptr<Isotropic> unwrap_shared_ptr(const mxArray* obj, const string& className) {
-#ifndef UNSAFE_WRAP
-  bool isIsotropic = mxIsClass(obj, "gtsamnoiseModelIsotropic");
-  bool isUnit = mxIsClass(obj, "gtsamnoiseModelUnit");
-  if (!isIsotropic && !isUnit) {
-    mexPrintf("Expected gtsamnoiseModelIsotropic or derived classes, got %s\n", mxGetClassName(obj));
-    error("Argument has wrong type.");
-  }
-#endif
-  mxArray* mxh = mxGetProperty(obj,0,"self");
-  if (mxh==NULL) error("unwrap_reference: invalid wrap object");
-  ObjectHandle<Isotropic>* handle = ObjectHandle<Isotropic>::from_mex_handle(mxh);
-  return handle->get_object();
-}
-
-// Diagonal
-template <>
-boost::shared_ptr<Diagonal> unwrap_shared_ptr(const mxArray* obj, const string& className) {
-#ifndef UNSAFE_WRAP
-	bool isDiagonal = mxIsClass(obj, "gtsamnoiseModelDiagonal");
-  bool isIsotropic = mxIsClass(obj, "gtsamnoiseModelIsotropic");
-  bool isUnit = mxIsClass(obj, "gtsamnoiseModelUnit");
-  if (!isDiagonal && !isIsotropic && !isUnit ) {
-    mexPrintf("Expected gtsamnoiseModelDiagonal or derived classes, got %s\n", mxGetClassName(obj));
-    error("Argument has wrong type.");
-  }
-#endif
-  mxArray* mxh = mxGetProperty(obj,0,"self");
-  if (mxh==NULL) error("unwrap_reference: invalid wrap object");
-  ObjectHandle<Isotropic>* handle = ObjectHandle<Isotropic>::from_mex_handle(mxh);
-  return handle->get_object();
-}
-
-// Gaussian
-template <>
-boost::shared_ptr<Gaussian> unwrap_shared_ptr(const mxArray* obj, const string& className) {
-#ifndef UNSAFE_WRAP
-	bool isGaussian = mxIsClass(obj, "gtsamnoiseModelGaussian");
-	bool isDiagonal = mxIsClass(obj, "gtsamnoiseModelDiagonal");
-  bool isIsotropic = mxIsClass(obj, "gtsamnoiseModelIsotropic");
-  bool isUnit = mxIsClass(obj, "gtsamnoiseModelUnit");
-  if (!isGaussian && !isDiagonal && !isIsotropic && !isUnit) {
-    mexPrintf("Expected gtsamnoiseModelGaussian or derived classes, got %s\n", mxGetClassName(obj));
-    error("Argument has wrong type.");
-  }
-#endif
-  mxArray* mxh = mxGetProperty(obj,0,"self");
-  if (mxh==NULL) error("unwrap_reference: invalid wrap object");
-  ObjectHandle<Isotropic>* handle = ObjectHandle<Isotropic>::from_mex_handle(mxh);
-  return handle->get_object();
-}
-
-// Base
-template <>
-boost::shared_ptr<Base> unwrap_shared_ptr(const mxArray* obj, const string& className) {
-#ifndef UNSAFE_WRAP
-	bool isBase = mxIsClass(obj, "gtsamnoiseModelBase");
-	bool isGaussian = mxIsClass(obj, "gtsamnoiseModelGaussian");
-	bool isDiagonal = mxIsClass(obj, "gtsamnoiseModelDiagonal");
-  bool isIsotropic = mxIsClass(obj, "gtsamnoiseModelIsotropic");
-  bool isUnit = mxIsClass(obj, "gtsamnoiseModelUnit");
-  if (!isBase && !isGaussian && !isDiagonal && !isIsotropic && !isUnit) {
-    mexPrintf("Expected gtsamnoiseModelBase or derived classes, got %s\n", mxGetClassName(obj));
-    error("Argument has wrong type.");
-  }
-#endif
-  mxArray* mxh = mxGetProperty(obj,0,"self");
-  if (mxh==NULL) error("unwrap_reference: invalid wrap object");
-  ObjectHandle<Isotropic>* handle = ObjectHandle<Isotropic>::from_mex_handle(mxh);
-  return handle->get_object();
-}
-
-//end specialized templates
-
-template <typename Class>
-void delete_shared_ptr(const mxArray* obj, const string& className) {
-    //Why is this here?
-#ifndef UNSAFE_WRAP
-  bool isClass = true;//mxIsClass(obj, className.c_str());
-  if (!isClass) {
-    mexPrintf("Expected %s, got %s\n", className.c_str(), mxGetClassName(obj));
-    error("Argument has wrong type.");
-  }
-#endif
-  mxArray* mxh = mxGetProperty(obj,0,"self");
-  if (mxh==NULL) error("unwrap_reference: invalid wrap object");
-  ObjectHandle<Class>* handle = ObjectHandle<Class>::from_mex_handle(mxh);
-  delete handle;
-}
-
-//*****************************************************************************

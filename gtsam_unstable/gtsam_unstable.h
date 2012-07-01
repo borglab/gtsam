@@ -14,6 +14,7 @@ namespace gtsam {
 class Dummy {
   Dummy();
   void print(string s) const;
+  unsigned char dummyTwoVar(unsigned char a) const;
 };
 
 #include <gtsam_unstable/dynamics/PoseRTV.h>

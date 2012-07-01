@@ -138,6 +138,5 @@ if (GTSAM_BUILD_WRAP)
 
     # Macro to handle details of setting up targets
     # FIXME: issue with dependency between wrap_gtsam and wrap_gtsam_build, only shows up on CMake 2.8.3
-    # FIXME: rework install commands to specify only certain filetypes/folders to avoid installing temp files
     wrap_library(gtsam "${mexFlags}" "../")
 endif ()

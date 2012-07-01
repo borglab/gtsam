@@ -28,12 +28,12 @@ namespace wrap {
 struct Constructor {
 
 	/// Constructor creates an empty class
-	Constructor(bool verbose = true) :
+	Constructor(bool verbose = false) :
 			verbose_(verbose) {
 	}
 
 	// Then the instance variables are set directly by the Module constructor
-	ArgumentList args;
+    std::vector<ArgumentList> args_list;
 	std::string name;
 	bool verbose_;
 
@@ -48,11 +48,14 @@ struct Constructor {
 	 * Create fragment to select constructor in proxy class, e.g.,
 	 * if nargin == 2, obj.self = new_Pose3_RP(varargin{1},varargin{2}); end
 	 */
-	void matlab_proxy_fragment(FileWriter& file, const std::string& className) const;
+	void matlab_proxy_fragment(FileWriter& file, 
+	        const std::string& className, const int i,
+	        const ArgumentList args) const;
 
 	/// m-file
 	void matlab_mfile(const std::string& toolboxPath,
-			const std::string& qualifiedMatlabName) const;
+			const std::string& qualifiedMatlabName,
+			const ArgumentList args) const;
 
 	/// cpp wrapper
 	void matlab_wrapper(const std::string& toolboxPath,
@@ -60,7 +63,12 @@ struct Constructor {
 			 const std::string& matlabClassName,
 			 const std::vector<std::string>& using_namespaces,
 			 const std::vector<std::string>& includes) const;
+
+	/// constructor function
+	void generate_construct(FileWriter& file, const std::string& cppClassName,
+	        std::vector<ArgumentList>& args_list) const;
+	
 };
 
-} // \namespace wrap
 
+} // \namespace wrap

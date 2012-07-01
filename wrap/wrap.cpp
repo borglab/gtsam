@@ -29,7 +29,7 @@ using namespace std;
  * @param interfacePath path to where interface file lives, e.g., borg/gtsam
  * @param moduleName name of the module to be generated e.g. gtsam
  * @param toolboxPath path where the toolbox should be generated, e.g. borg/gtsam/build
- * @param nameSpace e.g. gtsam
+ * @param headerPath is the path to matlab.h
  * @param mexFlags extra arguments for mex script, i.e., include flags etc...
  */
 void generate_matlab_toolbox(
@@ -38,14 +38,15 @@ void generate_matlab_toolbox(
 					 const string& interfacePath,
 			     const string& moduleName,
 			     const string& toolboxPath,
-			     const string& mexFlags) 
+			     const string& headerPath,
+			     const string& mexFlags)
 {
   // Parse interface file into class object
 	// This recursively creates Class objects, Method objects, etc...
-  wrap::Module module(interfacePath, moduleName, true);
+  wrap::Module module(interfacePath, moduleName, false);
 
   // Then emit MATLAB code
-  module.matlab_code(mexCommand,toolboxPath,mexExt,mexFlags);
+  module.matlab_code(mexCommand,toolboxPath,mexExt,headerPath,mexFlags);
 }
 
 /** Displays usage information */
@@ -57,6 +58,7 @@ void usage() {
   cerr << "  interfacePath : *absolute* path to directory of module interface file" << endl;
   cerr << "  moduleName    : the name of the module, interface file must be called moduleName.h" << endl;
   cerr << "  toolboxPath   : the directory in which to generate the wrappers" << endl;
+  cerr << "  headerPath    : path to matlab.h" << endl;
   cerr << "  [mexFlags]    : extra flags for the mex command" << endl;
 }
 
@@ -73,6 +75,6 @@ int main(int argc, const char* argv[]) {
   	usage();
   }
   else
-    generate_matlab_toolbox(argv[1],argv[2],argv[3],argv[4],argv[5],argc==6 ? " " : argv[6]);
+    generate_matlab_toolbox(argv[1],argv[2],argv[3],argv[4],argv[5],argv[6],argc==7 ? " " : argv[7]);
   return 0;
 }

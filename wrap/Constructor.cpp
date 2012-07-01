@@ -12,10 +12,12 @@
 /**
  * @file Constructor.ccp
  * @author Frank Dellaert
+ * @author Andrew Melim
  **/
 
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 
 #include <boost/foreach.hpp>
 
@@ -25,14 +27,16 @@
 using namespace std;
 using namespace wrap;
 
+
 /* ************************************************************************* */
 string Constructor::matlab_wrapper_name(const string& className) const {
-  string str = "new_" + className + "_" + args.signature();
+  string str = "new_" + className + "_";
   return str;
 }
 
 /* ************************************************************************* */
-void Constructor::matlab_proxy_fragment(FileWriter& file, const string& className) const {
+void Constructor::matlab_proxy_fragment(FileWriter& file, 
+        const string& className, const int id, const ArgumentList args) const {
 	size_t nrArgs = args.size();
 	// check for number of arguments...
   file.oss << "      if (nargin == " << nrArgs;
@@ -45,19 +49,17 @@ void Constructor::matlab_proxy_fragment(FileWriter& file, const string& classNam
     first=false;
   }
   // emit code for calling constructor
-  file.oss << "), obj.self = " << matlab_wrapper_name(className) << "(";
+  file.oss << "), obj.self = " << matlab_wrapper_name(className) << "(" << "0," << id;
   // emit constructor arguments
-  first = true;
   for(size_t i=0;i<nrArgs;i++) {
-    if (!first) file.oss << ",";
+    file.oss << ",";
     file.oss << "varargin{" << i+1 << "}";
-    first=false;
   }
   file.oss << "); end" << endl;
 }
 
 /* ************************************************************************* */
-void Constructor::matlab_mfile(const string& toolboxPath, const string& qualifiedMatlabName) const {
+void Constructor::matlab_mfile(const string& toolboxPath, const string& qualifiedMatlabName, const ArgumentList args) const {
 
   string matlabName = matlab_wrapper_name(qualifiedMatlabName);
 
@@ -80,7 +82,8 @@ void Constructor::matlab_mfile(const string& toolboxPath, const string& qualifie
 void Constructor::matlab_wrapper(const string& toolboxPath,
 				 const string& cppClassName,
 				 const string& matlabClassName,
-				 const vector<string>& using_namespaces, const vector<string>& includes) const {
+				 const vector<string>& using_namespaces, 
+				 const vector<string>& includes) const {
   string matlabName = matlab_wrapper_name(matlabClassName);
 
   // open destination wrapperFile
@@ -91,12 +94,66 @@ void Constructor::matlab_wrapper(const string& toolboxPath,
   generateIncludes(file, name, includes);
   generateUsingNamespace(file, using_namespaces);
 
+  //Typedef boost::shared_ptr
+  file.oss << "typedef boost::shared_ptr<"  << cppClassName  << "> Shared;" << endl;
+  file.oss << endl;
+
+  //Generate collector
+  file.oss << "static std::set<Shared*> collector;" << endl;
+  file.oss << endl;
+
+  //Generate the destructor function
+  file.oss << "struct Destruct" << endl;
+  file.oss << "{" << endl;
+  file.oss << "  void operator() (Shared* p)" << endl;
+  file.oss << "  {" << endl;
+  file.oss << "    collector.erase(p);" << endl;
+  file.oss << "  }" << endl;
+  file.oss << "};" << endl;
+  file.oss << endl;
+
+  //Generate cleanup function
+  file.oss << "void cleanup(void) {" << endl;
+  file.oss << "  std::for_each( collector.begin(), collector.end(), Destruct() );" << endl;
+  file.oss << "}" << endl;
+
   file.oss << "void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])" << endl;
   file.oss << "{" << endl;
-  file.oss << "  checkArguments(\"" << matlabName << "\",nargout,nargin," << args.size() << ");" << endl;
-  args.matlab_unwrap(file); // unwrap arguments
-  file.oss << "  " << cppClassName << "* self = new " << cppClassName << "(" << args.names() << ");" << endl; // need qualified name, delim: "::"
-  file.oss << "  out[0] = wrap_constructed(self,\"" << matlabClassName << "\");" << endl; // need matlab qualified name
+  //Cleanup function callback
+  file.oss << "  mexAtExit(cleanup);" << endl;
+  file.oss << endl;
+  file.oss << "  const mxArray* input = in[0];" << endl;
+  file.oss << "  Shared* self = *(Shared**) mxGetData(input);" << endl;
+  file.oss << endl;
+  file.oss << "  if(self) {" << endl;
+  file.oss << "    if(nargin > 1) {" << endl;
+  file.oss << "      collector.insert(self);" << endl;
+  if(verbose_)
+    file.oss << "      std::cout << \"Collected\" << collector.size() << std::endl;" << endl;
+  file.oss << "    }" << endl;
+  file.oss << "    else if(collector.erase(self))" << endl;
+  file.oss << "      delete self;" << endl;
+  file.oss << "  } else {" << endl;
+  file.oss << "    int nc = unwrap<int>(in[1]);" << endl;
+
+  int i = 0;
+  BOOST_FOREACH(ArgumentList al, args_list)
+  {
+    file.oss << "    if(nc == " << i <<") {" << endl;
+    al.matlab_unwrap(file, 2); // unwrap arguments, start at 1
+    file.oss << "      self = new Shared(new " << cppClassName << "(" << al.names() << "));" << endl;
+    file.oss << "    }" << endl;
+    i++;
+  }
+  
+  //file.oss << "    self = construct(nc, in);" << endl;
+  file.oss << "    collector.insert(self);" << endl;
+  if(verbose_)
+    file.oss << "    std::cout << \"constructed \" << self << \", size=\" << collector.size() << std::endl;" << endl;
+  file.oss << "    out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);" << endl;
+  file.oss << "    *reinterpret_cast<Shared**> (mxGetPr(out[0])) = self;" << endl;
+  file.oss << "  }" << endl;
+
   file.oss << "}" << endl;
 
   // close file

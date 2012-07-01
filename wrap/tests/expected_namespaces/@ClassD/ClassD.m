@@ -5,11 +5,15 @@ classdef ClassD < handle
   end
   methods
     function obj = ClassD(varargin)
-      if (nargin == 0), obj.self = new_ClassD_(); end
-      if nargin ~= 13 && obj.self == 0, error('ClassD constructor failed'); end
+      if (nargin == 0), obj.self = new_ClassD_(0,0); end
+      if nargin ==14, new_ClassD_(varargin{1},0); end
+      if nargin ~= 13 && nargin ~= 14 && obj.self == 0, error('ClassD constructor failed'); end
     end
     function delete(obj)
-       delete_ClassD(obj);
+      if obj.self ~= 0
+        new_ClassD_(obj.self);
+        obj.self = 0;
+      end
     end
     function display(obj), obj.print(''); end
     function disp(obj), obj.display; end

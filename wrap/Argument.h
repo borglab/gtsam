@@ -13,6 +13,7 @@
  * @file Argument.h
  * @brief arguments to constructors and methods
  * @author Frank Dellaert
+ * @author Andrew Melim
  **/
 
 #pragma once
@@ -65,6 +66,7 @@ struct ArgumentList: public std::vector<Argument> {
 	 * @param start initial index for input array, set to 1 for method
 	 */
 	void matlab_unwrap(FileWriter& file, int start = 0) const; // MATLAB to C++
+
 };
 
 } // \namespace wrap

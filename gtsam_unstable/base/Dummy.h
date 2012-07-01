@@ -33,6 +33,10 @@ namespace gtsam {
       std::cout << s << "Dummy " << id << std::endl;
     }
 
+    unsigned char dummyTwoVar(unsigned char a) const {
+        return a;
+    }
+
   };
 
 } // namespace gtsam
