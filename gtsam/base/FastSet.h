@@ -66,9 +66,18 @@ public:
       Base(x) {
   }
 
-  /** Copy constructor from the base map class */
+  /** Copy constructor from the base set class */
   FastSet(const Base& x) :
       Base(x) {
+  }
+
+  /** Copy constructor from a standard STL container */
+  FastSet(const std::set<VALUE>& x) {
+    // This if statement works around a bug in boost pool allocator and/or
+    // STL vector where if the size is zero, the pool allocator will allocate
+    // huge amounts of memory.
+    if(x.size() > 0)
+      Base::insert(x.begin(), x.end());
   }
 
   /** Print to implement Testable */
