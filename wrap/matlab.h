@@ -47,8 +47,8 @@ using namespace boost; // not usual, but for conciseness of generated code
 #define GTSAM_MAGIC_GAUSSIAN
 // end GTSAM Specifics /////////////////////////////////////////////////
 
-#ifdef __LP64__
-// 64-bit Mac
+#if defined(__LP64__) || defined(_WIN64)
+// 64-bit
 #define mxUINT32OR64_CLASS mxUINT64_CLASS
 #else
 #define mxUINT32OR64_CLASS mxUINT32_CLASS
@@ -346,7 +346,7 @@ mxArray* create_collect_object(const char *classname, mxArray* h){
 template <typename Class>
 mxArray* wrap_shared_ptr(boost::shared_ptr< Class >* shared_ptr, const char *classname) {
   mxArray* mxh = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
-  *reinterpret_cast<boost::shared_ptr<Class>**> (mxGetPr(mxh)) = shared_ptr;
+  *reinterpret_cast<boost::shared_ptr<Class>**> (mxGetData(mxh)) = shared_ptr;
   //return mxh;
   return create_object(classname, mxh);
 }
@@ -354,7 +354,7 @@ mxArray* wrap_shared_ptr(boost::shared_ptr< Class >* shared_ptr, const char *cla
 template <typename Class>
 mxArray* wrap_collect_shared_ptr(boost::shared_ptr< Class >* shared_ptr, const char *classname) {
   mxArray* mxh = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
-  *reinterpret_cast<boost::shared_ptr<Class>**> (mxGetPr(mxh)) = shared_ptr;
+  *reinterpret_cast<boost::shared_ptr<Class>**> (mxGetData(mxh)) = shared_ptr;
   //return mxh;
   return create_collect_object(classname, mxh);
 }
@@ -367,6 +367,6 @@ boost::shared_ptr<Class> unwrap_shared_ptr(const mxArray* obj, const string& cla
     || mxGetM(mxh) != 1 || mxGetN(mxh) != 1) error(
     "Parameter is not an Shared type.");
 
-  boost::shared_ptr<Class>* spp = *reinterpret_cast<boost::shared_ptr<Class>**> (mxGetPr(mxh));
+  boost::shared_ptr<Class>* spp = *reinterpret_cast<boost::shared_ptr<Class>**> (mxGetData(mxh));
   return *spp;
 }
