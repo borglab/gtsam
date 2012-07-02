@@ -1267,10 +1267,10 @@ class ISAM {
 class LevenbergMarquardtOptimizer {
   double lambda() const;
   void iterate();
-  visualSLAM::Values optimize();
-  visualSLAM::Values optimizeSafely();
   double error() const;
   size_t iterations() const;
+  visualSLAM::Values optimize();
+  visualSLAM::Values optimizeSafely();
   visualSLAM::Values values() const;
 };
 

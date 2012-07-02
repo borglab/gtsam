@@ -78,6 +78,13 @@ namespace gtsam {
 			return e != NULL && Base::equals(*e, tol) && this->measured_.equals(e->measured_, tol);
 		}
 
+    /** print contents */
+    void print(const std::string& s="", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+      std::cout << s << "BearingFactor, bearing = ";
+      measured_.print();
+      Base::print("", keyFormatter);
+    }
+
 	private:
 
 		/** Serialization function */

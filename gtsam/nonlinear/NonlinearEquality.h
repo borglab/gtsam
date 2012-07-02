@@ -109,8 +109,8 @@ namespace gtsam {
 		/// @{
 
 		virtual void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-			std::cout << "Constraint: " << s << " on [" << keyFormatter(this->key()) << "]\n";
-			gtsam::print(feasible_,"Feasible Point");
+			std::cout << s << "Constraint: on [" << keyFormatter(this->key()) << "]\n";
+			gtsam::print(feasible_,"Feasible Point:\n");
 			std::cout << "Variable Dimension: " << feasible_.dim() << std::endl;
 		}
 

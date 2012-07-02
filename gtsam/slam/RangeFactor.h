@@ -75,7 +75,8 @@ namespace gtsam {
 
 		/** print contents */
 		void print(const std::string& s="", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-			Base::print(s + std::string(" range: ") + boost::lexical_cast<std::string>(measured_), keyFormatter);
+      std::cout << s << "RangeFactor, range = " << measured_ << std::endl;
+			Base::print("", keyFormatter);
 		}
 
 	private:

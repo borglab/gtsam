@@ -99,7 +99,7 @@ public:
 
   /** print */
   virtual void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-    std::cout << s << "keys = { ";
+    std::cout << s << "  keys = { ";
     BOOST_FOREACH(Key key, this->keys()) { std::cout << keyFormatter(key) << " "; }
     std::cout << "}" << std::endl;
   }
