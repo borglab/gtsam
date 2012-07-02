@@ -117,8 +117,10 @@ void Constructor::matlab_wrapper(const string& toolboxPath,
   file.oss << "void cleanup(void) {" << endl;
   //TODO: Remove
   //file.oss << "  std::for_each( collector.begin(), collector.end(), Destruct() );" << endl;
-  file.oss << "  BOOST_FOREACH(Shared* p, collector)" << endl;
-  file.oss << "    collector.erase(p);" << endl;
+	file.oss << "  for(std::set<Shared*>::iterator iter = collector.begin(); iter != collector.end(); ) {\n";
+	file.oss << "    delete *iter;\n";
+	file.oss << "    collector.erase(iter++);\n";
+	file.oss << "  }\n";
   file.oss << "}" << endl;
 
   file.oss << "void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])" << endl;
