@@ -764,6 +764,8 @@ class GaussianFactor {
 	void print(string s) const;
 	bool equals(const gtsam::GaussianFactor& lf, double tol) const;
 	double error(const gtsam::VectorValues& c) const;
+	gtsam::GaussianFactor* negate() const;
+	size_t size() const;
 };
 
 class JacobianFactor {
@@ -775,12 +777,15 @@ class JacobianFactor {
 			const gtsam::noiseModel::Diagonal* model);
 	JacobianFactor(size_t i1, Matrix A1, size_t i2, Matrix A2, size_t i3, Matrix A3,
 			Vector b, const gtsam::noiseModel::Diagonal* model);
+	JacobianFactor(const gtsam::GaussianFactor& factor);
 	void print(string s) const;
 	bool equals(const gtsam::GaussianFactor& lf, double tol) const;
 	bool empty() const;
+	size_t size() const;
 	Vector getb() const;
 	double error(const gtsam::VectorValues& c) const;
 	gtsam::GaussianConditional* eliminateFirst();
+	gtsam::GaussianFactor* negate() const;
 };
 
 class HessianFactor {
@@ -795,9 +800,11 @@ class HessianFactor {
 			double f);
 	HessianFactor(const gtsam::GaussianConditional& cg);
 	HessianFactor(const gtsam::GaussianFactor& factor);
+	size_t size() const;
 	void print(string s) const;
 	bool equals(const gtsam::GaussianFactor& lf, double tol) const;
 	double error(const gtsam::VectorValues& c) const;
+	gtsam::GaussianFactor* negate() const;
 };
 
 class GaussianFactorGraph {
@@ -809,6 +816,7 @@ class GaussianFactorGraph {
 	void print(string s) const;
 	bool equals(const gtsam::GaussianFactorGraph& lfgraph, double tol) const;
 	size_t size() const;
+	gtsam::GaussianFactor* at(size_t idx) const;
 
 	// Building the graph
 	void add(gtsam::JacobianFactor* factor);
@@ -917,7 +925,7 @@ class NonlinearFactor {
 	void equals(const gtsam::NonlinearFactor& other, double tol) const;
 	gtsam::KeyVector keys() const;
 	size_t size() const;
-//	size_t dim() const; // FIXME: Doesn't link
+	size_t dim() const; // FIXME: Doesn't link
 };
 
 class Values {
@@ -928,24 +936,68 @@ class Values {
 };
 
 // Actually a FastList<Key>
-#include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/Key.h>
 class KeyList {
 	KeyList();
 	KeyList(const gtsam::KeyList& other);
 
 	// Note: no print function
+
+	// common STL methods
 	size_t size() const;
+	bool empty() const;
+	void clear();
+
+	// structure specific methods
+	size_t front() const;
+	size_t back() const;
+	void push_back(size_t key);
+	void push_front(size_t key);
+	void sort();
+	void remove(size_t key);
 };
 
-// Actually a KeyVector<Key>
-#include <gtsam/nonlinear/Values.h>
+// Actually a FastSet<Key>
+#include <gtsam/nonlinear/Key.h>
+class KeySet {
+	KeySet();
+	KeySet(const gtsam::KeySet& other);
+
+	// Testable
+	void print(string s) const;
+	bool equals(const gtsam::KeySet& other) const;
+
+	// common STL methods
+	size_t size() const;
+	bool empty() const;
+	void clear();
+
+	// structure specific methods
+	void insert(size_t key);
+	bool erase(size_t key); // returns true if value was removed
+	bool count(size_t key) const; // returns true if value exists
+};
+
+// Actually a FastVector<Key>
+#include <gtsam/nonlinear/Key.h>
 class KeyVector {
 	KeyVector();
 	KeyVector(const gtsam::KeyVector& other);
+	KeyVector(const gtsam::KeySet& other);
+	KeyVector(const gtsam::KeyList& other);
 
 	// Note: no print function
+
+	// common STL methods
 	size_t size() const;
+	bool empty() const;
+	void clear();
+
+	// structure specific methods
 	size_t at(size_t i) const;
+	size_t front() const;
+	size_t back() const;
+	void push_back(size_t key) const;
 };
 
 class Marginals {

@@ -26,8 +26,8 @@
 
 #include <gtsam/base/Value.h>
 #include <gtsam/base/FastMap.h>
-#include <gtsam/base/FastVector.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/nonlinear/Key.h>
 #include <gtsam/nonlinear/Ordering.h>
 
 #include <boost/pool/pool_alloc.hpp>
@@ -43,10 +43,6 @@
 #include <utility>
 
 namespace gtsam {
-
-	// Useful typedefs for operations with Values - allow for matlab interfaces
-	typedef FastList<Key> KeyList;
-	typedef FastVector<Key> KeyVector;
 
   // Forward declarations / utilities
   class ValueCloneAllocator;

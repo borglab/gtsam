@@ -24,6 +24,7 @@
 #include <boost/serialization/vector.hpp>
 
 #include <gtsam/base/FastList.h>
+#include <gtsam/base/FastSet.h>
 
 namespace gtsam {
 
@@ -65,6 +66,12 @@ public:
 
   /** Copy constructor from a FastList */
   FastVector(const FastList<VALUE>& x) {
+    if(x.size() > 0)
+      Base::assign(x.begin(), x.end());
+  }
+
+  /** Copy constructor from a FastSet */
+  FastVector(const FastSet<VALUE>& x) {
     if(x.size() > 0)
       Base::assign(x.begin(), x.end());
   }
