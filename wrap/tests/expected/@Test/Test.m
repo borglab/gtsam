@@ -5,8 +5,8 @@ classdef Test < handle
   end
   methods
     function obj = Test(varargin)
-      if (nargin == 0), obj.self = new_Test_(0,0); end
-      if (nargin == 2 && isa(varargin{1},'double') && isa(varargin{2},'double')), obj.self = new_Test_(0,1,varargin{1},varargin{2}); end
+      if (nargin == 0), obj.self = new_Test(0,0); end
+      if (nargin == 2 && isa(varargin{1},'double') && isa(varargin{2},'double')), obj.self = new_Test(0,1,varargin{1},varargin{2}); end
       if nargin ==14, new_Test_(varargin{1},0); end
       if nargin ~= 13 && nargin ~= 14 && obj.self == 0, error('Test constructor failed'); end
     end

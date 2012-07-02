@@ -220,18 +220,18 @@ TEST( wrap, matlab_code_namespaces ) {
   string act_path = "actual_namespaces/";
 	module.matlab_code("mex", "actual_namespaces", "mexa64", headerPath, "-O5");
 
-	EXPECT(files_equal(exp_path + "new_ClassD_.cpp"              , act_path + "new_ClassD_.cpp"              ));
-	EXPECT(files_equal(exp_path + "new_ClassD_.m"                , act_path + "new_ClassD_.m"                ));
-	EXPECT(files_equal(exp_path + "new_ns1ClassA_.cpp"           , act_path + "new_ns1ClassA_.cpp"           ));
-	EXPECT(files_equal(exp_path + "new_ns1ClassA_.m"             , act_path + "new_ns1ClassA_.m"             ));
-	EXPECT(files_equal(exp_path + "new_ns1ClassB_.cpp"           , act_path + "new_ns1ClassB_.cpp"           ));
-	EXPECT(files_equal(exp_path + "new_ns1ClassB_.m"             , act_path + "new_ns1ClassB_.m"             ));
-	EXPECT(files_equal(exp_path + "new_ns2ClassA_.cpp"           , act_path + "new_ns2ClassA_.cpp"           ));
-	EXPECT(files_equal(exp_path + "new_ns2ClassA_.m"             , act_path + "new_ns2ClassA_.m"             ));
-	EXPECT(files_equal(exp_path + "new_ns2ClassC_.cpp"           , act_path + "new_ns2ClassC_.cpp"           ));
-	EXPECT(files_equal(exp_path + "new_ns2ClassC_.m"             , act_path + "new_ns2ClassC_.m"             ));
-	EXPECT(files_equal(exp_path + "new_ns2ns3ClassB_.cpp"        , act_path + "new_ns2ns3ClassB_.cpp"        ));
-	EXPECT(files_equal(exp_path + "new_ns2ns3ClassB_.m"          , act_path + "new_ns2ns3ClassB_.m"          ));
+	EXPECT(files_equal(exp_path + "new_ClassD.cpp"              , act_path + "new_ClassD.cpp"              ));
+	EXPECT(files_equal(exp_path + "new_ClassD.m"                , act_path + "new_ClassD.m"                ));
+	EXPECT(files_equal(exp_path + "new_ns1ClassA.cpp"           , act_path + "new_ns1ClassA.cpp"           ));
+	EXPECT(files_equal(exp_path + "new_ns1ClassA.m"             , act_path + "new_ns1ClassA.m"             ));
+	EXPECT(files_equal(exp_path + "new_ns1ClassB.cpp"           , act_path + "new_ns1ClassB.cpp"           ));
+	EXPECT(files_equal(exp_path + "new_ns1ClassB.m"             , act_path + "new_ns1ClassB.m"             ));
+	EXPECT(files_equal(exp_path + "new_ns2ClassA.cpp"           , act_path + "new_ns2ClassA.cpp"           ));
+	EXPECT(files_equal(exp_path + "new_ns2ClassA.m"             , act_path + "new_ns2ClassA.m"             ));
+	EXPECT(files_equal(exp_path + "new_ns2ClassC.cpp"           , act_path + "new_ns2ClassC.cpp"           ));
+	EXPECT(files_equal(exp_path + "new_ns2ClassC.m"             , act_path + "new_ns2ClassC.m"             ));
+	EXPECT(files_equal(exp_path + "new_ns2ns3ClassB.cpp"        , act_path + "new_ns2ns3ClassB.cpp"        ));
+	EXPECT(files_equal(exp_path + "new_ns2ns3ClassB.m"          , act_path + "new_ns2ns3ClassB.m"          ));
 	EXPECT(files_equal(exp_path + "ns2ClassA_afunction.cpp"      , act_path + "ns2ClassA_afunction.cpp"      ));
 	EXPECT(files_equal(exp_path + "ns2ClassA_afunction.m"        , act_path + "ns2ClassA_afunction.m"        ));
 
@@ -265,12 +265,12 @@ TEST( wrap, matlab_code ) {
 
 	EXPECT(files_equal(epath + "Makefile"                     , apath + "Makefile"                     ));
 	EXPECT(files_equal(epath + "make_geometry.m"              , apath + "make_geometry.m"              ));
-	EXPECT(files_equal(epath + "new_Point2_.cpp"              , apath + "new_Point2_.cpp"              ));
-	EXPECT(files_equal(epath + "new_Point2_.m"                , apath + "new_Point2_.m"                ));
-	EXPECT(files_equal(epath + "new_Point3_.cpp"              , apath + "new_Point3_.cpp"              ));
-	EXPECT(files_equal(epath + "new_Point3_.m"                , apath + "new_Point3_.m"                ));
-	EXPECT(files_equal(epath + "new_Test_.cpp"                , apath + "new_Test_.cpp"                ));
-	EXPECT(files_equal(epath + "new_Test_.m"                  , apath + "new_Test_.m"                  ));
+	EXPECT(files_equal(epath + "new_Point2.cpp"              , apath + "new_Point2.cpp"              ));
+	EXPECT(files_equal(epath + "new_Point2.m"                , apath + "new_Point2.m"                ));
+	EXPECT(files_equal(epath + "new_Point3.cpp"              , apath + "new_Point3.cpp"              ));
+	EXPECT(files_equal(epath + "new_Point3.m"                , apath + "new_Point3.m"                ));
+	EXPECT(files_equal(epath + "new_Test.cpp"                , apath + "new_Test.cpp"                ));
+	EXPECT(files_equal(epath + "new_Test.m"                  , apath + "new_Test.m"                  ));
 
 	EXPECT(files_equal(epath + "Point3_staticFunction.cpp"    , apath + "Point3_staticFunction.cpp"    ));
 	EXPECT(files_equal(epath + "Point3_staticFunction.m"      , apath + "Point3_staticFunction.m"      ));

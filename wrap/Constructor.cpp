@@ -30,7 +30,7 @@ using namespace wrap;
 
 /* ************************************************************************* */
 string Constructor::matlab_wrapper_name(const string& className) const {
-  string str = "new_" + className + "_";
+  string str = "new_" + className;
   return str;
 }
 
@@ -102,19 +102,23 @@ void Constructor::matlab_wrapper(const string& toolboxPath,
   file.oss << "static std::set<Shared*> collector;" << endl;
   file.oss << endl;
 
+  //TODO: Remove
   //Generate the destructor function
-  file.oss << "struct Destruct" << endl;
+  /*file.oss << "struct Destruct" << endl;
   file.oss << "{" << endl;
   file.oss << "  void operator() (Shared* p)" << endl;
   file.oss << "  {" << endl;
   file.oss << "    collector.erase(p);" << endl;
   file.oss << "  }" << endl;
   file.oss << "};" << endl;
-  file.oss << endl;
+  file.oss << endl;*/
 
   //Generate cleanup function
   file.oss << "void cleanup(void) {" << endl;
-  file.oss << "  std::for_each( collector.begin(), collector.end(), Destruct() );" << endl;
+  //TODO: Remove
+  //file.oss << "  std::for_each( collector.begin(), collector.end(), Destruct() );" << endl;
+  file.oss << "  BOOST_FOREACH(Shared* p, collector)" << endl;
+  file.oss << "    collector.erase(p);" << endl;
   file.oss << "}" << endl;
 
   file.oss << "void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])" << endl;
@@ -134,15 +138,24 @@ void Constructor::matlab_wrapper(const string& toolboxPath,
   file.oss << "    else if(collector.erase(self))" << endl;
   file.oss << "      delete self;" << endl;
   file.oss << "  } else {" << endl;
-  file.oss << "    int nc = unwrap<int>(in[1]);" << endl;
+  file.oss << "    int nc = unwrap<int>(in[1]);" << endl << endl;
 
   int i = 0;
   BOOST_FOREACH(ArgumentList al, args_list)
   {
-    file.oss << "    if(nc == " << i <<") {" << endl;
-    al.matlab_unwrap(file, 2); // unwrap arguments, start at 1
-    file.oss << "      self = new Shared(new " << cppClassName << "(" << al.names() << "));" << endl;
-    file.oss << "    }" << endl;
+      //Check to see if there will be any arguments and remove {} for consiseness
+      if(al.size())
+      {
+        file.oss << "    if(nc == " << i <<") {" << endl;
+        al.matlab_unwrap(file, 2); // unwrap arguments, start at 1
+        file.oss << "      self = new Shared(new " << cppClassName << "(" << al.names() << "));" << endl;
+        file.oss << "    }" << endl;
+      }
+      else
+      {
+        file.oss << "    if(nc == " << i <<")" << endl;
+        file.oss << "      self = new Shared(new " << cppClassName << "(" << al.names() << "));" << endl;
+      }
     i++;
   }
   

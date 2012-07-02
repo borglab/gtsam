@@ -85,9 +85,7 @@ void Method::matlab_wrapper(const string& classPath,
 
   // get class pointer
   // example: shared_ptr<Test> = unwrap_shared_ptr< Test >(in[0], "Test");
-  file.oss << "  mxArray* mxh = mxGetProperty(in[0],0,\"self\");" << endl;
-  file.oss << "  Shared* self = *reinterpret_cast<Shared**> (mxGetPr(mxh));" << endl; 
-  file.oss << "  Shared obj = *self;" << endl;
+  file.oss << "  Shared obj = unwrap_shared_ptr<" << cppClassName << ">(in[0], \"" << cppClassName << "\");" << endl;
   // unwrap arguments, see Argument.cpp
   args.matlab_unwrap(file,1);
 

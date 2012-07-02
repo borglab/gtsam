@@ -124,7 +124,6 @@ void generateUsingNamespace(FileWriter& file, const vector<string>& using_namesp
 void generateIncludes(FileWriter& file, const string& class_name,
 		const vector<string>& includes) {
 	file.oss << "#include <wrap/matlab.h>" << endl;
-	file.oss << "#include <set>" << endl;
 	bool added_include = false;
 	BOOST_FOREACH(const string& s, includes) {
 		if (!s.empty()) {

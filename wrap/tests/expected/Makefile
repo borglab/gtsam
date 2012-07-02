@@ -8,8 +8,8 @@ mex_flags = -O5
 all: Point2 Point3 Test 
 
 # Point2
-new_Point2_.$(MEXENDING): new_Point2_.cpp $(PATH_TO_WRAP)/matlab.h
-	$(MEX) $(mex_flags) new_Point2_.cpp  -output new_Point2_
+new_Point2.$(MEXENDING): new_Point2.cpp $(PATH_TO_WRAP)/matlab.h
+	$(MEX) $(mex_flags) new_Point2.cpp  -output new_Point2
 @Point2/x.$(MEXENDING): @Point2/x.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Point2/x.cpp  -output @Point2/x
 @Point2/y.$(MEXENDING): @Point2/y.cpp $(PATH_TO_WRAP)/matlab.h
@@ -25,11 +25,11 @@ new_Point2_.$(MEXENDING): new_Point2_.cpp $(PATH_TO_WRAP)/matlab.h
 @Point2/vectorConfusion.$(MEXENDING): @Point2/vectorConfusion.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Point2/vectorConfusion.cpp  -output @Point2/vectorConfusion
 
-Point2: new_Point2_.$(MEXENDING) @Point2/x.$(MEXENDING) @Point2/y.$(MEXENDING) @Point2/dim.$(MEXENDING) @Point2/returnChar.$(MEXENDING) @Point2/argChar.$(MEXENDING) @Point2/argUChar.$(MEXENDING) @Point2/vectorConfusion.$(MEXENDING) 
+Point2: new_Point2.$(MEXENDING) @Point2/x.$(MEXENDING) @Point2/y.$(MEXENDING) @Point2/dim.$(MEXENDING) @Point2/returnChar.$(MEXENDING) @Point2/argChar.$(MEXENDING) @Point2/argUChar.$(MEXENDING) @Point2/vectorConfusion.$(MEXENDING) 
 
 # Point3
-new_Point3_.$(MEXENDING): new_Point3_.cpp $(PATH_TO_WRAP)/matlab.h
-	$(MEX) $(mex_flags) new_Point3_.cpp  -output new_Point3_
+new_Point3.$(MEXENDING): new_Point3.cpp $(PATH_TO_WRAP)/matlab.h
+	$(MEX) $(mex_flags) new_Point3.cpp  -output new_Point3
 Point3_staticFunction.$(MEXENDING): Point3_staticFunction.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) Point3_staticFunction.cpp  -output Point3_staticFunction
 Point3_StaticFunctionRet.$(MEXENDING): Point3_StaticFunctionRet.cpp $(PATH_TO_WRAP)/matlab.h
@@ -37,11 +37,11 @@ Point3_StaticFunctionRet.$(MEXENDING): Point3_StaticFunctionRet.cpp $(PATH_TO_WR
 @Point3/norm.$(MEXENDING): @Point3/norm.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Point3/norm.cpp  -output @Point3/norm
 
-Point3: new_Point3_.$(MEXENDING) Point3_staticFunction.$(MEXENDING) Point3_StaticFunctionRet.$(MEXENDING) @Point3/norm.$(MEXENDING) 
+Point3: new_Point3.$(MEXENDING) Point3_staticFunction.$(MEXENDING) Point3_StaticFunctionRet.$(MEXENDING) @Point3/norm.$(MEXENDING) 
 
 # Test
-new_Test_.$(MEXENDING): new_Test_.cpp $(PATH_TO_WRAP)/matlab.h
-	$(MEX) $(mex_flags) new_Test_.cpp  -output new_Test_
+new_Test.$(MEXENDING): new_Test.cpp $(PATH_TO_WRAP)/matlab.h
+	$(MEX) $(mex_flags) new_Test.cpp  -output new_Test
 @Test/return_pair.$(MEXENDING): @Test/return_pair.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Test/return_pair.cpp  -output @Test/return_pair
 @Test/return_bool.$(MEXENDING): @Test/return_bool.cpp $(PATH_TO_WRAP)/matlab.h
@@ -81,7 +81,7 @@ new_Test_.$(MEXENDING): new_Test_.cpp $(PATH_TO_WRAP)/matlab.h
 @Test/print.$(MEXENDING): @Test/print.cpp $(PATH_TO_WRAP)/matlab.h
 	$(MEX) $(mex_flags) @Test/print.cpp  -output @Test/print
 
-Test: new_Test_.$(MEXENDING) @Test/return_pair.$(MEXENDING) @Test/return_bool.$(MEXENDING) @Test/return_size_t.$(MEXENDING) @Test/return_int.$(MEXENDING) @Test/return_double.$(MEXENDING) @Test/return_string.$(MEXENDING) @Test/return_vector1.$(MEXENDING) @Test/return_matrix1.$(MEXENDING) @Test/return_vector2.$(MEXENDING) @Test/return_matrix2.$(MEXENDING) @Test/arg_EigenConstRef.$(MEXENDING) @Test/return_field.$(MEXENDING) @Test/return_TestPtr.$(MEXENDING) @Test/return_Test.$(MEXENDING) @Test/return_Point2Ptr.$(MEXENDING) @Test/create_ptrs.$(MEXENDING) @Test/create_MixedPtrs.$(MEXENDING) @Test/return_ptrs.$(MEXENDING) @Test/print.$(MEXENDING) 
+Test: new_Test.$(MEXENDING) @Test/return_pair.$(MEXENDING) @Test/return_bool.$(MEXENDING) @Test/return_size_t.$(MEXENDING) @Test/return_int.$(MEXENDING) @Test/return_double.$(MEXENDING) @Test/return_string.$(MEXENDING) @Test/return_vector1.$(MEXENDING) @Test/return_matrix1.$(MEXENDING) @Test/return_vector2.$(MEXENDING) @Test/return_matrix2.$(MEXENDING) @Test/arg_EigenConstRef.$(MEXENDING) @Test/return_field.$(MEXENDING) @Test/return_TestPtr.$(MEXENDING) @Test/return_Test.$(MEXENDING) @Test/return_Point2Ptr.$(MEXENDING) @Test/create_ptrs.$(MEXENDING) @Test/create_MixedPtrs.$(MEXENDING) @Test/return_ptrs.$(MEXENDING) @Test/print.$(MEXENDING) 
 
 
 

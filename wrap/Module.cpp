@@ -182,7 +182,7 @@ Module::Module(const string& interfacePath,
   Rule include_p = str_p("#include") >> ch_p('<') >> (*(anychar_p - '>'))[assign_a(include_path)] >> ch_p('>');
 
   Rule class_p =
-  		(!include_p
+  		(!*include_p
   		>> str_p("class")[push_back_a(cls.includes, include_path)][assign_a(include_path, null_str)]
   		>> className_p[assign_a(cls.name)]
       >> '{'
@@ -201,7 +201,7 @@ Module::Module(const string& interfacePath,
   		[assign_a(cls,cls0)];
 
 	Rule namespace_def_p =
-			(!include_p
+			(!*include_p
 			>> str_p("namespace")[push_back_a(namespace_includes, include_path)][assign_a(include_path, null_str)]
 			>> namespace_name_p[push_back_a(namespaces)]
 			>> ch_p('{')

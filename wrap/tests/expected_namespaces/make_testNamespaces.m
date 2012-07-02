@@ -9,19 +9,19 @@ addpath(toolboxpath);
 
 %% ns1ClassA
 cd(toolboxpath)
-mex -O5 new_ns1ClassA_.cpp
+mex -O5 new_ns1ClassA.cpp
 
 cd @ns1ClassA
 
 %% ns1ClassB
 cd(toolboxpath)
-mex -O5 new_ns1ClassB_.cpp
+mex -O5 new_ns1ClassB.cpp
 
 cd @ns1ClassB
 
 %% ns2ClassA
 cd(toolboxpath)
-mex -O5 new_ns2ClassA_.cpp
+mex -O5 new_ns2ClassA.cpp
 mex -O5 ns2ClassA_afunction.cpp
 
 cd @ns2ClassA
@@ -31,19 +31,19 @@ mex -O5 nsReturn.cpp
 
 %% ns2ns3ClassB
 cd(toolboxpath)
-mex -O5 new_ns2ns3ClassB_.cpp
+mex -O5 new_ns2ns3ClassB.cpp
 
 cd @ns2ns3ClassB
 
 %% ns2ClassC
 cd(toolboxpath)
-mex -O5 new_ns2ClassC_.cpp
+mex -O5 new_ns2ClassC.cpp
 
 cd @ns2ClassC
 
 %% ClassD
 cd(toolboxpath)
-mex -O5 new_ClassD_.cpp
+mex -O5 new_ClassD.cpp
 
 cd @ClassD
 

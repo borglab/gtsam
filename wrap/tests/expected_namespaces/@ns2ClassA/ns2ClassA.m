@@ -5,7 +5,7 @@ classdef ns2ClassA < handle
   end
   methods
     function obj = ns2ClassA(varargin)
-      if (nargin == 0), obj.self = new_ns2ClassA_(0,0); end
+      if (nargin == 0), obj.self = new_ns2ClassA(0,0); end
       if nargin ==14, new_ns2ClassA_(varargin{1},0); end
       if nargin ~= 13 && nargin ~= 14 && obj.self == 0, error('ns2ClassA constructor failed'); end
     end

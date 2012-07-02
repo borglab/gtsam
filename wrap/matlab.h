@@ -21,15 +21,9 @@
 
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
-#include <gtsam/linear/NoiseModel.h>
 
 using gtsam::Vector;
 using gtsam::Matrix;
-using gtsam::noiseModel::Base;
-using gtsam::noiseModel::Gaussian;
-using gtsam::noiseModel::Diagonal;
-using gtsam::noiseModel::Isotropic;
-using gtsam::noiseModel::Unit;
 
 extern "C" {
 #include <mex.h>
@@ -37,6 +31,7 @@ extern "C" {
 
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/foreach.hpp>
 
 #include <list>
 #include <string>
@@ -321,7 +316,6 @@ gtsam::Matrix unwrap< gtsam::Matrix >(const mxArray* array) {
  dummy arguments to let the constructor know we want an object without
  the self property initialized. We then assign the mexhandle to self.
 */
-// TODO: think about memory
 mxArray* create_object(const char *classname, mxArray* h) {
   mxArray *result;
   mxArray* dummy[13] = {h,h,h,h,h, h,h,h,h,h, h,h,h};

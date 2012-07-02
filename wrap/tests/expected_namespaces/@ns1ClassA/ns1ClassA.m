@@ -5,7 +5,7 @@ classdef ns1ClassA < handle
   end
   methods
     function obj = ns1ClassA(varargin)
-      if (nargin == 0), obj.self = new_ns1ClassA_(0,0); end
+      if (nargin == 0), obj.self = new_ns1ClassA(0,0); end
       if nargin ==14, new_ns1ClassA_(varargin{1},0); end
       if nargin ~= 13 && nargin ~= 14 && obj.self == 0, error('ns1ClassA constructor failed'); end
     end

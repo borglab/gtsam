@@ -9,7 +9,7 @@ addpath(toolboxpath);
 
 %% Point2
 cd(toolboxpath)
-mex -O5 new_Point2_.cpp
+mex -O5 new_Point2.cpp
 
 cd @Point2
 mex -O5 x.cpp
@@ -22,7 +22,7 @@ mex -O5 vectorConfusion.cpp
 
 %% Point3
 cd(toolboxpath)
-mex -O5 new_Point3_.cpp
+mex -O5 new_Point3.cpp
 mex -O5 Point3_staticFunction.cpp
 mex -O5 Point3_StaticFunctionRet.cpp
 
@@ -31,7 +31,7 @@ mex -O5 norm.cpp
 
 %% Test
 cd(toolboxpath)
-mex -O5 new_Test_.cpp
+mex -O5 new_Test.cpp
 
 cd @Test
 mex -O5 return_pair.cpp
