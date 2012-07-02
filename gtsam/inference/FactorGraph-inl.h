@@ -108,15 +108,15 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	template<class DERIVED, class KEY>
-	typename DERIVED::shared_ptr Combine(const FactorGraph<DERIVED>& factors,
+	template<class DERIVEDFACTOR, class KEY>
+	typename DERIVEDFACTOR::shared_ptr Combine(const FactorGraph<DERIVEDFACTOR>& factors,
     const FastMap<KEY, std::vector<KEY> >& variableSlots) {
 
 		typedef const std::pair<const KEY, std::vector<KEY> > KeySlotPair;
     // Local functional for getting keys out of key-value pairs
     struct Local { static KEY FirstOf(const KeySlotPair& pr) { return pr.first; } };
 
-		return typename DERIVED::shared_ptr(new DERIVED(
+		return typename DERIVEDFACTOR::shared_ptr(new DERIVEDFACTOR(
 		    boost::make_transform_iterator(variableSlots.begin(), &Local::FirstOf),
 		    boost::make_transform_iterator(variableSlots.end(), &Local::FirstOf)));
 	}

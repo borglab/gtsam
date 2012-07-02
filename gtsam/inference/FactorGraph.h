@@ -215,8 +215,8 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 	}; // FactorGraph
 
   /** Create a combined joint factor (new style for EliminationTree). */
-	template<class DERIVED, class KEY>
-	typename DERIVED::shared_ptr Combine(const FactorGraph<DERIVED>& factors,
+	template<class DERIVEDFACTOR, class KEY>
+	typename DERIVEDFACTOR::shared_ptr Combine(const FactorGraph<DERIVEDFACTOR>& factors,
 			const FastMap<KEY, std::vector<KEY> >& variableSlots);
 
 	/**
