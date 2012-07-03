@@ -53,7 +53,7 @@ void Class::matlab_proxy(const string& classFile) const {
     id++;
   }
   //Static constructor collect call
-  file.oss << "      if nargin ==14, new_" << matlabName << "_(varargin{1},0); end" << endl;
+  file.oss << "      if nargin ==14, new_" << matlabName << "(varargin{1},0); end" << endl;
   file.oss << "      if nargin ~= 13 && nargin ~= 14 && obj.self == 0, error('" << matlabName << " constructor failed'); end" << endl;
   file.oss << "    end" << endl;
   // deconstructor
@@ -61,7 +61,7 @@ void Class::matlab_proxy(const string& classFile) const {
   file.oss << "      if obj.self ~= 0" << endl;
   //TODO: Add verbosity flag
   //file.oss << "        fprintf(1,'MATLAB class deleting %x',obj.self);" << endl;
-  file.oss << "        new_" << matlabName << "_(obj.self);" << endl;
+  file.oss << "        new_" << matlabName << "(obj.self);" << endl;
   file.oss << "        obj.self = 0;" << endl;
   file.oss << "      end" << endl;
   file.oss << "    end" << endl;
