@@ -4,8 +4,10 @@ find_package(Boost 1.42 COMPONENTS system filesystem thread REQUIRED)
 
 # Build the executable itself
 file(GLOB wrap_srcs "*.cpp")
+file(GLOB wrap_headers "*.h")
 list(REMOVE_ITEM wrap_srcs ${CMAKE_CURRENT_SOURCE_DIR}/wrap.cpp)
-add_library(wrap_lib STATIC ${wrap_srcs})
+add_library(wrap_lib STATIC ${wrap_srcs} ${wrap_headers})
+gtsam_assign_source_folders(${wrap_srcs} ${wrap_headers})
 add_executable(wrap wrap.cpp)
 target_link_libraries(wrap wrap_lib ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY})
 
