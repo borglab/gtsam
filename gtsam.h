@@ -1288,10 +1288,14 @@ class Graph {
   void addRangeFactor(size_t poseKey, size_t pointKey, double range, const gtsam::noiseModel::Base* model);
 
   // Measurements
-  void addMeasurement(const gtsam::Point2& measured, const gtsam::noiseModel::Base* model,
-      size_t poseKey, size_t pointKey, const gtsam::Cal3_S2* K);
-  void addStereoMeasurement(const gtsam::StereoPoint2& measured, const gtsam::noiseModel::Base* model,
-      size_t poseKey, size_t pointKey, const gtsam::Cal3_S2Stereo* K);
+    void addMeasurement(const gtsam::Point2& measured,
+        const gtsam::noiseModel::Base* model, size_t poseKey, size_t pointKey,
+        const gtsam::Cal3_S2* K);
+    void addMeasurements(size_t i, const gtsam::KeyVector& J, Matrix Z,
+        const gtsam::noiseModel::Base* model, const gtsam::Cal3_S2* K);
+    void addStereoMeasurement(const gtsam::StereoPoint2& measured,
+        const gtsam::noiseModel::Base* model, size_t poseKey, size_t pointKey,
+        const gtsam::Cal3_S2Stereo* K);
 };
 
 class ISAM {

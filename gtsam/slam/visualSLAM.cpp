@@ -47,7 +47,20 @@ namespace visualSLAM {
   /* ************************************************************************* */
   void Graph::addMeasurement(const Point2& measured, const SharedNoiseModel& model,
        Key poseKey, Key pointKey, const shared_ptrK K) {
-    push_back(make_shared<GenericProjectionFactor<Pose3, Point3> >(measured, model, poseKey, pointKey, K));
+    push_back(
+        make_shared<GenericProjectionFactor<Pose3, Point3> >
+          (measured, model, poseKey, pointKey, K));
+  }
+
+  /* ************************************************************************* */
+  void Graph::addMeasurements(Key i, const KeyVector& J, const Matrix& Z,
+      const SharedNoiseModel& model, const shared_ptrK K) {
+    if ( Z.rows()!=2) throw std::invalid_argument("addMeasurements: Z must be 2*K");
+    if (Z.cols() != J.size())
+      throw std::invalid_argument(
+          "addMeasurements: J and Z must have same number of entries");
+    for(size_t k=0;k<Z.cols();k++)
+      addMeasurement(Point2(Z(0,k),Z(1,k)),model,i, J[k], K);
   }
 
   /* ************************************************************************* */
