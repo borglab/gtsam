@@ -1013,6 +1013,24 @@ class LevenbergMarquardtParams {
   LevenbergMarquardtParams();
   LevenbergMarquardtParams(double initial, double factor, double bound, size_t verbose);
   void print(string s) const;
+
+  double getMaxIterations() const;
+  double getRelativeErrorTol() const;
+  double getAbsoluteErrorTol() const;
+  double getErrorTol() const;
+  string getVerbosity() const;
+
+  void setMaxIterations(double value);
+  void setRelativeErrorTol(double value);
+  void setAbsoluteErrorTol(double value);
+  void setErrorTol(double value);
+  void setVerbosity(string s);
+
+  bool isMultifrontal() const;
+  bool isSequential() const;
+  bool isCholmod() const;
+  bool isCG() const;
+
   double getlambdaInitial() const ;
   double getlambdaFactor() const ;
   double getlambdaUpperBound() const;
