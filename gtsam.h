@@ -1052,6 +1052,7 @@ namespace pose2SLAM {
 
 class Values {
 	Values();
+  Values(const pose2SLAM::Values& values);
 	size_t size() const;
 	void print(string s) const;
   bool exists(size_t key);
@@ -1105,6 +1106,7 @@ namespace pose3SLAM {
 
 class Values {
 	Values();
+  Values(const pose3SLAM::Values& values);
 	size_t size() const;
 	void print(string s) const;
   bool exists(size_t key);
@@ -1158,6 +1160,7 @@ namespace planarSLAM {
 
 class Values {
 	Values();
+  Values(const planarSLAM::Values& values);
 	size_t size() const;
 	void print(string s) const;
   bool exists(size_t key);
@@ -1243,6 +1246,7 @@ namespace visualSLAM {
 
 class Values {
   Values();
+  Values(const visualSLAM::Values& values);
   size_t size() const;
   void print(string s) const;
   bool exists(size_t key);
