@@ -135,11 +135,6 @@ if (GTSAM_BUILD_WRAP)
 	string(TOUPPER ${CMAKE_BUILD_TYPE} build_type_toupper)
 	get_target_property(gtsam_library_file gtsam-static LOCATION_${build_type_toupper})
     set(mexFlags ${GTSAM_BUILD_MEX_BINARY_FLAGS} -I${Boost_INCLUDE_DIR} -I${MEX_INCLUDE_ROOT} -I${MEX_INCLUDE_ROOT}/gtsam -I${MEX_INCLUDE_ROOT}/gtsam/base -I${MEX_INCLUDE_ROOT}/gtsam/geometry -I${MEX_INCLUDE_ROOT}/gtsam/linear -I${MEX_INCLUDE_ROOT}/gtsam/discrete -I${MEX_INCLUDE_ROOT}/gtsam/inference -I${MEX_INCLUDE_ROOT}/gtsam/nonlinear -I${MEX_INCLUDE_ROOT}/gtsam/slam)
-	if(MSVC)
-		list(APPEND mexFlags "/bigobj")
-	endif()
-	# Add the CXXFLAGS from building gtsam
-	list(APPEND mexFlags -g "CXXFLAGS=$CXXFLAGS ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${build_type_toupper}}")
 
     # Macro to handle details of setting up targets
     # FIXME: issue with dependency between wrap_gtsam and wrap_gtsam_build, only shows up on CMake 2.8.3
