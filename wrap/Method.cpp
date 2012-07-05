@@ -18,6 +18,7 @@
 #include <fstream>
 
 #include <boost/foreach.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include "Method.h"
 #include "utilities.h"
@@ -26,57 +27,49 @@ using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
-void Method::matlab_mfile(const string& classPath) const {
+void Method::proxy_fragment(FileWriter& file, const std::string& wrapperName, const int id) const {
 
-  // open destination m-file
-  string wrapperFile = classPath + "/" + name + ".m";
-  FileWriter file(wrapperFile, verbose_, "%");
-
-  // generate code
-  string returnType = returnVal.matlab_returnType();
-  file.oss << "% " << returnType << " = obj." << name << "(" << args.names() << ")" << endl;
-  file.oss << "function " << returnType << " = " << name << "(obj";
-  if (args.size()) file.oss << "," << args.names();
-  file.oss << ")" << endl;
-  file.oss << "  error('need to compile " << name << ".cpp');" << endl;
-  file.oss << "end" << endl;
-
-  // close file
-  file.emit(false);
+	string output;
+	if(returnVal.isPair)
+		output = "[ r1 r2 ] = ";
+	else if(returnVal.category1 == ReturnValue::VOID)
+		output = "";
+	else
+		output = "r = ";
+	file.oss << "    function " << output << name << "(varargin)\n";
+	file.oss << "      " << output << wrapperName << "(" << id << ", varargin{:});\n";
+	file.oss << "    end\n";
 }
 
 /* ************************************************************************* */
-void Method::matlab_wrapper(const string& classPath, 
-			    const string& className,
+string Method::wrapper_fragment(FileWriter& file, 
 			    const string& cppClassName,
 			    const string& matlabClassName,
-			    const vector<string>& using_namespaces, const std::vector<std::string>& includes) const {
-  // open destination wrapperFile
-  string wrapperFile = classPath + "/" + name + ".cpp";
-  FileWriter file(wrapperFile, verbose_, "//");
+					int id,
+			    const vector<string>& using_namespaces) const {
 
   // generate code
 
-  // header
-  generateIncludes(file, className, includes);
-  generateUsingNamespace(file, using_namespaces);
+	const string wrapFunctionName = matlabClassName + "_" + name + "_" + boost::lexical_cast<string>(id);
+
+	// call
+	file.oss << "void " << wrapFunctionName << "(int nargout, mxArray *out[], int nargin, const mxArray *in[])\n";
+	// start
+	file.oss << "{\n";
+	generateUsingNamespace(file, using_namespaces);
 
   if(returnVal.isPair)
   {
       if(returnVal.category1 == ReturnValue::CLASS)
-        file.oss << "typedef boost::shared_ptr<"  << returnVal.qualifiedType1("::")  << "> Shared" <<  returnVal.type1 << ";"<< endl;
+        file.oss << "  typedef boost::shared_ptr<"  << returnVal.qualifiedType1("::")  << "> Shared" <<  returnVal.type1 << ";"<< endl;
       if(returnVal.category2 == ReturnValue::CLASS)
-        file.oss << "typedef boost::shared_ptr<"  << returnVal.qualifiedType2("::")  << "> Shared" <<  returnVal.type2 << ";"<< endl;
+        file.oss << "  typedef boost::shared_ptr<"  << returnVal.qualifiedType2("::")  << "> Shared" <<  returnVal.type2 << ";"<< endl;
   }
   else
       if(returnVal.category1 == ReturnValue::CLASS)
-        file.oss << "typedef boost::shared_ptr<"  << returnVal.qualifiedType1("::")  << "> Shared" <<  returnVal.type1 << ";"<< endl;
+        file.oss << "  typedef boost::shared_ptr<"  << returnVal.qualifiedType1("::")  << "> Shared" <<  returnVal.type1 << ";"<< endl;
 
-  file.oss << "typedef boost::shared_ptr<"  << cppClassName  << "> Shared;" << endl;
-  // call
-  file.oss << "void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])\n";
-  // start
-  file.oss << "{\n";
+  file.oss << "  typedef boost::shared_ptr<"  << cppClassName  << "> Shared;" << endl;
 
   // check arguments
   // extra argument obj -> nargin-1 is passed !
@@ -103,8 +96,7 @@ void Method::matlab_wrapper(const string& classPath,
   // finish
   file.oss << "}\n";
 
-  // close file
-  file.emit(true);
+	return wrapFunctionName;
 }
 
 /* ************************************************************************* */

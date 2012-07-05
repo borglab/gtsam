@@ -42,13 +42,12 @@ struct Method {
 	// MATLAB code generation
 	// classPath is class directory, e.g., ../matlab/@Point2
 
-	void matlab_mfile(const std::string& classPath) const; ///< m-file
-	void matlab_wrapper(const std::string& classPath,
-			const std::string& className,
+	void proxy_fragment(FileWriter& file, const std::string& wrapperName, const int id) const;
+	std::string wrapper_fragment(FileWriter& file,
 	    const std::string& cppClassName,
 	    const std::string& matlabClassname,
-	    const std::vector<std::string>& using_namespaces,
-	    const std::vector<std::string>& includes) const; ///< cpp wrapper
+			int id,
+	    const std::vector<std::string>& using_namespaces) const; ///< cpp wrapper
 };
 
 } // \namespace wrap

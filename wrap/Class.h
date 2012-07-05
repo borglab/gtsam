@@ -19,6 +19,7 @@
 #pragma once
 
 #include <string>
+#include <boost/bimap.hpp>
 
 #include "Constructor.h"
 #include "Deconstructor.h"
@@ -37,16 +38,17 @@ struct Class {
   std::vector<Method> methods;              ///< Class methods
   std::vector<StaticMethod> static_methods; ///< Static methods
   std::vector<std::string> namespaces;      ///< Stack of namespaces
-  std::vector<std::string> using_namespaces; ///< default namespaces
+  std::vector<std::string> using_namespaces;///< default namespaces
   std::vector<std::string> includes;        ///< header include overrides
-  Constructor constructor;    ///< Class constructors
+  Constructor constructor;                  ///< Class constructors
+	Deconstructor deconstructor;              ///< Deconstructor to deallocate C++ object
   bool verbose_;                            ///< verbose flag
 
   // And finally MATLAB code is emitted, methods below called by Module::matlab_code
-  void matlab_proxy(const std::string& classFile) const;          ///< emit proxy class
-  void matlab_constructors(const std::string& toolboxPath) const;   ///< emit constructor wrappers
-  void matlab_methods(const std::string& classPath) const;   ///< emit method wrappers
-  void matlab_static_methods(const std::string& classPath) const;   ///< emit static method wrappers
+  void matlab_proxy(const std::string& classFile, const std::string& wrapperName,
+		FileWriter& wrapperFile, std::vector<std::string>& functionNames) const;          ///< emit proxy class
+  void matlab_static_methods(const std::string& toolboxPath, const std::string& wrapperName,
+		FileWriter& wrapperFile, std::vector<std::string>& functionNames) const;   ///< emit static method wrappers
   void matlab_make_fragment(FileWriter& file,
 			    const std::string& toolboxPath,
 			    const std::string& mexFlags) const;   ///< emit make fragment for global make script

@@ -19,6 +19,7 @@
 #include <fstream>
 
 #include <boost/foreach.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include "utilities.h"
 #include "Deconstructor.h"
@@ -33,51 +34,42 @@ string Deconstructor::matlab_wrapper_name(const string& className) const {
 }
 
 /* ************************************************************************* */
-void Deconstructor::matlab_mfile(const string& toolboxPath, const string& qualifiedMatlabName) const {
+void Deconstructor::proxy_fragment(FileWriter& file,
+		const std::string& wrapperName,
+		const std::string& qualifiedMatlabName, int id) const {
 
-  string matlabName = matlab_wrapper_name(qualifiedMatlabName);
-
-  // open destination m-file
-  string wrapperFile = toolboxPath + "/" + matlabName + ".m";
-  FileWriter file(wrapperFile, verbose_, "%");
-
-  // generate code
-  file.oss << "function result = " << matlabName << "(obj";
-  if (args.size()) file.oss << "," << args.names();
-  file.oss << ")" << endl;
-  file.oss << "  error('need to compile " << matlabName << ".cpp');" << endl;
-  file.oss << "end" << endl;
-
-  // close file
-  file.emit(true);
+	file.oss << "    function delete(obj)\n";
+	file.oss << "      " << wrapperName << "(" << id << ", obj.self);\n";
+	file.oss << "    end\n";
 }
 
 /* ************************************************************************* */
-void Deconstructor::matlab_wrapper(const string& toolboxPath,
+string Deconstructor::wrapper_fragment(FileWriter& file,
 				 const string& cppClassName,
 				 const string& matlabClassName,
+				 int id,
 				 const vector<string>& using_namespaces, const vector<string>& includes) const {
-  string matlabName = matlab_wrapper_name(matlabClassName);
+  
+	const string matlabName = matlab_wrapper_name(matlabClassName);
 
-  // open destination wrapperFile
-  string wrapperFile = toolboxPath + "/" + matlabName + ".cpp";
-  FileWriter file(wrapperFile, verbose_, "//");
-
-  // generate code
-  //
-  generateIncludes(file, name, includes);
-  cout << "Generate includes " << name << endl;
-  generateUsingNamespace(file, using_namespaces);
+	const string wrapFunctionName = matlabClassName + "_deconstructor_" + boost::lexical_cast<string>(id);
     
-  file.oss << "void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])" << endl;
+  file.oss << "void " << wrapFunctionName << "(int nargout, mxArray *out[], int nargin, const mxArray *in[])" << endl;
   file.oss << "{" << endl;
+  generateUsingNamespace(file, using_namespaces);
+  file.oss << "  typedef boost::shared_ptr<"  << cppClassName  << "> Shared;" << endl;
   //Deconstructor takes 1 arg, the mxArray obj
   file.oss << "  checkArguments(\"" << matlabName << "\",nargout,nargin," << "1" << ");" << endl;
-  file.oss << "  delete_shared_ptr< " << cppClassName << " >(in[0],\"" << matlabClassName << "\");" << endl;
+	file.oss << "  Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));\n";
+	file.oss << "  Collector_" << matlabClassName << "::iterator item;\n";
+	file.oss << "  item = collector_" << matlabClassName << ".find(self);\n";
+	file.oss << "  if(item != collector_" << matlabClassName << ".end()) {\n";
+  file.oss << "    delete self;\n";
+	file.oss << "    collector_" << matlabClassName << ".erase(item);\n";
+	file.oss << "  }\n";
   file.oss << "}" << endl;
 
-  // close file
-  file.emit(true);
+	return wrapFunctionName;
 }
 
 /* ************************************************************************* */

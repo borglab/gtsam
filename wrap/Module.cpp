@@ -56,7 +56,7 @@ Module::Module(const string& interfacePath,
   ArgumentList args0, args;
   vector<string> arg_dup; ///keep track of duplicates
   Constructor constructor0(enable_verbose), constructor(enable_verbose);
-  //Deconstructor deconstructor0(enable_verbose), deconstructor(enable_verbose);
+  Deconstructor deconstructor0(enable_verbose), deconstructor(enable_verbose);
   Method method0(enable_verbose), method(enable_verbose);
   StaticMethod static_method0(enable_verbose), static_method(enable_verbose);
   Class cls0(enable_verbose),cls(enable_verbose);
@@ -193,10 +193,10 @@ Module::Module(const string& interfacePath,
   		[assign_a(cls.namespaces, namespaces)]
   		 [assign_a(cls.using_namespaces, using_namespace_current)]
   		[append_a(cls.includes, namespace_includes)]
-        //[assign_a(deconstructor.name,cls.name)]
-        //[assign_a(cls.d, deconstructor)]
+        [assign_a(deconstructor.name,cls.name)]
+        [assign_a(cls.deconstructor, deconstructor)]
   		[push_back_a(classes,cls)]
-        //[assign_a(deconstructor,deconstructor0)]
+        [assign_a(deconstructor,deconstructor0)]
         [assign_a(constructor, constructor0)]
   		[assign_a(cls,cls0)];
 
@@ -299,6 +299,16 @@ void Module::matlab_code(const string& mexCommand, const string& toolboxPath,
     string makeFileName = toolboxPath + "/Makefile";
     FileWriter makeModuleMakefile(makeFileName, verbose, "#");
 
+		// create the unified .cpp switch file
+		const string wrapperName = name + "_wrapper";
+		string wrapperFileName = toolboxPath + "/" + wrapperName + ".cpp";
+		FileWriter wrapperFile(wrapperFileName, verbose, "//");
+		vector<string> functionNames; // Function names stored by index for switch
+		wrapperFile.oss << "#include <wrap/matlab.h>\n";
+		wrapperFile.oss << "#include <map>\n";
+		wrapperFile.oss << "#include <boost/foreach.hpp>\n";
+		wrapperFile.oss << "\n";
+
     makeModuleMfile.oss << "echo on" << endl << endl;
     makeModuleMfile.oss << "toolboxpath = mfilename('fullpath');" << endl;
     makeModuleMfile.oss << "delims = find(toolboxpath == '/' | toolboxpath == '\\');" << endl;
@@ -333,15 +343,42 @@ void Module::matlab_code(const string& mexCommand, const string& toolboxPath,
     }
     makeModuleMakefile.oss << "\n\n";
 
+		// Generate all includes
+		BOOST_FOREACH(Class cls, classes) {
+			generateIncludes(wrapperFile, cls.name, cls.includes);
+		}
+		wrapperFile.oss << "\n";
+
+		// Generate all collectors
+		BOOST_FOREACH(Class cls, classes) {
+			const string matlabName = cls.qualifiedName(), cppName = cls.qualifiedName("::");
+			wrapperFile.oss << "typedef std::set<boost::shared_ptr<" << cppName << ">*> "
+				<< "Collector_" << matlabName << ";\n";
+			wrapperFile.oss << "static Collector_" << matlabName <<
+				" collector_" << matlabName << ";\n";
+		}
+
+		// generate mexAtExit cleanup function
+		wrapperFile.oss << "void _deleteAllObjects()\n";
+		wrapperFile.oss << "{\n";
+		BOOST_FOREACH(Class cls, classes) {
+			const string matlabName = cls.qualifiedName();
+			const string cppName = cls.qualifiedName("::");
+			const string collectorType = "Collector_" + matlabName;
+			const string collectorName = "collector_" + matlabName;
+			wrapperFile.oss << "  for(" << collectorType << "::iterator iter = " << collectorName << ".begin();\n";
+			wrapperFile.oss << "      iter != " << collectorName << ".end(); ) {\n";
+			wrapperFile.oss << "    delete *iter;\n";
+			wrapperFile.oss << "    " << collectorName << ".erase(iter++);\n";
+			wrapperFile.oss << "  }\n";
+		}
+		wrapperFile.oss << "}\n";
+
     // generate proxy classes and wrappers
     BOOST_FOREACH(Class cls, classes) {
-      // create directory if needed
-      string classPath = toolboxPath + "/@" + cls.qualifiedName();
-      fs::create_directories(classPath);
-
       // create proxy class
-      string classFile = classPath + "/" + cls.qualifiedName() + ".m";
-      cls.matlab_proxy(classFile);
+      string classFile = toolboxPath + "/" + cls.qualifiedName() + ".m";
+      cls.matlab_proxy(classFile, wrapperName, wrapperFile, functionNames);
 
       // verify all of the function arguments
       //TODO:verifyArguments<ArgumentList>(validTypes, cls.constructor.args_list);
@@ -353,12 +390,7 @@ void Module::matlab_code(const string& mexCommand, const string& toolboxPath,
       verifyReturnTypes<Method>(validTypes, cls.methods);
 
       // create constructor and method wrappers
-      cls.matlab_constructors(toolboxPath);
-      cls.matlab_static_methods(toolboxPath);
-      cls.matlab_methods(classPath);
-
-      // create deconstructor
-      //cls.matlab_deconstructor(toolboxPath);
+      cls.matlab_static_methods(toolboxPath, wrapperName, wrapperFile, functionNames);
 
       // add lines to make m-file
       makeModuleMfile.oss << "%% " << cls.qualifiedName() << endl;
@@ -384,6 +416,30 @@ void Module::matlab_code(const string& mexCommand, const string& toolboxPath,
     // finish Makefile
     makeModuleMakefile.oss << "\n" << endl;
     makeModuleMakefile.emit(true);
+
+		// finish wrapper file
+		finish_wrapper(wrapperFile, functionNames);
+
+		wrapperFile.emit(true);
   }
+
+/* ************************************************************************* */
+	void Module::finish_wrapper(FileWriter& file, const std::vector<std::string>& functionNames) const {
+		file.oss << "void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])\n";
+		file.oss << "{\n";
+		file.oss << "  mstream mout;\n"; // Send stdout to MATLAB console, see matlab.h
+		file.oss << "  std::streambuf *outbuf = std::cout.rdbuf(&mout);\n\n";
+		file.oss << "  int id = unwrap<int>(in[0]);\n\n";
+		file.oss << "  switch(id) {\n";
+		for(size_t id = 0; id < functionNames.size(); ++id) {
+			file.oss << "  case " << id << ":\n";
+			file.oss << "    " << functionNames[id] << "(nargout, out, nargin-1, in+1);\n";
+			file.oss << "    break;\n";
+		}
+		file.oss << "  }\n";
+		file.oss << "\n";
+		file.oss << "  std::cout.rdbuf(outbuf);\n"; // Restore cout, see matlab.h
+		file.oss << "}\n";
+	}
 
 /* ************************************************************************* */

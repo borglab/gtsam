@@ -46,6 +46,8 @@ struct Module {
 		   const std::string& mexExt,
 		   const std::string& headerPath,
 		   const std::string& mexFlags) const;
+
+	void finish_wrapper(FileWriter& file, const std::vector<std::string>& functionNames) const;
 };
 
 } // \namespace wrap

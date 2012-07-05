@@ -46,13 +46,15 @@ struct Deconstructor {
 	std::string matlab_wrapper_name(const std::string& className) const;
 
 	/// m-file
-	void matlab_mfile(const std::string& toolboxPath,
-			const std::string& qualifiedMatlabName) const;
+	void proxy_fragment(FileWriter& file,
+		const std::string& wrapperName,
+		const std::string& qualifiedMatlabName, int id) const;
 
 	/// cpp wrapper
-	void matlab_wrapper(const std::string& toolboxPath,
+	std::string wrapper_fragment(FileWriter& file,
 			 const std::string& cppClassName,
 			 const std::string& matlabClassName,
+			 int id,
 			 const std::vector<std::string>& using_namespaces,
 			 const std::vector<std::string>& includes) const;
 };

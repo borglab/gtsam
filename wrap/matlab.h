@@ -38,6 +38,7 @@ extern "C" {
 #include <sstream>
 #include <typeinfo>
 #include <set>
+#include <streambuf>
 
 using namespace std;
 using namespace boost; // not usual, but for conciseness of generated code
@@ -53,6 +54,18 @@ using namespace boost; // not usual, but for conciseness of generated code
 #else
 #define mxUINT32OR64_CLASS mxUINT32_CLASS
 #endif
+
+// "Unique" key to signal calling the matlab object constructor with a raw pointer
+// Also present in Class.cpp
+static const uint64_t ptr_constructor_key =
+	(uint64_t('G') << 56) |
+	(uint64_t('T') << 48) |
+	(uint64_t('S') << 40) |
+	(uint64_t('A') << 32) |
+	(uint64_t('M') << 24) |
+	(uint64_t('p') << 16) |
+	(uint64_t('t') << 8) |
+	(uint64_t('r'));
 
 //*****************************************************************************
 // Utilities
@@ -72,6 +85,22 @@ void checkScalar(const mxArray* array, const char* str) {
 	if (m!=1 || n!=1)
 		mexErrMsgIdAndTxt("wrap: not a scalar in ", str);
 }
+
+// Replacement streambuf for cout that writes to the MATLAB console
+// Thanks to http://stackoverflow.com/a/249008
+class mstream : public std::streambuf {
+protected:
+	virtual std::streamsize xsputn(const char *s, std::streamsize n) {
+		mexPrintf("%.*s",n,s);
+		return n;
+	}
+	virtual int overflow(int c = EOF) {
+		if (c != EOF) {
+			mexPrintf("%.1s",&c);
+		}
+		return 1;
+	}
+};
 
 //*****************************************************************************
 // Check arguments
@@ -316,25 +345,20 @@ gtsam::Matrix unwrap< gtsam::Matrix >(const mxArray* array) {
  dummy arguments to let the constructor know we want an object without
  the self property initialized. We then assign the mexhandle to self.
 */
-mxArray* create_object(const char *classname, mxArray* h) {
+mxArray* create_object(const char *classname, void *pointer) {
   mxArray *result;
-  mxArray* dummy[13] = {h,h,h,h,h, h,h,h,h,h, h,h,h};
-  mexCallMATLAB(1,&result,13,dummy,classname);
-  mxSetProperty(result, 0, "self", h);
-  return result;
-}
-
-/*
- * Similar to create object, this also collects the shared_ptr in addition
- * to creating the dummy object. Mainly used for static constructor methods
- * which don't have direct access to the function.
- */
-mxArray* create_collect_object(const char *classname, mxArray* h){
-  mxArray *result;
-  //First arg is a flag to collect
-  mxArray* dummy[14] = {h,h,h,h,h, h,h,h,h,h, h,h,h,h};
-  mexCallMATLAB(1,&result,14,dummy,classname);
-  mxSetProperty(result, 0, "self", h);
+	mxArray *input[2];
+	// First input argument is pointer constructor key
+	input[0] = mxCreateNumericMatrix(1, 1, mxUINT64_CLASS, mxREAL);
+	*reinterpret_cast<uint64_t*>(mxGetData(input[0])) = ptr_constructor_key;
+	// Second input argument is the pointer
+  input[1] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+	*reinterpret_cast<void**>(mxGetData(input[1])) = pointer;
+	// Call special pointer constructor, which sets 'self'
+  mexCallMATLAB(1,&result,2,input,classname);
+  // Deallocate our memory
+	mxDestroyArray(input[0]);
+	mxDestroyArray(input[1]);
   return result;
 }
 
@@ -345,18 +369,9 @@ mxArray* create_collect_object(const char *classname, mxArray* h){
 */
 template <typename Class>
 mxArray* wrap_shared_ptr(boost::shared_ptr< Class >* shared_ptr, const char *classname) {
-  mxArray* mxh = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
-  *reinterpret_cast<boost::shared_ptr<Class>**> (mxGetData(mxh)) = shared_ptr;
-  //return mxh;
-  return create_object(classname, mxh);
-}
-
-template <typename Class>
-mxArray* wrap_collect_shared_ptr(boost::shared_ptr< Class >* shared_ptr, const char *classname) {
-  mxArray* mxh = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
-  *reinterpret_cast<boost::shared_ptr<Class>**> (mxGetData(mxh)) = shared_ptr;
-  //return mxh;
-  return create_collect_object(classname, mxh);
+	// Create actual class object from out pointer
+  mxArray* result = create_object(classname, shared_ptr);
+	return result;
 }
 
 template <typename Class>

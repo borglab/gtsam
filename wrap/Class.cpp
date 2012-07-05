@@ -28,81 +28,96 @@
 using namespace std;
 using namespace wrap;
 
+static const uint64_t ptr_constructor_key =
+	(uint64_t('G') << 56) |
+	(uint64_t('T') << 48) |
+	(uint64_t('S') << 40) |
+	(uint64_t('A') << 32) |
+	(uint64_t('M') << 24) |
+	(uint64_t('p') << 16) |
+	(uint64_t('t') << 8) |
+	(uint64_t('r'));
+
 /* ************************************************************************* */
-void Class::matlab_proxy(const string& classFile) const {
+void Class::matlab_proxy(const string& classFile, const string& wrapperName, FileWriter& wrapperFile, vector<string>& functionNames) const {
   // open destination classFile
-  FileWriter file(classFile, verbose_, "%");
+  FileWriter proxyFile(classFile, verbose_, "%");
 
   // get the name of actual matlab object
-  string matlabName = qualifiedName();
+  string matlabName = qualifiedName(), cppName = qualifiedName("::");
 
   // emit class proxy code
   // we want our class to inherit the handle class for memory purposes
-  file.oss << "classdef " << matlabName << " < handle" << endl;
-  file.oss << "  properties" << endl;
-  file.oss << "    self = 0" << endl;
-  file.oss << "  end" << endl;
-  file.oss << "  methods" << endl;
-  // constructor
-  file.oss << "    function obj = " << matlabName << "(varargin)" << endl;
-  //i is constructor id
-  int id = 0;
+  proxyFile.oss << "classdef " << matlabName << " < handle" << endl;
+  proxyFile.oss << "  properties" << endl;
+  proxyFile.oss << "    self = 0" << endl;
+  proxyFile.oss << "  end" << endl;
+  proxyFile.oss << "  methods" << endl;
+
+  // Constructor
+  proxyFile.oss << "    function obj = " << matlabName << "(varargin)" << endl;
+  // Special pointer constructor
+	{
+		const int id = functionNames.size();
+		proxyFile.oss << "      if nargin == 2 && isa(varargin{1}, 'uint64') && ";
+		proxyFile.oss << "varargin{1} == uint64(" << ptr_constructor_key << ")\n";
+		proxyFile.oss << "        obj.self = varargin{2};\n";
+	}
+	// Regular constructors
   BOOST_FOREACH(ArgumentList a, constructor.args_list)
   {
-    constructor.matlab_proxy_fragment(file,matlabName, id, a);
-    id++;
+		const int id = functionNames.size();
+    constructor.proxy_fragment(proxyFile, wrapperName, matlabName, id, a);
+		const string wrapFunctionName = constructor.wrapper_fragment(wrapperFile,
+			cppName, matlabName, id, using_namespaces, includes, a);
+		wrapperFile.oss << "\n";
+    functionNames.push_back(wrapFunctionName);
   }
-  //Static constructor collect call
-  file.oss << "      if nargin ==14, new_" << matlabName << "(varargin{1},0); end" << endl;
-  file.oss << "      if nargin ~= 13 && nargin ~= 14 && obj.self == 0, error('" << matlabName << " constructor failed'); end" << endl;
-  file.oss << "    end" << endl;
-  // deconstructor
-  file.oss << "    function delete(obj)" << endl;
-  file.oss << "      if obj.self ~= 0" << endl;
-  //TODO: Add verbosity flag
-  //file.oss << "        fprintf(1,'MATLAB class deleting %x',obj.self);" << endl;
-  file.oss << "        new_" << matlabName << "(obj.self);" << endl;
-  file.oss << "        obj.self = 0;" << endl;
-  file.oss << "      end" << endl;
-  file.oss << "    end" << endl;
-  file.oss << "    function display(obj), obj.print(''); end" << endl;
-  file.oss << "    function disp(obj), obj.display; end" << endl;
-  file.oss << "  end" << endl;
-  file.oss << "end" << endl;
+  proxyFile.oss << "      else\n";
+	proxyFile.oss << "        error('" << matlabName << " constructor failed');" << endl;
+	proxyFile.oss << "      end\n";
+  proxyFile.oss << "    end\n\n";
 
-  // close file
-  file.emit(true);
+	// Deconstructor
+	{
+		const int id = functionNames.size();
+		deconstructor.proxy_fragment(proxyFile, wrapperName, matlabName, id);
+		proxyFile.oss << "\n";
+		const string functionName = deconstructor.wrapper_fragment(wrapperFile,
+			cppName, matlabName, id, using_namespaces, includes);
+		wrapperFile.oss << "\n";
+		functionNames.push_back(functionName);
+	}
+  proxyFile.oss << "    function display(obj), obj.print(''); end\n\n";
+  proxyFile.oss << "    function disp(obj), obj.display; end\n\n";
+
+	// Methods
+	BOOST_FOREACH(Method m, methods) {
+		const int id = functionNames.size();
+		m.proxy_fragment(proxyFile, wrapperName, id);
+		proxyFile.oss << "\n";
+		const string wrapFunctionName = m.wrapper_fragment(wrapperFile,
+			cppName, matlabName, id, using_namespaces);
+		wrapperFile.oss << "\n";
+		functionNames.push_back(wrapFunctionName);
+	}
+
+	proxyFile.oss << "  end" << endl;
+	proxyFile.oss << "end" << endl;
+
+  // Close file
+  proxyFile.emit(true);
 }
 
 /* ************************************************************************* */
-//TODO: Consolidate into single file
-void Class::matlab_constructors(const string& toolboxPath) const {
-  /*BOOST_FOREACH(Constructor c, constructors) {
-    args_list.push_back(c.args);
-  }*/
-
-  BOOST_FOREACH(ArgumentList a, constructor.args_list) {
-    constructor.matlab_mfile(toolboxPath, qualifiedName(), a);
-  }
-    constructor.matlab_wrapper(toolboxPath, qualifiedName("::"), qualifiedName(), 
-                     using_namespaces, includes);
-}
-
-/* ************************************************************************* */
-void Class::matlab_methods(const string& classPath) const {
-	string matlabName = qualifiedName(), cppName = qualifiedName("::");
-  BOOST_FOREACH(Method m, methods) {
-    m.matlab_mfile  (classPath);
-    m.matlab_wrapper(classPath, name, cppName, matlabName, using_namespaces, includes);
-  }
-}
-
-/* ************************************************************************* */
-void Class::matlab_static_methods(const string& toolboxPath) const {
+void Class::matlab_static_methods(const string& toolboxPath, const string& wrapperName,
+																	FileWriter& wrapperFile, vector<string>& functionNames) const {
 	string matlabName = qualifiedName(), cppName = qualifiedName("::");
   BOOST_FOREACH(const StaticMethod& m, static_methods) {
-    m.matlab_mfile  (toolboxPath, qualifiedName());
-    m.matlab_wrapper(toolboxPath, name, matlabName, cppName, using_namespaces, includes);
+		const int id = functionNames.size();
+		m.proxy_fragment(toolboxPath, matlabName, wrapperName, id);
+    const string wrapFunction = m.wrapper_fragment(wrapperFile, matlabName, cppName, id, using_namespaces);
+		functionNames.push_back(wrapFunction);
   }
 }
 
