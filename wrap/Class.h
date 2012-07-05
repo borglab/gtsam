@@ -50,6 +50,9 @@ struct Class {
   void matlab_static_methods(const std::string& toolboxPath, const std::string& wrapperName,
 		FileWriter& wrapperFile, std::vector<std::string>& functionNames) const;   ///< emit static method wrappers
   std::string qualifiedName(const std::string& delim = "") const; ///< creates a namespace-qualified name, optional delimiter
+
+private:
+	std::string pointer_constructor_fragments(FileWriter& proxyFile, FileWriter& wrapperFile, const std::string& wrapperName, int id) const;
 };
 
 } // \namespace wrap
