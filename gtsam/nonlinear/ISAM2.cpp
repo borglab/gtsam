@@ -329,11 +329,13 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
     toc(1,"reorder");
 
     tic(2,"linearize");
-    linearFactors_ = *nonlinearFactors_.linearize(theta_, ordering_);
+    GaussianFactorGraph linearized = *nonlinearFactors_.linearize(theta_, ordering_);
+    if(params_.cacheLinearizedFactors)
+      linearFactors_ = linearized;
     toc(2,"linearize");
 
     tic(5,"eliminate");
-    JunctionTree<GaussianFactorGraph, Base::Clique> jt(linearFactors_, variableIndex_);
+    JunctionTree<GaussianFactorGraph, Base::Clique> jt(linearized, variableIndex_);
     sharedClique newRoot;
     if(params_.factorization == ISAM2Params::CHOLESKY)
       newRoot = jt.eliminate(EliminatePreferCholesky);
@@ -352,7 +354,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
 
     lastAffectedMarkedCount = markedKeys.size();
     lastAffectedVariableCount = affectedKeysSet->size();
-    lastAffectedFactorCount = linearFactors_.size();
+    lastAffectedFactorCount = linearized.size();
 
     // Reeliminated keys for detailed results
     if(params_.enableDetailedResults) {
