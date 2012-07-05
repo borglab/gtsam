@@ -579,6 +579,15 @@ ISAM2Result ISAM2::update(
 				markedKeys.insert(index);
 		}
 
+		// Delete any keys from 'unusedKeys' that are actually used by the new, incoming factors
+		FastSet<Key> newNonlinearKeys = newFactors.keys();
+		BOOST_FOREACH(Key key, newNonlinearKeys) {
+		  FastSet<Key>::iterator iter = unusedKeys.find(key);
+		  if(iter != unusedKeys.end()) {
+		    unusedKeys.erase(iter);
+		  }
+		}
+
 		// Remove unused keys.  We must hold on to the new nodes index for now
 		// instead of placing it into the tree because removeTop will need to
 		// update it.
