@@ -68,7 +68,15 @@ namespace visualSLAM {
     /// get a point
     Point3 point(Key j) const { return at<Point3>(j); }
 
-    Matrix points() const; ///< get all point coordinates in a matrix
+    /// insert a number of initial point values by backprojecting
+    void insertBackprojections(const SimpleCamera& c, const Vector& J,
+        const Matrix& Z, double depth);
+
+    /// perturb all points using normally distributed noise
+    void perturbPoints(double sigma, int32_t seed = 42u);
+
+    /// get all point coordinates in a matrix
+    Matrix points() const;
 
   };
 
@@ -137,7 +145,7 @@ namespace visualSLAM {
      *  @param model the noise model for the measurement
      *  @param K shared pointer to calibration object
      */
-    void addMeasurements(Key i, const KeyVector& J, const Matrix& Z,
+    void addMeasurements(Key i, const Vector& J, const Matrix& Z,
         const SharedNoiseModel& model, const shared_ptrK K);
 
     /**

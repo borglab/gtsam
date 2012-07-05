@@ -1272,6 +1272,8 @@ class Values {
   void insertPoint(size_t key, const gtsam::Point3& pose);
   void updatePoint(size_t key, const gtsam::Point3& pose);
   gtsam::Point3 point(size_t j);
+  void insertBackprojections(const gtsam::SimpleCamera& c, Vector J, Matrix Z, double depth);
+  void perturbPoints(double sigma, size_t seed);
   Matrix points() const;
 };
 
@@ -1312,7 +1314,7 @@ class Graph {
     void addMeasurement(const gtsam::Point2& measured,
         const gtsam::noiseModel::Base* model, size_t poseKey, size_t pointKey,
         const gtsam::Cal3_S2* K);
-    void addMeasurements(size_t i, const gtsam::KeyVector& J, Matrix Z,
+    void addMeasurements(size_t i, Vector J, Matrix Z,
         const gtsam::noiseModel::Base* model, const gtsam::Cal3_S2* K);
     void addStereoMeasurement(const gtsam::StereoPoint2& measured,
         const gtsam::noiseModel::Base* model, size_t poseKey, size_t pointKey,
