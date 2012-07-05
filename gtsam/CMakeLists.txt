@@ -95,9 +95,6 @@ if (GTSAM_BUILD_STATIC_LIBRARY)
     list(APPEND GTSAM_EXPORTED_TARGETS gtsam-static)
     set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
     set(gtsam-lib gtsam-static)
-	if(NOT GTSAM_BUILD_SHARED_LIBRARY)
-		set(gtsam-prefer-shared gtsam-static)
-	endif()
 endif (GTSAM_BUILD_STATIC_LIBRARY)
 
 if (GTSAM_BUILD_SHARED_LIBRARY)
@@ -115,7 +112,6 @@ if (GTSAM_BUILD_SHARED_LIBRARY)
     if (NOT GTSAM_BUILD_STATIC_LIBRARY)
         set(gtsam-lib "gtsam-shared")
     endif()
-	set(gtsam-prefer-shared gtsam-shared)
 endif(GTSAM_BUILD_SHARED_LIBRARY)
 
 # Create the matlab toolbox for the gtsam library
@@ -137,13 +133,13 @@ if (GTSAM_BUILD_WRAP)
     
     # Generate, build and install toolbox
 	string(TOUPPER ${CMAKE_BUILD_TYPE} build_type_toupper)
-	get_target_property(gtsam_library_file ${gtsam-prefer-shared} LOCATION_${build_type_toupper})
-    set(mexFlags "${GTSAM_BUILD_MEX_BINARY_FLAGS} -I${Boost_INCLUDE_DIR} -I${MEX_INCLUDE_ROOT} -I${MEX_INCLUDE_ROOT}/gtsam -I${MEX_INCLUDE_ROOT}/gtsam/base -I${MEX_INCLUDE_ROOT}/gtsam/geometry -I${MEX_INCLUDE_ROOT}/gtsam/linear -I${MEX_INCLUDE_ROOT}/gtsam/discrete -I${MEX_INCLUDE_ROOT}/gtsam/inference -I${MEX_INCLUDE_ROOT}/gtsam/nonlinear -I${MEX_INCLUDE_ROOT}/gtsam/slam ${gtsam_library_file}")
+	get_target_property(gtsam_library_file gtsam-static LOCATION_${build_type_toupper})
+    set(mexFlags ${GTSAM_BUILD_MEX_BINARY_FLAGS} -I${Boost_INCLUDE_DIR} -I${MEX_INCLUDE_ROOT} -I${MEX_INCLUDE_ROOT}/gtsam -I${MEX_INCLUDE_ROOT}/gtsam/base -I${MEX_INCLUDE_ROOT}/gtsam/geometry -I${MEX_INCLUDE_ROOT}/gtsam/linear -I${MEX_INCLUDE_ROOT}/gtsam/discrete -I${MEX_INCLUDE_ROOT}/gtsam/inference -I${MEX_INCLUDE_ROOT}/gtsam/nonlinear -I${MEX_INCLUDE_ROOT}/gtsam/slam)
 	if(MSVC)
-		set(comp_flags_extra "/bigobj")
+		list(APPEND mexFlags "/bigobj")
 	endif()
-	# Lots of escapes '\' here because they get eaten during subsequent calls to 'set'
-	set(mexFlags "${mexFlags} -g COMPFLAGS=\\\"$COMPFLAGS ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${build_type_toupper}} ${comp_flags_extra}\\\"")
+	# Add the CXXFLAGS from building gtsam
+	list(APPEND mexFlags -g "CXXFLAGS=$CXXFLAGS ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${build_type_toupper}}")
 
     # Macro to handle details of setting up targets
     # FIXME: issue with dependency between wrap_gtsam and wrap_gtsam_build, only shows up on CMake 2.8.3
