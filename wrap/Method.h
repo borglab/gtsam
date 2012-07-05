@@ -36,16 +36,27 @@ struct Method {
 	bool verbose_;
 	bool is_const_;
 	std::string name;
-	ArgumentList args;
-	ReturnValue returnVal;
+	std::vector<ArgumentList> argLists;
+	std::vector<ReturnValue> returnVals;
+
+	// The first time this function is called, it initializes the class members
+	// with those in rhs, but in subsequent calls it adds additional argument
+	// lists as function overloads.
+	void addOverload(bool verbose, bool is_const, const std::string& name,
+		const ArgumentList& args, const ReturnValue& retVal);
 
 	// MATLAB code generation
 	// classPath is class directory, e.g., ../matlab/@Point2
+	void proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperFile,
+		const std::string& cppClassName,	const std::string& matlabClassName,
+		const std::string& wrapperName, const std::vector<std::string>& using_namespaces,
+		std::vector<std::string>& functionNames) const;
 
-	void proxy_fragment(FileWriter& file, const std::string& wrapperName, const int id) const;
+private:
 	std::string wrapper_fragment(FileWriter& file,
 	    const std::string& cppClassName,
 	    const std::string& matlabClassname,
+			int overload,
 			int id,
 	    const std::vector<std::string>& using_namespaces) const; ///< cpp wrapper
 };

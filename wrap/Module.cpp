@@ -24,6 +24,8 @@
 //#define BOOST_SPIRIT_DEBUG
 #include <boost/spirit/include/classic_confix.hpp>
 #include <boost/spirit/include/classic_clear_actor.hpp>
+#include <boost/lambda/bind.hpp>
+#include <boost/lambda/lambda.hpp>
 #include <boost/foreach.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
@@ -34,6 +36,7 @@
 using namespace std;
 using namespace wrap;
 using namespace BOOST_SPIRIT_CLASSIC_NS;
+namespace bl = boost::lambda;
 namespace fs = boost::filesystem;
 
 typedef rule<BOOST_SPIRIT_CLASSIC_NS::phrase_scanner_t> Rule;
@@ -51,13 +54,15 @@ Module::Module(const string& interfacePath,
 {
   // these variables will be imperatively updated to gradually build [cls]
   // The one with postfix 0 are used to reset the variables after parse.
+	string methodName, methodName0;
+	bool isConst, isConst0 = false;
 	ReturnValue retVal0, retVal;
   Argument arg0, arg;
   ArgumentList args0, args;
   vector<string> arg_dup; ///keep track of duplicates
   Constructor constructor0(enable_verbose), constructor(enable_verbose);
   Deconstructor deconstructor0(enable_verbose), deconstructor(enable_verbose);
-  Method method0(enable_verbose), method(enable_verbose);
+  //Method method0(enable_verbose), method(enable_verbose);
   StaticMethod static_method0(enable_verbose), static_method(enable_verbose);
   Class cls0(enable_verbose),cls(enable_verbose);
   vector<string> namespaces, /// current namespace tag
@@ -155,27 +160,35 @@ Module::Module(const string& interfacePath,
   Rule methodName_p = lexeme_d[lower_p >> *(alnum_p | '_')];
 
   Rule method_p = 
-    (returnType_p >> methodName_p[assign_a(method.name)] >>
+    (returnType_p >> methodName_p[assign_a(methodName)] >>
      '(' >> argumentList_p >> ')' >> 
-     !str_p("const")[assign_a(method.is_const_,true)] >> ';' >> *comments_p)
-    [assign_a(method.args,args)]
+     !str_p("const")[assign_a(isConst,true)] >> ';' >> *comments_p)
+		[bl::bind(&Method::addOverload,
+			bl::var(cls.methods)[bl::var(methodName)],
+			verbose,
+			bl::var(isConst),
+			bl::var(methodName),
+			bl::var(args),
+		  bl::var(retVal))]
+	  [assign_a(isConst,isConst0)]
+		[assign_a(methodName,methodName0)]
     [assign_a(args,args0)]
-    [assign_a(method.returnVal,retVal)]
-    [assign_a(retVal,retVal0)]
-    [push_back_a(cls.methods, method)]
-    [assign_a(method,method0)];
+    [assign_a(retVal,retVal0)];
 
   Rule staticMethodName_p = lexeme_d[(upper_p | lower_p) >> *(alnum_p | '_')];
 
   Rule static_method_p =
-    (str_p("static") >> returnType_p >> staticMethodName_p[assign_a(static_method.name)] >>
+    (str_p("static") >> returnType_p >> staticMethodName_p[assign_a(methodName)] >>
      '(' >> argumentList_p >> ')' >> ';' >> *comments_p)
-    [assign_a(static_method.args,args)]
+		[bl::bind(&StaticMethod::addOverload,
+			bl::var(cls.static_methods)[bl::var(methodName)],
+			verbose,
+			bl::var(methodName),
+			bl::var(args),
+		  bl::var(retVal))]
+		[assign_a(methodName,methodName0)]
     [assign_a(args,args0)]
-    [assign_a(static_method.returnVal,retVal)]
-    [assign_a(retVal,retVal0)]
-    [push_back_a(cls.static_methods, static_method)]
-    [assign_a(static_method,static_method0)];
+    [assign_a(retVal,retVal0)];
 
   Rule functions_p = constructor_p | method_p | static_method_p;
 
@@ -262,26 +275,33 @@ Module::Module(const string& interfacePath,
 
 /* ************************************************************************* */
 template<class T>
-void verifyArguments(const vector<string>& validArgs, const vector<T>& vt) {
-	BOOST_FOREACH(const T& t, vt) {
-		BOOST_FOREACH(Argument arg, t.args) {
-			string fullType = arg.qualifiedType("::");
-			if(find(validArgs.begin(), validArgs.end(), fullType)
-			== validArgs.end())
-				throw DependencyMissing(fullType, t.name);
+void verifyArguments(const vector<string>& validArgs, const map<string,T>& vt) {
+	typedef map<string,T>::value_type Name_Method;
+	BOOST_FOREACH(const Name_Method& name_method, vt) {
+		const T& t = name_method.second;
+		BOOST_FOREACH(const ArgumentList& argList, t.argLists) {
+			BOOST_FOREACH(Argument arg, argList) {
+				string fullType = arg.qualifiedType("::");
+				if(find(validArgs.begin(), validArgs.end(), fullType)
+					== validArgs.end())
+					throw DependencyMissing(fullType, t.name);
+			}
 		}
 	}
 }
 
 /* ************************************************************************* */
 template<class T>
-void verifyReturnTypes(const vector<string>& validtypes, const vector<T>& vt) {
-	BOOST_FOREACH(const T& t, vt) {
-		const ReturnValue& retval = t.returnVal;
-		if (find(validtypes.begin(), validtypes.end(), retval.qualifiedType1("::"))	== validtypes.end())
-			throw DependencyMissing(retval.qualifiedType1("::"), t.name);
-		if (retval.isPair && find(validtypes.begin(), validtypes.end(), retval.qualifiedType2("::"))	== validtypes.end())
-			throw DependencyMissing(retval.qualifiedType2("::"), t.name);
+void verifyReturnTypes(const vector<string>& validtypes, const map<string,T>& vt) {
+	typedef map<string,T>::value_type Name_Method;
+	BOOST_FOREACH(const Name_Method& name_method, vt) {
+		const T& t = name_method.second;
+		BOOST_FOREACH(const ReturnValue& retval, t.returnVals) {
+			if (find(validtypes.begin(), validtypes.end(), retval.qualifiedType1("::"))	== validtypes.end())
+				throw DependencyMissing(retval.qualifiedType1("::"), t.name);
+			if (retval.isPair && find(validtypes.begin(), validtypes.end(), retval.qualifiedType2("::"))	== validtypes.end())
+				throw DependencyMissing(retval.qualifiedType2("::"), t.name);
+		}
 	}
 }
 
@@ -350,7 +370,7 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 
     // generate proxy classes and wrappers
     BOOST_FOREACH(Class cls, classes) {
-      // create proxy class
+      // create proxy class and wrapper code
       string classFile = toolboxPath + "/" + cls.qualifiedName() + ".m";
       cls.matlab_proxy(classFile, wrapperName, wrapperFile, functionNames);
 
@@ -362,9 +382,6 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
       // verify function return types
       verifyReturnTypes<StaticMethod>(validTypes, cls.static_methods);
       verifyReturnTypes<Method>(validTypes, cls.methods);
-
-      // create constructor and method wrappers
-      cls.matlab_static_methods(toolboxPath, wrapperName, wrapperFile, functionNames);
     }  
 
 		// finish wrapper file

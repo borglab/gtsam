@@ -70,7 +70,7 @@ void Class::matlab_proxy(const string& classFile, const string& wrapperName, Fil
     functionNames.push_back(wrapFunctionName);
   }
   proxyFile.oss << "      else\n";
-	proxyFile.oss << "        error('" << matlabName << " constructor failed');" << endl;
+	proxyFile.oss << "        error('Arguments do not match any overload of " << matlabName << " constructor');" << endl;
 	proxyFile.oss << "      end\n";
   proxyFile.oss << "    end\n\n";
 
@@ -88,14 +88,23 @@ void Class::matlab_proxy(const string& classFile, const string& wrapperName, Fil
   proxyFile.oss << "    function disp(obj), obj.display; end\n\n";
 
 	// Methods
-	BOOST_FOREACH(Method m, methods) {
-		const int id = functionNames.size();
-		m.proxy_fragment(proxyFile, wrapperName, id);
+	BOOST_FOREACH(const Methods::value_type& name_m, methods) {
+		const Method& m = name_m.second;
+		m.proxy_wrapper_fragments(proxyFile, wrapperFile, cppName, matlabName, wrapperName, using_namespaces, functionNames);
 		proxyFile.oss << "\n";
-		const string wrapFunctionName = m.wrapper_fragment(wrapperFile,
-			cppName, matlabName, id, using_namespaces);
 		wrapperFile.oss << "\n";
-		functionNames.push_back(wrapFunctionName);
+	}
+
+	proxyFile.oss << "  end\n";
+	proxyFile.oss << "\n";
+	proxyFile.oss << "  methods(Static = true)\n";
+
+	// Static methods
+	BOOST_FOREACH(const StaticMethods::value_type& name_m, static_methods) {
+		const StaticMethod& m = name_m.second;
+		m.proxy_wrapper_fragments(proxyFile, wrapperFile, cppName, matlabName, wrapperName, using_namespaces, functionNames);
+		proxyFile.oss << "\n";
+		wrapperFile.oss << "\n";
 	}
 
 	proxyFile.oss << "  end" << endl;
@@ -103,18 +112,6 @@ void Class::matlab_proxy(const string& classFile, const string& wrapperName, Fil
 
   // Close file
   proxyFile.emit(true);
-}
-
-/* ************************************************************************* */
-void Class::matlab_static_methods(const string& toolboxPath, const string& wrapperName,
-																	FileWriter& wrapperFile, vector<string>& functionNames) const {
-	string matlabName = qualifiedName(), cppName = qualifiedName("::");
-  BOOST_FOREACH(const StaticMethod& m, static_methods) {
-		const int id = functionNames.size();
-		m.proxy_fragment(toolboxPath, matlabName, wrapperName, id);
-    const string wrapFunction = m.wrapper_fragment(wrapperFile, matlabName, cppName, id, using_namespaces);
-		functionNames.push_back(wrapFunction);
-  }
 }
 
 /* ************************************************************************* */
