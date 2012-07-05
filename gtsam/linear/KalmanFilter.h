@@ -17,6 +17,8 @@
  * @author Frank Dellaert
  */
 
+#pragma once
+
 #include <gtsam/linear/GaussianDensity.h>
 #include <gtsam/linear/NoiseModel.h>
 
