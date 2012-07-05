@@ -575,8 +575,6 @@ ISAM2Result ISAM2::update(
 			Index index = ordering_[key];
 			if(variableIndex_[index].empty())
 				unusedKeys.insert(key);
-			else
-				markedKeys.insert(index);
 		}
 
 		// Delete any keys from 'unusedKeys' that are actually used by the new, incoming factors
@@ -593,6 +591,16 @@ ISAM2Result ISAM2::update(
 		// update it.
 		Impl::RemoveVariables(unusedKeys, root_, theta_, variableIndex_, delta_, deltaNewton_, RgProd_,
 			deltaReplacedMask_, ordering_, Base::nodes_, linearFactors_);
+
+		// Mark keys that are still in the use and are also included in the removed factors
+		// Note: The ordering has been modified during the RemoveVariables() function call.
+		// Hence, we do not create this list until after that call
+		BOOST_FOREACH(Key key, removedFactorSymbKeys) {
+		  Index index;
+		  if(ordering_.tryAt(key, index))
+			markedKeys.insert(index);
+		}
+
 	}
   toc(1,"push_back factors");
 
