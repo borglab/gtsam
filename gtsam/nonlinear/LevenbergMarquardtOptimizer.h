@@ -46,13 +46,9 @@ public:
   double lambdaUpperBound; ///< The maximum lambda to try before assuming the optimization has failed (default: 1e5)
   VerbosityLM verbosityLM; ///< The verbosity level for Levenberg-Marquardt (default: SILENT), see also NonlinearOptimizerParams::verbosity
 
-  LevenbergMarquardtParams() :
-    lambdaInitial(1e-5), lambdaFactor(10.0), lambdaUpperBound(1e5), verbosityLM(SILENT) {}
-
-  LevenbergMarquardtParams(double initial, double factor, double bound, size_t verbose) :
-    lambdaInitial(initial), lambdaFactor(factor), lambdaUpperBound(bound), verbosityLM(VerbosityLM(verbose)) {}
-
+  LevenbergMarquardtParams() : lambdaInitial(1e-5), lambdaFactor(10.0), lambdaUpperBound(1e5), verbosityLM(SILENT) {}
   virtual ~LevenbergMarquardtParams() {}
+
   virtual void print(const std::string& str = "") const;
 
   inline double getlambdaInitial() const { return lambdaInitial; }

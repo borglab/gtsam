@@ -63,7 +63,7 @@ initialEstimate.print(sprintf('\nInitial estimate:\n  '));
 
 %% Fine grain optimization, allowing user to iterate step by step
 
-parameters = gtsamLevenbergMarquardtParams(1e-5, 1e-5, 0, 0);
+parameters = gtsamLevenbergMarquardtParams;
 parameters.setlambdaInitial(1.0);
 parameters.setVerbosityLM('trylambda');
 

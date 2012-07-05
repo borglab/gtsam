@@ -1011,7 +1011,6 @@ class Marginals {
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 class LevenbergMarquardtParams {
   LevenbergMarquardtParams();
-  LevenbergMarquardtParams(double initial, double factor, double bound, size_t verbose);
   void print(string s) const;
 
   double getMaxIterations() const;

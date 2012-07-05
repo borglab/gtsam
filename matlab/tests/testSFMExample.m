@@ -48,7 +48,7 @@ for j=1:size(truth.points,2)
 end
 
 %% Optimization
-parameters = gtsamLevenbergMarquardtParams(1e-5, 1e-5, 0, 0);
+parameters = gtsamLevenbergMarquardtParams;
 optimizer = graph.optimizer(initialEstimate, parameters);
 for i=1:5
     optimizer.iterate();
