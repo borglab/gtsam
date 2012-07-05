@@ -121,6 +121,7 @@ void checkArguments(const string& name, int nargout, int nargin, int expected) {
 template <typename Class>
 mxArray* wrap(Class& value) {
   error("wrap internal error: attempted wrap of invalid type");
+	return 0;
 }
 
 // specialization to string

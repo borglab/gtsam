@@ -58,7 +58,6 @@ void Class::matlab_proxy(const string& classFile, const string& wrapperName, Fil
   proxyFile.oss << "    function obj = " << matlabName << "(varargin)" << endl;
   // Special pointer constructor
 	{
-		const int id = functionNames.size();
 		proxyFile.oss << "      if nargin == 2 && isa(varargin{1}, 'uint64') && ";
 		proxyFile.oss << "varargin{1} == uint64(" << ptr_constructor_key << ")\n";
 		proxyFile.oss << "        obj.self = varargin{2};\n";
