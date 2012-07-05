@@ -276,7 +276,7 @@ Module::Module(const string& interfacePath,
 /* ************************************************************************* */
 template<class T>
 void verifyArguments(const vector<string>& validArgs, const map<string,T>& vt) {
-	typedef map<string,T>::value_type Name_Method;
+	typedef typename map<string,T>::value_type Name_Method;
 	BOOST_FOREACH(const Name_Method& name_method, vt) {
 		const T& t = name_method.second;
 		BOOST_FOREACH(const ArgumentList& argList, t.argLists) {
@@ -293,7 +293,7 @@ void verifyArguments(const vector<string>& validArgs, const map<string,T>& vt) {
 /* ************************************************************************* */
 template<class T>
 void verifyReturnTypes(const vector<string>& validtypes, const map<string,T>& vt) {
-	typedef map<string,T>::value_type Name_Method;
+	typedef typename map<string,T>::value_type Name_Method;
 	BOOST_FOREACH(const Name_Method& name_method, vt) {
 		const T& t = name_method.second;
 		BOOST_FOREACH(const ReturnValue& retval, t.returnVals) {
