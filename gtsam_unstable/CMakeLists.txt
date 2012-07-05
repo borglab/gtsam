@@ -95,6 +95,6 @@ if (GTSAM_BUILD_WRAP)
     set(mexFlags -I${Boost_INCLUDE_DIR} -I${MEX_INCLUDE_ROOT} -I${MEX_INCLUDE_ROOT}/gtsam_unstable -I${MEX_INCLUDE_ROOT}/gtsam_unstable/dynamics -I${MEX_INCLUDE_ROOT}/gtsam_unstable/discrete)
     
     # Macro to handle details of setting up targets
-    wrap_library(gtsam_unstable "${mexFlags}" "./")
+    wrap_library(gtsam_unstable "${mexFlags}" "./" gtsam)
 
 endif(GTSAM_BUILD_WRAP)
