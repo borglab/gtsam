@@ -41,11 +41,8 @@ struct Module {
 
   /// MATLAB code generation:
   void matlab_code(
-  		 const std::string& mexCommand,
   		 const std::string& path,
-		   const std::string& mexExt,
-		   const std::string& headerPath,
-		   const std::string& mexFlags) const;
+		   const std::string& headerPath) const;
 
 	void finish_wrapper(FileWriter& file, const std::vector<std::string>& functionNames) const;
 };

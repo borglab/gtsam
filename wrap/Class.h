@@ -49,10 +49,6 @@ struct Class {
 		FileWriter& wrapperFile, std::vector<std::string>& functionNames) const;          ///< emit proxy class
   void matlab_static_methods(const std::string& toolboxPath, const std::string& wrapperName,
 		FileWriter& wrapperFile, std::vector<std::string>& functionNames) const;   ///< emit static method wrappers
-  void matlab_make_fragment(FileWriter& file,
-			    const std::string& toolboxPath,
-			    const std::string& mexFlags) const;   ///< emit make fragment for global make script
-  void makefile_fragment(FileWriter& file) const; ///< emit makefile fragment
   std::string qualifiedName(const std::string& delim = "") const; ///< creates a namespace-qualified name, optional delimiter
 };
 

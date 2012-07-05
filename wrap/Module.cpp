@@ -286,18 +286,9 @@ void verifyReturnTypes(const vector<string>& validtypes, const vector<T>& vt) {
 }
 
 /* ************************************************************************* */
-void Module::matlab_code(const string& mexCommand, const string& toolboxPath,
-			 const string& mexExt, const string& headerPath,const string& mexFlags) const {
+void Module::matlab_code(const string& toolboxPath, const string& headerPath) const {
 
     fs::create_directories(toolboxPath);
-
-    // create make m-file
-    string matlabMakeFileName = toolboxPath + "/make_" + name + ".m";
-    FileWriter makeModuleMfile(matlabMakeFileName, verbose, "%");
-
-    // create the (actual) make file
-    string makeFileName = toolboxPath + "/Makefile";
-    FileWriter makeModuleMakefile(makeFileName, verbose, "#");
 
 		// create the unified .cpp switch file
 		const string wrapperName = name + "_wrapper";
@@ -308,18 +299,6 @@ void Module::matlab_code(const string& mexCommand, const string& toolboxPath,
 		wrapperFile.oss << "#include <map>\n";
 		wrapperFile.oss << "#include <boost/foreach.hpp>\n";
 		wrapperFile.oss << "\n";
-
-    makeModuleMfile.oss << "echo on" << endl << endl;
-    makeModuleMfile.oss << "toolboxpath = mfilename('fullpath');" << endl;
-    makeModuleMfile.oss << "delims = find(toolboxpath == '/' | toolboxpath == '\\');" << endl;
-    makeModuleMfile.oss << "toolboxpath = toolboxpath(1:(delims(end)-1));" << endl;
-    makeModuleMfile.oss << "clear delims" << endl;
-    makeModuleMfile.oss << "addpath(toolboxpath);" << endl << endl;
-
-    makeModuleMakefile.oss << "\nMEX = " << mexCommand << "\n";
-    makeModuleMakefile.oss << "MEXENDING = " << mexExt << "\n";
-    makeModuleMakefile.oss << "PATH_TO_WRAP = " << headerPath << "\n";
-    makeModuleMakefile.oss << "mex_flags = " << mexFlags << "\n\n";
 
     // Dependency check list
     vector<string> validTypes = forward_declarations;
@@ -333,15 +312,10 @@ void Module::matlab_code(const string& mexCommand, const string& toolboxPath,
     validTypes.push_back("double");
     validTypes.push_back("Vector");
     validTypes.push_back("Matrix");
-
-    // add 'all' to Makefile
-    makeModuleMakefile.oss << "all: ";
+		//Create a list of parsed classes for dependency checking
     BOOST_FOREACH(Class cls, classes) {
-    	makeModuleMakefile.oss << cls.qualifiedName() << " ";
-			//Create a list of parsed classes for dependency checking
 			validTypes.push_back(cls.qualifiedName("::"));
     }
-    makeModuleMakefile.oss << "\n\n";
 
 		// Generate all includes
 		BOOST_FOREACH(Class cls, classes) {
@@ -391,31 +365,7 @@ void Module::matlab_code(const string& mexCommand, const string& toolboxPath,
 
       // create constructor and method wrappers
       cls.matlab_static_methods(toolboxPath, wrapperName, wrapperFile, functionNames);
-
-      // add lines to make m-file
-      makeModuleMfile.oss << "%% " << cls.qualifiedName() << endl;
-      makeModuleMfile.oss << "cd(toolboxpath)" << endl;
-      cls.matlab_make_fragment(makeModuleMfile, toolboxPath, mexFlags);
-
-      // add section to the (actual) make file
-      makeModuleMakefile.oss << "# " << cls.qualifiedName() << endl;
-      cls.makefile_fragment(makeModuleMakefile);
     }  
-
-    // finish make m-file
-    makeModuleMfile.oss << "cd(toolboxpath)" << endl << endl;
-    makeModuleMfile.oss << "echo off" << endl;
-    makeModuleMfile.emit(true); // By default, compare existing file first
-
-    // make clean at end of Makefile
-    makeModuleMakefile.oss << "\n\nclean: \n";
-    makeModuleMakefile.oss << "\trm -rf *.$(MEXENDING)\n";
-    BOOST_FOREACH(Class cls, classes)
-    	makeModuleMakefile.oss << "\trm -rf @" << cls.qualifiedName() << "/*.$(MEXENDING)\n";
-
-    // finish Makefile
-    makeModuleMakefile.oss << "\n" << endl;
-    makeModuleMakefile.emit(true);
 
 		// finish wrapper file
 		finish_wrapper(wrapperFile, functionNames);

@@ -121,65 +121,6 @@ void Class::matlab_static_methods(const string& toolboxPath, const string& wrapp
 }
 
 /* ************************************************************************* */
-void Class::matlab_make_fragment(FileWriter& file, 
-				 const string& toolboxPath,
-				 const string& mexFlags) const {
-  string mex = "mex " + mexFlags + " ";
-  string matlabClassName = qualifiedName();
-  file.oss << mex << constructor.matlab_wrapper_name(matlabClassName) << ".cpp" << endl;
-  BOOST_FOREACH(StaticMethod sm, static_methods)
-    file.oss << mex << matlabClassName + "_" + sm.name << ".cpp" << endl;
-  file.oss << endl << "cd @" << matlabClassName << endl;
-  BOOST_FOREACH(Method m, methods)
-    file.oss << mex << m.name << ".cpp" << endl;
-  file.oss << endl;
-}
-
-/* ************************************************************************* */
-void Class::makefile_fragment(FileWriter& file) const {
-//	new_Point2_.$(MEXENDING): new_Point2_.cpp
-//		$(MEX) $(mex_flags) new_Point2_.cpp
-//	new_Point2_dd.$(MEXENDING): new_Point2_dd.cpp
-//		$(MEX) $(mex_flags) new_Point2_dd.cpp
-//	@Point2/x.$(MEXENDING): @Point2/x.cpp
-//		$(MEX) $(mex_flags) @Point2/x.cpp -output @Point2/x
-//	@Point2/y.$(MEXENDING): @Point2/y.cpp
-//		$(MEX) $(mex_flags) @Point2/y.cpp -output @Point2/y
-//	@Point2/dim.$(MEXENDING): @Point2/dim.cpp
-//		$(MEX) $(mex_flags) @Point2/dim.cpp -output @Point2/dim
-//
-//	Point2: new_Point2_.$(MEXENDING) new_Point2_dd.$(MEXENDING) @Point2/x.$(MEXENDING) @Point2/y.$(MEXENDING) @Point2/dim.$(MEXENDING)
-
-  string matlabName = qualifiedName();
-
-  // collect names
-  vector<string> file_names;
-  string file_base = constructor.matlab_wrapper_name(matlabName);
-  file_names.push_back(file_base);
-  BOOST_FOREACH(StaticMethod c, static_methods) {
-  	string file_base = matlabName + "_" + c.name;
-  	file_names.push_back(file_base);
-  }
-  BOOST_FOREACH(Method c, methods) {
-  	string file_base = "@" + matlabName + "/" + c.name;
-  	file_names.push_back(file_base);
-  }
-
-  BOOST_FOREACH(const string& file_base, file_names) {
-  	file.oss << file_base << ".$(MEXENDING): " << file_base << ".cpp";
-  	file.oss << " $(PATH_TO_WRAP)/matlab.h" << endl;
-  	file.oss << "\t$(MEX) $(mex_flags) " << file_base << ".cpp  -output " << file_base << endl;
-  }
-
-	// class target
-  file.oss << "\n" << matlabName << ": ";
-  BOOST_FOREACH(const string& file_base, file_names) {
-    	file.oss << file_base << ".$(MEXENDING) ";
-  }
-  file.oss << "\n" << endl;
-}
-
-/* ************************************************************************* */
 string Class::qualifiedName(const string& delim) const {
 	string result;
 	BOOST_FOREACH(const string& ns, namespaces)
