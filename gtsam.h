@@ -239,7 +239,7 @@ class Rot3 {
 	static gtsam::Rot3 Rx(double t);
 	static gtsam::Rot3 Ry(double t);
 	static gtsam::Rot3 Rz(double t);
-//  static gtsam::Rot3 RzRyRx(double x, double y, double z); // FIXME: overloaded functions don't work yet
+  static gtsam::Rot3 RzRyRx(double x, double y, double z); // FIXME: overloaded functions don't work yet
 	static gtsam::Rot3 RzRyRx(Vector xyz);
 	static gtsam::Rot3 yaw(double t); // positive yaw is to right (as in aircraft heading)
 	static gtsam::Rot3 pitch(double t); // positive pitch is up (increasing aircraft altitude)
@@ -261,7 +261,7 @@ class Rot3 {
   // Manifold
   static size_t Dim();
   size_t dim() const;
-  // gtsam::Rot3 retractCayley(Vector v) const; // FIXME, does not exist in both Matrix and Quaternion options
+  gtsam::Rot3 retractCayley(Vector v) const; // FIXME, does not exist in both Matrix and Quaternion options
   gtsam::Rot3 retract(Vector v) const;
   Vector localCoordinates(const gtsam::Rot3& p) const;
 
@@ -335,7 +335,7 @@ class Pose3 {
 	Pose3();
 	Pose3(const gtsam::Pose3& pose);
 	Pose3(const gtsam::Rot3& r, const gtsam::Point3& t);
-	// Pose3(const gtsam::Pose2& pose2); // FIXME: shadows Pose3(Pose3 pose)
+	Pose3(const gtsam::Pose2& pose2); // FIXME: shadows Pose3(Pose3 pose)
 	Pose3(Matrix t);
 
 	// Testable
@@ -373,9 +373,9 @@ class Pose3 {
 	double y() const;
 	double z() const;
 	Matrix matrix() const;
-	// gtsam::Pose3 transform_to(const gtsam::Pose3& pose) const; // FIXME: shadows other transform_to()
+	gtsam::Pose3 transform_to(const gtsam::Pose3& pose) const; // FIXME: shadows other transform_to()
 	double range(const gtsam::Point3& point);
-	// double range(const gtsam::Pose3& pose); // FIXME: shadows other range
+	double range(const gtsam::Pose3& pose); // FIXME: shadows other range
 };
 
 class Cal3_S2 {
@@ -466,7 +466,7 @@ class SimpleCamera {
   SimpleCamera(const gtsam::Pose3& pose, const gtsam::Cal3_S2& K);
   static gtsam::SimpleCamera level(const gtsam::Cal3_S2& K,
       const gtsam::Pose2& pose, double height);
-  // static gtsam::SimpleCamera level(const gtsam::Pose2& pose, double height); // FIXME overload
+  static gtsam::SimpleCamera level(const gtsam::Pose2& pose, double height); // FIXME overload
   static gtsam::SimpleCamera lookat(const gtsam::Point3& eye,
       const gtsam::Point3& target, const gtsam::Point3& upVector,
       const gtsam::Cal3_S2& K);
@@ -491,7 +491,7 @@ class SimpleCamera {
 	gtsam::Point2 project(const gtsam::Point3& point);
 	gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
   double range(const gtsam::Point3& point);
-  // double range(const gtsam::Pose3& point); // FIXME, overload
+  double range(const gtsam::Pose3& point); // FIXME, overload
 };
 
 //*************************************************************************
