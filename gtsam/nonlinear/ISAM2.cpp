@@ -649,6 +649,15 @@ ISAM2Result ISAM2::update(
       // add other cliques that have the marked ones in the separator
       Impl::FindAll(this->root(), markedKeys, markedRelinMask);
 
+			// FindAll might have marked some removed keys because the removed keys
+			// are still in the old BayesTree structure - we remove them from
+			// markedKeys here.  Note that the limit for removing indices that we use
+			// (delta_.size()) is after all of the new variables - so we do not
+			// remove indices that were removed but then recreated by adding new
+			// keys.
+			FastSet<Index>::iterator firstRemovedIndex = markedKeys.lower_bound(delta_.size());
+			markedKeys.erase(firstRemovedIndex, markedKeys.end());
+
       // Relin involved keys for detailed results
       if(params_.enableDetailedResults) {
         FastSet<Index> involvedRelinKeys;
