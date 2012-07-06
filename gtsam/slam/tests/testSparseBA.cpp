@@ -10,13 +10,13 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file   testSba.cpp
+ * @file   testsparseBA.cpp
  * @brief  
  * @date   Jul 5, 2012
  * @author Yong-Dian Jian
  */
 
-#include <gtsam/slam/sba.h>
+#include <gtsam/slam/sparseBA.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/Symbol.h>
@@ -66,7 +66,7 @@ static Camera camera1(pose1, calib1);
 static Camera camera2(pose2, calib2);
 
 /* ************************************************************************* */
-sba::Graph testGraph1() {
+sparseBA::Graph testGraph1() {
   Point2 z11(-100, 100);
   Point2 z12(-100,-100);
   Point2 z13( 100,-100);
@@ -77,7 +77,7 @@ sba::Graph testGraph1() {
   Point2 z24( 125, 125);
 
 
-  sba::Graph g;
+  sparseBA::Graph g;
   g.addMeasurement<Camera>(z11, sigma, C(1), L(1));
   g.addMeasurement<Camera>(z12, sigma, C(1), L(2));
   g.addMeasurement<Camera>(z13, sigma, C(1), L(3));
@@ -89,7 +89,7 @@ sba::Graph testGraph1() {
   return g;
 }
 
-sba::Graph testGraph2() {
+sparseBA::Graph testGraph2() {
   Point2 z11(-100, 100);
   Point2 z12(-100,-100);
   Point2 z13( 100,-100);
@@ -99,7 +99,7 @@ sba::Graph testGraph2() {
   Point2 z23( 125,-125);
   Point2 z24( 125, 125);
 
-  sba::Graph g;
+  sparseBA::Graph g;
   g.addMeasurement<Cal3_S2>(z11, sigma, X(1), L(1), K(1));
   g.addMeasurement<Cal3_S2>(z12, sigma, X(1), L(2), K(1));
   g.addMeasurement<Cal3_S2>(z13, sigma, X(1), L(3), K(1));
@@ -112,10 +112,10 @@ sba::Graph testGraph2() {
 }
 
 /* ************************************************************************* */
-TEST( optimizeLM1, sba )
+TEST( optimizeLM1, sparseBA )
 {
   // build a graph
-  sba::Graph graph(testGraph1());
+  sparseBA::Graph graph(testGraph1());
 
   // add 3 landmark constraints
   graph.addPointConstraint(L(1), landmark1);
@@ -150,10 +150,10 @@ TEST( optimizeLM1, sba )
 }
 
 /* ************************************************************************* */
-TEST( optimizeLM2, sba )
+TEST( optimizeLM2, sparseBA )
 {
   // build a graph
-  sba::Graph graph(testGraph2());
+  sparseBA::Graph graph(testGraph2());
 
   // add 3 landmark constraints
   graph.addPointConstraint(L(1), landmark1);
