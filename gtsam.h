@@ -458,7 +458,6 @@ class CalibratedCamera {
   double range(const gtsam::Point3& p) const; // TODO: Other overloaded range methods
 };
 
-
 class SimpleCamera {
   // Standard Constructors and Named Constructors
 	SimpleCamera();
@@ -1358,3 +1357,83 @@ class LevenbergMarquardtOptimizer {
 };
 
 }///\namespace visualSLAM
+
+//************************************************************************
+// sparse BA
+//************************************************************************
+
+#include <gtsam/slam/sparseBA.h>
+namespace sparseBA {
+
+class Values {
+  Values();
+  Values(const sparseBA::Values& values);
+  size_t size() const;
+  void print(string s) const;
+  bool exists(size_t key);
+  gtsam::KeyVector keys() const;
+
+  // Access to cameras
+  sparseBA::Values allSimpleCameras() const ;
+  size_t  nrSimpleCameras() const ;
+  gtsam::KeyVector simpleCameraKeys() const ;
+  void insertSimpleCamera(size_t j, const gtsam::SimpleCamera& camera);
+  void updateSimpleCamera(size_t j, const gtsam::SimpleCamera& camera);
+  gtsam::SimpleCamera simpleCamera(size_t j) const;
+
+  // Access to points, inherited from visualSLAM
+  sparseBA::Values allPoints() const;
+  size_t nrPoints() const;
+  gtsam::KeyVector pointKeys() const; // Note the switch to KeyVector, rather than KeyList
+  void insertPoint(size_t key, const gtsam::Point3& pose);
+  void updatePoint(size_t key, const gtsam::Point3& pose);
+  gtsam::Point3 point(size_t j);
+  Matrix points() const;
+};
+
+class Graph {
+  Graph();
+  Graph(const gtsam::NonlinearFactorGraph& graph);
+  Graph(const sparseBA::Graph& graph);
+
+  // Information
+  Matrix reprojectionErrors(const sparseBA::Values& values) const;
+
+  // inherited from FactorGraph
+  void print(string s) const;
+  bool equals(const sparseBA::Graph& fg, double tol) const;
+  size_t size() const;
+  bool empty() const;
+  void remove(size_t i);
+  size_t nrFactors() const;
+  gtsam::NonlinearFactor* at(size_t i) const;
+
+  double error(const sparseBA::Values& values) const;
+  gtsam::Ordering* orderingCOLAMD(const sparseBA::Values& values) const;
+  gtsam::GaussianFactorGraph* linearize(const sparseBA::Values& values, const gtsam::Ordering& ordering) const;
+
+  sparseBA::Values optimize(const sparseBA::Values& initialEstimate, size_t verbosity) const;
+  sparseBA::LevenbergMarquardtOptimizer optimizer(const sparseBA::Values& initialEstimate, const gtsam::LevenbergMarquardtParams& parameters) const;
+  gtsam::Marginals marginals(const sparseBA::Values& solution) const;
+
+  // inherited from visualSLAM
+  void addPointConstraint(size_t pointKey, const gtsam::Point3& p);
+  void addPointPrior(size_t pointKey, const gtsam::Point3& p, const gtsam::noiseModel::Base* model);
+
+  // add factors
+  void addSimpleCameraPrior(size_t cameraKey, const gtsam::SimpleCamera &camera, gtsam::noiseModel::Base* model);
+  void addSimpleCameraConstraint(size_t cameraKey, const gtsam::SimpleCamera &camera);
+  void addSimpleCameraMeasurement(const gtsam::Point2 &z, gtsam::noiseModel::Base* model, size_t cameraKey, size_t pointKey);
+};
+
+class LevenbergMarquardtOptimizer {
+  double lambda() const;
+  void iterate();
+  double error() const;
+  size_t iterations() const;
+  sparseBA::Values optimize();
+  sparseBA::Values optimizeSafely();
+  sparseBA::Values values() const;
+};
+}///\namespace sparseBA
+
