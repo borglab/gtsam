@@ -108,7 +108,7 @@ namespace visualSLAM {
     BOOST_FOREACH(const sharedFactor& f, *this) {
       boost::shared_ptr<const ProjectionFactor> p =
           boost::dynamic_pointer_cast<const ProjectionFactor>(f);
-      if (p) errors.col(k) = p->unwhitenedError(values);
+      if (p) errors.col(k++) = p->unwhitenedError(values);
     }
     return errors;
   }
