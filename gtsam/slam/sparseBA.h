@@ -21,7 +21,7 @@
 #include <gtsam/slam/visualSLAM.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 
-namespace sba {
+namespace sparseBA {
 
   using namespace gtsam;
 
