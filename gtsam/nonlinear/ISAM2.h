@@ -516,7 +516,7 @@ private:
   GaussianFactorGraph getCachedBoundaryFactors(Cliques& orphans);
 
   boost::shared_ptr<FastSet<Index> > recalculate(const FastSet<Index>& markedKeys, const FastSet<Index>& relinKeys,
-      const FastVector<Index>& observedKeys, const boost::optional<FastMap<Index,int> >& constrainKeys, ISAM2Result& result);
+      const FastVector<Index>& observedKeys, const FastSet<Index>& unusedIndices, const boost::optional<FastMap<Index,int> >& constrainKeys, ISAM2Result& result);
   //	void linear_update(const GaussianFactorGraph& newFactors);
   void updateDelta(bool forceFullSolve = false) const;
 
