@@ -96,17 +96,15 @@ void ISAM2::Impl::RemoveVariables(const FastSet<Key>& unusedKeys, const ISAM2Cli
 			 VectorValues newDeltaNewton(dims);
 			 VectorValues newDeltaGradSearch(dims);
 			 std::vector<bool> newReplacedKeys(replacedKeys.size() - unusedIndices.size());
-			 Base::Nodes newNodes(nodes.size()); // We still keep unused keys at the end until later in ISAM2::recalculate
+			 Base::Nodes newNodes(replacedKeys.size() - unusedIndices.size());
 
 			 for(size_t j = 0; j < dims.size(); ++j) {
 				 newDelta[j] = delta[unusedToEnd[j]];
 				 newDeltaNewton[j] = deltaNewton[unusedToEnd[j]];
 				 newDeltaGradSearch[j] = deltaGradSearch[unusedToEnd[j]];
 				 newReplacedKeys[j] = replacedKeys[unusedToEnd[j]];
+				 newNodes[j] = nodes[unusedToEnd[j]];
 			 }
-
-			 // Permute the nodes index so the unused variables are the end
-			 unusedToEnd.applyToCollection(newNodes, nodes);
 
 			 // Swap the new data structures with the outputs of this function
 			 delta.swap(newDelta);

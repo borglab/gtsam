@@ -42,14 +42,14 @@ static Point3 landmark2(-1.0, 1.0, 0.0);
 static Point3 landmark3( 1.0, 1.0, 0.0);
 static Point3 landmark4( 1.0,-1.0, 0.0);
 
-static Pose3 camera1(Matrix_(3,3,
+static Pose3 pose1(Matrix_(3,3,
 		       1., 0., 0.,
 		       0.,-1., 0.,
 		       0., 0.,-1.
 		       ),
 	      Point3(0,0,6.25));
 
-static Pose3 camera2(Matrix_(3,3,
+static Pose3 pose2(Matrix_(3,3,
 		       1., 0., 0.,
 		       0.,-1., 0.,
 		       0., 0.,-1.
@@ -92,8 +92,8 @@ TEST( VisualSLAM, optimizeLM)
 
   // Create an initial values structure corresponding to the ground truth
   Values initialEstimate;
-  initialEstimate.insert(X(1), camera1);
-  initialEstimate.insert(X(2), camera2);
+  initialEstimate.insert(X(1), pose1);
+  initialEstimate.insert(X(2), pose2);
   initialEstimate.insert(L(1), landmark1);
   initialEstimate.insert(L(2), landmark2);
   initialEstimate.insert(L(3), landmark3);
@@ -124,13 +124,13 @@ TEST( VisualSLAM, optimizeLM2)
   // build a graph
   visualSLAM::Graph graph(testGraph());
 	// add 2 camera constraints
-  graph.addPoseConstraint(X(1), camera1);
-  graph.addPoseConstraint(X(2), camera2);
+  graph.addPoseConstraint(X(1), pose1);
+  graph.addPoseConstraint(X(2), pose2);
 
   // Create an initial values structure corresponding to the ground truth
   Values initialEstimate;
-  initialEstimate.insert(X(1), camera1);
-  initialEstimate.insert(X(2), camera2);
+  initialEstimate.insert(X(1), pose1);
+  initialEstimate.insert(X(2), pose2);
   initialEstimate.insert(L(1), landmark1);
   initialEstimate.insert(L(2), landmark2);
   initialEstimate.insert(L(3), landmark3);
@@ -160,13 +160,13 @@ TEST( VisualSLAM, LMoptimizer)
   // build a graph
   visualSLAM::Graph graph(testGraph());
   // add 2 camera constraints
-  graph.addPoseConstraint(X(1), camera1);
-  graph.addPoseConstraint(X(2), camera2);
+  graph.addPoseConstraint(X(1), pose1);
+  graph.addPoseConstraint(X(2), pose2);
 
   // Create an initial values structure corresponding to the ground truth
   Values initialEstimate;
-  initialEstimate.insert(X(1), camera1);
-  initialEstimate.insert(X(2), camera2);
+  initialEstimate.insert(X(1), pose1);
+  initialEstimate.insert(X(2), pose2);
   initialEstimate.insert(L(1), landmark1);
   initialEstimate.insert(L(2), landmark2);
   initialEstimate.insert(L(3), landmark3);
@@ -184,6 +184,10 @@ TEST( VisualSLAM, LMoptimizer)
 
   // check if correct
   CHECK(assert_equal(initialEstimate, optimizer.values()));
+
+  // check errors
+  Matrix errors = graph.reprojectionErrors(optimizer.values());
+  CHECK(assert_equal(zeros(2,8), errors));
 }
 
 
@@ -193,13 +197,13 @@ TEST( VisualSLAM, CHECK_ORDERING)
   // build a graph
   visualSLAM::Graph graph = testGraph();
   // add 2 camera constraints
-  graph.addPoseConstraint(X(1), camera1);
-  graph.addPoseConstraint(X(2), camera2);
+  graph.addPoseConstraint(X(1), pose1);
+  graph.addPoseConstraint(X(2), pose2);
 
   // Create an initial values structure corresponding to the ground truth
   Values initialEstimate;
-  initialEstimate.insert(X(1), camera1);
-  initialEstimate.insert(X(2), camera2);
+  initialEstimate.insert(X(1), pose1);
+  initialEstimate.insert(X(2), pose2);
   initialEstimate.insert(L(1), landmark1);
   initialEstimate.insert(L(2), landmark2);
   initialEstimate.insert(L(3), landmark3);
@@ -274,8 +278,8 @@ TEST( VisualSLAM, keys_and_view )
 {
 	// create config
 	visualSLAM::Values c;
-	c.insert(X(1), camera1);
-	c.insert(X(2), camera2);
+	c.insert(X(1), pose1);
+	c.insert(X(2), pose2);
 	c.insert(L(2), landmark2);
 	LONGS_EQUAL(2,c.nrPoses());
 	LONGS_EQUAL(1,c.nrPoints());
@@ -297,6 +301,42 @@ TEST( VisualSLAM, keys_and_view )
 	actual = c.pointKeys();
 	CHECK(expected == actual);
 	}
+}
+
+/* ************************************************************************* */
+TEST( VisualSLAM, addMeasurements )
+{
+  // create config
+  visualSLAM::Graph g;
+  Vector J = Vector_(3,1.0,2.0,3.0);
+  Matrix Z = Matrix_(2,3, -1.0,0.0,1.0, -1.0,0.0,1.0);
+  shared_ptrK sK(new Cal3_S2(625, 625, 0, 0, 0));
+  g.addMeasurements(0,J,Z,sigma,sK);
+  EXPECT_LONGS_EQUAL(3,g.size());
+}
+
+/* ************************************************************************* */
+TEST( VisualSLAM, insertBackProjections )
+{
+  // create config
+  visualSLAM::Values c;
+  SimpleCamera camera(pose1);
+  Vector J = Vector_(3,1.0,2.0,3.0);
+  Matrix Z = Matrix_(2,3, -1.0,0.0,1.0, -1.0,0.0,1.0);
+  c.insertBackprojections(camera,J,Z,1.0);
+  EXPECT_LONGS_EQUAL(3,c.nrPoints());
+}
+
+/* ************************************************************************* */
+TEST( VisualSLAM, perturbPoints )
+{
+  visualSLAM::Values c1,c2;
+  c1.insert(L(2), landmark2);
+  c1.perturbPoints(0.01,42u);
+  CHECK(assert_equal(Point3(-0.986984, 0.999534, -0.0147962),c1.point(L(2)),1e-6));
+  c2.insert(L(2), landmark2);
+  c2.perturbPoints(0.01,42u);
+  CHECK(assert_equal(Point3(-0.986984, 0.999534, -0.0147962),c2.point(L(2)),1e-6));
 }
 
 /* ************************************************************************* */

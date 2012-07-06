@@ -1,6 +1,16 @@
-#Wed Oct 06 11:57:41 EDT 2010
 eclipse.preferences.version=1
+environment/project/cdt.managedbuild.toolchain.gnu.macosx.base.1359703544.127261216/PATH/delimiter=\:
+environment/project/cdt.managedbuild.toolchain.gnu.macosx.base.1359703544.127261216/PATH/operation=append
+environment/project/cdt.managedbuild.toolchain.gnu.macosx.base.1359703544.127261216/PATH/value=/home/ydjian/matlab/R2012a/bin
+environment/project/cdt.managedbuild.toolchain.gnu.macosx.base.1359703544.127261216/append=true
+environment/project/cdt.managedbuild.toolchain.gnu.macosx.base.1359703544.127261216/appendContributed=true
+environment/project/cdt.managedbuild.toolchain.gnu.macosx.base.1359703544.1441575890/PATH/delimiter=\:
+environment/project/cdt.managedbuild.toolchain.gnu.macosx.base.1359703544.1441575890/PATH/operation=append
+environment/project/cdt.managedbuild.toolchain.gnu.macosx.base.1359703544.1441575890/PATH/value=/home/ydjian/matlab/R2012a/bin
 environment/project/cdt.managedbuild.toolchain.gnu.macosx.base.1359703544.1441575890/append=true
 environment/project/cdt.managedbuild.toolchain.gnu.macosx.base.1359703544.1441575890/appendContributed=true
+environment/project/cdt.managedbuild.toolchain.gnu.macosx.base.1359703544/PATH/delimiter=\:
+environment/project/cdt.managedbuild.toolchain.gnu.macosx.base.1359703544/PATH/operation=append
+environment/project/cdt.managedbuild.toolchain.gnu.macosx.base.1359703544/PATH/value=/home/ydjian/matlab/R2012a/bin
 environment/project/cdt.managedbuild.toolchain.gnu.macosx.base.1359703544/append=true
 environment/project/cdt.managedbuild.toolchain.gnu.macosx.base.1359703544/appendContributed=true

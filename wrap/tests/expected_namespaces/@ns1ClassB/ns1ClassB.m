@@ -6,12 +6,12 @@ classdef ns1ClassB < handle
   methods
     function obj = ns1ClassB(varargin)
       if (nargin == 0), obj.self = new_ns1ClassB(0,0); end
-      if nargin ==14, new_ns1ClassB_(varargin{1},0); end
+      if nargin ==14, new_ns1ClassB(varargin{1},0); end
       if nargin ~= 13 && nargin ~= 14 && obj.self == 0, error('ns1ClassB constructor failed'); end
     end
     function delete(obj)
       if obj.self ~= 0
-        new_ns1ClassB_(obj.self);
+        new_ns1ClassB(obj.self);
         obj.self = 0;
       end
     end

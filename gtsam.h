@@ -458,7 +458,6 @@ class CalibratedCamera {
   double range(const gtsam::Point3& p) const; // TODO: Other overloaded range methods
 };
 
-
 class SimpleCamera {
   // Standard Constructors and Named Constructors
 	SimpleCamera();
@@ -1011,8 +1010,25 @@ class Marginals {
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 class LevenbergMarquardtParams {
   LevenbergMarquardtParams();
-  LevenbergMarquardtParams(double initial, double factor, double bound, size_t verbose);
   void print(string s) const;
+
+  double getMaxIterations() const;
+  double getRelativeErrorTol() const;
+  double getAbsoluteErrorTol() const;
+  double getErrorTol() const;
+  string getVerbosity() const;
+
+  void setMaxIterations(double value);
+  void setRelativeErrorTol(double value);
+  void setAbsoluteErrorTol(double value);
+  void setErrorTol(double value);
+  void setVerbosity(string s);
+
+  bool isMultifrontal() const;
+  bool isSequential() const;
+  bool isCholmod() const;
+  bool isCG() const;
+
   double getlambdaInitial() const ;
   double getlambdaFactor() const ;
   double getlambdaUpperBound() const;
@@ -1035,6 +1051,7 @@ namespace pose2SLAM {
 
 class Values {
 	Values();
+  Values(const pose2SLAM::Values& values);
 	size_t size() const;
 	void print(string s) const;
   bool exists(size_t key);
@@ -1088,6 +1105,7 @@ namespace pose3SLAM {
 
 class Values {
 	Values();
+  Values(const pose3SLAM::Values& values);
 	size_t size() const;
 	void print(string s) const;
   bool exists(size_t key);
@@ -1141,6 +1159,7 @@ namespace planarSLAM {
 
 class Values {
 	Values();
+  Values(const planarSLAM::Values& values);
 	size_t size() const;
 	void print(string s) const;
   bool exists(size_t key);
@@ -1226,6 +1245,7 @@ namespace visualSLAM {
 
 class Values {
   Values();
+  Values(const visualSLAM::Values& values);
   size_t size() const;
   void print(string s) const;
   bool exists(size_t key);
@@ -1251,6 +1271,8 @@ class Values {
   void insertPoint(size_t key, const gtsam::Point3& pose);
   void updatePoint(size_t key, const gtsam::Point3& pose);
   gtsam::Point3 point(size_t j);
+  void insertBackprojections(const gtsam::SimpleCamera& c, Vector J, Matrix Z, double depth);
+  void perturbPoints(double sigma, size_t seed);
   Matrix points() const;
 };
 
@@ -1288,10 +1310,18 @@ class Graph {
   void addRangeFactor(size_t poseKey, size_t pointKey, double range, const gtsam::noiseModel::Base* model);
 
   // Measurements
-  void addMeasurement(const gtsam::Point2& measured, const gtsam::noiseModel::Base* model,
-      size_t poseKey, size_t pointKey, const gtsam::Cal3_S2* K);
-  void addStereoMeasurement(const gtsam::StereoPoint2& measured, const gtsam::noiseModel::Base* model,
-      size_t poseKey, size_t pointKey, const gtsam::Cal3_S2Stereo* K);
+    void addMeasurement(const gtsam::Point2& measured,
+        const gtsam::noiseModel::Base* model, size_t poseKey, size_t pointKey,
+        const gtsam::Cal3_S2* K);
+    void addMeasurements(size_t i, Vector J, Matrix Z,
+        const gtsam::noiseModel::Base* model, const gtsam::Cal3_S2* K);
+    void addStereoMeasurement(const gtsam::StereoPoint2& measured,
+        const gtsam::noiseModel::Base* model, size_t poseKey, size_t pointKey,
+        const gtsam::Cal3_S2Stereo* K);
+
+  // Information
+  Matrix reprojectionErrors(const visualSLAM::Values& values) const;
+
 };
 
 class ISAM {
@@ -1327,3 +1357,83 @@ class LevenbergMarquardtOptimizer {
 };
 
 }///\namespace visualSLAM
+
+//************************************************************************
+// sparse BA
+//************************************************************************
+
+#include <gtsam/slam/sparseBA.h>
+namespace sparseBA {
+
+class Values {
+  Values();
+  Values(const sparseBA::Values& values);
+  size_t size() const;
+  void print(string s) const;
+  bool exists(size_t key);
+  gtsam::KeyVector keys() const;
+
+  // Access to cameras
+  sparseBA::Values allSimpleCameras() const ;
+  size_t  nrSimpleCameras() const ;
+  gtsam::KeyVector simpleCameraKeys() const ;
+  void insertSimpleCamera(size_t j, const gtsam::SimpleCamera& camera);
+  void updateSimpleCamera(size_t j, const gtsam::SimpleCamera& camera);
+  gtsam::SimpleCamera simpleCamera(size_t j) const;
+
+  // Access to points, inherited from visualSLAM
+  sparseBA::Values allPoints() const;
+  size_t nrPoints() const;
+  gtsam::KeyVector pointKeys() const; // Note the switch to KeyVector, rather than KeyList
+  void insertPoint(size_t key, const gtsam::Point3& pose);
+  void updatePoint(size_t key, const gtsam::Point3& pose);
+  gtsam::Point3 point(size_t j);
+  Matrix points() const;
+};
+
+class Graph {
+  Graph();
+  Graph(const gtsam::NonlinearFactorGraph& graph);
+  Graph(const sparseBA::Graph& graph);
+
+  // Information
+  Matrix reprojectionErrors(const sparseBA::Values& values) const;
+
+  // inherited from FactorGraph
+  void print(string s) const;
+  bool equals(const sparseBA::Graph& fg, double tol) const;
+  size_t size() const;
+  bool empty() const;
+  void remove(size_t i);
+  size_t nrFactors() const;
+  gtsam::NonlinearFactor* at(size_t i) const;
+
+  double error(const sparseBA::Values& values) const;
+  gtsam::Ordering* orderingCOLAMD(const sparseBA::Values& values) const;
+  gtsam::GaussianFactorGraph* linearize(const sparseBA::Values& values, const gtsam::Ordering& ordering) const;
+
+  sparseBA::Values optimize(const sparseBA::Values& initialEstimate, size_t verbosity) const;
+  sparseBA::LevenbergMarquardtOptimizer optimizer(const sparseBA::Values& initialEstimate, const gtsam::LevenbergMarquardtParams& parameters) const;
+  gtsam::Marginals marginals(const sparseBA::Values& solution) const;
+
+  // inherited from visualSLAM
+  void addPointConstraint(size_t pointKey, const gtsam::Point3& p);
+  void addPointPrior(size_t pointKey, const gtsam::Point3& p, const gtsam::noiseModel::Base* model);
+
+  // add factors
+  void addSimpleCameraPrior(size_t cameraKey, const gtsam::SimpleCamera &camera, gtsam::noiseModel::Base* model);
+  void addSimpleCameraConstraint(size_t cameraKey, const gtsam::SimpleCamera &camera);
+  void addSimpleCameraMeasurement(const gtsam::Point2 &z, gtsam::noiseModel::Base* model, size_t cameraKey, size_t pointKey);
+};
+
+class LevenbergMarquardtOptimizer {
+  double lambda() const;
+  void iterate();
+  double error() const;
+  size_t iterations() const;
+  sparseBA::Values optimize();
+  sparseBA::Values optimizeSafely();
+  sparseBA::Values values() const;
+};
+}///\namespace sparseBA
+

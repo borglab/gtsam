@@ -7,8 +7,10 @@ typedef boost::shared_ptr<ns2::ns3::ClassB> Shared;
 static std::set<Shared*> collector;
 
 void cleanup(void) {
-  BOOST_FOREACH(Shared* p, collector)
-    collector.erase(p);
+  for(std::set<Shared*>::iterator iter = collector.begin(); iter != collector.end(); ) {
+    delete *iter;
+    collector.erase(iter++);
+  }
 }
 void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {

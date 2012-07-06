@@ -68,7 +68,15 @@ namespace visualSLAM {
     /// get a point
     Point3 point(Key j) const { return at<Point3>(j); }
 
-    Matrix points() const; ///< get all point coordinates in a matrix
+    /// insert a number of initial point values by backprojecting
+    void insertBackprojections(const SimpleCamera& c, const Vector& J,
+        const Matrix& Z, double depth);
+
+    /// perturb all points using normally distributed noise
+    void perturbPoints(double sigma, int32_t seed = 42u);
+
+    /// get all point coordinates in a matrix
+    Matrix points() const;
 
   };
 
@@ -94,14 +102,14 @@ namespace visualSLAM {
 
     /**
      *  Add a constraint on a point (for now, *must* be satisfied in any Values)
-     *  @param key variable key of the landmark
+     *  @param key variable key of the point
      *  @param p point around which soft prior is defined
      */
     void addPointConstraint(Key pointKey, const Point3& p = Point3());
 
     /**
-     *  Add a prior on a landmark
-     *  @param key variable key of the landmark
+     *  Add a prior on a point
+     *  @param key variable key of the point
      *  @param p to which point to constrain it to
      *  @param model uncertainty model of this prior
      */
@@ -109,10 +117,10 @@ namespace visualSLAM {
 				const SharedNoiseModel& model = noiseModel::Unit::Create(3));
 
     /**
-     *  Add a range prior to a landmark
+     *  Add a range prior to a point
      *  @param poseKey variable key of the camera pose
-     *  @param pointKey variable key of the landmark
-     *  @param range approximate range to landmark
+     *  @param pointKey variable key of the point
+     *  @param range approximate range to point
      *  @param model uncertainty model of this prior
      */
     void addRangeFactor(Key poseKey, Key pointKey, double range,
@@ -123,22 +131,36 @@ namespace visualSLAM {
      *  @param measured the measurement
      *  @param model the noise model for the measurement
      *  @param poseKey variable key for the camera pose
-     *  @param pointKey variable key for the landmark
+     *  @param pointKey variable key for the point
      *  @param K shared pointer to calibration object
      */
     void addMeasurement(const Point2& measured, const SharedNoiseModel& model,
         Key poseKey, Key pointKey, const shared_ptrK K);
 
     /**
+     *  Add a number of measurements at the same time
+     *  @param i variable key for the camera pose
+     *  @param J variable keys for the point, KeyVector of size K
+     *  @param Z the 2*K measurements as a matrix
+     *  @param model the noise model for the measurement
+     *  @param K shared pointer to calibration object
+     */
+    void addMeasurements(Key i, const Vector& J, const Matrix& Z,
+        const SharedNoiseModel& model, const shared_ptrK K);
+
+    /**
      *  Add a stereo factor measurement
      *  @param measured the measurement
      *  @param model the noise model for the measurement
      *  @param poseKey variable key for the camera pose
-     *  @param pointKey variable key for the landmark
+     *  @param pointKey variable key for the point
      *  @param K shared pointer to stereo calibration object
      */
     void addStereoMeasurement(const StereoPoint2& measured, const SharedNoiseModel& model,
         Key poseKey, Key pointKey, const shared_ptrKStereo K);
+
+    /// Return a 2*K Matrix of reprojection errors
+    Matrix reprojectionErrors(const Values& values) const;
 
   }; // Graph
 

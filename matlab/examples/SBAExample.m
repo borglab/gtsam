@@ -6,8 +6,8 @@
 % 
 % See LICENSE for the license information
 %
-% @brief A structure from motion example
-% @author Duy-Nguyen Ta
+% @brief An SFM example (adapted from SFMExample.m) optimizing calibration
+% @author Yong-Dian Jian
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Assumptions
@@ -26,34 +26,40 @@ options.showImages = false;
 
 measurementNoiseSigma = 1.0;
 pointNoiseSigma = 0.1;
-poseNoiseSigmas = [0.001 0.001 0.001 0.1 0.1 0.1]';
+cameraNoiseSigmas = [0.001 0.001 0.001 0.1 0.1 0.1 ...
+                     0.001*ones(1,5)]';
 
 %% Create the graph (defined in visualSLAM.h, derived from NonlinearFactorGraph)
-graph = visualSLAMGraph;
+graph = sparseBAGraph;
 
+ 
 %% Add factors for all measurements
 measurementNoise = gtsamnoiseModelIsotropic_Sigma(2,measurementNoiseSigma);
 for i=1:length(data.Z)
     for k=1:length(data.Z{i})
         j = data.J{i}{k};
-        graph.addMeasurement(data.Z{i}{k}, measurementNoise, symbol('x',i), symbol('p',j), data.K);
+        graph.addSimpleCameraMeasurement(data.Z{i}{k}, measurementNoise, symbol('c',i), symbol('p',j));
     end
 end
 
 %% Add Gaussian priors for a pose and a landmark to constrain the system
-posePriorNoise  = gtsamnoiseModelDiagonal_Sigmas(poseNoiseSigmas);
-graph.addPosePrior(symbol('x',1), truth.cameras{1}.pose, posePriorNoise);
+cameraPriorNoise  = gtsamnoiseModelDiagonal_Sigmas(cameraNoiseSigmas);
+firstCamera = gtsamSimpleCamera(truth.cameras{1}.pose, truth.K);
+graph.addSimpleCameraPrior(symbol('c',1), firstCamera, cameraPriorNoise);
+
 pointPriorNoise  = gtsamnoiseModelIsotropic_Sigma(3,pointNoiseSigma);
 graph.addPointPrior(symbol('p',1), truth.points{1}, pointPriorNoise);
 
 %% Print the graph
 graph.print(sprintf('\nFactor graph:\n'));
 
+
 %% Initialize cameras and points close to ground truth in this example
-initialEstimate = visualSLAMValues;
+initialEstimate = sparseBAValues;
 for i=1:size(truth.cameras,2)
     pose_i = truth.cameras{i}.pose.retract(0.1*randn(6,1));
-    initialEstimate.insertPose(symbol('x',i), pose_i);
+    camera_i = gtsamSimpleCamera(pose_i, truth.K);
+    initialEstimate.insertSimpleCamera(symbol('c',i), camera_i);
 end
 for j=1:size(truth.points,2)
     point_j = truth.points{j}.retract(0.1*randn(3,1));
@@ -72,25 +78,8 @@ optimizer = graph.optimizer(initialEstimate, parameters);
 for i=1:5
     optimizer.iterate();
 end
+
 result = optimizer.values();
 result.print(sprintf('\nFinal result:\n  '));
 
-%% Plot results with covariance ellipses
-marginals = graph.marginals(result);
-cla
-hold on;
-for j=1:result.nrPoints
-    P = marginals.marginalCovariance(symbol('p',j));
-    point_j = result.point(symbol('p',j));
-	plot3(point_j.x, point_j.y, point_j.z,'marker','o');
-    covarianceEllipse3D([point_j.x;point_j.y;point_j.z],P);
-end
 
-for i=1:result.nrPoses
-    P = marginals.marginalCovariance(symbol('x',i));
-    pose_i = result.pose(symbol('x',i));
-    plotPose3(pose_i,P,10);
-end
-axis([-40 40 -40 40 -10 20]);axis equal
-view(3)
-colormap('hot')

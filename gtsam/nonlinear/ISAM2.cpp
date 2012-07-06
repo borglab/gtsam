@@ -203,8 +203,8 @@ GaussianFactorGraph ISAM2::getCachedBoundaryFactors(Cliques& orphans) {
   return cachedBoundary;
 }
 
-boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
-    const FastSet<Index>& markedKeys, const FastSet<Index>& relinKeys, const FastVector<Index>& observedKeys,
+boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(const FastSet<Index>& markedKeys,
+		const FastSet<Index>& relinKeys, const FastVector<Index>& observedKeys, const FastSet<Index>& unusedIndices,
     const boost::optional<FastMap<Index,int> >& constrainKeys, ISAM2Result& result) {
 
   // TODO:  new factors are linearized twice, the newFactors passed in are not used.
@@ -249,9 +249,6 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
   this->removeTop(markedKeys, affectedBayesNet, orphans);
   toc(1, "removetop");
 
-	// Now that the top is removed, correct the size of the Nodes index
-	this->nodes_.resize(delta_.size());
-
   if(debug) affectedBayesNet.print("Removed top: ");
   if(debug) orphans.print("Orphans: ");
 
@@ -269,14 +266,6 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
   // ordering provides all keys in conditionals, there cannot be others because path to root included
   tic(2,"affectedKeys");
   FastList<Index> affectedKeys = affectedBayesNet.ordering();
-	// The removed top also contained removed variables, which will be ordered
-	// higher than the number of variables in the system since unused variables
-	// were already removed in ISAM2::update.
-	for(FastList<Index>::iterator key = affectedKeys.begin(); key != affectedKeys.end(); )
-		if(*key >= delta_.size())
-			affectedKeys.erase(key++);
-		else
-			++key;
   toc(2,"affectedKeys");
 
   boost::shared_ptr<FastSet<Index> > affectedKeysSet(new FastSet<Index>()); // Will return this result
@@ -329,11 +318,13 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
     toc(1,"reorder");
 
     tic(2,"linearize");
-    linearFactors_ = *nonlinearFactors_.linearize(theta_, ordering_);
+    GaussianFactorGraph linearized = *nonlinearFactors_.linearize(theta_, ordering_);
+    if(params_.cacheLinearizedFactors)
+      linearFactors_ = linearized;
     toc(2,"linearize");
 
     tic(5,"eliminate");
-    JunctionTree<GaussianFactorGraph, Base::Clique> jt(linearFactors_, variableIndex_);
+    JunctionTree<GaussianFactorGraph, Base::Clique> jt(linearized, variableIndex_);
     sharedClique newRoot;
     if(params_.factorization == ISAM2Params::CHOLESKY)
       newRoot = jt.eliminate(EliminatePreferCholesky);
@@ -352,7 +343,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
 
     lastAffectedMarkedCount = markedKeys.size();
     lastAffectedVariableCount = affectedKeysSet->size();
-    lastAffectedFactorCount = linearFactors_.size();
+    lastAffectedFactorCount = linearized.size();
 
     // Reeliminated keys for detailed results
     if(params_.enableDetailedResults) {
@@ -428,8 +419,12 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
       reorderingMode.constrainedKeys = FastMap<Index,int>();
       BOOST_FOREACH(Index var, observedKeys) { reorderingMode.constrainedKeys->insert(make_pair(var, 1)); }
     }
+		FastSet<Index> affectedUsedKeys = *affectedKeysSet; // Remove unused keys from the set we pass to PartialSolve
+		BOOST_FOREACH(Index unused, unusedIndices) {
+			affectedUsedKeys.erase(unused);
+		}
     Impl::PartialSolveResult partialSolveResult =
-        Impl::PartialSolve(factors, *affectedKeysSet, reorderingMode, (params_.factorization == ISAM2Params::QR));
+        Impl::PartialSolve(factors, affectedUsedKeys, reorderingMode, (params_.factorization == ISAM2Params::QR));
     toc(2,"PartialSolve");
 
     // We now need to permute everything according this partial reordering: the
@@ -557,33 +552,25 @@ ISAM2Result ISAM2::update(
   // Remove removed factors from the variable index so we do not attempt to relinearize them
   variableIndex_.remove(removeFactorIndices, *removeFactors.symbolic(ordering_));
 
-	// We now need to start keeping track of the marked keys involved in added or
-	// removed factors.
-	FastSet<Index> markedKeys;
-
-	// Remove unused keys and add keys from removed factors that are still used
-	// in other factors to markedKeys.
+	// Compute unused keys and indices
+	FastSet<Key> unusedKeys;
+	FastSet<Index> unusedIndices;
 	{
-		// Get keys from removed factors
-		FastSet<Key> removedFactorSymbKeys = removeFactors.keys();
-
-		// For each key, if still used in other factors, add to markedKeys to be
-		// recalculated, or if not used, add to unusedKeys to be removed from the
-		// system.  Note that unusedKeys stores Key while markedKeys stores Index.
-		FastSet<Key> unusedKeys;
-		BOOST_FOREACH(Key key, removedFactorSymbKeys) {
-			Index index = ordering_[key];
-			if(variableIndex_[index].empty())
-				unusedKeys.insert(key);
-			else
-				markedKeys.insert(index);
+		// Get keys from removed factors and new factors, and compute unused keys,
+		// i.e., keys that are empty now and do not appear in the new factors.
+		FastSet<Key> removedAndEmpty;
+		BOOST_FOREACH(Key key, removeFactors.keys()) {
+			if(variableIndex_[ordering_[key]].empty())
+				removedAndEmpty.insert(removedAndEmpty.end(), key);
 		}
+		FastSet<Key> newFactorSymbKeys = newFactors.keys();
+		std::set_difference(removedAndEmpty.begin(), removedAndEmpty.end(),
+			newFactorSymbKeys.begin(), newFactorSymbKeys.end(), std::inserter(unusedKeys, unusedKeys.end()));
 
-		// Remove unused keys.  We must hold on to the new nodes index for now
-		// instead of placing it into the tree because removeTop will need to
-		// update it.
-		Impl::RemoveVariables(unusedKeys, root_, theta_, variableIndex_, delta_, deltaNewton_, RgProd_,
-			deltaReplacedMask_, ordering_, Base::nodes_, linearFactors_);
+		// Get indices for unused keys
+		BOOST_FOREACH(Key key, unusedKeys) {
+			unusedIndices.insert(unusedIndices.end(), ordering_[key]);
+		}
 	}
   toc(1,"push_back factors");
 
@@ -603,10 +590,12 @@ ISAM2Result ISAM2::update(
 
   tic(4,"gather involved keys");
   // 3. Mark linear update
-	{
-		FastSet<Index> newFactorIndices = Impl::IndicesFromFactors(ordering_, newFactors); // Get keys from new factors
-		markedKeys.insert(newFactorIndices.begin(), newFactorIndices.end());
-	}
+  FastSet<Index> markedKeys = Impl::IndicesFromFactors(ordering_, newFactors); // Get keys from new factors
+  // Also mark keys involved in removed factors
+  {
+    FastSet<Index> markedRemoveKeys = Impl::IndicesFromFactors(ordering_, removeFactors); // Get keys involved in removed factors
+    markedKeys.insert(markedRemoveKeys.begin(), markedRemoveKeys.end()); // Add to the overall set of marked keys
+  }
 
 	// Observed keys for detailed results
   if(params_.enableDetailedResults) {
@@ -617,7 +606,11 @@ ISAM2Result ISAM2::update(
   // NOTE: we use assign instead of the iterator constructor here because this
   // is a vector of size_t, so the constructor unintentionally resolves to
   // vector(size_t count, Index value) instead of the iterator constructor.
-  FastVector<Index> observedKeys; observedKeys.assign(markedKeys.begin(), markedKeys.end()); // Make a copy of these, as we'll soon add to them
+  FastVector<Index> observedKeys;  observedKeys.reserve(markedKeys.size());
+	BOOST_FOREACH(Index index, markedKeys) {
+		if(unusedIndices.find(index) == unusedIndices.end()) // Only add if not unused
+			observedKeys.push_back(index); // Make a copy of these, as we'll soon add to them
+	}
   toc(4,"gather involved keys");
 
   // Check relinearization if we're at the nth step, or we are using a looser loop relin threshold
@@ -710,7 +703,7 @@ ISAM2Result ISAM2::update(
   }
   boost::shared_ptr<FastSet<Index> > replacedKeys;
   if(!markedKeys.empty() || !observedKeys.empty())
-    replacedKeys = recalculate(markedKeys, relinKeys, observedKeys, constrainedIndices, result);
+    replacedKeys = recalculate(markedKeys, relinKeys, observedKeys, unusedIndices, constrainedIndices, result);
 
   // Update replaced keys mask (accumulates until back-substitution takes place)
   if(replacedKeys) {
@@ -718,10 +711,11 @@ ISAM2Result ISAM2::update(
       deltaReplacedMask_[var] = true; } }
   toc(9,"recalculate");
 
-  //tic(9,"solve");
-  // 9. Solve
-  if(debug) delta_.print("delta_: ");
-  //toc(9,"solve");
+	// After the top of the tree has been redone and may have index gaps from
+	// unused keys, condense the indices to remove gaps by rearranging indices
+	// in all data structures.
+	Impl::RemoveVariables(unusedKeys, root_, theta_, variableIndex_, delta_, deltaNewton_, RgProd_,
+		deltaReplacedMask_, ordering_, Base::nodes_, linearFactors_);
 
   result.cliques = this->nodes().size();
   deltaDoglegUptodate_ = false;
