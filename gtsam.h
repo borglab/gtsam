@@ -1319,6 +1319,10 @@ class Graph {
     void addStereoMeasurement(const gtsam::StereoPoint2& measured,
         const gtsam::noiseModel::Base* model, size_t poseKey, size_t pointKey,
         const gtsam::Cal3_S2Stereo* K);
+
+  // Information
+  Matrix reprojectionErrors(const visualSLAM::Values& values) const;
+
 };
 
 class ISAM {

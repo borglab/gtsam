@@ -159,6 +159,9 @@ namespace visualSLAM {
     void addStereoMeasurement(const StereoPoint2& measured, const SharedNoiseModel& model,
         Key poseKey, Key pointKey, const shared_ptrKStereo K);
 
+    /// Return a 2*K Matrix of reprojection errors
+    Matrix reprojectionErrors(const Values& values) const;
+
   }; // Graph
 
   /**

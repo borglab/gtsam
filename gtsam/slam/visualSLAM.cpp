@@ -98,4 +98,19 @@ namespace visualSLAM {
   }
 
   /* ************************************************************************* */
+  Matrix Graph::reprojectionErrors(const Values& values) const {
+    // first count
+    size_t K = 0, k=0;
+    BOOST_FOREACH(const sharedFactor& f, *this)
+      if (boost::dynamic_pointer_cast<const ProjectionFactor>(f)) ++K;
+    // now fill
+    Matrix errors(2,K);
+    BOOST_FOREACH(const sharedFactor& f, *this) {
+      boost::shared_ptr<const ProjectionFactor> p =
+          boost::dynamic_pointer_cast<const ProjectionFactor>(f);
+      if (p) errors.col(k) = p->unwhitenedError(values);
+    }
+    return errors;
+  }
+  /* ************************************************************************* */
 }

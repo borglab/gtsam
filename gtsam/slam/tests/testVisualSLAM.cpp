@@ -184,6 +184,10 @@ TEST( VisualSLAM, LMoptimizer)
 
   // check if correct
   CHECK(assert_equal(initialEstimate, optimizer.values()));
+
+  // check errors
+  Matrix errors = graph.reprojectionErrors(optimizer.values());
+  CHECK(assert_equal(zeros(2,8), errors));
 }
 
 
