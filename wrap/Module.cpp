@@ -93,7 +93,7 @@ Module::Module(const string& interfacePath,
   Rule eigenType_p =
     (str_p("Vector") | "Matrix");
 
-  Rule className_p  = (lexeme_d[upper_p >> *(alnum_p | '_')] - eigenType_p - keywords_p)[assign_a(class_name)];
+  Rule className_p  = (lexeme_d[upper_p >> *(alnum_p | '_')] - eigenType_p - keywords_p);
 
   Rule namespace_name_p = lexeme_d[lower_p >> *(alnum_p | '_')] - keywords_p;
 
@@ -113,6 +113,10 @@ Module::Module(const string& interfacePath,
   	*namespace_arg_p >>
     className_p[assign_a(arg.type)] >>
     (ch_p('*')[assign_a(arg.is_ptr,true)] | ch_p('&')[assign_a(arg.is_ref,true)]);
+
+	Rule classParent_p =
+		*(namespace_name_p[push_back_a(cls.qualifiedParent)] >> str_p("::")) >>
+		className_p[push_back_a(cls.qualifiedParent)];
 
   Rule name_p = lexeme_d[alpha_p >> *(alnum_p | '_')];
 
@@ -198,7 +202,7 @@ Module::Module(const string& interfacePath,
   		(!*include_p
   		>> str_p("class")[push_back_a(cls.includes, include_path)][assign_a(include_path, null_str)]
   		>> className_p[assign_a(cls.name)]
-      >> '{'
+			>> ((':' >> classParent_p >> '{') | '{') // By having (parent >> '{' | '{') here instead of (!parent >> '{'), we trigger a parse error on a badly-formed parent spec
   		>> *(functions_p | comments_p)
   		>> str_p("};"))
         [assign_a(constructor.name, cls.name)]

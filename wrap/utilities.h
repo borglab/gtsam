@@ -98,4 +98,10 @@ void generateUsingNamespace(FileWriter& file, const std::vector<std::string>& us
 void generateIncludes(FileWriter& file, const std::string& class_name,
 		const std::vector<std::string>& includes);
 
+/**
+ * Return a qualified name, if finalName is empty, only the names vector will
+ * be used (i.e. there won't be a trailing separator on the qualified name).
+ */
+std::string qualifiedName(const std::string& separator, const std::vector<std::string>& names, const std::string& finalName = "");
+
 } // \namespace wrap

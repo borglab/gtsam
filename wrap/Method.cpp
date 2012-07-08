@@ -43,7 +43,7 @@ void Method::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperF
 																		 const vector<string>& using_namespaces,
 																		 vector<string>& functionNames) const {
 
-	proxyFile.oss << "    function varargout = " << name << "(self, varargin)\n";
+	proxyFile.oss << "    function varargout = " << name << "(this, varargin)\n";
 
 	for(size_t overload = 0; overload < argLists.size(); ++overload) {
 		const ArgumentList& args = argLists[overload];
@@ -74,7 +74,7 @@ void Method::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperF
 			output = "";
 		else
 			output = "varargout{1} = ";
-		proxyFile.oss << "        " << output << wrapperName << "(" << id << ", self, varargin{:});\n";
+		proxyFile.oss << "        " << output << wrapperName << "(" << id << ", this, varargin{:});\n";
 
 		// Output C++ wrapper code
 		
@@ -135,7 +135,7 @@ string Method::wrapper_fragment(FileWriter& file,
 
   // get class pointer
   // example: shared_ptr<Test> = unwrap_shared_ptr< Test >(in[0], "Test");
-  file.oss << "  Shared obj = unwrap_shared_ptr<" << cppClassName << ">(in[0], \"" << cppClassName << "\");" << endl;
+  file.oss << "  Shared obj = unwrap_shared_ptr<" << cppClassName << ">(in[0], \"ptr_" << matlabClassName << "\");" << endl;
   // unwrap arguments, see Argument.cpp
   args.matlab_unwrap(file,1);
 

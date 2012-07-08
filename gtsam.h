@@ -64,7 +64,18 @@ namespace gtsam {
 // base
 //*************************************************************************
 
-class LieVector {
+class Value {
+	// Testable
+	void print(string s) const;
+	bool equals(const gtsam::Value& expected, double tol) const;
+
+	// Manifold
+	size_t dim() const;
+	gtsam::Value retract(Vector v) const;
+	Vector localCoordinates(const gtsam::Value& t2) const;
+};
+
+class LieVector : gtsam::Value {
 	// Standard constructors
 	LieVector();
 	LieVector(Vector v);

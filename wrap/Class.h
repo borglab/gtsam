@@ -38,6 +38,7 @@ struct Class {
 
 	// Then the instance variables are set directly by the Module constructor
   std::string name;                         ///< Class name
+	std::vector<std::string> qualifiedParent; ///< The *single* parent - the last string is the parent class name, preceededing elements are a namespace stack
   Methods methods;                          ///< Class methods
   StaticMethods static_methods;             ///< Static methods
   std::vector<std::string> namespaces;      ///< Stack of namespaces

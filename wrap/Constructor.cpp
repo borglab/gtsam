@@ -53,7 +53,7 @@ void Constructor::proxy_fragment(FileWriter& file, const std::string& wrapperNam
   file.oss << "\n        obj.self = " << wrapperName << "(" << id;
   // emit constructor arguments
   for(size_t i=0;i<nrArgs;i++) {
-    file.oss << ",";
+    file.oss << ", ";
     file.oss << "varargin{" << i+1 << "}";
   }
   file.oss << ");\n";

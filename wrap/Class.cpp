@@ -39,9 +39,11 @@ void Class::matlab_proxy(const string& classFile, const string& wrapperName, Fil
 
   // emit class proxy code
   // we want our class to inherit the handle class for memory purposes
-  proxyFile.oss << "classdef " << matlabName << " < handle" << endl;
+	const string parent = qualifiedParent.empty() ?
+		"handle" : ::wrap::qualifiedName("", qualifiedParent);
+  proxyFile.oss << "classdef " << matlabName << " < " << parent << endl;
   proxyFile.oss << "  properties" << endl;
-  proxyFile.oss << "    self = 0" << endl;
+  proxyFile.oss << "    ptr_" << matlabName << " = 0" << endl;
   proxyFile.oss << "  end" << endl;
   proxyFile.oss << "  methods" << endl;
 
@@ -116,10 +118,7 @@ void Class::matlab_proxy(const string& classFile, const string& wrapperName, Fil
 
 /* ************************************************************************* */
 string Class::qualifiedName(const string& delim) const {
-	string result;
-	BOOST_FOREACH(const string& ns, namespaces)
-		result += ns + delim;
-	return result + name;
+	return ::wrap::qualifiedName(delim, namespaces, name);
 }
 
 /* ************************************************************************* */
@@ -136,14 +135,14 @@ string Class::pointer_constructor_fragments(FileWriter& proxyFile, FileWriter& w
 		(uint64_t('r'));
 
   const string matlabName = qualifiedName(), cppName = qualifiedName("::");
-	const string wrapFunctionName = matlabName + "_constructor_" + boost::lexical_cast<string>(id);
+	const string wrapFunctionName = matlabName + "_collectorInsert_" + boost::lexical_cast<string>(id);
 
 	// MATLAB constructor that assigns pointer to matlab object then calls c++
 	// function to add the object to the collector.
 	proxyFile.oss << "      if nargin == 2 && isa(varargin{1}, 'uint64') && ";
 	proxyFile.oss << "varargin{1} == uint64(" << ptr_constructor_key << ")\n";
 	proxyFile.oss << "        obj.self = varargin{2};\n";
-	proxyFile.oss << "        " << wrapperName << "(obj.self);\n";
+	proxyFile.oss << "        " << wrapperName << "(" << id << ", obj.self);\n";
 
 	// C++ function to add pointer from MATLAB to collector.  The pointer always
 	// comes from a C++ return value; this mechanism allows the object to be added
