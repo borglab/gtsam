@@ -705,14 +705,14 @@ namespace noiseModel {
 class Base {
 };
 
-class Gaussian {
+class Gaussian : gtsam::noiseModel::Base {
 	static gtsam::noiseModel::Gaussian* SqrtInformation(Matrix R);
 	static gtsam::noiseModel::Gaussian* Covariance(Matrix R);
 //	Matrix R() const;		// FIXME: cannot parse!!!
 	void print(string s) const;
 };
 
-class Diagonal {
+class Diagonal : gtsam::noiseModel::Gaussian {
 	static gtsam::noiseModel::Diagonal* Sigmas(Vector sigmas);
 	static gtsam::noiseModel::Diagonal* Variances(Vector variances);
 	static gtsam::noiseModel::Diagonal* Precisions(Vector precisions);
@@ -720,14 +720,14 @@ class Diagonal {
 	void print(string s) const;
 };
 
-class Isotropic {
+class Isotropic : gtsam::noiseModel::Gaussian {
 	static gtsam::noiseModel::Isotropic* Sigma(size_t dim, double sigma);
 	static gtsam::noiseModel::Isotropic* Variance(size_t dim, double varianace);
 	static gtsam::noiseModel::Isotropic* Precision(size_t dim, double precision);
 	void print(string s) const;
 };
 
-class Unit {
+class Unit : gtsam::noiseModel::Gaussian {
 	static gtsam::noiseModel::Unit* Create(size_t dim);
 	void print(string s) const;
 };
