@@ -79,7 +79,6 @@ namespace gtsam {
 
 virtual class Value {
 	// No constructors because this is an abstract class
-	Value(const gtsam::Value& rhs);
 
 	// Testable
 	void print(string s) const;
