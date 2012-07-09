@@ -11,9 +11,11 @@ gtsam_assign_source_folders(${wrap_srcs} ${wrap_headers})
 add_executable(wrap wrap.cpp)
 target_link_libraries(wrap wrap_lib ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY})
 
-# Install wrap binary
+# Install wrap binary and export target
 if (GTSAM_INSTALL_WRAP)
-    install(TARGETS wrap DESTINATION bin)
+    install(TARGETS wrap EXPORT GTSAM-exports DESTINATION bin)
+    list(APPEND GTSAM_EXPORTED_TARGETS wrap)
+    set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
 endif(GTSAM_INSTALL_WRAP)
 
 # Install matlab header
