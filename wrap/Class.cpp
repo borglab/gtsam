@@ -30,7 +30,9 @@ using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
-void Class::matlab_proxy(const string& classFile, const string& wrapperName, FileWriter& wrapperFile, vector<string>& functionNames) const {
+void Class::matlab_proxy(const string& classFile, const string& wrapperName,
+												 const ReturnValue::TypeAttributesTable& typeAttributes,
+												 FileWriter& wrapperFile, vector<string>& functionNames) const {
   // open destination classFile
   FileWriter proxyFile(classFile, verbose_, "%");
 
@@ -96,7 +98,7 @@ void Class::matlab_proxy(const string& classFile, const string& wrapperName, Fil
 	// Methods
 	BOOST_FOREACH(const Methods::value_type& name_m, methods) {
 		const Method& m = name_m.second;
-		m.proxy_wrapper_fragments(proxyFile, wrapperFile, cppName, matlabName, wrapperName, using_namespaces, functionNames);
+		m.proxy_wrapper_fragments(proxyFile, wrapperFile, cppName, matlabName, wrapperName, using_namespaces, typeAttributes, functionNames);
 		proxyFile.oss << "\n";
 		wrapperFile.oss << "\n";
 	}
@@ -108,7 +110,7 @@ void Class::matlab_proxy(const string& classFile, const string& wrapperName, Fil
 	// Static methods
 	BOOST_FOREACH(const StaticMethods::value_type& name_m, static_methods) {
 		const StaticMethod& m = name_m.second;
-		m.proxy_wrapper_fragments(proxyFile, wrapperFile, cppName, matlabName, wrapperName, using_namespaces, functionNames);
+		m.proxy_wrapper_fragments(proxyFile, wrapperFile, cppName, matlabName, wrapperName, using_namespaces, typeAttributes, functionNames);
 		proxyFile.oss << "\n";
 		wrapperFile.oss << "\n";
 	}

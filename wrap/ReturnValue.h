@@ -8,6 +8,7 @@
  */
 
 #include <vector>
+#include <map>
 
 #include "FileWriter.h"
 
@@ -16,6 +17,14 @@
 namespace wrap {
 
 struct ReturnValue {
+
+	struct TypeAttributes {
+		bool isVirtual;
+		TypeAttributes() : isVirtual(false) {}
+		TypeAttributes(bool isVirtual) : isVirtual(isVirtual) {}
+	};
+
+	typedef std::map<std::string, TypeAttributes> TypeAttributesTable;
 
 	typedef enum {
 		CLASS,
@@ -47,7 +56,7 @@ struct ReturnValue {
 
 	std::string matlab_returnType() const;
 
-	void wrap_result(FileWriter& file) const;
+	void wrap_result(const std::string& result, FileWriter& file, const TypeAttributesTable& typeAttributes) const;
 
 };
 

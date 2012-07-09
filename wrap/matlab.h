@@ -119,7 +119,7 @@ void checkArguments(const string& name, int nargout, int nargin, int expected) {
 
 // default wrapping throws an error: only basis types are allowed in wrap
 template <typename Class>
-mxArray* wrap(Class& value) {
+mxArray* wrap(const Class& value) {
   error("wrap internal error: attempted wrap of invalid type");
 	return 0;
 }
@@ -127,13 +127,13 @@ mxArray* wrap(Class& value) {
 // specialization to string
 // wraps into a character array
 template<>
-mxArray* wrap<string>(string& value) {
+mxArray* wrap<string>(const string& value) {
   return mxCreateString(value.c_str());
 }
 
 // specialization to char
 template<>
-mxArray* wrap<char>(char& value) {
+mxArray* wrap<char>(const char& value) {
   mxArray *result = scalar(mxUINT32OR64_CLASS);
   *(char*)mxGetData(result) = value;
   return result;
@@ -141,7 +141,7 @@ mxArray* wrap<char>(char& value) {
 
 // specialization to unsigned char
 template<>
-mxArray* wrap<unsigned char>(unsigned char& value) {
+mxArray* wrap<unsigned char>(const unsigned char& value) {
   mxArray *result = scalar(mxUINT32OR64_CLASS);
   *(unsigned char*)mxGetData(result) = value;
   return result;
@@ -149,7 +149,7 @@ mxArray* wrap<unsigned char>(unsigned char& value) {
 
 // specialization to bool
 template<>
-mxArray* wrap<bool>(bool& value) {
+mxArray* wrap<bool>(const bool& value) {
   mxArray *result = scalar(mxUINT32OR64_CLASS);
   *(bool*)mxGetData(result) = value;
   return result;
@@ -157,7 +157,7 @@ mxArray* wrap<bool>(bool& value) {
 
 // specialization to size_t
 template<>
-mxArray* wrap<size_t>(size_t& value) {
+mxArray* wrap<size_t>(const size_t& value) {
   mxArray *result = scalar(mxUINT32OR64_CLASS);
   *(size_t*)mxGetData(result) = value;
   return result;
@@ -165,7 +165,7 @@ mxArray* wrap<size_t>(size_t& value) {
 
 // specialization to int
 template<>
-mxArray* wrap<int>(int& value) {
+mxArray* wrap<int>(const int& value) {
   mxArray *result = scalar(mxUINT32OR64_CLASS);
   *(int*)mxGetData(result) = value;
   return result;
@@ -173,7 +173,7 @@ mxArray* wrap<int>(int& value) {
 
 // specialization to double -> just double
 template<>
-mxArray* wrap<double>(double& value) {
+mxArray* wrap<double>(const double& value) {
   return mxCreateDoubleScalar(value);
 }
 
@@ -188,13 +188,7 @@ mxArray* wrap_Vector(const gtsam::Vector& v) {
 
 // specialization to Eigen vector -> double vector
 template<>
-mxArray* wrap<gtsam::Vector >(gtsam::Vector& v) {
-  return wrap_Vector(v);
-}
-
-// const version
-template<>
-mxArray* wrap<const gtsam::Vector >(const gtsam::Vector& v) {
+mxArray* wrap<gtsam::Vector >(const gtsam::Vector& v) {
   return wrap_Vector(v);
 }
 
@@ -214,13 +208,7 @@ mxArray* wrap_Matrix(const gtsam::Matrix& A) {
 
 // specialization to Eigen MATRIX -> double matrix
 template<>
-mxArray* wrap<gtsam::Matrix >(gtsam::Matrix& A) {
-  return wrap_Matrix(A);
-}
-
-// const version
-template<>
-mxArray* wrap<const gtsam::Matrix >(const gtsam::Matrix& A) {
+mxArray* wrap<gtsam::Matrix >(const gtsam::Matrix& A) {
   return wrap_Matrix(A);
 }
 

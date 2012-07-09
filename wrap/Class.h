@@ -34,10 +34,11 @@ struct Class {
 	typedef std::map<std::string, StaticMethod> StaticMethods;
 
   /// Constructor creates an empty class
-  Class(bool verbose=true) : verbose_(verbose) {}
+  Class(bool verbose=true) : verbose_(verbose), isVirtual(false) {}
 
 	// Then the instance variables are set directly by the Module constructor
   std::string name;                         ///< Class name
+	bool isVirtual;                           ///< Whether the class is part of a virtual inheritance chain
 	std::vector<std::string> qualifiedParent; ///< The *single* parent - the last string is the parent class name, preceededing elements are a namespace stack
   Methods methods;                          ///< Class methods
   StaticMethods static_methods;             ///< Static methods
@@ -49,7 +50,7 @@ struct Class {
   bool verbose_;                            ///< verbose flag
 
   // And finally MATLAB code is emitted, methods below called by Module::matlab_code
-  void matlab_proxy(const std::string& classFile, const std::string& wrapperName,
+  void matlab_proxy(const std::string& classFile, const std::string& wrapperName, const ReturnValue::TypeAttributesTable& typeAttributes,
 		FileWriter& wrapperFile, std::vector<std::string>& functionNames) const;          ///< emit proxy class
   std::string qualifiedName(const std::string& delim = "") const; ///< creates a namespace-qualified name, optional delimiter
 

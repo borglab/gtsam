@@ -50,6 +50,7 @@ struct Method {
 	void proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperFile,
 		const std::string& cppClassName,	const std::string& matlabClassName,
 		const std::string& wrapperName, const std::vector<std::string>& using_namespaces,
+		const ReturnValue::TypeAttributesTable& typeAttributes,
 		std::vector<std::string>& functionNames) const;
 
 private:
@@ -58,7 +59,8 @@ private:
 	    const std::string& matlabClassname,
 			int overload,
 			int id,
-	    const std::vector<std::string>& using_namespaces) const; ///< cpp wrapper
+	    const std::vector<std::string>& using_namespaces,
+			const ReturnValue::TypeAttributesTable& typeAttributes) const; ///< cpp wrapper
 };
 
 } // \namespace wrap

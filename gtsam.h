@@ -13,12 +13,17 @@
  *     - void
  *     - Any class with which be copied with boost::make_shared()
  *     - boost::shared_ptr of any object type
- *   Limitations on methods
- *     - Parsing does not support overloading
- *     - There can only be one method (static or otherwise) with a given name
+ *   Constructors
+ *     - Overloads are supported
+ *     - A class with no constructors can be returned from other functions but not allocated directly in MATLAB
+ *   Methods
  *     - Constness has no effect
- *   Methods must start with a lowercase letter
- *   Static methods must start with a letter (upper or lowercase) and use the "static" keyword
+ *     - Must start with a lowercase letter
+ *     - Overloads are supported
+ *   Static methods
+ *     - Must start with a letter (upper or lowercase) and use the "static" keyword
+ *     - Static method names will be changed to start with an uppercase letter in the generated MATLAB interface
+ *     - Overloads are supported
  *   Arguments to functions any of
  *   	 - Eigen types:       Matrix, Vector
  *   	 - Eigen types and classes as an optionally const reference
@@ -44,17 +49,23 @@
  *   	 - To override, add a full include statement just before the class statement
  *   	 - An override include can be added for a namespace by placing it just before the namespace statement
  *   	 - Both classes and namespace accept exactly one namespace
- *   Overriding type dependency checks
+ *   Using classes defined in other modules
  *     - If you are using a class 'OtherClass' not wrapped in this definition file, add "class OtherClass;" to avoid a dependency error
- *     - Limitation: this only works if the class does not need a namespace specification
+ *   Virtual inheritance
+ *     - Specify fully-qualified base classes, i.e. "virtual class Derived : module::Base {"
+ *     - Mark with 'virtual' keyword, e.g. "virtual class Base {", and also "virtual class Derived : module::Base {"
+ *     - Forward declarations must also be marked virtual, e.g. "virtual class module::Base;" and
+ *       also "virtual class module::Derived;"
+ *     - Pure virtual (abstract) classes should list no constructors in this interface file
+ *     - Virtual classes must have a clone() function in C++ (though it does not have to be included
+ *       in the MATLAB interface).  clone() will be called whenever an object copy is needed, instead
+ *       of using the copy constructor (which is used for non-virtual objects).
  */
 
 /**
  * Status:
  *  - TODO: global functions
  *  - TODO: default values for arguments
- *  - TODO: overloaded functions
- *  - TODO: signatures for constructors can be ambiguous if two types have the same first letter
  *  - TODO: Handle gtsam::Rot3M conversions to quaternions
  */
 
@@ -64,8 +75,9 @@ namespace gtsam {
 // base
 //*************************************************************************
 
-class Value {
+virtual class Value {
 	// No constructors because this is an abstract class
+	Value(const gtsam::Value& rhs);
 
 	// Testable
 	void print(string s) const;
@@ -74,7 +86,7 @@ class Value {
 	size_t dim() const;
 };
 
-class LieVector : gtsam::Value {
+virtual class LieVector : gtsam::Value {
 	// Standard constructors
 	LieVector();
 	LieVector(Vector v);
@@ -106,7 +118,7 @@ class LieVector : gtsam::Value {
 // geometry
 //*************************************************************************
 
-class Point2 : gtsam::Value {
+virtual class Point2 : gtsam::Value {
   // Standard Constructors
 	Point2();
 	Point2(double x, double y);
@@ -138,7 +150,7 @@ class Point2 : gtsam::Value {
   Vector vector() const;
 };
 
-class StereoPoint2 : gtsam::Value {
+virtual class StereoPoint2 : gtsam::Value {
   // Standard Constructors
   StereoPoint2();
   StereoPoint2(double uL, double uR, double v);
@@ -167,7 +179,7 @@ class StereoPoint2 : gtsam::Value {
   Vector vector() const;
 };
 
-class Point3 : gtsam::Value {
+virtual class Point3 : gtsam::Value {
   // Standard Constructors
 	Point3();
 	Point3(double x, double y, double z);
@@ -200,7 +212,7 @@ class Point3 : gtsam::Value {
 	double z() const;
 };
 
-class Rot2 : gtsam::Value {
+virtual class Rot2 : gtsam::Value {
   // Standard Constructors and Named Constructors
 	Rot2();
 	Rot2(double theta);
@@ -242,7 +254,7 @@ class Rot2 : gtsam::Value {
   Matrix matrix() const;
 };
 
-class Rot3 : gtsam::Value {
+virtual class Rot3 : gtsam::Value {
   // Standard Constructors and Named Constructors
 	Rot3();
 	Rot3(Matrix R);
@@ -294,7 +306,7 @@ class Rot3 : gtsam::Value {
 //  Vector toQuaternion() const;  // FIXME: Can't cast to Vector properly
 };
 
-class Pose2 : gtsam::Value {
+virtual class Pose2 : gtsam::Value {
   // Standard Constructor
 	Pose2();
 	Pose2(double x, double y, double theta);
@@ -340,7 +352,7 @@ class Pose2 : gtsam::Value {
   Matrix matrix() const;
 };
 
-class Pose3 : gtsam::Value {
+virtual class Pose3 : gtsam::Value {
 	// Standard Constructors
 	Pose3();
 	Pose3(const gtsam::Pose3& pose);
@@ -388,7 +400,7 @@ class Pose3 : gtsam::Value {
 	double range(const gtsam::Pose3& pose); // FIXME: shadows other range
 };
 
-class Cal3_S2 : gtsam::Value {
+virtual class Cal3_S2 : gtsam::Value {
   // Standard Constructors
   Cal3_S2();
   Cal3_S2(double fx, double fy, double s, double u0, double v0);
@@ -438,7 +450,7 @@ class Cal3_S2Stereo {
   double baseline() const;
 };
 
-class CalibratedCamera : gtsam::Value {
+virtual class CalibratedCamera : gtsam::Value {
   // Standard Constructors and Named Constructors
 	CalibratedCamera();
 	CalibratedCamera(const gtsam::Pose3& pose);
@@ -468,7 +480,7 @@ class CalibratedCamera : gtsam::Value {
   double range(const gtsam::Point3& p) const; // TODO: Other overloaded range methods
 };
 
-class SimpleCamera : gtsam::Value {
+virtual class SimpleCamera : gtsam::Value {
   // Standard Constructors and Named Constructors
 	SimpleCamera();
   SimpleCamera(const gtsam::Pose3& pose);
@@ -943,6 +955,7 @@ class Values {
 	void print(string s) const;
 	void insert(size_t j, const gtsam::Value& value);
 	bool exists(size_t j) const;
+	gtsam::Value at(size_t j) const;
 };
 
 // Actually a FastList<Key>

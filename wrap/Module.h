@@ -19,6 +19,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 
 #include "Class.h"
 
@@ -28,11 +29,18 @@ namespace wrap {
  * A module just has a name and a list of classes
  */
 struct Module {
+
+	struct ForwardDeclaration {
+		std::string name;
+		bool isVirtual;
+		ForwardDeclaration() : isVirtual(false) {}
+	};
+
   std::string name;         ///< module name
   std::vector<Class> classes; ///< list of classes
   bool verbose;            ///< verbose flag
 //  std::vector<std::string> using_namespaces; ///< all default namespaces
-  std::vector<std::string> forward_declarations;
+  std::vector<ForwardDeclaration> forward_declarations;
 
   /// constructor that parses interface file
   Module(const std::string& interfacePath,
