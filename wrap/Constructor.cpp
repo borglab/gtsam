@@ -37,7 +37,7 @@ string Constructor::matlab_wrapper_name(const string& className) const {
 
 /* ************************************************************************* */
 void Constructor::proxy_fragment(FileWriter& file, const std::string& wrapperName,
-        const string& className, const int id, const ArgumentList args) const {
+        const string& matlabName, const string& matlabBaseName, const int id, const ArgumentList args) const {
 	size_t nrArgs = args.size();
 	// check for number of arguments...
   file.oss << "      elseif nargin == " << nrArgs;
@@ -50,7 +50,11 @@ void Constructor::proxy_fragment(FileWriter& file, const std::string& wrapperNam
     first=false;
   }
   // emit code for calling constructor
-  file.oss << "\n        obj.self = " << wrapperName << "(" << id;
+	if(matlabBaseName.empty())
+		file.oss << "\n        my_ptr = ";
+	else
+		file.oss << "\n        [ my_ptr, base_ptr ] = ";
+  file.oss << wrapperName << "(" << id;
   // emit constructor arguments
   for(size_t i=0;i<nrArgs;i++) {
     file.oss << ", ";
@@ -63,9 +67,9 @@ void Constructor::proxy_fragment(FileWriter& file, const std::string& wrapperNam
 string Constructor::wrapper_fragment(FileWriter& file,
 				 const string& cppClassName,
 				 const string& matlabClassName,
+				 const string& cppBaseClassName,
 				 int id,
 				 const vector<string>& using_namespaces, 
-				 const vector<string>& includes,
 				 const ArgumentList& al) const {
 
 	const string wrapFunctionName = matlabClassName + "_constructor_" + boost::lexical_cast<string>(id);
@@ -88,6 +92,14 @@ string Constructor::wrapper_fragment(FileWriter& file,
     file.oss << "  std::cout << \"constructed \" << self << \" << std::endl;" << endl;
   file.oss << "  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);" << endl;
   file.oss << "  *reinterpret_cast<Shared**> (mxGetData(out[0])) = self;" << endl;
+
+	// If we have a base class, return the base class pointer (MATLAB will call the base class collectorInsertAndMakeBase to add this to the collector and recurse the heirarchy)
+	if(!cppBaseClassName.empty()) {
+		file.oss << "\n";
+		file.oss << "  typedef boost::shared_ptr<" << cppBaseClassName << "> SharedBase;\n";
+    file.oss << "  out[1] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);\n";
+		file.oss << "  *reinterpret_cast<SharedBase**>(mxGetData(out[1])) = new SharedBase(*self);\n";
+	}
 
   file.oss << "}" << endl;
 

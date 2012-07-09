@@ -39,7 +39,7 @@ void Deconstructor::proxy_fragment(FileWriter& file,
 		const std::string& qualifiedMatlabName, int id) const {
 
 	file.oss << "    function delete(obj)\n";
-	file.oss << "      " << wrapperName << "(" << id << ", obj.self);\n";
+	file.oss << "      " << wrapperName << "(" << id << ", obj.ptr_" << qualifiedMatlabName << ");\n";
 	file.oss << "    end\n";
 }
 
@@ -48,7 +48,7 @@ string Deconstructor::wrapper_fragment(FileWriter& file,
 				 const string& cppClassName,
 				 const string& matlabClassName,
 				 int id,
-				 const vector<string>& using_namespaces, const vector<string>& includes) const {
+				 const vector<string>& using_namespaces) const {
   
 	const string matlabName = matlab_wrapper_name(matlabClassName);
 

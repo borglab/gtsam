@@ -56,7 +56,7 @@ using namespace boost; // not usual, but for conciseness of generated code
 #endif
 
 // "Unique" key to signal calling the matlab object constructor with a raw pointer
-// Also present in Class.cpp
+// Also present in utilities.h
 static const uint64_t ptr_constructor_key =
 	(uint64_t('G') << 56) |
 	(uint64_t('T') << 48) |
@@ -383,7 +383,7 @@ mxArray* wrap_shared_ptr(boost::shared_ptr< Class >* shared_ptr, const char *cla
 template <typename Class>
 boost::shared_ptr<Class> unwrap_shared_ptr(const mxArray* obj, const string& propertyName) {
 
-  mxArray* mxh = mxGetProperty(obj,0, propertyName);
+	mxArray* mxh = mxGetProperty(obj,0, propertyName.c_str());
   if (mxGetClassID(mxh) != mxUINT32OR64_CLASS || mxIsComplex(mxh)
     || mxGetM(mxh) != 1 || mxGetN(mxh) != 1) error(
     "Parameter is not an Shared type.");

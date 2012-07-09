@@ -65,14 +65,13 @@ namespace gtsam {
 //*************************************************************************
 
 class Value {
+	// No constructors because this is an abstract class
+
 	// Testable
 	void print(string s) const;
-	bool equals(const gtsam::Value& expected, double tol) const;
 
 	// Manifold
 	size_t dim() const;
-	gtsam::Value retract(Vector v) const;
-	Vector localCoordinates(const gtsam::Value& t2) const;
 };
 
 class LieVector : gtsam::Value {
@@ -107,7 +106,7 @@ class LieVector : gtsam::Value {
 // geometry
 //*************************************************************************
 
-class Point2 {
+class Point2 : gtsam::Value {
   // Standard Constructors
 	Point2();
 	Point2(double x, double y);
@@ -139,7 +138,7 @@ class Point2 {
   Vector vector() const;
 };
 
-class StereoPoint2 {
+class StereoPoint2 : gtsam::Value {
   // Standard Constructors
   StereoPoint2();
   StereoPoint2(double uL, double uR, double v);
@@ -168,7 +167,7 @@ class StereoPoint2 {
   Vector vector() const;
 };
 
-class Point3 {
+class Point3 : gtsam::Value {
   // Standard Constructors
 	Point3();
 	Point3(double x, double y, double z);
@@ -201,7 +200,7 @@ class Point3 {
 	double z() const;
 };
 
-class Rot2 {
+class Rot2 : gtsam::Value {
   // Standard Constructors and Named Constructors
 	Rot2();
 	Rot2(double theta);
@@ -243,7 +242,7 @@ class Rot2 {
   Matrix matrix() const;
 };
 
-class Rot3 {
+class Rot3 : gtsam::Value {
   // Standard Constructors and Named Constructors
 	Rot3();
 	Rot3(Matrix R);
@@ -295,7 +294,7 @@ class Rot3 {
 //  Vector toQuaternion() const;  // FIXME: Can't cast to Vector properly
 };
 
-class Pose2 {
+class Pose2 : gtsam::Value {
   // Standard Constructor
 	Pose2();
 	Pose2(double x, double y, double theta);
@@ -341,7 +340,7 @@ class Pose2 {
   Matrix matrix() const;
 };
 
-class Pose3 {
+class Pose3 : gtsam::Value {
 	// Standard Constructors
 	Pose3();
 	Pose3(const gtsam::Pose3& pose);
@@ -389,7 +388,7 @@ class Pose3 {
 	double range(const gtsam::Pose3& pose); // FIXME: shadows other range
 };
 
-class Cal3_S2 {
+class Cal3_S2 : gtsam::Value {
   // Standard Constructors
   Cal3_S2();
   Cal3_S2(double fx, double fy, double s, double u0, double v0);
@@ -439,7 +438,7 @@ class Cal3_S2Stereo {
   double baseline() const;
 };
 
-class CalibratedCamera {
+class CalibratedCamera : gtsam::Value {
   // Standard Constructors and Named Constructors
 	CalibratedCamera();
 	CalibratedCamera(const gtsam::Pose3& pose);
@@ -469,7 +468,7 @@ class CalibratedCamera {
   double range(const gtsam::Point3& p) const; // TODO: Other overloaded range methods
 };
 
-class SimpleCamera {
+class SimpleCamera : gtsam::Value {
   // Standard Constructors and Named Constructors
 	SimpleCamera();
   SimpleCamera(const gtsam::Pose3& pose);
@@ -942,6 +941,7 @@ class Values {
 	Values();
 	size_t size() const;
 	void print(string s) const;
+	void insert(size_t j, const gtsam::Value& value);
 	bool exists(size_t j) const;
 };
 

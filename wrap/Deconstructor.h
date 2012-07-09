@@ -55,8 +55,7 @@ struct Deconstructor {
 			 const std::string& cppClassName,
 			 const std::string& matlabClassName,
 			 int id,
-			 const std::vector<std::string>& using_namespaces,
-			 const std::vector<std::string>& includes) const;
+			 const std::vector<std::string>& using_namespaces) const;
 };
 
 } // \namespace wrap

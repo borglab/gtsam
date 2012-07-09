@@ -21,6 +21,7 @@
 #include <exception>
 #include <fstream>
 #include <sstream>
+#include <cstdint>
 
 #include "FileWriter.h"
 
@@ -65,7 +66,19 @@ public:
 		return ("Missing dependency " + dependency_ + " in " + location_).c_str();
 	}
 };
-
+	
+/** Special "magic number" passed into MATLAB constructor to indicate creating
+ * a MATLAB object from a shared_ptr allocated in C++
+ */
+static const uint64_t ptr_constructor_key =
+	(uint64_t('G') << 56) |
+	(uint64_t('T') << 48) |
+	(uint64_t('S') << 40) |
+	(uint64_t('A') << 32) |
+	(uint64_t('M') << 24) |
+	(uint64_t('p') << 16) |
+	(uint64_t('t') << 8) |
+	(uint64_t('r'));
 
 /**
  * read contents of a file into a std::string

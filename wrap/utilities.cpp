@@ -137,12 +137,16 @@ void generateIncludes(FileWriter& file, const string& class_name,
 /* ************************************************************************* */
 string qualifiedName(const string& separator, const vector<string>& names, const string& finalName) {
 	string result;
-	for(size_t i = 0; i < names.size() - 1; ++i)
-		result += (names[i] + separator);
-	if(finalName.empty())
-		result += names.back();
-	else
-		result += (names.back() + separator + finalName);
+	if(!names.empty()) {
+		for(size_t i = 0; i < names.size() - 1; ++i)
+			result += (names[i] + separator);
+		if(finalName.empty())
+			result += names.back();
+		else
+			result += (names.back() + separator + finalName);
+	} else if(!finalName.empty()) {
+		result = finalName;
+	}
 	return result;
 }
 
