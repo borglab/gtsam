@@ -18,7 +18,7 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
-#include <stdint.h>
+#include <cstdint>
 
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
@@ -31,18 +31,24 @@ using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
-void Class::matlab_proxy(const string& classFile, const string& wrapperName, FileWriter& wrapperFile, vector<string>& functionNames) const {
+void Class::matlab_proxy(const string& classFile, const string& wrapperName,
+												 const ReturnValue::TypeAttributesTable& typeAttributes,
+												 FileWriter& wrapperFile, vector<string>& functionNames) const {
   // open destination classFile
   FileWriter proxyFile(classFile, verbose_, "%");
 
   // get the name of actual matlab object
   const string matlabName = qualifiedName(), cppName = qualifiedName("::");
+	const string matlabBaseName = wrap::qualifiedName("", qualifiedParent);
+	const string cppBaseName = wrap::qualifiedName("::", qualifiedParent);
 
   // emit class proxy code
   // we want our class to inherit the handle class for memory purposes
-  proxyFile.oss << "classdef " << matlabName << " < handle" << endl;
+	const string parent = qualifiedParent.empty() ?
+		"handle" : ::wrap::qualifiedName("", qualifiedParent);
+  proxyFile.oss << "classdef " << matlabName << " < " << parent << endl;
   proxyFile.oss << "  properties" << endl;
-  proxyFile.oss << "    self = 0" << endl;
+  proxyFile.oss << "    ptr_" << matlabName << " = 0" << endl;
   proxyFile.oss << "  end" << endl;
   proxyFile.oss << "  methods" << endl;
 
@@ -64,15 +70,18 @@ void Class::matlab_proxy(const string& classFile, const string& wrapperName, Fil
   BOOST_FOREACH(ArgumentList a, constructor.args_list)
   {
 		const int id = functionNames.size();
-    constructor.proxy_fragment(proxyFile, wrapperName, matlabName, id, a);
+		constructor.proxy_fragment(proxyFile, wrapperName, matlabName, matlabBaseName, id, a);
 		const string wrapFunctionName = constructor.wrapper_fragment(wrapperFile,
-			cppName, matlabName, id, using_namespaces, includes, a);
+			cppName, matlabName, cppBaseName, id, using_namespaces, a);
 		wrapperFile.oss << "\n";
     functionNames.push_back(wrapFunctionName);
   }
   proxyFile.oss << "      else\n";
 	proxyFile.oss << "        error('Arguments do not match any overload of " << matlabName << " constructor');" << endl;
 	proxyFile.oss << "      end\n";
+	if(!qualifiedParent.empty())
+		proxyFile.oss << "      obj = obj@" << matlabBaseName << "(uint64(" << ptr_constructor_key << "), base_ptr);\n";
+	proxyFile.oss << "      obj.ptr_" << matlabName << " = my_ptr;\n";
   proxyFile.oss << "    end\n\n";
 
 	// Deconstructor
@@ -80,8 +89,7 @@ void Class::matlab_proxy(const string& classFile, const string& wrapperName, Fil
 		const int id = functionNames.size();
 		deconstructor.proxy_fragment(proxyFile, wrapperName, matlabName, id);
 		proxyFile.oss << "\n";
-		const string functionName = deconstructor.wrapper_fragment(wrapperFile,
-			cppName, matlabName, id, using_namespaces, includes);
+		const string functionName = deconstructor.wrapper_fragment(wrapperFile, cppName, matlabName, id, using_namespaces);
 		wrapperFile.oss << "\n";
 		functionNames.push_back(functionName);
 	}
@@ -91,7 +99,7 @@ void Class::matlab_proxy(const string& classFile, const string& wrapperName, Fil
 	// Methods
 	BOOST_FOREACH(const Methods::value_type& name_m, methods) {
 		const Method& m = name_m.second;
-		m.proxy_wrapper_fragments(proxyFile, wrapperFile, cppName, matlabName, wrapperName, using_namespaces, functionNames);
+		m.proxy_wrapper_fragments(proxyFile, wrapperFile, cppName, matlabName, wrapperName, using_namespaces, typeAttributes, functionNames);
 		proxyFile.oss << "\n";
 		wrapperFile.oss << "\n";
 	}
@@ -103,7 +111,7 @@ void Class::matlab_proxy(const string& classFile, const string& wrapperName, Fil
 	// Static methods
 	BOOST_FOREACH(const StaticMethods::value_type& name_m, static_methods) {
 		const StaticMethod& m = name_m.second;
-		m.proxy_wrapper_fragments(proxyFile, wrapperFile, cppName, matlabName, wrapperName, using_namespaces, functionNames);
+		m.proxy_wrapper_fragments(proxyFile, wrapperFile, cppName, matlabName, wrapperName, using_namespaces, typeAttributes, functionNames);
 		proxyFile.oss << "\n";
 		wrapperFile.oss << "\n";
 	}
@@ -117,49 +125,50 @@ void Class::matlab_proxy(const string& classFile, const string& wrapperName, Fil
 
 /* ************************************************************************* */
 string Class::qualifiedName(const string& delim) const {
-	string result;
-	BOOST_FOREACH(const string& ns, namespaces)
-		result += ns + delim;
-	return result + name;
+	return ::wrap::qualifiedName(delim, namespaces, name);
 }
 
 /* ************************************************************************* */
 string Class::pointer_constructor_fragments(FileWriter& proxyFile, FileWriter& wrapperFile, const string& wrapperName, int id) const {
-	
-	static const uint64_t ptr_constructor_key =
-		(uint64_t('G') << 56) |
-		(uint64_t('T') << 48) |
-		(uint64_t('S') << 40) |
-		(uint64_t('A') << 32) |
-		(uint64_t('M') << 24) |
-		(uint64_t('p') << 16) |
-		(uint64_t('t') << 8) |
-		(uint64_t('r'));
 
   const string matlabName = qualifiedName(), cppName = qualifiedName("::");
-	const string wrapFunctionName = matlabName + "_constructor_" + boost::lexical_cast<string>(id);
+	const string wrapFunctionName = matlabName + "_collectorInsertAndMakeBase_" + boost::lexical_cast<string>(id);
+	const string baseMatlabName = wrap::qualifiedName("", qualifiedParent);
+	const string baseCppName = wrap::qualifiedName("::", qualifiedParent);
 
 	// MATLAB constructor that assigns pointer to matlab object then calls c++
 	// function to add the object to the collector.
 	proxyFile.oss << "      if nargin == 2 && isa(varargin{1}, 'uint64') && ";
 	proxyFile.oss << "varargin{1} == uint64(" << ptr_constructor_key << ")\n";
-	proxyFile.oss << "        obj.self = varargin{2};\n";
-	proxyFile.oss << "        " << wrapperName << "(obj.self);\n";
+	proxyFile.oss << "        my_ptr = varargin{2};\n";
+	if(qualifiedParent.empty()) // If this class has a base class, we'll get a base class pointer back
+		proxyFile.oss << "        ";
+	else
+		proxyFile.oss << "        base_ptr = ";
+	proxyFile.oss << wrapperName << "(" << id << ", my_ptr);\n"; // Call collector insert and get base class ptr
 
 	// C++ function to add pointer from MATLAB to collector.  The pointer always
 	// comes from a C++ return value; this mechanism allows the object to be added
-	// to a collector in a different wrap module.
+	// to a collector in a different wrap module.  If this class has a base class,
+	// a new pointer to the base class is allocated and returned.
   wrapperFile.oss << "void " << wrapFunctionName << "(int nargout, mxArray *out[], int nargin, const mxArray *in[])" << endl;
   wrapperFile.oss << "{\n";
 	wrapperFile.oss << "  mexAtExit(&_deleteAllObjects);\n";
 	generateUsingNamespace(wrapperFile, using_namespaces);
   // Typedef boost::shared_ptr
-	wrapperFile.oss << "  typedef boost::shared_ptr<"  << cppName << "> Shared;\n";
+	wrapperFile.oss << "  typedef boost::shared_ptr<" << cppName << "> Shared;\n";
 	wrapperFile.oss << "\n";
 	// Get self pointer passed in
 	wrapperFile.oss << "  Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));\n";
 	// Add to collector
 	wrapperFile.oss << "  collector_" << matlabName << ".insert(self);\n";
+	// If we have a base class, return the base class pointer (MATLAB will call the base class collectorInsertAndMakeBase to add this to the collector and recurse the heirarchy)
+	if(!qualifiedParent.empty()) {
+		wrapperFile.oss << "\n";
+		wrapperFile.oss << "  typedef boost::shared_ptr<" << baseCppName << "> SharedBase;\n";
+    wrapperFile.oss << "  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);\n";
+		wrapperFile.oss << "  *reinterpret_cast<SharedBase**>(mxGetData(out[0])) = new SharedBase(*self);\n";
+	}
 	wrapperFile.oss << "}\n";
 
 	return wrapFunctionName;

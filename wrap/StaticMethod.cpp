@@ -42,6 +42,7 @@ void StaticMethod::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wr
 																		 const string& matlabClassName,
 																		 const string& wrapperName,
 																		 const vector<string>& using_namespaces,
+																		 const ReturnValue::TypeAttributesTable& typeAttributes,
 																		 vector<string>& functionNames) const {
 
   string upperName = name;  upperName[0] = std::toupper(upperName[0], std::locale());
@@ -82,7 +83,7 @@ void StaticMethod::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wr
 		// Output C++ wrapper code
 		
 		const string wrapFunctionName = wrapper_fragment(
-			wrapperFile, cppClassName, matlabClassName, overload, id, using_namespaces);
+			wrapperFile, cppClassName, matlabClassName, overload, id, using_namespaces, typeAttributes);
 
 		// Add to function list
 		functionNames.push_back(wrapFunctionName);
@@ -103,7 +104,8 @@ string StaticMethod::wrapper_fragment(FileWriter& file,
 			    const string& matlabClassName,
 					int overload,
 					int id,
-			    const vector<string>& using_namespaces) const {
+			    const vector<string>& using_namespaces,
+					const ReturnValue::TypeAttributesTable& typeAttributes) const {
 
   // generate code
 
@@ -140,14 +142,11 @@ string StaticMethod::wrapper_fragment(FileWriter& file,
 
   file.oss << "  ";
 
-  // call method with default type
+  // call method with default type and wrap result
   if (returnVal.type1!="void")
-    file.oss << returnVal.return_type(true,ReturnValue::pair) << " result = ";
-  file.oss << cppClassName  << "::" << name << "(" << args.names() << ");\n";
-
-  // wrap result
-  // example: out[0]=wrap<bool>(result);
-  returnVal.wrap_result(file);
+		returnVal.wrap_result(cppClassName+"::"+name+"("+args.names()+")", file, typeAttributes);
+	else
+		file.oss << cppClassName+"::"+name+"("+args.names()+");\n";
 
   // finish
   file.oss << "}\n";

@@ -21,6 +21,9 @@
 #include <exception>
 #include <fstream>
 #include <sstream>
+#include <cstdint>
+#include <string>
+#include <boost/format.hpp>
 
 #include "FileWriter.h"
 
@@ -28,44 +31,54 @@ namespace wrap {
 
 class CantOpenFile : public std::exception {
  private:
-  std::string filename_;
+	const std::string what_;
  public:
- CantOpenFile(const std::string& filename) : filename_(filename) {}
+ CantOpenFile(const std::string& filename) : what_("Can't open file " + filename) {}
   ~CantOpenFile() throw() {}
-  virtual const char* what() const throw() { 
-    return ("Can't open file " + filename_).c_str(); 
-  }
+	virtual const char* what() const throw() { return what_.c_str(); }
 };
 
 class ParseFailed : public std::exception {
  private:
-  int length_;
+  const std::string what_;
  public:
- ParseFailed(int length) : length_(length) {}
-  ~ParseFailed() throw() {}
-  virtual const char* what() const throw() { 
-    std::stringstream buf;
-    int len = length_+1;
-    buf << "Parse failed at character [" << len << "]";
-    return buf.str().c_str(); 
-  }
+	 ParseFailed(int length) : what_((boost::format("Parse failed at character [%d]")%(length-1)).str()) {}
+	 ~ParseFailed() throw() {}
+	 virtual const char* what() const throw() { return what_.c_str(); }
 };
 
 class DependencyMissing : public std::exception {
 private:
-	std::string dependency_;
-	std::string location_;
+	const std::string what_;
 public:
-	DependencyMissing(const std::string& dep, const std::string& loc) {
-		dependency_ = dep;
-		location_ = loc;
-	}
+	DependencyMissing(const std::string& dep, const std::string& loc) :
+		what_("Missing dependency " + dep + " in " + loc) {}
 	~DependencyMissing() throw() {}
-	virtual const char* what() const throw() {
-		return ("Missing dependency " + dependency_ + " in " + location_).c_str();
-	}
+	virtual const char* what() const throw() { return what_.c_str(); }
 };
 
+class DuplicateDefinition : public std::exception {
+private:
+	const std::string what_;
+public:
+	DuplicateDefinition(const std::string& name) :
+		what_("Duplicate definition of " + name) {}
+	~DuplicateDefinition() throw() {}
+	virtual const char* what() const throw() { return what_.c_str(); }
+};
+	
+/** Special "magic number" passed into MATLAB constructor to indicate creating
+ * a MATLAB object from a shared_ptr allocated in C++
+ */
+static const uint64_t ptr_constructor_key =
+	(uint64_t('G') << 56) |
+	(uint64_t('T') << 48) |
+	(uint64_t('S') << 40) |
+	(uint64_t('A') << 32) |
+	(uint64_t('M') << 24) |
+	(uint64_t('p') << 16) |
+	(uint64_t('t') << 8) |
+	(uint64_t('r'));
 
 /**
  * read contents of a file into a std::string
@@ -97,5 +110,11 @@ void generateUsingNamespace(FileWriter& file, const std::vector<std::string>& us
  */
 void generateIncludes(FileWriter& file, const std::string& class_name,
 		const std::vector<std::string>& includes);
+
+/**
+ * Return a qualified name, if finalName is empty, only the names vector will
+ * be used (i.e. there won't be a trailing separator on the qualified name).
+ */
+std::string qualifiedName(const std::string& separator, const std::vector<std::string>& names, const std::string& finalName = "");
 
 } // \namespace wrap

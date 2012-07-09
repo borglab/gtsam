@@ -64,7 +64,7 @@ void Argument::matlab_unwrap(FileWriter& file, const string& matlabName) const {
 		file.oss << cppType << " " << name << " = unwrap< ";
 
 	file.oss << cppType << " >(" << matlabName;
-  if (is_ptr || is_ref) file.oss << ", \"" << matlabType << "\"";
+  if (is_ptr || is_ref) file.oss << ", \"ptr_" << matlabType << "\"";
   file.oss << ");" << endl;
 }
 

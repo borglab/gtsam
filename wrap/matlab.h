@@ -56,7 +56,7 @@ using namespace boost; // not usual, but for conciseness of generated code
 #endif
 
 // "Unique" key to signal calling the matlab object constructor with a raw pointer
-// Also present in Class.cpp
+// Also present in utilities.h
 static const uint64_t ptr_constructor_key =
 	(uint64_t('G') << 56) |
 	(uint64_t('T') << 48) |
@@ -119,7 +119,7 @@ void checkArguments(const string& name, int nargout, int nargin, int expected) {
 
 // default wrapping throws an error: only basis types are allowed in wrap
 template <typename Class>
-mxArray* wrap(Class& value) {
+mxArray* wrap(const Class& value) {
   error("wrap internal error: attempted wrap of invalid type");
 	return 0;
 }
@@ -127,13 +127,13 @@ mxArray* wrap(Class& value) {
 // specialization to string
 // wraps into a character array
 template<>
-mxArray* wrap<string>(string& value) {
+mxArray* wrap<string>(const string& value) {
   return mxCreateString(value.c_str());
 }
 
 // specialization to char
 template<>
-mxArray* wrap<char>(char& value) {
+mxArray* wrap<char>(const char& value) {
   mxArray *result = scalar(mxUINT32OR64_CLASS);
   *(char*)mxGetData(result) = value;
   return result;
@@ -141,7 +141,7 @@ mxArray* wrap<char>(char& value) {
 
 // specialization to unsigned char
 template<>
-mxArray* wrap<unsigned char>(unsigned char& value) {
+mxArray* wrap<unsigned char>(const unsigned char& value) {
   mxArray *result = scalar(mxUINT32OR64_CLASS);
   *(unsigned char*)mxGetData(result) = value;
   return result;
@@ -149,7 +149,7 @@ mxArray* wrap<unsigned char>(unsigned char& value) {
 
 // specialization to bool
 template<>
-mxArray* wrap<bool>(bool& value) {
+mxArray* wrap<bool>(const bool& value) {
   mxArray *result = scalar(mxUINT32OR64_CLASS);
   *(bool*)mxGetData(result) = value;
   return result;
@@ -157,7 +157,7 @@ mxArray* wrap<bool>(bool& value) {
 
 // specialization to size_t
 template<>
-mxArray* wrap<size_t>(size_t& value) {
+mxArray* wrap<size_t>(const size_t& value) {
   mxArray *result = scalar(mxUINT32OR64_CLASS);
   *(size_t*)mxGetData(result) = value;
   return result;
@@ -165,7 +165,7 @@ mxArray* wrap<size_t>(size_t& value) {
 
 // specialization to int
 template<>
-mxArray* wrap<int>(int& value) {
+mxArray* wrap<int>(const int& value) {
   mxArray *result = scalar(mxUINT32OR64_CLASS);
   *(int*)mxGetData(result) = value;
   return result;
@@ -173,7 +173,7 @@ mxArray* wrap<int>(int& value) {
 
 // specialization to double -> just double
 template<>
-mxArray* wrap<double>(double& value) {
+mxArray* wrap<double>(const double& value) {
   return mxCreateDoubleScalar(value);
 }
 
@@ -188,13 +188,7 @@ mxArray* wrap_Vector(const gtsam::Vector& v) {
 
 // specialization to Eigen vector -> double vector
 template<>
-mxArray* wrap<gtsam::Vector >(gtsam::Vector& v) {
-  return wrap_Vector(v);
-}
-
-// const version
-template<>
-mxArray* wrap<const gtsam::Vector >(const gtsam::Vector& v) {
+mxArray* wrap<gtsam::Vector >(const gtsam::Vector& v) {
   return wrap_Vector(v);
 }
 
@@ -214,13 +208,7 @@ mxArray* wrap_Matrix(const gtsam::Matrix& A) {
 
 // specialization to Eigen MATRIX -> double matrix
 template<>
-mxArray* wrap<gtsam::Matrix >(gtsam::Matrix& A) {
-  return wrap_Matrix(A);
-}
-
-// const version
-template<>
-mxArray* wrap<const gtsam::Matrix >(const gtsam::Matrix& A) {
+mxArray* wrap<gtsam::Matrix >(const gtsam::Matrix& A) {
   return wrap_Matrix(A);
 }
 
@@ -342,9 +330,14 @@ gtsam::Matrix unwrap< gtsam::Matrix >(const mxArray* array) {
  [create_object] creates a MATLAB proxy class object with a mexhandle
  in the self property. Matlab does not allow the creation of matlab
  objects from within mex files, hence we resort to an ugly trick: we
- invoke the proxy class constructor by calling MATLAB, and pass 13
- dummy arguments to let the constructor know we want an object without
- the self property initialized. We then assign the mexhandle to self.
+ invoke the proxy class constructor by calling MATLAB with a special
+ uint64 value ptr_constructor_key and the pointer itself.  MATLAB
+ allocates the object.  Then, the special constructor in our wrap code
+ that is activated when the ptr_constructor_key is passed in passes
+ the pointer back into a C++ function to add the pointer to its
+ collector.  We go through this extra "C++ to MATLAB to C++ step" in
+ order to be able to add to the collector could be in a different wrap
+ module.
 */
 mxArray* create_object(const char *classname, void *pointer) {
   mxArray *result;
@@ -376,9 +369,9 @@ mxArray* wrap_shared_ptr(boost::shared_ptr< Class >* shared_ptr, const char *cla
 }
 
 template <typename Class>
-boost::shared_ptr<Class> unwrap_shared_ptr(const mxArray* obj, const string& className) {
+boost::shared_ptr<Class> unwrap_shared_ptr(const mxArray* obj, const string& propertyName) {
 
-  mxArray* mxh = mxGetProperty(obj,0,"self");
+	mxArray* mxh = mxGetProperty(obj,0, propertyName.c_str());
   if (mxGetClassID(mxh) != mxUINT32OR64_CLASS || mxIsComplex(mxh)
     || mxGetM(mxh) != 1 || mxGetN(mxh) != 1) error(
     "Parameter is not an Shared type.");

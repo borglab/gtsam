@@ -41,9 +41,10 @@ void Method::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperF
 																		 const string& matlabClassName,
 																		 const string& wrapperName,
 																		 const vector<string>& using_namespaces,
+																		 const ReturnValue::TypeAttributesTable& typeAttributes,
 																		 vector<string>& functionNames) const {
 
-	proxyFile.oss << "    function varargout = " << name << "(self, varargin)\n";
+	proxyFile.oss << "    function varargout = " << name << "(this, varargin)\n";
 
 	for(size_t overload = 0; overload < argLists.size(); ++overload) {
 		const ArgumentList& args = argLists[overload];
@@ -74,12 +75,12 @@ void Method::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperF
 			output = "";
 		else
 			output = "varargout{1} = ";
-		proxyFile.oss << "        " << output << wrapperName << "(" << id << ", self, varargin{:});\n";
+		proxyFile.oss << "        " << output << wrapperName << "(" << id << ", this, varargin{:});\n";
 
 		// Output C++ wrapper code
 		
 		const string wrapFunctionName = wrapper_fragment(
-			wrapperFile, cppClassName, matlabClassName, overload, id, using_namespaces);
+			wrapperFile, cppClassName, matlabClassName, overload, id, using_namespaces, typeAttributes);
 
 		// Add to function list
 		functionNames.push_back(wrapFunctionName);
@@ -100,7 +101,8 @@ string Method::wrapper_fragment(FileWriter& file,
 			    const string& matlabClassName,
 					int overload,
 					int id,
-			    const vector<string>& using_namespaces) const {
+			    const vector<string>& using_namespaces,
+					const ReturnValue::TypeAttributesTable& typeAttributes) const {
 
   // generate code
 
@@ -135,20 +137,16 @@ string Method::wrapper_fragment(FileWriter& file,
 
   // get class pointer
   // example: shared_ptr<Test> = unwrap_shared_ptr< Test >(in[0], "Test");
-  file.oss << "  Shared obj = unwrap_shared_ptr<" << cppClassName << ">(in[0], \"" << cppClassName << "\");" << endl;
+  file.oss << "  Shared obj = unwrap_shared_ptr<" << cppClassName << ">(in[0], \"ptr_" << matlabClassName << "\");" << endl;
   // unwrap arguments, see Argument.cpp
   args.matlab_unwrap(file,1);
 
-  // call method
-  // example: bool result = self->return_field(t);
-  file.oss << "  ";
+  // call method and wrap result
+  // example: out[0]=wrap<bool>(self->return_field(t));
   if (returnVal.type1!="void")
-    file.oss << returnVal.return_type(true,ReturnValue::pair) << " result = ";
-  file.oss << "obj->" << name << "(" << args.names() << ");\n";
-
-  // wrap result
-  // example: out[0]=wrap<bool>(result);
-  returnVal.wrap_result(file);
+		returnVal.wrap_result("obj->"+name+"("+args.names()+")", file, typeAttributes);
+	else
+		file.oss << "  obj->"+name+"("+args.names()+");\n";
 
   // finish
   file.oss << "}\n";

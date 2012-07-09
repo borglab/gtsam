@@ -24,8 +24,10 @@
 //#define BOOST_SPIRIT_DEBUG
 #include <boost/spirit/include/classic_confix.hpp>
 #include <boost/spirit/include/classic_clear_actor.hpp>
+#include <boost/spirit/include/classic_insert_at_actor.hpp>
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/lambda.hpp>
+#include <boost/lambda/construct.hpp>
 #include <boost/foreach.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
@@ -65,12 +67,12 @@ Module::Module(const string& interfacePath,
   //Method method0(enable_verbose), method(enable_verbose);
   StaticMethod static_method0(enable_verbose), static_method(enable_verbose);
   Class cls0(enable_verbose),cls(enable_verbose);
+	ForwardDeclaration fwDec0, fwDec;
   vector<string> namespaces, /// current namespace tag
   							 namespace_includes, /// current set of includes
   							 namespaces_return, /// namespace for current return type
   							 using_namespace_current;  /// All namespaces from "using" declarations
   string include_path = "";
-  string class_name = "";
   const string null_str = "";
 
   //----------------------------------------------------------------------------
@@ -93,7 +95,7 @@ Module::Module(const string& interfacePath,
   Rule eigenType_p =
     (str_p("Vector") | "Matrix");
 
-  Rule className_p  = (lexeme_d[upper_p >> *(alnum_p | '_')] - eigenType_p - keywords_p)[assign_a(class_name)];
+  Rule className_p  = (lexeme_d[upper_p >> *(alnum_p | '_')] - eigenType_p - keywords_p);
 
   Rule namespace_name_p = lexeme_d[lower_p >> *(alnum_p | '_')] - keywords_p;
 
@@ -113,6 +115,10 @@ Module::Module(const string& interfacePath,
   	*namespace_arg_p >>
     className_p[assign_a(arg.type)] >>
     (ch_p('*')[assign_a(arg.is_ptr,true)] | ch_p('&')[assign_a(arg.is_ref,true)]);
+
+	Rule classParent_p =
+		*(namespace_name_p[push_back_a(cls.qualifiedParent)] >> str_p("::")) >>
+		className_p[push_back_a(cls.qualifiedParent)];
 
   Rule name_p = lexeme_d[alpha_p >> *(alnum_p | '_')];
 
@@ -196,9 +202,10 @@ Module::Module(const string& interfacePath,
 
   Rule class_p =
   		(!*include_p
+			>> !(str_p("virtual")[assign_a(cls.isVirtual, true)])
   		>> str_p("class")[push_back_a(cls.includes, include_path)][assign_a(include_path, null_str)]
   		>> className_p[assign_a(cls.name)]
-      >> '{'
+			>> ((':' >> classParent_p >> '{') | '{') // By having (parent >> '{' | '{') here instead of (!parent >> '{'), we trigger a parse error on a badly-formed parent spec
   		>> *(functions_p | comments_p)
   		>> str_p("};"))
         [assign_a(constructor.name, cls.name)]
@@ -208,7 +215,7 @@ Module::Module(const string& interfacePath,
   		[append_a(cls.includes, namespace_includes)]
         [assign_a(deconstructor.name,cls.name)]
         [assign_a(cls.deconstructor, deconstructor)]
-  		[push_back_a(classes,cls)]
+			[push_back_a(classes, cls)]
         [assign_a(deconstructor,deconstructor0)]
         [assign_a(constructor, constructor0)]
   		[assign_a(cls,cls0)];
@@ -229,9 +236,12 @@ Module::Module(const string& interfacePath,
 			>> namespace_name_p[push_back_a(using_namespace_current)] >> ch_p(';');
 
 	Rule forward_declaration_p =
-			str_p("class") >>
-					(*(namespace_name_p >> str_p("::")) >> className_p)[push_back_a(forward_declarations)]
-					>> ch_p(';');
+			!(str_p("virtual")[assign_a(fwDec.isVirtual, true)])
+			>> str_p("class")
+			>> (*(namespace_name_p >> str_p("::")) >> className_p)[assign_a(fwDec.name)]
+			>> ch_p(';')
+			[push_back_a(forward_declarations, fwDec)]
+			[assign_a(fwDec, fwDec0)];
 
   Rule module_content_p =	comments_p | using_namespace_p | class_p | forward_declaration_p | namespace_def_p ;
 
@@ -321,7 +331,10 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 		wrapperFile.oss << "\n";
 
     // Dependency check list
-    vector<string> validTypes = forward_declarations;
+    vector<string> validTypes;
+		BOOST_FOREACH(const ForwardDeclaration& fwDec, forward_declarations) {
+			validTypes.push_back(fwDec.name);
+		}
     validTypes.push_back("void");
     validTypes.push_back("string");
     validTypes.push_back("int");
@@ -333,18 +346,31 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
     validTypes.push_back("Vector");
     validTypes.push_back("Matrix");
 		//Create a list of parsed classes for dependency checking
-    BOOST_FOREACH(Class cls, classes) {
+    BOOST_FOREACH(const Class& cls, classes) {
 			validTypes.push_back(cls.qualifiedName("::"));
     }
 
+		// Create type attributes table
+		ReturnValue::TypeAttributesTable typeAttributes;
+		BOOST_FOREACH(const ForwardDeclaration& fwDec, forward_declarations) {
+			if(!typeAttributes.insert(make_pair(fwDec.name, ReturnValue::TypeAttributes(fwDec.isVirtual))).second)
+				throw DuplicateDefinition("class " + fwDec.name);
+		}
+		BOOST_FOREACH(const Class& cls, classes) {
+			if(!typeAttributes.insert(make_pair(cls.qualifiedName("::"), ReturnValue::TypeAttributes(cls.isVirtual))).second)
+				throw DuplicateDefinition("class " + cls.qualifiedName("::"));
+
+			// Check that class is virtual if it has a parent
+		}
+
 		// Generate all includes
-		BOOST_FOREACH(Class cls, classes) {
+		BOOST_FOREACH(const Class& cls, classes) {
 			generateIncludes(wrapperFile, cls.name, cls.includes);
 		}
 		wrapperFile.oss << "\n";
 
 		// Generate all collectors
-		BOOST_FOREACH(Class cls, classes) {
+		BOOST_FOREACH(const Class& cls, classes) {
 			const string matlabName = cls.qualifiedName(), cppName = cls.qualifiedName("::");
 			wrapperFile.oss << "typedef std::set<boost::shared_ptr<" << cppName << ">*> "
 				<< "Collector_" << matlabName << ";\n";
@@ -355,7 +381,7 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 		// generate mexAtExit cleanup function
 		wrapperFile.oss << "void _deleteAllObjects()\n";
 		wrapperFile.oss << "{\n";
-		BOOST_FOREACH(Class cls, classes) {
+		BOOST_FOREACH(const Class& cls, classes) {
 			const string matlabName = cls.qualifiedName();
 			const string cppName = cls.qualifiedName("::");
 			const string collectorType = "Collector_" + matlabName;
@@ -369,10 +395,10 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 		wrapperFile.oss << "}\n";
 
     // generate proxy classes and wrappers
-    BOOST_FOREACH(Class cls, classes) {
+		BOOST_FOREACH(const Class& cls, classes) {
       // create proxy class and wrapper code
       string classFile = toolboxPath + "/" + cls.qualifiedName() + ".m";
-      cls.matlab_proxy(classFile, wrapperName, wrapperFile, functionNames);
+      cls.matlab_proxy(classFile, wrapperName, typeAttributes, wrapperFile, functionNames);
 
       // verify all of the function arguments
       //TODO:verifyArguments<ArgumentList>(validTypes, cls.constructor.args_list);
