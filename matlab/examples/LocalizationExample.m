@@ -20,13 +20,13 @@ graph = pose2SLAMGraph;
 
 %% Add two odometry factors
 odometry = gtsamPose2(2.0, 0.0, 0.0); % create a measurement for both factors (the same in this case)
-odometryNoise = gtsamnoiseModelDiagonal_Sigmas([0.2; 0.2; 0.1]); % 20cm std on x,y, 0.1 rad on theta
+odometryNoise = gtsamnoiseModelDiagonal.Sigmas([0.2; 0.2; 0.1]); % 20cm std on x,y, 0.1 rad on theta
 graph.addRelativePose(1, 2, odometry, odometryNoise);
 graph.addRelativePose(2, 3, odometry, odometryNoise);
 
 %% Add three "GPS" measurements
 % We use Pose2 Priors here with high variance on theta
-noiseModel = gtsamnoiseModelDiagonal_Sigmas([0.1; 0.1; 10]);
+noiseModel = gtsamnoiseModelDiagonal.Sigmas([0.1; 0.1; 10]);
 graph.addPosePrior(1, gtsamPose2(0.0, 0.0, 0.0), noiseModel);
 graph.addPosePrior(2, gtsamPose2(2.0, 0.0, 0.0), noiseModel);
 graph.addPosePrior(3, gtsamPose2(4.0, 0.0, 0.0), noiseModel);

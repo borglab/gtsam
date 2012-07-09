@@ -15,22 +15,22 @@
 i1 = symbol('x',1); i2 = symbol('x',2); i3 = symbol('x',3);
 graph = planarSLAMGraph;
 priorMean = gtsamPose2(0.0, 0.0, 0.0); % prior at origin
-priorNoise = gtsamnoiseModelDiagonal_Sigmas([0.3; 0.3; 0.1]);
+priorNoise = gtsamnoiseModelDiagonal.Sigmas([0.3; 0.3; 0.1]);
 graph.addPosePrior(i1, priorMean, priorNoise); % add directly to graph
 odometry = gtsamPose2(2.0, 0.0, 0.0);
-odometryNoise = gtsamnoiseModelDiagonal_Sigmas([0.2; 0.2; 0.1]);
+odometryNoise = gtsamnoiseModelDiagonal.Sigmas([0.2; 0.2; 0.1]);
 graph.addRelativePose(i1, i2, odometry, odometryNoise);
 graph.addRelativePose(i2, i3, odometry, odometryNoise);
 
 %% Except, for measurements we offer a choice
 j1 = symbol('l',1); j2 = symbol('l',2);
 degrees = pi/180;
-noiseModel = gtsamnoiseModelDiagonal_Sigmas([0.1; 0.2]);
+noiseModel = gtsamnoiseModelDiagonal.Sigmas([0.1; 0.2]);
 if 1
     graph.addBearingRange(i1, j1, gtsamRot2(45*degrees), sqrt(4+4), noiseModel);
     graph.addBearingRange(i2, j1, gtsamRot2(90*degrees), 2, noiseModel);
 else
-    bearingModel = gtsamnoiseModelDiagonal_Sigmas(0.1);    
+    bearingModel = gtsamnoiseModelDiagonal.Sigmas(0.1);    
     graph.addBearing(i1, j1, gtsamRot2(45*degrees), bearingModel);
     graph.addBearing(i2, j1, gtsamRot2(90*degrees), bearingModel);
 end

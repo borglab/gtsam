@@ -6,25 +6,27 @@
  *
  * Requirements:
  *   Classes must start with an uppercase letter
- *   Only one Method/Constructor per line
+ *   	 - Can wrap a typedef
+ *   Only one Method/Constructor per line, though methods/constructors can extend across multiple lines
  *   Methods can return
  *     - Eigen types:       Matrix, Vector
  *     - C/C++ basic types: string, bool, size_t, size_t, double, char, unsigned char
  *     - void
  *     - Any class with which be copied with boost::make_shared()
  *     - boost::shared_ptr of any object type
- *   Constructors
+<*   Constructors
  *     - Overloads are supported
  *     - A class with no constructors can be returned from other functions but not allocated directly in MATLAB
  *   Methods
  *     - Constness has no effect
+ *     - Specify by-value (not reference) return types, even if C++ method returns reference
  *     - Must start with a lowercase letter
  *     - Overloads are supported
  *   Static methods
  *     - Must start with a letter (upper or lowercase) and use the "static" keyword
- *     - Static method names will be changed to start with an uppercase letter in the generated MATLAB interface
+ *     - The first letter will be made uppercase in the generated MATLAB interface
  *     - Overloads are supported
- *   Arguments to functions any of
+=*   Arguments to functions any of
  *   	 - Eigen types:       Matrix, Vector
  *   	 - Eigen types and classes as an optionally const reference
  *     - C/C++ basic types: string, bool, size_t, size_t, double, char, unsigned char
@@ -40,7 +42,7 @@
  *   Namespace usage
  *   	 - Namespaces can be specified for classes in arguments and return values
  *   	 - In each case, the namespace must be fully specified, e.g., "namespace1::namespace2::ClassName"
- *   Using namespace
+ *   Using namespace: FIXME: this functionality is currently broken
  *   	 - To use a namespace (e.g., generate a "using namespace x" line in cpp files), add "using namespace x;"
  *   	 - This declaration applies to all classes *after* the declaration, regardless of brackets
  *   Includes in C++ wrappers
@@ -931,8 +933,20 @@ class Ordering {
   void insert(size_t key, size_t order);
   void push_back(size_t key);
   void permuteWithInverse(const gtsam::Permutation& inversePermutation);
-  // FIXME: Wrap InvertedMap as well
-  //InvertedMap invert() const;
+  gtsam::InvertedOrdering invert() const;
+};
+
+#include <gtsam/nonlinear/Ordering.h>
+class InvertedOrdering {
+	InvertedOrdering();
+
+	// FIXME: add bracket operator overload
+
+	bool empty() const;
+	size_t size() const;
+	bool count(size_t index) const; // Use as a boolean function with implicit cast
+
+	void clear();
 };
 
 class NonlinearFactorGraph {

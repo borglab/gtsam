@@ -18,6 +18,7 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <cstdint>
 
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
