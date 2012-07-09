@@ -22,13 +22,13 @@
 F = eye(2,2);
 B = eye(2,2);
 u = [1.0; 0.0];
-modelQ = gtsamnoiseModelDiagonal_Sigmas([0.1;0.1]);
+modelQ = gtsamnoiseModelDiagonal.Sigmas([0.1;0.1]);
 Q = 0.01*eye(2,2);
 H = eye(2,2);
 z1 = [1.0, 0.0]';
 z2 = [2.0, 0.0]';
 z3 = [3.0, 0.0]';
-modelR = gtsamnoiseModelDiagonal_Sigmas([0.1;0.1]);
+modelR = gtsamnoiseModelDiagonal.Sigmas([0.1;0.1]);
 R = 0.01*eye(2,2);
 
 %% Create the set of expected output TestValues

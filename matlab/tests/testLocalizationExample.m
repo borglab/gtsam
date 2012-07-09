@@ -15,7 +15,7 @@ graph = pose2SLAMGraph;
 
 %% Add two odometry factors
 odometry = gtsamPose2(2.0, 0.0, 0.0); % create a measurement for both factors (the same in this case)
-odometryNoise = gtsamnoiseModelDiagonal_Sigmas([0.2; 0.2; 0.1]); % 20cm std on x,y, 0.1 rad on theta
+odometryNoise = gtsamnoiseModelDiagonal.Sigmas([0.2; 0.2; 0.1]); % 20cm std on x,y, 0.1 rad on theta
 graph.addRelativePose(1, 2, odometry, odometryNoise);
 graph.addRelativePose(2, 3, odometry, odometryNoise);
 
@@ -25,7 +25,7 @@ groundTruth = pose2SLAMValues;
 groundTruth.insertPose(1, gtsamPose2(0.0, 0.0, 0.0));
 groundTruth.insertPose(2, gtsamPose2(2.0, 0.0, 0.0));
 groundTruth.insertPose(3, gtsamPose2(4.0, 0.0, 0.0));
-noiseModel = gtsamnoiseModelDiagonal_Sigmas([0.1; 0.1; 10]);
+noiseModel = gtsamnoiseModelDiagonal.Sigmas([0.1; 0.1; 10]);
 for i=1:3
     graph.addPosePrior(i, groundTruth.pose(i), noiseModel);
 end

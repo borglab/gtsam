@@ -23,7 +23,7 @@ poseNoiseSigmas = [0.001 0.001 0.001 0.1 0.1 0.1]';
 graph = visualSLAMGraph;
 
 %% Add factors for all measurements
-measurementNoise = gtsamnoiseModelIsotropic_Sigma(2,measurementNoiseSigma);
+measurementNoise = gtsamnoiseModelIsotropic.Sigma(2,measurementNoiseSigma);
 for i=1:length(data.Z)
     for k=1:length(data.Z{i})
         j = data.J{i}{k};
@@ -31,9 +31,9 @@ for i=1:length(data.Z)
     end
 end
 
-posePriorNoise  = gtsamnoiseModelDiagonal_Sigmas(poseNoiseSigmas);
+posePriorNoise  = gtsamnoiseModelDiagonal.Sigmas(poseNoiseSigmas);
 graph.addPosePrior(symbol('x',1), truth.cameras{1}.pose, posePriorNoise);
-pointPriorNoise  = gtsamnoiseModelIsotropic_Sigma(3,pointNoiseSigma);
+pointPriorNoise  = gtsamnoiseModelIsotropic.Sigma(3,pointNoiseSigma);
 graph.addPointPrior(symbol('p',1), truth.points{1}, pointPriorNoise);
 
 %% Initial estimate

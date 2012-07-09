@@ -34,7 +34,7 @@ graph = sparseBAGraph;
 
  
 %% Add factors for all measurements
-measurementNoise = gtsamnoiseModelIsotropic_Sigma(2,measurementNoiseSigma);
+measurementNoise = gtsamnoiseModelIsotropic.Sigma(2,measurementNoiseSigma);
 for i=1:length(data.Z)
     for k=1:length(data.Z{i})
         j = data.J{i}{k};
@@ -43,11 +43,11 @@ for i=1:length(data.Z)
 end
 
 %% Add Gaussian priors for a pose and a landmark to constrain the system
-cameraPriorNoise  = gtsamnoiseModelDiagonal_Sigmas(cameraNoiseSigmas);
+cameraPriorNoise  = gtsamnoiseModelDiagonal.Sigmas(cameraNoiseSigmas);
 firstCamera = gtsamSimpleCamera(truth.cameras{1}.pose, truth.K);
 graph.addSimpleCameraPrior(symbol('c',1), firstCamera, cameraPriorNoise);
 
-pointPriorNoise  = gtsamnoiseModelIsotropic_Sigma(3,pointNoiseSigma);
+pointPriorNoise  = gtsamnoiseModelIsotropic.Sigma(3,pointNoiseSigma);
 graph.addPointPrior(symbol('p',1), truth.points{1}, pointPriorNoise);
 
 %% Print the graph
