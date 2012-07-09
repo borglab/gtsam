@@ -233,7 +233,10 @@ private:
 		ar & BOOST_SERIALIZATION_NVP(order_);
 		ar & BOOST_SERIALIZATION_NVP(nVars_);
 	}
-};
+}; // \class Ordering
+
+// typedef for use with matlab
+typedef Ordering::InvertedMap InvertedOrdering;
 
 /**
  * @class Unordered

@@ -6,13 +6,16 @@
  *
  * Requirements:
  *   Classes must start with an uppercase letter
- *   Only one Method/Constructor per line
+ *   	 - Can wrap a typedef
+ *   Only one Method/Constructor per line, though methods/constructors can extend across multiple lines
  *   Methods can return
  *     - Eigen types:       Matrix, Vector
  *     - C/C++ basic types: string, bool, size_t, size_t, double, char, unsigned char
  *     - void
  *     - Any class with which be copied with boost::make_shared()
  *     - boost::shared_ptr of any object type
+ *   Methods cannot return
+ *     - const references of anything
  *   Limitations on methods
  *     - Parsing does not support overloading
  *     - There can only be one method (static or otherwise) with a given name
@@ -35,7 +38,7 @@
  *   Namespace usage
  *   	 - Namespaces can be specified for classes in arguments and return values
  *   	 - In each case, the namespace must be fully specified, e.g., "namespace1::namespace2::ClassName"
- *   Using namespace
+ *   Using namespace: FIXME: this functionality is currently broken
  *   	 - To use a namespace (e.g., generate a "using namespace x" line in cpp files), add "using namespace x;"
  *   	 - This declaration applies to all classes *after* the declaration, regardless of brackets
  *   Includes in C++ wrappers
@@ -46,14 +49,12 @@
  *   	 - Both classes and namespace accept exactly one namespace
  *   Overriding type dependency checks
  *     - If you are using a class 'OtherClass' not wrapped in this definition file, add "class OtherClass;" to avoid a dependency error
- *     - Limitation: this only works if the class does not need a namespace specification
  */
 
 /**
  * Status:
  *  - TODO: global functions
  *  - TODO: default values for arguments
- *  - TODO: overloaded functions
  *  - TODO: signatures for constructors can be ambiguous if two types have the same first letter
  *  - TODO: Handle gtsam::Rot3M conversions to quaternions
  */
@@ -909,8 +910,20 @@ class Ordering {
   void insert(size_t key, size_t order);
   void push_back(size_t key);
   void permuteWithInverse(const gtsam::Permutation& inversePermutation);
-  // FIXME: Wrap InvertedMap as well
-  //InvertedMap invert() const;
+  gtsam::InvertedOrdering invert() const;
+};
+
+#include <gtsam/nonlinear/Ordering.h>
+class InvertedOrdering {
+	InvertedOrdering();
+
+	// FIXME: add bracket operator overload
+
+	bool empty() const;
+	size_t size() const;
+	bool count(size_t index) const; // Use as a boolean function with implicit cast
+
+	void clear();
 };
 
 class NonlinearFactorGraph {
