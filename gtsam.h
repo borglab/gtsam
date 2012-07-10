@@ -702,17 +702,17 @@ class VariableIndex {
 
 #include <gtsam/linear/NoiseModel.h>
 namespace noiseModel {
-class Base {
+virtual class Base {
 };
 
-class Gaussian : gtsam::noiseModel::Base {
+virtual class Gaussian : gtsam::noiseModel::Base {
 	static gtsam::noiseModel::Gaussian* SqrtInformation(Matrix R);
 	static gtsam::noiseModel::Gaussian* Covariance(Matrix R);
 //	Matrix R() const;		// FIXME: cannot parse!!!
 	void print(string s) const;
 };
 
-class Diagonal : gtsam::noiseModel::Gaussian {
+virtual class Diagonal : gtsam::noiseModel::Gaussian {
 	static gtsam::noiseModel::Diagonal* Sigmas(Vector sigmas);
 	static gtsam::noiseModel::Diagonal* Variances(Vector variances);
 	static gtsam::noiseModel::Diagonal* Precisions(Vector precisions);
@@ -720,14 +720,14 @@ class Diagonal : gtsam::noiseModel::Gaussian {
 	void print(string s) const;
 };
 
-class Isotropic : gtsam::noiseModel::Gaussian {
+virtual class Isotropic : gtsam::noiseModel::Gaussian {
 	static gtsam::noiseModel::Isotropic* Sigma(size_t dim, double sigma);
 	static gtsam::noiseModel::Isotropic* Variance(size_t dim, double varianace);
 	static gtsam::noiseModel::Isotropic* Precision(size_t dim, double precision);
 	void print(string s) const;
 };
 
-class Unit : gtsam::noiseModel::Gaussian {
+virtual class Unit : gtsam::noiseModel::Gaussian {
 	static gtsam::noiseModel::Unit* Create(size_t dim);
 	void print(string s) const;
 };

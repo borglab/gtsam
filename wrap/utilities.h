@@ -68,6 +68,16 @@ public:
 	~DuplicateDefinition() throw() {}
 	virtual const char* what() const throw() { return what_.c_str(); }
 };
+
+class AttributeError : public std::exception {
+private:
+	const std::string what_;
+public:
+	AttributeError(const std::string& name, const std::string& problem) :
+		what_("Class " + name + ": " + problem) {}
+	~AttributeError() throw() {}
+	virtual const char* what() const throw() { return what_.c_str(); }
+};
 	
 /** Special "magic number" passed into MATLAB constructor to indicate creating
  * a MATLAB object from a shared_ptr allocated in C++

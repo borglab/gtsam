@@ -359,8 +359,16 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 		BOOST_FOREACH(const Class& cls, classes) {
 			if(!typeAttributes.insert(make_pair(cls.qualifiedName("::"), ReturnValue::TypeAttributes(cls.isVirtual))).second)
 				throw DuplicateDefinition("class " + cls.qualifiedName("::"));
-
+		}
+		// Check attributes
+		BOOST_FOREACH(const Class& cls, classes) {
 			// Check that class is virtual if it has a parent
+			if(!cls.qualifiedParent.empty() && !cls.isVirtual)
+				throw AttributeError(cls.qualifiedName("::"), "Has a base class so needs to be declared virtual, change to 'virtual class "+cls.name+" ...'");
+			// Check that parent is virtual as well
+			if(!cls.qualifiedParent.empty() && !typeAttributes.at(wrap::qualifiedName("::", cls.qualifiedParent)).isVirtual)
+				throw AttributeError(wrap::qualifiedName("::", cls.qualifiedParent),
+				"Is the base class of " + cls.qualifiedName("::") + ", so needs to be declared virtual");
 		}
 
     // Check that all classes have been defined somewhere
@@ -391,7 +399,7 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 		}
 
 		// generate mexAtExit cleanup function
-		wrapperFile.oss << "void _deleteAllObjects()\n";
+		wrapperFile.oss << "\nvoid _deleteAllObjects()\n";
 		wrapperFile.oss << "{\n";
 		BOOST_FOREACH(const Class& cls, classes) {
 			const string matlabName = cls.qualifiedName();
@@ -413,6 +421,7 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
     }  
 
 		// finish wrapper file
+		wrapperFile.oss << "\n";
 		finish_wrapper(wrapperFile, functionNames);
 
 		wrapperFile.emit(true);
