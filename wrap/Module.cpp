@@ -412,7 +412,46 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 			wrapperFile.oss << "    " << collectorName << ".erase(iter++);\n";
 			wrapperFile.oss << "  }\n";
 		}
-		wrapperFile.oss << "}\n";
+		wrapperFile.oss << "}\n\n";
+
+		// generate RTTI registry (for returning derived-most types)
+		{
+			// Generate static class and instance to get all RTTI type names
+			wrapperFile.oss <<
+				"static bool _RTTIRegister_" << name << "_done = false;\n"
+				"void _" << name << "_RTTIRegister() {\n"
+				"  std::map<std::string, std::string> types;\n"
+			  "  cout << \"in get\" << endl;\n";
+			BOOST_FOREACH(const Class& cls, classes) {
+				if(cls.isVirtual)
+					wrapperFile.oss <<
+  					"  types.insert(std::make_pair(typeid(" << cls.qualifiedName("::") << ").name(), \"" << cls.qualifiedName() << "\"));\n";
+			}
+			wrapperFile.oss << "\n";
+
+			// Generate another static class and instance to add RTTI types to a MATLAB global variable
+			wrapperFile.oss <<
+				"  cout << \"in register\" << endl;\n"
+				"  mxArray *registry = mexGetVariable(\"global\", \"_gtsamwrap_rttiRegistry\");\n"
+				"  cout << \"registry = \" << registry << endl;\n"
+				"  if(!registry)\n"
+				"    registry = mxCreateStructMatrix(1, 1, 0, NULL);\n"
+				"  typedef std::pair<std::string, std::string> StringPair;\n"
+				"  BOOST_FOREACH(const StringPair& rtti_matlab, types) {\n"
+				"    cout << rtti_matlab.first << \" -> \" << rtti_matlab.second << endl;\n"
+				"    int fieldId = mxAddField(registry, rtti_matlab.first.c_str());\n"
+				"    if(fieldId < 0)\n"
+				"      mexErrMsgTxt(\"gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly\");\n"
+				"    mxArray *matlabName = mxCreateString(rtti_matlab.second.c_str());\n"
+				"    mxSetFieldByNumber(registry, 0, fieldId, matlabName);\n"
+				"  }\n"
+				"  if(mexPutVariable(\"global\", \"gtsamwrap_rttiRegistry\", registry) != 0)\n"
+				"    mexErrMsgTxt(\"gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly\");\n"
+				"  cout << \"Stored\" << endl;\n"
+				"  mxDestroyArray(registry);\n"
+				"}\n"
+				"\n";
+		}
 
 		// create proxy class and wrapper code
 		BOOST_FOREACH(const Class& cls, classes) {
@@ -433,6 +472,10 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 		file.oss << "{\n";
 		file.oss << "  mstream mout;\n"; // Send stdout to MATLAB console, see matlab.h
 		file.oss << "  std::streambuf *outbuf = std::cout.rdbuf(&mout);\n\n";
+		file.oss << "  if(!_RTTIRegister_" << name << "_done) {\n";
+		file.oss << "    _" << name << "_RTTIRegister();\n";
+		file.oss << "    _RTTIRegister_" << name << "_done = true;\n";
+		file.oss << "  }\n";
 		file.oss << "  int id = unwrap<int>(in[0]);\n\n";
 		file.oss << "  switch(id) {\n";
 		for(size_t id = 0; id < functionNames.size(); ++id) {
