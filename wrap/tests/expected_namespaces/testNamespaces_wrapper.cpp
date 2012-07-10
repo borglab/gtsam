@@ -58,7 +58,7 @@ void _deleteAllObjects()
     collector_ClassD.erase(iter++);
   }
 }
-void ns1ClassA_constructor_0(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void ns1ClassA_collectorInsertAndMakeBase_0(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
   typedef boost::shared_ptr<ns1::ClassA> Shared;
@@ -90,7 +90,7 @@ void ns1ClassA_deconstructor_2(int nargout, mxArray *out[], int nargin, const mx
   }
 }
 
-void ns1ClassB_constructor_3(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void ns1ClassB_collectorInsertAndMakeBase_3(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
   typedef boost::shared_ptr<ns1::ClassB> Shared;
@@ -122,7 +122,7 @@ void ns1ClassB_deconstructor_5(int nargout, mxArray *out[], int nargin, const mx
   }
 }
 
-void ns2ClassA_constructor_6(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void ns2ClassA_collectorInsertAndMakeBase_6(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
   typedef boost::shared_ptr<ns2::ClassA> Shared;
@@ -158,19 +158,17 @@ void ns2ClassA_memberFunction_9(int nargout, mxArray *out[], int nargin, const m
 {
   typedef boost::shared_ptr<ns2::ClassA> Shared;
   checkArguments("memberFunction",nargout,nargin-1,0);
-  Shared obj = unwrap_shared_ptr<ns2::ClassA>(in[0], "ns2::ClassA");
-  double result = obj->memberFunction();
-  out[0] = wrap< double >(result);
+  Shared obj = unwrap_shared_ptr<ns2::ClassA>(in[0], "ptr_ns2ClassA");
+  out[0] = wrap< double >(obj->memberFunction());
 }
 
 void ns2ClassA_nsArg_10(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<ns2::ClassA> Shared;
   checkArguments("nsArg",nargout,nargin-1,1);
-  Shared obj = unwrap_shared_ptr<ns2::ClassA>(in[0], "ns2::ClassA");
-  ns1::ClassB& arg = *unwrap_shared_ptr< ns1::ClassB >(in[1], "ns1ClassB");
-  int result = obj->nsArg(arg);
-  out[0] = wrap< int >(result);
+  Shared obj = unwrap_shared_ptr<ns2::ClassA>(in[0], "ptr_ns2ClassA");
+  ns1::ClassB& arg = *unwrap_shared_ptr< ns1::ClassB >(in[1], "ptr_ns1ClassB");
+  out[0] = wrap< int >(obj->nsArg(arg));
 }
 
 void ns2ClassA_nsReturn_11(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -178,10 +176,9 @@ void ns2ClassA_nsReturn_11(int nargout, mxArray *out[], int nargin, const mxArra
   typedef boost::shared_ptr<ns2::ns3::ClassB> SharedClassB;
   typedef boost::shared_ptr<ns2::ClassA> Shared;
   checkArguments("nsReturn",nargout,nargin-1,1);
-  Shared obj = unwrap_shared_ptr<ns2::ClassA>(in[0], "ns2::ClassA");
+  Shared obj = unwrap_shared_ptr<ns2::ClassA>(in[0], "ptr_ns2ClassA");
   double q = unwrap< double >(in[1]);
-  ns2::ns3::ClassB result = obj->nsReturn(q);
-  SharedClassB* ret = new SharedClassB(new ns2::ns3::ClassB(result));
+  SharedClassB* ret = new SharedClassB(new ns2::ns3::ClassB(obj->nsReturn(q)));
   out[0] = wrap_shared_ptr(ret,"ns2ns3ClassB");
 }
 
@@ -189,11 +186,10 @@ void ns2ClassA_afunction_12(int nargout, mxArray *out[], int nargin, const mxArr
 {
   typedef boost::shared_ptr<ns2::ClassA> Shared;
   checkArguments("ns2ClassA.afunction",nargout,nargin,0);
-  double result = ns2::ClassA::afunction();
-  out[0] = wrap< double >(result);
+    out[0] = wrap< double >(ns2::ClassA::afunction());
 }
 
-void ns2ns3ClassB_constructor_13(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void ns2ns3ClassB_collectorInsertAndMakeBase_13(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
   typedef boost::shared_ptr<ns2::ns3::ClassB> Shared;
@@ -225,7 +221,7 @@ void ns2ns3ClassB_deconstructor_15(int nargout, mxArray *out[], int nargin, cons
   }
 }
 
-void ns2ClassC_constructor_16(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void ns2ClassC_collectorInsertAndMakeBase_16(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
   typedef boost::shared_ptr<ns2::ClassC> Shared;
@@ -257,7 +253,7 @@ void ns2ClassC_deconstructor_18(int nargout, mxArray *out[], int nargin, const m
   }
 }
 
-void ClassD_constructor_19(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void ClassD_collectorInsertAndMakeBase_19(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
   typedef boost::shared_ptr<ClassD> Shared;
@@ -298,7 +294,7 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 
   switch(id) {
   case 0:
-    ns1ClassA_constructor_0(nargout, out, nargin-1, in+1);
+    ns1ClassA_collectorInsertAndMakeBase_0(nargout, out, nargin-1, in+1);
     break;
   case 1:
     ns1ClassA_constructor_1(nargout, out, nargin-1, in+1);
@@ -307,7 +303,7 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
     ns1ClassA_deconstructor_2(nargout, out, nargin-1, in+1);
     break;
   case 3:
-    ns1ClassB_constructor_3(nargout, out, nargin-1, in+1);
+    ns1ClassB_collectorInsertAndMakeBase_3(nargout, out, nargin-1, in+1);
     break;
   case 4:
     ns1ClassB_constructor_4(nargout, out, nargin-1, in+1);
@@ -316,7 +312,7 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
     ns1ClassB_deconstructor_5(nargout, out, nargin-1, in+1);
     break;
   case 6:
-    ns2ClassA_constructor_6(nargout, out, nargin-1, in+1);
+    ns2ClassA_collectorInsertAndMakeBase_6(nargout, out, nargin-1, in+1);
     break;
   case 7:
     ns2ClassA_constructor_7(nargout, out, nargin-1, in+1);
@@ -337,7 +333,7 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
     ns2ClassA_afunction_12(nargout, out, nargin-1, in+1);
     break;
   case 13:
-    ns2ns3ClassB_constructor_13(nargout, out, nargin-1, in+1);
+    ns2ns3ClassB_collectorInsertAndMakeBase_13(nargout, out, nargin-1, in+1);
     break;
   case 14:
     ns2ns3ClassB_constructor_14(nargout, out, nargin-1, in+1);
@@ -346,7 +342,7 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
     ns2ns3ClassB_deconstructor_15(nargout, out, nargin-1, in+1);
     break;
   case 16:
-    ns2ClassC_constructor_16(nargout, out, nargin-1, in+1);
+    ns2ClassC_collectorInsertAndMakeBase_16(nargout, out, nargin-1, in+1);
     break;
   case 17:
     ns2ClassC_constructor_17(nargout, out, nargin-1, in+1);
@@ -355,7 +351,7 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
     ns2ClassC_deconstructor_18(nargout, out, nargin-1, in+1);
     break;
   case 19:
-    ClassD_constructor_19(nargout, out, nargin-1, in+1);
+    ClassD_collectorInsertAndMakeBase_19(nargout, out, nargin-1, in+1);
     break;
   case 20:
     ClassD_constructor_20(nargout, out, nargin-1, in+1);

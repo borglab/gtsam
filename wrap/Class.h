@@ -34,7 +34,7 @@ struct Class {
 	typedef std::map<std::string, StaticMethod> StaticMethods;
 
   /// Constructor creates an empty class
-  Class(bool verbose=true) : verbose_(verbose), isVirtual(false) {}
+  Class(bool verbose=true) : isVirtual(false), verbose_(verbose) {}
 
 	// Then the instance variables are set directly by the Module constructor
   std::string name;                         ///< Class name
