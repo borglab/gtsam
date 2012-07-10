@@ -31,7 +31,7 @@ namespace visualSLAM {
     if (Z.rows() != 2) throw std::invalid_argument("insertBackProjections: Z must be 2*K");
     if (Z.cols() != J.size()) throw std::invalid_argument(
           "insertBackProjections: J and Z must have same number of entries");
-    for(size_t k=0;k<Z.cols();k++) {
+    for(int k=0;k<Z.cols();k++) {
       Point2 p(Z(0,k),Z(1,k));
       Point3 P = camera.backproject(p, depth);
       insertPoint(J(k), P);
@@ -82,7 +82,7 @@ namespace visualSLAM {
     if (Z.rows() != 2) throw std::invalid_argument("addMeasurements: Z must be 2*K");
     if (Z.cols() != J.size()) throw std::invalid_argument(
           "addMeasurements: J and Z must have same number of entries");
-    for (size_t k = 0; k < Z.cols(); k++)
+    for (int k = 0; k < Z.cols(); k++)
       addMeasurement(Point2(Z(0, k), Z(1, k)), model, i, J(k), K);
   }
 

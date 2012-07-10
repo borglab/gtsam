@@ -431,7 +431,7 @@ bool isam_check(const planarSLAM::Graph& fullgraph, const Values& fullinit, cons
 	bool totalGradOk = assert_equal(expectedGradient, actualGradient);
 	EXPECT(totalGradOk);
 
-	return nodeGradientsOk && expectedGradOk && totalGradOk;
+	return nodeGradientsOk && expectedGradOk && totalGradOk && isamEqual;
 }
 
 /* ************************************************************************* */
