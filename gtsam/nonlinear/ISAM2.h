@@ -403,11 +403,6 @@ protected:
   /** The inverse ordering, only used for creating ISAM2Result::DetailedResults */
   boost::optional<Ordering::InvertedMap> inverseOrdering_;
 
-private:
-#ifndef NDEBUG
-  std::vector<bool> lastRelinVariables_;
-#endif
-
 public:
 
   typedef ISAM2 This; ///< This class

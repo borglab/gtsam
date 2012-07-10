@@ -86,9 +86,6 @@ ISAM2& ISAM2::operator=(const ISAM2& rhs) {
   params_ = rhs.params_;
   doglegDelta_ = rhs.doglegDelta_;
 
-#ifndef NDEBUG
-  lastRelinVariables_ = rhs.lastRelinVariables_;
-#endif
   lastAffectedVariableCount = rhs.lastAffectedVariableCount;
   lastAffectedFactorCount = rhs.lastAffectedFactorCount;
   lastAffectedCliqueCount = rhs.lastAffectedCliqueCount;
@@ -661,15 +658,8 @@ ISAM2Result ISAM2::update(
     toc(7,"expmap");
 
     result.variablesRelinearized = markedKeys.size();
-
-#ifndef NDEBUG
-    lastRelinVariables_ = markedRelinMask;
-#endif
   } else {
     result.variablesRelinearized = 0;
-#ifndef NDEBUG
-    lastRelinVariables_ = vector<bool>(ordering_.nVars(), false);
-#endif
   }
 
   tic(8,"linearize new");
