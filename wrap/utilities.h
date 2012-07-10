@@ -21,7 +21,9 @@
 #include <exception>
 #include <fstream>
 #include <sstream>
-#include <cstdint>
+//#include <cstdint> // on Linux GCC: fails with error regarding needing C++0x std flags
+//#include <cinttypes>  // same failure as above
+#include <stdint.h> // works on Linux GCC
 #include <string>
 #include <boost/format.hpp>
 

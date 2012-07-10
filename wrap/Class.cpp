@@ -18,7 +18,9 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
-#include <cstdint>
+//#include <cstdint> // on Linux GCC: fails with error regarding needing C++0x std flags
+//#include <cinttypes> // same failure as above
+#include <stdint.h> // works on Linux GCC
 
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
