@@ -31,7 +31,7 @@ void _deleteAllObjects()
     collector_Test.erase(iter++);
   }
 }
-void Point2_constructor_0(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void Point2_collectorInsertAndMakeBase_0(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
   typedef boost::shared_ptr<Point2> Shared;
@@ -80,7 +80,7 @@ void Point2_argChar_4(int nargout, mxArray *out[], int nargin, const mxArray *in
 {
   typedef boost::shared_ptr<Point2> Shared;
   checkArguments("argChar",nargout,nargin-1,1);
-  Shared obj = unwrap_shared_ptr<Point2>(in[0], "Point2");
+  Shared obj = unwrap_shared_ptr<Point2>(in[0], "ptr_Point2");
   char a = unwrap< char >(in[1]);
   obj->argChar(a);
 }
@@ -89,7 +89,7 @@ void Point2_argUChar_5(int nargout, mxArray *out[], int nargin, const mxArray *i
 {
   typedef boost::shared_ptr<Point2> Shared;
   checkArguments("argUChar",nargout,nargin-1,1);
-  Shared obj = unwrap_shared_ptr<Point2>(in[0], "Point2");
+  Shared obj = unwrap_shared_ptr<Point2>(in[0], "ptr_Point2");
   unsigned char a = unwrap< unsigned char >(in[1]);
   obj->argUChar(a);
 }
@@ -98,18 +98,16 @@ void Point2_dim_6(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<Point2> Shared;
   checkArguments("dim",nargout,nargin-1,0);
-  Shared obj = unwrap_shared_ptr<Point2>(in[0], "Point2");
-  int result = obj->dim();
-  out[0] = wrap< int >(result);
+  Shared obj = unwrap_shared_ptr<Point2>(in[0], "ptr_Point2");
+  out[0] = wrap< int >(obj->dim());
 }
 
 void Point2_returnChar_7(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<Point2> Shared;
   checkArguments("returnChar",nargout,nargin-1,0);
-  Shared obj = unwrap_shared_ptr<Point2>(in[0], "Point2");
-  char result = obj->returnChar();
-  out[0] = wrap< char >(result);
+  Shared obj = unwrap_shared_ptr<Point2>(in[0], "ptr_Point2");
+  out[0] = wrap< char >(obj->returnChar());
 }
 
 void Point2_vectorConfusion_8(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -117,9 +115,8 @@ void Point2_vectorConfusion_8(int nargout, mxArray *out[], int nargin, const mxA
   typedef boost::shared_ptr<VectorNotEigen> SharedVectorNotEigen;
   typedef boost::shared_ptr<Point2> Shared;
   checkArguments("vectorConfusion",nargout,nargin-1,0);
-  Shared obj = unwrap_shared_ptr<Point2>(in[0], "Point2");
-  VectorNotEigen result = obj->vectorConfusion();
-  SharedVectorNotEigen* ret = new SharedVectorNotEigen(new VectorNotEigen(result));
+  Shared obj = unwrap_shared_ptr<Point2>(in[0], "ptr_Point2");
+  SharedVectorNotEigen* ret = new SharedVectorNotEigen(new VectorNotEigen(obj->vectorConfusion()));
   out[0] = wrap_shared_ptr(ret,"VectorNotEigen");
 }
 
@@ -127,21 +124,19 @@ void Point2_x_9(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<Point2> Shared;
   checkArguments("x",nargout,nargin-1,0);
-  Shared obj = unwrap_shared_ptr<Point2>(in[0], "Point2");
-  double result = obj->x();
-  out[0] = wrap< double >(result);
+  Shared obj = unwrap_shared_ptr<Point2>(in[0], "ptr_Point2");
+  out[0] = wrap< double >(obj->x());
 }
 
 void Point2_y_10(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<Point2> Shared;
   checkArguments("y",nargout,nargin-1,0);
-  Shared obj = unwrap_shared_ptr<Point2>(in[0], "Point2");
-  double result = obj->y();
-  out[0] = wrap< double >(result);
+  Shared obj = unwrap_shared_ptr<Point2>(in[0], "ptr_Point2");
+  out[0] = wrap< double >(obj->y());
 }
 
-void Point3_constructor_11(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void Point3_collectorInsertAndMakeBase_11(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
 using namespace geometry;
@@ -184,9 +179,8 @@ void Point3_norm_14(int nargout, mxArray *out[], int nargin, const mxArray *in[]
 using namespace geometry;
   typedef boost::shared_ptr<Point3> Shared;
   checkArguments("norm",nargout,nargin-1,0);
-  Shared obj = unwrap_shared_ptr<Point3>(in[0], "Point3");
-  double result = obj->norm();
-  out[0] = wrap< double >(result);
+  Shared obj = unwrap_shared_ptr<Point3>(in[0], "ptr_Point3");
+  out[0] = wrap< double >(obj->norm());
 }
 
 void Point3_StaticFunctionRet_15(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -196,8 +190,7 @@ using namespace geometry;
   typedef boost::shared_ptr<Point3> Shared;
   checkArguments("Point3.StaticFunctionRet",nargout,nargin,1);
   double z = unwrap< double >(in[0]);
-  Point3 result = Point3::StaticFunctionRet(z);
-  SharedPoint3* ret = new SharedPoint3(new Point3(result));
+    SharedPoint3* ret = new SharedPoint3(new Point3(Point3::StaticFunctionRet(z)));
   out[0] = wrap_shared_ptr(ret,"Point3");
 }
 
@@ -206,11 +199,10 @@ void Point3_staticFunction_16(int nargout, mxArray *out[], int nargin, const mxA
 using namespace geometry;
   typedef boost::shared_ptr<Point3> Shared;
   checkArguments("Point3.staticFunction",nargout,nargin,0);
-  double result = Point3::staticFunction();
-  out[0] = wrap< double >(result);
+    out[0] = wrap< double >(Point3::staticFunction());
 }
 
-void Test_constructor_17(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void Test_collectorInsertAndMakeBase_17(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
 using namespace geometry;
@@ -264,8 +256,8 @@ void Test_arg_EigenConstRef_21(int nargout, mxArray *out[], int nargin, const mx
 using namespace geometry;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("arg_EigenConstRef",nargout,nargin-1,1);
-  Shared obj = unwrap_shared_ptr<Test>(in[0], "Test");
-  Matrix& value = *unwrap_shared_ptr< Matrix >(in[1], "Matrix");
+  Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
+  Matrix& value = *unwrap_shared_ptr< Matrix >(in[1], "ptr_Matrix");
   obj->arg_EigenConstRef(value);
 }
 
@@ -276,11 +268,10 @@ using namespace geometry;
   typedef boost::shared_ptr<Test> SharedTest;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("create_MixedPtrs",nargout,nargin-1,0);
-  Shared obj = unwrap_shared_ptr<Test>(in[0], "Test");
-  pair< Test, SharedTest > result = obj->create_MixedPtrs();
-  SharedTest* ret = new SharedTest(new Test(result.first));
+  Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
+  SharedTest* ret = new SharedTest(new Test(obj->create_MixedPtrs().first));
   out[0] = wrap_shared_ptr(ret,"Test");
-  SharedTest* ret = new SharedTest(result.second);
+  SharedTest* ret = new SharedTest(obj->create_MixedPtrs().second);
   out[1] = wrap_shared_ptr(ret,"Test");
 }
 
@@ -291,11 +282,10 @@ using namespace geometry;
   typedef boost::shared_ptr<Test> SharedTest;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("create_ptrs",nargout,nargin-1,0);
-  Shared obj = unwrap_shared_ptr<Test>(in[0], "Test");
-  pair< SharedTest, SharedTest > result = obj->create_ptrs();
-  SharedTest* ret = new SharedTest(result.first);
+  Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
+  SharedTest* ret = new SharedTest(obj->create_ptrs().first);
   out[0] = wrap_shared_ptr(ret,"Test");
-  SharedTest* ret = new SharedTest(result.second);
+  SharedTest* ret = new SharedTest(obj->create_ptrs().second);
   out[1] = wrap_shared_ptr(ret,"Test");
 }
 
@@ -304,7 +294,7 @@ void Test_print_24(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 using namespace geometry;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("print",nargout,nargin-1,0);
-  Shared obj = unwrap_shared_ptr<Test>(in[0], "Test");
+  Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
   obj->print();
 }
 
@@ -314,10 +304,9 @@ using namespace geometry;
   typedef boost::shared_ptr<Point2> SharedPoint2;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_Point2Ptr",nargout,nargin-1,1);
-  Shared obj = unwrap_shared_ptr<Test>(in[0], "Test");
+  Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
   bool value = unwrap< bool >(in[1]);
-  SharedPoint2 result = obj->return_Point2Ptr(value);
-  SharedPoint2* ret = new SharedPoint2(result);
+  SharedPoint2* ret = new SharedPoint2(obj->return_Point2Ptr(value));
   out[0] = wrap_shared_ptr(ret,"Point2");
 }
 
@@ -327,10 +316,9 @@ using namespace geometry;
   typedef boost::shared_ptr<Test> SharedTest;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_Test",nargout,nargin-1,1);
-  Shared obj = unwrap_shared_ptr<Test>(in[0], "Test");
-  boost::shared_ptr<Test> value = unwrap_shared_ptr< Test >(in[1], "Test");
-  Test result = obj->return_Test(value);
-  SharedTest* ret = new SharedTest(new Test(result));
+  Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
+  boost::shared_ptr<Test> value = unwrap_shared_ptr< Test >(in[1], "ptr_Test");
+  SharedTest* ret = new SharedTest(new Test(obj->return_Test(value)));
   out[0] = wrap_shared_ptr(ret,"Test");
 }
 
@@ -340,10 +328,9 @@ using namespace geometry;
   typedef boost::shared_ptr<Test> SharedTest;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_TestPtr",nargout,nargin-1,1);
-  Shared obj = unwrap_shared_ptr<Test>(in[0], "Test");
-  boost::shared_ptr<Test> value = unwrap_shared_ptr< Test >(in[1], "Test");
-  SharedTest result = obj->return_TestPtr(value);
-  SharedTest* ret = new SharedTest(result);
+  Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
+  boost::shared_ptr<Test> value = unwrap_shared_ptr< Test >(in[1], "ptr_Test");
+  SharedTest* ret = new SharedTest(obj->return_TestPtr(value));
   out[0] = wrap_shared_ptr(ret,"Test");
 }
 
@@ -352,10 +339,9 @@ void Test_return_bool_28(int nargout, mxArray *out[], int nargin, const mxArray 
 using namespace geometry;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_bool",nargout,nargin-1,1);
-  Shared obj = unwrap_shared_ptr<Test>(in[0], "Test");
+  Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
   bool value = unwrap< bool >(in[1]);
-  bool result = obj->return_bool(value);
-  out[0] = wrap< bool >(result);
+  out[0] = wrap< bool >(obj->return_bool(value));
 }
 
 void Test_return_double_29(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -363,10 +349,9 @@ void Test_return_double_29(int nargout, mxArray *out[], int nargin, const mxArra
 using namespace geometry;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_double",nargout,nargin-1,1);
-  Shared obj = unwrap_shared_ptr<Test>(in[0], "Test");
+  Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
   double value = unwrap< double >(in[1]);
-  double result = obj->return_double(value);
-  out[0] = wrap< double >(result);
+  out[0] = wrap< double >(obj->return_double(value));
 }
 
 void Test_return_field_30(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -374,10 +359,9 @@ void Test_return_field_30(int nargout, mxArray *out[], int nargin, const mxArray
 using namespace geometry;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_field",nargout,nargin-1,1);
-  Shared obj = unwrap_shared_ptr<Test>(in[0], "Test");
-  Test& t = *unwrap_shared_ptr< Test >(in[1], "Test");
-  bool result = obj->return_field(t);
-  out[0] = wrap< bool >(result);
+  Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
+  Test& t = *unwrap_shared_ptr< Test >(in[1], "ptr_Test");
+  out[0] = wrap< bool >(obj->return_field(t));
 }
 
 void Test_return_int_31(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -385,10 +369,9 @@ void Test_return_int_31(int nargout, mxArray *out[], int nargin, const mxArray *
 using namespace geometry;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_int",nargout,nargin-1,1);
-  Shared obj = unwrap_shared_ptr<Test>(in[0], "Test");
+  Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
   int value = unwrap< int >(in[1]);
-  int result = obj->return_int(value);
-  out[0] = wrap< int >(result);
+  out[0] = wrap< int >(obj->return_int(value));
 }
 
 void Test_return_matrix1_32(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -396,10 +379,9 @@ void Test_return_matrix1_32(int nargout, mxArray *out[], int nargin, const mxArr
 using namespace geometry;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_matrix1",nargout,nargin-1,1);
-  Shared obj = unwrap_shared_ptr<Test>(in[0], "Test");
+  Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
   Matrix value = unwrap< Matrix >(in[1]);
-  Matrix result = obj->return_matrix1(value);
-  out[0] = wrap< Matrix >(result);
+  out[0] = wrap< Matrix >(obj->return_matrix1(value));
 }
 
 void Test_return_matrix2_33(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -407,10 +389,9 @@ void Test_return_matrix2_33(int nargout, mxArray *out[], int nargin, const mxArr
 using namespace geometry;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_matrix2",nargout,nargin-1,1);
-  Shared obj = unwrap_shared_ptr<Test>(in[0], "Test");
+  Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
   Matrix value = unwrap< Matrix >(in[1]);
-  Matrix result = obj->return_matrix2(value);
-  out[0] = wrap< Matrix >(result);
+  out[0] = wrap< Matrix >(obj->return_matrix2(value));
 }
 
 void Test_return_pair_34(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -418,12 +399,11 @@ void Test_return_pair_34(int nargout, mxArray *out[], int nargin, const mxArray 
 using namespace geometry;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_pair",nargout,nargin-1,2);
-  Shared obj = unwrap_shared_ptr<Test>(in[0], "Test");
+  Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
   Vector v = unwrap< Vector >(in[1]);
   Matrix A = unwrap< Matrix >(in[2]);
-  pair< Vector, Matrix > result = obj->return_pair(v,A);
-  out[0] = wrap< Vector >(result.first);
-  out[1] = wrap< Matrix >(result.second);
+  out[0] = wrap< Vector >(obj->return_pair(v,A).first);
+  out[1] = wrap< Matrix >(obj->return_pair(v,A).second);
 }
 
 void Test_return_ptrs_35(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -433,13 +413,12 @@ using namespace geometry;
   typedef boost::shared_ptr<Test> SharedTest;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_ptrs",nargout,nargin-1,2);
-  Shared obj = unwrap_shared_ptr<Test>(in[0], "Test");
-  boost::shared_ptr<Test> p1 = unwrap_shared_ptr< Test >(in[1], "Test");
-  boost::shared_ptr<Test> p2 = unwrap_shared_ptr< Test >(in[2], "Test");
-  pair< SharedTest, SharedTest > result = obj->return_ptrs(p1,p2);
-  SharedTest* ret = new SharedTest(result.first);
+  Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
+  boost::shared_ptr<Test> p1 = unwrap_shared_ptr< Test >(in[1], "ptr_Test");
+  boost::shared_ptr<Test> p2 = unwrap_shared_ptr< Test >(in[2], "ptr_Test");
+  SharedTest* ret = new SharedTest(obj->return_ptrs(p1,p2).first);
   out[0] = wrap_shared_ptr(ret,"Test");
-  SharedTest* ret = new SharedTest(result.second);
+  SharedTest* ret = new SharedTest(obj->return_ptrs(p1,p2).second);
   out[1] = wrap_shared_ptr(ret,"Test");
 }
 
@@ -448,10 +427,9 @@ void Test_return_size_t_36(int nargout, mxArray *out[], int nargin, const mxArra
 using namespace geometry;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_size_t",nargout,nargin-1,1);
-  Shared obj = unwrap_shared_ptr<Test>(in[0], "Test");
+  Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
   size_t value = unwrap< size_t >(in[1]);
-  size_t result = obj->return_size_t(value);
-  out[0] = wrap< size_t >(result);
+  out[0] = wrap< size_t >(obj->return_size_t(value));
 }
 
 void Test_return_string_37(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -459,10 +437,9 @@ void Test_return_string_37(int nargout, mxArray *out[], int nargin, const mxArra
 using namespace geometry;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_string",nargout,nargin-1,1);
-  Shared obj = unwrap_shared_ptr<Test>(in[0], "Test");
+  Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
   string value = unwrap< string >(in[1]);
-  string result = obj->return_string(value);
-  out[0] = wrap< string >(result);
+  out[0] = wrap< string >(obj->return_string(value));
 }
 
 void Test_return_vector1_38(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -470,10 +447,9 @@ void Test_return_vector1_38(int nargout, mxArray *out[], int nargin, const mxArr
 using namespace geometry;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_vector1",nargout,nargin-1,1);
-  Shared obj = unwrap_shared_ptr<Test>(in[0], "Test");
+  Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
   Vector value = unwrap< Vector >(in[1]);
-  Vector result = obj->return_vector1(value);
-  out[0] = wrap< Vector >(result);
+  out[0] = wrap< Vector >(obj->return_vector1(value));
 }
 
 void Test_return_vector2_39(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -481,10 +457,9 @@ void Test_return_vector2_39(int nargout, mxArray *out[], int nargin, const mxArr
 using namespace geometry;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_vector2",nargout,nargin-1,1);
-  Shared obj = unwrap_shared_ptr<Test>(in[0], "Test");
+  Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
   Vector value = unwrap< Vector >(in[1]);
-  Vector result = obj->return_vector2(value);
-  out[0] = wrap< Vector >(result);
+  out[0] = wrap< Vector >(obj->return_vector2(value));
 }
 
 void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -496,7 +471,7 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 
   switch(id) {
   case 0:
-    Point2_constructor_0(nargout, out, nargin-1, in+1);
+    Point2_collectorInsertAndMakeBase_0(nargout, out, nargin-1, in+1);
     break;
   case 1:
     Point2_constructor_1(nargout, out, nargin-1, in+1);
@@ -529,7 +504,7 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
     Point2_y_10(nargout, out, nargin-1, in+1);
     break;
   case 11:
-    Point3_constructor_11(nargout, out, nargin-1, in+1);
+    Point3_collectorInsertAndMakeBase_11(nargout, out, nargin-1, in+1);
     break;
   case 12:
     Point3_constructor_12(nargout, out, nargin-1, in+1);
@@ -547,7 +522,7 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
     Point3_staticFunction_16(nargout, out, nargin-1, in+1);
     break;
   case 17:
-    Test_constructor_17(nargout, out, nargin-1, in+1);
+    Test_collectorInsertAndMakeBase_17(nargout, out, nargin-1, in+1);
     break;
   case 18:
     Test_constructor_18(nargout, out, nargin-1, in+1);

@@ -359,9 +359,29 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 		BOOST_FOREACH(const Class& cls, classes) {
 			if(!typeAttributes.insert(make_pair(cls.qualifiedName("::"), ReturnValue::TypeAttributes(cls.isVirtual))).second)
 				throw DuplicateDefinition("class " + cls.qualifiedName("::"));
-
-			// Check that class is virtual if it has a parent
 		}
+		// Check attributes
+		BOOST_FOREACH(const Class& cls, classes) {
+			// Check that class is virtual if it has a parent
+			if(!cls.qualifiedParent.empty() && !cls.isVirtual)
+				throw AttributeError(cls.qualifiedName("::"), "Has a base class so needs to be declared virtual, change to 'virtual class "+cls.name+" ...'");
+			// Check that parent is virtual as well
+			if(!cls.qualifiedParent.empty() && !typeAttributes.at(wrap::qualifiedName("::", cls.qualifiedParent)).isVirtual)
+				throw AttributeError(wrap::qualifiedName("::", cls.qualifiedParent),
+				"Is the base class of " + cls.qualifiedName("::") + ", so needs to be declared virtual");
+		}
+
+    // Check that all classes have been defined somewhere
+		BOOST_FOREACH(const Class& cls, classes) {
+      // verify all of the function arguments
+      //TODO:verifyArguments<ArgumentList>(validTypes, cls.constructor.args_list);
+      verifyArguments<StaticMethod>(validTypes, cls.static_methods);
+      verifyArguments<Method>(validTypes, cls.methods);
+
+      // verify function return types
+      verifyReturnTypes<StaticMethod>(validTypes, cls.static_methods);
+      verifyReturnTypes<Method>(validTypes, cls.methods);
+    }
 
 		// Generate all includes
 		BOOST_FOREACH(const Class& cls, classes) {
@@ -379,7 +399,7 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 		}
 
 		// generate mexAtExit cleanup function
-		wrapperFile.oss << "void _deleteAllObjects()\n";
+		wrapperFile.oss << "\nvoid _deleteAllObjects()\n";
 		wrapperFile.oss << "{\n";
 		BOOST_FOREACH(const Class& cls, classes) {
 			const string matlabName = cls.qualifiedName();
@@ -394,23 +414,14 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 		}
 		wrapperFile.oss << "}\n";
 
-    // generate proxy classes and wrappers
+		// create proxy class and wrapper code
 		BOOST_FOREACH(const Class& cls, classes) {
-      // create proxy class and wrapper code
       string classFile = toolboxPath + "/" + cls.qualifiedName() + ".m";
       cls.matlab_proxy(classFile, wrapperName, typeAttributes, wrapperFile, functionNames);
-
-      // verify all of the function arguments
-      //TODO:verifyArguments<ArgumentList>(validTypes, cls.constructor.args_list);
-      verifyArguments<StaticMethod>(validTypes, cls.static_methods);
-      verifyArguments<Method>(validTypes, cls.methods);
-
-      // verify function return types
-      verifyReturnTypes<StaticMethod>(validTypes, cls.static_methods);
-      verifyReturnTypes<Method>(validTypes, cls.methods);
     }  
 
 		// finish wrapper file
+		wrapperFile.oss << "\n";
 		finish_wrapper(wrapperFile, functionNames);
 
 		wrapperFile.emit(true);

@@ -30,7 +30,7 @@ struct Method {
 
 	/// Constructor creates empty object
 	Method(bool verbose = true) :
-			verbose_(verbose) {}
+			verbose_(verbose), is_const_(false) {}
 
 	// Then the instance variables are set directly by the Module constructor
 	bool verbose_;

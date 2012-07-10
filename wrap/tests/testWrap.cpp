@@ -58,7 +58,7 @@ TEST( wrap, ArgumentList ) {
 }
 
 /* ************************************************************************* */
-TEST( wrap, check_exception ) {
+TEST_UNSAFE( wrap, check_exception ) {
 	THROWS_EXCEPTION(Module("/notarealpath", "geometry",enable_verbose));
 	CHECK_EXCEPTION(Module("/alsonotarealpath", "geometry",enable_verbose), CantOpenFile);
 
@@ -80,8 +80,9 @@ TEST( wrap, parse ) {
 	strvec exp_using1, exp_using2; exp_using2 += "geometry";
 
 	// forward declarations
-	strvec exp_forward; exp_forward += "VectorNotEigen", "ns::OtherClass";
-	EXPECT(assert_equal(exp_forward, module.forward_declarations));
+	LONGS_EQUAL(2, module.forward_declarations.size());
+	EXPECT(assert_equal("VectorNotEigen", module.forward_declarations[0].name));
+	EXPECT(assert_equal("ns::OtherClass", module.forward_declarations[1].name));
 
 	// check first class, Point2
 	{

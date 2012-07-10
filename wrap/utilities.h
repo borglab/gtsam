@@ -21,7 +21,9 @@
 #include <exception>
 #include <fstream>
 #include <sstream>
-#include <cstdint>
+//#include <cstdint> // on Linux GCC: fails with error regarding needing C++0x std flags
+//#include <cinttypes>  // same failure as above
+#include <stdint.h> // works on Linux GCC
 #include <string>
 #include <boost/format.hpp>
 
@@ -64,6 +66,16 @@ public:
 	DuplicateDefinition(const std::string& name) :
 		what_("Duplicate definition of " + name) {}
 	~DuplicateDefinition() throw() {}
+	virtual const char* what() const throw() { return what_.c_str(); }
+};
+
+class AttributeError : public std::exception {
+private:
+	const std::string what_;
+public:
+	AttributeError(const std::string& name, const std::string& problem) :
+		what_("Class " + name + ": " + problem) {}
+	~AttributeError() throw() {}
 	virtual const char* what() const throw() { return what_.c_str(); }
 };
 	
