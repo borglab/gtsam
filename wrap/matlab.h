@@ -56,6 +56,7 @@ using namespace boost; // not usual, but for conciseness of generated code
 #endif
 
 // "Unique" key to signal calling the matlab object constructor with a raw pointer
+// to a shared pointer of the same C++ object type as the MATLAB type.
 // Also present in utilities.h
 static const uint64_t ptr_constructor_key =
 	(uint64_t('G') << 56) |
@@ -339,20 +340,52 @@ gtsam::Matrix unwrap< gtsam::Matrix >(const mxArray* array) {
  order to be able to add to the collector could be in a different wrap
  module.
 */
-mxArray* create_object(const char *classname, void *pointer) {
+mxArray* create_object(const std::string& classname, void *pointer, bool isVirtual, const char *rttiName) {
   mxArray *result;
-	mxArray *input[2];
+	mxArray *input[3];
+	int nargin = 2;
 	// First input argument is pointer constructor key
 	input[0] = mxCreateNumericMatrix(1, 1, mxUINT64_CLASS, mxREAL);
 	*reinterpret_cast<uint64_t*>(mxGetData(input[0])) = ptr_constructor_key;
 	// Second input argument is the pointer
   input[1] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
 	*reinterpret_cast<void**>(mxGetData(input[1])) = pointer;
+	// If the class is virtual, use the RTTI name to look up the derived matlab type
+	const char *derivedClassName;
+	if(isVirtual) {
+		const mxArray *rttiRegistry = mexGetVariablePtr("global", "gtsamwrap_rttiRegistry");
+		if(!rttiRegistry)
+			mexErrMsgTxt(
+			"gtsam wrap:  RTTI registry is missing - it could have been cleared from the workspace."
+			"  You can issue 'clear all' to completely clear the workspace, and next time a wrapped object is"
+			" created the RTTI registry will be recreated.");
+		const mxArray *derivedNameMx = mxGetField(rttiRegistry, 0, rttiName);
+		if(!derivedNameMx)
+			mexErrMsgTxt((
+			"gtsam wrap:  The derived class type " + string(rttiName) + " was not found in the RTTI registry.  "
+			"The most likely cause for this is that a base class was marked virtual in the wrap interface "
+			"definition header file for gtsam or for your module, but a derived type was returned by a C++"
+			"function and that derived type was not marked virtual (or was not specified in the wrap interface"
+			"definition header at all).").c_str());
+		size_t strLen = mxGetN(derivedNameMx);
+		char *buf = new char[strLen+1];
+		if(mxGetString(derivedNameMx, buf, strLen+1))
+			mexErrMsgTxt("gtsam wrap:  Internal error reading RTTI table, try 'clear all' to clear your workspace and reinitialize the toolbox.");
+		derivedClassName = buf;
+		input[2] = mxCreateString("void");
+		nargin = 3;
+	} else {
+		derivedClassName = classname.c_str();
+	}
 	// Call special pointer constructor, which sets 'self'
-  mexCallMATLAB(1,&result,2,input,classname);
+  mexCallMATLAB(1,&result, nargin, input, derivedClassName);
   // Deallocate our memory
 	mxDestroyArray(input[0]);
 	mxDestroyArray(input[1]);
+	if(isVirtual) {
+		mxDestroyArray(input[2]);
+		delete[] derivedClassName;
+	}
   return result;
 }
 
@@ -362,9 +395,16 @@ mxArray* create_object(const char *classname, void *pointer) {
  class to matlab.
 */
 template <typename Class>
-mxArray* wrap_shared_ptr(boost::shared_ptr< Class >* shared_ptr, const char *classname) {
+mxArray* wrap_shared_ptr(boost::shared_ptr< Class > shared_ptr, const std::string& matlabName, bool isVirtual) {
 	// Create actual class object from out pointer
-  mxArray* result = create_object(classname, shared_ptr);
+	mxArray* result;
+	if(isVirtual) {
+		boost::shared_ptr<void> void_ptr(shared_ptr);
+		result = create_object(matlabName, &void_ptr, isVirtual, typeid(*shared_ptr).name());
+	} else {
+		boost::shared_ptr<Class> *heapPtr = new boost::shared_ptr<Class>(shared_ptr);
+		result = create_object(matlabName, heapPtr, isVirtual, "");
+	}
 	return result;
 }
 

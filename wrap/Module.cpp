@@ -428,7 +428,7 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 			wrapperFile.oss << "\n";
 
 			wrapperFile.oss <<
-				"  mxArray *registry = mexGetVariable(\"global\", \"_gtsamwrap_rttiRegistry\");\n"
+				"  mxArray *registry = mexGetVariable(\"global\", \"gtsamwrap_rttiRegistry\");\n"
 				"  if(!registry)\n"
 				"    registry = mxCreateStructMatrix(1, 1, 0, NULL);\n"
 				"  typedef std::pair<std::string, std::string> StringPair;\n"

@@ -63,11 +63,8 @@ void Class::matlab_proxy(const string& classFile, const string& wrapperName,
 	// other wrap modules - to add these to their collectors the pointer is
 	// passed from one C++ module into matlab then back into the other C++
 	// module.
-	{
-		int id = functionNames.size();
-		const string functionName = pointer_constructor_fragments(proxyFile, wrapperFile, wrapperName, id);
-		functionNames.push_back(functionName);
-	}
+	pointer_constructor_fragments(proxyFile, wrapperFile, wrapperName, functionNames);
+	wrapperFile.oss << "\n";
 	// Regular constructors
   BOOST_FOREACH(ArgumentList a, constructor.args_list)
   {
@@ -131,29 +128,52 @@ string Class::qualifiedName(const string& delim) const {
 }
 
 /* ************************************************************************* */
-string Class::pointer_constructor_fragments(FileWriter& proxyFile, FileWriter& wrapperFile, const string& wrapperName, int id) const {
+void Class::pointer_constructor_fragments(FileWriter& proxyFile, FileWriter& wrapperFile, const string& wrapperName, vector<string>& functionNames) const {
 
   const string matlabName = qualifiedName(), cppName = qualifiedName("::");
-	const string wrapFunctionName = matlabName + "_collectorInsertAndMakeBase_" + boost::lexical_cast<string>(id);
 	const string baseMatlabName = wrap::qualifiedName("", qualifiedParent);
 	const string baseCppName = wrap::qualifiedName("::", qualifiedParent);
 
+	const int collectorInsertId = functionNames.size();
+	const string collectorInsertFunctionName = matlabName + "_collectorInsertAndMakeBase_" + boost::lexical_cast<string>(collectorInsertId);
+	functionNames.push_back(collectorInsertFunctionName);
+
+	int upcastFromVoidId;
+	string upcastFromVoidFunctionName;
+	if(isVirtual) {
+		upcastFromVoidId = functionNames.size();
+		upcastFromVoidFunctionName = matlabName + "_upcastFromVoid_" + boost::lexical_cast<string>(upcastFromVoidId);
+		functionNames.push_back(upcastFromVoidFunctionName);
+	}
+
 	// MATLAB constructor that assigns pointer to matlab object then calls c++
 	// function to add the object to the collector.
-	proxyFile.oss << "      if nargin == 2 && isa(varargin{1}, 'uint64') && ";
-	proxyFile.oss << "varargin{1} == uint64(" << ptr_constructor_key << ")\n";
-	proxyFile.oss << "        my_ptr = varargin{2};\n";
+	if(isVirtual) {
+		proxyFile.oss << "      if (nargin == 2 || (nargin == 3 && strcmp(varargin{3}, 'void')))";
+	} else {
+		proxyFile.oss << "      if nargin == 2";
+	}
+	proxyFile.oss << " && isa(varargin{1}, 'uint64') && varargin{1} == uint64(" << ptr_constructor_key << ")\n";
+	if(isVirtual) {
+		proxyFile.oss << "        if nargin == 2\n";
+		proxyFile.oss << "          my_ptr = varargin{2};\n";
+		proxyFile.oss << "        else\n";
+		proxyFile.oss << "          my_ptr = " << wrapperName << "(" << upcastFromVoidId << ", varargin{2});\n";
+		proxyFile.oss << "        end\n";
+	} else {
+		proxyFile.oss << "        my_ptr = varargin{2};\n";
+	}
 	if(qualifiedParent.empty()) // If this class has a base class, we'll get a base class pointer back
 		proxyFile.oss << "        ";
 	else
 		proxyFile.oss << "        base_ptr = ";
-	proxyFile.oss << wrapperName << "(" << id << ", my_ptr);\n"; // Call collector insert and get base class ptr
+	proxyFile.oss << wrapperName << "(" << collectorInsertId << ", my_ptr);\n"; // Call collector insert and get base class ptr
 
 	// C++ function to add pointer from MATLAB to collector.  The pointer always
 	// comes from a C++ return value; this mechanism allows the object to be added
 	// to a collector in a different wrap module.  If this class has a base class,
 	// a new pointer to the base class is allocated and returned.
-  wrapperFile.oss << "void " << wrapFunctionName << "(int nargout, mxArray *out[], int nargin, const mxArray *in[])" << endl;
+  wrapperFile.oss << "void " << collectorInsertFunctionName << "(int nargout, mxArray *out[], int nargin, const mxArray *in[])" << endl;
   wrapperFile.oss << "{\n";
 	wrapperFile.oss << "  mexAtExit(&_deleteAllObjects);\n";
 	generateUsingNamespace(wrapperFile, using_namespaces);
@@ -173,7 +193,21 @@ string Class::pointer_constructor_fragments(FileWriter& proxyFile, FileWriter& w
 	}
 	wrapperFile.oss << "}\n";
 
-	return wrapFunctionName;
+	// If this is a virtual function, C++ function to dynamic upcast it from a
+	// shared_ptr<void>.  This mechanism allows automatic dynamic creation of the
+	// real underlying derived-most class when a C++ method returns a virtual
+	// base class.
+	if(isVirtual)
+		wrapperFile.oss <<
+		"\n"
+		"void " << upcastFromVoidFunctionName << "(int nargout, mxArray *out[], int nargin, const mxArray *in[]) {\n"
+		"  mexAtExit(&_deleteAllObjects);\n"
+		"  typedef boost::shared_ptr<" << cppName << "> Shared;\n"
+		"  boost::shared_ptr<void> *asVoid = *reinterpret_cast<boost::shared_ptr<void>**> (mxGetData(in[0]));\n"
+		"  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);\n"
+		"  Shared *self = new Shared(boost::static_pointer_cast<" << cppName << ">(*asVoid));\n"
+		"  *reinterpret_cast<Shared**>(mxGetData(out[0])) = self;\n"
+		"}\n";
 }
 
 /* ************************************************************************* */

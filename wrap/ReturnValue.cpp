@@ -52,53 +52,71 @@ void ReturnValue::wrap_result(const string& result, FileWriter& file, const Type
 
   if (isPair) {
   	// first return value in pair
-    if (isPtr1) {// if we already have a pointer
-      file.oss << "  Shared" << type1 <<"* ret = new Shared" << type1 << "(" << result << ".first);" << endl;
-      file.oss << "  out[0] = wrap_shared_ptr(ret,\"" << matlabType1 << "\");\n";
-    }
-    else if (category1 == ReturnValue::CLASS) { // if we are going to make one
-			string objCopy;
-			if(typeAttributes.at(cppType1).isVirtual)
-				objCopy = "boost::dynamic_pointer_cast<" + cppType1 + ">(" + result + ".first.clone())";
-			else
-				objCopy = "new " + cppType1 + "(" + result + ".first)";
-      file.oss << "  Shared" <<  type1 << "* ret = new Shared" <<  type1 << "(" << objCopy << ");\n";
-    	file.oss << "  out[0] = wrap_shared_ptr(ret,\"" << matlabType1 << "\");\n";
-    }
-    else // if basis type
+    if (category1 == ReturnValue::CLASS) { // if we are going to make one
+			string objCopy, ptrType;
+			ptrType = "Shared" + type1;
+			const bool isVirtual = typeAttributes.at(cppType1).isVirtual;
+			if(isVirtual) {
+				if(isPtr1)
+					objCopy = result + ".first";
+				else
+					objCopy = result + ".first.clone()";
+			} else {
+				if(isPtr1)
+					objCopy = result + ".first";
+				else
+					objCopy = ptrType + "(new " + cppType1 + "(" + result + ".first))";
+			}
+    	file.oss << "  out[0] = wrap_shared_ptr(" << objCopy << ",\"" << matlabType1 << "\", " << (isVirtual ? "true" : "false") << ");\n";
+    } else if(isPtr1) {
+			file.oss << "  Shared" << type1 <<"* ret = new Shared" << type1 << "(" << result << ".first);" << endl;
+			file.oss << "  out[0] = wrap_shared_ptr(ret,\"" << matlabType1 << "\", false);\n";
+		} else // if basis type
       file.oss << "  out[0] = wrap< " << return_type(true,arg1) << " >(" << result << ".first);\n";
 
     // second return value in pair
-    if (isPtr2) {// if we already have a pointer
-      file.oss << "  Shared" << type2 <<"* ret = new Shared" << type2 << "(" << result << ".second);" << endl;
-      file.oss << "  out[1] = wrap_shared_ptr(ret,\"" << matlabType2 << "\");\n";
-    }
-    else if (category2 == ReturnValue::CLASS) { // if we are going to make one
-			string objCopy;
-			if(typeAttributes.at(cppType1).isVirtual)
-				objCopy = "boost::dynamic_pointer_cast<" + cppType2 + ">(" + result + ".second.clone())";
-			else
-				objCopy = "new " + cppType1 + "(" + result + ".second)";
-      file.oss << "  Shared" <<  type2 << "* ret = new Shared" <<  type2 << "(" << objCopy << ");\n";
-    	file.oss << "  out[0] = wrap_shared_ptr(ret,\"" << matlabType2 << "\");\n";
-    }
-    else
+    if (category2 == ReturnValue::CLASS) { // if we are going to make one
+			string objCopy, ptrType;
+			ptrType = "Shared" + type2;
+			const bool isVirtual = typeAttributes.at(cppType2).isVirtual;
+			if(isVirtual) {
+				if(isPtr2)
+					objCopy = result + ".second";
+				else
+					objCopy = result + ".second.clone()";
+			} else {
+				if(isPtr2)
+					objCopy = result + ".second";
+				else
+					objCopy = ptrType + "(new " + cppType2 + "(" + result + ".second))";
+			}
+			file.oss << "  out[0] = wrap_shared_ptr(" << objCopy << ",\"" << matlabType2 << "\", " << (isVirtual ? "true" : "false") << ");\n";
+    } else if(isPtr2) {
+			file.oss << "  Shared" << type2 <<"* ret = new Shared" << type2 << "(" << result << ".second);" << endl;
+			file.oss << "  out[1] = wrap_shared_ptr(ret,\"" << matlabType2 << "\");\n";
+		} else
       file.oss << "  out[1] = wrap< " << return_type(true,arg2) << " >(" << result << ".second);\n";
   }
-  else if (isPtr1){
-    file.oss << "  Shared" << type1 <<"* ret = new Shared" << type1 << "(" << result << ");" << endl;
-    file.oss << "  out[0] = wrap_shared_ptr(ret,\"" << matlabType1 << "\");\n";
-  }
   else if (category1 == ReturnValue::CLASS){
-		string objCopy;
-		if(typeAttributes.at(cppType1).isVirtual)
-			objCopy = "boost::dynamic_pointer_cast<" + cppType1 + ">(" + result + ".clone())";
-		else
-			objCopy = "new " + cppType1 + "(" + result + ")";
-    file.oss << "  Shared" <<  type1 << "* ret = new Shared" <<  type1 << "(" << objCopy << ");\n";
+		string objCopy, ptrType;
+		ptrType = "Shared" + type1;
+		const bool isVirtual = typeAttributes.at(cppType1).isVirtual;
+		if(isVirtual) {
+			if(isPtr1)
+				objCopy = result;
+			else
+				objCopy = result + ".clone()";
+		} else {
+			if(isPtr1)
+				objCopy = result;
+			else
+				objCopy = ptrType + "(new " + cppType1 + "(" + result + "))";
+		}
+		file.oss << "  out[0] = wrap_shared_ptr(" << objCopy << ",\"" << matlabType1 << "\", " << (isVirtual ? "true" : "false") << ");\n";
+  } else if(isPtr1) {
+		file.oss << "  Shared" << type1 <<"* ret = new Shared" << type1 << "(" << result << ");" << endl;
 		file.oss << "  out[0] = wrap_shared_ptr(ret,\"" << matlabType1 << "\");\n";
-  }
-  else if (matlabType1!="void")
+	} else if (matlabType1!="void")
     file.oss << "  out[0] = wrap< " << return_type(true,arg1) << " >(" << result << ");\n";
 }
 

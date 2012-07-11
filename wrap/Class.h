@@ -55,7 +55,7 @@ struct Class {
   std::string qualifiedName(const std::string& delim = "") const; ///< creates a namespace-qualified name, optional delimiter
 
 private:
-	std::string pointer_constructor_fragments(FileWriter& proxyFile, FileWriter& wrapperFile, const std::string& wrapperName, int id) const;
+	void pointer_constructor_fragments(FileWriter& proxyFile, FileWriter& wrapperFile, const std::string& wrapperName, std::vector<std::string>& functionNames) const;
 };
 
 } // \namespace wrap
