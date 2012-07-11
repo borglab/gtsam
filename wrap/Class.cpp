@@ -211,3 +211,90 @@ void Class::pointer_constructor_fragments(FileWriter& proxyFile, FileWriter& wra
 }
 
 /* ************************************************************************* */
+vector<ArgumentList> expandArgumentListsTemplate(const vector<ArgumentList>& argLists, const string& templateArg, const vector<string>& instName) {
+	vector<ArgumentList> result;
+	BOOST_FOREACH(const ArgumentList& argList, argLists) {
+		ArgumentList instArgList;
+		BOOST_FOREACH(const Argument& arg, argList) {
+			Argument instArg = arg;
+			if(arg.type == templateArg) {
+				instArg.namespaces.assign(instName.begin(), instName.end()-1);
+				instArg.type = instName.back();
+			}
+			instArgList.push_back(instArg);
+		}
+		result.push_back(instArgList);
+	}
+	return result;
+}
+
+/* ************************************************************************* */
+template<class METHOD>
+map<string, METHOD> expandMethodTemplate(const map<string, METHOD>& methods, const string& templateArg, const vector<string>& instName) {
+	map<string, METHOD> result;
+	typedef pair<const string, METHOD> Name_Method;
+	BOOST_FOREACH(const Name_Method& name_method, methods) {
+		const METHOD& method = name_method.second;
+		METHOD instMethod = method;
+		instMethod.argLists = expandArgumentListsTemplate(method.argLists, templateArg, instName);
+		instMethod.returnVals.clear();
+		BOOST_FOREACH(const ReturnValue& retVal, method.returnVals) {
+			ReturnValue instRetVal = retVal;
+			if(retVal.type1 == templateArg) {
+				instRetVal.namespaces1.assign(instName.begin(), instName.end()-1);
+				instRetVal.type1 = instName.back();
+			}
+			if(retVal.type2 == templateArg) {
+				instRetVal.namespaces2.assign(instName.begin(), instName.end()-1);
+				instRetVal.type2 = instName.back();
+			}
+		}
+		result.insert(make_pair(name_method.first, instMethod));
+	}
+	return result;
+}
+
+/* ************************************************************************* */
+vector<Class> Class::expandTemplate(const string& templateArg, const vector<vector<string> >& instantiations) const {
+	vector<Class> result;
+	BOOST_FOREACH(const vector<string>& instName, instantiations) {
+		Class inst;
+		inst.name = name + instName.back();
+		inst.typedefName = qualifiedName("::") + "<" + wrap::qualifiedName("::", instName) + ">";
+		inst.isVirtual = isVirtual;
+		inst.qualifiedParent = qualifiedParent;
+		inst.methods = expandMethodTemplate(methods, templateArg, instName);
+		inst.static_methods = expandMethodTemplate(static_methods, templateArg, instName);
+		inst.namespaces = namespaces;
+		inst.using_namespaces = using_namespaces;
+		bool allIncludesEmpty = true;
+		BOOST_FOREACH(const string& inc, includes) { if(!inc.empty()) { allIncludesEmpty = true; break; } }
+		if(allIncludesEmpty)
+			inst.includes.push_back(name + ".h");
+		else
+			inst.includes = includes;
+		inst.constructor = constructor;
+		inst.constructor.args_list = expandArgumentListsTemplate(constructor.args_list, templateArg, instName);
+		inst.constructor.name = inst.name;
+		inst.deconstructor = deconstructor;
+		inst.deconstructor.name = inst.name;
+		inst.verbose_ = verbose_;
+		result.push_back(inst);
+	}
+	return result;
+}
+
+/* ************************************************************************* */
+std::string Class::getTypedef() const {
+	string result;
+	BOOST_FOREACH(const string& namesp, namespaces) {
+		result += ("namespace " + namesp + " { ");
+	}
+	result += ("typedef " + typedefName + " " + name + ";");
+	BOOST_FOREACH(const string& namesp, namespaces) {
+		result += " }";
+	}
+	return result;
+}
+
+/* ************************************************************************* */

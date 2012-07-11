@@ -51,6 +51,19 @@ typedef rule<BOOST_SPIRIT_CLASSIC_NS::phrase_scanner_t> Rule;
 // and with start rule [class_p], doubles as the specs for our interface files.
 /* ************************************************************************* */
 
+/* ************************************************************************* */
+void handle_possible_template(vector<Class>& classes, const Class& cls, const string& templateArgument, const vector<vector<string> >& instantiations) {
+	if(instantiations.empty()) {
+		classes.push_back(cls);
+	} else {
+		vector<Class>& classInstantiations = cls.expandTemplate(templateArgument, instantiations);
+		BOOST_FOREACH(const Class& c, classInstantiations) {
+			classes.push_back(c);
+		}
+	}
+}
+
+/* ************************************************************************* */
 Module::Module(const string& interfacePath,
 	       const string& moduleName, bool enable_verbose) : name(moduleName), verbose(enable_verbose)
 {
@@ -72,6 +85,9 @@ Module::Module(const string& interfacePath,
   							 namespace_includes, /// current set of includes
   							 namespaces_return, /// namespace for current return type
   							 using_namespace_current;  /// All namespaces from "using" declarations
+	string templateArgument;
+	vector<string> templateInstantiationNamespace;
+	vector<vector<string> > templateInstantiations;
   string include_path = "";
   const string null_str = "";
 
@@ -116,11 +132,23 @@ Module::Module(const string& interfacePath,
     className_p[assign_a(arg.type)] >>
     (ch_p('*')[assign_a(arg.is_ptr,true)] | ch_p('&')[assign_a(arg.is_ref,true)]);
 
+	Rule name_p = lexeme_d[alpha_p >> *(alnum_p | '_')];
+
 	Rule classParent_p =
 		*(namespace_name_p[push_back_a(cls.qualifiedParent)] >> str_p("::")) >>
 		className_p[push_back_a(cls.qualifiedParent)];
 
-  Rule name_p = lexeme_d[alpha_p >> *(alnum_p | '_')];
+	Rule templateInstantiation_p =
+		(*(namespace_name_p[push_back_a(templateInstantiationNamespace)] >> str_p("::")) >>
+		className_p[push_back_a(templateInstantiationNamespace)])
+		[push_back_a(templateInstantiations, templateInstantiationNamespace)]
+	  [clear_a(templateInstantiationNamespace)];
+
+	Rule templateInstantiations_p =
+		str_p("template") >>
+		'<' >> name_p[assign_a(templateArgument)] >> '=' >> '{' >>
+		!(templateInstantiation_p >> *(',' >> templateInstantiation_p)) >>
+		'}' >> '>';
 
   Rule argument_p = 
     ((basisType_p[assign_a(arg.type)] | argEigenType_p | eigenRef_p | classArg_p)
@@ -202,10 +230,11 @@ Module::Module(const string& interfacePath,
 
   Rule class_p =
   		(!*include_p
+			>> !(templateInstantiations_p)
 			>> !(str_p("virtual")[assign_a(cls.isVirtual, true)])
   		>> str_p("class")[push_back_a(cls.includes, include_path)][assign_a(include_path, null_str)]
   		>> className_p[assign_a(cls.name)]
-			>> ((':' >> classParent_p >> '{') | '{') // By having (parent >> '{' | '{') here instead of (!parent >> '{'), we trigger a parse error on a badly-formed parent spec
+			>> ((':' >> classParent_p >> '{') | '{')
   		>> *(functions_p | comments_p)
   		>> str_p("};"))
         [assign_a(constructor.name, cls.name)]
@@ -215,10 +244,12 @@ Module::Module(const string& interfacePath,
   		[append_a(cls.includes, namespace_includes)]
         [assign_a(deconstructor.name,cls.name)]
         [assign_a(cls.deconstructor, deconstructor)]
-			[push_back_a(classes, cls)]
-        [assign_a(deconstructor,deconstructor0)]
-        [assign_a(constructor, constructor0)]
-  		[assign_a(cls,cls0)];
+			[bl::bind(&handle_possible_template, bl::var(classes), bl::var(cls), bl::var(templateArgument), bl::var(templateInstantiations))]
+      [assign_a(deconstructor,deconstructor0)]
+      [assign_a(constructor, constructor0)]
+  		[assign_a(cls,cls0)]
+			[clear_a(templateArgument)]
+			[clear_a(templateInstantiations)];
 
 	Rule namespace_def_p =
 			(!*include_p
@@ -412,6 +443,13 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 
 		// Generate includes while avoiding redundant includes
 		generateIncludes(wrapperFile);
+
+		// create typedef classes
+		BOOST_FOREACH(const Class& cls, classes) {
+			if(!cls.typedefName.empty())
+				wrapperFile.oss << cls.getTypedef() << "\n";
+		}
+		wrapperFile.oss << "\n";
 
 		// Generate all collectors
 		BOOST_FOREACH(const Class& cls, classes) {
