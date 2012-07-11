@@ -1084,6 +1084,19 @@ class LevenbergMarquardtParams {
   void setVerbosityLM(string s);
 };
 
+//*************************************************************************
+// Nonlinear factor types
+//*************************************************************************
+template<T = {gtsam::LieVector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera}>
+virtual class PriorFactor : gtsam::NonlinearFactor {
+	PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
+};
+
+template<T = {gtsam::LieVector, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
+virtual class BetweenFactor : gtsam::NonlinearFactor {
+	BetweenFactor(size_t key1, size_t key2, const T& relativePose, const gtsam::noiseModel::Base* noiseModel);
+};
+
 }///\namespace gtsam
 
 //*************************************************************************
