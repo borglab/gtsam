@@ -720,14 +720,14 @@ virtual class Diagonal : gtsam::noiseModel::Gaussian {
 	void print(string s) const;
 };
 
-virtual class Isotropic : gtsam::noiseModel::Gaussian {
+virtual class Isotropic : gtsam::noiseModel::Diagonal {
 	static gtsam::noiseModel::Isotropic* Sigma(size_t dim, double sigma);
 	static gtsam::noiseModel::Isotropic* Variance(size_t dim, double varianace);
 	static gtsam::noiseModel::Isotropic* Precision(size_t dim, double precision);
 	void print(string s) const;
 };
 
-virtual class Unit : gtsam::noiseModel::Gaussian {
+virtual class Unit : gtsam::noiseModel::Isotropic {
 	static gtsam::noiseModel::Unit* Create(size_t dim);
 	void print(string s) const;
 };
@@ -782,7 +782,7 @@ class GaussianBayesNet {
 	void push_front(gtsam::GaussianConditional* conditional);
 };
 
-class GaussianFactor {
+virtual class GaussianFactor {
 	void print(string s) const;
 	bool equals(const gtsam::GaussianFactor& lf, double tol) const;
 	double error(const gtsam::VectorValues& c) const;
@@ -790,7 +790,7 @@ class GaussianFactor {
 	size_t size() const;
 };
 
-class JacobianFactor {
+virtual class JacobianFactor : gtsam::GaussianFactor {
 	JacobianFactor();
 	JacobianFactor(Vector b_in);
 	JacobianFactor(size_t i1, Matrix A1, Vector b,
@@ -810,7 +810,7 @@ class JacobianFactor {
 	gtsam::GaussianFactor* negate() const;
 };
 
-class HessianFactor {
+virtual class HessianFactor : gtsam::GaussianFactor {
 	HessianFactor(const gtsam::HessianFactor& gf);
 	HessianFactor();
 	HessianFactor(size_t j, Matrix G, Vector g, double f);
@@ -834,22 +834,19 @@ class GaussianFactorGraph {
 	GaussianFactorGraph(const gtsam::GaussianBayesNet& CBN);
 
 	// From FactorGraph
-	void push_back(gtsam::GaussianFactor* factor);
 	void print(string s) const;
 	bool equals(const gtsam::GaussianFactorGraph& lfgraph, double tol) const;
 	size_t size() const;
 	gtsam::GaussianFactor* at(size_t idx) const;
 
 	// Building the graph
-	void add(gtsam::JacobianFactor* factor);
-	// all these won't work as MATLAB can't handle overloading
-//	void add(Vector b);
-//	void add(size_t key1, Matrix A1, Vector b, const gtsam::SharedDiagonal& model);
-//	void add(size_t key1, Matrix A1, size_t key2, Matrix A2, Vector b,
-//			const gtsam::SharedDiagonal& model);
-//	void add(size_t key1, Matrix A1, size_t key2, Matrix A2, size_t key3, Matrix A3,
-//			Vector b, const gtsam::SharedDiagonal& model);
-//	void add(gtsam::HessianFactor* factor);
+	void push_back(gtsam::GaussianFactor* factor);
+	void add(Vector b);
+	void add(size_t key1, Matrix A1, Vector b, const gtsam::noiseModel::Diagonal* model);
+	void add(size_t key1, Matrix A1, size_t key2, Matrix A2, Vector b,
+			const gtsam::noiseModel::Diagonal* model);
+	void add(size_t key1, Matrix A1, size_t key2, Matrix A2, size_t key3, Matrix A3,
+			Vector b, const gtsam::noiseModel::Diagonal* model);
 
 	// error and probability
 	double error(const gtsam::VectorValues& c) const;
@@ -951,15 +948,25 @@ class InvertedOrdering {
 class NonlinearFactorGraph {
 	NonlinearFactorGraph();
   void print(string s) const;
+	double error(const gtsam::Values& c) const;
+	double probPrime(const gtsam::Values& c) const;
+	gtsam::Ordering* orderingCOLAMD(const gtsam::Values& c) const;
+	// Ordering* orderingCOLAMDConstrained(const gtsam::Values& c, const std::map<gtsam::Key,int>& constraints) const;
+	gtsam::GaussianFactorGraph* linearize(const gtsam::Values& c, const gtsam::Ordering& ordering) const;
+	gtsam::NonlinearFactorGraph clone() const;
 };
 
-class NonlinearFactor {
-//	NonlinearFactor(); // FIXME: don't use this - creates an abstract class
+virtual class NonlinearFactor {
 	void print(string s) const;
 	void equals(const gtsam::NonlinearFactor& other, double tol) const;
 	gtsam::KeyVector keys() const;
 	size_t size() const;
-	size_t dim() const; // FIXME: Doesn't link
+	size_t dim() const;
+	double error(const gtsam::Values& c) const;
+	bool active(const gtsam::Values& c) const;
+	gtsam::GaussianFactor* linearize(const gtsam::Values& c, const gtsam::Ordering& ordering) const;
+	gtsam::NonlinearFactor* clone() const;
+	// gtsam::NonlinearFactor* rekey(const gtsam::KeyVector& newKeys) const; //FIXME: Conversion from KeyVector to std::vector does not happen
 };
 
 class Values {
