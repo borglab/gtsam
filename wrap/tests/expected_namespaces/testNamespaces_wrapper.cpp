@@ -25,6 +25,7 @@ typedef std::set<boost::shared_ptr<ns2::ClassC>*> Collector_ns2ClassC;
 static Collector_ns2ClassC collector_ns2ClassC;
 typedef std::set<boost::shared_ptr<ClassD>*> Collector_ClassD;
 static Collector_ClassD collector_ClassD;
+
 void _deleteAllObjects()
 {
   for(Collector_ns1ClassA::iterator iter = collector_ns1ClassA.begin();
@@ -284,6 +285,7 @@ void ClassD_deconstructor_21(int nargout, mxArray *out[], int nargin, const mxAr
     collector_ClassD.erase(item);
   }
 }
+
 
 void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {

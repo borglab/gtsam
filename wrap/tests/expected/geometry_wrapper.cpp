@@ -13,6 +13,7 @@ typedef std::set<boost::shared_ptr<Point3>*> Collector_Point3;
 static Collector_Point3 collector_Point3;
 typedef std::set<boost::shared_ptr<Test>*> Collector_Test;
 static Collector_Test collector_Test;
+
 void _deleteAllObjects()
 {
   for(Collector_Point2::iterator iter = collector_Point2.begin();
@@ -461,6 +462,7 @@ using namespace geometry;
   Vector value = unwrap< Vector >(in[1]);
   out[0] = wrap< Vector >(obj->return_vector2(value));
 }
+
 
 void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
