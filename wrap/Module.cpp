@@ -321,7 +321,6 @@ void Module::generateIncludes(FileWriter& file) const {
 	// collect includes
 	vector<string> all_includes;
 	BOOST_FOREACH(const Class& cls, classes) {
-//		generateIncludes(wrapperFile, cls.name, cls.includes);
 		bool added_include = false;
 		BOOST_FOREACH(const string& s, cls.includes) {
 			if (!s.empty()) {
@@ -335,12 +334,11 @@ void Module::generateIncludes(FileWriter& file) const {
 
 	// sort and remove duplicates
 	sort(all_includes.begin(), all_includes.end());
-	unique(all_includes.begin(), all_includes.end());
-
+	vector<string>::const_iterator last_include = unique(all_includes.begin(), all_includes.end());
+	vector<string>::const_iterator it = all_includes.begin();
 	// add includes to file
-	BOOST_FOREACH(const string& include, all_includes) {
-		file.oss << "#include <" << include << ">" << endl;
-	}
+	for (; it != last_include; ++it)
+		file.oss << "#include <" << *it << ">" << endl;
 	file.oss << "\n";
 }
 

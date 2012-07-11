@@ -9,9 +9,6 @@
 #include <path/to/ns2.h>
 #include <path/to/ns2/ClassA.h>
 #include <path/to/ns3.h>
-#include <path/to/ns2.h>
-#include <path/to/ns2/ClassA.h>
-#include <path/to/ns3.h>
 
 typedef std::set<boost::shared_ptr<ns1::ClassA>*> Collector_ns1ClassA;
 static Collector_ns1ClassA collector_ns1ClassA;
@@ -59,6 +56,27 @@ void _deleteAllObjects()
     collector_ClassD.erase(iter++);
   }
 }
+
+static bool _RTTIRegister_testNamespaces_done = false;
+void _testNamespaces_RTTIRegister() {
+  std::map<std::string, std::string> types;
+
+  mxArray *registry = mexGetVariable("global", "gtsamwrap_rttiRegistry");
+  if(!registry)
+    registry = mxCreateStructMatrix(1, 1, 0, NULL);
+  typedef std::pair<std::string, std::string> StringPair;
+  BOOST_FOREACH(const StringPair& rtti_matlab, types) {
+    int fieldId = mxAddField(registry, rtti_matlab.first.c_str());
+    if(fieldId < 0)
+      mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly");
+    mxArray *matlabName = mxCreateString(rtti_matlab.second.c_str());
+    mxSetFieldByNumber(registry, 0, fieldId, matlabName);
+  }
+  if(mexPutVariable("global", "gtsamwrap_rttiRegistry", registry) != 0)
+    mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly");
+  mxDestroyArray(registry);
+}
+
 void ns1ClassA_collectorInsertAndMakeBase_0(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
@@ -67,6 +85,7 @@ void ns1ClassA_collectorInsertAndMakeBase_0(int nargout, mxArray *out[], int nar
   Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
   collector_ns1ClassA.insert(self);
 }
+
 void ns1ClassA_constructor_1(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
@@ -99,6 +118,7 @@ void ns1ClassB_collectorInsertAndMakeBase_3(int nargout, mxArray *out[], int nar
   Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
   collector_ns1ClassB.insert(self);
 }
+
 void ns1ClassB_constructor_4(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
@@ -131,6 +151,7 @@ void ns2ClassA_collectorInsertAndMakeBase_6(int nargout, mxArray *out[], int nar
   Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
   collector_ns2ClassA.insert(self);
 }
+
 void ns2ClassA_constructor_7(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
@@ -179,8 +200,7 @@ void ns2ClassA_nsReturn_11(int nargout, mxArray *out[], int nargin, const mxArra
   checkArguments("nsReturn",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<ns2::ClassA>(in[0], "ptr_ns2ClassA");
   double q = unwrap< double >(in[1]);
-  SharedClassB* ret = new SharedClassB(new ns2::ns3::ClassB(obj->nsReturn(q)));
-  out[0] = wrap_shared_ptr(ret,"ns2ns3ClassB");
+  out[0] = wrap_shared_ptr(SharedClassB(new ns2::ns3::ClassB(obj->nsReturn(q))),"ns2ns3ClassB", false);
 }
 
 void ns2ClassA_afunction_12(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -198,6 +218,7 @@ void ns2ns3ClassB_collectorInsertAndMakeBase_13(int nargout, mxArray *out[], int
   Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
   collector_ns2ns3ClassB.insert(self);
 }
+
 void ns2ns3ClassB_constructor_14(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
@@ -230,6 +251,7 @@ void ns2ClassC_collectorInsertAndMakeBase_16(int nargout, mxArray *out[], int na
   Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
   collector_ns2ClassC.insert(self);
 }
+
 void ns2ClassC_constructor_17(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
@@ -262,6 +284,7 @@ void ClassD_collectorInsertAndMakeBase_19(int nargout, mxArray *out[], int nargi
   Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
   collector_ClassD.insert(self);
 }
+
 void ClassD_constructor_20(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
@@ -292,6 +315,10 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
   mstream mout;
   std::streambuf *outbuf = std::cout.rdbuf(&mout);
 
+  if(!_RTTIRegister_testNamespaces_done) {
+    _testNamespaces_RTTIRegister();
+    _RTTIRegister_testNamespaces_done = true;
+  }
   int id = unwrap<int>(in[0]);
 
   switch(id) {
