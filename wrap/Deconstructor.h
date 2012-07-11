@@ -34,7 +34,6 @@ struct Deconstructor {
 	}
 
 	// Then the instance variables are set directly by the Module deconstructor
-    ArgumentList args;	
 	std::string name;
 	bool verbose_;
 
