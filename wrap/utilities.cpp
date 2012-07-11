@@ -121,20 +121,6 @@ void generateUsingNamespace(FileWriter& file, const vector<string>& using_namesp
 }
 
 /* ************************************************************************* */
-void generateIncludes(FileWriter& file, const string& class_name,
-		const vector<string>& includes) {
-	bool added_include = false;
-	BOOST_FOREACH(const string& s, includes) {
-		if (!s.empty()) {
-			file.oss << "#include <" << s << ">" << endl;
-			added_include = true;
-		}
-	}
-	if (!added_include) // add default include
-		file.oss << "#include <" << class_name << ".h>" << endl;
-}
-
-/* ************************************************************************* */
 string qualifiedName(const string& separator, const vector<string>& names, const string& finalName) {
 	string result;
 	if(!names.empty()) {

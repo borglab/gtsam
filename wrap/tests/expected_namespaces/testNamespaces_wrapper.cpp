@@ -3,15 +3,15 @@
 #include <map>
 #include <boost/foreach.hpp>
 
-#include <path/to/ns1.h>
+#include <ClassD.h>
 #include <path/to/ns1.h>
 #include <path/to/ns1/ClassB.h>
 #include <path/to/ns2.h>
 #include <path/to/ns2/ClassA.h>
-#include <path/to/ns2.h>
 #include <path/to/ns3.h>
 #include <path/to/ns2.h>
-#include <ClassD.h>
+#include <path/to/ns2/ClassA.h>
+#include <path/to/ns3.h>
 
 typedef std::set<boost::shared_ptr<ns1::ClassA>*> Collector_ns1ClassA;
 static Collector_ns1ClassA collector_ns1ClassA;

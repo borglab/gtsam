@@ -118,12 +118,6 @@ std::string maybe_shared_ptr(bool add, const std::string& qtype, const std::stri
 void generateUsingNamespace(FileWriter& file, const std::vector<std::string>& using_namespaces);
 
 /**
- * Creates the #include statements
- */
-void generateIncludes(FileWriter& file, const std::string& class_name,
-		const std::vector<std::string>& includes);
-
-/**
  * Return a qualified name, if finalName is empty, only the names vector will
  * be used (i.e. there won't be a trailing separator on the qualified name).
  */

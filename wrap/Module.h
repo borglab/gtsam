@@ -53,6 +53,8 @@ struct Module {
 		   const std::string& headerPath) const;
 
 	void finish_wrapper(FileWriter& file, const std::vector<std::string>& functionNames) const;
+
+	void generateIncludes(FileWriter& file) const;
 };
 
 } // \namespace wrap

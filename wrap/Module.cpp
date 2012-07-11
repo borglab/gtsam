@@ -316,6 +316,35 @@ void verifyReturnTypes(const vector<string>& validtypes, const map<string,T>& vt
 }
 
 /* ************************************************************************* */
+void Module::generateIncludes(FileWriter& file) const {
+
+	// collect includes
+	vector<string> all_includes;
+	BOOST_FOREACH(const Class& cls, classes) {
+//		generateIncludes(wrapperFile, cls.name, cls.includes);
+		bool added_include = false;
+		BOOST_FOREACH(const string& s, cls.includes) {
+			if (!s.empty()) {
+				all_includes.push_back(s);
+				added_include = true;
+			}
+		}
+		if (!added_include) // add default include
+			all_includes.push_back(cls.name + ".h");
+	}
+
+	// sort and remove duplicates
+	sort(all_includes.begin(), all_includes.end());
+	unique(all_includes.begin(), all_includes.end());
+
+	// add includes to file
+	BOOST_FOREACH(const string& include, all_includes) {
+		file.oss << "#include <" << include << ">" << endl;
+	}
+	file.oss << "\n";
+}
+
+/* ************************************************************************* */
 void Module::matlab_code(const string& toolboxPath, const string& headerPath) const {
 
     fs::create_directories(toolboxPath);
@@ -383,11 +412,8 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
       verifyReturnTypes<Method>(validTypes, cls.methods);
     }
 
-		// Generate all includes
-		BOOST_FOREACH(const Class& cls, classes) {
-			generateIncludes(wrapperFile, cls.name, cls.includes);
-		}
-		wrapperFile.oss << "\n";
+		// Generate includes while avoiding redundant includes
+		generateIncludes(wrapperFile);
 
 		// Generate all collectors
 		BOOST_FOREACH(const Class& cls, classes) {
