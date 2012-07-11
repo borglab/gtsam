@@ -79,9 +79,9 @@ public:
 	virtual const char* what() const throw() { return what_.c_str(); }
 };
 	
-/** Special "magic number" passed into MATLAB constructor to indicate creating
- * a MATLAB object from a shared_ptr allocated in C++
- */
+// "Unique" key to signal calling the matlab object constructor with a raw pointer
+// to a shared pointer of the same C++ object type as the MATLAB type.
+// Also present in matlab.h
 static const uint64_t ptr_constructor_key =
 	(uint64_t('G') << 56) |
 	(uint64_t('T') << 48) |
