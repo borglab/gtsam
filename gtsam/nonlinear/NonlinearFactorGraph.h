@@ -55,9 +55,14 @@ namespace gtsam {
 		/** Unnormalized probability. O(n) */
 		double probPrime(const Values& c) const;
 
-		template<class F>
-		void add(const F& factor) {
-			this->push_back(boost::shared_ptr<F>(new F(factor)));
+		/// Add a factor by value - copies the factor object
+		void add(const NonlinearFactor& factor) {
+			this->push_back(factor.clone());
+		}
+
+		/// Add a factor by pointer - stores pointer without copying factor object
+		void add(const sharedFactor& factor) {
+			this->push_back(factor);
 		}
 
 		/**

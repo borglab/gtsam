@@ -982,6 +982,7 @@ class NonlinearFactorGraph {
   void print(string s) const;
 	double error(const gtsam::Values& c) const;
 	double probPrime(const gtsam::Values& c) const;
+	void add(const gtsam::NonlinearFactor* factor);
 	gtsam::Ordering* orderingCOLAMD(const gtsam::Values& c) const;
 	// Ordering* orderingCOLAMDConstrained(const gtsam::Values& c, const std::map<gtsam::Key,int>& constraints) const;
 	gtsam::GaussianFactorGraph* linearize(const gtsam::Values& c, const gtsam::Ordering& ordering) const;
