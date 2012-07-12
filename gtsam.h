@@ -398,17 +398,18 @@ virtual class Pose3 : gtsam::Value {
 	Matrix matrix() const;
 	gtsam::Pose3 transform_to(const gtsam::Pose3& pose) const; // FIXME: shadows other transform_to()
 	double range(const gtsam::Point3& point);
-	double range(const gtsam::Pose3& pose); // FIXME: shadows other range
+	double range(const gtsam::Pose3& pose);
 };
 
 virtual class Cal3_S2 : gtsam::Value {
   // Standard Constructors
   Cal3_S2();
   Cal3_S2(double fx, double fy, double s, double u0, double v0);
+	Cal3_S2(Vector v);
 
   // Testable
   void print(string s) const;
-  bool equals(const gtsam::Cal3_S2& pose, double tol) const;
+  bool equals(const gtsam::Cal3_S2& rhs, double tol) const;
 
   // Manifold
   static size_t Dim();
@@ -430,6 +431,37 @@ virtual class Cal3_S2 : gtsam::Value {
   Vector vector() const;
   Matrix matrix() const;
   Matrix matrix_inverse() const;
+};
+
+virtual class Cal3DS2 : gtsam::Value {
+	// Standard Constructors
+	Cal3DS2();
+	Cal3DS2(double fx, double fy, double s, double u0, double v0, double k1, double k2, double k3, double k4);
+	Cal3DS2(Vector v);
+
+	// Testable
+	void print(string s) const;
+	bool equals(const gtsam::Cal3DS2& rhs, double tol) const;
+
+	// Manifold
+	static size_t Dim();
+	size_t dim() const;
+	gtsam::Cal3DS2 retract(Vector v) const;
+	Vector localCoordinates(const gtsam::Cal3DS2& c) const;
+
+	// Action on Point2
+	gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
+	// TODO: D2d functions that start with an uppercase letter
+
+	// Standard Interface
+	double fx() const;
+	double fy() const;
+	double skew() const;
+	double px() const;
+	double py() const;
+	Vector vector() const;
+	Vector k() const;
+	//Matrix K() const; //FIXME: Uppercase
 };
 
 class Cal3_S2Stereo {
@@ -1092,10 +1124,41 @@ virtual class PriorFactor : gtsam::NonlinearFactor {
 	PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
 };
 
+
 template<T = {gtsam::LieVector, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
 virtual class BetweenFactor : gtsam::NonlinearFactor {
 	BetweenFactor(size_t key1, size_t key2, const T& relativePose, const gtsam::noiseModel::Base* noiseModel);
 };
+
+
+template<POSE, POINT>
+virtual class RangeFactor : gtsam::NonlinearFactor {
+	RangeFactor(size_t key1, size_t key2, double measured, const gtsam::noiseModel::Base* noiseModel);
+};
+
+typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Point2> RangeFactor2D;
+typedef gtsam::RangeFactor<gtsam::Pose3, gtsam::Point3> RangeFactor3D;
+typedef gtsam::RangeFactor<gtsam::CalibratedCamera, gtsam::Point3> RangeFactorCalibratedCamera;
+typedef gtsam::RangeFactor<gtsam::SimpleCamera, gtsam::Point3> RangeFactorSimpleCamera;
+
+template<POSE, POINT, ROT>
+virtual class BearingFactor : gtsam::NonlinearFactor {
+	BearingFactor(size_t key1, size_t key2, const ROT& measured, const gtsam::noiseModel::Base* noiseModel);
+};
+
+typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2> BearingFactor2D;
+
+
+#include <ProjectionFactor.h>
+template<POSE, LANDMARK, CALIBRATION>
+virtual class GenericProjectionFactor : gtsam::NonlinearFactor {
+	GenericProjectionFactor(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
+		size_t poseKey, size_t pointKey, const CALIBRATION* k);
+	gtsam::Point2 measured() const;
+	CALIBRATION* calibration() const;
+};
+typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> GenericProjectionFactorCal3_S2;
+typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> GenericProjectionFactorCal3DS2;
 
 }///\namespace gtsam
 

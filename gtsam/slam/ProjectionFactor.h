@@ -62,7 +62,7 @@ namespace gtsam {
 		 * @param K shared pointer to the constant calibration
 		 */
 		GenericProjectionFactor(const Point2& measured, const SharedNoiseModel& model,
-				const Key poseKey, Key pointKey, const shared_ptrK& K) :
+				Key poseKey, Key pointKey, const boost::shared_ptr<CALIBRATION>& K) :
 				  Base(model, poseKey, pointKey), measured_(measured), K_(K) {
 		}
 

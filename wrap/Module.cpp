@@ -56,7 +56,7 @@ void handle_possible_template(vector<Class>& classes, const Class& cls, const st
 	if(instantiations.empty()) {
 		classes.push_back(cls);
 	} else {
-		vector<Class>& classInstantiations = cls.expandTemplate(templateArgument, instantiations);
+		vector<Class> classInstantiations = cls.expandTemplate(templateArgument, instantiations);
 		BOOST_FOREACH(const Class& c, classInstantiations) {
 			classes.push_back(c);
 		}
