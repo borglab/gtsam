@@ -13,6 +13,7 @@
  * @file Class.cpp
  * @author Frank Dellaert
  * @author Andrew Melim
+ * @author Richard Roberts
  **/
 
 #include <vector>
@@ -34,7 +35,7 @@ using namespace wrap;
 
 /* ************************************************************************* */
 void Class::matlab_proxy(const string& classFile, const string& wrapperName,
-												 const ReturnValue::TypeAttributesTable& typeAttributes,
+												 const TypeAttributesTable& typeAttributes,
 												 FileWriter& wrapperFile, vector<string>& functionNames) const {
   // open destination classFile
   FileWriter proxyFile(classFile, verbose_, "%");
@@ -68,7 +69,7 @@ void Class::matlab_proxy(const string& classFile, const string& wrapperName,
 	// Regular constructors
   BOOST_FOREACH(ArgumentList a, constructor.args_list)
   {
-		const int id = functionNames.size();
+		const int id = (int)functionNames.size();
 		constructor.proxy_fragment(proxyFile, wrapperName, matlabName, matlabBaseName, id, a);
 		const string wrapFunctionName = constructor.wrapper_fragment(wrapperFile,
 			cppName, matlabName, cppBaseName, id, using_namespaces, a);
@@ -85,7 +86,7 @@ void Class::matlab_proxy(const string& classFile, const string& wrapperName,
 
 	// Deconstructor
 	{
-		const int id = functionNames.size();
+		const int id = (int)functionNames.size();
 		deconstructor.proxy_fragment(proxyFile, wrapperName, matlabName, id);
 		proxyFile.oss << "\n";
 		const string functionName = deconstructor.wrapper_fragment(wrapperFile, cppName, matlabName, id, using_namespaces);
@@ -134,14 +135,14 @@ void Class::pointer_constructor_fragments(FileWriter& proxyFile, FileWriter& wra
 	const string baseMatlabName = wrap::qualifiedName("", qualifiedParent);
 	const string baseCppName = wrap::qualifiedName("::", qualifiedParent);
 
-	const int collectorInsertId = functionNames.size();
+	const int collectorInsertId = (int)functionNames.size();
 	const string collectorInsertFunctionName = matlabName + "_collectorInsertAndMakeBase_" + boost::lexical_cast<string>(collectorInsertId);
 	functionNames.push_back(collectorInsertFunctionName);
 
 	int upcastFromVoidId;
 	string upcastFromVoidFunctionName;
 	if(isVirtual) {
-		upcastFromVoidId = functionNames.size();
+		upcastFromVoidId = (int)functionNames.size();
 		upcastFromVoidFunctionName = matlabName + "_upcastFromVoid_" + boost::lexical_cast<string>(upcastFromVoidId);
 		functionNames.push_back(upcastFromVoidFunctionName);
 	}

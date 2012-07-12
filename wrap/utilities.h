@@ -13,6 +13,7 @@
  * @file utilities.h
  * @author Frank Dellaert
  * @author Andrew Melim
+ * @author Richard Roberts
  **/
 
 #pragma once

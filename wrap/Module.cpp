@@ -14,10 +14,12 @@
  * @author Frank Dellaert
  * @author Alex Cunningham
  * @author Andrew Melim
+ * @author Richard Roberts
  **/
 
 #include "Module.h"
 #include "FileWriter.h"
+#include "TypeAttributesTable.h"
 #include "utilities.h"
 #include "spirit_actors.h"
 
@@ -88,7 +90,7 @@ Module::Module(const string& interfacePath,
 	string templateArgument;
 	vector<string> templateInstantiationNamespace;
 	vector<vector<string> > templateInstantiations;
-	TemplateSingleInstantiation singleInstantiation, singleInstantiation0;
+	TemplateInstantiationTypedef singleInstantiation, singleInstantiation0;
   string include_path = "";
   const string null_str = "";
 
@@ -167,7 +169,7 @@ Module::Module(const string& interfacePath,
 		className_p[assign_a(singleInstantiation.name)] >>
 		';')
 		[assign_a(singleInstantiation.namespaces, namespaces)]
-	  [push_back_a(singleInstantiations, singleInstantiation)]
+	  [push_back_a(templateInstantiationTypedefs, singleInstantiation)]
 		[assign_a(singleInstantiation, singleInstantiation0)];
 
 	Rule templateList_p =
@@ -335,7 +337,7 @@ Module::Module(const string& interfacePath,
   parse_info<const char*> info = parse(contents.c_str(), module_p, space_p);
   if(!info.full) {
     printf("parsing stopped at \n%.20s\n",info.stop);
-    throw ParseFailed(info.length);
+    throw ParseFailed((int)info.length);
   }
 }
 
@@ -413,49 +415,19 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 		wrapperFile.oss << "#include <boost/foreach.hpp>\n";
 		wrapperFile.oss << "\n";
 
-		// Expand templates
-		vector<Class> expandedClasses = expandTemplates();
+		// Expand templates - This is done first so that template instantiations are
+		// counted in the list of valid types, have their attributes and dependencies
+		// checked, etc.
+		vector<Class> expandedClasses = ExpandTypedefInstantiations(classes, templateInstantiationTypedefs);
 
     // Dependency check list
-    vector<string> validTypes;
-		BOOST_FOREACH(const ForwardDeclaration& fwDec, forward_declarations) {
-			validTypes.push_back(fwDec.name);
-		}
-    validTypes.push_back("void");
-    validTypes.push_back("string");
-    validTypes.push_back("int");
-    validTypes.push_back("bool");
-    validTypes.push_back("char");
-    validTypes.push_back("unsigned char");
-    validTypes.push_back("size_t");
-    validTypes.push_back("double");
-    validTypes.push_back("Vector");
-    validTypes.push_back("Matrix");
-		//Create a list of parsed classes for dependency checking
-    BOOST_FOREACH(const Class& cls, expandedClasses) {
-			validTypes.push_back(cls.qualifiedName("::"));
-    }
+    vector<string> validTypes = GenerateValidTypes(expandedClasses, forward_declarations);
 
-		// Create type attributes table
-		ReturnValue::TypeAttributesTable typeAttributes;
-		BOOST_FOREACH(const ForwardDeclaration& fwDec, forward_declarations) {
-			if(!typeAttributes.insert(make_pair(fwDec.name, ReturnValue::TypeAttributes(fwDec.isVirtual))).second)
-				throw DuplicateDefinition("class " + fwDec.name);
-		}
-		BOOST_FOREACH(const Class& cls, expandedClasses) {
-			if(!typeAttributes.insert(make_pair(cls.qualifiedName("::"), ReturnValue::TypeAttributes(cls.isVirtual))).second)
-				throw DuplicateDefinition("class " + cls.qualifiedName("::"));
-		}
-		// Check attributes
-		BOOST_FOREACH(const Class& cls, expandedClasses) {
-			// Check that class is virtual if it has a parent
-			if(!cls.qualifiedParent.empty() && !cls.isVirtual)
-				throw AttributeError(cls.qualifiedName("::"), "Has a base class so needs to be declared virtual, change to 'virtual class "+cls.name+" ...'");
-			// Check that parent is virtual as well
-			if(!cls.qualifiedParent.empty() && !typeAttributes.at(wrap::qualifiedName("::", cls.qualifiedParent)).isVirtual)
-				throw AttributeError(wrap::qualifiedName("::", cls.qualifiedParent),
-				"Is the base class of " + cls.qualifiedName("::") + ", so needs to be declared virtual");
-		}
+		// Create type attributes table and check validity
+		TypeAttributesTable typeAttributes;
+		typeAttributes.addClasses(expandedClasses);
+		typeAttributes.addForwardDeclarations(forward_declarations);
+		typeAttributes.checkValidity(expandedClasses);
 
     // Check that all classes have been defined somewhere
 		BOOST_FOREACH(const Class& cls, expandedClasses) {
@@ -472,69 +444,18 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 		// Generate includes while avoiding redundant includes
 		generateIncludes(wrapperFile);
 
-		// create typedef classes
+		// create typedef classes - we put this at the top of the wrap file so that collectors and method arguments can use these typedefs
 		BOOST_FOREACH(const Class& cls, expandedClasses) {
 			if(!cls.typedefName.empty())
 				wrapperFile.oss << cls.getTypedef() << "\n";
 		}
 		wrapperFile.oss << "\n";
 
-		// Generate all collectors
-		BOOST_FOREACH(const Class& cls, expandedClasses) {
-			const string matlabName = cls.qualifiedName(), cppName = cls.qualifiedName("::");
-			wrapperFile.oss << "typedef std::set<boost::shared_ptr<" << cppName << ">*> "
-				<< "Collector_" << matlabName << ";\n";
-			wrapperFile.oss << "static Collector_" << matlabName <<
-				" collector_" << matlabName << ";\n";
-		}
-
-		// generate mexAtExit cleanup function
-		wrapperFile.oss << "\nvoid _deleteAllObjects()\n";
-		wrapperFile.oss << "{\n";
-		BOOST_FOREACH(const Class& cls, expandedClasses) {
-			const string matlabName = cls.qualifiedName();
-			const string cppName = cls.qualifiedName("::");
-			const string collectorType = "Collector_" + matlabName;
-			const string collectorName = "collector_" + matlabName;
-			wrapperFile.oss << "  for(" << collectorType << "::iterator iter = " << collectorName << ".begin();\n";
-			wrapperFile.oss << "      iter != " << collectorName << ".end(); ) {\n";
-			wrapperFile.oss << "    delete *iter;\n";
-			wrapperFile.oss << "    " << collectorName << ".erase(iter++);\n";
-			wrapperFile.oss << "  }\n";
-		}
-		wrapperFile.oss << "}\n\n";
+		// Generate collectors and cleanup function to be called from mexAtExit
+		WriteCollectorsAndCleanupFcn(wrapperFile, name, expandedClasses);
 
 		// generate RTTI registry (for returning derived-most types)
-		{
-			wrapperFile.oss <<
-				"static bool _RTTIRegister_" << name << "_done = false;\n"
-				"void _" << name << "_RTTIRegister() {\n"
-				"  std::map<std::string, std::string> types;\n";
-			BOOST_FOREACH(const Class& cls, expandedClasses) {
-				if(cls.isVirtual)
-					wrapperFile.oss <<
-  					"  types.insert(std::make_pair(typeid(" << cls.qualifiedName("::") << ").name(), \"" << cls.qualifiedName() << "\"));\n";
-			}
-			wrapperFile.oss << "\n";
-
-			wrapperFile.oss <<
-				"  mxArray *registry = mexGetVariable(\"global\", \"gtsamwrap_rttiRegistry\");\n"
-				"  if(!registry)\n"
-				"    registry = mxCreateStructMatrix(1, 1, 0, NULL);\n"
-				"  typedef std::pair<std::string, std::string> StringPair;\n"
-				"  BOOST_FOREACH(const StringPair& rtti_matlab, types) {\n"
-				"    int fieldId = mxAddField(registry, rtti_matlab.first.c_str());\n"
-				"    if(fieldId < 0)\n"
-				"      mexErrMsgTxt(\"gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly\");\n"
-				"    mxArray *matlabName = mxCreateString(rtti_matlab.second.c_str());\n"
-				"    mxSetFieldByNumber(registry, 0, fieldId, matlabName);\n"
-				"  }\n"
-				"  if(mexPutVariable(\"global\", \"gtsamwrap_rttiRegistry\", registry) != 0)\n"
-				"    mexErrMsgTxt(\"gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly\");\n"
-				"  mxDestroyArray(registry);\n"
-				"}\n"
-				"\n";
-		}
+		WriteRTTIRegistry(wrapperFile, name, expandedClasses);
 
 		// create proxy class and wrapper code
 		BOOST_FOREACH(const Class& cls, expandedClasses) {
@@ -573,43 +494,13 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 	}
 
 /* ************************************************************************* */
-vector<Class> Module::expandTemplates() const {
+vector<Class> Module::ExpandTypedefInstantiations(const vector<Class>& classes, const vector<TemplateInstantiationTypedef> instantiations) {
 
 	vector<Class> expandedClasses = classes;
 
-	BOOST_FOREACH(const TemplateSingleInstantiation& inst, singleInstantiations) {
-		// Find matching class
-		std::vector<Class>::iterator clsIt = expandedClasses.end();
-		for(std::vector<Class>::iterator it = expandedClasses.begin(); it != expandedClasses.end(); ++it) {
-			if(it->name == inst.className && it->namespaces == inst.classNamespaces && it->templateArgs.size() == inst.typeList.size()) {
-				clsIt = it;
-				break;
-			}
-		}
-
-		if(clsIt == expandedClasses.end())
-			throw DependencyMissing(wrap::qualifiedName("::", inst.classNamespaces, inst.className),
-			"instantiation into typedef name " + wrap::qualifiedName("::", inst.namespaces, inst.name) +
-			".  Ensure that the typedef provides the correct number of template arguments.");
-
-		// Instantiate it
-		Class classInst = *clsIt;
-		for(size_t i = 0; i < inst.typeList.size(); ++i)
-			classInst = classInst.expandTemplate(classInst.templateArgs[i], inst.typeList[i]);
-
-		// Fix class properties
-		classInst.name = inst.name;
-		classInst.templateArgs.clear();
-		classInst.typedefName = clsIt->qualifiedName("::") + "<";
-		if(inst.typeList.size() > 0)
-			classInst.typedefName += wrap::qualifiedName("::", inst.typeList[0]);
-		for(size_t i = 1; i < inst.typeList.size(); ++i)
-			classInst.typedefName += (", " + wrap::qualifiedName("::", inst.typeList[i]));
-		classInst.typedefName += ">";
-		classInst.namespaces = inst.namespaces;
-
+	BOOST_FOREACH(const TemplateInstantiationTypedef& inst, instantiations) {
 		// Add the new class to the list
-		expandedClasses.push_back(classInst);
+		expandedClasses.push_back(inst.findAndExpand(classes));
 	}
 
 	// Remove all template classes
@@ -620,6 +511,90 @@ vector<Class> Module::expandTemplates() const {
 		}
 
 	return expandedClasses;
+}
+
+/* ************************************************************************* */
+vector<string> Module::GenerateValidTypes(const vector<Class>& classes, const vector<ForwardDeclaration> forwardDeclarations) {
+	vector<string> validTypes;
+	BOOST_FOREACH(const ForwardDeclaration& fwDec, forwardDeclarations) {
+		validTypes.push_back(fwDec.name);
+	}
+	validTypes.push_back("void");
+	validTypes.push_back("string");
+	validTypes.push_back("int");
+	validTypes.push_back("bool");
+	validTypes.push_back("char");
+	validTypes.push_back("unsigned char");
+	validTypes.push_back("size_t");
+	validTypes.push_back("double");
+	validTypes.push_back("Vector");
+	validTypes.push_back("Matrix");
+	//Create a list of parsed classes for dependency checking
+	BOOST_FOREACH(const Class& cls, classes) {
+		validTypes.push_back(cls.qualifiedName("::"));
+	}
+
+	return validTypes;
+}
+
+/* ************************************************************************* */
+void Module::WriteCollectorsAndCleanupFcn(FileWriter& wrapperFile, const std::string& moduleName, const std::vector<Class>& classes) {
+	// Generate all collectors
+	BOOST_FOREACH(const Class& cls, classes) {
+		const string matlabName = cls.qualifiedName(), cppName = cls.qualifiedName("::");
+		wrapperFile.oss << "typedef std::set<boost::shared_ptr<" << cppName << ">*> "
+			<< "Collector_" << matlabName << ";\n";
+		wrapperFile.oss << "static Collector_" << matlabName <<
+			" collector_" << matlabName << ";\n";
+	}
+
+	// generate mexAtExit cleanup function
+	wrapperFile.oss << "\nvoid _deleteAllObjects()\n";
+	wrapperFile.oss << "{\n";
+	BOOST_FOREACH(const Class& cls, classes) {
+		const string matlabName = cls.qualifiedName();
+		const string cppName = cls.qualifiedName("::");
+		const string collectorType = "Collector_" + matlabName;
+		const string collectorName = "collector_" + matlabName;
+		wrapperFile.oss << "  for(" << collectorType << "::iterator iter = " << collectorName << ".begin();\n";
+		wrapperFile.oss << "      iter != " << collectorName << ".end(); ) {\n";
+		wrapperFile.oss << "    delete *iter;\n";
+		wrapperFile.oss << "    " << collectorName << ".erase(iter++);\n";
+		wrapperFile.oss << "  }\n";
+	}
+	wrapperFile.oss << "}\n\n";
+}
+
+/* ************************************************************************* */
+void Module::WriteRTTIRegistry(FileWriter& wrapperFile, const std::string& moduleName, const std::vector<Class>& classes) {
+	wrapperFile.oss <<
+		"static bool _RTTIRegister_" << moduleName << "_done = false;\n"
+		"void _" << moduleName << "_RTTIRegister() {\n"
+		"  std::map<std::string, std::string> types;\n";
+	BOOST_FOREACH(const Class& cls, classes) {
+		if(cls.isVirtual)
+			wrapperFile.oss <<
+			"  types.insert(std::make_pair(typeid(" << cls.qualifiedName("::") << ").name(), \"" << cls.qualifiedName() << "\"));\n";
+	}
+	wrapperFile.oss << "\n";
+
+	wrapperFile.oss <<
+		"  mxArray *registry = mexGetVariable(\"global\", \"gtsamwrap_rttiRegistry\");\n"
+		"  if(!registry)\n"
+		"    registry = mxCreateStructMatrix(1, 1, 0, NULL);\n"
+		"  typedef std::pair<std::string, std::string> StringPair;\n"
+		"  BOOST_FOREACH(const StringPair& rtti_matlab, types) {\n"
+		"    int fieldId = mxAddField(registry, rtti_matlab.first.c_str());\n"
+		"    if(fieldId < 0)\n"
+		"      mexErrMsgTxt(\"gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly\");\n"
+		"    mxArray *matlabName = mxCreateString(rtti_matlab.second.c_str());\n"
+		"    mxSetFieldByNumber(registry, 0, fieldId, matlabName);\n"
+		"  }\n"
+		"  if(mexPutVariable(\"global\", \"gtsamwrap_rttiRegistry\", registry) != 0)\n"
+		"    mexErrMsgTxt(\"gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly\");\n"
+		"  mxDestroyArray(registry);\n"
+		"}\n"
+		"\n";
 }
 
 /* ************************************************************************* */

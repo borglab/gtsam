@@ -5,26 +5,20 @@
  *
  * @date Dec 1, 2011
  * @author Alex Cunningham
+ * @author Richard Roberts
  */
 
 #include <vector>
 #include <map>
 
 #include "FileWriter.h"
+#include "TypeAttributesTable.h"
 
 #pragma once
 
 namespace wrap {
 
 struct ReturnValue {
-
-	struct TypeAttributes {
-		bool isVirtual;
-		TypeAttributes() : isVirtual(false) {}
-		TypeAttributes(bool isVirtual) : isVirtual(isVirtual) {}
-	};
-
-	typedef std::map<std::string, TypeAttributes> TypeAttributesTable;
 
 	typedef enum {
 		CLASS,

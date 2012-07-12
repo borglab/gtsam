@@ -14,6 +14,7 @@
  * @brief arguments to constructors and methods
  * @author Frank Dellaert
  * @author Andrew Melim
+ * @author Richard Roberts
  **/
 
 #pragma once

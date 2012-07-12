@@ -14,6 +14,9 @@
  * @brief header file to be included in MATLAB wrappers
  * @date 2008
  * @author Frank Dellaert
+ * @author Alex Cunningham
+ * @author Andrew Melim
+ * @author Richard Roberts
  *
  * wrapping and unwrapping is done using specialized templates, see
  * http://www.cplusplus.com/doc/tutorial/templates.html

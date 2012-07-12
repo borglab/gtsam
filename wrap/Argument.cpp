@@ -13,6 +13,7 @@
  * @file Argument.ccp
  * @author Frank Dellaert
  * @author Andrew Melim
+ * @author Richard Roberts
  **/
 
 #include <iostream>

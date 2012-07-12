@@ -13,6 +13,7 @@
  * @file Constructor.h
  * @brief class describing a constructor + code generation
  * @author Frank Dellaert
+ * @author Richard Roberts
  **/
 
 #pragma once

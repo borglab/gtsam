@@ -14,6 +14,7 @@
  * @brief class describing a constructor + code generation
  * @author Frank Dellaert
  * @author Andrew Melim
+ * @author Richard Roberts
  **/
 
 #pragma once

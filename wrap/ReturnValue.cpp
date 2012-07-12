@@ -4,6 +4,7 @@
  * @date Dec 1, 2011
  * @author Alex Cunningham
  * @author Andrew Melim
+ * @author Richard Roberts
  */
 
 #include <boost/foreach.hpp>

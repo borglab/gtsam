@@ -13,6 +13,7 @@
  * @file StaticMethod.ccp
  * @author Frank Dellaert
  * @author Andrew Melim
+ * @author Richard Roberts
  **/
 
 #include <iostream>
@@ -42,7 +43,7 @@ void StaticMethod::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wr
 																		 const string& matlabClassName,
 																		 const string& wrapperName,
 																		 const vector<string>& using_namespaces,
-																		 const ReturnValue::TypeAttributesTable& typeAttributes,
+																		 const TypeAttributesTable& typeAttributes,
 																		 vector<string>& functionNames) const {
 
   string upperName = name;  upperName[0] = std::toupper(upperName[0], std::locale());
@@ -105,7 +106,7 @@ string StaticMethod::wrapper_fragment(FileWriter& file,
 					int overload,
 					int id,
 			    const vector<string>& using_namespaces,
-					const ReturnValue::TypeAttributesTable& typeAttributes) const {
+					const TypeAttributesTable& typeAttributes) const {
 
   // generate code
 

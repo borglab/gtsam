@@ -12,6 +12,7 @@
 /**
  * @file Method.ccp
  * @author Frank Dellaert
+ * @author Richard Roberts
  **/
 
 #include <iostream>
@@ -41,7 +42,7 @@ void Method::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperF
 																		 const string& matlabClassName,
 																		 const string& wrapperName,
 																		 const vector<string>& using_namespaces,
-																		 const ReturnValue::TypeAttributesTable& typeAttributes,
+																		 const TypeAttributesTable& typeAttributes,
 																		 vector<string>& functionNames) const {
 
 	proxyFile.oss << "    function varargout = " << name << "(this, varargin)\n";
@@ -102,7 +103,7 @@ string Method::wrapper_fragment(FileWriter& file,
 					int overload,
 					int id,
 			    const vector<string>& using_namespaces,
-					const ReturnValue::TypeAttributesTable& typeAttributes) const {
+					const TypeAttributesTable& typeAttributes) const {
 
   // generate code
 

@@ -13,6 +13,7 @@
  * @file Module.h
  * @brief describes module to be wrapped
  * @author Frank Dellaert
+ * @author Richard Roberts
  **/
 
 #pragma once
@@ -22,6 +23,8 @@
 #include <map>
 
 #include "Class.h"
+#include "TemplateInstantiationTypedef.h"
+#include "ForwardDeclaration.h"
 
 namespace wrap {
 
@@ -30,23 +33,9 @@ namespace wrap {
  */
 struct Module {
 
-	struct ForwardDeclaration {
-		std::string name;
-		bool isVirtual;
-		ForwardDeclaration() : isVirtual(false) {}
-	};
-
-	struct TemplateSingleInstantiation {
-		std::vector<std::string> classNamespaces;
-		std::string className;
-		std::vector<std::string> namespaces;
-		std::string name;
-		std::vector<std::vector<std::string> > typeList;
-	};
-
   std::string name;         ///< module name
   std::vector<Class> classes; ///< list of classes
-	std::vector<TemplateSingleInstantiation> singleInstantiations; ///< list of template instantiations
+	std::vector<TemplateInstantiationTypedef> templateInstantiationTypedefs; ///< list of template instantiations
   bool verbose;            ///< verbose flag
 //  std::vector<std::string> using_namespaces; ///< all default namespaces
   std::vector<ForwardDeclaration> forward_declarations;
@@ -66,7 +55,10 @@ struct Module {
 	void generateIncludes(FileWriter& file) const;
 
 private:
-	std::vector<Class> expandTemplates() const;
+	static std::vector<Class> ExpandTypedefInstantiations(const std::vector<Class>& classes, const std::vector<TemplateInstantiationTypedef> instantiations);
+	static std::vector<std::string> GenerateValidTypes(const std::vector<Class>& classes, const std::vector<ForwardDeclaration> forwardDeclarations);
+	static void WriteCollectorsAndCleanupFcn(FileWriter& wrapperFile, const std::string& moduleName, const std::vector<Class>& classes);
+	static void WriteRTTIRegistry(FileWriter& wrapperFile, const std::string& moduleName, const std::vector<Class>& classes);
 };
 
 } // \namespace wrap

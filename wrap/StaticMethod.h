@@ -14,6 +14,7 @@
  * @brief describes and generates code for static methods
  * @author Frank Dellaert
  * @author Alex Cunningham
+ * @author Richard Roberts
  **/
 
 #pragma once
@@ -23,6 +24,7 @@
 
 #include "Argument.h"
 #include "ReturnValue.h"
+#include "TypeAttributesTable.h"
 
 namespace wrap {
 
@@ -50,7 +52,7 @@ struct StaticMethod {
 	void proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperFile,
 		const std::string& cppClassName,	const std::string& matlabClassName,
 		const std::string& wrapperName, const std::vector<std::string>& using_namespaces,
-		const ReturnValue::TypeAttributesTable& typeAttributes,
+		const TypeAttributesTable& typeAttributes,
 		std::vector<std::string>& functionNames) const;
 
 private:
@@ -60,7 +62,7 @@ private:
 			int overload,
 			int id,
 	    const std::vector<std::string>& using_namespaces,
-			const ReturnValue::TypeAttributesTable& typeAttributes) const; ///< cpp wrapper
+			const TypeAttributesTable& typeAttributes) const; ///< cpp wrapper
 };
 
 } // \namespace wrap

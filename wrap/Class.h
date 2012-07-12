@@ -14,6 +14,7 @@
  * @brief describe the C++ class that is being wrapped
  * @author Frank Dellaert
  * @author Andrew Melim
+ * @author Richard Roberts
  **/
 
 #pragma once
@@ -25,6 +26,7 @@
 #include "Deconstructor.h"
 #include "Method.h"
 #include "StaticMethod.h"
+#include "TypeAttributesTable.h"
 
 namespace wrap {
 
@@ -52,7 +54,7 @@ struct Class {
   bool verbose_;                            ///< verbose flag
 
   // And finally MATLAB code is emitted, methods below called by Module::matlab_code
-  void matlab_proxy(const std::string& classFile, const std::string& wrapperName, const ReturnValue::TypeAttributesTable& typeAttributes,
+  void matlab_proxy(const std::string& classFile, const std::string& wrapperName, const TypeAttributesTable& typeAttributes,
 		FileWriter& wrapperFile, std::vector<std::string>& functionNames) const;          ///< emit proxy class
   std::string qualifiedName(const std::string& delim = "") const; ///< creates a namespace-qualified name, optional delimiter
 
