@@ -36,8 +36,17 @@ struct Module {
 		ForwardDeclaration() : isVirtual(false) {}
 	};
 
+	struct TemplateSingleInstantiation {
+		std::vector<std::string> classNamespaces;
+		std::string className;
+		std::vector<std::string> namespaces;
+		std::string name;
+		std::vector<std::vector<std::string> > typeList;
+	};
+
   std::string name;         ///< module name
   std::vector<Class> classes; ///< list of classes
+	std::vector<TemplateSingleInstantiation> singleInstantiations; ///< list of template instantiations
   bool verbose;            ///< verbose flag
 //  std::vector<std::string> using_namespaces; ///< all default namespaces
   std::vector<ForwardDeclaration> forward_declarations;
@@ -55,6 +64,9 @@ struct Module {
 	void finish_wrapper(FileWriter& file, const std::vector<std::string>& functionNames) const;
 
 	void generateIncludes(FileWriter& file) const;
+
+private:
+	std::vector<Class> expandTemplates() const;
 };
 
 } // \namespace wrap

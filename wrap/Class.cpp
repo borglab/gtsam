@@ -248,6 +248,7 @@ map<string, METHOD> expandMethodTemplate(const map<string, METHOD>& methods, con
 				instRetVal.namespaces2.assign(instName.begin(), instName.end()-1);
 				instRetVal.type2 = instName.back();
 			}
+			instMethod.returnVals.push_back(instRetVal);
 		}
 		result.insert(make_pair(name_method.first, instMethod));
 	}
@@ -255,33 +256,48 @@ map<string, METHOD> expandMethodTemplate(const map<string, METHOD>& methods, con
 }
 
 /* ************************************************************************* */
+Class expandClassTemplate(const Class& cls, const string& templateArg, const vector<string>& instName) {
+	Class inst;
+	inst.name = cls.name;
+	inst.templateArgs = cls.templateArgs;
+	inst.typedefName = cls.typedefName;
+	inst.isVirtual = cls.isVirtual;
+	inst.qualifiedParent = cls.qualifiedParent;
+	inst.methods = expandMethodTemplate(cls.methods, templateArg, instName);
+	inst.static_methods = expandMethodTemplate(cls.static_methods, templateArg, instName);
+	inst.namespaces = cls.namespaces;
+	inst.using_namespaces = cls.using_namespaces;
+	bool allIncludesEmpty = true;
+	BOOST_FOREACH(const string& inc, cls.includes) { if(!inc.empty()) { allIncludesEmpty = true; break; } }
+	if(allIncludesEmpty)
+		inst.includes.push_back(cls.name + ".h");
+	else
+		inst.includes = cls.includes;
+	inst.constructor = cls.constructor;
+	inst.constructor.args_list = expandArgumentListsTemplate(cls.constructor.args_list, templateArg, instName);
+	inst.constructor.name = inst.name;
+	inst.deconstructor = cls.deconstructor;
+	inst.deconstructor.name = inst.name;
+	inst.verbose_ = cls.verbose_;
+	return inst;
+}
+
+/* ************************************************************************* */
 vector<Class> Class::expandTemplate(const string& templateArg, const vector<vector<string> >& instantiations) const {
 	vector<Class> result;
 	BOOST_FOREACH(const vector<string>& instName, instantiations) {
-		Class inst;
+		Class inst = expandClassTemplate(*this, templateArg, instName);
 		inst.name = name + instName.back();
+		inst.templateArgs.clear();
 		inst.typedefName = qualifiedName("::") + "<" + wrap::qualifiedName("::", instName) + ">";
-		inst.isVirtual = isVirtual;
-		inst.qualifiedParent = qualifiedParent;
-		inst.methods = expandMethodTemplate(methods, templateArg, instName);
-		inst.static_methods = expandMethodTemplate(static_methods, templateArg, instName);
-		inst.namespaces = namespaces;
-		inst.using_namespaces = using_namespaces;
-		bool allIncludesEmpty = true;
-		BOOST_FOREACH(const string& inc, includes) { if(!inc.empty()) { allIncludesEmpty = true; break; } }
-		if(allIncludesEmpty)
-			inst.includes.push_back(name + ".h");
-		else
-			inst.includes = includes;
-		inst.constructor = constructor;
-		inst.constructor.args_list = expandArgumentListsTemplate(constructor.args_list, templateArg, instName);
-		inst.constructor.name = inst.name;
-		inst.deconstructor = deconstructor;
-		inst.deconstructor.name = inst.name;
-		inst.verbose_ = verbose_;
 		result.push_back(inst);
 	}
 	return result;
+}
+
+/* ************************************************************************* */
+Class Class::expandTemplate(const string& templateArg, const vector<string>& instantiation) const {
+	return expandClassTemplate(*this, templateArg, instantiation);
 }
 
 /* ************************************************************************* */

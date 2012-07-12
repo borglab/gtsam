@@ -88,6 +88,7 @@ Module::Module(const string& interfacePath,
 	string templateArgument;
 	vector<string> templateInstantiationNamespace;
 	vector<vector<string> > templateInstantiations;
+	TemplateSingleInstantiation singleInstantiation, singleInstantiation0;
   string include_path = "";
   const string null_str = "";
 
@@ -145,10 +146,34 @@ Module::Module(const string& interfacePath,
 	  [clear_a(templateInstantiationNamespace)];
 
 	Rule templateInstantiations_p =
-		str_p("template") >>
+		(str_p("template") >>
 		'<' >> name_p[assign_a(templateArgument)] >> '=' >> '{' >>
 		!(templateInstantiation_p >> *(',' >> templateInstantiation_p)) >>
-		'}' >> '>';
+		'}' >> '>')
+		[push_back_a(cls.templateArgs, templateArgument)];
+
+	Rule templateSingleInstantiationArg_p =
+		(*(namespace_name_p[push_back_a(templateInstantiationNamespace)] >> str_p("::")) >>
+		className_p[push_back_a(templateInstantiationNamespace)])
+		[push_back_a(singleInstantiation.typeList, templateInstantiationNamespace)]
+	  [clear_a(templateInstantiationNamespace)];
+
+	Rule templateSingleInstantiation_p =
+		(str_p("typedef") >>
+		*(namespace_name_p[push_back_a(singleInstantiation.classNamespaces)] >> str_p("::")) >>
+		className_p[assign_a(singleInstantiation.className)] >>
+		'<' >> templateSingleInstantiationArg_p >> *(',' >> templateSingleInstantiationArg_p) >>
+		'>' >>
+		className_p[assign_a(singleInstantiation.name)] >>
+		';')
+		[assign_a(singleInstantiation.namespaces, namespaces)]
+	  [push_back_a(singleInstantiations, singleInstantiation)]
+		[assign_a(singleInstantiation, singleInstantiation0)];
+
+	Rule templateList_p =
+		(str_p("template") >>
+		'<' >> name_p[push_back_a(cls.templateArgs)] >> *(',' >> name_p[push_back_a(cls.templateArgs)]) >>
+		'>');
 
   Rule argument_p = 
     ((basisType_p[assign_a(arg.type)] | argEigenType_p | eigenRef_p | classArg_p)
@@ -230,7 +255,7 @@ Module::Module(const string& interfacePath,
 
   Rule class_p =
   		(!*include_p
-			>> !(templateInstantiations_p)
+			>> !(templateInstantiations_p | templateList_p)
 			>> !(str_p("virtual")[assign_a(cls.isVirtual, true)])
   		>> str_p("class")[push_back_a(cls.includes, include_path)][assign_a(include_path, null_str)]
   		>> className_p[assign_a(cls.name)]
@@ -256,7 +281,7 @@ Module::Module(const string& interfacePath,
 			>> str_p("namespace")[push_back_a(namespace_includes, include_path)][assign_a(include_path, null_str)]
 			>> namespace_name_p[push_back_a(namespaces)]
 			>> ch_p('{')
-			>> *(class_p | namespace_def_p | comments_p)
+			>> *(class_p | templateSingleInstantiation_p | namespace_def_p | comments_p)
 			>> str_p("}///\\namespace") // end namespace, avoid confusion with classes
 			>> !namespace_name_p)
 			[pop_a(namespaces)]
@@ -274,7 +299,7 @@ Module::Module(const string& interfacePath,
 			[push_back_a(forward_declarations, fwDec)]
 			[assign_a(fwDec, fwDec0)];
 
-  Rule module_content_p =	comments_p | using_namespace_p | class_p | forward_declaration_p | namespace_def_p ;
+  Rule module_content_p =	comments_p | using_namespace_p | class_p | templateSingleInstantiation_p | forward_declaration_p | namespace_def_p ;
 
   Rule module_p = *module_content_p >> !end_p;
 
@@ -388,6 +413,9 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 		wrapperFile.oss << "#include <boost/foreach.hpp>\n";
 		wrapperFile.oss << "\n";
 
+		// Expand templates
+		vector<Class> expandedClasses = expandTemplates();
+
     // Dependency check list
     vector<string> validTypes;
 		BOOST_FOREACH(const ForwardDeclaration& fwDec, forward_declarations) {
@@ -404,7 +432,7 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
     validTypes.push_back("Vector");
     validTypes.push_back("Matrix");
 		//Create a list of parsed classes for dependency checking
-    BOOST_FOREACH(const Class& cls, classes) {
+    BOOST_FOREACH(const Class& cls, expandedClasses) {
 			validTypes.push_back(cls.qualifiedName("::"));
     }
 
@@ -414,12 +442,12 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 			if(!typeAttributes.insert(make_pair(fwDec.name, ReturnValue::TypeAttributes(fwDec.isVirtual))).second)
 				throw DuplicateDefinition("class " + fwDec.name);
 		}
-		BOOST_FOREACH(const Class& cls, classes) {
+		BOOST_FOREACH(const Class& cls, expandedClasses) {
 			if(!typeAttributes.insert(make_pair(cls.qualifiedName("::"), ReturnValue::TypeAttributes(cls.isVirtual))).second)
 				throw DuplicateDefinition("class " + cls.qualifiedName("::"));
 		}
 		// Check attributes
-		BOOST_FOREACH(const Class& cls, classes) {
+		BOOST_FOREACH(const Class& cls, expandedClasses) {
 			// Check that class is virtual if it has a parent
 			if(!cls.qualifiedParent.empty() && !cls.isVirtual)
 				throw AttributeError(cls.qualifiedName("::"), "Has a base class so needs to be declared virtual, change to 'virtual class "+cls.name+" ...'");
@@ -430,7 +458,7 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 		}
 
     // Check that all classes have been defined somewhere
-		BOOST_FOREACH(const Class& cls, classes) {
+		BOOST_FOREACH(const Class& cls, expandedClasses) {
       // verify all of the function arguments
       //TODO:verifyArguments<ArgumentList>(validTypes, cls.constructor.args_list);
       verifyArguments<StaticMethod>(validTypes, cls.static_methods);
@@ -445,14 +473,14 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 		generateIncludes(wrapperFile);
 
 		// create typedef classes
-		BOOST_FOREACH(const Class& cls, classes) {
+		BOOST_FOREACH(const Class& cls, expandedClasses) {
 			if(!cls.typedefName.empty())
 				wrapperFile.oss << cls.getTypedef() << "\n";
 		}
 		wrapperFile.oss << "\n";
 
 		// Generate all collectors
-		BOOST_FOREACH(const Class& cls, classes) {
+		BOOST_FOREACH(const Class& cls, expandedClasses) {
 			const string matlabName = cls.qualifiedName(), cppName = cls.qualifiedName("::");
 			wrapperFile.oss << "typedef std::set<boost::shared_ptr<" << cppName << ">*> "
 				<< "Collector_" << matlabName << ";\n";
@@ -463,7 +491,7 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 		// generate mexAtExit cleanup function
 		wrapperFile.oss << "\nvoid _deleteAllObjects()\n";
 		wrapperFile.oss << "{\n";
-		BOOST_FOREACH(const Class& cls, classes) {
+		BOOST_FOREACH(const Class& cls, expandedClasses) {
 			const string matlabName = cls.qualifiedName();
 			const string cppName = cls.qualifiedName("::");
 			const string collectorType = "Collector_" + matlabName;
@@ -482,7 +510,7 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 				"static bool _RTTIRegister_" << name << "_done = false;\n"
 				"void _" << name << "_RTTIRegister() {\n"
 				"  std::map<std::string, std::string> types;\n";
-			BOOST_FOREACH(const Class& cls, classes) {
+			BOOST_FOREACH(const Class& cls, expandedClasses) {
 				if(cls.isVirtual)
 					wrapperFile.oss <<
   					"  types.insert(std::make_pair(typeid(" << cls.qualifiedName("::") << ").name(), \"" << cls.qualifiedName() << "\"));\n";
@@ -509,7 +537,7 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 		}
 
 		// create proxy class and wrapper code
-		BOOST_FOREACH(const Class& cls, classes) {
+		BOOST_FOREACH(const Class& cls, expandedClasses) {
       string classFile = toolboxPath + "/" + cls.qualifiedName() + ".m";
       cls.matlab_proxy(classFile, wrapperName, typeAttributes, wrapperFile, functionNames);
     }  
@@ -543,5 +571,55 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 		file.oss << "  std::cout.rdbuf(outbuf);\n"; // Restore cout, see matlab.h
 		file.oss << "}\n";
 	}
+
+/* ************************************************************************* */
+vector<Class> Module::expandTemplates() const {
+
+	vector<Class> expandedClasses = classes;
+
+	BOOST_FOREACH(const TemplateSingleInstantiation& inst, singleInstantiations) {
+		// Find matching class
+		std::vector<Class>::iterator clsIt = expandedClasses.end();
+		for(std::vector<Class>::iterator it = expandedClasses.begin(); it != expandedClasses.end(); ++it) {
+			if(it->name == inst.className && it->namespaces == inst.classNamespaces && it->templateArgs.size() == inst.typeList.size()) {
+				clsIt = it;
+				break;
+			}
+		}
+
+		if(clsIt == expandedClasses.end())
+			throw DependencyMissing(wrap::qualifiedName("::", inst.classNamespaces, inst.className),
+			"instantiation into typedef name " + wrap::qualifiedName("::", inst.namespaces, inst.name) +
+			".  Ensure that the typedef provides the correct number of template arguments.");
+
+		// Instantiate it
+		Class classInst = *clsIt;
+		for(size_t i = 0; i < inst.typeList.size(); ++i)
+			classInst = classInst.expandTemplate(classInst.templateArgs[i], inst.typeList[i]);
+
+		// Fix class properties
+		classInst.name = inst.name;
+		classInst.templateArgs.clear();
+		classInst.typedefName = clsIt->qualifiedName("::") + "<";
+		if(inst.typeList.size() > 0)
+			classInst.typedefName += wrap::qualifiedName("::", inst.typeList[0]);
+		for(size_t i = 1; i < inst.typeList.size(); ++i)
+			classInst.typedefName += (", " + wrap::qualifiedName("::", inst.typeList[i]));
+		classInst.typedefName += ">";
+		classInst.namespaces = inst.namespaces;
+
+		// Add the new class to the list
+		expandedClasses.push_back(classInst);
+	}
+
+	// Remove all template classes
+	for(int i = 0; i < expandedClasses.size(); ++i)
+		if(!expandedClasses[size_t(i)].templateArgs.empty()) {
+			expandedClasses.erase(expandedClasses.begin() + size_t(i));
+			-- i;
+		}
+
+	return expandedClasses;
+}
 
 /* ************************************************************************* */
