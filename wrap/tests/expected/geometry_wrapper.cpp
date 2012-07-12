@@ -7,6 +7,7 @@
 #include <Point3.h>
 #include <folder/path/to/Test.h>
 
+
 typedef std::set<boost::shared_ptr<Point2>*> Collector_Point2;
 static Collector_Point2 collector_Point2;
 typedef std::set<boost::shared_ptr<Point3>*> Collector_Point3;
