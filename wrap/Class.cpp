@@ -269,7 +269,7 @@ Class expandClassTemplate(const Class& cls, const string& templateArg, const vec
 	inst.namespaces = cls.namespaces;
 	inst.using_namespaces = cls.using_namespaces;
 	bool allIncludesEmpty = true;
-	BOOST_FOREACH(const string& inc, cls.includes) { if(!inc.empty()) { allIncludesEmpty = true; break; } }
+	BOOST_FOREACH(const string& inc, cls.includes) { if(!inc.empty()) { allIncludesEmpty = false; break; } }
 	if(allIncludesEmpty)
 		inst.includes.push_back(cls.name + ".h");
 	else
