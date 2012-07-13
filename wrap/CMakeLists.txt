@@ -1,6 +1,6 @@
 # Build/install Wrap
 
-find_package(Boost 1.43 COMPONENTS system filesystem thread REQUIRED)
+set(WRAP_BOOST_LIBRARIES ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} ${Boost_THREAD_LIBRARY})
 
 # Build the executable itself
 file(GLOB wrap_srcs "*.cpp")
@@ -9,7 +9,7 @@ list(REMOVE_ITEM wrap_srcs ${CMAKE_CURRENT_SOURCE_DIR}/wrap.cpp)
 add_library(wrap_lib STATIC ${wrap_srcs} ${wrap_headers})
 gtsam_assign_source_folders(${wrap_srcs} ${wrap_headers})
 add_executable(wrap wrap.cpp)
-target_link_libraries(wrap wrap_lib ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY})
+target_link_libraries(wrap wrap_lib ${WRAP_BOOST_LIBRARIES})
 
 # Install wrap binary and export target
 if (GTSAM_INSTALL_WRAP)
@@ -23,7 +23,7 @@ install(FILES matlab.h DESTINATION include/wrap)
 
 # Build tests
 if (GTSAM_BUILD_TESTS)
-    set(wrap_local_libs wrap_lib ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY}) 
+    set(wrap_local_libs wrap_lib ${WRAP_BOOST_LIBRARIES}) 
     gtsam_add_subdir_tests("wrap" "${wrap_local_libs}" "${wrap_local_libs}" "") 
 endif(GTSAM_BUILD_TESTS)
 

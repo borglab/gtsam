@@ -63,7 +63,7 @@ option(GTSAM_BUILD_WRAP                  "Enable/Disable building of matlab wrap
 option(GTSAM_INSTALL_WRAP                "Enable/Disable installation of wrap utility for wrapping other libraries"    ON)
 set(GTSAM_TOOLBOX_INSTALL_PATH "" CACHE DOCSTRING "Matlab toolbox destination, blank defaults to CMAKE_INSTALL_PREFIX/borg/toolbox")
 set(GTSAM_BUILD_MEX_BINARY_FLAGS "" CACHE STRING "Extra flags for running Matlab MEX compilation")
-set(MEX_COMMAND "mex" CACHE STRING "Command to use for executing mex (if on path, 'mex' will work)")
+set(MEX_COMMAND "mex" CACHE FILEPATH "Command to use for executing mex (if on path, 'mex' will work)")
 
 # Check / set dependent variables for MATLAB wrapper
 set(GTSAM_WRAP_HEADER_PATH "${PROJECT_SOURCE_DIR}/wrap")
@@ -109,7 +109,8 @@ endif()
 if(CYGWIN OR MSVC OR WIN32)
   set(Boost_USE_STATIC_LIBS 1)
 endif()
-find_package(Boost 1.43 COMPONENTS serialization REQUIRED)
+find_package(Boost 1.43 COMPONENTS serialization system filesystem thread date_time REQUIRED)
+set(GTSAM_BOOST_LIBRARIES ${Boost_SERIALIZATION_LIBRARY})
 
 # General build settings
 include_directories(
