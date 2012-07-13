@@ -1090,13 +1090,13 @@ class LevenbergMarquardtParams {
   LevenbergMarquardtParams();
   void print(string s) const;
 
-  double getMaxIterations() const;
+  size_t getMaxIterations() const;
   double getRelativeErrorTol() const;
   double getAbsoluteErrorTol() const;
   double getErrorTol() const;
   string getVerbosity() const;
 
-  void setMaxIterations(double value);
+  void setMaxIterations(size_t value);
   void setRelativeErrorTol(double value);
   void setAbsoluteErrorTol(double value);
   void setErrorTol(double value);
