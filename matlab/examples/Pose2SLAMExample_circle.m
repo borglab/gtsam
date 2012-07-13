@@ -11,7 +11,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Create a hexagon of poses
-hexagon = pose2SLAMValues_Circle(6,1.0);
+hexagon = pose2SLAMValues.Circle(6,1.0);
 p0 = hexagon.pose(0);
 p1 = hexagon.pose(1);
 
@@ -19,7 +19,7 @@ p1 = hexagon.pose(1);
 fg = pose2SLAMGraph;
 fg.addPoseConstraint(0, p0);
 delta = p0.between(p1);
-covariance = gtsamnoiseModelDiagonal_Sigmas([0.05; 0.05; 5*pi/180]);
+covariance = gtsamnoiseModelDiagonal.Sigmas([0.05; 0.05; 5*pi/180]);
 fg.addRelativePose(0,1, delta, covariance);
 fg.addRelativePose(1,2, delta, covariance);
 fg.addRelativePose(2,3, delta, covariance);

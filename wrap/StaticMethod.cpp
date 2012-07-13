@@ -13,12 +13,14 @@
  * @file StaticMethod.ccp
  * @author Frank Dellaert
  * @author Andrew Melim
+ * @author Richard Roberts
  **/
 
 #include <iostream>
 #include <fstream>
 
 #include <boost/foreach.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include "StaticMethod.h"
 #include "utilities.h"
@@ -26,80 +28,131 @@
 using namespace std;
 using namespace wrap;
 
+
 /* ************************************************************************* */
-void StaticMethod::matlab_mfile(const string& toolboxPath, const string& className) const {
+void StaticMethod::addOverload(bool verbose, const std::string& name,
+		const ArgumentList& args, const ReturnValue& retVal) {
+	this->verbose = verbose;
+	this->name = name;
+	this->argLists.push_back(args);
+	this->returnVals.push_back(retVal);
+}
 
-  // open destination m-file
-	string full_name = className + "_" + name;
-  string wrapperFile = toolboxPath + "/" + full_name + ".m";
-  FileWriter file(wrapperFile, verbose, "%");
+void StaticMethod::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperFile,
+																		 const string& cppClassName,
+																		 const string& matlabClassName,
+																		 const string& wrapperName,
+																		 const vector<string>& using_namespaces,
+																		 const TypeAttributesTable& typeAttributes,
+																		 vector<string>& functionNames) const {
 
-  // generate code
-  string returnType = returnVal.matlab_returnType();
-  file.oss << "function " << returnType << " = " << full_name << "(";
-  if (args.size()) file.oss << args.names();
-  file.oss << ")" << endl;
-  file.oss << "% usage: x = " << full_name << "(" << args.names() << ")" << endl;
-  file.oss << "  error('need to compile " << full_name << ".cpp');" << endl;
-  file.oss << "end" << endl;
+  string upperName = name;  upperName[0] = std::toupper(upperName[0], std::locale());
 
-  // close file
-  file.emit(true);
+	proxyFile.oss << "    function varargout = " << upperName << "(varargin)\n";
+
+	for(size_t overload = 0; overload < argLists.size(); ++overload) {
+		const ArgumentList& args = argLists[overload];
+		const ReturnValue& returnVal = returnVals[overload];
+		size_t nrArgs = args.size();
+
+		const int id = functionNames.size();
+
+		// Output proxy matlab code
+
+		// check for number of arguments...
+		proxyFile.oss << "      " << (overload==0?"":"else") << "if length(varargin) == " << nrArgs;
+		if (nrArgs>0) proxyFile.oss << " && ";
+		// ...and their types
+		bool first = true;
+		for(size_t i=0;i<nrArgs;i++) {
+			if (!first) proxyFile.oss << " && ";
+			proxyFile.oss << "isa(varargin{" << i+1 << "},'" << args[i].matlabClass() << "')";
+			first=false;
+		}
+		proxyFile.oss << "\n";
+
+		// output call to C++ wrapper
+		string output;
+		if(returnVal.isPair)
+			output = "[ varargout{1} varargout{2} ] = ";
+		else if(returnVal.category1 == ReturnValue::VOID)
+			output = "";
+		else
+			output = "varargout{1} = ";
+		proxyFile.oss << "        " << output << wrapperName << "(" << id << ", varargin{:});\n";
+
+		// Output C++ wrapper code
+		
+		const string wrapFunctionName = wrapper_fragment(
+			wrapperFile, cppClassName, matlabClassName, overload, id, using_namespaces, typeAttributes);
+
+		// Add to function list
+		functionNames.push_back(wrapFunctionName);
+
+	}
+	
+  proxyFile.oss << "      else\n";
+	proxyFile.oss << "        error('Arguments do not match any overload of function " <<
+		matlabClassName << "." << upperName << "');" << endl;
+
+	proxyFile.oss << "      end\n";
+	proxyFile.oss << "    end\n";
 }
 
 /* ************************************************************************* */
-void StaticMethod::matlab_wrapper(const string& toolboxPath, const string& className,
-		const string& matlabClassName, const string& cppClassName,
-		const vector<string>& using_namespaces,
-		const vector<string>& includes) const {
-  // open destination wrapperFile
-	string full_name = matlabClassName + "_" + name;
-  string wrapperFile = toolboxPath + "/" + full_name + ".cpp";
-  FileWriter file(wrapperFile, verbose, "//");
+string StaticMethod::wrapper_fragment(FileWriter& file, 
+			    const string& cppClassName,
+			    const string& matlabClassName,
+					int overload,
+					int id,
+			    const vector<string>& using_namespaces,
+					const TypeAttributesTable& typeAttributes) const {
 
   // generate code
 
-  // header
-  generateIncludes(file, className, includes);
-  generateUsingNamespace(file, using_namespaces);
+	const string wrapFunctionName = matlabClassName + "_" + name + "_" + boost::lexical_cast<string>(id);
+
+	const ArgumentList& args = argLists[overload];
+	const ReturnValue& returnVal = returnVals[overload];
+
+	// call
+	file.oss << "void " << wrapFunctionName << "(int nargout, mxArray *out[], int nargin, const mxArray *in[])\n";
+	// start
+	file.oss << "{\n";
+	generateUsingNamespace(file, using_namespaces);
 
   if(returnVal.isPair)
   {
-    file.oss << "typedef boost::shared_ptr<"  << returnVal.qualifiedType1("::")  << "> Shared" <<  returnVal.type1 << ";"<< endl;
-    file.oss << "typedef boost::shared_ptr<"  << returnVal.qualifiedType2("::")  << "> Shared" <<  returnVal.type2 << ";"<< endl;
+      if(returnVal.category1 == ReturnValue::CLASS)
+        file.oss << "  typedef boost::shared_ptr<"  << returnVal.qualifiedType1("::")  << "> Shared" <<  returnVal.type1 << ";"<< endl;
+      if(returnVal.category2 == ReturnValue::CLASS)
+        file.oss << "  typedef boost::shared_ptr<"  << returnVal.qualifiedType2("::")  << "> Shared" <<  returnVal.type2 << ";"<< endl;
   }
   else
-    file.oss << "typedef boost::shared_ptr<"  << returnVal.qualifiedType1("::")  << "> Shared" <<  returnVal.type1 << ";"<< endl;
+      if(returnVal.category1 == ReturnValue::CLASS)
+        file.oss << "  typedef boost::shared_ptr<"  << returnVal.qualifiedType1("::")  << "> Shared" <<  returnVal.type1 << ";"<< endl;
 
-  file.oss << "typedef boost::shared_ptr<"  << cppClassName  << "> Shared;" << endl;
-  // call
-  file.oss << "void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])\n";
-  // start
-  file.oss << "{\n";
+  file.oss << "  typedef boost::shared_ptr<"  << cppClassName  << "> Shared;" << endl;
 
   // check arguments
   // NOTE: for static functions, there is no object passed
-  file.oss << "  checkArguments(\"" << full_name << "\",nargout,nargin," << args.size() << ");\n";
+  file.oss << "  checkArguments(\"" << matlabClassName << "." << name << "\",nargout,nargin," << args.size() << ");\n";
 
   // unwrap arguments, see Argument.cpp
   args.matlab_unwrap(file,0); // We start at 0 because there is no self object
 
   file.oss << "  ";
 
-  // call method with default type
+  // call method with default type and wrap result
   if (returnVal.type1!="void")
-    file.oss << returnVal.return_type(true,ReturnValue::pair) << " result = ";
-  file.oss << cppClassName  << "::" << name << "(" << args.names() << ");\n";
-
-  // wrap result
-  // example: out[0]=wrap<bool>(result);
-  returnVal.wrap_result(file);
+		returnVal.wrap_result(cppClassName+"::"+name+"("+args.names()+")", file, typeAttributes);
+	else
+		file.oss << cppClassName+"::"+name+"("+args.names()+");\n";
 
   // finish
   file.oss << "}\n";
 
-  // close file
-  file.emit(true);
+	return wrapFunctionName;
 }
 
 /* ************************************************************************* */

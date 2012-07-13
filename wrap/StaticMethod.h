@@ -14,6 +14,7 @@
  * @brief describes and generates code for static methods
  * @author Frank Dellaert
  * @author Alex Cunningham
+ * @author Richard Roberts
  **/
 
 #pragma once
@@ -23,6 +24,7 @@
 
 #include "Argument.h"
 #include "ReturnValue.h"
+#include "TypeAttributesTable.h"
 
 namespace wrap {
 
@@ -36,20 +38,31 @@ struct StaticMethod {
 	// Then the instance variables are set directly by the Module constructor
 	bool verbose;
 	std::string name;
-	ArgumentList args;
-	ReturnValue returnVal;
+	std::vector<ArgumentList> argLists;
+	std::vector<ReturnValue> returnVals;
+
+	// The first time this function is called, it initializes the class members
+	// with those in rhs, but in subsequent calls it adds additional argument
+	// lists as function overloads.
+	void addOverload(bool verbose, const std::string& name,
+		const ArgumentList& args, const ReturnValue& retVal);
 
 	// MATLAB code generation
-	// toolboxPath is the core toolbox directory, e.g., ../matlab
-	// NOTE: static functions are not inside the class, and
-	// are created with [ClassName]_[FunctionName]() format
+	// classPath is class directory, e.g., ../matlab/@Point2
+	void proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperFile,
+		const std::string& cppClassName,	const std::string& matlabClassName,
+		const std::string& wrapperName, const std::vector<std::string>& using_namespaces,
+		const TypeAttributesTable& typeAttributes,
+		std::vector<std::string>& functionNames) const;
 
-	void matlab_mfile(const std::string& toolboxPath, const std::string& className) const; ///< m-file
-	void matlab_wrapper(const std::string& toolboxPath,
-			const std::string& className, const std::string& matlabClassName,
-			const std::string& cppClassName,
-			const std::vector<std::string>& using_namespaces,
-			const std::vector<std::string>& includes) const; ///< cpp wrapper
+private:
+	std::string wrapper_fragment(FileWriter& file,
+	    const std::string& cppClassName,
+	    const std::string& matlabClassname,
+			int overload,
+			int id,
+	    const std::vector<std::string>& using_namespaces,
+			const TypeAttributesTable& typeAttributes) const; ///< cpp wrapper
 };
 
 } // \namespace wrap

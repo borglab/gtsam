@@ -36,41 +36,47 @@ else()
     set(GTSAM_UNSTABLE_AVAILABLE 0)
 endif()
 
+
 # Configurable Options
 option(GTSAM_BUILD_TESTS                 "Enable/Disable building of tests"          ON)
 option(GTSAM_BUILD_TIMING                "Enable/Disable building of timing scripts" ON)
 option(GTSAM_BUILD_EXAMPLES              "Enable/Disable building of examples"       ON)
 if(GTSAM_UNSTABLE_AVAILABLE)
-    option(GTSAM_BUILD_UNSTABLE              "Enable/Disable libgtsam_unstable"          OFF)
+    option(GTSAM_BUILD_UNSTABLE              "Enable/Disable libgtsam_unstable"          ON)
 endif()
-option(GTSAM_BUILD_WRAP                  "Enable/Disable building of matlab wrap utility (necessary for matlab interface)" ON)
-if(MSVC)
-  option(GTSAM_BUILD_SHARED_LIBRARY        "Enable/Disable building of a shared version of gtsam" OFF)
-else()
+if(NOT MSVC)
   option(GTSAM_BUILD_SHARED_LIBRARY        "Enable/Disable building of a shared version of gtsam" ON)
-endif()
-option(GTSAM_BUILD_STATIC_LIBRARY        "Enable/Disable building of a static version of gtsam" ON)
-option(GTSAM_USE_QUATERNIONS             "Enable/Disable using an internal Quaternion representation for rotations instead of rotation matrices" OFF)
-if(MSVC)
-  option(GTSAM_BUILD_CONVENIENCE_LIBRARIES "Enable/Disable use of convenience libraries for faster development rebuilds, but slower install" OFF)
+  option(GTSAM_BUILD_STATIC_LIBRARY        "Enable/Disable building of a static version of gtsam" ON)
 else()
+  set(GTSAM_BUILD_STATIC_LIBRARY ON)
+endif()
+option(GTSAM_USE_QUATERNIONS             "Enable/Disable using an internal Quaternion representation for rotations instead of rotation matrices" OFF)
+if(NOT MSVC)
   option(GTSAM_BUILD_CONVENIENCE_LIBRARIES "Enable/Disable use of convenience libraries for faster development rebuilds, but slower install" ON)
 endif()
-option(GTSAM_INSTALL_MATLAB_TOOLBOX      "Enable/Disable installation of matlab toolbox"  ON)
-option(GTSAM_INSTALL_MATLAB_EXAMPLES     "Enable/Disable installation of matlab examples" ON)
-option(GTSAM_INSTALL_MATLAB_TESTS        "Enable/Disable installation of matlab tests"    ON)
-option(GTSAM_INSTALL_WRAP                "Enable/Disable installation of wrap utility" ON)
 
-set(GTSAM_TOOLBOX_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/borg/toolbox CACHE DOCSTRING "Path to install matlab toolbox")
-set(GTSAM_WRAP_HEADER_PATH ${PROJECT_SOURCE_DIR}/wrap CACHE DOCSTRING "Path to directory of matlab.h")
 
+# Options relating to MATLAB wrapper
 # TODO: Check for matlab mex binary before handling building of binaries
+option(GTSAM_INSTALL_MATLAB_TOOLBOX      "Enable/Disable installation of matlab toolbox"  ON)
+option(GTSAM_BUILD_WRAP                  "Enable/Disable building of matlab wrap utility (necessary for matlab interface)" ON)
+option(GTSAM_INSTALL_WRAP                "Enable/Disable installation of wrap utility for wrapping other libraries"    ON)
+set(GTSAM_TOOLBOX_INSTALL_PATH "" CACHE DOCSTRING "Matlab toolbox destination, blank defaults to CMAKE_INSTALL_PREFIX/borg/toolbox")
+set(GTSAM_BUILD_MEX_BINARY_FLAGS "" CACHE STRING "Extra flags for running Matlab MEX compilation")
+set(MEX_COMMAND "mex" CACHE FILEPATH "Command to use for executing mex (if on path, 'mex' will work)")
 
-# Flags for building/installing mex files
-option(GTSAM_BUILD_MEX_BIN     "Enable/Disable building of matlab mex files" OFF)
-option(GTSAM_INSTALL_MEX_BIN   "Enable/Disable installing matlab mex binaries" OFF)
-set(GTSAM_BUILD_MEX_BINARY_FLAGS "" CACHE STRING "Flags for running Matlab MEX compilation")
-set(MEX_COMMAND "mex" CACHE STRING "Command to use for executing mex (if on path, 'mex' will work)")
+# Check / set dependent variables for MATLAB wrapper
+set(GTSAM_WRAP_HEADER_PATH "${PROJECT_SOURCE_DIR}/wrap")
+if(GTSAM_INSTALL_MATLAB_TOOLBOX AND NOT GTSAM_BUILD_WRAP)
+	message(FATAL_ERROR "GTSAM_INSTALL_MATLAB_TOOLBOX is enabled, please also enable GTSAM_BUILD_WRAP")
+endif()
+if(GTSAM_INSTALL_WRAP AND NOT GTSAM_BUILD_WRAP)
+	message(FATAL_ERROR "GTSAM_INSTALL_WRAP is enabled, please also enable GTSAM_BUILD_WRAP")
+endif()
+if(NOT GTSAM_TOOLBOX_INSTALL_PATH)
+	set(GTSAM_TOOLBOX_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/borg/toolbox")
+endif()
+
 
 # Flags for choosing default packaging tools
 set(CPACK_SOURCE_GENERATOR "TGZ" CACHE STRING "CPack Default Source Generator")
@@ -90,7 +96,7 @@ endif(GTSAM_USE_QUATERNIONS)
 # Flags to determine whether tests and examples are build during 'make install'
 # Note that these remove the targets from the 'all'
 option(GTSAM_DISABLE_TESTS_ON_INSTALL "Disables building tests during install" ON)
-option(GTSAM_DISABLE_EXAMPLES_ON_INSTALL "Disables buildint examples during install" OFF)
+option(GTSAM_DISABLE_EXAMPLES_ON_INSTALL "Disables building examples during install" OFF)
 
 # Pull in infrastructure
 if (GTSAM_BUILD_TESTS)
@@ -103,7 +109,8 @@ endif()
 if(CYGWIN OR MSVC OR WIN32)
   set(Boost_USE_STATIC_LIBS 1)
 endif()
-find_package(Boost 1.43 COMPONENTS serialization REQUIRED)
+find_package(Boost 1.43 COMPONENTS serialization system filesystem thread date_time REQUIRED)
+set(GTSAM_BOOST_LIBRARIES ${Boost_SERIALIZATION_LIBRARY})
 
 # General build settings
 include_directories(
@@ -134,7 +141,9 @@ if (GTSAM_BUILD_EXAMPLES)
 endif(GTSAM_BUILD_EXAMPLES)
 
 # Matlab toolbox
-add_subdirectory(matlab)
+if (GTSAM_INSTALL_MATLAB_TOOLBOX)
+	add_subdirectory(matlab)
+endif()
 
 # Build gtsam_unstable
 if (GTSAM_BUILD_UNSTABLE)
@@ -168,11 +177,12 @@ message(STATUS "Build flags                                               ")
 print_config_flag(${GTSAM_BUILD_TIMING}                "Build Timing scripts           ")
 print_config_flag(${GTSAM_BUILD_EXAMPLES}              "Build Examples                 ")
 print_config_flag(${GTSAM_BUILD_TESTS}                 "Build Tests                    ")
-print_config_flag(${GTSAM_BUILD_WRAP}                  "Build Wrap                     ")
-print_config_flag(${GTSAM_BUILD_SHARED_LIBRARY}        "Build shared GTSAM Library     ")
-print_config_flag(${GTSAM_BUILD_STATIC_LIBRARY}        "Build static GTSAM Library     ")
+if(NOT MSVC)
+	print_config_flag(${GTSAM_BUILD_SHARED_LIBRARY}        "Build shared GTSAM Library     ")
+	print_config_flag(${GTSAM_BUILD_STATIC_LIBRARY}        "Build static GTSAM Library     ")
+	print_config_flag(${GTSAM_BUILD_CONVENIENCE_LIBRARIES} "Build Convenience Libraries    ")
+endif()
 print_config_flag(${GTSAM_BUILD_TYPE_POSTFIXES}        "Put build-type in library name ")
-print_config_flag(${GTSAM_BUILD_CONVENIENCE_LIBRARIES} "Build Convenience Libraries    ")
 if(GTSAM_UNSTABLE_AVAILABLE)
     print_config_flag(${GTSAM_BUILD_UNSTABLE}           "Build libgtsam_unstable       ")
 endif()
@@ -192,11 +202,8 @@ print_config_flag(${GTSAM_USE_QUATERNIONS}             "Quaternions as default R
 
 message(STATUS "MATLAB toolbox flags                                      ")
 print_config_flag(${GTSAM_INSTALL_MATLAB_TOOLBOX}      "Install matlab toolbox     ")
-print_config_flag(${GTSAM_INSTALL_MATLAB_EXAMPLES}     "Install matlab examples    ")
-print_config_flag(${GTSAM_INSTALL_MATLAB_TESTS}        "Install matlab tests       ")
+print_config_flag(${GTSAM_BUILD_WRAP}                  "Build Wrap                 ")
 print_config_flag(${GTSAM_INSTALL_WRAP}                "Install wrap utility       ")
-print_config_flag(${GTSAM_BUILD_MEX_BIN}               "Build MEX binaries         ")
-print_config_flag(${GTSAM_INSTALL_MEX_BIN}             "Install MEX binaries       ")
 message(STATUS "===============================================================")
 
 # Include CPack *after* all flags

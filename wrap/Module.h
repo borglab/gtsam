@@ -13,14 +13,18 @@
  * @file Module.h
  * @brief describes module to be wrapped
  * @author Frank Dellaert
+ * @author Richard Roberts
  **/
 
 #pragma once
 
 #include <string>
 #include <vector>
+#include <map>
 
 #include "Class.h"
+#include "TemplateInstantiationTypedef.h"
+#include "ForwardDeclaration.h"
 
 namespace wrap {
 
@@ -28,11 +32,13 @@ namespace wrap {
  * A module just has a name and a list of classes
  */
 struct Module {
+
   std::string name;         ///< module name
   std::vector<Class> classes; ///< list of classes
+	std::vector<TemplateInstantiationTypedef> templateInstantiationTypedefs; ///< list of template instantiations
   bool verbose;            ///< verbose flag
 //  std::vector<std::string> using_namespaces; ///< all default namespaces
-  std::vector<std::string> forward_declarations;
+  std::vector<ForwardDeclaration> forward_declarations;
 
   /// constructor that parses interface file
   Module(const std::string& interfacePath,
@@ -41,11 +47,18 @@ struct Module {
 
   /// MATLAB code generation:
   void matlab_code(
-  		 const std::string& mexCommand,
   		 const std::string& path,
-		   const std::string& mexExt,
-		   const std::string& headerPath,
-		   const std::string& mexFlags) const;
+		   const std::string& headerPath) const;
+
+	void finish_wrapper(FileWriter& file, const std::vector<std::string>& functionNames) const;
+
+	void generateIncludes(FileWriter& file) const;
+
+private:
+	static std::vector<Class> ExpandTypedefInstantiations(const std::vector<Class>& classes, const std::vector<TemplateInstantiationTypedef> instantiations);
+	static std::vector<std::string> GenerateValidTypes(const std::vector<Class>& classes, const std::vector<ForwardDeclaration> forwardDeclarations);
+	static void WriteCollectorsAndCleanupFcn(FileWriter& wrapperFile, const std::string& moduleName, const std::vector<Class>& classes);
+	static void WriteRTTIRegistry(FileWriter& wrapperFile, const std::string& moduleName, const std::vector<Class>& classes);
 };
 
 } // \namespace wrap

@@ -5,11 +5,14 @@
  *
  * @date Dec 1, 2011
  * @author Alex Cunningham
+ * @author Richard Roberts
  */
 
 #include <vector>
+#include <map>
 
 #include "FileWriter.h"
+#include "TypeAttributesTable.h"
 
 #pragma once
 
@@ -47,7 +50,7 @@ struct ReturnValue {
 
 	std::string matlab_returnType() const;
 
-	void wrap_result(FileWriter& file) const;
+	void wrap_result(const std::string& result, FileWriter& file, const TypeAttributesTable& typeAttributes) const;
 
 };
 

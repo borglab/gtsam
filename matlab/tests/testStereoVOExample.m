@@ -31,7 +31,7 @@ graph.addPoseConstraint(x1, first_pose);
 %% Create realistic calibration and measurement noise model
 % format: fx fy skew cx cy baseline
 K = gtsamCal3_S2Stereo(1000, 1000, 0, 320, 240, 0.2);
-stereo_model = gtsamnoiseModelDiagonal_Sigmas([1.0; 1.0; 1.0]);
+stereo_model = gtsamnoiseModelDiagonal.Sigmas([1.0; 1.0; 1.0]);
 
 %% Add measurements
 % pose 1

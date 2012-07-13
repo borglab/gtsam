@@ -14,16 +14,22 @@
  * @author Frank Dellaert
  * @author Alex Cunningham
  * @author Andrew Melim
+ * @author Richard Roberts
  **/
 
 #include "Module.h"
 #include "FileWriter.h"
+#include "TypeAttributesTable.h"
 #include "utilities.h"
 #include "spirit_actors.h"
 
 //#define BOOST_SPIRIT_DEBUG
 #include <boost/spirit/include/classic_confix.hpp>
 #include <boost/spirit/include/classic_clear_actor.hpp>
+#include <boost/spirit/include/classic_insert_at_actor.hpp>
+#include <boost/lambda/bind.hpp>
+#include <boost/lambda/lambda.hpp>
+#include <boost/lambda/construct.hpp>
 #include <boost/foreach.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
@@ -34,6 +40,7 @@
 using namespace std;
 using namespace wrap;
 using namespace BOOST_SPIRIT_CLASSIC_NS;
+namespace bl = boost::lambda;
 namespace fs = boost::filesystem;
 
 typedef rule<BOOST_SPIRIT_CLASSIC_NS::phrase_scanner_t> Rule;
@@ -46,26 +53,45 @@ typedef rule<BOOST_SPIRIT_CLASSIC_NS::phrase_scanner_t> Rule;
 // and with start rule [class_p], doubles as the specs for our interface files.
 /* ************************************************************************* */
 
+/* ************************************************************************* */
+void handle_possible_template(vector<Class>& classes, const Class& cls, const string& templateArgument, const vector<vector<string> >& instantiations) {
+	if(instantiations.empty()) {
+		classes.push_back(cls);
+	} else {
+		vector<Class> classInstantiations = cls.expandTemplate(templateArgument, instantiations);
+		BOOST_FOREACH(const Class& c, classInstantiations) {
+			classes.push_back(c);
+		}
+	}
+}
+
+/* ************************************************************************* */
 Module::Module(const string& interfacePath,
 	       const string& moduleName, bool enable_verbose) : name(moduleName), verbose(enable_verbose)
 {
   // these variables will be imperatively updated to gradually build [cls]
   // The one with postfix 0 are used to reset the variables after parse.
+	string methodName, methodName0;
+	bool isConst, isConst0 = false;
 	ReturnValue retVal0, retVal;
   Argument arg0, arg;
   ArgumentList args0, args;
   vector<string> arg_dup; ///keep track of duplicates
   Constructor constructor0(enable_verbose), constructor(enable_verbose);
-  //Deconstructor deconstructor0(enable_verbose), deconstructor(enable_verbose);
-  Method method0(enable_verbose), method(enable_verbose);
+  Deconstructor deconstructor0(enable_verbose), deconstructor(enable_verbose);
+  //Method method0(enable_verbose), method(enable_verbose);
   StaticMethod static_method0(enable_verbose), static_method(enable_verbose);
   Class cls0(enable_verbose),cls(enable_verbose);
+	ForwardDeclaration fwDec0, fwDec;
   vector<string> namespaces, /// current namespace tag
   							 namespace_includes, /// current set of includes
   							 namespaces_return, /// namespace for current return type
   							 using_namespace_current;  /// All namespaces from "using" declarations
+	string templateArgument;
+	vector<string> templateInstantiationNamespace;
+	vector<vector<string> > templateInstantiations;
+	TemplateInstantiationTypedef singleInstantiation, singleInstantiation0;
   string include_path = "";
-  string class_name = "";
   const string null_str = "";
 
   //----------------------------------------------------------------------------
@@ -88,7 +114,7 @@ Module::Module(const string& interfacePath,
   Rule eigenType_p =
     (str_p("Vector") | "Matrix");
 
-  Rule className_p  = (lexeme_d[upper_p >> *(alnum_p | '_')] - eigenType_p - keywords_p)[assign_a(class_name)];
+  Rule className_p  = (lexeme_d[upper_p >> *(alnum_p | '_')] - eigenType_p - keywords_p);
 
   Rule namespace_name_p = lexeme_d[lower_p >> *(alnum_p | '_')] - keywords_p;
 
@@ -109,7 +135,47 @@ Module::Module(const string& interfacePath,
     className_p[assign_a(arg.type)] >>
     (ch_p('*')[assign_a(arg.is_ptr,true)] | ch_p('&')[assign_a(arg.is_ref,true)]);
 
-  Rule name_p = lexeme_d[alpha_p >> *(alnum_p | '_')];
+	Rule name_p = lexeme_d[alpha_p >> *(alnum_p | '_')];
+
+	Rule classParent_p =
+		*(namespace_name_p[push_back_a(cls.qualifiedParent)] >> str_p("::")) >>
+		className_p[push_back_a(cls.qualifiedParent)];
+
+	Rule templateInstantiation_p =
+		(*(namespace_name_p[push_back_a(templateInstantiationNamespace)] >> str_p("::")) >>
+		className_p[push_back_a(templateInstantiationNamespace)])
+		[push_back_a(templateInstantiations, templateInstantiationNamespace)]
+	  [clear_a(templateInstantiationNamespace)];
+
+	Rule templateInstantiations_p =
+		(str_p("template") >>
+		'<' >> name_p[assign_a(templateArgument)] >> '=' >> '{' >>
+		!(templateInstantiation_p >> *(',' >> templateInstantiation_p)) >>
+		'}' >> '>')
+		[push_back_a(cls.templateArgs, templateArgument)];
+
+	Rule templateSingleInstantiationArg_p =
+		(*(namespace_name_p[push_back_a(templateInstantiationNamespace)] >> str_p("::")) >>
+		className_p[push_back_a(templateInstantiationNamespace)])
+		[push_back_a(singleInstantiation.typeList, templateInstantiationNamespace)]
+	  [clear_a(templateInstantiationNamespace)];
+
+	Rule templateSingleInstantiation_p =
+		(str_p("typedef") >>
+		*(namespace_name_p[push_back_a(singleInstantiation.classNamespaces)] >> str_p("::")) >>
+		className_p[assign_a(singleInstantiation.className)] >>
+		'<' >> templateSingleInstantiationArg_p >> *(',' >> templateSingleInstantiationArg_p) >>
+		'>' >>
+		className_p[assign_a(singleInstantiation.name)] >>
+		';')
+		[assign_a(singleInstantiation.namespaces, namespaces)]
+	  [push_back_a(templateInstantiationTypedefs, singleInstantiation)]
+		[assign_a(singleInstantiation, singleInstantiation0)];
+
+	Rule templateList_p =
+		(str_p("template") >>
+		'<' >> name_p[push_back_a(cls.templateArgs)] >> *(',' >> name_p[push_back_a(cls.templateArgs)]) >>
+		'>');
 
   Rule argument_p = 
     ((basisType_p[assign_a(arg.type)] | argEigenType_p | eigenRef_p | classArg_p)
@@ -155,27 +221,35 @@ Module::Module(const string& interfacePath,
   Rule methodName_p = lexeme_d[lower_p >> *(alnum_p | '_')];
 
   Rule method_p = 
-    (returnType_p >> methodName_p[assign_a(method.name)] >>
+    (returnType_p >> methodName_p[assign_a(methodName)] >>
      '(' >> argumentList_p >> ')' >> 
-     !str_p("const")[assign_a(method.is_const_,true)] >> ';' >> *comments_p)
-    [assign_a(method.args,args)]
+     !str_p("const")[assign_a(isConst,true)] >> ';' >> *comments_p)
+		[bl::bind(&Method::addOverload,
+			bl::var(cls.methods)[bl::var(methodName)],
+			verbose,
+			bl::var(isConst),
+			bl::var(methodName),
+			bl::var(args),
+		  bl::var(retVal))]
+	  [assign_a(isConst,isConst0)]
+		[assign_a(methodName,methodName0)]
     [assign_a(args,args0)]
-    [assign_a(method.returnVal,retVal)]
-    [assign_a(retVal,retVal0)]
-    [push_back_a(cls.methods, method)]
-    [assign_a(method,method0)];
+    [assign_a(retVal,retVal0)];
 
   Rule staticMethodName_p = lexeme_d[(upper_p | lower_p) >> *(alnum_p | '_')];
 
   Rule static_method_p =
-    (str_p("static") >> returnType_p >> staticMethodName_p[assign_a(static_method.name)] >>
+    (str_p("static") >> returnType_p >> staticMethodName_p[assign_a(methodName)] >>
      '(' >> argumentList_p >> ')' >> ';' >> *comments_p)
-    [assign_a(static_method.args,args)]
+		[bl::bind(&StaticMethod::addOverload,
+			bl::var(cls.static_methods)[bl::var(methodName)],
+			verbose,
+			bl::var(methodName),
+			bl::var(args),
+		  bl::var(retVal))]
+		[assign_a(methodName,methodName0)]
     [assign_a(args,args0)]
-    [assign_a(static_method.returnVal,retVal)]
-    [assign_a(retVal,retVal0)]
-    [push_back_a(cls.static_methods, static_method)]
-    [assign_a(static_method,static_method0)];
+    [assign_a(retVal,retVal0)];
 
   Rule functions_p = constructor_p | method_p | static_method_p;
 
@@ -183,9 +257,11 @@ Module::Module(const string& interfacePath,
 
   Rule class_p =
   		(!*include_p
+			>> !(templateInstantiations_p | templateList_p)
+			>> !(str_p("virtual")[assign_a(cls.isVirtual, true)])
   		>> str_p("class")[push_back_a(cls.includes, include_path)][assign_a(include_path, null_str)]
   		>> className_p[assign_a(cls.name)]
-      >> '{'
+			>> ((':' >> classParent_p >> '{') | '{')
   		>> *(functions_p | comments_p)
   		>> str_p("};"))
         [assign_a(constructor.name, cls.name)]
@@ -193,19 +269,21 @@ Module::Module(const string& interfacePath,
   		[assign_a(cls.namespaces, namespaces)]
   		 [assign_a(cls.using_namespaces, using_namespace_current)]
   		[append_a(cls.includes, namespace_includes)]
-        //[assign_a(deconstructor.name,cls.name)]
-        //[assign_a(cls.d, deconstructor)]
-  		[push_back_a(classes,cls)]
-        //[assign_a(deconstructor,deconstructor0)]
-        [assign_a(constructor, constructor0)]
-  		[assign_a(cls,cls0)];
+        [assign_a(deconstructor.name,cls.name)]
+        [assign_a(cls.deconstructor, deconstructor)]
+			[bl::bind(&handle_possible_template, bl::var(classes), bl::var(cls), bl::var(templateArgument), bl::var(templateInstantiations))]
+      [assign_a(deconstructor,deconstructor0)]
+      [assign_a(constructor, constructor0)]
+  		[assign_a(cls,cls0)]
+			[clear_a(templateArgument)]
+			[clear_a(templateInstantiations)];
 
 	Rule namespace_def_p =
 			(!*include_p
 			>> str_p("namespace")[push_back_a(namespace_includes, include_path)][assign_a(include_path, null_str)]
 			>> namespace_name_p[push_back_a(namespaces)]
 			>> ch_p('{')
-			>> *(class_p | namespace_def_p | comments_p)
+			>> *(class_p | templateSingleInstantiation_p | namespace_def_p | comments_p)
 			>> str_p("}///\\namespace") // end namespace, avoid confusion with classes
 			>> !namespace_name_p)
 			[pop_a(namespaces)]
@@ -216,11 +294,14 @@ Module::Module(const string& interfacePath,
 			>> namespace_name_p[push_back_a(using_namespace_current)] >> ch_p(';');
 
 	Rule forward_declaration_p =
-			str_p("class") >>
-					(*(namespace_name_p >> str_p("::")) >> className_p)[push_back_a(forward_declarations)]
-					>> ch_p(';');
+			!(str_p("virtual")[assign_a(fwDec.isVirtual, true)])
+			>> str_p("class")
+			>> (*(namespace_name_p >> str_p("::")) >> className_p)[assign_a(fwDec.name)]
+			>> ch_p(';')
+			[push_back_a(forward_declarations, fwDec)]
+			[assign_a(fwDec, fwDec0)];
 
-  Rule module_content_p =	comments_p | using_namespace_p | class_p | forward_declaration_p | namespace_def_p ;
+  Rule module_content_p =	comments_p | using_namespace_p | class_p | templateSingleInstantiation_p | forward_declaration_p | namespace_def_p ;
 
   Rule module_p = *module_content_p >> !end_p;
 
@@ -256,134 +337,268 @@ Module::Module(const string& interfacePath,
   parse_info<const char*> info = parse(contents.c_str(), module_p, space_p);
   if(!info.full) {
     printf("parsing stopped at \n%.20s\n",info.stop);
-    throw ParseFailed(info.length);
+    throw ParseFailed((int)info.length);
   }
 }
 
 /* ************************************************************************* */
 template<class T>
-void verifyArguments(const vector<string>& validArgs, const vector<T>& vt) {
-	BOOST_FOREACH(const T& t, vt) {
-		BOOST_FOREACH(Argument arg, t.args) {
-			string fullType = arg.qualifiedType("::");
-			if(find(validArgs.begin(), validArgs.end(), fullType)
-			== validArgs.end())
-				throw DependencyMissing(fullType, t.name);
+void verifyArguments(const vector<string>& validArgs, const map<string,T>& vt) {
+	typedef typename map<string,T>::value_type Name_Method;
+	BOOST_FOREACH(const Name_Method& name_method, vt) {
+		const T& t = name_method.second;
+		BOOST_FOREACH(const ArgumentList& argList, t.argLists) {
+			BOOST_FOREACH(Argument arg, argList) {
+				string fullType = arg.qualifiedType("::");
+				if(find(validArgs.begin(), validArgs.end(), fullType)
+					== validArgs.end())
+					throw DependencyMissing(fullType, t.name);
+			}
 		}
 	}
 }
 
 /* ************************************************************************* */
 template<class T>
-void verifyReturnTypes(const vector<string>& validtypes, const vector<T>& vt) {
-	BOOST_FOREACH(const T& t, vt) {
-		const ReturnValue& retval = t.returnVal;
-		if (find(validtypes.begin(), validtypes.end(), retval.qualifiedType1("::"))	== validtypes.end())
-			throw DependencyMissing(retval.qualifiedType1("::"), t.name);
-		if (retval.isPair && find(validtypes.begin(), validtypes.end(), retval.qualifiedType2("::"))	== validtypes.end())
-			throw DependencyMissing(retval.qualifiedType2("::"), t.name);
+void verifyReturnTypes(const vector<string>& validtypes, const map<string,T>& vt) {
+	typedef typename map<string,T>::value_type Name_Method;
+	BOOST_FOREACH(const Name_Method& name_method, vt) {
+		const T& t = name_method.second;
+		BOOST_FOREACH(const ReturnValue& retval, t.returnVals) {
+			if (find(validtypes.begin(), validtypes.end(), retval.qualifiedType1("::"))	== validtypes.end())
+				throw DependencyMissing(retval.qualifiedType1("::"), t.name);
+			if (retval.isPair && find(validtypes.begin(), validtypes.end(), retval.qualifiedType2("::"))	== validtypes.end())
+				throw DependencyMissing(retval.qualifiedType2("::"), t.name);
+		}
 	}
 }
 
 /* ************************************************************************* */
-void Module::matlab_code(const string& mexCommand, const string& toolboxPath,
-			 const string& mexExt, const string& headerPath,const string& mexFlags) const {
+void Module::generateIncludes(FileWriter& file) const {
+
+	// collect includes
+	vector<string> all_includes;
+	BOOST_FOREACH(const Class& cls, classes) {
+		bool added_include = false;
+		BOOST_FOREACH(const string& s, cls.includes) {
+			if (!s.empty()) {
+				all_includes.push_back(s);
+				added_include = true;
+			}
+		}
+		if (!added_include) // add default include
+			all_includes.push_back(cls.name + ".h");
+	}
+
+	// sort and remove duplicates
+	sort(all_includes.begin(), all_includes.end());
+	vector<string>::const_iterator last_include = unique(all_includes.begin(), all_includes.end());
+	vector<string>::const_iterator it = all_includes.begin();
+	// add includes to file
+	for (; it != last_include; ++it)
+		file.oss << "#include <" << *it << ">" << endl;
+	file.oss << "\n";
+}
+
+/* ************************************************************************* */
+void Module::matlab_code(const string& toolboxPath, const string& headerPath) const {
 
     fs::create_directories(toolboxPath);
 
-    // create make m-file
-    string matlabMakeFileName = toolboxPath + "/make_" + name + ".m";
-    FileWriter makeModuleMfile(matlabMakeFileName, verbose, "%");
+		// create the unified .cpp switch file
+		const string wrapperName = name + "_wrapper";
+		string wrapperFileName = toolboxPath + "/" + wrapperName + ".cpp";
+		FileWriter wrapperFile(wrapperFileName, verbose, "//");
+		vector<string> functionNames; // Function names stored by index for switch
+		wrapperFile.oss << "#include <wrap/matlab.h>\n";
+		wrapperFile.oss << "#include <map>\n";
+		wrapperFile.oss << "#include <boost/foreach.hpp>\n";
+		wrapperFile.oss << "\n";
 
-    // create the (actual) make file
-    string makeFileName = toolboxPath + "/Makefile";
-    FileWriter makeModuleMakefile(makeFileName, verbose, "#");
-
-    makeModuleMfile.oss << "echo on" << endl << endl;
-    makeModuleMfile.oss << "toolboxpath = mfilename('fullpath');" << endl;
-    makeModuleMfile.oss << "delims = find(toolboxpath == '/' | toolboxpath == '\\');" << endl;
-    makeModuleMfile.oss << "toolboxpath = toolboxpath(1:(delims(end)-1));" << endl;
-    makeModuleMfile.oss << "clear delims" << endl;
-    makeModuleMfile.oss << "addpath(toolboxpath);" << endl << endl;
-
-    makeModuleMakefile.oss << "\nMEX = " << mexCommand << "\n";
-    makeModuleMakefile.oss << "MEXENDING = " << mexExt << "\n";
-    makeModuleMakefile.oss << "PATH_TO_WRAP = " << headerPath << "\n";
-    makeModuleMakefile.oss << "mex_flags = " << mexFlags << "\n\n";
+		// Expand templates - This is done first so that template instantiations are
+		// counted in the list of valid types, have their attributes and dependencies
+		// checked, etc.
+		vector<Class> expandedClasses = ExpandTypedefInstantiations(classes, templateInstantiationTypedefs);
 
     // Dependency check list
-    vector<string> validTypes = forward_declarations;
-    validTypes.push_back("void");
-    validTypes.push_back("string");
-    validTypes.push_back("int");
-    validTypes.push_back("bool");
-    validTypes.push_back("char");
-    validTypes.push_back("unsigned char");
-    validTypes.push_back("size_t");
-    validTypes.push_back("double");
-    validTypes.push_back("Vector");
-    validTypes.push_back("Matrix");
+    vector<string> validTypes = GenerateValidTypes(expandedClasses, forward_declarations);
 
-    // add 'all' to Makefile
-    makeModuleMakefile.oss << "all: ";
-    BOOST_FOREACH(Class cls, classes) {
-    	makeModuleMakefile.oss << cls.qualifiedName() << " ";
-			//Create a list of parsed classes for dependency checking
-			validTypes.push_back(cls.qualifiedName("::"));
-    }
-    makeModuleMakefile.oss << "\n\n";
+		// Check that all classes have been defined somewhere
+		BOOST_FOREACH(const Class& cls, expandedClasses) {
+			// verify all of the function arguments
+			//TODO:verifyArguments<ArgumentList>(validTypes, cls.constructor.args_list);
+			verifyArguments<StaticMethod>(validTypes, cls.static_methods);
+			verifyArguments<Method>(validTypes, cls.methods);
 
-    // generate proxy classes and wrappers
-    BOOST_FOREACH(Class cls, classes) {
-      // create directory if needed
-      string classPath = toolboxPath + "/@" + cls.qualifiedName();
-      fs::create_directories(classPath);
+			// verify function return types
+			verifyReturnTypes<StaticMethod>(validTypes, cls.static_methods);
+			verifyReturnTypes<Method>(validTypes, cls.methods);
 
-      // create proxy class
-      string classFile = classPath + "/" + cls.qualifiedName() + ".m";
-      cls.matlab_proxy(classFile);
+			// verify parents
+			if(!cls.qualifiedParent.empty() && std::find(validTypes.begin(), validTypes.end(), wrap::qualifiedName("::", cls.qualifiedParent)) == validTypes.end())
+				throw DependencyMissing(wrap::qualifiedName("::", cls.qualifiedParent), cls.qualifiedName("::"));
+		}
 
-      // verify all of the function arguments
-      //TODO:verifyArguments<ArgumentList>(validTypes, cls.constructor.args_list);
-      verifyArguments<StaticMethod>(validTypes, cls.static_methods);
-      verifyArguments<Method>(validTypes, cls.methods);
+		// Create type attributes table and check validity
+		TypeAttributesTable typeAttributes;
+		typeAttributes.addClasses(expandedClasses);
+		typeAttributes.addForwardDeclarations(forward_declarations);
+		typeAttributes.checkValidity(expandedClasses);
 
-      // verify function return types
-      verifyReturnTypes<StaticMethod>(validTypes, cls.static_methods);
-      verifyReturnTypes<Method>(validTypes, cls.methods);
+		// Generate includes while avoiding redundant includes
+		generateIncludes(wrapperFile);
 
-      // create constructor and method wrappers
-      cls.matlab_constructors(toolboxPath);
-      cls.matlab_static_methods(toolboxPath);
-      cls.matlab_methods(classPath);
+		// create typedef classes - we put this at the top of the wrap file so that collectors and method arguments can use these typedefs
+		BOOST_FOREACH(const Class& cls, expandedClasses) {
+			if(!cls.typedefName.empty())
+				wrapperFile.oss << cls.getTypedef() << "\n";
+		}
+		wrapperFile.oss << "\n";
 
-      // create deconstructor
-      //cls.matlab_deconstructor(toolboxPath);
+		// Generate collectors and cleanup function to be called from mexAtExit
+		WriteCollectorsAndCleanupFcn(wrapperFile, name, expandedClasses);
 
-      // add lines to make m-file
-      makeModuleMfile.oss << "%% " << cls.qualifiedName() << endl;
-      makeModuleMfile.oss << "cd(toolboxpath)" << endl;
-      cls.matlab_make_fragment(makeModuleMfile, toolboxPath, mexFlags);
+		// generate RTTI registry (for returning derived-most types)
+		WriteRTTIRegistry(wrapperFile, name, expandedClasses);
 
-      // add section to the (actual) make file
-      makeModuleMakefile.oss << "# " << cls.qualifiedName() << endl;
-      cls.makefile_fragment(makeModuleMakefile);
+		// create proxy class and wrapper code
+		BOOST_FOREACH(const Class& cls, expandedClasses) {
+      string classFile = toolboxPath + "/" + cls.qualifiedName() + ".m";
+      cls.matlab_proxy(classFile, wrapperName, typeAttributes, wrapperFile, functionNames);
     }  
 
-    // finish make m-file
-    makeModuleMfile.oss << "cd(toolboxpath)" << endl << endl;
-    makeModuleMfile.oss << "echo off" << endl;
-    makeModuleMfile.emit(true); // By default, compare existing file first
+		// finish wrapper file
+		wrapperFile.oss << "\n";
+		finish_wrapper(wrapperFile, functionNames);
 
-    // make clean at end of Makefile
-    makeModuleMakefile.oss << "\n\nclean: \n";
-    makeModuleMakefile.oss << "\trm -rf *.$(MEXENDING)\n";
-    BOOST_FOREACH(Class cls, classes)
-    	makeModuleMakefile.oss << "\trm -rf @" << cls.qualifiedName() << "/*.$(MEXENDING)\n";
-
-    // finish Makefile
-    makeModuleMakefile.oss << "\n" << endl;
-    makeModuleMakefile.emit(true);
+		wrapperFile.emit(true);
   }
+
+/* ************************************************************************* */
+	void Module::finish_wrapper(FileWriter& file, const std::vector<std::string>& functionNames) const {
+		file.oss << "void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])\n";
+		file.oss << "{\n";
+		file.oss << "  mstream mout;\n"; // Send stdout to MATLAB console, see matlab.h
+		file.oss << "  std::streambuf *outbuf = std::cout.rdbuf(&mout);\n\n";
+		file.oss << "  if(!_RTTIRegister_" << name << "_done) {\n";
+		file.oss << "    _" << name << "_RTTIRegister();\n";
+		file.oss << "    _RTTIRegister_" << name << "_done = true;\n";
+		file.oss << "  }\n";
+		file.oss << "  int id = unwrap<int>(in[0]);\n\n";
+		file.oss << "  switch(id) {\n";
+		for(size_t id = 0; id < functionNames.size(); ++id) {
+			file.oss << "  case " << id << ":\n";
+			file.oss << "    " << functionNames[id] << "(nargout, out, nargin-1, in+1);\n";
+			file.oss << "    break;\n";
+		}
+		file.oss << "  }\n";
+		file.oss << "\n";
+		file.oss << "  std::cout.rdbuf(outbuf);\n"; // Restore cout, see matlab.h
+		file.oss << "}\n";
+	}
+
+/* ************************************************************************* */
+vector<Class> Module::ExpandTypedefInstantiations(const vector<Class>& classes, const vector<TemplateInstantiationTypedef> instantiations) {
+
+	vector<Class> expandedClasses = classes;
+
+	BOOST_FOREACH(const TemplateInstantiationTypedef& inst, instantiations) {
+		// Add the new class to the list
+		expandedClasses.push_back(inst.findAndExpand(classes));
+	}
+
+	// Remove all template classes
+	for(int i = 0; i < expandedClasses.size(); ++i)
+		if(!expandedClasses[size_t(i)].templateArgs.empty()) {
+			expandedClasses.erase(expandedClasses.begin() + size_t(i));
+			-- i;
+		}
+
+	return expandedClasses;
+}
+
+/* ************************************************************************* */
+vector<string> Module::GenerateValidTypes(const vector<Class>& classes, const vector<ForwardDeclaration> forwardDeclarations) {
+	vector<string> validTypes;
+	BOOST_FOREACH(const ForwardDeclaration& fwDec, forwardDeclarations) {
+		validTypes.push_back(fwDec.name);
+	}
+	validTypes.push_back("void");
+	validTypes.push_back("string");
+	validTypes.push_back("int");
+	validTypes.push_back("bool");
+	validTypes.push_back("char");
+	validTypes.push_back("unsigned char");
+	validTypes.push_back("size_t");
+	validTypes.push_back("double");
+	validTypes.push_back("Vector");
+	validTypes.push_back("Matrix");
+	//Create a list of parsed classes for dependency checking
+	BOOST_FOREACH(const Class& cls, classes) {
+		validTypes.push_back(cls.qualifiedName("::"));
+	}
+
+	return validTypes;
+}
+
+/* ************************************************************************* */
+void Module::WriteCollectorsAndCleanupFcn(FileWriter& wrapperFile, const std::string& moduleName, const std::vector<Class>& classes) {
+	// Generate all collectors
+	BOOST_FOREACH(const Class& cls, classes) {
+		const string matlabName = cls.qualifiedName(), cppName = cls.qualifiedName("::");
+		wrapperFile.oss << "typedef std::set<boost::shared_ptr<" << cppName << ">*> "
+			<< "Collector_" << matlabName << ";\n";
+		wrapperFile.oss << "static Collector_" << matlabName <<
+			" collector_" << matlabName << ";\n";
+	}
+
+	// generate mexAtExit cleanup function
+	wrapperFile.oss << "\nvoid _deleteAllObjects()\n";
+	wrapperFile.oss << "{\n";
+	BOOST_FOREACH(const Class& cls, classes) {
+		const string matlabName = cls.qualifiedName();
+		const string cppName = cls.qualifiedName("::");
+		const string collectorType = "Collector_" + matlabName;
+		const string collectorName = "collector_" + matlabName;
+		wrapperFile.oss << "  for(" << collectorType << "::iterator iter = " << collectorName << ".begin();\n";
+		wrapperFile.oss << "      iter != " << collectorName << ".end(); ) {\n";
+		wrapperFile.oss << "    delete *iter;\n";
+		wrapperFile.oss << "    " << collectorName << ".erase(iter++);\n";
+		wrapperFile.oss << "  }\n";
+	}
+	wrapperFile.oss << "}\n\n";
+}
+
+/* ************************************************************************* */
+void Module::WriteRTTIRegistry(FileWriter& wrapperFile, const std::string& moduleName, const std::vector<Class>& classes) {
+	wrapperFile.oss <<
+		"static bool _RTTIRegister_" << moduleName << "_done = false;\n"
+		"void _" << moduleName << "_RTTIRegister() {\n"
+		"  std::map<std::string, std::string> types;\n";
+	BOOST_FOREACH(const Class& cls, classes) {
+		if(cls.isVirtual)
+			wrapperFile.oss <<
+			"  types.insert(std::make_pair(typeid(" << cls.qualifiedName("::") << ").name(), \"" << cls.qualifiedName() << "\"));\n";
+	}
+	wrapperFile.oss << "\n";
+
+	wrapperFile.oss <<
+		"  mxArray *registry = mexGetVariable(\"global\", \"gtsamwrap_rttiRegistry\");\n"
+		"  if(!registry)\n"
+		"    registry = mxCreateStructMatrix(1, 1, 0, NULL);\n"
+		"  typedef std::pair<std::string, std::string> StringPair;\n"
+		"  BOOST_FOREACH(const StringPair& rtti_matlab, types) {\n"
+		"    int fieldId = mxAddField(registry, rtti_matlab.first.c_str());\n"
+		"    if(fieldId < 0)\n"
+		"      mexErrMsgTxt(\"gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly\");\n"
+		"    mxArray *matlabName = mxCreateString(rtti_matlab.second.c_str());\n"
+		"    mxSetFieldByNumber(registry, 0, fieldId, matlabName);\n"
+		"  }\n"
+		"  if(mexPutVariable(\"global\", \"gtsamwrap_rttiRegistry\", registry) != 0)\n"
+		"    mexErrMsgTxt(\"gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly\");\n"
+		"  mxDestroyArray(registry);\n"
+		"}\n"
+		"\n";
+}
 
 /* ************************************************************************* */

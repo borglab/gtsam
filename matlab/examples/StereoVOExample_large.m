@@ -14,7 +14,7 @@
 % format: fx fy skew cx cy baseline
 calib = dlmread('../../examples/Data/VO_calibration.txt');
 K = gtsamCal3_S2Stereo(calib(1), calib(2), calib(3), calib(4), calib(5), calib(6));
-stereo_model = gtsamnoiseModelDiagonal_Sigmas([1.0; 1.0; 1.0]);
+stereo_model = gtsamnoiseModelDiagonal.Sigmas([1.0; 1.0; 1.0]);
 
 %% create empty graph and values
 graph = visualSLAMGraph;

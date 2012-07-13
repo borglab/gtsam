@@ -45,23 +45,23 @@ public:
   Verbosity verbosity; ///< The printing verbosity during optimization (default SILENT)
 
   NonlinearOptimizerParams() :
-    maxIterations(100.0), relativeErrorTol(1e-5), absoluteErrorTol(1e-5),
+    maxIterations(100), relativeErrorTol(1e-5), absoluteErrorTol(1e-5),
     errorTol(0.0), verbosity(SILENT) {}
 
   virtual ~NonlinearOptimizerParams() {}
   virtual void print(const std::string& str = "") const ;
 
-  inline double getMaxIterations() const { return maxIterations; }
-  inline double getRelativeErrorTol() const { return relativeErrorTol; }
-  inline double getAbsoluteErrorTol() const { return absoluteErrorTol; }
-  inline double getErrorTol() const { return errorTol; }
-  inline std::string getVerbosity() const { return verbosityTranslator(verbosity); }
+  size_t getMaxIterations() const { return maxIterations; }
+  double getRelativeErrorTol() const { return relativeErrorTol; }
+  double getAbsoluteErrorTol() const { return absoluteErrorTol; }
+  double getErrorTol() const { return errorTol; }
+  std::string getVerbosity() const { return verbosityTranslator(verbosity); }
 
-  inline void setMaxIterations(double value) { maxIterations = value; }
-  inline void setRelativeErrorTol(double value) { relativeErrorTol = value; }
-  inline void setAbsoluteErrorTol(double value) { absoluteErrorTol = value; }
-  inline void setErrorTol(double value) { errorTol  = value ; }
-  inline void setVerbosity(const std::string &src) { verbosity = verbosityTranslator(src); }
+  void setMaxIterations(size_t value) { maxIterations = value; }
+  void setRelativeErrorTol(double value) { relativeErrorTol = value; }
+  void setAbsoluteErrorTol(double value) { absoluteErrorTol = value; }
+  void setErrorTol(double value) { errorTol  = value ; }
+  void setVerbosity(const std::string &src) { verbosity = verbosityTranslator(src); }
 
   Verbosity verbosityTranslator(const std::string &s) const;
   std::string verbosityTranslator(Verbosity value) const;

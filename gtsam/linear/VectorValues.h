@@ -419,7 +419,7 @@ namespace gtsam {
     maps_.reserve(maps_.size() + dimensions.size());
     BOOST_FOREACH(size_t dim, dimensions) {
       maps_.push_back(values_.segment(varStart, dim));
-      varStart += dim; // varStart is continued from first for loop
+      varStart += (int)dim; // varStart is continued from first for loop
     }
   }
 

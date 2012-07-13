@@ -13,6 +13,7 @@
  * @file utilities.ccp
  * @author Frank Dellaert
  * @author Andrew Melim
+ * @author Richard Roberts
  **/
 
 #include <iostream>
@@ -121,21 +122,21 @@ void generateUsingNamespace(FileWriter& file, const vector<string>& using_namesp
 }
 
 /* ************************************************************************* */
-void generateIncludes(FileWriter& file, const string& class_name,
-		const vector<string>& includes) {
-	file.oss << "#include <wrap/matlab.h>" << endl;
-	bool added_include = false;
-	BOOST_FOREACH(const string& s, includes) {
-		if (!s.empty()) {
-			file.oss << "#include <" << s << ">" << endl;
-			added_include = true;
-		}
+string qualifiedName(const string& separator, const vector<string>& names, const string& finalName) {
+	string result;
+	if(!names.empty()) {
+		for(size_t i = 0; i < names.size() - 1; ++i)
+			result += (names[i] + separator);
+		if(finalName.empty())
+			result += names.back();
+		else
+			result += (names.back() + separator + finalName);
+	} else if(!finalName.empty()) {
+		result = finalName;
 	}
-	if (!added_include) // add default include
-		file.oss << "#include <" << class_name << ".h>" << endl;
+	return result;
 }
 
 /* ************************************************************************* */
-
 
 } // \namespace wrap

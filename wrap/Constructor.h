@@ -13,6 +13,7 @@
  * @file Constructor.h
  * @brief class describing a constructor + code generation
  * @author Frank Dellaert
+ * @author Richard Roberts
  **/
 
 #pragma once
@@ -48,21 +49,18 @@ struct Constructor {
 	 * Create fragment to select constructor in proxy class, e.g.,
 	 * if nargin == 2, obj.self = new_Pose3_RP(varargin{1},varargin{2}); end
 	 */
-	void matlab_proxy_fragment(FileWriter& file, 
-	        const std::string& className, const int i,
+	void proxy_fragment(FileWriter& file, const std::string& wrapperName,
+	        const std::string& className, const std::string& matlabBaseName, const int id,
 	        const ArgumentList args) const;
 
-	/// m-file
-	void matlab_mfile(const std::string& toolboxPath,
-			const std::string& qualifiedMatlabName,
-			const ArgumentList args) const;
-
 	/// cpp wrapper
-	void matlab_wrapper(const std::string& toolboxPath,
+	std::string wrapper_fragment(FileWriter& file,
 			 const std::string& cppClassName,
 			 const std::string& matlabClassName,
+			 const std::string& cppBaseClassName,
+			 int id,
 			 const std::vector<std::string>& using_namespaces,
-			 const std::vector<std::string>& includes) const;
+			 const ArgumentList& al) const;
 
 	/// constructor function
 	void generate_construct(FileWriter& file, const std::string& cppClassName,

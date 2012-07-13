@@ -22,19 +22,19 @@ graph = pose2SLAMGraph;
 %% Add prior
 % gaussian for prior
 priorMean = gtsamPose2(0.0, 0.0, 0.0); % prior at origin
-priorNoise = gtsamnoiseModelDiagonal_Sigmas([0.3; 0.3; 0.1]);
+priorNoise = gtsamnoiseModelDiagonal.Sigmas([0.3; 0.3; 0.1]);
 graph.addPrior(1, priorMean, priorNoise); % add directly to graph
 
 %% Add odometry
 % general noisemodel for odometry
-odometryNoise = gtsamnoiseModelDiagonal_Sigmas([0.2; 0.2; 0.1]);
+odometryNoise = gtsamnoiseModelDiagonal.Sigmas([0.2; 0.2; 0.1]);
 graph.addOdometry(1, 2, gtsamPose2(2.0, 0.0, 0.0 ), odometryNoise);
 graph.addOdometry(2, 3, gtsamPose2(2.0, 0.0, pi/2), odometryNoise);
 graph.addOdometry(3, 4, gtsamPose2(2.0, 0.0, pi/2), odometryNoise);
 graph.addOdometry(4, 5, gtsamPose2(2.0, 0.0, pi/2), odometryNoise);
 
 %% Add pose constraint
-model = gtsamnoiseModelDiagonal_Sigmas([0.2; 0.2; 0.1]);
+model = gtsamnoiseModelDiagonal.Sigmas([0.2; 0.2; 0.1]);
 graph.addRelativePose(5, 2, gtsamPose2(2.0, 0.0, pi/2), model);
 
 % print

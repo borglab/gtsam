@@ -6,19 +6,26 @@
  *
  * Requirements:
  *   Classes must start with an uppercase letter
- *   Only one Method/Constructor per line
+ *   	 - Can wrap a typedef
+ *   Only one Method/Constructor per line, though methods/constructors can extend across multiple lines
  *   Methods can return
  *     - Eigen types:       Matrix, Vector
  *     - C/C++ basic types: string, bool, size_t, size_t, double, char, unsigned char
  *     - void
  *     - Any class with which be copied with boost::make_shared()
  *     - boost::shared_ptr of any object type
- *   Limitations on methods
- *     - Parsing does not support overloading
- *     - There can only be one method (static or otherwise) with a given name
+ *   Constructors
+ *     - Overloads are supported
+ *     - A class with no constructors can be returned from other functions but not allocated directly in MATLAB
+ *   Methods
  *     - Constness has no effect
- *   Methods must start with a lowercase letter
- *   Static methods must start with a letter (upper or lowercase) and use the "static" keyword
+ *     - Specify by-value (not reference) return types, even if C++ method returns reference
+ *     - Must start with a lowercase letter
+ *     - Overloads are supported
+ *   Static methods
+ *     - Must start with a letter (upper or lowercase) and use the "static" keyword
+ *     - The first letter will be made uppercase in the generated MATLAB interface
+ *     - Overloads are supported
  *   Arguments to functions any of
  *   	 - Eigen types:       Matrix, Vector
  *   	 - Eigen types and classes as an optionally const reference
@@ -35,7 +42,7 @@
  *   Namespace usage
  *   	 - Namespaces can be specified for classes in arguments and return values
  *   	 - In each case, the namespace must be fully specified, e.g., "namespace1::namespace2::ClassName"
- *   Using namespace
+ *   Using namespace: FIXME: this functionality is currently broken
  *   	 - To use a namespace (e.g., generate a "using namespace x" line in cpp files), add "using namespace x;"
  *   	 - This declaration applies to all classes *after* the declaration, regardless of brackets
  *   Includes in C++ wrappers
@@ -44,17 +51,34 @@
  *   	 - To override, add a full include statement just before the class statement
  *   	 - An override include can be added for a namespace by placing it just before the namespace statement
  *   	 - Both classes and namespace accept exactly one namespace
- *   Overriding type dependency checks
+ *   Using classes defined in other modules
  *     - If you are using a class 'OtherClass' not wrapped in this definition file, add "class OtherClass;" to avoid a dependency error
- *     - Limitation: this only works if the class does not need a namespace specification
+ *   Virtual inheritance
+ *     - Specify fully-qualified base classes, i.e. "virtual class Derived : module::Base {"
+ *     - Mark with 'virtual' keyword, e.g. "virtual class Base {", and also "virtual class Derived : module::Base {"
+ *     - Forward declarations must also be marked virtual, e.g. "virtual class module::Base;" and
+ *       also "virtual class module::Derived;"
+ *     - Pure virtual (abstract) classes should list no constructors in this interface file
+ *     - Virtual classes must have a clone() function in C++ (though it does not have to be included
+ *       in the MATLAB interface).  clone() will be called whenever an object copy is needed, instead
+ *       of using the copy constructor (which is used for non-virtual objects).
+ *   Templates
+ *     - Basic templates are supported either with an explicit list of types to instantiate,
+ *       e.g. template<T = {gtsam::Pose2, gtsam::Rot2, gtsam::Point3}> class Class1 { ... };
+ *       or with typedefs, e.g.
+ *       template<T, U> class Class2 { ... };
+ *       typedef Class2<Type1, Type2> MyInstantiatedClass;
+ *     - To create new instantiations in other modules, you must copy-and-paste the whole class definition
+ *       into the new module, but use only your new instantiation types.
+ *     - When forward-declaring template instantiations, use the generated/typedefed name, e.g.
+ *       class gtsam::Class1Pose2;
+ *       class gtsam::MyInstantiatedClass;
  */
 
 /**
  * Status:
  *  - TODO: global functions
  *  - TODO: default values for arguments
- *  - TODO: overloaded functions
- *  - TODO: signatures for constructors can be ambiguous if two types have the same first letter
  *  - TODO: Handle gtsam::Rot3M conversions to quaternions
  */
 
@@ -64,7 +88,17 @@ namespace gtsam {
 // base
 //*************************************************************************
 
-class LieVector {
+virtual class Value {
+	// No constructors because this is an abstract class
+
+	// Testable
+	void print(string s) const;
+
+	// Manifold
+	size_t dim() const;
+};
+
+virtual class LieVector : gtsam::Value {
 	// Standard constructors
 	LieVector();
 	LieVector(Vector v);
@@ -96,7 +130,7 @@ class LieVector {
 // geometry
 //*************************************************************************
 
-class Point2 {
+virtual class Point2 : gtsam::Value {
   // Standard Constructors
 	Point2();
 	Point2(double x, double y);
@@ -128,7 +162,7 @@ class Point2 {
   Vector vector() const;
 };
 
-class StereoPoint2 {
+virtual class StereoPoint2 : gtsam::Value {
   // Standard Constructors
   StereoPoint2();
   StereoPoint2(double uL, double uR, double v);
@@ -157,7 +191,7 @@ class StereoPoint2 {
   Vector vector() const;
 };
 
-class Point3 {
+virtual class Point3 : gtsam::Value {
   // Standard Constructors
 	Point3();
 	Point3(double x, double y, double z);
@@ -190,7 +224,7 @@ class Point3 {
 	double z() const;
 };
 
-class Rot2 {
+virtual class Rot2 : gtsam::Value {
   // Standard Constructors and Named Constructors
 	Rot2();
 	Rot2(double theta);
@@ -232,14 +266,14 @@ class Rot2 {
   Matrix matrix() const;
 };
 
-class Rot3 {
+virtual class Rot3 : gtsam::Value {
   // Standard Constructors and Named Constructors
 	Rot3();
 	Rot3(Matrix R);
 	static gtsam::Rot3 Rx(double t);
 	static gtsam::Rot3 Ry(double t);
 	static gtsam::Rot3 Rz(double t);
-//  static gtsam::Rot3 RzRyRx(double x, double y, double z); // FIXME: overloaded functions don't work yet
+  static gtsam::Rot3 RzRyRx(double x, double y, double z); // FIXME: overloaded functions don't work yet
 	static gtsam::Rot3 RzRyRx(Vector xyz);
 	static gtsam::Rot3 yaw(double t); // positive yaw is to right (as in aircraft heading)
 	static gtsam::Rot3 pitch(double t); // positive pitch is up (increasing aircraft altitude)
@@ -261,7 +295,7 @@ class Rot3 {
   // Manifold
   static size_t Dim();
   size_t dim() const;
-  // gtsam::Rot3 retractCayley(Vector v) const; // FIXME, does not exist in both Matrix and Quaternion options
+  gtsam::Rot3 retractCayley(Vector v) const; // FIXME, does not exist in both Matrix and Quaternion options
   gtsam::Rot3 retract(Vector v) const;
   Vector localCoordinates(const gtsam::Rot3& p) const;
 
@@ -284,7 +318,7 @@ class Rot3 {
 //  Vector toQuaternion() const;  // FIXME: Can't cast to Vector properly
 };
 
-class Pose2 {
+virtual class Pose2 : gtsam::Value {
   // Standard Constructor
 	Pose2();
 	Pose2(double x, double y, double theta);
@@ -330,12 +364,12 @@ class Pose2 {
   Matrix matrix() const;
 };
 
-class Pose3 {
+virtual class Pose3 : gtsam::Value {
 	// Standard Constructors
 	Pose3();
 	Pose3(const gtsam::Pose3& pose);
 	Pose3(const gtsam::Rot3& r, const gtsam::Point3& t);
-	// Pose3(const gtsam::Pose2& pose2); // FIXME: shadows Pose3(Pose3 pose)
+	Pose3(const gtsam::Pose2& pose2); // FIXME: shadows Pose3(Pose3 pose)
 	Pose3(Matrix t);
 
 	// Testable
@@ -373,19 +407,20 @@ class Pose3 {
 	double y() const;
 	double z() const;
 	Matrix matrix() const;
-	// gtsam::Pose3 transform_to(const gtsam::Pose3& pose) const; // FIXME: shadows other transform_to()
+	gtsam::Pose3 transform_to(const gtsam::Pose3& pose) const; // FIXME: shadows other transform_to()
 	double range(const gtsam::Point3& point);
-	// double range(const gtsam::Pose3& pose); // FIXME: shadows other range
+	double range(const gtsam::Pose3& pose);
 };
 
-class Cal3_S2 {
+virtual class Cal3_S2 : gtsam::Value {
   // Standard Constructors
   Cal3_S2();
   Cal3_S2(double fx, double fy, double s, double u0, double v0);
+	Cal3_S2(Vector v);
 
   // Testable
   void print(string s) const;
-  bool equals(const gtsam::Cal3_S2& pose, double tol) const;
+  bool equals(const gtsam::Cal3_S2& rhs, double tol) const;
 
   // Manifold
   static size_t Dim();
@@ -409,6 +444,37 @@ class Cal3_S2 {
   Matrix matrix_inverse() const;
 };
 
+virtual class Cal3DS2 : gtsam::Value {
+	// Standard Constructors
+	Cal3DS2();
+	Cal3DS2(double fx, double fy, double s, double u0, double v0, double k1, double k2, double k3, double k4);
+	Cal3DS2(Vector v);
+
+	// Testable
+	void print(string s) const;
+	bool equals(const gtsam::Cal3DS2& rhs, double tol) const;
+
+	// Manifold
+	static size_t Dim();
+	size_t dim() const;
+	gtsam::Cal3DS2 retract(Vector v) const;
+	Vector localCoordinates(const gtsam::Cal3DS2& c) const;
+
+	// Action on Point2
+	gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
+	// TODO: D2d functions that start with an uppercase letter
+
+	// Standard Interface
+	double fx() const;
+	double fy() const;
+	double skew() const;
+	double px() const;
+	double py() const;
+	Vector vector() const;
+	Vector k() const;
+	//Matrix K() const; //FIXME: Uppercase
+};
+
 class Cal3_S2Stereo {
   // Standard Constructors
   Cal3_S2Stereo();
@@ -428,7 +494,7 @@ class Cal3_S2Stereo {
   double baseline() const;
 };
 
-class CalibratedCamera {
+virtual class CalibratedCamera : gtsam::Value {
   // Standard Constructors and Named Constructors
 	CalibratedCamera();
 	CalibratedCamera(const gtsam::Pose3& pose);
@@ -458,14 +524,14 @@ class CalibratedCamera {
   double range(const gtsam::Point3& p) const; // TODO: Other overloaded range methods
 };
 
-class SimpleCamera {
+virtual class SimpleCamera : gtsam::Value {
   // Standard Constructors and Named Constructors
 	SimpleCamera();
   SimpleCamera(const gtsam::Pose3& pose);
   SimpleCamera(const gtsam::Pose3& pose, const gtsam::Cal3_S2& K);
   static gtsam::SimpleCamera level(const gtsam::Cal3_S2& K,
       const gtsam::Pose2& pose, double height);
-  // static gtsam::SimpleCamera level(const gtsam::Pose2& pose, double height); // FIXME overload
+  static gtsam::SimpleCamera level(const gtsam::Pose2& pose, double height); // FIXME overload
   static gtsam::SimpleCamera lookat(const gtsam::Point3& eye,
       const gtsam::Point3& target, const gtsam::Point3& upVector,
       const gtsam::Cal3_S2& K);
@@ -490,7 +556,7 @@ class SimpleCamera {
 	gtsam::Point2 project(const gtsam::Point3& point);
 	gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
   double range(const gtsam::Point3& point);
-  // double range(const gtsam::Pose3& point); // FIXME, overload
+  double range(const gtsam::Pose3& point); // FIXME, overload
 };
 
 //*************************************************************************
@@ -679,17 +745,17 @@ class VariableIndex {
 
 #include <gtsam/linear/NoiseModel.h>
 namespace noiseModel {
-class Base {
+virtual class Base {
 };
 
-class Gaussian {
+virtual class Gaussian : gtsam::noiseModel::Base {
 	static gtsam::noiseModel::Gaussian* SqrtInformation(Matrix R);
 	static gtsam::noiseModel::Gaussian* Covariance(Matrix R);
 //	Matrix R() const;		// FIXME: cannot parse!!!
 	void print(string s) const;
 };
 
-class Diagonal {
+virtual class Diagonal : gtsam::noiseModel::Gaussian {
 	static gtsam::noiseModel::Diagonal* Sigmas(Vector sigmas);
 	static gtsam::noiseModel::Diagonal* Variances(Vector variances);
 	static gtsam::noiseModel::Diagonal* Precisions(Vector precisions);
@@ -697,14 +763,14 @@ class Diagonal {
 	void print(string s) const;
 };
 
-class Isotropic {
+virtual class Isotropic : gtsam::noiseModel::Diagonal {
 	static gtsam::noiseModel::Isotropic* Sigma(size_t dim, double sigma);
 	static gtsam::noiseModel::Isotropic* Variance(size_t dim, double varianace);
 	static gtsam::noiseModel::Isotropic* Precision(size_t dim, double precision);
 	void print(string s) const;
 };
 
-class Unit {
+virtual class Unit : gtsam::noiseModel::Isotropic {
 	static gtsam::noiseModel::Unit* Create(size_t dim);
 	void print(string s) const;
 };
@@ -759,7 +825,7 @@ class GaussianBayesNet {
 	void push_front(gtsam::GaussianConditional* conditional);
 };
 
-class GaussianFactor {
+virtual class GaussianFactor {
 	void print(string s) const;
 	bool equals(const gtsam::GaussianFactor& lf, double tol) const;
 	double error(const gtsam::VectorValues& c) const;
@@ -767,7 +833,7 @@ class GaussianFactor {
 	size_t size() const;
 };
 
-class JacobianFactor {
+virtual class JacobianFactor : gtsam::GaussianFactor {
 	JacobianFactor();
 	JacobianFactor(Vector b_in);
 	JacobianFactor(size_t i1, Matrix A1, Vector b,
@@ -787,7 +853,7 @@ class JacobianFactor {
 	gtsam::GaussianFactor* negate() const;
 };
 
-class HessianFactor {
+virtual class HessianFactor : gtsam::GaussianFactor {
 	HessianFactor(const gtsam::HessianFactor& gf);
 	HessianFactor();
 	HessianFactor(size_t j, Matrix G, Vector g, double f);
@@ -811,22 +877,19 @@ class GaussianFactorGraph {
 	GaussianFactorGraph(const gtsam::GaussianBayesNet& CBN);
 
 	// From FactorGraph
-	void push_back(gtsam::GaussianFactor* factor);
 	void print(string s) const;
 	bool equals(const gtsam::GaussianFactorGraph& lfgraph, double tol) const;
 	size_t size() const;
 	gtsam::GaussianFactor* at(size_t idx) const;
 
 	// Building the graph
-	void add(gtsam::JacobianFactor* factor);
-	// all these won't work as MATLAB can't handle overloading
-//	void add(Vector b);
-//	void add(size_t key1, Matrix A1, Vector b, const gtsam::SharedDiagonal& model);
-//	void add(size_t key1, Matrix A1, size_t key2, Matrix A2, Vector b,
-//			const gtsam::SharedDiagonal& model);
-//	void add(size_t key1, Matrix A1, size_t key2, Matrix A2, size_t key3, Matrix A3,
-//			Vector b, const gtsam::SharedDiagonal& model);
-//	void add(gtsam::HessianFactor* factor);
+	void push_back(gtsam::GaussianFactor* factor);
+	void add(Vector b);
+	void add(size_t key1, Matrix A1, Vector b, const gtsam::noiseModel::Diagonal* model);
+	void add(size_t key1, Matrix A1, size_t key2, Matrix A2, Vector b,
+			const gtsam::noiseModel::Diagonal* model);
+	void add(size_t key1, Matrix A1, size_t key2, Matrix A2, size_t key3, Matrix A3,
+			Vector b, const gtsam::noiseModel::Diagonal* model);
 
 	// error and probability
 	double error(const gtsam::VectorValues& c) const;
@@ -909,29 +972,55 @@ class Ordering {
   void insert(size_t key, size_t order);
   void push_back(size_t key);
   void permuteWithInverse(const gtsam::Permutation& inversePermutation);
-  // FIXME: Wrap InvertedMap as well
-  //InvertedMap invert() const;
+  gtsam::InvertedOrdering invert() const;
+};
+
+#include <gtsam/nonlinear/Ordering.h>
+class InvertedOrdering {
+	InvertedOrdering();
+
+	// FIXME: add bracket operator overload
+
+	bool empty() const;
+	size_t size() const;
+	bool count(size_t index) const; // Use as a boolean function with implicit cast
+
+	void clear();
 };
 
 class NonlinearFactorGraph {
 	NonlinearFactorGraph();
   void print(string s) const;
+	double error(const gtsam::Values& c) const;
+	double probPrime(const gtsam::Values& c) const;
+	gtsam::NonlinearFactor* at(size_t i) const;
+	void add(const gtsam::NonlinearFactor* factor);
+	gtsam::Ordering* orderingCOLAMD(const gtsam::Values& c) const;
+	// Ordering* orderingCOLAMDConstrained(const gtsam::Values& c, const std::map<gtsam::Key,int>& constraints) const;
+	gtsam::GaussianFactorGraph* linearize(const gtsam::Values& c, const gtsam::Ordering& ordering) const;
+	gtsam::NonlinearFactorGraph clone() const;
 };
 
-class NonlinearFactor {
-//	NonlinearFactor(); // FIXME: don't use this - creates an abstract class
+virtual class NonlinearFactor {
 	void print(string s) const;
 	void equals(const gtsam::NonlinearFactor& other, double tol) const;
 	gtsam::KeyVector keys() const;
 	size_t size() const;
-	size_t dim() const; // FIXME: Doesn't link
+	size_t dim() const;
+	double error(const gtsam::Values& c) const;
+	bool active(const gtsam::Values& c) const;
+	gtsam::GaussianFactor* linearize(const gtsam::Values& c, const gtsam::Ordering& ordering) const;
+	gtsam::NonlinearFactor* clone() const;
+	// gtsam::NonlinearFactor* rekey(const gtsam::KeyVector& newKeys) const; //FIXME: Conversion from KeyVector to std::vector does not happen
 };
 
 class Values {
 	Values();
 	size_t size() const;
 	void print(string s) const;
+	void insert(size_t j, const gtsam::Value& value);
 	bool exists(size_t j) const;
+	gtsam::Value at(size_t j) const;
 };
 
 // Actually a FastList<Key>
@@ -1012,13 +1101,13 @@ class LevenbergMarquardtParams {
   LevenbergMarquardtParams();
   void print(string s) const;
 
-  double getMaxIterations() const;
+  size_t getMaxIterations() const;
   double getRelativeErrorTol() const;
   double getAbsoluteErrorTol() const;
   double getErrorTol() const;
   string getVerbosity() const;
 
-  void setMaxIterations(double value);
+  void setMaxIterations(size_t value);
   void setRelativeErrorTol(double value);
   void setAbsoluteErrorTol(double value);
   void setErrorTol(double value);
@@ -1039,6 +1128,59 @@ class LevenbergMarquardtParams {
   void setlambdaUpperBound(double value);
   void setVerbosityLM(string s);
 };
+
+//*************************************************************************
+// Nonlinear factor types
+//*************************************************************************
+template<T = {gtsam::LieVector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera}>
+virtual class PriorFactor : gtsam::NonlinearFactor {
+	PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
+};
+
+
+template<T = {gtsam::LieVector, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
+virtual class BetweenFactor : gtsam::NonlinearFactor {
+	BetweenFactor(size_t key1, size_t key2, const T& relativePose, const gtsam::noiseModel::Base* noiseModel);
+};
+
+
+template<T = {gtsam::LieVector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera}>
+virtual class NonlinearEquality : gtsam::NonlinearFactor {
+	// Constructor - forces exact evaluation
+	NonlinearEquality(size_t j, const T& feasible);
+	// Constructor - allows inexact evaluation
+	NonlinearEquality(size_t j, const T& feasible, double error_gain);
+};
+
+
+template<POSE, POINT>
+virtual class RangeFactor : gtsam::NonlinearFactor {
+	RangeFactor(size_t key1, size_t key2, double measured, const gtsam::noiseModel::Base* noiseModel);
+};
+
+typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Point2> RangeFactor2D;
+typedef gtsam::RangeFactor<gtsam::Pose3, gtsam::Point3> RangeFactor3D;
+typedef gtsam::RangeFactor<gtsam::CalibratedCamera, gtsam::Point3> RangeFactorCalibratedCamera;
+typedef gtsam::RangeFactor<gtsam::SimpleCamera, gtsam::Point3> RangeFactorSimpleCamera;
+
+template<POSE, POINT, ROT>
+virtual class BearingFactor : gtsam::NonlinearFactor {
+	BearingFactor(size_t key1, size_t key2, const ROT& measured, const gtsam::noiseModel::Base* noiseModel);
+};
+
+typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2> BearingFactor2D;
+
+
+#include <ProjectionFactor.h>
+template<POSE, LANDMARK, CALIBRATION>
+virtual class GenericProjectionFactor : gtsam::NonlinearFactor {
+	GenericProjectionFactor(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
+		size_t poseKey, size_t pointKey, const CALIBRATION* k);
+	gtsam::Point2 measured() const;
+	CALIBRATION* calibration() const;
+};
+typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> GenericProjectionFactorCal3_S2;
+typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> GenericProjectionFactorCal3DS2;
 
 }///\namespace gtsam
 

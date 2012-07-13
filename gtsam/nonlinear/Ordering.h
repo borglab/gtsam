@@ -155,7 +155,7 @@ public:
   iterator end() { return order_.end(); }
 
   /// Test if the key exists in the ordering.
-  bool exists(Key key) const { return order_.count(key); }
+  bool exists(Key key) const { return order_.count(key) > 0; }
 
   ///TODO: comment
   std::pair<iterator,bool> tryInsert(Key key, Index order) { return tryInsert(std::make_pair(key,order)); }
@@ -233,7 +233,10 @@ private:
 		ar & BOOST_SERIALIZATION_NVP(order_);
 		ar & BOOST_SERIALIZATION_NVP(nVars_);
 	}
-};
+}; // \class Ordering
+
+// typedef for use with matlab
+typedef Ordering::InvertedMap InvertedOrdering;
 
 /**
  * @class Unordered
