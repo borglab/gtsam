@@ -982,6 +982,7 @@ class NonlinearFactorGraph {
   void print(string s) const;
 	double error(const gtsam::Values& c) const;
 	double probPrime(const gtsam::Values& c) const;
+	gtsam::NonlinearFactor* at(size_t i) const;
 	void add(const gtsam::NonlinearFactor* factor);
 	gtsam::Ordering* orderingCOLAMD(const gtsam::Values& c) const;
 	// Ordering* orderingCOLAMDConstrained(const gtsam::Values& c, const std::map<gtsam::Key,int>& constraints) const;
@@ -1129,6 +1130,15 @@ virtual class PriorFactor : gtsam::NonlinearFactor {
 template<T = {gtsam::LieVector, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
 virtual class BetweenFactor : gtsam::NonlinearFactor {
 	BetweenFactor(size_t key1, size_t key2, const T& relativePose, const gtsam::noiseModel::Base* noiseModel);
+};
+
+
+template<T = {gtsam::LieVector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera}>
+virtual class NonlinearEquality : gtsam::NonlinearFactor {
+	// Constructor - forces exact evaluation
+	NonlinearEquality(size_t j, const T& feasible);
+	// Constructor - allows inexact evaluation
+	NonlinearEquality(size_t j, const T& feasible, double error_gain);
 };
 
 
