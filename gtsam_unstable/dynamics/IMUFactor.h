@@ -70,8 +70,6 @@ public:
 	const Vector& gyro() const { return gyro_; }
 	const Vector& accel() const { return accel_; }
 	Vector z() const { return concatVectors(2, &accel_, &gyro_); }
-	const Key& key1() const { return this->key1_; }
-	const Key& key2() const { return this->key2_; }
 
 	/**
 	 * Error evaluation with optional derivatives - calculates
