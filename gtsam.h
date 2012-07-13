@@ -14,7 +14,7 @@
  *     - void
  *     - Any class with which be copied with boost::make_shared()
  *     - boost::shared_ptr of any object type
-<*   Constructors
+ *   Constructors
  *     - Overloads are supported
  *     - A class with no constructors can be returned from other functions but not allocated directly in MATLAB
  *   Methods
@@ -26,7 +26,7 @@
  *     - Must start with a letter (upper or lowercase) and use the "static" keyword
  *     - The first letter will be made uppercase in the generated MATLAB interface
  *     - Overloads are supported
-=*   Arguments to functions any of
+ *   Arguments to functions any of
  *   	 - Eigen types:       Matrix, Vector
  *   	 - Eigen types and classes as an optionally const reference
  *     - C/C++ basic types: string, bool, size_t, size_t, double, char, unsigned char
@@ -62,6 +62,17 @@
  *     - Virtual classes must have a clone() function in C++ (though it does not have to be included
  *       in the MATLAB interface).  clone() will be called whenever an object copy is needed, instead
  *       of using the copy constructor (which is used for non-virtual objects).
+ *   Templates
+ *     - Basic templates are supported either with an explicit list of types to instantiate,
+ *       e.g. template<T = {gtsam::Pose2, gtsam::Rot2, gtsam::Point3}> class Class1 { ... };
+ *       or with typedefs, e.g.
+ *       template<T, U> class Class2 { ... };
+ *       typedef Class2<Type1, Type2> MyInstantiatedClass;
+ *     - To create new instantiations in other modules, you must copy-and-paste the whole class definition
+ *       into the new module, but use only your new instantiation types.
+ *     - When forward-declaring template instantiations, use the generated/typedefed name, e.g.
+ *       class gtsam::Class1Pose2;
+ *       class gtsam::MyInstantiatedClass;
  */
 
 /**
