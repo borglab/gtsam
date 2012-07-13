@@ -115,21 +115,15 @@ if (GTSAM_BUILD_SHARED_LIBRARY)
 endif(GTSAM_BUILD_SHARED_LIBRARY)
 
 # Create the matlab toolbox for the gtsam library
-if (GTSAM_BUILD_WRAP)
+if (GTSAM_INSTALL_MATLAB_TOOLBOX)
     # Set up codegen
     include(GtsamMatlabWrap)
     
     # TODO: generate these includes programmatically
     # Choose include flags depending on build process
-    if (GTSAM_BUILD_MEX_BIN)
-        set(MEX_INCLUDE_ROOT ${GTSAM_SOURCE_ROOT_DIR})
-        set(MEX_LIB_ROOT ${CMAKE_BINARY_DIR})
-        set(GTSAM_LIB_DIR ${MEX_LIB_ROOT}/gtsam)
-    else()
-        set(MEX_INCLUDE_ROOT ${CMAKE_INSTALL_PREFIX}/include)
-        set(MEX_LIB_ROOT ${CMAKE_INSTALL_PREFIX}/lib)
-        set(GTSAM_LIB_DIR ${MEX_LIB_ROOT})
-    endif()
+	set(MEX_INCLUDE_ROOT ${GTSAM_SOURCE_ROOT_DIR})
+	set(MEX_LIB_ROOT ${CMAKE_BINARY_DIR})
+	set(GTSAM_LIB_DIR ${MEX_LIB_ROOT}/gtsam)
     
     # Generate, build and install toolbox
     set(mexFlags ${GTSAM_BUILD_MEX_BINARY_FLAGS} -I${Boost_INCLUDE_DIR} -I${MEX_INCLUDE_ROOT} -I${MEX_INCLUDE_ROOT}/gtsam -I${MEX_INCLUDE_ROOT}/gtsam/base -I${MEX_INCLUDE_ROOT}/gtsam/geometry -I${MEX_INCLUDE_ROOT}/gtsam/linear -I${MEX_INCLUDE_ROOT}/gtsam/discrete -I${MEX_INCLUDE_ROOT}/gtsam/inference -I${MEX_INCLUDE_ROOT}/gtsam/nonlinear -I${MEX_INCLUDE_ROOT}/gtsam/slam)
