@@ -423,23 +423,27 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
     // Dependency check list
     vector<string> validTypes = GenerateValidTypes(expandedClasses, forward_declarations);
 
+		// Check that all classes have been defined somewhere
+		BOOST_FOREACH(const Class& cls, expandedClasses) {
+			// verify all of the function arguments
+			//TODO:verifyArguments<ArgumentList>(validTypes, cls.constructor.args_list);
+			verifyArguments<StaticMethod>(validTypes, cls.static_methods);
+			verifyArguments<Method>(validTypes, cls.methods);
+
+			// verify function return types
+			verifyReturnTypes<StaticMethod>(validTypes, cls.static_methods);
+			verifyReturnTypes<Method>(validTypes, cls.methods);
+
+			// verify parents
+			if(!cls.qualifiedParent.empty() && std::find(validTypes.begin(), validTypes.end(), wrap::qualifiedName("::", cls.qualifiedParent)) == validTypes.end())
+				throw DependencyMissing(wrap::qualifiedName("::", cls.qualifiedParent), cls.qualifiedName("::"));
+		}
+
 		// Create type attributes table and check validity
 		TypeAttributesTable typeAttributes;
 		typeAttributes.addClasses(expandedClasses);
 		typeAttributes.addForwardDeclarations(forward_declarations);
 		typeAttributes.checkValidity(expandedClasses);
-
-    // Check that all classes have been defined somewhere
-		BOOST_FOREACH(const Class& cls, expandedClasses) {
-      // verify all of the function arguments
-      //TODO:verifyArguments<ArgumentList>(validTypes, cls.constructor.args_list);
-      verifyArguments<StaticMethod>(validTypes, cls.static_methods);
-      verifyArguments<Method>(validTypes, cls.methods);
-
-      // verify function return types
-      verifyReturnTypes<StaticMethod>(validTypes, cls.static_methods);
-      verifyReturnTypes<Method>(validTypes, cls.methods);
-    }
 
 		// Generate includes while avoiding redundant includes
 		generateIncludes(wrapperFile);
