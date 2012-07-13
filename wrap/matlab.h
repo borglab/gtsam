@@ -366,9 +366,11 @@ mxArray* create_object(const std::string& classname, void *pointer, bool isVirtu
 		if(!derivedNameMx)
 			mexErrMsgTxt((
 			"gtsam wrap:  The derived class type " + string(rttiName) + " was not found in the RTTI registry.  "
+			"Try calling 'clear all' twice consecutively - we have seen things not get unloaded properly the "
+			"first time.  If this does not work, this may indicate an inconsistency in your wrap interface file.  "
 			"The most likely cause for this is that a base class was marked virtual in the wrap interface "
-			"definition header file for gtsam or for your module, but a derived type was returned by a C++"
-			"function and that derived type was not marked virtual (or was not specified in the wrap interface"
+			"definition header file for gtsam or for your module, but a derived type was returned by a C++ "
+			"function and that derived type was not marked virtual (or was not specified in the wrap interface "
 			"definition header at all).").c_str());
 		size_t strLen = mxGetN(derivedNameMx);
 		char *buf = new char[strLen+1];
