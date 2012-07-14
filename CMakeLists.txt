@@ -36,12 +36,13 @@ else()
     set(GTSAM_UNSTABLE_AVAILABLE 0)
 endif()
 
+# Check for doxygen availability
+find_package(Doxygen)
 
 # Configurable Options
 option(GTSAM_BUILD_TESTS                 "Enable/Disable building of tests"          ON)
 option(GTSAM_BUILD_TIMING                "Enable/Disable building of timing scripts" ON)
 option(GTSAM_BUILD_EXAMPLES              "Enable/Disable building of examples"       ON)
-option(GTSAM_BUILD_DOCS                  "Enable/Disable building of doxygen docs"   OFF)
 if(GTSAM_UNSTABLE_AVAILABLE)
     option(GTSAM_BUILD_UNSTABLE              "Enable/Disable libgtsam_unstable"          ON)
 endif()
@@ -155,18 +156,40 @@ endif(GTSAM_BUILD_UNSTABLE)
 GtsamMakeConfigFile(GTSAM)
 export(TARGETS ${GTSAM_EXPORTED_TARGETS} FILE GTSAM-exports.cmake)
 
-# add a target to generate API documentation with Doxygen
-if (GTSAM_BUILD_DOCS)
-    find_package(Doxygen)
-    if(DOXYGEN_FOUND)
+# Doxygen documentation configuration
+if (DOXYGEN_FOUND)
+    option(GTSAM_BUILD_DOCS                  "Enable/Disable building of doxygen docs"   OFF)
+    
+    # configure doxygen
+    option(GTSAM_BUILD_DOC_HTML              "Enable/Disable doxygen HTML output"    ON)
+    option(GTSAM_BUILD_DOC_LATEX             "Enable/Disable doxygen LaTeX output"   OFF)
+
+    # add a target to generate API documentation with Doxygen
+    if (GTSAM_BUILD_DOCS)
+        # Convert configuration to YES/NO variables
+        if (GTSAM_BUILD_DOC_HTML)
+            set(GTSAM_BUILD_DOC_HTML_YN "YES")
+        else() 
+            set(GTSAM_BUILD_DOC_HTML_YN "NO")
+        endif()
+        
+        if (GTSAM_BUILD_DOC_LATEX)
+            set(GTSAM_BUILD_DOC_LATEX_YN "YES")
+        else() 
+            set(GTSAM_BUILD_DOC_LATEX_YN "NO")
+        endif()
+    
+        # Generate Doxyfile
         configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
+        
+        # Add target to actually build documentation as configured
         add_custom_target(doc
             ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/doc
             COMMENT "Generating API documentation with Doxygen" VERBATIM
         )
-    endif(DOXYGEN_FOUND)
-endif (GTSAM_BUILD_DOCS)
+    endif()
+endif ()
 
 # Set up CPack
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "GTSAM")
@@ -191,7 +214,9 @@ message(STATUS "Build flags                                               ")
 print_config_flag(${GTSAM_BUILD_TIMING}                "Build Timing scripts           ")
 print_config_flag(${GTSAM_BUILD_EXAMPLES}              "Build Examples                 ")
 print_config_flag(${GTSAM_BUILD_TESTS}                 "Build Tests                    ")
-print_config_flag(${GTSAM_BUILD_DOCS}                   "Build Docs                    ")
+if (DOXYGEN_FOUND)
+    print_config_flag(${GTSAM_BUILD_DOCS}                  "Build Docs                     ")
+endif()
 if(NOT MSVC)
 	print_config_flag(${GTSAM_BUILD_SHARED_LIBRARY}        "Build shared GTSAM Library     ")
 	print_config_flag(${GTSAM_BUILD_STATIC_LIBRARY}        "Build static GTSAM Library     ")
