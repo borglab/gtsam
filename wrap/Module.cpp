@@ -508,7 +508,7 @@ vector<Class> Module::ExpandTypedefInstantiations(const vector<Class>& classes, 
 	}
 
 	// Remove all template classes
-	for(int i = 0; i < expandedClasses.size(); ++i)
+	for(size_t i = 0; i < expandedClasses.size(); ++i)
 		if(!expandedClasses[size_t(i)].templateArgs.empty()) {
 			expandedClasses.erase(expandedClasses.begin() + size_t(i));
 			-- i;
