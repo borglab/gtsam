@@ -32,7 +32,7 @@ PROJECT_NAME           = gtsam
 # This could be handy for archiving the generated documentation or 
 # if some version control system is used.
 
-PROJECT_NUMBER         = 2.0.0
+PROJECT_NUMBER         = @GTSAM_VERSION_MAJOR@.@GTSAM_VERSION_MINOR@.@GTSAM_VERSION_PATCH@
 
 # Using the PROJECT_BRIEF tag one can provide an optional one line description 
 # for a project that appears at the top of each page and should give viewer 
@@ -638,19 +638,19 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories 
 # with spaces.
 
-INPUT                  = ../gtsam/base \
-                         ../gtsam/geometry \
-                         ../gtsam/inference \
-                         ../gtsam/discrete \
-                         ../gtsam/linear \
-                         ../gtsam/nonlinear \
-                         ../gtsam
-#                         ../gtsam/slam \
-#                         ../gtsam_unstable/slam \
-#                         ../gtsam_unstable/base \
-#                         ../gtsam_unstable/geometry \
-#                         ../gtsam_unstable/dynamics \
-#                         ../gtsam_unstable 
+INPUT                  = @PROJECT_SOURCE_DIR@/gtsam/base \
+                         @PROJECT_SOURCE_DIR@/gtsam/geometry \
+                         @PROJECT_SOURCE_DIR@/gtsam/inference \
+                         @PROJECT_SOURCE_DIR@/gtsam/discrete \
+                         @PROJECT_SOURCE_DIR@/gtsam/linear \
+                         @PROJECT_SOURCE_DIR@/gtsam/nonlinear \
+                         @PROJECT_SOURCE_DIR@/gtsam
+#                        @PROJECT_SOURCE_DIR@/gtsam/slam \
+#                        @PROJECT_SOURCE_DIR@/gtsam_unstable/slam \
+#                        @PROJECT_SOURCE_DIR@/gtsam_unstable/base \
+#                        @PROJECT_SOURCE_DIR@/gtsam_unstable/geometry \
+#                        @PROJECT_SOURCE_DIR@/gtsam_unstable/dynamics \
+#                        @PROJECT_SOURCE_DIR@/gtsam_unstable 
 
 # This tag can be used to specify the character encoding of the source files 
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is 

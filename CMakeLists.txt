@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 2.6)
 
 # Set the version number for the library
 set (GTSAM_VERSION_MAJOR 2)
-set (GTSAM_VERSION_MINOR 0)
+set (GTSAM_VERSION_MINOR 1)
 set (GTSAM_VERSION_PATCH 0)
 
 # Set the default install path to home
@@ -41,6 +41,7 @@ endif()
 option(GTSAM_BUILD_TESTS                 "Enable/Disable building of tests"          ON)
 option(GTSAM_BUILD_TIMING                "Enable/Disable building of timing scripts" ON)
 option(GTSAM_BUILD_EXAMPLES              "Enable/Disable building of examples"       ON)
+option(GTSAM_BUILD_DOCS                  "Enable/Disable building of doxygen docs"   OFF)
 if(GTSAM_UNSTABLE_AVAILABLE)
     option(GTSAM_BUILD_UNSTABLE              "Enable/Disable libgtsam_unstable"          ON)
 endif()
@@ -154,6 +155,19 @@ endif(GTSAM_BUILD_UNSTABLE)
 GtsamMakeConfigFile(GTSAM)
 export(TARGETS ${GTSAM_EXPORTED_TARGETS} FILE GTSAM-exports.cmake)
 
+# add a target to generate API documentation with Doxygen
+if (GTSAM_BUILD_DOCS)
+    find_package(Doxygen)
+    if(DOXYGEN_FOUND)
+        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
+        add_custom_target(doc
+            ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/doc
+            COMMENT "Generating API documentation with Doxygen" VERBATIM
+        )
+    endif(DOXYGEN_FOUND)
+endif (GTSAM_BUILD_DOCS)
+
 # Set up CPack
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "GTSAM")
 set(CPACK_PACKAGE_VENDOR "Frank Dellaert, Georgia Institute of Technology")
@@ -177,6 +191,7 @@ message(STATUS "Build flags                                               ")
 print_config_flag(${GTSAM_BUILD_TIMING}                "Build Timing scripts           ")
 print_config_flag(${GTSAM_BUILD_EXAMPLES}              "Build Examples                 ")
 print_config_flag(${GTSAM_BUILD_TESTS}                 "Build Tests                    ")
+print_config_flag(${GTSAM_BUILD_DOCS}                   "Build Docs                    ")
 if(NOT MSVC)
 	print_config_flag(${GTSAM_BUILD_SHARED_LIBRARY}        "Build shared GTSAM Library     ")
 	print_config_flag(${GTSAM_BUILD_STATIC_LIBRARY}        "Build static GTSAM Library     ")
