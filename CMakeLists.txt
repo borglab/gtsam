@@ -188,6 +188,15 @@ if (DOXYGEN_FOUND)
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/doc
             COMMENT "Generating API documentation with Doxygen" VERBATIM
         )
+        
+        # Clean target
+        add_custom_target(doc_clean
+            COMMAND
+                cmake -E remove_directory ${CMAKE_CURRENT_SOURCE_DIR}/doc/latex
+            COMMAND
+                cmake -E remove_directory ${CMAKE_CURRENT_SOURCE_DIR}/doc/html
+            COMMENT "Removing Doxygen documentation"
+        )
     endif()
 endif ()
 
