@@ -158,7 +158,7 @@ export(TARGETS ${GTSAM_EXPORTED_TARGETS} FILE GTSAM-exports.cmake)
 
 # Doxygen documentation configuration
 if (DOXYGEN_FOUND)
-    option(GTSAM_BUILD_DOCS                  "Enable/Disable building of doxygen docs"   OFF)
+    option(GTSAM_BUILD_DOCS                  "Enable/Disable building of doxygen docs"   ON)
     
     # configure doxygen
     option(GTSAM_BUILD_DOC_HTML              "Enable/Disable doxygen HTML output"    ON)
