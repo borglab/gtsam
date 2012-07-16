@@ -96,7 +96,7 @@ namespace gtsam {
 		 * @param pose2 specifies the location and viewing direction
 		 * (theta 0 = looking in direction of positive X axis)
 		 */
-		static CalibratedCamera level(const Pose2& pose2, double height);
+		static CalibratedCamera Level(const Pose2& pose2, double height);
 
 		/// @}
 		/// @name Manifold

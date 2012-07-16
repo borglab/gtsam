@@ -66,7 +66,7 @@ namespace gtsam {
      * (theta 0 = looking in direction of positive X axis)
      * @param height camera height
      */
-    static PinholeCamera level(const Calibration &K, const Pose2& pose2, double height) {
+    static PinholeCamera Level(const Calibration &K, const Pose2& pose2, double height) {
       const double st = sin(pose2.theta()), ct = cos(pose2.theta());
       const Point3 x(st, -ct, 0), y(0, 0, -1), z(ct, st, 0);
       const Rot3 wRc(x, y, z);
@@ -76,8 +76,8 @@ namespace gtsam {
     }
 
     /// PinholeCamera::level with default calibration
-    static PinholeCamera level(const Pose2& pose2, double height) {
-      return PinholeCamera::level(Calibration(), pose2, height);
+    static PinholeCamera Level(const Pose2& pose2, double height) {
+      return PinholeCamera::Level(Calibration(), pose2, height);
     }
 
     /**
@@ -89,7 +89,7 @@ namespace gtsam {
      *        doesn't need to be on the image plane nor orthogonal to the viewing axis
      * @param K optional calibration parameter
      */
-    static PinholeCamera lookat(const Point3& eye, const Point3& target, const Point3& upVector, const Calibration& K = Calibration()) {
+    static PinholeCamera Lookat(const Point3& eye, const Point3& target, const Point3& upVector, const Calibration& K = Calibration()) {
       Point3 zc = target-eye;
       zc = zc/zc.norm();
       Point3 xc = (-upVector).cross(zc);  // minus upVector since yc is pointing down

@@ -67,7 +67,7 @@ struct VisualSLAMExampleData {
 		double r = 30.0;
 		for (int i=0; i<n; ++i, theta += 2*M_PI/n) {
 			gtsam::Point3 C = gtsam::Point3(r*cos(theta), r*sin(theta), 0.0);
-			gtsam::SimpleCamera camera = gtsam::SimpleCamera::lookat(C, gtsam::Point3(), gtsam::Point3(0,0,1));
+			gtsam::SimpleCamera camera = gtsam::SimpleCamera::Lookat(C, gtsam::Point3(), gtsam::Point3(0,0,1));
 			data.poses.push_back(camera.pose());
 		}
 		data.odometry = data.poses[0].between(data.poses[1]);

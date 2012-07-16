@@ -499,7 +499,7 @@ virtual class CalibratedCamera : gtsam::Value {
 	CalibratedCamera();
 	CalibratedCamera(const gtsam::Pose3& pose);
 	CalibratedCamera(const Vector& v);
-  gtsam::CalibratedCamera level(const gtsam::Pose2& pose2, double height);
+  static gtsam::CalibratedCamera Level(const gtsam::Pose2& pose2, double height);
 
   // Testable
 	void print(string s) const;
@@ -529,10 +529,10 @@ virtual class SimpleCamera : gtsam::Value {
 	SimpleCamera();
   SimpleCamera(const gtsam::Pose3& pose);
   SimpleCamera(const gtsam::Pose3& pose, const gtsam::Cal3_S2& K);
-  static gtsam::SimpleCamera level(const gtsam::Cal3_S2& K,
+  static gtsam::SimpleCamera Level(const gtsam::Cal3_S2& K,
       const gtsam::Pose2& pose, double height);
-  static gtsam::SimpleCamera level(const gtsam::Pose2& pose, double height); // FIXME overload
-  static gtsam::SimpleCamera lookat(const gtsam::Point3& eye,
+  static gtsam::SimpleCamera Level(const gtsam::Pose2& pose, double height); // FIXME overload
+  static gtsam::SimpleCamera Lookat(const gtsam::Point3& eye,
       const gtsam::Point3& target, const gtsam::Point3& upVector,
       const gtsam::Cal3_S2& K);
 

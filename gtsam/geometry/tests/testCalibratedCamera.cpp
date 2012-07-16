@@ -52,7 +52,7 @@ TEST( CalibratedCamera, level1)
 {
 	// Create a level camera, looking in X-direction
 	Pose2 pose2(0.1,0.2,0);
-	CalibratedCamera camera = CalibratedCamera::level(pose2, 0.3);
+	CalibratedCamera camera = CalibratedCamera::Level(pose2, 0.3);
 
 	// expected
 	Point3 x(0,-1,0),y(0,0,-1),z(1,0,0);
@@ -66,7 +66,7 @@ TEST( CalibratedCamera, level2)
 {
 	// Create a level camera, looking in Y-direction
 	Pose2 pose2(0.4,0.3,M_PI/2.0);
-	CalibratedCamera camera = CalibratedCamera::level(pose2, 0.1);
+	CalibratedCamera camera = CalibratedCamera::Level(pose2, 0.1);
 
 	// expected
 	Point3 x(1,0,0),y(0,0,-1),z(0,1,0);

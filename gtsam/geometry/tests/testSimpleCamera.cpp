@@ -54,7 +54,7 @@ TEST( SimpleCamera, level2)
 {
 	// Create a level camera, looking in Y-direction
 	Pose2 pose2(0.4,0.3,M_PI/2.0);
-	SimpleCamera camera = SimpleCamera::level(K, pose2, 0.1);
+	SimpleCamera camera = SimpleCamera::Level(K, pose2, 0.1);
 
 	// expected
 	Point3 x(1,0,0),y(0,0,-1),z(0,1,0);
@@ -68,7 +68,7 @@ TEST( SimpleCamera, lookat)
 {
 	// Create a level camera, looking in Y-direction
 	Point3 C(10.0,0.0,0.0);
-	SimpleCamera camera = SimpleCamera::lookat(C, Point3(), Point3(0.0,0.0,1.0));
+	SimpleCamera camera = SimpleCamera::Lookat(C, Point3(), Point3(0.0,0.0,1.0));
 
 	// expected
 	Point3 xc(0,1,0),yc(0,0,-1),zc(-1,0,0);
@@ -76,7 +76,7 @@ TEST( SimpleCamera, lookat)
   CHECK(assert_equal( camera.pose(), expected));
 
   Point3 C2(30.0,0.0,10.0);
-  SimpleCamera camera2 = SimpleCamera::lookat(C2, Point3(), Point3(0.0,0.0,1.0));
+  SimpleCamera camera2 = SimpleCamera::Lookat(C2, Point3(), Point3(0.0,0.0,1.0));
 
   Matrix R = camera2.pose().rotation().matrix();
   Matrix I = trans(R)*R;
