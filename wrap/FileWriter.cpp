@@ -35,7 +35,7 @@ void FileWriter::emit(bool add_header, bool force_overwrite) const {
 	// Only write a file if it is new, an update, or overwrite is forced
 	string new_contents = oss.str();
 	if (force_overwrite || !file_exists || existing_contents != new_contents) {
-		ofstream ofs(filename_.c_str());
+		ofstream ofs(filename_.c_str(), ios::binary); // Binary to use LF line endings instead of CRLF
 		if (!ofs) throw CantOpenFile(filename_);
 
 		// header
