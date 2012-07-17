@@ -126,6 +126,34 @@ virtual class LieVector : gtsam::Value {
 	static Vector Logmap(const gtsam::LieVector& p);
 };
 
+virtual class LieMatrix : gtsam::Value {
+	// Standard constructors
+	LieMatrix();
+	LieMatrix(Matrix v);
+
+	// Standard interface
+	Vector matrix() const;
+
+	// Testable
+	void print(string s) const;
+	bool equals(const gtsam::LieMatrix& expected, double tol) const;
+
+	// Group
+	static gtsam::LieMatrix identity();
+	gtsam::LieMatrix inverse() const;
+	gtsam::LieMatrix compose(const gtsam::LieMatrix& p) const;
+	gtsam::LieMatrix between(const gtsam::LieMatrix& l2) const;
+
+	// Manifold
+	size_t dim() const;
+	gtsam::LieMatrix retract(Vector v) const;
+	Vector localCoordinates(const gtsam::LieMatrix & t2) const;
+
+	// Lie group
+	static gtsam::LieMatrix Expmap(Vector v);
+	static Vector Logmap(const gtsam::LieMatrix& p);
+};
+
 //*************************************************************************
 // geometry
 //*************************************************************************
