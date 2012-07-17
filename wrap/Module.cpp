@@ -463,12 +463,9 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 	void Module::finish_wrapper(FileWriter& file, const std::vector<std::string>& functionNames) const {
 		file.oss << "void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])\n";
 		file.oss << "{\n";
-		file.oss << "  mstream mout;\n"; // Send stdout to MATLAB console, see matlab.h
+		file.oss << "  mstream mout;\n"; // Send stdout to MATLAB console
 		file.oss << "  std::streambuf *outbuf = std::cout.rdbuf(&mout);\n\n";
-		file.oss << "  if(!_RTTIRegister_" << name << "_done) {\n";
-		file.oss << "    _" << name << "_RTTIRegister();\n";
-		file.oss << "    _RTTIRegister_" << name << "_done = true;\n";
-		file.oss << "  }\n";
+		file.oss << "  _" << name << "_RTTIRegister();\n\n";
 		file.oss << "  int id = unwrap<int>(in[0]);\n\n";
 		file.oss << "  switch(id) {\n";
 		for(size_t id = 0; id < functionNames.size(); ++id) {
@@ -478,7 +475,7 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 		}
 		file.oss << "  }\n";
 		file.oss << "\n";
-		file.oss << "  std::cout.rdbuf(outbuf);\n"; // Restore cout, see matlab.h
+		file.oss << "  std::cout.rdbuf(outbuf);\n"; // Restore cout
 		file.oss << "}\n";
 	}
 
@@ -538,50 +535,70 @@ void Module::WriteCollectorsAndCleanupFcn(FileWriter& wrapperFile, const std::st
 	}
 
 	// generate mexAtExit cleanup function
-	wrapperFile.oss << "\nvoid _deleteAllObjects()\n";
-	wrapperFile.oss << "{\n";
+	wrapperFile.oss <<
+		"\nvoid _deleteAllObjects()\n"
+		"{\n"
+		"  mstream mout;\n" // Send stdout to MATLAB console
+		"  std::streambuf *outbuf = std::cout.rdbuf(&mout);\n\n"
+		"  bool anyDeleted = false;\n";
 	BOOST_FOREACH(const Class& cls, classes) {
 		const string matlabName = cls.qualifiedName();
 		const string cppName = cls.qualifiedName("::");
 		const string collectorType = "Collector_" + matlabName;
 		const string collectorName = "collector_" + matlabName;
-		wrapperFile.oss << "  for(" << collectorType << "::iterator iter = " << collectorName << ".begin();\n";
-		wrapperFile.oss << "      iter != " << collectorName << ".end(); ) {\n";
-		wrapperFile.oss << "    delete *iter;\n";
-		wrapperFile.oss << "    " << collectorName << ".erase(iter++);\n";
-		wrapperFile.oss << "  }\n";
+		wrapperFile.oss <<
+			"  for(" << collectorType << "::iterator iter = " << collectorName << ".begin();\n"
+			"      iter != " << collectorName << ".end(); ) {\n"
+			"    delete *iter;\n"
+			"    " << collectorName << ".erase(iter++);\n"
+			"    anyDeleted = true;\n"
+			"  }\n";
 	}
-	wrapperFile.oss << "}\n\n";
+	wrapperFile.oss <<
+		"  if(anyDeleted)\n"
+		"    cout <<\n"
+		"      \"WARNING:  Wrap modules with variables in the workspace have been reloaded due to\\n\"\n"
+		"      \"calling destructors, call 'clear all' again if you plan to now recompile a wrap\\n\"\n"
+		"      \"module, so that your recompiled module is used instead of the old one.\" << endl;\n"
+		"  std::cout.rdbuf(outbuf);\n" // Restore cout
+		"}\n\n";
 }
 
 /* ************************************************************************* */
 void Module::WriteRTTIRegistry(FileWriter& wrapperFile, const std::string& moduleName, const std::vector<Class>& classes) {
 	wrapperFile.oss <<
-		"static bool _RTTIRegister_" << moduleName << "_done = false;\n"
 		"void _" << moduleName << "_RTTIRegister() {\n"
-		"  std::map<std::string, std::string> types;\n";
+		"  const mxArray *alreadyCreated = mexGetVariablePtr(\"global\", \"gtsam_" + moduleName + "_rttiRegistry_created\");\n"
+		"  if(!alreadyCreated) {\n"
+		"    std::map<std::string, std::string> types;\n";
 	BOOST_FOREACH(const Class& cls, classes) {
 		if(cls.isVirtual)
 			wrapperFile.oss <<
-			"  types.insert(std::make_pair(typeid(" << cls.qualifiedName("::") << ").name(), \"" << cls.qualifiedName() << "\"));\n";
+			"    types.insert(std::make_pair(typeid(" << cls.qualifiedName("::") << ").name(), \"" << cls.qualifiedName() << "\"));\n";
 	}
 	wrapperFile.oss << "\n";
 
 	wrapperFile.oss <<
-		"  mxArray *registry = mexGetVariable(\"global\", \"gtsamwrap_rttiRegistry\");\n"
-		"  if(!registry)\n"
-		"    registry = mxCreateStructMatrix(1, 1, 0, NULL);\n"
-		"  typedef std::pair<std::string, std::string> StringPair;\n"
-		"  BOOST_FOREACH(const StringPair& rtti_matlab, types) {\n"
-		"    int fieldId = mxAddField(registry, rtti_matlab.first.c_str());\n"
-		"    if(fieldId < 0)\n"
+		"    mxArray *registry = mexGetVariable(\"global\", \"gtsamwrap_rttiRegistry\");\n"
+		"    if(!registry)\n"
+		"      registry = mxCreateStructMatrix(1, 1, 0, NULL);\n"
+		"    typedef std::pair<std::string, std::string> StringPair;\n"
+		"    BOOST_FOREACH(const StringPair& rtti_matlab, types) {\n"
+		"      int fieldId = mxAddField(registry, rtti_matlab.first.c_str());\n"
+		"      if(fieldId < 0)\n"
+		"        mexErrMsgTxt(\"gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly\");\n"
+		"      mxArray *matlabName = mxCreateString(rtti_matlab.second.c_str());\n"
+		"      mxSetFieldByNumber(registry, 0, fieldId, matlabName);\n"
+		"    }\n"
+		"    if(mexPutVariable(\"global\", \"gtsamwrap_rttiRegistry\", registry) != 0)\n"
 		"      mexErrMsgTxt(\"gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly\");\n"
-		"    mxArray *matlabName = mxCreateString(rtti_matlab.second.c_str());\n"
-		"    mxSetFieldByNumber(registry, 0, fieldId, matlabName);\n"
+		"    mxDestroyArray(registry);\n"
+		"    \n"
+		"    mxArray *newAlreadyCreated = mxCreateNumericMatrix(0, 0, mxINT8_CLASS, mxREAL);\n"
+		"    if(mexPutVariable(\"global\", \"gtsam_" + moduleName + "_rttiRegistry_created\", newAlreadyCreated) != 0)\n"
+		"      mexErrMsgTxt(\"gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly\");\n"
+		"    mxDestroyArray(newAlreadyCreated);\n"
 		"  }\n"
-		"  if(mexPutVariable(\"global\", \"gtsamwrap_rttiRegistry\", registry) != 0)\n"
-		"    mexErrMsgTxt(\"gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly\");\n"
-		"  mxDestroyArray(registry);\n"
 		"}\n"
 		"\n";
 }
