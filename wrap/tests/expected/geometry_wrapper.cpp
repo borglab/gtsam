@@ -15,41 +15,61 @@ static Collector_Test collector_Test;
 
 void _deleteAllObjects()
 {
+  mstream mout;
+  std::streambuf *outbuf = std::cout.rdbuf(&mout);
+
+  bool anyDeleted = false;
   for(Collector_Point2::iterator iter = collector_Point2.begin();
       iter != collector_Point2.end(); ) {
     delete *iter;
     collector_Point2.erase(iter++);
+    anyDeleted = true;
   }
   for(Collector_Point3::iterator iter = collector_Point3.begin();
       iter != collector_Point3.end(); ) {
     delete *iter;
     collector_Point3.erase(iter++);
+    anyDeleted = true;
   }
   for(Collector_Test::iterator iter = collector_Test.begin();
       iter != collector_Test.end(); ) {
     delete *iter;
     collector_Test.erase(iter++);
+    anyDeleted = true;
   }
+  if(anyDeleted)
+    cout <<
+      "WARNING:  Wrap modules with variables in the workspace have been reloaded due to\n"
+      "calling destructors, call 'clear all' again if you plan to now recompile a wrap\n"
+      "module, so that your recompiled module is used instead of the old one." << endl;
+  std::cout.rdbuf(outbuf);
 }
 
-static bool _RTTIRegister_geometry_done = false;
 void _geometry_RTTIRegister() {
-  std::map<std::string, std::string> types;
+  const mxArray *alreadyCreated = mexGetVariablePtr("global", "gtsam_geometry_rttiRegistry_created");
+  if(!alreadyCreated) {
+    std::map<std::string, std::string> types;
 
-  mxArray *registry = mexGetVariable("global", "gtsamwrap_rttiRegistry");
-  if(!registry)
-    registry = mxCreateStructMatrix(1, 1, 0, NULL);
-  typedef std::pair<std::string, std::string> StringPair;
-  BOOST_FOREACH(const StringPair& rtti_matlab, types) {
-    int fieldId = mxAddField(registry, rtti_matlab.first.c_str());
-    if(fieldId < 0)
+    mxArray *registry = mexGetVariable("global", "gtsamwrap_rttiRegistry");
+    if(!registry)
+      registry = mxCreateStructMatrix(1, 1, 0, NULL);
+    typedef std::pair<std::string, std::string> StringPair;
+    BOOST_FOREACH(const StringPair& rtti_matlab, types) {
+      int fieldId = mxAddField(registry, rtti_matlab.first.c_str());
+      if(fieldId < 0)
+        mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly");
+      mxArray *matlabName = mxCreateString(rtti_matlab.second.c_str());
+      mxSetFieldByNumber(registry, 0, fieldId, matlabName);
+    }
+    if(mexPutVariable("global", "gtsamwrap_rttiRegistry", registry) != 0)
       mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly");
-    mxArray *matlabName = mxCreateString(rtti_matlab.second.c_str());
-    mxSetFieldByNumber(registry, 0, fieldId, matlabName);
+    mxDestroyArray(registry);
+    
+    mxArray *newAlreadyCreated = mxCreateNumericMatrix(0, 0, mxINT8_CLASS, mxREAL);
+    if(mexPutVariable("global", "gtsam_geometry_rttiRegistry_created", newAlreadyCreated) != 0)
+      mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly");
+    mxDestroyArray(newAlreadyCreated);
   }
-  if(mexPutVariable("global", "gtsamwrap_rttiRegistry", registry) != 0)
-    mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly");
-  mxDestroyArray(registry);
 }
 
 void Point2_collectorInsertAndMakeBase_0(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -481,10 +501,8 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
   mstream mout;
   std::streambuf *outbuf = std::cout.rdbuf(&mout);
 
-  if(!_RTTIRegister_geometry_done) {
-    _geometry_RTTIRegister();
-    _RTTIRegister_geometry_done = true;
-  }
+  _geometry_RTTIRegister();
+
   int id = unwrap<int>(in[0]);
 
   switch(id) {

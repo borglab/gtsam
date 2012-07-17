@@ -25,56 +25,79 @@ static Collector_ClassD collector_ClassD;
 
 void _deleteAllObjects()
 {
+  mstream mout;
+  std::streambuf *outbuf = std::cout.rdbuf(&mout);
+
+  bool anyDeleted = false;
   for(Collector_ns1ClassA::iterator iter = collector_ns1ClassA.begin();
       iter != collector_ns1ClassA.end(); ) {
     delete *iter;
     collector_ns1ClassA.erase(iter++);
+    anyDeleted = true;
   }
   for(Collector_ns1ClassB::iterator iter = collector_ns1ClassB.begin();
       iter != collector_ns1ClassB.end(); ) {
     delete *iter;
     collector_ns1ClassB.erase(iter++);
+    anyDeleted = true;
   }
   for(Collector_ns2ClassA::iterator iter = collector_ns2ClassA.begin();
       iter != collector_ns2ClassA.end(); ) {
     delete *iter;
     collector_ns2ClassA.erase(iter++);
+    anyDeleted = true;
   }
   for(Collector_ns2ns3ClassB::iterator iter = collector_ns2ns3ClassB.begin();
       iter != collector_ns2ns3ClassB.end(); ) {
     delete *iter;
     collector_ns2ns3ClassB.erase(iter++);
+    anyDeleted = true;
   }
   for(Collector_ns2ClassC::iterator iter = collector_ns2ClassC.begin();
       iter != collector_ns2ClassC.end(); ) {
     delete *iter;
     collector_ns2ClassC.erase(iter++);
+    anyDeleted = true;
   }
   for(Collector_ClassD::iterator iter = collector_ClassD.begin();
       iter != collector_ClassD.end(); ) {
     delete *iter;
     collector_ClassD.erase(iter++);
+    anyDeleted = true;
   }
+  if(anyDeleted)
+    cout <<
+      "WARNING:  Wrap modules with variables in the workspace have been reloaded due to\n"
+      "calling destructors, call 'clear all' again if you plan to now recompile a wrap\n"
+      "module, so that your recompiled module is used instead of the old one." << endl;
+  std::cout.rdbuf(outbuf);
 }
 
-static bool _RTTIRegister_testNamespaces_done = false;
 void _testNamespaces_RTTIRegister() {
-  std::map<std::string, std::string> types;
+  const mxArray *alreadyCreated = mexGetVariablePtr("global", "gtsam_testNamespaces_rttiRegistry_created");
+  if(!alreadyCreated) {
+    std::map<std::string, std::string> types;
 
-  mxArray *registry = mexGetVariable("global", "gtsamwrap_rttiRegistry");
-  if(!registry)
-    registry = mxCreateStructMatrix(1, 1, 0, NULL);
-  typedef std::pair<std::string, std::string> StringPair;
-  BOOST_FOREACH(const StringPair& rtti_matlab, types) {
-    int fieldId = mxAddField(registry, rtti_matlab.first.c_str());
-    if(fieldId < 0)
+    mxArray *registry = mexGetVariable("global", "gtsamwrap_rttiRegistry");
+    if(!registry)
+      registry = mxCreateStructMatrix(1, 1, 0, NULL);
+    typedef std::pair<std::string, std::string> StringPair;
+    BOOST_FOREACH(const StringPair& rtti_matlab, types) {
+      int fieldId = mxAddField(registry, rtti_matlab.first.c_str());
+      if(fieldId < 0)
+        mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly");
+      mxArray *matlabName = mxCreateString(rtti_matlab.second.c_str());
+      mxSetFieldByNumber(registry, 0, fieldId, matlabName);
+    }
+    if(mexPutVariable("global", "gtsamwrap_rttiRegistry", registry) != 0)
       mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly");
-    mxArray *matlabName = mxCreateString(rtti_matlab.second.c_str());
-    mxSetFieldByNumber(registry, 0, fieldId, matlabName);
+    mxDestroyArray(registry);
+    
+    mxArray *newAlreadyCreated = mxCreateNumericMatrix(0, 0, mxINT8_CLASS, mxREAL);
+    if(mexPutVariable("global", "gtsam_testNamespaces_rttiRegistry_created", newAlreadyCreated) != 0)
+      mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly");
+    mxDestroyArray(newAlreadyCreated);
   }
-  if(mexPutVariable("global", "gtsamwrap_rttiRegistry", registry) != 0)
-    mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly");
-  mxDestroyArray(registry);
 }
 
 void ns1ClassA_collectorInsertAndMakeBase_0(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -315,10 +338,8 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
   mstream mout;
   std::streambuf *outbuf = std::cout.rdbuf(&mout);
 
-  if(!_RTTIRegister_testNamespaces_done) {
-    _testNamespaces_RTTIRegister();
-    _RTTIRegister_testNamespaces_done = true;
-  }
+  _testNamespaces_RTTIRegister();
+
   int id = unwrap<int>(in[0]);
 
   switch(id) {
