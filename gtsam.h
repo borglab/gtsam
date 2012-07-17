@@ -46,11 +46,9 @@
  *   	 - To use a namespace (e.g., generate a "using namespace x" line in cpp files), add "using namespace x;"
  *   	 - This declaration applies to all classes *after* the declaration, regardless of brackets
  *   Includes in C++ wrappers
- *   	 - By default, the include will be <[classname].h>
- *   	 - All namespaces must have angle brackets: <path>
- *   	 - To override, add a full include statement just before the class statement
- *   	 - An override include can be added for a namespace by placing it just before the namespace statement
- *   	 - Both classes and namespace accept exactly one namespace
+ *     - All includes will be collected and added in a single file
+ *     - All namespaces must have angle brackets: <path>
+ *     - No default includes will be added
  *   Using classes defined in other modules
  *     - If you are using a class 'OtherClass' not wrapped in this definition file, add "class OtherClass;" to avoid a dependency error
  *   Virtual inheritance
@@ -98,6 +96,7 @@ virtual class Value {
 	size_t dim() const;
 };
 
+#include <gtsam/base/LieVector.h>
 virtual class LieVector : gtsam::Value {
 	// Standard constructors
 	LieVector();
@@ -126,6 +125,7 @@ virtual class LieVector : gtsam::Value {
 	static Vector Logmap(const gtsam::LieVector& p);
 };
 
+#include <gtsam/base/LieMatrix.h>
 virtual class LieMatrix : gtsam::Value {
 	// Standard constructors
 	LieMatrix();
@@ -472,6 +472,7 @@ virtual class Cal3_S2 : gtsam::Value {
   Matrix matrix_inverse() const;
 };
 
+#include <gtsam/geometry/Cal3DS2.h>
 virtual class Cal3DS2 : gtsam::Value {
 	// Standard Constructors
 	Cal3DS2();
@@ -715,6 +716,7 @@ class SymbolicFactorGraph {
   //FastSet<Index> keys() const;
 };
 
+#include <gtsam/inference/SymbolicSequentialSolver.h>
 class SymbolicSequentialSolver {
   // Standard Constructors and Named Constructors
   SymbolicSequentialSolver(const gtsam::SymbolicFactorGraph& factorGraph);
@@ -728,6 +730,7 @@ class SymbolicSequentialSolver {
   gtsam::SymbolicBayesNet* eliminate() const;
 };
 
+#include <gtsam/inference/SymbolicMultifrontalSolver.h>
 class SymbolicMultifrontalSolver {
   // Standard Constructors and Named Constructors
   SymbolicMultifrontalSolver(const gtsam::SymbolicFactorGraph& factorGraph);
@@ -776,7 +779,6 @@ namespace noiseModel {
 virtual class Base {
 };
 
-#include <gtsam/linear/NoiseModel.h>
 virtual class Gaussian : gtsam::noiseModel::Base {
 	static gtsam::noiseModel::Gaussian* SqrtInformation(Matrix R);
 	static gtsam::noiseModel::Gaussian* Covariance(Matrix R);
@@ -784,7 +786,6 @@ virtual class Gaussian : gtsam::noiseModel::Base {
 	void print(string s) const;
 };
 
-#include <gtsam/linear/NoiseModel.h>
 virtual class Diagonal : gtsam::noiseModel::Gaussian {
 	static gtsam::noiseModel::Diagonal* Sigmas(Vector sigmas);
 	static gtsam::noiseModel::Diagonal* Variances(Vector variances);
@@ -793,7 +794,6 @@ virtual class Diagonal : gtsam::noiseModel::Gaussian {
 	void print(string s) const;
 };
 
-#include <gtsam/linear/NoiseModel.h>
 virtual class Isotropic : gtsam::noiseModel::Diagonal {
 	static gtsam::noiseModel::Isotropic* Sigma(size_t dim, double sigma);
 	static gtsam::noiseModel::Isotropic* Variance(size_t dim, double varianace);
@@ -801,14 +801,13 @@ virtual class Isotropic : gtsam::noiseModel::Diagonal {
 	void print(string s) const;
 };
 
-#include <gtsam/linear/NoiseModel.h>
 virtual class Unit : gtsam::noiseModel::Isotropic {
 	static gtsam::noiseModel::Unit* Create(size_t dim);
 	void print(string s) const;
 };
 }///\namespace noiseModel
 
-
+#include <gtsam/linear/Sampler.h>
 class Sampler {
 	Sampler(gtsam::noiseModel::Diagonal* model, int seed);
 	Sampler(Vector sigmas, int seed);
@@ -948,6 +947,7 @@ class GaussianISAM {
   gtsam::GaussianBayesNet* jointBayesNet(size_t key1, size_t key2) const;
 };
 
+#include <gtsam/linear/GaussianSequentialSolver.h>
 class GaussianSequentialSolver {
 	GaussianSequentialSolver(const gtsam::GaussianFactorGraph& graph,
 			bool useQR);
@@ -957,6 +957,7 @@ class GaussianSequentialSolver {
 	Matrix marginalCovariance(size_t j) const;
 };
 
+#include <gtsam/linear/KalmanFilter.h>
 class KalmanFilter {
 	KalmanFilter(size_t n);
 	// gtsam::GaussianDensity* init(Vector x0, const gtsam::SharedDiagonal& P0);
@@ -979,6 +980,7 @@ class KalmanFilter {
 // nonlinear
 //*************************************************************************
 
+#include <gtsam/nonlinear/Symbol.h>
 class Symbol {
 	Symbol(char c, size_t j);
 	Symbol(size_t k);
@@ -988,6 +990,7 @@ class Symbol {
 	char chr() const;
 };
 
+#include <gtsam/nonlinear/Ordering.h>
 class Ordering {
   // Standard Constructors and Named Constructors
   Ordering();
@@ -1007,7 +1010,6 @@ class Ordering {
   gtsam::InvertedOrdering invert() const;
 };
 
-#include <gtsam/nonlinear/Ordering.h>
 class InvertedOrdering {
 	InvertedOrdering();
 
@@ -1203,7 +1205,7 @@ virtual class BearingFactor : gtsam::NonlinearFactor {
 typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2> BearingFactor2D;
 
 
-#include <ProjectionFactor.h>
+#include <gtsam/slam/ProjectionFactor.h>
 template<POSE, LANDMARK, CALIBRATION>
 virtual class GenericProjectionFactor : gtsam::NonlinearFactor {
 	GenericProjectionFactor(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,

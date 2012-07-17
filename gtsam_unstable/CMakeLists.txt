@@ -89,7 +89,7 @@ if (GTSAM_INSTALL_MATLAB_TOOLBOX)
 	set(GTSAM_UNSTABLE_LIB_DIR ${MEX_LIB_ROOT}/gtsam_unstable)
     
     # Generate, build and install toolbox
-    set(mexFlags -I${Boost_INCLUDE_DIR} -I${MEX_INCLUDE_ROOT} -I${MEX_INCLUDE_ROOT}/gtsam_unstable -I${MEX_INCLUDE_ROOT}/gtsam_unstable/dynamics -I${MEX_INCLUDE_ROOT}/gtsam_unstable/discrete)
+    set(mexFlags -I${Boost_INCLUDE_DIR} -I${MEX_INCLUDE_ROOT})
     
     # Macro to handle details of setting up targets
     wrap_library(gtsam_unstable "${mexFlags}" "./" gtsam)

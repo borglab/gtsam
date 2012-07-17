@@ -252,12 +252,9 @@ Module::Module(const string& interfacePath,
 
   Rule functions_p = constructor_p | method_p | static_method_p;
 
-  Rule include_p = str_p("#include") >> ch_p('<') >> (*(anychar_p - '>'))[assign_a(include_path)] >> ch_p('>');
-
   Rule class_p =
 		  (str_p("")[assign_a(cls,cls0)])
-  		>> (*(include_p[push_back_a(cls.includes, include_path)][assign_a(include_path, null_str)])
-			>> !(templateInstantiations_p | templateList_p)
+  		>> (!(templateInstantiations_p | templateList_p)
 			>> !(str_p("virtual")[assign_a(cls.isVirtual, true)])
   		>> str_p("class")
   		>> className_p[assign_a(cls.name)]
@@ -277,12 +274,13 @@ Module::Module(const string& interfacePath,
 			[clear_a(templateArgument)]
 			[clear_a(templateInstantiations)];
 
+  Rule include_p = str_p("#include") >> ch_p('<') >> (*(anychar_p - '>'))[push_back_a(includes)] >> ch_p('>');
+
 	Rule namespace_def_p =
-			(*(include_p[push_back_a(includes, include_path)][assign_a(include_path, null_str)])
-			>> str_p("namespace")
+			(str_p("namespace")
 			>> namespace_name_p[push_back_a(namespaces)]
 			>> ch_p('{')
-			>> *(class_p | templateSingleInstantiation_p | namespace_def_p | comments_p)
+			>> *(include_p | class_p | templateSingleInstantiation_p | namespace_def_p | comments_p)
 			>> str_p("}///\\namespace") // end namespace, avoid confusion with classes
 			>> !namespace_name_p)
 			[pop_a(namespaces)];
@@ -299,7 +297,7 @@ Module::Module(const string& interfacePath,
 			[push_back_a(forward_declarations, fwDec)]
 			[assign_a(fwDec, fwDec0)];
 
-  Rule module_content_p =	comments_p | using_namespace_p | class_p | templateSingleInstantiation_p | forward_declaration_p | namespace_def_p ;
+  Rule module_content_p =	comments_p | using_namespace_p | include_p | class_p | templateSingleInstantiation_p | forward_declaration_p | namespace_def_p ;
 
   Rule module_p = *module_content_p >> !end_p;
 
@@ -375,24 +373,7 @@ void verifyReturnTypes(const vector<string>& validtypes, const map<string,T>& vt
 void Module::generateIncludes(FileWriter& file) const {
 
 	// collect includes
-	vector<string> all_includes;
-	BOOST_FOREACH(const Class& cls, classes) {
-		bool added_include = false;
-		BOOST_FOREACH(const string& s, cls.includes) {
-			if (!s.empty()) {
-				all_includes.push_back(s);
-				added_include = true;
-			}
-		}
-		if (!added_include) // add default include
-			all_includes.push_back(cls.name + ".h");
-	}
-
-	// Add namespace includes
-	BOOST_FOREACH(const string& s, includes) {
-		if(!s.empty())
-			all_includes.push_back(s);
-	}
+	vector<string> all_includes(includes);
 
 	// sort and remove duplicates
 	sort(all_includes.begin(), all_includes.end());

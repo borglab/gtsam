@@ -71,7 +71,7 @@ TEST_UNSAFE( wrap, check_exception ) {
 }
 
 /* ************************************************************************* */
-TEST( wrap, parse ) {
+TEST( wrap, parse_geometry ) {
 	string markup_header_path = topdir + "/wrap/tests";
 	Module module(markup_header_path.c_str(), "geometry",enable_verbose);
 	EXPECT_LONGS_EQUAL(3, module.classes.size());
@@ -83,6 +83,10 @@ TEST( wrap, parse ) {
 	LONGS_EQUAL(2, module.forward_declarations.size());
 	EXPECT(assert_equal("VectorNotEigen", module.forward_declarations[0].name));
 	EXPECT(assert_equal("ns::OtherClass", module.forward_declarations[1].name));
+
+	// includes
+	strvec exp_includes; exp_includes += "folder/path/to/Test.h";
+	EXPECT(assert_equal(exp_includes, module.includes));
 
 	// check first class, Point2
 	{
@@ -136,8 +140,6 @@ TEST( wrap, parse ) {
 		EXPECT_LONGS_EQUAL( 0, testCls.static_methods.size());
 		EXPECT_LONGS_EQUAL( 0, testCls.namespaces.size());
 		EXPECT(assert_equal(exp_using2, testCls.using_namespaces));
-		strvec exp_includes; exp_includes += "folder/path/to/Test.h";
-		EXPECT(assert_equal(exp_includes, testCls.includes));
 
 		// function to parse: pair<Vector,Matrix> return_pair (Vector v, Matrix A) const;
 		CHECK(testCls.methods.find("return_pair") != testCls.methods.end());
@@ -158,8 +160,11 @@ TEST( wrap, parse_namespaces ) {
 	{
 		strvec module_exp_includes;
 		module_exp_includes += "path/to/ns1.h";
+		module_exp_includes += "path/to/ns1/ClassB.h";
 		module_exp_includes += "path/to/ns2.h";
+		module_exp_includes += "path/to/ns2/ClassA.h";
 		module_exp_includes += "path/to/ns3.h";
+		EXPECT(assert_equal(module_exp_includes, module.includes));
 	}
 
 	{
@@ -167,8 +172,6 @@ TEST( wrap, parse_namespaces ) {
 		EXPECT(assert_equal("ClassA", cls.name));
 		strvec exp_namespaces; exp_namespaces += "ns1";
 		EXPECT(assert_equal(exp_namespaces, cls.namespaces));
-		strvec exp_includes; exp_includes;
-		EXPECT(assert_equal(exp_includes, cls.includes));
 	}
 
 	{
@@ -176,8 +179,6 @@ TEST( wrap, parse_namespaces ) {
 		EXPECT(assert_equal("ClassB", cls.name));
 		strvec exp_namespaces; exp_namespaces += "ns1";
 		EXPECT(assert_equal(exp_namespaces, cls.namespaces));
-		strvec exp_includes; exp_includes += "path/to/ns1/ClassB.h";
-		EXPECT(assert_equal(exp_includes, cls.includes));
 	}
 
 	{
@@ -185,8 +186,6 @@ TEST( wrap, parse_namespaces ) {
 		EXPECT(assert_equal("ClassA", cls.name));
 		strvec exp_namespaces; exp_namespaces += "ns2";
 		EXPECT(assert_equal(exp_namespaces, cls.namespaces));
-		strvec exp_includes; exp_includes += "path/to/ns2/ClassA.h";
-		EXPECT(assert_equal(exp_includes, cls.includes));
 	}
 
 	{
@@ -194,8 +193,6 @@ TEST( wrap, parse_namespaces ) {
 		EXPECT(assert_equal("ClassB", cls.name));
 		strvec exp_namespaces; exp_namespaces += "ns2", "ns3";
 		EXPECT(assert_equal(exp_namespaces, cls.namespaces));
-		strvec exp_includes;
-		EXPECT(assert_equal(exp_includes, cls.includes));
 	}
 
 	{
@@ -203,8 +200,6 @@ TEST( wrap, parse_namespaces ) {
 		EXPECT(assert_equal("ClassC", cls.name));
 		strvec exp_namespaces; exp_namespaces += "ns2";
 		EXPECT(assert_equal(exp_namespaces, cls.namespaces));
-		strvec exp_includes;
-		EXPECT(assert_equal(exp_includes, cls.includes));
 	}
 
 	{
@@ -212,8 +207,6 @@ TEST( wrap, parse_namespaces ) {
 		EXPECT(assert_equal("ClassD", cls.name));
 		strvec exp_namespaces;
 		EXPECT(assert_equal(exp_namespaces, cls.namespaces));
-		strvec exp_includes;
-		EXPECT(assert_equal(exp_includes, cls.includes));
 	}
 }
 
@@ -243,7 +236,7 @@ TEST( wrap, matlab_code_namespaces ) {
 }
 
 /* ************************************************************************* */
-TEST( wrap, matlab_code ) {
+TEST( wrap, matlab_code_geometry ) {
 	// Parse into class object
 	string header_path = topdir + "/wrap/tests";
 	Module module(header_path,"geometry",enable_verbose);

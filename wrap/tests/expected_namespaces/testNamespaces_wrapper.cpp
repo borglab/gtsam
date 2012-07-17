@@ -3,10 +3,6 @@
 #include <map>
 #include <boost/foreach.hpp>
 
-#include <ClassA.h>
-#include <ClassB.h>
-#include <ClassC.h>
-#include <ClassD.h>
 #include <path/to/ns1.h>
 #include <path/to/ns1/ClassB.h>
 #include <path/to/ns2.h>

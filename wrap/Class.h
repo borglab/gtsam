@@ -40,7 +40,7 @@ struct Class {
 
 	// Then the instance variables are set directly by the Module constructor
   std::string name;                         ///< Class name
-	std::vector<std::string> templateArgs;         ///< Template arguments
+	std::vector<std::string> templateArgs;    ///< Template arguments
 	std::string typedefName;                  ///< The name to typedef *from*, if this class is actually a typedef, i.e. typedef [typedefName] [name]
 	bool isVirtual;                           ///< Whether the class is part of a virtual inheritance chain
 	std::vector<std::string> qualifiedParent; ///< The *single* parent - the last string is the parent class name, preceededing elements are a namespace stack
@@ -48,7 +48,6 @@ struct Class {
   StaticMethods static_methods;             ///< Static methods
   std::vector<std::string> namespaces;      ///< Stack of namespaces
   std::vector<std::string> using_namespaces;///< default namespaces
-  std::vector<std::string> includes;        ///< header include overrides
   Constructor constructor;                  ///< Class constructors
 	Deconstructor deconstructor;              ///< Deconstructor to deallocate C++ object
   bool verbose_;                            ///< verbose flag

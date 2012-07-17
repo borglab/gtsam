@@ -268,12 +268,6 @@ Class expandClassTemplate(const Class& cls, const string& templateArg, const vec
 	inst.static_methods = expandMethodTemplate(cls.static_methods, templateArg, instName);
 	inst.namespaces = cls.namespaces;
 	inst.using_namespaces = cls.using_namespaces;
-	bool allIncludesEmpty = true;
-	BOOST_FOREACH(const string& inc, cls.includes) { if(!inc.empty()) { allIncludesEmpty = false; break; } }
-	if(allIncludesEmpty)
-		inst.includes.push_back(cls.name + ".h");
-	else
-		inst.includes = cls.includes;
 	inst.constructor = cls.constructor;
 	inst.constructor.args_list = expandArgumentListsTemplate(cls.constructor.args_list, templateArg, instName);
 	inst.constructor.name = inst.name;

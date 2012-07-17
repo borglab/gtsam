@@ -139,13 +139,12 @@ virtual class FullIMUFactor : gtsam::NonlinearFactor {
 };
 
 
-#include <DynamicsPriors.h>
+#include <gtsam_unstable/dynamics/DynamicsPriors.h>
 virtual class DHeightPrior : gtsam::NonlinearFactor {
 	DHeightPrior(size_t key, double height, const gtsam::noiseModel::Base* model);
 };
 
 
-#include <DynamicsPriors.h>
 virtual class DRollPrior : gtsam::NonlinearFactor {
 	/** allows for explicit roll parameterization - uses canonical coordinate */
 	DRollPrior(size_t key, double wx, const gtsam::noiseModel::Base* model);
@@ -154,13 +153,11 @@ virtual class DRollPrior : gtsam::NonlinearFactor {
 };
 
 
-#include <DynamicsPriors.h>
 virtual class VelocityPrior : gtsam::NonlinearFactor {
 	VelocityPrior(size_t key, Vector vel, const gtsam::noiseModel::Base* model);
 };
 
 
-#include <DynamicsPriors.h>
 virtual class DGroundConstraint : gtsam::NonlinearFactor {
 	// Primary constructor allows for variable height of the "floor"
   DGroundConstraint(size_t key, double height, const gtsam::noiseModel::Base* model);
@@ -182,7 +179,6 @@ class Values {
 	gtsam::PoseRTV pose(size_t key) const;
 };
 
-#include <gtsam_unstable/dynamics/imuSystem.h>
 class Graph {
 	Graph();
 	void print(string s) const;

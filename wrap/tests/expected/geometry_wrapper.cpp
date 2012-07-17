@@ -3,8 +3,6 @@
 #include <map>
 #include <boost/foreach.hpp>
 
-#include <Point2.h>
-#include <Point3.h>
 #include <folder/path/to/Test.h>
 
 

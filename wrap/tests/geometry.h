@@ -35,7 +35,9 @@ class Point3 {
  * A multi-line comment!
  */
 
+// An include! Can go anywhere outside of a class, in any order
 #include <folder/path/to/Test.h>
+
 class Test {
 
 	/* a comment! */
