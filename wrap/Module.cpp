@@ -84,7 +84,6 @@ Module::Module(const string& interfacePath,
   Class cls0(enable_verbose),cls(enable_verbose);
 	ForwardDeclaration fwDec0, fwDec;
   vector<string> namespaces, /// current namespace tag
-  							 namespace_includes, /// current set of includes
   							 namespaces_return, /// namespace for current return type
   							 using_namespace_current;  /// All namespaces from "using" declarations
 	string templateArgument;
@@ -256,10 +255,11 @@ Module::Module(const string& interfacePath,
   Rule include_p = str_p("#include") >> ch_p('<') >> (*(anychar_p - '>'))[assign_a(include_path)] >> ch_p('>');
 
   Rule class_p =
-  		(!*include_p
+		  (str_p("")[assign_a(cls,cls0)])
+  		>> (*(include_p[push_back_a(cls.includes, include_path)][assign_a(include_path, null_str)])
 			>> !(templateInstantiations_p | templateList_p)
 			>> !(str_p("virtual")[assign_a(cls.isVirtual, true)])
-  		>> str_p("class")[push_back_a(cls.includes, include_path)][assign_a(include_path, null_str)]
+  		>> str_p("class")
   		>> className_p[assign_a(cls.name)]
 			>> ((':' >> classParent_p >> '{') | '{')
   		>> *(functions_p | comments_p)
@@ -268,7 +268,6 @@ Module::Module(const string& interfacePath,
         [assign_a(cls.constructor, constructor)]
   		[assign_a(cls.namespaces, namespaces)]
   		 [assign_a(cls.using_namespaces, using_namespace_current)]
-  		[append_a(cls.includes, namespace_includes)]
         [assign_a(deconstructor.name,cls.name)]
         [assign_a(cls.deconstructor, deconstructor)]
 			[bl::bind(&handle_possible_template, bl::var(classes), bl::var(cls), bl::var(templateArgument), bl::var(templateInstantiations))]
@@ -279,15 +278,14 @@ Module::Module(const string& interfacePath,
 			[clear_a(templateInstantiations)];
 
 	Rule namespace_def_p =
-			(!*include_p
-			>> str_p("namespace")[push_back_a(namespace_includes, include_path)][assign_a(include_path, null_str)]
+			(*(include_p[push_back_a(includes, include_path)][assign_a(include_path, null_str)])
+			>> str_p("namespace")
 			>> namespace_name_p[push_back_a(namespaces)]
 			>> ch_p('{')
 			>> *(class_p | templateSingleInstantiation_p | namespace_def_p | comments_p)
 			>> str_p("}///\\namespace") // end namespace, avoid confusion with classes
 			>> !namespace_name_p)
-			[pop_a(namespaces)]
-			[pop_a(namespace_includes)];
+			[pop_a(namespaces)];
 
 	Rule using_namespace_p =
 			str_p("using") >> str_p("namespace")
@@ -388,6 +386,12 @@ void Module::generateIncludes(FileWriter& file) const {
 		}
 		if (!added_include) // add default include
 			all_includes.push_back(cls.name + ".h");
+	}
+
+	// Add namespace includes
+	BOOST_FOREACH(const string& s, includes) {
+		if(!s.empty())
+			all_includes.push_back(s);
 	}
 
 	// sort and remove duplicates

@@ -171,9 +171,9 @@ virtual class DGroundConstraint : gtsam::NonlinearFactor {
 
 }///\namespace gtsam
 
-#include <gtsam_unstable/dynamics/imuSystem.h>
 namespace imu {
 
+#include <gtsam_unstable/dynamics/imuSystem.h>
 class Values {
 	Values();
 	void print(string s) const;
@@ -182,6 +182,7 @@ class Values {
 	gtsam::PoseRTV pose(size_t key) const;
 };
 
+#include <gtsam_unstable/dynamics/imuSystem.h>
 class Graph {
 	Graph();
 	void print(string s) const;

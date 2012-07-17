@@ -771,11 +771,12 @@ class VariableIndex {
 // linear
 //*************************************************************************
 
-#include <gtsam/linear/NoiseModel.h>
 namespace noiseModel {
+#include <gtsam/linear/NoiseModel.h>
 virtual class Base {
 };
 
+#include <gtsam/linear/NoiseModel.h>
 virtual class Gaussian : gtsam::noiseModel::Base {
 	static gtsam::noiseModel::Gaussian* SqrtInformation(Matrix R);
 	static gtsam::noiseModel::Gaussian* Covariance(Matrix R);
@@ -783,6 +784,7 @@ virtual class Gaussian : gtsam::noiseModel::Base {
 	void print(string s) const;
 };
 
+#include <gtsam/linear/NoiseModel.h>
 virtual class Diagonal : gtsam::noiseModel::Gaussian {
 	static gtsam::noiseModel::Diagonal* Sigmas(Vector sigmas);
 	static gtsam::noiseModel::Diagonal* Variances(Vector variances);
@@ -791,6 +793,7 @@ virtual class Diagonal : gtsam::noiseModel::Gaussian {
 	void print(string s) const;
 };
 
+#include <gtsam/linear/NoiseModel.h>
 virtual class Isotropic : gtsam::noiseModel::Diagonal {
 	static gtsam::noiseModel::Isotropic* Sigma(size_t dim, double sigma);
 	static gtsam::noiseModel::Isotropic* Variance(size_t dim, double varianace);
@@ -798,6 +801,7 @@ virtual class Isotropic : gtsam::noiseModel::Diagonal {
 	void print(string s) const;
 };
 
+#include <gtsam/linear/NoiseModel.h>
 virtual class Unit : gtsam::noiseModel::Isotropic {
 	static gtsam::noiseModel::Unit* Create(size_t dim);
 	void print(string s) const;
@@ -1216,9 +1220,9 @@ typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3D
 // Pose2SLAM
 //*************************************************************************
 
-#include <gtsam/slam/pose2SLAM.h>
 namespace pose2SLAM {
 
+#include <gtsam/slam/pose2SLAM.h>
 class Values {
 	Values();
   Values(const pose2SLAM::Values& values);
@@ -1234,6 +1238,7 @@ class Values {
   Matrix poses() const;
 };
 
+#include <gtsam/slam/pose2SLAM.h>
 class Graph {
 	Graph();
   Graph(const gtsam::NonlinearFactorGraph& graph);
@@ -1270,9 +1275,9 @@ class Graph {
 // Pose3SLAM
 //*************************************************************************
 
-#include <gtsam/slam/pose3SLAM.h>
 namespace pose3SLAM {
 
+#include <gtsam/slam/pose3SLAM.h>
 class Values {
 	Values();
   Values(const pose3SLAM::Values& values);
@@ -1288,6 +1293,7 @@ class Values {
   Matrix translations() const;
 };
 
+#include <gtsam/slam/pose3SLAM.h>
 class Graph {
 	Graph();
   Graph(const gtsam::NonlinearFactorGraph& graph);
@@ -1324,9 +1330,9 @@ class Graph {
 // planarSLAM
 //*************************************************************************
 
-#include <gtsam/slam/planarSLAM.h>
 namespace planarSLAM {
 
+#include <gtsam/slam/planarSLAM.h>
 class Values {
 	Values();
   Values(const planarSLAM::Values& values);
@@ -1358,6 +1364,7 @@ class Values {
   Matrix points() const;
 };
 
+#include <gtsam/slam/planarSLAM.h>
 class Graph {
 	Graph();
   Graph(const gtsam::NonlinearFactorGraph& graph);
@@ -1396,6 +1403,7 @@ class Graph {
 	void addBearingRange(size_t poseKey, size_t pointKey, const gtsam::Rot2& bearing,double range, const gtsam::noiseModel::Base* noiseModel);
 };
 
+#include <gtsam/slam/planarSLAM.h>
 class Odometry {
 	Odometry(size_t key1, size_t key2, const gtsam::Pose2& measured,
 			const gtsam::noiseModel::Base* model);
@@ -1410,9 +1418,9 @@ class Odometry {
 // VisualSLAM
 //*************************************************************************
 
-#include <gtsam/slam/visualSLAM.h>
 namespace visualSLAM {
 
+#include <gtsam/slam/visualSLAM.h>
 class Values {
   Values();
   Values(const visualSLAM::Values& values);
@@ -1446,6 +1454,7 @@ class Values {
   Matrix points() const;
 };
 
+#include <gtsam/slam/visualSLAM.h>
 class Graph {
   Graph();
   Graph(const gtsam::NonlinearFactorGraph& graph);
@@ -1494,6 +1503,7 @@ class Graph {
 
 };
 
+#include <gtsam/slam/visualSLAM.h>
 class ISAM {
 	ISAM();
 	ISAM(int reorderInterval);
@@ -1516,6 +1526,7 @@ class ISAM {
   gtsam::NonlinearFactorGraph getFactorsUnsafe() const;
 };
 
+#include <gtsam/slam/visualSLAM.h>
 class LevenbergMarquardtOptimizer {
   double lambda() const;
   void iterate();
@@ -1532,9 +1543,9 @@ class LevenbergMarquardtOptimizer {
 // sparse BA
 //************************************************************************
 
-#include <gtsam/slam/sparseBA.h>
 namespace sparseBA {
 
+#include <gtsam/slam/sparseBA.h>
 class Values {
   Values();
   Values(const sparseBA::Values& values);
@@ -1561,6 +1572,7 @@ class Values {
   Matrix points() const;
 };
 
+#include <gtsam/slam/sparseBA.h>
 class Graph {
   Graph();
   Graph(const gtsam::NonlinearFactorGraph& graph);
@@ -1596,6 +1608,7 @@ class Graph {
   void addSimpleCameraMeasurement(const gtsam::Point2 &z, gtsam::noiseModel::Base* model, size_t cameraKey, size_t pointKey);
 };
 
+#include <gtsam/slam/sparseBA.h>
 class LevenbergMarquardtOptimizer {
   double lambda() const;
   void iterate();
