@@ -156,11 +156,18 @@ TEST( wrap, parse_namespaces ) {
 	EXPECT_LONGS_EQUAL(6, module.classes.size());
 
 	{
+		strvec module_exp_includes;
+		module_exp_includes += "path/to/ns1.h";
+		module_exp_includes += "path/to/ns2.h";
+		module_exp_includes += "path/to/ns3.h";
+	}
+
+	{
 		Class cls = module.classes.at(0);
 		EXPECT(assert_equal("ClassA", cls.name));
 		strvec exp_namespaces; exp_namespaces += "ns1";
 		EXPECT(assert_equal(exp_namespaces, cls.namespaces));
-		strvec exp_includes; exp_includes += "path/to/ns1.h", "";
+		strvec exp_includes; exp_includes;
 		EXPECT(assert_equal(exp_includes, cls.includes));
 	}
 
@@ -169,7 +176,7 @@ TEST( wrap, parse_namespaces ) {
 		EXPECT(assert_equal("ClassB", cls.name));
 		strvec exp_namespaces; exp_namespaces += "ns1";
 		EXPECT(assert_equal(exp_namespaces, cls.namespaces));
-		strvec exp_includes; exp_includes += "path/to/ns1.h", "path/to/ns1/ClassB.h";
+		strvec exp_includes; exp_includes += "path/to/ns1/ClassB.h";
 		EXPECT(assert_equal(exp_includes, cls.includes));
 	}
 
@@ -178,7 +185,7 @@ TEST( wrap, parse_namespaces ) {
 		EXPECT(assert_equal("ClassA", cls.name));
 		strvec exp_namespaces; exp_namespaces += "ns2";
 		EXPECT(assert_equal(exp_namespaces, cls.namespaces));
-		strvec exp_includes; exp_includes += "path/to/ns2.h", "path/to/ns2/ClassA.h";
+		strvec exp_includes; exp_includes += "path/to/ns2/ClassA.h";
 		EXPECT(assert_equal(exp_includes, cls.includes));
 	}
 
@@ -187,7 +194,7 @@ TEST( wrap, parse_namespaces ) {
 		EXPECT(assert_equal("ClassB", cls.name));
 		strvec exp_namespaces; exp_namespaces += "ns2", "ns3";
 		EXPECT(assert_equal(exp_namespaces, cls.namespaces));
-		strvec exp_includes; exp_includes += "path/to/ns2.h", "path/to/ns3.h", "";
+		strvec exp_includes;
 		EXPECT(assert_equal(exp_includes, cls.includes));
 	}
 
@@ -196,7 +203,7 @@ TEST( wrap, parse_namespaces ) {
 		EXPECT(assert_equal("ClassC", cls.name));
 		strvec exp_namespaces; exp_namespaces += "ns2";
 		EXPECT(assert_equal(exp_namespaces, cls.namespaces));
-		strvec exp_includes; exp_includes += "path/to/ns2.h", "";
+		strvec exp_includes;
 		EXPECT(assert_equal(exp_includes, cls.includes));
 	}
 
@@ -205,7 +212,7 @@ TEST( wrap, parse_namespaces ) {
 		EXPECT(assert_equal("ClassD", cls.name));
 		strvec exp_namespaces;
 		EXPECT(assert_equal(exp_namespaces, cls.namespaces));
-		strvec exp_includes; exp_includes += "";
+		strvec exp_includes;
 		EXPECT(assert_equal(exp_includes, cls.includes));
 	}
 }
