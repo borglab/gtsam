@@ -13,14 +13,10 @@
 
 #include "Failure.h"
 
-#include <stdio.h>
-#include <string.h> 
-
-
-Failure::Failure (const SimpleString&	theTestName, 
-				  const SimpleString&	theFileName, 
+Failure::Failure (const std::string&	theTestName,
+				  const std::string&	theFileName,
 		          long	 				theLineNumber,
-		          const SimpleString&	theCondition) 
+		          const std::string&	theCondition)
 : message (theCondition), 
   testName (theTestName), 
   fileName (theFileName), 
@@ -28,9 +24,9 @@ Failure::Failure (const SimpleString&	theTestName,
 {
 }
 
-Failure::Failure (const SimpleString&	theTestName,
-				  const SimpleString&	theFileName,
-		          const SimpleString&	theCondition)
+Failure::Failure (const std::string&	theTestName,
+				  const std::string&	theFileName,
+		          const std::string&	theCondition)
 : message (theCondition),
   testName (theTestName),
   fileName (theFileName),
@@ -39,33 +35,16 @@ Failure::Failure (const SimpleString&	theTestName,
 }
 
 
-Failure::Failure (const SimpleString&	theTestName, 
-			 	  const SimpleString&	theFileName, 
+Failure::Failure (const std::string&	theTestName,
+			 	  const std::string&	theFileName,
 				  long					theLineNumber,
-				  const SimpleString&	expected,
-				  const SimpleString&	actual) 
-: testName (theTestName), 
+				  const std::string&	expected,
+				  const std::string&	actual)
+: message("expected " + expected + " but was: " + actual),
+  testName (theTestName),
   fileName (theFileName), 
   lineNumber (theLineNumber)
 {
-	const char *part1 = "expected ";
-	const char *part3 = " but was: ";
-
-	char *stage = new char [strlen (part1) 
-					+ expected.size () 
-					+ strlen (part3)
-					+ actual.size ()
-					+ 1];
-
-	sprintf(stage, "%s%s%s%s", 
-		part1, 
-		expected.asCharString(), 
-		part3, 
-		actual.asCharString());
-
-	message = SimpleString(stage);
-
-	delete stage;
 }
 
 

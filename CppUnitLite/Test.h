@@ -23,7 +23,7 @@
 
 
 #include <cmath>
-#include "SimpleString.h"
+#include <boost/lexical_cast.hpp>
 
 class TestResult;
 
@@ -32,8 +32,8 @@ class TestResult;
 class Test
 {
 public:
-	Test (const SimpleString& testName);
-	Test (const SimpleString& testName, const SimpleString& filename, long lineNumber, bool safeCheck);
+	Test (const std::string& testName);
+	Test (const std::string& testName, const std::string& filename, long lineNumber, bool safeCheck);
   virtual ~Test() {};
 
 	virtual void	run (TestResult& result) = 0;
@@ -41,19 +41,19 @@ public:
 
 	void			setNext(Test *test);
 	Test			*getNext () const;
-	SimpleString    getName() const {return name_;}
-	SimpleString 	getFilename() const {return filename_;}
+	std::string    getName() const {return name_;}
+	std::string 	getFilename() const {return filename_;}
 	long			getLineNumber() const {return lineNumber_;}
 	bool  			safe() const {return safeCheck_;}
 
 protected:
 
-	bool check (long expected, long actual, TestResult& result, const SimpleString& fileName, long lineNumber);
-	bool check (const SimpleString& expected, const SimpleString& actual, TestResult& result, const SimpleString& fileName, long lineNumber);
+	bool check (long expected, long actual, TestResult& result, const std::string& fileName, long lineNumber);
+	bool check (const std::string& expected, const std::string& actual, TestResult& result, const std::string& fileName, long lineNumber);
 
-	SimpleString	name_;
+	std::string	name_;
 	Test			*next_;
-	SimpleString 	filename_;
+	std::string 	filename_;
 	long 			lineNumber_; /// This is the line line number of the test, rather than the a single check
 	bool 			safeCheck_;
 
@@ -102,17 +102,17 @@ protected:
 
 #define THROWS_EXCEPTION(condition)\
 { try { condition; \
-		result_.addFailure (Failure (name_, __FILE__,__LINE__, SimpleString("Didn't throw: ") + StringFrom(#condition))); \
+		result_.addFailure (Failure (name_, __FILE__,__LINE__, std::string("Didn't throw: ") + boost::lexical_cast<std::string>(#condition))); \
 		return; } \
   catch (...) {} }
 
 #define CHECK_EXCEPTION(condition, exception_name)\
 { try { condition; \
-		result_.addFailure (Failure (name_, __FILE__,__LINE__, SimpleString("Didn't throw: ") + StringFrom(#condition))); \
+		result_.addFailure (Failure (name_, __FILE__,__LINE__, std::string("Didn't throw: ") + boost::lexical_cast<std::string>(#condition))); \
 		return; } \
   catch (exception_name&) {} \
   catch (...) { \
-	result_.addFailure (Failure (name_, __FILE__,__LINE__, SimpleString("Wrong exception: ") + StringFrom(#condition) + StringFrom(", expected: ") + StringFrom(#exception_name))); \
+	result_.addFailure (Failure (name_, __FILE__,__LINE__, std::string("Wrong exception: ") + boost::lexical_cast<std::string>(#condition) + boost::lexical_cast<std::string>(", expected: ") + boost::lexical_cast<std::string>(#exception_name))); \
 	return; } }
 
 #define EQUALITY(expected,actual)\
@@ -120,21 +120,21 @@ protected:
     result_.addFailure(Failure(name_, __FILE__, __LINE__, #expected, #actual)); }
 
 #define CHECK_EQUAL(expected,actual)\
-{ if ((expected) == (actual)) return; result_.addFailure(Failure(name_, __FILE__, __LINE__, StringFrom(expected), StringFrom(actual))); }
+{ if ((expected) == (actual)) return; result_.addFailure(Failure(name_, __FILE__, __LINE__, boost::lexical_cast<std::string>(expected), boost::lexical_cast<std::string>(actual))); }
 
 #define LONGS_EQUAL(expected,actual)\
 { long actualTemp = actual; \
   long expectedTemp = expected; \
   if ((expectedTemp) != (actualTemp)) \
-{ result_.addFailure (Failure (name_, __FILE__, __LINE__, StringFrom(expectedTemp), \
-StringFrom(actualTemp))); return; } }
+{ result_.addFailure (Failure (name_, __FILE__, __LINE__, boost::lexical_cast<std::string>(expectedTemp), \
+boost::lexical_cast<std::string>(actualTemp))); return; } }
 
 #define DOUBLES_EQUAL(expected,actual,threshold)\
 { double actualTemp = actual; \
   double expectedTemp = expected; \
   if (fabs ((expectedTemp)-(actualTemp)) > threshold) \
 { result_.addFailure (Failure (name_, __FILE__, __LINE__, \
-StringFrom((double)expectedTemp), StringFrom((double)actualTemp))); return; } }
+boost::lexical_cast<std::string>((double)expectedTemp), boost::lexical_cast<std::string>((double)actualTemp))); return; } }
 
 
 /* EXPECTs: tests will continue running after a failure */
@@ -146,15 +146,15 @@ StringFrom((double)expectedTemp), StringFrom((double)actualTemp))); return; } }
 { long actualTemp = actual; \
   long expectedTemp = expected; \
   if ((expectedTemp) != (actualTemp)) \
-{ result_.addFailure (Failure (name_, __FILE__, __LINE__, StringFrom(expectedTemp), \
-StringFrom(actualTemp))); } }
+{ result_.addFailure (Failure (name_, __FILE__, __LINE__, boost::lexical_cast<std::string>(expectedTemp), \
+boost::lexical_cast<std::string>(actualTemp))); } }
 
 #define EXPECT_DOUBLES_EQUAL(expected,actual,threshold)\
 { double actualTemp = actual; \
   double expectedTemp = expected; \
   if (fabs ((expectedTemp)-(actualTemp)) > threshold) \
 { result_.addFailure (Failure (name_, __FILE__, __LINE__, \
-StringFrom((double)expectedTemp), StringFrom((double)actualTemp))); } }
+boost::lexical_cast<std::string>((double)expectedTemp), boost::lexical_cast<std::string>((double)actualTemp))); } }
 
 
 #define FAIL(text) \

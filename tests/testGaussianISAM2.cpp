@@ -381,7 +381,7 @@ TEST(ISAM2, optimize2) {
 bool isam_check(const planarSLAM::Graph& fullgraph, const Values& fullinit, const ISAM2& isam, Test& test, TestResult& result) {
 
 	TestResult& result_ = result;
-	const SimpleString name_ = test.getName();
+	const std::string name_ = test.getName();
 
   Values actual = isam.calculateEstimate();
   Ordering ordering = isam.getOrdering(); // *fullgraph.orderingCOLAMD(fullinit).first;

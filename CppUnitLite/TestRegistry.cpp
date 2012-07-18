@@ -17,7 +17,6 @@
 #include "Failure.h"
 #include "TestResult.h"
 #include "TestRegistry.h"
-#include "SimpleString.h"
 
 void TestRegistry::addTest (Test *test) 
 {
@@ -65,12 +64,12 @@ int TestRegistry::run (TestResult& result)
 				// catch standard exceptions and derivatives
 				result.addFailure(
 						Failure(test->getName(), test->getFilename(), test->getLineNumber(),
-								SimpleString("Exception: ") + SimpleString(e.what())));
+								std::string("Exception: ") + std::string(e.what())));
 			} catch (...) {
 				// catch all other exceptions
 				result.addFailure(
 						Failure(test->getName(), test->getFilename(), test->getLineNumber(),
-								SimpleString("ExceptionThrown!")));
+								"ExceptionThrown!"));
 			}
 		}
 		else {

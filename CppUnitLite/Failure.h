@@ -24,32 +24,31 @@
 #ifndef FAILURE_H
 #define FAILURE_H
 
-#include "SimpleString.h"
-
+#include <string>
 
 class Failure
 {
 
 public:
-	Failure (const SimpleString&		theTestName, 
-			 const SimpleString&		theFileName, 
+	Failure (const std::string&		theTestName,
+			 const std::string&		theFileName,
 			 long	  					theLineNumber,
-			 const SimpleString&		theCondition);
+			 const std::string&		theCondition);
 
-	Failure (const SimpleString&		theTestName, 
-			 const SimpleString&		theFileName, 
+	Failure (const std::string&		theTestName,
+			 const std::string&		theFileName,
 			 long						theLineNumber,
-			 const SimpleString&		expected,
-			 const SimpleString&		actual);
+			 const std::string&		expected,
+			 const std::string&		actual);
 
-	Failure (const SimpleString&		theTestName,
-			 const SimpleString&		theFileName,
-			 const SimpleString&		theCondition);
+	Failure (const std::string&		theTestName,
+			 const std::string&		theFileName,
+			 const std::string&		theCondition);
 
 
-	SimpleString		message;
-	SimpleString		testName;
-	SimpleString		fileName;
+	std::string		message;
+	std::string		testName;
+	std::string		fileName;
 	long				lineNumber;
 };
 
