@@ -30,11 +30,12 @@ cameraNoiseSigmas = [0.001 0.001 0.001 0.1 0.1 0.1 ...
                      0.001*ones(1,5)]';
 
 %% Create the graph (defined in visualSLAM.h, derived from NonlinearFactorGraph)
-graph = sparseBAGraph;
+graph = sparseBA.Graph;
 
  
 %% Add factors for all measurements
-measurementNoise = gtsamnoiseModelIsotropic.Sigma(2,measurementNoiseSigma);
+import gtsam.*
+measurementNoise = noiseModel.Isotropic.Sigma(2,measurementNoiseSigma);
 for i=1:length(data.Z)
     for k=1:length(data.Z{i})
         j = data.J{i}{k};
@@ -43,11 +44,12 @@ for i=1:length(data.Z)
 end
 
 %% Add Gaussian priors for a pose and a landmark to constrain the system
-cameraPriorNoise  = gtsamnoiseModelDiagonal.Sigmas(cameraNoiseSigmas);
-firstCamera = gtsamSimpleCamera(truth.cameras{1}.pose, truth.K);
+import gtsam.*
+cameraPriorNoise  = noiseModel.Diagonal.Sigmas(cameraNoiseSigmas);
+firstCamera = SimpleCamera(truth.cameras{1}.pose, truth.K);
 graph.addSimpleCameraPrior(symbol('c',1), firstCamera, cameraPriorNoise);
 
-pointPriorNoise  = gtsamnoiseModelIsotropic.Sigma(3,pointNoiseSigma);
+pointPriorNoise  = noiseModel.Isotropic.Sigma(3,pointNoiseSigma);
 graph.addPointPrior(symbol('p',1), truth.points{1}, pointPriorNoise);
 
 %% Print the graph
@@ -55,10 +57,11 @@ graph.print(sprintf('\nFactor graph:\n'));
 
 
 %% Initialize cameras and points close to ground truth in this example
-initialEstimate = sparseBAValues;
+import gtsam.*
+initialEstimate = sparseBA.Values;
 for i=1:size(truth.cameras,2)
     pose_i = truth.cameras{i}.pose.retract(0.1*randn(6,1));
-    camera_i = gtsamSimpleCamera(pose_i, truth.K);
+    camera_i = SimpleCamera(pose_i, truth.K);
     initialEstimate.insertSimpleCamera(symbol('c',i), camera_i);
 end
 for j=1:size(truth.points,2)
@@ -69,7 +72,8 @@ initialEstimate.print(sprintf('\nInitial estimate:\n  '));
 
 %% Fine grain optimization, allowing user to iterate step by step
 
-parameters = gtsamLevenbergMarquardtParams;
+import gtsam.*
+parameters = LevenbergMarquardtParams;
 parameters.setlambdaInitial(1.0);
 parameters.setVerbosityLM('trylambda');
 

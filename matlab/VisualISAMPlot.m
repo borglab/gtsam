@@ -21,10 +21,11 @@ for j=0:N-1  % NOTE: uses indexing directly from a C++ vector, so zero-indexed
 end
 
 %% Plot cameras
+import gtsam.*
 for i=1:options.cameraInterval:M
     ii = symbol('x',i);
     pose_i = result.pose(ii);
-    if options.hardConstraint & (i==1)
+    if options.hardConstraint && (i==1)
         plotPose3(pose_i,[],10);
     else
         P = isam.marginalCovariance(ii);

@@ -12,37 +12,39 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Create the same factor graph as in PlanarSLAMExample
+import gtsam.*
 i1 = symbol('x',1); i2 = symbol('x',2); i3 = symbol('x',3);
-graph = planarSLAMGraph;
-priorMean = gtsamPose2(0.0, 0.0, 0.0); % prior at origin
-priorNoise = gtsamnoiseModelDiagonal.Sigmas([0.3; 0.3; 0.1]);
+graph = planarSLAM.Graph;
+priorMean = Pose2(0.0, 0.0, 0.0); % prior at origin
+priorNoise = noiseModel.Diagonal.Sigmas([0.3; 0.3; 0.1]);
 graph.addPosePrior(i1, priorMean, priorNoise); % add directly to graph
-odometry = gtsamPose2(2.0, 0.0, 0.0);
-odometryNoise = gtsamnoiseModelDiagonal.Sigmas([0.2; 0.2; 0.1]);
+odometry = Pose2(2.0, 0.0, 0.0);
+odometryNoise = noiseModel.Diagonal.Sigmas([0.2; 0.2; 0.1]);
 graph.addRelativePose(i1, i2, odometry, odometryNoise);
 graph.addRelativePose(i2, i3, odometry, odometryNoise);
 
 %% Except, for measurements we offer a choice
+import gtsam.*
 j1 = symbol('l',1); j2 = symbol('l',2);
 degrees = pi/180;
-noiseModel = gtsamnoiseModelDiagonal.Sigmas([0.1; 0.2]);
+brNoise = noiseModel.Diagonal.Sigmas([0.1; 0.2]);
 if 1
-    graph.addBearingRange(i1, j1, gtsamRot2(45*degrees), sqrt(4+4), noiseModel);
-    graph.addBearingRange(i2, j1, gtsamRot2(90*degrees), 2, noiseModel);
+    graph.addBearingRange(i1, j1, Rot2(45*degrees), sqrt(4+4), brNoise);
+    graph.addBearingRange(i2, j1, Rot2(90*degrees), 2, brNoise);
 else
-    bearingModel = gtsamnoiseModelDiagonal.Sigmas(0.1);    
-    graph.addBearing(i1, j1, gtsamRot2(45*degrees), bearingModel);
-    graph.addBearing(i2, j1, gtsamRot2(90*degrees), bearingModel);
+    bearingModel = noiseModel.Diagonal.Sigmas(0.1);    
+    graph.addBearing(i1, j1, Rot2(45*degrees), bearingModel);
+    graph.addBearing(i2, j1, Rot2(90*degrees), bearingModel);
 end
-graph.addBearingRange(i3, j2, gtsamRot2(90*degrees), 2, noiseModel);    
+graph.addBearingRange(i3, j2, Rot2(90*degrees), 2, brNoise);    
 
 %% Initialize MCMC sampler with ground truth
-sample = planarSLAMValues;
-sample.insertPose(i1, gtsamPose2(0,0,0));
-sample.insertPose(i2, gtsamPose2(2,0,0));
-sample.insertPose(i3, gtsamPose2(4,0,0));
-sample.insertPoint(j1, gtsamPoint2(2,2));
-sample.insertPoint(j2, gtsamPoint2(4,2));
+sample = planarSLAM.Values;
+sample.insertPose(i1, Pose2(0,0,0));
+sample.insertPose(i2, Pose2(2,0,0));
+sample.insertPose(i3, Pose2(4,0,0));
+sample.insertPoint(j1, Point2(2,2));
+sample.insertPoint(j2, Point2(4,2));
 
 %% Calculate and plot Covariance Ellipses
 figure(1);clf;hold on
@@ -74,6 +76,6 @@ axis equal
 N=1000;
 for s=1:N
     delta = S{2}*randn(2,1);
-    proposedPoint = gtsamPoint2(point{2}.x+delta(1),point{2}.y+delta(2));
+    proposedPoint = Point2(point{2}.x+delta(1),point{2}.y+delta(2));
     plotPoint2(proposedPoint,'k.')
 end

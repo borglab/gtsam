@@ -48,8 +48,8 @@ string ReturnValue::qualifiedType2(const string& delim) const {
 /* ************************************************************************* */
 //TODO:Fix this
 void ReturnValue::wrap_result(const string& result, FileWriter& file, const TypeAttributesTable& typeAttributes) const {
-	string cppType1 = qualifiedType1("::"), matlabType1 = qualifiedType1();
-	string cppType2 = qualifiedType2("::"), matlabType2 = qualifiedType2();
+	string cppType1 = qualifiedType1("::"), matlabType1 = qualifiedType1(".");
+	string cppType2 = qualifiedType2("::"), matlabType2 = qualifiedType2(".");
 
   if (isPair) {
   	// first return value in pair

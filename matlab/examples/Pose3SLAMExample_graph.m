@@ -16,7 +16,7 @@ N = 2500;
 filename = '../../examples/Data/sphere2500.txt';
 
 %% Initialize graph, initial estimate, and odometry noise
-model = gtsamnoiseModelDiagonal.Sigmas([0.05; 0.05; 0.05; 5*pi/180; 5*pi/180; 5*pi/180]);
+model = gtsam.noiseModel.Diagonal.Sigmas([0.05; 0.05; 0.05; 5*pi/180; 5*pi/180; 5*pi/180]);
 [graph,initial]=load3D(filename,model,true,N);
 
 %% Plot Initial Estimate
@@ -27,6 +27,6 @@ plot3DTrajectory(initial,'g-',false);
 
 %% Read again, now with all constraints, and optimize
 graph = load3D(filename,model,false,N);
-graph.addHardConstraint(0, first);
+graph.addPoseConstraint(0, first);
 result = graph.optimize(initial);
 plot3DTrajectory(result,'r-',false); axis equal;

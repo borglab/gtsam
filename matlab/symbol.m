@@ -1,4 +1,4 @@
 function key = symbol(c,i)
 % generate a key corresponding to a symbol
-s = gtsamSymbol(c,i);
+s = gtsam.Symbol(c,i);
 key = s.key();

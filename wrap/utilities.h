@@ -41,6 +41,15 @@ class CantOpenFile : public std::exception {
 	virtual const char* what() const throw() { return what_.c_str(); }
 };
 
+class OutputError : public std::exception {
+private:
+	const std::string what_;
+public:
+	OutputError(const std::string& what) : what_(what) {}
+	~OutputError() throw() {}
+	virtual const char* what() const throw() { return what_.c_str(); }
+};
+
 class ParseFailed : public std::exception {
  private:
   const std::string what_;

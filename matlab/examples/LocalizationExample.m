@@ -16,36 +16,41 @@
 %  - The robot is on a grid, moving 2 meters each step
 
 %% Create the graph (defined in pose2SLAM.h, derived from NonlinearFactorGraph)
-graph = pose2SLAMGraph;
+graph = pose2SLAM.Graph;
 
 %% Add two odometry factors
-odometry = gtsamPose2(2.0, 0.0, 0.0); % create a measurement for both factors (the same in this case)
-odometryNoise = gtsamnoiseModelDiagonal.Sigmas([0.2; 0.2; 0.1]); % 20cm std on x,y, 0.1 rad on theta
+import gtsam.*
+odometry = Pose2(2.0, 0.0, 0.0); % create a measurement for both factors (the same in this case)
+odometryNoise = noiseModel.Diagonal.Sigmas([0.2; 0.2; 0.1]); % 20cm std on x,y, 0.1 rad on theta
 graph.addRelativePose(1, 2, odometry, odometryNoise);
 graph.addRelativePose(2, 3, odometry, odometryNoise);
 
 %% Add three "GPS" measurements
+import gtsam.*
 % We use Pose2 Priors here with high variance on theta
-noiseModel = gtsamnoiseModelDiagonal.Sigmas([0.1; 0.1; 10]);
-graph.addPosePrior(1, gtsamPose2(0.0, 0.0, 0.0), noiseModel);
-graph.addPosePrior(2, gtsamPose2(2.0, 0.0, 0.0), noiseModel);
-graph.addPosePrior(3, gtsamPose2(4.0, 0.0, 0.0), noiseModel);
+priorNoise = noiseModel.Diagonal.Sigmas([0.1; 0.1; 10]);
+graph.addPosePrior(1, Pose2(0.0, 0.0, 0.0), priorNoise);
+graph.addPosePrior(2, Pose2(2.0, 0.0, 0.0), priorNoise);
+graph.addPosePrior(3, Pose2(4.0, 0.0, 0.0), priorNoise);
 
 %% print
 graph.print(sprintf('\nFactor graph:\n'));
 
 %% Initialize to noisy points
-initialEstimate = pose2SLAMValues;
-initialEstimate.insertPose(1, gtsamPose2(0.5, 0.0, 0.2));
-initialEstimate.insertPose(2, gtsamPose2(2.3, 0.1,-0.2));
-initialEstimate.insertPose(3, gtsamPose2(4.1, 0.1, 0.1));
+import gtsam.*
+initialEstimate = pose2SLAM.Values;
+initialEstimate.insertPose(1, Pose2(0.5, 0.0, 0.2));
+initialEstimate.insertPose(2, Pose2(2.3, 0.1,-0.2));
+initialEstimate.insertPose(3, Pose2(4.1, 0.1, 0.1));
 initialEstimate.print(sprintf('\nInitial estimate:\n  '));
 
 %% Optimize using Levenberg-Marquardt optimization with an ordering from colamd
+import gtsam.*
 result = graph.optimize(initialEstimate,1);
 result.print(sprintf('\nFinal result:\n  '));
 
 %% Plot Covariance Ellipses
+import gtsam.*
 cla;
 X=result.poses();
 plot(X(:,1),X(:,2),'k*-'); hold on

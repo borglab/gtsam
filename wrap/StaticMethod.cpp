@@ -40,7 +40,8 @@ void StaticMethod::addOverload(bool verbose, const std::string& name,
 
 void StaticMethod::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperFile,
 																		 const string& cppClassName,
-																		 const string& matlabClassName,
+																		 const std::string& matlabQualName,
+																		 const std::string& matlabUniqueName,
 																		 const string& wrapperName,
 																		 const vector<string>& using_namespaces,
 																		 const TypeAttributesTable& typeAttributes,
@@ -66,7 +67,7 @@ void StaticMethod::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wr
 		bool first = true;
 		for(size_t i=0;i<nrArgs;i++) {
 			if (!first) proxyFile.oss << " && ";
-			proxyFile.oss << "isa(varargin{" << i+1 << "},'" << args[i].matlabClass() << "')";
+			proxyFile.oss << "isa(varargin{" << i+1 << "},'" << args[i].matlabClass(".") << "')";
 			first=false;
 		}
 		proxyFile.oss << "\n";
@@ -84,7 +85,7 @@ void StaticMethod::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wr
 		// Output C++ wrapper code
 		
 		const string wrapFunctionName = wrapper_fragment(
-			wrapperFile, cppClassName, matlabClassName, overload, id, using_namespaces, typeAttributes);
+			wrapperFile, cppClassName, matlabUniqueName, overload, id, using_namespaces, typeAttributes);
 
 		// Add to function list
 		functionNames.push_back(wrapFunctionName);
@@ -93,7 +94,7 @@ void StaticMethod::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wr
 	
   proxyFile.oss << "      else\n";
 	proxyFile.oss << "        error('Arguments do not match any overload of function " <<
-		matlabClassName << "." << upperName << "');" << endl;
+		matlabQualName << "." << upperName << "');" << endl;
 
 	proxyFile.oss << "      end\n";
 	proxyFile.oss << "    end\n";
@@ -102,7 +103,7 @@ void StaticMethod::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wr
 /* ************************************************************************* */
 string StaticMethod::wrapper_fragment(FileWriter& file, 
 			    const string& cppClassName,
-			    const string& matlabClassName,
+			    const string& matlabUniqueName,
 					int overload,
 					int id,
 			    const vector<string>& using_namespaces,
@@ -110,7 +111,7 @@ string StaticMethod::wrapper_fragment(FileWriter& file,
 
   // generate code
 
-	const string wrapFunctionName = matlabClassName + "_" + name + "_" + boost::lexical_cast<string>(id);
+	const string wrapFunctionName = matlabUniqueName + "_" + name + "_" + boost::lexical_cast<string>(id);
 
 	const ArgumentList& args = argLists[overload];
 	const ReturnValue& returnVal = returnVals[overload];
@@ -136,7 +137,7 @@ string StaticMethod::wrapper_fragment(FileWriter& file,
 
   // check arguments
   // NOTE: for static functions, there is no object passed
-  file.oss << "  checkArguments(\"" << matlabClassName << "." << name << "\",nargout,nargin," << args.size() << ");\n";
+  file.oss << "  checkArguments(\"" << matlabUniqueName << "." << name << "\",nargout,nargin," << args.size() << ");\n";
 
   // unwrap arguments, see Argument.cpp
   args.matlab_unwrap(file,0); // We start at 0 because there is no self object

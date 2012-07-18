@@ -20,40 +20,45 @@
 %  - Landmarks are 2 meters away from the robot trajectory
 
 %% Create keys for variables
+import gtsam.*
 i1 = symbol('x',1); i2 = symbol('x',2); i3 = symbol('x',3);
 j1 = symbol('l',1); j2 = symbol('l',2);
 
 %% Create graph container and add factors to it
-graph = planarSLAMGraph;
+graph = planarSLAM.Graph;
 
 %% Add prior
-priorMean = gtsamPose2(0.0, 0.0, 0.0); % prior at origin
-priorNoise = gtsamnoiseModelDiagonal.Sigmas([0.3; 0.3; 0.1]);
+import gtsam.*
+priorMean = Pose2(0.0, 0.0, 0.0); % prior at origin
+priorNoise = noiseModel.Diagonal.Sigmas([0.3; 0.3; 0.1]);
 graph.addPosePrior(i1, priorMean, priorNoise); % add directly to graph
 
 %% Add odometry
-odometry = gtsamPose2(2.0, 0.0, 0.0);
-odometryNoise = gtsamnoiseModelDiagonal.Sigmas([0.2; 0.2; 0.1]);
+import gtsam.*
+odometry = Pose2(2.0, 0.0, 0.0);
+odometryNoise = noiseModel.Diagonal.Sigmas([0.2; 0.2; 0.1]);
 graph.addRelativePose(i1, i2, odometry, odometryNoise);
 graph.addRelativePose(i2, i3, odometry, odometryNoise);
 
 %% Add bearing/range measurement factors
+import gtsam.*
 degrees = pi/180;
-noiseModel = gtsamnoiseModelDiagonal.Sigmas([0.1; 0.2]);
-graph.addBearingRange(i1, j1, gtsamRot2(45*degrees), sqrt(4+4), noiseModel);
-graph.addBearingRange(i2, j1, gtsamRot2(90*degrees), 2, noiseModel);
-graph.addBearingRange(i3, j2, gtsamRot2(90*degrees), 2, noiseModel);
+brNoise = noiseModel.Diagonal.Sigmas([0.1; 0.2]);
+graph.addBearingRange(i1, j1, Rot2(45*degrees), sqrt(4+4), brNoise);
+graph.addBearingRange(i2, j1, Rot2(90*degrees), 2, brNoise);
+graph.addBearingRange(i3, j2, Rot2(90*degrees), 2, brNoise);
 
 % print
 graph.print(sprintf('\nFull graph:\n'));
 
 %% Initialize to noisy points
-initialEstimate = planarSLAMValues;
-initialEstimate.insertPose(i1, gtsamPose2(0.5, 0.0, 0.2));
-initialEstimate.insertPose(i2, gtsamPose2(2.3, 0.1,-0.2));
-initialEstimate.insertPose(i3, gtsamPose2(4.1, 0.1, 0.1));
-initialEstimate.insertPoint(j1, gtsamPoint2(1.8, 2.1));
-initialEstimate.insertPoint(j2, gtsamPoint2(4.1, 1.8));
+import gtsam.*
+initialEstimate = planarSLAM.Values;
+initialEstimate.insertPose(i1, Pose2(0.5, 0.0, 0.2));
+initialEstimate.insertPose(i2, Pose2(2.3, 0.1,-0.2));
+initialEstimate.insertPose(i3, Pose2(4.1, 0.1, 0.1));
+initialEstimate.insertPoint(j1, Point2(1.8, 2.1));
+initialEstimate.insertPoint(j2, Point2(4.1, 1.8));
 
 initialEstimate.print(sprintf('\nInitial estimate:\n'));
 
@@ -62,6 +67,7 @@ result = graph.optimize(initialEstimate,1);
 result.print(sprintf('\nFinal result:\n'));
 
 %% Plot Covariance Ellipses
+import gtsam.*
 cla;hold on
 marginals = graph.marginals(result);
 for i=1:3

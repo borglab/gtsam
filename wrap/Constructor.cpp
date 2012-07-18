@@ -38,7 +38,7 @@ string Constructor::matlab_wrapper_name(const string& className) const {
 
 /* ************************************************************************* */
 void Constructor::proxy_fragment(FileWriter& file, const std::string& wrapperName,
-        const string& matlabName, const string& matlabBaseName, const int id, const ArgumentList args) const {
+        bool hasParent, const int id, const ArgumentList args) const {
 	size_t nrArgs = args.size();
 	// check for number of arguments...
   file.oss << "      elseif nargin == " << nrArgs;
@@ -47,14 +47,14 @@ void Constructor::proxy_fragment(FileWriter& file, const std::string& wrapperNam
   bool first = true;
   for(size_t i=0;i<nrArgs;i++) {
     if (!first) file.oss << " && ";
-    file.oss << "isa(varargin{" << i+1 << "},'" << args[i].matlabClass() << "')";
+    file.oss << "isa(varargin{" << i+1 << "},'" << args[i].matlabClass(".") << "')";
     first=false;
   }
   // emit code for calling constructor
-	if(matlabBaseName.empty())
-		file.oss << "\n        my_ptr = ";
-	else
+	if(hasParent)
 		file.oss << "\n        [ my_ptr, base_ptr ] = ";
+	else
+		file.oss << "\n        my_ptr = ";
   file.oss << wrapperName << "(" << id;
   // emit constructor arguments
   for(size_t i=0;i<nrArgs;i++) {
@@ -67,13 +67,13 @@ void Constructor::proxy_fragment(FileWriter& file, const std::string& wrapperNam
 /* ************************************************************************* */
 string Constructor::wrapper_fragment(FileWriter& file,
 				 const string& cppClassName,
-				 const string& matlabClassName,
+				 const string& matlabUniqueName,
 				 const string& cppBaseClassName,
 				 int id,
 				 const vector<string>& using_namespaces, 
 				 const ArgumentList& al) const {
 
-	const string wrapFunctionName = matlabClassName + "_constructor_" + boost::lexical_cast<string>(id);
+	const string wrapFunctionName = matlabUniqueName + "_constructor_" + boost::lexical_cast<string>(id);
 
   file.oss << "void " << wrapFunctionName << "(int nargout, mxArray *out[], int nargin, const mxArray *in[])" << endl;
   file.oss << "{\n";
@@ -87,7 +87,7 @@ string Constructor::wrapper_fragment(FileWriter& file,
 	if(al.size() > 0)
 		al.matlab_unwrap(file); // unwrap arguments
 	file.oss << "  Shared *self = new Shared(new " << cppClassName << "(" << al.names() << "));" << endl;
-	file.oss << "  collector_" << matlabClassName << ".insert(self);\n";
+	file.oss << "  collector_" << matlabUniqueName << ".insert(self);\n";
 
 	if(verbose_)
     file.oss << "  std::cout << \"constructed \" << self << \" << std::endl;" << endl;

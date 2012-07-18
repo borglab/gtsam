@@ -3,18 +3,19 @@ function [noiseModels,isam,result] = VisualISAMInitialize(data,truth,options)
 % Authors: Duy Nguyen Ta, Frank Dellaert and Alex Cunningham
 
 %% Initialize iSAM
-isam = visualSLAMISAM(options.reorderInterval);
+isam = visualSLAM.ISAM(options.reorderInterval);
 
 %% Set Noise parameters
-noiseModels.pose = gtsamnoiseModelDiagonal.Sigmas([0.001 0.001 0.001 0.1 0.1 0.1]');
-noiseModels.odometry = gtsamnoiseModelDiagonal.Sigmas([0.001 0.001 0.001 0.1 0.1 0.1]');
-noiseModels.point = gtsamnoiseModelIsotropic.Sigma(3, 0.1);
-noiseModels.measurement = gtsamnoiseModelIsotropic.Sigma(2, 1.0);
+import gtsam.*
+noiseModels.pose = noiseModel.Diagonal.Sigmas([0.001 0.001 0.001 0.1 0.1 0.1]');
+noiseModels.odometry = noiseModel.Diagonal.Sigmas([0.001 0.001 0.001 0.1 0.1 0.1]');
+noiseModels.point = noiseModel.Isotropic.Sigma(3, 0.1);
+noiseModels.measurement = noiseModel.Isotropic.Sigma(2, 1.0);
 
 %% Add constraints/priors
 % TODO: should not be from ground truth!
-newFactors = visualSLAMGraph;
-initialEstimates = visualSLAMValues;
+newFactors = visualSLAM.Graph;
+initialEstimates = visualSLAM.Values;
 for i=1:2
     ii = symbol('x',i);
     if i==1

@@ -48,12 +48,12 @@ struct Deconstructor {
 	/// m-file
 	void proxy_fragment(FileWriter& file,
 		const std::string& wrapperName,
-		const std::string& qualifiedMatlabName, int id) const;
+		const std::string& matlabUniqueName, int id) const;
 
 	/// cpp wrapper
 	std::string wrapper_fragment(FileWriter& file,
 			 const std::string& cppClassName,
-			 const std::string& matlabClassName,
+			 const std::string& matlabUniqueName,
 			 int id,
 			 const std::vector<std::string>& using_namespaces) const;
 };

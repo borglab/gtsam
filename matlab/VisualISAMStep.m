@@ -4,15 +4,17 @@ function [isam,result] = VisualISAMStep(data,noiseModels,isam,result,truth, opti
 
 % iSAM expects us to give it a new set of factors 
 % along with initial estimates for any new variables introduced.
-newFactors = visualSLAMGraph;
-initialEstimates = visualSLAMValues;
+newFactors = visualSLAM.Graph;
+initialEstimates = visualSLAM.Values;
 
 %% Add odometry
+import gtsam.*
 i = result.nrPoses+1;
 odometry = data.odometry{i-1};
 newFactors.addRelativePose(symbol('x',i-1), symbol('x',i), odometry, noiseModels.odometry);
 
 %% Add visual measurement factors and initializations as necessary
+import gtsam.*
 for k=1:length(data.Z{i})
     zij = data.Z{i}{k};
     j = data.J{i}{k};
@@ -26,6 +28,7 @@ for k=1:length(data.Z{i})
 end
 
 %% Initial estimates for the new pose.
+import gtsam.*
 prevPose = result.pose(symbol('x',i-1));
 initialEstimates.insertPose(symbol('x',i), prevPose.compose(odometry));
 

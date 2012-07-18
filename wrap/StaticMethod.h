@@ -50,7 +50,7 @@ struct StaticMethod {
 	// MATLAB code generation
 	// classPath is class directory, e.g., ../matlab/@Point2
 	void proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperFile,
-		const std::string& cppClassName,	const std::string& matlabClassName,
+		const std::string& cppClassName, const std::string& matlabQualName, const std::string& matlabUniqueName,
 		const std::string& wrapperName, const std::vector<std::string>& using_namespaces,
 		const TypeAttributesTable& typeAttributes,
 		std::vector<std::string>& functionNames) const;
@@ -58,7 +58,7 @@ struct StaticMethod {
 private:
 	std::string wrapper_fragment(FileWriter& file,
 	    const std::string& cppClassName,
-	    const std::string& matlabClassname,
+	    const std::string& matlabUniqueName,
 			int overload,
 			int id,
 	    const std::vector<std::string>& using_namespaces,

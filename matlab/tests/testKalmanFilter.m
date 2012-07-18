@@ -19,16 +19,17 @@
 %  */
 
 %% Create the controls and measurement properties for our example
+import gtsam.*
 F = eye(2,2);
 B = eye(2,2);
 u = [1.0; 0.0];
-modelQ = gtsamnoiseModelDiagonal.Sigmas([0.1;0.1]);
+modelQ = noiseModel.Diagonal.Sigmas([0.1;0.1]);
 Q = 0.01*eye(2,2);
 H = eye(2,2);
 z1 = [1.0, 0.0]';
 z2 = [2.0, 0.0]';
 z3 = [3.0, 0.0]';
-modelR = gtsamnoiseModelDiagonal.Sigmas([0.1;0.1]);
+modelR = noiseModel.Diagonal.Sigmas([0.1;0.1]);
 R = 0.01*eye(2,2);
 
 %% Create the set of expected output TestValues
@@ -48,7 +49,8 @@ P23 = inv(I22) + Q;
 I33 = inv(P23) + inv(R);
 
 %% Create an KalmanFilter object
-KF = gtsamKalmanFilter(2);
+import gtsam.*
+KF = KalmanFilter(2);
 
 %% Create the Kalman Filter initialization point
 x_initial = [0.0;0.0];

@@ -11,15 +11,15 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Create a hexagon of poses
-hexagon = pose3SLAMValues.Circle(6,1.0);
+hexagon = pose3SLAM.Values.Circle(6,1.0);
 p0 = hexagon.pose(0);
 p1 = hexagon.pose(1);
 
 %% create a Pose graph with one equality constraint and one measurement
-fg = pose3SLAMGraph;
+fg = pose3SLAM.Graph;
 fg.addPoseConstraint(0, p0);
 delta = p0.between(p1);
-covariance = gtsamnoiseModelDiagonal.Sigmas([0.05; 0.05; 0.05; 5*pi/180; 5*pi/180; 5*pi/180]);
+covariance = gtsam.noiseModel.Diagonal.Sigmas([0.05; 0.05; 0.05; 5*pi/180; 5*pi/180; 5*pi/180]);
 fg.addRelativePose(0,1, delta, covariance);
 fg.addRelativePose(1,2, delta, covariance);
 fg.addRelativePose(2,3, delta, covariance);
@@ -28,7 +28,7 @@ fg.addRelativePose(4,5, delta, covariance);
 fg.addRelativePose(5,0, delta, covariance);
 
 %% Create initial config
-initial = pose3SLAMValues;
+initial = pose3SLAM.Values;
 s = 0.10;
 initial.insertPose(0, p0);
 initial.insertPose(1, hexagon.pose(1).retract(s*randn(6,1)));

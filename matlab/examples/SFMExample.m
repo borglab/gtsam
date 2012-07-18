@@ -29,10 +29,11 @@ pointNoiseSigma = 0.1;
 poseNoiseSigmas = [0.001 0.001 0.001 0.1 0.1 0.1]';
 
 %% Create the graph (defined in visualSLAM.h, derived from NonlinearFactorGraph)
-graph = visualSLAMGraph;
+graph = visualSLAM.Graph;
 
 %% Add factors for all measurements
-measurementNoise = gtsamnoiseModelIsotropic.Sigma(2,measurementNoiseSigma);
+import gtsam.*
+measurementNoise = noiseModel.Isotropic.Sigma(2,measurementNoiseSigma);
 for i=1:length(data.Z)
     for k=1:length(data.Z{i})
         j = data.J{i}{k};
@@ -41,16 +42,17 @@ for i=1:length(data.Z)
 end
 
 %% Add Gaussian priors for a pose and a landmark to constrain the system
-posePriorNoise  = gtsamnoiseModelDiagonal.Sigmas(poseNoiseSigmas);
+import gtsam.*
+posePriorNoise  = noiseModel.Diagonal.Sigmas(poseNoiseSigmas);
 graph.addPosePrior(symbol('x',1), truth.cameras{1}.pose, posePriorNoise);
-pointPriorNoise  = gtsamnoiseModelIsotropic.Sigma(3,pointNoiseSigma);
+pointPriorNoise  = noiseModel.Isotropic.Sigma(3,pointNoiseSigma);
 graph.addPointPrior(symbol('p',1), truth.points{1}, pointPriorNoise);
 
 %% Print the graph
 graph.print(sprintf('\nFactor graph:\n'));
 
 %% Initialize cameras and points close to ground truth in this example
-initialEstimate = visualSLAMValues;
+initialEstimate = visualSLAM.Values;
 for i=1:size(truth.cameras,2)
     pose_i = truth.cameras{i}.pose.retract(0.1*randn(6,1));
     initialEstimate.insertPose(symbol('x',i), pose_i);
@@ -63,7 +65,8 @@ initialEstimate.print(sprintf('\nInitial estimate:\n  '));
 
 %% Fine grain optimization, allowing user to iterate step by step
 
-parameters = gtsamLevenbergMarquardtParams;
+import gtsam.*
+parameters = LevenbergMarquardtParams;
 parameters.setlambdaInitial(1.0);
 parameters.setVerbosityLM('trylambda');
 

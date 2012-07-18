@@ -48,7 +48,7 @@ void Argument::matlab_unwrap(FileWriter& file, const string& matlabName) const {
   file.oss << "  ";
 
   string cppType = qualifiedType("::");
-  string matlabType = qualifiedType();
+  string matlabUniqueType = qualifiedType();
 
   if (is_ptr)
 		// A pointer: emit an "unwrap_shared_ptr" call which returns a pointer
@@ -65,7 +65,7 @@ void Argument::matlab_unwrap(FileWriter& file, const string& matlabName) const {
 		file.oss << cppType << " " << name << " = unwrap< ";
 
 	file.oss << cppType << " >(" << matlabName;
-  if (is_ptr || is_ref) file.oss << ", \"ptr_" << matlabType << "\"";
+  if (is_ptr || is_ref) file.oss << ", \"ptr_" << matlabUniqueType << "\"";
   file.oss << ");" << endl;
 }
 

@@ -1,6 +1,8 @@
 %-----------------------------------------------------------------------
 % eliminate
 
+import gtsam.*
+
 % the combined linear factor
 Ax2 = [
 -5., 0.
@@ -30,8 +32,8 @@ x1 = 3;
 % the RHS
 b2=[-1;1.5;2;-1];
 sigmas = [1;1;1;1];
-model4 = gtsamnoiseModelDiagonal.Sigmas(sigmas);
-combined = gtsamJacobianFactor(x2, Ax2,  l1, Al1, x1, Ax1, b2, model4);
+model4 = noiseModel.Diagonal.Sigmas(sigmas);
+combined = JacobianFactor(x2, Ax2,  l1, Al1, x1, Ax1, b2, model4);
 
 % eliminate the first variable (x2) in the combined factor, destructive !
 actualCG = combined.eliminateFirst();
@@ -50,7 +52,7 @@ S13 = [
 +0.00,-8.94427
 ];
 d=[2.23607;-1.56525];
-expectedCG = gtsamGaussianConditional(x2,d,R11,l1,S12,x1,S13,[1;1]);
+expectedCG = GaussianConditional(x2,d,R11,l1,S12,x1,S13,[1;1]);
 % check if the result matches
 CHECK('actualCG.equals(expectedCG,1e-5)',actualCG.equals(expectedCG,1e-4));
 
@@ -69,8 +71,8 @@ Bx1 = [
 % the RHS
 b1= [0.0;0.894427];
 
-model2 = gtsamnoiseModelDiagonal.Sigmas([1;1]);
-expectedLF = gtsamJacobianFactor(l1, Bl1, x1, Bx1, b1, model2);
+model2 = noiseModel.Diagonal.Sigmas([1;1]);
+expectedLF = JacobianFactor(l1, Bl1, x1, Bx1, b1, model2);
 
 % check if the result matches the combined (reduced) factor
 % FIXME: JacobianFactor/GaussianFactor mismatch

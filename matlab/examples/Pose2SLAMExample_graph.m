@@ -11,13 +11,15 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Initialize graph, initial estimate, and odometry noise
-model = gtsamnoiseModelDiagonal.Sigmas([0.05; 0.05; 5*pi/180]);
+import gtsam.*
+model = noiseModel.Diagonal.Sigmas([0.05; 0.05; 5*pi/180]);
 [graph,initial]=load2D('../../examples/Data/w100-odom.graph',model);
 initial.print(sprintf('Initial estimate:\n'));
 
 %% Add a Gaussian prior on pose x_1
-priorMean = gtsamPose2(0.0, 0.0, 0.0); % prior mean is at origin
-priorNoise = gtsamnoiseModelDiagonal.Sigmas([0.01; 0.01; 0.01]);
+import gtsam.*
+priorMean = Pose2(0.0, 0.0, 0.0); % prior mean is at origin
+priorNoise = noiseModel.Diagonal.Sigmas([0.01; 0.01; 0.01]);
 graph.addPosePrior(0, priorMean, priorNoise); % add directly to graph
 
 %% Plot Initial Estimate

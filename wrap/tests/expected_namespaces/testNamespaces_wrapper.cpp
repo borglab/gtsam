@@ -223,7 +223,7 @@ void ns2ClassA_nsReturn_11(int nargout, mxArray *out[], int nargin, const mxArra
   checkArguments("nsReturn",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<ns2::ClassA>(in[0], "ptr_ns2ClassA");
   double q = unwrap< double >(in[1]);
-  out[0] = wrap_shared_ptr(SharedClassB(new ns2::ns3::ClassB(obj->nsReturn(q))),"ns2ns3ClassB", false);
+  out[0] = wrap_shared_ptr(SharedClassB(new ns2::ns3::ClassB(obj->nsReturn(q))),"ns2.ns3.ClassB", false);
 }
 
 void ns2ClassA_afunction_12(int nargout, mxArray *out[], int nargin, const mxArray *in[])

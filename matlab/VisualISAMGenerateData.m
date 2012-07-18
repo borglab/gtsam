@@ -3,33 +3,35 @@ function [data,truth] = VisualISAMGenerateData(options)
 % Authors: Duy Nguyen Ta and Frank Dellaert
 
 %% Generate simulated data
+import gtsam.*
 if options.triangle % Create a triangle target, just 3 points on a plane
     nrPoints = 3;
     r = 10;
     for j=1:nrPoints
         theta = (j-1)*2*pi/nrPoints;
-        truth.points{j} = gtsamPoint3([r*cos(theta), r*sin(theta), 0]');
+        truth.points{j} = Point3([r*cos(theta), r*sin(theta), 0]');
     end
 else % 3D landmarks as vertices of a cube
     nrPoints = 8;
-    truth.points = {gtsamPoint3([10 10 10]'),...
-        gtsamPoint3([-10 10 10]'),...
-        gtsamPoint3([-10 -10 10]'),...
-        gtsamPoint3([10 -10 10]'),...
-        gtsamPoint3([10 10 -10]'),...
-        gtsamPoint3([-10 10 -10]'),...
-        gtsamPoint3([-10 -10 -10]'),...
-        gtsamPoint3([10 -10 -10]')};
+    truth.points = {Point3([10 10 10]'),...
+        Point3([-10 10 10]'),...
+        Point3([-10 -10 10]'),...
+        Point3([10 -10 10]'),...
+        Point3([10 10 -10]'),...
+        Point3([-10 10 -10]'),...
+        Point3([-10 -10 -10]'),...
+        Point3([10 -10 -10]')};
 end
 
 %% Create camera cameras on a circle around the triangle
+import gtsam.*
 height = 10; r = 40;
-truth.K = gtsamCal3_S2(500,500,0,640/2,480/2);
+truth.K = Cal3_S2(500,500,0,640/2,480/2);
 data.K = truth.K;
 for i=1:options.nrCameras
     theta = (i-1)*2*pi/options.nrCameras;
-    t = gtsamPoint3([r*cos(theta), r*sin(theta), height]');
-    truth.cameras{i} = gtsamSimpleCamera.Lookat(t, gtsamPoint3, gtsamPoint3([0,0,1]'), truth.K);
+    t = Point3([r*cos(theta), r*sin(theta), height]');
+    truth.cameras{i} = SimpleCamera.Lookat(t, Point3, Point3([0,0,1]'), truth.K);
     % Create measurements
     for j=1:nrPoints
         % All landmarks seen in every frame

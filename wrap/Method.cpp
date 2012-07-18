@@ -39,7 +39,8 @@ void Method::addOverload(bool verbose, bool is_const, const std::string& name,
 
 void Method::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperFile,
 																		 const string& cppClassName,
-																		 const string& matlabClassName,
+																		 const std::string& matlabQualName,
+																		 const std::string& matlabUniqueName,
 																		 const string& wrapperName,
 																		 const vector<string>& using_namespaces,
 																		 const TypeAttributesTable& typeAttributes,
@@ -63,7 +64,7 @@ void Method::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperF
 		bool first = true;
 		for(size_t i=0;i<nrArgs;i++) {
 			if (!first) proxyFile.oss << " && ";
-			proxyFile.oss << "isa(varargin{" << i+1 << "},'" << args[i].matlabClass() << "')";
+			proxyFile.oss << "isa(varargin{" << i+1 << "},'" << args[i].matlabClass(".") << "')";
 			first=false;
 		}
 		proxyFile.oss << "\n";
@@ -81,7 +82,7 @@ void Method::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperF
 		// Output C++ wrapper code
 		
 		const string wrapFunctionName = wrapper_fragment(
-			wrapperFile, cppClassName, matlabClassName, overload, id, using_namespaces, typeAttributes);
+			wrapperFile, cppClassName, matlabUniqueName, overload, id, using_namespaces, typeAttributes);
 
 		// Add to function list
 		functionNames.push_back(wrapFunctionName);
@@ -90,7 +91,7 @@ void Method::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperF
 	
   proxyFile.oss << "      else\n";
 	proxyFile.oss << "        error('Arguments do not match any overload of function " <<
-		matlabClassName << "." << name << "');" << endl;
+		matlabQualName << "." << name << "');" << endl;
 
 	proxyFile.oss << "      end\n";
 	proxyFile.oss << "    end\n";
@@ -99,7 +100,7 @@ void Method::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperF
 /* ************************************************************************* */
 string Method::wrapper_fragment(FileWriter& file, 
 			    const string& cppClassName,
-			    const string& matlabClassName,
+			    const string& matlabUniqueName,
 					int overload,
 					int id,
 			    const vector<string>& using_namespaces,
@@ -107,7 +108,7 @@ string Method::wrapper_fragment(FileWriter& file,
 
   // generate code
 
-	const string wrapFunctionName = matlabClassName + "_" + name + "_" + boost::lexical_cast<string>(id);
+	const string wrapFunctionName = matlabUniqueName + "_" + name + "_" + boost::lexical_cast<string>(id);
 
 	const ArgumentList& args = argLists[overload];
 	const ReturnValue& returnVal = returnVals[overload];
@@ -138,7 +139,7 @@ string Method::wrapper_fragment(FileWriter& file,
 
   // get class pointer
   // example: shared_ptr<Test> = unwrap_shared_ptr< Test >(in[0], "Test");
-  file.oss << "  Shared obj = unwrap_shared_ptr<" << cppClassName << ">(in[0], \"ptr_" << matlabClassName << "\");" << endl;
+  file.oss << "  Shared obj = unwrap_shared_ptr<" << cppClassName << ">(in[0], \"ptr_" << matlabUniqueName << "\");" << endl;
   // unwrap arguments, see Argument.cpp
   args.matlab_unwrap(file,1);
 

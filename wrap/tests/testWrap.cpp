@@ -227,11 +227,11 @@ TEST( wrap, matlab_code_namespaces ) {
 
 
 	EXPECT(files_equal(exp_path + "ClassD.m"                    , act_path + "ClassD.m"                   ));
-	EXPECT(files_equal(exp_path + "ns1ClassA.m"                 , act_path + "ns1ClassA.m"                ));
-	EXPECT(files_equal(exp_path + "ns1ClassB.m"                 , act_path + "ns1ClassB.m"                ));
-	EXPECT(files_equal(exp_path + "ns2ClassA.m"                 , act_path + "ns2ClassA.m"                ));
-	EXPECT(files_equal(exp_path + "ns2ClassC.m"                 , act_path + "ns2ClassC.m"                ));
-	EXPECT(files_equal(exp_path + "ns2ns3ClassB.m"              , act_path + "ns2ns3ClassB.m"             ));
+	EXPECT(files_equal(exp_path + "+ns1/ClassA.m"               , act_path + "+ns1/ClassA.m"              ));
+	EXPECT(files_equal(exp_path + "+ns1/ClassB.m"               , act_path + "+ns1/ClassB.m"              ));
+	EXPECT(files_equal(exp_path + "+ns2/ClassA.m"               , act_path + "+ns2/ClassA.m"              ));
+	EXPECT(files_equal(exp_path + "+ns2/ClassC.m"               , act_path + "+ns2/ClassC.m"              ));
+	EXPECT(files_equal(exp_path + "+ns2/+ns3/ClassB.m"          , act_path + "+ns2/+ns3/ClassB.m"         ));
 	EXPECT(files_equal(exp_path + "testNamespaces_wrapper.cpp"  , act_path + "testNamespaces_wrapper.cpp" ));
 }
 

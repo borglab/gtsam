@@ -50,13 +50,12 @@ struct Constructor {
 	 * if nargin == 2, obj.self = new_Pose3_RP(varargin{1},varargin{2}); end
 	 */
 	void proxy_fragment(FileWriter& file, const std::string& wrapperName,
-	        const std::string& className, const std::string& matlabBaseName, const int id,
-	        const ArgumentList args) const;
+	        bool hasParent, const int id, const ArgumentList args) const;
 
 	/// cpp wrapper
 	std::string wrapper_fragment(FileWriter& file,
 			 const std::string& cppClassName,
-			 const std::string& matlabClassName,
+			 const std::string& matlabUniqueName,
 			 const std::string& cppBaseClassName,
 			 int id,
 			 const std::vector<std::string>& using_namespaces,

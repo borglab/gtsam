@@ -448,8 +448,7 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 
 		// create proxy class and wrapper code
 		BOOST_FOREACH(const Class& cls, expandedClasses) {
-      string classFile = toolboxPath + "/" + cls.qualifiedName() + ".m";
-      cls.matlab_proxy(classFile, wrapperName, typeAttributes, wrapperFile, functionNames);
+      cls.matlab_proxy(toolboxPath, wrapperName, typeAttributes, wrapperFile, functionNames);
     }  
 
 		// finish wrapper file
@@ -527,11 +526,12 @@ vector<string> Module::GenerateValidTypes(const vector<Class>& classes, const ve
 void Module::WriteCollectorsAndCleanupFcn(FileWriter& wrapperFile, const std::string& moduleName, const std::vector<Class>& classes) {
 	// Generate all collectors
 	BOOST_FOREACH(const Class& cls, classes) {
-		const string matlabName = cls.qualifiedName(), cppName = cls.qualifiedName("::");
+		const string matlabUniqueName = cls.qualifiedName(),
+			cppName = cls.qualifiedName("::");
 		wrapperFile.oss << "typedef std::set<boost::shared_ptr<" << cppName << ">*> "
-			<< "Collector_" << matlabName << ";\n";
-		wrapperFile.oss << "static Collector_" << matlabName <<
-			" collector_" << matlabName << ";\n";
+			<< "Collector_" << matlabUniqueName << ";\n";
+		wrapperFile.oss << "static Collector_" << matlabUniqueName <<
+			" collector_" << matlabUniqueName << ";\n";
 	}
 
 	// generate mexAtExit cleanup function
@@ -542,10 +542,10 @@ void Module::WriteCollectorsAndCleanupFcn(FileWriter& wrapperFile, const std::st
 		"  std::streambuf *outbuf = std::cout.rdbuf(&mout);\n\n"
 		"  bool anyDeleted = false;\n";
 	BOOST_FOREACH(const Class& cls, classes) {
-		const string matlabName = cls.qualifiedName();
+		const string matlabUniqueName = cls.qualifiedName();
 		const string cppName = cls.qualifiedName("::");
-		const string collectorType = "Collector_" + matlabName;
-		const string collectorName = "collector_" + matlabName;
+		const string collectorType = "Collector_" + matlabUniqueName;
+		const string collectorName = "collector_" + matlabUniqueName;
 		wrapperFile.oss <<
 			"  for(" << collectorType << "::iterator iter = " << collectorName << ".begin();\n"
 			"      iter != " << collectorName << ".end(); ) {\n"
@@ -574,7 +574,7 @@ void Module::WriteRTTIRegistry(FileWriter& wrapperFile, const std::string& modul
 	BOOST_FOREACH(const Class& cls, classes) {
 		if(cls.isVirtual)
 			wrapperFile.oss <<
-			"    types.insert(std::make_pair(typeid(" << cls.qualifiedName("::") << ").name(), \"" << cls.qualifiedName() << "\"));\n";
+			"    types.insert(std::make_pair(typeid(" << cls.qualifiedName("::") << ").name(), \"" << cls.qualifiedName(".") << "\"));\n";
 	}
 	wrapperFile.oss << "\n";
 
