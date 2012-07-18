@@ -1130,32 +1130,46 @@ class Marginals {
 	Matrix marginalInformation(size_t variable) const;
 };
 
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-class LevenbergMarquardtParams {
-  LevenbergMarquardtParams();
-  void print(string s) const;
+//*************************************************************************
+// Nonlinear optimizers
+//*************************************************************************
 
-  size_t getMaxIterations() const;
-  double getRelativeErrorTol() const;
-  double getAbsoluteErrorTol() const;
-  double getErrorTol() const;
-  string getVerbosity() const;
+#include <gtsam/nonlinear/NonlinearOptimizer.h>
+virtual class NonlinearOptimizerParams {
+	NonlinearOptimizerParams();
+	void print(string s) const;
 
-  void setMaxIterations(size_t value);
-  void setRelativeErrorTol(double value);
-  void setAbsoluteErrorTol(double value);
-  void setErrorTol(double value);
-  void setVerbosity(string s);
+	size_t getMaxIterations() const;
+	double getRelativeErrorTol() const;
+	double getAbsoluteErrorTol() const;
+	double getErrorTol() const;
+	string getVerbosity() const;
+
+	void setMaxIterations(size_t value);
+	void setRelativeErrorTol(double value);
+	void setAbsoluteErrorTol(double value);
+	void setErrorTol(double value);
+	void setVerbosity(string s);
+};
+
+#include <gtsam/nonlinear/SuccessiveLinearizationOptimizer.h>
+virtual class SuccessiveLinearizationParams : gtsam::NonlinearOptimizerParams {
+  SuccessiveLinearizationParams();
 
   bool isMultifrontal() const;
   bool isSequential() const;
   bool isCholmod() const;
   bool isCG() const;
+};
 
-  double getlambdaInitial() const ;
-  double getlambdaFactor() const ;
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+virtual class LevenbergMarquardtParams : gtsam::SuccessiveLinearizationParams {
+	LevenbergMarquardtParams();
+
+  double getlambdaInitial() const;
+  double getlambdaFactor() const;
   double getlambdaUpperBound() const;
-  string getVerbosityLM() const ;
+  string getVerbosityLM() const;
 
   void setlambdaInitial(double value);
   void setlambdaFactor(double value);
@@ -1163,22 +1177,53 @@ class LevenbergMarquardtParams {
   void setVerbosityLM(string s);
 };
 
+#include <gtsam/nonlinear/DoglegOptimizer.h>
+virtual class DoglegParams : gtsam::SuccessiveLinearizationParams {
+	DoglegParams();
+
+	double getDeltaInitial() const;
+	string getVerbosityDL() const;
+
+	void setDeltaInitial(double deltaInitial) const;
+	void setVerbosityDL(string verbosityDL) const;
+};
+
+virtual class NonlinearOptimizer {
+	gtsam::Values optimizeSafely();
+	double error() const;
+	int iterations() const;
+	gtsam::Values values() const;
+	void iterate() const;
+};
+
+virtual class DoglegOptimizer : gtsam::NonlinearOptimizer {
+	DoglegOptimizer(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& initialValues);
+	DoglegOptimizer(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& initialValues, const gtsam::DoglegParams& params);
+	double getDelta() const;
+};
+
+virtual class LevenbergMarquardtOptimizer : gtsam::NonlinearOptimizer {
+	LevenbergMarquardtOptimizer(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& initialValues);
+	LevenbergMarquardtOptimizer(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& initialValues, const gtsam::LevenbergMarquardtParams& params);
+	double lambda() const;
+};
+
 //*************************************************************************
 // Nonlinear factor types
 //*************************************************************************
-template<T = {gtsam::LieVector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera}>
+template<T = {gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera}>
 virtual class PriorFactor : gtsam::NonlinearFactor {
 	PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
 };
 
 
-template<T = {gtsam::LieVector, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
+template<T = {gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
 virtual class BetweenFactor : gtsam::NonlinearFactor {
 	BetweenFactor(size_t key1, size_t key2, const T& relativePose, const gtsam::noiseModel::Base* noiseModel);
 };
 
 
-template<T = {gtsam::LieVector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera}>
+template<T = {gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera}>
 virtual class NonlinearEquality : gtsam::NonlinearFactor {
 	// Constructor - forces exact evaluation
 	NonlinearEquality(size_t j, const T& feasible);

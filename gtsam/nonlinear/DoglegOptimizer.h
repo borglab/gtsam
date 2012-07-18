@@ -50,6 +50,15 @@ public:
     std::cout << "               deltaInitial: " << deltaInitial << "\n";
     std::cout.flush();
   }
+
+	double getDeltaInitial() const { return deltaInitial; }
+	std::string getVerbosityDL() const { return verbosityDLTranslator(verbosityDL); }
+
+	void setDeltaInitial(double deltaInitial) { this->deltaInitial = deltaInitial; }
+	void setVerbosityDL(const std::string& verbosityDL) { this->verbosityDL = verbosityDLTranslator(verbosityDL); }
+
+	VerbosityDL verbosityDLTranslator(const std::string& verbosityDL) const;
+	std::string verbosityDLTranslator(VerbosityDL verbosityDL) const;
 };
 
 /**
@@ -128,7 +137,7 @@ public:
   const DoglegState& state() const { return state_; }
 
   /** Access the current trust region radius Delta */
-  double Delta() const { return state_.Delta; }
+  double getDelta() const { return state_.Delta; }
 
   /// @}
 
