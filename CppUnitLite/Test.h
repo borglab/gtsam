@@ -27,8 +27,6 @@
 
 class TestResult;
 
-
-
 class Test
 {
 public:

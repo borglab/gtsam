@@ -18,13 +18,13 @@
 #include <boost/lexical_cast.hpp>
 
 Test::Test (const std::string& testName)
-	: name_ (testName) 
+	: name_ (testName), next_(0), lineNumber_(-1), safeCheck_(true)
 {
 	TestRegistry::addTest (this);
 }
 
-Test::Test (const std::string& testName, const std::string& filename, long lineNumber, bool safeCheck = true)
-	: name_(testName), filename_(filename), lineNumber_(lineNumber), safeCheck_(safeCheck)
+Test::Test (const std::string& testName, const std::string& filename, long lineNumber, bool safeCheck)
+	: name_(testName), next_(0), filename_(filename), lineNumber_(lineNumber), safeCheck_(safeCheck)
 {
 	TestRegistry::addTest (this);
 }
