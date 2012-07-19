@@ -20,6 +20,7 @@
 using namespace boost::assign;
 #include <boost/range/adaptors.hpp>
 #include <boost/range/algorithm.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include <gtsam/base/timing.h>
 #include <gtsam/base/debug.h>
@@ -38,6 +39,48 @@ using namespace std;
 
 static const bool disableReordering = false;
 static const double batchThreshold = 0.65;
+
+/* ************************************************************************* */
+std::string ISAM2DoglegParams::adaptationModeTranslator(const DoglegOptimizerImpl::TrustRegionAdaptationMode& adaptationMode) const {
+  std::string s;
+  switch (adaptationMode) {
+  case DoglegOptimizerImpl::SEARCH_EACH_ITERATION:   s = "SEARCH_EACH_ITERATION";  break;
+  case DoglegOptimizerImpl::ONE_STEP_PER_ITERATION:  s = "ONE_STEP_PER_ITERATION"; break;
+  default:                                           s = "UNDEFINED";              break;
+  }
+  return s;
+}
+
+/* ************************************************************************* */
+DoglegOptimizerImpl::TrustRegionAdaptationMode ISAM2DoglegParams::adaptationModeTranslator(const std::string& adaptationMode) const {
+  std::string s = adaptationMode;  boost::algorithm::to_upper(s);
+  if (s == "SEARCH_EACH_ITERATION")  return DoglegOptimizerImpl::SEARCH_EACH_ITERATION;
+  if (s == "ONE_STEP_PER_ITERATION") return DoglegOptimizerImpl::ONE_STEP_PER_ITERATION;
+
+  /* default is SEARCH_EACH_ITERATION */
+  return DoglegOptimizerImpl::SEARCH_EACH_ITERATION;
+}
+
+/* ************************************************************************* */
+ISAM2Params::Factorization ISAM2Params::factorizationTranslator(const std::string& str) const {
+  std::string s = str;  boost::algorithm::to_upper(s);
+  if (s == "QR") return ISAM2Params::QR;
+  if (s == "CHOLESKY") return ISAM2Params::CHOLESKY;
+
+  /* default is CHOLESKY */
+  return ISAM2Params::CHOLESKY;
+}
+
+/* ************************************************************************* */
+std::string ISAM2Params::factorizationTranslator(const ISAM2Params::Factorization& value) const {
+  std::string s;
+  switch (value) {
+  case ISAM2Params::QR:         s = "QR"; break;
+  case ISAM2Params::CHOLESKY:   s = "CHOLESKY"; break;
+  default:                      s = "UNDEFINED"; break;
+  }
+  return s;
+}
 
 /* ************************************************************************* */
 ISAM2::ISAM2(const ISAM2Params& params):

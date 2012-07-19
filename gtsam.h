@@ -1025,6 +1025,7 @@ class InvertedOrdering {
 class NonlinearFactorGraph {
 	NonlinearFactorGraph();
   void print(string s) const;
+  size_t size() const;
 	double error(const gtsam::Values& c) const;
 	double probPrime(const gtsam::Values& c) const;
 	gtsam::NonlinearFactor* at(size_t i) const;
@@ -1206,6 +1207,95 @@ virtual class LevenbergMarquardtOptimizer : gtsam::NonlinearOptimizer {
 	LevenbergMarquardtOptimizer(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& initialValues);
 	LevenbergMarquardtOptimizer(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& initialValues, const gtsam::LevenbergMarquardtParams& params);
 	double lambda() const;
+};
+
+#include <gtsam/nonlinear/ISAM2.h>
+class ISAM2GaussNewtonParams {
+  ISAM2GaussNewtonParams();
+
+  void print(string str) const;
+
+  /** Getters and Setters for all properties */
+  double getWildfireThreshold() const;
+  void setWildfireThreshold(double wildfireThreshold);
+};
+
+class ISAM2DoglegParams {
+  ISAM2DoglegParams();
+
+  void print(string str) const;
+
+  /** Getters and Setters for all properties */
+  double getWildfireThreshold() const;
+  void setWildfireThreshold(double wildfireThreshold);
+  double getInitialDelta() const;
+  void setInitialDelta(double initialDelta);
+  string getAdaptationMode() const;
+  void setAdaptationMode(string adaptationMode);
+  bool isVerbose() const;
+  void setVerbose(bool verbose);
+};
+
+class ISAM2Params {
+  ISAM2Params();
+
+  void print(string str) const;
+
+  /** Getters and Setters for all properties */
+  void setOptimizationParams(const gtsam::ISAM2GaussNewtonParams& params);
+  void setOptimizationParams(const gtsam::ISAM2DoglegParams& params);
+  void setRelinearizeThreshold(double relinearizeThreshold);
+  // TODO: wrap this
+  //void setRelinearizeThreshold(const FastMap<char,Vector>& relinearizeThreshold);
+  int getRelinearizeSkip() const;
+  void setRelinearizeSkip(int relinearizeSkip);
+  bool isEnableRelinearization() const;
+  void setEnableRelinearization(bool enableRelinearization);
+  bool isEvaluateNonlinearError() const;
+  void setEvaluateNonlinearError(bool evaluateNonlinearError);
+  string getFactorization() const;
+  void setFactorization(string factorization);
+  bool isCacheLinearizedFactors() const;
+  void setCacheLinearizedFactors(bool cacheLinearizedFactors);
+  bool isEnableDetailedResults() const;
+  void setEnableDetailedResults(bool enableDetailedResults);
+  bool isEnablePartialRelinearizationCheck() const;
+  void setEnablePartialRelinearizationCheck(bool enablePartialRelinearizationCheck);
+};
+
+class ISAM2Result {
+  ISAM2Result();
+
+  void print(string str) const;
+
+  /** Getters and Setters for all properties */
+  size_t getVariablesRelinearized() const;
+  size_t getVariablesReeliminated() const;
+  size_t getCliques() const;
+};
+
+class ISAM2 {
+  ISAM2();
+  ISAM2(const gtsam::ISAM2Params& params);
+
+  bool equals(const gtsam::ISAM2& other, double tol) const;
+  void print(string s) const;
+
+  gtsam::ISAM2Result update();
+  gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta);
+  gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::KeyVector& removeFactorIndices);
+  // TODO: wrap the full version of update
+  //void update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::KeyVector& removeFactorIndices, FastMap<Key,int>& constrainedKeys);
+  //void update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::KeyVector& removeFactorIndices, FastMap<Key,int>& constrainedKeys, bool force_relinearize);
+
+  gtsam::Values getLinearizationPoint() const;
+  gtsam::Values calculateEstimate() const;
+  gtsam::Values calculateBestEstimate() const;
+  gtsam::VectorValues getDelta() const;
+  gtsam::NonlinearFactorGraph getFactorsUnsafe() const;
+  gtsam::Ordering getOrdering() const;
+  gtsam::VariableIndex getVariableIndex() const;
+  gtsam::ISAM2Params params() const;
 };
 
 //*************************************************************************

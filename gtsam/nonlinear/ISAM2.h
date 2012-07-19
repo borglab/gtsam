@@ -40,6 +40,15 @@ struct ISAM2GaussNewtonParams {
   ISAM2GaussNewtonParams(
       double _wildfireThreshold = 0.001 ///< see ISAM2GaussNewtonParams public variables, ISAM2GaussNewtonParams::wildfireThreshold
   ) : wildfireThreshold(_wildfireThreshold) {}
+
+  void print(const std::string str = "") const {
+    std::cout << str << "type:              ISAM2GaussNewtonParams\n";
+    std::cout << str << "wildfireThreshold: " << wildfireThreshold << "\n";
+    std::cout.flush();
+  }
+
+  double getWildfireThreshold() const { return wildfireThreshold; }
+  void setWildfireThreshold(double wildfireThreshold) { this->wildfireThreshold = wildfireThreshold; }
 };
 
 /**
@@ -62,6 +71,27 @@ struct ISAM2DoglegParams {
       bool _verbose = false ///< see ISAM2DoglegParams::verbose
   ) : initialDelta(_initialDelta), wildfireThreshold(_wildfireThreshold),
   adaptationMode(_adaptationMode), verbose(_verbose) {}
+
+  void print(const std::string str = "") const {
+    std::cout << str << "type:              ISAM2DoglegParams\n";
+    std::cout << str << "initialDelta:      " << initialDelta << "\n";
+    std::cout << str << "wildfireThreshold: " << wildfireThreshold << "\n";
+    std::cout << str << "adaptationMode:    " << adaptationModeTranslator(adaptationMode) << "\n";
+    std::cout.flush();
+  }
+
+  double getInitialDelta() const { return initialDelta; }
+  double getWildfireThreshold() const { return wildfireThreshold; }
+  std::string getAdaptationMode() const { return adaptationModeTranslator(adaptationMode); };
+  bool isVerbose() const { return verbose; };
+
+  void setInitialDelta(double initialDelta) { this->initialDelta = initialDelta; }
+  void setWildfireThreshold(double wildfireThreshold) { this->wildfireThreshold = wildfireThreshold; }
+  void setAdaptationMode(const std::string& adaptationMode) { this->adaptationMode = adaptationModeTranslator(adaptationMode); }
+  void setVerbose(bool verbose) { this->verbose = verbose; };
+
+  std::string adaptationModeTranslator(const DoglegOptimizerImpl::TrustRegionAdaptationMode& adaptationMode) const;
+  DoglegOptimizerImpl::TrustRegionAdaptationMode adaptationModeTranslator(const std::string& adaptationMode) const;
 };
 
 /**
@@ -147,7 +177,56 @@ struct ISAM2Params {
       evaluateNonlinearError(_evaluateNonlinearError), factorization(_factorization),
       cacheLinearizedFactors(_cacheLinearizedFactors), keyFormatter(_keyFormatter),
       enableDetailedResults(false), enablePartialRelinearizationCheck(false) {}
+
+  void print(const std::string& str = "") const {
+    std::cout << str << "\n";
+    if(optimizationParams.type() == typeid(ISAM2GaussNewtonParams))
+      boost::get<ISAM2GaussNewtonParams>(optimizationParams).print("optimizationParams:                ");
+    else if(optimizationParams.type() == typeid(ISAM2DoglegParams))
+      boost::get<ISAM2DoglegParams>(optimizationParams).print("optimizationParams:                ");
+    else
+      std::cout << "optimizationParams:                " << "{unknown type}" << "\n";
+    if(relinearizeThreshold.type() == typeid(double))
+      std::cout << "relinearizeThreshold:              " << boost::get<double>(relinearizeThreshold) << "\n";
+    else
+      std::cout << "relinearizeThreshold:              " << "{mapped}" << "\n";
+    std::cout << "relinearizeSkip:                   " << relinearizeSkip << "\n";
+    std::cout << "enableRelinearization:             " << enableRelinearization << "\n";
+    std::cout << "evaluateNonlinearError:            " << evaluateNonlinearError << "\n";
+    std::cout << "factorization:                     " << factorizationTranslator(factorization) << "\n";
+    std::cout << "cacheLinearizedFactors:            " << cacheLinearizedFactors << "\n";
+    std::cout << "enableDetailedResults:             " << enableDetailedResults << "\n";
+    std::cout << "enablePartialRelinearizationCheck: " << enablePartialRelinearizationCheck << "\n";
+    std::cout.flush();
+  }
+
+   /** Getters and Setters for all properties */
+  OptimizationParams getOptimizationParams() const { return this->optimizationParams; }
+  RelinearizationThreshold getRelinearizeThreshold() const { return relinearizeThreshold; }
+  int getRelinearizeSkip() const { return relinearizeSkip; }
+  bool isEnableRelinearization() const { return enableRelinearization; }
+  bool isEvaluateNonlinearError() const { return evaluateNonlinearError; }
+  std::string getFactorization() const { return factorizationTranslator(factorization); }
+  bool isCacheLinearizedFactors() const { return cacheLinearizedFactors; }
+  KeyFormatter getKeyFormatter() const { return keyFormatter; }
+  bool isEnableDetailedResults() const { return enableDetailedResults; }
+  bool isEnablePartialRelinearizationCheck() const { return enablePartialRelinearizationCheck; }
+
+  void setOptimizationParams(OptimizationParams optimizationParams) { this->optimizationParams = optimizationParams; }
+  void setRelinearizeThreshold(RelinearizationThreshold relinearizeThreshold) { this->relinearizeThreshold = relinearizeThreshold; }
+  void setRelinearizeSkip(int relinearizeSkip) { this->relinearizeSkip = relinearizeSkip; }
+  void setEnableRelinearization(bool enableRelinearization) { this->enableRelinearization = enableRelinearization; }
+  void setEvaluateNonlinearError(bool evaluateNonlinearError) { this->evaluateNonlinearError = evaluateNonlinearError; }
+  void setFactorization(const std::string& factorization) { this->factorization = factorizationTranslator(factorization); }
+  void setCacheLinearizedFactors(bool cacheLinearizedFactors) { this->cacheLinearizedFactors = cacheLinearizedFactors; }
+  void setKeyFormatter(KeyFormatter keyFormatter) { this->keyFormatter = keyFormatter; }
+  void setEnableDetailedResults(bool enableDetailedResults) { this->enableDetailedResults = enableDetailedResults; }
+  void setEnablePartialRelinearizationCheck(bool enablePartialRelinearizationCheck) { this->enablePartialRelinearizationCheck = enablePartialRelinearizationCheck; }
+
+  Factorization factorizationTranslator(const std::string& str) const;
+  std::string factorizationTranslator(const Factorization& value) const;
 };
+
 
 /**
  * @addtogroup ISAM2
@@ -237,6 +316,16 @@ struct ISAM2Result {
   /** Detailed results, if enabled by ISAM2Params::enableDetailedResults.  See
    * Detail for information about the results data stored here. */
   boost::optional<DetailedResults> detail;
+
+
+  void print(const std::string str = "") const {
+    std::cout << str << "  Reelimintated: " << variablesReeliminated << "  Relinearized: " << variablesRelinearized << "  Cliques: " << cliques << std::endl;
+  }
+
+  /** Getters and Setters */
+  size_t getVariablesRelinearized() const { return variablesRelinearized; };
+  size_t getVariablesReeliminated() const { return variablesReeliminated; };
+  size_t getCliques() const { return cliques; };
 };
 
 /**
