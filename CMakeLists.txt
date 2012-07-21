@@ -36,9 +36,6 @@ else()
     set(GTSAM_UNSTABLE_AVAILABLE 0)
 endif()
 
-# Check for doxygen availability
-find_package(Doxygen)
-
 # Configurable Options
 option(GTSAM_BUILD_TESTS                 "Enable/Disable building of tests"          ON)
 option(GTSAM_BUILD_TIMING                "Enable/Disable building of timing scripts" ON)
@@ -156,49 +153,13 @@ endif(GTSAM_BUILD_UNSTABLE)
 GtsamMakeConfigFile(GTSAM)
 export(TARGETS ${GTSAM_EXPORTED_TARGETS} FILE GTSAM-exports.cmake)
 
-# Doxygen documentation configuration
-if (DOXYGEN_FOUND)
-    option(GTSAM_BUILD_DOCS                  "Enable/Disable building of doxygen docs"   ON)
-    
-    # configure doxygen
-    option(GTSAM_BUILD_DOC_HTML              "Enable/Disable doxygen HTML output"    ON)
-    option(GTSAM_BUILD_DOC_LATEX             "Enable/Disable doxygen LaTeX output"   OFF)
+# Check for doxygen availability - optional dependency
+find_package(Doxygen)
 
-    # add a target to generate API documentation with Doxygen
-    if (GTSAM_BUILD_DOCS)
-        # Convert configuration to YES/NO variables
-        if (GTSAM_BUILD_DOC_HTML)
-            set(GTSAM_BUILD_DOC_HTML_YN "YES")
-        else() 
-            set(GTSAM_BUILD_DOC_HTML_YN "NO")
-        endif()
-        
-        if (GTSAM_BUILD_DOC_LATEX)
-            set(GTSAM_BUILD_DOC_LATEX_YN "YES")
-        else() 
-            set(GTSAM_BUILD_DOC_LATEX_YN "NO")
-        endif()
-    
-        # Generate Doxyfile
-        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
-        
-        # Add target to actually build documentation as configured
-        add_custom_target(doc
-            ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/doc
-            COMMENT "Generating API documentation with Doxygen" VERBATIM
-        )
-        
-        # Clean target
-        add_custom_target(doc_clean
-            COMMAND
-                cmake -E remove_directory ${CMAKE_CURRENT_SOURCE_DIR}/doc/latex
-            COMMAND
-                cmake -E remove_directory ${CMAKE_CURRENT_SOURCE_DIR}/doc/html
-            COMMENT "Removing Doxygen documentation"
-        )
-    endif()
-endif ()
+# Doxygen documentation - enabling options in subfolder
+if (DOXYGEN_FOUND)
+    add_subdirectory(doc)
+endif()
 
 # Set up CPack
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "GTSAM")
