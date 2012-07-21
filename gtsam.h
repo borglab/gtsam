@@ -1129,6 +1129,14 @@ class Marginals {
 	void print(string s) const;
 	Matrix marginalCovariance(size_t variable) const;
 	Matrix marginalInformation(size_t variable) const;
+	gtsam::JointMarginal jointMarginalCovariance(const gtsam::KeyVector& variables) const;
+	gtsam::JointMarginal jointMarginalInformation(const gtsam::KeyVector& variables) const;
+};
+
+class JointMarginal {
+	Matrix at(size_t iVariable, size_t jVariable) const;
+	void print(string s) const;
+	void print() const;
 };
 
 //*************************************************************************

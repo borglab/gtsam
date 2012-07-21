@@ -117,11 +117,18 @@ public:
   Block operator()(Key iVariable, Key jVariable) const {
     return blockView_(indices_[iVariable], indices_[jVariable]); }
 
+	/** Synonym for operator() */
+	Block at(Key iVariable, Key jVariable) const {
+		return (*this)(iVariable, jVariable); }
+
   /** Copy constructor */
   JointMarginal(const JointMarginal& other);
 
   /** Assignment operator */
   JointMarginal& operator=(const JointMarginal& rhs);
+
+	/** Print */
+	void print(const std::string& s = "", const KeyFormatter& formatter = DefaultKeyFormatter) const;
 };
 
 } /* namespace gtsam */

@@ -88,6 +88,11 @@ public:
       Base::assign(x.begin(), x.end());
   }
 
+	/** Conversion to a standard STL container */
+	operator std::vector<VALUE>() const {
+		return std::vector<VALUE>(begin(), end());
+	}
+
 private:
   /** Serialization function */
   friend class boost::serialization::access;
