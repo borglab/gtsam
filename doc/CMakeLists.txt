@@ -43,7 +43,7 @@ if (GTSAM_BUILD_DOCS)
         gtsam_unstable
     )
     
-    # Build a list of folders to include
+    # Build a list of folders to include depending on build options
     set(doc_subdirs ${gtsam_doc_subdirs})
     if (GTSAM_BUILD_UNSTABLE)
         list(APPEND doc_subdirs ${gtsam_unstable_doc_subdirs})
