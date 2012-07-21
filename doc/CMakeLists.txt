@@ -42,22 +42,21 @@ if (GTSAM_BUILD_DOCS)
         gtsam_unstable/dynamics 
         gtsam_unstable
     )
-       
+    
     # Build a list of folders to include
     set(doc_subdirs ${gtsam_doc_subdirs})
     if (GTSAM_BUILD_UNSTABLE)
         list(APPEND doc_subdirs ${gtsam_unstable_doc_subdirs})
     endif()
-             
-    message(STATUS "Doxgyen inputs (raw) [${doc_subdirs}]")              
-
+    if (GTSAM_BUILD_EXAMPLES)
+        list(APPEND doc_subdirs examples)
+    endif()
+    
     # From subfolders, build a list with whitespace separation of paths
     set(GTSAM_DOXYGEN_INPUT_PATHS "")
     foreach(dir ${doc_subdirs})
         set(GTSAM_DOXYGEN_INPUT_PATHS "${GTSAM_DOXYGEN_INPUT_PATHS} ${PROJECT_SOURCE_DIR}/${dir}")
     endforeach()
-
-    message(STATUS "Doxgyen inputs [${GTSAM_DOXYGEN_INPUT_PATHS}]")
 
     # Generate Doxyfile
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
