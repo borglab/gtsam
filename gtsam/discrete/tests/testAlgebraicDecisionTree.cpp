@@ -23,10 +23,6 @@
 #include <gtsam/discrete/AlgebraicDecisionTree.h>
 #include <gtsam/discrete/DecisionTree-inl.h> // for convert only
 #define DISABLE_TIMING
-#include <boost/version.hpp>  // for checking whether we are using boost 1.40
-#if BOOST_VERSION >= 104200
-#define BOOST_HAVE_PARSER
-#endif
 
 #include <boost/timer.hpp>
 #include <boost/foreach.hpp>
@@ -150,7 +146,6 @@ TEST(ADT, joint)
 {
 	DiscreteKey A(0, 2), S(1, 2), T(2, 2), L(3, 2), B(4, 2), E(5, 2), X(6, 2), D(7, 2);
 
-#ifdef BOOST_HAVE_PARSER
 	resetCounts();
 	ADT pA = create(A % "99/1");
 	ADT pS = create(S % "50/50");
@@ -193,7 +188,6 @@ TEST(ADT, joint)
 	EXPECT(assert_equal(pA, fAa));
 	ADT fAb = pASTL.combine(S, &add_).combine(T, &add_).combine(L, &add_);
 	EXPECT(assert_equal(pA, fAb));
-#endif
 }
 
 /* ************************************************************************* */
@@ -203,7 +197,6 @@ TEST(ADT, inference)
 	DiscreteKey A(0,2), D(1,2),//
 			B(2,2), L(3,2), E(4,2), S(5,2), T(6,2), X(7,2);
 
-#ifdef BOOST_HAVE_PARSER
 	resetCounts();
 	ADT pA = create(A % "99/1");
 	ADT pS = create(S % "50/50");
@@ -247,7 +240,6 @@ TEST(ADT, inference)
 	dot(marginal, "Joint-Sum-ADBL");
 	EXPECT_LONGS_EQUAL(161, adds);
 	printCounts("Asia sum");
-#endif
 }
 
 /* ************************************************************************* */
@@ -255,7 +247,6 @@ TEST(ADT, factor_graph)
 {
 	DiscreteKey B(0,2), L(1,2), E(2,2), S(3,2), T(4,2), X(5,2);
 
-#ifdef BOOST_HAVE_PARSER
 	resetCounts();
 	ADT pS = create(S % "50/50");
 	ADT pT = create(T % "95/5");
@@ -334,7 +325,6 @@ TEST(ADT, factor_graph)
 	fB = fB.combine(L, &add_);
 	dot(fB, "Eliminate-10-fB");
 	printCounts("Eliminate L");
-#endif
 }
 
 /* ************************************************************************* */
@@ -360,7 +350,6 @@ TEST(ADT, equality_noparser)
 }
 
 /* ************************************************************************* */
-#ifdef BOOST_HAVE_PARSER
 // test equality
 TEST(ADT, equality_parser)
 {
@@ -376,7 +365,6 @@ TEST(ADT, equality_parser)
 	ADT pAB2 = apply(pB, pA1, &mul);
 	EXPECT(pAB2 == pAB1);
 }
-#endif
 
 /* ******************************************************************************** */
 // Factor graph construction

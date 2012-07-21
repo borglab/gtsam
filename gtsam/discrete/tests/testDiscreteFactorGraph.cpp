@@ -24,10 +24,6 @@
 
 #include <boost/assign/std/map.hpp>
 using namespace boost::assign;
-#include <boost/version.hpp>  // for checking whether we are using boost 1.40
-#if BOOST_VERSION >= 104200
-#define BOOST_HAVE_PARSER
-#endif
 
 using namespace std;
 using namespace gtsam;
@@ -136,7 +132,6 @@ TEST( DiscreteFactorGraph, test)
 	boost::tie(conditional, newFactor) =//
 	EliminateDiscrete(graph, 1);
 
-#ifdef BOOST_HAVE_PARSER
 	// Check Bayes net
 	CHECK(conditional);
 	DiscreteBayesNet expected;
@@ -173,7 +168,6 @@ TEST( DiscreteFactorGraph, test)
 	insert(expectedValues)(0, 0)(1, 0)(2, 0);
 	DiscreteFactor::sharedValues actualValues = solver.optimize();
 	EXPECT(assert_equal(expectedValues, *actualValues));
-#endif
 }
 
 /* ************************************************************************* */

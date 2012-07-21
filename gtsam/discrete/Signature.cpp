@@ -21,17 +21,13 @@
 
 #include "Signature.h"
 
-#ifdef BOOST_HAVE_PARSER
 #include <boost/spirit/include/qi.hpp> // for parsing
 #include <boost/spirit/include/phoenix.hpp> // for qi::_val
-#endif
 
 namespace gtsam {
 
 	using namespace std;
 
-
-#ifdef BOOST_HAVE_PARSER
 	namespace qi = boost::spirit::qi;
   namespace ph = boost::phoenix;
 
@@ -109,7 +105,6 @@ namespace gtsam {
 			return true;
 		}
 	} // \namespace parser
-#endif
 
 	ostream& operator <<(ostream &os, const Signature::Row &row) {
 		os << row[0];
@@ -169,7 +164,6 @@ namespace gtsam {
 
 	Signature& Signature::operator=(const string& spec) {
 		spec_.reset(spec);
-#ifdef BOOST_HAVE_PARSER
 		Table table;
 		// NOTE: using simpler parse function to ensure boost back compatibility
 //		parser::It f = spec.begin(), l = spec.end();
@@ -181,7 +175,6 @@ namespace gtsam {
 				normalize(row);
 			table_.reset(table);
 		}
-#endif
 		return *this;
 	}
 

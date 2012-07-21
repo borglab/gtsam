@@ -22,11 +22,6 @@
 #include <boost/optional.hpp>
 #include <gtsam/discrete/DiscreteKey.h>
 
-#include <boost/version.hpp>  // for checking whether we are using boost 1.40
-#if BOOST_VERSION >= 104200
-#define BOOST_HAVE_PARSER
-#endif
-
 namespace gtsam {
 
 	/**

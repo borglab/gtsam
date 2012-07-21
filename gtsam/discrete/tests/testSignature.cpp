@@ -28,7 +28,6 @@ using namespace boost::assign;
 
 DiscreteKey X(0,2), Y(1,3), Z(2,2);
 
-#ifdef BOOST_HAVE_PARSER
 /* ************************************************************************* */
 TEST(testSignature, simple_conditional) {
 	Signature sig(X | Y = "1/1 2/3 1/4");
@@ -43,7 +42,6 @@ TEST(testSignature, simple_conditional) {
 	vector<double> actCpt = sig.cpt();
 	EXPECT_LONGS_EQUAL(6, actCpt.size());
 }
-#endif
 
 /* ************************************************************************* */
 TEST(testSignature, simple_conditional_nonparser) {

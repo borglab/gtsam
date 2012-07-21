@@ -25,10 +25,6 @@
 
 #include <boost/assign/std/map.hpp>
 using namespace boost::assign;
-#include <boost/version.hpp>  // for checking whether we are using boost 1.40
-#if BOOST_VERSION >= 104200
-#define BOOST_HAVE_PARSER
-#endif
 
 #include <iostream>
 
@@ -44,7 +40,6 @@ TEST(DiscreteBayesNet, Asia)
 	DiscreteKey A(0,2), S(4,2), T(3,2), L(6,2), B(7,2), E(5,2), X(2,2), D(1,2);
 
 	// TODO: make a version that doesn't use the parser
-#ifdef BOOST_HAVE_PARSER
 	add_front(asia, A % "99/1");
 	add_front(asia, S % "50/50");
 
@@ -104,7 +99,6 @@ TEST(DiscreteBayesNet, Asia)
 			S.first, 1)(E.first, 0)(L.first, 0)(B.first, 1);
 	DiscreteFactor::sharedValues actualSample = sample(*chordal2);
 	EXPECT(assert_equal(expectedSample, *actualSample));
-#endif
 }
 
 /* ************************************************************************* */
@@ -114,7 +108,6 @@ TEST_UNSAFE(DiscreteBayesNet, Sugar)
 
 	DiscreteBayesNet bn;
 
-#ifdef BOOST_HAVE_PARSER
 	// test some mistakes
 	//	add(bn, D);
 	//	add(bn, D | E);
@@ -127,7 +120,6 @@ TEST_UNSAFE(DiscreteBayesNet, Sugar)
 	//	// try multivalued
 	add(bn, C % "1/1/2");
 	add(bn, C | S = "1/1/2 5/2/3");
-#endif
 }
 
 /* ************************************************************************* */
