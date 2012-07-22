@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
   }
 
   // Create a NonlinearISAM object which will relinearize and reorder the variables every "relinearizeInterval" updates
-  int relinearizeInterval = 1;
+  int relinearizeInterval = 3;
   NonlinearISAM isam(relinearizeInterval);
 
   // Create a Factor Graph and Values to hold the new data
