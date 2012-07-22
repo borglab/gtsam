@@ -4,10 +4,10 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam_unstable/dynamics/imuSystem.h>
+
+#include <gtsam_unstable/dynamics/VelocityConstraint.h>
 
 using namespace gtsam;
-using namespace imu;
 
 const double tol=1e-5;
 

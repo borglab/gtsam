@@ -102,7 +102,7 @@ virtual class NonlinearEquality : gtsam::NonlinearFactor {
 	NonlinearEquality(size_t j, const T& feasible, double error_gain);
 };
 
-
+#include <gtsam_unstable/dynamics/IMUFactor.h>
 template<POSE = {gtsam::PoseRTV}>
 virtual class IMUFactor : gtsam::NonlinearFactor {
 	/** Standard constructor */
@@ -120,7 +120,7 @@ virtual class IMUFactor : gtsam::NonlinearFactor {
 	size_t key2() const;
 };
 
-
+#include <gtsam_unstable/dynamics/FullIMUFactor.h>
 template<POSE = {gtsam::PoseRTV}>
 virtual class FullIMUFactor : gtsam::NonlinearFactor {
 	/** Standard constructor */
@@ -167,38 +167,3 @@ virtual class DGroundConstraint : gtsam::NonlinearFactor {
 
 
 }///\namespace gtsam
-
-namespace imu {
-
-#include <gtsam_unstable/dynamics/imuSystem.h>
-class Values {
-	Values();
-	void print(string s) const;
-
-	void insertPose(size_t key, const gtsam::PoseRTV& pose);
-	gtsam::PoseRTV pose(size_t key) const;
-};
-
-class Graph {
-	Graph();
-	void print(string s) const;
-
-	// prior factors
-	void addPrior(size_t key, const gtsam::PoseRTV& pose, const gtsam::noiseModel::Base* noiseModel);
-	void addConstraint(size_t key, const gtsam::PoseRTV& pose);
-	void addHeightPrior(size_t key, double z, const gtsam::noiseModel::Base* noiseModel);
-
-	// inertial factors
-	void addFullIMUMeasurement(size_t key1, size_t key2, const Vector& accel, const Vector& gyro, double dt, const gtsam::noiseModel::Base* noiseModel);
-	void addIMUMeasurement(size_t key1, size_t key2, const Vector& accel, const Vector& gyro, double dt, const gtsam::noiseModel::Base* noiseModel);
-	void addVelocityConstraint(size_t key1, size_t key2, double dt, const gtsam::noiseModel::Base* noiseModel);
-
-	// other measurements
-	void addBetween(size_t key1, size_t key2, const gtsam::PoseRTV& z, const gtsam::noiseModel::Base* noiseModel);
-	void addRange(size_t key1, size_t key2, double z, const gtsam::noiseModel::Base* noiseModel);
-
-	// optimization
-	imu::Values optimize(const imu::Values& init) const;
-};
-
-}///\namespace imu
