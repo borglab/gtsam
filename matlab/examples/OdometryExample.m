@@ -16,48 +16,44 @@
 %  - The robot is on a grid, moving 2 meters each step
 
 %% Create the graph (defined in pose2SLAM.h, derived from NonlinearFactorGraph)
-graph = pose2SLAM.Graph;
+graph = gtsam.NonlinearFactorGraph;
 
 %% Add a Gaussian prior on pose x_1
 import gtsam.*
 priorMean = Pose2(0.0, 0.0, 0.0); % prior mean is at origin
 priorNoise = noiseModel.Diagonal.Sigmas([0.3; 0.3; 0.1]); % 30cm std on x,y, 0.1 rad on theta
-graph.addPosePrior(1, priorMean, priorNoise); % add directly to graph
+graph.add(PriorFactorPose2(1, priorMean, priorNoise)); % add directly to graph
 
 %% Add two odometry factors
 import gtsam.*
 odometry = Pose2(2.0, 0.0, 0.0); % create a measurement for both factors (the same in this case)
 odometryNoise = noiseModel.Diagonal.Sigmas([0.2; 0.2; 0.1]); % 20cm std on x,y, 0.1 rad on theta
-graph.addRelativePose(1, 2, odometry, odometryNoise);
-graph.addRelativePose(2, 3, odometry, odometryNoise);
+graph.add(BetweenFactorPose2(1, 2, odometry, odometryNoise));
+graph.add(BetweenFactorPose2(2, 3, odometry, odometryNoise));
 
 %% print
 graph.print(sprintf('\nFactor graph:\n'));
 
 %% Initialize to noisy points
 import gtsam.*
-initialEstimate = pose2SLAM.Values;
-initialEstimate.insertPose(1, Pose2(0.5, 0.0, 0.2));
-initialEstimate.insertPose(2, Pose2(2.3, 0.1,-0.2));
-initialEstimate.insertPose(3, Pose2(4.1, 0.1, 0.1));
+initialEstimate = Values;
+initialEstimate.insert(1, Pose2(0.5, 0.0, 0.2));
+initialEstimate.insert(2, Pose2(2.3, 0.1,-0.2));
+initialEstimate.insert(3, Pose2(4.1, 0.1, 0.1));
 initialEstimate.print(sprintf('\nInitial estimate:\n  '));
 
 %% Optimize using Levenberg-Marquardt optimization with an ordering from colamd
-result = graph.optimize(initialEstimate,1);
+optimizer = LevenbergMarquardtOptimizer(graph, initialEstimate);
+result = optimizer.optimizeSafely();
 result.print(sprintf('\nFinal result:\n  '));
 
-%% Plot Covariance Ellipses
+%% Plot trajectory and covariance ellipses
 import gtsam.*
 cla;
-X=result.poses();
-plot(X(:,1),X(:,2),'k*-'); hold on
-marginals = graph.marginals(result);
-P={};
-for i=1:result.size()
-    pose_i = result.pose(i);
-    P{i}=marginals.marginalCovariance(i);
-    plotPose2(pose_i,'g',P{i})
-end
+hold on;
+
+plot2DTrajectory(result, Marginals(graph, result));
+
 axis([-0.6 4.8 -1 1])
 axis equal
 view(2)
