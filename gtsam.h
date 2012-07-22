@@ -1056,6 +1056,7 @@ class Values {
 	void insert(size_t j, const gtsam::Value& value);
 	bool exists(size_t j) const;
 	gtsam::Value at(size_t j) const;
+	gtsam::KeyList keys() const;
 };
 
 // Actually a FastList<Key>
