@@ -16,14 +16,18 @@
  */
 
 #include <tests/smallExample.h>
-#include <gtsam/slam/planarSLAM.h>
-#include <gtsam/slam/pose2SLAM.h>
+#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/slam/BearingRangeFactor.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
-#include <gtsam/inference/BayesTree-inl.h>
+#include <gtsam/inference/BayesTree.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/cholesky.h>
@@ -128,29 +132,29 @@ TEST( GaussianJunctionTreeB, optimizeMultiFrontal2)
 /* ************************************************************************* */
 TEST(GaussianJunctionTreeB, slamlike) {
   Values init;
-  planarSLAM::Graph newfactors;
-  planarSLAM::Graph fullgraph;
+  NonlinearFactorGraph newfactors;
+  NonlinearFactorGraph fullgraph;
   SharedDiagonal odoNoise = noiseModel::Diagonal::Sigmas(Vector_(3, 0.1, 0.1, M_PI/100.0));
   SharedDiagonal brNoise = noiseModel::Diagonal::Sigmas(Vector_(2, M_PI/100.0, 0.1));
 
   size_t i = 0;
 
-  newfactors = planarSLAM::Graph();
-  newfactors.addPosePrior(X(0), Pose2(0.0, 0.0, 0.0), odoNoise);
+  newfactors = NonlinearFactorGraph();
+  newfactors.add(PriorFactor<Pose2>(X(0), Pose2(0.0, 0.0, 0.0), odoNoise));
   init.insert(X(0), Pose2(0.01, 0.01, 0.01));
   fullgraph.push_back(newfactors);
 
   for( ; i<5; ++i) {
-    newfactors = planarSLAM::Graph();
-    newfactors.addRelativePose(X(i), X(i+1), Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors = NonlinearFactorGraph();
+    newfactors.add(BetweenFactor<Pose2>(X(i), X(i+1), Pose2(1.0, 0.0, 0.0), odoNoise));
     init.insert(X(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
     fullgraph.push_back(newfactors);
   }
 
-  newfactors = planarSLAM::Graph();
-  newfactors.addRelativePose(X(i), X(i+1), Pose2(1.0, 0.0, 0.0), odoNoise);
-  newfactors.addBearingRange(X(i), L(0), Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
-  newfactors.addBearingRange(X(i), L(1), Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
+  newfactors = NonlinearFactorGraph();
+  newfactors.add(BetweenFactor<Pose2>(X(i), X(i+1), Pose2(1.0, 0.0, 0.0), odoNoise));
+  newfactors.add(BearingRangeFactor<Pose2,Point2>(X(i), L(0), Rot2::fromAngle(M_PI/4.0), 5.0, brNoise));
+  newfactors.add(BearingRangeFactor<Pose2,Point2>(X(i), L(1), Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise));
   init.insert(X(i+1), Pose2(1.01, 0.01, 0.01));
   init.insert(L(0), Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
   init.insert(L(1), Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
@@ -158,16 +162,16 @@ TEST(GaussianJunctionTreeB, slamlike) {
   ++ i;
 
   for( ; i<5; ++i) {
-    newfactors = planarSLAM::Graph();
-    newfactors.addRelativePose(X(i), X(i+1), Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors = NonlinearFactorGraph();
+    newfactors.add(BetweenFactor<Pose2>(X(i), X(i+1), Pose2(1.0, 0.0, 0.0), odoNoise));
     init.insert(X(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
     fullgraph.push_back(newfactors);
   }
 
-  newfactors = planarSLAM::Graph();
-  newfactors.addRelativePose(X(i), X(i+1), Pose2(1.0, 0.0, 0.0), odoNoise);
-  newfactors.addBearingRange(X(i), L(0), Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
-  newfactors.addBearingRange(X(i), L(1), Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+  newfactors = NonlinearFactorGraph();
+  newfactors.add(BetweenFactor<Pose2>(X(i), X(i+1), Pose2(1.0, 0.0, 0.0), odoNoise));
+  newfactors.add(BearingRangeFactor<Pose2,Point2>(X(i), L(0), Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise));
+  newfactors.add(BearingRangeFactor<Pose2,Point2>(X(i), L(1), Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise));
   init.insert(X(i+1), Pose2(6.9, 0.1, 0.01));
   fullgraph.push_back(newfactors);
   ++ i;
@@ -193,9 +197,9 @@ TEST(GaussianJunctionTreeB, simpleMarginal) {
   typedef BayesTree<GaussianConditional> GaussianBayesTree;
 
   // Create a simple graph
-  pose2SLAM::Graph fg;
-  fg.addPosePrior(X(0), Pose2(), noiseModel::Isotropic::Sigma(3, 10.0));
-  fg.addRelativePose(X(0), X(1), Pose2(1.0, 0.0, 0.0), noiseModel::Diagonal::Sigmas(Vector_(3, 10.0, 1.0, 1.0)));
+  NonlinearFactorGraph fg;
+  fg.add(PriorFactor<Pose2>(X(0), Pose2(), noiseModel::Isotropic::Sigma(3, 10.0)));
+  fg.add(BetweenFactor<Pose2>(X(0), X(1), Pose2(1.0, 0.0, 0.0), noiseModel::Diagonal::Sigmas(Vector_(3, 10.0, 1.0, 1.0))));
 
   Values init;
   init.insert(X(0), Pose2());
