@@ -5,13 +5,17 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <gtsam/linear/Sampler.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearISAM.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Symbol.h>
-#include <gtsam/slam/planarSLAM.h>
+#include <gtsam/linear/Sampler.h>
+#include <gtsam/geometry/Pose2.h>
+
 
 using namespace gtsam;
-using namespace planarSLAM;
 
 typedef NonlinearISAM PlanarISAM;
 
@@ -27,22 +31,22 @@ TEST(testNonlinearISAM, markov_chain ) {
 
 	// create initial graph
 	Pose2 cur_pose; // start at origin
-	Graph start_factors;
-	start_factors.addPoseConstraint(0, cur_pose);
+	NonlinearFactorGraph start_factors;
+	start_factors.add(NonlinearEquality<Pose2>(0, cur_pose));
 
-	planarSLAM::Values init;
-	planarSLAM::Values expected;
-	init.insertPose(0, cur_pose);
-	expected.insertPose(0, cur_pose);
+	Values init;
+	Values expected;
+	init.insert(0, cur_pose);
+	expected.insert(0, cur_pose);
 	isam.update(start_factors, init);
 
 	// loop for a period of time to verify memory usage
 	size_t nrPoses = 21;
 	Pose2 z(1.0, 2.0, 0.1);
 	for (size_t i=1; i<=nrPoses; ++i) {
-		Graph new_factors;
-		new_factors.addRelativePose(i-1, i, z, model);
-		planarSLAM::Values new_init;
+		NonlinearFactorGraph new_factors;
+		new_factors.add(BetweenFactor<Pose2>(i-1, i, z, model));
+		Values new_init;
 
 		// perform a check on changing orderings
 		if (i == 5) {
@@ -60,15 +64,15 @@ TEST(testNonlinearISAM, markov_chain ) {
 		}
 
 		cur_pose = cur_pose.compose(z);
-		new_init.insertPose(i, cur_pose.retract(sampler.sample()));
-		expected.insertPose(i, cur_pose);
+		new_init.insert(i, cur_pose.retract(sampler.sample()));
+		expected.insert(i, cur_pose);
 		isam.update(new_factors, new_init);
 	}
 
 	// verify values - all but the last one should be very close
-	planarSLAM::Values actual = isam.estimate();
+	Values actual = isam.estimate();
 	for (size_t i=0; i<nrPoses; ++i) {
-		EXPECT(assert_equal(expected.pose(i), actual.pose(i), tol));
+		EXPECT(assert_equal(expected.at<Pose2>(i), actual.at<Pose2>(i), tol));
 	}
 }
 
