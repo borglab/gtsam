@@ -156,4 +156,18 @@ JointMarginal Marginals::jointMarginalInformation(const std::vector<Key>& variab
   }
 }
 
+/* ************************************************************************* */
+void JointMarginal::print(const std::string& s, const KeyFormatter& formatter) const {
+	cout << s << "Joint marginal on keys ";
+	bool first = true;
+	BOOST_FOREACH(const Ordering::value_type& key_index, indices_) {
+		if(!first)
+			cout << ", ";
+		else
+			first = false;
+		cout << formatter(key_index.first);
+	}
+	cout << ".  Use 'at' or 'operator()' to query matrix blocks." << endl;
+}
+
 } /* namespace gtsam */

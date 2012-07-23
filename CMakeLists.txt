@@ -108,7 +108,7 @@ endif()
 if(CYGWIN OR MSVC OR WIN32)
   set(Boost_USE_STATIC_LIBS 1)
 endif()
-find_package(Boost 1.43 COMPONENTS serialization system filesystem thread date_time REQUIRED)
+find_package(Boost 1.43 COMPONENTS serialization system filesystem thread date_time regex REQUIRED)
 set(GTSAM_BOOST_LIBRARIES ${Boost_SERIALIZATION_LIBRARY})
 
 # General build settings
