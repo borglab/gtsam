@@ -29,7 +29,7 @@ using namespace std;
 
 /* ************************************************************************* */
 string file_contents(const string& filename, bool skipheader) {
-  ifstream ifs(filename.c_str(), ios::binary); // Do not do LF/CRLF translation - we always write in binary mode too
+  ifstream ifs(filename.c_str());
   if(!ifs) throw CantOpenFile(filename);
 
   // read file into stringstream
