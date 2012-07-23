@@ -70,7 +70,6 @@ string Constructor::wrapper_fragment(FileWriter& file,
 				 const string& matlabUniqueName,
 				 const string& cppBaseClassName,
 				 int id,
-				 const vector<string>& using_namespaces, 
 				 const ArgumentList& al) const {
 
 	const string wrapFunctionName = matlabUniqueName + "_constructor_" + boost::lexical_cast<string>(id);
@@ -78,7 +77,6 @@ string Constructor::wrapper_fragment(FileWriter& file,
   file.oss << "void " << wrapFunctionName << "(int nargout, mxArray *out[], int nargin, const mxArray *in[])" << endl;
   file.oss << "{\n";
 	file.oss << "  mexAtExit(&_deleteAllObjects);\n";
-	generateUsingNamespace(file, using_namespaces);
   //Typedef boost::shared_ptr
 	file.oss << "  typedef boost::shared_ptr<" << cppClassName << "> Shared;\n";
 	file.oss << "\n";

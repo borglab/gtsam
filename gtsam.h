@@ -36,19 +36,19 @@
  *   Namespace definitions
  *     - Names of namespaces must start with a lowercase letter
  *   	 - start a namespace with "namespace {"
- *   	 - end a namespace with exactly "}///\namespace [namespace_name]", optionally adding the name of the namespace
- *   	 - This ending is not C++ standard, and must contain "}///\namespace" to parse
+ *   	 - end a namespace with exactly "}"
  *   	 - Namespaces can be nested
  *   Namespace usage
  *   	 - Namespaces can be specified for classes in arguments and return values
  *   	 - In each case, the namespace must be fully specified, e.g., "namespace1::namespace2::ClassName"
- *   Using namespace: FIXME: this functionality is currently broken
- *   	 - To use a namespace (e.g., generate a "using namespace x" line in cpp files), add "using namespace x;"
- *   	 - This declaration applies to all classes *after* the declaration, regardless of brackets
  *   Includes in C++ wrappers
  *     - All includes will be collected and added in a single file
  *     - All namespaces must have angle brackets: <path>
  *     - No default includes will be added
+ *   Global/Namespace functions
+ *     - Functions specified outside of a class are global
+ *     - Can be overloaded with different arguments
+ *     - Can have multiple functions of the same name in different namespaces
  *   Using classes defined in other modules
  *     - If you are using a class 'OtherClass' not wrapped in this definition file, add "class OtherClass;" to avoid a dependency error
  *   Virtual inheritance
@@ -75,7 +75,6 @@
 
 /**
  * Status:
- *  - TODO: global functions
  *  - TODO: default values for arguments
  *  - TODO: Handle gtsam::Rot3M conversions to quaternions
  */
@@ -85,6 +84,9 @@ namespace gtsam {
 //*************************************************************************
 // base
 //*************************************************************************
+
+/** gtsam namespace functions */
+bool linear_independent(Matrix A, Matrix B, double tol);
 
 virtual class Value {
 	// No constructors because this is an abstract class
@@ -1385,7 +1387,7 @@ virtual class GenericProjectionFactor : gtsam::NonlinearFactor {
 typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> GenericProjectionFactorCal3_S2;
 typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> GenericProjectionFactorCal3DS2;
 
-}///\namespace gtsam
+} //\namespace gtsam
 
 //*************************************************************************
 // Pose2SLAM
@@ -1440,7 +1442,7 @@ class Graph {
 	gtsam::Marginals marginals(const pose2SLAM::Values& solution) const;
 };
 
-}///\namespace pose2SLAM
+} //\namespace pose2SLAM
 
 //*************************************************************************
 // Pose3SLAM
@@ -1495,7 +1497,7 @@ class Graph {
 	gtsam::Marginals marginals(const pose3SLAM::Values& solution) const;
 };
 
-}///\namespace pose3SLAM
+} //\namespace pose3SLAM
 
 //*************************************************************************
 // planarSLAM
@@ -1583,7 +1585,7 @@ class Odometry {
 			const gtsam::Ordering& ordering) const;
 };
 
-}///\namespace planarSLAM
+} //\namespace planarSLAM
 
 //*************************************************************************
 // VisualSLAM
@@ -1708,7 +1710,7 @@ class LevenbergMarquardtOptimizer {
   visualSLAM::Values values() const;
 };
 
-}///\namespace visualSLAM
+} //\namespace visualSLAM
 
 //************************************************************************
 // sparse BA
@@ -1789,5 +1791,5 @@ class LevenbergMarquardtOptimizer {
   sparseBA::Values optimizeSafely();
   sparseBA::Values values() const;
 };
-}///\namespace sparseBA
+} //\namespace sparseBA
 

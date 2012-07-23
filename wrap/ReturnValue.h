@@ -52,6 +52,8 @@ struct ReturnValue {
 
 	void wrap_result(const std::string& result, FileWriter& file, const TypeAttributesTable& typeAttributes) const;
 
+	void wrapTypeUnwrap(FileWriter& wrapperFile) const;
+
 };
 
 } // \namespace wrap

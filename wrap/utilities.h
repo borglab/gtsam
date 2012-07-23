@@ -123,14 +123,12 @@ bool assert_equal(const std::vector<std::string>& expected, const std::vector<st
 std::string maybe_shared_ptr(bool add, const std::string& qtype, const std::string& type);
 
 /**
- * Creates the "using namespace [name];" declarations
- */
-void generateUsingNamespace(FileWriter& file, const std::vector<std::string>& using_namespaces);
-
-/**
  * Return a qualified name, if finalName is empty, only the names vector will
  * be used (i.e. there won't be a trailing separator on the qualified name).
  */
 std::string qualifiedName(const std::string& separator, const std::vector<std::string>& names, const std::string& finalName = "");
+
+/** creates the necessary folders for namespaces, as specified by a namespace stack */
+void createNamespaceStructure(const std::vector<std::string>& namespaces, const std::string& toolboxPath);
 
 } // \namespace wrap

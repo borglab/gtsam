@@ -90,7 +90,7 @@ public:
 
 	/** Conversion to a standard STL container */
 	operator std::vector<VALUE>() const {
-		return std::vector<VALUE>(begin(), end());
+		return std::vector<VALUE>(this->begin(), this->end());
 	}
 
 private:

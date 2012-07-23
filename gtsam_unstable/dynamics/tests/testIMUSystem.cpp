@@ -7,23 +7,37 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <gtsam_unstable/dynamics/imuSystem.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/slam/RangeFactor.h>
+#include <gtsam/slam/PartialPriorFactor.h>
+#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/nonlinear/EasyFactorGraph.h>
+
+#include <gtsam_unstable/dynamics/IMUFactor.h>
+#include <gtsam_unstable/dynamics/FullIMUFactor.h>
+#include <gtsam_unstable/dynamics/VelocityConstraint.h>
+#include <gtsam_unstable/dynamics/DynamicsPriors.h>
 
 using namespace std;
 using namespace gtsam;
-using namespace imu;
 
 const double tol=1e-5;
 
 static const Key x0 = 0, x1 = 1, x2 = 2, x3 = 3, x4 = 4;
 static const Vector g = delta(3, 2, -9.81);
 
+//typedef gtsam::IMUFactor<gtsam::PoseRTV> IMUFactor<PoseRTV>; // IMU between measurements
+//typedef gtsam::FullIMUFactor<gtsam::PoseRTV> IMUFactor<PoseRTV>; // Full-state IMU between measurements
+//typedef gtsam::BetweenFactor<gtsam::PoseRTV> Between;   // full odometry (including velocity)
+//typedef gtsam::NonlinearEquality<gtsam::PoseRTV> Constraint;
+//typedef gtsam::PriorFactor<gtsam::PoseRTV> Prior;
+//typedef gtsam::RangeFactor<gtsam::PoseRTV, gtsam::PoseRTV> Range;
+
 /* ************************************************************************* */
 TEST(testIMUSystem, instantiations) {
 	// just checking for compilation
 	PoseRTV x1_v;
-	imu::Values local_values;
-	Graph graph;
 
 	gtsam::SharedNoiseModel model1 = gtsam::noiseModel::Unit::Create(1);
 	gtsam::SharedNoiseModel model3 = gtsam::noiseModel::Unit::Create(3);
@@ -32,13 +46,13 @@ TEST(testIMUSystem, instantiations) {
 
 	Vector accel = ones(3), gyro = ones(3);
 
-	IMUMeasurement imu(accel, gyro, 0.01, x1, x2, model6);
-	FullIMUMeasurement full_imu(accel, gyro, 0.01, x1, x2, model9);
-	Constraint poseHardPrior(x1, x1_v);
-	Between odom(x1, x2, x1_v, model9);
-	Range range(x1, x2, 1.0, model1);
+	IMUFactor<PoseRTV> imu(accel, gyro, 0.01, x1, x2, model6);
+	FullIMUFactor<PoseRTV> full_imu(accel, gyro, 0.01, x1, x2, model9);
+	NonlinearEquality<gtsam::PoseRTV> poseHardPrior(x1, x1_v);
+	BetweenFactor<gtsam::PoseRTV> odom(x1, x2, x1_v, model9);
+	RangeFactor<gtsam::PoseRTV, gtsam::PoseRTV> range(x1, x2, 1.0, model1);
 	VelocityConstraint constraint(x1, x2, 0.1, 10000);
-	Prior posePrior(x1, x1_v, model9);
+	PriorFactor<gtsam::PoseRTV> posePrior(x1, x1_v, model9);
 	DHeightPrior heightPrior(x1, 0.1, model1);
 	VelocityPrior velPrior(x1, ones(3), model3);
 }
@@ -60,17 +74,17 @@ TEST( testIMUSystem, optimize_chain ) {
 	imu34 = pose3.imuPrediction(pose4, dt);
 
 	// assemble simple graph with IMU measurements and velocity constraints
-	Graph graph;
-	graph.add(Constraint(x1, pose1));
-	graph.add(IMUMeasurement(imu12, dt, x1, x2, model));
-	graph.add(IMUMeasurement(imu23, dt, x2, x3, model));
-	graph.add(IMUMeasurement(imu34, dt, x3, x4, model));
+	EasyFactorGraph graph;
+	graph.add(NonlinearEquality<gtsam::PoseRTV>(x1, pose1));
+	graph.add(IMUFactor<PoseRTV>(imu12, dt, x1, x2, model));
+	graph.add(IMUFactor<PoseRTV>(imu23, dt, x2, x3, model));
+	graph.add(IMUFactor<PoseRTV>(imu34, dt, x3, x4, model));
 	graph.add(VelocityConstraint(x1, x2, dt));
 	graph.add(VelocityConstraint(x2, x3, dt));
 	graph.add(VelocityConstraint(x3, x4, dt));
 
 	// ground truth values
-	imu::Values true_values;
+	Values true_values;
 	true_values.insert(x1, pose1);
 	true_values.insert(x2, pose2);
 	true_values.insert(x3, pose3);
@@ -80,13 +94,13 @@ TEST( testIMUSystem, optimize_chain ) {
 	EXPECT_DOUBLES_EQUAL(0, graph.error(true_values), 1e-5);
 
 	// initialize with zero values and optimize
-	imu::Values values;
+	Values values;
 	values.insert(x1, PoseRTV());
 	values.insert(x2, PoseRTV());
 	values.insert(x3, PoseRTV());
 	values.insert(x4, PoseRTV());
 
-	imu::Values actual = graph.optimize(values);
+	Values actual = graph.optimize(values);
 	EXPECT(assert_equal(true_values, actual, tol));
 }
 
@@ -107,14 +121,14 @@ TEST( testIMUSystem, optimize_chain_fullfactor ) {
 	imu34 = pose3.imuPrediction(pose4, dt);
 
 	// assemble simple graph with IMU measurements and velocity constraints
-	Graph graph;
-	graph.add(Constraint(x1, pose1));
-	graph.add(FullIMUMeasurement(imu12, dt, x1, x2, model));
-	graph.add(FullIMUMeasurement(imu23, dt, x2, x3, model));
-	graph.add(FullIMUMeasurement(imu34, dt, x3, x4, model));
+	EasyFactorGraph graph;
+	graph.add(NonlinearEquality<gtsam::PoseRTV>(x1, pose1));
+	graph.add(FullIMUFactor<PoseRTV>(imu12, dt, x1, x2, model));
+	graph.add(FullIMUFactor<PoseRTV>(imu23, dt, x2, x3, model));
+	graph.add(FullIMUFactor<PoseRTV>(imu34, dt, x3, x4, model));
 
 	// ground truth values
-	imu::Values true_values;
+	Values true_values;
 	true_values.insert(x1, pose1);
 	true_values.insert(x2, pose2);
 	true_values.insert(x3, pose3);
@@ -124,7 +138,7 @@ TEST( testIMUSystem, optimize_chain_fullfactor ) {
 	EXPECT_DOUBLES_EQUAL(0, graph.error(true_values), 1e-5);
 
 	// initialize with zero values and optimize
-	imu::Values values;
+	Values values;
 	values.insert(x1, PoseRTV());
 	values.insert(x2, PoseRTV());
 	values.insert(x3, PoseRTV());
@@ -132,7 +146,7 @@ TEST( testIMUSystem, optimize_chain_fullfactor ) {
 
 	cout << "Initial Error: " << graph.error(values) << endl; // Initial error is 0.5 - need better prediction model
 
-	imu::Values actual = graph.optimize(values);
+	Values actual = graph.optimize(values);
 //	EXPECT(assert_equal(true_values, actual, tol)); // FAIL
 }
 
@@ -147,10 +161,10 @@ TEST( testIMUSystem, linear_trajectory) {
 	Vector gyro = delta(3, 0, 0.1); // constant rotation
 	SharedDiagonal model = noiseModel::Unit::Create(9);
 
-	imu::Values true_traj, init_traj;
-	Graph graph;
+	Values true_traj, init_traj;
+	EasyFactorGraph graph;
 
-	graph.add(Constraint(x0, start));
+	graph.add(NonlinearEquality<gtsam::PoseRTV>(x0, start));
 	true_traj.insert(x0, start);
 	init_traj.insert(x0, start);
 
@@ -159,7 +173,7 @@ TEST( testIMUSystem, linear_trajectory) {
 	for (size_t i=1; i<nrPoses; ++i) {
 		Key xA = i-1, xB = i;
 		cur_pose = cur_pose.generalDynamics(accel, gyro, dt);
-		graph.add(FullIMUMeasurement(accel - g, gyro, dt, xA, xB, model));
+		graph.add(FullIMUFactor<PoseRTV>(accel - g, gyro, dt, xA, xB, model));
 		true_traj.insert(xB, cur_pose);
 		init_traj.insert(xB, PoseRTV());
 	}

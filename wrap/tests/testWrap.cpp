@@ -76,9 +76,6 @@ TEST( wrap, parse_geometry ) {
 	Module module(markup_header_path.c_str(), "geometry",enable_verbose);
 	EXPECT_LONGS_EQUAL(3, module.classes.size());
 
-	// check using declarations
-	strvec exp_using1, exp_using2; exp_using2 += "geometry";
-
 	// forward declarations
 	LONGS_EQUAL(2, module.forward_declarations.size());
 	EXPECT(assert_equal("VectorNotEigen", module.forward_declarations[0].name));
@@ -88,6 +85,8 @@ TEST( wrap, parse_geometry ) {
 	strvec exp_includes; exp_includes += "folder/path/to/Test.h";
 	EXPECT(assert_equal(exp_includes, module.includes));
 
+	LONGS_EQUAL(3, module.classes.size());
+
 	// check first class, Point2
 	{
 		Class cls = module.classes.at(0);
@@ -96,7 +95,6 @@ TEST( wrap, parse_geometry ) {
 		EXPECT_LONGS_EQUAL(7, cls.methods.size());
 		EXPECT_LONGS_EQUAL(0, cls.static_methods.size());
 		EXPECT_LONGS_EQUAL(0, cls.namespaces.size());
-		EXPECT(assert_equal(exp_using1, cls.using_namespaces));
 	}
 
 	// check second class, Point3
@@ -107,7 +105,6 @@ TEST( wrap, parse_geometry ) {
 		EXPECT_LONGS_EQUAL(1, cls.methods.size());
 		EXPECT_LONGS_EQUAL(2, cls.static_methods.size());
 		EXPECT_LONGS_EQUAL(0, cls.namespaces.size());
-		EXPECT(assert_equal(exp_using2, cls.using_namespaces));
 
 		// first constructor takes 3 doubles
 		ArgumentList c1 = cls.constructor.args_list.front();
@@ -133,13 +130,11 @@ TEST( wrap, parse_geometry ) {
 
 	// Test class is the third one
 	{
-		LONGS_EQUAL(3, module.classes.size());
 		Class testCls = module.classes.at(2);
 		EXPECT_LONGS_EQUAL( 2, testCls.constructor.args_list.size());
 		EXPECT_LONGS_EQUAL(19, testCls.methods.size());
 		EXPECT_LONGS_EQUAL( 0, testCls.static_methods.size());
 		EXPECT_LONGS_EQUAL( 0, testCls.namespaces.size());
-		EXPECT(assert_equal(exp_using2, testCls.using_namespaces));
 
 		// function to parse: pair<Vector,Matrix> return_pair (Vector v, Matrix A) const;
 		CHECK(testCls.methods.find("return_pair") != testCls.methods.end());
@@ -148,6 +143,20 @@ TEST( wrap, parse_geometry ) {
 		EXPECT(m2.returnVals.front().isPair);
 		EXPECT(m2.returnVals.front().category1 == ReturnValue::EIGEN);
 		EXPECT(m2.returnVals.front().category2 == ReturnValue::EIGEN);
+	}
+
+	// evaluate global functions
+//	Vector aGlobalFunction();
+	LONGS_EQUAL(1, module.global_functions.size());
+	CHECK(module.global_functions.find("aGlobalFunction") != module.global_functions.end());
+	{
+		GlobalFunction gfunc = module.global_functions.at("aGlobalFunction");
+		EXPECT(assert_equal("aGlobalFunction", gfunc.name));
+		LONGS_EQUAL(1, gfunc.returnVals.size());
+		EXPECT(assert_equal("Vector", gfunc.returnVals.front().type1));
+		EXPECT_LONGS_EQUAL(1, gfunc.argLists.size());
+		LONGS_EQUAL(1, gfunc.namespaces.size());
+		EXPECT(gfunc.namespaces.front().empty());
 	}
 }
 
@@ -208,6 +217,27 @@ TEST( wrap, parse_namespaces ) {
 		strvec exp_namespaces;
 		EXPECT(assert_equal(exp_namespaces, cls.namespaces));
 	}
+
+	// evaluate global functions
+//	Vector ns1::aGlobalFunction();
+//	Vector ns2::aGlobalFunction();
+	LONGS_EQUAL(1, module.global_functions.size());
+	CHECK(module.global_functions.find("aGlobalFunction") != module.global_functions.end());
+	{
+		GlobalFunction gfunc = module.global_functions.at("aGlobalFunction");
+		EXPECT(assert_equal("aGlobalFunction", gfunc.name));
+		LONGS_EQUAL(2, gfunc.returnVals.size());
+		EXPECT(assert_equal("Vector", gfunc.returnVals.front().type1));
+		EXPECT_LONGS_EQUAL(2, gfunc.argLists.size());
+
+		// check namespaces
+		LONGS_EQUAL(2, gfunc.namespaces.size());
+		strvec exp_namespaces1; exp_namespaces1 += "ns1";
+		EXPECT(assert_equal(exp_namespaces1, gfunc.namespaces.at(0)));
+
+		strvec exp_namespaces2; exp_namespaces2 += "ns2";
+		EXPECT(assert_equal(exp_namespaces2, gfunc.namespaces.at(1)));
+	}
 }
 
 /* ************************************************************************* */
@@ -255,6 +285,7 @@ TEST( wrap, matlab_code_geometry ) {
 	EXPECT(files_equal(epath + "Point2.m"             , apath + "Point2.m"             ));
 	EXPECT(files_equal(epath + "Point3.m"             , apath + "Point3.m"             ));
 	EXPECT(files_equal(epath + "Test.m"               , apath + "Test.m"               ));
+	EXPECT(files_equal(epath + "aGlobalFunction.m"    , apath + "aGlobalFunction.m"    ));
 }
 
 /* ************************************************************************* */

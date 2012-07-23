@@ -48,8 +48,7 @@ void Deconstructor::proxy_fragment(FileWriter& file,
 string Deconstructor::wrapper_fragment(FileWriter& file,
 				 const string& cppClassName,
 				 const string& matlabUniqueName,
-				 int id,
-				 const vector<string>& using_namespaces) const {
+				 int id) const {
   
 	const string matlabName = matlab_wrapper_name(matlabUniqueName);
 
@@ -57,7 +56,6 @@ string Deconstructor::wrapper_fragment(FileWriter& file,
     
   file.oss << "void " << wrapFunctionName << "(int nargout, mxArray *out[], int nargin, const mxArray *in[])" << endl;
   file.oss << "{" << endl;
-  generateUsingNamespace(file, using_namespaces);
   file.oss << "  typedef boost::shared_ptr<"  << cppClassName  << "> Shared;" << endl;
   //Deconstructor takes 1 arg, the mxArray obj
   file.oss << "  checkArguments(\"" << matlabName << "\",nargout,nargin," << "1" << ");" << endl;

@@ -38,12 +38,12 @@ void StaticMethod::addOverload(bool verbose, const std::string& name,
 	this->returnVals.push_back(retVal);
 }
 
+/* ************************************************************************* */
 void StaticMethod::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperFile,
 																		 const string& cppClassName,
 																		 const std::string& matlabQualName,
 																		 const std::string& matlabUniqueName,
 																		 const string& wrapperName,
-																		 const vector<string>& using_namespaces,
 																		 const TypeAttributesTable& typeAttributes,
 																		 vector<string>& functionNames) const {
 
@@ -85,7 +85,7 @@ void StaticMethod::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wr
 		// Output C++ wrapper code
 		
 		const string wrapFunctionName = wrapper_fragment(
-			wrapperFile, cppClassName, matlabUniqueName, overload, id, using_namespaces, typeAttributes);
+			wrapperFile, cppClassName, matlabUniqueName, overload, id, typeAttributes);
 
 		// Add to function list
 		functionNames.push_back(wrapFunctionName);
@@ -106,7 +106,6 @@ string StaticMethod::wrapper_fragment(FileWriter& file,
 			    const string& matlabUniqueName,
 					int overload,
 					int id,
-			    const vector<string>& using_namespaces,
 					const TypeAttributesTable& typeAttributes) const {
 
   // generate code
@@ -120,18 +119,8 @@ string StaticMethod::wrapper_fragment(FileWriter& file,
 	file.oss << "void " << wrapFunctionName << "(int nargout, mxArray *out[], int nargin, const mxArray *in[])\n";
 	// start
 	file.oss << "{\n";
-	generateUsingNamespace(file, using_namespaces);
 
-  if(returnVal.isPair)
-  {
-      if(returnVal.category1 == ReturnValue::CLASS)
-        file.oss << "  typedef boost::shared_ptr<"  << returnVal.qualifiedType1("::")  << "> Shared" <<  returnVal.type1 << ";"<< endl;
-      if(returnVal.category2 == ReturnValue::CLASS)
-        file.oss << "  typedef boost::shared_ptr<"  << returnVal.qualifiedType2("::")  << "> Shared" <<  returnVal.type2 << ";"<< endl;
-  }
-  else
-      if(returnVal.category1 == ReturnValue::CLASS)
-        file.oss << "  typedef boost::shared_ptr<"  << returnVal.qualifiedType1("::")  << "> Shared" <<  returnVal.type1 << ";"<< endl;
+	returnVal.wrapTypeUnwrap(file);
 
   file.oss << "  typedef boost::shared_ptr<"  << cppClassName  << "> Shared;" << endl;
 

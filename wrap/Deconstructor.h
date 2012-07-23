@@ -54,8 +54,7 @@ struct Deconstructor {
 	std::string wrapper_fragment(FileWriter& file,
 			 const std::string& cppClassName,
 			 const std::string& matlabUniqueName,
-			 int id,
-			 const std::vector<std::string>& using_namespaces) const;
+			 int id) const;
 };
 
 } // \namespace wrap
