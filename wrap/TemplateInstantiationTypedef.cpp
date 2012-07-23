@@ -42,7 +42,7 @@ namespace wrap {
 		// Instantiate it
 		Class classInst = *clsIt;
 		for(size_t i = 0; i < typeList.size(); ++i)
-			classInst = classInst.expandTemplate(classInst.templateArgs[i], typeList[i]);
+			classInst = classInst.expandTemplate(classInst.templateArgs[i], typeList[i], namespaces, name);
 
 		// Fix class properties
 		classInst.name = name;

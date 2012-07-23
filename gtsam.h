@@ -66,6 +66,9 @@
  *       or with typedefs, e.g.
  *       template<T, U> class Class2 { ... };
  *       typedef Class2<Type1, Type2> MyInstantiatedClass;
+ *     - In the class definition, appearances of the template argument(s) will be replaced with their
+ *       instantiated types, e.g. 'void setValue(const T& value);'.
+ *     - To refer to the instantiation of the template class itself, use 'This', i.e. 'static This Create();'
  *     - To create new instantiations in other modules, you must copy-and-paste the whole class definition
  *       into the new module, but use only your new instantiation types.
  *     - When forward-declaring template instantiations, use the generated/typedefed name, e.g.

@@ -217,7 +217,7 @@ void Class::pointer_constructor_fragments(FileWriter& proxyFile, FileWriter& wra
 }
 
 /* ************************************************************************* */
-vector<ArgumentList> expandArgumentListsTemplate(const vector<ArgumentList>& argLists, const string& templateArg, const vector<string>& instName) {
+vector<ArgumentList> expandArgumentListsTemplate(const vector<ArgumentList>& argLists, const string& templateArg, const vector<string>& instName, const std::vector<string>& expandedClassNamespace, const string& expandedClassName) {
 	vector<ArgumentList> result;
 	BOOST_FOREACH(const ArgumentList& argList, argLists) {
 		ArgumentList instArgList;
@@ -226,6 +226,9 @@ vector<ArgumentList> expandArgumentListsTemplate(const vector<ArgumentList>& arg
 			if(arg.type == templateArg) {
 				instArg.namespaces.assign(instName.begin(), instName.end()-1);
 				instArg.type = instName.back();
+			} else if(arg.type == "This") {
+				instArg.namespaces.assign(expandedClassNamespace.begin(), expandedClassNamespace.end());
+				instArg.type = expandedClassName;
 			}
 			instArgList.push_back(instArg);
 		}
@@ -236,23 +239,29 @@ vector<ArgumentList> expandArgumentListsTemplate(const vector<ArgumentList>& arg
 
 /* ************************************************************************* */
 template<class METHOD>
-map<string, METHOD> expandMethodTemplate(const map<string, METHOD>& methods, const string& templateArg, const vector<string>& instName) {
+map<string, METHOD> expandMethodTemplate(const map<string, METHOD>& methods, const string& templateArg, const vector<string>& instName, const std::vector<string>& expandedClassNamespace, const string& expandedClassName) {
 	map<string, METHOD> result;
 	typedef pair<const string, METHOD> Name_Method;
 	BOOST_FOREACH(const Name_Method& name_method, methods) {
 		const METHOD& method = name_method.second;
 		METHOD instMethod = method;
-		instMethod.argLists = expandArgumentListsTemplate(method.argLists, templateArg, instName);
+		instMethod.argLists = expandArgumentListsTemplate(method.argLists, templateArg, instName, expandedClassNamespace, expandedClassName);
 		instMethod.returnVals.clear();
 		BOOST_FOREACH(const ReturnValue& retVal, method.returnVals) {
 			ReturnValue instRetVal = retVal;
 			if(retVal.type1 == templateArg) {
 				instRetVal.namespaces1.assign(instName.begin(), instName.end()-1);
 				instRetVal.type1 = instName.back();
+			} else if(retVal.type1 == "This") {
+				instRetVal.namespaces1.assign(expandedClassNamespace.begin(), expandedClassNamespace.end());
+				instRetVal.type1 = expandedClassName;
 			}
 			if(retVal.type2 == templateArg) {
 				instRetVal.namespaces2.assign(instName.begin(), instName.end()-1);
 				instRetVal.type2 = instName.back();
+			} else if(retVal.type1 == "This") {
+				instRetVal.namespaces2.assign(expandedClassNamespace.begin(), expandedClassNamespace.end());
+				instRetVal.type2 = expandedClassName;
 			}
 			instMethod.returnVals.push_back(instRetVal);
 		}
@@ -262,18 +271,18 @@ map<string, METHOD> expandMethodTemplate(const map<string, METHOD>& methods, con
 }
 
 /* ************************************************************************* */
-Class expandClassTemplate(const Class& cls, const string& templateArg, const vector<string>& instName) {
+Class expandClassTemplate(const Class& cls, const string& templateArg, const vector<string>& instName, const std::vector<string>& expandedClassNamespace, const string& expandedClassName) {
 	Class inst;
 	inst.name = cls.name;
 	inst.templateArgs = cls.templateArgs;
 	inst.typedefName = cls.typedefName;
 	inst.isVirtual = cls.isVirtual;
 	inst.qualifiedParent = cls.qualifiedParent;
-	inst.methods = expandMethodTemplate(cls.methods, templateArg, instName);
-	inst.static_methods = expandMethodTemplate(cls.static_methods, templateArg, instName);
+	inst.methods = expandMethodTemplate(cls.methods, templateArg, instName, expandedClassNamespace, expandedClassName);
+	inst.static_methods = expandMethodTemplate(cls.static_methods, templateArg, instName, expandedClassNamespace, expandedClassName);
 	inst.namespaces = cls.namespaces;
 	inst.constructor = cls.constructor;
-	inst.constructor.args_list = expandArgumentListsTemplate(cls.constructor.args_list, templateArg, instName);
+	inst.constructor.args_list = expandArgumentListsTemplate(cls.constructor.args_list, templateArg, instName, expandedClassNamespace, expandedClassName);
 	inst.constructor.name = inst.name;
 	inst.deconstructor = cls.deconstructor;
 	inst.deconstructor.name = inst.name;
@@ -285,8 +294,9 @@ Class expandClassTemplate(const Class& cls, const string& templateArg, const vec
 vector<Class> Class::expandTemplate(const string& templateArg, const vector<vector<string> >& instantiations) const {
 	vector<Class> result;
 	BOOST_FOREACH(const vector<string>& instName, instantiations) {
-		Class inst = expandClassTemplate(*this, templateArg, instName);
-		inst.name = name + instName.back();
+		const string expandedName = name + instName.back();
+		Class inst = expandClassTemplate(*this, templateArg, instName, this->namespaces, expandedName);
+		inst.name = expandedName;
 		inst.templateArgs.clear();
 		inst.typedefName = qualifiedName("::") + "<" + wrap::qualifiedName("::", instName) + ">";
 		result.push_back(inst);
@@ -295,8 +305,8 @@ vector<Class> Class::expandTemplate(const string& templateArg, const vector<vect
 }
 
 /* ************************************************************************* */
-Class Class::expandTemplate(const string& templateArg, const vector<string>& instantiation) const {
-	return expandClassTemplate(*this, templateArg, instantiation);
+Class Class::expandTemplate(const string& templateArg, const vector<string>& instantiation, const std::vector<string>& expandedClassNamespace, const string& expandedClassName) const {
+	return expandClassTemplate(*this, templateArg, instantiation, expandedClassNamespace, expandedClassName);
 }
 
 /* ************************************************************************* */
