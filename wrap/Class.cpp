@@ -24,7 +24,6 @@
 #include <stdint.h> // works on Linux GCC
 
 #include <boost/foreach.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 
 #include "Class.h"
@@ -40,18 +39,7 @@ void Class::matlab_proxy(const string& toolboxPath, const string& wrapperName,
 												 FileWriter& wrapperFile, vector<string>& functionNames) const {
   
 	// Create namespace folders
-	{
-		using namespace boost::filesystem;
-		path curPath = toolboxPath;
-		BOOST_FOREACH(const string& subdir, namespaces) {
-			curPath /= "+" + subdir;
-			if(!is_directory(curPath))
-				if(exists("+" + subdir))
-					throw OutputError("Need to write files to directory " + curPath.string() + ", which already exists as a file but is not a directory");
-				else
-					boost::filesystem::create_directory(curPath);
-		}
-	}
+	createNamespaceStructure(namespaces, toolboxPath);
 
 	// open destination classFile
 	string classFile = toolboxPath;

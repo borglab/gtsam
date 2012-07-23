@@ -495,6 +495,11 @@ using namespace geometry;
   out[0] = wrap< Vector >(obj->return_vector2(value));
 }
 
+void aGlobalFunction_40(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("aGlobalFunction",nargout,nargin,0);
+  out[0] = wrap< Vector >(aGlobalFunction());
+}
 
 void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
@@ -625,6 +630,9 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
     break;
   case 39:
     Test_return_vector2_39(nargout, out, nargin-1, in+1);
+    break;
+  case 40:
+    aGlobalFunction_40(nargout, out, nargin-1, in+1);
     break;
   }
 

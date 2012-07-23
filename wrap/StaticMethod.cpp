@@ -38,6 +38,7 @@ void StaticMethod::addOverload(bool verbose, const std::string& name,
 	this->returnVals.push_back(retVal);
 }
 
+/* ************************************************************************* */
 void StaticMethod::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperFile,
 																		 const string& cppClassName,
 																		 const std::string& matlabQualName,

@@ -464,6 +464,11 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
       cls.matlab_proxy(toolboxPath, wrapperName, typeAttributes, wrapperFile, functionNames);
     }  
 
+		// create matlab files and wrapper code for global functions
+		BOOST_FOREACH(const GlobalFunctions::value_type& p, global_functions) {
+			p.second.matlab_proxy(toolboxPath, wrapperName, typeAttributes, wrapperFile, functionNames);
+		}
+
 		// finish wrapper file
 		wrapperFile.oss << "\n";
 		finish_wrapper(wrapperFile, functionNames);

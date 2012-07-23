@@ -20,6 +20,7 @@
 #include <cstdlib>
 
 #include <boost/foreach.hpp>
+#include <boost/filesystem.hpp>
 
 #include "utilities.h"
 
@@ -135,6 +136,21 @@ string qualifiedName(const string& separator, const vector<string>& names, const
 		result = finalName;
 	}
 	return result;
+}
+
+/* ************************************************************************* */
+void createNamespaceStructure(const std::vector<std::string>& namespaces, const std::string& toolboxPath) {
+	using namespace boost::filesystem;
+	path curPath = toolboxPath;
+	BOOST_FOREACH(const string& subdir, namespaces) {
+		curPath /= "+" + subdir;
+		if(!is_directory(curPath)) {
+			if(exists("+" + subdir))
+				throw OutputError("Need to write files to directory " + curPath.string() + ", which already exists as a file but is not a directory");
+			else
+				boost::filesystem::create_directory(curPath);
+		}
+	}
 }
 
 /* ************************************************************************* */

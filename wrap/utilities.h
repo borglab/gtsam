@@ -133,4 +133,7 @@ void generateUsingNamespace(FileWriter& file, const std::vector<std::string>& us
  */
 std::string qualifiedName(const std::string& separator, const std::vector<std::string>& names, const std::string& finalName = "");
 
+/** creates the necessary folders for namespaces, as specified by a namespace stack */
+void createNamespaceStructure(const std::vector<std::string>& namespaces, const std::string& toolboxPath);
+
 } // \namespace wrap

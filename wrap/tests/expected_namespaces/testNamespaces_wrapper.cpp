@@ -332,6 +332,17 @@ void ClassD_deconstructor_21(int nargout, mxArray *out[], int nargin, const mxAr
   }
 }
 
+void ns1aGlobalFunction_22(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("ns1aGlobalFunction",nargout,nargin,0);
+  out[0] = wrap< Vector >(ns1::aGlobalFunction());
+}
+
+void ns2aGlobalFunction_23(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("ns2aGlobalFunction",nargout,nargin,0);
+  out[0] = wrap< Vector >(ns2::aGlobalFunction());
+}
 
 void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
@@ -408,6 +419,12 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
     break;
   case 21:
     ClassD_deconstructor_21(nargout, out, nargin-1, in+1);
+    break;
+  case 22:
+    ns1aGlobalFunction_22(nargout, out, nargin-1, in+1);
+    break;
+  case 23:
+    ns2aGlobalFunction_23(nargout, out, nargin-1, in+1);
     break;
   }
 

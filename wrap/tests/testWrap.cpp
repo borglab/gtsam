@@ -291,6 +291,7 @@ TEST( wrap, matlab_code_geometry ) {
 	EXPECT(files_equal(epath + "Point2.m"             , apath + "Point2.m"             ));
 	EXPECT(files_equal(epath + "Point3.m"             , apath + "Point3.m"             ));
 	EXPECT(files_equal(epath + "Test.m"               , apath + "Test.m"               ));
+	EXPECT(files_equal(epath + "aGlobalFunction.m"    , apath + "aGlobalFunction.m"    ));
 }
 
 /* ************************************************************************* */
