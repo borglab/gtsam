@@ -78,20 +78,16 @@ public:
   }
 
   inline bool isMultifrontal() const {
-    return (linearSolverType == MULTIFRONTAL_CHOLESKY) || (linearSolverType == MULTIFRONTAL_QR);
-  }
+    return (linearSolverType == MULTIFRONTAL_CHOLESKY) || (linearSolverType == MULTIFRONTAL_QR); }
 
   inline bool isSequential() const {
-    return (linearSolverType == SEQUENTIAL_CHOLESKY) || (linearSolverType == SEQUENTIAL_QR);
-  }
+    return (linearSolverType == SEQUENTIAL_CHOLESKY) || (linearSolverType == SEQUENTIAL_QR); }
 
-  inline bool isCholmod() const {
-    return (linearSolverType == CHOLMOD);
-  }
+  inline bool isCholmod() const { return (linearSolverType == CHOLMOD); }
 
-  inline bool isCG() const {
-    return (linearSolverType == CG);
-  }
+  inline bool isCG() const { return (linearSolverType == CG); }
+
+	void setOrdering(const Ordering& ordering) { this->ordering = ordering; }
 
   GaussianFactorGraph::Eliminate getEliminationFunction() {
     switch (linearSolverType) {

@@ -1167,6 +1167,7 @@ virtual class NonlinearOptimizerParams {
 virtual class SuccessiveLinearizationParams : gtsam::NonlinearOptimizerParams {
   SuccessiveLinearizationParams();
 
+	void setOrdering(const gtsam::Ordering& ordering);
   bool isMultifrontal() const;
   bool isSequential() const;
   bool isCholmod() const;
@@ -1357,14 +1358,20 @@ typedef gtsam::RangeFactor<gtsam::SimpleCamera, gtsam::Point3> RangeFactorSimple
 typedef gtsam::RangeFactor<gtsam::CalibratedCamera, gtsam::CalibratedCamera> RangeFactorCalibratedCamera;
 typedef gtsam::RangeFactor<gtsam::SimpleCamera, gtsam::SimpleCamera> RangeFactorSimpleCamera;
 
-
-#include <gtsam/slam/BearingFactor.h>
-template<POSE, POINT, ROT>
+template<POSE, POINT, ROTATION>
 virtual class BearingFactor : gtsam::NonlinearFactor {
-	BearingFactor(size_t key1, size_t key2, const ROT& measured, const gtsam::noiseModel::Base* noiseModel);
+	BearingFactor(size_t key1, size_t key2, const ROTATION& measured, const gtsam::noiseModel::Base* noiseModel);
 };
 
 typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2> BearingFactor2D;
+
+
+template<POSE, POINT, ROTATION>
+virtual class BearingRangeFactor : gtsam::NonlinearFactor {
+	BearingRangeFactor(size_t poseKey, size_t pointKey, const ROTATION& measuredBearing, double measuredRange, const gtsam::noiseModel::Base* noiseModel);
+};
+
+typedef gtsam::BearingRangeFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2> BearingRangeFactor2D;
 
 
 #include <gtsam/slam/ProjectionFactor.h>
