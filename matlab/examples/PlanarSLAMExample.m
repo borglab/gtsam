@@ -25,72 +25,59 @@ i1 = symbol('x',1); i2 = symbol('x',2); i3 = symbol('x',3);
 j1 = symbol('l',1); j2 = symbol('l',2);
 
 %% Create graph container and add factors to it
-graph = planarSLAM.Graph;
+graph = gtsam.NonlinearFactorGraph;
 
 %% Add prior
 import gtsam.*
 priorMean = Pose2(0.0, 0.0, 0.0); % prior at origin
 priorNoise = noiseModel.Diagonal.Sigmas([0.3; 0.3; 0.1]);
-graph.addPosePrior(i1, priorMean, priorNoise); % add directly to graph
+graph.add(PriorFactorPose2(i1, priorMean, priorNoise)); % add directly to graph
 
 %% Add odometry
 import gtsam.*
 odometry = Pose2(2.0, 0.0, 0.0);
 odometryNoise = noiseModel.Diagonal.Sigmas([0.2; 0.2; 0.1]);
-graph.addRelativePose(i1, i2, odometry, odometryNoise);
-graph.addRelativePose(i2, i3, odometry, odometryNoise);
+graph.add(BetweenFactorPose2(i1, i2, odometry, odometryNoise));
+graph.add(BetweenFactorPose2(i2, i3, odometry, odometryNoise));
 
 %% Add bearing/range measurement factors
 import gtsam.*
 degrees = pi/180;
 brNoise = noiseModel.Diagonal.Sigmas([0.1; 0.2]);
-graph.addBearingRange(i1, j1, Rot2(45*degrees), sqrt(4+4), brNoise);
-graph.addBearingRange(i2, j1, Rot2(90*degrees), 2, brNoise);
-graph.addBearingRange(i3, j2, Rot2(90*degrees), 2, brNoise);
+graph.add(BearingRangeFactor2D(i1, j1, Rot2(45*degrees), sqrt(4+4), brNoise));
+graph.add(BearingRangeFactor2D(i2, j1, Rot2(90*degrees), 2, brNoise));
+graph.add(BearingRangeFactor2D(i3, j2, Rot2(90*degrees), 2, brNoise));
 
 % print
 graph.print(sprintf('\nFull graph:\n'));
 
 %% Initialize to noisy points
 import gtsam.*
-initialEstimate = planarSLAM.Values;
-initialEstimate.insertPose(i1, Pose2(0.5, 0.0, 0.2));
-initialEstimate.insertPose(i2, Pose2(2.3, 0.1,-0.2));
-initialEstimate.insertPose(i3, Pose2(4.1, 0.1, 0.1));
-initialEstimate.insertPoint(j1, Point2(1.8, 2.1));
-initialEstimate.insertPoint(j2, Point2(4.1, 1.8));
+initialEstimate = Values;
+initialEstimate.insert(i1, Pose2(0.5, 0.0, 0.2));
+initialEstimate.insert(i2, Pose2(2.3, 0.1,-0.2));
+initialEstimate.insert(i3, Pose2(4.1, 0.1, 0.1));
+initialEstimate.insert(j1, Point2(1.8, 2.1));
+initialEstimate.insert(j2, Point2(4.1, 1.8));
 
 initialEstimate.print(sprintf('\nInitial estimate:\n'));
 
 %% Optimize using Levenberg-Marquardt optimization with an ordering from colamd
-result = graph.optimize(initialEstimate,1);
+optimizer = LevenbergMarquardtOptimizer(graph, initialEstimate);
+result = optimizer.optimizeSafely();
 result.print(sprintf('\nFinal result:\n'));
 
 %% Plot Covariance Ellipses
 import gtsam.*
 cla;hold on
-marginals = graph.marginals(result);
-for i=1:3
-    key = symbol('x',i);
-    pose{i} = result.pose(key);
-    P{i}=marginals.marginalCovariance(key);
-    if i>1
-        plot([pose{i-1}.x;pose{i}.x],[pose{i-1}.y;pose{i}.y],'r-');
-    end
-end
-for i=1:3
-    plotPose2(pose{i},'g',P{i})
-end
-point = {};
-for j=1:2
-    key = symbol('l',j);
-    point{j} = result.point(key);
-    Q{j}=marginals.marginalCovariance(key);
-    plotPoint2(point{j},'b',Q{j})
-end
-plot([pose{1}.x;point{1}.x],[pose{1}.y;point{1}.y],'c-');
-plot([pose{2}.x;point{1}.x],[pose{2}.y;point{1}.y],'c-');
-plot([pose{3}.x;point{2}.x],[pose{3}.y;point{2}.y],'c-');
+
+marginals = Marginals(graph, result);
+plot2DTrajectory(result, [], marginals);
+plot2DPoints(result, marginals);
+
+plot([result.at(i1).x; result.at(j1).x],[result.at(i1).y; result.at(j1).y], 'c-');
+plot([result.at(i2).x; result.at(j1).x],[result.at(i2).y; result.at(j1).y], 'c-');
+plot([result.at(i3).x; result.at(j2).x],[result.at(i3).y; result.at(j2).y], 'c-');
 axis([-0.6 4.8 -1 1])
 axis equal
 view(2)

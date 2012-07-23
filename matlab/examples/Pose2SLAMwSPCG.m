@@ -17,41 +17,42 @@
 %  - The robot is on a grid, moving 2 meters each step
 
 %% Create graph container and add factors to it
-graph = pose2SLAM.Graph;
+graph = NonlinearFactorGraph;
 
 %% Add prior
 import gtsam.*
 % gaussian for prior
 priorMean = Pose2(0.0, 0.0, 0.0); % prior at origin
 priorNoise = noiseModel.Diagonal.Sigmas([0.3; 0.3; 0.1]);
-graph.addPosePrior(1, priorMean, priorNoise); % add directly to graph
+graph.add(PriorFactorPose2(1, priorMean, priorNoise)); % add directly to graph
 
 %% Add odometry
 import gtsam.*
 % general noisemodel for odometry
 odometryNoise = noiseModel.Diagonal.Sigmas([0.2; 0.2; 0.1]);
-graph.addRelativePose(1, 2, Pose2(2.0, 0.0, 0.0 ), odometryNoise);
-graph.addRelativePose(2, 3, Pose2(2.0, 0.0, pi/2), odometryNoise);
-graph.addRelativePose(3, 4, Pose2(2.0, 0.0, pi/2), odometryNoise);
-graph.addRelativePose(4, 5, Pose2(2.0, 0.0, pi/2), odometryNoise);
+graph.add(BetweenFactorPose2(1, 2, Pose2(2.0, 0.0, 0.0 ), odometryNoise));
+graph.add(BetweenFactorPose2(2, 3, Pose2(2.0, 0.0, pi/2), odometryNoise));
+graph.add(BetweenFactorPose2(3, 4, Pose2(2.0, 0.0, pi/2), odometryNoise));
+graph.add(BetweenFactorPose2(4, 5, Pose2(2.0, 0.0, pi/2), odometryNoise));
 
 %% Add pose constraint
 import gtsam.*
 model = noiseModel.Diagonal.Sigmas([0.2; 0.2; 0.1]);
-graph.addRelativePose(5, 2, Pose2(2.0, 0.0, pi/2), model);
+graph.add(BetweenFactorPose2(5, 2, Pose2(2.0, 0.0, pi/2), model));
 
 % print
 graph.print(sprintf('\nFactor graph:\n'));
 
 %% Initialize to noisy points
-initialEstimate = pose2SLAM.Values;
-initialEstimate.insertPose(1, Pose2(0.5, 0.0, 0.2 ));
-initialEstimate.insertPose(2, Pose2(2.3, 0.1,-0.2 ));
-initialEstimate.insertPose(3, Pose2(4.1, 0.1, pi/2));
-initialEstimate.insertPose(4, Pose2(4.0, 2.0, pi  ));
-initialEstimate.insertPose(5, Pose2(2.1, 2.1,-pi/2));
+initialEstimate = Values;
+initialEstimate.insert(1, Pose2(0.5, 0.0, 0.2 ));
+initialEstimate.insert(2, Pose2(2.3, 0.1,-0.2 ));
+initialEstimate.insert(3, Pose2(4.1, 0.1, pi/2));
+initialEstimate.insert(4, Pose2(4.0, 2.0, pi  ));
+initialEstimate.insert(5, Pose2(2.1, 2.1,-pi/2));
 initialEstimate.print(sprintf('\nInitial estimate:\n'));
 
 %% Optimize using Levenberg-Marquardt optimization with an ordering from colamd
-result = graph.optimizeSPCG(initialEstimate);
+optimizer = DoglegOptimizer(graph, initialEstimate);
+result = optimizer.optimizeSafely();
 result.print(sprintf('\nFinal result:\n'));

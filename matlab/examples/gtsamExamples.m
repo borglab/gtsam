@@ -22,7 +22,7 @@ function varargout = gtsamExamples(varargin)
 
 % Edit the above text to modify the response to help gtsamExamples
 
-% Last Modified by GUIDE v2.5 13-Jun-2012 08:13:23
+% Last Modified by GUIDE v2.5 23-Jul-2012 13:12:19
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -104,6 +104,20 @@ echo on
 Pose2SLAMExample
 echo off
 
+% --- Executes on button press in Pose2SLAMCircle.
+function Pose2SLAMCircle_Callback(hObject, eventdata, handles)
+axes(handles.axes3);
+echo on
+Pose2SLAMExample_circle
+echo off
+
+% --- Executes on button press in Pose2SLAMManhattan.
+function Pose2SLAMManhattan_Callback(hObject, eventdata, handles)
+axes(handles.axes3);
+echo on
+Pose2SLAMExample_graph
+echo off
+
 % --- Executes on button press in Pose3SLAM.
 function Pose3SLAM_Callback(hObject, eventdata, handles)
 axes(handles.axes3);
@@ -111,11 +125,25 @@ echo on
 Pose3SLAMExample
 echo off
 
+% --- Executes on button press in Pose3SLAMSphere.
+function Pose3SLAMSphere_Callback(hObject, eventdata, handles)
+axes(handles.axes3);
+echo on
+Pose3SLAMExample_graph
+echo off
+
 % --- Executes on button press in PlanarSLAM.
 function PlanarSLAM_Callback(hObject, eventdata, handles)
 axes(handles.axes3);
 echo on
 PlanarSLAMExample
+echo off
+
+% --- Executes on button press in PlanarSLAMSampling.
+function PlanarSLAMSampling_Callback(hObject, eventdata, handles)
+axes(handles.axes3);
+echo on
+PlanarSLAMExample_sampling
 echo off
 
 % --- Executes on button press in SFM.
@@ -138,7 +166,3 @@ axes(handles.axes3);
 echo on
 StereoVOExample
 echo off
-
-% --- Executes on button press in Future.
-function Future_Callback(hObject, eventdata, handles)
-fprintf(1,'Future demo not implemented yet :-)\n');

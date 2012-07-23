@@ -16,33 +16,37 @@ p0 = hexagon.pose(0);
 p1 = hexagon.pose(1);
 
 %% create a Pose graph with one equality constraint and one measurement
-fg = pose2SLAM.Graph;
-fg.addPoseConstraint(0, p0);
+import gtsam.*
+fg = NonlinearFactorGraph;
+fg.add(NonlinearEqualityPose2(0, p0));
 delta = p0.between(p1);
-covariance = gtsam.noiseModel.Diagonal.Sigmas([0.05; 0.05; 5*pi/180]);
-fg.addRelativePose(0,1, delta, covariance);
-fg.addRelativePose(1,2, delta, covariance);
-fg.addRelativePose(2,3, delta, covariance);
-fg.addRelativePose(3,4, delta, covariance);
-fg.addRelativePose(4,5, delta, covariance);
-fg.addRelativePose(5,0, delta, covariance);
+covariance = noiseModel.Diagonal.Sigmas([0.05; 0.05; 5*pi/180]);
+fg.add(BetweenFactorPose2(0,1, delta, covariance));
+fg.add(BetweenFactorPose2(1,2, delta, covariance));
+fg.add(BetweenFactorPose2(2,3, delta, covariance));
+fg.add(BetweenFactorPose2(3,4, delta, covariance));
+fg.add(BetweenFactorPose2(4,5, delta, covariance));
+fg.add(BetweenFactorPose2(5,0, delta, covariance));
 
 %% Create initial config
-initial = pose2SLAM.Values;
-initial.insertPose(0, p0);
-initial.insertPose(1, hexagon.pose(1).retract([-0.1, 0.1,-0.1]'));
-initial.insertPose(2, hexagon.pose(2).retract([ 0.1,-0.1, 0.1]'));
-initial.insertPose(3, hexagon.pose(3).retract([-0.1, 0.1,-0.1]'));
-initial.insertPose(4, hexagon.pose(4).retract([ 0.1,-0.1, 0.1]'));
-initial.insertPose(5, hexagon.pose(5).retract([-0.1, 0.1,-0.1]'));
+initial = Values;
+initial.insert(0, p0);
+initial.insert(1, hexagon.pose(1).retract([-0.1, 0.1,-0.1]'));
+initial.insert(2, hexagon.pose(2).retract([ 0.1,-0.1, 0.1]'));
+initial.insert(3, hexagon.pose(3).retract([-0.1, 0.1,-0.1]'));
+initial.insert(4, hexagon.pose(4).retract([ 0.1,-0.1, 0.1]'));
+initial.insert(5, hexagon.pose(5).retract([-0.1, 0.1,-0.1]'));
 
 %% Plot Initial Estimate
-figure(1);clf
-plot(initial.xs(),initial.ys(),'g-*'); axis equal
+cla
+plot2DTrajectory(initial, 'g*-'); axis equal
 
 %% optimize
-result = fg.optimize(initial);
+optimizer = DoglegOptimizer(fg, initial);
+result = optimizer.optimizeSafely;
 
 %% Show Result
-hold on; plot(result.xs(),result.ys(),'b-*')
+hold on; plot2DTrajectory(result, 'b*-');
+view(2);
+axis([-1.5 1.5 -1.5 1.5]);
 result.print(sprintf('\nFinal result:\n'));

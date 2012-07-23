@@ -10,23 +10,31 @@
 % @author Frank Dellaert
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%% Find data file
 N = 2500;
-% filename = '../../examples/Data/sphere_smallnoise.graph';
-% filename = '../../examples/Data/sphere2500_groundtruth.txt';
-filename = '../../examples/Data/sphere2500.txt';
+% dataset = 'sphere_smallnoise.graph';
+% dataset = 'sphere2500_groundtruth.txt';
+dataset = 'sphere2500.txt';
+
+datafile = findExampleDataFile(dataset);
 
 %% Initialize graph, initial estimate, and odometry noise
-model = gtsam.noiseModel.Diagonal.Sigmas([0.05; 0.05; 0.05; 5*pi/180; 5*pi/180; 5*pi/180]);
-[graph,initial]=load3D(filename,model,true,N);
+import gtsam.*
+model = noiseModel.Diagonal.Sigmas([0.05; 0.05; 0.05; 5*pi/180; 5*pi/180; 5*pi/180]);
+[graph,initial]=load3D(datafile,model,true,N);
 
 %% Plot Initial Estimate
-figure(1);clf
-first = initial.pose(0);
+cla
+first = initial.at(0);
 plot3(first.x(),first.y(),first.z(),'r*'); hold on
 plot3DTrajectory(initial,'g-',false);
 
 %% Read again, now with all constraints, and optimize
-graph = load3D(filename,model,false,N);
-graph.addPoseConstraint(0, first);
-result = graph.optimize(initial);
-plot3DTrajectory(result,'r-',false); axis equal;
+import gtsam.*
+graph = load3D(datafile, model, false, N);
+graph.add(NonlinearEqualityPose3(0, first));
+optimizer = DoglegOptimizer(graph, initial);
+result = optimizer.optimizeSafely();
+plot3DTrajectory(result, 'r-', false); axis equal;
+
+view(0); axis equal;
