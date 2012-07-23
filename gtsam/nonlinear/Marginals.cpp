@@ -110,11 +110,11 @@ JointMarginal Marginals::jointMarginalInformation(const std::vector<Key>& variab
     return JointMarginal(info, dims, indices);
 
   } else {
-    // Convert keys to linear indices
+    // Obtain requested variables as ordered indices
     vector<Index> indices(variables.size());
     for(size_t i=0; i<variables.size(); ++i) { indices[i] = ordering_[variables[i]]; }
 
-    // Compute joint factor graph
+    // Compute joint marginal factor graph.
     GaussianFactorGraph jointFG;
     if(variables.size() == 2) {
       if(factorization_ == CHOLESKY)
@@ -128,13 +128,15 @@ JointMarginal Marginals::jointMarginalInformation(const std::vector<Key>& variab
         jointFG = *GaussianSequentialSolver(graph_, true).jointFactorGraph(indices);
     }
 
-    // Conversion from variable keys to position in factor graph variables,
+    // Build map from variable keys to position in factor graph variables,
     // which are sorted in index order.
     Ordering variableConversion;
     {
+			// First build map from index to key
       FastMap<Index,Key> usedIndices;
       for(size_t i=0; i<variables.size(); ++i)
         usedIndices.insert(make_pair(indices[i], variables[i]));
+			// Next run over indices in sorted order
       size_t slot = 0;
       typedef pair<Index,Key> Index_Key;
       BOOST_FOREACH(const Index_Key& index_key, usedIndices) {
@@ -145,8 +147,9 @@ JointMarginal Marginals::jointMarginalInformation(const std::vector<Key>& variab
 
     // Get dimensions from factor graph
     std::vector<size_t> dims(indices.size(), 0);
-    for(size_t i = 0; i < variables.size(); ++i)
-      dims[i] = values_.at(variables[i]).dim();
+    BOOST_FOREACH(Key key, variables) {
+      dims[variableConversion[key]] = values_.at(key).dim();
+		}
 
     // Get information matrix
     Matrix augmentedInfo = jointFG.denseHessian();
