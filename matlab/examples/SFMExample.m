@@ -29,7 +29,8 @@ pointNoiseSigma = 0.1;
 poseNoiseSigmas = [0.001 0.001 0.001 0.1 0.1 0.1]';
 
 %% Create the graph (defined in visualSLAM.h, derived from NonlinearFactorGraph)
-graph = visualSLAM.Graph;
+import gtsam.*
+graph = NonlinearFactorGraph;
 
 %% Add factors for all measurements
 import gtsam.*
@@ -37,29 +38,30 @@ measurementNoise = noiseModel.Isotropic.Sigma(2,measurementNoiseSigma);
 for i=1:length(data.Z)
     for k=1:length(data.Z{i})
         j = data.J{i}{k};
-        graph.addMeasurement(data.Z{i}{k}, measurementNoise, symbol('x',i), symbol('p',j), data.K);
+        graph.add(GenericProjectionFactorCal3_S2(data.Z{i}{k}, measurementNoise, symbol('x',i), symbol('p',j), data.K));
     end
 end
 
 %% Add Gaussian priors for a pose and a landmark to constrain the system
 import gtsam.*
 posePriorNoise  = noiseModel.Diagonal.Sigmas(poseNoiseSigmas);
-graph.addPosePrior(symbol('x',1), truth.cameras{1}.pose, posePriorNoise);
+graph.add(PriorFactorPose3(symbol('x',1), truth.cameras{1}.pose, posePriorNoise));
 pointPriorNoise  = noiseModel.Isotropic.Sigma(3,pointNoiseSigma);
-graph.addPointPrior(symbol('p',1), truth.points{1}, pointPriorNoise);
+graph.add(PriorFactorPoint3(symbol('p',1), truth.points{1}, pointPriorNoise));
 
 %% Print the graph
 graph.print(sprintf('\nFactor graph:\n'));
 
 %% Initialize cameras and points close to ground truth in this example
-initialEstimate = visualSLAM.Values;
+import gtsam.*
+initialEstimate = Values;
 for i=1:size(truth.cameras,2)
     pose_i = truth.cameras{i}.pose.retract(0.1*randn(6,1));
-    initialEstimate.insertPose(symbol('x',i), pose_i);
+    initialEstimate.insert(symbol('x',i), pose_i);
 end
 for j=1:size(truth.points,2)
     point_j = truth.points{j}.retract(0.1*randn(3,1));
-    initialEstimate.insertPoint(symbol('p',j), point_j);
+    initialEstimate.insert(symbol('p',j), point_j);
 end
 initialEstimate.print(sprintf('\nInitial estimate:\n  '));
 
@@ -70,7 +72,7 @@ parameters = LevenbergMarquardtParams;
 parameters.setlambdaInitial(1.0);
 parameters.setVerbosityLM('trylambda');
 
-optimizer = graph.optimizer(initialEstimate, parameters);
+optimizer = LevenbergMarquardtOptimizer(graph, initialEstimate, parameters);
 
 for i=1:5
     optimizer.iterate();
@@ -79,21 +81,14 @@ result = optimizer.values();
 result.print(sprintf('\nFinal result:\n  '));
 
 %% Plot results with covariance ellipses
-marginals = graph.marginals(result);
+import gtsam.*
+marginals = Marginals(graph, result);
 cla
 hold on;
-for j=1:result.nrPoints
-    P = marginals.marginalCovariance(symbol('p',j));
-    point_j = result.point(symbol('p',j));
-	plot3(point_j.x, point_j.y, point_j.z,'marker','o');
-    covarianceEllipse3D([point_j.x;point_j.y;point_j.z],P);
-end
 
-for i=1:result.nrPoses
-    P = marginals.marginalCovariance(symbol('x',i));
-    pose_i = result.pose(symbol('x',i));
-    plotPose3(pose_i,P,10);
-end
+plot3DPoints(result, [], marginals);
+plot3DTrajectory(result, '*', 1, 8, marginals);
+
 axis([-40 40 -40 40 -10 20]);axis equal
 view(3)
 colormap('hot')
