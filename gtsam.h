@@ -85,6 +85,9 @@ namespace gtsam {
 // base
 //*************************************************************************
 
+/** gtsam namespace functions */
+bool linear_independent(Matrix A, Matrix B, double tol);
+
 virtual class Value {
 	// No constructors because this is an abstract class
 
