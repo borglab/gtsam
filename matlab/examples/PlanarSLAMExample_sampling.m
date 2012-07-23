@@ -51,7 +51,7 @@ cla;hold on
 marginals = Marginals(graph, sample);
 
 plot2DTrajectory(sample, [], marginals);
-plot2DPoints(sample, marginals);
+plot2DPoints(sample, [], marginals);
 
 for j=1:2
     key = symbol('l',j);

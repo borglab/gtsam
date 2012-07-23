@@ -3,6 +3,8 @@ function [graph,initial] = load3D(filename,model,successive,N)
 % cannot read noise model from file yet, uses specified model
 % if [successive] is tru, constructs initial estimate from odometry
 
+import gtsam.*
+
 if nargin<3, successive=false; end
 fid = fopen(filename);
 if fid < 0
@@ -15,10 +17,10 @@ fclose(fid);
 lines=columns{1};
 
 % loop over lines and add vertices
-graph = pose3SLAM.Graph;
-initial = pose3SLAM.Values;
+graph = NonlinearFactorGraph;
+initial = Values;
 origin=gtsam.Pose3;
-initial.insertPose(0,origin);
+initial.insert(0,origin);
 n=size(lines,1);
 if nargin<4, N=n;end
 
@@ -30,7 +32,7 @@ for i=1:n
         if (~successive && i1<N || successive && i1==0)
             t = gtsam.Point3(v{3}, v{4}, v{5});
             R = gtsam.Rot3.Ypr(v{8}, -v{7}, v{6});
-            initial.insertPose(i1, gtsam.Pose3(R,t));
+            initial.insert(i1, gtsam.Pose3(R,t));
         end
     elseif strcmp('EDGE3',line_i(1:5))
         e = textscan(line_i,'%s %d %d %f %f %f %f %f %f',1);
@@ -41,12 +43,12 @@ for i=1:n
                 t = gtsam.Point3(e{4}, e{5}, e{6});
                 R = gtsam.Rot3.Ypr(e{9}, e{8}, e{7});
                 dpose = gtsam.Pose3(R,t);
-                graph.addRelativePose(i1, i2, dpose, model);
+                graph.add(BetweenFactorPose3(i1, i2, dpose, model));
                 if successive
                     if i2>i1
-                        initial.insertPose(i2,initial.pose(i1).compose(dpose));
+                        initial.insert(i2,initial.at(i1).compose(dpose));
                     else
-                        initial.insertPose(i1,initial.pose(i2).compose(dpose.inverse));
+                        initial.insert(i1,initial.at(i2).compose(dpose.inverse));
                     end
                 end
             end

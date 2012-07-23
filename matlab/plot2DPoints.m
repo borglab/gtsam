@@ -1,4 +1,4 @@
-function plot2DPoints(values, marginals)
+function plot2DPoints(values, linespec, marginals)
 %PLOT2DPOINTS Plots the Point2's in a values, with optional covariances
 %   Finds all the Point2 objects in the given Values object and plots them.
 % If a Marginals object is given, this function will also plot marginal
@@ -6,6 +6,9 @@ function plot2DPoints(values, marginals)
 
 import gtsam.*
 
+if ~exist('linespec', 'var') || isempty(linespec)
+    linespec = 'g';
+end
 haveMarginals = exist('marginals', 'var');
 keys = KeyVector(values.keys);
 
@@ -19,9 +22,9 @@ for i = 0:keys.size-1
     if isa(p, 'gtsam.Point2')
         if haveMarginals
             P = marginals.marginalCovariance(key);
-            plotPoint2(p, 'g', P);
+            plotPoint2(p, linespec, P);
         else
-            plotPoint2(p, 'g');
+            plotPoint2(p, linespec);
         end
     end
 end

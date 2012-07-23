@@ -28,13 +28,14 @@ cla
 first = initial.at(0);
 plot3(first.x(),first.y(),first.z(),'r*'); hold on
 plot3DTrajectory(initial,'g-',false);
+drawnow;
 
 %% Read again, now with all constraints, and optimize
 import gtsam.*
 graph = load3D(datafile, model, false, N);
 graph.add(NonlinearEqualityPose3(0, first));
-optimizer = DoglegOptimizer(graph, initial);
+optimizer = LevenbergMarquardtOptimizer(graph, initial);
 result = optimizer.optimizeSafely();
 plot3DTrajectory(result, 'r-', false); axis equal;
 
-view(0); axis equal;
+view(3); axis equal;
