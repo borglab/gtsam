@@ -82,6 +82,9 @@ class Test {
   // even more comments at the end!
 };
 
+
+Vector aGlobalFunction();
+
 // comments at the end!
 
 // even more comments at the end!

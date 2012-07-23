@@ -79,10 +79,10 @@ Module::Module(const string& interfacePath,
   vector<string> arg_dup; ///keep track of duplicates
   Constructor constructor0(enable_verbose), constructor(enable_verbose);
   Deconstructor deconstructor0(enable_verbose), deconstructor(enable_verbose);
-  //Method method0(enable_verbose), method(enable_verbose);
   StaticMethod static_method0(enable_verbose), static_method(enable_verbose);
   Class cls0(enable_verbose),cls(enable_verbose);
-	ForwardDeclaration fwDec0, fwDec;
+  GlobalFunction globalFunc0(enable_verbose), globalFunc(enable_verbose);
+  ForwardDeclaration fwDec0, fwDec;
   vector<string> namespaces, /// current namespace tag
   							 namespaces_return, /// namespace for current return type
   							 using_namespace_current;  /// All namespaces from "using" declarations
@@ -261,18 +261,32 @@ Module::Module(const string& interfacePath,
 			>> ((':' >> classParent_p >> '{') | '{')
   		>> *(functions_p | comments_p)
   		>> str_p("};"))
-        [assign_a(constructor.name, cls.name)]
-        [assign_a(cls.constructor, constructor)]
+      [assign_a(constructor.name, cls.name)]
+      [assign_a(cls.constructor, constructor)]
   		[assign_a(cls.namespaces, namespaces)]
-  		 [assign_a(cls.using_namespaces, using_namespace_current)]
-        [assign_a(deconstructor.name,cls.name)]
-        [assign_a(cls.deconstructor, deconstructor)]
+  		[assign_a(cls.using_namespaces, using_namespace_current)]
+      [assign_a(deconstructor.name,cls.name)]
+      [assign_a(cls.deconstructor, deconstructor)]
 			[bl::bind(&handle_possible_template, bl::var(classes), bl::var(cls), bl::var(templateArgument), bl::var(templateInstantiations))]
       [assign_a(deconstructor,deconstructor0)]
       [assign_a(constructor, constructor0)]
   		[assign_a(cls,cls0)]
 			[clear_a(templateArgument)]
 			[clear_a(templateInstantiations)];
+
+  Rule global_function_p =
+      (returnType_p >> staticMethodName_p[assign_a(methodName)] >>
+       '(' >> argumentList_p >> ')' >> ';' >> *comments_p)
+  		[bl::bind(&GlobalFunction::addOverload,
+  			bl::var(global_functions)[bl::var(methodName)],
+  			verbose,
+  			bl::var(methodName),
+  			bl::var(args),
+  		  bl::var(retVal),
+  		  bl::var(namespaces))]
+  		[assign_a(methodName,methodName0)]
+      [assign_a(args,args0)]
+      [assign_a(retVal,retVal0)];
 
   Rule include_p = str_p("#include") >> ch_p('<') >> (*(anychar_p - '>'))[push_back_a(includes)] >> ch_p('>');
 
@@ -281,7 +295,7 @@ Module::Module(const string& interfacePath,
 			>> namespace_name_p[push_back_a(namespaces)]
 			>> ch_p('{')
 			>> *(include_p | class_p | templateSingleInstantiation_p | namespace_def_p | comments_p)
-			>> str_p("}///\\namespace") // end namespace, avoid confusion with classes
+			>> str_p("}///\\namespace") // end namespace, avoid confusion with classes // FIXME: check for absense of semicolon to disambiguate
 			>> !namespace_name_p)
 			[pop_a(namespaces)];
 
@@ -297,7 +311,7 @@ Module::Module(const string& interfacePath,
 			[push_back_a(forward_declarations, fwDec)]
 			[assign_a(fwDec, fwDec0)];
 
-  Rule module_content_p =	comments_p | using_namespace_p | include_p | class_p | templateSingleInstantiation_p | forward_declaration_p | namespace_def_p ;
+  Rule module_content_p =	comments_p | using_namespace_p | include_p | class_p | templateSingleInstantiation_p | forward_declaration_p | global_function_p | namespace_def_p;
 
   Rule module_p = *module_content_p >> !end_p;
 

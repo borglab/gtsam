@@ -23,6 +23,7 @@
 #include <map>
 
 #include "Class.h"
+#include "GlobalFunction.h"
 #include "TemplateInstantiationTypedef.h"
 #include "ForwardDeclaration.h"
 
@@ -33,6 +34,8 @@ namespace wrap {
  */
 struct Module {
 
+	typedef std::map<std::string, GlobalFunction> GlobalFunctions;
+
   std::string name;         ///< module name
   std::vector<Class> classes; ///< list of classes
 	std::vector<TemplateInstantiationTypedef> templateInstantiationTypedefs; ///< list of template instantiations
@@ -40,6 +43,7 @@ struct Module {
 //  std::vector<std::string> using_namespaces; ///< all default namespaces
   std::vector<ForwardDeclaration> forward_declarations;
 	std::vector<std::string> includes;        ///< Include statements
+	GlobalFunctions global_functions;
 
   /// constructor that parses interface file
   Module(const std::string& interfacePath,
