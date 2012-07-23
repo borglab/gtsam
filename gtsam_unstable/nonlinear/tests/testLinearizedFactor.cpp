@@ -6,7 +6,8 @@
 #include <boost/assign/std/vector.hpp>
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
-#include <gtsam/slam/planarSLAM.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/nonlinear/Values.h>
 
 #include <gtsam_unstable/nonlinear/LinearizedFactor.h>
 
