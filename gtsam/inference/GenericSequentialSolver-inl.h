@@ -88,7 +88,7 @@ namespace gtsam {
 	GenericSequentialSolver<FACTOR>::jointFactorGraph(
 			const std::vector<Index>& js, Eliminate function) const {
 
-		// Compute a COLAMD permutation with the marginal variable constrained to the end.
+		// Compute a COLAMD permutation with the marginal variables constrained to the end.
 		Permutation::shared_ptr permutation(inference::PermutationCOLAMD(*structure_, js));
 		Permutation::shared_ptr permutationInverse(permutation->inverse());
 
