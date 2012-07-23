@@ -30,7 +30,8 @@ cameraNoiseSigmas = [0.001 0.001 0.001 0.1 0.1 0.1 ...
                      0.001*ones(1,5)]';
 
 %% Create the graph (defined in visualSLAM.h, derived from NonlinearFactorGraph)
-graph = sparseBA.Graph;
+import gtsam.*
+graph = NonlinearFactorGraph;
 
  
 %% Add factors for all measurements
@@ -39,7 +40,7 @@ measurementNoise = noiseModel.Isotropic.Sigma(2,measurementNoiseSigma);
 for i=1:length(data.Z)
     for k=1:length(data.Z{i})
         j = data.J{i}{k};
-        graph.addSimpleCameraMeasurement(data.Z{i}{k}, measurementNoise, symbol('c',i), symbol('p',j));
+        graph.add(GeneralSFMFactorCal3_S2(data.Z{i}{k}, measurementNoise, symbol('c',i), symbol('p',j)));
     end
 end
 
@@ -47,10 +48,10 @@ end
 import gtsam.*
 cameraPriorNoise  = noiseModel.Diagonal.Sigmas(cameraNoiseSigmas);
 firstCamera = SimpleCamera(truth.cameras{1}.pose, truth.K);
-graph.addSimpleCameraPrior(symbol('c',1), firstCamera, cameraPriorNoise);
+graph.add(PriorFactorSimpleCamera(symbol('c',1), firstCamera, cameraPriorNoise));
 
 pointPriorNoise  = noiseModel.Isotropic.Sigma(3,pointNoiseSigma);
-graph.addPointPrior(symbol('p',1), truth.points{1}, pointPriorNoise);
+graph.add(PriorFactorPoint3(symbol('p',1), truth.points{1}, pointPriorNoise));
 
 %% Print the graph
 graph.print(sprintf('\nFactor graph:\n'));
@@ -58,15 +59,15 @@ graph.print(sprintf('\nFactor graph:\n'));
 
 %% Initialize cameras and points close to ground truth in this example
 import gtsam.*
-initialEstimate = sparseBA.Values;
+initialEstimate = Values;
 for i=1:size(truth.cameras,2)
     pose_i = truth.cameras{i}.pose.retract(0.1*randn(6,1));
     camera_i = SimpleCamera(pose_i, truth.K);
-    initialEstimate.insertSimpleCamera(symbol('c',i), camera_i);
+    initialEstimate.insert(symbol('c',i), camera_i);
 end
 for j=1:size(truth.points,2)
     point_j = truth.points{j}.retract(0.1*randn(3,1));
-    initialEstimate.insertPoint(symbol('p',j), point_j);
+    initialEstimate.insert(symbol('p',j), point_j);
 end
 initialEstimate.print(sprintf('\nInitial estimate:\n  '));
 
@@ -77,7 +78,7 @@ parameters = LevenbergMarquardtParams;
 parameters.setlambdaInitial(1.0);
 parameters.setVerbosityLM('trylambda');
 
-optimizer = graph.optimizer(initialEstimate, parameters);
+optimizer = LevenbergMarquardtOptimizer(graph, initialEstimate, parameters);
 
 for i=1:5
     optimizer.iterate();
