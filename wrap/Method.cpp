@@ -42,7 +42,6 @@ void Method::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperF
 																		 const std::string& matlabQualName,
 																		 const std::string& matlabUniqueName,
 																		 const string& wrapperName,
-																		 const vector<string>& using_namespaces,
 																		 const TypeAttributesTable& typeAttributes,
 																		 vector<string>& functionNames) const {
 
@@ -82,7 +81,7 @@ void Method::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperF
 		// Output C++ wrapper code
 		
 		const string wrapFunctionName = wrapper_fragment(
-			wrapperFile, cppClassName, matlabUniqueName, overload, id, using_namespaces, typeAttributes);
+			wrapperFile, cppClassName, matlabUniqueName, overload, id, typeAttributes);
 
 		// Add to function list
 		functionNames.push_back(wrapFunctionName);
@@ -103,7 +102,6 @@ string Method::wrapper_fragment(FileWriter& file,
 			    const string& matlabUniqueName,
 					int overload,
 					int id,
-			    const vector<string>& using_namespaces,
 					const TypeAttributesTable& typeAttributes) const {
 
   // generate code
@@ -117,7 +115,6 @@ string Method::wrapper_fragment(FileWriter& file,
 	file.oss << "void " << wrapFunctionName << "(int nargout, mxArray *out[], int nargin, const mxArray *in[])\n";
 	// start
 	file.oss << "{\n";
-	generateUsingNamespace(file, using_namespaces);
 
   if(returnVal.isPair)
   {

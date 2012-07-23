@@ -41,9 +41,6 @@
  *   Namespace usage
  *   	 - Namespaces can be specified for classes in arguments and return values
  *   	 - In each case, the namespace must be fully specified, e.g., "namespace1::namespace2::ClassName"
- *   Using namespace: FIXME: this functionality is currently broken
- *   	 - To use a namespace (e.g., generate a "using namespace x" line in cpp files), add "using namespace x;"
- *   	 - This declaration applies to all classes *after* the declaration, regardless of brackets
  *   Includes in C++ wrappers
  *     - All includes will be collected and added in a single file
  *     - All namespaces must have angle brackets: <path>

@@ -180,7 +180,6 @@ void Point2_y_10(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 void Point3_collectorInsertAndMakeBase_11(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-using namespace geometry;
   typedef boost::shared_ptr<Point3> Shared;
 
   Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
@@ -190,7 +189,6 @@ using namespace geometry;
 void Point3_constructor_12(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-using namespace geometry;
   typedef boost::shared_ptr<Point3> Shared;
 
   double x = unwrap< double >(in[0]);
@@ -204,7 +202,6 @@ using namespace geometry;
 
 void Point3_deconstructor_13(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-using namespace geometry;
   typedef boost::shared_ptr<Point3> Shared;
   checkArguments("delete_Point3",nargout,nargin,1);
   Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
@@ -218,7 +215,6 @@ using namespace geometry;
 
 void Point3_norm_14(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-using namespace geometry;
   typedef boost::shared_ptr<Point3> Shared;
   checkArguments("norm",nargout,nargin-1,0);
   Shared obj = unwrap_shared_ptr<Point3>(in[0], "ptr_Point3");
@@ -227,7 +223,6 @@ using namespace geometry;
 
 void Point3_StaticFunctionRet_15(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-using namespace geometry;
   typedef boost::shared_ptr<Point3> SharedPoint3;
   typedef boost::shared_ptr<Point3> Shared;
   checkArguments("Point3.StaticFunctionRet",nargout,nargin,1);
@@ -237,7 +232,6 @@ using namespace geometry;
 
 void Point3_staticFunction_16(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-using namespace geometry;
   typedef boost::shared_ptr<Point3> Shared;
   checkArguments("Point3.staticFunction",nargout,nargin,0);
     out[0] = wrap< double >(Point3::staticFunction());
@@ -246,7 +240,6 @@ using namespace geometry;
 void Test_collectorInsertAndMakeBase_17(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-using namespace geometry;
   typedef boost::shared_ptr<Test> Shared;
 
   Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
@@ -256,7 +249,6 @@ using namespace geometry;
 void Test_constructor_18(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-using namespace geometry;
   typedef boost::shared_ptr<Test> Shared;
 
   Shared *self = new Shared(new Test());
@@ -268,7 +260,6 @@ using namespace geometry;
 void Test_constructor_19(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-using namespace geometry;
   typedef boost::shared_ptr<Test> Shared;
 
   double a = unwrap< double >(in[0]);
@@ -281,7 +272,6 @@ using namespace geometry;
 
 void Test_deconstructor_20(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-using namespace geometry;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("delete_Test",nargout,nargin,1);
   Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
@@ -295,7 +285,6 @@ using namespace geometry;
 
 void Test_arg_EigenConstRef_21(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-using namespace geometry;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("arg_EigenConstRef",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
@@ -305,7 +294,6 @@ using namespace geometry;
 
 void Test_create_MixedPtrs_22(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-using namespace geometry;
   typedef boost::shared_ptr<Test> SharedTest;
   typedef boost::shared_ptr<Test> SharedTest;
   typedef boost::shared_ptr<Test> Shared;
@@ -317,7 +305,6 @@ using namespace geometry;
 
 void Test_create_ptrs_23(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-using namespace geometry;
   typedef boost::shared_ptr<Test> SharedTest;
   typedef boost::shared_ptr<Test> SharedTest;
   typedef boost::shared_ptr<Test> Shared;
@@ -329,7 +316,6 @@ using namespace geometry;
 
 void Test_print_24(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-using namespace geometry;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("print",nargout,nargin-1,0);
   Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
@@ -338,7 +324,6 @@ using namespace geometry;
 
 void Test_return_Point2Ptr_25(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-using namespace geometry;
   typedef boost::shared_ptr<Point2> SharedPoint2;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_Point2Ptr",nargout,nargin-1,1);
@@ -349,7 +334,6 @@ using namespace geometry;
 
 void Test_return_Test_26(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-using namespace geometry;
   typedef boost::shared_ptr<Test> SharedTest;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_Test",nargout,nargin-1,1);
@@ -360,7 +344,6 @@ using namespace geometry;
 
 void Test_return_TestPtr_27(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-using namespace geometry;
   typedef boost::shared_ptr<Test> SharedTest;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_TestPtr",nargout,nargin-1,1);
@@ -371,7 +354,6 @@ using namespace geometry;
 
 void Test_return_bool_28(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-using namespace geometry;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_bool",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
@@ -381,7 +363,6 @@ using namespace geometry;
 
 void Test_return_double_29(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-using namespace geometry;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_double",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
@@ -391,7 +372,6 @@ using namespace geometry;
 
 void Test_return_field_30(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-using namespace geometry;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_field",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
@@ -401,7 +381,6 @@ using namespace geometry;
 
 void Test_return_int_31(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-using namespace geometry;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_int",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
@@ -411,7 +390,6 @@ using namespace geometry;
 
 void Test_return_matrix1_32(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-using namespace geometry;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_matrix1",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
@@ -421,7 +399,6 @@ using namespace geometry;
 
 void Test_return_matrix2_33(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-using namespace geometry;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_matrix2",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
@@ -431,7 +408,6 @@ using namespace geometry;
 
 void Test_return_pair_34(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-using namespace geometry;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_pair",nargout,nargin-1,2);
   Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
@@ -443,7 +419,6 @@ using namespace geometry;
 
 void Test_return_ptrs_35(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-using namespace geometry;
   typedef boost::shared_ptr<Test> SharedTest;
   typedef boost::shared_ptr<Test> SharedTest;
   typedef boost::shared_ptr<Test> Shared;
@@ -457,7 +432,6 @@ using namespace geometry;
 
 void Test_return_size_t_36(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-using namespace geometry;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_size_t",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
@@ -467,7 +441,6 @@ using namespace geometry;
 
 void Test_return_string_37(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-using namespace geometry;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_string",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
@@ -477,7 +450,6 @@ using namespace geometry;
 
 void Test_return_vector1_38(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-using namespace geometry;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_vector1",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
@@ -487,7 +459,6 @@ using namespace geometry;
 
 void Test_return_vector2_39(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-using namespace geometry;
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("return_vector2",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");

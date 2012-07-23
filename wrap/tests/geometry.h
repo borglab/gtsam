@@ -15,9 +15,6 @@ class Point2 {
  VectorNotEigen vectorConfusion();
 };
 
-// flag a namespace as in use - only applies *after* the declaration
-using namespace geometry;
-
 class Point3 {
   Point3(double x, double y, double z);
   double norm() const;

@@ -76,9 +76,6 @@ TEST( wrap, parse_geometry ) {
 	Module module(markup_header_path.c_str(), "geometry",enable_verbose);
 	EXPECT_LONGS_EQUAL(3, module.classes.size());
 
-	// check using declarations
-	strvec exp_using1, exp_using2; exp_using2 += "geometry";
-
 	// forward declarations
 	LONGS_EQUAL(2, module.forward_declarations.size());
 	EXPECT(assert_equal("VectorNotEigen", module.forward_declarations[0].name));
@@ -98,7 +95,6 @@ TEST( wrap, parse_geometry ) {
 		EXPECT_LONGS_EQUAL(7, cls.methods.size());
 		EXPECT_LONGS_EQUAL(0, cls.static_methods.size());
 		EXPECT_LONGS_EQUAL(0, cls.namespaces.size());
-		EXPECT(assert_equal(exp_using1, cls.using_namespaces));
 	}
 
 	// check second class, Point3
@@ -109,7 +105,6 @@ TEST( wrap, parse_geometry ) {
 		EXPECT_LONGS_EQUAL(1, cls.methods.size());
 		EXPECT_LONGS_EQUAL(2, cls.static_methods.size());
 		EXPECT_LONGS_EQUAL(0, cls.namespaces.size());
-		EXPECT(assert_equal(exp_using2, cls.using_namespaces));
 
 		// first constructor takes 3 doubles
 		ArgumentList c1 = cls.constructor.args_list.front();
@@ -140,7 +135,6 @@ TEST( wrap, parse_geometry ) {
 		EXPECT_LONGS_EQUAL(19, testCls.methods.size());
 		EXPECT_LONGS_EQUAL( 0, testCls.static_methods.size());
 		EXPECT_LONGS_EQUAL( 0, testCls.namespaces.size());
-		EXPECT(assert_equal(exp_using2, testCls.using_namespaces));
 
 		// function to parse: pair<Vector,Matrix> return_pair (Vector v, Matrix A) const;
 		CHECK(testCls.methods.find("return_pair") != testCls.methods.end());

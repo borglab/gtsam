@@ -58,7 +58,6 @@ struct Constructor {
 			 const std::string& matlabUniqueName,
 			 const std::string& cppBaseClassName,
 			 int id,
-			 const std::vector<std::string>& using_namespaces,
 			 const ArgumentList& al) const;
 
 	/// constructor function

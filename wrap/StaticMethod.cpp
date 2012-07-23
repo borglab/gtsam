@@ -44,7 +44,6 @@ void StaticMethod::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wr
 																		 const std::string& matlabQualName,
 																		 const std::string& matlabUniqueName,
 																		 const string& wrapperName,
-																		 const vector<string>& using_namespaces,
 																		 const TypeAttributesTable& typeAttributes,
 																		 vector<string>& functionNames) const {
 
@@ -86,7 +85,7 @@ void StaticMethod::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wr
 		// Output C++ wrapper code
 		
 		const string wrapFunctionName = wrapper_fragment(
-			wrapperFile, cppClassName, matlabUniqueName, overload, id, using_namespaces, typeAttributes);
+			wrapperFile, cppClassName, matlabUniqueName, overload, id, typeAttributes);
 
 		// Add to function list
 		functionNames.push_back(wrapFunctionName);
@@ -107,7 +106,6 @@ string StaticMethod::wrapper_fragment(FileWriter& file,
 			    const string& matlabUniqueName,
 					int overload,
 					int id,
-			    const vector<string>& using_namespaces,
 					const TypeAttributesTable& typeAttributes) const {
 
   // generate code
@@ -121,7 +119,6 @@ string StaticMethod::wrapper_fragment(FileWriter& file,
 	file.oss << "void " << wrapFunctionName << "(int nargout, mxArray *out[], int nargin, const mxArray *in[])\n";
 	// start
 	file.oss << "{\n";
-	generateUsingNamespace(file, using_namespaces);
 
 	returnVal.wrapTypeUnwrap(file);
 

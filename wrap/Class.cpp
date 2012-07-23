@@ -79,7 +79,7 @@ void Class::matlab_proxy(const string& toolboxPath, const string& wrapperName,
 		const int id = (int)functionNames.size();
 		constructor.proxy_fragment(proxyFile, wrapperName, !qualifiedParent.empty(), id, a);
 		const string wrapFunctionName = constructor.wrapper_fragment(wrapperFile,
-			cppName, matlabUniqueName, cppBaseName, id, using_namespaces, a);
+			cppName, matlabUniqueName, cppBaseName, id, a);
 		wrapperFile.oss << "\n";
     functionNames.push_back(wrapFunctionName);
   }
@@ -96,7 +96,7 @@ void Class::matlab_proxy(const string& toolboxPath, const string& wrapperName,
 		const int id = (int)functionNames.size();
 		deconstructor.proxy_fragment(proxyFile, wrapperName, matlabUniqueName, id);
 		proxyFile.oss << "\n";
-		const string functionName = deconstructor.wrapper_fragment(wrapperFile, cppName, matlabUniqueName, id, using_namespaces);
+		const string functionName = deconstructor.wrapper_fragment(wrapperFile, cppName, matlabUniqueName, id);
 		wrapperFile.oss << "\n";
 		functionNames.push_back(functionName);
 	}
@@ -106,7 +106,7 @@ void Class::matlab_proxy(const string& toolboxPath, const string& wrapperName,
 	// Methods
 	BOOST_FOREACH(const Methods::value_type& name_m, methods) {
 		const Method& m = name_m.second;
-		m.proxy_wrapper_fragments(proxyFile, wrapperFile, cppName, matlabQualName, matlabUniqueName, wrapperName, using_namespaces, typeAttributes, functionNames);
+		m.proxy_wrapper_fragments(proxyFile, wrapperFile, cppName, matlabQualName, matlabUniqueName, wrapperName, typeAttributes, functionNames);
 		proxyFile.oss << "\n";
 		wrapperFile.oss << "\n";
 	}
@@ -118,7 +118,7 @@ void Class::matlab_proxy(const string& toolboxPath, const string& wrapperName,
 	// Static methods
 	BOOST_FOREACH(const StaticMethods::value_type& name_m, static_methods) {
 		const StaticMethod& m = name_m.second;
-		m.proxy_wrapper_fragments(proxyFile, wrapperFile, cppName, matlabQualName, matlabUniqueName, wrapperName, using_namespaces, typeAttributes, functionNames);
+		m.proxy_wrapper_fragments(proxyFile, wrapperFile, cppName, matlabQualName, matlabUniqueName, wrapperName, typeAttributes, functionNames);
 		proxyFile.oss << "\n";
 		wrapperFile.oss << "\n";
 	}
@@ -183,7 +183,6 @@ void Class::pointer_constructor_fragments(FileWriter& proxyFile, FileWriter& wra
   wrapperFile.oss << "void " << collectorInsertFunctionName << "(int nargout, mxArray *out[], int nargin, const mxArray *in[])" << endl;
   wrapperFile.oss << "{\n";
 	wrapperFile.oss << "  mexAtExit(&_deleteAllObjects);\n";
-	generateUsingNamespace(wrapperFile, using_namespaces);
   // Typedef boost::shared_ptr
 	wrapperFile.oss << "  typedef boost::shared_ptr<" << cppName << "> Shared;\n";
 	wrapperFile.oss << "\n";
@@ -273,7 +272,6 @@ Class expandClassTemplate(const Class& cls, const string& templateArg, const vec
 	inst.methods = expandMethodTemplate(cls.methods, templateArg, instName);
 	inst.static_methods = expandMethodTemplate(cls.static_methods, templateArg, instName);
 	inst.namespaces = cls.namespaces;
-	inst.using_namespaces = cls.using_namespaces;
 	inst.constructor = cls.constructor;
 	inst.constructor.args_list = expandArgumentListsTemplate(cls.constructor.args_list, templateArg, instName);
 	inst.constructor.name = inst.name;

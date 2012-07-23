@@ -47,7 +47,6 @@ struct Class {
   Methods methods;                          ///< Class methods
   StaticMethods static_methods;             ///< Static methods
   std::vector<std::string> namespaces;      ///< Stack of namespaces
-  std::vector<std::string> using_namespaces;///< default namespaces
   Constructor constructor;                  ///< Class constructors
 	Deconstructor deconstructor;              ///< Deconstructor to deallocate C++ object
   bool verbose_;                            ///< verbose flag

@@ -84,8 +84,7 @@ Module::Module(const string& interfacePath,
   GlobalFunction globalFunc0(enable_verbose), globalFunc(enable_verbose);
   ForwardDeclaration fwDec0, fwDec;
   vector<string> namespaces, /// current namespace tag
-  							 namespaces_return, /// namespace for current return type
-  							 using_namespace_current;  /// All namespaces from "using" declarations
+  							 namespaces_return; /// namespace for current return type
 	string templateArgument;
 	vector<string> templateInstantiationNamespace;
 	vector<vector<string> > templateInstantiations;
@@ -264,7 +263,6 @@ Module::Module(const string& interfacePath,
       [assign_a(constructor.name, cls.name)]
       [assign_a(cls.constructor, constructor)]
   		[assign_a(cls.namespaces, namespaces)]
-  		[assign_a(cls.using_namespaces, using_namespace_current)]
       [assign_a(deconstructor.name,cls.name)]
       [assign_a(cls.deconstructor, deconstructor)]
 			[bl::bind(&handle_possible_template, bl::var(classes), bl::var(cls), bl::var(templateArgument), bl::var(templateInstantiations))]
@@ -298,10 +296,6 @@ Module::Module(const string& interfacePath,
 			>> ch_p('}'))
 			[pop_a(namespaces)];
 
-	Rule using_namespace_p =
-			str_p("using") >> str_p("namespace")
-			>> namespace_name_p[push_back_a(using_namespace_current)] >> ch_p(';');
-
 	Rule forward_declaration_p =
 			!(str_p("virtual")[assign_a(fwDec.isVirtual, true)])
 			>> str_p("class")
@@ -310,7 +304,7 @@ Module::Module(const string& interfacePath,
 			[push_back_a(forward_declarations, fwDec)]
 			[assign_a(fwDec, fwDec0)];
 
-  Rule module_content_p =	comments_p | using_namespace_p | include_p | class_p | templateSingleInstantiation_p | forward_declaration_p | global_function_p | namespace_def_p;
+  Rule module_content_p =	comments_p | include_p | class_p | templateSingleInstantiation_p | forward_declaration_p | global_function_p | namespace_def_p;
 
   Rule module_p = *module_content_p >> !end_p;
 
