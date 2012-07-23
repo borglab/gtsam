@@ -1124,6 +1124,7 @@ class KeyVector {
 	void push_back(size_t key) const;
 };
 
+#include <gtsam/nonlinear/Marginals.h>
 class Marginals {
 	Marginals(const gtsam::NonlinearFactorGraph& graph,
 			const gtsam::Values& solution);
@@ -1302,18 +1303,28 @@ class ISAM2 {
 //*************************************************************************
 // Nonlinear factor types
 //*************************************************************************
+#include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/Cal3DS2.h>
+#include <gtsam/geometry/Cal3_S2Stereo.h>
+#include <gtsam/geometry/SimpleCamera.h>
+#include <gtsam/geometry/CalibratedCamera.h>
+#include <gtsam/geometry/StereoPoint2.h>
+
+#include <gtsam/slam/PriorFactor.h>
 template<T = {gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera}>
 virtual class PriorFactor : gtsam::NonlinearFactor {
 	PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
 };
 
 
+#include <gtsam/slam/BetweenFactor.h>
 template<T = {gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
 virtual class BetweenFactor : gtsam::NonlinearFactor {
 	BetweenFactor(size_t key1, size_t key2, const T& relativePose, const gtsam::noiseModel::Base* noiseModel);
 };
 
 
+#include <gtsam/nonlinear/NonlinearEquality.h>
 template<T = {gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera}>
 virtual class NonlinearEquality : gtsam::NonlinearFactor {
 	// Constructor - forces exact evaluation
@@ -1323,6 +1334,7 @@ virtual class NonlinearEquality : gtsam::NonlinearFactor {
 };
 
 
+#include <gtsam/slam/RangeFactor.h>
 template<POSE, POINT>
 virtual class RangeFactor : gtsam::NonlinearFactor {
 	RangeFactor(size_t key1, size_t key2, double measured, const gtsam::noiseModel::Base* noiseModel);
@@ -1337,6 +1349,8 @@ typedef gtsam::RangeFactor<gtsam::SimpleCamera, gtsam::Point3> RangeFactorSimple
 typedef gtsam::RangeFactor<gtsam::CalibratedCamera, gtsam::CalibratedCamera> RangeFactorCalibratedCamera;
 typedef gtsam::RangeFactor<gtsam::SimpleCamera, gtsam::SimpleCamera> RangeFactorSimpleCamera;
 
+
+#include <gtsam/slam/BearingFactor.h>
 template<POSE, POINT, ROT>
 virtual class BearingFactor : gtsam::NonlinearFactor {
 	BearingFactor(size_t key1, size_t key2, const ROT& measured, const gtsam::noiseModel::Base* noiseModel);
