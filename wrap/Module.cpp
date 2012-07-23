@@ -558,13 +558,15 @@ void Module::WriteCollectorsAndCleanupFcn(FileWriter& wrapperFile, const std::st
 		const string cppName = cls.qualifiedName("::");
 		const string collectorType = "Collector_" + matlabUniqueName;
 		const string collectorName = "collector_" + matlabUniqueName;
+		// The extra curly-braces around the for loops work around a limitation in MSVC (existing
+		// since 2005!) preventing more than 248 blocks.
 		wrapperFile.oss <<
-			"  for(" << collectorType << "::iterator iter = " << collectorName << ".begin();\n"
+			"  { for(" << collectorType << "::iterator iter = " << collectorName << ".begin();\n"
 			"      iter != " << collectorName << ".end(); ) {\n"
 			"    delete *iter;\n"
 			"    " << collectorName << ".erase(iter++);\n"
 			"    anyDeleted = true;\n"
-			"  }\n";
+			"  } }\n";
 	}
 	wrapperFile.oss <<
 		"  if(anyDeleted)\n"
