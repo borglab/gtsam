@@ -17,7 +17,7 @@ class ClassB {
 // check namespace handling
 Vector aGlobalFunction();
 
-}///\namespace ns1
+}
 
 #include <path/to/ns2.h>
 namespace ns2 {
@@ -38,7 +38,7 @@ class ClassB {
 	ClassB();
 };
 
-}///\namespace ns3
+}
 
 class ClassC {
 	ClassC();
@@ -47,7 +47,7 @@ class ClassC {
 // separate namespace global function, same name
 Vector aGlobalFunction();
 
-}///\namespace ns2
+} //\namespace ns2
 
 class ClassD {
 	ClassD();

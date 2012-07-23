@@ -295,8 +295,7 @@ Module::Module(const string& interfacePath,
 			>> namespace_name_p[push_back_a(namespaces)]
 			>> ch_p('{')
 			>> *(include_p | class_p | templateSingleInstantiation_p | global_function_p | namespace_def_p | comments_p)
-			>> str_p("}///\\namespace") // end namespace, avoid confusion with classes // FIXME: check for absense of semicolon to disambiguate
-			>> !namespace_name_p)
+			>> ch_p('}'))
 			[pop_a(namespaces)];
 
 	Rule using_namespace_p =

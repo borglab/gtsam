@@ -36,8 +36,7 @@
  *   Namespace definitions
  *     - Names of namespaces must start with a lowercase letter
  *   	 - start a namespace with "namespace {"
- *   	 - end a namespace with exactly "}///\namespace [namespace_name]", optionally adding the name of the namespace
- *   	 - This ending is not C++ standard, and must contain "}///\namespace" to parse
+ *   	 - end a namespace with exactly "}"
  *   	 - Namespaces can be nested
  *   Namespace usage
  *   	 - Namespaces can be specified for classes in arguments and return values
@@ -1363,7 +1362,7 @@ virtual class GenericProjectionFactor : gtsam::NonlinearFactor {
 typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> GenericProjectionFactorCal3_S2;
 typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> GenericProjectionFactorCal3DS2;
 
-}///\namespace gtsam
+} //\namespace gtsam
 
 //*************************************************************************
 // Pose2SLAM
@@ -1418,7 +1417,7 @@ class Graph {
 	gtsam::Marginals marginals(const pose2SLAM::Values& solution) const;
 };
 
-}///\namespace pose2SLAM
+} //\namespace pose2SLAM
 
 //*************************************************************************
 // Pose3SLAM
@@ -1473,7 +1472,7 @@ class Graph {
 	gtsam::Marginals marginals(const pose3SLAM::Values& solution) const;
 };
 
-}///\namespace pose3SLAM
+} //\namespace pose3SLAM
 
 //*************************************************************************
 // planarSLAM
@@ -1561,7 +1560,7 @@ class Odometry {
 			const gtsam::Ordering& ordering) const;
 };
 
-}///\namespace planarSLAM
+} //\namespace planarSLAM
 
 //*************************************************************************
 // VisualSLAM
@@ -1686,7 +1685,7 @@ class LevenbergMarquardtOptimizer {
   visualSLAM::Values values() const;
 };
 
-}///\namespace visualSLAM
+} //\namespace visualSLAM
 
 //************************************************************************
 // sparse BA
@@ -1767,5 +1766,5 @@ class LevenbergMarquardtOptimizer {
   sparseBA::Values optimizeSafely();
   sparseBA::Values values() const;
 };
-}///\namespace sparseBA
+} //\namespace sparseBA
 
