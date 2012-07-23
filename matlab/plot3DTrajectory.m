@@ -1,18 +1,53 @@
-function plot3DTrajectory(values,style,frames,scale)
+function plot3DTrajectory(values,linespec,frames,scale,marginals)
 % plot3DTrajectory
-if nargin<3,frames=false;end
-if nargin<4,scale=0;end
+if ~exist('scale','var') || isempty(scale), scale=1; end
+if ~exist('frames','var'), scale=[]; end
 
-T=values.translations()
-plot3(T(:,1),T(:,2),T(:,3),style); hold on
-if frames
-    N=values.size;
-    for i=0:N-1
-        pose = values.pose(i);
-        t = pose.translation;
-        R = pose.rotation.matrix;
-        quiver3(t.x,t.y,t.z,R(1,1),R(2,1),R(3,1),scale,'r');
-        quiver3(t.x,t.y,t.z,R(1,2),R(2,2),R(3,2),scale,'g');
-        quiver3(t.x,t.y,t.z,R(1,3),R(2,3),R(3,3),scale,'b');
+import gtsam.*
+
+haveMarginals = exist('marginals', 'var');
+keys = KeyVector(values.keys);
+
+holdstate = ishold;
+hold on
+
+% Plot poses and covariance matrices
+lastIndex = [];
+for i = 0:keys.size-1
+    key = keys.at(i);
+    x = values.at(key);
+    if isa(x, 'gtsam.Pose3')
+        if ~isempty(lastIndex)
+            % Draw line from last pose then covariance ellipse on top of
+            % last pose.
+            lastKey = keys.at(lastIndex);
+            lastPose = values.at(lastKey);
+            plot3([ x.x; lastPose.x ], [ x.y; lastPose.y ], [ x.z; lastPose.z ], linespec);
+            if haveMarginals
+                P = marginals.marginalCovariance(lastKey);
+            else
+                P = [];
+            end
+            plotPose3(lastPose, P, scale);
+        end
+        lastIndex = i;
     end
+end
+
+% Draw final pose
+if ~isempty(lastIndex)
+    lastKey = keys.at(lastIndex);
+    lastPose = values.at(lastKey);
+    if haveMarginals
+        P = marginals.marginalCovariance(lastKey);
+    else
+        P = [];
+    end
+    plotPose3(lastPose, P, scale);
+end
+
+if ~holdstate
+    hold off
+end
+
 end

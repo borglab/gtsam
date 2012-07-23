@@ -11,7 +11,7 @@ k = 11.82;
 radii = k*sqrt(diag(s));
 
 % generate data for "unrotated" ellipsoid
-[xc,yc,zc] = ellipsoid(0,0,0,radii(1),radii(2),radii(3));
+[xc,yc,zc] = ellipsoid(0,0,0,radii(1),radii(2),radii(3),8);
 
 % rotate data with orientation matrix U and center M
 data = kron(e(:,1),xc) + kron(e(:,2),yc) + kron(e(:,3),zc);

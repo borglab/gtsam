@@ -1,4 +1,4 @@
-function plot2DTrajectory(values, marginals)
+function plot2DTrajectory(values, linespec, marginals)
 %PLOT2DTRAJECTORY Plots the Pose2's in a values, with optional covariances
 %   Finds all the Pose2 objects in the given Values object and plots them
 % in increasing key order, connecting consecutive poses with a line.  If
@@ -7,10 +7,17 @@ function plot2DTrajectory(values, marginals)
 
 import gtsam.*
 
+if ~exist('linespec', 'var') || isempty(linespec)
+    linespec = 'k*-';
+end
+
 haveMarginals = exist('marginals', 'var');
 keys = KeyVector(values.keys);
 
-% Store poses and covariance matrices
+holdstate = ishold;
+hold on
+
+% Plot poses and covariance matrices
 lastIndex = [];
 for i = 0:keys.size-1
     key = keys.at(i);
@@ -21,7 +28,7 @@ for i = 0:keys.size-1
             % last pose.
             lastKey = keys.at(lastIndex);
             lastPose = values.at(lastKey);
-            plot([ x.x; lastPose.x ], [ x.y; lastPose.y ], 'k*-');
+            plot([ x.x; lastPose.x ], [ x.y; lastPose.y ], linespec);
             if haveMarginals
                 P = marginals.marginalCovariance(lastKey);
                 plotPose2(lastPose, 'g', P);
@@ -37,6 +44,10 @@ if ~isempty(lastIndex) && haveMarginals
     lastPose = values.at(lastKey);
     P = marginals.marginalCovariance(lastKey);
     plotPose2(lastPose, 'g', P);
+end
+
+if ~holdstate
+    hold off
 end
 
 end
