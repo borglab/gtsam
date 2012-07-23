@@ -122,5 +122,19 @@ void ReturnValue::wrap_result(const string& result, FileWriter& file, const Type
 }
 
 /* ************************************************************************* */
+void ReturnValue::wrapTypeUnwrap(FileWriter& wrapperFile) const {
+	if(isPair)
+	{
+		if(category1 == ReturnValue::CLASS)
+			wrapperFile.oss << "  typedef boost::shared_ptr<"  << qualifiedType1("::")  << "> Shared" <<  type1 << ";"<< endl;
+		if(category2 == ReturnValue::CLASS)
+			wrapperFile.oss << "  typedef boost::shared_ptr<"  << qualifiedType2("::")  << "> Shared" <<  type2 << ";"<< endl;
+	}
+	else {
+		if (category1 == ReturnValue::CLASS)
+			wrapperFile.oss << "  typedef boost::shared_ptr<"  << qualifiedType1("::")  << "> Shared" <<  type1 << ";"<< endl;
+	}
+}
+/* ************************************************************************* */
 
 

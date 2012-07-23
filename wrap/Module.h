@@ -40,7 +40,6 @@ struct Module {
   std::vector<Class> classes; ///< list of classes
 	std::vector<TemplateInstantiationTypedef> templateInstantiationTypedefs; ///< list of template instantiations
   bool verbose;            ///< verbose flag
-//  std::vector<std::string> using_namespaces; ///< all default namespaces
   std::vector<ForwardDeclaration> forward_declarations;
 	std::vector<std::string> includes;        ///< Include statements
 	GlobalFunctions global_functions;

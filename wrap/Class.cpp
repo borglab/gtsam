@@ -308,7 +308,7 @@ std::string Class::getTypedef() const {
 		result += ("namespace " + namesp + " { ");
 	}
 	result += ("typedef " + typedefName + " " + name + ";");
-	BOOST_FOREACH(const string& namesp, namespaces) {
+	for (size_t i = 0; i<namespaces.size(); ++i) {
 		result += " }";
 	}
 	return result;

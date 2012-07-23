@@ -123,16 +123,7 @@ string StaticMethod::wrapper_fragment(FileWriter& file,
 	file.oss << "{\n";
 	generateUsingNamespace(file, using_namespaces);
 
-  if(returnVal.isPair)
-  {
-      if(returnVal.category1 == ReturnValue::CLASS)
-        file.oss << "  typedef boost::shared_ptr<"  << returnVal.qualifiedType1("::")  << "> Shared" <<  returnVal.type1 << ";"<< endl;
-      if(returnVal.category2 == ReturnValue::CLASS)
-        file.oss << "  typedef boost::shared_ptr<"  << returnVal.qualifiedType2("::")  << "> Shared" <<  returnVal.type2 << ";"<< endl;
-  }
-  else
-      if(returnVal.category1 == ReturnValue::CLASS)
-        file.oss << "  typedef boost::shared_ptr<"  << returnVal.qualifiedType1("::")  << "> Shared" <<  returnVal.type1 << ";"<< endl;
+	returnVal.wrapTypeUnwrap(file);
 
   file.oss << "  typedef boost::shared_ptr<"  << cppClassName  << "> Shared;" << endl;
 

@@ -121,17 +121,7 @@ void GlobalFunction::generateSingleFunction(const std::string& toolboxPath, cons
 		// start
 		wrapperFile.oss << "{\n";
 
-		if(returnVal.isPair)
-		{
-			if(returnVal.category1 == ReturnValue::CLASS)
-				wrapperFile.oss << "  typedef boost::shared_ptr<"  << returnVal.qualifiedType1("::")  << "> Shared" <<  returnVal.type1 << ";"<< endl;
-			if(returnVal.category2 == ReturnValue::CLASS)
-				wrapperFile.oss << "  typedef boost::shared_ptr<"  << returnVal.qualifiedType2("::")  << "> Shared" <<  returnVal.type2 << ";"<< endl;
-		}
-		else {
-			if (returnVal.category1 == ReturnValue::CLASS)
-				wrapperFile.oss << "  typedef boost::shared_ptr<"  << returnVal.qualifiedType1("::")  << "> Shared" <<  returnVal.type1 << ";"<< endl;
-		}
+		returnVal.wrapTypeUnwrap(wrapperFile);
 
 		// check arguments
 		// NOTE: for static functions, there is no object passed

@@ -48,6 +48,10 @@
  *     - All includes will be collected and added in a single file
  *     - All namespaces must have angle brackets: <path>
  *     - No default includes will be added
+ *   Global/Namespace functions
+ *     - Functions specified outside of a class are global
+ *     - Can be overloaded with different arguments
+ *     - Can have multiple functions of the same name in different namespaces
  *   Using classes defined in other modules
  *     - If you are using a class 'OtherClass' not wrapped in this definition file, add "class OtherClass;" to avoid a dependency error
  *   Virtual inheritance
@@ -74,7 +78,6 @@
 
 /**
  * Status:
- *  - TODO: global functions
  *  - TODO: default values for arguments
  *  - TODO: Handle gtsam::Rot3M conversions to quaternions
  */

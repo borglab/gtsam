@@ -24,7 +24,7 @@ struct GlobalFunction {
 	// each overload, regardless of namespace
 	std::vector<ArgumentList> argLists;       ///< arugments for each overload
 	std::vector<ReturnValue> returnVals;      ///< returnVals for each overload
-	std::vector<StrVec> namespaces;      ///< Stack of namespaces
+	std::vector<StrVec> namespaces;           ///< Stack of namespaces
 
 	// Constructor only used in Module
 	GlobalFunction(bool verbose = true) : verbose_(verbose) {}
