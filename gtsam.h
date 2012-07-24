@@ -1446,6 +1446,17 @@ virtual class GeneralSFMFactor2 : gtsam::NonlinearFactor {
 	gtsam::Point2 measured() const;
 };
 
+
+#include <gtsam/slam/StereoFactor.h>
+template<POSE, LANDMARK>
+virtual class GenericStereoFactor : gtsam::NonlinearFactor {
+	GenericStereoFactor(const gtsam::StereoPoint2& measured, const gtsam::noiseModel::Base* noiseModel,
+		size_t poseKey, size_t landmarkKey, const gtsam::Cal3_S2Stereo* K);
+	gtsam::StereoPoint2 measured() const;
+	gtsam::Cal3_S2Stereo* calibration() const;
+};
+typedef gtsam::GenericStereoFactor<gtsam::Pose3, gtsam::Point3> GenericStereoFactor3D;
+
 } //\namespace gtsam
 
 //*************************************************************************
