@@ -6,7 +6,7 @@
  */
 
 #include <gtsam/slam/pose2SLAM.h>
-#include <gtsam/nonlinear/GradientDescentOptimizer.h>
+#include <gtsam/nonlinear/NonlinearConjugateGradientOptimizer.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -51,31 +51,6 @@ boost::tuple<pose2SLAM::Graph, Values> generateProblem() {
   return boost::tie(graph, initialEstimate);
 }
 
-
-/* ************************************************************************* */
-TEST(optimize, GradientDescentOptimizer) {
-
-  pose2SLAM::Graph graph ;
-  pose2SLAM::Values initialEstimate;
-
-  boost::tie(graph, initialEstimate) = generateProblem();
-  // cout << "initial error = " << graph.error(initialEstimate) << endl ;
-
-  // Single Step Optimization using Levenberg-Marquardt
-  NonlinearOptimizerParams param;
-  param.maxIterations = 500;    /* requires a larger number of iterations to converge */
-  param.verbosity = NonlinearOptimizerParams::SILENT;
-
-  GradientDescentOptimizer optimizer(graph, initialEstimate, param);
-  Values result = optimizer.optimize();
-//  cout << "gd1 solver final error = " << graph.error(result) << endl;
-
-  /* the optimality of the solution is not comparable to the */
-  DOUBLES_EQUAL(0.0, graph.error(result), 1e-2);
-
-  CHECK(1);
-}
-
 /* ************************************************************************* */
 TEST(optimize, ConjugateGradientOptimizer) {
 
@@ -90,40 +65,13 @@ TEST(optimize, ConjugateGradientOptimizer) {
   param.maxIterations = 500;    /* requires a larger number of iterations to converge */
   param.verbosity = NonlinearOptimizerParams::SILENT;
 
-
-  ConjugateGradientOptimizer optimizer(graph, initialEstimate, param, true);
+  NonlinearConjugateGradientOptimizer optimizer(graph, initialEstimate, param);
   Values result = optimizer.optimize();
 //  cout << "cg final error = " << graph.error(result) << endl;
 
   /* the optimality of the solution is not comparable to the */
   DOUBLES_EQUAL(0.0, graph.error(result), 1e-2);
 }
-
-/* ************************************************************************* */
-TEST(optimize, GradientDescentOptimizer2) {
-
-  pose2SLAM::Graph graph ;
-  pose2SLAM::Values initialEstimate;
-
-  boost::tie(graph, initialEstimate) = generateProblem();
-//  cout << "initial error = " << graph.error(initialEstimate) << endl ;
-
-  // Single Step Optimization using Levenberg-Marquardt
-  NonlinearOptimizerParams param;
-  param.maxIterations = 500;    /* requires a larger number of iterations to converge */
-  param.verbosity = NonlinearOptimizerParams::SILENT;
-
-
-  ConjugateGradientOptimizer optimizer(graph, initialEstimate, param, false);
-  Values result = optimizer.optimize();
-//  cout << "gd2 solver final error = " << graph.error(result) << endl;
-
-  /* the optimality of the solution is not comparable to the */
-  DOUBLES_EQUAL(0.0, graph.error(result), 1e-2);
-}
-
-
-
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

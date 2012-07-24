@@ -136,8 +136,8 @@ namespace gtsam {
 		/// convert image coordinates uv to intrinsic coordinates xy
 		Point2 calibrate(const Point2& p) const {
 			const double u = p.x(), v = p.y();
-			return Point2((1 / fx_) * (u - u0_ - (s_ / fy_) * (v - v0_)), (1 / fy_)
-					* (v - v0_));
+			return Point2((1 / fx_) * (u - u0_ - (s_ / fy_) * (v - v0_)),
+			              (1 / fy_)	* (v - v0_));
 		}
 
 		/// @}

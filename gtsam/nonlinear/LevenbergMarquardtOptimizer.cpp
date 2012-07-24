@@ -19,12 +19,9 @@
 #include <cmath>
 
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/SuccessiveLinearizationOptimizer.h>
 
 #include <gtsam/base/cholesky.h> // For NegativeMatrixException
-#include <gtsam/inference/EliminationTree.h>
-#include <gtsam/linear/GaussianJunctionTree.h>
-#include <gtsam/linear/SimpleSPCGSolver.h>
-#include <gtsam/linear/SubgraphSolver.h>
 #include <boost/algorithm/string.hpp>
 #include <string>
 
@@ -106,34 +103,8 @@ void LevenbergMarquardtOptimizer::iterate() {
 
     // Try solving
     try {
-
-      // Optimize
-      VectorValues delta;
-      if ( params_.isMultifrontal() ) {
-        delta = GaussianJunctionTree(dampedSystem).optimize(params_.getEliminationFunction());
-      }
-      else if ( params_.isSequential() ) {
-        delta = gtsam::optimize(*EliminationTree<GaussianFactor>::Create(dampedSystem)->eliminate(params_.getEliminationFunction()));
-      }
-      else if ( params_.isCG() ) {
-
-        if ( !params_.iterativeParams ) throw runtime_error("LMSolver: cg parameter has to be assigned ...");
-
-        if ( boost::dynamic_pointer_cast<SimpleSPCGSolverParameters>(params_.iterativeParams)) {
-          SimpleSPCGSolver solver (dampedSystem, *boost::dynamic_pointer_cast<SimpleSPCGSolverParameters>(params_.iterativeParams));
-          delta = solver.optimize();
-        }
-        else if ( boost::dynamic_pointer_cast<SubgraphSolverParameters>(params_.iterativeParams) ) {
-          SubgraphSolver solver (dampedSystem, *boost::dynamic_pointer_cast<SubgraphSolverParameters>(params_.iterativeParams));
-          delta = solver.optimize();
-        }
-        else {
-          throw runtime_error("LMSolver: special cg parameter type is not handled in LM solver ...");
-        }
-      }
-      else {
-        throw runtime_error("Optimization parameter is invalid: LevenbergMarquardtParams::elimination");
-      }
+      // Solve Damped Gaussian Factor Graph
+      const VectorValues delta = solveGaussianFactorGraph(dampedSystem, params_);
 
       if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) cout << "linear delta norm = " << delta.vector().norm() << endl;
       if (lmVerbosity >= LevenbergMarquardtParams::TRYDELTA) delta.print("delta");

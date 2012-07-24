@@ -29,7 +29,7 @@ static Cal3DS2 K(500, 100, 0.1, 320, 240, 1e-3, 2.0*1e-3, 3.0*1e-3, 4.0*1e-3);
 static Point2 p(2,3);
 
 /* ************************************************************************* */
-TEST( Cal3DS2, calibrate)
+TEST( Cal3DS2, uncalibrate)
 {
   Vector k = K.k() ;
   double r = p.x()*p.x() + p.y()*p.y() ;
@@ -41,6 +41,14 @@ TEST( Cal3DS2, calibrate)
   Point2 p_i(v_i(0)/v_i(2), v_i(1)/v_i(2)) ;
   Point2 q = K.uncalibrate(p);
   CHECK(assert_equal(q,p_i));
+}
+
+TEST( Cal3DS2, calibrate )
+{
+  Point2 pn(0.5, 0.5);
+  Point2 pi = K.uncalibrate(pn);
+  Point2 pn_hat = K.calibrate(pi);
+  CHECK( pn.equals(pn_hat, 1e-5));
 }
 
 Point2 uncalibrate_(const Cal3DS2& k, const Point2& pt) { return k.uncalibrate(pt); }

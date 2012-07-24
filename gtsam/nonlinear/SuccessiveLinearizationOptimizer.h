@@ -40,42 +40,7 @@ public:
   IterativeOptimizationParameters::shared_ptr iterativeParams; ///< The container for iterativeOptimization parameters. used in CG Solvers.
 
   SuccessiveLinearizationParams() : linearSolverType(MULTIFRONTAL_CHOLESKY) {}
-
   virtual ~SuccessiveLinearizationParams() {}
-
-  virtual void print(const std::string& str = "") const {
-    NonlinearOptimizerParams::print(str);
-    switch ( linearSolverType ) {
-    case MULTIFRONTAL_CHOLESKY:
-      std::cout << "         linear solver type: MULTIFRONTAL CHOLESKY\n";
-      break;
-    case MULTIFRONTAL_QR:
-      std::cout << "         linear solver type: MULTIFRONTAL QR\n";
-      break;
-    case SEQUENTIAL_CHOLESKY:
-      std::cout << "         linear solver type: SEQUENTIAL CHOLESKY\n";
-      break;
-    case SEQUENTIAL_QR:
-      std::cout << "         linear solver type: SEQUENTIAL QR\n";
-      break;
-    case CHOLMOD:
-      std::cout << "         linear solver type: CHOLMOD\n";
-      break;
-    case CG:
-      std::cout << "         linear solver type: CG\n";
-      break;
-    default:
-      std::cout << "         linear solver type: (invalid)\n";
-      break;
-    }
-
-    if(ordering)
-      std::cout << "                   ordering: custom\n";
-    else
-      std::cout << "                   ordering: COLAMD\n";
-
-    std::cout.flush();
-  }
 
   inline bool isMultifrontal() const {
     return (linearSolverType == MULTIFRONTAL_CHOLESKY) || (linearSolverType == MULTIFRONTAL_QR);
@@ -93,7 +58,9 @@ public:
     return (linearSolverType == CG);
   }
 
-  GaussianFactorGraph::Eliminate getEliminationFunction() {
+  virtual void print(const std::string& str) const;
+
+  GaussianFactorGraph::Eliminate getEliminationFunction() const {
     switch (linearSolverType) {
     case MULTIFRONTAL_CHOLESKY:
     case SEQUENTIAL_CHOLESKY:
@@ -110,5 +77,8 @@ public:
     }
   }
 };
+
+/* a wrapper for solving a GaussianFactorGraph according to the parameters */
+VectorValues solveGaussianFactorGraph(const GaussianFactorGraph &gfg, const SuccessiveLinearizationParams &params) ;
 
 } /* namespace gtsam */

@@ -96,6 +96,9 @@ public:
 			boost::optional<Matrix&> H1 = boost::none,
 			boost::optional<Matrix&> H2 = boost::none) const ;
 
+	/// Conver a pixel coordinate to ideal coordinate
+  Point2 calibrate(const Point2& p, const double tol=1e-5) const;
+
 	/// Derivative of uncalibrate wrpt intrinsic coordinates
 	Matrix D2d_intrinsic(const Point2& p) const ;
 

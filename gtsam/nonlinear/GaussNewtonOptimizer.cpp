@@ -16,8 +16,6 @@
  * @date 	Feb 26, 2012
  */
 
-#include <gtsam/inference/EliminationTree.h>
-#include <gtsam/linear/GaussianJunctionTree.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 
 using namespace std;
@@ -32,22 +30,8 @@ void GaussNewtonOptimizer::iterate() {
   // Linearize graph
   GaussianFactorGraph::shared_ptr linear = graph_.linearize(current.values, *params_.ordering);
 
-  // Optimize
-  VectorValues delta;
-  {
-    if ( params_.isMultifrontal() ) {
-      delta = GaussianJunctionTree(*linear).optimize(params_.getEliminationFunction());
-    }
-    else if ( params_.isSequential() ) {
-      delta = gtsam::optimize(*EliminationTree<GaussianFactor>::Create(*linear)->eliminate(params_.getEliminationFunction()));
-    }
-    else if ( params_.isCG() ) {
-      throw runtime_error("todo: ");
-    }
-    else {
-      throw runtime_error("Optimization parameter is invalid: GaussNewtonParams::elimination");
-    }
-  }
+  // Solve Factor Graph
+  const VectorValues delta = solveGaussianFactorGraph(*linear, params_);
 
   // Maybe show output
   if(params_.verbosity >= NonlinearOptimizerParams::DELTA) delta.print("delta");
