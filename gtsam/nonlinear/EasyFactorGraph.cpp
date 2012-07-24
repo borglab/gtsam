@@ -44,7 +44,7 @@ namespace gtsam {
 			size_t verbosity) const {
 		LevenbergMarquardtParams p;
 		p.verbosity = (NonlinearOptimizerParams::Verbosity) verbosity;
-		p.linearSolverType = SuccessiveLinearizationParams::CG;
+		p.linearSolverType = SuccessiveLinearizationParams::CONJUGATE_GRADIENT;
 		p.iterativeParams = boost::make_shared<SimpleSPCGSolverParameters>();
 		return optimizer(initialEstimate, p).optimizeSafely();
 	}

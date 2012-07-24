@@ -1209,11 +1209,20 @@ virtual class NonlinearOptimizerParams {
 virtual class SuccessiveLinearizationParams : gtsam::NonlinearOptimizerParams {
   SuccessiveLinearizationParams();
 
+	string getLinearSolverType() const;
+	
+	void setLinearSolverType(string solver);
 	void setOrdering(const gtsam::Ordering& ordering);
+
   bool isMultifrontal() const;
   bool isSequential() const;
   bool isCholmod() const;
   bool isCG() const;
+};
+
+#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
+virtual class GaussNewtonParams : gtsam::SuccessiveLinearizationParams {
+	GaussNewtonParams();
 };
 
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
@@ -1243,11 +1252,17 @@ virtual class DoglegParams : gtsam::SuccessiveLinearizationParams {
 };
 
 virtual class NonlinearOptimizer {
+	gtsam::Values optimize();
 	gtsam::Values optimizeSafely();
 	double error() const;
 	int iterations() const;
 	gtsam::Values values() const;
 	void iterate() const;
+};
+
+virtual class GaussNewtonOptimizer : gtsam::NonlinearOptimizer {
+	GaussNewtonOptimizer(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& initialValues);
+	GaussNewtonOptimizer(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& initialValues, const gtsam::GaussNewtonParams& params);
 };
 
 virtual class DoglegOptimizer : gtsam::NonlinearOptimizer {

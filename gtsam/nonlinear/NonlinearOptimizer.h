@@ -63,6 +63,7 @@ public:
   void setErrorTol(double value) { errorTol  = value ; }
   void setVerbosity(const std::string &src) { verbosity = verbosityTranslator(src); }
 
+private:
   Verbosity verbosityTranslator(const std::string &s) const;
   std::string verbosityTranslator(Verbosity value) const;
 };

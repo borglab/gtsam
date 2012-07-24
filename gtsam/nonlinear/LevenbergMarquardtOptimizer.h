@@ -61,6 +61,7 @@ public:
   inline void setlambdaUpperBound(double value) { lambdaUpperBound = value; }
   inline void setVerbosityLM(const std::string &s) { verbosityLM = verbosityLMTranslator(s); }
 
+private:
   VerbosityLM verbosityLMTranslator(const std::string &s) const;
   std::string verbosityLMTranslator(VerbosityLM value) const;
 };
