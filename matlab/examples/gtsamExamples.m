@@ -22,7 +22,7 @@ function varargout = gtsamExamples(varargin)
 
 % Edit the above text to modify the response to help gtsamExamples
 
-% Last Modified by GUIDE v2.5 23-Jul-2012 13:12:19
+% Last Modified by GUIDE v2.5 24-Jul-2012 10:18:05
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -114,9 +114,7 @@ echo off
 % --- Executes on button press in Pose2SLAMManhattan.
 function Pose2SLAMManhattan_Callback(hObject, eventdata, handles)
 axes(handles.axes3);
-echo on
 Pose2SLAMExample_graph
-echo off
 
 % --- Executes on button press in Pose3SLAM.
 function Pose3SLAM_Callback(hObject, eventdata, handles)
@@ -142,9 +140,7 @@ echo off
 % --- Executes on button press in PlanarSLAMSampling.
 function PlanarSLAMSampling_Callback(hObject, eventdata, handles)
 axes(handles.axes3);
-echo on
 PlanarSLAMExample_sampling
-echo off
 
 % --- Executes on button press in SFM.
 function SFM_Callback(hObject, eventdata, handles)
@@ -166,3 +162,8 @@ axes(handles.axes3);
 echo on
 StereoVOExample
 echo off
+
+% --- Executes on button press in StereoVOLarge.
+function StereoVOLarge_Callback(hObject, eventdata, handles)
+axes(handles.axes3);
+StereoVOExample_large
