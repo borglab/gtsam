@@ -3,8 +3,8 @@ function datafile = findExampleDataFile(datasetName)
 
 [ myPath, ~, ~ ] = fileparts(mfilename('fullpath'));
 searchPath = { ...
-    fullfile(myPath, [ '../../examples/Data/' datasetName ]) ...
-    fullfile(myPath, [ 'Data/' datasetName ]) };
+    fullfile(myPath, [ '../../../examples/Data/' datasetName ]) ...
+    fullfile(myPath, [ '../Data/' datasetName ]) };
 datafile = [];
 for path = searchPath
     if exist(path{:}, 'file')

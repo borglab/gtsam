@@ -16,10 +16,8 @@ install(FILES ${matlab_tests} DESTINATION ${GTSAM_TOOLBOX_INSTALL_PATH}/gtsam_te
 # Examples
 message(STATUS "Installing Matlab Toolbox Examples")
 # Matlab files: *.m and *.fig
-file(GLOB matlab_examples_m "${GTSAM_SOURCE_ROOT_DIR}/matlab/examples/*.m")
-file(GLOB matlab_examples_fig "${GTSAM_SOURCE_ROOT_DIR}/matlab/examples/*.fig")
-set(matlab_examples ${matlab_examples_m} ${matlab_examples_fig})
-install(FILES ${matlab_examples} DESTINATION ${GTSAM_TOOLBOX_INSTALL_PATH}/gtsam_examples)
+install(DIRECTORY "${GTSAM_SOURCE_ROOT_DIR}/matlab/examples/" DESTINATION "${GTSAM_TOOLBOX_INSTALL_PATH}/gtsam_examples" FILES_MATCHING PATTERN "*.m")
+install(DIRECTORY "${GTSAM_SOURCE_ROOT_DIR}/matlab/examples/" DESTINATION "${GTSAM_TOOLBOX_INSTALL_PATH}/gtsam_examples" FILES_MATCHING PATTERN "*.fig")
 
 message(STATUS "Installing Matlab Toolbox Examples (Data)")
 # Data files: *.graph and *.txt

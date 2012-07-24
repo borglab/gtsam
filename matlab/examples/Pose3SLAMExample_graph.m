@@ -16,7 +16,7 @@ N = 2500;
 % dataset = 'sphere2500_groundtruth.txt';
 dataset = 'sphere2500.txt';
 
-datafile = findExampleDataFile(dataset);
+datafile = support.findExampleDataFile(dataset);
 
 %% Initialize graph, initial estimate, and odometry noise
 import gtsam.*

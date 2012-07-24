@@ -11,7 +11,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Find data file
-datafile = findExampleDataFile('w100-odom.graph');
+datafile = support.findExampleDataFile('w100-odom.graph');
 
 %% Initialize graph, initial estimate, and odometry noise
 import gtsam.*

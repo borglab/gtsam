@@ -22,7 +22,7 @@ options.nrCameras = 10;
 options.showImages = false;
 
 %% Generate data
-[data,truth] = VisualISAMGenerateData(options);
+[data,truth] = support.VisualISAMGenerateData(options);
 
 measurementNoiseSigma = 1.0;
 pointNoiseSigma = 0.1;

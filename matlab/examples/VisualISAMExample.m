@@ -32,17 +32,17 @@ options.saveFigures = false;
 options.saveDotFiles = false;
 
 %% Generate data
-[data,truth] = VisualISAMGenerateData(options);
+[data,truth] = support.VisualISAMGenerateData(options);
 
 %% Initialize iSAM with the first pose and points
-[noiseModels,isam,result] = VisualISAMInitialize(data,truth,options);
+[noiseModels,isam,result] = support.VisualISAMInitialize(data,truth,options);
 cla;
-VisualISAMPlot(truth, data, isam, result, options)
+support.VisualISAMPlot(truth, data, isam, result, options)
 
 %% Main loop for iSAM: stepping through all poses
 for frame_i=3:options.nrCameras
-    [isam,result] = VisualISAMStep(data,noiseModels,isam,result,truth,options);
+    [isam,result] = support.VisualISAMStep(data,noiseModels,isam,result,truth,options);
     if mod(frame_i,options.drawInterval)==0
-        VisualISAMPlot(truth, data, isam, result, options)
+        support.VisualISAMPlot(truth, data, isam, result, options)
     end
 end
