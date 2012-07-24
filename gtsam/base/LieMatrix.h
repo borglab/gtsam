@@ -22,6 +22,7 @@
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/DerivedValue.h>
+#include <boost/serialization/nvp.hpp>
 
 namespace gtsam {
 
@@ -134,6 +135,19 @@ struct LieMatrix : public Matrix, public DerivedValue<LieMatrix> {
 	/** Logmap around identity - just returns with default cast back */
 	static inline Vector Logmap(const LieMatrix& p) {
     return Eigen::Map<const Vector>(&p(0,0), p.dim()); }
+
+private:
+
+  // Serialization function
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version) {
+    ar & boost::serialization::make_nvp("LieMatrix",
+       boost::serialization::base_object<Value>(*this));
+    ar & boost::serialization::make_nvp("Matrix",
+       boost::serialization::base_object<Matrix>(*this));
+
+  }
 
 };
 } // \namespace gtsam

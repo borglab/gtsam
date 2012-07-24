@@ -269,8 +269,8 @@ TEST (Serialization, factors) {
 	Symbol b01('b',1), b02('b',2), b03('b',3), b04('b',4), b05('b',5), b06('b',6), b07('b',7), b08('b',8), b09('b',9), b10('b',10), b11('b',11), b12('b',12), b13('b',13);
 
   Values values;
-//	values.insert(a01, lieVector);
-//	values.insert(a02, lieMatrix);
+	values.insert(a01, lieVector);
+	values.insert(a02, lieMatrix);
 	values.insert(a03, point2);
 	values.insert(a04, stereoPoint2);
 	values.insert(a05, point3);
@@ -352,8 +352,8 @@ TEST (Serialization, factors) {
 
 
   NonlinearFactorGraph graph;
-//  graph.add(priorFactorLieVector);
-//  graph.add(priorFactorLieMatrix);
+  graph.add(priorFactorLieVector);
+  graph.add(priorFactorLieMatrix);
   graph.add(priorFactorPoint2);
   graph.add(priorFactorStereoPoint2);
   graph.add(priorFactorPoint3);
@@ -366,8 +366,8 @@ TEST (Serialization, factors) {
   graph.add(priorFactorCalibratedCamera);
   graph.add(priorFactorSimpleCamera);
 
-//  graph.add(betweenFactorLieVector);
-//  graph.add(betweenFactorLieMatrix);
+  graph.add(betweenFactorLieVector);
+  graph.add(betweenFactorLieMatrix);
   graph.add(betweenFactorPoint2);
   graph.add(betweenFactorPoint3);
   graph.add(betweenFactorRot2);
@@ -375,8 +375,8 @@ TEST (Serialization, factors) {
   graph.add(betweenFactorPose2);
   graph.add(betweenFactorPose3);
 
-//  graph.add(nonlinearEqualityLieVector);
-//  graph.add(nonlinearEqualityLieMatrix);
+  graph.add(nonlinearEqualityLieVector);
+  graph.add(nonlinearEqualityLieMatrix);
   graph.add(nonlinearEqualityPoint2);
   graph.add(nonlinearEqualityStereoPoint2);
   graph.add(nonlinearEqualityPoint3);
@@ -412,8 +412,8 @@ TEST (Serialization, factors) {
   EXPECT(equalsObj<Values>(values));
   EXPECT(equalsObj<NonlinearFactorGraph>(graph));
 
-//  EXPECT(equalsObj<PriorFactorLieVector>(priorFactorLieVector));
-//  EXPECT(equalsObj<PriorFactorLieMatrix>(priorFactorLieMatrix));
+  EXPECT(equalsObj<PriorFactorLieVector>(priorFactorLieVector));
+  EXPECT(equalsObj<PriorFactorLieMatrix>(priorFactorLieMatrix));
   EXPECT(equalsObj<PriorFactorPoint2>(priorFactorPoint2));
   EXPECT(equalsObj<PriorFactorStereoPoint2>(priorFactorStereoPoint2));
   EXPECT(equalsObj<PriorFactorPoint3>(priorFactorPoint3));
@@ -426,8 +426,8 @@ TEST (Serialization, factors) {
   EXPECT(equalsObj<PriorFactorCalibratedCamera>(priorFactorCalibratedCamera));
   EXPECT(equalsObj<PriorFactorSimpleCamera>(priorFactorSimpleCamera));
 
-//  EXPECT(equalsObj<BetweenFactorLieVector>(betweenFactorLieVector));
-//  EXPECT(equalsObj<BetweenFactorLieMatrix>(betweenFactorLieMatrix));
+  EXPECT(equalsObj<BetweenFactorLieVector>(betweenFactorLieVector));
+  EXPECT(equalsObj<BetweenFactorLieMatrix>(betweenFactorLieMatrix));
   EXPECT(equalsObj<BetweenFactorPoint2>(betweenFactorPoint2));
   EXPECT(equalsObj<BetweenFactorPoint3>(betweenFactorPoint3));
   EXPECT(equalsObj<BetweenFactorRot2>(betweenFactorRot2));
@@ -435,8 +435,8 @@ TEST (Serialization, factors) {
   EXPECT(equalsObj<BetweenFactorPose2>(betweenFactorPose2));
   EXPECT(equalsObj<BetweenFactorPose3>(betweenFactorPose3));
 
-//  EXPECT(equalsObj<NonlinearEqualityLieVector>(nonlinearEqualityLieVector));
-//  EXPECT(equalsObj<NonlinearEqualityLieMatrix>(nonlinearEqualityLieMatrix));
+  EXPECT(equalsObj<NonlinearEqualityLieVector>(nonlinearEqualityLieVector));
+  EXPECT(equalsObj<NonlinearEqualityLieMatrix>(nonlinearEqualityLieMatrix));
   EXPECT(equalsObj<NonlinearEqualityPoint2>(nonlinearEqualityPoint2));
   EXPECT(equalsObj<NonlinearEqualityStereoPoint2>(nonlinearEqualityStereoPoint2));
   EXPECT(equalsObj<NonlinearEqualityPoint3>(nonlinearEqualityPoint3));
@@ -472,8 +472,8 @@ TEST (Serialization, factors) {
   EXPECT(equalsXML<Values>(values));
   EXPECT(equalsXML<NonlinearFactorGraph>(graph));
 
-//  EXPECT(equalsXML<PriorFactorLieVector>(priorFactorLieVector));
-//  EXPECT(equalsXML<PriorFactorLieMatrix>(priorFactorLieMatrix));
+  EXPECT(equalsXML<PriorFactorLieVector>(priorFactorLieVector));
+  EXPECT(equalsXML<PriorFactorLieMatrix>(priorFactorLieMatrix));
   EXPECT(equalsXML<PriorFactorPoint2>(priorFactorPoint2));
   EXPECT(equalsXML<PriorFactorStereoPoint2>(priorFactorStereoPoint2));
   EXPECT(equalsXML<PriorFactorPoint3>(priorFactorPoint3));
@@ -486,8 +486,8 @@ TEST (Serialization, factors) {
   EXPECT(equalsXML<PriorFactorCalibratedCamera>(priorFactorCalibratedCamera));
   EXPECT(equalsXML<PriorFactorSimpleCamera>(priorFactorSimpleCamera));
 
-//  EXPECT(equalsXML<BetweenFactorLieVector>(betweenFactorLieVector));
-//  EXPECT(equalsXML<BetweenFactorLieMatrix>(betweenFactorLieMatrix));
+  EXPECT(equalsXML<BetweenFactorLieVector>(betweenFactorLieVector));
+  EXPECT(equalsXML<BetweenFactorLieMatrix>(betweenFactorLieMatrix));
   EXPECT(equalsXML<BetweenFactorPoint2>(betweenFactorPoint2));
   EXPECT(equalsXML<BetweenFactorPoint3>(betweenFactorPoint3));
   EXPECT(equalsXML<BetweenFactorRot2>(betweenFactorRot2));
@@ -495,8 +495,8 @@ TEST (Serialization, factors) {
   EXPECT(equalsXML<BetweenFactorPose2>(betweenFactorPose2));
   EXPECT(equalsXML<BetweenFactorPose3>(betweenFactorPose3));
 
-//  EXPECT(equalsXML<NonlinearEqualityLieVector>(nonlinearEqualityLieVector));
-//  EXPECT(equalsXML<NonlinearEqualityLieMatrix>(nonlinearEqualityLieMatrix));
+  EXPECT(equalsXML<NonlinearEqualityLieVector>(nonlinearEqualityLieVector));
+  EXPECT(equalsXML<NonlinearEqualityLieMatrix>(nonlinearEqualityLieMatrix));
   EXPECT(equalsXML<NonlinearEqualityPoint2>(nonlinearEqualityPoint2));
   EXPECT(equalsXML<NonlinearEqualityStereoPoint2>(nonlinearEqualityStereoPoint2));
   EXPECT(equalsXML<NonlinearEqualityPoint3>(nonlinearEqualityPoint3));
