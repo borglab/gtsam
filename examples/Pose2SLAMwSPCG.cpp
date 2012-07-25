@@ -108,7 +108,7 @@ int main(int argc, char** argv) {
   LevenbergMarquardtParams parameters;
   parameters.verbosity = NonlinearOptimizerParams::ERROR;
   parameters.verbosityLM = LevenbergMarquardtParams::LAMBDA;
-  parameters.linearSolverType = SuccessiveLinearizationParams::CG;
+  parameters.linearSolverType = SuccessiveLinearizationParams::CONJUGATE_GRADIENT;
 
   {
     parameters.iterativeParams = boost::make_shared<SimpleSPCGSolverParameters>();
