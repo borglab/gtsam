@@ -13,7 +13,7 @@
 %% Load calibration
 import gtsam.*
 % format: fx fy skew cx cy baseline
-calib = dlmread('../../examples/Data/VO_calibration.txt');
+calib = dlmread('Data/VO_calibration.txt');
 K = Cal3_S2Stereo(calib(1), calib(2), calib(3), calib(4), calib(5), calib(6));
 stereo_model = noiseModel.Diagonal.Sigmas([1.0; 1.0; 1.0]);
 
@@ -26,7 +26,7 @@ initial = visualSLAM.Values;
 % row format: camera_id 4x4 pose (row, major)
 import gtsam.*
 fprintf(1,'Reading data\n');
-cameras = dlmread('../../examples/Data/VO_camera_poses_large.txt');
+cameras = dlmread('Data/VO_camera_poses_large.txt');
 for i=1:size(cameras,1)
     pose = Pose3(reshape(cameras(i,2:17),4,4)');
     initial.insertPose(symbol('x',cameras(i,1)),pose);
@@ -35,7 +35,7 @@ end
 %% load stereo measurements and initialize landmarks
 % camera_id landmark_id uL uR v X Y Z
 import gtsam.*
-measurements = dlmread('../../examples/Data/VO_stereo_factors_large.txt');
+measurements = dlmread('Data/VO_stereo_factors_large.txt');
 
 fprintf(1,'Creating Graph\n'); tic
 for i=1:size(measurements,1)
@@ -67,10 +67,12 @@ toc
 figure(1); clf; hold on;
 
 % initial trajectory in red (rotated so Z is up)
-plot3(initial.zs(),-initial.xs(),-initial.ys(), '-*r','LineWidth',2);
+P = initial.translations;
+plot3(P(:,3),-P(:,1),-P(:,2), '-*r','LineWidth',2);
 
 % final trajectory in green (rotated so Z is up)
-plot3(result.zs(),-result.xs(),-result.ys(), '-*g','LineWidth',2);
+P = result.translations;
+plot3(P(:,3),-P(:,1),-P(:,2), '-*g','LineWidth',2);
 xlabel('X (m)'); ylabel('Y (m)'); zlabel('Z (m)');
 
 % switch to XZ view

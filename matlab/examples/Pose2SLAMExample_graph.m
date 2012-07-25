@@ -13,7 +13,7 @@
 %% Initialize graph, initial estimate, and odometry noise
 import gtsam.*
 model = noiseModel.Diagonal.Sigmas([0.05; 0.05; 5*pi/180]);
-[graph,initial]=load2D('../../examples/Data/w100-odom.graph',model);
+[graph,initial]=load2D('Data/w100-odom.graph',model);
 initial.print(sprintf('Initial estimate:\n'));
 
 %% Add a Gaussian prior on pose x_1
@@ -24,11 +24,13 @@ graph.addPosePrior(0, priorMean, priorNoise); % add directly to graph
 
 %% Plot Initial Estimate
 figure(1);clf
-plot(initial.xs(),initial.ys(),'g-*'); axis equal
+P=initial.poses;
+plot(P(:,1),P(:,2),'g-*'); axis equal
 
 %% Optimize using Levenberg-Marquardt optimization with an ordering from colamd
-result = graph.optimize(initial);
-hold on; plot(result.xs(),result.ys(),'b-*')
+result = graph.optimize(initial,1);
+P=result.poses;
+hold on; plot(P(:,1),P(:,2),'b-*')
 result.print(sprintf('\nFinal result:\n'));
 
 %% Plot Covariance Ellipses

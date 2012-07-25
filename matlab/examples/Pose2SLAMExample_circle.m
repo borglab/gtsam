@@ -38,11 +38,13 @@ initial.insertPose(5, hexagon.pose(5).retract([-0.1, 0.1,-0.1]'));
 
 %% Plot Initial Estimate
 figure(1);clf
-plot(initial.xs(),initial.ys(),'g-*'); axis equal
+P=initial.poses;
+plot(P(:,1),P(:,2),'g-*'); axis equal
 
 %% optimize
-result = fg.optimize(initial);
+result = fg.optimize(initial,1);
 
 %% Show Result
-hold on; plot(result.xs(),result.ys(),'b-*')
+P=result.poses;
+hold on; plot(P(:,1),P(:,2),'b-*')
 result.print(sprintf('\nFinal result:\n'));
