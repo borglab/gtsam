@@ -1365,6 +1365,10 @@ virtual class GenericProjectionFactor : gtsam::NonlinearFactor {
 typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> GenericProjectionFactorCal3_S2;
 typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> GenericProjectionFactorCal3DS2;
 
+#include <gtsam/slam/dataset.h>
+pair<pose2SLAM::Graph*, pose2SLAM::Values*> load2D(string filename,
+    gtsam::noiseModel::Diagonal* model, int maxID, bool addNoise, bool smart);
+
 } //\namespace gtsam
 
 //*************************************************************************
