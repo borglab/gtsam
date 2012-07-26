@@ -10,13 +10,14 @@
 % @author Frank Dellaert
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+import gtsam.*
+
 %% Create a hexagon of poses
-hexagon = pose2SLAM.Values.Circle(6,1.0);
-p0 = hexagon.pose(0);
-p1 = hexagon.pose(1);
+hexagon = circlePose2(6,1.0);
+p0 = hexagon.at(0);
+p1 = hexagon.at(1);
 
 %% create a Pose graph with one equality constraint and one measurement
-import gtsam.*
 fg = NonlinearFactorGraph;
 fg.add(NonlinearEqualityPose2(0, p0));
 delta = p0.between(p1);
@@ -31,11 +32,11 @@ fg.add(BetweenFactorPose2(5,0, delta, covariance));
 %% Create initial config
 initial = Values;
 initial.insert(0, p0);
-initial.insert(1, hexagon.pose(1).retract([-0.1, 0.1,-0.1]'));
-initial.insert(2, hexagon.pose(2).retract([ 0.1,-0.1, 0.1]'));
-initial.insert(3, hexagon.pose(3).retract([-0.1, 0.1,-0.1]'));
-initial.insert(4, hexagon.pose(4).retract([ 0.1,-0.1, 0.1]'));
-initial.insert(5, hexagon.pose(5).retract([-0.1, 0.1,-0.1]'));
+initial.insert(1, hexagon.at(1).retract([-0.1, 0.1,-0.1]'));
+initial.insert(2, hexagon.at(2).retract([ 0.1,-0.1, 0.1]'));
+initial.insert(3, hexagon.at(3).retract([-0.1, 0.1,-0.1]'));
+initial.insert(4, hexagon.at(4).retract([ 0.1,-0.1, 0.1]'));
+initial.insert(5, hexagon.at(5).retract([-0.1, 0.1,-0.1]'));
 
 %% Plot Initial Estimate
 cla
