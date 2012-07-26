@@ -299,8 +299,9 @@ void Test_create_MixedPtrs_22(int nargout, mxArray *out[], int nargin, const mxA
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("create_MixedPtrs",nargout,nargin-1,0);
   Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
-  out[0] = wrap_shared_ptr(SharedTest(new Test(obj->create_MixedPtrs().first)),"Test", false);
-  out[0] = wrap_shared_ptr(obj->create_MixedPtrs().second,"Test", false);
+  pair< Test, SharedTest > pairResult = obj->create_MixedPtrs();
+  out[0] = wrap_shared_ptr(SharedTest(new Test(pairResult.first)),"Test", false);
+  out[1] = wrap_shared_ptr(pairResult.second,"Test", false);
 }
 
 void Test_create_ptrs_23(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -310,8 +311,9 @@ void Test_create_ptrs_23(int nargout, mxArray *out[], int nargin, const mxArray 
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("create_ptrs",nargout,nargin-1,0);
   Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
-  out[0] = wrap_shared_ptr(obj->create_ptrs().first,"Test", false);
-  out[0] = wrap_shared_ptr(obj->create_ptrs().second,"Test", false);
+  pair< SharedTest, SharedTest > pairResult = obj->create_ptrs();
+  out[0] = wrap_shared_ptr(pairResult.first,"Test", false);
+  out[1] = wrap_shared_ptr(pairResult.second,"Test", false);
 }
 
 void Test_print_24(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -413,8 +415,9 @@ void Test_return_pair_34(int nargout, mxArray *out[], int nargin, const mxArray 
   Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
   Vector v = unwrap< Vector >(in[1]);
   Matrix A = unwrap< Matrix >(in[2]);
-  out[0] = wrap< Vector >(obj->return_pair(v,A).first);
-  out[1] = wrap< Matrix >(obj->return_pair(v,A).second);
+  pair< Vector, Matrix > pairResult = obj->return_pair(v,A);
+  out[0] = wrap< Vector >(pairResult.first);
+  out[1] = wrap< Matrix >(pairResult.second);
 }
 
 void Test_return_ptrs_35(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -426,8 +429,9 @@ void Test_return_ptrs_35(int nargout, mxArray *out[], int nargin, const mxArray 
   Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
   boost::shared_ptr<Test> p1 = unwrap_shared_ptr< Test >(in[1], "ptr_Test");
   boost::shared_ptr<Test> p2 = unwrap_shared_ptr< Test >(in[2], "ptr_Test");
-  out[0] = wrap_shared_ptr(obj->return_ptrs(p1,p2).first,"Test", false);
-  out[0] = wrap_shared_ptr(obj->return_ptrs(p1,p2).second,"Test", false);
+  pair< SharedTest, SharedTest > pairResult = obj->return_ptrs(p1,p2);
+  out[0] = wrap_shared_ptr(pairResult.first,"Test", false);
+  out[1] = wrap_shared_ptr(pairResult.second,"Test", false);
 }
 
 void Test_return_size_t_36(int nargout, mxArray *out[], int nargin, const mxArray *in[])
