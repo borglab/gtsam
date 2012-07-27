@@ -20,8 +20,10 @@
 #include <sstream>
 #include <cstdlib>
 
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/linear/Sampler.h>
 #include <gtsam/slam/dataset.h>
+#include <gtsam/slam/BetweenFactor.h>
 
 using namespace std;
 
@@ -78,23 +80,23 @@ pair<string, boost::optional<SharedDiagonal> > dataset(const string& dataset,
 }
 
 /* ************************************************************************* */
-pair<pose2SLAM::Graph::shared_ptr, pose2SLAM::Values::shared_ptr> load2D(
-		pair<string, boost::optional<SharedDiagonal> > dataset,
+pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
+		pair<string, boost::optional<noiseModel::Diagonal::shared_ptr> > dataset,
 		int maxID, bool addNoise, bool smart) {
 	return load2D(dataset.first, dataset.second, maxID, addNoise, smart);
 }
 
 /* ************************************************************************* */
-pair<pose2SLAM::Graph::shared_ptr, pose2SLAM::Values::shared_ptr> load2D(
-		const string& filename, boost::optional<SharedDiagonal> model, int maxID,
+pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
+		const string& filename, boost::optional<noiseModel::Diagonal::shared_ptr> model, int maxID,
 		bool addNoise, bool smart) {
 	cout << "Will try to read " << filename << endl;
 	ifstream is(filename.c_str());
 	if (!is)
 		throw std::invalid_argument("load2D: can not find the file!");
 
-	pose2SLAM::Values::shared_ptr poses(new pose2SLAM::Values);
-	pose2SLAM::Graph::shared_ptr graph(new pose2SLAM::Graph);
+	Values::shared_ptr poses(new Values);
+	NonlinearFactorGraph::shared_ptr graph(new NonlinearFactorGraph);
 
 	string tag;
 
@@ -155,7 +157,7 @@ pair<pose2SLAM::Graph::shared_ptr, pose2SLAM::Values::shared_ptr> load2D(
 			if (!poses->exists(id2))
 				poses->insert(id2, poses->at<Pose2>(id1) * l1Xl2);
 
-			pose2SLAM::Graph::sharedFactor factor(
+			NonlinearFactor::shared_ptr factor(
 					new BetweenFactor<Pose2>(id1, id2, l1Xl2, *model));
 			graph->push_back(factor);
 		}
@@ -169,8 +171,8 @@ pair<pose2SLAM::Graph::shared_ptr, pose2SLAM::Values::shared_ptr> load2D(
 }
 
 /* ************************************************************************* */
-void save2D(const pose2SLAM::Graph& graph, const Values& config,
-		const SharedDiagonal model, const string& filename) {
+void save2D(const NonlinearFactorGraph& graph, const Values& config,
+		const noiseModel::Diagonal::shared_ptr model, const string& filename) {
 
 	fstream stream(filename.c_str(), fstream::out);
 

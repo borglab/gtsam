@@ -122,6 +122,15 @@ private:
   }
 };
 
+/** Create a symbol key from a character and index, i.e. x5. */
+inline Key symbol(unsigned char c, size_t j) { return (Key)Symbol(c,j); }
+
+/** Return the character portion of a symbol key. */
+inline unsigned char symbolChr(Key key) { return Symbol(key).chr(); }
+
+/** Return the index portion of a symbol key. */
+inline size_t symbolIndex(Key key) { return Symbol(key).index(); }
+
 namespace symbol_shorthand {
 inline Key A(size_t j) { return Symbol('a', j); }
 inline Key B(size_t j) { return Symbol('b', j); }

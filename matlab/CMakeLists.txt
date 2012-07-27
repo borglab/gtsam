@@ -10,14 +10,17 @@ install(FILES ${matlab_utils} DESTINATION ${GTSAM_TOOLBOX_INSTALL_PATH}/)
 
 # Tests
 message(STATUS "Installing Matlab Toolbox Tests")
-file(GLOB matlab_tests "${GTSAM_SOURCE_ROOT_DIR}/matlab/tests/*.m")
-install(FILES ${matlab_tests} DESTINATION ${GTSAM_TOOLBOX_INSTALL_PATH}/gtsam_tests)
+install(DIRECTORY "${GTSAM_SOURCE_ROOT_DIR}/matlab/gtsam_tests" DESTINATION "${GTSAM_TOOLBOX_INSTALL_PATH}" FILES_MATCHING PATTERN "*.m")
 
 # Examples
 message(STATUS "Installing Matlab Toolbox Examples")
 # Matlab files: *.m and *.fig
-install(DIRECTORY "${GTSAM_SOURCE_ROOT_DIR}/matlab/examples/" DESTINATION "${GTSAM_TOOLBOX_INSTALL_PATH}/gtsam_examples" FILES_MATCHING PATTERN "*.m")
-install(DIRECTORY "${GTSAM_SOURCE_ROOT_DIR}/matlab/examples/" DESTINATION "${GTSAM_TOOLBOX_INSTALL_PATH}/gtsam_examples" FILES_MATCHING PATTERN "*.fig")
+install(DIRECTORY "${GTSAM_SOURCE_ROOT_DIR}/matlab/gtsam_examples" DESTINATION "${GTSAM_TOOLBOX_INSTALL_PATH}" FILES_MATCHING PATTERN "*.m")
+install(DIRECTORY "${GTSAM_SOURCE_ROOT_DIR}/matlab/gtsam_examples" DESTINATION "${GTSAM_TOOLBOX_INSTALL_PATH}" FILES_MATCHING PATTERN "*.fig")
+
+# Utilities
+message(STATUS "Installing Matlab Toolbox Utilities")
+install(DIRECTORY "${GTSAM_SOURCE_ROOT_DIR}/matlab/+gtsam_utils" DESTINATION "${GTSAM_TOOLBOX_INSTALL_PATH}" FILES_MATCHING PATTERN "*.m")
 
 message(STATUS "Installing Matlab Toolbox Examples (Data)")
 # Data files: *.graph and *.txt
