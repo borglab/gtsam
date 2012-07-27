@@ -7,7 +7,7 @@
 
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/NonlinearGradientDescentOptimizer.h>
+#include <gtsam/nonlinear/NonlinearConjugateGradientOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/geometry/Pose2.h>
@@ -69,7 +69,7 @@ TEST(optimize, GradientDescentOptimizer) {
   param.maxIterations = 500;    /* requires a larger number of iterations to converge */
   param.verbosity = NonlinearOptimizerParams::SILENT;
 
-  GradientDescentOptimizer optimizer(graph, initialEstimate, param);
+  NonlinearConjugateGradientOptimizer optimizer(graph, initialEstimate, param);
   Values result = optimizer.optimize();
 //  cout << "gd1 solver final error = " << graph.error(result) << endl;
 
