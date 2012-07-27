@@ -42,40 +42,6 @@ public:
   SuccessiveLinearizationParams() : linearSolverType(MULTIFRONTAL_CHOLESKY) {}
   virtual ~SuccessiveLinearizationParams() {}
 
-  virtual void print(const std::string& str = "") const {
-    NonlinearOptimizerParams::print(str);
-    switch ( linearSolverType ) {
-    case MULTIFRONTAL_CHOLESKY:
-      std::cout << "         linear solver type: MULTIFRONTAL CHOLESKY\n";
-      break;
-    case MULTIFRONTAL_QR:
-      std::cout << "         linear solver type: MULTIFRONTAL QR\n";
-      break;
-    case SEQUENTIAL_CHOLESKY:
-      std::cout << "         linear solver type: SEQUENTIAL CHOLESKY\n";
-      break;
-    case SEQUENTIAL_QR:
-      std::cout << "         linear solver type: SEQUENTIAL QR\n";
-      break;
-    case CHOLMOD:
-      std::cout << "         linear solver type: CHOLMOD\n";
-      break;
-    case CONJUGATE_GRADIENT:
-      std::cout << "         linear solver type: CONJUGATE GRADIENT\n";
-      break;
-    default:
-      std::cout << "         linear solver type: (invalid)\n";
-      break;
-    }
-
-    if(ordering)
-      std::cout << "                   ordering: custom\n";
-    else
-      std::cout << "                   ordering: COLAMD\n";
-
-    std::cout.flush();
-  }
-
     inline bool isMultifrontal() const {
     return (linearSolverType == MULTIFRONTAL_CHOLESKY) || (linearSolverType == MULTIFRONTAL_QR); }
 
