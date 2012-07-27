@@ -12,12 +12,14 @@
 
 %% Initialize graph, initial estimate, and odometry noise
 import gtsam.*
-model = noiseModel.Diagonal.Sigmas([0.05; 0.05; 5*pi/180]);
-[graph,initial]=load2D('Data/w100-odom.graph',model);
+model = noiseModel.Diagonal.Sigmas([0.05; 0.05; 1*pi/180]);
+maxID=0;
+addNoise=false;
+smart=true;
+[graph,initial]=load2D('Data/w10000-odom.graph',model,maxID,addNoise,smart);
 initial.print(sprintf('Initial estimate:\n'));
 
 %% Add a Gaussian prior on pose x_1
-import gtsam.*
 priorMean = Pose2(0.0, 0.0, 0.0); % prior mean is at origin
 priorNoise = noiseModel.Diagonal.Sigmas([0.01; 0.01; 0.01]);
 graph.addPosePrior(0, priorMean, priorNoise); % add directly to graph
@@ -28,7 +30,9 @@ P=initial.poses;
 plot(P(:,1),P(:,2),'g-*'); axis equal
 
 %% Optimize using Levenberg-Marquardt optimization with an ordering from colamd
+tic
 result = graph.optimize(initial,1);
+toc
 P=result.poses;
 hold on; plot(P(:,1),P(:,2),'b-*')
 result.print(sprintf('\nFinal result:\n'));
