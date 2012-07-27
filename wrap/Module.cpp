@@ -416,6 +416,9 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
     vector<string> validTypes = GenerateValidTypes(expandedClasses, forward_declarations);
 
 		// Check that all classes have been defined somewhere
+		verifyArguments<GlobalFunction>(validTypes, global_functions);
+		verifyReturnTypes<GlobalFunction>(validTypes, global_functions);
+
 		BOOST_FOREACH(const Class& cls, expandedClasses) {
 			// verify all of the function arguments
 			//TODO:verifyArguments<ArgumentList>(validTypes, cls.constructor.args_list);
