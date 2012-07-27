@@ -1,7 +1,7 @@
 /**
  * @file   GradientDescentOptimizer.cpp
  * @brief
- * @author ydjian
+ * @author Yong-Dian Jian
  * @date   Jun 11, 2012
  */
 
@@ -9,75 +9,31 @@
 
 #include <gtsam/base/Manifold.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <boost/tuple/tuple.hpp>
 
 namespace gtsam {
 
-/* an implementation of gradient-descent method using the NLO interface */
-
-class GradientDescentState : public NonlinearOptimizerState {
-
+/**  An implementation of the nonlinear cg method using the template below */
+class NonlinearConjugateGradientState : public NonlinearOptimizerState {
 public:
-
   typedef NonlinearOptimizerState Base;
-
-  GradientDescentState(const NonlinearFactorGraph& graph, const Values& values)
+  NonlinearConjugateGradientState(const NonlinearFactorGraph& graph, const Values& values)
     : Base(graph, values) {}
 };
 
-class GradientDescentOptimizer : public NonlinearOptimizer {
-
-public:
-
-  typedef boost::shared_ptr<GradientDescentOptimizer> shared_ptr;
-  typedef NonlinearOptimizer Base;
-  typedef GradientDescentState States;
-  typedef NonlinearOptimizerParams Parameters;
-
-protected:
-
-  Parameters params_;
-  States state_;
-  Ordering::shared_ptr ordering_;
-  VectorValues::shared_ptr gradient_;
-
-public:
-
-  GradientDescentOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues, const Parameters& params = Parameters())
-    : Base(graph), params_(params), state_(graph, initialValues),
-      ordering_(initialValues.orderingArbitrary()),
-      gradient_(new VectorValues(initialValues.zeroVectors(*ordering_))) {}
-
-  virtual ~GradientDescentOptimizer() {}
-
-  virtual void iterate();
-
-protected:
-
-  virtual const NonlinearOptimizerState& _state() const { return state_; }
-  virtual const NonlinearOptimizerParams& _params() const { return params_; }
-};
-
-
-/**
- *  An implementation of the nonlinear cg method using the template below
- */
-
-class ConjugateGradientOptimizer {
-
+class NonlinearConjugateGradientOptimizer : public NonlinearOptimizer {
+  /* a class for the nonlinearConjugateGradient template */
   class System {
-
   public:
-
     typedef Values State;
     typedef VectorValues Gradient;
+    typedef NonlinearOptimizerParams Parameters;
 
   protected:
-
-    NonlinearFactorGraph graph_;
-    Ordering ordering_;
+    const NonlinearFactorGraph &graph_;
+    const Ordering &ordering_;
 
   public:
-
     System(const NonlinearFactorGraph &graph, const Ordering &ordering): graph_(graph), ordering_(ordering) {}
     double error(const State &state) const ;
     Gradient gradient(const State &state) const ;
@@ -85,35 +41,32 @@ class ConjugateGradientOptimizer {
   };
 
 public:
-
+  typedef NonlinearOptimizer Base;
+  typedef NonlinearConjugateGradientState States;
   typedef NonlinearOptimizerParams Parameters;
-  typedef boost::shared_ptr<ConjugateGradientOptimizer> shared_ptr;
+  typedef boost::shared_ptr<NonlinearConjugateGradientOptimizer> shared_ptr;
 
 protected:
-
-  NonlinearFactorGraph graph_;
-  Values initialEstimate_;
+  States state_;
   Parameters params_;
   Ordering::shared_ptr ordering_;
   VectorValues::shared_ptr gradient_;
-  bool cg_;
 
 public:
 
-  ConjugateGradientOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues,
-                             const Parameters& params = Parameters(), const bool cg = true)
-    : graph_(graph), initialEstimate_(initialValues), params_(params),
-      ordering_(initialValues.orderingArbitrary()),
-      gradient_(new VectorValues(initialValues.zeroVectors(*ordering_))),
-      cg_(cg) {}
+  NonlinearConjugateGradientOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues,
+                                      const Parameters& params = Parameters())
+    : Base(graph), state_(graph, initialValues), params_(params), ordering_(initialValues.orderingArbitrary()),
+      gradient_(new VectorValues(initialValues.zeroVectors(*ordering_))){}
 
-  virtual ~ConjugateGradientOptimizer() {}
-  virtual Values optimize () ;
+  virtual ~NonlinearConjugateGradientOptimizer() {}
+  virtual void iterate();
+  virtual const Values& optimize ();
+  virtual const NonlinearOptimizerState& _state() const { return state_; }
+  virtual const NonlinearOptimizerParams& _params() const { return params_; }
 };
 
-/**
- * Implement the golden-section line search algorithm
- */
+/** Implement the golden-section line search algorithm */
 template <class S, class V, class W>
 double lineSearch(const S &system, const V currentValues, const W &gradient) {
 
@@ -171,18 +124,20 @@ double lineSearch(const S &system, const V currentValues, const W &gradient) {
  *
  * The last parameter is a switch between gradient-descent and conjugate gradient
  */
-
 template <class S, class V>
-V conjugateGradient(const S &system, const V &initial, const NonlinearOptimizerParams &params, const bool gradientDescent) {
+boost::tuple<V, size_t> nonlinearConjugateGradient(const S &system, const V &initial, const NonlinearOptimizerParams &params, const bool singleIteration, const bool gradientDescent = false) {
 
-  GTSAM_CONCEPT_MANIFOLD_TYPE(V);
+  // GTSAM_CONCEPT_MANIFOLD_TYPE(V);
+
+  Index iteration = 0;
 
   // check if we're already close enough
   double currentError = system.error(initial);
   if(currentError <= params.errorTol) {
-    if (params.verbosity >= NonlinearOptimizerParams::ERROR)
+    if (params.verbosity >= NonlinearOptimizerParams::ERROR){
       std::cout << "Exiting, as error = " << currentError << " < " << params.errorTol << std::endl;
-    return initial;
+    }
+    return boost::tie(initial, iteration);
   }
 
   V currentValues = initial;
@@ -194,14 +149,12 @@ V conjugateGradient(const S &system, const V &initial, const NonlinearOptimizerP
   double alpha = lineSearch(system, currentValues, direction);
   currentValues = system.advance(prevValues, alpha, direction);
   currentError = system.error(currentValues);
-  Index iteration = 0;
 
   // Maybe show output
   if (params.verbosity >= NonlinearOptimizerParams::ERROR) std::cout << "Initial error: " << currentError << std::endl;
 
   // Iterative loop
   do {
-
     if ( gradientDescent == true) {
       direction = system.gradient(currentValues);
     }
@@ -222,13 +175,14 @@ V conjugateGradient(const S &system, const V &initial, const NonlinearOptimizerP
     // Maybe show output
     if(params.verbosity >= NonlinearOptimizerParams::ERROR) std::cout << "currentError: " << currentError << std::endl;
   } while( ++iteration < params.maxIterations &&
+           !singleIteration &&
            !checkConvergence(params.relativeErrorTol, params.absoluteErrorTol, params.errorTol, prevError, currentError, params.verbosity));
 
   // Printing if verbose
   if (params.verbosity >= NonlinearOptimizerParams::ERROR && iteration >= params.maxIterations)
-    std::cout << "Terminating because reached maximum iterations" << std::endl;
+    std::cout << "nonlinearConjugateGradient: Terminating because reached maximum iterations" << std::endl;
 
-  return currentValues;
+  return boost::tie(currentValues, iteration);
 }
 
 

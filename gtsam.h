@@ -1472,6 +1472,10 @@ virtual class GenericStereoFactor : gtsam::NonlinearFactor {
 };
 typedef gtsam::GenericStereoFactor<gtsam::Pose3, gtsam::Point3> GenericStereoFactor3D;
 
+#include <gtsam/slam/dataset.h>
+pair<pose2SLAM::Graph*, pose2SLAM::Values*> load2D(string filename,
+    gtsam::noiseModel::Diagonal* model, int maxID, bool addNoise, bool smart);
+
 } //\namespace gtsam
 
 //*************************************************************************

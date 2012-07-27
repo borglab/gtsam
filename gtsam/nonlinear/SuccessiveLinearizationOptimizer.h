@@ -40,7 +40,6 @@ public:
   IterativeOptimizationParameters::shared_ptr iterativeParams; ///< The container for iterativeOptimization parameters. used in CG Solvers.
 
   SuccessiveLinearizationParams() : linearSolverType(MULTIFRONTAL_CHOLESKY) {}
-
   virtual ~SuccessiveLinearizationParams() {}
 
   virtual void print(const std::string& str = "") const {
@@ -62,7 +61,7 @@ public:
       std::cout << "         linear solver type: CHOLMOD\n";
       break;
     case CONJUGATE_GRADIENT:
-      std::cout << "         linear solver type: CG\n";
+      std::cout << "         linear solver type: CONJUGATE GRADIENT\n";
       break;
     default:
       std::cout << "         linear solver type: (invalid)\n";
@@ -77,7 +76,7 @@ public:
     std::cout.flush();
   }
 
-  inline bool isMultifrontal() const {
+    inline bool isMultifrontal() const {
     return (linearSolverType == MULTIFRONTAL_CHOLESKY) || (linearSolverType == MULTIFRONTAL_QR); }
 
   inline bool isSequential() const {
@@ -87,7 +86,9 @@ public:
 
   inline bool isCG() const { return (linearSolverType == CONJUGATE_GRADIENT); }
 
-  GaussianFactorGraph::Eliminate getEliminationFunction() {
+  virtual void print(const std::string& str) const;
+
+  GaussianFactorGraph::Eliminate getEliminationFunction() const {
     switch (linearSolverType) {
     case MULTIFRONTAL_CHOLESKY:
     case SEQUENTIAL_CHOLESKY:
@@ -131,5 +132,8 @@ private:
 		throw std::invalid_argument("Unknown linear solver type in SuccessiveLinearizationOptimizer");
 	}
 };
+
+/* a wrapper for solving a GaussianFactorGraph according to the parameters */
+VectorValues solveGaussianFactorGraph(const GaussianFactorGraph &gfg, const SuccessiveLinearizationParams &params) ;
 
 } /* namespace gtsam */

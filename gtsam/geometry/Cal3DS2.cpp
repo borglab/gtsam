@@ -79,6 +79,36 @@ Point2 Cal3DS2::uncalibrate(const Point2& p,
 }
 
 /* ************************************************************************* */
+Point2 Cal3DS2::calibrate(const Point2& pi, const double tol) const {
+  // Use the following fixed point iteration to invert the radial distortion.
+  // pn_{t+1} = (inv(K)*pi - dp(pn_{t})) / g(pn_{t})
+
+  const Point2 invKPi ((1 / fx_) * (pi.x() - u0_ - (s_ / fy_) * (pi.y() - v0_)),
+                       (1 / fy_) * (pi.y() - v0_));
+
+  // initialize by ignoring the distortion at all, might be problematic for pixels around boundary
+  Point2 pn = invKPi;
+
+  // iterate until the uncalibrate is close to the actual pixel coordinate
+  const int maxIterations = 10;
+  int iteration;
+  for ( iteration = 0 ; iteration < maxIterations ; ++iteration ) {
+    if ( uncalibrate(pn).dist(pi) <= tol ) break;
+    const double x = pn.x(), y = pn.y(), xy = x*y, xx = x*x, yy = y*y ;
+    const double r = xx + yy ;
+    const double g = (1+k1_*r+k2_*r*r) ;
+    const double dx = 2*k3_*xy + k4_*(r+2*xx) ;
+    const double dy = 2*k4_*xy + k3_*(r+2*yy) ;
+    pn = (invKPi - Point2(dx,dy))/g ;
+  }
+
+  if ( iteration >= maxIterations )
+    throw std::runtime_error("Cal3DS2::calibrate fails to converge. need a better initialization");
+
+  return pn;
+}
+
+/* ************************************************************************* */
 Matrix Cal3DS2::D2d_intrinsic(const Point2& p) const {
 	//const double fx = fx_, fy = fy_, s = s_ ;
 	const double k1 = k1_, k2 = k2_, k3 = k3_, k4 = k4_;

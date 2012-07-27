@@ -7,7 +7,7 @@
 
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/GradientDescentOptimizer.h>
+#include <gtsam/nonlinear/NonlinearGradientDescentOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/geometry/Pose2.h>
@@ -55,7 +55,6 @@ boost::tuple<NonlinearFactorGraph, Values> generateProblem() {
   return boost::tie(graph, initialEstimate);
 }
 
-
 /* ************************************************************************* */
 TEST(optimize, GradientDescentOptimizer) {
 
@@ -94,40 +93,13 @@ TEST(optimize, ConjugateGradientOptimizer) {
   param.maxIterations = 500;    /* requires a larger number of iterations to converge */
   param.verbosity = NonlinearOptimizerParams::SILENT;
 
-
-  ConjugateGradientOptimizer optimizer(graph, initialEstimate, param, true);
+  NonlinearConjugateGradientOptimizer optimizer(graph, initialEstimate, param);
   Values result = optimizer.optimize();
 //  cout << "cg final error = " << graph.error(result) << endl;
 
   /* the optimality of the solution is not comparable to the */
   DOUBLES_EQUAL(0.0, graph.error(result), 1e-2);
 }
-
-/* ************************************************************************* */
-TEST(optimize, GradientDescentOptimizer2) {
-
-  NonlinearFactorGraph graph;
-  Values initialEstimate;
-
-  boost::tie(graph, initialEstimate) = generateProblem();
-//  cout << "initial error = " << graph.error(initialEstimate) << endl ;
-
-  // Single Step Optimization using Levenberg-Marquardt
-  NonlinearOptimizerParams param;
-  param.maxIterations = 500;    /* requires a larger number of iterations to converge */
-  param.verbosity = NonlinearOptimizerParams::SILENT;
-
-
-  ConjugateGradientOptimizer optimizer(graph, initialEstimate, param, false);
-  Values result = optimizer.optimize();
-//  cout << "gd2 solver final error = " << graph.error(result) << endl;
-
-  /* the optimality of the solution is not comparable to the */
-  DOUBLES_EQUAL(0.0, graph.error(result), 1e-2);
-}
-
-
-
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

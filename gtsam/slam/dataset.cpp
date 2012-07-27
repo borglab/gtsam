@@ -90,10 +90,8 @@ pair<pose2SLAM::Graph::shared_ptr, pose2SLAM::Values::shared_ptr> load2D(
 		bool addNoise, bool smart) {
 	cout << "Will try to read " << filename << endl;
 	ifstream is(filename.c_str());
-	if (!is) {
-		cout << "load2D: can not find the file!";
-		exit(-1);
-	}
+	if (!is)
+		throw std::invalid_argument("load2D: can not find the file!");
 
 	pose2SLAM::Values::shared_ptr poses(new pose2SLAM::Values);
 	pose2SLAM::Graph::shared_ptr graph(new pose2SLAM::Graph);
