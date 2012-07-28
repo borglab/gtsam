@@ -24,15 +24,6 @@
 #include <string>
 
 namespace gtsam {
-	/**
-	 * Construct dataset filename from short name
-	 * Currently has "Killian" "intel.gfs", "10K", etc...
-	 * @param filename
-	 * @param optional dataset, if empty will try to getenv $DATASET
-	 * @param optional path, if empty will try to getenv $HOME
-	 */
-	std::pair<std::string, boost::optional<gtsam::SharedDiagonal> >
-	dataset(const std::string& dataset = "", const std::string& path = "");
 
 	/**
 	 * Load TORO 2D Graph
