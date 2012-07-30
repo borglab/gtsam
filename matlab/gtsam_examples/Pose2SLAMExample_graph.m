@@ -16,7 +16,10 @@ datafile = gtsam_utils.findExampleDataFile('w100-odom.graph');
 %% Initialize graph, initial estimate, and odometry noise
 import gtsam.*
 model = noiseModel.Diagonal.Sigmas([0.05; 0.05; 5*pi/180]);
-[graph,initial] = gtsam_utils.load2D(datafile, model);
+maxID = 0;
+addNoise = false;
+smart = true;
+[graph,initial] = gtsam.load2D(datafile, model, maxID, addNoise, smart);
 initial.print(sprintf('Initial estimate:\n'));
 
 %% Add a Gaussian prior on pose x_1
