@@ -1247,6 +1247,26 @@ class ISAM2DoglegParams {
   void setVerbose(bool verbose);
 };
 
+class ISAM2ThresholdMapValue {
+  ISAM2ThresholdMapValue(char c, Vector thresholds);
+  ISAM2ThresholdMapValue(const gtsam::ISAM2ThresholdMapValue& other);
+};
+
+class ISAM2ThresholdMap {
+  ISAM2ThresholdMap();
+  ISAM2ThresholdMap(const gtsam::ISAM2ThresholdMap& other);
+
+  // Note: no print function
+
+  // common STL methods
+  size_t size() const;
+  bool empty() const;
+  void clear();
+
+  // structure specific methods
+  void insert(const gtsam::ISAM2ThresholdMapValue& value) const;
+};
+
 class ISAM2Params {
   ISAM2Params();
 
@@ -1256,8 +1276,7 @@ class ISAM2Params {
   void setOptimizationParams(const gtsam::ISAM2GaussNewtonParams& params);
   void setOptimizationParams(const gtsam::ISAM2DoglegParams& params);
   void setRelinearizeThreshold(double relinearizeThreshold);
-  // TODO: wrap this
-  //void setRelinearizeThreshold(const FastMap<char,Vector>& relinearizeThreshold);
+  void setRelinearizeThreshold(const gtsam::ISAM2ThresholdMap& relinearizeThreshold);
   int getRelinearizeSkip() const;
   void setRelinearizeSkip(int relinearizeSkip);
   bool isEnableRelinearization() const;
