@@ -1474,4 +1474,23 @@ typedef gtsam::GenericStereoFactor<gtsam::Pose3, gtsam::Point3> GenericStereoFac
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
     gtsam::noiseModel::Diagonal* model, int maxID, bool addNoise, bool smart);
 
+
+//*************************************************************************
+// Utilities
+//*************************************************************************
+
+namespace utilities {
+
+  #include <matlab.h>
+  Matrix extractPoint2(const gtsam::Values& values);
+  Matrix extractPoint3(const gtsam::Values& values);
+  Matrix extractPose2(const gtsam::Values& values);
+  Matrix extractPose3(const gtsam::Values& values);
+  void perturbPoint2(gtsam::Values& values, double sigma, int seed);
+  void perturbPoint3(gtsam::Values& values, double sigma, int seed);
+  void insertBackprojections(gtsam::Values& values, const gtsam::SimpleCamera& c, Vector J, Matrix Z, double depth);
+  Matrix reprojectionErrors(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& values);
+
+} //\namespace utilities
+
 }
