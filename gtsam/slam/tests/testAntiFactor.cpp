@@ -17,10 +17,12 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <gtsam/slam/pose3SLAM.h>
 #include <gtsam/slam/AntiFactor.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/Values.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/geometry/Pose3.h>
 
@@ -95,12 +97,12 @@ TEST( AntiFactor, EquivalentBayesNet)
   Pose3 z(Rot3(), Point3(1, 1, 1));
   SharedNoiseModel sigma(noiseModel::Unit::Create(Pose3::Dim()));
 
-	boost::shared_ptr<pose3SLAM::Graph> graph(new pose3SLAM::Graph());
-	graph->addPosePrior(1, pose1, sigma);
-	graph->addRelativePose(1, 2, pose1.between(pose2), sigma);
+	NonlinearFactorGraph::shared_ptr graph(new NonlinearFactorGraph());
+	graph->add(PriorFactor<Pose3>(1, pose1, sigma));
+	graph->add(BetweenFactor<Pose3>(1, 2, pose1.between(pose2), sigma));
 
 	// Create a configuration corresponding to the ground truth
-	boost::shared_ptr<Values> values(new Values());
+	Values::shared_ptr values(new Values());
 	values->insert(1, pose1);
 	values->insert(2, pose2);
 
