@@ -184,12 +184,13 @@ virtual class Point2 : gtsam::Value {
 
   // Lie Group
   static gtsam::Point2 Expmap(Vector v);
-	static Vector Logmap(const gtsam::Point2& p);
+  static Vector Logmap(const gtsam::Point2& p);
 
   // Standard Interface
   double x() const;
-	double y() const;
+  double y() const;
   Vector vector() const;
+  double dist(const gtsam::Point2& p2) const;
 };
 
 virtual class StereoPoint2 : gtsam::Value {
