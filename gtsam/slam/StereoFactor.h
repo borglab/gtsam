@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/StereoCamera.h>
 
 namespace gtsam {

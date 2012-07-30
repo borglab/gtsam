@@ -15,13 +15,16 @@
  * @author  Chris Beall
  */
 
-#include <gtsam/slam/visualSLAM.h>
 #include <gtsam/slam/StereoFactor.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/geometry/StereoCamera.h>
+#include <gtsam/geometry/Cal3_S2Stereo.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Point3.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -35,8 +38,7 @@ static Pose3 camera1(Matrix_(3,3,
 		       ),
 	      Point3(0,0,6.25));
 
-static Cal3_S2Stereo::shared_ptr K(new Cal3_S2Stereo(1500, 1500, 0, 320, 240, 0.5));
-static StereoCamera stereoCam(Pose3(), K);
+static boost::shared_ptr<Cal3_S2Stereo> K(new Cal3_S2Stereo(625, 625, 0, 320, 240, 0.5));
 
 // point X Y Z in meters
 static Point3 p(0, 0, 5);
@@ -46,20 +48,16 @@ static SharedNoiseModel sigma(noiseModel::Unit::Create(1));
 using symbol_shorthand::X;
 using symbol_shorthand::L;
 
-typedef GenericStereoFactor<Pose3, Point3> MyStereoFactor;
-
 /* ************************************************************************* */
 TEST( StereoFactor, singlePoint)
 {
-	//Cal3_S2 K(625, 625, 0, 320, 240, 0.5);
-	boost::shared_ptr<Cal3_S2Stereo> K(new Cal3_S2Stereo(625, 625, 0, 320, 240, 0.5));
 	NonlinearFactorGraph graph;
 
-	graph.add(NonlinearEquality<Pose3>(X(1),camera1));
+	graph.add(NonlinearEquality<Pose3>(X(1), camera1));
 
-	StereoPoint2 z14(320,320.0-50, 240);
+	StereoPoint2 z14(320, 320.0-50, 240);
   // arguments: measurement, sigma, cam#, measurement #, K, baseline (m)
-	graph.add(MyStereoFactor(z14,sigma, X(1), L(1), K));
+	graph.add(GenericStereoFactor<Pose3, Point3>(z14, sigma, X(1), L(1), K));
 
 	// Create a configuration corresponding to the ground truth
 	Values values;
