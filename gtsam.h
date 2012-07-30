@@ -1473,6 +1473,12 @@ typedef gtsam::GenericStereoFactor<gtsam::Pose3, gtsam::Point3> GenericStereoFac
 #include <gtsam/slam/dataset.h>
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
     gtsam::noiseModel::Diagonal* model, int maxID, bool addNoise, bool smart);
+pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
+		gtsam::noiseModel::Diagonal* model, int maxID, bool addNoise);
+pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
+		gtsam::noiseModel::Diagonal* model, int maxID);
+pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
+		gtsam::noiseModel::Diagonal* model);
 
 
 //*************************************************************************
