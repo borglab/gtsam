@@ -18,6 +18,7 @@
 #pragma once
 
 #include <vector>
+#include <deque>
 #include <stdexcept>
 #include <boost/foreach.hpp>
 
@@ -33,7 +34,7 @@ namespace gtsam {
  * factor graph.  The factor graph stores a collection of factors, each of 
  * which involves a set of variables.  In contrast, the VariableIndex is built
  * from a factor graph prior to elimination, and stores the list of factors
- * that involve each variable.  This information is stored as a vector of
+ * that involve each variable.  This information is stored as a deque of
  * lists of factor indices.
  * \nosubgrouping
  */
@@ -46,7 +47,7 @@ public:
   typedef Factors::const_iterator Factor_const_iterator;
 
 protected:
-  std::vector<Factors> index_;
+  std::deque<Factors> index_;
   size_t nFactors_; // Number of factors in the original factor graph.
   size_t nEntries_; // Sum of involved variable counts of each factor.
 
