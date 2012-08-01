@@ -747,17 +747,20 @@ ISAM2Result ISAM2::update(
 	// After the top of the tree has been redone and may have index gaps from
 	// unused keys, condense the indices to remove gaps by rearranging indices
 	// in all data structures.
-	Impl::RemoveVariables(unusedKeys, root_, theta_, variableIndex_, delta_, deltaNewton_, RgProd_,
-		deltaReplacedMask_, ordering_, Base::nodes_, linearFactors_);
-
+  if(!unusedKeys.empty()) {
+    tic(10,"remove variables");
+    Impl::RemoveVariables(unusedKeys, root_, theta_, variableIndex_, delta_, deltaNewton_, RgProd_,
+        deltaReplacedMask_, ordering_, Base::nodes_, linearFactors_);
+    toc(10,"remove variables");
+  }
   result.cliques = this->nodes().size();
   deltaDoglegUptodate_ = false;
   deltaUptodate_ = false;
 
-  tic(10,"evaluate error after");
+  tic(11,"evaluate error after");
   if(params_.evaluateNonlinearError)
     result.errorAfter.reset(nonlinearFactors_.error(calculateEstimate()));
-  toc(10,"evaluate error after");
+  toc(11,"evaluate error after");
 
   return result;
 }
