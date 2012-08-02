@@ -448,6 +448,7 @@ virtual class Cal3_S2 : gtsam::Value {
   Cal3_S2();
   Cal3_S2(double fx, double fy, double s, double u0, double v0);
 	Cal3_S2(Vector v);
+	Cal3_S2(double fov, int w, int h);
 
   // Testable
   void print(string s) const;
