@@ -6,6 +6,7 @@
 virtual class gtsam::Value;
 virtual class gtsam::Point3;
 virtual class gtsam::Rot3;
+virtual class gtsam::Pose2;
 virtual class gtsam::Pose3;
 virtual class gtsam::noiseModel::Base;
 virtual class gtsam::NonlinearFactor;
@@ -165,5 +166,21 @@ virtual class DGroundConstraint : gtsam::NonlinearFactor {
   DGroundConstraint(size_t key, Vector constraint, const gtsam::noiseModel::Base* model);
 };
 
+//*************************************************************************
+// General nonlinear factor types
+//*************************************************************************
+#include <gtsam/geometry/Pose2.h>
 
-}///\namespace gtsam
+#include <gtsam_unstable/slam/PoseTranslationPrior.h>
+template<POSE = {gtsam::Pose2,gtsam::Pose3}>
+virtual class PoseTranslationPrior : gtsam::NonlinearFactor {
+	PoseTranslationPrior(size_t key, const POSE& pose_z, const gtsam::noiseModel::Base* noiseModel);
+};
+
+#include <gtsam_unstable/slam/PoseRotationPrior.h>
+template<POSE = {gtsam::Pose2,gtsam::Pose3}>
+virtual class PoseRotationPrior : gtsam::NonlinearFactor {
+	PoseRotationPrior(size_t key, const POSE& pose_z, const gtsam::noiseModel::Base* noiseModel);
+};
+
+} //\namespace gtsam

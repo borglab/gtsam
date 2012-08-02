@@ -28,17 +28,31 @@ public:
 	GTSAM_CONCEPT_LIE_TYPE(Translation)
 
 	/** standard constructor */
-	PoseTranslationPrior(Key key, const Translation& rot_z, const SharedNoiseModel& model)
-	: Base(key, model)
-	{
-		assert(rot_z.dim() == model->dim());
+	PoseTranslationPrior(Key key, const Translation& trans_z, const SharedNoiseModel& model)
+	: Base(key, model) {
+		initialize(trans_z);
+	}
+
+	/** Constructor that pulls the translation from an incoming POSE */
+	PoseTranslationPrior(Key key, const POSE& pose_z, const SharedNoiseModel& model)
+	: Base(key, model) {
+		initialize(pose_z.translation());
+	}
+
+	/** get the rotation used to create the measurement */
+	Translation priorTranslation() const { return Translation::Expmap(this->prior_); }
+
+protected:
+	/** loads the underlying partial prior factor */
+	void initialize(const Translation& trans_z) {
+		assert(trans_z.dim() == this->noiseModel_->dim());
 
 		// Calculate the prior applied
-		this->prior_ = Translation::Logmap(rot_z);
+		this->prior_ = Translation::Logmap(trans_z);
 
 		// Create the mask for partial prior
 		size_t pose_dim = Pose::identity().dim();
-		size_t rot_dim = rot_z.dim();
+		size_t rot_dim = trans_z.dim();
 
 		// get the interval of the lie coordinates corresponding to rotation
 		std::pair<size_t, size_t> interval = Pose::translationInterval();
@@ -51,9 +65,6 @@ public:
 		this->H_ = zeros(rot_dim, pose_dim);
 		this->fillH();
 	}
-
-	/** get the rotation used to create the measurement */
-	Translation priorTranslation() const { return Translation::Expmap(this->prior_); }
 
 };
 
