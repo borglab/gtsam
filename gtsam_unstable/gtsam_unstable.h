@@ -172,15 +172,21 @@ virtual class DGroundConstraint : gtsam::NonlinearFactor {
 #include <gtsam/geometry/Pose2.h>
 
 #include <gtsam_unstable/slam/PoseTranslationPrior.h>
-template<POSE = {gtsam::Pose2,gtsam::Pose3}>
+template<POSE>
 virtual class PoseTranslationPrior : gtsam::NonlinearFactor {
 	PoseTranslationPrior(size_t key, const POSE& pose_z, const gtsam::noiseModel::Base* noiseModel);
 };
 
+typedef gtsam::PoseTranslationPrior<gtsam::Pose2> PoseTranslationPrior2D;
+typedef gtsam::PoseTranslationPrior<gtsam::Pose3> PoseTranslationPrior3D;
+
 #include <gtsam_unstable/slam/PoseRotationPrior.h>
-template<POSE = {gtsam::Pose2,gtsam::Pose3}>
+template<POSE>
 virtual class PoseRotationPrior : gtsam::NonlinearFactor {
 	PoseRotationPrior(size_t key, const POSE& pose_z, const gtsam::noiseModel::Base* noiseModel);
 };
+
+typedef gtsam::PoseRotationPrior<gtsam::Pose2> PoseRotationPrior2D;
+typedef gtsam::PoseRotationPrior<gtsam::Pose3> PoseRotationPrior3D;
 
 } //\namespace gtsam

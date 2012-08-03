@@ -1063,15 +1063,25 @@ class InvertedOrdering {
 
 class NonlinearFactorGraph {
 	NonlinearFactorGraph();
-  void print(string s) const;
-  size_t size() const;
-	double error(const gtsam::Values& c) const;
-	double probPrime(const gtsam::Values& c) const;
-	gtsam::NonlinearFactor* at(size_t i) const;
+	NonlinearFactorGraph(const gtsam::NonlinearFactorGraph& graph);
+
+	// FactorGraph
+	void print(string s) const;
+	bool equals(const gtsam::NonlinearFactorGraph& fg, double tol) const;
+	size_t size() const;
+	bool empty() const;
+	void remove(size_t i);
+	size_t nrFactors() const;
 	void add(const gtsam::NonlinearFactor* factor);
-	gtsam::Ordering* orderingCOLAMD(const gtsam::Values& c) const;
+	gtsam::NonlinearFactor* at(size_t i) const;
+
+	// NonlinearFactorGraph
+	double error(const gtsam::Values& values) const;
+	double probPrime(const gtsam::Values& values) const;
+	gtsam::Ordering* orderingCOLAMD(const gtsam::Values& values) const;
 	// Ordering* orderingCOLAMDConstrained(const gtsam::Values& c, const std::map<gtsam::Key,int>& constraints) const;
-	gtsam::GaussianFactorGraph* linearize(const gtsam::Values& c, const gtsam::Ordering& ordering) const;
+	gtsam::GaussianFactorGraph* linearize(const gtsam::Values& values,
+			const gtsam::Ordering& ordering) const;
 	gtsam::NonlinearFactorGraph clone() const;
 };
 
@@ -1380,6 +1390,29 @@ class ISAM2 {
   gtsam::Ordering getOrdering() const;
   gtsam::VariableIndex getVariableIndex() const;
   gtsam::ISAM2Params params() const;
+};
+
+#include <gtsam/nonlinear/NonlinearISAM.h>
+class NonlinearISAM {
+	NonlinearISAM();
+	NonlinearISAM(int reorderInterval);
+  void print(string s) const;
+  void printStats() const;
+  void saveGraph(string s) const;
+	gtsam::Values estimate() const;
+  Matrix marginalCovariance(size_t key) const;
+  int reorderInterval() const;
+  int reorderCounter() const;
+  void update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& initialValues);
+  void reorder_relinearize();
+  void addKey(size_t key);
+  void setOrdering(const gtsam::Ordering& new_ordering);
+
+  // These might be expensive as instead of a reference the wrapper will make a copy
+  gtsam::GaussianISAM bayesTree() const;
+  gtsam::Values getLinearizationPoint() const;
+  gtsam::Ordering getOrdering() const;
+  gtsam::NonlinearFactorGraph getFactorsUnsafe() const;
 };
 
 //*************************************************************************
