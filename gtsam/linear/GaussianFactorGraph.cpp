@@ -177,7 +177,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	// Helper functions for Combine
-	static boost::tuple<vector<size_t>, size_t, size_t> countDims(const std::vector<JacobianFactor::shared_ptr>& factors, const VariableSlots& variableSlots) {
+	static boost::tuple<vector<size_t>, size_t, size_t> countDims(const FactorGraph<JacobianFactor>& factors, const VariableSlots& variableSlots) {
 #ifndef NDEBUG
 		vector<size_t> varDims(variableSlots.size(), numeric_limits<size_t>::max());
 #else

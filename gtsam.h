@@ -187,12 +187,13 @@ virtual class Point2 : gtsam::Value {
 
   // Lie Group
   static gtsam::Point2 Expmap(Vector v);
-	static Vector Logmap(const gtsam::Point2& p);
+  static Vector Logmap(const gtsam::Point2& p);
 
   // Standard Interface
   double x() const;
-	double y() const;
+  double y() const;
   Vector vector() const;
+  double dist(const gtsam::Point2& p2) const;
 };
 
 virtual class StereoPoint2 : gtsam::Value {
@@ -450,6 +451,7 @@ virtual class Cal3_S2 : gtsam::Value {
   Cal3_S2();
   Cal3_S2(double fx, double fy, double s, double u0, double v0);
 	Cal3_S2(Vector v);
+	Cal3_S2(double fov, int w, int h);
 
   // Testable
   void print(string s) const;
@@ -1299,6 +1301,26 @@ class ISAM2DoglegParams {
   void setVerbose(bool verbose);
 };
 
+class ISAM2ThresholdMapValue {
+  ISAM2ThresholdMapValue(char c, Vector thresholds);
+  ISAM2ThresholdMapValue(const gtsam::ISAM2ThresholdMapValue& other);
+};
+
+class ISAM2ThresholdMap {
+  ISAM2ThresholdMap();
+  ISAM2ThresholdMap(const gtsam::ISAM2ThresholdMap& other);
+
+  // Note: no print function
+
+  // common STL methods
+  size_t size() const;
+  bool empty() const;
+  void clear();
+
+  // structure specific methods
+  void insert(const gtsam::ISAM2ThresholdMapValue& value) const;
+};
+
 class ISAM2Params {
   ISAM2Params();
 
@@ -1308,8 +1330,7 @@ class ISAM2Params {
   void setOptimizationParams(const gtsam::ISAM2GaussNewtonParams& params);
   void setOptimizationParams(const gtsam::ISAM2DoglegParams& params);
   void setRelinearizeThreshold(double relinearizeThreshold);
-  // TODO: wrap this
-  //void setRelinearizeThreshold(const FastMap<char,Vector>& relinearizeThreshold);
+  void setRelinearizeThreshold(const gtsam::ISAM2ThresholdMap& relinearizeThreshold);
   int getRelinearizeSkip() const;
   void setRelinearizeSkip(int relinearizeSkip);
   bool isEnableRelinearization() const;

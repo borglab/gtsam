@@ -202,7 +202,7 @@ namespace gtsam {
 		}
 
     /** return nodes */
-    Nodes nodes() const { return nodes_; }
+    const Nodes& nodes() const { return nodes_; }
 
 		/** return root clique */
 		const sharedClique& root() const { return root_;	}

@@ -2,6 +2,7 @@
 # and also build tests 
 set (gtsam_unstable_subdirs
     base 
+    geometry
     discrete
 #    linear 
     dynamics
@@ -31,6 +32,7 @@ endforeach(subdir)
 # assemble gtsam_unstable components
 set(gtsam_unstable_srcs
     ${base_srcs} 
+    ${geometry_srcs}
     ${discrete_srcs}
     ${dynamics_srcs}
     #${linear_srcs}    

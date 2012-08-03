@@ -98,6 +98,8 @@ struct ISAM2DoglegParams {
  * @addtogroup ISAM2
  * Parameters for the ISAM2 algorithm.  Default parameter values are listed below.
  */
+typedef FastMap<char,Vector> ISAM2ThresholdMap;
+typedef ISAM2ThresholdMap::value_type ISAM2ThresholdMapValue;
 struct ISAM2Params {
   typedef boost::variant<ISAM2GaussNewtonParams, ISAM2DoglegParams> OptimizationParams; ///< Either ISAM2GaussNewtonParams or ISAM2DoglegParams
   typedef boost::variant<double, FastMap<char,Vector> > RelinearizationThreshold; ///< Either a constant relinearization threshold or a per-variable-type set of thresholds
@@ -189,7 +191,12 @@ struct ISAM2Params {
     if(relinearizeThreshold.type() == typeid(double))
       std::cout << "relinearizeThreshold:              " << boost::get<double>(relinearizeThreshold) << "\n";
     else
+    {
       std::cout << "relinearizeThreshold:              " << "{mapped}" << "\n";
+      BOOST_FOREACH(const ISAM2ThresholdMapValue& value, boost::get<ISAM2ThresholdMap>(relinearizeThreshold)) {
+        std::cout << "                                   '" << value.first << "' -> [" << value.second.transpose() << " ]\n";
+      }
+    }
     std::cout << "relinearizeSkip:                   " << relinearizeSkip << "\n";
     std::cout << "enableRelinearization:             " << enableRelinearization << "\n";
     std::cout << "evaluateNonlinearError:            " << evaluateNonlinearError << "\n";

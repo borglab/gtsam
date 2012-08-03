@@ -29,9 +29,23 @@ public:
 
 	/** standard constructor */
 	PoseRotationPrior(Key key, const Rotation& rot_z, const SharedNoiseModel& model)
-	: Base(key, model)
-	{
-		assert(rot_z.dim() == model->dim());
+	: Base(key, model) {
+		initialize(rot_z);
+	}
+
+	/** Constructor that pulls the translation from an incoming POSE */
+	PoseRotationPrior(Key key, const POSE& pose_z, const SharedNoiseModel& model)
+	: Base(key, model) {
+		initialize(pose_z.rotation());
+	}
+
+	/** get the rotation used to create the measurement */
+	Rotation priorRotation() const { return Rotation::Expmap(this->prior_); }
+
+protected:
+	/** loads the underlying partial prior factor */
+	void initialize(const Rotation& rot_z) {
+		assert(rot_z.dim() == this->noiseModel_->dim());
 
 		// Calculate the prior applied
 		this->prior_ = Rotation::Logmap(rot_z);
@@ -51,9 +65,6 @@ public:
 		this->H_ = zeros(rot_dim, pose_dim);
 		this->fillH();
 	}
-
-	/** get the rotation used to create the measurement */
-	Rotation priorRotation() const { return Rotation::Expmap(this->prior_); }
 
 };
 
