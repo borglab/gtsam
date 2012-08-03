@@ -28,7 +28,7 @@ for i = 0:keys.size-1
             else
                 P = [];
             end
-            gtsam_utils.plotPose3(lastPose, P, scale);
+            gtsam.plotPose3(lastPose, P, scale);
         end
         lastIndex = i;
     end
@@ -43,7 +43,7 @@ if ~isempty(lastIndex)
     else
         P = [];
     end
-    gtsam_utils.plotPose3(lastPose, P, scale);
+    gtsam.plotPose3(lastPose, P, scale);
 end
 
 if ~holdstate

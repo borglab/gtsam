@@ -68,7 +68,7 @@ hold on
 plot([result.at(5).x;result.at(2).x],[result.at(5).y;result.at(2).y],'r-','LineWidth',2);
 marginals = Marginals(graph, result);
 
-gtsam_utils.plot2DTrajectory(result, [], marginals);
+gtsam.plot2DTrajectory(result, [], marginals);
 
 axis([-0.6 4.8 -1 1])
 axis equal

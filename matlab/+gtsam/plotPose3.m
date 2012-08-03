@@ -25,7 +25,7 @@ end
 if (nargin>2) && (~isempty(P))
     pPp = P(4:6,4:6); % covariance matrix in pose coordinate frame    
     gPp = gRp*pPp*gRp'; % convert the covariance matrix to global coordinate frame
-    gtsam_utils.covarianceEllipse3D(C,gPp);  
+    gtsam.covarianceEllipse3D(C,gPp);  
 end
     
 end

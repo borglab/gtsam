@@ -6,7 +6,7 @@ else
     plot3(p.x,p.y,p.z,color);
 end
 if exist('P', 'var')
-    gtsam_utils.covarianceEllipse3D([p.x;p.y;p.z],P);
+    gtsam.covarianceEllipse3D([p.x;p.y;p.z],P);
 end
 
 end

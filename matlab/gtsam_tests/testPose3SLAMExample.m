@@ -42,7 +42,6 @@ initial.insert(5, hexagon.at(5).retract(s*randn(6,1)));
 
 %% optimize
 import gtsam.*
-import gtsam_utils.*
 optimizer = LevenbergMarquardtOptimizer(fg, initial);
 result = optimizer.optimizeSafely;
 

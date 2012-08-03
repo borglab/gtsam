@@ -22,7 +22,7 @@ options.nrCameras = 10;
 options.showImages = false;
 
 %% Generate data
-[data,truth] = gtsam_utils.VisualISAMGenerateData(options);
+[data,truth] = gtsam.VisualISAMGenerateData(options);
 
 measurementNoiseSigma = 1.0;
 pointNoiseSigma = 0.1;
@@ -86,8 +86,8 @@ marginals = Marginals(graph, result);
 cla
 hold on;
 
-gtsam_utils.plot3DPoints(result, [], marginals);
-gtsam_utils.plot3DTrajectory(result, '*', 1, 8, marginals);
+gtsam.plot3DPoints(result, [], marginals);
+gtsam.plot3DTrajectory(result, '*', 1, 8, marginals);
 
 axis([-40 40 -40 40 -10 20]);axis equal
 view(3)

@@ -230,12 +230,12 @@ global frame_i truth data noiseModels isam result nextPoseIndex options
 initOptions(handles)
 
 % Generate Data
-[data,truth] = gtsam_utils.VisualISAMGenerateData(options);
+[data,truth] = gtsam.VisualISAMGenerateData(options);
 
 % Initialize and plot
-[noiseModels,isam,result,nextPoseIndex] = gtsam_utils.VisualISAMInitialize(data,truth,options);
+[noiseModels,isam,result,nextPoseIndex] = gtsam.VisualISAMInitialize(data,truth,options);
 cla
-gtsam_utils.VisualISAMPlot(truth, data, isam, result, options)
+gtsam.VisualISAMPlot(truth, data, isam, result, options)
 frame_i = 2;
 showFramei(hObject, handles)
 
@@ -246,10 +246,10 @@ global frame_i truth data noiseModels isam result nextPoseIndex options
 while (frame_i<size(truth.cameras,2))
     frame_i = frame_i+1;
     showFramei(hObject, handles)
-    [isam,result,nextPoseIndex] = gtsam_utils.VisualISAMStep(data,noiseModels,isam,result,truth,nextPoseIndex);
+    [isam,result,nextPoseIndex] = gtsam.VisualISAMStep(data,noiseModels,isam,result,truth,nextPoseIndex);
     if mod(frame_i,options.drawInterval)==0
         showWaiting(handles, 'Computing marginals...');
-        gtsam_utils.VisualISAMPlot(truth, data, isam, result, options)
+        gtsam.VisualISAMPlot(truth, data, isam, result, options)
         showWaiting(handles, '');
     end
 end
@@ -261,8 +261,8 @@ global frame_i truth data noiseModels isam result nextPoseIndex options
 if (frame_i<size(truth.cameras,2))
     frame_i = frame_i+1;
     showFramei(hObject, handles)
-    [isam,result,nextPoseIndex] = gtsam_utils.VisualISAMStep(data,noiseModels,isam,result,truth,nextPoseIndex);
+    [isam,result,nextPoseIndex] = gtsam.VisualISAMStep(data,noiseModels,isam,result,truth,nextPoseIndex);
     showWaiting(handles, 'Computing marginals...');
-    gtsam_utils.VisualISAMPlot(truth, data, isam, result, options)
+    gtsam.VisualISAMPlot(truth, data, isam, result, options)
     showWaiting(handles, '');
 end

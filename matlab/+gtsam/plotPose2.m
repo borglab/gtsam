@@ -9,5 +9,5 @@ quiver(pose.x,pose.y,c,s,axisLength,color);
 if nargin>2
     pPp = P(1:2,1:2); % covariance matrix in pose coordinate frame    
     gRp = [c -s;s c]; % rotation from pose to global
-    gtsam_utils.covarianceEllipse([pose.x;pose.y],gRp*pPp*gRp',color);
+    gtsam.covarianceEllipse([pose.x;pose.y],gRp*pPp*gRp',color);
 end

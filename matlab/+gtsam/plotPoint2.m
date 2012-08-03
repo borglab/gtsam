@@ -6,5 +6,5 @@ else
     plot(p.x,p.y,color);
 end
 if exist('P', 'var')
-    gtsam_utils.covarianceEllipse([p.x;p.y],P,color(1));
+    gtsam.covarianceEllipse([p.x;p.y],P,color(1));
 end

@@ -66,7 +66,6 @@ result = optimizer.optimizeSafely();
 
 %% Plot Covariance Ellipses
 import gtsam.*
-import gtsam_utils.*
 marginals = Marginals(graph, result);
 P = marginals.marginalCovariance(1);
 

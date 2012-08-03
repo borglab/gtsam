@@ -12,7 +12,7 @@
 
 %% Create a hexagon of poses
 import gtsam.*
-hexagon = gtsam_utils.circlePose2(6,1.0);
+hexagon = gtsam.circlePose2(6,1.0);
 p0 = hexagon.at(0);
 p1 = hexagon.at(1);
 
@@ -42,7 +42,7 @@ initial.insert(5, hexagon.at(5).retract([-0.1, 0.1,-0.1]'));
 %% Plot Initial Estimate
 import gtsam.*
 cla
-gtsam_utils.plot2DTrajectory(initial, 'g*-'); axis equal
+gtsam.plot2DTrajectory(initial, 'g*-'); axis equal
 
 %% optimize
 import gtsam.*
@@ -51,7 +51,7 @@ result = optimizer.optimizeSafely;
 
 %% Show Result
 import gtsam.*
-hold on; gtsam_utils.plot2DTrajectory(result, 'b*-');
+hold on; gtsam.plot2DTrajectory(result, 'b*-');
 view(2);
 axis([-1.5 1.5 -1.5 1.5]);
 result.print(sprintf('\nFinal result:\n'));

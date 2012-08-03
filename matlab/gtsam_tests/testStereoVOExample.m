@@ -68,7 +68,6 @@ result = optimizer.optimize();
 
 %% check equality for the first pose and point
 import gtsam.*
-import gtsam_utils.*
 pose_x1 = result.at(x1);
 CHECK('pose_x1.equals(first_pose,1e-4)',pose_x1.equals(first_pose,1e-4));
 

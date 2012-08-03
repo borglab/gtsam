@@ -2,7 +2,6 @@
 % eliminate
 
 import gtsam.*
-import gtsam_utils.*
 
 % the combined linear factor
 Ax2 = [

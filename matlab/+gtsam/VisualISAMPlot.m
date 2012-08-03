@@ -9,7 +9,7 @@ hold on;
 %% Plot points
 % Can't use data because current frame might not see all points
 marginals = Marginals(isam.getFactorsUnsafe(), isam.calculateEstimate()); % TODO - this is slow
-gtsam_utils.plot3DPoints(result, [], marginals);
+gtsam.plot3DPoints(result, [], marginals);
 
 %% Plot cameras
 import gtsam.*
@@ -18,13 +18,13 @@ while result.exists(symbol('x',M))
     ii = symbol('x',M);
     pose_i = result.at(ii);
     if options.hardConstraint && (M==1)
-        gtsam_utils.plotPose3(pose_i,[],10);
+        gtsam.plotPose3(pose_i,[],10);
     else
         P = marginals.marginalCovariance(ii);
-        gtsam_utils.plotPose3(pose_i,P,10);
+        gtsam.plotPose3(pose_i,P,10);
     end
     if options.drawTruePoses % show ground truth
-        gtsam_utils.plotPose3(truth.cameras{M}.pose,[],10);
+        gtsam.plotPose3(truth.cameras{M}.pose,[],10);
     end
     
     M = M + options.cameraInterval;

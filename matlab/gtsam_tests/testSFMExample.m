@@ -11,7 +11,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 import gtsam.*
-import gtsam_utils.*
 
 options.triangle = false;
 options.nrCameras = 10;
@@ -68,7 +67,6 @@ marginals.marginalCovariance(symbol('x',1));
 
 %% Check optimized results, should be equal to ground truth
 import gtsam.*
-import gtsam_utils.*
 for i=1:size(truth.cameras,2)
     pose_i = result.at(symbol('x',i));
     CHECK('pose_i.equals(truth.cameras{i}.pose,1e-5)',pose_i.equals(truth.cameras{i}.pose,1e-5))

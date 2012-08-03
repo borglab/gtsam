@@ -52,8 +52,8 @@ import gtsam.*
 cla;hold on
 marginals = Marginals(graph, sample);
 
-gtsam_utils.plot2DTrajectory(sample, [], marginals);
-gtsam_utils.plot2DPoints(sample, [], marginals);
+gtsam.plot2DTrajectory(sample, [], marginals);
+gtsam.plot2DPoints(sample, [], marginals);
 
 for j=1:2
     key = symbol('l',j);
@@ -73,5 +73,5 @@ N=1000;
 for s=1:N
     delta = S{2}*randn(2,1);
     proposedPoint = Point2(point{2}.x+delta(1),point{2}.y+delta(2));
-    gtsam_utils.plotPoint2(proposedPoint,'k.')
+    gtsam.plotPoint2(proposedPoint,'k.')
 end

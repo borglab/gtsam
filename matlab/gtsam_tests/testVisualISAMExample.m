@@ -32,15 +32,15 @@ options.saveFigures = false;
 options.saveDotFiles = false;
 
 %% Generate data
-import gtsam_utils.*
+import gtsam.*
 [data,truth] = VisualISAMGenerateData(options);
 
 %% Initialize iSAM with the first pose and points
-import gtsam_utils.*
+import gtsam.*
 [noiseModels,isam,result,nextPose] = VisualISAMInitialize(data,truth,options);
 
 %% Main loop for iSAM: stepping through all poses
-import gtsam_utils.*
+import gtsam.*
 for frame_i=3:options.nrCameras
     [isam,result,nextPose] = VisualISAMStep(data,noiseModels,isam,result,truth,nextPose);
 end

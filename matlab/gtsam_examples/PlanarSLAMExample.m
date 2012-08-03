@@ -72,8 +72,8 @@ import gtsam.*
 cla;hold on
 
 marginals = Marginals(graph, result);
-gtsam_utils.plot2DTrajectory(result, [], marginals);
-gtsam_utils.plot2DPoints(result, [], marginals);
+gtsam.plot2DTrajectory(result, [], marginals);
+gtsam.plot2DPoints(result, [], marginals);
 
 plot([result.at(i1).x; result.at(j1).x],[result.at(i1).y; result.at(j1).y], 'c-');
 plot([result.at(i2).x; result.at(j1).x],[result.at(i2).y; result.at(j1).y], 'c-');

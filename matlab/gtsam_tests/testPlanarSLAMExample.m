@@ -66,7 +66,6 @@ marginals = Marginals(graph, result);
 
 %% Check first pose and point equality
 import gtsam.*
-import gtsam_utils.*
 pose_1 = result.at(symbol('x',1));
 marginals.marginalCovariance(symbol('x',1));
 CHECK('pose_1.equals(Pose2,1e-4)',pose_1.equals(Pose2,1e-4));

@@ -31,7 +31,7 @@ for i = 0:keys.size-1
             plot([ x.x; lastPose.x ], [ x.y; lastPose.y ], linespec);
             if haveMarginals
                 P = marginals.marginalCovariance(lastKey);
-                gtsam_utils.plotPose2(lastPose, 'g', P);
+                gtsam.plotPose2(lastPose, 'g', P);
             end
         end
         lastIndex = i;
@@ -43,7 +43,7 @@ if ~isempty(lastIndex) && haveMarginals
     lastKey = keys.at(lastIndex);
     lastPose = values.at(lastKey);
     P = marginals.marginalCovariance(lastKey);
-    gtsam_utils.plotPose2(lastPose, 'g', P);
+    gtsam.plotPose2(lastPose, 'g', P);
 end
 
 if ~holdstate

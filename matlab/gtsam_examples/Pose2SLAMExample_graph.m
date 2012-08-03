@@ -11,7 +11,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Find data file
-datafile = gtsam_utils.findExampleDataFile('w100-odom.graph');
+datafile = gtsam.findExampleDataFile('w100-odom.graph');
 
 %% Initialize graph, initial estimate, and odometry noise
 import gtsam.*
@@ -31,13 +31,13 @@ graph.add(PriorFactorPose2(0, priorMean, priorNoise)); % add directly to graph
 %% Plot Initial Estimate
 import gtsam.*
 cla
-gtsam_utils.plot2DTrajectory(initial, 'g-*'); axis equal
+gtsam.plot2DTrajectory(initial, 'g-*'); axis equal
 
 %% Optimize using Levenberg-Marquardt optimization with an ordering from colamd
 import gtsam.*
 optimizer = LevenbergMarquardtOptimizer(graph, initial);
 result = optimizer.optimizeSafely;
-hold on; gtsam_utils.plot2DTrajectory(result, 'b-*');
+hold on; gtsam.plot2DTrajectory(result, 'b-*');
 result.print(sprintf('\nFinal result:\n'));
 
 %% Plot Covariance Ellipses
@@ -47,7 +47,7 @@ P={};
 for i=1:result.size()-1
     pose_i = result.at(i);
     P{i}=marginals.marginalCovariance(i);
-    gtsam_utils.plotPose2(pose_i,'b',P{i})
+    gtsam.plotPose2(pose_i,'b',P{i})
 end
 view(2)
 axis([-15 10 -15 10]); axis equal;

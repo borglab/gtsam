@@ -57,13 +57,13 @@ x_initial = [0.0;0.0];
 P_initial = 0.01*eye(2);
 
 %% Create an KF object
-import gtsam_utils.*
+import gtsam.*
 state = KF.init(x_initial, P_initial);
 EQUALITY('expected0,state.mean', expected0,state.mean);
 EQUALITY('expected0,state.mean', P00,state.covariance);
 
 %% Run iteration 1
-import gtsam_utils.*
+import gtsam.*
 state = KF.predict(state,F, B, u, modelQ);
 EQUALITY('expected1,state.mean', expected1,state.mean);
 EQUALITY('P01,state.covariance', P01,state.covariance);
@@ -72,14 +72,14 @@ EQUALITY('expected1,state.mean', expected1,state.mean);
 EQUALITY('I11,state.information', I11,state.information);
 
 %% Run iteration 2
-import gtsam_utils.*
+import gtsam.*
 state = KF.predict(state,F, B, u, modelQ);
 EQUALITY('expected2,state.mean', expected2,state.mean);
 state = KF.update(state,H,z2,modelR);
 EQUALITY('expected2,state.mean', expected2,state.mean);
 
 %% Run iteration 3
-import gtsam_utils.*
+import gtsam.*
 state = KF.predict(state,F, B, u, modelQ);
 EQUALITY('expected3,state.mean', expected3,state.mean);
 state = KF.update(state,H,z3,modelR);

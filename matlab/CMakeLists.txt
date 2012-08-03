@@ -20,7 +20,7 @@ install(DIRECTORY "${GTSAM_SOURCE_ROOT_DIR}/matlab/gtsam_examples" DESTINATION "
 
 # Utilities
 message(STATUS "Installing Matlab Toolbox Utilities")
-install(DIRECTORY "${GTSAM_SOURCE_ROOT_DIR}/matlab/+gtsam_utils" DESTINATION "${GTSAM_TOOLBOX_INSTALL_PATH}" FILES_MATCHING PATTERN "*.m")
+install(DIRECTORY "${GTSAM_SOURCE_ROOT_DIR}/matlab/+gtsam" DESTINATION "${GTSAM_TOOLBOX_INSTALL_PATH}" FILES_MATCHING PATTERN "*.m")
 
 message(STATUS "Installing Matlab Toolbox Examples (Data)")
 # Data files: *.graph and *.txt

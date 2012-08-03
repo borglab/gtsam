@@ -75,6 +75,6 @@ axis equal
 view(-38,12)
 camup([0;1;0]);
 
-gtsam_utils.plot3DTrajectory(initialEstimate, 'r', 1, 0.3);
-gtsam_utils.plot3DTrajectory(result, 'g', 1, 0.3);
-gtsam_utils.plot3DPoints(result);
+gtsam.plot3DTrajectory(initialEstimate, 'r', 1, 0.3);
+gtsam.plot3DTrajectory(result, 'g', 1, 0.3);
+gtsam.plot3DPoints(result);

@@ -52,7 +52,7 @@ import gtsam.*
 cla;
 hold on;
 
-gtsam_utils.plot2DTrajectory(result, [], Marginals(graph, result));
+gtsam.plot2DTrajectory(result, [], Marginals(graph, result));
 
 axis([-0.6 4.8 -1 1])
 axis equal
