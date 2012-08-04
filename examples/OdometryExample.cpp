@@ -80,21 +80,22 @@ int main(int argc, char** argv) {
 
   // Create the data structure to hold the initialEstimate estimate to the solution
   // For illustrative purposes, these have been deliberately set to incorrect values
-  Values initialEstimate;
-  initialEstimate.insert(1, Pose2(0.5, 0.0, 0.2));
-  initialEstimate.insert(2, Pose2(2.3, 0.1, -0.2));
-  initialEstimate.insert(3, Pose2(4.1, 0.1, 0.1));
-  initialEstimate.print("\nInitial Estimate:\n"); // print
+  Values initial;
+  initial.insert(1, Pose2(0.5, 0.0, 0.2));
+  initial.insert(2, Pose2(2.3, 0.1, -0.2));
+  initial.insert(3, Pose2(4.1, 0.1, 0.1));
+  initial.print("\nInitial Estimate:\n"); // print
 
   // optimize using Levenberg-Marquardt optimization
-  Values result = LevenbergMarquardtOptimizer(graph, initialEstimate).optimize();
+  Values result = LevenbergMarquardtOptimizer(graph, initial).optimize();
   result.print("Final Result:\n");
 
   // Calculate and print marginal covariances for all variables
+  cout.precision(2);
   Marginals marginals(graph, result);
-  cout << "Pose 1 covariance:\n" << marginals.marginalCovariance(1) << endl;
-  cout << "Pose 2 covariance:\n" << marginals.marginalCovariance(2) << endl;
-  cout << "Pose 3 covariance:\n" << marginals.marginalCovariance(3) << endl;
+  cout << "x1 covariance:\n" << marginals.marginalCovariance(1) << endl;
+  cout << "x2 covariance:\n" << marginals.marginalCovariance(2) << endl;
+  cout << "x3 covariance:\n" << marginals.marginalCovariance(3) << endl;
 
   return 0;
 }
