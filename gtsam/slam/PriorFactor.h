@@ -65,8 +65,8 @@ namespace gtsam {
 
 		/** print */
 		virtual void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-			std::cout << s << "PriorFactor on " << keyFormatter(this->key()) << ", prior value:\n";
-			prior_.print();
+			std::cout << s << "PriorFactor on " << keyFormatter(this->key()) << "\n";
+			prior_.print("  prior mean: ");
 			this->noiseModel_->print("  noise model: ");
 		}
 
