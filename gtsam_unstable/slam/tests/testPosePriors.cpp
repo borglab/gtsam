@@ -9,11 +9,11 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
+
 #include <gtsam_unstable/slam/PoseRotationPrior.h>
 #include <gtsam_unstable/slam/PoseTranslationPrior.h>
-
-#include <gtsam/slam/planarSLAM.h>
-#include <gtsam/slam/visualSLAM.h>
 
 #include <gtsam/nonlinear/Symbol.h>
 

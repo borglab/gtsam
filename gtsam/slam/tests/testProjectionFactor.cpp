@@ -16,9 +16,13 @@
  *  @date Nov 2009
  */
 
-#include <gtsam/slam/visualSLAM.h>
+#include <gtsam/slam/ProjectionFactor.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/geometry/Cal3DS2.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Point3.h>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
@@ -80,7 +84,7 @@ TEST( ProjectionFactor, error )
 	CHECK(assert_equal(expected,*actual,1e-3));
 
 	// linearize graph
-	visualSLAM::Graph graph;
+	NonlinearFactorGraph graph;
 	graph.push_back(factor);
 	FactorGraph<GaussianFactor> expected_lfg;
 	expected_lfg.push_back(actual);

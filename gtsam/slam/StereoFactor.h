@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/StereoCamera.h>
 
 namespace gtsam {
@@ -74,7 +75,7 @@ public:
 	/**
 	 * equals
 	 */
-	virtual bool equals(const NonlinearFactor& f, double tol) const {
+	virtual bool equals(const NonlinearFactor& f, double tol = 1e-9) const {
 	  const GenericStereoFactor* p = dynamic_cast<const GenericStereoFactor*> (&f);
 		return p && Base::equals(f) && measured_.equals(p->measured_, tol);
 	}
@@ -102,6 +103,8 @@ private:
 	friend class boost::serialization::access;
 	template<class Archive>
 	void serialize(Archive & ar, const unsigned int version) {
+    ar & boost::serialization::make_nvp("NoiseModelFactor2",
+        boost::serialization::base_object<Base>(*this));
 		ar & BOOST_SERIALIZATION_NVP(measured_);
 		ar & BOOST_SERIALIZATION_NVP(K_);
 	}

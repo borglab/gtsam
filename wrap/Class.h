@@ -57,7 +57,7 @@ struct Class {
   std::string qualifiedName(const std::string& delim = "") const; ///< creates a namespace-qualified name, optional delimiter
 
 	std::vector<Class> expandTemplate(const std::string& templateArg, const std::vector<std::vector<std::string> >& instantiations) const;
-	Class expandTemplate(const std::string& templateArg, const std::vector<std::string>& instantiation) const;
+	Class expandTemplate(const std::string& templateArg, const std::vector<std::string>& instantiation, const std::vector<std::string>& expandedClassNamespace, const std::string& expandedClassName) const;
 
 	// The typedef line for this class, if this class is a typedef, otherwise returns an empty string.
 	std::string getTypedef() const;

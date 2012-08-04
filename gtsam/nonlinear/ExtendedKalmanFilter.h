@@ -90,3 +90,5 @@ namespace gtsam {
 	};
 
 } // namespace
+
+#include <gtsam/nonlinear/ExtendedKalmanFilter-inl.h>

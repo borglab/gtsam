@@ -17,32 +17,35 @@
  */
 
 #include <gtsam/slam/dataset.h>
-#include <gtsam/slam/pose2SLAM.h>
+#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/nonlinear/Marginals.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/Values.h>
+#include <gtsam/geometry/Pose2.h>
 #include <boost/tuple/tuple.hpp>
 #include <cmath>
 
 using namespace std;
 using namespace gtsam;
-using namespace gtsam::noiseModel;
 
 int main(int argc, char** argv) {
 
 	// Read File and create graph and initial estimate
 	// we are in build/examples, data is in examples/Data
-	pose2SLAM::Graph::shared_ptr graph ;
-	pose2SLAM::Values::shared_ptr initial;
-	SharedDiagonal model = Diagonal::Sigmas(Vector_(3, 0.05, 0.05, 5.0*M_PI/180.0));
+	NonlinearFactorGraph::shared_ptr graph ;
+	Values::shared_ptr initial;
+	SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector_(3, 0.05, 0.05, 5.0*M_PI/180.0));
 	boost::tie(graph,initial) = load2D("../../examples/Data/w100-odom.graph",model);
 	initial->print("Initial estimate:\n");
 
 	// Add a Gaussian prior on first poses
 	Pose2 priorMean(0.0, 0.0, 0.0); // prior at origin
-	SharedDiagonal priorNoise = Diagonal::Sigmas(Vector_(3, 0.01, 0.01, 0.01));
-	graph->addPosePrior(0, priorMean, priorNoise);
+	SharedDiagonal priorNoise = noiseModel::Diagonal::Sigmas(Vector_(3, 0.01, 0.01, 0.01));
+	graph->add(PriorFactor<Pose2>(0, priorMean, priorNoise));
 
 	// Single Step Optimization using Levenberg-Marquardt
-	pose2SLAM::Values result = graph->optimize(*initial);
+	Values result = LevenbergMarquardtOptimizer(*graph, *initial).optimize();
 	result.print("\nFinal result:\n");
 
 	// Plot the covariance of the last pose

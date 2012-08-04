@@ -16,7 +16,10 @@
  */
 
 #include <tests/smallExample.h>
-#include <gtsam/slam/pose2SLAM.h>
+#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
@@ -24,6 +27,7 @@
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/NoiseModel.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/Matrix.h>
 
 #include <CppUnitLite/TestHarness.h>
@@ -174,9 +178,9 @@ TEST( NonlinearOptimizer, Factorization )
 	config.insert(X(1), Pose2(0.,0.,0.));
 	config.insert(X(2), Pose2(1.5,0.,0.));
 
-	pose2SLAM::Graph graph;
-	graph.addPosePrior(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10));
-	graph.addRelativePose(X(1),X(2), Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1));
+	NonlinearFactorGraph graph;
+	graph.add(PriorFactor<Pose2>(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10)));
+	graph.add(BetweenFactor<Pose2>(X(1),X(2), Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1)));
 
 	Ordering ordering;
 	ordering.push_back(X(1));

@@ -20,8 +20,10 @@
 #include <sstream>
 #include <cstdlib>
 
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/linear/Sampler.h>
 #include <gtsam/slam/dataset.h>
+#include <gtsam/slam/BetweenFactor.h>
 
 using namespace std;
 
@@ -30,71 +32,23 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-pair<string, boost::optional<SharedDiagonal> > dataset(const string& dataset,
-		const string& user_path) {
-	string path = user_path, set = dataset;
-	boost::optional<SharedDiagonal> null_model;
-	boost::optional<SharedDiagonal> identity(noiseModel::Unit::Create(3));
-	boost::optional<SharedDiagonal> small(
-			noiseModel::Diagonal::Variances(
-					gtsam::Vector_(3, 0.0001, 0.0001, 0.0003)));
-
-	if (path.empty())
-		path = string(getenv("HOME")) + "/data";
-	if (set.empty())
-		set = string(getenv("DATASET"));
-
-	if (set == "intel")
-		return make_pair(path + "/Intel/intel.graph", null_model);
-	if (set == "intel-gfs")
-		return make_pair(path + "/Intel/intel.gfs.graph", null_model);
-	if (set == "Killian-gfs")
-		return make_pair(path + "/Killian/Killian.gfs.graph", null_model);
-	if (set == "Killian")
-		return make_pair(path + "/Killian/Killian.graph", small);
-	if (set == "Killian-noised")
-		return make_pair(path + "/Killian/Killian-noised.graph", null_model);
-	if (set == "3")
-		return make_pair(path + "/TORO/w3-odom.graph", identity);
-	if (set == "100")
-		return make_pair(path + "/TORO/w100-odom.graph", identity);
-	if (set == "10K")
-		return make_pair(path + "/TORO/w10000-odom.graph", identity);
-	if (set == "10K2")
-		return make_pair(path + "/hogman/data/2D/w10000.graph",
-				noiseModel::Diagonal::Variances(gtsam::Vector_(3, 0.1, 0.1, 0.05)));
-	if (set == "Eiffel100")
-		return make_pair(path + "/TORO/w100-Eiffel.graph", identity);
-	if (set == "Eiffel10K")
-		return make_pair(path + "/TORO/w10000-Eiffel.graph", identity);
-	if (set == "olson")
-		return make_pair(path + "/Olson/olson06icra.graph", null_model);
-	if (set == "victoria")
-		return make_pair(path + "/VictoriaPark/victoria_park.graph", null_model);
-	if (set == "beijing")
-		return make_pair(path + "/Beijing/beijingData_trips.graph", null_model);
-
-	return make_pair("unknown", null_model);
-}
-
-/* ************************************************************************* */
-pair<pose2SLAM::Graph::shared_ptr, pose2SLAM::Values::shared_ptr> load2D(
-		pair<string, boost::optional<SharedDiagonal> > dataset,
+pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
+		pair<string, boost::optional<noiseModel::Diagonal::shared_ptr> > dataset,
 		int maxID, bool addNoise, bool smart) {
 	return load2D(dataset.first, dataset.second, maxID, addNoise, smart);
 }
 
 /* ************************************************************************* */
-pair<pose2SLAM::Graph::shared_ptr, pose2SLAM::Values::shared_ptr> load2D(
-		const string& filename, boost::optional<SharedDiagonal> model, int maxID,
+pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
+		const string& filename, boost::optional<noiseModel::Diagonal::shared_ptr> model, int maxID,
 		bool addNoise, bool smart) {
 	cout << "Will try to read " << filename << endl;
 	ifstream is(filename.c_str());
 	if (!is)
 		throw std::invalid_argument("load2D: can not find the file!");
 
-	pose2SLAM::Values::shared_ptr poses(new pose2SLAM::Values);
-	pose2SLAM::Graph::shared_ptr graph(new pose2SLAM::Graph);
+	Values::shared_ptr poses(new Values);
+	NonlinearFactorGraph::shared_ptr graph(new NonlinearFactorGraph);
 
 	string tag;
 
@@ -155,7 +109,7 @@ pair<pose2SLAM::Graph::shared_ptr, pose2SLAM::Values::shared_ptr> load2D(
 			if (!poses->exists(id2))
 				poses->insert(id2, poses->at<Pose2>(id1) * l1Xl2);
 
-			pose2SLAM::Graph::sharedFactor factor(
+			NonlinearFactor::shared_ptr factor(
 					new BetweenFactor<Pose2>(id1, id2, l1Xl2, *model));
 			graph->push_back(factor);
 		}
@@ -169,8 +123,8 @@ pair<pose2SLAM::Graph::shared_ptr, pose2SLAM::Values::shared_ptr> load2D(
 }
 
 /* ************************************************************************* */
-void save2D(const pose2SLAM::Graph& graph, const Values& config,
-		const SharedDiagonal model, const string& filename) {
+void save2D(const NonlinearFactorGraph& graph, const Values& config,
+		const noiseModel::Diagonal::shared_ptr model, const string& filename) {
 
 	fstream stream(filename.c_str(), fstream::out);
 

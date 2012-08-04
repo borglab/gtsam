@@ -119,5 +119,17 @@ struct LieVector : public Vector, public DerivedValue<LieVector> {
 	/** Logmap around identity - just returns with default cast back */
 	static inline Vector Logmap(const LieVector& p) { return p; }
 
+private:
+
+  // Serialization function
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version) {
+    ar & boost::serialization::make_nvp("LieVector",
+       boost::serialization::base_object<Value>(*this));
+    ar & boost::serialization::make_nvp("Vector",
+       boost::serialization::base_object<Vector>(*this));
+  }
+
 };
 } // \namespace gtsam

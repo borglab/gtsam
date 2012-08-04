@@ -66,6 +66,9 @@
  *       or with typedefs, e.g.
  *       template<T, U> class Class2 { ... };
  *       typedef Class2<Type1, Type2> MyInstantiatedClass;
+ *     - In the class definition, appearances of the template argument(s) will be replaced with their
+ *       instantiated types, e.g. 'void setValue(const T& value);'.
+ *     - To refer to the instantiation of the template class itself, use 'This', i.e. 'static This Create();'
  *     - To create new instantiations in other modules, you must copy-and-paste the whole class definition
  *       into the new module, but use only your new instantiation types.
  *     - When forward-declaring template instantiations, use the generated/typedefed name, e.g.
@@ -592,6 +595,43 @@ virtual class SimpleCamera : gtsam::Value {
   double range(const gtsam::Pose3& point); // FIXME, overload
 };
 
+// TODO: Add this back in when Cal3DS2 has a calibrate function
+//template<CALIBRATION = {gtsam::Cal3DS2}>
+//virtual class PinholeCamera : gtsam::Value {
+//	// Standard Constructors and Named Constructors
+//	PinholeCamera();
+//	PinholeCamera(const gtsam::Pose3& pose);
+//	PinholeCamera(const gtsam::Pose3& pose, const gtsam::Cal3DS2& K);
+//	static This Level(const gtsam::Cal3DS2& K,
+//		const gtsam::Pose2& pose, double height);
+//	static This Level(const gtsam::Pose2& pose, double height); // FIXME overload
+//	static This Lookat(const gtsam::Point3& eye,
+//		const gtsam::Point3& target, const gtsam::Point3& upVector,
+//		const gtsam::Cal3DS2& K);
+//
+//	// Testable
+//	void print(string s) const;
+//	bool equals(const This& camera, double tol) const;
+//
+//	// Standard Interface
+//	gtsam::Pose3 pose() const;
+//	CALIBRATION calibration() const;
+//
+//	// Manifold
+//	This retract(const Vector& d) const;
+//	Vector localCoordinates(const This& T2) const;
+//	size_t dim() const;
+//	static size_t Dim();
+//
+//	// Transformations and measurement functions
+//	static gtsam::Point2 project_to_camera(const gtsam::Point3& cameraPoint);
+//	pair<gtsam::Point2,bool> projectSafe(const gtsam::Point3& pw) const;
+//	gtsam::Point2 project(const gtsam::Point3& point);
+//	gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
+//	double range(const gtsam::Point3& point);
+//	double range(const gtsam::Pose3& point); // FIXME, overload
+//};
+
 //*************************************************************************
 // inference
 //*************************************************************************
@@ -985,14 +1025,9 @@ class KalmanFilter {
 //*************************************************************************
 
 #include <gtsam/nonlinear/Symbol.h>
-class Symbol {
-	Symbol(char c, size_t j);
-	Symbol(size_t k);
-	void print(string s) const;
-	size_t key() const;
-	size_t index() const;
-	char chr() const;
-};
+size_t symbol(char chr, size_t index);
+char symbolChr(size_t key);
+size_t symbolIndex(size_t key);
 
 #include <gtsam/nonlinear/Ordering.h>
 class Ordering {
@@ -1070,6 +1105,7 @@ class Values {
 	void insert(size_t j, const gtsam::Value& value);
 	bool exists(size_t j) const;
 	gtsam::Value at(size_t j) const;
+	gtsam::KeyList keys() const;
 };
 
 // Actually a FastList<Key>
@@ -1137,6 +1173,7 @@ class KeyVector {
 	void push_back(size_t key) const;
 };
 
+#include <gtsam/nonlinear/Marginals.h>
 class Marginals {
 	Marginals(const gtsam::NonlinearFactorGraph& graph,
 			const gtsam::Values& solution);
@@ -1179,10 +1216,20 @@ virtual class NonlinearOptimizerParams {
 virtual class SuccessiveLinearizationParams : gtsam::NonlinearOptimizerParams {
   SuccessiveLinearizationParams();
 
+	string getLinearSolverType() const;
+	
+	void setLinearSolverType(string solver);
+	void setOrdering(const gtsam::Ordering& ordering);
+
   bool isMultifrontal() const;
   bool isSequential() const;
   bool isCholmod() const;
   bool isCG() const;
+};
+
+#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
+virtual class GaussNewtonParams : gtsam::SuccessiveLinearizationParams {
+	GaussNewtonParams();
 };
 
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
@@ -1212,11 +1259,17 @@ virtual class DoglegParams : gtsam::SuccessiveLinearizationParams {
 };
 
 virtual class NonlinearOptimizer {
+	gtsam::Values optimize();
 	gtsam::Values optimizeSafely();
 	double error() const;
 	int iterations() const;
 	gtsam::Values values() const;
 	void iterate() const;
+};
+
+virtual class GaussNewtonOptimizer : gtsam::NonlinearOptimizer {
+	GaussNewtonOptimizer(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& initialValues);
+	GaussNewtonOptimizer(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& initialValues, const gtsam::GaussNewtonParams& params);
 };
 
 virtual class DoglegOptimizer : gtsam::NonlinearOptimizer {
@@ -1365,18 +1418,28 @@ class NonlinearISAM {
 //*************************************************************************
 // Nonlinear factor types
 //*************************************************************************
+#include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/Cal3DS2.h>
+#include <gtsam/geometry/Cal3_S2Stereo.h>
+#include <gtsam/geometry/SimpleCamera.h>
+#include <gtsam/geometry/CalibratedCamera.h>
+#include <gtsam/geometry/StereoPoint2.h>
+
+#include <gtsam/slam/PriorFactor.h>
 template<T = {gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera}>
 virtual class PriorFactor : gtsam::NonlinearFactor {
 	PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
 };
 
 
+#include <gtsam/slam/BetweenFactor.h>
 template<T = {gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
 virtual class BetweenFactor : gtsam::NonlinearFactor {
 	BetweenFactor(size_t key1, size_t key2, const T& relativePose, const gtsam::noiseModel::Base* noiseModel);
 };
 
 
+#include <gtsam/nonlinear/NonlinearEquality.h>
 template<T = {gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera}>
 virtual class NonlinearEquality : gtsam::NonlinearFactor {
 	// Constructor - forces exact evaluation
@@ -1386,6 +1449,7 @@ virtual class NonlinearEquality : gtsam::NonlinearFactor {
 };
 
 
+#include <gtsam/slam/RangeFactor.h>
 template<POSE, POINT>
 virtual class RangeFactor : gtsam::NonlinearFactor {
 	RangeFactor(size_t key1, size_t key2, double measured, const gtsam::noiseModel::Base* noiseModel);
@@ -1400,12 +1464,23 @@ typedef gtsam::RangeFactor<gtsam::SimpleCamera, gtsam::Point3> RangeFactorSimple
 typedef gtsam::RangeFactor<gtsam::CalibratedCamera, gtsam::CalibratedCamera> RangeFactorCalibratedCamera;
 typedef gtsam::RangeFactor<gtsam::SimpleCamera, gtsam::SimpleCamera> RangeFactorSimpleCamera;
 
-template<POSE, POINT, ROT>
+
+#include <gtsam/slam/BearingFactor.h>
+template<POSE, POINT, ROTATION>
 virtual class BearingFactor : gtsam::NonlinearFactor {
-	BearingFactor(size_t key1, size_t key2, const ROT& measured, const gtsam::noiseModel::Base* noiseModel);
+	BearingFactor(size_t key1, size_t key2, const ROTATION& measured, const gtsam::noiseModel::Base* noiseModel);
 };
 
 typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2> BearingFactor2D;
+
+
+#include <gtsam/slam/BearingRangeFactor.h>
+template<POSE, POINT, ROTATION>
+virtual class BearingRangeFactor : gtsam::NonlinearFactor {
+	BearingRangeFactor(size_t poseKey, size_t pointKey, const ROTATION& measuredBearing, double measuredRange, const gtsam::noiseModel::Base* noiseModel);
+};
+
+typedef gtsam::BearingRangeFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2> BearingRangeFactor2D;
 
 
 #include <gtsam/slam/ProjectionFactor.h>
@@ -1417,415 +1492,65 @@ virtual class GenericProjectionFactor : gtsam::NonlinearFactor {
 	CALIBRATION* calibration() const;
 };
 typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> GenericProjectionFactorCal3_S2;
-typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> GenericProjectionFactorCal3DS2;
+// FIXME: Add Cal3DS2 when it has a 'calibrate' function
+//typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> GenericProjectionFactorCal3DS2;
+
+
+#include <gtsam/slam/GeneralSFMFactor.h>
+template<CAMERA, LANDMARK>
+virtual class GeneralSFMFactor : gtsam::NonlinearFactor {
+	GeneralSFMFactor(const gtsam::Point2& measured, const gtsam::noiseModel::Base* model, size_t cameraKey, size_t landmarkKey);
+	gtsam::Point2 measured() const;
+};
+typedef gtsam::GeneralSFMFactor<gtsam::SimpleCamera, gtsam::Point3> GeneralSFMFactorCal3_S2;
+// FIXME: Add Cal3DS2 when it has a 'calibrate' function
+//typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3DS2, gtsam::Point3> GeneralSFMFactorCal3DS2;
+
+// FIXME: Add Cal3DS2 when it has a 'calibrate' function
+template<CALIBRATION = {gtsam::Cal3_S2}>
+virtual class GeneralSFMFactor2 : gtsam::NonlinearFactor {
+	GeneralSFMFactor2(const gtsam::Point2& measured, const gtsam::noiseModel::Base* model, size_t poseKey, size_t landmarkKey, size_t calibKey);
+	gtsam::Point2 measured() const;
+};
+
+
+#include <gtsam/slam/StereoFactor.h>
+template<POSE, LANDMARK>
+virtual class GenericStereoFactor : gtsam::NonlinearFactor {
+	GenericStereoFactor(const gtsam::StereoPoint2& measured, const gtsam::noiseModel::Base* noiseModel,
+		size_t poseKey, size_t landmarkKey, const gtsam::Cal3_S2Stereo* K);
+	gtsam::StereoPoint2 measured() const;
+	gtsam::Cal3_S2Stereo* calibration() const;
+};
+typedef gtsam::GenericStereoFactor<gtsam::Pose3, gtsam::Point3> GenericStereoFactor3D;
 
 #include <gtsam/slam/dataset.h>
-pair<pose2SLAM::Graph*, pose2SLAM::Values*> load2D(string filename,
+pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
     gtsam::noiseModel::Diagonal* model, int maxID, bool addNoise, bool smart);
+pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
+		gtsam::noiseModel::Diagonal* model, int maxID, bool addNoise);
+pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
+		gtsam::noiseModel::Diagonal* model, int maxID);
+pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
+		gtsam::noiseModel::Diagonal* model);
 
-} //\namespace gtsam
-
-//*************************************************************************
-// Pose2SLAM
-//*************************************************************************
-
-namespace pose2SLAM {
-
-#include <gtsam/slam/pose2SLAM.h>
-class Values {
-	Values();
-  Values(const pose2SLAM::Values& values);
-	size_t size() const;
-	void print(string s) const;
-  bool exists(size_t key);
-  gtsam::KeyVector keys() const; // Note the switch to KeyVector, rather than KeyList
-
-	static pose2SLAM::Values Circle(size_t n, double R);
-	void insertPose(size_t key, const gtsam::Pose2& pose);
-	void updatePose(size_t key, const gtsam::Pose2& pose);
-	gtsam::Pose2 pose(size_t i);
-  Matrix poses() const;
-};
-
-#include <gtsam/slam/pose2SLAM.h>
-class Graph {
-	Graph();
-  Graph(const gtsam::NonlinearFactorGraph& graph);
-  Graph(const pose2SLAM::Graph& graph);
-
-	// FactorGraph
-	void print(string s) const;
-	bool equals(const pose2SLAM::Graph& fg, double tol) const;
-	size_t size() const;
-	bool empty() const;
-	void remove(size_t i);
-	size_t nrFactors() const;
-	gtsam::NonlinearFactor* at(size_t i) const;
-
-	// NonlinearFactorGraph
-	double error(const pose2SLAM::Values& values) const;
-	double probPrime(const pose2SLAM::Values& values) const;
-	gtsam::Ordering* orderingCOLAMD(const pose2SLAM::Values& values) const;
-	gtsam::GaussianFactorGraph* linearize(const pose2SLAM::Values& values,
-			const gtsam::Ordering& ordering) const;
-
-	// pose2SLAM-specific
-	void addPoseConstraint(size_t key, const gtsam::Pose2& pose);
-	void addPosePrior(size_t key, const gtsam::Pose2& pose, const gtsam::noiseModel::Base* noiseModel);
-	void addRelativePose(size_t key1, size_t key2, const gtsam::Pose2& relativePoseMeasurement, const gtsam::noiseModel::Base* noiseModel);
-	pose2SLAM::Values optimize(const pose2SLAM::Values& initialEstimate, size_t verbosity) const;
-	pose2SLAM::Values optimizeSPCG(const pose2SLAM::Values& initialEstimate, size_t verbosity) const;
-	gtsam::Marginals marginals(const pose2SLAM::Values& solution) const;
-};
-
-} //\namespace pose2SLAM
 
 //*************************************************************************
-// Pose3SLAM
+// Utilities
 //*************************************************************************
 
-namespace pose3SLAM {
+namespace utilities {
 
-#include <gtsam/slam/pose3SLAM.h>
-class Values {
-	Values();
-  Values(const pose3SLAM::Values& values);
-	size_t size() const;
-	void print(string s) const;
-  bool exists(size_t key);
-  gtsam::KeyVector keys() const; // Note the switch to KeyVector, rather than KeyList
+  #include <matlab.h>
+  Matrix extractPoint2(const gtsam::Values& values);
+  Matrix extractPoint3(const gtsam::Values& values);
+  Matrix extractPose2(const gtsam::Values& values);
+  Matrix extractPose3(const gtsam::Values& values);
+  void perturbPoint2(gtsam::Values& values, double sigma, int seed);
+  void perturbPoint3(gtsam::Values& values, double sigma, int seed);
+  void insertBackprojections(gtsam::Values& values, const gtsam::SimpleCamera& c, Vector J, Matrix Z, double depth);
+  Matrix reprojectionErrors(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& values);
 
-	static pose3SLAM::Values Circle(size_t n, double R);
-	void insertPose(size_t key, const gtsam::Pose3& pose);
-	void updatePose(size_t key, const gtsam::Pose3& pose);
-	gtsam::Pose3 pose(size_t i);
-  Matrix translations() const;
-};
+} //\namespace utilities
 
-#include <gtsam/slam/pose3SLAM.h>
-class Graph {
-	Graph();
-  Graph(const gtsam::NonlinearFactorGraph& graph);
-  Graph(const pose3SLAM::Graph& graph);
-
-	// FactorGraph
-	void print(string s) const;
-	bool equals(const pose3SLAM::Graph& fg, double tol) const;
-	size_t size() const;
-	bool empty() const;
-	void remove(size_t i);
-	size_t nrFactors() const;
-	gtsam::NonlinearFactor* at(size_t i) const;
-
-	// NonlinearFactorGraph
-	double error(const pose3SLAM::Values& values) const;
-	double probPrime(const pose3SLAM::Values& values) const;
-	gtsam::Ordering* orderingCOLAMD(const pose3SLAM::Values& values) const;
-	gtsam::GaussianFactorGraph* linearize(const pose3SLAM::Values& values,
-			const gtsam::Ordering& ordering) const;
-
-	// pose3SLAM-specific
-	void addPoseConstraint(size_t i, const gtsam::Pose3& p);
-	void addPosePrior(size_t key, const gtsam::Pose3& p, const gtsam::noiseModel::Base* model);
-	void addRelativePose(size_t key1, size_t key2, const gtsam::Pose3& z, const gtsam::noiseModel::Base* model);
-	pose3SLAM::Values optimize(const pose3SLAM::Values& initialEstimate, size_t verbosity) const;
-	// FIXME gtsam::LevenbergMarquardtOptimizer optimizer(const pose3SLAM::Values& initialEstimate, const gtsam::LevenbergMarquardtParams& parameters) const;
-	gtsam::Marginals marginals(const pose3SLAM::Values& solution) const;
-};
-
-} //\namespace pose3SLAM
-
-//*************************************************************************
-// planarSLAM
-//*************************************************************************
-
-namespace planarSLAM {
-
-#include <gtsam/slam/planarSLAM.h>
-class Values {
-	Values();
-  Values(const planarSLAM::Values& values);
-	size_t size() const;
-	void print(string s) const;
-  bool exists(size_t key);
-  gtsam::KeyVector keys() const; // Note the switch to KeyVector, rather than KeyList
-
-  // inherited from pose2SLAM
-  static planarSLAM::Values Circle(size_t n, double R);
-	void insertPose(size_t key, const gtsam::Pose2& pose);
-	void updatePose(size_t key, const gtsam::Pose2& pose);
-	gtsam::Pose2 pose(size_t i);
-  Matrix poses() const;
-
-  // Access to poses
-  planarSLAM::Values allPoses() const;
-  size_t nrPoses() const;
-  gtsam::KeyVector poseKeys() const; // Note the switch to KeyVector, rather than KeyList
-
-  // Access to points
-  planarSLAM::Values allPoints() const;
-  size_t nrPoints() const;
-  gtsam::KeyVector pointKeys() const; // Note the switch to KeyVector, rather than KeyList
-
-  void insertPoint(size_t key, const gtsam::Point2& point);
-	void updatePoint(size_t key, const gtsam::Point2& point);
-	gtsam::Point2 point(size_t key) const;
-  Matrix points() const;
-};
-
-#include <gtsam/slam/planarSLAM.h>
-class Graph {
-	Graph();
-  Graph(const gtsam::NonlinearFactorGraph& graph);
-  Graph(const pose2SLAM::Graph& graph);
-  Graph(const planarSLAM::Graph& graph);
-
-	// FactorGraph
-	void print(string s) const;
-	bool equals(const planarSLAM::Graph& fg, double tol) const;
-	size_t size() const;
-	bool empty() const;
-	void remove(size_t i);
-	size_t nrFactors() const;
-	gtsam::NonlinearFactor* at(size_t i) const;
-
-	// NonlinearFactorGraph
-	double error(const planarSLAM::Values& values) const;
-	double probPrime(const planarSLAM::Values& values) const;
-	gtsam::Ordering* orderingCOLAMD(const planarSLAM::Values& values) const;
-	gtsam::GaussianFactorGraph* linearize(const planarSLAM::Values& values,
-			const gtsam::Ordering& ordering) const;
-
-	// pose2SLAM-inherited
-	void addPoseConstraint(size_t key, const gtsam::Pose2& pose);
-	void addPosePrior(size_t key, const gtsam::Pose2& pose, const gtsam::noiseModel::Base* noiseModel);
-	void addRelativePose(size_t key1, size_t key2, const gtsam::Pose2& relativePoseMeasurement, const gtsam::noiseModel::Base* noiseModel);
-	planarSLAM::Values optimize(const planarSLAM::Values& initialEstimate, size_t verbosity) const;
-	planarSLAM::Values optimizeSPCG(const planarSLAM::Values& initialEstimate, size_t verbosity) const;
-	gtsam::Marginals marginals(const planarSLAM::Values& solution) const;
-
-	// planarSLAM-specific
-  void addPointConstraint(size_t pointKey, const gtsam::Point2& p);
-  void addPointPrior(size_t pointKey, const gtsam::Point2& p, const gtsam::noiseModel::Base* model);
-	void addBearing(size_t poseKey, size_t pointKey, const gtsam::Rot2& bearing, const gtsam::noiseModel::Base* noiseModel);
-	void addRange(size_t poseKey, size_t pointKey, double range, const gtsam::noiseModel::Base* noiseModel);
-	void addBearingRange(size_t poseKey, size_t pointKey, const gtsam::Rot2& bearing,double range, const gtsam::noiseModel::Base* noiseModel);
-};
-
-#include <gtsam/slam/planarSLAM.h>
-class Odometry {
-	Odometry(size_t key1, size_t key2, const gtsam::Pose2& measured,
-			const gtsam::noiseModel::Base* model);
-	void print(string s) const;
-	gtsam::GaussianFactor* linearize(const planarSLAM::Values& center,
-			const gtsam::Ordering& ordering) const;
-};
-
-} //\namespace planarSLAM
-
-//*************************************************************************
-// VisualSLAM
-//*************************************************************************
-
-namespace visualSLAM {
-
-#include <gtsam/slam/visualSLAM.h>
-class Values {
-  Values();
-  Values(const visualSLAM::Values& values);
-  size_t size() const;
-  void print(string s) const;
-  bool exists(size_t key);
-  gtsam::KeyVector keys() const; // Note the switch to KeyVector, rather than KeyList
-
-  // pose3SLAM inherited
-	static visualSLAM::Values Circle(size_t n, double R);
-	void insertPose(size_t key, const gtsam::Pose3& pose);
-	void updatePose(size_t key, const gtsam::Pose3& pose);
-	gtsam::Pose3 pose(size_t i);
-  Matrix translations() const;
-
-  // Access to poses
-  visualSLAM::Values allPoses() const;
-  size_t nrPoses() const;
-  gtsam::KeyVector poseKeys() const; // Note the switch to KeyVector, rather than KeyList
-
-  // Access to points
-  visualSLAM::Values allPoints() const;
-  size_t nrPoints() const;
-  gtsam::KeyVector pointKeys() const; // Note the switch to KeyVector, rather than KeyList
-
-  void insertPoint(size_t key, const gtsam::Point3& pose);
-  void updatePoint(size_t key, const gtsam::Point3& pose);
-  gtsam::Point3 point(size_t j);
-  void insertBackprojections(const gtsam::SimpleCamera& c, Vector J, Matrix Z, double depth);
-  void perturbPoints(double sigma, size_t seed);
-  Matrix points() const;
-};
-
-#include <gtsam/slam/visualSLAM.h>
-class Graph {
-  Graph();
-  Graph(const gtsam::NonlinearFactorGraph& graph);
-  Graph(const pose3SLAM::Graph& graph);
-  Graph(const visualSLAM::Graph& graph);
-
-	// FactorGraph
-	void print(string s) const;
-	bool equals(const visualSLAM::Graph& fg, double tol) const;
-	size_t size() const;
-	bool empty() const;
-	void remove(size_t i);
-	size_t nrFactors() const;
-	gtsam::NonlinearFactor* at(size_t i) const;
-
-  double error(const visualSLAM::Values& values) const;
-  gtsam::Ordering* orderingCOLAMD(const visualSLAM::Values& values) const;
-  gtsam::GaussianFactorGraph* linearize(const visualSLAM::Values& values,
-      const gtsam::Ordering& ordering) const;
-
-	// pose3SLAM-inherited
-	void addPoseConstraint(size_t i, const gtsam::Pose3& p);
-	void addPosePrior(size_t key, const gtsam::Pose3& p, const gtsam::noiseModel::Base* model);
-	void addRelativePose(size_t key1, size_t key2, const gtsam::Pose3& z, const gtsam::noiseModel::Base* model);
-	visualSLAM::Values optimize(const visualSLAM::Values& initialEstimate, size_t verbosity) const;
-	visualSLAM::LevenbergMarquardtOptimizer optimizer(const visualSLAM::Values& initialEstimate, const gtsam::LevenbergMarquardtParams& parameters) const;
-	gtsam::Marginals marginals(const visualSLAM::Values& solution) const;
-
-	// Priors and constraints
-  void addPointConstraint(size_t pointKey, const gtsam::Point3& p);
-  void addPointPrior(size_t pointKey, const gtsam::Point3& p, const gtsam::noiseModel::Base* model);
-  void addRangeFactor(size_t poseKey, size_t pointKey, double range, const gtsam::noiseModel::Base* model);
-
-  // Measurements
-    void addMeasurement(const gtsam::Point2& measured,
-        const gtsam::noiseModel::Base* model, size_t poseKey, size_t pointKey,
-        const gtsam::Cal3_S2* K);
-    void addMeasurements(size_t i, Vector J, Matrix Z,
-        const gtsam::noiseModel::Base* model, const gtsam::Cal3_S2* K);
-    void addStereoMeasurement(const gtsam::StereoPoint2& measured,
-        const gtsam::noiseModel::Base* model, size_t poseKey, size_t pointKey,
-        const gtsam::Cal3_S2Stereo* K);
-
-  // Information
-  Matrix reprojectionErrors(const visualSLAM::Values& values) const;
-
-};
-
-#include <gtsam/slam/visualSLAM.h>
-class ISAM {
-	ISAM();
-	ISAM(int reorderInterval);
-  void print(string s) const;
-  void printStats() const;
-  void saveGraph(string s) const;
-	visualSLAM::Values estimate() const;
-  Matrix marginalCovariance(size_t key) const;
-  int reorderInterval() const;
-  int reorderCounter() const;
-  void update(const visualSLAM::Graph& newFactors, const visualSLAM::Values& initialValues);
-  void reorder_relinearize();
-  void addKey(size_t key);
-  void setOrdering(const gtsam::Ordering& new_ordering);
-
-  // These might be expensive as instead of a reference the wrapper will make a copy
-  gtsam::GaussianISAM bayesTree() const;
-  visualSLAM::Values getLinearizationPoint() const;
-  gtsam::Ordering getOrdering() const;
-  gtsam::NonlinearFactorGraph getFactorsUnsafe() const;
-};
-
-#include <gtsam/slam/visualSLAM.h>
-class LevenbergMarquardtOptimizer {
-  double lambda() const;
-  void iterate();
-  double error() const;
-  size_t iterations() const;
-  visualSLAM::Values optimize();
-  visualSLAM::Values optimizeSafely();
-  visualSLAM::Values values() const;
-};
-
-} //\namespace visualSLAM
-
-//************************************************************************
-// sparse BA
-//************************************************************************
-
-namespace sparseBA {
-
-#include <gtsam/slam/sparseBA.h>
-class Values {
-  Values();
-  Values(const sparseBA::Values& values);
-  size_t size() const;
-  void print(string s) const;
-  bool exists(size_t key);
-  gtsam::KeyVector keys() const;
-
-  // Access to cameras
-  sparseBA::Values allSimpleCameras() const ;
-  size_t  nrSimpleCameras() const ;
-  gtsam::KeyVector simpleCameraKeys() const ;
-  void insertSimpleCamera(size_t j, const gtsam::SimpleCamera& camera);
-  void updateSimpleCamera(size_t j, const gtsam::SimpleCamera& camera);
-  gtsam::SimpleCamera simpleCamera(size_t j) const;
-
-  // Access to points, inherited from visualSLAM
-  sparseBA::Values allPoints() const;
-  size_t nrPoints() const;
-  gtsam::KeyVector pointKeys() const; // Note the switch to KeyVector, rather than KeyList
-  void insertPoint(size_t key, const gtsam::Point3& pose);
-  void updatePoint(size_t key, const gtsam::Point3& pose);
-  gtsam::Point3 point(size_t j);
-  Matrix points() const;
-};
-
-#include <gtsam/slam/sparseBA.h>
-class Graph {
-  Graph();
-  Graph(const gtsam::NonlinearFactorGraph& graph);
-  Graph(const sparseBA::Graph& graph);
-
-  // Information
-  Matrix reprojectionErrors(const sparseBA::Values& values) const;
-
-  // inherited from FactorGraph
-  void print(string s) const;
-  bool equals(const sparseBA::Graph& fg, double tol) const;
-  size_t size() const;
-  bool empty() const;
-  void remove(size_t i);
-  size_t nrFactors() const;
-  gtsam::NonlinearFactor* at(size_t i) const;
-
-  double error(const sparseBA::Values& values) const;
-  gtsam::Ordering* orderingCOLAMD(const sparseBA::Values& values) const;
-  gtsam::GaussianFactorGraph* linearize(const sparseBA::Values& values, const gtsam::Ordering& ordering) const;
-
-  sparseBA::Values optimize(const sparseBA::Values& initialEstimate, size_t verbosity) const;
-  sparseBA::LevenbergMarquardtOptimizer optimizer(const sparseBA::Values& initialEstimate, const gtsam::LevenbergMarquardtParams& parameters) const;
-  gtsam::Marginals marginals(const sparseBA::Values& solution) const;
-
-  // inherited from visualSLAM
-  void addPointConstraint(size_t pointKey, const gtsam::Point3& p);
-  void addPointPrior(size_t pointKey, const gtsam::Point3& p, const gtsam::noiseModel::Base* model);
-
-  // add factors
-  void addSimpleCameraPrior(size_t cameraKey, const gtsam::SimpleCamera &camera, gtsam::noiseModel::Base* model);
-  void addSimpleCameraConstraint(size_t cameraKey, const gtsam::SimpleCamera &camera);
-  void addSimpleCameraMeasurement(const gtsam::Point2 &z, gtsam::noiseModel::Base* model, size_t cameraKey, size_t pointKey);
-};
-
-#include <gtsam/slam/sparseBA.h>
-class LevenbergMarquardtOptimizer {
-  double lambda() const;
-  void iterate();
-  double error() const;
-  size_t iterations() const;
-  sparseBA::Values optimize();
-  sparseBA::Values optimizeSafely();
-  sparseBA::Values values() const;
-};
-} //\namespace sparseBA
-
+}

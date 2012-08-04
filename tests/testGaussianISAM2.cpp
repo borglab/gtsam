@@ -6,15 +6,21 @@
 
 #include <gtsam/base/debug.h>
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
-#include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/JacobianFactorGraph.h>
+#include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/ISAM2.h>
+#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/slam/BearingRangeFactor.h>
 #include <tests/smallExample.h>
-#include <gtsam/slam/planarSLAM.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -39,21 +45,21 @@ SharedDiagonal brNoise = noiseModel::Diagonal::Sigmas(Vector_(2, M_PI/100.0, 0.1
 
 ISAM2 createSlamlikeISAM2(
 		boost::optional<Values&> init_values = boost::none,
-		boost::optional<planarSLAM::Graph&> full_graph = boost::none,
+		boost::optional<NonlinearFactorGraph&> full_graph = boost::none,
 		const ISAM2Params& params = ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false, true)) {
 
   // These variables will be reused and accumulate factors and values
   ISAM2 isam(params);
   Values fullinit;
-  planarSLAM::Graph fullgraph;
+  NonlinearFactorGraph fullgraph;
 
   // i keeps track of the time step
   size_t i = 0;
 
   // Add a prior at time 0 and update isam
   {
-    planarSLAM::Graph newfactors;
-    newfactors.addPosePrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
+    NonlinearFactorGraph newfactors;
+    newfactors.add(PriorFactor<Pose2>(0, Pose2(0.0, 0.0, 0.0), odoNoise));
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -65,8 +71,8 @@ ISAM2 createSlamlikeISAM2(
 
   // Add odometry from time 0 to time 5
   for( ; i<5; ++i) {
-    planarSLAM::Graph newfactors;
-    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    NonlinearFactorGraph newfactors;
+    newfactors.add(BetweenFactor<Pose2>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise));
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -78,10 +84,10 @@ ISAM2 createSlamlikeISAM2(
 
   // Add odometry from time 5 to 6 and landmark measurement at time 5
   {
-    planarSLAM::Graph newfactors;
-    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
-    newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
-    newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
+    NonlinearFactorGraph newfactors;
+    newfactors.add(BetweenFactor<Pose2>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise));
+    newfactors.add(BearingRangeFactor<Pose2,Point2>(i, 100, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise));
+    newfactors.add(BearingRangeFactor<Pose2,Point2>(i, 101, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise));
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -98,8 +104,8 @@ ISAM2 createSlamlikeISAM2(
 
   // Add odometry from time 6 to time 10
   for( ; i<10; ++i) {
-    planarSLAM::Graph newfactors;
-    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    NonlinearFactorGraph newfactors;
+    newfactors.add(BetweenFactor<Pose2>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise));
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -111,10 +117,10 @@ ISAM2 createSlamlikeISAM2(
 
   // Add odometry from time 10 to 11 and landmark measurement at time 10
   {
-    planarSLAM::Graph newfactors;
-    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
-    newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
-    newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+    NonlinearFactorGraph newfactors;
+    newfactors.add(BetweenFactor<Pose2>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise));
+    newfactors.add(BearingRangeFactor<Pose2,Point2>(i, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise));
+    newfactors.add(BearingRangeFactor<Pose2,Point2>(i, 101, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise));
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -298,8 +304,8 @@ TEST_UNSAFE(ISAM2, ImplRemoveVariables) {
 //  typedef GaussianISAM2<Values>::Impl Impl;
 //
 //  Ordering ordering; ordering += (0), (0), (1);
-//  planarSLAM::Graph graph;
-//  graph.addPosePrior((0), Pose2(), noiseModel::Unit::Create(Pose2::dimension));
+//  NonlinearFactorGraph graph;
+//  graph.add(PriorFactor<Pose2>((0), Pose2(), noiseModel::Unit::Create(Pose2::dimension));
 //  graph.addRange((0), (0), 1.0, noiseModel::Unit::Create(1));
 //
 //  FastSet<Index> expected;
@@ -378,7 +384,7 @@ TEST(ISAM2, optimize2) {
 }
 
 /* ************************************************************************* */
-bool isam_check(const planarSLAM::Graph& fullgraph, const Values& fullinit, const ISAM2& isam, Test& test, TestResult& result) {
+bool isam_check(const NonlinearFactorGraph& fullgraph, const Values& fullinit, const ISAM2& isam, Test& test, TestResult& result) {
 
 	TestResult& result_ = result;
 	const std::string name_ = test.getName();
@@ -439,7 +445,7 @@ TEST(ISAM2, slamlike_solution_gaussnewton)
 {
   // These variables will be reused and accumulate factors and values
   Values fullinit;
-  planarSLAM::Graph fullgraph;
+  NonlinearFactorGraph fullgraph;
 	ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph, ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
 
   // Compare solutions
@@ -451,7 +457,7 @@ TEST(ISAM2, slamlike_solution_dogleg)
 {
   // These variables will be reused and accumulate factors and values
   Values fullinit;
-  planarSLAM::Graph fullgraph;
+  NonlinearFactorGraph fullgraph;
 	ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph, ISAM2Params(ISAM2DoglegParams(1.0), 0.0, 0, false));
 
   // Compare solutions
@@ -463,7 +469,7 @@ TEST(ISAM2, slamlike_solution_gaussnewton_qr)
 {
   // These variables will be reused and accumulate factors and values
   Values fullinit;
-  planarSLAM::Graph fullgraph;
+  NonlinearFactorGraph fullgraph;
 	ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph, ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false, false, ISAM2Params::QR));
 
 	// Compare solutions
@@ -475,7 +481,7 @@ TEST(ISAM2, slamlike_solution_dogleg_qr)
 {
   // These variables will be reused and accumulate factors and values
   Values fullinit;
-  planarSLAM::Graph fullgraph;
+  NonlinearFactorGraph fullgraph;
 	ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph, ISAM2Params(ISAM2DoglegParams(1.0), 0.0, 0, false, false, ISAM2Params::QR));
 
   // Compare solutions
@@ -584,13 +590,13 @@ TEST(ISAM2, removeFactors)
 
   // These variables will be reused and accumulate factors and values
   Values fullinit;
-  planarSLAM::Graph fullgraph;
+  NonlinearFactorGraph fullgraph;
 	ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph, ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
 
 	// Remove the 2nd measurement on landmark 0 (Key 100)
 	FastVector<size_t> toRemove;
 	toRemove.push_back(12);
-	isam.update(planarSLAM::Graph(), Values(), toRemove);
+	isam.update(NonlinearFactorGraph(), Values(), toRemove);
 
 	// Remove the factor from the full system
 	fullgraph.remove(12);
@@ -604,14 +610,14 @@ TEST_UNSAFE(ISAM2, removeVariables)
 {
 	// These variables will be reused and accumulate factors and values
 	Values fullinit;
-	planarSLAM::Graph fullgraph;
+	NonlinearFactorGraph fullgraph;
 	ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph, ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
 
 	// Remove the measurement on landmark 0 (Key 100)
 	FastVector<size_t> toRemove;
 	toRemove.push_back(7);
 	toRemove.push_back(14);
-	isam.update(planarSLAM::Graph(), Values(), toRemove);
+	isam.update(NonlinearFactorGraph(), Values(), toRemove);
 
 	// Remove the factors and variable from the full system
 	fullgraph.remove(7);
@@ -629,7 +635,7 @@ TEST_UNSAFE(ISAM2, swapFactors)
   // then swaps the 2nd-to-last landmark measurement with a different one
 
   Values fullinit;
-  planarSLAM::Graph fullgraph;
+  NonlinearFactorGraph fullgraph;
   ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph);
 
   // Remove the measurement on landmark 0 and replace with a different one
@@ -639,15 +645,15 @@ TEST_UNSAFE(ISAM2, swapFactors)
   	toRemove.push_back(swap_idx);
   	fullgraph.remove(swap_idx);
 
-  	planarSLAM::Graph swapfactors;
-//  	swapfactors.addBearingRange(10, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise); // original factor
-  	swapfactors.addBearingRange(10, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 5.0, brNoise);
+  	NonlinearFactorGraph swapfactors;
+//  	swapfactors.add(BearingRange<Pose2,Point2>(10, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise); // original factor
+  	swapfactors.add(BearingRangeFactor<Pose2,Point2>(10, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 5.0, brNoise));
   	fullgraph.push_back(swapfactors);
   	isam.update(swapfactors, Values(), toRemove);
   }
 
   // Compare solutions
-  EXPECT(assert_equal(fullgraph, planarSLAM::Graph(isam.getFactorsUnsafe())));
+  EXPECT(assert_equal(fullgraph, NonlinearFactorGraph(isam.getFactorsUnsafe())));
   EXPECT(isam_check(fullgraph, fullinit, isam, *this, result_));
 
   // Check gradient at each node
@@ -685,7 +691,7 @@ TEST(ISAM2, constrained_ordering)
   // These variables will be reused and accumulate factors and values
   ISAM2 isam(ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
   Values fullinit;
-  planarSLAM::Graph fullgraph;
+  NonlinearFactorGraph fullgraph;
 
   // We will constrain x3 and x4 to the end
   FastMap<Key, int> constrained;
@@ -697,8 +703,8 @@ TEST(ISAM2, constrained_ordering)
 
   // Add a prior at time 0 and update isam
   {
-    planarSLAM::Graph newfactors;
-    newfactors.addPosePrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
+    NonlinearFactorGraph newfactors;
+    newfactors.add(PriorFactor<Pose2>(0, Pose2(0.0, 0.0, 0.0), odoNoise));
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -712,8 +718,8 @@ TEST(ISAM2, constrained_ordering)
 
   // Add odometry from time 0 to time 5
   for( ; i<5; ++i) {
-    planarSLAM::Graph newfactors;
-    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    NonlinearFactorGraph newfactors;
+    newfactors.add(BetweenFactor<Pose2>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise));
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -728,10 +734,10 @@ TEST(ISAM2, constrained_ordering)
 
   // Add odometry from time 5 to 6 and landmark measurement at time 5
   {
-    planarSLAM::Graph newfactors;
-    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
-    newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
-    newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
+    NonlinearFactorGraph newfactors;
+    newfactors.add(BetweenFactor<Pose2>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise));
+    newfactors.add(BearingRangeFactor<Pose2,Point2>(i, 100, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise));
+    newfactors.add(BearingRangeFactor<Pose2,Point2>(i, 101, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise));
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -748,8 +754,8 @@ TEST(ISAM2, constrained_ordering)
 
   // Add odometry from time 6 to time 10
   for( ; i<10; ++i) {
-    planarSLAM::Graph newfactors;
-    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    NonlinearFactorGraph newfactors;
+    newfactors.add(BetweenFactor<Pose2>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise));
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -761,10 +767,10 @@ TEST(ISAM2, constrained_ordering)
 
   // Add odometry from time 10 to 11 and landmark measurement at time 10
   {
-    planarSLAM::Graph newfactors;
-    newfactors.addRelativePose(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
-    newfactors.addBearingRange(i, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
-    newfactors.addBearingRange(i, 101, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+    NonlinearFactorGraph newfactors;
+    newfactors.add(BetweenFactor<Pose2>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise));
+    newfactors.add(BearingRangeFactor<Pose2,Point2>(i, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise));
+    newfactors.add(BearingRangeFactor<Pose2,Point2>(i, 101, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise));
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -816,7 +822,7 @@ TEST(ISAM2, slamlike_solution_partial_relinearization_check)
 
   // These variables will be reused and accumulate factors and values
   Values fullinit;
-  planarSLAM::Graph fullgraph;
+  NonlinearFactorGraph fullgraph;
 	ISAM2Params params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false);
 	params.enablePartialRelinearizationCheck = true;
 	ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph, params);

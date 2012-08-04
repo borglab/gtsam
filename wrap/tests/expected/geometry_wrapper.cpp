@@ -19,24 +19,24 @@ void _deleteAllObjects()
   std::streambuf *outbuf = std::cout.rdbuf(&mout);
 
   bool anyDeleted = false;
-  for(Collector_Point2::iterator iter = collector_Point2.begin();
+  { for(Collector_Point2::iterator iter = collector_Point2.begin();
       iter != collector_Point2.end(); ) {
     delete *iter;
     collector_Point2.erase(iter++);
     anyDeleted = true;
-  }
-  for(Collector_Point3::iterator iter = collector_Point3.begin();
+  } }
+  { for(Collector_Point3::iterator iter = collector_Point3.begin();
       iter != collector_Point3.end(); ) {
     delete *iter;
     collector_Point3.erase(iter++);
     anyDeleted = true;
-  }
-  for(Collector_Test::iterator iter = collector_Test.begin();
+  } }
+  { for(Collector_Test::iterator iter = collector_Test.begin();
       iter != collector_Test.end(); ) {
     delete *iter;
     collector_Test.erase(iter++);
     anyDeleted = true;
-  }
+  } }
   if(anyDeleted)
     cout <<
       "WARNING:  Wrap modules with variables in the workspace have been reloaded due to\n"
@@ -227,14 +227,14 @@ void Point3_StaticFunctionRet_15(int nargout, mxArray *out[], int nargin, const 
   typedef boost::shared_ptr<Point3> Shared;
   checkArguments("Point3.StaticFunctionRet",nargout,nargin,1);
   double z = unwrap< double >(in[0]);
-    out[0] = wrap_shared_ptr(SharedPoint3(new Point3(Point3::StaticFunctionRet(z))),"Point3", false);
+  out[0] = wrap_shared_ptr(SharedPoint3(new Point3(Point3::StaticFunctionRet(z))),"Point3", false);
 }
 
 void Point3_staticFunction_16(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<Point3> Shared;
   checkArguments("Point3.staticFunction",nargout,nargin,0);
-    out[0] = wrap< double >(Point3::staticFunction());
+  out[0] = wrap< double >(Point3::staticFunction());
 }
 
 void Test_collectorInsertAndMakeBase_17(int nargout, mxArray *out[], int nargin, const mxArray *in[])

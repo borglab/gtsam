@@ -29,42 +29,42 @@ void _deleteAllObjects()
   std::streambuf *outbuf = std::cout.rdbuf(&mout);
 
   bool anyDeleted = false;
-  for(Collector_ns1ClassA::iterator iter = collector_ns1ClassA.begin();
+  { for(Collector_ns1ClassA::iterator iter = collector_ns1ClassA.begin();
       iter != collector_ns1ClassA.end(); ) {
     delete *iter;
     collector_ns1ClassA.erase(iter++);
     anyDeleted = true;
-  }
-  for(Collector_ns1ClassB::iterator iter = collector_ns1ClassB.begin();
+  } }
+  { for(Collector_ns1ClassB::iterator iter = collector_ns1ClassB.begin();
       iter != collector_ns1ClassB.end(); ) {
     delete *iter;
     collector_ns1ClassB.erase(iter++);
     anyDeleted = true;
-  }
-  for(Collector_ns2ClassA::iterator iter = collector_ns2ClassA.begin();
+  } }
+  { for(Collector_ns2ClassA::iterator iter = collector_ns2ClassA.begin();
       iter != collector_ns2ClassA.end(); ) {
     delete *iter;
     collector_ns2ClassA.erase(iter++);
     anyDeleted = true;
-  }
-  for(Collector_ns2ns3ClassB::iterator iter = collector_ns2ns3ClassB.begin();
+  } }
+  { for(Collector_ns2ns3ClassB::iterator iter = collector_ns2ns3ClassB.begin();
       iter != collector_ns2ns3ClassB.end(); ) {
     delete *iter;
     collector_ns2ns3ClassB.erase(iter++);
     anyDeleted = true;
-  }
-  for(Collector_ns2ClassC::iterator iter = collector_ns2ClassC.begin();
+  } }
+  { for(Collector_ns2ClassC::iterator iter = collector_ns2ClassC.begin();
       iter != collector_ns2ClassC.end(); ) {
     delete *iter;
     collector_ns2ClassC.erase(iter++);
     anyDeleted = true;
-  }
-  for(Collector_ClassD::iterator iter = collector_ClassD.begin();
+  } }
+  { for(Collector_ClassD::iterator iter = collector_ClassD.begin();
       iter != collector_ClassD.end(); ) {
     delete *iter;
     collector_ClassD.erase(iter++);
     anyDeleted = true;
-  }
+  } }
   if(anyDeleted)
     cout <<
       "WARNING:  Wrap modules with variables in the workspace have been reloaded due to\n"
@@ -230,7 +230,7 @@ void ns2ClassA_afunction_12(int nargout, mxArray *out[], int nargin, const mxArr
 {
   typedef boost::shared_ptr<ns2::ClassA> Shared;
   checkArguments("ns2ClassA.afunction",nargout,nargin,0);
-    out[0] = wrap< double >(ns2::ClassA::afunction());
+  out[0] = wrap< double >(ns2::ClassA::afunction());
 }
 
 void ns2ns3ClassB_collectorInsertAndMakeBase_13(int nargout, mxArray *out[], int nargin, const mxArray *in[])

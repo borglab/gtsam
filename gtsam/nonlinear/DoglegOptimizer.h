@@ -57,6 +57,7 @@ public:
 	void setDeltaInitial(double deltaInitial) { this->deltaInitial = deltaInitial; }
 	void setVerbosityDL(const std::string& verbosityDL) { this->verbosityDL = verbosityDLTranslator(verbosityDL); }
 
+private:
 	VerbosityDL verbosityDLTranslator(const std::string& verbosityDL) const;
 	std::string verbosityDLTranslator(VerbosityDL verbosityDL) const;
 };

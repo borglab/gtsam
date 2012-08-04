@@ -18,19 +18,12 @@
 
 #pragma once
 
-#include <gtsam/slam/pose2SLAM.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/linear/NoiseModel.h>
+
 #include <string>
 
 namespace gtsam {
-	/**
-	 * Construct dataset filename from short name
-	 * Currently has "Killian" "intel.gfs", "10K", etc...
-	 * @param filename
-	 * @param optional dataset, if empty will try to getenv $DATASET
-	 * @param optional path, if empty will try to getenv $HOME
-	 */
-	std::pair<std::string, boost::optional<gtsam::SharedDiagonal> >
-	dataset(const std::string& dataset = "", const std::string& path = "");
 
 	/**
 	 * Load TORO 2D Graph
@@ -39,8 +32,8 @@ namespace gtsam {
 	 * @param addNoise add noise to the edges
 	 * @param smart try to reduce complexity of covariance to cheapest model
 	 */
-	std::pair<pose2SLAM::Graph::shared_ptr, pose2SLAM::Values::shared_ptr> load2D(
-			std::pair<std::string, boost::optional<SharedDiagonal> > dataset,
+	std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
+			std::pair<std::string, boost::optional<noiseModel::Diagonal::shared_ptr> > dataset,
 			int maxID = 0, bool addNoise = false, bool smart = true);
 
 	/**
@@ -51,15 +44,15 @@ namespace gtsam {
 	 * @param addNoise add noise to the edges
 	 * @param smart try to reduce complexity of covariance to cheapest model
 	 */
-	std::pair<pose2SLAM::Graph::shared_ptr, pose2SLAM::Values::shared_ptr> load2D(
+	std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
 			const std::string& filename,
 			boost::optional<gtsam::SharedDiagonal> model = boost::optional<
-					gtsam::SharedDiagonal>(), int maxID = 0, bool addNoise = false,
+					noiseModel::Diagonal::shared_ptr>(), int maxID = 0, bool addNoise = false,
 			bool smart = true);
 
 	/** save 2d graph */
-	void save2D(const pose2SLAM::Graph& graph, const Values& config,
-			const gtsam::SharedDiagonal model, const std::string& filename);
+	void save2D(const NonlinearFactorGraph& graph, const Values& config,
+			const noiseModel::Diagonal::shared_ptr model, const std::string& filename);
 
 	/**
 	 * Load TORO 3D Graph

@@ -31,7 +31,7 @@ public:
     MULTIFRONTAL_QR,
     SEQUENTIAL_CHOLESKY,
     SEQUENTIAL_QR,
-    CG,         /* Experimental Flag */
+    CONJUGATE_GRADIENT,         /* Experimental Flag */
     CHOLMOD,    /* Experimental Flag */
   };
 
@@ -42,21 +42,15 @@ public:
   SuccessiveLinearizationParams() : linearSolverType(MULTIFRONTAL_CHOLESKY) {}
   virtual ~SuccessiveLinearizationParams() {}
 
-  inline bool isMultifrontal() const {
-    return (linearSolverType == MULTIFRONTAL_CHOLESKY) || (linearSolverType == MULTIFRONTAL_QR);
-  }
+    inline bool isMultifrontal() const {
+    return (linearSolverType == MULTIFRONTAL_CHOLESKY) || (linearSolverType == MULTIFRONTAL_QR); }
 
   inline bool isSequential() const {
-    return (linearSolverType == SEQUENTIAL_CHOLESKY) || (linearSolverType == SEQUENTIAL_QR);
-  }
+    return (linearSolverType == SEQUENTIAL_CHOLESKY) || (linearSolverType == SEQUENTIAL_QR); }
 
-  inline bool isCholmod() const {
-    return (linearSolverType == CHOLMOD);
-  }
+  inline bool isCholmod() const { return (linearSolverType == CHOLMOD); }
 
-  inline bool isCG() const {
-    return (linearSolverType == CG);
-  }
+  inline bool isCG() const { return (linearSolverType == CONJUGATE_GRADIENT); }
 
   virtual void print(const std::string& str) const;
 
@@ -76,6 +70,33 @@ public:
       break;
     }
   }
+
+	std::string getLinearSolverType() const { return linearSolverTranslator(linearSolverType); }
+
+	void setLinearSolverType(const std::string& solver) { linearSolverType = linearSolverTranslator(solver); }
+	void setOrdering(const Ordering& ordering) { this->ordering = ordering; }
+
+private:
+	std::string linearSolverTranslator(LinearSolverType linearSolverType) const {
+		switch(linearSolverType) {
+		case MULTIFRONTAL_CHOLESKY: return "MULTIFRONTAL_CHOLESKY";
+		case MULTIFRONTAL_QR: return "MULTIFRONTAL_QR";
+		case SEQUENTIAL_CHOLESKY: return "SEQUENTIAL_CHOLESKY";
+		case SEQUENTIAL_QR: return "SEQUENTIAL_QR";
+		case CONJUGATE_GRADIENT: return "CONJUGATE_GRADIENT";
+		case CHOLMOD: return "CHOLMOD";
+		default: throw std::invalid_argument("Unknown linear solver type in SuccessiveLinearizationOptimizer");
+		}
+	}
+	LinearSolverType linearSolverTranslator(const std::string& linearSolverType) const {
+		if(linearSolverType == "MULTIFRONTAL_CHOLESKY") return MULTIFRONTAL_CHOLESKY;
+		if(linearSolverType == "MULTIFRONTAL_QR") return MULTIFRONTAL_QR;
+		if(linearSolverType == "SEQUENTIAL_CHOLESKY") return SEQUENTIAL_CHOLESKY;
+		if(linearSolverType == "SEQUENTIAL_QR") return SEQUENTIAL_QR;
+		if(linearSolverType == "CONJUGATE_GRADIENT") return CONJUGATE_GRADIENT;
+		if(linearSolverType == "CHOLMOD") return CHOLMOD;
+		throw std::invalid_argument("Unknown linear solver type in SuccessiveLinearizationOptimizer");
+	}
 };
 
 /* a wrapper for solving a GaussianFactorGraph according to the parameters */

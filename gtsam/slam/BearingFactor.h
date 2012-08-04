@@ -25,12 +25,12 @@ namespace gtsam {
 	/**
 	 * Binary factor for a bearing measurement
 	 */
-	template<class POSE, class POINT, class ROT = typename POSE::Rotation>
+	template<class POSE, class POINT, class ROTATION = typename POSE::Rotation>
 	class BearingFactor: public NoiseModelFactor2<POSE, POINT> {
 	private:
 
 		typedef POSE Pose;
-		typedef ROT Rot;
+		typedef ROTATION Rot;
 		typedef POINT Point;
 
 		typedef BearingFactor<POSE, POINT> This;

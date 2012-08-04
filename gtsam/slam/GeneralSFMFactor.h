@@ -111,6 +111,8 @@ namespace gtsam {
 		friend class boost::serialization::access;
 		template<class Archive>
 		void serialize(Archive & ar, const unsigned int version) {
+      ar & boost::serialization::make_nvp("NoiseModelFactor2",
+          boost::serialization::base_object<Base>(*this));
 			ar & BOOST_SERIALIZATION_NVP(measured_);
 		}
 	};
@@ -143,6 +145,7 @@ namespace gtsam {
      */
     GeneralSFMFactor2(const Point2& measured, const SharedNoiseModel& model, Key poseKey, Key landmarkKey, Key calibKey) :
       Base(model, poseKey, landmarkKey, calibKey), measured_(measured) {}
+    GeneralSFMFactor2():measured_(0.0,0.0) {}              ///< default constructor
 
     virtual ~GeneralSFMFactor2() {} ///< destructor
 
@@ -197,6 +200,8 @@ namespace gtsam {
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version) {
+      ar & boost::serialization::make_nvp("NoiseModelFactor3",
+          boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(measured_);
     }
   };

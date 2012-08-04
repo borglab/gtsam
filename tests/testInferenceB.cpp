@@ -17,10 +17,17 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/slam/BearingRangeFactor.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
-#include <gtsam/slam/planarSLAM.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/geometry/Rot2.h>
 
 #include <tests/smallExample.h>
 
@@ -54,16 +61,16 @@ TEST( inference, marginals )
 /* ************************************************************************* */
 TEST( inference, marginals2)
 {
-	planarSLAM::Graph fg;
+	NonlinearFactorGraph fg;
   SharedDiagonal poseModel(noiseModel::Isotropic::Sigma(3, 0.1));
   SharedDiagonal pointModel(noiseModel::Isotropic::Sigma(3, 0.1));
 
-  fg.addPosePrior(X(0), Pose2(), poseModel);
-  fg.addRelativePose(X(0), X(1), Pose2(1.0,0.0,0.0), poseModel);
-  fg.addRelativePose(X(1), X(2), Pose2(1.0,0.0,0.0), poseModel);
-  fg.addBearingRange(X(0), L(0), Rot2(), 1.0, pointModel);
-  fg.addBearingRange(X(1), L(0), Rot2(), 1.0, pointModel);
-  fg.addBearingRange(X(2), L(0), Rot2(), 1.0, pointModel);
+  fg.add(PriorFactor<Pose2>(X(0), Pose2(), poseModel));
+  fg.add(BetweenFactor<Pose2>(X(0), X(1), Pose2(1.0,0.0,0.0), poseModel));
+  fg.add(BetweenFactor<Pose2>(X(1), X(2), Pose2(1.0,0.0,0.0), poseModel));
+  fg.add(BearingRangeFactor<Pose2, Point2>(X(0), L(0), Rot2(), 1.0, pointModel));
+  fg.add(BearingRangeFactor<Pose2, Point2>(X(1), L(0), Rot2(), 1.0, pointModel));
+  fg.add(BearingRangeFactor<Pose2, Point2>(X(2), L(0), Rot2(), 1.0, pointModel));
 
   Values init;
   init.insert(X(0), Pose2(0.0,0.0,0.0));
