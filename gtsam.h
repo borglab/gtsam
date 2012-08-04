@@ -1282,6 +1282,7 @@ virtual class LevenbergMarquardtOptimizer : gtsam::NonlinearOptimizer {
 	LevenbergMarquardtOptimizer(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& initialValues);
 	LevenbergMarquardtOptimizer(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& initialValues, const gtsam::LevenbergMarquardtParams& params);
 	double lambda() const;
+  void print(string str) const;
 };
 
 #include <gtsam/nonlinear/ISAM2.h>
