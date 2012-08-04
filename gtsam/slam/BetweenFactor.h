@@ -74,7 +74,7 @@ namespace gtsam {
 	    std::cout << s << "BetweenFactor("
 	    		<< keyFormatter(this->key1()) << ","
 	    		<< keyFormatter(this->key2()) << ")\n";
-			measured_.print("  measured");
+			measured_.print("  measured: ");
 	    this->noiseModel_->print("  noise model: ");
 		}
 
