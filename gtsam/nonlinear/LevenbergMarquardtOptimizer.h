@@ -30,6 +30,7 @@ class LevenbergMarquardtOptimizer;
  * all of those parameters.
  */
 class LevenbergMarquardtParams : public SuccessiveLinearizationParams {
+
 public:
   /** See LevenbergMarquardtParams::lmVerbosity */
   enum VerbosityLM {
@@ -40,6 +41,12 @@ public:
     TRYDELTA,
     DAMPED
   };
+
+private:
+  VerbosityLM verbosityLMTranslator(const std::string &s) const;
+  std::string verbosityLMTranslator(VerbosityLM value) const;
+
+public:
 
   double lambdaInitial; ///< The initial Levenberg-Marquardt damping term (default: 1e-5)
   double lambdaFactor; ///< The amount by which to multiply or divide lambda when adjusting lambda (default: 10.0)
@@ -60,16 +67,20 @@ public:
   inline void setlambdaFactor(double value) { lambdaFactor = value; }
   inline void setlambdaUpperBound(double value) { lambdaUpperBound = value; }
   inline void setVerbosityLM(const std::string &s) { verbosityLM = verbosityLMTranslator(s); }
-
-private:
-  VerbosityLM verbosityLMTranslator(const std::string &s) const;
-  std::string verbosityLMTranslator(VerbosityLM value) const;
 };
 
 /**
  * State for LevenbergMarquardtOptimizer
  */
 class LevenbergMarquardtState : public NonlinearOptimizerState {
+
+protected:
+
+  LevenbergMarquardtState(const NonlinearFactorGraph& graph, const Values& initialValues, const LevenbergMarquardtParams& params, unsigned int iterations = 0) :
+    NonlinearOptimizerState(graph, initialValues, iterations), lambda(params.lambdaInitial) {}
+
+  friend class LevenbergMarquardtOptimizer;
+
 public:
 
   double lambda;
@@ -77,18 +88,31 @@ public:
   LevenbergMarquardtState() {}
 
   virtual ~LevenbergMarquardtState() {}
-
-protected:
-  LevenbergMarquardtState(const NonlinearFactorGraph& graph, const Values& initialValues, const LevenbergMarquardtParams& params, unsigned int iterations = 0) :
-    NonlinearOptimizerState(graph, initialValues, iterations), lambda(params.lambdaInitial) {}
-
-  friend class LevenbergMarquardtOptimizer;
 };
 
 /**
  * This class performs Levenberg-Marquardt nonlinear optimization
  */
 class LevenbergMarquardtOptimizer : public NonlinearOptimizer {
+
+protected:
+
+  LevenbergMarquardtParams params_; ///< LM parameters
+  LevenbergMarquardtState state_;   ///< optimization state
+  std::vector<size_t> dimensions_;  ///< undocumented
+
+  /** Access the parameters (base class version) */
+  virtual const NonlinearOptimizerParams& _params() const { return params_; }
+
+  /** Access the state (base class version) */
+  virtual const NonlinearOptimizerState& _state() const { return state_; }
+
+  /** Internal function for computing a COLAMD ordering if no ordering is specified */
+  LevenbergMarquardtParams ensureHasOrdering(LevenbergMarquardtParams params, const NonlinearFactorGraph& graph, const Values& values) const {
+    if(!params.ordering)
+      params.ordering = *graph.orderingCOLAMD(values);
+    return params;
+  }
 
 public:
 
@@ -122,8 +146,14 @@ public:
     params_.ordering = ordering;
     state_ = LevenbergMarquardtState(graph, initialValues, params_); }
 
-  /** Access the current damping value */
+  /// Access the current damping value
   double lambda() const { return state_.lambda; }
+
+  /// print
+  virtual void print(const std::string& str = "") const {
+    std::cout << str << "LevenbergMarquardtOptimizer" << std::endl;
+    this->params_.print("  parameters:\n");
+  }
 
   /// @}
 
@@ -146,25 +176,6 @@ public:
   const LevenbergMarquardtState& state() const { return state_; }
 
   /// @}
-
-protected:
-
-  LevenbergMarquardtParams params_;
-  LevenbergMarquardtState state_;
-  std::vector<size_t> dimensions_;
-
-  /** Access the parameters (base class version) */
-  virtual const NonlinearOptimizerParams& _params() const { return params_; }
-
-  /** Access the state (base class version) */
-  virtual const NonlinearOptimizerState& _state() const { return state_; }
-
-  /** Internal function for computing a COLAMD ordering if no ordering is specified */
-  LevenbergMarquardtParams ensureHasOrdering(LevenbergMarquardtParams params, const NonlinearFactorGraph& graph, const Values& values) const {
-    if(!params.ordering)
-      params.ordering = *graph.orderingCOLAMD(values);
-    return params;
-  }
 };
 
 }
