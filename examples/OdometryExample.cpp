@@ -22,10 +22,8 @@
  *  - We have full odometry between poses
  */
 
-// As this is a planar SLAM example, we will use Pose2 variables (x, y, theta) to represent
-// the robot positions
+// We will use Pose2 variables (x, y, theta) to represent the robot positions
 #include <gtsam/geometry/Pose2.h>
-#include <gtsam/geometry/Point2.h>
 
 // In GTSAM, measurement functions are represented as 'factors'. Several common factors
 // have been provided with the library for solving robotics/SLAM/Bundle Adjustment problems.

@@ -23,25 +23,16 @@
  *  - We have "GPS-like" measurements implemented with a custom factor
  */
 
-// As this is a planar SLAM example, we will use Pose2 variables (x, y, theta) to represent
-// the robot positions
+// We will use Pose2 variables (x, y, theta) to represent the robot positions
 #include <gtsam/geometry/Pose2.h>
 
-// Each variable in the system (poses) must be identified with a unique key.
-// We can either use simple integer keys (1, 2, 3, ...) or symbols (X1, X2, L1).
-// Here we will use simple integer keys
+// We will use simple integer Keys to refer to the robot poses.
 #include <gtsam/nonlinear/Key.h>
 
-// In GTSAM, measurement functions are represented as 'factors'. Several common factors
-// have been provided with the library for solving robotics/SLAM/Bundle Adjustment problems.
-// Here we will use Between factors for the relative motion described by odometry measurements.
-// Because we have global measurements in the form of "GPS-like" measurements, we don't
-// actually need to provide an initial position prior in this example. We will create our
-// custom factor shortly.
+// As in OdometryExample.cpp, we use a BetweenFactor to model odometry measurements.
 #include <gtsam/slam/BetweenFactor.h>
 
-// When the factors are created, we will add them to a Factor Graph. As the factors we are using
-// are nonlinear factors, we will need a Nonlinear Factor Graph.
+// We add all facors to a Nonlinear Factor Graph, as our factors are nonlinear.
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 // The nonlinear solvers within GTSAM are iterative solvers, meaning they linearize the
@@ -61,10 +52,8 @@
 // of desired variables
 #include <gtsam/nonlinear/Marginals.h>
 
-
 using namespace std;
 using namespace gtsam;
-
 
 // Before we begin the example, we must create a custom unary factor to implement a
 // "GPS-like" functionality. Because standard GPS measurements provide information
@@ -75,10 +64,12 @@ using namespace gtsam;
 // also use a standard Gaussian noise model. Hence, we will derive our new factor from
 // the NoiseModelFactor1.
 #include <gtsam/nonlinear/NonlinearFactor.h>
+
 class UnaryFactor: public NoiseModelFactor1<Pose2> {
 
   // The factor will hold a measurement consisting of an (X,Y) location
-  Point2 measurement_;
+  // We could this with a Point2 but here we just use two doubles
+  double mx_, my_;
 
 public:
   /// shorthand for a smart pointer to a factor
@@ -86,15 +77,15 @@ public:
 
   // The constructor requires the variable key, the (X, Y) measurement value, and the noise model
   UnaryFactor(Key j, double x, double y, const SharedNoiseModel& model):
-    NoiseModelFactor1<Pose2>(model, j), measurement_(x, y) {}
+    NoiseModelFactor1<Pose2>(model, j), mx_(x), my_(y) {}
 
   virtual ~UnaryFactor() {}
 
-  // By using the NoiseModelFactor base classes, the only two function that must be overridden.
+  // Using the NoiseModelFactor1 base class there are two functions that must be overridden.
   // The first is the 'evaluateError' function. This function implements the desired measurement
   // function, returning a vector of errors when evaluated at the provided variable value. It
   // must also calculate the Jacobians for this measurement function, if requested.
-  Vector evaluateError(const Pose2& pose, boost::optional<Matrix&> H = boost::none) const
+  Vector evaluateError(const Pose2& q, boost::optional<Matrix&> H = boost::none) const
   {
     // The measurement function for a GPS-like measurement is simple:
     // error_x = pose.x - measurement.x
@@ -102,10 +93,8 @@ public:
     // Consequently, the Jacobians are:
     // [ derror_x/dx  derror_x/dy  derror_x/dtheta ] = [1 0 0]
     // [ derror_y/dx  derror_y/dy  derror_y/dtheta ] = [0 1 0]
-    if (H)
-      (*H) = Matrix_(2,3, 1.0,0.0,0.0, 0.0,1.0,0.0);
-
-    return Vector_(2, pose.x() - measurement_.x(), pose.y() - measurement_.y());
+    if (H) (*H) = Matrix_(2,3, 1.0,0.0,0.0, 0.0,1.0,0.0);
+    return Vector_(2, q.x() - mx_, q.y() - my_);
   }
 
   // The second is a 'clone' function that allows the factor to be copied. Under most
@@ -115,22 +104,11 @@ public:
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new UnaryFactor(*this))); }
 
-  // Additionally, custom factors should really provide specific implementations of
-  // 'equals' to ensure proper operation will all GTSAM functionality, and a custom
-  // 'print' function, if desired.
-  virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
-    const UnaryFactor* e = dynamic_cast<const UnaryFactor*> (&expected);
-    return e != NULL && NoiseModelFactor1::equals(*e, tol) && this->measurement_.equals(e->measurement_, tol);
-  }
+  // Additionally, we encourage you the use of unit testing your custom factors,
+  // (as all GTSAM factors are), in which you would need an equals and print, to satisfy the
+  // GTSAM_CONCEPT_TESTABLE_INST(T) defined in Testable.h, but these are not needed below.
 
-  virtual void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-    std::cout << s << "UnaryFactor(" << keyFormatter(this->key()) << ")\n";
-    measurement_.print("  measurement: ");
-    this->noiseModel_->print("  noise model: ");
-  }
-
-};
-
+}; // UnaryFactor
 
 
 int main(int argc, char** argv) {
@@ -148,8 +126,9 @@ int main(int argc, char** argv) {
   // 2b. Add "GPS-like" measurements
   // We will use our custom UnaryFactor for this.
   noiseModel::Diagonal::shared_ptr unaryNoise = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1)); // 10cm std on x,y
-  graph.add(UnaryFactor(1, 0.0, 0.0, unaryNoise));
-  graph.add(UnaryFactor(3, 4.0, 0.0, unaryNoise));
+  graph.push_back(boost::make_shared<UnaryFactor>(1, 0.0, 0.0, unaryNoise));
+  graph.push_back(boost::make_shared<UnaryFactor>(2, 2.0, 0.0, unaryNoise));
+  graph.push_back(boost::make_shared<UnaryFactor>(3, 4.0, 0.0, unaryNoise));
   graph.print("\nFactor Graph:\n"); // print
 
   // 3. Create the data structure to hold the initialEstimate estimate to the solution
@@ -172,9 +151,9 @@ int main(int argc, char** argv) {
 
   // 5. Calculate and print marginal covariances for all variables
   Marginals marginals(graph, result);
-  cout << "Pose 1 covariance:\n" << marginals.marginalCovariance(1) << endl;
-  cout << "Pose 2 covariance:\n" << marginals.marginalCovariance(2) << endl;
-  cout << "Pose 3 covariance:\n" << marginals.marginalCovariance(3) << endl;
+  cout << "x1 covariance:\n" << marginals.marginalCovariance(1) << endl;
+  cout << "x2 covariance:\n" << marginals.marginalCovariance(2) << endl;
+  cout << "x3 covariance:\n" << marginals.marginalCovariance(3) << endl;
 
   return 0;
 }
