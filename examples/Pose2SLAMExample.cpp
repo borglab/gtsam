@@ -25,14 +25,10 @@
  *  - We have a loop closure constraint when the robot returns to the first position
  */
 
-// As this is a planar SLAM example, we will use Pose2 variables (x, y, theta) to represent
-// the robot positions
+// In planar SLAM example we use Pose2 variables (x, y, theta) to represent the robot poses
 #include <gtsam/geometry/Pose2.h>
-#include <gtsam/geometry/Point2.h>
 
-// Each variable in the system (poses) must be identified with a unique key.
-// We can either use simple integer keys (1, 2, 3, ...) or symbols (X1, X2, L1).
-// Here we will use simple integer keys
+// We will use simple integer Keys to refer to the robot poses.
 #include <gtsam/nonlinear/Key.h>
 
 // In GTSAM, measurement functions are represented as 'factors'. Several common factors
@@ -75,37 +71,34 @@ int main(int argc, char** argv) {
 
 	// 2a. Add a prior on the first pose, setting it to the origin
 	// A prior factor consists of a mean and a noise model (covariance matrix)
-	Pose2 prior(0.0, 0.0, 0.0); // prior at origin
 	noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas(Vector_(3, 0.3, 0.3, 0.1));
-	graph.add(PriorFactor<Pose2>(1, prior, priorNoise));
+	graph.add(PriorFactor<Pose2>(1, Pose2(0, 0, 0), priorNoise));
+
+	// For simplicity, we will use the same noise model for odometry and loop closures
+	noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Sigmas(Vector_(3, 0.2, 0.2, 0.1));
 
 	// 2b. Add odometry factors
-	// For simplicity, we will use the same noise model for each odometry factor
-	noiseModel::Diagonal::shared_ptr odometryNoise = noiseModel::Diagonal::Sigmas(Vector_(3, 0.2, 0.2, 0.1));
 	// Create odometry (Between) factors between consecutive poses
-	graph.add(BetweenFactor<Pose2>(1, 2, Pose2(2.0, 0.0, M_PI_2), odometryNoise));
-	graph.add(BetweenFactor<Pose2>(2, 3, Pose2(2.0, 0.0, M_PI_2), odometryNoise));
-	graph.add(BetweenFactor<Pose2>(3, 4, Pose2(2.0, 0.0, M_PI_2), odometryNoise));
-	graph.add(BetweenFactor<Pose2>(4, 5, Pose2(2.0, 0.0, M_PI_2), odometryNoise));
+	graph.add(BetweenFactor<Pose2>(1, 2, Pose2(2, 0, 0     ), model));
+	graph.add(BetweenFactor<Pose2>(2, 3, Pose2(2, 0, M_PI_2), model));
+	graph.add(BetweenFactor<Pose2>(3, 4, Pose2(2, 0, M_PI_2), model));
+	graph.add(BetweenFactor<Pose2>(4, 5, Pose2(2, 0, M_PI_2), model));
 
 	// 2c. Add the loop closure constraint
 	// This factor encodes the fact that we have returned to the same pose. In real systems,
 	// these constraints may be identified in many ways, such as appearance-based techniques
-	// with camera images.
-	// We will use another Between Factor to enforce this constraint, with the distance set to zero,
-	noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Sigmas(Vector_(3, 0.2, 0.2, 0.1));
-	graph.add(BetweenFactor<Pose2>(5, 1, Pose2(0.0, 0.0, 0.0), model));
+	// with camera images. We will use another Between Factor to enforce this constraint:
+	graph.add(BetweenFactor<Pose2>(5, 2, Pose2(2, 0, M_PI_2), model));
 	graph.print("\nFactor Graph:\n"); // print
-
 
 	// 3. Create the data structure to hold the initialEstimate estimate to the solution
 	// For illustrative purposes, these have been deliberately set to incorrect values
 	Values initialEstimate;
-	initialEstimate.insert(1, Pose2(0.5, 0.0, 0.2));
-	initialEstimate.insert(2, Pose2(2.3, 0.1, 1.1));
-	initialEstimate.insert(3, Pose2(2.1, 1.9, 2.8));
-	initialEstimate.insert(4, Pose2(-.3, 2.5, 4.2));
-	initialEstimate.insert(5, Pose2(0.1,-0.7, 5.8));
+	initialEstimate.insert(1, Pose2(0.5, 0.0,  0.2   ));
+	initialEstimate.insert(2, Pose2(2.3, 0.1, -0.2   ));
+	initialEstimate.insert(3, Pose2(4.1, 0.1,  M_PI_2));
+	initialEstimate.insert(4, Pose2(4.0, 2.0,  M_PI  ));
+	initialEstimate.insert(5, Pose2(2.1, 2.1, -M_PI_2));
 	initialEstimate.print("\nInitial Estimate:\n"); // print
 
   // 4. Optimize the initial values using a Gauss-Newton nonlinear optimizer
@@ -125,12 +118,13 @@ int main(int argc, char** argv) {
   result.print("Final Result:\n");
 
   // 5. Calculate and print marginal covariances for all variables
+  cout.precision(3);
   Marginals marginals(graph, result);
-  cout << "Pose 1 covariance:\n" << marginals.marginalCovariance(1) << endl;
-  cout << "Pose 2 covariance:\n" << marginals.marginalCovariance(2) << endl;
-  cout << "Pose 3 covariance:\n" << marginals.marginalCovariance(3) << endl;
-  cout << "Pose 4 covariance:\n" << marginals.marginalCovariance(4) << endl;
-  cout << "Pose 5 covariance:\n" << marginals.marginalCovariance(5) << endl;
+  cout << "x1 covariance:\n" << marginals.marginalCovariance(1) << endl;
+  cout << "x2 covariance:\n" << marginals.marginalCovariance(2) << endl;
+  cout << "x3 covariance:\n" << marginals.marginalCovariance(3) << endl;
+  cout << "x4 covariance:\n" << marginals.marginalCovariance(4) << endl;
+  cout << "x5 covariance:\n" << marginals.marginalCovariance(5) << endl;
 
 	return 0;
 }
