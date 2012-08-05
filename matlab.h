@@ -108,6 +108,19 @@ namespace gtsam {
       }
     }
 
+    /// insert multiple projection factors for a single pose key
+    void insertProjectionFactors(NonlinearFactorGraph& graph, Key i, const Vector& J, const Matrix& Z,
+        const SharedNoiseModel& model, const shared_ptrK K) {
+      if (Z.rows() != 2) throw std::invalid_argument("addMeasurements: Z must be 2*K");
+      if (Z.cols() != J.size()) throw std::invalid_argument(
+            "addMeasurements: J and Z must have same number of entries");
+      for (int k = 0; k < Z.cols(); k++) {
+        graph.push_back(
+            make_shared<GenericProjectionFactor<Pose3, Point3> >
+            (Point2(Z(0, k), Z(1, k)), model, i, J(k), K));
+      }
+    }
+
     /// calculate the errors of all projection factors in a graph
     Matrix reprojectionErrors(const NonlinearFactorGraph& graph, const Values& values) {
       // first count
