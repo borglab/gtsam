@@ -10,10 +10,11 @@
 % @author Chris Beall
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% Load calibration
 import gtsam.*
+
+%% Load calibration
 % format: fx fy skew cx cy baseline
-calib = dlmread(gtsam.findExampleDataFile('VO_calibration.txt'));
+calib = dlmread(findExampleDataFile('VO_calibration.txt'));
 K = Cal3_S2Stereo(calib(1), calib(2), calib(3), calib(4), calib(5), calib(6));
 stereo_model = noiseModel.Diagonal.Sigmas([1.0; 1.0; 1.0]);
 
@@ -24,9 +25,8 @@ initial = Values;
 
 %% load the initial poses from VO
 % row format: camera_id 4x4 pose (row, major)
-import gtsam.*
 fprintf(1,'Reading data\n');
-cameras = dlmread(gtsam.findExampleDataFile('VO_camera_poses_large.txt'));
+cameras = dlmread(findExampleDataFile('VO_camera_poses_large.txt'));
 for i=1:size(cameras,1)
     pose = Pose3(reshape(cameras(i,2:17),4,4)');
     initial.insert(symbol('x',cameras(i,1)),pose);
@@ -34,8 +34,7 @@ end
 
 %% load stereo measurements and initialize landmarks
 % camera_id landmark_id uL uR v X Y Z
-import gtsam.*
-measurements = dlmread(gtsam.findExampleDataFile('VO_stereo_factors_large.txt'));
+measurements = dlmread(findExampleDataFile('VO_stereo_factors_large.txt'));
 
 fprintf(1,'Creating Graph\n'); tic
 for i=1:size(measurements,1)
@@ -54,13 +53,11 @@ end
 toc
 
 %% add a constraint on the starting pose
-import gtsam.*
 key = symbol('x',1);
 first_pose = initial.at(key);
 graph.add(NonlinearEqualityPose3(key, first_pose));
 
 %% optimize
-import gtsam.*
 fprintf(1,'Optimizing\n'); tic
 optimizer = LevenbergMarquardtOptimizer(graph, initial);
 result = optimizer.optimizeSafely();
@@ -69,9 +66,9 @@ toc
 %% visualize initial trajectory, final trajectory, and final points
 cla; hold on;
 
-gtsam.plot3DTrajectory(initial, 'r', 1, 0.5);
-gtsam.plot3DTrajectory(result, 'g', 1, 0.5);
-gtsam.plot3DPoints(result);
+plot3DTrajectory(initial, 'r', 1, 0.5);
+plot3DTrajectory(result, 'g', 1, 0.5);
+plot3DPoints(result);
 
 axis([-5 20 -20 20 0 100]);
 axis equal

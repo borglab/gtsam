@@ -10,6 +10,8 @@
 % @author Yong-Dian Jian
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+import gtsam.*
+
 %% Assumptions
 %  - All values are axis aligned
 %  - Robot poses are facing along the X axis (horizontal, to the right in images)
@@ -20,14 +22,12 @@
 graph = NonlinearFactorGraph;
 
 %% Add prior
-import gtsam.*
 % gaussian for prior
 priorMean = Pose2(0.0, 0.0, 0.0); % prior at origin
 priorNoise = noiseModel.Diagonal.Sigmas([0.3; 0.3; 0.1]);
 graph.add(PriorFactorPose2(1, priorMean, priorNoise)); % add directly to graph
 
 %% Add odometry
-import gtsam.*
 % general noisemodel for odometry
 odometryNoise = noiseModel.Diagonal.Sigmas([0.2; 0.2; 0.1]);
 graph.add(BetweenFactorPose2(1, 2, Pose2(2.0, 0.0, 0.0 ), odometryNoise));
@@ -36,7 +36,6 @@ graph.add(BetweenFactorPose2(3, 4, Pose2(2.0, 0.0, pi/2), odometryNoise));
 graph.add(BetweenFactorPose2(4, 5, Pose2(2.0, 0.0, pi/2), odometryNoise));
 
 %% Add pose constraint
-import gtsam.*
 model = noiseModel.Diagonal.Sigmas([0.2; 0.2; 0.1]);
 graph.add(BetweenFactorPose2(5, 2, Pose2(2.0, 0.0, pi/2), model));
 

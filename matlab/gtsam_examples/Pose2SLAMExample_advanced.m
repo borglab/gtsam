@@ -14,6 +14,8 @@
 % @author Can Erdogan
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+import gtsam.*
+
 %% Assumptions
 %  - All values are axis aligned
 %  - Robot poses are facing along the X axis (horizontal, to the right in images)
@@ -24,14 +26,12 @@
 graph = NonlinearFactorGraph;
 
 %% Add prior
-import gtsam.*
 % gaussian for prior
 priorNoise = noiseModel.Diagonal.Sigmas([0.3; 0.3; 0.1]);
 priorMean = Pose2(0.0, 0.0, 0.0); % prior at origin
 graph.add(PriorFactorPose2(1, priorMean, priorNoise)); % add directly to graph
 
 %% Add odometry
-import gtsam.*
 % general noisemodel for odometry
 odometryNoise = noiseModel.Diagonal.Sigmas([0.2; 0.2; 0.1]);
 odometry = Pose2(2.0, 0.0, 0.0); % create a measurement for both factors (the same in this case)
@@ -39,7 +39,6 @@ graph.add(BetweenFactorPose2(1, 2, odometry, odometryNoise));
 graph.add(BetweenFactorPose2(2, 3, odometry, odometryNoise));
 
 %% Add measurements
-import gtsam.*
 % general noisemodel for measurements
 measurementNoise = noiseModel.Diagonal.Sigmas([0.1; 0.2]);
 
@@ -47,7 +46,6 @@ measurementNoise = noiseModel.Diagonal.Sigmas([0.1; 0.2]);
 graph.print('full graph');
 
 %% Initialize to noisy points
-import gtsam.*
 initialEstimate = Values;
 initialEstimate.insert(1, Pose2(0.5, 0.0, 0.2));
 initialEstimate.insert(2, Pose2(2.3, 0.1,-0.2));

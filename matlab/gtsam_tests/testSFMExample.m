@@ -25,7 +25,6 @@ poseNoiseSigmas = [0.001 0.001 0.001 0.1 0.1 0.1]';
 graph = NonlinearFactorGraph;
 
 %% Add factors for all measurements
-import gtsam.*
 measurementNoise = noiseModel.Isotropic.Sigma(2,measurementNoiseSigma);
 for i=1:length(data.Z)
     for k=1:length(data.Z{i})
@@ -40,7 +39,6 @@ pointPriorNoise  = noiseModel.Isotropic.Sigma(3,pointNoiseSigma);
 graph.add(PriorFactorPoint3(symbol('p',1), truth.points{1}, pointPriorNoise));
 
 %% Initial estimate
-import gtsam.*
 initialEstimate = Values;
 for i=1:size(truth.cameras,2)
     pose_i = truth.cameras{i}.pose;
@@ -52,7 +50,6 @@ for j=1:size(truth.points,2)
 end
 
 %% Optimization
-import gtsam.*
 optimizer = LevenbergMarquardtOptimizer(graph, initialEstimate);
 for i=1:5
     optimizer.iterate();
@@ -60,13 +57,11 @@ end
 result = optimizer.values();
 
 %% Marginalization
-import gtsam.*
 marginals = Marginals(graph, result);
 marginals.marginalCovariance(symbol('p',1));
 marginals.marginalCovariance(symbol('x',1));
 
 %% Check optimized results, should be equal to ground truth
-import gtsam.*
 for i=1:size(truth.cameras,2)
     pose_i = result.at(symbol('x',i));
     CHECK('pose_i.equals(truth.cameras{i}.pose,1e-5)',pose_i.equals(truth.cameras{i}.pose,1e-5))

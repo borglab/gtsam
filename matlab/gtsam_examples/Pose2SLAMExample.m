@@ -12,13 +12,13 @@
 % @author Chris Beall
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+import gtsam.*
+
 %% Assumptions
 %  - All values are axis aligned
 %  - Robot poses are facing along the X axis (horizontal, to the right in images)
 %  - We have full odometry for measurements
 %  - The robot is on a grid, moving 2 meters each step
-
-import gtsam.*
 
 %% Create graph container and add factors to it
 graph = NonlinearFactorGraph;
@@ -60,7 +60,7 @@ hold on
 plot([result.at(5).x;result.at(2).x],[result.at(5).y;result.at(2).y],'r-');
 marginals = Marginals(graph, result);
 
-gtsam.plot2DTrajectory(result, [], marginals);
+plot2DTrajectory(result, [], marginals);
 for i=1:5,marginals.marginalCovariance(i),end
 axis equal
 axis tight

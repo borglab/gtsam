@@ -10,6 +10,8 @@
 % @author Chris Beall
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+import gtsam.*
+
 %% Assumptions
 %  - For simplicity this example is in the camera's coordinate frame
 %  - X: right, Y: down, Z: forward
@@ -18,27 +20,22 @@
 %  - No noise on measurements
 
 %% Create keys for variables
-import gtsam.*
 x1 = symbol('x',1); x2 = symbol('x',2); 
 l1 = symbol('l',1); l2 = symbol('l',2); l3 = symbol('l',3);
 
 %% Create graph container and add factors to it
-import gtsam.*
 graph = NonlinearFactorGraph;
 
 %% add a constraint on the starting pose
-import gtsam.*
 first_pose = Pose3();
 graph.add(NonlinearEqualityPose3(x1, first_pose));
 
 %% Create realistic calibration and measurement noise model
 % format: fx fy skew cx cy baseline
-import gtsam.*
 K = Cal3_S2Stereo(1000, 1000, 0, 320, 240, 0.2);
 stereo_model = noiseModel.Diagonal.Sigmas([1.0; 1.0; 1.0]);
 
 %% Add measurements
-import gtsam.*
 % pose 1
 graph.add(GenericStereoFactor3D(StereoPoint2(520, 480, 440), stereo_model, x1, l1, K));
 graph.add(GenericStereoFactor3D(StereoPoint2(120,  80, 440), stereo_model, x1, l2, K));
@@ -51,7 +48,6 @@ graph.add(GenericStereoFactor3D(StereoPoint2(320, 270, 115), stereo_model, x2, l
 
 
 %% Create initial estimate for camera poses and landmarks
-import gtsam.*
 initialEstimate = Values;
 initialEstimate.insert(x1, first_pose);
 % noisy estimate for pose 2
@@ -62,7 +58,6 @@ initialEstimate.insert(l3, Point3( 0,-.5, 5));
 
 %% optimize
 fprintf(1,'Optimizing\n'); tic
-import gtsam.*
 optimizer = LevenbergMarquardtOptimizer(graph, initialEstimate);
 result = optimizer.optimizeSafely();
 toc
@@ -75,6 +70,6 @@ axis equal
 view(-38,12)
 camup([0;1;0]);
 
-gtsam.plot3DTrajectory(initialEstimate, 'r', 1, 0.3);
-gtsam.plot3DTrajectory(result, 'g', 1, 0.3);
-gtsam.plot3DPoints(result);
+plot3DTrajectory(initialEstimate, 'r', 1, 0.3);
+plot3DTrajectory(result, 'g', 1, 0.3);
+plot3DPoints(result);

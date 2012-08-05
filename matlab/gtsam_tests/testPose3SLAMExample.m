@@ -10,14 +10,14 @@
 % @author Frank Dellaert
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% Create a hexagon of poses
 import gtsam.*
+
+%% Create a hexagon of poses
 hexagon = circlePose3(6,1.0);
 p0 = hexagon.at(0);
 p1 = hexagon.at(1);
 
 %% create a Pose graph with one equality constraint and one measurement
-import gtsam.*
 fg = NonlinearFactorGraph;
 fg.add(NonlinearEqualityPose3(0, p0));
 delta = p0.between(p1);
@@ -30,7 +30,6 @@ fg.add(BetweenFactorPose3(4,5, delta, covariance));
 fg.add(BetweenFactorPose3(5,0, delta, covariance));
 
 %% Create initial config
-import gtsam.*
 initial = Values;
 s = 0.10;
 initial.insert(0, p0);
@@ -41,7 +40,6 @@ initial.insert(4, hexagon.at(4).retract(s*randn(6,1)));
 initial.insert(5, hexagon.at(5).retract(s*randn(6,1)));
 
 %% optimize
-import gtsam.*
 optimizer = LevenbergMarquardtOptimizer(fg, initial);
 result = optimizer.optimizeSafely;
 

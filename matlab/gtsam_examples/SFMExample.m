@@ -10,6 +10,8 @@
 % @author Duy-Nguyen Ta
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+import gtsam.*
+
 %% Assumptions
 %  - Landmarks as 8 vertices of a cube: (10,10,10) (-10,10,10) etc...
 %  - Cameras are on a circle around the cube, pointing at the world origin
@@ -22,18 +24,16 @@ options.nrCameras = 10;
 options.showImages = false;
 
 %% Generate data
-[data,truth] = gtsam.VisualISAMGenerateData(options);
+[data,truth] = VisualISAMGenerateData(options);
 
 measurementNoiseSigma = 1.0;
 pointNoiseSigma = 0.1;
 poseNoiseSigmas = [0.001 0.001 0.001 0.1 0.1 0.1]';
 
 %% Create the graph (defined in visualSLAM.h, derived from NonlinearFactorGraph)
-import gtsam.*
 graph = NonlinearFactorGraph;
 
 %% Add factors for all measurements
-import gtsam.*
 measurementNoise = noiseModel.Isotropic.Sigma(2,measurementNoiseSigma);
 for i=1:length(data.Z)
     for k=1:length(data.Z{i})
@@ -43,7 +43,6 @@ for i=1:length(data.Z)
 end
 
 %% Add Gaussian priors for a pose and a landmark to constrain the system
-import gtsam.*
 posePriorNoise  = noiseModel.Diagonal.Sigmas(poseNoiseSigmas);
 graph.add(PriorFactorPose3(symbol('x',1), truth.cameras{1}.pose, posePriorNoise));
 pointPriorNoise  = noiseModel.Isotropic.Sigma(3,pointNoiseSigma);
@@ -53,7 +52,6 @@ graph.add(PriorFactorPoint3(symbol('p',1), truth.points{1}, pointPriorNoise));
 graph.print(sprintf('\nFactor graph:\n'));
 
 %% Initialize cameras and points close to ground truth in this example
-import gtsam.*
 initialEstimate = Values;
 for i=1:size(truth.cameras,2)
     pose_i = truth.cameras{i}.pose.retract(0.1*randn(6,1));
@@ -66,8 +64,6 @@ end
 initialEstimate.print(sprintf('\nInitial estimate:\n  '));
 
 %% Fine grain optimization, allowing user to iterate step by step
-
-import gtsam.*
 parameters = LevenbergMarquardtParams;
 parameters.setlambdaInitial(1.0);
 parameters.setVerbosityLM('trylambda');
@@ -81,13 +77,12 @@ result = optimizer.values();
 result.print(sprintf('\nFinal result:\n  '));
 
 %% Plot results with covariance ellipses
-import gtsam.*
 marginals = Marginals(graph, result);
 cla
 hold on;
 
-gtsam.plot3DPoints(result, [], marginals);
-gtsam.plot3DTrajectory(result, '*', 1, 8, marginals);
+plot3DPoints(result, [], marginals);
+plot3DTrajectory(result, '*', 1, 8, marginals);
 
 axis([-40 40 -40 40 -10 20]);axis equal
 view(3)

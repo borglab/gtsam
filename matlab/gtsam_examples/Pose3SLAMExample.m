@@ -10,14 +10,14 @@
 % @author Frank Dellaert
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% Create a hexagon of poses
 import gtsam.*
-hexagon = gtsam.circlePose3(6,1.0);
+
+%% Create a hexagon of poses
+hexagon = circlePose3(6,1.0);
 p0 = hexagon.at(0);
 p1 = hexagon.at(1);
 
 %% create a Pose graph with one equality constraint and one measurement
-import gtsam.*
 fg = NonlinearFactorGraph;
 fg.add(NonlinearEqualityPose3(0, p0));
 delta = p0.between(p1);
@@ -30,7 +30,6 @@ fg.add(BetweenFactorPose3(4,5, delta, covariance));
 fg.add(BetweenFactorPose3(5,0, delta, covariance));
 
 %% Create initial config
-import gtsam.*
 initial = Values;
 s = 0.10;
 initial.insert(0, p0);
@@ -41,18 +40,15 @@ initial.insert(4, hexagon.at(4).retract(s*randn(6,1)));
 initial.insert(5, hexagon.at(5).retract(s*randn(6,1)));
 
 %% Plot Initial Estimate
-import gtsam.*
 cla
-gtsam.plot3DTrajectory(initial, 'g-*');
+plot3DTrajectory(initial, 'g-*');
 
 %% optimize
-import gtsam.*
 optimizer = DoglegOptimizer(fg, initial);
 result = optimizer.optimizeSafely();
 
 %% Show Result
-import gtsam.*
-hold on; gtsam.plot3DTrajectory(result, 'b-*', true, 0.3);
+hold on; plot3DTrajectory(result, 'b-*', true, 0.3);
 axis([-2 2 -2 2 -1 1]);
 axis equal
 view(-37,40)
