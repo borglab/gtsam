@@ -116,8 +116,8 @@ namespace gtsam {
             "addMeasurements: J and Z must have same number of entries");
       for (int k = 0; k < Z.cols(); k++) {
         graph.push_back(
-            make_shared<GenericProjectionFactor<Pose3, Point3> >
-            (Point2(Z(0, k), Z(1, k)), model, i, J(k), K));
+            boost::make_shared<GenericProjectionFactor<Pose3, Point3> >
+            (Point2(Z(0, k), Z(1, k)), model, i, Key(J(k)), K));
       }
     }
 
