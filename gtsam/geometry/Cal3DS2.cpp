@@ -24,13 +24,6 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-Cal3DS2::Cal3DS2():fx_(1), fy_(1), s_(0), u0_(0), v0_(0), k1_(0), k2_(0), k3_(0), k4_(0){}
-
-/* ************************************************************************* */
-Cal3DS2::Cal3DS2(double fx, double fy, double s, double u0, double v0, double k1, double k2, double k3, double k4) :
-		fx_(fx), fy_(fy), s_(s), u0_(u0), v0_(v0), k1_(k1), k2_(k2), k3_(k3), k4_(k4) {}
-
-/* ************************************************************************* */
 Cal3DS2::Cal3DS2(const Vector &v):
 		fx_(v[0]), fy_(v[1]), s_(v[2]), u0_(v[3]), v0_(v[4]), k1_(v[5]), k2_(v[6]), k3_(v[7]), k4_(v[8]){}
 
@@ -38,13 +31,10 @@ Cal3DS2::Cal3DS2(const Vector &v):
 Matrix Cal3DS2::K() const { return Matrix_(3,3, fx_, s_, u0_, 0.0, fy_, v0_, 0.0, 0.0, 1.0); }
 
 /* ************************************************************************* */
-Vector Cal3DS2::k() const { return Vector_(4, k1_, k2_, k3_, k4_); }
-
-/* ************************************************************************* */
 Vector Cal3DS2::vector() const { return Vector_(9, fx_, fy_, s_, u0_, v0_, k1_, k2_, k3_, k4_) ; }
 
 /* ************************************************************************* */
-void Cal3DS2::print(const std::string& s) const { gtsam::print(K(), s + ".K") ; gtsam::print(k(), s + ".k") ; }
+void Cal3DS2::print(const std::string& s) const { gtsam::print(K(), s + ".K") ; gtsam::print(Vector(k()), s + ".k") ; }
 
 /* ************************************************************************* */
 bool Cal3DS2::equals(const Cal3DS2& K, double tol) const {

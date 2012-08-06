@@ -44,17 +44,18 @@ private:
 
 public:
 	Matrix K() const ;
-	Vector k() const ;
+	Eigen::Vector4d k() const { return Eigen::Vector4d(k1_, k2_, k3_, k4_); }
 	Vector vector() const ;
 
   /// @name Standard Constructors
   /// @{
 
 	/// Default Constructor with only unit focal length
-	Cal3DS2();
+	Cal3DS2() : fx_(1), fy_(1), s_(0), u0_(0), v0_(0), k1_(0), k2_(0), k3_(0), k4_(0) {}
 
 	Cal3DS2(double fx, double fy, double s, double u0, double v0,
-			double k1, double k2, double k3, double k4) ;
+			double k1, double k2, double k3 = 0.0, double k4 = 0.0) :
+	fx_(fx), fy_(fy), s_(s), u0_(u0), v0_(v0), k1_(k1), k2_(k2), k3_(k3), k4_(k4) {}
 
   /// @}
   /// @name Advanced Constructors
