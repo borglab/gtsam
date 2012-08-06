@@ -78,11 +78,9 @@ namespace gtsam {
    * \f[ E(x) = \frac{1}{2} (A_1 x_{j1} + A_2 x_{j2} - b)^T \Sigma^{-1} (A_1 x_{j1} + A_2 x_{j2} - b) . \f]
    */
   class JacobianFactor : public GaussianFactor {
-  public:
-  	typedef Matrix AbMatrix;
-  	typedef VerticalBlockView<AbMatrix> BlockAb;
-
   protected:
+		typedef Matrix AbMatrix;
+		typedef VerticalBlockView<AbMatrix> BlockAb;
 
     noiseModel::Diagonal::shared_ptr model_; // Gaussian noise model with diagonal covariance matrix
     std::vector<size_t> firstNonzeroBlocks_;
@@ -96,8 +94,6 @@ namespace gtsam {
     typedef BlockAb::constBlock constABlock;
     typedef BlockAb::Column BVector;
     typedef BlockAb::constColumn constBVector;
-
-  public:
 
     /** Copy constructor */
     JacobianFactor(const JacobianFactor& gf);

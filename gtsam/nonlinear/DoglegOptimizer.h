@@ -67,7 +67,6 @@ private:
  */
 class DoglegState : public NonlinearOptimizerState {
 public:
-
   double Delta;
 
   DoglegState() {}
@@ -86,8 +85,11 @@ protected:
  */
 class DoglegOptimizer : public NonlinearOptimizer {
 
-public:
+protected:
+	DoglegParams params_;
+	DoglegState state_;
 
+public:
   typedef boost::shared_ptr<DoglegOptimizer> shared_ptr;
 
   /// @name Standard interface
@@ -143,9 +145,6 @@ public:
   /// @}
 
 protected:
-  DoglegParams params_;
-  DoglegState state_;
-
   /** Access the parameters (base class version) */
   virtual const NonlinearOptimizerParams& _params() const { return params_; }
 

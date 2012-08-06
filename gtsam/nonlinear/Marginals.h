@@ -88,11 +88,6 @@ protected:
   BlockView blockView_;
   Ordering indices_;
 
-  JointMarginal(const Matrix& fullMatrix, const std::vector<size_t>& dims, const Ordering& indices) :
-    fullMatrix_(fullMatrix), blockView_(fullMatrix_, dims.begin(), dims.end()), indices_(indices) {}
-
-  friend class Marginals;
-
 public:
   /** A block view of the joint marginal - this stores a reference to the
    * JointMarginal object, so the JointMarginal object must be kept in scope
@@ -129,6 +124,13 @@ public:
 
 	/** Print */
 	void print(const std::string& s = "", const KeyFormatter& formatter = DefaultKeyFormatter) const;
+
+protected:
+	JointMarginal(const Matrix& fullMatrix, const std::vector<size_t>& dims, const Ordering& indices) :
+		fullMatrix_(fullMatrix), blockView_(fullMatrix_, dims.begin(), dims.end()), indices_(indices) {}
+
+	friend class Marginals;
+
 };
 
 } /* namespace gtsam */

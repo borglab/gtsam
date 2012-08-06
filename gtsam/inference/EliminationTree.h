@@ -73,38 +73,10 @@ private:
   Factors factors_; ///< factors associated with root
   SubTrees subTrees_; ///< sub-trees
 
+public:
+
 	/// @name Standard Constructors
 	/// @{
-
-  /** default constructor, private, as you should use Create below */
-  EliminationTree(Index key = 0) : key_(key) {}
-
-	/// @}
-	/// @name Advanced Interface
-	/// @{
-
-  /**
-   * Static internal function to build a vector of parent pointers using the
-   * algorithm of Gilbert et al., 2001, BIT.
-   */
-  static std::vector<Index> ComputeParents(const VariableIndex& structure);
-
-  /** add a factor, for Create use only */
-  void add(const sharedFactor& factor) { factors_.push_back(factor); }
-
-  /** add a subtree, for Create use only */
-  void add(const shared_ptr& child) { subTrees_.push_back(child); }
-
-  /**
-   * Recursive routine that eliminates the factors arranged in an elimination tree
-   * @param Conditionals is a vector of shared pointers that will be modified in place
-   */
-  sharedFactor eliminate_(Eliminate function, Conditionals& conditionals) const;
-
-  /// Allow access to constructor and add methods for testing purposes
-  friend class ::EliminationTreeTester;
-
-public:
 
   /**
    * Named constructor to build the elimination tree of a factor graph using
@@ -150,6 +122,32 @@ public:
   bool equals(const EliminationTree& other, double tol = 1e-9) const;
 
 	/// @}
+
+private:
+	
+  /** default constructor, private, as you should use Create below */
+  EliminationTree(Index key = 0) : key_(key) {}
+
+  /**
+   * Static internal function to build a vector of parent pointers using the
+   * algorithm of Gilbert et al., 2001, BIT.
+   */
+  static std::vector<Index> ComputeParents(const VariableIndex& structure);
+
+  /** add a factor, for Create use only */
+  void add(const sharedFactor& factor) { factors_.push_back(factor); }
+
+  /** add a subtree, for Create use only */
+  void add(const shared_ptr& child) { subTrees_.push_back(child); }
+
+  /**
+   * Recursive routine that eliminates the factors arranged in an elimination tree
+   * @param Conditionals is a vector of shared pointers that will be modified in place
+   */
+  sharedFactor eliminate_(Eliminate function, Conditionals& conditionals) const;
+
+  /// Allow access to constructor and add methods for testing purposes
+  friend class ::EliminationTreeTester;
 
 };
 

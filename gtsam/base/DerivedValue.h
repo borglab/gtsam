@@ -24,9 +24,6 @@ namespace gtsam {
 
 template<class DERIVED>
 class DerivedValue : public Value {
-private:
-	/// Fake Tag struct for singleton pool allocator. In fact, it is never used!
-	struct PoolTag { };
 
 protected:
 	DerivedValue() {}
@@ -118,6 +115,10 @@ protected:
 	  // Nothing to do, do not call base class assignment operator
 	  return *this;
 	}
+
+private:
+	/// Fake Tag struct for singleton pool allocator. In fact, it is never used!
+	struct PoolTag { };
 
 };
 

@@ -43,8 +43,11 @@ protected:
  */
 class GaussNewtonOptimizer : public NonlinearOptimizer {
 
-public:
+protected:
+	GaussNewtonParams params_;
+	GaussNewtonState state_;
 
+public:
   /// @name Standard interface
   /// @{
 
@@ -94,10 +97,6 @@ public:
   /// @}
 
 protected:
-
-  GaussNewtonParams params_;
-  GaussNewtonState state_;
-
   /** Access the parameters (base class version) */
   virtual const NonlinearOptimizerParams& _params() const { return params_; }
 

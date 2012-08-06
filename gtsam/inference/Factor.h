@@ -81,15 +81,6 @@ protected:
   /// The keys involved in this factor
   std::vector<KeyType> keys_;
 
-  friend class JacobianFactor;
-  friend class HessianFactor;
-
-protected:
-
-  /// Internal consistency check that is run frequently when in debug mode.
-  /// If NDEBUG is defined, this is empty and optimized out.
-  void assertInvariants() const;
-
 public:
 
 	/// @name Standard Constructors
@@ -212,9 +203,15 @@ public:
   iterator begin() { return keys_.begin(); }	///TODO: comment
   iterator end() { return keys_.end(); }			///TODO: comment
 
+protected:
+	friend class JacobianFactor;
+	friend class HessianFactor;
+
+	/// Internal consistency check that is run frequently when in debug mode.
+	/// If NDEBUG is defined, this is empty and optimized out.
+	void assertInvariants() const;
 
 private:
-
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>

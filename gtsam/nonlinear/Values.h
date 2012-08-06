@@ -123,8 +123,6 @@ namespace gtsam {
 
     typedef KeyValuePair value_type;
 
-  public:
-
     /** A filtered view of a Values, returned from Values::filter. */
     template<class ValueType = Value>
     class Filtered;
@@ -196,7 +194,6 @@ namespace gtsam {
     /** Get a zero VectorValues of the correct structure */
     VectorValues zeroVectors(const Ordering& ordering) const;
 
-  public:
     const_iterator begin() const { return boost::make_transform_iterator(values_.begin(), &make_const_deref_pair); }
     const_iterator end() const { return boost::make_transform_iterator(values_.end(), &make_const_deref_pair); }
     iterator begin() { return boost::make_transform_iterator(values_.begin(), &make_deref_pair); }

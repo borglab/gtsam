@@ -94,51 +94,6 @@ namespace gtsam {
     /** Map from keys to Clique */
     typedef std::deque<sharedClique> Nodes;
 
-	protected:
-
-    /** Map from keys to Clique */
-		Nodes nodes_;
-
-		/** private helper method for saving the Tree to a text file in GraphViz format */
-		void saveGraph(std::ostream &s, sharedClique clique, const IndexFormatter& indexFormatter,
-				int parentnum = 0) const;
-
-		/** Gather data on a single clique */
-		void getCliqueData(CliqueData& stats, sharedClique clique) const;
-
-		/** Root clique */
-		sharedClique root_;
-
-		/** remove a clique: warning, can result in a forest */
-		void removeClique(sharedClique clique);
-
-		/** add a clique (top down) */
-		sharedClique addClique(const sharedConditional& conditional, const sharedClique& parent_clique = sharedClique());
-
-    /** add a clique (top down) */
-    void addClique(const sharedClique& clique, const sharedClique& parent_clique = sharedClique());
-
-		/** add a clique (bottom up) */
-		sharedClique addClique(const sharedConditional& conditional, std::list<sharedClique>& child_cliques);
-
-		/**
-		 * Add a conditional to the front of a clique, i.e. a conditional whose
-		 * parents are already in the clique or its separators.  This function does
-		 * not check for this condition, it just updates the data structures.
-		 */
-		static void addToCliqueFront(BayesTree<CONDITIONAL,CLIQUE>& bayesTree,
-		    const sharedConditional& conditional, const sharedClique& clique);
-
-		/** Fill the nodes index for a subtree */
-		void fillNodesIndex(const sharedClique& subtree);
-
-    /** Helper function to build a non-symbolic tree (e.g. Gaussian) using a
-     * symbolic tree, used in the BT(BN) constructor.
-     */
-		void recursiveTreeBuild(const boost::shared_ptr<BayesTreeClique<IndexConditional> >& symbolic,
-		      const std::vector<boost::shared_ptr<CONDITIONAL> >& conditionals,
-		      const typename BayesTree<CONDITIONAL,CLIQUE>::sharedClique& parent);
-
 	public:
 
 		/// @name Standard Constructors
@@ -183,8 +138,6 @@ namespace gtsam {
 		/// @}
 		/// @name Standard Interface
 		/// @{
-
-	public:
 
 		/**
 		 * Find parent clique of a conditional.  It will look at all parents and
@@ -284,6 +237,51 @@ namespace gtsam {
 		sharedClique insert(const sharedConditional& clique,
 				std::list<sharedClique>& children, bool isRootClique = false);
 
+		
+	protected:
+
+    /** Map from keys to Clique */
+		Nodes nodes_;
+
+		/** private helper method for saving the Tree to a text file in GraphViz format */
+		void saveGraph(std::ostream &s, sharedClique clique, const IndexFormatter& indexFormatter,
+				int parentnum = 0) const;
+
+		/** Gather data on a single clique */
+		void getCliqueData(CliqueData& stats, sharedClique clique) const;
+
+		/** Root clique */
+		sharedClique root_;
+
+		/** remove a clique: warning, can result in a forest */
+		void removeClique(sharedClique clique);
+
+		/** add a clique (top down) */
+		sharedClique addClique(const sharedConditional& conditional, const sharedClique& parent_clique = sharedClique());
+
+    /** add a clique (top down) */
+    void addClique(const sharedClique& clique, const sharedClique& parent_clique = sharedClique());
+
+		/** add a clique (bottom up) */
+		sharedClique addClique(const sharedConditional& conditional, std::list<sharedClique>& child_cliques);
+
+		/**
+		 * Add a conditional to the front of a clique, i.e. a conditional whose
+		 * parents are already in the clique or its separators.  This function does
+		 * not check for this condition, it just updates the data structures.
+		 */
+		static void addToCliqueFront(BayesTree<CONDITIONAL,CLIQUE>& bayesTree,
+		    const sharedConditional& conditional, const sharedClique& clique);
+
+		/** Fill the nodes index for a subtree */
+		void fillNodesIndex(const sharedClique& subtree);
+
+    /** Helper function to build a non-symbolic tree (e.g. Gaussian) using a
+     * symbolic tree, used in the BT(BN) constructor.
+     */
+		void recursiveTreeBuild(const boost::shared_ptr<BayesTreeClique<IndexConditional> >& symbolic,
+		      const std::vector<boost::shared_ptr<CONDITIONAL> >& conditionals,
+		      const typename BayesTree<CONDITIONAL,CLIQUE>::sharedClique& parent);
 
   private:
 

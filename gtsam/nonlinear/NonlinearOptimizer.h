@@ -177,23 +177,9 @@ Values::const_shared_ptr result = DoglegOptimizer(graph, initialValues, params).
 class NonlinearOptimizer {
 
 protected:
-
   NonlinearFactorGraph graph_;
 
-  /** A default implementation of the optimization loop, which calls iterate()
-   * until checkConvergence returns true.
-   */
-  void defaultOptimize();
-
-  virtual const NonlinearOptimizerState& _state() const = 0;
-
-  virtual const NonlinearOptimizerParams& _params() const = 0;
-
-  /** Constructor for initial construction of base classes. */
-  NonlinearOptimizer(const NonlinearFactorGraph& graph) : graph_(graph) {}
-
 public:
-
   /** A shared pointer to this class */
   typedef boost::shared_ptr<const NonlinearOptimizer> shared_ptr;
 
@@ -243,6 +229,20 @@ public:
   virtual void iterate() = 0;
 
   /// @}
+
+protected:	
+  /** A default implementation of the optimization loop, which calls iterate()
+   * until checkConvergence returns true.
+   */
+  void defaultOptimize();
+
+  virtual const NonlinearOptimizerState& _state() const = 0;
+
+  virtual const NonlinearOptimizerParams& _params() const = 0;
+
+  /** Constructor for initial construction of base classes. */
+  NonlinearOptimizer(const NonlinearFactorGraph& graph) : graph_(graph) {}
+
 };
 
 /** Check whether the relative error decrease is less than relativeErrorTreshold,
