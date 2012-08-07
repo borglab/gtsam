@@ -1072,12 +1072,13 @@ class NonlinearFactorGraph {
 	bool empty() const;
 	void remove(size_t i);
 	size_t nrFactors() const;
-	void add(const gtsam::NonlinearFactor* factor);
 	gtsam::NonlinearFactor* at(size_t i) const;
+	void push_back(const gtsam::NonlinearFactorGraph& factors);
 
 	// NonlinearFactorGraph
 	double error(const gtsam::Values& values) const;
 	double probPrime(const gtsam::Values& values) const;
+	void add(const gtsam::NonlinearFactor* factor);
 	gtsam::Ordering* orderingCOLAMD(const gtsam::Values& values) const;
 	// Ordering* orderingCOLAMDConstrained(const gtsam::Values& c, const std::map<gtsam::Key,int>& constraints) const;
 	gtsam::GaussianFactorGraph* linearize(const gtsam::Values& values,
