@@ -44,8 +44,11 @@ TEST( testOrdering, simple_modifications ) {
 	CHECK_EXCEPTION(ordering.pop_back(x1), std::invalid_argument);
 
 	// reassemble back make the ordering 1, 2, 4, 3
-	ordering.push_back(x4);
-	ordering.push_back(x3);
+	EXPECT_LONGS_EQUAL(2, ordering.push_back(x4));
+	EXPECT_LONGS_EQUAL(3, ordering.push_back(x3));
+
+	EXPECT_LONGS_EQUAL(2, ordering[x4]);
+	EXPECT_LONGS_EQUAL(3, ordering[x3]);
 
 	// verify
 	Ordering expectedFinal;
