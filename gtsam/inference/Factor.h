@@ -187,6 +187,10 @@ public:
   void print(const std::string& s = "Factor",
   		const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
+  /// print only keys
+  void printKeys(const std::string& s = "Factor",
+  		const IndexFormatter& formatter = DefaultIndexFormatter) const;
+
   /// check equality
   bool equals(const This& other, double tol = 1e-9) const;
 

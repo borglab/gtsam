@@ -919,6 +919,7 @@ virtual class JacobianFactor : gtsam::GaussianFactor {
 			Vector b, const gtsam::noiseModel::Diagonal* model);
 	JacobianFactor(const gtsam::GaussianFactor& factor);
 	void print(string s) const;
+	void printKeys(string s) const;
 	bool equals(const gtsam::GaussianFactor& lf, double tol) const;
 	bool empty() const;
 	size_t size() const;
@@ -942,6 +943,7 @@ virtual class HessianFactor : gtsam::GaussianFactor {
 	HessianFactor(const gtsam::GaussianFactor& factor);
 	size_t size() const;
 	void print(string s) const;
+	void printKeys(string s) const;
 	bool equals(const gtsam::GaussianFactor& lf, double tol) const;
 	double error(const gtsam::VectorValues& c) const;
 	gtsam::GaussianFactor* negate() const;
@@ -1088,6 +1090,7 @@ class NonlinearFactorGraph {
 
 virtual class NonlinearFactor {
 	void print(string s) const;
+	void printKeys(string s) const;
 	void equals(const gtsam::NonlinearFactor& other, double tol) const;
 	gtsam::KeyVector keys() const;
 	size_t size() const;

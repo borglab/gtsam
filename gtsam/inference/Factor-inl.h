@@ -58,10 +58,16 @@ namespace gtsam {
 	template<typename KEY>
 	void Factor<KEY>::print(const std::string& s,
 			const IndexFormatter& formatter) const {
+		printKeys(s,formatter);
+	}
+
+	/* ************************************************************************* */
+	template<typename KEY>
+  void Factor<KEY>::printKeys(const std::string& s, const IndexFormatter& formatter) const {
 		std::cout << s << " ";
 		BOOST_FOREACH(KEY key, keys_) std::cout << " " << formatter(key);
 		std::cout << std::endl;
-	}
+  }
 
 	/* ************************************************************************* */
 	template<typename KEY>
