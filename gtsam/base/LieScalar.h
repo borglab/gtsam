@@ -36,6 +36,9 @@ namespace gtsam {
 		/** access the underlying value */
 		double value() const { return d_; }
 
+		/** Automatic conversion to underlying value */
+		operator double() const { return d_; }
+
 		/** print @param name optional string naming the object */
 		inline void print(const std::string& name="") const {
 	    std::cout << name << ": " << d_ << std::endl;
