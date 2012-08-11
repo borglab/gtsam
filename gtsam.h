@@ -101,6 +101,35 @@ virtual class Value {
 	size_t dim() const;
 };
 
+#include <gtsam/base/LieScalar.h>
+virtual class LieScalar : gtsam::Value {
+	// Standard constructors
+	LieScalar();
+	LieScalar(double d);
+
+	// Standard interface
+	double value() const;
+
+	// Testable
+	void print(string s) const;
+	bool equals(const gtsam::LieScalar& expected, double tol) const;
+
+	// Group
+	static gtsam::LieScalar identity();
+	gtsam::LieScalar inverse() const;
+	gtsam::LieScalar compose(const gtsam::LieScalar& p) const;
+	gtsam::LieScalar between(const gtsam::LieScalar& l2) const;
+
+	// Manifold
+	size_t dim() const;
+	gtsam::LieScalar retract(Vector v) const;
+	Vector localCoordinates(const gtsam::LieScalar& t2) const;
+
+	// Lie group
+	static gtsam::LieScalar Expmap(Vector v);
+	static Vector Logmap(const gtsam::LieScalar& p);
+};
+
 #include <gtsam/base/LieVector.h>
 virtual class LieVector : gtsam::Value {
 	// Standard constructors
@@ -1451,21 +1480,21 @@ class NonlinearISAM {
 #include <gtsam/geometry/StereoPoint2.h>
 
 #include <gtsam/slam/PriorFactor.h>
-template<T = {gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera}>
+template<T = {gtsam::LieScalar, gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera}>
 virtual class PriorFactor : gtsam::NonlinearFactor {
 	PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
 };
 
 
 #include <gtsam/slam/BetweenFactor.h>
-template<T = {gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
+template<T = {gtsam::LieScalar, gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
 virtual class BetweenFactor : gtsam::NonlinearFactor {
 	BetweenFactor(size_t key1, size_t key2, const T& relativePose, const gtsam::noiseModel::Base* noiseModel);
 };
 
 
 #include <gtsam/nonlinear/NonlinearEquality.h>
-template<T = {gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera}>
+template<T = {gtsam::LieScalar, gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera}>
 virtual class NonlinearEquality : gtsam::NonlinearFactor {
 	// Constructor - forces exact evaluation
 	NonlinearEquality(size_t j, const T& feasible);
