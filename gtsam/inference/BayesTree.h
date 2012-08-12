@@ -198,6 +198,9 @@ namespace gtsam {
 		/** Access the root clique (non-const version) */
 		sharedClique& root() { return root_; }
 
+		/** Access the nodes (non-cost version) */
+		Nodes& nodes() { return nodes_; }
+
 		/** Remove all nodes */
 		void clear();
 
