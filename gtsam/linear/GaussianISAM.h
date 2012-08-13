@@ -77,6 +77,10 @@ public:
     dims_.clear();
   }
 
+  // access
+  const Dims& dims() const { return dims_; } ///< Const access to dimensions structure
+  Dims& dims() { return dims_; } ///< non-const access to dimensions structure (advanced interface)
+
   friend VectorValues optimize(const GaussianISAM&);
 
 	/** return marginal on any variable as a factor, Bayes net, or mean/cov */
