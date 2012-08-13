@@ -31,7 +31,7 @@ namespace gtsam {
 		LieScalar() : d_(0.0) {}
 
 		/** wrap a double */
-		LieScalar(double d) : d_(d) {}
+		explicit LieScalar(double d) : d_(d) {}
 
 		/** access the underlying value */
 		double value() const { return d_; }
