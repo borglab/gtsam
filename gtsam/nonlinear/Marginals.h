@@ -116,6 +116,13 @@ public:
 	Block at(Key iVariable, Key jVariable) const {
 		return (*this)(iVariable, jVariable); }
 
+	/** The full, dense covariance/information matrix of the joint marginal. This returns
+	 * a reference to the JointMarginal object, so the JointMarginal object must be kept
+	 * in scope while this view is needed. Otherwise assign this block object to a Matrix
+	 * to store it.
+	 */
+	const Matrix& fullMatrix() const { return fullMatrix_; }
+
   /** Copy constructor */
   JointMarginal(const JointMarginal& other);
 

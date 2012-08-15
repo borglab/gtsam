@@ -1239,6 +1239,7 @@ class Marginals {
 
 class JointMarginal {
 	Matrix at(size_t iVariable, size_t jVariable) const;
+	Matrix fullMatrix() const;
 	void print(string s) const;
 	void print() const;
 };
