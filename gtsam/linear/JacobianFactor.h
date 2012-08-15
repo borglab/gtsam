@@ -241,7 +241,6 @@ namespace gtsam {
     /**
      * Return (dense) matrix associated with factor
      * The returned system is an augmented matrix: [A b]
-     * @param ordering of variables needed for matrix column order
      * @param set weight to use whitening to bake in weights
      */
     Matrix matrix_augmented(bool weight = true) const;
@@ -267,6 +266,13 @@ namespace gtsam {
 
     /** return a multi-frontal conditional. It's actually a chordal Bayesnet */
     boost::shared_ptr<GaussianConditional> eliminate(size_t nrFrontals = 1);
+
+    /**
+     * splits a pre-factorized factor into a conditional, and changes the current
+     * factor to be the remaining component. Performs same operation as eliminate(),
+     * but without running QR.
+     */
+    boost::shared_ptr<GaussianConditional> splitConditional(size_t nrFrontals = 1);
 
     /* Used by ::CombineJacobians for sorting */
     struct _RowSource {
