@@ -47,8 +47,8 @@ public:
    * Destroy and deallocate this object, only if it was originally allocated using clone_().
    */
   virtual void deallocate_() const {
-    this->Value::~Value();
-  	boost::singleton_pool<PoolTag, sizeof(DERIVED)>::free((void*)this);
+    this->~DerivedValue(); // Virtual destructor cleans up the derived object
+  	boost::singleton_pool<PoolTag, sizeof(DERIVED)>::free((void*)this); // Release memory from pool
   }
 
 	/**
