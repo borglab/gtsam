@@ -900,7 +900,12 @@ class VectorValues {
 	void print(string s) const;
 	bool equals(const gtsam::VectorValues& expected, double tol) const;
 	size_t size() const;
+	size_t dim(size_t j) const;
+	size_t dim() const;
+	bool exists(size_t j) const;
 	void insert(size_t j, Vector value);
+	Vector vector() const;
+	Vector at(size_t j) const;
 };
 
 class GaussianConditional {
