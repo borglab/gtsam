@@ -167,7 +167,12 @@ struct DisconnectedGraphException : public std::exception {
 
   /// Returns the string "Attempting to eliminate a disconnected graph - this is not currently possible in gtsam."
   virtual const char* what() const throw() {
-    return "Attempting to eliminate a disconnected graph - this is not currently possible in gtsam."; }
+    return
+			"Attempting to eliminate a disconnected graph - this is not currently possible in\n"
+			"GTSAM.  You may add \"empty\" BetweenFactor's to join disconnected graphs, these\n"
+			"will affect the symbolic structure and solving complexity of the graph but not\n"
+			"the solution.  To do this, create BetweenFactor's with zero-precision noise\n"
+			"models, i.e. noiseModel::Isotropic::Precision(n, 0.0);\n"; }
 };
 
 }
