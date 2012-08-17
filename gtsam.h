@@ -166,7 +166,7 @@ virtual class LieMatrix : gtsam::Value {
 	LieMatrix(Matrix v);
 
 	// Standard interface
-	Vector matrix() const;
+	Matrix matrix() const;
 
 	// Testable
 	void print(string s) const;
