@@ -189,4 +189,14 @@ virtual class PoseRotationPrior : gtsam::NonlinearFactor {
 typedef gtsam::PoseRotationPrior<gtsam::Pose2> PoseRotationPrior2D;
 typedef gtsam::PoseRotationPrior<gtsam::Pose3> PoseRotationPrior3D;
 
+#include <gtsam_unstable/slam/RelativeElevationFactor.h>
+virtual class RelativeElevationFactor: gtsam::NonlinearFactor {
+	RelativeElevationFactor();
+	RelativeElevationFactor(size_t poseKey, size_t pointKey, double measured,
+			const gtsam::noiseModel::Base* model);
+
+	double measured() const;
+	void print(string s) const;
+};
+
 } //\namespace gtsam
