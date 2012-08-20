@@ -80,6 +80,14 @@ public:
   GaussianFactor::shared_ptr negate(const Ordering& ordering) const;
 
   /**
+   * Creates the equivalent anti-factor as another LinearContainerFactor,
+   * so it remains independent of ordering.
+   */
+  NonlinearFactor::shared_ptr negate() const;
+
+
+
+  /**
    * Creates a shared_ptr clone of the factor - needs to be specialized to allow
    * for subclasses
    *
