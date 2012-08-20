@@ -29,8 +29,17 @@ const gtsam::Key poseKey = 1;
 const Point3 point3A(1.0, 2.0, 3.0), point3B(4.0, 6.0, 8.0);
 const Rot3 rot3A, rot3B = Rot3::pitch(-M_PI_2), rot3C = Rot3::RzRyRx(0.1, 0.2, 0.3);
 
+// Pose2 examples
+const Point2 point2A(1.0, 2.0), point2B(4.0, 6.0);
+const Rot2 rot2A, rot2B = Rot2::fromAngle(M_PI_2);
+
 /* ************************************************************************* */
 LieVector evalFactorError3(const Pose3TranslationPrior& factor, const Pose3& x) {
+	return LieVector(factor.evaluateError(x));
+}
+
+/* ************************************************************************* */
+LieVector evalFactorError2(const Pose2TranslationPrior& factor, const Pose2& x) {
 	return LieVector(factor.evaluateError(x));
 }
 
@@ -97,6 +106,28 @@ TEST( testRelativeElevationFactor, smallrot3_error ) {
 	EXPECT(assert_equal(Vector_(3,-3.0,-4.0,-5.0), factor.evaluateError(pose1, actH1)));
 	Matrix expH1 = numericalDerivative11<LieVector,Pose3>(
 			boost::bind(evalFactorError3, factor, _1), pose1, 1e-5);
+	EXPECT(assert_equal(expH1, actH1, tol));
+}
+
+/* ************************************************************************* */
+TEST( testRelativeElevationFactor, level2_zero_error ) {
+	Pose2 pose1(rot2A, point2A);
+	Pose2TranslationPrior factor(poseKey, point2A, model2);
+	Matrix actH1;
+	EXPECT(assert_equal(zero(2), factor.evaluateError(pose1, actH1)));
+	Matrix expH1 = numericalDerivative11<LieVector,Pose2>(
+			boost::bind(evalFactorError2, factor, _1), pose1, 1e-5);
+	EXPECT(assert_equal(expH1, actH1, tol));
+}
+
+/* ************************************************************************* */
+TEST( testRelativeElevationFactor, level2_error ) {
+	Pose2 pose1(rot2A, point2A);
+	Pose2TranslationPrior factor(poseKey, point2B, model2);
+	Matrix actH1;
+	EXPECT(assert_equal(Vector_(2,-3.0,-4.0), factor.evaluateError(pose1, actH1)));
+	Matrix expH1 = numericalDerivative11<LieVector,Pose2>(
+			boost::bind(evalFactorError2, factor, _1), pose1, 1e-5);
 	EXPECT(assert_equal(expH1, actH1, tol));
 }
 

@@ -59,7 +59,7 @@ public:
 
 	/** Constructor that pulls the translation from an incoming POSE */
 	PoseTranslationPrior(Key key, const POSE& pose_z, const noiseModel::Base::shared_ptr& model)
-	: Base(key, model), measured_(pose_z.translation()) {
+	: Base(model, key), measured_(pose_z.translation()) {
 	}
 
 	virtual ~PoseTranslationPrior() {}
