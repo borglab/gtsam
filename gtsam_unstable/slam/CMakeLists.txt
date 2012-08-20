@@ -4,7 +4,7 @@ install(FILES ${slam_headers} DESTINATION include/gtsam_unstable/slam)
 
 # Components to link tests in this subfolder against
 set(slam_local_libs 
-   #slam_unstable # No sources currently, so no convenience lib
+   slam_unstable 
    slam
    nonlinear
    linear
