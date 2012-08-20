@@ -9,61 +9,105 @@
 
 #pragma once
 
-#include <gtsam/slam/PartialPriorFactor.h>
 #include <gtsam/geometry/concepts.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
 
-template<class POSE>
-class PoseTranslationPrior : public PartialPriorFactor<POSE> {
-public:
+/** simple pose traits for building factors */
+namespace pose_traits {
 
+/** checks whether parameterization of rotation is before or after translation in Lie algebra */
+template<class POSE>
+bool isRotFirst() {
+	throw std::invalid_argument("PoseTrait: no implementation for this pose type");
+	return false;
+}
+
+// Instantiate for common poses
+template<> bool isRotFirst<Pose3>() { return true; }
+template<> bool isRotFirst<Pose2>() { return false; }
+
+} // \namespace pose_traits
+
+/**
+ * A prior on the translation part of a pose
+ */
+template<class POSE>
+class PoseTranslationPrior : public NoiseModelFactor1<POSE> {
+public:
 	typedef PoseTranslationPrior<POSE> This;
-	typedef PartialPriorFactor<POSE> Base;
+	typedef NoiseModelFactor1<POSE> Base;
 	typedef POSE Pose;
 	typedef typename POSE::Translation Translation;
+	typedef typename POSE::Rotation Rotation;
 
 	GTSAM_CONCEPT_POSE_TYPE(Pose)
 	GTSAM_CONCEPT_GROUP_TYPE(Pose)
 	GTSAM_CONCEPT_LIE_TYPE(Translation)
 
+protected:
+
+	Translation measured_;
+
+public:
+
 	/** standard constructor */
-	PoseTranslationPrior(Key key, const Translation& trans_z, const SharedNoiseModel& model)
-	: Base(key, model) {
-		initialize(trans_z);
+	PoseTranslationPrior(Key key, const Translation& measured, const noiseModel::Base::shared_ptr& model)
+	: Base(model, key), measured_(measured) {
 	}
 
 	/** Constructor that pulls the translation from an incoming POSE */
-	PoseTranslationPrior(Key key, const POSE& pose_z, const SharedNoiseModel& model)
-	: Base(key, model) {
-		initialize(pose_z.translation());
+	PoseTranslationPrior(Key key, const POSE& pose_z, const noiseModel::Base::shared_ptr& model)
+	: Base(key, model), measured_(pose_z.translation()) {
 	}
 
-	/** get the rotation used to create the measurement */
-	Translation priorTranslation() const { return Translation::Expmap(this->prior_); }
+	virtual ~PoseTranslationPrior() {}
 
-protected:
-	/** loads the underlying partial prior factor */
-	void initialize(const Translation& trans_z) {
-		assert(trans_z.dim() == this->noiseModel_->dim());
+	const Translation& measured() const { return measured_; }
 
-		// Calculate the prior applied
-		this->prior_ = Translation::Logmap(trans_z);
+	/// @return a deep copy of this factor
+  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+	  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+	      gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
-		// Create the mask for partial prior
-		size_t pose_dim = Pose::identity().dim();
-		size_t rot_dim = trans_z.dim();
+	/** h(x)-z */
+	Vector evaluateError(const Pose& pose, boost::optional<Matrix&> H = boost::none) const {
+		const Translation& newTrans = pose.translation();
+		const Rotation& R = pose.rotation();
+		const size_t tDim = newTrans.dim(), xDim = pose.dim();
+		if (H) {
+			*H = gtsam::zeros(tDim, xDim);
+			if (pose_traits::isRotFirst<Pose>())
+				(*H).rightCols(tDim) = R.matrix();
+			else
+				(*H).leftCols(tDim) = R.matrix();
+		}
 
-		// get the interval of the lie coordinates corresponding to rotation
-		std::pair<size_t, size_t> interval = Pose::translationInterval();
+		return newTrans.vector() - measured_.vector();
+	}
 
-		std::vector<size_t> mask;
-		for (size_t i=interval.first; i<=interval.second; ++i)
-			mask.push_back(i);
-		this->mask_ = mask;
+	/** equals specialized to this factor */
+	virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
+		const This *e = dynamic_cast<const This*> (&expected);
+		return e != NULL && Base::equals(*e, tol) && measured_.equals(e->measured_, tol);
+	}
 
-		this->H_ = zeros(rot_dim, pose_dim);
-		this->fillH();
+	/** print contents */
+	void print(const std::string& s="", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+		Base::print(s + "PoseTranslationPrior", keyFormatter);
+		measured_.print("Measured Translation");
+	}
+
+private:
+
+	/** Serialization function */
+	friend class boost::serialization::access;
+	template<class ARCHIVE>
+	void serialize(ARCHIVE & ar, const unsigned int version) {
+		ar & boost::serialization::make_nvp("NoiseModelFactor1",
+				boost::serialization::base_object<Base>(*this));
+		ar & BOOST_SERIALIZATION_NVP(measured_);
 	}
 
 };
