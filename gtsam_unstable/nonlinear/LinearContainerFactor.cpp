@@ -106,8 +106,7 @@ size_t LinearContainerFactor::dim() const {
 }
 
 /* ************************************************************************* */
-boost::shared_ptr<GaussianFactor>
-LinearContainerFactor::linearize(const Values& c, const Ordering& ordering) const {
+GaussianFactor::shared_ptr LinearContainerFactor::order(const Ordering& ordering) const {
 	// clone factor
 	boost::shared_ptr<GaussianFactor> result = factor_->clone();
 
@@ -116,6 +115,12 @@ LinearContainerFactor::linearize(const Values& c, const Ordering& ordering) cons
 		key = ordering[key];
 
 	return result;
+}
+
+/* ************************************************************************* */
+GaussianFactor::shared_ptr LinearContainerFactor::linearize(
+		const Values& c, const Ordering& ordering) const {
+	return order(ordering);
 }
 
 /* ************************************************************************* */
@@ -145,6 +150,22 @@ GaussianFactor::shared_ptr LinearContainerFactor::negate(const Ordering& orderin
 NonlinearFactor::shared_ptr LinearContainerFactor::negate() const {
 	GaussianFactor::shared_ptr antifactor = factor_->negate(); // already has keys in place
 	return NonlinearFactor::shared_ptr(new LinearContainerFactor(antifactor));
+}
+
+/* ************************************************************************* */
+NonlinearFactorGraph LinearContainerFactor::convertLinearGraph(
+		const GaussianFactorGraph& linear_graph,	const Ordering& ordering) {
+	return convertLinearGraph(linear_graph, ordering.invert());
+}
+
+/* ************************************************************************* */
+NonlinearFactorGraph LinearContainerFactor::convertLinearGraph(
+		const GaussianFactorGraph& linear_graph,	const InvertedOrdering& invOrdering) {
+	NonlinearFactorGraph result;
+	BOOST_FOREACH(const GaussianFactor::shared_ptr& f, linear_graph)
+		if (f)
+			result.push_back(NonlinearFactorGraph::sharedFactor(new LinearContainerFactor(f, invOrdering)));
+	return result;
 }
 
 /* ************************************************************************* */

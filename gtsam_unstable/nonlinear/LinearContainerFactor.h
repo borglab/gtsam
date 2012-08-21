@@ -10,7 +10,7 @@
 #pragma once
 
 #include <gtsam/linear/HessianFactor.h>
-#include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 namespace gtsam {
 
@@ -70,9 +70,11 @@ public:
   /** get the dimension of the factor: rows of linear factor */
   size_t dim() const;
 
+  /** Apply the ordering to a graph - same as linearize(), but without needing a linearization point */
+  GaussianFactor::shared_ptr order(const Ordering& ordering) const;
+
   /** linearize to a GaussianFactor: values has no effect, just clones/rekeys underlying factor */
-  boost::shared_ptr<GaussianFactor>
-  linearize(const Values& c, const Ordering& ordering) const;
+  GaussianFactor::shared_ptr linearize(const Values& c, const Ordering& ordering) const;
 
   /**
    * Creates an anti-factor directly and performs rekeying due to ordering
@@ -84,8 +86,6 @@ public:
    * so it remains independent of ordering.
    */
   NonlinearFactor::shared_ptr negate() const;
-
-
 
   /**
    * Creates a shared_ptr clone of the factor - needs to be specialized to allow
@@ -109,6 +109,18 @@ public:
 
   /** Casts to HessianFactor */
   HessianFactor::shared_ptr toHessian() const;
+
+  /**
+   * Utility function for converting linear graphs to nonlinear graphs
+   * consisting of LinearContainerFactors.  Two versions are available, using
+   * either the ordering the linear graph was linearized around, or the inverse ordering.
+   * If the inverse ordering is present, it will be faster.
+   */
+  static NonlinearFactorGraph convertLinearGraph(const GaussianFactorGraph& linear_graph,
+  		const Ordering& ordering);
+
+  static NonlinearFactorGraph convertLinearGraph(const GaussianFactorGraph& linear_graph,
+  		const InvertedOrdering& invOrdering);
 
 protected:
   void rekeyFactor(const Ordering& ordering);
