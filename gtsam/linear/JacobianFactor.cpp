@@ -501,59 +501,6 @@ namespace gtsam {
     // Start of next part
     model_ = noiseModel;
     return splitConditional(nrFrontals);
-
-//    // Check for singular factor
-//    if(noiseModel->dim() < frontalDim) {
-//      throw domain_error((boost::format(
-//          "JacobianFactor is singular in variable %1%, discovered while attempting\n"
-//          "to eliminate this variable.") % front()).str());
-//    }
-//
-//    // Extract conditional
-//    tic(3, "cond Rd");
-//
-//    // Restrict the matrix to be in the first nrFrontals variables
-//    Ab_.rowEnd() = Ab_.rowStart() + frontalDim;
-//    const Eigen::VectorBlock<const Vector> sigmas = noiseModel->sigmas().segment(Ab_.rowStart(), Ab_.rowEnd()-Ab_.rowStart());
-//    GaussianConditional::shared_ptr conditional(new GaussianConditional(begin(), end(), nrFrontals, Ab_, sigmas));
-//    if(debug) conditional->print("Extracted conditional: ");
-//    Ab_.rowStart() += frontalDim;
-//    Ab_.firstBlock() += nrFrontals;
-//    toc(3, "cond Rd");
-//
-//    if(debug) conditional->print("Extracted conditionals: ");
-//
-//    tic(4, "remaining factor");
-//    // Take lower-right block of Ab to get the new factor
-//    Ab_.rowEnd() = noiseModel->dim();
-//    keys_.erase(begin(), begin() + nrFrontals);
-//    // Set sigmas with the right model
-//    if (noiseModel->isConstrained())
-//      model_ = noiseModel::Constrained::MixedSigmas(sub(noiseModel->sigmas(), frontalDim, noiseModel->dim()));
-//    else
-//      model_ = noiseModel::Diagonal::Sigmas(sub(noiseModel->sigmas(), frontalDim, noiseModel->dim()));
-//    if(debug) this->print("Eliminated factor: ");
-//    assert(Ab_.rows() <= Ab_.cols()-1);
-//    toc(4, "remaining factor");
-//
-//    // todo SL: deal with "dead" pivot columns!!!
-//    tic(5, "rowstarts");
-//    size_t varpos = 0;
-//    firstNonzeroBlocks_.resize(this->rows());
-//    for(size_t row=0; row<rows(); ++row) {
-//      if(debug) cout << "row " << row << " varpos " << varpos << " Ab_.offset(varpos)=" << Ab_.offset(varpos) << " Ab_.offset(varpos+1)=" << Ab_.offset(varpos+1) << endl;
-//      while(varpos < this->size() && Ab_.offset(varpos+1)-Ab_.offset(0) <= row)
-//        ++ varpos;
-//      firstNonzeroBlocks_[row] = varpos;
-//      if(debug) cout << "firstNonzeroVars_[" << row << "] = " << firstNonzeroBlocks_[row] << endl;
-//    }
-//    toc(5, "rowstarts");
-//
-//    if(debug) print("Eliminated factor: ");
-//
-//    assertInvariants();
-//
-//    return conditional;
   }
 
   /* ************************************************************************* */
