@@ -386,8 +386,7 @@ break;
 
 		// Form Ab' * Ab
 		tic(3, "combine");
-		HessianFactor::shared_ptr //
-		combinedFactor(new HessianFactor(factors, dimensions, scatter));
+		HessianFactor::shared_ptr combinedFactor(new HessianFactor(factors, dimensions, scatter));
 		toc(3, "combine");
 
 		// Do Cholesky, note that after this, the lower triangle still contains
