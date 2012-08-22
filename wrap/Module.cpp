@@ -481,12 +481,16 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 		file.oss << "  std::streambuf *outbuf = std::cout.rdbuf(&mout);\n\n";
 		file.oss << "  _" << name << "_RTTIRegister();\n\n";
 		file.oss << "  int id = unwrap<int>(in[0]);\n\n";
-		file.oss << "  switch(id) {\n";
+		file.oss << "  try {\n";
+		file.oss << "    switch(id) {\n";
 		for(size_t id = 0; id < functionNames.size(); ++id) {
-			file.oss << "  case " << id << ":\n";
-			file.oss << "    " << functionNames[id] << "(nargout, out, nargin-1, in+1);\n";
-			file.oss << "    break;\n";
+			file.oss << "    case " << id << ":\n";
+			file.oss << "      " << functionNames[id] << "(nargout, out, nargin-1, in+1);\n";
+			file.oss << "      break;\n";
 		}
+		file.oss << "    }\n";
+		file.oss << "  } catch(const std::exception& e) {\n";
+		file.oss << "    mexErrMsgTxt((\"Exception from gtsam:\\n\" + std::string(e.what()) + \"\\n\").c_str());\n";
 		file.oss << "  }\n";
 		file.oss << "\n";
 		file.oss << "  std::cout.rdbuf(outbuf);\n"; // Restore cout
