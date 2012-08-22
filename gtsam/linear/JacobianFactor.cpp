@@ -15,6 +15,7 @@
  * @date    Dec 8, 2010
  */
 
+#include <gtsam/linear/linearExceptions.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/HessianFactor.h>
@@ -50,12 +51,6 @@ namespace gtsam {
     assert(firstNonzeroBlocks_.size() == Ab_.rows());
     for(size_t i=0; i<firstNonzeroBlocks_.size(); ++i)
       assert(firstNonzeroBlocks_[i] < Ab_.nBlocks());
-
-    // Check for non-finite values
-    for(size_t i=0; i<Ab_.rows(); ++i)
-      for(size_t j=0; j<Ab_.cols(); ++j)
-        if(isnan(matrix_(i,j)))
-          throw invalid_argument("JacobianFactor contains NaN matrix entries.");
 #endif
   }
 
@@ -194,18 +189,16 @@ namespace gtsam {
   JacobianFactor::JacobianFactor(const HessianFactor& factor) : Ab_(matrix_) {
     keys_ = factor.keys_;
     Ab_.assignNoalias(factor.info_);
+
+		// Do Cholesky to get a Jacobian
     size_t maxrank;
-    try {
-      maxrank = choleskyCareful(matrix_).first;
-    } catch(const CarefulCholeskyNegativeMatrixException&) {
-      cout <<
-          "Attempting to convert a HessianFactor to a JacobianFactor, but for this\n"
-          "HessianFactor it is not possible because either the Hessian is negative or\n"
-          "indefinite, or the quadratic error function it describes becomes negative for\n"
-          "some values.  Here is the HessianFactor on which this conversion was attempted:\n";
-      factor.print("");
-      throw;
-    }
+		bool success;
+		boost::tie(maxrank, success) = choleskyCareful(matrix_);
+
+		// Check for indefinite system
+		if(!success)
+			throw IndeterminantLinearSystemException(factor.keys().front());
+
     // Zero out lower triangle
     matrix_.topRows(maxrank).triangularView<Eigen::StrictlyLower>() =
         Matrix::Zero(maxrank, matrix_.cols());
@@ -324,7 +317,6 @@ namespace gtsam {
     return model_->whiten(Ax);
   }
 
-
   /* ************************************************************************* */
   void JacobianFactor::transposeMultiplyAdd(double alpha, const Vector& e,
       VectorValues& x) const {
@@ -410,11 +402,8 @@ namespace gtsam {
   	size_t frontalDim = Ab_.range(0,nrFrontals).cols();
 
   	// Check for singular factor
-  	if(model_->dim() < frontalDim) {
-  		throw domain_error((boost::format(
-  				"JacobianFactor is singular in variable %1%, discovered while attempting\n"
-  				"to eliminate this variable.") % front()).str());
-  	}
+  	if(model_->dim() < frontalDim)
+			throw IndeterminantLinearSystemException(this->keys().front());
 
   	// Extract conditional
   	tic(3, "cond Rd");

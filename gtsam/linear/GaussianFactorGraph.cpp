@@ -393,14 +393,7 @@ break;
 		// some untouched non-zeros that should be zero.  We zero them while
 		// extracting submatrices next.
 		tic(4, "partial Cholesky");
-		try {
-			combinedFactor->partialCholesky(nrFrontals);
-		} catch
-		(std::exception &ex) { // catch exception from Cholesky
-			combinedFactor->print("combinedFactor");
-			string reason = "EliminateCholesky failed while trying to eliminate the combined factor";
-			throw invalid_argument(reason);
-		}
+		combinedFactor->partialCholesky(nrFrontals);
 
 		toc(4, "partial Cholesky");
 
@@ -502,64 +495,9 @@ break;
 			return EliminateQR(factors, nrFrontals);
 		else {
 			GaussianFactorGraph::EliminationResult ret;
-#ifdef NDEBUG
-			static const bool diag = false;
-#else
-			static const bool diag = !ISDEBUG("NoCholeskyDiagnostics");
-#endif
-			if (!diag) {
-				tic(2, "EliminateCholesky");
-				ret = EliminateCholesky(factors, nrFrontals);
-				toc(2, "EliminateCholesky");
-			} else {
-				try {
-					tic(2, "EliminateCholesky");
-					ret = EliminateCholesky(factors, nrFrontals);
-					toc(2, "EliminateCholesky");
-				} catch (const exception& e) {
-					cout << "Exception in EliminateCholesky: " << e.what() << endl;
-					SETDEBUG("EliminateCholesky", true);
-					SETDEBUG("updateATA", true);
-					SETDEBUG("JacobianFactor::eliminate", true);
-					SETDEBUG("JacobianFactor::Combine", true);
-					SETDEBUG("choleskyPartial", true);
-					factors.print("Combining factors: ");
-					EliminateCholesky(factors, nrFrontals);
-					throw;
-				}
-			}
-
-			const bool checkCholesky = ISDEBUG("EliminateGaussian Check Cholesky");
-			if (checkCholesky) {
-				GaussianFactorGraph::EliminationResult expected;
-				FactorGraph<J> jacobians = convertToJacobians(factors);
-				try {
-					// Compare with QR
-					expected = EliminateJacobians(jacobians, nrFrontals);
-				} catch (...) {
-					cout << "Exception in QR" << endl;
-					throw;
-				}
-
-				H actual_factor(*ret.second);
-				H expected_factor(*expected.second);
-				if (!assert_equal(*expected.first, *ret.first, 100.0)
-						|| !assert_equal(expected_factor, actual_factor, 1.0)) {
-					cout << "Cholesky and QR do not agree" << endl;
-
-					SETDEBUG("EliminateCholesky", true);
-					SETDEBUG("updateATA", true);
-					SETDEBUG("JacobianFactor::eliminate", true);
-					SETDEBUG("JacobianFactor::Combine", true);
-					jacobians.print("Jacobian Factors: ");
-					EliminateJacobians(jacobians, nrFrontals);
-					EliminateCholesky(factors, nrFrontals);
-					factors.print("Combining factors: ");
-
-					throw runtime_error("Cholesky and QR do not agree");
-				}
-			}
-
+			tic(2, "EliminateCholesky");
+			ret = EliminateCholesky(factors, nrFrontals);
+			toc(2, "EliminateCholesky");
 			return ret;
 		}
 

@@ -17,8 +17,10 @@
 
 #include <string.h>
 #include <boost/format.hpp>
+#include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
 
+#include <gtsam/linear/linearExceptions.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
@@ -189,6 +191,11 @@ void GaussianConditional::solveInPlace(VectorValues& x) const {
 	Vector xS = internal::extractVectorValuesSlices(x, this->beginParents(), this->endParents());
 	xS = this->get_d() - this->get_S() * xS;
 	Vector soln = this->get_R().triangularView<Eigen::Upper>().solve(xS);
+
+	// Check for indeterminant solution
+	if(soln.unaryExpr(!boost::lambda::bind(ptr_fun(isfinite<double>), boost::lambda::_1)).any())
+		throw IndeterminantLinearSystemException(this->keys().front());
+
 	if(debug) {
 		gtsam::print(Matrix(this->get_R()), "Calling backSubstituteUpper on ");
 		gtsam::print(soln, "full back-substitution solution: ");
@@ -199,8 +206,12 @@ void GaussianConditional::solveInPlace(VectorValues& x) const {
 /* ************************************************************************* */
 void GaussianConditional::solveTransposeInPlace(VectorValues& gy) const {
 	Vector frontalVec = internal::extractVectorValuesSlices(gy, beginFrontals(), endFrontals());
-	// TODO: verify permutation
 	frontalVec = gtsam::backSubstituteUpper(frontalVec,Matrix(get_R()));
+
+	// Check for indeterminant solution
+	if(frontalVec.unaryExpr(!boost::lambda::bind(ptr_fun(isfinite<double>), boost::lambda::_1)).any())
+		throw IndeterminantLinearSystemException(this->keys().front());
+
 	GaussianConditional::const_iterator it;
 	for (it = beginParents(); it!= endParents(); it++) {
 		const Index i = *it;

@@ -140,7 +140,7 @@ struct ISAM2Params {
    * Cholesky is faster but potentially numerically unstable for poorly-conditioned problems, which can occur when
    * uncertainty is very low in some variables (or dimensions of variables) and very high in others.  QR is
    * slower but more numerically stable in poorly-conditioned problems.  We suggest using the default of Cholesky
-   * unless gtsam sometimes throws NegativeMatrixException when your problem's Hessian is actually positive
+   * unless gtsam sometimes throws IndefiniteLinearSystemException when your problem's Hessian is actually positive
    * definite.  For positive definite problems, numerical error accumulation can cause the problem to become
    * numerically negative or indefinite as solving proceeds, especially when using Cholesky.
    */

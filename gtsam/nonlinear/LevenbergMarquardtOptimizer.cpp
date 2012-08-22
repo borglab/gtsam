@@ -18,10 +18,10 @@
 
 #include <cmath>
 
+#include <gtsam/linear/linearExceptions.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/SuccessiveLinearizationOptimizer.h>
 
-#include <gtsam/base/cholesky.h> // For NegativeMatrixException
 #include <boost/algorithm/string.hpp>
 #include <string>
 
@@ -134,7 +134,7 @@ void LevenbergMarquardtOptimizer::iterate() {
           state_.lambda *= params_.lambdaFactor;
         }
       }
-    } catch(const NegativeMatrixException& e) {
+    } catch(const IndeterminantLinearSystemException& e) {
       if(lmVerbosity >= LevenbergMarquardtParams::LAMBDA)
         cout << "Negative matrix, increasing lambda" << endl;
       // Either we're not cautious, or the same lambda was worse than the current error.

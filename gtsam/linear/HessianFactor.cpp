@@ -28,6 +28,7 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/FastMap.h>
 #include <gtsam/base/cholesky.h>
+#include <gtsam/linear/linearExceptions.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
@@ -47,13 +48,7 @@ string SlotEntry::toString() const {
 
 /* ************************************************************************* */
 void HessianFactor::assertInvariants() const {
-#ifndef NDEBUG
-	// Check for non-finite values
-	for(size_t i=0; i<(size_t) matrix_.rows(); ++i)
-		for(size_t j=i; j<(size_t) matrix_.cols(); ++j)
-			if(!isfinite(matrix_(i,j)))
-				throw invalid_argument("HessianFactor contains non-finite matrix entries.");
-#endif
+	GaussianFactor::assertInvariants(); // The base class checks for unique keys
 }
 
 /* ************************************************************************* */
@@ -473,7 +468,8 @@ void HessianFactor::updateATA(const JacobianFactor& update, const Scatter& scatt
 
 /* ************************************************************************* */
 void HessianFactor::partialCholesky(size_t nrFrontals) {
-	choleskyPartial(matrix_, info_.offset(nrFrontals));
+	if(!choleskyPartial(matrix_, info_.offset(nrFrontals)))
+		throw IndeterminantLinearSystemException(this->keys().front());
 }
 
 /* ************************************************************************* */
