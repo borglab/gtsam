@@ -25,8 +25,8 @@ bool isRotFirst() {
 }
 
 // Instantiate for common poses
-template<> bool isRotFirst<Pose3>() { return true; }
-template<> bool isRotFirst<Pose2>() { return false; }
+template<> inline bool isRotFirst<Pose3>() { return true; }
+template<> inline bool isRotFirst<Pose2>() { return false; }
 
 } // \namespace pose_traits
 
