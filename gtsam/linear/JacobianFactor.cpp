@@ -208,21 +208,6 @@ namespace gtsam {
 
     firstNonzeroBlocks_.resize(this->rows(), 0);
 
-    // Sort keys
-    set<Index> vars;
-    for(size_t j=0; j<size(); ++j)
-      vars.insert(keys_[j]);
-    Permutation permutation(Permutation::Identity(*vars.rbegin() + 1));
-    size_t jNew = 0;
-    BOOST_FOREACH(const Index& var, vars) {
-      permutation[var] = jNew++;
-    }
-    permuteWithInverse(permutation);
-    jNew = 0;
-    BOOST_FOREACH(const Index& var, vars) {
-      keys_[jNew++] = var;
-    }
-
     assertInvariants();
   }
 
