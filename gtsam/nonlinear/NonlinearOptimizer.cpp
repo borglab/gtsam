@@ -119,7 +119,7 @@ bool checkConvergence(double relativeErrorTreshold, double absoluteErrorTreshold
     double errorThreshold, double currentError, double newError,
     NonlinearOptimizerParams::Verbosity verbosity) {
 
-	if ( verbosity >= 2 ) {
+	if ( verbosity >= NonlinearOptimizerParams::ERROR ) {
 		if ( newError <= errorThreshold )
 			cout << "errorThreshold: " << newError << " < " << errorThreshold << endl;
 		else
@@ -130,7 +130,7 @@ bool checkConvergence(double relativeErrorTreshold, double absoluteErrorTreshold
 
 	// check if diverges
 	double absoluteDecrease = currentError - newError;
-	if (verbosity >= 2) {
+	if (verbosity >= NonlinearOptimizerParams::ERROR) {
 		if (absoluteDecrease <= absoluteErrorTreshold)
 			cout << "absoluteDecrease: " << setprecision(12) << absoluteDecrease << " < " << absoluteErrorTreshold << endl;
 		else
@@ -139,7 +139,7 @@ bool checkConvergence(double relativeErrorTreshold, double absoluteErrorTreshold
 
 	// calculate relative error decrease and update currentError
 	double relativeDecrease = absoluteDecrease / currentError;
-	if (verbosity >= 2) {
+	if (verbosity >= NonlinearOptimizerParams::ERROR) {
 		if (relativeDecrease <= relativeErrorTreshold)
 			cout << "relativeDecrease: " << setprecision(12) << relativeDecrease << " < " << relativeErrorTreshold << endl;
 		else
@@ -147,7 +147,7 @@ bool checkConvergence(double relativeErrorTreshold, double absoluteErrorTreshold
 	}
 	bool converged = (relativeErrorTreshold && (relativeDecrease <= relativeErrorTreshold))
 			|| (absoluteDecrease <= absoluteErrorTreshold);
-	if (verbosity >= 1 && converged) {
+	if (verbosity >= NonlinearOptimizerParams::ERROR && converged) {
 		if(absoluteDecrease >= 0.0)
 		  cout << "converged" << endl;
 		else
