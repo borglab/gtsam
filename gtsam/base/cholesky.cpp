@@ -168,6 +168,8 @@ bool choleskyPartial(Matrix& ABC, size_t nFrontal) {
 			int exp1;
 			(void)frexp(ABC(0,0), &exp1);
 			ok = (exp1 > -underconstrainedExponentDifference);
+		} else {
+			ok = true;
 		}
 	} else {
 		ok = false;
