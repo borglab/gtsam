@@ -58,7 +58,12 @@ public:
 	/// @{
 
 	/// construct from 2D vector
-	Point2(const Vector& v) : x_(v(0)), y_(v(1)) { assert(v.size() == 2); }
+	Point2(const Vector& v) {
+		if(v.size() != 2)
+			throw std::invalid_argument("Point2 constructor from Vector requires that the Vector have dimension 2");
+		x_ = v(0);
+		y_ = v(1);
+	}
 
   /// @}
   /// @name Testable
