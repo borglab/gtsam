@@ -293,7 +293,7 @@ std::pair<Matrix,Matrix> qr(const Matrix& A);
  * @param clear_below_diagonal enables zeroing out below diagonal
  */
 template <class MATRIX>
-void inplace_QR(MATRIX& A, bool clear_below_diagonal=true) {
+void inplace_QR(MATRIX& A) {
 	size_t rows = A.rows();
 	size_t cols = A.cols();
 	size_t size = std::min(rows,cols);

@@ -124,7 +124,7 @@ SharedDiagonal Gaussian::QR(Matrix& Ab) const {
 	if(debug) gtsam::print(Ab, "Whitened Ab: ");
 
 	// Eigen QR - much faster than older householder approach
-	inplace_QR(Ab, false);
+	inplace_QR(Ab);
 
 	// hand-coded householder implementation
 	// TODO: necessary to isolate last column?
