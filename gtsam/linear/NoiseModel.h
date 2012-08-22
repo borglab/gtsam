@@ -203,12 +203,6 @@ namespace gtsam {
 			virtual boost::shared_ptr<Diagonal> QR(Matrix& Ab) const;
 
 			/**
-			 * Cholesky factorization
-			 * FIXME: this is never used anywhere
-			 */
-			virtual boost::shared_ptr<Diagonal> Cholesky(Matrix& Ab, size_t nFrontals) const;
-
-			/**
 			 * Return R itself, but note that Whiten(H) is cheaper than R*H
 			 */
 			virtual Matrix R() const { return thisR();}

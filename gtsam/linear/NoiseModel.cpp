@@ -133,29 +133,6 @@ SharedDiagonal Gaussian::QR(Matrix& Ab) const {
 	return Unit::Create(maxRank);
 }
 
-/* ************************************************************************* */
-SharedDiagonal Gaussian::Cholesky(Matrix& Ab, size_t nFrontals) const {
-  // get size(A) and maxRank
-  // TODO: really no rank problems ?
-
-  // pre-whiten everything (cheaply if possible)
-  WhitenInPlace(Ab);
-
-  // Form A'*A (todo: this is probably less efficient than possible)
-  Ab = Ab.transpose() * Ab;
-
-  // Use Cholesky to factor Ab
-  size_t maxrank = choleskyCareful(Ab).first;
-
-  // Due to numerical error the rank could appear to be more than the number
-  // of variables.  The important part is that it does not includes the
-  // augmented b column.
-  if(maxrank == (size_t) Ab.cols())
-    -- maxrank;
-
-  return Unit::Create(maxrank);
-}
-
 void Gaussian::WhitenSystem(vector<Matrix>& A, Vector& b) const {
   BOOST_FOREACH(Matrix& Aj, A) { WhitenInPlace(Aj); }
   whitenInPlace(b);

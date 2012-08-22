@@ -248,18 +248,6 @@ TEST( NoiseModel, QR )
 }
 
 /* ************************************************************************* */
-TEST(NoiseModel, Cholesky)
-{
-  SharedDiagonal expected = noiseModel::Unit::Create(4);
-  Matrix Ab = exampleQR::Ab; // otherwise overwritten !
-  SharedDiagonal actual = exampleQR::diagonal->Cholesky(Ab, 4);
-  EXPECT(assert_equal(*expected,*actual));
-  // Ab was modified in place !!!
-  Matrix actualRd = Ab.block(0, 0, actual->dim(), Ab.cols()).triangularView<Eigen::Upper>();
-  EXPECT(linear_dependent(exampleQR::Rd,actualRd,1e-4));
-}
-
-/* ************************************************************************* */
 TEST(NoiseModel, QRNan )
 {
 	SharedDiagonal constrained = noiseModel::Constrained::All(2);
