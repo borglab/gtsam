@@ -353,79 +353,83 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 
   int id = unwrap<int>(in[0]);
 
-  switch(id) {
-  case 0:
-    ns1ClassA_collectorInsertAndMakeBase_0(nargout, out, nargin-1, in+1);
-    break;
-  case 1:
-    ns1ClassA_constructor_1(nargout, out, nargin-1, in+1);
-    break;
-  case 2:
-    ns1ClassA_deconstructor_2(nargout, out, nargin-1, in+1);
-    break;
-  case 3:
-    ns1ClassB_collectorInsertAndMakeBase_3(nargout, out, nargin-1, in+1);
-    break;
-  case 4:
-    ns1ClassB_constructor_4(nargout, out, nargin-1, in+1);
-    break;
-  case 5:
-    ns1ClassB_deconstructor_5(nargout, out, nargin-1, in+1);
-    break;
-  case 6:
-    ns2ClassA_collectorInsertAndMakeBase_6(nargout, out, nargin-1, in+1);
-    break;
-  case 7:
-    ns2ClassA_constructor_7(nargout, out, nargin-1, in+1);
-    break;
-  case 8:
-    ns2ClassA_deconstructor_8(nargout, out, nargin-1, in+1);
-    break;
-  case 9:
-    ns2ClassA_memberFunction_9(nargout, out, nargin-1, in+1);
-    break;
-  case 10:
-    ns2ClassA_nsArg_10(nargout, out, nargin-1, in+1);
-    break;
-  case 11:
-    ns2ClassA_nsReturn_11(nargout, out, nargin-1, in+1);
-    break;
-  case 12:
-    ns2ClassA_afunction_12(nargout, out, nargin-1, in+1);
-    break;
-  case 13:
-    ns2ns3ClassB_collectorInsertAndMakeBase_13(nargout, out, nargin-1, in+1);
-    break;
-  case 14:
-    ns2ns3ClassB_constructor_14(nargout, out, nargin-1, in+1);
-    break;
-  case 15:
-    ns2ns3ClassB_deconstructor_15(nargout, out, nargin-1, in+1);
-    break;
-  case 16:
-    ns2ClassC_collectorInsertAndMakeBase_16(nargout, out, nargin-1, in+1);
-    break;
-  case 17:
-    ns2ClassC_constructor_17(nargout, out, nargin-1, in+1);
-    break;
-  case 18:
-    ns2ClassC_deconstructor_18(nargout, out, nargin-1, in+1);
-    break;
-  case 19:
-    ClassD_collectorInsertAndMakeBase_19(nargout, out, nargin-1, in+1);
-    break;
-  case 20:
-    ClassD_constructor_20(nargout, out, nargin-1, in+1);
-    break;
-  case 21:
-    ClassD_deconstructor_21(nargout, out, nargin-1, in+1);
-    break;
-  case 22:
-    ns1aGlobalFunction_22(nargout, out, nargin-1, in+1);
-    break;
-  case 23:
-    ns2aGlobalFunction_23(nargout, out, nargin-1, in+1);
-    break;
+  try {
+    switch(id) {
+    case 0:
+      ns1ClassA_collectorInsertAndMakeBase_0(nargout, out, nargin-1, in+1);
+      break;
+    case 1:
+      ns1ClassA_constructor_1(nargout, out, nargin-1, in+1);
+      break;
+    case 2:
+      ns1ClassA_deconstructor_2(nargout, out, nargin-1, in+1);
+      break;
+    case 3:
+      ns1ClassB_collectorInsertAndMakeBase_3(nargout, out, nargin-1, in+1);
+      break;
+    case 4:
+      ns1ClassB_constructor_4(nargout, out, nargin-1, in+1);
+      break;
+    case 5:
+      ns1ClassB_deconstructor_5(nargout, out, nargin-1, in+1);
+      break;
+    case 6:
+      ns2ClassA_collectorInsertAndMakeBase_6(nargout, out, nargin-1, in+1);
+      break;
+    case 7:
+      ns2ClassA_constructor_7(nargout, out, nargin-1, in+1);
+      break;
+    case 8:
+      ns2ClassA_deconstructor_8(nargout, out, nargin-1, in+1);
+      break;
+    case 9:
+      ns2ClassA_memberFunction_9(nargout, out, nargin-1, in+1);
+      break;
+    case 10:
+      ns2ClassA_nsArg_10(nargout, out, nargin-1, in+1);
+      break;
+    case 11:
+      ns2ClassA_nsReturn_11(nargout, out, nargin-1, in+1);
+      break;
+    case 12:
+      ns2ClassA_afunction_12(nargout, out, nargin-1, in+1);
+      break;
+    case 13:
+      ns2ns3ClassB_collectorInsertAndMakeBase_13(nargout, out, nargin-1, in+1);
+      break;
+    case 14:
+      ns2ns3ClassB_constructor_14(nargout, out, nargin-1, in+1);
+      break;
+    case 15:
+      ns2ns3ClassB_deconstructor_15(nargout, out, nargin-1, in+1);
+      break;
+    case 16:
+      ns2ClassC_collectorInsertAndMakeBase_16(nargout, out, nargin-1, in+1);
+      break;
+    case 17:
+      ns2ClassC_constructor_17(nargout, out, nargin-1, in+1);
+      break;
+    case 18:
+      ns2ClassC_deconstructor_18(nargout, out, nargin-1, in+1);
+      break;
+    case 19:
+      ClassD_collectorInsertAndMakeBase_19(nargout, out, nargin-1, in+1);
+      break;
+    case 20:
+      ClassD_constructor_20(nargout, out, nargin-1, in+1);
+      break;
+    case 21:
+      ClassD_deconstructor_21(nargout, out, nargin-1, in+1);
+      break;
+    case 22:
+      ns1aGlobalFunction_22(nargout, out, nargin-1, in+1);
+      break;
+    case 23:
+      ns2aGlobalFunction_23(nargout, out, nargin-1, in+1);
+      break;
+    }
+  } catch(const std::exception& e) {
+    mexErrMsgTxt(("Exception from gtsam:\n" + std::string(e.what()) + "\n").c_str());
   }
 
   std::cout.rdbuf(outbuf);

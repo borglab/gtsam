@@ -485,130 +485,134 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 
   int id = unwrap<int>(in[0]);
 
-  switch(id) {
-  case 0:
-    Point2_collectorInsertAndMakeBase_0(nargout, out, nargin-1, in+1);
-    break;
-  case 1:
-    Point2_constructor_1(nargout, out, nargin-1, in+1);
-    break;
-  case 2:
-    Point2_constructor_2(nargout, out, nargin-1, in+1);
-    break;
-  case 3:
-    Point2_deconstructor_3(nargout, out, nargin-1, in+1);
-    break;
-  case 4:
-    Point2_argChar_4(nargout, out, nargin-1, in+1);
-    break;
-  case 5:
-    Point2_argUChar_5(nargout, out, nargin-1, in+1);
-    break;
-  case 6:
-    Point2_dim_6(nargout, out, nargin-1, in+1);
-    break;
-  case 7:
-    Point2_returnChar_7(nargout, out, nargin-1, in+1);
-    break;
-  case 8:
-    Point2_vectorConfusion_8(nargout, out, nargin-1, in+1);
-    break;
-  case 9:
-    Point2_x_9(nargout, out, nargin-1, in+1);
-    break;
-  case 10:
-    Point2_y_10(nargout, out, nargin-1, in+1);
-    break;
-  case 11:
-    Point3_collectorInsertAndMakeBase_11(nargout, out, nargin-1, in+1);
-    break;
-  case 12:
-    Point3_constructor_12(nargout, out, nargin-1, in+1);
-    break;
-  case 13:
-    Point3_deconstructor_13(nargout, out, nargin-1, in+1);
-    break;
-  case 14:
-    Point3_norm_14(nargout, out, nargin-1, in+1);
-    break;
-  case 15:
-    Point3_StaticFunctionRet_15(nargout, out, nargin-1, in+1);
-    break;
-  case 16:
-    Point3_staticFunction_16(nargout, out, nargin-1, in+1);
-    break;
-  case 17:
-    Test_collectorInsertAndMakeBase_17(nargout, out, nargin-1, in+1);
-    break;
-  case 18:
-    Test_constructor_18(nargout, out, nargin-1, in+1);
-    break;
-  case 19:
-    Test_constructor_19(nargout, out, nargin-1, in+1);
-    break;
-  case 20:
-    Test_deconstructor_20(nargout, out, nargin-1, in+1);
-    break;
-  case 21:
-    Test_arg_EigenConstRef_21(nargout, out, nargin-1, in+1);
-    break;
-  case 22:
-    Test_create_MixedPtrs_22(nargout, out, nargin-1, in+1);
-    break;
-  case 23:
-    Test_create_ptrs_23(nargout, out, nargin-1, in+1);
-    break;
-  case 24:
-    Test_print_24(nargout, out, nargin-1, in+1);
-    break;
-  case 25:
-    Test_return_Point2Ptr_25(nargout, out, nargin-1, in+1);
-    break;
-  case 26:
-    Test_return_Test_26(nargout, out, nargin-1, in+1);
-    break;
-  case 27:
-    Test_return_TestPtr_27(nargout, out, nargin-1, in+1);
-    break;
-  case 28:
-    Test_return_bool_28(nargout, out, nargin-1, in+1);
-    break;
-  case 29:
-    Test_return_double_29(nargout, out, nargin-1, in+1);
-    break;
-  case 30:
-    Test_return_field_30(nargout, out, nargin-1, in+1);
-    break;
-  case 31:
-    Test_return_int_31(nargout, out, nargin-1, in+1);
-    break;
-  case 32:
-    Test_return_matrix1_32(nargout, out, nargin-1, in+1);
-    break;
-  case 33:
-    Test_return_matrix2_33(nargout, out, nargin-1, in+1);
-    break;
-  case 34:
-    Test_return_pair_34(nargout, out, nargin-1, in+1);
-    break;
-  case 35:
-    Test_return_ptrs_35(nargout, out, nargin-1, in+1);
-    break;
-  case 36:
-    Test_return_size_t_36(nargout, out, nargin-1, in+1);
-    break;
-  case 37:
-    Test_return_string_37(nargout, out, nargin-1, in+1);
-    break;
-  case 38:
-    Test_return_vector1_38(nargout, out, nargin-1, in+1);
-    break;
-  case 39:
-    Test_return_vector2_39(nargout, out, nargin-1, in+1);
-    break;
-  case 40:
-    aGlobalFunction_40(nargout, out, nargin-1, in+1);
-    break;
+  try {
+    switch(id) {
+    case 0:
+      Point2_collectorInsertAndMakeBase_0(nargout, out, nargin-1, in+1);
+      break;
+    case 1:
+      Point2_constructor_1(nargout, out, nargin-1, in+1);
+      break;
+    case 2:
+      Point2_constructor_2(nargout, out, nargin-1, in+1);
+      break;
+    case 3:
+      Point2_deconstructor_3(nargout, out, nargin-1, in+1);
+      break;
+    case 4:
+      Point2_argChar_4(nargout, out, nargin-1, in+1);
+      break;
+    case 5:
+      Point2_argUChar_5(nargout, out, nargin-1, in+1);
+      break;
+    case 6:
+      Point2_dim_6(nargout, out, nargin-1, in+1);
+      break;
+    case 7:
+      Point2_returnChar_7(nargout, out, nargin-1, in+1);
+      break;
+    case 8:
+      Point2_vectorConfusion_8(nargout, out, nargin-1, in+1);
+      break;
+    case 9:
+      Point2_x_9(nargout, out, nargin-1, in+1);
+      break;
+    case 10:
+      Point2_y_10(nargout, out, nargin-1, in+1);
+      break;
+    case 11:
+      Point3_collectorInsertAndMakeBase_11(nargout, out, nargin-1, in+1);
+      break;
+    case 12:
+      Point3_constructor_12(nargout, out, nargin-1, in+1);
+      break;
+    case 13:
+      Point3_deconstructor_13(nargout, out, nargin-1, in+1);
+      break;
+    case 14:
+      Point3_norm_14(nargout, out, nargin-1, in+1);
+      break;
+    case 15:
+      Point3_StaticFunctionRet_15(nargout, out, nargin-1, in+1);
+      break;
+    case 16:
+      Point3_staticFunction_16(nargout, out, nargin-1, in+1);
+      break;
+    case 17:
+      Test_collectorInsertAndMakeBase_17(nargout, out, nargin-1, in+1);
+      break;
+    case 18:
+      Test_constructor_18(nargout, out, nargin-1, in+1);
+      break;
+    case 19:
+      Test_constructor_19(nargout, out, nargin-1, in+1);
+      break;
+    case 20:
+      Test_deconstructor_20(nargout, out, nargin-1, in+1);
+      break;
+    case 21:
+      Test_arg_EigenConstRef_21(nargout, out, nargin-1, in+1);
+      break;
+    case 22:
+      Test_create_MixedPtrs_22(nargout, out, nargin-1, in+1);
+      break;
+    case 23:
+      Test_create_ptrs_23(nargout, out, nargin-1, in+1);
+      break;
+    case 24:
+      Test_print_24(nargout, out, nargin-1, in+1);
+      break;
+    case 25:
+      Test_return_Point2Ptr_25(nargout, out, nargin-1, in+1);
+      break;
+    case 26:
+      Test_return_Test_26(nargout, out, nargin-1, in+1);
+      break;
+    case 27:
+      Test_return_TestPtr_27(nargout, out, nargin-1, in+1);
+      break;
+    case 28:
+      Test_return_bool_28(nargout, out, nargin-1, in+1);
+      break;
+    case 29:
+      Test_return_double_29(nargout, out, nargin-1, in+1);
+      break;
+    case 30:
+      Test_return_field_30(nargout, out, nargin-1, in+1);
+      break;
+    case 31:
+      Test_return_int_31(nargout, out, nargin-1, in+1);
+      break;
+    case 32:
+      Test_return_matrix1_32(nargout, out, nargin-1, in+1);
+      break;
+    case 33:
+      Test_return_matrix2_33(nargout, out, nargin-1, in+1);
+      break;
+    case 34:
+      Test_return_pair_34(nargout, out, nargin-1, in+1);
+      break;
+    case 35:
+      Test_return_ptrs_35(nargout, out, nargin-1, in+1);
+      break;
+    case 36:
+      Test_return_size_t_36(nargout, out, nargin-1, in+1);
+      break;
+    case 37:
+      Test_return_string_37(nargout, out, nargin-1, in+1);
+      break;
+    case 38:
+      Test_return_vector1_38(nargout, out, nargin-1, in+1);
+      break;
+    case 39:
+      Test_return_vector2_39(nargout, out, nargin-1, in+1);
+      break;
+    case 40:
+      aGlobalFunction_40(nargout, out, nargin-1, in+1);
+      break;
+    }
+  } catch(const std::exception& e) {
+    mexErrMsgTxt(("Exception from gtsam:\n" + std::string(e.what()) + "\n").c_str());
   }
 
   std::cout.rdbuf(outbuf);
