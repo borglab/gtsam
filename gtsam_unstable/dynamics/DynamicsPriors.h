@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include <gtsam/slam/PartialPriorFactor.h>
+#include <gtsam_unstable/slam/PartialPriorFactor.h>
 
 #include <gtsam_unstable/dynamics/PoseRTV.h>
 
