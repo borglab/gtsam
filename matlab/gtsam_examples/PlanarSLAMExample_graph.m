@@ -21,29 +21,27 @@ datafile = '/Users/dellaert/borg/gtsam/examples/Data/example.graph';
 model = noiseModel.Diagonal.Sigmas([0.05; 0.05; 2*pi/180]);
 [graph,initial] = load2D(datafile, model);
 
-%% Add a Gaussian prior on pose x_1
-priorMean = initial.at(0);
-priorNoise = noiseModel.Diagonal.Sigmas([0.01; 0.01; 0.01]);
-graph.add(PriorFactorPose2(0, priorMean, priorNoise)); % add directly to graph
+%% Add a Gaussian prior on a pose in the middle
+priorMean = initial.at(40);
+priorNoise = noiseModel.Diagonal.Sigmas([0.1; 0.1; 2*pi/180]);
+graph.add(PriorFactorPose2(40, priorMean, priorNoise)); % add directly to graph
 
 %% Plot Initial Estimate
 cla
-plot2DTrajectory(initial, 'g-*'); axis equal
+plot2DTrajectory(initial, 'r-'); axis equal
 
 %% Optimize using Levenberg-Marquardt optimization with an ordering from colamd
 optimizer = LevenbergMarquardtOptimizer(graph, initial);
 tic
 result = optimizer.optimizeSafely;
 toc
-hold on; plot2DTrajectory(result, 'b-*');
 
 %% Plot Covariance Ellipses
+cla;hold on
 marginals = Marginals(graph, result);
-P={};
-for i=0:94
-    pose_i = result.at(i);
-    Pi=marginals.marginalCovariance(i);
-    plotPose2(pose_i,'b',Pi)
-end
+plot2DTrajectory(result, 'g', marginals);
+plot2DPoints(result, 'b', marginals);
+axis tight
+axis equal
 view(2)
-axis tight; axis equal;
+
