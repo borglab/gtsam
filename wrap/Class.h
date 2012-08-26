@@ -62,8 +62,10 @@ struct Class {
 	// The typedef line for this class, if this class is a typedef, otherwise returns an empty string.
 	std::string getTypedef() const;
 
+
 private:
 	void pointer_constructor_fragments(FileWriter& proxyFile, FileWriter& wrapperFile, const std::string& wrapperName, std::vector<std::string>& functionNames) const;
+    void comment_fragment(FileWriter& proxyFile) const;
 };
 
 } // \namespace wrap
