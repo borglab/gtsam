@@ -52,6 +52,9 @@ LinearContainerFactor::LinearContainerFactor(
 		const GaussianFactor::shared_ptr& factor)
 : factor_(factor->clone())
 {
+	// Extract keys stashed in linear factor
+	BOOST_FOREACH(const Index& idx, factor_->keys())
+		keys_.push_back(idx);
 }
 
 /* ************************************************************************* */
