@@ -327,7 +327,7 @@ std::string Class::getTypedef() const {
 
 void Class::comment_fragment(FileWriter& proxyFile) const
 {
-    proxyFile.oss << "%%" << " --Overloads--" << endl;
+    proxyFile.oss << "%%" << " -------Overloads-------" << endl;
     BOOST_FOREACH(ArgumentList argList, constructor.args_list) 
     { 
         proxyFile.oss << "%" << name << "(";
@@ -341,6 +341,25 @@ void Class::comment_fragment(FileWriter& proxyFile) const
 		    i++;
         }
         proxyFile.oss << ")" << endl;
+    }
+
+    proxyFile.oss << "%" << "-------Methods-------" << endl;
+    BOOST_FOREACH(const Methods::value_type& name_m, methods) { 
+		const Method& m = name_m.second; 
+        BOOST_FOREACH(ArgumentList argList, m.argLists) 
+        { 
+            proxyFile.oss << "%" << m.name << "(";
+            int i = 0;
+		    BOOST_FOREACH(const Argument& arg, argList) 
+		    {
+		        if(i != argList.size()-1)
+		            proxyFile.oss << arg.type << " " << arg.name << ", ";
+                else
+		            proxyFile.oss << arg.type << " " << arg.name;
+		        i++;
+            }
+            proxyFile.oss << ")" << endl;
+        }
     }
 }
 /* ************************************************************************* */ 
