@@ -235,6 +235,24 @@ TEST(Values, expmap_d)
 }
 
 /* ************************************************************************* */
+TEST(Values, localCoordinates)
+{
+	Values valuesA;
+	valuesA.insert(key1, LieVector(3, 1.0, 2.0, 3.0));
+	valuesA.insert(key2, LieVector(3, 5.0, 6.0, 7.0));
+
+	Ordering ordering = *valuesA.orderingArbitrary();
+
+	VectorValues expDelta = valuesA.zeroVectors(ordering);
+//	expDelta.at(ordering[key1]) = Vector_(3, 0.1, 0.2, 0.3);
+//	expDelta.at(ordering[key2]) = Vector_(3, 0.4, 0.5, 0.6);
+
+	Values valuesB = valuesA.retract(expDelta, ordering);
+
+	EXPECT(assert_equal(expDelta, valuesA.localCoordinates(valuesB, ordering)));
+}
+
+/* ************************************************************************* */
 TEST(Values, extract_keys)
 {
 	Values config;

@@ -90,7 +90,15 @@ namespace gtsam {
   /* ************************************************************************* */
   VectorValues Values::localCoordinates(const Values& cp, const Ordering& ordering) const {
     VectorValues result(this->dims(ordering));
-    localCoordinates(cp, ordering, result);
+    if(this->size() != cp.size())
+      throw DynamicValuesMismatched();
+    for(const_iterator it1=this->begin(), it2=cp.begin(); it1!=this->end(); ++it1, ++it2) {
+      if(it1->key != it2->key)
+        throw DynamicValuesMismatched(); // If keys do not match
+      // Will throw a dynamic_cast exception if types do not match
+      // NOTE: this is separate from localCoordinates(cp, ordering, result) due to at() vs. insert
+      result.at(ordering[it1->key]) = it1->value.localCoordinates_(it2->value);
+    }
     return result;
   }
 

@@ -21,32 +21,40 @@ class LinearContainerFactor : public NonlinearFactor {
 protected:
 
 	GaussianFactor::shared_ptr factor_;
+	boost::optional<Values> linearizationPoint_;
 
 public:
 
 	/** Primary constructor: store a linear factor and decode the ordering */
-	LinearContainerFactor(const JacobianFactor& factor, const Ordering& ordering);
+	LinearContainerFactor(const JacobianFactor& factor, const Ordering& ordering,
+			const Values& linearizationPoint = Values());
 
 	/** Primary constructor: store a linear factor and decode the ordering */
-	LinearContainerFactor(const HessianFactor& factor, const Ordering& ordering);
+	LinearContainerFactor(const HessianFactor& factor, const Ordering& ordering,
+			const Values& linearizationPoint = Values());
 
 	/** Constructor from shared_ptr */
-	LinearContainerFactor(const GaussianFactor::shared_ptr& factor, const Ordering& ordering);
+	LinearContainerFactor(const GaussianFactor::shared_ptr& factor, const Ordering& ordering,
+			const Values& linearizationPoint = Values());
 
 	/** Constructor from re-keyed factor: all indices assumed replaced with Key */
-	LinearContainerFactor(const GaussianFactor::shared_ptr& factor);
+	LinearContainerFactor(const GaussianFactor::shared_ptr& factor,
+			const Values& linearizationPoint = Values());
 
 	/** Alternate constructor: store a linear factor and decode keys with inverted ordering*/
 	LinearContainerFactor(const JacobianFactor& factor,
-			const Ordering::InvertedMap& inverted_ordering);
+			const Ordering::InvertedMap& inverted_ordering,
+			const Values& linearizationPoint = Values());
 
 	/** Alternate constructor: store a linear factor and decode keys with inverted ordering*/
 	LinearContainerFactor(const HessianFactor& factor,
-			const Ordering::InvertedMap& inverted_ordering);
+			const Ordering::InvertedMap& inverted_ordering,
+			const Values& linearizationPoint = Values());
 
 	/** Constructor from shared_ptr with inverted ordering*/
 	LinearContainerFactor(const GaussianFactor::shared_ptr& factor,
-			const Ordering::InvertedMap& ordering);
+			const Ordering::InvertedMap& ordering,
+			const Values& linearizationPoint = Values());
 
 	// Access
 
@@ -69,6 +77,9 @@ public:
 
   /** get the dimension of the factor: rows of linear factor */
   size_t dim() const;
+
+  /** Extract the linearization point used in recalculating error */
+	const boost::optional<Values>& linearizationPoint() const { return linearizationPoint_; }
 
   /** Apply the ordering to a graph - same as linearize(), but without needing a linearization point */
   GaussianFactor::shared_ptr order(const Ordering& ordering) const;
@@ -125,6 +136,7 @@ public:
 protected:
   void rekeyFactor(const Ordering& ordering);
   void rekeyFactor(const Ordering::InvertedMap& invOrdering);
+  void initializeLinearizationPoint(const Values& linearizationPoint);
 
 }; // \class LinearContainerFactor
 

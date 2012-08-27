@@ -212,7 +212,7 @@ namespace gtsam {
     /** Get a delta config about a linearization point c0 (*this) */
     VectorValues localCoordinates(const Values& cp, const Ordering& ordering) const;
 
-    /** Get a delta config about a linearization point c0 (*this) */
+    /** Get a delta config about a linearization point c0 (*this) - assumes uninitialized delta */
     void localCoordinates(const Values& cp, const Ordering& ordering, VectorValues& delta) const;
 
     ///@}

@@ -71,6 +71,49 @@ TEST( testLinearContainerFactor, generic_jacobian_factor ) {
 }
 
 /* ************************************************************************* */
+TEST( testLinearContainerFactor, jacobian_factor_withlinpoints ) {
+
+	Ordering ordering; ordering += x1, x2, l1, l2;
+
+	JacobianFactor expLinFactor(
+			ordering[l1],
+			Matrix_(2,2,
+					 2.74222, -0.0067457,
+							 0.0,  2.63624),
+			ordering[l2],
+			Matrix_(2,2,
+					-0.0455167, -0.0443573,
+					-0.0222154, -0.102489),
+			Vector_(2, 0.0277052,
+								 -0.0533393),
+			diag_model2);
+
+	Values values;
+	values.insert(l1, landmark1);
+	values.insert(l2, landmark2);
+	values.insert(x1, poseA1);
+	values.insert(x2, poseA2);
+
+	LinearContainerFactor actFactor(expLinFactor, ordering, values);
+
+	// Check contents
+	Values expLinPoint;
+	expLinPoint.insert(l1, landmark1);
+	expLinPoint.insert(l2, landmark2);
+	CHECK(actFactor.linearizationPoint());
+	EXPECT(assert_equal(expLinPoint, *actFactor.linearizationPoint()));
+
+	// Check error evaluation
+	VectorValues delta = values.zeroVectors(ordering);
+	delta.at(ordering[l1]) = Vector_(2, 1.0, 2.0);
+	delta.at(ordering[l2]) = Vector_(2, 3.0, 4.0);
+	Values noisyValues = values.retract(delta, ordering);
+	double expError = expLinFactor.error(delta);
+	EXPECT_DOUBLES_EQUAL(expError, actFactor.error(noisyValues), tol);
+	EXPECT_DOUBLES_EQUAL(expLinFactor.error(values.zeroVectors(ordering)), actFactor.error(values), tol);
+}
+
+/* ************************************************************************* */
 TEST( testLinearContainerFactor, generic_hessian_factor ) {
   Matrix G11 = Matrix_(1,1, 1.0);
   Matrix G12 = Matrix_(1,2, 2.0, 4.0);

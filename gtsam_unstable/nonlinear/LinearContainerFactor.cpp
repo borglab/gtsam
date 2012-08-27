@@ -27,56 +27,82 @@ void LinearContainerFactor::rekeyFactor(const Ordering::InvertedMap& invOrdering
 }
 
 /* ************************************************************************* */
-LinearContainerFactor::LinearContainerFactor(
-		const JacobianFactor& factor, const Ordering& ordering)
-: factor_(factor.clone()) {
-	rekeyFactor(ordering);
+void LinearContainerFactor::initializeLinearizationPoint(const Values& linearizationPoint) {
+	if (!linearizationPoint.empty()) {
+		linearizationPoint_ = Values();
+		BOOST_FOREACH(const gtsam::Key& key, this->keys()) {
+			linearizationPoint_->insert(key, linearizationPoint.at(key));
+		}
+	} else {
+		linearizationPoint_ = boost::none;
+	}
 }
 
 /* ************************************************************************* */
 LinearContainerFactor::LinearContainerFactor(
-		const HessianFactor& factor, const Ordering& ordering)
+		const JacobianFactor& factor, const Ordering& ordering,
+		const Values& linearizationPoint)
 : factor_(factor.clone()) {
 	rekeyFactor(ordering);
+	initializeLinearizationPoint(linearizationPoint);
 }
 
 /* ************************************************************************* */
 LinearContainerFactor::LinearContainerFactor(
-		const GaussianFactor::shared_ptr& factor, const Ordering& ordering)
+		const HessianFactor& factor, const Ordering& ordering,
+		const Values& linearizationPoint)
+: factor_(factor.clone()) {
+	rekeyFactor(ordering);
+	initializeLinearizationPoint(linearizationPoint);
+}
+
+/* ************************************************************************* */
+LinearContainerFactor::LinearContainerFactor(
+		const GaussianFactor::shared_ptr& factor, const Ordering& ordering,
+		const Values& linearizationPoint)
 : factor_(factor->clone()) {
 	rekeyFactor(ordering);
-}
-
-/* ************************************************************************* */
-LinearContainerFactor::LinearContainerFactor(
-		const GaussianFactor::shared_ptr& factor)
-: factor_(factor->clone())
-{
-	// Extract keys stashed in linear factor
-	BOOST_FOREACH(const Index& idx, factor_->keys())
-		keys_.push_back(idx);
-}
-
-/* ************************************************************************* */
-LinearContainerFactor::LinearContainerFactor(const JacobianFactor& factor,
-		const Ordering::InvertedMap& inverted_ordering)
-: factor_(factor.clone()) {
-	rekeyFactor(inverted_ordering);
-}
-
-/* ************************************************************************* */
-LinearContainerFactor::LinearContainerFactor(const HessianFactor& factor,
-		const Ordering::InvertedMap& inverted_ordering)
-: factor_(factor.clone()) {
-	rekeyFactor(inverted_ordering);
+	initializeLinearizationPoint(linearizationPoint);
 }
 
 /* ************************************************************************* */
 LinearContainerFactor::LinearContainerFactor(
 		const GaussianFactor::shared_ptr& factor,
-		const Ordering::InvertedMap& ordering)
+		const Values& linearizationPoint)
+: factor_(factor->clone())
+{
+	// Extract keys stashed in linear factor
+	BOOST_FOREACH(const Index& idx, factor_->keys())
+		keys_.push_back(idx);
+	initializeLinearizationPoint(linearizationPoint);
+}
+
+/* ************************************************************************* */
+LinearContainerFactor::LinearContainerFactor(const JacobianFactor& factor,
+		const Ordering::InvertedMap& inverted_ordering,
+		const Values& linearizationPoint)
+: factor_(factor.clone()) {
+	rekeyFactor(inverted_ordering);
+	initializeLinearizationPoint(linearizationPoint);
+}
+
+/* ************************************************************************* */
+LinearContainerFactor::LinearContainerFactor(const HessianFactor& factor,
+		const Ordering::InvertedMap& inverted_ordering,
+		const Values& linearizationPoint)
+: factor_(factor.clone()) {
+	rekeyFactor(inverted_ordering);
+	initializeLinearizationPoint(linearizationPoint);
+}
+
+/* ************************************************************************* */
+LinearContainerFactor::LinearContainerFactor(
+		const GaussianFactor::shared_ptr& factor,
+		const Ordering::InvertedMap& ordering,
+		const Values& linearizationPoint)
 : factor_(factor->clone()) {
 	rekeyFactor(ordering);
+	initializeLinearizationPoint(linearizationPoint);
 }
 
 /* ************************************************************************* */
@@ -84,20 +110,45 @@ void LinearContainerFactor::print(const std::string& s, const KeyFormatter& keyF
 	Base::print(s+"LinearContainerFactor", keyFormatter);
 	if (factor_)
 		factor_->print("   Stored Factor", keyFormatter);
+	if (linearizationPoint_)
+		linearizationPoint_->print("   LinearizationPoint", keyFormatter);
 }
 
 /* ************************************************************************* */
 bool LinearContainerFactor::equals(const NonlinearFactor& f, double tol) const {
 	const LinearContainerFactor* jcf = dynamic_cast<const LinearContainerFactor*>(&f);
-	return jcf && factor_->equals(*jcf->factor_, tol) && NonlinearFactor::equals(f);
+	if (!jcf || factor_->equals(*jcf->factor_, tol) || NonlinearFactor::equals(f))
+		return false;
+	if (!linearizationPoint_ && !jcf->linearizationPoint_)
+		return true;
+	return jcf->linearizationPoint_ && linearizationPoint_->equals(*jcf->linearizationPoint_, tol);
 }
 
 /* ************************************************************************* */
 double LinearContainerFactor::error(const Values& c) const {
-	//	VectorValues vecvalues;
-	//	// FIXME: add values correctly here
-	//	return factor_.error(vecvalues);
-		return 0; // FIXME: placeholder
+	if (!linearizationPoint_)
+		return 0;
+
+	// Extract subset of values for comparision
+	Values csub;
+	BOOST_FOREACH(const gtsam::Key& key, keys())
+		csub.insert(key, c.at(key));
+
+	// create dummy ordering for evaluation
+	Ordering ordering = *csub.orderingArbitrary();
+	VectorValues delta = linearizationPoint_->localCoordinates(csub, ordering);
+
+	// Change keys on stored factor
+	BOOST_FOREACH(gtsam::Index& index, factor_->keys())
+		index = ordering[index];
+
+	// compute error
+	double error = factor_->error(delta);
+
+	// change keys back
+	factor_->keys() = keys();
+
+	return error;
 }
 
 /* ************************************************************************* */
