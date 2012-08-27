@@ -9,6 +9,7 @@
 
 #include <gtsam_unstable/nonlinear/LinearContainerFactor.h>
 
+#include <gtsam/base/TestableAssertions.h>
 #include <gtsam/geometry/Pose2.h>
 
 using namespace gtsam;
@@ -95,6 +96,11 @@ TEST( testLinearContainerFactor, jacobian_factor_withlinpoints ) {
 	values.insert(x2, poseA2);
 
 	LinearContainerFactor actFactor(expLinFactor, ordering, values);
+	LinearContainerFactor actFactorNolin(expLinFactor, ordering);
+
+	EXPECT(assert_equal(actFactor, actFactor, tol));
+	EXPECT(assert_inequal(actFactor, actFactorNolin, tol));
+	EXPECT(assert_inequal(actFactorNolin, actFactor, tol));
 
 	// Check contents
 	Values expLinPoint;

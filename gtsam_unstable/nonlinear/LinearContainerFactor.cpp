@@ -117,11 +117,13 @@ void LinearContainerFactor::print(const std::string& s, const KeyFormatter& keyF
 /* ************************************************************************* */
 bool LinearContainerFactor::equals(const NonlinearFactor& f, double tol) const {
 	const LinearContainerFactor* jcf = dynamic_cast<const LinearContainerFactor*>(&f);
-	if (!jcf || factor_->equals(*jcf->factor_, tol) || NonlinearFactor::equals(f))
+	if (!jcf || !factor_->equals(*jcf->factor_, tol) || !NonlinearFactor::equals(f))
 		return false;
 	if (!linearizationPoint_ && !jcf->linearizationPoint_)
 		return true;
-	return jcf->linearizationPoint_ && linearizationPoint_->equals(*jcf->linearizationPoint_, tol);
+	if (linearizationPoint_ && jcf->linearizationPoint_)
+		return linearizationPoint_->equals(*jcf->linearizationPoint_, tol);
+	return false;
 }
 
 /* ************************************************************************* */
