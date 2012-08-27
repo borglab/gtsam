@@ -44,7 +44,7 @@ LieVector evalFactorError2(const Pose2TranslationPrior& factor, const Pose2& x) 
 }
 
 /* ************************************************************************* */
-TEST( testRelativeElevationFactor, level3_zero_error ) {
+TEST( testPoseTranslationFactor, level3_zero_error ) {
 	Pose3 pose1(rot3A, point3A);
 	Pose3TranslationPrior factor(poseKey, point3A, model3);
 	Matrix actH1;
@@ -55,7 +55,7 @@ TEST( testRelativeElevationFactor, level3_zero_error ) {
 }
 
 /* ************************************************************************* */
-TEST( testRelativeElevationFactor, level3_error ) {
+TEST( testPoseTranslationFactor, level3_error ) {
 	Pose3 pose1(rot3A, point3A);
 	Pose3TranslationPrior factor(poseKey, point3B, model3);
 	Matrix actH1;
@@ -66,7 +66,7 @@ TEST( testRelativeElevationFactor, level3_error ) {
 }
 
 /* ************************************************************************* */
-TEST( testRelativeElevationFactor, pitched3_zero_error ) {
+TEST( testPoseTranslationFactor, pitched3_zero_error ) {
 	Pose3 pose1(rot3B, point3A);
 	Pose3TranslationPrior factor(poseKey, point3A, model3);
 	Matrix actH1;
@@ -77,7 +77,7 @@ TEST( testRelativeElevationFactor, pitched3_zero_error ) {
 }
 
 /* ************************************************************************* */
-TEST( testRelativeElevationFactor, pitched3_error ) {
+TEST( testPoseTranslationFactor, pitched3_error ) {
 	Pose3 pose1(rot3B, point3A);
 	Pose3TranslationPrior factor(poseKey, point3B, model3);
 	Matrix actH1;
@@ -88,7 +88,7 @@ TEST( testRelativeElevationFactor, pitched3_error ) {
 }
 
 /* ************************************************************************* */
-TEST( testRelativeElevationFactor, smallrot3_zero_error ) {
+TEST( testPoseTranslationFactor, smallrot3_zero_error ) {
 	Pose3 pose1(rot3C, point3A);
 	Pose3TranslationPrior factor(poseKey, point3A, model3);
 	Matrix actH1;
@@ -99,7 +99,7 @@ TEST( testRelativeElevationFactor, smallrot3_zero_error ) {
 }
 
 /* ************************************************************************* */
-TEST( testRelativeElevationFactor, smallrot3_error ) {
+TEST( testPoseTranslationFactor, smallrot3_error ) {
 	Pose3 pose1(rot3C, point3A);
 	Pose3TranslationPrior factor(poseKey, point3B, model3);
 	Matrix actH1;
@@ -110,7 +110,7 @@ TEST( testRelativeElevationFactor, smallrot3_error ) {
 }
 
 /* ************************************************************************* */
-TEST( testRelativeElevationFactor, level2_zero_error ) {
+TEST( testPoseTranslationFactor, level2_zero_error ) {
 	Pose2 pose1(rot2A, point2A);
 	Pose2TranslationPrior factor(poseKey, point2A, model2);
 	Matrix actH1;
@@ -121,7 +121,7 @@ TEST( testRelativeElevationFactor, level2_zero_error ) {
 }
 
 /* ************************************************************************* */
-TEST( testRelativeElevationFactor, level2_error ) {
+TEST( testPoseTranslationFactor, level2_error ) {
 	Pose2 pose1(rot2A, point2A);
 	Pose2TranslationPrior factor(poseKey, point2B, model2);
 	Matrix actH1;
