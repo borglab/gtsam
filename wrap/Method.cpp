@@ -46,6 +46,24 @@ void Method::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperF
 																		 vector<string>& functionNames) const {
 
 	proxyFile.oss << "    function varargout = " << name << "(this, varargin)\n";
+	//Comments for documentation
+	proxyFile.oss << "      % " << name << " See GTSAM Doc for detailed info." << endl;
+	proxyFile.oss << "      % " << "" << endl;
+	proxyFile.oss << "      % " << "Method Overloads" << endl;
+    BOOST_FOREACH(ArgumentList argList, argLists) 
+    { 
+        proxyFile.oss << "      % " << name << "(";
+        int i = 0;
+		BOOST_FOREACH(const Argument& arg, argList) 
+		{
+		    if(i != argList.size()-1)
+		        proxyFile.oss << arg.type << " " << arg.name << ", ";
+            else
+		        proxyFile.oss << arg.type << " " << arg.name;
+		    i++;
+        }
+        proxyFile.oss << ")" << endl;
+    }
 
 	for(size_t overload = 0; overload < argLists.size(); ++overload) {
 		const ArgumentList& args = argLists[overload];

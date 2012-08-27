@@ -24,6 +24,7 @@
 #include "Argument.h"
 #include "ReturnValue.h"
 #include "TypeAttributesTable.h"
+#include <boost/algorithm/string.hpp>
 
 namespace wrap {
 
