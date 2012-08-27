@@ -47,7 +47,22 @@ void Method::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperF
 
 	proxyFile.oss << "    function varargout = " << name << "(this, varargin)\n";
 	//Comments for documentation
-	proxyFile.oss << "      % " << name << " See GTSAM Doxygen html for detailed info." << endl;
+	proxyFile.oss << "      % " << name << " ";
+	BOOST_FOREACH(ArgumentList argList, argLists) 
+    { 
+        proxyFile.oss << " " << name << "(";
+        int i = 0;
+		BOOST_FOREACH(const Argument& arg, argList) 
+		{
+		    if(i != argList.size()-1)
+		        proxyFile.oss << arg.type << " " << arg.name << ", ";
+            else
+		        proxyFile.oss << arg.type << " " << arg.name;
+		    i++;
+        }
+        proxyFile.oss << ") : ";
+    }
+    proxyFile.oss << endl;
 	proxyFile.oss << "      % " << "Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html" << endl;
 	proxyFile.oss << "      % " << "" << endl;
 	proxyFile.oss << "      % " << "Method Overloads" << endl;
