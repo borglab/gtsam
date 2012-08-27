@@ -955,12 +955,15 @@ virtual class JacobianFactor : gtsam::GaussianFactor {
 	void print(string s) const;
 	void printKeys(string s) const;
 	bool equals(const gtsam::GaussianFactor& lf, double tol) const;
-	bool empty() const;
 	size_t size() const;
-	Vector getb() const;
 	double error(const gtsam::VectorValues& c) const;
-	gtsam::GaussianConditional* eliminateFirst();
-	gtsam::GaussianFactor* negate() const;
+  gtsam::GaussianFactor* negate() const;
+  bool empty() const;
+  Vector getb() const;
+  pair<Matrix, Vector> matrix() const;
+  Matrix matrix_augmented() const;
+  gtsam::GaussianConditional* eliminateFirst();
+  gtsam::GaussianConditional* eliminate(size_t nrFrontals);
 };
 
 virtual class HessianFactor : gtsam::GaussianFactor {
