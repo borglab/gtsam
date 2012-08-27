@@ -380,5 +380,8 @@ void Class::comment_fragment(FileWriter& proxyFile) const
             proxyFile.oss << ")" << endl;
         }
     }
+
+	proxyFile.oss << "%" << "" << endl;
+	proxyFile.oss << "%" << "Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html" << endl;
 }
 /* ************************************************************************* */ 

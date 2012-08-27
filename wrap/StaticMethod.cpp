@@ -50,7 +50,8 @@ void StaticMethod::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wr
   string upperName = name;  upperName[0] = std::toupper(upperName[0], std::locale());
 
 	proxyFile.oss << "    function varargout = " << upperName << "(varargin)\n";
-    proxyFile.oss << "      % " << name << " See GTSAM Doc for detailed info." << endl;
+	proxyFile.oss << "      % " << name << " See GTSAM Doxygen html for detailed info." << endl;
+	proxyFile.oss << "      % " << "Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html" << endl;
 	proxyFile.oss << "      % " << "" << endl;
 	proxyFile.oss << "      % " << "Method Overloads" << endl;
     BOOST_FOREACH(ArgumentList argList, argLists) 
