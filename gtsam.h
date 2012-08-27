@@ -1122,6 +1122,7 @@ class NonlinearFactorGraph {
 	// Ordering* orderingCOLAMDConstrained(const gtsam::Values& c, const std::map<gtsam::Key,int>& constraints) const;
 	gtsam::GaussianFactorGraph* linearize(const gtsam::Values& values,
 			const gtsam::Ordering& ordering) const;
+	gtsam::SymbolicFactorGraph* symbolic(const gtsam::Ordering& ordering) const;
 	gtsam::NonlinearFactorGraph clone() const;
 };
 
