@@ -240,20 +240,6 @@ break;
 		}
 		toc(1, "countDims");
 
-		if (debug) cout << "Sort rows" << endl;
-		tic(2, "sort rows");
-		vector<JacobianFactor::_RowSource> rowSources;
-		rowSources.reserve(m);
-		bool anyConstrained = false;
-		for (size_t sourceFactorI = 0; sourceFactorI < factors.size(); ++sourceFactorI) {
-			const JacobianFactor& sourceFactor(*factors[sourceFactorI]);
-			sourceFactor.collectInfo(sourceFactorI, rowSources);
-			if (sourceFactor.isConstrained()) anyConstrained = true;
-		}
-		assert(rowSources.size() == m);
-		std::sort(rowSources.begin(), rowSources.end());
-		toc(2, "sort rows");
-
 		if (debug) cout << "Allocate new factor" << endl;
 		tic(3, "allocate");
 		JacobianFactor::shared_ptr combined(new JacobianFactor());
@@ -261,36 +247,47 @@ break;
 		Vector sigmas(m);
 		toc(3, "allocate");
 
-		if (debug) cout << "Copy rows" << endl;
-		tic(4, "copy rows");
+		if (debug) cout << "Copy blocks" << endl;
+		tic(4, "copy blocks");
+		// Loop over slots in combined factor
 		Index combinedSlot = 0;
 		BOOST_FOREACH(const VariableSlots::value_type& varslot, variableSlots) {
-			for (size_t row = 0; row < m; ++row) {
-				const JacobianFactor::_RowSource& info(rowSources[row]);
-				const JacobianFactor& source(*factors[info.factorI]);
-				size_t sourceRow = info.factorRowI;
-				Index sourceSlot = varslot.second[info.factorI];
-				combined->copyRow(source, sourceRow, sourceSlot, row, combinedSlot);
+			JacobianFactor::ABlock destSlot(combined->getA(combined->begin()+combinedSlot));
+			// Loop over source factors
+			size_t nextRow = 0;
+			for(size_t factorI = 0; factorI < factors.size(); ++factorI) {
+				// Slot in source factor
+				const Index sourceSlot = varslot.second[factorI];
+				const size_t sourceRows = factors[factorI]->rows();
+				JacobianFactor::ABlock::RowsBlockXpr destBlock(destSlot.middleRows(nextRow, sourceRows));
+				// Copy if exists in source factor, otherwise set zero
+				if(sourceSlot != numeric_limits<Index>::max())
+					destBlock = factors[factorI]->getA(factors[factorI]->begin()+sourceSlot);
+				else
+					destBlock.setZero();
+				nextRow += sourceRows;
 			}
 			++combinedSlot;
 		}
-		toc(4, "copy rows");
+		toc(4, "copy blocks");
 
-		if (debug) cout << "Copy rhs (b), sigma, and firstNonzeroBlocks" << endl;
+		if (debug) cout << "Copy rhs (b) and sigma" << endl;
 		tic(5, "copy vectors");
-		for (size_t row = 0; row < m; ++row) {
-			const JacobianFactor::_RowSource& info(rowSources[row]);
-			const JacobianFactor& source(*factors[info.factorI]);
-			const size_t sourceRow = info.factorRowI;
-			combined->getb()(row) = source.getb()(sourceRow);
-			sigmas(row) = source.get_model()->sigmas()(sourceRow);
+		bool anyConstrained = false;
+		// Loop over source factors
+		size_t nextRow = 0;
+		for(size_t factorI = 0; factorI < factors.size(); ++factorI) {
+			const size_t sourceRows = factors[factorI]->rows();
+			combined->getb().segment(nextRow, sourceRows) = factors[factorI]->getb();
+			sigmas.segment(nextRow, sourceRows) = factors[factorI]->get_model()->sigmas();
+			if (factors[factorI]->isConstrained()) anyConstrained = true;
+			nextRow += sourceRows;
 		}
-		combined->copyFNZ(m, variableSlots.size(),rowSources);
 		toc(5, "copy vectors");
 
 		if (debug) cout << "Create noise model from sigmas" << endl;
 		tic(6, "noise model");
-		combined->setModel( anyConstrained,sigmas);
+		combined->setModel(anyConstrained, sigmas);
 		toc(6, "noise model");
 
 		if (debug) cout << "Assert Invariants" << endl;

@@ -83,7 +83,6 @@ namespace gtsam {
 		typedef VerticalBlockView<AbMatrix> BlockAb;
 
     noiseModel::Diagonal::shared_ptr model_; // Gaussian noise model with diagonal covariance matrix
-    std::vector<size_t> firstNonzeroBlocks_;
     AbMatrix matrix_; // the full matrix corresponding to the factor
     BlockAb Ab_;      // the block view of the full matrix
     typedef GaussianFactor Base; // typedef to base
@@ -274,34 +273,12 @@ namespace gtsam {
      */
     boost::shared_ptr<GaussianConditional> splitConditional(size_t nrFrontals = 1);
 
-    /* Used by ::CombineJacobians for sorting */
-    struct _RowSource {
-      size_t firstNonzeroVar;
-      size_t factorI;
-      size_t factorRowI;
-      _RowSource(size_t _firstNonzeroVar, size_t _factorI, size_t _factorRowI) :
-        firstNonzeroVar(_firstNonzeroVar), factorI(_factorI), factorRowI(_factorRowI) {}
-      bool operator<(const _RowSource& o) const {
-      	return firstNonzeroVar < o.firstNonzeroVar;
-      }
-    };
-
     // following methods all used in CombineJacobians:
     // Many imperative, perhaps all need to be combined in constructor
-
-    /** Collect information on Jacobian rows */
-    void collectInfo(size_t index, std::vector<_RowSource>& rowSources) const;
 
     /** allocate space */
     void allocate(const VariableSlots& variableSlots,
 				std::vector<size_t>& varDims, size_t m);
-
-    /** copy a slot from source */
-    void copyRow(const JacobianFactor& source,
-    		Index sourceRow, size_t sourceSlot, size_t row, Index slot);
-
-    /** copy firstNonzeroBlocks structure */
-    void copyFNZ(size_t m, size_t n, std::vector<_RowSource>& rowSources);
 
     /** set noiseModel correctly */
   	void setModel(bool anyConstrained, const Vector& sigmas);
@@ -341,7 +318,6 @@ namespace gtsam {
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
     	ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(GaussianFactor);
-    	ar & BOOST_SERIALIZATION_NVP(firstNonzeroBlocks_);
     	ar & BOOST_SERIALIZATION_NVP(Ab_);
     	ar & BOOST_SERIALIZATION_NVP(model_);
     	ar & BOOST_SERIALIZATION_NVP(matrix_);

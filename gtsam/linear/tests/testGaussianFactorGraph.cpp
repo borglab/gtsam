@@ -163,10 +163,10 @@ TEST(GaussianFactorGraph, Combine2)
   JacobianFactor actual = *CombineJacobians(jacobians, VariableSlots(gfg));
 
   Matrix zero3x3 = zeros(3,3);
-  Matrix A0 = gtsam::stack(3, &A10, &zero3x3, &zero3x3);
-  Matrix A1 = gtsam::stack(3, &A11, &A01, &A21);
-  Vector b = gtsam::concatVectors(3, &b1, &b0, &b2);
-  Vector sigmas = gtsam::concatVectors(3, &s1, &s0, &s2);
+  Matrix A0 = gtsam::stack(3, &zero3x3, &A10, &zero3x3);
+  Matrix A1 = gtsam::stack(3, &A01, &A11, &A21);
+  Vector b = gtsam::concatVectors(3, &b0, &b1, &b2);
+  Vector sigmas = gtsam::concatVectors(3, &s0, &s1, &s2);
 
   JacobianFactor expected(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
 

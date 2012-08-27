@@ -200,7 +200,7 @@ TEST(DoglegOptimizer, BT_BN_equivalency) {
   GaussianFactorGraph expected(gbn);
   GaussianFactorGraph actual(bt);
 
-  EXPECT(assert_equal(expected.denseJacobian(), actual.denseJacobian()));
+  EXPECT(assert_equal(expected.denseHessian(), actual.denseHessian()));
 }
 
 /* ************************************************************************* */
