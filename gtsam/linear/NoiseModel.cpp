@@ -27,7 +27,6 @@
 #include <boost/random/variate_generator.hpp>
 
 #include <gtsam/base/timing.h>
-#include <gtsam/base/cholesky.h>
 #include <gtsam/linear/NoiseModel.h>
 
 static double inf = std::numeric_limits<double>::infinity();
