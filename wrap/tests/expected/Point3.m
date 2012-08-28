@@ -1,10 +1,12 @@
 %-------Constructors-------
-%Point3(double x, double y, double z)
+%POINT3(double x, double y, double z)
+% 
 %-------Methods-------
-%norm()
+%NORM() : returns double
+% 
 %-------Static Methods-------
-%StaticFunctionRet(double z)
-%staticFunction()
+%STATICFUNCTIONRET(double z) : returns Point3
+%STATICFUNCTION() : returns double
 %
 %For more detailed documentation on GTSAM go to our Doxygen page, which can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
 classdef Point3 < handle
@@ -33,7 +35,8 @@ classdef Point3 < handle
     function disp(obj), obj.display; end
 
     function varargout = norm(this, varargin)
-      % norm  norm() : 
+      % NORM usage: NORM() : returns double
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -49,11 +52,12 @@ classdef Point3 < handle
 
   methods(Static = true)
     function varargout = StaticFunctionRet(varargin)
-      % StaticFunctionRet  StaticFunctionRet(double z) : 
+      % STATICFUNCTIONRET usage: STATICFUNCTIONRET(double z) : returns Point3
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
-      % Method Overloads
-      % StaticFunctionRet(double z)
+      % Usage
+      % STATICFUNCTIONRET(double z)
       if length(varargin) == 1 && isa(varargin{1},'double')
         varargout{1} = geometry_wrapper(15, varargin{:});
       else
@@ -62,11 +66,12 @@ classdef Point3 < handle
     end
 
     function varargout = StaticFunction(varargin)
-      % staticFunction  staticFunction() : 
+      % STATICFUNCTION usage: STATICFUNCTION() : returns double
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
-      % Method Overloads
-      % staticFunction()
+      % Usage
+      % STATICFUNCTION()
       if length(varargin) == 0
         varargout{1} = geometry_wrapper(16, varargin{:});
       else

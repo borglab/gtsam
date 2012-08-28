@@ -1,26 +1,28 @@
 %-------Constructors-------
-%Test()
-%Test(double a, Matrix b)
+%TEST()
+%TEST(double a, Matrix b)
+% 
 %-------Methods-------
-%arg_EigenConstRef(Matrix value)
-%create_MixedPtrs()
-%create_ptrs()
-%print()
-%return_Point2Ptr(bool value)
-%return_Test(Test value)
-%return_TestPtr(Test value)
-%return_bool(bool value)
-%return_double(double value)
-%return_field(Test t)
-%return_int(int value)
-%return_matrix1(Matrix value)
-%return_matrix2(Matrix value)
-%return_pair(Vector v, Matrix A)
-%return_ptrs(Test p1, Test p2)
-%return_size_t(size_t value)
-%return_string(string value)
-%return_vector1(Vector value)
-%return_vector2(Vector value)
+%ARG_EIGENCONSTREF(Matrix value) : returns void
+%CREATE_MIXEDPTRS() : returns pair< Test, SharedTest >
+%CREATE_PTRS() : returns pair< SharedTest, SharedTest >
+%PRINT() : returns void
+%RETURN_POINT2PTR(bool value) : returns Point2
+%RETURN_TEST(Test value) : returns Test
+%RETURN_TESTPTR(Test value) : returns Test
+%RETURN_BOOL(bool value) : returns bool
+%RETURN_DOUBLE(double value) : returns double
+%RETURN_FIELD(Test t) : returns bool
+%RETURN_INT(int value) : returns int
+%RETURN_MATRIX1(Matrix value) : returns Matrix
+%RETURN_MATRIX2(Matrix value) : returns Matrix
+%RETURN_PAIR(Vector v, Matrix A) : returns pair< Vector, Matrix >
+%RETURN_PTRS(Test p1, Test p2) : returns pair< SharedTest, SharedTest >
+%RETURN_SIZE_T(size_t value) : returns size_t
+%RETURN_STRING(string value) : returns string
+%RETURN_VECTOR1(Vector value) : returns Vector
+%RETURN_VECTOR2(Vector value) : returns Vector
+% 
 %-------Static Methods-------
 %
 %For more detailed documentation on GTSAM go to our Doxygen page, which can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
@@ -52,7 +54,8 @@ classdef Test < handle
     function disp(obj), obj.display; end
 
     function varargout = arg_EigenConstRef(this, varargin)
-      % arg_EigenConstRef  arg_EigenConstRef(Matrix value) : 
+      % ARG_EIGENCONSTREF usage: ARG_EIGENCONSTREF(Matrix value) : returns void
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -65,7 +68,8 @@ classdef Test < handle
     end
 
     function varargout = create_MixedPtrs(this, varargin)
-      % create_MixedPtrs  create_MixedPtrs() : 
+      % CREATE_MIXEDPTRS usage: CREATE_MIXEDPTRS() : returns pair< Test, SharedTest >
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -78,7 +82,8 @@ classdef Test < handle
     end
 
     function varargout = create_ptrs(this, varargin)
-      % create_ptrs  create_ptrs() : 
+      % CREATE_PTRS usage: CREATE_PTRS() : returns pair< SharedTest, SharedTest >
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -91,7 +96,8 @@ classdef Test < handle
     end
 
     function varargout = print(this, varargin)
-      % print  print() : 
+      % PRINT usage: PRINT() : returns void
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -104,7 +110,8 @@ classdef Test < handle
     end
 
     function varargout = return_Point2Ptr(this, varargin)
-      % return_Point2Ptr  return_Point2Ptr(bool value) : 
+      % RETURN_POINT2PTR usage: RETURN_POINT2PTR(bool value) : returns Point2
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -117,7 +124,8 @@ classdef Test < handle
     end
 
     function varargout = return_Test(this, varargin)
-      % return_Test  return_Test(Test value) : 
+      % RETURN_TEST usage: RETURN_TEST(Test value) : returns Test
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -130,7 +138,8 @@ classdef Test < handle
     end
 
     function varargout = return_TestPtr(this, varargin)
-      % return_TestPtr  return_TestPtr(Test value) : 
+      % RETURN_TESTPTR usage: RETURN_TESTPTR(Test value) : returns Test
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -143,7 +152,8 @@ classdef Test < handle
     end
 
     function varargout = return_bool(this, varargin)
-      % return_bool  return_bool(bool value) : 
+      % RETURN_BOOL usage: RETURN_BOOL(bool value) : returns bool
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -156,7 +166,8 @@ classdef Test < handle
     end
 
     function varargout = return_double(this, varargin)
-      % return_double  return_double(double value) : 
+      % RETURN_DOUBLE usage: RETURN_DOUBLE(double value) : returns double
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -169,7 +180,8 @@ classdef Test < handle
     end
 
     function varargout = return_field(this, varargin)
-      % return_field  return_field(Test t) : 
+      % RETURN_FIELD usage: RETURN_FIELD(Test t) : returns bool
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -182,7 +194,8 @@ classdef Test < handle
     end
 
     function varargout = return_int(this, varargin)
-      % return_int  return_int(int value) : 
+      % RETURN_INT usage: RETURN_INT(int value) : returns int
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -195,7 +208,8 @@ classdef Test < handle
     end
 
     function varargout = return_matrix1(this, varargin)
-      % return_matrix1  return_matrix1(Matrix value) : 
+      % RETURN_MATRIX1 usage: RETURN_MATRIX1(Matrix value) : returns Matrix
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -208,7 +222,8 @@ classdef Test < handle
     end
 
     function varargout = return_matrix2(this, varargin)
-      % return_matrix2  return_matrix2(Matrix value) : 
+      % RETURN_MATRIX2 usage: RETURN_MATRIX2(Matrix value) : returns Matrix
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -221,7 +236,8 @@ classdef Test < handle
     end
 
     function varargout = return_pair(this, varargin)
-      % return_pair  return_pair(Vector v, Matrix A) : 
+      % RETURN_PAIR usage: RETURN_PAIR(Vector v, Matrix A) : returns pair< Vector, Matrix >
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -234,7 +250,8 @@ classdef Test < handle
     end
 
     function varargout = return_ptrs(this, varargin)
-      % return_ptrs  return_ptrs(Test p1, Test p2) : 
+      % RETURN_PTRS usage: RETURN_PTRS(Test p1, Test p2) : returns pair< SharedTest, SharedTest >
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -247,7 +264,8 @@ classdef Test < handle
     end
 
     function varargout = return_size_t(this, varargin)
-      % return_size_t  return_size_t(size_t value) : 
+      % RETURN_SIZE_T usage: RETURN_SIZE_T(size_t value) : returns size_t
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -260,7 +278,8 @@ classdef Test < handle
     end
 
     function varargout = return_string(this, varargin)
-      % return_string  return_string(string value) : 
+      % RETURN_STRING usage: RETURN_STRING(string value) : returns string
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -273,7 +292,8 @@ classdef Test < handle
     end
 
     function varargout = return_vector1(this, varargin)
-      % return_vector1  return_vector1(Vector value) : 
+      % RETURN_VECTOR1 usage: RETURN_VECTOR1(Vector value) : returns Vector
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -286,7 +306,8 @@ classdef Test < handle
     end
 
     function varargout = return_vector2(this, varargin)
-      % return_vector2  return_vector2(Vector value) : 
+      % RETURN_VECTOR2 usage: RETURN_VECTOR2(Vector value) : returns Vector
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads

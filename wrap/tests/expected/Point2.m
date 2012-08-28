@@ -1,14 +1,16 @@
 %-------Constructors-------
-%Point2()
-%Point2(double x, double y)
+%POINT2()
+%POINT2(double x, double y)
+% 
 %-------Methods-------
-%argChar(char a)
-%argUChar(unsigned char a)
-%dim()
-%returnChar()
-%vectorConfusion()
-%x()
-%y()
+%ARGCHAR(char a) : returns void
+%ARGUCHAR(unsigned char a) : returns void
+%DIM() : returns int
+%RETURNCHAR() : returns char
+%VECTORCONFUSION() : returns VectorNotEigen
+%X() : returns double
+%Y() : returns double
+% 
 %-------Static Methods-------
 %
 %For more detailed documentation on GTSAM go to our Doxygen page, which can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
@@ -40,7 +42,8 @@ classdef Point2 < handle
     function disp(obj), obj.display; end
 
     function varargout = argChar(this, varargin)
-      % argChar  argChar(char a) : 
+      % ARGCHAR usage: ARGCHAR(char a) : returns void
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -53,7 +56,8 @@ classdef Point2 < handle
     end
 
     function varargout = argUChar(this, varargin)
-      % argUChar  argUChar(unsigned char a) : 
+      % ARGUCHAR usage: ARGUCHAR(unsigned char a) : returns void
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -66,7 +70,8 @@ classdef Point2 < handle
     end
 
     function varargout = dim(this, varargin)
-      % dim  dim() : 
+      % DIM usage: DIM() : returns int
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -79,7 +84,8 @@ classdef Point2 < handle
     end
 
     function varargout = returnChar(this, varargin)
-      % returnChar  returnChar() : 
+      % RETURNCHAR usage: RETURNCHAR() : returns char
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -92,7 +98,8 @@ classdef Point2 < handle
     end
 
     function varargout = vectorConfusion(this, varargin)
-      % vectorConfusion  vectorConfusion() : 
+      % VECTORCONFUSION usage: VECTORCONFUSION() : returns VectorNotEigen
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -105,7 +112,8 @@ classdef Point2 < handle
     end
 
     function varargout = x(this, varargin)
-      % x  x() : 
+      % X usage: X() : returns double
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -118,7 +126,8 @@ classdef Point2 < handle
     end
 
     function varargout = y(this, varargin)
-      % y  y() : 
+      % Y usage: Y() : returns double
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads

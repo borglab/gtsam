@@ -1,11 +1,13 @@
 %-------Constructors-------
-%ClassA()
+%CLASSA()
+% 
 %-------Methods-------
-%memberFunction()
-%nsArg(ClassB arg)
-%nsReturn(double q)
+%MEMBERFUNCTION() : returns double
+%NSARG(ClassB arg) : returns int
+%NSRETURN(double q) : returns ns2::ns3::ClassB
+% 
 %-------Static Methods-------
-%afunction()
+%AFUNCTION() : returns double
 %
 %For more detailed documentation on GTSAM go to our Doxygen page, which can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
 classdef ClassA < handle
@@ -34,7 +36,8 @@ classdef ClassA < handle
     function disp(obj), obj.display; end
 
     function varargout = memberFunction(this, varargin)
-      % memberFunction  memberFunction() : 
+      % MEMBERFUNCTION usage: MEMBERFUNCTION() : returns double
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -47,7 +50,8 @@ classdef ClassA < handle
     end
 
     function varargout = nsArg(this, varargin)
-      % nsArg  nsArg(ClassB arg) : 
+      % NSARG usage: NSARG(ClassB arg) : returns int
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -60,7 +64,8 @@ classdef ClassA < handle
     end
 
     function varargout = nsReturn(this, varargin)
-      % nsReturn  nsReturn(double q) : 
+      % NSRETURN usage: NSRETURN(double q) : returns ns2::ns3::ClassB
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -76,11 +81,12 @@ classdef ClassA < handle
 
   methods(Static = true)
     function varargout = Afunction(varargin)
-      % afunction  afunction() : 
+      % AFUNCTION usage: AFUNCTION() : returns double
+
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
-      % Method Overloads
-      % afunction()
+      % Usage
+      % AFUNCTION()
       if length(varargin) == 0
         varargout{1} = testNamespaces_wrapper(12, varargin{:});
       else

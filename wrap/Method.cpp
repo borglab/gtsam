@@ -47,11 +47,13 @@ void Method::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperF
 
 	proxyFile.oss << "    function varargout = " << name << "(this, varargin)\n";
 	//Comments for documentation
-	proxyFile.oss << "      % " << name << " ";
+	string up_name  = boost::to_upper_copy(name);
+	proxyFile.oss << "      % " << up_name << " usage:";
+	unsigned int argLCount = 0;
 	BOOST_FOREACH(ArgumentList argList, argLists) 
     { 
-        proxyFile.oss << " " << name << "(";
-        int i = 0;
+        proxyFile.oss << " " << up_name << "(";
+        unsigned int i = 0;
 		BOOST_FOREACH(const Argument& arg, argList) 
 		{
 		    if(i != argList.size()-1)
@@ -60,8 +62,23 @@ void Method::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperF
 		        proxyFile.oss << arg.type << " " << arg.name;
 		    i++;
         }
-        proxyFile.oss << ") : ";
+        if(argLCount != argLists.size()-1)
+            proxyFile.oss << "), ";
+        else
+            proxyFile.oss << ") : returns ";
+        argLCount++;
     }
+
+    unsigned int retCount = 0;
+    BOOST_FOREACH(ReturnValue rt, returnVals)
+    {
+        if(retCount != returnVals.size() - 1) 
+            proxyFile.oss << rt.return_type(false, rt.pair) << ", ";
+        else
+            proxyFile.oss << rt.return_type(false, rt.pair) << "" << endl;
+    
+    }
+
     proxyFile.oss << endl;
 	proxyFile.oss << "      % " << "Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html" << endl;
 	proxyFile.oss << "      % " << "" << endl;
@@ -69,7 +86,7 @@ void Method::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperF
     BOOST_FOREACH(ArgumentList argList, argLists) 
     { 
         proxyFile.oss << "      % " << name << "(";
-        int i = 0;
+        unsigned int i = 0;
 		BOOST_FOREACH(const Argument& arg, argList) 
 		{
 		    if(i != argList.size()-1)

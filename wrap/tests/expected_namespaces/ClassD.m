@@ -1,6 +1,8 @@
 %-------Constructors-------
-%ClassD()
+%CLASSD()
+% 
 %-------Methods-------
+% 
 %-------Static Methods-------
 %
 %For more detailed documentation on GTSAM go to our Doxygen page, which can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
