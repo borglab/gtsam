@@ -42,8 +42,13 @@ void Ordering::permuteWithInverse(const Permutation& inversePermutation) {
 /* ************************************************************************* */
 void Ordering::print(const string& str, const KeyFormatter& keyFormatter) const {
   cout << str;
-  BOOST_FOREACH(const Ordering::value_type& key_order, *this)
-    cout << keyFormatter(key_order.first) << ":" << key_order.second << endl;
+	// Print ordering in index order
+	Ordering::InvertedMap inverted = this->invert();
+	cout << "key (zero-based order)\n";
+	BOOST_FOREACH(const Ordering::InvertedMap::value_type& index_key, inverted) {
+		cout << keyFormatter(index_key.second) << " (" << index_key.first << ")\n";
+	}
+	cout.flush();
 }
 
 /* ************************************************************************* */
