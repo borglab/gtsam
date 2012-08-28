@@ -20,6 +20,8 @@
 #include <sstream>
 #include <cstdlib>
 
+#include <boost/filesystem.hpp>
+
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/linear/Sampler.h>
 #include <gtsam/slam/dataset.h>
@@ -27,10 +29,40 @@
 #include <gtsam/slam/BearingRangeFactor.h>
 
 using namespace std;
+namespace fs = boost::filesystem;
 
 #define LINESIZE 81920
 
 namespace gtsam {
+
+/* ************************************************************************* */
+string findExampleDataFile(const string& name) {
+	// Search source tree and installed location
+	vector<string> rootsToSearch;
+	rootsToSearch.push_back(SOURCE_TREE_DATASET_DIR); // Defined by CMake, see gtsam/gtsam/CMakeLists.txt
+	rootsToSearch.push_back(INSTALLED_DATASET_DIR);   // Defined by CMake, see gtsam/gtsam/CMakeLists.txt
+
+	// Search for filename as given, and with .graph and .txt extensions
+	vector<string> namesToSearch;
+	namesToSearch.push_back(name);
+	namesToSearch.push_back(name + ".graph");
+	namesToSearch.push_back(name + ".txt");
+
+	// Find first name that exists
+	BOOST_FOREACH(const fs::path& root, rootsToSearch) {
+		BOOST_FOREACH(const fs::path& name, namesToSearch) {
+			if(fs::is_regular_file(root / name))
+				return (root / name).string();
+		}
+	}
+
+	// If we did not return already, then we did not find the file
+	throw std::invalid_argument(
+		"gtsam::findExampleDataFile could not find a matching file in\n"
+		SOURCE_TREE_DATASET_DIR " or\n"
+		INSTALLED_DATASET_DIR " named\n" +
+		name + ", " + name + ".graph, or " + name + ".txt");
+}
 
 /* ************************************************************************* */
 pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
