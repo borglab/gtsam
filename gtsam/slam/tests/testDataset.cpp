@@ -32,3 +32,7 @@ TEST(dataSet, findExampleDataFile) {
 	boost::replace_all(actual_end, "\\", "/"); // Convert directory separators to forward-slash
 	EXPECT(assert_equal(expected_end, actual_end));
 }
+
+/* ************************************************************************* */
+int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
+/* ************************************************************************* */
