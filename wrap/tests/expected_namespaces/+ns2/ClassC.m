@@ -28,9 +28,9 @@ classdef ClassC < handle
     end
 
     function display(obj), obj.print(''); end
-
+    %DISPLAY Calls print on the object
     function disp(obj), obj.display; end
-
+    %DISP Calls print on the object
   end
 
   methods(Static = true)

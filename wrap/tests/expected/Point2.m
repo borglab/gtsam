@@ -38,12 +38,11 @@ classdef Point2 < handle
     end
 
     function display(obj), obj.print(''); end
-
+    %DISPLAY Calls print on the object
     function disp(obj), obj.display; end
-
+    %DISP Calls print on the object
     function varargout = argChar(this, varargin)
-      % ARGCHAR usage: ARGCHAR(char a) : returns void
-
+      % ARGCHAR usage: argChar(char a) : returns void
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -56,8 +55,7 @@ classdef Point2 < handle
     end
 
     function varargout = argUChar(this, varargin)
-      % ARGUCHAR usage: ARGUCHAR(unsigned char a) : returns void
-
+      % ARGUCHAR usage: argUChar(unsigned char a) : returns void
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -70,8 +68,7 @@ classdef Point2 < handle
     end
 
     function varargout = dim(this, varargin)
-      % DIM usage: DIM() : returns int
-
+      % DIM usage: dim() : returns int
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -84,8 +81,7 @@ classdef Point2 < handle
     end
 
     function varargout = returnChar(this, varargin)
-      % RETURNCHAR usage: RETURNCHAR() : returns char
-
+      % RETURNCHAR usage: returnChar() : returns char
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -98,8 +94,7 @@ classdef Point2 < handle
     end
 
     function varargout = vectorConfusion(this, varargin)
-      % VECTORCONFUSION usage: VECTORCONFUSION() : returns VectorNotEigen
-
+      % VECTORCONFUSION usage: vectorConfusion() : returns VectorNotEigen
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -112,8 +107,7 @@ classdef Point2 < handle
     end
 
     function varargout = x(this, varargin)
-      % X usage: X() : returns double
-
+      % X usage: x() : returns double
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -126,8 +120,7 @@ classdef Point2 < handle
     end
 
     function varargout = y(this, varargin)
-      % Y usage: Y() : returns double
-
+      % Y usage: y() : returns double
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads

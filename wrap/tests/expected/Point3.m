@@ -31,12 +31,11 @@ classdef Point3 < handle
     end
 
     function display(obj), obj.print(''); end
-
+    %DISPLAY Calls print on the object
     function disp(obj), obj.display; end
-
+    %DISP Calls print on the object
     function varargout = norm(this, varargin)
-      % NORM usage: NORM() : returns double
-
+      % NORM usage: norm() : returns double
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -52,8 +51,7 @@ classdef Point3 < handle
 
   methods(Static = true)
     function varargout = StaticFunctionRet(varargin)
-      % STATICFUNCTIONRET usage: STATICFUNCTIONRET(double z) : returns Point3
-
+      % STATICFUNCTIONRET usage: StaticFunctionRet(double z) : returns Point3
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Usage
@@ -66,8 +64,7 @@ classdef Point3 < handle
     end
 
     function varargout = StaticFunction(varargin)
-      % STATICFUNCTION usage: STATICFUNCTION() : returns double
-
+      % STATICFUNCTION usage: staticFunction() : returns double
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Usage

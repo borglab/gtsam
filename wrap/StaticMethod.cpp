@@ -56,7 +56,7 @@ void StaticMethod::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wr
 	unsigned int argLCount = 0;
 	BOOST_FOREACH(ArgumentList argList, argLists) 
     { 
-        proxyFile.oss << " " << up_name << "(";
+        proxyFile.oss << " " << name << "(";
         unsigned int i = 0;
 		BOOST_FOREACH(const Argument& arg, argList) 
 		{
@@ -69,21 +69,10 @@ void StaticMethod::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wr
         if(argLCount != argLists.size()-1)
             proxyFile.oss << "), ";
         else
-            proxyFile.oss << ") : returns ";
+            proxyFile.oss << ") : returns " << returnVals[0].return_type(false, returnVals[0].pair) << endl; 
         argLCount++;
     }
 
-    unsigned int retCount = 0;
-    BOOST_FOREACH(ReturnValue rt, returnVals)
-    {
-        if(retCount != returnVals.size() - 1) 
-            proxyFile.oss << rt.return_type(false, rt.pair) << ", ";
-        else
-            proxyFile.oss << rt.return_type(false, rt.pair) << "" << endl;
-    
-    }
-
-    proxyFile.oss << endl;
 	proxyFile.oss << "      % " << "Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html" << endl;
 	proxyFile.oss << "      % " << "" << endl;
 	proxyFile.oss << "      % " << "Usage" << endl;
