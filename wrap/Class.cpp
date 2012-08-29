@@ -101,8 +101,8 @@ void Class::matlab_proxy(const string& toolboxPath, const string& wrapperName,
 		wrapperFile.oss << "\n"; 
 		functionNames.push_back(functionName); 
 	} 
-  proxyFile.oss << "    function display(obj), obj.print(''); end\n\n"; 
-  proxyFile.oss << "    function disp(obj), obj.display; end\n\n"; 
+  proxyFile.oss << "    function display(obj), obj.print(''); end\n    %DISPLAY Calls print on the object\n"; 
+  proxyFile.oss << "    function disp(obj), obj.display; end\n    %DISP Calls print on the object\n"; 
  
 	// Methods 
 	BOOST_FOREACH(const Methods::value_type& name_m, methods) { 
@@ -362,16 +362,7 @@ void Class::comment_fragment(FileWriter& proxyFile) const
 		            proxyFile.oss << arg.type << " " << arg.name;
 		        i++;
             }
-            proxyFile.oss << ") : returns ";
-        }
-        unsigned int retCount = 0;
-        BOOST_FOREACH(ReturnValue rt, m.returnVals)
-        {
-            if(retCount != m.returnVals.size() - 1) 
-                proxyFile.oss << rt.return_type(false, rt.pair) << ", ";
-            else
-                proxyFile.oss << rt.return_type(false, rt.pair) << "" << endl;
-    
+                proxyFile.oss << ") : returns " << m.returnVals[0].return_type(false, m.returnVals[0].pair) << endl; 
         }
     }
 
@@ -392,16 +383,8 @@ void Class::comment_fragment(FileWriter& proxyFile) const
 		            proxyFile.oss << arg.type << " " << arg.name;
 		        i++;
             }
-            proxyFile.oss << ") : returns ";
-        }
-        unsigned int retCount = 0;
-        BOOST_FOREACH(ReturnValue rt, m.returnVals)
-        {
-            if(retCount != m.returnVals.size() - 1) 
-                proxyFile.oss << rt.return_type(false, rt.pair) << ", ";
-            else
-                proxyFile.oss << rt.return_type(false, rt.pair) << "" << endl;
-    
+
+                proxyFile.oss << ") : returns " << m.returnVals[0].return_type(false, m.returnVals[0].pair) << endl; 
         }
     }
 

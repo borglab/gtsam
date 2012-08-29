@@ -32,12 +32,11 @@ classdef ClassA < handle
     end
 
     function display(obj), obj.print(''); end
-
+    %DISPLAY Calls print on the object
     function disp(obj), obj.display; end
-
+    %DISP Calls print on the object
     function varargout = memberFunction(this, varargin)
-      % MEMBERFUNCTION usage: MEMBERFUNCTION() : returns double
-
+      % MEMBERFUNCTION usage: memberFunction() : returns double
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -50,8 +49,7 @@ classdef ClassA < handle
     end
 
     function varargout = nsArg(this, varargin)
-      % NSARG usage: NSARG(ClassB arg) : returns int
-
+      % NSARG usage: nsArg(ClassB arg) : returns int
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -64,8 +62,7 @@ classdef ClassA < handle
     end
 
     function varargout = nsReturn(this, varargin)
-      % NSRETURN usage: NSRETURN(double q) : returns ns2::ns3::ClassB
-
+      % NSRETURN usage: nsReturn(double q) : returns ns2::ns3::ClassB
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Method Overloads
@@ -81,8 +78,7 @@ classdef ClassA < handle
 
   methods(Static = true)
     function varargout = Afunction(varargin)
-      % AFUNCTION usage: AFUNCTION() : returns double
-
+      % AFUNCTION usage: afunction() : returns double
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Usage
