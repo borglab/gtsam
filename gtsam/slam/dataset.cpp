@@ -35,6 +35,7 @@ namespace fs = boost::filesystem;
 
 namespace gtsam {
 
+#ifndef MATLAB_MEX_FILE
 /* ************************************************************************* */
 string findExampleDataFile(const string& name) {
 	// Search source tree and installed location
@@ -63,6 +64,7 @@ string findExampleDataFile(const string& name) {
 		INSTALLED_DATASET_DIR " named\n" +
 		name + ", " + name + ".graph, or " + name + ".txt");
 }
+#endif
 
 /* ************************************************************************* */
 pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
