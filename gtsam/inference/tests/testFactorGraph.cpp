@@ -45,7 +45,7 @@ TEST(FactorGraph, eliminateFrontals) {
 
 	IndexConditional::shared_ptr actualCond;
 	SymbolicFactorGraph actualSfg;
-	boost::tie(actualCond, actualSfg) = sfgOrig.eliminateFrontals(2, EliminateSymbolic);
+	boost::tie(actualCond, actualSfg) = sfgOrig.eliminateFrontals(2);
 
 	vector<Index> condIndices;
 	condIndices += 0,1,2,3,4;
