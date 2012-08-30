@@ -21,16 +21,44 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/assign/std/set.hpp> // for operator +=
+#include <boost/assign/std/vector.hpp>
 using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <gtsam/inference/IndexConditional.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
 
 using namespace std;
 using namespace gtsam;
 
-typedef boost::shared_ptr<SymbolicFactorGraph> shared;
+/* ************************************************************************* */
+TEST(FactorGraph, eliminateFrontals) {
+
+	SymbolicFactorGraph sfgOrig;
+	sfgOrig.push_factor(0,1);
+	sfgOrig.push_factor(0,2);
+	sfgOrig.push_factor(1,3);
+	sfgOrig.push_factor(1,4);
+	sfgOrig.push_factor(2,3);
+	sfgOrig.push_factor(4,5);
+
+	IndexConditional::shared_ptr actualCond;
+	SymbolicFactorGraph actualSfg;
+	boost::tie(actualCond, actualSfg) = sfgOrig.eliminateFrontals(2, EliminateSymbolic);
+
+	vector<Index> condIndices;
+	condIndices += 0,1,2,3,4;
+	IndexConditional expectedCond(condIndices, 2);
+
+	SymbolicFactorGraph expectedSfg;
+	expectedSfg.push_factor(2,3);
+	expectedSfg.push_factor(4,5);
+	expectedSfg.push_factor(2,3,4);
+
+	EXPECT(assert_equal(expectedSfg, actualSfg));
+	EXPECT(assert_equal(expectedCond, *actualCond));
+}
 
 ///* ************************************************************************* */
 // SL-FIX TEST( FactorGraph, splitMinimumSpanningTree )

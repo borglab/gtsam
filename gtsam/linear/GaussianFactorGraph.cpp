@@ -48,6 +48,13 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
+	std::pair<GaussianFactorGraph::sharedConditional, GaussianFactorGraph>
+		GaussianFactorGraph::eliminateFrontals(size_t nFrontals) const
+	{
+		return FactorGraph<GaussianFactor>::eliminateFrontals(nFrontals, EliminateQR);
+	}
+
+	/* ************************************************************************* */
 	void GaussianFactorGraph::permuteWithInverse(
 	    const Permutation& inversePermutation) {
 	  BOOST_FOREACH(const sharedFactor& factor, factors_) {

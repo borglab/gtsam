@@ -175,6 +175,13 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 		/** Get the last factor */
 		sharedFactor back() const { return factors_.back(); }
 
+		/** Eliminate the first \c n frontal variables, returning the resulting
+		 * conditional and remaining factor graph - this is very inefficient for
+		 * eliminating all variables, to do that use EliminationTree or
+		 * JunctionTree.
+		 */
+		std::pair<sharedConditional, FactorGraph<FactorType> > eliminateFrontals(size_t nFrontals, const Eliminate& eliminate) const;
+
 		/// @}
 		/// @name Modifying Factor Graphs (imperative, discouraged)
 		/// @{
