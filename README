@@ -148,6 +148,12 @@ just the geometry tests, run "make check.geometry". Individual tests can be run 
 appending ".run" to the name of the test, for example, to run testMatrix, run 
 "make testMatrix.run". 
 
+MEX_COMMAND: Path to the mex compiler. Defaults to assume the path is included in your 
+shell's PATH environment variable. mex is installed with matlab at 
+$MATLABROOT/bin/mex
+
+$MATLABROOT can be found by executing the command 'matlabroot' in MATLAB
+
 Debugging tips:
 
 Another useful debugging symbol is _GLIBCXX_DEBUG, which enables debug checks
