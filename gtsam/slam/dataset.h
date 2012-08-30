@@ -25,6 +25,7 @@
 
 namespace gtsam {
 
+#ifndef MATLAB_MEX_FILE
 	/**
 	 * Find the full path to an example dataset distributed with gtsam.  The name
 	 * may be specified with or without a file extension - if no extension is
@@ -37,6 +38,7 @@ namespace gtsam {
 	 * search process described above.
 	 */
 	std::string findExampleDataFile(const std::string& name);
+#endif
 
 	/**
 	 * Load TORO 2D Graph
