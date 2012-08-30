@@ -132,6 +132,16 @@ namespace gtsam {
     typedef FastSet<Index> Keys;
     Keys keys() const;
 
+				
+		/** Eliminate the first \c n frontal variables, returning the resulting
+		 * conditional and remaining factor graph - this is very inefficient for
+		 * eliminating all variables, to do that use EliminationTree or
+		 * JunctionTree.  Note that this version simply calls
+		 * FactorGraph<GaussianFactor>::eliminateFrontals with EliminateQR as the
+		 * eliminate function argument.
+		 */
+		std::pair<sharedConditional, GaussianFactorGraph> eliminateFrontals(size_t nFrontals) const;
+
     /** Permute the variables in the factors */
     void permuteWithInverse(const Permutation& inversePermutation);
 

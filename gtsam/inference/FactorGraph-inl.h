@@ -23,6 +23,7 @@
 #pragma once
 
 #include <gtsam/inference/BayesTree.h>
+#include <gtsam/inference/VariableIndex.h>
 
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -83,6 +84,57 @@ namespace gtsam {
 		for (const_iterator factor = factors_.begin(); factor != factors_.end(); factor++)
 			if (*factor != NULL) size_++;
 		return size_;
+	}
+
+	/* ************************************************************************* */
+	template<class FACTOR>
+	std::pair<typename FactorGraph<FACTOR>::sharedConditional, FactorGraph<FACTOR> >
+		FactorGraph<FACTOR>::eliminateFrontals(size_t nFrontals, const Eliminate& eliminate) const
+	{
+		// Build variable index
+		VariableIndex variableIndex(*this);
+
+		// Find first variable
+		Index firstIndex = 0;
+		while(firstIndex < variableIndex.size() && variableIndex[firstIndex].empty())
+			++ firstIndex;
+
+		// Check that number of variables is in bounds
+		if(firstIndex + nFrontals >= variableIndex.size())
+			throw std::invalid_argument("Requested to eliminate more frontal variables than exist in the factor graph.");
+
+		// Get set of involved factors
+		FastSet<size_t> involvedFactorIs;
+		for(Index j = firstIndex; j < firstIndex + nFrontals; ++j) {
+			BOOST_FOREACH(size_t i, variableIndex[j]) {
+				involvedFactorIs.insert(i);
+			}
+		}
+
+		// Separate factors into involved and remaining
+		FactorGraph<FactorType> involvedFactors;
+		FactorGraph<FactorType> remainingFactors;
+		FastSet<size_t>::const_iterator involvedFactorIsIt = involvedFactorIs.begin();
+		for(size_t i = 0; i < this->size(); ++i) {
+			if(*involvedFactorIsIt == i) {
+				// If the current factor is involved, add it to involved and increment involved iterator
+				involvedFactors.push_back((*this)[i]);
+				++ involvedFactorIsIt;
+			} else {
+				// If not involved, add to remaining
+				remainingFactors.push_back((*this)[i]);
+			}
+		}
+
+		// Do dense elimination on the involved factors
+		typename FactorGraph<FactorType>::EliminationResult eliminationResult =
+			eliminate(involvedFactors, nFrontals);
+
+		// Add the remaining factor back into the factor graph
+		remainingFactors.push_back(eliminationResult.second);
+
+		// Return the eliminated factor and remaining factor graph
+		return std::make_pair(eliminationResult.first, remainingFactors);
 	}
 
 	/* ************************************************************************* */

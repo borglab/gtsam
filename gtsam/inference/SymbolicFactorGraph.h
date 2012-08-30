@@ -57,6 +57,15 @@ namespace gtsam {
 		 */
 		template<class FACTOR>
 		SymbolicFactorGraph(const FactorGraph<FACTOR>& fg);
+		
+		/** Eliminate the first \c n frontal variables, returning the resulting
+		 * conditional and remaining factor graph - this is very inefficient for
+		 * eliminating all variables, to do that use EliminationTree or
+		 * JunctionTree.  Note that this version simply calls
+		 * FactorGraph<IndexFactor>::eliminateFrontals with EliminateSymbolic
+		 * as the eliminate function argument.
+		 */
+		std::pair<sharedConditional, SymbolicFactorGraph> eliminateFrontals(size_t nFrontals) const;
 
 		/// @}
 		/// @name Standard Interface
@@ -67,6 +76,8 @@ namespace gtsam {
 		 * union).
 		 */
 		FastSet<Index> keys() const;
+
+
 
 		/// @}
 		/// @name Advanced Interface
@@ -87,9 +98,8 @@ namespace gtsam {
 	};
 
 	/** Create a combined joint factor (new style for EliminationTree). */
-	IndexFactor::shared_ptr CombineSymbolic(
-			const FactorGraph<IndexFactor>& factors, const FastMap<Index,
-					std::vector<Index> >& variableSlots);
+	IndexFactor::shared_ptr CombineSymbolic(const FactorGraph<IndexFactor>& factors,
+		const FastMap<Index, std::vector<Index> >& variableSlots);
 
 	/**
 	 * CombineAndEliminate provides symbolic elimination.

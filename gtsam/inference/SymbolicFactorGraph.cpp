@@ -64,6 +64,13 @@ namespace gtsam {
   }
 
 	/* ************************************************************************* */
+	std::pair<SymbolicFactorGraph::sharedConditional, SymbolicFactorGraph>
+		SymbolicFactorGraph::eliminateFrontals(size_t nFrontals) const
+	{
+		return FactorGraph<IndexFactor>::eliminateFrontals(nFrontals, EliminateSymbolic);
+	}
+
+	/* ************************************************************************* */
 	IndexFactor::shared_ptr CombineSymbolic(
 			const FactorGraph<IndexFactor>& factors, const FastMap<Index,
 					vector<Index> >& variableSlots) {

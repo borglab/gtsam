@@ -787,6 +787,8 @@ class SymbolicFactorGraph {
   // Standard interface
   // FIXME: Must wrap FastSet<Index> for this to work
   //FastSet<Index> keys() const;
+
+	pair<gtsam::IndexConditional*, gtsam::SymbolicFactorGraph> eliminateFrontals(size_t nFrontals) const;
 };
 
 #include <gtsam/inference/SymbolicSequentialSolver.h>
@@ -995,6 +997,9 @@ class GaussianFactorGraph {
 	bool equals(const gtsam::GaussianFactorGraph& lfgraph, double tol) const;
 	size_t size() const;
 	gtsam::GaussianFactor* at(size_t idx) const;
+
+	// Inference
+	pair<gtsam::GaussianConditional*, gtsam::GaussianFactorGraph> eliminateFrontals(size_t nFrontals) const;
 
 	// Building the graph
 	void push_back(gtsam::GaussianFactor* factor);
