@@ -17,8 +17,10 @@ Note about newer Ubuntu versions unsupported by MATLAB (later than 10.04)
 If you have a newer Ubuntu system, you must make a small modification to your
 MATLAB installation, due to MATLAB being distributed with an old version of
 the C++ standard library.  Delete or rename all files starting with
-'libstdc++' in your MATLAB installation directory, typically
-/usr/local/MATLAB/[version]/sys/os/[system]/
+'libstdc++' in your MATLAB installation directory, in paths:
+
+	/usr/local/MATLAB/[version]/sys/os/[system]/ 
+	/usr/local/MATLAB/[version]/bin/[system]/
 
 
 ----------------------------------------
