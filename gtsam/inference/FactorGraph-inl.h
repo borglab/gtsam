@@ -116,7 +116,7 @@ namespace gtsam {
 		FactorGraph<FactorType> remainingFactors;
 		FastSet<size_t>::const_iterator involvedFactorIsIt = involvedFactorIs.begin();
 		for(size_t i = 0; i < this->size(); ++i) {
-			if(*involvedFactorIsIt == i) {
+			if(involvedFactorIsIt != involvedFactorIs.end() && *involvedFactorIsIt == i) {
 				// If the current factor is involved, add it to involved and increment involved iterator
 				involvedFactors.push_back((*this)[i]);
 				++ involvedFactorIsIt;
