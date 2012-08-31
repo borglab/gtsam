@@ -52,7 +52,6 @@ TEST(FactorGraph, eliminateFrontals) {
 	IndexConditional expectedCond(condIndices, 2);
 
 	SymbolicFactorGraph expectedSfg;
-	expectedSfg.push_factor(2,3);
 	expectedSfg.push_factor(4,5);
 	expectedSfg.push_factor(2,3,4);
 
