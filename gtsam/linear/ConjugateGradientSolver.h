@@ -20,9 +20,7 @@ namespace gtsam {
  */
 
 class ConjugateGradientParameters : public IterativeOptimizationParameters {
-
 public:
-
   typedef IterativeOptimizationParameters Base;
   typedef boost::shared_ptr<ConjugateGradientParameters> shared_ptr;
 
@@ -49,7 +47,21 @@ public:
   inline double epsilon_rel() const { return epsilon_rel_; }
   inline double epsilon_abs() const { return epsilon_abs_; }
 
-  void print() const {
+  inline size_t getMinIterations() const { return minIterations_; }
+  inline size_t getMaxIterations() const { return maxIterations_; }
+  inline size_t getReset() const { return reset_; }
+  inline double getEpsilon() const { return epsilon_rel_; }
+  inline double getEpsilon_rel() const { return epsilon_rel_; }
+  inline double getEpsilon_abs() const { return epsilon_abs_; }
+
+  inline void setMinIterations(size_t value) { minIterations_ = value; }
+  inline void setMaxIterations(size_t value) { maxIterations_ = value; }
+  inline void setReset(size_t value) { reset_ = value; }
+  inline void setEpsilon(double value) { epsilon_rel_ = value; }
+  inline void setEpsilon_rel(double value) { epsilon_rel_ = value; }
+  inline void setEpsilon_abs(double value) { epsilon_abs_ = value; }
+
+  virtual void print(const std::string &s="") const {
     Base::print();
     std::cout << "ConjugateGradientParameters: "
               << "minIter = " << minIterations_
@@ -60,19 +72,5 @@ public:
               << std::endl;
   }
 };
-
-//class ConjugateGradientSolver : public IterativeSolver {
-//
-//public:
-//
-//  typedef ConjugateGradientParameters Parameters;
-//
-//  Parameters parameters_;
-//
-//  ConjugateGradientSolver(const ConjugateGradientParameters &parameters) : parameters_(parameters) {}
-//  virtual VectorValues::shared_ptr optimize () = 0;
-//  virtual const IterativeOptimizationParameters& _params() const = 0;
-//};
-
 
 }

@@ -15,6 +15,10 @@
 
 namespace gtsam {
 
+void SuccessiveLinearizationParams::setIterativeParams(const SubgraphSolverParameters &params) {
+  iterativeParams = boost::make_shared<SubgraphSolverParameters>(params);
+}
+
 void SuccessiveLinearizationParams::print(const std::string& str) const {
 	NonlinearOptimizerParams::print(str);
 	switch ( linearSolverType ) {

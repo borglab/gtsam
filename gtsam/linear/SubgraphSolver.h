@@ -25,8 +25,8 @@ class SubgraphSolverParameters : public ConjugateGradientParameters {
 public:
   typedef ConjugateGradientParameters Base;
   SubgraphSolverParameters() : Base() {}
+  virtual void print(const std::string &s="") const { Base::print(s); }
 };
-
 
 /**
  * This class implements the SPCG solver presented in Dellaert et al in IROS'10.
