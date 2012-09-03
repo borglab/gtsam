@@ -146,7 +146,7 @@ PlanarSLAMExample_sampling
 function PlanarSLAMGraph_Callback(hObject, eventdata, handles)
 axes(handles.axes3);
 echo on
-PlanarSLAMExample_Graph
+PlanarSLAMExample_graph
 echo off
 
 % --- Executes on button press in SFM.
