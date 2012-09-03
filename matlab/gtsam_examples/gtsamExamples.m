@@ -22,7 +22,7 @@ function varargout = gtsamExamples(varargin)
 
 % Edit the above text to modify the response to help gtsamExamples
 
-% Last Modified by GUIDE v2.5 24-Jul-2012 10:18:05
+% Last Modified by GUIDE v2.5 03-Sep-2012 13:34:13
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -141,6 +141,13 @@ echo off
 function PlanarSLAMSampling_Callback(hObject, eventdata, handles)
 axes(handles.axes3);
 PlanarSLAMExample_sampling
+
+% --- Executes on button press in PlanarSLAMGraph.
+function PlanarSLAMGraph_Callback(hObject, eventdata, handles)
+axes(handles.axes3);
+echo on
+PlanarSLAMExample_Graph
+echo off
 
 % --- Executes on button press in SFM.
 function SFM_Callback(hObject, eventdata, handles)
