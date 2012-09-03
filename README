@@ -59,10 +59,12 @@ Tested compilers
  - GCC 4.2-4.7
  - Clang 2.9-3.2
  - OSX GCC 4.2
+ - MSVC 2010, 2012
  
 Tested systems:
  - Ubuntu 11.04, 11.10, 12.04
  - MacOS 10.6, 10.7
+ - Windows 7
 
 2)
 GTSAM makes extensive use of debug assertions, and we highly recommend you work
