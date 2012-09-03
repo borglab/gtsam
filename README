@@ -72,8 +72,8 @@ will run up to 10x faster in Release mode! See the end of this document for
 additional debugging tips.
 
 3)
-GTSAM has Doxygen documentation. To generate, run the the script 
-makedoc.sh.  
+GTSAM has Doxygen documentation. To generate, run 'make doc' from your
+build directory.
 
 4)
 The instructions below install the library to the default system install path and
