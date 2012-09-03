@@ -2,7 +2,7 @@
 
 # Detect platform
 os=`uname -s`
-arch=`uname -p`
+arch=`uname -m`
 if [ "$os" = "Linux" -a "$arch" = "x86_64" ]; then
 	platform=lin64
 elif [ "$os" = "Linux" -a "$arch" = "i686" ]; then
@@ -37,7 +37,7 @@ if [ ! $? ]; then
 fi
 
 # Compile
-make -j4 install
+make install
 
 # Create package
 tar czf gtsam-toolbox-2.1.0-$platform.tgz -C stage/borg toolbox
