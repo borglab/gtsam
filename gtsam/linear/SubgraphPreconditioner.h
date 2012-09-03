@@ -40,7 +40,7 @@ namespace gtsam {
 		typedef boost::shared_ptr<const Errors> sharedErrors;
 
 	private:
-		sharedFG Ab1_, Ab2_;
+		sharedFG Ab2_;
 		sharedBayesNet Rc1_;
 		sharedValues xbar_;  ///< A1 \ b1
 		sharedErrors b2bar_; ///< A2*xbar - b2
@@ -51,16 +51,11 @@ namespace gtsam {
 
 		/**
 		 * Constructor
-		 * @param Ab1: the Graph A1*x=b1
 		 * @param Ab2: the Graph A2*x=b2
 		 * @param Rc1: the Bayes Net R1*x=c1
 		 * @param xbar: the solution to R1*x=c1
 		 */
-    SubgraphPreconditioner(const sharedFG& Ab1, const sharedFG& Ab2,
-        const sharedBayesNet& Rc1, const sharedValues& xbar);
-
-		/** Access Ab1 */
-		const sharedFG& Ab1() const { return Ab1_; }
+    SubgraphPreconditioner(const sharedFG& Ab2, const sharedBayesNet& Rc1, const sharedValues& xbar);
 
 		/** Access Ab2 */
 		const sharedFG& Ab2() const { return Ab2_; }

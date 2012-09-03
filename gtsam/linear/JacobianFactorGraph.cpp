@@ -115,7 +115,20 @@ JacobianFactorGraph::shared_ptr dynamicCastFactors(const GaussianFactorGraph &gf
   return jfg;
 }
 
-
+/* ************************************************************************* */
+JacobianFactorGraph::shared_ptr convertToJacobianFactorGraph(const GaussianFactorGraph &gfg) {
+  JacobianFactorGraph::shared_ptr jfg(new JacobianFactorGraph());
+  jfg->reserve(gfg.size());
+  BOOST_FOREACH(const GaussianFactor::shared_ptr & factor, gfg) {
+    if( JacobianFactor::shared_ptr jf = boost::dynamic_pointer_cast<JacobianFactor>(factor) ) {
+      jfg->push_back(jf);
+    }
+    else {
+      jfg->push_back(boost::make_shared<JacobianFactor>(*factor));
+    }
+  }
+  return jfg;
+}
 
 } // namespace
 

@@ -120,7 +120,7 @@ TEST( SubgraphPreconditioner, system )
 
   // Create Subgraph-preconditioned system
   VectorValues::shared_ptr xbarShared(new VectorValues(xbar)); // TODO: horrible
-  SubgraphPreconditioner system(Ab1, Ab2, Rc1, xbarShared);
+  SubgraphPreconditioner system(Ab2, Rc1, xbarShared);
 
   // Create zero config
   VectorValues zeros = VectorValues::Zero(xbar);
@@ -197,7 +197,7 @@ TEST( SubgraphPreconditioner, conjugateGradients )
 
   // Create Subgraph-preconditioned system
   VectorValues::shared_ptr xbarShared(new VectorValues(xbar)); // TODO: horrible
-  SubgraphPreconditioner system(Ab1, Ab2, Rc1, xbarShared);
+  SubgraphPreconditioner system(Ab2, Rc1, xbarShared);
 
   // Create zero config y0 and perturbed config y1
   VectorValues y0 = VectorValues::Zero(xbar);

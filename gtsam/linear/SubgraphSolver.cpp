@@ -19,100 +19,168 @@
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/inference/graph-inl.h>
 #include <gtsam/inference/EliminationTree.h>
-
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
-
 #include <list>
 
 using namespace std;
 
 namespace gtsam {
 
+/**************************************************************************************************/
 SubgraphSolver::SubgraphSolver(const GaussianFactorGraph &gfg, const Parameters &parameters)
   : parameters_(parameters)
 {
+  JacobianFactorGraph::shared_ptr jfg = dynamicCastFactors(gfg);
+  initialize(*jfg);
+}
 
+/**************************************************************************************************/
+SubgraphSolver::SubgraphSolver(const JacobianFactorGraph::shared_ptr &jfg, const Parameters &parameters)
+  : parameters_(parameters)
+{
+  initialize(*jfg);
+}
 
-  GaussianFactorGraph::shared_ptr Ab1 = boost::make_shared<GaussianFactorGraph>();
-  GaussianFactorGraph::shared_ptr Ab2 = boost::make_shared<GaussianFactorGraph>();
+/**************************************************************************************************/
+SubgraphSolver::SubgraphSolver(const GaussianFactorGraph &Ab1, const GaussianFactorGraph &Ab2, const Parameters &parameters)
+  : parameters_(parameters) {
 
-  boost::tie(Ab1, Ab2) = splitGraph(gfg) ;
+  GaussianBayesNet::shared_ptr Rc1 = EliminationTree<GaussianFactor>::Create(Ab1)->eliminate(&EliminateQR);
+  JacobianFactorGraph::shared_ptr Ab2Jacobian = dynamicCastFactors(Ab2);
+  initialize(Rc1, Ab2Jacobian);
+}
 
-  if (parameters_.verbosity())
-    cout << ",with " << Ab1->size() << " and " << Ab2->size() << " factors" << endl;
-
-  //  // Add a HardConstraint to the root, otherwise the root will be singular
-  //  Key root = keys.back();
-  //  T_.addHardConstraint(root, theta0[root]);
-  //
-  //  // compose the approximate solution
-  //  theta_bar_ = composePoses<GRAPH, Constraint, Pose, Values> (T_, tree, theta0[root]);
+/**************************************************************************************************/
+SubgraphSolver::SubgraphSolver(const JacobianFactorGraph::shared_ptr &Ab1,
+    const JacobianFactorGraph::shared_ptr &Ab2, const Parameters &parameters)
+  : parameters_(parameters) {
 
   GaussianBayesNet::shared_ptr Rc1 = EliminationTree<GaussianFactor>::Create(*Ab1)->eliminate(&EliminateQR);
-  VectorValues::shared_ptr xbar(new VectorValues(gtsam::optimize(*Rc1)));
+  initialize(Rc1, Ab2);
+}
 
-  // Convert or cast Ab1 to JacobianFactors
-  boost::shared_ptr<FactorGraph<JacobianFactor> > Ab1Jacobians = boost::make_shared<FactorGraph<JacobianFactor> >();
-  Ab1Jacobians->reserve(Ab1->size());
-  BOOST_FOREACH(const boost::shared_ptr<GaussianFactor>& factor, *Ab1) {
-    if(boost::shared_ptr<JacobianFactor> jf =
-      boost::dynamic_pointer_cast<JacobianFactor>(factor))
-      Ab1Jacobians->push_back(jf);
-    else
-      Ab1Jacobians->push_back(boost::make_shared<JacobianFactor>(*factor));
-  }
+/**************************************************************************************************/
+SubgraphSolver::SubgraphSolver(const GaussianBayesNet::shared_ptr &Rc1, const GaussianFactorGraph &Ab2,
+    const Parameters &parameters) : parameters_(parameters)
+{
+  JacobianFactorGraph::shared_ptr Ab2Jacobians = dynamicCastFactors(Ab2);
+  initialize(Rc1, Ab2Jacobians);
+}
 
-  // Convert or cast Ab2 to JacobianFactors
-  boost::shared_ptr<FactorGraph<JacobianFactor> > Ab2Jacobians = boost::make_shared<FactorGraph<JacobianFactor> >();
-  Ab1Jacobians->reserve(Ab2->size());
-  BOOST_FOREACH(const boost::shared_ptr<GaussianFactor>& factor, *Ab2) {
-    if(boost::shared_ptr<JacobianFactor> jf =
-      boost::dynamic_pointer_cast<JacobianFactor>(factor))
-      Ab2Jacobians->push_back(jf);
-    else
-      Ab2Jacobians->push_back(boost::make_shared<JacobianFactor>(*factor));
-  }
-
-  pc_ = boost::make_shared<SubgraphPreconditioner>(Ab1Jacobians, Ab2Jacobians, Rc1, xbar);
+/**************************************************************************************************/
+SubgraphSolver::SubgraphSolver(const GaussianBayesNet::shared_ptr &Rc1,
+    const JacobianFactorGraph::shared_ptr &Ab2, const Parameters &parameters) : parameters_(parameters)
+{
+  initialize(Rc1, Ab2);
 }
 
 VectorValues SubgraphSolver::optimize() {
-
   VectorValues ybar = conjugateGradients<SubgraphPreconditioner, VectorValues, Errors>(*pc_, pc_->zero(), parameters_);
   return pc_->x(ybar);
 }
 
-boost::tuple<GaussianFactorGraph::shared_ptr, GaussianFactorGraph::shared_ptr>
-SubgraphSolver::splitGraph(const GaussianFactorGraph &gfg) {
+void SubgraphSolver::initialize(const JacobianFactorGraph &jfg)
+{
+  JacobianFactorGraph::shared_ptr Ab1 = boost::make_shared<JacobianFactorGraph>(),
+                                  Ab2 = boost::make_shared<JacobianFactorGraph>();
 
-  VariableIndex index(gfg);
-  size_t n = index.size();
-  std::vector<bool> connected(n, false);
+  boost::tie(Ab1, Ab2) = splitGraph(jfg) ;
+  if (parameters_.verbosity())
+    cout << "Split A into (A1) " << Ab1->size() << " and (A2) " << Ab2->size() << " factors" << endl;
 
-  GaussianFactorGraph::shared_ptr At(new GaussianFactorGraph());
-  GaussianFactorGraph::shared_ptr Ac( new GaussianFactorGraph());
+  GaussianBayesNet::shared_ptr Rc1 = EliminationTree<GaussianFactor>::Create(*Ab1)->eliminate(&EliminateQR);
+  VectorValues::shared_ptr xbar(new VectorValues(gtsam::optimize(*Rc1)));
+  JacobianFactorGraph::shared_ptr Ab2Jacobians = convertToJacobianFactorGraph(*Ab2);
+  pc_ = boost::make_shared<SubgraphPreconditioner>(Ab2Jacobians, Rc1, xbar);
+}
 
-  BOOST_FOREACH ( const GaussianFactor::shared_ptr &gf, gfg ) {
+void SubgraphSolver::initialize(const GaussianBayesNet::shared_ptr &Rc1, const JacobianFactorGraph::shared_ptr &Ab2)
+{
+  VectorValues::shared_ptr xbar(new VectorValues(gtsam::optimize(*Rc1)));
+  pc_ = boost::make_shared<SubgraphPreconditioner>(Ab2, Rc1, xbar);
+}
+
+boost::tuple<JacobianFactorGraph::shared_ptr, JacobianFactorGraph::shared_ptr>
+SubgraphSolver::splitGraph(const JacobianFactorGraph &jfg) {
+
+  const VariableIndex index(jfg);
+  const size_t n = index.size(), m = jfg.size();
+  DisjointSet D(n) ;
+
+  JacobianFactorGraph::shared_ptr At(new JacobianFactorGraph());
+  JacobianFactorGraph::shared_ptr Ac( new JacobianFactorGraph());
+
+  size_t t = 0;
+  BOOST_FOREACH ( const JacobianFactor::shared_ptr &jf, jfg ) {
+
+    if ( jf->keys().size() > 2 ) {
+      throw runtime_error("SubgraphSolver::splitGraph the graph is not simple, sanity check failed ");
+    }
 
     bool augment = false ;
 
     /* check whether this factor should be augmented to the "tree" graph */
-    if ( gf->keys().size() == 1 ) augment = true;
+    if ( jf->keys().size() == 1 ) augment = true;
     else {
-      BOOST_FOREACH ( const Index key, *gf ) {
-        if ( connected[key] == false ) {
-          augment = true ;
-          connected[key] = true;
-        }
+      const Index u = jf->keys()[0], v = jf->keys()[1],
+                  u_root = D.find(u), v_root = D.find(v);
+      if ( u_root != v_root ) {
+        t++; augment = true ;
+        D.makeUnion(u_root, v_root);
       }
     }
-
-    if ( augment ) At->push_back(gf);
-    else Ac->push_back(gf);
+    if ( augment ) At->push_back(jf);
+    else Ac->push_back(jf);
   }
 
   return boost::tie(At, Ac);
+}
+
+
+SubgraphSolver::DisjointSet::DisjointSet(const size_t n):n_(n),rank_(n,1),parent_(n) {
+  for ( Index i = 0 ; i < n ; ++i ) parent_[i] = i ;
+}
+
+Index SubgraphSolver::DisjointSet::makeUnion(const Index &u, const Index &v) {
+
+  Index u_root = find(u), v_root = find(v) ;
+  Index u_rank = rank(u), v_rank = rank(v) ;
+
+  if ( u_root != v_root ) {
+    if ( v_rank > u_rank ) {
+      parent_[u_root] = v_root ;
+      rank_[v_root] += rank_[u_root] ;
+      return v_root ;
+    }
+    else {
+      parent_[v_root] = u_root ;
+      rank_[u_root] += rank_[v_root] ;
+      return u_root ;
+    }
+  }
+  return u_root ;
+}
+
+Index SubgraphSolver::DisjointSet::find(const Index &u) {
+  vector<Index> path ;
+  Index x = u;
+  Index x_root = parent_[x] ;
+
+  // find the root, and keep the vertices along the path
+  while ( x != x_root ) {
+    path.push_back(x) ;
+    x = x_root ;
+    x_root = parent_[x] ;
+  }
+
+  // path compression
+  BOOST_FOREACH(const Index &i, path) {
+    rank_[i] = 1 ;
+    parent_[i] = x_root ;
+  }
+
+  return x_root ;
 }
 
 

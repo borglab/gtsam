@@ -26,9 +26,9 @@ using namespace std;
 namespace gtsam {
 
 	/* ************************************************************************* */
-	SubgraphPreconditioner::SubgraphPreconditioner(const sharedFG& Ab1, const sharedFG& Ab2,
+	SubgraphPreconditioner::SubgraphPreconditioner(const sharedFG& Ab2,
 			const sharedBayesNet& Rc1, const sharedValues& xbar) :
-		Ab1_(Ab1), Ab2_(Ab2), Rc1_(Rc1), xbar_(xbar), b2bar_(new Errors(-gaussianErrors(*Ab2_,*xbar))) {
+		Ab2_(Ab2), Rc1_(Rc1), xbar_(xbar), b2bar_(new Errors(-gaussianErrors(*Ab2_,*xbar))) {
 	}
 
 	/* ************************************************************************* */

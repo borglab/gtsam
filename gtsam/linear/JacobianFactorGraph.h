@@ -67,7 +67,9 @@ namespace gtsam {
   void multiply(const JacobianFactorGraph& fg, const VectorValues &x, VectorValues &r);
   void transposeMultiply(const JacobianFactorGraph& fg, const VectorValues &r, VectorValues &x);
 
-  /** dynamic_cast the gaussian factors down to jacobian factors */
+  /** dynamic_cast the gaussian factors down to jacobian factors, may throw exception if it contains non-Jacobian Factor */
   JacobianFactorGraph::shared_ptr dynamicCastFactors(const GaussianFactorGraph &gfg);
 
+  /** convert the gaussian factors down to jacobian factors, may duplicate factors if it contains Hessian Factor */
+  JacobianFactorGraph::shared_ptr convertToJacobianFactorGraph(const GaussianFactorGraph &gfg);
 }

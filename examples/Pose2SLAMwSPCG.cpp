@@ -54,12 +54,8 @@
 // for each variable, held in a Values container.
 #include <gtsam/nonlinear/Values.h>
 
-// ???
-#include <gtsam/linear/SimpleSPCGSolver.h>
 #include <gtsam/linear/SubgraphSolver.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-
-
 
 using namespace std;
 using namespace gtsam;
@@ -109,14 +105,6 @@ int main(int argc, char** argv) {
   parameters.verbosity = NonlinearOptimizerParams::ERROR;
   parameters.verbosityLM = LevenbergMarquardtParams::LAMBDA;
   parameters.linearSolverType = SuccessiveLinearizationParams::CONJUGATE_GRADIENT;
-
-  {
-    parameters.iterativeParams = boost::make_shared<SimpleSPCGSolverParameters>();
-    LevenbergMarquardtOptimizer optimizer(graph, initialEstimate, parameters);
-    Values result = optimizer.optimize();
-    result.print("Final Result:\n");
-    cout << "simple spcg solver final error = " << graph.error(result) << endl;
-  }
 
   {
     parameters.iterativeParams = boost::make_shared<SubgraphSolverParameters>();
