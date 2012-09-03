@@ -67,11 +67,30 @@ inline Matrix Matrix_(const Vector& v) { return Matrix_(v.size(),1,v);}
 */
 Matrix Matrix_(size_t m, size_t n, ...);
 
+// Matlab-like syntax
+
 /**
- * MATLAB like constructors
+ * Creates an zeros matrix, with matlab-like syntax
+ *
+ * Note: if assigning a block (created from an Eigen block() function) of a matrix to zeros,
+ * don't use this function, instead use ".setZero(m,n)" to avoid an Eigen error.
  */
 Matrix zeros(size_t m, size_t n);
+
+/**
+ * Creates an identity matrix, with matlab-like syntax
+ *
+ * Note: if assigning a block (created from an Eigen block() function) of a matrix to identity,
+ * don't use this function, instead use ".setIdentity(m,n)" to avoid an Eigen error.
+ */
 Matrix eye(size_t m, size_t n);
+
+/**
+ * Creates a square identity matrix, with matlab-like syntax
+ *
+ * Note: if assigning a block (created from an Eigen block() function) of a matrix to identity,
+ * don't use this function, instead use ".setIdentity(m)" to avoid an Eigen error.
+ */
 inline Matrix eye( size_t m ) { return eye(m,m); }
 Matrix diag(const Vector& v);
 
