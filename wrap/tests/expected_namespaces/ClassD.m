@@ -1,5 +1,5 @@
 %-------Constructors-------
-%CLASSD()
+%ClassD()
 % 
 %-------Methods-------
 % 

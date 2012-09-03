@@ -1,27 +1,27 @@
 %-------Constructors-------
-%TEST()
-%TEST(double a, Matrix b)
+%Test()
+%Test(double a, Matrix b)
 % 
 %-------Methods-------
-%ARG_EIGENCONSTREF(Matrix value) : returns void
-%CREATE_MIXEDPTRS() : returns pair< Test, SharedTest >
-%CREATE_PTRS() : returns pair< SharedTest, SharedTest >
-%PRINT() : returns void
-%RETURN_POINT2PTR(bool value) : returns Point2
-%RETURN_TEST(Test value) : returns Test
-%RETURN_TESTPTR(Test value) : returns Test
-%RETURN_BOOL(bool value) : returns bool
-%RETURN_DOUBLE(double value) : returns double
-%RETURN_FIELD(Test t) : returns bool
-%RETURN_INT(int value) : returns int
-%RETURN_MATRIX1(Matrix value) : returns Matrix
-%RETURN_MATRIX2(Matrix value) : returns Matrix
-%RETURN_PAIR(Vector v, Matrix A) : returns pair< Vector, Matrix >
-%RETURN_PTRS(Test p1, Test p2) : returns pair< SharedTest, SharedTest >
-%RETURN_SIZE_T(size_t value) : returns size_t
-%RETURN_STRING(string value) : returns string
-%RETURN_VECTOR1(Vector value) : returns Vector
-%RETURN_VECTOR2(Vector value) : returns Vector
+%arg_EigenConstRef(Matrix value) : returns void
+%create_MixedPtrs() : returns pair< Test, SharedTest >
+%create_ptrs() : returns pair< SharedTest, SharedTest >
+%print() : returns void
+%return_Point2Ptr(bool value) : returns Point2
+%return_Test(Test value) : returns Test
+%return_TestPtr(Test value) : returns Test
+%return_bool(bool value) : returns bool
+%return_double(double value) : returns double
+%return_field(Test t) : returns bool
+%return_int(int value) : returns int
+%return_matrix1(Matrix value) : returns Matrix
+%return_matrix2(Matrix value) : returns Matrix
+%return_pair(Vector v, Matrix A) : returns pair< Vector, Matrix >
+%return_ptrs(Test p1, Test p2) : returns pair< SharedTest, SharedTest >
+%return_size_t(size_t value) : returns size_t
+%return_string(string value) : returns string
+%return_vector1(Vector value) : returns Vector
+%return_vector2(Vector value) : returns Vector
 % 
 %-------Static Methods-------
 %

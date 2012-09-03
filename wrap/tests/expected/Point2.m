@@ -1,15 +1,15 @@
 %-------Constructors-------
-%POINT2()
-%POINT2(double x, double y)
+%Point2()
+%Point2(double x, double y)
 % 
 %-------Methods-------
-%ARGCHAR(char a) : returns void
-%ARGUCHAR(unsigned char a) : returns void
-%DIM() : returns int
-%RETURNCHAR() : returns char
-%VECTORCONFUSION() : returns VectorNotEigen
-%X() : returns double
-%Y() : returns double
+%argChar(char a) : returns void
+%argUChar(unsigned char a) : returns void
+%dim() : returns int
+%returnChar() : returns char
+%vectorConfusion() : returns VectorNotEigen
+%x() : returns double
+%y() : returns double
 % 
 %-------Static Methods-------
 %
