@@ -421,7 +421,7 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	boost::tuple<GaussianFactorGraph, VectorValues> planarGraph(size_t N) {
+	boost::tuple<JacobianFactorGraph, VectorValues> planarGraph(size_t N) {
 
 		// create empty graph
 		NonlinearFactorGraph nlfg;
@@ -458,7 +458,13 @@ namespace example {
 				xtrue[ordering[key(x, y)]] = Point2(x,y).vector();
 
 		// linearize around zero
-		return boost::make_tuple(*nlfg.linearize(zeros, ordering), xtrue);
+		boost::shared_ptr<GaussianFactorGraph> gfg = nlfg.linearize(zeros, ordering);
+
+		JacobianFactorGraph jfg;
+    BOOST_FOREACH(GaussianFactorGraph::sharedFactor factor, *gfg)
+		  jfg.push_back(boost::dynamic_pointer_cast<JacobianFactor>(factor));
+
+		return boost::make_tuple(jfg, xtrue);
 	}
 
 	/* ************************************************************************* */
@@ -476,21 +482,21 @@ namespace example {
 		JacobianFactorGraph T, C;
 
 		// Add the x11 constraint to the tree
-		T.push_back(original[0]);
+		T.push_back(boost::dynamic_pointer_cast<JacobianFactor>(original[0]));
 
 		// Add all horizontal constraints to the tree
 		size_t i = 1;
 		for (size_t x = 1; x < N; x++)
 			for (size_t y = 1; y <= N; y++, i++)
-				T.push_back(original[i]);
+				T.push_back(boost::dynamic_pointer_cast<JacobianFactor>(original[i]));
 
 		// Add first vertical column of constraints to T, others to C
 		for (size_t x = 1; x <= N; x++)
 			for (size_t y = 1; y < N; y++, i++)
 				if (x == 1)
-					T.push_back(original[i]);
+					T.push_back(boost::dynamic_pointer_cast<JacobianFactor>(original[i]));
 				else
-					C.push_back(original[i]);
+					C.push_back(boost::dynamic_pointer_cast<JacobianFactor>(original[i]));
 
 		return make_pair(T, C);
 	}

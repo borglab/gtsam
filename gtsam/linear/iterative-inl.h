@@ -122,7 +122,7 @@ namespace gtsam {
 	// conjugate gradient method.
 	// S: linear system, V: step vector, E: errors
 	template<class S, class V, class E>
-	V conjugateGradients(const S& Ab,	V x, const ConjugateGradientParameters &parameters, bool steepest = false) {
+	V conjugateGradients(const S& Ab,	V x, const ConjugateGradientParameters &parameters, bool steepest) {
 
 		CGState<S, V, E> state(Ab, x, parameters, steepest);
 

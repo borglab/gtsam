@@ -31,12 +31,11 @@ namespace gtsam {
 	 * "Vector" class E needs dot(v,v)
 	 * @param Ab, the "system" that needs to be solved, examples below
 	 * @param x is the initial estimate
-	 * @param epsilon determines the convergence criterion: norm(g)<epsilon*norm(g0)
-	 * @param maxIterations, if 0 will be set to |x|
 	 * @param steepest flag, if true does steepest descent, not CG
 	 * */
-	template<class S, class V, class E>
-	V conjugateGradients(const S& Ab, V x, bool verbose, double epsilon, size_t maxIterations, bool steepest = false);
+  template<class S, class V, class E>
+  V conjugateGradients(const S& Ab, V x,
+      const ConjugateGradientParameters &parameters, bool steepest = false);
 
 	/**
 	 * Helper class encapsulating the combined system |Ax-b_|^2
@@ -127,21 +126,19 @@ namespace gtsam {
 			const Vector& x,
 			const ConjugateGradientParameters & parameters);
 
-	class GaussianFactorGraph;
-
 	/**
 	 * Method of steepest gradients, Gaussian Factor Graph version
-	 * */
+	 */
 	VectorValues steepestDescent(
-			const GaussianFactorGraph& fg,
+			const FactorGraph<JacobianFactor>& fg,
 			const VectorValues& x,
 			const ConjugateGradientParameters & parameters);
 
 	/**
 	 * Method of conjugate gradients (CG), Gaussian Factor Graph version
-	 * */
+	 */
 	VectorValues conjugateGradientDescent(
-			const GaussianFactorGraph& fg,
+			const FactorGraph<JacobianFactor>& fg,
 			const VectorValues& x,
 			const ConjugateGradientParameters & parameters);
 

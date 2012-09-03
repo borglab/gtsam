@@ -48,6 +48,7 @@ namespace gtsam {
 	public:
 
 		SubgraphPreconditioner();
+
 		/**
 		 * Constructor
 		 * @param Ab1: the Graph A1*x=b1
@@ -55,7 +56,8 @@ namespace gtsam {
 		 * @param Rc1: the Bayes Net R1*x=c1
 		 * @param xbar: the solution to R1*x=c1
 		 */
-		SubgraphPreconditioner(const sharedFG& Ab1, const sharedFG& Ab2, const sharedBayesNet& Rc1,	const sharedValues& xbar);
+    SubgraphPreconditioner(const sharedFG& Ab1, const sharedFG& Ab2,
+        const sharedBayesNet& Rc1, const sharedValues& xbar);
 
 		/** Access Ab1 */
 		const sharedFG& Ab1() const { return Ab1_; }
@@ -69,23 +71,23 @@ namespace gtsam {
 		/** Access b2bar */
 		const sharedErrors b2bar() const { return b2bar_; }
 
-	    /**
-	     * Add zero-mean i.i.d. Gaussian prior terms to each variable
-	     * @param sigma Standard deviation of Gaussian
-	     */
-//	    SubgraphPreconditioner add_priors(double sigma) const;
+    /**
+     * Add zero-mean i.i.d. Gaussian prior terms to each variable
+     * @param sigma Standard deviation of Gaussian
+     */
+//  SubgraphPreconditioner add_priors(double sigma) const;
 
 		/* x = xbar + inv(R1)*y */
 		VectorValues x(const VectorValues& y) const;
 
 		/* A zero VectorValues with the structure of xbar */
 		VectorValues zero() const {
-			VectorValues V(VectorValues::Zero(*xbar_)) ;
+			VectorValues V(VectorValues::Zero(*xbar_));
 			return V ;
 		}
 
 		/**
-		 * Add constraint part of the error only, used in both calls above
+		 * Add constraint part of the error only
 		 * y += alpha*inv(R1')*A2'*e2
 		 * Takes a range indicating e2 !!!!
 		 */

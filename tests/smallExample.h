@@ -130,7 +130,7 @@ namespace gtsam {
 		 * -x11-x21-x31
 		 * with x11 clamped at (1,1), and others related by 2D odometry.
 		 */
-		boost::tuple<GaussianFactorGraph, VectorValues> planarGraph(size_t N);
+		boost::tuple<JacobianFactorGraph, VectorValues> planarGraph(size_t N);
 
 		/*
 		 * Create canonical ordering for planar graph that also works for tree
