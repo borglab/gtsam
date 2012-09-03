@@ -15,7 +15,7 @@ clear
 import gtsam.*
 
 %% Find data file
-datafile = '/Users/dellaert/borg/gtsam/examples/Data/example.graph';
+datafile = findExampleDataFile('example.graph');
 
 %% Initialize graph, initial estimate, and odometry noise
 model = noiseModel.Diagonal.Sigmas([0.05; 0.05; 2*pi/180]);
