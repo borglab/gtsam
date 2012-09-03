@@ -205,7 +205,7 @@ GaussianFactor::shared_ptr LinearContainerFactor::negate(const Ordering& orderin
 /* ************************************************************************* */
 NonlinearFactor::shared_ptr LinearContainerFactor::negate() const {
 	GaussianFactor::shared_ptr antifactor = factor_->negate(); // already has keys in place
-	return NonlinearFactor::shared_ptr(new LinearContainerFactor(antifactor));
+	return NonlinearFactor::shared_ptr(new LinearContainerFactor(antifactor,linearizationPoint_));
 }
 
 /* ************************************************************************* */
