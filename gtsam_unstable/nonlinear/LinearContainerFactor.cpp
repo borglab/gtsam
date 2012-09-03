@@ -39,6 +39,15 @@ void LinearContainerFactor::initializeLinearizationPoint(const Values& lineariza
 }
 
 /* ************************************************************************* */
+LinearContainerFactor::LinearContainerFactor(const GaussianFactor::shared_ptr& factor,
+		const boost::optional<Values>& linearizationPoint)
+: factor_(factor), linearizationPoint_(linearizationPoint) {
+	// Extract keys stashed in linear factor
+	BOOST_FOREACH(const Index& idx, factor_->keys())
+		keys_.push_back(idx);
+}
+
+/* ************************************************************************* */
 LinearContainerFactor::LinearContainerFactor(
 		const JacobianFactor& factor, const Ordering& ordering,
 		const Values& linearizationPoint)

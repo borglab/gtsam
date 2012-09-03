@@ -25,8 +25,7 @@ protected:
 
 	/** direct copy constructor */
 	LinearContainerFactor(const GaussianFactor::shared_ptr& factor,
-			const boost::optional<Values>& linearizationPoint)
-	: factor_(factor), linearizationPoint_(linearizationPoint) {}
+			const boost::optional<Values>& linearizationPoint);
 
 public:
 
