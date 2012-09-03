@@ -66,33 +66,6 @@ TEST( GaussianFactor, linearFactor )
 	EXPECT(assert_equal(expected,*lf));
 }
 
-///* ************************************************************************* */
-// SL-FIX TEST( GaussianFactor, keys )
-//{
-//	// get the factor kf2 from the small linear factor graph
-//  Ordering ordering; ordering += kx1,kx2,kl1;
-//  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
-//	GaussianFactor::shared_ptr lf = fg[1];
-//	list<Symbol> expected;
-//	expected.push_back(kx1);
-//	expected.push_back(kx2);
-//	EXPECT(lf->keys() == expected);
-//}
-
-///* ************************************************************************* */
-// SL-FIX TEST( GaussianFactor, dimensions )
-//{
-//  // get the factor kf2 from the small linear factor graph
-//  Ordering ordering; ordering += kx1,kx2,kl1;
-//  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
-//
-//  // Check a single factor
-//  Dimensions expected;
-//  insert(expected)(kx1, 2)(kx2, 2);
-//  Dimensions actual = fg[1]->dimensions();
-//  EXPECT(expected==actual);
-//}
-
 /* ************************************************************************* */
 TEST( GaussianFactor, getDim )
 {
@@ -109,62 +82,6 @@ TEST( GaussianFactor, getDim )
 	size_t expected = 2;
 	EXPECT_LONGS_EQUAL(expected, actual);
 }
-
-///* ************************************************************************* */
-// SL-FIX TEST( GaussianFactor, combine )
-//{
-//	// create a small linear factor graph
-//  Ordering ordering; ordering += kx1,kx2,kl1;
-//  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
-//
-//	// get two factors from it and insert the factors into a vector
-//	vector<GaussianFactor::shared_ptr> lfg;
-//	lfg.push_back(fg[4 - 1]);
-//	lfg.push_back(fg[2 - 1]);
-//
-//	// combine in a factor
-//	GaussianFactor combined(lfg);
-//
-//	// sigmas
-//	double sigma2 = 0.1;
-//	double sigma4 = 0.2;
-//	Vector sigmas = Vector_(4, sigma4, sigma4, sigma2, sigma2);
-//
-//	// the expected combined linear factor
-//	Matrix Ax2 = Matrix_(4, 2, // x2
-//			-5., 0.,
-//			+0., -5.,
-//			10., 0.,
-//			+0., 10.);
-//
-//	Matrix Al1 = Matrix_(4, 2,	// l1
-//			5., 0.,
-//			0., 5.,
-//			0., 0.,
-//			0., 0.);
-//
-//	Matrix Ax1 = Matrix_(4, 2,	// x1
-//			0.00, 0., // f4
-//			0.00, 0., // f4
-//			-10., 0., // f2
-//			0.00, -10. // f2
-//	);
-//
-//	// the RHS
-//	Vector b2(4);
-//	b2(0) = -1.0;
-//	b2(1) =  1.5;
-//	b2(2) =  2.0;
-//	b2(3) = -1.0;
-//
-//	// use general constructor for making arbitrary factors
-//	vector<pair<Symbol, Matrix> > meas;
-//	meas.push_back(make_pair(kx2, Ax2));
-//	meas.push_back(make_pair(kl1, Al1));
-//	meas.push_back(make_pair(kx1, Ax1));
-//	GaussianFactor expected(meas, b2, noiseModel::Diagonal::Sigmas(ones(4)));
-//	EXPECT(assert_equal(expected,combined));
-//}
 
 /* ************************************************************************* */
 TEST( GaussianFactor, error )
@@ -185,47 +102,6 @@ TEST( GaussianFactor, error )
 	double actual = lf->error(cfg);
 	DOUBLES_EQUAL( 1.0, actual, 0.00000001 );
 }
-
-///* ************************************************************************* */
-// SL-FIX TEST( GaussianFactor, eliminate )
-//{
-//	// create a small linear factor graph
-//  Ordering ordering; ordering += kx1,kx2,kl1;
-//  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
-//
-//	// get two factors from it and insert the factors into a vector
-//	vector<GaussianFactor::shared_ptr> lfg;
-//	lfg.push_back(fg[4 - 1]);
-//	lfg.push_back(fg[2 - 1]);
-//
-//	// combine in a factor
-//	GaussianFactor combined(lfg);
-//
-//	// eliminate the combined factor
-//	GaussianConditional::shared_ptr actualCG;
-//	GaussianFactor::shared_ptr actualLF;
-//	boost::tie(actualCG,actualLF) = combined.eliminate(kx2);
-//
-//	// create expected Conditional Gaussian
-//	Matrix I = eye(2)*sqrt(125.0);
-//	Matrix R11 = I, S12 = -0.2*I, S13 = -0.8*I;
-//	Vector d = I*Vector_(2,0.2,-0.14);
-//
-//	// Check the conditional Gaussian
-//	GaussianConditional
-//	expectedCG(kx2, d, R11, kl1, S12, kx1, S13, repeat(2, 1.0));
-//
-//	// the expected linear factor
-//	I = eye(2)/0.2236;
-//	Matrix Bl1 = I, Bx1 = -I;
-//	Vector b1 = I*Vector_(2,0.0,0.2);
-//
-//	GaussianFactor expectedLF(kl1, Bl1, kx1, Bx1, b1, repeat(2,1.0));
-//
-//	// check if the result matches
-//	EXPECT(assert_equal(expectedCG,*actualCG,1e-3));
-//	EXPECT(assert_equal(expectedLF,*actualLF,1e-3));
-//}
 
 /* ************************************************************************* */
 TEST( GaussianFactor, matrix )
@@ -327,66 +203,6 @@ void print(const list<T>& i) {
 	copy(i.begin(), i.end(), ostream_iterator<T> (cout, ","));
 	cout << endl;
 }
-
-///* ************************************************************************* */
-// SL-FIX TEST( GaussianFactor, sparse )
-//{
-//	// create a small linear factor graph
-//  Ordering ordering; ordering += kx1,kx2,kl1;
-//  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
-//
-//	// get the factor kf2 from the factor graph
-//	GaussianFactor::shared_ptr lf = fg[1];
-//
-//	// render with a given ordering
-//	Ordering ord;
-//	ord += kx1,kx2;
-//
-//	list<int> i,j;
-//	list<double> s;
-//	boost::tie(i,j,s) = lf->sparse(fg.columnIndices(ord));
-//
-//	list<int> i1,j1;
-//	i1 += 1,2,1,2;
-//	j1 += 1,2,3,4;
-//
-//	list<double> s1;
-//	s1 += -10,-10,10,10;
-//
-//	EXPECT(i==i1);
-//	EXPECT(j==j1);
-//	EXPECT(s==s1);
-//}
-
-///* ************************************************************************* */
-// SL-FIX TEST( GaussianFactor, sparse2 )
-//{
-//	// create a small linear factor graph
-//  Ordering ordering; ordering += kx1,kx2,kl1;
-//  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
-//
-//	// get the factor kf2 from the factor graph
-//	GaussianFactor::shared_ptr lf = fg[1];
-//
-//	// render with a given ordering
-//	Ordering ord;
-//	ord += kx2,kl1,kx1;
-//
-//	list<int> i,j;
-//	list<double> s;
-//	boost::tie(i,j,s) = lf->sparse(fg.columnIndices(ord));
-//
-//	list<int> i1,j1;
-//	i1 += 1,2,1,2;
-//	j1 += 5,6,1,2;
-//
-//	list<double> s1;
-//	s1 += -10,-10,10,10;
-//
-//	EXPECT(i==i1);
-//	EXPECT(j==j1);
-//	EXPECT(s==s1);
-//}
 
 /* ************************************************************************* */
 TEST( GaussianFactor, size )

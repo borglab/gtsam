@@ -47,7 +47,7 @@ static double sigmax1 = 0.786153, sigmax2 = 1.0/1.47292, sigmax3 = 0.671512, sig
 static const double tol = 1e-4;
 
 /* ************************************************************************* */
-TEST_UNSAFE( ISAM, iSAM_smoother )
+TEST( ISAM, iSAM_smoother )
 {
   Ordering ordering;
   for (int t = 1; t <= 7; t++) ordering += X(t);
@@ -75,31 +75,6 @@ TEST_UNSAFE( ISAM, iSAM_smoother )
 	VectorValues optimized = optimize(actual); // actual solution
 	EXPECT(assert_equal(e, optimized));
 }
-
-/* ************************************************************************* */
-// SL-FIX TEST( ISAM, iSAM_smoother2 )
-//{
-//	// Create smoother with 7 nodes
-//	GaussianFactorGraph smoother = createSmoother(7);
-//
-//	// Create initial tree from first 4 timestamps in reverse order !
-//	Ordering ord; ord += X(4),X(3),X(2),X(1);
-//	GaussianFactorGraph factors1;
-//	for (int i=0;i<7;i++) factors1.push_back(smoother[i]);
-//	GaussianISAM actual(*inference::Eliminate(factors1));
-//
-//	// run iSAM with remaining factors
-//	GaussianFactorGraph factors2;
-//	for (int i=7;i<13;i++) factors2.push_back(smoother[i]);
-//	actual.update(factors2);
-//
-//	// Create expected Bayes Tree by solving smoother with "natural" ordering
-//	Ordering ordering;
-//	for (int t = 1; t <= 7; t++) ordering += symbol('x', t);
-//	GaussianISAM expected(smoother.eliminate(ordering));
-//
-//	EXPECT(assert_equal(expected, actual));
-//}
 
 /* ************************************************************************* *
  Bayes tree for smoother with "natural" ordering:
