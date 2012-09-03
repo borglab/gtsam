@@ -67,9 +67,9 @@ public:
 		if (H) {
 			*H = gtsam::zeros(rDim, xDim);
 			if (pose_traits::isRotFirst<Pose>())
-				(*H).leftCols(rDim).setIdentity(rDim, rDim); // = eye(rDim); // FIXME: avoiding use of assign with eye()
+				(*H).leftCols(rDim).setIdentity(rDim, rDim);
 			else
-				(*H).rightCols(rDim).setIdentity(rDim, rDim); // = eye(rDim);
+				(*H).rightCols(rDim).setIdentity(rDim, rDim);
 		}
 
 		return Rotation::Logmap(newR) - Rotation::Logmap(measured_);
