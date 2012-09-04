@@ -130,7 +130,7 @@ namespace gtsam {
 	 * Method of steepest gradients, Gaussian Factor Graph version
 	 */
 	VectorValues steepestDescent(
-			const FactorGraph<JacobianFactor>& fg,
+			const GaussianFactorGraph& fg,
 			const VectorValues& x,
 			const ConjugateGradientParameters & parameters);
 
@@ -138,7 +138,7 @@ namespace gtsam {
 	 * Method of conjugate gradients (CG), Gaussian Factor Graph version
 	 */
 	VectorValues conjugateGradientDescent(
-			const FactorGraph<JacobianFactor>& fg,
+			const GaussianFactorGraph& fg,
 			const VectorValues& x,
 			const ConjugateGradientParameters & parameters);
 

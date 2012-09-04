@@ -14,7 +14,7 @@
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/iterative-inl.h>
-#include <gtsam/linear/JacobianFactorGraph.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/SubgraphSolver.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/inference/graph-inl.h>
@@ -31,12 +31,11 @@ namespace gtsam {
 SubgraphSolver::SubgraphSolver(const GaussianFactorGraph &gfg, const Parameters &parameters)
   : parameters_(parameters)
 {
-  JacobianFactorGraph::shared_ptr jfg = dynamicCastFactors(gfg);
-  initialize(*jfg);
+  initialize(gfg);
 }
 
 /**************************************************************************************************/
-SubgraphSolver::SubgraphSolver(const JacobianFactorGraph::shared_ptr &jfg, const Parameters &parameters)
+SubgraphSolver::SubgraphSolver(const GaussianFactorGraph::shared_ptr &jfg, const Parameters &parameters)
   : parameters_(parameters)
 {
   initialize(*jfg);
@@ -47,13 +46,12 @@ SubgraphSolver::SubgraphSolver(const GaussianFactorGraph &Ab1, const GaussianFac
   : parameters_(parameters) {
 
   GaussianBayesNet::shared_ptr Rc1 = EliminationTree<GaussianFactor>::Create(Ab1)->eliminate(&EliminateQR);
-  JacobianFactorGraph::shared_ptr Ab2Jacobian = dynamicCastFactors(Ab2);
-  initialize(Rc1, Ab2Jacobian);
+  initialize(Rc1, boost::make_shared<GaussianFactorGraph>(Ab2));
 }
 
 /**************************************************************************************************/
-SubgraphSolver::SubgraphSolver(const JacobianFactorGraph::shared_ptr &Ab1,
-    const JacobianFactorGraph::shared_ptr &Ab2, const Parameters &parameters)
+SubgraphSolver::SubgraphSolver(const GaussianFactorGraph::shared_ptr &Ab1,
+    const GaussianFactorGraph::shared_ptr &Ab2, const Parameters &parameters)
   : parameters_(parameters) {
 
   GaussianBayesNet::shared_ptr Rc1 = EliminationTree<GaussianFactor>::Create(*Ab1)->eliminate(&EliminateQR);
@@ -64,13 +62,12 @@ SubgraphSolver::SubgraphSolver(const JacobianFactorGraph::shared_ptr &Ab1,
 SubgraphSolver::SubgraphSolver(const GaussianBayesNet::shared_ptr &Rc1, const GaussianFactorGraph &Ab2,
     const Parameters &parameters) : parameters_(parameters)
 {
-  JacobianFactorGraph::shared_ptr Ab2Jacobians = dynamicCastFactors(Ab2);
-  initialize(Rc1, Ab2Jacobians);
+  initialize(Rc1, boost::make_shared<GaussianFactorGraph>(Ab2));
 }
 
 /**************************************************************************************************/
 SubgraphSolver::SubgraphSolver(const GaussianBayesNet::shared_ptr &Rc1,
-    const JacobianFactorGraph::shared_ptr &Ab2, const Parameters &parameters) : parameters_(parameters)
+    const GaussianFactorGraph::shared_ptr &Ab2, const Parameters &parameters) : parameters_(parameters)
 {
   initialize(Rc1, Ab2);
 }
@@ -80,10 +77,10 @@ VectorValues SubgraphSolver::optimize() {
   return pc_->x(ybar);
 }
 
-void SubgraphSolver::initialize(const JacobianFactorGraph &jfg)
+void SubgraphSolver::initialize(const GaussianFactorGraph &jfg)
 {
-  JacobianFactorGraph::shared_ptr Ab1 = boost::make_shared<JacobianFactorGraph>(),
-                                  Ab2 = boost::make_shared<JacobianFactorGraph>();
+  GaussianFactorGraph::shared_ptr Ab1 = boost::make_shared<GaussianFactorGraph>(),
+                                  Ab2 = boost::make_shared<GaussianFactorGraph>();
 
   boost::tie(Ab1, Ab2) = splitGraph(jfg) ;
   if (parameters_.verbosity())
@@ -91,28 +88,33 @@ void SubgraphSolver::initialize(const JacobianFactorGraph &jfg)
 
   GaussianBayesNet::shared_ptr Rc1 = EliminationTree<GaussianFactor>::Create(*Ab1)->eliminate(&EliminateQR);
   VectorValues::shared_ptr xbar(new VectorValues(gtsam::optimize(*Rc1)));
-  JacobianFactorGraph::shared_ptr Ab2Jacobians = convertToJacobianFactorGraph(*Ab2);
-  pc_ = boost::make_shared<SubgraphPreconditioner>(Ab2Jacobians, Rc1, xbar);
+  pc_ = boost::make_shared<SubgraphPreconditioner>(Ab2, Rc1, xbar);
 }
 
-void SubgraphSolver::initialize(const GaussianBayesNet::shared_ptr &Rc1, const JacobianFactorGraph::shared_ptr &Ab2)
+void SubgraphSolver::initialize(const GaussianBayesNet::shared_ptr &Rc1, const GaussianFactorGraph::shared_ptr &Ab2)
 {
   VectorValues::shared_ptr xbar(new VectorValues(gtsam::optimize(*Rc1)));
   pc_ = boost::make_shared<SubgraphPreconditioner>(Ab2, Rc1, xbar);
 }
 
-boost::tuple<JacobianFactorGraph::shared_ptr, JacobianFactorGraph::shared_ptr>
-SubgraphSolver::splitGraph(const JacobianFactorGraph &jfg) {
+boost::tuple<GaussianFactorGraph::shared_ptr, GaussianFactorGraph::shared_ptr>
+SubgraphSolver::splitGraph(const GaussianFactorGraph &jfg) {
 
   const VariableIndex index(jfg);
   const size_t n = index.size(), m = jfg.size();
   DisjointSet D(n) ;
 
-  JacobianFactorGraph::shared_ptr At(new JacobianFactorGraph());
-  JacobianFactorGraph::shared_ptr Ac( new JacobianFactorGraph());
+  GaussianFactorGraph::shared_ptr At(new GaussianFactorGraph());
+  GaussianFactorGraph::shared_ptr Ac( new GaussianFactorGraph());
 
   size_t t = 0;
-  BOOST_FOREACH ( const JacobianFactor::shared_ptr &jf, jfg ) {
+  BOOST_FOREACH ( const GaussianFactor::shared_ptr &gf, jfg ) {
+
+		JacobianFactor::shared_ptr jf;
+		if(JacobianFactor::shared_ptr Ai_J = boost::dynamic_pointer_cast<JacobianFactor>(gf))
+			jf = Ai_J;
+		else
+			jf = boost::make_shared<JacobianFactor>(*gf); // Convert any non-Jacobian factors to Jacobians (e.g. Hessian -> Jacobian with Cholesky)
 
     if ( jf->keys().size() > 2 ) {
       throw runtime_error("SubgraphSolver::splitGraph the graph is not simple, sanity check failed ");

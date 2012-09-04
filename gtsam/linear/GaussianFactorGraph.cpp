@@ -521,4 +521,151 @@ break;
 
 	} // \EliminatePreferCholesky
 
+	/* ************************************************************************* */
+	Errors operator*(const GaussianFactorGraph& fg, const VectorValues& x) {
+		Errors e;
+		BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
+			JacobianFactor::shared_ptr Ai;
+			if(JacobianFactor::shared_ptr Ai_J = boost::dynamic_pointer_cast<JacobianFactor>(Ai_G))
+				Ai = Ai_J;
+			else
+				Ai = boost::make_shared<JacobianFactor>(*Ai_G); // Convert any non-Jacobian factors to Jacobians (e.g. Hessian -> Jacobian with Cholesky)
+			e.push_back((*Ai)*x);
+		}
+		return e;
+	}
+
+	/* ************************************************************************* */
+	void multiplyInPlace(const GaussianFactorGraph& fg, const VectorValues& x, Errors& e) {
+		multiplyInPlace(fg,x,e.begin());
+	}
+
+	/* ************************************************************************* */
+	void multiplyInPlace(const GaussianFactorGraph& fg, const VectorValues& x, const Errors::iterator& e) {
+		Errors::iterator ei = e;
+		BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
+			JacobianFactor::shared_ptr Ai;
+			if(JacobianFactor::shared_ptr Ai_J = boost::dynamic_pointer_cast<JacobianFactor>(Ai_G))
+				Ai = Ai_J;
+			else
+				Ai = boost::make_shared<JacobianFactor>(*Ai_G); // Convert any non-Jacobian factors to Jacobians (e.g. Hessian -> Jacobian with Cholesky)
+			*ei = (*Ai)*x;
+			ei++;
+		}
+	}
+
+	/* ************************************************************************* */
+	// x += alpha*A'*e
+	void transposeMultiplyAdd(const GaussianFactorGraph& fg, double alpha, const Errors& e, VectorValues& x) {
+		// For each factor add the gradient contribution
+		Errors::const_iterator ei = e.begin();
+		BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
+			JacobianFactor::shared_ptr Ai;
+			if(JacobianFactor::shared_ptr Ai_J = boost::dynamic_pointer_cast<JacobianFactor>(Ai_G))
+				Ai = Ai_J;
+			else
+				Ai = boost::make_shared<JacobianFactor>(*Ai_G); // Convert any non-Jacobian factors to Jacobians (e.g. Hessian -> Jacobian with Cholesky)
+			Ai->transposeMultiplyAdd(alpha,*(ei++),x);
+		}
+	}
+
+	/* ************************************************************************* */
+	VectorValues gradient(const GaussianFactorGraph& fg, const VectorValues& x0) {
+		// It is crucial for performance to make a zero-valued clone of x
+		VectorValues g = VectorValues::Zero(x0);
+		Errors e;
+		BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
+			JacobianFactor::shared_ptr Ai;
+			if(JacobianFactor::shared_ptr Ai_J = boost::dynamic_pointer_cast<JacobianFactor>(Ai_G))
+				Ai = Ai_J;
+			else
+				Ai = boost::make_shared<JacobianFactor>(*Ai_G); // Convert any non-Jacobian factors to Jacobians (e.g. Hessian -> Jacobian with Cholesky)
+			e.push_back(Ai->error_vector(x0));
+		}
+		transposeMultiplyAdd(fg, 1.0, e, g);
+		return g;
+	}
+
+	/* ************************************************************************* */
+	void gradientAtZero(const GaussianFactorGraph& fg, VectorValues& g) {
+		// Zero-out the gradient
+		g.setZero();
+		Errors e;
+		BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
+			JacobianFactor::shared_ptr Ai;
+			if(JacobianFactor::shared_ptr Ai_J = boost::dynamic_pointer_cast<JacobianFactor>(Ai_G))
+				Ai = Ai_J;
+			else
+				Ai = boost::make_shared<JacobianFactor>(*Ai_G); // Convert any non-Jacobian factors to Jacobians (e.g. Hessian -> Jacobian with Cholesky)
+			e.push_back(-Ai->getb());
+		}
+		transposeMultiplyAdd(fg, 1.0, e, g);
+	}
+
+	/* ************************************************************************* */
+	void residual(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r) {
+		Index i = 0 ;
+		BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
+			JacobianFactor::shared_ptr Ai;
+			if(JacobianFactor::shared_ptr Ai_J = boost::dynamic_pointer_cast<JacobianFactor>(Ai_G))
+				Ai = Ai_J;
+			else
+				Ai = boost::make_shared<JacobianFactor>(*Ai_G); // Convert any non-Jacobian factors to Jacobians (e.g. Hessian -> Jacobian with Cholesky)
+			r[i] = Ai->getb();
+			i++;
+		}
+		VectorValues Ax = VectorValues::SameStructure(r);
+		multiply(fg,x,Ax);
+		axpy(-1.0,Ax,r);
+	}
+
+	/* ************************************************************************* */
+	void multiply(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r) {
+		r.vector() = Vector::Zero(r.dim());
+		Index i = 0;
+		BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
+			JacobianFactor::shared_ptr Ai;
+			if(JacobianFactor::shared_ptr Ai_J = boost::dynamic_pointer_cast<JacobianFactor>(Ai_G))
+				Ai = Ai_J;
+			else
+				Ai = boost::make_shared<JacobianFactor>(*Ai_G); // Convert any non-Jacobian factors to Jacobians (e.g. Hessian -> Jacobian with Cholesky)
+			SubVector &y = r[i];
+			for(JacobianFactor::const_iterator j = Ai->begin(); j != Ai->end(); ++j) {
+				y += Ai->getA(j) * x[*j];
+			}
+			++i;
+		}
+	}
+
+	/* ************************************************************************* */
+	void transposeMultiply(const GaussianFactorGraph& fg, const VectorValues &r, VectorValues &x) {
+		x.vector() = Vector::Zero(x.dim());
+		Index i = 0;
+		BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
+			JacobianFactor::shared_ptr Ai;
+			if(JacobianFactor::shared_ptr Ai_J = boost::dynamic_pointer_cast<JacobianFactor>(Ai_G))
+				Ai = Ai_J;
+			else
+				Ai = boost::make_shared<JacobianFactor>(*Ai_G); // Convert any non-Jacobian factors to Jacobians (e.g. Hessian -> Jacobian with Cholesky)
+			for(JacobianFactor::const_iterator j = Ai->begin(); j != Ai->end(); ++j) {
+				x[*j] += Ai->getA(j).transpose() * r[i];
+			}
+			++i;
+		}
+	}
+
+	/* ************************************************************************* */
+	boost::shared_ptr<Errors> gaussianErrors_(const GaussianFactorGraph& fg, const VectorValues& x) {
+		boost::shared_ptr<Errors> e(new Errors);
+		BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
+			JacobianFactor::shared_ptr Ai;
+			if(JacobianFactor::shared_ptr Ai_J = boost::dynamic_pointer_cast<JacobianFactor>(Ai_G))
+				Ai = Ai_J;
+			else
+				Ai = boost::make_shared<JacobianFactor>(*Ai_G); // Convert any non-Jacobian factors to Jacobians (e.g. Hessian -> Jacobian with Cholesky)
+			e->push_back(Ai->error_vector(x));
+		}
+		return e;
+	}
+
 } // namespace gtsam

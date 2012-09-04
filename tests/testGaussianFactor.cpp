@@ -72,7 +72,7 @@ TEST( GaussianFactor, getDim )
 	const Key kx1 = X(1), kx2 = X(2), kl1 = L(1);
 	// get a factor
   Ordering ordering; ordering += kx1,kx2,kl1;
-  GaussianFactorGraph fg = example::createGaussianFactorGraph(ordering);
+  FactorGraph<JacobianFactor> fg = example::createGaussianFactorGraph(ordering);
 	GaussianFactor::shared_ptr factor = fg[0];
 
 	// get the size of a variable
@@ -89,7 +89,7 @@ TEST( GaussianFactor, error )
 	const Key kx1 = X(1), kx2 = X(2), kl1 = L(1);
 	// create a small linear factor graph
   Ordering ordering; ordering += kx1,kx2,kl1;
-  GaussianFactorGraph fg = example::createGaussianFactorGraph(ordering);
+  FactorGraph<JacobianFactor> fg = example::createGaussianFactorGraph(ordering);
 
 	// get the first factor from the factor graph
 	GaussianFactor::shared_ptr lf = fg[0];
@@ -210,7 +210,7 @@ TEST( GaussianFactor, size )
 	// create a linear factor graph
 	const Key kx1 = X(1), kx2 = X(2), kl1 = L(1);
   Ordering ordering; ordering += kx1,kx2,kl1;
-  GaussianFactorGraph fg = example::createGaussianFactorGraph(ordering);
+  FactorGraph<JacobianFactor> fg = example::createGaussianFactorGraph(ordering);
 
 	// get some factors from the graph
 	boost::shared_ptr<GaussianFactor> factor1 = fg[0];

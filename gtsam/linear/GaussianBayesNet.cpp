@@ -16,7 +16,7 @@
  */
 
 #include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/linear/JacobianFactorGraph.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/inference/BayesNet-inl.h>
 
@@ -242,12 +242,12 @@ double determinant(const GaussianBayesNet& bayesNet) {
 
 /* ************************************************************************* */
 VectorValues gradient(const GaussianBayesNet& bayesNet, const VectorValues& x0) {
-  return gradient(FactorGraph<JacobianFactor>(bayesNet), x0);
+  return gradient(GaussianFactorGraph(bayesNet), x0);
 }
 
 /* ************************************************************************* */
 void gradientAtZero(const GaussianBayesNet& bayesNet, VectorValues& g) {
-  gradientAtZero(FactorGraph<JacobianFactor>(bayesNet), g);
+  gradientAtZero(GaussianFactorGraph(bayesNet), g);
 }
 
 /* ************************************************************************* */

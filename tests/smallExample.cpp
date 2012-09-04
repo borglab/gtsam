@@ -138,9 +138,9 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	JacobianFactorGraph createGaussianFactorGraph(const Ordering& ordering) {
+	FactorGraph<JacobianFactor> createGaussianFactorGraph(const Ordering& ordering) {
 		// Create empty graph
-		JacobianFactorGraph fg;
+		FactorGraph<JacobianFactor> fg;
 
 		SharedDiagonal unit2 = noiseModel::Unit::Create(2);
 
@@ -273,7 +273,7 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	JacobianFactorGraph createSimpleConstraintGraph() {
+	GaussianFactorGraph createSimpleConstraintGraph() {
 		// create unary factor
 		// prior on _x_, mean = [1,-1], sigma=0.1
 		Matrix Ax = eye(2);
@@ -293,7 +293,7 @@ namespace example {
 				constraintModel));
 
 		// construct the graph
-		JacobianFactorGraph fg;
+		GaussianFactorGraph fg;
 		fg.push_back(f1);
 		fg.push_back(f2);
 
@@ -310,7 +310,7 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	JacobianFactorGraph createSingleConstraintGraph() {
+	GaussianFactorGraph createSingleConstraintGraph() {
 		// create unary factor
 		// prior on _x_, mean = [1,-1], sigma=0.1
 		Matrix Ax = eye(2);
@@ -335,7 +335,7 @@ namespace example {
 				constraintModel));
 
 		// construct the graph
-		JacobianFactorGraph fg;
+		GaussianFactorGraph fg;
 		fg.push_back(f1);
 		fg.push_back(f2);
 
@@ -351,7 +351,7 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	JacobianFactorGraph createMultiConstraintGraph() {
+	GaussianFactorGraph createMultiConstraintGraph() {
 		// unary factor 1
 		Matrix A = eye(2);
 		Vector b = Vector_(2, -2.0, 2.0);
@@ -396,7 +396,7 @@ namespace example {
 				constraintModel));
 
 		// construct the graph
-		JacobianFactorGraph fg;
+		GaussianFactorGraph fg;
 		fg.push_back(lf1);
 		fg.push_back(lc1);
 		fg.push_back(lc2);
@@ -421,7 +421,7 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	boost::tuple<JacobianFactorGraph, VectorValues> planarGraph(size_t N) {
+	boost::tuple<GaussianFactorGraph, VectorValues> planarGraph(size_t N) {
 
 		// create empty graph
 		NonlinearFactorGraph nlfg;
@@ -460,7 +460,7 @@ namespace example {
 		// linearize around zero
 		boost::shared_ptr<GaussianFactorGraph> gfg = nlfg.linearize(zeros, ordering);
 
-		JacobianFactorGraph jfg;
+		GaussianFactorGraph jfg;
     BOOST_FOREACH(GaussianFactorGraph::sharedFactor factor, *gfg)
 		  jfg.push_back(boost::dynamic_pointer_cast<JacobianFactor>(factor));
 
@@ -477,9 +477,9 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	pair<JacobianFactorGraph, JacobianFactorGraph > splitOffPlanarTree(size_t N,
-			const JacobianFactorGraph& original) {
-		JacobianFactorGraph T, C;
+	pair<GaussianFactorGraph, GaussianFactorGraph > splitOffPlanarTree(size_t N,
+			const GaussianFactorGraph& original) {
+		GaussianFactorGraph T, C;
 
 		// Add the x11 constraint to the tree
 		T.push_back(boost::dynamic_pointer_cast<JacobianFactor>(original[0]));

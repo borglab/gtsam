@@ -31,24 +31,6 @@
 
 namespace gtsam {
 
-  /** return A*x-b
-   * \todo Make this a member function - affects SubgraphPreconditioner */
-  template<class FACTOR>
-  Errors gaussianErrors(const FactorGraph<FACTOR>& fg, const VectorValues& x) {
-    return *gaussianErrors_(fg, x);
-  }
-
-  /** shared pointer version
-   * \todo Make this a member function - affects SubgraphPreconditioner */
-  template<class FACTOR>
-  boost::shared_ptr<Errors> gaussianErrors_(const FactorGraph<FACTOR>& fg, const VectorValues& x) {
-    boost::shared_ptr<Errors> e(new Errors);
-    BOOST_FOREACH(const typename boost::shared_ptr<FACTOR>& factor, fg) {
-      e->push_back(factor->error_vector(x));
-    }
-    return e;
-  }
-
   /**
    * A Linear Factor Graph is a factor graph where all factors are Gaussian, i.e.
    *   Factor == GaussianFactor
@@ -321,5 +303,53 @@ namespace gtsam {
    */
   GaussianFactorGraph::EliminationResult EliminateCholesky(const FactorGraph<
 			GaussianFactor>& factors, size_t nrFrontals = 1);
+	
+  /** return A*x */
+  Errors operator*(const GaussianFactorGraph& fg, const VectorValues& x);
+
+  /** In-place version e <- A*x that overwrites e. */
+  void multiplyInPlace(const GaussianFactorGraph& fg, const VectorValues& x, Errors& e);
+
+  /** In-place version e <- A*x that takes an iterator. */
+  void multiplyInPlace(const GaussianFactorGraph& fg, const VectorValues& x, const Errors::iterator& e);
+
+  /** x += alpha*A'*e */
+  void transposeMultiplyAdd(const GaussianFactorGraph& fg, double alpha, const Errors& e, VectorValues& x);
+
+  /**
+   * Compute the gradient of the energy function,
+   * \f$ \nabla_{x=x_0} \left\Vert \Sigma^{-1} A x - b \right\Vert^2 \f$,
+   * centered around \f$ x = x_0 \f$.
+   * The gradient is \f$ A^T(Ax-b) \f$.
+   * @param fg The Jacobian factor graph $(A,b)$
+   * @param x0 The center about which to compute the gradient
+   * @return The gradient as a VectorValues
+   */
+  VectorValues gradient(const GaussianFactorGraph& fg, const VectorValues& x0);
+
+  /**
+   * Compute the gradient of the energy function,
+   * \f$ \nabla_{x=0} \left\Vert \Sigma^{-1} A x - b \right\Vert^2 \f$,
+   * centered around zero.
+   * The gradient is \f$ A^T(Ax-b) \f$.
+   * @param fg The Jacobian factor graph $(A,b)$
+   * @param [output] g A VectorValues to store the gradient, which must be preallocated, see allocateVectorValues
+   * @return The gradient as a VectorValues
+   */
+  void gradientAtZero(const GaussianFactorGraph& fg, VectorValues& g);
+
+  /* matrix-vector operations */
+  void residual(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r);
+  void multiply(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r);
+  void transposeMultiply(const GaussianFactorGraph& fg, const VectorValues &r, VectorValues &x);
+
+  /** shared pointer version
+   * \todo Make this a member function - affects SubgraphPreconditioner */
+  boost::shared_ptr<Errors> gaussianErrors_(const GaussianFactorGraph& fg, const VectorValues& x);
+
+	/** return A*x-b
+   * \todo Make this a member function - affects SubgraphPreconditioner */
+  inline Errors gaussianErrors(const GaussianFactorGraph& fg, const VectorValues& x) {
+    return *gaussianErrors_(fg, x); }
 
 } // namespace gtsam

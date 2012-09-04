@@ -18,7 +18,7 @@
  */
 
 #include <gtsam/linear/GaussianBayesTree.h>
-#include <gtsam/linear/JacobianFactorGraph.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 
 namespace gtsam {
 

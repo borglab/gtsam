@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 
 namespace gtsam {
@@ -35,7 +36,7 @@ namespace gtsam {
 
 	  typedef boost::shared_ptr<SubgraphPreconditioner> shared_ptr;
 		typedef boost::shared_ptr<const GaussianBayesNet> sharedBayesNet;
-		typedef boost::shared_ptr<const FactorGraph<JacobianFactor> > sharedFG;
+		typedef boost::shared_ptr<const GaussianFactorGraph> sharedFG;
 		typedef boost::shared_ptr<const VectorValues> sharedValues;
 		typedef boost::shared_ptr<const Errors> sharedErrors;
 

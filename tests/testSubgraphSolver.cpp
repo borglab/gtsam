@@ -20,7 +20,7 @@
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/iterative.h>
-#include <gtsam/linear/JacobianFactorGraph.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/SubgraphSolver.h>
 #include <gtsam/inference/EliminationTree-inl.h>
 #include <gtsam/base/numericalDerivative.h>
@@ -38,9 +38,9 @@ using namespace example;
 
 /* ************************************************************************* */
 /** unnormalized error */
-static double error(const JacobianFactorGraph& fg, const VectorValues& x) {
+static double error(const GaussianFactorGraph& fg, const VectorValues& x) {
   double total_error = 0.;
-  BOOST_FOREACH(const JacobianFactor::shared_ptr& factor, fg)
+  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, fg)
     total_error += factor->error(x);
   return total_error;
 }
@@ -50,7 +50,7 @@ static double error(const JacobianFactorGraph& fg, const VectorValues& x) {
 TEST( SubgraphSolver, constructor1 )
 {
   // Build a planar graph
-  JacobianFactorGraph Ab;
+  GaussianFactorGraph Ab;
   VectorValues xtrue;
   size_t N = 3;
   boost::tie(Ab, xtrue) = planarGraph(N); // A*x-b
@@ -67,13 +67,13 @@ TEST( SubgraphSolver, constructor1 )
 TEST( SubgraphSolver, constructor2 )
 {
   // Build a planar graph
-  JacobianFactorGraph Ab;
+  GaussianFactorGraph Ab;
   VectorValues xtrue;
   size_t N = 3;
   boost::tie(Ab, xtrue) = planarGraph(N); // A*x-b
 
   // Get the spanning tree and corresponding ordering
-  JacobianFactorGraph Ab1_, Ab2_; // A1*x-b1 and A2*x-b2
+  GaussianFactorGraph Ab1_, Ab2_; // A1*x-b1 and A2*x-b2
   boost::tie(Ab1_, Ab2_) = splitOffPlanarTree(N, Ab);
 
   // The second constructor takes two factor graphs,
@@ -88,13 +88,13 @@ TEST( SubgraphSolver, constructor2 )
 TEST( SubgraphSolver, constructor3 )
 {
   // Build a planar graph
-  JacobianFactorGraph Ab;
+  GaussianFactorGraph Ab;
   VectorValues xtrue;
   size_t N = 3;
   boost::tie(Ab, xtrue) = planarGraph(N); // A*x-b
 
   // Get the spanning tree and corresponding ordering
-  JacobianFactorGraph Ab1_, Ab2_; // A1*x-b1 and A2*x-b2
+  GaussianFactorGraph Ab1_, Ab2_; // A1*x-b1 and A2*x-b2
   boost::tie(Ab1_, Ab2_) = splitOffPlanarTree(N, Ab);
 
   // The caller solves |A1*x-b1|^2 == |R1*x-c1|^2 via QR factorization, where R1 is square UT

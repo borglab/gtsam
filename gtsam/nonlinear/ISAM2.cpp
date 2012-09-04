@@ -27,7 +27,7 @@ using namespace boost::assign;
 #include <gtsam/linear/GaussianJunctionTree.h>
 #include <gtsam/inference/BayesTree-inl.h>
 #include <gtsam/linear/HessianFactor.h>
-#include <gtsam/linear/JacobianFactorGraph.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>

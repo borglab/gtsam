@@ -19,7 +19,7 @@
 #include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/linear/iterative.h>
-#include <gtsam/linear/JacobianFactorGraph.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
 #include <gtsam/base/numericalDerivative.h>
@@ -54,9 +54,9 @@ TEST( SubgraphPreconditioner, planarOrdering ) {
 
 /* ************************************************************************* */
 /** unnormalized error */
-static double error(const JacobianFactorGraph& fg, const VectorValues& x) {
+static double error(const GaussianFactorGraph& fg, const VectorValues& x) {
   double total_error = 0.;
-  BOOST_FOREACH(const JacobianFactor::shared_ptr& factor, fg)
+  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, fg)
     total_error += factor->error(x);
   return total_error;
 }
@@ -65,7 +65,7 @@ static double error(const JacobianFactorGraph& fg, const VectorValues& x) {
 TEST( SubgraphPreconditioner, planarGraph )
   {
   // Check planar graph construction
-  JacobianFactorGraph A;
+  GaussianFactorGraph A;
   VectorValues xtrue;
   boost::tie(A, xtrue) = planarGraph(3);
   LONGS_EQUAL(13,A.size());
@@ -82,12 +82,12 @@ TEST( SubgraphPreconditioner, planarGraph )
 TEST( SubgraphPreconditioner, splitOffPlanarTree )
 {
   // Build a planar graph
-  JacobianFactorGraph A;
+  GaussianFactorGraph A;
   VectorValues xtrue;
   boost::tie(A, xtrue) = planarGraph(3);
 
   // Get the spanning tree and constraints, and check their sizes
-  JacobianFactorGraph T, C;
+  GaussianFactorGraph T, C;
   boost::tie(T, C) = splitOffPlanarTree(3, A);
   LONGS_EQUAL(9,T.size());
   LONGS_EQUAL(4,C.size());
@@ -103,16 +103,16 @@ TEST( SubgraphPreconditioner, splitOffPlanarTree )
 TEST( SubgraphPreconditioner, system )
 {
   // Build a planar graph
-  JacobianFactorGraph Ab;
+  GaussianFactorGraph Ab;
   VectorValues xtrue;
   size_t N = 3;
   boost::tie(Ab, xtrue) = planarGraph(N); // A*x-b
 
   // Get the spanning tree and corresponding ordering
-  JacobianFactorGraph Ab1_, Ab2_; // A1*x-b1 and A2*x-b2
+  GaussianFactorGraph Ab1_, Ab2_; // A1*x-b1 and A2*x-b2
   boost::tie(Ab1_, Ab2_) = splitOffPlanarTree(N, Ab);
-  SubgraphPreconditioner::sharedFG Ab1(new JacobianFactorGraph(Ab1_));
-  SubgraphPreconditioner::sharedFG Ab2(new JacobianFactorGraph(Ab2_));
+  SubgraphPreconditioner::sharedFG Ab1(new GaussianFactorGraph(Ab1_));
+  SubgraphPreconditioner::sharedFG Ab2(new GaussianFactorGraph(Ab2_));
 
   // Eliminate the spanning tree to build a prior
   SubgraphPreconditioner::sharedBayesNet Rc1 = GaussianSequentialSolver(Ab1_).eliminate(); // R1*x-c1
@@ -179,16 +179,16 @@ TEST( SubgraphPreconditioner, system )
 TEST( SubgraphPreconditioner, conjugateGradients )
 {
   // Build a planar graph
-  JacobianFactorGraph Ab;
+  GaussianFactorGraph Ab;
   VectorValues xtrue;
   size_t N = 3;
   boost::tie(Ab, xtrue) = planarGraph(N); // A*x-b
 
   // Get the spanning tree and corresponding ordering
-  JacobianFactorGraph Ab1_, Ab2_; // A1*x-b1 and A2*x-b2
+  GaussianFactorGraph Ab1_, Ab2_; // A1*x-b1 and A2*x-b2
   boost::tie(Ab1_, Ab2_) = splitOffPlanarTree(N, Ab);
-  SubgraphPreconditioner::sharedFG Ab1(new JacobianFactorGraph(Ab1_));
-  SubgraphPreconditioner::sharedFG Ab2(new JacobianFactorGraph(Ab2_));
+  SubgraphPreconditioner::sharedFG Ab1(new GaussianFactorGraph(Ab1_));
+  SubgraphPreconditioner::sharedFG Ab2(new GaussianFactorGraph(Ab2_));
 
   // Eliminate the spanning tree to build a prior
   Ordering ordering = planarOrdering(N);

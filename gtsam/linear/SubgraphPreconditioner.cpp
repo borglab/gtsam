@@ -17,7 +17,7 @@
 
 #include <gtsam/linear/SubgraphPreconditioner.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/JacobianFactorGraph.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 
 #include <boost/foreach.hpp>
 

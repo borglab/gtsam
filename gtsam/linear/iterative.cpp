@@ -19,7 +19,7 @@
 #include <gtsam/linear/iterative-inl.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
-#include <gtsam/linear/JacobianFactorGraph.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/IterativeSolver.h>
 
 #include <iostream>
@@ -61,15 +61,15 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  VectorValues steepestDescent(const FactorGraph<JacobianFactor>& fg,
+  VectorValues steepestDescent(const GaussianFactorGraph& fg,
       const VectorValues& x, const ConjugateGradientParameters & parameters) {
-    return conjugateGradients<FactorGraph<JacobianFactor>, VectorValues, Errors>(
+    return conjugateGradients<GaussianFactorGraph, VectorValues, Errors>(
         fg, x, parameters, true);
   }
 
-  VectorValues conjugateGradientDescent(const FactorGraph<JacobianFactor>& fg,
+  VectorValues conjugateGradientDescent(const GaussianFactorGraph& fg,
       const VectorValues& x, const ConjugateGradientParameters & parameters) {
-    return conjugateGradients<FactorGraph<JacobianFactor>, VectorValues, Errors>(
+    return conjugateGradients<GaussianFactorGraph, VectorValues, Errors>(
         fg, x, parameters);
   }
 

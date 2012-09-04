@@ -40,7 +40,7 @@ TEST( Iterative, steepestDescent )
 	// Create factor graph
 	Ordering ord;
 	ord += L(1), X(1), X(2);
-	JacobianFactorGraph fg = createGaussianFactorGraph(ord);
+	FactorGraph<JacobianFactor> fg = createGaussianFactorGraph(ord);
 
   // eliminate and solve
   VectorValues expected = *GaussianSequentialSolver(fg).optimize();

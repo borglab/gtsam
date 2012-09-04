@@ -11,7 +11,7 @@
 
 /**
  *  @file   testJacobianFactorGraph.cpp
- *  @brief  Unit tests for JacobianFactorGraph
+ *  @brief  Unit tests for GaussianFactorGraph
  *  @author Yong Dian Jian
  **/
 

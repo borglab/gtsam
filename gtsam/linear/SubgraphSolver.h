@@ -13,7 +13,7 @@
 
 #include <gtsam/linear/ConjugateGradientSolver.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/JacobianFactorGraph.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 
@@ -62,26 +62,26 @@ protected:
 public:
 	/* Given a gaussian factor graph, split it into a spanning tree (A1) + others (A2) for SPCG */
 	SubgraphSolver(const GaussianFactorGraph &A, const Parameters &parameters);
-  SubgraphSolver(const JacobianFactorGraph::shared_ptr &A, const Parameters &parameters);
+  SubgraphSolver(const GaussianFactorGraph::shared_ptr &A, const Parameters &parameters);
 
 	/* The user specify the subgraph part and the constraint part, may throw exception if A1 is underdetermined */
 	SubgraphSolver(const GaussianFactorGraph &Ab1, const GaussianFactorGraph &Ab2, const Parameters &parameters);
-  SubgraphSolver(const JacobianFactorGraph::shared_ptr &Ab1, const JacobianFactorGraph::shared_ptr &Ab2, const Parameters &parameters);
+  SubgraphSolver(const GaussianFactorGraph::shared_ptr &Ab1, const GaussianFactorGraph::shared_ptr &Ab2, const Parameters &parameters);
 
 	/* The same as above, but the A1 is solved before */
 	SubgraphSolver(const GaussianBayesNet::shared_ptr &Rc1, const GaussianFactorGraph &Ab2, const Parameters &parameters);
-	SubgraphSolver(const GaussianBayesNet::shared_ptr &Rc1, const JacobianFactorGraph::shared_ptr &Ab2, const Parameters &parameters);
+	SubgraphSolver(const GaussianBayesNet::shared_ptr &Rc1, const GaussianFactorGraph::shared_ptr &Ab2, const Parameters &parameters);
 
   virtual ~SubgraphSolver() {}
   virtual VectorValues optimize () ;
 
 protected:
 
-  void initialize(const JacobianFactorGraph &jfg);
-  void initialize(const GaussianBayesNet::shared_ptr &Rc1, const JacobianFactorGraph::shared_ptr &Ab2);
+  void initialize(const GaussianFactorGraph &jfg);
+  void initialize(const GaussianBayesNet::shared_ptr &Rc1, const GaussianFactorGraph::shared_ptr &Ab2);
 
-  boost::tuple<JacobianFactorGraph::shared_ptr, JacobianFactorGraph::shared_ptr>
-  splitGraph(const JacobianFactorGraph &gfg) ;
+  boost::tuple<GaussianFactorGraph::shared_ptr, GaussianFactorGraph::shared_ptr>
+  splitGraph(const GaussianFactorGraph &gfg) ;
 
 public:
 
