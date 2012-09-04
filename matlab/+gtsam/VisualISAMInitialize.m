@@ -50,7 +50,7 @@ for i=1:2
             initialEstimates.insert(jj, truth.points{j});
         end
         if options.pointPriors % add point priors
-            newFactors.add(priorFactorPoint3(jj, truth.points{j}, noiseModels.point));
+            newFactors.add(PriorFactorPoint3(jj, truth.points{j}, noiseModels.point));
         end
     end
 end
