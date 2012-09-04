@@ -38,7 +38,7 @@ using namespace example;
 
 /* ************************************************************************* */
 /** unnormalized error */
-double error(const JacobianFactorGraph& fg, const VectorValues& x) {
+static double error(const JacobianFactorGraph& fg, const VectorValues& x) {
   double total_error = 0.;
   BOOST_FOREACH(const JacobianFactor::shared_ptr& factor, fg)
     total_error += factor->error(x);
