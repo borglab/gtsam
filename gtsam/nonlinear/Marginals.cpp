@@ -152,7 +152,7 @@ JointMarginal Marginals::jointMarginalInformation(const std::vector<Key>& variab
 		}
 
     // Get information matrix
-    Matrix augmentedInfo = jointFG.denseHessian();
+    Matrix augmentedInfo = jointFG.augmentedHessian();
     Matrix info = augmentedInfo.topLeftCorner(augmentedInfo.rows()-1, augmentedInfo.cols()-1);
 
     return JointMarginal(info, dims, variableConversion);

@@ -166,7 +166,7 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	Matrix GaussianFactorGraph::denseJacobian() const {
+	Matrix GaussianFactorGraph::augmentedJacobian() const {
     // Convert to Jacobians
     FactorGraph<JacobianFactor> jfg;
     jfg.reserve(this->size());
@@ -180,6 +180,14 @@ namespace gtsam {
 		// combine all factors
 		JacobianFactor combined(*CombineJacobians(jfg, VariableSlots(*this)));
 		return combined.matrix_augmented();
+	}
+
+	/* ************************************************************************* */
+	std::pair<Matrix,Vector> GaussianFactorGraph::jacobian() const {
+		Matrix augmented = augmentedJacobian();
+		return make_pair(
+			augmented.leftCols(augmented.cols()-1),
+			augmented.col(augmented.cols()-1));
 	}
 
 	/* ************************************************************************* */
@@ -317,9 +325,7 @@ break;
 	}
 
 	/* ************************************************************************* */
-	static
-	FastMap<Index, SlotEntry> findScatterAndDims
-	(const FactorGraph<GaussianFactor>& factors) {
+	static FastMap<Index, SlotEntry> findScatterAndDims(const FactorGraph<GaussianFactor>& factors) {
 
 		const bool debug = ISDEBUG("findScatterAndDims");
 
@@ -349,7 +355,7 @@ break;
 	}
 
 	/* ************************************************************************* */
-	Matrix GaussianFactorGraph::denseHessian() const {
+	Matrix GaussianFactorGraph::augmentedHessian() const {
 
 		Scatter scatter = findScatterAndDims(*this);
 
@@ -365,6 +371,14 @@ break;
 		// Fill in lower-triangular part of Hessian
 		result.triangularView<Eigen::StrictlyLower>() = result.transpose();
 		return result;
+	}
+
+	/* ************************************************************************* */
+	std::pair<Matrix,Vector> GaussianFactorGraph::hessian() const {
+		Matrix augmented = augmentedHessian();
+		return make_pair(
+			augmented.topLeftCorner(augmented.rows()-1, augmented.rows()-1),
+			augmented.col(augmented.rows()-1).head(augmented.rows()-1));
 	}
 
 	/* ************************************************************************* */

@@ -188,15 +188,43 @@ namespace gtsam {
 		Matrix sparseJacobian_() const;
 
     /**
-     * Return a dense \f$ m \times n \f$ Jacobian matrix, augmented with b
-     * with standard deviations are baked into A and b
+     * Return a dense \f$ [ \;A\;b\; ] \in \mathbb{R}^{m \times n+1} \f$
+		 * Jacobian matrix, augmented with b with the noise models baked
+		 * into A and b.  The negative log-likelihood is
+		 * \f$ \frac{1}{2} \Vert Ax-b \Vert^2 \f$.  See also
+		 * GaussianFactorGraph::jacobian and GaussianFactorGraph::sparseJacobian.
      */
-    Matrix denseJacobian() const;
+    Matrix augmentedJacobian() const;
+
+		/**
+		 * Return the dense Jacobian \f$ A \f$ and right-hand-side \f$ b \f$,
+		 * with the noise models baked into A and b. The negative log-likelihood
+		 * is \f$ \frac{1}{2} \Vert Ax-b \Vert^2 \f$.  See also
+		 * GaussianFactorGraph::augmentedJacobian and
+		 * GaussianFactorGraph::sparseJacobian.
+		 */
+		std::pair<Matrix,Vector> jacobian() const;
 
     /**
-     * Return a dense \f$ n \times n \f$ Hessian matrix, augmented with \f$ A^T b \f$
+     * Return a dense \f$ \Lambda \in \mathbb{R}^{n+1 \times n+1} \f$ Hessian
+		 * matrix, augmented with the information vector \f$ \eta \f$.  The
+		 * augmented Hessian is
+		 \f[ \left[ \begin{array}{ccc}
+		 \Lambda & \eta \\
+		 \eta^T & c
+		 \end{array} \right] \f]
+		 and the negative log-likelihood is
+		 \f$ \frac{1}{2} x^T \Lambda x + \eta^T x + c \f$.
      */
-    Matrix denseHessian() const;
+    Matrix augmentedHessian() const;
+
+		/**
+		 * Return the dense Hessian \f$ \Lambda \f$ and information vector
+		 * \f$ \eta \f$, with the noise models baked in. The negative log-likelihood
+		 * is \frac{1}{2} x^T \Lambda x + \eta^T x + c.  See also
+		 * GaussianFactorGraph::augmentedHessian.
+		 */
+		std::pair<Matrix,Vector> hessian() const;
 
   private:
     /** Serialization function */

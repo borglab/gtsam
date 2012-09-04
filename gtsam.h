@@ -1022,8 +1022,10 @@ class GaussianFactorGraph {
 
 	// Conversion to matrices
 	Matrix sparseJacobian_() const;
-	Matrix denseJacobian() const;
-	Matrix denseHessian() const;
+	Matrix augmentedJacobian() const;
+	pair<Matrix,Vector> jacobian() const;
+	Matrix augmentedHessian() const;
+	pair<Matrix,Vector> hessian() const;
 };
 
 class GaussianISAM {
