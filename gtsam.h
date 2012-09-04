@@ -1484,6 +1484,8 @@ class ISAM2 {
 
   bool equals(const gtsam::ISAM2& other, double tol) const;
   void print(string s) const;
+  void printStats() const;
+  void saveGraph(string s) const;
 
   gtsam::ISAM2Result update();
   gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta);
