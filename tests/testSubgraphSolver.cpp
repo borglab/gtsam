@@ -55,9 +55,11 @@ TEST( SubgraphSolver, constructor1 )
   size_t N = 3;
   boost::tie(Ab, xtrue) = planarGraph(N); // A*x-b
 
+  // The first constructor just takes a factor graph (and parameters)
+  // and it will split the graph into A1 and A2, where A1 is a spanning tree
   SubgraphSolverParameters parameters;
   SubgraphSolver solver(Ab, parameters);
-  VectorValues optimized = solver.optimize();
+  VectorValues optimized = solver.optimize(); // does PCG optimization
   DOUBLES_EQUAL(0.0, error(Ab, optimized), 1e-5);
 }
 
@@ -74,6 +76,8 @@ TEST( SubgraphSolver, constructor2 )
   JacobianFactorGraph Ab1_, Ab2_; // A1*x-b1 and A2*x-b2
   boost::tie(Ab1_, Ab2_) = splitOffPlanarTree(N, Ab);
 
+  // The second constructor takes two factor graphs,
+  // so the caller can specify the preconditioner (Ab1) and the constraints that are left out (Ab2)
   SubgraphSolverParameters parameters;
   SubgraphSolver solver(Ab1_, Ab2_, parameters);
   VectorValues optimized = solver.optimize();
@@ -93,8 +97,12 @@ TEST( SubgraphSolver, constructor3 )
   JacobianFactorGraph Ab1_, Ab2_; // A1*x-b1 and A2*x-b2
   boost::tie(Ab1_, Ab2_) = splitOffPlanarTree(N, Ab);
 
-  GaussianBayesNet::shared_ptr Rc1 = EliminationTree<GaussianFactor>::Create(Ab1_)->eliminate(&EliminateQR);
+  // The caller solves |A1*x-b1|^2 == |R1*x-c1|^2 via QR factorization, where R1 is square UT
+  GaussianBayesNet::shared_ptr Rc1 = //
+      EliminationTree<GaussianFactor>::Create(Ab1_)->eliminate(&EliminateQR);
 
+  // The third constructor allows the caller to pass an already solved preconditioner Rc1_
+  // as a Bayes net, in addition to the "loop closing constraints" Ab2, as before
   SubgraphSolverParameters parameters;
   SubgraphSolver solver(Rc1, Ab2_, parameters);
   VectorValues optimized = solver.optimize();
