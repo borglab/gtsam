@@ -82,7 +82,7 @@ options.showImages = get(handles.showImagesCB,'Value');
 options.hardConstraint = get(handles.hardConstraintCB,'Value');
 options.pointPriors = get(handles.pointPriorsCB,'Value');
 options.batchInitialization = get(handles.batchInitCB,'Value');
-options.reorderInterval = str2num(get(handles.reorderIntervalEdit,'String'));
+%options.reorderInterval = str2num(get(handles.reorderIntervalEdit,'String'));
 options.alwaysRelinearize = get(handles.alwaysRelinearizeCB,'Value');
 
 % Display Options
