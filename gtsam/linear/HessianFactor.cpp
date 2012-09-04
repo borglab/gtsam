@@ -261,12 +261,10 @@ HessianFactor::HessianFactor(const FactorGraph<GaussianFactor>& factors,
 	if (debug) cout << "Combining " << factors.size() << " factors" << endl;
 	BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors)
 	{
-		shared_ptr hessian(boost::dynamic_pointer_cast<HessianFactor>(factor));
-		if (hessian)
-			updateATA(*hessian, scatter);
-		else {
-			JacobianFactor::shared_ptr jacobianFactor(boost::dynamic_pointer_cast<JacobianFactor>(factor));
-			if (jacobianFactor)
+		if(factor) {
+			if(shared_ptr hessian = boost::dynamic_pointer_cast<HessianFactor>(factor))
+				updateATA(*hessian, scatter);
+			else if(JacobianFactor::shared_ptr jacobianFactor = boost::dynamic_pointer_cast<JacobianFactor>(factor))
 				updateATA(*jacobianFactor, scatter);
 			else
 				throw invalid_argument("GaussianFactor is neither Hessian nor Jacobian");
@@ -360,7 +358,6 @@ void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatte
 
 	// Apply updates to the upper triangle
 	tic(3, "update");
-	assert(this->info_.nBlocks() - 1 == scatter.size());
 	for(size_t j2=0; j2<update.info_.nBlocks(); ++j2) {
 		size_t slot2 = (j2 == update.size()) ? this->info_.nBlocks()-1 : slots[j2];
 		for(size_t j1=0; j1<=j2; ++j1) {
@@ -437,7 +434,6 @@ void HessianFactor::updateATA(const JacobianFactor& update, const Scatter& scatt
 
 	// Apply updates to the upper triangle
 	tic(3, "update");
-	assert(this->info_.nBlocks() - 1 == scatter.size());
 	for(size_t j2=0; j2<update.Ab_.nBlocks(); ++j2) {
 		size_t slot2 = (j2 == update.size()) ? this->info_.nBlocks()-1 : slots[j2];
 		for(size_t j1=0; j1<=j2; ++j1) {

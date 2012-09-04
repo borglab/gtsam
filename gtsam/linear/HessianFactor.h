@@ -120,20 +120,6 @@ namespace gtsam {
     InfoMatrix matrix_; ///< The full augmented information matrix, s.t. the quadratic error is 0.5*[x -1]'*H*[x -1]
     BlockInfo info_;    ///< The block view of the full information matrix.
 
-    /** Update the factor by adding the information from the JacobianFactor
-     * (used internally during elimination).
-     * @param update The JacobianFactor containing the new information to add
-     * @param scatter A mapping from variable index to slot index in this HessianFactor
-     */
-    void updateATA(const JacobianFactor& update, const Scatter& scatter);
-
-    /** Update the factor by adding the information from the HessianFactor
-     * (used internally during elimination).
-     * @param update The HessianFactor containing the new information to add
-     * @param scatter A mapping from variable index to slot index in this HessianFactor
-     */
-    void updateATA(const HessianFactor& update, const Scatter& scatter);
-
   public:
 
     typedef boost::shared_ptr<HessianFactor> shared_ptr; ///< A shared_ptr to this
@@ -314,6 +300,20 @@ namespace gtsam {
 
     /** split partially eliminated factor */
     boost::shared_ptr<GaussianConditional> splitEliminatedFactor(size_t nrFrontals);
+
+    /** Update the factor by adding the information from the JacobianFactor
+     * (used internally during elimination).
+     * @param update The JacobianFactor containing the new information to add
+     * @param scatter A mapping from variable index to slot index in this HessianFactor
+     */
+    void updateATA(const JacobianFactor& update, const Scatter& scatter);
+
+    /** Update the factor by adding the information from the HessianFactor
+     * (used internally during elimination).
+     * @param update The HessianFactor containing the new information to add
+     * @param scatter A mapping from variable index to slot index in this HessianFactor
+     */
+    void updateATA(const HessianFactor& update, const Scatter& scatter);
 
     /** assert invariants */
     void assertInvariants() const;
