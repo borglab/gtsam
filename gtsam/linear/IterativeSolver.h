@@ -68,6 +68,8 @@ namespace gtsam {
 
     /* interface to the nonlinear optimizer  */
     virtual VectorValues optimize () = 0;
+    /* update interface to the nonlinear optimizer  */
+    virtual void replaceFactors(const GaussianFactorGraph::shared_ptr &factorGraph, const double lambda) {}
   };
 
 }
