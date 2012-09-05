@@ -16,13 +16,14 @@
  **/
 
 #include <tests/smallExample.h>
+#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
-//#include <gtsam/linear/VectorValues.h>
-//#include <gtsam/linear/SubgraphPreconditioner.h>
-#include <gtsam/linear/iterative-inl.h>
-//#include <gtsam/inference/FactorGraph-inl.h>
+#include <gtsam/linear/iterative.h>
+#include <gtsam/geometry/Pose2.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -32,23 +33,23 @@ using namespace example;
 using symbol_shorthand::X; // to create pose keys
 using symbol_shorthand::L; // to create landmark keys
 
-static bool verbose = false;
+static ConjugateGradientParameters parameters;
+// add following below to add printing:
+// parameters.verbosity_ = ConjugateGradientParameters::COMPLEXITY;
 
 /* ************************************************************************* */
 TEST( Iterative, steepestDescent )
 {
 	// Create factor graph
-	Ordering ord;
-	ord += L(1), X(1), X(2);
-	FactorGraph<JacobianFactor> fg = createGaussianFactorGraph(ord);
+	Ordering ordering;
+	ordering += L(1), X(1), X(2);
+	GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
 
   // eliminate and solve
   VectorValues expected = *GaussianSequentialSolver(fg).optimize();
 
 	// Do gradient descent
 	VectorValues zero = VectorValues::Zero(expected); // TODO, how do we do this normally?
-  ConjugateGradientParameters parameters;
-//  parameters.verbosity_ = ConjugateGradientParameters::COMPLEXITY;
 	VectorValues actual = steepestDescent(fg, zero, parameters);
 	CHECK(assert_equal(expected,actual,1e-2));
 }
@@ -56,134 +57,93 @@ TEST( Iterative, steepestDescent )
 /* ************************************************************************* */
 TEST( Iterative, conjugateGradientDescent )
 {
-//	// Expected solution
-//	Ordering ord;
-//	ord += L(1), X(1), X(2);
-//	GaussianFactorGraph fg = createGaussianFactorGraph();
-//	VectorValues expected = fg.optimize(ord); // destructive
-//
-//	// create graph and get matrices
-//	GaussianFactorGraph fg2 = createGaussianFactorGraph();
-//	Matrix A;
-//	Vector b;
-//	Vector x0 = gtsam::zero(6);
-//	boost::tie(A, b) = fg2.matrix(ord);
-//	Vector expectedX = Vector_(6, -0.1, 0.1, -0.1, -0.1, 0.1, -0.2);
-//
-//	// Do conjugate gradient descent, System version
-//	System Ab(A, b);
-//	Vector actualX = conjugateGradientDescent(Ab, x0, verbose);
-//	CHECK(assert_equal(expectedX,actualX,1e-9));
-//
-//	// Do conjugate gradient descent, Matrix version
-//	Vector actualX2 = conjugateGradientDescent(A, b, x0, verbose);
-//	CHECK(assert_equal(expectedX,actualX2,1e-9));
-//
-//	// Do conjugate gradient descent on factor graph
-//	VectorValues zero = createZeroDelta();
-//	VectorValues actual = conjugateGradientDescent(fg2, zero, verbose);
-//	CHECK(assert_equal(expected,actual,1e-2));
-//
-//	// Test method
-//	VectorValues actual2 = fg2.conjugateGradientDescent(zero, verbose);
-//	CHECK(assert_equal(expected,actual2,1e-2));
+  // Create factor graph
+  Ordering ordering;
+  ordering += L(1), X(1), X(2);
+  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
+
+  // eliminate and solve
+  VectorValues expected = *GaussianSequentialSolver(fg).optimize();
+
+  // get matrices
+	Matrix A;
+	Vector b;
+	Vector x0 = gtsam::zero(6);
+	boost::tie(A, b) = fg.jacobian();
+	Vector expectedX = Vector_(6, -0.1, 0.1, -0.1, -0.1, 0.1, -0.2);
+
+	// Do conjugate gradient descent, System version
+	System Ab(A, b);
+	Vector actualX = conjugateGradientDescent(Ab, x0, parameters);
+	CHECK(assert_equal(expectedX,actualX,1e-9));
+
+	// Do conjugate gradient descent, Matrix version
+	Vector actualX2 = conjugateGradientDescent(A, b, x0, parameters);
+	CHECK(assert_equal(expectedX,actualX2,1e-9));
+
+	// Do conjugate gradient descent on factor graph
+	VectorValues zero = VectorValues::Zero(expected);
+	VectorValues actual = conjugateGradientDescent(fg, zero, parameters);
+	CHECK(assert_equal(expected,actual,1e-2));
 }
 
 /* ************************************************************************* */
-/*TEST( Iterative, conjugateGradientDescent_hard_constraint )
+TEST( Iterative, conjugateGradientDescent_hard_constraint )
 {
-	typedef Pose2Values::Key Key;
+  Values config;
+  Pose2 pose1 = Pose2(0.,0.,0.);
+  config.insert(X(1), pose1);
+  config.insert(X(2), Pose2(1.5,0.,0.));
 
-	Pose2Values config;
-	config.insert(1, Pose2(0.,0.,0.));
-	config.insert(2, Pose2(1.5,0.,0.));
+	NonlinearFactorGraph graph;
+  graph.add(NonlinearEquality<Pose2>(X(1), pose1));
+  graph.add(BetweenFactor<Pose2>(X(1),X(2), Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1)));
 
-	Pose2Graph graph;
-	Matrix cov = eye(3);
-	graph.push_back(Pose2Graph::sharedFactor(new Pose2Factor(Key(1), Key(2), Pose2(1.,0.,0.), cov)));
-	graph.addHardConstraint(1, config[1]);
+  Ordering ordering;
+  ordering += X(1), X(2);
+  boost::shared_ptr<GaussianFactorGraph> fg = graph.linearize(config,ordering);
 
-	VectorValues zeros;
-	zeros.insert(X(1),zero(3));
-	zeros.insert(X(2),zero(3));
+  VectorValues zeros = VectorValues::Zero(2, 3);
 
-	GaussianFactorGraph fg = graph.linearize(config);
-	VectorValues actual = conjugateGradientDescent(fg, zeros, true, 1e-3, 1e-5, 10);
+  ConjugateGradientParameters parameters;
+  parameters.setEpsilon_abs(1e-3);
+  parameters.setEpsilon_rel(1e-5);
+  parameters.setMaxIterations(100);
+  VectorValues actual = conjugateGradientDescent(*fg, zeros, parameters);
 
-	VectorValues expected;
-	expected.insert(X(1), zero(3));
-	expected.insert(X(2), Vector_(-0.5,0.,0.));
-	CHECK(assert_equal(expected, actual));
-}*/
+  VectorValues expected;
+  expected.insert(0, zero(3));
+  expected.insert(1, Vector_(3,-0.5,0.,0.));
+  CHECK(assert_equal(expected, actual));
+}
 
 /* ************************************************************************* */
 TEST( Iterative, conjugateGradientDescent_soft_constraint )
 {
-//	Pose2Values config;
-//	config.insert(1, Pose2(0.,0.,0.));
-//	config.insert(2, Pose2(1.5,0.,0.));
-//
-//	Pose2Graph graph;
-//	graph.addPrior(1, Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10));
-//	graph.addConstraint(1,2, Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1));
-//
-//	VectorValues zeros;
-//	zeros.insert(X(1),zero(3));
-//	zeros.insert(X(2),zero(3));
-//
-//	boost::shared_ptr<GaussianFactorGraph> fg = graph.linearize(config);
-//	VectorValues actual = conjugateGradientDescent(*fg, zeros, verbose, 1e-3, 1e-5, 100);
-//
-//	VectorValues expected;
-//	expected.insert(X(1), zero(3));
-//	expected.insert(X(2), Vector_(3,-0.5,0.,0.));
-//	CHECK(assert_equal(expected, actual));
-}
+	Values config;
+	config.insert(X(1), Pose2(0.,0.,0.));
+	config.insert(X(2), Pose2(1.5,0.,0.));
 
-/* ************************************************************************* */
-TEST( Iterative, subgraphPCG )
-{
-//	typedef Pose2Values::Key Key;
-//
-//	Pose2Values theta_bar;
-//	theta_bar.insert(1, Pose2(0.,0.,0.));
-//	theta_bar.insert(2, Pose2(1.5,0.,0.));
-//
-//	Pose2Graph graph;
-//	graph.addPrior(1, Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10));
-//	graph.addConstraint(1,2, Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1));
-//
-//	// generate spanning tree and create ordering
-//	PredecessorMap<Key> tree = graph.findMinimumSpanningTree<Key, Pose2Factor>();
-//	list<Key> keys = predecessorMap2Keys(tree);
-//	list<Symbol> symbols;
-//	symbols.resize(keys.size());
-//	std::transform(keys.begin(), keys.end(), symbols.begin(), key2symbol<Key>);
-//	Ordering ordering(symbols);
-//
-//	Key root = keys.back();
-//	Pose2Graph T, C;
-//	graph.split<Key, Pose2Factor>(tree, T, C);
-//
-//	// build the subgraph PCG system
-//	boost::shared_ptr<GaussianFactorGraph> Ab1_ = T.linearize(theta_bar);
-//	SubgraphPreconditioner::sharedFG Ab1 = T.linearize(theta_bar);
-//	SubgraphPreconditioner::sharedFG Ab2 = C.linearize(theta_bar);
-//	SubgraphPreconditioner::sharedBayesNet Rc1 = Ab1_->eliminate_(ordering);
-//	SubgraphPreconditioner::sharedValues xbar = optimize_(*Rc1);
-//	SubgraphPreconditioner system(Ab1, Ab2, Rc1, xbar);
-//
-//	VectorValues zeros = VectorValues::zero(*xbar);
-//
-//	// Solve the subgraph PCG
-//	VectorValues ybar = conjugateGradients<SubgraphPreconditioner, VectorValues,
-//			Errors> (system, zeros, verbose, 1e-5, 1e-5, 100);
-//	VectorValues actual = system.x(ybar);
-//
-//	VectorValues expected;
-//	expected.insert(X(1), zero(3));
-//	expected.insert(X(2), Vector_(3, -0.5, 0., 0.));
-//	CHECK(assert_equal(expected, actual));
+	NonlinearFactorGraph graph;
+	graph.add(PriorFactor<Pose2>(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10)));
+	graph.add(BetweenFactor<Pose2>(X(1),X(2), Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1)));
+
+  Ordering ordering;
+  ordering += X(1), X(2);
+  boost::shared_ptr<GaussianFactorGraph> fg = graph.linearize(config,ordering);
+
+  VectorValues zeros = VectorValues::Zero(2, 3);
+
+	ConjugateGradientParameters parameters;
+	parameters.setEpsilon_abs(1e-3);
+	parameters.setEpsilon_rel(1e-5);
+	parameters.setMaxIterations(100);
+	VectorValues actual = conjugateGradientDescent(*fg, zeros, parameters);
+
+	VectorValues expected;
+	expected.insert(0, zero(3));
+	expected.insert(1, Vector_(3,-0.5,0.,0.));
+	CHECK(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */

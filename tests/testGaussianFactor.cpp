@@ -57,10 +57,11 @@ TEST( GaussianFactor, linearFactor )
 	JacobianFactor expected(ordering[kx1], -10*I,ordering[kx2], 10*I, b, noiseModel::Unit::Create(2));
 
 	// create a small linear factor graph
-	FactorGraph<JacobianFactor> fg = example::createGaussianFactorGraph(ordering);
+	GaussianFactorGraph fg = example::createGaussianFactorGraph(ordering);
 
 	// get the factor kf2 from the factor graph
-	JacobianFactor::shared_ptr lf = fg[1];
+	JacobianFactor::shared_ptr lf =
+	    boost::dynamic_pointer_cast<JacobianFactor>(fg[1]);
 
 	// check if the two factors are the same
 	EXPECT(assert_equal(expected,*lf));
@@ -72,7 +73,7 @@ TEST( GaussianFactor, getDim )
 	const Key kx1 = X(1), kx2 = X(2), kl1 = L(1);
 	// get a factor
   Ordering ordering; ordering += kx1,kx2,kl1;
-  FactorGraph<JacobianFactor> fg = example::createGaussianFactorGraph(ordering);
+  GaussianFactorGraph fg = example::createGaussianFactorGraph(ordering);
 	GaussianFactor::shared_ptr factor = fg[0];
 
 	// get the size of a variable
@@ -89,7 +90,7 @@ TEST( GaussianFactor, error )
 	const Key kx1 = X(1), kx2 = X(2), kl1 = L(1);
 	// create a small linear factor graph
   Ordering ordering; ordering += kx1,kx2,kl1;
-  FactorGraph<JacobianFactor> fg = example::createGaussianFactorGraph(ordering);
+  GaussianFactorGraph fg = example::createGaussianFactorGraph(ordering);
 
 	// get the first factor from the factor graph
 	GaussianFactor::shared_ptr lf = fg[0];
@@ -109,7 +110,7 @@ TEST( GaussianFactor, matrix )
 	const Key kx1 = X(1), kx2 = X(2), kl1 = L(1);
 	// create a small linear factor graph
   Ordering ordering; ordering += kx1,kx2,kl1;
-  FactorGraph<JacobianFactor> fg = example::createGaussianFactorGraph(ordering);
+  GaussianFactorGraph fg = example::createGaussianFactorGraph(ordering);
 
 	// get the factor kf2 from the factor graph
 	//GaussianFactor::shared_ptr lf = fg[1]; // NOTE: using the older version
@@ -158,7 +159,7 @@ TEST( GaussianFactor, matrix_aug )
 	const Key kx1 = X(1), kx2 = X(2), kl1 = L(1);
 	// create a small linear factor graph
   Ordering ordering; ordering += kx1,kx2,kl1;
-  FactorGraph<JacobianFactor> fg = example::createGaussianFactorGraph(ordering);
+  GaussianFactorGraph fg = example::createGaussianFactorGraph(ordering);
 
 	// get the factor kf2 from the factor graph
 	//GaussianFactor::shared_ptr lf = fg[1];
@@ -210,7 +211,7 @@ TEST( GaussianFactor, size )
 	// create a linear factor graph
 	const Key kx1 = X(1), kx2 = X(2), kl1 = L(1);
   Ordering ordering; ordering += kx1,kx2,kl1;
-  FactorGraph<JacobianFactor> fg = example::createGaussianFactorGraph(ordering);
+  GaussianFactorGraph fg = example::createGaussianFactorGraph(ordering);
 
 	// get some factors from the graph
 	boost::shared_ptr<GaussianFactor> factor1 = fg[0];

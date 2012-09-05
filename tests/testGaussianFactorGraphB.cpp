@@ -369,7 +369,7 @@ TEST( GaussianFactorGraph, multiplication )
   // create an ordering
   Ordering ord; ord += X(2),L(1),X(1);
 
-	FactorGraph<JacobianFactor> A = createGaussianFactorGraph(ord);
+  GaussianFactorGraph A = createGaussianFactorGraph(ord);
   VectorValues x = createCorrectDelta(ord);
   Errors actual = A * x;
   Errors expected;
@@ -523,7 +523,7 @@ TEST(GaussianFactorGraph, hasConstraints)
 	EXPECT(hasConstraints(fgc2));
 
 	Ordering ordering; ordering += X(1), X(2), L(1);
-	FactorGraph<GaussianFactor> fg = createGaussianFactorGraph(ordering);
+	GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
 	EXPECT(!hasConstraints(fg));
 }
 

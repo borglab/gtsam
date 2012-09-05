@@ -101,7 +101,7 @@ boost::tuple<GaussianFactorGraph::shared_ptr, GaussianFactorGraph::shared_ptr>
 SubgraphSolver::splitGraph(const GaussianFactorGraph &jfg) {
 
   const VariableIndex index(jfg);
-  const size_t n = index.size(), m = jfg.size();
+  const size_t n = index.size();
   DisjointSet D(n) ;
 
   GaussianFactorGraph::shared_ptr At(new GaussianFactorGraph());

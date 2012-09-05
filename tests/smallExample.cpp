@@ -138,9 +138,9 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	FactorGraph<JacobianFactor> createGaussianFactorGraph(const Ordering& ordering) {
+	GaussianFactorGraph createGaussianFactorGraph(const Ordering& ordering) {
 		// Create empty graph
-		FactorGraph<JacobianFactor> fg;
+	  GaussianFactorGraph fg;
 
 		SharedDiagonal unit2 = noiseModel::Unit::Create(2);
 

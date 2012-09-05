@@ -65,7 +65,7 @@ namespace gtsam {
 		 * create a linear factor graph
 		 * The non-linear graph above evaluated at NoisyValues
 		 */
-		FactorGraph<JacobianFactor> createGaussianFactorGraph(const Ordering& ordering);
+		GaussianFactorGraph createGaussianFactorGraph(const Ordering& ordering);
 
 		/**
 		 * create small Chordal Bayes Net x <- y
