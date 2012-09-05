@@ -489,4 +489,13 @@ namespace gtsam {
     return description_.c_str();
   }
 
+  /* ************************************************************************* */
+  JacobianFactor::shared_ptr convertToJacobianFactorPtr(const GaussianFactor::shared_ptr &gf) {
+    JacobianFactor::shared_ptr result = boost::dynamic_pointer_cast<JacobianFactor>(gf);
+    if( !result ) {
+      result = boost::make_shared<JacobianFactor>(*gf); // Convert any non-Jacobian factors to Jacobians (e.g. Hessian -> Jacobian with Cholesky)
+    }
+    return result;
+  }
+
 }

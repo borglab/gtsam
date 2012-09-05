@@ -111,11 +111,7 @@ SubgraphSolver::splitGraph(const GaussianFactorGraph &jfg) {
   size_t t = 0;
   BOOST_FOREACH ( const GaussianFactor::shared_ptr &gf, jfg ) {
 
-		JacobianFactor::shared_ptr jf;
-		if(JacobianFactor::shared_ptr Ai_J = boost::dynamic_pointer_cast<JacobianFactor>(gf))
-			jf = Ai_J;
-		else
-			jf = boost::make_shared<JacobianFactor>(*gf); // Convert any non-Jacobian factors to Jacobians (e.g. Hessian -> Jacobian with Cholesky)
+		JacobianFactor::shared_ptr jf = convertToJacobianFactorPtr(gf);
 
     if ( jf->keys().size() > 2 ) {
       throw runtime_error("SubgraphSolver::splitGraph the graph is not simple, sanity check failed ");

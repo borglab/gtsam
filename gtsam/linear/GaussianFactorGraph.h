@@ -303,7 +303,9 @@ namespace gtsam {
    */
   GaussianFactorGraph::EliminationResult EliminateCholesky(const FactorGraph<
 			GaussianFactor>& factors, size_t nrFrontals = 1);
-	
+
+  /****** Linear Algebra Opeations ******/
+
   /** return A*x */
   Errors operator*(const GaussianFactorGraph& fg, const VectorValues& x);
 
