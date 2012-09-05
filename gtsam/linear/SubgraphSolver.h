@@ -82,31 +82,6 @@ protected:
 
   boost::tuple<GaussianFactorGraph::shared_ptr, GaussianFactorGraph::shared_ptr>
   splitGraph(const GaussianFactorGraph &gfg) ;
-
-public:
-
-  // a simplfied implementation of disjoint set data structure.
-  class DisjointSet {
-  protected:
-    size_t n_ ;
-    std::vector<size_t> rank_ ;
-    std::vector<Index> parent_ ;
-
-  public:
-    // initialize a disjoint set, point every vertex to itself
-    DisjointSet(const size_t n) ;
-    inline size_t size() const { return n_ ; }
-
-    // union the root of u and and the root of v, return the root of u and v
-    Index makeUnion(const Index &u, const Index &v) ;
-
-    // return the root of u
-    Index find(const Index &u) ;
-
-    // return the rank of x, which is defined as the cardinality of the set containing x
-    inline size_t rank(const Index &x) {return rank_[find(x)] ;}
-  };
-
 };
 
 } // namespace gtsam

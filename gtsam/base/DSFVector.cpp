@@ -18,7 +18,7 @@
 
 #include <boost/make_shared.hpp>
 #include <boost/foreach.hpp>
-#include <gtsam_unstable/base/DSFVector.h>
+#include <gtsam/base/DSFVector.h>
 
 using namespace std;
 

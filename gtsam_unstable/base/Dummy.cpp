@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -17,17 +17,27 @@
  * @date June 14, 2012
  */
 
-#include <string>
+#include <gtsam_unstable/base/Dummy.h>
+#include <iostream>
 
 namespace gtsam {
 
-  struct Dummy {
-    size_t id;
-    Dummy();
-    ~Dummy();
-    void print(const std::string& s="") const ;
-    unsigned char dummyTwoVar(unsigned char a) const ;
-  };
+static size_t gDummyCount = 0;
 
-} // namespace gtsam
+Dummy::Dummy():id(++gDummyCount) {
+  std::cout << "Dummy constructor " << id << std::endl;
+}
 
+Dummy::~Dummy() {
+  std::cout << "Dummy destructor " << id << std::endl;
+}
+
+void Dummy::print(const std::string& s) const {
+  std::cout << s << "Dummy " << id << std::endl;
+}
+
+unsigned char Dummy::dummyTwoVar(unsigned char a) const {
+  return a;
+}
+
+}

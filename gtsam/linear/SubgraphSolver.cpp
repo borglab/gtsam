@@ -19,6 +19,7 @@
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/inference/graph-inl.h>
 #include <gtsam/inference/EliminationTree.h>
+#include <gtsam/base/DSFVector.h>
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
 #include <list>
@@ -102,7 +103,7 @@ SubgraphSolver::splitGraph(const GaussianFactorGraph &jfg) {
 
   const VariableIndex index(jfg);
   const size_t n = index.size();
-  DisjointSet D(n) ;
+  DSFVector D(n);
 
   GaussianFactorGraph::shared_ptr At(new GaussianFactorGraph());
   GaussianFactorGraph::shared_ptr Ac( new GaussianFactorGraph());
@@ -126,10 +127,10 @@ SubgraphSolver::splitGraph(const GaussianFactorGraph &jfg) {
     if ( jf->keys().size() == 1 ) augment = true;
     else {
       const Index u = jf->keys()[0], v = jf->keys()[1],
-                  u_root = D.find(u), v_root = D.find(v);
+                  u_root = D.findSet(u), v_root = D.findSet(v);
       if ( u_root != v_root ) {
         t++; augment = true ;
-        D.makeUnion(u_root, v_root);
+        D.makeUnionInPlace(u_root, v_root);
       }
     }
     if ( augment ) At->push_back(jf);
@@ -138,54 +139,5 @@ SubgraphSolver::splitGraph(const GaussianFactorGraph &jfg) {
 
   return boost::tie(At, Ac);
 }
-
-
-SubgraphSolver::DisjointSet::DisjointSet(const size_t n):n_(n),rank_(n,1),parent_(n) {
-  for ( Index i = 0 ; i < n ; ++i ) parent_[i] = i ;
-}
-
-Index SubgraphSolver::DisjointSet::makeUnion(const Index &u, const Index &v) {
-
-  Index u_root = find(u), v_root = find(v) ;
-  Index u_rank = rank(u), v_rank = rank(v) ;
-
-  if ( u_root != v_root ) {
-    if ( v_rank > u_rank ) {
-      parent_[u_root] = v_root ;
-      rank_[v_root] += rank_[u_root] ;
-      return v_root ;
-    }
-    else {
-      parent_[v_root] = u_root ;
-      rank_[u_root] += rank_[v_root] ;
-      return u_root ;
-    }
-  }
-  return u_root ;
-}
-
-Index SubgraphSolver::DisjointSet::find(const Index &u) {
-  vector<Index> path ;
-  Index x = u;
-  Index x_root = parent_[x] ;
-
-  // find the root, and keep the vertices along the path
-  while ( x != x_root ) {
-    path.push_back(x) ;
-    x = x_root ;
-    x_root = parent_[x] ;
-  }
-
-  // path compression
-  BOOST_FOREACH(const Index &i, path) {
-    rank_[i] = 1 ;
-    parent_[i] = x_root ;
-  }
-
-  return x_root ;
-}
-
-
-
 
 } // \namespace gtsam
