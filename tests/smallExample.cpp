@@ -459,12 +459,7 @@ namespace example {
 
 		// linearize around zero
 		boost::shared_ptr<GaussianFactorGraph> gfg = nlfg.linearize(zeros, ordering);
-
-		GaussianFactorGraph jfg;
-    BOOST_FOREACH(GaussianFactorGraph::sharedFactor factor, *gfg)
-		  jfg.push_back(boost::dynamic_pointer_cast<JacobianFactor>(factor));
-
-		return boost::make_tuple(jfg, xtrue);
+		return boost::make_tuple(*gfg, xtrue);
 	}
 
 	/* ************************************************************************* */
@@ -482,21 +477,21 @@ namespace example {
 		GaussianFactorGraph T, C;
 
 		// Add the x11 constraint to the tree
-		T.push_back(boost::dynamic_pointer_cast<JacobianFactor>(original[0]));
+		T.push_back(original[0]);
 
 		// Add all horizontal constraints to the tree
 		size_t i = 1;
 		for (size_t x = 1; x < N; x++)
 			for (size_t y = 1; y <= N; y++, i++)
-				T.push_back(boost::dynamic_pointer_cast<JacobianFactor>(original[i]));
+				T.push_back(original[i]);
 
 		// Add first vertical column of constraints to T, others to C
 		for (size_t x = 1; x <= N; x++)
 			for (size_t y = 1; y < N; y++, i++)
 				if (x == 1)
-					T.push_back(boost::dynamic_pointer_cast<JacobianFactor>(original[i]));
+					T.push_back(original[i]);
 				else
-					C.push_back(boost::dynamic_pointer_cast<JacobianFactor>(original[i]));
+					C.push_back(original[i]);
 
 		return make_pair(T, C);
 	}
