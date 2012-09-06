@@ -17,8 +17,6 @@
 
 #include <gtsam/linear/SubgraphPreconditioner.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
-
 #include <boost/foreach.hpp>
 
 using namespace std;
@@ -28,7 +26,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	SubgraphPreconditioner::SubgraphPreconditioner(const sharedFG& Ab2,
 			const sharedBayesNet& Rc1, const sharedValues& xbar) :
-		Ab2_(Ab2), Rc1_(Rc1), xbar_(xbar), b2bar_(new Errors(-gaussianErrors(*Ab2_,*xbar))) {
+		Ab2_(convertToJacobianFactors(*Ab2)), Rc1_(Rc1), xbar_(xbar), b2bar_(new Errors(-gaussianErrors(*Ab2_,*xbar))) {
 	}
 
 	/* ************************************************************************* */

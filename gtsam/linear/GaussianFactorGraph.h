@@ -354,4 +354,7 @@ namespace gtsam {
   inline Errors gaussianErrors(const GaussianFactorGraph& fg, const VectorValues& x) {
     return *gaussianErrors_(fg, x); }
 
+  /** Convert all factors to JacobianFactor */
+  GaussianFactorGraph::shared_ptr convertToJacobianFactors(const GaussianFactorGraph &gfg);
+
 } // namespace gtsam

@@ -635,4 +635,13 @@ break;
 		return e;
 	}
 
+	/* ************************************************************************* */
+	GaussianFactorGraph::shared_ptr convertToJacobianFactors(const GaussianFactorGraph &gfg) {
+	  GaussianFactorGraph::shared_ptr result(new GaussianFactorGraph());
+	  BOOST_FOREACH(const GaussianFactor::shared_ptr &gf, gfg) {
+	    result->push_back(convertToJacobianFactorPtr(gf));
+	  }
+	  return result;
+	}
+
 } // namespace gtsam
