@@ -308,16 +308,6 @@ bool HessianFactor::equals(const GaussianFactor& lf, double tol) const {
 }
 
 /* ************************************************************************* */
-double HessianFactor::constantTerm() const {
-	return info_(this->size(), this->size())(0,0);
-}
-
-/* ************************************************************************* */
-HessianFactor::constColumn HessianFactor::linearTerm() const {
-	return info_.rangeColumn(0, this->size(), this->size(), 0);
-}
-
-/* ************************************************************************* */
 Matrix HessianFactor::computeInformation() const {
   return info_.full().selfadjointView<Eigen::Upper>();
 }

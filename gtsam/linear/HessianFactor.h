@@ -242,16 +242,39 @@ namespace gtsam {
      */
     constBlock info(const_iterator j1, const_iterator j2) const { return info_(j1-begin(), j2-begin()); }
 
+    /** Return a view of the block at (j1,j2) of the <em>upper-triangular part</em> of the
+     * information matrix \f$ H \f$, no data is copied.  See HessianFactor class documentation
+     * above to explain that only the upper-triangular part of the information matrix is stored
+     * and returned by this function.
+     * @param j1 Which block row to get, as an iterator pointing to the slot in this factor.  You can
+     * use, for example, begin() + 2 to get the 3rd variable in this factor.
+     * @param j2 Which block column to get, as an iterator pointing to the slot in this factor.  You can
+     * use, for example, begin() + 2 to get the 3rd variable in this factor.
+     * @return A view of the requested block, not a copy.
+     */
+    Block info(iterator j1, iterator j2) { return info_(j1-begin(), j2-begin()); }
+
     /** Return the <em>upper-triangular part</em> of the full *augmented* information matrix,
      * as described above.  See HessianFactor class documentation above to explain that only the
      * upper-triangular part of the information matrix is stored and returned by this function.
      */
     constBlock info() const { return info_.full(); }
 
+    /** Return the <em>upper-triangular part</em> of the full *augmented* information matrix,
+     * as described above.  See HessianFactor class documentation above to explain that only the
+     * upper-triangular part of the information matrix is stored and returned by this function.
+     */
+    Block info() { return info_.full(); }
+
     /** Return the constant term \f$ f \f$ as described above
      * @return The constant term \f$ f \f$
      */
-    double constantTerm() const;
+    double constantTerm() const { return info_(this->size(), this->size())(0,0); }
+
+    /** Return the constant term \f$ f \f$ as described above
+     * @return The constant term \f$ f \f$
+     */
+    double& constantTerm() { return info_(this->size(), this->size())(0,0); }
 
     /** Return the part of linear term \f$ g \f$ as described above corresponding to the requested variable.
      * @param j Which block row to get, as an iterator pointing to the slot in this factor.  You can
@@ -259,9 +282,19 @@ namespace gtsam {
      * @return The linear term \f$ g \f$ */
     constColumn linearTerm(const_iterator j) const { return info_.column(j-begin(), size(), 0); }
 
+    /** Return the part of linear term \f$ g \f$ as described above corresponding to the requested variable.
+     * @param j Which block row to get, as an iterator pointing to the slot in this factor.  You can
+     * use, for example, begin() + 2 to get the 3rd variable in this factor.
+     * @return The linear term \f$ g \f$ */
+    Column linearTerm(iterator j) { return info_.column(j-begin(), size(), 0); }
+
     /** Return the complete linear term \f$ g \f$ as described above.
      * @return The linear term \f$ g \f$ */
-    constColumn linearTerm() const;
+    constColumn linearTerm() const { return info_.rangeColumn(0, this->size(), this->size(), 0); }
+
+    /** Return the complete linear term \f$ g \f$ as described above.
+     * @return The linear term \f$ g \f$ */
+    Column linearTerm() { return info_.rangeColumn(0, this->size(), this->size(), 0); }
     
     /** Return the augmented information matrix represented by this GaussianFactor.
      * The augmented information matrix contains the information matrix with an
