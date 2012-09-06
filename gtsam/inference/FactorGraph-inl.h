@@ -100,7 +100,7 @@ namespace gtsam {
 			++ firstIndex;
 
 		// Check that number of variables is in bounds
-		if(firstIndex + nFrontals >= variableIndex.size())
+		if(firstIndex + nFrontals > variableIndex.size())
 			throw std::invalid_argument("Requested to eliminate more frontal variables than exist in the factor graph.");
 
 		// Get set of involved factors
