@@ -81,7 +81,7 @@ TEST(cholesky, BadScalingSVD) {
   double expectedCondition = 1e40;
   double actualCondition = S(0) / S(1);
 
-  DOUBLES_EQUAL(expectedCondition, actualCondition, 1e-41);
+  DOUBLES_EQUAL(expectedCondition, actualCondition, 1e30);
 }
 
 /* ************************************************************************* */
