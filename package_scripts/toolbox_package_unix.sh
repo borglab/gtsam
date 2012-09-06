@@ -7,6 +7,8 @@ if [ "$os" = "Linux" -a "$arch" = "x86_64" ]; then
 	platform=lin64
 elif [ "$os" = "Linux" -a "$arch" = "i686" ]; then
 	platform=lin32
+elif [ "$os" = "Darwin" -a "$arch" = "x86_64" ]; then
+	platform=mac64
 else
 	echo "Unrecognized platform"
 	exit 1
