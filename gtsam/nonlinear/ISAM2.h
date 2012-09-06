@@ -598,6 +598,9 @@ public:
 
   const ISAM2Params& params() const { return params_; }
 
+  /** prints out clique statistics */
+  void printStats() const { getCliqueData().getStats().print(); }
+
   //@}
 
 private:

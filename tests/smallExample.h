@@ -23,7 +23,6 @@
 
 #include <tests/simulated2D.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/linear/JacobianFactorGraph.h>
 #include <boost/tuple/tuple.hpp>
 
 namespace gtsam {
@@ -66,7 +65,7 @@ namespace gtsam {
 		 * create a linear factor graph
 		 * The non-linear graph above evaluated at NoisyValues
 		 */
-		JacobianFactorGraph createGaussianFactorGraph(const Ordering& ordering);
+		GaussianFactorGraph createGaussianFactorGraph(const Ordering& ordering);
 
 		/**
 		 * create small Chordal Bayes Net x <- y
@@ -100,21 +99,21 @@ namespace gtsam {
 		 * Creates a simple constrained graph with one linear factor and
 		 * one binary equality constraint that sets x = y
 		 */
-		JacobianFactorGraph createSimpleConstraintGraph();
+		GaussianFactorGraph createSimpleConstraintGraph();
 		VectorValues createSimpleConstraintValues();
 
 		/**
 		 * Creates a simple constrained graph with one linear factor and
 		 * one binary constraint.
 		 */
-		JacobianFactorGraph createSingleConstraintGraph();
+		GaussianFactorGraph createSingleConstraintGraph();
 		VectorValues createSingleConstraintValues();
 
 		/**
 		 * Creates a constrained graph with a linear factor and two
 		 * binary constraints that share a node
 		 */
-		JacobianFactorGraph createMultiConstraintGraph();
+		GaussianFactorGraph createMultiConstraintGraph();
 		VectorValues createMultiConstraintValues();
 
 		/* ******************************************************* */
@@ -147,8 +146,8 @@ namespace gtsam {
 		 *   |
 		 * -x11-x21-x31
 		 */
-		std::pair<JacobianFactorGraph, JacobianFactorGraph > splitOffPlanarTree(
-				size_t N, const JacobianFactorGraph& original);
+		std::pair<GaussianFactorGraph, GaussianFactorGraph > splitOffPlanarTree(
+				size_t N, const GaussianFactorGraph& original);
 
 	} // example
 } // gtsam

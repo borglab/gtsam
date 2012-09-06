@@ -39,11 +39,12 @@ drawnow
 %% do various optional things
 
 if options.saveFigures
-    fig2 = figure('visible','off');
-    newax = copyobj(h,fig2);
-    colormap(fig2,'hot');
+    figToSave = figure('visible','off');
+    newax = copyobj(h,figToSave);
+    colormap(figToSave,'hot');
     set(newax, 'units', 'normalized', 'position', [0.13 0.11 0.775 0.815]);
-    print(fig2,'-dpng',sprintf('VisualiSAM%03d.png',M));
+    print(figToSave,'-dpng',sprintf('VisualiSAM%03d.png',M));
+    axes(h);
 end
 
 if options.saveDotFiles

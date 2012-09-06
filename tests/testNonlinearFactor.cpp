@@ -73,8 +73,8 @@ TEST( NonlinearFactor, equals2 )
   Graph::sharedFactor f0 = fg[0], f1 = fg[1];
 
   CHECK(f0->equals(*f0));
-// SL-FIX  CHECK(!f0->equals(*f1));
-// SL-FIX  CHECK(!f1->equals(*f0));
+	CHECK(!f0->equals(*f1));
+	CHECK(!f1->equals(*f0));
 }
 
 /* ************************************************************************* */

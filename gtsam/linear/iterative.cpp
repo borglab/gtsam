@@ -19,9 +19,8 @@
 #include <gtsam/linear/iterative-inl.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
-#include <gtsam/linear/JacobianFactorGraph.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/IterativeSolver.h>
-
 
 #include <iostream>
 
@@ -29,43 +28,51 @@ using namespace std;
 
 namespace gtsam {
 
-	/* ************************************************************************* */
-	void System::print (const string& s) const {
-		cout << s << endl;
-		gtsam::print(A_, "A");
-		gtsam::print(b_, "b");
-	}
+  /* ************************************************************************* */
+  void System::print(const string& s) const {
+    cout << s << endl;
+    gtsam::print(A_, "A");
+    gtsam::print(b_, "b");
+  }
 
-	/* ************************************************************************* */
+  /* ************************************************************************* */
 
-	Vector steepestDescent(const System& Ab, const Vector& x, const ConjugateGradientParameters & parameters) {
-		return conjugateGradients<System, Vector, Vector> (Ab, x, parameters, true);
-	}
+  Vector steepestDescent(const System& Ab, const Vector& x,
+      const ConjugateGradientParameters & parameters) {
+    return conjugateGradients<System, Vector, Vector>(Ab, x, parameters, true);
+  }
 
-	Vector conjugateGradientDescent(const System& Ab, const Vector& x, const ConjugateGradientParameters & parameters) {
-		return conjugateGradients<System, Vector, Vector> (Ab, x, parameters);
-	}
+  Vector conjugateGradientDescent(const System& Ab, const Vector& x,
+      const ConjugateGradientParameters & parameters) {
+    return conjugateGradients<System, Vector, Vector>(Ab, x, parameters);
+  }
 
-	/* ************************************************************************* */
-	Vector steepestDescent(const Matrix& A, const Vector& b, const Vector& x, const ConjugateGradientParameters & parameters) {
-		System Ab(A, b);
-		return conjugateGradients<System, Vector, Vector> (Ab, x, parameters, true);
-	}
+  /* ************************************************************************* */
+  Vector steepestDescent(const Matrix& A, const Vector& b, const Vector& x,
+      const ConjugateGradientParameters & parameters) {
+    System Ab(A, b);
+    return conjugateGradients<System, Vector, Vector>(Ab, x, parameters, true);
+  }
 
-	Vector conjugateGradientDescent(const Matrix& A, const Vector& b, const Vector& x, const ConjugateGradientParameters & parameters) {
-		System Ab(A, b);
-		return conjugateGradients<System, Vector, Vector> (Ab, x, parameters);
-	}
+  Vector conjugateGradientDescent(const Matrix& A, const Vector& b,
+      const Vector& x, const ConjugateGradientParameters & parameters) {
+    System Ab(A, b);
+    return conjugateGradients<System, Vector, Vector>(Ab, x, parameters);
+  }
 
-	/* ************************************************************************* */
-	VectorValues steepestDescent(const FactorGraph<JacobianFactor>& fg, const VectorValues& x, const ConjugateGradientParameters & parameters) {
-		return conjugateGradients<FactorGraph<JacobianFactor>, VectorValues, Errors> (fg, x, parameters, true);
-	}
+  /* ************************************************************************* */
+  VectorValues steepestDescent(const GaussianFactorGraph& fg,
+      const VectorValues& x, const ConjugateGradientParameters & parameters) {
+    return conjugateGradients<GaussianFactorGraph, VectorValues, Errors>(
+        fg, x, parameters, true);
+  }
 
-	VectorValues conjugateGradientDescent(const FactorGraph<JacobianFactor>& fg, const VectorValues& x, const ConjugateGradientParameters & parameters) {
-		return conjugateGradients<FactorGraph<JacobianFactor>, VectorValues, Errors> (fg, x, parameters);
-	}
+  VectorValues conjugateGradientDescent(const GaussianFactorGraph& fg,
+      const VectorValues& x, const ConjugateGradientParameters & parameters) {
+    return conjugateGradients<GaussianFactorGraph, VectorValues, Errors>(
+        fg, x, parameters);
+  }
 
-	/* ************************************************************************* */
+/* ************************************************************************* */
 
 } // namespace gtsam

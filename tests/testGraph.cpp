@@ -105,6 +105,108 @@ TEST( Graph, composePoses )
 	CHECK(assert_equal(expected, *actual));
 }
 
+// SL-FIX TEST( GaussianFactorGraph, findMinimumSpanningTree )
+//{
+//	GaussianFactorGraph g;
+//	Matrix I = eye(2);
+//	Vector b = Vector_(0, 0, 0);
+//	g.add(X(1), I, X(2), I, b, model);
+//	g.add(X(1), I, X(3), I, b, model);
+//	g.add(X(1), I, X(4), I, b, model);
+//	g.add(X(2), I, X(3), I, b, model);
+//	g.add(X(2), I, X(4), I, b, model);
+//	g.add(X(3), I, X(4), I, b, model);
+//
+//	map<string, string> tree = g.findMinimumSpanningTree<string, GaussianFactor>();
+//	EXPECT(tree[X(1)].compare(X(1))==0);
+//	EXPECT(tree[X(2)].compare(X(1))==0);
+//	EXPECT(tree[X(3)].compare(X(1))==0);
+//	EXPECT(tree[X(4)].compare(X(1))==0);
+//}
+
+///* ************************************************************************* */
+// SL-FIX TEST( GaussianFactorGraph, split )
+//{
+//	GaussianFactorGraph g;
+//	Matrix I = eye(2);
+//	Vector b = Vector_(0, 0, 0);
+//	g.add(X(1), I, X(2), I, b, model);
+//	g.add(X(1), I, X(3), I, b, model);
+//	g.add(X(1), I, X(4), I, b, model);
+//	g.add(X(2), I, X(3), I, b, model);
+//	g.add(X(2), I, X(4), I, b, model);
+//
+//	PredecessorMap<string> tree;
+//	tree[X(1)] = X(1);
+//	tree[X(2)] = X(1);
+//	tree[X(3)] = X(1);
+//	tree[X(4)] = X(1);
+//
+//	GaussianFactorGraph Ab1, Ab2;
+//  g.split<string, GaussianFactor>(tree, Ab1, Ab2);
+//	LONGS_EQUAL(3, Ab1.size());
+//	LONGS_EQUAL(2, Ab2.size());
+//}
+
+///* ************************************************************************* */
+// SL-FIX TEST( FactorGraph, splitMinimumSpanningTree )
+//{
+//	SymbolicFactorGraph G;
+//	G.push_factor("x1", "x2");
+//	G.push_factor("x1", "x3");
+//	G.push_factor("x1", "x4");
+//	G.push_factor("x2", "x3");
+//	G.push_factor("x2", "x4");
+//	G.push_factor("x3", "x4");
+//
+//	SymbolicFactorGraph T, C;
+//	boost::tie(T, C) = G.splitMinimumSpanningTree();
+//
+//	SymbolicFactorGraph expectedT, expectedC;
+//	expectedT.push_factor("x1", "x2");
+//	expectedT.push_factor("x1", "x3");
+//	expectedT.push_factor("x1", "x4");
+//	expectedC.push_factor("x2", "x3");
+//	expectedC.push_factor("x2", "x4");
+//	expectedC.push_factor("x3", "x4");
+//	CHECK(assert_equal(expectedT,T));
+//	CHECK(assert_equal(expectedC,C));
+//}
+
+///* ************************************************************************* */
+///**
+// *  x1 - x2 - x3 - x4 - x5
+// *       |    |  / |
+// *       l1   l2   l3
+// */
+// SL-FIX TEST( FactorGraph, removeSingletons )
+//{
+//	SymbolicFactorGraph G;
+//	G.push_factor("x1", "x2");
+//	G.push_factor("x2", "x3");
+//	G.push_factor("x3", "x4");
+//	G.push_factor("x4", "x5");
+//	G.push_factor("x2", "l1");
+//	G.push_factor("x3", "l2");
+//	G.push_factor("x4", "l2");
+//	G.push_factor("x4", "l3");
+//
+//	SymbolicFactorGraph singletonGraph;
+//	set<Symbol> singletons;
+//	boost::tie(singletonGraph, singletons) = G.removeSingletons();
+//
+//	set<Symbol> singletons_excepted; singletons_excepted += "x1", "x2", "x5", "l1", "l3";
+//	CHECK(singletons_excepted == singletons);
+//
+//	SymbolicFactorGraph singletonGraph_excepted;
+//	singletonGraph_excepted.push_factor("x2", "l1");
+//	singletonGraph_excepted.push_factor("x4", "l3");
+//	singletonGraph_excepted.push_factor("x1", "x2");
+//	singletonGraph_excepted.push_factor("x4", "x5");
+//	singletonGraph_excepted.push_factor("x2", "x3");
+//	CHECK(singletonGraph_excepted.equals(singletonGraph));
+//}
+
 /* ************************************************************************* */
 int main() {
 	TestResult tr;

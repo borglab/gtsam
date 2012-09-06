@@ -19,7 +19,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
-#include <gtsam/linear/IterativeSolver.h>
+#include <gtsam/linear/SubgraphSolver.h>
 
 namespace gtsam {
 
@@ -74,6 +74,7 @@ public:
 	std::string getLinearSolverType() const { return linearSolverTranslator(linearSolverType); }
 
 	void setLinearSolverType(const std::string& solver) { linearSolverType = linearSolverTranslator(solver); }
+  void setIterativeParams(const SubgraphSolverParameters &params);
 	void setOrdering(const Ordering& ordering) { this->ordering = ordering; }
 
 private:

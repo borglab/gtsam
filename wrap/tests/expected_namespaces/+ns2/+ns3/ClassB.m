@@ -1,5 +1,5 @@
 %-------Constructors-------
-%CLASSB()
+%ClassB()
 % 
 %-------Methods-------
 % 

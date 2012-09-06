@@ -332,7 +332,7 @@ void Class::comment_fragment(FileWriter& proxyFile) const
     { 
 
 	    string up_name  = boost::to_upper_copy(name);
-        proxyFile.oss << "%" << up_name << "(";
+        proxyFile.oss << "%" << name << "(";
         unsigned int i = 0;
 		BOOST_FOREACH(const Argument& arg, argList) 
 		{
@@ -352,7 +352,7 @@ void Class::comment_fragment(FileWriter& proxyFile) const
         BOOST_FOREACH(ArgumentList argList, m.argLists) 
         { 
 	        string up_name  = boost::to_upper_copy(m.name);
-            proxyFile.oss << "%" << up_name << "(";
+            proxyFile.oss << "%" << m.name << "(";
             unsigned int i = 0;
 		    BOOST_FOREACH(const Argument& arg, argList) 
 		    {
@@ -373,7 +373,7 @@ void Class::comment_fragment(FileWriter& proxyFile) const
         BOOST_FOREACH(ArgumentList argList, m.argLists) 
         { 
 	        string up_name  = boost::to_upper_copy(m.name);
-            proxyFile.oss << "%" << up_name << "(";
+            proxyFile.oss << "%" << m.name << "(";
             unsigned int i = 0;
 		    BOOST_FOREACH(const Argument& arg, argList) 
 		    {

@@ -410,7 +410,7 @@ TEST(GaussianFactor, eliminateFrontals)
   factors.push_back(factor4);
 
   // extract the dense matrix for the graph
-  Matrix actualDense = factors.denseJacobian();
+  Matrix actualDense = factors.augmentedJacobian();
   EXPECT(assert_equal(2.0 * Ab, actualDense));
 
   // Convert to Jacobians, inefficient copy of all factors instead of selectively converting only Hessians
@@ -619,7 +619,7 @@ TEST(GaussianFactorGraph, sparseJacobian) {
 }
 
 /* ************************************************************************* */
-TEST(GaussianFactorGraph, denseHessian) {
+TEST(GaussianFactorGraph, matrices) {
   // Create factor graph:
   // x1 x2 x3 x4 x5  b
   //  1  2  3  0  0  4
@@ -639,9 +639,24 @@ TEST(GaussianFactorGraph, denseHessian) {
       9,10, 0,11,12,13,
       0, 0, 0,14,15,16;
 
+	Matrix expectedJacobian = jacobian;
   Matrix expectedHessian = jacobian.transpose() * jacobian;
-  Matrix actualHessian = gfg.denseHessian();
+	Matrix expectedA = jacobian.leftCols(jacobian.cols()-1);
+	Vector expectedb = jacobian.col(jacobian.cols()-1);
+	Matrix expectedL = expectedA.transpose() * expectedA;
+	Vector expectedeta = expectedA.transpose() * expectedb;
+
+	Matrix actualJacobian = gfg.augmentedJacobian();
+	Matrix actualHessian = gfg.augmentedHessian();
+	Matrix actualA; Vector actualb; boost::tie(actualA,actualb) = gfg.jacobian();
+	Matrix actualL; Vector actualeta; boost::tie(actualL,actualeta) = gfg.hessian();
+
+	EXPECT(assert_equal(expectedJacobian, actualJacobian));
   EXPECT(assert_equal(expectedHessian, actualHessian));
+	EXPECT(assert_equal(expectedA, actualA));
+	EXPECT(assert_equal(expectedb, actualb));
+	EXPECT(assert_equal(expectedL, actualL));
+	EXPECT(assert_equal(expectedeta, actualeta));
 }
 
 /* ************************************************************************* */

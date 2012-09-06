@@ -23,6 +23,10 @@ protected:
 	GaussianFactor::shared_ptr factor_;
 	boost::optional<Values> linearizationPoint_;
 
+	/** direct copy constructor */
+	LinearContainerFactor(const GaussianFactor::shared_ptr& factor,
+			const boost::optional<Values>& linearizationPoint);
+
 public:
 
 	/** Primary constructor: store a linear factor and decode the ordering */
@@ -105,7 +109,7 @@ public:
    * Clones the underlying linear factor
    */
   NonlinearFactor::shared_ptr clone() const {
-  	return NonlinearFactor::shared_ptr(new LinearContainerFactor(factor_));
+  	return NonlinearFactor::shared_ptr(new LinearContainerFactor(factor_,linearizationPoint_));
   }
 
   // casting syntactic sugar

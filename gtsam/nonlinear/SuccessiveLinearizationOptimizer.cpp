@@ -8,13 +8,16 @@
 #include <gtsam/nonlinear/SuccessiveLinearizationOptimizer.h>
 #include <gtsam/inference/EliminationTree.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
-#include <gtsam/linear/SimpleSPCGSolver.h>
 #include <gtsam/linear/SubgraphSolver.h>
 #include <gtsam/linear/VectorValues.h>
 #include <boost/shared_ptr.hpp>
 #include <stdexcept>
 
 namespace gtsam {
+
+void SuccessiveLinearizationParams::setIterativeParams(const SubgraphSolverParameters &params) {
+  iterativeParams = boost::make_shared<SubgraphSolverParameters>(params);
+}
 
 void SuccessiveLinearizationParams::print(const std::string& str) const {
 	NonlinearOptimizerParams::print(str);
@@ -60,11 +63,7 @@ VectorValues solveGaussianFactorGraph(const GaussianFactorGraph &gfg, const Succ
   }
   else if ( params.isCG() ) {
     if ( !params.iterativeParams ) throw std::runtime_error("solveGaussianFactorGraph: cg parameter has to be assigned ...");
-    if ( boost::dynamic_pointer_cast<SimpleSPCGSolverParameters>(params.iterativeParams)) {
-      SimpleSPCGSolver solver (gfg, *boost::dynamic_pointer_cast<SimpleSPCGSolverParameters>(params.iterativeParams));
-      delta = solver.optimize();
-    }
-    else if ( boost::dynamic_pointer_cast<SubgraphSolverParameters>(params.iterativeParams) ) {
+    if ( boost::dynamic_pointer_cast<SubgraphSolverParameters>(params.iterativeParams) ) {
       SubgraphSolver solver (gfg, *boost::dynamic_pointer_cast<SubgraphSolverParameters>(params.iterativeParams));
       delta = solver.optimize();
     }

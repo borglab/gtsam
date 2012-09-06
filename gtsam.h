@@ -1022,8 +1022,10 @@ class GaussianFactorGraph {
 
 	// Conversion to matrices
 	Matrix sparseJacobian_() const;
-	Matrix denseJacobian() const;
-	Matrix denseHessian() const;
+	Matrix augmentedJacobian() const;
+	pair<Matrix,Vector> jacobian() const;
+	Matrix augmentedHessian() const;
+	pair<Matrix,Vector> hessian() const;
 };
 
 class GaussianISAM {
@@ -1043,6 +1045,46 @@ class GaussianSequentialSolver {
 	gtsam::VectorValues* optimize() const;
 	gtsam::GaussianFactor* marginalFactor(size_t j) const;
 	Matrix marginalCovariance(size_t j) const;
+};
+
+#include <gtsam/linear/IterativeSolver.h>
+virtual class IterativeOptimizationParameters {
+  string getKernel() const ;
+  string getVerbosity() const;
+  void setKernel(string s) ;
+  void setVerbosity(string s) ;
+};
+
+//virtual class IterativeSolver {
+//  IterativeSolver();
+//  gtsam::VectorValues optimize ();
+//};
+
+#include <gtsam/linear/ConjugateGradientSolver.h>
+virtual class ConjugateGradientParameters : gtsam::IterativeOptimizationParameters {
+  ConjugateGradientParameters();
+  size_t getMinIterations() const ;
+  size_t getMaxIterations() const ;
+  size_t getReset() const;
+  double getEpsilon_rel() const;
+  double getEpsilon_abs() const;
+
+  void setMinIterations(size_t value);
+  void setMaxIterations(size_t value);
+  void setReset(size_t value);
+  void setEpsilon_rel(double value);
+  void setEpsilon_abs(double value);
+};
+
+#include <gtsam/linear/SubgraphSolver.h>
+virtual class SubgraphSolverParameters : gtsam::ConjugateGradientParameters {
+  SubgraphSolverParameters();
+  void print(string s) const;
+};
+
+class SubgraphSolver  {
+  SubgraphSolver(const gtsam::GaussianFactorGraph &A, const gtsam::SubgraphSolverParameters &parameters);
+  gtsam::VectorValues optimize() const;
 };
 
 #include <gtsam/linear/KalmanFilter.h>
@@ -1288,6 +1330,7 @@ virtual class SuccessiveLinearizationParams : gtsam::NonlinearOptimizerParams {
 	
 	void setLinearSolverType(string solver);
 	void setOrdering(const gtsam::Ordering& ordering);
+	void setIterativeParams(const gtsam::SubgraphSolverParameters &params);
 
   bool isMultifrontal() const;
   bool isSequential() const;
@@ -1443,6 +1486,8 @@ class ISAM2 {
 
   bool equals(const gtsam::ISAM2& other, double tol) const;
   void print(string s) const;
+  void printStats() const;
+  void saveGraph(string s) const;
 
   gtsam::ISAM2Result update();
   gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta);

@@ -59,10 +59,12 @@ Tested compilers
  - GCC 4.2-4.7
  - Clang 2.9-3.2
  - OSX GCC 4.2
+ - MSVC 2010, 2012
  
 Tested systems:
  - Ubuntu 11.04, 11.10, 12.04
  - MacOS 10.6, 10.7
+ - Windows 7
 
 2)
 GTSAM makes extensive use of debug assertions, and we highly recommend you work
@@ -72,8 +74,8 @@ will run up to 10x faster in Release mode! See the end of this document for
 additional debugging tips.
 
 3)
-GTSAM has Doxygen documentation. To generate, run the the script 
-makedoc.sh.  
+GTSAM has Doxygen documentation. To generate, run 'make doc' from your
+build directory.
 
 4)
 The instructions below install the library to the default system install path and

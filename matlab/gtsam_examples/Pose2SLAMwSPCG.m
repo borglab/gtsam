@@ -51,7 +51,14 @@ initialEstimate.insert(4, Pose2(4.0, 2.0, pi  ));
 initialEstimate.insert(5, Pose2(2.1, 2.1,-pi/2));
 initialEstimate.print(sprintf('\nInitial estimate:\n'));
 
-%% Optimize using Levenberg-Marquardt optimization with an ordering from colamd
-optimizer = DoglegOptimizer(graph, initialEstimate);
-result = optimizer.optimizeSafely();
+%% Optimize using Levenberg-Marquardt optimization with SubgraphSolver
+params = gtsam.LevenbergMarquardtParams;
+subgraphParams = gtsam.SubgraphSolverParameters;
+params.setLinearSolverType('CONJUGATE_GRADIENT');
+params.setIterativeParams(subgraphParams);
+optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initialEstimate);
+result = optimizer.optimize();
 result.print(sprintf('\nFinal result:\n'));
+
+
+

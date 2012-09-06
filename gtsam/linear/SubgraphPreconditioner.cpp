@@ -17,8 +17,6 @@
 
 #include <gtsam/linear/SubgraphPreconditioner.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/JacobianFactorGraph.h>
-
 #include <boost/foreach.hpp>
 
 using namespace std;
@@ -26,9 +24,22 @@ using namespace std;
 namespace gtsam {
 
 	/* ************************************************************************* */
-	SubgraphPreconditioner::SubgraphPreconditioner(const sharedFG& Ab1, const sharedFG& Ab2,
+	static GaussianFactorGraph::shared_ptr convertToJacobianFactors(const GaussianFactorGraph &gfg) {
+		GaussianFactorGraph::shared_ptr result(new GaussianFactorGraph());
+		BOOST_FOREACH(const GaussianFactor::shared_ptr &gf, gfg) {
+			JacobianFactor::shared_ptr jf = boost::dynamic_pointer_cast<JacobianFactor>(gf);
+			if( !jf ) {
+				jf = boost::make_shared<JacobianFactor>(*gf); // Convert any non-Jacobian factors to Jacobians (e.g. Hessian -> Jacobian with Cholesky)
+			}
+			result->push_back(jf);
+		}
+		return result;
+	}
+
+	/* ************************************************************************* */
+	SubgraphPreconditioner::SubgraphPreconditioner(const sharedFG& Ab2,
 			const sharedBayesNet& Rc1, const sharedValues& xbar) :
-		Ab1_(Ab1), Ab2_(Ab2), Rc1_(Rc1), xbar_(xbar), b2bar_(new Errors(-gaussianErrors(*Ab2_,*xbar))) {
+		Ab2_(convertToJacobianFactors(*Ab2)), Rc1_(Rc1), xbar_(xbar), b2bar_(new Errors(-gaussianErrors(*Ab2_,*xbar))) {
 	}
 
 	/* ************************************************************************* */

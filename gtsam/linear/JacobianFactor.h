@@ -322,7 +322,6 @@ namespace gtsam {
     	ar & BOOST_SERIALIZATION_NVP(model_);
     	ar & BOOST_SERIALIZATION_NVP(matrix_);
     }
-
   }; // JacobianFactor
 
 } // gtsam

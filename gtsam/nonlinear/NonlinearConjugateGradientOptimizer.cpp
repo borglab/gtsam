@@ -8,7 +8,7 @@
 #include <gtsam/nonlinear/NonlinearConjugateGradientOptimizer.h>
 #include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/linear/JacobianFactorGraph.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
 
 #include <cmath>

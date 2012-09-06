@@ -44,10 +44,23 @@ void Ordering::print(const string& str, const KeyFormatter& keyFormatter) const 
   cout << str;
 	// Print ordering in index order
 	Ordering::InvertedMap inverted = this->invert();
-	cout << "key (zero-based order)\n";
+	// Print the ordering with varsPerLine ordering entries printed on each line,
+	// for compactness.
+	static const size_t varsPerLine = 10;
+	bool endedOnNewline = false;
 	BOOST_FOREACH(const Ordering::InvertedMap::value_type& index_key, inverted) {
-		cout << keyFormatter(index_key.second) << " (" << index_key.first << ")\n";
+		if(index_key.first % varsPerLine != 0)
+			cout << ", ";
+		cout << index_key.first << ":" << keyFormatter(index_key.second);
+		if(index_key.first % varsPerLine == varsPerLine - 1) {
+			cout << "\n";
+			endedOnNewline = true;
+		} else {
+			endedOnNewline = false;
+		}
 	}
+	if(!endedOnNewline)
+		cout << "\n";
 	cout.flush();
 }
 

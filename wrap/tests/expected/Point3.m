@@ -1,12 +1,12 @@
 %-------Constructors-------
-%POINT3(double x, double y, double z)
+%Point3(double x, double y, double z)
 % 
 %-------Methods-------
-%NORM() : returns double
+%norm() : returns double
 % 
 %-------Static Methods-------
-%STATICFUNCTIONRET(double z) : returns Point3
-%STATICFUNCTION() : returns double
+%StaticFunctionRet(double z) : returns Point3
+%staticFunction() : returns double
 %
 %For more detailed documentation on GTSAM go to our Doxygen page, which can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
 classdef Point3 < handle

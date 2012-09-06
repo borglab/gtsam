@@ -96,7 +96,7 @@ TEST(DoglegOptimizer, ComputeSteepestDescentPoint) {
   gradientValues.vector() = gradient;
 
   // Compute the gradient using dense matrices
-  Matrix augmentedHessian = GaussianFactorGraph(gbn).denseHessian();
+  Matrix augmentedHessian = GaussianFactorGraph(gbn).augmentedHessian();
   LONGS_EQUAL(11, augmentedHessian.cols());
   VectorValues denseMatrixGradient = *allocateVectorValues(gbn);
   denseMatrixGradient.vector() = -augmentedHessian.col(10).segment(0,10);
@@ -200,7 +200,7 @@ TEST(DoglegOptimizer, BT_BN_equivalency) {
   GaussianFactorGraph expected(gbn);
   GaussianFactorGraph actual(bt);
 
-  EXPECT(assert_equal(expected.denseHessian(), actual.denseHessian()));
+  EXPECT(assert_equal(expected.augmentedHessian(), actual.augmentedHessian()));
 }
 
 /* ************************************************************************* */
@@ -276,7 +276,7 @@ TEST(DoglegOptimizer, ComputeSteepestDescentPointBT) {
   gradientValues.vector() = gradient;
 
   // Compute the gradient using dense matrices
-  Matrix augmentedHessian = GaussianFactorGraph(bt).denseHessian();
+  Matrix augmentedHessian = GaussianFactorGraph(bt).augmentedHessian();
   LONGS_EQUAL(11, augmentedHessian.cols());
   VectorValues denseMatrixGradient = *allocateVectorValues(bt);
   denseMatrixGradient.vector() = -augmentedHessian.col(10).segment(0,10);

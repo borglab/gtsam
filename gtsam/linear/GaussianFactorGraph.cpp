@@ -166,7 +166,7 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	Matrix GaussianFactorGraph::denseJacobian() const {
+	Matrix GaussianFactorGraph::augmentedJacobian() const {
     // Convert to Jacobians
     FactorGraph<JacobianFactor> jfg;
     jfg.reserve(this->size());
@@ -180,6 +180,14 @@ namespace gtsam {
 		// combine all factors
 		JacobianFactor combined(*CombineJacobians(jfg, VariableSlots(*this)));
 		return combined.matrix_augmented();
+	}
+
+	/* ************************************************************************* */
+	std::pair<Matrix,Vector> GaussianFactorGraph::jacobian() const {
+		Matrix augmented = augmentedJacobian();
+		return make_pair(
+			augmented.leftCols(augmented.cols()-1),
+			augmented.col(augmented.cols()-1));
 	}
 
 	/* ************************************************************************* */
@@ -317,9 +325,7 @@ break;
 	}
 
 	/* ************************************************************************* */
-	static
-	FastMap<Index, SlotEntry> findScatterAndDims
-	(const FactorGraph<GaussianFactor>& factors) {
+	static FastMap<Index, SlotEntry> findScatterAndDims(const FactorGraph<GaussianFactor>& factors) {
 
 		const bool debug = ISDEBUG("findScatterAndDims");
 
@@ -349,7 +355,7 @@ break;
 	}
 
 	/* ************************************************************************* */
-	Matrix GaussianFactorGraph::denseHessian() const {
+	Matrix GaussianFactorGraph::augmentedHessian() const {
 
 		Scatter scatter = findScatterAndDims(*this);
 
@@ -365,6 +371,14 @@ break;
 		// Fill in lower-triangular part of Hessian
 		result.triangularView<Eigen::StrictlyLower>() = result.transpose();
 		return result;
+	}
+
+	/* ************************************************************************* */
+	std::pair<Matrix,Vector> GaussianFactorGraph::hessian() const {
+		Matrix augmented = augmentedHessian();
+		return make_pair(
+			augmented.topLeftCorner(augmented.rows()-1, augmented.rows()-1),
+			augmented.col(augmented.rows()-1).head(augmented.rows()-1));
 	}
 
 	/* ************************************************************************* */
@@ -506,5 +520,127 @@ break;
 		}
 
 	} // \EliminatePreferCholesky
+
+
+
+	/* ************************************************************************* */
+	static JacobianFactor::shared_ptr convertToJacobianFactorPtr(const GaussianFactor::shared_ptr &gf) {
+		JacobianFactor::shared_ptr result = boost::dynamic_pointer_cast<JacobianFactor>(gf);
+		if( !result ) {
+			result = boost::make_shared<JacobianFactor>(*gf); // Convert any non-Jacobian factors to Jacobians (e.g. Hessian -> Jacobian with Cholesky)
+		}
+		return result;
+	}
+
+	/* ************************************************************************* */
+	Errors operator*(const GaussianFactorGraph& fg, const VectorValues& x) {
+		Errors e;
+		BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
+		  JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
+			e.push_back((*Ai)*x);
+		}
+		return e;
+	}
+
+	/* ************************************************************************* */
+	void multiplyInPlace(const GaussianFactorGraph& fg, const VectorValues& x, Errors& e) {
+		multiplyInPlace(fg,x,e.begin());
+	}
+
+	/* ************************************************************************* */
+	void multiplyInPlace(const GaussianFactorGraph& fg, const VectorValues& x, const Errors::iterator& e) {
+		Errors::iterator ei = e;
+		BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
+      JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
+      *ei = (*Ai)*x;
+			ei++;
+		}
+	}
+
+	/* ************************************************************************* */
+	// x += alpha*A'*e
+	void transposeMultiplyAdd(const GaussianFactorGraph& fg, double alpha, const Errors& e, VectorValues& x) {
+		// For each factor add the gradient contribution
+		Errors::const_iterator ei = e.begin();
+		BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
+      JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
+      Ai->transposeMultiplyAdd(alpha,*(ei++),x);
+		}
+	}
+
+	/* ************************************************************************* */
+	VectorValues gradient(const GaussianFactorGraph& fg, const VectorValues& x0) {
+		// It is crucial for performance to make a zero-valued clone of x
+		VectorValues g = VectorValues::Zero(x0);
+		Errors e;
+		BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
+      JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
+      e.push_back(Ai->error_vector(x0));
+		}
+		transposeMultiplyAdd(fg, 1.0, e, g);
+		return g;
+	}
+
+	/* ************************************************************************* */
+	void gradientAtZero(const GaussianFactorGraph& fg, VectorValues& g) {
+		// Zero-out the gradient
+		g.setZero();
+		Errors e;
+		BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
+      JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
+      e.push_back(-Ai->getb());
+		}
+		transposeMultiplyAdd(fg, 1.0, e, g);
+	}
+
+	/* ************************************************************************* */
+	void residual(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r) {
+		Index i = 0 ;
+		BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
+      JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
+      r[i] = Ai->getb();
+			i++;
+		}
+		VectorValues Ax = VectorValues::SameStructure(r);
+		multiply(fg,x,Ax);
+		axpy(-1.0,Ax,r);
+	}
+
+	/* ************************************************************************* */
+	void multiply(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r) {
+		r.vector() = Vector::Zero(r.dim());
+		Index i = 0;
+		BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
+      JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
+      SubVector &y = r[i];
+			for(JacobianFactor::const_iterator j = Ai->begin(); j != Ai->end(); ++j) {
+				y += Ai->getA(j) * x[*j];
+			}
+			++i;
+		}
+	}
+
+	/* ************************************************************************* */
+	void transposeMultiply(const GaussianFactorGraph& fg, const VectorValues &r, VectorValues &x) {
+		x.vector() = Vector::Zero(x.dim());
+		Index i = 0;
+		BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
+      JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
+      for(JacobianFactor::const_iterator j = Ai->begin(); j != Ai->end(); ++j) {
+				x[*j] += Ai->getA(j).transpose() * r[i];
+			}
+			++i;
+		}
+	}
+
+	/* ************************************************************************* */
+	boost::shared_ptr<Errors> gaussianErrors_(const GaussianFactorGraph& fg, const VectorValues& x) {
+		boost::shared_ptr<Errors> e(new Errors);
+		BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
+      JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
+      e->push_back(Ai->error_vector(x));
+		}
+		return e;
+	}
 
 } // namespace gtsam
