@@ -523,6 +523,14 @@ break;
 
 
 
+	/* ************************************************************************* */
+	static JacobianFactor::shared_ptr convertToJacobianFactorPtr(const GaussianFactor::shared_ptr &gf) {
+		JacobianFactor::shared_ptr result = boost::dynamic_pointer_cast<JacobianFactor>(gf);
+		if( !result ) {
+			result = boost::make_shared<JacobianFactor>(*gf); // Convert any non-Jacobian factors to Jacobians (e.g. Hessian -> Jacobian with Cholesky)
+		}
+		return result;
+	}
 
 	/* ************************************************************************* */
 	Errors operator*(const GaussianFactorGraph& fg, const VectorValues& x) {
@@ -633,15 +641,6 @@ break;
       e->push_back(Ai->error_vector(x));
 		}
 		return e;
-	}
-
-	/* ************************************************************************* */
-	GaussianFactorGraph::shared_ptr convertToJacobianFactors(const GaussianFactorGraph &gfg) {
-	  GaussianFactorGraph::shared_ptr result(new GaussianFactorGraph());
-	  BOOST_FOREACH(const GaussianFactor::shared_ptr &gf, gfg) {
-	    result->push_back(convertToJacobianFactorPtr(gf));
-	  }
-	  return result;
 	}
 
 } // namespace gtsam

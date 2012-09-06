@@ -33,7 +33,6 @@ namespace gtsam {
 	class SubgraphPreconditioner {
 
 	public:
-
 	  typedef boost::shared_ptr<SubgraphPreconditioner> shared_ptr;
 		typedef boost::shared_ptr<const GaussianBayesNet> sharedBayesNet;
 		typedef boost::shared_ptr<const GaussianFactorGraph> sharedFG;

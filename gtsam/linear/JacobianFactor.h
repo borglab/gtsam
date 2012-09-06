@@ -324,8 +324,5 @@ namespace gtsam {
     }
   }; // JacobianFactor
 
-  /** cast from GaussianFactor::shared_ptr to JacobianFactor::shared_ptr */
-  JacobianFactor::shared_ptr convertToJacobianFactorPtr(const GaussianFactor::shared_ptr &gf);
-
 } // gtsam
 

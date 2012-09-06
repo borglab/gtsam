@@ -111,26 +111,24 @@ SubgraphSolver::splitGraph(const GaussianFactorGraph &jfg) {
   size_t t = 0;
   BOOST_FOREACH ( const GaussianFactor::shared_ptr &gf, jfg ) {
 
-		JacobianFactor::shared_ptr jf = convertToJacobianFactorPtr(gf);
-
-    if ( jf->keys().size() > 2 ) {
+    if ( gf->keys().size() > 2 ) {
       throw runtime_error("SubgraphSolver::splitGraph the graph is not simple, sanity check failed ");
     }
 
     bool augment = false ;
 
     /* check whether this factor should be augmented to the "tree" graph */
-    if ( jf->keys().size() == 1 ) augment = true;
+    if ( gf->keys().size() == 1 ) augment = true;
     else {
-      const Index u = jf->keys()[0], v = jf->keys()[1],
+      const Index u = gf->keys()[0], v = gf->keys()[1],
                   u_root = D.findSet(u), v_root = D.findSet(v);
       if ( u_root != v_root ) {
         t++; augment = true ;
         D.makeUnionInPlace(u_root, v_root);
       }
     }
-    if ( augment ) At->push_back(jf);
-    else Ac->push_back(jf);
+    if ( augment ) At->push_back(gf);
+    else Ac->push_back(gf);
   }
 
   return boost::tie(At, Ac);
