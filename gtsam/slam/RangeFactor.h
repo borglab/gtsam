@@ -24,6 +24,7 @@ namespace gtsam {
 
 	/**
 	 * Binary factor for a range measurement
+	 * @addtogroup SLAM
 	 */
 	template<class POSE, class POINT>
 	class RangeFactor: public NoiseModelFactor2<POSE, POINT> {

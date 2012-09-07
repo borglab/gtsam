@@ -23,6 +23,10 @@
 
 namespace gtsam {
 
+/*
+ * A Generic Stereo Factor
+ * @addtogroup SLAM
+ */
 template<class POSE, class LANDMARK>
 class GenericStereoFactor: public NoiseModelFactor2<POSE, LANDMARK> {
 private:

@@ -24,6 +24,7 @@ namespace gtsam {
 
 	/**
 	 * Binary factor for a bearing measurement
+	 * @addtogroup SLAM
 	 */
 	template<class POSE, class POINT, class ROTATION = typename POSE::Rotation>
 	class BearingFactor: public NoiseModelFactor2<POSE, POINT> {
