@@ -41,10 +41,11 @@ public:
 	/**
 	 * Constructor
 	 * TODO: Mark argument order standard (keys, measurement, parameters)
-	 * @param z is the 2 dimensional location of point in image (the measurement)
+	 * @param measured is the 2 dimensional location of point in image (the measurement)
 	 * @param model is the standard deviation
-	 * @param j_pose is basically the frame number
-	 * @param j_landmark is the index of the landmark
+	 * @param poseKey is basically the frame number
+	 * @param pointKey is the index of the landmark
+   * @param invDepthKey is the index of inverse depth
 	 * @param K shared pointer to the constant calibration
 	 */
 	InvDepthFactor3(const gtsam::Point2& measured, const gtsam::SharedNoiseModel& model,
@@ -57,6 +58,7 @@ public:
 	/**
 	 * print
 	 * @param s optional string naming the factor
+	 * @param keyFormatter optional formatter useful for printing Symbols
 	 */
 	void print(const std::string& s = "InvDepthFactor3",
 			const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter) const {
