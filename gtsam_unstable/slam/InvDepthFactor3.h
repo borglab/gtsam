@@ -43,7 +43,7 @@ public:
 	 * TODO: Mark argument order standard (keys, measurement, parameters)
 	 * @param measured is the 2 dimensional location of point in image (the measurement)
 	 * @param model is the standard deviation
-	 * @param poseKey is basically the frame number
+	 * @param poseKey is the index of the camera pose
 	 * @param pointKey is the index of the landmark
    * @param invDepthKey is the index of inverse depth
 	 * @param K shared pointer to the constant calibration

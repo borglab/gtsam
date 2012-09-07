@@ -50,10 +50,10 @@ namespace gtsam {
 
 		/**
 		 * Constructor
-		 * @param z is the 2 dimensional location of point in image (the measurement)
+		 * @param measured is the 2 dimensional location of point in image (the measurement)
 		 * @param model is the standard deviation of the measurements
-		 * @param i is basically the frame number
-		 * @param j is the index of the landmark
+		 * @param cameraKey is the index of the camera
+		 * @param landmarkKey is the index of the landmark
 		 */
 		GeneralSFMFactor(const Point2& measured, const SharedNoiseModel& model, Key cameraKey, Key landmarkKey) :
 		  Base(model, cameraKey, landmarkKey), measured_(measured) {}
@@ -72,6 +72,7 @@ namespace gtsam {
 		/**
 		 * print
 		 * @param s optional string naming the factor
+		 * @param keyFormatter optional formatter for printing out Symbols
 		 */
 		void print(const std::string& s = "SFMFactor", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
 			Base::print(s, keyFormatter);
@@ -140,10 +141,11 @@ namespace gtsam {
 
     /**
      * Constructor
-     * @param z is the 2 dimensional location of point in image (the measurement)
+     * @param measured is the 2 dimensional location of point in image (the measurement)
      * @param model is the standard deviation of the measurements
-     * @param i is basically the frame number
-     * @param j is the index of the landmark
+     * @param poseKey is the index of the camera
+     * @param landmarkKey is the index of the landmark
+     * @param calibKey is the index of the calibration
      */
     GeneralSFMFactor2(const Point2& measured, const SharedNoiseModel& model, Key poseKey, Key landmarkKey, Key calibKey) :
       Base(model, poseKey, landmarkKey, calibKey), measured_(measured) {}
@@ -159,6 +161,7 @@ namespace gtsam {
     /**
      * print
      * @param s optional string naming the factor
+     * @param keyFormatter optional formatter useful for printing Symbols
      */
     void print(const std::string& s = "SFMFactor2", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
       Base::print(s, keyFormatter);

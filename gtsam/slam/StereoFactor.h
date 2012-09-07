@@ -70,6 +70,7 @@ public:
 	/**
 	 * print
 	 * @param s optional string naming the factor
+   * @param keyFormatter optional formatter useful for printing Symbols
 	 */
 	void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
 		Base::print(s, keyFormatter);
