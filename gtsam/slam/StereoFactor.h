@@ -23,7 +23,7 @@
 
 namespace gtsam {
 
-/*
+/**
  * A Generic Stereo Factor
  * @addtogroup SLAM
  */
