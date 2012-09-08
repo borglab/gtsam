@@ -91,10 +91,18 @@ namespace gtsam {
 			CliqueStats getStats() const;
 		};
 
-    /** Map from keys to Clique */
+    /** Map from indices to Clique */
     typedef std::deque<sharedClique> Nodes;
 
-	public:
+	protected:
+
+    /** Map from indices to Clique */
+    Nodes nodes_;
+
+    /** Root clique */
+    sharedClique root_;
+
+  public:
 
 		/// @name Standard Constructors
 		/// @{
@@ -160,29 +168,29 @@ namespace gtsam {
 		/** return root clique */
 		const sharedClique& root() const { return root_;	}
 
-		/** find the clique to which key belongs */
-		sharedClique operator[](Index key) const {
-			return nodes_.at(key);
+		/** find the clique that contains the variable with Index j */
+		sharedClique operator[](Index j) const {
+			return nodes_.at(j);
 		}
 
 		/** Gather data on all cliques */
 		CliqueData getCliqueData() const;
 
 		/** return marginal on any variable */
-		typename FactorType::shared_ptr marginalFactor(Index key, Eliminate function) const;
+		typename FactorType::shared_ptr marginalFactor(Index j, Eliminate function) const;
 
 		/**
 		 * return marginal on any variable, as a Bayes Net
 		 * NOTE: this function calls marginal, and then eliminates it into a Bayes Net
 		 * This is more expensive than the above function
 		 */
-		typename BayesNet<CONDITIONAL>::shared_ptr marginalBayesNet(Index key, Eliminate function) const;
+		typename BayesNet<CONDITIONAL>::shared_ptr marginalBayesNet(Index j, Eliminate function) const;
 
 		/** return joint on two variables */
-		typename FactorGraph<FactorType>::shared_ptr joint(Index key1, Index key2, Eliminate function) const;
+		typename FactorGraph<FactorType>::shared_ptr joint(Index j1, Index j2, Eliminate function) const;
 
 		/** return joint on two variables as a BayesNet */
-		typename BayesNet<CONDITIONAL>::shared_ptr jointBayesNet(Index key1, Index key2, Eliminate function) const;
+		typename BayesNet<CONDITIONAL>::shared_ptr jointBayesNet(Index j1, Index j2, Eliminate function) const;
 
 		/**
 		 * Read only with side effects
@@ -211,11 +219,11 @@ namespace gtsam {
 		void removePath(sharedClique clique, BayesNet<CONDITIONAL>& bn, Cliques& orphans);
 
 		/**
-		 * Given a list of keys, turn "contaminated" part of the tree back into a factor graph.
+		 * Given a list of indices, turn "contaminated" part of the tree back into a factor graph.
 		 * Factors and orphans are added to the in/out arguments.
 		 */
 		template<class CONTAINER>
-		void removeTop(const CONTAINER& keys, BayesNet<CONDITIONAL>& bn, Cliques& orphans);
+		void removeTop(const CONTAINER& indices, BayesNet<CONDITIONAL>& bn, Cliques& orphans);
 
 		/**
 		 * Hang a new subtree off of the existing tree.  This finds the appropriate
@@ -243,18 +251,12 @@ namespace gtsam {
 		
 	protected:
 
-    /** Map from keys to Clique */
-		Nodes nodes_;
-
 		/** private helper method for saving the Tree to a text file in GraphViz format */
 		void saveGraph(std::ostream &s, sharedClique clique, const IndexFormatter& indexFormatter,
 				int parentnum = 0) const;
 
 		/** Gather data on a single clique */
 		void getCliqueData(CliqueData& stats, sharedClique clique) const;
-
-		/** Root clique */
-		sharedClique root_;
 
 		/** remove a clique: warning, can result in a forest */
 		void removeClique(sharedClique clique);
