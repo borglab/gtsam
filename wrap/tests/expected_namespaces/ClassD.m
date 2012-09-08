@@ -1,11 +1,9 @@
+%class ClassD, see Doxygen page for details
+%at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
+%
 %-------Constructors-------
 %ClassD()
-% 
-%-------Methods-------
-% 
-%-------Static Methods-------
 %
-%For more detailed documentation on GTSAM go to our Doxygen page, which can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
 classdef ClassD < handle
   properties
     ptr_ClassD = 0

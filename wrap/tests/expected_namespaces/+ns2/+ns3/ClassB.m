@@ -1,11 +1,9 @@
+%class ClassB, see Doxygen page for details
+%at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
+%
 %-------Constructors-------
 %ClassB()
-% 
-%-------Methods-------
-% 
-%-------Static Methods-------
 %
-%For more detailed documentation on GTSAM go to our Doxygen page, which can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
 classdef ClassB < handle
   properties
     ptr_ns2ns3ClassB = 0

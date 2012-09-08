@@ -1,15 +1,17 @@
+%class ClassA, see Doxygen page for details
+%at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
+%
 %-------Constructors-------
 %ClassA()
-% 
+%
 %-------Methods-------
 %memberFunction() : returns double
 %nsArg(ClassB arg) : returns int
 %nsReturn(double q) : returns ns2::ns3::ClassB
-% 
+%
 %-------Static Methods-------
 %afunction() : returns double
 %
-%For more detailed documentation on GTSAM go to our Doxygen page, which can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
 classdef ClassA < handle
   properties
     ptr_ns2ClassA = 0

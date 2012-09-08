@@ -342,6 +342,15 @@ Module::Module(const string& interfacePath,
     printf("parsing stopped at \n%.20s\n",info.stop); 
     throw ParseFailed((int)info.length); 
   } 
+
+  //Explicitly add methods to the classes from parents so it shows in documentation
+  BOOST_FOREACH(Class& cls, classes)
+  {
+    map<string, Method> inhereted = appendInheretedMethods(cls, classes);
+    cls.methods.insert(inhereted.begin(), inhereted.end());
+  }
+
+
 } 
  
 /* ************************************************************************* */ 
@@ -432,6 +441,7 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 			// verify parents 
 			if(!cls.qualifiedParent.empty() && std::find(validTypes.begin(), validTypes.end(), wrap::qualifiedName("::", cls.qualifiedParent)) == validTypes.end()) 
 				throw DependencyMissing(wrap::qualifiedName("::", cls.qualifiedParent), cls.qualifiedName("::")); 
+
 		} 
  
 		// Create type attributes table and check validity 
@@ -472,6 +482,33 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
  
 		wrapperFile.emit(true); 
   } 
+/* ************************************************************************* */ 
+map<string, Method> Module::appendInheretedMethods(const Class& cls, const vector<Class>& classes)
+{
+    map<string, Method> methods;
+    if(!cls.qualifiedParent.empty())
+    {
+        cout << "Class: " << cls.name << " Parent Name: " << cls.qualifiedParent.back() << endl;
+        //Find Class
+        BOOST_FOREACH(const Class& parent, classes)
+        {
+            //We found the class for our parent
+            if(parent.name == cls.qualifiedParent.back())
+            {
+                cout << "Inner class: " << cls.qualifiedParent.back() << endl;
+                Methods inhereted = appendInheretedMethods(parent, classes);
+                methods.insert(inhereted.begin(), inhereted.end());
+            }
+        }
+    }
+    else
+    {
+        cout << "Dead end: " << cls.name << endl;
+        methods.insert(cls.methods.begin(), cls.methods.end());
+    }
+
+    return methods;
+}
  
 /* ************************************************************************* */ 
 	void Module::finish_wrapper(FileWriter& file, const std::vector<std::string>& functionNames) const { 

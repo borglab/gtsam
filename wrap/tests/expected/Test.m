@@ -1,7 +1,10 @@
+%class Test, see Doxygen page for details
+%at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
+%
 %-------Constructors-------
 %Test()
 %Test(double a, Matrix b)
-% 
+%
 %-------Methods-------
 %arg_EigenConstRef(Matrix value) : returns void
 %create_MixedPtrs() : returns pair< Test, SharedTest >
@@ -22,10 +25,7 @@
 %return_string(string value) : returns string
 %return_vector1(Vector value) : returns Vector
 %return_vector2(Vector value) : returns Vector
-% 
-%-------Static Methods-------
 %
-%For more detailed documentation on GTSAM go to our Doxygen page, which can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
 classdef Test < handle
   properties
     ptr_Test = 0

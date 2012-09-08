@@ -338,7 +338,7 @@ namespace gtsam {
 	template<class CONDITIONAL, class CLIQUE>
 	void BayesTree<CONDITIONAL,CLIQUE>::print(const std::string& s, const IndexFormatter& indexFormatter) const {
 		if (root_.use_count() == 0) {
-			printf("WARNING: BayesTree.print encountered a forest...\n");
+            std::cout << "WARNING: BayesTree.print encountered a forest..." << std::endl;
 			return;
 		}
 		std::cout << s << ": clique size == " << size() << ", node size == " << nodes_.size() << std::endl;

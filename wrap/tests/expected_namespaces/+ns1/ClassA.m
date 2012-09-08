@@ -1,11 +1,9 @@
+%class ClassA, see Doxygen page for details
+%at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
+%
 %-------Constructors-------
 %ClassA()
-% 
-%-------Methods-------
-% 
-%-------Static Methods-------
 %
-%For more detailed documentation on GTSAM go to our Doxygen page, which can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
 classdef ClassA < handle
   properties
     ptr_ns1ClassA = 0

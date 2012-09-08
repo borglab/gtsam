@@ -1,7 +1,10 @@
+%class Point2, see Doxygen page for details
+%at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
+%
 %-------Constructors-------
 %Point2()
 %Point2(double x, double y)
-% 
+%
 %-------Methods-------
 %argChar(char a) : returns void
 %argUChar(unsigned char a) : returns void
@@ -10,10 +13,7 @@
 %vectorConfusion() : returns VectorNotEigen
 %x() : returns double
 %y() : returns double
-% 
-%-------Static Methods-------
 %
-%For more detailed documentation on GTSAM go to our Doxygen page, which can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
 classdef Point2 < handle
   properties
     ptr_Point2 = 0

@@ -898,6 +898,24 @@ class VariableIndex {
   void permuteInPlace(const gtsam::Permutation& permutation);
 };
 
+#include <gtsam/inference/BayesTree.h>
+template<CONDITIONAL, CLIQUE>
+virtual class BayesTree {
+
+    //Constructors
+    BayesTree(); 
+
+    //Standard Interface
+    //bool equals(const gtsam::BayesTree<CONDITIONAL, CLIQUE>& other, double tol) const;
+    void print(string s);
+    size_t size();
+    CLIQUE* root() const;
+    void clear();
+    void insert(const CLIQUE* subtree);
+};
+
+typedef gtsam::BayesTree<gtsam::GaussianConditional, gtsam::ISAM2Clique> ISAM2BayesTree;
+
 //*************************************************************************
 // linear
 //*************************************************************************
@@ -1672,6 +1690,20 @@ class ISAM2Params {
   void setEnablePartialRelinearizationCheck(bool enablePartialRelinearizationCheck);
 };
 
+virtual class ISAM2Clique {
+
+    //Constructors
+    ISAM2Clique(const gtsam::GaussianConditional* conditional);
+
+    //Standard Interface
+    Vector gradientContribution() const;
+    gtsam::ISAM2Clique* clone() const;
+    void print(string s);
+
+    void permuteWithInverse(const gtsam::Permutation& inversePermutation);
+    bool permuteSeparatorWithInverse(const gtsam::Permutation& inversePermutation);
+};
+
 class ISAM2Result {
   ISAM2Result();
 
@@ -1683,7 +1715,7 @@ class ISAM2Result {
   size_t getCliques() const;
 };
 
-class ISAM2 {
+virtual class ISAM2  : gtsam::ISAM2BayesTree {
   ISAM2();
   ISAM2(const gtsam::ISAM2Params& params);
 
