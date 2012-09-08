@@ -1,5 +1,5 @@
 function covarianceEllipse(x,P,color)
-% covarianceEllipse: plot a Gaussian as an uncertainty ellipse
+% covarianceEllipse plots a Gaussian as an uncertainty ellipse
 % Based on Maybeck Vol 1, page 366
 % k=2.296 corresponds to 1 std, 68.26% of all probability
 % k=11.82 corresponds to 3 std, 99.74% of all probability

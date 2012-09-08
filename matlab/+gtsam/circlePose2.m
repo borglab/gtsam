@@ -1,5 +1,5 @@
 function values = circlePose2(numPoses, radius, symbolChar)
-% circlePose3: generate a set of poses in a circle. This function
+% circlePose2 generates a set of poses in a circle. This function
 % returns those poses inside a gtsam.Values object, with sequential
 % keys starting from 0. An optional character may be provided, which
 % will be stored in the msb of each key (i.e. gtsam.Symbol).

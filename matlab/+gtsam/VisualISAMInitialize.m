@@ -1,5 +1,5 @@
 function [noiseModels,isam,result,nextPoseIndex] = VisualISAMInitialize(data,truth,options)
-% VisualInitialize: initialize visualSLAM::iSAM object and noise parameters
+% VisualISAMInitialize initializes visualSLAM::iSAM object and noise parameters
 % Authors: Duy Nguyen Ta, Frank Dellaert and Alex Cunningham
 
 %% Initialize iSAM
