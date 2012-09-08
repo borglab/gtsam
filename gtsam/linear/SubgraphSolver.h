@@ -17,8 +17,6 @@
 #include <gtsam/linear/SubgraphPreconditioner.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 
-#include <boost/make_shared.hpp>
-
 namespace gtsam {
 
 class SubgraphSolverParameters : public ConjugateGradientParameters {
