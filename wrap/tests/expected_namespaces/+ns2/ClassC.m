@@ -1,11 +1,9 @@
+%class ClassC, see Doxygen page for details
+%at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
+%
 %-------Constructors-------
 %ClassC()
-% 
-%-------Methods-------
-% 
-%-------Static Methods-------
 %
-%For more detailed documentation on GTSAM go to our Doxygen page, which can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
 classdef ClassC < handle
   properties
     ptr_ns2ClassC = 0

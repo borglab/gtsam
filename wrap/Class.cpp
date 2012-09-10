@@ -58,13 +58,13 @@ void Class::matlab_proxy(const string& toolboxPath, const string& wrapperName,
 	const string parent = qualifiedParent.empty() ? "handle" : matlabBaseName; 
 	comment_fragment(proxyFile);
   proxyFile.oss << "classdef " << name << " < " << parent << endl; 
-  proxyFile.oss << "  properties" << endl; 
-  proxyFile.oss << "    ptr_" << matlabUniqueName << " = 0" << endl; 
-  proxyFile.oss << "  end" << endl; 
-  proxyFile.oss << "  methods" << endl; 
+  proxyFile.oss << "  properties\n";
+  proxyFile.oss << "    ptr_" << matlabUniqueName << " = 0\n";
+  proxyFile.oss << "  end\n";
+  proxyFile.oss << "  methods\n";
  
   // Constructor 
-  proxyFile.oss << "    function obj = " << name << "(varargin)" << endl; 
+  proxyFile.oss << "    function obj = " << name << "(varargin)\n";
   // Special pointer constructors - one in MATLAB to create an object and 
 	// assign a pointer returned from a C++ function.  In turn this MATLAB 
 	// constructor calls a special C++ function that just adds the object to 
@@ -85,7 +85,7 @@ void Class::matlab_proxy(const string& toolboxPath, const string& wrapperName,
     functionNames.push_back(wrapFunctionName); 
   } 
   proxyFile.oss << "      else\n"; 
-	proxyFile.oss << "        error('Arguments do not match any overload of " << matlabQualName << " constructor');" << endl; 
+	proxyFile.oss << "        error('Arguments do not match any overload of " << matlabQualName << " constructor');\n";
 	proxyFile.oss << "      end\n"; 
 	if(!qualifiedParent.empty()) 
 		proxyFile.oss << "      obj = obj@" << matlabBaseName << "(uint64(" << ptr_constructor_key << "), base_ptr);\n"; 
@@ -124,8 +124,8 @@ void Class::matlab_proxy(const string& toolboxPath, const string& wrapperName,
 		wrapperFile.oss << "\n"; 
 	} 
  
-	proxyFile.oss << "  end" << endl; 
-	proxyFile.oss << "end" << endl; 
+	proxyFile.oss << "  end\n";
+	proxyFile.oss << "end\n";
  
   // Close file 
   proxyFile.emit(true); 
@@ -181,7 +181,7 @@ void Class::pointer_constructor_fragments(FileWriter& proxyFile, FileWriter& wra
 	// comes from a C++ return value; this mechanism allows the object to be added 
 	// to a collector in a different wrap module.  If this class has a base class, 
 	// a new pointer to the base class is allocated and returned. 
-  wrapperFile.oss << "void " << collectorInsertFunctionName << "(int nargout, mxArray *out[], int nargin, const mxArray *in[])" << endl; 
+  wrapperFile.oss << "void " << collectorInsertFunctionName << "(int nargout, mxArray *out[], int nargin, const mxArray *in[])\n";
   wrapperFile.oss << "{\n"; 
 	wrapperFile.oss << "  mexAtExit(&_deleteAllObjects);\n"; 
   // Typedef boost::shared_ptr 
@@ -325,70 +325,69 @@ std::string Class::getTypedef() const {
  
 /* ************************************************************************* */ 
 
-void Class::comment_fragment(FileWriter& proxyFile) const
-{
-    proxyFile.oss << "%" << "-------Constructors-------" << endl;
-    BOOST_FOREACH(ArgumentList argList, constructor.args_list) 
-    { 
+void Class::comment_fragment(FileWriter& proxyFile) const {
+  proxyFile.oss << "%class " << name
+      << ", see Doxygen page for details\n";
+  proxyFile.oss
+      << "%at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html\n";
 
-	    string up_name  = boost::to_upper_copy(name);
-        proxyFile.oss << "%" << name << "(";
-        unsigned int i = 0;
-		BOOST_FOREACH(const Argument& arg, argList) 
-		{
-		    if(i != argList.size()-1)
-		        proxyFile.oss << arg.type << " " << arg.name << ", ";
-            else
-		        proxyFile.oss << arg.type << " " << arg.name;
-		    i++;
-        }
-        proxyFile.oss << ")" << endl;
+  if (!constructor.args_list.empty())
+    proxyFile.oss << "%\n%-------Constructors-------\n";
+  BOOST_FOREACH(ArgumentList argList, constructor.args_list) {
+    string up_name = boost::to_upper_copy(name);
+    proxyFile.oss << "%" << name << "(";
+    unsigned int i = 0;
+    BOOST_FOREACH(const Argument& arg, argList) {
+      if (i != argList.size() - 1)
+        proxyFile.oss << arg.type << " " << arg.name << ", ";
+      else
+        proxyFile.oss << arg.type << " " << arg.name;
+      i++;
     }
+    proxyFile.oss << ")\n";
+  }
 
-	proxyFile.oss << "% " << "" << endl;
-    proxyFile.oss << "%" << "-------Methods-------" << endl;
-    BOOST_FOREACH(const Methods::value_type& name_m, methods) { 
-		const Method& m = name_m.second; 
-        BOOST_FOREACH(ArgumentList argList, m.argLists) 
-        { 
-	        string up_name  = boost::to_upper_copy(m.name);
-            proxyFile.oss << "%" << m.name << "(";
-            unsigned int i = 0;
-		    BOOST_FOREACH(const Argument& arg, argList) 
-		    {
-		        if(i != argList.size()-1)
-		            proxyFile.oss << arg.type << " " << arg.name << ", ";
-                else
-		            proxyFile.oss << arg.type << " " << arg.name;
-		        i++;
-            }
-                proxyFile.oss << ") : returns " << m.returnVals[0].return_type(false, m.returnVals[0].pair) << endl; 
-        }
+  if (!methods.empty())
+    proxyFile.oss << "%\n%-------Methods-------\n";
+  BOOST_FOREACH(const Methods::value_type& name_m, methods) {
+    const Method& m = name_m.second;
+    BOOST_FOREACH(ArgumentList argList, m.argLists) {
+      string up_name = boost::to_upper_copy(m.name);
+      proxyFile.oss << "%" << m.name << "(";
+      unsigned int i = 0;
+      BOOST_FOREACH(const Argument& arg, argList) {
+        if (i != argList.size() - 1)
+          proxyFile.oss << arg.type << " " << arg.name << ", ";
+        else
+          proxyFile.oss << arg.type << " " << arg.name;
+        i++;
+      }
+      proxyFile.oss << ") : returns "
+          << m.returnVals[0].return_type(false, m.returnVals[0].pair) << endl;
     }
+  }
 
-	proxyFile.oss << "% " << "" << endl;
-    proxyFile.oss << "%" << "-------Static Methods-------" << endl;
-    BOOST_FOREACH(const StaticMethods::value_type& name_m, static_methods) { 
-		const StaticMethod& m = name_m.second; 
-        BOOST_FOREACH(ArgumentList argList, m.argLists) 
-        { 
-	        string up_name  = boost::to_upper_copy(m.name);
-            proxyFile.oss << "%" << m.name << "(";
-            unsigned int i = 0;
-		    BOOST_FOREACH(const Argument& arg, argList) 
-		    {
-		        if(i != argList.size()-1)
-		            proxyFile.oss << arg.type << " " << arg.name << ", ";
-                else
-		            proxyFile.oss << arg.type << " " << arg.name;
-		        i++;
-            }
+  if (!static_methods.empty())
+    proxyFile.oss << "%\n%-------Static Methods-------\n";
+  BOOST_FOREACH(const StaticMethods::value_type& name_m, static_methods) {
+    const StaticMethod& m = name_m.second;
+    BOOST_FOREACH(ArgumentList argList, m.argLists) {
+      string up_name = boost::to_upper_copy(m.name);
+      proxyFile.oss << "%" << m.name << "(";
+      unsigned int i = 0;
+      BOOST_FOREACH(const Argument& arg, argList) {
+        if (i != argList.size() - 1)
+          proxyFile.oss << arg.type << " " << arg.name << ", ";
+        else
+          proxyFile.oss << arg.type << " " << arg.name;
+        i++;
+      }
 
-                proxyFile.oss << ") : returns " << m.returnVals[0].return_type(false, m.returnVals[0].pair) << endl; 
-        }
+      proxyFile.oss << ") : returns "
+          << m.returnVals[0].return_type(false, m.returnVals[0].pair) << endl;
     }
+  }
 
-	proxyFile.oss << "%" << "" << endl;
-	proxyFile.oss << "%" << "For more detailed documentation on GTSAM go to our Doxygen page, which can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html" << endl;
+  proxyFile.oss << "%\n";
 }
 /* ************************************************************************* */ 

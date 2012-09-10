@@ -1,5 +1,5 @@
 function [data,truth] = VisualISAMGenerateData(options)
-% VisualISAMGenerateData: create data for viusalSLAM::iSAM examples
+% VisualISAMGenerateData creates data for viusalSLAM::iSAM examples
 % Authors: Duy Nguyen Ta and Frank Dellaert
 
 %% Generate simulated data

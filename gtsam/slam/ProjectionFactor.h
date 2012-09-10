@@ -28,6 +28,7 @@ namespace gtsam {
 	/**
 	 * Non-linear factor for a constraint derived from a 2D measurement. The calibration is known here.
 	 * i.e. the main building block for visual SLAM.
+	 * @addtogroup SLAM
 	 */
 	template<class POSE, class LANDMARK, class CALIBRATION = Cal3_S2>
 	class GenericProjectionFactor: public NoiseModelFactor2<POSE, LANDMARK> {
@@ -55,10 +56,10 @@ namespace gtsam {
 		/**
 		 * Constructor
 		 * TODO: Mark argument order standard (keys, measurement, parameters)
-		 * @param z is the 2 dimensional location of point in image (the measurement)
+		 * @param measured is the 2 dimensional location of point in image (the measurement)
 		 * @param model is the standard deviation
-		 * @param j_pose is basically the frame number
-		 * @param j_landmark is the index of the landmark
+		 * @param poseKey is the index of the camera
+		 * @param pointKey is the index of the landmark
 		 * @param K shared pointer to the constant calibration
 		 */
 		GenericProjectionFactor(const Point2& measured, const SharedNoiseModel& model,
@@ -77,6 +78,7 @@ namespace gtsam {
 		/**
 		 * print
 		 * @param s optional string naming the factor
+	   * @param keyFormatter optional formatter useful for printing Symbols
 		 */
 		void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
       std::cout << s << "GenericProjectionFactor, z = ";

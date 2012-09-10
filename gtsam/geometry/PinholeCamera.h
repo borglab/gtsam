@@ -62,6 +62,7 @@ namespace gtsam {
 
     /**
      * Create a level camera at the given 2D pose and height
+     * @param K the calibration
      * @param pose2 specifies the location and viewing direction
      * (theta 0 = looking in direction of positive X axis)
      * @param height camera height
@@ -290,6 +291,8 @@ namespace gtsam {
     /**
      * Calculate range to a landmark
      * @param point 3D location of landmark
+     * @param H1 the optionally computed Jacobian with respect to pose
+     * @param H2 the optionally computed Jacobian with respect to the landmark
      * @return range (double)
      */
     double range(const Point3& point,
@@ -308,6 +311,8 @@ namespace gtsam {
     /**
      * Calculate range to another pose
      * @param pose Other SO(3) pose
+     * @param H1 the optionally computed Jacobian with respect to pose
+     * @param H2 the optionally computed Jacobian with respect to the landmark
      * @return range (double)
      */
     double range(const Pose3& pose,
@@ -326,6 +331,8 @@ namespace gtsam {
     /**
      * Calculate range to another camera
      * @param camera Other camera
+     * @param H1 the optionally computed Jacobian with respect to pose
+     * @param H2 the optionally computed Jacobian with respect to the landmark
      * @return range (double)
      */
     template<class CalibrationB>
@@ -351,6 +358,8 @@ namespace gtsam {
     /**
      * Calculate range to another camera
      * @param camera Other camera
+     * @param H1 the optionally computed Jacobian with respect to pose
+     * @param H2 the optionally computed Jacobian with respect to the landmark
      * @return range (double)
      */
     double range(const CalibratedCamera& camera,

@@ -156,6 +156,7 @@ namespace gtsam {
 
 			/**
 			 * A Gaussian noise model created by specifying a covariance matrix.
+			 * @param covariance The square covariance Matrix
 			 * @param smart check if can be simplified to derived class
 			 */
 			static shared_ptr Covariance(const Matrix& covariance, bool smart = true);
@@ -263,6 +264,7 @@ namespace gtsam {
 			/**
 			 * A diagonal noise model created by specifying a Vector of variances, i.e.
 			 * i.e. the diagonal of the covariance matrix.
+			 * @param variances A vector containing the variances of this noise model
 			 * @param smart check if can be simplified to derived class
 			 */
 			static shared_ptr Variances(const Vector& variances, bool smart = true);
@@ -492,6 +494,8 @@ namespace gtsam {
 
 			/**
 			 * An isotropic noise model created by specifying a variance = sigma^2.
+			 * @param dim The dimension of this noise model
+			 * @param variance The variance of this noise model
 			 * @param smart check if can be simplified to derived class
 			 */
 			static shared_ptr Variance(size_t dim, double variance, bool smart = true);

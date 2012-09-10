@@ -1,14 +1,16 @@
+%class Point3, see Doxygen page for details
+%at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
+%
 %-------Constructors-------
 %Point3(double x, double y, double z)
-% 
+%
 %-------Methods-------
 %norm() : returns double
-% 
+%
 %-------Static Methods-------
 %StaticFunctionRet(double z) : returns Point3
 %staticFunction() : returns double
 %
-%For more detailed documentation on GTSAM go to our Doxygen page, which can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
 classdef Point3 < handle
   properties
     ptr_Point3 = 0

@@ -1,5 +1,5 @@
 function [graph,initial] = load3D(filename,model,successive,N)
-% load3D: read TORO 3D pose graph
+% load3D reads a TORO-style 3D pose graph
 % cannot read noise model from file yet, uses specified model
 % if [successive] is tru, constructs initial estimate from odometry
 

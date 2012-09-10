@@ -94,6 +94,7 @@ namespace gtsam {
 		/**
 		 * Create a level camera at the given 2D pose and height
 		 * @param pose2 specifies the location and viewing direction
+		 * @param height specifies the height of the camera (along the positive Z-axis)
 		 * (theta 0 = looking in direction of positive X axis)
 		 */
 		static CalibratedCamera Level(const Pose2& pose2, double height);
@@ -126,8 +127,9 @@ namespace gtsam {
 		/**
 		 * This function receives the camera pose and the landmark location and
 		 * returns the location the point is supposed to appear in the image
-		 * @param camera the CalibratedCamera
 		 * @param point a 3D point to be projected
+		 * @param D_intrinsic_pose the optionally computed Jacobian with respect to pose
+		 * @param D_intrinsic_point the optionally computed Jacobian with respect to the 3D point
 		 * @return the intrinsic coordinates of the projected point
 		 */
 		Point2 project(const Point3& point,
@@ -150,6 +152,8 @@ namespace gtsam {
     /**
      * Calculate range to a landmark
      * @param point 3D location of landmark
+     * @param H1 optionally computed Jacobian with respect to pose
+     * @param H2 optionally computed Jacobian with respect to the 3D point
      * @return range (double)
      */
     double range(const Point3& point,
@@ -160,6 +164,8 @@ namespace gtsam {
     /**
      * Calculate range to another pose
      * @param pose Other SO(3) pose
+     * @param H1 optionally computed Jacobian with respect to pose
+     * @param H2 optionally computed Jacobian with respect to the 3D point
      * @return range (double)
      */
     double range(const Pose3& pose,
@@ -170,6 +176,8 @@ namespace gtsam {
     /**
      * Calculate range to another camera
      * @param camera Other camera
+     * @param H1 optionally computed Jacobian with respect to pose
+     * @param H2 optionally computed Jacobian with respect to the 3D point
      * @return range (double)
      */
     double range(const CalibratedCamera& camera,

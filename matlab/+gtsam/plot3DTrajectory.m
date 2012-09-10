@@ -1,5 +1,7 @@
 function plot3DTrajectory(values,linespec,frames,scale,marginals)
-% plot3DTrajectory
+% plot3DTrajectory plots a 3D trajectory
+% plot3DTrajectory(values,linespec,frames,scale,marginals)
+
 if ~exist('scale','var') || isempty(scale), scale=1; end
 if ~exist('frames','var'), scale=[]; end
 

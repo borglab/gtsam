@@ -1,5 +1,5 @@
 function plotPose3(pose, P, axisLength)
-% plotPose3: show a Pose, possibly with covariance matrix
+% plotPose3 shows a Pose, possibly with covariance matrix
 if nargin<3,axisLength=0.1;end
 
 % get rotation and translation (center)

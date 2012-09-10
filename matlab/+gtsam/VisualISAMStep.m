@@ -1,5 +1,5 @@
 function [isam,result,nextPoseIndex] = VisualISAMStep(data,noiseModels,isam,result,truth,nextPoseIndex)
-% VisualISAMStep: execute one update step of visualSLAM::iSAM object
+% VisualISAMStep executes one update step of visualSLAM::iSAM object
 % Authors: Duy Nguyen Ta and Frank Dellaert
 
 % iSAM expects us to give it a new set of factors 

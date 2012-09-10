@@ -23,6 +23,10 @@
 
 namespace gtsam {
 
+/**
+ * A Generic Stereo Factor
+ * @addtogroup SLAM
+ */
 template<class POSE, class LANDMARK>
 class GenericStereoFactor: public NoiseModelFactor2<POSE, LANDMARK> {
 private:
@@ -66,6 +70,7 @@ public:
 	/**
 	 * print
 	 * @param s optional string naming the factor
+   * @param keyFormatter optional formatter useful for printing Symbols
 	 */
 	void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
 		Base::print(s, keyFormatter);

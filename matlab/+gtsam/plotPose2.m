@@ -1,5 +1,5 @@
 function plotPose2(pose,color,P,axisLength)
-% plotPose2: show a Pose2, possibly with covariance matrix
+% plotPose2 shows a Pose2, possibly with covariance matrix
 if nargin<4,axisLength=0.1;end
 
 plot(pose.x,pose.y,[color '*']);

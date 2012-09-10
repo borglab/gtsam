@@ -35,6 +35,7 @@ namespace wrap {
 struct Module {
 
 	typedef std::map<std::string, GlobalFunction> GlobalFunctions;
+	typedef std::map<std::string, Method> Methods;
 
   std::string name;         ///< module name
   std::vector<Class> classes; ///< list of classes
@@ -48,6 +49,9 @@ struct Module {
   Module(const std::string& interfacePath,
 	 const std::string& moduleName,
 	 bool enable_verbose=true);
+
+  //Recursive method to append all methods inhereted from parent classes
+  std::map<std::string, Method> appendInheretedMethods(const Class& cls, const std::vector<Class>& classes);
 
   /// MATLAB code generation:
   void matlab_code(

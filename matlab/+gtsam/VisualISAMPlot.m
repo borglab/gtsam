@@ -1,5 +1,5 @@
 function VisualISAMPlot(truth, data, isam, result, options)
-% VisualISAMPlot: plot current state of ISAM2 object
+% VisualISAMPlot plots current state of ISAM2 object
 % Authors: Duy Nguyen Ta and Frank Dellaert
 
 h=gca;
