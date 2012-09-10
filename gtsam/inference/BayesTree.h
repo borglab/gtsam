@@ -248,7 +248,14 @@ namespace gtsam {
 		sharedClique insert(const sharedConditional& clique,
 				std::list<sharedClique>& children, bool isRootClique = false);
 
-		
+		/**
+		 * Create a clone of this object as a shared pointer
+		 * Necessary for inheritance in matlab interface
+		 */
+		virtual shared_ptr clone() const {
+			return shared_ptr(new This(*this));
+		}
+
 	protected:
 
 		/** private helper method for saving the Tree to a text file in GraphViz format */

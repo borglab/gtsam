@@ -52,14 +52,16 @@
  *   Using classes defined in other modules
  *     - If you are using a class 'OtherClass' not wrapped in this definition file, add "class OtherClass;" to avoid a dependency error
  *   Virtual inheritance
- *     - Specify fully-qualified base classes, i.e. "virtual class Derived : module::Base {"
- *     - Mark with 'virtual' keyword, e.g. "virtual class Base {", and also "virtual class Derived : module::Base {"
- *     - Forward declarations must also be marked virtual, e.g. "virtual class module::Base;" and
- *       also "virtual class module::Derived;"
+ *     - Specify fully-qualified base classes, i.e. "virtual class Derived : ns::Base {" where "ns" is the namespace
+ *     - Mark with 'virtual' keyword, e.g. "virtual class Base {", and also "virtual class Derived : ns::Base {"
+ *     - Forward declarations must also be marked virtual, e.g. "virtual class ns::Base;" and
+ *       also "virtual class ns::Derived;"
  *     - Pure virtual (abstract) classes should list no constructors in this interface file
  *     - Virtual classes must have a clone() function in C++ (though it does not have to be included
  *       in the MATLAB interface).  clone() will be called whenever an object copy is needed, instead
  *       of using the copy constructor (which is used for non-virtual objects).
+ *     - Signature of clone function - will be called virtually, so must appear at least at the top of the inheritance tree
+ *       		virtual boost::shared_ptr<CLASS_NAME> clone() const;
  *   Templates
  *     - Basic templates are supported either with an explicit list of types to instantiate,
  *       e.g. template<T = {gtsam::Pose2, gtsam::Rot2, gtsam::Point3}> class Class1 { ... };
@@ -87,7 +89,7 @@
     //Module.cpp needs to be changed to allow lowercase classnames
     class vector
     {
-        //Capcaity
+        //Capacity
         size_t size() const;
         size_t max_size() const;
         void resize(size_t sz, T c = T());
@@ -917,6 +919,38 @@ virtual class BayesTree {
 
 typedef gtsam::BayesTree<gtsam::GaussianConditional, gtsam::ISAM2Clique> ISAM2BayesTree;
 
+template<CONDITIONAL>
+virtual class BayesTreeClique {
+  BayesTreeClique();
+  BayesTreeClique(CONDITIONAL* conditional);
+//  BayesTreeClique(const std::pair<typename ConditionalType::shared_ptr, typename ConditionalType::FactorType::shared_ptr>& result) : Base(result) {}
+
+  bool equals(const This& other, double tol) const;
+  void print(string s) const;
+  void printTree() const; // Default indent of ""
+  void printTree(string indent) const;
+
+  CONDITIONAL* conditional() const;
+  bool isRoot() const;
+  size_t treeSize() const;
+//  const std::list<derived_ptr>& children() const { return children_; }
+//  derived_ptr parent() const { return parent_.lock(); }
+
+  void permuteWithInverse(const gtsam::Permutation& inversePermutation);
+  bool permuteSeparatorWithInverse(const gtsam::Permutation& inversePermutation);
+
+  // FIXME: need wrapped versions graphs, BayesNet
+//  BayesNet<ConditionalType> shortcut(derived_ptr root, Eliminate function) const;
+//  FactorGraph<FactorType> marginal(derived_ptr root, Eliminate function) const;
+//  FactorGraph<FactorType> joint(derived_ptr C2, derived_ptr root, Eliminate function) const;
+
+  /**
+   * This deletes the cached shortcuts of all cliques (subtree) below this clique.
+   * This is performed when the bayes tree is modified.
+   */
+  void deleteCachedShorcuts();
+};
+
 //*************************************************************************
 // linear
 //*************************************************************************
@@ -1237,7 +1271,10 @@ class Errors {
 //Non-Class functions for Errors
 //double dot(const gtsam::Errors& A, const gtsam::Errors& b);
 
-class GaussianISAM {
+typedef gtsam::BayesTreeClique<gtsam::GaussianConditional> GaussianBayesTreeClique;
+typedef gtsam::BayesTree<gtsam::GaussianConditional, gtsam::GaussianBayesTreeClique> GaussianBayesTree;
+
+virtual class GaussianISAM : gtsam::GaussianBayesTree {
   //Constructor
   GaussianISAM();
 
