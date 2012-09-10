@@ -914,6 +914,7 @@ virtual class BayesTree {
     size_t size();
     CLIQUE* root() const;
     void clear();
+    void deleteCachedShorcuts();
     void insert(const CLIQUE* subtree);
 };
 
@@ -944,10 +945,6 @@ virtual class BayesTreeClique {
 //  FactorGraph<FactorType> marginal(derived_ptr root, Eliminate function) const;
 //  FactorGraph<FactorType> joint(derived_ptr C2, derived_ptr root, Eliminate function) const;
 
-  /**
-   * This deletes the cached shortcuts of all cliques (subtree) below this clique.
-   * This is performed when the bayes tree is modified.
-   */
   void deleteCachedShorcuts();
 };
 
