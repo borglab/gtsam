@@ -220,16 +220,14 @@ TEST( DiscreteFactorGraph, testMPE_Darwiche09book_p244)
 //	DiscreteConditional::shared_ptr root = chordal->back();
 //	EXPECT_DOUBLES_EQUAL(0.4, (*root)(*actualMPE), 1e-9);
 
-#ifdef OLD
 	// Let us create the Bayes tree here, just for fun, because we don't use it now
 	typedef JunctionTree<DiscreteFactorGraph> JT;
 	GenericMultifrontalSolver<DiscreteFactor, JT> solver(graph);
-	JT::BayesTree::shared_ptr bayesTree = solver.eliminate(&EliminateDiscrete);
-	bayesTree->print("Bayes Tree");
+	BayesTree<DiscreteConditional>::shared_ptr bayesTree = solver.eliminate(&EliminateDiscrete);
+//  bayesTree->print("Bayes Tree");
+	EXPECT_LONGS_EQUAL(2,bayesTree->size());
 
-	tictoc_print();
-}
-
+#ifdef OLD
 // Create the elimination tree manually
 VariableIndex structure(graph);
 typedef EliminationTree<DiscreteFactor> ETree;
