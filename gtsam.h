@@ -875,7 +875,7 @@ class SymbolicMultifrontalSolver {
 class VariableIndex {
   // Standard Constructors and Named Constructors
   VariableIndex();
-  // FIXME: Handle templates somehow
+  // TODO: Templetize constructor when wrap supports it
   //template<T = {gtsam::FactorGraph}>
   //VariableIndex(const T& factorGraph, size_t nVariables);
   //VariableIndex(const T& factorGraph);
@@ -906,8 +906,9 @@ virtual class BayesTree {
     BayesTree(); 
 
     //Standard Interface
-    //bool equals(const gtsam::BayesTree<CONDITIONAL, CLIQUE>& other, double tol) const;
+    bool equals(const This& other, double tol) const;
     void print(string s);
+		//size_t findParentClique(const gtsam::IndexVector& parents) const;
     size_t size();
     CLIQUE* root() const;
     void clear();
