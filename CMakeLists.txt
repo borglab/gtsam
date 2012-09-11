@@ -38,7 +38,7 @@ endif()
 
 # Configurable Options
 option(GTSAM_BUILD_TESTS                 "Enable/Disable building of tests"          ON)
-option(GTSAM_BUILD_TIMING                "Enable/Disable building of timing scripts" ON)
+#option(GTSAM_BUILD_TIMING                "Enable/Disable building of timing scripts" ON) # These do not currently work
 option(GTSAM_BUILD_EXAMPLES              "Enable/Disable building of examples"       ON)
 if(GTSAM_UNSTABLE_AVAILABLE)
     option(GTSAM_BUILD_UNSTABLE              "Enable/Disable libgtsam_unstable"          ON)
@@ -187,7 +187,7 @@ set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-dev (>= 1.43)") #Example: "libc6 (>= 
 message(STATUS "===============================================================")
 message(STATUS "================  Configuration Options  ======================")
 message(STATUS "Build flags                                               ")
-print_config_flag(${GTSAM_BUILD_TIMING}                "Build Timing scripts           ")
+#print_config_flag(${GTSAM_BUILD_TIMING}                "Build Timing scripts           ")
 print_config_flag(${GTSAM_BUILD_EXAMPLES}              "Build Examples                 ")
 print_config_flag(${GTSAM_BUILD_TESTS}                 "Build Tests                    ")
 if (DOXYGEN_FOUND)
