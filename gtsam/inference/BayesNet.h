@@ -108,6 +108,10 @@ public:
   /** print statistics */
   void printStats(const std::string& s = "") const;
 
+  /** save dot graph */
+  void saveGraph(const std::string &s, const IndexFormatter& indexFormatter =
+      DefaultIndexFormatter) const;
+
   /** return keys in reverse topological sort order, i.e., elimination order */
   FastList<Index> ordering() const;
 

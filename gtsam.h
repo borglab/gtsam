@@ -779,6 +779,7 @@ virtual class BayesNet {
 	// Standard interface
 	size_t size() const;
 	void printStats(string s) const;
+  void saveGraph(string s) const;
 	CONDITIONAL* front() const;
 	CONDITIONAL* back() const;
 	void push_back(CONDITIONAL* conditional);

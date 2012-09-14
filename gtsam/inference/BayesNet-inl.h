@@ -43,6 +43,15 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class CONDITIONAL>
+  bool BayesNet<CONDITIONAL>::equals(const BayesNet& cbn, double tol) const {
+    if (size() != cbn.size())
+      return false;
+    return std::equal(conditionals_.begin(), conditionals_.end(),
+        cbn.conditionals_.begin(), equals_star<CONDITIONAL>(tol));
+  }
+
+  /* ************************************************************************* */
+  template<class CONDITIONAL>
   void BayesNet<CONDITIONAL>::printStats(const std::string& s) const {
 
     const size_t n = conditionals_.size();
@@ -60,11 +69,23 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class CONDITIONAL>
-  bool BayesNet<CONDITIONAL>::equals(const BayesNet& cbn, double tol) const {
-    if (size() != cbn.size())
-      return false;
-    return std::equal(conditionals_.begin(), conditionals_.end(),
-        cbn.conditionals_.begin(), equals_star<CONDITIONAL>(tol));
+  void BayesNet<CONDITIONAL>::saveGraph(const std::string &s,
+      const IndexFormatter& indexFormatter) const {
+    std::ofstream of(s.c_str());
+    of << "digraph G{\n";
+
+  BOOST_FOREACH(typename CONDITIONAL::shared_ptr conditional, conditionals_) {
+    typename CONDITIONAL::Frontals frontals = conditional->frontals();
+    Index me = frontals.front();
+//      of << me << std::endl;
+    typename CONDITIONAL::Parents parents = conditional->parents();
+    BOOST_FOREACH(Index p, parents)
+      of << p << "->" << me << std::endl;
+  }
+
+
+    of << "}";
+    of.close();
   }
 
   /* ************************************************************************* */

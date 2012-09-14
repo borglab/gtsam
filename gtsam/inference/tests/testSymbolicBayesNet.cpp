@@ -189,6 +189,20 @@ TEST_UNSAFE(SymbolicBayesNet, popLeaf) {
 }
 
 /* ************************************************************************* */
+TEST(SymbolicBayesNet, saveGraph) {
+  SymbolicBayesNet bn;
+  bn += IndexConditional::shared_ptr(new IndexConditional(_A_, _B_));
+  std::vector<Index> keys;
+  keys.push_back(_B_);
+  keys.push_back(_C_);
+  keys.push_back(_D_);
+  bn += IndexConditional::shared_ptr(new IndexConditional(keys,2));
+  bn += IndexConditional::shared_ptr(new IndexConditional(_D_));
+
+  bn.saveGraph("SymbolicBayesNet.dot");
+}
+
+/* ************************************************************************* */
 int main() {
 	TestResult tr;
 	return TestRegistry::runAllTests(tr);
