@@ -802,8 +802,9 @@ virtual class BayesTree {
     bool equals(const This& other, double tol) const;
 
     //Standard Interface
-		//size_t findParentClique(const gtsam::IndexVector& parents) const;
+	//size_t findParentClique(const gtsam::IndexVector& parents) const;
     size_t size();
+    void saveGraph(string s) const;
     CLIQUE* root() const;
     void clear();
     void deleteCachedShorcuts();
@@ -859,7 +860,9 @@ virtual class SymbolicBayesNet  : gtsam::SymbolicBayesNetBase {
 };
 
 #include <gtsam/inference/SymbolicFactorGraph.h>
-class SymbolicBayesTree {
+typedef gtsam::BayesTreeClique<gtsam::IndexConditional> SymbolicBayesTreeClique;
+typedef gtsam::BayesTree<gtsam::IndexConditional, gtsam::SymbolicBayesTreeClique> SymbolicBayesTreeBase;
+virtual class SymbolicBayesTree : gtsam::SymbolicBayesTreeBase {
   // Standard Constructors and Named Constructors
   SymbolicBayesTree();
   SymbolicBayesTree(const gtsam::SymbolicBayesNet& bn);
@@ -867,15 +870,8 @@ class SymbolicBayesTree {
   // FIXME: wrap needs to understand std::list
   //SymbolicBayesTree(const gtsam::SymbolicBayesNet& bayesNet, std::list<gtsam::SymbolicBayesTree> subtrees);
 
-  // Testable
-  void print(string s) const;
-  bool equals(const gtsam::SymbolicBayesTree& other, double tol) const;
-
   // Standard interface
   size_t findParentClique(const gtsam::IndexConditional& parents) const;
-  size_t size() const;
-  void saveGraph(string s) const;
-  void clear();
   // TODO: There are many other BayesTree member functions which might be of use
 };
 
@@ -1120,6 +1116,16 @@ double determinant(const gtsam::GaussianBayesNet& bayesNet);
 gtsam::VectorValues gradient(const gtsam::GaussianBayesNet& bayesNet, const gtsam::VectorValues& x0);
 void gradientAtZero(const gtsam::GaussianBayesNet& bayesNet, const gtsam::VectorValues& g);*/
 
+#include <gtsam/linear/GaussianBayesTree.h>
+typedef gtsam::BayesTreeClique<gtsam::GaussianConditional> GaussianBayesTreeClique;
+typedef gtsam::BayesTree<gtsam::GaussianConditional, gtsam::GaussianBayesTreeClique> GaussianBayesTreeBase;
+virtual class GaussianBayesTree : gtsam::GaussianBayesTreeBase {
+  // Standard Constructors and Named Constructors
+	GaussianBayesTree();
+	GaussianBayesTree(const gtsam::GaussianBayesNet& bn);
+	GaussianBayesTree(const gtsam::GaussianBayesNet& other);
+};
+
 virtual class GaussianFactor {
 	void print(string s) const;
 	bool equals(const gtsam::GaussianFactor& lf, double tol) const;
@@ -1276,9 +1282,6 @@ class Errors {
 
 //Non-Class functions for Errors
 //double dot(const gtsam::Errors& A, const gtsam::Errors& b);
-
-typedef gtsam::BayesTreeClique<gtsam::GaussianConditional> GaussianBayesTreeClique;
-typedef gtsam::BayesTree<gtsam::GaussianConditional, gtsam::GaussianBayesTreeClique> GaussianBayesTree;
 
 virtual class GaussianISAM : gtsam::GaussianBayesTree {
   //Constructor
