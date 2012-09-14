@@ -49,12 +49,17 @@ classdef thinTree
         % Function to return the ID's of a node's parents
         function ids = getParents(obj, nodeID)
             % Initialisation
-            ids = zeros(1,obj.w);
             node = nodeID;
-            % Loop on w, the number of parents associated to one node
-            for i=1:obj.w
-                ids(i) = floor(node/2);
-                node = floor(node/2);
+            depthOfNode = obj.getNodeDepth(nodeID);
+            if depthOfNode == 1
+                ids = 1;
+            else
+                ids = zeros(1,min(obj.w, depthOfNode-1));
+                % Loop on w, the number of parents associated to one node
+                for i=1:min(obj.w, depthOfNode-1)
+                    ids(i) = floor(node/2);
+                    node = floor(node/2);
+                end
             end
             % Return
             return
@@ -73,6 +78,11 @@ classdef thinTree
         
         function output = getNumberOfElements(obj)
             output = 2^obj.depth - 1;
+        end
+        
+        % Returns the depth of a node
+        function output = getNodeDepth(obj, nodeID)
+            output = ceil(log(nodeID+1)/log(2));
         end
     end     % Methods
 end     % Class

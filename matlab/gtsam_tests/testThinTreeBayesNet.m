@@ -17,7 +17,11 @@
 %  * @author Jean-Guillaume Durand
 %  */
 
+%% Clean the workspace
+clc, clear all, close all;
+
 %% Run the tests
 import gtsam.*
-bayesNet = thinTreeBayesNet(3,2);
+[bayesNet tree] = thinTreeBayesNet(4,2);
 EQUALITY('7 = bayesNet.size', 7, bayesNet.size);
+bayesNet.saveGraph('thinTreeBayesNet.dot');
