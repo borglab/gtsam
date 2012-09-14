@@ -769,29 +769,90 @@ class IndexConditional {
   void permuteWithInverse(const gtsam::Permutation& inversePermutation);
 };
 
+#include <gtsam/inference/BayesNet.h>
+template<CONDITIONAL>
+virtual class BayesNet {
+	// Testable
+	void print(string s) const;
+	bool equals(const This& other, double tol) const;
+
+	// Standard interface
+	size_t size() const;
+	void printStats(string s) const;
+	CONDITIONAL* front() const;
+	CONDITIONAL* back() const;
+	void push_back(CONDITIONAL* conditional);
+	void push_front(CONDITIONAL* conditional);
+	void push_back(This& conditional);
+	void push_front(This& conditional);
+	void pop_front();
+	void permuteWithInverse(const gtsam::Permutation& inversePermutation);
+	bool permuteSeparatorWithInverse(const gtsam::Permutation& inversePermutation);
+};
+
+#include <gtsam/inference/BayesTree.h>
+template<CONDITIONAL, CLIQUE>
+virtual class BayesTree {
+
+    //Constructors
+    BayesTree();
+
+    // Testable
+    void print(string s);
+    bool equals(const This& other, double tol) const;
+
+    //Standard Interface
+		//size_t findParentClique(const gtsam::IndexVector& parents) const;
+    size_t size();
+    CLIQUE* root() const;
+    void clear();
+    void deleteCachedShorcuts();
+    void insert(const CLIQUE* subtree);
+};
+
+template<CONDITIONAL>
+virtual class BayesTreeClique {
+  BayesTreeClique();
+  BayesTreeClique(CONDITIONAL* conditional);
+//  BayesTreeClique(const std::pair<typename ConditionalType::shared_ptr, typename ConditionalType::FactorType::shared_ptr>& result) : Base(result) {}
+
+  bool equals(const This& other, double tol) const;
+  void print(string s) const;
+  void printTree() const; // Default indent of ""
+  void printTree(string indent) const;
+
+  CONDITIONAL* conditional() const;
+  bool isRoot() const;
+  size_t treeSize() const;
+//  const std::list<derived_ptr>& children() const { return children_; }
+//  derived_ptr parent() const { return parent_.lock(); }
+
+  void permuteWithInverse(const gtsam::Permutation& inversePermutation);
+  bool permuteSeparatorWithInverse(const gtsam::Permutation& inversePermutation);
+
+  // FIXME: need wrapped versions graphs, BayesNet
+//  BayesNet<ConditionalType> shortcut(derived_ptr root, Eliminate function) const;
+//  FactorGraph<FactorType> marginal(derived_ptr root, Eliminate function) const;
+//  FactorGraph<FactorType> joint(derived_ptr C2, derived_ptr root, Eliminate function) const;
+
+  void deleteCachedShorcuts();
+};
+
 #include <gtsam/inference/SymbolicFactorGraph.h>
-class SymbolicBayesNet {
+typedef gtsam::BayesNet<gtsam::IndexConditional> SymbolicBayesNetBase;
+virtual class SymbolicBayesNet  : gtsam::SymbolicBayesNetBase {
   // Standard Constructors and Named Constructors
   SymbolicBayesNet();
   SymbolicBayesNet(const gtsam::SymbolicBayesNet& bn);
   SymbolicBayesNet(const gtsam::IndexConditional* conditional);
 
-  // Testable
-  void print(string s) const;
-  bool equals(const gtsam::SymbolicBayesNet& other, double tol) const;
-
   // Standard interface
-  size_t size() const;
-  void push_back(const gtsam::IndexConditional* conditional);
   //TODO:Throws parse error
   //void push_back(const gtsam::SymbolicBayesNet bn);
-  void push_front(const gtsam::IndexConditional* conditional);
   //TODO:Throws parse error
   //void push_front(const gtsam::SymbolicBayesNet bn);
 
   //Advanced Interface
-  gtsam::IndexConditional* front() const;
-  gtsam::IndexConditional* back() const;
   void pop_front();
   void permuteWithInverse(const gtsam::Permutation& inversePermutation);
   bool permuteSeparatorWithInverse(const gtsam::Permutation& inversePermutation);
@@ -898,54 +959,6 @@ class VariableIndex {
   size_t nFactors() const;
   size_t nEntries() const;
   void permuteInPlace(const gtsam::Permutation& permutation);
-};
-
-#include <gtsam/inference/BayesTree.h>
-template<CONDITIONAL, CLIQUE>
-virtual class BayesTree {
-
-    //Constructors
-    BayesTree(); 
-
-    //Standard Interface
-    bool equals(const This& other, double tol) const;
-    void print(string s);
-		//size_t findParentClique(const gtsam::IndexVector& parents) const;
-    size_t size();
-    CLIQUE* root() const;
-    void clear();
-    void deleteCachedShorcuts();
-    void insert(const CLIQUE* subtree);
-};
-
-typedef gtsam::BayesTree<gtsam::GaussianConditional, gtsam::ISAM2Clique> ISAM2BayesTree;
-
-template<CONDITIONAL>
-virtual class BayesTreeClique {
-  BayesTreeClique();
-  BayesTreeClique(CONDITIONAL* conditional);
-//  BayesTreeClique(const std::pair<typename ConditionalType::shared_ptr, typename ConditionalType::FactorType::shared_ptr>& result) : Base(result) {}
-
-  bool equals(const This& other, double tol) const;
-  void print(string s) const;
-  void printTree() const; // Default indent of ""
-  void printTree(string indent) const;
-
-  CONDITIONAL* conditional() const;
-  bool isRoot() const;
-  size_t treeSize() const;
-//  const std::list<derived_ptr>& children() const { return children_; }
-//  derived_ptr parent() const { return parent_.lock(); }
-
-  void permuteWithInverse(const gtsam::Permutation& inversePermutation);
-  bool permuteSeparatorWithInverse(const gtsam::Permutation& inversePermutation);
-
-  // FIXME: need wrapped versions graphs, BayesNet
-//  BayesNet<ConditionalType> shortcut(derived_ptr root, Eliminate function) const;
-//  FactorGraph<FactorType> marginal(derived_ptr root, Eliminate function) const;
-//  FactorGraph<FactorType> joint(derived_ptr C2, derived_ptr root, Eliminate function) const;
-
-  void deleteCachedShorcuts();
 };
 
 //*************************************************************************
@@ -1082,15 +1095,11 @@ class GaussianDensity {
 	Matrix covariance() const;
 };
 
-class GaussianBayesNet {
+typedef gtsam::BayesNet<gtsam::GaussianConditional> GaussianBayesNetBase;
+virtual class GaussianBayesNet  : gtsam::GaussianBayesNetBase {
     //Constructors
 	GaussianBayesNet();
-
-	//Standard Interface
-	void print(string s) const;
-	bool equals(const gtsam::GaussianBayesNet& cbn, double tol) const;
-	void push_back(gtsam::GaussianConditional* conditional);
-	void push_front(gtsam::GaussianConditional* conditional);
+	GaussianBayesNet(const gtsam::GaussianConditional* conditional);
 };
 
 //Non-Class methods found in GaussianBayesNet.h
@@ -1750,6 +1759,7 @@ class ISAM2Result {
   size_t getCliques() const;
 };
 
+typedef gtsam::BayesTree<gtsam::GaussianConditional, gtsam::ISAM2Clique> ISAM2BayesTree;
 virtual class ISAM2  : gtsam::ISAM2BayesTree {
   ISAM2();
   ISAM2(const gtsam::ISAM2Params& params);
