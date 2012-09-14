@@ -93,9 +93,6 @@ public:
   void print(const std::string& s = "",
   		const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
-  /** print statistics */
-  void printStats(const std::string& s = "") const;
-
   /** check equality */
   bool equals(const BayesNet& other, double tol = 1e-9) const;
 
@@ -107,6 +104,9 @@ public:
   size_t size() const {
     return conditionals_.size();
   }
+
+  /** print statistics */
+  void printStats(const std::string& s = "") const;
 
   /** return keys in reverse topological sort order, i.e., elimination order */
   FastList<Index> ordering() const;
@@ -190,10 +190,10 @@ public:
   }
 
   /// push_back an entire Bayes net
-  void push_back(const BayesNet<CONDITIONAL> bn);
+  void push_back(const BayesNet<CONDITIONAL>& bn);
 
   /// push_front an entire Bayes net
-  void push_front(const BayesNet<CONDITIONAL> bn);
+  void push_front(const BayesNet<CONDITIONAL>& bn);
 
   /** += syntax for push_back, e.g. bayesNet += c1, c2, c3
    * @param conditional The conditional to add to the back of the BayesNet

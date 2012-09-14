@@ -112,14 +112,14 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class CONDITIONAL>
-  void BayesNet<CONDITIONAL>::push_back(const BayesNet<CONDITIONAL> bn) {
+  void BayesNet<CONDITIONAL>::push_back(const BayesNet<CONDITIONAL>& bn) {
     BOOST_FOREACH(sharedConditional conditional,bn.conditionals_)
       push_back(conditional);
   }
 
   /* ************************************************************************* */
   template<class CONDITIONAL>
-  void BayesNet<CONDITIONAL>::push_front(const BayesNet<CONDITIONAL> bn) {
+  void BayesNet<CONDITIONAL>::push_front(const BayesNet<CONDITIONAL>& bn) {
     BOOST_FOREACH(sharedConditional conditional,bn.conditionals_)
       push_front(conditional);
   }
