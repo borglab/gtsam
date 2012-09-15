@@ -36,6 +36,15 @@ namespace gtsam {
 		bayesNet.push_back(boost::make_shared<DiscreteConditional>(s));
 	}
 
+  /* ************************************************************************* */
+  double evaluate(const DiscreteBayesNet& bn, const DiscreteConditional::Values & values) {
+    // evaluate all conditionals and multiply
+    double result = 1.0;
+    BOOST_FOREACH(DiscreteConditional::shared_ptr conditional, bn)
+      result *= (*conditional)(values);
+    return result;
+  }
+
 	/* ************************************************************************* */
 	DiscreteFactor::sharedValues optimize(const DiscreteBayesNet& bn) {
 		// solve each node in turn in topological sort order (parents first)
