@@ -74,15 +74,13 @@ namespace gtsam {
     std::ofstream of(s.c_str());
     of << "digraph G{\n";
 
-  BOOST_FOREACH(typename CONDITIONAL::shared_ptr conditional, conditionals_) {
-    typename CONDITIONAL::Frontals frontals = conditional->frontals();
-    Index me = frontals.front();
-//      of << me << std::endl;
-    typename CONDITIONAL::Parents parents = conditional->parents();
-    BOOST_FOREACH(Index p, parents)
-      of << p << "->" << me << std::endl;
-  }
-
+    BOOST_REVERSE_FOREACH(typename CONDITIONAL::shared_ptr conditional, conditionals_) {
+      typename CONDITIONAL::Frontals frontals = conditional->frontals();
+      Index me = frontals.front();
+      typename CONDITIONAL::Parents parents = conditional->parents();
+      BOOST_FOREACH(Index p, parents)
+        of << p << "->" << me << std::endl;
+    }
 
     of << "}";
     of.close();
