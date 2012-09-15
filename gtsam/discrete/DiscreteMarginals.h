@@ -22,7 +22,6 @@
 
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/inference/GenericMultifrontalSolver.h>
-#include <gtsam/linear/GaussianBayesTree.h>
 
 namespace gtsam {
 
