@@ -22,6 +22,7 @@
 #include <gtsam/discrete/Signature.h>
 #include <gtsam/inference/IndexConditional.h>
 #include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 
 namespace gtsam {
 
@@ -57,6 +58,16 @@ namespace gtsam {
 		/** construct P(X|Y)=P(X,Y)/P(Y) from P(X,Y) and P(Y) */
 		DiscreteConditional(const DecisionTreeFactor& joint,
 				const DecisionTreeFactor& marginal);
+
+	  /**
+	   * Combine several conditional into a single one.
+	   * The conditionals must be given in increasing order, meaning that the parents
+	   * of any conditional may not include a conditional coming before it.
+	   * @param firstConditional Iterator to the first conditional to combine, must dereference to a shared_ptr<DiscreteConditional>.
+	   * @param lastConditional Iterator to after the last conditional to combine, must dereference to a shared_ptr<DiscreteConditional>.
+	   * */
+	  template<typename ITERATOR>
+	  static shared_ptr Combine(ITERATOR firstConditional, ITERATOR lastConditional);
 
 		/// @}
 		/// @name Testable
@@ -122,6 +133,20 @@ namespace gtsam {
 
 	};
 // DiscreteConditional
+
+	/* ************************************************************************* */
+	template<typename ITERATOR>
+	DiscreteConditional::shared_ptr DiscreteConditional::Combine(
+	    ITERATOR firstConditional, ITERATOR lastConditional) {
+	  // TODO:  check for being a clique
+	  DecisionTreeFactor product;
+	  for(ITERATOR it = firstConditional; it != lastConditional; ++it) {
+	    DiscreteConditional::shared_ptr c = *it;
+	    DecisionTreeFactor::shared_ptr factor = c->toFactor();
+	    product = (*factor) * product;
+	  }
+	  return boost::make_shared<DiscreteConditional>(1,product);
+	}
 
 }// gtsam
 
