@@ -12,9 +12,8 @@ bayesNet.push_front(gc);
 n=tree.getNumberOfElements();
 for i=2:n
   % Getting the parents of that node
-  i
-  parents = tree.getParents(i)
-  di = tree.getNodeDepth(i)
+  parents = tree.getParents(i);
+  di = tree.getNodeDepth(i);
   % Create and link the corresponding GaussianConditionals
   if tree.getW == 1 || di == 2
     % Creation of single-parent GaussianConditional
