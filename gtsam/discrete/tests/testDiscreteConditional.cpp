@@ -95,16 +95,16 @@ TEST( DiscreteConditional, constructors3)
 }
 
 /* ************************************************************************* */
-TEST( DiscreteConditional, Combine)
-{
-  DiscreteKey A(0,2), B(1,2);
+TEST( DiscreteConditional, Combine) {
+  DiscreteKey A(0, 2), B(1, 2);
   vector<DiscreteConditional::shared_ptr> c;
   c.push_back(boost::make_shared<DiscreteConditional>(A | B = "1/2 2/1"));
   c.push_back(boost::make_shared<DiscreteConditional>(B % "1/2"));
-  DiscreteConditional::shared_ptr actual = DiscreteConditional::Combine(c.begin(), c.end());
-  DecisionTreeFactor::shared_ptr actualFactor = actual->toFactor();
-  DecisionTreeFactor expected(A & B, "0.333333 0.666667 0.666667 0.333333");
-  EXPECT(assert_equal(expected, *actualFactor,1e-5));
+  DecisionTreeFactor factor(A & B, "0.111111 0.444444 0.222222 0.222222");
+  DiscreteConditional expected(2, factor);
+  DiscreteConditional::shared_ptr actual = DiscreteConditional::Combine(
+      c.begin(), c.end());
+  EXPECT(assert_equal(expected, *actual,1e-5));
 }
 
 /* ************************************************************************* */

@@ -144,13 +144,17 @@ namespace gtsam {
 	DiscreteConditional::shared_ptr DiscreteConditional::Combine(
 	    ITERATOR firstConditional, ITERATOR lastConditional) {
 	  // TODO:  check for being a clique
+
+	  // multiply all the potentials of the given conditionals
+	  size_t nrFrontals = 0;
 	  DecisionTreeFactor product;
-	  for(ITERATOR it = firstConditional; it != lastConditional; ++it) {
+	  for(ITERATOR it = firstConditional; it != lastConditional; ++it, ++nrFrontals) {
 	    DiscreteConditional::shared_ptr c = *it;
 	    DecisionTreeFactor::shared_ptr factor = c->toFactor();
 	    product = (*factor) * product;
 	  }
-	  return boost::make_shared<DiscreteConditional>(1,product);
+	  // and then create a new multi-frontal conditional
+	  return boost::make_shared<DiscreteConditional>(nrFrontals,product);
 	}
 
 }// gtsam
