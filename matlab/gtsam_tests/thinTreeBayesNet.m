@@ -1,39 +1,30 @@
-function [bayesNet, tree] = thinTreeBayesNet(d,w)
+function [bayesNet, tree] = thinTreeBayesNet(depth,width)
+% thinTreeBayesNet
+
 import gtsam.*
 bayesNet = GaussianBayesNet;
-tree = thinTree(d,w);
+tree = thinTree(depth,width);
 
-% Filling the tree
-
-% Creation of the root
+% Add root to the Bayes net
 gc = gtsam.GaussianConditional(1, 5*rand(1), 5*rand(1), 3*rand(1));
-% Getting it into the GaussianBayesNet
 bayesNet.push_front(gc);
 
-for i=1:tree.getNumberOfElements()
-    % Getting the parents of that node
-    parents = tree.getParents(i);
-    % Create and link the corresponding GaussianConditionals
-    if tree.getW == 1 || tree.getNodeDepth(i) <= 2
-        % Creation of the GaussianConditional
-        gc = gtsam.GaussianConditional(parents(1), 5*rand(1), 5*rand(1), i, 5*rand(1), 5*rand(1));
-        % Getting it into the GaussianBayesNet
-        bayesNet.push_front(gc);
-        % Getting it in the thinTree
-        tree = tree.addContent({gc,parents}, i);
-    elseif tree.getW == 2 && tree.getNodeDepth(i) > 2
-        % Creation of the GaussianConditional associated with the first
-        % parent
-        gc = gtsam.GaussianConditional(parents(1), 5*rand(1), 5*rand(1), i, 5*rand(1), 5*rand(1));
-        % Getting it into the GaussianBayesNet
-        bayesNet.push_front(gc);
-        % Creation of the GaussianConditionalj associated with the second
-        % parent
-        gc = gtsam.GaussianConditional(parents(2), 5*rand(1), 5*rand(1), i, 5*rand(1), 5*rand(1));
-        % Getting it into the GaussianBayesNet
-        bayesNet.push_front(gc);
-        % Getting it in the thinTree
-        tree = tree.addContent({gc,parents}, i);
-    end
+n=tree.getNumberOfElements();
+for i=2:n
+  % Getting the parents of that node
+  i
+  parents = tree.getParents(i)
+  di = tree.getNodeDepth(i)
+  % Create and link the corresponding GaussianConditionals
+  if tree.getW == 1 || di == 2
+    % Creation of single-parent GaussianConditional
+    gc = gtsam.GaussianConditional(n-i, 5*rand(1), 5*rand(1), n-parents(1), 5*rand(1), 5*rand(1));
+  elseif tree.getW == 2 || di == 3
+    % GaussianConditionalj associated with the second parent
+    gc = gtsam.GaussianConditional(n-i, 5*rand(1), 5*rand(1), n-parents(1), 5*rand(1), n-parents(2), 5*rand(1), 5*rand(1));
+  end
+  % Add conditional to the Bayes net
+  bayesNet.push_front(gc);
 end
+
 end

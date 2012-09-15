@@ -10,18 +10,15 @@
 %  * -------------------------------------------------------------------------- */
 %
 % /**
-%  * @file testThinTree.cpp
+%  * @file testThinTreeBayesNet.cpp
 %  * @brief Test of binary tree
 %  * @date Sep 13, 2012
 %  * @author Frank Dellaert
 %  * @author Jean-Guillaume Durand
 %  */
 
-%% Clean the workspace
-clc, clear all, close all;
-
 %% Run the tests
 import gtsam.*
 [bayesNet tree] = thinTreeBayesNet(4,2);
 EQUALITY('7 = bayesNet.size', 7, bayesNet.size);
-bayesNet.saveGraph('thinTreeBayesNet.dot');
+gtsam.plotBayesNet(bayesNet);
