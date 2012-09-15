@@ -92,6 +92,11 @@ namespace gtsam {
 		/// @name Standard Interface
 		/// @{
 
+    /// Evaluate, just look up in AlgebraicDecisonTree
+    virtual double operator()(const Values& values) const {
+      return Potentials::operator()(values);
+    }
+
 		/** Convert to a factor */
 		DecisionTreeFactor::shared_ptr toFactor() const {
 			return DecisionTreeFactor::shared_ptr(new DecisionTreeFactor(*this));
