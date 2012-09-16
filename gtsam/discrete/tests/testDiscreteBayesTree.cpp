@@ -36,6 +36,16 @@ class Clique: public BayesTreeCliqueBase<Clique, DiscreteConditional> {
 
 protected:
 
+  /// Calculate set S\B
+  vector<Index> separatorShortcutVariables(derived_ptr B) const {
+    sharedConditional p_F_S = this->conditional();
+    vector<Index> &indicesB = B->conditional()->keys();
+    vector<Index> S_setminus_B;
+    set_difference(p_F_S->beginParents(), p_F_S->endParents(), //
+        indicesB.begin(), indicesB.end(), back_inserter(S_setminus_B));
+    return S_setminus_B;
+  }
+
   /**
    * Determine variable indices to keep in recursive separator shortcut calculation
    * The factor graph p_Cp_B has keys from the parent clique Cp and from B.
@@ -44,23 +54,18 @@ protected:
   vector<Index> indices(derived_ptr B,
       const FactorGraph<FactorType>& p_Cp_B) const {
 
-    // Get all keys
-    set<Index> allKeys = p_Cp_B.keys();
-
     // We do this by first merging S and B
-    boost::iterator_range<FactorType::iterator> indicesS =
-        this->conditional()->parents();
-    size_t sizeS = indicesS.end() - indicesS.begin();
+    sharedConditional p_F_S = this->conditional();
     vector<Index> &indicesB = B->conditional()->keys();
-    vector<Index> S_union_B(indicesB.size() + sizeS);
-    vector<Index>::iterator it = set_union(indicesS.begin(), indicesS.end(),
-        indicesB.begin(), indicesB.end(), S_union_B.begin());
+    vector<Index> S_union_B;
+    set_union(p_F_S->beginParents(), p_F_S->endParents(), //
+        indicesB.begin(), indicesB.end(), back_inserter(S_union_B));
 
-    // then intersecting S_union_B with allKeys
-    vector<Index> keepers(indicesB.size() + sizeS);
-    it = set_intersection(S_union_B.begin(), it, allKeys.begin(), allKeys.end(),
-        keepers.begin());
-    keepers.erase(it, keepers.end());
+    // then intersecting S_union_B with all keys in p_Cp_B
+    set<Index> allKeys = p_Cp_B.keys();
+    vector<Index> keepers;
+    set_intersection(S_union_B.begin(), S_union_B.end(), //
+        allKeys.begin(), allKeys.end(), back_inserter(keepers));
 
     return keepers;
   }
@@ -153,16 +158,9 @@ public:
       FactorGraph<FactorType>::shared_ptr fg = separatorShortcut(B);
       if (fg) {
         // calculate set S\B of indices to keep in Bayes net
-        vector<Index> indicesS(this->conditional()->beginParents(),
-            this->conditional()->endParents());
-        // now get B indices out
-        vector<Index> &indicesB = B->conditional()->keys();
-        vector<Index> S_setminus_B(indicesS.size());
-        vector<Index>::iterator it = set_difference(indicesS.begin(),
-            indicesS.end(), indicesB.begin(), indicesB.end(),
-            S_setminus_B.begin());
-        S_setminus_B.erase(it, S_setminus_B.end());
+        vector<Index> S_setminus_B = separatorShortcutVariables(B);
         set<Index> keep(S_setminus_B.begin(), S_setminus_B.end());
+
         BOOST_FOREACH (FactorType::shared_ptr factor,*fg) {
           DecisionTreeFactor::shared_ptr df = boost::dynamic_pointer_cast<
               DecisionTreeFactor>(factor);

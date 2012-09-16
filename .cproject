@@ -809,10 +809,10 @@
 			</target>
 			<target name="testDiscreteBayesTree.run" path="build/gtsam/discrete" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
-				<buildArguments>-j5</buildArguments>
+				<buildArguments>-j1</buildArguments>
 				<buildTarget>testDiscreteBayesTree.run</buildTarget>
 				<stopOnError>true</stopOnError>
-				<useDefaultCommand>true</useDefaultCommand>
+				<useDefaultCommand>false</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
 			<target name="testDiscreteFactorGraph.run" path="build/gtsam/discrete" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
