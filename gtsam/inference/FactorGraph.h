@@ -27,6 +27,7 @@
 
 #include <boost/serialization/nvp.hpp>
 #include <boost/function.hpp>
+#include <set>
 
 namespace gtsam {
 
@@ -44,7 +45,7 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 	public:
 
 		typedef FACTOR FactorType;  ///< factor type
-		typedef typename FACTOR::KeyType KeyType; ///< type of Keys we use to index factors with
+		typedef typename FACTOR::KeyType KeyType; ///< type of Keys we use to index variables with
 		typedef boost::shared_ptr<FACTOR> sharedFactor;  ///< Shared pointer to a factor
 		typedef boost::shared_ptr<typename FACTOR::ConditionalType> sharedConditional;  ///< Shared pointer to a conditional
 
@@ -207,6 +208,9 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
 
 		/** return the number valid factors */
 		size_t nrFactors() const;
+
+    /** Potentially very slow function to return all keys involved */
+    std::set<KeyType> keys() const;
 
 	private:
 

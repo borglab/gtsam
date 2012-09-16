@@ -77,14 +77,26 @@ namespace gtsam {
 		return true;
 	}
 
-	/* ************************************************************************* */
-	template<class FACTOR>
-	size_t FactorGraph<FACTOR>::nrFactors() const {
-		size_t size_ = 0;
-		for (const_iterator factor = factors_.begin(); factor != factors_.end(); factor++)
-			if (*factor != NULL) size_++;
-		return size_;
-	}
+  /* ************************************************************************* */
+  template<class FACTOR>
+  size_t FactorGraph<FACTOR>::nrFactors() const {
+    size_t size_ = 0;
+    BOOST_FOREACH(const sharedFactor& factor, factors_)
+      if (factor) size_++;
+    return size_;
+  }
+
+  /* ************************************************************************* */
+  template<class FACTOR>
+  std::set<typename FACTOR::KeyType> FactorGraph<FACTOR>::keys() const {
+    std::set<KeyType> allKeys;
+    BOOST_FOREACH(const sharedFactor& factor, factors_)
+      if (factor) {
+        BOOST_FOREACH(Index j, factor->keys())
+          allKeys.insert(j);
+      }
+    return allKeys;
+  }
 
 	/* ************************************************************************* */
 	template<class FACTOR>
