@@ -63,47 +63,62 @@ TEST( SymbolicSequentialSolver, inference ) {
   EXPECT(assert_equal(expected,*actual));
 
   {
-  // jointBayesNet
-  vector<Index> js;
-  js.push_back(0);
-  js.push_back(4);
-  js.push_back(3);
-  SymbolicBayesNet::shared_ptr actualBN = solver.jointBayesNet(js);
-  SymbolicBayesNet expectedBN;
-  expectedBN.push_front(boost::make_shared<IndexConditional>(3));
-  expectedBN.push_front(boost::make_shared<IndexConditional>(4, 3));
-  expectedBN.push_front(boost::make_shared<IndexConditional>(0, 4));
-  EXPECT( assert_equal(expectedBN,*actualBN));
+    // jointBayesNet
+    vector<Index> js;
+    js.push_back(0);
+    js.push_back(4);
+    js.push_back(3);
+    SymbolicBayesNet::shared_ptr actualBN = solver.jointBayesNet(js);
+    SymbolicBayesNet expectedBN;
+    expectedBN.push_front(boost::make_shared<IndexConditional>(3));
+    expectedBN.push_front(boost::make_shared<IndexConditional>(4, 3));
+    expectedBN.push_front(boost::make_shared<IndexConditional>(0, 4));
+    EXPECT( assert_equal(expectedBN,*actualBN));
 
-  // jointFactorGraph
-  SymbolicFactorGraph::shared_ptr actualFG = solver.jointFactorGraph(js);
-  SymbolicFactorGraph expectedFG;
-  expectedFG.push_factor(0, 4);
-  expectedFG.push_factor(4, 3);
-  expectedFG.push_factor(3);
-  EXPECT( assert_equal(expectedFG,(SymbolicFactorGraph)(*actualFG)));
+    // jointFactorGraph
+    SymbolicFactorGraph::shared_ptr actualFG = solver.jointFactorGraph(js);
+    SymbolicFactorGraph expectedFG;
+    expectedFG.push_factor(0, 4);
+    expectedFG.push_factor(4, 3);
+    expectedFG.push_factor(3);
+    EXPECT( assert_equal(expectedFG,(SymbolicFactorGraph)(*actualFG)));
   }
 
   {
-  // jointBayesNet
-  vector<Index> js;
-  js.push_back(0);
-  js.push_back(3);
-  js.push_back(4);
-  SymbolicBayesNet::shared_ptr actualBN = solver.jointBayesNet(js);
-  SymbolicBayesNet expectedBN;
-  expectedBN.push_front(boost::make_shared<IndexConditional>(3));
-  expectedBN.push_front(boost::make_shared<IndexConditional>(4, 3));
-  expectedBN.push_front(boost::make_shared<IndexConditional>(0, 4));
-  EXPECT( assert_equal(expectedBN,*actualBN));
+    // jointBayesNet
+    vector<Index> js;
+    js.push_back(0);
+    js.push_back(2);
+    js.push_back(3);
+    SymbolicBayesNet::shared_ptr actualBN = solver.jointBayesNet(js);
+    SymbolicBayesNet expectedBN;
+    expectedBN.push_front(boost::make_shared<IndexConditional>(2));
+    expectedBN.push_front(boost::make_shared<IndexConditional>(3, 2));
+    expectedBN.push_front(boost::make_shared<IndexConditional>(0, 3, 2));
+    EXPECT( assert_equal(expectedBN,*actualBN));
 
-  // jointFactorGraph
-  SymbolicFactorGraph::shared_ptr actualFG = solver.jointFactorGraph(js);
-  SymbolicFactorGraph expectedFG;
-  expectedFG.push_factor(0, 4);
-  expectedFG.push_factor(4, 3);
-  expectedFG.push_factor(3);
-  EXPECT( assert_equal(expectedFG,(SymbolicFactorGraph)(*actualFG)));
+    // jointFactorGraph
+    SymbolicFactorGraph::shared_ptr actualFG = solver.jointFactorGraph(js);
+    SymbolicFactorGraph expectedFG;
+    expectedFG.push_factor(0, 3, 2);
+    expectedFG.push_factor(3, 2);
+    expectedFG.push_factor(2);
+    EXPECT( assert_equal(expectedFG,(SymbolicFactorGraph)(*actualFG)));
+  }
+
+  {
+    // conditionalBayesNet
+    vector<Index> js;
+    js.push_back(0);
+    js.push_back(2);
+    js.push_back(3);
+    size_t nrFrontals = 2;
+    SymbolicBayesNet::shared_ptr actualBN = //
+        solver.conditionalBayesNet(js, nrFrontals);
+    SymbolicBayesNet expectedBN;
+    expectedBN.push_front(boost::make_shared<IndexConditional>(3, 2));
+    expectedBN.push_front(boost::make_shared<IndexConditional>(0, 3, 2));
+    EXPECT( assert_equal(expectedBN,*actualBN));
   }
 }
 
