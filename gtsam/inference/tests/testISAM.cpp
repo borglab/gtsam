@@ -34,8 +34,8 @@ typedef ISAM<IndexConditional> SymbolicISAM;
 /* ************************************************************************* */
 // Some numbers that should be consistent among all smoother tests
 
-static double sigmax1 = 0.786153, sigmax2 = 0.687131, sigmax3 = 0.671512, sigmax4 =
-		0.669534, sigmax5 = sigmax3, sigmax6 = sigmax2, sigmax7 = sigmax1;
+//static double sigmax1 = 0.786153, sigmax2 = 0.687131 ,sigmax3 = 0.671512,
+//sigmax4 = 0.669534, sigmax5 = sigmax3,, sigmax7 = sigmax1, sigmax6 = sigmax2;
 
 /* ************************************************************************* */
 
