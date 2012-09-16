@@ -57,6 +57,19 @@ namespace gtsam {
 					signature.discreteKeysParentsFirst(), signature.cpt()) {
 	}
 
+  /* ******************************************************************************** */
+  void DiscreteConditional::print(const std::string& s, const IndexFormatter& formatter) const {
+    std::cout << s << std::endl;
+    IndexConditional::print(s, formatter);
+    Potentials::print(s);
+  }
+
+  /* ******************************************************************************** */
+  bool DiscreteConditional::equals(const DiscreteConditional& other, double tol) const {
+    return IndexConditional::equals(other, tol)
+        && Potentials::equals(other, tol);
+  }
+
 	/* ******************************************************************************** */
 	Potentials::ADT DiscreteConditional::choose(
 			const Values& parentsValues) const {

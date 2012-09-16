@@ -73,20 +73,12 @@ namespace gtsam {
 		/// @name Testable
 		/// @{
 
-		/** GTSAM-style print */
-		void print(const std::string& s = "Discrete Conditional: ",
-				const IndexFormatter& formatter
-				=DefaultIndexFormatter) const {
-			std::cout << s << std::endl;
-			IndexConditional::print(s, formatter);
-			Potentials::print(s);
-		}
+    /// GTSAM-style print
+    void print(const std::string& s = "Discrete Conditional: ",
+        const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
-		/** GTSAM-style equals */
-		bool equals(const DiscreteConditional& other, double tol = 1e-9) const {
-			return IndexConditional::equals(other, tol)
-					&& Potentials::equals(other, tol);
-		}
+    /// GTSAM-style equals
+    bool equals(const DiscreteConditional& other, double tol = 1e-9) const;
 
 		/// @}
 		/// @name Standard Interface
