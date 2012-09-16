@@ -11,72 +11,105 @@
 
 /**
  * @file    testSymbolicSequentialSolver.cpp
- * @brief   Unit tests for a symbolic IndexFactor Graph
+ * @brief   Unit tests for a symbolic sequential solver routines
  * @author  Frank Dellaert
  * @date    Sept 16, 2012
  */
 
-#include <boost/assign/std/list.hpp> // for operator +=
-using namespace boost::assign;
+#include <gtsam/inference/SymbolicSequentialSolver.h>
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <gtsam/inference/SymbolicFactorGraph.h>
-#include <gtsam/inference/BayesNet-inl.h>
-#include <gtsam/inference/IndexFactor.h>
-#include <gtsam/inference/FactorGraph.h>
-#include <gtsam/inference/SymbolicSequentialSolver.h>
+#include <boost/assign/std/list.hpp> // for operator +=
+using namespace boost::assign;
 
 using namespace std;
 using namespace gtsam;
 
-static const Index vx2 = 0;
-static const Index vx1 = 1;
-static const Index vl1 = 2;
-
 /* ************************************************************************* */
-TEST( SymbolicSequentialSolver, SymbolicSequentialSolver )
-{
-	// create factor graph
-	SymbolicFactorGraph g;
-	g.push_factor(vx2, vx1, vl1);
-	g.push_factor(vx1, vl1);
-	g.push_factor(vx1);
-	// test solver is Testable
-	SymbolicSequentialSolver solver(g);
+
+TEST( SymbolicSequentialSolver, SymbolicSequentialSolver ) {
+  // create factor graph
+  SymbolicFactorGraph g;
+  g.push_factor(2, 2, 0);
+  g.push_factor(2, 0);
+  g.push_factor(2);
+  // test solver is Testable
+  SymbolicSequentialSolver solver(g);
 //	GTSAM_PRINT(solver);
-	EXPECT(assert_equal(solver,solver));
+  EXPECT(assert_equal(solver,solver));
 }
 
 /* ************************************************************************* */
-TEST( SymbolicSequentialSolver, eliminate )
-{
-	// create expected Chordal bayes Net
+
+TEST( SymbolicSequentialSolver, inference ) {
+  // Create factor graph
+  SymbolicFactorGraph fg;
+  fg.push_factor(0, 1);
+  fg.push_factor(0, 2);
+  fg.push_factor(1, 4);
+  fg.push_factor(2, 4);
+  fg.push_factor(3, 4);
+
+  // eliminate
+  SymbolicSequentialSolver solver(fg);
+  SymbolicBayesNet::shared_ptr actual = solver.eliminate();
   SymbolicBayesNet expected;
   expected.push_front(boost::make_shared<IndexConditional>(4));
-  expected.push_front(boost::make_shared<IndexConditional>(3,4));
-  expected.push_front(boost::make_shared<IndexConditional>(2,4));
-  expected.push_front(boost::make_shared<IndexConditional>(1,2,4));
-  expected.push_front(boost::make_shared<IndexConditional>(0,1,2));
+  expected.push_front(boost::make_shared<IndexConditional>(3, 4));
+  expected.push_front(boost::make_shared<IndexConditional>(2, 4));
+  expected.push_front(boost::make_shared<IndexConditional>(1, 2, 4));
+  expected.push_front(boost::make_shared<IndexConditional>(0, 1, 2));
+  EXPECT(assert_equal(expected,*actual));
 
-	// Create factor graph
-	SymbolicFactorGraph fg;
-	fg.push_factor(0, 1);
-	fg.push_factor(0, 2);
-	fg.push_factor(1, 4);
-	fg.push_factor(2, 4);
-	fg.push_factor(3, 4);
+  {
+  // jointBayesNet
+  vector<Index> js;
+  js.push_back(0);
+  js.push_back(4);
+  js.push_back(3);
+  SymbolicBayesNet::shared_ptr actualBN = solver.jointBayesNet(js);
+  SymbolicBayesNet expectedBN;
+  expectedBN.push_front(boost::make_shared<IndexConditional>(3));
+  expectedBN.push_front(boost::make_shared<IndexConditional>(4, 3));
+  expectedBN.push_front(boost::make_shared<IndexConditional>(0, 4));
+  EXPECT( assert_equal(expectedBN,*actualBN));
 
-	// eliminate
-  SymbolicSequentialSolver solver(fg);
-	SymbolicBayesNet::shared_ptr actual = solver.eliminate();
+  // jointFactorGraph
+  SymbolicFactorGraph::shared_ptr actualFG = solver.jointFactorGraph(js);
+  SymbolicFactorGraph expectedFG;
+  expectedFG.push_factor(0, 4);
+  expectedFG.push_factor(4, 3);
+  expectedFG.push_factor(3);
+  EXPECT( assert_equal(expectedFG,(SymbolicFactorGraph)(*actualFG)));
+  }
 
-	CHECK(assert_equal(expected,*actual));
+  {
+  // jointBayesNet
+  vector<Index> js;
+  js.push_back(0);
+  js.push_back(3);
+  js.push_back(4);
+  SymbolicBayesNet::shared_ptr actualBN = solver.jointBayesNet(js);
+  SymbolicBayesNet expectedBN;
+  expectedBN.push_front(boost::make_shared<IndexConditional>(3));
+  expectedBN.push_front(boost::make_shared<IndexConditional>(4, 3));
+  expectedBN.push_front(boost::make_shared<IndexConditional>(0, 4));
+  EXPECT( assert_equal(expectedBN,*actualBN));
+
+  // jointFactorGraph
+  SymbolicFactorGraph::shared_ptr actualFG = solver.jointFactorGraph(js);
+  SymbolicFactorGraph expectedFG;
+  expectedFG.push_factor(0, 4);
+  expectedFG.push_factor(4, 3);
+  expectedFG.push_factor(3);
+  EXPECT( assert_equal(expectedFG,(SymbolicFactorGraph)(*actualFG)));
+  }
 }
 
 /* ************************************************************************* */
 int main() {
-	TestResult tr;
-	return TestRegistry::runAllTests(tr);
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */

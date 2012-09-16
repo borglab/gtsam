@@ -51,10 +51,8 @@ namespace gtsam {
 	protected:
 
 		typedef boost::shared_ptr<FactorGraph<FACTOR> > sharedFactorGraph;
-
-		typedef std::pair<
-		        boost::shared_ptr<typename FACTOR::ConditionalType>,
-		        boost::shared_ptr<FACTOR> > EliminationResult;
+		typedef typename FACTOR::ConditionalType Conditional;
+    typedef std::pair<boost::shared_ptr<Conditional>, boost::shared_ptr<FACTOR> > EliminationResult;
 		typedef boost::function<EliminationResult(const FactorGraph<FACTOR>&, size_t)> Eliminate;
 
 		/** Store the original factors for computing marginals
@@ -117,20 +115,29 @@ namespace gtsam {
 		 * Eliminate the factor graph sequentially.  Uses a column elimination tree
 		 * to recursively eliminate.
 		 */
-		typename boost::shared_ptr<BayesNet<typename FACTOR::ConditionalType> > eliminate(Eliminate function) const;
+		typename boost::shared_ptr<BayesNet<Conditional> >
+		eliminate(Eliminate function) const;
 
-		/**
-		 * Compute the marginal joint over a set of variables, by integrating out
-		 * all of the other variables.  Returns the result as a factor graph.
-		 */
-		typename FactorGraph<FACTOR>::shared_ptr jointFactorGraph(
-				const std::vector<Index>& js, Eliminate function) const;
+    /**
+     * Compute the marginal joint over a set of variables, by integrating out
+     * all of the other variables.  Returns the result as a Bayes net
+     */
+		typename BayesNet<Conditional>::shared_ptr
+		jointBayesNet(const std::vector<Index>& js, Eliminate function) const;
+
+    /**
+     * Compute the marginal joint over a set of variables, by integrating out
+     * all of the other variables.  Returns the result as a factor graph.
+     */
+    typename FactorGraph<FACTOR>::shared_ptr
+    jointFactorGraph(const std::vector<Index>& js, Eliminate function) const;
 
 		/**
 		 * Compute the marginal Gaussian density over a variable, by integrating out
 		 * all of the other variables.  This function returns the result as a factor.
 		 */
-		typename boost::shared_ptr<FACTOR> marginalFactor(Index j, Eliminate function) const;
+		typename boost::shared_ptr<FACTOR>
+		marginalFactor(Index j, Eliminate function) const;
 
 		/// @}
 

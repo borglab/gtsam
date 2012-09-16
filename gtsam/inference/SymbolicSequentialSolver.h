@@ -52,13 +52,22 @@ namespace gtsam {
      * Eliminate the factor graph sequentially.  Uses a column elimination tree
      * to recursively eliminate.
      */
-    SymbolicBayesNet::shared_ptr eliminate() const { return Base::eliminate(&EliminateSymbolic); };
+    SymbolicBayesNet::shared_ptr eliminate() const
+    { return Base::eliminate(&EliminateSymbolic); };
+
+    /**
+     * Compute the marginal joint over a set of variables, by integrating out
+     * all of the other variables.  Returns the result as a Bayes net.
+     */
+    SymbolicBayesNet::shared_ptr jointBayesNet(const std::vector<Index>& js) const
+    { return Base::jointBayesNet(js, &EliminateSymbolic); };
 
     /**
      * Compute the marginal joint over a set of variables, by integrating out
      * all of the other variables.  Returns the result as a factor graph.
      */
-    SymbolicFactorGraph::shared_ptr jointFactorGraph(const std::vector<Index>& js) const { return Base::jointFactorGraph(js, &EliminateSymbolic); };
+    SymbolicFactorGraph::shared_ptr jointFactorGraph(const std::vector<Index>& js) const
+    { return Base::jointFactorGraph(js, &EliminateSymbolic); };
 
     /**
      * Compute the marginal Gaussian density over a variable, by integrating out

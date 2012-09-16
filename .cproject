@@ -849,10 +849,10 @@
 			</target>
 			<target name="testSymbolicSequentialSolver.run" path="build/gtsam/inference" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
-				<buildArguments>-j5</buildArguments>
+				<buildArguments>-j1</buildArguments>
 				<buildTarget>testSymbolicSequentialSolver.run</buildTarget>
 				<stopOnError>true</stopOnError>
-				<useDefaultCommand>true</useDefaultCommand>
+				<useDefaultCommand>false</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
 			<target name="testEliminationTree.run" path="build/gtsam/inference" targetID="org.eclipse.cdt.build.MakeTargetBuilder">

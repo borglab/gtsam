@@ -82,45 +82,54 @@ namespace gtsam {
 		return eliminationTree_->eliminate(function);
 	}
 
-	/* ************************************************************************* */
-	template<class FACTOR>
-	typename FactorGraph<FACTOR>::shared_ptr //
-	GenericSequentialSolver<FACTOR>::jointFactorGraph(
-			const std::vector<Index>& js, Eliminate function) const {
+  /* ************************************************************************* */
+  template<class FACTOR>
+  typename BayesNet<typename FACTOR::ConditionalType>::shared_ptr //
+  GenericSequentialSolver<FACTOR>::jointBayesNet(
+      const std::vector<Index>& js, Eliminate function) const {
 
-		// Compute a COLAMD permutation with the marginal variables constrained to the end.
-		Permutation::shared_ptr permutation(inference::PermutationCOLAMD(*structure_, js));
-		Permutation::shared_ptr permutationInverse(permutation->inverse());
+    // Compute a COLAMD permutation with the marginal variables constrained to the end.
+    Permutation::shared_ptr permutation(inference::PermutationCOLAMD(*structure_, js));
+    Permutation::shared_ptr permutationInverse(permutation->inverse());
 
-		// Permute the factors - NOTE that this permutes the original factors, not
-		// copies.  Other parts of the code may hold shared_ptr's to these factors so
-		// we must undo the permutation before returning.
-		BOOST_FOREACH(const typename boost::shared_ptr<FACTOR>& factor, *factors_)
-			if (factor) factor->permuteWithInverse(*permutationInverse);
+    // Permute the factors - NOTE that this permutes the original factors, not
+    // copies.  Other parts of the code may hold shared_ptr's to these factors so
+    // we must undo the permutation before returning.
+    BOOST_FOREACH(const typename boost::shared_ptr<FACTOR>& factor, *factors_)
+      if (factor) factor->permuteWithInverse(*permutationInverse);
 
-		// Eliminate all variables
-		typename BayesNet<typename FACTOR::ConditionalType>::shared_ptr
-			bayesNet(EliminationTree<FACTOR>::Create(*factors_)->eliminate(function));
+    // Eliminate all variables
+    typename BayesNet<Conditional>::shared_ptr
+      bayesNet(EliminationTree<FACTOR>::Create(*factors_)->eliminate(function));
 
-		// Undo the permuation on the original factors and on the structure.
-		BOOST_FOREACH(const typename boost::shared_ptr<FACTOR>& factor, *factors_)
-			if (factor) factor->permuteWithInverse(*permutation);
+    // Undo the permutation on the original factors and on the structure.
+    BOOST_FOREACH(const typename boost::shared_ptr<FACTOR>& factor, *factors_)
+      if (factor) factor->permuteWithInverse(*permutation);
 
-		// Take the joint marginal from the Bayes net.
-		sharedFactorGraph joint(new FactorGraph<FACTOR> );
-		joint->reserve(js.size());
-		typename BayesNet<typename FACTOR::ConditionalType>::const_reverse_iterator
-			conditional = bayesNet->rbegin();
+    // Get rid of conditionals on variables that we want to marginalize out
+    size_t nrMarginalizedOut = bayesNet->size()-js.size();
+    for(int i=0;i<nrMarginalizedOut;i++)
+      bayesNet->pop_front();
 
-		for (size_t i = 0; i < js.size(); ++i)
-			joint->push_back((*(conditional++))->toFactor());
+    // Undo the permutation on the conditionals
+    BOOST_FOREACH(const boost::shared_ptr<Conditional>& c, *bayesNet)
+      c->permuteWithInverse(*permutation);
 
-		// Undo the permutation on the eliminated joint marginal factors
-		BOOST_FOREACH(const typename boost::shared_ptr<FACTOR>& factor, *joint)
-			factor->permuteWithInverse(*permutation);
+    return bayesNet;
+  }
 
-		return joint;
-	}
+  /* ************************************************************************* */
+  template<class FACTOR>
+  typename FactorGraph<FACTOR>::shared_ptr //
+  GenericSequentialSolver<FACTOR>::jointFactorGraph(
+      const std::vector<Index>& js, Eliminate function) const {
+
+    // Eliminate all variables
+    typename BayesNet<Conditional>::shared_ptr
+      bayesNet = jointBayesNet(js,function);
+
+    return boost::make_shared<FactorGraph<FACTOR> >(*bayesNet);
+  }
 
 	/* ************************************************************************* */
 	template<class FACTOR>
