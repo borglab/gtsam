@@ -17,7 +17,10 @@
 
 #include <string.h>
 #include <boost/format.hpp>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #include <boost/lambda/lambda.hpp>
+#pragma GCC diagnostic pop
 #include <boost/lambda/bind.hpp>
 
 #include <gtsam/linear/linearExceptions.h>
