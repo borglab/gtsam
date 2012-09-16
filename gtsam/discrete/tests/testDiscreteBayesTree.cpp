@@ -110,32 +110,43 @@ public:
    */
   FactorGraph<FactorType>::shared_ptr separatorShortcut(derived_ptr B) const {
 
-    FactorGraph<FactorType>::shared_ptr p_S_B; //shortcut P(S||B) This is empty now
+    typedef FactorGraph<FactorType> FG;
+
+    FG::shared_ptr p_S_B; //shortcut P(S||B) This is empty now
 
     // We only calculate the shortcut when this clique is not B
-    derived_ptr parent(parent_.lock());
-    if (B.get() != this) {
+    // and when the S\B is not empty
+    vector<Index> S_setminus_B = separatorShortcutVariables(B);
+    if (B.get() != this && !S_setminus_B.empty()) {
 
       // Obtain P(Fp|Sp) as a factor
+      derived_ptr parent(parent_.lock());
       boost::shared_ptr<FactorType> p_Fp_Sp = parent->conditional()->toFactor();
 
       // Obtain the parent shortcut P(Sp|B) as factors
       // TODO: really annoying that we eliminate more than we have to !
       // TODO: we should only eliminate C_p\B, with S\B variables last
       // TODO: and this index dance will be easier then, as well
-      FactorGraph<FactorType> p_Sp_B(parent->shortcut(B, &EliminateDiscrete));
+      FG p_Sp_B(parent->shortcut(B, &EliminateDiscrete));
 
       // now combine P(Cp||B) = P(Fp|Sp) * P(Sp||B)
-      FactorGraph<FactorType> p_Cp_B;
-      p_Cp_B.push_back(p_Fp_Sp);
-      p_Cp_B.push_back(p_Sp_B);
+      boost::shared_ptr<FG> p_Cp_B(new FG);
+      p_Cp_B->push_back(p_Fp_Sp);
+      p_Cp_B->push_back(p_Sp_B);
+
+      // Figure out how many variables there are in in the shortcut
+//      size_t nVariables = *max_element(S_setminus_B.begin(),S_setminus_B.end());
+//      cout << "nVariables: " << nVariables << endl;
+//      VariableIndex::shared_ptr structure(new VariableIndex(*p_Cp_B));
+//      GTSAM_PRINT(*p_Cp_B);
+//      GTSAM_PRINT(*structure);
 
       // Create a generic solver that will marginalize for us
-      GenericSequentialSolver<FactorType> solver(p_Cp_B);
+      GenericSequentialSolver<FactorType> solver(*p_Cp_B);
 
       // The factor graph above will have keys from the parent clique Cp and from B.
       // But we only keep the variables not in S union B.
-      vector<Index> keepers = indices(B, p_Cp_B);
+      vector<Index> keepers = indices(B, *p_Cp_B);
 
       p_S_B = solver.jointFactorGraph(keepers, &EliminateDiscrete);
     }
@@ -234,7 +245,7 @@ TEST_UNSAFE( DiscreteMarginals, thinTree ) {
 // Check whether BN and BT give the same answer on all configurations
 // Also calculate all some marginals
   Vector marginals = zero(15);
-  double shortcut0, sum0;
+  double shortcut8, shortcut0;
   vector<DiscreteFactor::Values> allPosbValues = cartesianProduct(
       key[0] & key[1] & key[2] & key[3] & key[4] & key[5] & key[6] & key[7]
           & key[8] & key[9] & key[10] & key[11] & key[12] & key[13] & key[14]);
@@ -247,21 +258,31 @@ TEST_UNSAFE( DiscreteMarginals, thinTree ) {
     for (size_t i = 0; i < 15; i++)
       if (x[i])
         marginals[i] += actual;
-    // calculate a deep shortcut
-    if (x[12] && x[14] & x[8])
+    // calculate shortcut 8 and 0
+    if (x[12] && x[14])
+      shortcut8 += actual;
+    if (x[8] && x[12] & x[14])
       shortcut0 += actual;
-    if (x[14])
-      sum0 += actual;
   }
   DiscreteFactor::Values all1 = allPosbValues.back();
 
-  // check shortcut P(S0||R) to root
+// check shortcut P(S9||R) to root
   Clique::shared_ptr R = bayesTree.root();
-  Clique::shared_ptr c = bayesTree[0];
+  Clique::shared_ptr c = bayesTree[9];
   DiscreteBayesNet shortcut = c->shortcut(R, &EliminateDiscrete);
-  EXPECT_DOUBLES_EQUAL(shortcut0/sum0, evaluate(shortcut,all1), 1e-9);
+  EXPECT_LONGS_EQUAL(0, shortcut.size());
 
-  // calculate all shortcuts to root
+// check shortcut P(S8||R) to root
+  c = bayesTree[8];
+  shortcut = c->shortcut(R, &EliminateDiscrete);
+  EXPECT_DOUBLES_EQUAL(shortcut8/marginals[14], evaluate(shortcut,all1), 1e-9);
+
+// check shortcut P(S0||R) to root
+  c = bayesTree[0];
+  shortcut = c->shortcut(R, &EliminateDiscrete);
+  EXPECT_DOUBLES_EQUAL(shortcut0/marginals[14], evaluate(shortcut,all1), 1e-9);
+
+// calculate all shortcuts to root
   DiscreteBayesTree::Nodes cliques = bayesTree.nodes();
   BOOST_FOREACH(Clique::shared_ptr c, cliques) {
     DiscreteBayesNet shortcut = c->shortcut(R, &EliminateDiscrete);
@@ -271,7 +292,7 @@ TEST_UNSAFE( DiscreteMarginals, thinTree ) {
     }
   }
 
-  // Check all marginals
+// Check all marginals
   DiscreteFactor::shared_ptr marginalFactor;
   for (size_t i = 0; i < 15; i++) {
     marginalFactor = bayesTree.marginalFactor(i, &EliminateDiscrete);
