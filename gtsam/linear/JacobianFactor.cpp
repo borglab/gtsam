@@ -30,9 +30,10 @@
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/make_shared.hpp>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #include <boost/bind.hpp>
-//#include <boost/lambda/bind.hpp>
-//#include <boost/lambda/lambda.hpp>
+#pragma GCC diagnostic pop
 
 #include <cmath>
 #include <sstream>

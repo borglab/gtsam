@@ -27,8 +27,11 @@
 #include <boost/spirit/include/classic_confix.hpp> 
 #include <boost/spirit/include/classic_clear_actor.hpp> 
 #include <boost/spirit/include/classic_insert_at_actor.hpp> 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #include <boost/lambda/bind.hpp> 
 #include <boost/lambda/lambda.hpp> 
+#pragma GCC diagnostic pop
 #include <boost/lambda/construct.hpp> 
 #include <boost/foreach.hpp> 
 #include <boost/filesystem.hpp> 

@@ -35,7 +35,10 @@
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/iterator/filter_iterator.hpp>
 #include <boost/function.hpp>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #include <boost/bind.hpp>
+#pragma GCC diagnostic pop
 #include <boost/ptr_container/serialize_ptr_map.hpp>
 #include <boost/iterator_adaptors.hpp>
 

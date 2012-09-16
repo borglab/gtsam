@@ -21,9 +21,12 @@
 #include <boost/mpl/char.hpp>
 #include <boost/format.hpp>
 #include <boost/function.hpp>
-#include <boost/lambda/bind.hpp>
 #include <boost/lambda/construct.hpp>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
+#include <boost/lambda/bind.hpp>
 #include <boost/lambda/lambda.hpp>
+#pragma GCC diagnostic pop
 
 #include <limits.h>
 #include <list>

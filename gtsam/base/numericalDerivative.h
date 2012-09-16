@@ -20,7 +20,10 @@
 #pragma once
 
 #include <boost/function.hpp>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #include <boost/bind.hpp>
+#pragma GCC diagnostic pop
 
 #include <gtsam/base/LieVector.h>
 #include <gtsam/base/Matrix.h>
