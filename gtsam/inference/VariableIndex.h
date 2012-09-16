@@ -64,13 +64,13 @@ public:
    * of a factor graph.  This constructor is used when the number of variables
    * is known beforehand.
    */
-  template<class FactorGraph> VariableIndex(const FactorGraph& factorGraph, Index nVariables);
+  template<class FG> VariableIndex(const FG& factorGraph, Index nVariables);
 
   /**
    * Create a VariableIndex that computes and stores the block column structure
    * of a factor graph.
    */
-  template<class FactorGraph> VariableIndex(const FactorGraph& factorGraph);
+  template<class FG> VariableIndex(const FG& factorGraph);
 
 	/// @}
 	/// @name Standard Interface
@@ -116,7 +116,7 @@ public:
    * Augment the variable index with new factors.  This can be used when
    * solving problems incrementally.
    */
-  template<class FactorGraph> void augment(const FactorGraph& factors);
+  template<class FG> void augment(const FG& factors);
 
   /**
    * Remove entries corresponding to the specified factors.
@@ -129,7 +129,7 @@ public:
    * @param factors The factors being removed, which must symbolically correspond
    * exactly to the factors with the specified \c indices that were added.
    */
-  template<typename CONTAINER, class FactorGraph> void remove(const CONTAINER& indices, const FactorGraph& factors);
+  template<typename CONTAINER, class FG> void remove(const CONTAINER& indices, const FG& factors);
 
 	/// Permute the variables in the VariableIndex according to the given permutation
 	void permuteInPlace(const Permutation& permutation);
@@ -154,14 +154,14 @@ protected:
   void checkVar(Index variable) const { assert(variable < index_.size()); }
 
   /// Internal function to populate the variable index from a factor graph
-  template<class FactorGraph> void fill(const FactorGraph& factorGraph);
+  template<class FG> void fill(const FG& factorGraph);
 
 	/// @}
 };
 
 /* ************************************************************************* */
-template<class FactorGraph>
-void VariableIndex::fill(const FactorGraph& factorGraph) {
+template<class FG>
+void VariableIndex::fill(const FG& factorGraph) {
 
   // Build index mapping from variable id to factor index
   for(size_t fi=0; fi<factorGraph.size(); ++fi) {
@@ -178,8 +178,8 @@ void VariableIndex::fill(const FactorGraph& factorGraph) {
 }
 
 /* ************************************************************************* */
-template<class FactorGraph>
-VariableIndex::VariableIndex(const FactorGraph& factorGraph) :
+template<class FG>
+VariableIndex::VariableIndex(const FG& factorGraph) :
     nFactors_(0), nEntries_(0) {
 
   // If the factor graph is empty, return an empty index because inside this
@@ -187,7 +187,7 @@ VariableIndex::VariableIndex(const FactorGraph& factorGraph) :
   if(factorGraph.size() > 0) {
     // Find highest-numbered variable
     Index maxVar = 0;
-    BOOST_FOREACH(const typename FactorGraph::sharedFactor& factor, factorGraph) {
+    BOOST_FOREACH(const typename FG::sharedFactor& factor, factorGraph) {
       if(factor) {
         BOOST_FOREACH(const Index key, factor->keys()) {
           if(key > maxVar)
@@ -204,21 +204,21 @@ VariableIndex::VariableIndex(const FactorGraph& factorGraph) :
 }
 
 /* ************************************************************************* */
-template<class FactorGraph>
-VariableIndex::VariableIndex(const FactorGraph& factorGraph, Index nVariables) :
+template<class FG>
+VariableIndex::VariableIndex(const FG& factorGraph, Index nVariables) :
     index_(nVariables), nFactors_(0), nEntries_(0) {
   fill(factorGraph);
 }
 
 /* ************************************************************************* */
-template<class FactorGraph>
-void VariableIndex::augment(const FactorGraph& factors) {
+template<class FG>
+void VariableIndex::augment(const FG& factors) {
   // If the factor graph is empty, return an empty index because inside this
   // if block we assume at least one factor.
   if(factors.size() > 0) {
     // Find highest-numbered variable
     Index maxVar = 0;
-    BOOST_FOREACH(const typename FactorGraph::sharedFactor& factor, factors) {
+    BOOST_FOREACH(const typename FG::sharedFactor& factor, factors) {
       if(factor) {
         BOOST_FOREACH(const Index key, factor->keys()) {
           if(key > maxVar)
@@ -245,8 +245,8 @@ void VariableIndex::augment(const FactorGraph& factors) {
 }
 
 /* ************************************************************************* */
-template<typename CONTAINER, class FactorGraph>
-void VariableIndex::remove(const CONTAINER& indices, const FactorGraph& factors) {
+template<typename CONTAINER, class FG>
+void VariableIndex::remove(const CONTAINER& indices, const FG& factors) {
 	// NOTE: We intentionally do not decrement nFactors_ because the factor
 	// indices need to remain consistent.  Removing factors from a factor graph
 	// does not shift the indices of other factors.  Also, we keep nFactors_
