@@ -28,92 +28,142 @@
 
 namespace gtsam {
 
-	/* ************************************************************************* */
-	template<class FACTOR>
-	GenericSequentialSolver<FACTOR>::GenericSequentialSolver(
-			const FactorGraph<FACTOR>& factorGraph) :
-			factors_(new FactorGraph<FACTOR>(factorGraph)),
-			structure_(new VariableIndex(factorGraph)),
-			eliminationTree_(EliminationTree<FACTOR>::Create(*factors_, *structure_)) {
-	}
-
-	/* ************************************************************************* */
-	template<class FACTOR>
-	GenericSequentialSolver<FACTOR>::GenericSequentialSolver(
-			const sharedFactorGraph& factorGraph,
-			const boost::shared_ptr<VariableIndex>& variableIndex) :
-			factors_(factorGraph), structure_(variableIndex),
-			eliminationTree_(EliminationTree<FACTOR>::Create(*factors_, *structure_)) {
-	}
-
-	/* ************************************************************************* */
-	template<class FACTOR>
-	void GenericSequentialSolver<FACTOR>::print(const std::string& s) const {
-		this->factors_->print(s + " factors:");
-		this->structure_->print(s + " structure:\n");
-		this->eliminationTree_->print(s + " etree:");
-	}
-
-	/* ************************************************************************* */
-	template<class FACTOR>
-	bool GenericSequentialSolver<FACTOR>::equals(
-			const GenericSequentialSolver& expected, double tol) const {
-		if (!this->factors_->equals(*expected.factors_, tol)) return false;
-		if (!this->structure_->equals(*expected.structure_, tol)) return false;
-		if (!this->eliminationTree_->equals(*expected.eliminationTree_, tol)) return false;
-		return true;
-	}
-
-	/* ************************************************************************* */
-	template<class FACTOR>
-	void GenericSequentialSolver<FACTOR>::replaceFactors(
-			const sharedFactorGraph& factorGraph) {
-		// Reset this shared pointer first to deallocate if possible - for big
-		// problems there may not be enough memory to store two copies.
-		eliminationTree_.reset();
-		factors_ = factorGraph;
-		eliminationTree_ = EliminationTree<FACTOR>::Create(*factors_, *structure_);
-	}
-
-	/* ************************************************************************* */
-	template<class FACTOR>
-	typename boost::shared_ptr<BayesNet<typename FACTOR::ConditionalType> > //
-	GenericSequentialSolver<FACTOR>::eliminate(Eliminate function) const {
-		return eliminationTree_->eliminate(function);
-	}
+  /* ************************************************************************* */
+  template<class FACTOR>
+  GenericSequentialSolver<FACTOR>::GenericSequentialSolver(
+      const FactorGraph<FACTOR>& factorGraph) :
+      factors_(new FactorGraph<FACTOR>(factorGraph)), structure_(
+          new VariableIndex(factorGraph)), eliminationTree_(
+          EliminationTree<FACTOR>::Create(*factors_, *structure_)) {
+  }
 
   /* ************************************************************************* */
   template<class FACTOR>
-  typename BayesNet<typename FACTOR::ConditionalType>::shared_ptr //
-  GenericSequentialSolver<FACTOR>::jointBayesNet(
-      const std::vector<Index>& js, Eliminate function) const {
+  GenericSequentialSolver<FACTOR>::GenericSequentialSolver(
+      const sharedFactorGraph& factorGraph,
+      const boost::shared_ptr<VariableIndex>& variableIndex) :
+      factors_(factorGraph), structure_(variableIndex), eliminationTree_(
+          EliminationTree<FACTOR>::Create(*factors_, *structure_)) {
+  }
 
-    // Compute a COLAMD permutation with the marginal variables constrained to the end.
-    Permutation::shared_ptr permutation(inference::PermutationCOLAMD(*structure_, js));
-    Permutation::shared_ptr permutationInverse(permutation->inverse());
+  /* ************************************************************************* */
+  template<class FACTOR>
+  void GenericSequentialSolver<FACTOR>::print(const std::string& s) const {
+    this->factors_->print(s + " factors:");
+    this->structure_->print(s + " structure:\n");
+    this->eliminationTree_->print(s + " etree:");
+  }
+
+  /* ************************************************************************* */
+  template<class FACTOR>
+  bool GenericSequentialSolver<FACTOR>::equals(
+      const GenericSequentialSolver& expected, double tol) const {
+    if (!this->factors_->equals(*expected.factors_, tol))
+      return false;
+    if (!this->structure_->equals(*expected.structure_, tol))
+      return false;
+    if (!this->eliminationTree_->equals(*expected.eliminationTree_, tol))
+      return false;
+    return true;
+  }
+
+  /* ************************************************************************* */
+  template<class FACTOR>
+  void GenericSequentialSolver<FACTOR>::replaceFactors(
+      const sharedFactorGraph& factorGraph) {
+    // Reset this shared pointer first to deallocate if possible - for big
+    // problems there may not be enough memory to store two copies.
+    eliminationTree_.reset();
+    factors_ = factorGraph;
+    eliminationTree_ = EliminationTree<FACTOR>::Create(*factors_, *structure_);
+  }
+
+  /* ************************************************************************* */
+  template<class FACTOR>
+  typename GenericSequentialSolver<FACTOR>::sharedBayesNet //
+  GenericSequentialSolver<FACTOR>::eliminate(Eliminate function) const {
+    return eliminationTree_->eliminate(function);
+  }
+
+  /* ************************************************************************* */
+  template<class FACTOR>
+  typename GenericSequentialSolver<FACTOR>::sharedBayesNet //
+  GenericSequentialSolver<FACTOR>::eliminate(const Permutation& permutation,
+      Eliminate function, boost::optional<size_t> nrToEliminate) const {
+
+    // Create inverse permutation
+    Permutation::shared_ptr permutationInverse(permutation.inverse());
 
     // Permute the factors - NOTE that this permutes the original factors, not
     // copies.  Other parts of the code may hold shared_ptr's to these factors so
     // we must undo the permutation before returning.
     BOOST_FOREACH(const typename boost::shared_ptr<FACTOR>& factor, *factors_)
-      if (factor) factor->permuteWithInverse(*permutationInverse);
+      if (factor)
+        factor->permuteWithInverse(*permutationInverse);
 
-    // Eliminate all variables
-    typename BayesNet<Conditional>::shared_ptr
-      bayesNet(EliminationTree<FACTOR>::Create(*factors_)->eliminate(function));
+    // Eliminate using elimination tree provided
+    typename EliminationTree<FACTOR>::shared_ptr etree;
+    if (nrToEliminate) {
+      VariableIndex structure(*factors_, *nrToEliminate);
+      etree = EliminationTree<FACTOR>::Create(*factors_, structure);
+    } else
+      etree = EliminationTree<FACTOR>::Create(*factors_);
+    sharedBayesNet bayesNet = etree->eliminate(function);
 
     // Undo the permutation on the original factors and on the structure.
     BOOST_FOREACH(const typename boost::shared_ptr<FACTOR>& factor, *factors_)
-      if (factor) factor->permuteWithInverse(*permutation);
-
-    // Get rid of conditionals on variables that we want to marginalize out
-    size_t nrMarginalizedOut = bayesNet->size()-js.size();
-    for(int i=0;i<nrMarginalizedOut;i++)
-      bayesNet->pop_front();
+      if (factor)
+        factor->permuteWithInverse(permutation);
 
     // Undo the permutation on the conditionals
     BOOST_FOREACH(const boost::shared_ptr<Conditional>& c, *bayesNet)
-      c->permuteWithInverse(*permutation);
+      c->permuteWithInverse(permutation);
+
+    return bayesNet;
+  }
+
+  /* ************************************************************************* */
+  template<class FACTOR>
+  typename GenericSequentialSolver<FACTOR>::sharedBayesNet //
+  GenericSequentialSolver<FACTOR>::conditionalBayesNet(
+      const std::vector<Index>& js, size_t nrFrontals,
+      Eliminate function) const {
+
+    // Compute a COLAMD permutation with the marginal variables constrained to the end.
+    // TODO in case of nrFrontals, the order of js has to be respected here !
+    Permutation::shared_ptr permutation(
+        inference::PermutationCOLAMD(*structure_, js));
+
+    // Eliminate only variables J \cup F from P(J,F,S) to get P(F|S)
+    size_t nrVariables = factors_->keys().size(); // TODO expensive!
+    size_t nrMarginalized = nrVariables - js.size();
+    size_t nrToEliminate = nrMarginalized + nrFrontals;
+    sharedBayesNet bayesNet = eliminate(*permutation, function, nrToEliminate);
+
+    // Get rid of conditionals on variables that we want to marginalize out
+    for (int i = 0; i < nrMarginalized; i++)
+      bayesNet->pop_front();
+
+    return bayesNet;
+  }
+
+  /* ************************************************************************* */
+  template<class FACTOR>
+  typename GenericSequentialSolver<FACTOR>::sharedBayesNet //
+  GenericSequentialSolver<FACTOR>::jointBayesNet(const std::vector<Index>& js,
+      Eliminate function) const {
+
+    // Compute a COLAMD permutation with the marginal variables constrained to the end.
+    Permutation::shared_ptr permutation(
+        inference::PermutationCOLAMD(*structure_, js));
+
+    // Eliminate all variables
+    sharedBayesNet bayesNet = eliminate(*permutation, function);
+
+    // Get rid of conditionals on variables that we want to marginalize out
+    size_t nrMarginalizedOut = bayesNet->size() - js.size();
+    for (int i = 0; i < nrMarginalizedOut; i++)
+      bayesNet->pop_front();
 
     return bayesNet;
   }
@@ -125,22 +175,23 @@ namespace gtsam {
       const std::vector<Index>& js, Eliminate function) const {
 
     // Eliminate all variables
-    typename BayesNet<Conditional>::shared_ptr
-      bayesNet = jointBayesNet(js,function);
+    typename BayesNet<Conditional>::shared_ptr bayesNet = jointBayesNet(js,
+        function);
 
     return boost::make_shared<FactorGraph<FACTOR> >(*bayesNet);
   }
 
-	/* ************************************************************************* */
-	template<class FACTOR>
-	typename boost::shared_ptr<FACTOR> //
-	GenericSequentialSolver<FACTOR>::marginalFactor(Index j, Eliminate function) const {
-		// Create a container for the one variable index
-		std::vector<Index> js(1);
-		js[0] = j;
+  /* ************************************************************************* */
+  template<class FACTOR>
+  typename boost::shared_ptr<FACTOR> //
+  GenericSequentialSolver<FACTOR>::marginalFactor(Index j,
+      Eliminate function) const {
+    // Create a container for the one variable index
+    std::vector<Index> js(1);
+    js[0] = j;
 
-		// Call joint and return the only factor in the factor graph it returns
-		return (*this->jointFactorGraph(js, function))[0];
-	}
+    // Call joint and return the only factor in the factor graph it returns
+    return (*this->jointFactorGraph(js, function))[0];
+  }
 
 } // namespace gtsam

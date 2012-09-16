@@ -56,6 +56,14 @@ namespace gtsam {
     { return Base::eliminate(&EliminateSymbolic); };
 
     /**
+     * Compute a conditional density P(F|S) while marginalizing out variables J
+     * P(F|S) is obtained by P(J,F,S)=P(J|F,S)P(F|S)P(S) and dropping P(S)
+     * Returns the result as a Bayes net.
+     */
+    SymbolicBayesNet::shared_ptr conditionalBayesNet(const std::vector<Index>& js, size_t nrFrontals) const
+    { return Base::conditionalBayesNet(js, nrFrontals, &EliminateSymbolic); };
+
+    /**
      * Compute the marginal joint over a set of variables, by integrating out
      * all of the other variables.  Returns the result as a Bayes net.
      */
