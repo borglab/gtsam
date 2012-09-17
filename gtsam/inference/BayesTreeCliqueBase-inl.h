@@ -51,24 +51,12 @@ namespace gtsam {
       derived_ptr B, const FactorGraph<FactorType>& p_Cp_B) const {
     std::set<Index> allKeys = p_Cp_B.keys();
     std::vector<Index> &indicesB = B->conditional()->keys();
-    std::vector<Index> keep;
-#ifdef OLD_INDICES
-    // We do this by first merging S and B
-    sharedConditional p_F_S = this->conditional();
-    std::vector<Index> S_union_B;
-    std::set_union(p_F_S->beginParents(), p_F_S->endParents(),//
-        indicesB.begin(), indicesB.end(), back_inserter(S_union_B));
-
-    // then intersecting S_union_B with all keys in p_Cp_B
-    std::set_intersection(S_union_B.begin(), S_union_B.end(),//
-        allKeys.begin(), allKeys.end(), back_inserter(keep));
-#else
     std::vector<Index> S_setminus_B = separator_setminus_B(B); // TODO, get as argument?
+    std::vector<Index> keep;
     std::set_intersection(S_setminus_B.begin(), S_setminus_B.end(), //
         allKeys.begin(), allKeys.end(), back_inserter(keep));
     std::set_intersection(indicesB.begin(), indicesB.end(), //
         allKeys.begin(), allKeys.end(), back_inserter(keep));
-#endif
     // BOOST_FOREACH(Index j, keep) std::cout << j << " "; std::cout << std::endl;
     return keep;
   }
