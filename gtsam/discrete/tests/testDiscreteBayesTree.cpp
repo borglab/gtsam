@@ -36,40 +36,6 @@ class Clique: public BayesTreeCliqueBase<Clique, DiscreteConditional> {
 
 protected:
 
-  /// Calculate set S\B
-  vector<Index> separatorShortcutVariables(derived_ptr B) const {
-    sharedConditional p_F_S = this->conditional();
-    vector<Index> &indicesB = B->conditional()->keys();
-    vector<Index> S_setminus_B;
-    set_difference(p_F_S->beginParents(), p_F_S->endParents(), //
-        indicesB.begin(), indicesB.end(), back_inserter(S_setminus_B));
-    return S_setminus_B;
-  }
-
-  /**
-   * Determine variable indices to keep in recursive separator shortcut calculation
-   * The factor graph p_Cp_B has keys from the parent clique Cp and from B.
-   * But we only keep the variables not in S union B.
-   */
-  vector<Index> indices(derived_ptr B,
-      const FactorGraph<FactorType>& p_Cp_B) const {
-
-    // We do this by first merging S and B
-    sharedConditional p_F_S = this->conditional();
-    vector<Index> &indicesB = B->conditional()->keys();
-    vector<Index> S_union_B;
-    set_union(p_F_S->beginParents(), p_F_S->endParents(), //
-        indicesB.begin(), indicesB.end(), back_inserter(S_union_B));
-
-    // then intersecting S_union_B with all keys in p_Cp_B
-    set<Index> allKeys = p_Cp_B.keys();
-    vector<Index> keepers;
-    set_intersection(S_union_B.begin(), S_union_B.end(), //
-        allKeys.begin(), allKeys.end(), back_inserter(keepers));
-
-    return keepers;
-  }
-
 public:
 
   typedef BayesTreeCliqueBase<Clique, DiscreteConditional> Base;
@@ -102,88 +68,6 @@ public:
     return result;
   }
 
-  /**
-   * Separator shortcut function P(S||B) = P(S\B|B)
-   * where S is a clique separator, and B any node (e.g., a brancing in the tree)
-   * We can compute it recursively from the parent shortcut
-   * P(Sp||B) as \int P(Fp|Sp) P(Sp||B), where Fp are the frontal nodes in p
-   */
-  FactorGraph<FactorType>::shared_ptr separatorShortcut(derived_ptr B) const {
-
-    typedef FactorGraph<FactorType> FG;
-
-    FG::shared_ptr p_S_B; //shortcut P(S||B) This is empty now
-
-    // We only calculate the shortcut when this clique is not B
-    // and when the S\B is not empty
-    vector<Index> S_setminus_B = separatorShortcutVariables(B);
-    if (B.get() != this && !S_setminus_B.empty()) {
-
-      // Obtain P(Fp|Sp) as a factor
-      derived_ptr parent(parent_.lock());
-      boost::shared_ptr<FactorType> p_Fp_Sp = parent->conditional()->toFactor();
-
-      // Obtain the parent shortcut P(Sp|B) as factors
-      // TODO: really annoying that we eliminate more than we have to !
-      // TODO: we should only eliminate C_p\B, with S\B variables last
-      // TODO: and this index dance will be easier then, as well
-      FG p_Sp_B(parent->shortcut(B, &EliminateDiscrete));
-
-      // now combine P(Cp||B) = P(Fp|Sp) * P(Sp||B)
-      boost::shared_ptr<FG> p_Cp_B(new FG);
-      p_Cp_B->push_back(p_Fp_Sp);
-      p_Cp_B->push_back(p_Sp_B);
-
-      // Figure out how many variables there are in in the shortcut
-//      size_t nVariables = *max_element(S_setminus_B.begin(),S_setminus_B.end());
-//      cout << "nVariables: " << nVariables << endl;
-//      VariableIndex::shared_ptr structure(new VariableIndex(*p_Cp_B));
-//      GTSAM_PRINT(*p_Cp_B);
-//      GTSAM_PRINT(*structure);
-
-      // Create a generic solver that will marginalize for us
-      GenericSequentialSolver<FactorType> solver(*p_Cp_B);
-
-      // The factor graph above will have keys from the parent clique Cp and from B.
-      // But we only keep the variables not in S union B.
-      vector<Index> keepers = indices(B, *p_Cp_B);
-
-      p_S_B = solver.jointFactorGraph(keepers, &EliminateDiscrete);
-    }
-    // return the shortcut P(S||B)
-    return p_S_B;
-  }
-
-  /**
-   * The shortcut density is a conditional P(S||B) of the separator of this
-   * clique on the clique B.
-   */
-  BayesNet<DiscreteConditional> shortcut(derived_ptr B,
-      Eliminate function) const {
-
-    //Check if the ShortCut already exists
-    if (cachedShortcut_) {
-      return *cachedShortcut_; // return the cached version
-    } else {
-      BayesNet<DiscreteConditional> bn;
-      FactorGraph<FactorType>::shared_ptr fg = separatorShortcut(B);
-      if (fg) {
-        // calculate set S\B of indices to keep in Bayes net
-        vector<Index> S_setminus_B = separatorShortcutVariables(B);
-        set<Index> keep(S_setminus_B.begin(), S_setminus_B.end());
-
-        BOOST_FOREACH (FactorType::shared_ptr factor,*fg) {
-          DecisionTreeFactor::shared_ptr df = boost::dynamic_pointer_cast<
-              DecisionTreeFactor>(factor);
-          if (keep.count(*factor->begin()))
-            bn.push_front(boost::make_shared<DiscreteConditional>(1, *df));
-        }
-      }
-      cachedShortcut_ = bn;
-      return bn;
-    }
-  }
-
 };
 
 typedef BayesTree<DiscreteConditional, Clique> DiscreteBayesTree;
@@ -196,7 +80,7 @@ double evaluate(const DiscreteBayesTree& tree,
 
 /* ************************************************************************* */
 
-TEST_UNSAFE( DiscreteMarginals, thinTree ) {
+TEST_UNSAFE( DiscreteBayesTree, thinTree ) {
 
   const int nrNodes = 15;
   const size_t nrStates = 2;
