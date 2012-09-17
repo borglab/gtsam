@@ -31,7 +31,7 @@ using namespace gtsam;
 TEST( SymbolicSequentialSolver, SymbolicSequentialSolver ) {
   // create factor graph
   SymbolicFactorGraph g;
-  g.push_factor(2, 2, 0);
+  g.push_factor(2, 1, 0);
   g.push_factor(2, 0);
   g.push_factor(2);
   // test solver is Testable
@@ -116,10 +116,31 @@ TEST( SymbolicSequentialSolver, inference ) {
     SymbolicBayesNet::shared_ptr actualBN = //
         solver.conditionalBayesNet(js, nrFrontals);
     SymbolicBayesNet expectedBN;
-    expectedBN.push_front(boost::make_shared<IndexConditional>(3, 2));
-    expectedBN.push_front(boost::make_shared<IndexConditional>(0, 3, 2));
+    expectedBN.push_front(boost::make_shared<IndexConditional>(2, 3));
+    expectedBN.push_front(boost::make_shared<IndexConditional>(0, 2, 3));
     EXPECT( assert_equal(expectedBN,*actualBN));
   }
+}
+
+/* ************************************************************************* */
+// This test shows a problem with my (Frank) attempt at a faster conditionalBayesNet
+TEST( SymbolicSequentialSolver, problematicConditional ) {
+  // Create factor graph
+  SymbolicFactorGraph fg;
+  fg.push_factor(9, 12, 14);
+
+  // eliminate
+  SymbolicSequentialSolver solver(fg);
+  // conditionalBayesNet
+  vector<Index> js;
+  js.push_back(12);
+  js.push_back(14);
+  size_t nrFrontals = 1;
+  SymbolicBayesNet::shared_ptr actualBN = //
+      solver.conditionalBayesNet(js, nrFrontals);
+  SymbolicBayesNet expectedBN;
+  expectedBN.push_front(boost::make_shared<IndexConditional>(12,14));
+  EXPECT( assert_equal(expectedBN,*actualBN));
 }
 
 /* ************************************************************************* */
