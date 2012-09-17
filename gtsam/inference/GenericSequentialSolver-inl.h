@@ -187,7 +187,7 @@ namespace gtsam {
 
     // Get rid of conditionals on variables that we want to marginalize out
     size_t nrMarginalized = bayesNet->size() - js.size();
-    for (int i = 0; i < nrMarginalized; i++)
+    for (size_t i = 0; i < nrMarginalized; i++)
       bayesNet->pop_front();
 
     return bayesNet;

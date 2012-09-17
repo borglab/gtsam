@@ -20,6 +20,8 @@
 
 #include <gtsam/inference/Factor.h>
 
+#include <boost/range.hpp>
+
 #include <iostream>
 #include <list>
 
