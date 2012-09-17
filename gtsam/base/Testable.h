@@ -90,8 +90,8 @@ namespace gtsam {
 		if (actual.equals(expected, tol))
 			return true;
 		printf("Not equal:\n");
-		expected.print("expected");
-		actual.print("actual");
+		expected.print("expected:\n");
+		actual.print("actual:\n");
 		return false;
 	}
 
