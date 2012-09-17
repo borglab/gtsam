@@ -192,7 +192,10 @@ namespace gtsam {
     FactorGraph<FactorType> marginal(derived_ptr root,
         Eliminate function) const;
 
-    /** return the joint P(C1,C2), where C1==this. TODO: not a method? */
+    /**
+     * return the joint P(C1,C2), where C1==this. TODO: not a method?
+     * Limitation: can only calculate joint if cliques are disjoint or one of them is root
+     */
     FactorGraph<FactorType> joint(derived_ptr C2, derived_ptr root,
         Eliminate function) const;
 

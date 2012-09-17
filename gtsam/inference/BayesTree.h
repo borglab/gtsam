@@ -186,10 +186,16 @@ namespace gtsam {
 		 */
 		typename BayesNet<CONDITIONAL>::shared_ptr marginalBayesNet(Index j, Eliminate function) const;
 
-		/** return joint on two variables */
+		/**
+		 * return joint on two variables
+     * Limitation: can only calculate joint if cliques are disjoint or one of them is root
+		 */
 		typename FactorGraph<FactorType>::shared_ptr joint(Index j1, Index j2, Eliminate function) const;
 
-		/** return joint on two variables as a BayesNet */
+		/**
+		 * return joint on two variables as a BayesNet
+     * Limitation: can only calculate joint if cliques are disjoint or one of them is root
+		 */
 		typename BayesNet<CONDITIONAL>::shared_ptr jointBayesNet(Index j1, Index j2, Eliminate function) const;
 
 		/**

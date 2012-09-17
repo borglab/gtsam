@@ -85,14 +85,14 @@ TEST_UNSAFE( DiscreteBayesTree, thinTree ) {
   const int nrNodes = 15;
   const size_t nrStates = 2;
 
-// define variables
+  // define variables
   vector<DiscreteKey> key;
   for (int i = 0; i < nrNodes; i++) {
     DiscreteKey key_i(i, nrStates);
     key.push_back(key_i);
   }
 
-// create a thin-tree Bayesnet, a la Jean-Guillaume
+  // create a thin-tree Bayesnet, a la Jean-Guillaume
   DiscreteBayesNet bayesNet;
   add_front(bayesNet, key[14] % "1/3");
 
@@ -119,17 +119,18 @@ TEST_UNSAFE( DiscreteBayesTree, thinTree ) {
     bayesNet.saveGraph("/tmp/discreteBayesNet.dot");
   }
 
-// create a BayesTree out of a Bayes net
+  // create a BayesTree out of a Bayes net
   DiscreteBayesTree bayesTree(bayesNet);
   if (debug) {
     GTSAM_PRINT(bayesTree);
     bayesTree.saveGraph("/tmp/discreteBayesTree.dot");
   }
 
-// Check whether BN and BT give the same answer on all configurations
-// Also calculate all some marginals
+  // Check whether BN and BT give the same answer on all configurations
+  // Also calculate all some marginals
   Vector marginals = zero(15);
-  double shortcut8, shortcut0;
+  double joint_12_14 = 0, joint_9_12_14 = 0, joint_8_12_14 = 0, joint82 = 0,
+      joint12 = 0, joint24 = 0, joint45 = 0, joint46 = 0, joint_4_11 = 0;
   vector<DiscreteFactor::Values> allPosbValues = cartesianProduct(
       key[0] & key[1] & key[2] & key[3] & key[4] & key[5] & key[6] & key[7]
           & key[8] & key[9] & key[10] & key[11] & key[12] & key[13] & key[14]);
@@ -144,47 +145,93 @@ TEST_UNSAFE( DiscreteBayesTree, thinTree ) {
         marginals[i] += actual;
     // calculate shortcut 8 and 0
     if (x[12] && x[14])
-      shortcut8 += actual;
+      joint_12_14 += actual;
+    if (x[9] && x[12] & x[14])
+      joint_9_12_14 += actual;
     if (x[8] && x[12] & x[14])
-      shortcut0 += actual;
+      joint_8_12_14 += actual;
+    if (x[8] && x[2])
+      joint82 += actual;
+    if (x[1] && x[2])
+      joint12 += actual;
+    if (x[2] && x[4])
+      joint24 += actual;
+    if (x[4] && x[5])
+      joint45 += actual;
+    if (x[4] && x[6])
+      joint46 += actual;
+    if (x[4] && x[11])
+      joint_4_11 += actual;
   }
   DiscreteFactor::Values all1 = allPosbValues.back();
 
-// check shortcut P(S9||R) to root
+  // check shortcut P(S9||R) to root
   Clique::shared_ptr R = bayesTree.root();
   Clique::shared_ptr c = bayesTree[9];
-  DiscreteBayesNet shortcut = c->shortcut(R, &EliminateDiscrete);
+  DiscreteBayesNet shortcut = c->shortcut(R, EliminateDiscrete);
   EXPECT_LONGS_EQUAL(0, shortcut.size());
 
-// check shortcut P(S8||R) to root
+  // check shortcut P(S8||R) to root
   c = bayesTree[8];
-  shortcut = c->shortcut(R, &EliminateDiscrete);
-  EXPECT_DOUBLES_EQUAL(shortcut8/marginals[14], evaluate(shortcut,all1), 1e-9);
+  shortcut = c->shortcut(R, EliminateDiscrete);
+  EXPECT_DOUBLES_EQUAL(joint_12_14/marginals[14], evaluate(shortcut,all1),
+      1e-9);
 
-// check shortcut P(S0||R) to root
+  // check shortcut P(S2||R) to root
+  c = bayesTree[2];
+  shortcut = c->shortcut(R, EliminateDiscrete);
+  EXPECT_DOUBLES_EQUAL(joint_9_12_14/marginals[14], evaluate(shortcut,all1),
+      1e-9);
+
+  // check shortcut P(S0||R) to root
   c = bayesTree[0];
-  shortcut = c->shortcut(R, &EliminateDiscrete);
-  EXPECT_DOUBLES_EQUAL(shortcut0/marginals[14], evaluate(shortcut,all1), 1e-9);
+  shortcut = c->shortcut(R, EliminateDiscrete);
+  EXPECT_DOUBLES_EQUAL(joint_8_12_14/marginals[14], evaluate(shortcut,all1),
+      1e-9);
 
-// calculate all shortcuts to root
+  // calculate all shortcuts to root
   DiscreteBayesTree::Nodes cliques = bayesTree.nodes();
   BOOST_FOREACH(Clique::shared_ptr c, cliques) {
-    DiscreteBayesNet shortcut = c->shortcut(R, &EliminateDiscrete);
+    DiscreteBayesNet shortcut = c->shortcut(R, EliminateDiscrete);
     if (debug) {
       c->printSignature();
       shortcut.print("shortcut:");
     }
   }
 
-// Check all marginals
+  // Check all marginals
   DiscreteFactor::shared_ptr marginalFactor;
   for (size_t i = 0; i < 15; i++) {
-    marginalFactor = bayesTree.marginalFactor(i, &EliminateDiscrete);
-    DiscreteFactor::Values x;
-    x[i] = 1;
-    double actual = (*marginalFactor)(x);
+    marginalFactor = bayesTree.marginalFactor(i, EliminateDiscrete);
+    double actual = (*marginalFactor)(all1);
     EXPECT_DOUBLES_EQUAL(marginals[i], actual, 1e-9);
   }
+
+  DiscreteBayesNet::shared_ptr actualJoint;
+
+  // Check joint P(8,2) TODO: not disjoint !
+//  actualJoint = bayesTree.jointBayesNet(8, 2, EliminateDiscrete);
+//  EXPECT_DOUBLES_EQUAL(joint82, evaluate(*actualJoint,all1), 1e-9);
+
+  // Check joint P(1,2) TODO: not disjoint !
+//  actualJoint = bayesTree.jointBayesNet(1, 2, EliminateDiscrete);
+//  EXPECT_DOUBLES_EQUAL(joint12, evaluate(*actualJoint,all1), 1e-9);
+
+  // Check joint P(2,4)
+  actualJoint = bayesTree.jointBayesNet(2, 4, EliminateDiscrete);
+  EXPECT_DOUBLES_EQUAL(joint24, evaluate(*actualJoint,all1), 1e-9);
+
+  // Check joint P(4,5) TODO: not disjoint !
+//  actualJoint = bayesTree.jointBayesNet(4, 5, EliminateDiscrete);
+//  EXPECT_DOUBLES_EQUAL(joint46, evaluate(*actualJoint,all1), 1e-9);
+
+  // Check joint P(4,6) TODO: not disjoint !
+//  actualJoint = bayesTree.jointBayesNet(4, 6, EliminateDiscrete);
+//  EXPECT_DOUBLES_EQUAL(joint46, evaluate(*actualJoint,all1), 1e-9);
+
+  // Check joint P(4,11)
+  actualJoint = bayesTree.jointBayesNet(4, 11, EliminateDiscrete);
+  EXPECT_DOUBLES_EQUAL(joint_4_11, evaluate(*actualJoint,all1), 1e-9);
 
 }
 

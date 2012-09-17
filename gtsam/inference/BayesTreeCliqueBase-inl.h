@@ -221,32 +221,38 @@ namespace gtsam {
       Eliminate function) const {
     // For now, assume neither is the root
 
+    sharedConditional p_F1_S1 = this->conditional();
+    sharedConditional p_F2_S2 = C2->conditional();
+
     // Combine P(F1|S1), P(S1|R), P(F2|S2), P(S2|R), and P(R)
     FactorGraph<FactorType> joint;
-    if (!isRoot())
-      joint.push_back(this->conditional()->toFactor()); // P(F1|S1)
-    if (!isRoot())
+    if (!isRoot()) {
+      joint.push_back(p_F1_S1->toFactor()); // P(F1|S1)
       joint.push_back(shortcut(R, function)); // P(S1|R)
-    if (!C2->isRoot())
-      joint.push_back(C2->conditional()->toFactor()); // P(F2|S2)
-    if (!C2->isRoot())
+    }
+    if (!C2->isRoot()) {
+      joint.push_back(p_F2_S2->toFactor()); // P(F2|S2)
       joint.push_back(C2->shortcut(R, function)); // P(S2|R)
+    }
     joint.push_back(R->conditional()->toFactor()); // P(R)
 
-    // Find the keys of both C1 and C2
-    std::vector<Index> keys1(conditional_->keys());
-    std::vector<Index> keys2(C2->conditional_->keys());
-    FastSet<Index> keys12;
-    keys12.insert(keys1.begin(), keys1.end());
-    keys12.insert(keys2.begin(), keys2.end());
+    // Merge the keys of C1 and C2
+    std::vector<Index> keys12;
+    std::vector<Index> &indices1 = p_F1_S1->keys(), &indices2 = p_F2_S2->keys();
+    std::set_union(indices1.begin(), indices1.end(), //
+        indices2.begin(), indices2.end(), std::back_inserter(keys12));
+
+    // Check validity
+    bool cliques_intersect = (keys12.size() < indices1.size() + indices2.size());
+    if (!isRoot() && !C2->isRoot() && cliques_intersect)
+      throw std::runtime_error(
+          "BayesTreeCliqueBase::joint can only calculate joint if cliques are disjoint\n"
+          "or one of them is the root clique");
 
     // Calculate the marginal
-    std::vector<Index> keys12vector;
-    keys12vector.reserve(keys12.size());
-    keys12vector.insert(keys12vector.begin(), keys12.begin(), keys12.end());
     assertInvariants();
     GenericSequentialSolver<FactorType> solver(joint);
-    return *solver.jointFactorGraph(keys12vector, function);
+    return *solver.jointFactorGraph(keys12, function);
   }
 
   /* ************************************************************************* */

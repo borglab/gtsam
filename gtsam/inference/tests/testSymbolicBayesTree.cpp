@@ -100,6 +100,16 @@ TEST_UNSAFE( SymbolicBayesTree, thinTree ) {
   }
 
   {
+    // check shortcut P(S2||R) to root
+    SymbolicBayesTree::Clique::shared_ptr c = bayesTree[2];
+    SymbolicBayesNet shortcut = c->shortcut(R, EliminateSymbolic);
+    SymbolicBayesNet expected;
+    expected.push_front(boost::make_shared<IndexConditional>(12, 14));
+    expected.push_front(boost::make_shared<IndexConditional>(9, 12, 14));
+    EXPECT(assert_equal(expected, shortcut));
+  }
+
+  {
     // check shortcut P(S0||R) to root
     SymbolicBayesTree::Clique::shared_ptr c = bayesTree[0];
     SymbolicBayesNet shortcut = c->shortcut(R, EliminateSymbolic);
@@ -107,6 +117,44 @@ TEST_UNSAFE( SymbolicBayesTree, thinTree ) {
     expected.push_front(boost::make_shared<IndexConditional>(12, 14));
     expected.push_front(boost::make_shared<IndexConditional>(8, 12, 14));
     EXPECT(assert_equal(expected, shortcut));
+  }
+
+  SymbolicBayesNet::shared_ptr actualJoint;
+
+  // Check joint P(8,2)
+  if (false) { // TODO, not disjoint
+    actualJoint = bayesTree.jointBayesNet(8, 2, EliminateSymbolic);
+    SymbolicBayesNet expected;
+    expected.push_front(boost::make_shared<IndexConditional>(8));
+    expected.push_front(boost::make_shared<IndexConditional>(2, 8));
+    EXPECT(assert_equal(expected, *actualJoint));
+  }
+
+  // Check joint P(1,2)
+  if (false) { // TODO, not disjoint
+    actualJoint = bayesTree.jointBayesNet(1, 2, EliminateSymbolic);
+    SymbolicBayesNet expected;
+    expected.push_front(boost::make_shared<IndexConditional>(2));
+    expected.push_front(boost::make_shared<IndexConditional>(1, 2));
+    EXPECT(assert_equal(expected, *actualJoint));
+  }
+
+  // Check joint P(2,6)
+  if (true) {
+    actualJoint = bayesTree.jointBayesNet(2, 6, EliminateSymbolic);
+    SymbolicBayesNet expected;
+    expected.push_front(boost::make_shared<IndexConditional>(6));
+    expected.push_front(boost::make_shared<IndexConditional>(2, 6));
+    EXPECT(assert_equal(expected, *actualJoint));
+  }
+
+  // Check joint P(4,6)
+  if (false) { // TODO, not disjoint
+    actualJoint = bayesTree.jointBayesNet(4, 6, EliminateSymbolic);
+    SymbolicBayesNet expected;
+    expected.push_front(boost::make_shared<IndexConditional>(6));
+    expected.push_front(boost::make_shared<IndexConditional>(4, 6));
+    EXPECT(assert_equal(expected, *actualJoint));
   }
 }
 
