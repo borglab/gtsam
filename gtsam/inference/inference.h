@@ -43,10 +43,11 @@ namespace gtsam {
 		 * @param variableIndex is the variable index lookup from a graph
 		 * @param constrainlast is a vector of keys that should be constrained
 		 * @tparam constrainLast is a std::vector (or similar structure)
+		 * @param forceOrder if true, will not allow re-ordering of constrained variables
 		 */
 		template<typename CONSTRAINED>
 		Permutation::shared_ptr PermutationCOLAMD(
-				const VariableIndex& variableIndex, const CONSTRAINED& constrainLast);
+				const VariableIndex& variableIndex, const CONSTRAINED& constrainLast, bool forceOrder=false);
 
 		/**
 		 * Compute a permutation of variable ordering using constrained colamd to

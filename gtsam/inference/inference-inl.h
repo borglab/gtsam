@@ -32,31 +32,39 @@ namespace inference {
 /* ************************************************************************* */
 template<typename CONSTRAINED>
 Permutation::shared_ptr PermutationCOLAMD(
-		const VariableIndex& variableIndex, const CONSTRAINED& constrainLast) {
+		const VariableIndex& variableIndex, const CONSTRAINED& constrainLast, bool forceOrder) {
 
-  std::vector<int> cmember(variableIndex.size(), 0);
+  size_t n = variableIndex.size();
+  std::vector<int> cmember(n, 0);
 
   // If at least some variables are not constrained to be last, constrain the
   // ones that should be constrained.
-  if(constrainLast.size() < variableIndex.size()) {
+  if(constrainLast.size() < n) {
     BOOST_FOREACH(Index var, constrainLast) {
-      assert(var < variableIndex.size());
+      assert(var < n);
       cmember[var] = 1;
     }
   }
 
-  return PermutationCOLAMD_(variableIndex, cmember);
+  Permutation::shared_ptr permutation = PermutationCOLAMD_(variableIndex, cmember);
+  if (forceOrder) {
+    Index j=n;
+    BOOST_REVERSE_FOREACH(Index c, constrainLast)
+      permutation->operator[](--j) = c;
+  }
+  return permutation;
 }
 
 /* ************************************************************************* */
 template<typename CONSTRAINED_MAP>
 Permutation::shared_ptr PermutationCOLAMDGrouped(
 		const VariableIndex& variableIndex, const CONSTRAINED_MAP& constraints) {
-  std::vector<int> cmember(variableIndex.size(), 0);
+  size_t n = variableIndex.size();
+  std::vector<int> cmember(n, 0);
 
 	typedef typename CONSTRAINED_MAP::value_type constraint_pair;
   BOOST_FOREACH(const constraint_pair& p, constraints) {
-  	assert(p.first < variableIndex.size());
+  	assert(p.first < n);
   	// FIXME: check that no groups are skipped
   	cmember[p.first] = p.second;
   }
@@ -66,7 +74,8 @@ Permutation::shared_ptr PermutationCOLAMDGrouped(
 
 /* ************************************************************************* */
 inline Permutation::shared_ptr PermutationCOLAMD(const VariableIndex& variableIndex) {
-  std::vector<int> cmember(variableIndex.size(), 0);
+  size_t n = variableIndex.size();
+  std::vector<int> cmember(n, 0);
   return PermutationCOLAMD_(variableIndex, cmember);
 }
 
