@@ -64,6 +64,7 @@ namespace gtsam {
 
     typedef boost::shared_ptr<FactorGraph<FACTOR> > sharedFactorGraph;
     typedef typename FACTOR::ConditionalType Conditional;
+    typedef typename boost::shared_ptr<Conditional> sharedConditional;
     typedef typename boost::shared_ptr<BayesNet<Conditional> > sharedBayesNet;
     typedef std::pair<boost::shared_ptr<Conditional>, boost::shared_ptr<FACTOR> > EliminationResult;
     typedef boost::function<
@@ -86,11 +87,14 @@ namespace gtsam {
 
     /**
      * Eliminate in a different order, given a permutation
-     * If given a number of variables to eliminate, will only eliminate that many
      */
     sharedBayesNet
-    eliminate(const Permutation& permutation, Eliminate function,
-        boost::optional<size_t> nrToEliminate = boost::none) const;
+    eliminate(const Permutation& permutation, Eliminate function
+#ifdef ATTEMPT_AT_NOT_ELIMINATING_ALL
+        , boost::optional<size_t> nrToEliminate = boost::none
+        // If given a number of variables to eliminate, will only eliminate that many
+#endif
+        ) const;
 
   public:
 

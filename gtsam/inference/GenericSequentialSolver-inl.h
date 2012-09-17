@@ -89,7 +89,11 @@ namespace gtsam {
   template<class FACTOR>
   typename GenericSequentialSolver<FACTOR>::sharedBayesNet //
   GenericSequentialSolver<FACTOR>::eliminate(const Permutation& permutation,
-      Eliminate function, boost::optional<size_t> nrToEliminate) const {
+      Eliminate function
+#ifdef ATTEMPT_AT_NOT_ELIMINATING_ALL
+      , boost::optional<size_t> nrToEliminate
+#endif
+      ) const {
 
     // Create inverse permutation
     Permutation::shared_ptr permutationInverse(permutation.inverse());
@@ -103,11 +107,13 @@ namespace gtsam {
 
     // Eliminate using elimination tree provided
     typename EliminationTree<FACTOR>::shared_ptr etree;
+#ifdef ATTEMPT_AT_NOT_ELIMINATING_ALL
     if (nrToEliminate) {
       VariableIndex structure(*factors_, *nrToEliminate);
       etree = EliminationTree<FACTOR>::Create(*factors_, structure);
     } else
-      etree = EliminationTree<FACTOR>::Create(*factors_);
+#endif
+    etree = EliminationTree<FACTOR>::Create(*factors_);
     sharedBayesNet bayesNet = etree->eliminate(function);
 
     // Undo the permutation on the original factors and on the structure.
@@ -132,17 +138,36 @@ namespace gtsam {
     // Compute a COLAMD permutation with the marginal variables constrained to the end.
     // TODO in case of nrFrontals, the order of js has to be respected here !
     Permutation::shared_ptr permutation(
-        inference::PermutationCOLAMD(*structure_, js));
+        inference::PermutationCOLAMD(*structure_, js, true));
 
+#ifdef ATTEMPT_AT_NOT_ELIMINATING_ALL
+    // TODO Frank says: this was my attempt at eliminating exactly
+    // as many variables as we need. Unfortunately, in some cases
+    // (see testSymbolicSequentialSolver::problematicConditional)
+    // my trick below (passing nrToEliminate to eliminate) sometimes leads
+    // to a disconnected graph.
     // Eliminate only variables J \cup F from P(J,F,S) to get P(F|S)
-    size_t nrVariables = factors_->keys().size(); // TODO expensive!
+    size_t nrVariables = factors_->keys().size();// TODO expensive!
     size_t nrMarginalized = nrVariables - js.size();
     size_t nrToEliminate = nrMarginalized + nrFrontals;
     sharedBayesNet bayesNet = eliminate(*permutation, function, nrToEliminate);
-
     // Get rid of conditionals on variables that we want to marginalize out
     for (int i = 0; i < nrMarginalized; i++)
-      bayesNet->pop_front();
+    bayesNet->pop_front();
+#else
+    // Eliminate all variables
+    sharedBayesNet fullBayesNet = eliminate(*permutation, function);
+
+    // Get rid of conditionals we do not need (front and back)
+    size_t nrMarginalized = fullBayesNet->size() - js.size();
+    sharedBayesNet bayesNet(new BayesNet<Conditional>());
+    size_t i = 1;
+    BOOST_FOREACH(sharedConditional c, *fullBayesNet) {
+      if (i > nrMarginalized && i - nrMarginalized <= nrFrontals)
+        bayesNet->push_back(c);
+      i += 1;
+    }
+#endif
 
     return bayesNet;
   }
@@ -161,8 +186,8 @@ namespace gtsam {
     sharedBayesNet bayesNet = eliminate(*permutation, function);
 
     // Get rid of conditionals on variables that we want to marginalize out
-    size_t nrMarginalizedOut = bayesNet->size() - js.size();
-    for (int i = 0; i < nrMarginalizedOut; i++)
+    size_t nrMarginalized = bayesNet->size() - js.size();
+    for (int i = 0; i < nrMarginalized; i++)
       bayesNet->pop_front();
 
     return bayesNet;
