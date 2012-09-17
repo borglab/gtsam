@@ -75,10 +75,16 @@ namespace gtsam {
 		}
 
     /** Constructor from keys and nr of frontal variables */
-		IndexConditional(const std::vector<Index>& keys, size_t nrFrontals) :
-			Base(keys, nrFrontals) {
-			assertInvariants();
-		}
+    IndexConditional(const std::vector<Index>& keys, size_t nrFrontals) :
+      Base(keys, nrFrontals) {
+      assertInvariants();
+    }
+
+    /** Constructor from keys and nr of frontal variables */
+    IndexConditional(const std::list<Index>& keys, size_t nrFrontals) :
+      Base(keys, nrFrontals) {
+      assertInvariants();
+    }
 
 		/// @}
 		/// @name Standard Interface
