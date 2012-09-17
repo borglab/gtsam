@@ -213,6 +213,58 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  // separator marginal, uses separator marginal of parent recursively
+  // P(C) = P(F|S) P(S)
+  /* ************************************************************************* */
+  template<class DERIVED, class CONDITIONAL>
+  FactorGraph<typename BayesTreeCliqueBase<DERIVED, CONDITIONAL>::FactorType> BayesTreeCliqueBase<
+      DERIVED, CONDITIONAL>::separatorMarginal(derived_ptr R, Eliminate function) const {
+    // Check if the Separator marginal was already calculated
+    if (!cachedSeparatorMarginal_) {
+
+      // If this is the root, there is no separator
+      if (R.get() == this) {
+        // we are root, return empty
+        FactorGraph<FactorType> empty;
+        cachedSeparatorMarginal_ = empty;
+      } else {
+        // Obtain P(S) = \int P(Cp) = \int P(Fp|Sp) P(Sp)
+        // initialize P(Cp) with the parent separator marginal
+        derived_ptr parent(parent_.lock());
+        FactorGraph<FactorType> p_Cp(parent->separatorMarginal(R, function)); // P(Sp)
+        // now add the parent cobnditional
+        p_Cp.push_back(parent->conditional()->toFactor()); // P(Fp|Sp)
+
+        // Create solver that will marginalize for us
+        GenericSequentialSolver<FactorType> solver(p_Cp);
+
+        // The variables we want to keep are exactly the ones in S
+        sharedConditional p_F_S = this->conditional();
+        std::vector<Index> indicesS(p_F_S->beginParents(), p_F_S->endParents());
+
+        cachedSeparatorMarginal_ = *(solver.jointBayesNet(indicesS, function));
+      }
+    }
+
+    // return the shortcut P(S||B)
+    return *cachedSeparatorMarginal_; // return the cached version
+  }
+
+  /* ************************************************************************* */
+  // marginal2, uses separator marginal of parent recursively
+  // P(C) = P(F|S) P(S)
+  /* ************************************************************************* */
+  template<class DERIVED, class CONDITIONAL>
+  FactorGraph<typename BayesTreeCliqueBase<DERIVED, CONDITIONAL>::FactorType> BayesTreeCliqueBase<
+      DERIVED, CONDITIONAL>::marginal2(derived_ptr R, Eliminate function) const {
+    // initialize with separator marginal P(S)
+    FactorGraph<FactorType> p_C(this->separatorMarginal(R, function));
+    // add the conditional P(F|S)
+    p_C.push_back(this->conditional()->toFactor());
+    return p_C;
+  }
+
+  /* ************************************************************************* */
   // P(C1,C2) = \int_R P(F1|S1) P(S1|R) P(F2|S1) P(S2|R) P(R)
   /* ************************************************************************* */
   template<class DERIVED, class CONDITIONAL>

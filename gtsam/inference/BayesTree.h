@@ -219,7 +219,9 @@ namespace gtsam {
 		void clear();
 
 		/** Clear all shortcut caches - use before timing on marginal calculation to avoid residual cache data */
-		inline void deleteCachedShorcuts() { root_->deleteCachedShorcuts(); }
+		inline void deleteCachedShorcuts() {
+		  root_->deleteCachedShorcuts();
+		}
 
 		/**
 		 * Remove path from clique to root and return that path as factors

@@ -200,8 +200,8 @@ namespace gtsam {
       const std::vector<Index>& js, Eliminate function) const {
 
     // Eliminate all variables
-    typename BayesNet<Conditional>::shared_ptr bayesNet = jointBayesNet(js,
-        function);
+    typename BayesNet<Conditional>::shared_ptr bayesNet = //
+          jointBayesNet(js, function);
 
     return boost::make_shared<FactorGraph<FACTOR> >(*bayesNet);
   }
@@ -216,6 +216,7 @@ namespace gtsam {
     js[0] = j;
 
     // Call joint and return the only factor in the factor graph it returns
+    // TODO: just call jointBayesNet and grab last conditional, then toFactor....
     return (*this->jointFactorGraph(js, function))[0];
   }
 

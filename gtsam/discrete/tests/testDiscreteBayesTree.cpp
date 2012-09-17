@@ -129,8 +129,9 @@ TEST_UNSAFE( DiscreteBayesTree, thinTree ) {
   // Check whether BN and BT give the same answer on all configurations
   // Also calculate all some marginals
   Vector marginals = zero(15);
-  double joint_12_14 = 0, joint_9_12_14 = 0, joint_8_12_14 = 0, joint82 = 0,
-      joint12 = 0, joint24 = 0, joint45 = 0, joint46 = 0, joint_4_11 = 0;
+  double joint_12_14 = 0, joint_9_12_14 = 0, joint_8_12_14 = 0, joint_8_12 = 0,
+      joint82 = 0, joint12 = 0, joint24 = 0, joint45 = 0, joint46 = 0,
+      joint_4_11 = 0;
   vector<DiscreteFactor::Values> allPosbValues = cartesianProduct(
       key[0] & key[1] & key[2] & key[3] & key[4] & key[5] & key[6] & key[7]
           & key[8] & key[9] & key[10] & key[11] & key[12] & key[13] & key[14]);
@@ -150,6 +151,8 @@ TEST_UNSAFE( DiscreteBayesTree, thinTree ) {
       joint_9_12_14 += actual;
     if (x[8] && x[12] & x[14])
       joint_8_12_14 += actual;
+    if (x[8] && x[12])
+      joint_8_12 += actual;
     if (x[8] && x[2])
       joint82 += actual;
     if (x[1] && x[2])
@@ -165,9 +168,28 @@ TEST_UNSAFE( DiscreteBayesTree, thinTree ) {
   }
   DiscreteFactor::Values all1 = allPosbValues.back();
 
-  // check shortcut P(S9||R) to root
   Clique::shared_ptr R = bayesTree.root();
-  Clique::shared_ptr c = bayesTree[9];
+
+  // check separator marginal P(S0)
+  Clique::shared_ptr c = bayesTree[0];
+  DiscreteFactorGraph separatorMarginal0 = c->separatorMarginal(R,
+      EliminateDiscrete);
+  EXPECT_DOUBLES_EQUAL(joint_8_12, separatorMarginal0(all1), 1e-9);
+
+  // check separator marginal P(S9), should be P(14)
+  c = bayesTree[9];
+  DiscreteFactorGraph separatorMarginal9 = c->separatorMarginal(R,
+      EliminateDiscrete);
+  EXPECT_DOUBLES_EQUAL(marginals[14], separatorMarginal9(all1), 1e-9);
+
+  // check separator marginal of root, should be empty
+  c = bayesTree[11];
+  DiscreteFactorGraph separatorMarginal11 = c->separatorMarginal(R,
+      EliminateDiscrete);
+  EXPECT_LONGS_EQUAL(0, separatorMarginal11.size());
+
+  // check shortcut P(S9||R) to root
+  c = bayesTree[9];
   DiscreteBayesNet shortcut = c->shortcut(R, EliminateDiscrete);
   EXPECT_LONGS_EQUAL(0, shortcut.size());
 

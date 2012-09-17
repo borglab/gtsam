@@ -83,6 +83,9 @@ namespace gtsam {
     /// This stores the Cached Shortcut value
     mutable boost::optional<BayesNet<ConditionalType> > cachedShortcut_;
 
+    /// This stores the Cached separator margnal P(S)
+    mutable boost::optional<FactorGraph<FactorType> > cachedSeparatorMarginal_;
+
   public:
     sharedConditional conditional_;
     derived_weak_ptr parent_;
@@ -192,6 +195,14 @@ namespace gtsam {
     FactorGraph<FactorType> marginal(derived_ptr root,
         Eliminate function) const;
 
+    /** return the conditional P(S|Root) on the separator given the root */
+    FactorGraph<FactorType> separatorMarginal(derived_ptr root,
+        Eliminate function) const;
+
+    /** return the marginal P(C) of the clique, using separator shortcuts */
+    FactorGraph<FactorType> marginal2(derived_ptr root,
+        Eliminate function) const;
+
     /**
      * return the joint P(C1,C2), where C1==this. TODO: not a method?
      * Limitation: can only calculate joint if cliques are disjoint or one of them is root
@@ -233,6 +244,7 @@ namespace gtsam {
 
     /// Reset the computed shortcut of this clique. Used by friend BayesTree
     void resetCachedShortcut() {
+      cachedSeparatorMarginal_ = boost::none;
       cachedShortcut_ = boost::none;
     }
 

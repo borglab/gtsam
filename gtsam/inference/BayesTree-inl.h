@@ -475,22 +475,23 @@ namespace gtsam {
 	  }
 	}
 
-	/* ************************************************************************* */
-	// First finds clique marginal then marginalizes that
-	/* ************************************************************************* */
-	template<class CONDITIONAL, class CLIQUE>
-	typename CONDITIONAL::FactorType::shared_ptr BayesTree<CONDITIONAL,CLIQUE>::marginalFactor(
-			Index j, Eliminate function) const {
+  /* ************************************************************************* */
+  // First finds clique marginal then marginalizes that
+  /* ************************************************************************* */
+  template<class CONDITIONAL, class CLIQUE>
+  typename CONDITIONAL::FactorType::shared_ptr BayesTree<CONDITIONAL,CLIQUE>::marginalFactor(
+      Index j, Eliminate function) const {
 
-		// get clique containing Index j
-		sharedClique clique = (*this)[j];
+    // get clique containing Index j
+    sharedClique clique = (*this)[j];
 
-		// calculate or retrieve its marginal
-		FactorGraph<FactorType> cliqueMarginal = clique->marginal(root_,function);
+    // calculate or retrieve its marginal P(C) = P(F,S)
+    FactorGraph<FactorType> cliqueMarginal = clique->marginal2(root_,function);
 
-		return GenericSequentialSolver<FactorType>(cliqueMarginal).marginalFactor(
-				j, function);
-	}
+    // now, marginalize out everything that is not variable j
+    GenericSequentialSolver<FactorType> solver(cliqueMarginal);
+    return solver.marginalFactor(j, function);
+  }
 
 	/* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
