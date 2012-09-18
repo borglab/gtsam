@@ -114,8 +114,11 @@ Module::Module(const string& interfacePath,
  
   Rule eigenType_p = 
     (str_p("Vector") | "Matrix"); 
+
+  //Rule for STL Containers (class names are lowercase)
+  Rule stlType_p = (str_p("vector") | "list");
  
-  Rule className_p  = (lexeme_d[upper_p >> *(alnum_p | '_')] - eigenType_p - keywords_p); 
+  Rule className_p  = (lexeme_d[upper_p >> *(alnum_p | '_')] - eigenType_p - keywords_p) | stlType_p; 
  
   Rule namespace_name_p = lexeme_d[lower_p >> *(alnum_p | '_')] - keywords_p; 
  
@@ -491,14 +494,12 @@ map<string, Method> Module::appendInheretedMethods(const Class& cls, const vecto
     map<string, Method> methods;
     if(!cls.qualifiedParent.empty())
     {
-        cout << "Class: " << cls.name << " Parent Name: " << cls.qualifiedParent.back() << endl;
         //Find Class
         BOOST_FOREACH(const Class& parent, classes)
         {
             //We found the class for our parent
             if(parent.name == cls.qualifiedParent.back())
             {
-                cout << "Inner class: " << cls.qualifiedParent.back() << endl;
                 Methods inhereted = appendInheretedMethods(parent, classes);
                 methods.insert(inhereted.begin(), inhereted.end());
             }
@@ -506,7 +507,6 @@ map<string, Method> Module::appendInheretedMethods(const Class& cls, const vecto
     }
     else
     {
-        cout << "Dead end: " << cls.name << endl;
         methods.insert(cls.methods.begin(), cls.methods.end());
     }
 
