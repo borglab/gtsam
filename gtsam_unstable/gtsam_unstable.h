@@ -199,4 +199,9 @@ virtual class RelativeElevationFactor: gtsam::NonlinearFactor {
 	void print(string s) const;
 };
 
+#include <gtsam_unstable/slam/DummyFactor.h>
+virtual class DummyFactor : gtsam::NonlinearFactor {
+	DummyFactor(size_t key1, size_t dim1, size_t key2, size_t dim2);
+};
+
 } //\namespace gtsam
