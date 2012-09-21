@@ -217,8 +217,12 @@ namespace gtsam {
     void deleteCachedShorcuts();
 
     /** return cached shortcut of the clique */
-    const boost::optional<BayesNet<ConditionalType> > cachedShortcut() const {
+    const boost::optional<BayesNet<ConditionalType> >& cachedShortcut() const {
       return cachedShortcut_;
+    }
+
+    const boost::optional<FactorGraph<FactorType> >& cachedSeparatorMarginal() const {
+    	return cachedSeparatorMarginal_;
     }
 
     friend class BayesTree<ConditionalType, DerivedType> ;
