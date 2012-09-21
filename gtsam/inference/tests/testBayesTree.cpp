@@ -293,6 +293,8 @@ TEST( BayesTree, shortcutCheck )
 		bool notCleared = clique->cachedShortcut();
 		CHECK( notCleared == false);
 	}
+	EXPECT_LONGS_EQUAL(0, rootClique->numCachedShortcuts());
+	EXPECT_LONGS_EQUAL(0, rootClique->numCachedSeparatorMarginals());
 
 //	BOOST_FOREACH(SymbolicBayesTree::sharedClique& clique, allCliques) {
 //		clique->print("Clique#");

@@ -90,14 +90,40 @@ namespace gtsam {
   size_t BayesTreeCliqueBase<DERIVED, CONDITIONAL>::treeSize() const {
     size_t size = 1;
     BOOST_FOREACH(const derived_ptr& child, children_)
-      size += child->treeSize();
+    	size += child->treeSize();
     return size;
   }
 
   /* ************************************************************************* */
   template<class DERIVED, class CONDITIONAL>
+  size_t BayesTreeCliqueBase<DERIVED, CONDITIONAL>::numCachedShortcuts() const {
+  	if (!cachedShortcut_)
+  		return 0;
+
+  	size_t subtree_count = 1;
+  	BOOST_FOREACH(const derived_ptr& child, children_)
+  		subtree_count += child->numCachedShortcuts();
+
+  	return subtree_count;
+  }
+
+  /* ************************************************************************* */
+  template<class DERIVED, class CONDITIONAL>
+  size_t BayesTreeCliqueBase<DERIVED, CONDITIONAL>::numCachedSeparatorMarginals() const {
+  	if (!cachedSeparatorMarginal_)
+  		return 0;
+
+  	size_t subtree_count = 1;
+  	BOOST_FOREACH(const derived_ptr& child, children_)
+  		subtree_count += child->numCachedSeparatorMarginals();
+
+  	return subtree_count;
+  }
+
+  /* ************************************************************************* */
+  template<class DERIVED, class CONDITIONAL>
   void BayesTreeCliqueBase<DERIVED, CONDITIONAL>::printTree(
-      const std::string& indent, const IndexFormatter& indexFormatter) const {
+  		const std::string& indent, const IndexFormatter& indexFormatter) const {
     asDerived(this)->print(indent, indexFormatter);
     BOOST_FOREACH(const derived_ptr& child, children_)
       child->printTree(indent + "  ", indexFormatter);

@@ -58,6 +58,18 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
+	size_t BayesTree<CONDITIONAL,CLIQUE>::numCachedShortcuts() const {
+		return (root_) ? root_->numCachedShortcuts() : 0;
+	}
+
+	/* ************************************************************************* */
+	template<class CONDITIONAL, class CLIQUE>
+	size_t BayesTree<CONDITIONAL,CLIQUE>::numCachedSeparatorMarginals() const {
+		return (root_) ? root_->numCachedSeparatorMarginals() : 0;
+	}
+
+	/* ************************************************************************* */
+	template<class CONDITIONAL, class CLIQUE>
 	void BayesTree<CONDITIONAL,CLIQUE>::saveGraph(const std::string &s, const IndexFormatter& indexFormatter) const {
 		if (!root_.get()) throw std::invalid_argument("the root of Bayes tree has not been initialized!");
 		std::ofstream of(s.c_str());
