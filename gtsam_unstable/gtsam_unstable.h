@@ -10,6 +10,14 @@ virtual class gtsam::Pose2;
 virtual class gtsam::Pose3;
 virtual class gtsam::noiseModel::Base;
 virtual class gtsam::NonlinearFactor;
+virtual class gtsam::GaussianFactor;
+virtual class gtsam::HessianFactor;
+virtual class gtsam::JacobianFactor;
+class gtsam::GaussianFactorGraph;
+class gtsam::NonlinearFactorGraph;
+class gtsam::Ordering;
+class gtsam::Values;
+class gtsam::InvertedOrdering;
 
 namespace gtsam {
 
@@ -167,7 +175,46 @@ virtual class DGroundConstraint : gtsam::NonlinearFactor {
 };
 
 //*************************************************************************
-// General nonlinear factor types
+// nonlinear
+//*************************************************************************
+#include <gtsam_unstable/nonlinear/LinearContainerFactor.h>
+virtual class LinearContainerFactor : gtsam::NonlinearFactor {
+
+	LinearContainerFactor(gtsam::GaussianFactor* factor, const gtsam::Ordering& ordering,
+			const gtsam::Values& linearizationPoint);
+	LinearContainerFactor(gtsam::GaussianFactor* factor,	const gtsam::Values& linearizationPoint);
+	LinearContainerFactor(gtsam::GaussianFactor* factor, const gtsam::InvertedOrdering& ordering,
+			const gtsam::Values& linearizationPoint);
+
+	LinearContainerFactor(gtsam::GaussianFactor* factor, const gtsam::Ordering& ordering);
+	LinearContainerFactor(gtsam::GaussianFactor* factor);
+	LinearContainerFactor(gtsam::GaussianFactor* factor, const gtsam::InvertedOrdering& ordering);
+
+	gtsam::GaussianFactor* factor() const;
+//	const boost::optional<Values>& linearizationPoint() const;
+
+  gtsam::GaussianFactor* order(const gtsam::Ordering& ordering) const;
+  gtsam::GaussianFactor* negate(const gtsam::Ordering& ordering) const;
+  gtsam::NonlinearFactor* negate() const;
+
+  bool isJacobian() const;
+  gtsam::JacobianFactor* toJacobian() const;
+  gtsam::HessianFactor* toHessian() const;
+
+  static gtsam::NonlinearFactorGraph convertLinearGraph(const gtsam::GaussianFactorGraph& linear_graph,
+  		const gtsam::Ordering& ordering, const gtsam::Values& linearizationPoint);
+  static gtsam::NonlinearFactorGraph convertLinearGraph(const gtsam::GaussianFactorGraph& linear_graph,
+  		const gtsam::InvertedOrdering& invOrdering, const gtsam::Values& linearizationPoint);
+
+  static gtsam::NonlinearFactorGraph convertLinearGraph(const gtsam::GaussianFactorGraph& linear_graph,
+  		const gtsam::Ordering& ordering);
+  static gtsam::NonlinearFactorGraph convertLinearGraph(const gtsam::GaussianFactorGraph& linear_graph,
+  		const gtsam::InvertedOrdering& invOrdering);
+
+}; // \class LinearContainerFactor
+
+//*************************************************************************
+// slam
 //*************************************************************************
 #include <gtsam/geometry/Pose2.h>
 

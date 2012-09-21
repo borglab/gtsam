@@ -219,17 +219,20 @@ NonlinearFactor::shared_ptr LinearContainerFactor::negate() const {
 
 /* ************************************************************************* */
 NonlinearFactorGraph LinearContainerFactor::convertLinearGraph(
-		const GaussianFactorGraph& linear_graph,	const Ordering& ordering) {
+		const GaussianFactorGraph& linear_graph,	const Ordering& ordering,
+		const Values& linearizationPoint) {
 	return convertLinearGraph(linear_graph, ordering.invert());
 }
 
 /* ************************************************************************* */
 NonlinearFactorGraph LinearContainerFactor::convertLinearGraph(
-		const GaussianFactorGraph& linear_graph,	const InvertedOrdering& invOrdering) {
+		const GaussianFactorGraph& linear_graph,	const InvertedOrdering& invOrdering,
+		const Values& linearizationPoint) {
 	NonlinearFactorGraph result;
 	BOOST_FOREACH(const GaussianFactor::shared_ptr& f, linear_graph)
 		if (f)
-			result.push_back(NonlinearFactorGraph::sharedFactor(new LinearContainerFactor(f, invOrdering)));
+			result.push_back(NonlinearFactorGraph::sharedFactor(
+					new LinearContainerFactor(f, invOrdering, linearizationPoint)));
 	return result;
 }
 

@@ -132,10 +132,10 @@ public:
    * If the inverse ordering is present, it will be faster.
    */
   static NonlinearFactorGraph convertLinearGraph(const GaussianFactorGraph& linear_graph,
-  		const Ordering& ordering);
+  		const Ordering& ordering, const Values& linearizationPoint = Values());
 
   static NonlinearFactorGraph convertLinearGraph(const GaussianFactorGraph& linear_graph,
-  		const InvertedOrdering& invOrdering);
+  		const InvertedOrdering& invOrdering, const Values& linearizationPoint = Values());
 
 protected:
   void rekeyFactor(const Ordering& ordering);
