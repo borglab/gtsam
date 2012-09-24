@@ -61,6 +61,12 @@ public:
       Base(first, last) {
   }
 
+  /** Constructor from a iterable container, passes through to base class */
+  template<typename INPUTCONTAINER>
+  explicit FastSet(const INPUTCONTAINER& container) :
+      Base(container.begin(), container.end()) {
+  }
+
   /** Copy constructor from another FastSet */
   FastSet(const FastSet<VALUE>& x) :
       Base(x) {

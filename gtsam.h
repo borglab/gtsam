@@ -1517,6 +1517,8 @@ class KeyList {
 class KeySet {
 	KeySet();
 	KeySet(const gtsam::KeySet& other);
+	KeySet(const gtsam::KeyVector& other);
+	KeySet(const gtsam::KeyList& other);
 
 	// Testable
 	void print(string s) const;
