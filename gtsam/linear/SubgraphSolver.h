@@ -72,6 +72,7 @@ public:
 
   virtual ~SubgraphSolver() {}
   virtual VectorValues optimize () ;
+  virtual VectorValues optimize (const VectorValues &initial) ;
 
 protected:
 
