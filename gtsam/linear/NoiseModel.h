@@ -570,97 +570,98 @@ namespace gtsam {
 			}
 		};
 
-		// TODO: should not really exist
-		/// The MEstimator namespace contains all robust error functions (not models)
-		namespace MEstimator {
+    // TODO: should not really exist
+    /// The MEstimator namespace contains all robust error functions (not models)
+    namespace MEstimator {
 
-		//---------------------------------------------------------------------------------------
+      //---------------------------------------------------------------------------------------
 
-		class Base {
-    public:
-      enum ReweightScheme { Scalar, Block };
-      typedef boost::shared_ptr<Base> shared_ptr;
+      class Base {
+      public:
+        enum ReweightScheme { Scalar, Block };
+        typedef boost::shared_ptr<Base> shared_ptr;
 
-		protected:
-      /** the rows can be weighted independently accordint to the error
-       * or uniformly with the norm of the right hand side */
-      ReweightScheme reweight_;
+      protected:
+        /** the rows can be weighted independently according to the error
+        * or uniformly with the norm of the right hand side */
+        ReweightScheme reweight_;
 
-    public:
-      Base(): reweight_(Block) {}
-		  Base(const ReweightScheme reweight):reweight_(reweight) {}
-		  virtual ~Base() {}
+      public:
+        Base(): reweight_(Block) {}
+        Base(const ReweightScheme reweight):reweight_(reweight) {}
+        virtual ~Base() {}
 
-		  /// robust error function to implement
-		  virtual double weight(const double &error) const = 0;
+        /// robust error function to implement
+        virtual double weight(const double &error) const = 0;
 
-		  virtual void print(const std::string &s) const = 0;
-		  virtual bool equals(const Base& expected, const double tol=1e-8) const = 0;
+        virtual void print(const std::string &s) const = 0;
+        virtual bool equals(const Base& expected, const double tol=1e-8) const = 0;
 
-		  inline double sqrtWeight(const double &error) const
-		  { return std::sqrt(weight(error)); }
+        inline double sqrtWeight(const double &error) const
+        { return std::sqrt(weight(error)); }
 
-      /** produce a weight vector according to an error vector and the implemented
-       * robust function */
-      Vector weight(const Vector &error) const;
+        /** produce a weight vector according to an error vector and the implemented
+        * robust function */
+        Vector weight(const Vector &error) const;
 
-      /** square root version of the weight function */
-      Vector sqrtWeight(const Vector &error) const;
+        /** square root version of the weight function */
+        Vector sqrtWeight(const Vector &error) const;
 
-      /** reweight block matrices and a vector according to their weight implementation */
-      void reweight(std::vector<Matrix> &A, Vector &error) const;
-		  void reweight(Matrix &A, Vector &error) const;
-		  void reweight(Matrix &A1, Matrix &A2, Vector &error) const;
-		  void reweight(Matrix &A1, Matrix &A2, Matrix &A3, Vector &error) const;
-		};
+        /** reweight block matrices and a vector according to their weight implementation */
+        void reweight(Vector &error) const;
+        void reweight(std::vector<Matrix> &A, Vector &error) const;
+        void reweight(Matrix &A, Vector &error) const;
+        void reweight(Matrix &A1, Matrix &A2, Vector &error) const;
+        void reweight(Matrix &A1, Matrix &A2, Matrix &A3, Vector &error) const;
+      };
 
-		/// Null class is not robust so is a Gaussian ?
-    class Null : public Base {
-    public:
-      typedef boost::shared_ptr<Null> shared_ptr;
-      Null(const ReweightScheme reweight = Block) : Base(reweight) {}
-      virtual ~Null() {}
-      virtual double weight(const double &error) const { return 1.0; }
-      virtual void print(const std::string &s) const;
-      virtual bool equals(const Base& expected, const double tol=1e-8) const { return true; }
-      static shared_ptr Create() ;
-    };
+      /// Null class is not robust so is a Gaussian ?
+      class Null : public Base {
+      public:
+        typedef boost::shared_ptr<Null> shared_ptr;
+        Null(const ReweightScheme reweight = Block) : Base(reweight) {}
+        virtual ~Null() {}
+        virtual double weight(const double &error) const { return 1.0; }
+        virtual void print(const std::string &s) const;
+        virtual bool equals(const Base& expected, const double tol=1e-8) const { return true; }
+        static shared_ptr Create() ;
+      };
 
-    /// Fair implements the "Fair" robust error model (Zhang97ivc)
-		class Fair : public Base {
-		public:
-		  typedef boost::shared_ptr<Fair> shared_ptr;
-		protected:
-		  double c_;
-		public:
-		  Fair(const double c, const ReweightScheme reweight = Block);
-		  virtual ~Fair() {}
-		  virtual double weight(const double &error) const ;
-      virtual void print(const std::string &s) const ;
-      virtual bool equals(const Base& expected, const double tol=1e-8) const ;
-      static shared_ptr Create(const double c, const ReweightScheme reweight = Block) ;
-		private:
-      Fair(){}
-		};
+      /// Fair implements the "Fair" robust error model (Zhang97ivc)
+      class Fair : public Base {
+      public:
+        typedef boost::shared_ptr<Fair> shared_ptr;
+      protected:
+        double c_;
+      public:
+        Fair(const double c, const ReweightScheme reweight = Block);
+        virtual ~Fair() {}
+        virtual double weight(const double &error) const ;
+        virtual void print(const std::string &s) const ;
+        virtual bool equals(const Base& expected, const double tol=1e-8) const ;
+        static shared_ptr Create(const double c, const ReweightScheme reweight = Block) ;
+      private:
+        Fair(){}
+      };
 
-    /// Huber implements the "Huber" robust error model (Zhang97ivc)
-	  class Huber : public Base {
-	    public:
-	      typedef boost::shared_ptr<Huber> shared_ptr;
-	    protected:
-	      double k_;
-	    public:
-	      Huber(const double k, const ReweightScheme reweight = Block);
-	      virtual ~Huber() {}
-	      virtual double weight(const double &error) const ;
-	      virtual void print(const std::string &s) const ;
-	      virtual bool equals(const Base& expected, const double tol=1e-8) const ;
-	      static shared_ptr Create(const double k, const ReweightScheme reweight = Block) ;
-	    private:
-	      Huber(){}
-	    };
+      /// Huber implements the "Huber" robust error model (Zhang97ivc)
+      class Huber : public Base {
+      public:
+        typedef boost::shared_ptr<Huber> shared_ptr;
+      protected:
+        double k_;
+      public:
+        Huber(const double k, const ReweightScheme reweight = Block);
+        virtual ~Huber() {}
+        virtual double weight(const double &error) const ;
+        virtual void print(const std::string &s) const ;
+        virtual bool equals(const Base& expected, const double tol=1e-8) const ;
+        static shared_ptr Create(const double k, const ReweightScheme reweight = Block) ;
+      private:
+        Huber(){}
+      };
 
-		} ///\namespace MEstimator
+    } ///\namespace MEstimator
 
 		/// Base class for robust error models
 		class Robust : public Base {
@@ -692,17 +693,16 @@ namespace gtsam {
       /// Return the contained noise model
       const NoiseModel::shared_ptr& noise() const { return noise_; }
 
-      // TODO: all function below are dummy but necessary for the noiseModel::Base
-
+      // TODO: functions below are dummy but necessary for the noiseModel::Base
       inline virtual Vector whiten(const Vector& v) const
-      { return noise_->whiten(v); }
+      { Vector r = v; this->WhitenSystem(r); return r; }
       inline virtual Vector unwhiten(const Vector& v) const
-      { return noise_->unwhiten(v); }
+      { throw std::invalid_argument("unwhiten is not currently supported for robust noise models."); }
       inline virtual double distance(const Vector& v) const
-      { return noise_->distance(v); }
+      { throw std::invalid_argument("distance is not currently supported for robust noise models."); }
 
       // TODO: these are really robust iterated re-weighting support functions
-
+      virtual void WhitenSystem(Vector& b) const;
       virtual void WhitenSystem(std::vector<Matrix>& A, Vector& b) const;
       virtual void WhitenSystem(Matrix& A, Vector& b) const;
       virtual void WhitenSystem(Matrix& A1, Matrix& A2, Vector& b) const;

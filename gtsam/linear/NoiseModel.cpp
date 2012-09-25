@@ -463,6 +463,16 @@ Vector Base::sqrtWeight(const Vector &error) const {
 /** The following three functions reweight block matrices and a vector
  * according to their weight implementation */
 
+void Base::reweight(Vector& error) const {
+	if(reweight_ == Block) {
+    const double w = sqrtWeight(error.norm());
+    error *= w;
+  } else {
+    const Vector w = sqrtWeight(error);
+    error.array() *= w.array();
+  }
+}
+
 /** Reweight n block matrices with one error vector */
 void Base::reweight(vector<Matrix> &A, Vector &error) const {
   if ( reweight_ == Block ) {
@@ -611,6 +621,11 @@ bool Robust::equals(const Base& expected, double tol) const {
   const Robust* p = dynamic_cast<const Robust*> (&expected);
   if (p == NULL) return false;
   return noise_->equals(*p->noise_,tol) && robust_->equals(*p->robust_,tol);
+}
+
+void Robust::WhitenSystem(Vector& b) const {
+  noise_->whitenInPlace(b);
+  robust_->reweight(b);
 }
 
 void Robust::WhitenSystem(vector<Matrix>& A, Vector& b) const {
