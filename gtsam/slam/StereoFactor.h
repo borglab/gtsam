@@ -88,8 +88,16 @@ public:
 	/** h(x)-z */
 	Vector evaluateError(const Pose3& pose, const Point3& point,
 			boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
-		StereoCamera stereoCam(pose, K_);
-		return (stereoCam.project(point, H1, H2) - measured_).vector();
+	  try {
+	    StereoCamera stereoCam(pose, K_);
+	    return (stereoCam.project(point, H1, H2) - measured_).vector();
+	  } catch(StereoCheiralityException& e) {
+      if (H1) *H1 = zeros(3,6);
+      if (H2) *H2 = zeros(3,3);
+      std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2()) <<
+          " moved behind camera " << DefaultKeyFormatter(this->key1()) << std::endl;
+	  }
+    return ones(3) * 2.0 * K_->fx();
 	}
 
 	/** return the measured */
@@ -101,7 +109,6 @@ public:
   inline const Cal3_S2Stereo::shared_ptr calibration() const {
     return K_;
   }
-
 
 private:
 	/** Serialization function */
@@ -115,5 +122,4 @@ private:
 	}
 };
 
-
-}
+} // \ namespace gtsam

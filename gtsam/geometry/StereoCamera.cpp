@@ -39,6 +39,8 @@ namespace gtsam {
 		const Point3 q = leftCamPose_.transform_to(point);
 #endif
 
+		if ( q.z() <= 0 ) throw StereoCheiralityException();
+
 		// get calibration
 		const Cal3_S2Stereo& K = *K_;
 		const double fx = K.fx(), fy = K.fy(), b = K.baseline();

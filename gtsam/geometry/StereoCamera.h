@@ -11,7 +11,7 @@
 
 /**
  * @file    StereoCamera.h
- * @brief   A Stereo Camera based on two Simple Cameras
+ * @brief   A Rectified Stereo Camera
  * @author  Chris Beall
  */
 
@@ -25,6 +25,12 @@
 #include <gtsam/geometry/StereoPoint2.h>
 
 namespace gtsam {
+
+class StereoCheiralityException: public std::runtime_error {
+public:
+  StereoCheiralityException() : std::runtime_error("Stereo Cheirality Exception") {}
+};
+
 
 /**
  * A stereo camera class, parameterize by left camera pose and stereo calibration
