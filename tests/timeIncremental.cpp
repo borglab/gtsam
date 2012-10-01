@@ -21,6 +21,7 @@
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/ISAM2.h>
+#include <gtsam/nonlinear/Marginals.h>
 
 using namespace std;
 using namespace gtsam;
@@ -120,7 +121,7 @@ int main(int argc, char *argv[]) {
     isam2.update(newFactors, newVariables);
     toc_(3, "Update ISAM2");
 
-    if(step % 20 == 0) {
+    if(step % 100 == 0) {
       tic_(4, "chi2 (script only)");
       Values estimate(isam2.calculateEstimate());
       double chi2 = chi2_red(isam2.getFactorsUnsafe(), estimate);
@@ -128,12 +129,25 @@ int main(int argc, char *argv[]) {
       toc_(4, "chi2 (script only)");
     }
 
-    if(step % 100 == 0) {
+    tictoc_finishedIteration_();
+
+    if(step % 1000 == 0) {
       cout << "Step " << step << endl;
       tictoc_print_();
     }
+  }
 
+  // Compute marginals
+  Marginals marginals(isam2.getFactorsUnsafe(), isam2.calculateEstimate());
+  int i=0;
+  BOOST_FOREACH(Key key, initial.keys()) {
+    tic_(5, "marginalInformation");
+    Matrix info = marginals.marginalInformation(key);
+    toc_(5, "marginalInformation");
     tictoc_finishedIteration_();
+    if(i % 1000 == 0)
+      tictoc_print_();
+    ++i;
   }
 
   return 0;
