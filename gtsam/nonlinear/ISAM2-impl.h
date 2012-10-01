@@ -47,7 +47,7 @@ struct ISAM2::Impl {
    * @param keyFormatter Formatter for printing nonlinear keys during debugging
    */
   static void AddVariables(const Values& newTheta, Values& theta, VectorValues& delta,
-      VectorValues& deltaNewton, VectorValues& deltaGradSearch, std::vector<bool>& replacedKeys,
+      VectorValues& deltaNewton, VectorValues& RgProd, std::vector<bool>& replacedKeys,
       Ordering& ordering, const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 	  
   /**
@@ -55,7 +55,7 @@ struct ISAM2::Impl {
    */
 	static void RemoveVariables(const FastSet<Key>& unusedKeys, const ISAM2Clique::shared_ptr& root,
 		Values& theta, VariableIndex& variableIndex, VectorValues& delta, VectorValues& deltaNewton,
-		VectorValues& deltaGradSearch, std::vector<bool>& replacedKeys, Ordering& ordering, Base::Nodes& nodes,
+		VectorValues& RgProd, std::vector<bool>& replacedKeys, Ordering& ordering, Base::Nodes& nodes,
 		GaussianFactorGraph& linearFactors);
 
   /**

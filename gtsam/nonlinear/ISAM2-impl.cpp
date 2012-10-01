@@ -30,7 +30,7 @@ namespace gtsam {
 /* ************************************************************************* */
 void ISAM2::Impl::AddVariables(
     const Values& newTheta, Values& theta, VectorValues& delta,
-    VectorValues& deltaNewton, VectorValues& deltaGradSearch, vector<bool>& replacedKeys,
+    VectorValues& deltaNewton, VectorValues& RgProd, vector<bool>& replacedKeys,
     Ordering& ordering, const KeyFormatter& keyFormatter) {
   const bool debug = ISDEBUG("ISAM2 AddVariables");
 
@@ -46,8 +46,8 @@ void ISAM2::Impl::AddVariables(
   delta.vector().segment(originalDim, newDim).operator=(Vector::Zero(newDim));
   deltaNewton.append(dims);
   deltaNewton.vector().segment(originalDim, newDim).operator=(Vector::Zero(newDim));
-  deltaGradSearch.append(dims);
-  deltaGradSearch.vector().segment(originalDim, newDim).operator=(Vector::Zero(newDim));
+  RgProd.append(dims);
+  RgProd.vector().segment(originalDim, newDim).operator=(Vector::Zero(newDim));
   {
     Index nextVar = originalnVars;
     BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, newTheta) {
@@ -64,7 +64,7 @@ void ISAM2::Impl::AddVariables(
 /* ************************************************************************* */
 void ISAM2::Impl::RemoveVariables(const FastSet<Key>& unusedKeys, const ISAM2Clique::shared_ptr& root,
 																	Values& theta, VariableIndex& variableIndex,
-																	VectorValues& delta, VectorValues& deltaNewton, VectorValues& deltaGradSearch,
+																	VectorValues& delta, VectorValues& deltaNewton, VectorValues& RgProd,
 																	std::vector<bool>& replacedKeys, Ordering& ordering, Base::Nodes& nodes,
 																	GaussianFactorGraph& linearFactors) {
 
@@ -101,7 +101,7 @@ void ISAM2::Impl::RemoveVariables(const FastSet<Key>& unusedKeys, const ISAM2Cli
 			 for(size_t j = 0; j < dims.size(); ++j) {
 				 newDelta[j] = delta[unusedToEnd[j]];
 				 newDeltaNewton[j] = deltaNewton[unusedToEnd[j]];
-				 newDeltaGradSearch[j] = deltaGradSearch[unusedToEnd[j]];
+				 newDeltaGradSearch[j] = RgProd[unusedToEnd[j]];
 				 newReplacedKeys[j] = replacedKeys[unusedToEnd[j]];
 				 newNodes[j] = nodes[unusedToEnd[j]];
 			 }
@@ -109,7 +109,7 @@ void ISAM2::Impl::RemoveVariables(const FastSet<Key>& unusedKeys, const ISAM2Cli
 			 // Swap the new data structures with the outputs of this function
 			 delta.swap(newDelta);
 			 deltaNewton.swap(newDeltaNewton);
-			 deltaGradSearch.swap(newDeltaGradSearch);
+			 RgProd.swap(newDeltaGradSearch);
 			 replacedKeys.swap(newReplacedKeys);
 			 nodes.swap(newNodes);
 		 }
@@ -438,7 +438,7 @@ size_t ISAM2::Impl::UpdateDelta(const boost::shared_ptr<ISAM2Clique>& root, std:
 
 /* ************************************************************************* */
 namespace internal {
-void updateDoglegDeltas(const boost::shared_ptr<ISAM2Clique>& clique, std::vector<bool>& replacedKeys,
+void updateDoglegDeltas(const boost::shared_ptr<ISAM2Clique>& clique, const std::vector<bool>& replacedKeys,
     const VectorValues& grad, VectorValues& deltaNewton, VectorValues& RgProd, size_t& varsUpdated) {
 
   // Check if any frontal or separator keys were recalculated, if so, we need
