@@ -88,13 +88,9 @@ namespace gtsam {
     /**
      * Eliminate in a different order, given a permutation
      */
-    sharedBayesNet
-    eliminate(const Permutation& permutation, Eliminate function
-#ifdef ATTEMPT_AT_NOT_ELIMINATING_ALL
-        , boost::optional<size_t> nrToEliminate = boost::none
-        // If given a number of variables to eliminate, will only eliminate that many
-#endif
-        ) const;
+     sharedBayesNet eliminate(const Permutation& permutation, Eliminate function,
+     boost::optional<size_t> nrToEliminate = boost::none ///< If given a number of variables to eliminate, will only eliminate that many
+     ) const;
 
   public:
 

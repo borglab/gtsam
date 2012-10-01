@@ -77,8 +77,6 @@ namespace gtsam {
 		 */
 		FastSet<Index> keys() const;
 
-
-
 		/// @}
 		/// @name Advanced Interface
 		/// @{
@@ -94,6 +92,12 @@ namespace gtsam {
 
 		/** Push back 4-way factor */
 		void push_factor(Index key1, Index key2, Index key3, Index key4);
+
+    /** Permute the variables in the factors */
+    void permuteWithInverse(const Permutation& inversePermutation);
+
+    /** Apply a reduction, which is a remapping of variable indices. */
+    void reduceWithInverse(const internal::Reduction& inverseReduction);
 
 	};
 

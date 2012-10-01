@@ -498,7 +498,11 @@ namespace gtsam {
     sharedClique clique = (*this)[j];
 
     // calculate or retrieve its marginal P(C) = P(F,S)
+#ifdef MARGINAL2
     FactorGraph<FactorType> cliqueMarginal = clique->marginal2(root_,function);
+#else
+    FactorGraph<FactorType> cliqueMarginal = clique->marginal(root_,function);
+#endif
 
     // now, marginalize out everything that is not variable j
     GenericSequentialSolver<FactorType> solver(cliqueMarginal);

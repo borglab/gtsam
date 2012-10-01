@@ -30,9 +30,6 @@ using namespace gtsam;
 
 static bool debug = false;
 
-typedef BayesNet<IndexConditional> SymbolicBayesNet;
-typedef BayesTree<IndexConditional> SymbolicBayesTree;
-
 /* ************************************************************************* */
 
 TEST_UNSAFE( SymbolicBayesTree, thinTree ) {

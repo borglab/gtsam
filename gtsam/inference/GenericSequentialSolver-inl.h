@@ -89,11 +89,7 @@ namespace gtsam {
   template<class FACTOR>
   typename GenericSequentialSolver<FACTOR>::sharedBayesNet //
   GenericSequentialSolver<FACTOR>::eliminate(const Permutation& permutation,
-      Eliminate function
-#ifdef ATTEMPT_AT_NOT_ELIMINATING_ALL
-      , boost::optional<size_t> nrToEliminate
-#endif
-      ) const {
+      Eliminate function, boost::optional<size_t> nrToEliminate) const {
 
     // Create inverse permutation
     Permutation::shared_ptr permutationInverse(permutation.inverse());
@@ -106,15 +102,12 @@ namespace gtsam {
         factor->permuteWithInverse(*permutationInverse);
 
     // Eliminate using elimination tree provided
-    typename EliminationTree<FACTOR>::shared_ptr etree;
-#ifdef ATTEMPT_AT_NOT_ELIMINATING_ALL
-    if (nrToEliminate) {
-      VariableIndex structure(*factors_, *nrToEliminate);
-      etree = EliminationTree<FACTOR>::Create(*factors_, structure);
-    } else
-#endif
-    etree = EliminationTree<FACTOR>::Create(*factors_);
-    sharedBayesNet bayesNet = etree->eliminate(function);
+    typename EliminationTree<FACTOR>::shared_ptr etree = EliminationTree<FACTOR>::Create(*factors_);
+    sharedBayesNet bayesNet;
+    if(nrToEliminate)
+      bayesNet = etree->eliminatePartial(function, *nrToEliminate);
+    else
+      bayesNet = etree->eliminate(function);
 
     // Undo the permutation on the original factors and on the structure.
     BOOST_FOREACH(const typename boost::shared_ptr<FACTOR>& factor, *factors_)
@@ -147,13 +140,13 @@ namespace gtsam {
     // my trick below (passing nrToEliminate to eliminate) sometimes leads
     // to a disconnected graph.
     // Eliminate only variables J \cup F from P(J,F,S) to get P(F|S)
-    size_t nrVariables = factors_->keys().size();// TODO expensive!
+    size_t nrVariables = structure_->size();
     size_t nrMarginalized = nrVariables - js.size();
     size_t nrToEliminate = nrMarginalized + nrFrontals;
     sharedBayesNet bayesNet = eliminate(*permutation, function, nrToEliminate);
     // Get rid of conditionals on variables that we want to marginalize out
     for (int i = 0; i < nrMarginalized; i++)
-    bayesNet->pop_front();
+      bayesNet->pop_front();
 #else
     // Eliminate all variables
     sharedBayesNet fullBayesNet = eliminate(*permutation, function);

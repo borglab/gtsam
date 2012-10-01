@@ -17,6 +17,7 @@
 #pragma once
 
 #include <gtsam/inference/GenericSequentialSolver.h>
+#include <boost/foreach.hpp>
 
 namespace gtsam {
 
@@ -53,8 +54,10 @@ namespace gtsam {
     std::vector<Index> &indicesB = B->conditional()->keys();
     std::vector<Index> S_setminus_B = separator_setminus_B(B); // TODO, get as argument?
     std::vector<Index> keep;
+    // keep = S\B intersect allKeys
     std::set_intersection(S_setminus_B.begin(), S_setminus_B.end(), //
         allKeys.begin(), allKeys.end(), back_inserter(keep));
+    // keep += B intersect allKeys
     std::set_intersection(indicesB.begin(), indicesB.end(), //
         allKeys.begin(), allKeys.end(), back_inserter(keep));
     // BOOST_FOREACH(Index j, keep) std::cout << j << " "; std::cout << std::endl;
@@ -190,18 +193,42 @@ namespace gtsam {
         // systems and exceptions are thrown. However, we should be able to omit
         // this if we can get ATTEMPT_AT_NOT_ELIMINATING_ALL in
         // GenericSequentialSolver.* working...
+#ifndef ATTEMPT_AT_NOT_ELIMINATING_ALL
         p_Cp_B.push_back(B->conditional()->toFactor()); // P(B)
+#endif
+
+        // Determine the variables we want to keepSet, S union B
+        std::vector<Index> keep = shortcut_indices(B, p_Cp_B);
+        //std::set<Index> keepSet;
+        //BOOST_FOREACH(Index j, this->conditional()->parents()) {
+        //  keepSet.insert(j); }
+        //BOOST_FOREACH(Index j, (*B->conditional())) {
+        //  keepSet.insert(j); }
+        //std::vector<Index> keep(keepSet.begin(), keepSet.end());
+
+        // Reduce the variable indices to start at zero
+        const Permutation reduction = internal::createReducingPermutation(p_Cp_B.keys());
+        internal::Reduction inverseReduction = internal::Reduction::CreateAsInverse(reduction);
+        BOOST_FOREACH(const boost::shared_ptr<FactorType>& factor, p_Cp_B) {
+          if(factor) factor->reduceWithInverse(inverseReduction); }
+        inverseReduction.applyInverse(keep);
 
         // Create solver that will marginalize for us
         GenericSequentialSolver<FactorType> solver(p_Cp_B);
-
-        // Determine the variables we want to keep
-        std::vector<Index> keep = shortcut_indices(B, p_Cp_B);
 
         // Finally, we only want to have S\B variables in the Bayes net, so
         size_t nrFrontals = S_setminus_B.size();
         cachedShortcut_ = //
             *solver.conditionalBayesNet(keep, nrFrontals, function);
+
+        // Undo the reduction
+        BOOST_FOREACH(const typename boost::shared_ptr<FactorType>& factor, p_Cp_B) {
+          if (factor) {
+            factor->permuteWithInverse(reduction);
+          }
+        }
+        cachedShortcut_->permuteWithInverse(reduction);
+
         assertInvariants();
       } else {
         BayesNet<CONDITIONAL> empty;
@@ -264,7 +291,7 @@ namespace gtsam {
         // Create solver that will marginalize for us
         GenericSequentialSolver<FactorType> solver(p_Cp);
 
-        // The variables we want to keep are exactly the ones in S
+        // The variables we want to keepSet are exactly the ones in S
         sharedConditional p_F_S = this->conditional();
         std::vector<Index> indicesS(p_F_S->beginParents(), p_F_S->endParents());
 

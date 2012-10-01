@@ -63,6 +63,15 @@ namespace gtsam {
     }
 	}
 
+  /* ************************************************************************* */
+  void GaussianFactorGraph::reduceWithInverse(
+    const internal::Reduction& inverseReduction) {
+      BOOST_FOREACH(const sharedFactor& factor, factors_) {
+        if(factor)
+          factor->reduceWithInverse(inverseReduction);
+      }
+  }
+
 	/* ************************************************************************* */
 	void GaussianFactorGraph::combine(const GaussianFactorGraph &lfg) {
 		for (const_iterator factor = lfg.factors_.begin(); factor

@@ -115,6 +115,13 @@ namespace gtsam {
     	IndexFactor::permuteWithInverse(inversePermutation);
     }
 
+	  /**
+	   * Apply a reduction, which is a remapping of variable indices.
+	   */
+    virtual void reduceWithInverse(const internal::Reduction& inverseReduction) {
+    	IndexFactor::reduceWithInverse(inverseReduction);
+    }
+
     /**
      * Construct the corresponding anti-factor to negate information
      * stored stored in this factor.

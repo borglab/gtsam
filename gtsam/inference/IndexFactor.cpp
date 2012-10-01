@@ -61,5 +61,13 @@ namespace gtsam {
 			key = inversePermutation[key];
 		assertInvariants();
 	}
+
 	/* ************************************************************************* */
+  void IndexFactor::reduceWithInverse(const internal::Reduction& inverseReduction) {
+    BOOST_FOREACH(Index& key, keys())
+      key = inverseReduction[key];
+    assertInvariants();
+  }
+
+  /* ************************************************************************* */
 } // gtsam

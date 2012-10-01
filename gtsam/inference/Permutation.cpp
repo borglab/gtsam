@@ -152,4 +152,64 @@ void Permutation::print(const std::string& str) const {
   std::cout << std::endl;
 }
 
+namespace internal {
+/* ************************************************************************* */
+  Reduction Reduction::CreateAsInverse(const Permutation& p) {
+    Reduction result;
+    for(Index j = 0; j < p.size(); ++j)
+      result.insert(std::make_pair(p[j], j));
+    return result;
+  }
+
+  /* ************************************************************************* */
+  void Reduction::applyInverse(std::vector<Index>& js) const {
+    BOOST_FOREACH(Index& j, js) {
+      j = this->find(j)->second;
+    }
+  }
+
+  /* ************************************************************************* */
+  Permutation Reduction::inverse() const {
+    Index maxIndex = 0;
+    BOOST_FOREACH(const value_type& target_source, *this) {
+      if(target_source.second > maxIndex)
+        maxIndex = target_source.second;
+    }
+    Permutation result(maxIndex + 1);
+    BOOST_FOREACH(const value_type& target_source, *this) {
+      result[target_source.second] = target_source.first;
+    }
+    return result;
+  }
+
+  /* ************************************************************************* */
+  Index& Reduction::operator[](const Index& j) {
+    iterator it = this->find(j);
+    if(it == this->end())
+      throw std::out_of_range("Index to Reduction::operator[] not present");
+    else
+      return it->second;
+  }
+
+  /* ************************************************************************* */
+  const Index& Reduction::operator[](const Index& j) const {
+    const_iterator it = this->find(j);
+    if(it == this->end())
+      throw std::out_of_range("Index to Reduction::operator[] not present");
+    else
+      return it->second;
+  }
+
+  /* ************************************************************************* */
+  Permutation createReducingPermutation(const std::set<Index>& indices) {
+    Permutation p(indices.size());
+    Index newJ = 0;
+    BOOST_FOREACH(Index j, indices) {
+      p[newJ] = j;
+      ++ newJ;
+    }
+    return p;
+  }
+}
+
 }

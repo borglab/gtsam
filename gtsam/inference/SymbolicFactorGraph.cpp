@@ -70,6 +70,24 @@ namespace gtsam {
 		return FactorGraph<IndexFactor>::eliminateFrontals(nFrontals, EliminateSymbolic);
 	}
 
+  /* ************************************************************************* */
+  void SymbolicFactorGraph::permuteWithInverse(
+    const Permutation& inversePermutation) {
+      BOOST_FOREACH(const sharedFactor& factor, factors_) {
+        if(factor)
+          factor->permuteWithInverse(inversePermutation);
+      }
+  }
+
+  /* ************************************************************************* */
+  void SymbolicFactorGraph::reduceWithInverse(
+    const internal::Reduction& inverseReduction) {
+      BOOST_FOREACH(const sharedFactor& factor, factors_) {
+        if(factor)
+          factor->reduceWithInverse(inverseReduction);
+      }
+  }
+
 	/* ************************************************************************* */
 	IndexFactor::shared_ptr CombineSymbolic(
 			const FactorGraph<IndexFactor>& factors, const FastMap<Index,

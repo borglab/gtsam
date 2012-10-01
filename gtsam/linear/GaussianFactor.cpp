@@ -25,7 +25,6 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	GaussianFactor::GaussianFactor(const GaussianConditional& c) :
-		IndexFactor(c) {
-	}
+    IndexFactor(c) {}
 
 }

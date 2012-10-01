@@ -35,34 +35,42 @@ namespace gtsam {
 /* ************************************************************************* */
 template<class FACTOR>
 typename EliminationTree<FACTOR>::sharedFactor EliminationTree<FACTOR>::eliminate_(
-		Eliminate function, Conditionals& conditionals) const {
+  Eliminate function, Conditionals& conditionals) const {
 
-  static const bool debug = false;
+    static const bool debug = false;
 
-  if(debug) std::cout << "ETree: eliminating " << this->key_ << std::endl;
+    if(debug) std::cout << "ETree: eliminating " << this->key_ << std::endl;
 
-  // Create the list of factors to be eliminated, initially empty, and reserve space
-  FactorGraph<FACTOR> factors;
-  factors.reserve(this->factors_.size() + this->subTrees_.size());
+    if(this->key_ < conditionals.size()) { // If it is requested to eliminate the current variable
+      // Create the list of factors to be eliminated, initially empty, and reserve space
+      FactorGraph<FACTOR> factors;
+      factors.reserve(this->factors_.size() + this->subTrees_.size());
 
-  // Add all factors associated with the current node
-  factors.push_back(this->factors_.begin(), this->factors_.end());
+      // Add all factors associated with the current node
+      factors.push_back(this->factors_.begin(), this->factors_.end());
 
-  // for all subtrees, eliminate into Bayes net and a separator factor, added to [factors]
-  BOOST_FOREACH(const shared_ptr& child, subTrees_)
-    factors.push_back(child->eliminate_(function, conditionals)); // TODO: spawn thread
-  // TODO: wait for completion of all threads
+      // for all subtrees, eliminate into Bayes net and a separator factor, added to [factors]
+      BOOST_FOREACH(const shared_ptr& child, subTrees_)
+        factors.push_back(child->eliminate_(function, conditionals)); // TODO: spawn thread
+      // TODO: wait for completion of all threads
 
-  // Combine all factors (from this node and from subtrees) into a joint factor
-  typename FactorGraph<FACTOR>::EliminationResult
-				eliminated(function(factors, 1));
-  conditionals[this->key_] = eliminated.first;
+      // Combine all factors (from this node and from subtrees) into a joint factor
+      typename FactorGraph<FACTOR>::EliminationResult
+        eliminated(function(factors, 1));
+      conditionals[this->key_] = eliminated.first;
 
-  if(debug) std::cout << "Eliminated " << this->key_ << " to get:\n";
-  if(debug) eliminated.first->print("Conditional: ");
-  if(debug) eliminated.second->print("Factor: ");
+      if(debug) std::cout << "Eliminated " << this->key_ << " to get:\n";
+      if(debug) eliminated.first->print("Conditional: ");
+      if(debug) eliminated.second->print("Factor: ");
 
-  return eliminated.second;
+      return eliminated.second;
+    } else {
+      // Eliminate each child but discard the result.
+      BOOST_FOREACH(const shared_ptr& child, subTrees_) {
+        (void)child->eliminate_(function, conditionals);
+      }
+      return sharedFactor(); // Return a NULL factor
+    }
 }
 
 /* ************************************************************************* */
@@ -138,7 +146,8 @@ typename EliminationTree<FACTOR>::shared_ptr EliminationTree<FACTOR>::Create(
     if(derivedFactor) {
       sharedFactor factor(derivedFactor);
       Index j = *std::min_element(factor->begin(), factor->end());
-      trees[j]->add(factor);
+      if(j < structure.size())
+        trees[j]->add(factor);
     }
   }
   toc(3, "hang factors");
@@ -193,12 +202,13 @@ bool EliminationTree<FACTORGRAPH>::equals(const EliminationTree<FACTORGRAPH>& ex
 /* ************************************************************************* */
 template<class FACTOR>
 typename EliminationTree<FACTOR>::BayesNet::shared_ptr
-EliminationTree<FACTOR>::eliminate(Eliminate function) const {
+  EliminationTree<FACTOR>::eliminatePartial(typename EliminationTree<FACTOR>::Eliminate function, size_t nrToEliminate) const {
 
   // call recursive routine
   tic(1, "ET recursive eliminate");
-  size_t nrConditionals = this->key_ + 1;    // root key has highest index
-  Conditionals conditionals(nrConditionals); // reserve a vector of conditional shared pointers
+  if(nrToEliminate > this->key_ + 1)
+    throw std::invalid_argument("Requested that EliminationTree::eliminatePartial eliminate more variables than exist");
+  Conditionals conditionals(nrToEliminate); // reserve a vector of conditional shared pointers
   (void)eliminate_(function, conditionals);  // modify in place
   toc(1, "ET recursive eliminate");
 
@@ -212,6 +222,14 @@ EliminationTree<FACTOR>::eliminate(Eliminate function) const {
   toc(2, "assemble BayesNet");
 
   return bayesNet;
+}
+
+/* ************************************************************************* */
+template<class FACTOR>
+typename EliminationTree<FACTOR>::BayesNet::shared_ptr
+EliminationTree<FACTOR>::eliminate(Eliminate function) const {
+  size_t nrConditionals = this->key_ + 1;    // root key has highest index
+  return eliminatePartial(function, nrConditionals);
 }
 
 }

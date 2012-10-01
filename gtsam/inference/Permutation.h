@@ -19,10 +19,12 @@
 
 #include <vector>
 #include <string>
+#include <set>
 #include <iostream>
 #include <boost/shared_ptr.hpp>
 
 #include <gtsam/base/types.h>
+#include <gtsam/base/FastMap.h>
 
 namespace gtsam {
 
@@ -181,5 +183,21 @@ protected:
 
 	/// @}
 };
+
+
+namespace internal {
+  // An internal class used for storing and applying a permutation from a map
+  class Reduction : public gtsam::FastMap<Index,Index> {
+  public:
+    static Reduction CreateAsInverse(const Permutation& p);
+    void applyInverse(std::vector<Index>& js) const;
+    Permutation inverse() const;
+    Index& operator[](const Index& j);
+    const Index& operator[](const Index& j) const;
+  };
+
+  // Reduce the variable indices so that those in the set are mapped to start at zero
+  Permutation createReducingPermutation(const std::set<Index>& indices);
+}
 
 }

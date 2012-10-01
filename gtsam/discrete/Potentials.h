@@ -49,6 +49,10 @@ namespace gtsam {
 		// Safe division for probabilities
 		static double safe_div(const double& a, const double& b);
 
+    // Apply either a permutation or a reduction
+    template<class P>
+    void remapIndices(const P& remapping);
+
 	public:
 
 		/** Default constructor for I/O */
@@ -78,6 +82,11 @@ namespace gtsam {
 		 * re-implement it.
 		 */
 		virtual void permuteWithInverse(const Permutation& inversePermutation);
+
+    /**
+	   * Apply a reduction, which is a remapping of variable indices.
+	   */
+    virtual void reduceWithInverse(const internal::Reduction& inverseReduction);
 
 	}; // Potentials
 

@@ -123,27 +123,6 @@ TEST( SymbolicSequentialSolver, inference ) {
 }
 
 /* ************************************************************************* */
-// This test shows a problem with my (Frank) attempt at a faster conditionalBayesNet
-TEST( SymbolicSequentialSolver, problematicConditional ) {
-  // Create factor graph
-  SymbolicFactorGraph fg;
-  fg.push_factor(9, 12, 14);
-
-  // eliminate
-  SymbolicSequentialSolver solver(fg);
-  // conditionalBayesNet
-  vector<Index> js;
-  js.push_back(12);
-  js.push_back(14);
-  size_t nrFrontals = 1;
-  SymbolicBayesNet::shared_ptr actualBN = //
-      solver.conditionalBayesNet(js, nrFrontals);
-  SymbolicBayesNet expectedBN;
-  expectedBN.push_front(boost::make_shared<IndexConditional>(12,14));
-  EXPECT( assert_equal(expectedBN,*actualBN));
-}
-
-/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

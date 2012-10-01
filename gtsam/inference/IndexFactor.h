@@ -156,6 +156,11 @@ namespace gtsam {
 	   */
 	  void permuteWithInverse(const Permutation& inversePermutation);
 
+	  /**
+	   * Apply a reduction, which is a remapping of variable indices.
+	   */
+    void reduceWithInverse(const internal::Reduction& inverseReduction);
+
 		virtual ~IndexFactor() {
 		}
 

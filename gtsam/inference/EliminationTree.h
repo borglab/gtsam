@@ -110,6 +110,13 @@ public:
    */
   typename BayesNet::shared_ptr eliminate(Eliminate function) const;
 
+  /** Eliminate the factors to a Bayes Net and return the remaining factor
+   * @param function The function to use to eliminate, see the namespace functions
+   * in GaussianFactorGraph.h
+   * @return The BayesNet resulting from elimination and the remaining factor
+   */
+  typename BayesNet::shared_ptr eliminatePartial(Eliminate function, size_t nrToEliminate) const;
+
 	/// @}
 	/// @name Testable
 	/// @{

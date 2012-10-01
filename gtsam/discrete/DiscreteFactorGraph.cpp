@@ -75,6 +75,24 @@ namespace gtsam {
 		}
 	}
 
+  /* ************************************************************************* */
+  void DiscreteFactorGraph::permuteWithInverse(
+    const Permutation& inversePermutation) {
+      BOOST_FOREACH(const sharedFactor& factor, factors_) {
+        if(factor)
+          factor->permuteWithInverse(inversePermutation);
+      }
+  }
+
+  /* ************************************************************************* */
+  void DiscreteFactorGraph::reduceWithInverse(
+    const internal::Reduction& inverseReduction) {
+      BOOST_FOREACH(const sharedFactor& factor, factors_) {
+        if(factor)
+          factor->reduceWithInverse(inverseReduction);
+      }
+  }
+
 	/* ************************************************************************* */
 	std::pair<DiscreteConditional::shared_ptr, DecisionTreeFactor::shared_ptr>  //
 	EliminateDiscrete(const FactorGraph<DiscreteFactor>& factors, size_t num) {

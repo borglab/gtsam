@@ -79,6 +79,12 @@ public:
 	/// print
 	void print(const std::string& s = "DiscreteFactorGraph",
 			const IndexFormatter& formatter =DefaultIndexFormatter) const;
+
+  /** Permute the variables in the factors */
+  void permuteWithInverse(const Permutation& inversePermutation);
+
+  /** Apply a reduction, which is a remapping of variable indices. */
+  void reduceWithInverse(const internal::Reduction& inverseReduction);
 };
 // DiscreteFactorGraph
 

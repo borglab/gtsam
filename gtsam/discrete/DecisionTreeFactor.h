@@ -139,6 +139,14 @@ namespace gtsam {
 			DiscreteFactor::permuteWithInverse(inversePermutation);
 			Potentials::permuteWithInverse(inversePermutation);
 		}
+    
+	  /**
+	   * Apply a reduction, which is a remapping of variable indices.
+	   */
+    virtual void reduceWithInverse(const internal::Reduction& inverseReduction) {
+    	DiscreteFactor::reduceWithInverse(inverseReduction);
+      Potentials::reduceWithInverse(inverseReduction);
+    }
 
 		/// @}
 	};
