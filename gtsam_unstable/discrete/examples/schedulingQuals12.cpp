@@ -178,9 +178,9 @@ void solveStaged(size_t addMutex = 2) {
     scheduler.buildGraph(addMutex);
 
     // Do EXACT INFERENCE
-    tic_(3,"eliminate");
+    tic_(eliminate);
     DiscreteBayesNet::shared_ptr chordal = scheduler.eliminate();
-    toc_(3,"eliminate");
+    toc_(eliminate);
 
     // find root node
     DiscreteConditional::shared_ptr root = *(chordal->rbegin());

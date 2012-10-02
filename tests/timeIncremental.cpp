@@ -46,11 +46,11 @@ int main(int argc, char *argv[]) {
 
   cout << "Loading data..." << endl;
 
-  tic_(1, "Find datafile (script only)");
+  tic_(Find_datafile);
   string datasetFile = findExampleDataFile("w10000-odom");
   std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> data =
     load2D(datasetFile);
-  toc_(1, "Find datafile (script only)");
+  toc_(Find_datafile);
 
   NonlinearFactorGraph measurements = *data.first;
   Values initial = *data.second;
@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
     NonlinearFactorGraph newFactors;
 
     // Collect measurements and new variables for the current step
-    tic_(2, "Collect measurements (script only)");
+    tic_(Collect_measurements);
     if(step == 1) {
       //      cout << "Initializing " << 0 << endl;
       newVariables.insert(0, Pose());
@@ -114,19 +114,19 @@ int main(int argc, char *argv[]) {
       }
       ++ nextMeasurement;
     }
-    toc_(2, "Collect measurements (script only)");
+    toc_(Collect_measurements);
 
     // Update iSAM2
-    tic_(3, "Update ISAM2");
+    tic_(Update_ISAM2);
     isam2.update(newFactors, newVariables);
-    toc_(3, "Update ISAM2");
+    toc_(Update_ISAM2);
 
     if(step % 100 == 0) {
-      tic_(4, "chi2 (script only)");
+      tic_(chi2);
       Values estimate(isam2.calculateEstimate());
       double chi2 = chi2_red(isam2.getFactorsUnsafe(), estimate);
       cout << "chi2 = " << chi2 << endl;
-      toc_(4, "chi2 (script only)");
+      toc_(chi2);
     }
 
     tictoc_finishedIteration_();
@@ -141,9 +141,9 @@ int main(int argc, char *argv[]) {
   Marginals marginals(isam2.getFactorsUnsafe(), isam2.calculateEstimate());
   int i=0;
   BOOST_FOREACH(Key key, initial.keys()) {
-    tic_(5, "marginalInformation");
+    tic_(marginalInformation);
     Matrix info = marginals.marginalInformation(key);
-    toc_(5, "marginalInformation");
+    toc_(marginalInformation);
     tictoc_finishedIteration_();
     if(i % 1000 == 0)
       tictoc_print_();

@@ -82,51 +82,55 @@ int main(int argc, char *argv[]) {
 
   int n = 10000000;
 
+  {
   VirtualBase** b = new VirtualBase*[n];
-  tic_(0, "Virtual");
-  tic_(0, "new");
+  tic_(Virtual);
+  tic_(new);
   for(int i=0; i<n; ++i)
     b[i] = new VirtualDerived();
-  toc_(0, "new");
-  tic_(1, "method");
+  toc_(new);
+  tic_(method);
   for(int i=0; i<n; ++i)
     b[i]->method();
-  toc_(1, "method");
-  tic_(2, "dynamic_cast");
+  toc_(method);
+  tic_(dynamic_cast);
   for(int i=0; i<n; ++i) {
     VirtualDerived* d = dynamic_cast<VirtualDerived*>(b[i]);
     if(d)
       d->method();
   }
-  toc_(2, "dynamic_cast");
-  tic_(3, "delete");
+  toc_(dynamic_cast);
+  tic_(delete);
   for(int i=0; i<n; ++i)
     delete b[i];
-  toc_(3, "delete");
-  toc_(0, "Virtual");
+  toc_(delete);
+  toc_(Virtual);
   delete[] b;
+  }
 
 
+  {
   NonVirtualDerived** d = new NonVirtualDerived*[n];
-  tic_(1, "NonVirtual");
-  tic_(0, "new");
+  tic_(NonVirtual);
+  tic_(new);
   for(int i=0; i<n; ++i)
     d[i] = new NonVirtualDerived();
-  toc_(0, "new");
-  tic_(1, "method");
+  toc_(new);
+  tic_(method);
   for(int i=0; i<n; ++i)
     d[i]->method();
-  toc_(1, "method");
-  tic_(2, "dynamic_cast (does nothing)");
+  toc_(method);
+  tic_(dynamic_cast (does nothing));
   for(int i=0; i<n; ++i)
     d[i]->method();
-  toc_(2, "dynamic_cast (does nothing)");
-  tic_(3, "delete");
+  toc_(dynamic_cast (does nothing));
+  tic_(delete);
   for(int i=0; i<n; ++i)
     delete d[i];
-  toc_(3, "delete");
-  toc_(1, "NonVirtual");
+  toc_(delete);
+  toc_(NonVirtual);
   delete[] d;
+  }
 
   tictoc_finishedIteration_();
   tictoc_print_();
