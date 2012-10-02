@@ -98,23 +98,23 @@ namespace gtsam {
   EliminateDiscrete(const FactorGraph<DiscreteFactor>& factors, size_t num) {
 
     // PRODUCT: multiply all factors
-    tic(product);
+    gttic(product);
     DecisionTreeFactor product;
     BOOST_FOREACH(const DiscreteFactor::shared_ptr& factor, factors){
       product = (*factor) * product;
     }
 
-    toc(product);
+    gttoc(product);
 
     // sum out frontals, this is the factor on the separator
-    tic(sum);
+    gttic(sum);
     DecisionTreeFactor::shared_ptr sum = product.sum(num);
-    toc(sum);
+    gttoc(sum);
 
     // now divide product/sum to get conditional
-    tic(divide);
+    gttic(divide);
     DiscreteConditional::shared_ptr cond(new DiscreteConditional(product, *sum));
-    toc(divide);
+    gttoc(divide);
 
     return std::make_pair(cond, sum);
   }

@@ -117,9 +117,9 @@ void runLargeExample() {
   // Do exact inference
   //  SETDEBUG("timing-verbose", true);
   SETDEBUG("DiscreteConditional::DiscreteConditional", true);
-  tic(large);
+  gttic(large);
   DiscreteFactor::sharedValues MPE = scheduler.optimalAssignment();
-  toc(large);
+  gttoc(large);
   tictoc_finishedIteration();
   tictoc_print();
   scheduler.printAssignment(MPE);
@@ -151,9 +151,9 @@ void solveStaged(size_t addMutex = 2) {
     scheduler.buildGraph(addMutex);
 
     // Do EXACT INFERENCE
-    tic_(eliminate);
+    gttic_(eliminate);
     DiscreteBayesNet::shared_ptr chordal = scheduler.eliminate();
-    toc_(eliminate);
+    gttoc_(eliminate);
 
     // find root node
     DiscreteConditional::shared_ptr root = *(chordal->rbegin());

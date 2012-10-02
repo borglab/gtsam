@@ -131,30 +131,30 @@ bool choleskyPartial(Matrix& ABC, size_t nFrontal) {
   const size_t n = ABC.rows();
 
   // Compute Cholesky factorization of A, overwrites A.
-  tic(lld);
+  gttic(lld);
   Eigen::LLT<Matrix, Eigen::Upper> llt = ABC.block(0,0,nFrontal,nFrontal).selfadjointView<Eigen::Upper>().llt();
   ABC.block(0,0,nFrontal,nFrontal).triangularView<Eigen::Upper>() = llt.matrixU();
-  toc(lld);
+  gttoc(lld);
 
   if(debug) cout << "R:\n" << Eigen::MatrixXd(ABC.topLeftCorner(nFrontal,nFrontal).triangularView<Eigen::Upper>()) << endl;
 
   // Compute S = inv(R') * B
-  tic(compute_S);
+  gttic(compute_S);
   if(n - nFrontal > 0) {
     ABC.topLeftCorner(nFrontal,nFrontal).triangularView<Eigen::Upper>().transpose().solveInPlace(
         ABC.topRightCorner(nFrontal, n-nFrontal));
   }
   if(debug) cout << "S:\n" << ABC.topRightCorner(nFrontal, n-nFrontal) << endl;
-  toc(compute_S);
+  gttoc(compute_S);
 
   // Compute L = C - S' * S
-  tic(compute_L);
+  gttic(compute_L);
   if(debug) cout << "C:\n" << Eigen::MatrixXd(ABC.bottomRightCorner(n-nFrontal,n-nFrontal).selfadjointView<Eigen::Upper>()) << endl;
   if(n - nFrontal > 0)
     ABC.bottomRightCorner(n-nFrontal,n-nFrontal).selfadjointView<Eigen::Upper>().rankUpdate(
         ABC.topRightCorner(nFrontal, n-nFrontal).transpose(), -1.0);
   if(debug) cout << "L:\n" << Eigen::MatrixXd(ABC.bottomRightCorner(n-nFrontal,n-nFrontal).selfadjointView<Eigen::Upper>()) << endl;
-  toc(compute_L);
+  gttoc(compute_L);
 
   // Check last diagonal element - Eigen does not check it
   bool ok;

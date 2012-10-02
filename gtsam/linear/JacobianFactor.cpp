@@ -388,7 +388,7 @@ namespace gtsam {
       throw IndeterminantLinearSystemException(this->keys().front());
 
     // Extract conditional
-    tic(cond_Rd);
+    gttic(cond_Rd);
 
     // Restrict the matrix to be in the first nrFrontals variables
     Ab_.rowEnd() = Ab_.rowStart() + frontalDim;
@@ -397,11 +397,11 @@ namespace gtsam {
     if(debug) conditional->print("Extracted conditional: ");
     Ab_.rowStart() += frontalDim;
     Ab_.firstBlock() += nrFrontals;
-    toc(cond_Rd);
+    gttoc(cond_Rd);
 
     if(debug) conditional->print("Extracted conditional: ");
 
-    tic(remaining_factor);
+    gttic(remaining_factor);
     // Take lower-right block of Ab to get the new factor
     Ab_.rowEnd() = model_->dim();
     keys_.erase(begin(), begin() + nrFrontals);
@@ -412,7 +412,7 @@ namespace gtsam {
       model_ = noiseModel::Diagonal::Sigmas(sub(model_->sigmas(), frontalDim, model_->dim()));
     if(debug) this->print("Eliminated factor: ");
     assert(Ab_.rows() <= Ab_.cols()-1);
-    toc(remaining_factor);
+    gttoc(remaining_factor);
 
     if(debug) print("Eliminated factor: ");
 
@@ -439,9 +439,9 @@ namespace gtsam {
     if(debug) cout << "frontalDim = " << frontalDim << endl;
 
     // Use in-place QR dense Ab appropriate to NoiseModel
-    tic(QR);
+    gttic(QR);
     SharedDiagonal noiseModel = model_->QR(matrix_);
-    toc(QR);
+    gttoc(QR);
 
     // Zero the lower-left triangle.  todo: not all of these entries actually
     // need to be zeroed if we are careful to start copying rows after the last

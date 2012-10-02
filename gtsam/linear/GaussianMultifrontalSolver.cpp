@@ -51,13 +51,13 @@ GaussianBayesTree::shared_ptr GaussianMultifrontalSolver::eliminate() const {
 
 /* ************************************************************************* */
 VectorValues::shared_ptr GaussianMultifrontalSolver::optimize() const {
-  tic(optimize);
+  gttic(optimize);
   VectorValues::shared_ptr values;
   if (useQR_)
     values = VectorValues::shared_ptr(new VectorValues(junctionTree_->optimize(&EliminateQR)));
   else
     values= VectorValues::shared_ptr(new VectorValues(junctionTree_->optimize(&EliminatePreferCholesky)));
-  toc(optimize);
+  gttoc(optimize);
   return values;
 }
 

@@ -36,22 +36,22 @@ namespace gtsam {
 
   /* ************************************************************************* */
   VectorValues GaussianJunctionTree::optimize(Eliminate function) const {
-    tic(GJT_eliminate);
+    gttic(GJT_eliminate);
     // eliminate from leaves to the root
     BTClique::shared_ptr rootClique(this->eliminate(function));
-    toc(GJT_eliminate);
+    gttoc(GJT_eliminate);
 
     // Allocate solution vector and copy RHS
-    tic(allocate_VectorValues);
+    gttic(allocate_VectorValues);
     vector<size_t> dims(rootClique->conditional()->back()+1, 0);
     countDims(rootClique, dims);
     VectorValues result(dims);
-    toc(allocate_VectorValues);
+    gttoc(allocate_VectorValues);
 
     // back-substitution
-    tic(backsubstitute);
+    gttic(backsubstitute);
     internal::optimizeInPlace<GaussianBayesTree>(rootClique, result);
-    toc(backsubstitute);
+    gttoc(backsubstitute);
     return result;
   }
 

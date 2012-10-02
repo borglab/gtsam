@@ -79,7 +79,7 @@ int main(int argc, char** argv) {
 
 
   cout << "\nComputing Node Marginals ..(Sequential Elimination)" << endl;
-  tic_(Sequential);
+  gttic_(Sequential);
   for (vector<DiscreteKey>::iterator itr = nodes.begin(); itr != nodes.end();
       ++itr) {
     //Compute the marginal
@@ -89,14 +89,14 @@ int main(int argc, char** argv) {
     cout << "Node#" << setw(4) << itr->first << " :  ";
     print(margProbs);
   }
-  toc_(Sequential);
+  gttoc_(Sequential);
 
   // Here we'll make use of DiscreteMarginals class, which makes use of
   // bayes-tree based shortcut evaluation of marginals
   DiscreteMarginals marginals(graph);
 
   cout << "\nComputing Node Marginals ..(BayesTree based)" << endl;
-  tic_(Multifrontal);
+  gttic_(Multifrontal);
   for (vector<DiscreteKey>::iterator itr = nodes.begin(); itr != nodes.end();
       ++itr) {
     //Compute the marginal
@@ -106,7 +106,7 @@ int main(int argc, char** argv) {
     cout << "Node#" << setw(4) << itr->first << " :  ";
     print(margProbs);
   }
-  toc_(Multifrontal);
+  gttoc_(Multifrontal);
 
   tictoc_print_();
   return 0;

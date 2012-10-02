@@ -21,23 +21,23 @@ int main(int argc, char *argv[]) {
 
   ticPush_("1", "top 1");
   ticPush_("1", "sub 1");
-  tic_("sub sub a");
-  toc_("sub sub a");
+  gttic_("sub sub a");
+  gttoc_("sub sub a");
   ticPop_("1", "sub 1");
   ticPush_("2", "sub 2");
-  tic_("sub sub b");
-  toc_("sub sub b");
+  gttic_("sub sub b");
+  gttoc_("sub sub b");
   ticPop_("2", "sub 2");
   ticPop_("1", "top 1");
 
   ticPush_("2", "top 2");
   ticPush_("1", "sub 1");
-  tic_("sub sub a");
-  toc_("sub sub a");
+  gttic_("sub sub a");
+  gttoc_("sub sub a");
   ticPop_("1", "sub 1");
   ticPush_("2", "sub 2");
-  tic_("sub sub b");
-  toc_("sub sub b");
+  gttic_("sub sub b");
+  gttoc_("sub sub b");
   ticPop_("2", "sub 2");
   ticPop_("2", "top 2");
 
@@ -49,10 +49,10 @@ int main(int argc, char *argv[]) {
   }
 
   for(size_t i=0; i<1000000; ++i) {
-    tic(overhead_a);
-    tic(overhead_b);
-    toc(overhead_b);
-    toc(overhead_a);
+    gttic(overhead_a);
+    gttic(overhead_b);
+    gttoc(overhead_b);
+    gttoc(overhead_a);
   }
 
   tictoc_print_();

@@ -71,7 +71,7 @@ void LevenbergMarquardtParams::print(const std::string& str) const {
 /* ************************************************************************* */
 void LevenbergMarquardtOptimizer::iterate() {
 
-  tic(LM_iterate);
+  gttic(LM_iterate);
 
   // Linearize graph
   GaussianFactorGraph::shared_ptr linear = graph_.linearize(state_.values, *params_.ordering);
@@ -87,7 +87,7 @@ void LevenbergMarquardtOptimizer::iterate() {
 
     // Add prior-factors
     // TODO: replace this dampening with a backsubstitution approach
-    tic(damp);
+    gttic(damp);
     GaussianFactorGraph dampedSystem(*linear);
     {
       double sigma = 1.0 / std::sqrt(state_.lambda);
@@ -102,7 +102,7 @@ void LevenbergMarquardtOptimizer::iterate() {
         dampedSystem.push_back(prior);
       }
     }
-    toc(damp);
+    gttoc(damp);
     if (lmVerbosity >= LevenbergMarquardtParams::DAMPED) dampedSystem.print("damped");
 
     // Try solving
@@ -114,14 +114,14 @@ void LevenbergMarquardtOptimizer::iterate() {
       if (lmVerbosity >= LevenbergMarquardtParams::TRYDELTA) delta.print("delta");
 
       // update values
-      tic(retract);
+      gttic(retract);
       Values newValues = state_.values.retract(delta, *params_.ordering);
-      toc(retract);
+      gttoc(retract);
 
       // create new optimization state with more adventurous lambda
-      tic(compute_error);
+      gttic(compute_error);
       double error = graph_.error(newValues);
-      toc(compute_error);
+      gttoc(compute_error);
 
       if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) cout << "next error = " << error << endl;
 

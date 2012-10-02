@@ -142,9 +142,9 @@ VectorValues backSubstituteTranspose(const GaussianBayesNet& bn,
 
 /* ************************************************************************* */
 VectorValues optimizeGradientSearch(const GaussianBayesNet& Rd) {
-  tic(Allocate_VectorValues);
+  gttic(Allocate_VectorValues);
   VectorValues grad = *allocateVectorValues(Rd);
-  toc(Allocate_VectorValues);
+  gttoc(Allocate_VectorValues);
 
   optimizeGradientSearchInPlace(Rd, grad);
 
@@ -153,27 +153,27 @@ VectorValues optimizeGradientSearch(const GaussianBayesNet& Rd) {
 
 /* ************************************************************************* */
 void optimizeGradientSearchInPlace(const GaussianBayesNet& Rd, VectorValues& grad) {
-  tic(Compute_Gradient);
+  gttic(Compute_Gradient);
   // Compute gradient (call gradientAtZero function, which is defined for various linear systems)
   gradientAtZero(Rd, grad);
   double gradientSqNorm = grad.dot(grad);
-  toc(Compute_Gradient);
+  gttoc(Compute_Gradient);
 
-  tic(Compute_Rg);
+  gttic(Compute_Rg);
   // Compute R * g
   FactorGraph<JacobianFactor> Rd_jfg(Rd);
   Errors Rg = Rd_jfg * grad;
-  toc(Compute_Rg);
+  gttoc(Compute_Rg);
 
-  tic(Compute_minimizing_step_size);
+  gttic(Compute_minimizing_step_size);
   // Compute minimizing step size
   double step = -gradientSqNorm / dot(Rg, Rg);
-  toc(Compute_minimizing_step_size);
+  gttoc(Compute_minimizing_step_size);
 
-  tic(Compute_point);
+  gttic(Compute_point);
   // Compute steepest descent point
   scal(step, grad);
-  toc(Compute_point);
+  gttoc(Compute_point);
 }
 
 /* ************************************************************************* */  

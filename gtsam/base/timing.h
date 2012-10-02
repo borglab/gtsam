@@ -108,10 +108,10 @@ inline void tictoc_print2_() {
 }
 
 // Tic and toc functions using a string label
-#define tic_(label) \
+#define gttic_(label) \
   static const size_t label##_id_tic = ::gtsam::internal::getTicTocID(#label); \
   ::gtsam::internal::AutoTicToc label##_obj = ::gtsam::internal::AutoTicToc(label##_id_tic, #label)
-#define toc_(label) \
+#define gttoc_(label) \
   label##_obj.stop()
 #define longtic_(label) \
   static const size_t label##_id_tic = ::gtsam::internal::getTicTocID(#label); \
@@ -121,15 +121,15 @@ inline void tictoc_print2_() {
   ::gtsam::internal::tocInternal(label##_id_toc, #label)
 
 #ifdef ENABLE_TIMING
-#define tic(label) tic_(label)
-#define toc(label) toc_(label)
+#define gttic(label) gttic_(label)
+#define gttoc(label) gttoc_(label)
 #define longtic(label) longtic_(label)
 #define longtoc(label) longtoc_(label)
 #define tictoc_finishedIteration tictoc_finishedIteration_
 #define tictoc_print tictoc_print_
 #else
-#define tic(label) ((void)0)
-#define toc(label) ((void)0)
+#define gttic(label) ((void)0)
+#define gttoc(label) ((void)0)
 #define longtic(label) ((void)0)
 #define longtoc(label) ((void)0)
 inline void tictoc_finishedIteration() {}

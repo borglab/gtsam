@@ -125,9 +125,9 @@ TEST( schedulingExample, test)
   //product.dot("scheduling", false);
 
   // Do exact inference
-  tic(small);
+  gttic(small);
   DiscreteFactor::sharedValues MPE = s.optimalAssignment();
-  toc(small);
+  gttoc(small);
 
   // print MPE, commented out as unit tests don't print
 //  s.printAssignment(MPE);

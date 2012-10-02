@@ -124,9 +124,9 @@ void runLargeExample() {
   SETDEBUG("DiscreteConditional::DiscreteConditional", true);
 #define SAMPLE
 #ifdef SAMPLE
-  tic(large);
+  gttic(large);
   DiscreteBayesNet::shared_ptr chordal = scheduler.eliminate();
-  toc(large);
+  gttoc(large);
   tictoc_finishedIteration();
   tictoc_print();
   for (size_t i=0;i<100;i++) {
@@ -143,9 +143,9 @@ void runLargeExample() {
     }
   }
 #else
-  tic(large);
+  gttic(large);
   DiscreteFactor::sharedValues MPE = scheduler.optimalAssignment();
-  toc(large);
+  gttoc(large);
   tictoc_finishedIteration();
   tictoc_print();
   scheduler.printAssignment(MPE);
@@ -178,9 +178,9 @@ void solveStaged(size_t addMutex = 2) {
     scheduler.buildGraph(addMutex);
 
     // Do EXACT INFERENCE
-    tic_(eliminate);
+    gttic_(eliminate);
     DiscreteBayesNet::shared_ptr chordal = scheduler.eliminate();
-    toc_(eliminate);
+    gttoc_(eliminate);
 
     // find root node
     DiscreteConditional::shared_ptr root = *(chordal->rbegin());

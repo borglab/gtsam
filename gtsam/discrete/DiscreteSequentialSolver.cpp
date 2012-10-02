@@ -35,18 +35,18 @@ namespace gtsam {
         "DiscreteSequentialSolver, elimination tree ");
 
     // Eliminate using the elimination tree
-    tic(eliminate);
+    gttic(eliminate);
     DiscreteBayesNet::shared_ptr bayesNet = eliminate();
-    toc(eliminate);
+    gttoc(eliminate);
 
     if (debug) bayesNet->print("DiscreteSequentialSolver, Bayes net ");
 
     // Allocate the solution vector if it is not already allocated
 
     // Back-substitute
-    tic(optimize);
+    gttic(optimize);
     DiscreteFactor::sharedValues solution = gtsam::optimize(*bayesNet);
-    toc(optimize);
+    gttoc(optimize);
 
     if (debug) solution->print("DiscreteSequentialSolver, solution ");
 

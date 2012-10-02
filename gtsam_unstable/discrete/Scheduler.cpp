@@ -253,12 +253,12 @@ namespace gtsam {
 
   /** Eliminate, return a Bayes net */
   DiscreteBayesNet::shared_ptr Scheduler::eliminate() const {
-    tic(my_solver);
+    gttic(my_solver);
     DiscreteSequentialSolver solver(*this);
-    toc(my_solver);
-    tic(my_eliminate);
+    gttoc(my_solver);
+    gttic(my_eliminate);
     DiscreteBayesNet::shared_ptr chordal = solver.eliminate();
-    toc(my_eliminate);
+    gttoc(my_eliminate);
     return chordal;
   }
 
@@ -273,9 +273,9 @@ namespace gtsam {
       (*it)->print(student.name_);
     }
 
-    tic(my_optimize);
+    gttic(my_optimize);
     sharedValues mpe = optimize(*chordal);
-    toc(my_optimize);
+    gttoc(my_optimize);
     return mpe;
   }
 

@@ -44,7 +44,7 @@ void NonlinearFactorGraph::print(const std::string& str, const KeyFormatter& key
 
 /* ************************************************************************* */
 double NonlinearFactorGraph::error(const Values& c) const {
-  tic(NonlinearFactorGraph_error);
+  gttic(NonlinearFactorGraph_error);
   double total_error = 0.;
   // iterate over all the factors_ to accumulate the log probabilities
   BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
@@ -68,7 +68,7 @@ FastSet<Key> NonlinearFactorGraph::keys() const {
 Ordering::shared_ptr NonlinearFactorGraph::orderingCOLAMD(
     const Values& config) const
 {
-  tic(NonlinearFactorGraph_orderingCOLAMD);
+  gttic(NonlinearFactorGraph_orderingCOLAMD);
 
   // Create symbolic graph and initial (iterator) ordering
   SymbolicFactorGraph::shared_ptr symbolic;
@@ -93,7 +93,7 @@ Ordering::shared_ptr NonlinearFactorGraph::orderingCOLAMD(
 Ordering::shared_ptr NonlinearFactorGraph::orderingCOLAMDConstrained(const Values& config,
     const std::map<Key, int>& constraints) const
 {
-  tic(NonlinearFactorGraph_orderingCOLAMDConstrained);
+  gttic(NonlinearFactorGraph_orderingCOLAMDConstrained);
 
   // Create symbolic graph and initial (iterator) ordering
   SymbolicFactorGraph::shared_ptr symbolic;
@@ -122,7 +122,7 @@ Ordering::shared_ptr NonlinearFactorGraph::orderingCOLAMDConstrained(const Value
 
 /* ************************************************************************* */
 SymbolicFactorGraph::shared_ptr NonlinearFactorGraph::symbolic(const Ordering& ordering) const {
-  tic(NonlinearFactorGraph_symbolic_from_Ordering);
+  gttic(NonlinearFactorGraph_symbolic_from_Ordering);
 
   // Generate the symbolic factor graph
   SymbolicFactorGraph::shared_ptr symbolicfg(new SymbolicFactorGraph);
@@ -142,7 +142,7 @@ SymbolicFactorGraph::shared_ptr NonlinearFactorGraph::symbolic(const Ordering& o
 pair<SymbolicFactorGraph::shared_ptr, Ordering::shared_ptr> NonlinearFactorGraph::symbolic(
     const Values& config) const
 {
-  tic(NonlinearFactorGraph_symbolic_from_Values);
+  gttic(NonlinearFactorGraph_symbolic_from_Values);
 
   // Generate an initial key ordering in iterator order
   Ordering::shared_ptr ordering(config.orderingArbitrary());
@@ -153,7 +153,7 @@ pair<SymbolicFactorGraph::shared_ptr, Ordering::shared_ptr> NonlinearFactorGraph
 GaussianFactorGraph::shared_ptr NonlinearFactorGraph::linearize(
     const Values& config, const Ordering& ordering) const
 {
-  tic(NonlinearFactorGraph_linearize);
+  gttic(NonlinearFactorGraph_linearize);
 
   // create an empty linear FG
   GaussianFactorGraph::shared_ptr linearFG(new GaussianFactorGraph);

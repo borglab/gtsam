@@ -251,16 +251,16 @@ HessianFactor::HessianFactor(const FactorGraph<GaussianFactor>& factors,
 
   const bool debug = ISDEBUG("EliminateCholesky");
   // Form Ab' * Ab
-  tic(allocate);
+  gttic(allocate);
   info_.resize(dimensions.begin(), dimensions.end(), false);
   // Fill in keys
   keys_.resize(scatter.size());
   std::transform(scatter.begin(), scatter.end(), keys_.begin(), boost::bind(&Scatter::value_type::first, ::_1));
-  toc(allocate);
-  tic(zero);
+  gttoc(allocate);
+  gttic(zero);
   matrix_.noalias() = Matrix::Zero(matrix_.rows(),matrix_.cols());
-  toc(zero);
-  tic(update);
+  gttoc(zero);
+  gttic(update);
   if (debug) cout << "Combining " << factors.size() << " factors" << endl;
   BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors)
   {
@@ -273,7 +273,7 @@ HessianFactor::HessianFactor(const FactorGraph<GaussianFactor>& factors,
         throw invalid_argument("GaussianFactor is neither Hessian nor Jacobian");
     }
   }
-  toc(update);
+  gttoc(update);
 
   if (debug) gtsam::print(matrix_, "Ab' * Ab: ");
 
@@ -335,14 +335,14 @@ void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatte
   const bool debug = ISDEBUG("updateATA");
 
   // First build an array of slots
-  tic(slots);
+  gttic(slots);
   size_t* slots = (size_t*)alloca(sizeof(size_t)*update.size()); // FIXME: alloca is bad, just ask Google.
   size_t slot = 0;
   BOOST_FOREACH(Index j, update) {
     slots[slot] = scatter.find(j)->second.slot;
     ++ slot;
   }
-  toc(slots);
+  gttoc(slots);
 
   if(debug) {
     this->print("Updating this: ");
@@ -350,7 +350,7 @@ void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatte
   }
 
   // Apply updates to the upper triangle
-  tic(update);
+  gttic(update);
   for(size_t j2=0; j2<update.info_.nBlocks(); ++j2) {
     size_t slot2 = (j2 == update.size()) ? this->info_.nBlocks()-1 : slots[j2];
     for(size_t j1=0; j1<=j2; ++j1) {
@@ -375,7 +375,7 @@ void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatte
       if(debug) this->print();
     }
   }
-  toc(update);
+  gttoc(update);
 }
 
 /* ************************************************************************* */
@@ -388,16 +388,16 @@ void HessianFactor::updateATA(const JacobianFactor& update, const Scatter& scatt
   const bool debug = ISDEBUG("updateATA");
 
   // First build an array of slots
-  tic(slots);
+  gttic(slots);
   size_t* slots = (size_t*)alloca(sizeof(size_t)*update.size()); // FIXME: alloca is bad, just ask Google.
   size_t slot = 0;
   BOOST_FOREACH(Index j, update) {
     slots[slot] = scatter.find(j)->second.slot;
     ++ slot;
   }
-  toc(slots);
+  gttoc(slots);
 
-  tic(form_ATA);
+  gttic(form_ATA);
   if(update.model_->isConstrained())
     throw invalid_argument("Cannot update HessianFactor from JacobianFactor with constrained noise model");
 
@@ -423,10 +423,10 @@ void HessianFactor::updateATA(const JacobianFactor& update, const Scatter& scatt
       throw invalid_argument("In HessianFactor::updateATA, JacobianFactor noise model is neither Unit nor Diagonal");
   }
   if (debug) cout << "updateInform: \n" << updateInform << endl;
-   toc(form_ATA);
+   gttoc(form_ATA);
 
   // Apply updates to the upper triangle
-  tic(update);
+  gttic(update);
   for(size_t j2=0; j2<update.Ab_.nBlocks(); ++j2) {
     size_t slot2 = (j2 == update.size()) ? this->info_.nBlocks()-1 : slots[j2];
     for(size_t j1=0; j1<=j2; ++j1) {
@@ -452,7 +452,7 @@ void HessianFactor::updateATA(const JacobianFactor& update, const Scatter& scatt
       if(debug) this->print();
     }
   }
-  toc(update);
+  gttoc(update);
 }
 
 /* ************************************************************************* */
@@ -467,7 +467,7 @@ GaussianConditional::shared_ptr HessianFactor::splitEliminatedFactor(size_t nrFr
   static const bool debug = false;
 
   // Extract conditionals
-  tic(extract_conditionals);
+  gttic(extract_conditionals);
   GaussianConditional::shared_ptr conditional(new GaussianConditional());
   typedef VerticalBlockView<Matrix> BlockAb;
   BlockAb Ab(matrix_, info_);
@@ -476,22 +476,22 @@ GaussianConditional::shared_ptr HessianFactor::splitEliminatedFactor(size_t nrFr
   Ab.rowEnd() = Ab.rowStart() + varDim;
 
   // Create one big conditionals with many frontal variables.
-  tic(construct_cond);
+  gttic(construct_cond);
   Vector sigmas = Vector::Ones(varDim);
   conditional = boost::make_shared<ConditionalType>(keys_.begin(), keys_.end(), nrFrontals, Ab, sigmas);
-  toc(construct_cond);
+  gttoc(construct_cond);
   if(debug) conditional->print("Extracted conditional: ");
 
-  toc(extract_conditionals);
+  gttoc(extract_conditionals);
 
   // Take lower-right block of Ab_ to get the new factor
-  tic(remaining_factor);
+  gttic(remaining_factor);
   info_.blockStart() = nrFrontals;
   // Assign the keys
   vector<Index> remainingKeys(keys_.size() - nrFrontals);
   remainingKeys.assign(keys_.begin() + nrFrontals, keys_.end());
   keys_.swap(remainingKeys);
-  toc(remaining_factor);
+  gttoc(remaining_factor);
 
   return conditional;
 }

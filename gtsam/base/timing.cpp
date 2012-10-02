@@ -194,7 +194,7 @@ void TimingOutline::finishedIteration() {
   void ticInternal(size_t id, const char *labelC) {
     const std::string label(labelC);
     if(ISDEBUG("timing-verbose"))
-      std::cout << "tic_(" << id << ", " << label << ")" << std::endl;
+      std::cout << "gttic_(" << id << ", " << label << ")" << std::endl;
     boost::shared_ptr<TimingOutline> node = timingCurrent.lock()->child(id, label, timingCurrent);
     timingCurrent = node;
     node->ticInternal();
@@ -203,18 +203,18 @@ void TimingOutline::finishedIteration() {
   /* ************************************************************************* */
   void tocInternal(size_t id, const char *label) {
     if(ISDEBUG("timing-verbose"))
-      std::cout << "toc(" << id << ", " << label << ")" << std::endl;
+      std::cout << "gttoc(" << id << ", " << label << ")" << std::endl;
     boost::shared_ptr<TimingOutline> current(timingCurrent.lock());
     if(id != current->myId_) {
       timingRoot->print();
       throw std::invalid_argument(
-        (boost::format("gtsam timing:  Mismatched tic/toc: toc(\"%s\") called when last tic was \"%s\".") %
+        (boost::format("gtsam timing:  Mismatched tic/toc: gttoc(\"%s\") called when last tic was \"%s\".") %
         label % current->label_).str());
     }
     if(!current->parent_.lock()) {
       timingRoot->print();
       throw std::invalid_argument(
-        (boost::format("gtsam timing:  Mismatched tic/toc: extra toc(\"%s\"), already at the root") %
+        (boost::format("gtsam timing:  Mismatched tic/toc: extra gttoc(\"%s\"), already at the root") %
         label).str());
     }
     current->tocInternal();

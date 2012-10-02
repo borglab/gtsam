@@ -84,51 +84,51 @@ int main(int argc, char *argv[]) {
 
   {
   VirtualBase** b = new VirtualBase*[n];
-  tic_(Virtual);
-  tic_(new);
+  gttic_(Virtual);
+  gttic_(new);
   for(int i=0; i<n; ++i)
     b[i] = new VirtualDerived();
-  toc_(new);
-  tic_(method);
+  gttoc_(new);
+  gttic_(method);
   for(int i=0; i<n; ++i)
     b[i]->method();
-  toc_(method);
-  tic_(dynamic_cast);
+  gttoc_(method);
+  gttic_(dynamic_cast);
   for(int i=0; i<n; ++i) {
     VirtualDerived* d = dynamic_cast<VirtualDerived*>(b[i]);
     if(d)
       d->method();
   }
-  toc_(dynamic_cast);
-  tic_(delete);
+  gttoc_(dynamic_cast);
+  gttic_(delete);
   for(int i=0; i<n; ++i)
     delete b[i];
-  toc_(delete);
-  toc_(Virtual);
+  gttoc_(delete);
+  gttoc_(Virtual);
   delete[] b;
   }
 
 
   {
   NonVirtualDerived** d = new NonVirtualDerived*[n];
-  tic_(NonVirtual);
-  tic_(new);
+  gttic_(NonVirtual);
+  gttic_(new);
   for(int i=0; i<n; ++i)
     d[i] = new NonVirtualDerived();
-  toc_(new);
-  tic_(method);
+  gttoc_(new);
+  gttic_(method);
   for(int i=0; i<n; ++i)
     d[i]->method();
-  toc_(method);
-  tic_(dynamic_cast (does nothing));
+  gttoc_(method);
+  gttic_(dynamic_cast (does nothing));
   for(int i=0; i<n; ++i)
     d[i]->method();
-  toc_(dynamic_cast (does nothing));
-  tic_(delete);
+  gttoc_(dynamic_cast (does nothing));
+  gttic_(delete);
   for(int i=0; i<n; ++i)
     delete d[i];
-  toc_(delete);
-  toc_(NonVirtual);
+  gttoc_(delete);
+  gttoc_(NonVirtual);
   delete[] d;
   }
 

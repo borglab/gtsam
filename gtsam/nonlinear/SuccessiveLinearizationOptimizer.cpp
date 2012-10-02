@@ -54,7 +54,7 @@ void SuccessiveLinearizationParams::print(const std::string& str) const {
 }
 
 VectorValues solveGaussianFactorGraph(const GaussianFactorGraph &gfg, const SuccessiveLinearizationParams &params) {
-  tic(solveGaussianFactorGraph);
+  gttic(solveGaussianFactorGraph);
   VectorValues delta;
   if (params.isMultifrontal()) {
     delta = GaussianJunctionTree(gfg).optimize(params.getEliminationFunction());

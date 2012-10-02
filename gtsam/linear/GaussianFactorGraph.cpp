@@ -253,7 +253,7 @@ break;
     if (debug) variableSlots.print();
 
     if (debug) cout << "Determine dimensions" << endl;
-    tic(countDims);
+    gttic(countDims);
     vector<size_t> varDims;
     size_t m, n;
     boost::tie(varDims, m, n) = countDims(factors, variableSlots);
@@ -262,17 +262,17 @@ break;
       BOOST_FOREACH(const size_t dim, varDims) cout << dim << " ";
       cout << endl;
     }
-    toc(countDims);
+    gttoc(countDims);
 
     if (debug) cout << "Allocate new factor" << endl;
-    tic(allocate);
+    gttic(allocate);
     JacobianFactor::shared_ptr combined(new JacobianFactor());
     combined->allocate(variableSlots, varDims, m);
     Vector sigmas(m);
-    toc(allocate);
+    gttoc(allocate);
 
     if (debug) cout << "Copy blocks" << endl;
-    tic(copy_blocks);
+    gttic(copy_blocks);
     // Loop over slots in combined factor
     Index combinedSlot = 0;
     BOOST_FOREACH(const VariableSlots::value_type& varslot, variableSlots) {
@@ -293,10 +293,10 @@ break;
       }
       ++combinedSlot;
     }
-    toc(copy_blocks);
+    gttoc(copy_blocks);
 
     if (debug) cout << "Copy rhs (b) and sigma" << endl;
-    tic(copy_vectors);
+    gttic(copy_vectors);
     bool anyConstrained = false;
     // Loop over source factors
     size_t nextRow = 0;
@@ -307,12 +307,12 @@ break;
       if (factors[factorI]->isConstrained()) anyConstrained = true;
       nextRow += sourceRows;
     }
-    toc(copy_vectors);
+    gttoc(copy_vectors);
 
     if (debug) cout << "Create noise model from sigmas" << endl;
-    tic(noise_model);
+    gttic(noise_model);
     combined->setModel(anyConstrained, sigmas);
-    toc(noise_model);
+    gttoc(noise_model);
 
     if (debug) cout << "Assert Invariants" << endl;
     combined->assertInvariants();
@@ -323,13 +323,13 @@ break;
   /* ************************************************************************* */
   GaussianFactorGraph::EliminationResult EliminateJacobians(const FactorGraph<
       JacobianFactor>& factors, size_t nrFrontals) {
-    tic(Combine);
+    gttic(Combine);
     JacobianFactor::shared_ptr jointFactor =
         CombineJacobians(factors, VariableSlots(factors));
-    toc(Combine);
-    tic(eliminate);
+    gttoc(Combine);
+    gttic(eliminate);
     GaussianConditional::shared_ptr gbn = jointFactor->eliminate(nrFrontals);
-    toc(eliminate);
+    gttoc(eliminate);
     return make_pair(gbn, jointFactor);
   }
 
@@ -397,42 +397,42 @@ break;
     const bool debug = ISDEBUG("EliminateCholesky");
 
     // Find the scatter and variable dimensions
-    tic(find_scatter);
+    gttic(find_scatter);
     Scatter scatter(findScatterAndDims(factors));
-    toc(find_scatter);
+    gttoc(find_scatter);
 
     // Pull out keys and dimensions
-    tic(keys);
+    gttic(keys);
     vector<size_t> dimensions(scatter.size() + 1);
     BOOST_FOREACH(const Scatter::value_type& var_slot, scatter) {
       dimensions[var_slot.second.slot] = var_slot.second.dimension;
     }
     // This is for the r.h.s. vector
     dimensions.back() = 1;
-    toc(keys);
+    gttoc(keys);
 
     // Form Ab' * Ab
-    tic(combine);
+    gttic(combine);
     HessianFactor::shared_ptr combinedFactor(new HessianFactor(factors, dimensions, scatter));
-    toc(combine);
+    gttoc(combine);
 
     // Do Cholesky, note that after this, the lower triangle still contains
     // some untouched non-zeros that should be zero.  We zero them while
     // extracting submatrices next.
-    tic(partial_Cholesky);
+    gttic(partial_Cholesky);
     combinedFactor->partialCholesky(nrFrontals);
 
-    toc(partial_Cholesky);
+    gttoc(partial_Cholesky);
 
     // Extract conditional and fill in details of the remaining factor
-    tic(split);
+    gttic(split);
     GaussianConditional::shared_ptr conditional =
         combinedFactor->splitEliminatedFactor(nrFrontals);
     if (debug) {
       conditional->print("Extracted conditional: ");
       combinedFactor->print("Eliminated factor (L piece): ");
     }
-    toc(split);
+    gttoc(split);
 
     combinedFactor->assertInvariants();
     return make_pair(conditional, combinedFactor);
@@ -482,15 +482,15 @@ break;
     // Convert all factors to the appropriate type and call the type-specific EliminateGaussian.
     if (debug) cout << "Using QR" << endl;
 
-    tic(convert_to_Jacobian);
+    gttic(convert_to_Jacobian);
     FactorGraph<JacobianFactor> jacobians = convertToJacobians(factors);
-    toc(convert_to_Jacobian);
+    gttoc(convert_to_Jacobian);
 
-    tic(Jacobian_EliminateGaussian);
+    gttic(Jacobian_EliminateGaussian);
     GaussianConditional::shared_ptr conditional;
     GaussianFactor::shared_ptr factor;
     boost::tie(conditional, factor) = EliminateJacobians(jacobians, nrFrontals);
-    toc(Jacobian_EliminateGaussian);
+    gttoc(Jacobian_EliminateGaussian);
 
     return make_pair(conditional, factor);
   } // \EliminateQR
@@ -522,9 +522,9 @@ break;
       return EliminateQR(factors, nrFrontals);
     else {
       GaussianFactorGraph::EliminationResult ret;
-      tic(EliminateCholesky);
+      gttic(EliminateCholesky);
       ret = EliminateCholesky(factors, nrFrontals);
-      toc(EliminateCholesky);
+      gttoc(EliminateCholesky);
       return ret;
     }
 

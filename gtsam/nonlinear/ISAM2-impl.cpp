@@ -302,7 +302,7 @@ ISAM2::Impl::PartialSolve(GaussianFactorGraph& factors,
 
   PartialSolveResult result;
 
-  tic(select_affected_variables);
+  gttic(select_affected_variables);
 #ifndef NDEBUG
   // Debug check that all variables involved in the factors to be re-eliminated
   // are in affectedKeys, since we will use it to select a subset of variables.
@@ -326,12 +326,12 @@ ISAM2::Impl::PartialSolve(GaussianFactorGraph& factors,
   if(debug) affectedKeysSelectorInverse.print("affectedKeysSelectorInverse: ");
   factors.permuteWithInverse(affectedKeysSelectorInverse);
   if(debug) factors.print("Factors to reorder/re-eliminate: ");
-  toc(select_affected_variables);
-  tic(variable_index);
+  gttoc(select_affected_variables);
+  gttic(variable_index);
   VariableIndex affectedFactorsIndex(factors); // Create a variable index for the factors to be re-eliminated
   if(debug) affectedFactorsIndex.print("affectedFactorsIndex: ");
-  toc(variable_index);
-  tic(ccolamd);
+  gttoc(variable_index);
+  gttic(ccolamd);
   vector<int> cmember(affectedKeysSelector.size(), 0);
   if(reorderingMode.constrain == ReorderingMode::CONSTRAIN_LAST) {
     assert(reorderingMode.constrainedKeys);
@@ -348,8 +348,8 @@ ISAM2::Impl::PartialSolve(GaussianFactorGraph& factors,
     }
   }
   Permutation::shared_ptr affectedColamd(inference::PermutationCOLAMD_(affectedFactorsIndex, cmember));
-  toc(ccolamd);
-  tic(ccolamd_permutations);
+  gttoc(ccolamd);
+  gttic(ccolamd_permutations);
   Permutation::shared_ptr affectedColamdInverse(affectedColamd->inverse());
   if(debug) affectedColamd->print("affectedColamd: ");
   if(debug) affectedColamdInverse->print("affectedColamdInverse: ");
@@ -358,15 +358,15 @@ ISAM2::Impl::PartialSolve(GaussianFactorGraph& factors,
   result.fullReorderingInverse =
       *Permutation::Identity(reorderingMode.nFullSystemVars).partialPermutation(affectedKeysSelector, *affectedColamdInverse);
   if(debug) result.fullReordering.print("partialReordering: ");
-  toc(ccolamd_permutations);
+  gttoc(ccolamd_permutations);
 
-  tic(permute_affected_variable_index);
+  gttic(permute_affected_variable_index);
   affectedFactorsIndex.permuteInPlace(*affectedColamd);
-  toc(permute_affected_variable_index);
+  gttoc(permute_affected_variable_index);
 
-  tic(permute_affected_factors);
+  gttic(permute_affected_factors);
   factors.permuteWithInverse(*affectedColamdInverse);
-  toc(permute_affected_factors);
+  gttoc(permute_affected_factors);
 
   if(debug) factors.print("Colamd-ordered affected factors: ");
 
@@ -376,15 +376,15 @@ ISAM2::Impl::PartialSolve(GaussianFactorGraph& factors,
 #endif
 
   // eliminate into a Bayes net
-  tic(eliminate);
+  gttic(eliminate);
   JunctionTree<GaussianFactorGraph, ISAM2::Clique> jt(factors, affectedFactorsIndex);
   if(!useQR)
     result.bayesTree = jt.eliminate(EliminatePreferCholesky);
   else
     result.bayesTree = jt.eliminate(EliminateQR);
-  toc(eliminate);
+  gttoc(eliminate);
 
-  tic(permute_eliminated);
+  gttic(permute_eliminated);
   if(result.bayesTree) result.bayesTree->permuteWithInverse(affectedKeysSelector);
   if(debug && result.bayesTree) {
     cout << "Full var-ordered eliminated BT:\n";
@@ -393,7 +393,7 @@ ISAM2::Impl::PartialSolve(GaussianFactorGraph& factors,
   // Undo permutation on our subset of cached factors, we must later permute *all* of the cached factors
   factors.permuteWithInverse(*affectedColamd);
   factors.permuteWithInverse(affectedKeysSelector);
-  toc(permute_eliminated);
+  gttoc(permute_eliminated);
 
   return result;
 }
