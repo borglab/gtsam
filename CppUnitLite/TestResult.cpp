@@ -17,7 +17,7 @@
 
 
 TestResult::TestResult ()
-	: failureCount (0)
+  : failureCount (0)
 {
 }
 
@@ -29,29 +29,29 @@ void TestResult::testsStarted ()
 
 void TestResult::addFailure (const Failure& failure) 
 {
-	if (failure.lineNumber < 0) // allow for no line number
-		fprintf (stdout, "%s%s%s%s\n",
-				"Failure: \"",
-				failure.message.c_str (),
-				"\" in ",
-				failure.fileName.c_str ());
-	else
-		fprintf (stdout, "%s%s%ld%s%s%s\n",
-				failure.fileName.c_str(),  // Format matches Eclipse error flagging
-				":",
-				failure.lineNumber,
-				": Failure: \"",
-				failure.message.c_str(),
-				"\" ");
+  if (failure.lineNumber < 0) // allow for no line number
+    fprintf (stdout, "%s%s%s%s\n",
+        "Failure: \"",
+        failure.message.c_str (),
+        "\" in ",
+        failure.fileName.c_str ());
+  else
+    fprintf (stdout, "%s%s%ld%s%s%s\n",
+        failure.fileName.c_str(),  // Format matches Eclipse error flagging
+        ":",
+        failure.lineNumber,
+        ": Failure: \"",
+        failure.message.c_str(),
+        "\" ");
 
-	failureCount++;
+  failureCount++;
 }
 
 
 void TestResult::testsEnded () 
 {
-	if (failureCount > 0)
-		fprintf (stdout, "There were %d failures\n", failureCount);
-	else
-		fprintf (stdout, "There were no test failures\n");
+  if (failureCount > 0)
+    fprintf (stdout, "There were %d failures\n", failureCount);
+  else
+    fprintf (stdout, "There were no test failures\n");
 }

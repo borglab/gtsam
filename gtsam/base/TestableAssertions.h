@@ -47,36 +47,36 @@ inline bool assert_equal(const Index& expected, const Index& actual, double tol 
  */
 template<class V>
 bool assert_equal(const boost::optional<V>& expected,
-									const boost::optional<V>& actual, double tol = 1e-9) {
-	if (!expected && actual) {
-		std::cout << "expected is boost::none, while actual is not" << std::endl;
-		return false;
-	}
-	if (expected && !actual) {
-		std::cout << "actual is boost::none, while expected is not" << std::endl;
-		return false;
-	}
-	if (!expected && !actual)
-		return true;
-	return assert_equal(*expected, *actual, tol);
+                  const boost::optional<V>& actual, double tol = 1e-9) {
+  if (!expected && actual) {
+    std::cout << "expected is boost::none, while actual is not" << std::endl;
+    return false;
+  }
+  if (expected && !actual) {
+    std::cout << "actual is boost::none, while expected is not" << std::endl;
+    return false;
+  }
+  if (!expected && !actual)
+    return true;
+  return assert_equal(*expected, *actual, tol);
 }
 
 template<class V>
 bool assert_equal(const V& expected, const boost::optional<V>& actual, double tol = 1e-9) {
-	if (!actual) {
-		std::cout << "actual is boost::none" << std::endl;
-		return false;
-	}
-	return assert_equal(expected, *actual, tol);
+  if (!actual) {
+    std::cout << "actual is boost::none" << std::endl;
+    return false;
+  }
+  return assert_equal(expected, *actual, tol);
 }
 
 template<class V>
 bool assert_equal(const V& expected, const boost::optional<const V&>& actual, double tol = 1e-9) {
-	if (!actual) {
-		std::cout << "actual is boost::none" << std::endl;
-		return false;
-	}
-	return assert_equal(expected, *actual, tol);
+  if (!actual) {
+    std::cout << "actual is boost::none" << std::endl;
+    return false;
+  }
+  return assert_equal(expected, *actual, tol);
 }
 
 /**
@@ -97,15 +97,15 @@ bool assert_equal(const std::vector<V>& expected, const std::vector<V>& actual, 
       }
     }
   }
-	if(!match) {
-	  std::cout << "expected: " << std::endl;
-	  BOOST_FOREACH(const V& a, expected) { std::cout << a << " "; }
-	  std::cout << "\nactual: " << std::endl;
-	  BOOST_FOREACH(const V& a, actual) { std::cout << a << " "; }
-	  std::cout << std::endl;
-	  return false;
-	}
-	return true;
+  if(!match) {
+    std::cout << "expected: " << std::endl;
+    BOOST_FOREACH(const V& a, expected) { std::cout << a << " "; }
+    std::cout << "\nactual: " << std::endl;
+    BOOST_FOREACH(const V& a, actual) { std::cout << a << " "; }
+    std::cout << std::endl;
+    return false;
+  }
+  return true;
 }
 
 /**
@@ -114,37 +114,37 @@ bool assert_equal(const std::vector<V>& expected, const std::vector<V>& actual, 
  */
 template<class V1, class V2>
 bool assert_container_equal(const std::map<V1,V2>& expected, const std::map<V1,V2>& actual, double tol = 1e-9) {
-	typedef typename std::map<V1,V2> Map;
+  typedef typename std::map<V1,V2> Map;
   bool match = true;
   if (expected.size() != actual.size())
     match = false;
   typename Map::const_iterator
-  	itExp = expected.begin(),
-  	itAct = actual.begin();
+    itExp = expected.begin(),
+    itAct = actual.begin();
   if(match) {
-  	for (; itExp!=expected.end() && itAct!=actual.end(); ++itExp, ++itAct) {
-  		if (!assert_equal(itExp->first, itAct->first, tol) ||
-  				!assert_equal(itExp->second, itAct->second, tol)) {
-  			match = false;
-  			break;
-  		}
-  	}
+    for (; itExp!=expected.end() && itAct!=actual.end(); ++itExp, ++itAct) {
+      if (!assert_equal(itExp->first, itAct->first, tol) ||
+          !assert_equal(itExp->second, itAct->second, tol)) {
+        match = false;
+        break;
+      }
+    }
   }
-	if(!match) {
-	  std::cout << "expected: " << std::endl;
-	  BOOST_FOREACH(const typename Map::value_type& a, expected) {
-	  	a.first.print("key");
-	  	a.second.print("    value");
-	  }
-	  std::cout << "\nactual: " << std::endl;
-	  BOOST_FOREACH(const typename Map::value_type& a, actual)  {
-	  	a.first.print("key");
-	  	a.second.print("    value");
-	  }
-	  std::cout << std::endl;
-	  return false;
-	}
-	return true;
+  if(!match) {
+    std::cout << "expected: " << std::endl;
+    BOOST_FOREACH(const typename Map::value_type& a, expected) {
+      a.first.print("key");
+      a.second.print("    value");
+    }
+    std::cout << "\nactual: " << std::endl;
+    BOOST_FOREACH(const typename Map::value_type& a, actual)  {
+      a.first.print("key");
+      a.second.print("    value");
+    }
+    std::cout << std::endl;
+    return false;
+  }
+  return true;
 }
 
 /**
@@ -152,37 +152,37 @@ bool assert_container_equal(const std::map<V1,V2>& expected, const std::map<V1,V
  */
 template<class V2>
 bool assert_container_equal(const std::map<size_t,V2>& expected, const std::map<size_t,V2>& actual, double tol = 1e-9) {
-	typedef typename std::map<size_t,V2> Map;
+  typedef typename std::map<size_t,V2> Map;
   bool match = true;
   if (expected.size() != actual.size())
     match = false;
   typename Map::const_iterator
-  	itExp = expected.begin(),
-  	itAct = actual.begin();
+    itExp = expected.begin(),
+    itAct = actual.begin();
   if(match) {
-  	for (; itExp!=expected.end() && itAct!=actual.end(); ++itExp, ++itAct) {
-  		if (itExp->first != itAct->first ||
-  				!assert_equal(itExp->second, itAct->second, tol)) {
-  			match = false;
-  			break;
-  		}
-  	}
+    for (; itExp!=expected.end() && itAct!=actual.end(); ++itExp, ++itAct) {
+      if (itExp->first != itAct->first ||
+          !assert_equal(itExp->second, itAct->second, tol)) {
+        match = false;
+        break;
+      }
+    }
   }
-	if(!match) {
-	  std::cout << "expected: " << std::endl;
-	  BOOST_FOREACH(const typename Map::value_type& a, expected) {
-	  	std::cout << "Key: " << a.first << std::endl;
-	  	a.second.print("    value");
-	  }
-	  std::cout << "\nactual: " << std::endl;
-	  BOOST_FOREACH(const typename Map::value_type& a, actual)  {
-	  	std::cout << "Key: " << a.first << std::endl;
-	  	a.second.print("    value");
-	  }
-	  std::cout << std::endl;
-	  return false;
-	}
-	return true;
+  if(!match) {
+    std::cout << "expected: " << std::endl;
+    BOOST_FOREACH(const typename Map::value_type& a, expected) {
+      std::cout << "Key: " << a.first << std::endl;
+      a.second.print("    value");
+    }
+    std::cout << "\nactual: " << std::endl;
+    BOOST_FOREACH(const typename Map::value_type& a, actual)  {
+      std::cout << "Key: " << a.first << std::endl;
+      a.second.print("    value");
+    }
+    std::cout << std::endl;
+    return false;
+  }
+  return true;
 }
 
 /**
@@ -190,38 +190,38 @@ bool assert_container_equal(const std::map<size_t,V2>& expected, const std::map<
  */
 template<class V1, class V2>
 bool assert_container_equal(const std::vector<std::pair<V1,V2> >& expected,
-		const std::vector<std::pair<V1,V2> >& actual, double tol = 1e-9) {
-	typedef typename std::vector<std::pair<V1,V2> > VectorPair;
+    const std::vector<std::pair<V1,V2> >& actual, double tol = 1e-9) {
+  typedef typename std::vector<std::pair<V1,V2> > VectorPair;
   bool match = true;
   if (expected.size() != actual.size())
     match = false;
   typename VectorPair::const_iterator
-  	itExp = expected.begin(),
-  	itAct = actual.begin();
+    itExp = expected.begin(),
+    itAct = actual.begin();
   if(match) {
-  	for (; itExp!=expected.end() && itAct!=actual.end(); ++itExp, ++itAct) {
-  		if (!assert_equal(itExp->first, itAct->first, tol) ||
-  				!assert_equal(itExp->second, itAct->second, tol)) {
-  			match = false;
-  			break;
-  		}
-  	}
+    for (; itExp!=expected.end() && itAct!=actual.end(); ++itExp, ++itAct) {
+      if (!assert_equal(itExp->first, itAct->first, tol) ||
+          !assert_equal(itExp->second, itAct->second, tol)) {
+        match = false;
+        break;
+      }
+    }
   }
-	if(!match) {
-	  std::cout << "expected: " << std::endl;
-	  BOOST_FOREACH(const typename VectorPair::value_type& a, expected) {
-	  	a.first.print( "    first ");
-	  	a.second.print("    second");
-	  }
-	  std::cout << "\nactual: " << std::endl;
-	  BOOST_FOREACH(const typename VectorPair::value_type& a, actual)  {
-	  	a.first.print( "    first ");
-	  	a.second.print("    second");
-	  }
-	  std::cout << std::endl;
-	  return false;
-	}
-	return true;
+  if(!match) {
+    std::cout << "expected: " << std::endl;
+    BOOST_FOREACH(const typename VectorPair::value_type& a, expected) {
+      a.first.print( "    first ");
+      a.second.print("    second");
+    }
+    std::cout << "\nactual: " << std::endl;
+    BOOST_FOREACH(const typename VectorPair::value_type& a, actual)  {
+      a.first.print( "    first ");
+      a.second.print("    second");
+    }
+    std::cout << std::endl;
+    return false;
+  }
+  return true;
 }
 
 
@@ -234,25 +234,25 @@ bool assert_container_equal(const V& expected, const V& actual, double tol = 1e-
   if (expected.size() != actual.size())
     match = false;
   typename V::const_iterator
-  	itExp = expected.begin(),
-  	itAct = actual.begin();
+    itExp = expected.begin(),
+    itAct = actual.begin();
   if(match) {
-  	for (; itExp!=expected.end() && itAct!=actual.end(); ++itExp, ++itAct) {
-  		if (!assert_equal(*itExp, *itAct, tol)) {
-  			match = false;
-  			break;
-  		}
-  	}
+    for (; itExp!=expected.end() && itAct!=actual.end(); ++itExp, ++itAct) {
+      if (!assert_equal(*itExp, *itAct, tol)) {
+        match = false;
+        break;
+      }
+    }
   }
-	if(!match) {
-	  std::cout << "expected: " << std::endl;
-	  BOOST_FOREACH(const typename V::value_type& a, expected) { a.print("  "); }
-	  std::cout << "\nactual: " << std::endl;
-	  BOOST_FOREACH(const typename V::value_type& a, actual) { a.print("  "); }
-	  std::cout << std::endl;
-	  return false;
-	}
-	return true;
+  if(!match) {
+    std::cout << "expected: " << std::endl;
+    BOOST_FOREACH(const typename V::value_type& a, expected) { a.print("  "); }
+    std::cout << "\nactual: " << std::endl;
+    BOOST_FOREACH(const typename V::value_type& a, actual) { a.print("  "); }
+    std::cout << std::endl;
+    return false;
+  }
+  return true;
 }
 
 /**
@@ -261,36 +261,36 @@ bool assert_container_equal(const V& expected, const V& actual, double tol = 1e-
  */
 template<class V2>
 bool assert_container_equality(const std::map<size_t,V2>& expected, const std::map<size_t,V2>& actual) {
-	typedef typename std::map<size_t,V2> Map;
+  typedef typename std::map<size_t,V2> Map;
   bool match = true;
   if (expected.size() != actual.size())
     match = false;
   typename Map::const_iterator
-  	itExp = expected.begin(),
-  	itAct = actual.begin();
+    itExp = expected.begin(),
+    itAct = actual.begin();
   if(match) {
-  	for (; itExp!=expected.end() && itAct!=actual.end(); ++itExp, ++itAct) {
-  		if (itExp->first  != itAct->first || itExp->second != itAct->second) {
-  			match = false;
-  			break;
-  		}
-  	}
+    for (; itExp!=expected.end() && itAct!=actual.end(); ++itExp, ++itAct) {
+      if (itExp->first  != itAct->first || itExp->second != itAct->second) {
+        match = false;
+        break;
+      }
+    }
   }
-	if(!match) {
-	  std::cout << "expected: " << std::endl;
-	  BOOST_FOREACH(const typename Map::value_type& a, expected) {
-	  	std::cout << "Key:   " << a.first << std::endl;
-	  	std::cout << "Value: " << a.second << std::endl;
-	  }
-	  std::cout << "\nactual: " << std::endl;
-	  BOOST_FOREACH(const typename Map::value_type& a, actual)  {
-	  	std::cout << "Key:   " << a.first << std::endl;
-	  	std::cout << "Value: " << a.second << std::endl;
-	  }
-	  std::cout << std::endl;
-	  return false;
-	}
-	return true;
+  if(!match) {
+    std::cout << "expected: " << std::endl;
+    BOOST_FOREACH(const typename Map::value_type& a, expected) {
+      std::cout << "Key:   " << a.first << std::endl;
+      std::cout << "Value: " << a.second << std::endl;
+    }
+    std::cout << "\nactual: " << std::endl;
+    BOOST_FOREACH(const typename Map::value_type& a, actual)  {
+      std::cout << "Key:   " << a.first << std::endl;
+      std::cout << "Value: " << a.second << std::endl;
+    }
+    std::cout << std::endl;
+    return false;
+  }
+  return true;
 }
 
 
@@ -303,37 +303,37 @@ bool assert_container_equality(const V& expected, const V& actual) {
   if (expected.size() != actual.size())
     match = false;
   typename V::const_iterator
-  	itExp = expected.begin(),
-  	itAct = actual.begin();
+    itExp = expected.begin(),
+    itAct = actual.begin();
   if(match) {
-  	for (; itExp!=expected.end() && itAct!=actual.end(); ++itExp, ++itAct) {
-  		if (*itExp != *itAct) {
-  			match = false;
-  			break;
-  		}
-  	}
+    for (; itExp!=expected.end() && itAct!=actual.end(); ++itExp, ++itAct) {
+      if (*itExp != *itAct) {
+        match = false;
+        break;
+      }
+    }
   }
-	if(!match) {
-	  std::cout << "expected: " << std::endl;
-	  BOOST_FOREACH(const typename V::value_type& a, expected) { std::cout << a << " "; }
-	  std::cout << "\nactual: " << std::endl;
-	  BOOST_FOREACH(const typename V::value_type& a, actual) { std::cout << a << " "; }
-	  std::cout << std::endl;
-	  return false;
-	}
-	return true;
+  if(!match) {
+    std::cout << "expected: " << std::endl;
+    BOOST_FOREACH(const typename V::value_type& a, expected) { std::cout << a << " "; }
+    std::cout << "\nactual: " << std::endl;
+    BOOST_FOREACH(const typename V::value_type& a, actual) { std::cout << a << " "; }
+    std::cout << std::endl;
+    return false;
+  }
+  return true;
 }
 
 /**
  * Compare strings for unit tests
  */
 inline bool assert_equal(const std::string& expected, const std::string& actual) {
-	if (expected == actual)
-		return true;
-	printf("Not equal:\n");
-	std::cout << "expected: [" << expected << "]\n";
-	std::cout << "actual: [" << actual << "]" << std::endl;
-	return false;
+  if (expected == actual)
+    return true;
+  printf("Not equal:\n");
+  std::cout << "expected: [" << expected << "]\n";
+  std::cout << "actual: [" << actual << "]" << std::endl;
+  return false;
 }
 
 /**
@@ -341,12 +341,12 @@ inline bool assert_equal(const std::string& expected, const std::string& actual)
  */
 template<class V>
 bool assert_inequal(const V& expected, const V& actual, double tol = 1e-9) {
-	if (!actual.equals(expected, tol))
-		return true;
-	printf("Erroneously equal:\n");
-	expected.print("expected");
-	actual.print("actual");
-	return false;
+  if (!actual.equals(expected, tol))
+    return true;
+  printf("Erroneously equal:\n");
+  expected.print("expected");
+  actual.print("actual");
+  return false;
 }
 
 } // \namespace gtsam

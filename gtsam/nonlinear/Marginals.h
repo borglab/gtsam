@@ -82,7 +82,7 @@ class JointMarginal {
 
 protected:
 
-	typedef SymmetricBlockView<Matrix> BlockView;
+  typedef SymmetricBlockView<Matrix> BlockView;
 
   Matrix fullMatrix_;
   BlockView blockView_;
@@ -112,16 +112,16 @@ public:
   Block operator()(Key iVariable, Key jVariable) const {
     return blockView_(indices_[iVariable], indices_[jVariable]); }
 
-	/** Synonym for operator() */
-	Block at(Key iVariable, Key jVariable) const {
-		return (*this)(iVariable, jVariable); }
+  /** Synonym for operator() */
+  Block at(Key iVariable, Key jVariable) const {
+    return (*this)(iVariable, jVariable); }
 
-	/** The full, dense covariance/information matrix of the joint marginal. This returns
-	 * a reference to the JointMarginal object, so the JointMarginal object must be kept
-	 * in scope while this view is needed. Otherwise assign this block object to a Matrix
-	 * to store it.
-	 */
-	const Matrix& fullMatrix() const { return fullMatrix_; }
+  /** The full, dense covariance/information matrix of the joint marginal. This returns
+   * a reference to the JointMarginal object, so the JointMarginal object must be kept
+   * in scope while this view is needed. Otherwise assign this block object to a Matrix
+   * to store it.
+   */
+  const Matrix& fullMatrix() const { return fullMatrix_; }
 
   /** Copy constructor */
   JointMarginal(const JointMarginal& other);
@@ -129,14 +129,14 @@ public:
   /** Assignment operator */
   JointMarginal& operator=(const JointMarginal& rhs);
 
-	/** Print */
-	void print(const std::string& s = "", const KeyFormatter& formatter = DefaultKeyFormatter) const;
+  /** Print */
+  void print(const std::string& s = "", const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
 protected:
-	JointMarginal(const Matrix& fullMatrix, const std::vector<size_t>& dims, const Ordering& indices) :
-		fullMatrix_(fullMatrix), blockView_(fullMatrix_, dims.begin(), dims.end()), indices_(indices) {}
+  JointMarginal(const Matrix& fullMatrix, const std::vector<size_t>& dims, const Ordering& indices) :
+    fullMatrix_(fullMatrix), blockView_(fullMatrix_, dims.begin(), dims.end()), indices_(indices) {}
 
-	friend class Marginals;
+  friend class Marginals;
 
 };
 

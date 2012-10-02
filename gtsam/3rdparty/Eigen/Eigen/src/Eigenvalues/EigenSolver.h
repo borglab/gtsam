@@ -547,7 +547,7 @@ void EigenSolver<MatrixType>::doComputeEigenvectors()
             if ((vr == 0.0) && (vi == 0.0))
               vr = eps * norm * (internal::abs(w) + internal::abs(q) + internal::abs(x) + internal::abs(y) + internal::abs(lastw));
 
-	    std::complex<Scalar> cc = cdiv(x*lastra-lastw*ra+q*sa,x*lastsa-lastw*sa-q*ra,vr,vi);
+      std::complex<Scalar> cc = cdiv(x*lastra-lastw*ra+q*sa,x*lastsa-lastw*sa-q*ra,vr,vi);
             m_matT.coeffRef(i,n-1) = internal::real(cc);
             m_matT.coeffRef(i,n) = internal::imag(cc);
             if (internal::abs(x) > (internal::abs(lastw) + internal::abs(q)))

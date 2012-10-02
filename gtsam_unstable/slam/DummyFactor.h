@@ -16,21 +16,21 @@ namespace gtsam {
 class DummyFactor : public NonlinearFactor {
 protected:
 
-	// Store the dimensions of the variables and the dimension of the full system
-	std::vector<size_t> dims_;
-	size_t rowDim_; ///< choose dimension for the rows
+  // Store the dimensions of the variables and the dimension of the full system
+  std::vector<size_t> dims_;
+  size_t rowDim_; ///< choose dimension for the rows
 
 public:
 
-	/** Default constructor: don't use directly */
-	DummyFactor() : rowDim_(1) { }
+  /** Default constructor: don't use directly */
+  DummyFactor() : rowDim_(1) { }
 
-	/** standard binary constructor */
-	DummyFactor(const Key& key1, size_t dim1, const Key& key2, size_t dim2);
+  /** standard binary constructor */
+  DummyFactor(const Key& key1, size_t dim1, const Key& key2, size_t dim2);
 
-	virtual ~DummyFactor() {}
+  virtual ~DummyFactor() {}
 
-	// testable
+  // testable
 
   /** print */
   virtual void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
@@ -63,8 +63,8 @@ public:
    * By default, throws exception if subclass does not implement the function.
    */
   virtual NonlinearFactor::shared_ptr clone() const {
-	  return boost::static_pointer_cast<NonlinearFactor>(
-	      NonlinearFactor::shared_ptr(new DummyFactor(*this)));
+    return boost::static_pointer_cast<NonlinearFactor>(
+        NonlinearFactor::shared_ptr(new DummyFactor(*this)));
   }
 
 };

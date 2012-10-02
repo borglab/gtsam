@@ -49,14 +49,14 @@ namespace gtsam {
  *
  * Returns dimensionality of the tangent space, which may be smaller than the number
  * of nonlinear parameters.
- * 		size_t dim() const;
+ *     size_t dim() const;
  *
  * Returns a new T that is a result of updating *this with the delta v after pulling
  * the updated value back to the manifold T.
- * 		T retract(const Vector& v) const;
+ *     T retract(const Vector& v) const;
  *
  * Returns the linear coordinates of lp in the tangent space centered around *this.
- * 		Vector localCoordinates(const T& lp) const;
+ *     Vector localCoordinates(const T& lp) const;
  *
  * By convention, we use capital letters to designate a static function
  * @tparam T is a Lie type, like Point2, Pose3, etc.
@@ -64,29 +64,29 @@ namespace gtsam {
 template <class T>
 class ManifoldConcept {
 private:
-	/** concept checking function - implement the functions this demands */
-	static T concept_check(const T& t) {
+  /** concept checking function - implement the functions this demands */
+  static T concept_check(const T& t) {
 
-		/** assignment */
-		T t2 = t;
+    /** assignment */
+    T t2 = t;
 
-		/**
-		 * Returns dimensionality of the tangent space
-		 */
-		size_t dim_ret = t.dim();
+    /**
+     * Returns dimensionality of the tangent space
+     */
+    size_t dim_ret = t.dim();
 
-		/**
-		 * Returns Retraction update of T
-		 */
-		T retract_ret = t.retract(gtsam::zero(dim_ret));
+    /**
+     * Returns Retraction update of T
+     */
+    T retract_ret = t.retract(gtsam::zero(dim_ret));
 
-		/**
-		 * Returns local coordinates of another object
-		 */
-		Vector localCoords_ret = t.localCoordinates(t2);
+    /**
+     * Returns local coordinates of another object
+     */
+    Vector localCoords_ret = t.localCoordinates(t2);
 
-		return retract_ret;
-	}
+    return retract_ret;
+  }
 };
 
 } // namespace gtsam

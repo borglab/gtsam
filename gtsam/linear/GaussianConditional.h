@@ -49,136 +49,136 @@ class GaussianConditional : public IndexConditional {
 
 public:
   typedef GaussianFactor FactorType;
-	typedef boost::shared_ptr<GaussianConditional> shared_ptr;
+  typedef boost::shared_ptr<GaussianConditional> shared_ptr;
 
-	/** Store the conditional matrix as upper-triangular column-major */
-	typedef Matrix RdMatrix;
-	typedef VerticalBlockView<RdMatrix> rsd_type;
+  /** Store the conditional matrix as upper-triangular column-major */
+  typedef Matrix RdMatrix;
+  typedef VerticalBlockView<RdMatrix> rsd_type;
 
-	typedef rsd_type::Block r_type;
+  typedef rsd_type::Block r_type;
   typedef rsd_type::constBlock const_r_type;
   typedef rsd_type::Column d_type;
   typedef rsd_type::constColumn const_d_type;
 
 protected:
 
-	/** Store the conditional as one big upper-triangular wide matrix, arranged
-	 * as \f$ [ R S1 S2 ... d ] \f$.  Access these blocks using a VerticalBlockView.
-	 * */
-	RdMatrix matrix_;
-	rsd_type rsd_;
+  /** Store the conditional as one big upper-triangular wide matrix, arranged
+   * as \f$ [ R S1 S2 ... d ] \f$.  Access these blocks using a VerticalBlockView.
+   * */
+  RdMatrix matrix_;
+  rsd_type rsd_;
 
-	/** vector of standard deviations */
-	Vector sigmas_;
+  /** vector of standard deviations */
+  Vector sigmas_;
 
   /** typedef to base class */
   typedef IndexConditional Base;
 
 public:
 
-	/** default constructor needed for serialization */
-	GaussianConditional();
+  /** default constructor needed for serialization */
+  GaussianConditional();
 
-	/** constructor */
-	explicit GaussianConditional(Index key);
+  /** constructor */
+  explicit GaussianConditional(Index key);
 
-	/** constructor with no parents
-	 * |Rx-d|
-	 */
-	GaussianConditional(Index key, const Vector& d, const Matrix& R, const Vector& sigmas);
+  /** constructor with no parents
+   * |Rx-d|
+   */
+  GaussianConditional(Index key, const Vector& d, const Matrix& R, const Vector& sigmas);
 
-	/** constructor with only one parent
-	 * |Rx+Sy-d|
-	 */
-	GaussianConditional(Index key, const Vector& d, const Matrix& R,
-			Index name1, const Matrix& S, const Vector& sigmas);
+  /** constructor with only one parent
+   * |Rx+Sy-d|
+   */
+  GaussianConditional(Index key, const Vector& d, const Matrix& R,
+      Index name1, const Matrix& S, const Vector& sigmas);
 
-	/** constructor with two parents
-	 * |Rx+Sy+Tz-d|
-	 */
-	GaussianConditional(Index key, const Vector& d, const Matrix& R,
-			Index name1, const Matrix& S, Index name2, const Matrix& T, const Vector& sigmas);
+  /** constructor with two parents
+   * |Rx+Sy+Tz-d|
+   */
+  GaussianConditional(Index key, const Vector& d, const Matrix& R,
+      Index name1, const Matrix& S, Index name2, const Matrix& T, const Vector& sigmas);
 
-	/**
-	 * constructor with number of arbitrary parents (only used in unit tests,
-	 * std::list is not efficient)
-	 * \f$ |Rx+sum(Ai*xi)-d| \f$
-	 */
-	GaussianConditional(Index key, const Vector& d,
-			const Matrix& R, const std::list<std::pair<Index, Matrix> >& parents, const Vector& sigmas);
-
-	/**
-	 * Constructor with arbitrary number of frontals and parents (only used in unit tests,
+  /**
+   * constructor with number of arbitrary parents (only used in unit tests,
    * std::list is not efficient)
-	 */
-	GaussianConditional(const std::list<std::pair<Index, Matrix> >& terms,
-	    size_t nrFrontals, const Vector& d, const Vector& sigmas);
+   * \f$ |Rx+sum(Ai*xi)-d| \f$
+   */
+  GaussianConditional(Index key, const Vector& d,
+      const Matrix& R, const std::list<std::pair<Index, Matrix> >& parents, const Vector& sigmas);
 
-	/**
-	 * Constructor when matrices are already stored in a combined matrix, allows
-	 * for multiple frontal variables.
-	 */
-	template<typename ITERATOR, class MATRIX>
-	GaussianConditional(ITERATOR firstKey, ITERATOR lastKey, size_t nrFrontals,
+  /**
+   * Constructor with arbitrary number of frontals and parents (only used in unit tests,
+   * std::list is not efficient)
+   */
+  GaussianConditional(const std::list<std::pair<Index, Matrix> >& terms,
+      size_t nrFrontals, const Vector& d, const Vector& sigmas);
+
+  /**
+   * Constructor when matrices are already stored in a combined matrix, allows
+   * for multiple frontal variables.
+   */
+  template<typename ITERATOR, class MATRIX>
+  GaussianConditional(ITERATOR firstKey, ITERATOR lastKey, size_t nrFrontals,
       const VerticalBlockView<MATRIX>& matrices, const Vector& sigmas);
 
   /** Copy constructor */
-	GaussianConditional(const GaussianConditional& rhs);
+  GaussianConditional(const GaussianConditional& rhs);
 
-	/** Combine several GaussianConditional into a single dense GC.  The
-	 * conditionals enumerated by \c first and \c last must be in increasing
-	 * order, meaning that the parents of any conditional may not include a
-	 * conditional coming before it.
-	 * @param firstConditional Iterator to the first conditional to combine, must dereference to a shared_ptr<GaussianConditional>.
+  /** Combine several GaussianConditional into a single dense GC.  The
+   * conditionals enumerated by \c first and \c last must be in increasing
+   * order, meaning that the parents of any conditional may not include a
+   * conditional coming before it.
+   * @param firstConditional Iterator to the first conditional to combine, must dereference to a shared_ptr<GaussianConditional>.
    * @param lastConditional Iterator to after the last conditional to combine, must dereference to a shared_ptr<GaussianConditional>. */
-	template<typename ITERATOR>
-	static shared_ptr Combine(ITERATOR firstConditional, ITERATOR lastConditional);
+  template<typename ITERATOR>
+  static shared_ptr Combine(ITERATOR firstConditional, ITERATOR lastConditional);
 
-	/** Assignment operator */
-	GaussianConditional& operator=(const GaussianConditional& rhs);
+  /** Assignment operator */
+  GaussianConditional& operator=(const GaussianConditional& rhs);
 
-	/** print */
-	void print(const std::string& = "GaussianConditional",
-			const IndexFormatter& formatter = DefaultIndexFormatter) const;
+  /** print */
+  void print(const std::string& = "GaussianConditional",
+      const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
-	/** equals function */
-	bool equals(const GaussianConditional &cg, double tol = 1e-9) const;
+  /** equals function */
+  bool equals(const GaussianConditional &cg, double tol = 1e-9) const;
 
-	/** dimension of multivariate variable */
-	size_t dim() const { return rsd_.rows(); }
+  /** dimension of multivariate variable */
+  size_t dim() const { return rsd_.rows(); }
 
-	/** Compute the information matrix */
-	Matrix computeInformation() const {
-	  return get_R().transpose() * get_R();
-	}
+  /** Compute the information matrix */
+  Matrix computeInformation() const {
+    return get_R().transpose() * get_R();
+  }
 
-	/** Return a view of the upper-triangular R block of the conditional */
-	rsd_type::constBlock get_R() const { return rsd_.range(0, nrFrontals()); }
+  /** Return a view of the upper-triangular R block of the conditional */
+  rsd_type::constBlock get_R() const { return rsd_.range(0, nrFrontals()); }
 
-	/** Return a view of the r.h.s. d vector */
-	const_d_type get_d() const { return rsd_.column(nrFrontals()+nrParents(), 0); }
+  /** Return a view of the r.h.s. d vector */
+  const_d_type get_d() const { return rsd_.column(nrFrontals()+nrParents(), 0); }
 
-	/** get the dimension of a variable */
-	size_t dim(const_iterator variable) const { return rsd_(variable - this->begin()).cols(); }
+  /** get the dimension of a variable */
+  size_t dim(const_iterator variable) const { return rsd_(variable - this->begin()).cols(); }
 
-	/** Get a view of the parent block corresponding to the variable pointed to by the given key iterator */
-	rsd_type::constBlock get_S(const_iterator variable) const { return rsd_(variable - this->begin()); }
+  /** Get a view of the parent block corresponding to the variable pointed to by the given key iterator */
+  rsd_type::constBlock get_S(const_iterator variable) const { return rsd_(variable - this->begin()); }
   /** Get a view of the parent block corresponding to the variable pointed to by the given key iterator (non-const version) */
-	rsd_type::constBlock get_S() const { return rsd_.range(nrFrontals(), size()); }
-	/** Get the Vector of sigmas */
-	const Vector& get_sigmas() const {return sigmas_;}
+  rsd_type::constBlock get_S() const { return rsd_.range(nrFrontals(), size()); }
+  /** Get the Vector of sigmas */
+  const Vector& get_sigmas() const {return sigmas_;}
 
 protected:
 
-	const RdMatrix& matrix() const { return matrix_; }
-	const rsd_type& rsd() const { return rsd_; }
+  const RdMatrix& matrix() const { return matrix_; }
+  const rsd_type& rsd() const { return rsd_; }
 
 public:
-	/**
-	 * Copy to a Factor (this creates a JacobianFactor and returns it as its
-	 * base class GaussianFactor.
-	 */
-	boost::shared_ptr<JacobianFactor> toFactor() const;
+  /**
+   * Copy to a Factor (this creates a JacobianFactor and returns it as its
+   * base class GaussianFactor.
+   */
+  boost::shared_ptr<JacobianFactor> toFactor() const;
 
   /**
    * Solves a conditional Gaussian and writes the solution into the entries of
@@ -201,8 +201,8 @@ public:
   /**
    * Performs backsubstition in place on values
    */
-	void solveTransposeInPlace(VectorValues& gy) const;
-	void scaleFrontalsBySigma(VectorValues& gy) const;
+  void solveTransposeInPlace(VectorValues& gy) const;
+  void scaleFrontalsBySigma(VectorValues& gy) const;
 
 protected:
   rsd_type::Column get_d_() { return rsd_.column(nrFrontals()+nrParents(), 0); }
@@ -221,24 +221,24 @@ private:
   friend class ::isGaussianFactorGaussianConditionalTest;
 
   /** Serialization function */
-	friend class boost::serialization::access;
-	template<class Archive>
-	void serialize(Archive & ar, const unsigned int version) {
-		ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(IndexConditional);
-		ar & BOOST_SERIALIZATION_NVP(matrix_);
-		ar & BOOST_SERIALIZATION_NVP(rsd_);
-		ar & BOOST_SERIALIZATION_NVP(sigmas_);
-	}
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version) {
+    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(IndexConditional);
+    ar & BOOST_SERIALIZATION_NVP(matrix_);
+    ar & BOOST_SERIALIZATION_NVP(rsd_);
+    ar & BOOST_SERIALIZATION_NVP(sigmas_);
+  }
 }; // GaussianConditional
 
 /* ************************************************************************* */
 template<typename ITERATOR, class MATRIX>
 GaussianConditional::GaussianConditional(ITERATOR firstKey, ITERATOR lastKey,
-		size_t nrFrontals, const VerticalBlockView<MATRIX>& matrices,
-		const Vector& sigmas) :
-	IndexConditional(std::vector<Index>(firstKey, lastKey), nrFrontals), rsd_(
-			matrix_), sigmas_(sigmas) {
-	rsd_.assignNoalias(matrices);
+    size_t nrFrontals, const VerticalBlockView<MATRIX>& matrices,
+    const Vector& sigmas) :
+  IndexConditional(std::vector<Index>(firstKey, lastKey), nrFrontals), rsd_(
+      matrix_), sigmas_(sigmas) {
+  rsd_.assignNoalias(matrices);
 }
 
 /* ************************************************************************* */

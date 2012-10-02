@@ -61,7 +61,7 @@ struct DoglegOptimizerImpl {
    */
   enum TrustRegionAdaptationMode {
     SEARCH_EACH_ITERATION,
-		SEARCH_REDUCE_ONLY,
+    SEARCH_REDUCE_ONLY,
     ONE_STEP_PER_ITERATION
   };
 
@@ -232,14 +232,14 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
     } else if(0.25 > rho && rho >= 0.0) {
       // M does not agree well with f, decrease Delta until it does
       double newDelta;
-			bool hitMinimumDelta;
+      bool hitMinimumDelta;
       if(Delta > 1e-5) {
         newDelta = 0.5 * Delta;
-				hitMinimumDelta = false;
-			} else {
+        hitMinimumDelta = false;
+      } else {
         newDelta = Delta;
-				hitMinimumDelta = true;
-			}
+        hitMinimumDelta = true;
+      }
       if(mode == ONE_STEP_PER_ITERATION || /* mode == SEARCH_EACH_ITERATION && */ lastAction == INCREASED_DELTA || hitMinimumDelta)
         stay = false;   // If not searching, just return with the new smaller delta
       else if(mode == SEARCH_EACH_ITERATION || mode == SEARCH_REDUCE_ONLY) {
@@ -251,9 +251,9 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
       Delta = newDelta; // Update Delta from new Delta
 
     } else {
-			// f actually increased, so keep decreasing Delta until f does not decrease.
-			// NOTE:  NaN and Inf solutions also will fall into this case, so that we
-			// decrease Delta if the solution becomes undetermined.
+      // f actually increased, so keep decreasing Delta until f does not decrease.
+      // NOTE:  NaN and Inf solutions also will fall into this case, so that we
+      // decrease Delta if the solution becomes undetermined.
       assert(0.0 > rho);
       if(Delta > 1e-5) {
         Delta *= 0.5;
@@ -261,8 +261,8 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
         lastAction = DECREASED_DELTA;
       } else {
         if(verbose) std::cout << "Warning:  Dog leg stopping because cannot decrease error with minimum Delta" << std::endl;
-				result.dx_d.setZero(); // Set delta to zero - don't allow error to increase
-				result.f_error = f_error;
+        result.dx_d.setZero(); // Set delta to zero - don't allow error to increase
+        result.f_error = f_error;
         stay = false;
       }
     }

@@ -60,15 +60,15 @@ inline T expmap_default(const T& t, const Vector& d) {return t.compose(T::Expmap
  * as x2 = x1.compose(Expmap(v)).
  *
  * Expmap around identity
- * 		static T Expmap(const Vector& v);
+ *     static T Expmap(const Vector& v);
  *
  * Logmap around identity
- * 		static Vector Logmap(const T& p);
+ *     static Vector Logmap(const T& p);
  *
  * Compute l0 s.t. l2=l1*l0, where (*this) is l1
  * A default implementation of between(*this, lp) is available:
  * between_default()
- * 		T between(const T& l2) const;
+ *     T between(const T& l2) const;
  *
  * By convention, we use capital letters to designate a static function
  *
@@ -77,28 +77,28 @@ inline T expmap_default(const T& t, const Vector& d) {return t.compose(T::Expmap
 template <class T>
 class LieConcept {
 private:
-	/** concept checking function - implement the functions this demands */
-	static T concept_check(const T& t) {
+  /** concept checking function - implement the functions this demands */
+  static T concept_check(const T& t) {
 
-		/** assignment */
-		T t2 = t;
+    /** assignment */
+    T t2 = t;
 
-		/**
-		 * Returns dimensionality of the tangent space
-		 */
-		size_t dim_ret = t.dim();
+    /**
+     * Returns dimensionality of the tangent space
+     */
+    size_t dim_ret = t.dim();
 
-		/** expmap around identity */
-		T expmap_identity_ret = T::Expmap(gtsam::zero(dim_ret));
+    /** expmap around identity */
+    T expmap_identity_ret = T::Expmap(gtsam::zero(dim_ret));
 
-		/** Logmap around identity */
-		Vector logmap_identity_ret = T::Logmap(t);
+    /** Logmap around identity */
+    Vector logmap_identity_ret = T::Logmap(t);
 
-		/** Compute l0 s.t. l2=l1*l0, where (*this) is l1 */
-		T between_ret = expmap_identity_ret.between(t2);
+    /** Compute l0 s.t. l2=l1*l0, where (*this) is l1 */
+    T between_ret = expmap_identity_ret.between(t2);
 
-		return between_ret;
-	}
+    return between_ret;
+  }
 
 };
 
@@ -112,10 +112,10 @@ private:
 /// AGC: bracket() only appears in Rot3 tests, should this be used elsewhere?
 template<class T>
 T BCH(const T& X, const T& Y) {
-	static const double _2 = 1. / 2., _12 = 1. / 12., _24 = 1. / 24.;
-	T X_Y = bracket(X, Y);
-	return X + Y + _2 * X_Y + _12 * bracket(X - Y, X_Y) - _24 * bracket(Y,
-			bracket(X, X_Y));
+  static const double _2 = 1. / 2., _12 = 1. / 12., _24 = 1. / 24.;
+  T X_Y = bracket(X, Y);
+  return X + Y + _2 * X_Y + _12 * bracket(X - Y, X_Y) - _24 * bracket(Y,
+      bracket(X, X_Y));
 }
 
 /**
@@ -132,8 +132,8 @@ template <class T> Matrix wedge(const Vector& x);
  */
 template <class T>
 T expm(const Vector& x, int K=7) {
-	Matrix xhat = wedge<T>(x);
-	return T(expm(xhat,K));
+  Matrix xhat = wedge<T>(x);
+  return T(expm(xhat,K));
 }
 
 } // namespace gtsam
@@ -147,11 +147,11 @@ T expm(const Vector& x, int K=7) {
  * the gtsam namespace to be more easily enforced as testable
  */
 #define GTSAM_CONCEPT_LIE_INST(T) \
-		template class gtsam::ManifoldConcept<T>; \
-		template class gtsam::GroupConcept<T>; \
-		template class gtsam::LieConcept<T>;
+    template class gtsam::ManifoldConcept<T>; \
+    template class gtsam::GroupConcept<T>; \
+    template class gtsam::LieConcept<T>;
 
 #define GTSAM_CONCEPT_LIE_TYPE(T) \
-		typedef gtsam::ManifoldConcept<T> _gtsam_ManifoldConcept_##T; \
-		typedef gtsam::GroupConcept<T> _gtsam_GroupConcept_##T; \
-		typedef gtsam::LieConcept<T> _gtsam_LieConcept_##T;
+    typedef gtsam::ManifoldConcept<T> _gtsam_ManifoldConcept_##T; \
+    typedef gtsam::GroupConcept<T> _gtsam_GroupConcept_##T; \
+    typedef gtsam::LieConcept<T> _gtsam_LieConcept_##T;

@@ -49,14 +49,14 @@ typedef NonlinearEquality<Point3> Point3Constraint;
 
 class Graph: public NonlinearFactorGraph {
 public:
-	void addMeasurement(int i, int j, const Point2& z, const SharedNoiseModel& model) {
-		push_back(boost::make_shared<Projection>(z, model, X(i), L(j)));
-	}
+  void addMeasurement(int i, int j, const Point2& z, const SharedNoiseModel& model) {
+    push_back(boost::make_shared<Projection>(z, model, X(i), L(j)));
+  }
 
-	void addCameraConstraint(int j, const GeneralCamera& p) {
-		boost::shared_ptr<CameraConstraint> factor(new CameraConstraint(X(j), p));
-		push_back(factor);
-	}
+  void addCameraConstraint(int j, const GeneralCamera& p) {
+    boost::shared_ptr<CameraConstraint> factor(new CameraConstraint(X(j), p));
+    push_back(factor);
+  }
 
   void addPoint3Constraint(int j, const Point3& p) {
     boost::shared_ptr<Point3Constraint> factor(new Point3Constraint(L(j), p));
@@ -85,32 +85,32 @@ static const SharedNoiseModel sigma1(noiseModel::Unit::Create(1));
 /* ************************************************************************* */
 TEST( GeneralSFMFactor, equals )
 {
-	// Create two identical factors and make sure they're equal
-	Vector z = Vector_(2,323.,240.);
+  // Create two identical factors and make sure they're equal
+  Vector z = Vector_(2,323.,240.);
   const Symbol cameraFrameNumber('x',1), landmarkNumber('l',1);
-	const SharedNoiseModel sigma(noiseModel::Unit::Create(1));
-	boost::shared_ptr<Projection>
-	  factor1(new Projection(z, sigma, cameraFrameNumber, landmarkNumber));
+  const SharedNoiseModel sigma(noiseModel::Unit::Create(1));
+  boost::shared_ptr<Projection>
+    factor1(new Projection(z, sigma, cameraFrameNumber, landmarkNumber));
 
-	boost::shared_ptr<Projection>
-		factor2(new Projection(z, sigma, cameraFrameNumber, landmarkNumber));
+  boost::shared_ptr<Projection>
+    factor2(new Projection(z, sigma, cameraFrameNumber, landmarkNumber));
 
-	EXPECT(assert_equal(*factor1, *factor2));
+  EXPECT(assert_equal(*factor1, *factor2));
 }
 
 /* ************************************************************************* */
 TEST( GeneralSFMFactor, error ) {
-	Point2 z(3.,0.);
-	const SharedNoiseModel sigma(noiseModel::Unit::Create(1));
-	boost::shared_ptr<Projection>	factor(new Projection(z, sigma, X(1), L(1)));
-	// For the following configuration, the factor predicts 320,240
-	Values values;
-	Rot3 R;
-	Point3 t1(0,0,-6);
-	Pose3 x1(R,t1);
-	values.insert(X(1), GeneralCamera(x1));
-	Point3 l1;  values.insert(L(1), l1);
-	EXPECT(assert_equal(Vector_(2, -3.0, 0.0), factor->unwhitenedError(values)));
+  Point2 z(3.,0.);
+  const SharedNoiseModel sigma(noiseModel::Unit::Create(1));
+  boost::shared_ptr<Projection>  factor(new Projection(z, sigma, X(1), L(1)));
+  // For the following configuration, the factor predicts 320,240
+  Values values;
+  Rot3 R;
+  Point3 t1(0,0,-6);
+  Pose3 x1(R,t1);
+  values.insert(X(1), GeneralCamera(x1));
+  Point3 l1;  values.insert(L(1), l1);
+  EXPECT(assert_equal(Vector_(2, -3.0, 0.0), factor->unwhitenedError(values)));
 }
 
 static const double baseline = 5.0 ;
@@ -163,37 +163,37 @@ TEST( GeneralSFMFactor, optimize_defaultK ) {
   vector<Point3> landmarks = genPoint3();
   vector<GeneralCamera> cameras = genCameraDefaultCalibration();
 
-	// add measurement with noise
-	Graph graph;
-	for ( size_t j = 0 ; j < cameras.size() ; ++j) {
-		for ( size_t i = 0 ; i < landmarks.size() ; ++i) {
-			Point2 pt = cameras[j].project(landmarks[i]) ;
-			graph.addMeasurement(j, i, pt, sigma1);
-		}
-	}
+  // add measurement with noise
+  Graph graph;
+  for ( size_t j = 0 ; j < cameras.size() ; ++j) {
+    for ( size_t i = 0 ; i < landmarks.size() ; ++i) {
+      Point2 pt = cameras[j].project(landmarks[i]) ;
+      graph.addMeasurement(j, i, pt, sigma1);
+    }
+  }
 
-	const size_t nMeasurements = cameras.size()*landmarks.size() ;
+  const size_t nMeasurements = cameras.size()*landmarks.size() ;
 
-	// add initial
-	const double noise = baseline*0.1;
-	Values values;
-	for ( size_t i = 0 ; i < cameras.size() ; ++i )
-	  values.insert(X(i), cameras[i]) ;
+  // add initial
+  const double noise = baseline*0.1;
+  Values values;
+  for ( size_t i = 0 ; i < cameras.size() ; ++i )
+    values.insert(X(i), cameras[i]) ;
 
-	for ( size_t i = 0 ; i < landmarks.size() ; ++i ) {
-		Point3 pt(landmarks[i].x()+noise*getGaussian(),
-		          landmarks[i].y()+noise*getGaussian(),
-		          landmarks[i].z()+noise*getGaussian());
-		values.insert(L(i), pt) ;
-	}
+  for ( size_t i = 0 ; i < landmarks.size() ; ++i ) {
+    Point3 pt(landmarks[i].x()+noise*getGaussian(),
+              landmarks[i].y()+noise*getGaussian(),
+              landmarks[i].z()+noise*getGaussian());
+    values.insert(L(i), pt) ;
+  }
 
-	graph.addCameraConstraint(0, cameras[0]);
+  graph.addCameraConstraint(0, cameras[0]);
 
-	// Create an ordering of the variables
+  // Create an ordering of the variables
   Ordering ordering = *getOrdering(cameras,landmarks);
   LevenbergMarquardtOptimizer optimizer(graph, values, ordering);
   Values final = optimizer.optimize();
-	EXPECT(optimizer.error() < 0.5 * 1e-5 * nMeasurements);
+  EXPECT(optimizer.error() < 0.5 * 1e-5 * nMeasurements);
 }
 
 /* ************************************************************************* */

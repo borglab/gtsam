@@ -43,34 +43,34 @@ using symbol_shorthand::L;
 /* ************************************************************************* */
 TEST( Graph, equals )
 {
-	Graph fg = createNonlinearFactorGraph();
-	Graph fg2 = createNonlinearFactorGraph();
-	CHECK( fg.equals(fg2) );
+  Graph fg = createNonlinearFactorGraph();
+  Graph fg2 = createNonlinearFactorGraph();
+  CHECK( fg.equals(fg2) );
 }
 
 /* ************************************************************************* */
 TEST( Graph, error )
 {
-	Graph fg = createNonlinearFactorGraph();
-	Values c1 = createValues();
-	double actual1 = fg.error(c1);
-	DOUBLES_EQUAL( 0.0, actual1, 1e-9 );
+  Graph fg = createNonlinearFactorGraph();
+  Values c1 = createValues();
+  double actual1 = fg.error(c1);
+  DOUBLES_EQUAL( 0.0, actual1, 1e-9 );
 
-	Values c2 = createNoisyValues();
-	double actual2 = fg.error(c2);
-	DOUBLES_EQUAL( 5.625, actual2, 1e-9 );
+  Values c2 = createNoisyValues();
+  double actual2 = fg.error(c2);
+  DOUBLES_EQUAL( 5.625, actual2, 1e-9 );
 }
 
 /* ************************************************************************* */
 TEST( Graph, keys )
 {
-	Graph fg = createNonlinearFactorGraph();
-	FastSet<Key> actual = fg.keys();
-	LONGS_EQUAL(3, actual.size());
-	FastSet<Key>::const_iterator it = actual.begin();
-	LONGS_EQUAL(L(1), *(it++));
-	LONGS_EQUAL(X(1), *(it++));
-	LONGS_EQUAL(X(2), *(it++));
+  Graph fg = createNonlinearFactorGraph();
+  FastSet<Key> actual = fg.keys();
+  LONGS_EQUAL(3, actual.size());
+  FastSet<Key>::const_iterator it = actual.begin();
+  LONGS_EQUAL(L(1), *(it++));
+  LONGS_EQUAL(X(1), *(it++));
+  LONGS_EQUAL(X(2), *(it++));
 }
 
 /* ************************************************************************* */
@@ -96,60 +96,60 @@ TEST( Graph, GET_ORDERING)
 /* ************************************************************************* */
 TEST( Graph, probPrime )
 {
-	Graph fg = createNonlinearFactorGraph();
-	Values cfg = createValues();
+  Graph fg = createNonlinearFactorGraph();
+  Values cfg = createValues();
 
-	// evaluate the probability of the factor graph
-	double actual = fg.probPrime(cfg);
-	double expected = 1.0;
-	DOUBLES_EQUAL(expected,actual,0);
+  // evaluate the probability of the factor graph
+  double actual = fg.probPrime(cfg);
+  double expected = 1.0;
+  DOUBLES_EQUAL(expected,actual,0);
 }
 
 /* ************************************************************************* */
 TEST( Graph, linearize )
 {
-	Graph fg = createNonlinearFactorGraph();
-	Values initial = createNoisyValues();
-	boost::shared_ptr<FactorGraph<GaussianFactor> > linearized = fg.linearize(initial, *initial.orderingArbitrary());
-	FactorGraph<GaussianFactor> expected = createGaussianFactorGraph(*initial.orderingArbitrary());
-	CHECK(assert_equal(expected,*linearized)); // Needs correct linearizations
+  Graph fg = createNonlinearFactorGraph();
+  Values initial = createNoisyValues();
+  boost::shared_ptr<FactorGraph<GaussianFactor> > linearized = fg.linearize(initial, *initial.orderingArbitrary());
+  FactorGraph<GaussianFactor> expected = createGaussianFactorGraph(*initial.orderingArbitrary());
+  CHECK(assert_equal(expected,*linearized)); // Needs correct linearizations
 }
 
 /* ************************************************************************* */
 TEST( Graph, clone )
 {
-	Graph fg = createNonlinearFactorGraph();
-	Graph actClone = fg.clone();
-	EXPECT(assert_equal(fg, actClone));
-	for (size_t i=0; i<fg.size(); ++i)
-		EXPECT(fg[i] != actClone[i]);
+  Graph fg = createNonlinearFactorGraph();
+  Graph actClone = fg.clone();
+  EXPECT(assert_equal(fg, actClone));
+  for (size_t i=0; i<fg.size(); ++i)
+    EXPECT(fg[i] != actClone[i]);
 }
 
 /* ************************************************************************* */
 TEST( Graph, rekey )
 {
-	Graph init = createNonlinearFactorGraph();
-	map<Key,Key> rekey_mapping;
-	rekey_mapping.insert(make_pair(L(1), L(4)));
-	Graph actRekey = init.rekey(rekey_mapping);
+  Graph init = createNonlinearFactorGraph();
+  map<Key,Key> rekey_mapping;
+  rekey_mapping.insert(make_pair(L(1), L(4)));
+  Graph actRekey = init.rekey(rekey_mapping);
 
-	// ensure deep clone
-	LONGS_EQUAL(init.size(), actRekey.size());
-	for (size_t i=0; i<init.size(); ++i)
-			EXPECT(init[i] != actRekey[i]);
+  // ensure deep clone
+  LONGS_EQUAL(init.size(), actRekey.size());
+  for (size_t i=0; i<init.size(); ++i)
+      EXPECT(init[i] != actRekey[i]);
 
-	Graph expRekey;
-	// original measurements
-	expRekey.push_back(init[0]);
-	expRekey.push_back(init[1]);
+  Graph expRekey;
+  // original measurements
+  expRekey.push_back(init[0]);
+  expRekey.push_back(init[1]);
 
-	// updated measurements
-	Point2 z3(0, -1),  z4(-1.5, -1.);
-	SharedDiagonal sigma0_2 = noiseModel::Isotropic::Sigma(2,0.2);
-	expRekey.add(simulated2D::Measurement(z3, sigma0_2, X(1), L(4)));
-	expRekey.add(simulated2D::Measurement(z4, sigma0_2, X(2), L(4)));
+  // updated measurements
+  Point2 z3(0, -1),  z4(-1.5, -1.);
+  SharedDiagonal sigma0_2 = noiseModel::Isotropic::Sigma(2,0.2);
+  expRekey.add(simulated2D::Measurement(z3, sigma0_2, X(1), L(4)));
+  expRekey.add(simulated2D::Measurement(z4, sigma0_2, X(2), L(4)));
 
-	EXPECT(assert_equal(expRekey, actRekey));
+  EXPECT(assert_equal(expRekey, actRekey));
 }
 
 /* ************************************************************************* */

@@ -39,7 +39,7 @@ template<typename Scalar,int Size> void hessenberg(int size = Size)
     VERIFY_IS_APPROX(m, Q * H * Q.adjoint());
     for(int row = 2; row < size; ++row) {
       for(int col = 0; col < row-1; ++col) {
-	VERIFY(H(row,col) == (typename MatrixType::Scalar)0);
+  VERIFY(H(row,col) == (typename MatrixType::Scalar)0);
       }
     }
   }

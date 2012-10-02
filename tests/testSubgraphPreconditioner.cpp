@@ -169,10 +169,10 @@ TEST( SubgraphPreconditioner, system )
 
   // Check it numerically for good measure
   // TODO use boost::bind(&SubgraphPreconditioner::error,&system,_1)
-  //	Vector numerical_g1 = numericalGradient<VectorValues> (error, y1, 0.001);
-  //	Vector expected_g1 = Vector_(18, 0., 0., 0., 0., 2., -2., 0., 0., -2., 2.,
-  //			3., -3., 0., 0., -1., 1., 1., -1.);
-  //	CHECK(assert_equal(expected_g1,numerical_g1));
+  //  Vector numerical_g1 = numericalGradient<VectorValues> (error, y1, 0.001);
+  //  Vector expected_g1 = Vector_(18, 0., 0., 0., 0., 2., -2., 0., 0., -2., 2.,
+  //      3., -3., 0., 0., -1., 1., 1., -1.);
+  //  CHECK(assert_equal(expected_g1,numerical_g1));
 }
 
 /* ************************************************************************* */

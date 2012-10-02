@@ -47,8 +47,8 @@ public:
   typedef Map::iterator iterator;
   typedef Map::const_iterator const_iterator;
 
-	/// @name Standard Constructors
-	/// @{
+  /// @name Standard Constructors
+  /// @{
 
   /// Default constructor for empty ordering
   Ordering() : nVars_(0) {}
@@ -56,9 +56,9 @@ public:
   /// Construct from list, assigns order indices sequentially to list items.
   Ordering(const std::list<Key> & L) ;
 
-	/// @}
-	/// @name Standard Interface
-	/// @{
+  /// @}
+  /// @name Standard Interface
+  /// @{
 
   /** One greater than the maximum ordering index, i.e. including missing indices in the count.  See also size(). */
   Index nVars() const { return nVars_; }
@@ -94,7 +94,7 @@ public:
   Index& operator[](Key key) {
     iterator i=order_.find(key);
     if(i == order_.end())  throw std::out_of_range(
-    		std::string("Attempting to access a key from an ordering that does not contain that key:") + DefaultKeyFormatter(key));
+        std::string("Attempting to access a key from an ordering that does not contain that key:") + DefaultKeyFormatter(key));
     else                   return i->second; }
 
   /// Access the index for the requested key, throws std::out_of_range if the
@@ -103,7 +103,7 @@ public:
   Index operator[](Key key) const {
     const_iterator i=order_.find(key);
     if(i == order_.end())  throw std::out_of_range(
-    		std::string("Attempting to access a key from an ordering that does not contain that key:") + DefaultKeyFormatter(key));
+        std::string("Attempting to access a key from an ordering that does not contain that key:") + DefaultKeyFormatter(key));
     else                   return i->second; }
 
   /** Returns an iterator pointing to the symbol/index pair with the requested,
@@ -127,22 +127,22 @@ public:
    * i.e., returns a pair of iterator and success (false if already present)
    */
   std::pair<iterator,bool> tryInsert(const value_type& key_order) {
-  	std::pair<iterator,bool> it_ok(order_.insert(key_order));
-  	if(it_ok.second == true && key_order.second+1 > nVars_)
-  		nVars_ = key_order.second+1;
-  	return it_ok;
+    std::pair<iterator,bool> it_ok(order_.insert(key_order));
+    if(it_ok.second == true && key_order.second+1 > nVars_)
+      nVars_ = key_order.second+1;
+    return it_ok;
   }
 
   /** Try insert, but will fail if the key is already present */
   iterator insert(const value_type& key_order) {
-  	std::pair<iterator,bool> it_ok(tryInsert(key_order));
-  	if(!it_ok.second)  throw std::invalid_argument(std::string("Attempting to insert a key into an ordering that already contains that key"));
-  	else               return it_ok.first;
+    std::pair<iterator,bool> it_ok(tryInsert(key_order));
+    if(!it_ok.second)  throw std::invalid_argument(std::string("Attempting to insert a key into an ordering that already contains that key"));
+    else               return it_ok.first;
   }
 
-	/// @}
-	/// @name Advanced Interface
-	/// @{
+  /// @}
+  /// @name Advanced Interface
+  /// @{
 
   /**
    * Iterator in order of sorted symbols, not in elimination/index order!
@@ -212,9 +212,9 @@ public:
    */
   InvertedMap invert() const;
 
-	/// @}
-	/// @name Testable
-	/// @{
+  /// @}
+  /// @name Testable
+  /// @{
 
   /** print (from Testable) for testing and debugging */
   void print(const std::string& str = "Ordering:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
@@ -222,17 +222,17 @@ public:
   /** equals (from Testable) for testing and debugging */
   bool equals(const Ordering& rhs, double tol = 0.0) const;
 
-	/// @}
+  /// @}
 
 private:
 
-	/** Serialization function */
-	friend class boost::serialization::access;
-	template<class ARCHIVE>
-	void serialize(ARCHIVE & ar, const unsigned int version) {
-		ar & BOOST_SERIALIZATION_NVP(order_);
-		ar & BOOST_SERIALIZATION_NVP(nVars_);
-	}
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int version) {
+    ar & BOOST_SERIALIZATION_NVP(order_);
+    ar & BOOST_SERIALIZATION_NVP(nVars_);
+  }
 }; // \class Ordering
 
 // typedef for use with matlab

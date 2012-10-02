@@ -29,69 +29,69 @@ namespace gtsam { class IndexConditional; }
 namespace gtsam {
 
   typedef EliminationTree<IndexFactor> SymbolicEliminationTree;
-	typedef BayesNet<IndexConditional> SymbolicBayesNet;
-	typedef BayesTree<IndexConditional> SymbolicBayesTree;
+  typedef BayesNet<IndexConditional> SymbolicBayesNet;
+  typedef BayesTree<IndexConditional> SymbolicBayesTree;
 
-	/** Symbolic IndexFactor Graph
-	 *  \nosubgrouping
-	 */
-	class SymbolicFactorGraph: public FactorGraph<IndexFactor> {
+  /** Symbolic IndexFactor Graph
+   *  \nosubgrouping
+   */
+  class SymbolicFactorGraph: public FactorGraph<IndexFactor> {
 
-	public:
+  public:
 
-		/// @name Standard Constructors
-		/// @{
+    /// @name Standard Constructors
+    /// @{
 
-		/** Construct empty factor graph */
-		SymbolicFactorGraph() {
-		}
+    /** Construct empty factor graph */
+    SymbolicFactorGraph() {
+    }
 
-		/** Construct from a BayesNet */
-		SymbolicFactorGraph(const SymbolicBayesNet& bayesNet);
+    /** Construct from a BayesNet */
+    SymbolicFactorGraph(const SymbolicBayesNet& bayesNet);
 
     /** Construct from a BayesTree */
     SymbolicFactorGraph(const SymbolicBayesTree& bayesTree);
 
-		/**
-		 * Construct from a factor graph of any type
-		 */
-		template<class FACTOR>
-		SymbolicFactorGraph(const FactorGraph<FACTOR>& fg);
-		
-		/** Eliminate the first \c n frontal variables, returning the resulting
-		 * conditional and remaining factor graph - this is very inefficient for
-		 * eliminating all variables, to do that use EliminationTree or
-		 * JunctionTree.  Note that this version simply calls
-		 * FactorGraph<IndexFactor>::eliminateFrontals with EliminateSymbolic
-		 * as the eliminate function argument.
-		 */
-		std::pair<sharedConditional, SymbolicFactorGraph> eliminateFrontals(size_t nFrontals) const;
+    /**
+     * Construct from a factor graph of any type
+     */
+    template<class FACTOR>
+    SymbolicFactorGraph(const FactorGraph<FACTOR>& fg);
+    
+    /** Eliminate the first \c n frontal variables, returning the resulting
+     * conditional and remaining factor graph - this is very inefficient for
+     * eliminating all variables, to do that use EliminationTree or
+     * JunctionTree.  Note that this version simply calls
+     * FactorGraph<IndexFactor>::eliminateFrontals with EliminateSymbolic
+     * as the eliminate function argument.
+     */
+    std::pair<sharedConditional, SymbolicFactorGraph> eliminateFrontals(size_t nFrontals) const;
 
-		/// @}
-		/// @name Standard Interface
-		/// @{
+    /// @}
+    /// @name Standard Interface
+    /// @{
 
-		/**
-		 * Return the set of variables involved in the factors (computes a set
-		 * union).
-		 */
-		FastSet<Index> keys() const;
+    /**
+     * Return the set of variables involved in the factors (computes a set
+     * union).
+     */
+    FastSet<Index> keys() const;
 
-		/// @}
-		/// @name Advanced Interface
-		/// @{
+    /// @}
+    /// @name Advanced Interface
+    /// @{
 
-		/** Push back unary factor */
-		void push_factor(Index key);
+    /** Push back unary factor */
+    void push_factor(Index key);
 
-		/** Push back binary factor */
-		void push_factor(Index key1, Index key2);
+    /** Push back binary factor */
+    void push_factor(Index key1, Index key2);
 
-		/** Push back ternary factor */
-		void push_factor(Index key1, Index key2, Index key3);
+    /** Push back ternary factor */
+    void push_factor(Index key1, Index key2, Index key3);
 
-		/** Push back 4-way factor */
-		void push_factor(Index key1, Index key2, Index key3, Index key4);
+    /** Push back 4-way factor */
+    void push_factor(Index key1, Index key2, Index key3, Index key4);
 
     /** Permute the variables in the factors */
     void permuteWithInverse(const Permutation& inversePermutation);
@@ -99,32 +99,32 @@ namespace gtsam {
     /** Apply a reduction, which is a remapping of variable indices. */
     void reduceWithInverse(const internal::Reduction& inverseReduction);
 
-	};
+  };
 
-	/** Create a combined joint factor (new style for EliminationTree). */
-	IndexFactor::shared_ptr CombineSymbolic(const FactorGraph<IndexFactor>& factors,
-		const FastMap<Index, std::vector<Index> >& variableSlots);
+  /** Create a combined joint factor (new style for EliminationTree). */
+  IndexFactor::shared_ptr CombineSymbolic(const FactorGraph<IndexFactor>& factors,
+    const FastMap<Index, std::vector<Index> >& variableSlots);
 
-	/**
-	 * CombineAndEliminate provides symbolic elimination.
-	 * Combine and eliminate can also be called separately, but for this and
-	 * derived classes calling them separately generally does extra work.
-	 */
-	std::pair<boost::shared_ptr<IndexConditional>, boost::shared_ptr<IndexFactor> >
-	EliminateSymbolic(const FactorGraph<IndexFactor>&, size_t nrFrontals = 1);
+  /**
+   * CombineAndEliminate provides symbolic elimination.
+   * Combine and eliminate can also be called separately, but for this and
+   * derived classes calling them separately generally does extra work.
+   */
+  std::pair<boost::shared_ptr<IndexConditional>, boost::shared_ptr<IndexFactor> >
+  EliminateSymbolic(const FactorGraph<IndexFactor>&, size_t nrFrontals = 1);
 
-	/// @}
+  /// @}
 
-	/** Template function implementation */
-	template<class FACTOR>
-	SymbolicFactorGraph::SymbolicFactorGraph(const FactorGraph<FACTOR>& fg) {
-		for (size_t i = 0; i < fg.size(); i++) {
-			if (fg[i]) {
-				IndexFactor::shared_ptr factor(new IndexFactor(*fg[i]));
-				push_back(factor);
-			} else
-				push_back(IndexFactor::shared_ptr());
-		}
-	}
+  /** Template function implementation */
+  template<class FACTOR>
+  SymbolicFactorGraph::SymbolicFactorGraph(const FactorGraph<FACTOR>& fg) {
+    for (size_t i = 0; i < fg.size(); i++) {
+      if (fg[i]) {
+        IndexFactor::shared_ptr factor(new IndexFactor(*fg[i]));
+        push_back(factor);
+      } else
+        push_back(IndexFactor::shared_ptr());
+    }
+  }
 
 } // namespace gtsam

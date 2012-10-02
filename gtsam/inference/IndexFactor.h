@@ -22,81 +22,81 @@
 
 namespace gtsam {
 
-	// Forward declaration of IndexConditional
-	class IndexConditional;
+  // Forward declaration of IndexConditional
+  class IndexConditional;
 
-	/**
-	 * IndexFactor serves two purposes.  It is the base class for all linear
-	 * factors (GaussianFactor, JacobianFactor, HessianFactor), and also
-	 * functions as a symbolic factor with Index keys, used to do symbolic
-	 * elimination by JunctionTree.
-	 *
-	 * It derives from Factor with a key type of Index, an unsigned integer.
-	 * \nosubgrouping
-	 */
-	class IndexFactor: public Factor<Index> {
+  /**
+   * IndexFactor serves two purposes.  It is the base class for all linear
+   * factors (GaussianFactor, JacobianFactor, HessianFactor), and also
+   * functions as a symbolic factor with Index keys, used to do symbolic
+   * elimination by JunctionTree.
+   *
+   * It derives from Factor with a key type of Index, an unsigned integer.
+   * \nosubgrouping
+   */
+  class IndexFactor: public Factor<Index> {
 
-	protected:
+  protected:
 
-		/// @name Advanced Interface
-		/// @{
+    /// @name Advanced Interface
+    /// @{
 
-		/// Internal function for checking class invariants (unique keys for this factor)
-		void assertInvariants() const;
+    /// Internal function for checking class invariants (unique keys for this factor)
+    void assertInvariants() const;
 
-		/// @}
+    /// @}
 
-	public:
+  public:
 
-		typedef IndexFactor This;
-		typedef Factor<Index> Base;
+    typedef IndexFactor This;
+    typedef Factor<Index> Base;
 
-		/** Elimination produces an IndexConditional */
-		typedef IndexConditional ConditionalType;
+    /** Elimination produces an IndexConditional */
+    typedef IndexConditional ConditionalType;
 
-		/** Overriding the shared_ptr typedef */
-		typedef boost::shared_ptr<IndexFactor> shared_ptr;
+    /** Overriding the shared_ptr typedef */
+    typedef boost::shared_ptr<IndexFactor> shared_ptr;
 
-		/// @name Standard Interface
-		/// @{
+    /// @name Standard Interface
+    /// @{
 
-		/** Copy constructor */
-		IndexFactor(const This& f) :
-			Base(f) {
-			assertInvariants();
-		}
+    /** Copy constructor */
+    IndexFactor(const This& f) :
+      Base(f) {
+      assertInvariants();
+    }
 
-		/** Construct from derived type */
-		IndexFactor(const IndexConditional& c);
+    /** Construct from derived type */
+    IndexFactor(const IndexConditional& c);
 
-		/** Default constructor for I/O */
-		IndexFactor() {
-			assertInvariants();
-		}
+    /** Default constructor for I/O */
+    IndexFactor() {
+      assertInvariants();
+    }
 
-		/** Construct unary factor */
-		IndexFactor(Index j) :
-			Base(j) {
-			assertInvariants();
-		}
+    /** Construct unary factor */
+    IndexFactor(Index j) :
+      Base(j) {
+      assertInvariants();
+    }
 
-		/** Construct binary factor */
-		IndexFactor(Index j1, Index j2) :
-			Base(j1, j2) {
-			assertInvariants();
-		}
+    /** Construct binary factor */
+    IndexFactor(Index j1, Index j2) :
+      Base(j1, j2) {
+      assertInvariants();
+    }
 
-		/** Construct ternary factor */
-		IndexFactor(Index j1, Index j2, Index j3) :
-			Base(j1, j2, j3) {
-			assertInvariants();
-		}
+    /** Construct ternary factor */
+    IndexFactor(Index j1, Index j2, Index j3) :
+      Base(j1, j2, j3) {
+      assertInvariants();
+    }
 
-		/** Construct 4-way factor */
-		IndexFactor(Index j1, Index j2, Index j3, Index j4) :
-			Base(j1, j2, j3, j4) {
-			assertInvariants();
-		}
+    /** Construct 4-way factor */
+    IndexFactor(Index j1, Index j2, Index j3, Index j4) :
+      Base(j1, j2, j3, j4) {
+      assertInvariants();
+    }
 
     /** Construct 5-way factor */
     IndexFactor(Index j1, Index j2, Index j3, Index j4, Index j5) :
@@ -110,70 +110,70 @@ namespace gtsam {
       assertInvariants();
     }
 
-		/// @}
-		/// @name Advanced Constructors
-		/// @{
+    /// @}
+    /// @name Advanced Constructors
+    /// @{
 
-		/** Construct n-way factor */
-		IndexFactor(const std::set<Index>& js) :
-			Base(js) {
-			assertInvariants();
-		}
+    /** Construct n-way factor */
+    IndexFactor(const std::set<Index>& js) :
+      Base(js) {
+      assertInvariants();
+    }
 
-		/** Construct n-way factor */
-		IndexFactor(const std::vector<Index>& js) :
-			Base(js) {
-			assertInvariants();
-		}
+    /** Construct n-way factor */
+    IndexFactor(const std::vector<Index>& js) :
+      Base(js) {
+      assertInvariants();
+    }
 
-		/** Constructor from a collection of keys */
-		template<class KeyIterator> IndexFactor(KeyIterator beginKey,
-				KeyIterator endKey) :
-			Base(beginKey, endKey) {
-			assertInvariants();
-		}
+    /** Constructor from a collection of keys */
+    template<class KeyIterator> IndexFactor(KeyIterator beginKey,
+        KeyIterator endKey) :
+      Base(beginKey, endKey) {
+      assertInvariants();
+    }
 
-		/// @}
+    /// @}
 
 #ifdef TRACK_ELIMINATE
-		/**
-		 * eliminate the first variable involved in this factor
-		 * @return a conditional on the eliminated variable
-		 */
-		boost::shared_ptr<ConditionalType> eliminateFirst();
+    /**
+     * eliminate the first variable involved in this factor
+     * @return a conditional on the eliminated variable
+     */
+    boost::shared_ptr<ConditionalType> eliminateFirst();
 
-		/** eliminate the first nrFrontals frontal variables.*/
-		boost::shared_ptr<BayesNet<ConditionalType> > eliminate(size_t nrFrontals =
-				1);
+    /** eliminate the first nrFrontals frontal variables.*/
+    boost::shared_ptr<BayesNet<ConditionalType> > eliminate(size_t nrFrontals =
+        1);
 #endif
 
-		/// @name Advanced Interface
-		/// @{
+    /// @name Advanced Interface
+    /// @{
 
-	  /**
-	   * Permutes the factor, but for efficiency requires the permutation
-	   * to already be inverted.
-	   */
-	  void permuteWithInverse(const Permutation& inversePermutation);
+    /**
+     * Permutes the factor, but for efficiency requires the permutation
+     * to already be inverted.
+     */
+    void permuteWithInverse(const Permutation& inversePermutation);
 
-	  /**
-	   * Apply a reduction, which is a remapping of variable indices.
-	   */
+    /**
+     * Apply a reduction, which is a remapping of variable indices.
+     */
     void reduceWithInverse(const internal::Reduction& inverseReduction);
 
-		virtual ~IndexFactor() {
-		}
+    virtual ~IndexFactor() {
+    }
 
   private:
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
-    	ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     }
 
-		/// @}
+    /// @}
 
-	}; // IndexFactor
+  }; // IndexFactor
 
 }

@@ -324,7 +324,7 @@ void ComplexEigenSolver<MatrixType>::sortEigenvalues(bool computeEigenvectors)
       k += i;
       std::swap(m_eivalues[k],m_eivalues[i]);
       if(computeEigenvectors)
-	m_eivec.col(i).swap(m_eivec.col(k));
+  m_eivec.col(i).swap(m_eivec.col(k));
     }
   }
 }

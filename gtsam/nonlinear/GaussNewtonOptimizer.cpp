@@ -13,7 +13,7 @@
  * @file    GaussNewtonOptimizer.cpp
  * @brief   
  * @author  Richard Roberts
- * @date 	Feb 26, 2012
+ * @date   Feb 26, 2012
  */
 
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>

@@ -68,8 +68,8 @@ template<typename MatrixType, int CRows, int CCols, int SRows, int SCols> void c
     cols = MatrixType::ColsAtCompileTime,
     r = CRows,
     c = CCols,
-	sr = SRows,
-	sc = SCols
+  sr = SRows,
+  sc = SCols
   };
 
   VERIFY_IS_EQUAL((matrix.template topLeftCorner<r,c>()), (matrix.template block<r,c>(0,0)));

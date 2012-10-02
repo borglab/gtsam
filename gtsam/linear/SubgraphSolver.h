@@ -54,21 +54,21 @@ public:
   typedef SubgraphSolverParameters Parameters;
 
 protected:
-	Parameters parameters_;
-	SubgraphPreconditioner::shared_ptr pc_;  ///< preconditioner object
+  Parameters parameters_;
+  SubgraphPreconditioner::shared_ptr pc_;  ///< preconditioner object
 
 public:
-	/* Given a gaussian factor graph, split it into a spanning tree (A1) + others (A2) for SPCG */
-	SubgraphSolver(const GaussianFactorGraph &A, const Parameters &parameters);
+  /* Given a gaussian factor graph, split it into a spanning tree (A1) + others (A2) for SPCG */
+  SubgraphSolver(const GaussianFactorGraph &A, const Parameters &parameters);
   SubgraphSolver(const GaussianFactorGraph::shared_ptr &A, const Parameters &parameters);
 
-	/* The user specify the subgraph part and the constraint part, may throw exception if A1 is underdetermined */
-	SubgraphSolver(const GaussianFactorGraph &Ab1, const GaussianFactorGraph &Ab2, const Parameters &parameters);
+  /* The user specify the subgraph part and the constraint part, may throw exception if A1 is underdetermined */
+  SubgraphSolver(const GaussianFactorGraph &Ab1, const GaussianFactorGraph &Ab2, const Parameters &parameters);
   SubgraphSolver(const GaussianFactorGraph::shared_ptr &Ab1, const GaussianFactorGraph::shared_ptr &Ab2, const Parameters &parameters);
 
-	/* The same as above, but the A1 is solved before */
-	SubgraphSolver(const GaussianBayesNet::shared_ptr &Rc1, const GaussianFactorGraph &Ab2, const Parameters &parameters);
-	SubgraphSolver(const GaussianBayesNet::shared_ptr &Rc1, const GaussianFactorGraph::shared_ptr &Ab2, const Parameters &parameters);
+  /* The same as above, but the A1 is solved before */
+  SubgraphSolver(const GaussianBayesNet::shared_ptr &Rc1, const GaussianFactorGraph &Ab2, const Parameters &parameters);
+  SubgraphSolver(const GaussianBayesNet::shared_ptr &Rc1, const GaussianFactorGraph::shared_ptr &Ab2, const Parameters &parameters);
 
   virtual ~SubgraphSolver() {}
   virtual VectorValues optimize () ;

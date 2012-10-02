@@ -35,100 +35,100 @@ const Rot2 rot2A, rot2B = Rot2::fromAngle(M_PI_2);
 
 /* ************************************************************************* */
 LieVector evalFactorError3(const Pose3TranslationPrior& factor, const Pose3& x) {
-	return LieVector(factor.evaluateError(x));
+  return LieVector(factor.evaluateError(x));
 }
 
 /* ************************************************************************* */
 LieVector evalFactorError2(const Pose2TranslationPrior& factor, const Pose2& x) {
-	return LieVector(factor.evaluateError(x));
+  return LieVector(factor.evaluateError(x));
 }
 
 /* ************************************************************************* */
 TEST( testPoseTranslationFactor, level3_zero_error ) {
-	Pose3 pose1(rot3A, point3A);
-	Pose3TranslationPrior factor(poseKey, point3A, model3);
-	Matrix actH1;
-	EXPECT(assert_equal(zero(3), factor.evaluateError(pose1, actH1)));
-	Matrix expH1 = numericalDerivative11<LieVector,Pose3>(
-			boost::bind(evalFactorError3, factor, _1), pose1, 1e-5);
-	EXPECT(assert_equal(expH1, actH1, tol));
+  Pose3 pose1(rot3A, point3A);
+  Pose3TranslationPrior factor(poseKey, point3A, model3);
+  Matrix actH1;
+  EXPECT(assert_equal(zero(3), factor.evaluateError(pose1, actH1)));
+  Matrix expH1 = numericalDerivative11<LieVector,Pose3>(
+      boost::bind(evalFactorError3, factor, _1), pose1, 1e-5);
+  EXPECT(assert_equal(expH1, actH1, tol));
 }
 
 /* ************************************************************************* */
 TEST( testPoseTranslationFactor, level3_error ) {
-	Pose3 pose1(rot3A, point3A);
-	Pose3TranslationPrior factor(poseKey, point3B, model3);
-	Matrix actH1;
-	EXPECT(assert_equal(Vector_(3,-3.0,-4.0,-5.0), factor.evaluateError(pose1, actH1)));
-	Matrix expH1 = numericalDerivative11<LieVector,Pose3>(
-			boost::bind(evalFactorError3, factor, _1), pose1, 1e-5);
-	EXPECT(assert_equal(expH1, actH1, tol));
+  Pose3 pose1(rot3A, point3A);
+  Pose3TranslationPrior factor(poseKey, point3B, model3);
+  Matrix actH1;
+  EXPECT(assert_equal(Vector_(3,-3.0,-4.0,-5.0), factor.evaluateError(pose1, actH1)));
+  Matrix expH1 = numericalDerivative11<LieVector,Pose3>(
+      boost::bind(evalFactorError3, factor, _1), pose1, 1e-5);
+  EXPECT(assert_equal(expH1, actH1, tol));
 }
 
 /* ************************************************************************* */
 TEST( testPoseTranslationFactor, pitched3_zero_error ) {
-	Pose3 pose1(rot3B, point3A);
-	Pose3TranslationPrior factor(poseKey, point3A, model3);
-	Matrix actH1;
-	EXPECT(assert_equal(zero(3), factor.evaluateError(pose1, actH1)));
-	Matrix expH1 = numericalDerivative11<LieVector,Pose3>(
-			boost::bind(evalFactorError3, factor, _1), pose1, 1e-5);
-	EXPECT(assert_equal(expH1, actH1, tol));
+  Pose3 pose1(rot3B, point3A);
+  Pose3TranslationPrior factor(poseKey, point3A, model3);
+  Matrix actH1;
+  EXPECT(assert_equal(zero(3), factor.evaluateError(pose1, actH1)));
+  Matrix expH1 = numericalDerivative11<LieVector,Pose3>(
+      boost::bind(evalFactorError3, factor, _1), pose1, 1e-5);
+  EXPECT(assert_equal(expH1, actH1, tol));
 }
 
 /* ************************************************************************* */
 TEST( testPoseTranslationFactor, pitched3_error ) {
-	Pose3 pose1(rot3B, point3A);
-	Pose3TranslationPrior factor(poseKey, point3B, model3);
-	Matrix actH1;
-	EXPECT(assert_equal(Vector_(3,-3.0,-4.0,-5.0), factor.evaluateError(pose1, actH1)));
-	Matrix expH1 = numericalDerivative11<LieVector,Pose3>(
-			boost::bind(evalFactorError3, factor, _1), pose1, 1e-5);
-	EXPECT(assert_equal(expH1, actH1, tol));
+  Pose3 pose1(rot3B, point3A);
+  Pose3TranslationPrior factor(poseKey, point3B, model3);
+  Matrix actH1;
+  EXPECT(assert_equal(Vector_(3,-3.0,-4.0,-5.0), factor.evaluateError(pose1, actH1)));
+  Matrix expH1 = numericalDerivative11<LieVector,Pose3>(
+      boost::bind(evalFactorError3, factor, _1), pose1, 1e-5);
+  EXPECT(assert_equal(expH1, actH1, tol));
 }
 
 /* ************************************************************************* */
 TEST( testPoseTranslationFactor, smallrot3_zero_error ) {
-	Pose3 pose1(rot3C, point3A);
-	Pose3TranslationPrior factor(poseKey, point3A, model3);
-	Matrix actH1;
-	EXPECT(assert_equal(zero(3), factor.evaluateError(pose1, actH1)));
-	Matrix expH1 = numericalDerivative11<LieVector,Pose3>(
-			boost::bind(evalFactorError3, factor, _1), pose1, 1e-5);
-	EXPECT(assert_equal(expH1, actH1, tol));
+  Pose3 pose1(rot3C, point3A);
+  Pose3TranslationPrior factor(poseKey, point3A, model3);
+  Matrix actH1;
+  EXPECT(assert_equal(zero(3), factor.evaluateError(pose1, actH1)));
+  Matrix expH1 = numericalDerivative11<LieVector,Pose3>(
+      boost::bind(evalFactorError3, factor, _1), pose1, 1e-5);
+  EXPECT(assert_equal(expH1, actH1, tol));
 }
 
 /* ************************************************************************* */
 TEST( testPoseTranslationFactor, smallrot3_error ) {
-	Pose3 pose1(rot3C, point3A);
-	Pose3TranslationPrior factor(poseKey, point3B, model3);
-	Matrix actH1;
-	EXPECT(assert_equal(Vector_(3,-3.0,-4.0,-5.0), factor.evaluateError(pose1, actH1)));
-	Matrix expH1 = numericalDerivative11<LieVector,Pose3>(
-			boost::bind(evalFactorError3, factor, _1), pose1, 1e-5);
-	EXPECT(assert_equal(expH1, actH1, tol));
+  Pose3 pose1(rot3C, point3A);
+  Pose3TranslationPrior factor(poseKey, point3B, model3);
+  Matrix actH1;
+  EXPECT(assert_equal(Vector_(3,-3.0,-4.0,-5.0), factor.evaluateError(pose1, actH1)));
+  Matrix expH1 = numericalDerivative11<LieVector,Pose3>(
+      boost::bind(evalFactorError3, factor, _1), pose1, 1e-5);
+  EXPECT(assert_equal(expH1, actH1, tol));
 }
 
 /* ************************************************************************* */
 TEST( testPoseTranslationFactor, level2_zero_error ) {
-	Pose2 pose1(rot2A, point2A);
-	Pose2TranslationPrior factor(poseKey, point2A, model2);
-	Matrix actH1;
-	EXPECT(assert_equal(zero(2), factor.evaluateError(pose1, actH1)));
-	Matrix expH1 = numericalDerivative11<LieVector,Pose2>(
-			boost::bind(evalFactorError2, factor, _1), pose1, 1e-5);
-	EXPECT(assert_equal(expH1, actH1, tol));
+  Pose2 pose1(rot2A, point2A);
+  Pose2TranslationPrior factor(poseKey, point2A, model2);
+  Matrix actH1;
+  EXPECT(assert_equal(zero(2), factor.evaluateError(pose1, actH1)));
+  Matrix expH1 = numericalDerivative11<LieVector,Pose2>(
+      boost::bind(evalFactorError2, factor, _1), pose1, 1e-5);
+  EXPECT(assert_equal(expH1, actH1, tol));
 }
 
 /* ************************************************************************* */
 TEST( testPoseTranslationFactor, level2_error ) {
-	Pose2 pose1(rot2A, point2A);
-	Pose2TranslationPrior factor(poseKey, point2B, model2);
-	Matrix actH1;
-	EXPECT(assert_equal(Vector_(2,-3.0,-4.0), factor.evaluateError(pose1, actH1)));
-	Matrix expH1 = numericalDerivative11<LieVector,Pose2>(
-			boost::bind(evalFactorError2, factor, _1), pose1, 1e-5);
-	EXPECT(assert_equal(expH1, actH1, tol));
+  Pose2 pose1(rot2A, point2A);
+  Pose2TranslationPrior factor(poseKey, point2B, model2);
+  Matrix actH1;
+  EXPECT(assert_equal(Vector_(2,-3.0,-4.0), factor.evaluateError(pose1, actH1)));
+  Matrix expH1 = numericalDerivative11<LieVector,Pose2>(
+      boost::bind(evalFactorError2, factor, _1), pose1, 1e-5);
+  EXPECT(assert_equal(expH1, actH1, tol));
 }
 
 /* ************************************************************************* */

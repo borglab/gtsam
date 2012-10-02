@@ -101,15 +101,15 @@ TEST( TestVector, sub )
 /* ************************************************************************* */
 TEST( TestVector, subInsert )
 {
-	Vector big = zero(6),
-		   small = ones(3);
+  Vector big = zero(6),
+       small = ones(3);
 
-	size_t i = 2;
-	subInsert(big, small, i);
+  size_t i = 2;
+  subInsert(big, small, i);
 
-	Vector expected = Vector_(6, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0);
+  Vector expected = Vector_(6, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0);
 
-	EXPECT(assert_equal(expected, big));
+  EXPECT(assert_equal(expected, big));
 }
 
 /* ************************************************************************* */
@@ -154,66 +154,66 @@ TEST( TestVector, concatVectors)
 /* ************************************************************************* */
 TEST( TestVector, weightedPseudoinverse )
 {
-	// column from a matrix
-	Vector x(2);
-	x(0) = 1.0; x(1) = 2.0;
+  // column from a matrix
+  Vector x(2);
+  x(0) = 1.0; x(1) = 2.0;
 
-	// create sigmas
-	Vector sigmas(2);
-	sigmas(0) = 0.1; sigmas(1) = 0.2;
-	Vector weights = reciprocal(emul(sigmas,sigmas));
+  // create sigmas
+  Vector sigmas(2);
+  sigmas(0) = 0.1; sigmas(1) = 0.2;
+  Vector weights = reciprocal(emul(sigmas,sigmas));
 
-	// perform solve
-	Vector actual; double precision;
-	boost::tie(actual, precision) = weightedPseudoinverse(x, weights);
+  // perform solve
+  Vector actual; double precision;
+  boost::tie(actual, precision) = weightedPseudoinverse(x, weights);
 
-	// construct expected
-	Vector expected(2);
-	expected(0) = 0.5; expected(1) = 0.25;
-	double expPrecision = 200.0;
+  // construct expected
+  Vector expected(2);
+  expected(0) = 0.5; expected(1) = 0.25;
+  double expPrecision = 200.0;
 
-	// verify
-	EXPECT(assert_equal(expected,actual));
-	EXPECT(fabs(expPrecision-precision) < 1e-5);
+  // verify
+  EXPECT(assert_equal(expected,actual));
+  EXPECT(fabs(expPrecision-precision) < 1e-5);
 }
 
 /* ************************************************************************* */
 TEST( TestVector, weightedPseudoinverse_constraint )
 {
-	// column from a matrix
-	Vector x(2);
-	x(0) = 1.0; x(1) = 2.0;
+  // column from a matrix
+  Vector x(2);
+  x(0) = 1.0; x(1) = 2.0;
 
-	// create sigmas
-	Vector sigmas(2);
-	sigmas(0) = 0.0; sigmas(1) = 0.2;
-	Vector weights = reciprocal(emul(sigmas,sigmas));
+  // create sigmas
+  Vector sigmas(2);
+  sigmas(0) = 0.0; sigmas(1) = 0.2;
+  Vector weights = reciprocal(emul(sigmas,sigmas));
 
-	// perform solve
-	Vector actual; double precision;
-	boost::tie(actual, precision) = weightedPseudoinverse(x, weights);
+  // perform solve
+  Vector actual; double precision;
+  boost::tie(actual, precision) = weightedPseudoinverse(x, weights);
 
-	// construct expected
-	Vector expected(2);
-	expected(0) = 1.0; expected(1) = 0.0;
+  // construct expected
+  Vector expected(2);
+  expected(0) = 1.0; expected(1) = 0.0;
 
-	// verify
-	EXPECT(assert_equal(expected,actual));
-	EXPECT(isinf(precision));
+  // verify
+  EXPECT(assert_equal(expected,actual));
+  EXPECT(isinf(precision));
 }
 
 /* ************************************************************************* */
 TEST( TestVector, weightedPseudoinverse_nan )
 {
-	Vector a = Vector_(4, 1., 0., 0., 0.);
-	Vector sigmas = Vector_(4, 0.1, 0.1, 0., 0.);
-	Vector weights = reciprocal(emul(sigmas,sigmas));
-	Vector pseudo; double precision;
-	boost::tie(pseudo, precision) = weightedPseudoinverse(a, weights);
+  Vector a = Vector_(4, 1., 0., 0., 0.);
+  Vector sigmas = Vector_(4, 0.1, 0.1, 0., 0.);
+  Vector weights = reciprocal(emul(sigmas,sigmas));
+  Vector pseudo; double precision;
+  boost::tie(pseudo, precision) = weightedPseudoinverse(a, weights);
 
-	Vector expected = Vector_(4, 1., 0., 0.,0.);
-	EXPECT(assert_equal(expected, pseudo));
-	DOUBLES_EQUAL(100, precision, 1e-5);
+  Vector expected = Vector_(4, 1., 0., 0.,0.);
+  EXPECT(assert_equal(expected, pseudo));
+  DOUBLES_EQUAL(100, precision, 1e-5);
 }
 
 /* ************************************************************************* */
@@ -251,50 +251,50 @@ TEST( TestVector, axpy )
 /* ************************************************************************* */
 TEST( TestVector, equals )
 {
-	Vector v1 = Vector_(1, 0.0/std::numeric_limits<double>::quiet_NaN()); //testing nan
-	Vector v2 = Vector_(1, 1.0);
-	double tol = 1.;
-	EXPECT(!equal_with_abs_tol(v1, v2, tol));
+  Vector v1 = Vector_(1, 0.0/std::numeric_limits<double>::quiet_NaN()); //testing nan
+  Vector v2 = Vector_(1, 1.0);
+  double tol = 1.;
+  EXPECT(!equal_with_abs_tol(v1, v2, tol));
 }
 
 /* ************************************************************************* */
 TEST( TestVector, greater_than )
 {
-	Vector v1 = Vector_(3, 1.0, 2.0, 3.0),
-		   v2 = zero(3);
-	EXPECT(greaterThanOrEqual(v1, v1)); // test basic greater than
-	EXPECT(greaterThanOrEqual(v1, v2)); // test equals
+  Vector v1 = Vector_(3, 1.0, 2.0, 3.0),
+       v2 = zero(3);
+  EXPECT(greaterThanOrEqual(v1, v1)); // test basic greater than
+  EXPECT(greaterThanOrEqual(v1, v2)); // test equals
 }
 
 /* ************************************************************************* */
 TEST( TestVector, reciprocal )
 {
-	Vector v = Vector_(3, 1.0, 2.0, 4.0);
+  Vector v = Vector_(3, 1.0, 2.0, 4.0);
   EXPECT(assert_equal(Vector_(3, 1.0, 0.5, 0.25),reciprocal(v)));
 }
 
 /* ************************************************************************* */
 TEST( TestVector, linear_dependent )
 {
-	Vector v1 = Vector_(3, 1.0, 2.0, 3.0);
-	Vector v2 = Vector_(3, -2.0, -4.0, -6.0);
-	EXPECT(linear_dependent(v1, v2));
+  Vector v1 = Vector_(3, 1.0, 2.0, 3.0);
+  Vector v2 = Vector_(3, -2.0, -4.0, -6.0);
+  EXPECT(linear_dependent(v1, v2));
 }
 
 /* ************************************************************************* */
 TEST( TestVector, linear_dependent2 )
 {
-	Vector v1 = Vector_(3, 0.0, 2.0, 0.0);
-	Vector v2 = Vector_(3, 0.0, -4.0, 0.0);
-	EXPECT(linear_dependent(v1, v2));
+  Vector v1 = Vector_(3, 0.0, 2.0, 0.0);
+  Vector v2 = Vector_(3, 0.0, -4.0, 0.0);
+  EXPECT(linear_dependent(v1, v2));
 }
 
 /* ************************************************************************* */
 TEST( TestVector, linear_dependent3 )
 {
-	Vector v1 = Vector_(3, 0.0, 2.0, 0.0);
-	Vector v2 = Vector_(3, 0.1, -4.1, 0.0);
-	EXPECT(!linear_dependent(v1, v2));
+  Vector v1 = Vector_(3, 0.0, 2.0, 0.0);
+  Vector v2 = Vector_(3, 0.1, -4.1, 0.0);
+  EXPECT(!linear_dependent(v1, v2));
 }
 
 /* ************************************************************************* */

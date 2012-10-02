@@ -27,51 +27,51 @@
 
 namespace gtsam {
 
-	/**
-	 * A JunctionTree where all the factors are of type GaussianFactor.
-	 *
-	 * In GTSAM, typically, a GaussianJunctionTree is created directly from a GaussianFactorGraph,
-	 * after which you call optimize() to solve for the mean, or JunctionTree::eliminate() to
-	 * create a BayesTree<GaussianConditional>. In both cases, you need to provide a basic
-	 * GaussianFactorGraph::Eliminate function that will be used to
-	 *
-	 * \addtogroup Multifrontal
-	 */
-	class GaussianJunctionTree: public JunctionTree<GaussianFactorGraph> {
+  /**
+   * A JunctionTree where all the factors are of type GaussianFactor.
+   *
+   * In GTSAM, typically, a GaussianJunctionTree is created directly from a GaussianFactorGraph,
+   * after which you call optimize() to solve for the mean, or JunctionTree::eliminate() to
+   * create a BayesTree<GaussianConditional>. In both cases, you need to provide a basic
+   * GaussianFactorGraph::Eliminate function that will be used to
+   *
+   * \addtogroup Multifrontal
+   */
+  class GaussianJunctionTree: public JunctionTree<GaussianFactorGraph> {
 
-	public:
-	  typedef boost::shared_ptr<GaussianJunctionTree> shared_ptr;
-		typedef JunctionTree<GaussianFactorGraph> Base;
-		typedef Base::sharedClique sharedClique;
-		typedef GaussianFactorGraph::Eliminate Eliminate;
+  public:
+    typedef boost::shared_ptr<GaussianJunctionTree> shared_ptr;
+    typedef JunctionTree<GaussianFactorGraph> Base;
+    typedef Base::sharedClique sharedClique;
+    typedef GaussianFactorGraph::Eliminate Eliminate;
 
-	public :
+  public :
 
-		/** Default constructor */
-		GaussianJunctionTree() : Base() {}
+    /** Default constructor */
+    GaussianJunctionTree() : Base() {}
 
-		/** Constructor from a factor graph.  Builds a VariableIndex. */
-		GaussianJunctionTree(const GaussianFactorGraph& fg) : Base(fg) {}
+    /** Constructor from a factor graph.  Builds a VariableIndex. */
+    GaussianJunctionTree(const GaussianFactorGraph& fg) : Base(fg) {}
 
     /** Construct from a factor graph and a pre-computed variable index. */
     GaussianJunctionTree(const GaussianFactorGraph& fg, const VariableIndex& variableIndex)
     : Base(fg, variableIndex) {}
 
-		/**
-		 *  optimize the linear graph
-		 */
-		VectorValues optimize(Eliminate function) const;
+    /**
+     *  optimize the linear graph
+     */
+    VectorValues optimize(Eliminate function) const;
 
-		// convenient function to return dimensions of all variables in the BayesTree<GaussianConditional>
-		template<class DIM_CONTAINER, class CLIQUE>
-		static void countDims(const BayesTree<GaussianConditional,CLIQUE>& bayesTree, DIM_CONTAINER& dims) {
-		  dims = DIM_CONTAINER(bayesTree.root()->conditional()->back()+1, 0);
-		  countDims(bayesTree.root(), dims);
-	  }
-
-	private:
+    // convenient function to return dimensions of all variables in the BayesTree<GaussianConditional>
     template<class DIM_CONTAINER, class CLIQUE>
-		static void countDims(const boost::shared_ptr<CLIQUE>& clique, DIM_CONTAINER& dims) {
+    static void countDims(const BayesTree<GaussianConditional,CLIQUE>& bayesTree, DIM_CONTAINER& dims) {
+      dims = DIM_CONTAINER(bayesTree.root()->conditional()->back()+1, 0);
+      countDims(bayesTree.root(), dims);
+    }
+
+  private:
+    template<class DIM_CONTAINER, class CLIQUE>
+    static void countDims(const boost::shared_ptr<CLIQUE>& clique, DIM_CONTAINER& dims) {
       GaussianConditional::const_iterator it = clique->conditional()->beginFrontals();
       for (; it != clique->conditional()->endFrontals(); ++it) {
         assert(dims.at(*it) == 0);
@@ -83,6 +83,6 @@ namespace gtsam {
       }
     }
 
-	}; // GaussianJunctionTree
+  }; // GaussianJunctionTree
 
 } // namespace gtsam

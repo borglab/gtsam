@@ -37,16 +37,16 @@ namespace gtsam {
    */
   class Point3 : public DerivedValue<Point3> {
   public:
-	  /// dimension of the variable - used to autodetect sizes
-	  static const size_t dimension = 3;
+    /// dimension of the variable - used to autodetect sizes
+    static const size_t dimension = 3;
 
   private:
     double x_, y_, z_;  
-		
+    
   public:
 
     /// @name Standard Constructors
-  	/// @{
+    /// @{
 
     /// Default constructor creates a zero-Point3
     Point3(): x_(0), y_(0), z_(0) {}
@@ -54,18 +54,18 @@ namespace gtsam {
     /// Construct from x, y, and z coordinates
     Point3(double x, double y, double z): x_(x), y_(y), z_(z) {}
 
-  	/// @}
-  	/// @name Advanced Constructors
-  	/// @{
+    /// @}
+    /// @name Advanced Constructors
+    /// @{
 
     /// Construct from 3-element vector
     Point3(const Vector& v) {
-			if(v.size() != 3)
-				throw std::invalid_argument("Point3 constructor from Vector requires that the Vector have dimension 3");
-			x_ = v(0);
-			y_ = v(1);
-			z_ = v(2);
-		}
+      if(v.size() != 3)
+        throw std::invalid_argument("Point3 constructor from Vector requires that the Vector have dimension 3");
+      x_ = v(0);
+      y_ = v(1);
+      z_ = v(2);
+    }
 
     /// @}
     /// @name Testable
@@ -82,9 +82,9 @@ namespace gtsam {
     /// @{
 
     /// identity for group operation
-		inline static Point3 identity() {
-			return Point3();
-		}
+    inline static Point3 identity() {
+      return Point3();
+    }
 
     /// "Inverse" - negates the coordinates such that compose(p, inverse(p)) = Point3()
     inline Point3 inverse() const { return Point3(-x_, -y_, -z_); }
@@ -94,11 +94,11 @@ namespace gtsam {
 
     /// "Compose" - just adds coordinates of two points
     inline Point3 compose(const Point3& p2,
-    		boost::optional<Matrix&> H1=boost::none,
-    		boost::optional<Matrix&> H2=boost::none) const {
-  	  if (H1) *H1 = eye(3);
-  	  if (H2) *H2 = eye(3);
-  	  return *this + p2;
+        boost::optional<Matrix&> H1=boost::none,
+        boost::optional<Matrix&> H2=boost::none) const {
+      if (H1) *H1 = eye(3);
+      if (H2) *H2 = eye(3);
+      return *this + p2;
     }
 
     ///syntactic sugar for adding two points, i.e., p+q == compose(p,q)
@@ -113,7 +113,7 @@ namespace gtsam {
       return p2 - *this;
     }
 
-  	/// syntactic sugar for subtracting points, i.e., q-p == between(p,q)
+    /// syntactic sugar for subtracting points, i.e., q-p == between(p,q)
     Point3 operator - (const Point3& q) const;
 
     /// @}
@@ -126,11 +126,11 @@ namespace gtsam {
     /// return dimensionality of tangent space, DOF = 3
     inline size_t dim() const { return dimension; }
 
-  	/// Updates a with tangent space delta
-  	inline Point3 retract(const Vector& v) const { return Point3(*this + v); }
+    /// Updates a with tangent space delta
+    inline Point3 retract(const Vector& v) const { return Point3(*this + v); }
 
-  	/// Returns inverse retraction
-  	inline Vector3 localCoordinates(const Point3& q) const { return (q -*this).vector(); }
+    /// Returns inverse retraction
+    inline Vector3 localCoordinates(const Point3& q) const { return (q -*this).vector(); }
 
     /// @}
     /// @name Lie Group
@@ -167,8 +167,8 @@ namespace gtsam {
     double dot(const Point3 &q) const;
 
     /// @}
-  	/// @name Standard Interface
-  	/// @{
+    /// @name Standard Interface
+    /// @{
 
     /// equality
     bool   operator ==(const Point3& q) const;
@@ -189,32 +189,32 @@ namespace gtsam {
 
     /** add two points, add(this,q) is same as this + q */
     Point3 add (const Point3 &q,
-  	      boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
+          boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
 
     /** subtract two points, sub(this,q) is same as this - q */
     Point3 sub (const Point3 &q,
-  	      boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
+          boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
 
-  	/// @}
+    /// @}
 
   private:
 
-  	/// @name Advanced Interface
-  	/// @{
+    /// @name Advanced Interface
+    /// @{
 
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
       void serialize(ARCHIVE & ar, const unsigned int version)
     {
-    	ar & boost::serialization::make_nvp("Point3",
-   			 boost::serialization::base_object<Value>(*this));
+      ar & boost::serialization::make_nvp("Point3",
+          boost::serialization::base_object<Value>(*this));
       ar & BOOST_SERIALIZATION_NVP(x_);
       ar & BOOST_SERIALIZATION_NVP(y_);
       ar & BOOST_SERIALIZATION_NVP(z_);
     }
 
-  	/// @}
+    /// @}
 
   };
 

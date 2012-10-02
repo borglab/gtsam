@@ -20,12 +20,12 @@
  * the function exists in derived class and throw compile-time errors.
  * 
  * print with optional string naming the object
- * 		void print(const std::string& name) const = 0;
+ *     void print(const std::string& name) const = 0;
  * 
  * equality up to tolerance
  * tricky to implement, see NoiseModelFactor1 for an example
  * equals is not supposed to print out *anything*, just return true|false
- * 		bool equals(const Derived& expected, double tol) const = 0;
+ *     bool equals(const Derived& expected, double tol) const = 0;
  * 
  */
 
@@ -41,84 +41,84 @@
 
 namespace gtsam {
 
-	/**
-	 * A testable concept check that should be placed in applicable unit
-	 * tests and in generic algorithms.
-	 *
-	 * See macros for details on using this structure
-	 * @addtogroup base
-	 * @tparam T is the type this constrains to be testable - assumes print() and equals()
-	 */
-	template <class T>
-	class TestableConcept {
-	  static bool checkTestableConcept(const T& d) {
-	  	// check print function, with optional string
-	    d.print(std::string());
-	    d.print();
+  /**
+   * A testable concept check that should be placed in applicable unit
+   * tests and in generic algorithms.
+   *
+   * See macros for details on using this structure
+   * @addtogroup base
+   * @tparam T is the type this constrains to be testable - assumes print() and equals()
+   */
+  template <class T>
+  class TestableConcept {
+    static bool checkTestableConcept(const T& d) {
+      // check print function, with optional string
+      d.print(std::string());
+      d.print();
 
-	    // check print, with optional threshold
-	    double tol = 1.0;
-	    bool r1 = d.equals(d, tol);
-	    bool r2 = d.equals(d);
-	    return r1 && r2;
-	  }
-	};
+      // check print, with optional threshold
+      double tol = 1.0;
+      bool r1 = d.equals(d, tol);
+      bool r2 = d.equals(d);
+      return r1 && r2;
+    }
+  };
 
-	/** Call print on the object */
-	template<class T>
-	inline void print(const T& object, const std::string& s = "") {
-		object.print(s);
-	}
+  /** Call print on the object */
+  template<class T>
+  inline void print(const T& object, const std::string& s = "") {
+    object.print(s);
+  }
 
-	/** Call equal on the object */
-	template<class T>
-	inline bool equal(const T& obj1, const T& obj2, double tol) {
-		return obj1.equals(obj2, tol);
-	}
+  /** Call equal on the object */
+  template<class T>
+  inline bool equal(const T& obj1, const T& obj2, double tol) {
+    return obj1.equals(obj2, tol);
+  }
 
-	/** Call equal on the object without tolerance (use default tolerance) */
-	template<class T>
-	inline bool equal(const T& obj1, const T& obj2) {
-		return obj1.equals(obj2);
-	}
+  /** Call equal on the object without tolerance (use default tolerance) */
+  template<class T>
+  inline bool equal(const T& obj1, const T& obj2) {
+    return obj1.equals(obj2);
+  }
 
-	/**
-	 * This template works for any type with equals
-	 */
-	template<class V>
-	bool assert_equal(const V& expected, const V& actual, double tol = 1e-9) {
-		if (actual.equals(expected, tol))
-			return true;
-		printf("Not equal:\n");
-		expected.print("expected:\n");
-		actual.print("actual:\n");
-		return false;
-	}
+  /**
+   * This template works for any type with equals
+   */
+  template<class V>
+  bool assert_equal(const V& expected, const V& actual, double tol = 1e-9) {
+    if (actual.equals(expected, tol))
+      return true;
+    printf("Not equal:\n");
+    expected.print("expected:\n");
+    actual.print("actual:\n");
+    return false;
+  }
 
-	/**
-	 * Template to create a binary predicate
-	 */
-	template<class V>
-	struct equals : public std::binary_function<const V&, const V&, bool> {
-		double tol_;
-		equals(double tol = 1e-9) : tol_(tol) {}
-		bool operator()(const V& expected, const V& actual) {
-			return (actual.equals(expected, tol_));
-		}
-	};
+  /**
+   * Template to create a binary predicate
+   */
+  template<class V>
+  struct equals : public std::binary_function<const V&, const V&, bool> {
+    double tol_;
+    equals(double tol = 1e-9) : tol_(tol) {}
+    bool operator()(const V& expected, const V& actual) {
+      return (actual.equals(expected, tol_));
+    }
+  };
 
-	/**
-	 * Binary predicate on shared pointers
-	 */
-	template<class V>
-	struct equals_star : public std::binary_function<const boost::shared_ptr<V>&, const boost::shared_ptr<V>&, bool> {
-		double tol_;
-		equals_star(double tol = 1e-9) : tol_(tol) {}
-		bool operator()(const boost::shared_ptr<V>& expected, const boost::shared_ptr<V>& actual) {
-			if (!actual || !expected) return false;
-			return (actual->equals(*expected, tol_));
-		}
-	};
+  /**
+   * Binary predicate on shared pointers
+   */
+  template<class V>
+  struct equals_star : public std::binary_function<const boost::shared_ptr<V>&, const boost::shared_ptr<V>&, bool> {
+    double tol_;
+    equals_star(double tol = 1e-9) : tol_(tol) {}
+    bool operator()(const boost::shared_ptr<V>& expected, const boost::shared_ptr<V>& actual) {
+      if (!actual || !expected) return false;
+      return (actual->equals(*expected, tol_));
+    }
+  };
 
 } // \namespace gtsam
 

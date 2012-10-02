@@ -110,8 +110,8 @@ std::vector<Index> EliminationTree<FACTOR>::ComputeParents(const VariableIndex& 
 template<class FACTOR>
 template<class DERIVEDFACTOR>
 typename EliminationTree<FACTOR>::shared_ptr EliminationTree<FACTOR>::Create(
-		const FactorGraph<DERIVEDFACTOR>& factorGraph,
-		const VariableIndex& structure) {
+    const FactorGraph<DERIVEDFACTOR>& factorGraph,
+    const VariableIndex& structure) {
 
   static const bool debug = false;
 
@@ -176,7 +176,7 @@ EliminationTree<FACTOR>::Create(const FactorGraph<DERIVEDFACTOR>& factorGraph) {
 /* ************************************************************************* */
 template<class FACTORGRAPH>
 void EliminationTree<FACTORGRAPH>::print(const std::string& name,
-		const IndexFormatter& formatter) const {
+    const IndexFormatter& formatter) const {
   std::cout << name << " (" << formatter(key_) << ")" << std::endl;
   BOOST_FOREACH(const sharedFactor& factor, factors_) {
     factor->print(name + "  ", formatter); }

@@ -32,7 +32,7 @@ namespace inference {
 /* ************************************************************************* */
 template<typename CONSTRAINED>
 Permutation::shared_ptr PermutationCOLAMD(
-		const VariableIndex& variableIndex, const CONSTRAINED& constrainLast, bool forceOrder) {
+    const VariableIndex& variableIndex, const CONSTRAINED& constrainLast, bool forceOrder) {
 
   size_t n = variableIndex.size();
   std::vector<int> cmember(n, 0);
@@ -58,15 +58,15 @@ Permutation::shared_ptr PermutationCOLAMD(
 /* ************************************************************************* */
 template<typename CONSTRAINED_MAP>
 Permutation::shared_ptr PermutationCOLAMDGrouped(
-		const VariableIndex& variableIndex, const CONSTRAINED_MAP& constraints) {
+    const VariableIndex& variableIndex, const CONSTRAINED_MAP& constraints) {
   size_t n = variableIndex.size();
   std::vector<int> cmember(n, 0);
 
-	typedef typename CONSTRAINED_MAP::value_type constraint_pair;
+  typedef typename CONSTRAINED_MAP::value_type constraint_pair;
   BOOST_FOREACH(const constraint_pair& p, constraints) {
-  	assert(p.first < n);
-  	// FIXME: check that no groups are skipped
-  	cmember[p.first] = p.second;
+    assert(p.first < n);
+    // FIXME: check that no groups are skipped
+    cmember[p.first] = p.second;
   }
 
   return PermutationCOLAMD_(variableIndex, cmember);
@@ -82,13 +82,13 @@ inline Permutation::shared_ptr PermutationCOLAMD(const VariableIndex& variableIn
 /* ************************************************************************* */
 template<class Graph>
 std::pair<typename Graph::sharedConditional, Graph> eliminate(
-		const Graph& factorGraph,
-		const std::vector<typename Graph::KeyType>& variables,
-		const typename Graph::Eliminate& eliminateFcn,
-		boost::optional<const VariableIndex&> variableIndex_) {
+    const Graph& factorGraph,
+    const std::vector<typename Graph::KeyType>& variables,
+    const typename Graph::Eliminate& eliminateFcn,
+    boost::optional<const VariableIndex&> variableIndex_) {
 
   const VariableIndex& variableIndex =
-					variableIndex_ ? *variableIndex_ : VariableIndex(factorGraph);
+          variableIndex_ ? *variableIndex_ : VariableIndex(factorGraph);
 
   // First find the involved factors
   Graph involvedFactors;
@@ -136,7 +136,7 @@ std::pair<typename Graph::sharedConditional, Graph> eliminate(
 
   // Add the remaining factor if it is not empty.
   if(remainingFactor->size() != 0)
-  	remainingGraph.push_back(remainingFactor);
+    remainingGraph.push_back(remainingFactor);
 
   return std::make_pair(conditional, remainingGraph);
 

@@ -33,7 +33,7 @@ double chi2_red(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& c
   // Compute degrees of freedom (observations - variables)
   // In ocaml, +1 was added to the observations to account for the prior, but
   // the factor graph already includes a factor for the prior/equality constraint.
-  //	double dof = graph.size() - config.size();
+  //  double dof = graph.size() - config.size();
   int graph_dim = 0;
   BOOST_FOREACH(const boost::shared_ptr<gtsam::NonlinearFactor>& nlf, graph) {
     graph_dim += nlf->dim();

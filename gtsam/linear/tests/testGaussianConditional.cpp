@@ -37,8 +37,8 @@ static const double tol = 1e-5;
 static const Index _x_=0, _x1_=1, _l1_=2;
 
 Matrix R = Matrix_(2,2,
-		-12.1244,  -5.1962,
-					0.,   4.6904);
+    -12.1244,  -5.1962,
+          0.,   4.6904);
 
 /* ************************************************************************* */
 TEST(GaussianConditional, constructor)
@@ -98,16 +98,16 @@ TEST(GaussianConditional, constructor)
 /* ************************************************************************* */
 
 GaussianConditional construct() {
-	Vector d = Vector_(2, 1.0, 2.0);
-	Vector s = Vector_(2, 3.0, 4.0);
-	GaussianConditional::shared_ptr shared(new GaussianConditional(1, d, R, s));
-	return *shared;
+  Vector d = Vector_(2, 1.0, 2.0);
+  Vector s = Vector_(2, 3.0, 4.0);
+  GaussianConditional::shared_ptr shared(new GaussianConditional(1, d, R, s));
+  return *shared;
 }
 
 TEST(GaussianConditional, return_value)
 {
-	Vector d = Vector_(2, 1.0, 2.0);
-	Vector s = Vector_(2, 3.0, 4.0);
+  Vector d = Vector_(2, 1.0, 2.0);
+  Vector s = Vector_(2, 3.0, 4.0);
   GaussianConditional copied = construct();
   EXPECT(assert_equal(d, copied.get_d()));
   EXPECT(assert_equal(s, copied.get_sigmas()));
@@ -191,118 +191,118 @@ TEST( GaussianConditional, solve )
 /* ************************************************************************* */
 TEST( GaussianConditional, solve_simple )
 {
-	Matrix full_matrix = Matrix_(4, 7,
-			1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 0.1,
-			0.0, 1.0, 0.0, 2.0, 0.0, 3.0, 0.2,
-			0.0, 0.0, 3.0, 0.0, 4.0, 0.0, 0.3,
-			0.0, 0.0, 0.0, 3.0, 0.0, 4.0, 0.4);
+  Matrix full_matrix = Matrix_(4, 7,
+      1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 0.1,
+      0.0, 1.0, 0.0, 2.0, 0.0, 3.0, 0.2,
+      0.0, 0.0, 3.0, 0.0, 4.0, 0.0, 0.3,
+      0.0, 0.0, 0.0, 3.0, 0.0, 4.0, 0.4);
 
-	// solve system as a non-multifrontal version first
-	// 2 variables, frontal has dim=4
-	vector<size_t> dims; dims += 4, 2, 1;
-	GaussianConditional::rsd_type matrices(full_matrix, dims.begin(), dims.end());
-	Vector sigmas = ones(4);
-	vector<size_t> cgdims; cgdims += _x_, _x1_;
-	GaussianConditional cg(cgdims.begin(), cgdims.end(), 1, matrices, sigmas);
+  // solve system as a non-multifrontal version first
+  // 2 variables, frontal has dim=4
+  vector<size_t> dims; dims += 4, 2, 1;
+  GaussianConditional::rsd_type matrices(full_matrix, dims.begin(), dims.end());
+  Vector sigmas = ones(4);
+  vector<size_t> cgdims; cgdims += _x_, _x1_;
+  GaussianConditional cg(cgdims.begin(), cgdims.end(), 1, matrices, sigmas);
 
-	// partial solution
-	Vector sx1 = Vector_(2, 9.0, 10.0);
+  // partial solution
+  Vector sx1 = Vector_(2, 9.0, 10.0);
 
-	// elimination order; _x_, _x1_
-	vector<size_t> vdim; vdim += 4, 2;
-	VectorValues actual(vdim);
-	actual[_x1_] = sx1; // parent
+  // elimination order; _x_, _x1_
+  vector<size_t> vdim; vdim += 4, 2;
+  VectorValues actual(vdim);
+  actual[_x1_] = sx1; // parent
 
-	VectorValues expected(vdim);
-	expected[_x1_] = sx1;
-	expected[_x_] = Vector_(4, -3.1,-3.4,-11.9,-13.2);
+  VectorValues expected(vdim);
+  expected[_x1_] = sx1;
+  expected[_x_] = Vector_(4, -3.1,-3.4,-11.9,-13.2);
 
-	// verify indices/size
-	EXPECT_LONGS_EQUAL(2, cg.size());
-	EXPECT_LONGS_EQUAL(4, cg.dim());
+  // verify indices/size
+  EXPECT_LONGS_EQUAL(2, cg.size());
+  EXPECT_LONGS_EQUAL(4, cg.dim());
 
-	// solve and verify
-	cg.solveInPlace(actual);
-	EXPECT(assert_equal(expected, actual, tol));
+  // solve and verify
+  cg.solveInPlace(actual);
+  EXPECT(assert_equal(expected, actual, tol));
 }
 
 /* ************************************************************************* */
 TEST( GaussianConditional, solve_multifrontal )
 {
-	// create full system, 3 variables, 2 frontals, all 2 dim
-	Matrix full_matrix = Matrix_(4, 7,
-			1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 0.1,
-			0.0, 1.0, 0.0, 2.0, 0.0, 3.0, 0.2,
-			0.0, 0.0, 3.0, 0.0, 4.0, 0.0, 0.3,
-			0.0, 0.0, 0.0, 3.0, 0.0, 4.0, 0.4);
+  // create full system, 3 variables, 2 frontals, all 2 dim
+  Matrix full_matrix = Matrix_(4, 7,
+      1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 0.1,
+      0.0, 1.0, 0.0, 2.0, 0.0, 3.0, 0.2,
+      0.0, 0.0, 3.0, 0.0, 4.0, 0.0, 0.3,
+      0.0, 0.0, 0.0, 3.0, 0.0, 4.0, 0.4);
 
-	// 3 variables, all dim=2
-	vector<size_t> dims; dims += 2, 2, 2, 1;
-	GaussianConditional::rsd_type matrices(full_matrix, dims.begin(), dims.end());
-	Vector sigmas = ones(4);
-	vector<size_t> cgdims; cgdims += _x_, _x1_, _l1_;
-	GaussianConditional cg(cgdims.begin(), cgdims.end(), 2, matrices, sigmas);
+  // 3 variables, all dim=2
+  vector<size_t> dims; dims += 2, 2, 2, 1;
+  GaussianConditional::rsd_type matrices(full_matrix, dims.begin(), dims.end());
+  Vector sigmas = ones(4);
+  vector<size_t> cgdims; cgdims += _x_, _x1_, _l1_;
+  GaussianConditional cg(cgdims.begin(), cgdims.end(), 2, matrices, sigmas);
 
-	EXPECT(assert_equal(Vector_(4, 0.1, 0.2, 0.3, 0.4), cg.get_d()));
+  EXPECT(assert_equal(Vector_(4, 0.1, 0.2, 0.3, 0.4), cg.get_d()));
 
-	// partial solution
-	Vector sl1 = Vector_(2, 9.0, 10.0);
+  // partial solution
+  Vector sl1 = Vector_(2, 9.0, 10.0);
 
-	// elimination order; _x_, _x1_, _l1_
-	VectorValues actual(vector<size_t>(3, 2));
-	actual[_l1_] = sl1; // parent
+  // elimination order; _x_, _x1_, _l1_
+  VectorValues actual(vector<size_t>(3, 2));
+  actual[_l1_] = sl1; // parent
 
-	VectorValues expected(vector<size_t>(3, 2));
-	expected[_x_] = Vector_(2, -3.1,-3.4);
-	expected[_x1_] = Vector_(2, -11.9,-13.2);
-	expected[_l1_] = sl1;
+  VectorValues expected(vector<size_t>(3, 2));
+  expected[_x_] = Vector_(2, -3.1,-3.4);
+  expected[_x1_] = Vector_(2, -11.9,-13.2);
+  expected[_l1_] = sl1;
 
-	// verify indices/size
-	EXPECT_LONGS_EQUAL(3, cg.size());
-	EXPECT_LONGS_EQUAL(4, cg.dim());
+  // verify indices/size
+  EXPECT_LONGS_EQUAL(3, cg.size());
+  EXPECT_LONGS_EQUAL(4, cg.dim());
 
-	// solve and verify
-	cg.solveInPlace(actual);
-	EXPECT(assert_equal(expected, actual, tol));
+  // solve and verify
+  cg.solveInPlace(actual);
+  EXPECT(assert_equal(expected, actual, tol));
 
 }
 
 /* ************************************************************************* */
 TEST( GaussianConditional, solveTranspose ) {
-	static const Index _y_=1;
-	/** create small Chordal Bayes Net x <- y
-	 * x y d
-	 * 1 1 9
-	 *   1 5
-	 */
-	Matrix R11 = Matrix_(1, 1, 1.0), S12 = Matrix_(1, 1, 1.0);
-	Matrix R22 = Matrix_(1, 1, 1.0);
-	Vector d1(1), d2(1);
-	d1(0) = 9;
-	d2(0) = 5;
-	Vector tau(1);
-	tau(0) = 1.0;
+  static const Index _y_=1;
+  /** create small Chordal Bayes Net x <- y
+   * x y d
+   * 1 1 9
+   *   1 5
+   */
+  Matrix R11 = Matrix_(1, 1, 1.0), S12 = Matrix_(1, 1, 1.0);
+  Matrix R22 = Matrix_(1, 1, 1.0);
+  Vector d1(1), d2(1);
+  d1(0) = 9;
+  d2(0) = 5;
+  Vector tau(1);
+  tau(0) = 1.0;
 
-	// define nodes and specify in reverse topological sort (i.e. parents last)
-	GaussianConditional::shared_ptr Px_y(new GaussianConditional(_x_, d1, R11, _y_, S12, tau));
-	GaussianConditional::shared_ptr Py(new GaussianConditional(_y_, d2, R22, tau));
-	GaussianBayesNet cbn;
-	cbn.push_back(Px_y);
-	cbn.push_back(Py);
+  // define nodes and specify in reverse topological sort (i.e. parents last)
+  GaussianConditional::shared_ptr Px_y(new GaussianConditional(_x_, d1, R11, _y_, S12, tau));
+  GaussianConditional::shared_ptr Py(new GaussianConditional(_y_, d2, R22, tau));
+  GaussianBayesNet cbn;
+  cbn.push_back(Px_y);
+  cbn.push_back(Py);
 
-	// x=R'*y, y=inv(R')*x
-	// 2 = 1    2
-	// 5   1 1  3
+  // x=R'*y, y=inv(R')*x
+  // 2 = 1    2
+  // 5   1 1  3
 
-	VectorValues y(vector<size_t>(2,1)), x(vector<size_t>(2,1));
-	x[_x_] = Vector_(1,2.);
-	x[_y_] = Vector_(1,5.);
-	y[_x_] = Vector_(1,2.);
-	y[_y_] = Vector_(1,3.);
+  VectorValues y(vector<size_t>(2,1)), x(vector<size_t>(2,1));
+  x[_x_] = Vector_(1,2.);
+  x[_y_] = Vector_(1,5.);
+  y[_x_] = Vector_(1,2.);
+  y[_y_] = Vector_(1,3.);
 
-	// test functional version
-	VectorValues actual = backSubstituteTranspose(cbn,x);
-	CHECK(assert_equal(y,actual));
+  // test functional version
+  VectorValues actual = backSubstituteTranspose(cbn,x);
+  CHECK(assert_equal(y,actual));
 }
 
 /* ************************************************************************* */

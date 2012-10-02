@@ -37,7 +37,7 @@ void NonlinearISAM::saveGraph(const string& s, const KeyFormatter& keyFormatter)
 
 /* ************************************************************************* */
 void NonlinearISAM::update(const NonlinearFactorGraph& newFactors,
-		const Values& initialValues) {
+    const Values& initialValues) {
 
   if(newFactors.size() > 0) {
 
@@ -104,16 +104,16 @@ Values NonlinearISAM::estimate() const {
 
 /* ************************************************************************* */
 Matrix NonlinearISAM::marginalCovariance(Key key) const {
-	return isam_.marginalCovariance(ordering_[key]);
+  return isam_.marginalCovariance(ordering_[key]);
 }
 
 /* ************************************************************************* */
 void NonlinearISAM::print(const string& s, const KeyFormatter& keyFormatter) const {
-	cout << s << "ReorderInterval: " << reorderInterval_ << " Current Count: " << reorderCounter_ << endl;
-	isam_.print("GaussianISAM:\n");
-	linPoint_.print("Linearization Point:\n", keyFormatter);
-	ordering_.print("System Ordering:\n", keyFormatter);
-	factors_.print("Nonlinear Graph:\n", keyFormatter);
+  cout << s << "ReorderInterval: " << reorderInterval_ << " Current Count: " << reorderCounter_ << endl;
+  isam_.print("GaussianISAM:\n");
+  linPoint_.print("Linearization Point:\n", keyFormatter);
+  ordering_.print("System Ordering:\n", keyFormatter);
+  factors_.print("Nonlinear Graph:\n", keyFormatter);
 }
 
 /* ************************************************************************* */

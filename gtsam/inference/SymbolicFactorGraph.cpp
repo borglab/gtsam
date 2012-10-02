@@ -24,11 +24,11 @@
 
 namespace gtsam {
 
-	using namespace std;
+  using namespace std;
 
   /* ************************************************************************* */
-	SymbolicFactorGraph::SymbolicFactorGraph(const SymbolicBayesNet& bayesNet) :
-	    FactorGraph<IndexFactor>(bayesNet) {}
+  SymbolicFactorGraph::SymbolicFactorGraph(const SymbolicBayesNet& bayesNet) :
+      FactorGraph<IndexFactor>(bayesNet) {}
 
   /* ************************************************************************* */
   SymbolicFactorGraph::SymbolicFactorGraph(const SymbolicBayesTree& bayesTree) :
@@ -63,12 +63,12 @@ namespace gtsam {
     return keys;
   }
 
-	/* ************************************************************************* */
-	std::pair<SymbolicFactorGraph::sharedConditional, SymbolicFactorGraph>
-		SymbolicFactorGraph::eliminateFrontals(size_t nFrontals) const
-	{
-		return FactorGraph<IndexFactor>::eliminateFrontals(nFrontals, EliminateSymbolic);
-	}
+  /* ************************************************************************* */
+  std::pair<SymbolicFactorGraph::sharedConditional, SymbolicFactorGraph>
+    SymbolicFactorGraph::eliminateFrontals(size_t nFrontals) const
+  {
+    return FactorGraph<IndexFactor>::eliminateFrontals(nFrontals, EliminateSymbolic);
+  }
 
   /* ************************************************************************* */
   void SymbolicFactorGraph::permuteWithInverse(
@@ -88,31 +88,31 @@ namespace gtsam {
       }
   }
 
-	/* ************************************************************************* */
-	IndexFactor::shared_ptr CombineSymbolic(
-			const FactorGraph<IndexFactor>& factors, const FastMap<Index,
-					vector<Index> >& variableSlots) {
-		IndexFactor::shared_ptr combined(Combine<IndexFactor, Index> (factors, variableSlots));
-//		combined->assertInvariants();
-		return combined;
-	}
+  /* ************************************************************************* */
+  IndexFactor::shared_ptr CombineSymbolic(
+      const FactorGraph<IndexFactor>& factors, const FastMap<Index,
+          vector<Index> >& variableSlots) {
+    IndexFactor::shared_ptr combined(Combine<IndexFactor, Index> (factors, variableSlots));
+//    combined->assertInvariants();
+    return combined;
+  }
 
-	/* ************************************************************************* */
-	pair<IndexConditional::shared_ptr, IndexFactor::shared_ptr> //
-	EliminateSymbolic(const FactorGraph<IndexFactor>& factors, size_t nrFrontals) {
+  /* ************************************************************************* */
+  pair<IndexConditional::shared_ptr, IndexFactor::shared_ptr> //
+  EliminateSymbolic(const FactorGraph<IndexFactor>& factors, size_t nrFrontals) {
 
-		FastSet<Index> keys;
-		BOOST_FOREACH(const IndexFactor::shared_ptr& factor, factors)
-						BOOST_FOREACH(Index var, *factor)
-										keys.insert(var);
+    FastSet<Index> keys;
+    BOOST_FOREACH(const IndexFactor::shared_ptr& factor, factors)
+            BOOST_FOREACH(Index var, *factor)
+                    keys.insert(var);
 
-		if (keys.size() < 1) throw invalid_argument(
-				"IndexFactor::CombineAndEliminate called on factors with no variables.");
+    if (keys.size() < 1) throw invalid_argument(
+        "IndexFactor::CombineAndEliminate called on factors with no variables.");
 
-		vector<Index> newKeys(keys.begin(), keys.end());
-		return make_pair(boost::make_shared<IndexConditional>(newKeys, nrFrontals),
-				boost::make_shared<IndexFactor>(newKeys.begin() + nrFrontals, newKeys.end()));
-	}
+    vector<Index> newKeys(keys.begin(), keys.end());
+    return make_pair(boost::make_shared<IndexConditional>(newKeys, nrFrontals),
+        boost::make_shared<IndexFactor>(newKeys.begin() + nrFrontals, newKeys.end()));
+  }
 
-	/* ************************************************************************* */
+  /* ************************************************************************* */
 }

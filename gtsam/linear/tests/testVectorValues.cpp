@@ -68,25 +68,25 @@ TEST(VectorValues, insert) {
 
 /* ************************************************************************* */
 TEST(VectorValues, dimsConstructor) {
-	vector<size_t> dims;
-	dims.push_back(1);
-	dims.push_back(2);
-	dims.push_back(2);
+  vector<size_t> dims;
+  dims.push_back(1);
+  dims.push_back(2);
+  dims.push_back(2);
 
-	VectorValues actual(dims);
-	actual[0] = Vector_(1, 1.0);
-	actual[1] = Vector_(2, 2.0, 3.0);
-	actual[2] = Vector_(2, 4.0, 5.0);
+  VectorValues actual(dims);
+  actual[0] = Vector_(1, 1.0);
+  actual[1] = Vector_(2, 2.0, 3.0);
+  actual[2] = Vector_(2, 4.0, 5.0);
 
-	// Check dimensions
-	LONGS_EQUAL(3, actual.size());
-	LONGS_EQUAL(5, actual.dim());
-	LONGS_EQUAL(1, actual.dim(0));
-	LONGS_EQUAL(2, actual.dim(1));
-	LONGS_EQUAL(2, actual.dim(2));
+  // Check dimensions
+  LONGS_EQUAL(3, actual.size());
+  LONGS_EQUAL(5, actual.dim());
+  LONGS_EQUAL(1, actual.dim(0));
+  LONGS_EQUAL(2, actual.dim(1));
+  LONGS_EQUAL(2, actual.dim(2));
 
-	// Check values
-	EXPECT(assert_equal(Vector_(1, 1.0), actual[0]));
+  // Check values
+  EXPECT(assert_equal(Vector_(1, 1.0), actual[0]));
   EXPECT(assert_equal(Vector_(2, 2.0, 3.0), actual[1]));
   EXPECT(assert_equal(Vector_(2, 4.0, 5.0), actual[2]));
   EXPECT(assert_equal(Vector_(5, 1.0, 2.0, 3.0, 4.0, 5.0), actual.vector()));
@@ -425,27 +425,27 @@ TEST(VectorValues, hasSameStructure) {
 /* ************************************************************************* */
 TEST(VectorValues, permute) {
 
-	VectorValues original;
-	original.insert(0, Vector_(1, 1.0));
-	original.insert(1, Vector_(2, 2.0, 3.0));
-	original.insert(2, Vector_(2, 4.0, 5.0));
-	original.insert(3, Vector_(2, 6.0, 7.0));
+  VectorValues original;
+  original.insert(0, Vector_(1, 1.0));
+  original.insert(1, Vector_(2, 2.0, 3.0));
+  original.insert(2, Vector_(2, 4.0, 5.0));
+  original.insert(3, Vector_(2, 6.0, 7.0));
 
-	VectorValues expected;
-	expected.insert(0, Vector_(2, 4.0, 5.0)); // from 2
-	expected.insert(1, Vector_(1, 1.0)); // from 0
-	expected.insert(2, Vector_(2, 6.0, 7.0)); // from 3
-	expected.insert(3, Vector_(2, 2.0, 3.0)); // from 1
+  VectorValues expected;
+  expected.insert(0, Vector_(2, 4.0, 5.0)); // from 2
+  expected.insert(1, Vector_(1, 1.0)); // from 0
+  expected.insert(2, Vector_(2, 6.0, 7.0)); // from 3
+  expected.insert(3, Vector_(2, 2.0, 3.0)); // from 1
 
-	Permutation permutation(4);
-	permutation[0] = 2;
-	permutation[1] = 0;
-	permutation[2] = 3;
-	permutation[3] = 1;
+  Permutation permutation(4);
+  permutation[0] = 2;
+  permutation[1] = 0;
+  permutation[2] = 3;
+  permutation[3] = 1;
 
-	VectorValues actual = original.permute(permutation);
+  VectorValues actual = original.permute(permutation);
 
-	EXPECT(assert_equal(expected, actual));
+  EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */

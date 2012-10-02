@@ -41,22 +41,22 @@ const Symbol key1('v',1), key2('v',2), key3('v',3), key4('v',4);
 
 class TestValueData {
 public:
-	static int ConstructorCount;
-	static int DestructorCount;
-	TestValueData(const TestValueData& other) { cout << "Copy constructor" << endl; ++ ConstructorCount; }
-	TestValueData() { cout << "Default constructor" << endl; ++ ConstructorCount; }
-	~TestValueData() { cout << "Destructor" << endl; ++ DestructorCount; }
+  static int ConstructorCount;
+  static int DestructorCount;
+  TestValueData(const TestValueData& other) { cout << "Copy constructor" << endl; ++ ConstructorCount; }
+  TestValueData() { cout << "Default constructor" << endl; ++ ConstructorCount; }
+  ~TestValueData() { cout << "Destructor" << endl; ++ DestructorCount; }
 };
 int TestValueData::ConstructorCount = 0;
 int TestValueData::DestructorCount = 0;
 class TestValue : public DerivedValue<TestValue> {
-	TestValueData data_;
+  TestValueData data_;
 public:
-	virtual void print(const std::string& str = "") const {}
-	bool equals(const TestValue& other, double tol = 1e-9) const { return true; }
-	virtual size_t dim() const { return 0; }
-	TestValue retract(const Vector&) const { return TestValue(); }
-	Vector localCoordinates(const TestValue&) const { return Vector(); }
+  virtual void print(const std::string& str = "") const {}
+  bool equals(const TestValue& other, double tol = 1e-9) const { return true; }
+  virtual size_t dim() const { return 0; }
+  TestValue retract(const Vector&) const { return TestValue(); }
+  Vector localCoordinates(const TestValue&) const { return Vector(); }
 };
 
 /* ************************************************************************* */
@@ -237,77 +237,77 @@ TEST(Values, expmap_d)
 /* ************************************************************************* */
 TEST(Values, localCoordinates)
 {
-	Values valuesA;
-	valuesA.insert(key1, LieVector(3, 1.0, 2.0, 3.0));
-	valuesA.insert(key2, LieVector(3, 5.0, 6.0, 7.0));
+  Values valuesA;
+  valuesA.insert(key1, LieVector(3, 1.0, 2.0, 3.0));
+  valuesA.insert(key2, LieVector(3, 5.0, 6.0, 7.0));
 
-	Ordering ordering = *valuesA.orderingArbitrary();
+  Ordering ordering = *valuesA.orderingArbitrary();
 
-	VectorValues expDelta = valuesA.zeroVectors(ordering);
-//	expDelta.at(ordering[key1]) = Vector_(3, 0.1, 0.2, 0.3);
-//	expDelta.at(ordering[key2]) = Vector_(3, 0.4, 0.5, 0.6);
+  VectorValues expDelta = valuesA.zeroVectors(ordering);
+//  expDelta.at(ordering[key1]) = Vector_(3, 0.1, 0.2, 0.3);
+//  expDelta.at(ordering[key2]) = Vector_(3, 0.4, 0.5, 0.6);
 
-	Values valuesB = valuesA.retract(expDelta, ordering);
+  Values valuesB = valuesA.retract(expDelta, ordering);
 
-	EXPECT(assert_equal(expDelta, valuesA.localCoordinates(valuesB, ordering)));
+  EXPECT(assert_equal(expDelta, valuesA.localCoordinates(valuesB, ordering)));
 }
 
 /* ************************************************************************* */
 TEST(Values, extract_keys)
 {
-	Values config;
+  Values config;
 
-	config.insert(key1, Pose2());
-	config.insert(key2, Pose2());
-	config.insert(key3, Pose2());
-	config.insert(key4, Pose2());
+  config.insert(key1, Pose2());
+  config.insert(key2, Pose2());
+  config.insert(key3, Pose2());
+  config.insert(key4, Pose2());
 
-	FastList<Key> expected, actual;
-	expected += key1, key2, key3, key4;
-	actual = config.keys();
+  FastList<Key> expected, actual;
+  expected += key1, key2, key3, key4;
+  actual = config.keys();
 
-	CHECK(actual.size() == expected.size());
-	FastList<Key>::const_iterator itAct = actual.begin(), itExp = expected.begin();
-	for (; itAct != actual.end() && itExp != expected.end(); ++itAct, ++itExp) {
-		EXPECT(*itExp == *itAct);
-	}
+  CHECK(actual.size() == expected.size());
+  FastList<Key>::const_iterator itAct = actual.begin(), itExp = expected.begin();
+  for (; itAct != actual.end() && itExp != expected.end(); ++itAct, ++itExp) {
+    EXPECT(*itExp == *itAct);
+  }
 }
 
 /* ************************************************************************* */
 TEST(Values, exists_)
 {
-	Values config0;
-	config0.insert(key1, LieVector(Vector_(1, 1.)));
-	config0.insert(key2, LieVector(Vector_(1, 2.)));
+  Values config0;
+  config0.insert(key1, LieVector(Vector_(1, 1.)));
+  config0.insert(key2, LieVector(Vector_(1, 2.)));
 
-	boost::optional<const LieVector&> v = config0.exists<LieVector>(key1);
-	CHECK(assert_equal(Vector_(1, 1.),*v));
+  boost::optional<const LieVector&> v = config0.exists<LieVector>(key1);
+  CHECK(assert_equal(Vector_(1, 1.),*v));
 }
 
 /* ************************************************************************* */
 TEST(Values, update)
 {
-	Values config0;
-	config0.insert(key1, LieVector(1, 1.));
-	config0.insert(key2, LieVector(1, 2.));
+  Values config0;
+  config0.insert(key1, LieVector(1, 1.));
+  config0.insert(key2, LieVector(1, 2.));
 
-	Values superset;
-	superset.insert(key1, LieVector(1, -1.));
-	superset.insert(key2, LieVector(1, -2.));
-	config0.update(superset);
+  Values superset;
+  superset.insert(key1, LieVector(1, -1.));
+  superset.insert(key2, LieVector(1, -2.));
+  config0.update(superset);
 
-	Values expected;
-	expected.insert(key1, LieVector(1, -1.));
-	expected.insert(key2, LieVector(1, -2.));
-	CHECK(assert_equal(expected,config0));
+  Values expected;
+  expected.insert(key1, LieVector(1, -1.));
+  expected.insert(key2, LieVector(1, -2.));
+  CHECK(assert_equal(expected,config0));
 }
 
 /* ************************************************************************* */
 TEST(Values, filter) {
-	Pose2 pose0(1.0, 2.0, 0.3);
-	Pose3 pose1(Pose2(0.1, 0.2, 0.3));
-	Pose2 pose2(4.0, 5.0, 0.6);
-	Pose3 pose3(Pose2(0.3, 0.7, 0.9));
+  Pose2 pose0(1.0, 2.0, 0.3);
+  Pose3 pose1(Pose2(0.1, 0.2, 0.3));
+  Pose2 pose2(4.0, 5.0, 0.6);
+  Pose3 pose3(Pose2(0.3, 0.7, 0.9));
 
   Values values;
   values.insert(0, pose0);
@@ -348,10 +348,10 @@ TEST(Values, filter) {
   EXPECT_LONGS_EQUAL(2, pose_filtered.size());
   BOOST_FOREACH(const Values::ConstFiltered<Pose3>::KeyValuePair& key_value, pose_filtered) {
     if(i == 0) {
-    	EXPECT_LONGS_EQUAL(1, key_value.key);
+      EXPECT_LONGS_EQUAL(1, key_value.key);
       EXPECT(assert_equal(pose1, key_value.value));
     } else if(i == 1) {
-    	EXPECT_LONGS_EQUAL(3, key_value.key);
+      EXPECT_LONGS_EQUAL(3, key_value.key);
       EXPECT(assert_equal(pose3, key_value.value));
     } else {
       EXPECT(false);
@@ -399,22 +399,22 @@ TEST(Values, Symbol_filter) {
 
 /* ************************************************************************* */
 TEST(Values, Destructors) {
-	// Check that Value destructors are called when Values container is deleted
-	{
-		Values values;
-		{
-			TestValue value1;
-			TestValue value2;
-			LONGS_EQUAL(2, TestValueData::ConstructorCount);
-			LONGS_EQUAL(0, TestValueData::DestructorCount);
-			values.insert(0, value1);
-			values.insert(1, value2);
-		}
-		LONGS_EQUAL(4, TestValueData::ConstructorCount);
-		LONGS_EQUAL(2, TestValueData::DestructorCount);
-	}
-	LONGS_EQUAL(4, TestValueData::ConstructorCount);
-	LONGS_EQUAL(4, TestValueData::DestructorCount);
+  // Check that Value destructors are called when Values container is deleted
+  {
+    Values values;
+    {
+      TestValue value1;
+      TestValue value2;
+      LONGS_EQUAL(2, TestValueData::ConstructorCount);
+      LONGS_EQUAL(0, TestValueData::DestructorCount);
+      values.insert(0, value1);
+      values.insert(1, value2);
+    }
+    LONGS_EQUAL(4, TestValueData::ConstructorCount);
+    LONGS_EQUAL(2, TestValueData::DestructorCount);
+  }
+  LONGS_EQUAL(4, TestValueData::ConstructorCount);
+  LONGS_EQUAL(4, TestValueData::DestructorCount);
 }
 
 /* ************************************************************************* */

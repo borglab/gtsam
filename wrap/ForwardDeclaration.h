@@ -23,10 +23,10 @@
 
 namespace wrap {
 
-	struct ForwardDeclaration {
-		std::string name;
-		bool isVirtual;
-		ForwardDeclaration() : isVirtual(false) {}
-	};
+  struct ForwardDeclaration {
+    std::string name;
+    bool isVirtual;
+    ForwardDeclaration() : isVirtual(false) {}
+  };
 
 }

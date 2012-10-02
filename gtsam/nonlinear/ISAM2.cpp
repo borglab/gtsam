@@ -244,7 +244,7 @@ GaussianFactorGraph ISAM2::getCachedBoundaryFactors(Cliques& orphans) {
 }
 
 boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(const FastSet<Index>& markedKeys,
-		const FastSet<Index>& relinKeys, const FastVector<Index>& observedKeys, const FastSet<Index>& unusedIndices,
+    const FastSet<Index>& relinKeys, const FastVector<Index>& observedKeys, const FastSet<Index>& unusedIndices,
     const boost::optional<FastMap<Index,int> >& constrainKeys, ISAM2Result& result) {
 
   // TODO:  new factors are linearized twice, the newFactors passed in are not used.
@@ -459,10 +459,10 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(const FastSet<Index>& mark
       reorderingMode.constrainedKeys = FastMap<Index,int>();
       BOOST_FOREACH(Index var, observedKeys) { reorderingMode.constrainedKeys->insert(make_pair(var, 1)); }
     }
-		FastSet<Index> affectedUsedKeys = *affectedKeysSet; // Remove unused keys from the set we pass to PartialSolve
-		BOOST_FOREACH(Index unused, unusedIndices) {
-			affectedUsedKeys.erase(unused);
-		}
+    FastSet<Index> affectedUsedKeys = *affectedKeysSet; // Remove unused keys from the set we pass to PartialSolve
+    BOOST_FOREACH(Index unused, unusedIndices) {
+      affectedUsedKeys.erase(unused);
+    }
     Impl::PartialSolveResult partialSolveResult =
         Impl::PartialSolve(factors, affectedUsedKeys, reorderingMode, (params_.factorization == ISAM2Params::QR));
     toc(2,"PartialSolve");
@@ -585,33 +585,33 @@ ISAM2Result ISAM2::update(
   BOOST_FOREACH(size_t index, removeFactorIndices) {
     removeFactors.push_back(nonlinearFactors_[index]);
     nonlinearFactors_.remove(index);
-		if(params_.cacheLinearizedFactors)
-			linearFactors_.remove(index);
+    if(params_.cacheLinearizedFactors)
+      linearFactors_.remove(index);
   }
 
   // Remove removed factors from the variable index so we do not attempt to relinearize them
   variableIndex_.remove(removeFactorIndices, *removeFactors.symbolic(ordering_));
 
-	// Compute unused keys and indices
-	FastSet<Key> unusedKeys;
-	FastSet<Index> unusedIndices;
-	{
-		// Get keys from removed factors and new factors, and compute unused keys,
-		// i.e., keys that are empty now and do not appear in the new factors.
-		FastSet<Key> removedAndEmpty;
-		BOOST_FOREACH(Key key, removeFactors.keys()) {
-			if(variableIndex_[ordering_[key]].empty())
-				removedAndEmpty.insert(removedAndEmpty.end(), key);
-		}
-		FastSet<Key> newFactorSymbKeys = newFactors.keys();
-		std::set_difference(removedAndEmpty.begin(), removedAndEmpty.end(),
-			newFactorSymbKeys.begin(), newFactorSymbKeys.end(), std::inserter(unusedKeys, unusedKeys.end()));
+  // Compute unused keys and indices
+  FastSet<Key> unusedKeys;
+  FastSet<Index> unusedIndices;
+  {
+    // Get keys from removed factors and new factors, and compute unused keys,
+    // i.e., keys that are empty now and do not appear in the new factors.
+    FastSet<Key> removedAndEmpty;
+    BOOST_FOREACH(Key key, removeFactors.keys()) {
+      if(variableIndex_[ordering_[key]].empty())
+        removedAndEmpty.insert(removedAndEmpty.end(), key);
+    }
+    FastSet<Key> newFactorSymbKeys = newFactors.keys();
+    std::set_difference(removedAndEmpty.begin(), removedAndEmpty.end(),
+      newFactorSymbKeys.begin(), newFactorSymbKeys.end(), std::inserter(unusedKeys, unusedKeys.end()));
 
-		// Get indices for unused keys
-		BOOST_FOREACH(Key key, unusedKeys) {
-			unusedIndices.insert(unusedIndices.end(), ordering_[key]);
-		}
-	}
+    // Get indices for unused keys
+    BOOST_FOREACH(Key key, unusedKeys) {
+      unusedIndices.insert(unusedIndices.end(), ordering_[key]);
+    }
+  }
   toc(1,"push_back factors");
 
   tic(2,"add new variables");
@@ -637,7 +637,7 @@ ISAM2Result ISAM2::update(
     markedKeys.insert(markedRemoveKeys.begin(), markedRemoveKeys.end()); // Add to the overall set of marked keys
   }
 
-	// Observed keys for detailed results
+  // Observed keys for detailed results
   if(params_.enableDetailedResults) {
     BOOST_FOREACH(Index index, markedKeys) {
       result.detail->variableStatus[inverseOrdering_->at(index)].isObserved = true;
@@ -647,10 +647,10 @@ ISAM2Result ISAM2::update(
   // is a vector of size_t, so the constructor unintentionally resolves to
   // vector(size_t count, Index value) instead of the iterator constructor.
   FastVector<Index> observedKeys;  observedKeys.reserve(markedKeys.size());
-	BOOST_FOREACH(Index index, markedKeys) {
-		if(unusedIndices.find(index) == unusedIndices.end()) // Only add if not unused
-			observedKeys.push_back(index); // Make a copy of these, as we'll soon add to them
-	}
+  BOOST_FOREACH(Index index, markedKeys) {
+    if(unusedIndices.find(index) == unusedIndices.end()) // Only add if not unused
+      observedKeys.push_back(index); // Make a copy of these, as we'll soon add to them
+  }
   toc(4,"gather involved keys");
 
   // Check relinearization if we're at the nth step, or we are using a looser loop relin threshold
@@ -744,9 +744,9 @@ ISAM2Result ISAM2::update(
       deltaReplacedMask_[var] = true; } }
   toc(9,"recalculate");
 
-	// After the top of the tree has been redone and may have index gaps from
-	// unused keys, condense the indices to remove gaps by rearranging indices
-	// in all data structures.
+  // After the top of the tree has been redone and may have index gaps from
+  // unused keys, condense the indices to remove gaps by rearranging indices
+  // in all data structures.
   if(!unusedKeys.empty()) {
     tic(10,"remove variables");
     Impl::RemoveVariables(unusedKeys, root_, theta_, variableIndex_, delta_, deltaNewton_, RgProd_,

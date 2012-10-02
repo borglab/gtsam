@@ -61,8 +61,8 @@ namespace simulated2D {
 
       /// @return a deep copy of this factor
       virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-      	return boost::static_pointer_cast<gtsam::NonlinearFactor>(
-      			gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
+        return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+            gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
       /**
        * Constructor for constraint
@@ -72,8 +72,8 @@ namespace simulated2D {
        * @param mu is the penalty function gain
        */
       ScalarCoordConstraint1(Key key, double c,
-      		bool isGreaterThan, double mu = 1000.0) :
-      			Base(key, c, isGreaterThan, mu) {
+          bool isGreaterThan, double mu = 1000.0) :
+            Base(key, c, isGreaterThan, mu) {
       }
 
       /**
@@ -129,8 +129,8 @@ namespace simulated2D {
 
       /// @return a deep copy of this factor
       virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-      	return boost::static_pointer_cast<gtsam::NonlinearFactor>(
-      			gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
+        return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+            gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
       /**
        * Primary constructor for factor
@@ -169,21 +169,21 @@ namespace simulated2D {
      */
     template<class POSE, class POINT>
     struct MinDistanceConstraint : public BoundingConstraint2<POSE, POINT> {
-    	typedef BoundingConstraint2<POSE, POINT> Base; ///< Base class for factor
-    	typedef MinDistanceConstraint<POSE, POINT> This; ///< This class for factor
-    	typedef POSE Pose; ///< Type of pose variable constrained
-    	typedef POINT Point; ///< Type of point variable constrained
+      typedef BoundingConstraint2<POSE, POINT> Base; ///< Base class for factor
+      typedef MinDistanceConstraint<POSE, POINT> This; ///< This class for factor
+      typedef POSE Pose; ///< Type of pose variable constrained
+      typedef POINT Point; ///< Type of point variable constrained
 
-    	virtual ~MinDistanceConstraint() {}
+      virtual ~MinDistanceConstraint() {}
 
-    	/// @return a deep copy of this factor
-    	virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-    		return boost::static_pointer_cast<gtsam::NonlinearFactor>(
-    				gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
+      /// @return a deep copy of this factor
+      virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+        return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+            gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
-    	/**
-    	 * Primary constructor for factor
-    	 * @param key1 is the first variable key
+      /**
+       * Primary constructor for factor
+       * @param key1 is the first variable key
        * @param key2 is the second variable key
        * @param range_bound is the minimum range allowed between the variables
        * @param mu is the gain for the penalty function

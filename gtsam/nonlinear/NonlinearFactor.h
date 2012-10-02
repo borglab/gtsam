@@ -66,8 +66,8 @@ public:
 
   typedef boost::shared_ptr<NonlinearFactor> shared_ptr;
 
-	/// @name Standard Constructors
-	/// @{
+  /// @name Standard Constructors
+  /// @{
 
   /** Default constructor for I/O only */
   NonlinearFactor() {
@@ -93,9 +93,9 @@ public:
   NonlinearFactor(Key key1, Key key2, Key key3, Key key4, Key key5) : Base(key1, key2, key3, key4, key5) {} ///< Convenience constructor for 5 keys
   NonlinearFactor(Key key1, Key key2, Key key3, Key key4, Key key5, Key key6) : Base(key1, key2, key3, key4, key5, key6) {} ///< Convenience constructor for 6 keys
 
-	/// @}
-	/// @name Testable
-	/// @{
+  /// @}
+  /// @name Testable
+  /// @{
 
   /** print */
   virtual void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
@@ -109,9 +109,9 @@ public:
     return Base::equals(f);
   }
 
-	/// @}
-	/// @name Standard Interface
-	/// @{
+  /// @}
+  /// @name Standard Interface
+  /// @{
 
   /** Destructor */
   virtual ~NonlinearFactor() {}
@@ -127,17 +127,17 @@ public:
   /** get the dimension of the factor (number of rows on linearization) */
   virtual size_t dim() const = 0;
 
-	/**
-	 * Checks whether a factor should be used based on a set of values.
-	 * This is primarily used to implment inequality constraints that
-	 * require a variable active set. For all others, the default implementation
-	 * returning true solves this problem.
-	 *
-	 * In an inequality/bounding constraint, this active() returns true
-	 * when the constraint is *NOT* fulfilled.
-	 * @return true if the constraint is active
-	 */
-	virtual bool active(const Values& c) const { return true; }
+  /**
+   * Checks whether a factor should be used based on a set of values.
+   * This is primarily used to implment inequality constraints that
+   * require a variable active set. For all others, the default implementation
+   * returning true solves this problem.
+   *
+   * In an inequality/bounding constraint, this active() returns true
+   * when the constraint is *NOT* fulfilled.
+   * @return true if the constraint is active
+   */
+  virtual bool active(const Values& c) const { return true; }
 
   /** linearize to a GaussianFactor */
   virtual boost::shared_ptr<GaussianFactor>
@@ -161,9 +161,9 @@ public:
    * By default, throws exception if subclass does not implement the function.
    */
   virtual shared_ptr clone() const {
-  	// TODO: choose better exception to throw here
-  	throw std::runtime_error("NonlinearFactor::clone(): Attempting to clone factor with no clone() implemented!");
-  	return shared_ptr();
+    // TODO: choose better exception to throw here
+    throw std::runtime_error("NonlinearFactor::clone(): Attempting to clone factor with no clone() implemented!");
+    return shared_ptr();
   }
 
   /**
@@ -171,14 +171,14 @@ public:
    * a map from old->new keys
    */
   shared_ptr rekey(const std::map<Key,Key>& rekey_mapping) const {
-  	shared_ptr new_factor = clone();
-  	for (size_t i=0; i<new_factor->size(); ++i) {
-  		Key& cur_key = new_factor->keys()[i];
-  		std::map<Key,Key>::const_iterator mapping = rekey_mapping.find(cur_key);
-  		if (mapping != rekey_mapping.end())
-  			cur_key = mapping->second;
-  	}
-  	return new_factor;
+    shared_ptr new_factor = clone();
+    for (size_t i=0; i<new_factor->size(); ++i) {
+      Key& cur_key = new_factor->keys()[i];
+      std::map<Key,Key>::const_iterator mapping = rekey_mapping.find(cur_key);
+      if (mapping != rekey_mapping.end())
+        cur_key = mapping->second;
+    }
+    return new_factor;
   }
 
   /**
@@ -186,10 +186,10 @@ public:
    * @param new_keys is the full replacement set of keys
    */
   shared_ptr rekey(const std::vector<Key>& new_keys) const {
-  	assert(new_keys.size() == this->keys().size());
-  	shared_ptr new_factor = clone();
-  	new_factor->keys() = new_keys;
-  	return new_factor;
+    assert(new_keys.size() == this->keys().size());
+    shared_ptr new_factor = clone();
+    new_factor->keys() = new_keys;
+    return new_factor;
   }
 
 
@@ -296,10 +296,10 @@ public:
    * to transform it to \f$ (h(x)-z)^2/\sigma^2 \f$, and then multiply by 0.5.
    */
   virtual double error(const Values& c) const {
-  	if (this->active(c))
-  		return 0.5 * noiseModel_->distance(unwhitenedError(c));
-  	else
-  		return 0.0;
+    if (this->active(c))
+      return 0.5 * noiseModel_->distance(unwhitenedError(c));
+    else
+      return 0.0;
   }
 
   /**
@@ -308,9 +308,9 @@ public:
    * Hence \f$ b = z - h(x) = - \mathtt{error\_vector}(x) \f$
    */
   boost::shared_ptr<GaussianFactor> linearize(const Values& x, const Ordering& ordering) const {
-  	// Only linearize if the factor is active
-		if (!this->active(x))
-			return boost::shared_ptr<JacobianFactor>();
+    // Only linearize if the factor is active
+    if (!this->active(x))
+      return boost::shared_ptr<JacobianFactor>();
 
     // Create the set of terms - Jacobians for each index
     Vector b;
@@ -455,8 +455,8 @@ public:
   virtual ~NoiseModelFactor2() {}
 
   /** methods to retrieve both keys */
-  inline Key key1() const { return keys_[0];	}
-  inline Key key2() const {	return keys_[1];	}
+  inline Key key1() const { return keys_[0];  }
+  inline Key key2() const {  return keys_[1];  }
 
   /** Calls the 2-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
@@ -617,14 +617,14 @@ public:
   /** Calls the 4-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
   virtual Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
-  	if(this->active(x)) {
-  		if(H)
-  			return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]), x.at<X4>(keys_[3]), (*H)[0], (*H)[1], (*H)[2], (*H)[3]);
-  		else
-  			return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]), x.at<X4>(keys_[3]));
-  	} else {
-  		return zero(this->dim());
-  	}
+    if(this->active(x)) {
+      if(H)
+        return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]), x.at<X4>(keys_[3]), (*H)[0], (*H)[1], (*H)[2], (*H)[3]);
+      else
+        return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]), x.at<X4>(keys_[3]));
+    } else {
+      return zero(this->dim());
+    }
   }
 
   /**
@@ -700,14 +700,14 @@ public:
   /** Calls the 5-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
   virtual Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
-  	if(this->active(x)) {
+    if(this->active(x)) {
       if(H)
         return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]), x.at<X4>(keys_[3]), x.at<X5>(keys_[4]), (*H)[0], (*H)[1], (*H)[2], (*H)[3], (*H)[4]);
       else
         return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]), x.at<X4>(keys_[3]), x.at<X5>(keys_[4]));
-  	} else {
-  		return zero(this->dim());
-  	}
+    } else {
+      return zero(this->dim());
+    }
   }
 
   /**
@@ -787,14 +787,14 @@ public:
   /** Calls the 6-key specific version of evaluateError, which is pure virtual
    * so must be implemented in the derived class. */
   virtual Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
-  	if(this->active(x)) {
+    if(this->active(x)) {
       if(H)
         return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]), x.at<X4>(keys_[3]), x.at<X5>(keys_[4]), x.at<X6>(keys_[5]), (*H)[0], (*H)[1], (*H)[2], (*H)[3], (*H)[4], (*H)[5]);
       else
         return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]), x.at<X4>(keys_[3]), x.at<X5>(keys_[4]), x.at<X6>(keys_[5]));
-  	} else {
-  		return zero(this->dim());
-  	}
+    } else {
+      return zero(this->dim());
+    }
   }
 
   /**

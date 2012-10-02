@@ -47,11 +47,11 @@ using symbol_shorthand::L;
 TEST( inference, marginals )
 {
   using namespace example;
-	// create and marginalize a small Bayes net on "x"
+  // create and marginalize a small Bayes net on "x"
   GaussianBayesNet cbn = createSmallGaussianBayesNet();
   vector<Index> xvar; xvar.push_back(0);
   GaussianBayesNet actual = *GaussianSequentialSolver(
-  		*GaussianSequentialSolver(GaussianFactorGraph(cbn)).jointFactorGraph(xvar)).eliminate();
+      *GaussianSequentialSolver(GaussianFactorGraph(cbn)).jointFactorGraph(xvar)).eliminate();
 
   // expected is just scalar Gaussian on x
   GaussianBayesNet expected = scalarGaussian(0, 4, sqrt(2.0));
@@ -61,7 +61,7 @@ TEST( inference, marginals )
 /* ************************************************************************* */
 TEST( inference, marginals2)
 {
-	NonlinearFactorGraph fg;
+  NonlinearFactorGraph fg;
   SharedDiagonal poseModel(noiseModel::Isotropic::Sigma(3, 0.1));
   SharedDiagonal pointModel(noiseModel::Isotropic::Sigma(3, 0.1));
 

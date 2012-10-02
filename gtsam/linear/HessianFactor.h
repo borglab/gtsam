@@ -149,17 +149,17 @@ namespace gtsam {
     /** Construct a binary factor.  Gxx are the upper-triangle blocks of the
      * quadratic term (the Hessian matrix), gx the pieces of the linear vector
      * term, and f the constant term.
-		 * JacobianFactor error is \f[ 0.5* (Ax-b)' M (Ax-b) = 0.5*x'A'MAx - x'A'Mb + 0.5*b'Mb \f]
-		 * HessianFactor  error is \f[ 0.5*(x'Gx - 2x'g + f) = 0.5*x'Gx    - x'*g   + 0.5*f    \f]
-		 * So, with \f$ A = [A1 A2] \f$ and \f$ G=A*'M*A = [A1';A2']*M*[A1 A2] \f$ we have
-		 \code
-		  n1*n1 G11 = A1'*M*A1
-		  n1*n2 G12 = A1'*M*A2
-		  n2*n2 G22 = A2'*M*A2
-		  n1*1   g1 = A1'*M*b
-		  n2*1   g2 = A2'*M*b
-		   1*1    f =  b'*M*b
-		 \endcode
+     * JacobianFactor error is \f[ 0.5* (Ax-b)' M (Ax-b) = 0.5*x'A'MAx - x'A'Mb + 0.5*b'Mb \f]
+     * HessianFactor  error is \f[ 0.5*(x'Gx - 2x'g + f) = 0.5*x'Gx    - x'*g   + 0.5*f    \f]
+     * So, with \f$ A = [A1 A2] \f$ and \f$ G=A*'M*A = [A1';A2']*M*[A1 A2] \f$ we have
+     \code
+      n1*n1 G11 = A1'*M*A1
+      n1*n2 G12 = A1'*M*A2
+      n2*n2 G22 = A2'*M*A2
+      n1*1   g1 = A1'*M*b
+      n2*1   g2 = A2'*M*b
+       1*1    f =  b'*M*b
+     \endcode
      */
     HessianFactor(Index j1, Index j2,
         const Matrix& G11, const Matrix& G12, const Vector& g1,
@@ -189,23 +189,23 @@ namespace gtsam {
 
     /** Special constructor used in EliminateCholesky which combines the given factors */
     HessianFactor(const FactorGraph<GaussianFactor>& factors,
-				const std::vector<size_t>& dimensions, const Scatter& scatter);
+        const std::vector<size_t>& dimensions, const Scatter& scatter);
 
     /** Destructor */
-		virtual ~HessianFactor() {}
+    virtual ~HessianFactor() {}
 
     /** Aassignment operator */
-		HessianFactor& operator=(const HessianFactor& rhs);
+    HessianFactor& operator=(const HessianFactor& rhs);
 
-		/** Clone this JacobianFactor */
-		virtual GaussianFactor::shared_ptr clone() const {
-		  return boost::static_pointer_cast<GaussianFactor>(
-		      shared_ptr(new HessianFactor(*this)));
-		}
+    /** Clone this JacobianFactor */
+    virtual GaussianFactor::shared_ptr clone() const {
+      return boost::static_pointer_cast<GaussianFactor>(
+          shared_ptr(new HessianFactor(*this)));
+    }
 
     /** Print the factor for debugging and testing (implementing Testable) */
     virtual void print(const std::string& s = "",
-    		const IndexFormatter& formatter = DefaultIndexFormatter) const;
+        const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
     /** Compare to another factor for testing (implementing Testable) */
     virtual bool equals(const GaussianFactor& lf, double tol = 1e-9) const;
@@ -325,10 +325,10 @@ namespace gtsam {
     // used in eliminateCholesky:
 
     /**
-		 * Do Cholesky. Note that after this, the lower triangle still contains
-		 * some untouched non-zeros that should be zero.  We zero them while
-		 * extracting submatrices in splitEliminatedFactor. Frank says :-(
-		 */
+     * Do Cholesky. Note that after this, the lower triangle still contains
+     * some untouched non-zeros that should be zero.  We zero them while
+     * extracting submatrices in splitEliminatedFactor. Frank says :-(
+     */
     void partialCholesky(size_t nrFrontals);
 
     /** split partially eliminated factor */
@@ -356,9 +356,9 @@ namespace gtsam {
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
-    	ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(GaussianFactor);
-    	ar & BOOST_SERIALIZATION_NVP(info_);
-    	ar & BOOST_SERIALIZATION_NVP(matrix_);
+      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(GaussianFactor);
+      ar & BOOST_SERIALIZATION_NVP(info_);
+      ar & BOOST_SERIALIZATION_NVP(matrix_);
     }
   };
 

@@ -26,11 +26,11 @@ using namespace std;
 using namespace gtsam;
 
 TEST(dataSet, findExampleDataFile) {
-	const string expected_end = "examples/Data/example.graph";
-	const string actual = findExampleDataFile("example");
-	string actual_end = actual.substr(actual.size() - expected_end.size(), expected_end.size());
-	boost::replace_all(actual_end, "\\", "/"); // Convert directory separators to forward-slash
-	EXPECT(assert_equal(expected_end, actual_end));
+  const string expected_end = "examples/Data/example.graph";
+  const string actual = findExampleDataFile("example");
+  string actual_end = actual.substr(actual.size() - expected_end.size(), expected_end.size());
+  boost::replace_all(actual_end, "\\", "/"); // Convert directory separators to forward-slash
+  EXPECT(assert_equal(expected_end, actual_end));
 }
 
 /* ************************************************************************* */

@@ -13,7 +13,7 @@
  * @file    LevenbergMarquardtOptimizer.h
  * @brief   
  * @author  Richard Roberts
- * @date 	Feb 26, 2012
+ * @date   Feb 26, 2012
  */
 
 #pragma once
@@ -63,8 +63,8 @@ public:
   inline void setVerbosityLM(const std::string &s) { verbosityLM = verbosityLMTranslator(s); }
 
 private:
-	VerbosityLM verbosityLMTranslator(const std::string &s) const;
-	std::string verbosityLMTranslator(VerbosityLM value) const;
+  VerbosityLM verbosityLMTranslator(const std::string &s) const;
+  std::string verbosityLMTranslator(VerbosityLM value) const;
 };
 
 /**
@@ -80,10 +80,10 @@ public:
   virtual ~LevenbergMarquardtState() {}
 
 protected:
-	LevenbergMarquardtState(const NonlinearFactorGraph& graph, const Values& initialValues, const LevenbergMarquardtParams& params, unsigned int iterations = 0) :
-		NonlinearOptimizerState(graph, initialValues, iterations), lambda(params.lambdaInitial) {}
+  LevenbergMarquardtState(const NonlinearFactorGraph& graph, const Values& initialValues, const LevenbergMarquardtParams& params, unsigned int iterations = 0) :
+    NonlinearOptimizerState(graph, initialValues, iterations), lambda(params.lambdaInitial) {}
 
-	friend class LevenbergMarquardtOptimizer;
+  friend class LevenbergMarquardtOptimizer;
 };
 
 /**
@@ -159,18 +159,18 @@ public:
   /// @}
 
 protected:
-	/** Access the parameters (base class version) */
-	virtual const NonlinearOptimizerParams& _params() const { return params_; }
+  /** Access the parameters (base class version) */
+  virtual const NonlinearOptimizerParams& _params() const { return params_; }
 
-	/** Access the state (base class version) */
-	virtual const NonlinearOptimizerState& _state() const { return state_; }
+  /** Access the state (base class version) */
+  virtual const NonlinearOptimizerState& _state() const { return state_; }
 
-	/** Internal function for computing a COLAMD ordering if no ordering is specified */
-	LevenbergMarquardtParams ensureHasOrdering(LevenbergMarquardtParams params, const NonlinearFactorGraph& graph, const Values& values) const {
-		if(!params.ordering)
-			params.ordering = *graph.orderingCOLAMD(values);
-		return params;
-	}
+  /** Internal function for computing a COLAMD ordering if no ordering is specified */
+  LevenbergMarquardtParams ensureHasOrdering(LevenbergMarquardtParams params, const NonlinearFactorGraph& graph, const Values& values) const {
+    if(!params.ordering)
+      params.ordering = *graph.orderingCOLAMD(values);
+    return params;
+  }
 };
 
 }

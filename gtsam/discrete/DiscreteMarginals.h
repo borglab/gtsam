@@ -36,41 +36,41 @@ namespace gtsam {
 
   public:
 
-	/** Construct a marginals class.
-	 * @param graph The factor graph defining the full joint density on all variables.
-	 */
-	DiscreteMarginals(const DiscreteFactorGraph& graph) {
-		typedef JunctionTree<DiscreteFactorGraph> DiscreteJT;
-		GenericMultifrontalSolver<DiscreteFactor, DiscreteJT> solver(graph);
-		bayesTree_ = *solver.eliminate(&EliminateDiscrete);
-	}
+  /** Construct a marginals class.
+   * @param graph The factor graph defining the full joint density on all variables.
+   */
+  DiscreteMarginals(const DiscreteFactorGraph& graph) {
+    typedef JunctionTree<DiscreteFactorGraph> DiscreteJT;
+    GenericMultifrontalSolver<DiscreteFactor, DiscreteJT> solver(graph);
+    bayesTree_ = *solver.eliminate(&EliminateDiscrete);
+  }
 
-	/** Compute the marginal of a single variable */
-	DiscreteFactor::shared_ptr operator()(Index variable) const {
-		// Compute marginal
-		DiscreteFactor::shared_ptr marginalFactor;
-		marginalFactor = bayesTree_.marginalFactor(variable, &EliminateDiscrete);
-		return marginalFactor;
-	}
+  /** Compute the marginal of a single variable */
+  DiscreteFactor::shared_ptr operator()(Index variable) const {
+    // Compute marginal
+    DiscreteFactor::shared_ptr marginalFactor;
+    marginalFactor = bayesTree_.marginalFactor(variable, &EliminateDiscrete);
+    return marginalFactor;
+  }
 
-	/** Compute the marginal of a single variable
-	 * 	@param key DiscreteKey of the Variable
-	 * 	@return Vector of marginal probabilities
-	 */
-	Vector marginalProbabilities(const DiscreteKey& key) const {
-		// Compute marginal
-		DiscreteFactor::shared_ptr marginalFactor;
-		marginalFactor = bayesTree_.marginalFactor(key.first, &EliminateDiscrete);
+  /** Compute the marginal of a single variable
+   *   @param key DiscreteKey of the Variable
+   *   @return Vector of marginal probabilities
+   */
+  Vector marginalProbabilities(const DiscreteKey& key) const {
+    // Compute marginal
+    DiscreteFactor::shared_ptr marginalFactor;
+    marginalFactor = bayesTree_.marginalFactor(key.first, &EliminateDiscrete);
 
-		//Create result
-		Vector vResult(key.second);
-		for (size_t state = 0; state < key.second ; ++ state) {
-			DiscreteFactor::Values values;
-			values[key.first] = state;
-			vResult(state) = (*marginalFactor)(values);
-		}
-		return vResult;
-	}
+    //Create result
+    Vector vResult(key.second);
+    for (size_t state = 0; state < key.second ; ++ state) {
+      DiscreteFactor::Values values;
+      values[key.first] = state;
+      vResult(state) = (*marginalFactor)(values);
+    }
+    return vResult;
+  }
 
   };
 

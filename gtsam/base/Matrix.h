@@ -100,19 +100,19 @@ Matrix diag(const Vector& v);
 template <class MATRIX>
 bool equal_with_abs_tol(const Eigen::DenseBase<MATRIX>& A, const Eigen::DenseBase<MATRIX>& B, double tol = 1e-9) {
 
-	const size_t n1 = A.cols(), m1 = A.rows();
-	const size_t n2 = B.cols(), m2 = B.rows();
+  const size_t n1 = A.cols(), m1 = A.rows();
+  const size_t n2 = B.cols(), m2 = B.rows();
 
-	if(m1!=m2 || n1!=n2) return false;
+  if(m1!=m2 || n1!=n2) return false;
 
-	for(size_t i=0; i<m1; i++)
-		for(size_t j=0; j<n1; j++) {
-			if(boost::math::isnan(A(i,j)) ^ boost::math::isnan(B(i,j)))
-				return false;
-			else if(fabs(A(i,j) - B(i,j)) > tol)
-				return false;
-		}
-	return true;
+  for(size_t i=0; i<m1; i++)
+    for(size_t j=0; j<n1; j++) {
+      if(boost::math::isnan(A(i,j)) ^ boost::math::isnan(B(i,j)))
+        return false;
+      else if(fabs(A(i,j) - B(i,j)) > tol)
+        return false;
+    }
+  return true;
 }
 
 /**
@@ -183,8 +183,8 @@ void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, SubVec
 /** products using old-style format to improve compatibility */
 template<class MATRIX>
 inline MATRIX prod(const MATRIX& A, const MATRIX&B) {
-	MATRIX result = A * B;
-	return result;
+  MATRIX result = A * B;
+  return result;
 }
 
 /**
@@ -220,8 +220,8 @@ std::istream& operator>>(std::istream& inputStream, Matrix& destinationMatrix);
  */
 template<class MATRIX>
 Eigen::Block<const MATRIX> sub(const MATRIX& A, size_t i1, size_t i2, size_t j1, size_t j2) {
-	size_t m=i2-i1, n=j2-j1;
-	return A.block(i1,j1,m,n);
+  size_t m=i2-i1, n=j2-j1;
+  return A.block(i1,j1,m,n);
 }
 
 /**
@@ -242,7 +242,7 @@ void insertSub(Matrix& fullMatrix, const Matrix& subMatrix, size_t i, size_t j);
  */
 template<class MATRIX>
 const typename MATRIX::ConstColXpr column(const MATRIX& A, size_t j) {
-	return A.col(j);
+  return A.col(j);
 }
 
 /**
@@ -253,7 +253,7 @@ const typename MATRIX::ConstColXpr column(const MATRIX& A, size_t j) {
  */
 template<class MATRIX>
 const typename MATRIX::ConstRowXpr row(const MATRIX& A, size_t j) {
-	return A.row(j);
+  return A.row(j);
 }
 
 /**
@@ -276,10 +276,10 @@ Vector columnNormSquare(const Matrix &A);
  */
 template<class MATRIX>
 void zeroBelowDiagonal(MATRIX& A, size_t cols=0) {
-	const size_t m = A.rows(), n = A.cols();
-	const size_t k = (cols) ? std::min(cols, std::min(m,n)) : std::min(m,n);
-	for (size_t j=0; j<k; ++j)
-		A.col(j).segment(j+1, m-(j+1)).setZero();
+  const size_t m = A.rows(), n = A.cols();
+  const size_t k = (cols) ? std::min(cols, std::min(m,n)) : std::min(m,n);
+  for (size_t j=0; j<k; ++j)
+    A.col(j).segment(j+1, m-(j+1)).setZero();
 }
 
 /**
@@ -313,18 +313,18 @@ std::pair<Matrix,Matrix> qr(const Matrix& A);
  */
 template <class MATRIX>
 void inplace_QR(MATRIX& A) {
-	size_t rows = A.rows();
-	size_t cols = A.cols();
-	size_t size = std::min(rows,cols);
+  size_t rows = A.rows();
+  size_t cols = A.cols();
+  size_t size = std::min(rows,cols);
 
-	typedef Eigen::internal::plain_diag_type<Matrix>::type HCoeffsType;
-	typedef Eigen::internal::plain_row_type<Matrix>::type RowVectorType;
-	HCoeffsType hCoeffs(size);
-	RowVectorType temp(cols);
+  typedef Eigen::internal::plain_diag_type<Matrix>::type HCoeffsType;
+  typedef Eigen::internal::plain_row_type<Matrix>::type RowVectorType;
+  HCoeffsType hCoeffs(size);
+  RowVectorType temp(cols);
 
-	Eigen::internal::householder_qr_inplace_blocked(A, hCoeffs, 48, temp.data());
+  Eigen::internal::householder_qr_inplace_blocked(A, hCoeffs, 48, temp.data());
 
-	zeroBelowDiagonal(A);
+  zeroBelowDiagonal(A);
 }
 
 /**
@@ -478,8 +478,8 @@ Matrix Cayley(const Matrix& A);
 /// Eigen do more optimization
 template<int N>
 Matrix Cayley(const Eigen::Matrix<double, N, N>& A) {
-	typedef Eigen::Matrix<double, N, N> FMat;
-	return Matrix((FMat::Identity() - A)*(FMat::Identity() + A).inverse());
+  typedef Eigen::Matrix<double, N, N> FMat;
+  return Matrix((FMat::Identity() - A)*(FMat::Identity() + A).inverse());
 }
 
 } // namespace gtsam
@@ -488,31 +488,31 @@ Matrix Cayley(const Eigen::Matrix<double, N, N>& A) {
 #include <boost/serialization/split_free.hpp>
 
 namespace boost {
-	namespace serialization {
+  namespace serialization {
 
 // split version - sends sizes ahead
-		template<class Archive>
-		void save(Archive & ar, const gtsam::Matrix & m, unsigned int version) {
-			const int rows = m.rows(), cols = m.cols(), elements = rows * cols;
-			std::vector<double> raw_data(elements);
-			std::copy(m.data(), m.data() + elements, raw_data.begin());
-			ar << make_nvp("rows", rows);
-			ar << make_nvp("cols", cols);
-			ar << make_nvp("data", raw_data);
-		}
+    template<class Archive>
+    void save(Archive & ar, const gtsam::Matrix & m, unsigned int version) {
+      const int rows = m.rows(), cols = m.cols(), elements = rows * cols;
+      std::vector<double> raw_data(elements);
+      std::copy(m.data(), m.data() + elements, raw_data.begin());
+      ar << make_nvp("rows", rows);
+      ar << make_nvp("cols", cols);
+      ar << make_nvp("data", raw_data);
+    }
 
-		template<class Archive>
-		void load(Archive & ar, gtsam::Matrix & m, unsigned int version) {
-			size_t rows, cols;
-			std::vector<double> raw_data;
-			ar >> make_nvp("rows", rows);
-			ar >> make_nvp("cols", cols);
-			ar >> make_nvp("data", raw_data);
-			m = gtsam::Matrix(rows, cols);
-			std::copy(raw_data.begin(), raw_data.end(), m.data());
-		}
+    template<class Archive>
+    void load(Archive & ar, gtsam::Matrix & m, unsigned int version) {
+      size_t rows, cols;
+      std::vector<double> raw_data;
+      ar >> make_nvp("rows", rows);
+      ar >> make_nvp("cols", cols);
+      ar >> make_nvp("data", raw_data);
+      m = gtsam::Matrix(rows, cols);
+      std::copy(raw_data.begin(), raw_data.end(), m.data());
+    }
 
-	} // namespace serialization
+  } // namespace serialization
 } // namespace boost
 
 BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Matrix)

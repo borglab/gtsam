@@ -63,68 +63,68 @@ void ISAM2::Impl::AddVariables(
 
 /* ************************************************************************* */
 void ISAM2::Impl::RemoveVariables(const FastSet<Key>& unusedKeys, const ISAM2Clique::shared_ptr& root,
-																	Values& theta, VariableIndex& variableIndex,
-																	VectorValues& delta, VectorValues& deltaNewton, VectorValues& RgProd,
-																	std::vector<bool>& replacedKeys, Ordering& ordering, Base::Nodes& nodes,
-																	GaussianFactorGraph& linearFactors) {
+                                  Values& theta, VariableIndex& variableIndex,
+                                  VectorValues& delta, VectorValues& deltaNewton, VectorValues& RgProd,
+                                  std::vector<bool>& replacedKeys, Ordering& ordering, Base::Nodes& nodes,
+                                  GaussianFactorGraph& linearFactors) {
 
-		 // Get indices of unused keys
-		 vector<Index> unusedIndices;  unusedIndices.reserve(unusedKeys.size());
-		 BOOST_FOREACH(Key key, unusedKeys) { unusedIndices.push_back(ordering[key]); }
+     // Get indices of unused keys
+     vector<Index> unusedIndices;  unusedIndices.reserve(unusedKeys.size());
+     BOOST_FOREACH(Key key, unusedKeys) { unusedIndices.push_back(ordering[key]); }
 
-		 // Create a permutation that shifts the unused variables to the end
-		 Permutation unusedToEnd = Permutation::PushToBack(unusedIndices, delta.size());
-		 Permutation unusedToEndInverse = *unusedToEnd.inverse();
+     // Create a permutation that shifts the unused variables to the end
+     Permutation unusedToEnd = Permutation::PushToBack(unusedIndices, delta.size());
+     Permutation unusedToEndInverse = *unusedToEnd.inverse();
 
-		 // Use the permutation to remove unused variables while shifting all the others to take up the space
-		 variableIndex.permuteInPlace(unusedToEnd);
-		 variableIndex.removeUnusedAtEnd(unusedIndices.size());
-		 {
-			 // Create a vector of variable dimensions with the unused ones removed
-			 // by applying the unusedToEnd permutation to the original vector of
-			 // variable dimensions.  We only allocate space in the shifted dims
-			 // vector for the used variables, so that the unused ones are dropped
-			 // when the permutation is applied.
-			 vector<size_t> originalDims = delta.dims();
-			 vector<size_t> dims(delta.size() - unusedIndices.size());
-			 unusedToEnd.applyToCollection(dims, originalDims);
+     // Use the permutation to remove unused variables while shifting all the others to take up the space
+     variableIndex.permuteInPlace(unusedToEnd);
+     variableIndex.removeUnusedAtEnd(unusedIndices.size());
+     {
+       // Create a vector of variable dimensions with the unused ones removed
+       // by applying the unusedToEnd permutation to the original vector of
+       // variable dimensions.  We only allocate space in the shifted dims
+       // vector for the used variables, so that the unused ones are dropped
+       // when the permutation is applied.
+       vector<size_t> originalDims = delta.dims();
+       vector<size_t> dims(delta.size() - unusedIndices.size());
+       unusedToEnd.applyToCollection(dims, originalDims);
 
-			 // Copy from the old data structures to new ones, only iterating up to
-			 // the number of used variables, and applying the unusedToEnd permutation
-			 // in order to remove the unused variables.
-			 VectorValues newDelta(dims);
-			 VectorValues newDeltaNewton(dims);
-			 VectorValues newDeltaGradSearch(dims);
-			 std::vector<bool> newReplacedKeys(replacedKeys.size() - unusedIndices.size());
-			 Base::Nodes newNodes(replacedKeys.size() - unusedIndices.size());
+       // Copy from the old data structures to new ones, only iterating up to
+       // the number of used variables, and applying the unusedToEnd permutation
+       // in order to remove the unused variables.
+       VectorValues newDelta(dims);
+       VectorValues newDeltaNewton(dims);
+       VectorValues newDeltaGradSearch(dims);
+       std::vector<bool> newReplacedKeys(replacedKeys.size() - unusedIndices.size());
+       Base::Nodes newNodes(replacedKeys.size() - unusedIndices.size());
 
-			 for(size_t j = 0; j < dims.size(); ++j) {
-				 newDelta[j] = delta[unusedToEnd[j]];
-				 newDeltaNewton[j] = deltaNewton[unusedToEnd[j]];
-				 newDeltaGradSearch[j] = RgProd[unusedToEnd[j]];
-				 newReplacedKeys[j] = replacedKeys[unusedToEnd[j]];
-				 newNodes[j] = nodes[unusedToEnd[j]];
-			 }
+       for(size_t j = 0; j < dims.size(); ++j) {
+         newDelta[j] = delta[unusedToEnd[j]];
+         newDeltaNewton[j] = deltaNewton[unusedToEnd[j]];
+         newDeltaGradSearch[j] = RgProd[unusedToEnd[j]];
+         newReplacedKeys[j] = replacedKeys[unusedToEnd[j]];
+         newNodes[j] = nodes[unusedToEnd[j]];
+       }
 
-			 // Swap the new data structures with the outputs of this function
-			 delta.swap(newDelta);
-			 deltaNewton.swap(newDeltaNewton);
-			 RgProd.swap(newDeltaGradSearch);
-			 replacedKeys.swap(newReplacedKeys);
-			 nodes.swap(newNodes);
-		 }
+       // Swap the new data structures with the outputs of this function
+       delta.swap(newDelta);
+       deltaNewton.swap(newDeltaNewton);
+       RgProd.swap(newDeltaGradSearch);
+       replacedKeys.swap(newReplacedKeys);
+       nodes.swap(newNodes);
+     }
 
-		 // Reorder and remove from ordering and solution
-		 ordering.permuteWithInverse(unusedToEndInverse);
-		 BOOST_REVERSE_FOREACH(Key key, unusedKeys) {
-		   ordering.pop_back(key);
-			 theta.erase(key);
-		 }
+     // Reorder and remove from ordering and solution
+     ordering.permuteWithInverse(unusedToEndInverse);
+     BOOST_REVERSE_FOREACH(Key key, unusedKeys) {
+       ordering.pop_back(key);
+       theta.erase(key);
+     }
 
-		 // Finally, permute references to variables
-		 if(root)
-			 root->permuteWithInverse(unusedToEndInverse);
-		 linearFactors.permuteWithInverse(unusedToEndInverse);
+     // Finally, permute references to variables
+     if(root)
+       root->permuteWithInverse(unusedToEndInverse);
+     linearFactors.permuteWithInverse(unusedToEndInverse);
 }
 
 /* ************************************************************************* */

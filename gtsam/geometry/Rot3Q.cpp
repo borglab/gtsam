@@ -24,13 +24,13 @@ using namespace std;
 
 namespace gtsam {
 
-	static const Matrix I3 = eye(3);
+  static const Matrix I3 = eye(3);
 
   /* ************************************************************************* */
-	Rot3::Rot3() : quaternion_(Quaternion::Identity()) {}
+  Rot3::Rot3() : quaternion_(Quaternion::Identity()) {}
 
   /* ************************************************************************* */
-	Rot3::Rot3(const Point3& r1, const Point3& r2, const Point3& r3) :
+  Rot3::Rot3(const Point3& r1, const Point3& r2, const Point3& r3) :
       quaternion_((Eigen::Matrix3d() <<
           r1.x(), r2.x(), r3.x(),
           r1.y(), r2.y(), r3.y(),
@@ -154,14 +154,14 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-	Rot3 Rot3::retract(const Vector& omega, Rot3::CoordinatesMode mode) const {
-		return compose(Expmap(omega));
-	}
+  Rot3 Rot3::retract(const Vector& omega, Rot3::CoordinatesMode mode) const {
+    return compose(Expmap(omega));
+  }
 
-	/* ************************************************************************* */
-	Vector3 Rot3::localCoordinates(const Rot3& t2, Rot3::CoordinatesMode mode) const {
-		return Logmap(between(t2));
-	}
+  /* ************************************************************************* */
+  Vector3 Rot3::localCoordinates(const Rot3& t2, Rot3::CoordinatesMode mode) const {
+    return Logmap(between(t2));
+  }
 
   /* ************************************************************************* */
   Matrix3 Rot3::matrix() const { return quaternion_.toRotationMatrix(); }
@@ -199,13 +199,13 @@ namespace gtsam {
 
   /* ************************************************************************* */
   Vector3 Rot3::ypr() const {
-  	Vector3 q = xyz();
+    Vector3 q = xyz();
     return Vector3(q(2),q(1),q(0));
   }
 
   /* ************************************************************************* */
   Vector3 Rot3::rpy() const {
-  	Vector3 q = xyz();
+    Vector3 q = xyz();
     return Vector3(q(0),q(1),q(2));
   }
 

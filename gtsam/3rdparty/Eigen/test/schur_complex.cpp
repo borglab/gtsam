@@ -40,7 +40,7 @@ template<typename MatrixType> void schur(int size = MatrixType::ColsAtCompileTim
     ComplexMatrixType T = schurOfA.matrixT();
     for(int row = 1; row < size; ++row) {
       for(int col = 0; col < row; ++col) {
-	VERIFY(T(row,col) == (typename MatrixType::Scalar)0);
+  VERIFY(T(row,col) == (typename MatrixType::Scalar)0);
       }
     }
     VERIFY_IS_APPROX(A.template cast<ComplexScalar>(), U * T * U.adjoint());

@@ -114,7 +114,7 @@ namespace Eigen
 
     // see bug 89. The copy_bool here is working around a bug in gcc <= 4.3
     #define eigen_assert(a) \
-      if( (!Eigen::internal::copy_bool(a)) && (!no_more_assert) )	\
+      if( (!Eigen::internal::copy_bool(a)) && (!no_more_assert) )  \
       {                                     \
         Eigen::no_more_assert = true;       \
         throw Eigen::eigen_assert_exception(); \
@@ -400,7 +400,7 @@ int main(int argc, char *argv[])
     if(!has_set_repeat) repeat = DEFAULT_REPEAT;
 
     std::cout << "Initializing random number generator with seed " << seed << std::endl;
-	std::srand(seed);
+  std::srand(seed);
     std::cout << "Repeating each test " << repeat << " times" << std::endl;
 
     Eigen::g_repeat = repeat;

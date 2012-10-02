@@ -28,17 +28,17 @@ namespace gtsam {
  */
 template<class T, class P>
 P transform_point(
-		const T& trans, const P& global,
-		boost::optional<Matrix&> Dtrans,
-		boost::optional<Matrix&> Dglobal) {
-	return trans.transform_from(global, Dtrans, Dglobal);
+    const T& trans, const P& global,
+    boost::optional<Matrix&> Dtrans,
+    boost::optional<Matrix&> Dglobal) {
+  return trans.transform_from(global, Dtrans, Dglobal);
 }
 
 /**
  * A constraint between two landmarks in separate maps
  * Templated on:
- *	 Point     : Type of landmark
- *	 Transform : Transform variable class
+ *   Point     : Type of landmark
+ *   Transform : Transform variable class
  *
  * The transform is defined as transforming global to local:
  *   l = lTg * g
@@ -56,78 +56,78 @@ P transform_point(
 template<class POINT, class TRANSFORM>
 class ReferenceFrameFactor : public NoiseModelFactor3<POINT, TRANSFORM, POINT> {
 protected:
-	/** default constructor for serialization only */
-	ReferenceFrameFactor() {}
+  /** default constructor for serialization only */
+  ReferenceFrameFactor() {}
 
 public:
-	typedef NoiseModelFactor3<POINT, TRANSFORM, POINT> Base;
-	typedef ReferenceFrameFactor<POINT, TRANSFORM> This;
+  typedef NoiseModelFactor3<POINT, TRANSFORM, POINT> Base;
+  typedef ReferenceFrameFactor<POINT, TRANSFORM> This;
 
-	typedef POINT Point;
-	typedef TRANSFORM Transform;
+  typedef POINT Point;
+  typedef TRANSFORM Transform;
 
-	/**
-	 * General constructor with arbitrary noise model (constrained or otherwise)
-	 */
-	ReferenceFrameFactor(Key globalKey, Key transKey, Key localKey, const noiseModel::Base::shared_ptr& model)
-	: Base(model,globalKey, transKey, localKey) {}
+  /**
+   * General constructor with arbitrary noise model (constrained or otherwise)
+   */
+  ReferenceFrameFactor(Key globalKey, Key transKey, Key localKey, const noiseModel::Base::shared_ptr& model)
+  : Base(model,globalKey, transKey, localKey) {}
 
-	/**
-	 * Construct a hard frame of reference reference constraint with equal mu values for
-	 * each degree of freedom.
-	 */
-	ReferenceFrameFactor(double mu, Key globalKey, Key transKey, Key localKey)
-	: Base(globalKey, transKey, localKey, Point().dim(), mu) {}
+  /**
+   * Construct a hard frame of reference reference constraint with equal mu values for
+   * each degree of freedom.
+   */
+  ReferenceFrameFactor(double mu, Key globalKey, Key transKey, Key localKey)
+  : Base(globalKey, transKey, localKey, Point().dim(), mu) {}
 
-	/**
-	 * Simple soft constraint constructor for frame of reference, with equal weighting for
-	 * each degree of freedom.
-	 */
-	ReferenceFrameFactor(Key globalKey, Key transKey, Key localKey, double sigma = 1e-2)
-	: Base(noiseModel::Isotropic::Sigma(POINT().dim(), sigma),
-			globalKey, transKey, localKey) {}
+  /**
+   * Simple soft constraint constructor for frame of reference, with equal weighting for
+   * each degree of freedom.
+   */
+  ReferenceFrameFactor(Key globalKey, Key transKey, Key localKey, double sigma = 1e-2)
+  : Base(noiseModel::Isotropic::Sigma(POINT().dim(), sigma),
+      globalKey, transKey, localKey) {}
 
-	virtual ~ReferenceFrameFactor(){}
+  virtual ~ReferenceFrameFactor(){}
 
-	virtual NonlinearFactor::shared_ptr clone() const {
-	  return boost::static_pointer_cast<NonlinearFactor>(
-	      NonlinearFactor::shared_ptr(new This(*this))); }
+  virtual NonlinearFactor::shared_ptr clone() const {
+    return boost::static_pointer_cast<NonlinearFactor>(
+        NonlinearFactor::shared_ptr(new This(*this))); }
 
-	/** Combined cost and derivative function using boost::optional */
-	virtual Vector evaluateError(const Point& global, const Transform& trans, const Point& local,
-				boost::optional<Matrix&> Dforeign = boost::none,
-				boost::optional<Matrix&> Dtrans = boost::none,
-				boost::optional<Matrix&> Dlocal = boost::none) const  {
-		Point newlocal = transform_point<Transform,Point>(trans, global, Dtrans, Dforeign);
-		if (Dlocal) {
-			Point dummy;
-			*Dlocal = -1* gtsam::eye(dummy.dim());
-		}
-		return local.localCoordinates(newlocal);
-	}
+  /** Combined cost and derivative function using boost::optional */
+  virtual Vector evaluateError(const Point& global, const Transform& trans, const Point& local,
+        boost::optional<Matrix&> Dforeign = boost::none,
+        boost::optional<Matrix&> Dtrans = boost::none,
+        boost::optional<Matrix&> Dlocal = boost::none) const  {
+    Point newlocal = transform_point<Transform,Point>(trans, global, Dtrans, Dforeign);
+    if (Dlocal) {
+      Point dummy;
+      *Dlocal = -1* gtsam::eye(dummy.dim());
+    }
+    return local.localCoordinates(newlocal);
+  }
 
-	virtual void print(const std::string& s="",
-			const gtsam::KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+  virtual void print(const std::string& s="",
+      const gtsam::KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     std::cout << s << ": ReferenceFrameFactor("
-    		<< "Global: " << keyFormatter(this->key1()) << ","
-    		<< " Transform: " << keyFormatter(this->key2()) << ","
-    		<< " Local: " << keyFormatter(this->key3()) << ")\n";
+        << "Global: " << keyFormatter(this->key1()) << ","
+        << " Transform: " << keyFormatter(this->key2()) << ","
+        << " Local: " << keyFormatter(this->key3()) << ")\n";
     this->noiseModel_->print("  noise model");
-	}
+  }
 
-	// access - convenience functions
-	Key global_key() const { return this->key1(); }
-	Key transform_key() const { return this->key2(); }
-	Key local_key() const { return this->key3(); }
+  // access - convenience functions
+  Key global_key() const { return this->key1(); }
+  Key transform_key() const { return this->key2(); }
+  Key local_key() const { return this->key3(); }
 
 private:
-	/** Serialization function */
-	friend class boost::serialization::access;
-	template<class ARCHIVE>
-	void serialize(ARCHIVE & ar, const unsigned int version) {
-		ar & boost::serialization::make_nvp("NonlinearFactor3",
-				boost::serialization::base_object<Base>(*this));
-	}
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int version) {
+    ar & boost::serialization::make_nvp("NonlinearFactor3",
+        boost::serialization::base_object<Base>(*this));
+  }
 };
 
 } // \namespace gtsam

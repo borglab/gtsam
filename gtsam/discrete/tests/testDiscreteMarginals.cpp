@@ -63,42 +63,42 @@ TEST_UNSAFE( DiscreteMarginals, UGM_small ) {
 /* ************************************************************************* */
 TEST_UNSAFE( DiscreteMarginals, UGM_chain ) {
 
-	const int nrNodes = 10;
-	const size_t nrStates = 7;
+  const int nrNodes = 10;
+  const size_t nrStates = 7;
 
-	// define variables
-	vector<DiscreteKey> key;
-	for (int i = 0; i < nrNodes; i++) {
-		DiscreteKey key_i(i, nrStates);
-		key.push_back(key_i);
-	}
+  // define variables
+  vector<DiscreteKey> key;
+  for (int i = 0; i < nrNodes; i++) {
+    DiscreteKey key_i(i, nrStates);
+    key.push_back(key_i);
+  }
 
-	// create graph
-	DiscreteFactorGraph graph;
+  // create graph
+  DiscreteFactorGraph graph;
 
-	// add node potentials
-	graph.add(key[0], ".3 .6 .1 0 0 0 0");
-	for (int i = 1; i < nrNodes; i++)
-		graph.add(key[i], "1 1 1 1 1 1 1");
+  // add node potentials
+  graph.add(key[0], ".3 .6 .1 0 0 0 0");
+  for (int i = 1; i < nrNodes; i++)
+    graph.add(key[i], "1 1 1 1 1 1 1");
 
-	const std::string edgePotential =   ".08 .9 .01 0 0 0 .01 "
-																			".03 .95 .01 0 0 0 .01 "
-																			".06 .06 .75 .05 .05 .02 .01 "
-																			"0 0 0 .3 .6 .09 .01 "
-																			"0 0 0 .02 .95 .02 .01 "
-																			"0 0 0 .01 .01 .97 .01 "
-																			"0 0 0 0 0 0 1";
+  const std::string edgePotential =   ".08 .9 .01 0 0 0 .01 "
+                                      ".03 .95 .01 0 0 0 .01 "
+                                      ".06 .06 .75 .05 .05 .02 .01 "
+                                      "0 0 0 .3 .6 .09 .01 "
+                                      "0 0 0 .02 .95 .02 .01 "
+                                      "0 0 0 .01 .01 .97 .01 "
+                                      "0 0 0 0 0 0 1";
 
-	// add edge potentials
-	for (int i = 0; i < nrNodes - 1; i++)
-		graph.add(key[i] & key[i + 1], edgePotential);
+  // add edge potentials
+  for (int i = 0; i < nrNodes - 1; i++)
+    graph.add(key[i] & key[i + 1], edgePotential);
 
-	DiscreteMarginals marginals(graph);
-	DiscreteFactor::shared_ptr actualC = marginals(key[2].first);
-	DiscreteFactor::Values values;
+  DiscreteMarginals marginals(graph);
+  DiscreteFactor::shared_ptr actualC = marginals(key[2].first);
+  DiscreteFactor::Values values;
 
-	values[key[2].first] = 0;
-	EXPECT_DOUBLES_EQUAL( 0.03426, (*actualC)(values), 1e-4);
+  values[key[2].first] = 0;
+  EXPECT_DOUBLES_EQUAL( 0.03426, (*actualC)(values), 1e-4);
 }
 
 /* ************************************************************************* */

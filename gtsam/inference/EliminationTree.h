@@ -50,9 +50,9 @@ class EliminationTree {
 
 public:
 
-	typedef EliminationTree<FACTOR> This; ///< This class
+  typedef EliminationTree<FACTOR> This; ///< This class
   typedef boost::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
-	typedef typename boost::shared_ptr<FACTOR> sharedFactor;  ///< Shared pointer to a factor
+  typedef typename boost::shared_ptr<FACTOR> sharedFactor;  ///< Shared pointer to a factor
   typedef gtsam::BayesNet<typename FACTOR::ConditionalType> BayesNet; ///< The BayesNet corresponding to FACTOR
   typedef FACTOR Factor;
   typedef typename FACTOR::KeyType KeyType;
@@ -75,8 +75,8 @@ private:
 
 public:
 
-	/// @name Standard Constructors
-	/// @{
+  /// @name Standard Constructors
+  /// @{
 
   /**
    * Named constructor to build the elimination tree of a factor graph using
@@ -99,9 +99,9 @@ public:
   template<class DERIVEDFACTOR>
   static shared_ptr Create(const FactorGraph<DERIVEDFACTOR>& factorGraph);
 
-	/// @}
-	/// @name Standard Interface
-	/// @{
+  /// @}
+  /// @name Standard Interface
+  /// @{
 
   /** Eliminate the factors to a Bayes Net
    * @param function The function to use to eliminate, see the namespace functions
@@ -117,21 +117,21 @@ public:
    */
   typename BayesNet::shared_ptr eliminatePartial(Eliminate function, size_t nrToEliminate) const;
 
-	/// @}
-	/// @name Testable
-	/// @{
+  /// @}
+  /// @name Testable
+  /// @{
 
   /** Print the tree to cout */
   void print(const std::string& name = "EliminationTree: ",
-  		const IndexFormatter& formatter = DefaultIndexFormatter) const;
+      const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
   /** Test whether the tree is equal to another */
   bool equals(const EliminationTree& other, double tol = 1e-9) const;
 
-	/// @}
+  /// @}
 
 private:
-	
+  
   /** default constructor, private, as you should use Create below */
   EliminationTree(Index key = 0) : key_(key) {}
 
@@ -175,11 +175,11 @@ struct DisconnectedGraphException : public std::exception {
   /// Returns the string "Attempting to eliminate a disconnected graph - this is not currently possible in gtsam."
   virtual const char* what() const throw() {
     return
-			"Attempting to eliminate a disconnected graph - this is not currently possible in\n"
-			"GTSAM.  You may add \"empty\" BetweenFactor's to join disconnected graphs, these\n"
-			"will affect the symbolic structure and solving complexity of the graph but not\n"
-			"the solution.  To do this, create BetweenFactor's with zero-precision noise\n"
-			"models, i.e. noiseModel::Isotropic::Precision(n, 0.0);\n"; }
+      "Attempting to eliminate a disconnected graph - this is not currently possible in\n"
+      "GTSAM.  You may add \"empty\" BetweenFactor's to join disconnected graphs, these\n"
+      "will affect the symbolic structure and solving complexity of the graph but not\n"
+      "the solution.  To do this, create BetweenFactor's with zero-precision noise\n"
+      "models, i.e. noiseModel::Isotropic::Precision(n, 0.0);\n"; }
 };
 
 }

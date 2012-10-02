@@ -39,21 +39,21 @@ using symbol_shorthand::L;
 TEST( SymbolicBayesNet, constructor )
 {
   Ordering o; o += X(2),L(1),X(1);
-	// Create manually
-	IndexConditional::shared_ptr
-		x2(new IndexConditional(o[X(2)],o[L(1)], o[X(1)])),
-		l1(new IndexConditional(o[L(1)],o[X(1)])),
-		x1(new IndexConditional(o[X(1)]));
-	BayesNet<IndexConditional> expected;
-	expected.push_back(x2);
-	expected.push_back(l1);
-	expected.push_back(x1);
+  // Create manually
+  IndexConditional::shared_ptr
+    x2(new IndexConditional(o[X(2)],o[L(1)], o[X(1)])),
+    l1(new IndexConditional(o[L(1)],o[X(1)])),
+    x1(new IndexConditional(o[X(1)]));
+  BayesNet<IndexConditional> expected;
+  expected.push_back(x2);
+  expected.push_back(l1);
+  expected.push_back(x1);
 
-	// Create from a factor graph
-	GaussianFactorGraph factorGraph = createGaussianFactorGraph(o);
-	SymbolicFactorGraph fg(factorGraph);
+  // Create from a factor graph
+  GaussianFactorGraph factorGraph = createGaussianFactorGraph(o);
+  SymbolicFactorGraph fg(factorGraph);
 
-	// eliminate it
+  // eliminate it
   SymbolicBayesNet actual = *SymbolicSequentialSolver(fg).eliminate();
 
   CHECK(assert_equal(expected, actual));
@@ -73,7 +73,7 @@ TEST( SymbolicBayesNet, FromGaussian) {
 
 /* ************************************************************************* */
 int main() {
-	TestResult tr;
-	return TestRegistry::runAllTests(tr);
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */

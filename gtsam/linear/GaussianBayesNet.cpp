@@ -40,35 +40,35 @@ template class BayesNet<GaussianConditional>;
 
 /* ************************************************************************* */
 GaussianBayesNet scalarGaussian(Index key, double mu, double sigma) {
-	GaussianBayesNet bn;
-	GaussianConditional::shared_ptr
-		conditional(new GaussianConditional(key, Vector_(1,mu)/sigma, eye(1)/sigma, ones(1)));
-	bn.push_back(conditional);
-	return bn;
+  GaussianBayesNet bn;
+  GaussianConditional::shared_ptr
+    conditional(new GaussianConditional(key, Vector_(1,mu)/sigma, eye(1)/sigma, ones(1)));
+  bn.push_back(conditional);
+  return bn;
 }
 
 /* ************************************************************************* */
 GaussianBayesNet simpleGaussian(Index key, const Vector& mu, double sigma) {
-	GaussianBayesNet bn;
-	size_t n = mu.size();
-	GaussianConditional::shared_ptr
-		conditional(new GaussianConditional(key, mu/sigma, eye(n)/sigma, ones(n)));
-	bn.push_back(conditional);
-	return bn;
+  GaussianBayesNet bn;
+  size_t n = mu.size();
+  GaussianConditional::shared_ptr
+    conditional(new GaussianConditional(key, mu/sigma, eye(n)/sigma, ones(n)));
+  bn.push_back(conditional);
+  return bn;
 }
 
 /* ************************************************************************* */
 void push_front(GaussianBayesNet& bn, Index key, Vector d, Matrix R,
-		Index name1, Matrix S, Vector sigmas) {
-	GaussianConditional::shared_ptr cg(new GaussianConditional(key, d, R, name1, S, sigmas));
-	bn.push_front(cg);
+    Index name1, Matrix S, Vector sigmas) {
+  GaussianConditional::shared_ptr cg(new GaussianConditional(key, d, R, name1, S, sigmas));
+  bn.push_front(cg);
 }
 
 /* ************************************************************************* */
 void push_front(GaussianBayesNet& bn, Index key, Vector d, Matrix R,
-		Index name1, Matrix S, Index name2, Matrix T, Vector sigmas) {
-	GaussianConditional::shared_ptr cg(new GaussianConditional(key, d, R, name1, S, name2, T, sigmas));
-	bn.push_front(cg);
+    Index name1, Matrix S, Index name2, Matrix T, Vector sigmas) {
+  GaussianConditional::shared_ptr cg(new GaussianConditional(key, d, R, name1, S, name2, T, sigmas));
+  bn.push_front(cg);
 }
 
 /* ************************************************************************* */
@@ -83,20 +83,20 @@ boost::shared_ptr<VectorValues> allocateVectorValues(const GaussianBayesNet& bn)
 
 /* ************************************************************************* */
 VectorValues optimize(const GaussianBayesNet& bn) {
-	VectorValues x = *allocateVectorValues(bn);
-	optimizeInPlace(bn, x);
-	return x;
+  VectorValues x = *allocateVectorValues(bn);
+  optimizeInPlace(bn, x);
+  return x;
 }
 
 /* ************************************************************************* */
 // (R*x)./sigmas = y by solving x=inv(R)*(y.*sigmas)
 void optimizeInPlace(const GaussianBayesNet& bn, VectorValues& x) {
-	/** solve each node in turn in topological sort order (parents first)*/
-	BOOST_REVERSE_FOREACH(const boost::shared_ptr<const GaussianConditional> cg, bn) {
-		// i^th part of R*x=y, x=inv(R)*y
-		// (Rii*xi + R_i*x(i+1:))./si = yi <-> xi = inv(Rii)*(yi.*si - R_i*x(i+1:))
-		cg->solveInPlace(x);
-	}
+  /** solve each node in turn in topological sort order (parents first)*/
+  BOOST_REVERSE_FOREACH(const boost::shared_ptr<const GaussianConditional> cg, bn) {
+    // i^th part of R*x=y, x=inv(R)*y
+    // (Rii*xi + R_i*x(i+1:))./si = yi <-> xi = inv(Rii)*(yi.*si - R_i*x(i+1:))
+    cg->solveInPlace(x);
+  }
 }
 
 /* ************************************************************************* */
@@ -122,22 +122,22 @@ VectorValues backSubstitute(const GaussianBayesNet& bn, const VectorValues& inpu
 // gy=inv(R'*inv(Sigma))*gx
 // gz'*R'=gx', gy = gz.*sigmas
 VectorValues backSubstituteTranspose(const GaussianBayesNet& bn,
-		const VectorValues& gx) {
+    const VectorValues& gx) {
 
-	// Initialize gy from gx
-	// TODO: used to insert zeros if gx did not have an entry for a variable in bn
-	VectorValues gy = gx;
+  // Initialize gy from gx
+  // TODO: used to insert zeros if gx did not have an entry for a variable in bn
+  VectorValues gy = gx;
 
-	// we loop from first-eliminated to last-eliminated
-	// i^th part of L*gy=gx is done block-column by block-column of L
-	BOOST_FOREACH(const boost::shared_ptr<const GaussianConditional> cg, bn)
-		cg->solveTransposeInPlace(gy);
+  // we loop from first-eliminated to last-eliminated
+  // i^th part of L*gy=gx is done block-column by block-column of L
+  BOOST_FOREACH(const boost::shared_ptr<const GaussianConditional> cg, bn)
+    cg->solveTransposeInPlace(gy);
 
-	// Scale gy
-	BOOST_FOREACH(GaussianConditional::shared_ptr cg, bn)
-		cg->scaleFrontalsBySigma(gy);
+  // Scale gy
+  BOOST_FOREACH(GaussianConditional::shared_ptr cg, bn)
+    cg->scaleFrontalsBySigma(gy);
 
-	return gy;
+  return gy;
 }
 
 /* ************************************************************************* */
@@ -183,11 +183,11 @@ pair<Matrix,Vector> matrix(const GaussianBayesNet& bn)  {
   // and at the same time create a mapping from keys to indices
   size_t N=0; map<Index,size_t> mapping;
   BOOST_FOREACH(GaussianConditional::shared_ptr cg,bn) {
-  	GaussianConditional::const_iterator it = cg->beginFrontals();
-  	for (; it != cg->endFrontals(); ++it) {
-  		mapping.insert(make_pair(*it,N));
-  		N += cg->dim(it);
-  	}
+    GaussianConditional::const_iterator it = cg->beginFrontals();
+    for (; it != cg->endFrontals(); ++it) {
+      mapping.insert(make_pair(*it,N));
+      N += cg->dim(it);
+    }
   }
 
   // create matrix and copy in values
@@ -211,7 +211,7 @@ pair<Matrix,Vector> matrix(const GaussianBayesNet& bn)  {
     GaussianConditional::const_r_type R_ = cg->get_R();
     for (size_t i=0;i<n;i++)
       for(size_t j=0;j<n;j++)
-      	R(I+i,I+j) = R_(i,j)/sigmas(i);
+        R(I+i,I+j) = R_(i,j)/sigmas(i);
 
     // loop over S matrices and copy them into R
     GaussianConditional::const_iterator keyS = cg->beginParents();
@@ -220,8 +220,8 @@ pair<Matrix,Vector> matrix(const GaussianBayesNet& bn)  {
       const size_t m = S.rows(), n = S.cols(); // find S size
       const size_t J = mapping[*keyS];     // find column index
       for (size_t i=0;i<m;i++)
-      	for(size_t j=0;j<n;j++)
-      		R(I+i,J+j) = S(i,j)/sigmas(i);
+        for(size_t j=0;j<n;j++)
+          R(I+i,J+j) = S(i,j)/sigmas(i);
     } // keyS
 
   } // keyI
@@ -231,13 +231,13 @@ pair<Matrix,Vector> matrix(const GaussianBayesNet& bn)  {
 
 /* ************************************************************************* */
 double determinant(const GaussianBayesNet& bayesNet) {
-	double logDet = 0.0;
+  double logDet = 0.0;
 
-	BOOST_FOREACH(boost::shared_ptr<const GaussianConditional> cg, bayesNet){
-		logDet += cg->get_R().diagonal().unaryExpr(ptr_fun<double,double>(log)).sum();
-	}
+  BOOST_FOREACH(boost::shared_ptr<const GaussianConditional> cg, bayesNet){
+    logDet += cg->get_R().diagonal().unaryExpr(ptr_fun<double,double>(log)).sum();
+  }
 
-	return exp(logDet);
+  return exp(logDet);
 }
 
 /* ************************************************************************* */

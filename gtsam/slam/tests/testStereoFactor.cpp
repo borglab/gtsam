@@ -32,11 +32,11 @@ using namespace std;
 using namespace gtsam;
 
 static Pose3 camera1(Matrix_(3,3,
-		       1., 0., 0.,
-		       0.,-1., 0.,
-		       0., 0.,-1.
-		       ),
-	      Point3(0,0,6.25));
+           1., 0., 0.,
+           0.,-1., 0.,
+           0., 0.,-1.
+           ),
+        Point3(0,0,6.25));
 
 static boost::shared_ptr<Cal3_S2Stereo> K(new Cal3_S2Stereo(625, 625, 0, 320, 240, 0.5));
 
@@ -51,36 +51,36 @@ using symbol_shorthand::L;
 /* ************************************************************************* */
 TEST( StereoFactor, singlePoint)
 {
-	NonlinearFactorGraph graph;
+  NonlinearFactorGraph graph;
 
-	graph.add(NonlinearEquality<Pose3>(X(1), camera1));
+  graph.add(NonlinearEquality<Pose3>(X(1), camera1));
 
-	StereoPoint2 z14(320, 320.0-50, 240);
+  StereoPoint2 z14(320, 320.0-50, 240);
   // arguments: measurement, sigma, cam#, measurement #, K, baseline (m)
-	graph.add(GenericStereoFactor<Pose3, Point3>(z14, sigma, X(1), L(1), K));
+  graph.add(GenericStereoFactor<Pose3, Point3>(z14, sigma, X(1), L(1), K));
 
-	// Create a configuration corresponding to the ground truth
-	Values values;
-	values.insert(X(1), camera1); // add camera at z=6.25m looking towards origin
+  // Create a configuration corresponding to the ground truth
+  Values values;
+  values.insert(X(1), camera1); // add camera at z=6.25m looking towards origin
 
-	Point3 l1(0, 0, 0);
-	values.insert(L(1), l1);   // add point at origin;
+  Point3 l1(0, 0, 0);
+  values.insert(L(1), l1);   // add point at origin;
 
-	GaussNewtonOptimizer optimizer(graph, values);
+  GaussNewtonOptimizer optimizer(graph, values);
 
-	// We expect the initial to be zero because config is the ground truth
-	DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
+  // We expect the initial to be zero because config is the ground truth
+  DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
 
-	// Iterate once, and the config should not have changed
-	optimizer.iterate();
-	DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
+  // Iterate once, and the config should not have changed
+  optimizer.iterate();
+  DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
 
-	// Complete solution
-	optimizer.optimize();
+  // Complete solution
+  optimizer.optimize();
 
-	DOUBLES_EQUAL(0.0, optimizer.error(), 1e-6);
+  DOUBLES_EQUAL(0.0, optimizer.error(), 1e-6);
 }
 
 /* ************************************************************************* */
-	int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
+  int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */

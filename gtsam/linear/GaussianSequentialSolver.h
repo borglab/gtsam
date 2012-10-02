@@ -71,14 +71,14 @@ public:
    * is the fastest.
    */
   GaussianSequentialSolver(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph,
-  		const VariableIndex::shared_ptr& variableIndex, bool useQR = false);
+      const VariableIndex::shared_ptr& variableIndex, bool useQR = false);
 
   /**
    * Named constructor to return a shared_ptr.  This builds the elimination
    * tree, which already does some of the symbolic work of elimination.
    */
   static shared_ptr Create(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph,
-  		const VariableIndex::shared_ptr& variableIndex, bool useQR = false);
+      const VariableIndex::shared_ptr& variableIndex, bool useQR = false);
 
   /**
    * Return a new solver that solves the given factor graph, which must have

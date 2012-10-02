@@ -22,7 +22,7 @@
 #include <gtsam/linear/VectorValues.h>
 
 namespace gtsam {
-	
+  
   /** vector of errors */
   class Errors : public std::list<Vector> {
 
@@ -30,10 +30,10 @@ namespace gtsam {
 
     Errors() ;
 
-	/** break V into pieces according to its start indices */
-	Errors(const VectorValues &V) ;
+  /** break V into pieces according to its start indices */
+  Errors(const VectorValues &V) ;
 
-  	/** print */
+    /** print */
     void print(const std::string& s = "Errors") const;
 
     /** equals, for unit testing */

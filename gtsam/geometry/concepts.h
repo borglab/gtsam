@@ -38,25 +38,25 @@ namespace gtsam {
 template<class POSE>
 class PoseConcept {
 public:
-	typedef typename POSE::Translation Translation;
-	typedef typename POSE::Rotation Rotation;
+  typedef typename POSE::Translation Translation;
+  typedef typename POSE::Rotation Rotation;
 
 private:
-	static Rotation checkRotationMemberAccess(const POSE& p) {
-		return p.rotation();
-	}
+  static Rotation checkRotationMemberAccess(const POSE& p) {
+    return p.rotation();
+  }
 
-	static Translation checkTranslationMemberAccess(const POSE& p) {
-		return p.translation();
-	}
+  static Translation checkTranslationMemberAccess(const POSE& p) {
+    return p.translation();
+  }
 
-	static std::pair<size_t, size_t> checkTranslationInterval() {
-		return POSE::translationInterval();
-	}
+  static std::pair<size_t, size_t> checkTranslationInterval() {
+    return POSE::translationInterval();
+  }
 
-	static std::pair<size_t, size_t> checkRotationInterval() {
-		return POSE::rotationInterval();
-	}
+  static std::pair<size_t, size_t> checkRotationInterval() {
+    return POSE::rotationInterval();
+  }
 };
 
 /**
@@ -67,14 +67,14 @@ private:
 template<class V1, class V2>
 class RangeMeasurementConcept {
 private:
-	static double checkRangeMeasurement(const V1& x, const V2& p) {
-		return x.range(p);
-	}
+  static double checkRangeMeasurement(const V1& x, const V2& p) {
+    return x.range(p);
+  }
 
-	static double checkRangeMeasurementDerivatives(const V1& x, const V2& p) {
-		boost::optional<Matrix&> H1, H2;
-		return x.range(p, H1, H2);
-	}
+  static double checkRangeMeasurementDerivatives(const V1& x, const V2& p) {
+    boost::optional<Matrix&> H1, H2;
+    return x.range(p, H1, H2);
+  }
 };
 
 } // \namespace gtsam

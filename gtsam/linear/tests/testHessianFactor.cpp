@@ -37,11 +37,11 @@ const double tol = 1e-5;
 
 /* ************************************************************************* */
 TEST(HessianFactor, emptyConstructor) {
-	HessianFactor f;
-	DOUBLES_EQUAL(0.0, f.constantTerm(), 1e-9);        // Constant term should be zero
-	EXPECT(assert_equal(Vector(), f.linearTerm()));    // Linear term should be empty
-	EXPECT(assert_equal(zeros(1,1), f.info()));        // Full matrix should be 1-by-1 zero matrix
-	DOUBLES_EQUAL(0.0, f.error(VectorValues()), 1e-9); // Should have zero error
+  HessianFactor f;
+  DOUBLES_EQUAL(0.0, f.constantTerm(), 1e-9);        // Constant term should be zero
+  EXPECT(assert_equal(Vector(), f.linearTerm()));    // Linear term should be empty
+  EXPECT(assert_equal(zeros(1,1), f.info()));        // Full matrix should be 1-by-1 zero matrix
+  DOUBLES_EQUAL(0.0, f.error(VectorValues()), 1e-9); // Should have zero error
 }
 
 /* ************************************************************************* */
@@ -53,13 +53,13 @@ TEST(HessianFactor, ConversionConstructor) {
   size_t dims[] = { 2, 4, 1 };
   expected.info_.resize(dims, dims+3, false);
   expected.matrix_ = Matrix_(7,7,
-				 125.0000,       0.0,  -25.0000,       0.0, -100.0000,       0.0,   25.0000,
-							0.0,  125.0000,       0.0,  -25.0000,       0.0, -100.0000,  -17.5000,
-				 -25.0000,       0.0,   25.0000,       0.0,       0.0,       0.0,   -5.0000,
-							0.0,  -25.0000,       0.0,   25.0000,       0.0,       0.0,    7.5000,
-				-100.0000,       0.0,       0.0,       0.0,  100.0000,       0.0,  -20.0000,
-							0.0, -100.0000,       0.0,       0.0,       0.0,  100.0000,   10.0000,
-					25.0000,  -17.5000,   -5.0000,    7.5000,  -20.0000,   10.0000,    8.2500);
+         125.0000,       0.0,  -25.0000,       0.0, -100.0000,       0.0,   25.0000,
+              0.0,  125.0000,       0.0,  -25.0000,       0.0, -100.0000,  -17.5000,
+         -25.0000,       0.0,   25.0000,       0.0,       0.0,       0.0,   -5.0000,
+              0.0,  -25.0000,       0.0,   25.0000,       0.0,       0.0,    7.5000,
+        -100.0000,       0.0,       0.0,       0.0,  100.0000,       0.0,  -20.0000,
+              0.0, -100.0000,       0.0,       0.0,       0.0,  100.0000,   10.0000,
+          25.0000,  -17.5000,   -5.0000,    7.5000,  -20.0000,   10.0000,    8.2500);
 
   // sigmas
   double sigma1 = 0.2;
@@ -144,8 +144,8 @@ TEST(HessianFactor, Constructor1)
 /* ************************************************************************* */
 TEST(HessianFactor, Constructor1b)
 {
-	Vector mu = Vector_(2,1.0,2.0);
-	Matrix Sigma = eye(2,2);
+  Vector mu = Vector_(2,1.0,2.0);
+  Matrix Sigma = eye(2,2);
 
   HessianFactor factor(0, mu, Sigma);
 
@@ -427,9 +427,9 @@ TEST_UNSAFE(HessianFactor, CombineAndEliminate)
 
   // Eliminate
   GaussianFactorGraph::EliminationResult actualCholesky = EliminateCholesky(gfg, 1);
-	HessianFactor::shared_ptr actualFactor = boost::dynamic_pointer_cast<HessianFactor>(actualCholesky.second);
+  HessianFactor::shared_ptr actualFactor = boost::dynamic_pointer_cast<HessianFactor>(actualCholesky.second);
 
-	EXPECT(assert_equal(*expectedBN, *actualCholesky.first, 1e-6));
+  EXPECT(assert_equal(*expectedBN, *actualCholesky.first, 1e-6));
   EXPECT(assert_equal(expectedCholeskyFactor, *actualFactor, 1e-6));
 }
 
@@ -476,9 +476,9 @@ TEST(HessianFactor, eliminate2 )
   combinedLFG_Chol.push_back(combinedLF_Chol);
 
   GaussianFactorGraph::EliminationResult actual_Chol = EliminateCholesky(
-			combinedLFG_Chol, 1);
-	HessianFactor::shared_ptr actualFactor = boost::dynamic_pointer_cast<
-			HessianFactor>(actual_Chol.second);
+      combinedLFG_Chol, 1);
+  HessianFactor::shared_ptr actualFactor = boost::dynamic_pointer_cast<
+      HessianFactor>(actual_Chol.second);
 
   // create expected Conditional Gaussian
   double oldSigma = 0.0894427; // from when R was made unit
@@ -577,12 +577,12 @@ TEST(HessianFactor, eliminateUnsorted) {
   GaussianConditional::shared_ptr expected_bn;
   GaussianFactor::shared_ptr expected_factor;
   boost::tie(expected_bn, expected_factor) =
-  		EliminatePreferCholesky(sortedGraph, 1);
+      EliminatePreferCholesky(sortedGraph, 1);
 
   GaussianConditional::shared_ptr actual_bn;
   GaussianFactor::shared_ptr actual_factor;
   boost::tie(actual_bn, actual_factor) =
-  		EliminatePreferCholesky(unsortedGraph, 1);
+      EliminatePreferCholesky(unsortedGraph, 1);
 
   EXPECT(assert_equal(*expected_bn, *actual_bn, 1e-10));
   EXPECT(assert_equal(*expected_factor, *actual_factor, 1e-10));
@@ -591,34 +591,34 @@ TEST(HessianFactor, eliminateUnsorted) {
 /* ************************************************************************* */
 TEST(HessianFactor, combine) {
 
-	// update the information matrix with a single jacobian factor
-	Matrix A0 = Matrix_(2, 2,
-	11.1803399,     0.0,
-	    0.0, 11.1803399);
-	Matrix A1 = Matrix_(2, 2,
-	-2.23606798,        0.0,
-	       0.0, -2.23606798);
-	Matrix A2 = Matrix_(2, 2,
-	-8.94427191,      0.0,
-				 0.0, -8.94427191);
-	Vector b = Vector_(2, 2.23606798,-1.56524758);
-	SharedDiagonal model = noiseModel::Diagonal::Sigmas(ones(2));
-	GaussianFactor::shared_ptr f(new JacobianFactor(0, A0, 1, A1, 2, A2, b, model));
-	FactorGraph<GaussianFactor> factors;
-	factors.push_back(f);
+  // update the information matrix with a single jacobian factor
+  Matrix A0 = Matrix_(2, 2,
+  11.1803399,     0.0,
+      0.0, 11.1803399);
+  Matrix A1 = Matrix_(2, 2,
+  -2.23606798,        0.0,
+         0.0, -2.23606798);
+  Matrix A2 = Matrix_(2, 2,
+  -8.94427191,      0.0,
+         0.0, -8.94427191);
+  Vector b = Vector_(2, 2.23606798,-1.56524758);
+  SharedDiagonal model = noiseModel::Diagonal::Sigmas(ones(2));
+  GaussianFactor::shared_ptr f(new JacobianFactor(0, A0, 1, A1, 2, A2, b, model));
+  FactorGraph<GaussianFactor> factors;
+  factors.push_back(f);
 
-	vector<size_t> dimensions;
-	dimensions += 2, 2, 2, 1;
+  vector<size_t> dimensions;
+  dimensions += 2, 2, 2, 1;
 
-	Scatter scatter;
-	scatter += make_pair(0, SlotEntry(0, 2));
-	scatter += make_pair(1, SlotEntry(1, 2));
-	scatter += make_pair(2, SlotEntry(2, 2));
+  Scatter scatter;
+  scatter += make_pair(0, SlotEntry(0, 2));
+  scatter += make_pair(1, SlotEntry(1, 2));
+  scatter += make_pair(2, SlotEntry(2, 2));
 
-	// Form Ab' * Ab
-	HessianFactor actual(factors, dimensions, scatter);
+  // Form Ab' * Ab
+  HessianFactor actual(factors, dimensions, scatter);
 
-	Matrix expected = Matrix_(7, 7,
+  Matrix expected = Matrix_(7, 7,
   125.0000,       0.0,  -25.0000,       0.0, -100.0000,       0.0,   25.0000,
        0.0,  125.0000,       0.0,  -25.0000,       0.0, -100.0000,  -17.5000,
   -25.0000,       0.0,    5.0000,       0.0,   20.0000,       0.0,   -5.0000,
@@ -626,8 +626,8 @@ TEST(HessianFactor, combine) {
  -100.0000,       0.0,   20.0000,       0.0,   80.0000,       0.0,  -20.0000,
        0.0, -100.0000,       0.0,   20.0000,       0.0,   80.0000,   14.0000,
    25.0000,  -17.5000,   -5.0000,    3.5000,  -20.0000,   14.0000,    7.4500);
-	EXPECT(assert_equal(Matrix(expected.triangularView<Eigen::Upper>()),
-			Matrix(actual.matrix_.triangularView<Eigen::Upper>()), tol));
+  EXPECT(assert_equal(Matrix(expected.triangularView<Eigen::Upper>()),
+      Matrix(actual.matrix_.triangularView<Eigen::Upper>()), tol));
 
 }
 /* ************************************************************************* */

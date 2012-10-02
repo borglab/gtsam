@@ -29,20 +29,20 @@ const double tol=1e-9;
 
 /* ************************************************************************* */
 TEST( testLieScalar, construction ) {
-	double d = 2.;
-	LieScalar lie1(d), lie2(d);
+  double d = 2.;
+  LieScalar lie1(d), lie2(d);
 
-	EXPECT_DOUBLES_EQUAL(2., lie1.value(),tol);
-	EXPECT_DOUBLES_EQUAL(2., lie2.value(),tol);
-	EXPECT(lie1.dim() == 1);
-	EXPECT(assert_equal(lie1, lie2));
+  EXPECT_DOUBLES_EQUAL(2., lie1.value(),tol);
+  EXPECT_DOUBLES_EQUAL(2., lie2.value(),tol);
+  EXPECT(lie1.dim() == 1);
+  EXPECT(assert_equal(lie1, lie2));
 }
 
 /* ************************************************************************* */
 TEST( testLieScalar, localCoordinates ) {
-	LieScalar lie1(1.), lie2(3.);
+  LieScalar lie1(1.), lie2(3.);
 
-	EXPECT(assert_equal(Vector_(1, 2.), lie1.localCoordinates(lie2)));
+  EXPECT(assert_equal(Vector_(1, 2.), lie1.localCoordinates(lie2)));
 }
 
 /* ************************************************************************* */

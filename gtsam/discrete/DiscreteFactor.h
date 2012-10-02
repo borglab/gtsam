@@ -23,100 +23,100 @@
 
 namespace gtsam {
 
-	class DecisionTreeFactor;
-	class DiscreteConditional;
+  class DecisionTreeFactor;
+  class DiscreteConditional;
 
-	/**
-	 * Base class for discrete probabilistic factors
-	 * The most general one is the derived DecisionTreeFactor
-	 */
-	class DiscreteFactor: public IndexFactor {
+  /**
+   * Base class for discrete probabilistic factors
+   * The most general one is the derived DecisionTreeFactor
+   */
+  class DiscreteFactor: public IndexFactor {
 
-	public:
+  public:
 
-		// typedefs needed to play nice with gtsam
-		typedef DiscreteFactor This;
-		typedef DiscreteConditional ConditionalType;
-		typedef boost::shared_ptr<DiscreteFactor> shared_ptr;
+    // typedefs needed to play nice with gtsam
+    typedef DiscreteFactor This;
+    typedef DiscreteConditional ConditionalType;
+    typedef boost::shared_ptr<DiscreteFactor> shared_ptr;
 
-		/** A map from keys to values */
-		typedef Assignment<Index> Values;
-		typedef boost::shared_ptr<Values> sharedValues;
+    /** A map from keys to values */
+    typedef Assignment<Index> Values;
+    typedef boost::shared_ptr<Values> sharedValues;
 
-	protected:
+  protected:
 
-		/// Construct n-way factor
-		DiscreteFactor(const std::vector<Index>& js) :
-				IndexFactor(js) {
-		}
-
-		/// Construct unary factor
-		DiscreteFactor(Index j) :
-				IndexFactor(j) {
-		}
-
-		/// Construct binary factor
-		DiscreteFactor(Index j1, Index j2) :
-				IndexFactor(j1, j2) {
-		}
-
-		/// construct from container
-		template<class KeyIterator>
-		DiscreteFactor(KeyIterator beginKey, KeyIterator endKey) :
-				IndexFactor(beginKey, endKey) {
-		}
-
-	public:
-
-		/// @name Standard Constructors
-		/// @{
-
-		/// Default constructor for I/O
-		DiscreteFactor();
-
-		/// Virtual destructor
-		virtual ~DiscreteFactor() {}
-
-		/// @}
-		/// @name Testable
-		/// @{
-
-		// print
-		virtual void print(const std::string& s = "DiscreteFactor\n",
-				const IndexFormatter& formatter
-				=DefaultIndexFormatter) const {
-			IndexFactor::print(s,formatter);
-		}
-
-		/// @}
-		/// @name Standard Interface
-		/// @{
-
-		/// Find value for given assignment of values to variables
-		virtual double operator()(const Values&) const = 0;
-
-		/// Multiply in a DecisionTreeFactor and return the result as DecisionTreeFactor
-		virtual DecisionTreeFactor operator*(const DecisionTreeFactor&) const = 0;
-
-		virtual DecisionTreeFactor toDecisionTreeFactor() const = 0;
-
-		/**
-		 * Permutes the factor, but for efficiency requires the permutation
-		 * to already be inverted.
-		 */
-		virtual void permuteWithInverse(const Permutation& inversePermutation){
-			IndexFactor::permuteWithInverse(inversePermutation);
-		}
-
-	  /**
-	   * Apply a reduction, which is a remapping of variable indices.
-	   */
-    virtual void reduceWithInverse(const internal::Reduction& inverseReduction) {
-    	IndexFactor::reduceWithInverse(inverseReduction);
+    /// Construct n-way factor
+    DiscreteFactor(const std::vector<Index>& js) :
+        IndexFactor(js) {
     }
 
-		/// @}
-	};
+    /// Construct unary factor
+    DiscreteFactor(Index j) :
+        IndexFactor(j) {
+    }
+
+    /// Construct binary factor
+    DiscreteFactor(Index j1, Index j2) :
+        IndexFactor(j1, j2) {
+    }
+
+    /// construct from container
+    template<class KeyIterator>
+    DiscreteFactor(KeyIterator beginKey, KeyIterator endKey) :
+        IndexFactor(beginKey, endKey) {
+    }
+
+  public:
+
+    /// @name Standard Constructors
+    /// @{
+
+    /// Default constructor for I/O
+    DiscreteFactor();
+
+    /// Virtual destructor
+    virtual ~DiscreteFactor() {}
+
+    /// @}
+    /// @name Testable
+    /// @{
+
+    // print
+    virtual void print(const std::string& s = "DiscreteFactor\n",
+        const IndexFormatter& formatter
+        =DefaultIndexFormatter) const {
+      IndexFactor::print(s,formatter);
+    }
+
+    /// @}
+    /// @name Standard Interface
+    /// @{
+
+    /// Find value for given assignment of values to variables
+    virtual double operator()(const Values&) const = 0;
+
+    /// Multiply in a DecisionTreeFactor and return the result as DecisionTreeFactor
+    virtual DecisionTreeFactor operator*(const DecisionTreeFactor&) const = 0;
+
+    virtual DecisionTreeFactor toDecisionTreeFactor() const = 0;
+
+    /**
+     * Permutes the factor, but for efficiency requires the permutation
+     * to already be inverted.
+     */
+    virtual void permuteWithInverse(const Permutation& inversePermutation){
+      IndexFactor::permuteWithInverse(inversePermutation);
+    }
+
+    /**
+     * Apply a reduction, which is a remapping of variable indices.
+     */
+    virtual void reduceWithInverse(const internal::Reduction& inverseReduction) {
+      IndexFactor::reduceWithInverse(inverseReduction);
+    }
+
+    /// @}
+  };
 // DiscreteFactor
 
 }// namespace gtsam

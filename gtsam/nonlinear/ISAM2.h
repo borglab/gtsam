@@ -383,14 +383,14 @@ public:
 
   bool equals(const This& other, double tol=1e-9) const {
     return Base::equals(other) &&
-    		((!cachedFactor_ && !other.cachedFactor_)
-    				|| (cachedFactor_ && other.cachedFactor_
-    						&& cachedFactor_->equals(*other.cachedFactor_, tol)));
+        ((!cachedFactor_ && !other.cachedFactor_)
+            || (cachedFactor_ && other.cachedFactor_
+                && cachedFactor_->equals(*other.cachedFactor_, tol)));
   }
 
   /** print this node */
   void print(const std::string& s = "",
-  		const IndexFormatter& formatter = DefaultIndexFormatter) const {
+      const IndexFormatter& formatter = DefaultIndexFormatter) const {
     Base::print(s,formatter);
     if(cachedFactor_)
       cachedFactor_->print(s + "Cached: ", formatter);
@@ -444,11 +444,11 @@ protected:
   VariableIndex variableIndex_;
 
   /** The linear delta from the last linear solution, an update to the estimate in theta
-	 *
-	 * This is \c mutable because it is a "cached" variable - it is not updated
-	 * until either requested with getDelta() or calculateEstimate(), or needed
-	 * during update() to evaluate whether to relinearize variables.
-	 */
+   *
+   * This is \c mutable because it is a "cached" variable - it is not updated
+   * until either requested with getDelta() or calculateEstimate(), or needed
+   * during update() to evaluate whether to relinearize variables.
+   */
   mutable VectorValues delta_;
 
   mutable VectorValues deltaNewton_;
@@ -611,7 +611,7 @@ private:
 
   boost::shared_ptr<FastSet<Index> > recalculate(const FastSet<Index>& markedKeys, const FastSet<Index>& relinKeys,
       const FastVector<Index>& observedKeys, const FastSet<Index>& unusedIndices, const boost::optional<FastMap<Index,int> >& constrainKeys, ISAM2Result& result);
-  //	void linear_update(const GaussianFactorGraph& newFactors);
+  //  void linear_update(const GaussianFactorGraph& newFactors);
   void updateDelta(bool forceFullSolve = false) const;
 
   friend void optimizeInPlace(const ISAM2&, VectorValues&);

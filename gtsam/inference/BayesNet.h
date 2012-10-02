@@ -70,8 +70,8 @@ protected:
 
 public:
 
-	/// @name Standard Constructors
-	/// @{
+  /// @name Standard Constructors
+  /// @{
 
   /** Default constructor as an empty BayesNet */
   BayesNet() {};
@@ -85,20 +85,20 @@ public:
   /** BayesNet with 1 conditional */
   explicit BayesNet(const sharedConditional& conditional) { push_back(conditional); }
 
-	/// @}
-	/// @name Testable
-	/// @{
+  /// @}
+  /// @name Testable
+  /// @{
 
   /** print */
   void print(const std::string& s = "",
-  		const IndexFormatter& formatter = DefaultIndexFormatter) const;
+      const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
   /** check equality */
   bool equals(const BayesNet& other, double tol = 1e-9) const;
 
-	/// @}
-	/// @name Standard Interface
-	/// @{
+  /// @}
+  /// @name Standard Interface
+  /// @{
 
   /** size is the number of nodes */
   size_t size() const {
@@ -126,9 +126,9 @@ public:
 
   /** return iterators. FD: breaks encapsulation? */
   const_iterator begin()          const {return conditionals_.begin();}   ///<TODO: comment
-  const_iterator end()            const {return conditionals_.end();}		  ///<TODO: comment
+  const_iterator end()            const {return conditionals_.end();}      ///<TODO: comment
   const_reverse_iterator rbegin() const {return conditionals_.rbegin();}  ///<TODO: comment
-  const_reverse_iterator rend()   const {return conditionals_.rend();}  	///<TODO: comment
+  const_reverse_iterator rend()   const {return conditionals_.rend();}    ///<TODO: comment
 
   /** Find an iterator pointing to the conditional where the specified key
    * appears as a frontal variable, or end() if no conditional contains this
@@ -138,9 +138,9 @@ public:
    */
   const_iterator find(Index key) const;
 
-	/// @}
-	/// @name Advanced Interface
-	/// @{
+  /// @}
+  /// @name Advanced Interface
+  /// @{
 
   /**
    * Remove any leaf conditional.  The conditional to remove is specified by
@@ -222,13 +222,13 @@ public:
    */
   bool permuteSeparatorWithInverse(const Permutation& inversePermutation);
 
-  iterator begin()          {return conditionals_.begin();}		///<TODO: comment
-  iterator end()            {return conditionals_.end();}			///<TODO: comment
-  reverse_iterator rbegin() {return conditionals_.rbegin();}	///<TODO: comment
-  reverse_iterator rend()   {return conditionals_.rend();}	  ///<TODO: comment
+  iterator begin()          {return conditionals_.begin();}    ///<TODO: comment
+  iterator end()            {return conditionals_.end();}      ///<TODO: comment
+  reverse_iterator rbegin() {return conditionals_.rbegin();}  ///<TODO: comment
+  reverse_iterator rend()   {return conditionals_.rend();}    ///<TODO: comment
 
   /** saves the bayes to a text file in GraphViz format */
-  //		void saveGraph(const std::string& s) const;
+  //    void saveGraph(const std::string& s) const;
 
 private:
   /** Serialization function */
@@ -238,7 +238,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(conditionals_);
   }
 
-	/// @}
+  /// @}
 }; // BayesNet
 
 } // namespace gtsam

@@ -49,14 +49,14 @@ struct ISAM2::Impl {
   static void AddVariables(const Values& newTheta, Values& theta, VectorValues& delta,
       VectorValues& deltaNewton, VectorValues& RgProd, std::vector<bool>& replacedKeys,
       Ordering& ordering, const KeyFormatter& keyFormatter = DefaultKeyFormatter);
-	  
+    
   /**
    * Remove variables from the ISAM2 system.
    */
-	static void RemoveVariables(const FastSet<Key>& unusedKeys, const ISAM2Clique::shared_ptr& root,
-		Values& theta, VariableIndex& variableIndex, VectorValues& delta, VectorValues& deltaNewton,
-		VectorValues& RgProd, std::vector<bool>& replacedKeys, Ordering& ordering, Base::Nodes& nodes,
-		GaussianFactorGraph& linearFactors);
+  static void RemoveVariables(const FastSet<Key>& unusedKeys, const ISAM2Clique::shared_ptr& root,
+    Values& theta, VariableIndex& variableIndex, VectorValues& delta, VectorValues& deltaNewton,
+    VectorValues& RgProd, std::vector<bool>& replacedKeys, Ordering& ordering, Base::Nodes& nodes,
+    GaussianFactorGraph& linearFactors);
 
   /**
    * Extract the set of variable indices from a NonlinearFactorGraph.  For each Symbol

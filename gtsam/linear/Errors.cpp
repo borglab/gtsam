@@ -29,11 +29,11 @@ Errors::Errors(){}
 
 /* ************************************************************************* */
 Errors::Errors(const VectorValues &V) {
-	this->resize(V.size()) ;
-	int i = 0 ;
-	BOOST_FOREACH( Vector &e, *this) {
-		e = V[i++];
-	}
+  this->resize(V.size()) ;
+  int i = 0 ;
+  BOOST_FOREACH( Vector &e, *this) {
+    e = V[i++];
+  }
 }
 
 /* ************************************************************************* */
@@ -45,45 +45,45 @@ void Errors::print(const std::string& s) const {
 
 /* ************************************************************************* */
 struct equalsVector : public std::binary_function<const Vector&, const Vector&, bool> {
-	double tol_;
-	equalsVector(double tol = 1e-9) : tol_(tol) {}
-	bool operator()(const Vector& expected, const Vector& actual) {
-		return equal_with_abs_tol(expected, actual,tol_);
-	}
+  double tol_;
+  equalsVector(double tol = 1e-9) : tol_(tol) {}
+  bool operator()(const Vector& expected, const Vector& actual) {
+    return equal_with_abs_tol(expected, actual,tol_);
+  }
 };
 
 bool Errors::equals(const Errors& expected, double tol) const {
-	if( size() != expected.size() ) return false;
-	return equal(begin(),end(),expected.begin(),equalsVector(tol));
+  if( size() != expected.size() ) return false;
+  return equal(begin(),end(),expected.begin(),equalsVector(tol));
 }
 
 /* ************************************************************************* */
 Errors Errors::operator+(const Errors& b) const {
 #ifndef NDEBUG
-	size_t m = size();
-	if (b.size()!=m)
+  size_t m = size();
+  if (b.size()!=m)
     throw(std::invalid_argument("Errors::operator+: incompatible sizes"));
 #endif
-	Errors result;
-	Errors::const_iterator it = b.begin();
+  Errors result;
+  Errors::const_iterator it = b.begin();
     BOOST_FOREACH(const Vector& ai, *this)
-		result.push_back(ai + *(it++));
-	return result;
+    result.push_back(ai + *(it++));
+  return result;
 }
 
 
 /* ************************************************************************* */
 Errors Errors::operator-(const Errors& b) const {
 #ifndef NDEBUG
-	size_t m = size();
-	if (b.size()!=m)
+  size_t m = size();
+  if (b.size()!=m)
     throw(std::invalid_argument("Errors::operator-: incompatible sizes"));
 #endif
-	Errors result;
-	Errors::const_iterator it = b.begin();
+  Errors result;
+  Errors::const_iterator it = b.begin();
   BOOST_FOREACH(const Vector& ai, *this)
-		result.push_back(ai - *(it++));
-	return result;
+    result.push_back(ai - *(it++));
+  return result;
 }
 
 /* ************************************************************************* */
@@ -99,28 +99,28 @@ Errors Errors::operator-() const {
 /* ************************************************************************* */
 double dot(const Errors& a, const Errors& b) {
 #ifndef NDEBUG
-	size_t m = a.size();
+  size_t m = a.size();
   if (b.size()!=m)
     throw(std::invalid_argument("Errors::dot: incompatible sizes"));
 #endif
   double result = 0.0;
-	Errors::const_iterator it = b.begin();
+  Errors::const_iterator it = b.begin();
   BOOST_FOREACH(const Vector& ai, a)
-		result += gtsam::dot(ai, *(it++));
-	return result;
+    result += gtsam::dot(ai, *(it++));
+  return result;
 }
 
 /* ************************************************************************* */
 template<>
 void axpy<Errors,Errors>(double alpha, const Errors& x, Errors& y) {
-	Errors::const_iterator it = x.begin();
+  Errors::const_iterator it = x.begin();
   BOOST_FOREACH(Vector& yi, y)
-		axpy(alpha,*(it++),yi);
+    axpy(alpha,*(it++),yi);
 }
 
 /* ************************************************************************* */
 void print(const Errors& a, const string& s) {
-	a.print(s);
+  a.print(s);
 }
 
 /* ************************************************************************* */

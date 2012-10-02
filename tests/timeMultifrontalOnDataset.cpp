@@ -35,22 +35,22 @@ int main(int argc, char *argv[]) {
 
   // check if there should be a constraint
   if (argc == 3 && string(argv[2]).compare("-c") == 0)
-  	soft_prior = false;
+    soft_prior = false;
 
   // find the number of trials - default is 10
   size_t nrTrials = 10;
   if (argc == 3 && string(argv[2]).compare("-c") != 0)
-  	nrTrials = strtoul(argv[2], NULL, 10);
+    nrTrials = strtoul(argv[2], NULL, 10);
   else if (argc == 4)
-  	nrTrials = strtoul(argv[3], NULL, 10);
+    nrTrials = strtoul(argv[3], NULL, 10);
 
   pair<boost::shared_ptr<pose2SLAM::Graph>, boost::shared_ptr<Values> > data = load2D(dataset(datasetname));
 
   // Add a prior on the first pose
   if (soft_prior)
-  	data.first->addPosePrior(0, Pose2(), noiseModel::Isotropic::Sigma(Pose2::Dim(), 0.0005));
+    data.first->addPosePrior(0, Pose2(), noiseModel::Isotropic::Sigma(Pose2::Dim(), 0.0005));
   else
-  	data.first->addPoseConstraint(0, Pose2());
+    data.first->addPoseConstraint(0, Pose2());
 
   tic_(1, "order");
   Ordering::shared_ptr ordering(data.first->orderingCOLAMD(*data.second));

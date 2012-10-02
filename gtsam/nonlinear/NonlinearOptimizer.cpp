@@ -104,14 +104,14 @@ void NonlinearOptimizer::defaultOptimize() {
 
 /* ************************************************************************* */
 const Values& NonlinearOptimizer::optimizeSafely() {
-	static const Values empty;
-	try {
-		defaultOptimize();
-		return values();
-	} catch (...) {
-		// uncaught exception, returning empty result
-		return empty;
-	}
+  static const Values empty;
+  try {
+    defaultOptimize();
+    return values();
+  } catch (...) {
+    // uncaught exception, returning empty result
+    return empty;
+  }
 }
 
 /* ************************************************************************* */
@@ -119,41 +119,41 @@ bool checkConvergence(double relativeErrorTreshold, double absoluteErrorTreshold
     double errorThreshold, double currentError, double newError,
     NonlinearOptimizerParams::Verbosity verbosity) {
 
-	if ( verbosity >= NonlinearOptimizerParams::ERROR ) {
-		if ( newError <= errorThreshold )
-			cout << "errorThreshold: " << newError << " < " << errorThreshold << endl;
-		else
-			cout << "errorThreshold: " << newError << " > " << errorThreshold << endl;
-	}
+  if ( verbosity >= NonlinearOptimizerParams::ERROR ) {
+    if ( newError <= errorThreshold )
+      cout << "errorThreshold: " << newError << " < " << errorThreshold << endl;
+    else
+      cout << "errorThreshold: " << newError << " > " << errorThreshold << endl;
+  }
 
-	if ( newError <= errorThreshold ) return true ;
+  if ( newError <= errorThreshold ) return true ;
 
-	// check if diverges
-	double absoluteDecrease = currentError - newError;
-	if (verbosity >= NonlinearOptimizerParams::ERROR) {
-		if (absoluteDecrease <= absoluteErrorTreshold)
-			cout << "absoluteDecrease: " << setprecision(12) << absoluteDecrease << " < " << absoluteErrorTreshold << endl;
-		else
-			cout << "absoluteDecrease: " << setprecision(12) << absoluteDecrease << " >= " << absoluteErrorTreshold << endl;
-	}
+  // check if diverges
+  double absoluteDecrease = currentError - newError;
+  if (verbosity >= NonlinearOptimizerParams::ERROR) {
+    if (absoluteDecrease <= absoluteErrorTreshold)
+      cout << "absoluteDecrease: " << setprecision(12) << absoluteDecrease << " < " << absoluteErrorTreshold << endl;
+    else
+      cout << "absoluteDecrease: " << setprecision(12) << absoluteDecrease << " >= " << absoluteErrorTreshold << endl;
+  }
 
-	// calculate relative error decrease and update currentError
-	double relativeDecrease = absoluteDecrease / currentError;
-	if (verbosity >= NonlinearOptimizerParams::ERROR) {
-		if (relativeDecrease <= relativeErrorTreshold)
-			cout << "relativeDecrease: " << setprecision(12) << relativeDecrease << " < " << relativeErrorTreshold << endl;
-		else
-			cout << "relativeDecrease: " << setprecision(12) << relativeDecrease << " >= " << relativeErrorTreshold << endl;
-	}
-	bool converged = (relativeErrorTreshold && (relativeDecrease <= relativeErrorTreshold))
-			|| (absoluteDecrease <= absoluteErrorTreshold);
-	if (verbosity >= NonlinearOptimizerParams::ERROR && converged) {
-		if(absoluteDecrease >= 0.0)
-		  cout << "converged" << endl;
-		else
-		  cout << "Warning:  stopping nonlinear iterations because error increased" << endl;
-	}
-	return converged;
+  // calculate relative error decrease and update currentError
+  double relativeDecrease = absoluteDecrease / currentError;
+  if (verbosity >= NonlinearOptimizerParams::ERROR) {
+    if (relativeDecrease <= relativeErrorTreshold)
+      cout << "relativeDecrease: " << setprecision(12) << relativeDecrease << " < " << relativeErrorTreshold << endl;
+    else
+      cout << "relativeDecrease: " << setprecision(12) << relativeDecrease << " >= " << relativeErrorTreshold << endl;
+  }
+  bool converged = (relativeErrorTreshold && (relativeDecrease <= relativeErrorTreshold))
+      || (absoluteDecrease <= absoluteErrorTreshold);
+  if (verbosity >= NonlinearOptimizerParams::ERROR && converged) {
+    if(absoluteDecrease >= 0.0)
+      cout << "converged" << endl;
+    else
+      cout << "Warning:  stopping nonlinear iterations because error increased" << endl;
+  }
+  return converged;
 }
 /* ************************************************************************* */
 

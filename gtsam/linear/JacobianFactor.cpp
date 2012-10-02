@@ -133,9 +133,9 @@ namespace gtsam {
 
   /* ************************************************************************* */
   JacobianFactor::JacobianFactor(const std::vector<std::pair<Index, Matrix> > &terms,
-  		const Vector &b, const SharedDiagonal& model) :
-  	GaussianFactor(GetKeys(terms.size(), terms.begin(), terms.end())),
-		model_(model), Ab_(matrix_)
+      const Vector &b, const SharedDiagonal& model) :
+    GaussianFactor(GetKeys(terms.size(), terms.begin(), terms.end())),
+    model_(model), Ab_(matrix_)
   {
 
     if(model->dim() != (size_t) b.size())
@@ -178,9 +178,9 @@ namespace gtsam {
 
   /* ************************************************************************* */
   JacobianFactor::JacobianFactor(const GaussianConditional& cg) :
-		GaussianFactor(cg),
-		model_(noiseModel::Diagonal::Sigmas(cg.get_sigmas(), true)),
-		Ab_(matrix_) {
+    GaussianFactor(cg),
+    model_(noiseModel::Diagonal::Sigmas(cg.get_sigmas(), true)),
+    Ab_(matrix_) {
     Ab_.assignNoalias(cg.rsd_);
     assertInvariants();
   }
@@ -190,14 +190,14 @@ namespace gtsam {
     keys_ = factor.keys_;
     Ab_.assignNoalias(factor.info_);
 
-		// Do Cholesky to get a Jacobian
+    // Do Cholesky to get a Jacobian
     size_t maxrank;
-		bool success;
-		boost::tie(maxrank, success) = choleskyCareful(matrix_);
+    bool success;
+    boost::tie(maxrank, success) = choleskyCareful(matrix_);
 
-		// Check for indefinite system
-		if(!success)
-			throw IndeterminantLinearSystemException(factor.keys().front());
+    // Check for indefinite system
+    if(!success)
+      throw IndeterminantLinearSystemException(factor.keys().front());
 
     // Zero out lower triangle
     matrix_.topRows(maxrank).triangularView<Eigen::StrictlyLower>() =
@@ -227,7 +227,7 @@ namespace gtsam {
       cout << endl;
     } else {
       for(const_iterator key=begin(); key!=end(); ++key)
-      	cout << boost::format("A[%1%]=\n")%formatter(*key) << getA(key) << endl;
+        cout << boost::format("A[%1%]=\n")%formatter(*key) << getA(key) << endl;
       cout << "b=" << getb() << endl;
       model_->print("model");
     }
@@ -245,7 +245,7 @@ namespace gtsam {
         return false;
 
       if (!(Ab_.rows() == f.Ab_.rows() && Ab_.cols() == f.Ab_.cols()))
-      	return false;
+        return false;
 
       constABlock Ab1(Ab_.range(0, Ab_.nBlocks()));
       constABlock Ab2(f.Ab_.range(0, f.Ab_.nBlocks()));
@@ -336,9 +336,9 @@ namespace gtsam {
       size_t column_start = columnIndices[*var];
       for (size_t i = 0; i < (size_t) whitenedA.rows(); i++)
         for (size_t j = 0; j < (size_t) whitenedA.cols(); j++) {
-        	double s = whitenedA(i,j);
+          double s = whitenedA(i,j);
           if (std::abs(s) > 1e-12) entries.push_back(
-							boost::make_tuple(i, column_start + j, s));
+              boost::make_tuple(i, column_start + j, s));
         }
     }
 
@@ -361,8 +361,8 @@ namespace gtsam {
 
   /* ************************************************************************* */
   GaussianFactor::shared_ptr JacobianFactor::negate() const {
-  	HessianFactor hessian(*this);
-  	return hessian.negate();
+    HessianFactor hessian(*this);
+    return hessian.negate();
   }
 
   /* ************************************************************************* */
@@ -372,53 +372,53 @@ namespace gtsam {
 
   /* ************************************************************************* */
   GaussianConditional::shared_ptr JacobianFactor::splitConditional(size_t nrFrontals) {
-  	assert(Ab_.rowStart() == 0 && Ab_.rowEnd() == (size_t) matrix_.rows() && Ab_.firstBlock() == 0);
-  	assert(size() >= nrFrontals);
-  	assertInvariants();
+    assert(Ab_.rowStart() == 0 && Ab_.rowEnd() == (size_t) matrix_.rows() && Ab_.firstBlock() == 0);
+    assert(size() >= nrFrontals);
+    assertInvariants();
 
-  	const bool debug = ISDEBUG("JacobianFactor::splitConditional");
+    const bool debug = ISDEBUG("JacobianFactor::splitConditional");
 
-  	if(debug) cout << "Eliminating " << nrFrontals << " frontal variables" << endl;
-  	if(debug) this->print("Splitting JacobianFactor: ");
+    if(debug) cout << "Eliminating " << nrFrontals << " frontal variables" << endl;
+    if(debug) this->print("Splitting JacobianFactor: ");
 
-  	size_t frontalDim = Ab_.range(0,nrFrontals).cols();
+    size_t frontalDim = Ab_.range(0,nrFrontals).cols();
 
-  	// Check for singular factor
-  	if(model_->dim() < frontalDim)
-			throw IndeterminantLinearSystemException(this->keys().front());
+    // Check for singular factor
+    if(model_->dim() < frontalDim)
+      throw IndeterminantLinearSystemException(this->keys().front());
 
-  	// Extract conditional
-  	tic(3, "cond Rd");
+    // Extract conditional
+    tic(3, "cond Rd");
 
-  	// Restrict the matrix to be in the first nrFrontals variables
-  	Ab_.rowEnd() = Ab_.rowStart() + frontalDim;
-  	const Eigen::VectorBlock<const Vector> sigmas = model_->sigmas().segment(Ab_.rowStart(), Ab_.rowEnd()-Ab_.rowStart());
-  	GaussianConditional::shared_ptr conditional(new GaussianConditional(begin(), end(), nrFrontals, Ab_, sigmas));
-  	if(debug) conditional->print("Extracted conditional: ");
-  	Ab_.rowStart() += frontalDim;
-  	Ab_.firstBlock() += nrFrontals;
-  	toc(3, "cond Rd");
+    // Restrict the matrix to be in the first nrFrontals variables
+    Ab_.rowEnd() = Ab_.rowStart() + frontalDim;
+    const Eigen::VectorBlock<const Vector> sigmas = model_->sigmas().segment(Ab_.rowStart(), Ab_.rowEnd()-Ab_.rowStart());
+    GaussianConditional::shared_ptr conditional(new GaussianConditional(begin(), end(), nrFrontals, Ab_, sigmas));
+    if(debug) conditional->print("Extracted conditional: ");
+    Ab_.rowStart() += frontalDim;
+    Ab_.firstBlock() += nrFrontals;
+    toc(3, "cond Rd");
 
-  	if(debug) conditional->print("Extracted conditional: ");
+    if(debug) conditional->print("Extracted conditional: ");
 
-  	tic(4, "remaining factor");
-  	// Take lower-right block of Ab to get the new factor
-  	Ab_.rowEnd() = model_->dim();
-  	keys_.erase(begin(), begin() + nrFrontals);
-  	// Set sigmas with the right model
-  	if (model_->isConstrained())
-  		model_ = noiseModel::Constrained::MixedSigmas(sub(model_->sigmas(), frontalDim, model_->dim()));
-  	else
-  		model_ = noiseModel::Diagonal::Sigmas(sub(model_->sigmas(), frontalDim, model_->dim()));
-  	if(debug) this->print("Eliminated factor: ");
-  	assert(Ab_.rows() <= Ab_.cols()-1);
-  	toc(4, "remaining factor");
+    tic(4, "remaining factor");
+    // Take lower-right block of Ab to get the new factor
+    Ab_.rowEnd() = model_->dim();
+    keys_.erase(begin(), begin() + nrFrontals);
+    // Set sigmas with the right model
+    if (model_->isConstrained())
+      model_ = noiseModel::Constrained::MixedSigmas(sub(model_->sigmas(), frontalDim, model_->dim()));
+    else
+      model_ = noiseModel::Diagonal::Sigmas(sub(model_->sigmas(), frontalDim, model_->dim()));
+    if(debug) this->print("Eliminated factor: ");
+    assert(Ab_.rows() <= Ab_.cols()-1);
+    toc(4, "remaining factor");
 
-  	if(debug) print("Eliminated factor: ");
+    if(debug) print("Eliminated factor: ");
 
-  	assertInvariants();
+    assertInvariants();
 
-  	return conditional;
+    return conditional;
   }
 
   /* ************************************************************************* */
@@ -461,23 +461,23 @@ namespace gtsam {
 
   /* ************************************************************************* */
   void JacobianFactor::allocate(const VariableSlots& variableSlots, vector<
-			size_t>& varDims, size_t m) {
-		keys_.resize(variableSlots.size());
-		std::transform(variableSlots.begin(), variableSlots.end(), begin(),
-				boost::bind(&VariableSlots::const_iterator::value_type::first, _1));
-		varDims.push_back(1);
-		Ab_.copyStructureFrom(BlockAb(matrix_, varDims.begin(), varDims.end(), m));
-	}
+      size_t>& varDims, size_t m) {
+    keys_.resize(variableSlots.size());
+    std::transform(variableSlots.begin(), variableSlots.end(), begin(),
+        boost::bind(&VariableSlots::const_iterator::value_type::first, _1));
+    varDims.push_back(1);
+    Ab_.copyStructureFrom(BlockAb(matrix_, varDims.begin(), varDims.end(), m));
+  }
 
   /* ************************************************************************* */
-	void JacobianFactor::setModel(bool anyConstrained, const Vector& sigmas) {
+  void JacobianFactor::setModel(bool anyConstrained, const Vector& sigmas) {
     if((size_t) sigmas.size() != this->rows())
       throw InvalidNoiseModel(this->rows(), sigmas.size());
-		if (anyConstrained)
-			model_ = noiseModel::Constrained::MixedSigmas(sigmas);
-		else
-			model_ = noiseModel::Diagonal::Sigmas(sigmas);
-	}
+    if (anyConstrained)
+      model_ = noiseModel::Constrained::MixedSigmas(sigmas);
+    else
+      model_ = noiseModel::Diagonal::Sigmas(sigmas);
+  }
 
   /* ************************************************************************* */
   const char* JacobianFactor::InvalidNoiseModel::what() const throw() {

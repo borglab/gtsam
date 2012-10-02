@@ -38,79 +38,79 @@ namespace gtsam {
 #ifndef MATLAB_MEX_FILE
 /* ************************************************************************* */
 string findExampleDataFile(const string& name) {
-	// Search source tree and installed location
-	vector<string> rootsToSearch;
-	rootsToSearch.push_back(SOURCE_TREE_DATASET_DIR); // Defined by CMake, see gtsam/gtsam/CMakeLists.txt
-	rootsToSearch.push_back(INSTALLED_DATASET_DIR);   // Defined by CMake, see gtsam/gtsam/CMakeLists.txt
+  // Search source tree and installed location
+  vector<string> rootsToSearch;
+  rootsToSearch.push_back(SOURCE_TREE_DATASET_DIR); // Defined by CMake, see gtsam/gtsam/CMakeLists.txt
+  rootsToSearch.push_back(INSTALLED_DATASET_DIR);   // Defined by CMake, see gtsam/gtsam/CMakeLists.txt
 
-	// Search for filename as given, and with .graph and .txt extensions
-	vector<string> namesToSearch;
-	namesToSearch.push_back(name);
-	namesToSearch.push_back(name + ".graph");
-	namesToSearch.push_back(name + ".txt");
+  // Search for filename as given, and with .graph and .txt extensions
+  vector<string> namesToSearch;
+  namesToSearch.push_back(name);
+  namesToSearch.push_back(name + ".graph");
+  namesToSearch.push_back(name + ".txt");
 
-	// Find first name that exists
-	BOOST_FOREACH(const fs::path& root, rootsToSearch) {
-		BOOST_FOREACH(const fs::path& name, namesToSearch) {
-			if(fs::is_regular_file(root / name))
-				return (root / name).string();
-		}
-	}
+  // Find first name that exists
+  BOOST_FOREACH(const fs::path& root, rootsToSearch) {
+    BOOST_FOREACH(const fs::path& name, namesToSearch) {
+      if(fs::is_regular_file(root / name))
+        return (root / name).string();
+    }
+  }
 
-	// If we did not return already, then we did not find the file
-	throw std::invalid_argument(
-		"gtsam::findExampleDataFile could not find a matching file in\n"
-		SOURCE_TREE_DATASET_DIR " or\n"
-		INSTALLED_DATASET_DIR " named\n" +
-		name + ", " + name + ".graph, or " + name + ".txt");
+  // If we did not return already, then we did not find the file
+  throw std::invalid_argument(
+    "gtsam::findExampleDataFile could not find a matching file in\n"
+    SOURCE_TREE_DATASET_DIR " or\n"
+    INSTALLED_DATASET_DIR " named\n" +
+    name + ", " + name + ".graph, or " + name + ".txt");
 }
 #endif
 
 /* ************************************************************************* */
 pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
-		pair<string, boost::optional<noiseModel::Diagonal::shared_ptr> > dataset,
-		int maxID, bool addNoise, bool smart) {
-	return load2D(dataset.first, dataset.second, maxID, addNoise, smart);
+    pair<string, boost::optional<noiseModel::Diagonal::shared_ptr> > dataset,
+    int maxID, bool addNoise, bool smart) {
+  return load2D(dataset.first, dataset.second, maxID, addNoise, smart);
 }
 
 /* ************************************************************************* */
 pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
-		const string& filename, boost::optional<noiseModel::Diagonal::shared_ptr> model, int maxID,
-		bool addNoise, bool smart) {
-	cout << "Will try to read " << filename << endl;
-	ifstream is(filename.c_str());
-	if (!is)
-		throw std::invalid_argument("load2D: can not find the file!");
+    const string& filename, boost::optional<noiseModel::Diagonal::shared_ptr> model, int maxID,
+    bool addNoise, bool smart) {
+  cout << "Will try to read " << filename << endl;
+  ifstream is(filename.c_str());
+  if (!is)
+    throw std::invalid_argument("load2D: can not find the file!");
 
-	Values::shared_ptr initial(new Values);
-	NonlinearFactorGraph::shared_ptr graph(new NonlinearFactorGraph);
+  Values::shared_ptr initial(new Values);
+  NonlinearFactorGraph::shared_ptr graph(new NonlinearFactorGraph);
 
-	string tag;
+  string tag;
 
-	// load the poses
-	while (is) {
-		is >> tag;
+  // load the poses
+  while (is) {
+    is >> tag;
 
-		if ((tag == "VERTEX2") || (tag == "VERTEX")) {
-			int id;
-			double x, y, yaw;
-			is >> id >> x >> y >> yaw;
-			// optional filter
-			if (maxID && id >= maxID)
-				continue;
-			initial->insert(id, Pose2(x, y, yaw));
-		}
-		is.ignore(LINESIZE, '\n');
-	}
-	is.clear(); /* clears the end-of-file and error flags */
-	is.seekg(0, ios::beg);
+    if ((tag == "VERTEX2") || (tag == "VERTEX")) {
+      int id;
+      double x, y, yaw;
+      is >> id >> x >> y >> yaw;
+      // optional filter
+      if (maxID && id >= maxID)
+        continue;
+      initial->insert(id, Pose2(x, y, yaw));
+    }
+    is.ignore(LINESIZE, '\n');
+  }
+  is.clear(); /* clears the end-of-file and error flags */
+  is.seekg(0, ios::beg);
 
-	// Create a sampler with random number generator
-	Sampler sampler(42u);
+  // Create a sampler with random number generator
+  Sampler sampler(42u);
 
-	// load the factors
-	while (is) {
-		is >> tag;
+  // load the factors
+  while (is) {
+    is >> tag;
 
     if ((tag == "EDGE2") || (tag == "EDGE") || (tag == "ODOMETRY")) {
       int id1, id2;
@@ -172,89 +172,89 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
         initial->insert(id2, global);
       }
     }
-		is.ignore(LINESIZE, '\n');
-	}
+    is.ignore(LINESIZE, '\n');
+  }
 
-	cout << "load2D read a graph file with " << initial->size()
-						<< " vertices and " << graph->nrFactors() << " factors" << endl;
+  cout << "load2D read a graph file with " << initial->size()
+            << " vertices and " << graph->nrFactors() << " factors" << endl;
 
-	return make_pair(graph, initial);
+  return make_pair(graph, initial);
 }
 
 /* ************************************************************************* */
 void save2D(const NonlinearFactorGraph& graph, const Values& config,
-		const noiseModel::Diagonal::shared_ptr model, const string& filename) {
+    const noiseModel::Diagonal::shared_ptr model, const string& filename) {
 
-	fstream stream(filename.c_str(), fstream::out);
+  fstream stream(filename.c_str(), fstream::out);
 
-	// save poses
-	BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, config)
-	{
-		const Pose2& pose = dynamic_cast<const Pose2&>(key_value.value);
-		stream << "VERTEX2 " << key_value.key << " " << pose.x() << " "
-				<< pose.y() << " " << pose.theta() << endl;
-	}
+  // save poses
+  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, config)
+  {
+    const Pose2& pose = dynamic_cast<const Pose2&>(key_value.value);
+    stream << "VERTEX2 " << key_value.key << " " << pose.x() << " "
+        << pose.y() << " " << pose.theta() << endl;
+  }
 
-	// save edges
-	Matrix R = model->R();
-	Matrix RR = trans(R) * R; //prod(trans(R),R);
-	BOOST_FOREACH(boost::shared_ptr<NonlinearFactor> factor_, graph)
-	{
-		boost::shared_ptr<BetweenFactor<Pose2> > factor =
-				boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor_);
-		if (!factor)
-			continue;
+  // save edges
+  Matrix R = model->R();
+  Matrix RR = trans(R) * R; //prod(trans(R),R);
+  BOOST_FOREACH(boost::shared_ptr<NonlinearFactor> factor_, graph)
+  {
+    boost::shared_ptr<BetweenFactor<Pose2> > factor =
+        boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor_);
+    if (!factor)
+      continue;
 
-		Pose2 pose = factor->measured().inverse();
-		stream << "EDGE2 " << factor->key2() << " " << factor->key1() << " "
-				<< pose.x() << " " << pose.y() << " " << pose.theta() << " "
-				<< RR(0, 0) << " " << RR(0, 1) << " " << RR(1, 1) << " "
-				<< RR(2, 2) << " " << RR(0, 2) << " " << RR(1, 2) << endl;
-	}
+    Pose2 pose = factor->measured().inverse();
+    stream << "EDGE2 " << factor->key2() << " " << factor->key1() << " "
+        << pose.x() << " " << pose.y() << " " << pose.theta() << " "
+        << RR(0, 0) << " " << RR(0, 1) << " " << RR(1, 1) << " "
+        << RR(2, 2) << " " << RR(0, 2) << " " << RR(1, 2) << endl;
+  }
 
-	stream.close();
+  stream.close();
 }
 
 /* ************************************************************************* */
 bool load3D(const string& filename) {
-	ifstream is(filename.c_str());
-	if (!is)
-		return false;
+  ifstream is(filename.c_str());
+  if (!is)
+    return false;
 
-	while (is) {
-		char buf[LINESIZE];
-		is.getline(buf, LINESIZE);
-		istringstream ls(buf);
-		string tag;
-		ls >> tag;
+  while (is) {
+    char buf[LINESIZE];
+    is.getline(buf, LINESIZE);
+    istringstream ls(buf);
+    string tag;
+    ls >> tag;
 
-		if (tag == "VERTEX3") {
-			int id;
-			double x, y, z, roll, pitch, yaw;
-			ls >> id >> x >> y >> z >> roll >> pitch >> yaw;
-		}
-	}
-	is.clear(); /* clears the end-of-file and error flags */
-	is.seekg(0, ios::beg);
+    if (tag == "VERTEX3") {
+      int id;
+      double x, y, z, roll, pitch, yaw;
+      ls >> id >> x >> y >> z >> roll >> pitch >> yaw;
+    }
+  }
+  is.clear(); /* clears the end-of-file and error flags */
+  is.seekg(0, ios::beg);
 
-	while (is) {
-		char buf[LINESIZE];
-		is.getline(buf, LINESIZE);
-		istringstream ls(buf);
-		string tag;
-		ls >> tag;
+  while (is) {
+    char buf[LINESIZE];
+    is.getline(buf, LINESIZE);
+    istringstream ls(buf);
+    string tag;
+    ls >> tag;
 
-		if (tag == "EDGE3") {
-			int id1, id2;
-			double x, y, z, roll, pitch, yaw;
-			ls >> id1 >> id2 >> x >> y >> z >> roll >> pitch >> yaw;
-			Matrix m = eye(6);
-			for (int i = 0; i < 6; i++)
-				for (int j = i; j < 6; j++)
-					ls >> m(i, j);
-		}
-	}
-	return true;
+    if (tag == "EDGE3") {
+      int id1, id2;
+      double x, y, z, roll, pitch, yaw;
+      ls >> id1 >> id2 >> x >> y >> z >> roll >> pitch >> yaw;
+      Matrix m = eye(6);
+      for (int i = 0; i < 6; i++)
+        for (int j = i; j < 6; j++)
+          ls >> m(i, j);
+    }
+  }
+  return true;
 }
 /* ************************************************************************* */
 

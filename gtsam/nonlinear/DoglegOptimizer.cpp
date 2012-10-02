@@ -13,7 +13,7 @@
  * @file    DoglegOptimizer.cpp
  * @brief   
  * @author  Richard Roberts
- * @date 	Feb 26, 2012
+ * @date   Feb 26, 2012
  */
 
 #include <gtsam/nonlinear/DoglegOptimizer.h>
@@ -30,23 +30,23 @@ namespace gtsam {
 
 /* ************************************************************************* */
 DoglegParams::VerbosityDL DoglegParams::verbosityDLTranslator(const std::string &verbosityDL) const {
-	std::string s = verbosityDL;  boost::algorithm::to_upper(s);
-	if (s == "SILENT") return DoglegParams::SILENT;
-	if (s == "VERBOSE") return DoglegParams::VERBOSE;
+  std::string s = verbosityDL;  boost::algorithm::to_upper(s);
+  if (s == "SILENT") return DoglegParams::SILENT;
+  if (s == "VERBOSE") return DoglegParams::VERBOSE;
 
-	/* default is silent */
-	return DoglegParams::SILENT;
+  /* default is silent */
+  return DoglegParams::SILENT;
 }
 
 /* ************************************************************************* */
 std::string DoglegParams::verbosityDLTranslator(VerbosityDL verbosityDL) const {
-	std::string s;
-	switch (verbosityDL) {
-	case DoglegParams::SILENT:  s = "SILENT"; break;
-	case DoglegParams::VERBOSE: s = "VERBOSE"; break;
-	default:                    s = "UNDEFINED"; break;
-	}
-	return s;
+  std::string s;
+  switch (verbosityDL) {
+  case DoglegParams::SILENT:  s = "SILENT"; break;
+  case DoglegParams::VERBOSE: s = "VERBOSE"; break;
+  default:                    s = "UNDEFINED"; break;
+  }
+  return s;
 }
 
 /* ************************************************************************* */

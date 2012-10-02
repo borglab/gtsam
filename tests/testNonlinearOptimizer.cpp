@@ -49,26 +49,26 @@ using symbol_shorthand::L;
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, iterateLM )
 {
-	// really non-linear factor graph
+  // really non-linear factor graph
   example::Graph fg(example::createReallyNonlinearFactorGraph());
 
-	// config far from minimum
-	Point2 x0(3,0);
-	Values config;
-	config.insert(X(1), x0);
+  // config far from minimum
+  Point2 x0(3,0);
+  Values config;
+  config.insert(X(1), x0);
 
-	// normal iterate
-	GaussNewtonParams gnParams;
-	GaussNewtonOptimizer gnOptimizer(fg, config, gnParams);
-	gnOptimizer.iterate();
+  // normal iterate
+  GaussNewtonParams gnParams;
+  GaussNewtonOptimizer gnOptimizer(fg, config, gnParams);
+  gnOptimizer.iterate();
 
-	// LM iterate with lambda 0 should be the same
-	LevenbergMarquardtParams lmParams;
-	lmParams.lambdaInitial = 0.0;
-	LevenbergMarquardtOptimizer lmOptimizer(fg, config, lmParams);
-	lmOptimizer.iterate();
+  // LM iterate with lambda 0 should be the same
+  LevenbergMarquardtParams lmParams;
+  lmParams.lambdaInitial = 0.0;
+  LevenbergMarquardtOptimizer lmOptimizer(fg, config, lmParams);
+  lmOptimizer.iterate();
 
-	CHECK(assert_equal(gnOptimizer.values(), lmOptimizer.values(), 1e-9));
+  CHECK(assert_equal(gnOptimizer.values(), lmOptimizer.values(), 1e-9));
 }
 
 /* ************************************************************************* */
@@ -76,31 +76,31 @@ TEST( NonlinearOptimizer, optimize )
 {
   example::Graph fg(example::createReallyNonlinearFactorGraph());
 
-	// test error at minimum
-	Point2 xstar(0,0);
-	Values cstar;
-	cstar.insert(X(1), xstar);
-	DOUBLES_EQUAL(0.0,fg.error(cstar),0.0);
+  // test error at minimum
+  Point2 xstar(0,0);
+  Values cstar;
+  cstar.insert(X(1), xstar);
+  DOUBLES_EQUAL(0.0,fg.error(cstar),0.0);
 
-	// test error at initial = [(1-cos(3))^2 + (sin(3))^2]*50 =
-	Point2 x0(3,3);
-	Values c0;
-	c0.insert(X(1), x0);
-	DOUBLES_EQUAL(199.0,fg.error(c0),1e-3);
+  // test error at initial = [(1-cos(3))^2 + (sin(3))^2]*50 =
+  Point2 x0(3,3);
+  Values c0;
+  c0.insert(X(1), x0);
+  DOUBLES_EQUAL(199.0,fg.error(c0),1e-3);
 
-	// optimize parameters
-	Ordering ord;
-	ord.push_back(X(1));
+  // optimize parameters
+  Ordering ord;
+  ord.push_back(X(1));
 
-	// Gauss-Newton
-	GaussNewtonParams gnParams;
-	gnParams.ordering = ord;
-	Values actual1 = GaussNewtonOptimizer(fg, c0, gnParams).optimize();
-	DOUBLES_EQUAL(0,fg.error(actual1),tol);
+  // Gauss-Newton
+  GaussNewtonParams gnParams;
+  gnParams.ordering = ord;
+  Values actual1 = GaussNewtonOptimizer(fg, c0, gnParams).optimize();
+  DOUBLES_EQUAL(0,fg.error(actual1),tol);
 
-	// Levenberg-Marquardt
-	LevenbergMarquardtParams lmParams;
-	lmParams.ordering = ord;
+  // Levenberg-Marquardt
+  LevenbergMarquardtParams lmParams;
+  lmParams.ordering = ord;
   Values actual2 = LevenbergMarquardtOptimizer(fg, c0, lmParams).optimize();
   DOUBLES_EQUAL(0,fg.error(actual2),tol);
 
@@ -114,14 +114,14 @@ TEST( NonlinearOptimizer, optimize )
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, SimpleLMOptimizer )
 {
-	example::Graph fg(example::createReallyNonlinearFactorGraph());
+  example::Graph fg(example::createReallyNonlinearFactorGraph());
 
-	Point2 x0(3,3);
-	Values c0;
-	c0.insert(X(1), x0);
+  Point2 x0(3,3);
+  Values c0;
+  c0.insert(X(1), x0);
 
-	Values actual = LevenbergMarquardtOptimizer(fg, c0).optimize();
-	DOUBLES_EQUAL(0,fg.error(actual),tol);
+  Values actual = LevenbergMarquardtOptimizer(fg, c0).optimize();
+  DOUBLES_EQUAL(0,fg.error(actual),tol);
 }
 
 /* ************************************************************************* */
@@ -134,7 +134,7 @@ TEST( NonlinearOptimizer, SimpleGNOptimizer )
   c0.insert(X(1), x0);
 
   Values actual = GaussNewtonOptimizer(fg, c0).optimize();
-	DOUBLES_EQUAL(0,fg.error(actual),tol);
+  DOUBLES_EQUAL(0,fg.error(actual),tol);
 }
 
 /* ************************************************************************* */
@@ -158,14 +158,14 @@ TEST( NonlinearOptimizer, optimization_method )
   LevenbergMarquardtParams paramsChol;
   paramsChol.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
 
-	example::Graph fg = example::createReallyNonlinearFactorGraph();
+  example::Graph fg = example::createReallyNonlinearFactorGraph();
 
-	Point2 x0(3,3);
-	Values c0;
-	c0.insert(X(1), x0);
+  Point2 x0(3,3);
+  Values c0;
+  c0.insert(X(1), x0);
 
-	Values actualMFQR = LevenbergMarquardtOptimizer(fg, c0, paramsQR).optimize();
-	DOUBLES_EQUAL(0,fg.error(actualMFQR),tol);
+  Values actualMFQR = LevenbergMarquardtOptimizer(fg, c0, paramsQR).optimize();
+  DOUBLES_EQUAL(0,fg.error(actualMFQR),tol);
 
   Values actualMFChol = LevenbergMarquardtOptimizer(fg, c0, paramsChol).optimize();
   DOUBLES_EQUAL(0,fg.error(actualMFChol),tol);
@@ -174,25 +174,25 @@ TEST( NonlinearOptimizer, optimization_method )
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, Factorization )
 {
-	Values config;
-	config.insert(X(1), Pose2(0.,0.,0.));
-	config.insert(X(2), Pose2(1.5,0.,0.));
+  Values config;
+  config.insert(X(1), Pose2(0.,0.,0.));
+  config.insert(X(2), Pose2(1.5,0.,0.));
 
-	NonlinearFactorGraph graph;
-	graph.add(PriorFactor<Pose2>(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10)));
-	graph.add(BetweenFactor<Pose2>(X(1),X(2), Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1)));
+  NonlinearFactorGraph graph;
+  graph.add(PriorFactor<Pose2>(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10)));
+  graph.add(BetweenFactor<Pose2>(X(1),X(2), Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1)));
 
-	Ordering ordering;
-	ordering.push_back(X(1));
-	ordering.push_back(X(2));
+  Ordering ordering;
+  ordering.push_back(X(1));
+  ordering.push_back(X(2));
 
-	LevenbergMarquardtOptimizer optimizer(graph, config, ordering);
-	optimizer.iterate();
+  LevenbergMarquardtOptimizer optimizer(graph, config, ordering);
+  optimizer.iterate();
 
-	Values expected;
-	expected.insert(X(1), Pose2(0.,0.,0.));
-	expected.insert(X(2), Pose2(1.,0.,0.));
-	CHECK(assert_equal(expected, optimizer.values(), 1e-5));
+  Values expected;
+  expected.insert(X(1), Pose2(0.,0.,0.));
+  expected.insert(X(2), Pose2(1.,0.,0.));
+  CHECK(assert_equal(expected, optimizer.values(), 1e-5));
 }
 
 /* ************************************************************************* */
@@ -257,7 +257,7 @@ TEST(NonlinearOptimizer, MoreOptimization) {
 
 /* ************************************************************************* */
 int main() {
-	TestResult tr;
-	return TestRegistry::runAllTests(tr);
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */

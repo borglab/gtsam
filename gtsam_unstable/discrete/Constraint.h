@@ -21,71 +21,71 @@
 
 namespace gtsam {
 
-	class Domain;
+  class Domain;
 
-	/**
-	 * Base class for discrete probabilistic factors
-	 * The most general one is the derived DecisionTreeFactor
-	 */
-	class Constraint : public DiscreteFactor {
+  /**
+   * Base class for discrete probabilistic factors
+   * The most general one is the derived DecisionTreeFactor
+   */
+  class Constraint : public DiscreteFactor {
 
-	public:
+  public:
 
-		typedef boost::shared_ptr<Constraint> shared_ptr;
+    typedef boost::shared_ptr<Constraint> shared_ptr;
 
-	protected:
+  protected:
 
-		/// Construct n-way factor
-		Constraint(const std::vector<Index>& js) :
-			DiscreteFactor(js) {
-		}
+    /// Construct n-way factor
+    Constraint(const std::vector<Index>& js) :
+      DiscreteFactor(js) {
+    }
 
-		/// Construct unary factor
-		Constraint(Index j) :
-			DiscreteFactor(j) {
-		}
+    /// Construct unary factor
+    Constraint(Index j) :
+      DiscreteFactor(j) {
+    }
 
-		/// Construct binary factor
-		Constraint(Index j1, Index j2) :
-			DiscreteFactor(j1, j2) {
-		}
+    /// Construct binary factor
+    Constraint(Index j1, Index j2) :
+      DiscreteFactor(j1, j2) {
+    }
 
-		/// construct from container
-		template<class KeyIterator>
-		Constraint(KeyIterator beginKey, KeyIterator endKey) :
-			DiscreteFactor(beginKey, endKey) {
-		}
+    /// construct from container
+    template<class KeyIterator>
+    Constraint(KeyIterator beginKey, KeyIterator endKey) :
+      DiscreteFactor(beginKey, endKey) {
+    }
 
-	public:
+  public:
 
-		/// @name Standard Constructors
-		/// @{
+    /// @name Standard Constructors
+    /// @{
 
-		/// Default constructor for I/O
-		Constraint();
+    /// Default constructor for I/O
+    Constraint();
 
-		/// Virtual destructor
-		virtual ~Constraint() {}
+    /// Virtual destructor
+    virtual ~Constraint() {}
 
-		/// @}
-		/// @name Standard Interface
-		/// @{
+    /// @}
+    /// @name Standard Interface
+    /// @{
 
-		/*
-		 * Ensure Arc-consistency
-		 * @param j domain to be checked
-		 * @param domains all other domains
-		 */
-		virtual bool ensureArcConsistency(size_t j, std::vector<Domain>& domains) const = 0;
+    /*
+     * Ensure Arc-consistency
+     * @param j domain to be checked
+     * @param domains all other domains
+     */
+    virtual bool ensureArcConsistency(size_t j, std::vector<Domain>& domains) const = 0;
 
-		/// Partially apply known values
-		virtual shared_ptr partiallyApply(const Values&) const = 0;
+    /// Partially apply known values
+    virtual shared_ptr partiallyApply(const Values&) const = 0;
 
 
-		/// Partially apply known values, domain version
-		virtual shared_ptr partiallyApply(const std::vector<Domain>&) const = 0;
-		/// @}
-	};
+    /// Partially apply known values, domain version
+    virtual shared_ptr partiallyApply(const std::vector<Domain>&) const = 0;
+    /// @}
+  };
 // DiscreteFactor
 
 }// namespace gtsam

@@ -32,28 +32,28 @@ namespace gtsam {
   template class JunctionTree<GaussianFactorGraph>;
   template class ClusterTree<GaussianFactorGraph>;
 
-	using namespace std;
+  using namespace std;
 
-	/* ************************************************************************* */
-	VectorValues GaussianJunctionTree::optimize(Eliminate function) const {
-	  tic(1, "GJT eliminate");
-		// eliminate from leaves to the root
-		BTClique::shared_ptr rootClique(this->eliminate(function));
+  /* ************************************************************************* */
+  VectorValues GaussianJunctionTree::optimize(Eliminate function) const {
+    tic(1, "GJT eliminate");
+    // eliminate from leaves to the root
+    BTClique::shared_ptr rootClique(this->eliminate(function));
     toc(1, "GJT eliminate");
 
-		// Allocate solution vector and copy RHS
+    // Allocate solution vector and copy RHS
     tic(2, "allocate VectorValues");
     vector<size_t> dims(rootClique->conditional()->back()+1, 0);
-		countDims(rootClique, dims);
-		VectorValues result(dims);
+    countDims(rootClique, dims);
+    VectorValues result(dims);
     toc(2, "allocate VectorValues");
 
-		// back-substitution
+    // back-substitution
     tic(3, "back-substitute");
-		internal::optimizeInPlace<GaussianBayesTree>(rootClique, result);
+    internal::optimizeInPlace<GaussianBayesTree>(rootClique, result);
     toc(3, "back-substitute");
-		return result;
-	}
+    return result;
+  }
 
-	/* ************************************************************************* */
+  /* ************************************************************************* */
 } //namespace gtsam

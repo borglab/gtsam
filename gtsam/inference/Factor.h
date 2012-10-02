@@ -83,8 +83,8 @@ protected:
 
 public:
 
-	/// @name Standard Constructors
-	/// @{
+  /// @name Standard Constructors
+  /// @{
 
   /** Copy constructor */
   Factor(const This& f);
@@ -119,26 +119,26 @@ public:
   Factor(KeyType key1, KeyType key2, KeyType key3, KeyType key4, KeyType key5, KeyType key6) : keys_(6) {
     keys_[0] = key1; keys_[1] = key2; keys_[2] = key3; keys_[3] = key4; keys_[4] = key5; keys_[5] = key6; assertInvariants(); }
 
-	/// @}
-	/// @name Advanced Constructors
-	/// @{
+  /// @}
+  /// @name Advanced Constructors
+  /// @{
 
   /** Construct n-way factor */
-	Factor(const std::set<KeyType>& keys) {
-		BOOST_FOREACH(const KeyType& key, keys) keys_.push_back(key);
-		assertInvariants();
-	}
+  Factor(const std::set<KeyType>& keys) {
+    BOOST_FOREACH(const KeyType& key, keys) keys_.push_back(key);
+    assertInvariants();
+  }
 
-	/** Construct n-way factor */
-	Factor(const std::vector<KeyType>& keys) : keys_(keys) {
-		assertInvariants();
-	}
+  /** Construct n-way factor */
+  Factor(const std::vector<KeyType>& keys) : keys_(keys) {
+    assertInvariants();
+  }
 
   /** Constructor from a collection of keys */
   template<class KEYITERATOR> Factor(KEYITERATOR beginKey, KEYITERATOR endKey) :
         keys_(beginKey, endKey) { assertInvariants(); }
 
-	/// @}
+  /// @}
 
 #ifdef TRACK_ELIMINATE
   /**
@@ -155,8 +155,8 @@ public:
   typename BayesNet<CONDITIONAL>::shared_ptr eliminate(size_t nrFrontals = 1);
 #endif
 
-	/// @name Standard Interface
-	/// @{
+  /// @name Standard Interface
+  /// @{
 
   /// First key
   KeyType front() const { return keys_.front(); }
@@ -171,32 +171,32 @@ public:
   const std::vector<KeyType>& keys() const { return keys_; }
 
   /** iterators */
-  const_iterator begin() const { return keys_.begin(); }	///TODO: comment
-  const_iterator end() const { return keys_.end(); }			///TODO: comment
+  const_iterator begin() const { return keys_.begin(); }  ///TODO: comment
+  const_iterator end() const { return keys_.end(); }      ///TODO: comment
 
   /**
    * @return the number of variables involved in this factor
    */
   size_t size() const { return keys_.size(); }
 
-	/// @}
-	/// @name Testable
-	/// @{
+  /// @}
+  /// @name Testable
+  /// @{
 
   /// print
   void print(const std::string& s = "Factor",
-  		const IndexFormatter& formatter = DefaultIndexFormatter) const;
+      const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
   /// print only keys
   void printKeys(const std::string& s = "Factor",
-  		const IndexFormatter& formatter = DefaultIndexFormatter) const;
+      const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
   /// check equality
   bool equals(const This& other, double tol = 1e-9) const;
 
-	/// @}
-	/// @name Advanced Interface
-	/// @{
+  /// @}
+  /// @name Advanced Interface
+  /// @{
 
   /**
    * @return keys involved in this factor
@@ -204,16 +204,16 @@ public:
   std::vector<KeyType>& keys() { return keys_; }
 
   /** mutable iterators */
-  iterator begin() { return keys_.begin(); }	///TODO: comment
-  iterator end() { return keys_.end(); }			///TODO: comment
+  iterator begin() { return keys_.begin(); }  ///TODO: comment
+  iterator end() { return keys_.end(); }      ///TODO: comment
 
 protected:
-	friend class JacobianFactor;
-	friend class HessianFactor;
+  friend class JacobianFactor;
+  friend class HessianFactor;
 
-	/// Internal consistency check that is run frequently when in debug mode.
-	/// If NDEBUG is defined, this is empty and optimized out.
-	void assertInvariants() const;
+  /// Internal consistency check that is run frequently when in debug mode.
+  /// If NDEBUG is defined, this is empty and optimized out.
+  void assertInvariants() const;
 
 private:
   /** Serialization function */
@@ -223,7 +223,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(keys_);
   }
 
-	/// @}
+  /// @}
 
 };
 

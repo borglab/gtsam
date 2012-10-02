@@ -31,24 +31,24 @@ template class ISAM<GaussianConditional>;
 
 /* ************************************************************************* */
 GaussianFactor::shared_ptr GaussianISAM::marginalFactor(Index j) const {
-	return Super::marginalFactor(j, &EliminateQR);
+  return Super::marginalFactor(j, &EliminateQR);
 }
 
 /* ************************************************************************* */
 BayesNet<GaussianConditional>::shared_ptr GaussianISAM::marginalBayesNet(Index j) const {
-	return Super::marginalBayesNet(j, &EliminateQR);
+  return Super::marginalBayesNet(j, &EliminateQR);
 }
 
 /* ************************************************************************* */
 Matrix GaussianISAM::marginalCovariance(Index j) const {
-	GaussianConditional::shared_ptr conditional = marginalBayesNet(j)->front();
-	return conditional->computeInformation().inverse();
+  GaussianConditional::shared_ptr conditional = marginalBayesNet(j)->front();
+  return conditional->computeInformation().inverse();
 }
 
 /* ************************************************************************* */
-	BayesNet<GaussianConditional>::shared_ptr GaussianISAM::jointBayesNet(
-			Index key1, Index key2) const {
-	return Super::jointBayesNet(key1, key2, &EliminateQR);
+  BayesNet<GaussianConditional>::shared_ptr GaussianISAM::jointBayesNet(
+      Index key1, Index key2) const {
+  return Super::jointBayesNet(key1, key2, &EliminateQR);
 }
 
 /* ************************************************************************* */
@@ -61,7 +61,7 @@ VectorValues optimize(const GaussianISAM& isam) {
 
 /* ************************************************************************* */
 BayesNet<GaussianConditional> GaussianISAM::shortcut(sharedClique clique, sharedClique root) {
-	return clique->shortcut(root,&EliminateQR);
+  return clique->shortcut(root,&EliminateQR);
 }
 /* ************************************************************************* */
 

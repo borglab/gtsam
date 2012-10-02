@@ -253,9 +253,9 @@ bool saveMarket(const SparseMatrixType& mat, const std::string& filename, int sy
   for(int j=0; j<mat.outerSize(); ++j)
     for(typename SparseMatrixType::InnerIterator it(mat,j); it; ++it)
     {
-	++ count;
-	internal::PutMatrixElt(it.value(), it.row()+1, it.col()+1, out);
-	// out << it.row()+1 << " " << it.col()+1 << " " << it.value() << "\n";
+  ++ count;
+  internal::PutMatrixElt(it.value(), it.row()+1, it.col()+1, out);
+  // out << it.row()+1 << " " << it.col()+1 << " " << it.value() << "\n";
     }
   out.close();
   return true;

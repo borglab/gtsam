@@ -125,11 +125,11 @@ namespace gtsam {
     /** The size of subtree rooted at this clique, i.e., nr of Cliques */
     size_t treeSize() const;
 
-		/** Collect number of cliques with cached shortcuts in subtree */
-		size_t numCachedShortcuts() const;
+    /** Collect number of cliques with cached shortcuts in subtree */
+    size_t numCachedShortcuts() const;
 
-		/** Collect number of cliques with cached separator marginals */
-		size_t numCachedSeparatorMarginals() const;
+    /** Collect number of cliques with cached separator marginals */
+    size_t numCachedSeparatorMarginals() const;
 
     /** The arrow operator accesses the conditional */
     const ConditionalType* operator->() const {
@@ -228,7 +228,7 @@ namespace gtsam {
     }
 
     const boost::optional<FactorGraph<FactorType> >& cachedSeparatorMarginal() const {
-    	return cachedSeparatorMarginal_;
+      return cachedSeparatorMarginal_;
     }
 
     friend class BayesTree<ConditionalType, DerivedType> ;

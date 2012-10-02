@@ -25,22 +25,22 @@
 
 namespace gtsam {
 
-	typedef BayesNet<DiscreteConditional> DiscreteBayesNet;
+  typedef BayesNet<DiscreteConditional> DiscreteBayesNet;
 
-	/** Add a DiscreteCondtional */
-	void add(DiscreteBayesNet&, const Signature& s);
+  /** Add a DiscreteCondtional */
+  void add(DiscreteBayesNet&, const Signature& s);
 
-	/** Add a DiscreteCondtional in front, when listing parents first*/
-	void add_front(DiscreteBayesNet&, const Signature& s);
+  /** Add a DiscreteCondtional in front, when listing parents first*/
+  void add_front(DiscreteBayesNet&, const Signature& s);
 
-	//** evaluate for given Values */
+  //** evaluate for given Values */
   double evaluate(const DiscreteBayesNet& bn, const DiscreteConditional::Values & values);
 
   /** Optimize function for back-substitution. */
-	DiscreteFactor::sharedValues optimize(const DiscreteBayesNet& bn);
+  DiscreteFactor::sharedValues optimize(const DiscreteBayesNet& bn);
 
-	/** Do ancestral sampling */
-	DiscreteFactor::sharedValues sample(const DiscreteBayesNet& bn);
+  /** Do ancestral sampling */
+  DiscreteFactor::sharedValues sample(const DiscreteBayesNet& bn);
 
 } // namespace
 

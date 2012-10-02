@@ -23,46 +23,46 @@ using namespace std;
 
 namespace gtsam {
 
-	template class Factor<Index> ;
+  template class Factor<Index> ;
 
-	/* ************************************************************************* */
-	void IndexFactor::assertInvariants() const {
-		Base::assertInvariants();
-	}
+  /* ************************************************************************* */
+  void IndexFactor::assertInvariants() const {
+    Base::assertInvariants();
+  }
 
-	/* ************************************************************************* */
-	IndexFactor::IndexFactor(const IndexConditional& c) :
-		Base(c) {
-		assertInvariants();
-	}
+  /* ************************************************************************* */
+  IndexFactor::IndexFactor(const IndexConditional& c) :
+    Base(c) {
+    assertInvariants();
+  }
 
-	/* ************************************************************************* */
+  /* ************************************************************************* */
 #ifdef TRACK_ELIMINATE
-	boost::shared_ptr<IndexConditional> IndexFactor::eliminateFirst() {
-		boost::shared_ptr<IndexConditional> result(Base::eliminateFirst<
-				IndexConditional>());
-		assertInvariants();
-		return result;
-	}
+  boost::shared_ptr<IndexConditional> IndexFactor::eliminateFirst() {
+    boost::shared_ptr<IndexConditional> result(Base::eliminateFirst<
+        IndexConditional>());
+    assertInvariants();
+    return result;
+  }
 
-	/* ************************************************************************* */
-	boost::shared_ptr<BayesNet<IndexConditional> > IndexFactor::eliminate(
-			size_t nrFrontals) {
-		boost::shared_ptr<BayesNet<IndexConditional> > result(Base::eliminate<
-				IndexConditional>(nrFrontals));
-		assertInvariants();
-		return result;
-	}
+  /* ************************************************************************* */
+  boost::shared_ptr<BayesNet<IndexConditional> > IndexFactor::eliminate(
+      size_t nrFrontals) {
+    boost::shared_ptr<BayesNet<IndexConditional> > result(Base::eliminate<
+        IndexConditional>(nrFrontals));
+    assertInvariants();
+    return result;
+  }
 #endif
 
-	/* ************************************************************************* */
-	void IndexFactor::permuteWithInverse(const Permutation& inversePermutation) {
-		BOOST_FOREACH(Index& key, keys())
-			key = inversePermutation[key];
-		assertInvariants();
-	}
+  /* ************************************************************************* */
+  void IndexFactor::permuteWithInverse(const Permutation& inversePermutation) {
+    BOOST_FOREACH(Index& key, keys())
+      key = inversePermutation[key];
+    assertInvariants();
+  }
 
-	/* ************************************************************************* */
+  /* ************************************************************************* */
   void IndexFactor::reduceWithInverse(const internal::Reduction& inverseReduction) {
     BOOST_FOREACH(Index& key, keys())
       key = inverseReduction[key];

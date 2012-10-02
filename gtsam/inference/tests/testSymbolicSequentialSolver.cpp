@@ -36,7 +36,7 @@ TEST( SymbolicSequentialSolver, SymbolicSequentialSolver ) {
   g.push_factor(2);
   // test solver is Testable
   SymbolicSequentialSolver solver(g);
-//	GTSAM_PRINT(solver);
+//  GTSAM_PRINT(solver);
   EXPECT(assert_equal(solver,solver));
 }
 

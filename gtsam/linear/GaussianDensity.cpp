@@ -22,37 +22,37 @@ using namespace std;
 
 namespace gtsam {
 
-	/* ************************************************************************* */
-	void GaussianDensity::print(const string &s, const IndexFormatter& formatter) const
-	{
-	  cout << s << ": density on ";
-	  for(const_iterator it = beginFrontals(); it != endFrontals(); ++it)
-	  	cout << (boost::format("[%1%]")%(formatter(*it))).str() << " ";
-	  cout << endl;
-	  gtsam::print(Matrix(get_R()),"R");
-	  gtsam::print(Vector(get_d()),"d");
-	  gtsam::print(sigmas_,"sigmas");
-	}
+  /* ************************************************************************* */
+  void GaussianDensity::print(const string &s, const IndexFormatter& formatter) const
+  {
+    cout << s << ": density on ";
+    for(const_iterator it = beginFrontals(); it != endFrontals(); ++it)
+      cout << (boost::format("[%1%]")%(formatter(*it))).str() << " ";
+    cout << endl;
+    gtsam::print(Matrix(get_R()),"R");
+    gtsam::print(Vector(get_d()),"d");
+    gtsam::print(sigmas_,"sigmas");
+  }
 
-	/* ************************************************************************* */
-	Vector GaussianDensity::mean() const {
-		// Solve for mean
-		VectorValues x;
-		Index k = firstFrontalKey();
-		// a VectorValues that only has a value for k: cannot be printed if k<>0
-		x.insert(k, Vector(sigmas_.size()));
-		solveInPlace(x);
-		return x[k];
-	}
+  /* ************************************************************************* */
+  Vector GaussianDensity::mean() const {
+    // Solve for mean
+    VectorValues x;
+    Index k = firstFrontalKey();
+    // a VectorValues that only has a value for k: cannot be printed if k<>0
+    x.insert(k, Vector(sigmas_.size()));
+    solveInPlace(x);
+    return x[k];
+  }
 
-	/* ************************************************************************* */
-	Matrix GaussianDensity::information() const {
-		return computeInformation();
-	}
+  /* ************************************************************************* */
+  Matrix GaussianDensity::information() const {
+    return computeInformation();
+  }
 
-	/* ************************************************************************* */
-	Matrix GaussianDensity::covariance() const {
-		return inverse(information());
-	}
+  /* ************************************************************************* */
+  Matrix GaussianDensity::covariance() const {
+    return inverse(information());
+  }
 
 } // gtsam

@@ -130,10 +130,10 @@ namespace gtsam {
 
   /* ************************************************************************* */
   void Values::insert(Key j, const Value& val) {
-  	Key key = j; // Non-const duplicate to deal with non-const insert argument
-  	std::pair<KeyValueMap::iterator,bool> insertResult = values_.insert(key, val.clone_());
-  	if(!insertResult.second)
-  		throw ValuesKeyAlreadyExists(j);
+    Key key = j; // Non-const duplicate to deal with non-const insert argument
+    std::pair<KeyValueMap::iterator,bool> insertResult = values_.insert(key, val.clone_());
+    if(!insertResult.second)
+      throw ValuesKeyAlreadyExists(j);
   }
 
   /* ************************************************************************* */
@@ -146,16 +146,16 @@ namespace gtsam {
 
   /* ************************************************************************* */
   void Values::update(Key j, const Value& val) {
-  	// Find the value to update
-  	KeyValueMap::iterator item = values_.find(j);
-  	if(item == values_.end())
-  		throw ValuesKeyDoesNotExist("update", j);
+    // Find the value to update
+    KeyValueMap::iterator item = values_.find(j);
+    if(item == values_.end())
+      throw ValuesKeyDoesNotExist("update", j);
 
-  	// Cast to the derived type
-  	if(typeid(*item->second) != typeid(val))
-  		throw ValuesIncorrectType(j, typeid(*item->second), typeid(val));
+    // Cast to the derived type
+    if(typeid(*item->second) != typeid(val))
+      throw ValuesIncorrectType(j, typeid(*item->second), typeid(val));
 
-  	values_.replace(item, val.clone_());
+    values_.replace(item, val.clone_());
   }
 
   /* ************************************************************************* */

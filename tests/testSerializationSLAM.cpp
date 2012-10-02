@@ -292,28 +292,28 @@ TEST (Serialization, factors) {
   StereoCamera stereoCamera(pose3, boost::make_shared<Cal3_S2Stereo>(cal3_s2stereo));
 
 
-	Symbol  a01('a',1),  a02('a',2),  a03('a',3),  a04('a',4),  a05('a',5),
-	        a06('a',6),  a07('a',7),  a08('a',8),  a09('a',9),  a10('a',10),
-	        a11('a',11), a12('a',12), a13('a',13), a14('a',14), a15('a',15);
-	Symbol  b01('b',1),  b02('b',2),  b03('b',3),  b04('b',4),  b05('b',5),
-	        b06('b',6),  b07('b',7),  b08('b',8),  b09('b',9),  b10('b',10),
-	        b11('b',11), b12('b',12), b13('b',13), b14('b',14), b15('b',15);
+  Symbol  a01('a',1),  a02('a',2),  a03('a',3),  a04('a',4),  a05('a',5),
+          a06('a',6),  a07('a',7),  a08('a',8),  a09('a',9),  a10('a',10),
+          a11('a',11), a12('a',12), a13('a',13), a14('a',14), a15('a',15);
+  Symbol  b01('b',1),  b02('b',2),  b03('b',3),  b04('b',4),  b05('b',5),
+          b06('b',6),  b07('b',7),  b08('b',8),  b09('b',9),  b10('b',10),
+          b11('b',11), b12('b',12), b13('b',13), b14('b',14), b15('b',15);
 
   Values values;
-	values.insert(a01, lieVector);
-	values.insert(a02, lieMatrix);
-	values.insert(a03, point2);
-	values.insert(a04, stereoPoint2);
-	values.insert(a05, point3);
-	values.insert(a06, rot2);
-	values.insert(a07, rot3);
-	values.insert(a08, pose2);
-	values.insert(a09, pose3);
-	values.insert(a10, cal3_s2);
-	values.insert(a11, cal3ds2);
-	values.insert(a12, calibratedCamera);
-	values.insert(a13, simpleCamera);
-	values.insert(a14, stereoCamera);
+  values.insert(a01, lieVector);
+  values.insert(a02, lieMatrix);
+  values.insert(a03, point2);
+  values.insert(a04, stereoPoint2);
+  values.insert(a05, point3);
+  values.insert(a06, rot2);
+  values.insert(a07, rot3);
+  values.insert(a08, pose2);
+  values.insert(a09, pose3);
+  values.insert(a10, cal3_s2);
+  values.insert(a11, cal3ds2);
+  values.insert(a12, calibratedCamera);
+  values.insert(a13, simpleCamera);
+  values.insert(a14, stereoCamera);
 
 
   SharedNoiseModel model1 = noiseModel::Isotropic::Sigma(1, 0.3);

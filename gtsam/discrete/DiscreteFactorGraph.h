@@ -29,56 +29,56 @@ namespace gtsam {
 class DiscreteFactorGraph: public FactorGraph<DiscreteFactor> {
 public:
 
-	/** A map from keys to values */
-	typedef std::vector<Index> Indices;
-	typedef Assignment<Index> Values;
-	typedef boost::shared_ptr<Values> sharedValues;
+  /** A map from keys to values */
+  typedef std::vector<Index> Indices;
+  typedef Assignment<Index> Values;
+  typedef boost::shared_ptr<Values> sharedValues;
 
-	/** Construct empty factor graph */
-	DiscreteFactorGraph();
+  /** Construct empty factor graph */
+  DiscreteFactorGraph();
 
-	/** Constructor from a factor graph of GaussianFactor or a derived type */
-	template<class DERIVEDFACTOR>
-	DiscreteFactorGraph(const FactorGraph<DERIVEDFACTOR>& fg) {
-		push_back(fg);
-	}
+  /** Constructor from a factor graph of GaussianFactor or a derived type */
+  template<class DERIVEDFACTOR>
+  DiscreteFactorGraph(const FactorGraph<DERIVEDFACTOR>& fg) {
+    push_back(fg);
+  }
 
-	/** construct from a BayesNet */
-	DiscreteFactorGraph(const BayesNet<DiscreteConditional>& bayesNet);
+  /** construct from a BayesNet */
+  DiscreteFactorGraph(const BayesNet<DiscreteConditional>& bayesNet);
 
-	template<class SOURCE>
-	void add(const DiscreteKey& j, SOURCE table) {
-		DiscreteKeys keys;
-		keys.push_back(j);
-		push_back(boost::make_shared<DecisionTreeFactor>(keys, table));
-	}
+  template<class SOURCE>
+  void add(const DiscreteKey& j, SOURCE table) {
+    DiscreteKeys keys;
+    keys.push_back(j);
+    push_back(boost::make_shared<DecisionTreeFactor>(keys, table));
+  }
 
-	template<class SOURCE>
-	void add(const DiscreteKey& j1, const DiscreteKey& j2, SOURCE table) {
-		DiscreteKeys keys;
-		keys.push_back(j1);
-		keys.push_back(j2);
-		push_back(boost::make_shared<DecisionTreeFactor>(keys, table));
-	}
+  template<class SOURCE>
+  void add(const DiscreteKey& j1, const DiscreteKey& j2, SOURCE table) {
+    DiscreteKeys keys;
+    keys.push_back(j1);
+    keys.push_back(j2);
+    push_back(boost::make_shared<DecisionTreeFactor>(keys, table));
+  }
 
-	/** add shared discreteFactor immediately from arguments */
-	template<class SOURCE>
-	void add(const DiscreteKeys& keys, SOURCE table) {
-		push_back(boost::make_shared<DecisionTreeFactor>(keys, table));
-	}
+  /** add shared discreteFactor immediately from arguments */
+  template<class SOURCE>
+  void add(const DiscreteKeys& keys, SOURCE table) {
+    push_back(boost::make_shared<DecisionTreeFactor>(keys, table));
+  }
 
-	/** Return the set of variables involved in the factors (set union) */
-	FastSet<Index> keys() const;
+  /** Return the set of variables involved in the factors (set union) */
+  FastSet<Index> keys() const;
 
-	/** return product of all factors as a single factor */
-	DecisionTreeFactor product() const;
+  /** return product of all factors as a single factor */
+  DecisionTreeFactor product() const;
 
-	/** Evaluates the factor graph given values, returns the joint probability of the factor graph given specific instantiation of values*/
-	double operator()(const DiscreteFactor::Values & values) const;
+  /** Evaluates the factor graph given values, returns the joint probability of the factor graph given specific instantiation of values*/
+  double operator()(const DiscreteFactor::Values & values) const;
 
-	/// print
-	void print(const std::string& s = "DiscreteFactorGraph",
-			const IndexFormatter& formatter =DefaultIndexFormatter) const;
+  /// print
+  void print(const std::string& s = "DiscreteFactorGraph",
+      const IndexFormatter& formatter =DefaultIndexFormatter) const;
 
   /** Permute the variables in the factors */
   void permuteWithInverse(const Permutation& inversePermutation);
@@ -91,6 +91,6 @@ public:
 /** Main elimination function for DiscreteFactorGraph */
 std::pair<boost::shared_ptr<DiscreteConditional>, DecisionTreeFactor::shared_ptr>
 EliminateDiscrete(const FactorGraph<DiscreteFactor>& factors,
-		size_t nrFrontals = 1);
+    size_t nrFrontals = 1);
 
 } // namespace gtsam

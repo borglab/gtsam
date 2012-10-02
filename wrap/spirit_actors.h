@@ -39,12 +39,12 @@ BOOST_SPIRIT_CLASSIC_NAMESPACE_BEGIN
 ///////////////////////////////////////////////////////////////////////////
 struct pop_action
 {
-	template<	typename T>
-	void act(T& ref_) const
-	{
-		if (!ref_.empty())
-		ref_.pop_back();
-	}
+  template<  typename T>
+  void act(T& ref_) const
+  {
+    if (!ref_.empty())
+    ref_.pop_back();
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -53,7 +53,7 @@ struct pop_action
 template<typename T>
 inline ref_actor<T,pop_action> pop_a(T& ref_)
 {
-	return ref_actor<T,pop_action>(ref_);
+  return ref_actor<T,pop_action>(ref_);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -82,38 +82,38 @@ inline ref_actor<T,pop_action> pop_a(T& ref_)
 
 struct append_action
 {
-	template<	typename T,	typename ValueT	>
-	void act(T& ref_, ValueT const& value_) const
-	{
-		ref_.insert(ref_.begin(), value_.begin(), value_.end());
-	}
+  template<  typename T,  typename ValueT  >
+  void act(T& ref_, ValueT const& value_) const
+  {
+    ref_.insert(ref_.begin(), value_.begin(), value_.end());
+  }
 
-	template<typename T,typename IteratorT>
-	void act(
-			T& ref_,
-			IteratorT const& first_,
-			IteratorT const& last_
-	) const
-	{
-		ref_.insert(ref_.end(), first_, last_);
-	}
+  template<typename T,typename IteratorT>
+  void act(
+      T& ref_,
+      IteratorT const& first_,
+      IteratorT const& last_
+  ) const
+  {
+    ref_.insert(ref_.end(), first_, last_);
+  }
 };
 
 template<typename T>
 inline ref_value_actor<T,append_action>
 append_a(T& ref_)
 {
-	return ref_value_actor<T,append_action>(ref_);
+  return ref_value_actor<T,append_action>(ref_);
 }
 
 template<typename T,typename ValueT>
 inline ref_const_ref_actor<T,ValueT,append_action>
 append_a(
-		T& ref_,
-		ValueT const& value_
+    T& ref_,
+    ValueT const& value_
 )
 {
-	return ref_const_ref_actor<T,ValueT,append_action>(ref_,value_);
+  return ref_const_ref_actor<T,ValueT,append_action>(ref_,value_);
 }
 
 BOOST_SPIRIT_CLASSIC_NAMESPACE_END

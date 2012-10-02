@@ -27,67 +27,67 @@
 
 namespace gtsam {
 
-	/**
-	 * A base class for both DiscreteFactor and DiscreteConditional
-	 */
-	class Potentials: public AlgebraicDecisionTree<Index> {
+  /**
+   * A base class for both DiscreteFactor and DiscreteConditional
+   */
+  class Potentials: public AlgebraicDecisionTree<Index> {
 
-	public:
+  public:
 
-		typedef AlgebraicDecisionTree<Index> ADT;
+    typedef AlgebraicDecisionTree<Index> ADT;
 
-	protected:
+  protected:
 
-		/// Cardinality for each key, used in combine
-		std::map<Index,size_t> cardinalities_;
+    /// Cardinality for each key, used in combine
+    std::map<Index,size_t> cardinalities_;
 
-		/** Constructor from ColumnIndex, and ADT */
-		Potentials(const ADT& potentials) :
-				ADT(potentials) {
-		}
+    /** Constructor from ColumnIndex, and ADT */
+    Potentials(const ADT& potentials) :
+        ADT(potentials) {
+    }
 
-		// Safe division for probabilities
-		static double safe_div(const double& a, const double& b);
+    // Safe division for probabilities
+    static double safe_div(const double& a, const double& b);
 
     // Apply either a permutation or a reduction
     template<class P>
     void remapIndices(const P& remapping);
 
-	public:
+  public:
 
-		/** Default constructor for I/O */
-		Potentials();
+    /** Default constructor for I/O */
+    Potentials();
 
-		/** Constructor from Indices and ADT */
-		Potentials(const DiscreteKeys& keys, const ADT& decisionTree);
+    /** Constructor from Indices and ADT */
+    Potentials(const DiscreteKeys& keys, const ADT& decisionTree);
 
-		/** Constructor from Indices and (string or doubles) */
-		template<class SOURCE>
-		Potentials(const DiscreteKeys& keys, SOURCE table) :
-				ADT(keys, table), cardinalities_(keys.cardinalities()) {
-		}
+    /** Constructor from Indices and (string or doubles) */
+    template<class SOURCE>
+    Potentials(const DiscreteKeys& keys, SOURCE table) :
+        ADT(keys, table), cardinalities_(keys.cardinalities()) {
+    }
 
-		// Testable
-		bool equals(const Potentials& other, double tol = 1e-9) const;
-		void print(const std::string& s = "Potentials: ",
-				const IndexFormatter& formatter = DefaultIndexFormatter) const;
+    // Testable
+    bool equals(const Potentials& other, double tol = 1e-9) const;
+    void print(const std::string& s = "Potentials: ",
+        const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
-		size_t cardinality(Index j) const { return cardinalities_.at(j);}
-
-		/**
-		 * @brief Permutes the keys in Potentials
-		 *
-		 * This permutes the Indices and performs necessary re-ordering of ADD.
-		 * This is virtual so that derived types e.g. DecisionTreeFactor can
-		 * re-implement it.
-		 */
-		virtual void permuteWithInverse(const Permutation& inversePermutation);
+    size_t cardinality(Index j) const { return cardinalities_.at(j);}
 
     /**
-	   * Apply a reduction, which is a remapping of variable indices.
-	   */
+     * @brief Permutes the keys in Potentials
+     *
+     * This permutes the Indices and performs necessary re-ordering of ADD.
+     * This is virtual so that derived types e.g. DecisionTreeFactor can
+     * re-implement it.
+     */
+    virtual void permuteWithInverse(const Permutation& inversePermutation);
+
+    /**
+     * Apply a reduction, which is a remapping of variable indices.
+     */
     virtual void reduceWithInverse(const internal::Reduction& inverseReduction);
 
-	}; // Potentials
+  }; // Potentials
 
 } // namespace gtsam

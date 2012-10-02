@@ -40,61 +40,61 @@ namespace gtsam {
   // Forward declaration of BayesTreeClique which is defined below BayesTree in this file
   template<class CONDITIONAL> struct BayesTreeClique;
 
-	/**
-	 * Bayes tree
-	 * @tparam CONDITIONAL The type of the conditional densities, i.e. the type of node in the underlying Bayes chain,
-	 * which could be a ConditionalProbabilityTable, a GaussianConditional, or a SymbolicConditional.
-	 * @tparam CLIQUE The type of the clique data structure, defaults to BayesTreeClique, normally do not change this
-	 * as it is only used when developing special versions of BayesTree, e.g. for ISAM2.
-	 *
-	 * \addtogroup Multifrontal
-	 * \nosubgrouping
-	 */
-	template<class CONDITIONAL, class CLIQUE=BayesTreeClique<CONDITIONAL> >
-	class BayesTree {
+  /**
+   * Bayes tree
+   * @tparam CONDITIONAL The type of the conditional densities, i.e. the type of node in the underlying Bayes chain,
+   * which could be a ConditionalProbabilityTable, a GaussianConditional, or a SymbolicConditional.
+   * @tparam CLIQUE The type of the clique data structure, defaults to BayesTreeClique, normally do not change this
+   * as it is only used when developing special versions of BayesTree, e.g. for ISAM2.
+   *
+   * \addtogroup Multifrontal
+   * \nosubgrouping
+   */
+  template<class CONDITIONAL, class CLIQUE=BayesTreeClique<CONDITIONAL> >
+  class BayesTree {
 
-	public:
+  public:
 
-	  typedef BayesTree<CONDITIONAL, CLIQUE> This;
-	  typedef boost::shared_ptr<BayesTree<CONDITIONAL, CLIQUE> > shared_ptr;
-		typedef boost::shared_ptr<CONDITIONAL> sharedConditional;
-		typedef boost::shared_ptr<BayesNet<CONDITIONAL> > sharedBayesNet;
-		typedef CONDITIONAL ConditionalType;
-		typedef typename CONDITIONAL::FactorType FactorType;
-	  typedef typename FactorGraph<FactorType>::Eliminate Eliminate;
+    typedef BayesTree<CONDITIONAL, CLIQUE> This;
+    typedef boost::shared_ptr<BayesTree<CONDITIONAL, CLIQUE> > shared_ptr;
+    typedef boost::shared_ptr<CONDITIONAL> sharedConditional;
+    typedef boost::shared_ptr<BayesNet<CONDITIONAL> > sharedBayesNet;
+    typedef CONDITIONAL ConditionalType;
+    typedef typename CONDITIONAL::FactorType FactorType;
+    typedef typename FactorGraph<FactorType>::Eliminate Eliminate;
 
-	  typedef CLIQUE Clique; ///< The clique type, normally BayesTreeClique
+    typedef CLIQUE Clique; ///< The clique type, normally BayesTreeClique
 
-		// typedef for shared pointers to cliques
-		typedef boost::shared_ptr<Clique> sharedClique;
+    // typedef for shared pointers to cliques
+    typedef boost::shared_ptr<Clique> sharedClique;
 
-		// A convenience class for a list of shared cliques
-		struct Cliques : public std::list<sharedClique> {
-			void print(const std::string& s = "Cliques",
-					const IndexFormatter& indexFormatter = DefaultIndexFormatter) const;
-			bool equals(const Cliques& other, double tol = 1e-9) const;
-		};
+    // A convenience class for a list of shared cliques
+    struct Cliques : public std::list<sharedClique> {
+      void print(const std::string& s = "Cliques",
+          const IndexFormatter& indexFormatter = DefaultIndexFormatter) const;
+      bool equals(const Cliques& other, double tol = 1e-9) const;
+    };
 
-		/** clique statistics */
-		struct CliqueStats {
-			double avgConditionalSize;
-			std::size_t maxConditionalSize;
-			double avgSeparatorSize;
-			std::size_t maxSeparatorSize;
-			void print(const std::string& s = "") const ;
-		};
+    /** clique statistics */
+    struct CliqueStats {
+      double avgConditionalSize;
+      std::size_t maxConditionalSize;
+      double avgSeparatorSize;
+      std::size_t maxSeparatorSize;
+      void print(const std::string& s = "") const ;
+    };
 
-		/** store all the sizes  */
-		struct CliqueData {
-			std::vector<std::size_t> conditionalSizes;
-			std::vector<std::size_t> separatorSizes;
-			CliqueStats getStats() const;
-		};
+    /** store all the sizes  */
+    struct CliqueData {
+      std::vector<std::size_t> conditionalSizes;
+      std::vector<std::size_t> separatorSizes;
+      CliqueStats getStats() const;
+    };
 
     /** Map from indices to Clique */
     typedef std::deque<sharedClique> Nodes;
 
-	protected:
+  protected:
 
     /** Map from indices to Clique */
     Nodes nodes_;
@@ -104,233 +104,233 @@ namespace gtsam {
 
   public:
 
-		/// @name Standard Constructors
-		/// @{
+    /// @name Standard Constructors
+    /// @{
 
-		/** Create an empty Bayes Tree */
-		BayesTree() {}
+    /** Create an empty Bayes Tree */
+    BayesTree() {}
 
-		/** Create a Bayes Tree from a Bayes Net (requires CONDITIONAL is IndexConditional *or* CONDITIONAL::Combine) */
-		explicit BayesTree(const BayesNet<CONDITIONAL>& bayesNet);
+    /** Create a Bayes Tree from a Bayes Net (requires CONDITIONAL is IndexConditional *or* CONDITIONAL::Combine) */
+    explicit BayesTree(const BayesNet<CONDITIONAL>& bayesNet);
 
-		/** Copy constructor */
-		BayesTree(const This& other);
+    /** Copy constructor */
+    BayesTree(const This& other);
 
-		/** Assignment operator */
-		This& operator=(const This& other);
+    /** Assignment operator */
+    This& operator=(const This& other);
 
-		/// @}
-		/// @name Advanced Constructors
-		/// @{
+    /// @}
+    /// @name Advanced Constructors
+    /// @{
 
-		/**
-		 * Create a Bayes Tree from a Bayes Net and some subtrees. The Bayes net corresponds to the
-		 * new root clique and the subtrees are connected to the root clique.
-		 */
-		BayesTree(const BayesNet<CONDITIONAL>& bayesNet, std::list<BayesTree<CONDITIONAL,CLIQUE> > subtrees);
+    /**
+     * Create a Bayes Tree from a Bayes Net and some subtrees. The Bayes net corresponds to the
+     * new root clique and the subtrees are connected to the root clique.
+     */
+    BayesTree(const BayesNet<CONDITIONAL>& bayesNet, std::list<BayesTree<CONDITIONAL,CLIQUE> > subtrees);
 
-		/** Destructor */
-		virtual ~BayesTree() {}
+    /** Destructor */
+    virtual ~BayesTree() {}
 
-		/// @}
-		/// @name Testable
-		/// @{
+    /// @}
+    /// @name Testable
+    /// @{
 
-		/** check equality */
-		bool equals(const BayesTree<CONDITIONAL,CLIQUE>& other, double tol = 1e-9) const;
+    /** check equality */
+    bool equals(const BayesTree<CONDITIONAL,CLIQUE>& other, double tol = 1e-9) const;
 
-		/** print */
-		void print(const std::string& s = "",
-				const IndexFormatter& indexFormatter = DefaultIndexFormatter ) const;
+    /** print */
+    void print(const std::string& s = "",
+        const IndexFormatter& indexFormatter = DefaultIndexFormatter ) const;
 
-		/// @}
-		/// @name Standard Interface
-		/// @{
+    /// @}
+    /// @name Standard Interface
+    /// @{
 
-		/**
-		 * Find parent clique of a conditional.  It will look at all parents and
-		 * return the one with the lowest index in the ordering.
-		 */
-		template<class CONTAINER>
-		Index findParentClique(const CONTAINER& parents) const;
+    /**
+     * Find parent clique of a conditional.  It will look at all parents and
+     * return the one with the lowest index in the ordering.
+     */
+    template<class CONTAINER>
+    Index findParentClique(const CONTAINER& parents) const;
 
-		/** number of cliques */
-		inline size_t size() const {
-			if(root_)
-				return root_->treeSize();
-			else
-				return 0;
-		}
+    /** number of cliques */
+    inline size_t size() const {
+      if(root_)
+        return root_->treeSize();
+      else
+        return 0;
+    }
 
     /** return nodes */
     const Nodes& nodes() const { return nodes_; }
 
-		/** return root clique */
-		const sharedClique& root() const { return root_;	}
+    /** return root clique */
+    const sharedClique& root() const { return root_;  }
 
-		/** find the clique that contains the variable with Index j */
-		sharedClique operator[](Index j) const {
-			return nodes_.at(j);
-		}
+    /** find the clique that contains the variable with Index j */
+    sharedClique operator[](Index j) const {
+      return nodes_.at(j);
+    }
 
-		/** Gather data on all cliques */
-		CliqueData getCliqueData() const;
+    /** Gather data on all cliques */
+    CliqueData getCliqueData() const;
 
-		/** Collect number of cliques with cached shortcuts */
-		size_t numCachedShortcuts() const;
+    /** Collect number of cliques with cached shortcuts */
+    size_t numCachedShortcuts() const;
 
-		/** Collect number of cliques with cached separator marginals */
-		size_t numCachedSeparatorMarginals() const;
+    /** Collect number of cliques with cached separator marginals */
+    size_t numCachedSeparatorMarginals() const;
 
-		/** return marginal on any variable */
-		typename FactorType::shared_ptr marginalFactor(Index j, Eliminate function) const;
+    /** return marginal on any variable */
+    typename FactorType::shared_ptr marginalFactor(Index j, Eliminate function) const;
 
-		/**
-		 * return marginal on any variable, as a Bayes Net
-		 * NOTE: this function calls marginal, and then eliminates it into a Bayes Net
-		 * This is more expensive than the above function
-		 */
-		typename BayesNet<CONDITIONAL>::shared_ptr marginalBayesNet(Index j, Eliminate function) const;
+    /**
+     * return marginal on any variable, as a Bayes Net
+     * NOTE: this function calls marginal, and then eliminates it into a Bayes Net
+     * This is more expensive than the above function
+     */
+    typename BayesNet<CONDITIONAL>::shared_ptr marginalBayesNet(Index j, Eliminate function) const;
 
-		/**
-		 * return joint on two variables
+    /**
+     * return joint on two variables
      * Limitation: can only calculate joint if cliques are disjoint or one of them is root
-		 */
-		typename FactorGraph<FactorType>::shared_ptr joint(Index j1, Index j2, Eliminate function) const;
+     */
+    typename FactorGraph<FactorType>::shared_ptr joint(Index j1, Index j2, Eliminate function) const;
 
-		/**
-		 * return joint on two variables as a BayesNet
+    /**
+     * return joint on two variables as a BayesNet
      * Limitation: can only calculate joint if cliques are disjoint or one of them is root
-		 */
-		typename BayesNet<CONDITIONAL>::shared_ptr jointBayesNet(Index j1, Index j2, Eliminate function) const;
+     */
+    typename BayesNet<CONDITIONAL>::shared_ptr jointBayesNet(Index j1, Index j2, Eliminate function) const;
 
-		/**
-		 * Read only with side effects
-		 */
+    /**
+     * Read only with side effects
+     */
 
-		/** saves the Tree to a text file in GraphViz format */
-		void saveGraph(const std::string& s, const IndexFormatter& indexFormatter = DefaultIndexFormatter ) const;
+    /** saves the Tree to a text file in GraphViz format */
+    void saveGraph(const std::string& s, const IndexFormatter& indexFormatter = DefaultIndexFormatter ) const;
 
-		/// @}
-		/// @name Advanced Interface
-		/// @{
+    /// @}
+    /// @name Advanced Interface
+    /// @{
 
-		/** Access the root clique (non-const version) */
-		sharedClique& root() { return root_; }
+    /** Access the root clique (non-const version) */
+    sharedClique& root() { return root_; }
 
-		/** Access the nodes (non-cost version) */
-		Nodes& nodes() { return nodes_; }
+    /** Access the nodes (non-cost version) */
+    Nodes& nodes() { return nodes_; }
 
-		/** Remove all nodes */
-		void clear();
+    /** Remove all nodes */
+    void clear();
 
-		/** Clear all shortcut caches - use before timing on marginal calculation to avoid residual cache data */
-		inline void deleteCachedShorcuts() {
-		  root_->deleteCachedShorcuts();
-		}
+    /** Clear all shortcut caches - use before timing on marginal calculation to avoid residual cache data */
+    inline void deleteCachedShorcuts() {
+      root_->deleteCachedShorcuts();
+    }
 
-		/**
-		 * Remove path from clique to root and return that path as factors
-		 * plus a list of orphaned subtree roots. Used in removeTop below.
-		 */
-		void removePath(sharedClique clique, BayesNet<CONDITIONAL>& bn, Cliques& orphans);
+    /**
+     * Remove path from clique to root and return that path as factors
+     * plus a list of orphaned subtree roots. Used in removeTop below.
+     */
+    void removePath(sharedClique clique, BayesNet<CONDITIONAL>& bn, Cliques& orphans);
 
-		/**
-		 * Given a list of indices, turn "contaminated" part of the tree back into a factor graph.
-		 * Factors and orphans are added to the in/out arguments.
-		 */
-		template<class CONTAINER>
-		void removeTop(const CONTAINER& indices, BayesNet<CONDITIONAL>& bn, Cliques& orphans);
+    /**
+     * Given a list of indices, turn "contaminated" part of the tree back into a factor graph.
+     * Factors and orphans are added to the in/out arguments.
+     */
+    template<class CONTAINER>
+    void removeTop(const CONTAINER& indices, BayesNet<CONDITIONAL>& bn, Cliques& orphans);
 
-		/**
-		 * Hang a new subtree off of the existing tree.  This finds the appropriate
-		 * parent clique for the subtree (which may be the root), and updates the
-		 * nodes index with the new cliques in the subtree.  None of the frontal
-		 * variables in the subtree may appear in the separators of the existing
-		 * BayesTree.
-		 */
-		void insert(const sharedClique& subtree);
+    /**
+     * Hang a new subtree off of the existing tree.  This finds the appropriate
+     * parent clique for the subtree (which may be the root), and updates the
+     * nodes index with the new cliques in the subtree.  None of the frontal
+     * variables in the subtree may appear in the separators of the existing
+     * BayesTree.
+     */
+    void insert(const sharedClique& subtree);
 
-		/** Insert a new conditional
-		 * This function only applies for Symbolic case with IndexCondtional,
-		 * We make it static so that it won't be compiled in GaussianConditional case.
-		 * */
-		static void insert(BayesTree<CONDITIONAL,CLIQUE>& bayesTree, const sharedConditional& conditional);
+    /** Insert a new conditional
+     * This function only applies for Symbolic case with IndexCondtional,
+     * We make it static so that it won't be compiled in GaussianConditional case.
+     * */
+    static void insert(BayesTree<CONDITIONAL,CLIQUE>& bayesTree, const sharedConditional& conditional);
 
-		/**
-		 * Insert a new clique corresponding to the given Bayes net.
-		 * It is the caller's responsibility to decide whether the given Bayes net is a valid clique,
-		 * i.e. all the variables (frontal and separator) are connected
-		 */
-		sharedClique insert(const sharedConditional& clique,
-				std::list<sharedClique>& children, bool isRootClique = false);
+    /**
+     * Insert a new clique corresponding to the given Bayes net.
+     * It is the caller's responsibility to decide whether the given Bayes net is a valid clique,
+     * i.e. all the variables (frontal and separator) are connected
+     */
+    sharedClique insert(const sharedConditional& clique,
+        std::list<sharedClique>& children, bool isRootClique = false);
 
-		/**
-		 * Create a clone of this object as a shared pointer
-		 * Necessary for inheritance in matlab interface
-		 */
-		virtual shared_ptr clone() const {
-			return shared_ptr(new This(*this));
-		}
+    /**
+     * Create a clone of this object as a shared pointer
+     * Necessary for inheritance in matlab interface
+     */
+    virtual shared_ptr clone() const {
+      return shared_ptr(new This(*this));
+    }
 
-	protected:
+  protected:
 
-		/** private helper method for saving the Tree to a text file in GraphViz format */
-		void saveGraph(std::ostream &s, sharedClique clique, const IndexFormatter& indexFormatter,
-				int parentnum = 0) const;
+    /** private helper method for saving the Tree to a text file in GraphViz format */
+    void saveGraph(std::ostream &s, sharedClique clique, const IndexFormatter& indexFormatter,
+        int parentnum = 0) const;
 
-		/** Gather data on a single clique */
-		void getCliqueData(CliqueData& stats, sharedClique clique) const;
+    /** Gather data on a single clique */
+    void getCliqueData(CliqueData& stats, sharedClique clique) const;
 
-		/** remove a clique: warning, can result in a forest */
-		void removeClique(sharedClique clique);
+    /** remove a clique: warning, can result in a forest */
+    void removeClique(sharedClique clique);
 
-		/** add a clique (top down) */
-		sharedClique addClique(const sharedConditional& conditional, const sharedClique& parent_clique = sharedClique());
+    /** add a clique (top down) */
+    sharedClique addClique(const sharedConditional& conditional, const sharedClique& parent_clique = sharedClique());
 
     /** add a clique (top down) */
     void addClique(const sharedClique& clique, const sharedClique& parent_clique = sharedClique());
 
-		/** add a clique (bottom up) */
-		sharedClique addClique(const sharedConditional& conditional, std::list<sharedClique>& child_cliques);
+    /** add a clique (bottom up) */
+    sharedClique addClique(const sharedConditional& conditional, std::list<sharedClique>& child_cliques);
 
-		/**
-		 * Add a conditional to the front of a clique, i.e. a conditional whose
-		 * parents are already in the clique or its separators.  This function does
-		 * not check for this condition, it just updates the data structures.
-		 */
-		static void addToCliqueFront(BayesTree<CONDITIONAL,CLIQUE>& bayesTree,
-		    const sharedConditional& conditional, const sharedClique& clique);
+    /**
+     * Add a conditional to the front of a clique, i.e. a conditional whose
+     * parents are already in the clique or its separators.  This function does
+     * not check for this condition, it just updates the data structures.
+     */
+    static void addToCliqueFront(BayesTree<CONDITIONAL,CLIQUE>& bayesTree,
+        const sharedConditional& conditional, const sharedClique& clique);
 
-		/** Fill the nodes index for a subtree */
-		void fillNodesIndex(const sharedClique& subtree);
+    /** Fill the nodes index for a subtree */
+    void fillNodesIndex(const sharedClique& subtree);
 
     /** Helper function to build a non-symbolic tree (e.g. Gaussian) using a
      * symbolic tree, used in the BT(BN) constructor.
      */
-		void recursiveTreeBuild(const boost::shared_ptr<BayesTreeClique<IndexConditional> >& symbolic,
-		      const std::vector<boost::shared_ptr<CONDITIONAL> >& conditionals,
-		      const typename BayesTree<CONDITIONAL,CLIQUE>::sharedClique& parent);
+    void recursiveTreeBuild(const boost::shared_ptr<BayesTreeClique<IndexConditional> >& symbolic,
+          const std::vector<boost::shared_ptr<CONDITIONAL> >& conditionals,
+          const typename BayesTree<CONDITIONAL,CLIQUE>::sharedClique& parent);
 
   private:
 
     /** deep copy to another tree */
-		void cloneTo(This& newTree) const;
+    void cloneTo(This& newTree) const;
 
-		/** deep copy to another tree */
-		void cloneTo(This& newTree, const sharedClique& subtree, const sharedClique& parent) const;
+    /** deep copy to another tree */
+    void cloneTo(This& newTree, const sharedClique& subtree, const sharedClique& parent) const;
 
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
-    	ar & BOOST_SERIALIZATION_NVP(nodes_);
-    	ar & BOOST_SERIALIZATION_NVP(root_);
+      ar & BOOST_SERIALIZATION_NVP(nodes_);
+      ar & BOOST_SERIALIZATION_NVP(root_);
     }
 
-		/// @}
+    /// @}
 
-	}; // BayesTree
+  }; // BayesTree
 
 
   /* ************************************************************************* */
@@ -352,13 +352,13 @@ namespace gtsam {
     }
   }
 
-	/* ************************************************************************* */
-	template<class CONDITIONAL,class CLIQUE>
-	boost::shared_ptr<VectorValues> allocateVectorValues(const BayesTree<CONDITIONAL,CLIQUE>& bt) {
-	  std::vector<size_t> dimensions(bt.nodes().size(), 0);
-	  _BayesTree_dim_adder<CONDITIONAL,CLIQUE>(dimensions, bt.root());
-	  return boost::shared_ptr<VectorValues>(new VectorValues(dimensions));
-	}
+  /* ************************************************************************* */
+  template<class CONDITIONAL,class CLIQUE>
+  boost::shared_ptr<VectorValues> allocateVectorValues(const BayesTree<CONDITIONAL,CLIQUE>& bt) {
+    std::vector<size_t> dimensions(bt.nodes().size(), 0);
+    _BayesTree_dim_adder<CONDITIONAL,CLIQUE>(dimensions, bt.root());
+    return boost::shared_ptr<VectorValues>(new VectorValues(dimensions));
+  }
 
 
   /* ************************************************************************* */

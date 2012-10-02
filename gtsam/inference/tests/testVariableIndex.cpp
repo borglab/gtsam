@@ -44,8 +44,8 @@ TEST(VariableIndex, augment) {
   VariableIndex actual(fg1);
   actual.augment(fg2);
 
-	LONGS_EQUAL(16, actual.nEntries());
-	LONGS_EQUAL(8, actual.nFactors());
+  LONGS_EQUAL(16, actual.nEntries());
+  LONGS_EQUAL(8, actual.nFactors());
   EXPECT(assert_equal(expected, actual));
 }
 

@@ -28,8 +28,8 @@
 
 namespace gtsam {
 
-	// Forward declarations
-	class Permutation;
+  // Forward declarations
+  class Permutation;
 
   /**
    * This class represents a collection of vector-valued variables associated
@@ -134,8 +134,8 @@ namespace gtsam {
     /** Return the summed dimensionality of all variables. */
     size_t dim() const { return values_.rows(); }
 
-		/** Return the dimension of each vector in this container */
-		std::vector<size_t> dims() const;
+    /** Return the dimension of each vector in this container */
+    std::vector<size_t> dims() const;
 
     /** Check whether a variable with index \c j exists. */
     bool exists(Index j) const { return j < size() && maps_[j].rows() > 0; }
@@ -174,7 +174,7 @@ namespace gtsam {
 
     /** print required by Testable for unit testing */
     void print(const std::string& str = "VectorValues: ",
-    		const IndexFormatter& formatter =DefaultIndexFormatter) const;
+        const IndexFormatter& formatter =DefaultIndexFormatter) const;
 
     /** equals required by Testable for unit testing */
     bool equals(const VectorValues& x, double tol = 1e-9) const;
@@ -293,16 +293,16 @@ namespace gtsam {
      */
     void operator+=(const VectorValues& c);
 
-		/**
-		 * Permute the entries of this VectorValues, returns a new VectorValues as
-		 * the result.
-		 */
-		VectorValues permute(const Permutation& permutation) const;
+    /**
+     * Permute the entries of this VectorValues, returns a new VectorValues as
+     * the result.
+     */
+    VectorValues permute(const Permutation& permutation) const;
 
-		/**
-		 * Swap the data in this VectorValues with another.
-		 */
-		void swap(VectorValues& other);
+    /**
+     * Swap the data in this VectorValues with another.
+     */
+    void swap(VectorValues& other);
 
     /// @}
 

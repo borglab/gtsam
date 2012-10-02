@@ -57,14 +57,14 @@ TEST( simulated2DOriented, Dprior )
 /* ************************************************************************* */
 TEST( simulated2DOriented, constructor )
 {
-	Pose2 measurement(0.2, 0.3, 0.1);
-	SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector_(3, 1., 1., 1.));
-	simulated2DOriented::Odometry factor(measurement, model, X(1), X(2));
+  Pose2 measurement(0.2, 0.3, 0.1);
+  SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector_(3, 1., 1., 1.));
+  simulated2DOriented::Odometry factor(measurement, model, X(1), X(2));
 
-	simulated2DOriented::Values config;
-	config.insert(X(1), Pose2(1., 0., 0.2));
-	config.insert(X(2), Pose2(2., 0., 0.1));
-	boost::shared_ptr<GaussianFactor> lf = factor.linearize(config, *config.orderingArbitrary());
+  simulated2DOriented::Values config;
+  config.insert(X(1), Pose2(1., 0., 0.2));
+  config.insert(X(2), Pose2(2., 0., 0.1));
+  boost::shared_ptr<GaussianFactor> lf = factor.linearize(config, *config.orderingArbitrary());
 }
 
 /* ************************************************************************* */

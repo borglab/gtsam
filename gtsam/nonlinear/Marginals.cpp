@@ -47,10 +47,10 @@ Marginals::Marginals(const NonlinearFactorGraph& graph, const Values& solution, 
 
 /* ************************************************************************* */
 void Marginals::print(const std::string& str, const KeyFormatter& keyFormatter) const {
-	ordering_.print(str+"Ordering: ", keyFormatter);
-	graph_.print(str+"Graph: ");
-	values_.print(str+"Solution: ", keyFormatter);
-	bayesTree_.print(str+"Bayes Tree: ");
+  ordering_.print(str+"Ordering: ", keyFormatter);
+  graph_.print(str+"Graph: ");
+  values_.print(str+"Solution: ", keyFormatter);
+  bayesTree_.print(str+"Bayes Tree: ");
 }
 
 /* ************************************************************************* */
@@ -132,11 +132,11 @@ JointMarginal Marginals::jointMarginalInformation(const std::vector<Key>& variab
     // which are sorted in index order.
     Ordering variableConversion;
     {
-			// First build map from index to key
+      // First build map from index to key
       FastMap<Index,Key> usedIndices;
       for(size_t i=0; i<variables.size(); ++i)
         usedIndices.insert(make_pair(indices[i], variables[i]));
-			// Next run over indices in sorted order
+      // Next run over indices in sorted order
       size_t slot = 0;
       typedef pair<Index,Key> Index_Key;
       BOOST_FOREACH(const Index_Key& index_key, usedIndices) {
@@ -149,7 +149,7 @@ JointMarginal Marginals::jointMarginalInformation(const std::vector<Key>& variab
     std::vector<size_t> dims(indices.size(), 0);
     BOOST_FOREACH(Key key, variables) {
       dims[variableConversion[key]] = values_.at(key).dim();
-		}
+    }
 
     // Get information matrix
     Matrix augmentedInfo = jointFG.augmentedHessian();
@@ -161,16 +161,16 @@ JointMarginal Marginals::jointMarginalInformation(const std::vector<Key>& variab
 
 /* ************************************************************************* */
 void JointMarginal::print(const std::string& s, const KeyFormatter& formatter) const {
-	cout << s << "Joint marginal on keys ";
-	bool first = true;
-	BOOST_FOREACH(const Ordering::value_type& key_index, indices_) {
-		if(!first)
-			cout << ", ";
-		else
-			first = false;
-		cout << formatter(key_index.first);
-	}
-	cout << ".  Use 'at' or 'operator()' to query matrix blocks." << endl;
+  cout << s << "Joint marginal on keys ";
+  bool first = true;
+  BOOST_FOREACH(const Ordering::value_type& key_index, indices_) {
+    if(!first)
+      cout << ", ";
+    else
+      first = false;
+    cout << formatter(key_index.first);
+  }
+  cout << ".  Use 'at' or 'operator()' to query matrix blocks." << endl;
 }
 
 } /* namespace gtsam */

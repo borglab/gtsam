@@ -36,41 +36,41 @@ static const Index _D_ = 4;
 static const Index _E_ = 5;
 
 static IndexConditional::shared_ptr
-	B(new IndexConditional(_B_)),
-	L(new IndexConditional(_L_, _B_));
+  B(new IndexConditional(_B_)),
+  L(new IndexConditional(_L_, _B_));
 
 /* ************************************************************************* */
 TEST( SymbolicBayesNet, equals )
 {
-	BayesNet<IndexConditional> f1;
-	f1.push_back(B);
-	f1.push_back(L);
-	BayesNet<IndexConditional> f2;
-	f2.push_back(L);
-	f2.push_back(B);
-	CHECK(f1.equals(f1));
-	CHECK(!f1.equals(f2));
+  BayesNet<IndexConditional> f1;
+  f1.push_back(B);
+  f1.push_back(L);
+  BayesNet<IndexConditional> f2;
+  f2.push_back(L);
+  f2.push_back(B);
+  CHECK(f1.equals(f1));
+  CHECK(!f1.equals(f2));
 }
 
 /* ************************************************************************* */
 TEST( SymbolicBayesNet, pop_front )
 {
-	IndexConditional::shared_ptr
-		A(new IndexConditional(_A_,_B_,_C_)),
-		B(new IndexConditional(_B_,_C_)),
-		C(new IndexConditional(_C_));
+  IndexConditional::shared_ptr
+    A(new IndexConditional(_A_,_B_,_C_)),
+    B(new IndexConditional(_B_,_C_)),
+    C(new IndexConditional(_C_));
 
-	// Expected after pop_front
-	BayesNet<IndexConditional> expected;
-	expected.push_back(B);
-	expected.push_back(C);
+  // Expected after pop_front
+  BayesNet<IndexConditional> expected;
+  expected.push_back(B);
+  expected.push_back(C);
 
-	// Actual
-	BayesNet<IndexConditional> actual;
-	actual.push_back(A);
-	actual.push_back(B);
-	actual.push_back(C);
-	actual.pop_front();
+  // Actual
+  BayesNet<IndexConditional> actual;
+  actual.push_back(A);
+  actual.push_back(B);
+  actual.push_back(C);
+  actual.pop_front();
 
   CHECK(assert_equal(expected,actual));
 }
@@ -78,27 +78,27 @@ TEST( SymbolicBayesNet, pop_front )
 /* ************************************************************************* */
 TEST( SymbolicBayesNet, combine )
 {
-	IndexConditional::shared_ptr
-		A(new IndexConditional(_A_,_B_,_C_)),
-		B(new IndexConditional(_B_,_C_)),
-		C(new IndexConditional(_C_));
+  IndexConditional::shared_ptr
+    A(new IndexConditional(_A_,_B_,_C_)),
+    B(new IndexConditional(_B_,_C_)),
+    C(new IndexConditional(_C_));
 
-	// p(A|BC)
-	BayesNet<IndexConditional> p_ABC;
-	p_ABC.push_back(A);
+  // p(A|BC)
+  BayesNet<IndexConditional> p_ABC;
+  p_ABC.push_back(A);
 
-	// P(BC)=P(B|C)P(C)
-	BayesNet<IndexConditional> p_BC;
-	p_BC.push_back(B);
-	p_BC.push_back(C);
+  // P(BC)=P(B|C)P(C)
+  BayesNet<IndexConditional> p_BC;
+  p_BC.push_back(B);
+  p_BC.push_back(C);
 
-	// P(ABC) = P(A|BC) P(BC)
-	p_ABC.push_back(p_BC);
+  // P(ABC) = P(A|BC) P(BC)
+  p_ABC.push_back(p_BC);
 
-	BayesNet<IndexConditional> expected;
-	expected.push_back(A);
-	expected.push_back(B);
-	expected.push_back(C);
+  BayesNet<IndexConditional> expected;
+  expected.push_back(A);
+  expected.push_back(B);
+  expected.push_back(C);
 
   CHECK(assert_equal(expected,p_ABC));
 }
@@ -204,7 +204,7 @@ TEST(SymbolicBayesNet, saveGraph) {
 
 /* ************************************************************************* */
 int main() {
-	TestResult tr;
-	return TestRegistry::runAllTests(tr);
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */

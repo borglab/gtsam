@@ -24,21 +24,21 @@ using namespace std;
 using namespace gtsam;
 
 #define TEST(TITLE,STATEMENT) \
-	cout << endl << TITLE << endl;\
-	timeLog = clock();\
-	for(int i = 0; i < n; i++)\
-	STATEMENT;\
-	timeLog2 = clock();\
-	seconds = (double)(timeLog2-timeLog)/CLOCKS_PER_SEC;\
-	cout << seconds << " seconds" << endl;\
-	cout << ((double)n/seconds) << " calls/second" << endl;
+  cout << endl << TITLE << endl;\
+  timeLog = clock();\
+  for(int i = 0; i < n; i++)\
+  STATEMENT;\
+  timeLog2 = clock();\
+  seconds = (double)(timeLog2-timeLog)/CLOCKS_PER_SEC;\
+  cout << seconds << " seconds" << endl;\
+  cout << ((double)n/seconds) << " calls/second" << endl;
 
 int main()
 {
   int n = 100000; long timeLog, timeLog2; double seconds;
-	// create a random direction:
-	double norm=sqrt(1.0+16.0+4.0);
-	double x=1.0/norm, y=4.0/norm, z=2.0/norm;
+  // create a random direction:
+  double norm=sqrt(1.0+16.0+4.0);
+  double x=1.0/norm, y=4.0/norm, z=2.0/norm;
   Vector v = Vector_(3,x,y,z);
   Rot3 R = Rot3::rodriguez(0.1, 0.4, 0.2), R2 = R.retract(v);
 

@@ -23,9 +23,9 @@
 
 namespace gtsam {
 
-	/// A simple camera class with a Cal3_S2 calibration
+  /// A simple camera class with a Cal3_S2 calibration
   typedef PinholeCamera<Cal3_S2> SimpleCamera;
 
   /// Recover camera from 3*4 camera matrix
-	SimpleCamera simpleCamera(const Matrix& P);
+  SimpleCamera simpleCamera(const Matrix& P);
 }

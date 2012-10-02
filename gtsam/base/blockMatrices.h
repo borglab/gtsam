@@ -307,11 +307,11 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version) {
-  	ar & BOOST_SERIALIZATION_NVP(matrix_);
-  	ar & BOOST_SERIALIZATION_NVP(variableColOffsets_);
-  	ar & BOOST_SERIALIZATION_NVP(rowStart_);
-  	ar & BOOST_SERIALIZATION_NVP(rowEnd_);
-  	ar & BOOST_SERIALIZATION_NVP(blockStart_);
+    ar & BOOST_SERIALIZATION_NVP(matrix_);
+    ar & BOOST_SERIALIZATION_NVP(variableColOffsets_);
+    ar & BOOST_SERIALIZATION_NVP(rowStart_);
+    ar & BOOST_SERIALIZATION_NVP(rowEnd_);
+    ar & BOOST_SERIALIZATION_NVP(blockStart_);
   }
 };
 
@@ -377,9 +377,9 @@ public:
     blockStart_ = 0;
     fillOffsets(firstBlockDim, lastBlockDim);
     if (preserve)
-    	matrix_.conservativeResize(variableColOffsets_.back(), variableColOffsets_.back());
+      matrix_.conservativeResize(variableColOffsets_.back(), variableColOffsets_.back());
     else
-    	matrix_.resize(variableColOffsets_.back(), variableColOffsets_.back());
+      matrix_.resize(variableColOffsets_.back(), variableColOffsets_.back());
   }
 
   /** Row size
@@ -415,9 +415,9 @@ public:
     assert(i_actualEndBlock < variableColOffsets_.size());
     assert(j_actualEndBlock < variableColOffsets_.size());
     return matrix_.block(
-    		variableColOffsets_[i_actualStartBlock], variableColOffsets_[j_actualStartBlock],
-    		variableColOffsets_[i_actualEndBlock]-variableColOffsets_[i_actualStartBlock],
-    		variableColOffsets_[j_actualEndBlock]-variableColOffsets_[j_actualStartBlock]);
+        variableColOffsets_[i_actualStartBlock], variableColOffsets_[j_actualStartBlock],
+        variableColOffsets_[i_actualEndBlock]-variableColOffsets_[i_actualStartBlock],
+        variableColOffsets_[j_actualEndBlock]-variableColOffsets_[j_actualStartBlock]);
   }
 
   constBlock range(size_t i_startBlock, size_t i_endBlock, size_t j_startBlock, size_t j_endBlock) const {
@@ -431,9 +431,9 @@ public:
     assert(i_actualEndBlock < variableColOffsets_.size());
     assert(j_actualEndBlock < variableColOffsets_.size());
     return ((const FullMatrix&)matrix_).block(
-    		variableColOffsets_[i_actualStartBlock], variableColOffsets_[j_actualStartBlock],
-    		variableColOffsets_[i_actualEndBlock]-variableColOffsets_[i_actualStartBlock],
-    		variableColOffsets_[j_actualEndBlock]-variableColOffsets_[j_actualStartBlock]);
+        variableColOffsets_[i_actualStartBlock], variableColOffsets_[j_actualStartBlock],
+        variableColOffsets_[i_actualEndBlock]-variableColOffsets_[i_actualStartBlock],
+        variableColOffsets_[j_actualEndBlock]-variableColOffsets_[j_actualStartBlock]);
   }
 
   Block full() {
@@ -448,19 +448,19 @@ public:
   const FullMatrix& fullMatrix() const { return matrix_; }
 
   Column column(size_t i_block, size_t j_block, size_t columnOffset) {
-  	assertInvariants();
-  	size_t i_actualBlock = i_block + blockStart_;
-  	size_t j_actualBlock = j_block + blockStart_;
-  	checkBlock(i_actualBlock);
-  	checkBlock(j_actualBlock);
-  	assert(i_actualBlock < variableColOffsets_.size());
-  	assert(j_actualBlock < variableColOffsets_.size());
-  	assert(variableColOffsets_[j_actualBlock] + columnOffset < variableColOffsets_[j_actualBlock+1]);
+    assertInvariants();
+    size_t i_actualBlock = i_block + blockStart_;
+    size_t j_actualBlock = j_block + blockStart_;
+    checkBlock(i_actualBlock);
+    checkBlock(j_actualBlock);
+    assert(i_actualBlock < variableColOffsets_.size());
+    assert(j_actualBlock < variableColOffsets_.size());
+    assert(variableColOffsets_[j_actualBlock] + columnOffset < variableColOffsets_[j_actualBlock+1]);
 
-  	return matrix_.col(
-  			variableColOffsets_[j_actualBlock] + columnOffset).segment(
-  					variableColOffsets_[i_actualBlock],
-  					variableColOffsets_[i_actualBlock+1]-variableColOffsets_[i_actualBlock]);
+    return matrix_.col(
+        variableColOffsets_[j_actualBlock] + columnOffset).segment(
+            variableColOffsets_[i_actualBlock],
+            variableColOffsets_[i_actualBlock+1]-variableColOffsets_[i_actualBlock]);
   }
 
   constColumn column(size_t i_block, size_t j_block, size_t columnOffset) const {
@@ -496,9 +496,9 @@ public:
     assert(variableColOffsets_[j_actualStartBlock] + columnOffset < variableColOffsets_[j_actualStartBlock+1]);
 
     return matrix_.col(
-    		variableColOffsets_[j_actualStartBlock] + columnOffset).segment(
-    				variableColOffsets_[i_actualStartBlock],
-    				variableColOffsets_[i_actualEndBlock]-variableColOffsets_[i_actualStartBlock]);
+        variableColOffsets_[j_actualStartBlock] + columnOffset).segment(
+            variableColOffsets_[i_actualStartBlock],
+            variableColOffsets_[i_actualEndBlock]-variableColOffsets_[i_actualStartBlock]);
   }
 
   constColumn rangeColumn(size_t i_startBlock, size_t i_endBlock, size_t j_block, size_t columnOffset) const {
@@ -513,9 +513,9 @@ public:
     assert(variableColOffsets_[j_actualStartBlock] + columnOffset < variableColOffsets_[j_actualStartBlock+1]);
 
     return ((const FullMatrix&)matrix_).col(
-    		variableColOffsets_[j_actualStartBlock] + columnOffset).segment(
-    				variableColOffsets_[i_actualStartBlock],
-    				variableColOffsets_[i_actualEndBlock]-variableColOffsets_[i_actualStartBlock]);
+        variableColOffsets_[j_actualStartBlock] + columnOffset).segment(
+            variableColOffsets_[i_actualStartBlock],
+            variableColOffsets_[i_actualEndBlock]-variableColOffsets_[i_actualStartBlock]);
   }
 
   size_t offset(size_t block) const {
@@ -615,9 +615,9 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version) {
-  	ar & BOOST_SERIALIZATION_NVP(matrix_);
-  	ar & BOOST_SERIALIZATION_NVP(variableColOffsets_);
-  	ar & BOOST_SERIALIZATION_NVP(blockStart_);
+    ar & BOOST_SERIALIZATION_NVP(matrix_);
+    ar & BOOST_SERIALIZATION_NVP(variableColOffsets_);
+    ar & BOOST_SERIALIZATION_NVP(blockStart_);
   }
 };
 

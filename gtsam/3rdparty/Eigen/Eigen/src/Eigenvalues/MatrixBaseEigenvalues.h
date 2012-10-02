@@ -141,10 +141,10 @@ MatrixBase<Derived>::operatorNorm() const
   // then we don't need to compute a maxCoeff() here, comparing the 1st and last ones is enough.
   return internal::sqrt((m_eval*m_eval.adjoint())
                  .eval()
-		 .template selfadjointView<Lower>()
-		 .eigenvalues()
-		 .maxCoeff()
-		 );
+     .template selfadjointView<Lower>()
+     .eigenvalues()
+     .maxCoeff()
+     );
 }
 
 /** \brief Computes the L2 operator norm

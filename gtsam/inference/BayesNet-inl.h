@@ -32,14 +32,14 @@ using boost::assign::operator+=;
 
 namespace gtsam {
 
-	/* ************************************************************************* */
-	template<class CONDITIONAL>
-	void BayesNet<CONDITIONAL>::print(const std::string& s,
-			const IndexFormatter& formatter) const {
-		std::cout << s;
-		BOOST_REVERSE_FOREACH(sharedConditional conditional, conditionals_)
-			conditional->print("Conditional", formatter);
-	}
+  /* ************************************************************************* */
+  template<class CONDITIONAL>
+  void BayesNet<CONDITIONAL>::print(const std::string& s,
+      const IndexFormatter& formatter) const {
+    std::cout << s;
+    BOOST_REVERSE_FOREACH(sharedConditional conditional, conditionals_)
+      conditional->print("Conditional", formatter);
+  }
 
   /* ************************************************************************* */
   template<class CONDITIONAL>
@@ -168,20 +168,20 @@ namespace gtsam {
     return ord;
   }
 
-//	/* ************************************************************************* */
-//	template<class CONDITIONAL>
-//	void BayesNet<CONDITIONAL>::saveGraph(const std::string &s) const {
-//		ofstream of(s.c_str());
-//		of<< "digraph G{\n";
-//		BOOST_FOREACH(const_sharedConditional conditional,conditionals_) {
-//			Index child = conditional->key();
-//			BOOST_FOREACH(Index parent, conditional->parents()) {
-//				of << parent << "->" << child << endl;
-//			}
-//		}
-//		of<<"}";
-//		of.close();
-//	}
+//  /* ************************************************************************* */
+//  template<class CONDITIONAL>
+//  void BayesNet<CONDITIONAL>::saveGraph(const std::string &s) const {
+//    ofstream of(s.c_str());
+//    of<< "digraph G{\n";
+//    BOOST_FOREACH(const_sharedConditional conditional,conditionals_) {
+//      Index child = conditional->key();
+//      BOOST_FOREACH(Index parent, conditional->parents()) {
+//        of << parent << "->" << child << endl;
+//      }
+//    }
+//    of<<"}";
+//    of.close();
+//  }
 //
   /* ************************************************************************* */
 

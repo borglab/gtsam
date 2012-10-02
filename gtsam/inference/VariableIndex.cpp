@@ -57,7 +57,7 @@ void VariableIndex::outputMetisFormat(ostream& os) const {
   os << size() << " " << nFactors() << "\n";
   // run over variables, which will be hyper-edges.
   BOOST_FOREACH(const Factors& variable, index_) {
-  	// every variable is a hyper-edge covering its factors
+    // every variable is a hyper-edge covering its factors
     BOOST_FOREACH(const size_t factor, variable)
       os << (factor+1) << " "; // base 1
     os << "\n";
@@ -67,24 +67,24 @@ void VariableIndex::outputMetisFormat(ostream& os) const {
 
 /* ************************************************************************* */
 void VariableIndex::permuteInPlace(const Permutation& permutation) {
-	// Create new index and move references to data into it in permuted order
-	deque<VariableIndex::Factors> newIndex(this->size());
-	for(Index i = 0; i < newIndex.size(); ++i)
-		newIndex[i].swap(this->index_[permutation[i]]);
+  // Create new index and move references to data into it in permuted order
+  deque<VariableIndex::Factors> newIndex(this->size());
+  for(Index i = 0; i < newIndex.size(); ++i)
+    newIndex[i].swap(this->index_[permutation[i]]);
 
-	// Move reference to entire index into the VariableIndex
-	index_.swap(newIndex);
+  // Move reference to entire index into the VariableIndex
+  index_.swap(newIndex);
 }
 
 /* ************************************************************************* */
 void VariableIndex::removeUnusedAtEnd(size_t nToRemove) {
 #ifndef NDEBUG
-	for(size_t i = this->size() - nToRemove; i < this->size(); ++i)
-		if(!(*this)[i].empty())
-			throw std::invalid_argument("Attempting to remove non-empty variables with VariableIndex::removeUnusedAtEnd()");
+  for(size_t i = this->size() - nToRemove; i < this->size(); ++i)
+    if(!(*this)[i].empty())
+      throw std::invalid_argument("Attempting to remove non-empty variables with VariableIndex::removeUnusedAtEnd()");
 #endif
 
-	index_.resize(this->size() - nToRemove);
+  index_.resize(this->size() - nToRemove);
 }
 
 }
