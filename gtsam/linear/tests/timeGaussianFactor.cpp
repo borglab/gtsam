@@ -28,7 +28,7 @@ using namespace std;
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/GaussianConditional.h>
-#include <gtsam/linear/SharedDiagonal.h>
+#include <gtsam/linear/NoiseModel.h>
 
 using namespace gtsam;
 using namespace boost::assign;

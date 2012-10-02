@@ -117,9 +117,9 @@ void runLargeExample() {
   // Do exact inference
   //  SETDEBUG("timing-verbose", true);
   SETDEBUG("DiscreteConditional::DiscreteConditional", true);
-  tic(2, "large");
+  tic(large);
   DiscreteFactor::sharedValues MPE = scheduler.optimalAssignment();
-  toc(2, "large");
+  toc(large);
   tictoc_finishedIteration();
   tictoc_print();
   scheduler.printAssignment(MPE);

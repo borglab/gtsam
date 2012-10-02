@@ -31,31 +31,29 @@ namespace gtsam {
   /* ************************************************************************* */
   template <class FG, class BTCLIQUE>
   void JunctionTree<FG,BTCLIQUE>::construct(const FG& fg, const VariableIndex& variableIndex) {
-    tic(1, "JT Constructor");
-    tic(1, "JT symbolic ET");
+    tic(JT_symbolic_ET);
     const typename EliminationTree<IndexFactor>::shared_ptr symETree =
         EliminationTree<IndexFactor>::Create(fg, variableIndex);
-    toc(1, "JT symbolic ET");
-    tic(2, "JT symbolic eliminate");
+    toc(JT_symbolic_ET);
+    tic(JT_symbolic_eliminate);
     SymbolicBayesNet::shared_ptr sbn = symETree->eliminate(&EliminateSymbolic);
-    toc(2, "JT symbolic eliminate");
-    tic(3, "symbolic BayesTree");
+    toc(JT_symbolic_eliminate);
+    tic(symbolic_BayesTree);
     SymbolicBayesTree sbt(*sbn);
-    toc(3, "symbolic BayesTree");
+    toc(symbolic_BayesTree);
 
     // distribute factors
-    tic(4, "distributeFactors");
+    tic(distributeFactors);
     this->root_ = distributeFactors(fg, sbt.root());
-    toc(4, "distributeFactors");
-    toc(1, "JT Constructor");
+    toc(distributeFactors);
   }
 
   /* ************************************************************************* */
   template <class FG, class BTCLIQUE>
   JunctionTree<FG,BTCLIQUE>::JunctionTree(const FG& fg) {
-    tic(0, "VariableIndex");
+    tic(VariableIndex);
     VariableIndex varIndex(fg);
-    toc(0, "VariableIndex");
+    toc(VariableIndex);
     construct(fg, varIndex);
   }
 
@@ -164,14 +162,14 @@ namespace gtsam {
 
     // Now that we know which factors and variables, and where variables
     // come from and go to, create and eliminate the new joint factor.
-    tic(2, "CombineAndEliminate");
+    tic(CombineAndEliminate);
     typename FG::EliminationResult eliminated(function(fg,
         current->frontal.size()));
-    toc(2, "CombineAndEliminate");
+    toc(CombineAndEliminate);
 
     assert(std::equal(eliminated.second->begin(), eliminated.second->end(), current->separator.begin()));
 
-    tic(3, "Update tree");
+    tic(Update_tree);
     // create a new clique corresponding the combined factors
     typename BTClique::shared_ptr new_clique(BTClique::Create(eliminated));
     new_clique->children_ = children;
@@ -179,7 +177,7 @@ namespace gtsam {
     BOOST_FOREACH(typename BTClique::shared_ptr& childRoot, children) {
       childRoot->parent_ = new_clique;
     }
-    toc(3, "Update tree");
+    toc(Update_tree);
 
     return std::make_pair(new_clique, eliminated.second);
   }
@@ -189,12 +187,12 @@ namespace gtsam {
   typename BTCLIQUE::shared_ptr JunctionTree<FG,BTCLIQUE>::eliminate(
       typename FG::Eliminate function) const {
     if (this->root()) {
-      tic(2, "JT eliminate");
+      tic(JT_eliminate);
       std::pair<typename BTClique::shared_ptr, typename FG::sharedFactor> ret =
           this->eliminateOneClique(function, this->root());
       if (ret.second->size() != 0) throw std::runtime_error(
           "JuntionTree::eliminate: elimination failed because of factors left over!");
-      toc(2, "JT eliminate");
+      toc(JT_eliminate);
       return ret.first;
     } else
       return typename BTClique::shared_ptr();

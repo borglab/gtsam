@@ -49,10 +49,10 @@ int main(int argc, char *argv[]) {
   }
 
   for(size_t i=0; i<1000000; ++i) {
-    tic(1, "overhead a");
-    tic(1, "overhead b");
-    toc(1, "overhead b");
-    toc(1, "overhead a");
+    tic(overhead_a);
+    tic(overhead_b);
+    toc(overhead_b);
+    toc(overhead_a);
   }
 
   tictoc_print_();

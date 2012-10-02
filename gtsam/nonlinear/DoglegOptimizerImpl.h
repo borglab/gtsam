@@ -149,22 +149,22 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
     const F& f, const VALUES& x0, const Ordering& ordering, const double f_error, const bool verbose) {
 
   // Compute steepest descent and Newton's method points
-  tic(0, "optimizeGradientSearch");
-  tic(0, "allocateVectorValues");
+  tic(optimizeGradientSearch);
+  tic(allocateVectorValues);
   VectorValues dx_u = *allocateVectorValues(Rd);
-  toc(0, "allocateVectorValues");
-  tic(1, "optimizeGradientSearchInPlace");
+  toc(allocateVectorValues);
+  tic(optimizeGradientSearchInPlace);
   optimizeGradientSearchInPlace(Rd, dx_u);
-  toc(1, "optimizeGradientSearchInPlace");
-  toc(0, "optimizeGradientSearch");
-  tic(1, "optimizeInPlace");
+  toc(optimizeGradientSearchInPlace);
+  toc(optimizeGradientSearch);
+  tic(optimizeInPlace);
   VectorValues dx_n(VectorValues::SameStructure(dx_u));
   optimizeInPlace(Rd, dx_n);
-  toc(1, "optimizeInPlace");
-  tic(2, "jfg error");
+  toc(optimizeInPlace);
+  tic(jfg_error);
   const GaussianFactorGraph jfg(Rd);
   const double M_error = jfg.error(VectorValues::Zero(dx_u));
-  toc(2, "jfg error");
+  toc(jfg_error);
 
   // Result to return
   IterationResult result;
@@ -172,32 +172,32 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
   bool stay = true;
   enum { NONE, INCREASED_DELTA, DECREASED_DELTA } lastAction = NONE; // Used to prevent alternating between increasing and decreasing in one iteration
   while(stay) {
-    tic(3, "Dog leg point");
+    tic(Dog_leg_point);
     // Compute dog leg point
     result.dx_d = ComputeDoglegPoint(Delta, dx_u, dx_n, verbose);
-    toc(3, "Dog leg point");
+    toc(Dog_leg_point);
 
     if(verbose) std::cout << "Delta = " << Delta << ", dx_d_norm = " << result.dx_d.vector().norm() << std::endl;
 
-    tic(4, "retract");
+    tic(retract);
     // Compute expmapped solution
     const VALUES x_d(x0.retract(result.dx_d, ordering));
-    toc(4, "retract");
+    toc(retract);
 
-    tic(5, "decrease in f");
+    tic(decrease_in_f);
     // Compute decrease in f
     result.f_error = f.error(x_d);
-    toc(5, "decrease in f");
+    toc(decrease_in_f);
 
-    tic(6, "decrease in M");
+    tic(decrease_in_M);
     // Compute decrease in M
     const double new_M_error = jfg.error(result.dx_d);
-    toc(6, "decrease in M");
+    toc(decrease_in_M);
 
     if(verbose) std::cout << std::setprecision(15) << "f error: " << f_error << " -> " << result.f_error << std::endl;
     if(verbose) std::cout << std::setprecision(15) << "M error: " << M_error << " -> " << new_M_error << std::endl;
 
-    tic(7, "adjust Delta");
+    tic(adjust_Delta);
     // Compute gain ratio.  Here we take advantage of the invariant that the
     // Bayes' net error at zero is equal to the nonlinear error
     const double rho = fabs(f_error - result.f_error) < 1e-15 || fabs(M_error - new_M_error) < 1e-15 ?
@@ -266,7 +266,7 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
         stay = false;
       }
     }
-    toc(7, "adjust Delta");
+    toc(adjust_Delta);
   }
 
   // dx_d and f_error have already been filled in during the loop

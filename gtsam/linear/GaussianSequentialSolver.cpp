@@ -64,21 +64,21 @@ VectorValues::shared_ptr GaussianSequentialSolver::optimize() const {
   if(debug) this->factors_->print("GaussianSequentialSolver, eliminating ");
   if(debug) this->eliminationTree_->print("GaussianSequentialSolver, elimination tree ");
 
-  tic(1,"eliminate");
+  tic(eliminate);
   // Eliminate using the elimination tree
   GaussianBayesNet::shared_ptr bayesNet(this->eliminate());
-  toc(1,"eliminate");
+  toc(eliminate);
 
   if(debug) bayesNet->print("GaussianSequentialSolver, Bayes net ");
 
   // Allocate the solution vector if it is not already allocated
 //  VectorValues::shared_ptr solution = allocateVectorValues(*bayesNet);
 
-  tic(2,"optimize");
+  tic(optimize);
   // Back-substitute
   VectorValues::shared_ptr solution(
       new VectorValues(gtsam::optimize(*bayesNet)));
-  toc(2,"optimize");
+  toc(optimize);
 
   if(debug) solution->print("GaussianSequentialSolver, solution ");
 

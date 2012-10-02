@@ -54,12 +54,14 @@ void SuccessiveLinearizationParams::print(const std::string& str) const {
 }
 
 VectorValues solveGaussianFactorGraph(const GaussianFactorGraph &gfg, const SuccessiveLinearizationParams &params) {
+  tic(solveGaussianFactorGraph);
   VectorValues delta;
-  if ( params.isMultifrontal() ) {
+  if (params.isMultifrontal()) {
     delta = GaussianJunctionTree(gfg).optimize(params.getEliminationFunction());
-  }
-  else if ( params.isSequential() ) {
-    delta = gtsam::optimize(*EliminationTree<GaussianFactor>::Create(gfg)->eliminate(params.getEliminationFunction()));
+  } else if(params.isSequential()) {
+    const boost::shared_ptr<GaussianBayesNet> gbn =
+      EliminationTree<GaussianFactor>::Create(gfg)->eliminate(params.getEliminationFunction());
+    delta = gtsam::optimize(*gbn);
   }
   else if ( params.isCG() ) {
     if ( !params.iterativeParams ) throw std::runtime_error("solveGaussianFactorGraph: cg parameter has to be assigned ...");

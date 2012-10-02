@@ -115,10 +115,10 @@ typename EliminationTree<FACTOR>::shared_ptr EliminationTree<FACTOR>::Create(
 
   static const bool debug = false;
 
-  tic(1, "ET ComputeParents");
+  tic(ET_ComputeParents);
   // Compute the tree structure
   std::vector<Index> parents(ComputeParents(structure));
-  toc(1, "ET ComputeParents");
+  toc(ET_ComputeParents);
 
   // Number of variables
   const size_t n = structure.size();
@@ -126,7 +126,7 @@ typename EliminationTree<FACTOR>::shared_ptr EliminationTree<FACTOR>::Create(
   static const Index none = std::numeric_limits<Index>::max();
 
   // Create tree structure
-  tic(2, "assemble tree");
+  tic(assemble_tree);
   std::vector<shared_ptr> trees(n);
   for (Index k = 1; k <= n; k++) {
     Index j = n - k;  // Start at the last variable and loop down to 0
@@ -136,10 +136,10 @@ typename EliminationTree<FACTOR>::shared_ptr EliminationTree<FACTOR>::Create(
     else if(!structure[j].empty() && j != n - 1) // If a node other than the last has no parents, this is a forest
       throw DisconnectedGraphException();
   }
-  toc(2, "assemble tree");
+  toc(assemble_tree);
 
   // Hang factors in right places
-  tic(3, "hang factors");
+  tic(hang_factors);
   BOOST_FOREACH(const typename boost::shared_ptr<DERIVEDFACTOR>& derivedFactor, factorGraph) {
     // Here we upwards-cast to the factor type of this EliminationTree.  This
     // allows performing symbolic elimination on, for example, GaussianFactors.
@@ -150,7 +150,7 @@ typename EliminationTree<FACTOR>::shared_ptr EliminationTree<FACTOR>::Create(
         trees[j]->add(factor);
     }
   }
-  toc(3, "hang factors");
+  toc(hang_factors);
 
   if(debug)
     trees.back()->print("ETree: ");
@@ -165,9 +165,9 @@ typename EliminationTree<FACTOR>::shared_ptr
 EliminationTree<FACTOR>::Create(const FactorGraph<DERIVEDFACTOR>& factorGraph) {
 
   // Build variable index
-  tic(0, "ET Create, variable index");
+  tic(ET_Create_variable_index);
   const VariableIndex variableIndex(factorGraph);
-  toc(0, "ET Create, variable index");
+  toc(ET_Create_variable_index);
 
   // Build elimination tree
   return Create(factorGraph, variableIndex);
@@ -205,21 +205,21 @@ typename EliminationTree<FACTOR>::BayesNet::shared_ptr
   EliminationTree<FACTOR>::eliminatePartial(typename EliminationTree<FACTOR>::Eliminate function, size_t nrToEliminate) const {
 
   // call recursive routine
-  tic(1, "ET recursive eliminate");
+  tic(ET_recursive_eliminate);
   if(nrToEliminate > this->key_ + 1)
     throw std::invalid_argument("Requested that EliminationTree::eliminatePartial eliminate more variables than exist");
   Conditionals conditionals(nrToEliminate); // reserve a vector of conditional shared pointers
   (void)eliminate_(function, conditionals);  // modify in place
-  toc(1, "ET recursive eliminate");
+  toc(ET_recursive_eliminate);
 
   // Add conditionals to BayesNet
-  tic(2, "assemble BayesNet");
+  tic(assemble_BayesNet);
   typename BayesNet::shared_ptr bayesNet(new BayesNet);
   BOOST_FOREACH(const typename BayesNet::sharedConditional& conditional, conditionals) {
     if(conditional)
       bayesNet->push_back(conditional);
   }
-  toc(2, "assemble BayesNet");
+  toc(assemble_BayesNet);
 
   return bayesNet;
 }

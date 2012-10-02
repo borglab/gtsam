@@ -18,20 +18,19 @@
 #pragma once
 
 #include <string>
-#include <map>
-#include <vector>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <gtsam/base/types.h>
+#include <gtsam/base/FastMap.h>
 
 // Enabling the new Boost timers introduces dependencies on other Boost
 // libraries so this is disabled for now until we modify the build scripts
 // to link each component or MATLAB wrapper with only the libraries it needs.
-#if 0
+//#if 0
 #if BOOST_VERSION >= 104800
 #define GTSAM_USING_NEW_BOOST_TIMERS
 #endif
-#endif
+//#endif
 
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
 #include <boost/timer/timer.hpp>
@@ -39,186 +38,102 @@
 #include <boost/timer.hpp>
 #endif
 
-class TimingOutline;
-extern boost::shared_ptr<TimingOutline> timingRoot;
-extern boost::weak_ptr<TimingOutline> timingCurrent;
+namespace gtsam {
 
-class TimingOutline {
-protected:
-  size_t t_;
-  double t2_ ; /* cache the \sum t_i^2 */
-  size_t tIt_;
-  size_t tMax_;
-  size_t tMin_;
-  size_t n_;
-  std::string label_;
+  namespace internal {
+    size_t getTicTocID(const char *description);
+    void ticInternal(size_t id, const char *label);
+    void tocInternal(size_t id, const char *label);
 
-  boost::weak_ptr<TimingOutline> parent_;
-  std::vector<boost::shared_ptr<TimingOutline> > children_;
+    class TimingOutline {
+    protected:
+      size_t myId_;
+      size_t t_;
+      double t2_ ; /* cache the \sum t_i^2 */
+      size_t tIt_;
+      size_t tMax_;
+      size_t tMin_;
+      size_t n_;
+      std::string label_;
+      boost::weak_ptr<TimingOutline> parent_;
+      typedef FastMap<size_t, boost::shared_ptr<TimingOutline> > ChildMap;
+      ChildMap children_;
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
-  boost::timer::cpu_timer timer_;
+      boost::timer::cpu_timer timer_;
 #else
-  boost::timer timer_;
-  gtsam::ValueWithDefault<bool,false> timerActive_;
+      boost::timer timer_;
+      gtsam::ValueWithDefault<bool,false> timerActive_;
 #endif
+      void add(size_t usecs);
+    public:
+      TimingOutline(const std::string& label, size_t myId);
+      size_t time() const;
+      void print(const std::string& outline = "") const;
+      void print2(const std::string& outline = "", const double parentTotal = -1.0) const;
+      const boost::shared_ptr<TimingOutline>& child(size_t child, const std::string& label, const boost::weak_ptr<TimingOutline>& thisPtr);
+      void ticInternal();
+      void tocInternal();
+      void finishedIteration();
 
-  void add(size_t usecs);
+      friend void tocInternal(size_t id);
+      friend void tocInternal(size_t id, const char *label);
+    }; // \TimingOutline
 
-public:
+    class AutoTicToc {
+    private:
+      size_t id_;
+      const char *label_;
+      bool isSet_;
+    public:
+      AutoTicToc(size_t id, const char* label) : id_(id), label_(label), isSet_(true) { ticInternal(id_, label_); }
+      void stop() { tocInternal(id_, label_); isSet_ = false; }
+      ~AutoTicToc() { if(isSet_) stop(); }
+    };
 
-  TimingOutline(const std::string& label);
-
-  size_t time() const;
-
-  void print(const std::string& outline = "") const;
-
-  void print2(const std::string& outline = "", const double parentTotal = -1.0) const;
-
-  const boost::shared_ptr<TimingOutline>& child(size_t child, const std::string& label, const boost::weak_ptr<TimingOutline>& thisPtr);
-
-  void tic();
-
-  void toc();
-
-  void finishedIteration();
-
-  friend class AutoTimer;
-  friend void toc_(size_t id);
-  friend void toc_(size_t id, const std::string& label);
-}; // \TimingOutline
-
-void tic_(size_t id, const std::string& label);
-
-void toc_(size_t id);
-
-void toc_(size_t id, const std::string& label);
+    extern boost::shared_ptr<TimingOutline> timingRoot;
+    extern boost::weak_ptr<TimingOutline> timingCurrent;
+  }
 
 inline void tictoc_finishedIteration_() {
-  timingRoot->finishedIteration();
+  internal::timingRoot->finishedIteration();
 }
 
 inline void tictoc_print_() {
-  timingRoot->print();
+  internal::timingRoot->print();
 }
 
 /* print mean and standard deviation */
 inline void tictoc_print2_() {
-  timingRoot->print2();
+  internal::timingRoot->print2();
 }
 
+// Tic and toc functions using a string label
+#define tic_(label) \
+  static const size_t label##_id_tic = ::gtsam::internal::getTicTocID(#label); \
+  ::gtsam::internal::AutoTicToc label##_obj = ::gtsam::internal::AutoTicToc(label##_id_tic, #label)
+#define toc_(label) \
+  label##_obj.stop()
+#define longtic_(label) \
+  static const size_t label##_id_tic = ::gtsam::internal::getTicTocID(#label); \
+  ::gtsam::internal::ticInternal(label##_id_tic, #label)
+#define longtoc_(label) \
+  static const size_t label##_id_toc = ::gtsam::internal::getTicTocID(#label); \
+  ::gtsam::internal::tocInternal(label##_id_toc, #label)
+
 #ifdef ENABLE_TIMING
-inline void tic(size_t id, const std::string& label) { tic_(id, label); }
-inline void toc(size_t id) { toc_(id); }
-inline void toc(size_t id, const std::string& label) { toc_(id, label); }
-inline void tictoc_finishedIteration() { tictoc_finishedIteration_(); }
-inline void tictoc_print() { tictoc_print_(); }
+#define tic(label) tic_(label)
+#define toc(label) toc_(label)
+#define longtic(label) longtic_(label)
+#define longtoc(label) longtoc_(label)
+#define tictoc_finishedIteration tictoc_finishedIteration_
+#define tictoc_print tictoc_print_
 #else
-inline void tic(size_t, const char*) {}
-inline void toc(size_t) {}
-inline void toc(size_t, const char*) {}
+#define tic(label) ((void)0)
+#define toc(label) ((void)0)
+#define longtic(label) ((void)0)
+#define longtoc(label) ((void)0)
 inline void tictoc_finishedIteration() {}
 inline void tictoc_print() {}
 #endif
 
-
-#ifdef ENABLE_OLD_TIMING
-
-// simple class for accumulating execution timing information by name
-class Timing;
-extern Timing timing;
-extern std::string timingPrefix;
-
-double _tic();
-double _toc(double t);
-double tic(const std::string& id);
-double toc(const std::string& id);
-void ticPush(const std::string& id);
-void ticPop(const std::string& id);
-void tictoc_finishedIteration();
-
-/** These underscore versions work evening when ENABLE_TIMING is not defined */
-double _tic_();
-double _toc_(double t);
-double tic_(const std::string& id);
-double toc_(const std::string& id);
-void ticPush_(const std::string& id);
-void ticPop_(const std::string& id);
-void tictoc_finishedIteration_();
-
-
-
-// simple class for accumulating execution timing information by name
-class Timing {
-  class Stats {
-  public:
-    std::string label;
-    double t0;
-    double t;
-    double t_max;
-    double t_min;
-    int n;
-  };
-  std::map<std::string, Stats> stats;
-public:
-  void add_t0(const std::string& id, double t0) {
-    stats[id].t0 = t0;
-  }
-  double get_t0(const std::string& id) {
-    return stats[id].t0;
-  }
-  void add_dt(const std::string& id, double dt) {
-    Stats& s = stats[id];
-    s.t += dt;
-    s.n++;
-    if (s.n==1 || s.t_max < dt) s.t_max = dt;
-    if (s.n==1 || s.t_min > dt) s.t_min = dt;
-  }
-  void print();
-
-  double time(const std::string& id) {
-    Stats& s = stats[id];
-    return s.t;
-  }
-};
-
-double _tic_();
-inline double _toc_(double t) {
-  double s = _tic_();
-  return (std::max(0., s-t));
 }
-inline double tic_(const std::string& id) {
-  double t0 = _tic_();
-  timing.add_t0(timingPrefix + " " + id, t0);
-  return t0;
-}
-inline double toc_(const std::string& id) {
-  std::string comb(timingPrefix + " " + id);
-  double dt = _toc_(timing.get_t0(comb));
-  timing.add_dt(comb, dt);
-  return dt;
-}
-inline void ticPush_(const std::string& prefix, const std::string& id) {
-  if(timingPrefix.size() > 0)
-    timingPrefix += ".";
-  timingPrefix += prefix;
-  tic_(id);
-}
-void ticPop_(const std::string& prefix, const std::string& id);
-
-#ifdef ENABLE_TIMING
-inline double _tic() { return _tic_(); }
-inline double _toc(double t) { return _toc_(t); }
-inline double tic(const std::string& id) { return tic_(id); }
-inline double toc(const std::string& id) { return toc_(id); }
-inline void ticPush(const std::string& prefix, const std::string& id) { ticPush_(prefix, id); }
-inline void ticPop(const std::string& prefix, const std::string& id) { ticPop_(prefix, id); }
-#else
-inline double _tic() {return 0.;}
-inline double _toc(double) {return 0.;}
-inline double tic(const std::string&) {return 0.;}
-inline double toc(const std::string&) {return 0.;}
-inline void ticPush(const std::string&, const std::string&) {}
-inline void ticPop(const std::string&, const std::string&) {}
-#endif
-
-#endif

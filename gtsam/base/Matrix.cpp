@@ -410,17 +410,17 @@ void householder_(Matrix& A, size_t k, bool copy_vectors) {
     double beta = houseInPlace(vjm);
 
     // do outer product update A(j:m,:) = (I-beta vv')*A = A - v*(beta*A'*v)' = A - v*w'
-    tic(1, "householder_update"); // bottleneck for system
+    tic(householder_update); // bottleneck for system
     // don't touch old columns
     Vector w = beta * A.block(j,j,m-j,n-j).transpose() * vjm;
     A.block(j,j,m-j,n-j) -= vjm * w.transpose();
-    toc(1, "householder_update");
+    toc(householder_update);
 
     // the Householder vector is copied in the zeroed out part
     if (copy_vectors) {
-      tic(2, "householder_vector_copy");
+      tic(householder_vector_copy);
       A.col(j).segment(j+1, m-(j+1)) = vjm.segment(1, m-(j+1));
-      toc(2, "householder_vector_copy");
+      toc(householder_vector_copy);
     }
   } // column j
 }
@@ -428,14 +428,14 @@ void householder_(Matrix& A, size_t k, bool copy_vectors) {
 /* ************************************************************************* */
 void householder(Matrix& A, size_t k) {
   // version with zeros below diagonal
-  tic(1, "householder_");
+  tic(householder_);
   householder_(A,k,false);
-  toc(1, "householder_");
-//  tic(2, "householder_zero_fill");
+  toc(householder_);
+//  tic(householder_zero_fill);
 //  const size_t m = A.rows(), n = A.cols(), kprime = min(k,min(m,n));
 //  for(size_t j=0; j < kprime; j++)
 //    A.col(j).segment(j+1, m-(j+1)).setZero();
-//  toc(2, "householder_zero_fill");
+//  toc(householder_zero_fill);
 }
 
 /* ************************************************************************* */

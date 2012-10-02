@@ -36,9 +36,9 @@ void optimizeInPlace(const GaussianBayesTree& bayesTree, VectorValues& result) {
 
 /* ************************************************************************* */
 VectorValues optimizeGradientSearch(const GaussianBayesTree& bayesTree) {
-  tic(0, "Allocate VectorValues");
+  tic(Allocate_VectorValues);
   VectorValues grad = *allocateVectorValues(bayesTree);
-  toc(0, "Allocate VectorValues");
+  toc(Allocate_VectorValues);
 
   optimizeGradientSearchInPlace(bayesTree, grad);
 
@@ -47,27 +47,27 @@ VectorValues optimizeGradientSearch(const GaussianBayesTree& bayesTree) {
 
 /* ************************************************************************* */
 void optimizeGradientSearchInPlace(const GaussianBayesTree& bayesTree, VectorValues& grad) {
-  tic(1, "Compute Gradient");
+  tic(Compute_Gradient);
   // Compute gradient (call gradientAtZero function, which is defined for various linear systems)
   gradientAtZero(bayesTree, grad);
   double gradientSqNorm = grad.dot(grad);
-  toc(1, "Compute Gradient");
+  toc(Compute_Gradient);
 
-  tic(2, "Compute R*g");
+  tic(Compute_Rg);
   // Compute R * g
   FactorGraph<JacobianFactor> Rd_jfg(bayesTree);
   Errors Rg = Rd_jfg * grad;
-  toc(2, "Compute R*g");
+  toc(Compute_Rg);
 
-  tic(3, "Compute minimizing step size");
+  tic(Compute_minimizing_step_size);
   // Compute minimizing step size
   double step = -gradientSqNorm / dot(Rg, Rg);
-  toc(3, "Compute minimizing step size");
+  toc(Compute_minimizing_step_size);
 
-  tic(4, "Compute point");
+  tic(Compute_point);
   // Compute steepest descent point
   scal(step, grad);
-  toc(4, "Compute point");
+  toc(Compute_point);
 }
 
 /* ************************************************************************* */

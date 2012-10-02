@@ -124,9 +124,9 @@ void runLargeExample() {
   SETDEBUG("DiscreteConditional::DiscreteConditional", true);
 #define SAMPLE
 #ifdef SAMPLE
-  tic(2, "large");
+  tic(large);
   DiscreteBayesNet::shared_ptr chordal = scheduler.eliminate();
-  toc(2, "large");
+  toc(large);
   tictoc_finishedIteration();
   tictoc_print();
   for (size_t i=0;i<100;i++) {
@@ -143,9 +143,9 @@ void runLargeExample() {
     }
   }
 #else
-  tic(2, "large");
+  tic(large);
   DiscreteFactor::sharedValues MPE = scheduler.optimalAssignment();
-  toc(2, "large");
+  toc(large);
   tictoc_finishedIteration();
   tictoc_print();
   scheduler.printAssignment(MPE);

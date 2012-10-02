@@ -34,15 +34,15 @@ int main(int argc, char *argv[]) {
 
   cout << "Optimizing..." << endl;
 
-  tic_(1, "Create optimizer");
+  tic_(Create_optimizer);
   LevenbergMarquardtOptimizer optimizer(graph, initial);
-  toc_(1, "Create optimizer");
+  toc_(Create_optimizer);
   tictoc_print_();
   double lastError = optimizer.error();
   do {
-    tic_(2, "Iterate optimizer");
+    tic_(Iterate_optimizer);
     optimizer.iterate();
-    toc_(2, "Iterate optimizer");
+    toc_(Iterate_optimizer);
     tictoc_finishedIteration_();
     tictoc_print_();
     cout << "Error: " << optimizer.error() << ", lambda: " << optimizer.lambda() << endl;

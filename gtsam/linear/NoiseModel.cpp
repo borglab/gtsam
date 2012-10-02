@@ -329,22 +329,22 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
     Vector a = Ab.col(j);
 
     // Calculate weighted pseudo-inverse and corresponding precision
-    tic(1, "constrained_QR weightedPseudoinverse");
+    tic(constrained_QR_weightedPseudoinverse);
     double precision = weightedPseudoinverse(a, weights, pseudo);
-    toc(1, "constrained_QR weightedPseudoinverse");
+    toc(constrained_QR_weightedPseudoinverse);
 
     // If precision is zero, no information on this column
     // This is actually not limited to constraints, could happen in Gaussian::QR
     // In that case, we're probably hosed. TODO: make sure Householder is rank-revealing
     if (precision < 1e-8) continue;
 
-    tic(2, "constrained_QR create rd");
+    tic(constrained_QR_create_rd);
     // create solution [r d], rhs is automatically r(n)
     Vector rd(n+1); // uninitialized !
     rd(j)=1.0; // put 1 on diagonal
     for (size_t j2=j+1; j2<n+1; ++j2) // and fill in remainder with dot-products
       rd(j2) = pseudo.dot(Ab.col(j2));
-    toc(2, "constrained_QR create rd");
+    toc(constrained_QR_create_rd);
 
     // construct solution (r, d, sigma)
     Rd.push_back(boost::make_tuple(j, rd, precision));
@@ -353,15 +353,15 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
     if (Rd.size()>=maxRank) break;
 
     // update Ab, expensive, using outer product
-    tic(3, "constrained_QR update Ab");
+    tic(constrained_QR_update_Ab);
     Ab.middleCols(j+1,n-j) -= a * rd.segment(j+1, n-j).transpose();
-    toc(3, "constrained_QR update Ab");
+    toc(constrained_QR_update_Ab);
   }
 
   // Create storage for precisions
   Vector precisions(Rd.size());
 
-  tic(4, "constrained_QR write back into Ab");
+  tic(constrained_QR_write_back_into_Ab);
   // Write back result in Ab, imperative as we are
   // TODO: test that is correct if a column was skipped !!!!
   size_t i = 0; // start with first row
@@ -377,7 +377,7 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
       Ab(i,j2) = rd(j2);
     i+=1;
   }
-  toc(4, "constrained_QR write back into Ab");
+  toc(constrained_QR_write_back_into_Ab);
 
   // Must include mu, as the defaults might be higher, resulting in non-convergence
   return mixed ? Constrained::MixedPrecisions(mu_, precisions) : Diagonal::Precisions(precisions);
