@@ -108,8 +108,19 @@ endif()
 if(CYGWIN OR MSVC OR WIN32)
   set(Boost_USE_STATIC_LIBS 1)
 endif()
-find_package(Boost 1.43 COMPONENTS serialization system filesystem thread date_time regex timer chrono REQUIRED)
-set(GTSAM_BOOST_LIBRARIES ${Boost_SERIALIZATION_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} ${Boost_TIMER_LIBRARY})
+
+# FIXME: Need to allow for requiring only components from 1.43, and optionally allow 1.47 components
+find_package(Boost 1.43 COMPONENTS serialization system filesystem thread date_time regex timer chrono OPTIONAL)
+
+# NOTE: likely won't work on second call if >= 1.47 is available
+#find_package(Boost 1.43 COMPONENTS serialization system filesystem thread date_time regex REQUIRED)
+#find_package(Boost 1.47 COMPONENTS timer chrono OPTIONAL)
+
+# Allow for not using the timer libraries on boost < 1.47
+set(GTSAM_BOOST_LIBRARIES ${Boost_SERIALIZATION_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY})
+if(Boost_TIMER_LIBRARY)
+    set(GTSAM_BOOST_LIBRARIES ${GTSAM_BOOST_LIBRARIES} ${Boost_TIMER_LIBRARY})
+endif() 
 
 # General build settings
 include_directories(
