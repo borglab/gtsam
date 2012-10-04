@@ -119,7 +119,7 @@ find_package(Boost 1.43 COMPONENTS serialization system filesystem thread date_t
 # Allow for not using the timer libraries on boost < 1.47
 set(GTSAM_BOOST_LIBRARIES ${Boost_SERIALIZATION_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY})
 if(Boost_TIMER_LIBRARY)
-    set(GTSAM_BOOST_LIBRARIES ${GTSAM_BOOST_LIBRARIES} ${Boost_TIMER_LIBRARY})
+  set(GTSAM_BOOST_LIBRARIES ${GTSAM_BOOST_LIBRARIES} ${Boost_TIMER_LIBRARY})
 endif() 
 
 # General build settings
