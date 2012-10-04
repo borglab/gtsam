@@ -527,6 +527,73 @@ TEST(GaussianFactorGraph, hasConstraints)
   EXPECT(!hasConstraints(fg));
 }
 
+#include <gtsam/slam/ProjectionFactor.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/slam/RangeFactor.h>
+#include <gtsam/linear/GaussianMultifrontalSolver.h>
+
+/* ************************************************************************* */
+TEST( GaussianFactorGraph, conditional_sigma_failure) {
+  // This system derives from a failure case in DDF in which a Bayes Tree
+  // has non-unit sigmas for conditionals in the Bayes Tree, which
+  // should never happen by construction
+
+  // Reason for the failure: using Vector_() is dangerous as having a non-float gets set to zero, resulting in constraints
+  gtsam::Key xC1 = 0, l32 = 1, l41 = 2;
+
+  // noisemodels at nonlinear level
+  gtsam::SharedNoiseModel priorModel = noiseModel::Diagonal::Sigmas(Vector_(6, 0.05, 0.05, 3.0, 0.2, 0.2, 0.2));
+  gtsam::SharedNoiseModel measModel = noiseModel::Unit::Create(2);
+  gtsam::SharedNoiseModel elevationModel = noiseModel::Isotropic::Sigma(1, 3.0);
+
+  double fov = 60; // degrees
+  double imgW = 640; // pixels
+  double imgH = 480; // pixels
+  gtsam::Cal3_S2::shared_ptr K(new gtsam::Cal3_S2(fov, imgW, imgH));
+
+  typedef GenericProjectionFactor<Pose3, Point3> ProjectionFactor;
+
+  double relElevation = 6;
+
+  Values initValues;
+  initValues.insert(xC1,
+      Pose3(Rot3(
+          -1.,           0.0,  1.2246468e-16,
+          0.0,             1.,           0.0,
+          -1.2246468e-16,           0.0,            -1.),
+          Point3(0.511832102, 8.42819594, 5.76841725)));
+  initValues.insert(l32,  Point3(0.364081507, 6.89766221, -0.231582751) );
+  initValues.insert(l41,  Point3(1.61051523, 6.7373052, -0.231582751)   );
+
+  NonlinearFactorGraph factors;
+  factors.add(PriorFactor<Pose3>(xC1,
+      Pose3(Rot3(
+          -1.,           0.0,  1.2246468e-16,
+          0.0,             1.,           0.0,
+          -1.2246468e-16,           0.0,            -1),
+          Point3(0.511832102, 8.42819594, 5.76841725)), priorModel));
+  factors.add(ProjectionFactor(Point2(333.648615, 98.61535), measModel, xC1, l32, K));
+  factors.add(ProjectionFactor(Point2(218.508, 83.8022039), measModel, xC1, l41, K));
+  factors.add(RangeFactor<Pose3,Point3>(xC1, l32, relElevation, elevationModel));
+  factors.add(RangeFactor<Pose3,Point3>(xC1, l41, relElevation, elevationModel));
+
+  Ordering orderingC; orderingC += xC1, l32, l41;
+
+  // Check that sigmas are correct (i.e., unit)
+  GaussianFactorGraph lfg = *factors.linearize(initValues, orderingC);
+
+  GaussianMultifrontalSolver solver(lfg, false);
+  GaussianBayesTree actBT = *solver.eliminate();
+
+  // Check that all sigmas in an unconstrained bayes tree are set to one
+  BOOST_FOREACH(const GaussianBayesTree::sharedClique& clique, actBT.nodes()) {
+    GaussianConditional::shared_ptr conditional = clique->conditional();
+    size_t dim = conditional->dim();
+    EXPECT(assert_equal(gtsam::ones(dim), conditional->get_sigmas(), tol));
+  }
+}
+
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */

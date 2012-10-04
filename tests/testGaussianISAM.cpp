@@ -63,9 +63,16 @@ TEST( ISAM, iSAM_smoother )
     actual.update(factorGraph);
   }
 
-  BayesTree<GaussianConditional>::shared_ptr bayesTree = GaussianMultifrontalSolver(smoother).eliminate();
   // Create expected Bayes Tree by solving smoother with "natural" ordering
+  BayesTree<GaussianConditional>::shared_ptr bayesTree = GaussianMultifrontalSolver(smoother).eliminate();
   GaussianISAM expected(*bayesTree);
+
+  // Verify sigmas in the bayes tree
+  BOOST_FOREACH(const GaussianBayesTree::sharedClique& clique, bayesTree->nodes()) {
+    GaussianConditional::shared_ptr conditional = clique->conditional();
+    size_t dim = conditional->dim();
+    EXPECT(assert_equal(gtsam::ones(dim), conditional->get_sigmas(), tol));
+  }
 
   // Check whether BayesTree is correct
   EXPECT(assert_equal(expected, actual));
