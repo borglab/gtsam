@@ -63,7 +63,7 @@ TEST( inference, marginals2)
 {
   NonlinearFactorGraph fg;
   SharedDiagonal poseModel(noiseModel::Isotropic::Sigma(3, 0.1));
-  SharedDiagonal pointModel(noiseModel::Isotropic::Sigma(3, 0.1));
+  SharedDiagonal pointModel(noiseModel::Isotropic::Sigma(2, 0.1));
 
   fg.add(PriorFactor<Pose2>(X(0), Pose2(), poseModel));
   fg.add(BetweenFactor<Pose2>(X(0), X(1), Pose2(1.0,0.0,0.0), poseModel));

@@ -80,7 +80,7 @@ static double getGaussian()
     return sqrt(-2.0f * (double)log(S) / S) * V1;
 }
 
-static const SharedNoiseModel sigma1(noiseModel::Unit::Create(1));
+static const SharedNoiseModel sigma1(noiseModel::Unit::Create(2));
 
 /* ************************************************************************* */
 TEST( GeneralSFMFactor, equals )

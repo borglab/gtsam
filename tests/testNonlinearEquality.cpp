@@ -477,7 +477,7 @@ TEST (testNonlinearEqualityConstraint, map_warp ) {
   Point2 pose1(1.0, 1.0);
   graph.add(eq2D::UnaryEqualityConstraint(pose1, x1));
 
-  SharedDiagonal sigma = noiseModel::Isotropic::Sigma(1,0.1);
+  SharedDiagonal sigma = noiseModel::Isotropic::Sigma(2, 0.1);
 
   // measurement from x1 to l1
   Point2 z1(0.0, 5.0);
@@ -546,7 +546,7 @@ TEST (testNonlinearEqualityConstraint, stereo_constrained ) {
   graph.add(NonlinearEquality<Pose3>(x2, camera2.pose()));
 
   // create  factors
-  SharedDiagonal vmodel = noiseModel::Unit::Create(3);
+  SharedDiagonal vmodel = noiseModel::Unit::Create(2);
   graph.add(GenericProjectionFactor<Pose3,Point3,Cal3_S2>(camera1.project(landmark), vmodel, x1, l1, shK));
   graph.add(GenericProjectionFactor<Pose3,Point3,Cal3_S2>(camera2.project(landmark), vmodel, x2, l2, shK));
 

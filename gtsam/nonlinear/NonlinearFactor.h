@@ -286,7 +286,10 @@ public:
    * This is the raw error, i.e., i.e. \f$ (h(x)-z)/\sigma \f$ in case of a Gaussian
    */
   Vector whitenedError(const Values& c) const {
-    return noiseModel_->whiten(unwhitenedError(c));
+    const Vector unwhitenedErrorVec = unwhitenedError(c);
+    if(unwhitenedErrorVec.size() != noiseModel_->dim())
+      throw std::invalid_argument("This factor was created with a NoiseModel of incorrect dimension.");
+    return noiseModel_->whiten(unwhitenedErrorVec);
   }
 
   /**
@@ -296,10 +299,14 @@ public:
    * to transform it to \f$ (h(x)-z)^2/\sigma^2 \f$, and then multiply by 0.5.
    */
   virtual double error(const Values& c) const {
-    if (this->active(c))
-      return 0.5 * noiseModel_->distance(unwhitenedError(c));
-    else
+    if (this->active(c)) {
+      const Vector unwhitenedErrorVec = unwhitenedError(c);
+      if(unwhitenedErrorVec.size() != noiseModel_->dim())
+        throw std::invalid_argument("This factor was created with a NoiseModel of incorrect dimension.");
+      return 0.5 * noiseModel_->distance(unwhitenedErrorVec);
+    } else {
       return 0.0;
+    }
   }
 
   /**
@@ -317,6 +324,8 @@ public:
     // Call evaluate error to get Jacobians and b vector
     std::vector<Matrix> A(this->size());
     b = -unwhitenedError(x, A);
+    if(b.size() != noiseModel_->dim())
+      throw std::invalid_argument("This factor was created with a NoiseModel of incorrect dimension.");
 
     this->noiseModel_->WhitenSystem(A,b);
 

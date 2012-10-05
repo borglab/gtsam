@@ -42,7 +42,7 @@ static boost::shared_ptr<Cal3_S2Stereo> K(new Cal3_S2Stereo(625, 625, 0, 320, 24
 
 // point X Y Z in meters
 static Point3 p(0, 0, 5);
-static SharedNoiseModel sigma(noiseModel::Unit::Create(1));
+static SharedNoiseModel sigma(noiseModel::Unit::Create(3));
 
 // Convenience for named keys
 using symbol_shorthand::X;
