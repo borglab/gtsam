@@ -86,6 +86,8 @@ namespace gtsam {
       return prior_.localCoordinates(p);
     }
 
+    const VALUE & prior() const { return prior_; }
+
   private:
 
     /** Serialization function */
