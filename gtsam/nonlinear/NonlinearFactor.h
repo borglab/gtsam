@@ -287,7 +287,7 @@ public:
    */
   Vector whitenedError(const Values& c) const {
     const Vector unwhitenedErrorVec = unwhitenedError(c);
-    if(unwhitenedErrorVec.size() != noiseModel_->dim())
+    if((size_t) unwhitenedErrorVec.size() != noiseModel_->dim())
       throw std::invalid_argument("This factor was created with a NoiseModel of incorrect dimension.");
     return noiseModel_->whiten(unwhitenedErrorVec);
   }
@@ -301,7 +301,7 @@ public:
   virtual double error(const Values& c) const {
     if (this->active(c)) {
       const Vector unwhitenedErrorVec = unwhitenedError(c);
-      if(unwhitenedErrorVec.size() != noiseModel_->dim())
+      if((size_t) unwhitenedErrorVec.size() != noiseModel_->dim())
         throw std::invalid_argument("This factor was created with a NoiseModel of incorrect dimension.");
       return 0.5 * noiseModel_->distance(unwhitenedErrorVec);
     } else {
@@ -324,7 +324,7 @@ public:
     // Call evaluate error to get Jacobians and b vector
     std::vector<Matrix> A(this->size());
     b = -unwhitenedError(x, A);
-    if(b.size() != noiseModel_->dim())
+    if((size_t) b.size() != noiseModel_->dim())
       throw std::invalid_argument("This factor was created with a NoiseModel of incorrect dimension.");
 
     this->noiseModel_->WhitenSystem(A,b);
