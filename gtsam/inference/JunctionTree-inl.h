@@ -34,9 +34,11 @@ namespace gtsam {
     gttic(JT_symbolic_ET);
     const typename EliminationTree<IndexFactor>::shared_ptr symETree =
         EliminationTree<IndexFactor>::Create(fg, variableIndex);
+    assert(symETree.get());
     gttoc(JT_symbolic_ET);
     gttic(JT_symbolic_eliminate);
     SymbolicBayesNet::shared_ptr sbn = symETree->eliminate(&EliminateSymbolic);
+    assert(sbn.get());
     gttoc(JT_symbolic_eliminate);
     gttic(symbolic_BayesTree);
     SymbolicBayesTree sbt(*sbn);

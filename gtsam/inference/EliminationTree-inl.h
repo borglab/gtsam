@@ -155,6 +155,8 @@ typename EliminationTree<FACTOR>::shared_ptr EliminationTree<FACTOR>::Create(
   if(debug)
     trees.back()->print("ETree: ");
 
+  // Check that this is not null
+  assert(trees.back().get());
   return trees.back();
 }
 
