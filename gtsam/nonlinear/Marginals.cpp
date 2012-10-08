@@ -17,6 +17,7 @@
  */
 
 #include <gtsam/3rdparty/Eigen/Eigen/Dense>
+#include <gtsam/base/timing.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
 #include <gtsam/nonlinear/Marginals.h>
@@ -27,6 +28,7 @@ namespace gtsam {
 
 /* ************************************************************************* */
 Marginals::Marginals(const NonlinearFactorGraph& graph, const Values& solution, Factorization factorization) {
+  gttic(MarginalsConstructor);
 
   // Compute COLAMD ordering
   ordering_ = *graph.orderingCOLAMD(solution);
@@ -60,6 +62,7 @@ Matrix Marginals::marginalCovariance(Key variable) const {
 
 /* ************************************************************************* */
 Matrix Marginals::marginalInformation(Key variable) const {
+  gttic(marginalInformation);
   // Get linear key
   Index index = ordering_[variable];
 
@@ -71,6 +74,7 @@ Matrix Marginals::marginalInformation(Key variable) const {
     marginalFactor = bayesTree_.marginalFactor(index, EliminateQR);
 
   // Get information matrix (only store upper-right triangle)
+  gttic(AsMatrix);
   return marginalFactor->information();
 }
 

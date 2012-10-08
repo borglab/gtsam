@@ -24,6 +24,7 @@
 
 #include <gtsam/base/FastList.h>
 #include <gtsam/base/types.h>
+#include <gtsam/base/timing.h>
 
 namespace gtsam {
 
@@ -162,7 +163,7 @@ protected:
 /* ************************************************************************* */
 template<class FG>
 void VariableIndex::fill(const FG& factorGraph) {
-
+  gttic(VariableIndex_fill);
   // Build index mapping from variable id to factor index
   for(size_t fi=0; fi<factorGraph.size(); ++fi) {
     if(factorGraph[fi]) {
@@ -180,11 +181,13 @@ void VariableIndex::fill(const FG& factorGraph) {
 /* ************************************************************************* */
 template<class FG>
 VariableIndex::VariableIndex(const FG& factorGraph) :
-    nFactors_(0), nEntries_(0) {
-
+    nFactors_(0), nEntries_(0)
+{
+  gttic(VariableIndex_constructor);
   // If the factor graph is empty, return an empty index because inside this
   // if block we assume at least one factor.
   if(factorGraph.size() > 0) {
+    gttic(VariableIndex_constructor_find_highest);
     // Find highest-numbered variable
     Index maxVar = 0;
     BOOST_FOREACH(const typename FG::sharedFactor& factor, factorGraph) {
@@ -195,9 +198,12 @@ VariableIndex::VariableIndex(const FG& factorGraph) :
         }
       }
     }
+    gttoc(VariableIndex_constructor_find_highest);
 
     // Allocate array
+    gttic(VariableIndex_constructor_allocate);
     index_.resize(maxVar+1);
+    gttoc(VariableIndex_constructor_allocate);
 
     fill(factorGraph);
   }
@@ -206,13 +212,18 @@ VariableIndex::VariableIndex(const FG& factorGraph) :
 /* ************************************************************************* */
 template<class FG>
 VariableIndex::VariableIndex(const FG& factorGraph, Index nVariables) :
-    index_(nVariables), nFactors_(0), nEntries_(0) {
+    nFactors_(0), nEntries_(0)
+{
+  gttic(VariableIndex_constructor_allocate);
+  index_.resize(nVariables);
+  gttoc(VariableIndex_constructor_allocate);
   fill(factorGraph);
 }
 
 /* ************************************************************************* */
 template<class FG>
 void VariableIndex::augment(const FG& factors) {
+  gttic(VariableIndex_augment);
   // If the factor graph is empty, return an empty index because inside this
   // if block we assume at least one factor.
   if(factors.size() > 0) {
@@ -247,6 +258,7 @@ void VariableIndex::augment(const FG& factors) {
 /* ************************************************************************* */
 template<typename CONTAINER, class FG>
 void VariableIndex::remove(const CONTAINER& indices, const FG& factors) {
+  gttic(VariableIndex_remove);
   // NOTE: We intentionally do not decrement nFactors_ because the factor
   // indices need to remain consistent.  Removing factors from a factor graph
   // does not shift the indices of other factors.  Also, we keep nFactors_

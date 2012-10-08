@@ -114,6 +114,7 @@ typename EliminationTree<FACTOR>::shared_ptr EliminationTree<FACTOR>::Create(
     const VariableIndex& structure) {
 
   static const bool debug = false;
+  gttic(ET_Create1);
 
   gttic(ET_ComputeParents);
   // Compute the tree structure
@@ -166,10 +167,9 @@ template<class DERIVEDFACTOR>
 typename EliminationTree<FACTOR>::shared_ptr
 EliminationTree<FACTOR>::Create(const FactorGraph<DERIVEDFACTOR>& factorGraph) {
 
+  gttic(ET_Create2);
   // Build variable index
-  gttic(ET_Create_variable_index);
   const VariableIndex variableIndex(factorGraph);
-  gttoc(ET_Create_variable_index);
 
   // Build elimination tree
   return Create(factorGraph, variableIndex);

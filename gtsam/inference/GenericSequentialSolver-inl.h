@@ -30,20 +30,23 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class FACTOR>
-  GenericSequentialSolver<FACTOR>::GenericSequentialSolver(
-      const FactorGraph<FACTOR>& factorGraph) :
-      factors_(new FactorGraph<FACTOR>(factorGraph)), structure_(
-          new VariableIndex(factorGraph)), eliminationTree_(
-          EliminationTree<FACTOR>::Create(*factors_, *structure_)) {
+  GenericSequentialSolver<FACTOR>::GenericSequentialSolver(const FactorGraph<FACTOR>& factorGraph) {
+    gttic(GenericSequentialSolver_constructor1);
+    factors_.reset(new FactorGraph<FACTOR>(factorGraph));
+    structure_.reset(new VariableIndex(factorGraph));
+    eliminationTree_ = EliminationTree<FACTOR>::Create(*factors_, *structure_);
   }
 
   /* ************************************************************************* */
   template<class FACTOR>
   GenericSequentialSolver<FACTOR>::GenericSequentialSolver(
       const sharedFactorGraph& factorGraph,
-      const boost::shared_ptr<VariableIndex>& variableIndex) :
-      factors_(factorGraph), structure_(variableIndex), eliminationTree_(
-          EliminationTree<FACTOR>::Create(*factors_, *structure_)) {
+      const boost::shared_ptr<VariableIndex>& variableIndex)
+  {
+    gttic(GenericSequentialSolver_constructor2);
+    factors_ = factorGraph;
+    structure_ = variableIndex;
+    eliminationTree_ = EliminationTree<FACTOR>::Create(*factors_, *structure_);
   }
 
   /* ************************************************************************* */
@@ -89,8 +92,9 @@ namespace gtsam {
   template<class FACTOR>
   typename GenericSequentialSolver<FACTOR>::sharedBayesNet //
   GenericSequentialSolver<FACTOR>::eliminate(const Permutation& permutation,
-      Eliminate function, boost::optional<size_t> nrToEliminate) const {
-
+      Eliminate function, boost::optional<size_t> nrToEliminate) const
+  {
+    gttic(GenericSequentialSolver_eliminate);
     // Create inverse permutation
     Permutation::shared_ptr permutationInverse(permutation.inverse());
 
@@ -126,8 +130,9 @@ namespace gtsam {
   typename GenericSequentialSolver<FACTOR>::sharedBayesNet //
   GenericSequentialSolver<FACTOR>::conditionalBayesNet(
       const std::vector<Index>& js, size_t nrFrontals,
-      Eliminate function) const {
-
+      Eliminate function) const
+  {
+    gttic(GenericSequentialSolver_conditionalBayesNet);
     // Compute a COLAMD permutation with the marginal variables constrained to the end.
     // TODO in case of nrFrontals, the order of js has to be respected here !
     Permutation::shared_ptr permutation(
@@ -169,8 +174,9 @@ namespace gtsam {
   template<class FACTOR>
   typename GenericSequentialSolver<FACTOR>::sharedBayesNet //
   GenericSequentialSolver<FACTOR>::jointBayesNet(const std::vector<Index>& js,
-      Eliminate function) const {
-
+      Eliminate function) const
+  {
+    gttic(GenericSequentialSolver_jointBayesNet);
     // Compute a COLAMD permutation with the marginal variables constrained to the end.
     Permutation::shared_ptr permutation(
         inference::PermutationCOLAMD(*structure_, js));
@@ -190,11 +196,11 @@ namespace gtsam {
   template<class FACTOR>
   typename FactorGraph<FACTOR>::shared_ptr //
   GenericSequentialSolver<FACTOR>::jointFactorGraph(
-      const std::vector<Index>& js, Eliminate function) const {
-
+      const std::vector<Index>& js, Eliminate function) const
+  {
+    gttic(GenericSequentialSolver_jointFactorGraph);
     // Eliminate all variables
-    typename BayesNet<Conditional>::shared_ptr bayesNet = //
-          jointBayesNet(js, function);
+    typename BayesNet<Conditional>::shared_ptr bayesNet = jointBayesNet(js, function);
 
     return boost::make_shared<FactorGraph<FACTOR> >(*bayesNet);
   }
@@ -202,8 +208,8 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class FACTOR>
   typename boost::shared_ptr<FACTOR> //
-  GenericSequentialSolver<FACTOR>::marginalFactor(Index j,
-      Eliminate function) const {
+  GenericSequentialSolver<FACTOR>::marginalFactor(Index j, Eliminate function) const {
+    gttic(GenericSequentialSolver_marginalFactor);
     // Create a container for the one variable index
     std::vector<Index> js(1);
     js[0] = j;
