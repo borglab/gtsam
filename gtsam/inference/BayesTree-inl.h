@@ -639,10 +639,10 @@ namespace gtsam {
       }
     }
 
-    // Delete cachedShorcuts for each orphan subtree
+    // Delete cachedShortcuts for each orphan subtree
     //TODO: Consider Improving
     BOOST_FOREACH(sharedClique& orphan, orphans)
-      orphan->deleteCachedShorcuts();
+      orphan->deleteCachedShortcuts();
   }
 
   /* ************************************************************************* */

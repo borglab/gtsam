@@ -220,7 +220,7 @@ namespace gtsam {
      * This deletes the cached shortcuts of all cliques (subtree) below this clique.
      * This is performed when the bayes tree is modified.
      */
-    void deleteCachedShorcuts();
+    void deleteCachedShortcuts();
 
     /** return cached shortcut of the clique */
     const boost::optional<BayesNet<ConditionalType> >& cachedShortcut() const {

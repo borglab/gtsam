@@ -420,14 +420,14 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class DERIVED, class CONDITIONAL>
-  void BayesTreeCliqueBase<DERIVED, CONDITIONAL>::deleteCachedShorcuts() {
+  void BayesTreeCliqueBase<DERIVED, CONDITIONAL>::deleteCachedShortcuts() {
 
     // When a shortcut is requested, all of the shortcuts between it and the
     // root are also generated. So, if this clique's cached shortcut is set,
     // recursively call over all child cliques. Otherwise, it is unnecessary.
     if (cachedShortcut_) {
       BOOST_FOREACH(derived_ptr& child, children_) {
-        child->deleteCachedShorcuts();
+        child->deleteCachedShortcuts();
       }
 
       //Delete CachedShortcut for this clique

@@ -288,7 +288,7 @@ TEST( BayesTree, shortcutCheck )
   }
 
   // Check if all the cached shortcuts are cleared
-  rootClique->deleteCachedShorcuts();
+  rootClique->deleteCachedShortcuts();
   BOOST_FOREACH(SymbolicBayesTree::sharedClique& clique, allCliques) {
     bool notCleared = clique->cachedShortcut();
     CHECK( notCleared == false);
