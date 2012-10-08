@@ -117,18 +117,21 @@ if(CYGWIN OR MSVC OR WIN32)
   set(Boost_USE_STATIC_LIBS 1) # Use static libs on Windows
 endif()
 
-# FIXME: Need to allow for requiring only components from 1.43, and optionally allow 1.47 components
-find_package(Boost 1.43 COMPONENTS serialization system filesystem thread date_time regex timer chrono OPTIONAL)
+find_package(Boost 1.43 COMPONENTS serialization system filesystem thread date_time regex timer chrono)
 
-# NOTE: likely won't work on second call if >= 1.47 is available
-#find_package(Boost 1.43 COMPONENTS serialization system filesystem thread date_time regex REQUIRED)
-#find_package(Boost 1.47 COMPONENTS timer chrono OPTIONAL)
+# Required components
+if(NOT Boost_SERIALIZATION_LIBRARY OR NOT Boost_SYSTEM_LIBRARY OR NOT Boost_FILESYSTEM_LIBRARY OR
+    NOT Boost_THREAD_LIBRARY OR NOT Boost_DATE_TIME_LIBRARY OR NOT Boost_REGEX_LIBRARY)
+  message(FATAL_ERROR "Missing required Boost components >= v1.43, please install/upgrade Boost or configure your search paths.")
+endif()
 
-# Allow for not using the timer libraries on boost < 1.47
+# Allow for not using the timer libraries on boost < 1.48 (GTSAM timing code falls back to old timer library)
 set(GTSAM_BOOST_LIBRARIES ${Boost_SERIALIZATION_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY})
 if(Boost_TIMER_LIBRARY)
   set(GTSAM_BOOST_LIBRARIES ${GTSAM_BOOST_LIBRARIES} ${Boost_TIMER_LIBRARY})
-endif() 
+else()
+  message("WARNING:  Boost older than 1.48 was found, GTSAM timing instrumentation will use the older, less accurate, Boost timer library.")
+endif()
 
 
 ###############################################################################
