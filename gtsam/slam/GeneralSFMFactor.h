@@ -100,7 +100,7 @@ namespace gtsam {
         if (H1) *H1 = zeros(2, camera.dim());
         if (H2) *H2 = zeros(2, point.dim());
         std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2())
-                              << " behind Camera " << DefaultKeyFormatter(this->key1()) << endl;
+                              << " behind Camera " << DefaultKeyFormatter(this->key1()) << std::endl;
       }
       return zero(2);
     }
@@ -193,7 +193,7 @@ namespace gtsam {
         if (H2) *H2 = zeros(2, point.dim());
         if (H3) *H3 = zeros(2, calib.dim());
         std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2())
-                              << " behind Camera " << DefaultKeyFormatter(this->key1()) << endl;
+                              << " behind Camera " << DefaultKeyFormatter(this->key1()) << std::endl;
       }
       return zero(2);
     }
