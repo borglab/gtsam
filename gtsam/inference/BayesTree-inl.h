@@ -500,10 +500,10 @@ namespace gtsam {
     sharedClique clique = (*this)[j];
 
     // calculate or retrieve its marginal P(C) = P(F,S)
-#ifdef MARGINAL2
-    FactorGraph<FactorType> cliqueMarginal = clique->marginal2(root_,function);
-#else
+#ifdef OLD_SHORTCUT_MARGINALS
     FactorGraph<FactorType> cliqueMarginal = clique->marginal(root_,function);
+#else
+    FactorGraph<FactorType> cliqueMarginal = clique->marginal2(root_,function);
 #endif
 
     // Reduce the variable indices to start at zero
