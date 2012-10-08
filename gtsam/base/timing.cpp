@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
@@ -72,7 +73,9 @@ size_t TimingOutline::time() const {
 
 /* ************************************************************************* */
 void TimingOutline::print(const std::string& outline) const {
-  std::cout << outline << "-" << label_ << ": " << double(t_)/1000000.0 << " (" <<
+  std::string formattedLabel = label_;
+  boost::replace_all(formattedLabel, "_", " ");
+  std::cout << outline << "-" << formattedLabel << ": " << double(t_)/1000000.0 << " (" <<
       n_ << " times, " << double(time())/1000000.0 << " children, min: " << double(tMin_)/1000000.0 <<
       " max: " << double(tMax_)/1000000.0 << ")\n";
   // Order children
