@@ -46,11 +46,6 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Matrix GaussianDensity::information() const {
-    return computeInformation();
-  }
-
-  /* ************************************************************************* */
   Matrix GaussianDensity::covariance() const {
     return inverse(information());
   }

@@ -1078,11 +1078,12 @@ class GaussianConditional {
   size_t dim() const;
 
   //Advanced Interface
-  Matrix computeInformation() const;
-    gtsam::JacobianFactor* toFactor() const;
-    void solveInPlace(gtsam::VectorValues& x) const;
-    void solveTransposeInPlace(gtsam::VectorValues& gy) const;
-    void scaleFrontalsBySigma(gtsam::VectorValues& gy) const;
+  Matrix information() const;
+  Matrix augmentedInformation() const;
+  gtsam::JacobianFactor* toFactor() const;
+  void solveInPlace(gtsam::VectorValues& x) const;
+  void solveTransposeInPlace(gtsam::VectorValues& gy) const;
+  void scaleFrontalsBySigma(gtsam::VectorValues& gy) const;
 };
 
 class GaussianDensity {
@@ -1136,6 +1137,8 @@ virtual class GaussianFactor {
   bool equals(const gtsam::GaussianFactor& lf, double tol) const;
   double error(const gtsam::VectorValues& c) const;
   gtsam::GaussianFactor* negate() const;
+  Matrix augmentedInformation() const;
+  Matrix information() const;
   size_t size() const;
 };
 
@@ -1161,31 +1164,29 @@ virtual class JacobianFactor : gtsam::GaussianFactor {
   double error(const gtsam::VectorValues& c) const;
 
   //Standard Interface
-    gtsam::GaussianFactor* negate() const;
-    bool empty() const;
-    Matrix getA() const;
-    Vector getb() const;
-    size_t rows() const;
-    size_t cols() const;
-    size_t numberOfRows() const;
-    bool isConstrained() const;
-    pair<Matrix, Vector> matrix() const;
-    Matrix matrix_augmented() const;
+  bool empty() const;
+  Matrix getA() const;
+  Vector getb() const;
+  size_t rows() const;
+  size_t cols() const;
+  size_t numberOfRows() const;
+  bool isConstrained() const;
+  pair<Matrix, Vector> matrix() const;
+  Matrix matrix_augmented() const;
 
-    gtsam::GaussianConditional* eliminateFirst();
-    gtsam::GaussianConditional* eliminate(size_t nrFrontals);
-    gtsam::GaussianFactor* negate() const;
-    Matrix computeInformation() const;
-    void transposeMultiplyAdd(double alpha, const Vector& e, gtsam::VectorValues& x) const;
-    gtsam::JacobianFactor whiten() const;
-    gtsam::GaussianConditional* eliminateFirst();
-    gtsam::GaussianConditional* eliminate(size_t nFrontals);
-    gtsam::GaussianConditional* splitConditional(size_t nFrontals);
+  gtsam::GaussianConditional* eliminateFirst();
+  gtsam::GaussianConditional* eliminate(size_t nrFrontals);
+  gtsam::GaussianFactor* negate() const;
+  void transposeMultiplyAdd(double alpha, const Vector& e, gtsam::VectorValues& x) const;
+  gtsam::JacobianFactor whiten() const;
+  gtsam::GaussianConditional* eliminateFirst();
+  gtsam::GaussianConditional* eliminate(size_t nFrontals);
+  gtsam::GaussianConditional* splitConditional(size_t nFrontals);
 
-    void setModel(bool anyConstrained, const Vector& sigmas);
-    void assertInvariants() const;
+  void setModel(bool anyConstrained, const Vector& sigmas);
+  void assertInvariants() const;
 
-    //gtsam::SharedDiagonal& get_model();
+  //gtsam::SharedDiagonal& get_model();
 };
 
 virtual class HessianFactor : gtsam::GaussianFactor {
@@ -1211,16 +1212,14 @@ virtual class HessianFactor : gtsam::GaussianFactor {
 
   //Standard Interface
   size_t rows() const;
-  gtsam::GaussianFactor* negate() const;
   Matrix info() const;
   double constantTerm() const;
   Vector linearTerm() const;
-  Matrix computeInformation() const;
 
   //Advanced Interface
   void partialCholesky(size_t nrFrontals);
-    gtsam::GaussianConditional* splitEliminatedFactor(size_t nrFrontals);
-    void assertInvariants() const;
+  gtsam::GaussianConditional* splitEliminatedFactor(size_t nrFrontals);
+  void assertInvariants() const;
 };
 
 class GaussianFactorGraph {

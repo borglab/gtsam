@@ -281,10 +281,17 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Matrix JacobianFactor::computeInformation() const {
+  Matrix JacobianFactor::augmentedInformation() const {
     Matrix AbWhitened = Ab_.full();
     model_->WhitenInPlace(AbWhitened);
     return AbWhitened.transpose() * AbWhitened;
+  }
+
+  /* ************************************************************************* */
+  Matrix JacobianFactor::information() const {
+    Matrix AWhitened = this->getA();
+    model_->WhitenInPlace(AWhitened);
+    return AWhitened.transpose() * AWhitened;
   }
 
   /* ************************************************************************* */

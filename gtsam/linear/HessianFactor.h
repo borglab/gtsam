@@ -311,7 +311,12 @@ namespace gtsam {
      * representation of the augmented information matrix, which stores only the
      * upper triangle.
      */
-    virtual Matrix computeInformation() const;
+    virtual Matrix augmentedInformation() const;
+
+    /** Return the non-augmented information matrix represented by this
+     * GaussianFactor.
+     */
+    virtual Matrix information() const;
 
     // Friend unit test classes
     friend class ::ConversionConstructorHessianFactorTest;

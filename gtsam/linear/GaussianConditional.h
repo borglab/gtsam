@@ -31,7 +31,7 @@ class eliminate2JacobianFactorTest;
 class constructorGaussianConditionalTest;
 class eliminationGaussianFactorGraphTest;
 class complicatedMarginalGaussianJunctionTreeTest;
-class computeInformationGaussianConditionalTest;
+class informationGaussianConditionalTest;
 class isGaussianFactorGaussianConditionalTest;
 
 namespace gtsam {
@@ -147,8 +147,15 @@ public:
   /** dimension of multivariate variable */
   size_t dim() const { return rsd_.rows(); }
 
+  /** Compute the augmented information matrix as
+   * \f$ [ R S d ]^T [ R S d ] \f$
+   */
+  Matrix augmentedInformation() const {
+    return rsd_.full().transpose() * rsd_.full().transpose();
+  }
+
   /** Compute the information matrix */
-  Matrix computeInformation() const {
+  Matrix information() const {
     return get_R().transpose() * get_R();
   }
 
@@ -217,7 +224,7 @@ private:
   friend class ::constructorGaussianConditionalTest;
   friend class ::eliminationGaussianFactorGraphTest;
   friend class ::complicatedMarginalGaussianJunctionTreeTest;
-  friend class ::computeInformationGaussianConditionalTest;
+  friend class ::informationGaussianConditionalTest;
   friend class ::isGaussianFactorGaussianConditionalTest;
 
   /** Serialization function */

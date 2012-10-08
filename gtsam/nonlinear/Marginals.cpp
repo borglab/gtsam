@@ -71,9 +71,7 @@ Matrix Marginals::marginalInformation(Key variable) const {
     marginalFactor = bayesTree_.marginalFactor(index, EliminateQR);
 
   // Get information matrix (only store upper-right triangle)
-  Matrix info = marginalFactor->computeInformation();
-  const int dim = info.rows() - 1;
-  return info.topLeftCorner(dim,dim); // Take the non-augmented part of the information matrix
+  return marginalFactor->information();
 }
 
 /* ************************************************************************* */

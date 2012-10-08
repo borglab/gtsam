@@ -42,7 +42,7 @@ BayesNet<GaussianConditional>::shared_ptr GaussianISAM::marginalBayesNet(Index j
 /* ************************************************************************* */
 Matrix GaussianISAM::marginalCovariance(Index j) const {
   GaussianConditional::shared_ptr conditional = marginalBayesNet(j)->front();
-  return conditional->computeInformation().inverse();
+  return conditional->information().inverse();
 }
 
 /* ************************************************************************* */

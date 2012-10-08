@@ -311,8 +311,13 @@ bool HessianFactor::equals(const GaussianFactor& lf, double tol) const {
 }
 
 /* ************************************************************************* */
-Matrix HessianFactor::computeInformation() const {
+Matrix HessianFactor::augmentedInformation() const {
   return info_.full().selfadjointView<Eigen::Upper>();
+}
+
+/* ************************************************************************* */
+Matrix HessianFactor::information() const {
+  return info_.range(0, this->size(), 0, this->size()).selfadjointView<Eigen::Upper>();
 }
 
 /* ************************************************************************* */

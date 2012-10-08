@@ -162,7 +162,12 @@ namespace gtsam {
      * augmented information matrix is described in more detail in HessianFactor,
      * which in fact stores an augmented information matrix.
      */
-    virtual Matrix computeInformation() const;
+    virtual Matrix augmentedInformation() const;
+    
+    /** Return the non-augmented information matrix represented by this
+     * GaussianFactor.
+     */
+    virtual Matrix information() const;
 
     /**
      * Construct the corresponding anti-factor to negate information

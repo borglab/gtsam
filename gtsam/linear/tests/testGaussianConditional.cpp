@@ -306,7 +306,7 @@ TEST( GaussianConditional, solveTranspose ) {
 }
 
 /* ************************************************************************* */
-TEST( GaussianConditional, computeInformation ) {
+TEST( GaussianConditional, information ) {
 
   // Create R matrix
   Matrix R = (Matrix(4,4) <<
@@ -322,7 +322,7 @@ TEST( GaussianConditional, computeInformation ) {
   Matrix IExpected = R.transpose() * R;
 
   // Actual information matrix (conditional should permute R)
-  Matrix IActual = conditional.computeInformation();
+  Matrix IActual = conditional.information();
   EXPECT(assert_equal(IExpected, IActual));
 }
 
@@ -340,7 +340,7 @@ TEST( GaussianConditional, isGaussianFactor ) {
   GaussianConditional conditional(0, Vector::Zero(4), R, Vector::Constant(4, 1.0));
 
   // Expected information matrix computed by conditional
-  Matrix IExpected = conditional.computeInformation();
+  Matrix IExpected = conditional.information();
 
   // Expected information matrix computed by a factor
   JacobianFactor jf = *conditional.toFactor();

@@ -88,7 +88,7 @@ Matrix GaussianMultifrontalSolver::marginalCovariance(Index j) const {
     fg.push_back(Base::marginalFactor(j,&EliminatePreferCholesky));
     conditional = EliminatePreferCholesky(fg,1).first;
   }
-  return conditional->computeInformation().inverse();
+  return conditional->information().inverse();
 }
 
 }

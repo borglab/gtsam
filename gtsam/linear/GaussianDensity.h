@@ -60,9 +60,6 @@ namespace gtsam {
     /// Mean \f$ \mu = R^{-1} d \f$
     Vector mean() const;
 
-    /// Information matrix \f$ \Lambda = R^T R \f$
-    Matrix information() const;
-
     /// Covariance matrix \f$ \Sigma = (R^T R)^{-1} \f$
     Matrix covariance() const;
 
