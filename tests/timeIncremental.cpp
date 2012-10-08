@@ -23,11 +23,33 @@
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/Marginals.h>
 
+#include <fstream>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/serialization/export.hpp>
+
 using namespace std;
 using namespace gtsam;
 using namespace gtsam::symbol_shorthand;
 
 typedef Pose2 Pose;
+
+typedef NoiseModelFactor1<Pose> NM1;
+typedef NoiseModelFactor2<Pose,Pose> NM2;
+
+BOOST_CLASS_EXPORT(Value);
+BOOST_CLASS_EXPORT(Pose);
+BOOST_CLASS_EXPORT(NonlinearFactor);
+BOOST_CLASS_EXPORT(NoiseModelFactor);
+BOOST_CLASS_EXPORT(NM1);
+BOOST_CLASS_EXPORT(NM2);
+BOOST_CLASS_EXPORT(BetweenFactor<Pose>);
+BOOST_CLASS_EXPORT(PriorFactor<Pose>);
+BOOST_CLASS_EXPORT(noiseModel::Base);
+BOOST_CLASS_EXPORT(noiseModel::Isotropic);
+BOOST_CLASS_EXPORT(noiseModel::Gaussian);
+BOOST_CLASS_EXPORT(noiseModel::Diagonal);
+BOOST_CLASS_EXPORT(noiseModel::Unit);
 
 double chi2_red(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& config) {
   // Compute degrees of freedom (observations - variables)
@@ -137,17 +159,55 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  try {
+    {
+      std::ofstream writerStream("incremental_init", ios::binary);
+      boost::archive::binary_oarchive writer(writerStream);
+      writer << isam2.calculateEstimate();
+      writerStream.close();
+    }
+    {
+      std::ofstream writerStream("incremental_graph", ios::binary);
+      boost::archive::binary_oarchive writer(writerStream);
+      writer << isam2.getFactorsUnsafe();
+      writerStream.close();
+    }
+  } catch(std::exception& e) {
+    cout << e.what() << endl;
+  }
+
+  NonlinearFactorGraph graph;
+  Values values;
+
+  //{
+  //  std::ifstream readerStream("incremental_init", ios::binary);
+  //  boost::archive::binary_iarchive reader(readerStream);
+  //  reader >> values;
+  //}
+  //{
+  //  std::ifstream readerStream("incremental_graph", ios::binary);
+  //  boost::archive::binary_iarchive reader(readerStream);
+  //  reader >> graph;
+  //}
+
+  graph = isam2.getFactorsUnsafe();
+  values = isam2.calculateEstimate();
+
   // Compute marginals
-  Marginals marginals(isam2.getFactorsUnsafe(), isam2.calculateEstimate());
-  int i=0;
-  BOOST_FOREACH(Key key, initial.keys()) {
-    gttic_(marginalInformation);
-    Matrix info = marginals.marginalInformation(key);
-    gttoc_(marginalInformation);
-    tictoc_finishedIteration_();
-    if(i % 1000 == 0)
-      tictoc_print_();
-    ++i;
+  try {
+    Marginals marginals(graph, values);
+    int i=0;
+    BOOST_FOREACH(Key key, values.keys()) {
+      gttic_(marginalInformation);
+      Matrix info = marginals.marginalInformation(key);
+      gttoc_(marginalInformation);
+      tictoc_finishedIteration_();
+      if(i % 1000 == 0)
+        tictoc_print_();
+      ++i;
+    }
+  } catch(std::exception& e) {
+    cout << e.what() << endl;
   }
 
   return 0;
