@@ -332,7 +332,7 @@ namespace gtsam {
 
         // The variables we want to keepSet are exactly the ones in S
         sharedConditional p_F_S = this->conditional();
-        std::vector<Index> indicesS = p_F_S->parents();
+        std::vector<Index> indicesS(p_F_S->beginParents(), p_F_S->endParents());
         inverseReduction.applyInverse(indicesS);
         gttoc(Reduce);
 
