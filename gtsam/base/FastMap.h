@@ -53,6 +53,11 @@ public:
   /** Copy constructor from the base map class */
   FastMap(const Base& x) : Base(x) {}
 
+  /** Conversion to a standard STL container */
+  operator std::map<KEY,VALUE>() const {
+    return std::map<KEY,VALUE>(this->begin(), this->end());
+  }
+
 private:
   /** Serialization function */
   friend class boost::serialization::access;

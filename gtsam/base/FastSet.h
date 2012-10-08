@@ -86,6 +86,11 @@ public:
       Base::insert(x.begin(), x.end());
   }
 
+  /** Conversion to a standard STL container */
+  operator std::set<VALUE>() const {
+    return std::set<VALUE>(this->begin(), this->end());
+  }
+
   /** Print to implement Testable */
   void print(const std::string& str = "") const { FastSetTestableHelper<VALUE>::print(*this, str); }
 

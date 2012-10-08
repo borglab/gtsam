@@ -229,6 +229,11 @@ namespace gtsam {
       root_->deleteCachedShorcuts();
     }
 
+    /** Apply a permutation to all cliques */
+    void permuteWithInverse(const Permutation& inversePermutation) {
+      root_->permuteWithInverse(inversePermutation);
+    }
+
     /**
      * Remove path from clique to root and return that path as factors
      * plus a list of orphaned subtree roots. Used in removeTop below.

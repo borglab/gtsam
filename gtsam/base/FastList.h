@@ -62,6 +62,11 @@ public:
       Base::assign(x.begin(), x.end());
   }
 
+  /** Conversion to a standard STL container */
+  operator std::list<VALUE>() const {
+    return std::list<VALUE>(this->begin(), this->end());
+  }
+
 private:
   /** Serialization function */
   friend class boost::serialization::access;
