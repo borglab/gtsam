@@ -25,6 +25,7 @@
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>
+#include <iostream>
 
 namespace gtsam {
 
@@ -98,8 +99,8 @@ namespace gtsam {
       catch( CheiralityException& e) {
         if (H1) *H1 = zeros(2, camera.dim());
         if (H2) *H2 = zeros(2, point.dim());
-        cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2())
-                         << " behind Camera " << DefaultKeyFormatter(this->key1()) << endl;
+        std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2())
+                              << " behind Camera " << DefaultKeyFormatter(this->key1()) << endl;
       }
       return zero(2);
     }
@@ -191,8 +192,8 @@ namespace gtsam {
         if (H1) *H1 = zeros(2, pose3.dim());
         if (H2) *H2 = zeros(2, point.dim());
         if (H3) *H3 = zeros(2, calib.dim());
-        cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2())
-                         << " behind Camera " << DefaultKeyFormatter(this->key1()) << endl;
+        std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2())
+                              << " behind Camera " << DefaultKeyFormatter(this->key1()) << endl;
       }
       return zero(2);
     }
