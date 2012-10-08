@@ -67,8 +67,7 @@ namespace gtsam {
     /// @{
 
     /** Default constructor */
-    BayesTreeCliqueBase() {
-    }
+    BayesTreeCliqueBase() {}
 
     /** Construct from a conditional, leaving parent and child pointers uninitialized */
     BayesTreeCliqueBase(const sharedConditional& conditional);
@@ -170,8 +169,7 @@ namespace gtsam {
      * types, such as ISAM2Clique, the factor part is kept as a cached factor.
      * @param result An elimination result, which is a pair<CONDITIONAL,FACTOR>
      */
-    static derived_ptr Create(
-        const std::pair<sharedConditional,
+    static derived_ptr Create(const std::pair<sharedConditional,
             boost::shared_ptr<typename ConditionalType::FactorType> >& result) {
       return boost::make_shared<DerivedType>(result);
     }
@@ -194,27 +192,22 @@ namespace gtsam {
     bool permuteSeparatorWithInverse(const Permutation& inversePermutation);
 
     /** return the conditional P(S|Root) on the separator given the root */
-    BayesNet<ConditionalType> shortcut(derived_ptr root,
-        Eliminate function) const;
+    BayesNet<ConditionalType> shortcut(derived_ptr root, Eliminate function) const;
 
     /** return the marginal P(C) of the clique */
-    FactorGraph<FactorType> marginal(derived_ptr root,
-        Eliminate function) const;
+    FactorGraph<FactorType> marginal(derived_ptr root, Eliminate function) const;
 
-    /** return the conditional P(S|Root) on the separator given the root */
-    FactorGraph<FactorType> separatorMarginal(derived_ptr root,
-        Eliminate function) const;
+    /** return the marginal P(S) on the separator */
+    FactorGraph<FactorType> separatorMarginal(derived_ptr root, Eliminate function) const;
 
-    /** return the marginal P(C) of the clique, using separator shortcuts */
-    FactorGraph<FactorType> marginal2(derived_ptr root,
-        Eliminate function) const;
+    /** return the marginal P(C) of the clique, using marginal caching */
+    FactorGraph<FactorType> marginal2(derived_ptr root, Eliminate function) const;
 
     /**
      * return the joint P(C1,C2), where C1==this. TODO: not a method?
      * Limitation: can only calculate joint if cliques are disjoint or one of them is root
      */
-    FactorGraph<FactorType> joint(derived_ptr C2, derived_ptr root,
-        Eliminate function) const;
+    FactorGraph<FactorType> joint(derived_ptr C2, derived_ptr root, Eliminate function) const;
 
     /**
      * This deletes the cached shortcuts of all cliques (subtree) below this clique.
