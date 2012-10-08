@@ -7,6 +7,10 @@ set (GTSAM_VERSION_MAJOR 2)
 set (GTSAM_VERSION_MINOR 1)
 set (GTSAM_VERSION_PATCH 0)
 
+
+###############################################################################
+# Gather information, perform checks, set defaults
+
 # Set the default install path to home
 #set (CMAKE_INSTALL_PREFIX ${HOME} CACHE PATH "Install prefix for library")
 
@@ -35,6 +39,10 @@ if(EXISTS "${PROJECT_SOURCE_DIR}/gtsam_unstable" AND IS_DIRECTORY "${PROJECT_SOU
 else()
     set(GTSAM_UNSTABLE_AVAILABLE 0)
 endif()
+
+
+###############################################################################
+# Set up options
 
 # Configurable Options
 option(GTSAM_BUILD_TESTS                 "Enable/Disable building of tests"          ON)
@@ -76,7 +84,6 @@ if(NOT GTSAM_TOOLBOX_INSTALL_PATH)
 	set(GTSAM_TOOLBOX_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/borg/toolbox")
 endif()
 
-
 # Flags for choosing default packaging tools
 set(CPACK_SOURCE_GENERATOR "TGZ" CACHE STRING "CPack Default Source Generator")
 set(CPACK_GENERATOR        "TGZ" CACHE STRING "CPack Default Binary Generator")
@@ -104,9 +111,10 @@ if (GTSAM_BUILD_TESTS)
     include(CTest)
 endif()
 
+###############################################################################
 # Find boost
 if(CYGWIN OR MSVC OR WIN32)
-  set(Boost_USE_STATIC_LIBS 1)
+  set(Boost_USE_STATIC_LIBS 1) # Use static libs on Windows
 endif()
 
 # FIXME: Need to allow for requiring only components from 1.43, and optionally allow 1.47 components
@@ -122,6 +130,10 @@ if(Boost_TIMER_LIBRARY)
   set(GTSAM_BOOST_LIBRARIES ${GTSAM_BOOST_LIBRARIES} ${Boost_TIMER_LIBRARY})
 endif() 
 
+
+###############################################################################
+# Global compile options
+
 # General build settings
 include_directories(
   gtsam/3rdparty/UFconfig 
@@ -130,6 +142,10 @@ include_directories(
   CppUnitLite
   ${Boost_INCLUDE_DIR})
 link_directories(${Boost_LIBRARY_DIRS})
+
+
+###############################################################################
+# Add components
 
 # Build CppUnitLite
 add_subdirectory(CppUnitLite)
@@ -172,7 +188,9 @@ if (DOXYGEN_FOUND)
     add_subdirectory(doc)
 endif()
 
-## Set up CPack
+
+###############################################################################
+# Set up CPack
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "GTSAM")
 set(CPACK_PACKAGE_VENDOR "Frank Dellaert, Georgia Institute of Technology")
 set(CPACK_PACKAGE_CONTACT "Frank Dellaert, dellaert@cc.gatech.edu")
@@ -194,7 +212,9 @@ set(CPACK_SOURCE_PACKAGE_FILE_NAME "gtsam-${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION
 set(CPACK_DEBIAN_PACKAGE_NAME "libgtsam-dev")
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-dev (>= 1.43)") #Example: "libc6 (>= 2.3.1-6), libgcc1 (>= 1:3.4.2-12)")
 
-# print configuration variables
+
+###############################################################################
+# Print configuration variables
 message(STATUS "===============================================================")
 message(STATUS "================  Configuration Options  ======================")
 message(STATUS "Build flags                                               ")
