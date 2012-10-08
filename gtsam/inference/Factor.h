@@ -167,7 +167,7 @@ public:
   /// find
   const_iterator find(KeyType key) const { return std::find(begin(), end(), key); }
 
-  ///TODO: comment
+  /// Access the factor's involved variable keys
   const std::vector<KeyType>& keys() const { return keys_; }
 
   /** iterators */
