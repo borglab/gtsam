@@ -49,7 +49,9 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class DERIVED, class CONDITIONAL>
   std::vector<Index> BayesTreeCliqueBase<DERIVED, CONDITIONAL>::shortcut_indices(
-      derived_ptr B, const FactorGraph<FactorType>& p_Cp_B) const {
+      derived_ptr B, const FactorGraph<FactorType>& p_Cp_B) const
+  {
+    gttic(shortcut_indices);
     std::set<Index> allKeys = p_Cp_B.keys();
     std::vector<Index> &indicesB = B->conditional()->keys();
     std::vector<Index> S_setminus_B = separator_setminus_B(B); // TODO, get as argument?
@@ -173,11 +175,13 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class DERIVED, class CONDITIONAL>
   BayesNet<CONDITIONAL> BayesTreeCliqueBase<DERIVED, CONDITIONAL>::shortcut(
-      derived_ptr B, Eliminate function) const {
-
+      derived_ptr B, Eliminate function) const
+  {
+    gttic(BayesTreeCliqueBase_shortcut);
     // Check if the ShortCut already exists
     if (!cachedShortcut_) {
 
+      gttic(BayesTreeCliqueBase_shortcut_cachemiss);
       // We only calculate the shortcut when this clique is not B
       // and when the S\B is not empty
       std::vector<Index> S_setminus_B = separator_setminus_B(B);
@@ -185,7 +189,11 @@ namespace gtsam {
 
         // Obtain P(Cp||B) = P(Fp|Sp) * P(Sp||B) as a factor graph
         derived_ptr parent(parent_.lock());
+        gttoc(BayesTreeCliqueBase_shortcut_cachemiss);
+        gttoc(BayesTreeCliqueBase_shortcut);
         FactorGraph<FactorType> p_Cp_B(parent->shortcut(B, function)); // P(Sp||B)
+        gttic(BayesTreeCliqueBase_shortcut);
+        gttic(BayesTreeCliqueBase_shortcut_cachemiss);
         p_Cp_B.push_back(parent->conditional()->toFactor()); // P(Fp|Sp)
 
         // Add the root conditional
@@ -199,19 +207,15 @@ namespace gtsam {
 
         // Determine the variables we want to keepSet, S union B
         std::vector<Index> keep = shortcut_indices(B, p_Cp_B);
-        //std::set<Index> keepSet;
-        //BOOST_FOREACH(Index j, this->conditional()->parents()) {
-        //  keepSet.insert(j); }
-        //BOOST_FOREACH(Index j, (*B->conditional())) {
-        //  keepSet.insert(j); }
-        //std::vector<Index> keep(keepSet.begin(), keepSet.end());
 
         // Reduce the variable indices to start at zero
+        gttic(Reduce);
         const Permutation reduction = internal::createReducingPermutation(p_Cp_B.keys());
         internal::Reduction inverseReduction = internal::Reduction::CreateAsInverse(reduction);
         BOOST_FOREACH(const boost::shared_ptr<FactorType>& factor, p_Cp_B) {
           if(factor) factor->reduceWithInverse(inverseReduction); }
         inverseReduction.applyInverse(keep);
+        gttoc(Reduce);
 
         // Create solver that will marginalize for us
         GenericSequentialSolver<FactorType> solver(p_Cp_B);
@@ -222,18 +226,19 @@ namespace gtsam {
             *solver.conditionalBayesNet(keep, nrFrontals, function);
 
         // Undo the reduction
+        gttic(Undo_Reduce);
         BOOST_FOREACH(const typename boost::shared_ptr<FactorType>& factor, p_Cp_B) {
-          if (factor) {
-            factor->permuteWithInverse(reduction);
-          }
-        }
+          if (factor) factor->permuteWithInverse(reduction); }
         cachedShortcut_->permuteWithInverse(reduction);
+        gttoc(Undo_Reduce);
 
         assertInvariants();
       } else {
         BayesNet<CONDITIONAL> empty;
         cachedShortcut_ = empty;
       }
+    } else {
+      gttic(BayesTreeCliqueBase_shortcut_cachehit);
     }
 
     // return the shortcut P(S||B)
@@ -248,7 +253,9 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class DERIVED, class CONDITIONAL>
   FactorGraph<typename BayesTreeCliqueBase<DERIVED, CONDITIONAL>::FactorType> BayesTreeCliqueBase<
-      DERIVED, CONDITIONAL>::marginal(derived_ptr R, Eliminate function) const {
+      DERIVED, CONDITIONAL>::marginal(derived_ptr R, Eliminate function) const
+  {
+    gttic(BayesTreeCliqueBase_marginal);
     // If we are the root, just return this root
     // NOTE: immediately cast to a factor graph
     BayesNet<ConditionalType> bn(R->conditional());
@@ -256,13 +263,35 @@ namespace gtsam {
       return bn;
 
     // Combine P(F|S), P(S|R), and P(R)
-    BayesNet<ConditionalType> p_FSR = this->shortcut(R, function);
-    p_FSR.push_front(this->conditional());
-    p_FSR.push_back(R->conditional());
+    BayesNet<ConditionalType> p_FSRc = this->shortcut(R, function);
+    p_FSRc.push_front(this->conditional());
+    p_FSRc.push_back(R->conditional());
+    FactorGraph<FactorType> p_FSR = p_FSRc;
 
     assertInvariants();
-    GenericSequentialSolver<FactorType> solver(p_FSR);
-    return *solver.jointFactorGraph(conditional_->keys(), function);
+
+    // Reduce the variable indices to start at zero
+    gttic(Reduce);
+    const Permutation reduction = internal::createReducingPermutation(p_FSR.keys());
+    internal::Reduction inverseReduction = internal::Reduction::CreateAsInverse(reduction);
+    BOOST_FOREACH(const boost::shared_ptr<FactorType>& factor, p_FSR) {
+      factor->reduceWithInverse(inverseReduction); }
+    std::vector<Index> keysFS = conditional_->keys();
+    inverseReduction.applyInverse(keysFS);
+    gttoc(Reduce);
+
+    // Eliminate to get the marginal
+    const GenericSequentialSolver<FactorType> solver(p_FSR);
+    FactorGraph<typename BayesTreeCliqueBase<DERIVED, CONDITIONAL>::FactorType> result =
+      *solver.jointFactorGraph(keysFS, function);
+
+    // Undo the reduction (don't need to undo p_FSR since the FactorGraph conversion no longer references the cached shortcuts)
+    gttic(Undo_Reduce);
+    BOOST_FOREACH(const typename boost::shared_ptr<FactorType>& factor, result) {
+      if (factor) factor->permuteWithInverse(reduction); }
+    gttoc(Undo_Reduce);
+
+    return result;
   }
 
   /* ************************************************************************* */
@@ -271,10 +300,12 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class DERIVED, class CONDITIONAL>
   FactorGraph<typename BayesTreeCliqueBase<DERIVED, CONDITIONAL>::FactorType> BayesTreeCliqueBase<
-      DERIVED, CONDITIONAL>::separatorMarginal(derived_ptr R, Eliminate function) const {
+      DERIVED, CONDITIONAL>::separatorMarginal(derived_ptr R, Eliminate function) const
+  {
+    gttic(BayesTreeCliqueBase_separatorMarginal);
     // Check if the Separator marginal was already calculated
     if (!cachedSeparatorMarginal_) {
-
+      gttic(BayesTreeCliqueBase_separatorMarginal_cachemiss);
       // If this is the root, there is no separator
       if (R.get() == this) {
         // we are root, return empty
@@ -284,19 +315,42 @@ namespace gtsam {
         // Obtain P(S) = \int P(Cp) = \int P(Fp|Sp) P(Sp)
         // initialize P(Cp) with the parent separator marginal
         derived_ptr parent(parent_.lock());
+        gttoc(BayesTreeCliqueBase_separatorMarginal_cachemiss); // Flatten recursion in timing outline
+        gttoc(BayesTreeCliqueBase_separatorMarginal);
         FactorGraph<FactorType> p_Cp(parent->separatorMarginal(R, function)); // P(Sp)
-        // now add the parent cobnditional
+        gttic(BayesTreeCliqueBase_separatorMarginal);
+        gttic(BayesTreeCliqueBase_separatorMarginal_cachemiss);
+        // now add the parent conditional
         p_Cp.push_back(parent->conditional()->toFactor()); // P(Fp|Sp)
+
+        // Reduce the variable indices to start at zero
+        gttic(Reduce);
+        const Permutation reduction = internal::createReducingPermutation(p_Cp.keys());
+        internal::Reduction inverseReduction = internal::Reduction::CreateAsInverse(reduction);
+        BOOST_FOREACH(const boost::shared_ptr<FactorType>& factor, p_Cp) {
+          if(factor) factor->reduceWithInverse(inverseReduction); }
+
+        // The variables we want to keepSet are exactly the ones in S
+        sharedConditional p_F_S = this->conditional();
+        std::vector<Index> indicesS = p_F_S->parents();
+        inverseReduction.applyInverse(indicesS);
+        gttoc(Reduce);
 
         // Create solver that will marginalize for us
         GenericSequentialSolver<FactorType> solver(p_Cp);
 
-        // The variables we want to keepSet are exactly the ones in S
-        sharedConditional p_F_S = this->conditional();
-        std::vector<Index> indicesS(p_F_S->beginParents(), p_F_S->endParents());
-
         cachedSeparatorMarginal_ = *(solver.jointBayesNet(indicesS, function));
+
+        // Undo the reduction
+        gttic(Undo_Reduce);
+        BOOST_FOREACH(const typename boost::shared_ptr<FactorType>& factor, p_Cp) {
+          if (factor) factor->permuteWithInverse(reduction); }
+        BOOST_FOREACH(const typename boost::shared_ptr<FactorType>& factor, *cachedSeparatorMarginal_) {
+          if (factor) factor->permuteWithInverse(reduction); }
+        gttoc(Undo_Reduce);
       }
+    } else {
+      gttic(BayesTreeCliqueBase_separatorMarginal_cachehit);
     }
 
     // return the shortcut P(S||B)
@@ -309,7 +363,9 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class DERIVED, class CONDITIONAL>
   FactorGraph<typename BayesTreeCliqueBase<DERIVED, CONDITIONAL>::FactorType> BayesTreeCliqueBase<
-      DERIVED, CONDITIONAL>::marginal2(derived_ptr R, Eliminate function) const {
+      DERIVED, CONDITIONAL>::marginal2(derived_ptr R, Eliminate function) const
+  {
+    gttic(BayesTreeCliqueBase_marginal2);
     // initialize with separator marginal P(S)
     FactorGraph<FactorType> p_C(this->separatorMarginal(R, function));
     // add the conditional P(F|S)
@@ -323,7 +379,9 @@ namespace gtsam {
   template<class DERIVED, class CONDITIONAL>
   FactorGraph<typename BayesTreeCliqueBase<DERIVED, CONDITIONAL>::FactorType> BayesTreeCliqueBase<
       DERIVED, CONDITIONAL>::joint(derived_ptr C2, derived_ptr R,
-      Eliminate function) const {
+      Eliminate function) const
+  {
+    gttic(BayesTreeCliqueBase_joint);
     // For now, assume neither is the root
 
     sharedConditional p_F1_S1 = this->conditional();

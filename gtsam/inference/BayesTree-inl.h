@@ -492,7 +492,9 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class CONDITIONAL, class CLIQUE>
   typename CONDITIONAL::FactorType::shared_ptr BayesTree<CONDITIONAL,CLIQUE>::marginalFactor(
-      Index j, Eliminate function) const {
+      Index j, Eliminate function) const
+  {
+    gttic(BayesTree_marginalFactor);
 
     // get clique containing Index j
     sharedClique clique = (*this)[j];
@@ -504,23 +506,57 @@ namespace gtsam {
     FactorGraph<FactorType> cliqueMarginal = clique->marginal(root_,function);
 #endif
 
+    // Reduce the variable indices to start at zero
+    gttic(Reduce);
+    const Permutation reduction = internal::createReducingPermutation(cliqueMarginal.keys());
+    internal::Reduction inverseReduction = internal::Reduction::CreateAsInverse(reduction);
+    BOOST_FOREACH(const boost::shared_ptr<FactorType>& factor, cliqueMarginal) {
+      if(factor) factor->reduceWithInverse(inverseReduction); }
+    gttoc(Reduce);
+
     // now, marginalize out everything that is not variable j
     GenericSequentialSolver<FactorType> solver(cliqueMarginal);
-    return solver.marginalFactor(j, function);
+    boost::shared_ptr<FactorType> result = solver.marginalFactor(inverseReduction[j], function);
+
+    // Undo the reduction
+    gttic(Undo_Reduce);
+    result->permuteWithInverse(reduction);
+    BOOST_FOREACH(const boost::shared_ptr<FactorType>& factor, cliqueMarginal) {
+      if(factor) factor->permuteWithInverse(reduction); }
+    gttoc(Undo_Reduce);
+    return result;
   }
 
   /* ************************************************************************* */
   template<class CONDITIONAL, class CLIQUE>
   typename BayesNet<CONDITIONAL>::shared_ptr BayesTree<CONDITIONAL,CLIQUE>::marginalBayesNet(
-      Index j, Eliminate function) const {
+      Index j, Eliminate function) const
+  {
+    gttic(BayesTree_marginalBayesNet);
 
     // calculate marginal as a factor graph
     FactorGraph<FactorType> fg;
     fg.push_back(this->marginalFactor(j,function));
 
+    // Reduce the variable indices to start at zero
+    gttic(Reduce);
+    const Permutation reduction = internal::createReducingPermutation(fg.keys());
+    internal::Reduction inverseReduction = internal::Reduction::CreateAsInverse(reduction);
+    BOOST_FOREACH(const boost::shared_ptr<FactorType>& factor, fg) {
+      if(factor) factor->reduceWithInverse(inverseReduction); }
+    gttoc(Reduce);
+
     // eliminate factor graph marginal to a Bayes net
-    return GenericSequentialSolver<FactorType>(fg).eliminate(function);
-  }
+    boost::shared_ptr<BayesNet<CONDITIONAL> > bn = GenericSequentialSolver<FactorType>(fg).eliminate(function);
+
+    // Undo the reduction
+    gttic(Undo_Reduce);
+    bn->permuteWithInverse(reduction);
+    BOOST_FOREACH(const boost::shared_ptr<FactorType>& factor, fg) {
+      if(factor) factor->permuteWithInverse(reduction); }
+    gttoc(Undo_Reduce);
+    return bn;
+ }
 
   /* ************************************************************************* */
   // Find two cliques, their joint, then marginalizes
