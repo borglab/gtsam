@@ -320,3 +320,7 @@ TEST_UNSAFE(BayesTree, simpleMarginal)
 
   EXPECT(assert_equal(expected, actual));
 }
+
+/* ************************************************************************* */
+int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
+/* ************************************************************************* */
