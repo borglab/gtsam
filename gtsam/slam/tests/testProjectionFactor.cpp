@@ -17,104 +17,174 @@
  */
 
 #include <gtsam/slam/ProjectionFactor.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/geometry/Cal3DS2.h>
+#include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Point3.h>
+#include <gtsam/geometry/Point2.h>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;
 
-// make cube
-static Point3
-  x000(-1, -1, -1), x001(-1, -1, +1), x010(-1, +1, -1), x011(-1, +1, +1),
-  x100(-1, -1, -1), x101(-1, -1, +1), x110(-1, +1, -1), x111(-1, +1, +1);
-
 // make a realistic calibration matrix
 static double fov = 60; // degrees
 static size_t w=640,h=480;
-static Cal3_S2 K(fov,w,h);
+static Cal3_S2::shared_ptr K(new Cal3_S2(fov,w,h));
 
-static SharedNoiseModel sigma(noiseModel::Unit::Create(2));
-static shared_ptrK sK(new Cal3_S2(K));
+// Create a noise model for the pixel error
+static SharedNoiseModel model(noiseModel::Unit::Create(2));
 
 // Convenience for named keys
 using symbol_shorthand::X;
 using symbol_shorthand::L;
 
-typedef GenericProjectionFactor<Pose3, Point3> MyProjectionFactor;
+typedef GenericProjectionFactor<Pose3, Point3> TestProjectionFactor;
 
 /* ************************************************************************* */
-TEST( ProjectionFactor, nonStandard )
-{
+TEST( ProjectionFactor, nonStandard ) {
   GenericProjectionFactor<Pose3, Point3, Cal3DS2> f;
 }
 
 /* ************************************************************************* */
-TEST( ProjectionFactor, error )
-  {
-  // Create the factor with a measurement that is 3 pixels off in x
-  Point2 z(323.,240.);
-  int i=1, j=1;
-  boost::shared_ptr<MyProjectionFactor>
-  factor(new MyProjectionFactor(z, sigma, X(i), L(j), sK));
+TEST( ProjectionFactor, Constructor) {
+  Key poseKey(X(1));
+  Key pointKey(L(1));
 
-  // For the following values structure, the factor predicts 320,240
-  Values config;
-  Rot3 R;Point3 t1(0,0,-6); Pose3 x1(R,t1); config.insert(X(1), x1);
-  Point3 l1;  config.insert(L(1), l1);
-  // Point should project to Point2(320.,240.)
-  CHECK(assert_equal(Vector_(2, -3.0, 0.0), factor->unwhitenedError(config)));
+  Point2 measurement(323.0, 240.0);
 
-  // Which yields an error of 3^2/2 = 4.5
-  DOUBLES_EQUAL(4.5,factor->error(config),1e-9);
-
-  // Check linearize
-  Ordering ordering; ordering += X(1),L(1);
-  Matrix Ax1 = Matrix_(2, 6, 0., -554.256, 0., -92.376, 0., 0., 554.256, 0., 0., 0., -92.376, 0.);
-  Matrix Al1 = Matrix_(2, 3, 92.376, 0., 0., 0., 92.376, 0.);
-  Vector b = Vector_(2,3.,0.);
-  SharedDiagonal probModel1 = noiseModel::Unit::Create(2);
-  JacobianFactor expected(ordering[X(1)], Ax1, ordering[L(1)], Al1, b, probModel1);
-  JacobianFactor::shared_ptr actual =
-      boost::dynamic_pointer_cast<JacobianFactor>(factor->linearize(config, ordering));
-  CHECK(assert_equal(expected,*actual,1e-3));
-
-  // linearize graph
-  NonlinearFactorGraph graph;
-  graph.push_back(factor);
-  FactorGraph<GaussianFactor> expected_lfg;
-  expected_lfg.push_back(actual);
-  boost::shared_ptr<FactorGraph<GaussianFactor> > actual_lfg = graph.linearize(config, ordering);
-  CHECK(assert_equal(expected_lfg,*actual_lfg));
-
-  // expmap on a config
-  Values expected_config;
-  Point3 t2(1,1,-5); Pose3 x2(R,t2); expected_config.insert(X(1), x2);
-  Point3 l2(1,2,3); expected_config.insert(L(1), l2);
-  VectorValues delta(expected_config.dims(ordering));
-  delta[ordering[X(1)]] = Vector_(6, 0.,0.,0., 1.,1.,1.);
-  delta[ordering[L(1)]] = Vector_(3, 1.,2.,3.);
-  Values actual_config = config.retract(delta, ordering);
-  CHECK(assert_equal(expected_config,actual_config,1e-9));
+  TestProjectionFactor factor(measurement, model, poseKey, pointKey, K);
 }
 
 /* ************************************************************************* */
-TEST( ProjectionFactor, equals )
-{
+TEST( ProjectionFactor, ConstructorWithTransform) {
+  Key poseKey(X(1));
+  Key pointKey(L(1));
+
+  Point2 measurement(323.0, 240.0);
+  Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
+
+  TestProjectionFactor factor(measurement, model, poseKey, pointKey, K, body_P_sensor);
+}
+
+/* ************************************************************************* */
+TEST( ProjectionFactor, Equals ) {
   // Create two identical factors and make sure they're equal
-  Vector z = Vector_(2,323.,240.);
-  int i=1, j=1;
-  boost::shared_ptr<MyProjectionFactor>
-    factor1(new MyProjectionFactor(z, sigma, X(i), L(j), sK));
+  Point2 measurement(323.0, 240.0);
 
-  boost::shared_ptr<MyProjectionFactor>
-    factor2(new MyProjectionFactor(z, sigma, X(i), L(j), sK));
+  TestProjectionFactor factor1(measurement, model, X(1), L(1), K);
+  TestProjectionFactor factor2(measurement, model, X(1), L(1), K);
 
-  CHECK(assert_equal(*factor1, *factor2));
+  CHECK(assert_equal(factor1, factor2));
+}
+
+/* ************************************************************************* */
+TEST( ProjectionFactor, EqualsWithTransform ) {
+  // Create two identical factors and make sure they're equal
+  Point2 measurement(323.0, 240.0);
+  Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
+
+  TestProjectionFactor factor1(measurement, model, X(1), L(1), K, body_P_sensor);
+  TestProjectionFactor factor2(measurement, model, X(1), L(1), K, body_P_sensor);
+
+  CHECK(assert_equal(factor1, factor2));
+}
+
+/* ************************************************************************* */
+TEST( ProjectionFactor, Error ) {
+  // Create the factor with a measurement that is 3 pixels off in x
+  Key poseKey(X(1));
+  Key pointKey(L(1));
+  Point2 measurement(323.0, 240.0);
+  TestProjectionFactor factor(measurement, model, poseKey, pointKey, K);
+
+  // Set the linearization point
+  Pose3 pose(Rot3(), Point3(0,0,-6));
+  Point3 point(0.0, 0.0, 0.0);
+
+  // Use the factor to calculate the error
+  Vector actualError(factor.evaluateError(pose, point));
+
+  // The expected error is (-3.0, 0.0) pixels / UnitCovariance
+  Vector expectedError = Vector_(2, -3.0, 0.0);
+
+  // Verify we get the expected error
+  CHECK(assert_equal(expectedError, actualError, 1e-9));
+}
+
+/* ************************************************************************* */
+TEST( ProjectionFactor, ErrorWithTransform ) {
+  // Create the factor with a measurement that is 3 pixels off in x
+  Key poseKey(X(1));
+  Key pointKey(L(1));
+  Point2 measurement(323.0, 240.0);
+  Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
+  TestProjectionFactor factor(measurement, model, poseKey, pointKey, K, body_P_sensor);
+
+  // Set the linearization point. The vehicle pose has been selected to put the camera at (-6, 0, 0)
+  Pose3 pose(Rot3(), Point3(-6.25, 0.10 , -1.0));
+  Point3 point(0.0, 0.0, 0.0);
+
+  // Use the factor to calculate the error
+  Vector actualError(factor.evaluateError(pose, point));
+
+  // The expected error is (-3.0, 0.0) pixels / UnitCovariance
+  Vector expectedError = Vector_(2, -3.0, 0.0);
+
+  // Verify we get the expected error
+  CHECK(assert_equal(expectedError, actualError, 1e-9));
+}
+
+/* ************************************************************************* */
+TEST( ProjectionFactor, Jacobian ) {
+  // Create the factor with a measurement that is 3 pixels off in x
+  Key poseKey(X(1));
+  Key pointKey(L(1));
+  Point2 measurement(323.0, 240.0);
+  TestProjectionFactor factor(measurement, model, poseKey, pointKey, K);
+
+  // Set the linearization point
+  Pose3 pose(Rot3(), Point3(0,0,-6));
+  Point3 point(0.0, 0.0, 0.0);
+
+  // Use the factor to calculate the Jacobians
+  Matrix H1Actual, H2Actual;
+  factor.evaluateError(pose, point, H1Actual, H2Actual);
+
+  // The expected Jacobians
+  Matrix H1Expected = Matrix_(2, 6, 0., -554.256, 0., -92.376, 0., 0., 554.256, 0., 0., 0., -92.376, 0.);
+  Matrix H2Expected = Matrix_(2, 3, 92.376, 0., 0., 0., 92.376, 0.);
+
+  // Verify the Jacobians are correct
+  CHECK(assert_equal(H1Expected, H1Actual, 1e-3));
+  CHECK(assert_equal(H2Expected, H2Actual, 1e-3));
+}
+
+/* ************************************************************************* */
+TEST( ProjectionFactor, JacobianWithTransform ) {
+  // Create the factor with a measurement that is 3 pixels off in x
+  Key poseKey(X(1));
+  Key pointKey(L(1));
+  Point2 measurement(323.0, 240.0);
+  Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
+  TestProjectionFactor factor(measurement, model, poseKey, pointKey, K, body_P_sensor);
+
+  // Set the linearization point. The vehicle pose has been selected to put the camera at (-6, 0, 0)
+  Pose3 pose(Rot3(), Point3(-6.25, 0.10 , -1.0));
+  Point3 point(0.0, 0.0, 0.0);
+
+  // Use the factor to calculate the Jacobians
+  Matrix H1Actual, H2Actual;
+  factor.evaluateError(pose, point, H1Actual, H2Actual);
+
+  // The expected Jacobians
+  Matrix H1Expected = Matrix_(2, 6, -92.376, 0., 577.350, 0., 92.376, 0., -9.2376, -577.350, 0., 0., 0., 92.376);
+  Matrix H2Expected = Matrix_(2, 3, 0., -92.376, 0., 0., 0., -92.376);
+
+  // Verify the Jacobians are correct
+  CHECK(assert_equal(H1Expected, H1Actual, 1e-3));
+  CHECK(assert_equal(H2Expected, H2Actual, 1e-3));
 }
 
 /* ************************************************************************* */

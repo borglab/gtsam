@@ -22,6 +22,7 @@
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/SimpleCamera.h>
+#include <boost/optional.hpp>
 
 namespace gtsam {
 
@@ -37,6 +38,7 @@ namespace gtsam {
     // Keep a copy of measurement and calibration for I/O
     Point2 measured_;                    ///< 2D measurement
     boost::shared_ptr<CALIBRATION> K_;  ///< shared pointer to calibration object
+    boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
 
   public:
 
@@ -63,8 +65,9 @@ namespace gtsam {
      * @param K shared pointer to the constant calibration
      */
     GenericProjectionFactor(const Point2& measured, const SharedNoiseModel& model,
-        Key poseKey, Key pointKey, const boost::shared_ptr<CALIBRATION>& K) :
-          Base(model, poseKey, pointKey), measured_(measured), K_(K) {
+        Key poseKey, Key pointKey, const boost::shared_ptr<CALIBRATION>& K,
+        boost::optional<POSE> body_P_sensor = boost::none) :
+          Base(model, poseKey, pointKey), measured_(measured), K_(K), body_P_sensor_(body_P_sensor) {
     }
 
     /** Virtual destructor */
@@ -83,22 +86,42 @@ namespace gtsam {
     void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
       std::cout << s << "GenericProjectionFactor, z = ";
       measured_.print();
+      if(this->body_P_sensor_)
+        this->body_P_sensor_->print("  sensor pose in body frame: ");
       Base::print("", keyFormatter);
     }
 
     /// equals
     virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const {
       const This *e = dynamic_cast<const This*>(&p);
-      return e && Base::equals(p, tol) && this->measured_.equals(e->measured_, tol) && this->K_->equals(*e->K_, tol);
+      return e
+          && Base::equals(p, tol)
+          && this->measured_.equals(e->measured_, tol)
+          && this->K_->equals(*e->K_, tol)
+          && ((!body_P_sensor_ && !e->body_P_sensor_) || (body_P_sensor_ && e->body_P_sensor_ && body_P_sensor_->equals(*e->body_P_sensor_)));
     }
 
     /// Evaluate error h(x)-z and optionally derivatives
     Vector evaluateError(const Pose3& pose, const Point3& point,
         boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const {
       try {
-        PinholeCamera<CALIBRATION> camera(pose, *K_);
-        Point2 reprojectionError(camera.project(point, H1, H2) - measured_);
-        return reprojectionError.vector();
+        if(body_P_sensor_) {
+          if(H1) {
+            gtsam::Matrix H0;
+            PinholeCamera<CALIBRATION> camera(pose.compose(*body_P_sensor_, H0), *K_);
+            Point2 reprojectionError(camera.project(point, H1, H2) - measured_);
+            *H1 = *H1 * H0;
+            return reprojectionError.vector();
+          } else {
+            PinholeCamera<CALIBRATION> camera(pose.compose(*body_P_sensor_), *K_);
+            Point2 reprojectionError(camera.project(point, H1, H2) - measured_);
+            return reprojectionError.vector();
+          }
+        } else {
+          PinholeCamera<CALIBRATION> camera(pose, *K_);
+          Point2 reprojectionError(camera.project(point, H1, H2) - measured_);
+          return reprojectionError.vector();
+        }
       } catch( CheiralityException& e) {
         if (H1) *H1 = zeros(2,6);
         if (H2) *H2 = zeros(2,3);
@@ -127,6 +150,7 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
       ar & BOOST_SERIALIZATION_NVP(measured_);
       ar & BOOST_SERIALIZATION_NVP(K_);
+      ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
     }
   };
 } // \ namespace gtsam
