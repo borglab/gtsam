@@ -98,8 +98,8 @@ namespace gtsam {
       catch( CheiralityException& e) {
         if (H1) *H1 = zeros(2, camera.dim());
         if (H2) *H2 = zeros(2, point.dim());
-        cout << e.what() << ": Landmark "<< this->key2_.index()
-                         << " behind Camera " << this->key1_.index() << endl;
+//        cout << e.what() << ": Landmark "<< this->key2_.index()
+//                         << " behind Camera " << this->key1_.index() << endl;
       }
       return zero(2);
     }
@@ -191,8 +191,8 @@ namespace gtsam {
         if (H1) *H1 = zeros(2, pose3.dim());
         if (H2) *H2 = zeros(2, point.dim());
         if (H3) *H3 = zeros(2, calib.dim());
-        cout << e.what() << ": Landmark "<< this->key2_.index()
-                         << " behind Camera " << this->key1_.index() << endl;
+//        cout << e.what() << ": Landmark "<< this->key2_.index()
+//                         << " behind Camera " << this->key1_.index() << endl;
       }
       return zero(2);
     }
