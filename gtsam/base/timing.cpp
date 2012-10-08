@@ -49,7 +49,7 @@ void TimingOutline::add(size_t usecs) {
 
 /* ************************************************************************* */
 TimingOutline::TimingOutline(const std::string& label, size_t myId) :
-   myId_(myId), t_(0), t2_(0.0), tIt_(0), tMax_(0), tMin_(0), n_(0), label_(label)
+   myId_(myId), t_(0), t2_(0.0), tIt_(0), tMax_(0), tMin_(0), n_(0), myOrder_(0), lastChildOrder_(0), label_(label)
 {
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
   timer_.stop();
@@ -72,14 +72,22 @@ size_t TimingOutline::time() const {
 
 /* ************************************************************************* */
 void TimingOutline::print(const std::string& outline) const {
-  std::cout << outline << " " << label_ << ": " << double(t_)/1000000.0 << " (" <<
+  std::cout << outline << "-" << label_ << ": " << double(t_)/1000000.0 << " (" <<
       n_ << " times, " << double(time())/1000000.0 << " children, min: " << double(tMin_)/1000000.0 <<
       " max: " << double(tMax_)/1000000.0 << ")\n";
+  // Order children
+  typedef FastMap<size_t, boost::shared_ptr<TimingOutline> > ChildOrder;
+  ChildOrder childOrder;
   BOOST_FOREACH(const ChildMap::value_type& child, children_) {
-    std::string childOutline(outline);
-    childOutline += "  ";
-    child.second->print(childOutline);
+    childOrder[child.second->myOrder_] = child.second;
   }
+  // Print children
+  BOOST_FOREACH(const ChildOrder::value_type order_child, childOrder) {
+    std::string childOutline(outline);
+    childOutline += "|   ";
+    order_child.second->print(childOutline);
+  }
+  std::cout.flush();
 }
 
 void TimingOutline::print2(const std::string& outline, const double parentTotal) const {
@@ -128,6 +136,8 @@ const boost::shared_ptr<TimingOutline>& TimingOutline::child(size_t child, const
   if(!result) {
     // Create child if necessary
     result.reset(new TimingOutline(label, child));
+    ++ this->lastChildOrder_;
+    result->myOrder_ = this->lastChildOrder_;
     result->parent_ = thisPtr;
   }
   return result;

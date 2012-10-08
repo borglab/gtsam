@@ -26,11 +26,9 @@
 // Enabling the new Boost timers introduces dependencies on other Boost
 // libraries so this is disabled for now until we modify the build scripts
 // to link each component or MATLAB wrapper with only the libraries it needs.
-//#if 0
 #if BOOST_VERSION >= 104800
 #define GTSAM_USING_NEW_BOOST_TIMERS
 #endif
-//#endif
 
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
 #include <boost/timer/timer.hpp>
@@ -54,6 +52,8 @@ namespace gtsam {
       size_t tMax_;
       size_t tMin_;
       size_t n_;
+      size_t myOrder_;
+      size_t lastChildOrder_;
       std::string label_;
       boost::weak_ptr<TimingOutline> parent_;
       typedef FastMap<size_t, boost::shared_ptr<TimingOutline> > ChildMap;
