@@ -105,6 +105,11 @@ public:
     return conditionals_.size();
   }
 
+  /** @return true if there are no conditionals/nodes */
+  bool empty() const {
+    return conditionals_.empty();
+  }
+
   /** print statistics */
   void printStats(const std::string& s = "") const;
 
