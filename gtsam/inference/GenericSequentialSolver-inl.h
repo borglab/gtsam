@@ -138,12 +138,6 @@ namespace gtsam {
     Permutation::shared_ptr permutation(
         inference::PermutationCOLAMD(*structure_, js, true));
 
-#ifdef ATTEMPT_AT_NOT_ELIMINATING_ALL
-    // TODO Frank says: this was my attempt at eliminating exactly
-    // as many variables as we need. Unfortunately, in some cases
-    // (see testSymbolicSequentialSolver::problematicConditional)
-    // my trick below (passing nrToEliminate to eliminate) sometimes leads
-    // to a disconnected graph.
     // Eliminate only variables J \cup F from P(J,F,S) to get P(F|S)
     size_t nrVariables = structure_->size();
     size_t nrMarginalized = nrVariables - js.size();
@@ -152,20 +146,6 @@ namespace gtsam {
     // Get rid of conditionals on variables that we want to marginalize out
     for (int i = 0; i < nrMarginalized; i++)
       bayesNet->pop_front();
-#else
-    // Eliminate all variables
-    sharedBayesNet fullBayesNet = eliminate(*permutation, function);
-
-    // Get rid of conditionals we do not need (front and back)
-    size_t nrMarginalized = fullBayesNet->size() - js.size();
-    sharedBayesNet bayesNet(new BayesNet<Conditional>());
-    size_t i = 1;
-    BOOST_FOREACH(sharedConditional c, *fullBayesNet) {
-      if (i > nrMarginalized && i - nrMarginalized <= nrFrontals)
-        bayesNet->push_back(c);
-      i += 1;
-    }
-#endif
 
     return bayesNet;
   }

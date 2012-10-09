@@ -196,15 +196,6 @@ namespace gtsam {
         gttic(BayesTreeCliqueBase_shortcut_cachemiss);
         p_Cp_B.push_back(parent->conditional()->toFactor()); // P(Fp|Sp)
 
-        // Add the root conditional
-        // TODO: this is needed because otherwise we will be solving singular
-        // systems and exceptions are thrown. However, we should be able to omit
-        // this if we can get ATTEMPT_AT_NOT_ELIMINATING_ALL in
-        // GenericSequentialSolver.* working...
-#ifndef ATTEMPT_AT_NOT_ELIMINATING_ALL
-        p_Cp_B.push_back(B->conditional()->toFactor()); // P(B)
-#endif
-
         // Determine the variables we want to keepSet, S union B
         std::vector<Index> keep = shortcut_indices(B, p_Cp_B);
 
