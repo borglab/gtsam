@@ -189,11 +189,15 @@ namespace internal {
   // An internal class used for storing and applying a permutation from a map
   class Reduction : public gtsam::FastMap<Index,Index> {
   public:
+    typedef gtsam::FastMap<Index,Index> Base;
+
     static Reduction CreateAsInverse(const Permutation& p);
     void applyInverse(std::vector<Index>& js) const;
     Permutation inverse() const;
     Index& operator[](const Index& j);
     const Index& operator[](const Index& j) const;
+
+    void print(const std::string& s="") const;
   };
 
   // Reduce the variable indices so that those in the set are mapped to start at zero

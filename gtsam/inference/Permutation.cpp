@@ -201,6 +201,13 @@ namespace internal {
   }
 
   /* ************************************************************************* */
+  void Reduction::print(const std::string& s) const {
+    cout << s << " reduction:" << endl;
+    BOOST_FOREACH(const value_type& p, *this)
+      cout << "  " << p.first << " : " << p.second << endl;
+  }
+
+  /* ************************************************************************* */
   Permutation createReducingPermutation(const std::set<Index>& indices) {
     Permutation p(indices.size());
     Index newJ = 0;
@@ -210,6 +217,7 @@ namespace internal {
     }
     return p;
   }
-}
+} // \namespace internal
 
-}
+/* ************************************************************************* */
+} // \namespace gtsam
