@@ -808,7 +808,7 @@ virtual class BayesTree {
     void saveGraph(string s) const;
     CLIQUE* root() const;
     void clear();
-    void deleteCachedShorcuts();
+    void deleteCachedShortcuts();
     void insert(const CLIQUE* subtree);
     size_t numCachedShortcuts() const;
     size_t numCachedSeparatorMarginals() const;
@@ -841,7 +841,7 @@ virtual class BayesTreeClique {
 //  FactorGraph<FactorType> marginal(derived_ptr root, Eliminate function) const;
 //  FactorGraph<FactorType> joint(derived_ptr C2, derived_ptr root, Eliminate function) const;
 
-  void deleteCachedShorcuts();
+  void deleteCachedShortcuts();
 };
 
 #include <gtsam/inference/SymbolicFactorGraph.h>
