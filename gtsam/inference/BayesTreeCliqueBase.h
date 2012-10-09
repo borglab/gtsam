@@ -203,11 +203,13 @@ namespace gtsam {
     /** return the marginal P(C) of the clique, using marginal caching */
     FactorGraph<FactorType> marginal2(derived_ptr root, Eliminate function) const;
 
+#ifdef SHORTCUT_JOINTS
     /**
      * return the joint P(C1,C2), where C1==this. TODO: not a method?
      * Limitation: can only calculate joint if cliques are disjoint or one of them is root
      */
     FactorGraph<FactorType> joint(derived_ptr C2, derived_ptr root, Eliminate function) const;
+#endif
 
     /**
      * This deletes the cached shortcuts of all cliques (subtree) below this clique.

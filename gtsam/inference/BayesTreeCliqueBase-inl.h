@@ -364,6 +364,7 @@ namespace gtsam {
     return p_C;
   }
 
+#ifdef SHORTCUT_JOINTS
   /* ************************************************************************* */
   // P(C1,C2) = \int_R P(F1|S1) P(S1|R) P(F2|S1) P(S2|R) P(R)
   /* ************************************************************************* */
@@ -408,6 +409,7 @@ namespace gtsam {
     GenericSequentialSolver<FactorType> solver(joint);
     return *solver.jointFactorGraph(keys12, function);
   }
+#endif
 
   /* ************************************************************************* */
   template<class DERIVED, class CONDITIONAL>
