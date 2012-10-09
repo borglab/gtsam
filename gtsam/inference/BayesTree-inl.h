@@ -565,6 +565,7 @@ namespace gtsam {
   typename FactorGraph<typename CONDITIONAL::FactorType>::shared_ptr
   BayesTree<CONDITIONAL,CLIQUE>::joint(Index j1, Index j2, Eliminate function) const {
 
+#ifdef SHORTCUT_JOINTS
     // get clique C1 and C2
     sharedClique C1 = (*this)[j1], C2 = (*this)[j2];
 
@@ -575,6 +576,13 @@ namespace gtsam {
     std::vector<Index> j12(2); j12[0] = j1; j12[1] = j2;
     GenericSequentialSolver<FactorType> solver(p_C1C2);
     return solver.jointFactorGraph(j12,function);
+#else
+    std::vector<Index> indices(2);
+    indices[0] = j1;
+    indices[1] = j2;
+    GenericSequentialSolver<FactorType> solver(FactorGraph<FactorType>(*this));
+    return solver.jointFactorGraph(indices, function);
+#endif
   }
 
   /* ************************************************************************* */
