@@ -144,7 +144,7 @@ namespace gtsam {
     size_t nrToEliminate = nrMarginalized + nrFrontals;
     sharedBayesNet bayesNet = eliminate(*permutation, function, nrToEliminate);
     // Get rid of conditionals on variables that we want to marginalize out
-    for (int i = 0; i < nrMarginalized; i++)
+    for (size_t i = 0; i < nrMarginalized; i++)
       bayesNet->pop_front();
 
     return bayesNet;
