@@ -640,6 +640,10 @@ template<class CLIQUE>
 int optimizeWildfire(const boost::shared_ptr<CLIQUE>& root,
     double threshold, const std::vector<bool>& replaced, VectorValues& delta);
 
+template<class CLIQUE>
+int optimizeWildfireNonRecursive(const boost::shared_ptr<CLIQUE>& root,
+    double threshold, const std::vector<bool>& replaced, VectorValues& delta);
+
 /**
  * Optimize along the gradient direction, with a closed-form computation to
  * perform the line search.  The gradient is computed about \f$ \delta x=0 \f$.

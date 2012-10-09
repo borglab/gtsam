@@ -422,7 +422,7 @@ size_t ISAM2::Impl::UpdateDelta(const boost::shared_ptr<ISAM2Clique>& root, std:
 
   } else {
     // Optimize with wildfire
-    lastBacksubVariableCount = optimizeWildfire(root, wildfireThreshold, replacedKeys, delta); // modifies delta_
+    lastBacksubVariableCount = optimizeWildfireNonRecursive(root, wildfireThreshold, replacedKeys, delta); // modifies delta_
 
 #ifndef NDEBUG
     for(size_t j=0; j<delta.size(); ++j)
@@ -487,7 +487,7 @@ size_t ISAM2::Impl::UpdateDoglegDeltas(const ISAM2& isam, double wildfireThresho
   // Update variables
   size_t varsUpdated = 0;
   internal::updateDoglegDeltas(isam.root(), replacedKeys, grad, deltaNewton, RgProd, varsUpdated);
-  optimizeWildfire(isam.root(), wildfireThreshold, replacedKeys, deltaNewton);
+  optimizeWildfireNonRecursive(isam.root(), wildfireThreshold, replacedKeys, deltaNewton);
 
 #if 0
   VectorValues expected = *allocateVectorValues(isam);
