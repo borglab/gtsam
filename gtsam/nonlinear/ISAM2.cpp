@@ -463,6 +463,15 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(const FastSet<Index>& mark
     BOOST_FOREACH(Index unused, unusedIndices) {
       affectedUsedKeys.erase(unused);
     }
+    // Remove unaffected keys from the constraints
+    FastMap<Index,int>::iterator iter = reorderingMode.constrainedKeys->begin();
+    while(iter != reorderingMode.constrainedKeys->end()) {
+      if(affectedUsedKeys.find(iter->first) == affectedUsedKeys.end()) {
+        reorderingMode.constrainedKeys->erase(iter++);
+      } else {
+        ++iter;
+      }
+    }
     Impl::PartialSolveResult partialSolveResult =
         Impl::PartialSolve(factors, affectedUsedKeys, reorderingMode, (params_.factorization == ISAM2Params::QR));
     gttoc(PartialSolve);
