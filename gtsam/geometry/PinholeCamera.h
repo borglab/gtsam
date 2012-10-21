@@ -154,13 +154,55 @@ namespace gtsam {
     /// @{
 
     /// compose two cameras: TODO Frank says this might not make sense
-    inline const PinholeCamera compose(const Pose3 &c) const {
-      return PinholeCamera( pose_ * c, K_ ) ;
+    inline const PinholeCamera compose(const PinholeCamera &c,
+        boost::optional<Matrix&> H1=boost::none,
+        boost::optional<Matrix&> H2=boost::none) const {
+      PinholeCamera result( pose_.compose(c.pose(), H1, H2), K_ );
+      if(H1) {
+        H1->conservativeResize(Dim(), Dim());
+        H1->topRightCorner(Pose3::Dim(), Calibration::Dim()) = zeros(Pose3::Dim(),Calibration::Dim());
+        H1->bottomRows(Calibration::Dim()) = zeros(Calibration::Dim(), Dim());
+      }
+      if(H2) {
+        H2->conservativeResize(Dim(), Dim());
+        H2->topRightCorner(Pose3::Dim(), Calibration::Dim()) = zeros(Pose3::Dim(),Calibration::Dim());
+        H2->bottomRows(Calibration::Dim()) = zeros(Calibration::Dim(), Dim());
+      }
+      return result;
+    }
+
+    /// between two cameras: TODO Frank says this might not make sense
+    inline const PinholeCamera between(const PinholeCamera& c,
+        boost::optional<Matrix&> H1=boost::none,
+        boost::optional<Matrix&> H2=boost::none) const {
+      PinholeCamera result( pose_.between(c.pose(), H1, H2), K_ );
+      if(H1) {
+        H1->conservativeResize(Dim(), Dim());
+        H1->topRightCorner(Pose3::Dim(), Calibration::Dim()) = zeros(Pose3::Dim(),Calibration::Dim());
+        H1->bottomRows(Calibration::Dim()) = zeros(Calibration::Dim(), Dim());
+      }
+      if(H2) {
+        H2->conservativeResize(Dim(), Dim());
+        H2->topRightCorner(Pose3::Dim(), Calibration::Dim()) = zeros(Pose3::Dim(),Calibration::Dim());
+        H2->bottomRows(Calibration::Dim()) = zeros(Calibration::Dim(), Dim());
+      }
+      return result;
+    }
+
+    /// inverse camera: TODO Frank says this might not make sense
+    inline const PinholeCamera inverse(boost::optional<Matrix&> H1=boost::none) const {
+      PinholeCamera result( pose_.inverse(H1), K_ );
+      if(H1) {
+        H1->conservativeResize(Dim(), Dim());
+        H1->topRightCorner(Pose3::Dim(), Calibration::Dim()) = zeros(Pose3::Dim(),Calibration::Dim());
+        H1->bottomRows(Calibration::Dim()) = zeros(Calibration::Dim(), Dim());
+      }
+      return result;
     }
 
     /// compose two cameras: TODO Frank says this might not make sense
-    inline const PinholeCamera inverse() const {
-      return PinholeCamera( pose_.inverse(), K_ ) ;
+    inline const PinholeCamera compose(const Pose3 &c) const {
+      return PinholeCamera( pose_.compose(c), K_ );
     }
 
     /// @}

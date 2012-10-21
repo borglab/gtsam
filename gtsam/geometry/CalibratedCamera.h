@@ -81,14 +81,23 @@ namespace gtsam {
     /// return pose
     inline const Pose3& pose() const {  return pose_; }
 
-    /// compose the poses
-    inline const CalibratedCamera compose(const CalibratedCamera &c) const {
-      return CalibratedCamera( pose_ * c.pose() ) ;
+    /// compose the two camera poses: TODO Frank says this might not make sense
+    inline const CalibratedCamera compose(const CalibratedCamera &c,
+        boost::optional<Matrix&> H1=boost::none,
+        boost::optional<Matrix&> H2=boost::none) const {
+      return CalibratedCamera( pose_.compose(c.pose(), H1, H2) );
     }
 
-    /// invert the camera's pose
-    inline const CalibratedCamera inverse() const {
-      return CalibratedCamera( pose_.inverse() ) ;
+    /// between the two camera poses: TODO Frank says this might not make sense
+    inline const CalibratedCamera between(const CalibratedCamera& c,
+        boost::optional<Matrix&> H1=boost::none,
+        boost::optional<Matrix&> H2=boost::none) const {
+      return CalibratedCamera( pose_.between(c.pose(), H1, H2) );
+    }
+
+    /// invert the camera pose: TODO Frank says this might not make sense
+    inline const CalibratedCamera inverse(boost::optional<Matrix&> H1=boost::none) const {
+      return CalibratedCamera( pose_.inverse(H1) );
     }
 
     /**
