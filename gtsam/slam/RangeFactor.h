@@ -31,6 +31,7 @@ namespace gtsam {
   private:
 
     double measured_; /** measurement */
+    boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
 
     typedef RangeFactor<POSE, POINT> This;
     typedef NoiseModelFactor2<POSE, POINT> Base;
@@ -39,15 +40,15 @@ namespace gtsam {
     typedef POINT Point;
 
     // Concept requirements for this factor
-    GTSAM_CONCEPT_RANGE_MEASUREMENT_TYPE(Pose, Point)
+    GTSAM_CONCEPT_RANGE_MEASUREMENT_TYPE(POSE, POINT)
 
   public:
 
     RangeFactor() {} /* Default constructor */
 
     RangeFactor(Key poseKey, Key pointKey, double measured,
-        const SharedNoiseModel& model) :
-          Base(model, poseKey, pointKey), measured_(measured) {
+        const SharedNoiseModel& model, boost::optional<POSE> body_P_sensor = boost::none) :
+          Base(model, poseKey, pointKey), measured_(measured), body_P_sensor_(body_P_sensor) {
     }
 
     virtual ~RangeFactor() {}
@@ -58,8 +59,20 @@ namespace gtsam {
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
     /** h(x)-z */
-    Vector evaluateError(const Pose& pose, const Point& point, boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
-      double hx = pose.range(point, H1, H2);
+    Vector evaluateError(const POSE& pose, const POINT& point,
+        boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const {
+      double hx;
+      if(body_P_sensor_) {
+        if(H1) {
+          Matrix H0;
+          hx = pose.compose(*body_P_sensor_, H0).range(point, H1, H2);
+          *H1 = *H1 * H0;
+        } else {
+          hx = pose.compose(*body_P_sensor_).range(point, H1, H2);
+        }
+      } else {
+        hx = pose.range(point, H1, H2);
+      }
       return Vector_(1, hx - measured_);
     }
 
@@ -71,12 +84,17 @@ namespace gtsam {
     /** equals specialized to this factor */
     virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
       const This *e = dynamic_cast<const This*> (&expected);
-      return e != NULL && Base::equals(*e, tol) && fabs(this->measured_ - e->measured_) < tol;
+      return e != NULL
+          && Base::equals(*e, tol)
+          && fabs(this->measured_ - e->measured_) < tol
+          && ((!body_P_sensor_ && !e->body_P_sensor_) || (body_P_sensor_ && e->body_P_sensor_ && body_P_sensor_->equals(*e->body_P_sensor_)));
     }
 
     /** print contents */
     void print(const std::string& s="", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
       std::cout << s << "RangeFactor, range = " << measured_ << std::endl;
+      if(this->body_P_sensor_)
+        this->body_P_sensor_->print("  sensor pose in body frame: ");
       Base::print("", keyFormatter);
     }
 
@@ -89,6 +107,7 @@ namespace gtsam {
       ar & boost::serialization::make_nvp("NoiseModelFactor2",
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(measured_);
+      ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
     }
   }; // RangeFactor
 
