@@ -79,69 +79,6 @@ inline Permutation::shared_ptr PermutationCOLAMD(const VariableIndex& variableIn
   return PermutationCOLAMD_(variableIndex, cmember);
 }
 
-/* ************************************************************************* */
-template<class Graph>
-std::pair<typename Graph::sharedConditional, Graph> eliminate(
-    const Graph& factorGraph,
-    const std::vector<typename Graph::KeyType>& variables,
-    const typename Graph::Eliminate& eliminateFcn,
-    boost::optional<const VariableIndex&> variableIndex_) {
-
-  const VariableIndex& variableIndex =
-          variableIndex_ ? *variableIndex_ : VariableIndex(factorGraph);
-
-  // First find the involved factors
-  Graph involvedFactors;
-  Index highestInvolvedVariable = 0; // Largest index of the variables in the involved factors
-
-  // First get the indices of the involved factors, but uniquely in a set
-  FastSet<size_t> involvedFactorIndices;
-  BOOST_FOREACH(Index variable, variables) {
-    involvedFactorIndices.insert(variableIndex[variable].begin(), variableIndex[variable].end()); }
-
-  // Add the factors themselves to involvedFactors and update largest index
-  involvedFactors.reserve(involvedFactorIndices.size());
-  BOOST_FOREACH(size_t factorIndex, involvedFactorIndices) {
-    const typename Graph::sharedFactor factor = factorGraph[factorIndex];
-    involvedFactors.push_back(factor); // Add involved factor
-    highestInvolvedVariable = std::max( // Updated largest index
-        highestInvolvedVariable,
-        *std::max_element(factor->begin(), factor->end()));
-  }
-
-  // Now permute the variables to be eliminated to the front of the ordering
-  Permutation toFront = Permutation::PullToFront(variables, highestInvolvedVariable+1);
-  Permutation toFrontInverse = *toFront.inverse();
-  involvedFactors.permuteWithInverse(toFrontInverse);
-
-  // Eliminate into conditional and remaining factor
-  typename Graph::EliminationResult eliminated = eliminateFcn(involvedFactors, variables.size());
-  boost::shared_ptr<typename Graph::FactorType::ConditionalType> conditional = eliminated.first;
-  typename Graph::sharedFactor remainingFactor = eliminated.second;
-
-  // Undo the permutation
-  conditional->permuteWithInverse(toFront);
-  remainingFactor->permuteWithInverse(toFront);
-
-  // Build the remaining graph, without the removed factors
-  Graph remainingGraph;
-  remainingGraph.reserve(factorGraph.size() - involvedFactors.size() + 1);
-  FastSet<size_t>::const_iterator involvedFactorIndexIt = involvedFactorIndices.begin();
-  for(size_t i = 0; i < factorGraph.size(); ++i) {
-    if(involvedFactorIndexIt != involvedFactorIndices.end() && *involvedFactorIndexIt == i)
-      ++ involvedFactorIndexIt;
-    else
-      remainingGraph.push_back(factorGraph[i]);
-  }
-
-  // Add the remaining factor if it is not empty.
-  if(remainingFactor->size() != 0)
-    remainingGraph.push_back(remainingFactor);
-
-  return std::make_pair(conditional, remainingGraph);
-
-} // eliminate
-
 } // namespace inference
 } // namespace gtsam
 

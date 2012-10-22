@@ -76,7 +76,7 @@ TEST( GaussianFactorGraph, eliminateOne_x1 )
 
   GaussianConditional::shared_ptr conditional;
   GaussianFactorGraph remaining;
-  boost::tie(conditional,remaining) = inference::eliminateOne(fg, 0, EliminateQR);
+  boost::tie(conditional,remaining) = fg.eliminateOne(0, EliminateQR);
 
   // create expected Conditional Gaussian
   Matrix I = 15*eye(2), R11 = I, S12 = -0.111111*I, S13 = -0.444444*I;
@@ -91,7 +91,7 @@ TEST( GaussianFactorGraph, eliminateOne_x2 )
 {
   Ordering ordering; ordering += X(2),L(1),X(1);
   GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
-  GaussianConditional::shared_ptr actual = inference::eliminateOne(fg, 0, EliminateQR).first;
+  GaussianConditional::shared_ptr actual = fg.eliminateOne(0, EliminateQR).first;
 
   // create expected Conditional Gaussian
   double sig = 0.0894427;
@@ -107,7 +107,7 @@ TEST( GaussianFactorGraph, eliminateOne_l1 )
 {
   Ordering ordering; ordering += L(1),X(1),X(2);
   GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
-  GaussianConditional::shared_ptr actual = inference::eliminateOne(fg, 0, EliminateQR).first;
+  GaussianConditional::shared_ptr actual = fg.eliminateOne(0, EliminateQR).first;
 
   // create expected Conditional Gaussian
   double sig = sqrt(2.0)/10.;
@@ -125,7 +125,7 @@ TEST( GaussianFactorGraph, eliminateOne_x1_fast )
   GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
   GaussianConditional::shared_ptr conditional;
   GaussianFactorGraph remaining;
-  boost::tie(conditional,remaining) = inference::eliminateOne(fg, ordering[X(1)], EliminateQR);
+  boost::tie(conditional,remaining) = fg.eliminateOne(ordering[X(1)], EliminateQR);
 
   // create expected Conditional Gaussian
   Matrix I = 15*eye(2), R11 = I, S12 = -0.111111*I, S13 = -0.444444*I;
@@ -154,7 +154,7 @@ TEST( GaussianFactorGraph, eliminateOne_x2_fast )
 {
   Ordering ordering; ordering += X(1),L(1),X(2);
   GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
-  GaussianConditional::shared_ptr actual = inference::eliminateOne(fg, ordering[X(2)], EliminateQR).first;
+  GaussianConditional::shared_ptr actual = fg.eliminateOne(ordering[X(2)], EliminateQR).first;
 
   // create expected Conditional Gaussian
   double sig = 0.0894427;
@@ -170,7 +170,7 @@ TEST( GaussianFactorGraph, eliminateOne_l1_fast )
 {
   Ordering ordering; ordering += X(1),L(1),X(2);
   GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
-  GaussianConditional::shared_ptr actual = inference::eliminateOne(fg, ordering[L(1)], EliminateQR).first;
+  GaussianConditional::shared_ptr actual = fg.eliminateOne(ordering[L(1)], EliminateQR).first;
 
   // create expected Conditional Gaussian
   double sig = sqrt(2.0)/10.;

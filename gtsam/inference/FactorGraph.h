@@ -33,6 +33,7 @@ namespace gtsam {
 
 // Forward declarations
 template<class CONDITIONAL, class CLIQUE> class BayesTree;
+class VariableIndex;
 
   /**
    * A factor graph is a bipartite graph with factor nodes connected to variable nodes.
@@ -182,6 +183,34 @@ template<class CONDITIONAL, class CLIQUE> class BayesTree;
      * JunctionTree.
      */
     std::pair<sharedConditional, FactorGraph<FactorType> > eliminateFrontals(size_t nFrontals, const Eliminate& eliminate) const;
+    
+    /** Factor the factor graph into a conditional and a remaining factor graph.
+     * Given the factor graph \f$ f(X) \f$, and \c variables to factorize out
+     * \f$ V \f$, this function factorizes into \f$ f(X) = f(V;Y)f(Y) \f$, where
+     * \f$ Y := X\V \f$ are the remaining variables.  If \f$ f(X) = p(X) \f$ is
+     * a probability density or likelihood, the factorization produces a
+     * conditional probability density and a marginal \f$ p(X) = p(V|Y)p(Y) \f$.
+     *
+     * For efficiency, this function treats the variables to eliminate
+     * \c variables as fully-connected, so produces a dense (fully-connected)
+     * conditional on all of the variables in \c variables, instead of a sparse
+     * BayesNet.  If the variables are not fully-connected, it is more efficient
+     * to sequentially factorize multiple times.
+     */
+    std::pair<typename FactorGraph<FACTOR>::sharedConditional, FactorGraph<FactorType> >
+      eliminate(
+      const std::vector<KeyType>& variables, const Eliminate& eliminateFcn,
+      boost::optional<const VariableIndex&> variableIndex = boost::none);
+
+    /** Eliminate a single variable, by calling
+     * eliminate(const Graph&, const std::vector<typename Graph::KeyType>&, const typename Graph::Eliminate&, boost::optional<const VariableIndex&>)
+     */
+    std::pair<sharedConditional, FactorGraph<FactorType> > eliminateOne(
+        KeyType variable, const Eliminate& eliminateFcn,
+        boost::optional<const VariableIndex&> variableIndex = boost::none) {
+      std::vector<size_t> variables(1, variable);
+      return eliminate(variables, eliminateFcn, variableIndex);
+    }
 
     /// @}
     /// @name Modifying Factor Graphs (imperative, discouraged)
