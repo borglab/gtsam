@@ -93,12 +93,19 @@ Vector PoseRTV::localCoordinates(const PoseRTV& p1) const {
 }
 
 /* ************************************************************************* */
-PoseRTV PoseRTV::inverse() const {
+PoseRTV inverse_(const PoseRTV& p) { return p.inverse(); }
+PoseRTV PoseRTV::inverse(boost::optional<Matrix&> H1) const {
+  if (H1) *H1 = numericalDerivative11(inverse_, *this, 1e-5);
   return PoseRTV(Rt_.inverse(), v_.inverse());
 }
 
 /* ************************************************************************* */
-PoseRTV PoseRTV::compose(const PoseRTV& p) const {
+PoseRTV compose_(const PoseRTV& p1, const PoseRTV& p2) { return p1.compose(p2); }
+PoseRTV PoseRTV::compose(const PoseRTV& p,
+    boost::optional<Matrix&> H1,
+    boost::optional<Matrix&> H2) const {
+  if (H1) *H1 = numericalDerivative21(compose_, *this, p, 1e-5);
+  if (H2) *H2 = numericalDerivative22(compose_, *this, p, 1e-5);
   return PoseRTV(Rt_.compose(p.Rt_), v_.compose(p.v_));
 }
 

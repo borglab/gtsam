@@ -88,11 +88,16 @@ public:
   static PoseRTV Expmap(const Vector& v);
   static Vector Logmap(const PoseRTV& p);
 
-  PoseRTV inverse() const;
-
-  PoseRTV compose(const PoseRTV& p) const;
-
   static PoseRTV identity() { return PoseRTV(); }
+
+  /** Derivatives calculated numerically */
+  PoseRTV inverse(boost::optional<Matrix&> H1=boost::none) const;
+
+  /** Derivatives calculated numerically */
+  PoseRTV compose(const PoseRTV& p,
+      boost::optional<Matrix&> H1=boost::none,
+      boost::optional<Matrix&> H2=boost::none) const;
+
 
   /** Derivatives calculated numerically */
   PoseRTV between(const PoseRTV& p,
