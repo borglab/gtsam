@@ -1316,6 +1316,20 @@ class GaussianSequentialSolver {
   Matrix marginalCovariance(size_t j) const;
 };
 
+#include <gtsam/linear/GaussianMultifrontalSolver.h>
+class GaussianMultifrontalSolver {
+  //Constructors
+  GaussianMultifrontalSolver(const gtsam::GaussianFactorGraph& graph,
+    bool useQR);
+
+  //Standard Interface
+  void replaceFactors(const gtsam::GaussianFactorGraph* factorGraph);
+  gtsam::GaussianBayesTree* eliminate() const;
+  gtsam::VectorValues* optimize() const;
+  gtsam::GaussianFactor* marginalFactor(size_t j) const;
+  Matrix marginalCovariance(size_t j) const;
+};
+
 #include <gtsam/linear/IterativeSolver.h>
 virtual class IterativeOptimizationParameters {
   string getKernel() const ;
