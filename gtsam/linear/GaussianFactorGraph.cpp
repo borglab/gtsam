@@ -55,6 +55,20 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  std::pair<GaussianFactorGraph::sharedConditional, GaussianFactorGraph>
+    GaussianFactorGraph::eliminate(const std::vector<Index>& variables)
+  {
+    return FactorGraph<GaussianFactor>::eliminate(variables, EliminateQR);
+  }
+
+  /* ************************************************************************* */
+  std::pair<GaussianFactorGraph::sharedConditional, GaussianFactorGraph>
+    GaussianFactorGraph::eliminateOne(Index variable)
+  {
+    return FactorGraph<GaussianFactor>::eliminateOne(variable, EliminateQR);
+  }
+
+  /* ************************************************************************* */
   void GaussianFactorGraph::permuteWithInverse(
       const Permutation& inversePermutation) {
     BOOST_FOREACH(const sharedFactor& factor, factors_) {
@@ -510,9 +524,6 @@ break;
   /* ************************************************************************* */
   GaussianFactorGraph::EliminationResult EliminatePreferCholesky(
       const FactorGraph<GaussianFactor>& factors, size_t nrFrontals) {
-
-    typedef JacobianFactor J;
-    typedef HessianFactor H;
 
     // If any JacobianFactors have constrained noise models, we have to convert
     // all factors to JacobianFactors.  Otherwise, we can convert all factors

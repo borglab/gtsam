@@ -66,6 +66,27 @@ namespace gtsam {
      * as the eliminate function argument.
      */
     std::pair<sharedConditional, SymbolicFactorGraph> eliminateFrontals(size_t nFrontals) const;
+            
+    /** Factor the factor graph into a conditional and a remaining factor graph.
+     * Given the factor graph \f$ f(X) \f$, and \c variables to factorize out
+     * \f$ V \f$, this function factorizes into \f$ f(X) = f(V;Y)f(Y) \f$, where
+     * \f$ Y := X\V \f$ are the remaining variables.  If \f$ f(X) = p(X) \f$ is
+     * a probability density or likelihood, the factorization produces a
+     * conditional probability density and a marginal \f$ p(X) = p(V|Y)p(Y) \f$.
+     *
+     * For efficiency, this function treats the variables to eliminate
+     * \c variables as fully-connected, so produces a dense (fully-connected)
+     * conditional on all of the variables in \c variables, instead of a sparse
+     * BayesNet.  If the variables are not fully-connected, it is more efficient
+     * to sequentially factorize multiple times.
+     * Note that this version simply calls
+     * FactorGraph<GaussianFactor>::eliminate with EliminateSymbolic as the eliminate
+     * function argument.
+     */
+    std::pair<sharedConditional, SymbolicFactorGraph> eliminate(const std::vector<Index>& variables);
+
+    /** Eliminate a single variable, by calling SymbolicFactorGraph::eliminate. */
+    std::pair<sharedConditional, SymbolicFactorGraph> eliminateOne(Index variable);
 
     /// @}
     /// @name Standard Interface

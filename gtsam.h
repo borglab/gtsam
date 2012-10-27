@@ -903,6 +903,7 @@ class SymbolicFactorGraph {
   void push_factor(size_t key1, size_t key2, size_t key3, size_t key4);
 
   pair<gtsam::IndexConditional*, gtsam::SymbolicFactorGraph> eliminateFrontals(size_t nFrontals) const;
+  pair<gtsam::IndexConditional*, gtsam::SymbolicFactorGraph> eliminateOne(size_t j) const;
 };
 
 #include <gtsam/inference/SymbolicSequentialSolver.h>
@@ -1234,6 +1235,7 @@ class GaussianFactorGraph {
 
   // Inference
   pair<gtsam::GaussianConditional*, gtsam::GaussianFactorGraph> eliminateFrontals(size_t nFrontals) const;
+  pair<gtsam::GaussianConditional*, gtsam::GaussianFactorGraph> eliminateOne(size_t j) const;
 
   // Building the graph
   void push_back(gtsam::GaussianFactor* factor);

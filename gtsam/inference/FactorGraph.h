@@ -197,14 +197,11 @@ class VariableIndex;
      * BayesNet.  If the variables are not fully-connected, it is more efficient
      * to sequentially factorize multiple times.
      */
-    std::pair<typename FactorGraph<FACTOR>::sharedConditional, FactorGraph<FactorType> >
-      eliminate(
+    std::pair<sharedConditional, FactorGraph<FactorType> > eliminate(
       const std::vector<KeyType>& variables, const Eliminate& eliminateFcn,
       boost::optional<const VariableIndex&> variableIndex = boost::none);
 
-    /** Eliminate a single variable, by calling
-     * eliminate(const Graph&, const std::vector<typename Graph::KeyType>&, const typename Graph::Eliminate&, boost::optional<const VariableIndex&>)
-     */
+    /** Eliminate a single variable, by calling FactorGraph::eliminate. */
     std::pair<sharedConditional, FactorGraph<FactorType> > eliminateOne(
         KeyType variable, const Eliminate& eliminateFcn,
         boost::optional<const VariableIndex&> variableIndex = boost::none) {

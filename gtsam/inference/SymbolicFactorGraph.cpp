@@ -71,6 +71,20 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  std::pair<SymbolicFactorGraph::sharedConditional, SymbolicFactorGraph>
+    SymbolicFactorGraph::eliminate(const std::vector<Index>& variables)
+  {
+    return FactorGraph<IndexFactor>::eliminate(variables, EliminateSymbolic);
+  }
+
+  /* ************************************************************************* */
+  std::pair<SymbolicFactorGraph::sharedConditional, SymbolicFactorGraph>
+    SymbolicFactorGraph::eliminateOne(Index variable)
+  {
+    return FactorGraph<IndexFactor>::eliminateOne(variable, EliminateSymbolic);
+  }
+
+  /* ************************************************************************* */
   void SymbolicFactorGraph::permuteWithInverse(
     const Permutation& inversePermutation) {
       BOOST_FOREACH(const sharedFactor& factor, factors_) {
