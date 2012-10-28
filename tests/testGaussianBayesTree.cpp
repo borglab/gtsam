@@ -52,7 +52,7 @@ C4       x3 : x4
 C5         x2 : x3
 C6           x1 : x2
 **************************************************************************** */
-TEST_UNSAFE( BayesTree, linear_smoother_shortcuts )
+TEST( GaussianBayesTree, linear_smoother_shortcuts )
 {
   // Create smoother with 7 nodes
   Ordering ordering;
@@ -113,7 +113,7 @@ TEST_UNSAFE( BayesTree, linear_smoother_shortcuts )
    C4      x7 : x6
 
 ************************************************************************* */
-TEST_UNSAFE( BayesTree, balanced_smoother_marginals )
+TEST( GaussianBayesTree, balanced_smoother_marginals )
 {
   // Create smoother with 7 nodes
   Ordering ordering;
@@ -180,7 +180,7 @@ TEST_UNSAFE( BayesTree, balanced_smoother_marginals )
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE( BayesTree, balanced_smoother_shortcuts )
+TEST( GaussianBayesTree, balanced_smoother_shortcuts )
 {
   // Create smoother with 7 nodes
   Ordering ordering;
@@ -244,7 +244,7 @@ TEST_UNSAFE( BayesTree, balanced_smoother_shortcuts )
 //}
 
 /* ************************************************************************* */
-TEST_UNSAFE( BayesTree, balanced_smoother_joint )
+TEST( GaussianBayesTree, balanced_smoother_joint )
 {
   // Create smoother with 7 nodes
   Ordering ordering;
@@ -305,7 +305,7 @@ TEST_UNSAFE( BayesTree, balanced_smoother_joint )
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(BayesTree, simpleMarginal)
+TEST(GaussianBayesTree, simpleMarginal)
 {
   GaussianFactorGraph gfg;
 
