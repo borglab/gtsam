@@ -583,7 +583,7 @@ namespace gtsam {
       }
       // Find the path intersection
       B = this->root();
-      FastList<sharedClique>::const_iterator p1 = path1.begin(), p2 = path2.begin();
+      typename FastList<sharedClique>::const_iterator p1 = path1.begin(), p2 = path2.begin();
       while(p1 != path1.end() && p2 != path2.end() && *p1 == *p2) {
         B = *p1;
         ++p1;
