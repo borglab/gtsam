@@ -77,7 +77,7 @@ namespace gtsam {
   DecisionTreeFactor::shared_ptr DecisionTreeFactor::combine //
   (size_t nrFrontals, ADT::Binary op) const {
 
-    if (nrFrontals == 0 || nrFrontals > size()) throw invalid_argument(
+    if (nrFrontals > size()) throw invalid_argument(
         (boost::format(
             "DecisionTreeFactor::combine: invalid number of frontal keys %d, nr.keys=%d")
             % nrFrontals % size()).str());

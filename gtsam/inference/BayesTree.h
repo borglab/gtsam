@@ -176,9 +176,6 @@ namespace gtsam {
     /** Gather data on all cliques */
     CliqueData getCliqueData() const;
 
-    /** Collect number of cliques with cached shortcuts */
-    size_t numCachedShortcuts() const;
-
     /** Collect number of cliques with cached separator marginals */
     size_t numCachedSeparatorMarginals() const;
 

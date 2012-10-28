@@ -322,5 +322,44 @@ TEST(GaussianBayesTree, simpleMarginal)
 }
 
 /* ************************************************************************* */
+TEST(GaussianBayesTree, shortcut_overlapping_separator)
+{
+  // Test computing shortcuts when the separator overlaps.  This previously
+  // would have highlighted a problem where information was duplicated.
+
+  // Create factor graph:
+  // f(1,2,5)
+  // f(3,4,5)
+  // f(5,6)
+  // f(6,7)
+  GaussianFactorGraph fg;
+  noiseModel::Diagonal::shared_ptr model = noiseModel::Unit::Create(1);
+  fg.add(1, Matrix_(1,1, 1.0), 3, Matrix_(1,1, 2.0), 5, Matrix_(1,1, 3.0), Vector_(1, 4.0), model);
+  fg.add(1, Matrix_(1,1, 5.0), Vector_(1, 6.0), model);
+  fg.add(2, Matrix_(1,1, 7.0), 4, Matrix_(1,1, 8.0), 5, Matrix_(1,1, 9.0), Vector_(1, 10.0), model);
+  fg.add(2, Matrix_(1,1, 11.0), Vector_(1, 12.0), model);
+  fg.add(5, Matrix_(1,1, 13.0), 6, Matrix_(1,1, 14.0), Vector_(1, 15.0), model);
+  fg.add(6, Matrix_(1,1, 17.0), 7, Matrix_(1,1, 18.0), Vector_(1, 19.0), model);
+  fg.add(7, Matrix_(1,1, 20.0), Vector_(1, 21.0), model);
+
+  // Eliminate into BayesTree
+  // c(6,7)
+  // c(5|6)
+  //   c(1,2|5)
+  //   c(3,4|5)
+  GaussianBayesTree bt = *GaussianMultifrontalSolver(fg).eliminate();
+
+  GaussianFactorGraph joint = *bt.joint(1,2, EliminateQR);
+
+  Matrix expectedJointJ = (Matrix(2,3) <<
+    0, 11, 12,
+    -5, 0, -6
+    ).finished();
+  Matrix actualJointJ = joint.augmentedJacobian();
+
+  EXPECT(assert_equal(expectedJointJ, actualJointJ));
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */

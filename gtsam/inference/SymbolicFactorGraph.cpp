@@ -120,8 +120,8 @@ namespace gtsam {
             BOOST_FOREACH(Index var, *factor)
                     keys.insert(var);
 
-    if (keys.size() < 1) throw invalid_argument(
-        "IndexFactor::CombineAndEliminate called on factors with no variables.");
+    if (keys.size() < nrFrontals) throw invalid_argument(
+        "EliminateSymbolic requested to eliminate more variables than exist in graph.");
 
     vector<Index> newKeys(keys.begin(), keys.end());
     return make_pair(boost::make_shared<IndexConditional>(newKeys, nrFrontals),

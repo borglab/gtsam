@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include <gtsam/base/FastList.h>
 #include <gtsam/base/FastSet.h>
 #include <gtsam/base/FastVector.h>
 #include <gtsam/inference/BayesTree.h>
@@ -54,12 +55,6 @@ namespace gtsam {
     BOOST_FOREACH(sharedClique c, clique->children_) {
       getCliqueData(data, c);
     }
-  }
-
-  /* ************************************************************************* */
-  template<class CONDITIONAL, class CLIQUE>
-  size_t BayesTree<CONDITIONAL,CLIQUE>::numCachedShortcuts() const {
-    return (root_) ? root_->numCachedShortcuts() : 0;
   }
 
   /* ************************************************************************* */
@@ -564,25 +559,92 @@ namespace gtsam {
   template<class CONDITIONAL, class CLIQUE>
   typename FactorGraph<typename CONDITIONAL::FactorType>::shared_ptr
   BayesTree<CONDITIONAL,CLIQUE>::joint(Index j1, Index j2, Eliminate function) const {
+    gttic(BayesTree_joint);
 
-#ifdef SHORTCUT_JOINTS
     // get clique C1 and C2
     sharedClique C1 = (*this)[j1], C2 = (*this)[j2];
 
-    // calculate joint
-    FactorGraph<FactorType> p_C1C2(C1->joint(C2, root_, function));
+    gttic(Lowest_common_ancestor);
+    // Find lowest common ancestor clique
+    sharedClique B; {
+      // Build two paths to the root
+      FastList<sharedClique> path1, path2; {
+        sharedClique p = C1;
+        while(p) {
+          path1.push_front(p);
+          p = p->parent();
+        }
+      } {
+        sharedClique p = C2;
+        while(p) {
+          path2.push_front(p);
+          p = p->parent();
+        }
+      }
+      // Find the path intersection
+      B = this->root();
+      FastList<sharedClique>::const_iterator p1 = path1.begin(), p2 = path2.begin();
+      while(p1 != path1.end() && p2 != path2.end() && *p1 == *p2) {
+        B = *p1;
+        ++p1;
+        ++p2;
+      }
+    }
+    gttoc(Lowest_common_ancestor);
 
-    // eliminate remaining factor graph to get requested joint
-    std::vector<Index> j12(2); j12[0] = j1; j12[1] = j2;
-    GenericSequentialSolver<FactorType> solver(p_C1C2);
-    return solver.jointFactorGraph(j12,function);
-#else
-    std::vector<Index> indices(2);
-    indices[0] = j1;
-    indices[1] = j2;
-    GenericSequentialSolver<FactorType> solver(FactorGraph<FactorType>(*this));
-    return solver.jointFactorGraph(indices, function);
-#endif
+    // Compute marginal on lowest common ancestor clique
+    gttic(LCA_marginal);
+    FactorGraph<FactorType> p_B = B->marginal2(this->root(), function);
+    gttoc(LCA_marginal);
+
+    // Compute shortcuts of the requested cliques given the lowest common ancestor
+    gttic(Clique_shortcuts);
+    BayesNet<CONDITIONAL> p_C1_Bred = C1->shortcut(B, function);
+    BayesNet<CONDITIONAL> p_C2_Bred = C2->shortcut(B, function);
+    gttoc(Clique_shortcuts);
+
+    // Factor the shortcuts to be conditioned on the full root
+    // Get the set of variables to eliminate, which is C1\B.
+    gttic(Full_root_factoring);
+    sharedConditional p_C1_B; {
+      std::vector<Index> C1_minus_B; {
+        FastSet<Index> C1_minus_B_set(C1->conditional()->beginParents(), C1->conditional()->endParents());
+        BOOST_FOREACH(const Index j, *B->conditional()) {
+          C1_minus_B_set.erase(j); }
+        C1_minus_B.assign(C1_minus_B_set.begin(), C1_minus_B_set.end());
+      }
+      // Factor into C1\B | B.
+      FactorGraph<FactorType> temp_remaining;
+      boost::tie(p_C1_B, temp_remaining) = FactorGraph<FactorType>(p_C1_Bred).eliminate(C1_minus_B, function);
+    }
+    sharedConditional p_C2_B; {
+      std::vector<Index> C2_minus_B; {
+        FastSet<Index> C2_minus_B_set(C2->conditional()->beginParents(), C2->conditional()->endParents());
+        BOOST_FOREACH(const Index j, *B->conditional()) {
+          C2_minus_B_set.erase(j); }
+        C2_minus_B.assign(C2_minus_B_set.begin(), C2_minus_B_set.end());
+      }
+      // Factor into C2\B | B.
+      FactorGraph<FactorType> temp_remaining;
+      boost::tie(p_C2_B, temp_remaining) = FactorGraph<FactorType>(p_C2_Bred).eliminate(C2_minus_B, function);
+    }
+    gttoc(Full_root_factoring);
+
+    gttic(Variable_joint);
+    // Build joint on all involved variables
+    FactorGraph<FactorType> p_BC1C2;
+    p_BC1C2.push_back(p_B);
+    p_BC1C2.push_back(p_C1_B->toFactor());
+    p_BC1C2.push_back(p_C2_B->toFactor());
+    if(C1 != B)
+      p_BC1C2.push_back(C1->conditional()->toFactor());
+    if(C2 != B)
+      p_BC1C2.push_back(C2->conditional()->toFactor());
+
+    // Compute final marginal by eliminating other variables
+    GenericSequentialSolver<FactorType> solver(p_BC1C2);
+    std::vector<Index> js; js.push_back(j1); js.push_back(j2);
+    return solver.jointFactorGraph(js, function);
   }
 
   /* ************************************************************************* */
