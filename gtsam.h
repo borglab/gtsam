@@ -810,7 +810,6 @@ virtual class BayesTree {
     void clear();
     void deleteCachedShortcuts();
     void insert(const CLIQUE* subtree);
-    size_t numCachedShortcuts() const;
     size_t numCachedSeparatorMarginals() const;
 };
 
@@ -824,7 +823,6 @@ virtual class BayesTreeClique {
   void print(string s) const;
   void printTree() const; // Default indent of ""
   void printTree(string indent) const;
-  size_t numCachedShortcuts() const;
   size_t numCachedSeparatorMarginals() const;
 
   CONDITIONAL* conditional() const;

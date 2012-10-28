@@ -31,6 +31,10 @@
 
 namespace gtsam {
 
+  // Forward declaration to use as default argument, documented declaration below.
+  FactorGraph<GaussianFactor>::EliminationResult
+    EliminateQR(const FactorGraph<GaussianFactor>& factors, size_t nrFrontals);
+
   /**
    * A Linear Factor Graph is a factor graph where all factors are Gaussian, i.e.
    *   Factor == GaussianFactor
@@ -122,7 +126,7 @@ namespace gtsam {
      * FactorGraph<GaussianFactor>::eliminateFrontals with EliminateQR as the
      * eliminate function argument.
      */
-    std::pair<sharedConditional, GaussianFactorGraph> eliminateFrontals(size_t nFrontals, const Eliminate& function) const {
+    std::pair<sharedConditional, GaussianFactorGraph> eliminateFrontals(size_t nFrontals, const Eliminate& function = EliminateQR) const {
       return Base::eliminateFrontals(nFrontals, function); }
         
     /** Factor the factor graph into a conditional and a remaining factor graph.
@@ -141,11 +145,11 @@ namespace gtsam {
      * FactorGraph<GaussianFactor>::eliminate with EliminateQR as the eliminate
      * function argument.
      */
-    std::pair<sharedConditional, GaussianFactorGraph> eliminate(const std::vector<Index>& variables, const Eliminate& function) {
+    std::pair<sharedConditional, GaussianFactorGraph> eliminate(const std::vector<Index>& variables, const Eliminate& function = EliminateQR) {
       return Base::eliminate(variables, function); }
 
     /** Eliminate a single variable, by calling GaussianFactorGraph::eliminate. */
-    std::pair<sharedConditional, GaussianFactorGraph> eliminateOne(Index variable, const Eliminate& function) {
+    std::pair<sharedConditional, GaussianFactorGraph> eliminateOne(Index variable, const Eliminate& function = EliminateQR) {
       return Base::eliminateOne(variable, function); }
 
     /** Permute the variables in the factors */
