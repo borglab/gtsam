@@ -131,7 +131,7 @@ if (GTSAM_INSTALL_MATLAB_TOOLBOX)
 	set(GTSAM_LIB_DIR ${MEX_LIB_ROOT}/gtsam)
     
     # Generate, build and install toolbox
-    set(mexFlags ${GTSAM_BUILD_MEX_BINARY_FLAGS} -I${Boost_INCLUDE_DIR} -I${MEX_INCLUDE_ROOT})
+    set(mexFlags ${GTSAM_BUILD_MEX_BINARY_FLAGS} -I${MEX_INCLUDE_ROOT} -I${Boost_INCLUDE_DIR})
 
     # Macro to handle details of setting up targets
     # FIXME: issue with dependency between wrap_gtsam and wrap_gtsam_build, only shows up on CMake 2.8.3
