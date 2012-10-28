@@ -122,7 +122,8 @@ namespace gtsam {
      * FactorGraph<GaussianFactor>::eliminateFrontals with EliminateQR as the
      * eliminate function argument.
      */
-    std::pair<sharedConditional, GaussianFactorGraph> eliminateFrontals(size_t nFrontals) const;
+    std::pair<sharedConditional, GaussianFactorGraph> eliminateFrontals(size_t nFrontals, const Eliminate& function) const {
+      return Base::eliminateFrontals(nFrontals, function); }
         
     /** Factor the factor graph into a conditional and a remaining factor graph.
      * Given the factor graph \f$ f(X) \f$, and \c variables to factorize out
@@ -140,10 +141,12 @@ namespace gtsam {
      * FactorGraph<GaussianFactor>::eliminate with EliminateQR as the eliminate
      * function argument.
      */
-    std::pair<sharedConditional, GaussianFactorGraph> eliminate(const std::vector<Index>& variables);
+    std::pair<sharedConditional, GaussianFactorGraph> eliminate(const std::vector<Index>& variables, const Eliminate& function) {
+      return Base::eliminate(variables, function); }
 
     /** Eliminate a single variable, by calling GaussianFactorGraph::eliminate. */
-    std::pair<sharedConditional, GaussianFactorGraph> eliminateOne(Index variable);
+    std::pair<sharedConditional, GaussianFactorGraph> eliminateOne(Index variable, const Eliminate& function) {
+      return Base::eliminateOne(variable, function); }
 
     /** Permute the variables in the factors */
     void permuteWithInverse(const Permutation& inversePermutation);
