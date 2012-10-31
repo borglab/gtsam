@@ -641,10 +641,28 @@ namespace gtsam {
     if(C2 != B)
       p_BC1C2.push_back(C2->conditional()->toFactor());
 
-    // Compute final marginal by eliminating other variables
+    // Reduce the variable indices to start at zero
+    gttic(Reduce);
+    const Permutation reduction = internal::createReducingPermutation(p_BC1C2.keys());
+    internal::Reduction inverseReduction = internal::Reduction::CreateAsInverse(reduction);
+    BOOST_FOREACH(const boost::shared_ptr<FactorType>& factor, p_BC1C2) {
+      if(factor) factor->reduceWithInverse(inverseReduction); }
+    std::vector<Index> js; js.push_back(inverseReduction[j1]); js.push_back(inverseReduction[j2]);
+    gttoc(Reduce);
+
+    // now, marginalize out everything that is not variable j
     GenericSequentialSolver<FactorType> solver(p_BC1C2);
-    std::vector<Index> js; js.push_back(j1); js.push_back(j2);
-    return solver.jointFactorGraph(js, function);
+    boost::shared_ptr<FactorGraph<FactorType> > result = solver.jointFactorGraph(js, function);
+
+    // Undo the reduction
+    gttic(Undo_Reduce);
+    BOOST_FOREACH(const boost::shared_ptr<FactorType>& factor, *result) {
+      if(factor) factor->permuteWithInverse(reduction); }
+    BOOST_FOREACH(const boost::shared_ptr<FactorType>& factor, p_BC1C2) {
+      if(factor) factor->permuteWithInverse(reduction); }
+    gttoc(Undo_Reduce);
+    return result;
+
   }
 
   /* ************************************************************************* */
