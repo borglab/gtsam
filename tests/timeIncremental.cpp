@@ -197,18 +197,38 @@ int main(int argc, char *argv[]) {
   try {
     Marginals marginals(graph, values);
     int i=0;
+    BOOST_REVERSE_FOREACH(Key key1, values.keys()) {
+      int j=0;
+      BOOST_REVERSE_FOREACH(Key key2, values.keys()) {
+        if(i != j) {
+          gttic_(jointMarginalInformation);
+          std::vector<Key> keys(2);
+          keys[0] = key1;
+          keys[1] = key2;
+          JointMarginal info = marginals.jointMarginalInformation(keys);
+          gttoc_(jointMarginalInformation);
+          tictoc_finishedIteration_();
+        }
+        ++j;
+        if(j >= 50)
+          break;
+      }
+      ++i;
+      if(i >= 50)
+        break;
+    }
+    tictoc_print_();
     BOOST_FOREACH(Key key, values.keys()) {
       gttic_(marginalInformation);
       Matrix info = marginals.marginalInformation(key);
       gttoc_(marginalInformation);
       tictoc_finishedIteration_();
-      if(i % 1000 == 0)
-        tictoc_print_();
       ++i;
     }
   } catch(std::exception& e) {
     cout << e.what() << endl;
   }
+  tictoc_print_();
 
   return 0;
 }
