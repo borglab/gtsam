@@ -34,6 +34,7 @@ private:
   // Keep a copy of measurement and calibration for I/O
   StereoPoint2 measured_;                      ///< the measurement
   boost::shared_ptr<Cal3_S2Stereo> K_;  ///< shared pointer to calibration
+  boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
 
 public:
 
@@ -56,8 +57,10 @@ public:
    * @param landmarkKey the landmark variable key
    * @param K the constant calibration
    */
-  GenericStereoFactor(const StereoPoint2& measured, const SharedNoiseModel& model, Key poseKey, Key landmarkKey, const shared_ptrKStereo& K) :
-    Base(model, poseKey, landmarkKey), measured_(measured), K_(K) {
+  GenericStereoFactor(const StereoPoint2& measured, const SharedNoiseModel& model,
+      Key poseKey, Key landmarkKey, const shared_ptrKStereo& K,
+      boost::optional<POSE> body_P_sensor = boost::none) :
+    Base(model, poseKey, landmarkKey), measured_(measured), K_(K), body_P_sensor_(body_P_sensor) {
   }
 
   virtual ~GenericStereoFactor() {}  ///< Virtual destructor
@@ -75,22 +78,40 @@ public:
   void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     Base::print(s, keyFormatter);
     measured_.print(s + ".z");
+    if(this->body_P_sensor_)
+      this->body_P_sensor_->print("  sensor pose in body frame: ");
   }
 
   /**
    * equals
    */
   virtual bool equals(const NonlinearFactor& f, double tol = 1e-9) const {
-    const GenericStereoFactor* p = dynamic_cast<const GenericStereoFactor*> (&f);
-    return p && Base::equals(f) && measured_.equals(p->measured_, tol);
+    const GenericStereoFactor* e = dynamic_cast<const GenericStereoFactor*> (&f);
+    return e
+        && Base::equals(f)
+        && measured_.equals(e->measured_, tol)
+        && ((!body_P_sensor_ && !e->body_P_sensor_) || (body_P_sensor_ && e->body_P_sensor_ && body_P_sensor_->equals(*e->body_P_sensor_)));
   }
 
   /** h(x)-z */
   Vector evaluateError(const Pose3& pose, const Point3& point,
-      boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const {
     try {
-      StereoCamera stereoCam(pose, K_);
-      return (stereoCam.project(point, H1, H2) - measured_).vector();
+      if(body_P_sensor_) {
+        if(H1) {
+          gtsam::Matrix H0;
+          StereoCamera stereoCam(pose.compose(*body_P_sensor_, H0), K_);
+          StereoPoint2 reprojectionError(stereoCam.project(point, H1, H2) - measured_);
+          *H1 = *H1 * H0;
+          return reprojectionError.vector();
+        } else {
+          StereoCamera stereoCam(pose.compose(*body_P_sensor_), K_);
+          return (stereoCam.project(point, H1, H2) - measured_).vector();
+        }
+      } else {
+        StereoCamera stereoCam(pose, K_);
+        return (stereoCam.project(point, H1, H2) - measured_).vector();
+      }
     } catch(StereoCheiralityException& e) {
       if (H1) *H1 = zeros(3,6);
       if (H2) *H2 = zeros(3,3);
@@ -119,6 +140,7 @@ private:
         boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(measured_);
     ar & BOOST_SERIALIZATION_NVP(K_);
+    ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
   }
 };
 
