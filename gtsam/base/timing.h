@@ -94,20 +94,11 @@ namespace gtsam {
     extern boost::weak_ptr<TimingOutline> timingCurrent;
   }
 
-inline void tictoc_finishedIteration_() {
-  internal::timingRoot->finishedIteration();
-}
-
-inline void tictoc_print_() {
-  internal::timingRoot->print();
-}
-
-/* print mean and standard deviation */
-inline void tictoc_print2_() {
-  internal::timingRoot->print2();
-}
-
-// Tic and toc functions using a string label
+// Tic and toc functions that are always active (whether or not ENABLE_TIMING is defined)
+// There is a trick being used here to achieve near-zero runtime overhead, in that a
+// static variable is created for each tic/toc statement storing an integer ID, but the
+// integer ID is only looked up by string once when the static variable is initialized
+// as the program starts.
 #define gttic_(label) \
   static const size_t label##_id_tic = ::gtsam::internal::getTicTocID(#label); \
   ::gtsam::internal::AutoTicToc label##_obj = ::gtsam::internal::AutoTicToc(label##_id_tic, #label)
@@ -119,6 +110,17 @@ inline void tictoc_print2_() {
 #define longtoc_(label) \
   static const size_t label##_id_toc = ::gtsam::internal::getTicTocID(#label); \
   ::gtsam::internal::tocInternal(label##_id_toc, #label)
+inline void tictoc_finishedIteration_() {
+  internal::timingRoot->finishedIteration(); }
+inline void tictoc_print_() {
+  internal::timingRoot->print(); }
+/* print mean and standard deviation */
+inline void tictoc_print2_() {
+  internal::timingRoot->print2(); }
+#define tictoc_getNode(variable, label) \
+  static const size_t label##_id_getnode = ::gtsam::internal::getTicTocID(#label); \
+  const boost::shared_ptr<const internal::TimingOutline> variable = \
+  internal::timingCurrent.lock()->child(label##_id_getnode, #label, internal::timingCurrent);
 
 #ifdef ENABLE_TIMING
 #define gttic(label) gttic_(label)
