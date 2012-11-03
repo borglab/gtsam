@@ -133,23 +133,43 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+//  template<class DERIVED, class CONDITIONAL>
+//  bool BayesTreeCliqueBase<DERIVED, CONDITIONAL>::permuteSeparatorWithInverse(
+//      const Permutation& inversePermutation) {
+//    bool changed = conditional_->permuteSeparatorWithInverse(
+//        inversePermutation);
+//#ifndef NDEBUG
+//    if(!changed) {
+//      BOOST_FOREACH(Index& separatorKey, conditional_->parents()) {assert(separatorKey == inversePermutation[separatorKey]);}
+//      BOOST_FOREACH(const derived_ptr& child, children_) {
+//        assert(child->permuteSeparatorWithInverse(inversePermutation) == false);
+//      }
+//    }
+//#endif
+//    if (changed) {
+//      BOOST_FOREACH(const derived_ptr& child, children_) {
+//        (void) child->permuteSeparatorWithInverse(inversePermutation);
+//      }
+//    }
+//    assertInvariants();
+//    return changed;
+//  }
+
+  /* ************************************************************************* */
   template<class DERIVED, class CONDITIONAL>
-  bool BayesTreeCliqueBase<DERIVED, CONDITIONAL>::permuteSeparatorWithInverse(
-      const Permutation& inversePermutation) {
-    bool changed = conditional_->permuteSeparatorWithInverse(
-        inversePermutation);
+  bool BayesTreeCliqueBase<DERIVED, CONDITIONAL>::reduceSeparatorWithInverse(
+    const internal::Reduction& inverseReduction)
+  {
+    bool changed = conditional_->reduceSeparatorWithInverse(inverseReduction);
 #ifndef NDEBUG
     if(!changed) {
-      BOOST_FOREACH(Index& separatorKey, conditional_->parents()) {assert(separatorKey == inversePermutation[separatorKey]);}
       BOOST_FOREACH(const derived_ptr& child, children_) {
-        assert(child->permuteSeparatorWithInverse(inversePermutation) == false);
-      }
+        assert(child->reduceSeparatorWithInverse(inverseReduction) == false); }
     }
 #endif
-    if (changed) {
+    if(changed) {
       BOOST_FOREACH(const derived_ptr& child, children_) {
-        (void) child->permuteSeparatorWithInverse(inversePermutation);
-      }
+        (void) child->reduceSeparatorWithInverse(inverseReduction); }
     }
     assertInvariants();
     return changed;
