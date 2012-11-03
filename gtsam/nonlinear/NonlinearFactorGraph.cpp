@@ -43,6 +43,30 @@ void NonlinearFactorGraph::print(const std::string& str, const KeyFormatter& key
 }
 
 /* ************************************************************************* */
+void NonlinearFactorGraph::saveGraph(std::ostream &stm, const KeyFormatter& keyFormatter) const {
+  stm << "graph {\n";
+
+  // Create nodes for each variable in the graph
+  BOOST_FOREACH(Key key, this->keys()) {
+    // Label the node with the label from the KeyFormatter
+    stm << "  var" << key << "[label=\"" << keyFormatter(key) << "\"];\n"; }
+  stm << "\n";
+
+  // Create factors and variable connections
+  for(size_t i = 0; i < this->size(); ++i) {
+    // Make each factor a dot
+    stm << "  factor" << i << "[label=\"\", shape=point];\n";
+
+    // Make factor-variable connections
+    if(this->at(i)) {
+      BOOST_FOREACH(Key key, *this->at(i)) {
+        stm << "  var" << key << "--" << "factor" << i << ";\n"; } }
+  }
+
+  stm << "}\n";
+}
+
+/* ************************************************************************* */
 double NonlinearFactorGraph::error(const Values& c) const {
   gttic(NonlinearFactorGraph_error);
   double total_error = 0.;

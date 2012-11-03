@@ -46,6 +46,9 @@ namespace gtsam {
     /** print just calls base class */
     void print(const std::string& str = "NonlinearFactorGraph: ", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
+    /** Write the graph in GraphViz format for visualization */
+    void saveGraph(std::ostream& stm, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+
     /** return keys as an ordered set - ordering is by key value */
     FastSet<Key> keys() const;
 
