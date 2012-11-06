@@ -256,6 +256,33 @@ TEST(NonlinearOptimizer, MoreOptimization) {
 }
 
 /* ************************************************************************* */
+TEST(NonlinearOptimizer, MoreOptimizationWithHuber) {
+
+  NonlinearFactorGraph fg;
+  fg.add(PriorFactor<Pose2>(0, Pose2(0,0,0), noiseModel::Isotropic::Sigma(3,1)));
+  fg.add(BetweenFactor<Pose2>(0, 1, Pose2(1,0,M_PI/2),
+                              noiseModel::Robust::Create(noiseModel::MEstimator::Huber::Create(2.0),
+                                                         noiseModel::Isotropic::Sigma(3,1))));
+  fg.add(BetweenFactor<Pose2>(1, 2, Pose2(1,0,M_PI/2),
+                              noiseModel::Robust::Create(noiseModel::MEstimator::Huber::Create(3.0),
+                                                         noiseModel::Isotropic::Sigma(3,1))));
+
+  Values init;
+  init.insert(0, Pose2(10,10,0));
+  init.insert(1, Pose2(1,0,M_PI));
+  init.insert(2, Pose2(1,1,-M_PI));
+
+  Values expected;
+  expected.insert(0, Pose2(0,0,0));
+  expected.insert(1, Pose2(1,0,M_PI/2));
+  expected.insert(2, Pose2(1,1,M_PI));
+
+  EXPECT(assert_equal(expected, GaussNewtonOptimizer(fg, init).optimize()));
+  EXPECT(assert_equal(expected, LevenbergMarquardtOptimizer(fg, init).optimize()));
+  EXPECT(assert_equal(expected, DoglegOptimizer(fg, init).optimize()));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

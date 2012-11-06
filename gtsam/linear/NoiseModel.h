@@ -699,7 +699,7 @@ namespace gtsam {
       inline virtual Vector unwhiten(const Vector& v) const
       { throw std::invalid_argument("unwhiten is not currently supported for robust noise models."); }
       inline virtual double distance(const Vector& v) const
-      { throw std::invalid_argument("distance is not currently supported for robust noise models."); }
+      { return this->whiten(v).squaredNorm(); }
 
       // TODO: these are really robust iterated re-weighting support functions
       virtual void WhitenSystem(Vector& b) const;
