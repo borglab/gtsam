@@ -135,9 +135,6 @@ public:
   /// Permute the variables in the VariableIndex according to the given permutation
   void permuteInPlace(const Permutation& permutation);
 
-  /// Permute the variables in the VariableIndex according to the given partial permutation
-  void permuteInPlace(const Permutation& selector, const Permutation& permutation);
-
   /** Remove unused empty variables at the end of the ordering (in debug mode
    * verifies they are empty).
    * @param nToRemove The number of unused variables at the end to remove

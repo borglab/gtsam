@@ -353,9 +353,11 @@ ISAM2::Impl::PartialSolve(GaussianFactorGraph& factors,
   Permutation::shared_ptr affectedColamdInverse(affectedColamd->inverse());
   if(debug) affectedColamd->print("affectedColamd: ");
   if(debug) affectedColamdInverse->print("affectedColamdInverse: ");
-  result.reorderingSelector = affectedKeysSelector;
-  result.reorderingPermutation = *affectedColamd;
-  result.reorderingInverse = internal::Reduction::CreateFromPartialPermutation(affectedKeysSelector, *affectedColamdInverse);
+  result.fullReordering =
+      *Permutation::Identity(reorderingMode.nFullSystemVars).partialPermutation(affectedKeysSelector, *affectedColamd);
+  result.fullReorderingInverse =
+      *Permutation::Identity(reorderingMode.nFullSystemVars).partialPermutation(affectedKeysSelector, *affectedColamdInverse);
+  if(debug) result.fullReordering.print("partialReordering: ");
   gttoc(ccolamd_permutations);
 
   gttic(permute_affected_variable_index);

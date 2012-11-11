@@ -26,9 +26,8 @@ struct ISAM2::Impl {
 
   struct PartialSolveResult {
     ISAM2::sharedClique bayesTree;
-    Permutation reorderingSelector;
-    Permutation reorderingPermutation;
-    internal::Reduction reorderingInverse;
+    Permutation fullReordering;
+    Permutation fullReorderingInverse;
   };
 
   struct ReorderingMode {

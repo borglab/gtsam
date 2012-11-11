@@ -225,7 +225,7 @@ public:
    * Returns true if any reordered variables appeared in the separator and
    * false if not.
    */
-  //bool permuteSeparatorWithInverse(const Permutation& inversePermutation);
+  bool permuteSeparatorWithInverse(const Permutation& inversePermutation);
 
   iterator begin()          {return conditionals_.begin();}    ///<TODO: comment
   iterator end()            {return conditionals_.end();}      ///<TODO: comment

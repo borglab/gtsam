@@ -765,6 +765,7 @@ class IndexConditional {
   gtsam::IndexFactor* toFactor() const;
 
   //Advanced interface
+  bool permuteSeparatorWithInverse(const gtsam::Permutation& inversePermutation);
   void permuteWithInverse(const gtsam::Permutation& inversePermutation);
 };
 
@@ -787,6 +788,7 @@ virtual class BayesNet {
   void push_front(This& conditional);
   void pop_front();
   void permuteWithInverse(const gtsam::Permutation& inversePermutation);
+  bool permuteSeparatorWithInverse(const gtsam::Permutation& inversePermutation);
 };
 
 #include <gtsam/inference/BayesTree.h>
@@ -830,6 +832,7 @@ virtual class BayesTreeClique {
 //  derived_ptr parent() const { return parent_.lock(); }
 
   void permuteWithInverse(const gtsam::Permutation& inversePermutation);
+  bool permuteSeparatorWithInverse(const gtsam::Permutation& inversePermutation);
 
   // FIXME: need wrapped versions graphs, BayesNet
 //  BayesNet<ConditionalType> shortcut(derived_ptr root, Eliminate function) const;
@@ -856,6 +859,7 @@ virtual class SymbolicBayesNet  : gtsam::SymbolicBayesNetBase {
   //Advanced Interface
   void pop_front();
   void permuteWithInverse(const gtsam::Permutation& inversePermutation);
+  bool permuteSeparatorWithInverse(const gtsam::Permutation& inversePermutation);
 };
 
 #include <gtsam/inference/SymbolicFactorGraph.h>
@@ -1764,6 +1768,7 @@ virtual class ISAM2Clique {
     void print(string s);
 
     void permuteWithInverse(const gtsam::Permutation& inversePermutation);
+    bool permuteSeparatorWithInverse(const gtsam::Permutation& inversePermutation);
 };
 
 class ISAM2Result {
