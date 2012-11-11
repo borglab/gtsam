@@ -50,6 +50,8 @@ run time. However, these assertions do cost time and can thus be turned off.
  - \b eigen_assert - macro with one argument that is used inside %Eigen for assertions. By default, it is
    basically defined to be \c assert, which aborts the program if the assertion is violated. Redefine this
    macro if you want to do something else, like throwing an exception.
+ - \b EIGEN_MPL2_ONLY - disable non MPL2 compatible features, or in other words disable the features which
+   are still under the LGPL.
 
 
 \section TopicPreprocessorDirectivesPerformance Alignment, vectorization and performance tweaking

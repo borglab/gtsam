@@ -1,7 +1,5 @@
 file(GLOB examples_SRCS "*.cpp")
 
-add_custom_target(all_examples)
-
 foreach(example_src ${examples_SRCS})
   get_filename_component(example ${example_src} NAME_WE)
   add_executable(${example} ${example_src})

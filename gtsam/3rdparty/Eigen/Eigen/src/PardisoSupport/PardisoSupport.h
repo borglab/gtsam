@@ -108,6 +108,7 @@ class PardisoImpl
     typedef Matrix<Scalar,Dynamic,1> VectorType;
     typedef Matrix<Index, 1, MatrixType::ColsAtCompileTime> IntRowVectorType;
     typedef Matrix<Index, MatrixType::RowsAtCompileTime, 1> IntColVectorType;
+    typedef Array<Index,64,1,DontAlign> ParameterType;
     enum {
       ScalarIsComplex = NumTraits<Scalar>::IsComplex
     };
@@ -142,7 +143,7 @@ class PardisoImpl
     /** \warning for advanced usage only.
       * \returns a reference to the parameter array controlling PARDISO.
       * See the PARDISO manual to know how to use it. */
-    Array<Index,64,1>& pardisoParameterArray()
+    ParameterType& pardisoParameterArray()
     {
       return m_iparm;
     }
@@ -295,7 +296,7 @@ class PardisoImpl
     bool m_initialized, m_analysisIsOk, m_factorizationIsOk;
     Index m_type, m_msglvl;
     mutable void *m_pt[64];
-    mutable Array<Index,64,1> m_iparm;
+    mutable ParameterType m_iparm;
     mutable IntColVectorType m_perm;
     Index m_size;
     

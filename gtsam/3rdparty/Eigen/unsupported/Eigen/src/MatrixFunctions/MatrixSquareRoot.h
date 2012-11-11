@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2011 Jitse Niesen <jitse@maths.leeds.ac.uk>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifndef EIGEN_MATRIX_SQUARE_ROOT
 #define EIGEN_MATRIX_SQUARE_ROOT
@@ -75,17 +60,17 @@ class MatrixSquareRootQuasiTriangular
     void computeOffDiagonalPartOfSqrt(MatrixType& sqrtT, const MatrixType& T);
     void compute2x2diagonalBlock(MatrixType& sqrtT, const MatrixType& T, typename MatrixType::Index i);
     void compute1x1offDiagonalBlock(MatrixType& sqrtT, const MatrixType& T, 
-            typename MatrixType::Index i, typename MatrixType::Index j);
+  				  typename MatrixType::Index i, typename MatrixType::Index j);
     void compute1x2offDiagonalBlock(MatrixType& sqrtT, const MatrixType& T, 
-            typename MatrixType::Index i, typename MatrixType::Index j);
+  				  typename MatrixType::Index i, typename MatrixType::Index j);
     void compute2x1offDiagonalBlock(MatrixType& sqrtT, const MatrixType& T, 
-            typename MatrixType::Index i, typename MatrixType::Index j);
+  				  typename MatrixType::Index i, typename MatrixType::Index j);
     void compute2x2offDiagonalBlock(MatrixType& sqrtT, const MatrixType& T, 
-            typename MatrixType::Index i, typename MatrixType::Index j);
+  				  typename MatrixType::Index i, typename MatrixType::Index j);
   
     template <typename SmallMatrixType>
     static void solveAuxiliaryEquation(SmallMatrixType& X, const SmallMatrixType& A, 
-               const SmallMatrixType& B, const SmallMatrixType& C);
+  				     const SmallMatrixType& B, const SmallMatrixType& C);
   
     const MatrixType& m_A;
 };
@@ -112,7 +97,7 @@ void MatrixSquareRootQuasiTriangular<MatrixType>::compute(ResultType &result)
 // post: the diagonal blocks of sqrtT are the square roots of the diagonal blocks of T
 template <typename MatrixType>
 void MatrixSquareRootQuasiTriangular<MatrixType>::computeDiagonalPartOfSqrt(MatrixType& sqrtT, 
-                    const MatrixType& T)
+									  const MatrixType& T)
 {
   const Index size = m_A.rows();
   for (Index i = 0; i < size; i++) {
@@ -131,25 +116,25 @@ void MatrixSquareRootQuasiTriangular<MatrixType>::computeDiagonalPartOfSqrt(Matr
 // post: sqrtT is the square root of T.
 template <typename MatrixType>
 void MatrixSquareRootQuasiTriangular<MatrixType>::computeOffDiagonalPartOfSqrt(MatrixType& sqrtT, 
-                       const MatrixType& T)
+									     const MatrixType& T)
 {
   const Index size = m_A.rows();
   for (Index j = 1; j < size; j++) {
       if (T.coeff(j, j-1) != 0)  // if T(j-1:j, j-1:j) is a 2-by-2 block
-  continue;
+	continue;
     for (Index i = j-1; i >= 0; i--) {
       if (i > 0 && T.coeff(i, i-1) != 0)  // if T(i-1:i, i-1:i) is a 2-by-2 block
-  continue;
+	continue;
       bool iBlockIs2x2 = (i < size - 1) && (T.coeff(i+1, i) != 0);
       bool jBlockIs2x2 = (j < size - 1) && (T.coeff(j+1, j) != 0);
       if (iBlockIs2x2 && jBlockIs2x2) 
-  compute2x2offDiagonalBlock(sqrtT, T, i, j);
+	compute2x2offDiagonalBlock(sqrtT, T, i, j);
       else if (iBlockIs2x2 && !jBlockIs2x2) 
-  compute2x1offDiagonalBlock(sqrtT, T, i, j);
+	compute2x1offDiagonalBlock(sqrtT, T, i, j);
       else if (!iBlockIs2x2 && jBlockIs2x2) 
-  compute1x2offDiagonalBlock(sqrtT, T, i, j);
+	compute1x2offDiagonalBlock(sqrtT, T, i, j);
       else if (!iBlockIs2x2 && !jBlockIs2x2) 
-  compute1x1offDiagonalBlock(sqrtT, T, i, j);
+	compute1x1offDiagonalBlock(sqrtT, T, i, j);
     }
   }
 }
@@ -174,7 +159,7 @@ void MatrixSquareRootQuasiTriangular<MatrixType>
 template <typename MatrixType>
 void MatrixSquareRootQuasiTriangular<MatrixType>
      ::compute1x1offDiagonalBlock(MatrixType& sqrtT, const MatrixType& T, 
-          typename MatrixType::Index i, typename MatrixType::Index j)
+				  typename MatrixType::Index i, typename MatrixType::Index j)
 {
   Scalar tmp = (sqrtT.row(i).segment(i+1,j-i-1) * sqrtT.col(j).segment(i+1,j-i-1)).value();
   sqrtT.coeffRef(i,j) = (T.coeff(i,j) - tmp) / (sqrtT.coeff(i,i) + sqrtT.coeff(j,j));
@@ -184,7 +169,7 @@ void MatrixSquareRootQuasiTriangular<MatrixType>
 template <typename MatrixType>
 void MatrixSquareRootQuasiTriangular<MatrixType>
      ::compute1x2offDiagonalBlock(MatrixType& sqrtT, const MatrixType& T, 
-          typename MatrixType::Index i, typename MatrixType::Index j)
+				  typename MatrixType::Index i, typename MatrixType::Index j)
 {
   Matrix<Scalar,1,2> rhs = T.template block<1,2>(i,j);
   if (j-i > 1)
@@ -198,7 +183,7 @@ void MatrixSquareRootQuasiTriangular<MatrixType>
 template <typename MatrixType>
 void MatrixSquareRootQuasiTriangular<MatrixType>
      ::compute2x1offDiagonalBlock(MatrixType& sqrtT, const MatrixType& T, 
-          typename MatrixType::Index i, typename MatrixType::Index j)
+				  typename MatrixType::Index i, typename MatrixType::Index j)
 {
   Matrix<Scalar,2,1> rhs = T.template block<2,1>(i,j);
   if (j-i > 2)
@@ -212,7 +197,7 @@ void MatrixSquareRootQuasiTriangular<MatrixType>
 template <typename MatrixType>
 void MatrixSquareRootQuasiTriangular<MatrixType>
      ::compute2x2offDiagonalBlock(MatrixType& sqrtT, const MatrixType& T, 
-          typename MatrixType::Index i, typename MatrixType::Index j)
+				  typename MatrixType::Index i, typename MatrixType::Index j)
 {
   Matrix<Scalar,2,2> A = sqrtT.template block<2,2>(i,i);
   Matrix<Scalar,2,2> B = sqrtT.template block<2,2>(j,j);
@@ -229,10 +214,10 @@ template <typename MatrixType>
 template <typename SmallMatrixType>
 void MatrixSquareRootQuasiTriangular<MatrixType>
      ::solveAuxiliaryEquation(SmallMatrixType& X, const SmallMatrixType& A,
-            const SmallMatrixType& B, const SmallMatrixType& C)
+			      const SmallMatrixType& B, const SmallMatrixType& C)
 {
   EIGEN_STATIC_ASSERT((internal::is_same<SmallMatrixType, Matrix<Scalar,2,2> >::value),
-          EIGEN_INTERNAL_ERROR_PLEASE_FILE_A_BUG_REPORT);
+		      EIGEN_INTERNAL_ERROR_PLEASE_FILE_A_BUG_REPORT);
 
   Matrix<Scalar,4,4> coeffMatrix = Matrix<Scalar,4,4>::Zero();
   coeffMatrix.coeffRef(0,0) = A.coeff(0,0) + B.coeff(0,0);

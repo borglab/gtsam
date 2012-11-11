@@ -4,24 +4,9 @@
 // Copyright (C) 2011 Jitse Niesen <jitse@maths.leeds.ac.uk>
 // Copyright (C) 2011 Chen-Pang He <jdh8@ms63.hinet.net>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifndef EIGEN_MATRIX_LOGARITHM
 #define EIGEN_MATRIX_LOGARITHM
@@ -168,7 +153,7 @@ void MatrixLogarithmAtomic<MatrixType>::computeBig(const MatrixType& A, MatrixTy
       degree = getPadeDegree(normTminusI);
       int degree2 = getPadeDegree(normTminusI / RealScalar(2));
       if ((degree - degree2 <= 1) || (numberOfExtraSquareRoots == 1)) 
-  break;
+	break;
       ++numberOfExtraSquareRoots;
     }
     MatrixType sqrtT;
@@ -210,24 +195,24 @@ template <typename MatrixType>
 int MatrixLogarithmAtomic<MatrixType>::getPadeDegree(long double normTminusI)
 {
 #if   LDBL_MANT_DIG == 53         // double precision
-  const double maxNormForPade[] = { 1.6206284795015624e-2 /* degree = 3 */ , 5.3873532631381171e-2,
-            1.1352802267628681e-1, 1.8662860613541288e-1, 2.642960831111435e-1 };
+  const long double maxNormForPade[] = { 1.6206284795015624e-2L /* degree = 3 */ , 5.3873532631381171e-2L,
+            1.1352802267628681e-1L, 1.8662860613541288e-1L, 2.642960831111435e-1L };
 #elif LDBL_MANT_DIG <= 64         // extended precision
-  const double maxNormForPade[] = { 5.48256690357782863103e-3 /* degree = 3 */, 2.34559162387971167321e-2,
-            5.84603923897347449857e-2, 1.08486423756725170223e-1, 1.68385767881294446649e-1,
-            2.32777776523703892094e-1 };
+  const long double maxNormForPade[] = { 5.48256690357782863103e-3L /* degree = 3 */, 2.34559162387971167321e-2L,
+            5.84603923897347449857e-2L, 1.08486423756725170223e-1L, 1.68385767881294446649e-1L,
+            2.32777776523703892094e-1L };
 #elif LDBL_MANT_DIG <= 106        // double-double
-  const double maxNormForPade[] = { 8.58970550342939562202529664318890e-5 /* degree = 3 */,
-            9.34074328446359654039446552677759e-4, 4.26117194647672175773064114582860e-3,
-            1.21546224740281848743149666560464e-2, 2.61100544998339436713088248557444e-2,
-            4.66170074627052749243018566390567e-2, 7.32585144444135027565872014932387e-2,
-            1.05026503471351080481093652651105e-1 };
+  const long double maxNormForPade[] = { 8.58970550342939562202529664318890e-5L /* degree = 3 */,
+            9.34074328446359654039446552677759e-4L, 4.26117194647672175773064114582860e-3L,
+            1.21546224740281848743149666560464e-2L, 2.61100544998339436713088248557444e-2L,
+            4.66170074627052749243018566390567e-2L, 7.32585144444135027565872014932387e-2L,
+            1.05026503471351080481093652651105e-1L };
 #else                             // quadruple precision
-  const double maxNormForPade[] = { 4.7419931187193005048501568167858103e-5 /* degree = 3 */,
-            5.8853168473544560470387769480192666e-4, 2.9216120366601315391789493628113520e-3,
-            8.8415758124319434347116734705174308e-3, 1.9850836029449446668518049562565291e-2,
-            3.6688019729653446926585242192447447e-2, 5.9290962294020186998954055264528393e-2,
-            8.6998436081634343903250580992127677e-2, 1.1880960220216759245467951592883642e-1 };
+  const long double maxNormForPade[] = { 4.7419931187193005048501568167858103e-5L /* degree = 3 */,
+            5.8853168473544560470387769480192666e-4L, 2.9216120366601315391789493628113520e-3L,
+            8.8415758124319434347116734705174308e-3L, 1.9850836029449446668518049562565291e-2L,
+            3.6688019729653446926585242192447447e-2L, 5.9290962294020186998954055264528393e-2L,
+            8.6998436081634343903250580992127677e-2L, 1.1880960220216759245467951592883642e-1L };
 #endif
   for (int degree = 3; degree <= maxPadeDegree; ++degree)
     if (normTminusI <= maxNormForPade[degree - minPadeDegree])
@@ -309,10 +294,10 @@ void MatrixLogarithmAtomic<MatrixType>::computePade6(MatrixType& result, const M
   const int degree = 6;
   const RealScalar nodes[]   = { 0.0337652428984239860938492227530027L, 0.1693953067668677431693002024900473L,
             0.3806904069584015456847491391596440L, 0.6193095930415984543152508608403560L,
-            0.8306046932331322568306997975099527L, 0.9662347571015760139061507772469973L };
+		        0.8306046932331322568306997975099527L, 0.9662347571015760139061507772469973L };
   const RealScalar weights[] = { 0.0856622461895851725201480710863665L, 0.1803807865240693037849167569188581L,
             0.2339569672863455236949351719947755L, 0.2339569672863455236949351719947755L,
-             0.1803807865240693037849167569188581L, 0.0856622461895851725201480710863665L };
+ 		        0.1803807865240693037849167569188581L, 0.0856622461895851725201480710863665L };
   assert(degree <= maxPadeDegree);
   MatrixType TminusI = T - MatrixType::Identity(T.rows(), T.rows());
   result.setZero(T.rows(), T.rows());
@@ -438,8 +423,8 @@ void MatrixLogarithmAtomic<MatrixType>::computePade11(MatrixType& result, const 
   * This class holds the argument to the matrix function until it is
   * assigned or evaluated for some other reason (so the argument
   * should not be changed in the meantime). It is the return type of
-  * matrixBase::matrixLogarithm() and most of the time this is the
-  * only way it is used.
+  * matrixBase::log() and most of the time this is the only way it
+  * is used.
   */
 template<typename Derived> class MatrixLogarithmReturnValue
 : public ReturnByValue<MatrixLogarithmReturnValue<Derived> >

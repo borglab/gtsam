@@ -490,7 +490,7 @@ Read-write access to sub-vectors:
 <tr><td>\code vec1.head(n)\endcode</td><td>\code vec1.head<n>()\endcode</td><td>the first \c n coeffs </td></tr>
 <tr><td>\code vec1.tail(n)\endcode</td><td>\code vec1.tail<n>()\endcode</td><td>the last \c n coeffs </td></tr>
 <tr><td>\code vec1.segment(pos,n)\endcode</td><td>\code vec1.segment<n>(pos)\endcode</td>
-    <td>the \c n coeffs in \n the range [\c pos : \c pos + \c n [</td></tr>
+    <td>the \c n coeffs in the \n range [\c pos : \c pos + \c n - 1]</td></tr>
 <tr class="alt"><td colspan="3">
 
 Read-write access to sub-matrices:</td></tr>

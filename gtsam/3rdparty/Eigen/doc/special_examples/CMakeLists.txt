@@ -17,4 +17,5 @@ if(QT4_FOUND)
       COMMAND Tutorial_sparse_example
       ARGS ${CMAKE_CURRENT_BINARY_DIR}/../html/Tutorial_sparse_example.jpeg
   )
+  add_dependencies(all_examples Tutorial_sparse_example)
 endif(QT4_FOUND)

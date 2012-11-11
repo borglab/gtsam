@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2008 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifndef EIGEN_SCALING_H
 #define EIGEN_SCALING_H
@@ -75,7 +60,12 @@ public:
 
   /** Concatenates a uniform scaling and an affine transformation */
   template<int Dim, int Mode, int Options>
-  inline Transform<Scalar,Dim,Mode> operator* (const Transform<Scalar,Dim, Mode, Options>& t) const;
+  inline Transform<Scalar,Dim,(int(Mode)==int(Isometry)?Affine:Mode)> operator* (const Transform<Scalar,Dim, Mode, Options>& t) const
+  {
+   Transform<Scalar,Dim,(int(Mode)==int(Isometry)?Affine:Mode)> res = t;
+   res.prescale(factor());
+   return res;
+}
 
   /** Concatenates a uniform scaling and a linear transformation matrix */
   // TODO returns an expression
@@ -168,16 +158,6 @@ UniformScaling<Scalar>::operator* (const Translation<Scalar,Dim>& t) const
   res.linear().diagonal().fill(factor());
   res.translation() = factor() * t.vector();
   res(Dim,Dim) = Scalar(1);
-  return res;
-}
-
-template<typename Scalar>
-template<int Dim,int Mode,int Options>
-inline Transform<Scalar,Dim,Mode>
-UniformScaling<Scalar>::operator* (const Transform<Scalar,Dim, Mode, Options>& t) const
-{
-  Transform<Scalar,Dim,Mode> res = t;
-  res.prescale(factor());
   return res;
 }
 

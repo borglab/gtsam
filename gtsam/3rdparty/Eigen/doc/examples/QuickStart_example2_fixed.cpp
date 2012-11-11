@@ -6,10 +6,10 @@ using namespace std;
 
 int main()
 {
-  Matrix3f m = Matrix3f::Random();
-  m = (m + Matrix3f::Constant(1.2)) * 50;
+  Matrix3d m = Matrix3d::Random();
+  m = (m + Matrix3d::Constant(1.2)) * 50;
   cout << "m =" << endl << m << endl;
-  Vector3f v(1,2,3);
+  Vector3d v(1,2,3);
   
   cout << "m * v =" << endl << m * v << endl;
 }
