@@ -6,7 +6,7 @@ if nargin<4,tol=1e-9;end
 sameSize = size(expected)==size(actual);
 if all(sameSize)
     equal = abs(expected-actual)<tol;
-    if ~all(equal)
+    if ~all(equal(:))
         warning(['EQUALITY ' name ' fails']);
         expected
         actual
