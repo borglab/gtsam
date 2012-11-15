@@ -1744,7 +1744,7 @@ For small angles
  we have 
 \begin_inset Formula 
 \[
-e^{\skew{\omega}}\approx\skew{\omega}=\omega\skew 1
+e^{\skew{\omega}}\approx I+\skew{\omega}=I+\omega\skew 1
 \]
 
 \end_inset
@@ -2122,7 +2122,7 @@ Analoguous to
 \begin_inset Formula $\SEthree$
 \end_inset
 
-, we can compute a velocity 
+ (see below), we can compute a velocity 
 \begin_inset Formula $\xihat\hat{p}$
 \end_inset
 
@@ -3143,8 +3143,7 @@ p\\
 
 \end_inset
 
-We would now like to know what an incremental rotation parameterized by
- 
+We would now like to know what an incremental pose parameterized by 
 \begin_inset Formula $\xi$
 \end_inset
 
@@ -3222,6 +3221,17 @@ By only taking the top three rows, we can write this as a velocity in
 -\Skew p & I_{3}\end{array}\right]\left[\begin{array}{c}
 \omega\\
 v
+\end{array}\right]
+\]
+
+\end_inset
+
+yielding the derivative
+\begin_inset Formula 
+\[
+\deriv{\hat{q}(\xi)}{\xi}=T\deriv{}{\xi}\left(\xihat\hat{p}\right)=T\left[\begin{array}{cc}
+-\Skew p & I_{3}\\
+0 & 0
 \end{array}\right]
 \]
 
