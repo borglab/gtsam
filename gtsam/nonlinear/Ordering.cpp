@@ -34,6 +34,7 @@ Ordering::Ordering(const std::list<Key> & L):nVars_(0) {
 
 /* ************************************************************************* */
 void Ordering::permuteWithInverse(const Permutation& inversePermutation) {
+  gttic(Ordering_permuteWithInverse);
   BOOST_FOREACH(Ordering::value_type& key_order, *this) {
     key_order.second = inversePermutation[key_order.second];
   }
