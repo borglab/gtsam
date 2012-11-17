@@ -1521,6 +1521,8 @@ class KeyList {
   size_t back() const;
   void push_back(size_t key);
   void push_front(size_t key);
+  void pop_back();
+  void pop_front();
   void sort();
   void remove(size_t key);
 };
@@ -1962,6 +1964,7 @@ namespace utilities {
   Matrix extractPoint2(const gtsam::Values& values);
   Matrix extractPoint3(const gtsam::Values& values);
   Matrix extractPose2(const gtsam::Values& values);
+  gtsam::Values allPose3s(gtsam::Values& values);
   Matrix extractPose3(const gtsam::Values& values);
   void perturbPoint2(gtsam::Values& values, double sigma, int seed);
   void perturbPoint3(gtsam::Values& values, double sigma, int seed);
