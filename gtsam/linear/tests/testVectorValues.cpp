@@ -459,7 +459,7 @@ TEST(VectorValues, subvector) {
   std::vector<gtsam::Index> indices;
   indices += 0, 2, 3;
   Vector expSubVector = Vector_(5, 1.0, 4.0, 5.0, 6.0, 7.0);
-  EXPECT(assert_equal(expSubVector, init.subvector(indices)));
+  EXPECT(assert_equal(expSubVector, init.vector(indices)));
 }
 
 /* ************************************************************************* */

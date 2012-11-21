@@ -332,7 +332,7 @@ double HessianFactor::error(const VectorValues& c) const {
   } else {
     // extract the relevant subset of the VectorValues
     // NOTE may not be as efficient
-    const Vector x = c.subvector(this->keys());
+    const Vector x = c.vector(this->keys());
     xtg = x.dot(linearTerm());
     xGx = x.transpose() * info_.range(0, this->size(), 0, this->size()).selfadjointView<Eigen::Upper>() *  x;
   }

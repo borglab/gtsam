@@ -203,7 +203,7 @@ void VectorValues::swap(VectorValues& other) {
 }
 
 /* ************************************************************************* */
-Vector VectorValues::subvector(const std::vector<Index>& indices) const {
+Vector VectorValues::vector(const std::vector<Index>& indices) const {
   if (indices.empty())
     return Vector();
 
