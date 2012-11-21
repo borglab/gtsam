@@ -256,6 +256,9 @@ namespace gtsam {
     /** Reference the entire solution vector. */
     Vector& vector() { chk(); return values_; }
 
+    /** Access a vector that is a subset of relevant indices */
+    Vector subvector(const std::vector<Index>& indices) const;
+
     /** Check whether this VectorValues has the same structure, meaning has the
      * same number of variables and that all variables are of the same dimension,
      * as another VectorValues

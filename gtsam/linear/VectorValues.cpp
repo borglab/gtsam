@@ -202,4 +202,28 @@ void VectorValues::swap(VectorValues& other) {
   this->maps_.swap(other.maps_);
 }
 
+/* ************************************************************************* */
+Vector VectorValues::subvector(const std::vector<Index>& indices) const {
+  if (indices.empty())
+    return Vector();
+
+  // find dimensions
+  size_t d = 0;
+  BOOST_FOREACH(const Index& idx, indices)
+    d += dim(idx);
+
+  // copy out values
+  Vector result(d);
+  size_t curHead = 0;
+  BOOST_FOREACH(const Index& j, indices) {
+    const SubVector& vj = at(j);
+    size_t dj = (size_t) vj.rows();
+    result.segment(curHead, dj) = vj;
+    curHead += dj;
+  }
+  return result;
 }
+
+/* ************************************************************************* */
+
+} // \namespace gtsam

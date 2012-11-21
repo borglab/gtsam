@@ -132,6 +132,15 @@ TEST(JacobianFactor, error) {
   Vector expected_whitened = Vector_(3, 4., 5., 6.);
   Vector actual_whitened = jf.error_vector(values);
   EXPECT(assert_equal(expected_whitened, actual_whitened));
+
+  // check behavior when there are more values than in this factor
+  VectorValues largeValues(3, 3);
+  largeValues[0] = Vector_(3, 1.,2.,3.);
+  largeValues[1] = Vector_(3, 4.,5.,6.);
+  largeValues[2] = Vector_(3, 7.,8.,9.);
+
+  EXPECT(assert_equal(expected_unwhitened, jf.unweighted_error(largeValues)));
+  EXPECT(assert_equal(expected_whitened, jf.error_vector(largeValues)));
 }
 
 /* ************************************************************************* */
