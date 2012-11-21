@@ -5,7 +5,7 @@
  * @author Alex Cunningham
  */
 
-#include <gtsam_unstable/nonlinear/LinearContainerFactor.h>
+#include <gtsam/nonlinear/LinearContainerFactor.h>
 
 #include <boost/foreach.hpp>
 

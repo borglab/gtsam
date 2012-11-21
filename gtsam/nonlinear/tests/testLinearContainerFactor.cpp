@@ -9,7 +9,7 @@
 
 #include <boost/assign/std/vector.hpp>
 
-#include <gtsam_unstable/nonlinear/LinearContainerFactor.h>
+#include <gtsam/nonlinear/LinearContainerFactor.h>
 
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/geometry/Pose2.h>
