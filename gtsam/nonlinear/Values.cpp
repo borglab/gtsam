@@ -190,6 +190,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   vector<size_t> Values::dims(const Ordering& ordering) const {
+    assert(ordering.size() == this->size()); // reads off of end of array if difference in size
     vector<size_t> result(values_.size());
     BOOST_FOREACH(const ConstKeyValuePair& key_value, *this) {
       result[ordering[key_value.key]] = key_value.value.dim();
