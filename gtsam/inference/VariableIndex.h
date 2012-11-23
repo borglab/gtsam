@@ -48,7 +48,7 @@ public:
   typedef Factors::const_iterator Factor_const_iterator;
 
 protected:
-  std::deque<Factors> index_;
+  std::vector<Factors> index_;
   size_t nFactors_; // Number of factors in the original factor graph.
   size_t nEntries_; // Sum of involved variable counts of each factor.
 

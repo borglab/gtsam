@@ -30,11 +30,11 @@ namespace gtsam {
 class GaussianISAM : public ISAM<GaussianConditional> {
 
   typedef ISAM<GaussianConditional> Super;
-  std::deque<size_t, boost::fast_pool_allocator<size_t> > dims_;
+  std::vector<size_t> dims_;
 
 public:
 
-  typedef std::deque<size_t, boost::fast_pool_allocator<size_t> > Dims;
+  typedef std::vector<size_t> Dims;
 
   /** Create an empty Bayes Tree */
   GaussianISAM() : Super() {}

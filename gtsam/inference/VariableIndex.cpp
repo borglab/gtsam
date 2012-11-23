@@ -68,7 +68,7 @@ void VariableIndex::outputMetisFormat(ostream& os) const {
 /* ************************************************************************* */
 void VariableIndex::permuteInPlace(const Permutation& permutation) {
   // Create new index and move references to data into it in permuted order
-  deque<VariableIndex::Factors> newIndex(this->size());
+  vector<VariableIndex::Factors> newIndex(this->size());
   for(Index i = 0; i < newIndex.size(); ++i)
     newIndex[i].swap(this->index_[permutation[i]]);
 
