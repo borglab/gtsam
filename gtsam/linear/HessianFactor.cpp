@@ -324,8 +324,8 @@ Matrix HessianFactor::information() const {
 double HessianFactor::error(const VectorValues& c) const {
   // error 0.5*(f - 2*x'*g + x'*G*x)
   const double f = constantTerm();
-  const double xtg = c.vector().dot(linearTerm());
-  const double xGx = c.vector().transpose() * info_.range(0, this->size(), 0, this->size()).selfadjointView<Eigen::Upper>() *  c.vector();
+  const double xtg = c.asVector().dot(linearTerm());
+  const double xGx = c.asVector().transpose() * info_.range(0, this->size(), 0, this->size()).selfadjointView<Eigen::Upper>() *  c.asVector();
 
   return 0.5 * (f - 2.0 * xtg +  xGx);
 }

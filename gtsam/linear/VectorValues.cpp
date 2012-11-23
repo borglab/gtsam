@@ -25,29 +25,17 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-VectorValues::VectorValues(const VectorValues& other) {
-  *this = other;
-}
-
-/* ************************************************************************* */
-VectorValues& VectorValues::operator=(const VectorValues& rhs) {
-  if(this != &rhs) {
-    resizeLike(rhs);        // Copy structure
-    values_ = rhs.values_;  // Copy values
-  }
-  return *this;
-}
-
-/* ************************************************************************* */
 VectorValues VectorValues::Zero(const VectorValues& x) {
-  VectorValues cloned(SameStructure(x));
-  cloned.setZero();
-  return cloned;
+  VectorValues result;
+  result.values_.resize(x.size());
+  for(size_t j=0; j<x.size(); ++j)
+    result.values_[j] = Vector::Zero(x.dim(j));
+  return result;
 }
 
 /* ************************************************************************* */
 vector<size_t> VectorValues::dims() const {
-  std::vector<size_t> result(this->size());
+  vector<size_t> result(this->size());
   for(Index j = 0; j < this->size(); ++j)
     result[j] = this->dim(j);
   return result;
@@ -59,44 +47,30 @@ void VectorValues::insert(Index j, const Vector& value) {
   if(exists(j))
     throw invalid_argument("VectorValues: requested variable index to insert already exists.");
 
-  // Get vector of dimensions
-  FastVector<size_t> dimensions(size());
-  for(size_t k=0; k<maps_.size(); ++k)
-    dimensions[k] = maps_[k].rows();
-
   // If this adds variables at the end, insert zero-length entries up to j
   if(j >= size())
-    dimensions.insert(dimensions.end(), j+1-size(), 0);
+    values_.resize(j+1);
 
-  // Set correct dimension for j
-  dimensions[j] = value.rows();
-
-  // Make a copy to make assignment easier
-  VectorValues original(*this);
-
-  // Resize to accomodate new variable
-  resize(dimensions);
-
-  // Copy original variables
-  for(Index k = 0; k < original.size(); ++k)
-    if(k != j && exists(k))
-      operator[](k) = original[k];
-
-  // Copy new variable
-  operator[](j) = value;
+  // Assign value
+  values_[j] = value;
 }
 
 /* ************************************************************************* */
 void VectorValues::print(const std::string& str, const IndexFormatter& formatter) const {
   std::cout << str << ": " << size() << " elements\n";
   for (Index var = 0; var < size(); ++var)
-    std::cout << "  " << formatter(var) << ": \n" << operator[](var) << "\n";
+    std::cout << "  " << formatter(var) << ": \n" << (*this)[var] << "\n";
   std::cout.flush();
 }
 
 /* ************************************************************************* */
 bool VectorValues::equals(const VectorValues& x, double tol) const {
-  return hasSameStructure(x) && equal_with_abs_tol(values_, x.values_, tol);
+  if(this->size() != x.size())
+    return false;
+  for(size_t j=0; j<size(); ++j)
+    if(!equal_with_abs_tol(values_[j], x.values_[j], tol))
+      return false;
+  return true;
 }
 
 /* ************************************************************************* */
@@ -154,28 +128,6 @@ bool VectorValues::hasSameStructure(const VectorValues& other) const {
 }
 
 /* ************************************************************************* */
-VectorValues VectorValues::operator+(const VectorValues& c) const {
-  assert(this->hasSameStructure(c));
-  VectorValues result(SameStructure(c));
-  result.values_ = this->values_ + c.values_;
-  return result;
-}
-
-/* ************************************************************************* */
-VectorValues VectorValues::operator-(const VectorValues& c) const {
-  assert(this->hasSameStructure(c));
-  VectorValues result(SameStructure(c));
-  result.values_ = this->values_ - c.values_;
-  return result;
-}
-
-/* ************************************************************************* */
-void VectorValues::operator+=(const VectorValues& c) {
-  assert(this->hasSameStructure(c));
-  this->values_ += c.values_;
-}
-
-/* ************************************************************************* */
 VectorValues VectorValues::permute(const Permutation& permutation) const {
   // Create result and allocate space
   VectorValues lhs;
@@ -200,6 +152,38 @@ VectorValues VectorValues::permute(const Permutation& permutation) const {
 void VectorValues::swap(VectorValues& other) {
   this->values_.swap(other.values_);
   this->maps_.swap(other.maps_);
+}
+
+/* ************************************************************************* */
+double VectorValues::dot(const VectorValues& V) const {
+
+}
+
+/* ************************************************************************* */
+double VectorValues::norm() const {
+
+}
+
+/* ************************************************************************* */
+VectorValues VectorValues::operator+(const VectorValues& c) const {
+  assert(this->hasSameStructure(c));
+  VectorValues result(SameStructure(c));
+  result.values_ = this->values_ + c.values_;
+  return result;
+}
+
+/* ************************************************************************* */
+VectorValues VectorValues::operator-(const VectorValues& c) const {
+  assert(this->hasSameStructure(c));
+  VectorValues result(SameStructure(c));
+  result.values_ = this->values_ - c.values_;
+  return result;
+}
+
+/* ************************************************************************* */
+void VectorValues::operator+=(const VectorValues& c) {
+  assert(this->hasSameStructure(c));
+  this->values_ += c.values_;
 }
 
 }

@@ -907,13 +907,13 @@ void optimizeGradientSearchInPlace(const ISAM2& isam, VectorValues& grad) {
 
   gttic(Compute_minimizing_step_size);
   // Compute minimizing step size
-  double RgNormSq = isam.RgProd_.vector().squaredNorm();
+  double RgNormSq = isam.RgProd_.asVector().squaredNorm();
   double step = -gradientSqNorm / RgNormSq;
   gttoc(Compute_minimizing_step_size);
 
   gttic(Compute_point);
   // Compute steepest descent point
-  grad.vector() *= step;
+  grad.asVector() *= step;
   gttoc(Compute_point);
 }
 

@@ -43,11 +43,11 @@ void ISAM2::Impl::AddVariables(
   const size_t originalDim = delta.dim();
   const size_t originalnVars = delta.size();
   delta.append(dims);
-  delta.vector().segment(originalDim, newDim).operator=(Vector::Zero(newDim));
+  delta.asVector().segment(originalDim, newDim).operator=(Vector::Zero(newDim));
   deltaNewton.append(dims);
-  deltaNewton.vector().segment(originalDim, newDim).operator=(Vector::Zero(newDim));
+  deltaNewton.asVector().segment(originalDim, newDim).operator=(Vector::Zero(newDim));
   RgProd.append(dims);
-  RgProd.vector().segment(originalDim, newDim).operator=(Vector::Zero(newDim));
+  RgProd.asVector().segment(originalDim, newDim).operator=(Vector::Zero(newDim));
   {
     Index nextVar = originalnVars;
     BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, newTheta) {

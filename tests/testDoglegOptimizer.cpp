@@ -45,7 +45,7 @@ double computeError(const GaussianBayesNet& gbn, const LieVector& values) {
 
   // Convert Vector to VectorValues
   VectorValues vv = *allocateVectorValues(gbn);
-  vv.vector() = values;
+  vv.asVector() = values;
 
   // Convert to factor graph
   GaussianFactorGraph gfg(gbn);
@@ -57,7 +57,7 @@ double computeErrorBt(const BayesTree<GaussianConditional>& gbt, const LieVector
 
   // Convert Vector to VectorValues
   VectorValues vv = *allocateVectorValues(gbt);
-  vv.vector() = values;
+  vv.asVector() = values;
 
   // Convert to factor graph
   GaussianFactorGraph gfg(gbt);
@@ -89,20 +89,20 @@ TEST(DoglegOptimizer, ComputeSteepestDescentPoint) {
   // Compute the Hessian numerically
   Matrix hessian = numericalHessian(
       boost::function<double(const LieVector&)>(boost::bind(&computeError, gbn, _1)),
-      LieVector(VectorValues::Zero(*allocateVectorValues(gbn)).vector()));
+      LieVector(VectorValues::Zero(*allocateVectorValues(gbn)).asVector()));
 
   // Compute the gradient numerically
   VectorValues gradientValues = *allocateVectorValues(gbn);
   Vector gradient = numericalGradient(
       boost::function<double(const LieVector&)>(boost::bind(&computeError, gbn, _1)),
-      LieVector(VectorValues::Zero(gradientValues).vector()));
-  gradientValues.vector() = gradient;
+      LieVector(VectorValues::Zero(gradientValues).asVector()));
+  gradientValues.asVector() = gradient;
 
   // Compute the gradient using dense matrices
   Matrix augmentedHessian = GaussianFactorGraph(gbn).augmentedHessian();
   LONGS_EQUAL(11, augmentedHessian.cols());
   VectorValues denseMatrixGradient = *allocateVectorValues(gbn);
-  denseMatrixGradient.vector() = -augmentedHessian.col(10).segment(0,10);
+  denseMatrixGradient.asVector() = -augmentedHessian.col(10).segment(0,10);
   EXPECT(assert_equal(gradientValues, denseMatrixGradient, 1e-5));
 
   // Compute the steepest descent point
@@ -269,20 +269,20 @@ TEST(DoglegOptimizer, ComputeSteepestDescentPointBT) {
   // Compute the Hessian numerically
   Matrix hessian = numericalHessian(
       boost::function<double(const LieVector&)>(boost::bind(&computeErrorBt, bt, _1)),
-      LieVector(VectorValues::Zero(*allocateVectorValues(bt)).vector()));
+      LieVector(VectorValues::Zero(*allocateVectorValues(bt)).asVector()));
 
   // Compute the gradient numerically
   VectorValues gradientValues = *allocateVectorValues(bt);
   Vector gradient = numericalGradient(
       boost::function<double(const LieVector&)>(boost::bind(&computeErrorBt, bt, _1)),
-      LieVector(VectorValues::Zero(gradientValues).vector()));
-  gradientValues.vector() = gradient;
+      LieVector(VectorValues::Zero(gradientValues).asVector()));
+  gradientValues.asVector() = gradient;
 
   // Compute the gradient using dense matrices
   Matrix augmentedHessian = GaussianFactorGraph(bt).augmentedHessian();
   LONGS_EQUAL(11, augmentedHessian.cols());
   VectorValues denseMatrixGradient = *allocateVectorValues(bt);
-  denseMatrixGradient.vector() = -augmentedHessian.col(10).segment(0,10);
+  denseMatrixGradient.asVector() = -augmentedHessian.col(10).segment(0,10);
   EXPECT(assert_equal(gradientValues, denseMatrixGradient, 1e-5));
 
   // Compute the steepest descent point
@@ -338,12 +338,12 @@ TEST(DoglegOptimizer, ComputeBlend) {
   VectorValues xn = optimize(gbn);
 
   // The Newton's method point should be more "adventurous", i.e. larger, than the steepest descent point
-  EXPECT(xu.vector().norm() < xn.vector().norm());
+  EXPECT(xu.asVector().norm() < xn.asVector().norm());
 
   // Compute blend
   double Delta = 1.5;
   VectorValues xb = DoglegOptimizerImpl::ComputeBlend(Delta, xu, xn);
-  DOUBLES_EQUAL(Delta, xb.vector().norm(), 1e-10);
+  DOUBLES_EQUAL(Delta, xb.asVector().norm(), 1e-10);
 }
 
 /* ************************************************************************* */
@@ -371,12 +371,12 @@ TEST(DoglegOptimizer, ComputeDoglegPoint) {
 
   double Delta1 = 0.5;  // Less than steepest descent
   VectorValues actual1 = DoglegOptimizerImpl::ComputeDoglegPoint(Delta1, optimizeGradientSearch(gbn), optimize(gbn));
-  DOUBLES_EQUAL(Delta1, actual1.vector().norm(), 1e-5);
+  DOUBLES_EQUAL(Delta1, actual1.asVector().norm(), 1e-5);
 
   double Delta2 = 1.5;  // Between steepest descent and Newton's method
   VectorValues expected2 = DoglegOptimizerImpl::ComputeBlend(Delta2, optimizeGradientSearch(gbn), optimize(gbn));
   VectorValues actual2 = DoglegOptimizerImpl::ComputeDoglegPoint(Delta2, optimizeGradientSearch(gbn), optimize(gbn));
-  DOUBLES_EQUAL(Delta2, actual2.vector().norm(), 1e-5);
+  DOUBLES_EQUAL(Delta2, actual2.asVector().norm(), 1e-5);
   EXPECT(assert_equal(expected2, actual2));
 
   double Delta3 = 5.0;  // Larger than Newton's method point

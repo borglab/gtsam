@@ -92,15 +92,14 @@ namespace gtsam {
    */
   class VectorValues {
   protected:
-    Vector values_; ///< The underlying vector storing the values
-    typedef std::vector<SubVector> ValueMaps; ///< Collection of SubVector s
-    ValueMaps maps_; ///< SubVector s referencing each vector variable in values_
+    typedef std::vector<Vector> Values; ///< Typedef for the collection of Vectors making up a VectorValues
+    Values values_; ///< Collection of Vectors making up this VectorValues
 
   public:
-    typedef ValueMaps::iterator iterator; ///< Iterator over vector values
-    typedef ValueMaps::const_iterator const_iterator; ///< Const iterator over vector values
-    typedef ValueMaps::reverse_iterator reverse_iterator; ///< Reverse iterator over vector values
-    typedef ValueMaps::const_reverse_iterator const_reverse_iterator; ///< Const reverse iterator over vector values
+    typedef Values::iterator iterator; ///< Iterator over vector values
+    typedef Values::const_iterator const_iterator; ///< Const iterator over vector values
+    typedef Values::reverse_iterator reverse_iterator; ///< Reverse iterator over vector values
+    typedef Values::const_reverse_iterator const_reverse_iterator; ///< Const reverse iterator over vector values
     typedef boost::shared_ptr<VectorValues> shared_ptr; ///< shared_ptr to this class
 
     /// @name Standard Constructors
@@ -110,9 +109,6 @@ namespace gtsam {
      * Default constructor creates an empty VectorValues.
      */
     VectorValues() {}
-
-    /** Copy constructor */
-    VectorValues(const VectorValues &other);
 
     /** Named constructor to create a VectorValues of the same structure of the
      * specifed one, but filled with zeros.
@@ -126,31 +122,31 @@ namespace gtsam {
 
     /** Number of variables stored, always 1 more than the highest variable index,
      * even if some variables with lower indices are not present. */
-    Index size() const { return maps_.size(); }
+    Index size() const { return values_.size(); }
 
     /** Return the dimension of variable \c j. */
     size_t dim(Index j) const { checkExists(j); return (*this)[j].rows(); }
 
     /** Return the summed dimensionality of all variables. */
-    size_t dim() const { return values_.rows(); }
+    //size_t dim() const { return values_.rows(); }
 
     /** Return the dimension of each vector in this container */
     std::vector<size_t> dims() const;
 
     /** Check whether a variable with index \c j exists. */
-    bool exists(Index j) const { return j < size() && maps_[j].rows() > 0; }
+    bool exists(Index j) const { return j < size() && (*this)[j].rows() > 0; }
 
     /** Read/write access to the vector value with index \c j, throws std::out_of_range if \c j does not exist, identical to operator[](Index). */
-    SubVector& at(Index j) { checkExists(j); return maps_[j]; }
+    Vector& at(Index j) { checkExists(j); return values_[j]; }
 
     /** Access the vector value with index \c j (const version), throws std::out_of_range if \c j does not exist, identical to operator[](Index). */
-    const SubVector& at(Index j) const { checkExists(j); return maps_[j]; }
+    const Vector& at(Index j) const { checkExists(j); return values_[j]; }
 
     /** Read/write access to the vector value with index \c j, throws std::out_of_range if \c j does not exist, identical to at(Index). */
-    SubVector& operator[](Index j) { return at(j); }
+    Vector& operator[](Index j) { return at(j); }
 
     /** Access the vector value with index \c j (const version), throws std::out_of_range if \c j does not exist, identical to at(Index). */
-    const SubVector& operator[](Index j) const { return at(j); }
+    const Vector& operator[](Index j) const { return at(j); }
 
     /** Insert a vector \c value with index \c j.
      * Causes reallocation. Can be used to insert values in any order, but
@@ -160,17 +156,14 @@ namespace gtsam {
      */
     void insert(Index j, const Vector& value);
 
-    /** Assignment */
-    VectorValues& operator=(const VectorValues& rhs);
-
-    iterator begin()                      { chk(); return maps_.begin(); }  ///< Iterator over variables
-    const_iterator begin() const          { chk(); return maps_.begin(); }  ///< Iterator over variables
-    iterator end()                         { chk(); return maps_.end(); }    ///< Iterator over variables
-    const_iterator end() const            { chk(); return maps_.end(); }    ///< Iterator over variables
-    reverse_iterator rbegin()              { chk(); return maps_.rbegin(); } ///< Reverse iterator over variables
-    const_reverse_iterator rbegin() const { chk(); return maps_.rbegin(); } ///< Reverse iterator over variables
-    reverse_iterator rend()                { chk(); return maps_.rend(); }   ///< Reverse iterator over variables
-    const_reverse_iterator rend() const   { chk(); return maps_.rend(); }   ///< Reverse iterator over variables
+    iterator begin()                      { return values_.begin(); }  ///< Iterator over variables
+    const_iterator begin() const          { return values_.begin(); }  ///< Iterator over variables
+    iterator end()                         { return values_.end(); }    ///< Iterator over variables
+    const_iterator end() const            { return values_.end(); }    ///< Iterator over variables
+    reverse_iterator rbegin()              { return values_.rbegin(); } ///< Reverse iterator over variables
+    const_reverse_iterator rbegin() const { return values_.rbegin(); } ///< Reverse iterator over variables
+    reverse_iterator rend()                { return values_.rend(); }   ///< Reverse iterator over variables
+    const_reverse_iterator rend() const   { return values_.rend(); }   ///< Reverse iterator over variables
 
     /** print required by Testable for unit testing */
     void print(const std::string& str = "VectorValues: ",
@@ -251,10 +244,10 @@ namespace gtsam {
     void setZero();
 
     /** Reference the entire solution vector (const version). */
-    const Vector& vector() const { chk(); return values_; }
+    //const Vector& asVector() const { return values_; }
 
     /** Reference the entire solution vector. */
-    Vector& vector() { chk(); return values_; }
+    //Vector& asVector() { return values_; }
 
     /** Check whether this VectorValues has the same structure, meaning has the
      * same number of variables and that all variables are of the same dimension,
@@ -264,16 +257,26 @@ namespace gtsam {
      */
     bool hasSameStructure(const VectorValues& other) const;
 
+    /**
+     * Permute the entries of this VectorValues in place
+     */
+    void permute(const Permutation& permutation);
+
+    /**
+     * Swap the data in this VectorValues with another.
+     */
+    void swap(VectorValues& other);
+
+    /// @}
+    /// @name Linear algebra operations
+    /// @{
+
     /** Dot product with another VectorValues, interpreting both as vectors of
      * their concatenated values. */
-    double dot(const VectorValues& V) const {
-      return gtsam::dot(this->values_, V.values_);
-    }
+    double dot(const VectorValues& V) const;
 
     /** Vector L2 norm */
-    inline double norm() const {
-      return this->vector().norm();
-    }
+    double norm() const;
 
     /**
      * + operator does element-wise addition.  Both VectorValues must have the
@@ -293,26 +296,11 @@ namespace gtsam {
      */
     void operator+=(const VectorValues& c);
 
-    /**
-     * Permute the entries of this VectorValues, returns a new VectorValues as
-     * the result.
-     */
-    VectorValues permute(const Permutation& permutation) const;
-
-    /**
-     * Swap the data in this VectorValues with another.
-     */
-    void swap(VectorValues& other);
-
     /// @}
 
   private:
-    // Verifies that the underlying Vector is consistent with the collection of SubVectors
-    void chk() const;
-
     // Throw an exception if j does not exist
     void checkExists(Index j) const {
-      chk();
       if(!exists(j))
         throw std::out_of_range("VectorValues: requested variable index is not in this VectorValues.");
     }
@@ -375,23 +363,9 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void save(ARCHIVE & ar, const unsigned int version) const {
-      // The maps_ stores pointers, so we serialize dimensions instead
-      std::vector<size_t> dimensions(size());
-      for(size_t j=0; j<maps_.size(); ++j)
-        dimensions[j] = maps_[j].rows();
-      ar & BOOST_SERIALIZATION_NVP(dimensions);
+    void serialize(ARCHIVE & ar, const unsigned int version) {
       ar & BOOST_SERIALIZATION_NVP(values_);
     }
-    template<class ARCHIVE>
-    void load(ARCHIVE & ar, const unsigned int version) {
-      std::vector<size_t> dimensions;
-      ar & BOOST_SERIALIZATION_NVP(dimensions); // Load dimensions
-      resize(dimensions); // Allocate space for everything
-      ar & BOOST_SERIALIZATION_NVP(values_); // Load values
-      chk();
-    }
-    BOOST_SERIALIZATION_SPLIT_MEMBER()
   }; // VectorValues definition
 
   // Implementations of template and inline functions
@@ -399,48 +373,32 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class CONTAINER>
   void VectorValues::resize(const CONTAINER& dimensions) {
-    maps_.clear();
-    values_.resize(0);
+    values_.clear();
     append(dimensions);
   }
 
   /* ************************************************************************* */
   template<class CONTAINER>
   void VectorValues::append(const CONTAINER& dimensions) {
-    chk();
-    int newDim = std::accumulate(dimensions.begin(), dimensions.end(), 0); // Sum of dimensions
-    values_.conservativeResize(dim() + newDim);
-    // Relocate existing maps
-    int varStart = 0;
-    for(size_t j = 0; j < maps_.size(); ++j) {
-      new (&maps_[j]) SubVector(values_.segment(varStart, maps_[j].rows()));
-      varStart += maps_[j].rows();
-    }
-    maps_.reserve(maps_.size() + dimensions.size());
+    values_.resize(size() + dimensions.size());
+    size_t i = size();
     BOOST_FOREACH(size_t dim, dimensions) {
-      maps_.push_back(values_.segment(varStart, dim));
-      varStart += (int)dim; // varStart is continued from first for loop
+      values_[i] = Vector(dim);
+      ++ i;
     }
   }
 
   /* ************************************************************************* */
   template<class CONTAINER>
   VectorValues VectorValues::Zero(const CONTAINER& dimensions) {
-    VectorValues ret(dimensions);
-    ret.setZero();
-    return ret;
-  }
-
-  /* ************************************************************************* */
-  inline void VectorValues::chk() const {
-#ifndef NDEBUG
-    // Check that the first SubVector points to the beginning of the Vector
-    if(maps_.size() > 0) {
-      assert(values_.data() == maps_[0].data());
-      // Check that the end of the last SubVector points to the end of the Vector
-      assert(values_.rows() == maps_.back().data() + maps_.back().rows() - maps_.front().data());
+    VectorValues ret;
+    values_.resize(dimensions.size());
+    size_t i = 0;
+    BOOST_FOREACH(size_t dim, dimensions) {
+      values_[i] = Vector::Zero(dim);
+      ++ i;
     }
-#endif
+    return ret;
   }
 
   namespace internal {
@@ -448,8 +406,8 @@ namespace gtsam {
   // Helper function, extracts vectors with variable indices
   // in the first and last iterators, and concatenates them in that order into the
   // output.
-  template<class VALUES, typename ITERATOR>
-  Vector extractVectorValuesSlices(const VALUES& values, ITERATOR first, ITERATOR last) {
+  template<typename ITERATOR>
+  Vector extractVectorValuesSlices(const VectorValues& values, ITERATOR first, ITERATOR last) {
     // Find total dimensionality
     int dim = 0;
     for(ITERATOR j = first; j != last; ++j)
@@ -469,8 +427,8 @@ namespace gtsam {
   // Helper function, writes to the variables in values
   // with indices iterated over by first and last, interpreting vector as the
   // concatenated vectors to write.
-  template<class VECTOR, class VALUES, typename ITERATOR>
-  void writeVectorValuesSlices(const VECTOR& vector, VALUES& values, ITERATOR first, ITERATOR last) {
+  template<class VECTOR, typename ITERATOR>
+  void writeVectorValuesSlices(const VECTOR& vector, VectorValues& values, ITERATOR first, ITERATOR last) {
     // Copy vectors
     int varStart = 0;
     for(ITERATOR j = first; j != last; ++j) {

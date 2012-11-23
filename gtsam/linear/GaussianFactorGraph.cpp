@@ -607,7 +607,7 @@ break;
 
   /* ************************************************************************* */
   void multiply(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r) {
-    r.vector() = Vector::Zero(r.dim());
+    r.asVector() = Vector::Zero(r.dim());
     Index i = 0;
     BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
       JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
@@ -621,7 +621,7 @@ break;
 
   /* ************************************************************************* */
   void transposeMultiply(const GaussianFactorGraph& fg, const VectorValues &r, VectorValues &x) {
-    x.vector() = Vector::Zero(x.dim());
+    x.asVector() = Vector::Zero(x.dim());
     Index i = 0;
     BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
       JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);

@@ -89,7 +89,7 @@ TEST(VectorValues, dimsConstructor) {
   EXPECT(assert_equal(Vector_(1, 1.0), actual[0]));
   EXPECT(assert_equal(Vector_(2, 2.0, 3.0), actual[1]));
   EXPECT(assert_equal(Vector_(2, 4.0, 5.0), actual[2]));
-  EXPECT(assert_equal(Vector_(5, 1.0, 2.0, 3.0, 4.0, 5.0), actual.vector()));
+  EXPECT(assert_equal(Vector_(5, 1.0, 2.0, 3.0, 4.0, 5.0), actual.asVector()));
 }
 
 /* ************************************************************************* */
@@ -126,7 +126,7 @@ TEST(VectorValues, copyConstructor) {
   EXPECT(assert_equal(Vector_(2, 2.0, 3.0), actual[1]));
   EXPECT(assert_equal(Vector_(2, 4.0, 5.0), actual[2]));
   EXPECT(assert_equal(Vector_(2, 6.0, 7.0), actual[5]));
-  EXPECT(assert_equal(Vector_(7, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0), actual.vector()));
+  EXPECT(assert_equal(Vector_(7, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0), actual.asVector()));
 
   // Check exceptions
   CHECK_EXCEPTION(actual.insert(1, Vector()), invalid_argument);
@@ -169,7 +169,7 @@ TEST(VectorValues, assignment) {
   EXPECT(assert_equal(Vector_(2, 2.0, 3.0), actual[1]));
   EXPECT(assert_equal(Vector_(2, 4.0, 5.0), actual[2]));
   EXPECT(assert_equal(Vector_(2, 6.0, 7.0), actual[5]));
-  EXPECT(assert_equal(Vector_(7, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0), actual.vector()));
+  EXPECT(assert_equal(Vector_(7, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0), actual.asVector()));
 
   // Check exceptions
   CHECK_EXCEPTION(actual.insert(1, Vector()), invalid_argument);
@@ -337,7 +337,7 @@ TEST(VectorValues, resize_fromUniform) {
   EXPECT(assert_equal(Vector_(2, 1.0, 2.0), actual[0]));
   EXPECT(assert_equal(Vector_(2, 2.0, 3.0), actual[1]));
   EXPECT(assert_equal(Vector_(2, 4.0, 5.0), actual[2]));
-  EXPECT(assert_equal(Vector_(6, 1.0, 2.0, 2.0, 3.0, 4.0, 5.0), actual.vector()));
+  EXPECT(assert_equal(Vector_(6, 1.0, 2.0, 2.0, 3.0, 4.0, 5.0), actual.asVector()));
 }
 
 /* ************************************************************************* */
@@ -364,7 +364,7 @@ TEST(VectorValues, resize_fromDims) {
   EXPECT(assert_equal(Vector_(1, 1.0), actual[0]));
   EXPECT(assert_equal(Vector_(2, 2.0, 3.0), actual[1]));
   EXPECT(assert_equal(Vector_(2, 4.0, 5.0), actual[2]));
-  EXPECT(assert_equal(Vector_(5, 1.0, 2.0, 3.0, 4.0, 5.0), actual.vector()));
+  EXPECT(assert_equal(Vector_(5, 1.0, 2.0, 3.0, 4.0, 5.0), actual.asVector()));
 }
 
 /* ************************************************************************* */
