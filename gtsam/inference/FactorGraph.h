@@ -199,12 +199,12 @@ class VariableIndex;
      */
     std::pair<sharedConditional, FactorGraph<FactorType> > eliminate(
       const std::vector<KeyType>& variables, const Eliminate& eliminateFcn,
-      boost::optional<const VariableIndex&> variableIndex = boost::none);
+      boost::optional<const VariableIndex&> variableIndex = boost::none) const;
 
     /** Eliminate a single variable, by calling FactorGraph::eliminate. */
     std::pair<sharedConditional, FactorGraph<FactorType> > eliminateOne(
         KeyType variable, const Eliminate& eliminateFcn,
-        boost::optional<const VariableIndex&> variableIndex = boost::none) {
+        boost::optional<const VariableIndex&> variableIndex = boost::none) const {
       std::vector<size_t> variables(1, variable);
       return eliminate(variables, eliminateFcn, variableIndex);
     }

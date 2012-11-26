@@ -72,14 +72,14 @@ namespace gtsam {
 
   /* ************************************************************************* */
   std::pair<SymbolicFactorGraph::sharedConditional, SymbolicFactorGraph>
-    SymbolicFactorGraph::eliminate(const std::vector<Index>& variables)
+    SymbolicFactorGraph::eliminate(const std::vector<Index>& variables) const
   {
     return FactorGraph<IndexFactor>::eliminate(variables, EliminateSymbolic);
   }
 
   /* ************************************************************************* */
   std::pair<SymbolicFactorGraph::sharedConditional, SymbolicFactorGraph>
-    SymbolicFactorGraph::eliminateOne(Index variable)
+    SymbolicFactorGraph::eliminateOne(Index variable) const
   {
     return FactorGraph<IndexFactor>::eliminateOne(variable, EliminateSymbolic);
   }

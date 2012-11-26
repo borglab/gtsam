@@ -153,7 +153,7 @@ namespace gtsam {
   template<class FACTOR>
   std::pair<typename FactorGraph<FACTOR>::sharedConditional, FactorGraph<FACTOR> >
     FactorGraph<FACTOR>::eliminate(const std::vector<KeyType>& variables, const Eliminate& eliminateFcn,
-    boost::optional<const VariableIndex&> variableIndex_)
+    boost::optional<const VariableIndex&> variableIndex_) const
   {
       const VariableIndex& variableIndex =
         variableIndex_ ? *variableIndex_ : VariableIndex(*this);
