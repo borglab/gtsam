@@ -148,7 +148,8 @@ bool VectorValues::hasSameStructure(const VectorValues& other) const {
   if(this->size() != other.size())
     return false;
   for(size_t j=0; j<size(); ++j)
-    if(this->dim(j) != other.dim(j))
+    // Directly accessing maps instead of using VV::dim in case some values are empty
+    if(this->maps_[j].rows() != other.maps_[j].rows())
       return false;
   return true;
 }
