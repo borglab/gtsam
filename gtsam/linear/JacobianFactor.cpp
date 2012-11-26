@@ -210,6 +210,22 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  JacobianFactor::JacobianFactor(const GaussianFactorGraph& gfg) : Ab_(matrix_) {
+    // Cast or convert to Jacobians
+    FactorGraph<JacobianFactor> jacobians;
+    BOOST_FOREACH(const GaussianFactorGraph::sharedFactor& factor, gfg) {
+      if(factor) {
+        if(JacobianFactor::shared_ptr jf = boost::dynamic_pointer_cast<JacobianFactor>(factor))
+          jacobians.push_back(jf);
+        else
+          jacobians.push_back(boost::make_shared<JacobianFactor>(*factor));
+      }
+    }
+
+    *this = *CombineJacobians(jacobians, VariableSlots(jacobians));
+  }
+
+  /* ************************************************************************* */
   JacobianFactor& JacobianFactor::operator=(const JacobianFactor& rhs) {
     this->Base::operator=(rhs); // Copy keys
     model_ = rhs.model_;        // Copy noise model

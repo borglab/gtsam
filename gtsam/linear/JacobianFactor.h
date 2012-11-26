@@ -37,6 +37,7 @@ namespace gtsam {
   class HessianFactor;
   class VariableSlots;
   template<class C> class BayesNet;
+  class GaussianFactorGraph;
 
   /**
    * A Gaussian factor in the squared-error form.
@@ -132,6 +133,9 @@ namespace gtsam {
 
     /** Convert from a HessianFactor (does Cholesky) */
     JacobianFactor(const HessianFactor& factor);
+
+    /** Build a dense joint factor from all the factors in a factor graph. */
+    JacobianFactor(const GaussianFactorGraph& gfg);
 
     /** Virtual destructor */
     virtual ~JacobianFactor() {}
