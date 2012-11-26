@@ -1,5 +1,5 @@
 
-badscale = 1e-14;
+badscale = 1e-10;
 
 % Create random Jacobian
 A = [
