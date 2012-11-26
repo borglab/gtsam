@@ -26,18 +26,30 @@ using namespace boost::assign;
 #include <gtsam/inference/VariableSlots.h>
 #include <gtsam/inference/VariableIndex.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/GaussianSequentialSolver.h>
 
 using namespace std;
 using namespace gtsam;
 using namespace boost;
 
-#ifdef BROKEN
-static const Index _x0_=0, _x1_=1, _x2_=2, _x3_=3, _x4_=4, _x_=5, _y_=6, _l1_=7, _l11_=8;
-#endif
-
 static SharedDiagonal
   sigma0_1 = noiseModel::Isotropic::Sigma(2,0.1), sigma_02 = noiseModel::Isotropic::Sigma(2,0.2),
   constraintModel = noiseModel::Constrained::All(2);
+
+static GaussianFactorGraph createSimpleGaussianFactorGraph() {
+  GaussianFactorGraph fg;
+  SharedDiagonal unit2 = noiseModel::Unit::Create(2);
+  // linearized prior on x1: c[_x1_]+x1=0 i.e. x1=-c[_x1_]
+  fg.add(2, 10*eye(2), -1.0*ones(2), unit2);
+  // odometry between x1 and x2: x2-x1=[0.2;-0.1]
+  fg.add(2, -10*eye(2), 0, 10*eye(2), Vector_(2, 2.0, -1.0), unit2);
+  // measurement between x1 and l1: l1-x1=[0.0;0.2]
+  fg.add(2, -5*eye(2), 1, 5*eye(2), Vector_(2, 0.0, 1.0), unit2);
+  // measurement between x2 and l1: l1-x2=[-0.2;0.3]
+  fg.add(0, -5*eye(2), 1, 5*eye(2), Vector_(2, -1.0, 1.5), unit2);
+  return fg;
+}
+
 
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, initialization) {
@@ -65,63 +77,7 @@ TEST(GaussianFactorGraph, initialization) {
 }
 
 /* ************************************************************************* */
-#ifdef BROKEN
-TEST(GaussianFactor, Combine)
-{
-  Matrix A00 = Matrix_(3,3,
-      1.0, 0.0, 0.0,
-      0.0, 1.0, 0.0,
-      0.0, 0.0, 1.0);
-  Vector b0 = Vector_(3, 0.0, 0.0, 0.0);
-  Vector s0 = Vector_(3, 0.0, 0.0, 0.0);
-
-  Matrix A10 = Matrix_(3,3,
-      0.0, -2.0, -4.0,
-      2.0, 0.0,  2.0,
-      0.0, 0.0, -10.0);
-  Matrix A11 = Matrix_(3,3,
-      2.0, 0.0, 0.0,
-      0.0, 2.0, 0.0,
-      0.0, 0.0, 10.0);
-  Vector b1 = Vector_(3, 6.0, 2.0, 0.0);
-  Vector s1 = Vector_(3, 1.0, 1.0, 1.0);
-
-  Matrix A20 = Matrix_(3,3,
-      1.0, 0.0, 0.0,
-      0.0, 1.0, 0.0,
-      0.0, 0.0, 1.0);
-  Vector b2 = Vector_(3, 0.0, 0.0, 0.0);
-  Vector s2 = Vector_(3, 100.0, 100.0, 100.0);
-
-  GaussianFactorGraph gfg;
-  gfg.add(0, A00, b0, noiseModel::Diagonal::Sigmas(s0, true));
-  gfg.add(0, A10, 1, A11, b1, noiseModel::Diagonal::Sigmas(s1, true));
-  gfg.add(0, A20, b2, noiseModel::Diagonal::Sigmas(s2, true));
-
-  GaussianVariableIndex varindex(gfg);
-  vector<size_t> factors(3); factors[0]=0; factors[1]=1; factors[2]=2;
-  vector<size_t> variables(2); variables[0]=0; variables[1]=1;
-  vector<vector<size_t> > variablePositions(3);
-  variablePositions[0].resize(1); variablePositions[0][0]=0;
-  variablePositions[1].resize(2); variablePositions[1][0]=0; variablePositions[1][1]=1;
-  variablePositions[2].resize(1); variablePositions[2][0]=0;
-
-  JacobianFactor actual = *JacobianFactor::Combine(gfg, varindex, factors, variables, variablePositions);
-
-  Matrix zero3x3 = zeros(3,3);
-  Matrix A0 = gtsam::stack(3, &A00, &A10, &A20);
-  Matrix A1 = gtsam::stack(3, &zero3x3, &A11, &zero3x3);
-  Vector b = gtsam::concatVectors(3, &b0, &b1, &b2);
-  Vector sigmas = gtsam::concatVectors(3, &s0, &s1, &s2);
-
-  JacobianFactor expected(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
-
-  EXPECT(assert_equal(expected, actual));
-}
-#endif
-
-/* ************************************************************************* */
-TEST(GaussianFactorGraph, Combine2)
+TEST(GaussianFactorGraph, CombineJacobians)
 {
   Matrix A01 = Matrix_(3,3,
       1.0, 0.0, 0.0,
@@ -153,7 +109,7 @@ TEST(GaussianFactorGraph, Combine2)
   gfg.add(0, A10, 1, A11, b1, noiseModel::Diagonal::Sigmas(s1, true));
   gfg.add(1, A21, b2, noiseModel::Diagonal::Sigmas(s2, true));
 
-  // Convert to Jacobians, inefficient copy of all factors instead of selectively converting only Hessians
+  // Convert to Jacobians (inefficient copy of all factors instead of selectively converting only Hessians)
   FactorGraph<JacobianFactor> jacobians;
   BOOST_FOREACH(const GaussianFactorGraph::sharedFactor& factor, gfg) {
     jacobians.push_back(boost::make_shared<JacobianFactor>(*factor));
@@ -224,125 +180,6 @@ TEST(GaussianFactor, CombineAndEliminate)
   EXPECT(assert_equal(*expectedBN, *actualBN));
   EXPECT(assert_equal(expectedFactor, *actualJacobian));
 }
-
-/* ************************************************************************* */
-#ifdef BROKEN
-TEST( NonlinearFactorGraph, combine2){
-  double sigma1 = 0.0957;
-  Matrix A11(2,2);
-  A11(0,0) = 1; A11(0,1) =  0;
-  A11(1,0) = 0;       A11(1,1) = 1;
-  Vector b(2);
-  b(0) = 2; b(1) = -1;
-  JacobianFactor::shared_ptr f1(new JacobianFactor(_x1_, A11, b*sigma1, noiseModel::Isotropic::Sigma(2,sigma1)));
-
-  double sigma2 = 0.5;
-  A11(0,0) = 1; A11(0,1) =  0;
-  A11(1,0) = 0; A11(1,1) = -1;
-  b(0) = 4 ; b(1) = -5;
-  JacobianFactor::shared_ptr f2(new JacobianFactor(_x1_, A11, b*sigma2, noiseModel::Isotropic::Sigma(2,sigma2)));
-
-  double sigma3 = 0.25;
-  A11(0,0) = 1; A11(0,1) =  0;
-  A11(1,0) = 0; A11(1,1) = -1;
-  b(0) = 3 ; b(1) = -88;
-  JacobianFactor::shared_ptr f3(new JacobianFactor(_x1_, A11, b*sigma3, noiseModel::Isotropic::Sigma(2,sigma3)));
-
-  // TODO: find a real sigma value for this example
-  double sigma4 = 0.1;
-  A11(0,0) = 6; A11(0,1) =  0;
-  A11(1,0) = 0; A11(1,1) = 7;
-  b(0) = 5 ; b(1) = -6;
-  JacobianFactor::shared_ptr f4(new JacobianFactor(_x1_, A11*sigma4, b*sigma4, noiseModel::Isotropic::Sigma(2,sigma4)));
-
-  vector<JacobianFactor::shared_ptr> lfg;
-  lfg.push_back(f1);
-  lfg.push_back(f2);
-  lfg.push_back(f3);
-  lfg.push_back(f4);
-  JacobianFactor combined(lfg);
-
-  Vector sigmas = Vector_(8, sigma1, sigma1, sigma2, sigma2, sigma3, sigma3, sigma4, sigma4);
-  Matrix A22(8,2);
-  A22(0,0) = 1;   A22(0,1) =  0;
-  A22(1,0) = 0;   A22(1,1) = 1;
-  A22(2,0) = 1;   A22(2,1) =  0;
-  A22(3,0) = 0;   A22(3,1) = -1;
-  A22(4,0) = 1;   A22(4,1) =  0;
-  A22(5,0) = 0;   A22(5,1) = -1;
-  A22(6,0) = 0.6; A22(6,1) =  0;
-  A22(7,0) = 0;   A22(7,1) =  0.7;
-  Vector exb(8);
-  exb(0) = 2*sigma1 ; exb(1) = -1*sigma1;  exb(2) = 4*sigma2 ; exb(3) = -5*sigma2;
-  exb(4) = 3*sigma3 ; exb(5) = -88*sigma3; exb(6) = 5*sigma4 ; exb(7) = -6*sigma4;
-
-  vector<pair<Index, Matrix> > meas;
-  meas.push_back(make_pair(_x1_, A22));
-  JacobianFactor expected(meas, exb, sigmas);
-  EXPECT(assert_equal(expected,combined));
-}
-
-/* ************************************************************************* */
-TEST(GaussianFactor, linearFactorN){
-  Matrix I = eye(2);
-  vector<JacobianFactor::shared_ptr> f;
-  SharedDiagonal model = noiseModel::Isotropic::Sigma(2,1.0);
-  f.push_back(JacobianFactor::shared_ptr(new JacobianFactor(_x1_, I, Vector_(2,
-      10.0, 5.0), model)));
-  f.push_back(JacobianFactor::shared_ptr(new JacobianFactor(_x1_, -10 * I,
-      _x2_, 10 * I, Vector_(2, 1.0, -2.0), model)));
-  f.push_back(JacobianFactor::shared_ptr(new JacobianFactor(_x2_, -10 * I,
-      _x3_, 10 * I, Vector_(2, 1.5, -1.5), model)));
-  f.push_back(JacobianFactor::shared_ptr(new JacobianFactor(_x3_, -10 * I,
-      _x4_, 10 * I, Vector_(2, 2.0, -1.0), model)));
-
-  JacobianFactor combinedFactor(f);
-
-  vector<pair<Index, Matrix> > combinedMeasurement;
-  combinedMeasurement.push_back(make_pair(_x1_, Matrix_(8,2,
-      1.0,  0.0,
-      0.0,  1.0,
-    -10.0,  0.0,
-      0.0,-10.0,
-      0.0,  0.0,
-      0.0,  0.0,
-      0.0,  0.0,
-      0.0,  0.0)));
-  combinedMeasurement.push_back(make_pair(_x2_, Matrix_(8,2,
-      0.0,  0.0,
-      0.0,  0.0,
-     10.0,  0.0,
-      0.0, 10.0,
-    -10.0,  0.0,
-      0.0,-10.0,
-      0.0,  0.0,
-      0.0,  0.0)));
-  combinedMeasurement.push_back(make_pair(_x3_, Matrix_(8,2,
-      0.0,  0.0,
-      0.0,  0.0,
-      0.0,  0.0,
-      0.0,  0.0,
-     10.0,  0.0,
-      0.0, 10.0,
-    -10.0,  0.0,
-      0.0,-10.0)));
-  combinedMeasurement.push_back(make_pair(_x4_, Matrix_(8,2,
-      0.0, 0.0,
-      0.0, 0.0,
-      0.0, 0.0,
-      0.0, 0.0,
-      0.0, 0.0,
-      0.0, 0.0,
-     10.0, 0.0,
-      0.0,10.0)));
-  Vector b = Vector_(8,
-      10.0, 5.0, 1.0, -2.0, 1.5, -1.5, 2.0, -1.0);
-
-  Vector sigmas = repeat(8,1.0);
-  JacobianFactor expected(combinedMeasurement, b, sigmas);
-  EXPECT(assert_equal(expected,combinedFactor));
-}
-#endif
 
 /* ************************************************************************* */
 TEST(GaussianFactor, eliminateFrontals)
@@ -515,24 +352,6 @@ TEST(GaussianFactor, eliminateFrontals)
 }
 
 /* ************************************************************************* */
-#ifdef BROKEN
-TEST(GaussianFactor, CONSTRUCTOR_GaussianConditionalConstrained )
-{
-  Matrix Ax = eye(2);
-  Vector b = Vector_(2, 3.0, 5.0);
-  SharedDiagonal noisemodel = noiseModel::Constrained::All(2);
-  JacobianFactor::shared_ptr expected(new JacobianFactor(_x0_, Ax, b, noisemodel));
-  GaussianFactorGraph graph;
-  graph.push_back(expected);
-
-  GaussianConditional::shared_ptr conditional = GaussianSequentialSolver::EliminateUntil(graph,_x0_+1);
-  JacobianFactor actual(*conditional);
-
-  EXPECT(assert_equal(*expected, actual));
-}
-#endif
-
-/* ************************************************************************* */
 TEST(GaussianFactor, permuteWithInverse)
 {
   Matrix A1 = Matrix_(2,2,
@@ -565,19 +384,6 @@ TEST(GaussianFactor, permuteWithInverse)
 //  GaussianVariableIndex expectedIndex(expectedFG);
 
   EXPECT(assert_equal(expected, actual));
-
-#ifdef BROKEN
-  // todo: fix this!!!  VariableIndex should not hold slots
-  for(Index j=0; j<actualIndex.size(); ++j) {
-    BOOST_FOREACH( GaussianVariableIndex::mapped_factor_type& factor_pos, actualIndex[j]) {
-      factor_pos.variablePosition = numeric_limits<Index>::max(); }
-  }
-  for(Index j=0; j<expectedIndex.size(); ++j) {
-    BOOST_FOREACH( GaussianVariableIndex::mapped_factor_type& factor_pos, expectedIndex[j]) {
-      factor_pos.variablePosition = numeric_limits<Index>::max(); }
-  }
-  EXPECT(assert_equal(expectedIndex, actualIndex));
-#endif
 }
 
 /* ************************************************************************* */
@@ -657,6 +463,73 @@ TEST(GaussianFactorGraph, matrices) {
   EXPECT(assert_equal(expectedb, actualb));
   EXPECT(assert_equal(expectedL, actualL));
   EXPECT(assert_equal(expectedeta, actualeta));
+}
+
+/* ************************************************************************* */
+TEST( GaussianFactorGraph, gradient )
+{
+  GaussianFactorGraph fg = createSimpleGaussianFactorGraph();
+
+  // Construct expected gradient
+  VectorValues expected;
+
+  // 2*f(x) = 100*(x1+c[X(1)])^2 + 100*(x2-x1-[0.2;-0.1])^2 + 25*(l1-x1-[0.0;0.2])^2 + 25*(l1-x2-[-0.2;0.3])^2
+  // worked out: df/dx1 = 100*[0.1;0.1] + 100*[0.2;-0.1]) + 25*[0.0;0.2] = [10+20;10-10+5] = [30;5]
+  expected.insert(1,Vector_(2,  5.0,-12.5));
+  expected.insert(2,Vector_(2, 30.0,  5.0));
+  expected.insert(0,Vector_(2,-25.0, 17.5));
+
+  // Check the gradient at delta=0
+  VectorValues zero = VectorValues::Zero(expected);
+  VectorValues actual = gradient(fg, zero);
+  EXPECT(assert_equal(expected,actual));
+
+  // Check the gradient at the solution (should be zero)
+  VectorValues solution = *GaussianSequentialSolver(fg).optimize();
+  VectorValues actual2 = gradient(fg, solution);
+  EXPECT(assert_equal(VectorValues::Zero(solution), actual2));
+}
+
+/* ************************************************************************* */
+TEST( GaussianFactorGraph, transposeMultiplication )
+{
+  GaussianFactorGraph A = createSimpleGaussianFactorGraph();
+
+  VectorValues e;
+  e.insert(0, Vector_(2, 0.0, 0.0));
+  e.insert(1, Vector_(2,15.0, 0.0));
+  e.insert(2, Vector_(2, 0.0,-5.0));
+  e.insert(3, Vector_(2,-7.5,-5.0));
+
+  VectorValues expected;
+  expected.insert(1, Vector_(2, -37.5,-50.0));
+  expected.insert(2, Vector_(2,-150.0, 25.0));
+  expected.insert(0, Vector_(2, 187.5, 25.0));
+
+  VectorValues actual = VectorValues::SameStructure(expected);
+  transposeMultiply(A, e, actual);
+  EXPECT(assert_equal(expected,actual));
+}
+
+//* ************************************************************************* */
+TEST(GaussianFactorGraph, eliminate_empty )
+{
+  // eliminate an empty factor
+  GaussianFactorGraph gfg;
+  gfg.push_back(boost::make_shared<JacobianFactor>());
+  GaussianConditional::shared_ptr actualCG;
+  GaussianFactorGraph remainingGFG;
+  boost::tie(actualCG, remainingGFG) = gfg.eliminateOne(0);
+
+  // expected Conditional Gaussian is just a parent-less node with P(x)=1
+  GaussianConditional expectedCG(0, Vector(), Matrix(), Vector());
+
+  // expected remaining graph should be the same as the original, still empty :-)
+  GaussianFactorGraph expectedLF = gfg;
+
+  // check if the result matches
+  EXPECT(actualCG->equals(expectedCG));
+  EXPECT(remainingGFG.equals(expectedLF));
 }
 
 /* ************************************************************************* */
