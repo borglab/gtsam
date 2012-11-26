@@ -511,7 +511,7 @@ TEST( GaussianFactorGraph, transposeMultiplication )
   EXPECT(assert_equal(expected,actual));
 }
 
-//* ************************************************************************* */
+/* ************************************************************************* */
 TEST(GaussianFactorGraph, eliminate_empty )
 {
   // eliminate an empty factor
