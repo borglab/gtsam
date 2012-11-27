@@ -21,15 +21,15 @@ namespace wrap {
 struct ReturnValue {
 
   typedef enum {
-    CLASS,
-    EIGEN,
-    BASIS,
-    VOID
+    CLASS = 0,
+    EIGEN = 1,
+    BASIS = 2,
+    VOID  = 3
   } return_category;
 
   ReturnValue(bool enable_verbosity = true)
   : verbose(enable_verbosity), isPtr1(false), isPtr2(false),
-    isPair(false), category1(VOID), category2(VOID)
+    isPair(false), category1(CLASS), category2(CLASS)
   {}
 
   bool verbose;

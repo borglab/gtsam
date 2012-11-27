@@ -76,7 +76,7 @@ Module::Module(const string& interfacePath,
   // The one with postfix 0 are used to reset the variables after parse. 
   string methodName, methodName0; 
   bool isConst, isConst0 = false; 
-  ReturnValue retVal0, retVal; 
+  ReturnValue retVal0(enable_verbose), retVal;
   Argument arg0, arg; 
   ArgumentList args0, args; 
   vector<string> arg_dup; ///keep track of duplicates 
@@ -205,7 +205,8 @@ Module::Module(const string& interfacePath,
     ((*namespace_ret_p)[assign_a(retVal.namespaces1, namespaces_return)][clear_a(namespaces_return)] 
         >> (className_p[assign_a(retVal.type1)][assign_a(retVal.category1, ReturnValue::CLASS)]) >> 
         !ch_p('*')[assign_a(retVal.isPtr1,true)]) | 
-    (eigenType_p[assign_a(retVal.type1)][assign_a(retVal.category1, ReturnValue::EIGEN)]); 
+    (eigenType_p[assign_a(retVal.type1)][assign_a(retVal.category1, ReturnValue::EIGEN)]);
+//    | str_p("void")[assign_a(retVal.type1)][assign_a(retVal.category1, ReturnValue::VOID)];
  
   Rule returnType2_p = 
     (basisType_p[assign_a(retVal.type2)][assign_a(retVal.category2, ReturnValue::BASIS)]) | 
@@ -218,7 +219,7 @@ Module::Module(const string& interfacePath,
     (str_p("pair") >> '<' >> returnType1_p >> ',' >> returnType2_p >> '>') 
     [assign_a(retVal.isPair,true)]; 
  
-  Rule void_p = str_p("void")[assign_a(retVal.type1)]; 
+  Rule void_p = str_p("void")[assign_a(retVal.type1)][assign_a(retVal.category1, ReturnValue::VOID)];
  
   Rule returnType_p = void_p | returnType1_p | pair_p; 
  
