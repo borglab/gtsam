@@ -144,7 +144,6 @@ void Module::parseMarkup(const std::string& data) {
  
   Rule argEigenType_p = 
     eigenType_p[assign_a(arg.type)];
-//    >> !ch_p('*')[assign_a(arg.is_ptr,true)];
  
   Rule eigenRef_p = 
       !str_p("const") [assign_a(arg.is_const,true)] >> 
@@ -155,7 +154,6 @@ void Module::parseMarkup(const std::string& data) {
     !str_p("const") [assign_a(arg.is_const,true)] >> 
     *namespace_arg_p >> 
     className_p[assign_a(arg.type)] >> 
-//    !ch_p('*')[assign_a(arg.is_ptr,true)] >>
     !ch_p('&')[assign_a(arg.is_ref,true)];
  
   Rule name_p = lexeme_d[alpha_p >> *(alnum_p | '_')]; 
@@ -199,12 +197,11 @@ void Module::parseMarkup(const std::string& data) {
     (str_p("template") >> 
     '<' >> name_p[push_back_a(cls.templateArgs)] >> *(',' >> name_p[push_back_a(cls.templateArgs)]) >> 
     '>'); 
- 
-  static const bool istrue = true;
 
+  // NOTE: allows for pointers to all types
   Rule argument_p =  
     ((basisType_p[assign_a(arg.type)] | argEigenType_p | eigenRef_p | classArg_p) 
-        >> !ch_p('*')[assign_a(arg.is_ptr,istrue)]
+        >> !ch_p('*')[assign_a(arg.is_ptr,true)]
         >> name_p[assign_a(arg.name)])
     [push_back_a(args, arg)] 
     [assign_a(arg,arg0)]; 
@@ -222,27 +219,18 @@ void Module::parseMarkup(const std::string& data) {
  
   Rule namespace_ret_p = namespace_name_p[push_back_a(namespaces_return)] >> str_p("::"); 
  
-  // HACK: use const values instead of using enums themselves
+  // HACK: use const values instead of using enums themselves - somehow this doesn't result in values getting assigned to gibberish
   static const ReturnValue::return_category RETURN_EIGEN = ReturnValue::EIGEN;
   static const ReturnValue::return_category RETURN_BASIS = ReturnValue::BASIS;
   static const ReturnValue::return_category RETURN_CLASS = ReturnValue::CLASS;
   static const ReturnValue::return_category RETURN_VOID = ReturnValue::VOID;
 
-  // switching to using constants
   Rule returnType1_p =
     (basisType_p[assign_a(retVal.type1)][assign_a(retVal.category1, RETURN_BASIS)]) |
     ((*namespace_ret_p)[assign_a(retVal.namespaces1, namespaces_return)][clear_a(namespaces_return)]
         >> (className_p[assign_a(retVal.type1)][assign_a(retVal.category1, RETURN_CLASS)]) >>
         !ch_p('*')[assign_a(retVal.isPtr1,true)]) |
     (eigenType_p[assign_a(retVal.type1)][assign_a(retVal.category1, RETURN_EIGEN)]);
-
-  // Original
-//  Rule returnType1_p =
-//    (basisType_p[assign_a(retVal.type1)][assign_a(retVal.category1, ReturnValue::BASIS)]) |
-//    ((*namespace_ret_p)[assign_a(retVal.namespaces1, namespaces_return)][clear_a(namespaces_return)]
-//        >> (className_p[assign_a(retVal.type1)][assign_a(retVal.category1, ReturnValue::CLASS)]) >>
-//        !ch_p('*')[assign_a(retVal.isPtr1,true)]) |
-//    (eigenType_p[assign_a(retVal.type1)][assign_a(retVal.category1, ReturnValue::EIGEN)]);
 
   Rule returnType2_p = 
     (basisType_p[assign_a(retVal.type2)][assign_a(retVal.category2, RETURN_BASIS)]) |
@@ -251,14 +239,6 @@ void Module::parseMarkup(const std::string& data) {
         !ch_p('*')  [assign_a(retVal.isPtr2,true)]) | 
     (eigenType_p[assign_a(retVal.type2)][assign_a(retVal.category2, RETURN_EIGEN)]);
 
-  // Original
-//  Rule returnType2_p =
-//    (basisType_p[assign_a(retVal.type2)][assign_a(retVal.category2, ReturnValue::BASIS)]) |
-//    ((*namespace_ret_p)[assign_a(retVal.namespaces2, namespaces_return)][clear_a(namespaces_return)]
-//        >> (className_p[assign_a(retVal.type2)][assign_a(retVal.category2, ReturnValue::CLASS)]) >>
-//        !ch_p('*')  [assign_a(retVal.isPtr2,true)]) |
-//    (eigenType_p[assign_a(retVal.type2)][assign_a(retVal.category2, ReturnValue::EIGEN)]);
- 
   Rule pair_p =  
     (str_p("pair") >> '<' >> returnType1_p >> ',' >> returnType2_p >> '>') 
     [assign_a(retVal.isPair,true)]; 
@@ -359,29 +339,29 @@ void Module::parseMarkup(const std::string& data) {
  
   Rule module_p = *module_content_p >> !end_p; 
  
-//  //----------------------------------------------------------------------------
-//  // for debugging, define BOOST_SPIRIT_DEBUG
-//# ifdef BOOST_SPIRIT_DEBUG
-//  BOOST_SPIRIT_DEBUG_NODE(className_p);
-//  BOOST_SPIRIT_DEBUG_NODE(classPtr_p);
-//  BOOST_SPIRIT_DEBUG_NODE(classRef_p);
-//  BOOST_SPIRIT_DEBUG_NODE(basisType_p);
-//  BOOST_SPIRIT_DEBUG_NODE(name_p);
-//  BOOST_SPIRIT_DEBUG_NODE(argument_p);
-//  BOOST_SPIRIT_DEBUG_NODE(argumentList_p);
-//  BOOST_SPIRIT_DEBUG_NODE(constructor_p);
-//  BOOST_SPIRIT_DEBUG_NODE(returnType1_p);
-//  BOOST_SPIRIT_DEBUG_NODE(returnType2_p);
-//  BOOST_SPIRIT_DEBUG_NODE(pair_p);
-//  BOOST_SPIRIT_DEBUG_NODE(void_p);
-//  BOOST_SPIRIT_DEBUG_NODE(returnType_p);
-//  BOOST_SPIRIT_DEBUG_NODE(methodName_p);
-//  BOOST_SPIRIT_DEBUG_NODE(method_p);
-//  BOOST_SPIRIT_DEBUG_NODE(class_p);
-//  BOOST_SPIRIT_DEBUG_NODE(namespace_def_p);
-//  BOOST_SPIRIT_DEBUG_NODE(module_p);
-//# endif
-//  //----------------------------------------------------------------------------
+  //----------------------------------------------------------------------------
+  // for debugging, define BOOST_SPIRIT_DEBUG
+# ifdef BOOST_SPIRIT_DEBUG
+  BOOST_SPIRIT_DEBUG_NODE(className_p);
+  BOOST_SPIRIT_DEBUG_NODE(classPtr_p);
+  BOOST_SPIRIT_DEBUG_NODE(classRef_p);
+  BOOST_SPIRIT_DEBUG_NODE(basisType_p);
+  BOOST_SPIRIT_DEBUG_NODE(name_p);
+  BOOST_SPIRIT_DEBUG_NODE(argument_p);
+  BOOST_SPIRIT_DEBUG_NODE(argumentList_p);
+  BOOST_SPIRIT_DEBUG_NODE(constructor_p);
+  BOOST_SPIRIT_DEBUG_NODE(returnType1_p);
+  BOOST_SPIRIT_DEBUG_NODE(returnType2_p);
+  BOOST_SPIRIT_DEBUG_NODE(pair_p);
+  BOOST_SPIRIT_DEBUG_NODE(void_p);
+  BOOST_SPIRIT_DEBUG_NODE(returnType_p);
+  BOOST_SPIRIT_DEBUG_NODE(methodName_p);
+  BOOST_SPIRIT_DEBUG_NODE(method_p);
+  BOOST_SPIRIT_DEBUG_NODE(class_p);
+  BOOST_SPIRIT_DEBUG_NODE(namespace_def_p);
+  BOOST_SPIRIT_DEBUG_NODE(module_p);
+# endif
+  //----------------------------------------------------------------------------
  
   // and parse contents
   parse_info<const char*> info = parse(data.c_str(), module_p, space_p);
@@ -449,108 +429,105 @@ void Module::generateIncludes(FileWriter& file) const {
  
 /* ************************************************************************* */ 
 void Module::matlab_code(const string& toolboxPath, const string& headerPath) const { 
- 
-    fs::create_directories(toolboxPath); 
- 
-    // create the unified .cpp switch file 
-    const string wrapperName = name + "_wrapper"; 
-    string wrapperFileName = toolboxPath + "/" + wrapperName + ".cpp"; 
-    FileWriter wrapperFile(wrapperFileName, verbose, "//"); 
-    vector<string> functionNames; // Function names stored by index for switch 
-    wrapperFile.oss << "#include <wrap/matlab.h>\n"; 
-    wrapperFile.oss << "#include <map>\n"; 
-    wrapperFile.oss << "#include <boost/foreach.hpp>\n"; 
-    wrapperFile.oss << "\n"; 
- 
-    // Expand templates - This is done first so that template instantiations are 
-    // counted in the list of valid types, have their attributes and dependencies 
-    // checked, etc. 
-    vector<Class> expandedClasses = ExpandTypedefInstantiations(classes, templateInstantiationTypedefs); 
- 
-    // Dependency check list 
-    vector<string> validTypes = GenerateValidTypes(expandedClasses, forward_declarations); 
- 
-    // Check that all classes have been defined somewhere 
-    verifyArguments<GlobalFunction>(validTypes, global_functions); 
-    verifyReturnTypes<GlobalFunction>(validTypes, global_functions); 
- 
-    BOOST_FOREACH(const Class& cls, expandedClasses) { 
-      // verify all of the function arguments 
-      //TODO:verifyArguments<ArgumentList>(validTypes, cls.constructor.args_list); 
-      verifyArguments<StaticMethod>(validTypes, cls.static_methods); 
-      verifyArguments<Method>(validTypes, cls.methods); 
- 
-      // verify function return types 
-      verifyReturnTypes<StaticMethod>(validTypes, cls.static_methods); 
-      verifyReturnTypes<Method>(validTypes, cls.methods); 
- 
-      // verify parents 
-      if(!cls.qualifiedParent.empty() && std::find(validTypes.begin(), validTypes.end(), wrap::qualifiedName("::", cls.qualifiedParent)) == validTypes.end()) 
-        throw DependencyMissing(wrap::qualifiedName("::", cls.qualifiedParent), cls.qualifiedName("::")); 
 
-    } 
- 
-    // Create type attributes table and check validity 
-    TypeAttributesTable typeAttributes; 
-    typeAttributes.addClasses(expandedClasses); 
-    typeAttributes.addForwardDeclarations(forward_declarations); 
-    typeAttributes.checkValidity(expandedClasses); 
- 
-    // Generate includes while avoiding redundant includes 
-    generateIncludes(wrapperFile); 
- 
-    // create typedef classes - we put this at the top of the wrap file so that collectors and method arguments can use these typedefs 
-    BOOST_FOREACH(const Class& cls, expandedClasses) { 
-      if(!cls.typedefName.empty()) 
-        wrapperFile.oss << cls.getTypedef() << "\n"; 
-    } 
-    wrapperFile.oss << "\n"; 
- 
-    // Generate collectors and cleanup function to be called from mexAtExit 
-    WriteCollectorsAndCleanupFcn(wrapperFile, name, expandedClasses); 
- 
-    // generate RTTI registry (for returning derived-most types) 
-    WriteRTTIRegistry(wrapperFile, name, expandedClasses); 
- 
-    // create proxy class and wrapper code 
-    BOOST_FOREACH(const Class& cls, expandedClasses) { 
-      cls.matlab_proxy(toolboxPath, wrapperName, typeAttributes, wrapperFile, functionNames); 
-    }   
- 
-    // create matlab files and wrapper code for global functions 
-    BOOST_FOREACH(const GlobalFunctions::value_type& p, global_functions) { 
-      p.second.matlab_proxy(toolboxPath, wrapperName, typeAttributes, wrapperFile, functionNames); 
-    } 
- 
-    // finish wrapper file 
-    wrapperFile.oss << "\n"; 
-    finish_wrapper(wrapperFile, functionNames); 
- 
-    wrapperFile.emit(true); 
+  fs::create_directories(toolboxPath);
+
+  // create the unified .cpp switch file
+  const string wrapperName = name + "_wrapper";
+  string wrapperFileName = toolboxPath + "/" + wrapperName + ".cpp";
+  FileWriter wrapperFile(wrapperFileName, verbose, "//");
+  vector<string> functionNames; // Function names stored by index for switch
+  wrapperFile.oss << "#include <wrap/matlab.h>\n";
+  wrapperFile.oss << "#include <map>\n";
+  wrapperFile.oss << "#include <boost/foreach.hpp>\n";
+  wrapperFile.oss << "\n";
+
+  // Expand templates - This is done first so that template instantiations are
+  // counted in the list of valid types, have their attributes and dependencies
+  // checked, etc.
+  vector<Class> expandedClasses = ExpandTypedefInstantiations(classes, templateInstantiationTypedefs);
+
+  // Dependency check list
+  vector<string> validTypes = GenerateValidTypes(expandedClasses, forward_declarations);
+
+  // Check that all classes have been defined somewhere
+  verifyArguments<GlobalFunction>(validTypes, global_functions);
+  verifyReturnTypes<GlobalFunction>(validTypes, global_functions);
+
+  BOOST_FOREACH(const Class& cls, expandedClasses) {
+    // verify all of the function arguments
+    //TODO:verifyArguments<ArgumentList>(validTypes, cls.constructor.args_list);
+    verifyArguments<StaticMethod>(validTypes, cls.static_methods);
+    verifyArguments<Method>(validTypes, cls.methods);
+
+    // verify function return types
+    verifyReturnTypes<StaticMethod>(validTypes, cls.static_methods);
+    verifyReturnTypes<Method>(validTypes, cls.methods);
+
+    // verify parents
+    if(!cls.qualifiedParent.empty() && std::find(validTypes.begin(), validTypes.end(), wrap::qualifiedName("::", cls.qualifiedParent)) == validTypes.end())
+      throw DependencyMissing(wrap::qualifiedName("::", cls.qualifiedParent), cls.qualifiedName("::"));
+
+  }
+
+  // Create type attributes table and check validity
+  TypeAttributesTable typeAttributes;
+  typeAttributes.addClasses(expandedClasses);
+  typeAttributes.addForwardDeclarations(forward_declarations);
+  typeAttributes.checkValidity(expandedClasses);
+
+  // Generate includes while avoiding redundant includes
+  generateIncludes(wrapperFile);
+
+  // create typedef classes - we put this at the top of the wrap file so that collectors and method arguments can use these typedefs
+  BOOST_FOREACH(const Class& cls, expandedClasses) {
+    if(!cls.typedefName.empty())
+      wrapperFile.oss << cls.getTypedef() << "\n";
+  }
+  wrapperFile.oss << "\n";
+
+  // Generate collectors and cleanup function to be called from mexAtExit
+  WriteCollectorsAndCleanupFcn(wrapperFile, name, expandedClasses);
+
+  // generate RTTI registry (for returning derived-most types)
+  WriteRTTIRegistry(wrapperFile, name, expandedClasses);
+
+  // create proxy class and wrapper code
+  BOOST_FOREACH(const Class& cls, expandedClasses) {
+    cls.matlab_proxy(toolboxPath, wrapperName, typeAttributes, wrapperFile, functionNames);
+  }
+
+  // create matlab files and wrapper code for global functions
+  BOOST_FOREACH(const GlobalFunctions::value_type& p, global_functions) {
+    p.second.matlab_proxy(toolboxPath, wrapperName, typeAttributes, wrapperFile, functionNames);
   } 
+
+  // finish wrapper file
+  wrapperFile.oss << "\n";
+  finish_wrapper(wrapperFile, functionNames);
+
+  wrapperFile.emit(true);
+}
 /* ************************************************************************* */ 
 map<string, Method> Module::appendInheretedMethods(const Class& cls, const vector<Class>& classes)
 {
-    map<string, Method> methods;
-    if(!cls.qualifiedParent.empty())
-    {
-        //Find Class
-        BOOST_FOREACH(const Class& parent, classes)
-        {
-            //We found the class for our parent
-            if(parent.name == cls.qualifiedParent.back())
-            {
-                Methods inhereted = appendInheretedMethods(parent, classes);
-                methods.insert(inhereted.begin(), inhereted.end());
-            }
-        }
+  map<string, Method> methods;
+  if(!cls.qualifiedParent.empty())
+  {
+    //Find Class
+    BOOST_FOREACH(const Class& parent, classes) {
+      //We found the class for our parent
+      if(parent.name == cls.qualifiedParent.back())
+      {
+        Methods inhereted = appendInheretedMethods(parent, classes);
+        methods.insert(inhereted.begin(), inhereted.end());
+      }
     }
-    else
-    {
-        methods.insert(cls.methods.begin(), cls.methods.end());
-    }
+  } else {
+    methods.insert(cls.methods.begin(), cls.methods.end());
+  }
 
-    return methods;
+  return methods;
 }
  
 /* ************************************************************************* */ 
