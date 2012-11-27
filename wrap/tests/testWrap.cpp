@@ -71,6 +71,69 @@ TEST_UNSAFE( wrap, check_exception ) {
 }
 
 /* ************************************************************************* */
+TEST( wrap, small_parse ) {
+  string moduleName("gtsam");
+  Module module(moduleName, true);
+
+  string markup(
+      string("class Point2 {                \n") +
+      string(" double x() const;            \n") +   // Method 1
+      string(" Matrix returnChar() const;   \n") +   // Method 2
+      string(" Point2 returnPoint2() const; \n") +   // Method 3
+      string("};\n"));
+  module.parseMarkup(markup);
+
+  // check return types
+  LONGS_EQUAL(1, module.classes.size());
+  Class cls = module.classes.front();
+  EXPECT(assert_equal("Point2", cls.name));
+  EXPECT(!cls.isVirtual);
+  EXPECT(cls.namespaces.empty());
+  EXPECT(cls.static_methods.empty());
+  LONGS_EQUAL(3, cls.methods.size());
+
+  // Method 1
+  Method m1 = cls.methods.at("x");
+  EXPECT(assert_equal("x", m1.name));
+  EXPECT(m1.is_const_);
+  LONGS_EQUAL(1, m1.argLists.size());
+  LONGS_EQUAL(1, m1.returnVals.size());
+
+  ReturnValue rv1 = m1.returnVals.front();
+  EXPECT(!rv1.isPair);
+  EXPECT(!rv1.isPtr1);
+  EXPECT(assert_equal("double", rv1.type1));
+  EXPECT_LONGS_EQUAL(ReturnValue::BASIS, rv1.category1);
+
+  // Method 2
+  Method m2 = cls.methods.at("returnChar");
+  EXPECT(assert_equal("returnChar", m2.name));
+  EXPECT(m2.is_const_);
+  LONGS_EQUAL(1, m2.argLists.size());
+  LONGS_EQUAL(1, m2.returnVals.size());
+
+  ReturnValue rv2 = m2.returnVals.front();
+  EXPECT(!rv2.isPair);
+  EXPECT(!rv2.isPtr1);
+  EXPECT(assert_equal("Matrix", rv2.type1));
+  EXPECT_LONGS_EQUAL(ReturnValue::EIGEN, rv2.category1);
+
+  // Method 3
+  Method m3 = cls.methods.at("returnPoint2");
+  EXPECT(assert_equal("returnPoint2", m3.name));
+  EXPECT(m3.is_const_);
+  LONGS_EQUAL(1, m3.argLists.size());
+  LONGS_EQUAL(1, m3.returnVals.size());
+
+  ReturnValue rv3 = m3.returnVals.front();
+  EXPECT(!rv3.isPair);
+  EXPECT(!rv3.isPtr1);
+  EXPECT(assert_equal("Point2", rv3.type1));
+  EXPECT_LONGS_EQUAL(ReturnValue::CLASS, rv3.category1);
+
+}
+
+/* ************************************************************************* */
 TEST( wrap, parse_geometry ) {
   string markup_header_path = topdir + "/wrap/tests";
   Module module(markup_header_path.c_str(), "geometry",enable_verbose);

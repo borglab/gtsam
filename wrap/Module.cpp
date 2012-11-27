@@ -68,23 +68,40 @@ void handle_possible_template(vector<Class>& classes, const Class& cls, const st
   } 
 } 
  
+/* ************************************************************************* */
+Module::Module(const std::string& moduleName, bool enable_verbose)
+: name(moduleName), verbose(enable_verbose)
+{
+}
+
 /* ************************************************************************* */ 
 Module::Module(const string& interfacePath, 
-         const string& moduleName, bool enable_verbose) : name(moduleName), verbose(enable_verbose) 
+         const string& moduleName, bool enable_verbose)
+: name(moduleName), verbose(enable_verbose)
 { 
+  // read interface file
+  string interfaceFile = interfacePath + "/" + moduleName + ".h";
+  string contents = file_contents(interfaceFile);
+
+  // execute parsing
+  parseMarkup(contents);
+}
+
+/* ************************************************************************* */
+void Module::parseMarkup(const std::string& data) {
   // these variables will be imperatively updated to gradually build [cls] 
   // The one with postfix 0 are used to reset the variables after parse. 
   string methodName, methodName0; 
   bool isConst, isConst0 = false; 
-  ReturnValue retVal0(enable_verbose), retVal;
+  ReturnValue retVal0(verbose), retVal(verbose);
   Argument arg0, arg; 
   ArgumentList args0, args; 
   vector<string> arg_dup; ///keep track of duplicates 
-  Constructor constructor0(enable_verbose), constructor(enable_verbose); 
-  Deconstructor deconstructor0(enable_verbose), deconstructor(enable_verbose); 
-  StaticMethod static_method0(enable_verbose), static_method(enable_verbose); 
-  Class cls0(enable_verbose),cls(enable_verbose); 
-  GlobalFunction globalFunc0(enable_verbose), globalFunc(enable_verbose); 
+  Constructor constructor0(verbose), constructor(verbose);
+  Deconstructor deconstructor0(verbose), deconstructor(verbose);
+  StaticMethod static_method0(verbose), static_method(verbose);
+  Class cls0(verbose),cls(verbose);
+  GlobalFunction globalFunc0(verbose), globalFunc(verbose);
   ForwardDeclaration fwDec0, fwDec; 
   vector<string> namespaces, /// current namespace tag 
                  namespaces_return; /// namespace for current return type 
@@ -110,7 +127,7 @@ Module::Module(const string& interfacePath,
     (str_p("string") | "bool" | "size_t" | "int" | "double" | "char" | "unsigned char"); 
  
   Rule keywords_p = 
-    (str_p("const") | "static" | "namespace" | basisType_p); 
+    (str_p("const") | "static" | "namespace" | "void" | basisType_p);
  
   Rule eigenType_p = 
     (str_p("Vector") | "Matrix"); 
@@ -208,20 +225,21 @@ Module::Module(const string& interfacePath,
 //    (eigenType_p[assign_a(retVal.type1)][assign_a(retVal.category1, ReturnValue::EIGEN)])
 //    | str_p("void")[assign_a(retVal.type1)][assign_a(retVal.category1, ReturnValue::VOID)]; // FIXME: allows for void in a pair
 
+  // current revision
+  Rule returnType1_p =
+    basisType_p[assign_a(retVal.category1, ReturnValue::BASIS)][assign_a(retVal.type1)] |
+    ((*namespace_ret_p)[assign_a(retVal.namespaces1, namespaces_return)][clear_a(namespaces_return)]
+            >> (className_p[assign_a(retVal.category1, ReturnValue::CLASS)][assign_a(retVal.type1)]) >>
+            !ch_p('*')[assign_a(retVal.isPtr1,true)]) |
+    eigenType_p[assign_a(retVal.category1, ReturnValue::EIGEN)][assign_a(retVal.type1)];
+
+  // Original
 //  Rule returnType1_p =
-//    (eigenType_p[assign_a(retVal.type1)][assign_a(retVal.category1, ReturnValue::EIGEN)]) |
 //    (basisType_p[assign_a(retVal.type1)][assign_a(retVal.category1, ReturnValue::BASIS)]) |
 //    ((*namespace_ret_p)[assign_a(retVal.namespaces1, namespaces_return)][clear_a(namespaces_return)]
 //        >> (className_p[assign_a(retVal.type1)][assign_a(retVal.category1, ReturnValue::CLASS)]) >>
-//        !ch_p('*')[assign_a(retVal.isPtr1,true)]);
-
-  // Original
-  Rule returnType1_p =
-    (basisType_p[assign_a(retVal.type1)][assign_a(retVal.category1, ReturnValue::BASIS)]) |
-    ((*namespace_ret_p)[assign_a(retVal.namespaces1, namespaces_return)][clear_a(namespaces_return)]
-        >> (className_p[assign_a(retVal.type1)][assign_a(retVal.category1, ReturnValue::CLASS)]) >>
-        !ch_p('*')[assign_a(retVal.isPtr1,true)]) |
-    (eigenType_p[assign_a(retVal.type1)][assign_a(retVal.category1, ReturnValue::EIGEN)]);
+//        !ch_p('*')[assign_a(retVal.isPtr1,true)]) |
+//    (eigenType_p[assign_a(retVal.type1)][assign_a(retVal.category1, ReturnValue::EIGEN)]);
  
   Rule returnType2_p = 
     (basisType_p[assign_a(retVal.type2)][assign_a(retVal.category2, ReturnValue::BASIS)]) | 
@@ -355,16 +373,12 @@ Module::Module(const string& interfacePath,
 # endif 
   //---------------------------------------------------------------------------- 
  
-  // read interface file 
-  string interfaceFile = interfacePath + "/" + moduleName + ".h"; 
-  string contents = file_contents(interfaceFile); 
- 
-  // and parse contents 
-  parse_info<const char*> info = parse(contents.c_str(), module_p, space_p); 
-  if(!info.full) { 
-    printf("parsing stopped at \n%.20s\n",info.stop); 
-    throw ParseFailed((int)info.length); 
-  } 
+  // and parse contents
+  parse_info<const char*> info = parse(data.c_str(), module_p, space_p);
+  if(!info.full) {
+    printf("parsing stopped at \n%.20s\n",info.stop);
+    throw ParseFailed((int)info.length);
+  }
 
   //Explicitly add methods to the classes from parents so it shows in documentation
   BOOST_FOREACH(Class& cls, classes)
@@ -372,7 +386,6 @@ Module::Module(const string& interfacePath,
     map<string, Method> inhereted = appendInheretedMethods(cls, classes);
     cls.methods.insert(inhereted.begin(), inhereted.end());
   }
-
 
 } 
  
