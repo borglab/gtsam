@@ -217,21 +217,27 @@ void Module::parseMarkup(const std::string& data) {
  
   Rule namespace_ret_p = namespace_name_p[push_back_a(namespaces_return)] >> str_p("::"); 
  
-//  Rule returnType1_p =
-//    (basisType_p[assign_a(retVal.type1)][assign_a(retVal.category1, ReturnValue::BASIS)]) |
-//    ((*namespace_ret_p)[assign_a(retVal.namespaces1, namespaces_return)][clear_a(namespaces_return)]
-//        >> (className_p[assign_a(retVal.type1)][assign_a(retVal.category1, ReturnValue::CLASS)]) >>
-//        !ch_p('*')[assign_a(retVal.isPtr1,true)]) |
-//    (eigenType_p[assign_a(retVal.type1)][assign_a(retVal.category1, ReturnValue::EIGEN)])
-//    | str_p("void")[assign_a(retVal.type1)][assign_a(retVal.category1, ReturnValue::VOID)]; // FIXME: allows for void in a pair
+  // const values
+  static const ReturnValue::return_category RETURN_EIGEN = ReturnValue::EIGEN;
+  static const ReturnValue::return_category RETURN_BASIS = ReturnValue::BASIS;
+  static const ReturnValue::return_category RETURN_CLASS = ReturnValue::CLASS;
+  static const ReturnValue::return_category RETURN_VOID = ReturnValue::VOID;
 
-  // current revision
+  // alternate version 1
+//  Rule returnType1_p =
+//    basisType_p[assign_a(retVal.category1, ReturnValue::BASIS)][assign_a(retVal.type1)] |
+//    eigenType_p[assign_a(retVal.category1, ReturnValue::EIGEN)][assign_a(retVal.type1)] |
+//    ((*namespace_ret_p)[assign_a(retVal.namespaces1, namespaces_return)][clear_a(namespaces_return)]
+//            >> (className_p[assign_a(retVal.category1, ReturnValue::CLASS)][assign_a(retVal.type1)]) >>
+//            !ch_p('*')[assign_a(retVal.isPtr1,true)]);
+
+  // switching to using constants
   Rule returnType1_p =
-    basisType_p[assign_a(retVal.category1, ReturnValue::BASIS)][assign_a(retVal.type1)] |
+    (basisType_p[assign_a(retVal.type1)][assign_a(retVal.category1, RETURN_BASIS)]) |
     ((*namespace_ret_p)[assign_a(retVal.namespaces1, namespaces_return)][clear_a(namespaces_return)]
-            >> (className_p[assign_a(retVal.category1, ReturnValue::CLASS)][assign_a(retVal.type1)]) >>
-            !ch_p('*')[assign_a(retVal.isPtr1,true)]) |
-    eigenType_p[assign_a(retVal.category1, ReturnValue::EIGEN)][assign_a(retVal.type1)];
+        >> (className_p[assign_a(retVal.type1)][assign_a(retVal.category1, RETURN_CLASS)]) >>
+        !ch_p('*')[assign_a(retVal.isPtr1,true)]) |
+    (eigenType_p[assign_a(retVal.type1)][assign_a(retVal.category1, RETURN_EIGEN)]);
 
   // Original
 //  Rule returnType1_p =
@@ -240,22 +246,29 @@ void Module::parseMarkup(const std::string& data) {
 //        >> (className_p[assign_a(retVal.type1)][assign_a(retVal.category1, ReturnValue::CLASS)]) >>
 //        !ch_p('*')[assign_a(retVal.isPtr1,true)]) |
 //    (eigenType_p[assign_a(retVal.type1)][assign_a(retVal.category1, ReturnValue::EIGEN)]);
- 
+
   Rule returnType2_p = 
-    (basisType_p[assign_a(retVal.type2)][assign_a(retVal.category2, ReturnValue::BASIS)]) | 
+    (basisType_p[assign_a(retVal.type2)][assign_a(retVal.category2, RETURN_BASIS)]) |
     ((*namespace_ret_p)[assign_a(retVal.namespaces2, namespaces_return)][clear_a(namespaces_return)] 
-        >> (className_p[assign_a(retVal.type2)][assign_a(retVal.category2, ReturnValue::CLASS)]) >> 
+        >> (className_p[assign_a(retVal.type2)][assign_a(retVal.category2, RETURN_CLASS)]) >>
         !ch_p('*')  [assign_a(retVal.isPtr2,true)]) | 
-    (eigenType_p[assign_a(retVal.type2)][assign_a(retVal.category2, ReturnValue::EIGEN)]); 
+    (eigenType_p[assign_a(retVal.type2)][assign_a(retVal.category2, RETURN_EIGEN)]);
+
+  // Original
+//  Rule returnType2_p =
+//    (basisType_p[assign_a(retVal.type2)][assign_a(retVal.category2, ReturnValue::BASIS)]) |
+//    ((*namespace_ret_p)[assign_a(retVal.namespaces2, namespaces_return)][clear_a(namespaces_return)]
+//        >> (className_p[assign_a(retVal.type2)][assign_a(retVal.category2, ReturnValue::CLASS)]) >>
+//        !ch_p('*')  [assign_a(retVal.isPtr2,true)]) |
+//    (eigenType_p[assign_a(retVal.type2)][assign_a(retVal.category2, ReturnValue::EIGEN)]);
  
   Rule pair_p =  
     (str_p("pair") >> '<' >> returnType1_p >> ',' >> returnType2_p >> '>') 
     [assign_a(retVal.isPair,true)]; 
  
-  Rule void_p = str_p("void")[assign_a(retVal.type1)][assign_a(retVal.category1, ReturnValue::VOID)];
+  Rule void_p = str_p("void")[assign_a(retVal.type1)][assign_a(retVal.category1, RETURN_VOID)];
  
-  Rule returnType_p = void_p | returnType1_p | pair_p; // original
-//  Rule returnType_p = returnType1_p | pair_p;
+  Rule returnType_p = void_p | returnType1_p | pair_p;
  
   Rule methodName_p = lexeme_d[lower_p >> *(alnum_p | '_')]; 
  

@@ -55,12 +55,6 @@ void ReturnValue::wrap_result(const string& result, FileWriter& file, const Type
     // For a pair, store the returned pair so we do not evaluate the function twice
     file.oss << "  " << return_type(false, pair) << " pairResult = " << result << ";\n";
     
-    // sanity check values
-    if ((category1 != ReturnValue::CLASS) || (category1 != ReturnValue::EIGEN) || (category1 != ReturnValue::BASIS))
-      throw invalid_argument("ReturnValue::wrap_result() FAILURE: invalid first member of pair ");
-    if ((category2 != ReturnValue::CLASS) || (category2 != ReturnValue::EIGEN) || (category2 != ReturnValue::BASIS))
-       throw invalid_argument("ReturnValue::wrap_result() FAILURE: invalid second member of pair ");
-
     // first return value in pair
     if (category1 == ReturnValue::CLASS) { // if we are going to make one
       string objCopy, ptrType;
@@ -107,9 +101,6 @@ void ReturnValue::wrap_result(const string& result, FileWriter& file, const Type
     } else
       file.oss << "  out[1] = wrap< " << return_type(true,arg2) << " >(pairResult.second);\n";
   } else { // Not a pair
-    // sanity check values
-    if ((category1 != ReturnValue::CLASS) || (category1 != ReturnValue::EIGEN) || (category1 != ReturnValue::BASIS))
-      throw invalid_argument("ReturnValue::wrap_result() FAILURE: return non-void flag ");
 
     if (category1 == ReturnValue::CLASS) {
       string objCopy, ptrType;

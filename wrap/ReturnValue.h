@@ -24,13 +24,12 @@ struct ReturnValue {
     CLASS = 1,
     EIGEN = 2,
     BASIS = 3,
-    VOID  = 4,
-    DUMMY_CATEGORY = 5
+    VOID  = 4
   } return_category;
 
   ReturnValue(bool enable_verbosity = true)
   : verbose(enable_verbosity), isPtr1(false), isPtr2(false),
-    isPair(false), category1(DUMMY_CATEGORY), category2(DUMMY_CATEGORY)
+    isPair(false), category1(CLASS), category2(CLASS)
   {}
 
   bool verbose;
