@@ -78,8 +78,9 @@ TEST( wrap, small_parse ) {
   string markup(
       string("class Point2 {                \n") +
       string(" double x() const;            \n") +   // Method 1
-      string(" Matrix returnChar() const;   \n") +   // Method 2
+      string(" Matrix returnMatrix() const;   \n") + // Method 2
       string(" Point2 returnPoint2() const; \n") +   // Method 3
+      string(" static Vector returnVector(); \n") +  // Static Method 1
       string("};\n"));
   module.parseMarkup(markup);
 
@@ -89,8 +90,8 @@ TEST( wrap, small_parse ) {
   EXPECT(assert_equal("Point2", cls.name));
   EXPECT(!cls.isVirtual);
   EXPECT(cls.namespaces.empty());
-  EXPECT(cls.static_methods.empty());
   LONGS_EQUAL(3, cls.methods.size());
+  LONGS_EQUAL(1, cls.static_methods.size());
 
   // Method 1
   Method m1 = cls.methods.at("x");
@@ -106,8 +107,8 @@ TEST( wrap, small_parse ) {
   EXPECT_LONGS_EQUAL(ReturnValue::BASIS, rv1.category1);
 
   // Method 2
-  Method m2 = cls.methods.at("returnChar");
-  EXPECT(assert_equal("returnChar", m2.name));
+  Method m2 = cls.methods.at("returnMatrix");
+  EXPECT(assert_equal("returnMatrix", m2.name));
   EXPECT(m2.is_const_);
   LONGS_EQUAL(1, m2.argLists.size());
   LONGS_EQUAL(1, m2.returnVals.size());
@@ -130,6 +131,19 @@ TEST( wrap, small_parse ) {
   EXPECT(!rv3.isPtr1);
   EXPECT(assert_equal("Point2", rv3.type1));
   EXPECT_LONGS_EQUAL(ReturnValue::CLASS, rv3.category1);
+
+  // Static Method 1
+  // static Vector returnVector();
+  StaticMethod sm1 = cls.static_methods.at("returnVector");
+  EXPECT(assert_equal("returnVector", sm1.name));
+  LONGS_EQUAL(1, sm1.argLists.size());
+  LONGS_EQUAL(1, sm1.returnVals.size());
+
+  ReturnValue rv4 = sm1.returnVals.front();
+  EXPECT(!rv4.isPair);
+  EXPECT(!rv4.isPtr1);
+  EXPECT(assert_equal("Vector", rv4.type1));
+  EXPECT_LONGS_EQUAL(ReturnValue::EIGEN, rv4.category1);
 
 }
 

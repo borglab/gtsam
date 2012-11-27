@@ -349,29 +349,29 @@ void Module::parseMarkup(const std::string& data) {
  
   Rule module_p = *module_content_p >> !end_p; 
  
-  //---------------------------------------------------------------------------- 
-  // for debugging, define BOOST_SPIRIT_DEBUG 
-# ifdef BOOST_SPIRIT_DEBUG 
-  BOOST_SPIRIT_DEBUG_NODE(className_p); 
-  BOOST_SPIRIT_DEBUG_NODE(classPtr_p); 
-  BOOST_SPIRIT_DEBUG_NODE(classRef_p); 
-  BOOST_SPIRIT_DEBUG_NODE(basisType_p); 
-  BOOST_SPIRIT_DEBUG_NODE(name_p); 
-  BOOST_SPIRIT_DEBUG_NODE(argument_p); 
-  BOOST_SPIRIT_DEBUG_NODE(argumentList_p); 
-  BOOST_SPIRIT_DEBUG_NODE(constructor_p); 
-  BOOST_SPIRIT_DEBUG_NODE(returnType1_p); 
-  BOOST_SPIRIT_DEBUG_NODE(returnType2_p); 
-  BOOST_SPIRIT_DEBUG_NODE(pair_p); 
-  BOOST_SPIRIT_DEBUG_NODE(void_p); 
-  BOOST_SPIRIT_DEBUG_NODE(returnType_p); 
-  BOOST_SPIRIT_DEBUG_NODE(methodName_p); 
-  BOOST_SPIRIT_DEBUG_NODE(method_p); 
-  BOOST_SPIRIT_DEBUG_NODE(class_p); 
-  BOOST_SPIRIT_DEBUG_NODE(namespace_def_p); 
-  BOOST_SPIRIT_DEBUG_NODE(module_p); 
-# endif 
-  //---------------------------------------------------------------------------- 
+//  //----------------------------------------------------------------------------
+//  // for debugging, define BOOST_SPIRIT_DEBUG
+//# ifdef BOOST_SPIRIT_DEBUG
+//  BOOST_SPIRIT_DEBUG_NODE(className_p);
+//  BOOST_SPIRIT_DEBUG_NODE(classPtr_p);
+//  BOOST_SPIRIT_DEBUG_NODE(classRef_p);
+//  BOOST_SPIRIT_DEBUG_NODE(basisType_p);
+//  BOOST_SPIRIT_DEBUG_NODE(name_p);
+//  BOOST_SPIRIT_DEBUG_NODE(argument_p);
+//  BOOST_SPIRIT_DEBUG_NODE(argumentList_p);
+//  BOOST_SPIRIT_DEBUG_NODE(constructor_p);
+//  BOOST_SPIRIT_DEBUG_NODE(returnType1_p);
+//  BOOST_SPIRIT_DEBUG_NODE(returnType2_p);
+//  BOOST_SPIRIT_DEBUG_NODE(pair_p);
+//  BOOST_SPIRIT_DEBUG_NODE(void_p);
+//  BOOST_SPIRIT_DEBUG_NODE(returnType_p);
+//  BOOST_SPIRIT_DEBUG_NODE(methodName_p);
+//  BOOST_SPIRIT_DEBUG_NODE(method_p);
+//  BOOST_SPIRIT_DEBUG_NODE(class_p);
+//  BOOST_SPIRIT_DEBUG_NODE(namespace_def_p);
+//  BOOST_SPIRIT_DEBUG_NODE(module_p);
+//# endif
+//  //----------------------------------------------------------------------------
  
   // and parse contents
   parse_info<const char*> info = parse(data.c_str(), module_p, space_p);
