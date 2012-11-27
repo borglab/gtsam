@@ -21,9 +21,10 @@
 #include "FileWriter.h" 
 #include "TypeAttributesTable.h" 
 #include "utilities.h" 
+
+//#define BOOST_SPIRIT_DEBUG
 #include "spirit_actors.h" 
  
-//#define BOOST_SPIRIT_DEBUG 
 #include <boost/spirit/include/classic_confix.hpp> 
 #include <boost/spirit/include/classic_clear_actor.hpp> 
 #include <boost/spirit/include/classic_insert_at_actor.hpp> 
@@ -142,8 +143,8 @@ void Module::parseMarkup(const std::string& data) {
   Rule namespace_arg_p = namespace_name_p[push_back_a(arg.namespaces)] >> str_p("::"); 
  
   Rule argEigenType_p = 
-    eigenType_p[assign_a(arg.type)] >> 
-    !ch_p('*')[assign_a(arg.is_ptr,true)]; 
+    eigenType_p[assign_a(arg.type)];
+//    >> !ch_p('*')[assign_a(arg.is_ptr,true)];
  
   Rule eigenRef_p = 
       !str_p("const") [assign_a(arg.is_const,true)] >> 
@@ -154,7 +155,8 @@ void Module::parseMarkup(const std::string& data) {
     !str_p("const") [assign_a(arg.is_const,true)] >> 
     *namespace_arg_p >> 
     className_p[assign_a(arg.type)] >> 
-    (ch_p('*')[assign_a(arg.is_ptr,true)] | ch_p('&')[assign_a(arg.is_ref,true)]); 
+//    !ch_p('*')[assign_a(arg.is_ptr,true)] >>
+    !ch_p('&')[assign_a(arg.is_ref,true)];
  
   Rule name_p = lexeme_d[alpha_p >> *(alnum_p | '_')]; 
  
@@ -198,9 +200,12 @@ void Module::parseMarkup(const std::string& data) {
     '<' >> name_p[push_back_a(cls.templateArgs)] >> *(',' >> name_p[push_back_a(cls.templateArgs)]) >> 
     '>'); 
  
+  static const bool istrue = true;
+
   Rule argument_p =  
     ((basisType_p[assign_a(arg.type)] | argEigenType_p | eigenRef_p | classArg_p) 
-        >> name_p[assign_a(arg.name)]) 
+        >> !ch_p('*')[assign_a(arg.is_ptr,istrue)]
+        >> name_p[assign_a(arg.name)])
     [push_back_a(args, arg)] 
     [assign_a(arg,arg0)]; 
  
@@ -217,19 +222,11 @@ void Module::parseMarkup(const std::string& data) {
  
   Rule namespace_ret_p = namespace_name_p[push_back_a(namespaces_return)] >> str_p("::"); 
  
-  // const values
+  // HACK: use const values instead of using enums themselves
   static const ReturnValue::return_category RETURN_EIGEN = ReturnValue::EIGEN;
   static const ReturnValue::return_category RETURN_BASIS = ReturnValue::BASIS;
   static const ReturnValue::return_category RETURN_CLASS = ReturnValue::CLASS;
   static const ReturnValue::return_category RETURN_VOID = ReturnValue::VOID;
-
-  // alternate version 1
-//  Rule returnType1_p =
-//    basisType_p[assign_a(retVal.category1, ReturnValue::BASIS)][assign_a(retVal.type1)] |
-//    eigenType_p[assign_a(retVal.category1, ReturnValue::EIGEN)][assign_a(retVal.type1)] |
-//    ((*namespace_ret_p)[assign_a(retVal.namespaces1, namespaces_return)][clear_a(namespaces_return)]
-//            >> (className_p[assign_a(retVal.category1, ReturnValue::CLASS)][assign_a(retVal.type1)]) >>
-//            !ch_p('*')[assign_a(retVal.isPtr1,true)]);
 
   // switching to using constants
   Rule returnType1_p =
