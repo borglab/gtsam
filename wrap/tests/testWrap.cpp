@@ -87,6 +87,13 @@ TEST( wrap, parse_geometry ) {
 
   LONGS_EQUAL(3, module.classes.size());
 
+  // Key for ReturnValue::return_category
+//  CLASS = 1,
+//  EIGEN = 2,
+//  BASIS = 3,
+//  VOID  = 4,
+//  DUMMY = 5
+
   {
     // check first class
     //  class Point2 {
@@ -112,7 +119,7 @@ TEST( wrap, parse_geometry ) {
       Method m1 = cls.methods.find("returnChar")->second;
       LONGS_EQUAL(1, m1.returnVals.size());
       EXPECT(assert_equal("char", m1.returnVals.front().type1));
-      EXPECT_LONGS_EQUAL(ReturnValue::BASIS, m1.returnVals.front().category1); // FAIL: gets 0 instead of 2
+      EXPECT_LONGS_EQUAL(ReturnValue::BASIS, m1.returnVals.front().category1); // FAIL: gets 1 instead of 3
       EXPECT(!m1.returnVals.front().isPair);
       EXPECT(assert_equal("returnChar", m1.name));
       LONGS_EQUAL(1, m1.argLists.size());
@@ -126,7 +133,7 @@ TEST( wrap, parse_geometry ) {
       Method m1 = cls.methods.find("vectorConfusion")->second;
       LONGS_EQUAL(1, m1.returnVals.size());
       EXPECT(assert_equal("VectorNotEigen", m1.returnVals.front().type1));
-      EXPECT_LONGS_EQUAL(ReturnValue::CLASS, m1.returnVals.front().category1); // FAIL: gets 1 instead of 0
+      EXPECT_LONGS_EQUAL(ReturnValue::CLASS, m1.returnVals.front().category1); // FAIL: gets 0 instead of 1
       EXPECT(!m1.returnVals.front().isPair);
       EXPECT(assert_equal("vectorConfusion", m1.name));
       LONGS_EQUAL(1, m1.argLists.size());
@@ -163,7 +170,7 @@ TEST( wrap, parse_geometry ) {
     Method m1 = cls.methods.find("norm")->second;
     LONGS_EQUAL(1, m1.returnVals.size());
     EXPECT(assert_equal("double", m1.returnVals.front().type1));
-    EXPECT_LONGS_EQUAL(ReturnValue::BASIS, m1.returnVals.front().category1); // FAIL: gets 0 instead of 2 - defaulting to CLASS
+    EXPECT_LONGS_EQUAL(ReturnValue::BASIS, m1.returnVals.front().category1); // FAIL: gets 1 instead of 3
     EXPECT(assert_equal("norm", m1.name));
     LONGS_EQUAL(1, m1.argLists.size());
     EXPECT_LONGS_EQUAL(0, m1.argLists.front().size());
@@ -183,9 +190,9 @@ TEST( wrap, parse_geometry ) {
     Method m2 = testCls.methods.find("return_pair")->second;
     LONGS_EQUAL(1, m2.returnVals.size());
     EXPECT(m2.returnVals.front().isPair);
-    EXPECT_LONGS_EQUAL(ReturnValue::EIGEN, m2.returnVals.front().category1); // FIXME: gets different large numbers - latest: 6152961
+    EXPECT_LONGS_EQUAL(ReturnValue::EIGEN, m2.returnVals.front().category1); // FAIL: gets 1 instead of 2
     EXPECT(assert_equal("Vector", m2.returnVals.front().type1));
-    EXPECT_LONGS_EQUAL(ReturnValue::EIGEN, m2.returnVals.front().category2); // FIXME: see above
+    EXPECT_LONGS_EQUAL(ReturnValue::EIGEN, m2.returnVals.front().category2); // FAIL: gets 6201089 instead of 2
     EXPECT(assert_equal("Matrix", m2.returnVals.front().type2));
   }
 

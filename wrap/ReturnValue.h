@@ -21,23 +21,23 @@ namespace wrap {
 struct ReturnValue {
 
   typedef enum {
-    CLASS = 0,
-    EIGEN = 1,
-    BASIS = 2,
-    VOID  = 3
+    CLASS = 1,
+    EIGEN = 2,
+    BASIS = 3,
+    VOID  = 4,
+    DUMMY_CATEGORY = 5
   } return_category;
 
   ReturnValue(bool enable_verbosity = true)
   : verbose(enable_verbosity), isPtr1(false), isPtr2(false),
-    isPair(false), category1(CLASS), category2(CLASS)
+    isPair(false), category1(DUMMY_CATEGORY), category2(DUMMY_CATEGORY)
   {}
 
   bool verbose;
-  std::string type1, type2;
   bool isPtr1, isPtr2, isPair;
-  std::vector<std::string> namespaces1, namespaces2;
-
   return_category category1, category2;
+  std::string type1, type2;
+  std::vector<std::string> namespaces1, namespaces2;
 
   typedef enum {
     arg1, arg2, pair
