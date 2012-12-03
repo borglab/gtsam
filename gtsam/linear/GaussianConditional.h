@@ -144,8 +144,11 @@ public:
   /** equals function */
   bool equals(const GaussianConditional &cg, double tol = 1e-9) const;
 
-  /** dimension of multivariate variable */
+  /** dimension of multivariate variable (same as rows()) */
   size_t dim() const { return rsd_.rows(); }
+
+  /** dimension of multivariate variable (same as dim()) */
+  size_t rows() const { return dim(); }
 
   /** Compute the augmented information matrix as
    * \f$ [ R S d ]^T [ R S d ] \f$
