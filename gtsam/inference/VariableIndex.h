@@ -142,11 +142,11 @@ public:
   void removeUnusedAtEnd(size_t nToRemove);
 
 protected:
-  Factor_iterator factorsBegin(Index variable) { checkVar(variable); return index_[variable].begin(); }    ///<TODO: comment
-  Factor_iterator factorsEnd(Index variable) { checkVar(variable); return index_[variable].end(); }        ///<TODO: comment
+  Factor_iterator factorsBegin(Index variable) { checkVar(variable); return index_[variable].begin(); }
+  Factor_iterator factorsEnd(Index variable) { checkVar(variable); return index_[variable].end(); }
 
-  Factor_const_iterator factorsBegin(Index variable) const { checkVar(variable); return index_[variable].begin(); }  ///<TODO: comment
-  Factor_const_iterator factorsEnd(Index variable) const { checkVar(variable); return index_[variable].end(); }      ///<TODO: comment
+  Factor_const_iterator factorsBegin(Index variable) const { checkVar(variable); return index_[variable].begin(); }
+  Factor_const_iterator factorsEnd(Index variable) const { checkVar(variable); return index_[variable].end(); }
 
   /// Internal constructor to allocate a VariableIndex of the requested size
   VariableIndex(size_t nVars) : index_(nVars), nFactors_(0), nEntries_(0) {}
