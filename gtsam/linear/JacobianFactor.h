@@ -297,7 +297,7 @@ namespace gtsam {
 
     /** An exception indicating that the noise model dimension passed into the
      * JacobianFactor has a different dimensionality than the factor. */
-    class InvalidNoiseModel : std::exception {
+    class InvalidNoiseModel : public std::exception {
     public:
       const size_t factorDims; ///< The dimensionality of the factor
       const size_t noiseModelDims; ///< The dimensionality of the noise model
