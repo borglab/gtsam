@@ -58,19 +58,8 @@ protected:
 };
 
 /**
- * Normal test will wrap execution in a try/catch block to catch exceptions more effectively
- */
-#define TEST(testName, testGroup)\
-  class testGroup##testName##Test : public Test \
-  { public: testGroup##testName##Test () : Test (#testName "Test", __FILE__, __LINE__, true) {} \
-            virtual ~testGroup##testName##Test () {};\
-            void run (TestResult& result_);} \
-    testGroup##testName##Instance; \
-  void testGroup##testName##Test::run (TestResult& result_) 
-
-/**
  * For debugging only: use TEST_UNSAFE to allow debuggers to have access to exceptions, as this
- * will not wrap execution with a try/catch block
+ * will not wrap execution with a try/catch block.
  */
 #define TEST_UNSAFE(testName, testGroup)\
   class testGroup##testName##Test : public Test \
@@ -79,6 +68,23 @@ protected:
             void run (TestResult& result_);} \
     testGroup##testName##Instance; \
   void testGroup##testName##Test::run (TestResult& result_)
+
+/**
+ * Normal test will wrap execution in a try/catch block to catch exceptions
+ * more effectively (except in debug mode where they will be uncaught to pass on
+ * to the debugger.)
+ */
+#ifdef NDEBUG
+#define TEST(testName, testGroup)\
+  class testGroup##testName##Test : public Test \
+  { public: testGroup##testName##Test () : Test (#testName "Test", __FILE__, __LINE__, true) {} \
+            virtual ~testGroup##testName##Test () {};\
+            void run (TestResult& result_);} \
+    testGroup##testName##Instance; \
+  void testGroup##testName##Test::run (TestResult& result_) 
+#else
+#define TEST TEST_UNSAFE
+#endif
 
 /*
  * Convention for tests:
