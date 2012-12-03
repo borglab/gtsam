@@ -367,6 +367,10 @@ void Module::parseMarkup(const std::string& data) {
   parse_info<const char*> info = parse(data.c_str(), module_p, space_p);
   if(!info.full) {
     printf("parsing stopped at \n%.20s\n",info.stop);
+    cout << "Stopped near:\n"
+      "class '" << cls.name << "'\n"
+      "method '" << methodName << "'\n"
+      "argument '" << arg.name << "'" << endl;
     throw ParseFailed((int)info.length);
   }
 
