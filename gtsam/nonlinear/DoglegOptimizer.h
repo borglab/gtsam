@@ -133,11 +133,17 @@ public:
    */
   virtual void iterate();
 
-  /** Access the parameters */
+  /** Read-only access the parameters */
   const DoglegParams& params() const { return params_; }
 
-  /** Access the last state */
+  /** Read/write access the parameters. */
+  DoglegParams& params() { return params_; }
+
+  /** Read-only access the last state */
   const DoglegState& state() const { return state_; }
+
+  /** Read/write access the last state. When modifying the state, the error, etc. must be consistent before calling iterate() */
+  DoglegState& state() { return state_; }
 
   /** Access the current trust region radius Delta */
   double getDelta() const { return state_.Delta; }
