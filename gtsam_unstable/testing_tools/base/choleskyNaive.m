@@ -4,12 +4,18 @@ function A = choleskyNaive(A)
 
 % Loop over rows of A
 q = min(size(A,2), size(A,1));
+lastA = 0;
 for i = 1:q
     % Check for valid pivot
     if A(i,i) <= 0.0
         A = [];
         return;
     end
+    
+    if lastA == A(i,i)
+        1;
+    end
+    lastA = A(i,i);
     
     % Scale row to be the square-root factor
     A(i,i) = sqrt(A(i,i));
