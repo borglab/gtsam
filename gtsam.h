@@ -84,37 +84,43 @@
  *  - TODO: Handle gtsam::Rot3M conversions to quaternions
  */
 
-/*namespace std {
+namespace std {
+    #include <vector>
     template<T>
-    //Module.cpp needs to be changed to allow lowercase classnames
     class vector
     {
+        //Do we need these?
         //Capacity
-        size_t size() const;
+        /*size_t size() const;
         size_t max_size() const;
-        void resize(size_t sz, T c = T());
+        //void resize(size_t sz);
         size_t capacity() const;
         bool empty() const;
         void reserve(size_t n);
 
         //Element acces
-        T& at(size_t n);
-        const T& at(size_t n) const;
-        T& front();
-        const T& front() const;
-        T& back();
-        const T& back() const;
+        T* at(size_t n);
+        T* front();
+        T* back();
 
         //Modifiers
         void assign(size_t n, const T& u);
         void push_back(const T& x);
-        void pop_back();
+        void pop_back();*/
     };
-}*/
+    //typedef std::vector
+  
+    #include<list>
+    template<T>
+    class list
+    {
+    
+    
+    };
+
+}
 
 namespace gtsam {
-
-//typedef std::vector<Index> IndexVector;
 
 //*************************************************************************
 // base
@@ -255,6 +261,7 @@ virtual class Point2 : gtsam::Value {
   double y() const;
   Vector vector() const;
   double dist(const gtsam::Point2& p2) const;
+  double norm() const;
 };
 
 virtual class StereoPoint2 : gtsam::Value {
@@ -383,7 +390,7 @@ virtual class Rot3 : gtsam::Value {
 
   // Group
   static gtsam::Rot3 identity();
-  gtsam::Rot3 inverse() const;
+    gtsam::Rot3 inverse() const;
   gtsam::Rot3 compose(const gtsam::Rot3& p2) const;
   gtsam::Rot3 between(const gtsam::Rot3& p2) const;
 
@@ -779,7 +786,7 @@ virtual class BayesNet {
   // Standard interface
   size_t size() const;
   void printStats(string s) const;
-  void saveGraph(string s) const;
+    void saveGraph(string s) const;
   CONDITIONAL* front() const;
   CONDITIONAL* back() const;
   void push_back(CONDITIONAL* conditional);
@@ -844,6 +851,7 @@ virtual class BayesTreeClique {
 
 #include <gtsam/inference/SymbolicFactorGraph.h>
 typedef gtsam::BayesNet<gtsam::IndexConditional> SymbolicBayesNetBase;
+
 virtual class SymbolicBayesNet  : gtsam::SymbolicBayesNetBase {
   // Standard Constructors and Named Constructors
   SymbolicBayesNet();
@@ -1943,6 +1951,8 @@ template<POSE, LANDMARK, CALIBRATION>
 virtual class GenericProjectionFactor : gtsam::NonlinearFactor {
   GenericProjectionFactor(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
     size_t poseKey, size_t pointKey, const CALIBRATION* k);
+  GenericProjectionFactor(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
+    size_t poseKey, size_t pointKey, const CALIBRATION* k, const POSE& body_P_sensor);
   gtsam::Point2 measured() const;
   CALIBRATION* calibration() const;
 };
@@ -2006,6 +2016,7 @@ namespace utilities {
   void perturbPoint3(gtsam::Values& values, double sigma, int seed);
   void insertBackprojections(gtsam::Values& values, const gtsam::SimpleCamera& c, Vector J, Matrix Z, double depth);
   void insertProjectionFactors(gtsam::NonlinearFactorGraph& graph, size_t i, Vector J, Matrix Z, const gtsam::noiseModel::Base* model, const gtsam::Cal3_S2* K);
+  void insertProjectionFactors(gtsam::NonlinearFactorGraph& graph, size_t i, Vector J, Matrix Z, const gtsam::noiseModel::Base* model, const gtsam::Cal3_S2* K, const gtsam::Pose3& body_P_sensor);
   Matrix reprojectionErrors(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& values);
 
 } //\namespace utilities
