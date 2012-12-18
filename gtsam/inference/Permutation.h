@@ -167,14 +167,6 @@ public:
   /// @name Advanced Interface
   /// @{
 
-
-  /**
-   * A partial permutation, reorders the variables selected by selector through
-   * partialPermutation.  selector and partialPermutation should have the same
-   * size, this is checked if NDEBUG is not defined.
-   */
-  Permutation::shared_ptr partialPermutation(const Permutation& selector, const Permutation& partialPermutation) const;
-
   iterator begin() { return rangeIndices_.begin(); }  ///< Iterate through the indices
   iterator end() { return rangeIndices_.end(); }      ///< Iterate through the indices
 

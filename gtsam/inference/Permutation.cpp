@@ -124,18 +124,6 @@ Permutation::shared_ptr Permutation::permute(const Permutation& permutation) con
 }
 
 /* ************************************************************************* */
-Permutation::shared_ptr Permutation::partialPermutation(
-    const Permutation& selector, const Permutation& partialPermutation) const {
-  assert(selector.size() == partialPermutation.size());
-  Permutation::shared_ptr result(new Permutation(*this));
-
-  for(Index subsetPos=0; subsetPos<selector.size(); ++subsetPos)
-    (*result)[selector[subsetPos]] = (*this)[selector[partialPermutation[subsetPos]]];
-
-  return result;
-}
-
-/* ************************************************************************* */
 Permutation::shared_ptr Permutation::inverse() const {
   Permutation::shared_ptr result(new Permutation(this->size()));
   for(Index i=0; i<this->size(); ++i) {

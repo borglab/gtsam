@@ -484,11 +484,9 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(const FastSet<Index>& mark
     variableIndex_.permuteInPlace(partialSolveResult.reorderingSelector, partialSolveResult.reorderingPermutation);
     gttoc(permute_global_variable_index);
     gttic(permute_delta);
-    const Permutation fullReordering = *Permutation::Identity(delta_.size()).
-      partialPermutation(partialSolveResult.reorderingSelector, partialSolveResult.reorderingPermutation);
-    delta_.permuteInPlace(fullReordering);
-    deltaNewton_.permuteInPlace(fullReordering);
-    RgProd_.permuteInPlace(fullReordering);
+    delta_.permuteInPlace(partialSolveResult.reorderingSelector, partialSolveResult.reorderingPermutation);
+    deltaNewton_.permuteInPlace(partialSolveResult.reorderingSelector, partialSolveResult.reorderingPermutation);
+    RgProd_.permuteInPlace(partialSolveResult.reorderingSelector, partialSolveResult.reorderingPermutation);
     gttoc(permute_delta);
     gttic(permute_ordering);
     ordering_.reduceWithInverse(partialSolveResult.reorderingInverse);
