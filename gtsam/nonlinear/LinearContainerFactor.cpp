@@ -198,6 +198,7 @@ GaussianFactor::shared_ptr LinearContainerFactor::linearize(
 
   // Determine delta between linearization points using new ordering
   VectorValues delta = linearizationPoint_->localCoordinates(subsetC, localOrdering);
+  Vector deltaVector = delta.asVector();
 
   // clone and reorder linear factor to final ordering
   GaussianFactor::shared_ptr linFactor = order(localOrdering);
@@ -208,8 +209,8 @@ GaussianFactor::shared_ptr LinearContainerFactor::linearize(
     HessianFactor::shared_ptr hesFactor = boost::shared_dynamic_cast<HessianFactor>(linFactor);
     size_t dim = hesFactor->linearTerm().size();
     Eigen::Block<HessianFactor::Block> Gview = hesFactor->info().block(0, 0, dim, dim);
-    Vector G_delta = Gview.selfadjointView<Eigen::Upper>() * delta.vector();
-    hesFactor->constantTerm() += delta.vector().dot(G_delta) + delta.vector().dot(hesFactor->linearTerm());
+    Vector G_delta = Gview.selfadjointView<Eigen::Upper>() * deltaVector;
+    hesFactor->constantTerm() += deltaVector.dot(G_delta) + deltaVector.dot(hesFactor->linearTerm());
     hesFactor->linearTerm() += G_delta;
   }
 

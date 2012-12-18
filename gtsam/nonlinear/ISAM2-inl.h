@@ -29,7 +29,7 @@ namespace gtsam {
 template<class VALUE>
 VALUE ISAM2::calculateEstimate(Key key) const {
   const Index index = getOrdering()[key];
-  const SubVector delta = getDelta()[index];
+  const Vector& delta = getDelta()[index];
   return theta_.at<VALUE>(key).retract(delta);
 }
 
@@ -158,7 +158,7 @@ bool optimizeWildfireNode(const boost::shared_ptr<CLIQUE>& clique, double thresh
     for(it = (*clique)->beginFrontals(); it!=(*clique)->endFrontals(); it++) {
       if(!valuesChanged) {
         const Vector& oldValue(originalValues[it - (*clique)->beginFrontals()]);
-        const SubVector& newValue(delta[*it]);
+        const Vector& newValue(delta[*it]);
         if((oldValue - newValue).lpNorm<Eigen::Infinity>() >= threshold) {
           valuesChanged = true;
           break;

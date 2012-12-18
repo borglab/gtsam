@@ -110,7 +110,7 @@ void LevenbergMarquardtOptimizer::iterate() {
       // Solve Damped Gaussian Factor Graph
       const VectorValues delta = solveGaussianFactorGraph(dampedSystem, params_);
 
-      if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) cout << "linear delta norm = " << delta.asVector().norm() << endl;
+      if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) cout << "linear delta norm = " << delta.norm() << endl;
       if (lmVerbosity >= LevenbergMarquardtParams::TRYDELTA) delta.print("delta");
 
       // update values

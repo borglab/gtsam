@@ -39,7 +39,6 @@ TEST(VectorValues, insert) {
 
   // Check dimensions
   LONGS_EQUAL(6, actual.size());
-  LONGS_EQUAL(7, actual.dim());
   LONGS_EQUAL(1, actual.dim(0));
   LONGS_EQUAL(2, actual.dim(1));
   LONGS_EQUAL(2, actual.dim(2));
@@ -59,7 +58,7 @@ TEST(VectorValues, insert) {
   EXPECT(assert_equal(Vector_(2, 2.0, 3.0), actual[1]));
   EXPECT(assert_equal(Vector_(2, 4.0, 5.0), actual[2]));
   EXPECT(assert_equal(Vector_(2, 6.0, 7.0), actual[5]));
-  EXPECT(assert_equal(Vector_(7, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0), actual.vector()));
+  EXPECT(assert_equal(Vector_(7, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0), actual.asVector()));
 
   // Check exceptions
   CHECK_EXCEPTION(actual.insert(1, Vector()), invalid_argument);
@@ -80,7 +79,6 @@ TEST(VectorValues, dimsConstructor) {
 
   // Check dimensions
   LONGS_EQUAL(3, actual.size());
-  LONGS_EQUAL(5, actual.dim());
   LONGS_EQUAL(1, actual.dim(0));
   LONGS_EQUAL(2, actual.dim(1));
   LONGS_EQUAL(2, actual.dim(2));
@@ -106,7 +104,6 @@ TEST(VectorValues, copyConstructor) {
 
   // Check dimensions
   LONGS_EQUAL(6, actual.size());
-  LONGS_EQUAL(7, actual.dim());
   LONGS_EQUAL(1, actual.dim(0));
   LONGS_EQUAL(2, actual.dim(1));
   LONGS_EQUAL(2, actual.dim(2));
@@ -149,7 +146,6 @@ TEST(VectorValues, assignment) {
 
   // Check dimensions
   LONGS_EQUAL(6, actual.size());
-  LONGS_EQUAL(7, actual.dim());
   LONGS_EQUAL(1, actual.dim(0));
   LONGS_EQUAL(2, actual.dim(1));
   LONGS_EQUAL(2, actual.dim(2));
@@ -188,7 +184,6 @@ TEST(VectorValues, SameStructure) {
 
   // Check dimensions
   LONGS_EQUAL(6, actual.size());
-  LONGS_EQUAL(7, actual.dim());
   LONGS_EQUAL(1, actual.dim(0));
   LONGS_EQUAL(2, actual.dim(1));
   LONGS_EQUAL(2, actual.dim(2));
@@ -220,7 +215,6 @@ TEST(VectorValues, Zero_fromModel) {
 
   // Check dimensions
   LONGS_EQUAL(6, actual.size());
-  LONGS_EQUAL(7, actual.dim());
   LONGS_EQUAL(1, actual.dim(0));
   LONGS_EQUAL(2, actual.dim(1));
   LONGS_EQUAL(2, actual.dim(2));
@@ -256,7 +250,6 @@ TEST(VectorValues, Zero_fromDims) {
 
   // Check dimensions
   LONGS_EQUAL(3, actual.size());
-  LONGS_EQUAL(5, actual.dim());
   LONGS_EQUAL(1, actual.dim(0));
   LONGS_EQUAL(2, actual.dim(1));
   LONGS_EQUAL(2, actual.dim(2));
@@ -273,7 +266,6 @@ TEST(VectorValues, Zero_fromUniform) {
 
   // Check dimensions
   LONGS_EQUAL(3, actual.size());
-  LONGS_EQUAL(6, actual.dim());
   LONGS_EQUAL(2, actual.dim(0));
   LONGS_EQUAL(2, actual.dim(1));
   LONGS_EQUAL(2, actual.dim(2));
@@ -298,7 +290,6 @@ TEST(VectorValues, resizeLike) {
 
   // Check dimensions
   LONGS_EQUAL(6, actual.size());
-  LONGS_EQUAL(7, actual.dim());
   LONGS_EQUAL(1, actual.dim(0));
   LONGS_EQUAL(2, actual.dim(1));
   LONGS_EQUAL(2, actual.dim(2));
@@ -328,7 +319,6 @@ TEST(VectorValues, resize_fromUniform) {
 
   // Check dimensions
   LONGS_EQUAL(3, actual.size());
-  LONGS_EQUAL(6, actual.dim());
   LONGS_EQUAL(2, actual.dim(0));
   LONGS_EQUAL(2, actual.dim(1));
   LONGS_EQUAL(2, actual.dim(2));
@@ -355,7 +345,6 @@ TEST(VectorValues, resize_fromDims) {
 
   // Check dimensions
   LONGS_EQUAL(3, actual.size());
-  LONGS_EQUAL(5, actual.dim());
   LONGS_EQUAL(1, actual.dim(0));
   LONGS_EQUAL(2, actual.dim(1));
   LONGS_EQUAL(2, actual.dim(2));
@@ -383,7 +372,6 @@ TEST(VectorValues, append) {
 
   // Check dimensions
   LONGS_EQUAL(5, actual.size());
-  LONGS_EQUAL(13, actual.dim());
   LONGS_EQUAL(1, actual.dim(0));
   LONGS_EQUAL(2, actual.dim(1));
   LONGS_EQUAL(2, actual.dim(2));
@@ -443,7 +431,8 @@ TEST(VectorValues, permute) {
   permutation[2] = 3;
   permutation[3] = 1;
 
-  VectorValues actual = original.permute(permutation);
+  VectorValues actual = original;
+  actual.permuteInPlace(permutation);
 
   EXPECT(assert_equal(expected, actual));
 }

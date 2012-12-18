@@ -207,6 +207,7 @@ TEST_UNSAFE(ISAM2, ImplAddVariables) {
   EXPECT(assert_container_equality(replacedKeysExpected, replacedKeys));
   EXPECT(assert_equal(orderingExpected, ordering));
 }
+
 /* ************************************************************************* */
 TEST_UNSAFE(ISAM2, ImplRemoveVariables) {
 

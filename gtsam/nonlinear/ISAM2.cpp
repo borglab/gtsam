@@ -348,9 +348,9 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(const FastSet<Index>& mark
     variableIndex_.permuteInPlace(*colamd);
     gttoc(permute_global_variable_index);
     gttic(permute_delta);
-    delta_ = delta_.permute(*colamd);
-    deltaNewton_ = deltaNewton_.permute(*colamd);
-    RgProd_ = RgProd_.permute(*colamd);
+    delta_.permuteInPlace(*colamd);
+    deltaNewton_.permuteInPlace(*colamd);
+    RgProd_.permuteInPlace(*colamd);
     gttoc(permute_delta);
     gttic(permute_ordering);
     ordering_.permuteWithInverse(*colamdInverse);
@@ -484,9 +484,9 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(const FastSet<Index>& mark
     variableIndex_.permuteInPlace(partialSolveResult.fullReordering);
     gttoc(permute_global_variable_index);
     gttic(permute_delta);
-    delta_ = delta_.permute(partialSolveResult.fullReordering);
-    deltaNewton_ = deltaNewton_.permute(partialSolveResult.fullReordering);
-    RgProd_ = RgProd_.permute(partialSolveResult.fullReordering);
+    delta_.permuteInPlace(partialSolveResult.fullReordering);
+    deltaNewton_.permuteInPlace(partialSolveResult.fullReordering);
+    RgProd_.permuteInPlace(partialSolveResult.fullReordering);
     gttoc(permute_delta);
     gttic(permute_ordering);
     ordering_.permuteWithInverse(partialSolveResult.fullReorderingInverse);
@@ -911,7 +911,7 @@ void optimizeGradientSearchInPlace(const ISAM2& isam, VectorValues& grad) {
 
   gttic(Compute_point);
   // Compute steepest descent point
-  grad.asVector() *= step;
+  scal(step, grad);
   gttoc(Compute_point);
 }
 

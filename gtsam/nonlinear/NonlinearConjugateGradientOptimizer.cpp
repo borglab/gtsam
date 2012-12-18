@@ -44,7 +44,7 @@ NonlinearConjugateGradientOptimizer::System::Gradient NonlinearConjugateGradient
 }
 NonlinearConjugateGradientOptimizer::System::State NonlinearConjugateGradientOptimizer::System::advance(const State &current, const double alpha, const Gradient &g) const {
   Gradient step = g;
-  step.asVector() *= alpha;
+  scal(alpha, step);
   return current.retract(step, ordering_);
 }
 

@@ -32,6 +32,7 @@
 #pragma GCC diagnostic pop
 #include <boost/assign/list_of.hpp> // for 'list_of()'
 #include <functional>
+#include <boost/iterator/counting_iterator.hpp>
 
 using namespace std;
 using namespace gtsam;
@@ -45,7 +46,8 @@ double computeError(const GaussianBayesNet& gbn, const LieVector& values) {
 
   // Convert Vector to VectorValues
   VectorValues vv = *allocateVectorValues(gbn);
-  vv.asVector() = values;
+  internal::writeVectorValuesSlices(values, vv,
+    boost::make_counting_iterator(size_t(0)), boost::make_counting_iterator(vv.size()));
 
   // Convert to factor graph
   GaussianFactorGraph gfg(gbn);
@@ -57,7 +59,8 @@ double computeErrorBt(const BayesTree<GaussianConditional>& gbt, const LieVector
 
   // Convert Vector to VectorValues
   VectorValues vv = *allocateVectorValues(gbt);
-  vv.asVector() = values;
+  internal::writeVectorValuesSlices(values, vv,
+    boost::make_counting_iterator(size_t(0)), boost::make_counting_iterator(vv.size()));
 
   // Convert to factor graph
   GaussianFactorGraph gfg(gbt);
@@ -96,13 +99,15 @@ TEST(DoglegOptimizer, ComputeSteepestDescentPoint) {
   Vector gradient = numericalGradient(
       boost::function<double(const LieVector&)>(boost::bind(&computeError, gbn, _1)),
       LieVector(VectorValues::Zero(gradientValues).asVector()));
-  gradientValues.asVector() = gradient;
+  internal::writeVectorValuesSlices(gradient, gradientValues,
+    boost::make_counting_iterator(size_t(0)), boost::make_counting_iterator(gradientValues.size()));
 
   // Compute the gradient using dense matrices
   Matrix augmentedHessian = GaussianFactorGraph(gbn).augmentedHessian();
   LONGS_EQUAL(11, augmentedHessian.cols());
   VectorValues denseMatrixGradient = *allocateVectorValues(gbn);
-  denseMatrixGradient.asVector() = -augmentedHessian.col(10).segment(0,10);
+  internal::writeVectorValuesSlices(-augmentedHessian.col(10).segment(0,10), denseMatrixGradient,
+    boost::make_counting_iterator(size_t(0)), boost::make_counting_iterator(gradientValues.size()));
   EXPECT(assert_equal(gradientValues, denseMatrixGradient, 1e-5));
 
   // Compute the steepest descent point
@@ -276,13 +281,15 @@ TEST(DoglegOptimizer, ComputeSteepestDescentPointBT) {
   Vector gradient = numericalGradient(
       boost::function<double(const LieVector&)>(boost::bind(&computeErrorBt, bt, _1)),
       LieVector(VectorValues::Zero(gradientValues).asVector()));
-  gradientValues.asVector() = gradient;
+  internal::writeVectorValuesSlices(gradient, gradientValues,
+    boost::make_counting_iterator(size_t(0)), boost::make_counting_iterator(gradientValues.size()));
 
   // Compute the gradient using dense matrices
   Matrix augmentedHessian = GaussianFactorGraph(bt).augmentedHessian();
   LONGS_EQUAL(11, augmentedHessian.cols());
   VectorValues denseMatrixGradient = *allocateVectorValues(bt);
-  denseMatrixGradient.asVector() = -augmentedHessian.col(10).segment(0,10);
+  internal::writeVectorValuesSlices(-augmentedHessian.col(10).segment(0,10), denseMatrixGradient,
+    boost::make_counting_iterator(size_t(0)), boost::make_counting_iterator(gradientValues.size()));
   EXPECT(assert_equal(gradientValues, denseMatrixGradient, 1e-5));
 
   // Compute the steepest descent point

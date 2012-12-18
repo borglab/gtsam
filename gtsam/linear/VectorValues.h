@@ -111,7 +111,7 @@ namespace gtsam {
     VectorValues() {}
 
     /** Named constructor to create a VectorValues of the same structure of the
-     * specifed one, but filled with zeros.
+     * specified one, but filled with zeros.
      * @return
      */
     static VectorValues Zero(const VectorValues& model);
@@ -127,14 +127,11 @@ namespace gtsam {
     /** Return the dimension of variable \c j. */
     size_t dim(Index j) const { checkExists(j); return (*this)[j].rows(); }
 
-    /** Return the summed dimensionality of all variables. */
-    //size_t dim() const { return values_.rows(); }
-
     /** Return the dimension of each vector in this container */
     std::vector<size_t> dims() const;
 
     /** Check whether a variable with index \c j exists. */
-    bool exists(Index j) const { return j < size() && (*this)[j].rows() > 0; }
+    bool exists(Index j) const { return j < size() && values_[j].rows() > 0; }
 
     /** Read/write access to the vector value with index \c j, throws std::out_of_range if \c j does not exist, identical to operator[](Index). */
     Vector& at(Index j) { checkExists(j); return values_[j]; }
@@ -149,8 +146,8 @@ namespace gtsam {
     const Vector& operator[](Index j) const { return at(j); }
 
     /** Insert a vector \c value with index \c j.
-     * Causes reallocation. Can be used to insert values in any order, but
-     * throws an invalid_argument exception if the index \c j is already used.
+     * Causes reallocation, but can insert values in any order.
+     * Throws an invalid_argument exception if the index \c j is already used.
      * @param value The vector to be inserted.
      * @param j The index with which the value will be associated.
      */
@@ -167,7 +164,7 @@ namespace gtsam {
 
     /** print required by Testable for unit testing */
     void print(const std::string& str = "VectorValues: ",
-        const IndexFormatter& formatter =DefaultIndexFormatter) const;
+        const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
     /** equals required by Testable for unit testing */
     bool equals(const VectorValues& x, double tol = 1e-9) const;
@@ -179,10 +176,10 @@ namespace gtsam {
 
     /** Construct from a container of variable dimensions (in variable order), without initializing any values. */
     template<class CONTAINER>
-    explicit VectorValues(const CONTAINER& dimensions) { append(dimensions); }
+    explicit VectorValues(const CONTAINER& dimensions) { this->append(dimensions); }
 
     /** Construct to hold nVars vectors of varDim dimension each. */
-    VectorValues(Index nVars, size_t varDim) { resize(nVars, varDim); }
+    VectorValues(Index nVars, size_t varDim) { this->resize(nVars, varDim); }
 
     /** Named constructor to create a VectorValues that matches the structure of
      * the specified VectorValues, but do not initialize the new values. */
@@ -214,17 +211,16 @@ namespace gtsam {
     void resizeLike(const VectorValues& other);
 
     /** Resize the VectorValues to hold \c nVars variables, each of dimension
-     * \c varDim, not preserving any data.  After calling this function, all
-     * variables will be uninitialized.
+     * \c varDim.  Any individual vectors that do not change size will keep
+     * their values, but any new or resized vectors will be uninitialized.
      * @param nVars The number of variables to create
      * @param varDim The dimension of each variable
      */
     void resize(Index nVars, size_t varDim);
 
     /** Resize the VectorValues to contain variables of the dimensions stored
-     * in \c dimensions, not preserving any data.  The new variables are
-     * uninitialized, but this function is used to pre-allocate space for
-     * performance.  After calling this function all variables will be uninitialized.
+     * in \c dimensions.  Any individual vectors that do not change size will keep
+     * their values, but any new or resized vectors will be uninitialized.
      * @param dimensions A container of the dimension of each variable to create.
      */
     template<class CONTAINER>
@@ -243,14 +239,11 @@ namespace gtsam {
     /** Set all entries to zero, does not modify the size. */
     void setZero();
 
-    /** Reference the entire solution vector (const version). */
-    //const Vector& asVector() const { return values_; }
-
-    /** Reference the entire solution vector. */
-    //Vector& asVector() { return values_; }
+    /** Retrieve the entire solution as a single vector */
+    const Vector asVector() const;
 
     /** Access a vector that is a subset of relevant indices */
-    Vector vector(const std::vector<Index>& indices) const;
+    const Vector vector(const std::vector<Index>& indices) const;
 
     /** Check whether this VectorValues has the same structure, meaning has the
      * same number of variables and that all variables are of the same dimension,
@@ -263,7 +256,7 @@ namespace gtsam {
     /**
      * Permute the entries of this VectorValues in place
      */
-    void permute(const Permutation& permutation);
+    void permuteInPlace(const Permutation& permutation);
 
     /**
      * Swap the data in this VectorValues with another.
@@ -276,10 +269,13 @@ namespace gtsam {
 
     /** Dot product with another VectorValues, interpreting both as vectors of
      * their concatenated values. */
-    double dot(const VectorValues& V) const;
+    double dot(const VectorValues& v) const;
 
     /** Vector L2 norm */
     double norm() const;
+
+    /** Squared vector L2 norm */
+    double squaredNorm() const;
 
     /**
      * + operator does element-wise addition.  Both VectorValues must have the
@@ -316,50 +312,54 @@ namespace gtsam {
     /**
      * scale a vector by a scalar
      */
-    friend VectorValues operator*(const double a, const VectorValues &V) {
-      VectorValues result(VectorValues::SameStructure(V));
-      result.values_ = a * V.values_;
+    friend VectorValues operator*(const double a, const VectorValues &v) {
+      VectorValues result = VectorValues::SameStructure(v);
+      for(Index j = 0; j < v.size(); ++j)
+        result.values_[j] = a * v.values_[j];
       return result;
     }
 
     /// TODO: linear algebra interface seems to have been added for SPCG.
-    friend size_t dim(const VectorValues& V) {
-      return V.dim();
-    }
-    /// TODO: linear algebra interface seems to have been added for SPCG.
-    friend double dot(const VectorValues& V1, const VectorValues& V2) {
-      return gtsam::dot(V1.values_, V2.values_);
-    }
-    /// TODO: linear algebra interface seems to have been added for SPCG.
     friend void scal(double alpha, VectorValues& x) {
-      gtsam::scal(alpha, x.values_);
+      for(Index j = 0; j < x.size(); ++j)
+        x.values_[j] *= alpha;
     }
     /// TODO: linear algebra interface seems to have been added for SPCG.
     friend void axpy(double alpha, const VectorValues& x, VectorValues& y) {
-      gtsam::axpy(alpha, x.values_, y.values_);
+      if(x.size() != y.size())
+        throw std::invalid_argument("axpy(VectorValues) called with different vector sizes");
+      for(Index j = 0; j < x.size(); ++j)
+        if(x.values_[j].size() == y.values_[j].size())
+          y.values_[j] += alpha * x.values_[j];
+        else
+          throw std::invalid_argument("axpy(VectorValues) called with different vector sizes");
     }
     /// TODO: linear algebra interface seems to have been added for SPCG.
     friend void sqrt(VectorValues &x) {
-      Vector y = gtsam::esqrt(x.values_);
-      x.values_ = y;
+      for(Index j = 0; j < x.size(); ++j)
+        x.values_[j] = x.values_[j].cwiseSqrt();
     }
 
     /// TODO: linear algebra interface seems to have been added for SPCG.
-    friend void ediv(const VectorValues& numerator,
-        const VectorValues& denominator, VectorValues &result) {
-      assert(
-          numerator.dim() == denominator.dim() && denominator.dim() == result.dim());
-      const size_t sz = result.dim();
-      for (size_t i = 0; i < sz; ++i)
-        result.values_[i] = numerator.values_[i] / denominator.values_[i];
+    friend void ediv(const VectorValues& numerator, const VectorValues& denominator, VectorValues &result) {
+      if(numerator.size() != denominator.size() || numerator.size() != result.size())
+        throw std::invalid_argument("ediv(VectorValues) called with different vector sizes");
+      for(Index j = 0; j < numerator.size(); ++j)
+        if(numerator.values_[j].size() == denominator.values_[j].size() && numerator.values_[j].size() == result.values_[j].size())
+          result.values_[j] = numerator.values_[j].cwiseQuotient(denominator.values_[j]);
+        else
+          throw std::invalid_argument("ediv(VectorValues) called with different vector sizes");
     }
 
     /// TODO: linear algebra interface seems to have been added for SPCG.
     friend void edivInPlace(VectorValues& x, const VectorValues& y) {
-      assert(x.dim() == y.dim());
-      const size_t sz = x.dim();
-      for (size_t i = 0; i < sz; ++i)
-        x.values_[i] /= y.values_[i];
+      if(x.size() != y.size())
+        throw std::invalid_argument("edivInPlace(VectorValues) called with different vector sizes");
+      for(Index j = 0; j < x.size(); ++j)
+        if(x.values_[j].size() == y.values_[j].size())
+          x.values_[j].array() /= y.values_[j].array();
+        else
+          throw std::invalid_argument("edivInPlace(VectorValues) called with different vector sizes");
     }
 
   private:
@@ -383,8 +383,8 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class CONTAINER>
   void VectorValues::append(const CONTAINER& dimensions) {
-    values_.resize(size() + dimensions.size());
     size_t i = size();
+    values_.resize(size() + dimensions.size());
     BOOST_FOREACH(size_t dim, dimensions) {
       values_[i] = Vector(dim);
       ++ i;
@@ -395,51 +395,56 @@ namespace gtsam {
   template<class CONTAINER>
   VectorValues VectorValues::Zero(const CONTAINER& dimensions) {
     VectorValues ret;
-    values_.resize(dimensions.size());
+    ret.values_.resize(dimensions.size());
     size_t i = 0;
     BOOST_FOREACH(size_t dim, dimensions) {
-      values_[i] = Vector::Zero(dim);
+      ret.values_[i] = Vector::Zero(dim);
       ++ i;
     }
     return ret;
   }
 
   namespace internal {
-  /* ************************************************************************* */
-  // Helper function, extracts vectors with variable indices
-  // in the first and last iterators, and concatenates them in that order into the
-  // output.
-  template<typename ITERATOR>
-  Vector extractVectorValuesSlices(const VectorValues& values, ITERATOR first, ITERATOR last) {
-    // Find total dimensionality
-    int dim = 0;
-    for(ITERATOR j = first; j != last; ++j)
-      dim += values[*j].rows();
+    /* ************************************************************************* */
+    // Helper function, extracts vectors with variable indices
+    // in the first and last iterators, and concatenates them in that order into the
+    // output.
+    template<typename ITERATOR>
+    const Vector extractVectorValuesSlices(const VectorValues& values, ITERATOR first, ITERATOR last, bool allowNonexistant = false) {
+      // Find total dimensionality
+      int dim = 0;
+      for(ITERATOR j = first; j != last; ++j)
+        // If allowNonexistant is true, skip nonexistent indices (otherwise dim will throw an error on nonexistent)
+        if(!allowNonexistant || values.exists(*j))
+          dim += values.dim(*j);
 
-    // Copy vectors
-    Vector ret(dim);
-    int varStart = 0;
-    for(ITERATOR j = first; j != last; ++j) {
-      ret.segment(varStart, values[*j].rows()) = values[*j];
-      varStart += values[*j].rows();
+      // Copy vectors
+      Vector ret(dim);
+      int varStart = 0;
+      for(ITERATOR j = first; j != last; ++j) {
+        // If allowNonexistant is true, skip nonexistent indices (otherwise dim will throw an error on nonexistent)
+        if(!allowNonexistant || values.exists(*j)) {
+          ret.segment(varStart, values.dim(*j)) = values[*j];
+          varStart += values.dim(*j);
+        }
+      }
+      return ret;
     }
-    return ret;
-  }
 
-  /* ************************************************************************* */
-  // Helper function, writes to the variables in values
-  // with indices iterated over by first and last, interpreting vector as the
-  // concatenated vectors to write.
-  template<class VECTOR, typename ITERATOR>
-  void writeVectorValuesSlices(const VECTOR& vector, VectorValues& values, ITERATOR first, ITERATOR last) {
-    // Copy vectors
-    int varStart = 0;
-    for(ITERATOR j = first; j != last; ++j) {
-      values[*j] = vector.segment(varStart, values[*j].rows());
-      varStart += values[*j].rows();
+    /* ************************************************************************* */
+    // Helper function, writes to the variables in values
+    // with indices iterated over by first and last, interpreting vector as the
+    // concatenated vectors to write.
+    template<class VECTOR, typename ITERATOR>
+    void writeVectorValuesSlices(const VECTOR& vector, VectorValues& values, ITERATOR first, ITERATOR last) {
+      // Copy vectors
+      int varStart = 0;
+      for(ITERATOR j = first; j != last; ++j) {
+        values[*j] = vector.segment(varStart, values[*j].rows());
+        varStart += values[*j].rows();
+      }
+      assert(varStart == vector.rows());
     }
-    assert(varStart == vector.rows());
-  }
   }
 
 } // \namespace gtsam

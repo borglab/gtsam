@@ -39,15 +39,15 @@ void ISAM2::Impl::AddVariables(
   // Add the new keys onto the ordering, add zeros to the delta for the new variables
   std::vector<Index> dims(newTheta.dims(*newTheta.orderingArbitrary()));
   if(debug) cout << "New variables have total dimensionality " << accumulate(dims.begin(), dims.end(), 0) << endl;
-  const size_t newDim = accumulate(dims.begin(), dims.end(), 0);
-  const size_t originalDim = delta.dim();
   const size_t originalnVars = delta.size();
   delta.append(dims);
-  delta.asVector().segment(originalDim, newDim).operator=(Vector::Zero(newDim));
   deltaNewton.append(dims);
-  deltaNewton.asVector().segment(originalDim, newDim).operator=(Vector::Zero(newDim));
   RgProd.append(dims);
-  RgProd.asVector().segment(originalDim, newDim).operator=(Vector::Zero(newDim));
+  for(Index j = originalnVars; j < delta.size(); ++j) {
+    delta[j].setZero();
+    deltaNewton[j].setZero();
+    RgProd[j].setZero();
+  }
   {
     Index nextVar = originalnVars;
     BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, newTheta) {
