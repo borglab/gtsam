@@ -43,7 +43,7 @@ noiseModel::Unit::shared_ptr model = noiseModel::Unit::Create(Pose::Dim());
 
 int main(int argc, char *argv[]) {
 
-  const size_t steps = 10000;
+  const size_t steps = 50000;
 
   cout << "Playing forward " << steps << " time steps..." << endl;
 
