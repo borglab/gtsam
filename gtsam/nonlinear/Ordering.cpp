@@ -41,6 +41,13 @@ void Ordering::permuteWithInverse(const Permutation& inversePermutation) {
 }
 
 /* ************************************************************************* */
+void Ordering::reduceWithInverse(const internal::Reduction& inverseReduction) {
+  BOOST_FOREACH(Ordering::value_type& key_order, *this) {
+    key_order.second = inverseReduction[key_order.second];
+  }
+}
+
+/* ************************************************************************* */
 void Ordering::print(const string& str, const KeyFormatter& keyFormatter) const {
   cout << str;
   // Print ordering in index order

@@ -481,22 +481,24 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(const FastSet<Index>& mark
     // re-eliminate.  The reordered variables are also mentioned in the
     // orphans and the leftover cached factors.
     gttic(permute_global_variable_index);
-    variableIndex_.permuteInPlace(partialSolveResult.fullReordering);
+    variableIndex_.permuteInPlace(partialSolveResult.reorderingSelector, partialSolveResult.reorderingPermutation);
     gttoc(permute_global_variable_index);
     gttic(permute_delta);
-    delta_.permuteInPlace(partialSolveResult.fullReordering);
-    deltaNewton_.permuteInPlace(partialSolveResult.fullReordering);
-    RgProd_.permuteInPlace(partialSolveResult.fullReordering);
+    const Permutation fullReordering = *Permutation::Identity(delta_.size()).
+      partialPermutation(partialSolveResult.reorderingSelector, partialSolveResult.reorderingPermutation);
+    delta_.permuteInPlace(fullReordering);
+    deltaNewton_.permuteInPlace(fullReordering);
+    RgProd_.permuteInPlace(fullReordering);
     gttoc(permute_delta);
     gttic(permute_ordering);
-    ordering_.permuteWithInverse(partialSolveResult.fullReorderingInverse);
+    ordering_.reduceWithInverse(partialSolveResult.reorderingInverse);
     gttoc(permute_ordering);
     if(params_.cacheLinearizedFactors) {
       gttic(permute_cached_linear);
       //linearFactors_.permuteWithInverse(partialSolveResult.fullReorderingInverse);
       FastList<size_t> permuteLinearIndices = getAffectedFactors(affectedAndNewKeys);
       BOOST_FOREACH(size_t idx, permuteLinearIndices) {
-        linearFactors_[idx]->permuteWithInverse(partialSolveResult.fullReorderingInverse);
+        linearFactors_[idx]->reduceWithInverse(partialSolveResult.reorderingInverse);
       }
       gttoc(permute_cached_linear);
     }
@@ -514,7 +516,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(const FastSet<Index>& mark
     gttic(orphans);
     gttic(permute);
     BOOST_FOREACH(sharedClique orphan, orphans) {
-      (void)orphan->permuteSeparatorWithInverse(partialSolveResult.fullReorderingInverse);
+      (void)orphan->reduceSeparatorWithInverse(partialSolveResult.reorderingInverse);
     }
     gttoc(permute);
     gttic(insert);
