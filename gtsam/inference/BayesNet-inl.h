@@ -118,16 +118,16 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  //template<class CONDITIONAL>
-  //bool BayesNet<CONDITIONAL>::permuteSeparatorWithInverse(
-  //    const Permutation& inversePermutation) {
-  //  bool separatorChanged = false;
-  //  BOOST_FOREACH(sharedConditional conditional, conditionals_) {
-  //    if (conditional->permuteSeparatorWithInverse(inversePermutation))
-  //      separatorChanged = true;
-  //  }
-  //  return separatorChanged;
-  //}
+  template<class CONDITIONAL>
+  bool BayesNet<CONDITIONAL>::permuteSeparatorWithInverse(
+      const Permutation& inversePermutation) {
+    bool separatorChanged = false;
+    BOOST_FOREACH(sharedConditional conditional, conditionals_) {
+      if (conditional->permuteSeparatorWithInverse(inversePermutation))
+        separatorChanged = true;
+    }
+    return separatorChanged;
+  }
 
   /* ************************************************************************* */
   template<class CONDITIONAL>

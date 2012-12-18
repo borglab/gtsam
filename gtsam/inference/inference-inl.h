@@ -33,6 +33,7 @@ namespace inference {
 template<typename CONSTRAINED>
 Permutation::shared_ptr PermutationCOLAMD(
     const VariableIndex& variableIndex, const CONSTRAINED& constrainLast, bool forceOrder) {
+  gttic(PermutationCOLAMD_constrained);
 
   size_t n = variableIndex.size();
   std::vector<int> cmember(n, 0);
@@ -59,6 +60,7 @@ Permutation::shared_ptr PermutationCOLAMD(
 template<typename CONSTRAINED_MAP>
 Permutation::shared_ptr PermutationCOLAMDGrouped(
     const VariableIndex& variableIndex, const CONSTRAINED_MAP& constraints) {
+  gttic(PermutationCOLAMD_grouped);
   size_t n = variableIndex.size();
   std::vector<int> cmember(n, 0);
 
@@ -74,6 +76,7 @@ Permutation::shared_ptr PermutationCOLAMDGrouped(
 
 /* ************************************************************************* */
 inline Permutation::shared_ptr PermutationCOLAMD(const VariableIndex& variableIndex) {
+  gttic(PermutationCOLAMD_unconstrained);
   size_t n = variableIndex.size();
   std::vector<int> cmember(n, 0);
   return PermutationCOLAMD_(variableIndex, cmember);

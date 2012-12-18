@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2012 Désiré Nuentsa-Wakam <desire.nuentsa_wakam@inria.fr>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifndef EIGEN_INCOMPLETE_LUT_H
 #define EIGEN_INCOMPLETE_LUT_H
@@ -47,8 +32,13 @@ namespace Eigen {
  * 
  * NOTE : The following implementation is derived from the ILUT implementation
  * in the SPARSKIT package, Copyright (C) 2005, the Regents of the University of Minnesota 
- *  released under the terms of the GNU LGPL; 
- * see http://www-users.cs.umn.edu/~saad/software/SPARSKIT/README for more details.
+ *  released under the terms of the GNU LGPL: 
+ *    http://www-users.cs.umn.edu/~saad/software/SPARSKIT/README
+ * However, Yousef Saad gave us permission to relicense his ILUT code to MPL2.
+ * See the Eigen mailing list archive, thread: ILUT, date: July 8, 2012:
+ *   http://listengine.tuxfamily.org/lists.tuxfamily.org/eigen/2012/07/msg00064.html
+ * alternatively, on GMANE:
+ *   http://comments.gmane.org/gmane.comp.lib.eigen/3302
  */
 template <typename _Scalar>
 class IncompleteLUT : internal::noncopyable

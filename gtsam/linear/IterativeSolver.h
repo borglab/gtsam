@@ -49,9 +49,10 @@ namespace gtsam {
     void setVerbosity(const std::string &s) ;
 
     void print() const {
-      std::cout << "IterativeOptimizationParameters: "
-                << "kernel = " << kernelTranslator(kernel_)
-                << ", verbosity = " << verbosityTranslator(verbosity_) << std::endl;
+      std::cout << "IterativeOptimizationParameters" << std::endl
+                << "kernel:     " << kernelTranslator(kernel_) << std::endl
+                << "verbosity:  " << verbosityTranslator(verbosity_) << std::endl
+                << std::endl;
     }
 
     static Kernel kernelTranslator(const std::string &s);

@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2011 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifndef EIGEN_BASIC_PRECONDITIONERS_H
 #define EIGEN_BASIC_PRECONDITIONERS_H
@@ -52,12 +37,13 @@ class DiagonalPreconditioner
     typedef typename Vector::Index Index;
 
   public:
+    // this typedef is only to export the scalar type and compile-time dimensions to solve_retval
     typedef Matrix<Scalar,Dynamic,Dynamic> MatrixType;
 
     DiagonalPreconditioner() : m_isInitialized(false) {}
 
-    template<typename MatrixType>
-    DiagonalPreconditioner(const MatrixType& mat) : m_invdiag(mat.cols())
+    template<typename MatType>
+    DiagonalPreconditioner(const MatType& mat) : m_invdiag(mat.cols())
     {
       compute(mat);
     }
@@ -65,19 +51,19 @@ class DiagonalPreconditioner
     Index rows() const { return m_invdiag.size(); }
     Index cols() const { return m_invdiag.size(); }
     
-    template<typename MatrixType>
-    DiagonalPreconditioner& analyzePattern(const MatrixType& )
+    template<typename MatType>
+    DiagonalPreconditioner& analyzePattern(const MatType& )
     {
       return *this;
     }
     
-    template<typename MatrixType>
-    DiagonalPreconditioner& factorize(const MatrixType& mat)
+    template<typename MatType>
+    DiagonalPreconditioner& factorize(const MatType& mat)
     {
       m_invdiag.resize(mat.cols());
       for(int j=0; j<mat.outerSize(); ++j)
       {
-        typename MatrixType::InnerIterator it(mat,j);
+        typename MatType::InnerIterator it(mat,j);
         while(it && it.index()!=j) ++it;
         if(it && it.index()==j)
           m_invdiag(j) = Scalar(1)/it.value();
@@ -88,8 +74,8 @@ class DiagonalPreconditioner
       return *this;
     }
     
-    template<typename MatrixType>
-    DiagonalPreconditioner& compute(const MatrixType& mat)
+    template<typename MatType>
+    DiagonalPreconditioner& compute(const MatType& mat)
     {
       return factorize(mat);
     }

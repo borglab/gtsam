@@ -122,7 +122,8 @@ bool VectorValues::hasSameStructure(const VectorValues& other) const {
   if(this->size() != other.size())
     return false;
   for(size_t j=0; j<size(); ++j)
-    if(this->dim(j) != other.dim(j))
+    // Directly accessing maps instead of using VV::dim in case some values are empty
+    if(this->maps_[j].rows() != other.maps_[j].rows())
       return false;
   return true;
 }
@@ -186,4 +187,28 @@ void VectorValues::operator+=(const VectorValues& c) {
   this->values_ += c.values_;
 }
 
+/* ************************************************************************* */
+Vector VectorValues::vector(const std::vector<Index>& indices) const {
+  if (indices.empty())
+    return Vector();
+
+  // find dimensions
+  size_t d = 0;
+  BOOST_FOREACH(const Index& idx, indices)
+    d += dim(idx);
+
+  // copy out values
+  Vector result(d);
+  size_t curHead = 0;
+  BOOST_FOREACH(const Index& j, indices) {
+    const SubVector& vj = at(j);
+    size_t dj = (size_t) vj.rows();
+    result.segment(curHead, dj) = vj;
+    curHead += dj;
+  }
+  return result;
 }
+
+/* ************************************************************************* */
+
+} // \namespace gtsam

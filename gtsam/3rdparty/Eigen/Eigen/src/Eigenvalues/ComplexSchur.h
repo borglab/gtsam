@@ -5,24 +5,9 @@
 // Copyright (C) 2009 Gael Guennebaud <gael.guennebaud@inria.fr>
 // Copyright (C) 2010 Jitse Niesen <jitse@maths.leeds.ac.uk>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifndef EIGEN_COMPLEX_SCHUR_H
 #define EIGEN_COMPLEX_SCHUR_H
@@ -351,6 +336,7 @@ void ComplexSchur<MatrixType>::reduceToTriangularForm(bool computeU)
   Index iu = m_matT.cols() - 1;
   Index il;
   Index iter = 0; // number of iterations we are working on the (iu,iu) element
+  Index totalIter = 0; // number of iterations for whole matrix
 
   while(true)
   {
@@ -365,9 +351,10 @@ void ComplexSchur<MatrixType>::reduceToTriangularForm(bool computeU)
     // if iu is zero then we are done; the whole matrix is triangularized
     if(iu==0) break;
 
-    // if we spent too many iterations on the current element, we give up
+    // if we spent too many iterations, we give up
     iter++;
-    if(iter > m_maxIterations) break;
+    totalIter++;
+    if(totalIter > m_maxIterations * m_matT.cols()) break;
 
     // find il, the top row of the active submatrix
     il = iu-1;
@@ -397,7 +384,7 @@ void ComplexSchur<MatrixType>::reduceToTriangularForm(bool computeU)
     }
   }
 
-  if(iter <= m_maxIterations) 
+  if(totalIter <= m_maxIterations * m_matT.cols())
     m_info = Success;
   else
     m_info = NoConvergence;

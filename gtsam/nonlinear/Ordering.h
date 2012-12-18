@@ -203,13 +203,6 @@ public:
    */
   void permuteWithInverse(const Permutation& inversePermutation);
 
-  /**
-   * Reorder the variables with a permutation.  This is typically used
-   * internally, permuting an initial key-sorted ordering into a fill-reducing
-   * ordering.
-   */
-  void reduceWithInverse(const internal::Reduction& inverseReduction);
-
   /// Synonym for operator[](Key)
   Index& at(Key key) { return operator[](key); }
 

@@ -83,10 +83,10 @@ namespace gtsam {
      * FactorGraph<GaussianFactor>::eliminate with EliminateSymbolic as the eliminate
      * function argument.
      */
-    std::pair<sharedConditional, SymbolicFactorGraph> eliminate(const std::vector<Index>& variables);
+    std::pair<sharedConditional, SymbolicFactorGraph> eliminate(const std::vector<Index>& variables) const;
 
     /** Eliminate a single variable, by calling SymbolicFactorGraph::eliminate. */
-    std::pair<sharedConditional, SymbolicFactorGraph> eliminateOne(Index variable);
+    std::pair<sharedConditional, SymbolicFactorGraph> eliminateOne(Index variable) const;
 
     /// @}
     /// @name Standard Interface

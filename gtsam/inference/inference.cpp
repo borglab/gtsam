@@ -33,6 +33,9 @@ namespace inference {
 
 /* ************************************************************************* */
 Permutation::shared_ptr PermutationCOLAMD_(const VariableIndex& variableIndex, std::vector<int>& cmember) {
+  gttic(PermutationCOLAMD_internal);
+
+  gttic(Prepare);
   size_t nEntries = variableIndex.nEntries(), nFactors = variableIndex.nFactors(), nVars = variableIndex.size();
   // Convert to compressed column major format colamd wants it in (== MATLAB format!)
   int Alen = ccolamd_recommended(nEntries, nFactors, nVars); /* colamd arg 3: size of the array A */
@@ -69,9 +72,12 @@ Permutation::shared_ptr PermutationCOLAMD_(const VariableIndex& variableIndex, s
 
   int stats[CCOLAMD_STATS]; /* colamd arg 7: colamd output statistics and error codes */
 
+  gttoc(Prepare);
+
   // call colamd, result will be in p
   /* returns (1) if successful, (0) otherwise*/
   if(nVars > 0) {
+    gttic(ccolamd);
     int rv = ccolamd(nFactors, nVars, Alen, &A[0], &p[0], knobs, stats, &cmember[0]);
     if(rv != 1)
       throw runtime_error((boost::format("ccolamd failed with return value %1%")%rv).str());
@@ -79,6 +85,7 @@ Permutation::shared_ptr PermutationCOLAMD_(const VariableIndex& variableIndex, s
 
   //  ccolamd_report(stats);
 
+  gttic(Create_permutation);
   // Convert elimination ordering in p to an ordering
   Permutation::shared_ptr permutation(new Permutation(nVars));
   for (Index j = 0; j < nVars; j++) {
@@ -89,6 +96,7 @@ Permutation::shared_ptr PermutationCOLAMD_(const VariableIndex& variableIndex, s
     if(debug) cout << "COLAMD:  " << j << "->" << p[j] << endl;
   }
   if(debug) cout << "COLAMD:  p[" << nVars << "] = " << p[nVars] << endl;
+  gttoc(Create_permutation);
 
   return permutation;
 }

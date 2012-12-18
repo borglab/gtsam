@@ -449,7 +449,19 @@ TEST(VectorValues, permute) {
 }
 
 /* ************************************************************************* */
-int main() {
-  TestResult tr; return TestRegistry::runAllTests(tr);
+TEST(VectorValues, subvector) {
+  VectorValues init;
+  init.insert(0, Vector_(1, 1.0));
+  init.insert(1, Vector_(2, 2.0, 3.0));
+  init.insert(2, Vector_(2, 4.0, 5.0));
+  init.insert(3, Vector_(2, 6.0, 7.0));
+
+  std::vector<gtsam::Index> indices;
+  indices += 0, 2, 3;
+  Vector expSubVector = Vector_(5, 1.0, 4.0, 5.0, 6.0, 7.0);
+  EXPECT(assert_equal(expSubVector, init.vector(indices)));
 }
+
+/* ************************************************************************* */
+int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

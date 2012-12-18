@@ -160,6 +160,9 @@ void LevenbergMarquardtOptimizer::iterate() {
     }
   } // end while
 
+  if (lmVerbosity >= LevenbergMarquardtParams::LAMBDA)
+    cout << "using lambda = " << state_.lambda << endl;
+
   // Increment the iteration counter
   ++state_.iterations;
 }

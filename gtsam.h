@@ -765,6 +765,7 @@ class IndexConditional {
   gtsam::IndexFactor* toFactor() const;
 
   //Advanced interface
+  bool permuteSeparatorWithInverse(const gtsam::Permutation& inversePermutation);
   void permuteWithInverse(const gtsam::Permutation& inversePermutation);
 };
 
@@ -787,6 +788,7 @@ virtual class BayesNet {
   void push_front(This& conditional);
   void pop_front();
   void permuteWithInverse(const gtsam::Permutation& inversePermutation);
+  bool permuteSeparatorWithInverse(const gtsam::Permutation& inversePermutation);
 };
 
 #include <gtsam/inference/BayesTree.h>
@@ -830,6 +832,7 @@ virtual class BayesTreeClique {
 //  derived_ptr parent() const { return parent_.lock(); }
 
   void permuteWithInverse(const gtsam::Permutation& inversePermutation);
+  bool permuteSeparatorWithInverse(const gtsam::Permutation& inversePermutation);
 
   // FIXME: need wrapped versions graphs, BayesNet
 //  BayesNet<ConditionalType> shortcut(derived_ptr root, Eliminate function) const;
@@ -856,6 +859,7 @@ virtual class SymbolicBayesNet  : gtsam::SymbolicBayesNetBase {
   //Advanced Interface
   void pop_front();
   void permuteWithInverse(const gtsam::Permutation& inversePermutation);
+  bool permuteSeparatorWithInverse(const gtsam::Permutation& inversePermutation);
 };
 
 #include <gtsam/inference/SymbolicFactorGraph.h>
@@ -1517,6 +1521,8 @@ class KeyList {
   size_t back() const;
   void push_back(size_t key);
   void push_front(size_t key);
+  void pop_back();
+  void pop_front();
   void sort();
   void remove(size_t key);
 };
@@ -1583,6 +1589,42 @@ class JointMarginal {
   void print(string s) const;
   void print() const;
 };
+
+#include <gtsam/nonlinear/LinearContainerFactor.h>
+virtual class LinearContainerFactor : gtsam::NonlinearFactor {
+
+  LinearContainerFactor(gtsam::GaussianFactor* factor, const gtsam::Ordering& ordering,
+      const gtsam::Values& linearizationPoint);
+  LinearContainerFactor(gtsam::GaussianFactor* factor,  const gtsam::Values& linearizationPoint);
+  LinearContainerFactor(gtsam::GaussianFactor* factor, const gtsam::InvertedOrdering& ordering,
+      const gtsam::Values& linearizationPoint);
+
+  LinearContainerFactor(gtsam::GaussianFactor* factor, const gtsam::Ordering& ordering);
+  LinearContainerFactor(gtsam::GaussianFactor* factor);
+  LinearContainerFactor(gtsam::GaussianFactor* factor, const gtsam::InvertedOrdering& ordering);
+
+  gtsam::GaussianFactor* factor() const;
+//  const boost::optional<Values>& linearizationPoint() const;
+
+  gtsam::GaussianFactor* order(const gtsam::Ordering& ordering) const;
+  gtsam::GaussianFactor* negate(const gtsam::Ordering& ordering) const;
+  gtsam::NonlinearFactor* negate() const;
+
+  bool isJacobian() const;
+  gtsam::JacobianFactor* toJacobian() const;
+  gtsam::HessianFactor* toHessian() const;
+
+  static gtsam::NonlinearFactorGraph convertLinearGraph(const gtsam::GaussianFactorGraph& linear_graph,
+      const gtsam::Ordering& ordering, const gtsam::Values& linearizationPoint);
+  static gtsam::NonlinearFactorGraph convertLinearGraph(const gtsam::GaussianFactorGraph& linear_graph,
+      const gtsam::InvertedOrdering& invOrdering, const gtsam::Values& linearizationPoint);
+
+  static gtsam::NonlinearFactorGraph convertLinearGraph(const gtsam::GaussianFactorGraph& linear_graph,
+      const gtsam::Ordering& ordering);
+  static gtsam::NonlinearFactorGraph convertLinearGraph(const gtsam::GaussianFactorGraph& linear_graph,
+      const gtsam::InvertedOrdering& invOrdering);
+
+}; // \class LinearContainerFactor
 
 //*************************************************************************
 // Nonlinear optimizers
@@ -1764,6 +1806,7 @@ virtual class ISAM2Clique {
     void print(string s);
 
     void permuteWithInverse(const gtsam::Permutation& inversePermutation);
+    bool permuteSeparatorWithInverse(const gtsam::Permutation& inversePermutation);
 };
 
 class ISAM2Result {
@@ -1957,6 +2000,7 @@ namespace utilities {
   Matrix extractPoint2(const gtsam::Values& values);
   Matrix extractPoint3(const gtsam::Values& values);
   Matrix extractPose2(const gtsam::Values& values);
+  gtsam::Values allPose3s(gtsam::Values& values);
   Matrix extractPose3(const gtsam::Values& values);
   void perturbPoint2(gtsam::Values& values, double sigma, int seed);
   void perturbPoint3(gtsam::Values& values, double sigma, int seed);

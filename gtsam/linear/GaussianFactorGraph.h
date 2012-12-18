@@ -145,11 +145,11 @@ namespace gtsam {
      * FactorGraph<GaussianFactor>::eliminate with EliminateQR as the eliminate
      * function argument.
      */
-    std::pair<sharedConditional, GaussianFactorGraph> eliminate(const std::vector<Index>& variables, const Eliminate& function = EliminateQR) {
+    std::pair<sharedConditional, GaussianFactorGraph> eliminate(const std::vector<Index>& variables, const Eliminate& function = EliminateQR) const {
       return Base::eliminate(variables, function); }
 
     /** Eliminate a single variable, by calling GaussianFactorGraph::eliminate. */
-    std::pair<sharedConditional, GaussianFactorGraph> eliminateOne(Index variable, const Eliminate& function = EliminateQR) {
+    std::pair<sharedConditional, GaussianFactorGraph> eliminateOne(Index variable, const Eliminate& function = EliminateQR) const {
       return Base::eliminateOne(variable, function); }
 
     /** Permute the variables in the factors */

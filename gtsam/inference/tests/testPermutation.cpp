@@ -25,7 +25,6 @@
 using namespace gtsam;
 using namespace std;
 
-/* ************************************************************************* */
 TEST(Permutation, Identity) {
   Permutation expected(5);
   expected[0] = 0;
@@ -39,7 +38,6 @@ TEST(Permutation, Identity) {
   EXPECT(assert_equal(expected, actual));
 }
 
-/* ************************************************************************* */
 TEST(Permutation, PullToFront) {
   Permutation expected(5);
   expected[0] = 4;
@@ -57,7 +55,6 @@ TEST(Permutation, PullToFront) {
   EXPECT(assert_equal(expected, actual));
 }
 
-/* ************************************************************************* */
 TEST(Permutation, PushToBack) {
   Permutation expected(5);
   expected[0] = 1;
@@ -75,7 +72,6 @@ TEST(Permutation, PushToBack) {
   EXPECT(assert_equal(expected, actual));
 }
 
-/* ************************************************************************* */
 TEST(Permutation, compose) {
   Permutation p1(5);
   p1[0] = 1;
@@ -106,25 +102,6 @@ TEST(Permutation, compose) {
   LONGS_EQUAL(p1[p2[2]], actual[2]);
   LONGS_EQUAL(p1[p2[3]], actual[3]);
   LONGS_EQUAL(p1[p2[4]], actual[4]);
-}
-
-/* ************************************************************************* */
-TEST(Reduction, CreateFromPartialPermutation) {
-  Permutation selector(3);
-  selector[0] = 2;
-  selector[1] = 4;
-  selector[2] = 6;
-  Permutation p(3);
-  p[0] = 2;
-  p[1] = 0;
-  p[2] = 1;
-
-  internal::Reduction expected;
-  expected.insert(make_pair(2,6));
-  expected.insert(make_pair(4,2));
-  expected.insert(make_pair(6,4));
-
-  internal::Reduction actual = internal::Reduction::CreateFromPartialPermutation(selector, p);
 }
 
 /* ************************************************************************* */

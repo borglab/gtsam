@@ -21,6 +21,7 @@ using namespace gtsam;
 static Cal3_S2::shared_ptr K(new Cal3_S2(1500, 1200, 0, 640, 480));
 static SharedNoiseModel sigma(noiseModel::Unit::Create(2));
 
+// camera pose at (0,0,1) looking straight along the x-axis.
 Pose3 level_pose = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1));
 SimpleCamera level_camera(level_pose, *K);
 
@@ -30,13 +31,16 @@ typedef NonlinearEquality<Pose3> PoseConstraint;
 /* ************************************************************************* */
 TEST( InvDepthFactor, optimize) {
 
-  // landmark 5 meters infront of camera
+  // landmark 5 meters infront of camera (camera center at (0,0,1))
   Point3 landmark(5, 0, 1);
 
+  // get expected projection using pinhole camera
   Point2 expected_uv = level_camera.project(landmark);
 
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose, K);
-  LieVector inv_landmark(5, 1., 0., 1., 0., 0.);
+  LieVector inv_landmark(5, 0., 0., 1., 0., 0.);
+  // initialize inverse depth with "incorrect" depth of 1/4
+  // in reality this is 1/5, but initial depth is guessed
   LieScalar inv_depth(1./4);
 
   gtsam::NonlinearFactorGraph graph;
@@ -52,19 +56,20 @@ TEST( InvDepthFactor, optimize) {
 
   LevenbergMarquardtParams lmParams;
   Values result = LevenbergMarquardtOptimizer(graph, initial, lmParams).optimize();
+  
+  // with a single factor the incorrect initialization of 1/4 should not move!
   EXPECT(assert_equal(initial, result, 1e-9));
 
   /// Add a second camera
 
-  // add a camera 1 meter to the right
+  // add a camera 2 meters to the right
   Pose3 right_pose = level_pose * Pose3(Rot3(), Point3(2,0,0));
   SimpleCamera right_camera(right_pose, *K);
 
-  InvDepthCamera3<Cal3_S2> right_inv_camera(right_pose, K);
-
-  Point3 landmark1(6,0,1);
-  Point2 right_uv = right_camera.project(landmark1);
-
+  // projection measurement of landmark into right camera
+  // this measurement disagrees with the depth initialization
+  // and will push it to 1/5
+  Point2 right_uv = right_camera.project(landmark);
 
   InverseDepthFactor::shared_ptr factor1(new InverseDepthFactor(right_uv, sigma,
       Symbol('x',2), Symbol('l',1),Symbol('d',1),K));
@@ -74,16 +79,16 @@ TEST( InvDepthFactor, optimize) {
 
   initial.insert(Symbol('x',2), right_pose);
 
-  // TODO: need to add priors to make this work with
-//    Values result2 = optimize<NonlinearFactorGraph>(graph, initial,
-//      NonlinearOptimizationParameters(),MULTIFRONTAL, GN);
-
   Values result2 = LevenbergMarquardtOptimizer(graph, initial, lmParams).optimize();
-  Point3 l1_result2 = InvDepthCamera3<Cal3_S2>::invDepthTo3D(
+  
+  Point3 result2_lmk = InvDepthCamera3<Cal3_S2>::invDepthTo3D(
       result2.at<LieVector>(Symbol('l',1)),
       result2.at<LieScalar>(Symbol('d',1)));
-
-  EXPECT(assert_equal(landmark1, l1_result2, 1e-9));
+  EXPECT(assert_equal(landmark, result2_lmk, 1e-9));
+  
+  // TODO: need to add priors to make this work with
+  //    Values result2 = optimize<NonlinearFactorGraph>(graph, initial,
+  //      NonlinearOptimizationParameters(),MULTIFRONTAL, GN);
 }
 
 

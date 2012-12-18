@@ -6,24 +6,9 @@
 // Copyright (C) 2009 Benoit Jacob <jacob.benoit.1@gmail.com>
 // Copyright (C) 2011 Timothy E. Holy <tim.holy@gmail.com >
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifndef EIGEN_LDLT_H
 #define EIGEN_LDLT_H
@@ -370,7 +355,7 @@ template<> struct ldlt_inplace<Lower>
     for (Index j = 0; j < size; j++)
     {
       // Check for termination due to an original decomposition of low-rank
-      if (!isfinite(alpha))
+      if (!(isfinite)(alpha))
         break;
 
       // Update the diagonal terms
@@ -514,12 +499,12 @@ struct solve_retval<LDLT<_MatrixType,_UpLo>, Rhs>
     typedef typename LDLTType::RealScalar RealScalar;
     const Diagonal<const MatrixType> vectorD = dec().vectorD();
     RealScalar tolerance = (max)(vectorD.array().abs().maxCoeff() * NumTraits<Scalar>::epsilon(),
-         RealScalar(1) / NumTraits<RealScalar>::highest()); // motivated by LAPACK's xGELSS
+				 RealScalar(1) / NumTraits<RealScalar>::highest()); // motivated by LAPACK's xGELSS
     for (Index i = 0; i < vectorD.size(); ++i) {
       if(abs(vectorD(i)) > tolerance)
-  dst.row(i) /= vectorD(i);
+	dst.row(i) /= vectorD(i);
       else
-  dst.row(i).setZero();
+	dst.row(i).setZero();
     }
 
     // dst = L^-T (D^-1 L^-1 P b)

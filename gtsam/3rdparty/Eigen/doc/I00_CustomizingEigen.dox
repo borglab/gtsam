@@ -83,7 +83,7 @@ An example of when you actually need to inherit Matrix, is when you have
 several layers of heritage such as  MyVerySpecificVector1,MyVerySpecificVector1 -> MyVector1 -> Matrix and.
 MyVerySpecificVector3,MyVerySpecificVector4 -> MyVector2 -> Matrix.
 
-In order for your object to work within the Eigen framework, you need to
+In order for your object to work within the %Eigen framework, you need to
 define a few members in your inherited class.
 
 Here is a minimalistic example:\n
@@ -93,8 +93,15 @@ class MyVectorType : public  Eigen::VectorXd
 public:
     MyVectorType(void):Eigen::VectorXd() {}
 
-    // You need to define this for your object to work
     typedef Eigen::VectorXd Base;
+
+    // This constructor allows you to construct MyVectorType from Eigen expressions
+    template<typename OtherDerived>
+    MyVectorType(const Eigen::MatrixBase<OtherDerived>& other)
+        : Eigen::Vector3d(other)
+    { }
+
+    // This method allows you to assign Eigen expressions to MyVectorType
     template<typename OtherDerived>
     MyVectorType & operator= (const Eigen::MatrixBase <OtherDerived>& other)
     {

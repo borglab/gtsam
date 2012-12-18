@@ -5,7 +5,7 @@
  * @author Alex Cunningham
  */
 
-#include <gtsam_unstable/nonlinear/LinearContainerFactor.h>
+#include <gtsam/nonlinear/LinearContainerFactor.h>
 
 #include <boost/foreach.hpp>
 
@@ -140,7 +140,7 @@ double LinearContainerFactor::error(const Values& c) const {
   if (!linearizationPoint_)
     return 0;
 
-  // Extract subset of values for comparision
+  // Extract subset of values for comparison
   Values csub;
   BOOST_FOREACH(const gtsam::Key& key, keys())
     csub.insert(key, c.at(key));
@@ -185,12 +185,49 @@ GaussianFactor::shared_ptr LinearContainerFactor::order(const Ordering& ordering
 /* ************************************************************************* */
 GaussianFactor::shared_ptr LinearContainerFactor::linearize(
     const Values& c, const Ordering& ordering) const {
-  return order(ordering);
+  if (!hasLinearizationPoint())
+    return order(ordering);
+
+  // Extract subset of values
+  Values subsetC;
+  BOOST_FOREACH(const gtsam::Key& key, this->keys())
+    subsetC.insert(key, c.at(key));
+
+  // Create a temp ordering for this factor
+  Ordering localOrdering = *subsetC.orderingArbitrary();
+
+  // Determine delta between linearization points using new ordering
+  VectorValues delta = linearizationPoint_->localCoordinates(subsetC, localOrdering);
+
+  // clone and reorder linear factor to final ordering
+  GaussianFactor::shared_ptr linFactor = order(localOrdering);
+  if (isJacobian()) {
+    JacobianFactor::shared_ptr jacFactor = boost::shared_dynamic_cast<JacobianFactor>(linFactor);
+    jacFactor->getb() += jacFactor->unweighted_error(delta) + jacFactor->getb();
+  } else {
+    HessianFactor::shared_ptr hesFactor = boost::shared_dynamic_cast<HessianFactor>(linFactor);
+    size_t dim = hesFactor->linearTerm().size();
+    Eigen::Block<HessianFactor::Block> Gview = hesFactor->info().block(0, 0, dim, dim);
+    Vector G_delta = Gview.selfadjointView<Eigen::Upper>() * delta.vector();
+    hesFactor->constantTerm() += delta.vector().dot(G_delta) + delta.vector().dot(hesFactor->linearTerm());
+    hesFactor->linearTerm() += G_delta;
+  }
+
+  // reset ordering
+  Ordering::InvertedMap invLocalOrdering = localOrdering.invert();
+  BOOST_FOREACH(Index& idx, linFactor->keys())
+    idx = ordering[invLocalOrdering[idx] ];
+  return linFactor;
 }
 
 /* ************************************************************************* */
 bool LinearContainerFactor::isJacobian() const {
   return boost::shared_dynamic_cast<JacobianFactor>(factor_);
+}
+
+/* ************************************************************************* */
+bool LinearContainerFactor::isHessian() const {
+  return boost::shared_dynamic_cast<HessianFactor>(factor_);
 }
 
 /* ************************************************************************* */

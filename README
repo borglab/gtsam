@@ -33,12 +33,13 @@ The library is organized according to the following directory structure:
   slam          SLAM and visual SLAM application code
 
 This library contains unchanged copies of two third party libraries, with documentation 
-of licensing in LICENSE and as follows: 
+of licensing as follows: 
   - CCOLAMD 2.73: Tim Davis' constrained column approximate minimum degree ordering library
     - http://www.cise.ufl.edu/research/sparse
     - Licenced under LGPL v2.1, provided in gtsam/3rdparty/CCOLAMD/Doc/lesser.txt
   - Eigen 3.1:  General C++ matrix and linear algebra library
-    - Licenced under LGPL v3, provided in gtsam/3rdparty/Eigen/COPYING.LGPL
+    - Licenced under MPL2, provided in gtsam/3rdparty/Eigen/COPYING.README (some code that is 3rd-party to
+	  Eigen is BSD and LGPL)
 
 
 There are two supporting libraries:

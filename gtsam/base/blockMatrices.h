@@ -137,7 +137,8 @@ public:
     assertInvariants();
     size_t actualStartBlock = startBlock + blockStart_;
     size_t actualEndBlock = endBlock + blockStart_;
-    checkBlock(actualStartBlock);
+    if(startBlock != 0 && endBlock != 0)
+      checkBlock(actualStartBlock);
     assert(actualEndBlock < variableColOffsets_.size());
     const size_t& startCol = variableColOffsets_[actualStartBlock];
     const size_t& endCol = variableColOffsets_[actualEndBlock];
@@ -148,7 +149,8 @@ public:
     assertInvariants();
     size_t actualStartBlock = startBlock + blockStart_;
     size_t actualEndBlock = endBlock + blockStart_;
-    checkBlock(actualStartBlock);
+    if(startBlock != 0 && endBlock != 0)
+      checkBlock(actualStartBlock);
     assert(actualEndBlock < variableColOffsets_.size());
     const size_t& startCol = variableColOffsets_[actualStartBlock];
     const size_t& endCol = variableColOffsets_[actualEndBlock];

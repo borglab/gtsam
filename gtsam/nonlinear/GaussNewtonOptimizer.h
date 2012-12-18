@@ -88,11 +88,17 @@ public:
    */
   virtual void iterate();
 
-  /** Access the parameters */
+  /** Read-only access the parameters */
   const GaussNewtonParams& params() const { return params_; }
 
-  /** Access the last state */
+  /** Read/write access the parameters. */
+  GaussNewtonParams& params() { return params_; }
+
+  /** Read-only access the last state */
   const GaussNewtonState& state() const { return state_; }
+
+  /** Read/write access the last state. When modifying the state, the error, etc. must be consistent before calling iterate() */
+  GaussNewtonState& state() { return state_; }
 
   /// @}
 

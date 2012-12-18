@@ -20,12 +20,11 @@
 #include <string>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
+#include <boost/version.hpp>
 #include <gtsam/base/types.h>
 #include <gtsam/base/FastMap.h>
 
-// Enabling the new Boost timers introduces dependencies on other Boost
-// libraries so this is disabled for now until we modify the build scripts
-// to link each component or MATLAB wrapper with only the libraries it needs.
+// Automatically use the new Boost timers if version is recent enough.
 #if BOOST_VERSION >= 104800
 #define GTSAM_USING_NEW_BOOST_TIMERS
 #endif

@@ -22,6 +22,7 @@
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 
 using namespace std;
 using namespace gtsam;
@@ -113,6 +114,119 @@ TEST(JabobianFactor, Hessian_conversion) {
 }
 
 /* ************************************************************************* */
+TEST( JacobianFactor, constructor_combined){
+  double sigma1 = 0.0957;
+  Matrix A11(2,2);
+  A11(0,0) = 1; A11(0,1) =  0;
+  A11(1,0) = 0;       A11(1,1) = 1;
+  Vector b(2);
+  b(0) = 2; b(1) = -1;
+  JacobianFactor::shared_ptr f1(new JacobianFactor(0, A11, b*sigma1, noiseModel::Isotropic::Sigma(2,sigma1)));
+
+  double sigma2 = 0.5;
+  A11(0,0) = 1; A11(0,1) =  0;
+  A11(1,0) = 0; A11(1,1) = -1;
+  b(0) = 4 ; b(1) = -5;
+  JacobianFactor::shared_ptr f2(new JacobianFactor(0, A11, b*sigma2, noiseModel::Isotropic::Sigma(2,sigma2)));
+
+  double sigma3 = 0.25;
+  A11(0,0) = 1; A11(0,1) =  0;
+  A11(1,0) = 0; A11(1,1) = -1;
+  b(0) = 3 ; b(1) = -88;
+  JacobianFactor::shared_ptr f3(new JacobianFactor(0, A11, b*sigma3, noiseModel::Isotropic::Sigma(2,sigma3)));
+
+  // TODO: find a real sigma value for this example
+  double sigma4 = 0.1;
+  A11(0,0) = 6; A11(0,1) =  0;
+  A11(1,0) = 0; A11(1,1) = 7;
+  b(0) = 5 ; b(1) = -6;
+  JacobianFactor::shared_ptr f4(new JacobianFactor(0, A11*sigma4, b*sigma4, noiseModel::Isotropic::Sigma(2,sigma4)));
+
+  GaussianFactorGraph lfg;
+  lfg.push_back(f1);
+  lfg.push_back(f2);
+  lfg.push_back(f3);
+  lfg.push_back(f4);
+  JacobianFactor combined(lfg);
+
+  Vector sigmas = Vector_(8, sigma1, sigma1, sigma2, sigma2, sigma3, sigma3, sigma4, sigma4);
+  Matrix A22(8,2);
+  A22(0,0) = 1;   A22(0,1) =  0;
+  A22(1,0) = 0;   A22(1,1) = 1;
+  A22(2,0) = 1;   A22(2,1) =  0;
+  A22(3,0) = 0;   A22(3,1) = -1;
+  A22(4,0) = 1;   A22(4,1) =  0;
+  A22(5,0) = 0;   A22(5,1) = -1;
+  A22(6,0) = 0.6; A22(6,1) =  0;
+  A22(7,0) = 0;   A22(7,1) =  0.7;
+  Vector exb(8);
+  exb(0) = 2*sigma1 ; exb(1) = -1*sigma1;  exb(2) = 4*sigma2 ; exb(3) = -5*sigma2;
+  exb(4) = 3*sigma3 ; exb(5) = -88*sigma3; exb(6) = 5*sigma4 ; exb(7) = -6*sigma4;
+
+  vector<pair<Index, Matrix> > meas;
+  meas.push_back(make_pair(0, A22));
+  JacobianFactor expected(meas, exb, noiseModel::Diagonal::Sigmas(sigmas));
+  EXPECT(assert_equal(expected,combined));
+}
+
+/* ************************************************************************* */
+TEST(JacobianFactor, linearFactorN){
+  Matrix I = eye(2);
+  GaussianFactorGraph f;
+  SharedDiagonal model = noiseModel::Isotropic::Sigma(2,1.0);
+  f.push_back(JacobianFactor::shared_ptr(new JacobianFactor(0, I, Vector_(2, 10.0, 5.0), model)));
+  f.push_back(JacobianFactor::shared_ptr(new JacobianFactor(0, -10 * I, 1, 10 * I, Vector_(2, 1.0, -2.0), model)));
+  f.push_back(JacobianFactor::shared_ptr(new JacobianFactor(1, -10 * I, 2, 10 * I, Vector_(2, 1.5, -1.5), model)));
+  f.push_back(JacobianFactor::shared_ptr(new JacobianFactor(2, -10 * I, 3, 10 * I, Vector_(2, 2.0, -1.0), model)));
+
+  JacobianFactor combinedFactor(f);
+
+  vector<pair<Index, Matrix> > combinedMeasurement;
+  combinedMeasurement.push_back(make_pair(0, Matrix_(8,2,
+    1.0,  0.0,
+    0.0,  1.0,
+    -10.0,  0.0,
+    0.0,-10.0,
+    0.0,  0.0,
+    0.0,  0.0,
+    0.0,  0.0,
+    0.0,  0.0)));
+  combinedMeasurement.push_back(make_pair(1, Matrix_(8,2,
+    0.0,  0.0,
+    0.0,  0.0,
+    10.0,  0.0,
+    0.0, 10.0,
+    -10.0,  0.0,
+    0.0,-10.0,
+    0.0,  0.0,
+    0.0,  0.0)));
+  combinedMeasurement.push_back(make_pair(2, Matrix_(8,2,
+    0.0,  0.0,
+    0.0,  0.0,
+    0.0,  0.0,
+    0.0,  0.0,
+    10.0,  0.0,
+    0.0, 10.0,
+    -10.0,  0.0,
+    0.0,-10.0)));
+  combinedMeasurement.push_back(make_pair(3, Matrix_(8,2,
+    0.0, 0.0,
+    0.0, 0.0,
+    0.0, 0.0,
+    0.0, 0.0,
+    0.0, 0.0,
+    0.0, 0.0,
+    10.0, 0.0,
+    0.0,10.0)));
+  Vector b = Vector_(8,
+    10.0, 5.0, 1.0, -2.0, 1.5, -1.5, 2.0, -1.0);
+
+  Vector sigmas = repeat(8,1.0);
+  JacobianFactor expected(combinedMeasurement, b, noiseModel::Diagonal::Sigmas(sigmas));
+  EXPECT(assert_equal(expected,combinedFactor));
+}
+
+/* ************************************************************************* */
 TEST(JacobianFactor, error) {
   Vector b = Vector_(3, 1., 2., 3.);
   SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector_(3,2.,2.,2.));
@@ -132,10 +246,18 @@ TEST(JacobianFactor, error) {
   Vector expected_whitened = Vector_(3, 4., 5., 6.);
   Vector actual_whitened = jf.error_vector(values);
   EXPECT(assert_equal(expected_whitened, actual_whitened));
+
+  // check behavior when there are more values than in this factor
+  VectorValues largeValues(3, 3);
+  largeValues[0] = Vector_(3, 1.,2.,3.);
+  largeValues[1] = Vector_(3, 4.,5.,6.);
+  largeValues[2] = Vector_(3, 7.,8.,9.);
+
+  EXPECT(assert_equal(expected_unwhitened, jf.unweighted_error(largeValues)));
+  EXPECT(assert_equal(expected_whitened, jf.error_vector(largeValues)));
 }
 
 /* ************************************************************************* */
-#ifdef BROKEN
 TEST(JacobianFactor, operators )
 {
   SharedDiagonal  sigma0_1 = noiseModel::Isotropic::Sigma(2,0.1);
@@ -145,8 +267,8 @@ TEST(JacobianFactor, operators )
   JacobianFactor lf(_x1_, -I, _x2_, I, b, sigma0_1);
 
   VectorValues c;
-  c[_x1_] = Vector_(2,10.,20.);
-  c[_x2_] = Vector_(2,30.,60.);
+  c.insert(_x1_, Vector_(2,10.,20.));
+  c.insert(_x2_, Vector_(2,30.,60.));
 
   // test A*x
   Vector expectedE = Vector_(2,200.,400.), e = lf*c;
@@ -154,19 +276,13 @@ TEST(JacobianFactor, operators )
 
   // test A^e
   VectorValues expectedX;
-  expectedX[_x1_] = Vector_(2,-2000.,-4000.);
-  expectedX[_x2_] = Vector_(2, 2000., 4000.);
-  EXPECT(assert_equal(expectedX,lf^e));
-
-  // test transposeMultiplyAdd
-  VectorValues x;
-  x[_x1_] = Vector_(2, 1.,2.);
-  x[_x2_] = Vector_(2, 3.,4.);
-  VectorValues expectedX2 = x + 0.1 * (lf^e);
-  lf.transposeMultiplyAdd(0.1,e,x);
-  EXPECT(assert_equal(expectedX2,x));
+  expectedX.insert(_x1_, Vector_(2,-2000.,-4000.));
+  expectedX.insert(_x2_, Vector_(2, 2000., 4000.));
+  VectorValues actualX = VectorValues::Zero(expectedX);
+  lf.transposeMultiplyAdd(1.0, e, actualX);
+  EXPECT(assert_equal(expectedX, actualX));
 }
-#endif
+
 /* ************************************************************************* */
 TEST(JacobianFactor, eliminate2 )
 {
@@ -250,29 +366,6 @@ TEST(JacobianFactor, default_error )
   EXPECT(actual==0.0);
 }
 
-//* ************************************************************************* */
-#ifdef BROKEN
-TEST(JacobianFactor, eliminate_empty )
-{
-  // create an empty factor
-  JacobianFactor f;
-
-  // eliminate the empty factor
-  GaussianConditional::shared_ptr actualCG;
-  JacobianFactor::shared_ptr actualLF(new JacobianFactor(f));
-  actualCG = actualLF->eliminateFirst();
-
-  // expected Conditional Gaussian is just a parent-less node with P(x)=1
-  GaussianConditional expectedCG(_x2_);
-
-  // expected remaining factor is still empty :-)
-  JacobianFactor expectedLF;
-
-  // check if the result matches
-  EXPECT(actualCG->equals(expectedCG));
-  EXPECT(actualLF->equals(expectedLF));
-}
-#endif
 //* ************************************************************************* */
 TEST(JacobianFactor, empty )
 {

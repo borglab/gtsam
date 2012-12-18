@@ -37,6 +37,7 @@ namespace gtsam {
   class HessianFactor;
   class VariableSlots;
   template<class C> class BayesNet;
+  class GaussianFactorGraph;
 
   /**
    * A Gaussian factor in the squared-error form.
@@ -132,6 +133,9 @@ namespace gtsam {
 
     /** Convert from a HessianFactor (does Cholesky) */
     JacobianFactor(const HessianFactor& factor);
+
+    /** Build a dense joint factor from all the factors in a factor graph. */
+    JacobianFactor(const GaussianFactorGraph& gfg);
 
     /** Virtual destructor */
     virtual ~JacobianFactor() {}
@@ -293,7 +297,7 @@ namespace gtsam {
 
     /** An exception indicating that the noise model dimension passed into the
      * JacobianFactor has a different dimensionality than the factor. */
-    class InvalidNoiseModel : std::exception {
+    class InvalidNoiseModel : public std::exception {
     public:
       const size_t factorDims; ///< The dimensionality of the factor
       const size_t noiseModelDims; ///< The dimensionality of the noise model

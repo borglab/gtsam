@@ -162,16 +162,6 @@ namespace internal {
   }
 
   /* ************************************************************************* */
-  Reduction Reduction::CreateFromPartialPermutation(const Permutation& selector, const Permutation& p) {
-    if(selector.size() != p.size())
-      throw invalid_argument("internal::Reduction::CreateFromPartialPermutation called with selector and permutation of different sizes");
-    Reduction result;
-    for(size_t dstSlot = 0; dstSlot < p.size(); ++dstSlot)
-      result.insert(make_pair(selector[dstSlot], selector[p[dstSlot]]));
-    return result;
-  }
-
-  /* ************************************************************************* */
   void Reduction::applyInverse(std::vector<Index>& js) const {
     BOOST_FOREACH(Index& j, js) {
       j = this->find(j)->second;
@@ -193,10 +183,10 @@ namespace internal {
   }
 
   /* ************************************************************************* */
-  const Index& Reduction::operator[](const Index& j) {
+  Index& Reduction::operator[](const Index& j) {
     iterator it = this->find(j);
     if(it == this->end())
-      return j;
+      throw std::out_of_range("Index to Reduction::operator[] not present");
     else
       return it->second;
   }
@@ -205,7 +195,7 @@ namespace internal {
   const Index& Reduction::operator[](const Index& j) const {
     const_iterator it = this->find(j);
     if(it == this->end())
-      return j;
+      throw std::out_of_range("Index to Reduction::operator[] not present");
     else
       return it->second;
   }
@@ -215,11 +205,6 @@ namespace internal {
     cout << s << " reduction:" << endl;
     BOOST_FOREACH(const value_type& p, *this)
       cout << "  " << p.first << " : " << p.second << endl;
-  }
-
-  /* ************************************************************************* */
-  bool Reduction::equals(const Reduction& other, double tol) const {
-    return (const Base&)(*this) == (const Base&)other;
   }
 
   /* ************************************************************************* */

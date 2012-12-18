@@ -159,22 +159,22 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  try {
-    {
-      std::ofstream writerStream("incremental_init", ios::binary);
-      boost::archive::binary_oarchive writer(writerStream);
-      writer << isam2.calculateEstimate();
-      writerStream.close();
-    }
-    {
-      std::ofstream writerStream("incremental_graph", ios::binary);
-      boost::archive::binary_oarchive writer(writerStream);
-      writer << isam2.getFactorsUnsafe();
-      writerStream.close();
-    }
-  } catch(std::exception& e) {
-    cout << e.what() << endl;
-  }
+  //try {
+  //  {
+  //    std::ofstream writerStream("incremental_init", ios::binary);
+  //    boost::archive::binary_oarchive writer(writerStream);
+  //    writer << isam2.calculateEstimate();
+  //    writerStream.close();
+  //  }
+  //  {
+  //    std::ofstream writerStream("incremental_graph", ios::binary);
+  //    boost::archive::binary_oarchive writer(writerStream);
+  //    writer << isam2.getFactorsUnsafe();
+  //    writerStream.close();
+  //  }
+  //} catch(std::exception& e) {
+  //  cout << e.what() << endl;
+  //}
 
   NonlinearFactorGraph graph;
   Values values;

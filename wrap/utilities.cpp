@@ -136,7 +136,8 @@ void createNamespaceStructure(const std::vector<std::string>& namespaces, const 
   using namespace boost::filesystem;
   path curPath = toolboxPath;
   BOOST_FOREACH(const string& subdir, namespaces) {
-    curPath /= "+" + subdir;
+//    curPath /= "+" + subdir; // original - resulted in valgrind error
+    curPath = curPath / string(string("+") + subdir);
     if(!is_directory(curPath)) {
       if(exists("+" + subdir))
         throw OutputError("Need to write files to directory " + curPath.string() + ", which already exists as a file but is not a directory");

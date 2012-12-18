@@ -153,7 +153,7 @@ namespace gtsam {
   template<class FACTOR>
   std::pair<typename FactorGraph<FACTOR>::sharedConditional, FactorGraph<FACTOR> >
     FactorGraph<FACTOR>::eliminate(const std::vector<KeyType>& variables, const Eliminate& eliminateFcn,
-    boost::optional<const VariableIndex&> variableIndex_)
+    boost::optional<const VariableIndex&> variableIndex_) const
   {
       const VariableIndex& variableIndex =
         variableIndex_ ? *variableIndex_ : VariableIndex(*this);
@@ -177,21 +177,30 @@ namespace gtsam {
           *std::max_element(factor->begin(), factor->end()));
       }
 
-      // Now permute the variables to be eliminated to the front of the ordering
-      Permutation toFront = Permutation::PullToFront(variables, highestInvolvedVariable+1);
-      Permutation toFrontInverse = *toFront.inverse();
-      BOOST_FOREACH(const sharedFactor& factor, involvedFactors) {
-        factor->permuteWithInverse(toFrontInverse);
+      sharedConditional conditional;
+      sharedFactor remainingFactor;
+      if(involvedFactors.size() > 0) {
+        // Now permute the variables to be eliminated to the front of the ordering
+        Permutation toFront = Permutation::PullToFront(variables, highestInvolvedVariable+1);
+        Permutation toFrontInverse = *toFront.inverse();
+        BOOST_FOREACH(const sharedFactor& factor, involvedFactors) {
+          factor->permuteWithInverse(toFrontInverse);
+        }
+
+        // Eliminate into conditional and remaining factor
+        EliminationResult eliminated = eliminateFcn(involvedFactors, variables.size());
+        conditional = eliminated.first;
+        remainingFactor = eliminated.second;
+
+        // Undo the permutation
+        conditional->permuteWithInverse(toFront);
+        remainingFactor->permuteWithInverse(toFront);
+      } else {
+        // Eliminate 0 variables
+        EliminationResult eliminated = eliminateFcn(involvedFactors, 0);
+        conditional = eliminated.first;
+        remainingFactor = eliminated.second;
       }
-
-      // Eliminate into conditional and remaining factor
-      EliminationResult eliminated = eliminateFcn(involvedFactors, variables.size());
-      sharedConditional conditional = eliminated.first;
-      sharedFactor remainingFactor = eliminated.second;
-
-      // Undo the permutation
-      conditional->permuteWithInverse(toFront);
-      remainingFactor->permuteWithInverse(toFront);
 
       // Build the remaining graph, without the removed factors
       FactorGraph<FACTOR> remainingGraph;

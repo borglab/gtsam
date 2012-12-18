@@ -4,24 +4,9 @@
 // Copyright (C) 2009, 2010 Jitse Niesen <jitse@maths.leeds.ac.uk>
 // Copyright (C) 2011 Chen-Pang He <jdh8@ms63.hinet.net>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifndef EIGEN_MATRIX_EXPONENTIAL
 #define EIGEN_MATRIX_EXPONENTIAL
@@ -248,7 +233,7 @@ template <typename MatrixType>
 EIGEN_STRONG_INLINE void MatrixExponential<MatrixType>::pade9(const MatrixType &A)
 {
   const RealScalar b[] = {17643225600., 8821612800., 2075673600., 302702400., 30270240.,
-            2162160., 110880., 3960., 90., 1.};
+  		      2162160., 110880., 3960., 90., 1.};
   MatrixType A2 = A * A;
   MatrixType A4 = A2 * A2;
   MatrixType A6 = A4 * A2;
@@ -262,8 +247,8 @@ template <typename MatrixType>
 EIGEN_STRONG_INLINE void MatrixExponential<MatrixType>::pade13(const MatrixType &A)
 {
   const RealScalar b[] = {64764752532480000., 32382376266240000., 7771770303897600.,
-            1187353796428800., 129060195264000., 10559470521600., 670442572800.,
-            33522128640., 1323241920., 40840800., 960960., 16380., 182., 1.};
+  		      1187353796428800., 129060195264000., 10559470521600., 670442572800.,
+  		      33522128640., 1323241920., 40840800., 960960., 16380., 182., 1.};
   MatrixType A2 = A * A;
   MatrixType A4 = A2 * A2;
   m_tmp1.noalias() = A4 * A2;

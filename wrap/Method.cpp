@@ -37,6 +37,7 @@ void Method::addOverload(bool verbose, bool is_const, const std::string& name,
   this->returnVals.push_back(retVal);
 }
 
+/* ************************************************************************* */
 void Method::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperFile,
                                      const string& cppClassName,
                                      const std::string& matlabQualName,

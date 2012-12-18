@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2008-2009 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "main.h"
 
@@ -183,6 +168,38 @@ template<typename MatrixType> void cwise_min_max(const MatrixType& m)
   VERIFY_IS_APPROX(MatrixType::Constant(rows,cols, maxM1), m1.cwiseMax( maxM1));
   VERIFY_IS_APPROX(m1, m1.cwiseMax( minM1));
 
+  VERIFY_IS_APPROX(MatrixType::Constant(rows,cols, minM1).array(), (m1.array().min)( minM1));
+  VERIFY_IS_APPROX(m1.array(), (m1.array().min)( maxM1));
+
+  VERIFY_IS_APPROX(MatrixType::Constant(rows,cols, maxM1).array(), (m1.array().max)( maxM1));
+  VERIFY_IS_APPROX(m1.array(), (m1.array().max)( minM1));
+
+}
+
+template<typename MatrixTraits> void resize(const MatrixTraits& t)
+{
+  typedef typename MatrixTraits::Index Index;
+  typedef typename MatrixTraits::Scalar Scalar;
+  typedef Matrix<Scalar,Dynamic,Dynamic> MatrixType;
+  typedef Array<Scalar,Dynamic,Dynamic> Array2DType;
+  typedef Matrix<Scalar,Dynamic,1> VectorType;
+  typedef Array<Scalar,Dynamic,1> Array1DType;
+
+  Index rows = t.rows(), cols = t.cols();
+
+  MatrixType m(rows,cols);
+  VectorType v(rows);
+  Array2DType a2(rows,cols);
+  Array1DType a1(rows);
+
+  m.array().resize(rows+1,cols+1);
+  VERIFY(m.rows()==rows+1 && m.cols()==cols+1);
+  a2.matrix().resize(rows+1,cols+1);
+  VERIFY(a2.rows()==rows+1 && a2.cols()==cols+1);
+  v.array().resize(cols);
+  VERIFY(v.size()==cols);
+  a1.matrix().resize(cols);
+  VERIFY(a1.size()==cols);
 }
 
 void test_array_for_matrix()
@@ -216,5 +233,10 @@ void test_array_for_matrix()
     CALL_SUBTEST_8( lpNorm(Vector4f()) );
     CALL_SUBTEST_5( lpNorm(VectorXf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
     CALL_SUBTEST_4( lpNorm(VectorXcf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+  }
+  for(int i = 0; i < g_repeat; i++) {
+    CALL_SUBTEST_4( resize(MatrixXcf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+    CALL_SUBTEST_5( resize(MatrixXf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+    CALL_SUBTEST_6( resize(MatrixXi(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
   }
 }

@@ -114,10 +114,13 @@ public:
 
   // casting syntactic sugar
 
+  inline bool hasLinearizationPoint() const { return linearizationPoint_; }
+
   /**
-   * Simple check whether this is a Jacobian or Hessian factor
+   * Simple checks whether this is a Jacobian or Hessian factor
    */
   bool isJacobian() const;
+  bool isHessian() const;
 
   /** Casts to JacobianFactor */
   JacobianFactor::shared_ptr toJacobian() const;
