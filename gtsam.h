@@ -717,7 +717,6 @@ class Permutation {
   // FIXME: Cannot currently wrap std::vector
   //static gtsam::Permutation PullToFront(const vector<size_t>& toFront, size_t size, bool filterDuplicates);
   //static gtsam::Permutation PushToBack(const vector<size_t>& toBack, size_t size, bool filterDuplicates = false);
-    gtsam::Permutation* partialPermutation(const gtsam::Permutation& selector, const gtsam::Permutation& partialPermutation) const;
 };
 
 class IndexFactor {
@@ -1038,12 +1037,11 @@ class VectorValues {
   //Standard Interface
   size_t size() const;
   size_t dim(size_t j) const;
-  size_t dim() const;
   bool exists(size_t j) const;
   void print(string s) const;
   bool equals(const gtsam::VectorValues& expected, double tol) const;
   void insert(size_t j, Vector value);
-  Vector vector() const;
+  Vector asVector() const;
   Vector at(size_t j) const;
 
   //Advanced Interface
