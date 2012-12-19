@@ -256,7 +256,7 @@ namespace gtsam {
     /**  
      * Permute the variables in the VariableIndex according to the given partial permutation
      */
-    void VectorValues::permuteInPlace(const Permutation& selector, const Permutation& permutation);
+    void permuteInPlace(const Permutation& selector, const Permutation& permutation);
 
     /**
      * Permute the entries of this VectorValues in place
