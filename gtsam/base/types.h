@@ -85,13 +85,16 @@ namespace gtsam {
 
 #ifdef _MSC_VER
 
-// Define some common g++ functions and macros that MSVC does not have
+// Define some common g++ functions and macros we use that MSVC does not have
 
 #include <boost/math/special_functions/fpclassify.hpp>
 namespace std {
-  using boost::math::isfinite;
-  using boost::math::isnan;
-  using boost::math::isinf;
+  template<typename T> inline int isfinite(T a) {
+    return (int)boost::math::isfinite(a); }
+  template<typename T> inline int isnan(T a) {
+    return (int)boost::math::isnan(a); }
+  template<typename T> inline int isinf(T a) {
+    return (int)boost::math::isinf(a); }
 }
 
 #include <boost/math/constants/constants.hpp>
