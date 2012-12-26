@@ -28,6 +28,26 @@
 namespace gtsam {
 
   /**
+   * Formatting options when saving in GraphViz format using
+   * NonlinearFactorGraph::saveGraph.
+   */
+  struct GraphvizFormatting {
+    enum Axis { X, Y, Z, NEGX, NEGY, NEGZ }; ///< World axes to be assigned to paper axes
+    Axis paperHorizontalAxis; ///< The world axis assigned to the horizontal paper axis
+    Axis paperVerticalAxis; ///< The world axis assigned to the vertical paper axis
+    double figureWidthInches; ///< The figure width on paper in inches
+    double figureHeightInches; ///< The figure height on paper in inches
+    bool mergeSimilarFactors; ///< Merge multiple factors that have the same connectivity
+    /// Default constructor sets up robot coordinates.  Paper horizontal is robot Y,
+    /// paper vertical is robot X.  Default figure size of 5x5 in.
+    GraphvizFormatting() :
+      paperHorizontalAxis(Y), paperVerticalAxis(X),
+      figureWidthInches(5), figureHeightInches(5),
+      mergeSimilarFactors(false) {}
+  };
+
+
+  /**
    * A non-linear factor graph is a graph of non-Gaussian, i.e. non-linear factors,
    * which derive from NonlinearFactor. The values structures are typically (in SAM) more general
    * than just vectors, e.g., Rot3 or Pose3, which are objects in non-linear manifolds.
@@ -47,7 +67,9 @@ namespace gtsam {
     void print(const std::string& str = "NonlinearFactorGraph: ", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
     /** Write the graph in GraphViz format for visualization */
-    void saveGraph(std::ostream& stm, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+    void saveGraph(std::ostream& stm, const Values& values = Values(),
+      const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
     /** return keys as an ordered set - ordering is by key value */
     FastSet<Key> keys() const;
