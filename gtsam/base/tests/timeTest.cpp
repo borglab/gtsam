@@ -19,6 +19,7 @@
 
 int main(int argc, char *argv[]) {
 
+  // FIXME: ticPush_ does not exist
   ticPush_("1", "top 1");
   ticPush_("1", "sub 1");
   gttic_("sub sub a");

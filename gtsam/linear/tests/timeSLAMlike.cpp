@@ -17,7 +17,7 @@
  */
 
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/SharedDiagonal.h>
+#include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
 
