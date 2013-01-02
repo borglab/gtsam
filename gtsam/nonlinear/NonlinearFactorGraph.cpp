@@ -103,6 +103,25 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
     }
   }} getXY;
 
+  // Find bounds
+  double minX = numeric_limits<double>::infinity(), maxX = -numeric_limits<double>::infinity();
+  double minY = numeric_limits<double>::infinity(), maxY = -numeric_limits<double>::infinity();
+  BOOST_FOREACH(Key key, keys) {
+    if(values.exists(key)) {
+      boost::optional<Point2> xy = getXY(values.at(key), graphvizFormatting);
+      if(xy) {
+        if(xy->x() < minX)
+          minX = xy->x();
+        if(xy->x() > maxX)
+          maxX = xy->x();
+        if(xy->y() < minY)
+          minY = xy->y();
+        if(xy->y() > maxY)
+          maxY = xy->y();
+      }
+    }
+  }
+
   // Create nodes for each variable in the graph
   BOOST_FOREACH(Key key, keys) {
     // Label the node with the label from the KeyFormatter
@@ -110,7 +129,7 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
     if(values.exists(key)) {
       boost::optional<Point2> xy = getXY(values.at(key), graphvizFormatting);
       if(xy)
-        stm << ", pos=\"" << xy->x() << "," << xy->y() << "\"";
+        stm << ", pos=\"" << (xy->x() - minX) << "," << (xy->y() - minY) << "!\"";
     }
     stm << "];\n";
   }
