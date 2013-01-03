@@ -1364,13 +1364,13 @@ virtual class ConjugateGradientParameters : gtsam::IterativeOptimizationParamete
   void setReset(size_t value);
   void setEpsilon_rel(double value);
   void setEpsilon_abs(double value);
-  void print(string s);
+  void print();
 };
 
 #include <gtsam/linear/SubgraphSolver.h>
 virtual class SubgraphSolverParameters : gtsam::ConjugateGradientParameters {
   SubgraphSolverParameters();
-  void print(string s) const;
+  void print() const;
 };
 
 class SubgraphSolver  {

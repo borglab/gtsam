@@ -61,14 +61,14 @@ public:
   inline void setEpsilon_rel(double value) { epsilon_rel_ = value; }
   inline void setEpsilon_abs(double value) { epsilon_abs_ = value; }
 
-  virtual void print(const std::string &s="") const {
+  virtual void print() const {
     Base::print();
     std::cout << "ConjugateGradientParameters" << std::endl
-              << "minIter:   " << minIterations_ << std::endl
-              << "maxIter:   " << maxIterations_ << std::endl
-              << "resetIter: " << reset_ << std::endl
-              << "eps_rel:   " << epsilon_rel_ << std::endl
-              << "eps_abs:   " << epsilon_abs_ << std::endl;
+              << "minIter:       " << minIterations_ << std::endl
+              << "maxIter:       " << maxIterations_ << std::endl
+              << "resetIter:     " << reset_ << std::endl
+              << "eps_rel:       " << epsilon_rel_ << std::endl
+              << "eps_abs:       " << epsilon_abs_ << std::endl;
   }
 };
 
