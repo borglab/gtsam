@@ -31,6 +31,9 @@ namespace gtsam {
  */
 struct LieMatrix : public Matrix, public DerivedValue<LieMatrix> {
 
+  /// @name Constructors
+  /// @{
+
   /** default constructor - should be unnecessary */
   LieMatrix() {}
 
@@ -48,10 +51,9 @@ struct LieMatrix : public Matrix, public DerivedValue<LieMatrix> {
   /** Specify arguments directly, as in Matrix_() - always force these to be doubles */
   LieMatrix(size_t m, size_t n, ...);
 
-  /** get the underlying vector */
-  inline Matrix matrix() const {
-    return static_cast<Matrix>(*this);
-  }
+  /// @}
+  /// @name Testable interface
+  /// @{
 
   /** print @param s optional string naming the object */
   inline void print(const std::string& name="") const {
@@ -62,8 +64,19 @@ struct LieMatrix : public Matrix, public DerivedValue<LieMatrix> {
   inline bool equals(const LieMatrix& expected, double tol=1e-5) const {
     return gtsam::equal_with_abs_tol(matrix(), expected.matrix(), tol);
   }
+  
+  /// @}
+  /// @name Standard Interface
+  /// @{
 
-  // Manifold requirements
+  /** get the underlying vector */
+  inline Matrix matrix() const {
+    return static_cast<Matrix>(*this);
+  }
+  
+  /// @}
+  /// @name Manifold interface
+  /// @{
 
   /** Returns dimensionality of the tangent space */
   inline size_t dim() const { return this->size(); }
@@ -72,22 +85,26 @@ struct LieMatrix : public Matrix, public DerivedValue<LieMatrix> {
    * tangent space vector correspond to the matrix entries arranged in
    * *row-major* order. */
   inline LieMatrix retract(const Vector& v) const {
-    if(v.size() != this->rows() * this->cols())
+    if(v.size() != this->size())
       throw std::invalid_argument("LieMatrix::retract called with Vector of incorrect size");
-    return LieMatrix(*this + Eigen::Map<const Matrix>(&v(0), this->cols(), this->rows()).transpose());
+    return LieMatrix(*this +
+      Eigen::Map<const Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> >(
+      &v(0), this->rows(), this->cols()));
   }
 
   /** @return the local coordinates of another object.  The elements of the
    * tangent space vector correspond to the matrix entries arranged in
    * *row-major* order. */
   inline Vector localCoordinates(const LieMatrix& t2) const {
-    Vector result(this->rows() * this->cols());
-    Eigen::Map<Matrix>(&result(0), this->cols(), this->rows()).transpose() =
-      (t2 - *this);
+    Vector result(this->size());
+    Eigen::Map<Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> >(
+      &result(0), this->rows(), this->cols()) = t2 - *this;
     return result;
   }
 
-  // Group requirements
+  /// @}
+  /// @name Group interface
+  /// @{
 
   /** identity - NOTE: no known size at compile time - so zero length */
   inline static LieMatrix identity() {
@@ -125,7 +142,9 @@ struct LieMatrix : public Matrix, public DerivedValue<LieMatrix> {
     return LieMatrix(-(*this));
   }
 
-  // Lie functions
+  /// @}
+  /// @name Lie group interface
+  /// @{
 
   /** Expmap around identity */
   static inline LieMatrix Expmap(const Vector& v) {
@@ -135,6 +154,8 @@ struct LieMatrix : public Matrix, public DerivedValue<LieMatrix> {
   /** Logmap around identity - just returns with default cast back */
   static inline Vector Logmap(const LieMatrix& p) {
     return Eigen::Map<const Vector>(&p(0,0), p.dim()); }
+	
+  /// @}
 
 private:
 

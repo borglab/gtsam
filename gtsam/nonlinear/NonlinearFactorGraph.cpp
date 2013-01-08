@@ -18,9 +18,12 @@
  */
 
 #include <cmath>
+#include <limits>
 #include <boost/foreach.hpp>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/inference.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 using namespace std;
@@ -43,24 +46,135 @@ void NonlinearFactorGraph::print(const std::string& str, const KeyFormatter& key
 }
 
 /* ************************************************************************* */
-void NonlinearFactorGraph::saveGraph(std::ostream &stm, const KeyFormatter& keyFormatter) const {
+void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
+    const GraphvizFormatting& graphvizFormatting,
+    const KeyFormatter& keyFormatter) const
+{
   stm << "graph {\n";
+  stm << "  size=\"" << graphvizFormatting.figureWidthInches << "," <<
+    graphvizFormatting.figureHeightInches << "\";\n\n";
+
+  FastSet<Key> keys = this->keys();
+
+  // Local utility function to extract x and y coordinates
+  struct { boost::optional<Point2> operator()(
+    const Value& value, const GraphvizFormatting& graphvizFormatting)
+  {
+    if(const Pose2* p = dynamic_cast<const Pose2*>(&value)) {
+      double x, y;
+      switch (graphvizFormatting.paperHorizontalAxis) {
+      case GraphvizFormatting::X: x = p->x(); break;
+      case GraphvizFormatting::Y: x = p->y(); break;
+      case GraphvizFormatting::Z: x = 0.0; break;
+      case GraphvizFormatting::NEGX: x = -p->x(); break;
+      case GraphvizFormatting::NEGY: x = -p->y(); break;
+      case GraphvizFormatting::NEGZ: x = 0.0; break;
+      }
+      switch (graphvizFormatting.paperVerticalAxis) {
+      case GraphvizFormatting::X: y = p->x(); break;
+      case GraphvizFormatting::Y: y = p->y(); break;
+      case GraphvizFormatting::Z: y = 0.0; break;
+      case GraphvizFormatting::NEGX: y = -p->x(); break;
+      case GraphvizFormatting::NEGY: y = -p->y(); break;
+      case GraphvizFormatting::NEGZ: y = 0.0; break;
+      }
+      return Point2(x,y);
+    } else if(const Pose3* p = dynamic_cast<const Pose3*>(&value)) {
+      double x, y;
+      switch (graphvizFormatting.paperHorizontalAxis) {
+      case GraphvizFormatting::X: x = p->x(); break;
+      case GraphvizFormatting::Y: x = p->y(); break;
+      case GraphvizFormatting::Z: x = p->z(); break;
+      case GraphvizFormatting::NEGX: x = -p->x(); break;
+      case GraphvizFormatting::NEGY: x = -p->y(); break;
+      case GraphvizFormatting::NEGZ: x = -p->z(); break;
+      }
+      switch (graphvizFormatting.paperVerticalAxis) {
+      case GraphvizFormatting::X: y = p->x(); break;
+      case GraphvizFormatting::Y: y = p->y(); break;
+      case GraphvizFormatting::Z: y = p->z(); break;
+      case GraphvizFormatting::NEGX: y = -p->x(); break;
+      case GraphvizFormatting::NEGY: y = -p->y(); break;
+      case GraphvizFormatting::NEGZ: y = -p->z(); break;
+      }
+     return Point2(x,y);
+    } else {
+      return boost::none;
+    }
+  }} getXY;
+
+  // Find bounds
+  double minX = numeric_limits<double>::infinity(), maxX = -numeric_limits<double>::infinity();
+  double minY = numeric_limits<double>::infinity(), maxY = -numeric_limits<double>::infinity();
+  BOOST_FOREACH(Key key, keys) {
+    if(values.exists(key)) {
+      boost::optional<Point2> xy = getXY(values.at(key), graphvizFormatting);
+      if(xy) {
+        if(xy->x() < minX)
+          minX = xy->x();
+        if(xy->x() > maxX)
+          maxX = xy->x();
+        if(xy->y() < minY)
+          minY = xy->y();
+        if(xy->y() > maxY)
+          maxY = xy->y();
+      }
+    }
+  }
 
   // Create nodes for each variable in the graph
-  BOOST_FOREACH(Key key, this->keys()) {
+  BOOST_FOREACH(Key key, keys) {
     // Label the node with the label from the KeyFormatter
-    stm << "  var" << key << "[label=\"" << keyFormatter(key) << "\"];\n"; }
+    stm << "  var" << key << "[label=\"" << keyFormatter(key) << "\"";
+    if(values.exists(key)) {
+      boost::optional<Point2> xy = getXY(values.at(key), graphvizFormatting);
+      if(xy)
+        stm << ", pos=\"" << graphvizFormatting.scale*(xy->x() - minX) << "," << graphvizFormatting.scale*(xy->y() - minY) << "!\"";
+    }
+    stm << "];\n";
+  }
   stm << "\n";
 
-  // Create factors and variable connections
-  for(size_t i = 0; i < this->size(); ++i) {
-    // Make each factor a dot
-    stm << "  factor" << i << "[label=\"\", shape=point];\n";
+  if(graphvizFormatting.mergeSimilarFactors) {
+    // Remove duplicate factors
+    FastSet<vector<Key> > structure;
+    BOOST_FOREACH(const sharedFactor& factor, *this) {
+      if(factor) {
+        vector<Key> factorKeys = factor->keys();
+        std::sort(factorKeys.begin(), factorKeys.end());
+        structure.insert(factorKeys);
+      }
+    }
 
-    // Make factor-variable connections
-    if(this->at(i)) {
-      BOOST_FOREACH(Key key, *this->at(i)) {
-        stm << "  var" << key << "--" << "factor" << i << ";\n"; } }
+    // Create factors and variable connections
+    size_t i = 0;
+    BOOST_FOREACH(const vector<Key>& factorKeys, structure) {
+      // Make each factor a dot
+      stm << "  factor" << i << "[label=\"\", shape=point";
+      {
+        map<size_t, Point2>::const_iterator pos = graphvizFormatting.factorPositions.find(i);
+        if(pos != graphvizFormatting.factorPositions.end())
+          stm << ", pos=\"" << graphvizFormatting.scale*(pos->second.x() - minX) << "," << graphvizFormatting.scale*(pos->second.y() - minY) << "!\"";
+      }
+      stm << "];\n";
+
+      // Make factor-variable connections
+      BOOST_FOREACH(Key key, factorKeys) {
+        stm << "  var" << key << "--" << "factor" << i << ";\n"; }
+
+      ++ i;
+    }
+  } else {
+    // Create factors and variable connections
+    for(size_t i = 0; i < this->size(); ++i) {
+      // Make each factor a dot
+      stm << "  factor" << i << "[label=\"\", shape=point];\n";
+
+      // Make factor-variable connections
+      if(this->at(i)) {
+        BOOST_FOREACH(Key key, *this->at(i)) {
+          stm << "  var" << key << "--" << "factor" << i << ";\n"; } }
+    }
   }
 
   stm << "}\n";

@@ -23,7 +23,7 @@ class SubgraphSolverParameters : public ConjugateGradientParameters {
 public:
   typedef ConjugateGradientParameters Base;
   SubgraphSolverParameters() : Base() {}
-  virtual void print(const std::string &s="") const { Base::print(s); }
+  virtual void print() const { Base::print(); }
 };
 
 /**

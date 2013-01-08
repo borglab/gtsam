@@ -109,30 +109,33 @@ TEST(Pose2, expmap3) {
 }
 
 /* ************************************************************************* */
-TEST(Pose2, expmap0) {
-  Pose2 pose(M_PI/2.0, Point2(1, 2));
-//#ifdef SLOW_BUT_CORRECT_EXPMAP
-  Pose2 expected(1.01491, 2.01013, 1.5888);
-//#else
-//  Pose2 expected(M_PI/2.0+0.018, Point2(1.015, 2.01));
-//#endif
-  Pose2 actual = pose * (Pose2::Expmap(Vector_(3, 0.01, -0.015, 0.018)));
+TEST(Pose2, expmap0a) {
+  Pose2 expected(0.0101345, -0.0149092, 0.018);
+  Pose2 actual = Pose2::Expmap(Vector_(3, 0.01, -0.015, 0.018));
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
 /* ************************************************************************* */
-TEST(Pose2, expmap0_full) {
-  Pose2 pose(M_PI/2.0, Point2(1, 2));
-  Pose2 expected(1.01491, 2.01013, 1.5888);
-  Pose2 actual = pose * Pose2::Expmap(Vector_(3, 0.01, -0.015, 0.018));
+TEST(Pose2, expmap0b) {
+  // a quarter turn
+  Pose2 expected(1.0, 1.0, M_PI/2);
+  Pose2 actual = Pose2::Expmap(Vector_(3, M_PI/2, 0.0, M_PI/2));
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
 /* ************************************************************************* */
-TEST(Pose2, expmap0_full2) {
-  Pose2 pose(M_PI/2.0, Point2(1, 2));
-  Pose2 expected(1.01491, 2.01013, 1.5888);
-  Pose2 actual = pose * Pose2::Expmap(Vector_(3, 0.01, -0.015, 0.018));
+TEST(Pose2, expmap0c) {
+  // a half turn
+  Pose2 expected(0.0, 2.0, M_PI);
+  Pose2 actual = Pose2::Expmap(Vector_(3, M_PI, 0.0, M_PI));
+  EXPECT(assert_equal(expected, actual, 1e-5));
+}
+
+/* ************************************************************************* */
+TEST(Pose2, expmap0d) {
+  // a full turn
+  Pose2 expected(0, 0, 0);
+  Pose2 actual = Pose2::Expmap(Vector_(3, 2*M_PI, 0.0, 2*M_PI));
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
