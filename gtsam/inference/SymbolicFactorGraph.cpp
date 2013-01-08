@@ -117,15 +117,15 @@ namespace gtsam {
 
     FastSet<Index> keys;
     BOOST_FOREACH(const IndexFactor::shared_ptr& factor, factors)
-            BOOST_FOREACH(Index var, *factor)
-                    keys.insert(var);
+      BOOST_FOREACH(Index var, *factor)
+      keys.insert(var);
 
     if (keys.size() < nrFrontals) throw invalid_argument(
-        "EliminateSymbolic requested to eliminate more variables than exist in graph.");
+      "EliminateSymbolic requested to eliminate more variables than exist in graph.");
 
     vector<Index> newKeys(keys.begin(), keys.end());
     return make_pair(boost::make_shared<IndexConditional>(newKeys, nrFrontals),
-        boost::make_shared<IndexFactor>(newKeys.begin() + nrFrontals, newKeys.end()));
+      boost::make_shared<IndexFactor>(newKeys.begin() + nrFrontals, newKeys.end()));
   }
 
   /* ************************************************************************* */
