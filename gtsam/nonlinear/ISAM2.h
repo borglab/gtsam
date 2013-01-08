@@ -502,9 +502,6 @@ protected:
   /** The current Dogleg Delta (trust region radius) */
   mutable boost::optional<double> doglegDelta_;
 
-  /** The inverse ordering, only used for creating ISAM2Result::DetailedResults */
-  boost::optional<Ordering::InvertedMap> inverseOrdering_;
-
 public:
 
   typedef ISAM2 This; ///< This class

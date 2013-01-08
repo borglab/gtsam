@@ -353,7 +353,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(const FastSet<Index>& mark
     RgProd_.permuteInPlace(*colamd);
     gttoc(permute_delta);
     gttic(permute_ordering);
-    ordering_.permuteWithInverse(*colamdInverse);
+    ordering_.permuteInPlace(*colamd);
     gttoc(permute_ordering);
     gttoc(reorder);
 
@@ -412,7 +412,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(const FastSet<Index>& mark
     // Reeliminated keys for detailed results
     if(params_.enableDetailedResults) {
       BOOST_FOREACH(Index index, affectedAndNewKeys) {
-        result.detail->variableStatus[inverseOrdering_->at(index)].isReeliminated = true;
+        result.detail->variableStatus[ordering_.key(index)].isReeliminated = true;
       }
     }
 
@@ -450,7 +450,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(const FastSet<Index>& mark
 
     gttic(PartialSolve);
     Impl::ReorderingMode reorderingMode;
-    reorderingMode.nFullSystemVars = ordering_.nVars();
+    reorderingMode.nFullSystemVars = ordering_.size();
     reorderingMode.algorithm = Impl::ReorderingMode::COLAMD;
     reorderingMode.constrain = Impl::ReorderingMode::CONSTRAIN_LAST;
     if(constrainKeys) {
@@ -489,7 +489,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(const FastSet<Index>& mark
     RgProd_.permuteInPlace(partialSolveResult.reorderingSelector, partialSolveResult.reorderingPermutation);
     gttoc(permute_delta);
     gttic(permute_ordering);
-    ordering_.reduceWithInverse(partialSolveResult.reorderingInverse);
+    ordering_.permuteInPlace(partialSolveResult.reorderingSelector, partialSolveResult.reorderingPermutation);
     gttoc(permute_ordering);
     if(params_.cacheLinearizedFactors) {
       gttic(permute_cached_linear);
@@ -538,7 +538,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(const FastSet<Index>& mark
   // Root clique variables for detailed results
   if(params_.enableDetailedResults) {
     BOOST_FOREACH(Index index, this->root()->conditional()->frontals()) {
-      result.detail->variableStatus[inverseOrdering_->at(index)].inRootClique = true;
+      result.detail->variableStatus[ordering_.key(index)].inRootClique = true;
     }
   }
 
@@ -628,7 +628,6 @@ ISAM2Result ISAM2::update(
   Impl::AddVariables(newTheta, theta_, delta_, deltaNewton_, RgProd_, deltaReplacedMask_, ordering_);
   // New keys for detailed results
   if(params_.enableDetailedResults) {
-    inverseOrdering_ = ordering_.invert();
     BOOST_FOREACH(Key key, newTheta.keys()) { result.detail->variableStatus[key].isNew = true; } }
   gttoc(add_new_variables);
 
@@ -649,7 +648,7 @@ ISAM2Result ISAM2::update(
   // Observed keys for detailed results
   if(params_.enableDetailedResults) {
     BOOST_FOREACH(Index index, markedKeys) {
-      result.detail->variableStatus[inverseOrdering_->at(index)].isObserved = true;
+      result.detail->variableStatus[ordering_.key(index)].isObserved = true;
     }
   }
   // NOTE: we use assign instead of the iterator constructor here because this
@@ -666,7 +665,7 @@ ISAM2Result ISAM2::update(
   FastSet<Index> relinKeys;
   if (relinearizeThisStep) {
     gttic(gather_relinearize_keys);
-    vector<bool> markedRelinMask(ordering_.nVars(), false);
+    vector<bool> markedRelinMask(ordering_.size(), false);
     // 4. Mark keys in \Delta above threshold \beta: J=\{\Delta_{j}\in\Delta|\Delta_{j}\geq\beta\}.
     if(params_.enablePartialRelinearizationCheck)
       relinKeys = Impl::CheckRelinearizationPartial(root_, delta_, ordering_, params_.relinearizeThreshold);
@@ -677,8 +676,8 @@ ISAM2Result ISAM2::update(
     // Above relin threshold keys for detailed results
     if(params_.enableDetailedResults) {
       BOOST_FOREACH(Index index, relinKeys) {
-        result.detail->variableStatus[inverseOrdering_->at(index)].isAboveRelinThreshold = true;
-        result.detail->variableStatus[inverseOrdering_->at(index)].isRelinearized = true; } }
+        result.detail->variableStatus[ordering_.key(index)].isAboveRelinThreshold = true;
+        result.detail->variableStatus[ordering_.key(index)].isRelinearized = true; } }
 
     // Add the variables being relinearized to the marked keys
     BOOST_FOREACH(const Index j, relinKeys) { markedRelinMask[j] = true; }
@@ -696,9 +695,9 @@ ISAM2Result ISAM2::update(
         FastSet<Index> involvedRelinKeys;
         Impl::FindAll(this->root(), involvedRelinKeys, markedRelinMask);
         BOOST_FOREACH(Index index, involvedRelinKeys) {
-          if(!result.detail->variableStatus[inverseOrdering_->at(index)].isAboveRelinThreshold) {
-            result.detail->variableStatus[inverseOrdering_->at(index)].isRelinearizeInvolved = true;
-            result.detail->variableStatus[inverseOrdering_->at(index)].isRelinearized = true; } }
+          if(!result.detail->variableStatus[ordering_.key(index)].isAboveRelinThreshold) {
+            result.detail->variableStatus[ordering_.key(index)].isRelinearizeInvolved = true;
+            result.detail->variableStatus[ordering_.key(index)].isRelinearized = true; } }
       }
     }
     gttoc(fluid_find_all);
@@ -818,7 +817,7 @@ Values ISAM2::calculateEstimate() const {
   const VectorValues& delta(getDelta());
   gttoc(getDelta);
   gttic(Expmap);
-  vector<bool> mask(ordering_.nVars(), true);
+  vector<bool> mask(ordering_.size(), true);
   Impl::ExpmapMasked(ret, delta, ordering_, mask);
   gttoc(Expmap);
   return ret;

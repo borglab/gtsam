@@ -252,7 +252,7 @@ TEST( GaussianFactorGraph, getOrdering)
   Ordering original; original += L(1),X(1),X(2);
   FactorGraph<IndexFactor> symbolic(createGaussianFactorGraph(original));
   Permutation perm(*inference::PermutationCOLAMD(VariableIndex(symbolic)));
-  Ordering actual = original; actual.permuteWithInverse((*perm.inverse()));
+  Ordering actual = original; actual.permuteInPlace(perm);
   Ordering expected; expected += L(1),X(2),X(1);
   EXPECT(assert_equal(expected,actual));
 }

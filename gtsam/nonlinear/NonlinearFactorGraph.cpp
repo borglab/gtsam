@@ -223,7 +223,7 @@ Ordering::shared_ptr NonlinearFactorGraph::orderingCOLAMD(
       variableIndex));
 
   // Permute the Ordering with the COLAMD ordering
-  ordering->permuteWithInverse(*colamdPerm->inverse());
+  ordering->permuteInPlace(*colamdPerm);
   return ordering;
 }
 
@@ -254,7 +254,7 @@ Ordering::shared_ptr NonlinearFactorGraph::orderingCOLAMDConstrained(const Value
       variableIndex, index_constraints));
 
   // Permute the Ordering with the COLAMD ordering
-  ordering->permuteWithInverse(*colamdPerm->inverse());
+  ordering->permuteInPlace(*colamdPerm);
   return ordering;
 }
 

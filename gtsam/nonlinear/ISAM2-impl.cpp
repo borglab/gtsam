@@ -55,10 +55,9 @@ void ISAM2::Impl::AddVariables(
       if(debug) cout << "Adding variable " << keyFormatter(key_value.key) << " with order " << nextVar << endl;
       ++ nextVar;
     }
-    assert(ordering.nVars() == delta.size());
     assert(ordering.size() == delta.size());
   }
-  replacedKeys.resize(ordering.nVars(), false);
+  replacedKeys.resize(ordering.size(), false);
 }
 
 /* ************************************************************************* */
@@ -115,9 +114,10 @@ void ISAM2::Impl::RemoveVariables(const FastSet<Key>& unusedKeys, const ISAM2Cli
      }
 
      // Reorder and remove from ordering and solution
-     ordering.permuteWithInverse(unusedToEndInverse);
+     ordering.permuteInPlace(unusedToEnd);
      BOOST_REVERSE_FOREACH(Key key, unusedKeys) {
-       ordering.pop_back(key);
+       Ordering::value_type removed = ordering.pop_back();
+       assert(removed.first == key);
        theta.erase(key);
      }
 
@@ -188,14 +188,14 @@ void CheckRelinearizationRecursiveDouble(FastSet<Index>& relinKeys, double thres
 }
 
 /* ************************************************************************* */
-void CheckRelinearizationRecursiveMap(FastSet<Index>& relinKeys, const FastMap<char,Vector>& thresholds, const VectorValues& delta, const Ordering::InvertedMap& decoder, const ISAM2Clique::shared_ptr& clique) {
+void CheckRelinearizationRecursiveMap(FastSet<Index>& relinKeys, const FastMap<char,Vector>& thresholds, const VectorValues& delta, const Ordering& ordering, const ISAM2Clique::shared_ptr& clique) {
 
   // Check the current clique for relinearization
   bool relinearize = false;
   BOOST_FOREACH(Index var, clique->conditional()->keys()) {
 
     // Lookup the key associated with this index
-    Key key = decoder.at(var);
+    Key key = ordering.key(var);
 
     // Find the threshold for this variable type
     const Vector& threshold = thresholds.find(Symbol(key).chr())->second;
@@ -214,7 +214,7 @@ void CheckRelinearizationRecursiveMap(FastSet<Index>& relinKeys, const FastMap<c
   // If this node was relinearized, also check its children
   if(relinearize) {
     BOOST_FOREACH(const ISAM2Clique::shared_ptr& child, clique->children()) {
-      CheckRelinearizationRecursiveMap(relinKeys, thresholds, delta, decoder, child);
+      CheckRelinearizationRecursiveMap(relinKeys, thresholds, delta, ordering, child);
     }
   }
 }
@@ -229,8 +229,7 @@ FastSet<Index> ISAM2::Impl::CheckRelinearizationPartial(const ISAM2Clique::share
     if(relinearizeThreshold.type() == typeid(double)) {
       CheckRelinearizationRecursiveDouble(relinKeys, boost::get<double>(relinearizeThreshold), delta, root);
     } else if(relinearizeThreshold.type() == typeid(FastMap<char,Vector>)) {
-      Ordering::InvertedMap decoder = ordering.invert();
-      CheckRelinearizationRecursiveMap(relinKeys, boost::get<FastMap<char,Vector> >(relinearizeThreshold), delta, decoder, root);
+      CheckRelinearizationRecursiveMap(relinKeys, boost::get<FastMap<char,Vector> >(relinearizeThreshold), delta, ordering, root);
     }
   }
 
@@ -267,8 +266,8 @@ void ISAM2::Impl::ExpmapMasked(Values& values, const VectorValues& delta, const 
   invalidateIfDebug = boost::none;
 #endif
 
-  assert(values.size() == ordering.nVars());
-  assert(delta.size() == ordering.nVars());
+  assert(values.size() == ordering.size());
+  assert(delta.size() == ordering.size());
   Values::iterator key_value;
   Ordering::const_iterator key_index;
   for(key_value = values.begin(), key_index = ordering.begin();

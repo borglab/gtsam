@@ -13,14 +13,8 @@ namespace gtsam {
 
 /* ************************************************************************* */
 void LinearContainerFactor::rekeyFactor(const Ordering& ordering) {
-  Ordering::InvertedMap invOrdering = ordering.invert(); // TODO: inefficient - make more selective ordering invert
-  rekeyFactor(invOrdering);
-}
-
-/* ************************************************************************* */
-void LinearContainerFactor::rekeyFactor(const Ordering::InvertedMap& invOrdering) {
   BOOST_FOREACH(Index& idx, factor_->keys()) {
-    Key fullKey = invOrdering.find(idx)->second;
+    Key fullKey = ordering.key(idx);
     idx = fullKey;
     keys_.push_back(fullKey);
   }
@@ -83,34 +77,6 @@ LinearContainerFactor::LinearContainerFactor(
   // Extract keys stashed in linear factor
   BOOST_FOREACH(const Index& idx, factor_->keys())
     keys_.push_back(idx);
-  initializeLinearizationPoint(linearizationPoint);
-}
-
-/* ************************************************************************* */
-LinearContainerFactor::LinearContainerFactor(const JacobianFactor& factor,
-    const Ordering::InvertedMap& inverted_ordering,
-    const Values& linearizationPoint)
-: factor_(factor.clone()) {
-  rekeyFactor(inverted_ordering);
-  initializeLinearizationPoint(linearizationPoint);
-}
-
-/* ************************************************************************* */
-LinearContainerFactor::LinearContainerFactor(const HessianFactor& factor,
-    const Ordering::InvertedMap& inverted_ordering,
-    const Values& linearizationPoint)
-: factor_(factor.clone()) {
-  rekeyFactor(inverted_ordering);
-  initializeLinearizationPoint(linearizationPoint);
-}
-
-/* ************************************************************************* */
-LinearContainerFactor::LinearContainerFactor(
-    const GaussianFactor::shared_ptr& factor,
-    const Ordering::InvertedMap& ordering,
-    const Values& linearizationPoint)
-: factor_(factor->clone()) {
-  rekeyFactor(ordering);
   initializeLinearizationPoint(linearizationPoint);
 }
 
@@ -215,9 +181,8 @@ GaussianFactor::shared_ptr LinearContainerFactor::linearize(
   }
 
   // reset ordering
-  Ordering::InvertedMap invLocalOrdering = localOrdering.invert();
   BOOST_FOREACH(Index& idx, linFactor->keys())
-    idx = ordering[invLocalOrdering[idx] ];
+    idx = ordering[localOrdering.key(idx)];
   return linFactor;
 }
 
@@ -259,18 +224,11 @@ NonlinearFactor::shared_ptr LinearContainerFactor::negate() const {
 NonlinearFactorGraph LinearContainerFactor::convertLinearGraph(
     const GaussianFactorGraph& linear_graph,  const Ordering& ordering,
     const Values& linearizationPoint) {
-  return convertLinearGraph(linear_graph, ordering.invert());
-}
-
-/* ************************************************************************* */
-NonlinearFactorGraph LinearContainerFactor::convertLinearGraph(
-    const GaussianFactorGraph& linear_graph,  const InvertedOrdering& invOrdering,
-    const Values& linearizationPoint) {
   NonlinearFactorGraph result;
   BOOST_FOREACH(const GaussianFactor::shared_ptr& f, linear_graph)
     if (f)
       result.push_back(NonlinearFactorGraph::sharedFactor(
-          new LinearContainerFactor(f, invOrdering, linearizationPoint)));
+          new LinearContainerFactor(f, ordering, linearizationPoint)));
   return result;
 }
 
