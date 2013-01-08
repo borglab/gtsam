@@ -129,7 +129,7 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
     if(values.exists(key)) {
       boost::optional<Point2> xy = getXY(values.at(key), graphvizFormatting);
       if(xy)
-        stm << ", pos=\"" << (xy->x() - minX) << "," << (xy->y() - minY) << "!\"";
+        stm << ", pos=\"" << graphvizFormatting.scale*(xy->x() - minX) << "," << graphvizFormatting.scale*(xy->y() - minY) << "!\"";
     }
     stm << "];\n";
   }
@@ -150,7 +150,13 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
     size_t i = 0;
     BOOST_FOREACH(const vector<Key>& factorKeys, structure) {
       // Make each factor a dot
-      stm << "  factor" << i << "[label=\"\", shape=point];\n";
+      stm << "  factor" << i << "[label=\"\", shape=point";
+      {
+        map<size_t, Point2>::const_iterator pos = graphvizFormatting.factorPositions.find(i);
+        if(pos != graphvizFormatting.factorPositions.end())
+          stm << ", pos=\"" << graphvizFormatting.scale*(pos->second.x() - minX) << "," << graphvizFormatting.scale*(pos->second.y() - minY) << "!\"";
+      }
+      stm << "];\n";
 
       // Make factor-variable connections
       BOOST_FOREACH(Key key, factorKeys) {

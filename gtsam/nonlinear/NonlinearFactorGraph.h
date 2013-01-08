@@ -21,6 +21,7 @@
 
 #pragma once
 
+#include <gtsam/geometry/Point2.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
@@ -37,12 +38,14 @@ namespace gtsam {
     Axis paperVerticalAxis; ///< The world axis assigned to the vertical paper axis
     double figureWidthInches; ///< The figure width on paper in inches
     double figureHeightInches; ///< The figure height on paper in inches
+    double scale; ///< Scale all positions to reduce / increase density
     bool mergeSimilarFactors; ///< Merge multiple factors that have the same connectivity
+    std::map<size_t, Point2> factorPositions; ///< (optional for each factor) Manually specify factor "dot" positions.
     /// Default constructor sets up robot coordinates.  Paper horizontal is robot Y,
     /// paper vertical is robot X.  Default figure size of 5x5 in.
     GraphvizFormatting() :
       paperHorizontalAxis(Y), paperVerticalAxis(X),
-      figureWidthInches(5), figureHeightInches(5),
+      figureWidthInches(5), figureHeightInches(5), scale(1),
       mergeSimilarFactors(false) {}
   };
 
