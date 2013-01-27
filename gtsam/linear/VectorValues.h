@@ -20,6 +20,7 @@
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/types.h>
 
+#include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
@@ -314,14 +315,17 @@ namespace gtsam {
     void chk() const;
 
     // Throw an exception if j does not exist
-    void checkExists(Index j) const {
+    inline void checkExists(Index j) const {
       chk();
-      if(!exists(j))
-        throw std::out_of_range("VectorValues: requested variable index is not in this VectorValues.");
+      if(!exists(j)) {
+        const std::string msg =
+            (boost::format("VectorValues: requested variable index j=%1% is not in this VectorValues.") % j).str();
+        throw std::out_of_range(msg);
+      }
     }
 
     // Resize
-    void copyStructureFrom(const VectorValues& other);
+//    void copyStructureFrom(const VectorValues& other) // FIXME: not implemented?
 
   public:
 
