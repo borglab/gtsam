@@ -93,6 +93,7 @@ TEST( BayesTree, constructor )
 
   // Check Size
   LONGS_EQUAL(4,bayesTree.size());
+  EXPECT(!bayesTree.empty());
 
   // Check root
   boost::shared_ptr<IndexConditional> actual_root = bayesTree.root()->conditional();
@@ -155,6 +156,7 @@ TEST( BayesTree, removePath )
       E(new IndexConditional(_E_, _B_)),
       F(new IndexConditional(_F_, _E_));
   SymbolicBayesTree bayesTree;
+  EXPECT(bayesTree.empty());
 //  Ordering ord; ord += _A_,_B_,_C_,_D_,_E_,_F_;
   SymbolicBayesTree::insert(bayesTree, A);
   SymbolicBayesTree::insert(bayesTree, B);

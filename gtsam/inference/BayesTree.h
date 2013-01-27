@@ -162,6 +162,11 @@ namespace gtsam {
         return 0;
     }
 
+    /** Check if there are any cliques in the tree */
+    inline bool empty() const {
+      return nodes_.empty();
+    }
+
     /** return nodes */
     const Nodes& nodes() const { return nodes_; }
 
