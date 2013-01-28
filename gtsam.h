@@ -1139,6 +1139,11 @@ virtual class GaussianBayesTree : gtsam::GaussianBayesTreeBase {
   GaussianBayesTree(const gtsam::GaussianBayesNet& other);
 };
 
+// namespace functions for GaussianBayesTree
+gtsam::VectorValues optimize(const gtsam::GaussianBayesTree& bayesTree);
+gtsam::VectorValues optimizeGradientSearch(const gtsam::GaussianBayesTree& bayesTree);
+gtsam::VectorValues gradient(const gtsam::GaussianBayesTree& bayesTree, const gtsam::VectorValues& x0);
+
 virtual class GaussianFactor {
   void print(string s) const;
   bool equals(const gtsam::GaussianFactor& lf, double tol) const;
