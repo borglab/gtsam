@@ -407,9 +407,9 @@ void verifyReturnTypes(const vector<string>& validtypes, const map<string,T>& vt
   BOOST_FOREACH(const Name_Method& name_method, vt) { 
     const T& t = name_method.second; 
     BOOST_FOREACH(const ReturnValue& retval, t.returnVals) { 
-      if (find(validtypes.begin(), validtypes.end(), retval.qualifiedType1("::"))  == validtypes.end()) 
+      if (find(validtypes.begin(), validtypes.end(), retval.qualifiedType1("::")) == validtypes.end()) 
         throw DependencyMissing(retval.qualifiedType1("::"), t.name); 
-      if (retval.isPair && find(validtypes.begin(), validtypes.end(), retval.qualifiedType2("::"))  == validtypes.end()) 
+      if (retval.isPair && find(validtypes.begin(), validtypes.end(), retval.qualifiedType2("::")) == validtypes.end()) 
         throw DependencyMissing(retval.qualifiedType2("::"), t.name); 
     } 
   } 
