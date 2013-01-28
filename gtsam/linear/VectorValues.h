@@ -324,9 +324,6 @@ namespace gtsam {
       }
     }
 
-    // Resize
-//    void copyStructureFrom(const VectorValues& other) // FIXME: not implemented?
-
   public:
 
     /**
