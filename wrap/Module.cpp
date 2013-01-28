@@ -245,7 +245,7 @@ void Module::parseMarkup(const std::string& data) {
  
   Rule void_p = str_p("void")[assign_a(retVal.type1)][assign_a(retVal.category1, RETURN_VOID)];
  
-  Rule returnType_p = void_p | returnType1_p | pair_p;
+  Rule returnType_p = void_p | pair_p | returnType1_p;
  
   Rule methodName_p = lexeme_d[lower_p >> *(alnum_p | '_')]; 
  
