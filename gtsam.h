@@ -818,6 +818,7 @@ virtual class BayesTree {
     void deleteCachedShortcuts();
     void insert(const CLIQUE* subtree);
     size_t numCachedSeparatorMarginals() const;
+    CLIQUE* clique(size_t j) const;
 };
 
 template<CONDITIONAL>
@@ -1143,6 +1144,7 @@ virtual class GaussianBayesTree : gtsam::GaussianBayesTreeBase {
 gtsam::VectorValues optimize(const gtsam::GaussianBayesTree& bayesTree);
 gtsam::VectorValues optimizeGradientSearch(const gtsam::GaussianBayesTree& bayesTree);
 gtsam::VectorValues gradient(const gtsam::GaussianBayesTree& bayesTree, const gtsam::VectorValues& x0);
+gtsam::VectorValues* allocateVectorValues(const gtsam::GaussianBayesTree& bt);
 
 virtual class GaussianFactor {
   void print(string s) const;
