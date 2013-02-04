@@ -10,6 +10,8 @@ set (gtsam_unstable_subdirs
     slam
 )
 
+set(GTSAM_UNSTABLE_BOOST_LIBRARIES ${GTSAM_BOOST_LIBRARIES} ${Boost_THREAD_LIBRARY})
+
 add_custom_target(check.unstable COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure)
 
 # assemble core libaries
@@ -58,7 +60,7 @@ set_target_properties(gtsam_unstable-static PROPERTIES
     CLEAN_DIRECT_OUTPUT 1
 	VERSION             ${gtsam_unstable_version}
  	SOVERSION           ${gtsam_unstable_soversion})
-target_link_libraries(gtsam_unstable-static gtsam-static)
+target_link_libraries(gtsam_unstable-static gtsam-static ${GTSAM_UNSTABLE_BOOST_LIBRARIES})
 set(gtsam_unstable-lib "gtsam_unstable-static")
 install(TARGETS gtsam_unstable-static EXPORT GTSAM-exports ARCHIVE DESTINATION lib)
 list(APPEND GTSAM_EXPORTED_TARGETS gtsam_unstable-static)
@@ -72,7 +74,7 @@ if (GTSAM_UNSTABLE_BUILD_SHARED_LIBRARY)
         CLEAN_DIRECT_OUTPUT 1
     	VERSION             ${gtsam_unstable_version}
      	SOVERSION           ${gtsam_unstable_soversion})
-    target_link_libraries(gtsam_unstable-shared gtsam-shared)
+    target_link_libraries(gtsam_unstable-shared gtsam-shared ${GTSAM_UNSTABLE_BOOST_LIBRARIES})
     install(TARGETS gtsam_unstable-shared EXPORT GTSAM-exports LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
     list(APPEND GTSAM_EXPORTED_TARGETS gtsam_unstable-shared)
     set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)

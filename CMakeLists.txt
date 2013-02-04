@@ -107,8 +107,10 @@ endif()
 
 ###############################################################################
 # Find boost
-if(CYGWIN OR MSVC OR WIN32)
-  set(Boost_USE_STATIC_LIBS 1) # Use static libs on Windows
+
+# If using Boost shared libs, set up auto linking for shared libs
+if(NOT Boost_USE_STATIC_LIBS)
+	add_definitions(-DBOOST_ALL_DYN_LINK)
 endif()
 
 find_package(Boost 1.43 COMPONENTS serialization system filesystem thread date_time regex timer chrono)
@@ -122,7 +124,7 @@ endif()
 # Allow for not using the timer libraries on boost < 1.48 (GTSAM timing code falls back to old timer library)
 set(GTSAM_BOOST_LIBRARIES ${Boost_SERIALIZATION_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY})
 if(Boost_TIMER_LIBRARY)
-  set(GTSAM_BOOST_LIBRARIES ${GTSAM_BOOST_LIBRARIES} ${Boost_TIMER_LIBRARY} ${Boost_CHRONO_LIBRARY})
+  list(APPEND GTSAM_BOOST_LIBRARIES ${GTSAM_BOOST_LIBRARIES} ${Boost_TIMER_LIBRARY} ${Boost_CHRONO_LIBRARY})
 else()
   message("WARNING:  Boost older than 1.48 was found, GTSAM timing instrumentation will use the older, less accurate, Boost timer library.")
 endif()
