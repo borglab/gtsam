@@ -91,6 +91,23 @@ VectorValues gradient(const GaussianBayesTree& bayesTree, const VectorValues& x0
  */
 void gradientAtZero(const GaussianBayesTree& bayesTree, VectorValues& g);
 
+/**
+ * Computes the determinant of a GassianBayesTree
+ * A GassianBayesTree is an upper triangular matrix and for an upper triangular matrix
+ * determinant is the product of the diagonal elements. Instead of actually multiplying
+ * we add the logarithms of the diagonal elements and take the exponent at the end
+ * because this is more numerically stable.
+ * @param bayesTree The input GassianBayesTree
+ * @return The determinant
+ */
+double determinant(const GaussianBayesTree& bayesTree);
+
+
+namespace internal {
+template<class BAYESTREE>
+double logDeterminant(const typename BAYESTREE::sharedClique& clique);
+}
+
 }
 
 #include <gtsam/linear/GaussianBayesTree-inl.h>

@@ -65,7 +65,13 @@ int main(int argc, const char* argv[]) {
     cerr << endl;
     usage();
   }
-  else
-    generate_matlab_toolbox(argv[1],argv[2],argv[3],argv[4]);
+  else {
+    try {
+      generate_matlab_toolbox(argv[1],argv[2],argv[3],argv[4]);
+    } catch(std::exception& e) {
+      cerr << e.what() << endl;
+      return 1;
+    }
+  }
   return 0;
 }

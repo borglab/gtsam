@@ -68,7 +68,6 @@ endif()
 option(GTSAM_INSTALL_MATLAB_TOOLBOX      "Enable/Disable installation of matlab toolbox"  OFF)
 option(GTSAM_BUILD_WRAP                  "Enable/Disable building of matlab wrap utility (necessary for matlab interface)" ON)
 option(GTSAM_INSTALL_WRAP                "Enable/Disable installation of wrap utility for wrapping other libraries"    ON)
-set(GTSAM_TOOLBOX_INSTALL_PATH "" CACHE PATH "Matlab toolbox destination, blank defaults to CMAKE_INSTALL_PREFIX/borg/toolbox")
 
 # Check / set dependent variables for MATLAB wrapper
 set(GTSAM_WRAP_HEADER_PATH "${PROJECT_SOURCE_DIR}/wrap")
@@ -77,9 +76,6 @@ if(GTSAM_INSTALL_MATLAB_TOOLBOX AND NOT GTSAM_BUILD_WRAP)
 endif()
 if(GTSAM_INSTALL_WRAP AND NOT GTSAM_BUILD_WRAP)
 	message(FATAL_ERROR "GTSAM_INSTALL_WRAP is enabled, please also enable GTSAM_BUILD_WRAP")
-endif()
-if(NOT GTSAM_TOOLBOX_INSTALL_PATH)
-	set(GTSAM_TOOLBOX_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/borg/toolbox")
 endif()
 
 # Flags for choosing default packaging tools
@@ -111,8 +107,10 @@ endif()
 
 ###############################################################################
 # Find boost
-if(CYGWIN OR MSVC OR WIN32)
-  set(Boost_USE_STATIC_LIBS 1) # Use static libs on Windows
+
+# If using Boost shared libs, set up auto linking for shared libs
+if(NOT Boost_USE_STATIC_LIBS)
+	add_definitions(-DBOOST_ALL_DYN_LINK)
 endif()
 
 find_package(Boost 1.43 COMPONENTS serialization system filesystem thread date_time regex timer chrono)
@@ -126,7 +124,7 @@ endif()
 # Allow for not using the timer libraries on boost < 1.48 (GTSAM timing code falls back to old timer library)
 set(GTSAM_BOOST_LIBRARIES ${Boost_SERIALIZATION_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY})
 if(Boost_TIMER_LIBRARY)
-  set(GTSAM_BOOST_LIBRARIES ${GTSAM_BOOST_LIBRARIES} ${Boost_TIMER_LIBRARY} ${Boost_CHRONO_LIBRARY})
+  list(APPEND GTSAM_BOOST_LIBRARIES ${GTSAM_BOOST_LIBRARIES} ${Boost_TIMER_LIBRARY} ${Boost_CHRONO_LIBRARY})
 else()
   message("WARNING:  Boost older than 1.48 was found, GTSAM timing instrumentation will use the older, less accurate, Boost timer library.")
 endif()

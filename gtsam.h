@@ -10,7 +10,7 @@
  *   Only one Method/Constructor per line, though methods/constructors can extend across multiple lines
  *   Methods can return
  *     - Eigen types:       Matrix, Vector
- *     - C/C++ basic types: string, bool, size_t, size_t, double, char, unsigned char
+ *     - C/C++ basic types: string, bool, size_t, int, double, char, unsigned char
  *     - void
  *     - Any class with which be copied with boost::make_shared()
  *     - boost::shared_ptr of any object type
@@ -815,6 +815,7 @@ virtual class BayesTree {
     void deleteCachedShortcuts();
     void insert(const CLIQUE* subtree);
     size_t numCachedSeparatorMarginals() const;
+    CLIQUE* clique(size_t j) const;
 };
 
 template<CONDITIONAL>
@@ -865,7 +866,6 @@ virtual class SymbolicBayesNet  : gtsam::SymbolicBayesNetBase {
   void permuteWithInverse(const gtsam::Permutation& inversePermutation);
 };
 
-#include <gtsam/inference/SymbolicFactorGraph.h>
 typedef gtsam::BayesTreeClique<gtsam::IndexConditional> SymbolicBayesTreeClique;
 typedef gtsam::BayesTree<gtsam::IndexConditional, gtsam::SymbolicBayesTreeClique> SymbolicBayesTreeBase;
 virtual class SymbolicBayesTree : gtsam::SymbolicBayesTreeBase {
@@ -1107,21 +1107,21 @@ virtual class GaussianBayesNet  : gtsam::GaussianBayesNetBase {
 
 //Non-Class methods found in GaussianBayesNet.h
 //FIXME: No MATLAB documentation for these functions!
-/*gtsam::GaussianBayesNet scalarGaussian(size_t key, double mu, double sigma);
-gtsam::GaussianBayesNet simpleGaussian(size_t key, const Vector& mu, double sigma);
-void push_front(gtsam::GaussianBayesNet& bn, size_t key, Vector d, Matrix R, size_t name1, Matrix S, Vector sigmas);
-void push_front(gtsam::GaussianBayesNet& bn, size_t key, Vector d, Matrix R, size_t name1, Matrix S, size_t name2, Matrix T, Vector sigmas);
-gtsam::VectorValues* allocateVectorValues(const gtsam::GaussianBayesNet& bn);
-gtsam::VectorValues optimize(const gtsam::GaussianBayesNet& bn);
-void optimizeInPlace(const gtsam::GaussianBayesNet& bn, gtsam::VectorValues& x);
-gtsam::VectorValues optimizeGradientSearch(const gtsam::GaussianBayesNet& bn);
-void optimizeGradientSearchInPlace(const gtsam::GaussianBayesNet& bn, gtsam::VectorValues& grad);
-gtsam::VectorValues backSubstitute(const gtsam::GaussianBayesNet& bn, const gtsam::VectorValues& gx);
-gtsam::VectorValues backSubstituteTranspose(const gtsam::GaussianBayesNet& bn, const gtsam::VectorValues& gx);
-pair<Matrix, Vector> matrix(const gtsam::GaussianBayesNet& bn);
+//gtsam::GaussianBayesNet scalarGaussian(size_t key, double mu, double sigma);
+//gtsam::GaussianBayesNet simpleGaussian(size_t key, const Vector& mu, double sigma);
+//void push_front(gtsam::GaussianBayesNet& bn, size_t key, Vector d, Matrix R, size_t name1, Matrix S, Vector sigmas);
+//void push_front(gtsam::GaussianBayesNet& bn, size_t key, Vector d, Matrix R, size_t name1, Matrix S, size_t name2, Matrix T, Vector sigmas);
+//gtsam::VectorValues* allocateVectorValues(const gtsam::GaussianBayesNet& bn);
+//gtsam::VectorValues optimize(const gtsam::GaussianBayesNet& bn);
+//void optimizeInPlace(const gtsam::GaussianBayesNet& bn, gtsam::VectorValues& x);
+//gtsam::VectorValues optimizeGradientSearch(const gtsam::GaussianBayesNet& bn);
+//void optimizeGradientSearchInPlace(const gtsam::GaussianBayesNet& bn, gtsam::VectorValues& grad);
+//gtsam::VectorValues backSubstitute(const gtsam::GaussianBayesNet& bn, const gtsam::VectorValues& gx);
+//gtsam::VectorValues backSubstituteTranspose(const gtsam::GaussianBayesNet& bn, const gtsam::VectorValues& gx);
+//pair<Matrix, Vector> matrix(const gtsam::GaussianBayesNet& bn);
 double determinant(const gtsam::GaussianBayesNet& bayesNet);
-gtsam::VectorValues gradient(const gtsam::GaussianBayesNet& bayesNet, const gtsam::VectorValues& x0);
-void gradientAtZero(const gtsam::GaussianBayesNet& bayesNet, const gtsam::VectorValues& g);*/
+//gtsam::VectorValues gradient(const gtsam::GaussianBayesNet& bayesNet, const gtsam::VectorValues& x0);
+//void gradientAtZero(const gtsam::GaussianBayesNet& bayesNet, const gtsam::VectorValues& g);
 
 #include <gtsam/linear/GaussianBayesTree.h>
 typedef gtsam::BayesTreeClique<gtsam::GaussianConditional> GaussianBayesTreeClique;
@@ -1132,6 +1132,13 @@ virtual class GaussianBayesTree : gtsam::GaussianBayesTreeBase {
   GaussianBayesTree(const gtsam::GaussianBayesNet& bn);
   GaussianBayesTree(const gtsam::GaussianBayesNet& other);
 };
+
+// namespace functions for GaussianBayesTree
+gtsam::VectorValues optimize(const gtsam::GaussianBayesTree& bayesTree);
+gtsam::VectorValues optimizeGradientSearch(const gtsam::GaussianBayesTree& bayesTree);
+gtsam::VectorValues gradient(const gtsam::GaussianBayesTree& bayesTree, const gtsam::VectorValues& x0);
+gtsam::VectorValues* allocateVectorValues(const gtsam::GaussianBayesTree& bt);
+double determinant(const gtsam::GaussianBayesTree& bayesTree);
 
 virtual class GaussianFactor {
   void print(string s) const;

@@ -162,6 +162,11 @@ namespace gtsam {
         return 0;
     }
 
+    /** Check if there are any cliques in the tree */
+    inline bool empty() const {
+      return nodes_.empty();
+    }
+
     /** return nodes */
     const Nodes& nodes() const { return nodes_; }
 
@@ -169,7 +174,12 @@ namespace gtsam {
     const sharedClique& root() const { return root_;  }
 
     /** find the clique that contains the variable with Index j */
-    sharedClique operator[](Index j) const {
+    inline sharedClique operator[](Index j) const {
+      return nodes_.at(j);
+    }
+
+    /** alternate syntax for matlab: find the clique that contains the variable with Index j */
+    inline sharedClique clique(Index j) const {
       return nodes_.at(j);
     }
 
