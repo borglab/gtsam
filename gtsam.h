@@ -1418,26 +1418,14 @@ class Ordering {
   bool equals(const gtsam::Ordering& ord, double tol) const;
 
   // Standard interface
-  size_t nVars() const;
   size_t size() const;
   size_t at(size_t key) const;
+  size_t key(size_t index) const;
   bool exists(size_t key) const;
   void insert(size_t key, size_t order);
   void push_back(size_t key);
-  void permuteWithInverse(const gtsam::Permutation& inversePermutation);
-  gtsam::InvertedOrdering invert() const;
-};
-
-class InvertedOrdering {
-  InvertedOrdering();
-
-  // FIXME: add bracket operator overload
-
-  bool empty() const;
-  size_t size() const;
-  bool count(size_t index) const; // Use as a boolean function with implicit cast
-
-  void clear();
+  void permuteInPlace(const gtsam::Permutation& permutation);
+  void permuteInPlace(const gtsam::Permutation& selector, const gtsam::Permutation& permutation);
 };
 
 class NonlinearFactorGraph {
@@ -1605,12 +1593,9 @@ virtual class LinearContainerFactor : gtsam::NonlinearFactor {
   LinearContainerFactor(gtsam::GaussianFactor* factor, const gtsam::Ordering& ordering,
       const gtsam::Values& linearizationPoint);
   LinearContainerFactor(gtsam::GaussianFactor* factor,  const gtsam::Values& linearizationPoint);
-  LinearContainerFactor(gtsam::GaussianFactor* factor, const gtsam::InvertedOrdering& ordering,
-      const gtsam::Values& linearizationPoint);
 
   LinearContainerFactor(gtsam::GaussianFactor* factor, const gtsam::Ordering& ordering);
   LinearContainerFactor(gtsam::GaussianFactor* factor);
-  LinearContainerFactor(gtsam::GaussianFactor* factor, const gtsam::InvertedOrdering& ordering);
 
   gtsam::GaussianFactor* factor() const;
 //  const boost::optional<Values>& linearizationPoint() const;
@@ -1625,13 +1610,9 @@ virtual class LinearContainerFactor : gtsam::NonlinearFactor {
 
   static gtsam::NonlinearFactorGraph convertLinearGraph(const gtsam::GaussianFactorGraph& linear_graph,
       const gtsam::Ordering& ordering, const gtsam::Values& linearizationPoint);
-  static gtsam::NonlinearFactorGraph convertLinearGraph(const gtsam::GaussianFactorGraph& linear_graph,
-      const gtsam::InvertedOrdering& invOrdering, const gtsam::Values& linearizationPoint);
 
   static gtsam::NonlinearFactorGraph convertLinearGraph(const gtsam::GaussianFactorGraph& linear_graph,
       const gtsam::Ordering& ordering);
-  static gtsam::NonlinearFactorGraph convertLinearGraph(const gtsam::GaussianFactorGraph& linear_graph,
-      const gtsam::InvertedOrdering& invOrdering);
 
 }; // \class LinearContainerFactor
 
