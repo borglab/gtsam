@@ -112,12 +112,6 @@ namespace gtsam {
      * Returns true if any reordered variables appeared in the separator and
      * false if not.
      */
-    //bool permuteSeparatorWithInverse(const Permutation& inversePermutation);
-
-    /** Permute the variables when only separator variables need to be permuted.
-     * Returns true if any reordered variables appeared in the separator and
-     * false if not.
-     */
     bool reduceSeparatorWithInverse(const internal::Reduction& inverseReduction);
 
     /**

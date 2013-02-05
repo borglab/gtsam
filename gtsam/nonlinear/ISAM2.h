@@ -405,12 +405,6 @@ public:
     Base::permuteWithInverse(inversePermutation);
   }
 
-  //bool permuteSeparatorWithInverse(const Permutation& inversePermutation) {
-  //  bool changed = Base::permuteSeparatorWithInverse(inversePermutation);
-  //  if(changed) if(cachedFactor_) cachedFactor_->permuteWithInverse(inversePermutation);
-  //  return changed;
-  //}
-
   bool reduceSeparatorWithInverse(const internal::Reduction& inverseReduction) {
     bool changed = Base::reduceSeparatorWithInverse(inverseReduction);
     if(changed) if(cachedFactor_) cachedFactor_->reduceWithInverse(inverseReduction);
