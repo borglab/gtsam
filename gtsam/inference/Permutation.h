@@ -167,14 +167,6 @@ public:
   /// @name Advanced Interface
   /// @{
 
-
-  /**
-   * A partial permutation, reorders the variables selected by selector through
-   * partialPermutation.  selector and partialPermutation should have the same
-   * size, this is checked if NDEBUG is not defined.
-   */
-  Permutation::shared_ptr partialPermutation(const Permutation& selector, const Permutation& partialPermutation) const;
-
   iterator begin() { return rangeIndices_.begin(); }  ///< Iterate through the indices
   iterator end() { return rangeIndices_.end(); }      ///< Iterate through the indices
 
@@ -192,12 +184,14 @@ namespace internal {
     typedef gtsam::FastMap<Index,Index> Base;
 
     static Reduction CreateAsInverse(const Permutation& p);
+    static Reduction CreateFromPartialPermutation(const Permutation& selector, const Permutation& p);
     void applyInverse(std::vector<Index>& js) const;
     Permutation inverse() const;
-    Index& operator[](const Index& j);
+    const Index& operator[](const Index& j);
     const Index& operator[](const Index& j) const;
 
     void print(const std::string& s="") const;
+    bool equals(const Reduction& other, double tol = 1e-9) const;
   };
 
   // Reduce the variable indices so that those in the set are mapped to start at zero

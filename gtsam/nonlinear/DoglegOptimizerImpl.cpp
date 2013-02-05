@@ -28,13 +28,12 @@ VectorValues DoglegOptimizerImpl::ComputeDoglegPoint(
   // Get magnitude of each update and find out which segment Delta falls in
   assert(Delta >= 0.0);
   double DeltaSq = Delta*Delta;
-  double x_u_norm_sq = dx_u.vector().squaredNorm();
-  double x_n_norm_sq = dx_n.vector().squaredNorm();
+  double x_u_norm_sq = dx_u.squaredNorm();
+  double x_n_norm_sq = dx_n.squaredNorm();
   if(verbose) cout << "Steepest descent magnitude " << std::sqrt(x_u_norm_sq) << ", Newton's method magnitude " << std::sqrt(x_n_norm_sq) << endl;
   if(DeltaSq < x_u_norm_sq) {
     // Trust region is smaller than steepest descent update
-    VectorValues x_d = VectorValues::SameStructure(dx_u);
-    x_d.vector() = dx_u.vector() * std::sqrt(DeltaSq / x_u_norm_sq);
+    VectorValues x_d = std::sqrt(DeltaSq / x_u_norm_sq) * dx_u;
     if(verbose) cout << "In steepest descent region with fraction " << std::sqrt(DeltaSq / x_u_norm_sq) << " of steepest descent magnitude" << endl;
     return x_d;
   } else if(DeltaSq < x_n_norm_sq) {
@@ -79,8 +78,7 @@ VectorValues DoglegOptimizerImpl::ComputeBlend(double Delta, const VectorValues&
 
   // Compute blended point
   if(verbose) cout << "In blend region with fraction " << tau << " of Newton's method point" << endl;
-  VectorValues blend = VectorValues::SameStructure(x_u);
-  blend.vector() = (1. - tau) * x_u.vector() + tau * x_n.vector();
+  VectorValues blend = (1. - tau) * x_u;  axpy(tau, x_n, blend);
   return blend;
 }
 

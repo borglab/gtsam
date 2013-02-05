@@ -405,9 +405,15 @@ public:
     Base::permuteWithInverse(inversePermutation);
   }
 
-  bool permuteSeparatorWithInverse(const Permutation& inversePermutation) {
-    bool changed = Base::permuteSeparatorWithInverse(inversePermutation);
-    if(changed) if(cachedFactor_) cachedFactor_->permuteWithInverse(inversePermutation);
+  //bool permuteSeparatorWithInverse(const Permutation& inversePermutation) {
+  //  bool changed = Base::permuteSeparatorWithInverse(inversePermutation);
+  //  if(changed) if(cachedFactor_) cachedFactor_->permuteWithInverse(inversePermutation);
+  //  return changed;
+  //}
+
+  bool reduceSeparatorWithInverse(const internal::Reduction& inverseReduction) {
+    bool changed = Base::reduceSeparatorWithInverse(inverseReduction);
+    if(changed) if(cachedFactor_) cachedFactor_->reduceWithInverse(inverseReduction);
     return changed;
   }
 
@@ -495,9 +501,6 @@ protected:
 
   /** The current Dogleg Delta (trust region radius) */
   mutable boost::optional<double> doglegDelta_;
-
-  /** The inverse ordering, only used for creating ISAM2Result::DetailedResults */
-  boost::optional<Ordering::InvertedMap> inverseOrdering_;
 
 public:
 

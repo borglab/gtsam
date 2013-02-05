@@ -55,10 +55,8 @@ void NonlinearISAM::update(const NonlinearFactorGraph& newFactors,
 
     // Augment ordering
     // TODO: allow for ordering constraints within the new variables
-    // FIXME: should just loop over new values
-    BOOST_FOREACH(const NonlinearFactorGraph::sharedFactor& factor, newFactors)
-      BOOST_FOREACH(Key key, factor->keys())
-        ordering_.tryInsert(key, ordering_.nVars()); // will do nothing if already present
+    BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, initialValues)
+      ordering_.insert(key_value.key, ordering_.size());
 
     boost::shared_ptr<GaussianFactorGraph> linearizedNewFactors = newFactors.linearize(linPoint_, ordering_);
 

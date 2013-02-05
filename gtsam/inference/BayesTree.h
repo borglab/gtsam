@@ -92,7 +92,7 @@ namespace gtsam {
     };
 
     /** Map from indices to Clique */
-    typedef std::deque<sharedClique> Nodes;
+    typedef std::vector<sharedClique> Nodes;
 
   protected:
 

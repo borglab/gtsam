@@ -24,7 +24,7 @@
 #include <boost/foreach.hpp>
 #include <boost/assign/list_inserter.hpp>
 #include <boost/pool/pool_alloc.hpp>
-#include <set>
+#include <vector>
 
 namespace gtsam {
 
@@ -35,8 +35,9 @@ namespace gtsam {
 class Ordering {
 protected:
   typedef FastMap<Key, Index> Map;
+  typedef std::vector<Map::iterator> OrderingIndex;
   Map order_;
-  Index nVars_;
+  OrderingIndex orderingIndex_;
 
 public:
 
@@ -51,25 +52,33 @@ public:
   /// @{
 
   /// Default constructor for empty ordering
-  Ordering() : nVars_(0) {}
+  Ordering() {}
+
+  /// Copy constructor
+  Ordering(const Ordering& other);
 
   /// Construct from list, assigns order indices sequentially to list items.
-  Ordering(const std::list<Key> & L) ;
+  Ordering(const std::list<Key> & L);
+
+  /// Assignment operator
+  Ordering& operator=(const Ordering& rhs);
 
   /// @}
   /// @name Standard Interface
   /// @{
 
-  /** One greater than the maximum ordering index, i.e. including missing indices in the count.  See also size(). */
-  Index nVars() const { return nVars_; }
-
   /** The actual number of variables in this ordering, i.e. not including missing indices in the count.  See also nVars(). */
-  Index size() const { return order_.size(); }
+  Index size() const { return orderingIndex_.size(); }
 
   const_iterator begin() const { return order_.begin(); } /**< Iterator in order of sorted symbols, not in elimination/index order! */
   const_iterator end() const { return order_.end(); } /**< Iterator in order of sorted symbols, not in elimination/index order! */
 
   Index at(Key key) const { return operator[](key); } ///< Synonym for operator[](Key) const
+  Key key(Index index) const {
+    if(index >= orderingIndex_.size())
+      throw std::out_of_range("Attempting to access out-of-range index in Ordering");
+    else
+      return orderingIndex_[index]->first; }
 
   /** Assigns the ordering index of the requested \c key into \c index if the symbol
    * is present in the ordering, otherwise does not modify \c index.  The
@@ -85,8 +94,7 @@ public:
       index = i->second;
       return true;
     } else
-      return false;
-  }
+      return false; }
 
   /// Access the index for the requested key, throws std::out_of_range if the
   /// key is not present in the ordering (note that this differs from the
@@ -122,23 +130,25 @@ public:
    */
   const_iterator find(Key key) const { return order_.find(key); }
 
-  /**
-   * Attempts to insert a symbol/order pair with same semantics as stl::Map::insert(),
-   * i.e., returns a pair of iterator and success (false if already present)
-   */
-  std::pair<iterator,bool> tryInsert(const value_type& key_order) {
-    std::pair<iterator,bool> it_ok(order_.insert(key_order));
-    if(it_ok.second == true && key_order.second+1 > nVars_)
-      nVars_ = key_order.second+1;
-    return it_ok;
-  }
-
-  /** Try insert, but will fail if the key is already present */
+  /** Insert a key-index pair, but will fail if the key is already present */
   iterator insert(const value_type& key_order) {
-    std::pair<iterator,bool> it_ok(tryInsert(key_order));
-    if(!it_ok.second)  throw std::invalid_argument(std::string("Attempting to insert a key into an ordering that already contains that key"));
-    else               return it_ok.first;
-  }
+    std::pair<iterator,bool> it_ok(order_.insert(key_order));
+    if(it_ok.second) {
+      if(key_order.second >= orderingIndex_.size())
+        orderingIndex_.resize(key_order.second + 1);
+      orderingIndex_[key_order.second] = it_ok.first;
+      return it_ok.first;
+    } else
+      throw std::invalid_argument(std::string("Attempting to insert a key into an ordering that already contains that key")); }
+
+  /// Test if the key exists in the ordering.
+  bool exists(Key key) const { return order_.count(key) > 0; }
+
+  /** Insert a key-index pair, but will fail if the key is already present */
+  iterator insert(Key key, Index order) { return insert(std::make_pair(key,order)); }
+
+  /// Adds a new key to the ordering with an index of one greater than the current highest index.
+  Index push_back(Key key) { return insert(std::make_pair(key, orderingIndex_.size()))->second; }
 
   /// @}
   /// @name Advanced Interface
@@ -154,18 +164,6 @@ public:
    */
   iterator end() { return order_.end(); }
 
-  /// Test if the key exists in the ordering.
-  bool exists(Key key) const { return order_.count(key) > 0; }
-
-  ///TODO: comment
-  std::pair<iterator,bool> tryInsert(Key key, Index order) { return tryInsert(std::make_pair(key,order)); }
-
-  ///TODO: comment
-  iterator insert(Key key, Index order) { return insert(std::make_pair(key,order)); }
-
-  /// Adds a new key to the ordering with an index of one greater than the current highest index.
-  Index push_back(Key key) { return insert(std::make_pair(key, nVars_))->second; }
-
   /** Remove the last (last-ordered, not highest-sorting key) symbol/index pair
    * from the ordering (this version is \f$ O(n) \f$, use it when you do not
    * know the last-ordered key).
@@ -176,16 +174,6 @@ public:
    * @return The symbol and index that were removed.
    */
   value_type pop_back();
-
-  /** Remove the last-ordered symbol from the ordering (this version is
-   * \f$ O(\log n) \f$, use it if you already know the last-ordered key).
-   *
-   * Throws std::invalid_argument if the requested key is not actually the
-   * last-ordered.
-   *
-   * @return The index of the symbol that was removed.
-   */
-  Index pop_back(Key key);
 
   /**
    * += operator allows statements like 'ordering += x0,x1,x2,x3;', which are
@@ -201,16 +189,12 @@ public:
    * internally, permuting an initial key-sorted ordering into a fill-reducing
    * ordering.
    */
-  void permuteWithInverse(const Permutation& inversePermutation);
+  void permuteInPlace(const Permutation& permutation);
+
+  void permuteInPlace(const Permutation& selector, const Permutation& permutation);
 
   /// Synonym for operator[](Key)
   Index& at(Key key) { return operator[](key); }
-
-  /**
-   * Create an inverse mapping from Index->Key, useful for decoding linear systems
-   * @return inverse mapping structure
-   */
-  InvertedMap invert() const;
 
   /// @}
   /// @name Testable
@@ -229,14 +213,24 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void save(ARCHIVE & ar, const unsigned int version) const
+  {
     ar & BOOST_SERIALIZATION_NVP(order_);
-    ar & BOOST_SERIALIZATION_NVP(nVars_);
+    size_t size_ = orderingIndex_.size(); // Save only the size but not the iterators
+    ar & BOOST_SERIALIZATION_NVP(size_);
   }
+  template<class ARCHIVE>
+  void load(ARCHIVE & ar, const unsigned int version)
+  {
+    ar & BOOST_SERIALIZATION_NVP(order_);
+    size_t size_;
+    ar & BOOST_SERIALIZATION_NVP(size_);
+    orderingIndex_.resize(size_);
+    for(iterator item = order_.begin(); item != order_.end(); ++item)
+      orderingIndex_[item->second] = item; // Assign the iterators
+  }
+  BOOST_SERIALIZATION_SPLIT_MEMBER()
 }; // \class Ordering
-
-// typedef for use with matlab
-typedef Ordering::InvertedMap InvertedOrdering;
 
 /**
  * @class Unordered
@@ -263,14 +257,15 @@ public:
 
 // Create an index formatter that looks up the Key in an inverse ordering, then
 // formats the key using the provided key formatter, used in saveGraph.
-struct OrderingIndexFormatter {
-  Ordering::InvertedMap inverseOrdering;
-  const KeyFormatter& keyFormatter;
+class OrderingIndexFormatter {
+private:
+  Ordering ordering_;
+  KeyFormatter keyFormatter_;
+public:
   OrderingIndexFormatter(const Ordering& ordering, const KeyFormatter& keyFormatter) :
-      inverseOrdering(ordering.invert()), keyFormatter(keyFormatter) {}
+      ordering_(ordering), keyFormatter_(keyFormatter) {}
   std::string operator()(Index index) {
-    return keyFormatter(inverseOrdering.at(index));
-  }
+    return keyFormatter_(ordering_.key(index)); }
 };
 
 } // \namespace gtsam

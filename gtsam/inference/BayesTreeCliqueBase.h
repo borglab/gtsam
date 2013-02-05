@@ -183,7 +183,7 @@ namespace gtsam {
      * traversing the whole tree.  Returns whether any separator variables in
      * this subtree were reordered.
      */
-    bool permuteSeparatorWithInverse(const Permutation& inversePermutation);
+    bool reduceSeparatorWithInverse(const internal::Reduction& inverseReduction);
 
     /** return the conditional P(S|Root) on the separator given the root */
     BayesNet<ConditionalType> shortcut(derived_ptr root, Eliminate function) const;

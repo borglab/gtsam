@@ -68,12 +68,26 @@ void VariableIndex::outputMetisFormat(ostream& os) const {
 /* ************************************************************************* */
 void VariableIndex::permuteInPlace(const Permutation& permutation) {
   // Create new index and move references to data into it in permuted order
-  deque<VariableIndex::Factors> newIndex(this->size());
+  vector<VariableIndex::Factors> newIndex(this->size());
   for(Index i = 0; i < newIndex.size(); ++i)
     newIndex[i].swap(this->index_[permutation[i]]);
 
   // Move reference to entire index into the VariableIndex
   index_.swap(newIndex);
+}
+
+/* ************************************************************************* */
+void VariableIndex::permuteInPlace(const Permutation& selector, const Permutation& permutation) {
+  if(selector.size() != permutation.size())
+    throw invalid_argument("VariableIndex::permuteInPlace (partial permutation version) called with selector and permutation of different sizes.");
+  // Create new index the size of the permuted entries
+  vector<VariableIndex::Factors> newIndex(selector.size());
+  // Permute the affected entries into the new index
+  for(size_t dstSlot = 0; dstSlot < selector.size(); ++dstSlot)
+    newIndex[dstSlot].swap(this->index_[selector[permutation[dstSlot]]]);
+  // Put the affected entries back in the new order
+  for(size_t slot = 0; slot < selector.size(); ++slot)
+    this->index_[selector[slot]].swap(newIndex[slot]);
 }
 
 /* ************************************************************************* */

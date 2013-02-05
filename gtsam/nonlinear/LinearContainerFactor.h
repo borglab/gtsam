@@ -45,21 +45,6 @@ public:
   LinearContainerFactor(const GaussianFactor::shared_ptr& factor,
       const Values& linearizationPoint = Values());
 
-  /** Alternate constructor: store a linear factor and decode keys with inverted ordering*/
-  LinearContainerFactor(const JacobianFactor& factor,
-      const Ordering::InvertedMap& inverted_ordering,
-      const Values& linearizationPoint = Values());
-
-  /** Alternate constructor: store a linear factor and decode keys with inverted ordering*/
-  LinearContainerFactor(const HessianFactor& factor,
-      const Ordering::InvertedMap& inverted_ordering,
-      const Values& linearizationPoint = Values());
-
-  /** Constructor from shared_ptr with inverted ordering*/
-  LinearContainerFactor(const GaussianFactor::shared_ptr& factor,
-      const Ordering::InvertedMap& ordering,
-      const Values& linearizationPoint = Values());
-
   // Access
 
   const GaussianFactor::shared_ptr& factor() const { return factor_; }
@@ -130,19 +115,13 @@ public:
 
   /**
    * Utility function for converting linear graphs to nonlinear graphs
-   * consisting of LinearContainerFactors.  Two versions are available, using
-   * either the ordering the linear graph was linearized around, or the inverse ordering.
-   * If the inverse ordering is present, it will be faster.
+   * consisting of LinearContainerFactors.
    */
   static NonlinearFactorGraph convertLinearGraph(const GaussianFactorGraph& linear_graph,
       const Ordering& ordering, const Values& linearizationPoint = Values());
 
-  static NonlinearFactorGraph convertLinearGraph(const GaussianFactorGraph& linear_graph,
-      const InvertedOrdering& invOrdering, const Values& linearizationPoint = Values());
-
 protected:
   void rekeyFactor(const Ordering& ordering);
-  void rekeyFactor(const Ordering::InvertedMap& invOrdering);
   void initializeLinearizationPoint(const Values& linearizationPoint);
 
 }; // \class LinearContainerFactor

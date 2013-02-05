@@ -724,7 +724,6 @@ class Permutation {
   // FIXME: Cannot currently wrap std::vector
   //static gtsam::Permutation PullToFront(const vector<size_t>& toFront, size_t size, bool filterDuplicates);
   //static gtsam::Permutation PushToBack(const vector<size_t>& toBack, size_t size, bool filterDuplicates = false);
-    gtsam::Permutation* partialPermutation(const gtsam::Permutation& selector, const gtsam::Permutation& partialPermutation) const;
 };
 
 class IndexFactor {
@@ -772,7 +771,6 @@ class IndexConditional {
   gtsam::IndexFactor* toFactor() const;
 
   //Advanced interface
-  bool permuteSeparatorWithInverse(const gtsam::Permutation& inversePermutation);
   void permuteWithInverse(const gtsam::Permutation& inversePermutation);
 };
 
@@ -795,7 +793,6 @@ virtual class BayesNet {
   void push_front(This& conditional);
   void pop_front();
   void permuteWithInverse(const gtsam::Permutation& inversePermutation);
-  bool permuteSeparatorWithInverse(const gtsam::Permutation& inversePermutation);
 };
 
 #include <gtsam/inference/BayesTree.h>
@@ -840,7 +837,6 @@ virtual class BayesTreeClique {
 //  derived_ptr parent() const { return parent_.lock(); }
 
   void permuteWithInverse(const gtsam::Permutation& inversePermutation);
-  bool permuteSeparatorWithInverse(const gtsam::Permutation& inversePermutation);
 
   // FIXME: need wrapped versions graphs, BayesNet
 //  BayesNet<ConditionalType> shortcut(derived_ptr root, Eliminate function) const;
@@ -868,7 +864,6 @@ virtual class SymbolicBayesNet  : gtsam::SymbolicBayesNetBase {
   //Advanced Interface
   void pop_front();
   void permuteWithInverse(const gtsam::Permutation& inversePermutation);
-  bool permuteSeparatorWithInverse(const gtsam::Permutation& inversePermutation);
 };
 
 typedef gtsam::BayesTreeClique<gtsam::IndexConditional> SymbolicBayesTreeClique;
@@ -1050,12 +1045,11 @@ class VectorValues {
   //Standard Interface
   size_t size() const;
   size_t dim(size_t j) const;
-  size_t dim() const;
   bool exists(size_t j) const;
   void print(string s) const;
   bool equals(const gtsam::VectorValues& expected, double tol) const;
   void insert(size_t j, Vector value);
-  Vector vector() const;
+  Vector asVector() const;
   Vector at(size_t j) const;
 
   //Advanced Interface
@@ -1821,7 +1815,6 @@ virtual class ISAM2Clique {
     void print(string s);
 
     void permuteWithInverse(const gtsam::Permutation& inversePermutation);
-    bool permuteSeparatorWithInverse(const gtsam::Permutation& inversePermutation);
 };
 
 class ISAM2Result {

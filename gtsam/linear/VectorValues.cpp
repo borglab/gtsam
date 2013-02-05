@@ -20,29 +20,19 @@
 #include <gtsam/inference/Permutation.h>
 #include <gtsam/linear/VectorValues.h>
 
+#include <boost/iterator/counting_iterator.hpp>
+
 using namespace std;
 
 namespace gtsam {
 
 /* ************************************************************************* */
-VectorValues::VectorValues(const VectorValues& other) {
-  *this = other;
-}
-
-/* ************************************************************************* */
-VectorValues& VectorValues::operator=(const VectorValues& rhs) {
-  if(this != &rhs) {
-    resizeLike(rhs);        // Copy structure
-    values_ = rhs.values_;  // Copy values
-  }
-  return *this;
-}
-
-/* ************************************************************************* */
 VectorValues VectorValues::Zero(const VectorValues& x) {
-  VectorValues cloned(SameStructure(x));
-  cloned.setZero();
-  return cloned;
+  VectorValues result;
+  result.values_.resize(x.size());
+  for(size_t j=0; j<x.size(); ++j)
+    result.values_[j] = Vector::Zero(x.values_[j].size());
+  return result;
 }
 
 /* ************************************************************************* */
@@ -59,69 +49,44 @@ void VectorValues::insert(Index j, const Vector& value) {
   if(exists(j))
     throw invalid_argument("VectorValues: requested variable index to insert already exists.");
 
-  // Get vector of dimensions
-  FastVector<size_t> dimensions(size());
-  for(size_t k=0; k<maps_.size(); ++k)
-    dimensions[k] = maps_[k].rows();
-
   // If this adds variables at the end, insert zero-length entries up to j
   if(j >= size())
-    dimensions.insert(dimensions.end(), j+1-size(), 0);
+    values_.resize(j+1);
 
-  // Set correct dimension for j
-  dimensions[j] = value.rows();
-
-  // Make a copy to make assignment easier
-  VectorValues original(*this);
-
-  // Resize to accomodate new variable
-  resize(dimensions);
-
-  // Copy original variables
-  for(Index k = 0; k < original.size(); ++k)
-    if(k != j && exists(k))
-      operator[](k) = original[k];
-
-  // Copy new variable
-  operator[](j) = value;
+  // Assign value
+  values_[j] = value;
 }
 
 /* ************************************************************************* */
 void VectorValues::print(const std::string& str, const IndexFormatter& formatter) const {
   std::cout << str << ": " << size() << " elements\n";
   for (Index var = 0; var < size(); ++var)
-    std::cout << "  " << formatter(var) << ": \n" << operator[](var) << "\n";
+    std::cout << "  " << formatter(var) << ": \n" << (*this)[var] << "\n";
   std::cout.flush();
 }
 
 /* ************************************************************************* */
 bool VectorValues::equals(const VectorValues& x, double tol) const {
-  return hasSameStructure(x) && equal_with_abs_tol(values_, x.values_, tol);
+  if(this->size() != x.size())
+    return false;
+  for(Index j=0; j < size(); ++j)
+    if(!equal_with_abs_tol(values_[j], x.values_[j], tol))
+      return false;
+  return true;
 }
 
 /* ************************************************************************* */
 void VectorValues::resize(Index nVars, size_t varDim) {
-  maps_.clear();
-  maps_.reserve(nVars);
-  values_.resize(nVars * varDim);
-  int varStart = 0;
-  for (Index j = 0; j < nVars; ++j) {
-    maps_.push_back(values_.segment(varStart, varDim));
-    varStart += varDim;
-  }
+  values_.resize(nVars);
+  for(Index j = 0; j < nVars; ++j)
+    values_[j] = Vector(varDim);
 }
 
 /* ************************************************************************* */
 void VectorValues::resizeLike(const VectorValues& other) {
-  values_.resize(other.dim());
-  // Create SubVectors referencing our values_ vector
-  maps_.clear();
-  maps_.reserve(other.size());
-  int varStart = 0;
-  BOOST_FOREACH(const SubVector& value, other) {
-    maps_.push_back(values_.segment(varStart, value.rows()));
-    varStart += value.rows();
-  }
+  values_.resize(other.size());
+  for(Index j = 0; j < other.size(); ++j)
+    values_[j].resize(other.values_[j].size());
 }
 
 /* ************************************************************************* */
@@ -140,89 +105,131 @@ VectorValues VectorValues::Zero(Index nVars, size_t varDim) {
 
 /* ************************************************************************* */
 void VectorValues::setZero() {
-  values_.setZero();
+  BOOST_FOREACH(Vector& v, *this) {
+    v.setZero();
+  }
+}
+
+/* ************************************************************************* */
+const Vector VectorValues::asVector() const {
+  return internal::extractVectorValuesSlices(*this,
+    boost::make_counting_iterator(size_t(0)), boost::make_counting_iterator(this->size()), true);
+}
+
+/* ************************************************************************* */
+const Vector VectorValues::vector(const std::vector<Index>& indices) const {
+  return internal::extractVectorValuesSlices(*this, indices.begin(), indices.end());
 }
 
 /* ************************************************************************* */
 bool VectorValues::hasSameStructure(const VectorValues& other) const {
   if(this->size() != other.size())
     return false;
-  for(size_t j=0; j<size(); ++j)
+  for(size_t j = 0; j < size(); ++j)
     // Directly accessing maps instead of using VV::dim in case some values are empty
-    if(this->maps_[j].rows() != other.maps_[j].rows())
+    if(this->values_[j].rows() != other.values_[j].rows())
       return false;
   return true;
 }
 
 /* ************************************************************************* */
-VectorValues VectorValues::operator+(const VectorValues& c) const {
-  assert(this->hasSameStructure(c));
-  VectorValues result(SameStructure(c));
-  result.values_ = this->values_ + c.values_;
-  return result;
+void VectorValues::permuteInPlace(const Permutation& permutation) {
+  // Allocate new values
+  Values newValues(this->size());
+
+  // Swap values from this VectorValues to the permuted VectorValues
+  for(size_t i = 0; i < this->size(); ++i)
+    newValues[i].swap(this->at(permutation[i]));
+
+  // Swap the values into this VectorValues
+  values_.swap(newValues);
 }
 
 /* ************************************************************************* */
-VectorValues VectorValues::operator-(const VectorValues& c) const {
-  assert(this->hasSameStructure(c));
-  VectorValues result(SameStructure(c));
-  result.values_ = this->values_ - c.values_;
-  return result;
-}
-
-/* ************************************************************************* */
-void VectorValues::operator+=(const VectorValues& c) {
-  assert(this->hasSameStructure(c));
-  this->values_ += c.values_;
-}
-
-/* ************************************************************************* */
-VectorValues VectorValues::permute(const Permutation& permutation) const {
-  // Create result and allocate space
-  VectorValues lhs;
-  lhs.values_.resize(this->dim());
-  lhs.maps_.reserve(this->size());
-
-  // Copy values from this VectorValues to the permuted VectorValues
-  size_t lhsPos = 0;
-  for(size_t i = 0; i < this->size(); ++i) {
-    // Map the next LHS subvector to the next slice of the LHS vector
-    lhs.maps_.push_back(SubVector(lhs.values_, lhsPos, this->at(permutation[i]).size()));
-    // Copy the data from the RHS subvector to the LHS subvector
-    lhs.maps_[i] = this->at(permutation[i]);
-    // Increment lhs position
-    lhsPos += lhs.maps_[i].size();
-  }
-
-  return lhs;
+void VectorValues::permuteInPlace(const Permutation& selector, const Permutation& permutation) {
+  if(selector.size() != permutation.size())
+    throw invalid_argument("VariableIndex::permuteInPlace (partial permutation version) called with selector and permutation of different sizes.");
+  // Create new index the size of the permuted entries
+  Values reorderedEntries(selector.size());
+  // Permute the affected entries into the new index
+  for(size_t dstSlot = 0; dstSlot < selector.size(); ++dstSlot)
+    reorderedEntries[dstSlot].swap(values_[selector[permutation[dstSlot]]]);
+  // Put the affected entries back in the new order
+  for(size_t slot = 0; slot < selector.size(); ++slot)
+    values_[selector[slot]].swap(reorderedEntries[slot]);
 }
 
 /* ************************************************************************* */
 void VectorValues::swap(VectorValues& other) {
   this->values_.swap(other.values_);
-  this->maps_.swap(other.maps_);
 }
 
 /* ************************************************************************* */
-Vector VectorValues::vector(const std::vector<Index>& indices) const {
-  if (indices.empty())
-    return Vector();
-
-  // find dimensions
-  size_t d = 0;
-  BOOST_FOREACH(const Index& idx, indices)
-    d += dim(idx);
-
-  // copy out values
-  Vector result(d);
-  size_t curHead = 0;
-  BOOST_FOREACH(const Index& j, indices) {
-    const SubVector& vj = at(j);
-    size_t dj = (size_t) vj.rows();
-    result.segment(curHead, dj) = vj;
-    curHead += dj;
-  }
+double VectorValues::dot(const VectorValues& v) const {
+  double result = 0.0;
+  if(this->size() != v.size())
+    throw invalid_argument("VectorValues::dot called with different vector sizes");
+  for(Index j = 0; j < this->size(); ++j)
+    // Directly accessing maps instead of using VV::dim in case some values are empty
+    if(this->values_[j].size() == v.values_[j].size())
+      result += this->values_[j].dot(v.values_[j]);
+    else
+      throw invalid_argument("VectorValues::dot called with different vector sizes");
   return result;
+}
+
+/* ************************************************************************* */
+double VectorValues::norm() const {
+  return std::sqrt(this->squaredNorm());
+}
+
+/* ************************************************************************* */
+double VectorValues::squaredNorm() const {
+  double sumSquares = 0.0;
+  for(Index j = 0; j < this->size(); ++j)
+    // Directly accessing maps instead of using VV::dim in case some values are empty
+    sumSquares += this->values_[j].squaredNorm();
+  return sumSquares;
+}
+
+/* ************************************************************************* */
+VectorValues VectorValues::operator+(const VectorValues& c) const {
+  VectorValues result = SameStructure(*this);
+  if(this->size() != c.size())
+    throw invalid_argument("VectorValues::operator+ called with different vector sizes");
+  for(Index j = 0; j < this->size(); ++j)
+    // Directly accessing maps instead of using VV::dim in case some values are empty
+    if(this->values_[j].size() == c.values_[j].size())
+      result.values_[j] = this->values_[j] + c.values_[j];
+    else
+      throw invalid_argument("VectorValues::operator- called with different vector sizes");
+  return result;
+}
+
+/* ************************************************************************* */
+VectorValues VectorValues::operator-(const VectorValues& c) const {
+  VectorValues result = SameStructure(*this);
+  if(this->size() != c.size())
+    throw invalid_argument("VectorValues::operator- called with different vector sizes");
+  for(Index j = 0; j < this->size(); ++j)
+    // Directly accessing maps instead of using VV::dim in case some values are empty
+    if(this->values_[j].size() == c.values_[j].size())
+      result.values_[j] = this->values_[j] - c.values_[j];
+    else
+      throw invalid_argument("VectorValues::operator- called with different vector sizes");
+  return result;
+}
+
+/* ************************************************************************* */
+void VectorValues::operator+=(const VectorValues& c) {
+  if(this->size() != c.size())
+    throw invalid_argument("VectorValues::operator+= called with different vector sizes");
+  for(Index j = 0; j < this->size(); ++j)
+    // Directly accessing maps instead of using VV::dim in case some values are empty
+    if(this->values_[j].size() == c.values_[j].size())
+      this->values_[j] += c.values_[j];
+    else
+      throw invalid_argument("VectorValues::operator+= called with different vector sizes");
 }
 
 /* ************************************************************************* */

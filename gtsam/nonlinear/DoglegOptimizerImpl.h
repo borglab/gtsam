@@ -177,7 +177,7 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
     result.dx_d = ComputeDoglegPoint(Delta, dx_u, dx_n, verbose);
     gttoc(Dog_leg_point);
 
-    if(verbose) std::cout << "Delta = " << Delta << ", dx_d_norm = " << result.dx_d.vector().norm() << std::endl;
+    if(verbose) std::cout << "Delta = " << Delta << ", dx_d_norm = " << result.dx_d.norm() << std::endl;
 
     gttic(retract);
     // Compute expmapped solution
@@ -208,7 +208,7 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
 
     if(rho >= 0.75) {
       // M agrees very well with f, so try to increase lambda
-      const double dx_d_norm = result.dx_d.vector().norm();
+      const double dx_d_norm = result.dx_d.norm();
       const double newDelta = std::max(Delta, 3.0 * dx_d_norm); // Compute new Delta
 
       if(mode == ONE_STEP_PER_ITERATION || mode == SEARCH_REDUCE_ONLY)

@@ -325,17 +325,11 @@ double HessianFactor::error(const VectorValues& c) const {
   // error 0.5*(f - 2*x'*g + x'*G*x)
   const double f = constantTerm();
   double xtg = 0, xGx = 0;
-  if (c.dim() == this->rows()) {
-    // If using the full vector values, this will reduce copying
-    xtg = c.vector().dot(linearTerm());
-    xGx = c.vector().transpose() * info_.range(0, this->size(), 0, this->size()).selfadjointView<Eigen::Upper>() *  c.vector();
-  } else {
-    // extract the relevant subset of the VectorValues
-    // NOTE may not be as efficient
-    const Vector x = c.vector(this->keys());
-    xtg = x.dot(linearTerm());
-    xGx = x.transpose() * info_.range(0, this->size(), 0, this->size()).selfadjointView<Eigen::Upper>() *  x;
-  }
+  // extract the relevant subset of the VectorValues
+  // NOTE may not be as efficient
+  const Vector x = c.vector(this->keys());
+  xtg = x.dot(linearTerm());
+  xGx = x.transpose() * info_.range(0, this->size(), 0, this->size()).selfadjointView<Eigen::Upper>() *  x;
   return 0.5 * (f - 2.0 * xtg +  xGx);
 }
 

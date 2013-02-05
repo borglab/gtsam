@@ -44,16 +44,16 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  bool IndexConditional::permuteSeparatorWithInverse(const Permutation& inversePermutation) {
-  #ifndef NDEBUG
-    BOOST_FOREACH(KeyType key, frontals()) { assert(key == inversePermutation[key]); }
-  #endif
+  bool IndexConditional::reduceSeparatorWithInverse(const internal::Reduction& inverseReduction) {
+#ifndef NDEBUG
+    BOOST_FOREACH(KeyType key, frontals()) { assert(inverseReduction.find(key) == inverseReduction.end()); }
+#endif
     bool parentChanged = false;
     BOOST_FOREACH(KeyType& parent, parents()) {
-      KeyType newParent = inversePermutation[parent];
-      if(parent != newParent) {
+      internal::Reduction::const_iterator it = inverseReduction.find(parent);
+      if(it != inverseReduction.end()) {
         parentChanged = true;
-        parent = newParent;
+        parent = it->second;
       }
     }
     assertInvariants();

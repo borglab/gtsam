@@ -48,7 +48,7 @@ public:
   typedef Factors::const_iterator Factor_const_iterator;
 
 protected:
-  std::deque<Factors> index_;
+  std::vector<Factors> index_;
   size_t nFactors_; // Number of factors in the original factor graph.
   size_t nEntries_; // Sum of involved variable counts of each factor.
 
@@ -134,6 +134,9 @@ public:
 
   /// Permute the variables in the VariableIndex according to the given permutation
   void permuteInPlace(const Permutation& permutation);
+
+  /// Permute the variables in the VariableIndex according to the given partial permutation
+  void permuteInPlace(const Permutation& selector, const Permutation& permutation);
 
   /** Remove unused empty variables at the end of the ordering (in debug mode
    * verifies they are empty).
