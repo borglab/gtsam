@@ -377,7 +377,7 @@ public:
 	    /* In practice, square root of the information matrix is represented, so that:
 	     *  R_d (approx)= R / sqrt(delta_t)
 	     * */
-	    return noiseModel::Gaussian::SqrtInformation(model->R()/sqrt(delta_t));
+	    return noiseModel::Gaussian::SqrtInformation(model->R()/std::sqrt(delta_t));
 	}
 
 private:
