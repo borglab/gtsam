@@ -25,6 +25,7 @@
 
 using namespace std;
 using namespace boost;
+using namespace gtsam;
 
 struct DtorTestBase {
   DtorTestBase() { cout << "  DtorTestBase" << endl; }
@@ -120,10 +121,10 @@ int main(int argc, char *argv[]) {
   for(int i=0; i<n; ++i)
     d[i]->method();
   gttoc_(method);
-  gttic_(dynamic_cast (does nothing));
+  gttic_(dynamic_cast_does_nothing);
   for(int i=0; i<n; ++i)
     d[i]->method();
-  gttoc_(dynamic_cast (does nothing));
+  gttoc_(dynamic_cast_does_nothing);
   gttic_(delete);
   for(int i=0; i<n; ++i)
     delete d[i];

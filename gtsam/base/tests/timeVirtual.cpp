@@ -25,6 +25,7 @@
 
 using namespace std;
 using namespace boost;
+using namespace gtsam;
 
 struct Plain {
   size_t data;
@@ -59,98 +60,97 @@ int main(int argc, char *argv[]) {
 
   size_t trials = 10000000;
 
-  gttic_("heap plain alloc, dealloc");
+  gttic_(heap_plain_alloc_dealloc);
   for(size_t i=0; i<trials; ++i) {
     Plain *obj = new Plain(i);
     delete obj;
   }
-  gttoc_("heap plain alloc, dealloc");
+  gttoc_(heap_plain_alloc_dealloc);
 
-  gttic_("heap virtual alloc, dealloc");
+  gttic_(heap_virtual_alloc_dealloc);
   for(size_t i=0; i<trials; ++i) {
     Virtual *obj = new Virtual(i);
     delete obj;
   }
-  gttoc_("heap virtual alloc, dealloc");
+  gttoc_(heap_virtual_alloc_dealloc);
 
-  gttic_("stack plain alloc, dealloc");
+  gttic_(stack_plain_alloc_dealloc);
   for(size_t i=0; i<trials; ++i) {
     Plain obj(i);
   }
-  gttoc_("stack plain alloc, dealloc");
+  gttoc_(stack_plain_alloc_dealloc);
 
-  gttic_("stack virtual alloc, dealloc");
+  gttic_(stack_virtual_alloc_dealloc);
   for(size_t i=0; i<trials; ++i) {
     Virtual obj(i);
   }
-  gttoc_("stack virtual alloc, dealloc");
+  gttoc_(stack_virtual_alloc_dealloc);
 
-  gttic_("shared plain alloc, dealloc");
+  gttic_(shared_plain_alloc_dealloc);
   for(size_t i=0; i<trials; ++i) {
     boost::shared_ptr<Plain> obj(new Plain(i));
   }
-  gttoc_("shared plain alloc, dealloc");
+  gttoc_(shared_plain_alloc_dealloc);
 
-  gttic_("shared virtual alloc, dealloc");
+  gttic_(shared_virtual_alloc_dealloc);
   for(size_t i=0; i<trials; ++i) {
     boost::shared_ptr<Virtual> obj(new Virtual(i));
   }
-  gttoc_("shared virtual alloc, dealloc");
+  gttoc_(shared_virtual_alloc_dealloc);
 
 
-  gttic_("heap plain alloc, dealloc, call");
+  gttic_(heap_plain_alloc_dealloc_call);
   for(size_t i=0; i<trials; ++i) {
     Plain *obj = new Plain(i);
     obj->setData(i+1);
     delete obj;
   }
-  gttoc_("heap plain alloc, dealloc, call");
+  gttoc_(heap_plain_alloc_dealloc_call);
 
-  gttic_("heap virtual alloc, dealloc, call");
+  gttic_(heap_virtual_alloc_dealloc_call);
   for(size_t i=0; i<trials; ++i) {
     Virtual *obj = new Virtual(i);
     obj->setData(i+1);
     delete obj;
   }
-  gttoc_("heap virtual alloc, dealloc, call");
+  gttoc_(heap_virtual_alloc_dealloc_call);
 
-  gttic_("stack plain alloc, dealloc, call");
+  gttic_(stack_plain_alloc_dealloc_call);
   for(size_t i=0; i<trials; ++i) {
     Plain obj(i);
     obj.setData(i+1);
   }
-  gttoc_("stack plain alloc, dealloc, call");
+  gttoc_(stack_plain_alloc_dealloc_call);
 
-  gttic_("stack virtual alloc, dealloc, call");
+  gttic_(stack_virtual_alloc_dealloc_call);
   for(size_t i=0; i<trials; ++i) {
     Virtual obj(i);
     obj.setData(i+1);
   }
-  gttoc_("stack virtual alloc, dealloc, call");
+  gttoc_(stack_virtual_alloc_dealloc_call);
 
-  gttic_("shared plain alloc, dealloc, call");
+  gttic_(shared_plain_alloc_dealloc_call);
   for(size_t i=0; i<trials; ++i) {
     boost::shared_ptr<Plain> obj(new Plain(i));
     obj->setData(i+1);
   }
-  gttoc_("shared plain alloc, dealloc, call");
+  gttoc_(shared_plain_alloc_dealloc_call);
 
-  gttic_("shared virtual alloc, dealloc, call");
+  gttic_(shared_virtual_alloc_dealloc_call);
   for(size_t i=0; i<trials; ++i) {
     boost::shared_ptr<Virtual> obj(new Virtual(i));
     obj->setData(i+1);
   }
-  gttoc_("shared virtual alloc, dealloc, call");
+  gttoc_(shared_virtual_alloc_dealloc_call);
 
-  gttic_("intrusive virtual alloc, dealloc, call");
+  gttic_(intrusive_virtual_alloc_dealloc_call);
   for(size_t i=0; i<trials; ++i) {
     intrusive_ptr<VirtualCounted> obj(new VirtualCounted(i));
     obj->setData(i+1);
   }
-  gttoc_("intrusive virtual alloc, dealloc, call");
+  gttoc_(intrusive_virtual_alloc_dealloc_call);
 
   tictoc_print_();
 
   return 0;
 }
-

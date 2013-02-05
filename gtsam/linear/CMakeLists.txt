@@ -14,8 +14,6 @@ set(linear_local_libs
 # Files to exclude from compilation of tests and timing scripts
 set(linear_excluded_files
 # "${CMAKE_CURRENT_SOURCE_DIR}/tests/testTypedDiscreteFactor.cpp" # Example of excluding a test
- "${CMAKE_CURRENT_SOURCE_DIR}/tests/timeSLAMlike.cpp"
- "${CMAKE_CURRENT_SOURCE_DIR}/tests/timeFactorOverhead.cpp"    
 #    ""  # Add to this list, with full path, to exclude
 )
 
