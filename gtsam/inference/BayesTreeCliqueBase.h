@@ -183,13 +183,6 @@ namespace gtsam {
      * traversing the whole tree.  Returns whether any separator variables in
      * this subtree were reordered.
      */
-    //bool permuteSeparatorWithInverse(const Permutation& inversePermutation);
-
-    /** Permute variables when they only appear in the separators.  In this
-     * case the running intersection property will be used to prevent always
-     * traversing the whole tree.  Returns whether any separator variables in
-     * this subtree were reordered.
-     */
     bool reduceSeparatorWithInverse(const internal::Reduction& inverseReduction);
 
     /** return the conditional P(S|Root) on the separator given the root */

@@ -220,13 +220,6 @@ public:
   /** Permute the variables in the BayesNet */
   void permuteWithInverse(const Permutation& inversePermutation);
 
-  /**
-   * Permute the variables when only separator variables need to be permuted.
-   * Returns true if any reordered variables appeared in the separator and
-   * false if not.
-   */
-  //bool permuteSeparatorWithInverse(const Permutation& inversePermutation);
-
   iterator begin()          {return conditionals_.begin();}    ///<TODO: comment
   iterator end()            {return conditionals_.end();}      ///<TODO: comment
   reverse_iterator rbegin() {return conditionals_.rbegin();}  ///<TODO: comment
