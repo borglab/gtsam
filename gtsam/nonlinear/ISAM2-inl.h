@@ -82,7 +82,7 @@ void optimizeWildfire(const boost::shared_ptr<CLIQUE>& clique, double threshold,
     for(it = (*clique)->beginFrontals(); it!=(*clique)->endFrontals(); it++) {
       if(!valuesChanged) {
         const Vector& oldValue(originalValues[it - (*clique)->beginFrontals()]);
-        const SubVector& newValue(delta[*it]);
+        const Vector& newValue(delta[*it]);
         if((oldValue - newValue).lpNorm<Eigen::Infinity>() >= threshold) {
           valuesChanged = true;
           break;
