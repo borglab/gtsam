@@ -572,7 +572,7 @@ namespace gtsam {
 
     // TODO: should not really exist
     /// The MEstimator namespace contains all robust error functions (not models)
-    namespace MEstimator {
+    namespace mEstimator {
 
       //---------------------------------------------------------------------------------------
 
@@ -661,6 +661,23 @@ namespace gtsam {
         Huber(){}
       };
 
+      /// Tukey implements the "Tukey" robust error model (Zhang97ivc)
+      class Tukey : public Base {
+      public:
+        typedef boost::shared_ptr<Tukey> shared_ptr;
+      protected:
+        double c_;
+      public:
+        Tukey(const double c, const ReweightScheme reweight = Block);
+        virtual ~Tukey() {}
+        virtual double weight(const double &error) const ;
+        virtual void print(const std::string &s) const ;
+        virtual bool equals(const Base& expected, const double tol=1e-8) const ;
+        static shared_ptr Create(const double k, const ReweightScheme reweight = Block) ;
+      private:
+        Tukey(){}
+      };
+
     } ///\namespace MEstimator
 
     /// Base class for robust error models
@@ -669,7 +686,7 @@ namespace gtsam {
       typedef boost::shared_ptr<Robust> shared_ptr;
 
     protected:
-      typedef MEstimator::Base RobustModel;
+      typedef mEstimator::Base RobustModel;
       typedef noiseModel::Base NoiseModel;
 
       const RobustModel::shared_ptr robust_; ///< robust error function used
