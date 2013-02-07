@@ -41,7 +41,6 @@ protected:
 
 public:
 
-  typedef std::map<Index, Key> InvertedMap;
   typedef boost::shared_ptr<Ordering> shared_ptr;
 
   typedef std::pair<const Key, Index> value_type;
