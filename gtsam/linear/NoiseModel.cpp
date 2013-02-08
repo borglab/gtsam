@@ -552,7 +552,7 @@ Null::shared_ptr Null::Create()
 Fair::Fair(const double c, const ReweightScheme reweight)
   : Base(reweight), c_(c) {
   if ( c_ <= 0 ) {
-    cout << "MEstimator Fair takes only positive double in constructor. forced to 1.0" << endl;
+    cout << "mEstimator Fair takes only positive double in constructor. forced to 1.0" << endl;
     c_ = 1.0;
   }
 }
@@ -583,7 +583,7 @@ Fair::shared_ptr Fair::Create(const double c, const ReweightScheme reweight)
 Huber::Huber(const double k, const ReweightScheme reweight)
   : Base(reweight), k_(k) {
   if ( k_ <= 0 ) {
-    cout << "MEstimator Huber takes only positive double in constructor. forced to 1.0" << endl;
+    cout << "mEstimator Huber takes only positive double in constructor. forced to 1.0" << endl;
     k_ = 1.0;
   }
 }
@@ -636,7 +636,7 @@ Tukey::shared_ptr Tukey::Create(const double c, const ReweightScheme reweight) {
   return shared_ptr(new Tukey(c, reweight));
 }
 
-} // namespace MEstimator
+} // namespace mEstimator
 
 /* ************************************************************************* */
 // Robust

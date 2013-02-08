@@ -261,10 +261,10 @@ TEST(NonlinearOptimizer, MoreOptimizationWithHuber) {
   NonlinearFactorGraph fg;
   fg.add(PriorFactor<Pose2>(0, Pose2(0,0,0), noiseModel::Isotropic::Sigma(3,1)));
   fg.add(BetweenFactor<Pose2>(0, 1, Pose2(1,0,M_PI/2),
-                              noiseModel::Robust::Create(noiseModel::MEstimator::Huber::Create(2.0),
+                              noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(2.0),
                                                          noiseModel::Isotropic::Sigma(3,1))));
   fg.add(BetweenFactor<Pose2>(1, 2, Pose2(1,0,M_PI/2),
-                              noiseModel::Robust::Create(noiseModel::MEstimator::Huber::Create(3.0),
+                              noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(3.0),
                                                          noiseModel::Isotropic::Sigma(3,1))));
 
   Values init;

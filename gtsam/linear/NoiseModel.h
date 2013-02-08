@@ -571,7 +571,7 @@ namespace gtsam {
     };
 
     // TODO: should not really exist
-    /// The MEstimator namespace contains all robust error functions (not models)
+    /// The mEstimator namespace contains all robust error functions (not models)
     namespace mEstimator {
 
       //---------------------------------------------------------------------------------------
@@ -678,7 +678,7 @@ namespace gtsam {
         Tukey(){}
       };
 
-    } ///\namespace MEstimator
+    } ///\namespace mEstimator
 
     /// Base class for robust error models
     class Robust : public Base {
