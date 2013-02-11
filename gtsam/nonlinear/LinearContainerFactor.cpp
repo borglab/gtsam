@@ -169,10 +169,10 @@ GaussianFactor::shared_ptr LinearContainerFactor::linearize(
   // clone and reorder linear factor to final ordering
   GaussianFactor::shared_ptr linFactor = order(localOrdering);
   if (isJacobian()) {
-    JacobianFactor::shared_ptr jacFactor = boost::shared_dynamic_cast<JacobianFactor>(linFactor);
+    JacobianFactor::shared_ptr jacFactor = boost::dynamic_pointer_cast<JacobianFactor>(linFactor);
     jacFactor->getb() += jacFactor->unweighted_error(delta) + jacFactor->getb();
   } else {
-    HessianFactor::shared_ptr hesFactor = boost::shared_dynamic_cast<HessianFactor>(linFactor);
+    HessianFactor::shared_ptr hesFactor = boost::dynamic_pointer_cast<HessianFactor>(linFactor);
     size_t dim = hesFactor->linearTerm().size();
     Eigen::Block<HessianFactor::Block> Gview = hesFactor->info().block(0, 0, dim, dim);
     Vector G_delta = Gview.selfadjointView<Eigen::Upper>() * deltaVector;
@@ -188,22 +188,22 @@ GaussianFactor::shared_ptr LinearContainerFactor::linearize(
 
 /* ************************************************************************* */
 bool LinearContainerFactor::isJacobian() const {
-  return boost::shared_dynamic_cast<JacobianFactor>(factor_);
+  return boost::dynamic_pointer_cast<JacobianFactor>(factor_);
 }
 
 /* ************************************************************************* */
 bool LinearContainerFactor::isHessian() const {
-  return boost::shared_dynamic_cast<HessianFactor>(factor_);
+  return boost::dynamic_pointer_cast<HessianFactor>(factor_);
 }
 
 /* ************************************************************************* */
 JacobianFactor::shared_ptr LinearContainerFactor::toJacobian() const {
-  return boost::shared_dynamic_cast<JacobianFactor>(factor_);
+  return boost::dynamic_pointer_cast<JacobianFactor>(factor_);
 }
 
 /* ************************************************************************* */
 HessianFactor::shared_ptr LinearContainerFactor::toHessian() const {
-  return boost::shared_dynamic_cast<HessianFactor>(factor_);
+  return boost::dynamic_pointer_cast<HessianFactor>(factor_);
 }
 
 /* ************************************************************************* */

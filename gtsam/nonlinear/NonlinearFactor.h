@@ -338,7 +338,7 @@ public:
 
     // TODO pass unwhitened + noise model to Gaussian factor
     noiseModel::Constrained::shared_ptr constrained =
-        boost::shared_dynamic_cast<noiseModel::Constrained>(this->noiseModel_);
+        boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
     if(constrained)
       return GaussianFactor::shared_ptr(
           new JacobianFactor(terms, b, constrained->unit()));
