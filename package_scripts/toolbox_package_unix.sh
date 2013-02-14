@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# Script to build a tarball with the matlab toolbox
+
 # Detect platform
 os=`uname -s`
 arch=`uname -m`
@@ -23,15 +25,23 @@ if [ ! -z "`ls`" ]; then
 fi
 
 # Check for boost
-if [ -z "$1" -o -z "$2" ]; then
-	echo "Usage: $0 BOOSTTREE MEX"
+if [ -z "$1" ]; then
+	echo "Usage: $0 BOOSTTREE"
 	echo "BOOSTTREE should be a boost source tree compiled with toolbox_build_boost."
-	echo "MEX should be the full path of the mex compiler"
 	exit 1
 fi
 
 # Run cmake
-cmake -DCMAKE_BUILD_TYPE=Release -DGTSAM_INSTALL_MATLAB_TOOLBOX:bool=true -DCMAKE_INSTALL_PREFIX="$PWD/stage" -DBoost_NO_SYSTEM_PATHS:bool=true -DBoost_USE_STATIC_LIBS:bool=true -DBOOST_ROOT="$1" -DGTSAM_BUILD_UNSTABLE:bool=false -DGTSAM_DISABLE_EXAMPLES_ON_INSTALL:bool=true -DGTSAM_DISABLE_TESTS_ON_INSTALL:bool=true -DGTSAM_MEX_BUILD_STATIC_MODULE:bool=true -DMEX_COMMAND="$2" ..
+cmake -DCMAKE_BUILD_TYPE=Release \
+-DGTSAM_INSTALL_MATLAB_TOOLBOX:bool=true \
+-DCMAKE_INSTALL_PREFIX="$PWD/stage" \
+-DBoost_NO_SYSTEM_PATHS:bool=true \
+-DBoost_USE_STATIC_LIBS:bool=true \
+-DBOOST_ROOT="$1" \
+-DGTSAM_BUILD_UNSTABLE:bool=false \
+-DGTSAM_DISABLE_EXAMPLES_ON_INSTALL:bool=true \
+-DGTSAM_DISABLE_TESTS_ON_INSTALL:bool=true \
+-DGTSAM_MEX_BUILD_STATIC_MODULE:bool=true ..
 
 if [ ! $? ]; then
 	echo "CMake failed"
