@@ -127,8 +127,8 @@ if (GTSAM_INSTALL_MATLAB_TOOLBOX)
     
     # Choose include flags depending on build process
 	set(MEX_INCLUDE_ROOT ${GTSAM_SOURCE_ROOT_DIR})
-	set(MEX_LIB_ROOT ${CMAKE_BINARY_DIR})
-	set(GTSAM_LIB_DIR ${MEX_LIB_ROOT}/gtsam)
+	set(MEX_LIB_ROOT ${CMAKE_BINARY_DIR})    # FIXME: is this used?
+	set(GTSAM_LIB_DIR ${MEX_LIB_ROOT}/gtsam) # FIXME: is this used?
     
     # Generate, build and install toolbox
     set(mexFlags ${GTSAM_BUILD_MEX_BINARY_FLAGS} -I${MEX_INCLUDE_ROOT} -I${Boost_INCLUDE_DIR})
