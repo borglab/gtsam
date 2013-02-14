@@ -26,7 +26,9 @@
 
 // Automatically use the new Boost timers if version is recent enough.
 #if BOOST_VERSION >= 104800
+#if not GTSAM_DISABLE_NEW_TIMERS
 #define GTSAM_USING_NEW_BOOST_TIMERS
+#endif
 #endif
 
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
