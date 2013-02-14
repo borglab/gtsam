@@ -38,9 +38,12 @@ cmake -DCMAKE_BUILD_TYPE=Release \
 -DBoost_NO_SYSTEM_PATHS:bool=true \
 -DBoost_USE_STATIC_LIBS:bool=true \
 -DBOOST_ROOT="$1" \
+-DGTSAM_BUILD_TESTS:bool=false \
+-DGTSAM_BUILD_EXAMPLES:bool=false \
 -DGTSAM_BUILD_UNSTABLE:bool=false \
 -DGTSAM_DISABLE_EXAMPLES_ON_INSTALL:bool=true \
 -DGTSAM_DISABLE_TESTS_ON_INSTALL:bool=true \
+-DGTSAM_BUILD_CONVENIENCE_LIBRARIES:bool=false \
 -DGTSAM_MEX_BUILD_STATIC_MODULE:bool=true ..
 
 if [ ! $? ]; then
