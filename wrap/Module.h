@@ -59,7 +59,7 @@ struct Module {
   /// MATLAB code generation:
   void matlab_code(
        const std::string& path,
-       const std::string& headerPath) const;
+       const std::string& headerPath) const; // FIXME: headerPath not actually used?
 
   void finish_wrapper(FileWriter& file, const std::vector<std::string>& functionNames) const;
 
