@@ -375,7 +375,7 @@ virtual class Rot3 : gtsam::Value {
   static gtsam::Rot3 Rx(double t);
   static gtsam::Rot3 Ry(double t);
   static gtsam::Rot3 Rz(double t);
-  static gtsam::Rot3 RzRyRx(double x, double y, double z); // FIXME: overloaded functions don't work yet
+  static gtsam::Rot3 RzRyRx(double x, double y, double z);
   static gtsam::Rot3 RzRyRx(Vector xyz);
   static gtsam::Rot3 yaw(double t); // positive yaw is to right (as in aircraft heading)
   static gtsam::Rot3 pitch(double t); // positive pitch is up (increasing aircraft altitude)
@@ -565,6 +565,8 @@ virtual class Cal3DS2 : gtsam::Value {
   Vector localCoordinates(const gtsam::Cal3DS2& c) const;
 
   // Action on Point2
+  gtsam::Point2 calibrate(const gtsam::Point2& p, double tol) const;
+  gtsam::Point2 calibrate(const gtsam::Point2& p) const;
   gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
   // TODO: D2d functions that start with an uppercase letter
 
@@ -635,7 +637,7 @@ virtual class SimpleCamera : gtsam::Value {
   SimpleCamera(const gtsam::Pose3& pose, const gtsam::Cal3_S2& K);
   static gtsam::SimpleCamera Level(const gtsam::Cal3_S2& K,
       const gtsam::Pose2& pose, double height);
-  static gtsam::SimpleCamera Level(const gtsam::Pose2& pose, double height); // FIXME overload
+  static gtsam::SimpleCamera Level(const gtsam::Pose2& pose, double height);
   static gtsam::SimpleCamera Lookat(const gtsam::Point3& eye,
       const gtsam::Point3& target, const gtsam::Point3& upVector,
       const gtsam::Cal3_S2& K);
@@ -660,45 +662,44 @@ virtual class SimpleCamera : gtsam::Value {
   gtsam::Point2 project(const gtsam::Point3& point);
   gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
   double range(const gtsam::Point3& point);
-  double range(const gtsam::Pose3& point); // FIXME, overload
+  double range(const gtsam::Pose3& point);
 };
 
-// TODO: Add this back in when Cal3DS2 has a calibrate function
-//template<CALIBRATION = {gtsam::Cal3DS2}>
-//virtual class PinholeCamera : gtsam::Value {
-//  // Standard Constructors and Named Constructors
-//  PinholeCamera();
-//  PinholeCamera(const gtsam::Pose3& pose);
-//  PinholeCamera(const gtsam::Pose3& pose, const gtsam::Cal3DS2& K);
-//  static This Level(const gtsam::Cal3DS2& K,
-//    const gtsam::Pose2& pose, double height);
-//  static This Level(const gtsam::Pose2& pose, double height); // FIXME overload
-//  static This Lookat(const gtsam::Point3& eye,
-//    const gtsam::Point3& target, const gtsam::Point3& upVector,
-//    const gtsam::Cal3DS2& K);
-//
-//  // Testable
-//  void print(string s) const;
-//  bool equals(const This& camera, double tol) const;
-//
-//  // Standard Interface
-//  gtsam::Pose3 pose() const;
-//  CALIBRATION calibration() const;
-//
-//  // Manifold
-//  This retract(const Vector& d) const;
-//  Vector localCoordinates(const This& T2) const;
-//  size_t dim() const;
-//  static size_t Dim();
-//
-//  // Transformations and measurement functions
-//  static gtsam::Point2 project_to_camera(const gtsam::Point3& cameraPoint);
-//  pair<gtsam::Point2,bool> projectSafe(const gtsam::Point3& pw) const;
-//  gtsam::Point2 project(const gtsam::Point3& point);
-//  gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
-//  double range(const gtsam::Point3& point);
-//  double range(const gtsam::Pose3& point); // FIXME, overload
-//};
+template<CALIBRATION = {gtsam::Cal3DS2}>
+virtual class PinholeCamera : gtsam::Value {
+  // Standard Constructors and Named Constructors
+  PinholeCamera();
+  PinholeCamera(const gtsam::Pose3& pose);
+  PinholeCamera(const gtsam::Pose3& pose, const gtsam::Cal3DS2& K);
+  static This Level(const gtsam::Cal3DS2& K,
+    const gtsam::Pose2& pose, double height);
+  static This Level(const gtsam::Pose2& pose, double height);
+  static This Lookat(const gtsam::Point3& eye,
+    const gtsam::Point3& target, const gtsam::Point3& upVector,
+    const gtsam::Cal3DS2& K);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const This& camera, double tol) const;
+
+  // Standard Interface
+  gtsam::Pose3 pose() const;
+  CALIBRATION calibration() const;
+
+  // Manifold
+  This retract(const Vector& d) const;
+  Vector localCoordinates(const This& T2) const;
+  size_t dim() const;
+  static size_t Dim();
+
+  // Transformations and measurement functions
+  static gtsam::Point2 project_to_camera(const gtsam::Point3& cameraPoint);
+  pair<gtsam::Point2,bool> projectSafe(const gtsam::Point3& pw) const;
+  gtsam::Point2 project(const gtsam::Point3& point);
+  gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
+  double range(const gtsam::Point3& point);
+  double range(const gtsam::Pose3& point);
+};
 
 //*************************************************************************
 // inference
@@ -1975,8 +1976,7 @@ virtual class GenericProjectionFactor : gtsam::NonlinearFactor {
   CALIBRATION* calibration() const;
 };
 typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> GenericProjectionFactorCal3_S2;
-// FIXME: Add Cal3DS2 when it has a 'calibrate' function
-//typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> GenericProjectionFactorCal3DS2;
+typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> GenericProjectionFactorCal3DS2;
 
 
 #include <gtsam/slam/GeneralSFMFactor.h>
@@ -1986,10 +1986,8 @@ virtual class GeneralSFMFactor : gtsam::NonlinearFactor {
   gtsam::Point2 measured() const;
 };
 typedef gtsam::GeneralSFMFactor<gtsam::SimpleCamera, gtsam::Point3> GeneralSFMFactorCal3_S2;
-// FIXME: Add Cal3DS2 when it has a 'calibrate' function
-//typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3DS2, gtsam::Point3> GeneralSFMFactorCal3DS2;
+typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3DS2, gtsam::Point3> GeneralSFMFactorCal3DS2;
 
-// FIXME: Add Cal3DS2 when it has a 'calibrate' function
 template<CALIBRATION = {gtsam::Cal3_S2}>
 virtual class GeneralSFMFactor2 : gtsam::NonlinearFactor {
   GeneralSFMFactor2(const gtsam::Point2& measured, const gtsam::noiseModel::Base* model, size_t poseKey, size_t landmarkKey, size_t calibKey);
