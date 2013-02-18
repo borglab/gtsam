@@ -203,6 +203,25 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class CONDITIONAL, class CLIQUE>
+  void BayesTree<CONDITIONAL,CLIQUE>::permuteWithInverse(const Permutation& inversePermutation) {
+    // recursively permute the cliques and internal conditionals
+    if (root_)
+      root_->permuteWithInverse(inversePermutation);
+
+    // need to know what the largest key is to get the right number of cliques
+    Index maxIndex = *std::max_element(inversePermutation.begin(), inversePermutation.end());
+
+    // Update the nodes structure
+    typename BayesTree<CONDITIONAL,CLIQUE>::Nodes newNodes(maxIndex+1);
+//    inversePermutation.applyToCollection(newNodes, nodes_); // Uses the forward, rather than inverse permutation
+    for(size_t i = 0; i < nodes_.size(); ++i)
+      newNodes[inversePermutation[i]] = nodes_[i];
+
+    nodes_ = newNodes;
+  }
+
+  /* ************************************************************************* */
+  template<class CONDITIONAL, class CLIQUE>
   inline void BayesTree<CONDITIONAL,CLIQUE>::addToCliqueFront(BayesTree<CONDITIONAL,CLIQUE>& bayesTree, const sharedConditional& conditional, const sharedClique& clique) {
     static const bool debug = false;
 #ifndef NDEBUG
@@ -242,6 +261,7 @@ namespace gtsam {
       child->parent_ = typename Clique::weak_ptr();
 
     BOOST_FOREACH(Index j, (*clique->conditional())) {
+      assert(j < nodes_.size()); // Don't want to overrun nodes list
       nodes_[j].reset();
     }
   }

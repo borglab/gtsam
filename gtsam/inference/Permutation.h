@@ -189,7 +189,9 @@ protected:
 
 
 namespace internal {
-  // An internal class used for storing and applying a permutation from a map
+  /**
+   * An internal class used for storing and applying a permutation from a map
+   */
   class Reduction : public gtsam::FastMap<Index,Index> {
   public:
     typedef gtsam::FastMap<Index,Index> Base;
@@ -205,8 +207,9 @@ namespace internal {
     bool equals(const Reduction& other, double tol = 1e-9) const;
   };
 
-  // Reduce the variable indices so that those in the set are mapped to start at zero
+  /**
+   * Reduce the variable indices so that those in the set are mapped to start at zero
+   */
   Permutation createReducingPermutation(const std::set<Index>& indices);
-}
-
-}
+} // \namespace internal
+} // \namespace gtsam

@@ -19,6 +19,7 @@
 
 #include <boost/assign/std/list.hpp> // for operator +=
 #include <boost/assign/std/vector.hpp>
+#include <boost/assign/std/set.hpp>
 #include <boost/assign/list_of.hpp>
 using namespace boost::assign;
 
@@ -309,8 +310,6 @@ TEST( BayesTree, shortcutCheck )
 //  }
 }
 
-
-
 /* ************************************************************************* */
 TEST( BayesTree, removeTop )
 {
@@ -408,6 +407,99 @@ TEST( BayesTree, removeTop3 )
 
   CHECK(orphans.size() == 0);
 }
+
+/* ************************************************************************* */
+TEST( BayesTree, permute )
+{
+  // creates a permutation and ensures that the nodes listing is updated
+
+  // initial keys - more than just 6 variables - for a system with 9 variables
+  const Index _A0_=8, _B0_=7, _C0_=6, _D0_=5, _E0_=4, _F0_=0;
+
+  // reduced keys - back to just 6 variables
+  const Index _A_=5, _B_=4, _C_=3, _D_=2, _E_=1, _F_=0;
+
+  // Create and verify the permutation
+  std::set<Index> indices; indices += _A0_, _B0_, _C0_, _D0_, _E0_, _F0_;
+  Permutation actReducingPermutation = gtsam::internal::createReducingPermutation(indices);
+  Permutation expReducingPermutation(6);
+  expReducingPermutation[_A_] = _A0_;
+  expReducingPermutation[_B_] = _B0_;
+  expReducingPermutation[_C_] = _C0_;
+  expReducingPermutation[_D_] = _D0_;
+  expReducingPermutation[_E_] = _E0_;
+  expReducingPermutation[_F_] = _F0_;
+  EXPECT(assert_equal(expReducingPermutation, actReducingPermutation));
+
+  // Invert the permutation
+  gtsam::internal::Reduction inv_reduction = gtsam::internal::Reduction::CreateAsInverse(expReducingPermutation);
+
+  // Build a bayes tree around reduced keys as if just eliminated from subset of factors/variables
+  IndexConditional::shared_ptr
+      A(new IndexConditional(_A_)),
+      B(new IndexConditional(_B_, _A_)),
+      C(new IndexConditional(_C_, _A_)),
+      D(new IndexConditional(_D_, _C_)),
+      E(new IndexConditional(_E_, _B_)),
+      F(new IndexConditional(_F_, _E_));
+  SymbolicBayesTree bayesTreeReduced;
+  SymbolicBayesTree::insert(bayesTreeReduced, A);
+  SymbolicBayesTree::insert(bayesTreeReduced, B);
+  SymbolicBayesTree::insert(bayesTreeReduced, C);
+  SymbolicBayesTree::insert(bayesTreeReduced, D);
+  SymbolicBayesTree::insert(bayesTreeReduced, E);
+  SymbolicBayesTree::insert(bayesTreeReduced, F);
+
+//  bayesTreeReduced.print("Reduced bayes tree");
+//  P( 4 5)
+//    P( 3 | 5)
+//      P( 2 | 3)
+//    P( 1 | 4)
+//      P( 0 | 1)
+
+  // Apply the permutation - should add placeholders for variables not present in nodes
+  SymbolicBayesTree actBayesTree = *bayesTreeReduced.clone();
+  actBayesTree.permuteWithInverse(expReducingPermutation);
+
+//  actBayesTree.print("Full bayes tree");
+//  P( 7 8)
+//    P( 6 | 8)
+//      P( 5 | 6)
+//    P( 4 | 7)
+//      P( 0 | 4)
+
+  // check keys in cliques
+  std::vector<Index> expRootIndices; expRootIndices += _B0_, _A0_;
+  IndexConditional::shared_ptr
+    expRoot(new IndexConditional(expRootIndices, 2)), // root
+    A0(new IndexConditional(_A0_)),
+    B0(new IndexConditional(_B0_, _A0_)),
+    C0(new IndexConditional(_C0_, _A0_)), // leaf level 1
+    D0(new IndexConditional(_D0_, _C0_)), // leaf level 2
+    E0(new IndexConditional(_E0_, _B0_)), // leaf level 2
+    F0(new IndexConditional(_F0_, _E0_)); // leaf level 3
+
+  CHECK(actBayesTree.root());
+  EXPECT(assert_equal(*expRoot, *actBayesTree.root()->conditional()));
+  EXPECT(assert_equal(*C0, *actBayesTree.root()->children().front()->conditional()));
+  EXPECT(assert_equal(*D0, *actBayesTree.root()->children().front()->children().front()->conditional()));
+  EXPECT(assert_equal(*E0, *actBayesTree.root()->children().back()->conditional()));
+  EXPECT(assert_equal(*F0, *actBayesTree.root()->children().back()->children().front()->conditional()));
+
+  // check nodes structure
+  LONGS_EQUAL(9, actBayesTree.nodes().size());
+
+  SymbolicBayesTree expFullTree;
+  SymbolicBayesTree::insert(expFullTree, A0);
+  SymbolicBayesTree::insert(expFullTree, B0);
+  SymbolicBayesTree::insert(expFullTree, C0);
+  SymbolicBayesTree::insert(expFullTree, D0);
+  SymbolicBayesTree::insert(expFullTree, E0);
+  SymbolicBayesTree::insert(expFullTree, F0);
+
+  EXPECT(assert_equal(expFullTree, actBayesTree));
+}
+
 ///* ************************************************************************* */
 ///**
 // *  x2 - x3 - x4 - x5
@@ -463,10 +555,7 @@ TEST( BayesTree, removeTop3 )
 //  CHECK(assert_equal(expected, actual));
 //
 //}
-/* ************************************************************************* */
 
-int main() {
-  TestResult tr;
-  return TestRegistry::runAllTests(tr);
-}
+/* ************************************************************************* */
+int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
