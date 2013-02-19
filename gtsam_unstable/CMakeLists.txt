@@ -8,6 +8,7 @@ set (gtsam_unstable_subdirs
     dynamics
 #    nonlinear
     slam
+    navigation
 )
 
 set(GTSAM_UNSTABLE_BOOST_LIBRARIES ${GTSAM_BOOST_LIBRARIES} ${Boost_THREAD_LIBRARY})
@@ -40,6 +41,7 @@ set(gtsam_unstable_srcs
     #${linear_srcs}    
     #${nonlinear_srcs}
     ${slam_srcs}
+    ${navigation_srcs}
 )
 
 if(NOT MSVC)
