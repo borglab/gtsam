@@ -6,7 +6,7 @@ set (gtsam_unstable_subdirs
     discrete
 #    linear 
     dynamics
-#    nonlinear
+    nonlinear
     slam
     navigation
 )
