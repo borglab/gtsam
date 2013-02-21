@@ -59,7 +59,7 @@ struct ISAM2GaussNewtonParams {
  */
 struct ISAM2DoglegParams {
   double initialDelta; ///< The initial trust region radius for Dogleg
-  double wildfireThreshold; ///< Continue updating the linear delta only when changes are above this threshold (default: 0.001)
+  double wildfireThreshold; ///< Continue updating the linear delta only when changes are above this threshold (default: 1e-5)
   DoglegOptimizerImpl::TrustRegionAdaptationMode adaptationMode; ///< See description in DoglegOptimizerImpl::TrustRegionAdaptationMode
   bool verbose; ///< Whether Dogleg prints iteration and convergence information
 
