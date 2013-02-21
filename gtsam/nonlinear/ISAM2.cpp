@@ -548,7 +548,8 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(const FastSet<Index>& mark
 /* ************************************************************************* */
 ISAM2Result ISAM2::update(
     const NonlinearFactorGraph& newFactors, const Values& newTheta, const FastVector<size_t>& removeFactorIndices,
-    const boost::optional<FastMap<Key,int> >& constrainedKeys, bool force_relinearize) {
+    const boost::optional<FastMap<Key,int> >& constrainedKeys,
+    const boost::optional<FastList<Key> >& noRelinKeys, bool force_relinearize) {
 
   const bool debug = ISDEBUG("ISAM2 update");
   const bool verbose = ISDEBUG("ISAM2 update verbose");
@@ -665,13 +666,19 @@ ISAM2Result ISAM2::update(
   FastSet<Index> relinKeys;
   if (relinearizeThisStep) {
     gttic(gather_relinearize_keys);
-    vector<bool> markedRelinMask(ordering_.size(), false);
     // 4. Mark keys in \Delta above threshold \beta: J=\{\Delta_{j}\in\Delta|\Delta_{j}\geq\beta\}.
     if(params_.enablePartialRelinearizationCheck)
       relinKeys = Impl::CheckRelinearizationPartial(root_, delta_, ordering_, params_.relinearizeThreshold);
     else
       relinKeys = Impl::CheckRelinearizationFull(delta_, ordering_, params_.relinearizeThreshold);
     if(disableReordering) relinKeys = Impl::CheckRelinearizationFull(delta_, ordering_, 0.0); // This is used for debugging
+
+    // Remove from relinKeys any keys whose linearization points are fixed
+    if(noRelinKeys) {
+      BOOST_FOREACH(Key key, *noRelinKeys) {
+        relinKeys.erase(ordering_[key]);
+      }
+    }
 
     // Above relin threshold keys for detailed results
     if(params_.enableDetailedResults) {
@@ -680,6 +687,7 @@ ISAM2Result ISAM2::update(
         result.detail->variableStatus[ordering_.key(index)].isRelinearized = true; } }
 
     // Add the variables being relinearized to the marked keys
+    vector<bool> markedRelinMask(ordering_.size(), false);
     BOOST_FOREACH(const Index j, relinKeys) { markedRelinMask[j] = true; }
     markedKeys.insert(relinKeys.begin(), relinKeys.end());
     gttoc(gather_relinearize_keys);
