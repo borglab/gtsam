@@ -40,6 +40,10 @@ namespace gtsam {
     boost::shared_ptr<CALIBRATION> K_;  ///< shared pointer to calibration object
     boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
 
+    // verbosity handling for Cheirality Exceptions
+    bool throwCheirality_; ///< If true, rethrows Cheirality exceptions (default: false)
+    bool verboseCheirality_; ///< If true, prints text for Cheirality exceptions (default: false)
+
   public:
 
     /// shorthand for base class type
@@ -52,8 +56,7 @@ namespace gtsam {
     typedef boost::shared_ptr<This> shared_ptr;
 
     /// Default constructor
-    GenericProjectionFactor() {
-    }
+    GenericProjectionFactor() : throwCheirality_(false), verboseCheirality_(false) {}
 
     /**
      * Constructor
@@ -63,12 +66,32 @@ namespace gtsam {
      * @param poseKey is the index of the camera
      * @param pointKey is the index of the landmark
      * @param K shared pointer to the constant calibration
+     * @param body_P_sensor is the transform from body to sensor frame (default identity)
      */
     GenericProjectionFactor(const Point2& measured, const SharedNoiseModel& model,
         Key poseKey, Key pointKey, const boost::shared_ptr<CALIBRATION>& K,
         boost::optional<POSE> body_P_sensor = boost::none) :
-          Base(model, poseKey, pointKey), measured_(measured), K_(K), body_P_sensor_(body_P_sensor) {
-    }
+          Base(model, poseKey, pointKey), measured_(measured), K_(K), body_P_sensor_(body_P_sensor),
+          throwCheirality_(false), verboseCheirality_(false) {}
+
+    /**
+     * Constructor with exception-handling flags
+     * TODO: Mark argument order standard (keys, measurement, parameters)
+     * @param measured is the 2 dimensional location of point in image (the measurement)
+     * @param model is the standard deviation
+     * @param poseKey is the index of the camera
+     * @param pointKey is the index of the landmark
+     * @param K shared pointer to the constant calibration
+     * @param throwCheirality determines whether exceptions are caught for Cheirality
+     * @param verboseCheirality determines whether exceptions are printed for Cheirality
+     * @param body_P_sensor is the transform from body to sensor frame  (default identity)
+     */
+    GenericProjectionFactor(const Point2& measured, const SharedNoiseModel& model,
+        Key poseKey, Key pointKey, const boost::shared_ptr<CALIBRATION>& K,
+        bool throwCheirality, bool verboseCheirality,
+        boost::optional<POSE> body_P_sensor = boost::none) :
+          Base(model, poseKey, pointKey), measured_(measured), K_(K), body_P_sensor_(body_P_sensor),
+          throwCheirality_(throwCheirality), verboseCheirality_(verboseCheirality) {}
 
     /** Virtual destructor */
     virtual ~GenericProjectionFactor() {}
@@ -125,8 +148,11 @@ namespace gtsam {
       } catch( CheiralityException& e) {
         if (H1) *H1 = zeros(2,6);
         if (H2) *H2 = zeros(2,3);
-        std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2()) <<
-            " moved behind camera " << DefaultKeyFormatter(this->key1()) << std::endl;
+        if (verboseCheirality_)
+          std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2()) <<
+              " moved behind camera " << DefaultKeyFormatter(this->key1()) << std::endl;
+        if (throwCheirality_)
+          throw e;
       }
       return ones(2) * 2.0 * K_->fx();
     }
@@ -141,6 +167,12 @@ namespace gtsam {
       return K_;
     }
 
+    /** return verbosity */
+    inline bool verboseCheirality() const { return verboseCheirality_; }
+
+    /** return flag for throwing cheirality exceptions */
+    inline bool throwCheirality() const { return throwCheirality_; }
+
   private:
 
     /// Serialization function
@@ -151,6 +183,8 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(measured_);
       ar & BOOST_SERIALIZATION_NVP(K_);
       ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
+      ar & BOOST_SERIALIZATION_NVP(throwCheirality_);
+      ar & BOOST_SERIALIZATION_NVP(verboseCheirality_);
     }
   };
 } // \ namespace gtsam

@@ -1972,8 +1972,17 @@ virtual class GenericProjectionFactor : gtsam::NonlinearFactor {
     size_t poseKey, size_t pointKey, const CALIBRATION* k);
   GenericProjectionFactor(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
     size_t poseKey, size_t pointKey, const CALIBRATION* k, const POSE& body_P_sensor);
+
+  GenericProjectionFactor(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
+      size_t poseKey, size_t pointKey, const CALIBRATION* k, bool throwCheirality, bool verboseCheirality);
+    GenericProjectionFactor(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
+      size_t poseKey, size_t pointKey, const CALIBRATION* k, bool throwCheirality, bool verboseCheirality,
+      const POSE& body_P_sensor);
+
   gtsam::Point2 measured() const;
   CALIBRATION* calibration() const;
+  bool verboseCheirality() const;
+  bool throwCheirality() const;
 };
 typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> GenericProjectionFactorCal3_S2;
 typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> GenericProjectionFactorCal3DS2;
