@@ -1095,6 +1095,9 @@ class VectorValues {
   void resize(size_t nVars, size_t varDim);
   void setZero();
 
+  gtsam::VectorValues add(const gtsam::VectorValues& c) const;
+  gtsam::VectorValues scale(double a, const gtsam::VectorValues& c) const;
+
     //FIXME: Parse errors with vector()
   //const Vector& vector() const;
   //Vector& vector();

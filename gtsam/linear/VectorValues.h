@@ -303,6 +303,15 @@ namespace gtsam {
 
     /// @}
 
+    /// @}
+    /// @name Matlab syntactic sugar for linear algebra operations
+    /// @{
+
+    inline VectorValues add(const VectorValues& c) const { return *this + c; }
+    inline VectorValues scale(const double a, const VectorValues& c) const { return a * (*this); }
+
+    /// @}
+
   private:
     // Throw an exception if j does not exist
     void checkExists(Index j) const {
