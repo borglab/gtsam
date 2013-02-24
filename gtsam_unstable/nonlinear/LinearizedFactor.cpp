@@ -56,7 +56,7 @@ LinearizedJacobianFactor::LinearizedJacobianFactor(const JacobianFactor::shared_
   AbMatrix fullMatrix = jacobian->matrix_augmented(true);
 
   // Create the dims array
-  size_t dims[jacobian->size() + 1];
+  size_t *dims = (size_t *)alloca(sizeof(size_t) * (jacobian->size() + 1));
   size_t index = 0;
   for(JacobianFactor::const_iterator iter = jacobian->begin(); iter != jacobian->end(); ++iter) {
     dims[index++] = jacobian->getDim(iter);
@@ -158,7 +158,7 @@ LinearizedHessianFactor::LinearizedHessianFactor(const HessianFactor::shared_ptr
   Matrix fullMatrix = hessian->info();
 
   // Create the dims array
-  size_t dims[hessian->size() + 1];
+  size_t *dims = (size_t*)alloca(sizeof(size_t)*(hessian->size() + 1));
   size_t index = 0;
   for(HessianFactor::const_iterator iter = hessian->begin(); iter != hessian->end(); ++iter) {
     dims[index++] = hessian->getDim(iter);

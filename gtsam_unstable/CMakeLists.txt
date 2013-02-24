@@ -39,7 +39,7 @@ set(gtsam_unstable_srcs
     ${discrete_srcs}
     ${dynamics_srcs}
     #${linear_srcs}    
-    #${nonlinear_srcs}
+    ${nonlinear_srcs}
     ${slam_srcs}
     ${navigation_srcs}
 )
