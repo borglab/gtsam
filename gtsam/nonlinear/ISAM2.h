@@ -485,9 +485,7 @@ protected:
   mutable GaussianFactorGraph linearFactors_;
 
   /** The current elimination ordering Symbols to Index (integer) keys.
-   *
-   * We keep it up to date as we add and reorder variables.
-   */
+   * We keep it up to date as we add and reorder variables. */
   Ordering ordering_;
 
   /** The current parameters */
