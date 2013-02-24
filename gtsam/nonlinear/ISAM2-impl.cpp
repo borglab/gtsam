@@ -65,7 +65,7 @@ void ISAM2::Impl::RemoveVariables(const FastSet<Key>& unusedKeys, const ISAM2Cli
                                   Values& theta, VariableIndex& variableIndex,
                                   VectorValues& delta, VectorValues& deltaNewton, VectorValues& RgProd,
                                   std::vector<bool>& replacedKeys, Ordering& ordering, Base::Nodes& nodes,
-                                  GaussianFactorGraph& linearFactors) {
+                                  GaussianFactorGraph& linearFactors, FastSet<Key>& fixedVariables) {
 
      // Get indices of unused keys
      vector<Index> unusedIndices;  unusedIndices.reserve(unusedKeys.size());
@@ -113,12 +113,13 @@ void ISAM2::Impl::RemoveVariables(const FastSet<Key>& unusedKeys, const ISAM2Cli
        nodes.swap(newNodes);
      }
 
-     // Reorder and remove from ordering and solution
+     // Reorder and remove from ordering, solution, and fixed keys
      ordering.permuteInPlace(unusedToEnd);
      BOOST_REVERSE_FOREACH(Key key, unusedKeys) {
        Ordering::value_type removed = ordering.pop_back();
        assert(removed.first == key);
        theta.erase(key);
+       fixedVariables.erase(key);
      }
 
      // Finally, permute references to variables

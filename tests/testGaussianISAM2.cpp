@@ -286,8 +286,9 @@ TEST_UNSAFE(ISAM2, ImplRemoveVariables) {
   SymbolicFactorGraph removedFactors; removedFactors.push_back(sfg[1]);
   variableIndex.remove(removedFactorsI, removedFactors);
   GaussianFactorGraph linearFactors;
+  FastSet<Key> fixedVariables;
   ISAM2::Impl::RemoveVariables(unusedKeys, ISAM2::sharedClique(), theta, variableIndex, delta, deltaNewton, deltaRg,
-    replacedKeys, ordering, nodes, linearFactors);
+    replacedKeys, ordering, nodes, linearFactors, fixedVariables);
 
   EXPECT(assert_equal(thetaExpected, theta));
   EXPECT(assert_equal(variableIndexExpected, variableIndex));
@@ -820,7 +821,6 @@ TEST(ISAM2, constrained_ordering)
 /* ************************************************************************* */
 TEST(ISAM2, slamlike_solution_partial_relinearization_check)
 {
-
   // These variables will be reused and accumulate factors and values
   Values fullinit;
   NonlinearFactorGraph fullgraph;
@@ -830,6 +830,43 @@ TEST(ISAM2, slamlike_solution_partial_relinearization_check)
 
   // Compare solutions
   CHECK(isam_check(fullgraph, fullinit, isam, *this, result_));
+}
+
+/* ************************************************************************* */
+TEST_UNSAFE(ISAM2, marginalizeLeaves)
+{
+  // Create isam2
+  ISAM2 isam = createSlamlikeISAM2();
+  
+  // Get linearization point
+  Values soln = isam.calculateBestEstimate();
+
+  // Calculate expected marginal
+  GaussianFactorGraph isamAsGraph(isam);
+  GaussianSequentialSolver solver(isamAsGraph);
+  vector<Index> toKeep;
+  const Index lastVar = isam.getOrdering().size() - 1;
+  for(Index i=0; i<=lastVar; ++i)
+    if(i != isam.getOrdering()[0])
+      toKeep.push_back(i);
+  GaussianFactorGraph marginalgfg = *solver.jointFactorGraph(toKeep);
+  vector<Index> toFrontI;
+  toFrontI.push_back(isam.getOrdering()[0]);
+  Permutation toFront = Permutation::PullToFront(toFrontI, lastVar+1);
+  marginalgfg.permuteWithInverse(*toFront.inverse());
+  Matrix expectedAugmentedHessian = marginalgfg.augmentedHessian();
+
+  // Marginalize
+  FastList<Key> marginalizeKeys;
+  marginalizeKeys.push_back(isam.getOrdering().key(0));
+  isam.experimentalMarginalizeLeaves(marginalizeKeys);
+
+  // Check
+  GaussianFactorGraph actualMarginalGraph(isam);
+  Matrix actualAugmentedHessian = actualMarginalGraph.augmentedHessian();
+
+  LONGS_EQUAL(lastVar-1, isam.getOrdering().size()-1);
+  EXPECT(assert_equal(expectedAugmentedHessian, actualAugmentedHessian));
 }
 
 /* ************************************************************************* */

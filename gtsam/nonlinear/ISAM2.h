@@ -494,6 +494,10 @@ protected:
   /** The current Dogleg Delta (trust region radius) */
   mutable boost::optional<double> doglegDelta_;
 
+  /** Set of variables that are involved with linear factors from marginalized
+   * variables and thus cannot have their linearization points changed. */
+  FastSet<Key> fixedVariables_;
+
 public:
 
   typedef ISAM2 This; ///< This class
@@ -544,6 +548,8 @@ public:
       const boost::optional<FastMap<Key,int> >& constrainedKeys = boost::none,
       const boost::optional<FastList<Key> >& noRelinKeys = boost::none,
       bool force_relinearize = false);
+
+  void experimentalMarginalizeLeaves(const FastList<Key>& leafKeys);
 
   /** Access the current linearization point */
   const Values& getLinearizationPoint() const { return theta_; }
