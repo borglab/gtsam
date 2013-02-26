@@ -235,10 +235,10 @@ namespace gtsam {
     Rot3 retractCayley(const Vector& omega) const;
 #endif
 
-    /// Retraction from R^3 to Rot3 manifold neighborhood around current rotation
+    /// Retraction from R^3 \f$ [R_x,R_y,R_z] \f$ to Rot3 manifold neighborhood around current rotation
     Rot3 retract(const Vector& omega, Rot3::CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE) const;
 
-    /// Returns local retract coordinates in neighborhood around current rotation
+    /// Returns local retract coordinates \f$ [R_x,R_y,R_z] \f$ in neighborhood around current rotation
     Vector3 localCoordinates(const Rot3& t2, Rot3::CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE) const;
 
     /// @}
@@ -247,7 +247,7 @@ namespace gtsam {
 
     /**
      * Exponential map at identity - create a rotation from canonical coordinates
-     * using Rodriguez' formula
+     * \f$ [R_x,R_y,R_z] \f$ using Rodriguez' formula
      */
     static Rot3 Expmap(const Vector& v)  {
       if(zero(v)) return Rot3();
@@ -255,7 +255,7 @@ namespace gtsam {
     }
 
     /**
-     * Log map at identity - return the canonical coordinates of this rotation
+     * Log map at identity - return the canonical coordinates \f$ [R_x,R_y,R_z] \f$ of this rotation
      */
     static Vector3 Logmap(const Rot3& R);
 

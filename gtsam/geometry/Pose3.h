@@ -125,28 +125,28 @@ namespace gtsam {
     /// Dimensionality of the tangent space = 6 DOF
     size_t dim() const { return dimension; }
 
-    /// Retraction with fast first-order approximation to the exponential map
+    /// Retraction from R^6 \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ from R^ with fast first-order approximation to the exponential map
     Pose3 retractFirstOrder(const Vector& d) const;
 
-    /// Retraction from R^6 to Pose3 manifold neighborhood around current pose
+    /// Retraction from R^6 \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ to Pose3 manifold neighborhood around current pose
     Pose3 retract(const Vector& d, Pose3::CoordinatesMode mode = POSE3_DEFAULT_COORDINATES_MODE) const;
 
-    /// Local 6D coordinates of Pose3 manifold neighborhood around current pose
+    /// Local 6D coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ of Pose3 manifold neighborhood around current pose
     Vector6 localCoordinates(const Pose3& T2, Pose3::CoordinatesMode mode = POSE3_DEFAULT_COORDINATES_MODE) const;
 
     /// @}
     /// @name Lie Group
     /// @{
 
-    /// Exponential map at identity - create a rotation from canonical coordinates
+    /// Exponential map at identity - create a rotation from canonical coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$
     static Pose3 Expmap(const Vector& xi);
 
-    /// Log map at identity - return the canonical coordinates of this rotation
+    /// Log map at identity - return the canonical coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ of this rotation
     static Vector6 Logmap(const Pose3& p);
 
     /**
      * Calculate Adjoint map
-     * Ad_pose is 6*6 matrix that when applied to twist xi, returns Ad_pose(xi)
+     * Ad_pose is 6*6 matrix that when applied to twist xi \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$, returns Ad_pose(xi)
      */
     Matrix6 adjointMap() const; /// FIXME Not tested - marked as incorrect
     Vector adjoint(const Vector& xi) const {return adjointMap()*xi; } /// FIXME Not tested - marked as incorrect

@@ -85,7 +85,7 @@ public:
   /// @name Advanced Constructors
   /// @{
 
-  /** Construct from canonical coordinates (Lie algebra) */
+  /** Construct from canonical coordinates \f$ [T_x,T_y,\theta] \f$ (Lie algebra) */
   Pose2(const Vector& v) {
     *this = Expmap(v);
   }
@@ -138,25 +138,25 @@ public:
   /// Dimensionality of tangent space = 3 DOF
   inline size_t dim() const { return dimension; }
 
-  /// Retraction from R^3 to Pose2 manifold neighborhood around current pose
+  /// Retraction from R^3 \f$ [T_x,T_y,\theta] \f$ to Pose2 manifold neighborhood around current pose
   Pose2 retract(const Vector& v) const;
 
-  /// Local 3D coordinates of Pose2 manifold neighborhood around current pose
+  /// Local 3D coordinates \f$ [T_x,T_y,\theta] \f$ of Pose2 manifold neighborhood around current pose
   Vector localCoordinates(const Pose2& p2) const;
 
   /// @}
   /// @name Lie Group
   /// @{
 
-  ///Exponential map at identity - create a rotation from canonical coordinates
+  ///Exponential map at identity - create a rotation from canonical coordinates \f$ [T_x,T_y,\theta] \f$
   static Pose2 Expmap(const Vector& xi);
 
-  ///Log map at identity - return the canonical coordinates of this rotation
+  ///Log map at identity - return the canonical coordinates \f$ [T_x,T_y,\theta] \f$ of this rotation
   static Vector Logmap(const Pose2& p);
 
   /**
    * Calculate Adjoint map
-   * Ad_pose is 3*3 matrix that when applied to twist xi, returns Ad_pose(xi)
+   * Ad_pose is 3*3 matrix that when applied to twist xi \f$ [T_x,T_y,\theta] \f$, returns Ad_pose(xi)
    */
   Matrix adjointMap() const;
   inline Vector adjoint(const Vector& xi) const {
