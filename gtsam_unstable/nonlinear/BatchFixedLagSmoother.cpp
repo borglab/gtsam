@@ -11,126 +11,38 @@
 
 /**
  * @file    BatchFixedLagSmoother.cpp
- * @brief   An LM-based fixed-lag smoother. To the extent possible, this class mimics the iSAM2
- * interface. However, additional parameters, such as the smoother lag and the timestamp associated
- * with each variable are needed.
+ * @brief   An LM-based fixed-lag smoother.
  *
  * @author  Michael Kaess, Stephen Williams
  * @date    Oct 14, 2012
  */
 
 #include <gtsam_unstable/nonlinear/BatchFixedLagSmoother.h>
-#include <gtsam/linear/GaussianSequentialSolver.h>
+#include <gtsam_unstable/nonlinear/LinearizedFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/inference/inference.h>
-#include <gtsam/inference/VariableIndex.h>
-#include <gtsam/inference/Permutation.h>
 #include <gtsam/base/debug.h>
 
 namespace gtsam {
 
 /* ************************************************************************* */
-void BatchFixedLagSmoother::PrintKeySet(const std::set<Key>& keys, const std::string& label) {
-  std::cout << label;
-  BOOST_FOREACH(gtsam::Key key, keys) {
-    std::cout << " " << gtsam::DefaultKeyFormatter(key);
-  }
-  std::cout << std::endl;
-}
-
-/* ************************************************************************* */
-void BatchFixedLagSmoother::PrintSymbolicFactor(const GaussianFactor::shared_ptr& factor, const Ordering& ordering) {
-  std::cout << "f(";
-  BOOST_FOREACH(Index index, factor->keys()) {
-    std::cout << " " << index << "[" << gtsam::DefaultKeyFormatter(ordering.key(index)) << "]";
-  }
-  std::cout << " )" << std::endl;
-}
-
-/* ************************************************************************* */
-void BatchFixedLagSmoother::PrintSymbolicGraph(const GaussianFactorGraph& graph, const Ordering& ordering, const std::string& label) {
-  std::cout << label << std::endl;
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, graph) {
-    PrintSymbolicFactor(factor, ordering);
-  }
-}
-
-/* ************************************************************************* */
-void BatchFixedLagSmoother::PrintSymbolicFactor(const NonlinearFactor::shared_ptr& factor) {
-  std::cout << "f(";
-  if(factor) {
-    BOOST_FOREACH(Key key, factor->keys()) {
-      std::cout << " " << gtsam::DefaultKeyFormatter(key);
-    }
-  } else {
-    std::cout << " NULL";
-  }
-  std::cout << " )" << std::endl;
-}
-
-/* ************************************************************************* */
-void BatchFixedLagSmoother::PrintSymbolicGraph(const NonlinearFactorGraph& graph, const std::string& label) {
-  std::cout << label << std::endl;
-  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, graph) {
-    PrintSymbolicFactor(factor);
-  }
-}
-
-
-
-
-/* ************************************************************************* */
-BatchFixedLagSmoother::BatchFixedLagSmoother(const LevenbergMarquardtParams& params, double smootherLag, bool enforceConsistency) :
-    parameters_(params), smootherLag_(smootherLag), enforceConsistency_(enforceConsistency) {
-}
-
-/* ************************************************************************* */
 void BatchFixedLagSmoother::print(const std::string& s, const KeyFormatter& keyFormatter) const {
-  std::cout << s;
+  FixedLagSmoother::print(s, keyFormatter);
+  // TODO: What else to print?
 }
 
 /* ************************************************************************* */
-bool BatchFixedLagSmoother::equals(const BatchFixedLagSmoother& rhs, double tol) const {
-  return factors_.equals(rhs.factors_, tol)
-      && theta_.equals(rhs.theta_, tol)
-      && std::fabs(smootherLag_ - rhs.smootherLag_) < tol
-      && std::equal(timestampKeyMap_.begin(), timestampKeyMap_.end(), rhs.timestampKeyMap_.begin());
+bool BatchFixedLagSmoother::equals(const FixedLagSmoother& rhs, double tol) const {
+  const BatchFixedLagSmoother* e =  dynamic_cast<const BatchFixedLagSmoother*> (&rhs);
+  return e != NULL
+      && FixedLagSmoother::equals(*e, tol)
+      && factors_.equals(e->factors_, tol)
+      && theta_.equals(e->theta_, tol);
 }
 
 /* ************************************************************************* */
-Matrix BatchFixedLagSmoother::marginalR(Key key) const {
-// TODO: Fix This
-//  // Use iSAM2 object to get the marginal factor
-//  GaussianFactor::shared_ptr marginalGaussian;
-//  if(params().getFactorization() == "QR")
-//    marginalGaussian = isam_.marginalFactor(getOrdering().at(key), EliminateQR);
-//  else if(params().getFactorization() == "CHOLESKY")
-//    marginalGaussian = isam_.marginalFactor(getOrdering().at(key), EliminateCholesky);
-//  else
-//    throw std::invalid_argument(boost::str(boost::format("Encountered unknown factorization type of '%s'. Known types are 'QR' and 'CHOLESKY'.") % params().getFactorization()));
-//
-//  // Extract the information matrix
-//  JacobianFactor::shared_ptr marginalJacobian = boost::dynamic_pointer_cast<JacobianFactor>(marginalGaussian);
-//  assert(marginalJacobian != 0);
-//  return marginalJacobian->getA(marginalJacobian->begin());
-  return Matrix();
-}
-
-/* ************************************************************************* */
-Matrix BatchFixedLagSmoother::marginalInformation(Key key) const {
-  Matrix R(marginalR(key));
-  return R.transpose() * R;
-}
-
-/* ************************************************************************* */
-Matrix BatchFixedLagSmoother::marginalCovariance(Key key) const {
-  Matrix Rinv(inverse(marginalR(key)));
-  return Rinv * Rinv.transpose();
-}
-
-/* ************************************************************************* */
-BatchFixedLagSmoother::Result BatchFixedLagSmoother::update(const NonlinearFactorGraph& newFactors, const Values& newTheta, const KeyTimestampMap& timestamps) {
+FixedLagSmoother::Result BatchFixedLagSmoother::update(const NonlinearFactorGraph& newFactors, const Values& newTheta, const KeyTimestampMap& timestamps) {
 
   const bool debug = ISDEBUG("BatchFixedLagSmoother update");
   if(debug) {
@@ -250,117 +162,22 @@ void BatchFixedLagSmoother::removeFactors(const std::set<size_t>& deleteFactors)
 }
 
 /* ************************************************************************* */
-void BatchFixedLagSmoother::updateKeyTimestampMap(const KeyTimestampMap& timestamps) {
-  // Loop through each key and add/update it in the map
-  BOOST_FOREACH(const KeyTimestampMap::value_type& key_timestamp, timestamps) {
-    // Check to see if this key already exists inthe database
-    KeyTimestampMap::iterator keyIter = keyTimestampMap_.find(key_timestamp.first);
-
-    // If the key already exists
-    if(keyIter != keyTimestampMap_.end()) {
-      // Find the entry in the Timestamp-Key database
-      std::pair<TimestampKeyMap::iterator,TimestampKeyMap::iterator> range = timestampKeyMap_.equal_range(keyIter->second);
-      TimestampKeyMap::iterator timeIter = range.first;
-      while(timeIter->second != key_timestamp.first) {
-        ++timeIter;
-      }
-      // remove the entry in the Timestamp-Key database
-      timestampKeyMap_.erase(timeIter);
-      // insert an entry at the new time
-      timestampKeyMap_.insert(TimestampKeyMap::value_type(key_timestamp.second, key_timestamp.first));
-      // update the Key-Timestamp database
-      keyIter->second = key_timestamp.second;
-    } else {
-      // Add the Key-Timestamp database
-      keyTimestampMap_.insert(key_timestamp);
-      // Add the key to the Timestamp-Key database
-      timestampKeyMap_.insert(TimestampKeyMap::value_type(key_timestamp.second, key_timestamp.first));
-    }
-  }
-}
-
-/* ************************************************************************* */
-double BatchFixedLagSmoother::getCurrentTimestamp() const {
-  if(timestampKeyMap_.size() > 0) {
-    return timestampKeyMap_.rbegin()->first;
-  } else {
-    return -std::numeric_limits<double>::max();
-  }
-}
-
-/* ************************************************************************* */
-std::set<Key> BatchFixedLagSmoother::findKeysBefore(double timestamp) const {
-  std::set<Key> keys;
-  TimestampKeyMap::const_iterator end = timestampKeyMap_.lower_bound(timestamp);
-  for(TimestampKeyMap::const_iterator iter = timestampKeyMap_.begin(); iter != end; ++iter) {
-    keys.insert(iter->second);
-  }
-  return keys;
-}
-
-/* ************************************************************************* */
 void BatchFixedLagSmoother::eraseKeys(const std::set<Key>& keys) {
 
-//  bool debug = true;
-
-//  if(debug) std::cout << "BatchFixedLagSmoother::eraseKeys() START" << std::endl;
-
-//  if(debug) PrintKeySet(keys, "Keys To Erase: ");
-
   BOOST_FOREACH(Key key, keys) {
-//    if(debug) std::cout << "Attempting to erase key " << DefaultKeyFormatter(key) << std::endl;
-
-    // Erase the key from the Timestamp->Key map
-    double timestamp = keyTimestampMap_.at(key);
-
-//    if(debug) std::cout << "Timestamp associated with key: " << timestamp << std::endl;
-
-    TimestampKeyMap::iterator iter = timestampKeyMap_.lower_bound(timestamp);
-    while(iter != timestampKeyMap_.end() && iter->first == timestamp) {
-      if(iter->second == key) {
-
-//        if(debug) {
-//          std::cout << "Contents of TimestampKeyMap before Erase:" << std::endl;
-//          BOOST_FOREACH(const TimestampKeyMap::value_type& timestamp_key, timestampKeyMap_) {
-//            std::cout << "   " << timestamp_key.first << "  ->  " << DefaultKeyFormatter(timestamp_key.second) << std::endl;
-//          }
-//        }
-
-        timestampKeyMap_.erase(iter++);
-
-//        if(debug) {
-//          std::cout << "Contents of TimestampKeyMap before Erase:" << std::endl;
-//          BOOST_FOREACH(const TimestampKeyMap::value_type& timestamp_key, timestampKeyMap_) {
-//            std::cout << "   " << timestamp_key.first << "  ->  " << DefaultKeyFormatter(timestamp_key.second) << std::endl;
-//          }
-//        }
-
-//        if(debug) std::cout << "Erased 1 entry from timestampKeyMap_" << std::endl;
-      } else {
-        ++iter;
-      }
-    }
-    // Erase the key from the Key->Timestamp map
-    size_t ret;
-    ret = keyTimestampMap_.erase(key);
-//    if(debug) std::cout << "Erased " << ret << " entries from keyTimestampMap_" << std::endl;
-
     // Erase the key from the values
     theta_.erase(key);
-//    if(debug) std::cout << "(Hopefully) Erased 1 entries from theta_" << std::endl;
 
     // Erase the key from the factor index
-    ret = factorIndex_.erase(key);
-//    if(debug) std::cout << "Erased " << ret << " entries from factorIndex_" << std::endl;
+    factorIndex_.erase(key);
 
     // Erase the key from the set of linearized keys
     if(linearizedKeys_.exists(key)) {
       linearizedKeys_.erase(key);
-//      if(debug) std::cout << "Erased 1 entry from linearizedKeys_" << std::endl;
     }
   }
 
-//  if(debug) std::cout << "BatchFixedLagSmoother::eraseKeys() FINISH" << std::endl;
+  eraseKeyTimestampMap(keys);
 }
 
 /* ************************************************************************* */
@@ -515,22 +332,16 @@ void BatchFixedLagSmoother::marginalizeKeys(const std::set<Key>& marginalizableK
         // These factors are all generated from BayesNet conditionals. They should all be Jacobians.
         JacobianFactor::shared_ptr jacobianFactor = boost::dynamic_pointer_cast<JacobianFactor>(gaussianFactor);
         assert(jacobianFactor);
-        LinearizedGaussianFactor::shared_ptr factor = LinearizedJacobianFactor::shared_ptr(new LinearizedJacobianFactor(jacobianFactor, ordering, getLinearizationPoint()));
+        LinearizedGaussianFactor::shared_ptr factor = LinearizedJacobianFactor::shared_ptr(new LinearizedJacobianFactor(jacobianFactor, ordering, theta_));
         // add it to the new factor set
         newFactors.push_back(factor);
       }
 
-      if(debug) std::cout << "1" << std::endl;
-
       //  (4) remove the marginalized factors from the graph
       removeFactors(factorTree.factors);
 
-      if(debug) std::cout << "2" << std::endl;
-
       //  (5) add the factors in this tree to the main set of factors
       updateFactors(newFactors);
-
-      if(debug) std::cout << "3" << std::endl;
 
       //  (6) add the keys involved in the linear(ized) factors to the linearizedKey list
       FastSet<Key> linearizedKeys = newFactors.keys();
@@ -539,24 +350,60 @@ void BatchFixedLagSmoother::marginalizeKeys(const std::set<Key>& marginalizableK
           linearizedKeys_.insert(key, theta_.at(key));
         }
       }
-
-      if(debug) std::cout << "4" << std::endl;
-    }
-
-    if(debug) std::cout << "5" << std::endl;
-
-    // Store the final estimate of each marginalized key
-    BOOST_FOREACH(Key key, marginalizableKeys) {
-      thetaFinal_.insert(key, theta_.at(key));
     }
 
     // Remove the marginalized keys from the smoother data structures
     eraseKeys(marginalizableKeys);
-
-    if(debug) std::cout << "6" << std::endl;
   }
 
   if(debug) std::cout << "BatchFixedLagSmoother::marginalizeKeys() FINISH" << std::endl;
+}
+
+/* ************************************************************************* */
+void BatchFixedLagSmoother::PrintKeySet(const std::set<Key>& keys, const std::string& label) {
+  std::cout << label;
+  BOOST_FOREACH(gtsam::Key key, keys) {
+    std::cout << " " << gtsam::DefaultKeyFormatter(key);
+  }
+  std::cout << std::endl;
+}
+
+/* ************************************************************************* */
+void BatchFixedLagSmoother::PrintSymbolicFactor(const NonlinearFactor::shared_ptr& factor) {
+  std::cout << "f(";
+  if(factor) {
+    BOOST_FOREACH(Key key, factor->keys()) {
+      std::cout << " " << gtsam::DefaultKeyFormatter(key);
+    }
+  } else {
+    std::cout << " NULL";
+  }
+  std::cout << " )" << std::endl;
+}
+
+/* ************************************************************************* */
+void BatchFixedLagSmoother::PrintSymbolicFactor(const GaussianFactor::shared_ptr& factor, const Ordering& ordering) {
+  std::cout << "f(";
+  BOOST_FOREACH(Index index, factor->keys()) {
+    std::cout << " " << index << "[" << gtsam::DefaultKeyFormatter(ordering.key(index)) << "]";
+  }
+  std::cout << " )" << std::endl;
+}
+
+/* ************************************************************************* */
+void BatchFixedLagSmoother::PrintSymbolicGraph(const NonlinearFactorGraph& graph, const std::string& label) {
+  std::cout << label << std::endl;
+  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, graph) {
+    PrintSymbolicFactor(factor);
+  }
+}
+
+/* ************************************************************************* */
+void BatchFixedLagSmoother::PrintSymbolicGraph(const GaussianFactorGraph& graph, const Ordering& ordering, const std::string& label) {
+  std::cout << label << std::endl;
+  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, graph) {
+    PrintSymbolicFactor(factor, ordering);
+  }
 }
 
 /* ************************************************************************* */

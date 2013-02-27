@@ -16,13 +16,15 @@
  * @date    May 23, 2012
  */
 
+
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam_unstable/nonlinear/BatchFixedLagSmoother.h>
+#include <gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/Key.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
@@ -32,8 +34,10 @@
 using namespace std;
 using namespace gtsam;
 
+Key MakeKey(size_t index) { return Symbol('x', index); }
+
 /* ************************************************************************* */
-bool check_smoother(const NonlinearFactorGraph& fullgraph, const Values& fullinit, const BatchFixedLagSmoother& smoother, const Key& key) {
+bool check_smoother(const NonlinearFactorGraph& fullgraph, const Values& fullinit, const IncrementalFixedLagSmoother& smoother, const Key& key) {
 
   Ordering ordering = *fullgraph.orderingCOLAMD(fullinit);
   GaussianFactorGraph linearized = *fullgraph.linearize(fullinit, ordering);
@@ -48,21 +52,21 @@ bool check_smoother(const NonlinearFactorGraph& fullgraph, const Values& fullini
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE( BatchFixedLagSmoother, Example )
+TEST_UNSAFE( IncrementalFixedLagSmoother, Example )
 {
-  // Test the BatchFixedLagSmoother in a pure linear environment. Thus, full optimization and
-  // the BatchFixedLagSmoother should be identical (even with the linearized approximations at
+  // Test the IncrementalFixedLagSmoother in a pure linear environment. Thus, full optimization and
+  // the IncrementalFixedLagSmoother should be identical (even with the linearized approximations at
   // the end of the smoothing lag)
 
-  SETDEBUG("BatchFixedLagSmoother update", false);
+  SETDEBUG("IncrementalFixedLagSmoother update", true);
 
   // Set up parameters
   SharedDiagonal odometerNoise = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1));
   SharedDiagonal loopNoise = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1));
 
   // Create a Fixed-Lag Smoother
-  typedef BatchFixedLagSmoother::KeyTimestampMap Timestamps;
-  BatchFixedLagSmoother smoother(7.0, LevenbergMarquardtParams());
+  typedef IncrementalFixedLagSmoother::KeyTimestampMap Timestamps;
+  IncrementalFixedLagSmoother smoother(7.0, ISAM2Params());
 
   // Create containers to keep the full graph
   Values fullinit;
@@ -75,7 +79,7 @@ TEST_UNSAFE( BatchFixedLagSmoother, Example )
 
   // Add a prior at time 0 and update the HMF
   {
-    Key key0(0);
+    Key key0 = MakeKey(0);
 
     NonlinearFactorGraph newFactors;
     Values newValues;
@@ -99,8 +103,8 @@ TEST_UNSAFE( BatchFixedLagSmoother, Example )
 
   // Add odometry from time 0 to time 5
   while(i <= 5) {
-    Key key1(i-1);
-    Key key2(i);
+    Key key1 = MakeKey(i-1);
+    Key key2 = MakeKey(i);
 
     NonlinearFactorGraph newFactors;
     Values newValues;
@@ -125,15 +129,15 @@ TEST_UNSAFE( BatchFixedLagSmoother, Example )
   // Add odometry from time 5 to 6 to the HMF and a loop closure at time 5 to the TSM
   {
     // Add the odometry factor to the HMF
-    Key key1(i-1);
-    Key key2(i);
+    Key key1 = MakeKey(i-1);
+    Key key2 = MakeKey(i);
 
     NonlinearFactorGraph newFactors;
     Values newValues;
     Timestamps newTimestamps;
 
     newFactors.add(BetweenFactor<Point2>(key1, key2, Point2(1.0, 0.0), odometerNoise));
-    newFactors.add(BetweenFactor<Point2>(Key(2), Key(5), Point2(3.5, 0.0), loopNoise));
+    newFactors.add(BetweenFactor<Point2>(MakeKey(2), MakeKey(5), Point2(3.5, 0.0), loopNoise));
     newValues.insert(key2, Point2(double(i)+0.1, -0.1));
     newTimestamps[key2] = double(i);
 
@@ -151,8 +155,8 @@ TEST_UNSAFE( BatchFixedLagSmoother, Example )
 
   // Add odometry from time 6 to time 15
   while(i <= 15) {
-    Key key1(i-1);
-    Key key2(i);
+    Key key1 = MakeKey(i-1);
+    Key key2 = MakeKey(i);
 
     NonlinearFactorGraph newFactors;
     Values newValues;
