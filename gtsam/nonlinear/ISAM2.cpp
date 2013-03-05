@@ -792,6 +792,7 @@ void ISAM2::experimentalMarginalizeLeaves(const FastList<Key>& leafKeys)
   BOOST_FOREACH(Key key, leafKeys) {
     indices.insert(ordering_[key]);
   }
+  FastSet<Index> origIndices = indices;
 
   // For each clique containing variables to be marginalized, we need to
   // reeliminate the marginalized variables and add their linear contribution
@@ -823,7 +824,7 @@ void ISAM2::experimentalMarginalizeLeaves(const FastList<Key>& leafKeys)
   }
 #endif
 
-  // Now loop over the indices
+  // Now loop over the indices, the iterator jI is advanced inside the loop.
   FastSet<size_t> factorIndicesToRemove;
   GaussianFactorGraph factorsToAdd;
   for(FastSet<Index>::iterator jI = indices.begin(); jI != indices.end(); )
@@ -834,14 +835,11 @@ void ISAM2::experimentalMarginalizeLeaves(const FastList<Key>& leafKeys)
     FastMap<sharedClique,Index>::iterator clique_lastIndex = cliquesToMarginalize.find(nodes_[*jI]);
     assert(clique_lastIndex != cliquesToMarginalize.end()); // Assert that we indexed the clique
 
+    const size_t originalnFrontals = clique_lastIndex->first->conditional()->nrFrontals();
+
     // Check that the clique has no children
     if(!clique_lastIndex->first->children().empty())
       throw MarginalizeNonleafException(ordering_.key(*jI), params_.keyFormatter);
-
-    // Mark factors to be removed
-    BOOST_FOREACH(size_t i, variableIndex_[*jI]) {
-      factorIndicesToRemove.insert(i);
-    }
 
     // Check that all previous variables in the clique are also being eliminated and no later ones.
     // At the same time, remove the indices marginalized with this clique from the indices set.
@@ -849,7 +847,7 @@ void ISAM2::experimentalMarginalizeLeaves(const FastList<Key>& leafKeys)
     size_t nFrontals = 0;
     {
       bool foundLast = false;
-      BOOST_FOREACH(Index cliqueVar, *clique_lastIndex->first->conditional()) {
+      BOOST_FOREACH(Index cliqueVar, clique_lastIndex->first->conditional()->frontals()) {
         if(!foundLast && indices.find(cliqueVar) == indices.end())
           throw MarginalizeNonleafException(ordering_.key(j), params_.keyFormatter);
         if(foundLast && indices.find(cliqueVar) != indices.end())
@@ -863,6 +861,10 @@ void ISAM2::experimentalMarginalizeLeaves(const FastList<Key>& leafKeys)
         }
         if(cliqueVar == clique_lastIndex->second)
           foundLast = true;
+        // Mark factors to be removed
+        BOOST_FOREACH(size_t i, variableIndex_[cliqueVar]) {
+          factorIndicesToRemove.insert(i);
+        }
       }
     }
 
@@ -876,11 +878,31 @@ void ISAM2::experimentalMarginalizeLeaves(const FastList<Key>& leafKeys)
       EliminateQR(cliqueGraph, nFrontals) :
       EliminatePreferCholesky(cliqueGraph, nFrontals);
 
+    // Now we discard the conditional part and add the marginal part back into
+    // the graph.  Also we need to rebuild the leaf clique using the marginal.
+
     // Add the marginal into the factor graph
     factorsToAdd.push_back(eliminationResult.second);
 
+    // Get the parent of the clique to be removed
+    sharedClique parent = clique_lastIndex->first->parent();
+
     // Remove the clique
     this->removeClique(clique_lastIndex->first);
+
+    // Add a new leaf clique if necessary
+    const size_t newnFrontals = originalnFrontals - nFrontals;
+    if(newnFrontals > 0) {
+      // Do the elimination for the new leaf clique
+      GaussianFactorGraph newCliqueGraph;
+      newCliqueGraph.push_back(eliminationResult.second);
+      pair<Clique::sharedConditional, GaussianFactor::shared_ptr> newEliminationResult =
+        params_.factorization==ISAM2Params::QR ?
+        EliminateQR(newCliqueGraph, newnFrontals) :
+        EliminatePreferCholesky(newCliqueGraph, newnFrontals);
+      // Create and add the new clique
+      this->addClique(ISAM2Clique::Create(newEliminationResult), parent);
+    }
   }
 
   // Remove any factors touching the marginalized-out variables
@@ -893,6 +915,7 @@ void ISAM2::experimentalMarginalizeLeaves(const FastList<Key>& leafKeys)
     if(params_.cacheLinearizedFactors)
       linearFactors_.remove(i);
   }
+  variableIndex_.remove(removedFactorIndices, removedFactors);
 
   // Add the new factors and fix linearization points of involved variables
   BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factorsToAdd) {
@@ -907,7 +930,6 @@ void ISAM2::experimentalMarginalizeLeaves(const FastList<Key>& leafKeys)
   variableIndex_.augment(factorsToAdd); // Augment the variable index
 
   // Remove the marginalized variables
-  variableIndex_.remove(removedFactorIndices, removedFactors);
   Impl::RemoveVariables(FastSet<Key>(leafKeys.begin(), leafKeys.end()), root_, theta_, variableIndex_, delta_, deltaNewton_, RgProd_,
     deltaReplacedMask_, ordering_, nodes_, linearFactors_, fixedVariables_);
 }

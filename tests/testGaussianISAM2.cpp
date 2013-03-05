@@ -6,6 +6,7 @@
 
 #include <gtsam/base/debug.h>
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/LieVector.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
@@ -832,41 +833,99 @@ TEST(ISAM2, slamlike_solution_partial_relinearization_check)
   CHECK(isam_check(fullgraph, fullinit, isam, *this, result_));
 }
 
+namespace {
+  bool checkMarginalizeLeaves(ISAM2& isam, const FastList<Key>& leafKeys) {
+    Matrix expectedAugmentedHessian, expected3AugmentedHessian;
+    vector<Index> toKeep;
+    const Index lastVar = isam.getOrdering().size() - 1;
+    for(Index i=0; i<=lastVar; ++i)
+      if(find(leafKeys.begin(), leafKeys.end(), isam.getOrdering().key(i)) == leafKeys.end())
+        toKeep.push_back(i);
+
+    // Calculate expected marginal from iSAM2 tree
+    GaussianFactorGraph isamAsGraph(isam);
+    GaussianSequentialSolver solver(isamAsGraph);
+    GaussianFactorGraph marginalgfg = *solver.jointFactorGraph(toKeep);
+    expectedAugmentedHessian = marginalgfg.augmentedHessian();
+
+    //// Calculate expected marginal from cached linear factors
+    //assert(isam.params().cacheLinearizedFactors);
+    //GaussianSequentialSolver solver2(isam.linearFactors_, isam.params().factorization == ISAM2Params::QR);
+    //expected2AugmentedHessian = solver2.jointFactorGraph(toKeep)->augmentedHessian();
+
+    // Calculate expected marginal from original nonlinear factors
+    GaussianSequentialSolver solver3(
+      *isam.getFactorsUnsafe().linearize(isam.getLinearizationPoint(), isam.getOrdering()),
+      isam.params().factorization == ISAM2Params::QR);
+    expected3AugmentedHessian = solver3.jointFactorGraph(toKeep)->augmentedHessian();
+
+    // Do marginalization
+    isam.experimentalMarginalizeLeaves(leafKeys);
+
+    // Check
+    GaussianFactorGraph actualMarginalGraph(isam);
+    Matrix actualAugmentedHessian = actualMarginalGraph.augmentedHessian();
+    //Matrix actual2AugmentedHessian = linearFactors_.augmentedHessian();
+    Matrix actual3AugmentedHessian = isam.getFactorsUnsafe().linearize(
+      isam.getLinearizationPoint(), isam.getOrdering())->augmentedHessian();
+    assert(actualAugmentedHessian.unaryExpr(std::ptr_fun(&std::isfinite<double>)).all());
+
+    // Check full marginalization
+    bool treeEqual = assert_equal(expectedAugmentedHessian, actualAugmentedHessian, 1e-6);
+    //bool linEqual = assert_equal(expected2AugmentedHessian, actualAugmentedHessian, 1e-6);
+    bool nonlinEqual = assert_equal(expected3AugmentedHessian, actualAugmentedHessian, 1e-6);
+    //bool linCorrect = assert_equal(expected3AugmentedHessian, expected2AugmentedHessian, 1e-6);
+    //actual2AugmentedHessian.bottomRightCorner(1,1) = expected3AugmentedHessian.bottomRightCorner(1,1); bool afterLinCorrect = assert_equal(expected3AugmentedHessian, actual2AugmentedHessian, 1e-6);
+    actual3AugmentedHessian.bottomRightCorner(1,1) = expected3AugmentedHessian.bottomRightCorner(1,1); bool afterNonlinCorrect = assert_equal(expected3AugmentedHessian, actual3AugmentedHessian, 1e-6);
+
+    bool ok = treeEqual && /*linEqual &&*/ nonlinEqual && /*linCorrect &&*/ /*afterLinCorrect &&*/ afterNonlinCorrect;
+    return ok;
+  }
+}
+
 /* ************************************************************************* */
 TEST_UNSAFE(ISAM2, marginalizeLeaves)
 {
+  ISAM2 isam;
+
+  NonlinearFactorGraph factors;
+  factors.add(PriorFactor<LieVector>(0, LieVector(0.0), noiseModel::Unit::Create(1)));
+
+  factors.add(BetweenFactor<LieVector>(0, 1, LieVector(0.0), noiseModel::Unit::Create(1)));
+  factors.add(BetweenFactor<LieVector>(1, 2, LieVector(0.0), noiseModel::Unit::Create(1)));
+  factors.add(BetweenFactor<LieVector>(0, 2, LieVector(0.0), noiseModel::Unit::Create(1)));
+
+  factors.add(BetweenFactor<LieVector>(2, 3, LieVector(0.0), noiseModel::Unit::Create(1)));
+
+  factors.add(BetweenFactor<LieVector>(3, 4, LieVector(0.0), noiseModel::Unit::Create(1)));
+  factors.add(BetweenFactor<LieVector>(4, 5, LieVector(0.0), noiseModel::Unit::Create(1)));
+  factors.add(BetweenFactor<LieVector>(3, 5, LieVector(0.0), noiseModel::Unit::Create(1)));
+
+  Values values;
+  values.insert(0, LieVector(0.0));
+  values.insert(1, LieVector(0.0));
+  values.insert(2, LieVector(0.0));
+  values.insert(3, LieVector(0.0));
+  values.insert(4, LieVector(0.0));
+  values.insert(5, LieVector(0.0));
+
+  isam.update(factors, values);
+
+  FastList<Key> leafKeys;
+  leafKeys.push_back(0);
+  EXPECT(checkMarginalizeLeaves(isam, leafKeys));
+}
+
+/* ************************************************************************* */
+TEST_UNSAFE(ISAM2, marginalizeLeaves2)
+{
   // Create isam2
   ISAM2 isam = createSlamlikeISAM2();
-  
-  // Get linearization point
-  Values soln = isam.calculateBestEstimate();
-
-  // Calculate expected marginal
-  GaussianFactorGraph isamAsGraph(isam);
-  GaussianSequentialSolver solver(isamAsGraph);
-  vector<Index> toKeep;
-  const Index lastVar = isam.getOrdering().size() - 1;
-  for(Index i=0; i<=lastVar; ++i)
-    if(i != isam.getOrdering()[0])
-      toKeep.push_back(i);
-  GaussianFactorGraph marginalgfg = *solver.jointFactorGraph(toKeep);
-  vector<Index> toFrontI;
-  toFrontI.push_back(isam.getOrdering()[0]);
-  Permutation toFront = Permutation::PullToFront(toFrontI, lastVar+1);
-  marginalgfg.permuteWithInverse(*toFront.inverse());
-  Matrix expectedAugmentedHessian = marginalgfg.augmentedHessian();
 
   // Marginalize
   FastList<Key> marginalizeKeys;
   marginalizeKeys.push_back(isam.getOrdering().key(0));
-  isam.experimentalMarginalizeLeaves(marginalizeKeys);
-
-  // Check
-  GaussianFactorGraph actualMarginalGraph(isam);
-  Matrix actualAugmentedHessian = actualMarginalGraph.augmentedHessian();
-
-  LONGS_EQUAL(lastVar-1, isam.getOrdering().size()-1);
-  EXPECT(assert_equal(expectedAugmentedHessian, actualAugmentedHessian));
+  EXPECT(checkMarginalizeLeaves(isam, marginalizeKeys));
 }
 
 /* ************************************************************************* */
