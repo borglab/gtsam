@@ -260,8 +260,7 @@ namespace gtsam {
     BOOST_FOREACH(sharedClique child, clique->children_)
       child->parent_ = typename Clique::weak_ptr();
 
-    BOOST_FOREACH(Index j, (*clique->conditional())) {
-      assert(j < nodes_.size()); // Don't want to overrun nodes list
+    BOOST_FOREACH(Index j, clique->conditional()->frontals()) {
       nodes_[j].reset();
     }
   }
