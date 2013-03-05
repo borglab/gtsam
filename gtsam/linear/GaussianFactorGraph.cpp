@@ -339,8 +339,10 @@ break;
 
     // First do the set union.
     BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors) {
-      for(GaussianFactor::const_iterator variable = factor->begin(); variable != factor->end(); ++variable) {
-        scatter.insert(make_pair(*variable, SlotEntry(0, factor->getDim(variable))));
+      if(factor) {
+        for(GaussianFactor::const_iterator variable = factor->begin(); variable != factor->end(); ++variable) {
+          scatter.insert(make_pair(*variable, SlotEntry(0, factor->getDim(variable))));
+        }
       }
     }
 
