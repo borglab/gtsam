@@ -88,7 +88,7 @@ protected:
   void eraseKeysBefore(double timestamp);
 
   /** Fill in an iSAM2 ConstrainedKeys structure such that the provided keys are eliminated before all others */
-  void createOrderingConstraints(const std::set<Key>& marginalizableKeys, FastMap<Key,int>& constrainedKeys) const;
+  void createOrderingConstraints(const std::set<Key>& marginalizableKeys, boost::optional<FastMap<Key,int> >& constrainedKeys) const;
 
 private:
   /** Private methods for printing debug information */

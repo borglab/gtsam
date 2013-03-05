@@ -42,23 +42,26 @@ bool IncrementalFixedLagSmoother::equals(const FixedLagSmoother& rhs, double tol
 FixedLagSmoother::Result IncrementalFixedLagSmoother::update(const NonlinearFactorGraph& newFactors, const Values& newTheta, const KeyTimestampMap& timestamps) {
 
   const bool debug = ISDEBUG("IncrementalFixedLagSmoother update");
+
   if(debug) {
-    std::cout << "IncrementalFixedLagSmoother::update()" << std::endl;
+    std::cout << "IncrementalFixedLagSmoother::update() Start" << std::endl;
     PrintSymbolicTree(isam_, "Bayes Tree Before Update:");
   }
 
   FastVector<size_t> removedFactors;
-  FastMap<Key,int> constrainedKeys;
+  boost::optional<FastMap<Key,int> > constrainedKeys = boost::none;
 
   // Update the Timestamps associated with the factor keys
   updateKeyTimestampMap(timestamps);
 
   // Get current timestamp
   double current_timestamp = getCurrentTimestamp();
+
   if(debug) std::cout << "Current Timestamp: " << current_timestamp << std::endl;
 
   // Find the set of variables to be marginalized out
   std::set<Key> marginalizableKeys = findKeysBefore(current_timestamp - smootherLag_);
+
   if(debug) {
     std::cout << "Marginalizable Keys: ";
     BOOST_FOREACH(Key key, marginalizableKeys) {
@@ -69,10 +72,13 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(const NonlinearFact
 
   // Force iSAM2 to put the marginalizable variables at the beginning
   createOrderingConstraints(marginalizableKeys, constrainedKeys);
+
   if(debug) {
     std::cout << "Constrained Keys: ";
-    for(FastMap<Key,int>::const_iterator iter = constrainedKeys.begin(); iter != constrainedKeys.end(); ++iter) {
-      std::cout << DefaultKeyFormatter(iter->first) << "(" << iter->second << ")  ";
+    if(constrainedKeys) {
+      for(FastMap<Key,int>::const_iterator iter = constrainedKeys->begin(); iter != constrainedKeys->end(); ++iter) {
+        std::cout << DefaultKeyFormatter(iter->first) << "(" << iter->second << ")  ";
+      }
     }
     std::cout << std::endl;
   }
@@ -85,13 +91,45 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(const NonlinearFact
   }
 
   // Marginalize out any needed variables
-  FastList<Key> leafKeys(marginalizableKeys.begin(), marginalizableKeys.end());
-  isam_.experimentalMarginalizeLeaves(leafKeys);
+  //FastList<Key> leafKeys(marginalizableKeys.begin(), marginalizableKeys.end());
+  //isam_.experimentalMarginalizeLeaves(leafKeys);
+  {
+    // Currently the marginalization code in iSAM2 is limited.
+    // Marginalize the keys out one at a time, in elimination order
+    typedef std::map<Index, Key> OrderedKeys;
+    OrderedKeys marginalizeOrder;
+    BOOST_FOREACH(Key key, marginalizableKeys) {
+      Index index = isam_.getOrdering().at(key);
+      marginalizeOrder[index] = key;
+    }
+
+    if(debug) {
+      std::cout << "Marginalization Order: ";
+      BOOST_FOREACH(const OrderedKeys::value_type& index_key, marginalizeOrder) {
+        std::cout << DefaultKeyFormatter(index_key.second) << " ";
+      }
+      std::cout << std::endl;
+    }
+
+    BOOST_FOREACH(const OrderedKeys::value_type& index_key, marginalizeOrder) {
+
+      if(debug) std::cout << "Attempting to marginalize out variable: " <<  DefaultKeyFormatter(index_key.second) << std::endl;
+
+      FastList<Key> leafKeys;
+      leafKeys.push_back(index_key.second);
+      isam_.experimentalMarginalizeLeaves(leafKeys);
+
+      if(debug) {
+        PrintSymbolicTree(isam_, "Bayes Tree After Marginalization:");
+      }
+    }
+  }
+
   // Remove marginalized keys from the KeyTimestampMap
   eraseKeyTimestampMap(marginalizableKeys);
 
   if(debug) {
-    PrintSymbolicTree(isam_, "Bayes Tree After Marginalization:");
+    PrintSymbolicTree(isam_, "Final Bayes Tree:");
   }
 
   // TODO: Fill in result structure
@@ -100,6 +138,8 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(const NonlinearFact
   result.linearVariables = 0;
   result.nonlinearVariables = 0;
   result.error = 0;
+
+  if(debug) std::cout << "IncrementalFixedLagSmoother::update() Finish" << std::endl;
 
   return result;
 }
@@ -115,16 +155,17 @@ void IncrementalFixedLagSmoother::eraseKeysBefore(double timestamp) {
 }
 
 /* ************************************************************************* */
-void IncrementalFixedLagSmoother::createOrderingConstraints(const std::set<Key>& marginalizableKeys, FastMap<Key,int>& constrainedKeys) const {
+void IncrementalFixedLagSmoother::createOrderingConstraints(const std::set<Key>& marginalizableKeys, boost::optional<FastMap<Key,int> >& constrainedKeys) const {
   if(marginalizableKeys.size() > 0) {
+    constrainedKeys = FastMap<Key,int>();
     // Generate ordering constraints so that the marginalizable variables will be eliminated first
     // Set all variables to Group1
     BOOST_FOREACH(const TimestampKeyMap::value_type& timestamp_key, timestampKeyMap_) {
-      constrainedKeys[timestamp_key.second] = 1;
+      constrainedKeys->operator[](timestamp_key.second) = 1;
     }
     // Set marginalizable variables to Group0
     BOOST_FOREACH(Key key, marginalizableKeys){
-      constrainedKeys[key] = 0;
+      constrainedKeys->operator[](key) = 0;
     }
   }
 }
