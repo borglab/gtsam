@@ -2046,7 +2046,7 @@ The adjoint is
 \begin_inset Formula 
 \begin{eqnarray}
 \Ad T{\xihat} & = & T\xihat T^{-1}\nonumber \\
- & = & \left[\begin{array}{cc}
+ & = & =\left[\begin{array}{cc}
 R & t\\
 0 & 1
 \end{array}\right]\left[\begin{array}{cc}
@@ -2061,7 +2061,7 @@ R^{T} & -R^{T}t\\
 0 & 0
 \end{array}\right]\nonumber \\
  & = & \left[\begin{array}{cc}
-\skew{\omega} & Rv-\omega R_{\pi/2}t\\
+\skew{\omega} & Rv-t^{\perp}\omega\\
 0 & 0
 \end{array}\right]\label{eq:adjointSE2}
 \end{eqnarray}
@@ -2075,7 +2075,7 @@ From this we can express the Adjoint map in terms of plane twist coordinates:
 v'\\
 \omega'
 \end{array}\right]=\left[\begin{array}{cc}
-R & -R_{\pi/2}t\\
+R & -t^{\perp}\\
 0 & 1
 \end{array}\right]\left[\begin{array}{c}
 v\\
