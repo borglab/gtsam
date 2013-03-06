@@ -21,7 +21,7 @@ dataset = 'sphere2500.txt';
 datafile = findExampleDataFile(dataset);
 
 %% Initialize graph, initial estimate, and odometry noise
-model = noiseModel.Diagonal.Sigmas([0.05; 0.05; 0.05; 5*pi/180; 5*pi/180; 5*pi/180]);
+model = noiseModel.Diagonal.Sigmas([5*pi/180; 5*pi/180; 5*pi/180; 0.05; 0.05; 0.05]);
 [graph,initial]=load3D(datafile,model,true,N);
 
 %% Plot Initial Estimate
