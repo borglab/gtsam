@@ -122,6 +122,9 @@ inline void tictoc_print2_() {
   static const size_t label##_id_getnode = ::gtsam::internal::getTicTocID(#label); \
   const boost::shared_ptr<const internal::TimingOutline> variable = \
   internal::timingCurrent.lock()->child(label##_id_getnode, #label, internal::timingCurrent);
+inline void tictoc_reset_() {
+  internal::timingRoot.reset(new internal::TimingOutline("Total", internal::getTicTocID("Total")));
+  internal::timingCurrent = internal::timingRoot; }
 
 #ifdef ENABLE_TIMING
 #define gttic(label) gttic_(label)
@@ -130,13 +133,15 @@ inline void tictoc_print2_() {
 #define longtoc(label) longtoc_(label)
 #define tictoc_finishedIteration tictoc_finishedIteration_
 #define tictoc_print tictoc_print_
+#define tictoc_reset tictoc_reset_
 #else
 #define gttic(label) ((void)0)
 #define gttoc(label) ((void)0)
 #define longtic(label) ((void)0)
 #define longtoc(label) ((void)0)
-inline void tictoc_finishedIteration() {}
-inline void tictoc_print() {}
+#define tictoc_finishedIteration ((void)0)
+#define tictoc_print ((void)0)
+#define tictoc_reset ((void)0)
 #endif
 
 }
