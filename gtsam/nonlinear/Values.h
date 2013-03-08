@@ -188,6 +188,14 @@ namespace gtsam {
     template<typename ValueType>
     boost::optional<const ValueType&> exists(Key j) const;
 
+    /** Find an element by key, returning an iterator, or end() if the key was
+     * not found. */
+    iterator find(Key j) { return boost::make_transform_iterator(values_.find(j), &make_deref_pair); }
+
+    /** Find an element by key, returning an iterator, or end() if the key was
+     * not found. */
+    const_iterator find(Key j) const { return boost::make_transform_iterator(values_.find(j), &make_const_deref_pair); }
+
     /** The number of variables in this config */
     size_t size() const { return values_.size(); }
 
