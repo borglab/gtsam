@@ -139,9 +139,9 @@ inline void tictoc_reset_() {
 #define gttoc(label) ((void)0)
 #define longtic(label) ((void)0)
 #define longtoc(label) ((void)0)
-#define tictoc_finishedIteration ((void)0)
-#define tictoc_print ((void)0)
-#define tictoc_reset ((void)0)
+#define tictoc_finishedIteration() ((void)0)
+#define tictoc_print() ((void)0)
+#define tictoc_reset() ((void)0)
 #endif
 
 }
