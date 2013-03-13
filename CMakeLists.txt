@@ -53,13 +53,13 @@ if(GTSAM_UNSTABLE_AVAILABLE)
 endif()
 if(NOT MSVC)
   option(GTSAM_BUILD_SHARED_LIBRARY        "Enable/Disable building of a shared version of gtsam" ON)
-  option(GTSAM_BUILD_STATIC_LIBRARY        "Enable/Disable building of a static version of gtsam" ON)
+  option(GTSAM_BUILD_STATIC_LIBRARY        "Enable/Disable building of a static version of gtsam" OFF)
 else()
   set(GTSAM_BUILD_STATIC_LIBRARY ON)
 endif()
 option(GTSAM_USE_QUATERNIONS             "Enable/Disable using an internal Quaternion representation for rotations instead of rotation matrices" OFF)
 if(NOT MSVC)
-  option(GTSAM_BUILD_CONVENIENCE_LIBRARIES "Enable/Disable use of convenience libraries for faster development rebuilds, but slower install" ON)
+  option(GTSAM_BUILD_CONVENIENCE_LIBRARIES "Enable/Disable use of convenience libraries for faster development rebuilds, but slower install" OFF)
 endif()
 
 
@@ -152,6 +152,19 @@ link_directories(${Boost_LIBRARY_DIRS})
 
 ###############################################################################
 # Add components
+
+# Set default library - static or shared, before adding subdirectories
+if(GTSAM_BUILD_SHARED_LIBRARY)
+	set(gtsam-default gtsam-shared)
+	if(GTSAM_BUILD_UNSTABLE)
+		set(gtsam_unstable-default gtsam_unstable-shared)
+	endif()
+else()
+	set(gtsam-default gtsam-static)
+	if(GTSAM_BUILD_UNSTABLE)
+		set(gtsam_unstable-default gtsam_unstable-static)
+	endif()
+endif()
 
 # Build CppUnitLite
 add_subdirectory(CppUnitLite)

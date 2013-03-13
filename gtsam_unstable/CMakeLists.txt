@@ -44,10 +44,6 @@ set(gtsam_unstable_srcs
     ${navigation_srcs}
 )
 
-if(NOT MSVC)
-	option (GTSAM_UNSTABLE_BUILD_SHARED_LIBRARY "Enable/Disable building of a shared version of gtsam_unstable" ON)
-endif()
-
 # Versions - same as core gtsam library
 set(gtsam_unstable_version   ${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH})
 set(gtsam_unstable_soversion ${GTSAM_VERSION_MAJOR})
@@ -55,20 +51,21 @@ message(STATUS "GTSAM_UNSTABLE Version: ${gtsam_unstable_version}")
 message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
  
 # build shared and static versions of the library
-message(STATUS "Building GTSAM_UNSTABLE - static")
-add_library(gtsam_unstable-static STATIC ${gtsam_unstable_srcs})
-set_target_properties(gtsam_unstable-static PROPERTIES 
-    OUTPUT_NAME         gtsam_unstable
-    CLEAN_DIRECT_OUTPUT 1
-	VERSION             ${gtsam_unstable_version}
- 	SOVERSION           ${gtsam_unstable_soversion})
-target_link_libraries(gtsam_unstable-static gtsam-static ${GTSAM_UNSTABLE_BOOST_LIBRARIES})
-set(gtsam_unstable-lib "gtsam_unstable-static")
-install(TARGETS gtsam_unstable-static EXPORT GTSAM-exports ARCHIVE DESTINATION lib)
-list(APPEND GTSAM_EXPORTED_TARGETS gtsam_unstable-static)
-set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
+if (GTSAM_BUILD_STATIC_LIBRARY)
+	message(STATUS "Building GTSAM_UNSTABLE - static")
+	add_library(gtsam_unstable-static STATIC ${gtsam_unstable_srcs})
+	set_target_properties(gtsam_unstable-static PROPERTIES 
+		OUTPUT_NAME         gtsam_unstable
+		CLEAN_DIRECT_OUTPUT 1
+		VERSION             ${gtsam_unstable_version}
+		SOVERSION           ${gtsam_unstable_soversion})
+	target_link_libraries(gtsam_unstable-static gtsam-static ${GTSAM_UNSTABLE_BOOST_LIBRARIES})
+	install(TARGETS gtsam_unstable-static EXPORT GTSAM-exports ARCHIVE DESTINATION lib)
+	list(APPEND GTSAM_EXPORTED_TARGETS gtsam_unstable-static)
+	set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
+endif()
 
-if (GTSAM_UNSTABLE_BUILD_SHARED_LIBRARY)
+if (GTSAM_BUILD_SHARED_LIBRARY)
     message(STATUS "Building GTSAM_UNSTABLE - shared")
     add_library(gtsam_unstable-shared SHARED ${gtsam_unstable_srcs})
     set_target_properties(gtsam_unstable-shared PROPERTIES 
@@ -80,7 +77,7 @@ if (GTSAM_UNSTABLE_BUILD_SHARED_LIBRARY)
     install(TARGETS gtsam_unstable-shared EXPORT GTSAM-exports LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
     list(APPEND GTSAM_EXPORTED_TARGETS gtsam_unstable-shared)
     set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
-endif(GTSAM_UNSTABLE_BUILD_SHARED_LIBRARY)
+endif()
 
 # Wrap version for gtsam_unstable
 if (GTSAM_INSTALL_MATLAB_TOOLBOX)

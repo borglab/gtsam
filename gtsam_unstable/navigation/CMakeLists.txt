@@ -15,8 +15,8 @@ set(navigation_local_libs
 )
 
 set (navigation_full_libs
-    gtsam-static
-    gtsam_unstable-static)
+    ${gtsam-default}
+    ${gtsam_unstable-default})
 
 # Exclude tests that don't work
 set (navigation_excluded_tests "")

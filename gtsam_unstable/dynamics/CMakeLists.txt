@@ -15,8 +15,8 @@ set(dynamics_local_libs
 )
 
 set (dynamics_full_libs
-    gtsam-static
-    gtsam_unstable-static)
+    ${gtsam-default}
+    ${gtsam_unstable-default})
 
 # Exclude tests that don't work
 set (dynamics_excluded_tests "")

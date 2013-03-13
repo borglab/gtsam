@@ -12,8 +12,8 @@ set(discrete_local_libs
 )
 
 set (discrete_full_libs
-    gtsam-static
-    gtsam_unstable-static)
+    ${gtsam-default}
+    ${gtsam_unstable-default})
 
 # Exclude tests that don't work
 #set (discrete_excluded_tests 
@@ -45,7 +45,6 @@ if (GTSAM_BUILD_EXAMPLES)
 			add_custom_target(${example}.run ${EXECUTABLE_OUTPUT_PATH}${example} ${ARGN})
 		endif()
     	
-    	add_dependencies(${example} gtsam-static gtsam_unstable-static)
-    	target_link_libraries(${example} gtsam-static gtsam_unstable-static)
+    	target_link_libraries(${example} ${gtsam-default} ${gtsam_unstable-default})
     endforeach(example)
 endif (GTSAM_BUILD_EXAMPLES)
