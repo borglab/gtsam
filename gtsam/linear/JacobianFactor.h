@@ -78,7 +78,7 @@ namespace gtsam {
    * and the negative log-likelihood represented by this factor would be
    * \f[ E(x) = \frac{1}{2} (A_1 x_{j1} + A_2 x_{j2} - b)^T \Sigma^{-1} (A_1 x_{j1} + A_2 x_{j2} - b) . \f]
    */
-  class JacobianFactor : public GaussianFactor {
+  class GTSAM_EXPORT JacobianFactor : public GaussianFactor {
   protected:
     typedef Matrix AbMatrix;
     typedef VerticalBlockView<AbMatrix> BlockAb;

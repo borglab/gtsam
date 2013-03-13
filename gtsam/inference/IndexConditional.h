@@ -38,7 +38,7 @@ namespace gtsam {
   protected:
 
     // Checks that frontal indices are sorted and lower than parent indices
-    void assertInvariants() const;
+    GTSAM_EXPORT void assertInvariants() const;
 
   public:
 
@@ -112,13 +112,13 @@ namespace gtsam {
      * Returns true if any reordered variables appeared in the separator and
      * false if not.
      */
-    bool reduceSeparatorWithInverse(const internal::Reduction& inverseReduction);
+    GTSAM_EXPORT bool reduceSeparatorWithInverse(const internal::Reduction& inverseReduction);
 
     /**
      * Permutes the Conditional, but for efficiency requires the permutation
      * to already be inverted.
      */
-    void permuteWithInverse(const Permutation& inversePermutation);
+    GTSAM_EXPORT void permuteWithInverse(const Permutation& inversePermutation);
 
   private:
     /** Serialization function */

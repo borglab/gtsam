@@ -20,7 +20,7 @@ namespace gtsam {
   /**
    * parameters for iterative linear solvers
    */
-  class IterativeOptimizationParameters {
+  class GTSAM_EXPORT IterativeOptimizationParameters {
 
   public:
 
@@ -60,7 +60,7 @@ namespace gtsam {
     static std::string verbosityTranslator(Verbosity v);
   };
 
-  class IterativeSolver {
+  class GTSAM_EXPORT IterativeSolver {
   public:
     typedef boost::shared_ptr<IterativeSolver> shared_ptr;
     IterativeSolver() {}

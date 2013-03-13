@@ -26,13 +26,13 @@
 namespace gtsam {
 
 /// A Bayes Tree representing a Gaussian density
-typedef BayesTree<GaussianConditional> GaussianBayesTree;
+GTSAM_EXPORT typedef BayesTree<GaussianConditional> GaussianBayesTree;
 
 /// optimize the BayesTree, starting from the root
-VectorValues optimize(const GaussianBayesTree& bayesTree);
+GTSAM_EXPORT VectorValues optimize(const GaussianBayesTree& bayesTree);
 
 /// recursively optimize this conditional and all subtrees
-void optimizeInPlace(const GaussianBayesTree& bayesTree, VectorValues& result);
+GTSAM_EXPORT void optimizeInPlace(const GaussianBayesTree& bayesTree, VectorValues& result);
 
 namespace internal {
 template<class BAYESTREE>
@@ -64,10 +64,10 @@ void optimizeInPlace(const typename BAYESTREE::sharedClique& clique, VectorValue
  *
  * \f[ \delta x = \hat\alpha g = \frac{-g^T g}{(R g)^T(R g)} \f]
  */
-VectorValues optimizeGradientSearch(const GaussianBayesTree& bayesTree);
+GTSAM_EXPORT VectorValues optimizeGradientSearch(const GaussianBayesTree& bayesTree);
 
 /** In-place version of optimizeGradientSearch requiring pre-allocated VectorValues \c x */
-void optimizeGradientSearchInPlace(const GaussianBayesTree& bayesTree, VectorValues& grad);
+GTSAM_EXPORT void optimizeGradientSearchInPlace(const GaussianBayesTree& bayesTree, VectorValues& grad);
 
 /**
  * Compute the gradient of the energy function,
@@ -78,7 +78,7 @@ void optimizeGradientSearchInPlace(const GaussianBayesTree& bayesTree, VectorVal
  * @param x0 The center about which to compute the gradient
  * @return The gradient as a VectorValues
  */
-VectorValues gradient(const GaussianBayesTree& bayesTree, const VectorValues& x0);
+GTSAM_EXPORT VectorValues gradient(const GaussianBayesTree& bayesTree, const VectorValues& x0);
 
 /**
  * Compute the gradient of the energy function,
@@ -89,7 +89,7 @@ VectorValues gradient(const GaussianBayesTree& bayesTree, const VectorValues& x0
  * @param [output] g A VectorValues to store the gradient, which must be preallocated, see allocateVectorValues
  * @return The gradient as a VectorValues
  */
-void gradientAtZero(const GaussianBayesTree& bayesTree, VectorValues& g);
+GTSAM_EXPORT void gradientAtZero(const GaussianBayesTree& bayesTree, VectorValues& g);
 
 /**
  * Computes the determinant of a GassianBayesTree
@@ -100,7 +100,7 @@ void gradientAtZero(const GaussianBayesTree& bayesTree, VectorValues& g);
  * @param bayesTree The input GassianBayesTree
  * @return The determinant
  */
-double determinant(const GaussianBayesTree& bayesTree);
+GTSAM_EXPORT double determinant(const GaussianBayesTree& bayesTree);
 
 
 namespace internal {

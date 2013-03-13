@@ -15,7 +15,7 @@ namespace gtsam {
   /**
    * SingleValue constraint
    */
-  class SingleValue: public Constraint {
+  class GTSAM_UNSTABLE_EXPORT SingleValue: public Constraint {
 
     /// Number of values
     size_t cardinality_;

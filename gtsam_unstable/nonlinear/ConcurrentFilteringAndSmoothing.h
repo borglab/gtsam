@@ -20,6 +20,7 @@
 // \callgraph
 #pragma once
 
+#include <gtsam_unstable/base/dllexport.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 namespace gtsam {
@@ -28,12 +29,12 @@ namespace gtsam {
 class ConcurrentFilter;
 class ConcurrentSmoother;
 
-void synchronize(ConcurrentFilter& filter, ConcurrentSmoother& smoother);
+void GTSAM_UNSTABLE_EXPORT synchronize(ConcurrentFilter& filter, ConcurrentSmoother& smoother);
 
 /**
  * The interface for the 'Filter' portion of the Concurrent Filtering and Smoother architecture.
  */
-class ConcurrentFilter {
+class GTSAM_UNSTABLE_EXPORT ConcurrentFilter {
 
 protected:
 

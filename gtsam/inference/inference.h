@@ -34,7 +34,7 @@ namespace gtsam {
     /**
      * Compute a permutation (variable ordering) using colamd
      */
-    Permutation::shared_ptr PermutationCOLAMD(
+    GTSAM_EXPORT Permutation::shared_ptr PermutationCOLAMD(
         const VariableIndex& variableIndex);
 
     /**
@@ -72,7 +72,7 @@ namespace gtsam {
      *
      * AGC: does cmember change?
      */
-    Permutation::shared_ptr PermutationCOLAMD_(
+    GTSAM_EXPORT Permutation::shared_ptr PermutationCOLAMD_(
         const VariableIndex& variableIndex, std::vector<int>& cmember);
 
   } // \namespace inference

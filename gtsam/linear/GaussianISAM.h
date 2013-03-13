@@ -81,22 +81,22 @@ public:
   const Dims& dims() const { return dims_; } ///< Const access to dimensions structure
   Dims& dims() { return dims_; } ///< non-const access to dimensions structure (advanced interface)
 
-  friend VectorValues optimize(const GaussianISAM&);
+  GTSAM_EXPORT friend VectorValues optimize(const GaussianISAM&);
 
   /** return marginal on any variable as a factor, Bayes net, or mean/cov */
-  GaussianFactor::shared_ptr marginalFactor(Index j) const;
-  BayesNet<GaussianConditional>::shared_ptr marginalBayesNet(Index key) const;
-  Matrix marginalCovariance(Index key) const;
+  GTSAM_EXPORT GaussianFactor::shared_ptr marginalFactor(Index j) const;
+  GTSAM_EXPORT BayesNet<GaussianConditional>::shared_ptr marginalBayesNet(Index key) const;
+  GTSAM_EXPORT Matrix marginalCovariance(Index key) const;
 
   /** return joint between two variables, as a Bayes net */
-  BayesNet<GaussianConditional>::shared_ptr jointBayesNet(Index key1, Index key2) const;
+  GTSAM_EXPORT BayesNet<GaussianConditional>::shared_ptr jointBayesNet(Index key1, Index key2) const;
 
   /** return the conditional P(S|Root) on the separator given the root */
-  static BayesNet<GaussianConditional> shortcut(sharedClique clique, sharedClique root);
+  GTSAM_EXPORT static BayesNet<GaussianConditional> shortcut(sharedClique clique, sharedClique root);
 
 }; // \class GaussianISAM
 
 // optimize the BayesTree, starting from the root
-VectorValues optimize(const GaussianISAM& isam);
+GTSAM_EXPORT VectorValues optimize(const GaussianISAM& isam);
 
 } // \namespace gtsam

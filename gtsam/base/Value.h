@@ -98,7 +98,7 @@ namespace gtsam {
      };
      \endcode
    */
-  class Value {
+  class GTSAM_EXPORT Value {
   public:
 
     /** Clone this value in a special memory pool, must be deleted with Value::deallocate_, *not* with the 'delete' operator. */

@@ -43,30 +43,30 @@ typedef Eigen::VectorBlock<const Vector> ConstSubVector;
 /**
  * An auxiliary function to printf for Win32 compatibility, added by Kai
  */
-void odprintf(const char *format, ...);
+GTSAM_EXPORT void odprintf(const char *format, ...);
 
 /**
  *  constructor with size and initial data, row order !
  */
-Vector Vector_( size_t m, const double* const data);
+GTSAM_EXPORT Vector Vector_( size_t m, const double* const data);
 
 /**
  *  nice constructor, dangerous as number of arguments must be exactly right
  *  and you have to pass doubles !!! always use 0.0 never 0
  */
-Vector Vector_(size_t m, ...);
+GTSAM_EXPORT Vector Vector_(size_t m, ...);
 
 /**
  * Create a numeric vector from an STL vector of doubles
  */
-Vector Vector_(const std::vector<double>& data);
+GTSAM_EXPORT Vector Vector_(const std::vector<double>& data);
 
 /**
  * Create vector initialized to a constant value
  * @param n is the size of the vector
  * @param value is a constant value to insert into the vector
  */
-Vector repeat(size_t n, double value);
+GTSAM_EXPORT Vector repeat(size_t n, double value);
 
 /**
  * Create basis vector of dimension n,
@@ -76,7 +76,7 @@ Vector repeat(size_t n, double value);
  * @param value is the value to insert into the vector
  * @return delta vector
  */
-Vector delta(size_t n, size_t i, double value);
+GTSAM_EXPORT Vector delta(size_t n, size_t i, double value);
 
 /**
  * Create basis vector of dimension n,
@@ -102,7 +102,7 @@ inline Vector ones(size_t n) { return Vector::Ones(n); }
 /**
  * check if all zero
  */
-bool zero(const Vector& v);
+GTSAM_EXPORT bool zero(const Vector& v);
 
 /**
  * dimensionality == size
@@ -112,30 +112,30 @@ inline size_t dim(const Vector& v) { return v.size(); }
 /**
  * print with optional string
  */
-void print(const Vector& v, const std::string& s = "", std::ostream& stream = std::cout);
+GTSAM_EXPORT void print(const Vector& v, const std::string& s = "", std::ostream& stream = std::cout);
 
 /**
  * save a vector to file, which can be loaded by matlab
  */
-void save(const Vector& A, const std::string &s, const std::string& filename);
+GTSAM_EXPORT void save(const Vector& A, const std::string &s, const std::string& filename);
 
 /**
  * operator==()
  */
-bool operator==(const Vector& vec1,const Vector& vec2);
+GTSAM_EXPORT bool operator==(const Vector& vec1,const Vector& vec2);
 
 /**
  * Greater than or equal to operation
  * returns true if all elements in v1
  * are greater than corresponding elements in v2
  */
-bool greaterThanOrEqual(const Vector& v1, const Vector& v2);
+GTSAM_EXPORT bool greaterThanOrEqual(const Vector& v1, const Vector& v2);
 
 /**
  * VecA == VecB up to tolerance
  */
-bool equal_with_abs_tol(const Vector& vec1, const Vector& vec2, double tol=1e-9);
-bool equal_with_abs_tol(const SubVector& vec1, const SubVector& vec2, double tol=1e-9);
+GTSAM_EXPORT bool equal_with_abs_tol(const Vector& vec1, const Vector& vec2, double tol=1e-9);
+GTSAM_EXPORT bool equal_with_abs_tol(const SubVector& vec1, const SubVector& vec2, double tol=1e-9);
 
 /**
  * Override of equal in Lie.h
@@ -158,7 +158,7 @@ inline bool equal(const Vector& vec1, const Vector& vec2) {
  * @param tol 1e-9
  * @return bool
  */
-bool assert_equal(const Vector& vec1, const Vector& vec2, double tol=1e-9);
+GTSAM_EXPORT bool assert_equal(const Vector& vec1, const Vector& vec2, double tol=1e-9);
 
 /**
  * Not the same, prints if error
@@ -167,7 +167,7 @@ bool assert_equal(const Vector& vec1, const Vector& vec2, double tol=1e-9);
  * @param tol 1e-9
  * @return bool
  */
-bool assert_inequal(const Vector& vec1, const Vector& vec2, double tol=1e-9);
+GTSAM_EXPORT bool assert_inequal(const Vector& vec1, const Vector& vec2, double tol=1e-9);
 
 /**
  * Same, prints if error
@@ -176,8 +176,8 @@ bool assert_inequal(const Vector& vec1, const Vector& vec2, double tol=1e-9);
  * @param tol 1e-9
  * @return bool
  */
-bool assert_equal(const SubVector& vec1, const SubVector& vec2, double tol=1e-9);
-bool assert_equal(const ConstSubVector& vec1, const ConstSubVector& vec2, double tol=1e-9);
+GTSAM_EXPORT bool assert_equal(const SubVector& vec1, const SubVector& vec2, double tol=1e-9);
+GTSAM_EXPORT bool assert_equal(const ConstSubVector& vec1, const ConstSubVector& vec2, double tol=1e-9);
 
 /**
  * check whether two vectors are linearly dependent
@@ -186,7 +186,7 @@ bool assert_equal(const ConstSubVector& vec1, const ConstSubVector& vec2, double
  * @param tol 1e-9
  * @return bool
  */
-bool linear_dependent(const Vector& vec1, const Vector& vec2, double tol=1e-9);
+GTSAM_EXPORT bool linear_dependent(const Vector& vec1, const Vector& vec2, double tol=1e-9);
 
 /**
  * extract subvector, slice semantics, i.e. range = [i1,i2[ excluding i2
@@ -195,7 +195,7 @@ bool linear_dependent(const Vector& vec1, const Vector& vec2, double tol=1e-9);
  * @param i2 last  row index + 1
  * @return subvector v(i1:i2)
  */
-ConstSubVector sub(const Vector &v, size_t i1, size_t i2);
+GTSAM_EXPORT ConstSubVector sub(const Vector &v, size_t i1, size_t i2);
 
 /**
  * Inserts a subvector into a vector IN PLACE
@@ -203,7 +203,7 @@ ConstSubVector sub(const Vector &v, size_t i1, size_t i2);
  * @param subVector is the vector to insert
  * @param i is the index where the subvector should be inserted
  */
-void subInsert(Vector& fullVector, const Vector& subVector, size_t i);
+GTSAM_EXPORT void subInsert(Vector& fullVector, const Vector& subVector, size_t i);
 
 /**
  * elementwise multiplication
@@ -211,7 +211,7 @@ void subInsert(Vector& fullVector, const Vector& subVector, size_t i);
  * @param b second vector
  * @return vector [a(i)*b(i)]
  */
-Vector emul(const Vector &a, const Vector &b);
+GTSAM_EXPORT Vector emul(const Vector &a, const Vector &b);
 
 /**
  * elementwise division
@@ -219,7 +219,7 @@ Vector emul(const Vector &a, const Vector &b);
  * @param b second vector
  * @return vector [a(i)/b(i)]
  */
-Vector ediv(const Vector &a, const Vector &b);
+GTSAM_EXPORT Vector ediv(const Vector &a, const Vector &b);
 
 /**
  * elementwise division, but 0/0 = 0, not inf
@@ -227,14 +227,14 @@ Vector ediv(const Vector &a, const Vector &b);
  * @param b second vector
  * @return vector [a(i)/b(i)]
  */
-Vector ediv_(const Vector &a, const Vector &b);
+GTSAM_EXPORT Vector ediv_(const Vector &a, const Vector &b);
 
 /**
  * sum vector elements
  * @param a vector
  * @return sum_i a(i)
  */
-double sum(const Vector &a);
+GTSAM_EXPORT double sum(const Vector &a);
 
 /**
  * Calculates L2 norm for a vector
@@ -242,35 +242,35 @@ double sum(const Vector &a);
  * @param v vector
  * @return the L2 norm
  */
-double norm_2(const Vector& v);
+GTSAM_EXPORT double norm_2(const Vector& v);
 
 /**
  * Elementwise reciprocal of vector elements
  * @param a vector
  * @return [1/a(i)]
  */
-Vector reciprocal(const Vector &a);
+GTSAM_EXPORT Vector reciprocal(const Vector &a);
 
 /**
  * Elementwise sqrt of vector elements
  * @param v is a vector
  * @return [sqrt(a(i))]
  */
-Vector esqrt(const Vector& v);
+GTSAM_EXPORT Vector esqrt(const Vector& v);
 
 /**
  * Absolute values of vector elements
  * @param v is a vector
  * @return [abs(a(i))]
  */
-Vector abs(const Vector& v);
+GTSAM_EXPORT Vector abs(const Vector& v);
 
 /**
  * Return the max element of a vector
  * @param a is a vector
  * @return max(a)
  */
-double max(const Vector &a);
+GTSAM_EXPORT double max(const Vector &a);
 
 /**
  * Dot product
@@ -313,10 +313,10 @@ inline void axpy(double alpha, const Vector& x, SubVector y) {
  *  from x, such that the corresponding Householder reflection zeroes out
  *  all but x.(j), j is base 0. Golub & Van Loan p 210.
  */
-std::pair<double,Vector> house(const Vector &x);
+GTSAM_EXPORT std::pair<double,Vector> house(const Vector &x);
 
 /** beta = house(x) computes the HouseHolder vector in place */
-double houseInPlace(Vector &x);
+GTSAM_EXPORT double houseInPlace(Vector &x);
 
 /**
  * Weighted Householder solution vector,
@@ -328,7 +328,7 @@ double houseInPlace(Vector &x);
  * @param weights is a vector of weights/precisions where w=1/(s*s)
  * @return a pair of the pseudoinverse of v and the associated precision/weight
  */
-std::pair<Vector, double>
+GTSAM_EXPORT std::pair<Vector, double>
 weightedPseudoinverse(const Vector& v, const Vector& weights);
 
 /*
@@ -336,17 +336,17 @@ weightedPseudoinverse(const Vector& v, const Vector& weights);
  * Pass in initialized vector pseudo of size(weights) or will crash !
  * @return the precision, pseudoinverse in third argument
  */
-double weightedPseudoinverse(const Vector& a, const Vector& weights, Vector& pseudo);
+GTSAM_EXPORT double weightedPseudoinverse(const Vector& a, const Vector& weights, Vector& pseudo);
 
 /**
  * concatenate Vectors
  */
-Vector concatVectors(const std::list<Vector>& vs);
+GTSAM_EXPORT Vector concatVectors(const std::list<Vector>& vs);
 
 /**
  * concatenate Vectors
  */
-Vector concatVectors(size_t nrVectors, ...);
+GTSAM_EXPORT Vector concatVectors(size_t nrVectors, ...);
 
 } // namespace gtsam
 

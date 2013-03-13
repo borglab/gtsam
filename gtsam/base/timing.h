@@ -40,11 +40,11 @@
 namespace gtsam {
 
   namespace internal {
-    size_t getTicTocID(const char *description);
-    void ticInternal(size_t id, const char *label);
-    void tocInternal(size_t id, const char *label);
+    GTSAM_EXPORT size_t getTicTocID(const char *description);
+    GTSAM_EXPORT void ticInternal(size_t id, const char *label);
+    GTSAM_EXPORT void tocInternal(size_t id, const char *label);
 
-    class TimingOutline {
+    class GTSAM_EXPORT TimingOutline {
     protected:
       size_t myId_;
       size_t t_;
@@ -76,8 +76,7 @@ namespace gtsam {
       void tocInternal();
       void finishedIteration();
 
-      friend void tocInternal(size_t id);
-      friend void tocInternal(size_t id, const char *label);
+      GTSAM_EXPORT friend void tocInternal(size_t id, const char *label);
     }; // \TimingOutline
 
     class AutoTicToc {
@@ -91,8 +90,8 @@ namespace gtsam {
       ~AutoTicToc() { if(isSet_) stop(); }
     };
 
-    extern boost::shared_ptr<TimingOutline> timingRoot;
-    extern boost::weak_ptr<TimingOutline> timingCurrent;
+    GTSAM_EXTERN_EXPORT boost::shared_ptr<TimingOutline> timingRoot;
+    GTSAM_EXTERN_EXPORT boost::weak_ptr<TimingOutline> timingCurrent;
   }
 
 // Tic and toc functions that are always active (whether or not ENABLE_TIMING is defined)

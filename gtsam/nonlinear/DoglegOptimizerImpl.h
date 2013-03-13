@@ -38,9 +38,9 @@ namespace gtsam {
  * currently either GaussianSequentialSolver or GaussianMultifrontalSolver.
  * The latter is typically faster, especially for non-trivial problems.
  */
-struct DoglegOptimizerImpl {
+struct GTSAM_EXPORT DoglegOptimizerImpl {
 
-  struct IterationResult {
+  struct GTSAM_EXPORT IterationResult {
     double Delta;
     VectorValues dx_d;
     double f_error;

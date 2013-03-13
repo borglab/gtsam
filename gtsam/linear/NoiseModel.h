@@ -44,7 +44,7 @@ namespace gtsam {
      * Noise models must implement a 'whiten' function to normalize an error vector,
      * and an 'unwhiten' function to unnormalize an error vector.
      */
-    class Base {
+    class GTSAM_EXPORT Base {
 
     public:
       typedef boost::shared_ptr<Base> shared_ptr;
@@ -116,7 +116,7 @@ namespace gtsam {
      * The named constructors return a shared_ptr because, when the smart flag is true,
      * the underlying object might be a derived class such as Diagonal.
      */
-    class Gaussian: public Base {
+    class GTSAM_EXPORT Gaussian: public Base {
 
     protected:
 
@@ -232,7 +232,7 @@ namespace gtsam {
      * elements of the diagonal specified in a Vector.  This class has no public
      * constructors, instead, use the static constructor functions Sigmas etc...
      */
-    class Diagonal : public Gaussian {
+    class GTSAM_EXPORT Diagonal : public Gaussian {
     protected:
 
       /** sigmas and reciprocal */
@@ -330,7 +330,7 @@ namespace gtsam {
      * The distance function in this function provides an error model
      * for a penalty function with a scaling function, assuming a mask of
      */
-    class Constrained : public Diagonal {
+    class GTSAM_EXPORT Constrained : public Diagonal {
     protected:
 
       // Sigmas are contained in the base class
@@ -470,7 +470,7 @@ namespace gtsam {
      * An isotropic noise model corresponds to a scaled diagonal covariance
      * To construct, use one of the static methods
      */
-    class Isotropic : public Diagonal {
+    class GTSAM_EXPORT Isotropic : public Diagonal {
     protected:
       double sigma_, invsigma_;
 
@@ -536,7 +536,7 @@ namespace gtsam {
     /**
      * Unit: i.i.d. unit-variance noise on all m dimensions.
      */
-    class Unit : public Isotropic {
+    class GTSAM_EXPORT Unit : public Isotropic {
     protected:
 
       Unit(size_t dim=1): Isotropic(dim,1.0) {}
@@ -576,7 +576,7 @@ namespace gtsam {
 
       //---------------------------------------------------------------------------------------
 
-      class Base {
+      class GTSAM_EXPORT Base {
       public:
         enum ReweightScheme { Scalar, Block };
         typedef boost::shared_ptr<Base> shared_ptr;
@@ -616,7 +616,7 @@ namespace gtsam {
       };
 
       /// Null class is not robust so is a Gaussian ?
-      class Null : public Base {
+      class GTSAM_EXPORT Null : public Base {
       public:
         typedef boost::shared_ptr<Null> shared_ptr;
         Null(const ReweightScheme reweight = Block) : Base(reweight) {}
@@ -628,7 +628,7 @@ namespace gtsam {
       };
 
       /// Fair implements the "Fair" robust error model (Zhang97ivc)
-      class Fair : public Base {
+      class GTSAM_EXPORT Fair : public Base {
       public:
         typedef boost::shared_ptr<Fair> shared_ptr;
       protected:
@@ -645,7 +645,7 @@ namespace gtsam {
       };
 
       /// Huber implements the "Huber" robust error model (Zhang97ivc)
-      class Huber : public Base {
+      class GTSAM_EXPORT Huber : public Base {
       public:
         typedef boost::shared_ptr<Huber> shared_ptr;
       protected:
@@ -662,7 +662,7 @@ namespace gtsam {
       };
 
       /// Tukey implements the "Tukey" robust error model (Zhang97ivc)
-      class Tukey : public Base {
+      class GTSAM_EXPORT Tukey : public Base {
       public:
         typedef boost::shared_ptr<Tukey> shared_ptr;
       protected:
@@ -681,7 +681,7 @@ namespace gtsam {
     } ///\namespace mEstimator
 
     /// Base class for robust error models
-    class Robust : public Base {
+    class GTSAM_EXPORT Robust : public Base {
     public:
       typedef boost::shared_ptr<Robust> shared_ptr;
 

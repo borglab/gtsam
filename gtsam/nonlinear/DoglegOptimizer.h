@@ -29,7 +29,7 @@ class DoglegOptimizer;
  * common to all nonlinear optimization algorithms.  This class also contains
  * all of those parameters.
  */
-class DoglegParams : public SuccessiveLinearizationParams {
+class GTSAM_EXPORT DoglegParams : public SuccessiveLinearizationParams {
 public:
   /** See DoglegParams::dlVerbosity */
   enum VerbosityDL {
@@ -65,7 +65,7 @@ private:
 /**
  * State for DoglegOptimizer
  */
-class DoglegState : public NonlinearOptimizerState {
+class GTSAM_EXPORT DoglegState : public NonlinearOptimizerState {
 public:
   double Delta;
 
@@ -83,7 +83,7 @@ protected:
 /**
  * This class performs Dogleg nonlinear optimization
  */
-class DoglegOptimizer : public NonlinearOptimizer {
+class GTSAM_EXPORT DoglegOptimizer : public NonlinearOptimizer {
 
 protected:
   DoglegParams params_;

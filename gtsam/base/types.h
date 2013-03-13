@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <gtsam/base/dllexport.h>
+
 #include <cstddef>
 
 #include <string>
@@ -33,7 +35,7 @@ namespace gtsam {
    * to a nonlinear key and then to a Symbol. */
   typedef boost::function<std::string(Index)> IndexFormatter;
 
-  std::string _defaultIndexFormatter(Index j);
+  GTSAM_EXPORT std::string _defaultIndexFormatter(Index j);
 
   /** The default IndexFormatter outputs the index */
   static const IndexFormatter DefaultIndexFormatter = &_defaultIndexFormatter;

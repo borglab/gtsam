@@ -18,7 +18,7 @@ namespace gtsam {
    * A specialization of a DiscreteFactorGraph.
    * It knows about CSP-specific constraints and algorithms
    */
-  class CSP: public DiscreteFactorGraph {
+  class GTSAM_UNSTABLE_EXPORT CSP: public DiscreteFactorGraph {
   public:
 
     /** A map from keys to values */

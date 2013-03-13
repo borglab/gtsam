@@ -61,7 +61,7 @@ namespace gtsam {
   * manifold element, and hence supports operations dim, retract, and
   * localCoordinates.
   */
-  class Values {
+  class GTSAM_EXPORT Values {
 
   private:
 
@@ -92,7 +92,7 @@ namespace gtsam {
     typedef boost::shared_ptr<const Values> const_shared_ptr;
 
     /// A key-value pair, which you get by dereferencing iterators
-    struct KeyValuePair {
+    struct GTSAM_EXPORT KeyValuePair {
       const Key key; ///< The key
       Value& value;  ///< The value
 
@@ -100,7 +100,7 @@ namespace gtsam {
     };
 
     /// A key-value pair, which you get by dereferencing iterators
-    struct ConstKeyValuePair {
+    struct GTSAM_EXPORT ConstKeyValuePair {
       const Key key; ///< The key
       const Value& value;  ///< The value
 
@@ -381,7 +381,7 @@ namespace gtsam {
   };
 
   /* ************************************************************************* */
-  class ValuesKeyAlreadyExists : public std::exception {
+  class GTSAM_EXPORT ValuesKeyAlreadyExists : public std::exception {
   protected:
     const Key key_; ///< The key that already existed
 
@@ -403,7 +403,7 @@ namespace gtsam {
   };
 
   /* ************************************************************************* */
-  class ValuesKeyDoesNotExist : public std::exception {
+  class GTSAM_EXPORT ValuesKeyDoesNotExist : public std::exception {
   protected:
     const char* operation_; ///< The operation that attempted to access the key
     const Key key_; ///< The key that does not exist
@@ -426,7 +426,7 @@ namespace gtsam {
   };
 
   /* ************************************************************************* */
-  class ValuesIncorrectType : public std::exception {
+  class GTSAM_EXPORT ValuesIncorrectType : public std::exception {
   protected:
     const Key key_; ///< The key requested
     const std::type_info& storedTypeId_;
@@ -457,7 +457,7 @@ namespace gtsam {
   };
 
   /* ************************************************************************* */
-  class DynamicValuesMismatched : public std::exception {
+  class GTSAM_EXPORT DynamicValuesMismatched : public std::exception {
 
   public:
     DynamicValuesMismatched() throw() {}

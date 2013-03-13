@@ -23,13 +23,15 @@
 #include <set>
 #include <boost/shared_ptr.hpp>
 
+#include <gtsam/base/types.h>
+
 namespace gtsam {
 
   /**
    * A fast implementation of disjoint set forests that uses vector as underly data structure.
    * @addtogroup base
    */
-  class DSFVector {
+  class GTSAM_EXPORT DSFVector {
 
   public:
     typedef std::vector<size_t> V; ///< Vector of ints

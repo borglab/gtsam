@@ -30,7 +30,7 @@ namespace gtsam {
    * To use the class, give the Bayes Net R1*x=c1 and Graph A2*x=b2.
    * Then solve for yhat using CG, and solve for xhat = system.x(yhat).
    */
-  class SubgraphPreconditioner {
+  class GTSAM_EXPORT SubgraphPreconditioner {
 
   public:
     typedef boost::shared_ptr<SubgraphPreconditioner> shared_ptr;
@@ -94,24 +94,24 @@ namespace gtsam {
   };
 
   /* error, given y */
-  double error(const SubgraphPreconditioner& sp, const VectorValues& y);
+  GTSAM_EXPORT double error(const SubgraphPreconditioner& sp, const VectorValues& y);
 
   /** gradient = y + inv(R1')*A2'*(A2*inv(R1)*y-b2bar) */
-  VectorValues gradient(const SubgraphPreconditioner& sp, const VectorValues& y);
+  GTSAM_EXPORT VectorValues gradient(const SubgraphPreconditioner& sp, const VectorValues& y);
 
   /** Apply operator A */
-  Errors operator*(const SubgraphPreconditioner& sp, const VectorValues& y);
+  GTSAM_EXPORT Errors operator*(const SubgraphPreconditioner& sp, const VectorValues& y);
 
   /** Apply operator A in place: needs e allocated already */
-  void multiplyInPlace(const SubgraphPreconditioner& sp, const VectorValues& y, Errors& e);
+  GTSAM_EXPORT void multiplyInPlace(const SubgraphPreconditioner& sp, const VectorValues& y, Errors& e);
 
     /** Apply operator A' */
-  VectorValues operator^(const SubgraphPreconditioner& sp, const Errors& e);
+  GTSAM_EXPORT VectorValues operator^(const SubgraphPreconditioner& sp, const Errors& e);
 
   /**
    * Add A'*e to y
    *  y += alpha*A'*[e1;e2] = [alpha*e1; alpha*inv(R1')*A2'*e2]
    */
-  void transposeMultiplyAdd(const SubgraphPreconditioner& sp, double alpha, const Errors& e, VectorValues& y);
+  GTSAM_EXPORT void transposeMultiplyAdd(const SubgraphPreconditioner& sp, double alpha, const Errors& e, VectorValues& y);
 
 } // namespace gtsam

@@ -35,7 +35,7 @@ namespace gtsam {
    * @addtogroup geometry
    * \nosubgrouping
    */
-  class Point3 : public DerivedValue<Point3> {
+  class GTSAM_EXPORT Point3 : public DerivedValue<Point3> {
   public:
     /// dimension of the variable - used to autodetect sizes
     static const size_t dimension = 3;

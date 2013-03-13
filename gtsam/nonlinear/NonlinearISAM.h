@@ -24,7 +24,7 @@ namespace gtsam {
 /**
  * Wrapper class to manage ISAM in a nonlinear context
  */
-class NonlinearISAM {
+class GTSAM_EXPORT NonlinearISAM {
 protected:
 
   /** The internal iSAM object */

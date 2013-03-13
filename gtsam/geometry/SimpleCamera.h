@@ -27,5 +27,5 @@ namespace gtsam {
   typedef PinholeCamera<Cal3_S2> SimpleCamera;
 
   /// Recover camera from 3*4 camera matrix
-  SimpleCamera simpleCamera(const Matrix& P);
+  GTSAM_EXPORT SimpleCamera simpleCamera(const Matrix& P);
 }

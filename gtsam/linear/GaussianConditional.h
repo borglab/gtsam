@@ -45,7 +45,7 @@ class JacobianFactor;
  * It has a set of parents y,z, etc. and implements a probability density on x.
  * The negative log-probability is given by \f$ \frac{1}{2} |Rx - (d - Sy - Tz - ...)|^2 \f$
  */
-class GaussianConditional : public IndexConditional {
+class GTSAM_EXPORT GaussianConditional : public IndexConditional {
 
 public:
   typedef GaussianFactor FactorType;

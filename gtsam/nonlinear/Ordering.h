@@ -32,7 +32,7 @@ namespace gtsam {
  * An ordering is a map from symbols (non-typed keys) to integer indices
  * \nosubgrouping
  */
-class Ordering {
+class GTSAM_EXPORT Ordering {
 protected:
   typedef FastMap<Key, Index> Map;
   typedef std::vector<Map::iterator> OrderingIndex;
@@ -250,13 +250,13 @@ public:
   bool exists(const Index& key) { return find(key) != end(); }
 
   // Testable
-  void print(const std::string& s = "Unordered") const;
-  bool equals(const Unordered &t, double tol=0) const;
+  GTSAM_EXPORT void print(const std::string& s = "Unordered") const;
+  GTSAM_EXPORT bool equals(const Unordered &t, double tol=0) const;
 };
 
 // Create an index formatter that looks up the Key in an inverse ordering, then
 // formats the key using the provided key formatter, used in saveGraph.
-class OrderingIndexFormatter {
+class GTSAM_EXPORT OrderingIndexFormatter {
 private:
   Ordering ordering_;
   KeyFormatter keyFormatter_;

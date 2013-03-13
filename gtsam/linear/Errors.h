@@ -28,40 +28,40 @@ namespace gtsam {
 
   public:
 
-    Errors() ;
+    GTSAM_EXPORT Errors() ;
 
   /** break V into pieces according to its start indices */
-  Errors(const VectorValues &V) ;
+  GTSAM_EXPORT Errors(const VectorValues &V) ;
 
     /** print */
-    void print(const std::string& s = "Errors") const;
+    GTSAM_EXPORT void print(const std::string& s = "Errors") const;
 
     /** equals, for unit testing */
-    bool equals(const Errors& expected, double tol=1e-9) const;
+    GTSAM_EXPORT bool equals(const Errors& expected, double tol=1e-9) const;
 
     /** Addition */
-    Errors operator+(const Errors& b) const;
+    GTSAM_EXPORT Errors operator+(const Errors& b) const;
 
     /** subtraction */
-    Errors operator-(const Errors& b) const;
+    GTSAM_EXPORT Errors operator-(const Errors& b) const;
 
     /** negation */
-    Errors operator-() const ;
+    GTSAM_EXPORT Errors operator-() const ;
 
   }; // Errors
 
   /**
    * dot product
    */
-  double dot(const Errors& a, const Errors& b);
+  GTSAM_EXPORT double dot(const Errors& a, const Errors& b);
 
   /**
    * BLAS level 2 style
    */
   template <>
-  void axpy<Errors,Errors>(double alpha, const Errors& x, Errors& y);
+  GTSAM_EXPORT void axpy<Errors,Errors>(double alpha, const Errors& x, Errors& y);
 
   /** print with optional string */
-  void print(const Errors& a, const std::string& s = "Error");
+  GTSAM_EXPORT void print(const Errors& a, const std::string& s = "Error");
 
 } // gtsam

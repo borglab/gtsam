@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <gtsam_unstable/base/dllexport.h>
 #include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Pose3.h>
 
@@ -18,7 +19,7 @@ typedef Point3 Velocity3;
  * Robot state for use with IMU measurements
  * - contains translation, translational velocity and rotation
  */
-class PoseRTV : public DerivedValue<PoseRTV> {
+class GTSAM_UNSTABLE_EXPORT PoseRTV : public DerivedValue<PoseRTV> {
 protected:
 
   Pose3 Rt_;

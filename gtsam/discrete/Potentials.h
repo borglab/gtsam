@@ -47,7 +47,7 @@ namespace gtsam {
     }
 
     // Safe division for probabilities
-    static double safe_div(const double& a, const double& b);
+    GTSAM_EXPORT static double safe_div(const double& a, const double& b);
 
     // Apply either a permutation or a reduction
     template<class P>
@@ -56,10 +56,10 @@ namespace gtsam {
   public:
 
     /** Default constructor for I/O */
-    Potentials();
+    GTSAM_EXPORT Potentials();
 
     /** Constructor from Indices and ADT */
-    Potentials(const DiscreteKeys& keys, const ADT& decisionTree);
+    GTSAM_EXPORT Potentials(const DiscreteKeys& keys, const ADT& decisionTree);
 
     /** Constructor from Indices and (string or doubles) */
     template<class SOURCE>
@@ -68,8 +68,8 @@ namespace gtsam {
     }
 
     // Testable
-    bool equals(const Potentials& other, double tol = 1e-9) const;
-    void print(const std::string& s = "Potentials: ",
+    GTSAM_EXPORT bool equals(const Potentials& other, double tol = 1e-9) const;
+    GTSAM_EXPORT void print(const std::string& s = "Potentials: ",
         const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
     size_t cardinality(Index j) const { return cardinalities_.at(j);}
@@ -81,12 +81,12 @@ namespace gtsam {
      * This is virtual so that derived types e.g. DecisionTreeFactor can
      * re-implement it.
      */
-    virtual void permuteWithInverse(const Permutation& inversePermutation);
+    GTSAM_EXPORT virtual void permuteWithInverse(const Permutation& inversePermutation);
 
     /**
      * Apply a reduction, which is a remapping of variable indices.
      */
-    virtual void reduceWithInverse(const internal::Reduction& inverseReduction);
+    GTSAM_EXPORT virtual void reduceWithInverse(const internal::Reduction& inverseReduction);
 
   }; // Potentials
 

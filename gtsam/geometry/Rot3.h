@@ -51,7 +51,7 @@ namespace gtsam {
    * @addtogroup geometry
    * \nosubgrouping
    */
-  class Rot3 : public DerivedValue<Rot3> {
+  class GTSAM_EXPORT Rot3 : public DerivedValue<Rot3> {
   public:
     static const size_t dimension = 3;
 
@@ -384,5 +384,5 @@ namespace gtsam {
    * @return an upper triangular matrix R
    * @return a vector [thetax, thetay, thetaz] in radians.
    */
-  std::pair<Matrix3,Vector3> RQ(const Matrix3& A);
+  GTSAM_EXPORT std::pair<Matrix3,Vector3> RQ(const Matrix3& A);
 }

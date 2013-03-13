@@ -9,11 +9,12 @@
 
 #pragma once
 
+#include <gtsam_unstable/base/dllexport.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
 
-class DummyFactor : public NonlinearFactor {
+class GTSAM_UNSTABLE_EXPORT DummyFactor : public NonlinearFactor {
 protected:
 
   // Store the dimensions of the variables and the dimension of the full system

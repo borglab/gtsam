@@ -333,7 +333,7 @@ namespace gtsam {
     std::list<sharedClique> childRoots;
     typedef BayesTree<CONDITIONAL,CLIQUE> Tree;
     BOOST_FOREACH(const Tree& subtree, subtrees) {
-      nodes_.insert(subtree.nodes_.begin(), subtree.nodes_.end());
+      nodes_.assign(subtree.nodes_.begin(), subtree.nodes_.end());
       childRoots.push_back(subtree.root());
     }
 

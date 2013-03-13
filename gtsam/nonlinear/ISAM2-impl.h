@@ -22,16 +22,16 @@
 
 namespace gtsam {
 
-struct ISAM2::Impl {
+struct GTSAM_EXPORT ISAM2::Impl {
 
-  struct PartialSolveResult {
+  struct GTSAM_EXPORT PartialSolveResult {
     ISAM2::sharedClique bayesTree;
     Permutation reorderingSelector;
     Permutation reorderingPermutation;
     internal::Reduction reorderingInverse;
   };
 
-  struct ReorderingMode {
+  struct GTSAM_EXPORT ReorderingMode {
     size_t nFullSystemVars;
     enum { /*AS_ADDED,*/ COLAMD } algorithm;
     enum { NO_CONSTRAINT, CONSTRAIN_LAST } constrain;

@@ -21,6 +21,6 @@
 namespace gtsam {
 
 // An explicit instantiation to be compiled into the library
-template class GenericSequentialSolver<IndexFactor>;
+//template class GenericSequentialSolver<IndexFactor>;
 
 }

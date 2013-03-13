@@ -27,10 +27,10 @@ class GaussNewtonOptimizer;
 /** Parameters for Gauss-Newton optimization, inherits from
  * NonlinearOptimizationParams.
  */
-class GaussNewtonParams : public SuccessiveLinearizationParams {
+class GTSAM_EXPORT GaussNewtonParams : public SuccessiveLinearizationParams {
 };
 
-class GaussNewtonState : public NonlinearOptimizerState {
+class GTSAM_EXPORT GaussNewtonState : public NonlinearOptimizerState {
 protected:
   GaussNewtonState(const NonlinearFactorGraph& graph, const Values& values, unsigned int iterations = 0) :
     NonlinearOptimizerState(graph, values, iterations) {}
@@ -41,7 +41,7 @@ protected:
 /**
  * This class performs Gauss-Newton nonlinear optimization
  */
-class GaussNewtonOptimizer : public NonlinearOptimizer {
+class GTSAM_EXPORT GaussNewtonOptimizer : public NonlinearOptimizer {
 
 protected:
   GaussNewtonParams params_;

@@ -39,7 +39,7 @@ namespace gtsam {
  * lists of factor indices.
  * \nosubgrouping
  */
-class VariableIndex {
+class GTSAM_EXPORT VariableIndex {
 public:
 
   typedef boost::shared_ptr<VariableIndex> shared_ptr;

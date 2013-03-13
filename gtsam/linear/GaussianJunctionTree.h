@@ -60,7 +60,7 @@ namespace gtsam {
     /**
      *  optimize the linear graph
      */
-    VectorValues optimize(Eliminate function) const;
+    GTSAM_EXPORT VectorValues optimize(Eliminate function) const;
 
     // convenient function to return dimensions of all variables in the BayesTree<GaussianConditional>
     template<class DIM_CONTAINER, class CLIQUE>

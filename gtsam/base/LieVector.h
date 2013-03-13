@@ -42,10 +42,10 @@ struct LieVector : public Vector, public DerivedValue<LieVector> {
   LieVector(double d) : Vector(Vector_(1, d)) {}
 
   /** constructor with size and initial data, row order ! */
-  LieVector(size_t m, const double* const data);
+  GTSAM_EXPORT LieVector(size_t m, const double* const data);
 
   /** Specify arguments directly, as in Vector_() - always force these to be doubles */
-  LieVector(size_t m, ...);
+  GTSAM_EXPORT LieVector(size_t m, ...);
 
   /** get the underlying vector */
   inline Vector vector() const {

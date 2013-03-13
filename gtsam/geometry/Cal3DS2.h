@@ -28,7 +28,7 @@ namespace gtsam {
  * @addtogroup geometry
  * \nosubgrouping
  */
-class Cal3DS2 : public DerivedValue<Cal3DS2> {
+class GTSAM_EXPORT Cal3DS2 : public DerivedValue<Cal3DS2> {
 
 private:
 

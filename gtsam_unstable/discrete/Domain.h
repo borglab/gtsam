@@ -15,7 +15,7 @@ namespace gtsam {
   /**
    * Domain restriction constraint
    */
-  class Domain: public Constraint {
+  class GTSAM_UNSTABLE_EXPORT Domain: public Constraint {
 
     size_t cardinality_; /// Cardinality
     std::set<size_t> values_; /// allowed values

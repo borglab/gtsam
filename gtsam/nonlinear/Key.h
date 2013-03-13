@@ -20,6 +20,7 @@
 #include <boost/function.hpp>
 #include <string>
 
+#include <gtsam/base/types.h>
 #include <gtsam/base/FastVector.h>
 #include <gtsam/base/FastList.h>
 #include <gtsam/base/FastSet.h>
@@ -33,7 +34,7 @@ namespace gtsam {
   typedef boost::function<std::string(Key)> KeyFormatter;
 
   // Helper function for DefaultKeyFormatter
-  std::string _defaultKeyFormatter(Key key);
+  GTSAM_EXPORT std::string _defaultKeyFormatter(Key key);
 
   /// The default KeyFormatter, which is used if no KeyFormatter is passed to
   /// a nonlinear 'print' function.  Automatically detects plain integer keys

@@ -18,6 +18,7 @@
 #pragma once
 
 #include <vector>
+#include <gtsam_unstable/base/dllexport.h>
 #include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
@@ -29,7 +30,7 @@ namespace gtsam {
 /**
  * A base factor class for the Jacobian and Hessian linearized factors
  */
-class LinearizedGaussianFactor : public NonlinearFactor {
+class GTSAM_UNSTABLE_EXPORT LinearizedGaussianFactor : public NonlinearFactor {
 public:
   /** base type */
   typedef NonlinearFactor Base;
@@ -76,7 +77,7 @@ private:
  * A factor that takes a linear, Jacobian factor and inserts it into
  * a nonlinear graph.
  */
-class LinearizedJacobianFactor : public LinearizedGaussianFactor {
+class GTSAM_UNSTABLE_EXPORT LinearizedJacobianFactor : public LinearizedGaussianFactor {
 
 public:
   /** base type */
@@ -172,7 +173,7 @@ private:
  * A factor that takes a linear, Hessian factor and inserts it into
  * a nonlinear graph.
  */
-class LinearizedHessianFactor : public LinearizedGaussianFactor {
+class GTSAM_UNSTABLE_EXPORT LinearizedHessianFactor : public LinearizedGaussianFactor {
 
 public:
   /** base type */

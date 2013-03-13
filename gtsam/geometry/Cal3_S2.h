@@ -31,7 +31,7 @@ namespace gtsam {
    * @addtogroup geometry
    * \nosubgrouping
    */
-  class Cal3_S2 : public DerivedValue<Cal3_S2> {
+  class GTSAM_EXPORT Cal3_S2 : public DerivedValue<Cal3_S2> {
   private:
     double fx_, fy_, s_, u0_, v0_;
 

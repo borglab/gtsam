@@ -42,7 +42,7 @@
 #endif
 
 namespace gtsam {
-  extern FastMap<std::string, ValueWithDefault<bool,false> > debugFlags;
+  GTSAM_EXTERN_EXPORT FastMap<std::string, ValueWithDefault<bool,false> > debugFlags;
 }
 
 #undef ISDEBUG

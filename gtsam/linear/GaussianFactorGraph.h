@@ -32,7 +32,7 @@
 namespace gtsam {
 
   // Forward declaration to use as default argument, documented declaration below.
-  FactorGraph<GaussianFactor>::EliminationResult
+  GTSAM_EXPORT FactorGraph<GaussianFactor>::EliminationResult
     EliminateQR(const FactorGraph<GaussianFactor>& factors, size_t nrFrontals);
 
   /**
@@ -55,7 +55,7 @@ namespace gtsam {
     /**
      * Constructor that receives a Chordal Bayes Net and returns a GaussianFactorGraph
      */
-    GaussianFactorGraph(const GaussianBayesNet& CBN);
+    GTSAM_EXPORT GaussianFactorGraph(const GaussianBayesNet& CBN);
 
     /**
      * Constructor that receives a BayesTree and returns a GaussianFactorGraph
@@ -116,7 +116,7 @@ namespace gtsam {
      * union).
      */
     typedef FastSet<Index> Keys;
-    Keys keys() const;
+    GTSAM_EXPORT Keys keys() const;
 
         
     /** Eliminate the first \c n frontal variables, returning the resulting
@@ -153,10 +153,10 @@ namespace gtsam {
       return Base::eliminateOne(variable, function); }
 
     /** Permute the variables in the factors */
-    void permuteWithInverse(const Permutation& inversePermutation);
+    GTSAM_EXPORT void permuteWithInverse(const Permutation& inversePermutation);
 
     /** Apply a reduction, which is a remapping of variable indices. */
-    void reduceWithInverse(const internal::Reduction& inverseReduction);
+    GTSAM_EXPORT void reduceWithInverse(const internal::Reduction& inverseReduction);
 
     /** unnormalized error */
     double error(const VectorValues& x) const {
@@ -177,28 +177,28 @@ namespace gtsam {
      * @param lfg2 Linear factor graph
      * @return a new combined factor graph
      */
-    static GaussianFactorGraph combine2(const GaussianFactorGraph& lfg1,
+    GTSAM_EXPORT static GaussianFactorGraph combine2(const GaussianFactorGraph& lfg1,
         const GaussianFactorGraph& lfg2);
 
     /**
      * combine two factor graphs
      * @param *lfg Linear factor graph
      */
-    void combine(const GaussianFactorGraph &lfg);
+    GTSAM_EXPORT void combine(const GaussianFactorGraph &lfg);
 
     /**
      * Return vector of i, j, and s to generate an m-by-n sparse Jacobian matrix,
      * where i(k) and j(k) are the base 0 row and column indices, s(k) a double.
      * The standard deviations are baked into A and b
      */
-    std::vector<boost::tuple<size_t, size_t, double> > sparseJacobian() const;
+    GTSAM_EXPORT std::vector<boost::tuple<size_t, size_t, double> > sparseJacobian() const;
 
     /**
      * Matrix version of sparseJacobian: generates a 3*m matrix with [i,j,s] entries
      * such that S(i(k),j(k)) = s(k), which can be given to MATLAB's sparse.
      * The standard deviations are baked into A and b
      */
-    Matrix sparseJacobian_() const;
+    GTSAM_EXPORT Matrix sparseJacobian_() const;
 
     /**
      * Return a dense \f$ [ \;A\;b\; ] \in \mathbb{R}^{m \times n+1} \f$
@@ -207,7 +207,7 @@ namespace gtsam {
      * \f$ \frac{1}{2} \Vert Ax-b \Vert^2 \f$.  See also
      * GaussianFactorGraph::jacobian and GaussianFactorGraph::sparseJacobian.
      */
-    Matrix augmentedJacobian() const;
+    GTSAM_EXPORT Matrix augmentedJacobian() const;
 
     /**
      * Return the dense Jacobian \f$ A \f$ and right-hand-side \f$ b \f$,
@@ -216,7 +216,7 @@ namespace gtsam {
      * GaussianFactorGraph::augmentedJacobian and
      * GaussianFactorGraph::sparseJacobian.
      */
-    std::pair<Matrix,Vector> jacobian() const;
+    GTSAM_EXPORT std::pair<Matrix,Vector> jacobian() const;
 
     /**
      * Return a dense \f$ \Lambda \in \mathbb{R}^{n+1 \times n+1} \f$ Hessian
@@ -229,7 +229,7 @@ namespace gtsam {
      and the negative log-likelihood is
      \f$ \frac{1}{2} x^T \Lambda x + \eta^T x + c \f$.
      */
-    Matrix augmentedHessian() const;
+    GTSAM_EXPORT Matrix augmentedHessian() const;
 
     /**
      * Return the dense Hessian \f$ \Lambda \f$ and information vector
@@ -237,7 +237,7 @@ namespace gtsam {
      * is \frac{1}{2} x^T \Lambda x + \eta^T x + c.  See also
      * GaussianFactorGraph::augmentedHessian.
      */
-    std::pair<Matrix,Vector> hessian() const;
+    GTSAM_EXPORT std::pair<Matrix,Vector> hessian() const;
 
   private:
     /** Serialization function */
@@ -253,7 +253,7 @@ namespace gtsam {
    * Combine and eliminate several factors.
    * \addtogroup LinearSolving
    */
-  JacobianFactor::shared_ptr CombineJacobians(
+  GTSAM_EXPORT JacobianFactor::shared_ptr CombineJacobians(
       const FactorGraph<JacobianFactor>& factors,
       const VariableSlots& variableSlots);
 
@@ -261,7 +261,7 @@ namespace gtsam {
    * Evaluates whether linear factors have any constrained noise models
    * @return true if any factor is constrained.
    */
-  bool hasConstraints(const FactorGraph<GaussianFactor>& factors);
+  GTSAM_EXPORT bool hasConstraints(const FactorGraph<GaussianFactor>& factors);
 
   /**
    * Densely combine and partially eliminate JacobianFactors to produce a
@@ -274,7 +274,7 @@ namespace gtsam {
 
    * \addtogroup LinearSolving
    */
-  GaussianFactorGraph::EliminationResult EliminateJacobians(const FactorGraph<
+  GTSAM_EXPORT GaussianFactorGraph::EliminationResult EliminateJacobians(const FactorGraph<
       JacobianFactor>& factors, size_t nrFrontals = 1);
 
   /**
@@ -289,7 +289,7 @@ namespace gtsam {
 
    * \addtogroup LinearSolving
    */
-  GaussianFactorGraph::EliminationResult EliminateQR(const FactorGraph<
+  GTSAM_EXPORT GaussianFactorGraph::EliminationResult EliminateQR(const FactorGraph<
       GaussianFactor>& factors, size_t nrFrontals = 1);
 
   /**
@@ -311,7 +311,7 @@ namespace gtsam {
 
    * \addtogroup LinearSolving
    */
-  GaussianFactorGraph::EliminationResult EliminatePreferCholesky(const FactorGraph<
+  GTSAM_EXPORT GaussianFactorGraph::EliminationResult EliminatePreferCholesky(const FactorGraph<
       GaussianFactor>& factors, size_t nrFrontals = 1);
 
   /**
@@ -332,22 +332,22 @@ namespace gtsam {
 
    * \addtogroup LinearSolving
    */
-  GaussianFactorGraph::EliminationResult EliminateCholesky(const FactorGraph<
+  GTSAM_EXPORT GaussianFactorGraph::EliminationResult EliminateCholesky(const FactorGraph<
       GaussianFactor>& factors, size_t nrFrontals = 1);
 
   /****** Linear Algebra Opeations ******/
 
   /** return A*x */
-  Errors operator*(const GaussianFactorGraph& fg, const VectorValues& x);
+  GTSAM_EXPORT Errors operator*(const GaussianFactorGraph& fg, const VectorValues& x);
 
   /** In-place version e <- A*x that overwrites e. */
-  void multiplyInPlace(const GaussianFactorGraph& fg, const VectorValues& x, Errors& e);
+  GTSAM_EXPORT void multiplyInPlace(const GaussianFactorGraph& fg, const VectorValues& x, Errors& e);
 
   /** In-place version e <- A*x that takes an iterator. */
-  void multiplyInPlace(const GaussianFactorGraph& fg, const VectorValues& x, const Errors::iterator& e);
+  GTSAM_EXPORT void multiplyInPlace(const GaussianFactorGraph& fg, const VectorValues& x, const Errors::iterator& e);
 
   /** x += alpha*A'*e */
-  void transposeMultiplyAdd(const GaussianFactorGraph& fg, double alpha, const Errors& e, VectorValues& x);
+  GTSAM_EXPORT void transposeMultiplyAdd(const GaussianFactorGraph& fg, double alpha, const Errors& e, VectorValues& x);
 
   /**
    * Compute the gradient of the energy function,
@@ -358,7 +358,7 @@ namespace gtsam {
    * @param x0 The center about which to compute the gradient
    * @return The gradient as a VectorValues
    */
-  VectorValues gradient(const GaussianFactorGraph& fg, const VectorValues& x0);
+  GTSAM_EXPORT VectorValues gradient(const GaussianFactorGraph& fg, const VectorValues& x0);
 
   /**
    * Compute the gradient of the energy function,
@@ -369,16 +369,16 @@ namespace gtsam {
    * @param [output] g A VectorValues to store the gradient, which must be preallocated, see allocateVectorValues
    * @return The gradient as a VectorValues
    */
-  void gradientAtZero(const GaussianFactorGraph& fg, VectorValues& g);
+  GTSAM_EXPORT void gradientAtZero(const GaussianFactorGraph& fg, VectorValues& g);
 
   /* matrix-vector operations */
-  void residual(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r);
-  void multiply(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r);
-  void transposeMultiply(const GaussianFactorGraph& fg, const VectorValues &r, VectorValues &x);
+  GTSAM_EXPORT void residual(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r);
+  GTSAM_EXPORT void multiply(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r);
+  GTSAM_EXPORT void transposeMultiply(const GaussianFactorGraph& fg, const VectorValues &r, VectorValues &x);
 
   /** shared pointer version
    * \todo Make this a member function - affects SubgraphPreconditioner */
-  boost::shared_ptr<Errors> gaussianErrors_(const GaussianFactorGraph& fg, const VectorValues& x);
+  GTSAM_EXPORT boost::shared_ptr<Errors> gaussianErrors_(const GaussianFactorGraph& fg, const VectorValues& x);
 
   /** return A*x-b
    * \todo Make this a member function - affects SubgraphPreconditioner */

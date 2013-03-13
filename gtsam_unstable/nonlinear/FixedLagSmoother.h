@@ -20,6 +20,7 @@
 // \callgraph
 #pragma once
 
+#include <gtsam_unstable/base/dllexport.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Key.h>
@@ -27,7 +28,7 @@
 
 namespace gtsam {
 
-class FixedLagSmoother {
+class GTSAM_UNSTABLE_EXPORT FixedLagSmoother {
 
 public:
 

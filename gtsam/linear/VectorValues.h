@@ -91,7 +91,7 @@ namespace gtsam {
    * This class is additionally used in gradient descent and dog leg to store the gradient.
    * \nosubgrouping
    */
-  class VectorValues {
+  class GTSAM_EXPORT VectorValues {
   protected:
     typedef std::vector<Vector> Values; ///< Typedef for the collection of Vectors making up a VectorValues
     Values values_; ///< Collection of Vectors making up this VectorValues

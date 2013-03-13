@@ -50,13 +50,13 @@ namespace gtsam {
     }
 
     /// Construct from cardinalities with default names
-    DiscreteKeys(const std::vector<int>& cs);
+    GTSAM_EXPORT DiscreteKeys(const std::vector<int>& cs);
 
     /// Return a vector of indices
-    std::vector<Index> indices() const;
+    GTSAM_EXPORT std::vector<Index> indices() const;
 
     /// Return a map from index to cardinality
-    std::map<Index,size_t> cardinalities() const;
+    GTSAM_EXPORT std::map<Index,size_t> cardinalities() const;
 
     /// Add a key (non-const!)
     DiscreteKeys& operator&(const DiscreteKey& key) {
@@ -66,5 +66,5 @@ namespace gtsam {
   }; // DiscreteKeys
 
   /// Create a list from two keys
-  DiscreteKeys operator&(const DiscreteKey& key1, const DiscreteKey& key2);
+  GTSAM_EXPORT DiscreteKeys operator&(const DiscreteKey& key1, const DiscreteKey& key2);
 }

@@ -45,7 +45,7 @@ namespace gtsam {
  *
  *
  */
-std::pair<size_t,bool> choleskyCareful(Matrix& ATA, int order = -1);
+GTSAM_EXPORT std::pair<size_t,bool> choleskyCareful(Matrix& ATA, int order = -1);
 
 /**
  * Partial Cholesky computes a factor [R S  such that [R' 0  [R S  = [A  B
@@ -58,7 +58,7 @@ std::pair<size_t,bool> choleskyCareful(Matrix& ATA, int order = -1);
  * @return \c true if the decomposition is successful, \c false if \c A was
  * not positive-definite.
  */
-bool choleskyPartial(Matrix& ABC, size_t nFrontal);
+GTSAM_EXPORT bool choleskyPartial(Matrix& ABC, size_t nFrontal);
 
 }
 

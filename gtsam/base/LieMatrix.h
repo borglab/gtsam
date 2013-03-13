@@ -49,7 +49,7 @@ struct LieMatrix : public Matrix, public DerivedValue<LieMatrix> {
       Matrix(Eigen::Map<const Matrix>(data, m, n)) {}
 
   /** Specify arguments directly, as in Matrix_() - always force these to be doubles */
-  LieMatrix(size_t m, size_t n, ...);
+  GTSAM_EXPORT LieMatrix(size_t m, size_t n, ...);
 
   /// @}
   /// @name Testable interface

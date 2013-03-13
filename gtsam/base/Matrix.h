@@ -49,12 +49,12 @@ typedef Eigen::Block<const Matrix> ConstSubMatrix;
 /**
  *  constructor with size and initial data, row order !
  */
-Matrix Matrix_(size_t m, size_t n, const double* const data);
+GTSAM_EXPORT Matrix Matrix_(size_t m, size_t n, const double* const data);
 
 /**
  *  constructor with size and vector data, column order !!!
  */
-Matrix Matrix_(size_t m, size_t n, const Vector& v);
+GTSAM_EXPORT Matrix Matrix_(size_t m, size_t n, const Vector& v);
 
 /**
  *  constructor from Vector yielding v.size()*1 vector
@@ -65,7 +65,7 @@ inline Matrix Matrix_(const Vector& v) { return Matrix_(v.size(),1,v);}
  *  nice constructor, dangerous as number of arguments must be exactly right
  *  and you have to pass doubles !!! always use 0.0 never 0
 */
-Matrix Matrix_(size_t m, size_t n, ...);
+GTSAM_EXPORT Matrix Matrix_(size_t m, size_t n, ...);
 
 // Matlab-like syntax
 
@@ -75,7 +75,7 @@ Matrix Matrix_(size_t m, size_t n, ...);
  * Note: if assigning a block (created from an Eigen block() function) of a matrix to zeros,
  * don't use this function, instead use ".setZero(m,n)" to avoid an Eigen error.
  */
-Matrix zeros(size_t m, size_t n);
+GTSAM_EXPORT Matrix zeros(size_t m, size_t n);
 
 /**
  * Creates an identity matrix, with matlab-like syntax
@@ -83,7 +83,7 @@ Matrix zeros(size_t m, size_t n);
  * Note: if assigning a block (created from an Eigen block() function) of a matrix to identity,
  * don't use this function, instead use ".setIdentity(m,n)" to avoid an Eigen error.
  */
-Matrix eye(size_t m, size_t n);
+GTSAM_EXPORT Matrix eye(size_t m, size_t n);
 
 /**
  * Creates a square identity matrix, with matlab-like syntax
@@ -92,7 +92,7 @@ Matrix eye(size_t m, size_t n);
  * don't use this function, instead use ".setIdentity(m)" to avoid an Eigen error.
  */
 inline Matrix eye( size_t m ) { return eye(m,m); }
-Matrix diag(const Vector& v);
+GTSAM_EXPORT Matrix diag(const Vector& v);
 
 /**
  * equals with an tolerance
@@ -132,53 +132,53 @@ inline bool operator!=(const Matrix& A, const Matrix& B) {
 /**
  * equals with an tolerance, prints out message if unequal
  */
-bool assert_equal(const Matrix& A, const Matrix& B, double tol = 1e-9);
+GTSAM_EXPORT bool assert_equal(const Matrix& A, const Matrix& B, double tol = 1e-9);
 
 /**
  * equals with an tolerance, prints out message if unequal
  */
-bool assert_equal(const std::list<Matrix>& As, const std::list<Matrix>& Bs, double tol = 1e-9);
+GTSAM_EXPORT bool assert_equal(const std::list<Matrix>& As, const std::list<Matrix>& Bs, double tol = 1e-9);
 
 /**
  * check whether the rows of two matrices are linear independent
  */
-bool linear_independent(const Matrix& A, const Matrix& B, double tol = 1e-9);
+GTSAM_EXPORT bool linear_independent(const Matrix& A, const Matrix& B, double tol = 1e-9);
 
 /**
  * check whether the rows of two matrices are linear dependent
  */
-bool linear_dependent(const Matrix& A, const Matrix& B, double tol = 1e-9);
+GTSAM_EXPORT bool linear_dependent(const Matrix& A, const Matrix& B, double tol = 1e-9);
 
 /**
  * BLAS Level-2 style e <- e + alpha*A*x
  */
-void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e);
+GTSAM_EXPORT void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e);
 
 /**
  * BLAS Level-2 style e <- e + A*x
  */
-void multiplyAdd(const Matrix& A, const Vector& x, Vector& e);
+GTSAM_EXPORT void multiplyAdd(const Matrix& A, const Vector& x, Vector& e);
 
 /**
  * overload ^ for trans(A)*v
  * We transpose the vectors for speed.
  */
-Vector operator^(const Matrix& A, const Vector & v);
+GTSAM_EXPORT Vector operator^(const Matrix& A, const Vector & v);
 
 /**
  * BLAS Level-2 style x <- x + alpha*A'*e
  */
-void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, Vector& x);
+GTSAM_EXPORT void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, Vector& x);
 
 /**
  * BLAS Level-2 style x <- x + A'*e
  */
-void transposeMultiplyAdd(const Matrix& A, const Vector& e, Vector& x);
+GTSAM_EXPORT void transposeMultiplyAdd(const Matrix& A, const Vector& e, Vector& x);
 
 /**
  * BLAS Level-2 style x <- x + alpha*A'*e
  */
-void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, SubVector x);
+GTSAM_EXPORT void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, SubVector x);
 
 /** products using old-style format to improve compatibility */
 template<class MATRIX>
@@ -190,24 +190,24 @@ inline MATRIX prod(const MATRIX& A, const MATRIX&B) {
 /**
  * convert to column vector, column order !!!
  */
-Vector Vector_(const Matrix& A);
+GTSAM_EXPORT Vector Vector_(const Matrix& A);
 
 /**
  * print a matrix
  */
-void print(const Matrix& A, const std::string& s = "", std::ostream& stream = std::cout);
+GTSAM_EXPORT void print(const Matrix& A, const std::string& s = "", std::ostream& stream = std::cout);
 
 /**
  * save a matrix to file, which can be loaded by matlab
  */
-void save(const Matrix& A, const std::string &s, const std::string& filename);
+GTSAM_EXPORT void save(const Matrix& A, const std::string &s, const std::string& filename);
 
 /**
  * Read a matrix from an input stream, such as a file.  Entries can be either
  * tab-, space-, or comma-separated, similar to the format read by the MATLAB
  * dlmread command.
  */
-std::istream& operator>>(std::istream& inputStream, Matrix& destinationMatrix);
+GTSAM_EXPORT std::istream& operator>>(std::istream& inputStream, Matrix& destinationMatrix);
 
 /**
  * extract submatrix, slice semantics, i.e. range = [i1,i2[ excluding i2
@@ -232,7 +232,7 @@ Eigen::Block<const MATRIX> sub(const MATRIX& A, size_t i1, size_t i2, size_t j1,
  * @param i is the row of the upper left corner insert location
  * @param j is the column of the upper left corner insert location
  */
-void insertSub(Matrix& fullMatrix, const Matrix& subMatrix, size_t i, size_t j);
+GTSAM_EXPORT void insertSub(Matrix& fullMatrix, const Matrix& subMatrix, size_t i, size_t j);
 
 /**
  * Extracts a column view from a matrix that avoids a copy
@@ -264,10 +264,10 @@ const typename MATRIX::ConstRowXpr row(const MATRIX& A, size_t j) {
  * @param col is the vector to be inserted
  * @param j is the index to insert the column
  */
-void insertColumn(Matrix& A, const Vector& col, size_t j);
-void insertColumn(Matrix& A, const Vector& col, size_t i, size_t j);
+GTSAM_EXPORT void insertColumn(Matrix& A, const Vector& col, size_t j);
+GTSAM_EXPORT void insertColumn(Matrix& A, const Vector& col, size_t i, size_t j);
 
-Vector columnNormSquare(const Matrix &A);
+GTSAM_EXPORT Vector columnNormSquare(const Matrix &A);
 
 /**
  * Zeros all of the elements below the diagonal of a matrix, in place
@@ -291,12 +291,12 @@ inline Matrix trans(const Matrix& A) { return A.transpose(); }
  * solve AX=B via in-place Lu factorization and backsubstitution
  * After calling, A contains LU, B the solved RHS vectors
  */
-void solve(Matrix& A, Matrix& B);
+GTSAM_EXPORT void solve(Matrix& A, Matrix& B);
 
 /**
  * invert A
  */
-Matrix inverse(const Matrix& A);
+GTSAM_EXPORT Matrix inverse(const Matrix& A);
 
 /**
  * QR factorization, inefficient, best use imperative householder below
@@ -304,7 +304,7 @@ Matrix inverse(const Matrix& A);
  * @param A a matrix
  * @return <Q,R> rotation matrix Q, upper triangular R
  */ 
-std::pair<Matrix,Matrix> qr(const Matrix& A);
+GTSAM_EXPORT std::pair<Matrix,Matrix> qr(const Matrix& A);
 
 /**
  * QR factorization using Eigen's internal block QR algorithm
@@ -335,7 +335,7 @@ void inplace_QR(MATRIX& A) {
  * @param sigmas is a vector of the measurement standard deviation
  * @return list of r vectors, d  and sigma
  */
-std::list<boost::tuple<Vector, double, double> >
+GTSAM_EXPORT std::list<boost::tuple<Vector, double, double> >
 weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas);
 
 /**
@@ -345,7 +345,7 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas);
  * @param copy_vectors - true to copy Householder vectors below diagonal
  * @return nothing: in place !!!
  */
-void householder_(Matrix& A, size_t k, bool copy_vectors=true);
+GTSAM_EXPORT void householder_(Matrix& A, size_t k, bool copy_vectors=true);
 
 /**
  * Householder tranformation, zeros below diagonal
@@ -353,7 +353,7 @@ void householder_(Matrix& A, size_t k, bool copy_vectors=true);
  * @param A matrix
  * @return nothing: in place !!!
  */
-void householder(Matrix& A, size_t k);
+GTSAM_EXPORT void householder(Matrix& A, size_t k);
 
 /**
  * backSubstitute U*x=b
@@ -362,7 +362,7 @@ void householder(Matrix& A, size_t k);
  * @param unit, set true if unit triangular
  * @return the solution x of U*x=b
  */
-Vector backSubstituteUpper(const Matrix& U, const Vector& b, bool unit=false);
+GTSAM_EXPORT Vector backSubstituteUpper(const Matrix& U, const Vector& b, bool unit=false);
 
 /**
  * backSubstitute x'*U=b'
@@ -372,7 +372,7 @@ Vector backSubstituteUpper(const Matrix& U, const Vector& b, bool unit=false);
  * @return the solution x of x'*U=b'
  */
 //TODO: is this function necessary? it isn't used
-Vector backSubstituteUpper(const Vector& b, const Matrix& U, bool unit=false);
+GTSAM_EXPORT Vector backSubstituteUpper(const Vector& b, const Matrix& U, bool unit=false);
 
 /**
  * backSubstitute L*x=b
@@ -381,7 +381,7 @@ Vector backSubstituteUpper(const Vector& b, const Matrix& U, bool unit=false);
  * @param unit, set true if unit triangular
  * @return the solution x of L*x=b
  */ 
-Vector backSubstituteLower(const Matrix& L, const Vector& b, bool unit=false);
+GTSAM_EXPORT Vector backSubstituteLower(const Matrix& L, const Vector& b, bool unit=false);
 
 /**
  * create a matrix by stacking other matrices
@@ -389,7 +389,7 @@ Vector backSubstituteLower(const Matrix& L, const Vector& b, bool unit=false);
  * @param ... pointers to matrices to be stacked
  * @return combined matrix [A1; A2; A3]
  */
-Matrix stack(size_t nrMatrices, ...);
+GTSAM_EXPORT Matrix stack(size_t nrMatrices, ...);
 
 /**
  * create a matrix by concatenating
@@ -401,8 +401,8 @@ Matrix stack(size_t nrMatrices, ...);
  * @param n is the number of columns of a single matrix
  * @return combined matrix [A1 A2 A3]
  */
-Matrix collect(const std::vector<const Matrix *>& matrices, size_t m = 0, size_t n = 0);
-Matrix collect(size_t nrMatrices, ...);
+GTSAM_EXPORT Matrix collect(const std::vector<const Matrix *>& matrices, size_t m = 0, size_t n = 0);
+GTSAM_EXPORT Matrix collect(size_t nrMatrices, ...);
 
 /**
  * scales a matrix row or column by the values in a vector
@@ -410,9 +410,9 @@ Matrix collect(size_t nrMatrices, ...);
  * (Vector, Matrix) scales the rows
  * @param inf_mask when true, will not scale with a NaN or inf value
  */
-void vector_scale_inplace(const Vector& v, Matrix& A, bool inf_mask = false); // row
-Matrix vector_scale(const Vector& v, const Matrix& A, bool inf_mask = false); // row
-Matrix vector_scale(const Matrix& A, const Vector& v, bool inf_mask = false); // column
+GTSAM_EXPORT void vector_scale_inplace(const Vector& v, Matrix& A, bool inf_mask = false); // row
+GTSAM_EXPORT Matrix vector_scale(const Vector& v, const Matrix& A, bool inf_mask = false); // row
+GTSAM_EXPORT Matrix vector_scale(const Matrix& A, const Vector& v, bool inf_mask = false); // column
 
 /**
  * skew symmetric matrix returns this:
@@ -424,21 +424,21 @@ Matrix vector_scale(const Matrix& A, const Vector& v, bool inf_mask = false); //
  * @param wz
  * @return a 3*3 skew symmetric matrix
 */
-Matrix3 skewSymmetric(double wx, double wy, double wz);
+GTSAM_EXPORT Matrix3 skewSymmetric(double wx, double wy, double wz);
 template<class Derived>
 inline Matrix3 skewSymmetric(const Eigen::MatrixBase<Derived>& w) { return skewSymmetric(w(0),w(1),w(2));}
 
 /** Use SVD to calculate inverse square root of a matrix */
-Matrix inverse_square_root(const Matrix& A);
+GTSAM_EXPORT Matrix inverse_square_root(const Matrix& A);
 
 /** Calculate the LL^t decomposition of a S.P.D matrix */
-Matrix LLt(const Matrix& A);
+GTSAM_EXPORT Matrix LLt(const Matrix& A);
 
 /** Calculate the R^tR decomposition of a S.P.D matrix */
-Matrix RtR(const Matrix& A);
+GTSAM_EXPORT Matrix RtR(const Matrix& A);
 
 /** Return the inverse of a S.P.D. matrix.  Inversion is done via Cholesky decomposition. */
-Matrix cholesky_inverse(const Matrix &A);
+GTSAM_EXPORT Matrix cholesky_inverse(const Matrix &A);
 
 /**
  * SVD computes economy SVD A=U*S*V'
@@ -452,7 +452,7 @@ Matrix cholesky_inverse(const Matrix &A);
  * U is a basis in R^m, V is a basis in R^n
  * You can just pass empty matrices U,V, and vector S, they will be re-allocated.
  */
-void svd(const Matrix& A, Matrix& U, Vector& S, Matrix& V);
+GTSAM_EXPORT void svd(const Matrix& A, Matrix& U, Vector& S, Matrix& V);
 
 /**
  * Direct linear transform algorithm that calls svd
@@ -461,7 +461,7 @@ void svd(const Matrix& A, Matrix& U, Vector& S, Matrix& V);
  * Returns rank of A, minimum error (singular value),
  * and corresponding eigenvector (column of V, with A=U*S*V')
  */
-boost::tuple<int, double, Vector>
+GTSAM_EXPORT boost::tuple<int, double, Vector>
 DLT(const Matrix& A, double rank_tol = 1e-9);
 
 /**
@@ -469,10 +469,10 @@ DLT(const Matrix& A, double rank_tol = 1e-9);
  * @param A matrix to exponentiate
  * @param K number of iterations
  */
-Matrix expm(const Matrix& A, size_t K=7);
+GTSAM_EXPORT Matrix expm(const Matrix& A, size_t K=7);
 
 /// Cayley transform
-Matrix Cayley(const Matrix& A);
+GTSAM_EXPORT Matrix Cayley(const Matrix& A);
 
 /// Implementation of Cayley transform using fixed size matrices to let
 /// Eigen do more optimization

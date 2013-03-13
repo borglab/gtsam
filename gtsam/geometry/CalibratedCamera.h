@@ -24,7 +24,7 @@
 
 namespace gtsam {
 
-  class CheiralityException: public std::runtime_error {
+  class GTSAM_EXPORT CheiralityException: public std::runtime_error {
   public:
     CheiralityException() : std::runtime_error("Cheirality Exception") {}
   };
@@ -36,7 +36,7 @@ namespace gtsam {
    * @addtogroup geometry
    * \nosubgrouping
    */
-  class CalibratedCamera : public DerivedValue<CalibratedCamera> {
+  class GTSAM_EXPORT CalibratedCamera : public DerivedValue<CalibratedCamera> {
   private:
     Pose3 pose_; // 6DOF pose
 

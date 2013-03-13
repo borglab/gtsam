@@ -28,7 +28,7 @@ namespace gtsam {
    * @addtogroup geometry
    * \nosubgrouping
    */
-  class StereoPoint2 : public DerivedValue<StereoPoint2> {
+  class GTSAM_EXPORT StereoPoint2 : public DerivedValue<StereoPoint2> {
   public:
     static const size_t dimension = 3;
   private:

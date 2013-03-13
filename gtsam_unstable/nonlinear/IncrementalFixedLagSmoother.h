@@ -31,7 +31,7 @@ namespace gtsam {
  * such that the active states are placed in/near the root. This base class implements a function
  * to calculate the ordering, and an update function to incorporate new factors into the HMF.
  */
-class IncrementalFixedLagSmoother : public FixedLagSmoother {
+class GTSAM_UNSTABLE_EXPORT IncrementalFixedLagSmoother : public FixedLagSmoother {
 
 public:
 

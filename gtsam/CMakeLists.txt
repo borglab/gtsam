@@ -91,6 +91,9 @@ if (GTSAM_BUILD_STATIC_LIBRARY)
         CLEAN_DIRECT_OUTPUT 1
     	VERSION             ${gtsam_version}
      	SOVERSION           ${gtsam_soversion})
+	if(WIN32) # Add 'lib' prefix to static library to avoid filename collision with shared library
+		set_target_properties(gtsam-static PROPERTIES PREFIX "lib")
+	endif()
     install(TARGETS gtsam-static EXPORT GTSAM-exports ARCHIVE DESTINATION lib)
     list(APPEND GTSAM_EXPORTED_TARGETS gtsam-static)
     set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
@@ -105,6 +108,13 @@ if (GTSAM_BUILD_SHARED_LIBRARY)
         CLEAN_DIRECT_OUTPUT 1
     	VERSION             ${gtsam_version}
      	SOVERSION           ${gtsam_soversion})
+	if(WIN32)
+		set_target_properties(gtsam-shared PROPERTIES
+			PREFIX ""
+			DEFINE_SYMBOL GTSAM_EXPORTS
+			RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
+		add_definitions(/wd4251 /wd4275) # Disable non-DLL-exported base class warnings
+	endif()
     install(TARGETS gtsam-shared EXPORT GTSAM-exports LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
     list(APPEND GTSAM_EXPORTED_TARGETS gtsam-shared)
     set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)

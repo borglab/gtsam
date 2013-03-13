@@ -54,7 +54,7 @@ namespace gtsam {
  * in order to create new indexing for a structure.
  * \nosubgrouping
  */
-class Permutation {
+class GTSAM_EXPORT Permutation {
 protected:
   std::vector<Index> rangeIndices_;
 
@@ -196,20 +196,20 @@ namespace internal {
   public:
     typedef gtsam::FastMap<Index,Index> Base;
 
-    static Reduction CreateAsInverse(const Permutation& p);
-    static Reduction CreateFromPartialPermutation(const Permutation& selector, const Permutation& p);
-    void applyInverse(std::vector<Index>& js) const;
-    Permutation inverse() const;
-    const Index& operator[](const Index& j);
-    const Index& operator[](const Index& j) const;
+    GTSAM_EXPORT static Reduction CreateAsInverse(const Permutation& p);
+    GTSAM_EXPORT static Reduction CreateFromPartialPermutation(const Permutation& selector, const Permutation& p);
+    GTSAM_EXPORT void applyInverse(std::vector<Index>& js) const;
+    GTSAM_EXPORT Permutation inverse() const;
+    GTSAM_EXPORT const Index& operator[](const Index& j);
+    GTSAM_EXPORT const Index& operator[](const Index& j) const;
 
-    void print(const std::string& s="") const;
-    bool equals(const Reduction& other, double tol = 1e-9) const;
+    GTSAM_EXPORT void print(const std::string& s="") const;
+    GTSAM_EXPORT bool equals(const Reduction& other, double tol = 1e-9) const;
   };
 
   /**
    * Reduce the variable indices so that those in the set are mapped to start at zero
    */
-  Permutation createReducingPermutation(const std::set<Index>& indices);
+  GTSAM_EXPORT Permutation createReducingPermutation(const std::set<Index>& indices);
 } // \namespace internal
 } // \namespace gtsam

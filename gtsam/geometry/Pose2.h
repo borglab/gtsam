@@ -33,7 +33,7 @@ namespace gtsam {
  * @addtogroup geometry
  * \nosubgrouping
  */
-class Pose2 : public DerivedValue<Pose2> {
+class GTSAM_EXPORT Pose2 : public DerivedValue<Pose2> {
 
 public:
   static const size_t dimension = 3;
@@ -301,7 +301,7 @@ inline Matrix wedge<Pose2>(const Vector& xi) {
  * where q = Pose2::transform_from(p) = t + R*p
  */
 typedef std::pair<Point2,Point2> Point2Pair;
-boost::optional<Pose2> align(const std::vector<Point2Pair>& pairs);
+GTSAM_EXPORT boost::optional<Pose2> align(const std::vector<Point2Pair>& pairs);
 
 /// @}
 

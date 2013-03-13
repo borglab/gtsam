@@ -30,7 +30,7 @@ class JointMarginal;
 /**
  * A class for computing Gaussian marginals of variables in a NonlinearFactorGraph
  */
-class Marginals {
+class GTSAM_EXPORT Marginals {
 
 public:
 
@@ -78,7 +78,7 @@ public:
 /**
  * A class to store and access a joint marginal, returned from Marginals::jointMarginalCovariance and Marginals::jointMarginalInformation
  */
-class JointMarginal {
+class GTSAM_EXPORT JointMarginal {
 
 protected:
 

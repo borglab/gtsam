@@ -30,35 +30,35 @@ namespace gtsam {
   typedef BayesNet<GaussianConditional> GaussianBayesNet;
 
   /** Create a scalar Gaussian */
-  GaussianBayesNet scalarGaussian(Index key, double mu=0.0, double sigma=1.0);
+  GTSAM_EXPORT GaussianBayesNet scalarGaussian(Index key, double mu=0.0, double sigma=1.0);
 
   /** Create a simple Gaussian on a single multivariate variable */
-  GaussianBayesNet simpleGaussian(Index key, const Vector& mu, double sigma=1.0);
+  GTSAM_EXPORT GaussianBayesNet simpleGaussian(Index key, const Vector& mu, double sigma=1.0);
 
   /**
    * Add a conditional node with one parent
    * |Rx+Sy-d|
    */
-  void push_front(GaussianBayesNet& bn, Index key, Vector d, Matrix R,
+  GTSAM_EXPORT void push_front(GaussianBayesNet& bn, Index key, Vector d, Matrix R,
       Index name1, Matrix S, Vector sigmas);
 
   /**
    * Add a conditional node with two parents
    * |Rx+Sy+Tz-d|
    */
-  void push_front(GaussianBayesNet& bn, Index key, Vector d, Matrix R,
+  GTSAM_EXPORT void push_front(GaussianBayesNet& bn, Index key, Vector d, Matrix R,
       Index name1, Matrix S, Index name2, Matrix T, Vector sigmas);
 
   /**
    * Allocate a VectorValues for the variables in a BayesNet
    */
-  boost::shared_ptr<VectorValues> allocateVectorValues(const GaussianBayesNet& bn);
+  GTSAM_EXPORT boost::shared_ptr<VectorValues> allocateVectorValues(const GaussianBayesNet& bn);
 
   /**
    * Solve the GaussianBayesNet, i.e. return \f$ x = R^{-1}*d \f$, computed by
    * back-substitution.
    */
-  VectorValues optimize(const GaussianBayesNet& bn);
+  GTSAM_EXPORT VectorValues optimize(const GaussianBayesNet& bn);
 
   /**
    * Solve the GaussianBayesNet, i.e. return \f$ x = R^{-1}*d \f$, computed by
@@ -67,7 +67,7 @@ namespace gtsam {
    * allocate it.  See also optimize(const GaussianBayesNet&), which does not
    * require pre-allocation.
    */
-  void optimizeInPlace(const GaussianBayesNet& bn, VectorValues& x);
+  GTSAM_EXPORT void optimizeInPlace(const GaussianBayesNet& bn, VectorValues& x);
 
   /**
    * Optimize along the gradient direction, with a closed-form computation to
@@ -97,20 +97,20 @@ namespace gtsam {
    * @param bn The GaussianBayesNet on which to perform this computation
    * @return The resulting \f$ \delta x \f$ as described above
    */
-  VectorValues optimizeGradientSearch(const GaussianBayesNet& bn);
+  GTSAM_EXPORT VectorValues optimizeGradientSearch(const GaussianBayesNet& bn);
 
   /** In-place version of optimizeGradientSearch(const GaussianBayesNet&) requiring pre-allocated VectorValues \c grad
    *
    * @param bn The GaussianBayesNet on which to perform this computation
    * @param [out] grad The resulting \f$ \delta x \f$ as described in optimizeGradientSearch(const GaussianBayesNet&)
    * */
-  void optimizeGradientSearchInPlace(const GaussianBayesNet& bn, VectorValues& grad);
+  GTSAM_EXPORT void optimizeGradientSearchInPlace(const GaussianBayesNet& bn, VectorValues& grad);
 
   /**
    * Backsubstitute
    * gy=inv(R*inv(Sigma))*gx
    */
-  VectorValues backSubstitute(const GaussianBayesNet& bn, const VectorValues& gx);
+  GTSAM_EXPORT VectorValues backSubstitute(const GaussianBayesNet& bn, const VectorValues& gx);
 
   /**
    * Transpose Backsubstitute
@@ -118,12 +118,12 @@ namespace gtsam {
    * gy=inv(R'*inv(Sigma))*gx
    * gz'*R'=gx', gy = gz.*sigmas
    */
-  VectorValues backSubstituteTranspose(const GaussianBayesNet& bn, const VectorValues& gx);
+  GTSAM_EXPORT VectorValues backSubstituteTranspose(const GaussianBayesNet& bn, const VectorValues& gx);
 
   /**
    * Return (dense) upper-triangular matrix representation
    */
-  std::pair<Matrix, Vector> matrix(const GaussianBayesNet&);
+  GTSAM_EXPORT std::pair<Matrix, Vector> matrix(const GaussianBayesNet&);
 
   /**
    * Computes the determinant of a GassianBayesNet
@@ -134,7 +134,7 @@ namespace gtsam {
    * @param bayesNet The input GaussianBayesNet
    * @return The determinant
    */
-  double determinant(const GaussianBayesNet& bayesNet);
+  GTSAM_EXPORT double determinant(const GaussianBayesNet& bayesNet);
 
   /**
    * Compute the gradient of the energy function,
@@ -145,7 +145,7 @@ namespace gtsam {
    * @param x0 The center about which to compute the gradient
    * @return The gradient as a VectorValues
    */
-  VectorValues gradient(const GaussianBayesNet& bayesNet, const VectorValues& x0);
+  GTSAM_EXPORT VectorValues gradient(const GaussianBayesNet& bayesNet, const VectorValues& x0);
 
   /**
    * Compute the gradient of the energy function,
@@ -156,6 +156,6 @@ namespace gtsam {
    * @param [output] g A VectorValues to store the gradient, which must be preallocated, see allocateVectorValues
    * @return The gradient as a VectorValues
    */
-  void gradientAtZero(const GaussianBayesNet& bayesNet, VectorValues& g);
+  GTSAM_EXPORT void gradientAtZero(const GaussianBayesNet& bayesNet, VectorValues& g);
 
 } /// namespace gtsam

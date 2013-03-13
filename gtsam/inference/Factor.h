@@ -228,3 +228,5 @@ private:
 };
 
 }
+
+#include <gtsam/inference/Factor-inl.h>

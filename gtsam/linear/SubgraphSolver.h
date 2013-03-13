@@ -19,7 +19,7 @@
 
 namespace gtsam {
 
-class SubgraphSolverParameters : public ConjugateGradientParameters {
+class GTSAM_EXPORT SubgraphSolverParameters : public ConjugateGradientParameters {
 public:
   typedef ConjugateGradientParameters Base;
   SubgraphSolverParameters() : Base() {}
@@ -48,7 +48,7 @@ public:
  * \nosubgrouping
  */
 
-class SubgraphSolver : public IterativeSolver {
+class GTSAM_EXPORT SubgraphSolver : public IterativeSolver {
 
 public:
   typedef SubgraphSolverParameters Parameters;

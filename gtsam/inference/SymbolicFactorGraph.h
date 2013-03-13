@@ -47,10 +47,10 @@ namespace gtsam {
     }
 
     /** Construct from a BayesNet */
-    SymbolicFactorGraph(const SymbolicBayesNet& bayesNet);
+    GTSAM_EXPORT SymbolicFactorGraph(const SymbolicBayesNet& bayesNet);
 
     /** Construct from a BayesTree */
-    SymbolicFactorGraph(const SymbolicBayesTree& bayesTree);
+    GTSAM_EXPORT SymbolicFactorGraph(const SymbolicBayesTree& bayesTree);
 
     /**
      * Construct from a factor graph of any type
@@ -65,7 +65,7 @@ namespace gtsam {
      * FactorGraph<IndexFactor>::eliminateFrontals with EliminateSymbolic
      * as the eliminate function argument.
      */
-    std::pair<sharedConditional, SymbolicFactorGraph> eliminateFrontals(size_t nFrontals) const;
+    GTSAM_EXPORT std::pair<sharedConditional, SymbolicFactorGraph> eliminateFrontals(size_t nFrontals) const;
             
     /** Factor the factor graph into a conditional and a remaining factor graph.
      * Given the factor graph \f$ f(X) \f$, and \c variables to factorize out
@@ -83,10 +83,10 @@ namespace gtsam {
      * FactorGraph<GaussianFactor>::eliminate with EliminateSymbolic as the eliminate
      * function argument.
      */
-    std::pair<sharedConditional, SymbolicFactorGraph> eliminate(const std::vector<Index>& variables) const;
+    GTSAM_EXPORT std::pair<sharedConditional, SymbolicFactorGraph> eliminate(const std::vector<Index>& variables) const;
 
     /** Eliminate a single variable, by calling SymbolicFactorGraph::eliminate. */
-    std::pair<sharedConditional, SymbolicFactorGraph> eliminateOne(Index variable) const;
+    GTSAM_EXPORT std::pair<sharedConditional, SymbolicFactorGraph> eliminateOne(Index variable) const;
 
     /// @}
     /// @name Standard Interface
@@ -96,34 +96,34 @@ namespace gtsam {
      * Return the set of variables involved in the factors (computes a set
      * union).
      */
-    FastSet<Index> keys() const;
+    GTSAM_EXPORT FastSet<Index> keys() const;
 
     /// @}
     /// @name Advanced Interface
     /// @{
 
     /** Push back unary factor */
-    void push_factor(Index key);
+    GTSAM_EXPORT void push_factor(Index key);
 
     /** Push back binary factor */
-    void push_factor(Index key1, Index key2);
+    GTSAM_EXPORT void push_factor(Index key1, Index key2);
 
     /** Push back ternary factor */
-    void push_factor(Index key1, Index key2, Index key3);
+    GTSAM_EXPORT void push_factor(Index key1, Index key2, Index key3);
 
     /** Push back 4-way factor */
-    void push_factor(Index key1, Index key2, Index key3, Index key4);
+    GTSAM_EXPORT void push_factor(Index key1, Index key2, Index key3, Index key4);
 
     /** Permute the variables in the factors */
-    void permuteWithInverse(const Permutation& inversePermutation);
+    GTSAM_EXPORT void permuteWithInverse(const Permutation& inversePermutation);
 
     /** Apply a reduction, which is a remapping of variable indices. */
-    void reduceWithInverse(const internal::Reduction& inverseReduction);
+    GTSAM_EXPORT void reduceWithInverse(const internal::Reduction& inverseReduction);
 
   };
 
   /** Create a combined joint factor (new style for EliminationTree). */
-  IndexFactor::shared_ptr CombineSymbolic(const FactorGraph<IndexFactor>& factors,
+  GTSAM_EXPORT IndexFactor::shared_ptr CombineSymbolic(const FactorGraph<IndexFactor>& factors,
     const FastMap<Index, std::vector<Index> >& variableSlots);
 
   /**
@@ -131,7 +131,7 @@ namespace gtsam {
    * Combine and eliminate can also be called separately, but for this and
    * derived classes calling them separately generally does extra work.
    */
-  std::pair<boost::shared_ptr<IndexConditional>, boost::shared_ptr<IndexFactor> >
+  GTSAM_EXPORT std::pair<boost::shared_ptr<IndexConditional>, boost::shared_ptr<IndexFactor> >
   EliminateSymbolic(const FactorGraph<IndexFactor>&, size_t nrFrontals = 1);
 
   /// @}

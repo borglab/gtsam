@@ -39,7 +39,7 @@ namespace gtsam {
   // Definition of Scatter, which is an intermediate data structure used when
   // building a HessianFactor incrementally, to get the keys in the right
   // order.
-  struct SlotEntry {
+  struct GTSAM_EXPORT SlotEntry {
     size_t slot;
     size_t dimension;
     SlotEntry(size_t _slot, size_t _dimension)
@@ -111,7 +111,7 @@ namespace gtsam {
      .......
      \endcode
    */
-  class HessianFactor : public GaussianFactor {
+  class GTSAM_EXPORT HessianFactor : public GaussianFactor {
   protected:
     typedef Matrix InfoMatrix; ///< The full augmented Hessian
     typedef SymmetricBlockView<InfoMatrix> BlockInfo; ///< A blockwise view of the Hessian

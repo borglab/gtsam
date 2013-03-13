@@ -29,7 +29,7 @@ namespace gtsam {
 /**
  * A Levenberg-Marquardt Batch Smoother that implements the Concurrent Filtering and Smoother interface.
  */
-class ConcurrentBatchSmoother : public ConcurrentSmoother {
+class GTSAM_UNSTABLE_EXPORT ConcurrentBatchSmoother : public ConcurrentSmoother {
 
 public:
 

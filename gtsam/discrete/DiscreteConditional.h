@@ -30,7 +30,7 @@ namespace gtsam {
    * Discrete Conditional Density
    * Derives from DecisionTreeFactor
    */
-  class DiscreteConditional: public IndexConditional, public Potentials {
+  class GTSAM_EXPORT DiscreteConditional: public IndexConditional, public Potentials {
 
   public:
     // typedefs needed to play nice with gtsam

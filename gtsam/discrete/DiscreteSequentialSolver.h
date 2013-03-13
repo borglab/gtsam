@@ -99,14 +99,14 @@ namespace gtsam {
      * all of the other variables. This function returns the result as a
      * Vector of the probability values.
      */
-    Vector marginalProbabilities(const DiscreteKey& key) const;
+    GTSAM_EXPORT Vector marginalProbabilities(const DiscreteKey& key) const;
 
     /**
      * Compute the MPE solution of the DiscreteFactorGraph.  This
      * eliminates to create a BayesNet and then back-substitutes this BayesNet to
      * obtain the solution.
      */
-    DiscreteFactor::sharedValues optimize() const;
+    GTSAM_EXPORT DiscreteFactor::sharedValues optimize() const;
 
   };
 

@@ -32,7 +32,7 @@ namespace gtsam {
    * Formatting options when saving in GraphViz format using
    * NonlinearFactorGraph::saveGraph.
    */
-  struct GraphvizFormatting {
+  struct GTSAM_EXPORT GraphvizFormatting {
     enum Axis { X, Y, Z, NEGX, NEGY, NEGZ }; ///< World axes to be assigned to paper axes
     Axis paperHorizontalAxis; ///< The world axis assigned to the horizontal paper axis
     Axis paperVerticalAxis; ///< The world axis assigned to the vertical paper axis
@@ -67,21 +67,21 @@ namespace gtsam {
     typedef boost::shared_ptr<NonlinearFactor> sharedFactor;
 
     /** print just calls base class */
-    void print(const std::string& str = "NonlinearFactorGraph: ", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+    GTSAM_EXPORT void print(const std::string& str = "NonlinearFactorGraph: ", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
     /** Write the graph in GraphViz format for visualization */
-    void saveGraph(std::ostream& stm, const Values& values = Values(),
+    GTSAM_EXPORT void saveGraph(std::ostream& stm, const Values& values = Values(),
       const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
     /** return keys as an ordered set - ordering is by key value */
-    FastSet<Key> keys() const;
+    GTSAM_EXPORT FastSet<Key> keys() const;
 
     /** unnormalized error, \f$ 0.5 \sum_i (h_i(X_i)-z)^2/\sigma^2 \f$ in the most common case */
-    double error(const Values& c) const;
+    GTSAM_EXPORT double error(const Values& c) const;
 
     /** Unnormalized probability. O(n) */
-    double probPrime(const Values& c) const;
+    GTSAM_EXPORT double probPrime(const Values& c) const;
 
     /// Add a factor by value - copies the factor object
     void add(const NonlinearFactor& factor) {
@@ -96,7 +96,7 @@ namespace gtsam {
     /**
      * Create a symbolic factor graph using an existing ordering
      */
-    SymbolicFactorGraph::shared_ptr symbolic(const Ordering& ordering) const;
+    GTSAM_EXPORT SymbolicFactorGraph::shared_ptr symbolic(const Ordering& ordering) const;
 
     /**
      * Create a symbolic factor graph and initial variable ordering that can
@@ -104,13 +104,13 @@ namespace gtsam {
      * The graph and ordering should be permuted after such a fill-reducing
      * ordering is found.
      */
-    std::pair<SymbolicFactorGraph::shared_ptr, Ordering::shared_ptr>
+    GTSAM_EXPORT std::pair<SymbolicFactorGraph::shared_ptr, Ordering::shared_ptr>
     symbolic(const Values& config) const;
 
     /**
      * Compute a fill-reducing ordering using COLAMD.
      */
-    Ordering::shared_ptr orderingCOLAMD(const Values& config) const;
+    GTSAM_EXPORT Ordering::shared_ptr orderingCOLAMD(const Values& config) const;
 
     /**
      * Compute a fill-reducing ordering with constraints using CCOLAMD
@@ -120,19 +120,19 @@ namespace gtsam {
      * indices need to appear in the constraints, unconstrained is assumed for all
      * other variables
      */
-    Ordering::shared_ptr orderingCOLAMDConstrained(const Values& config,
+    GTSAM_EXPORT Ordering::shared_ptr orderingCOLAMDConstrained(const Values& config,
         const std::map<Key, int>& constraints) const;
 
     /**
      * linearize a nonlinear factor graph
      */
-    boost::shared_ptr<GaussianFactorGraph >
+    GTSAM_EXPORT boost::shared_ptr<GaussianFactorGraph >
         linearize(const Values& config, const Ordering& ordering) const;
 
     /**
      * Clone() performs a deep-copy of the graph, including all of the factors
      */
-    NonlinearFactorGraph clone() const;
+    GTSAM_EXPORT NonlinearFactorGraph clone() const;
 
     /**
      * Rekey() performs a deep-copy of all of the factors, and changes
@@ -143,7 +143,7 @@ namespace gtsam {
      * @param rekey_mapping is a map of old->new keys
      * @result a cloned graph with updated keys
      */
-    NonlinearFactorGraph rekey(const std::map<Key,Key>& rekey_mapping) const;
+    GTSAM_EXPORT NonlinearFactorGraph rekey(const std::map<Key,Key>& rekey_mapping) const;
 
   private:
 

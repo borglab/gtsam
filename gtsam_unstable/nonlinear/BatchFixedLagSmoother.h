@@ -26,7 +26,7 @@
 
 namespace gtsam {
 
-class BatchFixedLagSmoother : public FixedLagSmoother {
+class GTSAM_UNSTABLE_EXPORT BatchFixedLagSmoother : public FixedLagSmoother {
 
 public:
 

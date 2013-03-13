@@ -49,7 +49,7 @@ namespace gtsam {
    *   X|E = "95/5 2/98"
    *   D|E,B = "9/1 2/8 3/7 1/9"
    */
-  class Signature {
+  class GTSAM_EXPORT Signature {
 
   public:
 
@@ -110,26 +110,26 @@ namespace gtsam {
     Signature& operator=(const Table& table);
 
     /** provide streaming */
-    friend std::ostream& operator <<(std::ostream &os, const Signature &s);
+    GTSAM_EXPORT friend std::ostream& operator <<(std::ostream &os, const Signature &s);
   };
 
   /**
    * Helper function to create Signature objects
    * example: Signature s = D | E;
    */
-  Signature operator|(const DiscreteKey& key, const DiscreteKey& parent);
+  GTSAM_EXPORT Signature operator|(const DiscreteKey& key, const DiscreteKey& parent);
 
   /**
    * Helper function to create Signature objects
    * example: Signature s(D % "99/1");
    * Uses string parser, which requires BOOST 1.42 or higher
    */
-  Signature operator%(const DiscreteKey& key, const std::string& parent);
+  GTSAM_EXPORT Signature operator%(const DiscreteKey& key, const std::string& parent);
 
   /**
    * Helper function to create Signature objects, using table construction directly
    * example: Signature s(D % table);
    */
-  Signature operator%(const DiscreteKey& key, const Signature::Table& parent);
+  GTSAM_EXPORT Signature operator%(const DiscreteKey& key, const Signature::Table& parent);
 
 }

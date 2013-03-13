@@ -29,7 +29,7 @@ class LevenbergMarquardtOptimizer;
  * common to all nonlinear optimization algorithms.  This class also contains
  * all of those parameters.
  */
-class LevenbergMarquardtParams : public SuccessiveLinearizationParams {
+class GTSAM_EXPORT LevenbergMarquardtParams : public SuccessiveLinearizationParams {
 
 public:
   /** See LevenbergMarquardtParams::lmVerbosity */
@@ -70,7 +70,7 @@ private:
 /**
  * State for LevenbergMarquardtOptimizer
  */
-class LevenbergMarquardtState : public NonlinearOptimizerState {
+class GTSAM_EXPORT LevenbergMarquardtState : public NonlinearOptimizerState {
 
 public:
   double lambda;
@@ -89,7 +89,7 @@ protected:
 /**
  * This class performs Levenberg-Marquardt nonlinear optimization
  */
-class LevenbergMarquardtOptimizer : public NonlinearOptimizer {
+class GTSAM_EXPORT LevenbergMarquardtOptimizer : public NonlinearOptimizer {
 
 protected:
   LevenbergMarquardtParams params_; ///< LM parameters

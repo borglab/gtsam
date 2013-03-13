@@ -17,7 +17,7 @@ namespace gtsam {
 /**
  * Dummy version of a generic linear factor to be injected into a nonlinear factor graph
  */
-class LinearContainerFactor : public NonlinearFactor {
+class GTSAM_EXPORT LinearContainerFactor : public NonlinearFactor {
 protected:
 
   GaussianFactor::shared_ptr factor_;

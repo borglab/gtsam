@@ -35,7 +35,7 @@ namespace gtsam {
    * @addtogroup geometry
    * \nosubgrouping
    */
-  class Pose3 : public DerivedValue<Pose3> {
+  class GTSAM_EXPORT Pose3 : public DerivedValue<Pose3> {
   public:
     static const size_t dimension = 6;
 

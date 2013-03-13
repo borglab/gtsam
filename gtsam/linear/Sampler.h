@@ -31,7 +31,7 @@ namespace gtsam {
  * This is primarily to allow for variable seeds, and does roughly the same
  * thing as sample() in NoiseModel.
  */
-class Sampler {
+class GTSAM_EXPORT Sampler {
 protected:
   /** noiseModel created at generation */
   noiseModel::Diagonal::shared_ptr model_;

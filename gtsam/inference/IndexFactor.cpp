@@ -16,14 +16,12 @@
  */
 
 #include <gtsam/inference/IndexFactor.h>
-#include <gtsam/inference/Factor-inl.h>
+#include <gtsam/inference/Factor.h>
 #include <gtsam/inference/IndexConditional.h>
 
 using namespace std;
 
 namespace gtsam {
-
-  template class Factor<Index> ;
 
   /* ************************************************************************* */
   void IndexFactor::assertInvariants() const {

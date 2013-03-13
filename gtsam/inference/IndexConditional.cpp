@@ -27,8 +27,6 @@ namespace gtsam {
   using namespace std;
   using namespace boost::lambda;
 
-  template class Conditional<Index>;
-
   /* ************************************************************************* */
   void IndexConditional::assertInvariants() const {
     // Checks for uniqueness of keys
