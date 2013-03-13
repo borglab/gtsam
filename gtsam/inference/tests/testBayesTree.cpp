@@ -27,7 +27,7 @@ using namespace boost::assign;
 #include <gtsam/base/TestableAssertions.h>
 
 #include <gtsam/inference/SymbolicFactorGraph.h>
-#include <gtsam/inference/BayesTree-inl.h>
+#include <gtsam/inference/BayesTree.h>
 #include <gtsam/inference/IndexFactor.h>
 #include <gtsam/inference/SymbolicSequentialSolver.h>
 

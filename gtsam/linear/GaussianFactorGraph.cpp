@@ -25,7 +25,7 @@
 #include <gtsam/base/FastVector.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/inference/BayesTree-inl.h>
+#include <gtsam/inference/BayesTree.h>
 #include <gtsam/inference/VariableSlots.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>

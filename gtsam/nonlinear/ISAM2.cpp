@@ -25,7 +25,7 @@ using namespace boost::assign;
 #include <gtsam/base/timing.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
-#include <gtsam/inference/BayesTree-inl.h>
+#include <gtsam/inference/BayesTree.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
