@@ -1854,6 +1854,7 @@ typedef gtsam::BayesTree<gtsam::GaussianConditional, gtsam::ISAM2Clique> ISAM2Ba
 virtual class ISAM2  : gtsam::ISAM2BayesTree {
   ISAM2();
   ISAM2(const gtsam::ISAM2Params& params);
+  ISAM2(const gtsam::ISAM2& other);
 
   bool equals(const gtsam::ISAM2& other, double tol) const;
   void print(string s) const;
