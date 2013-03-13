@@ -69,6 +69,7 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
       case GraphvizFormatting::NEGX: x = -p->x(); break;
       case GraphvizFormatting::NEGY: x = -p->y(); break;
       case GraphvizFormatting::NEGZ: x = 0.0; break;
+      default: throw std::runtime_error("Invalid enum value");
       }
       switch (graphvizFormatting.paperVerticalAxis) {
       case GraphvizFormatting::X: y = p->x(); break;
@@ -77,6 +78,7 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
       case GraphvizFormatting::NEGX: y = -p->x(); break;
       case GraphvizFormatting::NEGY: y = -p->y(); break;
       case GraphvizFormatting::NEGZ: y = 0.0; break;
+      default: throw std::runtime_error("Invalid enum value");
       }
       return Point2(x,y);
     } else if(const Pose3* p = dynamic_cast<const Pose3*>(&value)) {
@@ -88,6 +90,7 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
       case GraphvizFormatting::NEGX: x = -p->x(); break;
       case GraphvizFormatting::NEGY: x = -p->y(); break;
       case GraphvizFormatting::NEGZ: x = -p->z(); break;
+      default: throw std::runtime_error("Invalid enum value");
       }
       switch (graphvizFormatting.paperVerticalAxis) {
       case GraphvizFormatting::X: y = p->x(); break;
@@ -96,6 +99,7 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
       case GraphvizFormatting::NEGX: y = -p->x(); break;
       case GraphvizFormatting::NEGY: y = -p->y(); break;
       case GraphvizFormatting::NEGZ: y = -p->z(); break;
+      default: throw std::runtime_error("Invalid enum value");
       }
      return Point2(x,y);
     } else {
