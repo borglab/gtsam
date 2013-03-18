@@ -24,8 +24,9 @@ using namespace boost::assign;
 
 #include <gtsam/base/timing.h>
 #include <gtsam/base/debug.h>
-#include <gtsam/linear/GaussianJunctionTree.h>
 #include <gtsam/inference/BayesTree.h>
+#include <gtsam/linear/GaussianJunctionTree.h>
+#include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
@@ -792,120 +793,147 @@ void ISAM2::experimentalMarginalizeLeaves(const FastList<Key>& leafKeys)
   BOOST_FOREACH(Key key, leafKeys) {
     indices.insert(ordering_[key]);
   }
-  FastSet<Index> origIndices = indices;
 
-  // For each clique containing variables to be marginalized, we need to
-  // reeliminate the marginalized variables and add their linear contribution
-  // factor into the factor graph.  This results in some extra work if we are
-  // marginalizing multiple cliques on the same path.
-
-  // To do this, first build a map containing all cliques containing variables to be
-  // marginalized that determines the last-ordered variable eliminated in that
-  // clique.
-  FastMap<sharedClique, Index> cliquesToMarginalize;
-  BOOST_FOREACH(Index jI, indices)
-  {
-    assert(nodes_[jI]); // Assert that the nodes structure contains this index
-    pair<FastMap<sharedClique,Index>::iterator, bool> insertResult =
-      cliquesToMarginalize.insert(make_pair(nodes_[jI], jI));
-    // If insert found a map entry existing, see if our current index is
-    // eliminated later and modify the entry if so.
-    if(!insertResult.second && jI > insertResult.first->second)
-      insertResult.first->second = jI;
-  }
-
-#ifndef NDEBUG
-  // Check that the cliques have sorted frontal keys - we assume that here.
-  for(FastMap<sharedClique,Index>::const_iterator c = cliquesToMarginalize.begin();
-    c != cliquesToMarginalize.end(); ++c)
-  {
-    FastSet<Key> keys(c->first->conditional()->beginFrontals(), c->first->conditional()->endFrontals());
-    assert(std::equal(c->first->conditional()->beginFrontals(), c->first->conditional()->endFrontals(), keys.begin()));
-  }
-#endif
-
-  // Now loop over the indices, the iterator jI is advanced inside the loop.
+  // Keep track of marginal factors - map from clique to the marginal factors
+  // that should be incorporated into it, passed up from it's children.
+  multimap<sharedClique, GaussianFactor::shared_ptr> marginalFactors;
   FastSet<size_t> factorIndicesToRemove;
-  GaussianFactorGraph factorsToAdd;
-  for(FastSet<Index>::iterator jI = indices.begin(); jI != indices.end(); )
-  {
-    const Index j = *jI;
 
-    // Retrieve the clique and the latest-ordered index corresponding to this index
-    FastMap<sharedClique,Index>::iterator clique_lastIndex = cliquesToMarginalize.find(nodes_[*jI]);
-    assert(clique_lastIndex != cliquesToMarginalize.end()); // Assert that we indexed the clique
+  // Remove each variable and its subtrees
+  BOOST_FOREACH(Index j, indices) {
+    if(nodes_[j]) { // If the index was not already removed by removing another subtree
+      sharedClique clique = nodes_[j];
 
-    const size_t originalnFrontals = clique_lastIndex->first->conditional()->nrFrontals();
+      // See if we should remove the whole clique
+      bool marginalizeEntireClique = true;
+      BOOST_FOREACH(Index frontal, clique->conditional()->frontals()) {
+        if(indices.find(frontal) == indices.end()) {
+          marginalizeEntireClique = false;
+          break; } }
 
-    // Check that the clique has no children
-    if(!clique_lastIndex->first->children().empty())
-      throw MarginalizeNonleafException(ordering_.key(*jI), params_.keyFormatter);
-
-    // Check that all previous variables in the clique are also being eliminated and no later ones.
-    // At the same time, remove the indices marginalized with this clique from the indices set.
-    // This is where the iterator j is advanced.
-    size_t nFrontals = 0;
-    {
-      bool foundLast = false;
-      BOOST_FOREACH(Index cliqueVar, clique_lastIndex->first->conditional()->frontals()) {
-        if(!foundLast && indices.find(cliqueVar) == indices.end())
-          throw MarginalizeNonleafException(ordering_.key(j), params_.keyFormatter);
-        if(foundLast && indices.find(cliqueVar) != indices.end())
-          throw MarginalizeNonleafException(ordering_.key(j), params_.keyFormatter);
-        if(!foundLast) {
-          ++ nFrontals;
-          if(cliqueVar == *jI)
-            indices.erase(jI++); // j gets advanced here
-          else
-            indices.erase(cliqueVar);
-        }
-        if(cliqueVar == clique_lastIndex->second)
-          foundLast = true;
-        // Mark factors to be removed
-        BOOST_FOREACH(size_t i, variableIndex_[cliqueVar]) {
-          factorIndicesToRemove.insert(i);
+      // Remove either the whole clique or part of it
+      if(marginalizeEntireClique) {
+        // Remove the whole clique and its subtree, and keep the marginal factor.
+        GaussianFactor::shared_ptr marginalFactor = clique->cachedFactor();
+        // We do not need the marginal factors associated with this clique
+        // because their information is already incorporated in the new
+        // marginal factor.  So, now associate this marginal factor with the
+        // parent of this clique.
+        marginalFactors.insert(make_pair(clique->parent(), marginalFactor));
+        // Now remove this clique and its subtree - all of its marginal
+        // information has been stored in marginalFactors.
+        const Cliques removedCliques = this->removeSubtree(clique); // Remove the subtree and throw away the cliques
+        BOOST_FOREACH(const sharedClique& removedClique, removedCliques) {
+          marginalFactors.erase(removedClique);
+          // Mark factors for removal
+          BOOST_FOREACH(Index indexInClique, removedClique->conditional()->frontals()) {
+            factorIndicesToRemove.insert(variableIndex_[indexInClique].begin(), variableIndex_[indexInClique].end()); }
         }
       }
-    }
+      else {
+        // Reeliminate the current clique and the marginals from its children,
+        // then keep only the marginal on the non-marginalized variables.  We
+        // get the childrens' marginals from any existing children, plus
+        // the marginals from the marginalFactors multimap, which come from any
+        // subtrees already marginalized out.
+        
+        // Add child marginals and remove marginalized subtrees
+        GaussianFactorGraph graph;
+        Cliques subtreesToRemove;
+        BOOST_FOREACH(const sharedClique& child, clique->children()) {
+          graph.push_back(child->cachedFactor()); // Add child marginal
+          // Remove subtree if child depends on any marginalized keys
+          BOOST_FOREACH(Index parentIndex, child->conditional()->parents()) {
+            if(indices.find(parentIndex) != indices.end()) {
+              subtreesToRemove.push_back(child);
+              break;
+            }
+          }
+        }
+        BOOST_FOREACH(const sharedClique& childToRemove, subtreesToRemove) {
+          const Cliques removedCliques = this->removeSubtree(childToRemove); // Remove the subtree and throw away the cliques
+          BOOST_FOREACH(const sharedClique& removedClique, removedCliques) {
+            marginalFactors.erase(removedClique); }
+          // Mark factors for removal
+          BOOST_FOREACH(Index indexInClique, childToRemove->conditional()->frontals()) {
+            factorIndicesToRemove.insert(variableIndex_[indexInClique].begin(), variableIndex_[indexInClique].end()); }
+        }
 
-    // Reeliminate the factored conditional + marginal that was previously making up the clique
-    GaussianFactorGraph cliqueGraph;
-    cliqueGraph.push_back(clique_lastIndex->first->conditional()->toFactor());
-    assert(clique_lastIndex->first->cachedFactor()); // Assert that we have the cached marginal piece
-    cliqueGraph.push_back(clique_lastIndex->first->cachedFactor());
-    pair<Clique::sharedConditional, GaussianFactor::shared_ptr> eliminationResult =
-      params_.factorization==ISAM2Params::QR ?
-      EliminateQR(cliqueGraph, nFrontals) :
-      EliminatePreferCholesky(cliqueGraph, nFrontals);
+        // Gather remaining children after we removed marginalized subtrees
+        vector<sharedClique> orphans(clique->children().begin(), clique->children().end());
 
-    // Now we discard the conditional part and add the marginal part back into
-    // the graph.  Also we need to rebuild the leaf clique using the marginal.
+        // Add a factor for the current clique to the linear graph to reeliminate
+        graph.push_back(clique->conditional()->toFactor());
+        graph.push_back(clique->cachedFactor());
 
-    // Add the marginal into the factor graph
-    factorsToAdd.push_back(eliminationResult.second);
+        // Remove the current clique
+        sharedClique parent = clique->parent();
+        this->removeClique(clique);
+        // Mark factors for removal
+        BOOST_FOREACH(Index indexInClique, clique->conditional()->frontals()) {
+          factorIndicesToRemove.insert(variableIndex_[indexInClique].begin(), variableIndex_[indexInClique].end()); }
 
-    // Get the parent of the clique to be removed
-    sharedClique parent = clique_lastIndex->first->parent();
+        // Reeliminate the linear graph to get the marginal and discard the conditional
+        const FastSet<Index> cliqueFrontals(clique->conditional()->beginFrontals(), clique->conditional()->endFrontals());
+        FastSet<Index> cliqueFrontalsToEliminate;
+        std::set_intersection(cliqueFrontals.begin(), cliqueFrontals.end(), indices.begin(), indices.end(),
+          std::inserter(cliqueFrontalsToEliminate, cliqueFrontalsToEliminate.end()));
+        vector<Index> cliqueFrontalsToEliminateV(cliqueFrontalsToEliminate.begin(), cliqueFrontalsToEliminate.end());
+        pair<GaussianConditional::shared_ptr, GaussianFactorGraph> eliminationResult1 =
+          graph.eliminate(cliqueFrontalsToEliminateV,
+          params_.factorization==ISAM2Params::QR ? EliminateQR : EliminatePreferCholesky);
 
-    // Remove the clique
-    this->removeClique(clique_lastIndex->first);
+        // Add the resulting marginal
+        BOOST_FOREACH(const GaussianFactor::shared_ptr& marginal, eliminationResult1.second) {
+          if(marginal)
+            marginalFactors.insert(make_pair(clique, marginal)); }
 
-    // Add a new leaf clique if necessary
-    const size_t newnFrontals = originalnFrontals - nFrontals;
-    if(newnFrontals > 0) {
-      // Do the elimination for the new leaf clique
-      GaussianFactorGraph newCliqueGraph;
-      newCliqueGraph.push_back(eliminationResult.second);
-      pair<Clique::sharedConditional, GaussianFactor::shared_ptr> newEliminationResult =
-        params_.factorization==ISAM2Params::QR ?
-        EliminateQR(newCliqueGraph, newnFrontals) :
-        EliminatePreferCholesky(newCliqueGraph, newnFrontals);
-      // Create and add the new clique
-      this->addClique(ISAM2Clique::Create(newEliminationResult), parent);
+        // Recover the conditional on the remaining subset of frontal variables
+        // of this clique being martially marginalized.
+        vector<Index> newFrontals(
+          std::find(clique->conditional()->beginFrontals(), clique->conditional()->endFrontals(), j) + 1,
+          clique->conditional()->endFrontals()); // New frontals are all of those *after* the marginalized key
+        pair<GaussianConditional::shared_ptr, GaussianFactorGraph> eliminationResult2 =
+          eliminationResult1.second.eliminate(newFrontals,
+          params_.factorization==ISAM2Params::QR ? EliminateQR : EliminatePreferCholesky);
+
+        // Construct the marginalized clique
+        sharedClique newClique;
+        if(params_.factorization == ISAM2Params::QR)
+          newClique.reset(new Clique(GaussianFactorGraph::EliminationResult(
+          eliminationResult2.first, boost::make_shared<JacobianFactor>(eliminationResult2.second))));
+        else
+          newClique.reset(new Clique(GaussianFactorGraph::EliminationResult(
+          eliminationResult2.first, boost::make_shared<HessianFactor>(eliminationResult2.second))));
+
+        // Add the marginalized clique to the BayesTree
+        this->addClique(newClique, parent);
+
+        // Add the orphans
+        BOOST_FOREACH(const sharedClique& orphan, orphans) {
+          this->addClique(orphan, newClique); }
+      }
     }
   }
 
-  // Remove any factors touching the marginalized-out variables
+  // At this point we have updated the BayesTree, now update the remaining iSAM2 data structures
+
+  // Gather factors to add - the new marginal factors
+  GaussianFactorGraph factorsToAdd;
+  typedef pair<sharedClique, GaussianFactor::shared_ptr> Clique_Factor;
+  BOOST_FOREACH(const Clique_Factor& clique_factor, marginalFactors) {
+    if(clique_factor.second)
+      factorsToAdd.push_back(clique_factor.second);
+    nonlinearFactors_.push_back(boost::make_shared<LinearContainerFactor>(
+      clique_factor.second, ordering_));
+    if(params_.cacheLinearizedFactors)
+      linearFactors_.push_back(clique_factor.second);
+    BOOST_FOREACH(Index factorIndex, *clique_factor.second) {
+      fixedVariables_.insert(ordering_.key(factorIndex)); }
+  }
+  variableIndex_.augment(factorsToAdd); // Augment the variable index
+
+  // Remove the factors to remove that have been summarized in the newly-added marginal factors
   vector<size_t> removedFactorIndices;
   SymbolicFactorGraph removedFactors;
   BOOST_FOREACH(size_t i, factorIndicesToRemove) {
@@ -916,18 +944,6 @@ void ISAM2::experimentalMarginalizeLeaves(const FastList<Key>& leafKeys)
       linearFactors_.remove(i);
   }
   variableIndex_.remove(removedFactorIndices, removedFactors);
-
-  // Add the new factors and fix linearization points of involved variables
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factorsToAdd) {
-    nonlinearFactors_.push_back(boost::make_shared<LinearContainerFactor>(
-      factor, ordering_));
-    if(params_.cacheLinearizedFactors)
-      linearFactors_.push_back(factor);
-    BOOST_FOREACH(Index factorIndex, *factor) {
-      fixedVariables_.insert(ordering_.key(factorIndex));
-    }
-  }
-  variableIndex_.augment(factorsToAdd); // Augment the variable index
 
   // Remove the marginalized variables
   Impl::RemoveVariables(FastSet<Key>(leafKeys.begin(), leafKeys.end()), root_, theta_, variableIndex_, delta_, deltaNewton_, RgProd_,

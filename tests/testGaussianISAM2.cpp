@@ -884,7 +884,68 @@ namespace {
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(ISAM2, marginalizeLeaves)
+TEST_UNSAFE(ISAM2, marginalizeLeaves1)
+{
+  ISAM2 isam;
+
+  NonlinearFactorGraph factors;
+  factors.add(PriorFactor<LieVector>(0, LieVector(0.0), noiseModel::Unit::Create(1)));
+
+  factors.add(BetweenFactor<LieVector>(0, 1, LieVector(0.0), noiseModel::Unit::Create(1)));
+  factors.add(BetweenFactor<LieVector>(1, 2, LieVector(0.0), noiseModel::Unit::Create(1)));
+  factors.add(BetweenFactor<LieVector>(0, 2, LieVector(0.0), noiseModel::Unit::Create(1)));
+
+  Values values;
+  values.insert(0, LieVector(0.0));
+  values.insert(1, LieVector(0.0));
+  values.insert(2, LieVector(0.0));
+
+  FastMap<Key,int> constrainedKeys;
+  constrainedKeys.insert(make_pair(0,0));
+  constrainedKeys.insert(make_pair(1,1));
+  constrainedKeys.insert(make_pair(2,2));
+
+  isam.update(factors, values, FastVector<size_t>(), constrainedKeys);
+
+  FastList<Key> leafKeys;
+  leafKeys.push_back(isam.getOrdering().key(0));
+  EXPECT(checkMarginalizeLeaves(isam, leafKeys));
+}
+
+/* ************************************************************************* */
+TEST_UNSAFE(ISAM2, marginalizeLeaves2)
+{
+  ISAM2 isam;
+
+  NonlinearFactorGraph factors;
+  factors.add(PriorFactor<LieVector>(0, LieVector(0.0), noiseModel::Unit::Create(1)));
+
+  factors.add(BetweenFactor<LieVector>(0, 1, LieVector(0.0), noiseModel::Unit::Create(1)));
+  factors.add(BetweenFactor<LieVector>(1, 2, LieVector(0.0), noiseModel::Unit::Create(1)));
+  factors.add(BetweenFactor<LieVector>(0, 2, LieVector(0.0), noiseModel::Unit::Create(1)));
+  factors.add(BetweenFactor<LieVector>(2, 3, LieVector(0.0), noiseModel::Unit::Create(1)));
+
+  Values values;
+  values.insert(0, LieVector(0.0));
+  values.insert(1, LieVector(0.0));
+  values.insert(2, LieVector(0.0));
+  values.insert(3, LieVector(0.0));
+
+  FastMap<Key,int> constrainedKeys;
+  constrainedKeys.insert(make_pair(0,0));
+  constrainedKeys.insert(make_pair(1,1));
+  constrainedKeys.insert(make_pair(2,2));
+  constrainedKeys.insert(make_pair(3,3));
+
+  isam.update(factors, values, FastVector<size_t>(), constrainedKeys);
+
+  FastList<Key> leafKeys;
+  leafKeys.push_back(isam.getOrdering().key(0));
+  EXPECT(checkMarginalizeLeaves(isam, leafKeys));
+}
+
+/* ************************************************************************* */
+TEST_UNSAFE(ISAM2, marginalizeLeaves3)
 {
   ISAM2 isam;
 
@@ -909,15 +970,65 @@ TEST_UNSAFE(ISAM2, marginalizeLeaves)
   values.insert(4, LieVector(0.0));
   values.insert(5, LieVector(0.0));
 
-  isam.update(factors, values);
+  FastMap<Key,int> constrainedKeys;
+  constrainedKeys.insert(make_pair(0,0));
+  constrainedKeys.insert(make_pair(1,1));
+  constrainedKeys.insert(make_pair(2,2));
+  constrainedKeys.insert(make_pair(3,3));
+  constrainedKeys.insert(make_pair(4,4));
+  constrainedKeys.insert(make_pair(5,5));
+
+  isam.update(factors, values, FastVector<size_t>(), constrainedKeys);
 
   FastList<Key> leafKeys;
-  leafKeys.push_back(0);
+  leafKeys.push_back(isam.getOrdering().key(0));
   EXPECT(checkMarginalizeLeaves(isam, leafKeys));
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(ISAM2, marginalizeLeaves2)
+TEST_UNSAFE(ISAM2, marginalizeLeaves4)
+{
+  ISAM2 isam;
+
+  NonlinearFactorGraph factors;
+  factors.add(PriorFactor<LieVector>(0, LieVector(0.0), noiseModel::Unit::Create(1)));
+
+  factors.add(BetweenFactor<LieVector>(0, 1, LieVector(0.0), noiseModel::Unit::Create(1)));
+  factors.add(BetweenFactor<LieVector>(1, 2, LieVector(0.0), noiseModel::Unit::Create(1)));
+  factors.add(BetweenFactor<LieVector>(0, 2, LieVector(0.0), noiseModel::Unit::Create(1)));
+
+  factors.add(BetweenFactor<LieVector>(2, 3, LieVector(0.0), noiseModel::Unit::Create(1)));
+
+  factors.add(BetweenFactor<LieVector>(3, 4, LieVector(0.0), noiseModel::Unit::Create(1)));
+  factors.add(BetweenFactor<LieVector>(4, 5, LieVector(0.0), noiseModel::Unit::Create(1)));
+  factors.add(BetweenFactor<LieVector>(3, 5, LieVector(0.0), noiseModel::Unit::Create(1)));
+
+  Values values;
+  values.insert(0, LieVector(0.0));
+  values.insert(1, LieVector(0.0));
+  values.insert(2, LieVector(0.0));
+  values.insert(3, LieVector(0.0));
+  values.insert(4, LieVector(0.0));
+  values.insert(5, LieVector(0.0));
+
+  FastMap<Key,int> constrainedKeys;
+  constrainedKeys.insert(make_pair(0,0));
+  constrainedKeys.insert(make_pair(1,1));
+  constrainedKeys.insert(make_pair(2,2));
+  constrainedKeys.insert(make_pair(3,3));
+  constrainedKeys.insert(make_pair(4,4));
+  constrainedKeys.insert(make_pair(5,5));
+
+  isam.update(factors, values, FastVector<size_t>(), constrainedKeys);
+
+  FastList<Key> leafKeys;
+  leafKeys.push_back(isam.getOrdering().key(0));
+  leafKeys.push_back(isam.getOrdering().key(1));
+  EXPECT(checkMarginalizeLeaves(isam, leafKeys));
+}
+
+/* ************************************************************************* */
+TEST_UNSAFE(ISAM2, marginalizeLeaves5)
 {
   // Create isam2
   ISAM2 isam = createSlamlikeISAM2();
