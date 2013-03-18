@@ -85,7 +85,7 @@ namespace gtsam {
   public:
     sharedConditional conditional_;
     derived_weak_ptr parent_;
-    std::list<derived_ptr> children_;
+    FastList<derived_ptr> children_;
 
     /// @name Testable
     /// @{
@@ -149,7 +149,7 @@ namespace gtsam {
     }
 
     /** return the reference of children non-const version*/
-    std::list<derived_ptr>& children() {
+    FastList<derived_ptr>& children() {
       return children_;
     }
 

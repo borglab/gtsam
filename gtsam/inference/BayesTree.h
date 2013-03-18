@@ -28,7 +28,7 @@
 #include <boost/lexical_cast.hpp>
 
 #include <gtsam/base/types.h>
-#include <gtsam/base/FastVector.h>
+#include <gtsam/base/FastList.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/BayesTreeCliqueBase.h>
@@ -69,7 +69,7 @@ namespace gtsam {
     typedef boost::shared_ptr<Clique> sharedClique;
 
     // A convenience class for a list of shared cliques
-    struct Cliques : public std::list<sharedClique> {
+    struct Cliques : public FastList<sharedClique> {
       void print(const std::string& s = "Cliques",
           const IndexFormatter& indexFormatter = DefaultIndexFormatter) const;
       bool equals(const Cliques& other, double tol = 1e-9) const;
