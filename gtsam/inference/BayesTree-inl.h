@@ -772,7 +772,7 @@ namespace gtsam {
       root_.reset();
 
     // Add all subtree cliques and erase the children and parent of each
-    for(Cliques::iterator clique = cliques.begin(); clique != cliques.end(); ++clique)
+    for(typename Cliques::iterator clique = cliques.begin(); clique != cliques.end(); ++clique)
     {
       // Add children
       BOOST_FOREACH(const sharedClique& child, (*clique)->children()) {
