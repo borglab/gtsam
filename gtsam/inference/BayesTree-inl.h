@@ -758,6 +758,43 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class CONDITIONAL, class CLIQUE>
+  typename BayesTree<CONDITIONAL,CLIQUE>::Cliques BayesTree<CONDITIONAL,CLIQUE>::removeSubtree(
+    const sharedClique& subtree)
+  {
+    // Result clique list
+    Cliques cliques;
+    cliques.push_back(subtree);
+
+    // Remove the first clique from its parents
+    if(!subtree->isRoot())
+      subtree->parent()->children().remove(subtree);
+    else
+      root_.reset();
+
+    // Add all subtree cliques and erase the children and parent of each
+    for(Cliques::iterator clique = cliques.begin(); clique != cliques.end(); ++clique)
+    {
+      // Add children
+      BOOST_FOREACH(const sharedClique& child, (*clique)->children()) {
+        cliques.push_back(child); }
+
+      // Delete cached shortcuts
+      (*clique)->deleteCachedShortcutsNonRecursive();
+
+      // Remove this node from the nodes index
+      BOOST_FOREACH(Index j, (*clique)->conditional()->frontals()) {
+        nodes_[j].reset(); }
+
+      // Erase the parent and children pointers
+      (*clique)->parent_.reset();
+      (*clique)->children_.clear();
+    }
+
+    return cliques;
+  }
+
+  /* ************************************************************************* */
+  template<class CONDITIONAL, class CLIQUE>
   void BayesTree<CONDITIONAL,CLIQUE>::cloneTo(This& newTree) const {
     if(root())
       cloneTo(newTree, root(), sharedClique());

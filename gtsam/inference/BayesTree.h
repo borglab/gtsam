@@ -253,6 +253,10 @@ namespace gtsam {
     void removeTop(const CONTAINER& indices, BayesNet<CONDITIONAL>& bn, Cliques& orphans);
 
     /**
+     * Remove the requested subtree. */
+    Cliques removeSubtree(const sharedClique& subtree);
+
+    /**
      * Hang a new subtree off of the existing tree.  This finds the appropriate
      * parent clique for the subtree (which may be the root), and updates the
      * nodes index with the new cliques in the subtree.  None of the frontal
