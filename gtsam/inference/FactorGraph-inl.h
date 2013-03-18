@@ -184,8 +184,7 @@ namespace gtsam {
         Permutation toFront = Permutation::PullToFront(variables, highestInvolvedVariable+1);
         Permutation toFrontInverse = *toFront.inverse();
         BOOST_FOREACH(const sharedFactor& factor, involvedFactors) {
-          factor->permuteWithInverse(toFrontInverse);
-        }
+          factor->permuteWithInverse(toFrontInverse); }
 
         // Eliminate into conditional and remaining factor
         EliminationResult eliminated = eliminateFcn(involvedFactors, variables.size());
@@ -193,6 +192,8 @@ namespace gtsam {
         remainingFactor = eliminated.second;
 
         // Undo the permutation
+        BOOST_FOREACH(const sharedFactor& factor, involvedFactors) {
+          factor->permuteWithInverse(toFront); }
         conditional->permuteWithInverse(toFront);
         remainingFactor->permuteWithInverse(toFront);
       } else {
