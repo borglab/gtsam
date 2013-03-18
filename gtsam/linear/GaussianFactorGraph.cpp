@@ -327,50 +327,9 @@ break;
   }
 
   /* ************************************************************************* */
-  static FastMap<Index, SlotEntry> findScatterAndDims(const FactorGraph<GaussianFactor>& factors) {
-
-    const bool debug = ISDEBUG("findScatterAndDims");
-
-    // The "scatter" is a map from global variable indices to slot indices in the
-    // union of involved variables.  We also include the dimensionality of the
-    // variable.
-
-    Scatter scatter;
-
-    // First do the set union.
-    BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors) {
-      if(factor) {
-        for(GaussianFactor::const_iterator variable = factor->begin(); variable != factor->end(); ++variable) {
-          scatter.insert(make_pair(*variable, SlotEntry(0, factor->getDim(variable))));
-        }
-      }
-    }
-
-    // Next fill in the slot indices (we can only get these after doing the set
-    // union.
-    size_t slot = 0;
-    BOOST_FOREACH(Scatter::value_type& var_slot, scatter) {
-      var_slot.second.slot = (slot ++);
-      if(debug)
-        cout << "scatter[" << var_slot.first << "] = (slot " << var_slot.second.slot << ", dim " << var_slot.second.dimension << ")" << endl;
-    }
-
-    return scatter;
-  }
-
-  /* ************************************************************************* */
   Matrix GaussianFactorGraph::augmentedHessian() const {
-
-    Scatter scatter = findScatterAndDims(*this);
-
-    vector<size_t> dims; dims.reserve(scatter.size() + 1);
-    BOOST_FOREACH(const Scatter::value_type& index_entry, scatter) {
-      dims.push_back(index_entry.second.dimension);
-    }
-    dims.push_back(1);
-
     // combine all factors and get upper-triangular part of Hessian
-    HessianFactor combined(*this, dims, scatter);
+    HessianFactor combined(*this);
     Matrix result = combined.info();
     // Fill in lower-triangular part of Hessian
     result.triangularView<Eigen::StrictlyLower>() = result.transpose();
@@ -391,24 +350,9 @@ break;
 
     const bool debug = ISDEBUG("EliminateCholesky");
 
-    // Find the scatter and variable dimensions
-    gttic(find_scatter);
-    Scatter scatter(findScatterAndDims(factors));
-    gttoc(find_scatter);
-
-    // Pull out keys and dimensions
-    gttic(keys);
-    vector<size_t> dimensions(scatter.size() + 1);
-    BOOST_FOREACH(const Scatter::value_type& var_slot, scatter) {
-      dimensions[var_slot.second.slot] = var_slot.second.dimension;
-    }
-    // This is for the r.h.s. vector
-    dimensions.back() = 1;
-    gttoc(keys);
-
     // Form Ab' * Ab
     gttic(combine);
-    HessianFactor::shared_ptr combinedFactor(new HessianFactor(factors, dimensions, scatter));
+    HessianFactor::shared_ptr combinedFactor(new HessianFactor(factors));
     gttoc(combine);
 
     // Do Cholesky, note that after this, the lower triangle still contains

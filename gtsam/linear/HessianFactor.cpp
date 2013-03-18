@@ -50,6 +50,25 @@ string SlotEntry::toString() const {
 }
 
 /* ************************************************************************* */
+Scatter::Scatter(const FactorGraph<GaussianFactor>& gfg) {
+  // First do the set union.
+  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, gfg) {
+    if(factor) {
+      for(GaussianFactor::const_iterator variable = factor->begin(); variable != factor->end(); ++variable) {
+        this->insert(make_pair(*variable, SlotEntry(0, factor->getDim(variable))));
+      }
+    }
+  }
+
+  // Next fill in the slot indices (we can only get these after doing the set
+  // union.
+  size_t slot = 0;
+  BOOST_FOREACH(value_type& var_slot, *this) {
+    var_slot.second.slot = (slot ++);
+  }
+}
+
+/* ************************************************************************* */
 void HessianFactor::assertInvariants() const {
   GaussianFactor::assertInvariants(); // The base class checks for unique keys
 }
@@ -245,9 +264,19 @@ HessianFactor::HessianFactor(const GaussianFactor& gf) : info_(matrix_) {
 }
 
 /* ************************************************************************* */
-HessianFactor::HessianFactor(const FactorGraph<GaussianFactor>& factors,
-    const vector<size_t>& dimensions, const Scatter& scatter) :
-    info_(matrix_) {
+HessianFactor::HessianFactor(const FactorGraph<GaussianFactor>& factors) : info_(matrix_)
+{
+  Scatter scatter(factors);
+
+  // Pull out keys and dimensions
+  gttic(keys);
+  vector<size_t> dimensions(scatter.size() + 1);
+  BOOST_FOREACH(const Scatter::value_type& var_slot, scatter) {
+    dimensions[var_slot.second.slot] = var_slot.second.dimension;
+  }
+  // This is for the r.h.s. vector
+  dimensions.back() = 1;
+  gttoc(keys);
 
   const bool debug = ISDEBUG("EliminateCholesky");
   // Form Ab' * Ab
