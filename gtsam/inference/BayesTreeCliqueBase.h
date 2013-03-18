@@ -201,8 +201,7 @@ namespace gtsam {
     void deleteCachedShortcuts();
 
     const boost::optional<FactorGraph<FactorType> >& cachedSeparatorMarginal() const {
-      return cachedSeparatorMarginal_;
-    }
+      return cachedSeparatorMarginal_; }
 
     friend class BayesTree<ConditionalType, DerivedType> ;
 
@@ -224,6 +223,9 @@ namespace gtsam {
      */
     std::vector<Index> shortcut_indices(derived_ptr B,
         const FactorGraph<FactorType>& p_Cp_B) const;
+
+    /** Non-recursive delete cached shortcuts and marginals - internal only. */
+    void deleteCachedShortcutsNonRecursive() { cachedSeparatorMarginal_ = boost::none; }
 
   private:
 
