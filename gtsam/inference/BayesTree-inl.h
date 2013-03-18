@@ -724,7 +724,7 @@ namespace gtsam {
       this->removePath(typename Clique::shared_ptr(clique->parent_.lock()), bn, orphans);
 
       // add children to list of orphans (splice also removed them from clique->children_)
-      orphans.splice (orphans.begin(), clique->children_);
+      orphans.splice(orphans.begin(), clique->children_);
 
       bn.push_back(clique->conditional());
 
