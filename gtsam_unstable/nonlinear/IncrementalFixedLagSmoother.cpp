@@ -46,6 +46,7 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(const NonlinearFact
   if(debug) {
     std::cout << "IncrementalFixedLagSmoother::update() Start" << std::endl;
     PrintSymbolicTree(isam_, "Bayes Tree Before Update:");
+    std::cout << "END" << std::endl;
   }
 
   FastVector<size_t> removedFactors;
@@ -88,48 +89,19 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(const NonlinearFact
 
   if(debug) {
     PrintSymbolicTree(isam_, "Bayes Tree After Update, Before Marginalization:");
+    std::cout << "END" << std::endl;
   }
 
   // Marginalize out any needed variables
-  //FastList<Key> leafKeys(marginalizableKeys.begin(), marginalizableKeys.end());
-  //isam_.experimentalMarginalizeLeaves(leafKeys);
-  {
-    // Currently the marginalization code in iSAM2 is limited.
-    // Marginalize the keys out one at a time, in elimination order
-    typedef std::map<Index, Key> OrderedKeys;
-    OrderedKeys marginalizeOrder;
-    BOOST_FOREACH(Key key, marginalizableKeys) {
-      Index index = isam_.getOrdering().at(key);
-      marginalizeOrder[index] = key;
-    }
-
-    if(debug) {
-      std::cout << "Marginalization Order: ";
-      BOOST_FOREACH(const OrderedKeys::value_type& index_key, marginalizeOrder) {
-        std::cout << DefaultKeyFormatter(index_key.second) << " ";
-      }
-      std::cout << std::endl;
-    }
-
-    BOOST_FOREACH(const OrderedKeys::value_type& index_key, marginalizeOrder) {
-
-      if(debug) std::cout << "Attempting to marginalize out variable: " <<  DefaultKeyFormatter(index_key.second) << std::endl;
-
-      FastList<Key> leafKeys;
-      leafKeys.push_back(index_key.second);
-      isam_.experimentalMarginalizeLeaves(leafKeys);
-
-      if(debug) {
-        PrintSymbolicTree(isam_, "Bayes Tree After Marginalization:");
-      }
-    }
-  }
+  FastList<Key> leafKeys(marginalizableKeys.begin(), marginalizableKeys.end());
+  isam_.experimentalMarginalizeLeaves(leafKeys);
 
   // Remove marginalized keys from the KeyTimestampMap
   eraseKeyTimestampMap(marginalizableKeys);
 
   if(debug) {
     PrintSymbolicTree(isam_, "Final Bayes Tree:");
+    std::cout << "END" << std::endl;
   }
 
   // TODO: Fill in result structure
