@@ -102,16 +102,15 @@ bool checkMarginalizeLeaves(ISAM2& isam, const FastList<Key>& leafKeys) {
 
   isam.getLinearizationPoint(), isam.getOrdering())->augmentedHessian();
 
-  assert(
-      actualAugmentedHessian.unaryExpr(std::ptr_fun(&std::isfinite<double>)).all());
+  assert(actualAugmentedHessian.unaryExpr(std::ptr_fun(&std::isfinite<double>)).all());
 
   // Check full marginalization
-
+  std::cout << "Checking treeEqual..." << std::endl;
   bool treeEqual = assert_equal(expectedAugmentedHessian,
       actualAugmentedHessian, 1e-6);
 
   //bool linEqual = assert_equal(expected2AugmentedHessian, actualAugmentedHessian, 1e-6);
-
+  std::cout << "Checking nonlinEqual..." << std::endl;
   bool nonlinEqual = assert_equal(expected3AugmentedHessian,
       actualAugmentedHessian, 1e-6);
 
@@ -121,6 +120,8 @@ bool checkMarginalizeLeaves(ISAM2& isam, const FastList<Key>& leafKeys) {
 
   actual3AugmentedHessian.bottomRightCorner(1, 1) =
       expected3AugmentedHessian.bottomRightCorner(1, 1);
+
+  std::cout << "Checking afterNonlinCorrect..." << std::endl;
   bool afterNonlinCorrect = assert_equal(expected3AugmentedHessian,
       actual3AugmentedHessian, 1e-6);
 
@@ -185,9 +186,11 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(const NonlinearFact
   }
 
   // Marginalize out any needed variables
-  FastList<Key> leafKeys(marginalizableKeys.begin(), marginalizableKeys.end());
-//  isam_.experimentalMarginalizeLeaves(leafKeys);
-  checkMarginalizeLeaves(isam_, leafKeys);
+  if(marginalizableKeys.size() > 0) {
+    FastList<Key> leafKeys(marginalizableKeys.begin(), marginalizableKeys.end());
+//    isam_.experimentalMarginalizeLeaves(leafKeys);
+    checkMarginalizeLeaves(isam_, leafKeys);
+  }
 
   // Remove marginalized keys from the KeyTimestampMap
   eraseKeyTimestampMap(marginalizableKeys);
