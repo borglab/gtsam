@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <gtsam/base/FastSet.h>
 #include <gtsam/inference/BayesTree.h>
 #include <gtsam/inference/VariableIndex.h>
 
