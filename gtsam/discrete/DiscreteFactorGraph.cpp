@@ -100,9 +100,8 @@ namespace gtsam {
     // PRODUCT: multiply all factors
     gttic(product);
     DecisionTreeFactor product;
-    BOOST_FOREACH(const DiscreteFactor::shared_ptr& factor, factors){
+    BOOST_FOREACH(const DiscreteFactor::shared_ptr& factor, factors)
       product = (*factor) * product;
-    }
 
     gttoc(product);
 

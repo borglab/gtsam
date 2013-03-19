@@ -29,6 +29,7 @@ add_dependencies(check.unstable check.discrete_unstable)
 set(discrete_unstable_examples
 schedulingExample
 schedulingQuals12
+schedulingQuals13
 )
 
 if (GTSAM_BUILD_EXAMPLES)

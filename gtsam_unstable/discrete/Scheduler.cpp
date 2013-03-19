@@ -112,6 +112,7 @@ namespace gtsam {
 
     if (!slot && !slotsAvailable_.empty()) {
       if (debug) cout << "Adding availability of slots" << endl;
+      assert(slotsAvailable_.size()==s.key_.second);
       CSP::add(s.key_, slotsAvailable_);
     }
 
@@ -122,21 +123,24 @@ namespace gtsam {
       const string& areaName = s.areaName_[area];
 
       if (debug) cout << "Area constraints " << areaName << endl;
+      assert(facultyInArea_[areaName].size()==areaKey.second);
       CSP::add(areaKey, facultyInArea_[areaName]);
 
       if (debug) cout << "Advisor constraint " << areaName << endl;
+      assert(s.advisor_.size()==areaKey.second);
       CSP::add(areaKey, s.advisor_);
 
       if (debug) cout << "Availability of faculty " << areaName << endl;
       if (slot) {
         // get all constraints then specialize to slot
-        DiscreteKey dummy(0, nrTimeSlots());
-        Potentials::ADT p(dummy & areaKey, available_);
-        Potentials::ADT q = p.choose(0, *slot);
+        size_t dummyIndex = maxNrStudents_*3+maxNrStudents_;
+        DiscreteKey dummy(dummyIndex, nrTimeSlots());
+        Potentials::ADT p(dummy & areaKey, available_); // available_ is Doodle string
+        Potentials::ADT q = p.choose(dummyIndex, *slot);
         DiscreteFactor::shared_ptr f(new DecisionTreeFactor(areaKey, q));
         CSP::push_back(f);
       } else {
-        CSP::add(s.key_, areaKey, available_);
+        CSP::add(s.key_, areaKey, available_); // available_ is Doodle string
       }
     }
 
@@ -233,7 +237,7 @@ namespace gtsam {
     Values::const_iterator it = assignment->begin();
     for (size_t area = 0; area < 3; area++, it++) {
       size_t f = it->second;
-      cout << setw(12) << it->first << ": " << facultyName_[f] << endl;
+      cout << setw(12) << studentArea(0,area) << ": " << facultyName_[f] << endl;
     }
     cout << endl;
   }

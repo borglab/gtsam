@@ -24,7 +24,7 @@ using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
-size_t NRSTUDENTS = 9;
+size_t NRSTUDENTS = 12;
 
 bool NonZero(size_t i) {
   return i > 0;
@@ -34,70 +34,94 @@ bool NonZero(size_t i) {
 void addStudent(Scheduler& s, size_t i) {
   switch (i) {
   case 0:
-    s.addStudent("Pan, Yunpeng", "Controls", "Perception", "Mechanics", "Eric Johnson");
+    s.addStudent("Young, Carol", "Controls", "Autonomy", "Mechanics", "Fumin Zhang");
     break;
   case 1:
-    s.addStudent("Sawhney, Rahul", "Controls", "AI", "Perception", "Henrik Christensen");
+    s.addStudent("Erdogan, Can", "Controls", "AI", "Perception", "Mike Stilman");
     break;
   case 2:
-    s.addStudent("Akgun, Baris", "Controls", "AI", "HRI", "Andrea Thomaz");
+    s.addStudent("Arslan, Oktay", "Controls", "AI", "Mechanics", "Panos Tsiotras");
     break;
   case 3:
-    s.addStudent("Jiang, Shu", "Controls", "AI", "Perception", "Ron Arkin");
+    s.addStudent("Bhattacharjee, Tapomayukh", "Controls", "AI", "Mechanics", "Charlie Kemp");
     break;
   case 4:
-    s.addStudent("Grice, Phillip", "Controls", "Perception", "HRI", "Charlie Kemp");
+    s.addStudent("Grey, Michael", "Controls", "AI", "Mechanics", "Wayne Book");
     break;
   case 5:
-    s.addStudent("Huaman, Ana", "Controls", "AI", "Perception", "Mike Stilman");
+    s.addStudent("O'Flaherty, Rowland", "Controls", "AI", "Mechanics", "Magnus Egerstedt");
     break;
   case 6:
-    s.addStudent("Levihn, Martin", "AI", "Autonomy", "Perception", "Mike Stilman");
+    s.addStudent("Pickem, Daniel", "Controls", "AI", "Mechanics", "Jeff Shamma");
     break;
   case 7:
-    s.addStudent("Nieto, Carlos", "AI", "Autonomy", "Perception", "Henrik Christensen");
+    s.addStudent("Lee, Kimoon", "Controls", "Autonomy", "Mechanics", "Henrik Christensen");
     break;
   case 8:
-    s.addStudent("Robinette, Paul", "Controls", "AI", "HRI", "Ayanna Howard");
+    s.addStudent("Melim, Andrew Lyon", "Controls", "AI", "Perception", "Frank Dellaert");
     break;
+  case 9:
+    s.addStudent("Jensen, David", "Controls", "Autonomy", "HRI", "Andrea Thomaz");
+    break;
+  case 10:
+    s.addStudent("Nisbett, Jared", "Controls", "Perception", "Mechanics", "Magnus Egerstedt");
+    break;
+  case 11:
+    s.addStudent("Pan, Yunpeng", "Controls", "Perception", "Mechanics", "Wayne Book");
+    break;
+//    case 12:
+//    s.addStudent("Grice, Phillip", "Controls", "None", "None", "Wayne Book");
+//    break;
+//  case 13:
+//    s.addStudent("Robinette, Paul", "Controls", "None", "None", "Ayanna Howard");
+//    break;
+//  case 14:
+//    s.addStudent("Huaman, Ana", "Autonomy", "None", "None", "Mike Stilman");
+//    break;
   }
 }
 
 /* ************************************************************************* */
-Scheduler largeExample(size_t nrStudents = NRSTUDENTS) {
+Scheduler largeExample(size_t nrStudents = NRSTUDENTS, bool addStudents=true) {
   string path("../../../gtsam_unstable/discrete/examples/");
-  Scheduler s(nrStudents, path + "Doodle2012.csv");
+  Scheduler s(nrStudents, path + "Doodle2013.csv");
 
   s.addArea("Harvey Lipkin", "Mechanics");
   s.addArea("Jun Ueda", "Mechanics");
+  s.addArea("Mike Stilman", "Mechanics");
+//  s.addArea("Frank Dellaert", "Mechanics");
+  s.addArea("Wayne Book", "Mechanics");
+//  s.addArea("Charlie Kemp", "Mechanics");
 
   s.addArea("Patricio Vela", "Controls");
   s.addArea("Magnus Egerstedt", "Controls");
   s.addArea("Jun Ueda", "Controls");
   s.addArea("Panos Tsiotras", "Controls");
   s.addArea("Fumin Zhang", "Controls");
+  s.addArea("Ayanna Howard", "Controls");
+  s.addArea("Jeff Shamma", "Controls");
 
+  s.addArea("Frank Dellaert", "Perception");
   s.addArea("Henrik Christensen", "Perception");
-  s.addArea("Aaron Bobick", "Perception");
 
   s.addArea("Mike Stilman", "AI");
 //  s.addArea("Henrik Christensen", "AI");
-  s.addArea("Ayanna Howard", "AI");
+//  s.addArea("Ayanna Howard", "AI");
   s.addArea("Charles Isbell", "AI");
-  s.addArea("Tucker Balch", "AI");
+//  s.addArea("Tucker Balch", "AI");
+  s.addArea("Andrea Thomaz", "AI");
 
   s.addArea("Ayanna Howard", "Autonomy");
   s.addArea("Charlie Kemp", "Autonomy");
-  s.addArea("Tucker Balch", "Autonomy");
-  s.addArea("Ron Arkin", "Autonomy");
 
-  s.addArea("Andrea Thomaz", "HRI");
+//  s.addArea("Andrea Thomaz", "HRI");
   s.addArea("Karen Feigh", "HRI");
-  s.addArea("Charlie Kemp", "HRI");
+//  s.addArea("Charlie Kemp", "HRI");
 
   // add students
-  for (size_t i = 0; i < nrStudents; i++)
-    addStudent(s, i);
+  if (addStudents)
+    for (size_t i = 0; i < nrStudents; i++)
+      addStudent(s, i);
 
   return s;
 }
@@ -110,7 +134,7 @@ void runLargeExample() {
 
   // BUILD THE GRAPH !
   size_t addMutex = 3;
-  // SETDEBUG("Scheduler::buildGraph", true);
+  SETDEBUG("Scheduler::buildGraph", true);
   scheduler.buildGraph(addMutex);
 
   // Do brute force product and output that to file
@@ -122,7 +146,7 @@ void runLargeExample() {
   // Do exact inference
   //  SETDEBUG("timing-verbose", true);
   SETDEBUG("DiscreteConditional::DiscreteConditional", true);
-#define SAMPLE
+//#define SAMPLE
 #ifdef SAMPLE
   gttic(large);
   DiscreteBayesNet::shared_ptr chordal = scheduler.eliminate();
@@ -156,8 +180,9 @@ void runLargeExample() {
 // Solve a series of relaxed problems for maximum flexibility solution
 void solveStaged(size_t addMutex = 2) {
 
-  // super-hack! just count...
   bool debug = false;
+
+  // super-hack! just count...
   SETDEBUG("DiscreteConditional::COUNT", true);
   SETDEBUG("DiscreteConditional::DiscreteConditional", debug); // progress
 
@@ -169,7 +194,7 @@ void solveStaged(size_t addMutex = 2) {
   for (size_t s = 0; s < NRSTUDENTS; s++) {
     // add all students first time, then drop last one second time, etc...
     Scheduler scheduler = largeExample(NRSTUDENTS - s);
-    //scheduler.print(str(boost::format("Scheduler %d") % (NRSTUDENTS-s)));
+//    scheduler.print(str(boost::format("Scheduler %d") % (NRSTUDENTS-s)));
 
     // only allow slots not yet taken
     scheduler.setSlotsAvailable(slotsAvailable);
@@ -194,7 +219,7 @@ void solveStaged(size_t addMutex = 2) {
     // get corresponding count
     DiscreteKey dkey = scheduler.studentKey(NRSTUDENTS - 1 - s);
     values[dkey.first] = bestSlot;
-    size_t count = (*root)(values);
+    double count = (*root)(values);
 
     // remove this slot from consideration
     slotsAvailable[bestSlot] = 0.0;
@@ -208,30 +233,33 @@ void solveStaged(size_t addMutex = 2) {
 // Sample from solution found above and evaluate cost function
 DiscreteBayesNet::shared_ptr createSampler(size_t i,
     size_t slot, vector<Scheduler>& schedulers) {
-  Scheduler scheduler = largeExample(0); // todo: wrong nr students
+  Scheduler scheduler = largeExample(1,false);
   addStudent(scheduler, i);
+  cout << " creating sampler for " << scheduler.studentName(0) << endl;
   SETDEBUG("Scheduler::buildGraph", false);
+//  scheduler.print();
   scheduler.addStudentSpecificConstraints(0, slot);
   DiscreteBayesNet::shared_ptr chordal = scheduler.eliminate();
-  // chordal->print(scheduler[i].studentKey(0).name()); // large !
   schedulers.push_back(scheduler);
   return chordal;
 }
 
 void sampleSolutions() {
 
+  size_t nrFaculty = 17; // Change to correct number !
+
   vector<Scheduler> schedulers;
   vector<DiscreteBayesNet::shared_ptr> samplers(NRSTUDENTS);
 
   // Given the time-slots, we can create NRSTUDENTS independent samplers
   vector<size_t> slots;
-  slots += 3, 20, 2, 6, 5, 11, 1, 4; // given slots
+  slots += 12,11,13, 21,16,1, 3,2,6, 7,22,4; // given slots
   for (size_t i = 0; i < NRSTUDENTS; i++)
     samplers[i] = createSampler(i, slots[i], schedulers);
 
   // now, sample schedules
-  for (size_t n = 0; n < 500; n++) {
-    vector<size_t> stats(19, 0);
+  for (size_t n = 0; n < 10000; n++) {
+    vector<size_t> stats(nrFaculty, 0);
     vector<Scheduler::sharedValues> samples;
     for (size_t i = 0; i < NRSTUDENTS; i++) {
       samples.push_back(sample(*samplers[i]));
@@ -240,7 +268,7 @@ void sampleSolutions() {
     size_t max = *max_element(stats.begin(), stats.end());
     size_t min = *min_element(stats.begin(), stats.end());
     size_t nz = count_if(stats.begin(), stats.end(), NonZero);
-    if (nz >= 15 && max <= 2) {
+    if (nz >= 16 && max <= 3) {
       cout << boost::format(
           "Sampled schedule %d, min = %d, nz = %d, max = %d\n") % (n + 1) % min
           % nz % max;
@@ -256,8 +284,8 @@ void sampleSolutions() {
 /* ************************************************************************* */
 int main() {
 //  runLargeExample();
-  solveStaged(3);
-//  sampleSolutions();
+//  solveStaged(3);
+  sampleSolutions();
   return 0;
 }
 /* ************************************************************************* */

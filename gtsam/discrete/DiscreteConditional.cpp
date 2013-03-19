@@ -46,9 +46,8 @@ namespace gtsam {
       const DecisionTreeFactor& marginal) :
       IndexConditional(joint.keys(), joint.size() - marginal.size()), Potentials(
           ISDEBUG("DiscreteConditional::COUNT") ? joint : joint / marginal) {
-//    assert(nrFrontals() == 1);
-    if (ISDEBUG("DiscreteConditional::DiscreteConditional")) cout
-        << (firstFrontalKey()) << endl;  //TODO Print all keys
+    if (ISDEBUG("DiscreteConditional::DiscreteConditional"))
+      cout << (firstFrontalKey()) << endl;  //TODO Print all keys
   }
 
   /* ******************************************************************************** */
@@ -88,16 +87,8 @@ namespace gtsam {
 
   /* ******************************************************************************** */
   void DiscreteConditional::solveInPlace(Values& values) const {
-//    OLD
-//    assert(nrFrontals() == 1);
-//    Index j = (firstFrontalKey());
-//    size_t mpe = solve(values); // Solve for variable
-//    values[j] = mpe; // store result in partial solution
-//    OLD
+    // TODO: Abhijit asks: is this really the fastest way? He thinks it is.
 
-    // TODO: is this really the fastest way? I think it is.
-
-    //The following is to make make adjustment for nFrontals \neq 1
     ADT pFS = choose(values); // P(F|S=parentsValues)
 
     // Initialize

@@ -32,6 +32,7 @@ namespace gtsam {
   template<class FACTOR>
   GenericSequentialSolver<FACTOR>::GenericSequentialSolver(const FactorGraph<FACTOR>& factorGraph) {
     gttic(GenericSequentialSolver_constructor1);
+    assert(factorGraph.size());
     factors_.reset(new FactorGraph<FACTOR>(factorGraph));
     structure_.reset(new VariableIndex(factorGraph));
     eliminationTree_ = EliminationTree<FACTOR>::Create(*factors_, *structure_);
