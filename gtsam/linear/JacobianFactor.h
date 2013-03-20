@@ -267,12 +267,10 @@ namespace gtsam {
      * model. */
     JacobianFactor whiten() const;
 
-    /**
-     * eliminate the first variable
-     */
+    /** Eliminate the first variable, modifying the factor in place to contain the remaining marginal. */
     boost::shared_ptr<GaussianConditional> eliminateFirst();
 
-    /** return a multi-frontal conditional. It's actually a chordal Bayesnet */
+    /** Eliminate the requested number of frontal variables, modifying the factor in place to contain the remaining marginal. */
     boost::shared_ptr<GaussianConditional> eliminate(size_t nrFrontals = 1);
 
     /**
