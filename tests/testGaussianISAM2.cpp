@@ -871,11 +871,14 @@ namespace {
     assert(actualAugmentedHessian.unaryExpr(std::ptr_fun(&std::isfinite<double>)).all());
 
     // Check full marginalization
+    //cout << "treeEqual" << endl;
     bool treeEqual = assert_equal(expectedAugmentedHessian, actualAugmentedHessian, 1e-6);
     //bool linEqual = assert_equal(expected2AugmentedHessian, actualAugmentedHessian, 1e-6);
+    //cout << "nonlinEqual" << endl;
     bool nonlinEqual = assert_equal(expected3AugmentedHessian, actualAugmentedHessian, 1e-6);
     //bool linCorrect = assert_equal(expected3AugmentedHessian, expected2AugmentedHessian, 1e-6);
     //actual2AugmentedHessian.bottomRightCorner(1,1) = expected3AugmentedHessian.bottomRightCorner(1,1); bool afterLinCorrect = assert_equal(expected3AugmentedHessian, actual2AugmentedHessian, 1e-6);
+    //cout << "nonlinCorrect" << endl;
     actual3AugmentedHessian.bottomRightCorner(1,1) = expected3AugmentedHessian.bottomRightCorner(1,1); bool afterNonlinCorrect = assert_equal(expected3AugmentedHessian, actual3AugmentedHessian, 1e-6);
 
     bool ok = treeEqual && /*linEqual &&*/ nonlinEqual && /*linCorrect &&*/ /*afterLinCorrect &&*/ afterNonlinCorrect;
@@ -992,37 +995,22 @@ TEST_UNSAFE(ISAM2, marginalizeLeaves4)
 
   NonlinearFactorGraph factors;
   factors.add(PriorFactor<LieVector>(0, LieVector(0.0), noiseModel::Unit::Create(1)));
-
-  factors.add(BetweenFactor<LieVector>(0, 1, LieVector(0.0), noiseModel::Unit::Create(1)));
-  factors.add(BetweenFactor<LieVector>(1, 2, LieVector(0.0), noiseModel::Unit::Create(1)));
   factors.add(BetweenFactor<LieVector>(0, 2, LieVector(0.0), noiseModel::Unit::Create(1)));
-
-  factors.add(BetweenFactor<LieVector>(2, 3, LieVector(0.0), noiseModel::Unit::Create(1)));
-
-  factors.add(BetweenFactor<LieVector>(3, 4, LieVector(0.0), noiseModel::Unit::Create(1)));
-  factors.add(BetweenFactor<LieVector>(4, 5, LieVector(0.0), noiseModel::Unit::Create(1)));
-  factors.add(BetweenFactor<LieVector>(3, 5, LieVector(0.0), noiseModel::Unit::Create(1)));
+  factors.add(BetweenFactor<LieVector>(1, 2, LieVector(0.0), noiseModel::Unit::Create(1)));
 
   Values values;
   values.insert(0, LieVector(0.0));
   values.insert(1, LieVector(0.0));
   values.insert(2, LieVector(0.0));
-  values.insert(3, LieVector(0.0));
-  values.insert(4, LieVector(0.0));
-  values.insert(5, LieVector(0.0));
 
   FastMap<Key,int> constrainedKeys;
   constrainedKeys.insert(make_pair(0,0));
   constrainedKeys.insert(make_pair(1,1));
   constrainedKeys.insert(make_pair(2,2));
-  constrainedKeys.insert(make_pair(3,3));
-  constrainedKeys.insert(make_pair(4,4));
-  constrainedKeys.insert(make_pair(5,5));
 
   isam.update(factors, values, FastVector<size_t>(), constrainedKeys);
 
   FastList<Key> leafKeys;
-  leafKeys.push_back(isam.getOrdering().key(0));
   leafKeys.push_back(isam.getOrdering().key(1));
   EXPECT(checkMarginalizeLeaves(isam, leafKeys));
 }
