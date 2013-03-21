@@ -51,6 +51,7 @@ namespace gtsam {
   };
   class Scatter : public FastMap<Index, SlotEntry> {
   public:
+    Scatter() {}
     Scatter(const FactorGraph<GaussianFactor>& gfg);
   };
 
