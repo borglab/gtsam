@@ -4,7 +4,7 @@ set (gtsam_unstable_subdirs
     base 
     geometry
     discrete
-#    linear 
+    linear 
     dynamics
     nonlinear
     slam
@@ -38,7 +38,7 @@ set(gtsam_unstable_srcs
     ${geometry_srcs}
     ${discrete_srcs}
     ${dynamics_srcs}
-    #${linear_srcs}    
+    ${linear_srcs}    
     ${nonlinear_srcs}
     ${slam_srcs}
     ${navigation_srcs}

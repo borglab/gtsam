@@ -7,6 +7,7 @@ set(nonlinear_local_libs
    nonlinear_unstable
    nonlinear
    linear
+   linear_unstable
    inference
    geometry
    base
