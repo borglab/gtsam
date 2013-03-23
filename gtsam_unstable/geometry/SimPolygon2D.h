@@ -128,9 +128,7 @@ public:
 };
 
 typedef std::vector<SimPolygon2D> SimPolygon2DVector;
+typedef std::vector<Point2> Point2Vector;
 
 } //\namespace gtsam
 
-namespace gtsam {
-typedef std::vector<Point2> Point2Vector;
-} // \namespace gtsam

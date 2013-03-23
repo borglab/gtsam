@@ -135,6 +135,29 @@ virtual class BearingS2 : gtsam::Value {
   Vector localCoordinates(const gtsam::BearingS2& p2) const;
 };
 
+// std::vector<gtsam::Point2>
+class Point2Vector
+{
+  //Capacity
+  size_t size() const;
+  size_t max_size() const;
+  void resize(size_t sz);
+  size_t capacity() const;
+  bool empty() const;
+  void reserve(size_t n);
+
+  //Element access
+  gtsam::Point2 at(size_t n) const;
+  gtsam::Point2 front() const;
+  gtsam::Point2 back() const;
+
+  //Modifiers
+  void assign(size_t n, const gtsam::Point2& u);
+  void push_back(const gtsam::Point2& x);
+  void pop_back();
+};
+
+#include <gtsam_unstable/geometry/SimWall2D.h>
 class SimWall2D {
   SimWall2D();
   SimWall2D(const gtsam::Point2& a, const gtsam::Point2& b);
@@ -157,7 +180,8 @@ class SimWall2D {
   gtsam::Rot2 reflection(const gtsam::Point2& init, const gtsam::Point2& intersection) const;
 };
 
- class SimPolygon2D {
+#include <gtsam_unstable/geometry/SimPolygon2D.h>
+class SimPolygon2D {
    static void seedGenerator(size_t seed);
    static gtsam::SimPolygon2D createTriangle(const gtsam::Point2& pA, const gtsam::Point2& pB, const gtsam::Point2& pC);
    static gtsam::SimPolygon2D createRectangle(const gtsam::Point2& p, double height, double width);
