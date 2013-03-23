@@ -1,5 +1,5 @@
 # Install headers
-file(GLOB base_headers "*.h")
+file(GLOB linear_headers "*.h")
 install(FILES ${linear_headers} DESTINATION include/gtsam_unstable/linear)
 
 # Components to link tests in this subfolder against
