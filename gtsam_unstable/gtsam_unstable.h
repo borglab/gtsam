@@ -19,7 +19,8 @@ class gtsam::GaussianFactorGraph;
 class gtsam::NonlinearFactorGraph;
 class gtsam::Ordering;
 class gtsam::Values;
-class gtsam::InvertedOrdering;
+class gtsam::KeySet;
+class gtsam::KeyVector;
 
 namespace gtsam {
 
@@ -369,7 +370,15 @@ virtual class DGroundConstraint : gtsam::NonlinearFactor {
 //*************************************************************************
 // nonlinear
 //*************************************************************************
+#include <gtsam_unstable/nonlinear/summarization.h>
+gtsam::GaussianFactorGraph* summarizeGraphSequential(
+    const gtsam::GaussianFactorGraph& full_graph, const gtsam::KeyVector& indices);
+gtsam::GaussianFactorGraph* summarizeGraphSequential(
+    const gtsam::GaussianFactorGraph& full_graph, const gtsam::Ordering& ordering, const gtsam::KeySet& saved_keys);
 
+pair<gtsam::GaussianFactorGraph,gtsam::Ordering>
+partialCholeskySummarization(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& values,
+    const gtsam::KeySet& overlap_keys);
 
 //*************************************************************************
 // slam
