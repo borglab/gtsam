@@ -17,14 +17,14 @@ namespace gtsam {
    */
   class SimWall2D {
   protected:
-    gtsam::Point2 a_, b_;
+    Point2 a_, b_;
 
   public:
     /** default constructor makes canonical wall */
     SimWall2D() : a_(1.0, 0.0), b_(1.0, 1.0) {}
 
     /** constructors using endpoints */
-    SimWall2D(const gtsam::Point2& a, const gtsam::Point2& b)
+    SimWall2D(const Point2& a, const Point2& b)
       : a_(a), b_(b) {}
 
     SimWall2D(double ax, double ay, double bx, double by)
@@ -35,33 +35,33 @@ namespace gtsam {
     bool equals(const SimWall2D& other, double tol=1e-9) const;
 
     /** access */
-    gtsam::Point2 a() const { return a_; }
-    gtsam::Point2 b() const { return b_; }
+    Point2 a() const { return a_; }
+    Point2 b() const { return b_; }
 
     /** scales a wall to produce a new wall */
     SimWall2D scale(double s) const { return SimWall2D(s*a_, s*b_); }
 
     /** geometry */
     double length() const { return a_.dist(b_); }
-    gtsam::Point2 midpoint() const;
+    Point2 midpoint() const;
 
     /**
      * intersection check between two segments
      * returns true if they intersect, with the intersection
      * point in the optional second argument
      */
-    bool intersects(const SimWall2D& wall, boost::optional<gtsam::Point2&> pt=boost::none) const;
+    bool intersects(const SimWall2D& wall, boost::optional<Point2&> pt=boost::none) const;
 
     /**
      * norm is a 2D point representing the norm of the wall
      */
-    gtsam::Point2 norm() const;
+    Point2 norm() const;
 
     /**
      * reflection around a point of impact with a wall from a starting (init) point
      * at a given impact point (intersection), returning the angle away from the impact
      */
-    gtsam::Rot2 reflection(const gtsam::Point2& init, const gtsam::Point2& intersection) const;
+    Rot2 reflection(const Point2& init, const Point2& intersection) const;
 
   };
 
@@ -78,8 +78,8 @@ namespace gtsam {
    * @return the next pose for the robot
    * NOTE: samplers cannot be const
    */
-  std::pair<gtsam::Pose2, bool> moveWithBounce(const gtsam::Pose2& cur_pose, double step_size,
-      const std::vector<SimWall2D> walls, gtsam::Sampler& angle_drift,
-      gtsam::Sampler& reflect_noise, const gtsam::Rot2& bias = gtsam::Rot2());
+  std::pair<Pose2, bool> moveWithBounce(const Pose2& cur_pose, double step_size,
+      const std::vector<SimWall2D> walls, Sampler& angle_drift,
+      Sampler& reflect_noise, const Rot2& bias = Rot2());
 
 } // \namespace gtsam

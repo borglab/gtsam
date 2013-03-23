@@ -15,7 +15,6 @@
 namespace gtsam {
 
 using namespace std;
-using namespace gtsam;
 
 const size_t max_it = 100000;
 boost::minstd_rand SimPolygon2D::rng(42u);
@@ -128,7 +127,7 @@ SimPolygon2D SimPolygon2D::randomTriangle(
     double side_len, double mean_side_len, double sigma_side_len,
     double min_vertex_dist, double min_side_len, const vector<SimPolygon2D>& existing_polys) {
   // get the current set of landmarks
-  std::vector<gtsam::Point2> lms;
+  std::vector<Point2> lms;
   double d2 = side_len/2.0;
   lms.push_back(Point2( d2, d2));
   lms.push_back(Point2(-d2, d2));
@@ -150,7 +149,7 @@ SimPolygon2D SimPolygon2D::randomTriangle(
 
     // extend from B to find C
     double dBC = randomDistance(mean_side_len, sigma_side_len, min_side_len);
-    Pose2 xC = xB.retract(gtsam::delta(3, 0, dBC));
+    Pose2 xC = xB.retract(delta(3, 0, dBC));
 
     // use triangle equality to verify non-degenerate triangle
     double dAC = xA.t().dist(xC.t());
@@ -183,7 +182,7 @@ SimPolygon2D SimPolygon2D::randomRectangle(
     double side_len, double mean_side_len, double sigma_side_len,
     double min_vertex_dist, double min_side_len, const vector<SimPolygon2D>& existing_polys) {
   // get the current set of landmarks
-  std::vector<gtsam::Point2> lms;
+  std::vector<Point2> lms;
   double d2 = side_len/2.0;
   lms.push_back(Point2( d2, d2));
   lms.push_back(Point2(-d2, d2));
@@ -267,7 +266,7 @@ Point2 SimPolygon2D::randomBoundedPoint2(double boundary_size,
 
 /* ***************************************************************** */
 Point2 SimPolygon2D::randomBoundedPoint2(double boundary_size,
-    const std::vector<gtsam::Point2>& landmarks, double min_landmark_dist) {
+    const std::vector<Point2>& landmarks, double min_landmark_dist) {
   for (size_t i=0; i<max_it; ++i) {
     Point2 p = randomPoint2(boundary_size);
     if (!nearExisting(landmarks, p, min_landmark_dist))
@@ -279,7 +278,7 @@ Point2 SimPolygon2D::randomBoundedPoint2(double boundary_size,
 
 /* ***************************************************************** */
 Point2 SimPolygon2D::randomBoundedPoint2(double boundary_size,
-    const std::vector<gtsam::Point2>& landmarks,
+    const std::vector<Point2>& landmarks,
     const vector<SimPolygon2D>& obstacles, double min_landmark_dist) {
   for (size_t i=0; i<max_it; ++i) {
     Point2 p = randomPoint2(boundary_size);
@@ -292,8 +291,8 @@ Point2 SimPolygon2D::randomBoundedPoint2(double boundary_size,
 
 /* ***************************************************************** */
 Point2 SimPolygon2D::randomBoundedPoint2(
-    const gtsam::Point2& LL_corner, const gtsam::Point2& UR_corner,
-    const std::vector<gtsam::Point2>& landmarks,
+    const Point2& LL_corner, const Point2& UR_corner,
+    const std::vector<Point2>& landmarks,
     const std::vector<SimPolygon2D>& obstacles, double min_landmark_dist) {
 
   boost::uniform_real<>  gen_x(0.0, UR_corner.x() - LL_corner.x());
@@ -319,9 +318,9 @@ bool SimPolygon2D::insideBox(double s, const Point2& p) {
 }
 
 /* ***************************************************************** */
-bool SimPolygon2D::nearExisting(const std::vector<gtsam::Point2>& S,
+bool SimPolygon2D::nearExisting(const std::vector<Point2>& S,
     const Point2& p, double threshold) {
-  BOOST_FOREACH(const gtsam::Point2& Sp, S)
+  BOOST_FOREACH(const Point2& Sp, S)
     if (Sp.dist(p) < threshold)
       return true;
   return false;

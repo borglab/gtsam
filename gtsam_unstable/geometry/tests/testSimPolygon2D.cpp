@@ -9,7 +9,6 @@
 
 using namespace std;
 using namespace gtsam;
-using namespace gtsam;
 
 const double tol=1e-5;
 

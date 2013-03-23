@@ -11,7 +11,6 @@
 namespace gtsam {
 
 using namespace std;
-using namespace gtsam;
 
 /* ************************************************************************* */
 void SimWall2D::print(const std::string& s) const {
@@ -26,7 +25,7 @@ bool SimWall2D::equals(const SimWall2D& other, double tol) const {
 }
 
 /* ************************************************************************* */
-bool SimWall2D::intersects(const SimWall2D& B, boost::optional<gtsam::Point2&> pt) const {
+bool SimWall2D::intersects(const SimWall2D& B, boost::optional<Point2&> pt) const {
   const bool debug = false;
 
   const SimWall2D& A = *this;
@@ -101,7 +100,7 @@ bool SimWall2D::intersects(const SimWall2D& B, boost::optional<gtsam::Point2&> p
 }
 
 /* ************************************************************************* */
-gtsam::Point2 SimWall2D::midpoint() const {
+Point2 SimWall2D::midpoint() const {
   Point2 vec = b_ - a_;
   return a_ + vec * 0.5 * vec.norm();
 }
@@ -123,9 +122,9 @@ Rot2 SimWall2D::reflection(const Point2& init, const Point2& intersection) const
 }
 
 /* ***************************************************************** */
-std::pair<gtsam::Pose2, bool> moveWithBounce(const gtsam::Pose2& cur_pose, double step_size,
-    const std::vector<SimWall2D> walls, gtsam::Sampler& angle_drift,
-    gtsam::Sampler& reflect_noise, const gtsam::Rot2& bias) {
+std::pair<Pose2, bool> moveWithBounce(const Pose2& cur_pose, double step_size,
+    const std::vector<SimWall2D> walls, Sampler& angle_drift,
+    Sampler& reflect_noise, const Rot2& bias) {
 
   // calculate angle to change by
   Rot2 dtheta = Rot2::fromAngle(angle_drift.sample()(0) + bias.theta());
