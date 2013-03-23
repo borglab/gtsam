@@ -135,6 +135,116 @@ virtual class BearingS2 : gtsam::Value {
   Vector localCoordinates(const gtsam::BearingS2& p2) const;
 };
 
+class SimWall2D {
+  SimWall2D();
+  SimWall2D(const gtsam::Point2& a, const gtsam::Point2& b);
+  SimWall2D(double ax, double ay, double bx, double by);
+
+  void print(string s) const;
+  bool equals(const gtsam::SimWall2D& other, double tol) const;
+
+  gtsam::Point2 a() const;
+  gtsam::Point2 b() const;
+
+  gtsam::SimWall2D scale(double s) const;
+  double length() const;
+  gtsam::Point2 midpoint() const;
+
+  bool intersects(const gtsam::SimWall2D& wall) const;
+  //   bool intersects(const gtsam::SimWall2D& wall, boost::optional<gtsam::Point2&> pt=boost::none) const;
+
+  gtsam::Point2 norm() const;
+  gtsam::Rot2 reflection(const gtsam::Point2& init, const gtsam::Point2& intersection) const;
+};
+
+ class SimPolygon2D {
+   static void seedGenerator(size_t seed);
+   static gtsam::SimPolygon2D createTriangle(const gtsam::Point2& pA, const gtsam::Point2& pB, const gtsam::Point2& pC);
+   static gtsam::SimPolygon2D createRectangle(const gtsam::Point2& p, double height, double width);
+
+   static gtsam::SimPolygon2D randomTriangle(double side_len, double mean_side_len, double sigma_side_len,
+       double min_vertex_dist, double min_side_len, const gtsam::SimPolygon2DVector& existing_polys);
+   static gtsam::SimPolygon2D randomRectangle(double side_len, double mean_side_len, double sigma_side_len,
+       double min_vertex_dist, double min_side_len, const gtsam::SimPolygon2DVector& existing_polys);
+
+   gtsam::Point2 landmark(size_t i) const;
+   size_t size() const;
+   gtsam::Point2Vector vertices() const;
+
+   bool equals(const gtsam::SimPolygon2D& p, double tol) const;
+   void print(string s) const;
+
+   gtsam::SimWall2DVector walls() const;
+   bool contains(const gtsam::Point2& p) const;
+   bool overlaps(const gtsam::SimPolygon2D& p) const;
+
+   static bool anyContains(const gtsam::Point2& p, const gtsam::SimPolygon2DVector& obstacles);
+   static bool anyOverlaps(const gtsam::SimPolygon2D& p, const gtsam::SimPolygon2DVector& obstacles);
+   static bool insideBox(double s, const gtsam::Point2& p);
+   static bool nearExisting(const gtsam::Point2Vector& S,
+       const gtsam::Point2& p, double threshold);
+
+   static gtsam::Point2 randomPoint2(double s);
+   static gtsam::Rot2 randomAngle();
+   static double randomDistance(double mu, double sigma);
+   static double randomDistance(double mu, double sigma, double min_dist);
+   static gtsam::Point2 randomBoundedPoint2(double boundary_size,
+       const gtsam::Point2Vector& landmarks, double min_landmark_dist);
+   static gtsam::Point2 randomBoundedPoint2(double boundary_size,
+       const gtsam::Point2Vector& landmarks,
+       const gtsam::SimPolygon2DVector& obstacles, double min_landmark_dist);
+   static gtsam::Point2 randomBoundedPoint2(double boundary_size,
+       const gtsam::SimPolygon2DVector& obstacles);
+   static gtsam::Point2 randomBoundedPoint2(
+       const gtsam::Point2& LL_corner, const gtsam::Point2& UR_corner,
+       const gtsam::Point2Vector& landmarks,
+       const gtsam::SimPolygon2DVector& obstacles, double min_landmark_dist);
+   static gtsam::Pose2 randomFreePose(double boundary_size, const gtsam::SimPolygon2DVector& obstacles);
+ };
+
+ // std::vector<gtsam::SimWall2D>
+ class SimWall2DVector
+ {
+   //Capacity
+   size_t size() const;
+   size_t max_size() const;
+   void resize(size_t sz);
+   size_t capacity() const;
+   bool empty() const;
+   void reserve(size_t n);
+
+   //Element access
+   gtsam::SimWall2D at(size_t n) const;
+   gtsam::SimWall2D front() const;
+   gtsam::SimWall2D back() const;
+
+   //Modifiers
+   void assign(size_t n, const gtsam::SimWall2D& u);
+   void push_back(const gtsam::SimWall2D& x);
+   void pop_back();
+ };
+
+ // std::vector<gtsam::SimPolygon2D>
+ class SimPolygon2DVector
+ {
+   //Capacity
+   size_t size() const;
+   size_t max_size() const;
+   void resize(size_t sz);
+   size_t capacity() const;
+   bool empty() const;
+   void reserve(size_t n);
+
+   //Element access
+   gtsam::SimPolygon2D at(size_t n) const;
+   gtsam::SimPolygon2D front() const;
+   gtsam::SimPolygon2D back() const;
+
+   //Modifiers
+   void assign(size_t n, const gtsam::SimPolygon2D& u);
+   void push_back(const gtsam::SimPolygon2D& x);
+   void pop_back();
+ };
 
 // Nonlinear factors from gtsam, for our Value types
 #include <gtsam/slam/PriorFactor.h>
