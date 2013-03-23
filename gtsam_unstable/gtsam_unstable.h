@@ -4,9 +4,11 @@
 
 // specify the classes from gtsam we are using
 virtual class gtsam::Value;
+virtual class gtsam::Point2;
+virtual class gtsam::Rot2;
+virtual class gtsam::Pose2;
 virtual class gtsam::Point3;
 virtual class gtsam::Rot3;
-virtual class gtsam::Pose2;
 virtual class gtsam::Pose3;
 virtual class gtsam::noiseModel::Base;
 virtual class gtsam::NonlinearFactor;
@@ -75,6 +77,62 @@ virtual class PoseRTV : gtsam::Value {
   Vector imuPrediction(const gtsam::PoseRTV& x2, double dt) const;
   gtsam::Point3 translationIntegration(const gtsam::PoseRTV& x2, double dt) const;
   Vector translationIntegrationVec(const gtsam::PoseRTV& x2, double dt) const;
+};
+
+#include <gtsam_unstable/geometry/Pose3Upright.h>
+virtual class Pose3Upright : gtsam::Value {
+  Pose3Upright();
+  Pose3Upright(const gtsam::Pose3Upright& x);
+  Pose3Upright(const gtsam::Rot2& bearing, const gtsam::Point3& t);
+  Pose3Upright(double x, double y, double z, double theta);
+  Pose3Upright(const gtsam::Pose2& pose, double z);
+
+  void print(string s) const;
+  bool equals(const gtsam::Pose3Upright& pose, double tol) const;
+
+  double x() const;
+  double y() const;
+  double z() const;
+  double theta() const;
+
+  gtsam::Point2 translation2() const;
+  gtsam::Point3 translation() const;
+  gtsam::Rot2 rotation2() const;
+  gtsam::Rot3 rotation() const;
+  gtsam::Pose2 pose2() const;
+  gtsam::Pose3 pose() const;
+
+  size_t dim() const;
+  gtsam::Pose3Upright retract(Vector v) const;
+  Vector localCoordinates(const gtsam::Pose3Upright& p2) const;
+
+  static gtsam::Pose3Upright identity();
+  gtsam::Pose3Upright inverse() const;
+  gtsam::Pose3Upright compose(const gtsam::Pose3Upright& p2) const;
+  gtsam::Pose3Upright between(const gtsam::Pose3Upright& p2) const;
+
+  static gtsam::Pose3Upright Expmap(Vector xi);
+  static Vector Logmap(const gtsam::Pose3Upright& p);
+}; // \class Pose3Upright
+
+#include <gtsam_unstable/geometry/BearingS2.h>
+virtual class BearingS2 : gtsam::Value {
+  BearingS2();
+  BearingS2(double azimuth, double elevation);
+  BearingS2(const gtsam::Rot2& azimuth, const gtsam::Rot2& elevation);
+
+  gtsam::Rot2 azimuth() const;
+  gtsam::Rot2 elevation() const;
+
+  static gtsam::BearingS2 fromDownwardsObservation(const gtsam::Pose3& A, const gtsam::Point3& B);
+  static gtsam::BearingS2 fromForwardObservation(const gtsam::Pose3& A, const gtsam::Point3& B);
+
+  void print(string s) const;
+  bool equals(const gtsam::BearingS2& x, double tol) const;
+
+  size_t dim() const;
+  gtsam::BearingS2 retract(Vector v) const;
+  Vector localCoordinates(const gtsam::BearingS2& p2) const;
 };
 
 

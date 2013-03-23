@@ -4,10 +4,11 @@ install(FILES ${geometry_headers} DESTINATION include/gtsam_unstable/geometry)
 
 # Components to link tests in this subfolder against
 set(geometry_local_libs 
-   #geometry_unstable # No sources currently, so no convenience lib
+   geometry_unstable 
    geometry
    base
    ccolamd
+   linear
 )
 
 set (geometry_full_libs
