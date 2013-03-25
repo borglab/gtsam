@@ -32,7 +32,10 @@ for i = 0:keys.size-1
             if haveMarginals
                 P = marginals.marginalCovariance(lastKey);
                 gtsam.plotPose2(lastPose, 'g', P);
+            else
+                gtsam.plotPose2(lastPose, 'g', []);
             end
+            
         end
         lastIndex = i;
     end
