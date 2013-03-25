@@ -345,6 +345,12 @@ namespace gtsam {
      */
     Quaternion toQuaternion() const;
 
+    /**
+     * Converts to a generic matrix to allow for use with matlab
+     * In format: w x y z
+     */
+    Vector quaternion() const;
+
   private:
     /** Serialization function */
     friend class boost::serialization::access;

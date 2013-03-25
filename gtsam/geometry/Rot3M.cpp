@@ -344,6 +344,17 @@ Quaternion Rot3::toQuaternion() const {
 }
 
 /* ************************************************************************* */
+Vector Rot3::quaternion() const {
+  Quaternion q = toQuaternion();
+  Vector v(4);
+  v(0) = q.w();
+  v(1) = q.x();
+  v(2) = q.y();
+  v(3) = q.z();
+  return v;
+}
+
+/* ************************************************************************* */
 pair<Matrix3, Vector3> RQ(const Matrix3& A) {
 
   double x = -atan2(-A(2, 1), A(2, 2));

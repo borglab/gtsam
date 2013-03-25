@@ -418,6 +418,7 @@ virtual class Rot3 : gtsam::Value {
   double pitch() const;
   double yaw() const;
 //  Vector toQuaternion() const;  // FIXME: Can't cast to Vector properly
+  Vector quaternion() const;
 };
 
 virtual class Pose2 : gtsam::Value {
