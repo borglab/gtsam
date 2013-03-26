@@ -860,7 +860,7 @@ namespace {
     expected3AugmentedHessian = solver3.jointFactorGraph(toKeep)->augmentedHessian();
 
     // Do marginalization
-    isam.experimentalMarginalizeLeaves(leafKeys);
+    isam.marginalizeLeaves(leafKeys);
 
     // Check
     GaussianFactorGraph actualMarginalGraph(isam);

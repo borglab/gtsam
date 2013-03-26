@@ -786,7 +786,7 @@ ISAM2Result ISAM2::update(
 }
 
 /* ************************************************************************* */
-void ISAM2::experimentalMarginalizeLeaves(const FastList<Key>& leafKeys)
+void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeys)
 {
   // Convert set of keys into a set of indices
   FastSet<Index> indices;

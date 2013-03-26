@@ -549,7 +549,15 @@ public:
       const boost::optional<FastList<Key> >& noRelinKeys = boost::none,
       bool force_relinearize = false);
 
-  GTSAM_EXPORT void experimentalMarginalizeLeaves(const FastList<Key>& leafKeys);
+  /** Marginalize out variables listed in leafKeys.  These keys must be leaves
+   * in the BayesTree.  Throws MarginalizeNonleafException if non-leaves are
+   * requested to be marginalized.  Marginalization leaves a linear
+   * approximation of the marginal in the system, and the linearization points
+   * of any variables involved in this linear marginal become fixed.  The set
+   * fixed variables will include any involved with the marginalized variables
+   * in the original factors, and possibly additional ones due to fill-in.
+   */
+  GTSAM_EXPORT void marginalizeLeaves(const FastList<Key>& leafKeys);
 
   /** Access the current linearization point */
   const Values& getLinearizationPoint() const { return theta_; }

@@ -88,7 +88,7 @@ bool checkMarginalizeLeaves(ISAM2& isam, const FastList<Key>& leafKeys) {
 
   // Do marginalization
 
-  isam.experimentalMarginalizeLeaves(leafKeys);
+  isam.marginalizeLeaves(leafKeys);
 
   // Check
 
