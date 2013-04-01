@@ -232,7 +232,7 @@ namespace gtsam {
     void clear();
 
     /** Clear all shortcut caches - use before timing on marginal calculation to avoid residual cache data */
-    inline void deleteCachedShortcuts() {
+    void deleteCachedShortcuts() {
       root_->deleteCachedShortcuts();
     }
 

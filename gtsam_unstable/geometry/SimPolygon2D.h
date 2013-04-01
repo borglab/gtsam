@@ -16,7 +16,7 @@ namespace gtsam {
 /**
  * General polygon class for convex polygons
  */
-class SimPolygon2D {
+class GTSAM_UNSTABLE_EXPORT SimPolygon2D {
 protected:
   std::vector<Point2> landmarks_;
   static boost::minstd_rand rng;

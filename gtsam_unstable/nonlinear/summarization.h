@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <gtsam_unstable/base/dllexport.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 #include <gtsam/linear/GaussianFactorGraph.h>
@@ -24,11 +25,11 @@ typedef boost::shared_ptr<JacobianGraph> shared_jacobianGraph;
  * Summarization function that eliminates a set of variables (does not convert to Jacobians)
  * NOTE: uses sequential solver - requires fully constrained system
  */
-GaussianFactorGraph::shared_ptr summarizeGraphSequential(
+GaussianFactorGraph::shared_ptr GTSAM_UNSTABLE_EXPORT summarizeGraphSequential(
     const GaussianFactorGraph& full_graph, const std::vector<Index>& indices, bool useQR = false);
 
 /** Summarization that also converts keys to indices */
-GaussianFactorGraph::shared_ptr summarizeGraphSequential(
+GaussianFactorGraph::shared_ptr GTSAM_UNSTABLE_EXPORT summarizeGraphSequential(
     const GaussianFactorGraph& full_graph, const Ordering& ordering,
     const KeySet& saved_keys, bool useQR = false);
 
@@ -38,7 +39,7 @@ GaussianFactorGraph::shared_ptr summarizeGraphSequential(
  *
  * Performs linearization to apply an ordering
  */
-std::pair<GaussianFactorGraph,Ordering>
+std::pair<GaussianFactorGraph,Ordering> GTSAM_UNSTABLE_EXPORT
 partialCholeskySummarization(const NonlinearFactorGraph& graph, const Values& values,
     const KeySet& overlap_keys);
 

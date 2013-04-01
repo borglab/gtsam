@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <gtsam_unstable/base/dllexport.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/linear/Sampler.h>
 
@@ -15,7 +16,7 @@ namespace gtsam {
    * General Wall class for walls defined around unordered endpoints
    * Primarily to handle ray intersections
    */
-  class SimWall2D {
+  class GTSAM_UNSTABLE_EXPORT SimWall2D {
   protected:
     Point2 a_, b_;
 

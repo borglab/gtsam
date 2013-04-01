@@ -9,12 +9,13 @@
 
 #pragma once
 
+#include <gtsam_unstable/base/dllexport.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/Pose3.h>
 
 namespace gtsam {
 
-class BearingS2 : public DerivedValue<BearingS2> {
+class GTSAM_UNSTABLE_EXPORT BearingS2 : public DerivedValue<BearingS2> {
 protected:
   Rot2 azimuth_, elevation_;
 
