@@ -285,6 +285,9 @@ struct GTSAM_EXPORT ISAM2Result {
    */
   size_t variablesReeliminated;
 
+  /** The number of factors that were included in reelimination of the Bayes' tree. */
+  size_t factorsRecalculated;
+
   /** The number of cliques in the Bayes' Tree */
   size_t cliques;
 

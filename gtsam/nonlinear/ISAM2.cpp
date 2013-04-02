@@ -382,6 +382,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(const FastSet<Index>& mark
     gttoc(insert);
 
     result.variablesReeliminated = affectedKeysSet->size();
+    result.factorsRecalculated = nonlinearFactors_.size();
 
     lastAffectedMarkedCount = markedKeys.size();
     lastAffectedVariableCount = affectedKeysSet->size();
@@ -419,6 +420,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(const FastSet<Index>& mark
     }
 
     result.variablesReeliminated = affectedAndNewKeys.size();
+    result.factorsRecalculated = factors.size();
     lastAffectedMarkedCount = markedKeys.size();
     lastAffectedVariableCount = affectedKeys.size();
     lastAffectedFactorCount = factors.size();
