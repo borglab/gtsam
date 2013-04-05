@@ -458,6 +458,21 @@ TEST( Pose2, between2 )
 }
 
 /* ************************************************************************* */
+// arbitrary, non perpendicular angles to be extra safe
+TEST( Pose2, between3 )
+{
+  Pose2 p2(M_PI/3.0, Point2(1,2));
+  Pose2 p1(M_PI/6.0, Point2(-1,4));
+
+  Matrix actualH1,actualH2;
+  p1.between(p2,actualH1,actualH2);
+  Matrix numericalH1 = numericalDerivative21<Pose2,Pose2,Pose2>(testing::between, p1, p2);
+  EXPECT(assert_equal(numericalH1,actualH1));
+  Matrix numericalH2 = numericalDerivative22<Pose2,Pose2,Pose2>(testing::between, p1, p2);
+  EXPECT(assert_equal(numericalH2,actualH2));
+}
+
+/* ************************************************************************* */
 TEST( Pose2, round_trip )
 {
   Pose2 p1(1.23, 2.30, 0.2);
