@@ -4693,7 +4693,7 @@ inverse
 ,
 \begin_inset Formula 
 \[
-\frac{\partial T^{-1}}{\partial\xi}=\Ad T=-\left[\begin{array}{cc}
+\frac{\partial T^{-1}}{\partial\xi}=-\Ad T=-\left[\begin{array}{cc}
 R & 0\\
 \Skew tR & R
 \end{array}\right]
@@ -4728,7 +4728,7 @@ between
  in its first argument,
 \begin_inset Formula 
 \[
-\frac{\partial\left(T_{1}^{^{-1}}T_{2}\right)}{\partial\xi_{1}}=\Ad{T_{2}^{^{-1}}T_{1}}
+\frac{\partial\left(T_{1}^{^{-1}}T_{2}\right)}{\partial\xi_{1}}=-\Ad{T_{2}^{^{-1}}T_{1}}
 \]
 
 \end_inset
