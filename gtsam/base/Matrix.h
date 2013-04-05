@@ -479,7 +479,7 @@ GTSAM_EXPORT Matrix Cayley(const Matrix& A);
 template<int N>
 Eigen::Matrix<double, N, N> Cayley(const Eigen::Matrix<double, N, N>& A) {
   typedef Eigen::Matrix<double, N, N> FMat;
-  return Eigen::Matrix<double, N, N> = (FMat::Identity() - A)*(FMat::Identity() + A).inverse();
+  return (FMat::Identity() - A)*(FMat::Identity() + A).inverse();
 }
 
 } // namespace gtsam

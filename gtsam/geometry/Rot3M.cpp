@@ -167,7 +167,7 @@ Point3 Rot3::operator*(const Point3& p) const { return rotate(p); }
 /* ************************************************************************* */
 Rot3 Rot3::inverse(boost::optional<Matrix&> H1) const {
   if (H1) *H1 = -rot_;
-  return Rot3(rot_.transpose());
+  return Rot3(Matrix3(rot_.transpose()));
 }
 
 /* ************************************************************************* */
@@ -175,13 +175,13 @@ Rot3 Rot3::between (const Rot3& R2,
     boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
   if (H1) *H1 = -(R2.transpose()*rot_);
   if (H2) *H2 = I3;
-  return Rot3(rot_.transpose()*R2.rot_);
+  return Rot3(Matrix3(rot_.transpose()*R2.rot_));
   //return between_default(*this, R2);
 }
 
 /* ************************************************************************* */
 Rot3 Rot3::operator*(const Rot3& R2) const {
-  return Rot3(rot_*R2.rot_);
+  return Rot3(Matrix3(rot_*R2.rot_));
 }
 
 /* ************************************************************************* */
