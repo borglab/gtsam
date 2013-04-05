@@ -255,7 +255,7 @@ namespace gtsam {
       root_.reset();
     else { // detach clique from parent
       sharedClique parent = clique->parent_.lock();
-      typename std::list<typename CLIQUE::shared_ptr>::iterator child = std::find(parent->children().begin(), parent->children().end(), clique);
+      typename FastList<typename CLIQUE::shared_ptr>::iterator child = std::find(parent->children().begin(), parent->children().end(), clique);
       assert(child != parent->children().end());
       parent->children().erase(child);
     }
