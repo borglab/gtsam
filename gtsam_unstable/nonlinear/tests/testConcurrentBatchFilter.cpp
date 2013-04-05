@@ -777,7 +777,7 @@ TEST_UNSAFE( ConcurrentBatchFilter, synchronize )
 
   // Compare filter sync variables versus the expected
   CHECK(hessian_equal(expectedSmootherFactors, actualSmootherFactors, updatedTheta, 1e-8));
-  CHECK(assert_equal(expectedSmootherValues, actualSmootherValues, 1e-4));
+  CHECK(assert_equal(expectedSmootherValues, actualSmootherValues, 1e-3));
   CHECK(hessian_equal(expectedFilterSumarization, actualFilterSumarization, updatedTheta, 1e-8));
   CHECK(assert_equal(expectedRootValues, actualRootValues, 1e-4));
 }
