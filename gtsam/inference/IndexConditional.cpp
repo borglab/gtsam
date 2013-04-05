@@ -17,10 +17,14 @@
 
 #include <gtsam/base/FastSet.h>
 #include <gtsam/inference/IndexConditional.h>
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
+#endif
 #include <boost/lambda/lambda.hpp>
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
+#endif
 
 namespace gtsam {
 

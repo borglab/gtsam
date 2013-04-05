@@ -145,6 +145,10 @@ include_directories(
   ${Boost_INCLUDE_DIR})
 link_directories(${Boost_LIBRARY_DIRS})
 
+if(MSVC)
+	add_definitions(/wd4251 /wd4275 /wd4251) # Disable non-DLL-exported base class warnings
+endif()
+
 
 ###############################################################################
 # Add components

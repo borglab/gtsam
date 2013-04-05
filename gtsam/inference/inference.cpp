@@ -38,7 +38,7 @@ Permutation::shared_ptr PermutationCOLAMD_(const VariableIndex& variableIndex, s
   gttic(Prepare);
   size_t nEntries = variableIndex.nEntries(), nFactors = variableIndex.nFactors(), nVars = variableIndex.size();
   // Convert to compressed column major format colamd wants it in (== MATLAB format!)
-  int Alen = ccolamd_recommended(nEntries, nFactors, nVars); /* colamd arg 3: size of the array A */
+  int Alen = ccolamd_recommended((int)nEntries, (int)nFactors, (int)nVars); /* colamd arg 3: size of the array A */
   vector<int> A = vector<int>(Alen); /* colamd arg 4: row indices of A, of size Alen */
   vector<int> p = vector<int>(nVars + 1); /* colamd arg 5: column pointers of A, of size n_col+1 */
 
@@ -49,10 +49,10 @@ Permutation::shared_ptr PermutationCOLAMD_(const VariableIndex& variableIndex, s
   for(Index var = 0; var < variableIndex.size(); ++var) {
     const VariableIndex::Factors& column(variableIndex[var]);
     size_t lastFactorId = numeric_limits<size_t>::max();
-    BOOST_FOREACH(const size_t& factorIndex, column) {
+    BOOST_FOREACH(size_t factorIndex, column) {
       if(lastFactorId != numeric_limits<size_t>::max())
         assert(factorIndex > lastFactorId);
-      A[count++] = factorIndex; // copy sparse column
+      A[count++] = (int)factorIndex; // copy sparse column
       if(debug) cout << "A[" << count-1 << "] = " << factorIndex << endl;
     }
     p[var+1] = count; // column j (base 1) goes from A[j-1] to A[j]-1
@@ -78,7 +78,7 @@ Permutation::shared_ptr PermutationCOLAMD_(const VariableIndex& variableIndex, s
   /* returns (1) if successful, (0) otherwise*/
   if(nVars > 0) {
     gttic(ccolamd);
-    int rv = ccolamd(nFactors, nVars, Alen, &A[0], &p[0], knobs, stats, &cmember[0]);
+    int rv = ccolamd((int)nFactors, nVars, Alen, &A[0], &p[0], knobs, stats, &cmember[0]);
     if(rv != 1)
       throw runtime_error((boost::format("ccolamd failed with return value %1%")%rv).str());
   }

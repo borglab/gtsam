@@ -27,10 +27,14 @@
 #include <list>
 
 #include <boost/foreach.hpp>
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
+#endif
 #include <boost/bind.hpp>
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
+#endif
 #include <boost/iterator/transform_iterator.hpp>
 
 using namespace std;

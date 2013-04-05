@@ -113,7 +113,6 @@ if (GTSAM_BUILD_SHARED_LIBRARY)
 			PREFIX ""
 			DEFINE_SYMBOL GTSAM_EXPORTS
 			RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
-		add_definitions(/wd4251 /wd4275) # Disable non-DLL-exported base class warnings
 	endif()
     install(TARGETS gtsam-shared EXPORT GTSAM-exports LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
     list(APPEND GTSAM_EXPORTED_TARGETS gtsam-shared)

@@ -427,7 +427,7 @@ namespace gtsam {
     template<typename ITERATOR>
     const Vector extractVectorValuesSlices(const VectorValues& values, ITERATOR first, ITERATOR last, bool allowNonexistant = false) {
       // Find total dimensionality
-      int dim = 0;
+      size_t dim = 0;
       for(ITERATOR j = first; j != last; ++j)
         // If allowNonexistant is true, skip nonexistent indices (otherwise dim will throw an error on nonexistent)
         if(!allowNonexistant || values.exists(*j))
@@ -435,7 +435,7 @@ namespace gtsam {
 
       // Copy vectors
       Vector ret(dim);
-      int varStart = 0;
+      size_t varStart = 0;
       for(ITERATOR j = first; j != last; ++j) {
         // If allowNonexistant is true, skip nonexistent indices (otherwise dim will throw an error on nonexistent)
         if(!allowNonexistant || values.exists(*j)) {
@@ -453,7 +453,7 @@ namespace gtsam {
     template<class VECTOR, typename ITERATOR>
     void writeVectorValuesSlices(const VECTOR& vector, VectorValues& values, ITERATOR first, ITERATOR last) {
       // Copy vectors
-      int varStart = 0;
+      size_t varStart = 0;
       for(ITERATOR j = first; j != last; ++j) {
         values[*j] = vector.segment(varStart, values[*j].rows());
         varStart += values[*j].rows();

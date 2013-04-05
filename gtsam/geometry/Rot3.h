@@ -85,6 +85,9 @@ namespace gtsam {
         double R31, double R32, double R33);
 
     /** constructor from a rotation matrix */
+    Rot3(const Matrix3& R);
+
+    /** constructor from a rotation matrix */
     Rot3(const Matrix& R);
 
 //    /** constructor from a fixed size rotation matrix */

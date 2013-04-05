@@ -50,6 +50,11 @@ Rot3::Rot3(double R11, double R12, double R13,
 }
 
 /* ************************************************************************* */
+Rot3::Rot3(const Matrix3& R) {
+  rot_ = R;
+}
+
+/* ************************************************************************* */
 Rot3::Rot3(const Matrix& R) {
   if (R.rows()!=3 || R.cols()!=3)
     throw invalid_argument("Rot3 constructor expects 3*3 matrix");
@@ -288,7 +293,7 @@ Vector3 Rot3::localCoordinates(const Rot3& T, Rot3::CoordinatesMode mode) const 
     // Create a fixed-size matrix
     Eigen::Matrix3d A(between(T).matrix());
     // using templated version of Cayley
-    Matrix Omega = Cayley<3>(A);
+    Eigen::Matrix3d Omega = Cayley<3>(A);
     return -2*Vector3(Omega(2,1),Omega(0,2),Omega(1,0));
   } else {
     assert(false);

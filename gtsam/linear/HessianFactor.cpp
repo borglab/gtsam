@@ -21,10 +21,14 @@
 #include <boost/format.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/tuple/tuple.hpp>
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
+#endif
 #include <boost/bind.hpp>
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
+#endif
 
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>

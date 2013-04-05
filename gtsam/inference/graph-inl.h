@@ -19,11 +19,15 @@
 
 #include <stdexcept>
 #include <boost/foreach.hpp>
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
 #pragma GCC diagnostic ignored "-Wunneeded-internal-declaration"
+#endif
 #include <boost/graph/breadth_first_search.hpp>
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
+#endif
 #include <boost/graph/prim_minimum_spanning_tree.hpp>
 
 #include <gtsam/inference/graph.h>

@@ -160,8 +160,8 @@ namespace gtsam {
     Matrix IJS(3,nzmax);
     for (size_t k = 0; k < result.size(); k++) {
       const triplet& entry = result[k];
-      IJS(0,k) = entry.get<0>() + 1;
-      IJS(1,k) = entry.get<1>() + 1;
+      IJS(0,k) = double(entry.get<0>() + 1);
+      IJS(1,k) = double(entry.get<1>() + 1);
       IJS(2,k) = entry.get<2>();
     }
     return IJS;
