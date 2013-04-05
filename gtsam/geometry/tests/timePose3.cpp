@@ -15,39 +15,41 @@
  * @author  Frank Dellaert
  */
 
-#include <time.h>
 #include <iostream>
 
+#include <gtsam/base/timing.h>
 #include <gtsam/geometry/Pose3.h>
 
 using namespace std;
 using namespace gtsam;
 
+/* ************************************************************************* */
 #define TEST(TITLE,STATEMENT) \
-  cout << endl << TITLE << endl;\
-  timeLog = clock();\
-  for(int i = 0; i < n; i++)\
-  STATEMENT;\
-  timeLog2 = clock();\
-  seconds = (double)(timeLog2-timeLog)/CLOCKS_PER_SEC;\
-  cout << seconds << " seconds" << endl;\
-  cout << ((double)n/seconds) << " calls/second" << endl;
+  gttic_(TITLE); \
+  for(int i = 0; i < n; i++) \
+  STATEMENT; \
+  gttoc_(TITLE);
 
 int main()
 {
-  int n = 100000; long timeLog, timeLog2; double seconds;
+  int n = 5000000;
+  cout << "NOTE:  Times are reported for " << n << " calls" << endl;
+
   double norm=sqrt(1.0+16.0+4.0);
   double x=1.0/norm, y=4.0/norm, z=2.0/norm;
   Vector v = Vector_(6,x,y,z,0.1,0.2,-0.1);
   Pose3 T = Pose3::Expmap(Vector_(6,0.1,0.1,0.2,0.1, 0.4, 0.2)), T2 = T.retract(v);
   Matrix H1,H2;
 
-  TEST("retract", T.retract(v))
-  TEST("Expmap", T*Pose3::Expmap(v))
-  TEST("localCoordinates", T.localCoordinates(T2))
-  TEST("between", T.between(T2))
-  TEST("between-derivatives", T.between(T2,H1,H2))
-  TEST("Logmap", Pose3::Logmap(T.between(T2)))
+  TEST(retract, T.retract(v))
+  TEST(Expmap, T*Pose3::Expmap(v))
+  TEST(localCoordinates, T.localCoordinates(T2))
+  TEST(between, T.between(T2))
+  TEST(between_derivatives, T.between(T2,H1,H2))
+  TEST(Logmap, Pose3::Logmap(T.between(T2)))
+
+  // Print timings
+  tictoc_print_();
 
   return 0;
 }
