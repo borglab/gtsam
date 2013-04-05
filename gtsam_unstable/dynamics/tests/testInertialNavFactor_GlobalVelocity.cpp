@@ -331,11 +331,11 @@ TEST (InertialNavFactor_GlobalVelocity, Jacobian ) {
 	H5_expectedPose = gtsam::numericalDerivative11<Pose3, LieVector>(boost::bind(&predictionErrorPose, Pose1, Vel1, Bias1, Pose2, _1, factor), Vel2);
 
 	// Verify they are equal for this choice of state
-	CHECK( gtsam::assert_equal(H1_expectedPose, H1_actualPose, 1e-6));
-	CHECK( gtsam::assert_equal(H2_expectedPose, H2_actualPose, 1e-6));
-	CHECK( gtsam::assert_equal(H3_expectedPose, H3_actualPose, 1e-6));
-	CHECK( gtsam::assert_equal(H4_expectedPose, H4_actualPose, 1e-6));
-	CHECK( gtsam::assert_equal(H5_expectedPose, H5_actualPose, 1e-6));
+	CHECK( gtsam::assert_equal(H1_expectedPose, H1_actualPose, 1e-5));
+	CHECK( gtsam::assert_equal(H2_expectedPose, H2_actualPose, 1e-5));
+	CHECK( gtsam::assert_equal(H3_expectedPose, H3_actualPose, 1e-5));
+	CHECK( gtsam::assert_equal(H4_expectedPose, H4_actualPose, 1e-5));
+	CHECK( gtsam::assert_equal(H5_expectedPose, H5_actualPose, 1e-5));
 
 	// Checking for Vel part in the jacobians
 	// ******
@@ -354,11 +354,11 @@ TEST (InertialNavFactor_GlobalVelocity, Jacobian ) {
 	H5_expectedVel = gtsam::numericalDerivative11<LieVector, LieVector>(boost::bind(&predictionErrorVel, Pose1, Vel1, Bias1, Pose2, _1, factor), Vel2);
 
 	// Verify they are equal for this choice of state
-	CHECK( gtsam::assert_equal(H1_expectedVel, H1_actualVel, 1e-6));
-	CHECK( gtsam::assert_equal(H2_expectedVel, H2_actualVel, 1e-6));
-	CHECK( gtsam::assert_equal(H3_expectedVel, H3_actualVel, 1e-6));
-	CHECK( gtsam::assert_equal(H4_expectedVel, H4_actualVel, 1e-6));
-	CHECK( gtsam::assert_equal(H5_expectedVel, H5_actualVel, 1e-6));
+	CHECK( gtsam::assert_equal(H1_expectedVel, H1_actualVel, 1e-5));
+	CHECK( gtsam::assert_equal(H2_expectedVel, H2_actualVel, 1e-5));
+	CHECK( gtsam::assert_equal(H3_expectedVel, H3_actualVel, 1e-5));
+	CHECK( gtsam::assert_equal(H4_expectedVel, H4_actualVel, 1e-5));
+	CHECK( gtsam::assert_equal(H5_expectedVel, H5_actualVel, 1e-5));
 }
 
 
@@ -647,11 +647,11 @@ TEST (InertialNavFactor_GlobalVelocity, JacobianWithTransform ) {
   H5_expectedPose = gtsam::numericalDerivative11<Pose3, LieVector>(boost::bind(&predictionErrorPose, Pose1, Vel1, Bias1, Pose2, _1, factor), Vel2);
 
   // Verify they are equal for this choice of state
-  CHECK( gtsam::assert_equal(H1_expectedPose, H1_actualPose, 1e-6));
-  CHECK( gtsam::assert_equal(H2_expectedPose, H2_actualPose, 1e-6));
-  CHECK( gtsam::assert_equal(H3_expectedPose, H3_actualPose, 1e-6));
-  CHECK( gtsam::assert_equal(H4_expectedPose, H4_actualPose, 1e-6));
-  CHECK( gtsam::assert_equal(H5_expectedPose, H5_actualPose, 1e-6));
+  CHECK( gtsam::assert_equal(H1_expectedPose, H1_actualPose, 1e-5));
+  CHECK( gtsam::assert_equal(H2_expectedPose, H2_actualPose, 1e-5));
+  CHECK( gtsam::assert_equal(H3_expectedPose, H3_actualPose, 1e-5));
+  CHECK( gtsam::assert_equal(H4_expectedPose, H4_actualPose, 1e-5));
+  CHECK( gtsam::assert_equal(H5_expectedPose, H5_actualPose, 1e-5));
 
   // Checking for Vel part in the jacobians
   // ******
@@ -670,11 +670,11 @@ TEST (InertialNavFactor_GlobalVelocity, JacobianWithTransform ) {
   H5_expectedVel = gtsam::numericalDerivative11<LieVector, LieVector>(boost::bind(&predictionErrorVel, Pose1, Vel1, Bias1, Pose2, _1, factor), Vel2);
 
   // Verify they are equal for this choice of state
-  CHECK( gtsam::assert_equal(H1_expectedVel, H1_actualVel, 1e-6));
-  CHECK( gtsam::assert_equal(H2_expectedVel, H2_actualVel, 1e-6));
-  CHECK( gtsam::assert_equal(H3_expectedVel, H3_actualVel, 1e-6));
-  CHECK( gtsam::assert_equal(H4_expectedVel, H4_actualVel, 1e-6));
-  CHECK( gtsam::assert_equal(H5_expectedVel, H5_actualVel, 1e-6));
+  CHECK( gtsam::assert_equal(H1_expectedVel, H1_actualVel, 1e-5));
+  CHECK( gtsam::assert_equal(H2_expectedVel, H2_actualVel, 1e-5));
+  CHECK( gtsam::assert_equal(H3_expectedVel, H3_actualVel, 1e-5));
+  CHECK( gtsam::assert_equal(H4_expectedVel, H4_actualVel, 1e-5));
+  CHECK( gtsam::assert_equal(H5_expectedVel, H5_actualVel, 1e-5));
 }
 
 /* ************************************************************************* */
