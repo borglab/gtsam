@@ -226,11 +226,9 @@ namespace gtsam {
   // between = compose(p2,inverse(p1));
   Pose3 Pose3::between(const Pose3& p2, boost::optional<Matrix&> H1,
       boost::optional<Matrix&> H2) const {
-      Matrix invH;
-    Pose3 invp1 = inverse(invH);
-    Matrix composeH1;
-    Pose3 result = invp1.compose(p2, composeH1, H2);
-    if (H1) *H1 = composeH1 * invH;
+    Pose3 result = inverse()*p2;
+    if (H1) *H1 = -result.inverse().adjointMap();
+    if (H2) *H2 = I6;
     return result;
   }
 

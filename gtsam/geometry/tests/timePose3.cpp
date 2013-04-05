@@ -40,10 +40,13 @@ int main()
   double x=1.0/norm, y=4.0/norm, z=2.0/norm;
   Vector v = Vector_(6,x,y,z,0.1,0.2,-0.1);
   Pose3 T = Pose3::Expmap(Vector_(6,0.1,0.1,0.2,0.1, 0.4, 0.2)), T2 = T.retract(v);
+  Matrix H1,H2;
 
   TEST("retract", T.retract(v))
   TEST("Expmap", T*Pose3::Expmap(v))
   TEST("localCoordinates", T.localCoordinates(T2))
+  TEST("between", T.between(T2))
+  TEST("between-derivatives", T.between(T2,H1,H2))
   TEST("Logmap", Pose3::Logmap(T.between(T2)))
 
   return 0;
