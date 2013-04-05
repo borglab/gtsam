@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <gtsam_unstable/base/dllexport.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/nonlinear/Ordering.h>
@@ -18,7 +19,7 @@ namespace gtsam {
 // Managing orderings
 
 /** Converts sets of keys to indices by way of orderings */
-std::set<Index> keysToIndices(const KeySet& keys, const Ordering& ordering);
+GTSAM_UNSTABLE_EXPORT std::set<Index> keysToIndices(const KeySet& keys, const Ordering& ordering);
 
 // Linear Graph Operations
 
@@ -26,16 +27,16 @@ std::set<Index> keysToIndices(const KeySet& keys, const Ordering& ordering);
  * Given a graph, splits each factor into factors where the dimension is
  * that of the first variable.
  */
-GaussianFactorGraph splitFactors(const GaussianFactorGraph& fullgraph);
+GTSAM_UNSTABLE_EXPORT GaussianFactorGraph splitFactors(const GaussianFactorGraph& fullgraph);
 
 /**
  * Splits a factor into factors where the dimension is
  * that of the first variable.
  */
-GaussianFactorGraph splitFactor(const GaussianFactor::shared_ptr& factor);
+GTSAM_UNSTABLE_EXPORT GaussianFactorGraph splitFactor(const GaussianFactor::shared_ptr& factor);
 
 /** Removes prior jacobian factors from the graph */
-GaussianFactorGraph removePriors(const GaussianFactorGraph& fullgraph);
+GTSAM_UNSTABLE_EXPORT GaussianFactorGraph removePriors(const GaussianFactorGraph& fullgraph);
 
 // Bayes Tree / Conditional operations
 
@@ -45,7 +46,7 @@ GaussianFactorGraph removePriors(const GaussianFactorGraph& fullgraph);
  *
  * @return the set of conditionals extracted from cliques.
  */
-std::set<GaussianConditional::shared_ptr> findAffectedCliqueConditionals(
+GTSAM_UNSTABLE_EXPORT std::set<GaussianConditional::shared_ptr> findAffectedCliqueConditionals(
     const GaussianBayesTree& bayesTree, const std::set<Index>& savedIndices);
 
 /**
@@ -55,14 +56,14 @@ std::set<GaussianConditional::shared_ptr> findAffectedCliqueConditionals(
  * Note the use of a set of shared_ptr: this will sort/filter on unique *pointer* locations,
  * which ensures unique cliques, but the order of the cliques is meaningless
  */
-void findCliqueConditionals(const GaussianBayesTree::sharedClique& current_clique,
+GTSAM_UNSTABLE_EXPORT void findCliqueConditionals(const GaussianBayesTree::sharedClique& current_clique,
     std::set<GaussianConditional::shared_ptr>& result);
 
 /**
  * Given a clique, returns a sequence of clique parents to the root, not including the
  * given clique.
  */
-std::deque<GaussianBayesTree::sharedClique>
+GTSAM_UNSTABLE_EXPORT std::deque<GaussianBayesTree::sharedClique>
 findPathCliques(const GaussianBayesTree::sharedClique& initial);
 
 /**
@@ -71,8 +72,8 @@ findPathCliques(const GaussianBayesTree::sharedClique& initial);
  *
  * @param splitConditionals flag enables spliting multi-frontal conditionals into separate factors
  */
-GaussianFactorGraph liquefy(const GaussianBayesTree::sharedClique& root, bool splitConditionals = false);
-GaussianFactorGraph liquefy(const GaussianBayesTree& bayesTree, bool splitConditionals = false);
+GTSAM_UNSTABLE_EXPORT GaussianFactorGraph liquefy(const GaussianBayesTree::sharedClique& root, bool splitConditionals = false);
+GTSAM_UNSTABLE_EXPORT GaussianFactorGraph liquefy(const GaussianBayesTree& bayesTree, bool splitConditionals = false);
 
 } // \namespace gtsam
 

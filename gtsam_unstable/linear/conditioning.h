@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <gtsam_unstable/base/dllexport.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/nonlinear/Ordering.h>
@@ -26,7 +27,7 @@ namespace gtsam {
  *  @param saved_indices is the set of indices that should appear in the result
  *  @param solution is a full solution for the system
  */
-gtsam::GaussianConditional::shared_ptr conditionDensity(const gtsam::GaussianConditional::shared_ptr& initConditional,
+GTSAM_UNSTABLE_EXPORT gtsam::GaussianConditional::shared_ptr conditionDensity(const gtsam::GaussianConditional::shared_ptr& initConditional,
     const std::set<gtsam::Index>& saved_indices, const gtsam::VectorValues& solution);
 
 /**
@@ -34,7 +35,7 @@ gtsam::GaussianConditional::shared_ptr conditionDensity(const gtsam::GaussianCon
  * conditionals by solving out variables to eliminate. Traverses the tree to
  * add the correct dummy factors whenever a separator is eliminated.
  */
-gtsam::GaussianFactorGraph conditionDensity(const gtsam::GaussianBayesTree& bayesTree,
+GTSAM_UNSTABLE_EXPORT gtsam::GaussianFactorGraph conditionDensity(const gtsam::GaussianBayesTree& bayesTree,
     const std::set<gtsam::Index>& saved_indices);
 
 
