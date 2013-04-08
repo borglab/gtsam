@@ -221,21 +221,13 @@ public:
 		/* Rotation term */
 		Vector body_deltaAngles_body = delta_angles;
 
-	    // Convert earth-related terms into the body frame
+		// Convert earth-related terms into the body frame
 		Matrix body_R_world(world_P1_body.rotation().inverse().matrix());
 		Vector body_rho = body_R_world * world_rho;
 		Vector body_omega_earth = body_R_world * world_omega_earth;
 
 		// Incorporate earth-related terms. Note - these are assumed to be constant between t1 and t2.
 		body_deltaAngles_body -= (body_rho + body_omega_earth)*dt12;
-
-		// debug
-		//		std::cout<<"Pose1.rotation(): "<<std::endl<<Pose1.rotation().matrix()<<std::endl;
-		//		std::cout<<"delta_angles before earth terms: "<<delta_angles.transpose()<<std::endl;
-		//    std::cout<<"delta_angles after earth terms : "<<body_deltaAngles_body.transpose()<<std::endl;
-		//    std::cout<<"body_rho + body_omega_earth (should include dt_) : "<<body_rho.transpose() + body_omega_earth.transpose()<<std::endl;
-		//    Rot3 R = Pose1.rotation() * POSE::Rotation::Expmap(body_deltaAngles_body);
-		//    std::cout<<"calculated Pose2.rotation(): "<<std::endl<<R.matrix()<<std::endl;
 
 		return POSE(Pose1.rotation() * POSE::Rotation::Expmap(body_deltaAngles_body), Pose1.translation() + typename POSE::Translation(world_deltaPos_body));
 
@@ -275,15 +267,6 @@ public:
 
 		// Incorporate earth-related terms. Note - these are assumed to be constant between t1 and t2.
 		VelDelta -= 2*skewSymmetric(world_rho + world_omega_earth)*world_V1_body * dt12;
-
-		// debug
-		//		std::cout<<"... inside predictVelocity_inertial"<<std::endl;
-		//		std::cout<<"Vel1: "<<Vel1.transpose()   <<std::endl;
-		//		std::cout<<"Vel1.compose(VelDelta): "<<Vel1.compose(VelDelta).transpose()   <<std::endl;
-		//		std::cout<<"VelDelta before earth related terms: "<<world_deltaVel_body.transpose()   <<std::endl;
-		//		std::cout<<"VelDelta after earth related terms : "<<VelDelta.transpose()		<<std::endl;
-		//    std::cout<<"world_P1_body.rotation().matrix() : "<<std::endl<<world_P1_body.rotation().matrix()<<std::endl;
-
 
 		// Predict
 		return Vel1.compose( VelDelta );
@@ -424,17 +407,13 @@ public:
   }
 
 
-
-
-
-
   static inline void PreIntegrateIMUObservations(const Vector& msr_acc_t, const Vector& msr_gyro_t, const double msr_dt,
       Vector& delta_pos_in_t0, Vector3& delta_angles, Vector& delta_vel_in_t0, double& delta_t,
 			const noiseModel::Gaussian::shared_ptr& model_continuous_overall,
 			Matrix& EquivCov_Overall, Matrix& Jacobian_wrt_t0_Overall, const IMUBIAS Bias_t0 = IMUBIAS(),
 			boost::optional<POSE> p_body_P_sensor = boost::none){
 		// Note: all delta terms refer to an IMU\sensor system at t0
-		// Note: Earth-related terms are not accounted here but are incorporate in predict functions.
+		// Note: Earth-related terms are not accounted here but are incorporated in predict functions.
 
 		POSE body_P_sensor = POSE();
 		bool flag_use_body_P_sensor = false;
