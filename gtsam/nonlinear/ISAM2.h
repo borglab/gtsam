@@ -544,12 +544,17 @@ public:
    * (Params::relinearizeSkip).
    * @param constrainedKeys is an optional map of keys to group labels, such that a variable can
    * be constrained to a particular grouping in the BayesTree
+   * @param noRelinKeys is an optional set of nonlinear keys that iSAM2 will hold at a constant linearization
+   * point, regardless of the size of the linear delta
+   * @param extraReelimKeys is an optional set of nonlinear keys that iSAM2 will re-eliminate, regardless
+   * of the size of the linear delta. This allows the provided keys to be reordered.
    * @return An ISAM2Result struct containing information about the update
    */
   GTSAM_EXPORT ISAM2Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values(),
       const FastVector<size_t>& removeFactorIndices = FastVector<size_t>(),
       const boost::optional<FastMap<Key,int> >& constrainedKeys = boost::none,
       const boost::optional<FastList<Key> >& noRelinKeys = boost::none,
+      const boost::optional<FastList<Key> >& extraReelimKeys = boost::none,
       bool force_relinearize = false);
 
   /** Marginalize out variables listed in leafKeys.  These keys must be leaves

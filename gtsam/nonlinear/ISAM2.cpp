@@ -552,7 +552,8 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(const FastSet<Index>& mark
 /* ************************************************************************* */
 ISAM2Result ISAM2::update(
     const NonlinearFactorGraph& newFactors, const Values& newTheta, const FastVector<size_t>& removeFactorIndices,
-    const boost::optional<FastMap<Key,int> >& constrainedKeys, const boost::optional<FastList<Key> >& noRelinKeys, bool force_relinearize) {
+    const boost::optional<FastMap<Key,int> >& constrainedKeys, const boost::optional<FastList<Key> >& noRelinKeys,
+    const boost::optional<FastList<Key> >& extraReelimKeys, bool force_relinearize) {
 
   const bool debug = ISDEBUG("ISAM2 update");
   const bool verbose = ISDEBUG("ISAM2 update verbose");
@@ -647,6 +648,12 @@ ISAM2Result ISAM2::update(
   {
     FastSet<Index> markedRemoveKeys = Impl::IndicesFromFactors(ordering_, removeFactors); // Get keys involved in removed factors
     markedKeys.insert(markedRemoveKeys.begin(), markedRemoveKeys.end()); // Add to the overall set of marked keys
+  }
+  // Also mark any provided extra re-eliminate keys
+  if(extraReelimKeys) {
+    BOOST_FOREACH(Key key, *extraReelimKeys) {
+      markedKeys.insert(ordering_.at(key));
+    }
   }
 
   // Observed keys for detailed results
