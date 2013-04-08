@@ -634,7 +634,7 @@ void ConcurrentBatchFilter::getSummarizedFactors(NonlinearFactorGraph& summarize
   summarizedFactors.push_back(filterSummarization_);
   rootValues.insert(rootValues_);
 
-  gttic(get_summarized_factors);
+  gttoc(get_summarized_factors);
 }
 
 /* ************************************************************************* */
@@ -646,7 +646,7 @@ void ConcurrentBatchFilter::getSmootherFactors(NonlinearFactorGraph& smootherFac
   smootherFactors.push_back(smootherFactors_);
   smootherValues.insert(smootherValues_);
 
-  gttic(get_smoother_factors);
+  gttoc(get_smoother_factors);
 }
 
 /* ************************************************************************* */

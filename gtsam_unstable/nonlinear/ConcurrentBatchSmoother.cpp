@@ -279,7 +279,7 @@ void ConcurrentBatchSmoother::getSummarizedFactors(NonlinearFactorGraph& summari
   // Copy the previous calculated smoother summarization factors into the output
   summarizedFactors.push_back(smootherSummarization_);
 
-  gttic(get_summarized_factors);
+  gttoc(get_summarized_factors);
 }
 
 /* ************************************************************************* */
@@ -324,7 +324,7 @@ void ConcurrentBatchSmoother::postsync() {
 /* ************************************************************************* */
 size_t ConcurrentBatchSmoother::insertFactor(const NonlinearFactor::shared_ptr& factor) {
 
-  gttic(insert_factor);
+  gttic(insert_factors);
 
   // Insert the factor into an existing hole in the factor graph, if possible
   size_t slot;
