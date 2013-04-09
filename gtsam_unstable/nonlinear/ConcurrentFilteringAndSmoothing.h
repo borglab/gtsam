@@ -22,6 +22,7 @@
 
 #include <gtsam_unstable/base/dllexport.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/Values.h>
 
 namespace gtsam {
 
@@ -35,6 +36,14 @@ void GTSAM_UNSTABLE_EXPORT synchronize(ConcurrentFilter& filter, ConcurrentSmoot
  * The interface for the 'Filter' portion of the Concurrent Filtering and Smoother architecture.
  */
 class GTSAM_UNSTABLE_EXPORT ConcurrentFilter {
+public:
+  typedef boost::shared_ptr<ConcurrentFilter> shared_ptr;
+
+  /** Implement a standard 'print' function */
+  virtual void print(const std::string& s = "Concurrent Filter:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const = 0;
+
+  /** Check if two Concurrent Smoothers are equal */
+  virtual bool equals(const ConcurrentFilter& rhs, double tol = 1e-9) const = 0;
 
 protected:
 
@@ -89,7 +98,15 @@ protected:
 /**
  * The interface for the 'Smoother' portion of the Concurrent Filtering and Smoother architecture.
  */
-class ConcurrentSmoother {
+class GTSAM_UNSTABLE_EXPORT ConcurrentSmoother {
+public:
+  typedef boost::shared_ptr<ConcurrentSmoother> shared_ptr;
+
+  /** Implement a standard 'print' function */
+  virtual void print(const std::string& s = "Concurrent Smoother:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const = 0;
+
+  /** Check if two Concurrent Smoothers are equal */
+  virtual bool equals(const ConcurrentSmoother& rhs, double tol = 1e-9) const = 0;
 
 protected:
 

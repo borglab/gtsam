@@ -21,7 +21,6 @@
 
 #include <gtsam_unstable/nonlinear/ConcurrentFilteringAndSmoothing.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/nonlinear/ISAM2.h>
 #include <queue>
 
 namespace gtsam {
@@ -32,19 +31,17 @@ namespace gtsam {
 class GTSAM_UNSTABLE_EXPORT ConcurrentBatchSmoother : public ConcurrentSmoother {
 
 public:
-
+  typedef boost::shared_ptr<ConcurrentBatchSmoother> shared_ptr;
   typedef ConcurrentSmoother Base; ///< typedef for base class
 
-  /**
-   * Meta information returned about the update
-   */
-  // TODO: Think of some more things to put here
+  /** Meta information returned about the update */
   struct Result {
     size_t iterations; ///< The number of optimizer iterations performed
+    size_t lambdas; ///< The number of different L-M lambda factors that were tried during optimization
     size_t nonlinearVariables; ///< The number of variables that can be relinearized
     size_t linearVariables; ///< The number of variables that must keep a constant linearization point
     double error; ///< The final factor graph error
-    Result() : iterations(0), nonlinearVariables(0), linearVariables(0), error(0) {};
+    Result() : iterations(0), lambdas(0), nonlinearVariables(0), linearVariables(0), error(0) {};
   };
 
   /** Default constructor */
@@ -53,14 +50,42 @@ public:
   /** Default destructor */
   virtual ~ConcurrentBatchSmoother() {};
 
-  // Implement a GTSAM standard 'print' function
+  /** Implement a GTSAM standard 'print' function */
   void print(const std::string& s = "Concurrent Batch Smoother:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+
+  /** Check if two Concurrent Smoothers are equal */
+  bool equals(const ConcurrentSmoother& rhs, double tol = 1e-9) const;
+
+  /** Access the current set of factors */
+  const NonlinearFactorGraph& getFactors() const {
+    return factors_;
+  }
+
+  /** Access the current linearization point */
+  const Values& getLinearizationPoint() const {
+    return theta_;
+  }
+
+  /** Access the current ordering */
+  const Ordering& getOrdering() const {
+    return ordering_;
+  }
+
+  /** Access the current set of deltas to the linearization point */
+  const VectorValues& getDelta() const {
+    return delta_;
+  }
+
+  /** Access the nonlinear variable index */
+  const VariableIndex& getVariableIndex() const {
+    return variableIndex_;
+  }
 
   /** Compute the current best estimate of all variables and return a full Values structure.
    * If only a single variable is needed, it may be faster to call calculateEstimate(const KEY&).
    */
   Values calculateEstimate() const {
-    return theta_;
+    return getLinearizationPoint().retract(getDelta(), getOrdering());
   }
 
   /** Compute the current best estimate of a single variable. This is generally faster than
@@ -69,8 +94,10 @@ public:
    * @return
    */
   template<class VALUE>
-  VALUE calculateEstimate(const Key key) const {
-    return theta_.at<VALUE>(key);
+  VALUE calculateEstimate(Key key) const {
+    const Index index = getOrdering().at(key);
+    const Vector delta = getDelta().at(index);
+    return getLinearizationPoint().at<VALUE>(key).retract(delta);
   }
 
   /**
@@ -92,18 +119,17 @@ public:
 
 protected:
 
-  /** A typedef defining an Key-Factor mapping **/
-  typedef std::map<Key, std::set<Index> > FactorIndex;
-
   LevenbergMarquardtParams parameters_;  ///< LM parameters
-  NonlinearFactorGraph graph_;  ///< The graph of all the smoother factors
-  Values theta_;  ///< Current linearization point
-  Ordering ordering_; ///< The current ordering used to generate the deltas
-  VectorValues delta_;  ///< Current set of offsets from the linearization point
-  Values separatorValues_;  ///< The set of keys to be kept in the root and their linearization points
+  NonlinearFactorGraph factors_;  ///< The set of all factors currently in the smoother
+  Values theta_;  ///< Current linearization point of all variables in the smoother
+  Ordering ordering_; ///< The current ordering used to calculate the linear deltas
+  VectorValues delta_; ///< The current set of linear deltas from the linearization point
+  VariableIndex variableIndex_; ///< The current variable index, which allows efficient factor lookup by variable
   std::queue<size_t> availableSlots_; ///< The set of available factor graph slots caused by deleting factors
-  FactorIndex factorIndex_; ///< A cross-reference structure to allow efficient factor lookups by key
-  std::vector<size_t> filterSummarizationSlots_;  ///< The slots in graph for the last set of filter summarized factors
+  Values separatorValues_; ///< The linearization points of the separator variables. These should not be updated during optimization.
+  std::vector<size_t> filterSummarizationSlots_;  ///< The slots in factor graph that correspond to the current filter summarization factors
+
+  // Storage for information to be sent to the filter
   NonlinearFactorGraph smootherSummarization_; ///< A temporary holding place for calculated smoother summarization
 
   /**
@@ -130,7 +156,7 @@ protected:
    * @param rootValues The linearization point of the root variables
    */
   virtual void synchronize(const NonlinearFactorGraph& smootherFactors, const Values& smootherValues,
-      const NonlinearFactorGraph& summarizedFactors, const Values& rootValues);
+      const NonlinearFactorGraph& summarizedFactors, const Values& separatorValues);
 
   /**
    * Perform any required operations after the synchronization process finishes.
@@ -138,48 +164,33 @@ protected:
    */
   virtual void postsync();
 
-  /** Augment the graph with a new factor
+  /** Augment the graph with new factors
    *
-   * @param factors The factor to add to the graph
-   * @return The slot in the graph it was inserted into
+   * @param factors The factors to add to the graph
+   * @return The slots in the graph where they were inserted
    */
-  size_t insertFactor(const NonlinearFactor::shared_ptr& factor);
+  std::vector<size_t> insertFactors(const NonlinearFactorGraph& factors);
 
-  /** Remove a factor from the graph by slot index */
-  void removeFactor(size_t slot);
+  /** Remove factors from the graph by slot index
+   *
+   * @param slots The slots in the factor graph that should be deleted
+   * */
+  void removeFactors(const std::vector<size_t>& slots);
 
-  /** Optimize the graph using a modified version of L-M */
-  void optimize();
+  /** Use colamd to update into an efficient ordering */
+  void reorder();
 
-  /** Find all of the nonlinear factors that contain any of the provided keys */
-  std::set<size_t> findFactorsWithAny(const std::set<Key>& keys) const;
-
-  /** Find all of the nonlinear factors that contain only the provided keys */
-  std::set<size_t> findFactorsWithOnly(const std::set<Key>& keys) const;
-
-  /** Create a linearized factor from the information remaining after marginalizing out the requested keys */
-  NonlinearFactor::shared_ptr marginalizeKeysFromFactor(const NonlinearFactor::shared_ptr& factor, const std::set<Key>& keysToKeep, const Values& theta) const;
+  /** Use a modified version of L-M to update the linearization point and delta */
+  Result optimize();
 
 private:
   /** Some printing functions for debugging */
 
-  static void PrintNonlinearFactor(const gtsam::NonlinearFactor::shared_ptr& factor,
-      const std::string& indent = "", const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
+  static void PrintNonlinearFactor(const NonlinearFactor::shared_ptr& factor,
+      const std::string& indent = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
-  static void PrintLinearFactor(const gtsam::GaussianFactor::shared_ptr& factor, const gtsam::Ordering& ordering,
-      const std::string& indent = "", const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
-
-//  static void PrintSingleClique(const gtsam::ISAM2Clique::shared_ptr& clique, const gtsam::Ordering& ordering,
-//      const std::string& indent = "", const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
-//
-//  static void PrintRecursiveClique(const gtsam::ISAM2Clique::shared_ptr& clique, const gtsam::Ordering& ordering,
-//      const std::string& indent = "", const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
-//
-//  static void PrintBayesTree(const gtsam::ISAM2& bayesTree, const gtsam::Ordering& ordering,
-//      const std::string& indent = "", const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
-
-//  typedef BayesTree<GaussianConditional,ISAM2Clique>::sharedClique Clique;
-//  static void SymbolicPrintTree(const Clique& clique, const Ordering& ordering, const std::string indent = "");
+  static void PrintLinearFactor(const GaussianFactor::shared_ptr& factor, const Ordering& ordering,
+      const std::string& indent = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
 }; // ConcurrentBatchSmoother
 

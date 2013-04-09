@@ -19,10 +19,8 @@
 // \callgraph
 #pragma once
 
-#include "ConcurrentFilteringAndSmoothing.h"
+#include <gtsam_unstable/nonlinear/ConcurrentFilteringAndSmoothing.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/nonlinear/ISAM2.h>
-#include <map>
 #include <queue>
 
 namespace gtsam {
@@ -33,37 +31,61 @@ namespace gtsam {
 class GTSAM_UNSTABLE_EXPORT ConcurrentBatchFilter : public ConcurrentFilter {
 
 public:
-
+  typedef boost::shared_ptr<ConcurrentBatchFilter> shared_ptr;
   typedef ConcurrentFilter Base; ///< typedef for base class
-  typedef std::map<Key, double> KeyTimestampMap; ///< Typedef for a Key-Timestamp map/database
-  typedef std::multimap<double, Key> TimestampKeyMap;///< Typedef for a Timestamp-Key map/database
 
-  /**
-   * Meta information returned about the update
-   */
-  // TODO: Think of some more things to put here
+  /** Meta information returned about the update */
   struct Result {
     size_t iterations; ///< The number of optimizer iterations performed
+    size_t lambdas; ///< The number of different L-M lambda factors that were tried during optimization
     size_t nonlinearVariables; ///< The number of variables that can be relinearized
     size_t linearVariables; ///< The number of variables that must keep a constant linearization point
     double error; ///< The final factor graph error
-    Result() : iterations(0), nonlinearVariables(0), linearVariables(0), error(0) {};
+    Result() : iterations(0), lambdas(0), nonlinearVariables(0), linearVariables(0), error(0) {};
   };
 
   /** Default constructor */
-  ConcurrentBatchFilter(const LevenbergMarquardtParams& parameters, double lag) : parameters_(parameters), lag_(lag) {};
+  ConcurrentBatchFilter(const LevenbergMarquardtParams& parameters) : parameters_(parameters) {};
 
   /** Default destructor */
   virtual ~ConcurrentBatchFilter() {};
 
-  // Implement a GTSAM standard 'print' function
+  /** Implement a GTSAM standard 'print' function */
   void print(const std::string& s = "Concurrent Batch Filter:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+
+  /** Check if two Concurrent Filters are equal */
+  bool equals(const ConcurrentFilter& rhs, double tol = 1e-9) const;
+
+  /** Access the current set of factors */
+  const NonlinearFactorGraph& getFactors() const {
+    return factors_;
+  }
+
+  /** Access the current linearization point */
+  const Values& getLinearizationPoint() const {
+    return theta_;
+  }
+
+  /** Access the current ordering */
+  const Ordering& getOrdering() const {
+    return ordering_;
+  }
+
+  /** Access the current set of deltas to the linearization point */
+  const VectorValues& getDelta() const {
+    return delta_;
+  }
+
+  /** Access the nonlinear variable index */
+  const VariableIndex& getVariableIndex() const {
+    return variableIndex_;
+  }
 
   /** Compute the current best estimate of all variables and return a full Values structure.
    * If only a single variable is needed, it may be faster to call calculateEstimate(const KEY&).
    */
   Values calculateEstimate() const {
-    return theta_;
+    return getLinearizationPoint().retract(getDelta(), getOrdering());
   }
 
   /** Compute the current best estimate of a single variable. This is generally faster than
@@ -72,8 +94,10 @@ public:
    * @return
    */
   template<class VALUE>
-  VALUE calculateEstimate(const Key key) const {
-    return theta_.at<VALUE>(key);
+  VALUE calculateEstimate(Key key) const {
+    const Index index = getOrdering().at(key);
+    const Vector delta = getDelta().at(index);
+    return getLinearizationPoint().at<VALUE>(key).retract(delta);
   }
 
   /**
@@ -86,30 +110,25 @@ public:
    * @param newTheta Initialization points for new variables to be added to the filter
    * You must include here all new variables occurring in newFactors that were not already
    * in the filter.
+   * @param keysToMove An optional set of keys to remove from the filter and
    */
   Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values(),
-      const KeyTimestampMap& timestamps = KeyTimestampMap());
+      const boost::optional<FastList<Key> >& keysToMove = boost::none);
 
 protected:
 
-  /** A typedef defining an Key-Factor mapping **/
-  typedef std::map<Key, std::set<Index> > FactorIndex;
-
   LevenbergMarquardtParams parameters_;  ///< LM parameters
-  double lag_; ///< Time before keys are transitioned from the filter to the smoother
-  NonlinearFactorGraph graph_;  ///< The graph of all the smoother factors
-  Values theta_;  ///< Current solution
-  TimestampKeyMap timestampKeyMap_; ///< The set of keys associated with each timestamp
-  KeyTimestampMap keyTimestampMap_; ///< The timestamp associated with each key
+  NonlinearFactorGraph factors_;  ///< The set of all factors currently in the filter
+  Values theta_;  ///< Current linearization point of all variables in the filter
+  Ordering ordering_; ///< The current ordering used to calculate the linear deltas
+  VectorValues delta_; ///< The current set of linear deltas from the linearization point
+  VariableIndex variableIndex_; ///< The current variable index, which allows efficient factor lookup by variable
   std::queue<size_t> availableSlots_; ///< The set of available factor graph slots caused by deleting factors
-  FactorIndex factorIndex_; ///< A cross-reference structure to allow efficient factor lookups by key
-
-  std::vector<size_t> smootherSummarizationSlots_;  ///< The slots in graph for the last set of smoother summarized factors
-  Values separatorValues_;
+  Values separatorValues_; ///< The linearization points of the separator variables. These should not be updated during optimization.
+  std::vector<size_t> smootherSummarizationSlots_;  ///< The slots in factor graph that correspond to the current smoother summarization factors
 
   // Storage for information to be sent to the smoother
   NonlinearFactorGraph filterSummarization_; ///< A temporary holding place for calculated filter summarization factors to be sent to the smoother
-  Values rootValues_;  ///< The set of keys to be kept in the root and their linearization points
   NonlinearFactorGraph smootherFactors_;  ///< A temporary holding place for the set of full nonlinear factors being sent to the smoother
   Values smootherValues_; ///< A temporary holding place for the linearization points of all keys being sent to the smoother
 
@@ -126,7 +145,7 @@ protected:
    * @param summarizedFactors The summarized factors for the filter branch
    * @param rootValues The linearization points of the root clique variables
    */
-  virtual void getSummarizedFactors(NonlinearFactorGraph& summarizedFactors, Values& rootValues);
+  virtual void getSummarizedFactors(NonlinearFactorGraph& summarizedFactors, Values& separatorValues);
 
   /**
    * Populate the provided containers with factors being sent to the smoother from the filter. These
@@ -152,47 +171,34 @@ protected:
   virtual void postsync();
 
 
-  /** Augment the graph with a new factor
-   *
-   * @param factor The new factor to add to the graph
-   * @return The slot in the graph where the factor was inserted
-   */
-  size_t insertFactor(const NonlinearFactor::shared_ptr& factor);
-
-  /** Remove a factor from the graph by slot index */
-  void removeFactor(size_t slot);
-
-  /** Remove the specified key from all data structures */
-  void removeKey(Key key);
-
-  /** Update the Timestamps associated with the keys */
-  void updateKeyTimestampMap(const KeyTimestampMap& newTimestamps);
-
-  /** Find the most recent timestamp of the system */
-  double getCurrentTimestamp() const;
-
-  /** Find all of the keys associated with timestamps before the provided time */
-  std::set<Key> findKeysBefore(double timestamp) const;
-
-  /** Find all of the keys associated with timestamps after the provided time */
-  std::set<Key> findKeysAfter(double timestamp) const;
-
-  /** Find all of the nonlinear factors that contain any of the provided keys */
-  std::set<size_t> findFactorsWithAny(const std::set<Key>& keys) const;
-
-  /** Find all of the nonlinear factors that contain only the provided keys */
-  std::set<size_t> findFactorsWithOnly(const std::set<Key>& keys) const;
-
-  /** Create linearized factors from any factors remaining after marginalizing out the requested keys */
-  NonlinearFactor::shared_ptr marginalizeKeysFromFactor(const NonlinearFactor::shared_ptr& factor, const std::set<Key>& remainingKeys) const;
-
-  std::set<gtsam::Key> findSeparatorKeys(const gtsam::NonlinearFactorGraph& graph) const;
-
-  gtsam::Ordering computeOrdering(const gtsam::NonlinearFactorGraph& graph) const;
-
 private:
-  typedef BayesTree<GaussianConditional,ISAM2Clique>::sharedClique Clique;
-  static void SymbolicPrintTree(const Clique& clique, const Ordering& ordering, const std::string indent = "");
+
+  /** Augment the graph with new factors
+   *
+   * @param factors The factors to add to the graph
+   * @return The slots in the graph where they were inserted
+   */
+  std::vector<size_t> insertFactors(const NonlinearFactorGraph& factors);
+
+  /** Remove factors from the graph by slot index
+   *
+   * @param slots The slots in the factor graph that should be deleted
+   * */
+  void removeFactors(const std::vector<size_t>& slots);
+
+  /** Use colamd to update into an efficient ordering */
+  void reorder(const boost::optional<FastList<Key> >& keysToMove = boost::none);
+
+  /** Use a modified version of L-M to update the linearization point and delta */
+  Result optimize();
+
+  /** Print just the nonlinear keys in a nonlinear factor */
+  static void PrintNonlinearFactor(const NonlinearFactor::shared_ptr& factor,
+      const std::string& indent = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter);
+
+  /** Print just the nonlinear keys in a linear factor */
+  static void PrintLinearFactor(const GaussianFactor::shared_ptr& factor, const Ordering& ordering,
+      const std::string& indent = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
 }; // ConcurrentBatchFilter
 
