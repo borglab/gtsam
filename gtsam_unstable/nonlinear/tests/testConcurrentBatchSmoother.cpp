@@ -17,24 +17,19 @@
  */
 
 #include <gtsam_unstable/nonlinear/ConcurrentBatchSmoother.h>
-#include <gtsam_unstable/nonlinear/LinearizedFactor.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/Key.h>
-#include <gtsam/inference/JunctionTree.h>
 #include <gtsam/geometry/Pose3.h>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;
-
-namespace {
 
 // Set up initial pose, odometry difference, loop closure difference, and initialization errors
 const Pose3 poseInitial;
@@ -336,7 +331,7 @@ void CreateFactors(NonlinearFactorGraph& graph, Values& theta, size_t index1 = 0
 }
 
 /* ************************************************************************* */
-Values BatchOptimize(const NonlinearFactorGraph& graph, const Values& theta, const Values& rootValues = Values()) {
+Values BatchOptimize(const NonlinearFactorGraph& graph, const Values& theta, const Values& separatorValues = Values()) {
 
   // Create an L-M optimizer
   LevenbergMarquardtParams parameters;
@@ -348,9 +343,9 @@ Values BatchOptimize(const NonlinearFactorGraph& graph, const Values& theta, con
   double currentError;
   do {
     // Force variables associated with root keys to keep the same linearization point
-    if(rootValues.size() > 0) {
+    if(separatorValues.size() > 0) {
       // Put the old values of the root keys back into the optimizer state
-      optimizer.state().values.update(rootValues);
+      optimizer.state().values.update(separatorValues);
       // Update the error value with the new theta
       optimizer.state().error = graph.error(optimizer.state().values);
     }
@@ -367,60 +362,60 @@ Values BatchOptimize(const NonlinearFactorGraph& graph, const Values& theta, con
   return optimizer.values();
 }
 
+///* ************************************************************************* */
+//void FindFactorsWithAny(const std::set<Key>& keys, const NonlinearFactorGraph& sourceFactors, NonlinearFactorGraph& destinationFactors) {
+//
+//  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, sourceFactors) {
+//    NonlinearFactor::const_iterator key = factor->begin();
+//    while((key != factor->end()) && (!std::binary_search(keys.begin(), keys.end(), *key))) {
+//      ++key;
+//    }
+//    if(key != factor->end()) {
+//      destinationFactors.push_back(factor);
+//    }
+//  }
+//
+//}
+//
+///* ************************************************************************* */
+//void FindFactorsWithOnly(const std::set<Key>& keys, const NonlinearFactorGraph& sourceFactors, NonlinearFactorGraph& destinationFactors) {
+//
+//  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, sourceFactors) {
+//    NonlinearFactor::const_iterator key = factor->begin();
+//    while((key != factor->end()) && (std::binary_search(keys.begin(), keys.end(), *key))) {
+//      ++key;
+//    }
+//    if(key == factor->end()) {
+//      destinationFactors.push_back(factor);
+//    }
+//  }
+//
+//}
+//
+///* ************************************************************************* */
+//typedef BayesTree<GaussianConditional,ISAM2Clique>::sharedClique Clique;
+//void SymbolicPrintTree(const Clique& clique, const Ordering& ordering, const std::string indent = "") {
+//  std::cout << indent << "P( ";
+//  BOOST_FOREACH(Index index, clique->conditional()->frontals()){
+//    std::cout << DefaultKeyFormatter(ordering.key(index)) << " ";
+//  }
+//  if(clique->conditional()->nrParents() > 0) {
+//    std::cout << "| ";
+//  }
+//  BOOST_FOREACH(Index index, clique->conditional()->parents()){
+//    std::cout << DefaultKeyFormatter(ordering.key(index)) << " ";
+//  }
+//  std::cout << ")" << std::endl;
+//
+//  BOOST_FOREACH(const Clique& child, clique->children()) {
+//    SymbolicPrintTree(child, ordering, indent+"  ");
+//  }
+//}
+//
+//}
+
 /* ************************************************************************* */
-void FindFactorsWithAny(const std::set<Key>& keys, const NonlinearFactorGraph& sourceFactors, NonlinearFactorGraph& destinationFactors) {
-
-  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, sourceFactors) {
-    NonlinearFactor::const_iterator key = factor->begin();
-    while((key != factor->end()) && (!std::binary_search(keys.begin(), keys.end(), *key))) {
-      ++key;
-    }
-    if(key != factor->end()) {
-      destinationFactors.push_back(factor);
-    }
-  }
-
-}
-
-/* ************************************************************************* */
-void FindFactorsWithOnly(const std::set<Key>& keys, const NonlinearFactorGraph& sourceFactors, NonlinearFactorGraph& destinationFactors) {
-
-  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, sourceFactors) {
-    NonlinearFactor::const_iterator key = factor->begin();
-    while((key != factor->end()) && (std::binary_search(keys.begin(), keys.end(), *key))) {
-      ++key;
-    }
-    if(key == factor->end()) {
-      destinationFactors.push_back(factor);
-    }
-  }
-
-}
-
-/* ************************************************************************* */
-typedef BayesTree<GaussianConditional,ISAM2Clique>::sharedClique Clique;
-void SymbolicPrintTree(const Clique& clique, const Ordering& ordering, const std::string indent = "") {
-  std::cout << indent << "P( ";
-  BOOST_FOREACH(Index index, clique->conditional()->frontals()){
-    std::cout << DefaultKeyFormatter(ordering.key(index)) << " ";
-  }
-  if(clique->conditional()->nrParents() > 0) {
-    std::cout << "| ";
-  }
-  BOOST_FOREACH(Index index, clique->conditional()->parents()){
-    std::cout << DefaultKeyFormatter(ordering.key(index)) << " ";
-  }
-  std::cout << ")" << std::endl;
-
-  BOOST_FOREACH(const Clique& child, clique->children()) {
-    SymbolicPrintTree(child, ordering, indent+"  ");
-  }
-}
-
-}
-
-/* ************************************************************************* */
-TEST_UNSAFE( ConcurrentBatchSmoother, update_Batch )
+TEST_UNSAFE( ConcurrentBatchSmoother, update_batch )
 {
   // Test the 'update' function of the ConcurrentBatchSmoother in a nonlinear environment.
   // Thus, a full L-M optimization and the ConcurrentBatchSmoother results should be identical
@@ -451,7 +446,7 @@ TEST_UNSAFE( ConcurrentBatchSmoother, update_Batch )
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE( ConcurrentBatchSmoother, update_Incremental )
+TEST_UNSAFE( ConcurrentBatchSmoother, update_incremental )
 {
   // Test the 'update' function of the ConcurrentBatchSmoother in a nonlinear environment.
   // Thus, a full L-M optimization and the ConcurrentBatchSmoother results should be identical
@@ -492,220 +487,220 @@ TEST_UNSAFE( ConcurrentBatchSmoother, update_Incremental )
 
 }
 
-/* ************************************************************************* */
-TEST_UNSAFE( ConcurrentBatchSmoother, synchronize )
-{
-  // Test the 'synchronize' function of the ConcurrentBatchSmoother in a nonlinear environment.
-  // The smoother is operating on a known tree structure, so the factors and summarization can
-  // be predicted for testing purposes
-
-  // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
-
-  // Create a Concurrent Batch Smoother
-  ConcurrentBatchSmootherTester smoother(parameters);
-
-  // Create containers to keep the full graph
-  Values fullTheta;
-  NonlinearFactorGraph fullGraph;
-
-  // Create factors for times 0 - 12
-  // When eliminated with ordering (X2 X0 X1 X4 X5 X3 X6 X8 X11 X10 X7 X9 X12)augmentedHessian
-  // ... this Bayes Tree is produced:
-  // Bayes Tree:
-  //   P( X7 X9 X12 )
-  //     P( X10 | X9 )
-  //       P( X11 | X10 )
-  //     P( X8 | X9 )
-  //     P( X6 | X7 X9 )
-  //       P( X5 X3 | X6 )
-  //         P( X1 | X3 )
-  //           P( X0 | X1 )
-  //         P( X2 | X3 )
-  //     P( X4 | X7 )
-  // We then produce the inputs necessary for the 'synchronize' function.
-  // The smoother is branches X4 and X6, the filter is branches X8 and X10, and the root is (X7 X9 X12)
-  CreateFactors(fullGraph, fullTheta, 0, 13);
-
-  // Optimize the full graph
-  Values optimalTheta = BatchOptimize(fullGraph, fullTheta);
-
-  // Re-eliminate to create the Bayes Tree
-  Ordering ordering;
-  ordering.push_back(Symbol('X',  2));
-  ordering.push_back(Symbol('X',  0));
-  ordering.push_back(Symbol('X',  1));
-  ordering.push_back(Symbol('X',  4));
-  ordering.push_back(Symbol('X',  5));
-  ordering.push_back(Symbol('X',  3));
-  ordering.push_back(Symbol('X',  6));
-  ordering.push_back(Symbol('X',  8));
-  ordering.push_back(Symbol('X', 11));
-  ordering.push_back(Symbol('X', 10));
-  ordering.push_back(Symbol('X',  7));
-  ordering.push_back(Symbol('X',  9));
-  ordering.push_back(Symbol('X', 12));
-  Values linpoint;
-  linpoint.insert(optimalTheta);
-  GaussianFactorGraph linearGraph = *fullGraph.linearize(linpoint, ordering);
-  JunctionTree<GaussianFactorGraph, ISAM2Clique> jt(linearGraph);
-  ISAM2Clique::shared_ptr root = jt.eliminate(EliminateQR);
-  BayesTree<GaussianConditional, ISAM2Clique> bayesTree;
-  bayesTree.insert(root);
-
-  // Extract the values for the smoother keys. This consists of the branches: X4 and X6
-  // Extract the non-root values from the initial values to test the smoother optimization
-  Values smootherValues;
-  smootherValues.insert(Symbol('X',  0), fullTheta.at(Symbol('X',  0)));
-  smootherValues.insert(Symbol('X',  1), fullTheta.at(Symbol('X',  1)));
-  smootherValues.insert(Symbol('X',  2), fullTheta.at(Symbol('X',  2)));
-  smootherValues.insert(Symbol('X',  3), fullTheta.at(Symbol('X',  3)));
-  smootherValues.insert(Symbol('X',  4), fullTheta.at(Symbol('X',  4)));
-  smootherValues.insert(Symbol('X',  5), fullTheta.at(Symbol('X',  5)));
-  smootherValues.insert(Symbol('X',  6), fullTheta.at(Symbol('X',  6)));
-
-  // Extract the optimal root values
-  Values rootValues;
-  rootValues.insert(Symbol('X',  7), optimalTheta.at(Symbol('X',  7)));
-  rootValues.insert(Symbol('X',  9), optimalTheta.at(Symbol('X',  9)));
-  rootValues.insert(Symbol('X', 12), optimalTheta.at(Symbol('X', 12)));
-
-  // Extract the nonlinear smoother factors as any factor with a non-root smoother key
-  std::set<Key> smootherKeys;
-  smootherKeys.insert(Symbol('X', 0));
-  smootherKeys.insert(Symbol('X', 1));
-  smootherKeys.insert(Symbol('X', 2));
-  smootherKeys.insert(Symbol('X', 3));
-  smootherKeys.insert(Symbol('X', 4));
-  smootherKeys.insert(Symbol('X', 5));
-  smootherKeys.insert(Symbol('X', 6));
-  NonlinearFactorGraph smootherFactors;
-  FindFactorsWithAny(smootherKeys, fullGraph, smootherFactors);
-
-  // Extract the filter summarized factors. This consists of the linear cached factors from
-  // the filter branches X8 and X10, as well as any nonlinear factor that involves only root keys
-  NonlinearFactorGraph filterSummarization;
-  filterSummarization.add(LinearizedJacobianFactor(boost::static_pointer_cast<JacobianFactor>(bayesTree.nodes().at(ordering.at(Symbol('X',  8)))->cachedFactor()), ordering, linpoint));
-  filterSummarization.add(LinearizedJacobianFactor(boost::static_pointer_cast<JacobianFactor>(bayesTree.nodes().at(ordering.at(Symbol('X', 10)))->cachedFactor()), ordering, linpoint));
-  std::set<Key> rootKeys;
-  rootKeys.insert(Symbol('X',  7));
-  rootKeys.insert(Symbol('X',  9));
-  rootKeys.insert(Symbol('X', 12));
-  FindFactorsWithOnly(rootKeys, fullGraph, filterSummarization);
-
-
-
-  // Perform the synchronization procedure
-  NonlinearFactorGraph actualSmootherSummarization;
-  smoother.presync();
-  smoother.getSummarizedFactors(actualSmootherSummarization);
-  smoother.synchronize(smootherFactors, smootherValues, filterSummarization, rootValues);
-  smoother.postsync();
-
-  // Verify the returned smoother values is empty in the first iteration
-  NonlinearFactorGraph expectedSmootherSummarization;
-  CHECK(assert_equal(expectedSmootherSummarization, actualSmootherSummarization, 1e-4));
-
-
-
-  // Perform a full update of the smoother. Since the root values/summarized filter factors were
-  // created at the optimal values, the smoother should be identical to the batch optimization
-  smoother.update();
-  Values actualSmootherTheta = smoother.calculateEstimate();
-
-  // Create the expected values as the optimal set
-  Values expectedSmootherTheta;
-  expectedSmootherTheta.insert(Symbol('X',  0), optimalTheta.at(Symbol('X',  0)));
-  expectedSmootherTheta.insert(Symbol('X',  1), optimalTheta.at(Symbol('X',  1)));
-  expectedSmootherTheta.insert(Symbol('X',  2), optimalTheta.at(Symbol('X',  2)));
-  expectedSmootherTheta.insert(Symbol('X',  3), optimalTheta.at(Symbol('X',  3)));
-  expectedSmootherTheta.insert(Symbol('X',  4), optimalTheta.at(Symbol('X',  4)));
-  expectedSmootherTheta.insert(Symbol('X',  5), optimalTheta.at(Symbol('X',  5)));
-  expectedSmootherTheta.insert(Symbol('X',  6), optimalTheta.at(Symbol('X',  6)));
-
-  // Compare filter solution with full batch
-  CHECK(assert_equal(expectedSmootherTheta, actualSmootherTheta, 1e-4));
-
-
-
-  // Add a loop closure factor to the smoother and re-check. Since the filter
-  // factors were created at the optimal linpoint, and since the new loop closure
-  // does not involve filter keys, the smoother should still yeild the optimal solution
-  // The new Bayes Tree is:
-  // Bayes Tree:
-  //   P( X7 X9 X12 )
-  //     P( X10 | X9 )
-  //       P( X11 | X10 )
-  //     P( X8 | X9 )
-  //     P( X6 | X7 X9 )
-  //       P( X4 | X6 X7 )
-  //         P( X3 X5 | X4 X6 )
-  //           P( X2 | X3 )
-  //           P( X1 | X3 X4 )
-  //             P( X0 | X1 )
-  Pose3 poseDelta = fullTheta.at<Pose3>(Symbol('X', 1)).between(fullTheta.at<Pose3>(Symbol('X', 4)));
-  NonlinearFactor::shared_ptr loopClosure = NonlinearFactor::shared_ptr(new BetweenFactor<Pose3>(Symbol('X', 1), Symbol('X', 4), poseDelta, noiseOdometery));
-  fullGraph.push_back(loopClosure);
-  optimalTheta = BatchOptimize(fullGraph, fullTheta, rootValues);
-
-  // Recreate the Bayes Tree
-  linpoint.clear();
-  linpoint.insert(optimalTheta);
-  linpoint.update(rootValues);
-  linearGraph = *fullGraph.linearize(linpoint, ordering);
-  jt = JunctionTree<GaussianFactorGraph, ISAM2Clique>(linearGraph);
-  root = jt.eliminate(EliminateQR);
-  bayesTree = BayesTree<GaussianConditional, ISAM2Clique>();
-  bayesTree.insert(root);
-
-  // Add the loop closure to the smoother
-  NonlinearFactorGraph newFactors;
-  newFactors.push_back(loopClosure);
-  smoother.update(newFactors);
-  actualSmootherTheta = smoother.calculateEstimate();
-
-  // Create the expected values as the optimal set
-  expectedSmootherTheta.clear();
-  expectedSmootherTheta.insert(Symbol('X',  0), optimalTheta.at(Symbol('X',  0)));
-  expectedSmootherTheta.insert(Symbol('X',  1), optimalTheta.at(Symbol('X',  1)));
-  expectedSmootherTheta.insert(Symbol('X',  2), optimalTheta.at(Symbol('X',  2)));
-  expectedSmootherTheta.insert(Symbol('X',  3), optimalTheta.at(Symbol('X',  3)));
-  expectedSmootherTheta.insert(Symbol('X',  4), optimalTheta.at(Symbol('X',  4)));
-  expectedSmootherTheta.insert(Symbol('X',  5), optimalTheta.at(Symbol('X',  5)));
-  expectedSmootherTheta.insert(Symbol('X',  6), optimalTheta.at(Symbol('X',  6)));
-
-  // Compare filter solution with full batch
-  // TODO: Check This
+///* ************************************************************************* */
+//TEST_UNSAFE( ConcurrentBatchSmoother, synchronize )
+//{
+//  // Test the 'synchronize' function of the ConcurrentBatchSmoother in a nonlinear environment.
+//  // The smoother is operating on a known tree structure, so the factors and summarization can
+//  // be predicted for testing purposes
+//
+//  // Create a set of optimizer parameters
+//  LevenbergMarquardtParams parameters;
+//
+//  // Create a Concurrent Batch Smoother
+//  ConcurrentBatchSmootherTester smoother(parameters);
+//
+//  // Create containers to keep the full graph
+//  Values fullTheta;
+//  NonlinearFactorGraph fullGraph;
+//
+//  // Create factors for times 0 - 12
+//  // When eliminated with ordering (X2 X0 X1 X4 X5 X3 X6 X8 X11 X10 X7 X9 X12)augmentedHessian
+//  // ... this Bayes Tree is produced:
+//  // Bayes Tree:
+//  //   P( X7 X9 X12 )
+//  //     P( X10 | X9 )
+//  //       P( X11 | X10 )
+//  //     P( X8 | X9 )
+//  //     P( X6 | X7 X9 )
+//  //       P( X5 X3 | X6 )
+//  //         P( X1 | X3 )
+//  //           P( X0 | X1 )
+//  //         P( X2 | X3 )
+//  //     P( X4 | X7 )
+//  // We then produce the inputs necessary for the 'synchronize' function.
+//  // The smoother is branches X4 and X6, the filter is branches X8 and X10, and the root is (X7 X9 X12)
+//  CreateFactors(fullGraph, fullTheta, 0, 13);
+//
+//  // Optimize the full graph
+//  Values optimalTheta = BatchOptimize(fullGraph, fullTheta);
+//
+//  // Re-eliminate to create the Bayes Tree
+//  Ordering ordering;
+//  ordering.push_back(Symbol('X',  2));
+//  ordering.push_back(Symbol('X',  0));
+//  ordering.push_back(Symbol('X',  1));
+//  ordering.push_back(Symbol('X',  4));
+//  ordering.push_back(Symbol('X',  5));
+//  ordering.push_back(Symbol('X',  3));
+//  ordering.push_back(Symbol('X',  6));
+//  ordering.push_back(Symbol('X',  8));
+//  ordering.push_back(Symbol('X', 11));
+//  ordering.push_back(Symbol('X', 10));
+//  ordering.push_back(Symbol('X',  7));
+//  ordering.push_back(Symbol('X',  9));
+//  ordering.push_back(Symbol('X', 12));
+//  Values linpoint;
+//  linpoint.insert(optimalTheta);
+//  GaussianFactorGraph linearGraph = *fullGraph.linearize(linpoint, ordering);
+//  JunctionTree<GaussianFactorGraph, ISAM2Clique> jt(linearGraph);
+//  ISAM2Clique::shared_ptr root = jt.eliminate(EliminateQR);
+//  BayesTree<GaussianConditional, ISAM2Clique> bayesTree;
+//  bayesTree.insert(root);
+//
+//  // Extract the values for the smoother keys. This consists of the branches: X4 and X6
+//  // Extract the non-root values from the initial values to test the smoother optimization
+//  Values smootherValues;
+//  smootherValues.insert(Symbol('X',  0), fullTheta.at(Symbol('X',  0)));
+//  smootherValues.insert(Symbol('X',  1), fullTheta.at(Symbol('X',  1)));
+//  smootherValues.insert(Symbol('X',  2), fullTheta.at(Symbol('X',  2)));
+//  smootherValues.insert(Symbol('X',  3), fullTheta.at(Symbol('X',  3)));
+//  smootherValues.insert(Symbol('X',  4), fullTheta.at(Symbol('X',  4)));
+//  smootherValues.insert(Symbol('X',  5), fullTheta.at(Symbol('X',  5)));
+//  smootherValues.insert(Symbol('X',  6), fullTheta.at(Symbol('X',  6)));
+//
+//  // Extract the optimal root values
+//  Values rootValues;
+//  rootValues.insert(Symbol('X',  7), optimalTheta.at(Symbol('X',  7)));
+//  rootValues.insert(Symbol('X',  9), optimalTheta.at(Symbol('X',  9)));
+//  rootValues.insert(Symbol('X', 12), optimalTheta.at(Symbol('X', 12)));
+//
+//  // Extract the nonlinear smoother factors as any factor with a non-root smoother key
+//  std::set<Key> smootherKeys;
+//  smootherKeys.insert(Symbol('X', 0));
+//  smootherKeys.insert(Symbol('X', 1));
+//  smootherKeys.insert(Symbol('X', 2));
+//  smootherKeys.insert(Symbol('X', 3));
+//  smootherKeys.insert(Symbol('X', 4));
+//  smootherKeys.insert(Symbol('X', 5));
+//  smootherKeys.insert(Symbol('X', 6));
+//  NonlinearFactorGraph smootherFactors;
+//  FindFactorsWithAny(smootherKeys, fullGraph, smootherFactors);
+//
+//  // Extract the filter summarized factors. This consists of the linear cached factors from
+//  // the filter branches X8 and X10, as well as any nonlinear factor that involves only root keys
+//  NonlinearFactorGraph filterSummarization;
+//  filterSummarization.add(LinearizedJacobianFactor(boost::static_pointer_cast<JacobianFactor>(bayesTree.nodes().at(ordering.at(Symbol('X',  8)))->cachedFactor()), ordering, linpoint));
+//  filterSummarization.add(LinearizedJacobianFactor(boost::static_pointer_cast<JacobianFactor>(bayesTree.nodes().at(ordering.at(Symbol('X', 10)))->cachedFactor()), ordering, linpoint));
+//  std::set<Key> rootKeys;
+//  rootKeys.insert(Symbol('X',  7));
+//  rootKeys.insert(Symbol('X',  9));
+//  rootKeys.insert(Symbol('X', 12));
+//  FindFactorsWithOnly(rootKeys, fullGraph, filterSummarization);
+//
+//
+//
+//  // Perform the synchronization procedure
+//  NonlinearFactorGraph actualSmootherSummarization;
+//  smoother.presync();
+//  smoother.getSummarizedFactors(actualSmootherSummarization);
+//  smoother.synchronize(smootherFactors, smootherValues, filterSummarization, rootValues);
+//  smoother.postsync();
+//
+//  // Verify the returned smoother values is empty in the first iteration
+//  NonlinearFactorGraph expectedSmootherSummarization;
+//  CHECK(assert_equal(expectedSmootherSummarization, actualSmootherSummarization, 1e-4));
+//
+//
+//
+//  // Perform a full update of the smoother. Since the root values/summarized filter factors were
+//  // created at the optimal values, the smoother should be identical to the batch optimization
+//  smoother.update();
+//  Values actualSmootherTheta = smoother.calculateEstimate();
+//
+//  // Create the expected values as the optimal set
+//  Values expectedSmootherTheta;
+//  expectedSmootherTheta.insert(Symbol('X',  0), optimalTheta.at(Symbol('X',  0)));
+//  expectedSmootherTheta.insert(Symbol('X',  1), optimalTheta.at(Symbol('X',  1)));
+//  expectedSmootherTheta.insert(Symbol('X',  2), optimalTheta.at(Symbol('X',  2)));
+//  expectedSmootherTheta.insert(Symbol('X',  3), optimalTheta.at(Symbol('X',  3)));
+//  expectedSmootherTheta.insert(Symbol('X',  4), optimalTheta.at(Symbol('X',  4)));
+//  expectedSmootherTheta.insert(Symbol('X',  5), optimalTheta.at(Symbol('X',  5)));
+//  expectedSmootherTheta.insert(Symbol('X',  6), optimalTheta.at(Symbol('X',  6)));
+//
+//  // Compare filter solution with full batch
 //  CHECK(assert_equal(expectedSmootherTheta, actualSmootherTheta, 1e-4));
-
-
-
-  // Now perform a second synchronization to test the smoother-calculated summarization
-  actualSmootherSummarization.resize(0);
-  smootherFactors.resize(0);
-  smootherValues.clear();
-  smoother.presync();
-  smoother.getSummarizedFactors(actualSmootherSummarization);
-  smoother.synchronize(smootherFactors, smootherValues, filterSummarization, rootValues);
-  smoother.postsync();
-
-  // Extract the expected smoother summarization from the Bayes Tree
-  // The smoother branches after the addition of the loop closure is only X6
-  expectedSmootherSummarization.resize(0);
-  JacobianFactor::shared_ptr jf = boost::dynamic_pointer_cast<JacobianFactor>(bayesTree.nodes().at(ordering.at(Symbol('X',  6)))->cachedFactor());
-  LinearizedJacobianFactor::shared_ptr ljf(new LinearizedJacobianFactor(jf, ordering, linpoint));
-  expectedSmootherSummarization.push_back(ljf);
-
-  // Compare smoother factors with the expected factors by computing the hessian information matrix
-  // TODO: Check This
-//  CHECK(hessian_equal(expectedSmootherSummarization, actualSmootherSummarization, linpoint, 1e-4));
-
-
-
-  // TODO: Modify the second synchronization so that the filter sends an additional set of factors.
-  // I'm not sure what additional code this will exercise, but just for good measure.
-
-}
+//
+//
+//
+//  // Add a loop closure factor to the smoother and re-check. Since the filter
+//  // factors were created at the optimal linpoint, and since the new loop closure
+//  // does not involve filter keys, the smoother should still yeild the optimal solution
+//  // The new Bayes Tree is:
+//  // Bayes Tree:
+//  //   P( X7 X9 X12 )
+//  //     P( X10 | X9 )
+//  //       P( X11 | X10 )
+//  //     P( X8 | X9 )
+//  //     P( X6 | X7 X9 )
+//  //       P( X4 | X6 X7 )
+//  //         P( X3 X5 | X4 X6 )
+//  //           P( X2 | X3 )
+//  //           P( X1 | X3 X4 )
+//  //             P( X0 | X1 )
+//  Pose3 poseDelta = fullTheta.at<Pose3>(Symbol('X', 1)).between(fullTheta.at<Pose3>(Symbol('X', 4)));
+//  NonlinearFactor::shared_ptr loopClosure = NonlinearFactor::shared_ptr(new BetweenFactor<Pose3>(Symbol('X', 1), Symbol('X', 4), poseDelta, noiseOdometery));
+//  fullGraph.push_back(loopClosure);
+//  optimalTheta = BatchOptimize(fullGraph, fullTheta, rootValues);
+//
+//  // Recreate the Bayes Tree
+//  linpoint.clear();
+//  linpoint.insert(optimalTheta);
+//  linpoint.update(rootValues);
+//  linearGraph = *fullGraph.linearize(linpoint, ordering);
+//  jt = JunctionTree<GaussianFactorGraph, ISAM2Clique>(linearGraph);
+//  root = jt.eliminate(EliminateQR);
+//  bayesTree = BayesTree<GaussianConditional, ISAM2Clique>();
+//  bayesTree.insert(root);
+//
+//  // Add the loop closure to the smoother
+//  NonlinearFactorGraph newFactors;
+//  newFactors.push_back(loopClosure);
+//  smoother.update(newFactors);
+//  actualSmootherTheta = smoother.calculateEstimate();
+//
+//  // Create the expected values as the optimal set
+//  expectedSmootherTheta.clear();
+//  expectedSmootherTheta.insert(Symbol('X',  0), optimalTheta.at(Symbol('X',  0)));
+//  expectedSmootherTheta.insert(Symbol('X',  1), optimalTheta.at(Symbol('X',  1)));
+//  expectedSmootherTheta.insert(Symbol('X',  2), optimalTheta.at(Symbol('X',  2)));
+//  expectedSmootherTheta.insert(Symbol('X',  3), optimalTheta.at(Symbol('X',  3)));
+//  expectedSmootherTheta.insert(Symbol('X',  4), optimalTheta.at(Symbol('X',  4)));
+//  expectedSmootherTheta.insert(Symbol('X',  5), optimalTheta.at(Symbol('X',  5)));
+//  expectedSmootherTheta.insert(Symbol('X',  6), optimalTheta.at(Symbol('X',  6)));
+//
+//  // Compare filter solution with full batch
+//  // TODO: Check This
+////  CHECK(assert_equal(expectedSmootherTheta, actualSmootherTheta, 1e-4));
+//
+//
+//
+//  // Now perform a second synchronization to test the smoother-calculated summarization
+//  actualSmootherSummarization.resize(0);
+//  smootherFactors.resize(0);
+//  smootherValues.clear();
+//  smoother.presync();
+//  smoother.getSummarizedFactors(actualSmootherSummarization);
+//  smoother.synchronize(smootherFactors, smootherValues, filterSummarization, rootValues);
+//  smoother.postsync();
+//
+//  // Extract the expected smoother summarization from the Bayes Tree
+//  // The smoother branches after the addition of the loop closure is only X6
+//  expectedSmootherSummarization.resize(0);
+//  JacobianFactor::shared_ptr jf = boost::dynamic_pointer_cast<JacobianFactor>(bayesTree.nodes().at(ordering.at(Symbol('X',  6)))->cachedFactor());
+//  LinearizedJacobianFactor::shared_ptr ljf(new LinearizedJacobianFactor(jf, ordering, linpoint));
+//  expectedSmootherSummarization.push_back(ljf);
+//
+//  // Compare smoother factors with the expected factors by computing the hessian information matrix
+//  // TODO: Check This
+////  CHECK(hessian_equal(expectedSmootherSummarization, actualSmootherSummarization, linpoint, 1e-4));
+//
+//
+//
+//  // TODO: Modify the second synchronization so that the filter sends an additional set of factors.
+//  // I'm not sure what additional code this will exercise, but just for good measure.
+//
+//}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
