@@ -67,7 +67,7 @@ bool hessian_equal(const NonlinearFactorGraph& expected, const NonlinearFactorGr
   FastSet<Key> actualKeys = actual.keys();
 
   // Verify the set of keys in both graphs are the same
-  if(!std::equal(expectedKeys.begin(), expectedKeys.end(), actualKeys.begin()))
+  if(expectedKeys.size() != actualKeys.size() || !std::equal(expectedKeys.begin(), expectedKeys.end(), actualKeys.begin()))
     return false;
 
   // Create an ordering
