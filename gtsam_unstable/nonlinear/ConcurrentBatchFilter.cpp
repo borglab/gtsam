@@ -139,17 +139,6 @@ void ConcurrentBatchFilter::synchronize(const NonlinearFactorGraph& summarizedFa
 
 std::cout << "ConcurrentBatchFilter::synchronize(*) Begin" << std::endl;
 
-//// Check that solution before marginalization matches solution after marginalization
-//Values solutionBefore;
-//solutionBefore.insert(theta_);
-//solutionBefore.update(smootherSeparatorValues_);
-//Ordering orderingBefore = *graph_.orderingCOLAMD(solutionBefore);
-//GaussianFactorGraph lingraphBefore = *graph_.linearize(solutionBefore, orderingBefore);
-//GaussianMultifrontalSolver gmsBefore(lingraphBefore, true);
-//VectorValues deltaBefore = *gmsBefore.optimize();
-//solutionBefore = solutionBefore.retract(deltaBefore, orderingBefore);
-
-
 std::cout << "ConcurrentBatchFilter::synchronize(*)  Input Smoother Summarization:" << std::endl;
 BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, summarizedFactors) {
   std::cout << "  f( ";
@@ -158,39 +147,6 @@ BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, summarizedFactors) {
   }
   std::cout << ")" << std::endl;
 }
-
-  // At this step, we need to update the summarized factors representing the smoother,
-  // then update the solution by re-eliminating the nonlinear graph. In the process, we
-  // will create a Bayes Tree and form a new root clique. We will let CCOLAMD define
-  // the ordering, constraining the most recent variables (variables > lag) to the
-  // top of the tree.
-  //
-  // Once formed, we then need to determine which branches will be sent to the smoother,
-  // which branches constitute the filter, and which clique(s) form the root.
-  //
-  // Ideally, all of the old variables will be in the smoother. But, depending on the
-  // factors and the ordering, there may be some cliques with recent and old variables.
-  // So, we define the smoother branches as those remaining after removing any clique
-  // with any recent variables.
-  //
-  // The root should be the smallest set of variables that separate the smoother from
-  // the rest of the graph. Thus, the root will be the parents of all the smoother
-  // branches (plus the path to the root to ensure a connected, full-rank system).
-  //
-  // The filter branches are then defined as the children of the root that are not
-  // smoother branches.
-
-
-//std::cout << "Previous Graph:" << std::endl;
-//for(size_t i = 0; i < graph_.size(); ++i) {
-//  if(graph_[i]) {
-//    std::cout << "  f" << i << "( ";
-//    BOOST_FOREACH(Key key, graph_[i]->keys()) {
-//      std::cout << DefaultKeyFormatter(key) << " ";
-//    }
-//    std::cout << ")" << std::endl;
-//  }
-//}
 
 // TODO: Temporarily remove smoother effects
   // Remove the previous smoother summarization from the graph
@@ -232,9 +188,7 @@ for(size_t i = 0; i < graph_.size(); ++i) {
   update();
 
 
-  // The filter should now be optimal (up to the linearization point of the separator variables)
-  // Calculate a new separator, a new filter summarization, a new smoother summarization, and the
-  // set of factors to send to the smoother
+
 
 
 
@@ -253,38 +207,12 @@ BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) {
 }
 std::cout << std::endl;
 
-//std::cout << "ConcurrentBatchFilter::synchronize(*)  Old Root Keys:  ";
-//BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, rootValues_) {
-//  std::cout << DefaultKeyFormatter(key_value.key) << " ";
-//}
-//std::cout << std::endl;
-
-//std::cout << "ConcurrentBatchFilter::synchronize(*)  All Keys:  ";
-//BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, linpoint) {
-//  std::cout << DefaultKeyFormatter(key_value.key) << " ";
-//}
-//std::cout << std::endl;
-
-
   // Calculate an ordering that puts variables newer than LAG at the top
   gttic(compute_ordering);
-  std::set<Key> recentKeys = findKeysAfter(getCurrentTimestamp() - lag_);
-  std::map<Key, int> constraints;
-  BOOST_FOREACH(Key key, recentKeys) {
-    constraints[key] = 1;
-  }
-  Ordering ordering = *graph_.orderingCOLAMDConstrained(linpoint, constraints);
+  gtsam::Ordering ordering = computeOrdering(graph_);
   gttoc(compute_ordering);
 
-//typedef std::map<Key, int> Constraints;
-//std::cout << "ConcurrentBatchFilter::synchronize(*)  Constraints:  ";
-//BOOST_FOREACH(const Constraints::value_type key_group, constraints) {
-//  std::cout << DefaultKeyFormatter(key_group.first) << " ";
-//}
-//std::cout << std::endl;
-
-//ordering.print("ConcurrentBatchFilter::synchronize(*)  Ordering:\n");
-
+ordering.print("Hmf5Batch::synchronize(*)  Ordering:\n");
 
   // Create a Bayes Tree using iSAM2 cliques
   gttic(create_bayes_tree);
@@ -294,255 +222,134 @@ std::cout << std::endl;
   bayesTree.insert(root);
   gttoc(create_bayes_tree);
 
-//std::cout << "ConcurrentBatchFilter::synchronize(*)  Create Bayes Tree:" << std::endl;
-//SymbolicPrintTree(root, ordering, "  ");
+std::cout << "ConcurrentBatchFilter::synchronize(*)  Create Bayes Tree:" << std::endl;
+SymbolicPrintTree(root, ordering, "  ");
 
-  // Find all of the filter cliques, and the smoother branches
-  // The smoother branches are defined as the children filter cliques that are not also filter cliques
-  gttic(identify_smoother_branches);
-  std::set<ISAM2Clique::shared_ptr> filterCliques;
-  std::set<ISAM2Clique::shared_ptr> smootherBranches;
-  BOOST_FOREACH(Key key, recentKeys) {
-    Index index = ordering.at(key);
-    const ISAM2Clique::shared_ptr& clique = bayesTree.nodes().at(index);
-    if(clique) {
-      // Add all of the child-cliques to the smoother branches
-      filterCliques.insert(clique);
-      smootherBranches.insert(clique->children().begin(), clique->children().end());
-    }
-  }
-  BOOST_FOREACH(const ISAM2Clique::shared_ptr& filterClique, filterCliques) {
-    smootherBranches.erase(filterClique);
-  }
-  gttoc(identify_smoother_branches);
 
-std::cout << "ConcurrentBatchFilter::synchronize(*)  Smoother Branches:" << std::endl;
-BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, smootherBranches) {
-  std::cout << "  P( ";
-  BOOST_FOREACH(Index index, clique->conditional()->frontals()) {
-    std::cout << DefaultKeyFormatter(ordering.key(index)) << " ";
-  }
-  if(clique->conditional()->nrParents() > 0) { std::cout << "| "; }
-  BOOST_FOREACH(Index index, clique->conditional()->parents()) {
-    std::cout << DefaultKeyFormatter(ordering.key(index)) << " ";
-  }
-  std::cout << ")" << std::endl;
-}
 
-  // Find all of the frontal keys in the smoother branches
-  gttic(find_smoother_keys);
-  std::set<Key> smootherKeys;
-  std::queue<ISAM2Clique::shared_ptr> smootherCliques;
-  BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, smootherBranches) {
-    smootherCliques.push(clique);
-  }
-  while(smootherCliques.size() > 0) {
-    // Extract the frontal keys from the next clique
-    BOOST_FOREACH(Index index, smootherCliques.front()->conditional()->frontals()) {
-      smootherKeys.insert(ordering.key(index));
-    }
-    // Add any children to the queue
-    BOOST_FOREACH(const ISAM2Clique::shared_ptr& child, smootherCliques.front()->children()) {
-      smootherCliques.push(child);
-    }
-    // Remove this clique from the queue
-    smootherCliques.pop();
-  }
-  // Store the current linearization point for future transmission to the smoother (skip any variables in the previous root)
-  smootherValues_.clear();
-  BOOST_FOREACH(Key key, smootherKeys) {
-    smootherValues_.insert(key, linpoint.at(key));
-  }
-  gttoc(find_smoother_keys);
 
-std::cout << "ConcurrentBatchFilter::synchronize(*)  Smoother Keys:  ";
-BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, smootherValues_) {
-  std::cout << DefaultKeyFormatter(key_value.key) << " ";
-}
-std::cout << std::endl;
 
-  // Find the set of smoother separator keys
-  // The separator keys are defined as the set of parents to current branches
-  //                                 + the parents of previous branches that are not new smoother keys
-  gttic(update_smoother_separator);
-  BOOST_FOREACH(Key key, smootherKeys) {
-    if(separatorValues_.exists(key)) {
-      separatorValues_.erase(key);
-    }
-  }
-  BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, smootherBranches) {
-    BOOST_FOREACH(Index index, clique->conditional()->parents()) {
-      Key key = ordering.key(index);
-      if(!separatorValues_.exists(key))
-        separatorValues_.insert(key, linpoint.at(key));
-    }
-  }
-  gttoc(update_smoother_separator);
-
-std::cout << "ConcurrentBatchFilter::synchronize(*)  New Smoother Separator Keys:  ";
-BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) {
-  std::cout << DefaultKeyFormatter(key_value.key) << " ";
-}
-std::cout << std::endl;
-
-  // Calculate the new smoother summarization.
-  // This is potentially a combination of the previous summarization and cached factors from new smoother branches
-  gttic(extract_smoother_summarization);
-  // Add in previous summarization, marginalizing out non-smoother-separator keys
-  std::set<Key> smootherSeparatorKeys;
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) {
-    smootherSeparatorKeys.insert(key_value.key);
-  }
-  NonlinearFactorGraph smootherSummarization;
+  // Remove smoother summarization from the graph. It will be added back at the end.
   BOOST_FOREACH(size_t slot, smootherSummarizationSlots_) {
-if(smootherBranches.size() == 0) {
-graph_.at(slot)->print("Summarized Factor Before Marginalization:\n");
-    NonlinearFactor::shared_ptr marginalFactor = marginalizeKeysFromFactor(graph_.at(slot), smootherSeparatorKeys);
-    if(marginalFactor) {
-      smootherSummarization.push_back(marginalFactor);
-    }
-if(marginalFactor) {
-  marginalFactor->print("Summarized Factor After Marginalization:\n");
-} else {
-  std::cout << "Summarized Factor After Marginalization:\n{NULL}" << std::endl;
-}
-}
     removeFactor(slot);
   }
   smootherSummarizationSlots_.clear();
-  // Insert cached factors for any smoother branches
-  BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, smootherBranches) {
-clique->cachedFactor()->print("Summarized Cached Factor:\n");
-    LinearizedGaussianFactor::shared_ptr factor;
-    if(const JacobianFactor::shared_ptr rhs = boost::dynamic_pointer_cast<JacobianFactor>(clique->cachedFactor()))
-      factor = LinearizedJacobianFactor::shared_ptr(new LinearizedJacobianFactor(rhs, ordering, linpoint));
-    else if(const HessianFactor::shared_ptr rhs = boost::dynamic_pointer_cast<HessianFactor>(clique->cachedFactor()))
-      factor = LinearizedHessianFactor::shared_ptr(new LinearizedHessianFactor(rhs, ordering, linpoint));
-    else
-      throw std::invalid_argument("In ConcurrentBatchFilter::process(...), cached factor is neither a JacobianFactor nor a HessianFactor");
-factor->print("Summarized Linearized Factor:\n");
-    smootherSummarization.push_back(factor);
-  }
-  gttoc(extract_smoother_summarization);
 
-std::cout << "ConcurrentBatchFilter::synchronize(*)  Smoother Summarization:" << std::endl;
-BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, smootherSummarization) {
-  if(boost::dynamic_pointer_cast<LinearizedGaussianFactor>(factor))
-    std::cout << "  L( ";
-  else
-    std::cout << "  f( ";
-  BOOST_FOREACH(Key key, factor->keys()) {
-    std::cout << DefaultKeyFormatter(key) << " ";
-  }
-  std::cout << ")" << std::endl;
-}
 
-  // Find all of the factors that contain at least one smoother key
-  // These nonlinear factors will be sent to the smoother
-  gttic(find_smoother_factors);
-  std::set<size_t> smootherFactorSlots = findFactorsWithAny(smootherKeys);
-  // Convert the set of slots into a set of factors
-  smootherFactors_.resize(0);
-  BOOST_FOREACH(size_t slot, smootherFactorSlots) {
-    smootherFactors_.push_back(graph_.at(slot));
-  }
-  gttoc(find_smoother_factors);
 
-std::cout << "ConcurrentBatchFilter::synchronize(*)  Smoother Factors:" << std::endl;
-BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, smootherFactors_) {
-  if(boost::dynamic_pointer_cast<LinearizedGaussianFactor>(factor))
-    std::cout << "  L( ";
-  else
-    std::cout << "  f( ";
-  BOOST_FOREACH(Key key, factor->keys()) {
-    std::cout << DefaultKeyFormatter(key) << " ";
-  }
-  std::cout << ")" << std::endl;
-}
 
-  // Find the Root Cliques
-  // The root is defined as the parents of the smoother separator + the path to the root
-  gttic(identify_root_cliques);
-  std::set<ISAM2Clique::shared_ptr> rootCliques;
-  BOOST_FOREACH(Key key, smootherSeparatorKeys) {
+
+
+  // Find the Separator Cliques
+  // The root is defined as any clique with a separator key (+ the path to the root)
+  gttic(identify_separator_cliques);
+  std::set<Key> separatorKeys = findSeparatorKeys(graph_);
+  std::set<ISAM2Clique::shared_ptr> separatorCliques;
+  Values oldSeparatorValues = separatorValues_;
+  separatorValues_.clear();
+  BOOST_FOREACH(gtsam::Key key, separatorKeys) {
     Index index = ordering.at(key);
     const ISAM2Clique::shared_ptr& clique = bayesTree.nodes().at(index);
     if(clique) {
-      rootCliques.insert(clique);
+      separatorCliques.insert(clique);
     }
   }
-  BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, rootCliques) {
-    ISAM2Clique::shared_ptr rootClique = clique;
-    while(!rootClique->isRoot()) {
-      rootClique = rootClique->parent();
-      rootCliques.insert(rootClique);
+  // + the path to the root
+  // TODO: Given the ordering, is this actually necessary?
+  BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, separatorCliques) {
+    ISAM2Clique::shared_ptr separatorClique = clique;
+    while(!separatorClique->isRoot()) {
+      separatorClique = separatorClique->parent();
+      separatorCliques.insert(separatorClique);
     }
   }
-  std::set<Key> rootKeys;
-  BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, rootCliques) {
+  BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, separatorCliques) {
     BOOST_FOREACH(Index index, clique->conditional()->frontals()) {
-      rootKeys.insert(ordering.key(index));
+      separatorKeys.insert(ordering.key(index));
     }
   }
-  gttoc(identify_root_cliques);
-
-//std::cout << "ConcurrentBatchFilter::synchronize(*)  Root Cliques:" << std::endl;
-//BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, rootCliques) {
-//std::cout << "  P( ";
-//BOOST_FOREACH(Index index, clique->conditional()->frontals()) {
-//  std::cout << DefaultKeyFormatter(ordering.key(index)) << " ";
-//}
-//if(clique->conditional()->nrParents() > 0) { std::cout << "| "; }
-//BOOST_FOREACH(Index index, clique->conditional()->parents()) {
-//  std::cout << DefaultKeyFormatter(ordering.key(index)) << " ";
-//}
-//std::cout << ")" << std::endl;
-//}
-
-  // Update the keys and linearization points of the new root
-  gttic(update_root_values);
-  rootValues_.clear();
-  BOOST_FOREACH(Key key, rootKeys) {
-    rootValues_.insert(key, linpoint.at(key));
+  BOOST_FOREACH(Key key, separatorKeys) {
+    separatorValues_.insert(key, linpoint.at(key));
   }
-  gttoc(update_root_values);
+  gttoc(identify_separator_cliques);
 
-//std::cout << "ConcurrentBatchFilter::synchronize(*)  New Root Keys:  ";
-//BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, rootValues_) {
-//  std::cout << DefaultKeyFormatter(key_value.key) << " ";
-//}
-//std::cout << std::endl;
+std::cout << "ConcurrentBatchFilter::synchronize(*)  New Separator Cliques:" << std::endl;
+BOOST_FOREACH(const gtsam::ISAM2Clique::shared_ptr& clique, separatorCliques) {
+  std::cout << "  P( ";
+  BOOST_FOREACH(gtsam::Index index, clique->conditional()->frontals()) {
+    std::cout << gtsam::DefaultKeyFormatter(ordering.key(index)) << " ";
+  }
+  if(clique->conditional()->nrParents() > 0) { std::cout << "| "; }
+  BOOST_FOREACH(gtsam::Index index, clique->conditional()->parents()) {
+    std::cout << gtsam::DefaultKeyFormatter(ordering.key(index)) << " ";
+  }
+  std::cout << ")" << std::endl;
+}
 
-  // Identify the filter branches
-  // The filter branches are the children of the root that are not smoother branches.
-  gttic(identify_filter_branches);
+std::cout << "ConcurrentBatchFilter::synchronize(*)  New Separator Keys:  ";
+BOOST_FOREACH(const gtsam::Values::ConstKeyValuePair& key_value, separatorValues_) {
+std::cout << gtsam::DefaultKeyFormatter(key_value.key) << " ";
+}
+std::cout << std::endl;
+
+  // Identify the filter and smoother branches
+  // First find all of the children of the separator cliques (that are not separator cliques themselves),
+  // Then check if the child clique contains a filter key. If so, it is a filter branch, if not, it is a smoother branch
+  gttic(identify_smoother_and_filter_branches);
+  std::set<ISAM2Clique::shared_ptr> branches;
+  // Add all of the children to the children set
+  BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, separatorCliques) {
+    branches.insert(clique->children().begin(), clique->children().end());
+  }
+  // Remove any child that is also a separator
+  BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, separatorCliques) {
+    branches.erase(clique);
+  }
+  // Find the set of keys inside the lag
+  std::set<Key> insideKeys = findKeysBefore(getCurrentTimestamp() - lag_);
+  // Classify each child branch as a filter or a smoother branch
   std::set<ISAM2Clique::shared_ptr> filterBranches;
-  // Find the children of the root
-  BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, rootCliques) {
-    filterBranches.insert(clique->children().begin(), clique->children().end());
+  std::set<ISAM2Clique::shared_ptr> smootherBranches;
+  BOOST_FOREACH(const ISAM2Clique::shared_ptr& branch, branches) {
+    std::set<Key> frontalKeys;
+    BOOST_FOREACH(gtsam::Index index, branch->conditional()->frontals()) {
+      frontalKeys.insert(ordering.key(index));
+    }
+    if(std::find_first_of(frontalKeys.begin(), frontalKeys.end(), insideKeys.begin(), insideKeys.end()) == frontalKeys.end()) {
+      // No InsideKey exists in this branch. It must be a smoother branch.
+      smootherBranches.insert(branch);
+    } else {
+      // An InsideKey was found. This is a filter branch.
+      filterBranches.insert(branch);
+    }
   }
-  // Remove any root cliques that made it into the filter branches
-  BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, rootCliques) {
-    filterBranches.erase(clique);
-  }
-  // Remove the smoother branches
-  BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, smootherBranches) {
-    filterBranches.erase(clique);
-  }
-  gttoc(identify_filter_branches);
+  gttoc(identify_smoother_and_filter_branches);
 
-//std::cout << "ConcurrentBatchFilter::synchronize(*)  Filter Branches:" << std::endl;
-//BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, filterBranches) {
-//  std::cout << "  P( ";
-//  BOOST_FOREACH(Index index, clique->conditional()->frontals()) {
-//    std::cout << DefaultKeyFormatter(ordering.key(index)) << " ";
-//  }
-//  if(clique->conditional()->nrParents() > 0) { std::cout << "| "; }
-//  BOOST_FOREACH(Index index, clique->conditional()->parents()) {
-//    std::cout << DefaultKeyFormatter(ordering.key(index)) << " ";
-//  }
-//  std::cout << ")" << std::endl;
-//}
+std::cout << "ConcurrentBatchFilter::synchronize(*)  Smoother Branches:" << std::endl;
+BOOST_FOREACH(const gtsam::ISAM2Clique::shared_ptr& clique, smootherBranches) {
+std::cout << "  P( ";
+BOOST_FOREACH(gtsam::Index index, clique->conditional()->frontals()) {
+  std::cout << gtsam::DefaultKeyFormatter(ordering.key(index)) << " ";
+}
+if(clique->conditional()->nrParents() > 0) { std::cout << "| "; }
+BOOST_FOREACH(gtsam::Index index, clique->conditional()->parents()) {
+  std::cout << gtsam::DefaultKeyFormatter(ordering.key(index)) << " ";
+}
+std::cout << ")" << std::endl;
+}
+
+std::cout << "ConcurrentBatchFilter::synchronize(*)  Filter Branches:" << std::endl;
+BOOST_FOREACH(const gtsam::ISAM2Clique::shared_ptr& clique, filterBranches) {
+std::cout << "  P( ";
+BOOST_FOREACH(gtsam::Index index, clique->conditional()->frontals()) {
+  std::cout << gtsam::DefaultKeyFormatter(ordering.key(index)) << " ";
+}
+if(clique->conditional()->nrParents() > 0) { std::cout << "| "; }
+BOOST_FOREACH(gtsam::Index index, clique->conditional()->parents()) {
+  std::cout << gtsam::DefaultKeyFormatter(ordering.key(index)) << " ";
+}
+std::cout << ")" << std::endl;
+}
 
   // Extract cached factors from the filter branches and store for future transmission to the smoother
   gttic(extract_filter_summarization);
@@ -565,23 +372,121 @@ BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, smootherFactors_) {
   // to the smoother as well. Including it as part of the
   // root/filter summarization
   gttic(extract_root_summarization);
-  std::set<size_t> rootFactorSlots = findFactorsWithOnly(rootKeys);
-  BOOST_FOREACH(size_t slot, rootFactorSlots) {
+  std::set<size_t> separatorFactorSlots = findFactorsWithOnly(separatorKeys);
+  BOOST_FOREACH(size_t slot, separatorFactorSlots) {
     filterSummarization_.push_back(graph_.at(slot));
   }
   gttoc(extract_root_summarization);
 
-//std::cout << "ConcurrentBatchFilter::synchronize(*)  Filter Summarization:" << std::endl;
-//BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, filterSummarization_) {
-//  if(boost::dynamic_pointer_cast<LinearizedGaussianFactor>(factor))
-//    std::cout << "  L( ";
-//  else
-//    std::cout << "  f( ";
-//  BOOST_FOREACH(Key key, factor->keys()) {
-//    std::cout << DefaultKeyFormatter(key) << " ";
-//  }
-//  std::cout << ")" << std::endl;
-//}
+std::cout << "ConcurrentBatchFilter::synchronize(*)  Filter Summarization:" << std::endl;
+BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, filterSummarization_) {
+  if(boost::dynamic_pointer_cast<LinearizedGaussianFactor>(factor))
+    std::cout << "  L( ";
+  else
+    std::cout << "  f( ";
+  BOOST_FOREACH(Key key, factor->keys()) {
+    std::cout << DefaultKeyFormatter(key) << " ";
+  }
+  std::cout << ")" << std::endl;
+}
+
+  // Find all of the frontal keys in the smoother branches and grab their current linearization point
+  gttic(find_smoother_values);
+  std::set<Key> smootherKeys;
+  std::queue<ISAM2Clique::shared_ptr> smootherCliques;
+  BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, smootherBranches) {
+    smootherCliques.push(clique);
+  }
+  while(smootherCliques.size() > 0) {
+    // Extract the frontal keys from the next clique
+    BOOST_FOREACH(Index index, smootherCliques.front()->conditional()->frontals()) {
+      smootherKeys.insert(ordering.key(index));
+    }
+    // Add any children to the queue
+    BOOST_FOREACH(const ISAM2Clique::shared_ptr& child, smootherCliques.front()->children()) {
+      smootherCliques.push(child);
+    }
+    // Remove this clique from the queue
+    smootherCliques.pop();
+  }
+  // Store the current linearization point for future transmission to the smoother (skip any variables in the previous root)
+  smootherValues_.clear();
+  BOOST_FOREACH(Key key, smootherKeys) {
+    smootherValues_.insert(key, linpoint.at(key));
+  }
+  gttoc(find_smoother_values);
+
+std::cout << "Hmf5Batch::synchronize(*)  Smoother Keys:  ";
+BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, smootherValues_) {
+std::cout << DefaultKeyFormatter(key_value.key) << " ";
+}
+std::cout << std::endl;
+
+  // Find all of the factors that contain at least one smoother key
+  // These nonlinear factors will be sent to the smoother
+  // TODO: Are the summarized factors part of the graph currently?
+  gttic(find_smoother_factors);
+  std::set<size_t> smootherFactorSlots = findFactorsWithAny(smootherKeys);
+  // Convert the set of slots into a set of factors
+  smootherFactors_.resize(0);
+  BOOST_FOREACH(size_t slot, smootherFactorSlots) {
+    smootherFactors_.push_back(graph_.at(slot));
+  }
+  gttoc(find_smoother_factors);
+
+std::cout << "Hmf5Batch::synchronize(*)  Smoother Factors:" << std::endl;
+BOOST_FOREACH(const gtsam::NonlinearFactor::shared_ptr& factor, smootherFactors_) {
+std::cout << "  f( ";
+BOOST_FOREACH(gtsam::Key key, factor->keys()) {
+  std::cout << gtsam::DefaultKeyFormatter(key) << " ";
+}
+std::cout << ")" << std::endl;
+}
+
+  // Calculate the new smoother summarization.
+  // This is potentially a combination of the previous summarization and cached factors from new smoother branches
+  gttic(extract_smoother_summarization);
+  NonlinearFactorGraph smootherSummarization;
+  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, summarizedFactors) {
+    if(smootherBranches.size() == 0) {
+      factor->print("Summarized Factor Before Marginalization:\n");
+      NonlinearFactor::shared_ptr marginalFactor = marginalizeKeysFromFactor(factor, separatorKeys);
+      if(marginalFactor) {
+        smootherSummarization.push_back(marginalFactor);
+      }
+      if(marginalFactor) {
+        marginalFactor->print("Summarized Factor After Marginalization:\n");
+      } else {
+        std::cout << "Summarized Factor After Marginalization:\n{NULL}" << std::endl;
+      }
+    }
+  }
+  // Insert cached factors for any smoother branches
+  BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, smootherBranches) {
+    clique->cachedFactor()->print("Summarized Cached Factor:\n");
+    LinearizedGaussianFactor::shared_ptr factor;
+    if(const JacobianFactor::shared_ptr rhs = boost::dynamic_pointer_cast<JacobianFactor>(clique->cachedFactor()))
+      factor = LinearizedJacobianFactor::shared_ptr(new LinearizedJacobianFactor(rhs, ordering, linpoint));
+    else if(const HessianFactor::shared_ptr rhs = boost::dynamic_pointer_cast<HessianFactor>(clique->cachedFactor()))
+      factor = LinearizedHessianFactor::shared_ptr(new LinearizedHessianFactor(rhs, ordering, linpoint));
+    else
+      throw std::invalid_argument("In ConcurrentBatchFilter::process(...), cached factor is neither a JacobianFactor nor a HessianFactor");
+    factor->print("Summarized Linearized Factor:\n");
+    smootherSummarization.push_back(factor);
+  }
+  gttoc(extract_smoother_summarization);
+
+std::cout << "ConcurrentBatchFilter::synchronize(*)  Smoother Summarization:" << std::endl;
+BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, smootherSummarization) {
+if(boost::dynamic_pointer_cast<LinearizedGaussianFactor>(factor))
+  std::cout << "  L( ";
+else
+  std::cout << "  f( ";
+BOOST_FOREACH(Key key, factor->keys()) {
+  std::cout << DefaultKeyFormatter(key) << " ";
+}
+std::cout << ")" << std::endl;
+}
 
   gttic(purge_smoother_information);
   // Remove nonlinear factors being sent to the smoother
@@ -600,30 +505,501 @@ BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, smootherFactors_) {
   }
   gttoc(purge_smoother_information);
 
-
-
-
-
-//  // Check that solution before marginalization matches solution after marginalization
-//  Values solutionAfter;
-//  solutionAfter.insert(theta_);
-//  solutionAfter.update(smootherSeparatorValues_);
-//  Ordering orderingAfter = *graph_.orderingCOLAMD(solutionAfter);
-//  GaussianFactorGraph lingraphAfter = *graph_.linearize(solutionAfter, orderingAfter);
-//  GaussianMultifrontalSolver gmsAfter(lingraphAfter, true);
-//  VectorValues deltaAfter = *gmsAfter.optimize();
-//  solutionAfter = solutionAfter.retract(deltaAfter, orderingAfter);
-//
-//  BOOST_FOREACH(Key key, smootherKeys) {
-//    solutionBefore.erase(key);
-//  }
-//
-//std::cout << "Solution before marginalization matches solution after marginalization: " << solutionBefore.equals(solutionAfter, 1.0e-9) << std::endl;
-
-std::cout << "ConcurrentBatchFilter::synchronize(*) End" << std::endl;
-
+  std::cout << "ConcurrentBatchFilter::synchronize(*) End" << std::endl;
   gttoc(synchronize);
 }
+
+///* ************************************************************************* */
+//void ConcurrentBatchFilter::synchronize(const NonlinearFactorGraph& summarizedFactors) {
+//  gttic(synchronize);
+//
+//std::cout << "ConcurrentBatchFilter::synchronize(*) Begin" << std::endl;
+//
+////// Check that solution before marginalization matches solution after marginalization
+////Values solutionBefore;
+////solutionBefore.insert(theta_);
+////solutionBefore.update(smootherSeparatorValues_);
+////Ordering orderingBefore = *graph_.orderingCOLAMD(solutionBefore);
+////GaussianFactorGraph lingraphBefore = *graph_.linearize(solutionBefore, orderingBefore);
+////GaussianMultifrontalSolver gmsBefore(lingraphBefore, true);
+////VectorValues deltaBefore = *gmsBefore.optimize();
+////solutionBefore = solutionBefore.retract(deltaBefore, orderingBefore);
+//
+//
+//std::cout << "ConcurrentBatchFilter::synchronize(*)  Input Smoother Summarization:" << std::endl;
+//BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, summarizedFactors) {
+//  std::cout << "  f( ";
+//  BOOST_FOREACH(Key key, factor->keys()) {
+//    std::cout << DefaultKeyFormatter(key) << " ";
+//  }
+//  std::cout << ")" << std::endl;
+//}
+//
+//  // At this step, we need to update the summarized factors representing the smoother,
+//  // then update the solution by re-eliminating the nonlinear graph. In the process, we
+//  // will create a Bayes Tree and form a new root clique. We will let CCOLAMD define
+//  // the ordering, constraining the most recent variables (variables > lag) to the
+//  // top of the tree.
+//  //
+//  // Once formed, we then need to determine which branches will be sent to the smoother,
+//  // which branches constitute the filter, and which clique(s) form the root.
+//  //
+//  // Ideally, all of the old variables will be in the smoother. But, depending on the
+//  // factors and the ordering, there may be some cliques with recent and old variables.
+//  // So, we define the smoother branches as those remaining after removing any clique
+//  // with any recent variables.
+//  //
+//  // The root should be the smallest set of variables that separate the smoother from
+//  // the rest of the graph. Thus, the root will be the parents of all the smoother
+//  // branches (plus the path to the root to ensure a connected, full-rank system).
+//  //
+//  // The filter branches are then defined as the children of the root that are not
+//  // smoother branches.
+//
+//
+////std::cout << "Previous Graph:" << std::endl;
+////for(size_t i = 0; i < graph_.size(); ++i) {
+////  if(graph_[i]) {
+////    std::cout << "  f" << i << "( ";
+////    BOOST_FOREACH(Key key, graph_[i]->keys()) {
+////      std::cout << DefaultKeyFormatter(key) << " ";
+////    }
+////    std::cout << ")" << std::endl;
+////  }
+////}
+//
+//// TODO: Temporarily remove smoother effects
+//  // Remove the previous smoother summarization from the graph
+//  BOOST_FOREACH(size_t slot, smootherSummarizationSlots_) {
+//    removeFactor(slot);
+//  }
+//  smootherSummarizationSlots_.clear();
+//
+//std::cout << "Removed Previous Smoother Summarization:" << std::endl;
+//for(size_t i = 0; i < graph_.size(); ++i) {
+//  if(graph_[i]) {
+//    std::cout << "  f" << i << "( ";
+//    BOOST_FOREACH(Key key, graph_[i]->keys()) {
+//      std::cout << DefaultKeyFormatter(key) << " ";
+//    }
+//    std::cout << ")" << std::endl;
+//  }
+//}
+//
+//// TODO: Temporarily remove smoother effects
+//  // Insert the updated smoother summarized factors
+//  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, summarizedFactors) {
+//    smootherSummarizationSlots_.push_back(insertFactor(factor));
+//  }
+//
+//std::cout << "Added New Smoother Summarization:" << std::endl;
+//for(size_t i = 0; i < graph_.size(); ++i) {
+//  if(graph_[i]) {
+//    std::cout << "  f" << i << "( ";
+//    BOOST_FOREACH(Key key, graph_[i]->keys()) {
+//      std::cout << DefaultKeyFormatter(key) << " ";
+//    }
+//    std::cout << ")" << std::endl;
+//  }
+//}
+//
+//// TODO: Temporarily remove smoother effects
+//  // Now that the smoother summarization has been updated, re-optimize the filter
+//  update();
+//
+//
+//  // The filter should now be optimal (up to the linearization point of the separator variables)
+//  // Calculate a new separator, a new filter summarization, a new smoother summarization, and the
+//  // set of factors to send to the smoother
+//
+//
+//
+//  // Force variables associated with root keys to keep the same linearization point
+//  // TODO: This may be too many variables. It may only require that the smoother separator keys be kept constant.
+//  gttic(enforce_consistency);
+//  Values linpoint = theta_;
+//  if(separatorValues_.size() > 0) {
+//    linpoint.update(separatorValues_);
+//  }
+//  gttoc(enforce_consistency);
+//
+//std::cout << "ConcurrentBatchFilter::synchronize(*)  Old Smoother Separator Keys:  ";
+//BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) {
+//  std::cout << DefaultKeyFormatter(key_value.key) << " ";
+//}
+//std::cout << std::endl;
+//
+////std::cout << "ConcurrentBatchFilter::synchronize(*)  Old Root Keys:  ";
+////BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, rootValues_) {
+////  std::cout << DefaultKeyFormatter(key_value.key) << " ";
+////}
+////std::cout << std::endl;
+//
+////std::cout << "ConcurrentBatchFilter::synchronize(*)  All Keys:  ";
+////BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, linpoint) {
+////  std::cout << DefaultKeyFormatter(key_value.key) << " ";
+////}
+////std::cout << std::endl;
+//
+//
+//  // Calculate an ordering that puts variables newer than LAG at the top
+//  gttic(compute_ordering);
+//  std::set<Key> recentKeys = findKeysAfter(getCurrentTimestamp() - lag_);
+//  std::map<Key, int> constraints;
+//  BOOST_FOREACH(Key key, recentKeys) {
+//    constraints[key] = 1;
+//  }
+//  Ordering ordering = *graph_.orderingCOLAMDConstrained(linpoint, constraints);
+//  gttoc(compute_ordering);
+//
+////typedef std::map<Key, int> Constraints;
+////std::cout << "ConcurrentBatchFilter::synchronize(*)  Constraints:  ";
+////BOOST_FOREACH(const Constraints::value_type key_group, constraints) {
+////  std::cout << DefaultKeyFormatter(key_group.first) << " ";
+////}
+////std::cout << std::endl;
+//
+////ordering.print("ConcurrentBatchFilter::synchronize(*)  Ordering:\n");
+//
+//
+//  // Create a Bayes Tree using iSAM2 cliques
+//  gttic(create_bayes_tree);
+//  JunctionTree<GaussianFactorGraph, ISAM2Clique> jt(*graph_.linearize(linpoint, ordering));
+//  ISAM2Clique::shared_ptr root = jt.eliminate(parameters_.getEliminationFunction());
+//  BayesTree<GaussianConditional, ISAM2Clique> bayesTree;
+//  bayesTree.insert(root);
+//  gttoc(create_bayes_tree);
+//
+////std::cout << "ConcurrentBatchFilter::synchronize(*)  Create Bayes Tree:" << std::endl;
+////SymbolicPrintTree(root, ordering, "  ");
+//
+//  // Find all of the filter cliques, and the smoother branches
+//  // The smoother branches are defined as the children filter cliques that are not also filter cliques
+//  gttic(identify_smoother_branches);
+//  std::set<ISAM2Clique::shared_ptr> filterCliques;
+//  std::set<ISAM2Clique::shared_ptr> smootherBranches;
+//  BOOST_FOREACH(Key key, recentKeys) {
+//    Index index = ordering.at(key);
+//    const ISAM2Clique::shared_ptr& clique = bayesTree.nodes().at(index);
+//    if(clique) {
+//      // Add all of the child-cliques to the smoother branches
+//      filterCliques.insert(clique);
+//      smootherBranches.insert(clique->children().begin(), clique->children().end());
+//    }
+//  }
+//  BOOST_FOREACH(const ISAM2Clique::shared_ptr& filterClique, filterCliques) {
+//    smootherBranches.erase(filterClique);
+//  }
+//  gttoc(identify_smoother_branches);
+//
+//std::cout << "ConcurrentBatchFilter::synchronize(*)  Smoother Branches:" << std::endl;
+//BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, smootherBranches) {
+//  std::cout << "  P( ";
+//  BOOST_FOREACH(Index index, clique->conditional()->frontals()) {
+//    std::cout << DefaultKeyFormatter(ordering.key(index)) << " ";
+//  }
+//  if(clique->conditional()->nrParents() > 0) { std::cout << "| "; }
+//  BOOST_FOREACH(Index index, clique->conditional()->parents()) {
+//    std::cout << DefaultKeyFormatter(ordering.key(index)) << " ";
+//  }
+//  std::cout << ")" << std::endl;
+//}
+//
+//  // Find all of the frontal keys in the smoother branches
+//  gttic(find_smoother_keys);
+//  std::set<Key> smootherKeys;
+//  std::queue<ISAM2Clique::shared_ptr> smootherCliques;
+//  BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, smootherBranches) {
+//    smootherCliques.push(clique);
+//  }
+//  while(smootherCliques.size() > 0) {
+//    // Extract the frontal keys from the next clique
+//    BOOST_FOREACH(Index index, smootherCliques.front()->conditional()->frontals()) {
+//      smootherKeys.insert(ordering.key(index));
+//    }
+//    // Add any children to the queue
+//    BOOST_FOREACH(const ISAM2Clique::shared_ptr& child, smootherCliques.front()->children()) {
+//      smootherCliques.push(child);
+//    }
+//    // Remove this clique from the queue
+//    smootherCliques.pop();
+//  }
+//  // Store the current linearization point for future transmission to the smoother (skip any variables in the previous root)
+//  smootherValues_.clear();
+//  BOOST_FOREACH(Key key, smootherKeys) {
+//    smootherValues_.insert(key, linpoint.at(key));
+//  }
+//  gttoc(find_smoother_keys);
+//
+//std::cout << "ConcurrentBatchFilter::synchronize(*)  Smoother Keys:  ";
+//BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, smootherValues_) {
+//  std::cout << DefaultKeyFormatter(key_value.key) << " ";
+//}
+//std::cout << std::endl;
+//
+//  // Find the set of smoother separator keys
+//  // The separator keys are defined as the set of parents to current branches
+//  //                                 + the parents of previous branches that are not new smoother keys
+//  gttic(update_smoother_separator);
+//  BOOST_FOREACH(Key key, smootherKeys) {
+//    if(separatorValues_.exists(key)) {
+//      separatorValues_.erase(key);
+//    }
+//  }
+//  BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, smootherBranches) {
+//    BOOST_FOREACH(Index index, clique->conditional()->parents()) {
+//      Key key = ordering.key(index);
+//      if(!separatorValues_.exists(key))
+//        separatorValues_.insert(key, linpoint.at(key));
+//    }
+//  }
+//  gttoc(update_smoother_separator);
+//
+//std::cout << "ConcurrentBatchFilter::synchronize(*)  New Smoother Separator Keys:  ";
+//BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) {
+//  std::cout << DefaultKeyFormatter(key_value.key) << " ";
+//}
+//std::cout << std::endl;
+//
+//  // Calculate the new smoother summarization.
+//  // This is potentially a combination of the previous summarization and cached factors from new smoother branches
+//  gttic(extract_smoother_summarization);
+//  // Add in previous summarization, marginalizing out non-smoother-separator keys
+//  std::set<Key> smootherSeparatorKeys;
+//  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) {
+//    smootherSeparatorKeys.insert(key_value.key);
+//  }
+//  NonlinearFactorGraph smootherSummarization;
+//  BOOST_FOREACH(size_t slot, smootherSummarizationSlots_) {
+//if(smootherBranches.size() == 0) {
+//graph_.at(slot)->print("Summarized Factor Before Marginalization:\n");
+//    NonlinearFactor::shared_ptr marginalFactor = marginalizeKeysFromFactor(graph_.at(slot), smootherSeparatorKeys);
+//    if(marginalFactor) {
+//      smootherSummarization.push_back(marginalFactor);
+//    }
+//if(marginalFactor) {
+//  marginalFactor->print("Summarized Factor After Marginalization:\n");
+//} else {
+//  std::cout << "Summarized Factor After Marginalization:\n{NULL}" << std::endl;
+//}
+//}
+//    removeFactor(slot);
+//  }
+//  smootherSummarizationSlots_.clear();
+//  // Insert cached factors for any smoother branches
+//  BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, smootherBranches) {
+//clique->cachedFactor()->print("Summarized Cached Factor:\n");
+//    LinearizedGaussianFactor::shared_ptr factor;
+//    if(const JacobianFactor::shared_ptr rhs = boost::dynamic_pointer_cast<JacobianFactor>(clique->cachedFactor()))
+//      factor = LinearizedJacobianFactor::shared_ptr(new LinearizedJacobianFactor(rhs, ordering, linpoint));
+//    else if(const HessianFactor::shared_ptr rhs = boost::dynamic_pointer_cast<HessianFactor>(clique->cachedFactor()))
+//      factor = LinearizedHessianFactor::shared_ptr(new LinearizedHessianFactor(rhs, ordering, linpoint));
+//    else
+//      throw std::invalid_argument("In ConcurrentBatchFilter::process(...), cached factor is neither a JacobianFactor nor a HessianFactor");
+//factor->print("Summarized Linearized Factor:\n");
+//    smootherSummarization.push_back(factor);
+//  }
+//  gttoc(extract_smoother_summarization);
+//
+//std::cout << "ConcurrentBatchFilter::synchronize(*)  Smoother Summarization:" << std::endl;
+//BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, smootherSummarization) {
+//  if(boost::dynamic_pointer_cast<LinearizedGaussianFactor>(factor))
+//    std::cout << "  L( ";
+//  else
+//    std::cout << "  f( ";
+//  BOOST_FOREACH(Key key, factor->keys()) {
+//    std::cout << DefaultKeyFormatter(key) << " ";
+//  }
+//  std::cout << ")" << std::endl;
+//}
+//
+//  // Find all of the factors that contain at least one smoother key
+//  // These nonlinear factors will be sent to the smoother
+//  gttic(find_smoother_factors);
+//  std::set<size_t> smootherFactorSlots = findFactorsWithAny(smootherKeys);
+//  // Convert the set of slots into a set of factors
+//  smootherFactors_.resize(0);
+//  BOOST_FOREACH(size_t slot, smootherFactorSlots) {
+//    smootherFactors_.push_back(graph_.at(slot));
+//  }
+//  gttoc(find_smoother_factors);
+//
+//std::cout << "ConcurrentBatchFilter::synchronize(*)  Smoother Factors:" << std::endl;
+//BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, smootherFactors_) {
+//  if(boost::dynamic_pointer_cast<LinearizedGaussianFactor>(factor))
+//    std::cout << "  L( ";
+//  else
+//    std::cout << "  f( ";
+//  BOOST_FOREACH(Key key, factor->keys()) {
+//    std::cout << DefaultKeyFormatter(key) << " ";
+//  }
+//  std::cout << ")" << std::endl;
+//}
+//
+//  // Find the Root Cliques
+//  // The root is defined as the parents of the smoother separator + the path to the root
+//  gttic(identify_root_cliques);
+//  std::set<ISAM2Clique::shared_ptr> rootCliques;
+//  BOOST_FOREACH(Key key, smootherSeparatorKeys) {
+//    Index index = ordering.at(key);
+//    const ISAM2Clique::shared_ptr& clique = bayesTree.nodes().at(index);
+//    if(clique) {
+//      rootCliques.insert(clique);
+//    }
+//  }
+//  BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, rootCliques) {
+//    ISAM2Clique::shared_ptr rootClique = clique;
+//    while(!rootClique->isRoot()) {
+//      rootClique = rootClique->parent();
+//      rootCliques.insert(rootClique);
+//    }
+//  }
+//  std::set<Key> rootKeys;
+//  BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, rootCliques) {
+//    BOOST_FOREACH(Index index, clique->conditional()->frontals()) {
+//      rootKeys.insert(ordering.key(index));
+//    }
+//  }
+//  gttoc(identify_root_cliques);
+//
+////std::cout << "ConcurrentBatchFilter::synchronize(*)  Root Cliques:" << std::endl;
+////BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, rootCliques) {
+////std::cout << "  P( ";
+////BOOST_FOREACH(Index index, clique->conditional()->frontals()) {
+////  std::cout << DefaultKeyFormatter(ordering.key(index)) << " ";
+////}
+////if(clique->conditional()->nrParents() > 0) { std::cout << "| "; }
+////BOOST_FOREACH(Index index, clique->conditional()->parents()) {
+////  std::cout << DefaultKeyFormatter(ordering.key(index)) << " ";
+////}
+////std::cout << ")" << std::endl;
+////}
+//
+//  // Update the keys and linearization points of the new root
+//  gttic(update_root_values);
+//  rootValues_.clear();
+//  BOOST_FOREACH(Key key, rootKeys) {
+//    rootValues_.insert(key, linpoint.at(key));
+//  }
+//  gttoc(update_root_values);
+//
+////std::cout << "ConcurrentBatchFilter::synchronize(*)  New Root Keys:  ";
+////BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, rootValues_) {
+////  std::cout << DefaultKeyFormatter(key_value.key) << " ";
+////}
+////std::cout << std::endl;
+//
+//  // Identify the filter branches
+//  // The filter branches are the children of the root that are not smoother branches.
+//  gttic(identify_filter_branches);
+//  std::set<ISAM2Clique::shared_ptr> filterBranches;
+//  // Find the children of the root
+//  BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, rootCliques) {
+//    filterBranches.insert(clique->children().begin(), clique->children().end());
+//  }
+//  // Remove any root cliques that made it into the filter branches
+//  BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, rootCliques) {
+//    filterBranches.erase(clique);
+//  }
+//  // Remove the smoother branches
+//  BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, smootherBranches) {
+//    filterBranches.erase(clique);
+//  }
+//  gttoc(identify_filter_branches);
+//
+////std::cout << "ConcurrentBatchFilter::synchronize(*)  Filter Branches:" << std::endl;
+////BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, filterBranches) {
+////  std::cout << "  P( ";
+////  BOOST_FOREACH(Index index, clique->conditional()->frontals()) {
+////    std::cout << DefaultKeyFormatter(ordering.key(index)) << " ";
+////  }
+////  if(clique->conditional()->nrParents() > 0) { std::cout << "| "; }
+////  BOOST_FOREACH(Index index, clique->conditional()->parents()) {
+////    std::cout << DefaultKeyFormatter(ordering.key(index)) << " ";
+////  }
+////  std::cout << ")" << std::endl;
+////}
+//
+//  // Extract cached factors from the filter branches and store for future transmission to the smoother
+//  gttic(extract_filter_summarization);
+//  filterSummarization_.resize(0);
+//  BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, filterBranches) {
+//    LinearizedGaussianFactor::shared_ptr factor;
+//    if(const JacobianFactor::shared_ptr rhs = boost::dynamic_pointer_cast<JacobianFactor>(clique->cachedFactor()))
+//      factor = LinearizedJacobianFactor::shared_ptr(new LinearizedJacobianFactor(rhs, ordering, linpoint));
+//    else if(const HessianFactor::shared_ptr rhs = boost::dynamic_pointer_cast<HessianFactor>(clique->cachedFactor()))
+//      factor = LinearizedHessianFactor::shared_ptr(new LinearizedHessianFactor(rhs, ordering, linpoint));
+//    else
+//      throw std::invalid_argument("In ConcurrentBatchFilter::process(...), cached factor is neither a JacobianFactor nor a HessianFactor");
+//    filterSummarization_.push_back(factor);
+//  }
+//  gttoc(extract_filter_summarization);
+//
+//  // Find all factors that contain only root clique variables
+//  // This information is not contained in either the smoother
+//  // summarization or the filter summarization. This must be sent
+//  // to the smoother as well. Including it as part of the
+//  // root/filter summarization
+//  gttic(extract_root_summarization);
+//  std::set<size_t> rootFactorSlots = findFactorsWithOnly(rootKeys);
+//  BOOST_FOREACH(size_t slot, rootFactorSlots) {
+//    filterSummarization_.push_back(graph_.at(slot));
+//  }
+//  gttoc(extract_root_summarization);
+//
+////std::cout << "ConcurrentBatchFilter::synchronize(*)  Filter Summarization:" << std::endl;
+////BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, filterSummarization_) {
+////  if(boost::dynamic_pointer_cast<LinearizedGaussianFactor>(factor))
+////    std::cout << "  L( ";
+////  else
+////    std::cout << "  f( ";
+////  BOOST_FOREACH(Key key, factor->keys()) {
+////    std::cout << DefaultKeyFormatter(key) << " ";
+////  }
+////  std::cout << ")" << std::endl;
+////}
+//
+//  gttic(purge_smoother_information);
+//  // Remove nonlinear factors being sent to the smoother
+//  BOOST_FOREACH(size_t slot, smootherFactorSlots) {
+//    removeFactor(slot);
+//  }
+//
+//  // Remove the nonlinear keys being sent to the smoother
+//  BOOST_FOREACH(Key key, smootherKeys) {
+//    removeKey(key);
+//  }
+//
+//  // Add all of the smoother summarization factors to the filter, keeping track of their locations for later removal
+//  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, smootherSummarization) {
+//    smootherSummarizationSlots_.push_back(insertFactor(factor));
+//  }
+//  gttoc(purge_smoother_information);
+//
+//
+//
+//
+//
+////  // Check that solution before marginalization matches solution after marginalization
+////  Values solutionAfter;
+////  solutionAfter.insert(theta_);
+////  solutionAfter.update(smootherSeparatorValues_);
+////  Ordering orderingAfter = *graph_.orderingCOLAMD(solutionAfter);
+////  GaussianFactorGraph lingraphAfter = *graph_.linearize(solutionAfter, orderingAfter);
+////  GaussianMultifrontalSolver gmsAfter(lingraphAfter, true);
+////  VectorValues deltaAfter = *gmsAfter.optimize();
+////  solutionAfter = solutionAfter.retract(deltaAfter, orderingAfter);
+////
+////  BOOST_FOREACH(Key key, smootherKeys) {
+////    solutionBefore.erase(key);
+////  }
+////
+////std::cout << "Solution before marginalization matches solution after marginalization: " << solutionBefore.equals(solutionAfter, 1.0e-9) << std::endl;
+//
+//std::cout << "ConcurrentBatchFilter::synchronize(*) End" << std::endl;
+//
+//  gttoc(synchronize);
+//}
 
 /* ************************************************************************* */
 void ConcurrentBatchFilter::getSummarizedFactors(NonlinearFactorGraph& summarizedFactors, Values& rootValues) {
@@ -846,6 +1222,87 @@ std::set<size_t> ConcurrentBatchFilter::findFactorsWithOnly(const std::set<Key>&
   }
 
   return factorSlots;
+}
+
+/* ************************************************************************* */
+std::set<Key> ConcurrentBatchFilter::findSeparatorKeys(const NonlinearFactorGraph& graph) const {
+
+  // Create a random ordering
+  gtsam::Ordering ordering = *theta_.orderingArbitrary();
+
+  // Calculate a Variable Index using this ordering
+  gtsam::VariableIndex variableIndex(graph, theta_.size());
+
+  // Find the set of keys outside the smoothing lag
+  std::set<Key> outsideKeys = findKeysBefore(getCurrentTimestamp() - lag_);
+
+  // Find the set of factors that involve OutsideKeys
+  std::set<size_t> outsideFactorSlots;
+  BOOST_FOREACH(gtsam::Key key, outsideKeys) {
+    gtsam::Index index = ordering.at(key);
+    BOOST_FOREACH(size_t factorSlot, variableIndex[index]) {
+      outsideFactorSlots.insert(factorSlot);
+    }
+  }
+
+  // Find the set of all keys involved in OutsideFactors
+  std::set<gtsam::Key> involvedKeys;
+  BOOST_FOREACH(size_t factorSlot, outsideFactorSlots) {
+    BOOST_FOREACH(gtsam::Key key, graph.at(factorSlot)->keys()) {
+      involvedKeys.insert(key);
+    }
+  }
+
+  // The difference between the OutsideKeys and the InvolvedKeys is the set of keys
+  // inside the lag, but attached to keys outside the lag... i.e. the separator
+  std::set<gtsam::Key> separatorKeys;
+  std::set_difference(involvedKeys.begin(), involvedKeys.end(), outsideKeys.begin(), outsideKeys.end(), std::inserter(separatorKeys, separatorKeys.end()));
+
+  return separatorKeys;
+}
+
+/* ************************************************************************* */
+Ordering ConcurrentBatchFilter::computeOrdering(const NonlinearFactorGraph& graph) const {
+
+  // Find the set of keys outside the smoothing lag
+  std::set<gtsam::Key> outsideKeys = findKeysBefore(getCurrentTimestamp() - lag_);
+
+  // Find the set of keys inseide the smoother lag
+  std::set<gtsam::Key> insideKeys = findKeysAfter(getCurrentTimestamp() - lag_);
+
+  // Find the separator keys
+  std::set<gtsam::Key> separatorKeys = findSeparatorKeys(graph);
+
+  // Remove separator keys from inside keys
+  BOOST_FOREACH(gtsam::Key key, separatorKeys) {
+    insideKeys.erase(key);
+  }
+
+  // Create a set of COLAMD constraints to create an ordering {OutsideKeys InsideKeys SeparatorKeys}
+  typedef std::map<gtsam::Key, int> Constraints;
+  Constraints orderingConstraints;
+  int group = 0;
+  if(outsideKeys.size() > 0) {
+    BOOST_FOREACH(gtsam::Key key, outsideKeys) {
+      orderingConstraints[key] = group;
+    }
+    ++group;
+  }
+  if(insideKeys.size() > 0) {
+    BOOST_FOREACH(gtsam::Key key, insideKeys) {
+      orderingConstraints[key] = group;
+    }
+    ++group;
+  }
+  if(separatorKeys.size() > 0) {
+    BOOST_FOREACH(gtsam::Key key, separatorKeys) {
+      orderingConstraints[key] = group;
+    }
+    ++group;
+  }
+
+  // Create the constrained ordering
+  return *graph.orderingCOLAMDConstrained(theta_, orderingConstraints);
 }
 
 /* ************************************************************************* */

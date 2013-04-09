@@ -186,6 +186,10 @@ protected:
   /** Create linearized factors from any factors remaining after marginalizing out the requested keys */
   NonlinearFactor::shared_ptr marginalizeKeysFromFactor(const NonlinearFactor::shared_ptr& factor, const std::set<Key>& remainingKeys) const;
 
+  std::set<gtsam::Key> findSeparatorKeys(const gtsam::NonlinearFactorGraph& graph) const;
+
+  gtsam::Ordering computeOrdering(const gtsam::NonlinearFactorGraph& graph) const;
+
 private:
   typedef BayesTree<GaussianConditional,ISAM2Clique>::sharedClique Clique;
   static void SymbolicPrintTree(const Clique& clique, const Ordering& ordering, const std::string indent = "");
