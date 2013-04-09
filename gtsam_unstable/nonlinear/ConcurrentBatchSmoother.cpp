@@ -17,31 +17,32 @@
  */
 
 #include <gtsam_unstable/nonlinear/ConcurrentBatchSmoother.h>
-#include <gtsam_unstable/nonlinear/LinearizedFactor.h>
+#include <gtsam/nonlinear/LinearContainerFactor.h>
 #include <gtsam/inference/JunctionTree.h>
 #include <gtsam/base/timing.h>
+#include <gtsam/base/debug.h>
 #include <boost/lambda/lambda.hpp>
 
 namespace gtsam {
 
-/* ************************************************************************* */
-void ConcurrentBatchSmoother::SymbolicPrintTree(const Clique& clique, const Ordering& ordering, const std::string indent) {
-  std::cout << indent << "P( ";
-  BOOST_FOREACH(Index index, clique->conditional()->frontals()){
-    std::cout << DefaultKeyFormatter(ordering.key(index)) << " ";
-  }
-  if(clique->conditional()->nrParents() > 0) {
-    std::cout << "| ";
-  }
-  BOOST_FOREACH(Index index, clique->conditional()->parents()){
-    std::cout << DefaultKeyFormatter(ordering.key(index)) << " ";
-  }
-  std::cout << ")" << std::endl;
-
-  BOOST_FOREACH(const Clique& child, clique->children()) {
-    SymbolicPrintTree(child, ordering, indent+"  ");
-  }
-}
+///* ************************************************************************* */
+//void ConcurrentBatchSmoother::SymbolicPrintTree(const Clique& clique, const Ordering& ordering, const std::string indent) {
+//  std::cout << indent << "P( ";
+//  BOOST_FOREACH(Index index, clique->conditional()->frontals()){
+//    std::cout << DefaultKeyFormatter(ordering.key(index)) << " ";
+//  }
+//  if(clique->conditional()->nrParents() > 0) {
+//    std::cout << "| ";
+//  }
+//  BOOST_FOREACH(Index index, clique->conditional()->parents()){
+//    std::cout << DefaultKeyFormatter(ordering.key(index)) << " ";
+//  }
+//  std::cout << ")" << std::endl;
+//
+//  BOOST_FOREACH(const Clique& child, clique->children()) {
+//    SymbolicPrintTree(child, ordering, indent+"  ");
+//  }
+//}
 
 /* ************************************************************************* */
 void ConcurrentBatchSmoother::print(const std::string& s,
@@ -71,70 +72,31 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::update(const NonlinearF
   // Optimize the graph, updating theta
   gttic(optimize);
   if(graph_.size() > 0){
-    // Create an L-M optimizer
-    Values linpoint;
-    linpoint.insert(theta_);
-    if(rootValues_.size() > 0) {
-      linpoint.insert(rootValues_);
-    }
-    LevenbergMarquardtOptimizer optimizer(graph_, linpoint, parameters_);
+    optimize();
 
-    // Use a custom optimization loop so the linearization points can be controlled
-    double currentError;
-    do {
-      // Do next iteration
-      gttic(optimizer_iteration);
-      currentError = optimizer.error();
-      optimizer.iterate();
-      gttoc(optimizer_iteration);
-
-      // Force variables associated with root keys to keep the same linearization point
-      gttic(enforce_consistency);
-      if(rootValues_.size() > 0) {
-        // Put the old values of the root keys back into the optimizer state
-        optimizer.state().values.update(rootValues_);
-        optimizer.state().error = graph_.error(optimizer.state().values);
-      }
-      gttoc(enforce_consistency);
-
-      // Maybe show output
-      if(parameters_.verbosity >= NonlinearOptimizerParams::VALUES) optimizer.values().print("newValues");
-      if(parameters_.verbosity >= NonlinearOptimizerParams::ERROR) std::cout << "newError: " << optimizer.error() << std::endl;
-    } while(optimizer.iterations() < parameters_.maxIterations &&
-        !checkConvergence(parameters_.relativeErrorTol, parameters_.absoluteErrorTol,
-            parameters_.errorTol, currentError, optimizer.error(), parameters_.verbosity));
-
-    // Update theta from the optimizer, then remove root variables
-    theta_ = optimizer.values();
-    BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, rootValues_) {
-      theta_.erase(key_value.key);
-    }
-
-    result.iterations = optimizer.state().iterations;
-    result.nonlinearVariables = theta_.size();
-    result.linearVariables = rootValues_.size();
-    result.error = optimizer.state().error;
+    // TODO: fill in the results structure properly
+    result.iterations = 0;
+    result.nonlinearVariables = theta_.size() - separatorValues_.size();
+    result.linearVariables = separatorValues_.size();
+    result.error = 0;
   }
   gttoc(optimize);
 
   // Move all of the Pre-Sync code to the end of the update. This allows the smoother to perform these
   // calculations while the filter is still running
   gttic(presync);
-  // Calculate and store the information passed up to the root clique. This requires:
-  //   1) Calculate an ordering that forces the rootKey variables to be in the root
-  //   2) Perform an elimination, constructing a Bayes Tree from the currnet
-  //      variable values. This elimination will use the iSAM2 version of a clique so
-  //      that cached factors are stored
-  //   3) Verify the root's cached factors involve only root keys; all others should
-  //      be marginalized
-  //   4) Convert cached factors into 'Linearized' nonlinear factors
+  // Calculate and store the information passed up to the separator. This requires:
+  //   1) Calculate an ordering that forces the separator variables to be in the root
+  //   2) Eliminate all of the variables except the root. This produces one or more
+  //      linear, marginal factors on the separator variables.
+  //   3) Convert the marginal factors into nonlinear ones using the 'LinearContainerFactor'
 
-  if(rootValues_.size() > 0) {
+  if(separatorValues_.size() > 0) {
     // Force variables associated with root keys to keep the same linearization point
     gttic(enforce_consistency);
     Values linpoint;
     linpoint.insert(theta_);
-    linpoint.insert(rootValues_);
+    linpoint.insert(separatorValues_);
 
 //linpoint.print("ConcurrentBatchSmoother::presync()  LinPoint:\n");
 
@@ -143,7 +105,7 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::update(const NonlinearF
     // Calculate a root-constrained ordering
     gttic(compute_ordering);
     std::map<Key, int> constraints;
-    BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, rootValues_) {
+    BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) {
       constraints[key_value.key] = 1;
     }
     Ordering ordering = *graph_.orderingCOLAMDConstrained(linpoint, constraints);
@@ -158,9 +120,9 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::update(const NonlinearF
     gttoc(create_bayes_tree);
 
 //ordering.print("ConcurrentBatchSmoother::presync()  Ordering:\n");
-std::cout << "ConcurrentBatchSmoother::presync()  Root Keys: "; BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, rootValues_) { std::cout << DefaultKeyFormatter(key_value.key) << " "; } std::cout << std::endl;
+std::cout << "ConcurrentBatchSmoother::presync()  Root Keys: "; BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) { std::cout << DefaultKeyFormatter(key_value.key) << " "; } std::cout << std::endl;
 std::cout << "ConcurrentBatchSmoother::presync()  Bayes Tree:" << std::endl;
-SymbolicPrintTree(root, ordering, "  ");
+//SymbolicPrintTree(root, ordering, "  ");
 
     // Extract the marginal factors from the smoother
     // For any non-filter factor that involves a root variable,
@@ -171,7 +133,7 @@ SymbolicPrintTree(root, ordering, "  ");
     gttic(find_smoother_branches);
     std::set<ISAM2Clique::shared_ptr> rootCliques;
     std::set<ISAM2Clique::shared_ptr> smootherBranches;
-    BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, rootValues_) {
+    BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) {
       const ISAM2Clique::shared_ptr& clique = bayesTree.nodes().at(ordering.at(key_value.key));
       if(clique) {
         rootCliques.insert(clique);
@@ -203,7 +165,7 @@ BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, cachedFactors) {
     // Marginalize out any additional (non-root) variables
     gttic(marginalize_extra_variables);
     // The rootKeys have been ordered last, so their linear indices will be { linpoint.size()-rootKeys.size() :: linpoint.size()-1 }
-    Index minRootIndex = linpoint.size() - rootValues_.size();
+    Index minRootIndex = linpoint.size() - separatorValues_.size();
     // Calculate the set of keys to be marginalized
     FastSet<Index> cachedIndices = cachedFactors.keys();
     std::vector<Index> marginalizeIndices;
@@ -234,13 +196,7 @@ BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, cachedFactors) {
     gttic(store_cached_factors);
     smootherSummarization_.resize(0);
     BOOST_FOREACH(const GaussianFactor::shared_ptr& gaussianFactor, cachedFactors) {
-      LinearizedGaussianFactor::shared_ptr factor;
-      if(const JacobianFactor::shared_ptr rhs = boost::dynamic_pointer_cast<JacobianFactor>(gaussianFactor))
-        factor = LinearizedJacobianFactor::shared_ptr(new LinearizedJacobianFactor(rhs, ordering, linpoint));
-      else if(const HessianFactor::shared_ptr rhs = boost::dynamic_pointer_cast<HessianFactor>(gaussianFactor))
-        factor = LinearizedHessianFactor::shared_ptr(new LinearizedHessianFactor(rhs, ordering, linpoint));
-      else
-        throw std::invalid_argument("In ConcurrentBatchSmoother::presync(...), cached factor is neither a JacobianFactor nor a HessianFactor");
+      LinearContainerFactor::shared_ptr factor(new LinearContainerFactor(gaussianFactor, ordering, linpoint));
       smootherSummarization_.push_back(factor);
     }
     gttoc(store_cached_factors);
@@ -284,7 +240,7 @@ void ConcurrentBatchSmoother::getSummarizedFactors(NonlinearFactorGraph& summari
 
 /* ************************************************************************* */
 void ConcurrentBatchSmoother::synchronize(const NonlinearFactorGraph& smootherFactors, const Values& smootherValues,
-    const NonlinearFactorGraph& summarizedFactors, const Values& rootValues) {
+    const NonlinearFactorGraph& summarizedFactors, const Values& separatorValues) {
 
   gttic(synchronize);
 
@@ -308,7 +264,7 @@ void ConcurrentBatchSmoother::synchronize(const NonlinearFactorGraph& smootherFa
   theta_.insert(smootherValues);
 
   // Update the list of root keys
-  rootValues_ = rootValues;
+  separatorValues_ = separatorValues;
 
   gttoc(synchronize);
 }
@@ -397,6 +353,110 @@ std::set<size_t> ConcurrentBatchSmoother::findFactorsWithOnly(const std::set<Key
 }
 
 /* ************************************************************************* */
+void ConcurrentBatchSmoother::optimize() {
+
+  bool debug = ISDEBUG("ConcurrentBatchSmoother::optimize");
+
+  if(debug) std::cout << "ConcurrentBatchSmoother::optimize() Start" << std::endl;
+
+  // Calculate a good ordering
+  // TODO:
+
+  // Create a Values that holds the current evaluation point (simply use the linpoint initially, as a full delta is not available)
+  gtsam::Values evalpoint = theta_.retract(delta_, ordering_);
+
+  // Use a custom optimization loop so the linearization points can be controlled
+  double currentError = graph_.error(evalpoint);
+  double previousError;
+  gtsam::VectorValues newDelta;
+  size_t iterations = 0;
+  double lambda = parameters_.lambdaInitial;
+  do {
+    previousError = currentError;
+
+    // Do next iteration
+    gttic(optimizer_iteration);
+    {
+      // Linearize graph around the linearization point
+      gtsam::GaussianFactorGraph linearFactorGraph = *graph_.linearize(theta_, ordering_);
+
+      // Keep increasing lambda until we make make progress
+      while(true) {
+        // Add prior factors at the current solution
+        gttic(damp);
+        gtsam::GaussianFactorGraph dampedFactorGraph(linearFactorGraph);
+        dampedFactorGraph.reserve(linearFactorGraph.size() + delta_.size());
+        {
+          // for each of the variables, add a prior at the current solution
+          for(size_t j=0; j<delta_.size(); ++j) {
+            gtsam::Matrix A = lambda * gtsam::eye(delta_[j].size());
+            gtsam::Vector b = lambda * delta_[j];
+            gtsam::SharedDiagonal model = gtsam::noiseModel::Unit::Create(delta_[j].size());
+            gtsam::GaussianFactor::shared_ptr prior(new gtsam::JacobianFactor(j, A, b, model));
+            dampedFactorGraph.push_back(prior);
+          }
+        }
+        gttoc(damp);
+
+        // Solve Damped Gaussian Factor Graph
+        newDelta = gtsam::GaussianJunctionTree(dampedFactorGraph).optimize(parameters_.getEliminationFunction());
+
+        // update the evalpoint with the new delta
+        gttic(retract);
+        evalpoint = theta_.retract(newDelta, ordering_);
+        gttoc(retract);
+
+        // Evaluate the new error
+        gttic(compute_error);
+        double newError = graph_.error(evalpoint);
+        gttoc(compute_error);
+
+        if(newError < currentError) {
+          // Keep this change
+          // Update the error value
+          currentError = newError;
+          // Update the linearization point
+          theta_ = evalpoint;
+          // Reset the deltas to zeros
+          delta_.setZero();
+          // If 'enableConsistency' is turned on, put the linearization points and deltas back for specific variables
+          if(separatorValues_.size() > 0) {
+            theta_.update(separatorValues_);
+            BOOST_FOREACH(const gtsam::Values::ConstKeyValuePair& key_value, separatorValues_) {
+              gtsam::Index index = ordering_.at(key_value.key);
+              delta_.at(index) = newDelta.at(index);
+            }
+          }
+          // Decrease lambda for next time
+          lambda /= parameters_.lambdaFactor;
+          if(lambda < (0.5 / parameters_.lambdaUpperBound)) {
+            lambda = (0.5 / parameters_.lambdaUpperBound);
+          }
+          // End this lambda search iteration
+          break;
+        } else {
+          // Reject this change
+          // Increase lambda and continue searching
+          lambda *= parameters_.lambdaFactor;
+          if(lambda > parameters_.lambdaUpperBound) {
+            // The maximum lambda has been used. Print a warning and end the search.
+            std::cout << "Warning:  Levenberg-Marquardt giving up because cannot decrease error with maximum lambda" << std::endl;
+            break;
+          }
+        }
+      } // end while
+    }
+    gttoc(optimizer_iteration);
+
+    ++iterations;
+  } while(iterations < parameters_.maxIterations &&
+      !checkConvergence(parameters_.relativeErrorTol, parameters_.absoluteErrorTol, parameters_.errorTol,
+          previousError, currentError, gtsam::NonlinearOptimizerParams::SILENT));
+
+  if(debug) std::cout << "ConcurrentBatchSmoother::optimize() Finish" << std::endl;
+}
+
+/* ************************************************************************* */
 NonlinearFactor::shared_ptr ConcurrentBatchSmoother::marginalizeKeysFromFactor(const NonlinearFactor::shared_ptr& factor, const std::set<Key>& keysToKeep, const Values& theta) const {
 
 factor->print("Factor Before:\n");
@@ -455,15 +515,83 @@ result.second->print("Resulting Linear Factor:\n");
     assert(graph.size() <= 1);
     if(graph.size() > 0) {
 graph.at(0)->print("Linear Factor After:\n");
-      // These factors are all generated from BayesNet conditionals. They should all be Jacobians.
-      JacobianFactor::shared_ptr jacobianFactor = boost::dynamic_pointer_cast<JacobianFactor>(graph.at(0));
-      assert(jacobianFactor);
-      marginalFactor = LinearizedJacobianFactor::shared_ptr(new LinearizedJacobianFactor(jacobianFactor, ordering, theta));
+      marginalFactor.reset(new LinearContainerFactor(graph.at(0), ordering, theta));
     }
 marginalFactor->print("Factor After:\n");
     return marginalFactor;
   }
 }
+
+/* ************************************************************************* */
+void ConcurrentBatchSmoother::PrintNonlinearFactor(const gtsam::NonlinearFactor::shared_ptr& factor, const std::string& indent, const gtsam::KeyFormatter& keyFormatter) {
+  std::cout << indent;
+  if(factor) {
+    if(boost::dynamic_pointer_cast<gtsam::LinearContainerFactor>(factor)) {
+      std::cout << "l( ";
+    } else {
+      std::cout << "f( ";
+    }
+    BOOST_FOREACH(gtsam::Key key, *factor) {
+      std::cout << keyFormatter(key) << " ";
+    }
+    std::cout << ")" << std::endl;
+  } else {
+    std::cout << "{ NULL }" << std::endl;
+  }
+}
+
+/* ************************************************************************* */
+void ConcurrentBatchSmoother::PrintLinearFactor(const gtsam::GaussianFactor::shared_ptr& factor, const gtsam::Ordering& ordering, const std::string& indent, const gtsam::KeyFormatter& keyFormatter) {
+  std::cout << indent;
+  if(factor) {
+    std::cout << "g( ";
+    BOOST_FOREACH(gtsam::Index index, *factor) {
+      std::cout << keyFormatter(ordering.key(index)) << " ";
+    }
+    std::cout << ")" << std::endl;
+  } else {
+    std::cout << "{ NULL }" << std::endl;
+  }
+}
+
+///* ************************************************************************* */
+//void ConcurrentBatchSmoother::PrintSingleClique(const gtsam::ISAM2Clique::shared_ptr& clique, const gtsam::Ordering& ordering, const std::string& indent, const gtsam::KeyFormatter& keyFormatter) {
+//  std::cout << indent << "P( ";
+//  BOOST_FOREACH(gtsam::Index index, clique->conditional()->frontals()){
+//    std::cout << keyFormatter(ordering.key(index)) << " ";
+//  }
+//  if(clique->conditional()->nrParents() > 0){
+//    std::cout << "| ";
+//    BOOST_FOREACH(gtsam::Index index, clique->conditional()->parents()){
+//      std::cout << keyFormatter(ordering.key(index)) << " ";
+//    }
+//  }
+//  std::cout << ")" << std::endl;
+//}
+//
+///* ************************************************************************* */
+//void ConcurrentBatchSmoother::PrintRecursiveClique(const gtsam::ISAM2Clique::shared_ptr& clique, const gtsam::Ordering& ordering, const std::string& indent, const gtsam::KeyFormatter& keyFormatter) {
+//
+//  // Print this node
+//  PrintSingleClique(clique, ordering, indent, keyFormatter);
+//
+//  // Print Children
+//  BOOST_FOREACH(const gtsam::ISAM2Clique::shared_ptr& child, clique->children()) {
+//    PrintRecursiveClique(child, ordering, indent+"  ", keyFormatter);
+//  }
+//}
+//
+///* ************************************************************************* */
+//void ConcurrentBatchSmoother::PrintBayesTree(const gtsam::ISAM2& bayesTree, const gtsam::Ordering& ordering, const std::string& indent, const gtsam::KeyFormatter& keyFormatter) {
+//
+//  std::cout << indent << "Bayes Tree:" << std::endl;
+//  if (bayesTree.root().use_count() == 0) {
+//    std::cout << indent << "  {EMPTY}" << std::endl;
+//  } else {
+//    std::cout << indent << "  clique size == " << bayesTree.size() << ", node size == " << bayesTree.nodes().size() <<  std::endl;
+//    PrintRecursiveClique(bayesTree.root(), ordering, indent+"  ", keyFormatter);
+//  }
+//}
 
 /* ************************************************************************* */
 

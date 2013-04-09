@@ -19,7 +19,7 @@
 // \callgraph
 #pragma once
 
-#include "ConcurrentFilteringAndSmoothing.h"
+#include <gtsam_unstable/nonlinear/ConcurrentFilteringAndSmoothing.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/ISAM2.h>
 #include <queue>
@@ -97,8 +97,10 @@ protected:
 
   LevenbergMarquardtParams parameters_;  ///< LM parameters
   NonlinearFactorGraph graph_;  ///< The graph of all the smoother factors
-  Values theta_;  ///< Current solution
-  Values rootValues_;  ///< The set of keys to be kept in the root and their linearization points
+  Values theta_;  ///< Current linearization point
+  Ordering ordering_; ///< The current ordering used to generate the deltas
+  VectorValues delta_;  ///< Current set of offsets from the linearization point
+  Values separatorValues_;  ///< The set of keys to be kept in the root and their linearization points
   std::queue<size_t> availableSlots_; ///< The set of available factor graph slots caused by deleting factors
   FactorIndex factorIndex_; ///< A cross-reference structure to allow efficient factor lookups by key
   std::vector<size_t> filterSummarizationSlots_;  ///< The slots in graph for the last set of filter summarized factors
@@ -146,6 +148,9 @@ protected:
   /** Remove a factor from the graph by slot index */
   void removeFactor(size_t slot);
 
+  /** Optimize the graph using a modified version of L-M */
+  void optimize();
+
   /** Find all of the nonlinear factors that contain any of the provided keys */
   std::set<size_t> findFactorsWithAny(const std::set<Key>& keys) const;
 
@@ -156,8 +161,25 @@ protected:
   NonlinearFactor::shared_ptr marginalizeKeysFromFactor(const NonlinearFactor::shared_ptr& factor, const std::set<Key>& keysToKeep, const Values& theta) const;
 
 private:
-  typedef BayesTree<GaussianConditional,ISAM2Clique>::sharedClique Clique;
-  static void SymbolicPrintTree(const Clique& clique, const Ordering& ordering, const std::string indent = "");
+  /** Some printing functions for debugging */
+
+  static void PrintNonlinearFactor(const gtsam::NonlinearFactor::shared_ptr& factor,
+      const std::string& indent = "", const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
+
+  static void PrintLinearFactor(const gtsam::GaussianFactor::shared_ptr& factor, const gtsam::Ordering& ordering,
+      const std::string& indent = "", const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
+
+//  static void PrintSingleClique(const gtsam::ISAM2Clique::shared_ptr& clique, const gtsam::Ordering& ordering,
+//      const std::string& indent = "", const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
+//
+//  static void PrintRecursiveClique(const gtsam::ISAM2Clique::shared_ptr& clique, const gtsam::Ordering& ordering,
+//      const std::string& indent = "", const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
+//
+//  static void PrintBayesTree(const gtsam::ISAM2& bayesTree, const gtsam::Ordering& ordering,
+//      const std::string& indent = "", const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
+
+//  typedef BayesTree<GaussianConditional,ISAM2Clique>::sharedClique Clique;
+//  static void SymbolicPrintTree(const Clique& clique, const Ordering& ordering, const std::string indent = "");
 
 }; // ConcurrentBatchSmoother
 
