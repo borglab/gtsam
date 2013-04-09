@@ -15,7 +15,7 @@
  * @author  Vadim Indelman, Stephen Williams
  */
 
-#include <gtsam_unstable/navigation/ImuBias.h>
+#include <gtsam/navigation/ImuBias.h>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;

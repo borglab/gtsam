@@ -9,6 +9,7 @@ set (gtsam_subdirs
     linear 
     nonlinear 
     slam
+	navigation
 )
 
 set(gtsam_srcs)
@@ -73,6 +74,7 @@ set(gtsam_srcs
     ${linear_srcs}
     ${nonlinear_srcs}
     ${slam_srcs}
+	${navigation_srcs}
 )
 
 # Versions

@@ -17,8 +17,8 @@
 
 #include <iostream>
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam_unstable/dynamics/ImuBias.h>
-#include <gtsam_unstable/dynamics/InertialNavFactor_GlobalVelocity.h>
+#include <gtsam/navigation/ImuBias.h>
+#include <gtsam/navigation/InertialNavFactor_GlobalVelocity.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Key.h>

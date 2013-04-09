@@ -8,7 +8,6 @@ set (gtsam_unstable_subdirs
     dynamics
     nonlinear
     slam
-    navigation
 )
 
 set(GTSAM_UNSTABLE_BOOST_LIBRARIES ${GTSAM_BOOST_LIBRARIES} ${Boost_THREAD_LIBRARY})
@@ -41,7 +40,6 @@ set(gtsam_unstable_srcs
     ${linear_srcs}    
     ${nonlinear_srcs}
     ${slam_srcs}
-    ${navigation_srcs}
 )
 
 # Versions - same as core gtsam library
@@ -81,7 +79,6 @@ if (GTSAM_BUILD_SHARED_LIBRARY)
 			PREFIX ""
 			DEFINE_SYMBOL GTSAM_UNSTABLE_EXPORTS
 			RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
-		add_definitions(/wd4251 /wd4275) # Disable non-DLL-exported base class warnings
 	endif()
     target_link_libraries(gtsam_unstable-shared gtsam-shared ${GTSAM_UNSTABLE_BOOST_LIBRARIES})
     install(TARGETS gtsam_unstable-shared EXPORT GTSAM-exports LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)

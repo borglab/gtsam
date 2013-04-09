@@ -15,8 +15,8 @@
  * @author  Vadim Indelman, Stephen Williams
  */
 
-#include <gtsam_unstable/navigation/EquivInertialNavFactor_GlobalVel.h>
-#include <gtsam_unstable/navigation/ImuBias.h>
+#include <gtsam/navigation/EquivInertialNavFactor_GlobalVel.h>
+#include <gtsam/navigation/ImuBias.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Key.h>
