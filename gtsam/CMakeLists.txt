@@ -47,13 +47,13 @@ endif()
 # assemble core libaries
 foreach(subdir ${gtsam_subdirs})
     # Build convenience libraries
-    file(GLOB subdir_srcs "${subdir}/*.cpp")
+    file(GLOB subdir_cpp_srcs "${subdir}/*.cpp")
     file(GLOB subdir_headers "${subdir}/*.h")
-    set(subdir_srcs ${subdir_srcs} ${subdir_headers}) # Include header files so they show up in Visual Studio
+    set(subdir_srcs ${subdir_cpp_srcs} ${subdir_headers}) # Include header files so they show up in Visual Studio
     gtsam_assign_source_folders("${subdir_srcs}") # Create MSVC structure
     list(REMOVE_ITEM subdir_srcs ${excluded_sources})
     set(${subdir}_srcs ${subdir_srcs})
-    if (GTSAM_BUILD_CONVENIENCE_LIBRARIES)
+    if (GTSAM_BUILD_CONVENIENCE_LIBRARIES AND (subdir_cpp_srcs)) # Only build convenience library if sources exist
         message(STATUS "Building Convenience Library: ${subdir}")
         add_library(${subdir} STATIC ${subdir_srcs})
     endif()
@@ -62,6 +62,8 @@ foreach(subdir ${gtsam_subdirs})
     message(STATUS "Building ${subdir}") 
     add_subdirectory(${subdir})
 endforeach(subdir)
+ 
+message(STATUS "navigation_srcs: [${navigation_srcs}]")
  
 # To add additional sources to gtsam when building the full library (static or shared)
 # Add the subfolder with _srcs appended to the end to this list
