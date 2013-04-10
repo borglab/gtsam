@@ -76,16 +76,11 @@ public:
     return delta_;
   }
 
-  /** Access the nonlinear variable index */
-  const VariableIndex& getVariableIndex() const {
-    return variableIndex_;
-  }
-
   /** Compute the current best estimate of all variables and return a full Values structure.
    * If only a single variable is needed, it may be faster to call calculateEstimate(const KEY&).
    */
   Values calculateEstimate() const {
-    return getLinearizationPoint().retract(getDelta(), getOrdering());
+    return theta_.retract(delta_, ordering_);
   }
 
   /** Compute the current best estimate of a single variable. This is generally faster than
@@ -95,9 +90,9 @@ public:
    */
   template<class VALUE>
   VALUE calculateEstimate(Key key) const {
-    const Index index = getOrdering().at(key);
-    const Vector delta = getDelta().at(index);
-    return getLinearizationPoint().at<VALUE>(key).retract(delta);
+    const Index index = ordering_.at(key);
+    const Vector delta = delta_.at(index);
+    return theta_.at<VALUE>(key).retract(delta);
   }
 
   /**
@@ -122,7 +117,7 @@ protected:
   Values theta_;  ///< Current linearization point of all variables in the filter
   Ordering ordering_; ///< The current ordering used to calculate the linear deltas
   VectorValues delta_; ///< The current set of linear deltas from the linearization point
-  VariableIndex variableIndex_; ///< The current variable index, which allows efficient factor lookup by variable
+  VariableIndex variableIndex_; ///< The current variable index, which allows efficient factor lookup by variable. Note: after marginalization, this is left in an inconsistent state
   std::queue<size_t> availableSlots_; ///< The set of available factor graph slots caused by deleting factors
   Values separatorValues_; ///< The linearization points of the separator variables. These should not be updated during optimization.
   std::vector<size_t> smootherSummarizationSlots_;  ///< The slots in factor graph that correspond to the current smoother summarization factors
@@ -183,14 +178,19 @@ private:
   /** Remove factors from the graph by slot index
    *
    * @param slots The slots in the factor graph that should be deleted
-   * */
-  void removeFactors(const std::vector<size_t>& slots);
+   */
+  void removeFactors(const std::set<size_t>& slots);
 
   /** Use colamd to update into an efficient ordering */
   void reorder(const boost::optional<FastList<Key> >& keysToMove = boost::none);
 
   /** Use a modified version of L-M to update the linearization point and delta */
   Result optimize();
+
+  /** Marginalize out the set of requested variables from the filter, caching them for the smoother
+   *  This effectively moves the separator.
+   */
+  void marginalize(const FastList<Key>& keysToMove);
 
   /** Print just the nonlinear keys in a nonlinear factor */
   static void PrintNonlinearFactor(const NonlinearFactor::shared_ptr& factor,
@@ -199,6 +199,60 @@ private:
   /** Print just the nonlinear keys in a linear factor */
   static void PrintLinearFactor(const GaussianFactor::shared_ptr& factor, const Ordering& ordering,
       const std::string& indent = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter);
+
+  // A custom elimination tree that supports forests and partial elimination
+  class EliminationForest {
+  public:
+    typedef boost::shared_ptr<EliminationForest> shared_ptr; ///< Shared pointer to this class
+    typedef gtsam::GaussianFactor Factor; ///< The factor Type
+    typedef Factor::shared_ptr sharedFactor;  ///< Shared pointer to a factor
+    typedef gtsam::BayesNet<Factor::ConditionalType> BayesNet; ///< The BayesNet
+    typedef gtsam::GaussianFactorGraph::Eliminate Eliminate; ///< The eliminate subroutine
+
+  private:
+    typedef gtsam::FastList<sharedFactor> Factors;
+    typedef gtsam::FastList<shared_ptr> SubTrees;
+    typedef std::vector<Factor::ConditionalType::shared_ptr> Conditionals;
+
+    gtsam::Index key_; ///< index associated with root
+    Factors factors_; ///< factors associated with root
+    SubTrees subTrees_; ///< sub-trees
+
+    /** default constructor, private, as you should use Create below */
+    EliminationForest(gtsam::Index key = 0) : key_(key) {}
+
+    /**
+     * Static internal function to build a vector of parent pointers using the
+     * algorithm of Gilbert et al., 2001, BIT.
+     */
+    static std::vector<gtsam::Index> ComputeParents(const gtsam::VariableIndex& structure);
+
+    /** add a factor, for Create use only */
+    void add(const sharedFactor& factor) { factors_.push_back(factor); }
+
+    /** add a subtree, for Create use only */
+    void add(const shared_ptr& child) { subTrees_.push_back(child); }
+
+  public:
+
+    /** return the key associated with this tree node */
+    gtsam::Index key() const { return key_; }
+
+    /** return the const reference of children */
+    const SubTrees& children() const { return subTrees_; }
+
+    /** return the const reference to the factors */
+    const Factors& factors() const { return factors_; }
+
+    /** Create an elimination tree from a factor graph */
+    static std::vector<shared_ptr> Create(const gtsam::GaussianFactorGraph& factorGraph, const gtsam::VariableIndex& structure);
+
+    /** Recursive routine that eliminates the factors arranged in an elimination tree */
+    sharedFactor eliminateRecursive(Eliminate function);
+
+    /** Recursive function that helps find the top of each tree */
+    static void removeChildrenIndices(std::set<Index>& indices, const EliminationForest::shared_ptr& tree);
+  };
 
 }; // ConcurrentBatchFilter
 

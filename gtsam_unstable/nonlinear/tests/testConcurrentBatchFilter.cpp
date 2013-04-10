@@ -440,47 +440,47 @@ TEST_UNSAFE( ConcurrentBatchFilter, update_batch )
   CHECK(assert_equal(expected, actual, 1e-4));
 }
 
-///* ************************************************************************* */
-//TEST_UNSAFE( ConcurrentBatchFilter, update_batch_with_marginalization )
-//{
-//  // Test the 'update' function of the ConcurrentBatchFilter in a nonlinear environment.
-//  // Thus, a full L-M optimization and the ConcurrentBatchFilter results should be identical
-//  // This tests adds all of the factors to the filter at once (i.e. batch)
-//
-//  // Create a set of optimizer parameters
-//  LevenbergMarquardtParams parameters;
-//
-//  // Create a Concurrent Batch Filter
-//  ConcurrentBatchFilter filter(parameters);
-//
-//  // Create containers to keep the full graph
-//  Values fullTheta;
-//  NonlinearFactorGraph fullGraph;
-//
-//  // Create all factors
-//  CreateFactors(fullGraph, fullTheta, 0, 20);
-//
-//  // Create the set of key to marginalize out
-//  FastList<Key> marginalizeKeys;
-//  for(size_t j = 0; j < 15; ++j) {
-//    marginalizeKeys.push_back(Symbol('X', j));
-//  }
-//
-//  // Optimize with Concurrent Batch Filter
-//  filter.update(fullGraph, fullTheta, marginalizeKeys);
-//  Values actual = filter.calculateEstimate();
-//
-//
-//  // Optimize with L-M
-//  Values expected = BatchOptimize(fullGraph, fullTheta);
-//  // Remove the marginalized keys
-//  for(size_t j = 0; j < 15; ++j) {
-//    expected.erase(Symbol('X', j));
-//  }
-//
-//  // Check smoother versus batch
-//  CHECK(assert_equal(expected, actual, 1e-4));
-//}
+/* ************************************************************************* */
+TEST_UNSAFE( ConcurrentBatchFilter, update_batch_with_marginalization )
+{
+  // Test the 'update' function of the ConcurrentBatchFilter in a nonlinear environment.
+  // Thus, a full L-M optimization and the ConcurrentBatchFilter results should be identical
+  // This tests adds all of the factors to the filter at once (i.e. batch)
+
+  // Create a set of optimizer parameters
+  LevenbergMarquardtParams parameters;
+
+  // Create a Concurrent Batch Filter
+  ConcurrentBatchFilter filter(parameters);
+
+  // Create containers to keep the full graph
+  Values fullTheta;
+  NonlinearFactorGraph fullGraph;
+
+  // Create all factors
+  CreateFactors(fullGraph, fullTheta, 0, 20);
+
+  // Create the set of key to marginalize out
+  FastList<Key> marginalizeKeys;
+  for(size_t j = 0; j < 15; ++j) {
+    marginalizeKeys.push_back(Symbol('X', j));
+  }
+
+  // Optimize with Concurrent Batch Filter
+  filter.update(fullGraph, fullTheta, marginalizeKeys);
+  Values actual = filter.calculateEstimate();
+
+
+  // Optimize with L-M
+  Values expected = BatchOptimize(fullGraph, fullTheta);
+  // Remove the marginalized keys
+  for(size_t j = 0; j < 15; ++j) {
+    expected.erase(Symbol('X', j));
+  }
+
+  // Check smoother versus batch
+  CHECK(assert_equal(expected, actual, 1e-4));
+}
 
 /* ************************************************************************* */
 TEST_UNSAFE( ConcurrentBatchFilter, update_incremental )
@@ -524,57 +524,58 @@ TEST_UNSAFE( ConcurrentBatchFilter, update_incremental )
 
 }
 
-///* ************************************************************************* */
-//TEST_UNSAFE( ConcurrentBatchFilter, update_incremental_with_marginalization )
-//{
-//  // Test the 'update' function of the ConcurrentBatchFilter in a nonlinear environment.
-//  // Thus, a full L-M optimization and the ConcurrentBatchFilter results should be identical
-//  // This tests adds the factors to the filter as they are created (i.e. incrementally)
-//
-//  // Create a set of optimizer parameters
-//  LevenbergMarquardtParams parameters;
-//
-//  // Create a Concurrent Batch Filter
-//  ConcurrentBatchFilter filter(parameters);
-//
-//  // Create containers to keep the full graph
-//  Values fullTheta;
-//  NonlinearFactorGraph fullGraph;
-//
-//  // Add odometry from time 0 to time 10
-//  for(size_t i = 0; i < 20; ++i) {
-//    // Create containers to keep the new factors
-//    Values newTheta;
-//    NonlinearFactorGraph newGraph;
-//
-//    // Create factors
-//    CreateFactors(newGraph, newTheta, i, i+1);
-//
-//    // Create the set of factors to marginalize
-//    FastList<Key> marginalizeKeys;
-//    if(i >= 4) {
-//      marginalizeKeys.push_back(Symbol('X', i-4));
-//    }
-//
-//    // Add these entries to the filter
-//    filter.update(newGraph, newTheta, marginalizeKeys);
-//    Values actual = filter.calculateEstimate();
-//
-//    // Add these entries to the full batch version
-//    fullGraph.push_back(newGraph);
-//    fullTheta.insert(newTheta);
-//    Values expected = BatchOptimize(fullGraph, fullTheta);
-//    fullTheta = expected;
-//    // Remove marginalized keys
-//    for(int j = 0; j < (int)i - 4; ++j) {
-//      expected.erase(Symbol('X', j));
-//    }
-//
-//    // Compare filter solution with full batch
-//    CHECK(assert_equal(expected, actual, 1e-4));
-//  }
-//
-//}
+/* ************************************************************************* */
+TEST_UNSAFE( ConcurrentBatchFilter, update_incremental_with_marginalization )
+{
+  // Test the 'update' function of the ConcurrentBatchFilter in a nonlinear environment.
+  // Thus, a full L-M optimization and the ConcurrentBatchFilter results should be identical
+  // This tests adds the factors to the filter as they are created (i.e. incrementally)
+
+  // Create a set of optimizer parameters
+  LevenbergMarquardtParams parameters;
+
+  // Create a Concurrent Batch Filter
+  ConcurrentBatchFilter filter(parameters);
+
+  // Create containers to keep the full graph
+  Values fullTheta;
+  NonlinearFactorGraph fullGraph;
+
+  // Add odometry from time 0 to time 10
+  for(size_t i = 0; i < 20; ++i) {
+
+    // Create containers to keep the new factors
+    Values newTheta;
+    NonlinearFactorGraph newGraph;
+
+    // Create factors
+    CreateFactors(newGraph, newTheta, i, i+1);
+
+    // Create the set of factors to marginalize
+    FastList<Key> marginalizeKeys;
+    if(i >= 5) {
+      marginalizeKeys.push_back(Symbol('X', i-5));
+    }
+
+    // Add these entries to the filter
+    filter.update(newGraph, newTheta, marginalizeKeys);
+    Values actual = filter.calculateEstimate();
+
+    // Add these entries to the full batch version
+    fullGraph.push_back(newGraph);
+    fullTheta.insert(newTheta);
+    Values expected = BatchOptimize(fullGraph, fullTheta);
+    fullTheta = expected;
+    // Remove marginalized keys
+    for(int j = (int)i - 5; j >= 0; --j) {
+      expected.erase(Symbol('X', j));
+    }
+
+    // Compare filter solution with full batch
+    CHECK(assert_equal(expected, actual, 1e-4));
+  }
+
+}
 
 ///* ************************************************************************* */
 //TEST_UNSAFE( ConcurrentBatchFilter, synchronize )

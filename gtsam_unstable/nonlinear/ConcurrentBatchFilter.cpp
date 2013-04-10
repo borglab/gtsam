@@ -88,14 +88,7 @@ ConcurrentBatchFilter::Result ConcurrentBatchFilter::update(const NonlinearFacto
 
   gttic(marginalize);
   if(keysToMove && keysToMove->size() > 0){
-//    // Generate a permutation that will put the factor graph into the proper order
-//    std::set<Key> activeKeys;
-//    std::set<Key> marginalizableKeys;
-//    calculateKeySets(activeKeys, marginalizableKeys, registeredSensors_, ordering_, keyTimestampMap_, currentTimestamp, parameters_.smootherLag);
-//    permuteOrdering(ordering_, factors_, marginalizableKeys, activeKeys);
-//
-//    // Marginalize out inactive states (and remove from ordering/values)
-//    marginalize(factors_, theta_, ordering_, keyTimestampMap_, linearValues_, marginalizableKeys);
+    marginalize(*keysToMove);
   }
   gttoc(marginalize);
 
@@ -175,16 +168,13 @@ std::vector<size_t> ConcurrentBatchFilter::insertFactors(const NonlinearFactorGr
     slots.push_back(slot);
   }
 
-  // Augment the Variable Index
-  variableIndex_.augment(*factors.symbolic(ordering_));
-
   gttoc(insert_factors);
 
   return slots;
 }
 
 /* ************************************************************************* */
-void ConcurrentBatchFilter::removeFactors(const std::vector<size_t>& slots) {
+void ConcurrentBatchFilter::removeFactors(const std::set<size_t>& slots) {
 
   gttic(remove_factors);
 
@@ -201,19 +191,18 @@ void ConcurrentBatchFilter::removeFactors(const std::vector<size_t>& slots) {
     availableSlots_.push(slot);
   }
 
-  // Remove references to this factor from the VariableIndex
-  variableIndex_.remove(slots, factors);
-
   gttoc(remove_factors);
 }
 
 /* ************************************************************************* */
 void ConcurrentBatchFilter::reorder(const boost::optional<FastList<Key> >& keysToMove) {
 
-  // COLAMD groups will be used to place marginalize keys in Group 0, active keys in Group 1, and separator keys in Group 2
+  // Recalculate the variable index
+  variableIndex_ = VariableIndex(*factors_.symbolic(ordering_));
+
+  // COLAMD groups will be used to place marginalize keys in Group 0, and everything else in Group 1
   int group0 = 0;
-  int group1 = group0 + (keysToMove ? 1 : 0);
-  int group2 = group1 + 1;
+  int group1 = keysToMove ? 1 : 0;
 
   // Initialize all variables to group1
   std::vector<int> cmember(variableIndex_.size(), group1);
@@ -222,13 +211,6 @@ void ConcurrentBatchFilter::reorder(const boost::optional<FastList<Key> >& keysT
   if(keysToMove && keysToMove->size() > 0) {
     BOOST_FOREACH(Key key, *keysToMove) {
       cmember[ordering_.at(key)] = group0;
-    }
-  }
-
-  // Set all of the separator keys to Group2
-  if(separatorValues_.size() > 0) {
-    BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) {
-      cmember[ordering_.at(key_value.key)] = group2;
     }
   }
 
@@ -349,6 +331,114 @@ ConcurrentBatchFilter::Result ConcurrentBatchFilter::optimize() {
   return result;
 }
 
+/* ************************************************************************* */
+void ConcurrentBatchFilter::marginalize(const FastList<Key>& keysToMove) {
+  // In order to marginalize out the selected variables, the factors involved in those variables
+  // must be identified and removed. Also, the effect of those removed factors on the
+  // remaining variables needs to be accounted for. This will be done with linear container factors
+  // from the result of a partial elimination. This function removes the marginalized factors and
+  // adds the linearized factors back in.
+
+  std::set<size_t> removedFactorSlots;
+  std::vector<size_t> marginalSlots;
+
+  // Calculate marginal factors on the remaining variables (after marginalizing 'keyToMove')
+  // Note: It is assumed the ordering already has these keys first
+  {
+    // Use the variable Index to mark the factors that will be marginalized
+    BOOST_FOREACH(gtsam::Key key, keysToMove) {
+      const gtsam::FastList<size_t>& slots = variableIndex_[ordering_.at(key)];
+      removedFactorSlots.insert(slots.begin(), slots.end());
+    }
+
+    // Create the linear factor graph
+    gtsam::GaussianFactorGraph linearFactorGraph = *factors_.linearize(theta_, ordering_);
+
+    // Construct an elimination tree to perform sparse elimination
+    std::vector<EliminationForest::shared_ptr> forest( EliminationForest::Create(linearFactorGraph, variableIndex_) );
+
+    // This is a tree. Only the top-most nodes/indices need to be eliminated; all of the children will be eliminated automatically
+    // Find the subset of nodes/keys that must be eliminated
+    std::set<gtsam::Index> indicesToEliminate;
+    BOOST_FOREACH(gtsam::Key key, keysToMove) {
+      indicesToEliminate.insert(ordering_.at(key));
+    }
+    BOOST_FOREACH(gtsam::Key key, keysToMove) {
+      EliminationForest::removeChildrenIndices(indicesToEliminate, forest.at(ordering_.at(key)));
+    }
+
+    // Eliminate each top-most key, returning a Gaussian Factor on some of the remaining variables
+    // Convert the marginal factors into Linear Container Factors
+    // Add the marginal factor variables to the separator
+    NonlinearFactorGraph marginalFactors;
+    BOOST_FOREACH(gtsam::Index index, indicesToEliminate) {
+      GaussianFactor::shared_ptr gaussianFactor = forest.at(index)->eliminateRecursive(parameters_.getEliminationFunction());
+      LinearContainerFactor::shared_ptr marginalFactor(new LinearContainerFactor(gaussianFactor, ordering_, theta_));
+      marginalFactors.push_back(marginalFactor);
+      // Add the keys associated with the marginal factor to the separator values
+      BOOST_FOREACH(gtsam::Key key, *marginalFactor) {
+        if(!separatorValues_.exists(key)) {
+          separatorValues_.insert(key, theta_.at(key));
+        }
+      }
+    }
+    marginalSlots = insertFactors(marginalFactors);
+  }
+
+  // Cache marginalized variables and factors for later transmission to the smoother
+  {
+    // Add the new marginal factors to the list of smootherSeparatorFactors. In essence, we have just moved the separator
+    smootherSummarizationSlots_.insert(smootherSummarizationSlots_.end(), marginalSlots.begin(), marginalSlots.end());
+
+    // Move the marginalized factors from the filter to the smoother (holding area)
+    // Note: Be careful to only move nonlinear factors and not any marginals they may also need to be removed
+    BOOST_FOREACH(size_t slot, removedFactorSlots) {
+      std::vector<size_t>::iterator iter = std::find(smootherSummarizationSlots_.begin(), smootherSummarizationSlots_.end(), slot);
+      if(iter == smootherSummarizationSlots_.end()) {
+        // This is a real nonlinear factor. Add it to the smoother factor cache.
+        smootherFactors_.push_back(factors_.at(slot));
+      } else {
+        // This is a marginal factor that was removed and replaced by a new marginal factor. Remove this slot from the separator factor list.
+        smootherSummarizationSlots_.erase(iter);
+      }
+    }
+
+    // Add the linearization point of the moved variables to the smoother cache
+    BOOST_FOREACH(gtsam::Key key, keysToMove) {
+      smootherValues_.insert(key, theta_.at(key));
+    }
+  }
+
+  // Remove the marginalized variables and factors from the filter
+  {
+    // Remove marginalized factors from the factor graph
+    removeFactors(removedFactorSlots);
+
+    // Remove marginalized keys from values (and separator)
+    BOOST_FOREACH(gtsam::Key key, keysToMove) {
+      theta_.erase(key);
+      if(separatorValues_.exists(key)) {
+        separatorValues_.erase(key);
+      }
+    }
+
+    // Permute the ordering such that the removed keys are at the end.
+    // This is a prerequisite for removing them from several structures
+    std::vector<gtsam::Index> toBack;
+    BOOST_FOREACH(gtsam::Key key, keysToMove) {
+      toBack.push_back(ordering_.at(key));
+    }
+    Permutation forwardPermutation = Permutation::PushToBack(toBack, ordering_.size());
+    ordering_.permuteInPlace(forwardPermutation);
+    delta_.permuteInPlace(forwardPermutation);
+
+    // Remove marginalized keys from the ordering, variableIndex, and delta
+    for(size_t i = 0; i < keysToMove.size(); ++i) {
+      ordering_.pop_back();
+      delta_.pop_back();
+    }
+  }
+}
 
 /* ************************************************************************* */
 void ConcurrentBatchFilter::PrintNonlinearFactor(const NonlinearFactor::shared_ptr& factor,
@@ -381,6 +471,96 @@ void ConcurrentBatchFilter::PrintLinearFactor(const GaussianFactor::shared_ptr& 
     std::cout << ")" << std::endl;
   } else {
     std::cout << "{ NULL }" << std::endl;
+  }
+}
+
+/* ************************************************************************* */
+std::vector<Index> ConcurrentBatchFilter::EliminationForest::ComputeParents(const VariableIndex& structure) {
+  // Number of factors and variables
+  const size_t m = structure.nFactors();
+  const size_t n = structure.size();
+
+  static const gtsam::Index none = std::numeric_limits<gtsam::Index>::max();
+
+  // Allocate result parent vector and vector of last factor columns
+  std::vector<gtsam::Index> parents(n, none);
+  std::vector<gtsam::Index> prevCol(m, none);
+
+  // for column j \in 1 to n do
+  for (gtsam::Index j = 0; j < n; j++) {
+    // for row i \in Struct[A*j] do
+    BOOST_FOREACH(const size_t i, structure[j]) {
+      if (prevCol[i] != none) {
+        gtsam::Index k = prevCol[i];
+        // find root r of the current tree that contains k
+        gtsam::Index r = k;
+        while (parents[r] != none)
+          r = parents[r];
+        if (r != j) parents[r] = j;
+      }
+      prevCol[i] = j;
+    }
+  }
+
+  return parents;
+}
+
+/* ************************************************************************* */
+std::vector<ConcurrentBatchFilter::EliminationForest::shared_ptr> ConcurrentBatchFilter::EliminationForest::Create(const gtsam::GaussianFactorGraph& factorGraph, const gtsam::VariableIndex& structure) {
+  // Compute the tree structure
+  std::vector<gtsam::Index> parents(ComputeParents(structure));
+
+  // Number of variables
+  const size_t n = structure.size();
+
+  static const gtsam::Index none = std::numeric_limits<gtsam::Index>::max();
+
+  // Create tree structure
+  std::vector<shared_ptr> trees(n);
+  for (gtsam::Index k = 1; k <= n; k++) {
+    gtsam::Index j = n - k;  // Start at the last variable and loop down to 0
+    trees[j].reset(new EliminationForest(j));  // Create a new node on this variable
+    if (parents[j] != none)  // If this node has a parent, add it to the parent's children
+      trees[parents[j]]->add(trees[j]);
+  }
+
+  // Hang factors in right places
+  BOOST_FOREACH(const sharedFactor& factor, factorGraph) {
+    if(factor && factor->size() > 0) {
+      gtsam::Index j = *std::min_element(factor->begin(), factor->end());
+      if(j < structure.size())
+        trees[j]->add(factor);
+    }
+  }
+
+  return trees;
+}
+
+/* ************************************************************************* */
+ConcurrentBatchFilter::EliminationForest::sharedFactor ConcurrentBatchFilter::EliminationForest::eliminateRecursive(Eliminate function) {
+
+  // Create the list of factors to be eliminated, initially empty, and reserve space
+  gtsam::GaussianFactorGraph factors;
+  factors.reserve(this->factors_.size() + this->subTrees_.size());
+
+  // Add all factors associated with the current node
+  factors.push_back(this->factors_.begin(), this->factors_.end());
+
+  // for all subtrees, eliminate into Bayes net and a separator factor, added to [factors]
+  BOOST_FOREACH(const shared_ptr& child, subTrees_)
+    factors.push_back(child->eliminateRecursive(function));
+
+  // Combine all factors (from this node and from subtrees) into a joint factor
+  gtsam::GaussianFactorGraph::EliminationResult eliminated(function(factors, 1));
+
+  return eliminated.second;
+}
+
+/* ************************************************************************* */
+void ConcurrentBatchFilter::EliminationForest::removeChildrenIndices(std::set<Index>& indices, const ConcurrentBatchFilter::EliminationForest::shared_ptr& tree) {
+  BOOST_FOREACH(const EliminationForest::shared_ptr& child, tree->children()) {
+    indices.erase(child->key());
+    removeChildrenIndices(indices, child);
   }
 }
 
