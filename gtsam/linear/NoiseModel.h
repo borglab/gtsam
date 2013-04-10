@@ -326,9 +326,6 @@ namespace gtsam {
      * While a hard constraint may seem to be a case in which there is infinite error,
      * we do not ever produce an error value of infinity to allow for constraints
      * to actually be optimized rather than self-destructing if not initialized correctly.
-     *
-     * The distance function in this function provides an error model
-     * for a penalty function with a scaling function, assuming a mask of
      */
     class GTSAM_EXPORT Constrained : public Diagonal {
     protected:
@@ -395,7 +392,6 @@ namespace gtsam {
       /**
        * A diagonal noise model created by specifying a Vector of
        * precisions, some of which might be inf
-       * TODO: allow for mu
        */
       static shared_ptr MixedPrecisions(const Vector& mu, const Vector& precisions) {
         return MixedVariances(mu, reciprocal(precisions));
@@ -421,9 +417,9 @@ namespace gtsam {
         return shared_ptr(new Constrained(mu, repeat(dim,0)));
       }
 
-      /** Fully constrained variations */
-      static shared_ptr All(size_t dim, double m) {
-        return shared_ptr(new Constrained(repeat(dim, m), repeat(dim,0)));
+      /** Fully constrained variations with a mu parameter */
+      static shared_ptr All(size_t dim, double mu) {
+        return shared_ptr(new Constrained(repeat(dim, mu), repeat(dim,0)));
       }
 
       virtual void print(const std::string& name) const;
@@ -445,7 +441,7 @@ namespace gtsam {
        * Check constrained is always true
        * FIXME Find a better way of handling this
        */
-      virtual bool isConstrained() const {return true;}
+      virtual bool isConstrained() const { return true; }
 
       /**
        * Returns a Unit version of a constrained noisemodel in which

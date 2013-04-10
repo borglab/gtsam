@@ -1000,7 +1000,7 @@ virtual class Constrained : gtsam::noiseModel::Diagonal {
     static gtsam::noiseModel::Constrained* MixedPrecisions(const Vector& precisions);
 
     static gtsam::noiseModel::Constrained* All(size_t dim);
-    static gtsam::noiseModel::Constrained* All(size_t dim, double m);
+    static gtsam::noiseModel::Constrained* All(size_t dim, double mu);
 
     gtsam::noiseModel::Constrained* unit() const;
 };
