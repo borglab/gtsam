@@ -42,7 +42,6 @@ bool ConcurrentBatchFilter::equals(const ConcurrentFilter& rhs, double tol) cons
       && theta_.equals(filter->theta_)
       && ordering_.equals(filter->ordering_)
       && delta_.equals(filter->delta_)
-      && variableIndex_.equals(filter->variableIndex_)
       && separatorValues_.equals(filter->separatorValues_);
 }
 
