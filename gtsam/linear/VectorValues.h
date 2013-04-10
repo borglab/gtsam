@@ -237,6 +237,9 @@ namespace gtsam {
     template<class CONTAINER>
     void append(const CONTAINER& dimensions);
 
+    /** Removes the last subvector from the VectorValues */
+    void pop_back() { values_.pop_back(); };
+
     /** Set all entries to zero, does not modify the size. */
     void setZero();
 
