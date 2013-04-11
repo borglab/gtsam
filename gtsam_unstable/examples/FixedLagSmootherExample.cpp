@@ -111,6 +111,11 @@ int main(int argc, char** argv) {
     // Update the smoothers with the new factors
     smootherBatch.update(newFactors, newValues, newTimestamps);
     smootherISAM2.update(newFactors, newValues, newTimestamps);
+    // The iSAM2 algorithm only performs one optimization iteration per call to update.
+    // To get equivalent results to the full batch optimization each time, we need to call update multiple times
+    for(size_t i = 0; i < 10; ++i) {
+      smootherISAM2.update();
+    }
 
     // Print the optimized current pose
     cout << setprecision(5) << "Timestamp = " << time << endl;
