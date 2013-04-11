@@ -105,3 +105,9 @@ if (GTSAM_INSTALL_MATLAB_TOOLBOX)
     wrap_library(gtsam_unstable "${mexFlags}" "./" gtsam)
 
 endif(GTSAM_INSTALL_MATLAB_TOOLBOX)
+
+
+# Build examples
+if (GTSAM_BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif(GTSAM_BUILD_EXAMPLES)
