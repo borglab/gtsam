@@ -52,7 +52,7 @@ public:
   void presync() { ConcurrentBatchFilter::presync(); };
   void getSummarizedFactors(NonlinearFactorGraph& summarizedFactors, Values& rootValues) { ConcurrentBatchFilter::getSummarizedFactors(summarizedFactors, rootValues); };
   void getSmootherFactors(NonlinearFactorGraph& smootherFactors, Values& smootherValues) { ConcurrentBatchFilter::getSmootherFactors(smootherFactors, smootherValues); };
-  void synchronize(const NonlinearFactorGraph& summarizedFactors) { ConcurrentBatchFilter::synchronize(summarizedFactors); };
+  void synchronize(const NonlinearFactorGraph& summarizedFactors, const Values& separatorValues) { ConcurrentBatchFilter::synchronize(summarizedFactors, separatorValues); };
   void postsync() { ConcurrentBatchFilter::postsync(); };
 };
 
