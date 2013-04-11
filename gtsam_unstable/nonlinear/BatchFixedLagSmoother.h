@@ -34,7 +34,7 @@ public:
   typedef boost::shared_ptr<BatchFixedLagSmoother> shared_ptr;
 
   /** default constructor */
-  BatchFixedLagSmoother(double smootherLag = 0.0, const LevenbergMarquardtParams& parameters = LevenbergMarquardtParams(), bool enforceConsistency = false) :
+  BatchFixedLagSmoother(double smootherLag = 0.0, const LevenbergMarquardtParams& parameters = LevenbergMarquardtParams(), bool enforceConsistency = true) :
     FixedLagSmoother(smootherLag), parameters_(parameters), enforceConsistency_(enforceConsistency) { };
 
   /** destructor */
