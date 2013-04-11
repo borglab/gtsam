@@ -22,9 +22,26 @@
 #include <gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h>
 #include <gtsam/base/debug.h>
 
-#include <gtsam/linear/GaussianSequentialSolver.h>
-
 namespace gtsam {
+
+/* ************************************************************************* */
+void recursiveMarkAffectedKeys(const Index& index, const ISAM2Clique::shared_ptr& clique, const Ordering& ordering, std::set<Key>& additionalKeys) {
+
+  // Check if the separator keys of the current clique contain the specified key
+  if(std::find(clique->conditional()->beginParents(), clique->conditional()->endParents(), index) != clique->conditional()->endParents()) {
+
+    // Mark the frontal keys of the current clique
+    BOOST_FOREACH(Index i, clique->conditional()->frontals()) {
+      additionalKeys.insert(ordering.key(i));
+    }
+
+    // Recursively mark all of the children
+    BOOST_FOREACH(const ISAM2Clique::shared_ptr& child, clique->children()) {
+      recursiveMarkAffectedKeys(index, child, ordering, additionalKeys);
+    }
+  }
+  // If the key was not found in the separator/parents, then none of its children can have it either
+}
 
 /* ************************************************************************* */
 void IncrementalFixedLagSmoother::print(const std::string& s, const KeyFormatter& keyFormatter) const {
@@ -38,97 +55,6 @@ bool IncrementalFixedLagSmoother::equals(const FixedLagSmoother& rhs, double tol
   return e != NULL
       && FixedLagSmoother::equals(*e, tol)
       && isam_.equals(e->isam_, tol);
-}
-
-/* ************************************************************************* */
-bool checkMarginalizeLeaves(ISAM2& isam, const FastList<Key>& leafKeys) {
-
-  Matrix expectedAugmentedHessian, expected3AugmentedHessian;
-
-  vector<Index> toKeep;
-
-  const Index lastVar = isam.getOrdering().size() - 1;
-
-  for (Index i = 0; i <= lastVar; ++i)
-
-    if (find(leafKeys.begin(), leafKeys.end(), isam.getOrdering().key(i))
-        == leafKeys.end())
-
-      toKeep.push_back(i);
-
-  // Calculate expected marginal from iSAM2 tree
-
-  GaussianFactorGraph isamAsGraph(isam);
-
-  GaussianSequentialSolver solver(isamAsGraph);
-
-  GaussianFactorGraph marginalgfg = *solver.jointFactorGraph(toKeep);
-
-  expectedAugmentedHessian = marginalgfg.augmentedHessian();
-
-  //// Calculate expected marginal from cached linear factors
-
-  //assert(isam.params().cacheLinearizedFactors);
-
-  //GaussianSequentialSolver solver2(isam.linearFactors_, isam.params().factorization == ISAM2Params::QR);
-
-  //expected2AugmentedHessian = solver2.jointFactorGraph(toKeep)->augmentedHessian();
-
-  // Calculate expected marginal from original nonlinear factors
-
-  GaussianSequentialSolver solver3(
-
-      *isam.getFactorsUnsafe().linearize(isam.getLinearizationPoint(),
-          isam.getOrdering()),
-
-      isam.params().factorization == ISAM2Params::QR);
-
-  expected3AugmentedHessian =
-      solver3.jointFactorGraph(toKeep)->augmentedHessian();
-
-  // Do marginalization
-
-  isam.marginalizeLeaves(leafKeys);
-
-  // Check
-
-  GaussianFactorGraph actualMarginalGraph(isam);
-
-  Matrix actualAugmentedHessian = actualMarginalGraph.augmentedHessian();
-
-  //Matrix actual2AugmentedHessian = linearFactors_.augmentedHessian();
-
-  Matrix actual3AugmentedHessian = isam.getFactorsUnsafe().linearize(
-
-  isam.getLinearizationPoint(), isam.getOrdering())->augmentedHessian();
-
-  assert(actualAugmentedHessian.unaryExpr(std::ptr_fun(&std::isfinite<double>)).all());
-
-  // Check full marginalization
-  std::cout << "Checking treeEqual..." << std::endl;
-  bool treeEqual = assert_equal(expectedAugmentedHessian,
-      actualAugmentedHessian, 1e-6);
-
-  //bool linEqual = assert_equal(expected2AugmentedHessian, actualAugmentedHessian, 1e-6);
-  std::cout << "Checking nonlinEqual..." << std::endl;
-  bool nonlinEqual = assert_equal(expected3AugmentedHessian,
-      actualAugmentedHessian, 1e-6);
-
-  //bool linCorrect = assert_equal(expected3AugmentedHessian, expected2AugmentedHessian, 1e-6);
-
-  //actual2AugmentedHessian.bottomRightCorner(1,1) = expected3AugmentedHessian.bottomRightCorner(1,1); bool afterLinCorrect = assert_equal(expected3AugmentedHessian, actual2AugmentedHessian, 1e-6);
-
-  actual3AugmentedHessian.bottomRightCorner(1, 1) =
-      expected3AugmentedHessian.bottomRightCorner(1, 1);
-
-  std::cout << "Checking afterNonlinCorrect..." << std::endl;
-  bool afterNonlinCorrect = assert_equal(expected3AugmentedHessian,
-      actual3AugmentedHessian, 1e-6);
-
-  bool ok = treeEqual && /*linEqual &&*/nonlinEqual
-      && /*linCorrect &&*//*afterLinCorrect &&*/afterNonlinCorrect;
-
-  return ok;
 }
 
 /* ************************************************************************* */
@@ -177,8 +103,19 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(const NonlinearFact
     std::cout << std::endl;
   }
 
+  // Mark additional keys between the marginalized keys and the leaves
+  std::set<gtsam::Key> additionalKeys;
+  BOOST_FOREACH(gtsam::Key key, marginalizableKeys) {
+    gtsam::Index index = isam_.getOrdering().at(key);
+    gtsam::ISAM2Clique::shared_ptr clique = isam_[index];
+    BOOST_FOREACH(const gtsam::ISAM2Clique::shared_ptr& child, clique->children()) {
+      recursiveMarkAffectedKeys(index, child, isam_.getOrdering(), additionalKeys);
+    }
+  }
+  KeyList additionalMarkedKeys(additionalKeys.begin(), additionalKeys.end());
+
   // Update iSAM2
-  ISAM2Result isamResult = isam_.update(newFactors, newTheta, FastVector<size_t>(), constrainedKeys);
+  ISAM2Result isamResult = isam_.update(newFactors, newTheta, FastVector<size_t>(), constrainedKeys, boost::none, additionalMarkedKeys);
 
   if(debug) {
     PrintSymbolicTree(isam_, "Bayes Tree After Update, Before Marginalization:");
@@ -188,8 +125,7 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(const NonlinearFact
   // Marginalize out any needed variables
   if(marginalizableKeys.size() > 0) {
     FastList<Key> leafKeys(marginalizableKeys.begin(), marginalizableKeys.end());
-//    isam_.experimentalMarginalizeLeaves(leafKeys);
-    checkMarginalizeLeaves(isam_, leafKeys);
+    isam_.marginalizeLeaves(leafKeys);
   }
 
   // Remove marginalized keys from the KeyTimestampMap
