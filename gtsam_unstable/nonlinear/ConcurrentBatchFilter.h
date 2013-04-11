@@ -196,7 +196,7 @@ private:
    *  This effectively moves the separator.
    */
   static NonlinearFactorGraph marginalize(const NonlinearFactorGraph& graph, const Values& values,
-      const Ordering& ordering, const std::vector<Key>& marginalizeKeys, const GaussianFactorGraph::Eliminate& function = EliminateQR);
+      const Ordering& ordering, const std::set<Key>& marginalizeKeys, const GaussianFactorGraph::Eliminate& function = EliminateQR);
 
   /** Print just the nonlinear keys in a nonlinear factor */
   static void PrintNonlinearFactor(const NonlinearFactor::shared_ptr& factor,

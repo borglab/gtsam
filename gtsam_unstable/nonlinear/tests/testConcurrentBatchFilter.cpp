@@ -19,12 +19,16 @@
 #include <gtsam_unstable/nonlinear/ConcurrentBatchFilter.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/LinearContainerFactor.h>
 #include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/Key.h>
+#include <gtsam/linear/GaussianSequentialSolver.h>
+#include <gtsam/inference/JunctionTree.h>
 #include <gtsam/geometry/Pose3.h>
 #include <CppUnitLite/TestHarness.h>
 
@@ -59,12 +63,27 @@ public:
 /* ************************************************************************* */
 bool hessian_equal(const NonlinearFactorGraph& expected, const NonlinearFactorGraph& actual, const Values& theta, double tol = 1e-9) {
 
+  // Verify the set of keys in both graphs are the same
   FastSet<Key> expectedKeys = expected.keys();
   FastSet<Key> actualKeys = actual.keys();
+  bool keys_equal = (expectedKeys.size() == actualKeys.size()) && std::equal(expectedKeys.begin(), expectedKeys.end(), actualKeys.begin());
+  if(!keys_equal) {
+    std::cout << "Hessian Keys not equal:" << std::endl;
 
-  // Verify the set of keys in both graphs are the same
-  if(expectedKeys.size() != actualKeys.size() || !std::equal(expectedKeys.begin(), expectedKeys.end(), actualKeys.begin()))
+    std::cout << "Expected Keys: ";
+    BOOST_FOREACH(Key key, expectedKeys) {
+      std::cout << DefaultKeyFormatter(key) << " ";
+    }
+    std::cout << std::endl;
+
+    std::cout << "Actual Keys: ";
+    BOOST_FOREACH(Key key, actualKeys) {
+      std::cout << DefaultKeyFormatter(key) << " ";
+    }
+    std::cout << std::endl;
+
     return false;
+  }
 
   // Create an ordering
   Ordering ordering;
@@ -356,60 +375,64 @@ Values BatchOptimize(const NonlinearFactorGraph& graph, const Values& theta, con
   return optimizer.values();
 }
 
-///* ************************************************************************* */
-//void FindFactorsWithAny(const std::set<Key>& keys, const NonlinearFactorGraph& sourceFactors, NonlinearFactorGraph& destinationFactors) {
-//
-//  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, sourceFactors) {
-//    NonlinearFactor::const_iterator key = factor->begin();
-//    while((key != factor->end()) && (!std::binary_search(keys.begin(), keys.end(), *key))) {
-//      ++key;
-//    }
-//    if(key != factor->end()) {
-//      destinationFactors.push_back(factor);
-//    }
-//  }
-//
-//}
-//
-///* ************************************************************************* */
-//void FindFactorsWithOnly(const std::set<Key>& keys, const NonlinearFactorGraph& sourceFactors, NonlinearFactorGraph& destinationFactors) {
-//
-//  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, sourceFactors) {
-//    NonlinearFactor::const_iterator key = factor->begin();
-//    while((key != factor->end()) && (std::binary_search(keys.begin(), keys.end(), *key))) {
-//      ++key;
-//    }
-//    if(key == factor->end()) {
-//      destinationFactors.push_back(factor);
-//    }
-//  }
-//
-//}
-//
-///* ************************************************************************* */
-//typedef BayesTree<GaussianConditional,ISAM2Clique>::sharedClique Clique;
-//void SymbolicPrintTree(const Clique& clique, const Ordering& ordering, const std::string indent = "") {
-//  std::cout << indent << "P( ";
-//  BOOST_FOREACH(Index index, clique->conditional()->frontals()){
-//    std::cout << DefaultKeyFormatter(ordering.key(index)) << " ";
-//  }
-//  if(clique->conditional()->nrParents() > 0) {
-//    std::cout << "| ";
-//  }
-//  BOOST_FOREACH(Index index, clique->conditional()->parents()){
-//    std::cout << DefaultKeyFormatter(ordering.key(index)) << " ";
-//  }
-//  std::cout << ")" << std::endl;
-//
-//  BOOST_FOREACH(const Clique& child, clique->children()) {
-//    SymbolicPrintTree(child, ordering, indent+"  ");
-//  }
-//}
-//
-//}
+/* ************************************************************************* */
+NonlinearFactorGraph MarginalFactors(const NonlinearFactorGraph& factors, const Values& values, const std::set<Key>& remainingKeys) {
+
+  // Create an ordering with the remaining variable last
+  std::map<Key, int> constraints;
+  BOOST_FOREACH(Key key, remainingKeys) {
+    constraints[key] = 1;
+  }
+  Ordering ordering = *factors.orderingCOLAMDConstrained(values, constraints);
+
+  // Convert the remaining keys into indices
+  std::vector<Index> remainingIndices;
+  BOOST_FOREACH(Key key, remainingKeys) {
+    remainingIndices.push_back(ordering.at(key));
+  }
+
+  // Solve for the Gaussian marginal factors
+  GaussianSequentialSolver gss(*factors.linearize(values, ordering), true);
+  GaussianFactorGraph linearMarginals = *gss.jointFactorGraph(remainingIndices);
+
+  // Convert to LinearContainFactors
+  return LinearContainerFactor::convertLinearGraph(linearMarginals, ordering, values);
+}
 
 /* ************************************************************************* */
-TEST_UNSAFE( ConcurrentBatchFilter, update_batch )
+template<class CONTAINER>
+void FindFactorsWithAny(const CONTAINER& keys, const NonlinearFactorGraph& sourceFactors, NonlinearFactorGraph& destinationFactors) {
+
+  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, sourceFactors) {
+    NonlinearFactor::const_iterator key = factor->begin();
+    while((key != factor->end()) && (!std::binary_search(keys.begin(), keys.end(), *key))) {
+      ++key;
+    }
+    if(key != factor->end()) {
+      destinationFactors.push_back(factor);
+    }
+  }
+
+}
+
+/* ************************************************************************* */
+template<class CONTAINER>
+void FindFactorsWithOnly(const CONTAINER& keys, const NonlinearFactorGraph& sourceFactors, NonlinearFactorGraph& destinationFactors) {
+
+  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, sourceFactors) {
+    NonlinearFactor::const_iterator key = factor->begin();
+    while((key != factor->end()) && (std::binary_search(keys.begin(), keys.end(), *key))) {
+      ++key;
+    }
+    if(key == factor->end()) {
+      destinationFactors.push_back(factor);
+    }
+  }
+
+}
+
+/* ************************************************************************* */
+TEST( ConcurrentBatchFilter, update_batch )
 {
   // Test the 'update' function of the ConcurrentBatchFilter in a nonlinear environment.
   // Thus, a full L-M optimization and the ConcurrentBatchFilter results should be identical
@@ -441,7 +464,7 @@ TEST_UNSAFE( ConcurrentBatchFilter, update_batch )
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE( ConcurrentBatchFilter, update_batch_with_marginalization )
+TEST( ConcurrentBatchFilter, update_batch_with_marginalization )
 {
   // Test the 'update' function of the ConcurrentBatchFilter in a nonlinear environment.
   // Thus, a full L-M optimization and the ConcurrentBatchFilter results should be identical
@@ -483,7 +506,7 @@ TEST_UNSAFE( ConcurrentBatchFilter, update_batch_with_marginalization )
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE( ConcurrentBatchFilter, update_incremental )
+TEST( ConcurrentBatchFilter, update_incremental )
 {
   // Test the 'update' function of the ConcurrentBatchFilter in a nonlinear environment.
   // Thus, a full L-M optimization and the ConcurrentBatchFilter results should be identical
@@ -525,7 +548,7 @@ TEST_UNSAFE( ConcurrentBatchFilter, update_incremental )
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE( ConcurrentBatchFilter, update_incremental_with_marginalization )
+TEST( ConcurrentBatchFilter, update_incremental_with_marginalization )
 {
   // Test the 'update' function of the ConcurrentBatchFilter in a nonlinear environment.
   // Thus, a full L-M optimization and the ConcurrentBatchFilter results should be identical
@@ -577,151 +600,227 @@ TEST_UNSAFE( ConcurrentBatchFilter, update_incremental_with_marginalization )
 
 }
 
-///* ************************************************************************* */
-//TEST_UNSAFE( ConcurrentBatchFilter, synchronize )
-//{
-//  // Test the 'synchronize' function of the ConcurrentBatchFilter in a nonlinear environment.
-//  // The filter is operating on a known tree structure, so the factors and summarization can
-//  // be predicted for testing purposes
+/* ************************************************************************* */
+TEST_UNSAFE( ConcurrentBatchFilter, synchronize )
+{
+  // Test the 'synchronize' function of the ConcurrentBatchFilter in a nonlinear environment.
+  // The filter is operating on a known tree structure, so the factors and summarization can
+  // be predicted for testing purposes
+
+  // Create a set of optimizer parameters
+  LevenbergMarquardtParams parameters;
+
+  // Create a Concurrent Batch Filter
+  ConcurrentBatchFilterTester filter(parameters);
+
+  // Create containers to keep the full graph
+  Values newTheta, fullTheta;
+  NonlinearFactorGraph newGraph, fullGraph;
+
+  // Create factors from t=0 to t=12
+  //  BAYES TREE:
+  //    P( X7 X9 X12 )
+  //      P( X10 | X9 )
+  //        P( X11 | X10 )
+  //      P( X8 | X9 )
+  //      P( X6 | X7 X9 )
+  //        P( X3 X5 | X6 )
+  //          P( X2 | X3 )
+  //          P( X1 | X3 )
+  //            P( X0 | X1 )
+  //      P( X4 | X7 )
+  CreateFactors(newGraph, newTheta, 0, 13);
+  fullTheta.insert(newTheta);
+  fullGraph.push_back(newGraph);
+  Values optimalTheta = BatchOptimize(fullGraph, fullTheta);
+
+  // Optimize with Concurrent Batch Filter
+  FastList<Key> marginalizeKeys;
+  marginalizeKeys.push_back(Symbol('X',  0));
+  marginalizeKeys.push_back(Symbol('X',  1));
+  marginalizeKeys.push_back(Symbol('X',  2));
+  marginalizeKeys.push_back(Symbol('X',  3));
+  marginalizeKeys.push_back(Symbol('X',  4));
+  marginalizeKeys.push_back(Symbol('X',  5));
+  marginalizeKeys.push_back(Symbol('X',  6));
+  filter.update(newGraph, newTheta, marginalizeKeys);
+
+  // Extract the nonlinear factors that should be sent to the smoother
+  NonlinearFactorGraph expectedSmootherFactors;
+  FindFactorsWithAny(marginalizeKeys, fullGraph, expectedSmootherFactors);
+
+  // Extract smoother values
+  Values expectedSmootherValues;
+  BOOST_FOREACH(Key key, marginalizeKeys) {
+    expectedSmootherValues.insert(key, optimalTheta.at(key));
+  }
+
+  // Extract the filter summarized factors on the separator
+  // ( as defined by the smoother branch separators {X7,X9} and {X7} )
+  std::set<Key> separatorKeys;
+  separatorKeys.insert(Symbol('X',  7));
+  separatorKeys.insert(Symbol('X',  9));
+
+  // Marginal factors remaining after marginalizing out all non-separator keys from the filter factors
+  std::set<Key> filterKeys;
+  filterKeys.insert(Symbol('X',  7));
+  filterKeys.insert(Symbol('X',  8));
+  filterKeys.insert(Symbol('X',  9));
+  filterKeys.insert(Symbol('X', 10));
+  filterKeys.insert(Symbol('X', 11));
+  filterKeys.insert(Symbol('X', 12));
+  NonlinearFactorGraph filterFactors;
+  FindFactorsWithOnly(filterKeys, fullGraph, filterFactors);
+  Values filterValues;
+  BOOST_FOREACH(Key key, filterKeys) {
+    filterValues.insert(key, optimalTheta.at(key));
+  }
+  NonlinearFactorGraph expectedFilterSumarization = MarginalFactors(filterFactors, filterValues, separatorKeys);
+
+  // Extract the new separator values
+  Values expectedSeparatorValues;
+  BOOST_FOREACH(Key key, separatorKeys) {
+    expectedSeparatorValues.insert(key, optimalTheta.at(key));
+  }
+
+  // Start the synchronization process
+  NonlinearFactorGraph actualSmootherFactors, actualFilterSumarization, smootherSummarization;
+  Values actualSmootherValues, actualSeparatorValues, smootherSeparatorValues;
+  filter.presync();
+  filter.synchronize(smootherSummarization, smootherSeparatorValues);  // Supplying an empty factor graph here
+  filter.getSmootherFactors(actualSmootherFactors, actualSmootherValues);
+  filter.getSummarizedFactors(actualFilterSumarization, actualSeparatorValues);
+  filter.postsync();
+
+  // Compare filter sync variables versus the expected
+  CHECK(hessian_equal(expectedSmootherFactors, actualSmootherFactors, optimalTheta, 1e-8));
+  CHECK(assert_equal(expectedSmootherValues, actualSmootherValues, 1e-4));
+  CHECK(hessian_equal(expectedFilterSumarization, actualFilterSumarization, optimalTheta, 1e-9));
+  CHECK(assert_equal(expectedSeparatorValues, actualSeparatorValues, 1e-4));
+
+
+
+
+
+  // Calculate the quantities that would be coming from the smoother for the next iteration
+  expectedSmootherValues.insert(expectedSeparatorValues);
+  smootherSummarization = MarginalFactors(expectedSmootherFactors, expectedSmootherValues, separatorKeys);
+  smootherSeparatorValues = expectedSeparatorValues;
+
+  // Now add additional factors to the filter and re-sync
+  //  BAYES TREE:
+  //    P( X14 X16 X19 )
+  //      P( X17 | X16 )
+  //        P( X18 | X17 )
+  //      P( X15 | X16 )
+  //      P( X13 | X14 X16 )
+  //        P( X11 | X13 X14 )
+  //          P( X10 | X11 X13 )
+  //            P( X12 | X10 X13 )
+  //              P( X9 | X12 X10 )
+  //                P( X7 | X9 X12 )
+  //                  P( X6 | X7 X9 )
+  //                    P( X3 X5 | X6 )
+  //                      P( X2 | X3 )
+  //                      P( X1 | X3 )
+  //                        P( X0 | X1 )
+  //                  P( X4 | X7 )
+  //                P( X8 | X9 )
+  newGraph.resize(0);  newTheta.clear();
+  CreateFactors(newGraph, newTheta, 13, 20);
+  fullTheta.insert(newTheta);
+  fullGraph.push_back(newGraph);
+  optimalTheta = BatchOptimize(fullGraph, fullTheta);
+
+  // Optimize with Concurrent Batch Filter
+  marginalizeKeys.clear();
+  marginalizeKeys.push_back(Symbol('X',  7));
+  marginalizeKeys.push_back(Symbol('X',  8));
+  marginalizeKeys.push_back(Symbol('X',  9));
+  marginalizeKeys.push_back(Symbol('X', 10));
+  marginalizeKeys.push_back(Symbol('X', 11));
+  marginalizeKeys.push_back(Symbol('X', 12));
+  marginalizeKeys.push_back(Symbol('X', 13));
+  filter.update(newGraph, newTheta, marginalizeKeys);
+
+  // Extract the nonlinear factors that should be sent to the smoother
+  NonlinearFactorGraph newSmootherFactors;
+  FindFactorsWithAny(marginalizeKeys, fullGraph, newSmootherFactors);
+  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, expectedSmootherFactors) {
+    NonlinearFactorGraph::iterator iter = std::find(newSmootherFactors.begin(), newSmootherFactors.end(), factor);
+    if(iter != newSmootherFactors.end()) {
+      newSmootherFactors.remove(iter - newSmootherFactors.begin());
+    }
+  }
+  expectedSmootherFactors.resize(0);
+  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, newSmootherFactors) {
+    if(factor) {
+      expectedSmootherFactors.push_back(factor);
+    }
+  }
+
+  // Extract smoother values
+  expectedSmootherValues.clear();
+  BOOST_FOREACH(Key key, marginalizeKeys) {
+    expectedSmootherValues.insert(key, optimalTheta.at(key));
+  }
+
+  // Extract the filter summarized factors on the separator
+  // ( as defined by the smoother branch separators {X14,X16} )
+  separatorKeys.clear();
+  separatorKeys.insert(Symbol('X', 14));
+  separatorKeys.insert(Symbol('X', 16));
+
+  // Marginal factors remaining after marginalizing out all non-separator keys from the filter factors
+  filterKeys.clear();
+  filterKeys.insert(Symbol('X', 14));
+  filterKeys.insert(Symbol('X', 15));
+  filterKeys.insert(Symbol('X', 16));
+  filterKeys.insert(Symbol('X', 17));
+  filterKeys.insert(Symbol('X', 18));
+  filterKeys.insert(Symbol('X', 19));
+  filterFactors.resize(0);
+  FindFactorsWithOnly(filterKeys, fullGraph, filterFactors);
+  filterValues.clear();
+  BOOST_FOREACH(Key key, filterKeys) {
+    filterValues.insert(key, optimalTheta.at(key));
+  }
+  expectedFilterSumarization = MarginalFactors(filterFactors, filterValues, separatorKeys);
+
+  // Extract the new separator values
+  expectedSeparatorValues.clear();
+  BOOST_FOREACH(Key key, separatorKeys) {
+    expectedSeparatorValues.insert(key, optimalTheta.at(key));
+  }
+
+
+  // Start the synchronization process
+  actualSmootherFactors.resize(0); actualFilterSumarization.resize(0);
+  actualSmootherValues.clear(); actualSeparatorValues.clear();
+  smootherSeparatorValues = expectedSeparatorValues;
+  filter.presync();
+  filter.synchronize(smootherSummarization, smootherSeparatorValues);
+  filter.getSmootherFactors(actualSmootherFactors, actualSmootherValues);
+  filter.getSummarizedFactors(actualFilterSumarization, actualSeparatorValues);
+  filter.postsync();
+
+
+
+  // Compare filter sync variables versus the expected
+  CHECK(hessian_equal(expectedSmootherFactors, actualSmootherFactors, optimalTheta, 1e-8));
+  CHECK(assert_equal(expectedSmootherValues, actualSmootherValues, 1e-3));
+  CHECK(hessian_equal(expectedFilterSumarization, actualFilterSumarization, optimalTheta, 1e-8));
+  CHECK(assert_equal(expectedSeparatorValues, actualSeparatorValues, 1e-4));
 //
-//  // Create a set of optimizer parameters
-//  LevenbergMarquardtParams parameters;
-//  double lag = 4.0;
 //
-//  // Create a Concurrent Batch Filter
-//  ConcurrentBatchFilterTester filter(parameters, lag);
 //
-//  // Create containers to keep the full graph
-//  Values newTheta, fullTheta;
-//  NonlinearFactorGraph newGraph, fullGraph;
-//  ConcurrentBatchFilter::KeyTimestampMap newTimestamps;
 //
-//  // Create all factors
-//  CreateFactors(newGraph, newTheta, newTimestamps, 0, 13);
-//  fullTheta.insert(newTheta);
-//  fullGraph.push_back(newGraph);
 //
-//  // Optimize with Concurrent Batch Filter
-//  filter.update(newGraph, newTheta, newTimestamps);
-//  Values updatedTheta = filter.calculateEstimate();
+//
+//
 //
 //  // Eliminate the factor graph into a Bayes Tree to create the summarized factors
-//  // Create Ordering
-//  std::map<Key, int> constraints;
-//  constraints[Symbol('X',  8)] = 1;
-//  constraints[Symbol('X',  9)] = 1;
-//  constraints[Symbol('X', 10)] = 1;
-//  constraints[Symbol('X', 11)] = 1;
-//  constraints[Symbol('X', 12)] = 1;
-//  Ordering ordering = *fullGraph.orderingCOLAMDConstrained(fullTheta, constraints);
-//  // Linearize into a Gaussian Factor Graph
-//  GaussianFactorGraph linearGraph = *fullGraph.linearize(fullTheta, ordering);
-//  // Eliminate into a Bayes Net with iSAM2-type cliques
-//  JunctionTree<GaussianFactorGraph, ISAM2Clique> jt(linearGraph);
-//  ISAM2Clique::shared_ptr root = jt.eliminate(EliminateQR);
-//  BayesTree<GaussianConditional, ISAM2Clique> bayesTree;
-//  bayesTree.insert(root);
 //
-//  //  std::cout << "BAYES TREE:" << std::endl;
-//  //  SymbolicPrintTree(root, ordering.invert(), "  ");
-//
-//  //  BAYES TREE:
-//  //    P( X7 X9 X12 )
-//  //      P( X10 | X9 )
-//  //        P( X11 | X10 )
-//  //      P( X8 | X9 )
-//  //      P( X6 | X7 X9 )
-//  //        P( X3 X5 | X6 )
-//  //          P( X2 | X3 )
-//  //          P( X1 | X3 )
-//  //            P( X0 | X1 )
-//  //      P( X4 | X7 )
-//
-//  // Extract the nonlinear factors that should be sent to the smoother
-//  std::vector<Key> smootherKeys;
-//  smootherKeys.push_back(Symbol('X',  0));
-//  smootherKeys.push_back(Symbol('X',  1));
-//  smootherKeys.push_back(Symbol('X',  2));
-//  smootherKeys.push_back(Symbol('X',  3));
-//  smootherKeys.push_back(Symbol('X',  4));
-//  smootherKeys.push_back(Symbol('X',  5));
-//  smootherKeys.push_back(Symbol('X',  6));
-//  NonlinearFactorGraph expectedSmootherFactors;
-//  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, fullGraph) {
-//    if(std::find_first_of(factor->begin(), factor->end(), smootherKeys.begin(), smootherKeys.end()) != factor->end()) {
-//      expectedSmootherFactors.push_back(factor);
-//    }
-//  }
-//
-//  // Extract smoother values
-//  Values expectedSmootherValues;
-//  expectedSmootherValues.insert(Symbol('X',  0), updatedTheta.at(Symbol('X',  0)));
-//  expectedSmootherValues.insert(Symbol('X',  1), updatedTheta.at(Symbol('X',  1)));
-//  expectedSmootherValues.insert(Symbol('X',  2), updatedTheta.at(Symbol('X',  2)));
-//  expectedSmootherValues.insert(Symbol('X',  3), updatedTheta.at(Symbol('X',  3)));
-//  expectedSmootherValues.insert(Symbol('X',  4), updatedTheta.at(Symbol('X',  4)));
-//  expectedSmootherValues.insert(Symbol('X',  5), updatedTheta.at(Symbol('X',  5)));
-//  expectedSmootherValues.insert(Symbol('X',  6), updatedTheta.at(Symbol('X',  6)));
-//
-//  // Extract the filter summarized factors
-//  // Cached factors that represent the filter side (i.e. the X8 and X10 clique)
-//  NonlinearFactorGraph expectedFilterSumarization;
-//  expectedFilterSumarization.add(LinearizedJacobianFactor(boost::static_pointer_cast<JacobianFactor>(bayesTree.nodes().at(ordering.at(Symbol('X',  8)))->cachedFactor()), ordering, fullTheta));
-//  expectedFilterSumarization.add(LinearizedJacobianFactor(boost::static_pointer_cast<JacobianFactor>(bayesTree.nodes().at(ordering.at(Symbol('X', 10)))->cachedFactor()), ordering, fullTheta));
-//  // And any factors that involve only the root (X7, X9, X12)
-//  std::vector<Key> rootKeys;
-//  rootKeys.push_back(Symbol('X',  7));
-//  rootKeys.push_back(Symbol('X',  9));
-//  rootKeys.push_back(Symbol('X', 12));
-//  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, fullGraph) {
-//    size_t count = 0;
-//    BOOST_FOREACH(Key key, *factor) {
-//      if(std::binary_search(rootKeys.begin(), rootKeys.end(), key)) ++count;
-//    }
-//    if(count == factor->size()) expectedFilterSumarization.push_back(factor);
-//  }
-//
-//  // Extract the new root values
-//  Values expectedRootValues;
-//  expectedRootValues.insert(Symbol('X',  7), updatedTheta.at(Symbol('X',  7)));
-//  expectedRootValues.insert(Symbol('X',  9), updatedTheta.at(Symbol('X',  9)));
-//  expectedRootValues.insert(Symbol('X', 12), updatedTheta.at(Symbol('X', 12)));
-//
-//
-//
-//  // Start the synchronization process
-//  NonlinearFactorGraph actualSmootherFactors, actualFilterSumarization, smootherSummarization;
-//  Values actualSmootherValues, actualRootValues;
-//  filter.presync();
-//  filter.synchronize(smootherSummarization);  // Supplying an empty factor graph here
-//  filter.getSmootherFactors(actualSmootherFactors, actualSmootherValues);
-//  filter.getSummarizedFactors(actualFilterSumarization, actualRootValues);
-//  filter.postsync();
-//
-//
-//
-//  // Compare filter sync variables versus the expected
-//  CHECK(hessian_equal(expectedSmootherFactors, actualSmootherFactors, updatedTheta, 1e-8));
-//  CHECK(assert_equal(expectedSmootherValues, actualSmootherValues, 1e-4));
-//  CHECK(hessian_equal(expectedFilterSumarization, actualFilterSumarization, updatedTheta, 1e-9));
-//  CHECK(assert_equal(expectedRootValues, actualRootValues, 1e-4));
-//
-//
-//
-//
-//
-//
-//  // Now add additional factors to the filter and re-sync
-//  newGraph.resize(0);  newTheta.clear();  newTimestamps.clear();
-//  CreateFactors(newGraph, newTheta, newTimestamps, 13, 20);
-//  fullTheta.insert(newTheta);
-//  fullGraph.push_back(newGraph);
-//
-//  // Optimize with Concurrent Batch Filter
-//  filter.update(newGraph, newTheta, newTimestamps);
-//  updatedTheta = filter.calculateEstimate();
-//
-//  // Eliminate the factor graph into a Bayes Tree to create the summarized factors
 //  // Create Ordering
 //  constraints.clear();
 //  constraints[Symbol('X', 15)] = 1;
@@ -729,126 +828,78 @@ TEST_UNSAFE( ConcurrentBatchFilter, update_incremental_with_marginalization )
 //  constraints[Symbol('X', 17)] = 1;
 //  constraints[Symbol('X', 18)] = 1;
 //  constraints[Symbol('X', 19)] = 1;
-//  ordering = *fullGraph.orderingCOLAMDConstrained(fullTheta, constraints);
+//  ordering = *fullGraph.orderingCOLAMDConstrained(optimalTheta, constraints);
 //  // Linearize into a Gaussian Factor Graph
-//  linearGraph = *fullGraph.linearize(fullTheta, ordering);
+//  linearGraph = *fullGraph.linearize(optimalTheta, ordering);
 //  // Eliminate into a Bayes Net with iSAM2-type cliques
 //  jt = JunctionTree<GaussianFactorGraph, ISAM2Clique>(linearGraph);
 //  root = jt.eliminate(EliminateQR);
 //  bayesTree = BayesTree<GaussianConditional, ISAM2Clique>();
 //  bayesTree.insert(root);
 //
-//  //  std::cout << "BAYES TREE:" << std::endl;
-//  //  SymbolicPrintTree(root, ordering.invert(), "  ");
-//
-//  //  BAYES TREE:
-//  //    P( X14 X16 X19 )
-//  //      P( X17 | X16 )
-//  //        P( X18 | X17 )
-//  //      P( X15 | X16 )
-//  //      P( X13 | X14 X16 )
-//  //        P( X11 | X13 X14 )
-//  //          P( X10 | X11 X13 )
-//  //            P( X12 | X10 X13 )
-//  //              P( X9 | X12 X10 )
-//  //                P( X7 | X9 X12 )
-//  //                  P( X6 | X7 X9 )
-//  //                    P( X3 X5 | X6 )
-//  //                      P( X2 | X3 )
-//  //                      P( X1 | X3 )
-//  //                        P( X0 | X1 )
-//  //                  P( X4 | X7 )
-//  //                P( X8 | X9 )
 //
 //  // Extract the cached factors for X4 and X6. These are the new smoother summarized factors
-//  // TODO: I'm concerned about the linearization point used to create these factors. It may need to be the updated lin points?
 //  smootherSummarization.resize(0);
-//  smootherSummarization.add(LinearizedJacobianFactor(boost::static_pointer_cast<JacobianFactor>(bayesTree.nodes().at(ordering.at(Symbol('X', 4)))->cachedFactor()), ordering, fullTheta));
-//  smootherSummarization.add(LinearizedJacobianFactor(boost::static_pointer_cast<JacobianFactor>(bayesTree.nodes().at(ordering.at(Symbol('X', 6)))->cachedFactor()), ordering, fullTheta));
-//
-//
-//
-//
+//  smootherSummarization.add(LinearContainerFactor(bayesTree.nodes().at(ordering.at(Symbol('X', 4)))->cachedFactor(), ordering, optimalTheta));
+//  smootherSummarization.add(LinearContainerFactor(bayesTree.nodes().at(ordering.at(Symbol('X', 6)))->cachedFactor(), ordering, optimalTheta));
 //
 //  // Extract the nonlinear factors that should be sent to the smoother
-//  smootherKeys.clear();
-//  smootherKeys.push_back(Symbol('X',  8));
-//  smootherKeys.push_back(Symbol('X', 10));
-//  smootherKeys.push_back(Symbol('X', 11));
-//  smootherKeys.push_back(Symbol('X', 13));
 //  expectedSmootherFactors.resize(0);
 //  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, fullGraph) {
-//    if(std::find_first_of(factor->begin(), factor->end(), smootherKeys.begin(), smootherKeys.end()) != factor->end()) {
+//    if(std::find_first_of(factor->begin(), factor->end(), marginalizeKeys.begin(), marginalizeKeys.end()) != factor->end()) {
 //      expectedSmootherFactors.push_back(factor);
 //    }
 //  }
-//  // And any factors that involve only the old root (X7, X9, X12)
-//  rootKeys.clear();
-//  rootKeys.push_back(Symbol('X',  7));
-//  rootKeys.push_back(Symbol('X',  9));
-//  rootKeys.push_back(Symbol('X', 12));
-//  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, fullGraph) {
-//    size_t count = 0;
-//    BOOST_FOREACH(Key key, *factor) {
-//      if(std::binary_search(rootKeys.begin(), rootKeys.end(), key)) ++count;
-//    }
-//    if(count == factor->size()) expectedSmootherFactors.push_back(factor);
-//  }
+//  // And any factors that involve only the old separator (X7, X9)
+//  separatorKeys.clear();
+//  separatorKeys.insert(Symbol('X',  7));
+//  separatorKeys.insert(Symbol('X',  9));
+//  FindFactorsWithOnly(separatorKeys, fullGraph, expectedSmootherFactors);
 //
 //
 //  // Extract smoother Values
 //  expectedSmootherValues.clear();
-//  expectedSmootherValues.insert(Symbol('X',  7), updatedTheta.at(Symbol('X',  7)));
-//  expectedSmootherValues.insert(Symbol('X',  8), updatedTheta.at(Symbol('X',  8)));
-//  expectedSmootherValues.insert(Symbol('X',  9), updatedTheta.at(Symbol('X',  9)));
-//  expectedSmootherValues.insert(Symbol('X', 10), updatedTheta.at(Symbol('X', 10)));
-//  expectedSmootherValues.insert(Symbol('X', 11), updatedTheta.at(Symbol('X', 11)));
-//  expectedSmootherValues.insert(Symbol('X', 12), updatedTheta.at(Symbol('X', 12)));
-//  expectedSmootherValues.insert(Symbol('X', 13), updatedTheta.at(Symbol('X', 13)));
+//  BOOST_FOREACH(Key key, marginalizeKeys) {
+//    expectedSmootherValues.insert(key, optimalTheta.at(key));
+//  }
 //
 //  // Extract the filter summarized factors
 //  // Cached factors that represent the filter side (i.e. the X15 and X17 clique)
 //  expectedFilterSumarization.resize(0);
-//  expectedFilterSumarization.add(LinearizedJacobianFactor(boost::static_pointer_cast<JacobianFactor>(bayesTree.nodes().at(ordering.at(Symbol('X', 15)))->cachedFactor()), ordering, fullTheta));
-//  expectedFilterSumarization.add(LinearizedJacobianFactor(boost::static_pointer_cast<JacobianFactor>(bayesTree.nodes().at(ordering.at(Symbol('X', 17)))->cachedFactor()), ordering, fullTheta));
-//  // And any factors that involve only the root (X14, X16, X17)
-//  rootKeys.clear();
-//  rootKeys.push_back(Symbol('X', 14));
-//  rootKeys.push_back(Symbol('X', 16));
-//  rootKeys.push_back(Symbol('X', 19));
-//  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, fullGraph) {
-//    size_t count = 0;
-//    BOOST_FOREACH(Key key, *factor) {
-//      if(std::binary_search(rootKeys.begin(), rootKeys.end(), key)) ++count;
-//    }
-//    if(count == factor->size()) expectedFilterSumarization.push_back(factor);
-//  }
+//  expectedFilterSumarization.add(LinearContainerFactor(bayesTree.nodes().at(ordering.at(Symbol('X', 15)))->cachedFactor(), ordering, optimalTheta));
+//  expectedFilterSumarization.add(LinearContainerFactor(bayesTree.nodes().at(ordering.at(Symbol('X', 17)))->cachedFactor(), ordering, optimalTheta));
+//  // And any factors that involve only the new separator (X14, X16)
+//  separatorKeys.clear();
+//  separatorKeys.insert(Symbol('X', 14));
+//  separatorKeys.insert(Symbol('X', 16));
+//  FindFactorsWithOnly(separatorKeys, fullGraph, expectedFilterSumarization);
 //
 //  // Extract the new root keys
-//  expectedRootValues.clear();
-//  expectedRootValues.insert(Symbol('X', 14), updatedTheta.at(Symbol('X', 14)));
-//  expectedRootValues.insert(Symbol('X', 16), updatedTheta.at(Symbol('X', 16)));
-//  expectedRootValues.insert(Symbol('X', 19), updatedTheta.at(Symbol('X', 19)));
+//  expectedSeparatorValues.clear();
+//  BOOST_FOREACH(Key key, separatorKeys) {
+//    expectedSeparatorValues.insert(key, optimalTheta.at(key));
+//  }
 //
 //
 //
 //  // Start the synchronization process
 //  actualSmootherFactors.resize(0); actualFilterSumarization.resize(0);
-//  actualSmootherValues.clear(); actualRootValues.clear();
+//  actualSmootherValues.clear(); actualSeparatorValues.clear();
+//  smootherSeparatorValues = expectedSeparatorValues;
 //  filter.presync();
-//  filter.synchronize(smootherSummarization);
+//  filter.synchronize(smootherSummarization, smootherSeparatorValues);
 //  filter.getSmootherFactors(actualSmootherFactors, actualSmootherValues);
-//  filter.getSummarizedFactors(actualFilterSumarization, actualRootValues);
+//  filter.getSummarizedFactors(actualFilterSumarization, actualSeparatorValues);
 //  filter.postsync();
 //
 //
 //
 //  // Compare filter sync variables versus the expected
-//  CHECK(hessian_equal(expectedSmootherFactors, actualSmootherFactors, updatedTheta, 1e-8));
+//  CHECK(hessian_equal(expectedSmootherFactors, actualSmootherFactors, optimalTheta, 1e-8));
 //  CHECK(assert_equal(expectedSmootherValues, actualSmootherValues, 1e-3));
-//  CHECK(hessian_equal(expectedFilterSumarization, actualFilterSumarization, updatedTheta, 1e-8));
-//  CHECK(assert_equal(expectedRootValues, actualRootValues, 1e-4));
-//}
+//  CHECK(hessian_equal(expectedFilterSumarization, actualFilterSumarization, optimalTheta, 1e-8));
+//  CHECK(assert_equal(expectedSeparatorValues, actualSeparatorValues, 1e-4));
+}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}

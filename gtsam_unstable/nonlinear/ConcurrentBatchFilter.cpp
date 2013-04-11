@@ -115,32 +115,77 @@ void ConcurrentBatchFilter::synchronize(const NonlinearFactorGraph& summarizedFa
   // Create a factor graph containing the new smoother summarization, the factors to be sent to the smoother,
   // and all of the filter factors. This is the set of factors on the filter side since the smoother started
   // its previous update cycle.
-  NonlinearFactorGraph filterGraph;
-  filterGraph.push_back(factors_);
-  filterGraph.push_back(smootherFactors_);
-  filterGraph.push_back(summarizedFactors);
-  Values filterValues;
-  filterValues.insert(theta_);
-  filterValues.insert(smootherValues_);
-  filterValues.update(separatorValues); // ensure the smoother summarized factors are linearized around the values in the smoother
+  NonlinearFactorGraph graph;
+  graph.push_back(factors_);
+  graph.push_back(smootherFactors_);
+  graph.push_back(summarizedFactors);
+  Values values;
+  values.insert(theta_);
+  values.insert(smootherValues_);
+  values.update(separatorValues); // ensure the smoother summarized factors are linearized around the values in the smoother
 
   // Optimize this graph using a modified version of L-M
   // TODO:
 
+  // Create separate ordering constraints that force either the filter keys or the smoother keys to the front
+  typedef std::map<Key, int> OrderingConstraints;
+  OrderingConstraints filterConstraints;
+  OrderingConstraints smootherConstraints;
+  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, theta_) { /// the filter keys
+    filterConstraints[key_value.key] = 0;
+    smootherConstraints[key_value.key] = 1;
+  }
+  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, smootherValues_) { /// the smoother keys
+    filterConstraints[key_value.key] = 1;
+    smootherConstraints[key_value.key] = 0;
+  }
+  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) { /// the *new* separator keys
+    filterConstraints[key_value.key] = 2;
+    smootherConstraints[key_value.key] = 2;
+  }
+
+  // Generate separate orderings that place the filter keys or the smoother keys first
+  // TODO: This is convenient, but it recalculates the variable index each time
+  Ordering filterOrdering = *graph.orderingCOLAMDConstrained(values, filterConstraints);
+  Ordering smootherOrdering = *graph.orderingCOLAMDConstrained(values, smootherConstraints);
+
+  // Extract the set of filter keys and smoother keys
+  std::set<Key> filterKeys;
+  std::set<Key> separatorKeys;
+  std::set<Key> smootherKeys;
+  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, theta_) {
+    filterKeys.insert(key_value.key);
+  }
+  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) {
+    separatorKeys.insert(key_value.key);
+    filterKeys.erase(key_value.key);
+  }
+  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, smootherValues_) {
+    smootherKeys.insert(key_value.key);
+  }
+
   // Calculate the marginal on the new separator from the filter factors. This is performed by marginalizing out
   // all of the filter variables that are not part of the new separator. This filter summarization will then be
   // sent to the smoother.
-  Ordering filterOrdering;
-  std::vector<Key> filterKeys;
-  filterSummarization_ = marginalize(filterGraph, filterValues, filterOrdering, filterKeys, parameters_.getEliminationFunction());
+  filterSummarization_ = marginalize(graph, values, filterOrdering, filterKeys, parameters_.getEliminationFunction());
+  // The filter summarization should also include any nonlinear factors that involve only the separator variables.
+  // Otherwise the smoother will be missing this information
+  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, factors_) {
+    if(factor) {
+      NonlinearFactor::const_iterator key = factor->begin();
+      while((key != factor->end()) && (std::binary_search(separatorKeys.begin(), separatorKeys.end(), *key))) {
+        ++key;
+      }
+      if(key == factor->end()) {
+        filterSummarization_.push_back(factor);
+      }
+    }
+  }
 
   // Calculate the marginal on the new separator from the smoother factors. This is performed by marginalizing out
   // all of the smoother variables that are not part of the new separator. This smoother summarization will be
   // stored locally for use in the filter
-  Ordering smootherOrdering;
-  std::vector<Key> smootherKeys;
-  smootherSummarizationSlots_ = insertFactors( marginalize(filterGraph, filterValues, smootherOrdering, smootherKeys, parameters_.getEliminationFunction()) );
-
+  smootherSummarizationSlots_ = insertFactors( marginalize(graph, values, smootherOrdering, smootherKeys, parameters_.getEliminationFunction()) );
 
   gttoc(synchronize);
 }
@@ -173,6 +218,10 @@ void ConcurrentBatchFilter::getSmootherFactors(NonlinearFactorGraph& smootherFac
 void ConcurrentBatchFilter::postsync() {
 
   gttic(postsync);
+
+  // Clear out the factors and values that were just sent to the smoother
+  smootherFactors_.resize(0);
+  smootherValues_.clear();
 
   gttoc(postsync);
 }
@@ -475,7 +524,7 @@ void ConcurrentBatchFilter::marginalize(const FastList<Key>& keysToMove) {
 
 /* ************************************************************************* */
 NonlinearFactorGraph ConcurrentBatchFilter::marginalize(const NonlinearFactorGraph& graph, const Values& values,
-    const Ordering& ordering, const std::vector<Key>& marginalizeKeys, const GaussianFactorGraph::Eliminate& function) {
+    const Ordering& ordering, const std::set<Key>& marginalizeKeys, const GaussianFactorGraph::Eliminate& function) {
 
   // This function returns marginal factors (in the form of LinearContainerFactors) that result from
   // marginalizing out the selected variables.
