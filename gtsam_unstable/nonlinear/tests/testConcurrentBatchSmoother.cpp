@@ -54,8 +54,8 @@ public:
   void presync() {
     ConcurrentBatchSmoother::presync();
   };
-  void getSummarizedFactors(NonlinearFactorGraph& summarizedFactors) {
-    ConcurrentBatchSmoother::getSummarizedFactors(summarizedFactors);
+  void getSummarizedFactors(NonlinearFactorGraph& summarizedFactors, Values& separatorValues) {
+    ConcurrentBatchSmoother::getSummarizedFactors(summarizedFactors, separatorValues);
   };
   void synchronize(const NonlinearFactorGraph& smootherFactors, const Values& smootherValues, const NonlinearFactorGraph& summarizedFactors, const Values& rootValues) {
     ConcurrentBatchSmoother::synchronize(smootherFactors, smootherValues, summarizedFactors, rootValues);
@@ -573,8 +573,9 @@ TEST_UNSAFE( ConcurrentBatchSmoother, synchronize )
 
   // Perform the synchronization procedure
   NonlinearFactorGraph actualSmootherSummarization;
+  Values actualSeparatorValues;
   smoother.presync();
-  smoother.getSummarizedFactors(actualSmootherSummarization);
+  smoother.getSummarizedFactors(actualSmootherSummarization, actualSeparatorValues);
   smoother.synchronize(smootherFactors, smootherValues, filterSummarization, rootValues);
   smoother.postsync();
 
@@ -663,10 +664,11 @@ TEST_UNSAFE( ConcurrentBatchSmoother, synchronize )
 
   // Now perform a second synchronization to test the smoother-calculated summarization
   actualSmootherSummarization.resize(0);
+  actualSeparatorValues.clear();
   smootherFactors.resize(0);
   smootherValues.clear();
   smoother.presync();
-  smoother.getSummarizedFactors(actualSmootherSummarization);
+  smoother.getSummarizedFactors(actualSmootherSummarization, actualSeparatorValues);
   smoother.synchronize(smootherFactors, smootherValues, filterSummarization, rootValues);
   smoother.postsync();
 

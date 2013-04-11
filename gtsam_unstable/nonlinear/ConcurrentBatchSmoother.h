@@ -139,7 +139,7 @@ protected:
    *
    * @param summarizedFactors The summarized factors for the filter branch
    */
-  virtual void getSummarizedFactors(NonlinearFactorGraph& summarizedFactors);
+  virtual void getSummarizedFactors(NonlinearFactorGraph& summarizedFactors, Values& separatorValues);
 
   /**
    * Apply the new smoother factors sent by the filter, and the updated version of the filter
@@ -195,31 +195,27 @@ private:
   class EliminationForest {
   public:
     typedef boost::shared_ptr<EliminationForest> shared_ptr; ///< Shared pointer to this class
-    typedef gtsam::GaussianFactor Factor; ///< The factor Type
-    typedef Factor::shared_ptr sharedFactor;  ///< Shared pointer to a factor
-    typedef gtsam::BayesNet<Factor::ConditionalType> BayesNet; ///< The BayesNet
-    typedef gtsam::GaussianFactorGraph::Eliminate Eliminate; ///< The eliminate subroutine
 
   private:
-    typedef gtsam::FastList<sharedFactor> Factors;
-    typedef gtsam::FastList<shared_ptr> SubTrees;
-    typedef std::vector<Factor::ConditionalType::shared_ptr> Conditionals;
+    typedef FastList<GaussianFactor::shared_ptr> Factors;
+    typedef FastList<shared_ptr> SubTrees;
+    typedef std::vector<GaussianConditional::shared_ptr> Conditionals;
 
-    gtsam::Index key_; ///< index associated with root
+    Index key_; ///< index associated with root
     Factors factors_; ///< factors associated with root
     SubTrees subTrees_; ///< sub-trees
 
     /** default constructor, private, as you should use Create below */
-    EliminationForest(gtsam::Index key = 0) : key_(key) {}
+    EliminationForest(Index key = 0) : key_(key) {}
 
     /**
      * Static internal function to build a vector of parent pointers using the
      * algorithm of Gilbert et al., 2001, BIT.
      */
-    static std::vector<gtsam::Index> ComputeParents(const gtsam::VariableIndex& structure);
+    static std::vector<Index> ComputeParents(const VariableIndex& structure);
 
     /** add a factor, for Create use only */
-    void add(const sharedFactor& factor) { factors_.push_back(factor); }
+    void add(const GaussianFactor::shared_ptr& factor) { factors_.push_back(factor); }
 
     /** add a subtree, for Create use only */
     void add(const shared_ptr& child) { subTrees_.push_back(child); }
@@ -227,7 +223,7 @@ private:
   public:
 
     /** return the key associated with this tree node */
-    gtsam::Index key() const { return key_; }
+    Index key() const { return key_; }
 
     /** return the const reference of children */
     const SubTrees& children() const { return subTrees_; }
@@ -236,10 +232,10 @@ private:
     const Factors& factors() const { return factors_; }
 
     /** Create an elimination tree from a factor graph */
-    static std::vector<shared_ptr> Create(const gtsam::GaussianFactorGraph& factorGraph, const gtsam::VariableIndex& structure);
+    static std::vector<shared_ptr> Create(const GaussianFactorGraph& factorGraph, const VariableIndex& structure);
 
     /** Recursive routine that eliminates the factors arranged in an elimination tree */
-    sharedFactor eliminateRecursive(Eliminate function);
+    GaussianFactor::shared_ptr eliminateRecursive(GaussianFactorGraph::Eliminate function);
 
     /** Recursive function that helps find the top of each tree */
     static void removeChildrenIndices(std::set<Index>& indices, const EliminationForest::shared_ptr& tree);

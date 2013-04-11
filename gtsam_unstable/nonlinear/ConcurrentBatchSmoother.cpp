@@ -111,12 +111,15 @@ void ConcurrentBatchSmoother::presync() {
 }
 
 /* ************************************************************************* */
-void ConcurrentBatchSmoother::getSummarizedFactors(NonlinearFactorGraph& summarizedFactors) {
+void ConcurrentBatchSmoother::getSummarizedFactors(NonlinearFactorGraph& summarizedFactors, Values& separatorValues) {
 
   gttic(get_summarized_factors);
 
   // Copy the previous calculated smoother summarization factors into the output
   summarizedFactors.push_back(smootherSummarization_);
+
+  // Copy the separator values into the output
+  separatorValues.insert(separatorValues_);
 
   gttoc(get_summarized_factors);
 }
@@ -376,14 +379,14 @@ void ConcurrentBatchSmoother::updateSmootherSummarization() {
   smootherSummarization_.resize(0);
 
   // Create the linear factor graph
-  gtsam::GaussianFactorGraph linearFactorGraph = *factors_.linearize(theta_, ordering_);
+  GaussianFactorGraph linearFactorGraph = *factors_.linearize(theta_, ordering_);
 
   // Construct an elimination tree to perform sparse elimination
   std::vector<EliminationForest::shared_ptr> forest( EliminationForest::Create(linearFactorGraph, variableIndex_) );
 
   // This is a forest. Only the top-most node/index of each tree needs to be eliminated; all of the children will be eliminated automatically
   // Find the subset of nodes/keys that must be eliminated
-  std::set<gtsam::Index> indicesToEliminate;
+  std::set<Index> indicesToEliminate;
   BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, theta_) {
     indicesToEliminate.insert(ordering_.at(key_value.key));
   }
@@ -397,7 +400,7 @@ void ConcurrentBatchSmoother::updateSmootherSummarization() {
 
   // Eliminate each top-most key, returning a Gaussian Factor on some of the remaining variables
   // Convert the marginal factors into Linear Container Factors and store
-  BOOST_FOREACH(gtsam::Index index, indicesToEliminate) {
+  BOOST_FOREACH(Index index, indicesToEliminate) {
     GaussianFactor::shared_ptr gaussianFactor = forest.at(index)->eliminateRecursive(parameters_.getEliminationFunction());
     LinearContainerFactor::shared_ptr marginalFactor(new LinearContainerFactor(gaussianFactor, ordering_, theta_));
     smootherSummarization_.push_back(marginalFactor);
@@ -443,20 +446,20 @@ std::vector<Index> ConcurrentBatchSmoother::EliminationForest::ComputeParents(co
   const size_t m = structure.nFactors();
   const size_t n = structure.size();
 
-  static const gtsam::Index none = std::numeric_limits<gtsam::Index>::max();
+  static const Index none = std::numeric_limits<Index>::max();
 
   // Allocate result parent vector and vector of last factor columns
-  std::vector<gtsam::Index> parents(n, none);
-  std::vector<gtsam::Index> prevCol(m, none);
+  std::vector<Index> parents(n, none);
+  std::vector<Index> prevCol(m, none);
 
   // for column j \in 1 to n do
-  for (gtsam::Index j = 0; j < n; j++) {
+  for (Index j = 0; j < n; j++) {
     // for row i \in Struct[A*j] do
     BOOST_FOREACH(const size_t i, structure[j]) {
       if (prevCol[i] != none) {
-        gtsam::Index k = prevCol[i];
+        Index k = prevCol[i];
         // find root r of the current tree that contains k
-        gtsam::Index r = k;
+        Index r = k;
         while (parents[r] != none)
           r = parents[r];
         if (r != j) parents[r] = j;
@@ -469,28 +472,28 @@ std::vector<Index> ConcurrentBatchSmoother::EliminationForest::ComputeParents(co
 }
 
 /* ************************************************************************* */
-std::vector<ConcurrentBatchSmoother::EliminationForest::shared_ptr> ConcurrentBatchSmoother::EliminationForest::Create(const gtsam::GaussianFactorGraph& factorGraph, const gtsam::VariableIndex& structure) {
+std::vector<ConcurrentBatchSmoother::EliminationForest::shared_ptr> ConcurrentBatchSmoother::EliminationForest::Create(const GaussianFactorGraph& factorGraph, const VariableIndex& structure) {
   // Compute the tree structure
-  std::vector<gtsam::Index> parents(ComputeParents(structure));
+  std::vector<Index> parents(ComputeParents(structure));
 
   // Number of variables
   const size_t n = structure.size();
 
-  static const gtsam::Index none = std::numeric_limits<gtsam::Index>::max();
+  static const Index none = std::numeric_limits<Index>::max();
 
   // Create tree structure
   std::vector<shared_ptr> trees(n);
-  for (gtsam::Index k = 1; k <= n; k++) {
-    gtsam::Index j = n - k;  // Start at the last variable and loop down to 0
+  for (Index k = 1; k <= n; k++) {
+    Index j = n - k;  // Start at the last variable and loop down to 0
     trees[j].reset(new EliminationForest(j));  // Create a new node on this variable
     if (parents[j] != none)  // If this node has a parent, add it to the parent's children
       trees[parents[j]]->add(trees[j]);
   }
 
   // Hang factors in right places
-  BOOST_FOREACH(const sharedFactor& factor, factorGraph) {
+  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factorGraph) {
     if(factor && factor->size() > 0) {
-      gtsam::Index j = *std::min_element(factor->begin(), factor->end());
+      Index j = *std::min_element(factor->begin(), factor->end());
       if(j < structure.size())
         trees[j]->add(factor);
     }
@@ -500,10 +503,10 @@ std::vector<ConcurrentBatchSmoother::EliminationForest::shared_ptr> ConcurrentBa
 }
 
 /* ************************************************************************* */
-ConcurrentBatchSmoother::EliminationForest::sharedFactor ConcurrentBatchSmoother::EliminationForest::eliminateRecursive(Eliminate function) {
+GaussianFactor::shared_ptr ConcurrentBatchSmoother::EliminationForest::eliminateRecursive(GaussianFactorGraph::Eliminate function) {
 
   // Create the list of factors to be eliminated, initially empty, and reserve space
-  gtsam::GaussianFactorGraph factors;
+  GaussianFactorGraph factors;
   factors.reserve(this->factors_.size() + this->subTrees_.size());
 
   // Add all factors associated with the current node
@@ -514,7 +517,7 @@ ConcurrentBatchSmoother::EliminationForest::sharedFactor ConcurrentBatchSmoother
     factors.push_back(child->eliminateRecursive(function));
 
   // Combine all factors (from this node and from subtrees) into a joint factor
-  gtsam::GaussianFactorGraph::EliminationResult eliminated(function(factors, 1));
+  GaussianFactorGraph::EliminationResult eliminated(function(factors, 1));
 
   return eliminated.second;
 }
