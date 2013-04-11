@@ -4,6 +4,7 @@
 
 // specify the classes from gtsam we are using
 virtual class gtsam::Value;
+virtual class gtsam::LieScalar;
 virtual class gtsam::Point2;
 virtual class gtsam::Rot2;
 virtual class gtsam::Pose2;
@@ -365,6 +366,16 @@ virtual class DGroundConstraint : gtsam::NonlinearFactor {
   DGroundConstraint(size_t key, double height, const gtsam::noiseModel::Base* model);
   // Fully specify vector - use only for debugging
   DGroundConstraint(size_t key, Vector constraint, const gtsam::noiseModel::Base* model);
+};
+
+#include <gtsam/base/LieScalar.h>
+
+#include <gtsam_unstable/dynamics/VelocityConstraint3.h>
+virtual class VelocityConstraint3 : gtsam::NonlinearFactor {
+  /** Standard constructor */
+  VelocityConstraint3(size_t key1, size_t key2, size_t velKey, double dt);
+
+  Vector evaluateError(const gtsam::LieScalar& x1, const gtsam::LieScalar& x2, const gtsam::LieScalar& v) const;
 };
 
 //*************************************************************************
