@@ -66,9 +66,9 @@ protected:
    * needed by the smoother. Also, linearization points for the new root clique must be provided.
    *
    * @param summarizedFactors The summarized factors for the filter branch
-   * @param rootValues The linearization points of the root clique variables
+   * @param separatorValues The linearization points of the separator variables
    */
-  virtual void getSummarizedFactors(NonlinearFactorGraph& summarizedFactors, Values& rootValues) = 0;
+  virtual void getSummarizedFactors(NonlinearFactorGraph& summarizedFactors, Values& separatorValues) = 0;
 
   /**
    * Populate the provided containers with factors being sent to the smoother from the filter. These
@@ -84,8 +84,9 @@ protected:
    * Apply the updated version of the smoother branch summarized factors.
    *
    * @param summarizedFactors An updated version of the smoother branch summarized factors
+   * @param separatorValues The linearization points of the separator variables
    */
-  virtual void synchronize(const NonlinearFactorGraph& summarizedFactors) = 0;
+  virtual void synchronize(const NonlinearFactorGraph& summarizedFactors, const Values& separatorValues) = 0;
 
   /**
    * Perform any required operations after the synchronization process finishes.
@@ -129,8 +130,9 @@ protected:
    * needed by the filter.
    *
    * @param summarizedFactors The summarized factors for the filter branch
+   * @param separatorValues The linearization points of the separator variables
    */
-  virtual void getSummarizedFactors(NonlinearFactorGraph& summarizedFactors) = 0;
+  virtual void getSummarizedFactors(NonlinearFactorGraph& summarizedFactors, Values& separatorValues) = 0;
 
   /**
    * Apply the new smoother factors sent by the filter, and the updated version of the filter

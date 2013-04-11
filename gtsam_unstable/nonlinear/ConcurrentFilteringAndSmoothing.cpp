@@ -26,20 +26,20 @@ namespace gtsam {
 void synchronize(ConcurrentFilter& filter, ConcurrentSmoother& smoother) {
 
   NonlinearFactorGraph smootherFactors, filterSumarization, smootherSummarization;
-  Values smootherValues, rootValues;
+  Values smootherValues, filterSeparatorValues, smootherSeparatorValues;
 
   // Call the pre-sync functions of the filter and smoother
   filter.presync();
   smoother.presync();
 
   // Get the updates from the smoother and apply them to the filter
-  smoother.getSummarizedFactors(smootherSummarization);
-  filter.synchronize(smootherSummarization);
+  smoother.getSummarizedFactors(smootherSummarization, smootherSeparatorValues);
+  filter.synchronize(smootherSummarization, smootherSeparatorValues);
 
   // Get the updates from the filter and apply them to the smoother
   filter.getSmootherFactors(smootherFactors, smootherValues);
-  filter.getSummarizedFactors(filterSumarization, rootValues);
-  smoother.synchronize(smootherFactors, smootherValues, filterSumarization, rootValues);
+  filter.getSummarizedFactors(filterSumarization, filterSeparatorValues);
+  smoother.synchronize(smootherFactors, smootherValues, filterSumarization, filterSeparatorValues);
 
   // Call the post-sync functions of the filter and smoother
   filter.postsync();
