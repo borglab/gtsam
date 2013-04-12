@@ -472,7 +472,7 @@ void ConcurrentBatchFilter::marginalize(const FastList<Key>& keysToMove) {
     smootherSummarizationSlots_.insert(smootherSummarizationSlots_.end(), marginalSlots.begin(), marginalSlots.end());
 
     // Move the marginalized factors from the filter to the smoother (holding area)
-    // Note: Be careful to only move nonlinear factors and not any marginals they may also need to be removed
+    // Note: Be careful to only move nonlinear factors and not any marginals that may also need to be removed
     BOOST_FOREACH(size_t slot, removedFactorSlots) {
       std::vector<size_t>::iterator iter = std::find(smootherSummarizationSlots_.begin(), smootherSummarizationSlots_.end(), slot);
       if(iter == smootherSummarizationSlots_.end()) {
@@ -514,7 +514,7 @@ void ConcurrentBatchFilter::marginalize(const FastList<Key>& keysToMove) {
     ordering_.permuteInPlace(forwardPermutation);
     delta_.permuteInPlace(forwardPermutation);
 
-    // Remove marginalized keys from the ordering, variableIndex, and delta
+    // Remove marginalized keys from the ordering and delta
     for(size_t i = 0; i < keysToMove.size(); ++i) {
       ordering_.pop_back();
       delta_.pop_back();
@@ -525,9 +525,6 @@ void ConcurrentBatchFilter::marginalize(const FastList<Key>& keysToMove) {
 /* ************************************************************************* */
 NonlinearFactorGraph ConcurrentBatchFilter::marginalize(const NonlinearFactorGraph& graph, const Values& values,
     const Ordering& ordering, const std::set<Key>& marginalizeKeys, const GaussianFactorGraph::Eliminate& function) {
-
-  // This function returns marginal factors (in the form of LinearContainerFactors) that result from
-  // marginalizing out the selected variables.
 
   // Calculate marginal factors on the remaining variables (after marginalizing 'marginalizeKeys')
   // Note: It is assumed the ordering already has these keys first
