@@ -130,10 +130,13 @@ int main(int argc, char** argv) {
     fixedlagSmoother.update(newFactors, newValues, newTimestamps);
     batchSmoother.update(newFactors, newValues, newTimestamps);
 
-//    // Manually synchronize the Concurrent Filter and Smoother every 1.0 s
-//    if(fmod(time, 1.0) < 0.01) {
-//      synchronize(concurrentFilter, concurrentSmoother);
-//    }
+    // Manually synchronize the Concurrent Filter and Smoother every 1.0 s
+    if(fmod(time, 1.0) < 0.01) {
+      // Synchronize the Filter and Smoother
+      synchronize(concurrentFilter, concurrentSmoother);
+//      // Update the smoother
+//      concurrentSmoother.update();
+    }
 
     // Print the optimized current pose
     cout << setprecision(5) << "Timestamp = " << time << endl;
