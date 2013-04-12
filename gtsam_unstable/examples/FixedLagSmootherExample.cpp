@@ -100,22 +100,17 @@ int main(int argc, char** argv) {
     newValues.insert(currentKey, currentPose);
 
     // Add odometry factors from two different sources with different error stats
-    Pose2 odometryMeasurement1 = Pose2(2.32, -0.18, 0.02);
-    noiseModel::Diagonal::shared_ptr odometryNoise1 = noiseModel::Diagonal::Sigmas(Vector_(3, 0.2, 0.2, 0.1));
+    Pose2 odometryMeasurement1 = Pose2(0.61, -0.08, 0.02);
+    noiseModel::Diagonal::shared_ptr odometryNoise1 = noiseModel::Diagonal::Sigmas(Vector_(3, 0.1, 0.1, 0.05));
     newFactors.add(BetweenFactor<Pose2>(previousKey, currentKey, odometryMeasurement1, odometryNoise1));
 
-    Pose2 odometryMeasurement2 = Pose2(1.95, 0.07, 0.01);
+    Pose2 odometryMeasurement2 = Pose2(0.47, 0.03, 0.01);
     noiseModel::Diagonal::shared_ptr odometryNoise2 = noiseModel::Diagonal::Sigmas(Vector_(3, 0.05, 0.05, 0.05));
     newFactors.add(BetweenFactor<Pose2>(previousKey, currentKey, odometryMeasurement2, odometryNoise2));
 
     // Update the smoothers with the new factors
     smootherBatch.update(newFactors, newValues, newTimestamps);
     smootherISAM2.update(newFactors, newValues, newTimestamps);
-    // The iSAM2 algorithm only performs one optimization iteration per call to update.
-    // To get equivalent results to the full batch optimization each time, we need to call update multiple times
-    for(size_t i = 0; i < 10; ++i) {
-      smootherISAM2.update();
-    }
 
     // Print the optimized current pose
     cout << setprecision(5) << "Timestamp = " << time << endl;
