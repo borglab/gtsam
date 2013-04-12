@@ -45,7 +45,7 @@ public:
   };
 
   /** Default constructor */
-  ConcurrentBatchSmoother(const LevenbergMarquardtParams& parameters) : parameters_(parameters) {};
+  ConcurrentBatchSmoother(const LevenbergMarquardtParams& parameters = LevenbergMarquardtParams()) : parameters_(parameters) {};
 
   /** Default destructor */
   virtual ~ConcurrentBatchSmoother() {};

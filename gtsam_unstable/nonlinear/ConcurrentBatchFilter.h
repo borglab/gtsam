@@ -45,7 +45,7 @@ public:
   };
 
   /** Default constructor */
-  ConcurrentBatchFilter(const LevenbergMarquardtParams& parameters) : parameters_(parameters) {};
+  ConcurrentBatchFilter(const LevenbergMarquardtParams& parameters = LevenbergMarquardtParams()) : parameters_(parameters) {};
 
   /** Default destructor */
   virtual ~ConcurrentBatchFilter() {};
