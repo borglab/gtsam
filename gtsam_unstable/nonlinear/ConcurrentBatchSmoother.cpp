@@ -107,6 +107,15 @@ void ConcurrentBatchSmoother::presync() {
 
   gttic(presync);
 
+  // TODO: Don't let the length of this code fool you. There is considerable work being done here.
+  // When we start multi-threading the filter and smoother, it would be ideal if the pre-sync stage
+  // could happen before the filter is stopped.
+
+  // Calculate the marginal on the separator from the smoother factors
+  if(separatorValues_.size() > 0) {
+    updateSmootherSummarization();
+  }
+
   gttoc(presync);
 }
 
@@ -373,10 +382,13 @@ void ConcurrentBatchSmoother::updateSmootherSummarization() {
   // variables that result from marginalizing out all of the other variables
   // These marginal factors will be cached for later transmission to the filter using
   // linear container factors
-  // Note: This assumes the ordering already has the separator variables eliminated last
 
   // Clear out any existing smoother summarized factors
   smootherSummarization_.resize(0);
+
+  // Reorder the system so that the separator keys are eliminated last
+  // TODO: This is currently being done twice: here and in 'update'. Fix it.
+  reorder();
 
   // Create the linear factor graph
   GaussianFactorGraph linearFactorGraph = *factors_.linearize(theta_, ordering_);
