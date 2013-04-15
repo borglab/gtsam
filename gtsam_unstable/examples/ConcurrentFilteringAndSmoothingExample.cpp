@@ -93,7 +93,7 @@ int main(int argc, char** argv) {
   // Now, loop through several time steps, creating factors from different "sensors"
   // and adding them to the fixed-lag smoothers
   double deltaT = 0.25;
-  for(double time = deltaT; time <= 5.0; time += deltaT) {
+  for(double time = 0.0+deltaT; time <= 5.0; time += deltaT) {
 
     // Define the keys related to this timestamp
     Key previousKey(1000 * (time-deltaT));
@@ -121,7 +121,6 @@ int main(int argc, char** argv) {
     // requires the user to supply the specify which keys to marginalize
     FastList<Key> oldKeys;
     if(time >= lag+deltaT) {
-//      cout << "Requesting to marginalize keys at Timestamp = " << time-lag-deltaT << " [" << int(1000 * (time-lag-deltaT)) << "]" << endl;
       oldKeys.push_back(1000 * (time-lag-deltaT));
     }
 
@@ -134,8 +133,160 @@ int main(int argc, char** argv) {
     if(fmod(time, 1.0) < 0.01) {
       // Synchronize the Filter and Smoother
       synchronize(concurrentFilter, concurrentSmoother);
-//      // Update the smoother
-//      concurrentSmoother.update();
+    }
+
+    // Print the optimized current pose
+    cout << setprecision(5) << "Timestamp = " << time << endl;
+    concurrentFilter.calculateEstimate<Pose2>(currentKey).print("Concurrent Estimate: ");
+    fixedlagSmoother.calculateEstimate<Pose2>(currentKey).print("Fixed Lag Estimate:  ");
+    batchSmoother.calculateEstimate<Pose2>(currentKey).print("Batch Estimate:      ");
+    cout << endl;
+
+    // Clear contains for the next iteration
+    newTimestamps.clear();
+    newValues.clear();
+    newFactors.resize(0);
+  }
+  cout << "******************************************************************" << endl;
+  cout << "All three versions should be identical." << endl;
+  cout << "Adding a loop closure factor to the Batch version only." << endl;
+  cout << "******************************************************************" << endl;
+  cout << endl;
+
+  // At the moment, all three versions produce the same output.
+  // Now lets create a "loop closure" factor between the first pose and the current pose
+  Key loopKey1(1000 * (0.0));
+  Key loopKey2(1000 * (5.0));
+  Pose2 loopMeasurement = Pose2(9.5, 1.00, 0.00);
+  noiseModel::Diagonal::shared_ptr loopNoise = noiseModel::Diagonal::Sigmas(Vector_(3, 0.5, 0.5, 0.25));
+  NonlinearFactor::shared_ptr loopFactor(new BetweenFactor<Pose2>(loopKey1, loopKey2, loopMeasurement, loopNoise));
+
+  // This measurement cannot be added directly to the concurrent filter because it connects a filter state to a smoother state
+  // This measurement can never be added to the fixed-lag smoother, as one of the poses has been permanently marginalized out
+  // This measurement can be incorporated into the full batch version though
+  newFactors.push_back(loopFactor);
+  batchSmoother.update(newFactors, Values(), FixedLagSmoother::KeyTimestampMap());
+  newFactors.resize(0);
+
+
+
+  // Continue adding odometry factors until the loop closure may be incorporated into the concurrent smoother
+  for(double time = 5.0+deltaT; time <= 8.0; time += deltaT) {
+
+    // Define the keys related to this timestamp
+    Key previousKey(1000 * (time-deltaT));
+    Key currentKey(1000 * (time));
+
+    // Assign the current key to the current timestamp
+    newTimestamps[currentKey] = time;
+
+    // Add a guess for this pose to the new values
+    // Since the robot moves forward at 2 m/s, then the position is simply: time[s]*2.0[m/s]
+    // {This is not a particularly good way to guess, but this is just an example}
+    Pose2 currentPose(time * 2.0, 0.0, 0.0);
+    newValues.insert(currentKey, currentPose);
+
+    // Add odometry factors from two different sources with different error stats
+    Pose2 odometryMeasurement1 = Pose2(0.61, -0.08, 0.02);
+    noiseModel::Diagonal::shared_ptr odometryNoise1 = noiseModel::Diagonal::Sigmas(Vector_(3, 0.1, 0.1, 0.05));
+    newFactors.add(BetweenFactor<Pose2>(previousKey, currentKey, odometryMeasurement1, odometryNoise1));
+
+    Pose2 odometryMeasurement2 = Pose2(0.47, 0.03, 0.01);
+    noiseModel::Diagonal::shared_ptr odometryNoise2 = noiseModel::Diagonal::Sigmas(Vector_(3, 0.05, 0.05, 0.05));
+    newFactors.add(BetweenFactor<Pose2>(previousKey, currentKey, odometryMeasurement2, odometryNoise2));
+
+    // Unlike the fixed-lag versions, the concurrent filter implementation
+    // requires the user to supply the specify which keys to marginalize
+    FastList<Key> oldKeys;
+    if(time >= lag+deltaT) {
+      oldKeys.push_back(1000 * (time-lag-deltaT));
+    }
+
+    // Update the various inference engines
+    concurrentFilter.update(newFactors, newValues, oldKeys);
+    fixedlagSmoother.update(newFactors, newValues, newTimestamps);
+    batchSmoother.update(newFactors, newValues, newTimestamps);
+
+    // Manually synchronize the Concurrent Filter and Smoother every 1.0 s
+    if(fmod(time, 1.0) < 0.01) {
+      // Synchronize the Filter and Smoother
+      synchronize(concurrentFilter, concurrentSmoother);
+    }
+
+    // Print the optimized current pose
+    cout << setprecision(5) << "Timestamp = " << time << endl;
+    concurrentFilter.calculateEstimate<Pose2>(currentKey).print("Concurrent Estimate: ");
+    fixedlagSmoother.calculateEstimate<Pose2>(currentKey).print("Fixed Lag Estimate:  ");
+    batchSmoother.calculateEstimate<Pose2>(currentKey).print("Batch Estimate:      ");
+    cout << endl;
+
+    // Clear contains for the next iteration
+    newTimestamps.clear();
+    newValues.clear();
+    newFactors.resize(0);
+  }
+  cout << "******************************************************************" << endl;
+  cout << "The Concurrent system and the Fixed-Lag Smoother should be " << endl;
+  cout << "the same, but the Batch version has a loop closure." << endl;
+  cout << "Adding the loop closure factor to the Concurrent version." << endl;
+  cout << "This will not update the Concurrent Filter until the next " << endl;
+  cout << "synchronization, but the Concurrent solution should be identical " << endl;
+  cout << "to the Batch solution afterwards." << endl;
+  cout << "******************************************************************" << endl;
+  cout << endl;
+
+  // The state at 5.0s should have been transferred to the concurrent smoother at this point. Add the loop closure.
+  newFactors.push_back(loopFactor);
+  concurrentSmoother.update(newFactors, Values());
+  newFactors.resize(0);
+
+
+  // Now run for a few more seconds so the concurrent smoother and filter have to to re-sync
+  // Continue adding odometry factors until the loop closure may be incorporated into the concurrent smoother
+  for(double time = 8.0+deltaT; time <= 10.0; time += deltaT) {
+
+    // Define the keys related to this timestamp
+    Key previousKey(1000 * (time-deltaT));
+    Key currentKey(1000 * (time));
+
+    // Assign the current key to the current timestamp
+    newTimestamps[currentKey] = time;
+
+    // Add a guess for this pose to the new values
+    // Since the robot moves forward at 2 m/s, then the position is simply: time[s]*2.0[m/s]
+    // {This is not a particularly good way to guess, but this is just an example}
+    Pose2 currentPose(time * 2.0, 0.0, 0.0);
+    newValues.insert(currentKey, currentPose);
+
+    // Add odometry factors from two different sources with different error stats
+    Pose2 odometryMeasurement1 = Pose2(0.61, -0.08, 0.02);
+    noiseModel::Diagonal::shared_ptr odometryNoise1 = noiseModel::Diagonal::Sigmas(Vector_(3, 0.1, 0.1, 0.05));
+    newFactors.add(BetweenFactor<Pose2>(previousKey, currentKey, odometryMeasurement1, odometryNoise1));
+
+    Pose2 odometryMeasurement2 = Pose2(0.47, 0.03, 0.01);
+    noiseModel::Diagonal::shared_ptr odometryNoise2 = noiseModel::Diagonal::Sigmas(Vector_(3, 0.05, 0.05, 0.05));
+    newFactors.add(BetweenFactor<Pose2>(previousKey, currentKey, odometryMeasurement2, odometryNoise2));
+
+    // Unlike the fixed-lag versions, the concurrent filter implementation
+    // requires the user to supply the specify which keys to marginalize
+    FastList<Key> oldKeys;
+    if(time >= lag+deltaT) {
+      oldKeys.push_back(1000 * (time-lag-deltaT));
+    }
+
+    // Update the various inference engines
+    concurrentFilter.update(newFactors, newValues, oldKeys);
+    fixedlagSmoother.update(newFactors, newValues, newTimestamps);
+    batchSmoother.update(newFactors, newValues, newTimestamps);
+
+    // Manually synchronize the Concurrent Filter and Smoother every 1.0 s
+    if(fmod(time, 1.0) < 0.01) {
+      // Synchronize the Filter and Smoother
+      synchronize(concurrentFilter, concurrentSmoother);
+      cout << "******************************************************************" << endl;
+      cout << "Syncing Concurrent Filter and Smoother." << endl;
+      cout << "******************************************************************" << endl;
+      cout << endl;
     }
 
     // Print the optimized current pose
@@ -151,8 +302,9 @@ int main(int argc, char** argv) {
     newFactors.resize(0);
   }
 
+
   // And to demonstrate the fixed-lag aspect, print the keys contained in each smoother after 3.0 seconds
-  cout << "After 5.0 seconds, " << endl;
+  cout << "After 10.0 seconds, each version contains to the following keys:" << endl;
   cout << "  Concurrent Filter Keys: " << endl;
   BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, concurrentFilter.getLinearizationPoint()) {
     cout << setprecision(5) << "    Key: " << key_value.key << endl;
@@ -163,11 +315,11 @@ int main(int argc, char** argv) {
   }
   cout << "  Fixed-Lag Smoother Keys: " << endl;
   BOOST_FOREACH(const FixedLagSmoother::KeyTimestampMap::value_type& key_timestamp, fixedlagSmoother.getTimestamps()) {
-    cout << setprecision(5) << "    Key: " << key_timestamp.first << "  Time: " << key_timestamp.second << endl;
+    cout << setprecision(5) << "    Key: " << key_timestamp.first << endl;
   }
   cout << "  Batch Smoother Keys: " << endl;
   BOOST_FOREACH(const FixedLagSmoother::KeyTimestampMap::value_type& key_timestamp, batchSmoother.getTimestamps()) {
-    cout << setprecision(5) << "    Key: " << key_timestamp.first << "  Time: " << key_timestamp.second << endl;
+    cout << setprecision(5) << "    Key: " << key_timestamp.first << endl;
   }
 
   return 0;
