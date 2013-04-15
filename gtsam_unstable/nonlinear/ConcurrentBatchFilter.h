@@ -41,7 +41,16 @@ public:
     size_t nonlinearVariables; ///< The number of variables that can be relinearized
     size_t linearVariables; ///< The number of variables that must keep a constant linearization point
     double error; ///< The final factor graph error
+
+    /// Constructor
     Result() : iterations(0), lambdas(0), nonlinearVariables(0), linearVariables(0), error(0) {};
+
+    /// Getter methods
+    size_t getIterations() const { return iterations; }
+    size_t getLambdas() const { return lambdas; }
+    size_t getNonlinearVariables() const { return nonlinearVariables; }
+    size_t getLinearVariables() const { return linearVariables; }
+    double getError() const { return error; }
   };
 
   /** Default constructor */
@@ -210,10 +219,6 @@ private:
   class EliminationForest {
   public:
     typedef boost::shared_ptr<EliminationForest> shared_ptr; ///< Shared pointer to this class
-//    typedef GaussianFactor Factor; ///< The factor Type
-//    typedef Factor::shared_ptr sharedFactor;  ///< Shared pointer to a factor
-//    typedef BayesNet<Factor::ConditionalType> BayesNet; ///< The BayesNet
-//    typedef GaussianFactorGraph::Eliminate Eliminate; ///< The eliminate subroutine
 
   private:
     typedef FastList<GaussianFactor::shared_ptr> Factors;
@@ -261,5 +266,8 @@ private:
   };
 
 }; // ConcurrentBatchFilter
+
+/// Typedef for Matlab wrapping
+typedef ConcurrentBatchFilter::Result ConcurrentBatchFilterResult;
 
 }/// namespace gtsam

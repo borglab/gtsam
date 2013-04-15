@@ -41,7 +41,16 @@ public:
     size_t nonlinearVariables; ///< The number of variables that can be relinearized
     size_t linearVariables; ///< The number of variables that must keep a constant linearization point
     double error; ///< The final factor graph error
+
+    /// Constructor
     Result() : iterations(0), lambdas(0), nonlinearVariables(0), linearVariables(0), error(0) {};
+
+    /// Getter methods
+    size_t getIterations() const { return iterations; }
+    size_t getLambdas() const { return lambdas; }
+    size_t getNonlinearVariables() const { return nonlinearVariables; }
+    size_t getLinearVariables() const { return linearVariables; }
+    double getError() const { return error; }
   };
 
   /** Default constructor */
@@ -242,5 +251,8 @@ private:
   };
 
 }; // ConcurrentBatchSmoother
+
+/// Typedef for Matlab wrapping
+typedef ConcurrentBatchSmoother::Result ConcurrentBatchSmootherResult;
 
 }/// namespace gtsam

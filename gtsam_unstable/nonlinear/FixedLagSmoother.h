@@ -124,6 +124,7 @@ protected:
 
 /// Typedef for matlab wrapping
 typedef FixedLagSmoother::KeyTimestampMap FixedLagSmootherKeyTimestampMap;
+typedef FixedLagSmootherKeyTimestampMap::value_type FixedLagSmootherKeyTimestampMapValue;
 typedef FixedLagSmoother::Result FixedLagSmootherResult;
 
 } /// namespace gtsam
