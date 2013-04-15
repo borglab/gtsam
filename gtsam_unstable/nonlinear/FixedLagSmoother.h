@@ -49,6 +49,12 @@ public:
     size_t linearVariables; ///< The number of variables that must keep a constant linearization point
     double error; ///< The final factor graph error
     Result() : iterations(0), nonlinearVariables(0), linearVariables(0), error(0) {};
+
+    /// Getter methods
+    size_t getIterations() const { return iterations; }
+    size_t getNonlinearVariables() const { return nonlinearVariables; }
+    size_t getLinearVariables() const { return linearVariables; }
+    double getError() const { return error; }
   };
 
 
@@ -64,21 +70,6 @@ public:
   /** Check if two IncrementalFixedLagSmoother Objects are equal */
   virtual bool equals(const FixedLagSmoother& rhs, double tol = 1e-9) const;
 
-  /** Add new factors, updating the solution and relinearizing as needed. */
-  virtual Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values(),
-      const KeyTimestampMap& timestamps = KeyTimestampMap()) = 0;
-
-  /** Access the current set of timestamps associated with each variable */
-  const KeyTimestampMap& getTimestamps() const {
-    return keyTimestampMap_;
-  }
-
-  /** Compute an estimate from the incomplete linear delta computed during the last update.
-   * This delta is incomplete because it was not updated below wildfire_threshold.  If only
-   * a single variable is needed, it is faster to call calculateEstimate(const KEY&).
-   */
-  virtual Values calculateEstimate() const  = 0;
-
   /** read the current smoother lag */
   double smootherLag() const {
     return smootherLag_;
@@ -88,6 +79,21 @@ public:
   double& smootherLag() {
     return smootherLag_;
   }
+
+  /** Access the current set of timestamps associated with each variable */
+  const KeyTimestampMap& timestamps() const {
+    return keyTimestampMap_;
+  }
+
+  /** Add new factors, updating the solution and relinearizing as needed. */
+  virtual Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values(),
+      const KeyTimestampMap& timestamps = KeyTimestampMap()) = 0;
+
+  /** Compute an estimate from the incomplete linear delta computed during the last update.
+   * This delta is incomplete because it was not updated below wildfire_threshold.  If only
+   * a single variable is needed, it is faster to call calculateEstimate(const KEY&).
+   */
+  virtual Values calculateEstimate() const  = 0;
 
 
 protected:
@@ -115,5 +121,9 @@ protected:
   std::set<Key> findKeysAfter(double timestamp) const;
 
 }; // FixedLagSmoother
+
+/// Typedef for matlab wrapping
+typedef FixedLagSmoother::KeyTimestampMap FixedLagSmootherKeyTimestampMap;
+typedef FixedLagSmoother::Result FixedLagSmootherResult;
 
 } /// namespace gtsam

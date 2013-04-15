@@ -314,11 +314,11 @@ int main(int argc, char** argv) {
     cout << setprecision(5) << "    Key: " << key_value.key << endl;
   }
   cout << "  Fixed-Lag Smoother Keys: " << endl;
-  BOOST_FOREACH(const FixedLagSmoother::KeyTimestampMap::value_type& key_timestamp, fixedlagSmoother.getTimestamps()) {
+  BOOST_FOREACH(const FixedLagSmoother::KeyTimestampMap::value_type& key_timestamp, fixedlagSmoother.timestamps()) {
     cout << setprecision(5) << "    Key: " << key_timestamp.first << endl;
   }
   cout << "  Batch Smoother Keys: " << endl;
-  BOOST_FOREACH(const FixedLagSmoother::KeyTimestampMap::value_type& key_timestamp, batchSmoother.getTimestamps()) {
+  BOOST_FOREACH(const FixedLagSmoother::KeyTimestampMap::value_type& key_timestamp, batchSmoother.timestamps()) {
     cout << setprecision(5) << "    Key: " << key_timestamp.first << endl;
   }
 

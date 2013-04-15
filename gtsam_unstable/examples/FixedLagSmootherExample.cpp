@@ -127,11 +127,11 @@ int main(int argc, char** argv) {
   // And to demonstrate the fixed-lag aspect, print the keys contained in each smoother after 3.0 seconds
   cout << "After 3.0 seconds, " << endl;
   cout << "  Batch Smoother Keys: " << endl;
-  BOOST_FOREACH(const FixedLagSmoother::KeyTimestampMap::value_type& key_timestamp, smootherBatch.getTimestamps()) {
+  BOOST_FOREACH(const FixedLagSmoother::KeyTimestampMap::value_type& key_timestamp, smootherBatch.timestamps()) {
     cout << setprecision(5) << "    Key: " << key_timestamp.first << "  Time: " << key_timestamp.second << endl;
   }
   cout << "  iSAM2 Smoother Keys: " << endl;
-  BOOST_FOREACH(const FixedLagSmoother::KeyTimestampMap::value_type& key_timestamp, smootherISAM2.getTimestamps()) {
+  BOOST_FOREACH(const FixedLagSmoother::KeyTimestampMap::value_type& key_timestamp, smootherISAM2.timestamps()) {
     cout << setprecision(5) << "    Key: " << key_timestamp.first << "  Time: " << key_timestamp.second << endl;
   }
 
