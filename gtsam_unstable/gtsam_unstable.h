@@ -383,6 +383,21 @@ virtual class VelocityConstraint3 : gtsam::NonlinearFactor {
   Vector evaluateError(const gtsam::LieScalar& x1, const gtsam::LieScalar& x2, const gtsam::LieScalar& v) const;
 };
 
+#include <gtsam_unstable/dynamics/Pendulum.h>
+virtual class PendulumFactor1 : gtsam::NonlinearFactor {
+  /** Standard constructor */
+  PendulumFactor1(size_t k1, size_t k, size_t velKey, double dt);
+
+  Vector evaluateError(const gtsam::LieScalar& qk1, const gtsam::LieScalar& qk, const gtsam::LieScalar& v) const;
+};
+
+virtual class PendulumFactor2 : gtsam::NonlinearFactor {
+  /** Standard constructor */
+  PendulumFactor2(size_t vk1, size_t vk, size_t qKey, double dt, double L, double g);
+
+  Vector evaluateError(const gtsam::LieScalar& vk1, const gtsam::LieScalar& vk, const gtsam::LieScalar& q) const;
+};
+
 //*************************************************************************
 // nonlinear
 //*************************************************************************
