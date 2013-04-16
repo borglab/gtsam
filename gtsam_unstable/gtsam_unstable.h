@@ -398,6 +398,21 @@ virtual class PendulumFactor2 : gtsam::NonlinearFactor {
   Vector evaluateError(const gtsam::LieScalar& vk1, const gtsam::LieScalar& vk, const gtsam::LieScalar& q) const;
 };
 
+virtual class PendulumFactorPk : gtsam::NonlinearFactor {
+  /** Standard constructor */
+  PendulumFactorPk(size_t pk, size_t qk, size_t qk1, double h, double m, double r, double g, double alpha);
+
+  Vector evaluateError(const gtsam::LieScalar& pk, const gtsam::LieScalar& qk, const gtsam::LieScalar& qk1) const;
+};
+
+virtual class PendulumFactorPk1 : gtsam::NonlinearFactor {
+  /** Standard constructor */
+  PendulumFactorPk1(size_t pk1, size_t qk, size_t qk1, double h, double m, double r, double g, double alpha);
+
+  Vector evaluateError(const gtsam::LieScalar& pk1, const gtsam::LieScalar& qk, const gtsam::LieScalar& qk1) const;
+};
+
+
 //*************************************************************************
 // nonlinear
 //*************************************************************************
