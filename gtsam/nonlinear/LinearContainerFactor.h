@@ -16,6 +16,9 @@ namespace gtsam {
 
 /**
  * Dummy version of a generic linear factor to be injected into a nonlinear factor graph
+ *
+ * This factor does have the ability to perform relinearization under small-angle and
+ * linearity assumptions if a linearization point is added.
  */
 class GTSAM_EXPORT LinearContainerFactor : public NonlinearFactor {
 protected:
@@ -60,7 +63,12 @@ public:
   // NonlinearFactor
 
   /**
-   * Calculate the error of the factor: uses the underlying linear factor to compute ordering
+   * Calculate the nonlinear error for the factor, where the error is computed
+   * by passing the delta between linearization point and c, where
+   * delta = linearizationPoint_.localCoordinates(c), into the error function
+   * of the stored linear factor.
+   *
+   * @return nonlinear error if linearizationPoint present, zero otherwise
    */
   double error(const Values& c) const;
 
@@ -73,7 +81,23 @@ public:
   /** Apply the ordering to a graph - same as linearize(), but without needing a linearization point */
   GaussianFactor::shared_ptr order(const Ordering& ordering) const;
 
-  /** linearize to a GaussianFactor: values has no effect, just clones/rekeys underlying factor */
+  /**
+   * Linearize to a GaussianFactor, with method depending on the presence of a linearizationPoint
+   *  - With no linearization point, returns a reordered, but numerically identical,
+   *  version of the existing stored linear factor
+   *  - With a linearization point provided, returns a reordered and relinearized version of
+   *  the linearized factor.
+   *
+   * The relinearization approach used computes a linear delta between the original linearization
+   * point and the new values c, where delta = linearizationPoint_.localCoordinates(c), and
+   * substitutes this change into the system.  This substitution is only really valid for
+   * linear variable manifolds, and for any variables based on a non-commutative
+   * manifold (such as Pose2, Pose3), the relinearized version will be effective
+   * for only small angles.
+   *
+   * TODO: better approximation of relinearization
+   * TODO: switchable modes for approximation technique
+   */
   GaussianFactor::shared_ptr linearize(const Values& c, const Ordering& ordering) const;
 
   /**
