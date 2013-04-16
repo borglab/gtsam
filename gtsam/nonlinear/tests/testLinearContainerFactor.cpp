@@ -6,13 +6,12 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
-
-#include <boost/assign/std/vector.hpp>
-
+#include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/LinearContainerFactor.h>
-
-#include <gtsam/base/TestableAssertions.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Point3.h>
+#include <gtsam/base/TestableAssertions.h>
+#include <boost/assign/std/vector.hpp>
 
 using namespace std;
 using namespace boost::assign;
@@ -120,7 +119,7 @@ TEST( testLinearContainerFactor, jacobian_factor_withlinpoints ) {
   // Check linearization with corrections for updated linearization point
   Ordering newOrdering; newOrdering += x1, l1, x2, l2;
   GaussianFactor::shared_ptr actLinearizationB = actFactor.linearize(noisyValues, newOrdering);
-  Vector bprime = b + A1 * delta_l1 + A2 * delta_l2;
+  Vector bprime = b - A1 * delta_l1 - A2 * delta_l2;
   JacobianFactor expLinFactor2(newOrdering[l1], A1, newOrdering[l2], A2, bprime, diag_model2);
   EXPECT(assert_equal(*expLinFactor2.clone(), *actLinearizationB, tol));
 }
@@ -234,12 +233,12 @@ TEST( testLinearContainerFactor, hessian_factor_withlinpoints ) {
   // Compute updated versions
   Vector dv = Vector_(5, 3.0, 4.0, 0.5, 1.0, 2.0);
   Vector g(5); g << g1, g2;
-  Vector g_prime = G.selfadjointView<Eigen::Upper>() * dv + g;
+  Vector g_prime = g - G.selfadjointView<Eigen::Upper>() * dv;
 
   // Check linearization with corrections for updated linearization point
   Vector g1_prime = g_prime.head(3);
   Vector g2_prime = g_prime.tail(2);
-  double f_prime = f + dv.transpose() * G.selfadjointView<Eigen::Upper>() * dv + dv.transpose() * g;
+  double f_prime = f + dv.transpose() * G.selfadjointView<Eigen::Upper>() * dv - 2.0 * dv.transpose() * g;
   HessianFactor expNewFactor(ordering[x1], ordering[l1], G11, G12, g1_prime, G22, g2_prime, f_prime);
   EXPECT(assert_equal(*expNewFactor.clone(), *actFactor.linearize(noisyValues, ordering), tol));
 }
@@ -277,6 +276,80 @@ TEST( testLinearContainerFactor, creation ) {
 
   // Verify subset of linearization points
   EXPECT(assert_equal(exp_values, actual.linearizationPoint(), tol));
+}
+
+/* ************************************************************************* */
+TEST( testLinearContainerFactor, jacobian_relinearize )
+{
+  // Create a Between Factor from a Point3. This is actually a linear factor.
+  gtsam::Key key1(1);
+  gtsam::Key key2(2);
+  gtsam::Ordering ordering;
+  ordering.push_back(key1);
+  ordering.push_back(key2);
+  gtsam::Values linpoint1;
+  linpoint1.insert(key1, gtsam::Point3(-22.4,  +8.5,  +2.4));
+  linpoint1.insert(key2, gtsam::Point3(-21.0,  +5.0, +21.0));
+
+  gtsam::Point3 measured(1.0, -2.5, 17.8);
+  gtsam::SharedNoiseModel model = gtsam::noiseModel::Isotropic::Sigma(3, 0.1);
+  gtsam::BetweenFactor<gtsam::Point3> betweenFactor(key1, key2, measured, model);
+
+  // Create a jacobian container factor at linpoint 1
+  gtsam::JacobianFactor::shared_ptr jacobian(new gtsam::JacobianFactor(*betweenFactor.linearize(linpoint1, ordering)));
+  gtsam::LinearContainerFactor jacobianContainer(jacobian, ordering, linpoint1);
+
+  // Create a second linearization point
+  gtsam::Values linpoint2;
+  linpoint2.insert(key1, gtsam::Point3(+18.0, -0.25, +1.11));
+  linpoint2.insert(key2, gtsam::Point3(-10.0, +11.2, +0.05));
+
+  // Check the error at linpoint2 versus the original factor
+  double expected_error = betweenFactor.error(linpoint2);
+  double actual_error = jacobianContainer.error(linpoint2);
+  EXPECT_DOUBLES_EQUAL(expected_error, actual_error, 1e-9 );
+
+  // Re-linearize around the new point and check the factors
+  gtsam::GaussianFactor::shared_ptr expected_factor = betweenFactor.linearize(linpoint2, ordering);
+  gtsam::GaussianFactor::shared_ptr actual_factor   = jacobianContainer.linearize(linpoint2, ordering);
+  CHECK(gtsam::assert_equal(*expected_factor, *actual_factor));
+}
+
+/* ************************************************************************* */
+TEST( testLinearContainerFactor, hessian_relinearize )
+{
+  // Create a Between Factor from a Point3. This is actually a linear factor.
+  gtsam::Key key1(1);
+  gtsam::Key key2(2);
+  gtsam::Ordering ordering;
+  ordering.push_back(key1);
+  ordering.push_back(key2);
+  gtsam::Values linpoint1;
+  linpoint1.insert(key1, gtsam::Point3(-22.4,  +8.5,  +2.4));
+  linpoint1.insert(key2, gtsam::Point3(-21.0,  +5.0, +21.0));
+
+  gtsam::Point3 measured(1.0, -2.5, 17.8);
+  gtsam::SharedNoiseModel model = gtsam::noiseModel::Isotropic::Sigma(3, 0.1);
+  gtsam::BetweenFactor<gtsam::Point3> betweenFactor(key1, key2, measured, model);
+
+  // Create a hessian container factor at linpoint 1
+  gtsam::HessianFactor::shared_ptr hessian(new gtsam::HessianFactor(*betweenFactor.linearize(linpoint1, ordering)));
+  gtsam::LinearContainerFactor hessianContainer(hessian, ordering, linpoint1);
+
+  // Create a second linearization point
+  gtsam::Values linpoint2;
+  linpoint2.insert(key1, gtsam::Point3(+18.0, -0.25, +1.11));
+  linpoint2.insert(key2, gtsam::Point3(-10.0, +11.2, +0.05));
+
+  // Check the error at linpoint2 versus the original factor
+  double expected_error = betweenFactor.error(linpoint2);
+  double actual_error = hessianContainer.error(linpoint2);
+  EXPECT_DOUBLES_EQUAL(expected_error, actual_error, 1e-9 );
+
+  // Re-linearize around the new point and check the factors
+  gtsam::GaussianFactor::shared_ptr expected_factor = gtsam::HessianFactor::shared_ptr(new gtsam::HessianFactor(*betweenFactor.linearize(linpoint2, ordering)));
+  gtsam::GaussianFactor::shared_ptr actual_factor   = hessianContainer.linearize(linpoint2, ordering);
+  CHECK(gtsam::assert_equal(*expected_factor, *actual_factor));
 }
 
 /* ************************************************************************* */
