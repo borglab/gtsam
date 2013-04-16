@@ -99,7 +99,7 @@ public:
     const size_t p = LieScalar::Dim();
     if (H1) *H1 = -eye(p);
     if (H2) *H2 = eye(p);
-    if (H3) *H3 = -eye(p)*dt_*g_/L_*sin(q.value());
+    if (H3) *H3 = -eye(p)*dt_*g_/L_*cos(q.value());
     return vk1.localCoordinates(LieScalar(vk - dt_*g_/L_*sin(q)));
   }
 
