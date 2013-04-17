@@ -36,7 +36,7 @@ public:
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new VelocityConstraint3(*this))); }
 
-  /** g(x) with optional derivative2 */
+  /** x1 + v*dt - x2 = 0, with optional derivatives */
   Vector evaluateError(const LieScalar& x1, const LieScalar& x2, const LieScalar& v,
       boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none,
