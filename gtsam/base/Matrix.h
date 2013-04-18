@@ -135,6 +135,11 @@ inline bool operator!=(const Matrix& A, const Matrix& B) {
 GTSAM_EXPORT bool assert_equal(const Matrix& A, const Matrix& B, double tol = 1e-9);
 
 /**
+ * inequals with an tolerance, prints out message if within tolerance
+ */
+GTSAM_EXPORT bool assert_inequal(const Matrix& A, const Matrix& B, double tol = 1e-9);
+
+/**
  * equals with an tolerance, prints out message if unequal
  */
 GTSAM_EXPORT bool assert_equal(const std::list<Matrix>& As, const std::list<Matrix>& Bs, double tol = 1e-9);

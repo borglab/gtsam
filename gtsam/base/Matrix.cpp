@@ -106,6 +106,15 @@ bool assert_equal(const Matrix& expected, const Matrix& actual, double tol) {
 }
 
 /* ************************************************************************* */
+bool assert_inequal(const Matrix& A, const Matrix& B, double tol) {
+  if (!equal_with_abs_tol(A,B,tol)) return true;
+  cout << "Erroneously equal:" << endl;
+  print(A, "A = ");
+  print(B, "B = ");
+  return false;
+}
+
+/* ************************************************************************* */
 bool assert_equal(const std::list<Matrix>& As, const std::list<Matrix>& Bs, double tol) {
   if (As.size() != Bs.size()) return false;
 
