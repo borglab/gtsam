@@ -92,7 +92,7 @@ class EquivInertialNavFactor_GlobalVel : public NoiseModelFactor5<POSE, VELOCITY
 
 private:
 
-	typedef EquivInertialNavFactor_GlobalVelocity<POSE, VELOCITY, IMUBIAS> This;
+	typedef EquivInertialNavFactor_GlobalVel<POSE, VELOCITY, IMUBIAS> This;
 	typedef NoiseModelFactor5<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> Base;
 
 	Vector delta_pos_in_t0_;
@@ -112,7 +112,7 @@ private:
 public:
 
 	// shorthand for a smart pointer to a factor
-	typedef typename boost::shared_ptr<EquivInertialNavFactor_GlobalVelocity> shared_ptr;
+	typedef typename boost::shared_ptr<EquivInertialNavFactor_GlobalVel> shared_ptr;
 
 	/** default constructor - only use for serialization */
 	EquivInertialNavFactor_GlobalVel() {}
@@ -304,36 +304,36 @@ public:
 		// TODO: Write analytical derivative calculations
 		// Jacobian w.r.t. Pose1
 		if (H1){
-		  Matrix H1_Pose = numericalDerivative11<POSE, POSE>(boost::bind(&EquivInertialNavFactor_GlobalVelocity::evaluatePoseError, this, _1, Vel1, Bias1, Pose2, Vel2), Pose1);
-		  Matrix H1_Vel = numericalDerivative11<VELOCITY, POSE>(boost::bind(&EquivInertialNavFactor_GlobalVelocity::evaluateVelocityError, this, _1, Vel1, Bias1, Pose2, Vel2), Pose1);
+		  Matrix H1_Pose = numericalDerivative11<POSE, POSE>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluatePoseError, this, _1, Vel1, Bias1, Pose2, Vel2), Pose1);
+		  Matrix H1_Vel = numericalDerivative11<VELOCITY, POSE>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluateVelocityError, this, _1, Vel1, Bias1, Pose2, Vel2), Pose1);
 			*H1 = stack(2, &H1_Pose, &H1_Vel);
 		}
 
 		// Jacobian w.r.t. Vel1
 		if (H2){
-		  Matrix H2_Pose = numericalDerivative11<POSE, VELOCITY>(boost::bind(&EquivInertialNavFactor_GlobalVelocity::evaluatePoseError, this, Pose1, _1, Bias1, Pose2, Vel2), Vel1);
-		  Matrix H2_Vel = numericalDerivative11<VELOCITY, VELOCITY>(boost::bind(&EquivInertialNavFactor_GlobalVelocity::evaluateVelocityError, this, Pose1, _1, Bias1, Pose2, Vel2), Vel1);
+		  Matrix H2_Pose = numericalDerivative11<POSE, VELOCITY>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluatePoseError, this, Pose1, _1, Bias1, Pose2, Vel2), Vel1);
+		  Matrix H2_Vel = numericalDerivative11<VELOCITY, VELOCITY>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluateVelocityError, this, Pose1, _1, Bias1, Pose2, Vel2), Vel1);
 			*H2 = stack(2, &H2_Pose, &H2_Vel);
 		}
 
 		// Jacobian w.r.t. IMUBias1
 		if (H3){
-		  Matrix H3_Pose = numericalDerivative11<POSE, IMUBIAS>(boost::bind(&EquivInertialNavFactor_GlobalVelocity::evaluatePoseError, this, Pose1, Vel1, _1, Pose2, Vel2), Bias1);
-		  Matrix H3_Vel = numericalDerivative11<VELOCITY, IMUBIAS>(boost::bind(&EquivInertialNavFactor_GlobalVelocity::evaluateVelocityError, this, Pose1, Vel1, _1, Pose2, Vel2), Bias1);
+		  Matrix H3_Pose = numericalDerivative11<POSE, IMUBIAS>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluatePoseError, this, Pose1, Vel1, _1, Pose2, Vel2), Bias1);
+		  Matrix H3_Vel = numericalDerivative11<VELOCITY, IMUBIAS>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluateVelocityError, this, Pose1, Vel1, _1, Pose2, Vel2), Bias1);
 			*H3 = stack(2, &H3_Pose, &H3_Vel);
 		}
 
 		// Jacobian w.r.t. Pose2
 		if (H4){
-		  Matrix H4_Pose = numericalDerivative11<POSE, POSE>(boost::bind(&EquivInertialNavFactor_GlobalVelocity::evaluatePoseError, this, Pose1, Vel1, Bias1, _1, Vel2), Pose2);
-			Matrix H4_Vel = numericalDerivative11<VELOCITY, POSE>(boost::bind(&EquivInertialNavFactor_GlobalVelocity::evaluateVelocityError, this, Pose1, Vel1, Bias1, _1, Vel2), Pose2);
+		  Matrix H4_Pose = numericalDerivative11<POSE, POSE>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluatePoseError, this, Pose1, Vel1, Bias1, _1, Vel2), Pose2);
+			Matrix H4_Vel = numericalDerivative11<VELOCITY, POSE>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluateVelocityError, this, Pose1, Vel1, Bias1, _1, Vel2), Pose2);
 			*H4 = stack(2, &H4_Pose, &H4_Vel);
 		}
 
 		// Jacobian w.r.t. Vel2
 		if (H5){
-		  Matrix H5_Pose = numericalDerivative11<POSE, VELOCITY>(boost::bind(&EquivInertialNavFactor_GlobalVelocity::evaluatePoseError, this, Pose1, Vel1, Bias1, Pose2, _1), Vel2);
-		  Matrix H5_Vel = numericalDerivative11<VELOCITY, VELOCITY>(boost::bind(&EquivInertialNavFactor_GlobalVelocity::evaluateVelocityError, this, Pose1, Vel1, Bias1, Pose2, _1), Vel2);
+		  Matrix H5_Pose = numericalDerivative11<POSE, VELOCITY>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluatePoseError, this, Pose1, Vel1, Bias1, Pose2, _1), Vel2);
+		  Matrix H5_Vel = numericalDerivative11<VELOCITY, VELOCITY>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluateVelocityError, this, Pose1, Vel1, Bias1, Pose2, _1), Vel2);
 			*H5 = stack(2, &H5_Pose, &H5_Vel);
 		}
 
