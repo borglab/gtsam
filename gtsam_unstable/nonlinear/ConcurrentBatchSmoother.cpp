@@ -75,8 +75,6 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::update(const NonlinearF
   }
   gttoc(augment_system);
 
-  factors_.print("factors_");
-  theta_.print("theta_");
   if(factors_.size() > 0) {
     // Reorder the system to ensure efficient optimization (and marginalization) performance
     gttic(reorder);
