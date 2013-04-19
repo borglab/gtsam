@@ -75,27 +75,19 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::update(const NonlinearF
   }
   gttoc(augment_system);
 
-  // Reorder the system to ensure efficient optimization (and marginalization) performance
-  gttic(reorder);
-  reorder();
-  gttoc(reorder);
-
-  // Optimize the factors using a modified version of L-M
-  gttic(optimize);
+  factors_.print("factors_");
+  theta_.print("theta_");
   if(factors_.size() > 0) {
+    // Reorder the system to ensure efficient optimization (and marginalization) performance
+    gttic(reorder);
+    reorder();
+    gttoc(reorder);
+
+    // Optimize the factors using a modified version of L-M
+    gttic(optimize);
     result = optimize();
+    gttoc(optimize);
   }
-  gttoc(optimize);
-
-
-  // Moved presync code into the update function. Generally, only one call to smoother.update(*) is performed
-  // between synchronizations, so no extra work is being done. This also allows the presync code to be performed
-  // while the filter is still running (instead of during the synchronization when the filter is paused)
-  gttic(presync);
-  if(separatorValues_.size() > 0) {
-    updateSmootherSummarization();
-  }
-  gttoc(presync);
 
   gttoc(update);
 
@@ -414,8 +406,10 @@ void ConcurrentBatchSmoother::updateSmootherSummarization() {
   // Convert the marginal factors into Linear Container Factors and store
   BOOST_FOREACH(Index index, indicesToEliminate) {
     GaussianFactor::shared_ptr gaussianFactor = forest.at(index)->eliminateRecursive(parameters_.getEliminationFunction());
-    LinearContainerFactor::shared_ptr marginalFactor(new LinearContainerFactor(gaussianFactor, ordering_, theta_));
-    smootherSummarization_.push_back(marginalFactor);
+    if(gaussianFactor->size() > 0) {
+      LinearContainerFactor::shared_ptr marginalFactor(new LinearContainerFactor(gaussianFactor, ordering_, theta_));
+      smootherSummarization_.push_back(marginalFactor);
+    }
   }
 
 }

@@ -454,12 +454,14 @@ void ConcurrentBatchFilter::marginalize(const FastList<Key>& keysToMove) {
     NonlinearFactorGraph marginalFactors;
     BOOST_FOREACH(Index index, indicesToEliminate) {
       GaussianFactor::shared_ptr gaussianFactor = forest.at(index)->eliminateRecursive(parameters_.getEliminationFunction());
-      LinearContainerFactor::shared_ptr marginalFactor(new LinearContainerFactor(gaussianFactor, ordering_, theta_));
-      marginalFactors.push_back(marginalFactor);
-      // Add the keys associated with the marginal factor to the separator values
-      BOOST_FOREACH(Key key, *marginalFactor) {
-        if(!separatorValues_.exists(key)) {
-          separatorValues_.insert(key, theta_.at(key));
+      if(gaussianFactor->size() > 0) {
+        LinearContainerFactor::shared_ptr marginalFactor(new LinearContainerFactor(gaussianFactor, ordering_, theta_));
+        marginalFactors.push_back(marginalFactor);
+        // Add the keys associated with the marginal factor to the separator values
+        BOOST_FOREACH(Key key, *marginalFactor) {
+          if(!separatorValues_.exists(key)) {
+            separatorValues_.insert(key, theta_.at(key));
+          }
         }
       }
     }
@@ -554,8 +556,10 @@ NonlinearFactorGraph ConcurrentBatchFilter::marginalize(const NonlinearFactorGra
   NonlinearFactorGraph marginalFactors;
   BOOST_FOREACH(Index index, indicesToEliminate) {
     GaussianFactor::shared_ptr gaussianFactor = forest.at(index)->eliminateRecursive(function);
-    LinearContainerFactor::shared_ptr marginalFactor(new LinearContainerFactor(gaussianFactor, ordering, values));
-    marginalFactors.push_back(marginalFactor);
+    if(gaussianFactor->size() > 0) {
+      LinearContainerFactor::shared_ptr marginalFactor(new LinearContainerFactor(gaussianFactor, ordering, values));
+      marginalFactors.push_back(marginalFactor);
+    }
   }
 
   return marginalFactors;
