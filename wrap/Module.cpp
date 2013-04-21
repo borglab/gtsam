@@ -251,7 +251,7 @@ void Module::parseMarkup(const std::string& data) {
  
   Rule returnType_p = void_p | pair_p | returnType1_p;
  
-  Rule methodName_p = lexeme_d[lower_p >> *(alnum_p | '_')]; 
+  Rule methodName_p = lexeme_d[(upper_p | lower_p)  >> *(alnum_p | '_')];
  
   Rule method_p =  
     (returnType_p >> methodName_p[assign_a(methodName)] >> 

@@ -20,7 +20,7 @@
  *   Methods
  *     - Constness has no effect
  *     - Specify by-value (not reference) return types, even if C++ method returns reference
- *     - Must start with a lowercase letter
+ *     - Must start with a letter (upper or lowercase)
  *     - Overloads are supported
  *   Static methods
  *     - Must start with a letter (upper or lowercase) and use the "static" keyword
@@ -495,8 +495,8 @@ virtual class Pose3 : gtsam::Value {
   // Lie Group
   static gtsam::Pose3 Expmap(Vector v);
   static Vector Logmap(const gtsam::Pose3& p);
-  Matrix adjointMap() const;
-  Vector adjoint(const Vector& xi) const;
+  Matrix AdjointMap() const;
+  Vector Adjoint(Vector xi) const;
   static Matrix wedge(double wx, double wy, double wz, double vx, double vy, double vz);
 
   // Group Action on Point3
