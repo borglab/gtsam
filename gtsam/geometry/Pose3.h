@@ -145,11 +145,43 @@ namespace gtsam {
     static Vector6 Logmap(const Pose3& p);
 
     /**
-     * Calculate Adjoint map
+     * Calculate Adjoint map, transforming a twist in the this pose's (i.e, body) frame to the world spatial frame
      * Ad_pose is 6*6 matrix that when applied to twist xi \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$, returns Ad_pose(xi)
      */
-    Matrix6 adjointMap() const; /// FIXME Not tested - marked as incorrect
-    Vector adjoint(const Vector& xi) const {return adjointMap()*xi; } /// FIXME Not tested - marked as incorrect
+    Matrix6 AdjointMap() const; /// FIXME Not tested - marked as incorrect
+
+    /**
+     * Apply this pose's AdjointMap Ad_g to a twist \f$ \xi_b \f$, i.e. a body-fixed velocity, transforming it to the spatial frame
+     * \f$ \xi^s = g*\xi^b*g^{-1} = Ad_g * \xi^b \f$
+     */
+    Vector Adjoint(const Vector& xi_b) const {return AdjointMap()*xi_b; } /// FIXME Not tested - marked as incorrect
+
+    /**
+     * Compute the [ad(w,v)] operator as defined in [Kobilarov09siggraph], pg 11
+     * [ad(w,v)] = [w^, zero3; v^, w^]
+     * Note that this is the matrix representation of the adjoint operator for se3 Lie algebra,
+     * aka the Lie bracket, and also the derivative of Adjoint map for the Lie group SE3.
+     *
+     * Let \f$ \hat{\xi}_i \f$ be the se3 Lie algebra, and \f$ \hat{\xi}_i^\vee = \xi_i = [\omega_i,v_i] \in \mathbb{R}^6\f$ be its
+     * vector representation.
+     * We have the following relationship:
+     * \f$ [\hat{\xi}_1,\hat{\xi}_2]^\vee = ad_{\xi_1}(\xi_2) = [ad_{(\omega_1,v_1)}]*\xi_2 \f$
+     *
+     * We use this to compute the discrete version of the inverse right-trivialized tangent map,
+     * and its inverse transpose in the discrete Euler Poincare' (DEP) operator.
+     *
+     */
+    static Matrix6 adjoint(const Vector& xi);
+
+    /**
+     * Compute the inverse right-trivialized tangent (derivative) map of the exponential map,
+     * using the trapezoidal Lie-Newmark (TLN) scheme
+     * as detailed in [Kobilarov09siggraph] eq. (15) and C_TLN.
+     * The full formula is documented in [Celledoni99cmame]
+     *    Elena Celledoni and Brynjulf Owren. Lie group methods for rigid body dynamics and
+     *    time integration on manifolds. Comput. meth. in Appl. Mech. and Eng., 19(3,4):421Ð 438, 2003.
+     */
+    static Matrix6 dExpInv_TLN(const Vector&  xi);
 
     /**
      * wedge for Pose3:

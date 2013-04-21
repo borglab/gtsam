@@ -44,13 +44,27 @@ namespace gtsam {
   // Calculate Adjoint map
   // Ad_pose is 6*6 matrix that when applied to twist xi, returns Ad_pose(xi)
   // Experimental - unit tests of derivatives based on it do not check out yet
-  Matrix6 Pose3::adjointMap() const {
+  Matrix6 Pose3::AdjointMap() const {
     const Matrix3 R = R_.matrix();
     const Vector3 t = t_.vector();
     Matrix3 A = skewSymmetric(t)*R;
     Matrix6 adj;
     adj << R, Z3, A, R;
     return adj;
+  }
+
+  /* ************************************************************************* */
+  Matrix6 Pose3::adjoint(const Vector& xi) {
+    Matrix3 w_hat = skewSymmetric(xi(0), xi(1), xi(2));
+    Matrix3 v_hat = skewSymmetric(xi(3), xi(4), xi(5));
+    Matrix6 adj;
+    adj << w_hat, Z3, v_hat, w_hat;
+    return adj;
+  }
+
+  /* ************************************************************************* */
+  Matrix6 Pose3::dExpInv_TLN(const Vector& xi) {
+    return I6 - 0.5*adjoint(xi);
   }
 
   /* ************************************************************************* */
@@ -210,14 +224,14 @@ namespace gtsam {
   /* ************************************************************************* */
   Pose3 Pose3::compose(const Pose3& p2,
         boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
-    if (H1) *H1 = p2.inverse().adjointMap();
+    if (H1) *H1 = p2.inverse().AdjointMap();
     if (H2) *H2 = I6;
     return (*this) * p2;
   }
 
   /* ************************************************************************* */
   Pose3 Pose3::inverse(boost::optional<Matrix&> H1) const {
-    if (H1) *H1 = -adjointMap();
+    if (H1) *H1 = -AdjointMap();
     Rot3 Rt = R_.inverse();
     return Pose3(Rt, Rt*(-t_));
   }
@@ -227,7 +241,7 @@ namespace gtsam {
   Pose3 Pose3::between(const Pose3& p2, boost::optional<Matrix&> H1,
       boost::optional<Matrix&> H2) const {
     Pose3 result = inverse()*p2;
-    if (H1) *H1 = -result.inverse().adjointMap();
+    if (H1) *H1 = -result.inverse().AdjointMap();
     if (H2) *H2 = I6;
     return result;
   }

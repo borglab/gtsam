@@ -128,15 +128,15 @@ TEST(Pose3, expmap_c_full)
 TEST(Pose3, Adjoint_full)
 {
   Pose3 expected = T * Pose3::Expmap(screw::xi) * T.inverse();
-  Vector xiprime = T.adjoint(screw::xi);
+  Vector xiprime = T.Adjoint(screw::xi);
   EXPECT(assert_equal(expected, Pose3::Expmap(xiprime), 1e-6));
 
   Pose3 expected2 = T2 * Pose3::Expmap(screw::xi) * T2.inverse();
-  Vector xiprime2 = T2.adjoint(screw::xi);
+  Vector xiprime2 = T2.Adjoint(screw::xi);
   EXPECT(assert_equal(expected2, Pose3::Expmap(xiprime2), 1e-6));
 
   Pose3 expected3 = T3 * Pose3::Expmap(screw::xi) * T3.inverse();
-  Vector xiprime3 = T3.adjoint(screw::xi);
+  Vector xiprime3 = T3.Adjoint(screw::xi);
   EXPECT(assert_equal(expected3, Pose3::Expmap(xiprime3), 1e-6));
 }
 
@@ -192,7 +192,7 @@ TEST(Pose3, Adjoint_compose_full)
   const Pose3& T1 = T;
   Vector x = Vector_(6,0.1,0.1,0.1,0.4,0.2,0.8);
   Pose3 expected = T1 * Pose3::Expmap(x) * T2;
-  Vector y = T2.inverse().adjoint(x);
+  Vector y = T2.inverse().Adjoint(x);
   Pose3 actual = T1 * T2 * Pose3::Expmap(y);
   EXPECT(assert_equal(expected, actual, 1e-6));
 }
@@ -211,7 +211,7 @@ TEST( Pose3, compose )
 
   Matrix numericalH1 = numericalDerivative21(testing::compose<Pose3>, T2, T2);
   EXPECT(assert_equal(numericalH1,actualDcompose1,5e-3));
-  EXPECT(assert_equal(T2.inverse().adjointMap(),actualDcompose1,5e-3));
+  EXPECT(assert_equal(T2.inverse().AdjointMap(),actualDcompose1,5e-3));
 
   Matrix numericalH2 = numericalDerivative22(testing::compose<Pose3>, T2, T2);
   EXPECT(assert_equal(numericalH2,actualDcompose2,1e-4));
@@ -231,7 +231,7 @@ TEST( Pose3, compose2 )
 
   Matrix numericalH1 = numericalDerivative21(testing::compose<Pose3>, T1, T2);
   EXPECT(assert_equal(numericalH1,actualDcompose1,5e-3));
-  EXPECT(assert_equal(T2.inverse().adjointMap(),actualDcompose1,5e-3));
+  EXPECT(assert_equal(T2.inverse().AdjointMap(),actualDcompose1,5e-3));
 
   Matrix numericalH2 = numericalDerivative22(testing::compose<Pose3>, T1, T2);
   EXPECT(assert_equal(numericalH2,actualDcompose2,1e-5));
@@ -247,7 +247,7 @@ TEST( Pose3, inverse)
 
   Matrix numericalH = numericalDerivative11(testing::inverse<Pose3>, T);
   EXPECT(assert_equal(numericalH,actualDinverse,5e-3));
-  EXPECT(assert_equal(-T.adjointMap(),actualDinverse,5e-3));
+  EXPECT(assert_equal(-T.AdjointMap(),actualDinverse,5e-3));
 }
 
 /* ************************************************************************* */
@@ -261,7 +261,7 @@ TEST( Pose3, inverseDerivatives2)
   Matrix actualDinverse;
   T.inverse(actualDinverse);
   EXPECT(assert_equal(numericalH,actualDinverse,5e-3));
-  EXPECT(assert_equal(-T.adjointMap(),actualDinverse,5e-3));
+  EXPECT(assert_equal(-T.AdjointMap(),actualDinverse,5e-3));
 }
 
 /* ************************************************************************* */
@@ -620,6 +620,24 @@ TEST( Pose3, unicycle )
   EXPECT(assert_equal(Pose3(Rot3::ypr(0,0,0), l1), expmap_default<Pose3>(x1, x_step), tol));
   EXPECT(assert_equal(Pose3(Rot3::ypr(0,0,0), Point3(2,1,0)), expmap_default<Pose3>(x2, x_step), tol));
   EXPECT(assert_equal(Pose3(Rot3::ypr(M_PI/4.0,0,0), Point3(2,2,0)), expmap_default<Pose3>(x3, sqrt(2.0) * x_step), tol));
+}
+
+/* ************************************************************************* */
+TEST( Pose3, adjoint) {
+  Matrix res = Pose3::adjoint(screw::xi);
+  Matrix wh = skewSymmetric(screw::xi(0), screw::xi(1), screw::xi(2));
+  Matrix vh = skewSymmetric(screw::xi(3), screw::xi(4), screw::xi(5));
+  Matrix Z3 = zeros(3,3);
+  Matrix6 expected;
+  expected << wh, Z3, vh, wh;
+  EXPECT(assert_equal(expected,res,1e-5));
+}
+
+/* ************************************************************************* */
+TEST( Pose3, dExpInv_TLN) {
+  Matrix res = Pose3::dExpInv_TLN(screw::xi);
+  Matrix6 expected = eye(6,6) - 0.5*Pose3::adjoint(screw::xi);
+  EXPECT(assert_equal(expected,res,1e-5));
 }
 
 /* ************************************************************************* */
