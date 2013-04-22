@@ -11,13 +11,17 @@
 using namespace gtsam;
 using namespace gtsam::symbol_shorthand;
 
-const double tol=1e-5;
-const double h = 0.1;
-const double g = 9.81, l = 1.0;
+namespace {
 
-const double deg2rad = M_PI/180.0;
-LieScalar origin, q1(deg2rad*30.0), q2(deg2rad*31.0);
-LieScalar v1(deg2rad*1.0/h), v2((v1-h*g/l*sin(q1)));
+  const double tol=1e-5;
+  const double h = 0.1;
+  const double g = 9.81, l = 1.0;
+
+  const double deg2rad = M_PI/180.0;
+  LieScalar origin, q1(deg2rad*30.0), q2(deg2rad*31.0);
+  LieScalar v1(deg2rad*1.0/h), v2((v1-h*g/l*sin(q1)));
+
+}
 
 /* ************************************************************************* */
 TEST( testPendulumFactor1, evaluateError) {

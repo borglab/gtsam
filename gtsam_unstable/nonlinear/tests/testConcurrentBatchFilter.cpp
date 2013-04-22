@@ -35,6 +35,7 @@
 using namespace std;
 using namespace gtsam;
 
+namespace {
 
 // Set up initial pose, odometry difference, loop closure difference, and initialization errors
 const Pose3 poseInitial;
@@ -428,6 +429,8 @@ void FindFactorsWithOnly(const CONTAINER& keys, const NonlinearFactorGraph& sour
       destinationFactors.push_back(factor);
     }
   }
+
+}
 
 }
 
