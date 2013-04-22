@@ -12,6 +12,7 @@
 /**
  * @file serializationTestHelpers.h
  * @brief 
+ * @author Alex Cunningham
  * @author Richard Roberts
  * @date Feb 7, 2012
  */
