@@ -634,10 +634,23 @@ TEST( Pose3, adjoint) {
 }
 
 /* ************************************************************************* */
+/// exp(xi) exp(y) = exp(xi + x)
+/// Hence, y = log (exp(-xi)*exp(xi+x))
+Vector testDerivExpmapInv(const LieVector& dxi) {
+  return Pose3::Logmap(Pose3::Expmap(-screw::xi)*Pose3::Expmap(screw::xi+dxi));
+}
+
 TEST( Pose3, dExpInv_TLN) {
   Matrix res = Pose3::dExpInv_TLN(screw::xi);
-  Matrix6 expected = eye(6,6) - 0.5*Pose3::adjoint(screw::xi);
-  EXPECT(assert_equal(expected,res,1e-5));
+
+  Matrix numericalDerivExpmapInv = numericalDerivative11(
+      boost::function<Vector(const LieVector&)>(
+          boost::bind(testDerivExpmapInv,  _1)
+          ),
+      LieVector(Vector::Zero(6)), 1e-5
+      );
+
+  EXPECT(assert_equal(numericalDerivExpmapInv,res,1e-1));
 }
 
 /* ************************************************************************* */

@@ -64,7 +64,19 @@ namespace gtsam {
 
   /* ************************************************************************* */
   Matrix6 Pose3::dExpInv_TLN(const Vector& xi) {
-    return I6 - 0.5*adjoint(xi);
+    // Bernoulli numbers, from Wikipedia
+    static const Vector B = Vector_(9, 1.0, -1.0/2.0, 1./6., 0.0, -1.0/30.0, 0.0, 1.0/42.0, 0.0, -1.0/30);
+    static const int N = 5; // order of approximation
+    Matrix res = I6;
+    Matrix6 ad_i = I6;
+    Matrix6 ad_xi = adjoint(xi);
+    double fac = 1.0;
+    for (int i = 1 ; i<N; ++i) {
+      ad_i = ad_xi * ad_i;
+      fac = fac*i;
+      res = res + B(i)/fac*ad_i;
+    }
+    return res;
   }
 
   /* ************************************************************************* */
