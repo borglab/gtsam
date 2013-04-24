@@ -9,7 +9,6 @@
 
 #pragma once
 
-//#include <gtsam_unstable/slam/PoseTranslationPrior.h>
 #include <gtsam/geometry/concepts.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
