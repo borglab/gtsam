@@ -9,7 +9,10 @@
 
 #pragma once
 
-#include <gtsam_unstable/slam/PoseTranslationPrior.h>
+//#include <gtsam_unstable/slam/PoseTranslationPrior.h>
+#include <gtsam/geometry/concepts.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
+
 
 namespace gtsam {
 
@@ -66,10 +69,8 @@ public:
     const size_t rDim = newR.dim(), xDim = pose.dim();
     if (H) {
       *H = gtsam::zeros(rDim, xDim);
-      if (pose_traits::isRotFirst<Pose>())
-        (*H).leftCols(rDim).setIdentity(rDim, rDim);
-      else
-        (*H).rightCols(rDim).setIdentity(rDim, rDim);
+      std::pair<size_t, size_t> rotInterval = POSE::rotationInterval();
+      (*H).middleCols(rotInterval.first, rDim).setIdentity(rDim, rDim);
     }
 
     return Rotation::Logmap(newR) - Rotation::Logmap(measured_);

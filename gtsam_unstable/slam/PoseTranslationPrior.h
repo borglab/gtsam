@@ -14,22 +14,6 @@
 
 namespace gtsam {
 
-/** simple pose traits for building factors */
-namespace pose_traits {
-
-/** checks whether parameterization of rotation is before or after translation in Lie algebra */
-template<class POSE>
-bool isRotFirst() {
-  throw std::invalid_argument("PoseTrait: no implementation for this pose type");
-  return false;
-}
-
-// Instantiate for common poses
-template<> inline bool isRotFirst<Pose3>() { return true; }
-template<> inline bool isRotFirst<Pose2>() { return false; }
-
-} // \namespace pose_traits
-
 /**
  * A prior on the translation part of a pose
  */
@@ -78,10 +62,8 @@ public:
     const size_t tDim = newTrans.dim(), xDim = pose.dim();
     if (H) {
       *H = gtsam::zeros(tDim, xDim);
-      if (pose_traits::isRotFirst<Pose>())
-        (*H).rightCols(tDim) = R.matrix();
-      else
-        (*H).leftCols(tDim) = R.matrix();
+      std::pair<size_t, size_t> transInterval = POSE::translationInterval();
+      (*H).middleCols(transInterval.first, tDim) = R.matrix();
     }
 
     return newTrans.vector() - measured_.vector();
