@@ -150,7 +150,8 @@ endif()
 # Write Eigen include file with the paths for either the system Eigen or the GTSAM-bundled Eigen
 configure_file(gtsam/3rdparty/gtsam_eigen_includes.h.in gtsam/3rdparty/gtsam_eigen_includes.h)
 
-
+# Install the configuration file for Eigen
+install(FILES ${CMAKE_BINARY_DIR}/gtsam/3rdparty/gtsam_eigen_includes.h DESTINATION include/gtsam/3rdparty)
 
 
 ###############################################################################

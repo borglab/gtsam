@@ -44,6 +44,10 @@ else()
     set(excluded_sources ${excluded_sources} "${CMAKE_CURRENT_SOURCE_DIR}/geometry/Rot3Q.cpp")
 endif()
 
+# Common headers
+file(GLOB gtsam_core_headers "*.h")
+install(FILES ${gtsam_core_headers} DESTINATION include/gtsam)
+
 # assemble core libaries
 foreach(subdir ${gtsam_subdirs})
     # Build convenience libraries
@@ -77,6 +81,7 @@ set(gtsam_srcs
     ${nonlinear_srcs}
     ${slam_srcs}
 	${navigation_srcs}
+	${gtsam_core_headers}
 )
 
 # Versions
@@ -129,8 +134,9 @@ set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/slam/dataset.cpp"
 	"SOURCE_TREE_DATASET_DIR=\"${CMAKE_SOURCE_DIR}/examples/Data\""
 	"INSTALLED_DATASET_DIR=\"${GTSAM_TOOLBOX_INSTALL_PATH}/gtsam_examples/Data\"")
 	
-# Generate config file
+# Generate and install config file
 configure_file(config.h.in config.h)
+install(FILES ${CMAKE_BINARY_DIR}/gtsam/config.h DESTINATION include/gtsam)
 
 # Create the matlab toolbox for the gtsam library
 if (GTSAM_INSTALL_MATLAB_TOOLBOX)
