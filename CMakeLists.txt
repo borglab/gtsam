@@ -126,12 +126,38 @@ else()
 endif()
 
 
+###############################################################################
+# Option for using system Eigen or GTSAM-bundled Eigen
+option(GTSAM_USE_SYSTEM_EIGEN "Find and use system-installed Eigen. If 'off', use the one bundled with GTSAM" OFF)
+
+# Switch for using system Eigen or GTSAM-bundled Eigen
+if(GTSAM_USE_SYSTEM_EIGEN)
+	# Use generic Eigen include paths e.g. <Eigen/Core>
+	set(GTSAM_EIGEN_INCLUDE_PREFIX "")
+	
+	find_package(Eigen3 REQUIRED)
+	include_directories(AFTER EIGEN3_INCLUDE_DIR)
+else()
+	# Use bundled Eigen include paths e.g. <gtsam/3rdparty/Eigen/Eigen/Core>
+	set(GTSAM_EIGEN_INCLUDE_PREFIX "gtsam/3rdparty/Eigen/")
+	
+	# Clear any variables set by FindEigen3
+	if(EIGEN3_INCLUDE_DIR)
+		set(EIGEN3_INCLUDE_DIR NOTFOUND)
+	endif()
+endif()
+
+# Write Eigen include file with the paths for either the system Eigen or the GTSAM-bundled Eigen
+configure_file(gtsam/3rdparty/gtsam_eigen_includes.h.in gtsam/3rdparty/gtsam_eigen_includes.h)
+
+
+
 
 ###############################################################################
 # Global compile options
 
 # General build settings
-include_directories(
+include_directories(BEFORE
   gtsam/3rdparty/UFconfig 
   gtsam/3rdparty/CCOLAMD/Include
   ${CMAKE_SOURCE_DIR}
