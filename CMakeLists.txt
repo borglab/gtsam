@@ -136,14 +136,14 @@ if(GTSAM_USE_SYSTEM_EIGEN)
 	set(GTSAM_EIGEN_INCLUDE_PREFIX "")
 	
 	find_package(Eigen3 REQUIRED)
-	include_directories(AFTER EIGEN3_INCLUDE_DIR)
+	include_directories(AFTER "${EIGEN3_INCLUDE_DIR}")
 else()
 	# Use bundled Eigen include paths e.g. <gtsam/3rdparty/Eigen/Eigen/Core>
 	set(GTSAM_EIGEN_INCLUDE_PREFIX "gtsam/3rdparty/Eigen/")
 	
 	# Clear any variables set by FindEigen3
 	if(EIGEN3_INCLUDE_DIR)
-		set(EIGEN3_INCLUDE_DIR NOTFOUND)
+		set(EIGEN3_INCLUDE_DIR NOTFOUND CACHE STRING "" FORCE)
 	endif()
 endif()
 
