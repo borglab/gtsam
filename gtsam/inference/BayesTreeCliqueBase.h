@@ -21,7 +21,7 @@
 #include <boost/make_shared.hpp>
 #include <boost/weak_ptr.hpp>
 
-#include <gtsam/base/types.h>
+#include <gtsam/global_includes.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/BayesNet.h>
 

@@ -23,7 +23,7 @@
 #include <iostream>
 #include <boost/shared_ptr.hpp>
 
-#include <gtsam/base/types.h>
+#include <gtsam/global_includes.h>
 #include <gtsam/base/FastMap.h>
 
 namespace gtsam {

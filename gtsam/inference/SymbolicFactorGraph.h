@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <gtsam/base/types.h>
+#include <gtsam/global_includes.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/IndexFactor.h>
 

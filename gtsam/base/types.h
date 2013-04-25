@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include <gtsam/base/dllexport.h>
+#include <gtsam/dllexport.h>
 
 #include <cstddef>
 

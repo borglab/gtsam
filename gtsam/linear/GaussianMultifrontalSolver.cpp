@@ -15,7 +15,6 @@
  * @date    Oct 21, 2010
  */
 
-#include <gtsam/3rdparty/Eigen/Eigen/Dense>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
 
 namespace gtsam {

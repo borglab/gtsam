@@ -23,7 +23,6 @@
 #pragma once
 
 #include <gtsam/base/Vector.h>
-#include <gtsam/3rdparty/Eigen/Eigen/QR>
 #include <boost/format.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/math/special_functions/fpclassify.hpp>

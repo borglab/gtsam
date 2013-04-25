@@ -40,8 +40,8 @@ namespace gtsam {
 string findExampleDataFile(const string& name) {
   // Search source tree and installed location
   vector<string> rootsToSearch;
-  rootsToSearch.push_back(SOURCE_TREE_DATASET_DIR); // Defined by CMake, see gtsam/gtsam/CMakeLists.txt
-  rootsToSearch.push_back(INSTALLED_DATASET_DIR);   // Defined by CMake, see gtsam/gtsam/CMakeLists.txt
+  rootsToSearch.push_back(SourceTreeDatasetDir); // Defined by CMake, see gtsam/gtsam/CMakeLists.txt
+  rootsToSearch.push_back(InstalledDatasetDir);   // Defined by CMake, see gtsam/gtsam/CMakeLists.txt
 
   // Search for filename as given, and with .graph and .txt extensions
   vector<string> namesToSearch;

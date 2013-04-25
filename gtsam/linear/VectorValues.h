@@ -18,7 +18,7 @@
 #pragma once
 
 #include <gtsam/base/Vector.h>
-#include <gtsam/base/types.h>
+#include <gtsam/global_includes.h>
 
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>

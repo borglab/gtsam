@@ -26,7 +26,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#ifndef GTSAM_DEFAULT_QUATERNIONS
+#ifndef GTSAM_USE_QUATERNIONS
 
 using namespace std;
 using namespace gtsam;

@@ -27,7 +27,7 @@
 #include <boost/foreach.hpp>
 #include <boost/function/function1.hpp>
 #include <boost/lexical_cast.hpp>
-#include <gtsam/base/types.h>
+#include <gtsam/global_includes.h>
 #include <gtsam/base/FastMap.h>
 
 namespace gtsam {

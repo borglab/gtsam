@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <gtsam/base/types.h>
+#include <gtsam/global_includes.h>
 #include <gtsam/inference/Conditional.h>
 #include <gtsam/inference/IndexFactor.h>
 #include <gtsam/inference/Permutation.h>

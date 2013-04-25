@@ -18,7 +18,9 @@
  * @author  Richard Roberts
  */
 
-#ifndef GTSAM_DEFAULT_QUATERNIONS
+#include <gtsam/config.h> // Get GTSAM_USE_QUATERNIONS macro
+
+#ifndef GTSAM_USE_QUATERNIONS
 
 #include <gtsam/geometry/Rot3.h>
 #include <boost/math/constants/constants.hpp>

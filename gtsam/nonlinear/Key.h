@@ -20,7 +20,7 @@
 #include <boost/function.hpp>
 #include <string>
 
-#include <gtsam/base/types.h>
+#include <gtsam/global_includes.h>
 #include <gtsam/base/FastVector.h>
 #include <gtsam/base/FastList.h>
 #include <gtsam/base/FastSet.h>

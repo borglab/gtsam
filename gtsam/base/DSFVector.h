@@ -23,7 +23,7 @@
 #include <set>
 #include <boost/shared_ptr.hpp>
 
-#include <gtsam/base/types.h>
+#include <gtsam/global_includes.h>
 
 namespace gtsam {
 

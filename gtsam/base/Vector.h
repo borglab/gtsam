@@ -23,8 +23,8 @@
 #include <list>
 #include <vector>
 #include <iostream>
-#include <gtsam/base/types.h>
-#include <gtsam/3rdparty/Eigen/Eigen/Dense>
+#include <gtsam/global_includes.h>
+#include <gtsam/3rdparty/gtsam_eigen_includes.h>
 
 namespace gtsam {
 

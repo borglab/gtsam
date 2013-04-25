@@ -21,9 +21,11 @@
 
 #pragma once
 
+#include <gtsam/config.h> // Get GTSAM_USE_QUATERNIONS macro
+
 // You can override the default coordinate mode using this flag
 #ifndef ROT3_DEFAULT_COORDINATES_MODE
-#ifdef GTSAM_DEFAULT_QUATERNIONS
+#ifdef GTSAM_USE_QUATERNIONS
 // Exponential map is very cheap for quaternions
 #define ROT3_DEFAULT_COORDINATES_MODE Rot3::EXPMAP
 #else
@@ -35,7 +37,6 @@
 #include <gtsam/base/DerivedValue.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/geometry/Point3.h>
-#include <gtsam/3rdparty/Eigen/Eigen/Geometry>
 
 namespace gtsam {
 
@@ -46,7 +47,7 @@ namespace gtsam {
 
   /**
    * @brief A 3D rotation represented as a rotation matrix if the preprocessor
-   * symbol GTSAM_DEFAULT_QUATERNIONS is not defined, or as a quaternion if it
+   * symbol GTSAM_USE_QUATERNIONS is not defined, or as a quaternion if it
    * is defined.
    * @addtogroup geometry
    * \nosubgrouping
@@ -56,7 +57,7 @@ namespace gtsam {
     static const size_t dimension = 3;
 
   private:
-#ifdef GTSAM_DEFAULT_QUATERNIONS
+#ifdef GTSAM_USE_QUATERNIONS
     /** Internal Eigen Quaternion */
     Quaternion quaternion_;
 #else
@@ -222,18 +223,18 @@ namespace gtsam {
      * exponential map, but this can be expensive to compute. The following Enum is used
      * to indicate which method should be used.  The default
      * is determined by ROT3_DEFAULT_COORDINATES_MODE, which may be set at compile time,
-     * and itself defaults to Rot3::CAYLEY, or if GTSAM_DEFAULT_QUATERNIONS is defined,
+     * and itself defaults to Rot3::CAYLEY, or if GTSAM_USE_QUATERNIONS is defined,
      * to Rot3::EXPMAP.
      */
     enum CoordinatesMode {
       EXPMAP, ///< Use the Lie group exponential map to retract
-#ifndef GTSAM_DEFAULT_QUATERNIONS
+#ifndef GTSAM_USE_QUATERNIONS
       CAYLEY, ///< Retract and localCoordinates using the Cayley transform.
       SLOW_CAYLEY ///< Slow matrix implementation of Cayley transform (for tests only).
 #endif
       };
 
-#ifndef GTSAM_DEFAULT_QUATERNIONS
+#ifndef GTSAM_USE_QUATERNIONS
     /// Retraction from R^3 to Rot3 manifold using the Cayley transform
     Rot3 retractCayley(const Vector& omega) const;
 #endif
@@ -362,7 +363,7 @@ namespace gtsam {
     {
        ar & boost::serialization::make_nvp("Rot3",
            boost::serialization::base_object<Value>(*this));
-#ifndef GTSAM_DEFAULT_QUATERNIONS
+#ifndef GTSAM_USE_QUATERNIONS
        ar & boost::serialization::make_nvp("rot11", rot_(0,0));
        ar & boost::serialization::make_nvp("rot12", rot_(0,1));
        ar & boost::serialization::make_nvp("rot13", rot_(0,2));

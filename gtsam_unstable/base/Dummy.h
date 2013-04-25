@@ -17,7 +17,7 @@
  * @date June 14, 2012
  */
 
-#include <gtsam/base/types.h>
+#include <gtsam/global_includes.h>
 #include <gtsam_unstable/base/dllexport.h>
 #include <string>
 

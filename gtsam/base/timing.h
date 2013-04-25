@@ -21,7 +21,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <boost/version.hpp>
-#include <gtsam/base/types.h>
+#include <gtsam/global_includes.h>
 #include <gtsam/base/FastMap.h>
 
 // Automatically use the new Boost timers if version is recent enough.

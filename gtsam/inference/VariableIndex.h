@@ -23,7 +23,7 @@
 #include <boost/foreach.hpp>
 
 #include <gtsam/base/FastList.h>
-#include <gtsam/base/types.h>
+#include <gtsam/global_includes.h>
 #include <gtsam/base/timing.h>
 
 namespace gtsam {

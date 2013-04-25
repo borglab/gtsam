@@ -83,12 +83,6 @@ if (NOT GTSAM_BUILD_SHARED_LIBRARY AND NOT GTSAM_BUILD_STATIC_LIBRARY)
     message(FATAL_ERROR "Both shared and static version of GTSAM library disabled - need to choose at least one!")
 endif()
 
-# Add the Quaternion Build Flag if requested
-if (GTSAM_USE_QUATERNIONS)
-  set(CMAKE_C_FLAGS            "${CMAKE_C_FLAGS} -DGTSAM_DEFAULT_QUATERNIONS")
-  set(CMAKE_CXX_FLAGS          "${CMAKE_CXX_FLAGS} -DGTSAM_DEFAULT_QUATERNIONS")
-endif(GTSAM_USE_QUATERNIONS)
-
 # Flags to determine whether tests and examples are build during 'make install'
 # Note that these remove the targets from the 'all'
 option(GTSAM_DISABLE_TESTS_ON_INSTALL "Disables building tests during install" ON)
@@ -141,6 +135,7 @@ include_directories(
   gtsam/3rdparty/UFconfig 
   gtsam/3rdparty/CCOLAMD/Include
   ${CMAKE_SOURCE_DIR}
+  ${CMAKE_BINARY_DIR} # So we can include generated config header files
   CppUnitLite
   ${Boost_INCLUDE_DIR})
 link_directories(${Boost_LIBRARY_DIRS})

@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <gtsam/base/types.h>
+#include <gtsam/global_includes.h>
 
 #include <map>
 #include <string>

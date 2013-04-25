@@ -22,7 +22,7 @@
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/base/blockMatrices.h>
-#include <gtsam/base/types.h>
+#include <gtsam/global_includes.h>
 
 #include <boost/tuple/tuple.hpp>
 

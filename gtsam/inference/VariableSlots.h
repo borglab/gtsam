@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <gtsam/base/types.h>
+#include <gtsam/global_includes.h>
 #include <gtsam/base/FastMap.h>
 
 #include <iostream>

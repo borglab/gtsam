@@ -21,7 +21,7 @@
 
 #include <boost/utility.hpp>
 
-#include <gtsam/base/types.h>
+#include <gtsam/global_includes.h>
 #include <gtsam/base/blockMatrices.h>
 #include <gtsam/inference/IndexConditional.h>
 #include <gtsam/linear/VectorValues.h>

@@ -17,7 +17,7 @@
  */
 #pragma once
 
-#include <gtsam/base/types.h>
+#include <gtsam/global_includes.h>
 #include <boost/lexical_cast.hpp>
 #include <exception>
 

@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <gtsam/base/dllexport.h>
+#include <gtsam/dllexport.h>
 #include <gtsam/base/DerivedValue.h>
 #include <gtsam/base/Lie.h>
 
