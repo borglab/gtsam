@@ -18,10 +18,8 @@
 #pragma once
 
 // Paths to example datasets distributed with GTSAM
-namespace gtsam {
-  static const char* SourceTreeDatasetDir = "@CMAKE_SOURCE_DIR@/examples/Data";
-  static const char* InstalledDatasetDir = "@GTSAM_TOOLBOX_INSTALL_PATH@/gtsam_examples/Data";
-}
+#define GTSAM_SOURCE_TREE_DATASET_DIR "@CMAKE_SOURCE_DIR@/examples/Data"
+#define GTSAM_INSTALLED_DATASET_DIR "@GTSAM_TOOLBOX_INSTALL_PATH@/gtsam_examples/Data"
 
 // Whether GTSAM is compiled to use quaternions for Rot3 (otherwise uses rotation matrices)
 #cmakedefine GTSAM_USE_QUATERNIONS
