@@ -126,7 +126,6 @@ protected:
   Values theta_;  ///< Current linearization point of all variables in the filter
   Ordering ordering_; ///< The current ordering used to calculate the linear deltas
   VectorValues delta_; ///< The current set of linear deltas from the linearization point
-  VariableIndex variableIndex_; ///< The current variable index, which allows efficient factor lookup by variable. Note: after marginalization, this is left in an inconsistent state
   std::queue<size_t> availableSlots_; ///< The set of available factor graph slots caused by deleting factors
   Values separatorValues_; ///< The linearization points of the separator variables. These should not be updated during optimization.
   std::vector<size_t> smootherSummarizationSlots_;  ///< The slots in factor graph that correspond to the current smoother summarization factors
@@ -194,7 +193,8 @@ private:
   void reorder(const boost::optional<FastList<Key> >& keysToMove = boost::none);
 
   /** Use a modified version of L-M to update the linearization point and delta */
-  Result optimize();
+  static Result optimize(const NonlinearFactorGraph& factors, Values& theta, const Ordering& ordering,
+       VectorValues& delta, const Values& linearValues, const LevenbergMarquardtParams& parameters);
 
   /** Marginalize out the set of requested variables from the filter, caching them for the smoother
    *  This effectively moves the separator.
