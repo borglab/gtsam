@@ -31,19 +31,43 @@ GaussianFactorGraph::shared_ptr summarizeGraphSequential(
 
 /* ************************************************************************* */
 std::pair<GaussianFactorGraph,Ordering>
-partialCholeskySummarization(const NonlinearFactorGraph& graph, const Values& values,
-    const KeySet& overlap_keys) {
+sequentialSummarization(const NonlinearFactorGraph& graph, const Values& values,
+    const KeySet& saved_keys) {
   // compute a new ordering with non-saved keys first
   Ordering ordering;
   KeySet eliminatedKeys;
   BOOST_FOREACH(const Key& key, values.keys()) {
-    if (!overlap_keys.count(key)) {
+    if (!saved_keys.count(key)) {
       eliminatedKeys.insert(key);
       ordering += key;
     }
   }
 
-  BOOST_FOREACH(const Key& key, overlap_keys)
+  BOOST_FOREACH(const Key& key, saved_keys)
+    ordering += key;
+
+  // Linearize the system
+  GaussianFactorGraph full_graph = *graph.linearize(values, ordering);
+  GaussianFactorGraph summarized_system;
+  summarized_system.push_back(EliminateQR(full_graph, eliminatedKeys.size()).second);
+  return make_pair(summarized_system, ordering);
+}
+
+/* ************************************************************************* */
+std::pair<GaussianFactorGraph,Ordering>
+partialCholeskySummarization(const NonlinearFactorGraph& graph, const Values& values,
+    const KeySet& saved_keys) {
+  // compute a new ordering with non-saved keys first
+  Ordering ordering;
+  KeySet eliminatedKeys;
+  BOOST_FOREACH(const Key& key, values.keys()) {
+    if (!saved_keys.count(key)) {
+      eliminatedKeys.insert(key);
+      ordering += key;
+    }
+  }
+
+  BOOST_FOREACH(const Key& key, saved_keys)
     ordering += key;
 
   // reorder the system
