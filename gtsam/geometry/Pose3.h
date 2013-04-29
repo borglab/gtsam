@@ -19,7 +19,7 @@
 #pragma once
 
 #ifndef POSE3_DEFAULT_COORDINATES_MODE
-#define POSE3_DEFAULT_COORDINATES_MODE Pose3::FIRST_ORDER
+#define POSE3_DEFAULT_COORDINATES_MODE Pose3::EXPMAP
 #endif
 
 #include <gtsam/base/DerivedValue.h>
@@ -171,17 +171,29 @@ namespace gtsam {
      * and its inverse transpose in the discrete Euler Poincare' (DEP) operator.
      *
      */
-    static Matrix6 adjoint(const Vector& xi);
+    static Matrix6 adjointMap(const Vector& xi);
+
+    /**
+     * Action of the adjointMap on a Lie-algebra vector y, with optional derivatives
+     */
+    static Vector adjoint(const Vector& xi, const Vector& y, boost::optional<Matrix&> H = boost::none);
+
+    /**
+     * The dual version of adjoint action, acting on the dual space of the Lie-algebra vector space.
+     */
+    static Vector adjointTranspose(const Vector& xi, const Vector& y, boost::optional<Matrix&> H = boost::none);
 
     /**
      * Compute the inverse right-trivialized tangent (derivative) map of the exponential map,
-     * using the trapezoidal Lie-Newmark (TLN) scheme
-     * as detailed in [Kobilarov09siggraph] eq. (15) and C_TLN.
+     * as detailed in [Kobilarov09siggraph] eq. (15)
      * The full formula is documented in [Celledoni99cmame]
      *    Elena Celledoni and Brynjulf Owren. Lie group methods for rigid body dynamics and
      *    time integration on manifolds. Comput. meth. in Appl. Mech. and Eng., 19(3,4):421� 438, 2003.
+     * and in [Hairer06book] in formula (4.5), pg. 84, Lemma 4.2
+     *    Ernst Hairer, et al., Geometric Numerical Integration,
+     *      Structure-Preserving Algorithms for Ordinary Differential Equations, 2nd edition, Springer-Verlag, 2006.
      */
-    static Matrix6 dExpInv_TLN(const Vector&  xi);
+    static Matrix6 dExpInv_exp(const Vector&  xi);
 
     /**
      * wedge for Pose3:

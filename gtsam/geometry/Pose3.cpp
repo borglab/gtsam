@@ -55,22 +55,50 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Matrix6 Pose3::adjoint(const Vector& xi) {
+  Matrix6 Pose3::adjointMap(const Vector& xi) {
     Matrix3 w_hat = skewSymmetric(xi(0), xi(1), xi(2));
     Matrix3 v_hat = skewSymmetric(xi(3), xi(4), xi(5));
     Matrix6 adj;
     adj << w_hat, Z3, v_hat, w_hat;
+
     return adj;
   }
 
   /* ************************************************************************* */
-  Matrix6 Pose3::dExpInv_TLN(const Vector& xi) {
+  Vector Pose3::adjoint(const Vector& xi, const Vector& y, boost::optional<Matrix&> H) {
+    if (H) {
+      *H = zeros(6,6);
+      for (int i = 0; i<6; ++i) {
+        Vector dxi = zero(6); dxi(i) = 1.0;
+        Matrix Gi = adjointMap(dxi);
+        (*H).col(i) = Gi*y;
+      }
+    }
+    return adjointMap(xi)*y;
+  }
+
+  /* ************************************************************************* */
+  Vector Pose3::adjointTranspose(const Vector& xi, const Vector& y, boost::optional<Matrix&> H) {
+    if (H) {
+      *H = zeros(6,6);
+      for (int i = 0; i<6; ++i) {
+        Vector dxi = zero(6); dxi(i) = 1.0;
+        Matrix GTi = adjointMap(dxi).transpose();
+        (*H).col(i) = GTi*y;
+      }
+    }
+    Matrix adjT = adjointMap(xi).transpose();
+    return adjointMap(xi).transpose() * y;
+  }
+
+  /* ************************************************************************* */
+  Matrix6 Pose3::dExpInv_exp(const Vector& xi) {
     // Bernoulli numbers, from Wikipedia
     static const Vector B = Vector_(9, 1.0, -1.0/2.0, 1./6., 0.0, -1.0/30.0, 0.0, 1.0/42.0, 0.0, -1.0/30);
     static const int N = 5; // order of approximation
     Matrix res = I6;
     Matrix6 ad_i = I6;
-    Matrix6 ad_xi = adjoint(xi);
+    Matrix6 ad_xi = adjointMap(xi);
     double fac = 1.0;
     for (int i = 1 ; i<N; ++i) {
       ad_i = ad_xi * ad_i;

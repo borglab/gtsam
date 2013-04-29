@@ -627,8 +627,8 @@ TEST( Pose3, unicycle )
 }
 
 /* ************************************************************************* */
-TEST( Pose3, adjoint) {
-  Matrix res = Pose3::adjoint(screw::xi);
+TEST( Pose3, adjointMap) {
+  Matrix res = Pose3::adjointMap(screw::xi);
   Matrix wh = skewSymmetric(screw::xi(0), screw::xi(1), screw::xi(2));
   Matrix vh = skewSymmetric(screw::xi(3), screw::xi(4), screw::xi(5));
   Matrix Z3 = zeros(3,3);
@@ -674,12 +674,16 @@ TEST(Pose3, align_2) {
 /* ************************************************************************* */
 /// exp(xi) exp(y) = exp(xi + x)
 /// Hence, y = log (exp(-xi)*exp(xi+x))
+
+Vector xi = Vector_(6, 0.1, 0.2, 0.3, 1.0, 2.0, 3.0);
+
 Vector testDerivExpmapInv(const LieVector& dxi) {
-  return Pose3::Logmap(Pose3::Expmap(-screw::xi)*Pose3::Expmap(screw::xi+dxi));
+  Vector y = Pose3::Logmap(Pose3::Expmap(-xi)*Pose3::Expmap(xi+dxi));
+  return y;
 }
 
 TEST( Pose3, dExpInv_TLN) {
-  Matrix res = Pose3::dExpInv_TLN(screw::xi);
+  Matrix res = Pose3::dExpInv_exp(xi);
 
   Matrix numericalDerivExpmapInv = numericalDerivative11(
       boost::function<Vector(const LieVector&)>(
@@ -688,7 +692,53 @@ TEST( Pose3, dExpInv_TLN) {
       LieVector(Vector::Zero(6)), 1e-5
       );
 
-  EXPECT(assert_equal(numericalDerivExpmapInv,res,1e-1));
+  EXPECT(assert_equal(numericalDerivExpmapInv,res,3e-1));
+}
+
+/* ************************************************************************* */
+Vector testDerivAdjoint(const LieVector& xi, const LieVector& v) {
+  return Pose3::adjointMap(xi)*v;
+}
+
+TEST( Pose3, adjoint) {
+  Vector expected = testDerivAdjoint(screw::xi, screw::xi);
+
+  Matrix actualH;
+  Vector actual = Pose3::adjoint(screw::xi, screw::xi, actualH);
+
+  Matrix numericalH = numericalDerivative21(
+      boost::function<Vector(const LieVector&, const LieVector&)>(
+          boost::bind(testDerivAdjoint,  _1, _2)
+          ),
+      LieVector(screw::xi), LieVector(screw::xi), 1e-5
+      );
+
+  EXPECT(assert_equal(expected,actual,1e-5));
+  EXPECT(assert_equal(numericalH,actualH,1e-5));
+}
+
+/* ************************************************************************* */
+Vector testDerivAdjointTranspose(const LieVector& xi, const LieVector& v) {
+  return Pose3::adjointMap(xi).transpose()*v;
+}
+
+TEST( Pose3, adjointTranspose) {
+  Vector xi = Vector_(6, 0.01, 0.02, 0.03, 1.0, 2.0, 3.0);
+  Vector v = Vector_(6, 0.04, 0.05, 0.06, 4.0, 5.0, 6.0);
+  Vector expected = testDerivAdjointTranspose(xi, v);
+
+  Matrix actualH;
+  Vector actual = Pose3::adjointTranspose(xi, v, actualH);
+
+  Matrix numericalH = numericalDerivative21(
+      boost::function<Vector(const LieVector&, const LieVector&)>(
+          boost::bind(testDerivAdjointTranspose,  _1, _2)
+          ),
+      LieVector(xi), LieVector(v), 1e-5
+      );
+
+  EXPECT(assert_equal(expected,actual,1e-15));
+  EXPECT(assert_equal(numericalH,actualH,1e-5));
 }
 
 /* ************************************************************************* */
