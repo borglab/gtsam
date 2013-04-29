@@ -18,6 +18,7 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/concepts.h>
 #include <gtsam/base/Lie-inl.h>
+#include <boost/foreach.hpp>
 #include <iostream>
 #include <cmath>
 
@@ -282,5 +283,41 @@ namespace gtsam {
        insertSub(*H2, H2_, 0, 3);
      }
      return r;
+  }
+
+  /* ************************************************************************* */
+  boost::optional<Pose3> align(const vector<Point3Pair>& pairs) {
+    const size_t n = pairs.size();
+    if (n<3) return boost::none; // we need at least three pairs
+
+    // calculate centroids
+    Vector cp = zero(3),cq = zero(3);
+    BOOST_FOREACH(const Point3Pair& pair, pairs) {
+      cp += pair.first.vector();
+      cq += pair.second.vector();
+    }
+    double f = 1.0/n;
+    cp *= f; cq *= f;
+
+    // Add to form H matrix
+    Matrix H = zeros(3,3);
+    BOOST_FOREACH(const Point3Pair& pair, pairs) {
+      Vector dp = pair.first.vector()  - cp;
+      Vector dq = pair.second.vector() - cq;
+      H += dp * dq.transpose();
+    }
+
+    // Compute SVD
+    Matrix U,V;
+    Vector S;
+    svd(H,U,S,V);
+
+    // Recover transform with correction from Eggert97machinevisionandapplications
+    Matrix UVtranspose = U * V.transpose();
+    Matrix detWeighting = eye(3,3);
+    detWeighting(2,2) = UVtranspose.determinant();
+    Rot3 R(Matrix(V * detWeighting * U.transpose()));
+    Point3 t = Point3(cq) - R * Point3(cp);
+    return Pose3(R, t);
   }
 } // namespace gtsam

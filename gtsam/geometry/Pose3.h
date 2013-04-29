@@ -179,7 +179,7 @@ namespace gtsam {
      * as detailed in [Kobilarov09siggraph] eq. (15) and C_TLN.
      * The full formula is documented in [Celledoni99cmame]
      *    Elena Celledoni and Brynjulf Owren. Lie group methods for rigid body dynamics and
-     *    time integration on manifolds. Comput. meth. in Appl. Mech. and Eng., 19(3,4):421Ð 438, 2003.
+     *    time integration on manifolds. Comput. meth. in Appl. Mech. and Eng., 19(3,4):421ï¿½ 438, 2003.
      */
     static Matrix6 dExpInv_TLN(const Vector&  xi);
 
@@ -299,5 +299,12 @@ namespace gtsam {
   inline Matrix wedge<Pose3>(const Vector& xi) {
     return Pose3::wedge(xi(0),xi(1),xi(2),xi(3),xi(4),xi(5));
   }
+
+  /**
+   * Calculate pose between a vector of 3D point correspondences (p,q)
+   * where q = Pose3::transform_from(p) = t + R*p
+   */
+  typedef std::pair<Point3,Point3> Point3Pair;
+  GTSAM_EXPORT boost::optional<Pose3> align(const std::vector<Point3Pair>& pairs);
 
 } // namespace gtsam
