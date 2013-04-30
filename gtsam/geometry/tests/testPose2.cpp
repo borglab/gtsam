@@ -429,7 +429,7 @@ TEST( Pose2, between )
   EXPECT(assert_equal(expectedH1,actualH1));
   EXPECT(assert_equal(numericalH1,actualH1));
   // Assert H1 = -AdjointMap(between(p2,p1)) as in doc/math.lyx
-  EXPECT(assert_equal(-gT2.between(gT1).adjointMap(),actualH1));
+  EXPECT(assert_equal(-gT2.between(gT1).AdjointMap(),actualH1));
 
   Matrix expectedH2 = Matrix_(3,3,
        1.0, 0.0, 0.0,

@@ -158,10 +158,10 @@ public:
    * Calculate Adjoint map
    * Ad_pose is 3*3 matrix that when applied to twist xi \f$ [T_x,T_y,\theta] \f$, returns Ad_pose(xi)
    */
-  Matrix adjointMap() const;
-  inline Vector adjoint(const Vector& xi) const {
+  Matrix AdjointMap() const;
+  inline Vector Adjoint(const Vector& xi) const {
     assert(xi.size() == 3);
-    return adjointMap()*xi;
+    return AdjointMap()*xi;
   }
 
   /**

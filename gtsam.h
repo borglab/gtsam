@@ -448,8 +448,8 @@ virtual class Pose2 : gtsam::Value {
   // Lie Group
   static gtsam::Pose2 Expmap(Vector v);
   static Vector Logmap(const gtsam::Pose2& p);
-  Matrix adjointMap() const;
-  Vector adjoint(const Vector& xi) const;
+  Matrix AdjointMap() const;
+  Vector Adjoint(const Vector& xi) const;
   static Matrix wedge(double vx, double vy, double w);
 
   // Group Actions on Point2

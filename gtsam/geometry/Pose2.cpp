@@ -108,7 +108,7 @@ Vector Pose2::localCoordinates(const Pose2& p2) const {
 /* ************************************************************************* */
 // Calculate Adjoint map
 // Ad_pose is 3*3 matrix that when applied to twist xi, returns Ad_pose(xi)
-Matrix Pose2::adjointMap() const {
+Matrix Pose2::AdjointMap() const {
   double c = r_.c(), s = r_.s(), x = t_.x(), y = t_.y();
   return Matrix_(3,3,
       c,  -s,   y,
@@ -119,7 +119,7 @@ Matrix Pose2::adjointMap() const {
 
 /* ************************************************************************* */
 Pose2 Pose2::inverse(boost::optional<Matrix&> H1) const {
-  if (H1) *H1 = -adjointMap();
+  if (H1) *H1 = -AdjointMap();
   return Pose2(r_.inverse(), r_.unrotate(Point2(-t_.x(), -t_.y())));
 }
 
@@ -142,7 +142,7 @@ Point2 Pose2::transform_to(const Point2& point,
 Pose2 Pose2::compose(const Pose2& p2, boost::optional<Matrix&> H1,
     boost::optional<Matrix&> H2) const {
   // TODO: inline and reuse?
-  if(H1) *H1 = p2.inverse().adjointMap();
+  if(H1) *H1 = p2.inverse().AdjointMap();
   if(H2) *H2 = I3;
   return (*this)*p2;
 }
