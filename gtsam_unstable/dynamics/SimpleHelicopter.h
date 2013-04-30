@@ -27,7 +27,7 @@ class Reconstruction : public NoiseModelFactor3<Pose3, Pose3, LieVector>  {
   typedef NoiseModelFactor3<Pose3, Pose3, LieVector> Base;
 public:
   Reconstruction(Key gKey1, Key gKey, Key xiKey, double h, double mu = 1000.0) :
-    Base(noiseModel::Constrained::All(Pose3::Dim()*3, fabs(mu)), gKey1, gKey,
+    Base(noiseModel::Constrained::All(Pose3::Dim(), fabs(mu)), gKey1, gKey,
         xiKey), h_(h) {
   }
   virtual ~Reconstruction() {}
@@ -92,7 +92,7 @@ public:
   DiscreteEulerPoincareHelicopter(Key xiKey1, Key xiKey_1, Key gKey,
       double h, const Matrix& Inertia, const Vector& Fu, double m,
       double mu = 1000.0) :
-    Base(noiseModel::Constrained::All(Pose3::Dim()*3, fabs(mu)), xiKey1, xiKey_1, gKey),
+    Base(noiseModel::Constrained::All(Pose3::Dim(), fabs(mu)), xiKey1, xiKey_1, gKey),
     h_(h), Inertia_(Inertia), Fu_(Fu), m_(m) {
   }
   virtual ~DiscreteEulerPoincareHelicopter() {}

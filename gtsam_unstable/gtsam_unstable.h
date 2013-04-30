@@ -5,6 +5,7 @@
 // specify the classes from gtsam we are using
 virtual class gtsam::Value;
 virtual class gtsam::LieScalar;
+virtual class gtsam::LieVector;
 virtual class gtsam::Point2;
 virtual class gtsam::Rot2;
 virtual class gtsam::Pose2;
@@ -412,6 +413,21 @@ virtual class PendulumFactorPk1 : gtsam::NonlinearFactor {
   Vector evaluateError(const gtsam::LieScalar& pk1, const gtsam::LieScalar& qk, const gtsam::LieScalar& qk1) const;
 };
 
+#include <gtsam/base/LieVector.h>
+#include <gtsam_unstable/dynamics/SimpleHelicopter.h>
+
+virtual class Reconstruction : gtsam::NonlinearFactor {
+  Reconstruction(size_t gKey1, size_t gKey, size_t xiKey, double h);
+
+  Vector evaluateError(const gtsam::Pose3& gK1, const gtsam::Pose3& gK, const gtsam::LieVector& xiK) const;
+};
+
+virtual class DiscreteEulerPoincareHelicopter : gtsam::NonlinearFactor {
+  DiscreteEulerPoincareHelicopter(size_t xiKey, size_t xiKey_1, size_t gKey,
+      double h, Matrix Inertia, Vector Fu, double m);
+
+  Vector evaluateError(const gtsam::LieVector& xiK, const gtsam::LieVector& xiK_1, const gtsam::Pose3& gK) const;
+};
 
 //*************************************************************************
 // nonlinear
