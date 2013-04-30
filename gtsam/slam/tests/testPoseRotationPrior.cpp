@@ -14,7 +14,7 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 
-#include <gtsam_unstable/slam/PoseRotationPrior.h>
+#include <gtsam/slam/PoseRotationPrior.h>
 
 using namespace gtsam;
 

@@ -11,7 +11,7 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 
-#include <gtsam_unstable/slam/PoseTranslationPrior.h>
+#include <gtsam/slam/PoseTranslationPrior.h>
 
 using namespace gtsam;
 

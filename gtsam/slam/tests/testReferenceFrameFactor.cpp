@@ -28,7 +28,7 @@
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 
-#include <gtsam_unstable/slam/ReferenceFrameFactor.h>
+#include <gtsam/slam/ReferenceFrameFactor.h>
 
 using namespace std;
 using namespace boost;
