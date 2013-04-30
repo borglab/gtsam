@@ -23,3 +23,6 @@
 
 // Whether GTSAM is compiled to use quaternions for Rot3 (otherwise uses rotation matrices)
 #cmakedefine GTSAM_USE_QUATERNIONS
+
+// Whether GTSAM is compiled to use Pose3::EXPMAP as the default coordinates mode for Pose3's retract and localCoordinates (otherwise, Pose3::FIRST_ORDER will be used)
+#cmakedefine GTSAM_POSE3_EXPMAP 

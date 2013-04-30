@@ -18,7 +18,11 @@
 
 #pragma once
 
-#ifndef POSE3_DEFAULT_COORDINATES_MODE
+#include <gtsam/config.h>
+
+#ifndef GTSAM_POSE3_EXPMAP
+#define POSE3_DEFAULT_COORDINATES_MODE Pose3::FIRST_ORDER
+#else
 #define POSE3_DEFAULT_COORDINATES_MODE Pose3::EXPMAP
 #endif
 
