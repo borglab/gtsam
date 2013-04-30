@@ -2019,6 +2019,24 @@ virtual class GenericStereoFactor : gtsam::NonlinearFactor {
 };
 typedef gtsam::GenericStereoFactor<gtsam::Pose3, gtsam::Point3> GenericStereoFactor3D;
 
+#include <gtsam/slam/PoseTranslationPrior.h>
+template<POSE>
+virtual class PoseTranslationPrior : gtsam::NonlinearFactor {
+  PoseTranslationPrior(size_t key, const POSE& pose_z, const gtsam::noiseModel::Base* noiseModel);
+};
+
+typedef gtsam::PoseTranslationPrior<gtsam::Pose2> PoseTranslationPrior2D;
+typedef gtsam::PoseTranslationPrior<gtsam::Pose3> PoseTranslationPrior3D;
+
+#include <gtsam/slam/PoseRotationPrior.h>
+template<POSE>
+virtual class PoseRotationPrior : gtsam::NonlinearFactor {
+  PoseRotationPrior(size_t key, const POSE& pose_z, const gtsam::noiseModel::Base* noiseModel);
+};
+
+typedef gtsam::PoseRotationPrior<gtsam::Pose2> PoseRotationPrior2D;
+typedef gtsam::PoseRotationPrior<gtsam::Pose3> PoseRotationPrior3D;
+
 #include <gtsam/slam/dataset.h>
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
     gtsam::noiseModel::Diagonal* model, int maxID, bool addNoise, bool smart);

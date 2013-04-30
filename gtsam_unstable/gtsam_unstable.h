@@ -570,26 +570,6 @@ virtual class ConcurrentBatchSmoother : gtsam::ConcurrentSmoother {
 //*************************************************************************
 // slam
 //*************************************************************************
-#include <gtsam/geometry/Pose2.h>
-
-#include <gtsam_unstable/slam/PoseTranslationPrior.h>
-template<POSE>
-virtual class PoseTranslationPrior : gtsam::NonlinearFactor {
-  PoseTranslationPrior(size_t key, const POSE& pose_z, const gtsam::noiseModel::Base* noiseModel);
-};
-
-typedef gtsam::PoseTranslationPrior<gtsam::Pose2> PoseTranslationPrior2D;
-typedef gtsam::PoseTranslationPrior<gtsam::Pose3> PoseTranslationPrior3D;
-
-#include <gtsam_unstable/slam/PoseRotationPrior.h>
-template<POSE>
-virtual class PoseRotationPrior : gtsam::NonlinearFactor {
-  PoseRotationPrior(size_t key, const POSE& pose_z, const gtsam::noiseModel::Base* noiseModel);
-};
-
-typedef gtsam::PoseRotationPrior<gtsam::Pose2> PoseRotationPrior2D;
-typedef gtsam::PoseRotationPrior<gtsam::Pose3> PoseRotationPrior3D;
-
 #include <gtsam_unstable/slam/RelativeElevationFactor.h>
 virtual class RelativeElevationFactor: gtsam::NonlinearFactor {
   RelativeElevationFactor();
