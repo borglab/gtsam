@@ -1450,6 +1450,32 @@ size_t symbol(char chr, size_t index);
 char symbolChr(size_t key);
 size_t symbolIndex(size_t key);
 
+// Key utilities
+gtsam::KeySet keyIntersection(const gtsam::KeySet& keysA, const gtsam::KeySet& keysB);
+gtsam::KeySet keyDifference(const gtsam::KeySet& keysA, const gtsam::KeySet& keysB);
+bool hasKeyIntersection(const gtsam::KeySet& keysA, const gtsam::KeySet& keysB);
+
+// Default keyformatter
+void printKeySet(const gtsam::KeySet& keys);
+void printKeySet(const gtsam::KeySet& keys, string s);
+
+#include <gtsam/nonlinear/LabeledSymbol.h>
+class LabeledSymbol {
+  LabeledSymbol(size_t full_key);
+  LabeledSymbol(const gtsam::LabeledSymbol& key);
+  LabeledSymbol(unsigned char valType, unsigned char label, size_t j);
+
+  size_t key() const;
+  unsigned char label() const;
+  unsigned char chr() const;
+  size_t index() const;
+
+  gtsam::LabeledSymbol upper() const;
+  gtsam::LabeledSymbol lower() const;
+
+  void print(string s) const;
+};
+
 #include <gtsam/nonlinear/Ordering.h>
 class Ordering {
   // Standard Constructors and Named Constructors
