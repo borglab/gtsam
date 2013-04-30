@@ -48,35 +48,33 @@ struct LieVector : public Vector, public DerivedValue<LieVector> {
   GTSAM_EXPORT LieVector(size_t m, ...);
 
   /** get the underlying vector */
-  inline Vector vector() const {
+  Vector vector() const {
     return static_cast<Vector>(*this);
   }
 
   /** print @param name optional string naming the object */
-  inline void print(const std::string& name="") const {
-    gtsam::print(vector(), name);
-  }
+  void print(const std::string& name="") const;
 
   /** equality up to tolerance */
-  inline bool equals(const LieVector& expected, double tol=1e-5) const {
+  bool equals(const LieVector& expected, double tol=1e-5) const {
     return gtsam::equal(vector(), expected.vector(), tol);
   }
 
   // Manifold requirements
 
   /** Returns dimensionality of the tangent space */
-  inline size_t dim() const { return this->size(); }
+  size_t dim() const { return this->size(); }
 
   /** Update the LieVector with a tangent space update */
-  inline LieVector retract(const Vector& v) const { return LieVector(vector() + v); }
+  LieVector retract(const Vector& v) const { return LieVector(vector() + v); }
 
   /** @return the local coordinates of another object */
-  inline Vector localCoordinates(const LieVector& t2) const { return LieVector(t2 - vector()); }
+  Vector localCoordinates(const LieVector& t2) const { return LieVector(t2 - vector()); }
 
   // Group requirements
 
   /** identity - NOTE: no known size at compile time - so zero length */
-  inline static LieVector identity() {
+  static LieVector identity() {
     throw std::runtime_error("LieVector::identity(): Don't use this function");
     return LieVector();
   }
@@ -86,7 +84,7 @@ struct LieVector : public Vector, public DerivedValue<LieVector> {
   // instead of the gtsam::Matrix class. This is related to deriving this class from an Eigen Vector
   // as the other geometry objects (Point3, Rot3, etc.) have this problem
   /** compose with another object */
-  inline LieVector compose(const LieVector& p,
+  LieVector compose(const LieVector& p,
       boost::optional<gtsam::Matrix&> H1=boost::none,
       boost::optional<gtsam::Matrix&> H2=boost::none) const {
     if(H1) *H1 = eye(dim());
@@ -96,7 +94,7 @@ struct LieVector : public Vector, public DerivedValue<LieVector> {
   }
 
   /** between operation */
-  inline LieVector between(const LieVector& l2,
+  LieVector between(const LieVector& l2,
       boost::optional<gtsam::Matrix&> H1=boost::none,
       boost::optional<gtsam::Matrix&> H2=boost::none) const {
     if(H1) *H1 = -eye(dim());
@@ -105,7 +103,7 @@ struct LieVector : public Vector, public DerivedValue<LieVector> {
   }
 
   /** invert the object and yield a new one */
-  inline LieVector inverse(boost::optional<gtsam::Matrix&> H=boost::none) const {
+  LieVector inverse(boost::optional<gtsam::Matrix&> H=boost::none) const {
     if(H) *H = -eye(dim());
 
     return LieVector(-1.0 * vector());
@@ -114,10 +112,10 @@ struct LieVector : public Vector, public DerivedValue<LieVector> {
   // Lie functions
 
   /** Expmap around identity */
-  static inline LieVector Expmap(const Vector& v) { return LieVector(v); }
+  static LieVector Expmap(const Vector& v) { return LieVector(v); }
 
   /** Logmap around identity - just returns with default cast back */
-  static inline Vector Logmap(const LieVector& p) { return p; }
+  static Vector Logmap(const LieVector& p) { return p; }
 
 private:
 
