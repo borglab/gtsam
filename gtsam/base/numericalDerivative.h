@@ -112,22 +112,22 @@ namespace gtsam {
     return H;
   }
 
-  /** use a raw C++ function pointer */
-  template<class Y, class X>
-  Matrix numericalDerivative11(Y (*h)(const X&), const X& x, double delta=1e-5) {
-    return numericalDerivative11<Y,X>(boost::bind(h, _1), x, delta);
-  }
+//  /** use a raw C++ function pointer */
+//  template<class Y, class X>
+//  Matrix numericalDerivative11(Y (*h)(const X&), const X& x, double delta=1e-5) {
+//    return numericalDerivative11<Y,X>(boost::bind(h, _1), x, delta);
+//  }
 
   /** remapping for double valued functions */
-  template<class X>
-  Matrix numericalDerivative11(boost::function<double(const X&)> h, const X& x, double delta=1e-5) {
-    return numericalDerivative11<LieVector, X>(boost::bind(makeLieVectorD, boost::bind(h, _1)), x, delta);
-  }
+//  template<class X>
+//  Matrix numericalDerivative11(boost::function<double(const X&)> h, const X& x, double delta=1e-5) {
+//    return numericalDerivative11<LieVector, X>(boost::bind(makeLieVectorD, boost::bind(h, _1)), x, delta);
+//  }
 
-  template<class X>
-  Matrix numericalDerivative11(double (*h)(const X&), const X& x, double delta=1e-5) {
-    return numericalDerivative11<LieVector, X>(boost::bind(makeLieVectorD, boost::bind(h, _1)), x, delta);
-  }
+//  template<class X>
+//  Matrix numericalDerivative11(double (*h)(const X&), const X& x, double delta=1e-5) {
+//    return numericalDerivative11<LieVector, X>(boost::bind(makeLieVectorD, boost::bind(h, _1)), x, delta);
+//  }
 
   /** remapping for vector valued functions */
   template<class X>
@@ -135,10 +135,10 @@ namespace gtsam {
     return numericalDerivative11<LieVector, X>(boost::bind(makeLieVector, boost::bind(h, _1)), x, delta);
   }
 
-  template<class X>
-  Matrix numericalDerivative11(Vector (*h)(const X&), const X& x, double delta=1e-5) {
-    return numericalDerivative11<LieVector, X>(boost::bind(makeLieVector, boost::bind(h, _1)), x, delta);
-  }
+//  template<class X>
+//  Matrix numericalDerivative11(Vector (*h)(const X&), const X& x, double delta=1e-5) {
+//    return numericalDerivative11<LieVector, X>(boost::bind(makeLieVector, boost::bind(h, _1)), x, delta);
+//  }
 
   /**
    * Compute numerical derivative in argument 1 of binary function
