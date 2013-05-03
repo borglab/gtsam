@@ -1476,6 +1476,11 @@ class LabeledSymbol {
   void print(string s) const;
 };
 
+size_t mrsymbol(unsigned char c, unsigned char label, size_t j);
+unsigned char mrsymbolChr(size_t key);
+unsigned char mrsymbolLabel(size_t key);
+size_t mrsymbolIndex(size_t key);
+
 #include <gtsam/nonlinear/Ordering.h>
 class Ordering {
   // Standard Constructors and Named Constructors
