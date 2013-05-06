@@ -583,8 +583,7 @@ namespace gtsam {
         ReweightScheme reweight_;
 
       public:
-        Base(): reweight_(Block) {}
-        Base(const ReweightScheme reweight):reweight_(reweight) {}
+        Base(const ReweightScheme reweight = Block):reweight_(reweight) {}
         virtual ~Base() {}
 
         /// robust error function to implement
@@ -609,69 +608,110 @@ namespace gtsam {
         void reweight(Matrix &A, Vector &error) const;
         void reweight(Matrix &A1, Matrix &A2, Vector &error) const;
         void reweight(Matrix &A1, Matrix &A2, Matrix &A3, Vector &error) const;
+
+      private:
+        /** Serialization function */
+        friend class boost::serialization::access;
+        template<class ARCHIVE>
+        void serialize(ARCHIVE & ar, const unsigned int version) {
+          ar & BOOST_SERIALIZATION_NVP(reweight_);
+        }
       };
 
       /// Null class is not robust so is a Gaussian ?
       class GTSAM_EXPORT Null : public Base {
       public:
         typedef boost::shared_ptr<Null> shared_ptr;
+
         Null(const ReweightScheme reweight = Block) : Base(reweight) {}
         virtual ~Null() {}
         virtual double weight(const double &error) const { return 1.0; }
         virtual void print(const std::string &s) const;
         virtual bool equals(const Base& expected, const double tol=1e-8) const { return true; }
         static shared_ptr Create() ;
+
+      private:
+        /** Serialization function */
+        friend class boost::serialization::access;
+        template<class ARCHIVE>
+        void serialize(ARCHIVE & ar, const unsigned int version) {
+          ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+        }
       };
 
       /// Fair implements the "Fair" robust error model (Zhang97ivc)
       class GTSAM_EXPORT Fair : public Base {
       public:
         typedef boost::shared_ptr<Fair> shared_ptr;
-      protected:
-        double c_;
-      public:
-        Fair(const double c, const ReweightScheme reweight = Block);
+
+        Fair(const double c = 1.3998, const ReweightScheme reweight = Block);
         virtual ~Fair() {}
         virtual double weight(const double &error) const ;
         virtual void print(const std::string &s) const ;
         virtual bool equals(const Base& expected, const double tol=1e-8) const ;
         static shared_ptr Create(const double c, const ReweightScheme reweight = Block) ;
+
+      protected:
+        double c_;
+
       private:
-        Fair(){}
+        /** Serialization function */
+        friend class boost::serialization::access;
+        template<class ARCHIVE>
+        void serialize(ARCHIVE & ar, const unsigned int version) {
+          ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+          ar & BOOST_SERIALIZATION_NVP(c_);
+        }
       };
 
       /// Huber implements the "Huber" robust error model (Zhang97ivc)
       class GTSAM_EXPORT Huber : public Base {
       public:
         typedef boost::shared_ptr<Huber> shared_ptr;
-      protected:
-        double k_;
-      public:
-        Huber(const double k, const ReweightScheme reweight = Block);
+
         virtual ~Huber() {}
+        Huber(const double k = 1.345, const ReweightScheme reweight = Block);
         virtual double weight(const double &error) const ;
         virtual void print(const std::string &s) const ;
         virtual bool equals(const Base& expected, const double tol=1e-8) const ;
         static shared_ptr Create(const double k, const ReweightScheme reweight = Block) ;
+
+      protected:
+        double k_;
+
       private:
-        Huber(){}
+        /** Serialization function */
+        friend class boost::serialization::access;
+        template<class ARCHIVE>
+        void serialize(ARCHIVE & ar, const unsigned int version) {
+          ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+          ar & BOOST_SERIALIZATION_NVP(k_);
+        }
       };
 
       /// Tukey implements the "Tukey" robust error model (Zhang97ivc)
       class GTSAM_EXPORT Tukey : public Base {
       public:
         typedef boost::shared_ptr<Tukey> shared_ptr;
-      protected:
-        double c_;
-      public:
-        Tukey(const double c, const ReweightScheme reweight = Block);
+
+        Tukey(const double c = 4.6851, const ReweightScheme reweight = Block);
         virtual ~Tukey() {}
         virtual double weight(const double &error) const ;
         virtual void print(const std::string &s) const ;
         virtual bool equals(const Base& expected, const double tol=1e-8) const ;
         static shared_ptr Create(const double k, const ReweightScheme reweight = Block) ;
+
+      protected:
+        double c_;
+
       private:
-        Tukey(){}
+        /** Serialization function */
+        friend class boost::serialization::access;
+        template<class ARCHIVE>
+        void serialize(ARCHIVE & ar, const unsigned int version) {
+          ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+          ar & BOOST_SERIALIZATION_NVP(c_);
+        }
       };
 
     } ///\namespace mEstimator
@@ -689,6 +729,9 @@ namespace gtsam {
       const NoiseModel::shared_ptr noise_;   ///< noise model used
 
     public:
+
+      /// Default Constructor for serialization
+      Robust() {};
 
       /// Constructor
       Robust(const RobustModel::shared_ptr robust, const NoiseModel::shared_ptr noise)
@@ -725,7 +768,14 @@ namespace gtsam {
         const RobustModel::shared_ptr &robust, const NoiseModel::shared_ptr noise);
 
     private:
-      Robust();
+      /** Serialization function */
+      friend class boost::serialization::access;
+      template<class ARCHIVE>
+      void serialize(ARCHIVE & ar, const unsigned int version) {
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+        ar & boost::serialization::make_nvp("robust_", const_cast<RobustModel::shared_ptr&>(robust_));
+        ar & boost::serialization::make_nvp("noise_", const_cast<NoiseModel::shared_ptr&>(noise_));
+      }
     };
 
   } // namespace noiseModel
