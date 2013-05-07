@@ -46,15 +46,24 @@ namespace gtsam {
       Rot3 deltaRij; ///< Preintegrated relative orientation (in frame i)
       double deltaTij; ///< Time interval from i to j
 
+
+
+      Vector3 biasOmega;
+      Vector3 biasAcc;
+
       /** Default constructor, initialize with no IMU measurements */
-      PreintegratedMeasurements() : deltaPij(Vector3::Zero()), deltaVij(Vector3::Zero()), deltaTij(0.0) {}
+      PreintegratedMeasurements(Vector3 _biasOmega, ///< Current estimate of rotation rate bias
+          Vector3 _biasAcc ///< Current estimate of acceleration bias
+          ) : deltaPij(Vector3::Zero()), deltaVij(Vector3::Zero()), deltaTij(0.0), biasOmega(_biasOmega), biasAcc(_biasAcc) {}
 
       /** Construct preintegrated measurements from a single IMU measurement. */
       PreintegratedMeasurements(
           const Vector3& measuredAcc, ///< Measured linear acceleration (in body frame)
           const Vector3& measuredOmega, ///< Measured angular velocity (in body frame)
-          double deltaT ///< Time step
-      ) : deltaPij(Vector3::Zero()), deltaVij(Vector3::Zero()), deltaTij(0.0)
+          double deltaT, ///< Time step
+          Vector3 _biasOmega, ///< Current estimate of rotation rate bias
+          Vector3 _biasAcc ///< Current estimate of acceleration bias
+      ) : deltaPij(Vector3::Zero()), deltaVij(Vector3::Zero()), deltaTij(0.0), biasOmega(_biasOmega), biasAcc(_biasAcc)
       { integrateMeasurement(measuredAcc, measuredOmega, deltaT); }
 
       /** Add a single IMU measurement to the preintegration. */
@@ -64,9 +73,9 @@ namespace gtsam {
           double deltaT ///< Time step
       ) {
         // NOTE: order is important here because each update uses old values.
-        deltaPij += deltaVij * deltaT + 0.5 * deltaRij.matrix() * measuredAcc * deltaT*deltaT;
-        deltaVij += deltaRij.matrix() * measuredAcc * deltaT;
-        deltaRij = deltaRij * Rot3::Expmap(measuredOmega * deltaT);
+        deltaPij += deltaVij * deltaT + 0.5 * deltaRij.matrix() * (measuredAcc - biasAcc) * deltaT*deltaT;
+        deltaVij += deltaRij.matrix() * (measuredAcc - biasAcc) * deltaT;
+        deltaRij = deltaRij * Rot3::Expmap((measuredOmega - biasOmega) * deltaT);
         deltaTij += deltaT;
       }
     };
@@ -85,7 +94,7 @@ namespace gtsam {
     typedef typename boost::shared_ptr<ImuFactor> shared_ptr;
 
     /** Default constructor - only use for serialization */
-    ImuFactor() {}
+    ImuFactor() : preintegratedMeasurements_(Vector3::Zero(), Vector3::Zero()) {}
 
     /** Constructor */
     ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j,

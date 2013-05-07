@@ -39,11 +39,11 @@ using symbol_shorthand::X;
 using symbol_shorthand::V;
 
 /* ************************************************************************* */
-TEST( ImuFactor, Constructor) {
-  Vector3 gravity; gravity << 0, 0, 9.81;
-  noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Sigmas(Vector_(9, 0.15, 0.15, 0.15, 1.5, 1.5, 1.5, 0.5, 0.5, 0.5));
-  ImuFactor factor(X(1), V(1), X(2), V(2), ImuFactor::PreintegratedMeasurements(),gravity, model);
-}
+//TEST( ImuFactor, Constructor) {
+//  Vector3 gravity; gravity << 0, 0, 9.81;
+//  noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Sigmas(Vector_(9, 0.15, 0.15, 0.15, 1.5, 1.5, 1.5, 0.5, 0.5, 0.5));
+//  ImuFactor factor(X(1), V(1), X(2), V(2), ImuFactor::PreintegratedMeasurements(),gravity, model);
+//}
 
 ///* ************************************************************************* */
 //TEST( ImuFactor, ConstructorWithTransform) {
@@ -79,6 +79,10 @@ TEST( ImuFactor, Constructor) {
 /* ************************************************************************* */
 TEST( ImuFactor, PreintegratedMeasurements )
 {
+  // Linearization point
+  Vector3 biasOmega; biasOmega << 0,0,0; ///< Current estimate of rotation rate bias
+  Vector3 biasAcc; biasAcc << 0,0,0; ///< Current estimate of acceleration bias
+
   // Measurements
   Vector3 measuredAcc(0.1, 0.0, 0.0);
   Vector3 measuredOmega(M_PI/100.0, 0.0, 0.0);
@@ -91,7 +95,7 @@ TEST( ImuFactor, PreintegratedMeasurements )
   double expectedDeltaT1(0.5);
 
   // Actual preintegrated values
-  ImuFactor::PreintegratedMeasurements actual1(measuredAcc, measuredOmega, deltaT);
+  ImuFactor::PreintegratedMeasurements actual1(measuredAcc, measuredOmega, deltaT, biasOmega, biasAcc);
 
   EXPECT(assert_equal(Vector(expectedDeltaP1), Vector(actual1.deltaPij), 1e-6));
   EXPECT(assert_equal(Vector(expectedDeltaV1), Vector(actual1.deltaVij), 1e-6));
@@ -118,7 +122,8 @@ TEST( ImuFactor, PreintegratedMeasurements )
 TEST( ImuFactor, Error )
 {
   // Linearization point
-  Values values;
+  Vector3 biasOmega; biasOmega << 0,0,0; ///< Current estimate of rotation rate bias
+  Vector3 biasAcc; biasAcc << 0,0,0; ///< Current estimate of acceleration bias
   Pose3 x1(Rot3::RzRyRx(M_PI/12.0, M_PI/6.0, M_PI/4.0), Point3(5.0, 1.0, -50.0));
   LieVector v1(3, 0.5, 0.0, 0.0);
   Pose3 x2(Rot3::RzRyRx(M_PI/12.0 + M_PI/100.0, M_PI/6.0, M_PI/4.0), Point3(5.5, 1.0, -50.0));
@@ -129,7 +134,7 @@ TEST( ImuFactor, Error )
   Vector3 measuredOmega; measuredOmega << M_PI/100, 0, 0;
   Vector3 measuredAcc = x1.rotation().unrotate(-Point3(gravity)).vector();
   double deltaT = 1.0;
-  ImuFactor::PreintegratedMeasurements pre_int_data;
+  ImuFactor::PreintegratedMeasurements pre_int_data(biasOmega, biasAcc);
   pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   // Create factor
@@ -164,6 +169,60 @@ TEST( ImuFactor, Error )
   EXPECT(assert_equal(H2e, H2a));
   EXPECT(assert_equal(H3e, H3a));
   EXPECT(assert_equal(H4e, H4a));
+}
+
+/* ************************************************************************* */
+TEST( ImuFactor, ErrorWithBiases )
+{
+  // Linearization poin
+  Vector3 biasOmega; biasOmega << 0.1,0,0; ///< Current estimate of rotation rate bias
+  Vector3 biasAcc; biasAcc << 0.2,0,0; ///< Current estimate of acceleration bias
+  Pose3 x1(Rot3::RzRyRx(M_PI/12.0, M_PI/6.0, M_PI/4.0), Point3(5.0, 1.0, -50.0));
+  LieVector v1(3, 0.5, 0.0, 0.0);
+  Pose3 x2(Rot3::RzRyRx(M_PI/12.0 + M_PI/100.0, M_PI/6.0, M_PI/4.0), Point3(5.5, 1.0, -50.0));
+  LieVector v2(3, 0.5, 0.0, 0.0);
+
+  // Measurements
+  Vector3 gravity; gravity << 0, 0, 9.81;
+  Vector3 measuredOmega; measuredOmega << M_PI/100+0.1, 0, 0;
+  Vector3 measuredAcc = x1.rotation().unrotate(-Point3(gravity)).vector() + Vector3(0.2,0.0,0.0);
+  double deltaT = 1.0;
+
+  ImuFactor::PreintegratedMeasurements pre_int_data(biasOmega, biasAcc);
+    pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+
+    // Create factor
+    noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Sigmas(Vector_(9, 0.15, 0.15, 0.15, 1.5, 1.5, 1.5, 0.5, 0.5, 0.5));
+    ImuFactor factor(X(1), V(1), X(2), V(2), pre_int_data, gravity, model);
+
+    Vector errorActual = factor.evaluateError(x1, v1, x2, v2);
+
+    // Expected error
+    Vector errorExpected(9); errorExpected << 0, 0, 0, 0, 0, 0, 0, 0, 0;
+    EXPECT(assert_equal(errorExpected, errorActual, 1e-6));
+
+    // Expected Jacobians
+    Matrix H1e = numericalDerivative11<Pose3>(
+        boost::bind(&ImuFactor::evaluateError, &factor, _1, v1, x2, v2,
+            boost::none, boost::none, boost::none, boost::none), x1);
+    Matrix H2e = numericalDerivative11<LieVector>(
+        boost::bind(&ImuFactor::evaluateError, &factor, x1, _1, x2, v2,
+            boost::none, boost::none, boost::none, boost::none), v1);
+    Matrix H3e = numericalDerivative11<Pose3>(
+        boost::bind(&ImuFactor::evaluateError, &factor, x1, v1, _1, v2,
+            boost::none, boost::none, boost::none, boost::none), x2);
+    Matrix H4e = numericalDerivative11<LieVector>(
+        boost::bind(&ImuFactor::evaluateError, &factor, x1, v1, x2, _1,
+            boost::none, boost::none, boost::none, boost::none), v2);
+
+    // Actual Jacobians
+    Matrix H1a, H2a, H3a, H4a;
+    (void) factor.evaluateError(x1, v1, x2, v2, H1a, H2a, H3a, H4a);
+
+    EXPECT(assert_equal(H1e, H1a));
+    EXPECT(assert_equal(H2e, H2a));
+    EXPECT(assert_equal(H3e, H3a));
+    EXPECT(assert_equal(H4e, H4a));
 }
 
 ///* ************************************************************************* */
