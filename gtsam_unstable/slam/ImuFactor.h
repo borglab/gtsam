@@ -29,10 +29,10 @@
 namespace gtsam {
 
   /**
-   * A class for a measurement predicted by "between(config[key1],config[key2])"
+   * 
    * @addtogroup SLAM
    */
-  class ImuFactor: public NoiseModelFactor4<Pose3,LieVector,Pose3,LieVector> {
+  class ImuFactor: public NoiseModelFactor6<Pose3,LieVector,Pose3,LieVector,LieVector,LieVector> {
 
   public:
 
@@ -46,25 +46,24 @@ namespace gtsam {
       Rot3 deltaRij; ///< Preintegrated relative orientation (in frame i)
       double deltaTij; ///< Time interval from i to j
 
+      Matrix3 delPdelBiasAcc; ///< Jacobian of preintegrated position w.r.t. acceleration bias
+      Matrix3 delPdelBiasOmega; ///< Jacobian of preintegrated position w.r.t. angular rate bias
+      Matrix3 delVdelBiasAcc; ///< Jacobian of preintegrated velocity w.r.t. acceleration bias
+      Matrix3 delVdelBiasOmega; ///< Jacobian of preintegrated velocity w.r.t. angular rate bias
+      Matrix3 delRdelBiasOmega; ///< Jacobian of preintegrated rotation w.r.t. angular rate bias
 
-
-      Vector3 biasOmega;
-      Vector3 biasAcc;
+      Vector3 biasAccHat; ///< Linear acceleration bias
+      Vector3 biasOmegaHat; ///< Rotation rate bias
 
       /** Default constructor, initialize with no IMU measurements */
-      PreintegratedMeasurements(Vector3 _biasOmega, ///< Current estimate of rotation rate bias
-          Vector3 _biasAcc ///< Current estimate of acceleration bias
-          ) : deltaPij(Vector3::Zero()), deltaVij(Vector3::Zero()), deltaTij(0.0), biasOmega(_biasOmega), biasAcc(_biasAcc) {}
-
-      /** Construct preintegrated measurements from a single IMU measurement. */
       PreintegratedMeasurements(
-          const Vector3& measuredAcc, ///< Measured linear acceleration (in body frame)
-          const Vector3& measuredOmega, ///< Measured angular velocity (in body frame)
-          double deltaT, ///< Time step
-          Vector3 _biasOmega, ///< Current estimate of rotation rate bias
-          Vector3 _biasAcc ///< Current estimate of acceleration bias
-      ) : deltaPij(Vector3::Zero()), deltaVij(Vector3::Zero()), deltaTij(0.0), biasOmega(_biasOmega), biasAcc(_biasAcc)
-      { integrateMeasurement(measuredAcc, measuredOmega, deltaT); }
+          Vector3 _biasAcc, ///< Current estimate of acceleration bias
+          Vector3 _biasOmega ///< Current estimate of rotation rate bias
+      ) : deltaPij(Vector3::Zero()), deltaVij(Vector3::Zero()), deltaTij(0.0),
+      biasAccHat(_biasAcc), biasOmegaHat(_biasOmega),
+      delPdelBiasAcc(Matrix3::Zero()), delPdelBiasOmega(Matrix3::Zero()),
+      delVdelBiasAcc(Matrix3::Zero()), delVdelBiasOmega(Matrix3::Zero()),
+      delRdelBiasOmega(Matrix3::Zero()) {}
 
       /** Add a single IMU measurement to the preintegration. */
       void integrateMeasurement(
@@ -73,9 +72,21 @@ namespace gtsam {
           double deltaT ///< Time step
       ) {
         // NOTE: order is important here because each update uses old values.
-        deltaPij += deltaVij * deltaT + 0.5 * deltaRij.matrix() * (measuredAcc - biasAcc) * deltaT*deltaT;
-        deltaVij += deltaRij.matrix() * (measuredAcc - biasAcc) * deltaT;
-        deltaRij = deltaRij * Rot3::Expmap((measuredOmega - biasOmega) * deltaT);
+
+        const Rot3 Rincr = Rot3::Expmap((measuredOmega - biasOmegaHat) * deltaT);
+
+        // Update Jacobians
+        delPdelBiasAcc += delVdelBiasAcc * deltaT - 0.5 * deltaRij.matrix() * deltaT*deltaT;
+        delPdelBiasOmega += delVdelBiasOmega * deltaT + 0.5 * deltaRij.matrix()
+          * skewSymmetric(measuredAcc - biasAccHat) * deltaT*deltaT * delRdelBiasOmega;
+        delVdelBiasAcc += -deltaRij.matrix() * deltaT;
+        delVdelBiasOmega += -deltaRij.matrix() * skewSymmetric(measuredAcc - biasAccHat) * deltaT * delRdelBiasOmega;
+        delRdelBiasOmega = -Rincr.matrix() * delRdelBiasOmega - Matrix3::Identity() * deltaT;
+
+        // Update preintegrated measurements
+        deltaPij += deltaVij * deltaT + 0.5 * deltaRij.matrix() * (measuredAcc - biasAccHat) * deltaT*deltaT;
+        deltaVij += deltaRij.matrix() * (measuredAcc - biasAccHat) * deltaT;
+        deltaRij = deltaRij * Rincr;
         deltaTij += deltaT;
       }
     };
@@ -83,7 +94,7 @@ namespace gtsam {
   private:
 
     typedef ImuFactor This;
-    typedef NoiseModelFactor4<Pose3,LieVector,Pose3,LieVector> Base;
+    typedef NoiseModelFactor6<Pose3,LieVector,Pose3,LieVector,LieVector,LieVector> Base;
 
     PreintegratedMeasurements preintegratedMeasurements_;
     Vector3 gravity_;
@@ -134,10 +145,16 @@ namespace gtsam {
 
     /** vector of errors */
     Vector evaluateError(const Pose3& pose_i, const LieVector& vel_i, const Pose3& pose_j, const LieVector& vel_j,
+      const LieVector& biasAcc, const LieVector& biasOmega,
         boost::optional<Matrix&> H1 = boost::none,
         boost::optional<Matrix&> H2 = boost::none,
         boost::optional<Matrix&> H3 = boost::none,
-        boost::optional<Matrix&> H4 = boost::none) const {
+        boost::optional<Matrix&> H4 = boost::none,
+        boost::optional<Matrix&> H5 = boost::none,
+        boost::optional<Matrix&> H6 = boost::none) const
+    {
+
+      const double& deltaTij = preintegratedMeasurements_.deltaTij;
 
       if(H1) {
         H1->resize(9,6);
@@ -147,7 +164,7 @@ namespace gtsam {
       }
       if(H2) {
         H2->resize(9,3);
-        (*H2) <<  - Matrix3::Identity() * preintegratedMeasurements_.deltaTij,
+        (*H2) <<  - Matrix3::Identity() * deltaTij,
             - Matrix3::Identity(),
             Matrix3::Zero();
 
@@ -165,13 +182,26 @@ namespace gtsam {
             Matrix3::Zero();
       }
 
-      const Vector3 fp = pose_j.translation().vector() - pose_i.translation().vector() - pose_i.rotation().matrix() * preintegratedMeasurements_.deltaPij -
-                    vel_i * preintegratedMeasurements_.deltaTij - 0.5 * gravity_ * preintegratedMeasurements_.deltaTij*preintegratedMeasurements_.deltaTij;
+      const Vector3 biasAccIncr = biasAcc - preintegratedMeasurements_.biasAccHat;
+      const Vector3 biasOmegaIncr = biasOmega - preintegratedMeasurements_.biasOmegaHat;
 
-      const Vector3 fv = vel_j- vel_i - pose_i.rotation().matrix() * preintegratedMeasurements_.deltaVij
-          - gravity_ * preintegratedMeasurements_.deltaTij;
+      const Vector3 fp =
+        pose_j.translation().vector() - pose_i.translation().vector()
+        - pose_i.rotation().matrix() * (preintegratedMeasurements_.deltaPij
+          + preintegratedMeasurements_.delPdelBiasAcc * biasAccIncr
+          + preintegratedMeasurements_.delPdelBiasOmega * biasOmegaIncr)
+        - vel_i * deltaTij
+        - 0.5 * gravity_ * deltaTij*deltaTij;
 
-      const Vector3 fR = preintegratedMeasurements_.deltaRij.localCoordinates(pose_i.rotation().between(pose_j.rotation()) );
+      const Vector3 fv =
+        vel_j - vel_i - pose_i.rotation().matrix() * (preintegratedMeasurements_.deltaVij
+          + preintegratedMeasurements_.delVdelBiasAcc * biasAccIncr
+          + preintegratedMeasurements_.delVdelBiasOmega * biasOmegaIncr)
+        - gravity_ * deltaTij;
+
+      const Vector3 fR =
+        preintegratedMeasurements_.deltaRij.retract(preintegratedMeasurements_.delRdelBiasOmega * biasOmegaIncr)
+        .localCoordinates(pose_i.rotation().between(pose_j.rotation()));
 
       Vector r(9); r << fp, fv, fR;
 

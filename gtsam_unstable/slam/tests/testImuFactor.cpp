@@ -95,7 +95,8 @@ TEST( ImuFactor, PreintegratedMeasurements )
   double expectedDeltaT1(0.5);
 
   // Actual preintegrated values
-  ImuFactor::PreintegratedMeasurements actual1(measuredAcc, measuredOmega, deltaT, biasOmega, biasAcc);
+  ImuFactor::PreintegratedMeasurements actual1(biasAcc, biasOmega);
+  actual1.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   EXPECT(assert_equal(Vector(expectedDeltaP1), Vector(actual1.deltaPij), 1e-6));
   EXPECT(assert_equal(Vector(expectedDeltaV1), Vector(actual1.deltaVij), 1e-6));
@@ -134,7 +135,7 @@ TEST( ImuFactor, Error )
   Vector3 measuredOmega; measuredOmega << M_PI/100, 0, 0;
   Vector3 measuredAcc = x1.rotation().unrotate(-Point3(gravity)).vector();
   double deltaT = 1.0;
-  ImuFactor::PreintegratedMeasurements pre_int_data(biasOmega, biasAcc);
+  ImuFactor::PreintegratedMeasurements pre_int_data(biasAcc, biasOmega);
   pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   // Create factor
@@ -188,7 +189,7 @@ TEST( ImuFactor, ErrorWithBiases )
   Vector3 measuredAcc = x1.rotation().unrotate(-Point3(gravity)).vector() + Vector3(0.2,0.0,0.0);
   double deltaT = 1.0;
 
-  ImuFactor::PreintegratedMeasurements pre_int_data(biasOmega, biasAcc);
+  ImuFactor::PreintegratedMeasurements pre_int_data(biasAcc, biasOmega);
     pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
     // Create factor
