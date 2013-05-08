@@ -1691,20 +1691,15 @@ virtual class LinearContainerFactor : gtsam::NonlinearFactor {
 
 // Summarization functionality
 #include <gtsam/nonlinear/summarization.h>
-pair<gtsam::GaussianFactorGraph,gtsam::Ordering>
 
-summarize(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& values,
-    const gtsam::KeySet& saved_keys, bool useQR);
-pair<gtsam::GaussianFactorGraph,gtsam::Ordering>
-summarize(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& values,
-    const gtsam::KeySet& saved_keys); // Defaults to QR;
+// Uses partial QR approach by default
+pair<gtsam::GaussianFactorGraph,gtsam::Ordering> summarize(
+    const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& values,
+    const gtsam::KeySet& saved_keys);
 
 gtsam::NonlinearFactorGraph summarizeAsNonlinearContainer(
     const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& values,
-    const gtsam::KeySet& saved_keys, bool useQR);
-gtsam::NonlinearFactorGraph summarizeAsNonlinearContainer(
-    const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& values,
-    const gtsam::KeySet& saved_keys); // Defaults to QR
+    const gtsam::KeySet& saved_keys);
 
 //*************************************************************************
 // Nonlinear optimizers
