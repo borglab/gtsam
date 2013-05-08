@@ -74,8 +74,8 @@ TEST( testSummarization, example_from_ddf1 ) {
 
   // Summarize to a linear system
   GaussianFactorGraph actLinGraph; Ordering actOrdering;
-  bool useQR = true;
-  boost::tie(actLinGraph, actOrdering) = summarize(graph, values, saved_keys, useQR);
+  SummarizationMode mode = PARTIAL_QR;
+  boost::tie(actLinGraph, actOrdering) = summarize(graph, values, saved_keys, mode);
 
   Ordering expSumOrdering; expSumOrdering += xA0, xA1, xA2, lA3, lA5;
   EXPECT(assert_equal(expSumOrdering, actOrdering));
@@ -99,7 +99,7 @@ TEST( testSummarization, example_from_ddf1 ) {
   EXPECT(assert_equal(expLinGraph, actLinGraph, tol));
 
   // Summarize directly from a nonlinear graph to another nonlinear graph
-  NonlinearFactorGraph actContainerGraph = summarizeAsNonlinearContainer(graph, values, saved_keys, useQR);
+  NonlinearFactorGraph actContainerGraph = summarizeAsNonlinearContainer(graph, values, saved_keys, mode);
   NonlinearFactorGraph expContainerGraph = LinearContainerFactor::convertLinearGraph(expLinGraph, expSumOrdering);
 
   EXPECT(assert_equal(expContainerGraph, actContainerGraph, tol));
