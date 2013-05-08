@@ -38,6 +38,7 @@ TEST (Serialization, symbolic_graph) {
 
   EXPECT(equalsObj(sfg));
   EXPECT(equalsXML(sfg));
+  EXPECT(equalsBinary(sfg));
 }
 
 /* ************************************************************************* */
@@ -53,6 +54,7 @@ TEST (Serialization, symbolic_bn) {
 
   EXPECT(equalsObj(sbn));
   EXPECT(equalsXML(sbn));
+  EXPECT(equalsBinary(sbn));
 }
 
 /* ************************************************************************* */
@@ -78,6 +80,7 @@ TEST (Serialization, symbolic_bayes_tree ) {
 
   EXPECT(equalsObj(bayesTree));
   EXPECT(equalsXML(bayesTree));
+  EXPECT(equalsBinary(bayesTree));
 }
 
 /* ************************************************************************* */
