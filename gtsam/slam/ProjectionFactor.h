@@ -82,7 +82,7 @@ namespace gtsam {
      * @param poseKey is the index of the camera
      * @param pointKey is the index of the landmark
      * @param K shared pointer to the constant calibration
-     * @param throwCheirality determines whether exceptions are caught for Cheirality
+     * @param throwCheirality determines whether Cheirality exceptions are rethrown
      * @param verboseCheirality determines whether exceptions are printed for Cheirality
      * @param body_P_sensor is the transform from body to sensor frame  (default identity)
      */

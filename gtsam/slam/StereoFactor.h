@@ -36,6 +36,10 @@ private:
   Cal3_S2Stereo::shared_ptr K_;                ///< shared pointer to calibration
   boost::optional<POSE> body_P_sensor_;        ///< The pose of the sensor in the body frame
 
+  // verbosity handling for Cheirality Exceptions
+  bool throwCheirality_;                       ///< If true, rethrows Cheirality exceptions (default: false)
+  bool verboseCheirality_;                     ///< If true, prints text for Cheirality exceptions (default: false)
+
 public:
 
   // shorthand for base class type
@@ -47,7 +51,8 @@ public:
   /**
    * Default constructor
    */
-  GenericStereoFactor() : K_(new Cal3_S2Stereo(444, 555, 666, 777, 888, 1.0)) {}
+  GenericStereoFactor() : K_(new Cal3_S2Stereo(444, 555, 666, 777, 888, 1.0)),
+      throwCheirality_(false), verboseCheirality_(false) {}
 
   /**
    * Constructor
@@ -61,10 +66,29 @@ public:
   GenericStereoFactor(const StereoPoint2& measured, const SharedNoiseModel& model,
       Key poseKey, Key landmarkKey, const Cal3_S2Stereo::shared_ptr& K,
       boost::optional<POSE> body_P_sensor = boost::none) :
-    Base(model, poseKey, landmarkKey), measured_(measured), K_(K), body_P_sensor_(body_P_sensor) {
-  }
+    Base(model, poseKey, landmarkKey), measured_(measured), K_(K), body_P_sensor_(body_P_sensor),
+    throwCheirality_(false), verboseCheirality_(false) {}
 
-  virtual ~GenericStereoFactor() {}  ///< Virtual destructor
+  /**
+   * Constructor with exception-handling flags
+   * @param measured is the Stereo Point measurement (u_l, u_r, v). v will be identical for left & right for rectified stereo pair
+   * @param model is the noise model in on the measurement
+   * @param poseKey the pose variable key
+   * @param landmarkKey the landmark variable key
+   * @param K the constant calibration
+   * @param throwCheirality determines whether Cheirality exceptions are rethrown
+   * @param verboseCheirality determines whether exceptions are printed for Cheirality
+   * @param body_P_sensor is the transform from body to sensor frame  (default identity)
+   */
+  GenericStereoFactor(const StereoPoint2& measured, const SharedNoiseModel& model,
+      Key poseKey, Key landmarkKey, const Cal3_S2Stereo::shared_ptr& K,
+      bool throwCheirality, bool verboseCheirality,
+      boost::optional<POSE> body_P_sensor = boost::none) :
+    Base(model, poseKey, landmarkKey), measured_(measured), K_(K), body_P_sensor_(body_P_sensor),
+    throwCheirality_(throwCheirality), verboseCheirality_(verboseCheirality) {}
+
+  /** Virtual destructor */
+  virtual ~GenericStereoFactor() {}
 
   /// @return a deep copy of this factor
   virtual gtsam::NonlinearFactor::shared_ptr clone() const {
@@ -116,8 +140,11 @@ public:
     } catch(StereoCheiralityException& e) {
       if (H1) *H1 = zeros(3,6);
       if (H2) *H2 = zeros(3,3);
+      if (verboseCheirality_)
       std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2()) <<
           " moved behind camera " << DefaultKeyFormatter(this->key1()) << std::endl;
+      if (throwCheirality_)
+        throw e;
     }
     return ones(3) * 2.0 * K_->fx();
   }
@@ -142,6 +169,8 @@ private:
     ar & BOOST_SERIALIZATION_NVP(measured_);
     ar & BOOST_SERIALIZATION_NVP(K_);
     ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
+    ar & BOOST_SERIALIZATION_NVP(throwCheirality_);
+    ar & BOOST_SERIALIZATION_NVP(verboseCheirality_);
   }
 };
 
