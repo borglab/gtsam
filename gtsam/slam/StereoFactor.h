@@ -159,6 +159,12 @@ public:
     return K_;
   }
 
+  /** return verbosity */
+  inline bool verboseCheirality() const { return verboseCheirality_; }
+
+  /** return flag for throwing cheirality exceptions */
+  inline bool throwCheirality() const { return throwCheirality_; }
+
 private:
   /** Serialization function */
   friend class boost::serialization::access;
