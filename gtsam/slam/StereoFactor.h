@@ -33,16 +33,16 @@ private:
 
   // Keep a copy of measurement and calibration for I/O
   StereoPoint2 measured_;                      ///< the measurement
-  boost::shared_ptr<Cal3_S2Stereo> K_;  ///< shared pointer to calibration
-  boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
+  Cal3_S2Stereo::shared_ptr K_;                ///< shared pointer to calibration
+  boost::optional<POSE> body_P_sensor_;        ///< The pose of the sensor in the body frame
 
 public:
 
   // shorthand for base class type
-  typedef NoiseModelFactor2<POSE, LANDMARK> Base;               ///< typedef for base class
+  typedef NoiseModelFactor2<POSE, LANDMARK> Base;             ///< typedef for base class
   typedef GenericStereoFactor<POSE, LANDMARK> This;           ///< typedef for this class (with templates)
   typedef boost::shared_ptr<GenericStereoFactor> shared_ptr;  ///< typedef for shared pointer to this object
-  typedef POSE CamPose;                        ///< typedef for Pose Lie Value type
+  typedef POSE CamPose;                                       ///< typedef for Pose Lie Value type
 
   /**
    * Default constructor
@@ -58,7 +58,7 @@ public:
    * @param K the constant calibration
    */
   GenericStereoFactor(const StereoPoint2& measured, const SharedNoiseModel& model,
-      Key poseKey, Key landmarkKey, const shared_ptrKStereo& K,
+      Key poseKey, Key landmarkKey, const Cal3_S2Stereo::shared_ptr& K,
       boost::optional<POSE> body_P_sensor = boost::none) :
     Base(model, poseKey, landmarkKey), measured_(measured), K_(K), body_P_sensor_(body_P_sensor) {
   }
