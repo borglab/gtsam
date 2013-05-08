@@ -388,6 +388,7 @@ public:
 
   /**
    *  Constructor
+   *  @param noiseModel shared pointer to noise model
    *  @param key1 by which to look up X value in Values
    */
   NoiseModelFactor1(const SharedNoiseModel& noiseModel, Key key1) :
@@ -455,6 +456,7 @@ public:
 
   /**
    * Constructor
+   * @param noiseModel shared pointer to noise model
    * @param j1 key of the first variable
    * @param j2 key of the second variable
    */
@@ -530,6 +532,7 @@ public:
 
   /**
    * Constructor
+   * @param noiseModel shared pointer to noise model
    * @param j1 key of the first variable
    * @param j2 key of the second variable
    * @param j3 key of the third variable
@@ -607,6 +610,7 @@ public:
 
   /**
    * Constructor
+   * @param noiseModel shared pointer to noise model
    * @param j1 key of the first variable
    * @param j2 key of the second variable
    * @param j3 key of the third variable
@@ -688,6 +692,7 @@ public:
 
   /**
    * Constructor
+   * @param noiseModel shared pointer to noise model
    * @param j1 key of the first variable
    * @param j2 key of the second variable
    * @param j3 key of the third variable
@@ -773,6 +778,7 @@ public:
 
   /**
    * Constructor
+   * @param noiseModel shared pointer to noise model
    * @param j1 key of the first variable
    * @param j2 key of the second variable
    * @param j3 key of the third variable

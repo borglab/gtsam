@@ -56,6 +56,7 @@ public:
    * @param poseKey the pose variable key
    * @param landmarkKey the landmark variable key
    * @param K the constant calibration
+   * @param body_P_sensor is the transform from body to sensor frame (default identity)
    */
   GenericStereoFactor(const StereoPoint2& measured, const SharedNoiseModel& model,
       Key poseKey, Key landmarkKey, const Cal3_S2Stereo::shared_ptr& K,
