@@ -438,14 +438,6 @@ gtsam::GaussianFactorGraph* summarizeGraphSequential(
 gtsam::GaussianFactorGraph* summarizeGraphSequential(
     const gtsam::GaussianFactorGraph& full_graph, const gtsam::Ordering& ordering, const gtsam::KeySet& saved_keys);
 
-pair<gtsam::GaussianFactorGraph,gtsam::Ordering>
-partialCholeskySummarization(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& values,
-    const gtsam::KeySet& saved_keys);
-
-pair<gtsam::GaussianFactorGraph,gtsam::Ordering>
-sequentialSummarization(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& values,
-    const gtsam::KeySet& saved_keys);
-
 #include <gtsam_unstable/nonlinear/FixedLagSmoother.h>
 class FixedLagSmootherKeyTimestampMapValue {
   FixedLagSmootherKeyTimestampMapValue(const gtsam::Key& key, double timestamp);

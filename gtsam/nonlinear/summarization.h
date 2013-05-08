@@ -31,20 +31,6 @@ std::pair<GaussianFactorGraph,Ordering> GTSAM_EXPORT
 summarize(const NonlinearFactorGraph& graph, const Values& values,
     const KeySet& saved_keys, bool useQR = true);
 
-///**
-// * Summarization function to remove a subset of variables from a system using
-// * a partial cholesky approach.  This does not require that the system be fully constrained.
-// * Performs linearization to apply an ordering.
-// *
-// * @param graph A full nonlinear graph
-// * @param values The chosen linearization point
-// * @param saved_keys is the set of keys for variables that should remain
-// * * @return a pair of the remaining graph and the ordering used for linearization
-// */
-//std::pair<GaussianFactorGraph,Ordering> GTSAM_EXPORT
-//partialCholeskySummarization(const NonlinearFactorGraph& graph, const Values& values,
-//    const KeySet& saved_keys);
-
 /**
  * Performs the same summarization technique used in summarize(), but returns the
  * result as a NonlinearFactorGraph comprised of LinearContainerFactors.
@@ -58,18 +44,6 @@ summarize(const NonlinearFactorGraph& graph, const Values& values,
 NonlinearFactorGraph GTSAM_EXPORT summarizeAsNonlinearContainer(
     const NonlinearFactorGraph& graph, const Values& values,
     const KeySet& saved_keys, bool useQR = true);
-
-/**
- * Summarization function that eliminates a set of variables (does not convert to Jacobians)
- * NOTE: uses sequential solver - requires fully constrained system
- */
-//GaussianFactorGraph::shared_ptr GTSAM_UNSTABLE_EXPORT summarizeGraphSequential(
-//    const GaussianFactorGraph& full_graph, const std::vector<Index>& indices, bool useQR = false);
-//
-///** Summarization that also converts keys to indices */
-//GaussianFactorGraph::shared_ptr GTSAM_UNSTABLE_EXPORT summarizeGraphSequential(
-//    const GaussianFactorGraph& full_graph, const Ordering& ordering,
-//    const KeySet& saved_keys, bool useQR = false);
 
 } // \namespace gtsam
 

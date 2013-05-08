@@ -24,15 +24,9 @@
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/BearingRangeFactor.h>
 
-//#include <ddfsam/domains/planarDDFSystem.h>
-//
-//#include <ddfsam/ddf1/DDF1SummarizedMap.h>
-
 using namespace std;
 using namespace boost::assign;
 using namespace gtsam;
-//using namespace ddfsam;
-//using namespace planarDDF;
 
 const double tol=1e-5;
 
@@ -51,7 +45,7 @@ TEST( testSummarization, example_from_ddf1 ) {
   gtsam::noiseModel::Base::shared_ptr model2 = noiseModel::Unit::Create(2);
   gtsam::noiseModel::Base::shared_ptr model3 = noiseModel::Unit::Create(3);
 
-  SharedDiagonal model = noiseModel::Unit::Create(2);
+  SharedDiagonal model = noiseModel::Unit::Create(4);
 
   Pose2 pose0;
   Pose2 pose1(1.0, 0.0, 0.0);
@@ -86,23 +80,22 @@ TEST( testSummarization, example_from_ddf1 ) {
   Ordering expSumOrdering; expSumOrdering += xA0, xA1, xA2, lA3, lA5;
   EXPECT(assert_equal(expSumOrdering, actOrdering));
 
+  // Does not split out subfactors where possible
   GaussianFactorGraph expLinGraph;
   expLinGraph.add(
       expSumOrdering[lA3],
-      Matrix_(2,2,
-          0.595867, 0.605092,
-          0.0, 0.406109),
+      Matrix_(4,2,
+          0.595867,  0.605092,
+               0.0, -0.406109,
+               0.0,       0.0,
+               0.0,       0.0),
           expSumOrdering[lA5],
-      Matrix_(2,2,
+      Matrix_(4,2,
           -0.125971, -0.160052,
-          -0.13586, -0.301096),
-      zero(2), model);
-  expLinGraph.add(
-      expSumOrdering[lA5],
-      Matrix_(2,2,
-          0.268667,  0.31703,
-          0.0, 0.131698),
-      zero(2), model);
+            0.13586,  0.301096,
+           0.268667,   0.31703,
+                0.0, -0.131698),
+      zero(4), model);
   EXPECT(assert_equal(expLinGraph, actLinGraph, tol));
 
   // Summarize directly from a nonlinear graph to another nonlinear graph
