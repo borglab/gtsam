@@ -55,10 +55,10 @@ TEST( EquivInertialNavFactor_GlobalVel, Constructor)
 	SharedGaussian imu_model = noiseModel::Gaussian::Covariance(EquivCov_Overall.block(0,0,9,9));
 
 	// Constructor
-	EquivInertialNavFactor_GlobalVel<Pose3, LieVector, imuBias::ConstantBias>(
+	EquivInertialNavFactor_GlobalVel<Pose3, LieVector, imuBias::ConstantBias> factor(
       poseKey1, velKey1, biasKey1, poseKey2, velKey2,
           delta_pos_in_t0, delta_vel_in_t0, delta_angles, delta_t,
-          g, rho, omega_earth, imu_model, Jacobian_wrt_t0_Overall, bias1));
+          g, rho, omega_earth, imu_model, Jacobian_wrt_t0_Overall, bias1);
 
 }
 
