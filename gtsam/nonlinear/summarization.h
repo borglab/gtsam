@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include <gtsam_unstable/base/dllexport.h>
+#include <gtsam/dllexport.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 #include <gtsam/linear/GaussianFactorGraph.h>
