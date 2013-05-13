@@ -146,6 +146,10 @@ virtual class BearingS2 : gtsam::Value {
 // std::vector<gtsam::Point2>
 class Point2Vector
 {
+  // Constructors
+  Point2Vector();
+  Point2Vector(const gtsam::Point2Vector& v);
+
   //Capacity
   size_t size() const;
   size_t max_size() const;
