@@ -58,7 +58,9 @@ if (GTSAM_BUILD_STATIC_LIBRARY)
 		VERSION             ${gtsam_unstable_version}
 		SOVERSION           ${gtsam_unstable_soversion})
 	if(WIN32) # Add 'lib' prefix to static library to avoid filename collision with shared library
-		set_target_properties(gtsam_unstable-static PROPERTIES PREFIX "lib")
+		set_target_properties(gtsam_unstable-static PROPERTIES
+			PREFIX "lib"
+			COMPILE_DEFINITIONS GTSAM_UNSTABLE_IMPORT_STATIC)
 	endif()
 	target_link_libraries(gtsam_unstable-static gtsam-static ${GTSAM_UNSTABLE_BOOST_LIBRARIES})
 	install(TARGETS gtsam_unstable-static EXPORT GTSAM-exports ARCHIVE DESTINATION lib)
@@ -100,6 +102,9 @@ if (GTSAM_INSTALL_MATLAB_TOOLBOX)
     
     # Generate, build and install toolbox
     set(mexFlags -I${MEX_INCLUDE_ROOT} -I${Boost_INCLUDE_DIR} -I${CMAKE_BINARY_DIR})
+	if("${gtsam-default}" STREQUAL "gtsam-static")
+		list(APPEND mexFlags -DGTSAM_IMPORT_STATIC)
+	endif()
     
     # Macro to handle details of setting up targets
     wrap_library(gtsam_unstable "${mexFlags}" "./" gtsam)

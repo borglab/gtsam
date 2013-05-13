@@ -101,7 +101,9 @@ if (GTSAM_BUILD_STATIC_LIBRARY)
     	VERSION             ${gtsam_version}
      	SOVERSION           ${gtsam_soversion})
 	if(WIN32) # Add 'lib' prefix to static library to avoid filename collision with shared library
-		set_target_properties(gtsam-static PROPERTIES PREFIX "lib")
+		set_target_properties(gtsam-static PROPERTIES
+			PREFIX "lib"
+			COMPILE_DEFINITIONS GTSAM_IMPORT_STATIC)
 	endif()
     install(TARGETS gtsam-static EXPORT GTSAM-exports ARCHIVE DESTINATION lib)
     list(APPEND GTSAM_EXPORTED_TARGETS gtsam-static)
@@ -149,7 +151,10 @@ if (GTSAM_INSTALL_MATLAB_TOOLBOX)
 	set(GTSAM_LIB_DIR ${MEX_LIB_ROOT}/gtsam) # FIXME: is this used?
     
     # Generate, build and install toolbox
-    set(mexFlags ${GTSAM_BUILD_MEX_BINARY_FLAGS} -I${MEX_INCLUDE_ROOT} -I${Boost_INCLUDE_DIR}  -I${CMAKE_BINARY_DIR})
+    set(mexFlags ${GTSAM_BUILD_MEX_BINARY_FLAGS} -I${MEX_INCLUDE_ROOT} -I${Boost_INCLUDE_DIR} -I${CMAKE_BINARY_DIR})
+	if("${gtsam-default}" STREQUAL "gtsam-static")
+		list(APPEND mexFlags -DGTSAM_IMPORT_STATIC)
+	endif()
 
     # Macro to handle details of setting up targets
     # FIXME: issue with dependency between wrap_gtsam and wrap_gtsam_build, only shows up on CMake 2.8.3
