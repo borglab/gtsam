@@ -54,7 +54,7 @@ if [ ! $? ]; then
 fi
 
 # Compile
-make -j8 install
+make -j4 install
 
 # Create package
 tar czf gtsam-toolbox-2.3.0-$platform.tgz -C stage/borg toolbox
