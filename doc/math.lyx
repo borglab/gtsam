@@ -885,7 +885,39 @@ H_{a}=G_{f(a)}F_{a}
 
 \end_inset
 
+where 
+\begin_inset Formula $G_{f(a)}$
+\end_inset
 
+ is the 
+\begin_inset Formula $m\times p$
+\end_inset
+
+ Jacobian matrix of 
+\begin_inset Formula $g$
+\end_inset
+
+ evaluated at 
+\begin_inset Formula $f(a)$
+\end_inset
+
+, and 
+\begin_inset Formula $F_{a}$
+\end_inset
+
+ is the 
+\begin_inset Formula $p\times n$
+\end_inset
+
+ Jacobian matrix of 
+\begin_inset Formula $f$
+\end_inset
+
+ evaluated at 
+\begin_inset Formula $a$
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Proof
@@ -1521,7 +1553,7 @@ name "th:Action"
 \end_inset
 
 The Jacobian matrix of the group action
-\begin_inset Formula $f(T,P)=Tp$
+\begin_inset Formula $f(T,p)=Tp$
 \end_inset
 
  at 
@@ -2811,6 +2843,12 @@ B^{T} & I_{3}\end{array}\right]
 \end_layout
 
 \begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Pushforward-of-Between"
+
+\end_inset
+
 Pushforward of Between
 \end_layout
 
@@ -3378,27 +3416,14 @@ BetweenFactor
 \end_layout
 
 \begin_layout Standard
-BetweenFactor is often used to summarize 
-\end_layout
 
-\begin_layout Standard
-Theorem 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "D-exp"
-
-\end_inset
-
- about the derivative of the exponential map 
-\begin_inset Formula $f:\xi\mapsto\exp\xihat$
-\end_inset
-
- being identity only at 
-\begin_inset Formula $\xi=0$
-\end_inset
-
- has implications for GTSAM.
- Given two elements 
+\series bold
+\emph on
+BetweenFactor
+\series default
+\emph default
+ is a factor in GTSAM that is used ubiquitously to process measurements
+ indicating the relative pose between two unknown poses 
 \begin_inset Formula $T_{1}$
 \end_inset
 
@@ -3406,15 +3431,104 @@ reference "D-exp"
 \begin_inset Formula $T_{2}$
 \end_inset
 
-, BetweenFactor evaluates
+.
+ Let us assume the measured relative pose is 
+\begin_inset Formula $Z$
+\end_inset
+
+, then the code that calculates the error in 
+\series bold
+\emph on
+BetweenFactor
+\series default
+\emph default
+ first calculates the predicted relative pose 
+\begin_inset Formula $T_{12}$
+\end_inset
+
+, and then evaluates the error between the measured and predicted relative
+ pose:
+\end_layout
+
+\begin_layout LyX-Code
+T12 = between(T1, T2);
+\end_layout
+
+\begin_layout LyX-Code
+return localCoordinates(Z, T12);
+\end_layout
+
+\begin_layout Standard
+where we recall that the function 
+\series bold
+\emph on
+between
+\series default
+\emph default
+ is given in group theoretic notation as 
 \begin_inset Formula 
 \[
-g(T_{1},T_{2};Z)=f^{-1}\left(\mathop{between}(Z,\mathop{between}(T_{1},T_{2})\right)=f^{-1}\left(Z^{-1}\left(T_{1}^{-1}T_{2}\right)\right)
+\varphi(g,h)=g^{-1}h
 \]
 
 \end_inset
 
-but because it is assumed that 
+The function 
+\series bold
+\emph on
+localCoordinates
+\series default
+\emph default
+ itself also calls 
+\series bold
+\emph on
+between
+\series default
+\emph default
+, and converts to canonical coordinates: 
+\end_layout
+
+\begin_layout LyX-Code
+localCoordinates(Z,T12) = Logmap(between(Z, T12));
+\end_layout
+
+\begin_layout Standard
+Hence, given two elements 
+\begin_inset Formula $T_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $T_{2}$
+\end_inset
+
+, 
+\series bold
+\emph on
+BetweenFactor
+\series default
+\emph default
+ evaluates 
+\begin_inset Formula $g:G\times G\rightarrow\Reals n$
+\end_inset
+
+,
+\begin_inset Formula 
+\[
+g(T_{1},T_{2};Z)=f^{-1}\left(\varphi(Z,\varphi(T_{1},T_{2})\right)=f^{-1}\left(Z^{-1}\left(T_{1}^{-1}T_{2}\right)\right)
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $f^{-1}$
+\end_inset
+
+ is the inverse of the map 
+\begin_inset Formula $f:\xi\mapsto\exp\xihat$
+\end_inset
+
+.
+ If we assume that the measurement has only small error, then 
 \begin_inset Formula $Z\approx T_{1}^{-1}T_{2}$
 \end_inset
 
@@ -3422,12 +3536,49 @@ but because it is assumed that
 \begin_inset Formula $Z^{-1}T_{1}^{-1}T_{2}\approx e$
 \end_inset
 
- and the derivative should be good there.
- Note that the derivative of 
+, and we can invoke Theorem 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "D-exp"
+
+\end_inset
+
+, which says that the derivative of the exponential map 
+\begin_inset Formula $f:\xi\mapsto\exp\xihat$
+\end_inset
+
+ is identity at 
+\begin_inset Formula $\xi=0$
+\end_inset
+
+, as well as its inverse.
+\end_layout
+
+\begin_layout Standard
+Finally, because the derivative of 
+\series bold
 \emph on
 between
+\series default
 \emph default
- is identity in its second argument.
+ is identity in its second argument, the derivative of the 
+\series bold
+\emph on
+BetweenFactor
+\series default
+\emph default
+ error is identical to the derivative of pushforward of 
+\begin_inset Formula $\varphi(T_{1},T_{2})$
+\end_inset
+
+, derived in Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Pushforward-of-Between"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Section
