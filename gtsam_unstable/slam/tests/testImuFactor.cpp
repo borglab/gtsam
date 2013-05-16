@@ -208,24 +208,24 @@ TEST( ImuFactor, Error )
   Matrix H1a, H2a, H3a, H4a;
   (void) factor.evaluateError(x1, v1, x2, v2, bias, H1a, H2a, H3a, H4a);
 
-//  EXPECT(assert_equal(H1e, H1a));
-//  EXPECT(assert_equal(H2e, H2a));
-//  EXPECT(assert_equal(H3e, H3a));
-//  EXPECT(assert_equal(H4e, H4a));
 
-
-//    EXPECT(assert_equal(H1e, H1a));
+  // positions and velocities
+  Matrix H1etop6 =  H1e.topRows(6);
+  Matrix H1atop6 =  H1a.topRows(6);
+  EXPECT(assert_equal(H1etop6, H1atop6));
+  // rotations
   EXPECT(assert_equal(RH1e, H1a.bottomRows(3)));  // evaluate only the rotation residue
 
   EXPECT(assert_equal(H2e, H2a));
 
-//    EXPECT(assert_equal(H3e, H3a));
+  // positions and velocities
+  Matrix H3etop6 =  H3e.topRows(6);
+  Matrix H3atop6 =  H3a.topRows(6);
+  EXPECT(assert_equal(H3etop6, H3atop6));
+  // rotations
   EXPECT(assert_equal(RH3e, H3a.bottomRows(3)));  // evaluate only the rotation residue
 
   EXPECT(assert_equal(H4e, H4a));
-
-
-
 }
 
 /* ************************************************************************* */
@@ -292,19 +292,29 @@ TEST( ImuFactor, ErrorWithBiases )
     Matrix H1a, H2a, H3a, H4a, H5a;
     (void) factor.evaluateError(x1, v1, x2, v2, bias, H1a, H2a, H3a, H4a, H5a);
 
-
-
-//    EXPECT(assert_equal(H1e, H1a));
+    // positions and velocities
+    Matrix H1etop6 =  H1e.topRows(6);
+    Matrix H1atop6 =  H1a.topRows(6);
+    EXPECT(assert_equal(H1etop6, H1atop6));
+    // rotations
     EXPECT(assert_equal(RH1e, H1a.bottomRows(3)));  // evaluate only the rotation residue
 
     EXPECT(assert_equal(H2e, H2a));
 
-//    EXPECT(assert_equal(H3e, H3a));
+    // positions and velocities
+    Matrix H3etop6 =  H3e.topRows(6);
+    Matrix H3atop6 =  H3a.topRows(6);
+    EXPECT(assert_equal(H3etop6, H3atop6));
+    // rotations
     EXPECT(assert_equal(RH3e, H3a.bottomRows(3)));  // evaluate only the rotation residue
 
     EXPECT(assert_equal(H4e, H4a));
 
-//    EXPECT(assert_equal(H5e, H5a));
+    // positions and velocities
+     Matrix H5etop6 =  H5e.topRows(6);
+     Matrix H5atop6 =  H5a.topRows(6);
+     EXPECT(assert_equal(H5etop6, H5atop6));
+     // rotations
     EXPECT(assert_equal(RH5e, H5a.bottomRows(3)));  // evaluate only the rotation residue
 }
 
