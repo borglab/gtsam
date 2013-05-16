@@ -489,31 +489,28 @@ Eigen::Matrix<double, N, N> Cayley(const Eigen::Matrix<double, N, N>& A) {
 } // namespace gtsam
 
 #include <boost/serialization/nvp.hpp>
+#include <boost/serialization/array.hpp>
 #include <boost/serialization/split_free.hpp>
 
 namespace boost {
   namespace serialization {
 
-// split version - sends sizes ahead
+    // split version - sends sizes ahead
     template<class Archive>
     void save(Archive & ar, const gtsam::Matrix & m, unsigned int version) {
-      const int rows = m.rows(), cols = m.cols(), elements = rows * cols;
-      std::vector<double> raw_data(elements);
-      std::copy(m.data(), m.data() + elements, raw_data.begin());
-      ar << make_nvp("rows", rows);
-      ar << make_nvp("cols", cols);
-      ar << make_nvp("data", raw_data);
+      const size_t rows = m.rows(), cols = m.cols();
+      ar << BOOST_SERIALIZATION_NVP(rows);
+      ar << BOOST_SERIALIZATION_NVP(cols);
+      ar << make_nvp("data", make_array(m.data(), m.size()));
     }
 
     template<class Archive>
     void load(Archive & ar, gtsam::Matrix & m, unsigned int version) {
       size_t rows, cols;
-      std::vector<double> raw_data;
-      ar >> make_nvp("rows", rows);
-      ar >> make_nvp("cols", cols);
-      ar >> make_nvp("data", raw_data);
-      m = gtsam::Matrix(rows, cols);
-      std::copy(raw_data.begin(), raw_data.end(), m.data());
+      ar >> BOOST_SERIALIZATION_NVP(rows);
+      ar >> BOOST_SERIALIZATION_NVP(cols);
+      m.resize(rows, cols);
+      ar >> make_nvp("data", make_array(m.data(), m.size()));
     }
 
   } // namespace serialization

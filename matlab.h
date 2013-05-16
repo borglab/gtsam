@@ -25,6 +25,7 @@
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/SimpleCamera.h>
 
 #include <exception>
@@ -114,7 +115,7 @@ namespace gtsam {
 
     /// insert multiple projection factors for a single pose key
     void insertProjectionFactors(NonlinearFactorGraph& graph, Key i, const Vector& J, const Matrix& Z,
-        const SharedNoiseModel& model, const shared_ptrK K, const Pose3& body_P_sensor = Pose3()) {
+        const SharedNoiseModel& model, const Cal3_S2::shared_ptr K, const Pose3& body_P_sensor = Pose3()) {
       if (Z.rows() != 2) throw std::invalid_argument("addMeasurements: Z must be 2*K");
       if (Z.cols() != J.size()) throw std::invalid_argument(
             "addMeasurements: J and Z must have same number of entries");

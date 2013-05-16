@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 2.6)
 
 # Set the version number for the library
 set (GTSAM_VERSION_MAJOR 2)
-set (GTSAM_VERSION_MINOR 2)
+set (GTSAM_VERSION_MINOR 3)
 set (GTSAM_VERSION_PATCH 0)
 
 

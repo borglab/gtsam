@@ -1476,6 +1476,11 @@ class LabeledSymbol {
   void print(string s) const;
 };
 
+size_t mrsymbol(unsigned char c, unsigned char label, size_t j);
+unsigned char mrsymbolChr(size_t key);
+unsigned char mrsymbolLabel(size_t key);
+size_t mrsymbolIndex(size_t key);
+
 #include <gtsam/nonlinear/Ordering.h>
 class Ordering {
   // Standard Constructors and Named Constructors
@@ -1683,6 +1688,18 @@ virtual class LinearContainerFactor : gtsam::NonlinearFactor {
       const gtsam::Ordering& ordering);
 
 }; // \class LinearContainerFactor
+
+// Summarization functionality
+#include <gtsam/nonlinear/summarization.h>
+
+// Uses partial QR approach by default
+pair<gtsam::GaussianFactorGraph,gtsam::Ordering> summarize(
+    const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& values,
+    const gtsam::KeySet& saved_keys);
+
+gtsam::NonlinearFactorGraph summarizeAsNonlinearContainer(
+    const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& values,
+    const gtsam::KeySet& saved_keys);
 
 //*************************************************************************
 // Nonlinear optimizers

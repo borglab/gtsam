@@ -132,6 +132,7 @@ int main(int argc, char** argv) {
     // Manually synchronize the Concurrent Filter and Smoother every 1.0 s
     if(fmod(time, 1.0) < 0.01) {
       // Synchronize the Filter and Smoother
+      concurrentSmoother.update();
       synchronize(concurrentFilter, concurrentSmoother);
     }
 
@@ -210,6 +211,7 @@ int main(int argc, char** argv) {
     // Manually synchronize the Concurrent Filter and Smoother every 1.0 s
     if(fmod(time, 1.0) < 0.01) {
       // Synchronize the Filter and Smoother
+      concurrentSmoother.update();
       synchronize(concurrentFilter, concurrentSmoother);
     }
 
@@ -282,6 +284,7 @@ int main(int argc, char** argv) {
     // Manually synchronize the Concurrent Filter and Smoother every 1.0 s
     if(fmod(time, 1.0) < 0.01) {
       // Synchronize the Filter and Smoother
+      concurrentSmoother.update();
       synchronize(concurrentFilter, concurrentSmoother);
       cout << "******************************************************************" << endl;
       cout << "Syncing Concurrent Filter and Smoother." << endl;

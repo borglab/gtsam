@@ -124,84 +124,85 @@ void ConcurrentBatchFilter::synchronize(const NonlinearFactorGraph& summarizedFa
   values.insert(smootherValues_);
   values.update(separatorValues); // ensure the smoother summarized factors are linearized around the values in the smoother
 
-  // Perform an optional optimization on the to-be-sent-to-the-smoother factors
-  if(true) {
-    // Create ordering and delta
-    Ordering ordering = *graph.orderingCOLAMD(values);
-    VectorValues delta = values.zeroVectors(ordering);
-    // Optimize this graph using a modified version of L-M
-    optimize(graph, values, ordering, delta, separatorValues, parameters_);
-    // Update filter theta and delta
+  if(factors_.size() > 0) {
+    // Perform an optional optimization on the to-be-sent-to-the-smoother factors
+    if(true) {
+      // Create ordering and delta
+      Ordering ordering = *graph.orderingCOLAMD(values);
+      VectorValues delta = values.zeroVectors(ordering);
+      // Optimize this graph using a modified version of L-M
+      optimize(graph, values, ordering, delta, separatorValues, parameters_);
+      // Update filter theta and delta
+      BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, theta_) {
+        theta_.update(key_value.key, values.at(key_value.key));
+        delta_.at(ordering_.at(key_value.key)) = delta.at(ordering.at(key_value.key));
+      }
+      // Update the fixed linearization points (since they just changed)
+      BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) {
+        separatorValues_.update(key_value.key, values.at(key_value.key));
+      }
+    }
+
+    // Create separate ordering constraints that force either the filter keys or the smoother keys to the front
+    typedef std::map<Key, int> OrderingConstraints;
+    OrderingConstraints filterConstraints;
+    OrderingConstraints smootherConstraints;
+    BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, theta_) { /// the filter keys
+      filterConstraints[key_value.key] = 0;
+      smootherConstraints[key_value.key] = 1;
+    }
+    BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, smootherValues_) { /// the smoother keys
+      filterConstraints[key_value.key] = 1;
+      smootherConstraints[key_value.key] = 0;
+    }
+    BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) { /// the *new* separator keys
+      filterConstraints[key_value.key] = 2;
+      smootherConstraints[key_value.key] = 2;
+    }
+
+    // Generate separate orderings that place the filter keys or the smoother keys first
+    // TODO: This is convenient, but it recalculates the variable index each time
+    Ordering filterOrdering = *graph.orderingCOLAMDConstrained(values, filterConstraints);
+    Ordering smootherOrdering = *graph.orderingCOLAMDConstrained(values, smootherConstraints);
+
+    // Extract the set of filter keys and smoother keys
+    std::set<Key> filterKeys;
+    std::set<Key> separatorKeys;
+    std::set<Key> smootherKeys;
     BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, theta_) {
-      theta_.update(key_value.key, values.at(key_value.key));
-      delta_.at(ordering_.at(key_value.key)) = delta.at(ordering.at(key_value.key));
+      filterKeys.insert(key_value.key);
     }
-    // Update the fixed linearization points (since they just changed)
     BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) {
-      separatorValues_.update(key_value.key, values.at(key_value.key));
+      separatorKeys.insert(key_value.key);
+      filterKeys.erase(key_value.key);
     }
-  }
+    BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, smootherValues_) {
+      smootherKeys.insert(key_value.key);
+    }
 
-  // Create separate ordering constraints that force either the filter keys or the smoother keys to the front
-  typedef std::map<Key, int> OrderingConstraints;
-  OrderingConstraints filterConstraints;
-  OrderingConstraints smootherConstraints;
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, theta_) { /// the filter keys
-    filterConstraints[key_value.key] = 0;
-    smootherConstraints[key_value.key] = 1;
-  }
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, smootherValues_) { /// the smoother keys
-    filterConstraints[key_value.key] = 1;
-    smootherConstraints[key_value.key] = 0;
-  }
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) { /// the *new* separator keys
-    filterConstraints[key_value.key] = 2;
-    smootherConstraints[key_value.key] = 2;
-  }
-
-  // Generate separate orderings that place the filter keys or the smoother keys first
-  // TODO: This is convenient, but it recalculates the variable index each time
-  Ordering filterOrdering = *graph.orderingCOLAMDConstrained(values, filterConstraints);
-  Ordering smootherOrdering = *graph.orderingCOLAMDConstrained(values, smootherConstraints);
-
-  // Extract the set of filter keys and smoother keys
-  std::set<Key> filterKeys;
-  std::set<Key> separatorKeys;
-  std::set<Key> smootherKeys;
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, theta_) {
-    filterKeys.insert(key_value.key);
-  }
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) {
-    separatorKeys.insert(key_value.key);
-    filterKeys.erase(key_value.key);
-  }
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, smootherValues_) {
-    smootherKeys.insert(key_value.key);
-  }
-
-  // Calculate the marginal on the new separator from the filter factors. This is performed by marginalizing out
-  // all of the filter variables that are not part of the new separator. This filter summarization will then be
-  // sent to the smoother.
-  filterSummarization_ = marginalize(graph, values, filterOrdering, filterKeys, parameters_.getEliminationFunction());
-  // The filter summarization should also include any nonlinear factors that involve only the separator variables.
-  // Otherwise the smoother will be missing this information
-  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, factors_) {
-    if(factor) {
-      NonlinearFactor::const_iterator key = factor->begin();
-      while((key != factor->end()) && (std::binary_search(separatorKeys.begin(), separatorKeys.end(), *key))) {
-        ++key;
-      }
-      if(key == factor->end()) {
-        filterSummarization_.push_back(factor);
+    // Calculate the marginal on the new separator from the filter factors. This is performed by marginalizing out
+    // all of the filter variables that are not part of the new separator. This filter summarization will then be
+    // sent to the smoother.
+    filterSummarization_ = marginalize(graph, values, filterOrdering, filterKeys, parameters_.getEliminationFunction());
+    // The filter summarization should also include any nonlinear factors that involve only the separator variables.
+    // Otherwise the smoother will be missing this information
+    BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, factors_) {
+      if(factor) {
+        NonlinearFactor::const_iterator key = factor->begin();
+        while((key != factor->end()) && (std::binary_search(separatorKeys.begin(), separatorKeys.end(), *key))) {
+          ++key;
+        }
+        if(key == factor->end()) {
+          filterSummarization_.push_back(factor);
+        }
       }
     }
+
+    // Calculate the marginal on the new separator from the smoother factors. This is performed by marginalizing out
+    // all of the smoother variables that are not part of the new separator. This smoother summarization will be
+    // stored locally for use in the filter
+    smootherSummarizationSlots_ = insertFactors( marginalize(graph, values, smootherOrdering, smootherKeys, parameters_.getEliminationFunction()) );
   }
-
-  // Calculate the marginal on the new separator from the smoother factors. This is performed by marginalizing out
-  // all of the smoother variables that are not part of the new separator. This smoother summarization will be
-  // stored locally for use in the filter
-  smootherSummarizationSlots_ = insertFactors( marginalize(graph, values, smootherOrdering, smootherKeys, parameters_.getEliminationFunction()) );
-
   gttoc(synchronize);
 }
 

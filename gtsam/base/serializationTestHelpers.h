@@ -36,6 +36,8 @@
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/archive/xml_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
 
 // whether to print the serialized text to stdout
 const bool verbose = false;
@@ -143,6 +145,57 @@ template<class T>
 bool equalsDereferencedXML(const T& input = T()) {
   T output;
   roundtripXML<T>(input,output);
+  return input->equals(*output);
+}
+
+/* ************************************************************************* */
+template<class T>
+std::string serializeBinary(const T& input) {
+  std::ostringstream out_archive_stream;
+  boost::archive::binary_oarchive out_archive(out_archive_stream);
+  out_archive << boost::serialization::make_nvp("data", input);
+  return out_archive_stream.str();
+}
+
+template<class T>
+void deserializeBinary(const std::string& serialized, T& output) {
+  std::istringstream in_archive_stream(serialized);
+  boost::archive::binary_iarchive in_archive(in_archive_stream);
+  in_archive >> boost::serialization::make_nvp("data", output);
+}
+
+// Templated round-trip serialization using XML
+template<class T>
+void roundtripBinary(const T& input, T& output) {
+  // Serialize
+  std::string serialized = serializeBinary<T>(input);
+  if (verbose) std::cout << serialized << std::endl << std::endl;
+
+  // De-serialize
+  deserializeBinary(serialized, output);
+}
+
+// This version requires equality operator
+template<class T>
+bool equalityBinary(const T& input = T()) {
+  T output;
+  roundtripBinary<T>(input,output);
+  return input==output;
+}
+
+// This version requires equals
+template<class T>
+bool equalsBinary(const T& input = T()) {
+  T output;
+  roundtripBinary<T>(input,output);
+  return input.equals(output);
+}
+
+// This version is for pointers
+template<class T>
+bool equalsDereferencedBinary(const T& input = T()) {
+  T output;
+  roundtripBinary<T>(input,output);
   return input->equals(*output);
 }
 

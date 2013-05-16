@@ -146,6 +146,10 @@ virtual class BearingS2 : gtsam::Value {
 // std::vector<gtsam::Point2>
 class Point2Vector
 {
+  // Constructors
+  Point2Vector();
+  Point2Vector(const gtsam::Point2Vector& v);
+
   //Capacity
   size_t size() const;
   size_t max_size() const;
@@ -438,14 +442,6 @@ gtsam::GaussianFactorGraph* summarizeGraphSequential(
 gtsam::GaussianFactorGraph* summarizeGraphSequential(
     const gtsam::GaussianFactorGraph& full_graph, const gtsam::Ordering& ordering, const gtsam::KeySet& saved_keys);
 
-pair<gtsam::GaussianFactorGraph,gtsam::Ordering>
-partialCholeskySummarization(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& values,
-    const gtsam::KeySet& saved_keys);
-
-pair<gtsam::GaussianFactorGraph,gtsam::Ordering>
-sequentialSummarization(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& values,
-    const gtsam::KeySet& saved_keys);
-
 #include <gtsam_unstable/nonlinear/FixedLagSmoother.h>
 class FixedLagSmootherKeyTimestampMapValue {
   FixedLagSmootherKeyTimestampMapValue(const gtsam::Key& key, double timestamp);
@@ -583,6 +579,24 @@ virtual class RelativeElevationFactor: gtsam::NonlinearFactor {
 #include <gtsam_unstable/slam/DummyFactor.h>
 virtual class DummyFactor : gtsam::NonlinearFactor {
   DummyFactor(size_t key1, size_t dim1, size_t key2, size_t dim2);
+};
+
+#include <gtsam_unstable/slam/InvDepthFactorVariant1.h>
+virtual class InvDepthFactorVariant1 : gtsam::NonlinearFactor {
+  InvDepthFactorVariant1(size_t poseKey, size_t landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::noiseModel::Base* model);
+};
+
+#include <gtsam_unstable/slam/InvDepthFactorVariant2.h>
+virtual class InvDepthFactorVariant2 : gtsam::NonlinearFactor {
+  InvDepthFactorVariant2(size_t poseKey, size_t landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::Point3& referencePoint, const gtsam::noiseModel::Base* model);
+};
+
+#include <gtsam_unstable/slam/InvDepthFactorVariant3.h>
+virtual class InvDepthFactorVariant3a : gtsam::NonlinearFactor {
+  InvDepthFactorVariant3a(size_t poseKey, size_t landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::noiseModel::Base* model);
+};
+virtual class InvDepthFactorVariant3b : gtsam::NonlinearFactor {
+  InvDepthFactorVariant3b(size_t poseKey1, size_t poseKey2, size_t landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::noiseModel::Base* model);
 };
 
 } //\namespace gtsam

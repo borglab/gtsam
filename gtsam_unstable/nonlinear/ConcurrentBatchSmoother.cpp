@@ -87,6 +87,16 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::update(const NonlinearF
     gttoc(optimize);
   }
 
+  // TODO: The following code does considerable work, much of which could be redundant given the previous optimization step
+  // Refactor this code to reduce computational burden
+
+  // Calculate the marginal on the separator from the smoother factors
+  if(separatorValues_.size() > 0) {
+    gttic(presync);
+    updateSmootherSummarization();
+    gttoc(presync);
+  }
+
   gttoc(update);
 
   return result;
@@ -96,15 +106,6 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::update(const NonlinearF
 void ConcurrentBatchSmoother::presync() {
 
   gttic(presync);
-
-  // TODO: Don't let the length of this code fool you. There is considerable work being done here.
-  // When we start multi-threading the filter and smoother, it would be ideal if the pre-sync stage
-  // could happen before the filter is stopped.
-
-  // Calculate the marginal on the separator from the smoother factors
-  if(separatorValues_.size() > 0) {
-    updateSmootherSummarization();
-  }
 
   gttoc(presync);
 }

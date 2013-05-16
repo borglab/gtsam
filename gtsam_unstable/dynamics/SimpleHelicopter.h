@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/LieVector.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
@@ -20,6 +21,8 @@ namespace gtsam {
  *      \f$ \xi_k \f$: the body-fixed velocity (Lie algebra)
  * It is somewhat similar to BetweenFactor, but treats the body-fixed velocity
  * \f$ \xi_k \f$ as a variable. So it is a three-way factor.
+ * Note: this factor is necessary if one needs to smooth the entire graph. It's not needed
+ *  in sequential update method.
  */
 class Reconstruction : public NoiseModelFactor3<Pose3, Pose3, LieVector>  {
 
@@ -78,8 +81,8 @@ class DiscreteEulerPoincareHelicopter : public NoiseModelFactor3<LieVector, LieV
   double h_;  /// time step
   Matrix Inertia_;  /// Inertia tensors Inertia = [ J 0; 0 M ]
   Vector Fu_;   /// F is the 6xc Control matrix, where c is the number of control variables uk, which directly change the vehicle pose (e.g., gas/brake/speed)
-                  /// F(.) is actually a function of the shape variables, which do not change the pose, but affect the vehicle's shape, e.g. steering wheel.
-                  /// Fu_ encodes everything we need to know about the vehicle's dynamics.
+  /// F(.) is actually a function of the shape variables, which do not change the pose, but affect the vehicle's shape, e.g. steering wheel.
+  /// Fu_ encodes everything we need to know about the vehicle's dynamics.
   double m_;  /// mass. For gravity external force f_ext, which has a fixed formula in this case.
 
   // TODO: Fk_ and f_ext should be generalized as functions (factor nodes) on control signals and poses/velocities.
@@ -92,8 +95,8 @@ public:
   DiscreteEulerPoincareHelicopter(Key xiKey1, Key xiKey_1, Key gKey,
       double h, const Matrix& Inertia, const Vector& Fu, double m,
       double mu = 1000.0) :
-    Base(noiseModel::Constrained::All(Pose3::Dim(), fabs(mu)), xiKey1, xiKey_1, gKey),
-    h_(h), Inertia_(Inertia), Fu_(Fu), m_(m) {
+        Base(noiseModel::Constrained::All(Pose3::Dim(), fabs(mu)), xiKey1, xiKey_1, gKey),
+        h_(h), Inertia_(Inertia), Fu_(Fu), m_(m) {
   }
   virtual ~DiscreteEulerPoincareHelicopter() {}
 
@@ -148,6 +151,52 @@ public:
 
     return hx;
   }
+
+#if 0
+  Vector computeError(const LieVector& xik, const LieVector& xik_1, const Pose3& gk) const {
+    Vector pk = Pose3::dExpInv_exp(h_*xik).transpose()*Inertia_*xik;
+    Vector pk_1 = Pose3::dExpInv_exp(-h_*xik_1).transpose()*Inertia_*xik_1;
+
+    Point3 gravityBody = gk.rotation().unrotate(Point3(0.0, 0.0, -9.81*m_));
+    Vector f_ext = Vector_(6, 0.0, 0.0, 0.0, gravityBody.x(), gravityBody.y(), gravityBody.z());
+
+    Vector hx = pk - pk_1 - h_*Fu_ - h_*f_ext;
+
+    return hx;
+  }
+
+  Vector evaluateError(const LieVector& xik, const LieVector& xik_1, const Pose3& gk,
+      boost::optional<Matrix&> H1 = boost::none,
+      boost::optional<Matrix&> H2 = boost::none,
+      boost::optional<Matrix&> H3 = boost::none) const {
+    if (H1) {
+      (*H1) = numericalDerivative31(
+          boost::function<Vector(const LieVector&, const LieVector&, const Pose3&)>(
+              boost::bind(&DiscreteEulerPoincareHelicopter::computeError, *this, _1, _2, _3)
+          ),
+          xik, xik_1, gk, 1e-5
+      );
+    }
+    if (H2) {
+      (*H2) = numericalDerivative32(
+          boost::function<Vector(const LieVector&, const LieVector&, const Pose3&)>(
+              boost::bind(&DiscreteEulerPoincareHelicopter::computeError, *this, _1, _2, _3)
+          ),
+          xik, xik_1, gk, 1e-5
+      );
+    }
+    if (H3) {
+      (*H3) = numericalDerivative33(
+          boost::function<Vector(const LieVector&, const LieVector&, const Pose3&)>(
+              boost::bind(&DiscreteEulerPoincareHelicopter::computeError, *this, _1, _2, _3)
+          ),
+          xik, xik_1, gk, 1e-5
+      );
+    }
+
+    return computeError(xik, xik_1, gk);
+  }
+#endif
 
 };
 

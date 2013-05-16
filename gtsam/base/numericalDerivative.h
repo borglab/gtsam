@@ -118,7 +118,7 @@ namespace gtsam {
 //    return numericalDerivative11<Y,X>(boost::bind(h, _1), x, delta);
 //  }
 
-  /** remapping for double valued functions */
+//  /** remapping for double valued functions */
 //  template<class X>
 //  Matrix numericalDerivative11(boost::function<double(const X&)> h, const X& x, double delta=1e-5) {
 //    return numericalDerivative11<LieVector, X>(boost::bind(makeLieVectorD, boost::bind(h, _1)), x, delta);

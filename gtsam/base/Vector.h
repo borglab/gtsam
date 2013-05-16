@@ -351,29 +351,29 @@ GTSAM_EXPORT Vector concatVectors(size_t nrVectors, ...);
 } // namespace gtsam
 
 #include <boost/serialization/nvp.hpp>
+#include <boost/serialization/array.hpp>
 #include <boost/serialization/split_free.hpp>
 
 namespace boost {
-namespace serialization {
+  namespace serialization {
 
-// split version - copies into an STL vector for serialization
-template<class Archive>
-void save(Archive & ar, const gtsam::Vector & v, unsigned int version)
-{
-  const size_t n = v.size();
-  std::vector<double> raw_data(n);
-  copy(v.data(), v.data()+n, raw_data.begin());
-  ar << make_nvp("data", raw_data);
-}
-template<class Archive>
-void load(Archive & ar, gtsam::Vector & v, unsigned int version)
-{
-  std::vector<double> raw_data;
-  ar >> make_nvp("data", raw_data);
-  v = gtsam::Vector_(raw_data);
-}
+    // split version - copies into an STL vector for serialization
+    template<class Archive>
+    void save(Archive & ar, const gtsam::Vector & v, unsigned int version) {
+      const size_t size = v.size();
+      ar << BOOST_SERIALIZATION_NVP(size);
+      ar << make_nvp("data", make_array(v.data(), v.size()));
+    }
 
-} // namespace serialization
+    template<class Archive>
+    void load(Archive & ar, gtsam::Vector & v, unsigned int version) {
+      size_t size;
+      ar >> BOOST_SERIALIZATION_NVP(size);
+      v.resize(size);
+      ar >> make_nvp("data", make_array(v.data(), v.size()));
+    }
+
+  } // namespace serialization
 } // namespace boost
 
 BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Vector)

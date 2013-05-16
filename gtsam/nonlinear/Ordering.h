@@ -267,5 +267,11 @@ public:
     return keyFormatter_(ordering_.key(index)); }
 };
 
+/// Version of orderingIndexFormatter using multi-robot formatter
+struct GTSAM_EXPORT MultiRobotLinearFormatter : gtsam::OrderingIndexFormatter {
+  MultiRobotLinearFormatter(const gtsam::Ordering& ordering)
+  : gtsam::OrderingIndexFormatter(ordering, MultiRobotKeyFormatter) {}
+};
+
 } // \namespace gtsam
 

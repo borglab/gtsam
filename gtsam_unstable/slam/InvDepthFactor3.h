@@ -56,7 +56,7 @@ public:
    * @param K shared pointer to the constant calibration
    */
   InvDepthFactor3(const gtsam::Point2& measured, const gtsam::SharedNoiseModel& model,
-      const gtsam::Key poseKey, gtsam::Key pointKey, gtsam::Key invDepthKey, const gtsam::shared_ptrK& K) :
+      const gtsam::Key poseKey, gtsam::Key pointKey, gtsam::Key invDepthKey, const Cal3_S2::shared_ptr& K) :
         Base(model, poseKey, pointKey, invDepthKey), measured_(measured), K_(K) {}
 
   /** Virtual destructor */
