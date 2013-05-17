@@ -54,7 +54,7 @@ public:
   };
 
   /** Default constructor */
-  ConcurrentBatchFilter(const LevenbergMarquardtParams& parameters = LevenbergMarquardtParams()) : parameters_(parameters) {};
+  ConcurrentBatchFilter(const LevenbergMarquardtParams& parameters = LevenbergMarquardtParams(), bool relin = true) : parameters_(parameters), relin_(relin) {};
 
   /** Default destructor */
   virtual ~ConcurrentBatchFilter() {};
@@ -122,6 +122,7 @@ public:
 protected:
 
   LevenbergMarquardtParams parameters_;  ///< LM parameters
+  bool relin_;
   NonlinearFactorGraph factors_;  ///< The set of all factors currently in the filter
   Values theta_;  ///< Current linearization point of all variables in the filter
   Ordering ordering_; ///< The current ordering used to calculate the linear deltas

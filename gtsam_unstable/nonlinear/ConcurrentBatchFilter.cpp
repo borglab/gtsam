@@ -126,7 +126,7 @@ void ConcurrentBatchFilter::synchronize(const NonlinearFactorGraph& summarizedFa
 
   if(factors_.size() > 0) {
     // Perform an optional optimization on the to-be-sent-to-the-smoother factors
-    if(true) {
+    if(relin_) {
       // Create ordering and delta
       Ordering ordering = *graph.orderingCOLAMD(values);
       VectorValues delta = values.zeroVectors(ordering);
