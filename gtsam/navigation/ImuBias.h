@@ -72,7 +72,7 @@ namespace imuBias {
     /** Correct an accelerometer measurement using this bias model, and optionally compute Jacobians */
     Vector correctAccelerometer(const Vector3& measurment, boost::optional<Matrix&> H=boost::none) const {
       if (H){
-        H->resize(6,3);
+        H->resize(3,6);
         (*H) << -Matrix3::Identity(), Matrix3::Zero();
       }
       return measurment - biasAcc_;
@@ -81,7 +81,7 @@ namespace imuBias {
     /** Correct a gyroscope measurement using this bias model, and optionally compute Jacobians */
     Vector correctGyroscope(const Vector3& measurment, boost::optional<Matrix&> H=boost::none) const {
       if (H){
-        H->resize(6,3);
+        H->resize(3,6);
         (*H) << Matrix3::Zero(), -Matrix3::Identity();
       }
       return measurment - biasGyro_;
