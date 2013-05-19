@@ -64,6 +64,10 @@ namespace gtsam {
 
     class PreintegratedMeasurements {
     public:
+      Vector3 biasAccHat; ///< Acceleration bias value used during preintegration
+      Vector3 biasOmegaHat; ///< Angular rate bias value used during preintegration
+      Matrix measurementCovariance; ///< Covariance of the vector [measuredAcc measuredOmega integrationError] in R^(9X9)
+
       Vector3 deltaPij; ///< Preintegrated relative position (in frame i)
       Vector3 deltaVij; ///< Preintegrated relative velocity (in global frame)
       Rot3 deltaRij; ///< Preintegrated relative orientation (in frame i)
@@ -75,28 +79,48 @@ namespace gtsam {
       Matrix3 delVdelBiasOmega; ///< Jacobian of preintegrated velocity w.r.t. angular rate bias
       Matrix3 delRdelBiasOmega; ///< Jacobian of preintegrated rotation w.r.t. angular rate bias
 
-      Vector3 biasAccHat; ///< Linear acceleration bias
-      Vector3 biasOmegaHat; ///< Rotation rate bias
-
-      Matrix measurementCovariance; ///< Covariance of the vector [measuredAcc measuredOmega integrationError] in R^(9X9)
-      Matrix preintegratedMeasurementsCovariance; ///< Covariance of the preintegrated measurements in R^(9X9)
-
-
       /** Default constructor, initialize with no IMU measurements */
       PreintegratedMeasurements(
-          Vector3 _biasAcc, ///< Current estimate of acceleration bias
-          Vector3 _biasOmega, ///< Current estimate of rotation rate bias
-          Matrix3 _measuredAccCovariance, ///< Covariance matrix of measuredAcc
-          Matrix3 _measuredOmegaCovariance, ///< Covariance matrix of measuredAcc
-          Matrix3 _integrationErrorCovariance ///< Covariance matrix of measuredAcc
-      ) : deltaPij(Vector3::Zero()), deltaVij(Vector3::Zero()), deltaTij(0.0),
+          const Vector3& biasAcc, ///< Current estimate of acceleration bias
+          const Vector3& biasOmega, ///< Current estimate of rotation rate bias
+          const Matrix3& measuredAccCovariance, ///< Covariance matrix of measuredAcc
+          const Matrix3& measuredOmegaCovariance, ///< Covariance matrix of measuredAcc
+          const Matrix3& integrationErrorCovariance ///< Covariance matrix of measuredAcc
+      ) : biasAccHat(biasAcc), biasOmegaHat(biasOmega), measurementCovariance(9,9), deltaPij(Vector3::Zero()), deltaVij(Vector3::Zero()), deltaTij(0.0),
       delPdelBiasAcc(Matrix3::Zero()), delPdelBiasOmega(Matrix3::Zero()),
       delVdelBiasAcc(Matrix3::Zero()), delVdelBiasOmega(Matrix3::Zero()),
-      delRdelBiasOmega(Matrix3::Zero()),
-      biasAccHat(_biasAcc), biasOmegaHat(_biasOmega), measurementCovariance(9,9), preintegratedMeasurementsCovariance(9,9) {
-        measurementCovariance << _measuredAccCovariance , Matrix3::Zero(), Matrix3::Zero(),
-            Matrix3::Zero(), _measuredOmegaCovariance,  Matrix3::Zero(),
-            Matrix3::Zero(),   Matrix3::Zero(),   _integrationErrorCovariance;
+      delRdelBiasOmega(Matrix3::Zero())
+      {
+        measurementCovariance << measuredAccCovariance , Matrix3::Zero(), Matrix3::Zero(),
+            Matrix3::Zero(), measuredOmegaCovariance,  Matrix3::Zero(),
+            Matrix3::Zero(),   Matrix3::Zero(),   integrationErrorCovariance;
+      }
+
+      /** print */
+      void print(const std::string& s = "Preintegrated Measurements:") const {
+        std::cout << s << std::endl;
+        std::cout << "  biasAccHat [ " << biasAccHat.transpose() << " ]" << std::endl;
+        std::cout << "  biasOmegaHat [ " << biasOmegaHat.transpose() << " ]" << std::endl;
+        std::cout << "  deltaTij " << deltaTij << std::endl;
+        std::cout << "  deltaPij [ " << deltaPij.transpose() << " ]" << std::endl;
+        std::cout << "  deltaVij [ " << deltaVij.transpose() << " ]" << std::endl;
+        deltaRij.print("  deltaRij: ");
+      }
+
+      /** equals */
+      bool equals(const PreintegratedMeasurements& expected, double tol=1e-9) const {
+        return equal_with_abs_tol(biasAccHat, expected.biasAccHat, tol)
+            && equal_with_abs_tol(biasOmegaHat, expected.biasOmegaHat, tol)
+            && equal_with_abs_tol(measurementCovariance, expected.measurementCovariance, tol)
+            && equal_with_abs_tol(deltaPij, expected.deltaPij, tol)
+            && equal_with_abs_tol(deltaVij, expected.deltaVij, tol)
+            && deltaRij.equals(expected.deltaRij, tol)
+            && std::fabs(deltaTij - expected.deltaTij) < tol
+            && equal_with_abs_tol(delPdelBiasAcc, expected.delPdelBiasAcc, tol)
+            && equal_with_abs_tol(delPdelBiasOmega, expected.delPdelBiasOmega, tol)
+            && equal_with_abs_tol(delVdelBiasAcc, expected.delVdelBiasAcc, tol)
+            && equal_with_abs_tol(delVdelBiasOmega, expected.delVdelBiasOmega, tol)
+            && equal_with_abs_tol(delRdelBiasOmega, expected.delRdelBiasOmega, tol);
       }
 
       /** Add a single IMU measurement to the preintegration. */
@@ -124,25 +148,26 @@ namespace gtsam {
 
         delRdelBiasOmega = Rincr.inverse().matrix() * delRdelBiasOmega - Jr  * deltaT;
 
-        // Compute Preintegrated measurement covariance (this is not recursive, but we use the Jacobians computed before)
-        Matrix Jpreintegrated(9,9);
-                Jpreintegrated <<
-                    //deltaP VS (measuredAcc   measuredOmega   intError)
-                    - delPdelBiasAcc,  - delPdelBiasOmega, - delPdelBiasAcc,
-                        //deltaV VS (measuredAcc   measuredOmega   intError)
-                    - delVdelBiasAcc,  - delVdelBiasOmega, Matrix3::Zero(),
-                         //deltaR VS (measuredAcc   measuredOmega   intError)
-                         Matrix3::Zero(), -delRdelBiasOmega, Matrix3::Zero();
-
-        preintegratedMeasurementsCovariance = Jpreintegrated * measurementCovariance * Jpreintegrated.transpose();
-
-
         // Update preintegrated measurements
         deltaPij += deltaVij * deltaT + 0.5 * deltaRij.matrix() * (measuredAcc - biasAccHat) * deltaT*deltaT;
         deltaVij += deltaRij.matrix() * (measuredAcc - biasAccHat) * deltaT;
         deltaRij = deltaRij * Rincr;
         deltaTij += deltaT;
 
+      }
+
+      /** Calculate the covariance of the preintegrated measurements */
+      Matrix preintegratedMeasurementsCovariance() {
+        Matrix Jpreintegrated(9,9);
+        Jpreintegrated <<
+            //deltaP VS (measuredAcc   measuredOmega   intError)
+            - delPdelBiasAcc,  - delPdelBiasOmega, - delPdelBiasAcc,
+            //deltaV VS (measuredAcc   measuredOmega   intError)
+            - delVdelBiasAcc,  - delVdelBiasOmega, Matrix3::Zero(),
+            //deltaR VS (measuredAcc   measuredOmega   intError)
+            Matrix3::Zero(), -delRdelBiasOmega, Matrix3::Zero();
+
+        return Jpreintegrated * measurementCovariance * Jpreintegrated.transpose();
       }
     };
 
@@ -161,7 +186,7 @@ namespace gtsam {
     typedef typename boost::shared_ptr<ImuFactor> shared_ptr;
 
     /** Default constructor - only use for serialization */
-    ImuFactor() : preintegratedMeasurements_(Vector3::Zero(), Vector3::Zero(),  Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero()) {}
+    ImuFactor() : preintegratedMeasurements_(Vector3::Zero(), Vector3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero()) {}
 
     /** Constructor */
     ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
@@ -188,14 +213,21 @@ namespace gtsam {
           << keyFormatter(this->key1()) << ","
           << keyFormatter(this->key2()) << ","
           << keyFormatter(this->key3()) << ","
-          << keyFormatter(this->key4()) << ")\n";
+          << keyFormatter(this->key4()) << ","
+          << keyFormatter(this->key5()) << ")\n";
+      preintegratedMeasurements_.print("  preintegrated measurements:");
+      std::cout << "  gravity: [ " << gravity_.transpose() << " ]" << std::endl;
+      std::cout << "  omegaCoriolis: [ " << omegaCoriolis_.transpose() << " ]" << std::endl;
       this->noiseModel_->print("  noise model: ");
     }
 
     /** equals */
     virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
       const This *e =  dynamic_cast<const This*> (&expected);
-      return e != NULL && Base::equals(*e, tol);
+      return e != NULL && Base::equals(*e, tol)
+          && preintegratedMeasurements_.equals(e->preintegratedMeasurements_)
+          && equal_with_abs_tol(gravity_, e->gravity_, tol)
+          && equal_with_abs_tol(omegaCoriolis_, e->omegaCoriolis_, tol);
     }
 
     /** Access the preintegrated measurements. */
@@ -346,7 +378,7 @@ namespace gtsam {
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
-      ar & boost::serialization::make_nvp("NoiseModelFactor4",
+      ar & boost::serialization::make_nvp("NoiseModelFactor5",
           boost::serialization::base_object<Base>(*this));
     }
   }; // \class ImuFactor

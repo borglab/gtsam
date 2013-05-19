@@ -318,8 +318,7 @@ TEST( ImuFactor, ErrorWithBiases )
     EXPECT(assert_equal(RH5e, H5a.bottomRows(3)));  // evaluate only the rotation residue
 }
 
-///* ************************************************************************* */
-
+/* ************************************************************************* */
 TEST( ImuFactor, PartialDerivativeExpmap )
 {
   // Linearization point
@@ -344,8 +343,7 @@ TEST( ImuFactor, PartialDerivativeExpmap )
 }
 
 
-//* ************************************************************************* */
-
+/* ************************************************************************* */
 TEST( ImuFactor, PartialDerivativeLogmap )
 {
   // Linearization point
@@ -374,8 +372,7 @@ TEST( ImuFactor, PartialDerivativeLogmap )
 }
 
 
-///* ************************************************************************* */
-
+/* ************************************************************************* */
 TEST( ImuFactor, fistOrderExponential )
 {
   // Linearization point
@@ -537,117 +534,8 @@ TEST( ImuFactor, MeasurementCovarianceEstimation )
 
 
   // Compare Jacobians
-  EXPECT(assert_equal(MeasurementCovarianceexpected, preintegrated.preintegratedMeasurementsCovariance, 2e-5));
+  EXPECT(assert_equal(MeasurementCovarianceexpected, preintegrated.preintegratedMeasurementsCovariance(), 2e-5));
 }
-
-///* ************************************************************************* */
-//TEST( StereoFactor, ErrorWithTransform ) {
-//  // Create the factor with a measurement that is 3 pixels off in x
-//  StereoPoint2 measurement(323, 318-50, 241);
-//  Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
-//  TestStereoFactor factor(measurement, model, X(1), L(1), K, body_P_sensor);
-//
-//  // Set the linearization point. The vehicle pose has been selected to put the camera at (-6, 0, 0)
-//  Pose3 pose(Rot3(), Point3(-6.50, 0.10 , -1.0));
-//  Point3 point(0.0, 0.0, 0.0);
-//
-//  // Use the factor to calculate the error
-//  Vector actualError(factor.evaluateError(pose, point));
-//
-//  // The expected error is (-3.0, +2.0, -1.0) pixels / UnitCovariance
-//  Vector expectedError = Vector_(3, -3.0, +2.0, -1.0);
-//
-//  // Verify we get the expected error
-//  CHECK(assert_equal(expectedError, actualError, 1e-9));
-//}
-//
-///* ************************************************************************* */
-//TEST( StereoFactor, Jacobian ) {
-//  // Create the factor with a measurement that is 3 pixels off in x
-//  StereoPoint2 measurement(323, 318-50, 241);
-//  TestStereoFactor factor(measurement, model, X(1), L(1), K);
-//
-//  // Set the linearization point
-//  Pose3 pose(Rot3(), Point3(0.0, 0.0, -6.25));
-//  Point3 point(0.0, 0.0, 0.0);
-//
-//  // Use the factor to calculate the Jacobians
-//  Matrix H1Actual, H2Actual;
-//  factor.evaluateError(pose, point, H1Actual, H2Actual);
-//
-//  // The expected Jacobians
-//  Matrix H1Expected = Matrix_(3, 6, 0.0,  -625.0, 0.0, -100.0,    0.0,  0.0,
-//                                    0.0,  -625.0, 0.0, -100.0,    0.0, -8.0,
-//                                    625.0,   0.0, 0.0,    0.0, -100.0,  0.0);
-//  Matrix H2Expected = Matrix_(3, 3, 100.0,   0.0, 0.0,
-//                                    100.0,   0.0, 8.0,
-//                                    0.0,   100.0, 0.0);
-//
-//  // Verify the Jacobians are correct
-//  CHECK(assert_equal(H1Expected, H1Actual, 1e-3));
-//  CHECK(assert_equal(H2Expected, H2Actual, 1e-3));
-//}
-//
-///* ************************************************************************* */
-//TEST( StereoFactor, JacobianWithTransform ) {
-//  // Create the factor with a measurement that is 3 pixels off in x
-//  StereoPoint2 measurement(323, 318-50, 241);
-//  Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
-//  TestStereoFactor factor(measurement, model, X(1), L(1), K, body_P_sensor);
-//
-//  // Set the linearization point. The vehicle pose has been selected to put the camera at (-6, 0, 0)
-//  Pose3 pose(Rot3(), Point3(-6.50, 0.10 , -1.0));
-//  Point3 point(0.0, 0.0, 0.0);
-//
-//  // Use the factor to calculate the Jacobians
-//  Matrix H1Actual, H2Actual;
-//  factor.evaluateError(pose, point, H1Actual, H2Actual);
-//
-//  // The expected Jacobians
-//  Matrix H1Expected = Matrix_(3, 6, -100.0,    0.0,  650.0,   0.0,  100.0,    0.0,
-//                                    -100.0,   -8.0,  649.2,  -8.0,  100.0,    0.0,
-//                                     -10.0, -650.0,    0.0,   0.0,    0.0,  100.0);
-//  Matrix H2Expected = Matrix_(3, 3,    0.0, -100.0,    0.0,
-//                                       8.0, -100.0,    0.0,
-//                                       0.0,    0.0, -100.0);
-//
-//  // Verify the Jacobians are correct
-//  CHECK(assert_equal(H1Expected, H1Actual, 1e-3));
-//  CHECK(assert_equal(H2Expected, H2Actual, 1e-3));
-//}
-//
-///* ************************************************************************* */
-//TEST( StereoFactor, singlePoint)
-//{
-//  NonlinearFactorGraph graph;
-//
-//  graph.add(NonlinearEquality<Pose3>(X(1), camera1));
-//
-//  StereoPoint2 measurement(320, 320.0-50, 240);
-//  // arguments: measurement, sigma, cam#, measurement #, K, baseline (m)
-//  graph.add(GenericStereoFactor<Pose3, Point3>(measurement, model, X(1), L(1), K));
-//
-//  // Create a configuration corresponding to the ground truth
-//  Values values;
-//  values.insert(X(1), camera1); // add camera at z=6.25m looking towards origin
-//
-//  Point3 l1(0, 0, 0);
-//  values.insert(L(1), l1);   // add point at origin;
-//
-//  GaussNewtonOptimizer optimizer(graph, values);
-//
-//  // We expect the initial to be zero because config is the ground truth
-//  DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
-//
-//  // Iterate once, and the config should not have changed
-//  optimizer.iterate();
-//  DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
-//
-//  // Complete solution
-//  optimizer.optimize();
-//
-//  DOUBLES_EQUAL(0.0, optimizer.error(), 1e-6);
-//}
 
 #include <gtsam/linear/GaussianFactorGraph.h>
 /* ************************************************************************* */
@@ -676,7 +564,7 @@ TEST( ImuFactor, LinearizeTiming)
   }
 
   // Create factor
-  noiseModel::Base::shared_ptr model = noiseModel::Gaussian::Covariance(pre_int_data.preintegratedMeasurementsCovariance);
+  noiseModel::Base::shared_ptr model = noiseModel::Gaussian::Covariance(pre_int_data.preintegratedMeasurementsCovariance());
   ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pre_int_data, gravity, omegaCoriolis, model);
 
   Values values;
