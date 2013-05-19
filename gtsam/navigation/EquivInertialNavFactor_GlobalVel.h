@@ -171,11 +171,11 @@ public:
 	POSE predictPose(const POSE& Pose1, const VELOCITY& Vel1, const IMUBIAS& Bias1) const {
 
 		// Correct delta_pos_in_t0_ using (Bias1 - Bias_t0)
-	  Vector delta_BiasAcc  = Bias1.bias_acc();
-	  Vector delta_BiasGyro = Bias1.bias_gyro();
+	  Vector delta_BiasAcc  = Bias1.accelerometer();
+	  Vector delta_BiasGyro = Bias1.gyroscope();
 		if (Bias_initial_){
-			delta_BiasAcc  -= Bias_initial_->bias_acc();
-			delta_BiasGyro -= Bias_initial_->bias_gyro();
+			delta_BiasAcc  -= Bias_initial_->accelerometer();
+			delta_BiasGyro -= Bias_initial_->gyroscope();
 		}
 
 		Matrix J_Pos_wrt_BiasAcc  = Jacobian_wrt_t0_Overall_.block(4,9,3,3);
@@ -236,11 +236,11 @@ public:
 	VELOCITY predictVelocity(const POSE& Pose1, const VELOCITY& Vel1, const IMUBIAS& Bias1) const {
 
 		// Correct delta_vel_in_t0_ using (Bias1 - Bias_t0)
-	  Vector delta_BiasAcc  = Bias1.bias_acc();
-	  Vector delta_BiasGyro = Bias1.bias_gyro();
+	  Vector delta_BiasAcc  = Bias1.accelerometer();
+	  Vector delta_BiasGyro = Bias1.gyroscope();
 		if (Bias_initial_){
-			delta_BiasAcc  -= Bias_initial_->bias_acc();
-			delta_BiasGyro -= Bias_initial_->bias_gyro();
+			delta_BiasAcc  -= Bias_initial_->accelerometer();
+			delta_BiasGyro -= Bias_initial_->gyroscope();
 		}
 
 		Matrix J_Vel_wrt_BiasAcc  = Jacobian_wrt_t0_Overall_.block(6,9,3,3);
@@ -353,11 +353,11 @@ public:
 
 
     // Correct delta_pos_in_t0_ using (Bias1 - Bias_t0)
-    Vector delta_BiasAcc  = Bias1.bias_acc();
-    Vector delta_BiasGyro = Bias1.bias_gyro();
+    Vector delta_BiasAcc  = Bias1.accelerometer();
+    Vector delta_BiasGyro = Bias1.gyroscope();
     if (Bias_initial){
-      delta_BiasAcc  -= Bias_initial->bias_acc();
-      delta_BiasGyro -= Bias_initial->bias_gyro();
+      delta_BiasAcc  -= Bias_initial->accelerometer();
+      delta_BiasGyro -= Bias_initial->gyroscope();
     }
 
     Matrix J_Pos_wrt_BiasAcc  = Jacobian_wrt_t0_Overall.block(4,9,3,3);
@@ -381,11 +381,11 @@ public:
       const boost::optional<IMUBIAS>& Bias_initial = boost::none) {
 
     // Correct delta_vel_in_t0_ using (Bias1 - Bias_t0)
-    Vector delta_BiasAcc  = Bias1.bias_acc();
-    Vector delta_BiasGyro = Bias1.bias_gyro();
+    Vector delta_BiasAcc  = Bias1.accelerometer();
+    Vector delta_BiasGyro = Bias1.gyroscope();
     if (Bias_initial){
-      delta_BiasAcc  -= Bias_initial->bias_acc();
-      delta_BiasGyro -= Bias_initial->bias_gyro();
+      delta_BiasAcc  -= Bias_initial->accelerometer();
+      delta_BiasGyro -= Bias_initial->gyroscope();
     }
 
     Matrix J_Vel_wrt_BiasAcc  = Jacobian_wrt_t0_Overall.block(6,9,3,3);
@@ -481,12 +481,12 @@ public:
 		// Note: all delta terms refer to an IMU\sensor system at t0
 
 		// Calculate the corrected measurements using the Bias object
-	  Vector AccCorrected  = Bias_t0.CorrectAcc(msr_acc_t);
+	  Vector AccCorrected  = Bias_t0.correctAccelerometer(msr_acc_t);
 	  Vector body_t_a_body;
 		if (flag_use_body_P_sensor){
 		  Matrix body_R_sensor = body_P_sensor.rotation().matrix();
 
-		  Vector GyroCorrected(Bias_t0.CorrectGyro(msr_gyro_t));
+		  Vector GyroCorrected(Bias_t0.correctGyroscope(msr_gyro_t));
 
 		  Vector body_omega_body = body_R_sensor * GyroCorrected;
 		  Matrix body_omega_body__cross = skewSymmetric(body_omega_body);
@@ -509,7 +509,7 @@ public:
 		// Note: all delta terms refer to an IMU\sensor system at t0
 
 		// Calculate the corrected measurements using the Bias object
-	  Vector GyroCorrected = Bias_t0.CorrectGyro(msr_gyro_t);
+	  Vector GyroCorrected = Bias_t0.correctGyroscope(msr_gyro_t);
 
 	  Vector body_t_omega_body;
 		if (flag_use_body_P_sensor){
