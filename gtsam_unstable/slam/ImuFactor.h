@@ -179,6 +179,7 @@ namespace gtsam {
     PreintegratedMeasurements preintegratedMeasurements_;
     Vector3 gravity_;
     Vector3 omegaCoriolis_;
+    boost::optional<Pose3> body_P_sensor_;        ///< The pose of the sensor in the body frame
 
   public:
 
@@ -191,11 +192,12 @@ namespace gtsam {
     /** Constructor */
     ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
         const PreintegratedMeasurements& preintegratedMeasurements, const Vector3& gravity, const Vector3& omegaCoriolis,
-        const SharedNoiseModel& model) :
+        const SharedNoiseModel& model, boost::optional<Pose3> body_P_sensor = boost::none) :
       Base(model, pose_i, vel_i, pose_j, vel_j, bias),
       preintegratedMeasurements_(preintegratedMeasurements),
       gravity_(gravity),
-      omegaCoriolis_(omegaCoriolis) {
+      omegaCoriolis_(omegaCoriolis),
+      body_P_sensor_(body_P_sensor) {
     }
 
     virtual ~ImuFactor() {}
@@ -219,6 +221,8 @@ namespace gtsam {
       std::cout << "  gravity: [ " << gravity_.transpose() << " ]" << std::endl;
       std::cout << "  omegaCoriolis: [ " << omegaCoriolis_.transpose() << " ]" << std::endl;
       this->noiseModel_->print("  noise model: ");
+      if(this->body_P_sensor_)
+        this->body_P_sensor_->print("  sensor pose in body frame: ");
     }
 
     /** equals */
@@ -227,7 +231,8 @@ namespace gtsam {
       return e != NULL && Base::equals(*e, tol)
           && preintegratedMeasurements_.equals(e->preintegratedMeasurements_)
           && equal_with_abs_tol(gravity_, e->gravity_, tol)
-          && equal_with_abs_tol(omegaCoriolis_, e->omegaCoriolis_, tol);
+          && equal_with_abs_tol(omegaCoriolis_, e->omegaCoriolis_, tol)
+          && ((!body_P_sensor_ && !e->body_P_sensor_) || (body_P_sensor_ && e->body_P_sensor_ && body_P_sensor_->equals(*e->body_P_sensor_)));
     }
 
     /** Access the preintegrated measurements. */
