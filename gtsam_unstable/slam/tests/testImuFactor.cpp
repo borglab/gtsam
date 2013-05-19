@@ -649,6 +649,62 @@ TEST( ImuFactor, MeasurementCovarianceEstimation )
 //  DOUBLES_EQUAL(0.0, optimizer.error(), 1e-6);
 //}
 
+#include <gtsam/linear/GaussianFactorGraph.h>
+/* ************************************************************************* */
+TEST( ImuFactor, LinearizeTiming)
+{
+  // Linearization point
+  Pose3 x1(Rot3::RzRyRx(M_PI/12.0, M_PI/6.0, M_PI/4.0), Point3(5.0, 1.0, -50.0));
+  LieVector v1(3, 0.5, 0.0, 0.0);
+  Pose3 x2(Rot3::RzRyRx(M_PI/12.0 + M_PI/100.0, M_PI/6.0, M_PI/4.0), Point3(5.5, 1.0, -50.0));
+  LieVector v2(3, 0.5, 0.0, 0.0);
+  LieVector bias(6, 0.001, 0.002, 0.008, 0.002, 0.004, 0.012);
+
+  // Pre-integrator
+  Vector3 biasAcc; biasAcc << 0, 0, 0.10;
+  Vector3 biasOmega; biasOmega << 0, 0, 0.10;
+  Vector3 gravity; gravity << 0, 0, 9.81;
+  Vector3 omegaCoriolis; omegaCoriolis << 0.0001, 0, 0.01;
+  ImuFactor::PreintegratedMeasurements pre_int_data(biasAcc, biasOmega, Matrix3::Identity(), Matrix3::Identity(), Matrix3::Identity());
+
+  // Pre-integrate Measurements
+  Vector3 measuredAcc(0.1, 0.0, 0.0);
+  Vector3 measuredOmega(M_PI/100.0, 0.0, 0.0);
+  double deltaT = 0.5;
+  for(size_t i = 0; i < 50; ++i) {
+    pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+  }
+
+  // Create factor
+  noiseModel::Base::shared_ptr model = noiseModel::Gaussian::Covariance(pre_int_data.preintegratedMeasurementsCovariance);
+  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pre_int_data, gravity, omegaCoriolis, model);
+
+  Values values;
+  values.insert(X(1), x1);
+  values.insert(X(2), x2);
+  values.insert(V(1), v1);
+  values.insert(V(2), v2);
+  values.insert(B(1), bias);
+
+  Ordering ordering;
+  ordering.push_back(X(1));
+  ordering.push_back(V(1));
+  ordering.push_back(X(2));
+  ordering.push_back(V(2));
+  ordering.push_back(B(1));
+
+  GaussianFactorGraph graph;
+  gttic_(LinearizeTiming);
+  for(size_t i = 0; i < 100000; ++i) {
+    GaussianFactor::shared_ptr g = factor.linearize(values, ordering);
+    graph.push_back(g);
+  }
+  gttoc_(LinearizeTiming);
+  tictoc_finishedIteration_();
+  std::cout << "Linear Error: " << graph.error(values.zeroVectors(ordering)) << std::endl;
+  tictoc_print_();
+}
+
 /* ************************************************************************* */
   int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */
