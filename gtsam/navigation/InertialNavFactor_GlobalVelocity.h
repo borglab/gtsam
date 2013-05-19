@@ -148,7 +148,7 @@ public:
 
   POSE predictPose(const POSE& Pose1, const VELOCITY& Vel1, const IMUBIAS& Bias1) const {
     // Calculate the corrected measurements using the Bias object
-    Vector GyroCorrected(Bias1.CorrectGyro(measurement_gyro_));
+    Vector GyroCorrected(Bias1.correctGyroscope(measurement_gyro_));
 
     const POSE& world_P1_body = Pose1;
     const VELOCITY& world_V1_body = Vel1;
@@ -175,7 +175,7 @@ public:
 
   VELOCITY predictVelocity(const POSE& Pose1, const VELOCITY& Vel1, const IMUBIAS& Bias1) const {
     // Calculate the corrected measurements using the Bias object
-    Vector AccCorrected(Bias1.CorrectAcc(measurement_acc_));
+    Vector AccCorrected(Bias1.correctAccelerometer(measurement_acc_));
 
     const POSE& world_P1_body = Pose1;
     const VELOCITY& world_V1_body = Vel1;
@@ -185,7 +185,7 @@ public:
     if(body_P_sensor_) {
       Matrix body_R_sensor = body_P_sensor_->rotation().matrix();
 
-      Vector GyroCorrected(Bias1.CorrectGyro(measurement_gyro_));
+      Vector GyroCorrected(Bias1.correctGyroscope(measurement_gyro_));
       body_omega_body = body_R_sensor * GyroCorrected;
       Matrix body_omega_body__cross = skewSymmetric(body_omega_body);
       body_a_body = body_R_sensor * AccCorrected - body_omega_body__cross * body_omega_body__cross * body_P_sensor_->translation().vector();
