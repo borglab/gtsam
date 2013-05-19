@@ -16,13 +16,9 @@
  */
 
 #include <gtsam_unstable/slam/ImuFactor.h>
-//#include <gtsam/nonlinear/NonlinearEquality.h>
-//#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
-//#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-//#include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Symbol.h>
-//#include <gtsam/geometry/StereoCamera.h>
-//#include <gtsam/geometry/Cal3_S2Stereo.h>
+#include <gtsam/navigation/ImuBias.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/LieVector.h>
 #include <gtsam/base/TestableAssertions.h>
@@ -44,25 +40,25 @@ using symbol_shorthand::B;
 namespace {
 Vector callEvaluateError(const ImuFactor& factor,
     const Pose3& pose_i, const LieVector& vel_i, const Pose3& pose_j, const LieVector& vel_j,
-    const LieVector& bias)
+    const imuBias::ConstantBias& bias)
 {
   return factor.evaluateError(pose_i, vel_i, pose_j, vel_j, bias);
 }
 
 Rot3 evaluateRotationError(const ImuFactor& factor,
     const Pose3& pose_i, const LieVector& vel_i, const Pose3& pose_j, const LieVector& vel_j,
-    const LieVector& bias)
+    const imuBias::ConstantBias& bias)
 {
   return Rot3::Expmap(factor.evaluateError(pose_i, vel_i, pose_j, vel_j, bias).tail(3) ) ;
 }
 
 ImuFactor::PreintegratedMeasurements evaluatePreintegratedMeasurements(
-    const Vector3& biasAcc, const Vector3& biasOmega,
+    const imuBias::ConstantBias& bias,
     const list<Vector3>& measuredAccs,
     const list<Vector3>& measuredOmegas,
     const list<double>& deltaTs)
 {
-  ImuFactor::PreintegratedMeasurements result(biasAcc, biasOmega, Matrix3::Identity(), Matrix3::Identity(), Matrix3::Identity());
+  ImuFactor::PreintegratedMeasurements result(bias, Matrix3::Identity(), Matrix3::Identity(), Matrix3::Identity());
 
   list<Vector3>::const_iterator itAcc = measuredAccs.begin();
   list<Vector3>::const_iterator itOmega = measuredOmegas.begin();
@@ -75,32 +71,32 @@ ImuFactor::PreintegratedMeasurements evaluatePreintegratedMeasurements(
 }
 
 Vector3 evaluatePreintegratedMeasurementsPosition(
-    const Vector3& biasAcc, const Vector3& biasOmega,
+    const imuBias::ConstantBias& bias,
     const list<Vector3>& measuredAccs,
     const list<Vector3>& measuredOmegas,
     const list<double>& deltaTs)
 {
-  return evaluatePreintegratedMeasurements(biasAcc, biasOmega,
+  return evaluatePreintegratedMeasurements(bias,
       measuredAccs, measuredOmegas, deltaTs).deltaPij;
 }
 
 Vector3 evaluatePreintegratedMeasurementsVelocity(
-    const Vector3& biasAcc, const Vector3& biasOmega,
+    const imuBias::ConstantBias& bias,
     const list<Vector3>& measuredAccs,
     const list<Vector3>& measuredOmegas,
     const list<double>& deltaTs)
 {
-  return evaluatePreintegratedMeasurements(biasAcc, biasOmega,
+  return evaluatePreintegratedMeasurements(bias,
       measuredAccs, measuredOmegas, deltaTs).deltaVij;
 }
 
 Rot3 evaluatePreintegratedMeasurementsRotation(
-    const Vector3& biasAcc, const Vector3& biasOmega,
+    const imuBias::ConstantBias& bias,
     const list<Vector3>& measuredAccs,
     const list<Vector3>& measuredOmegas,
     const list<double>& deltaTs)
 {
-  return evaluatePreintegratedMeasurements(biasAcc, biasOmega,
+  return evaluatePreintegratedMeasurements(bias,
       measuredAccs, measuredOmegas, deltaTs).deltaRij;
 }
 
@@ -120,8 +116,7 @@ Vector3 evaluateLogRotation(const Vector3 thetahat, const Vector3 deltatheta)
 TEST( ImuFactor, PreintegratedMeasurements )
 {
   // Linearization point
-  Vector3 biasAcc; biasAcc << 0,0,0; ///< Current estimate of acceleration bias
-  Vector3 biasOmega; biasOmega << 0,0,0; ///< Current estimate of rotation rate bias
+  imuBias::ConstantBias bias(Vector3(0,0,0), Vector3(0,0,0)); ///< Current estimate of acceleration and angular rate biases
 
   // Measurements
   Vector3 measuredAcc(0.1, 0.0, 0.0);
@@ -135,7 +130,7 @@ TEST( ImuFactor, PreintegratedMeasurements )
   double expectedDeltaT1(0.5);
 
   // Actual preintegrated values
-  ImuFactor::PreintegratedMeasurements actual1(biasAcc, biasOmega, Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero());
+  ImuFactor::PreintegratedMeasurements actual1(bias, Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero());
   actual1.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   EXPECT(assert_equal(Vector(expectedDeltaP1), Vector(actual1.deltaPij), 1e-6));
@@ -163,7 +158,7 @@ TEST( ImuFactor, PreintegratedMeasurements )
 TEST( ImuFactor, Error )
 {
   // Linearization point
-  Vector bias(6); bias << 0,0,0,0,0,0; // Bias
+  imuBias::ConstantBias bias; // Bias
   Pose3 x1(Rot3::RzRyRx(M_PI/12.0, M_PI/6.0, M_PI/4.0), Point3(5.0, 1.0, -50.0));
   LieVector v1(3, 0.5, 0.0, 0.0);
   Pose3 x2(Rot3::RzRyRx(M_PI/12.0 + M_PI/100.0, M_PI/6.0, M_PI/4.0), Point3(5.5, 1.0, -50.0));
@@ -175,7 +170,7 @@ TEST( ImuFactor, Error )
   Vector3 measuredOmega; measuredOmega << M_PI/100, 0, 0;
   Vector3 measuredAcc = x1.rotation().unrotate(-Point3(gravity)).vector();
   double deltaT = 1.0;
-  ImuFactor::PreintegratedMeasurements pre_int_data(bias.head(3), bias.tail(3),  Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero());
+  ImuFactor::PreintegratedMeasurements pre_int_data(bias, Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero());
   pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   // Create factor
@@ -190,13 +185,15 @@ TEST( ImuFactor, Error )
 
   // Expected Jacobians
   Matrix H1e = numericalDerivative11<Pose3>(
-      boost::bind(&callEvaluateError, factor, _1, v1, x2, v2, LieVector(bias)), x1);
+      boost::bind(&callEvaluateError, factor, _1, v1, x2, v2, bias), x1);
   Matrix H2e = numericalDerivative11<LieVector>(
-      boost::bind(&callEvaluateError, factor, x1, _1, x2, v2, LieVector(bias)), v1);
+      boost::bind(&callEvaluateError, factor, x1, _1, x2, v2, bias), v1);
   Matrix H3e = numericalDerivative11<Pose3>(
-      boost::bind(&callEvaluateError, factor, x1, v1, _1, v2, LieVector(bias)), x2);
+      boost::bind(&callEvaluateError, factor, x1, v1, _1, v2, bias), x2);
   Matrix H4e = numericalDerivative11<LieVector>(
-      boost::bind(&callEvaluateError, factor, x1, v1, x2, _1, LieVector(bias)), v2);
+      boost::bind(&callEvaluateError, factor, x1, v1, x2, _1, bias), v2);
+  Matrix H5e = numericalDerivative11<imuBias::ConstantBias>(
+      boost::bind(&callEvaluateError, factor, x1, v1, x2, v2, _1), bias);
 
   // Check rotation Jacobians
   Matrix RH1e = numericalDerivative11<Rot3,Pose3>(
@@ -205,8 +202,8 @@ TEST( ImuFactor, Error )
       boost::bind(&evaluateRotationError, factor, x1, v1, _1, v2, bias), x2);
 
   // Actual Jacobians
-  Matrix H1a, H2a, H3a, H4a;
-  (void) factor.evaluateError(x1, v1, x2, v2, bias, H1a, H2a, H3a, H4a);
+  Matrix H1a, H2a, H3a, H4a, H5a;
+  (void) factor.evaluateError(x1, v1, x2, v2, bias, H1a, H2a, H3a, H4a, H5a);
 
 
   // positions and velocities
@@ -226,6 +223,7 @@ TEST( ImuFactor, Error )
   EXPECT(assert_equal(RH3e, H3a.bottomRows(3)));  // evaluate only the rotation residue
 
   EXPECT(assert_equal(H4e, H4a));
+//  EXPECT(assert_equal(H5e, H5a));
 }
 
 /* ************************************************************************* */
@@ -237,7 +235,7 @@ TEST( ImuFactor, ErrorWithBiases )
 //  LieVector v1(3, 0.5, 0.0, 0.0);
 //  Pose3 x2(Rot3::RzRyRx(M_PI/12.0 + M_PI/10.0, M_PI/6.0, M_PI/4.0), Point3(5.5, 1.0, -50.0));
 //  LieVector v2(3, 0.5, 0.0, 0.0);
-  Vector bias(6); bias << 0.2, 0, 0, 0, 0, 0.3; // Biases (acc, rot)
+  imuBias::ConstantBias bias(Vector3(0.2, 0, 0), Vector3(0, 0, 0.3)); // Biases (acc, rot)
   Pose3 x1(Rot3::Expmap(Vector3(0, 0, M_PI/4.0)), Point3(5.0, 1.0, -50.0));
   LieVector v1(3, 0.5, 0.0, 0.0);
   Pose3 x2(Rot3::Expmap(Vector3(0, 0, M_PI/4.0 + M_PI/10.0)), Point3(5.5, 1.0, -50.0));
@@ -250,7 +248,7 @@ TEST( ImuFactor, ErrorWithBiases )
   Vector3 measuredAcc = x1.rotation().unrotate(-Point3(gravity)).vector() + Vector3(0.2,0.0,0.0);
   double deltaT = 1.0;
 
-  ImuFactor::PreintegratedMeasurements pre_int_data(bias.head(3), Vector_(3, 0.0, 0.0, 0.0),  Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero());
+  ImuFactor::PreintegratedMeasurements pre_int_data(imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero());
     pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
 //  ImuFactor::PreintegratedMeasurements pre_int_data(bias.head(3), bias.tail(3));
@@ -277,15 +275,15 @@ TEST( ImuFactor, ErrorWithBiases )
         boost::bind(&callEvaluateError, factor, x1, v1, _1, v2, bias), x2);
     Matrix H4e = numericalDerivative11<LieVector>(
         boost::bind(&callEvaluateError, factor, x1, v1, x2, _1, bias), v2);
-    Matrix H5e = numericalDerivative11<LieVector>(
-           boost::bind(&callEvaluateError, factor, x1, v1, x2, v2, _1), bias);
+    Matrix H5e = numericalDerivative11<imuBias::ConstantBias>(
+        boost::bind(&callEvaluateError, factor, x1, v1, x2, v2, _1), bias);
 
     // Check rotation Jacobians
     Matrix RH1e = numericalDerivative11<Rot3,Pose3>(
         boost::bind(&evaluateRotationError, factor, _1, v1, x2, v2, bias), x1);
     Matrix RH3e = numericalDerivative11<Rot3,Pose3>(
         boost::bind(&evaluateRotationError, factor, x1, v1, _1, v2, bias), x2);
-    Matrix RH5e = numericalDerivative11<Rot3,LieVector>(
+    Matrix RH5e = numericalDerivative11<Rot3,imuBias::ConstantBias>(
         boost::bind(&evaluateRotationError, factor, x1, v1, x2, v2, _1), bias);
 
     // Actual Jacobians
@@ -311,10 +309,10 @@ TEST( ImuFactor, ErrorWithBiases )
     EXPECT(assert_equal(H4e, H4a));
 
     // positions and velocities
-     Matrix H5etop6 =  H5e.topRows(6);
-     Matrix H5atop6 =  H5a.topRows(6);
-     EXPECT(assert_equal(H5etop6, H5atop6));
-     // rotations
+    Matrix H5etop6 =  H5e.topRows(6);
+    Matrix H5atop6 =  H5a.topRows(6);
+    EXPECT(assert_equal(H5etop6, H5atop6));
+    // rotations
     EXPECT(assert_equal(RH5e, H5a.bottomRows(3)));  // evaluate only the rotation residue
 }
 
@@ -341,7 +339,6 @@ TEST( ImuFactor, PartialDerivativeExpmap )
   EXPECT(assert_equal(expectedDelRdelBiasOmega, actualdelRdelBiasOmega));
 
 }
-
 
 /* ************************************************************************* */
 TEST( ImuFactor, PartialDerivativeLogmap )
@@ -371,7 +368,6 @@ TEST( ImuFactor, PartialDerivativeLogmap )
 
 }
 
-
 /* ************************************************************************* */
 TEST( ImuFactor, fistOrderExponential )
 {
@@ -400,15 +396,13 @@ TEST( ImuFactor, fistOrderExponential )
 
     // Compare Jacobians
     EXPECT(assert_equal(expectedRot, actualRot));
-
 }
 
 /* ************************************************************************* */
 TEST( ImuFactor, FirstOrderPreIntegratedMeasurements )
 {
   // Linearization point
-  Vector3 biasAcc; biasAcc << 0,0,0; ///< Current estimate of acceleration bias
-  Vector3 biasOmega; biasOmega << 0,0,0; ///< Current estimate of rotation rate bias
+  imuBias::ConstantBias bias; ///< Current estimate of acceleration and rotation rate biases
 
   // Measurements
   list<Vector3> measuredAccs, measuredOmegas;
@@ -421,40 +415,30 @@ TEST( ImuFactor, FirstOrderPreIntegratedMeasurements )
   deltaTs.push_back(0.01);
   for(int i=1;i<100;i++)
   {
-  measuredAccs.push_back(Vector3(0.05, 0.09, 0.01));
-  measuredOmegas.push_back(Vector3(M_PI/100.0, M_PI/300.0, 2*M_PI/100.0));
-  deltaTs.push_back(0.01);
+    measuredAccs.push_back(Vector3(0.05, 0.09, 0.01));
+    measuredOmegas.push_back(Vector3(M_PI/100.0, M_PI/300.0, 2*M_PI/100.0));
+    deltaTs.push_back(0.01);
   }
 
   // Actual preintegrated values
   ImuFactor::PreintegratedMeasurements preintegrated =
-      evaluatePreintegratedMeasurements(biasAcc, biasOmega, measuredAccs, measuredOmegas, deltaTs);
+      evaluatePreintegratedMeasurements(bias, measuredAccs, measuredOmegas, deltaTs);
 
   // Compute numerical derivatives
-  Matrix expectedDelPdelBiasAcc = numericalDerivative11<LieVector>(boost::bind(
-      &evaluatePreintegratedMeasurementsPosition,
-      _1, biasOmega, measuredAccs, measuredOmegas, deltaTs),
-      biasAcc);
-  Matrix expectedDelPdelBiasOmega = numericalDerivative11<LieVector>(boost::bind(
-      &evaluatePreintegratedMeasurementsPosition,
-      biasAcc, _1, measuredAccs, measuredOmegas, deltaTs),
-      biasOmega);
-  Matrix expectedDelVdelBiasAcc = numericalDerivative11<LieVector>(boost::bind(
-      &evaluatePreintegratedMeasurementsVelocity,
-      _1, biasOmega, measuredAccs, measuredOmegas, deltaTs),
-      biasAcc);
-  Matrix expectedDelVdelBiasOmega = numericalDerivative11<LieVector>(boost::bind(
-      &evaluatePreintegratedMeasurementsVelocity,
-      biasAcc, _1, measuredAccs, measuredOmegas, deltaTs),
-      biasOmega);
-  Matrix expectedDelRdelBiasAcc = numericalDerivative11<Rot3,LieVector>(boost::bind(
-      &evaluatePreintegratedMeasurementsRotation,
-      _1, biasOmega, measuredAccs, measuredOmegas, deltaTs),
-      biasAcc);
-  Matrix expectedDelRdelBiasOmega = numericalDerivative11<Rot3,LieVector>(boost::bind(
-      &evaluatePreintegratedMeasurementsRotation,
-      biasAcc, _1, measuredAccs, measuredOmegas, deltaTs),
-      biasOmega, 1e-10);
+  Matrix expectedDelPdelBias = numericalDerivative11<imuBias::ConstantBias>(
+      boost::bind(&evaluatePreintegratedMeasurementsPosition, _1, measuredAccs, measuredOmegas, deltaTs), bias);
+  Matrix expectedDelPdelBiasAcc   = expectedDelPdelBias.leftCols(3);
+  Matrix expectedDelPdelBiasOmega = expectedDelPdelBias.rightCols(3);
+
+  Matrix expectedDelVdelBias = numericalDerivative11<imuBias::ConstantBias>(
+      boost::bind(&evaluatePreintegratedMeasurementsVelocity, _1, measuredAccs, measuredOmegas, deltaTs), bias);
+  Matrix expectedDelVdelBiasAcc   = expectedDelVdelBias.leftCols(3);
+  Matrix expectedDelVdelBiasOmega = expectedDelVdelBias.rightCols(3);
+
+  Matrix expectedDelRdelBias = numericalDerivative11<Rot3,imuBias::ConstantBias>(
+      boost::bind(&evaluatePreintegratedMeasurementsRotation, _1, measuredAccs, measuredOmegas, deltaTs), bias);
+  Matrix expectedDelRdelBiasAcc   = expectedDelRdelBias.leftCols(3);
+  Matrix expectedDelRdelBiasOmega = expectedDelRdelBias.rightCols(3);
 
   // Compare Jacobians
   EXPECT(assert_equal(expectedDelPdelBiasAcc, preintegrated.delPdelBiasAcc));
@@ -465,13 +449,11 @@ TEST( ImuFactor, FirstOrderPreIntegratedMeasurements )
   EXPECT(assert_equal(expectedDelRdelBiasOmega, preintegrated.delRdelBiasOmega, 2e-5));
 }
 
-
 /* ************************************************************************* */
 TEST( ImuFactor, MeasurementCovarianceEstimation )
 {
   // Linearization point
-  Vector3 biasAcc; biasAcc << 0,0,0; ///< Current estimate of acceleration bias
-  Vector3 biasOmega; biasOmega << 0,0,0; ///< Current estimate of rotation rate bias
+  imuBias::ConstantBias bias; ///< Current estimate of acceleration and rotation rate biases
 
   // Measurements
   list<Vector3> measuredAccs, measuredOmegas;
@@ -491,33 +473,23 @@ TEST( ImuFactor, MeasurementCovarianceEstimation )
 
   // Actual preintegrated values
   ImuFactor::PreintegratedMeasurements preintegrated =
-      evaluatePreintegratedMeasurements(biasAcc, biasOmega, measuredAccs, measuredOmegas, deltaTs);
+      evaluatePreintegratedMeasurements(bias, measuredAccs, measuredOmegas, deltaTs);
 
   // Compute numerical derivatives
-  Matrix expectedDelPdelBiasAcc = numericalDerivative11<LieVector>(boost::bind(
-      &evaluatePreintegratedMeasurementsPosition,
-      _1, biasOmega, measuredAccs, measuredOmegas, deltaTs),
-      biasAcc);
-  Matrix expectedDelPdelBiasOmega = numericalDerivative11<LieVector>(boost::bind(
-      &evaluatePreintegratedMeasurementsPosition,
-      biasAcc, _1, measuredAccs, measuredOmegas, deltaTs),
-      biasOmega);
-  Matrix expectedDelVdelBiasAcc = numericalDerivative11<LieVector>(boost::bind(
-      &evaluatePreintegratedMeasurementsVelocity,
-      _1, biasOmega, measuredAccs, measuredOmegas, deltaTs),
-      biasAcc);
-  Matrix expectedDelVdelBiasOmega = numericalDerivative11<LieVector>(boost::bind(
-      &evaluatePreintegratedMeasurementsVelocity,
-      biasAcc, _1, measuredAccs, measuredOmegas, deltaTs),
-      biasOmega);
-  Matrix expectedDelRdelBiasAcc = numericalDerivative11<Rot3,LieVector>(boost::bind(
-      &evaluatePreintegratedMeasurementsRotation,
-      _1, biasOmega, measuredAccs, measuredOmegas, deltaTs),
-      biasAcc);
-  Matrix expectedDelRdelBiasOmega = numericalDerivative11<Rot3,LieVector>(boost::bind(
-      &evaluatePreintegratedMeasurementsRotation,
-      biasAcc, _1, measuredAccs, measuredOmegas, deltaTs),
-      biasOmega, 1e-10);
+  Matrix expectedDelPdelBias = numericalDerivative11<imuBias::ConstantBias>(
+      boost::bind(&evaluatePreintegratedMeasurementsPosition, _1, measuredAccs, measuredOmegas, deltaTs), bias);
+  Matrix expectedDelPdelBiasAcc   = expectedDelPdelBias.leftCols(3);
+  Matrix expectedDelPdelBiasOmega = expectedDelPdelBias.rightCols(3);
+
+  Matrix expectedDelVdelBias = numericalDerivative11<imuBias::ConstantBias>(
+      boost::bind(&evaluatePreintegratedMeasurementsVelocity, _1, measuredAccs, measuredOmegas, deltaTs), bias);
+  Matrix expectedDelVdelBiasAcc   = expectedDelVdelBias.leftCols(3);
+  Matrix expectedDelVdelBiasOmega = expectedDelVdelBias.rightCols(3);
+
+  Matrix expectedDelRdelBias = numericalDerivative11<Rot3,imuBias::ConstantBias>(
+      boost::bind(&evaluatePreintegratedMeasurementsRotation, _1, measuredAccs, measuredOmegas, deltaTs), bias);
+  Matrix expectedDelRdelBiasAcc   = expectedDelRdelBias.leftCols(3);
+  Matrix expectedDelRdelBiasOmega = expectedDelRdelBias.rightCols(3);
 
   Matrix Jexpected(9,9);
   Jexpected <<        //deltaP VS (measuredAcc   measuredOmega   intError)
@@ -546,14 +518,13 @@ TEST( ImuFactor, LinearizeTiming)
   LieVector v1(3, 0.5, 0.0, 0.0);
   Pose3 x2(Rot3::RzRyRx(M_PI/12.0 + M_PI/100.0, M_PI/6.0, M_PI/4.0), Point3(5.5, 1.0, -50.0));
   LieVector v2(3, 0.5, 0.0, 0.0);
-  LieVector bias(6, 0.001, 0.002, 0.008, 0.002, 0.004, 0.012);
+  imuBias::ConstantBias bias(Vector3(0.001, 0.002, 0.008), Vector3(0.002, 0.004, 0.012));
 
   // Pre-integrator
-  Vector3 biasAcc; biasAcc << 0, 0, 0.10;
-  Vector3 biasOmega; biasOmega << 0, 0, 0.10;
+  imuBias::ConstantBias biasHat(Vector3(0, 0, 0.10), Vector3(0, 0, 0.10));
   Vector3 gravity; gravity << 0, 0, 9.81;
   Vector3 omegaCoriolis; omegaCoriolis << 0.0001, 0, 0.01;
-  ImuFactor::PreintegratedMeasurements pre_int_data(biasAcc, biasOmega, Matrix3::Identity(), Matrix3::Identity(), Matrix3::Identity());
+  ImuFactor::PreintegratedMeasurements pre_int_data(biasHat, Matrix3::Identity(), Matrix3::Identity(), Matrix3::Identity());
 
   // Pre-integrate Measurements
   Vector3 measuredAcc(0.1, 0.0, 0.0);

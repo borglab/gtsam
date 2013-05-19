@@ -19,6 +19,7 @@
 /* GTSAM includes */
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/navigation/ImuBias.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/LieVector.h>
 #include <gtsam/base/debug.h>
@@ -33,7 +34,7 @@ namespace gtsam {
    * 
    * @addtogroup SLAM
    */
-  class ImuFactor: public NoiseModelFactor5<Pose3,LieVector,Pose3,LieVector,LieVector> {
+  class ImuFactor: public NoiseModelFactor5<Pose3,LieVector,Pose3,LieVector,imuBias::ConstantBias> {
 
   public:
 
@@ -64,8 +65,7 @@ namespace gtsam {
 
     class PreintegratedMeasurements {
     public:
-      Vector3 biasAccHat; ///< Acceleration bias value used during preintegration
-      Vector3 biasOmegaHat; ///< Angular rate bias value used during preintegration
+      imuBias::ConstantBias biasHat; ///< Acceleration and angular rate bias values used during preintegration
       Matrix measurementCovariance; ///< Covariance of the vector [measuredAcc measuredOmega integrationError] in R^(9X9)
 
       Vector3 deltaPij; ///< Preintegrated relative position (in frame i)
@@ -81,12 +81,11 @@ namespace gtsam {
 
       /** Default constructor, initialize with no IMU measurements */
       PreintegratedMeasurements(
-          const Vector3& biasAcc, ///< Current estimate of acceleration bias
-          const Vector3& biasOmega, ///< Current estimate of rotation rate bias
+          const imuBias::ConstantBias& bias, ///< Current estimate of acceleration and rotation rate biases
           const Matrix3& measuredAccCovariance, ///< Covariance matrix of measuredAcc
           const Matrix3& measuredOmegaCovariance, ///< Covariance matrix of measuredAcc
           const Matrix3& integrationErrorCovariance ///< Covariance matrix of measuredAcc
-      ) : biasAccHat(biasAcc), biasOmegaHat(biasOmega), measurementCovariance(9,9), deltaPij(Vector3::Zero()), deltaVij(Vector3::Zero()), deltaTij(0.0),
+      ) : biasHat(bias), measurementCovariance(9,9), deltaPij(Vector3::Zero()), deltaVij(Vector3::Zero()), deltaTij(0.0),
       delPdelBiasAcc(Matrix3::Zero()), delPdelBiasOmega(Matrix3::Zero()),
       delVdelBiasAcc(Matrix3::Zero()), delVdelBiasOmega(Matrix3::Zero()),
       delRdelBiasOmega(Matrix3::Zero())
@@ -99,18 +98,16 @@ namespace gtsam {
       /** print */
       void print(const std::string& s = "Preintegrated Measurements:") const {
         std::cout << s << std::endl;
-        std::cout << "  biasAccHat [ " << biasAccHat.transpose() << " ]" << std::endl;
-        std::cout << "  biasOmegaHat [ " << biasOmegaHat.transpose() << " ]" << std::endl;
+        biasHat.print("  biasHat");
         std::cout << "  deltaTij " << deltaTij << std::endl;
         std::cout << "  deltaPij [ " << deltaPij.transpose() << " ]" << std::endl;
         std::cout << "  deltaVij [ " << deltaVij.transpose() << " ]" << std::endl;
-        deltaRij.print("  deltaRij: ");
+        deltaRij.print("  deltaRij ");
       }
 
       /** equals */
       bool equals(const PreintegratedMeasurements& expected, double tol=1e-9) const {
-        return equal_with_abs_tol(biasAccHat, expected.biasAccHat, tol)
-            && equal_with_abs_tol(biasOmegaHat, expected.biasOmegaHat, tol)
+        return biasHat.equals(expected.biasHat, tol)
             && equal_with_abs_tol(measurementCovariance, expected.measurementCovariance, tol)
             && equal_with_abs_tol(deltaPij, expected.deltaPij, tol)
             && equal_with_abs_tol(deltaVij, expected.deltaVij, tol)
@@ -131,29 +128,24 @@ namespace gtsam {
       ) {
         // NOTE: order is important here because each update uses old values.
 
-        const Rot3 Rincr = Rot3::Expmap((measuredOmega - biasOmegaHat) * deltaT);
+        const Rot3 Rincr = Rot3::Expmap((biasHat.correctGyroscope(measuredOmega)) * deltaT);
 
         // Update Jacobians
         delPdelBiasAcc += delVdelBiasAcc * deltaT - 0.5 * deltaRij.matrix() * deltaT*deltaT;
         delPdelBiasOmega += delVdelBiasOmega * deltaT - 0.5 * deltaRij.matrix()
-          * skewSymmetric(measuredAcc - biasAccHat) * deltaT*deltaT * delRdelBiasOmega;
+          * skewSymmetric(biasHat.correctAccelerometer(measuredAcc)) * deltaT*deltaT * delRdelBiasOmega;
         delVdelBiasAcc += -deltaRij.matrix() * deltaT;
-        delVdelBiasOmega += -deltaRij.matrix() * skewSymmetric(measuredAcc - biasAccHat) * deltaT * delRdelBiasOmega;
+        delVdelBiasOmega += -deltaRij.matrix() * skewSymmetric(biasHat.correctAccelerometer(measuredAcc)) * deltaT * delRdelBiasOmega;
 
-        const Vector3 x = (measuredOmega - biasOmegaHat) * deltaT; // parametrization of so(3)
-        const Matrix3 X = skewSymmetric(x); // element of Lie algebra so(3): X = x^
-        double normx = norm_2(x);
-        const Matrix3 Jr = Matrix3::Identity() - ((1-cos(normx))/(normx*normx)) * X +
-            ((normx-sin(normx))/(normx*normx*normx)) * X * X;
-
+        const Vector3 x = biasHat.correctGyroscope(measuredOmega) * deltaT; // parametrization of so(3)
+        const Matrix3 Jr = rightJacobianExpMapSO3(x);
         delRdelBiasOmega = Rincr.inverse().matrix() * delRdelBiasOmega - Jr  * deltaT;
 
         // Update preintegrated measurements
-        deltaPij += deltaVij * deltaT + 0.5 * deltaRij.matrix() * (measuredAcc - biasAccHat) * deltaT*deltaT;
-        deltaVij += deltaRij.matrix() * (measuredAcc - biasAccHat) * deltaT;
+        deltaPij += deltaVij * deltaT + 0.5 * deltaRij.matrix() * biasHat.correctAccelerometer(measuredAcc) * deltaT*deltaT;
+        deltaVij += deltaRij.matrix() * biasHat.correctAccelerometer(measuredAcc) * deltaT;
         deltaRij = deltaRij * Rincr;
         deltaTij += deltaT;
-
       }
 
       /** Calculate the covariance of the preintegrated measurements */
@@ -175,8 +167,7 @@ namespace gtsam {
       friend class boost::serialization::access;
       template<class ARCHIVE>
       void serialize(ARCHIVE & ar, const unsigned int version) {
-        ar & BOOST_SERIALIZATION_NVP(biasAccHat);
-        ar & BOOST_SERIALIZATION_NVP(biasOmegaHat);
+        ar & BOOST_SERIALIZATION_NVP(biasHat);
         ar & BOOST_SERIALIZATION_NVP(measurementCovariance);
         ar & BOOST_SERIALIZATION_NVP(deltaPij);
         ar & BOOST_SERIALIZATION_NVP(deltaVij);
@@ -193,7 +184,7 @@ namespace gtsam {
   private:
 
     typedef ImuFactor This;
-    typedef NoiseModelFactor5<Pose3,LieVector,Pose3,LieVector,LieVector> Base;
+    typedef NoiseModelFactor5<Pose3,LieVector,Pose3,LieVector,imuBias::ConstantBias> Base;
 
     PreintegratedMeasurements preintegratedMeasurements_;
     Vector3 gravity_;
@@ -206,7 +197,7 @@ namespace gtsam {
     typedef typename boost::shared_ptr<ImuFactor> shared_ptr;
 
     /** Default constructor - only use for serialization */
-    ImuFactor() : preintegratedMeasurements_(Vector3::Zero(), Vector3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero()) {}
+    ImuFactor() : preintegratedMeasurements_(imuBias::ConstantBias(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero()) {}
 
     /** Constructor */
     ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
@@ -262,7 +253,7 @@ namespace gtsam {
 
     /** vector of errors */
     Vector evaluateError(const Pose3& pose_i, const LieVector& vel_i, const Pose3& pose_j, const LieVector& vel_j,
-      const LieVector& bias,
+      const imuBias::ConstantBias& bias,
         boost::optional<Matrix&> H1 = boost::none,
         boost::optional<Matrix&> H2 = boost::none,
         boost::optional<Matrix&> H3 = boost::none,
@@ -271,8 +262,8 @@ namespace gtsam {
     {
 
       const double& deltaTij = preintegratedMeasurements_.deltaTij;
-      const Vector3 biasAccIncr = bias.head(3) - preintegratedMeasurements_.biasAccHat;
-      const Vector3 biasOmegaIncr = bias.tail(3) - preintegratedMeasurements_.biasOmegaHat;
+      const Vector3 biasAccIncr = bias.accelerometer() - preintegratedMeasurements_.biasHat.accelerometer();
+      const Vector3 biasOmegaIncr = bias.gyroscope() - preintegratedMeasurements_.biasHat.gyroscope();
 
 
       const Rot3 deltaRij_biascorrected = preintegratedMeasurements_.deltaRij.retract(preintegratedMeasurements_.delRdelBiasOmega * biasOmegaIncr, Rot3::EXPMAP);
