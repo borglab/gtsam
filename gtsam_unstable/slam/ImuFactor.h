@@ -169,6 +169,25 @@ namespace gtsam {
 
         return Jpreintegrated * measurementCovariance * Jpreintegrated.transpose();
       }
+
+    private:
+      /** Serialization function */
+      friend class boost::serialization::access;
+      template<class ARCHIVE>
+      void serialize(ARCHIVE & ar, const unsigned int version) {
+        ar & BOOST_SERIALIZATION_NVP(biasAccHat);
+        ar & BOOST_SERIALIZATION_NVP(biasOmegaHat);
+        ar & BOOST_SERIALIZATION_NVP(measurementCovariance);
+        ar & BOOST_SERIALIZATION_NVP(deltaPij);
+        ar & BOOST_SERIALIZATION_NVP(deltaVij);
+        ar & BOOST_SERIALIZATION_NVP(deltaRij);
+        ar & BOOST_SERIALIZATION_NVP(deltaTij);
+        ar & BOOST_SERIALIZATION_NVP(delPdelBiasAcc);
+        ar & BOOST_SERIALIZATION_NVP(delPdelBiasOmega);
+        ar & BOOST_SERIALIZATION_NVP(delVdelBiasAcc);
+        ar & BOOST_SERIALIZATION_NVP(delVdelBiasOmega);
+        ar & BOOST_SERIALIZATION_NVP(delRdelBiasOmega);
+      }
     };
 
   private:
@@ -385,6 +404,10 @@ namespace gtsam {
     void serialize(ARCHIVE & ar, const unsigned int version) {
       ar & boost::serialization::make_nvp("NoiseModelFactor5",
           boost::serialization::base_object<Base>(*this));
+      ar & BOOST_SERIALIZATION_NVP(preintegratedMeasurements_);
+      ar & BOOST_SERIALIZATION_NVP(gravity_);
+      ar & BOOST_SERIALIZATION_NVP(omegaCoriolis_);
+      ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
     }
   }; // \class ImuFactor
 
