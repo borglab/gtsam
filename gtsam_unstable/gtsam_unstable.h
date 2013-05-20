@@ -28,6 +28,7 @@ class gtsam::KeySet;
 class gtsam::KeyVector;
 class gtsam::LevenbergMarquardtParams;
 class gtsam::ISAM2Params;
+class gtsam::GaussianDensity;
 
 namespace gtsam {
 
@@ -597,6 +598,31 @@ virtual class InvDepthFactorVariant3a : gtsam::NonlinearFactor {
 };
 virtual class InvDepthFactorVariant3b : gtsam::NonlinearFactor {
   InvDepthFactorVariant3b(size_t poseKey1, size_t poseKey2, size_t landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::noiseModel::Base* model);
+};
+
+#include <gtsam_unstable/slam/Mechanization_bRn2.h>
+class Mechanization_bRn2 {
+  Mechanization_bRn2();
+  Mechanization_bRn2(gtsam::Rot3& initial_bRn, Vector initial_x_g,
+      Vector initial_x_a);
+  Vector b_g(double g_e);
+  gtsam::Rot3 bRn();
+  Vector x_g();
+  Vector x_a();
+  static gtsam::Mechanization_bRn2 initialize(Matrix U, Matrix F, double g_e);
+  gtsam::Mechanization_bRn2 correct(Vector dx) const;
+  gtsam::Mechanization_bRn2 integrate(Vector u, double dt) const;
+  void print(string s) const;
+};
+
+#include <gtsam_unstable/slam/AHRS.h>
+class AHRS {
+  AHRS(Matrix U, Matrix F, double g_e);
+  pair<gtsam::Mechanization_bRn2, gtsam::GaussianDensity*> initialize(double g_e);
+  pair<gtsam::Mechanization_bRn2, gtsam::GaussianDensity*> integrate(const gtsam::Mechanization_bRn2& mech, gtsam::GaussianDensity* state, Vector u, double dt);
+  pair<gtsam::Mechanization_bRn2, gtsam::GaussianDensity*> aid(const gtsam::Mechanization_bRn2& mech, gtsam::GaussianDensity* state, Vector f, bool Farrel);
+  pair<gtsam::Mechanization_bRn2, gtsam::GaussianDensity*> aidGeneral(const gtsam::Mechanization_bRn2& mech, gtsam::GaussianDensity* state, Vector f, Vector f_expected, const gtsam::Rot3& increment);
+  void print(string s) const;
 };
 
 } //\namespace gtsam
