@@ -201,14 +201,18 @@ ISAM2::relinearizeAffectedFactors(const FastList<Index>& affectedKeys, const Fas
     }
     if(inside) {
       if(useCachedLinear) {
+#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
         assert(linearFactors_[idx]);
-        linearized->push_back(linearFactors_[idx]);
         assert(linearFactors_[idx]->keys() == nonlinearFactors_[idx]->symbolic(ordering_)->keys());
+#endif
+        linearized->push_back(linearFactors_[idx]);
       } else {
         GaussianFactor::shared_ptr linearFactor = nonlinearFactors_[idx]->linearize(theta_, ordering_);
         linearized->push_back(linearFactor);
         if(params_.cacheLinearizedFactors) {
+#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
           assert(linearFactors_[idx]->keys() == linearFactor->keys());
+#endif
           linearFactors_[idx] = linearFactor;
         }
       }
@@ -230,13 +234,6 @@ GaussianFactorGraph ISAM2::getCachedBoundaryFactors(Cliques& orphans) {
   BOOST_FOREACH(sharedClique orphan, orphans) {
     // find the last variable that was eliminated
     Index key = (*orphan)->frontals().back();
-#ifndef NDEBUG
-//    typename BayesNet<CONDITIONAL>::const_iterator it = orphan->end();
-//    const CONDITIONAL& lastCONDITIONAL = **(--it);
-//    typename CONDITIONAL::const_iterator keyit = lastCONDITIONAL.endParents();
-//    const Index lastKey = *(--keyit);
-//    assert(key == lastKey);
-#endif
     // retrieve the cached factor and add to boundary
     cachedBoundary.push_back(orphan->cachedFactor());
     if(debug) { cout << "Cached factor for variable " << key; orphan->cachedFactor()->print(""); }

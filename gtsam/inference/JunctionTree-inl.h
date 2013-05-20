@@ -169,7 +169,9 @@ namespace gtsam {
         current->frontal.size()));
     gttoc(CombineAndEliminate);
 
+#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
     assert(std::equal(eliminated.second->begin(), eliminated.second->end(), current->separator.begin()));
+#endif
 
     gttic(Update_tree);
     // create a new clique corresponding the combined factors

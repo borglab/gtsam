@@ -195,7 +195,7 @@ namespace gtsam {
   /* ************************************************************************* */
   // Helper functions for Combine
   static boost::tuple<vector<size_t>, size_t, size_t> countDims(const FactorGraph<JacobianFactor>& factors, const VariableSlots& variableSlots) {
-#ifndef NDEBUG
+#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
     vector<size_t> varDims(variableSlots.size(), numeric_limits<size_t>::max());
 #else
     vector<size_t> varDims(variableSlots.size());
@@ -213,7 +213,7 @@ namespace gtsam {
           if(sourceVarpos < numeric_limits<Index>::max()) {
             const JacobianFactor& sourceFactor = *factors[sourceFactorI];
             size_t vardim = sourceFactor.getDim(sourceFactor.begin() + sourceVarpos);
-#ifndef NDEBUG
+#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
 if(varDims[jointVarpos] == numeric_limits<size_t>::max()) {
   varDims[jointVarpos] = vardim;
   n += vardim;

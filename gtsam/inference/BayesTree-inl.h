@@ -224,7 +224,7 @@ namespace gtsam {
   template<class CONDITIONAL, class CLIQUE>
   inline void BayesTree<CONDITIONAL,CLIQUE>::addToCliqueFront(BayesTree<CONDITIONAL,CLIQUE>& bayesTree, const sharedConditional& conditional, const sharedClique& clique) {
     static const bool debug = false;
-#ifndef NDEBUG
+#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
     // Debug check to make sure the conditional variable is ordered lower than
     // its parents and that all of its parents are present either in this
     // clique or its separator.
@@ -431,18 +431,6 @@ namespace gtsam {
     // if the parents and parent clique have the same size, add to parent clique
     if ((*parent_clique)->size() == size_t(parents.size())) {
       if(debug) std::cout << "Adding to parent clique" << std::endl;
-#ifndef NDEBUG
-      // Debug check that the parent indices of the new conditional match the indices
-      // currently in the clique.
-//      list<Index>::const_iterator parent = parents.begin();
-//      typename Clique::const_iterator cond = parent_clique->begin();
-//      while(parent != parents.end()) {
-//        assert(cond != parent_clique->end());
-//        assert(*parent == (*cond)->key());
-//        ++ parent;
-//        ++ cond;
-//      }
-#endif
       addToCliqueFront(bayesTree, conditional, parent_clique);
     } else {
       if(debug) std::cout << "Starting new clique" << std::endl;
