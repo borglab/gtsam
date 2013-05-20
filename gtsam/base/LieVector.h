@@ -53,7 +53,7 @@ struct LieVector : public Vector, public DerivedValue<LieVector> {
   }
 
   /** print @param name optional string naming the object */
-  void print(const std::string& name="") const;
+  GTSAM_EXPORT void print(const std::string& name="") const;
 
   /** equality up to tolerance */
   bool equals(const LieVector& expected, double tol=1e-5) const {
