@@ -58,16 +58,16 @@ namespace gtsam {
   typedef FastSet<Key> KeySet;
 
   /// Utility function to print sets of keys with optional prefix
-  void printKeySet(const KeySet& keys, const std::string& s = "",
+  GTSAM_EXPORT void printKeySet(const KeySet& keys, const std::string& s = "",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
   /// Computes the intersection between two sets
-  gtsam::KeySet keyIntersection(const gtsam::KeySet& keysA, const gtsam::KeySet& keysB);
+  GTSAM_EXPORT gtsam::KeySet keyIntersection(const gtsam::KeySet& keysA, const gtsam::KeySet& keysB);
 
   /// Checks if an intersection exists - faster checking size of above
-  bool hasKeyIntersection(const gtsam::KeySet& keysA, const gtsam::KeySet& keysB);
+  GTSAM_EXPORT bool hasKeyIntersection(const gtsam::KeySet& keysA, const gtsam::KeySet& keysB);
 
   /// Computes a difference between sets, so result is those that are in A, but not B
-  gtsam::KeySet keyDifference(const gtsam::KeySet& keysA, const gtsam::KeySet& keysB);
+  GTSAM_EXPORT gtsam::KeySet keyDifference(const gtsam::KeySet& keysA, const gtsam::KeySet& keysB);
 }
 
