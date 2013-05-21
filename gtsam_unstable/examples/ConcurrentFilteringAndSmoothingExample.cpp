@@ -118,7 +118,7 @@ int main(int argc, char** argv) {
     newFactors.add(BetweenFactor<Pose2>(previousKey, currentKey, odometryMeasurement2, odometryNoise2));
 
     // Unlike the fixed-lag versions, the concurrent filter implementation
-    // requires the user to supply the specify which keys to marginalize
+    // requires the user to supply the specify which keys to move to the smoother
     FastList<Key> oldKeys;
     if(time >= lag+deltaT) {
       oldKeys.push_back(1000 * (time-lag-deltaT));
