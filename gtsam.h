@@ -2092,6 +2092,47 @@ pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
 
 
 //*************************************************************************
+// Navigation
+//*************************************************************************
+namespace imuBias {
+#include <gtsam/navigation/ImuBias.h>
+
+virtual class ConstantBias : gtsam::Value {
+  // Standard Constructor
+  ConstantBias();
+  ConstantBias(Vector biasAcc, Vector biasGyro);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::imuBias::ConstantBias& expected, double tol) const;
+
+  // Group
+  static gtsam::imuBias::ConstantBias identity();
+  gtsam::imuBias::ConstantBias inverse() const;
+  gtsam::imuBias::ConstantBias compose(const gtsam::imuBias::ConstantBias& b) const;
+  gtsam::imuBias::ConstantBias between(const gtsam::imuBias::ConstantBias& b) const;
+
+  // Manifold
+  static size_t Dim();
+  size_t dim() const;
+  gtsam::imuBias::ConstantBias retract(Vector v) const;
+  Vector localCoordinates(const gtsam::imuBias::ConstantBias& b) const;
+
+  // Lie Group
+  static gtsam::imuBias::ConstantBias Expmap(Vector v);
+  static Vector Logmap(const gtsam::imuBias::ConstantBias& b);
+
+  // Standard Interface
+  Vector vector() const;
+  Vector accelerometer() const;
+  Vector gyroscope() const;
+  Vector correctAccelerometer(Vector measurement) const;
+  Vector correctGyroscope(Vector measurement) const;
+};
+
+}///\namespace imuBias
+
+//*************************************************************************
 // Utilities
 //*************************************************************************
 
