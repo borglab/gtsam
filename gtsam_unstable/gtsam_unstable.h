@@ -13,6 +13,7 @@ virtual class gtsam::Point3;
 virtual class gtsam::Rot3;
 virtual class gtsam::Pose3;
 virtual class gtsam::noiseModel::Base;
+virtual class gtsam::imuBias::ConstantBias;
 virtual class gtsam::NonlinearFactor;
 virtual class gtsam::GaussianFactor;
 virtual class gtsam::HessianFactor;
@@ -597,6 +598,33 @@ virtual class InvDepthFactorVariant3a : gtsam::NonlinearFactor {
 };
 virtual class InvDepthFactorVariant3b : gtsam::NonlinearFactor {
   InvDepthFactorVariant3b(size_t poseKey1, size_t poseKey2, size_t landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::noiseModel::Base* model);
+};
+
+#include <gtsam_unstable/slam/ImuFactor.h>
+class ImuFactorPreintegratedMeasurements {
+  // Standard Constructor
+  ImuFactorPreintegratedMeasurements(const gtsam::imuBias::ConstantBias& bias, Matrix measuredAccCovariance, Matrix measuredOmegaCovariance, Matrix integrationErrorCovariance);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::ImuFactorPreintegratedMeasurements& expected, double tol);
+
+  // Standard Interface
+  void integrateMeasurement(Vector measuredAcc, Vector measuredOmega, double deltaT);
+  Matrix preintegratedMeasurementsCovariance() const;
+};
+
+virtual class ImuFactor : gtsam::NonlinearFactor {
+  ImuFactor(size_t pose_i, size_t vel_i, size_t pose_j, size_t vel_j, size_t bias,
+      const gtsam::ImuFactorPreintegratedMeasurements& preintegratedMeasurements, Vector gravity, Vector omegaCoriolis,
+      const gtsam::noiseModel::Base* model);
+  ImuFactor(size_t pose_i, size_t vel_i, size_t pose_j, size_t vel_j, size_t bias,
+      const gtsam::ImuFactorPreintegratedMeasurements& preintegratedMeasurements, Vector gravity, Vector omegaCoriolis,
+      const gtsam::noiseModel::Base* model, const gtsam::Pose3& body_P_sensor);
+
+  // Standard Interface
+  gtsam::ImuFactorPreintegratedMeasurements preintegratedMeasurements() const;
+  void predict(const gtsam::Pose3& pose_i, const gtsam::LieVector& vel_i, gtsam::Pose3& pose_j, gtsam::LieVector& vel_j, const gtsam::imuBias::ConstantBias& bias) const;
 };
 
 } //\namespace gtsam
