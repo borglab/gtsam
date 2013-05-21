@@ -80,10 +80,10 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::initialize(double g_e) 
   double g3 = b_g(2);
   double g23 = g2 * g2 + g3 * g3;
   double g123 = g1 * g1 + g23;
-  double f = 1 / (sqrt(g23) * g123);
+  double f = 1 / (std::sqrt(g23) * g123);
   Matrix H_g = Matrix_(3, 3,
       0.0, g3 / g23, -(g2 / g23),                       // roll
-      sqrt(g23) / g123, -f * (g1 * g2), -f * (g1 * g3), // pitch
+      std::sqrt(g23) / g123, -f * (g1 * g2), -f * (g1 * g3), // pitch
       0.0, 0.0, 0.0);                                   // we don't know anything on yaw
 
   // Calculate the initial covariance matrix for the error state dx, Farrell08book eq. 10.66
