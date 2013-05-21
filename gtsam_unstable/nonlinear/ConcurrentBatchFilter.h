@@ -114,7 +114,7 @@ public:
    * @param newTheta Initialization points for new variables to be added to the filter
    * You must include here all new variables occurring in newFactors that were not already
    * in the filter.
-   * @param keysToMove An optional set of keys to remove from the filter and
+   * @param keysToMove An optional set of keys to move from the filter to the smoother
    */
   Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values(),
       const boost::optional<FastList<Key> >& keysToMove = boost::none);
@@ -129,7 +129,11 @@ protected:
   VectorValues delta_; ///< The current set of linear deltas from the linearization point
   std::queue<size_t> availableSlots_; ///< The set of available factor graph slots caused by deleting factors
   Values separatorValues_; ///< The linearization points of the separator variables. These should not be updated during optimization.
-  std::vector<size_t> smootherSummarizationSlots_;  ///< The slots in factor graph that correspond to the current smoother summarization factors
+  std::vector<size_t> currentSmootherSummarizationSlots_;  ///< The slots in factor graph that correspond to the current smoother summarization on the current separator
+
+  // Storage for information from the Smoother
+  NonlinearFactorGraph previousSmootherSummarization_; ///< The smoother summarization on the old separator sent by the smoother during the last synchronization
+  NonlinearFactorGraph smootherShortcut_; ///< A set of conditional factors from the old separator to the current separator (recursively calculated during each filter update)
 
   // Storage for information to be sent to the smoother
   NonlinearFactorGraph filterSummarization_; ///< A temporary holding place for calculated filter summarization factors to be sent to the smoother
@@ -193,14 +197,16 @@ private:
   /** Use colamd to update into an efficient ordering */
   void reorder(const boost::optional<FastList<Key> >& keysToMove = boost::none);
 
+  /** Marginalize out the set of requested variables from the filter, caching them for the smoother
+   *  This effectively moves the separator.
+   *
+   * @param keysToMove The set of keys to move from the filter to the smoother
+   */
+  void moveSeparator(const FastList<Key>& keysToMove);
+
   /** Use a modified version of L-M to update the linearization point and delta */
   static Result optimize(const NonlinearFactorGraph& factors, Values& theta, const Ordering& ordering,
        VectorValues& delta, const Values& linearValues, const LevenbergMarquardtParams& parameters);
-
-  /** Marginalize out the set of requested variables from the filter, caching them for the smoother
-   *  This effectively moves the separator.
-   */
-  void marginalize(const FastList<Key>& keysToMove);
 
   /** Marginalize out the set of requested variables from the filter, caching them for the smoother
    *  This effectively moves the separator.
