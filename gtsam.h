@@ -1450,11 +1450,6 @@ size_t symbol(char chr, size_t index);
 char symbolChr(size_t key);
 size_t symbolIndex(size_t key);
 
-// Key utilities
-gtsam::KeySet keyIntersection(const gtsam::KeySet& keysA, const gtsam::KeySet& keysB);
-gtsam::KeySet keyDifference(const gtsam::KeySet& keysA, const gtsam::KeySet& keysB);
-bool hasKeyIntersection(const gtsam::KeySet& keysA, const gtsam::KeySet& keysB);
-
 // Default keyformatter
 void printKeySet(const gtsam::KeySet& keys);
 void printKeySet(const gtsam::KeySet& keys, string s);
