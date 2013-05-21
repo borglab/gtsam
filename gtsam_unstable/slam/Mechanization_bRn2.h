@@ -9,11 +9,12 @@
 
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/base/Vector.h>
+#include <gtsam_unstable/base/dllexport.h>
 #include <list>
 
 namespace gtsam {
 
-class Mechanization_bRn2 {
+class GTSAM_UNSTABLE_EXPORT Mechanization_bRn2 {
 
 private:
   Rot3 bRn_;  ///<   rotation from nav to body
