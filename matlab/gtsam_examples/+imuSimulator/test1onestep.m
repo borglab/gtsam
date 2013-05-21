@@ -17,7 +17,6 @@ disp('IMU measurement discrepancy:');
 disp(acc_omegaActual - acc_omegaExpected);
 
 initialPose = Pose3;
-initialVelocity = velocity;
 finalPoseExpected = Pose3(Rot3.Expmap(omega * deltaT), Point3(velocity * deltaT));
 finalVelocityExpected = velocity;
 [ finalPoseActual, finalVelocityActual ] = imuSimulator.integrateTrajectory(initialPose, omega, velocity, velocity2body, deltaT);
@@ -42,7 +41,7 @@ initialPose = Pose3;
 initialVelocity = velocity;
 finalPoseExpected = Pose3.Expmap([ omega; velocity ] * deltaT);
 finalVelocityExpected = finalPoseExpected.rotation.rotate(Point3(velocity)).vector;
-[ finalPoseActual, finalVelocityActual ] = imuSimulator.integrateTrajectory(initialPose, omega, velocity, velocity2body, deltaT);
+[ finalPoseActual, finalVelocityActual ] = imuSimulator.integrateTrajectory(initialPose, omega, velocity, velocity, deltaT);
 disp('Final pose discrepancy:');
 disp(finalPoseExpected.between(finalPoseActual).matrix);
 disp('Final velocity discrepancy:');
