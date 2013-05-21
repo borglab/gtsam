@@ -65,7 +65,10 @@ int main(int argc, char** argv) {
   // The Batch version uses Levenberg-Marquardt to perform the nonlinear optimization
   BatchFixedLagSmoother smootherBatch(lag);
   // The Incremental version uses iSAM2 to perform the nonlinear optimization
-  IncrementalFixedLagSmoother smootherISAM2(lag);
+  ISAM2Params parameters;
+  parameters.relinearizeThreshold = 0.0; // Set the relin threshold to zero such that the batch estimate is recovered
+  parameters.relinearizeSkip = 1; // Relinearize every time
+  IncrementalFixedLagSmoother smootherISAM2(lag, parameters);
 
   // Create containers to store the factors and linearization points that
   // will be sent to the smoothers
@@ -111,6 +114,9 @@ int main(int argc, char** argv) {
     // Update the smoothers with the new factors
     smootherBatch.update(newFactors, newValues, newTimestamps);
     smootherISAM2.update(newFactors, newValues, newTimestamps);
+    for(size_t i = 1; i < 2; ++i) { // Optionally perform multiple iSAM2 iterations
+      smootherISAM2.update();
+    }
 
     // Print the optimized current pose
     cout << setprecision(5) << "Timestamp = " << time << endl;

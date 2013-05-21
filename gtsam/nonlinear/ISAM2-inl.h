@@ -44,7 +44,7 @@ void optimizeWildfire(const boost::shared_ptr<CLIQUE>& clique, double threshold,
 
   // Are any clique variables part of the tree that has been redone?
   bool cliqueReplaced = replaced[(*clique)->frontals().front()];
-#ifndef NDEBUG
+#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
   BOOST_FOREACH(Index frontal, (*clique)->frontals()) {
     assert(cliqueReplaced == replaced[frontal]);
   }
@@ -120,7 +120,7 @@ bool optimizeWildfireNode(const boost::shared_ptr<CLIQUE>& clique, double thresh
 
   // Are any clique variables part of the tree that has been redone?
   bool cliqueReplaced = replaced[(*clique)->frontals().front()];
-#ifndef NDEBUG
+#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
   BOOST_FOREACH(Index frontal, (*clique)->frontals()) {
     assert(cliqueReplaced == replaced[frontal]);
   }

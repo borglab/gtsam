@@ -39,7 +39,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   bool IndexConditional::reduceSeparatorWithInverse(const internal::Reduction& inverseReduction) {
-#ifndef NDEBUG
+#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
     BOOST_FOREACH(KeyType key, frontals()) { assert(inverseReduction.find(key) == inverseReduction.end()); }
 #endif
     bool parentChanged = false;

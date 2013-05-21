@@ -134,7 +134,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class CONDITIONAL>
   void BayesNet<CONDITIONAL>::popLeaf(iterator conditional) {
-#ifndef NDEBUG
+#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
     BOOST_FOREACH(typename CONDITIONAL::shared_ptr checkConditional, conditionals_) {
       BOOST_FOREACH(Index key, (*conditional)->frontals()) {
         if(std::find(checkConditional->beginParents(), checkConditional->endParents(), key) != checkConditional->endParents())

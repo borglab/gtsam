@@ -233,7 +233,7 @@ FixedLagSmoother::Result BatchFixedLagSmoother::optimize() {
   // Create a Values that holds the current evaluation point
   Values evalpoint = theta_.retract(delta_, ordering_);
   result.error = factors_.error(evalpoint);
-std::cout << "Initial Error = " << result.error << std::endl;
+
   // Use a custom optimization loop so the linearization points can be controlled
   double previousError;
   VectorValues newDelta;
@@ -266,22 +266,20 @@ std::cout << "Initial Error = " << result.error << std::endl;
         }
         gttoc(damp);
         result.intermediateSteps++;
-std::cout << "Trying Lambda = " << lambda << std::endl;
+
         gttic(solve);
         // Solve Damped Gaussian Factor Graph
         newDelta = GaussianJunctionTree(dampedFactorGraph).optimize(parameters_.getEliminationFunction());
         // update the evalpoint with the new delta
         evalpoint = theta_.retract(newDelta, ordering_);
         gttoc(solve);
-std::cout << "  Max Delta = " << newDelta.asVector().maxCoeff() << std::endl;
+
         // Evaluate the new error
         gttic(compute_error);
         double error = factors_.error(evalpoint);
         gttoc(compute_error);
-std::cout << "  New Error = " << error << std::endl;
-std::cout << "  Change = " << result.error - error << std::endl;
+
         if(error < result.error) {
-std::cout << "  Keeping Change" << std::endl;
           // Keep this change
           // Update the error value
           result.error = error;
@@ -305,7 +303,6 @@ std::cout << "  Keeping Change" << std::endl;
           // End this lambda search iteration
           break;
         } else {
-std::cout << "  Rejecting Change" << std::endl;
           // Reject this change
           // Increase lambda and continue searching
           lambda *= lambdaFactor;
@@ -322,7 +319,7 @@ std::cout << "  Rejecting Change" << std::endl;
     result.iterations++;
   } while(result.iterations < maxIterations &&
       !checkConvergence(relativeErrorTol, absoluteErrorTol, errorTol, previousError, result.error, NonlinearOptimizerParams::SILENT));
-std::cout << "Final Error = " << result.error << std::endl;
+
   return result;
 }
 

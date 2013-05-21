@@ -256,6 +256,103 @@ bool load3D(const string& filename) {
   }
   return true;
 }
+
 /* ************************************************************************* */
+pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D_robust(
+    const string& filename, noiseModel::Base::shared_ptr& model, int maxID) {
+  cout << "Will try to read " << filename << endl;
+  ifstream is(filename.c_str());
+  if (!is)
+    throw std::invalid_argument("load2D: can not find the file!");
+
+  Values::shared_ptr initial(new Values);
+  NonlinearFactorGraph::shared_ptr graph(new NonlinearFactorGraph);
+
+  string tag;
+
+  // load the poses
+  while (is) {
+    is >> tag;
+
+    if ((tag == "VERTEX2") || (tag == "VERTEX")) {
+      int id;
+      double x, y, yaw;
+      is >> id >> x >> y >> yaw;
+      // optional filter
+      if (maxID && id >= maxID)
+        continue;
+      initial->insert(id, Pose2(x, y, yaw));
+    }
+    is.ignore(LINESIZE, '\n');
+  }
+  is.clear(); /* clears the end-of-file and error flags */
+  is.seekg(0, ios::beg);
+
+  // Create a sampler with random number generator
+  Sampler sampler(42u);
+
+  // load the factors
+  while (is) {
+    is >> tag;
+
+    if ((tag == "EDGE2") || (tag == "EDGE") || (tag == "ODOMETRY")) {
+      int id1, id2;
+      double x, y, yaw;
+
+      is >> id1 >> id2 >> x >> y >> yaw;
+      Matrix m = eye(3);
+      is >> m(0, 0) >> m(0, 1) >> m(1, 1) >> m(2, 2) >> m(0, 2) >> m(1, 2);
+      m(2, 0) = m(0, 2);
+      m(2, 1) = m(1, 2);
+      m(1, 0) = m(0, 1);
+
+      // optional filter
+      if (maxID && (id1 >= maxID || id2 >= maxID))
+        continue;
+
+      Pose2 l1Xl2(x, y, yaw);
+
+      // Insert vertices if pure odometry file
+      if (!initial->exists(id1))
+        initial->insert(id1, Pose2());
+      if (!initial->exists(id2))
+        initial->insert(id2, initial->at<Pose2>(id1) * l1Xl2);
+
+      NonlinearFactor::shared_ptr factor(
+          new BetweenFactor<Pose2>(id1, id2, l1Xl2, model));
+      graph->push_back(factor);
+    }
+    if (tag == "BR") {
+      int id1, id2;
+      double bearing, range, bearing_std, range_std;
+
+      is >> id1 >> id2 >> bearing >> range >> bearing_std >> range_std;
+
+      // optional filter
+      if (maxID && (id1 >= maxID || id2 >= maxID))
+        continue;
+
+      noiseModel::Diagonal::shared_ptr measurementNoise =
+           noiseModel::Diagonal::Sigmas(Vector_(2, bearing_std, range_std));
+      graph->add(BearingRangeFactor<Pose2, Point2>(id1, id2, bearing, range, measurementNoise));
+
+      // Insert poses or points if they do not exist yet
+      if (!initial->exists(id1))
+        initial->insert(id1, Pose2());
+      if (!initial->exists(id2)) {
+        Pose2 pose = initial->at<Pose2>(id1);
+        Point2 local(cos(bearing)*range,sin(bearing)*range);
+        Point2 global = pose.transform_from(local);
+        initial->insert(id2, global);
+      }
+    }
+    is.ignore(LINESIZE, '\n');
+  }
+
+  cout << "load2D read a graph file with " << initial->size()
+            << " vertices and " << graph->nrFactors() << " factors" << endl;
+
+  return make_pair(graph, initial);
+}
 
 } // \namespace gtsam

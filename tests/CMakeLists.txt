@@ -26,6 +26,11 @@ set (tests_exclude
     #"${CMAKE_CURRENT_SOURCE_DIR}/testOccupancyGrid.cpp"
 )
 
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang") # might not be best test - Richard & Jason & Frank
+	# clang linker segfaults on large testSerializationSLAM 
+	list (APPEND tests_exclude "${CMAKE_CURRENT_SOURCE_DIR}/testSerializationSLAM.cpp") 
+endif()
+
 if(MSVC)
   add_definitions("/bigobj") # testSerializationSLAM needs this
 endif()
