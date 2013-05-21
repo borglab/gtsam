@@ -58,6 +58,7 @@ if(NOT MSVC)
   option(GTSAM_BUILD_CONVENIENCE_LIBRARIES "Enable/Disable use of convenience libraries for faster development rebuilds, but slower install" OFF)
 endif()
 option(GTSAM_POSE3_EXPMAP 			 	 "Enable/Disable using Pose3::EXPMAP as the default mode. If disabled, Pose3::FIRST_ORDER will be used." OFF)
+option(GTSAM_ENABLE_CONSISTENCY_CHECKS   "Enable/Disable expensive consistency checks"       OFF) 
 
 # Options relating to MATLAB wrapper
 # TODO: Check for matlab mex binary before handling building of binaries
@@ -172,6 +173,13 @@ if(MSVC)
 	add_definitions(/wd4251 /wd4275 /wd4251) # Disable non-DLL-exported base class warnings
 endif()
 
+if(GTSAM_ENABLE_CONSISTENCY_CHECKS)
+  add_definitions(-DGTSAM_EXTRA_CONSISTENCY_CHECKS)
+endif()   
+
+if(GTSAM_POSE3_EXPMAP)
+  add_definitions(-DGTSAM_POSE3_EXPMAP)
+endif()
 
 ###############################################################################
 # Add components
@@ -287,7 +295,9 @@ message(STATUS                                       "  CPack Source Generator  
 message(STATUS                                       "  CPack Generator            : ${CPACK_GENERATOR}")
 
 message(STATUS "GTSAM flags                                               ")
-print_config_flag(${GTSAM_USE_QUATERNIONS}             "Quaternions as default Rot3")
+print_config_flag(${GTSAM_USE_QUATERNIONS}             "Quaternions as default Rot3                   ")
+print_config_flag(${GTSAM_ENABLE_CONSISTENCY_CHECKS}   "Runtime consistency checking                  ")
+print_config_flag(${GTSAM_POSE3_EXPMAP}                "Using full expmap as defaul retract for Pose3 ")
 
 message(STATUS "MATLAB toolbox flags                                      ")
 print_config_flag(${GTSAM_INSTALL_MATLAB_TOOLBOX}      "Install matlab toolbox     ")
