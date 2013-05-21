@@ -149,7 +149,7 @@ namespace gtsam {
       }
 
       /** Calculate the covariance of the preintegrated measurements */
-      Matrix preintegratedMeasurementsCovariance() {
+      Matrix preintegratedMeasurementsCovariance() const {
         Matrix Jpreintegrated(9,9);
         Jpreintegrated <<
             //deltaP VS (measuredAcc   measuredOmega   intError)
@@ -248,6 +248,37 @@ namespace gtsam {
     /** Access the preintegrated measurements. */
     const PreintegratedMeasurements& preintegratedMeasurements() const {
       return preintegratedMeasurements_; }
+
+    /** Predict the pose and velocity at {j} using the pre-integrated measurement */
+    // TODO: This currently repeats the equations in 'evaluateError'. Refactor to remove the duplication
+    void predict(const Pose3& pose_i, const LieVector& vel_i, Pose3& pose_j, LieVector& vel_j, const imuBias::ConstantBias& bias) const {
+
+      // Calculate bias delta between preintegrated value and user-provided value
+      const double& deltaTij = preintegratedMeasurements_.deltaTij;
+      const Vector3 biasAccIncr = bias.accelerometer() - preintegratedMeasurements_.biasHat.accelerometer();
+      const Vector3 biasOmegaIncr = bias.gyroscope() - preintegratedMeasurements_.biasHat.gyroscope();
+
+      Point3 pose_j_translation = pose_i.translation()
+        + Point3(-pose_i.rotation().matrix() * (preintegratedMeasurements_.deltaPij
+                 + preintegratedMeasurements_.delPdelBiasAcc * biasAccIncr
+                 + preintegratedMeasurements_.delPdelBiasOmega * biasOmegaIncr)
+                 - vel_i * deltaTij
+                 + skewSymmetric(omegaCoriolis_) * vel_i * deltaTij*deltaTij  // Coriolis term - we got rid of the 2 wrt ins paper
+                 - 0.5 * gravity_ * deltaTij*deltaTij);
+
+      Vector3 vel_j_vector = vel_i
+          - pose_i.rotation().matrix() * (preintegratedMeasurements_.deltaVij
+                                        + preintegratedMeasurements_.delVdelBiasAcc * biasAccIncr
+                                        + preintegratedMeasurements_.delVdelBiasOmega * biasOmegaIncr)
+          + 2 * skewSymmetric(omegaCoriolis_) * vel_i * deltaTij  // Coriolis term
+          - gravity_ * deltaTij;
+
+      const Rot3 deltaRij_biascorrected = preintegratedMeasurements_.deltaRij.retract(preintegratedMeasurements_.delRdelBiasOmega * biasOmegaIncr, Rot3::EXPMAP);
+      Rot3 pose_j_rotation = pose_i.rotation().compose(deltaRij_biascorrected);
+
+      pose_j = Pose3(pose_j_rotation, pose_j_translation);
+      vel_j = LieVector(vel_j_vector);
+    }
 
     /** implement functions needed to derive from Factor */
 
@@ -401,5 +432,8 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
     }
   }; // \class ImuFactor
+
+  /// Typedef for Matlab interface
+  typedef ImuFactor::PreintegratedMeasurements ImuFactorPreintegratedMeasurements;
 
 } /// namespace gtsam
