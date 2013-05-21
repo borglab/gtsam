@@ -626,6 +626,7 @@ virtual class ImuFactor : gtsam::NonlinearFactor {
   // Standard Interface
   gtsam::ImuFactorPreintegratedMeasurements preintegratedMeasurements() const;
   void predict(const gtsam::Pose3& pose_i, const gtsam::LieVector& vel_i, gtsam::Pose3& pose_j, gtsam::LieVector& vel_j, const gtsam::imuBias::ConstantBias& bias) const;
+};
 
 #include <gtsam_unstable/slam/Mechanization_bRn2.h>
 class Mechanization_bRn2 {
