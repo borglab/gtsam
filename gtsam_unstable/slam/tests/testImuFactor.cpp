@@ -11,11 +11,11 @@
 
 /**
  * @file    testImuFactor.cpp
- * @brief   Unit test for StereoFactor
- * @author  Chris Beall
+ * @brief   Unit test for ImuFactor
+ * @author  Luca Carlone, Stephen Williams, Richard Roberts
  */
 
-#include <gtsam_unstable/slam/ImuFactor.h>
+#include <gtsam_unstable/slam/ImuFactorv2.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/navigation/ImuBias.h>
@@ -235,6 +235,8 @@ TEST( ImuFactor, ErrorWithBiases )
 //  LieVector v1(3, 0.5, 0.0, 0.0);
 //  Pose3 x2(Rot3::RzRyRx(M_PI/12.0 + M_PI/10.0, M_PI/6.0, M_PI/4.0), Point3(5.5, 1.0, -50.0));
 //  LieVector v2(3, 0.5, 0.0, 0.0);
+
+
   imuBias::ConstantBias bias(Vector3(0.2, 0, 0), Vector3(0, 0, 0.3)); // Biases (acc, rot)
   Pose3 x1(Rot3::Expmap(Vector3(0, 0, M_PI/4.0)), Point3(5.0, 1.0, -50.0));
   LieVector v1(3, 0.5, 0.0, 0.0);
@@ -243,7 +245,7 @@ TEST( ImuFactor, ErrorWithBiases )
 
   // Measurements
   Vector3 gravity; gravity << 0, 0, 9.81;
-  Vector3 omegaCoriolis; omegaCoriolis << 0.1, 0, 0.1;
+  Vector3 omegaCoriolis; omegaCoriolis << 0, 0.1, 0.1;
   Vector3 measuredOmega; measuredOmega << 0, 0, M_PI/10.0+0.3;
   Vector3 measuredAcc = x1.rotation().unrotate(-Point3(gravity)).vector() + Vector3(0.2,0.0,0.0);
   double deltaT = 1.0;
@@ -446,7 +448,7 @@ TEST( ImuFactor, FirstOrderPreIntegratedMeasurements )
   EXPECT(assert_equal(expectedDelVdelBiasAcc, preintegrated.delVdelBiasAcc));
   EXPECT(assert_equal(expectedDelVdelBiasOmega, preintegrated.delVdelBiasOmega));
   EXPECT(assert_equal(expectedDelRdelBiasAcc, Matrix::Zero(3,3)));
-  EXPECT(assert_equal(expectedDelRdelBiasOmega, preintegrated.delRdelBiasOmega, 2e-5));
+  EXPECT(assert_equal(expectedDelRdelBiasOmega, preintegrated.delRdelBiasOmega));
 }
 
 /* ************************************************************************* */

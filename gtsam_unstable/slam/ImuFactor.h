@@ -11,7 +11,7 @@
 
 /**
  *  @file  ImuFactor.h
- *  @author Luca Carlone, Stephen Williams
+ *  @author Luca Carlone, Stephen Williams, Richard Roberts
  **/
 
 #pragma once
