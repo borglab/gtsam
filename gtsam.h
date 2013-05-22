@@ -819,7 +819,6 @@ virtual class BayesTree {
     void insert(const CLIQUE* subtree);
     size_t numCachedSeparatorMarginals() const;
     CLIQUE* clique(size_t j) const;
-    bool checkConsistency() const;
 };
 
 template<CONDITIONAL>

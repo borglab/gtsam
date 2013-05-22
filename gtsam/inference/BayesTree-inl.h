@@ -800,23 +800,5 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  template<class CONDITIONAL, class CLIQUE>
-  bool BayesTree<CONDITIONAL,CLIQUE>::checkConsistency() const {
-    // Verify all nodes are mapped to initialized cliques
-    bool result = true;
-    for (gtsam::Index idx=0; idx<nodes_.size(); ++idx) {
-      const sharedClique& clique = nodes_[idx];
-      // Bad clique check
-      if (!clique) {
-        if (result)
-          std::cout << "BayesTree consistency check failures:" << std::endl;
-        std::cout << "  Null pointer clique entry for node " << idx << std::endl;
-        result = false;
-        break;
-      }
-    }
-    return result;
-  }
-  /* ************************************************************************* */
 
 } // \namespace gtsam

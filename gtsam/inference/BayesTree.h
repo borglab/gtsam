@@ -290,13 +290,6 @@ namespace gtsam {
       return shared_ptr(new This(*this));
     }
 
-    /**
-     * Verify internal consistency of indexing
-     * Prints results to stdout
-     * @return true iff correct
-     */
-    bool checkConsistency() const;
-
   protected:
 
     /** private helper method for saving the Tree to a text file in GraphViz format */
