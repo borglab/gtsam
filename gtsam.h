@@ -811,6 +811,7 @@ virtual class BayesTree {
     //Standard Interface
   //size_t findParentClique(const gtsam::IndexVector& parents) const;
     size_t size();
+    size_t nrNodes() const;
     void saveGraph(string s) const;
     CLIQUE* root() const;
     void clear();
@@ -818,6 +819,7 @@ virtual class BayesTree {
     void insert(const CLIQUE* subtree);
     size_t numCachedSeparatorMarginals() const;
     CLIQUE* clique(size_t j) const;
+    bool checkConsistency() const;
 };
 
 template<CONDITIONAL>

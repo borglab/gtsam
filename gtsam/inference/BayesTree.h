@@ -162,6 +162,9 @@ namespace gtsam {
         return 0;
     }
 
+    /** number of nodes */
+    inline size_t nrNodes() const { return nodes_.size(); }
+
     /** Check if there are any cliques in the tree */
     inline bool empty() const {
       return nodes_.empty();
@@ -286,6 +289,13 @@ namespace gtsam {
     virtual shared_ptr clone() const {
       return shared_ptr(new This(*this));
     }
+
+    /**
+     * Verify internal consistency of indexing
+     * Prints results to stdout
+     * @return true iff correct
+     */
+    bool checkConsistency() const;
 
   protected:
 
