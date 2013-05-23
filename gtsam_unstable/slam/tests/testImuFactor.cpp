@@ -15,7 +15,7 @@
  * @author  Luca Carlone, Stephen Williams, Richard Roberts
  */
 
-#include <gtsam_unstable/slam/ImuFactorv2.h>
+#include <gtsam_unstable/slam/ImuFactor.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/navigation/ImuBias.h>
