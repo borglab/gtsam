@@ -42,23 +42,37 @@ namespace gtsam {
      * incrementally so as to avoid costly integration at time of factor
      * construction. */
 
+
     /** Right Jacobian for SO(3) */
     static Matrix3 rightJacobianExpMapSO3(const Vector3& x)    {
       // x is the axis angle representation (exponential coordinates) for a rotation
-      const Matrix3 X = skewSymmetric(x); // element of Lie algebra so(3): X = x^
       double normx = norm_2(x); // rotation angle
-      const Matrix3 Jr = Matrix3::Identity() - ((1-cos(normx))/(normx*normx)) * X +
-          ((normx-sin(normx))/(normx*normx*normx)) * X * X; // right Jacobian
+      Matrix3 Jr;
+      if (normx < 10e-8){
+        Jr = Matrix3::Identity();
+      }
+      else{
+        const Matrix3 X = skewSymmetric(x); // element of Lie algebra so(3): X = x^
+        Jr = Matrix3::Identity() - ((1-cos(normx))/(normx*normx)) * X +
+            ((normx-sin(normx))/(normx*normx*normx)) * X * X; // right Jacobian
+      }
       return Jr;
     }
 
     /** Inverse of the Right Jacobian for SO(3) */
     static Matrix3 rightJacobianExpMapSO3inverse(const Vector3& x)    {
       // x is the axis angle representation (exponential coordinates) for a rotation
-      const Matrix3 X = skewSymmetric(x); // element of Lie algebra so(3): X = x^
       double normx = norm_2(x); // rotation angle
-      const Matrix3 Jrinv = Matrix3::Identity() +
-          0.5 * X + (1/(normx*normx) - (1+cos(normx))/(2*normx * sin(normx))   ) * X * X;
+      Matrix3 Jrinv;
+
+      if (normx < 10e-8){
+        Jrinv = Matrix3::Identity();
+      }
+      else{
+        const Matrix3 X = skewSymmetric(x); // element of Lie algebra so(3): X = x^
+        Jrinv = Matrix3::Identity() +
+            0.5 * X + (1/(normx*normx) - (1+cos(normx))/(2*normx * sin(normx))   ) * X * X;
+      }
       return Jrinv;
     }
 
@@ -79,16 +93,19 @@ namespace gtsam {
       Matrix3 delVdelBiasOmega; ///< Jacobian of preintegrated velocity w.r.t. angular rate bias
       Matrix3 delRdelBiasOmega; ///< Jacobian of preintegrated rotation w.r.t. angular rate bias
 
+      boost::optional<Pose3> body_P_sensor;        ///< The pose of the sensor in the body frame
+
       /** Default constructor, initialize with no IMU measurements */
       PreintegratedMeasurements(
           const imuBias::ConstantBias& bias, ///< Current estimate of acceleration and rotation rate biases
           const Matrix3& measuredAccCovariance, ///< Covariance matrix of measuredAcc
           const Matrix3& measuredOmegaCovariance, ///< Covariance matrix of measuredAcc
-          const Matrix3& integrationErrorCovariance ///< Covariance matrix of measuredAcc
+          const Matrix3& integrationErrorCovariance, ///< Covariance matrix of measuredAcc
+          boost::optional<Pose3> body_P_sensor = boost::none
       ) : biasHat(bias), measurementCovariance(9,9), deltaPij(Vector3::Zero()), deltaVij(Vector3::Zero()), deltaTij(0.0),
       delPdelBiasAcc(Matrix3::Zero()), delPdelBiasOmega(Matrix3::Zero()),
       delVdelBiasAcc(Matrix3::Zero()), delVdelBiasOmega(Matrix3::Zero()),
-      delRdelBiasOmega(Matrix3::Zero())
+      delRdelBiasOmega(Matrix3::Zero()), body_P_sensor(body_P_sensor)
       {
         measurementCovariance << measuredAccCovariance , Matrix3::Zero(), Matrix3::Zero(),
             Matrix3::Zero(), measuredOmegaCovariance,  Matrix3::Zero(),
@@ -128,8 +145,17 @@ namespace gtsam {
       ) {
         // NOTE: order is important here because each update uses old values.
 
-        const Rot3 body_R_sensor = Rot3::Expmap(Vector3(0, 0.1, 0.1));
-        Vector3 body_p_sensor;  body_p_sensor << 0,0,0;
+        Rot3 body_R_sensor;
+        Vector3 body_p_sensor;
+
+        if(body_P_sensor){
+          body_R_sensor = body_P_sensor->rotation();
+          body_p_sensor = body_P_sensor->translation().vector();
+        }
+        else{
+          body_R_sensor = Rot3::identity();
+          body_p_sensor << 0,0,0;
+        }
 
         const Rot3 Rincr = Rot3::Expmap((biasHat.correctGyroscope(measuredOmega)) * deltaT);
 
@@ -393,6 +419,46 @@ namespace gtsam {
 
       return r;
     }
+
+
+    /** vector of errors */
+        static void Predict(const Pose3& pose_i, const LieVector& vel_i, Pose3& pose_j, LieVector& vel_j,
+          const imuBias::ConstantBias& bias, const PreintegratedMeasurements preintegratedMeasurements,
+          const Vector3& gravity, const Vector3& omegaCoriolis)
+        {
+
+          const double& deltaTij = preintegratedMeasurements.deltaTij;
+          const Vector3 biasAccIncr = bias.accelerometer() - preintegratedMeasurements.biasHat.accelerometer();
+          const Vector3 biasOmegaIncr = bias.gyroscope() - preintegratedMeasurements.biasHat.gyroscope();
+
+          const Rot3 deltaRij_biascorrected = preintegratedMeasurements.deltaRij.retract(preintegratedMeasurements.delRdelBiasOmega * biasOmegaIncr, Rot3::EXPMAP);
+          // deltaRij_biascorrected is expmap(deltaRij) * expmap(delRdelBiasOmega * biasOmegaIncr)
+
+          Vector3 theta_biascorrected_corioliscorrected = Rot3::Logmap(deltaRij_biascorrected)  -
+              pose_i.rotation().inverse().matrix() * omegaCoriolis * deltaTij; // Coriolis term
+
+          const Rot3 deltaRij_biascorrected_corioliscorrected =
+              Rot3::Expmap( theta_biascorrected_corioliscorrected );  // Coriolis term
+
+          const Point3 position_j =   Point3( pose_i.translation().vector() + pose_i.rotation().matrix() * (preintegratedMeasurements.deltaPij
+              + preintegratedMeasurements.delPdelBiasAcc * biasAccIncr
+              + preintegratedMeasurements.delPdelBiasOmega * biasOmegaIncr)
+            + vel_i * deltaTij
+            - skewSymmetric(omegaCoriolis) * vel_i * deltaTij*deltaTij  // Coriolis term - we got rid of the 2 wrt ins paper
+            + 0.5 * gravity * deltaTij*deltaTij );
+
+
+          const Vector3 velocity_j =   vel_i + pose_i.rotation().matrix() * (preintegratedMeasurements.deltaVij
+              + preintegratedMeasurements.delVdelBiasAcc * biasAccIncr
+              + preintegratedMeasurements.delVdelBiasOmega * biasOmegaIncr)
+              - 2 * skewSymmetric(omegaCoriolis) * vel_i * deltaTij  // Coriolis term
+              + gravity * deltaTij;
+
+          const Rot3 orientation_j = pose_i.rotation().compose( deltaRij_biascorrected_corioliscorrected );
+
+          pose_j = Pose3( orientation_j, position_j );
+          vel_j = LieVector(velocity_j);
+        }
 
   private:
 

@@ -17,20 +17,19 @@ disp('--------------------------------------------------------');
 disp('Constant body velocity w/ lever arm');
 omega = [0;0;0.1];
 velocity = [1;0;0];
-%u = [1 1 1]; u = u/norm(u);
-%RIMUinBody = uth2rot(u,0.1);
-RIMUinBody = eye(3)
-IMUinBody = Pose3(Rot3(RIMUinBody), Point3([0;1;0]));
+RIMUinBody = Rot3.Rz(-pi/2);
+% RIMUinBody = eye(3)
+IMUinBody = Pose3(RIMUinBody, Point3([1;0;0]));
 
 % Initial state (body)
 currentPoseGlobal = Pose3;
 currentVelocityGlobal = velocity;
 % Initial state (IMU)
-currentPoseGlobalIMU = currentPoseGlobal.compose(IMUinBody);
+currentPoseGlobalIMU = Pose3; %currentPoseGlobal.compose(IMUinBody);
 %currentVelocityGlobalIMU = IMUinBody.rotation.unrotate(Point3(velocity)).vector; % no Coriolis here? 
-OmegaIMU = IMUinBody.rotation.unrotate(Point3(omega)).vector;
 currentVelocityGlobalIMU = IMUinBody.rotation.unrotate( ...
      Point3(velocity + cross(omega, IMUinBody.translation.vector))).vector;
+   
 
 % Positions
 % body trajectory
@@ -41,15 +40,15 @@ poses(1).R = currentPoseGlobal.rotation.matrix;
 
 % Expected IMU trajectory (from body trajectory and lever arm)
 positionsIMUe = zeros(3, length(times)+1);
-positionsIMUe(:,1) = currentPoseGlobalIMU.translation.vector;
+positionsIMUe(:,1) = IMUinBody.compose(currentPoseGlobalIMU).translation.vector;
 posesIMUe(1).p = positionsIMUe(:,1);
 posesIMUe(1).R = poses(1).R * IMUinBody.rotation.matrix;
 
 % Integrated IMU trajectory (from IMU measurements)
 positionsIMU = zeros(3, length(times)+1);
-positionsIMU(:,1) = currentPoseGlobalIMU.translation.vector;
+positionsIMU(:,1) = IMUinBody.compose(currentPoseGlobalIMU).translation.vector;
 posesIMU(1).p = positionsIMU(:,1);
-posesIMU(1).R = currentPoseGlobalIMU.rotation.matrix;
+posesIMU(1).R = IMUinBody.compose(currentPoseGlobalIMU).rotation.matrix;
 
 i = 2;
 for t = times
@@ -65,7 +64,7 @@ for t = times
     % Store data in some structure for statistics and plots  
     positions(:,i) = currentPoseGlobal.translation.vector;
     positionsIMUe(:,i) = currentPoseGlobal.translation.vector + currentPoseGlobal.rotation.matrix * IMUinBody.translation.vector;
-    positionsIMU(:,i) = currentPoseGlobalIMU.translation.vector;
+    positionsIMU(:,i) = IMUinBody.compose(currentPoseGlobalIMU).translation.vector;
     
     poses(i).p = positions(:,i);
     posesIMUe(i).p = positionsIMUe(:,i);
@@ -73,7 +72,7 @@ for t = times
     
     poses(i).R = currentPoseGlobal.rotation.matrix;
     posesIMUe(i).R = poses(i).R * IMUinBody.rotation.matrix;
-    posesIMU(i).R = currentPoseGlobalIMU.rotation.matrix;      
+    posesIMU(i).R = IMUinBody.compose(currentPoseGlobalIMU).rotation.matrix;      
     i = i + 1;   
 end
 
@@ -89,4 +88,9 @@ plot(positions(1,:), positions(2,:), '-b');
 plot(positionsIMU(1,:), positionsIMU(2,:), '-r');
 plot(positionsIMUe(1,:), positionsIMUe(2,:), ':k');
 axis equal;
+
+disp('Mismatch between final integrated IMU position and expected IMU position')
+disp(norm(posesIMUe(end).p - posesIMU(end).p))
+disp('Mismatch between final integrated IMU orientation and expected IMU orientation')
+disp(norm(posesIMUe(end).R - posesIMU(end).R))
 

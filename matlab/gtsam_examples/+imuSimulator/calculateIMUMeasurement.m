@@ -12,6 +12,7 @@ measuredOmega = imuFrame.rotation.unrotate(Point3(omega1Body)).vector;
 % induced by rigid body rotation on a lever arm (Coriolis effect).
 velocity1inertial = imuFrame.rotation.unrotate( ...
     Point3(velocity1Body + cross(omega1Body, imuFrame.translation.vector))).vector;
+
 imu2in1 = Rot3.Expmap(measuredOmega * deltaT);
 velocity2inertial = imu2in1.rotate(imuFrame.rotation.unrotate( ...
     Point3(velocity2Body + cross(omega2Body, imuFrame.translation.vector)))).vector;

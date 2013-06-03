@@ -282,8 +282,12 @@ public:
 		// Predict
 		POSE Pose2Pred = predictPose(Pose1, Vel1, Bias1);
 
+		// Luca: difference between Pose2 and Pose2Pred
+		POSE DiffPose( Pose2.rotation().between(Pose2Pred.rotation()),  Pose2Pred.translation() - Pose2.translation() );
+//		DiffPose = Pose2.between(Pose2Pred);
+		return DiffPose;
 		// Calculate error
-		return Pose2.between(Pose2Pred);
+		//return Pose2.between(Pose2Pred);
 	}
 
 	VELOCITY evaluateVelocityError(const POSE& Pose1, const VELOCITY& Vel1, const IMUBIAS& Bias1, const POSE& Pose2, const VELOCITY& Vel2) const {
@@ -454,10 +458,13 @@ public:
 		Matrix F_bias_g = collect(5, &Z_3x3, &Z_3x3, &Z_3x3, &Z_3x3, &I_3x3);
 		Matrix F = stack(5, &F_angles, &F_pos, &F_vel, &F_bias_a, &F_bias_g);
 
+
 		noiseModel::Gaussian::shared_ptr model_discrete_curr = calc_descrete_noise_model(model_continuous_overall, msr_dt );
 		Matrix Q_d = inverse(model_discrete_curr->R().transpose() * model_discrete_curr->R() );
 
 		EquivCov_Overall = F * EquivCov_Overall * F.transpose() + Q_d;
+		// Luca: force identity covariance matrix (for testing purposes)
+		// EquivCov_Overall = Matrix::Identity(15,15);
 
 		// Update Jacobian_wrt_t0_Overall
 		Jacobian_wrt_t0_Overall = F * Jacobian_wrt_t0_Overall;
