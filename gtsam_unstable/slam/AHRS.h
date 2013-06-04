@@ -14,7 +14,7 @@
 
 namespace gtsam {
 
-Matrix cov(const Matrix& m);
+GTSAM_UNSTABLE_EXPORT Matrix cov(const Matrix& m);
 
 class GTSAM_UNSTABLE_EXPORT AHRS {
 
