@@ -125,7 +125,7 @@ ISAM2& ISAM2::operator=(const ISAM2& rhs) {
   linearFactors_ = GaussianFactorGraph();
   linearFactors_.reserve(rhs.linearFactors_.size());
   BOOST_FOREACH(const GaussianFactor::shared_ptr& linearFactor, rhs.linearFactors_) {
-    linearFactors_.push_back(linearFactor->clone()); }
+    linearFactors_.push_back(linearFactor ? linearFactor->clone() : GaussianFactor::shared_ptr()); }
 
   ordering_ = rhs.ordering_;
   params_ = rhs.params_;
