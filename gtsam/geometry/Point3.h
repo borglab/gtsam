@@ -21,12 +21,13 @@
 
 #pragma once
 
-#include <cmath>
-#include <boost/serialization/nvp.hpp>
-
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/DerivedValue.h>
 #include <gtsam/base/Lie.h>
+
+#include <boost/serialization/nvp.hpp>
+
+#include <cmath>
 
 namespace gtsam {
 
@@ -201,6 +202,9 @@ namespace gtsam {
           boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
 
     /// @}
+
+    /// Output stream operator
+    friend std::ostream &operator<<(std::ostream &os, const Point3& p);
 
   private:
 
