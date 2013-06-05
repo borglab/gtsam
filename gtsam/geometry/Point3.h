@@ -153,8 +153,13 @@ namespace gtsam {
     Point3 operator / (double s) const;
 
     /** distance between two points */
-    double dist(const Point3& p2) const {
-      return std::sqrt(pow(x()-p2.x(),2.0) + pow(y()-p2.y(),2.0) + pow(z()-p2.z(),2.0));
+    inline double distance(const Point3& p2) const {
+      return (p2 - *this).norm();
+    }
+
+    /** @deprecated The following function has been deprecated, use distance above */
+    inline double dist(const Point3& p2) const {
+      return (p2 - *this).norm();
     }
 
     /** Distance of the point from the origin */
