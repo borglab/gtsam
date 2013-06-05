@@ -40,4 +40,10 @@ double Point2::norm() const {
   return sqrt(x_*x_ + y_*y_);
 }
 
+/* ************************************************************************* */
+ostream &operator<<(ostream &os, const Point2& p) {
+  os << '(' << p.x() << ", " << p.y() << ')';
+  return os;
+}
+
 } // namespace gtsam
