@@ -19,7 +19,6 @@
 
 #include <utility>
 #include <boost/shared_ptr.hpp>
-#include <boost/function.hpp>
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Key.h>
@@ -60,7 +59,8 @@ namespace gtsam {
     typedef BAYESNET BayesNetType; ///< The BayesNet corresponding to FACTOR
     typedef typename BayesNetType::ConditionalType ConditionalType; ///< The type of conditionals
     typedef typename boost::shared_ptr<ConditionalType> sharedConditional; ///< Shared pointer to a conditional
-    typedef boost::function<std::pair<sharedConditional,sharedFactor>(std::vector<sharedFactor>, std::vector<Key>)>
+    typedef boost::function<std::pair<sharedConditional,sharedFactor>(
+      std::vector<sharedFactor>, std::vector<Key>)>
       Eliminate; ///< Typedef for an eliminate subroutine
 
     struct Node {
