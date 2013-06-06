@@ -175,11 +175,7 @@ namespace gtsam {
     EliminationTreeUnordered<BAYESNET,GRAPH>::eliminate(Eliminate function) const
   {
     // Stack for eliminating nodes.  We use this stack instead of recursive function calls to
-    // avoid call stack overflow due to very long trees that arise from chain-like graphs.  We use
-    // an std::vector for storage here since we do not want frequent reallocations and do not care
-    // about the vector growing to be very large once and not being deallocated until this
-    // function exits, because in the worst case we only store one pointer in this stack for each
-    // variable in the system.
+    // avoid call stack overflow due to very long trees that arise from chain-like graphs.
     // TODO: Check whether this is faster as a vector (then use indices instead of parent pointers).
     typedef EliminationNode<This> EliminationNode;
     std::stack<EliminationNode, FastList<EliminationNode> > eliminationStack;
@@ -192,8 +188,9 @@ namespace gtsam {
     boost::shared_ptr<FactorGraphType> remainingFactors =
       boost::make_shared<FactorGraphType>(remainingFactors_.begin(), remainingFactors_.end());
 
-    // Add roots to the stack
-    BOOST_FOREACH(const sharedNode& root, roots_) {
+    // Add roots to the stack (use reverse foreach so conditionals to appear in elimination order -
+    // doesn't matter for computation but can make printouts easier to interpret by hand)
+    BOOST_REVERSE_FOREACH(const sharedNode& root, roots_) {
       eliminationStack.push(
         EliminationNode(root.get(), root->factors.size() + root->subTrees.size(),
         root->factors.begin(), root->factors.end(), 0)); }
@@ -221,9 +218,11 @@ namespace gtsam {
         // Remove from stack
         eliminationStack.pop();
       } else {
-        // Expand children and mark as expanded
+        // Expand children and mark as expanded (use reverse foreach so conditionals to appear in
+        // elimination order - doesn't matter for computation but can make printouts easier to
+        // interpret by hand)
         node.expanded = true;
-        BOOST_FOREACH(const sharedNode& child, node.treeNode->subTrees) {
+        BOOST_REVERSE_FOREACH(const sharedNode& child, node.treeNode->subTrees) {
           eliminationStack.push(
             EliminationNode(child.get(), child->factors.size() + child->subTrees.size(),
             child->factors.begin(), child->factors.end(), &node)); }

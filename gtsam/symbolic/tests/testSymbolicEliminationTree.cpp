@@ -90,11 +90,11 @@ TEST_UNSAFE(EliminationTree, eliminate )
 {
   // create expected Chordal bayes Net
   SymbolicBayesNetUnordered expected;
-  expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(4));
-  expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(3,4));
-  expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(2,4));
-  expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(1,2,4));
   expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(0,1,2));
+  expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(1,2,4));
+  expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(2,4));
+  expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(3,4));
+  expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(4));
 
   // Create factor graph
   SymbolicFactorGraphUnordered fg;
@@ -109,19 +109,31 @@ TEST_UNSAFE(EliminationTree, eliminate )
   order += 0,1,2,3,4;
   SymbolicBayesNetUnordered actual = *SymbolicEliminationTreeUnordered(fg,order).eliminate(EliminateSymbolicUnordered).first;
 
-  CHECK(assert_equal(expected,actual));
+  EXPECT(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
-//TEST(EliminationTree, disconnected_graph) {
-//  SymbolicFactorGraph fg;
-//  fg.push_factor(0, 1);
-//  fg.push_factor(0, 2);
-//  fg.push_factor(1, 2);
-//  fg.push_factor(3, 4);
-//
-//  CHECK_EXCEPTION(SymbolicEliminationTree::Create(fg), DisconnectedGraphException);
-//}
+TEST(EliminationTree, disconnected_graph) {
+  SymbolicFactorGraphUnordered fg;
+  fg.push_factor(0, 1);
+  fg.push_factor(0, 2);
+  fg.push_factor(1, 2);
+  fg.push_factor(3, 4);
+
+  // create expected Chordal bayes Net
+  SymbolicBayesNetUnordered expected;
+  expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(0,1,2));
+  expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(1,2));
+  expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(2));
+  expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(3,4));
+  expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(4));
+
+  vector<size_t> order;
+  order += 0,1,2,3,4;
+  SymbolicBayesNetUnordered actual = *SymbolicEliminationTreeUnordered(fg, order).eliminate(EliminateSymbolicUnordered).first;
+
+  EXPECT(assert_equal(expected,actual));
+}
 
 /* ************************************************************************* */
 int main() {
