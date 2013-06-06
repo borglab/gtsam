@@ -48,7 +48,7 @@ namespace gtsam {
     /// @{
 
     /** Virtual destructor */
-    virtual ~SymbolicFactorUnordered() {}
+    ~SymbolicFactorUnordered() {}
 
     /** Copy constructor */
     SymbolicFactorUnordered(const This& f) : Base(f) {}
@@ -80,7 +80,18 @@ namespace gtsam {
     /// @{
 
     /** Constructor from a collection of keys */
-    template<class KeyIterator> SymbolicFactorUnordered(KeyIterator beginKey, KeyIterator endKey) : Base(beginKey, endKey) {}
+    template<typename KEYITERATOR>
+    static SymbolicFactorUnordered FromIterator(KEYITERATOR beginKey, KEYITERATOR endKey) {
+      SymbolicFactorUnordered result;
+      result = Base::FromIterator(beginKey, endKey);
+      return result; }
+
+    /** Constructor from a collection of keys */
+    template<class CONTAINER>
+    static SymbolicFactorUnordered FromKeys(const CONTAINER& keys) {
+      SymbolicFactorUnordered result;
+      result = Base::FromKeys(keys);
+      return result; }
 
     /// @}
 
@@ -91,7 +102,10 @@ namespace gtsam {
     void serialize(ARCHIVE & ar, const unsigned int version) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     }
-
   }; // IndexFactor
+
+
+  std::pair<boost::shared_ptr<SymbolicConditionalUnordered>, boost::shared_ptr<SymbolicFactorUnordered> >
+    EliminateSymbolicUnordered(const vector<SymbolicFactorUnordered::shared_ptr>& factors, const vector<Key>& keys);
 
 }

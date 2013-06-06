@@ -18,8 +18,8 @@
 #pragma once
 
 #include <gtsam/base/types.h>
-#include <gtsam/inference/SymbolicFactorUnordered.h>
 #include <gtsam/inference/ConditionalUnordered.h>
+#include <gtsam/symbolic/SymbolicFactorUnordered.h>
 
 namespace gtsam {
 
@@ -62,14 +62,22 @@ namespace gtsam {
     SymbolicConditionalUnordered(Index j, Index parent1, Index parent2, Index parent3) : BaseFactor(j, parent1, parent2, parent3), BaseConditional(3) {}
 
     /** Named constructor from an arbitrary number of keys and frontals */
-    template<class ITERATOR>
-    static SymbolicConditionalUnordered FromIterator(ITERATOR firstKey, ITERATOR lastKey, size_t nrFrontals) :
+    template<typename ITERATOR>
+    static SymbolicConditionalUnordered FromIterator(ITERATOR firstKey, ITERATOR lastKey, size_t nrFrontals)
     {
       SymbolicConditionalUnordered result;
-      result.keys_.assign(firstKey, lastKey);
+      result = BaseFactor::FromIterator(firstKey, lastKey);
       result.nrFrontals_ = nrFrontals;
-      return result;
-    }
+      return result; }
+
+    /** Named constructor from an arbitrary number of keys and frontals */
+    template<class CONTAINER>
+    static SymbolicConditionalUnordered FromKeys(const CONTAINER& keys, size_t nrFrontals)
+    {
+      SymbolicConditionalUnordered result;
+      result = BaseFactor::FromKeys(keys);
+      result.nrFrontals_ = nrFrontals;
+      return result; }
 
     /// @}
 

@@ -16,15 +16,16 @@
  * @author Richard Roberts
  */
 
-#include <gtsam/inference/SymbolicBayesNetUnordered.h>
-#include <gtsam/inference/SymbolicFactorGraphUnordered.h>
 #include <gtsam/inference/EliminationTreeUnordered.h>
+#include <gtsam/symbolic/SymbolicBayesNetUnordered.h>
+#include <gtsam/symbolic/SymbolicFactorGraphUnordered.h>
 
 namespace gtsam {
 
-  class SymbolicEliminationTreeUnordered : public EliminationTreeUnordered<SymbolicBayesNetUnordered,SymbolicFactorGraphUnordered> {
+  class SymbolicEliminationTreeUnordered :
+    public EliminationTreeUnordered<SymbolicBayesNetUnordered, SymbolicFactorGraphUnordered> {
   public:
-    typedef EliminationTreeUnordered<SymbolicBayesNetUnordered,SymbolicFactorGraphUnordered> Base; ///< Base class
+    typedef EliminationTreeUnordered<SymbolicBayesNetUnordered, SymbolicFactorGraphUnordered> Base; ///< Base class
     typedef SymbolicEliminationTreeUnordered This; ///< This class
     typedef boost::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
     
@@ -45,7 +46,7 @@ namespace gtsam {
     * constructor instead.
     * @param factorGraph The factor graph for which to build the elimination tree
     */
-    SymbolicEliminationTreeUnordered(const FactorGraphType& factorGraph, const std::vector<Key>& order) :
+    SymbolicEliminationTreeUnordered(const SymbolicFactorGraphUnordered& factorGraph, const std::vector<Key>& order) :
       Base(factorGraph, order) {}
 
     /** Copy constructor - makes a deep copy of the tree structure, but only pointers to factors are

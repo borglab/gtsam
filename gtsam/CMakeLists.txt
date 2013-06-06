@@ -5,6 +5,7 @@ set (gtsam_subdirs
     base 
     geometry 
     inference 
+	symbolic 
     discrete 
     linear 
     nonlinear 
@@ -76,6 +77,7 @@ set(gtsam_srcs
     ${base_srcs}
     ${geometry_srcs}
     ${inference_srcs}
+	${symbolic_srcs}
     ${discrete_srcs}
     ${linear_srcs}
     ${nonlinear_srcs}

@@ -162,18 +162,21 @@ namespace gtsam {
 
     // Until the stack is empty
     while(!eliminationStack.empty()) {
-      // Process the next node.  If it has children, add its children to the stack and skip it -
-      // we'll come back and eliminate it later after the children have been processed.  If it has
-      // no children, we can eliminate it immediately and remove it from the stack.
+      // Process the next node.  If it has children, add its children to the stack and mark it
+      // expanded - we'll come back and eliminate it later after the children have been processed.
       EliminationNode& node = nodeStack.top();
       if(node.expanded) {
         // Remove from stack
         nodeStack.pop();
+
         // Do a dense elimination step
+        std::vector<Key> keyAsVector(1); keyAsVector[0] = node.key;
         std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> > eliminationResult =
-          function(node.factors, node.key);
+          function(node.factors, keyAsVector);
+
         // Add conditional to BayesNet and remaining factor to parent
         bayesNet->push_back(eliminationResult.first);
+
         // TODO: Don't add null factor?
         if(node.parent)
           node.parent->factors.push_back(eliminationResult.second);

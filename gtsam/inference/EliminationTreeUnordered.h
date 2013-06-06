@@ -24,7 +24,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Key.h>
 
-class EliminationTreeTester; // for unit tests, see testEliminationTree
+class EliminationTreeUnorderedTester; // for unit tests, see testEliminationTree
 
 namespace gtsam {
 
@@ -61,6 +61,8 @@ namespace gtsam {
     typedef typename BayesNetType::ConditionalType ConditionalType; ///< The type of conditionals
     typedef typename GRAPH::Eliminate Eliminate; ///< Typedef for an eliminate subroutine
 
+  private:
+
     class Node {
     public:
       typedef boost::shared_ptr<Node> shared_ptr;
@@ -73,8 +75,6 @@ namespace gtsam {
     };
 
     typedef Node::shared_ptr sharedNode; ///< Shared pointer to Node
-
-  private:
 
     /** concept check */
     GTSAM_CONCEPT_TESTABLE_TYPE(FactorType);
@@ -105,13 +105,13 @@ namespace gtsam {
     */
     EliminationTreeUnordered(const FactorGraphType& factorGraph, const std::vector<Key>& order);
 
-    /** Copy constructor - makes a deep copy of the tree structure, but only pointers to factors are
+    /** TODO: Copy constructor - makes a deep copy of the tree structure, but only pointers to factors are
      *  copied, factors are not cloned. */
-    EliminationTreeUnordered(const This& other);
+    EliminationTreeUnordered(const This& other) { throw std::runtime_error("Not implemented"); }
 
-    /** Assignment operator - makes a deep copy of the tree structure, but only pointers to factors are
+    /** TODO: Assignment operator - makes a deep copy of the tree structure, but only pointers to factors are
      *  copied, factors are not cloned. */
-    This& operator=(const This& other);
+    This& operator=(const This& other) { throw std::runtime_error("Not implemented"); }
 
     /// @}
     /// @name Standard Interface
@@ -141,7 +141,7 @@ namespace gtsam {
   private:
 
     /// Allow access to constructor and add methods for testing purposes
-    friend class ::EliminationTreeTester;
+    friend class ::EliminationTreeUnorderedTester;
 
   };
 

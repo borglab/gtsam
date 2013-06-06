@@ -10,14 +10,15 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    SymbolicFactor.cpp
+ * @file    SymbolicConditional.cpp
  * @author  Richard Roberts
  * @date    Oct 17, 2010
  */
 
-#include <gtsam/inference/SymbolicFactorUnordered.h>
-
-using namespace std;
+#include <gtsam/symbolic/SymbolicConditionalUnordered.h>
 
 namespace gtsam {
-} // gtsam
+
+  using namespace std;
+
+}

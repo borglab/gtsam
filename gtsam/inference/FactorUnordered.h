@@ -77,13 +77,16 @@ public:
   FactorUnordered() {}
 
   /** Construct unary factor */
-  FactorUnordered(Key key) : keys_(1) { keys_[0] = key; }
+  FactorUnordered(Key key) : keys_(1) {
+    keys_[0] = key; }
 
   /** Construct binary factor */
-  FactorUnordered(Key key1, Key key2) : keys_(2) { keys_[0] = key1; keys_[1] = key2; }
+  FactorUnordered(Key key1, Key key2) : keys_(2) {
+    keys_[0] = key1; keys_[1] = key2; }
 
   /** Construct ternary factor */
-  FactorUnordered(Key key1, Key key2, Key key3) : keys_(3) { keys_[0] = key1; keys_[1] = key2; keys_[2] = key3; }
+  FactorUnordered(Key key1, Key key2, Key key3) : keys_(3) {
+    keys_[0] = key1; keys_[1] = key2; keys_[2] = key3; }
 
   /** Construct 4-way factor */
   FactorUnordered(Key key1, Key key2, Key key3, Key key4) : keys_(4) {
@@ -102,14 +105,14 @@ public:
 
   /// @name Advanced Constructors
   /// @{
+
+  /** Construct n-way factor from iterator over keys. */
+  template<typename ITERATOR> static FactorUnordered FromIterator(ITERATOR first, ITERATOR last) {
+    FactorUnordered result; result.keys_.assign(first, last); }
   
   /** Construct n-way factor from container of keys. */
   template<class CONTAINER>
   static FactorUnordered FromKeys(const CONTAINER& keys) { return FromIterator(keys.begin(), keys.end()); }
-
-  /** Construct n-way factor from iterator over keys. */
-  template<class ITERATOR> static FactorUnordered FromIterator(ITERATOR first, ITERATOR last) {
-    FactorUnordered result; result.keys_.assign(first, last); }
 
   /// @}
 
