@@ -92,6 +92,12 @@ namespace gtsam {
 
     /// @}
 
+    /// @name Standard Interface
+    /// @{
+    
+    /** Whether the factor is empty (involves zero variables). */
+    bool empty() const { return keys_.empty(); }
+
   private:
     /** Serialization function */
     friend class boost::serialization::access;

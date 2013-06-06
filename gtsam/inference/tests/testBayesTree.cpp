@@ -92,6 +92,8 @@ TEST( BayesTree, constructor )
   // Create using insert
   SymbolicBayesTree bayesTree = createAsiaSymbolicBayesTree();
 
+  bayesTree.print("bayesTree (ordered): ");
+
   // Check Size
   LONGS_EQUAL(4,bayesTree.size());
   EXPECT(!bayesTree.empty());

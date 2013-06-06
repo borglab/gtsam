@@ -36,6 +36,7 @@ namespace gtsam {
   public:
     typedef EliminateableFactorGraph<FACTOR, FACTORGRAPH, CONDITIONAL, BAYESNET, ELIMINATIONTREE, BAYESTREE, JUNCTIONTREE> This;
     typedef boost::optional<const OrderingUnordered&> OptionalOrdering;
+    typedef boost::optional<const VariableIndexUnordered&> OptionalVariableIndex;
     typedef boost::function<std::pair<boost::shared_ptr<CONDITIONAL>, boost::shared_ptr<FACTOR> >(
       std::vector<boost::shared_ptr<FACTOR> >, std::vector<Key>)>
       Eliminate; ///< Typedef for an eliminate subroutine
@@ -63,7 +64,7 @@ namespace gtsam {
      *  */
     boost::shared_ptr<BAYESNET>
       eliminateSequential(const Eliminate& function, OptionalOrdering ordering = boost::none,
-      const VariableIndexUnordered& variableIndex = VariableIndexUnordered(*this)) const;
+      OptionalVariableIndex variableIndex = boost::none) const;
 
     /** Do multifrontal elimination of all variables to produce a Bayes tree.  If an ordering is not
      *  provided, the ordering provided by COLAMD will be used.
@@ -87,7 +88,7 @@ namespace gtsam {
      *  */
     boost::shared_ptr<BAYESTREE>
       eliminateMultifrontal(const Eliminate& function, OptionalOrdering ordering = boost::none,
-      const VariableIndexUnordered& variableIndex = VariableIndexUnordered(*this)) const;
+      OptionalVariableIndex variableIndex = boost::none) const;
 
     /** Do sequential elimination of some variables in the given \c ordering to produce a Bayes net
      *  and a remaining factor graph.  This computes the factorization \f$ p(X) = p(A|B) p(B) \f$,
@@ -95,7 +96,7 @@ namespace gtsam {
      *  B = X\backslash A \f$. */
     std::pair<boost::shared_ptr<BAYESNET>, boost::shared_ptr<FACTORGRAPH> >
       eliminatePartialSequential(const Eliminate& function, const OrderingUnordered& ordering,
-      const VariableIndexUnordered& variableIndex = VariableIndexUnordered(*this));
+      OptionalVariableIndex variableIndex = boost::none);
 
     /** Do sequential elimination of the given \c variables in an ordering computed by COLAMD to
      *  produce a Bayes net and a remaining factor graph.  This computes the factorization \f$ p(X)
@@ -103,7 +104,7 @@ namespace gtsam {
      *  factor graph, and \f$ B = X\backslash A \f$. */
     std::pair<boost::shared_ptr<BAYESNET>, boost::shared_ptr<FACTORGRAPH> >
       eliminatePartialSequential(const Eliminate& function, const std::vector<Key>& variables,
-      const VariableIndexUnordered& variableIndex = VariableIndexUnordered(*this));
+      OptionalVariableIndex variableIndex = boost::none);
 
     /** Do multifrontal elimination of the given \c variables in an ordering computed by COLAMD to
      *  produce a Bayes net and a remaining factor graph.  This computes the factorization \f$ p(X)
@@ -111,7 +112,7 @@ namespace gtsam {
      *  factor graph, and \f$ B = X\backslash A \f$. */
     std::pair<boost::shared_ptr<BAYESTREE>, boost::shared_ptr<FACTORGRAPH> >
       eliminatePartialMultifrontal(const Eliminate& function, const OrderingUnordered& ordering,
-      const VariableIndexUnordered& variableIndex = VariableIndexUnordered(*this));
+      OptionalVariableIndex variableIndex = boost::none);
     
     /** Do multifrontal elimination of some variables in the given \c ordering to produce a Bayes
      *  tree and a remaining factor graph.  This computes the factorization \f$ p(X) = p(A|B) p(B)
@@ -119,7 +120,7 @@ namespace gtsam {
      *  \f$ B = X\backslash A \f$. */
     std::pair<boost::shared_ptr<BAYESTREE>, boost::shared_ptr<FACTORGRAPH> >
       eliminatePartialMultifrontal(const Eliminate& function, const std::vector<Key>& variables,
-      const VariableIndexUnordered& variableIndex = VariableIndexUnordered(*this));
+      OptionalVariableIndex variableIndex = boost::none);
 
   private:
 

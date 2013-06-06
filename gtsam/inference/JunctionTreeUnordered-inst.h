@@ -87,7 +87,8 @@ namespace gtsam {
 
       // Store symbolic elimination results in the parent
       myData.parentData->childSymbolicConditionals.push_back(symbolicElimResult.first);
-      myData.parentData->childSymbolicFactors.push_back(symbolicElimResult.second);
+      if(!symbolicElimResult.second->empty())
+        myData.parentData->childSymbolicFactors.push_back(symbolicElimResult.second);
 
       // Merge our children if they are in our clique - if our conditional has exactly one fewer
       // parent than our child's conditional.
@@ -173,7 +174,8 @@ namespace gtsam {
       myData.bayesTreeNode->conditional_ = eliminationResult.first;
 
       // Store remaining factor in parent's gathered factors
-      myData.parentData->childFactors.push_back(eliminationResult.second);
+      if(!eliminationResult.second->empty())
+        myData.parentData->childFactors.push_back(eliminationResult.second);
     }
   }
 

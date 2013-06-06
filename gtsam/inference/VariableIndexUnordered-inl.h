@@ -59,9 +59,9 @@ void VariableIndexUnordered::remove(ITERATOR firstFactor, ITERATOR lastFactor, c
     if(i >= factors.size())
       throw std::invalid_argument("Internal error, requested inconsistent number of factor indices and factors in VariableIndex::remove");
     if(factors[i]) {
-      BOOST_FOREACH(Key j, factors[i]) {
+      BOOST_FOREACH(Key j, *factors[i]) {
         Factors& factorEntries = internalAt(j);
-        Factors::iterator entry = std::find(factorEntries.begin(), factorEntries.end(), indices[i]);
+        Factors::iterator entry = std::find(factorEntries.begin(), factorEntries.end(), *factorIndex);
         if(entry == factorEntries.end())
           throw std::invalid_argument("Internal error, indices and factors passed into VariableIndex::remove are not consistent with the existing variable index");
         factorEntries.erase(entry);
@@ -75,7 +75,7 @@ void VariableIndexUnordered::remove(ITERATOR firstFactor, ITERATOR lastFactor, c
 template<typename ITERATOR>
 void VariableIndexUnordered::removeUnusedVariables(ITERATOR firstKey, ITERATOR lastKey) {
   for(ITERATOR key = firstKey; key != lastKey; ++key) {
-    assert(!internalAt(*key).empty());
+    assert(internalAt(*key).empty());
     index_.erase(*key);
   }
 }
