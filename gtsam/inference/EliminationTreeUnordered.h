@@ -21,7 +21,6 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
 
-#include <gtsam/base/FastList.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Key.h>
 
@@ -83,7 +82,7 @@ namespace gtsam {
     /** concept check */
     GTSAM_CONCEPT_TESTABLE_TYPE(FactorType);
 
-    FastList<sharedNode> roots_;
+    std::vector<sharedNode> roots_;
     std::vector<sharedFactor> remainingFactors_;
 
   public:
@@ -109,12 +108,12 @@ namespace gtsam {
     */
     EliminationTreeUnordered(const FactorGraphType& factorGraph, const std::vector<Key>& order);
 
-    /** TODO: Copy constructor - makes a deep copy of the tree structure, but only pointers to factors are
+    /** Copy constructor - makes a deep copy of the tree structure, but only pointers to factors are
      *  copied, factors are not cloned. */
     EliminationTreeUnordered(const This& other) { *this = other; }
 
-    /** TODO: Assignment operator - makes a deep copy of the tree structure, but only pointers to factors are
-     *  copied, factors are not cloned. */
+    /** Assignment operator - makes a deep copy of the tree structure, but only pointers to factors
+     *  are copied, factors are not cloned. */
     This& operator=(const This& other);
 
     /// @}
@@ -144,7 +143,11 @@ namespace gtsam {
     /// @name Advanced Interface
     /// @{
     
-    const FastList<sharedNode>& roots() const { return roots_; }
+    /** Return the set of roots (one for a tree, multiple for a forest) */
+    const std::vector<sharedNode>& roots() const { return roots_; }
+
+    /** Return the remaining factors that are not pulled into elimination */
+    const std::vector<sharedFactor>& remainingFactors() const { return remainingFactors_; }
 
     /** Swap the data of this tree with another one, this operation is very fast. */
     void swap(This& other);

@@ -121,6 +121,17 @@ namespace gtsam {
         forest, rootData, visitorPre, no_op<typename FOREST::Node, DATA>);
     }
 
+    /** Clone a tree, copy-constructing new nodes (calling boost::make_shared) and setting up child
+     *  pointers for a clone of the original tree.
+     *  @param forest The forest of trees to clone.  The method \c forest.roots() should exist and
+     *         return a collection of shared pointers to \c FOREST::Node.
+     *  @return The new collection of roots. */
+    template<class FOREST>
+    std::vector<boost::shared_ptr<typename FOREST::Node> > CloneForest(const FOREST& forest)
+    {
+
+    }
+
   }
 
 }

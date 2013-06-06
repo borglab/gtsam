@@ -14,7 +14,8 @@
  * @date Feb 4, 2010
  * @author Kai Ni
  * @author Frank Dellaert
- * @brief: The junction tree
+ * @author Richard Roberts
+ * @brief The junction tree
  */
 
 #pragma once
@@ -83,7 +84,7 @@ namespace gtsam {
     /** concept check */
     GTSAM_CONCEPT_TESTABLE_TYPE(FactorType);
 
-    FastList<sharedNode> roots_;
+    std::vector<sharedNode>& roots_;
     std::vector<sharedFactor> remainingFactors_;
 
   public:
@@ -92,10 +93,40 @@ namespace gtsam {
     /// @{
 
     /** Build the junction tree from an elimination tree and a symbolic Bayes net. */
-    template<class ETREE, class SYMBOLIC_CONDITIONAL>
-    JunctionTreeUnordered(
-      const ETREE& eliminationTree,
-      const FactorGraphUnordered<SYMBOLIC_CONDITIONAL>& symbolicBayesNet);
+    template<class ETREE>
+    JunctionTreeUnordered(const ETREE& eliminationTree);
+    
+    /** Copy constructor - makes a deep copy of the tree structure, but only pointers to factors are
+     *  copied, factors are not cloned. */
+    JunctionTreeUnordered(const This& other) { *this = other; }
+
+    /** Assignment operator - makes a deep copy of the tree structure, but only pointers to factors
+     *  are copied, factors are not cloned. */
+    This& operator=(const This& other);
+
+    /// @}
+
+    /// @name Standard Interface
+    /// @{
+
+    /** Eliminate the factors to a Bayes net and remaining factor graph
+    * @param function The function to use to eliminate, see the namespace functions
+    * in GaussianFactorGraph.h
+    * @return The Bayes net and factor graph resulting from elimination
+    */
+    std::pair<boost::shared_ptr<BayesNetType>, boost::shared_ptr<FactorGraphType> >
+      eliminate(Eliminate function) const;
+
+    /// @}
+
+    /// @name Advanced Interface
+    /// @{
+    
+    /** Return the set of roots (one for a tree, multiple for a forest) */
+    const std::vector<sharedNode>& roots() const { return roots_; }
+
+    /** Return the remaining factors that are not pulled into elimination */
+    const std::vector<sharedFactor>& remainingFactors() const { return remainingFactors_; }
 
     /// @}
 

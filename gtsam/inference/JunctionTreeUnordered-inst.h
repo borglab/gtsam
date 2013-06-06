@@ -14,74 +14,127 @@
  * @date Feb 4, 2010
  * @author Kai Ni
  * @author Frank Dellaert
+ * @author Richard Roberts
  * @brief The junction tree, template bodies
  */
 
 #pragma once
 
-#include <gtsam/inference/SymbolicFactorGraph.h>
-#include <gtsam/inference/VariableSlots.h>
-#include <gtsam/inference/EliminationTree.h>
 #include <gtsam/base/timing.h>
+#include <gtsam/base/treeTraversal-inst.h>
+#include <gtsam/inference/JunctionTreeUnordered.h>
+#include <gtsam/symbolic/SymbolicConditionalUnordered.h>
 
 #include <boost/foreach.hpp>
 
 namespace gtsam {
 
-  namespace {
   /* ************************************************************************* */
   template<class BAYESTREE, class GRAPH>
-  struct ConstructorTraversalData {
-    const ConstructorTraversalData& parentData;
-    typename JunctionTreeUnordered<BAYESTREE,GRAPH>::sharedNode myJTNode;
-    ConstructorTraversalData(const ConstructorTraversalData& _parentData) : parentData(_parentData) {}
-  };
-
-  /* ************************************************************************* */
-  template<class BAYESTREE, class GRAPH, class ETREE_NODE>
-  ConstructorTraversalData<BAYESTREE,GRAPH> ConstructorTraversalVisitorPre(
-    const boost::shared_ptr<ETREE_NODE>& node,
-    const ConstructorTraversalData<BAYESTREE,GRAPH>& parentData)
+  typename JunctionTreeUnordered<BAYESTREE,GRAPH>::sharedFactor
+    JunctionTreeUnordered<BAYESTREE,GRAPH>::Node::eliminate(
+    const boost::shared_ptr<BayesTreeType>& output,
+    const Eliminate& function, const std::vector<sharedFactor>& childrenResults) const
   {
-    // On the pre-order pass, before children have been visited, we just set up a traversal data
-    // structure with its own JT node, and create a child pointer in its parent.
-    ConstructorTraversalData<BAYESTREE,GRAPH> myData = ConstructorTraversalData<BAYESTREE,GRAPH>(parentData);
-    myData.myJTNode = boost::make_shared<typename JunctionTreeUnordered<BAYESREE,GRAPH>::Node>();
-    myData.myJTNode->keys.push_back(node->key);
-    myData.myJTNode->factors.insert(myData.myJTNode->factors.begin(), node->factors.begin(), node->factors.end());
-    parentData.myJTNode->children.push_back(myData.myJTNode);
-    return myData;
+    // This function eliminates one node (Node::eliminate) - see below eliminate for the whole tree.
+
+    assert(childrenResults.size() == children.size());
+
+    // Gather factors
+    std::vector<sharedFactor> gatheredFactors;
+    gatheredFactors.reserve(factors.size() + children.size());
+    gatheredFactors.insert(gatheredFactors.end(), factors.begin(), factors.end());
+    gatheredFactors.insert(gatheredFactors.end(), childrenResults.begin(), childrenResults.end());
+
+    // Do dense elimination step
+    std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> > eliminationResult =
+      function(gatheredFactors, keys);
+
+    // Add conditional to BayesNet
+    output->push_back(eliminationResult.first);
+
+    // Return result
+    return eliminationResult.second;
   }
 
-  /* ************************************************************************* */
-  template<class BAYESTREE, class GRAPH, class ETREE_NODE, class SYMBOLIC_CONDITIONAL>
-  struct ConstructorTraversalVisitorPost
-  {
-    // Store and increment an iterator into the Bayes net during the post-order step
-    FactorGraphUnordered<SYMBOLIC_CONDITIONAL>::const_iterator symbolicBayesNetIterator;
 
-    // Constructor that starts at the beginning of the Bayes net
-    ConstructorTraversalVisitorPost(const FactorGraphUnordered<SYMBOLIC_CONDITIONAL>& symbolicBayesNet) :
-      symbolicBayesNetIterator(symbolicBayesNet.begin()) {}
+  namespace {
+    /* ************************************************************************* */
+    template<class BAYESTREE, class GRAPH>
+    struct ConstructorTraversalData {
+      const ConstructorTraversalData* parentData;
+      typename JunctionTreeUnordered<BAYESTREE,GRAPH>::sharedNode myJTNode;
+      std::vector<SymbolicConditionalUnordered::shared_ptr> childSymbolicConditionals;
+      std::vector<SymbolicFactorUnordered::shared_ptr> childSymbolicFactors;
+      ConstructorTraversalData(const ConstructorTraversalData* _parentData) : parentData(_parentData) {}
+    };
 
+    /* ************************************************************************* */
+    // Pre-order visitor function
+    template<class BAYESTREE, class GRAPH, class ETREE_NODE>
+    ConstructorTraversalData<BAYESTREE,GRAPH> ConstructorTraversalVisitorPre(
+      const boost::shared_ptr<ETREE_NODE>& node,
+      const ConstructorTraversalData<BAYESTREE,GRAPH>& parentData)
+    {
+      // On the pre-order pass, before children have been visited, we just set up a traversal data
+      // structure with its own JT node, and create a child pointer in its parent.
+      ConstructorTraversalData<BAYESTREE,GRAPH> myData = ConstructorTraversalData<BAYESTREE,GRAPH>(&parentData);
+      myData.myJTNode = boost::make_shared<typename JunctionTreeUnordered<BAYESREE,GRAPH>::Node>();
+      myData.myJTNode->keys.push_back(node->key);
+      myData.myJTNode->factors.insert(myData.myJTNode->factors.begin(), node->factors.begin(), node->factors.end());
+      parentData.myJTNode->children.push_back(myData.myJTNode);
+      return myData;
+    }
+
+    /* ************************************************************************* */
     // Post-order visitor function
-    void operator()(
+    template<class BAYESTREE, class GRAPH, class ETREE_NODE>
+    void ConstructorTraversalVisitorPost(
       const boost::shared_ptr<ETREE_NODE>& node,
       const ConstructorTraversalData<BAYESTREE,GRAPH>& myData)
     {
-      // In the post-order step, we check if we are in the same clique with our parent.  If so, we
-      // merge our JT nodes.
-      if()
-    }
-  };
+      // Do symbolic elimination for this node
+      std::vector<SymbolicFactorUnordered::shared_ptr> symbolicFactors;
+      symbolicFactors.reserve(node->factors.size() + myData.childSymbolicFactors.size());
+      BOOST_FOREACH(const typename GRAPH::sharedFactor& factor, node->factors) {
+        symbolicFactors.push_back(boost::make_shared<SymbolicFactorUnordered>(factor)); }
+      symbolicFactors.insert(symbolicFactors.end(), myData.childSymbolicFactors.begin(), myData.childSymbolicFactors.end());
+      std::vector<Key> keyAsVector(1); keyAsVector[0] = node->key;
+      std::pair<SymbolicConditionalUnordered::shared_ptr, SymbolicFactorUnordered::shared_ptr> symbolicElimResult =
+        EliminateSymbolicUnordered(symbolicFactors, keyAsVector);
 
+      // Store symbolic elimination results
+      myData.parentData->childSymbolicConditionals.push_back(symbolicElimResult.first);
+      myData.parentData->childSymbolicFactors.push_back(symbolicElimResult.second);
+
+      // Merge our children if they are in our clique - if our conditional has exactly one fewer
+      // parent than our child's conditional.
+      const size_t myNrParents = symbolicElimResult.first->nrParents();
+      size_t nrMergedChildren = 0;
+      assert(myData.myJTNode->children.size() == myData.childSymbolicConditionals.size());
+      // Loop over children
+      for(size_t child = 0; child < myData.childSymbolicConditionals.size(); ++child) {
+        // Check if we should merge the child
+        if(myNrParents + 1 == myData.childSymbolicConditionals[child]->nrParents()) {
+          // Get a reference to the child, adjusting the index to account for children previously
+          // merged and removed from the child list.
+          const typename JunctionTreeUnordered<BAYESREE,GRAPH>::Node& childToMerge =
+            *myData.myJTNode->children[child - nrMergedChildren];
+          // Merge keys, factors, and children.
+          myData.myJTNode->keys.insert(myData.myJTNode->keys.end(), childToMerge.keys.begin(), childToMerge.keys.end());
+          myData.myJTNode->factors.insert(myData.myJTNode->factors.end(), childToMerge.factors.begin(), childToMerge.factors.end());
+          myData.myJTNode->children.insert(myData.myJTNode->children.end(), childToMerge.children.begin(), childToMerge.children.end());
+          // Remove child from list.
+          myData.myJTNode->children.erase(myData.myJTNode->children.begin() + child - nrMergedChildren);
+        }
+      }
+    }
   }
 
   /* ************************************************************************* */
   template<class BAYESTREE, class GRAPH>
-  template<class ETREE, class SYMBOLIC_CONDITIONAL>
-  JunctionTreeUnordered(const ETREE& eliminationTree,
-    const FactorGraphUnordered<SYMBOLIC_CONDITIONAL>& symbolicBayesNet)
+  template<class ETREE>
+  JunctionTreeUnordered<BAYESTREE,GRAPH>::JunctionTreeUnordered(const ETREE& eliminationTree)
   {
     // Here we rely on the BayesNet having been produced by this elimination tree, such that the
     // conditionals are arranged in DFS post-order.  We traverse the elimination tree, and inspect
@@ -89,180 +142,52 @@ namespace gtsam {
     // the same clique with its parent if it has exactly one more Bayes net conditional parent than
     // does its elimination tree parent.
 
+    // Traverse the elimination tree, doing symbolic elimination and merging nodes as we go.  Gather
+    // the created junction tree roots in a dummy Node.
+    ConstructorTraversalData<BAYESTREE, GRAPH> rootData(0);
+    rootData.myJTNode = boost::make_shared<Node>(); // Make a dummy node to gather the junction tree roots
+    treeTraversal.DepthFirstForest(eliminationTree, rootData,
+      ConstructorTraversalVisitorPre<BAYESREE,GRAPH>, ConstructorTraversalVisitorPost<BAYESTREE,GRAPH>);
 
-  }
+    // Assign roots from the dummy node
+    roots_ = rootData.myJTNode->children;
 
-
-  /* ************************************************************************* */
-  template <class FG, class BTCLIQUE>
-  void JunctionTree<FG,BTCLIQUE>::construct(const FG& fg, const VariableIndex& variableIndex) {
-    gttic(JT_symbolic_ET);
-    const typename EliminationTree<IndexFactor>::shared_ptr symETree =
-        EliminationTree<IndexFactor>::Create(fg, variableIndex);
-    assert(symETree.get());
-    gttoc(JT_symbolic_ET);
-    gttic(JT_symbolic_eliminate);
-    SymbolicBayesNet::shared_ptr sbn = symETree->eliminate(&EliminateSymbolic);
-    assert(sbn.get());
-    gttoc(JT_symbolic_eliminate);
-    gttic(symbolic_BayesTree);
-    SymbolicBayesTree sbt(*sbn);
-    gttoc(symbolic_BayesTree);
-
-    // distribute factors
-    gttic(distributeFactors);
-    this->root_ = distributeFactors(fg, sbt.root());
-    gttoc(distributeFactors);
+    // Transfer remaining factors from elimination tree
+    remainingFactors_ = eliminationTree.remainingFactors();
   }
 
   /* ************************************************************************* */
-  template <class FG, class BTCLIQUE>
-  JunctionTree<FG,BTCLIQUE>::JunctionTree(const FG& fg) {
-    gttic(VariableIndex);
-    VariableIndex varIndex(fg);
-    gttoc(VariableIndex);
-    construct(fg, varIndex);
+  template<class BAYESTREE, class GRAPH>
+  JunctionTreeUnordered<BAYESTREE,GRAPH>::JunctionTreeUnordered(const This& other)
+  {
+
   }
 
   /* ************************************************************************* */
-  template <class FG, class BTCLIQUE>
-  JunctionTree<FG,BTCLIQUE>::JunctionTree(const FG& fg, const VariableIndex& variableIndex) {
-    construct(fg, variableIndex);
+  template<class BAYESTREE, class GRAPH>
+  JunctionTreeUnordered<BAYESTREE,GRAPH>& JunctionTreeUnordered<BAYESREE,GRAPH>::operator=(const This& other)
+  {
+
   }
 
   /* ************************************************************************* */
-  template<class FG, class BTCLIQUE>
-  typename JunctionTree<FG,BTCLIQUE>::sharedClique JunctionTree<FG,BTCLIQUE>::distributeFactors(
-      const FG& fg, const SymbolicBayesTree::sharedClique& bayesClique) {
+  template<class BAYESTREE, class GRAPH>
+  std::pair<boost::shared_ptr<BAYESTREE>, boost::shared_ptr<GRAPH> >
+    JunctionTreeUnordered<BAYESTREE,GRAPH>::eliminate(const Eliminate& function) const
+  {
+    // Allocate result
+    boost::shared_ptr<BayesTreeType> result = boost::make_shared<BayesTreeType>();
 
-    // Build "target" index.  This is an index for each variable of the factors
-    // that involve this variable as their *lowest-ordered* variable.  For each
-    // factor, it is the lowest-ordered variable of that factor that pulls the
-    // factor into elimination, after which all of the information in the
-    // factor is contained in the eliminated factors that are passed up the
-    // tree as elimination continues.
+    // Run tree elimination algorithm
+    std::vector<sharedFactor> remainingFactors = inference::EliminateTree(result, *this, function);
 
-    // Two stages - first build an array of the lowest-ordered variable in each
-    // factor and find the last variable to be eliminated.
-    std::vector<Index> lowestOrdered(fg.size(), std::numeric_limits<Index>::max());
-    Index maxVar = 0;
-    for(size_t i=0; i<fg.size(); ++i)
-      if(fg[i]) {
-        typename FG::FactorType::const_iterator min = std::min_element(fg[i]->begin(), fg[i]->end());
-        if(min != fg[i]->end()) {
-          lowestOrdered[i] = *min;
-          maxVar = std::max(maxVar, *min);
-        }
-      }
+    // Add remaining factors that were not involved with eliminated variables
+    boost::shared_ptr<FactorGraphType> allRemainingFactors = boost::make_shared<FactorGraphType>();
+    allRemainingFactors->push_back(remainingFactors_.begin(), remainingFactors_.end());
+    allRemainingFactors->push_back(remainingFactors.begin(), remainingFactors.end());
 
-    // Now add each factor to the list corresponding to its lowest-ordered
-    // variable.
-    std::vector<FastList<size_t> > targets(maxVar+1);
-    for(size_t i=0; i<lowestOrdered.size(); ++i)
-      if(lowestOrdered[i] != std::numeric_limits<Index>::max())
-        targets[lowestOrdered[i]].push_back(i);
-
-    // Now call the recursive distributeFactors
-    return distributeFactors(fg, targets, bayesClique);
-  }
-
-  /* ************************************************************************* */
-  template<class FG, class BTCLIQUE>
-  typename JunctionTree<FG,BTCLIQUE>::sharedClique JunctionTree<FG,BTCLIQUE>::distributeFactors(const FG& fg,
-      const std::vector<FastList<size_t> >& targets,
-      const SymbolicBayesTree::sharedClique& bayesClique) {
-
-    if(bayesClique) {
-      // create a new clique in the junction tree
-      sharedClique clique(new Clique((*bayesClique)->beginFrontals(), (*bayesClique)->endFrontals(),
-          (*bayesClique)->beginParents(), (*bayesClique)->endParents()));
-
-      // count the factors for this cluster to pre-allocate space
-      {
-        size_t nFactors = 0;
-        BOOST_FOREACH(const Index frontal, clique->frontal) {
-          // There may be less variables in "targets" than there really are if
-          // some of the highest-numbered variables do not pull in any factors.
-          if(frontal < targets.size())
-            nFactors += targets[frontal].size(); }
-        clique->reserve(nFactors);
-      }
-      // add the factors to this cluster
-      BOOST_FOREACH(const Index frontal, clique->frontal) {
-        if(frontal < targets.size()) {
-          BOOST_FOREACH(const size_t factorI, targets[frontal]) {
-            clique->push_back(fg[factorI]); } } }
-
-      // recursively call the children
-      BOOST_FOREACH(const typename SymbolicBayesTree::sharedClique bayesChild, bayesClique->children()) {
-        sharedClique child = distributeFactors(fg, targets, bayesChild);
-        clique->addChild(child);
-        child->parent() = clique;
-      }
-      return clique;
-    } else
-      return sharedClique();
-  }
-
-  /* ************************************************************************* */
-  template<class FG, class BTCLIQUE>
-  std::pair<typename JunctionTree<FG,BTCLIQUE>::BTClique::shared_ptr,
-      typename FG::sharedFactor> JunctionTree<FG,BTCLIQUE>::eliminateOneClique(
-      typename FG::Eliminate function,
-      const boost::shared_ptr<const Clique>& current) const {
-
-    FG fg; // factor graph will be assembled from local factors and marginalized children
-    fg.reserve(current->size() + current->children().size());
-    fg.push_back(*current); // add the local factors
-
-    // receive the factors from the child and its clique point
-    std::list<typename BTClique::shared_ptr> children;
-    BOOST_FOREACH(const boost::shared_ptr<const Clique>& child, current->children()) {
-      std::pair<typename BTClique::shared_ptr, typename FG::sharedFactor> tree_factor(
-          eliminateOneClique(function, child));
-      children.push_back(tree_factor.first);
-      fg.push_back(tree_factor.second);
-    }
-
-    // eliminate the combined factors
-    // warning: fg is being eliminated in-place and will contain marginal afterwards
-
-    // Now that we know which factors and variables, and where variables
-    // come from and go to, create and eliminate the new joint factor.
-    gttic(CombineAndEliminate);
-    typename FG::EliminationResult eliminated(function(fg,
-        current->frontal.size()));
-    gttoc(CombineAndEliminate);
-
-    assert(std::equal(eliminated.second->begin(), eliminated.second->end(), current->separator.begin()));
-
-    gttic(Update_tree);
-    // create a new clique corresponding the combined factors
-    typename BTClique::shared_ptr new_clique(BTClique::Create(eliminated));
-    new_clique->children_ = children;
-
-    BOOST_FOREACH(typename BTClique::shared_ptr& childRoot, children) {
-      childRoot->parent_ = new_clique;
-    }
-    gttoc(Update_tree);
-
-    return std::make_pair(new_clique, eliminated.second);
-  }
-
-  /* ************************************************************************* */
-  template<class FG, class BTCLIQUE>
-  typename BTCLIQUE::shared_ptr JunctionTree<FG,BTCLIQUE>::eliminate(
-      typename FG::Eliminate function) const {
-    if (this->root()) {
-      gttic(JT_eliminate);
-      std::pair<typename BTClique::shared_ptr, typename FG::sharedFactor> ret =
-          this->eliminateOneClique(function, this->root());
-      if (ret.second->size() != 0) throw std::runtime_error(
-          "JuntionTree::eliminate: elimination failed because of factors left over!");
-      gttoc(JT_eliminate);
-      return ret.first;
-    } else
-      return typename BTClique::shared_ptr();
+    // Return result
+    return std::make_pair(result, allRemainingFactors);
   }
 
 } //namespace gtsam
