@@ -20,6 +20,7 @@
 
 #include <gtsam/base/types.h>
 #include <gtsam/symbolic/SymbolicFactorGraphUnordered.h>
+#include <gtsam/symbolic/SymbolicConditionalUnordered.h>
 
 namespace gtsam {
 
@@ -29,6 +30,9 @@ namespace gtsam {
   class SymbolicBayesNetUnordered: public SymbolicFactorGraphUnordered {
 
   public:
+
+    typedef SymbolicFactorGraphUnordered Base;
+    typedef SymbolicConditionalUnordered ConditionalType;
 
     /// @name Standard Constructors
     /// @{

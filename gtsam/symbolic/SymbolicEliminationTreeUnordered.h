@@ -16,9 +16,9 @@
  * @author Richard Roberts
  */
 
-#include <gtsam/inference/EliminationTreeUnordered.h>
 #include <gtsam/symbolic/SymbolicBayesNetUnordered.h>
 #include <gtsam/symbolic/SymbolicFactorGraphUnordered.h>
+#include <gtsam/inference/EliminationTreeUnordered.h>
 
 namespace gtsam {
 
@@ -56,6 +56,13 @@ namespace gtsam {
     /** Assignment operator - makes a deep copy of the tree structure, but only pointers to factors are
      *  copied, factors are not cloned. */
     This& operator=(const This& other) { (void) Base::operator=(other); return *this; }
+
+  private:
+
+    /// Private default constructor
+    SymbolicEliminationTreeUnordered() {}
+
+    friend class ::EliminationTreeUnorderedTester;
 
   };
 

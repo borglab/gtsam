@@ -27,7 +27,7 @@
 #include <gtsam/geometry/Pose2.h>
 
 // We will use simple integer Keys to refer to the robot poses.
-#include <gtsam/nonlinear/Key.h>
+#include <gtsam/inference/Key.h>
 
 // As in OdometryExample.cpp, we use a BetweenFactor to model odometry measurements.
 #include <gtsam/slam/BetweenFactor.h>

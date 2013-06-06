@@ -21,7 +21,7 @@
 #include <gtsam/navigation/InertialNavFactor_GlobalVelocity.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/nonlinear/Key.h>
+#include <gtsam/inference/Key.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/LieVector.h>
 

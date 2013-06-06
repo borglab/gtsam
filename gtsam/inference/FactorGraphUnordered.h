@@ -22,7 +22,6 @@
 #pragma once
 
 #include <boost/serialization/nvp.hpp>
-#include <boost/function.hpp>
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Key.h>
@@ -48,12 +47,6 @@ namespace gtsam {
     typedef typename std::vector<sharedFactor>::iterator iterator;
     typedef typename std::vector<sharedFactor>::const_iterator const_iterator;
 
-    /** typedef for elimination result */
-    typedef std::pair<sharedConditional, sharedFactor> EliminationResult;
-
-    /** typedef for an eliminate subroutine */
-    typedef boost::function<EliminationResult(const This&, size_t)> Eliminate;
-
   protected:
 
     /** concept check, makes sure FACTOR defines print and equals */
@@ -69,6 +62,10 @@ namespace gtsam {
 
     /** Default constructor */
     FactorGraphUnordered() {}
+
+    /** Constructor from iterator over factors */
+    template<typename ITERATOR>
+    FactorGraphUnordered(ITERATOR firstFactor, ITERATOR lastFactor) { push_back(firstFactor, lastFactor); }
 
     /// @}
     /// @name Advanced Constructors

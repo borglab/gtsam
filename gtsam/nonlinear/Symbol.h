@@ -18,8 +18,9 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/Key.h>
 #include <boost/serialization/nvp.hpp>
+
+#include <gtsam/inference/Key.h>
 
 namespace gtsam {
 

@@ -48,7 +48,7 @@ namespace gtsam {
  * during symbolic elimination.  GaussianFactor and NonlinearFactor are virtual.
  * \nosubgrouping
  */
-class FactorUnordered {
+class GTSAM_EXPORT FactorUnordered {
 
 public:
 
@@ -108,7 +108,9 @@ public:
 
   /** Construct n-way factor from iterator over keys. */
   template<typename ITERATOR> static FactorUnordered FromIterator(ITERATOR first, ITERATOR last) {
-    FactorUnordered result; result.keys_.assign(first, last); }
+    FactorUnordered result;
+    result.keys_.assign(first, last);
+    return result; }
   
   /** Construct n-way factor from container of keys. */
   template<class CONTAINER>

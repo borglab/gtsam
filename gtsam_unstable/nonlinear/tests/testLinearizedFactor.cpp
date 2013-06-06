@@ -17,12 +17,12 @@
  */
 
 #include <gtsam_unstable/nonlinear/LinearizedFactor.h>
-#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Point3.h>
+#include <gtsam/inference/Key.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/nonlinear/Key.h>
-#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/slam/BetweenFactor.h>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace gtsam;

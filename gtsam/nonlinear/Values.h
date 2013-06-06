@@ -24,12 +24,6 @@
 
 #pragma once
 
-#include <gtsam/base/Value.h>
-#include <gtsam/base/FastMap.h>
-#include <gtsam/linear/VectorValues.h>
-#include <gtsam/nonlinear/Key.h>
-#include <gtsam/nonlinear/Ordering.h>
-
 #include <boost/pool/pool_alloc.hpp>
 #include <boost/ptr_container/ptr_map.hpp>
 #include <boost/iterator/transform_iterator.hpp>
@@ -48,6 +42,12 @@
 
 #include <string>
 #include <utility>
+
+#include <gtsam/base/Value.h>
+#include <gtsam/base/FastMap.h>
+#include <gtsam/linear/VectorValues.h>
+#include <gtsam/inference/Key.h>
+#include <gtsam/nonlinear/Ordering.h>
 
 namespace gtsam {
 

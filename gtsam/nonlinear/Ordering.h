@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/Key.h>
+#include <gtsam/inference/Key.h>
 #include <gtsam/inference/inference.h>
 #include <gtsam/base/FastMap.h>
 

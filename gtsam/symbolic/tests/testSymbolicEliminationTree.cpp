@@ -17,6 +17,9 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+
+#include <boost/assign/std/vector.hpp>
+
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/symbolic/SymbolicEliminationTreeUnordered.h>
 
@@ -28,45 +31,54 @@ public:
   // build hardcoded tree
   static SymbolicEliminationTreeUnordered buildHardcodedTree(const SymbolicFactorGraphUnordered& fg) {
 
-    SymbolicEliminationTreeUnordered::sharedNode leaf0(new SymbolicEliminationTree);
-    leaf0->add(fg[0]);
-    leaf0->add(fg[1]);
+    SymbolicEliminationTreeUnordered::sharedNode leaf0(new SymbolicEliminationTreeUnordered::Node);
+    leaf0->key = 0;
+    leaf0->factors.push_back(fg[0]);
+    leaf0->factors.push_back(fg[1]);
 
-    SymbolicEliminationTreeUnordered::sharedNode node1(new SymbolicEliminationTree(1));
-    node1->add(fg[2]);
-    node1->add(leaf0);
+    SymbolicEliminationTreeUnordered::sharedNode node1(new SymbolicEliminationTreeUnordered::Node);
+    node1->key = 1;
+    node1->factors.push_back(fg[2]);
+    node1->subTrees.push_back(leaf0);
 
-    SymbolicEliminationTreeUnordered::sharedNode node2(new SymbolicEliminationTree(2));
-    node2->add(fg[3]);
-    node2->add(node1);
+    SymbolicEliminationTreeUnordered::sharedNode node2(new SymbolicEliminationTreeUnordered::Node);
+    node2->key = 2;
+    node2->factors.push_back(fg[3]);
+    node2->subTrees.push_back(node1);
 
-    SymbolicEliminationTreeUnordered::sharedNode leaf3(new SymbolicEliminationTree(3));
-    leaf3->add(fg[4]);
+    SymbolicEliminationTreeUnordered::sharedNode leaf3(new SymbolicEliminationTreeUnordered::Node);
+    leaf3->key = 3;
+    leaf3->factors.push_back(fg[4]);
 
-    SymbolicEliminationTreeUnordered::sharedNode etree(new SymbolicEliminationTree(4));
-    etree->add(leaf3);
-    etree->add(node2);
+    SymbolicEliminationTreeUnordered::sharedNode root(new SymbolicEliminationTreeUnordered::Node);
+    root->key = 4;
+    root->subTrees.push_back(leaf3);
+    root->subTrees.push_back(node2);
 
-    return etree;
+    SymbolicEliminationTreeUnordered tree;
+    tree.roots_.push_back(root);
+    return tree;
   }
 };
 
 TEST(EliminationTree, Create)
 {
   // create example factor graph
-  SymbolicFactorGraph fg;
+  SymbolicFactorGraphUnordered fg;
   fg.push_factor(0, 1);
   fg.push_factor(0, 2);
   fg.push_factor(1, 4);
   fg.push_factor(2, 4);
   fg.push_factor(3, 4);
 
-  SymbolicEliminationTree::shared_ptr expected = EliminationTreeTester::buildHardcodedTree(fg);
+  SymbolicEliminationTreeUnordered expected = EliminationTreeUnorderedTester::buildHardcodedTree(fg);
 
   // Build from factor graph
-  SymbolicEliminationTree::shared_ptr actual = SymbolicEliminationTree::Create(fg);
+  vector<size_t> order;
+  order += 0,1,2,3,4;
+  SymbolicEliminationTreeUnordered actual(fg, order);
 
-  CHECK(assert_equal(*expected,*actual));
+  CHECK(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
@@ -74,18 +86,18 @@ TEST(EliminationTree, Create)
 // graph: f(0,1) f(0,2) f(1,4) f(2,4) f(3,4)
 /* ************************************************************************* */
 
-TEST(EliminationTree, eliminate )
+TEST_UNSAFE(EliminationTree, eliminate )
 {
   // create expected Chordal bayes Net
-  SymbolicBayesNet expected;
-  expected.push_front(boost::make_shared<IndexConditional>(4));
-  expected.push_front(boost::make_shared<IndexConditional>(3,4));
-  expected.push_front(boost::make_shared<IndexConditional>(2,4));
-  expected.push_front(boost::make_shared<IndexConditional>(1,2,4));
-  expected.push_front(boost::make_shared<IndexConditional>(0,1,2));
+  SymbolicBayesNetUnordered expected;
+  expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(4));
+  expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(3,4));
+  expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(2,4));
+  expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(1,2,4));
+  expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(0,1,2));
 
   // Create factor graph
-  SymbolicFactorGraph fg;
+  SymbolicFactorGraphUnordered fg;
   fg.push_factor(0, 1);
   fg.push_factor(0, 2);
   fg.push_factor(1, 4);
@@ -93,21 +105,23 @@ TEST(EliminationTree, eliminate )
   fg.push_factor(3, 4);
 
   // eliminate
-  SymbolicBayesNet actual = *SymbolicSequentialSolver(fg).eliminate();
+  vector<size_t> order;
+  order += 0,1,2,3,4;
+  SymbolicBayesNetUnordered actual = *SymbolicEliminationTreeUnordered(fg,order).eliminate(EliminateSymbolicUnordered).first;
 
   CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
-TEST(EliminationTree, disconnected_graph) {
-  SymbolicFactorGraph fg;
-  fg.push_factor(0, 1);
-  fg.push_factor(0, 2);
-  fg.push_factor(1, 2);
-  fg.push_factor(3, 4);
-
-  CHECK_EXCEPTION(SymbolicEliminationTree::Create(fg), DisconnectedGraphException);
-}
+//TEST(EliminationTree, disconnected_graph) {
+//  SymbolicFactorGraph fg;
+//  fg.push_factor(0, 1);
+//  fg.push_factor(0, 2);
+//  fg.push_factor(1, 2);
+//  fg.push_factor(3, 4);
+//
+//  CHECK_EXCEPTION(SymbolicEliminationTree::Create(fg), DisconnectedGraphException);
+//}
 
 /* ************************************************************************* */
 int main() {

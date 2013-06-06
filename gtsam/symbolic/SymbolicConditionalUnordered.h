@@ -32,13 +32,13 @@ namespace gtsam {
    * class for conditionals.
    * \nosubgrouping
    */
-  class SymbolicConditionalUnordered : public SymbolicFactorUnordered, public ConditionalUnordered<SymbolicFactorUnordered> {
+  class GTSAM_EXPORT SymbolicConditionalUnordered : public SymbolicFactorUnordered, public ConditionalUnordered<SymbolicFactorUnordered,SymbolicConditionalUnordered> {
 
   public:
 
     typedef SymbolicConditionalUnordered This; /// Typedef to this class
     typedef SymbolicFactorUnordered BaseFactor; /// Typedef to the factor base class
-    typedef ConditionalUnordered<SymbolicFactorUnordered> BaseConditional; /// Typedef to the conditional base class
+    typedef ConditionalUnordered<SymbolicFactorUnordered,SymbolicConditionalUnordered> BaseConditional; /// Typedef to the conditional base class
     typedef boost::shared_ptr<This> shared_ptr; /// Boost shared_ptr to this class
     typedef BaseFactor::iterator iterator; /// iterator to keys
     typedef BaseFactor::const_iterator const_iterator; /// const_iterator to keys
@@ -66,18 +66,14 @@ namespace gtsam {
     static SymbolicConditionalUnordered FromIterator(ITERATOR firstKey, ITERATOR lastKey, size_t nrFrontals)
     {
       SymbolicConditionalUnordered result;
-      result = BaseFactor::FromIterator(firstKey, lastKey);
+      (BaseFactor&)result = BaseFactor::FromIterator(firstKey, lastKey);
       result.nrFrontals_ = nrFrontals;
       return result; }
 
     /** Named constructor from an arbitrary number of keys and frontals */
     template<class CONTAINER>
-    static SymbolicConditionalUnordered FromKeys(const CONTAINER& keys, size_t nrFrontals)
-    {
-      SymbolicConditionalUnordered result;
-      result = BaseFactor::FromKeys(keys);
-      result.nrFrontals_ = nrFrontals;
-      return result; }
+    static SymbolicConditionalUnordered FromKeys(const CONTAINER& keys, size_t nrFrontals) {
+      return FromIterator(keys.begin(), keys.end(), nrFrontals); }
 
     /// @}
 

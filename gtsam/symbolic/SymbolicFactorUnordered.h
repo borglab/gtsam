@@ -17,6 +17,9 @@
 
 #pragma once
 
+#include <utility>
+#include <boost/shared_ptr.hpp>
+
 #include <gtsam/inference/FactorUnordered.h>
 #include <gtsam/inference/Key.h>
 
@@ -33,7 +36,7 @@ namespace gtsam {
    * It derives from Factor with a key type of Key, an unsigned integer.
    * \nosubgrouping
    */
-  class SymbolicFactorUnordered: public FactorUnordered {
+  class GTSAM_EXPORT SymbolicFactorUnordered: public FactorUnordered {
 
   public:
 
@@ -46,12 +49,6 @@ namespace gtsam {
 
     /// @name Standard Interface
     /// @{
-
-    /** Virtual destructor */
-    ~SymbolicFactorUnordered() {}
-
-    /** Copy constructor */
-    SymbolicFactorUnordered(const This& f) : Base(f) {}
 
     /** Default constructor for I/O */
     SymbolicFactorUnordered() {}
@@ -83,14 +80,14 @@ namespace gtsam {
     template<typename KEYITERATOR>
     static SymbolicFactorUnordered FromIterator(KEYITERATOR beginKey, KEYITERATOR endKey) {
       SymbolicFactorUnordered result;
-      result = Base::FromIterator(beginKey, endKey);
+      (Base&)result = Base::FromIterator(beginKey, endKey);
       return result; }
 
     /** Constructor from a collection of keys */
     template<class CONTAINER>
     static SymbolicFactorUnordered FromKeys(const CONTAINER& keys) {
       SymbolicFactorUnordered result;
-      result = Base::FromKeys(keys);
+      (Base&)result = Base::FromKeys(keys);
       return result; }
 
     /// @}
@@ -105,7 +102,7 @@ namespace gtsam {
   }; // IndexFactor
 
 
-  std::pair<boost::shared_ptr<SymbolicConditionalUnordered>, boost::shared_ptr<SymbolicFactorUnordered> >
-    EliminateSymbolicUnordered(const vector<SymbolicFactorUnordered::shared_ptr>& factors, const vector<Key>& keys);
+  GTSAM_EXPORT std::pair<boost::shared_ptr<SymbolicConditionalUnordered>, boost::shared_ptr<SymbolicFactorUnordered> >
+    EliminateSymbolicUnordered(const std::vector<SymbolicFactorUnordered::shared_ptr>& factors, const std::vector<Key>& keys);
 
 }

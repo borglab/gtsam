@@ -27,9 +27,12 @@ namespace gtsam {
   /** Symbolic Factor Graph
    *  \nosubgrouping
    */
-  class SymbolicFactorGraphUnordered: public FactorGraphUnordered<SymbolicFactorUnordered> {
+  class GTSAM_EXPORT SymbolicFactorGraphUnordered: public FactorGraphUnordered<SymbolicFactorUnordered> {
 
   public:
+
+    typedef SymbolicFactorGraphUnordered This;
+    typedef FactorGraphUnordered<SymbolicFactorUnordered> Base;
 
     /// @name Standard Constructors
     /// @{
@@ -37,21 +40,25 @@ namespace gtsam {
     /** Construct empty factor graph */
     SymbolicFactorGraphUnordered() {}
 
+    /** Constructor from iterator over factors */
+    template<typename ITERATOR>
+    SymbolicFactorGraphUnordered(ITERATOR firstFactor, ITERATOR lastFactor) : Base(firstFactor, lastFactor) {}
+
     /// @}
     /// @name Standard Interface
     /// @{
 
     /** Push back unary factor */
-    GTSAM_EXPORT void push_factor(Key key);
+    void push_factor(Key key);
 
     /** Push back binary factor */
-    GTSAM_EXPORT void push_factor(Key key1, Key key2);
+    void push_factor(Key key1, Key key2);
 
     /** Push back ternary factor */
-    GTSAM_EXPORT void push_factor(Key key1, Key key2, Key key3);
+    void push_factor(Key key1, Key key2, Key key3);
 
     /** Push back 4-way factor */
-    GTSAM_EXPORT void push_factor(Key key1, Key key2, Key key3, Key key4);
+    void push_factor(Key key1, Key key2, Key key3, Key key4);
 
     /// @}
   };

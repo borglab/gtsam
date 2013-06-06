@@ -19,12 +19,14 @@
 
 #include <utility>
 #include <boost/shared_ptr.hpp>
+#include <boost/function.hpp>
 
 #include <gtsam/base/FastList.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Key.h>
 
 class EliminationTreeUnorderedTester; // for unit tests, see testEliminationTree
+namespace { template<class ELIMINATIONTREE> struct EliminationNode; }
 
 namespace gtsam {
 
@@ -59,28 +61,29 @@ namespace gtsam {
     typedef typename boost::shared_ptr<FactorType> sharedFactor;  ///< Shared pointer to a factor
     typedef BAYESNET BayesNetType; ///< The BayesNet corresponding to FACTOR
     typedef typename BayesNetType::ConditionalType ConditionalType; ///< The type of conditionals
-    typedef typename GRAPH::Eliminate Eliminate; ///< Typedef for an eliminate subroutine
+    typedef typename boost::shared_ptr<ConditionalType> sharedConditional; ///< Shared pointer to a conditional
+    typedef boost::function<std::pair<sharedConditional,sharedFactor>(std::vector<sharedFactor>, std::vector<Key>)>
+      Eliminate; ///< Typedef for an eliminate subroutine
 
   private:
 
     class Node {
     public:
-      typedef boost::shared_ptr<Node> shared_ptr;
       typedef FastList<sharedFactor> Factors;
-      typedef FastList<shared_ptr> SubTrees;
+      typedef FastList<boost::shared_ptr<Node> > SubTrees;
 
       Key key; ///< key associated with root
       Factors factors; ///< factors associated with root
       SubTrees subTrees; ///< sub-trees
     };
 
-    typedef Node::shared_ptr sharedNode; ///< Shared pointer to Node
+    typedef boost::shared_ptr<Node> sharedNode; ///< Shared pointer to Node
 
     /** concept check */
     GTSAM_CONCEPT_TESTABLE_TYPE(FactorType);
 
     FastList<sharedNode> roots_;
-    FactorGraphType remainingFactors_;
+    std::vector<sharedFactor> remainingFactors_;
 
   public:
 
@@ -107,11 +110,11 @@ namespace gtsam {
 
     /** TODO: Copy constructor - makes a deep copy of the tree structure, but only pointers to factors are
      *  copied, factors are not cloned. */
-    EliminationTreeUnordered(const This& other) { throw std::runtime_error("Not implemented"); }
+    EliminationTreeUnordered(const This& other) { *this = other; }
 
     /** TODO: Assignment operator - makes a deep copy of the tree structure, but only pointers to factors are
      *  copied, factors are not cloned. */
-    This& operator=(const This& other) { throw std::runtime_error("Not implemented"); }
+    This& operator=(const This& other);
 
     /// @}
     /// @name Standard Interface
@@ -138,13 +141,18 @@ namespace gtsam {
 
     /// @}
 
-  private:
+  protected:
+    /// Protected default constructor
+    EliminationTreeUnordered() {}
 
+  private:
     /// Allow access to constructor and add methods for testing purposes
     friend class ::EliminationTreeUnorderedTester;
+    
+    friend struct EliminationNode<This>;
 
   };
 
 }
 
-#include <gtsam/inference/EliminationTree-inl.h>
+#include <gtsam/inference/EliminationTreeUnordered-inl.h>

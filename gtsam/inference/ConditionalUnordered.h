@@ -19,6 +19,7 @@
 #pragma once
 
 #include <boost/range.hpp>
+#include <boost/foreach.hpp>
 #include <iostream>
 
 #include <gtsam/inference/Key.h>
@@ -35,7 +36,7 @@ namespace gtsam {
    * IndexConditional and GaussianConditional for examples.
    * \nosubgrouping
    */
-  template<class FACTOR>
+  template<class FACTOR, class DERIVEDCONDITIONAL>
   class ConditionalUnordered {
 
   protected:
@@ -51,7 +52,7 @@ namespace gtsam {
 
   public:
 
-    typedef ConditionalUnordered<FACTOR> This;
+    typedef ConditionalUnordered<FACTOR,DERIVEDCONDITIONAL> This;
 
     /** View of the frontal keys (call frontals()) */
     typedef boost::iterator_range<const_iterator> Frontals;
@@ -86,12 +87,12 @@ namespace gtsam {
     size_t nrFrontals() const { return nrFrontals_; }
 
     /** return the number of parents */
-    size_t nrParents() const { return asDerived.size() - nrFrontals_; }
+    size_t nrParents() const { return asFactor().size() - nrFrontals_; }
 
     /** Convenience function to get the first frontal key */
     Key firstFrontalKey() const {
       if(nrFrontals_ > 0)
-        return asDerived().front();
+        return asFactor().front();
       else
         throw std::invalid_argument("Requested Conditional::firstFrontalKey from a conditional with zero frontal keys");
     }
@@ -103,16 +104,16 @@ namespace gtsam {
     Parents parents() const { return boost::make_iterator_range(beginParents(), endParents()); }
 
     /** Iterator pointing to first frontal key. */
-    const_iterator beginFrontals() const { return asDerived().begin(); }
+    const_iterator beginFrontals() const { return asFactor().begin(); }
     
     /** Iterator pointing past the last frontal key. */
-    const_iterator endFrontals() const { return asDerived().begin() + nrFrontals_; }
+    const_iterator endFrontals() const { return asFactor().begin() + nrFrontals_; }
     
     /** Iterator pointing to the first parent key. */
     const_iterator beginParents() const { return endFrontals(); }
 
     /** Iterator pointing past the last parent key. */
-    const_iterator endParents() const { return asDerived().end(); }
+    const_iterator endParents() const { return asFactor().end(); }
 
     /// @}
     /// @name Advanced Interface
@@ -120,24 +121,24 @@ namespace gtsam {
 
     /** Mutable iterators and accessors */
     iterator beginFrontals() {
-      return FactorType::begin();
+      return asFactor().begin();
     } ///<TODO: comment
     iterator endFrontals() {
-      return FactorType::begin() + nrFrontals_;
+      return asFactor().begin() + nrFrontals_;
     } ///<TODO: comment
     iterator beginParents() {
-      return FactorType::begin() + nrFrontals_;
+      return asFactor().begin() + nrFrontals_;
     } ///<TODO: comment
     iterator endParents() {
-      return FactorType::end();
+      return asFactor().end();
     } ///<TODO: comment
 
   private:
-    // Cast to derived type (non-const)
-    FACTOR& asDerived() { return static_cast<FACTOR&>(*this); }
+    // Cast to factor type (non-const) (casts down to derived conditional type, then up to factor type)
+    FACTOR& asFactor() { return static_cast<FACTOR&>(static_cast<DERIVEDCONDITIONAL&>(*this)); }
 
-    // Cast to derived type (const)
-    const FACTOR& asDerived() const { return static_cast<const FACTOR&>(*this); }
+    // Cast to derived type (const) (casts down to derived conditional type, then up to factor type)
+    const FACTOR& asFactor() const { return static_cast<const FACTOR&>(static_cast<const DERIVEDCONDITIONAL&>(*this)); }
 
     /** Serialization function */
     friend class boost::serialization::access;
@@ -152,8 +153,8 @@ namespace gtsam {
   };
 
   /* ************************************************************************* */
-  template<class FACTOR>
-  void ConditionalUnordered<FACTOR>::print(const std::string& s, const KeyFormatter& formatter) const {
+  template<class FACTOR, class DERIVEDFACTOR>
+  void ConditionalUnordered<FACTOR,DERIVEDFACTOR>::print(const std::string& s, const KeyFormatter& formatter) const {
     std::cout << s << " P(";
     BOOST_FOREACH(Key key, frontals())
       std::cout << " " << formatter(key);

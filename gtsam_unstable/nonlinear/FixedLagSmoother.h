@@ -21,9 +21,9 @@
 #pragma once
 
 #include <gtsam_unstable/base/dllexport.h>
+#include <gtsam/inference/Key.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/nonlinear/Key.h>
 #include <map>
 
 namespace gtsam {

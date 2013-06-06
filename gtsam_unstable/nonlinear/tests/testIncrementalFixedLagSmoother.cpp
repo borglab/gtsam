@@ -19,17 +19,17 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h>
+#include <gtsam/base/debug.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/inference/Key.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Symbol.h>
-#include <gtsam/nonlinear/Key.h>
-#include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/linear/GaussianSequentialSolver.h>
-#include <gtsam/geometry/Point2.h>
-#include <gtsam/base/debug.h>
 
 using namespace std;
 using namespace gtsam;

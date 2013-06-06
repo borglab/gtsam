@@ -34,7 +34,7 @@ void VariableIndexUnordered::augment(const FG& factors)
   for(size_t i = 0; i < factors.size(); ++i) {
     if(factors[i]) {
       const size_t globalI = originalNFactors + i;
-      BOOST_FOREACH(const Key key, factors[i]) {
+      BOOST_FOREACH(const Key key, *factors[i]) {
         index_[key].push_back(globalI);
         ++ nEntries_;
       }

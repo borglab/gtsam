@@ -22,7 +22,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/foreach.hpp>
 
-#include <gtsam/nonlinear/Key.h>
+#include <gtsam/inference/Key.h>
 #include <gtsam/nonlinear/LabeledSymbol.h>
 
 namespace gtsam {

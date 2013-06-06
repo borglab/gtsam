@@ -19,12 +19,15 @@
 
 // \callgraph
 
+#include <boost/foreach.hpp>
+#include <iostream>
+
 #include <gtsam/inference/FactorUnordered.h>
 
 namespace gtsam {
 
   /* ************************************************************************* */
-  void FactorUnordered::print(const std::string& s = "Factor", const KeyFormatter& formatter = DefaultKeyFormatter) const
+  void FactorUnordered::print(const std::string& s, const KeyFormatter& formatter) const
   {
     return this->printKeys(s, formatter);
   }
@@ -32,8 +35,13 @@ namespace gtsam {
   /* ************************************************************************* */
   void FactorUnordered::printKeys(const std::string& s, const KeyFormatter& formatter) const {
     std::cout << s << " ";
-    BOOST_FOREACH(KEY key, keys_) std::cout << " " << formatter(key);
+    BOOST_FOREACH(Key key, keys_) std::cout << " " << formatter(key);
     std::cout << std::endl;
+  }
+
+  /* ************************************************************************* */
+  bool FactorUnordered::equals(const This& other, double tol) const {
+    return keys_ == other.keys_;
   }
 
 }

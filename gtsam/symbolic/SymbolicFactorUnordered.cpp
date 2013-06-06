@@ -34,6 +34,12 @@ namespace gtsam {
     BOOST_FOREACH(const SymbolicFactorUnordered::shared_ptr& factor, factors) {
       allKeys.insert(factor->begin(), factor->end()); }
 
+    // Check keys
+    BOOST_FOREACH(Key key, keys) {
+      if(allKeys.find(key) == allKeys.end())
+        throw std::runtime_error("Requested to eliminate a key that is not in the factors");
+    }
+
     // Sort frontal keys
     FastSet<Key> frontals(keys);
     const size_t nFrontals = keys.size();

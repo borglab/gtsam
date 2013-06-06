@@ -4,11 +4,11 @@ install(FILES ${symbolic_headers} DESTINATION include/gtsam/symbolic)
 
 # Components to link tests in this subfolder against
 set(symbolic_local_libs
-   symbolic
    inference
    geometry
    base
    ccolamd
+   symbolic
 )
 
 # Files to exclude from compilation of tests and timing scripts

@@ -70,7 +70,7 @@ public:
    * of a factor graph.
    */
   template<class FG>
-  VariableIndexUnordered(const FG& factorGraph) { augment(factorGraph); }
+  VariableIndexUnordered(const FG& factorGraph) : nFactors_(0), nEntries_(0) { augment(factorGraph); }
 
   /// @}
   /// @name Standard Interface
