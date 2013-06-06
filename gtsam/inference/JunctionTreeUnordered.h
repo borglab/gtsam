@@ -71,9 +71,6 @@ namespace gtsam {
       Keys keys; ///< Frontal keys of this node
       Factors factors; ///< Factors associated with this node
       Children children; ///< sub-trees
-
-      sharedFactor eliminate(const boost::shared_ptr<BayesTreeType>& output,
-        const Eliminate& function, const std::vector<sharedFactor>& childrenFactors) const;
     };
 
     typedef boost::shared_ptr<Node> sharedNode; ///< Shared pointer to Node
@@ -83,17 +80,17 @@ namespace gtsam {
     /** concept check */
     GTSAM_CONCEPT_TESTABLE_TYPE(FactorType);
 
-    std::vector<sharedNode>& roots_;
+    std::vector<sharedNode> roots_;
     std::vector<sharedFactor> remainingFactors_;
 
-  public:
+  protected:
 
     /// @name Standard Constructors
     /// @{
 
     /** Build the junction tree from an elimination tree. */
     template<class ETREE>
-    JunctionTreeUnordered(const ETREE& eliminationTree);
+    static This FromEliminationTree(const ETREE& eliminationTree);
     
     /** Copy constructor - makes a deep copy of the tree structure, but only pointers to factors are
      *  copied, factors are not cloned. */
@@ -104,6 +101,8 @@ namespace gtsam {
     This& operator=(const This& other);
 
     /// @}
+
+  public:
 
     /// @name Standard Interface
     /// @{
@@ -128,6 +127,11 @@ namespace gtsam {
     const std::vector<sharedFactor>& remainingFactors() const { return remainingFactors_; }
 
     /// @}
+
+  private:
+
+    // Private default constructor (used in static construction methods)
+    JunctionTreeUnordered() {}
 
   };
 

@@ -21,8 +21,10 @@
 #pragma once
 
 #include <gtsam/inference/BayesTreeUnordered.h>
+#include <gtsam/base/treeTraversal-inst.h>
 
 #include <boost/foreach.hpp>
+#include <fstream>
 
 namespace gtsam {
 
@@ -31,16 +33,17 @@ namespace gtsam {
   typename BayesTreeUnordered<CLIQUE>::CliqueData
   BayesTreeUnordered<CLIQUE>::getCliqueData() const {
     CliqueData data;
-    getCliqueData(data, root_);
+    BOOST_FOREACH(const sharedClique& root, roots_)
+      getCliqueData(data, root);
     return data;
   }
 
   /* ************************************************************************* */
   template<class CLIQUE>
   void BayesTreeUnordered<CLIQUE>::getCliqueData(CliqueData& data, sharedClique clique) const {
-    data.conditionalSizes.push_back((*clique)->nrFrontals());
-    data.separatorSizes.push_back((*clique)->nrParents());
-    BOOST_FOREACH(sharedClique c, clique->children_) {
+    data.conditionalSizes.push_back(clique->conditional()->nrFrontals());
+    data.separatorSizes.push_back(clique->conditional()->nrParents());
+    BOOST_FOREACH(sharedClique c, clique->children) {
       getCliqueData(data, c);
     }
   }
@@ -48,16 +51,20 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class CLIQUE>
   size_t BayesTreeUnordered<CLIQUE>::numCachedSeparatorMarginals() const {
-    return (root_) ? root_->numCachedSeparatorMarginals() : 0;
+    size_t count = 0;
+    BOOST_FOREACH(const sharedClique& root, roots_)
+      count += root->numCachedSeparatorMarginals();
+    return count;
   }
 
   /* ************************************************************************* */
   template<class CLIQUE>
   void BayesTreeUnordered<CLIQUE>::saveGraph(const std::string &s, const KeyFormatter& keyFormatter) const {
-    if (!root_.get()) throw std::invalid_argument("the root of Bayes tree has not been initialized!");
+    if (roots_.empty()) throw std::invalid_argument("the root of Bayes tree has not been initialized!");
     std::ofstream of(s.c_str());
     of<< "digraph G{\n";
-    saveGraph(of, root_, keyFormatter);
+    BOOST_FOREACH(const sharedClique& root, roots_)
+      saveGraph(of, root, keyFormatter);
     of<<"}";
     of.close();
   }
@@ -77,7 +84,7 @@ namespace gtsam {
       parent += indexFormatter(index);
     }
 
-    if( clique != root_){
+    if(clique->parent()){
       parent += " : ";
       s << parentnum << "->" << num << "\n";
     }
@@ -91,7 +98,7 @@ namespace gtsam {
     s << parent;
     parentnum = num;
 
-    BOOST_FOREACH(sharedClique c, clique->children_) {
+    BOOST_FOREACH(sharedClique c, clique->children) {
       num++;
       saveGraph(s, c, indexFormatter, parentnum);
     }
@@ -152,27 +159,24 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class CLIQUE>
-  typename BayesTreeUnordered<CLIQUE>::sharedClique
-  BayesTreeUnordered<CLIQUE>::addClique(const sharedConditional& conditional, const sharedClique& parent_clique) {
-    sharedClique new_clique(new Clique(conditional));
-    addClique(new_clique, parent_clique);
-    return new_clique;
+  size_t BayesTreeUnordered<CLIQUE>::size() const {
+    size_t size = 0;
+    BOOST_FOREACH(const sharedClique& clique, roots_)
+      size += clique->treeSize();
+    return size;
   }
 
   /* ************************************************************************* */
   template<class CLIQUE>
   void BayesTreeUnordered<CLIQUE>::addClique(const sharedClique& clique, const sharedClique& parent_clique) {
-    nodes_.resize(std::max((*clique)->lastFrontalKey()+1, nodes_.size()));
-    BOOST_FOREACH(Index j, (*clique)->frontals())
+    BOOST_FOREACH(Index j, clique->conditional()->frontals())
       nodes_[j] = clique;
     if (parent_clique != NULL) {
       clique->parent_ = parent_clique;
-      parent_clique->children_.push_back(clique);
+      parent_clique->children.push_back(clique);
     } else {
-      assert(!root_);
-      root_ = clique;
+      roots_.push_back(clique);
     }
-    clique->assertInvariants();
   }
 
   /* ************************************************************************* */
@@ -181,13 +185,11 @@ namespace gtsam {
       const sharedConditional& conditional, std::list<sharedClique>& child_cliques)
   {
     sharedClique new_clique(new Clique(conditional));
-    nodes_.resize(std::max(conditional->lastFrontalKey()+1, nodes_.size()));
     BOOST_FOREACH(Index j, conditional->frontals())
       nodes_[j] = new_clique;
-    new_clique->children_ = child_cliques;
+    new_clique->children.assign(child_cliques.begin(), child_cliques.end());
     BOOST_FOREACH(sharedClique& child, child_cliques)
       child->parent_ = new_clique;
-    new_clique->assertInvariants();
     return new_clique;
   }
 
@@ -196,16 +198,16 @@ namespace gtsam {
   void BayesTreeUnordered<CLIQUE>::removeClique(sharedClique clique)
   {
     if (clique->isRoot())
-      root_.reset();
+      roots_.erase(std::find(roots_.begin(), roots_.end(), clique));
     else { // detach clique from parent
       sharedClique parent = clique->parent_.lock();
-      typename FastList<sharedClique>::iterator child = std::find(parent->children().begin(), parent->children().end(), clique);
-      assert(child != parent->children().end());
-      parent->children().erase(child);
+      typename std::vector<sharedClique>::iterator child = std::find(parent->children.begin(), parent->children.end(), clique);
+      assert(child != parent->children.end());
+      parent->children.erase(child);
     }
 
     // orphan my children
-    BOOST_FOREACH(sharedClique child, clique->children_)
+    BOOST_FOREACH(sharedClique child, clique->children)
       child->parent_ = typename Clique::weak_ptr();
 
     BOOST_FOREACH(Key j, clique->conditional()->frontals()) {
@@ -304,7 +306,9 @@ namespace gtsam {
   template<class CLIQUE>
   BayesTreeUnordered<CLIQUE>& BayesTreeUnordered<CLIQUE>::operator=(const This& other) {
     this->clear();
-    other.cloneTo(*this);
+    std::vector<sharedClique> clonedRoots = treeTraversal::CloneForest(other);
+    BOOST_FOREACH(const sharedClique& root, clonedRoots)
+      insertRoot(root);
     return *this;
   }
 
@@ -312,24 +316,25 @@ namespace gtsam {
   template<class CLIQUE>
   void BayesTreeUnordered<CLIQUE>::print(const std::string& s, const KeyFormatter& keyFormatter) const {
     std::cout << s << ": cliques: " << size() << ", variables: " << nodes_.size() << std::endl;
-    treeTraversal::PrintForest(*this, s, keyFormatter)
+    treeTraversal::PrintForest(*this, s, keyFormatter);
   }
 
   /* ************************************************************************* */
   // binary predicate to test equality of a pair for use in equals
   template<class CLIQUE>
   bool check_sharedCliques(
-      const typename BayesTreeUnordered<CLIQUE>::sharedClique& v1,
-      const typename BayesTreeUnordered<CLIQUE>::sharedClique& v2
+      const std::pair<Key, typename BayesTreeUnordered<CLIQUE>::sharedClique>& v1,
+      const std::pair<Key, typename BayesTreeUnordered<CLIQUE>::sharedClique>& v2
   ) {
-    return (!v1 && !v2) || (v1 && v2 && v1->equals(*v2));
+    return v1.first == v2.first &&
+      ((!v1.second && !v2.second) || (v1.second && v2.second && v1.second->equals(*v2.second)));
   }
 
   /* ************************************************************************* */
   template<class CLIQUE>
   bool BayesTreeUnordered<CLIQUE>::equals(const BayesTreeUnordered<CLIQUE>& other, double tol) const {
     return size()==other.size() &&
-      std::equal(nodes_.begin(), nodes_.end(), other.nodes_.begin(), &check_sharedCliques<CONDITIONAL,CLIQUE>);
+      std::equal(nodes_.begin(), nodes_.end(), other.nodes_.begin(), &check_sharedCliques<CLIQUE>);
   }
 
   /* ************************************************************************* */
@@ -348,31 +353,15 @@ namespace gtsam {
     BOOST_FOREACH(const Key& j, subtree->conditional()->frontals()) { nodes_[j] = subtree; }
     // Fill index for each child
     typedef typename BayesTreeUnordered<CLIQUE>::sharedClique sharedClique;
-    BOOST_FOREACH(const sharedClique& child, subtree->children_) {
+    BOOST_FOREACH(const sharedClique& child, subtree->children) {
       fillNodesIndex(child); }
   }
 
   /* ************************************************************************* */
   template<class CLIQUE>
-  void BayesTreeUnordered<CLIQUE>::insert(const sharedClique& subtree) {
-    if(subtree) {
-      // Find the parent clique of the new subtree.  By the running intersection
-      // property, those separator variables in the subtree that are ordered
-      // lower than the highest frontal variable of the subtree root will all
-      // appear in the separator of the subtree root.
-      if(subtree->conditional()->parents().empty()) {
-        assert(!root_);
-        root_ = subtree;
-      } else {
-        Key parentRepresentative = findParentClique(subtree->conditional()->parents());
-        sharedClique parent = (*this)[parentRepresentative];
-        parent->children_ += subtree;
-        subtree->parent_ = parent; // set new parent!
-      }
-
-      // Now fill in the nodes index
-      fillNodesIndex(subtree);
-    }
+  void BayesTreeUnordered<CLIQUE>::insertRoot(const sharedClique& subtree) {
+    roots_.push_back(subtree); // Add to roots
+    fillNodesIndex(subtree); // Populate nodes index
   }
 
   /* ************************************************************************* */
@@ -576,7 +565,15 @@ namespace gtsam {
   void BayesTreeUnordered<CLIQUE>::clear() {
     // Remove all nodes and clear the root pointer
     nodes_.clear();
-    root_.reset();
+    roots_.clear();
+  }
+
+  /* ************************************************************************* */
+  template<class CLIQUE>
+  void BayesTreeUnordered<CLIQUE>::deleteCachedShortcuts() {
+    BOOST_FOREACH(const sharedClique& root, roots_) {
+      root->deleteCachedShortcuts();
+    }
   }
 
   /* ************************************************************************* */
@@ -596,7 +593,8 @@ namespace gtsam {
       this->removePath(typename Clique::shared_ptr(clique->parent_.lock()), bn, orphans);
 
       // add children to list of orphans (splice also removed them from clique->children_)
-      orphans.splice(orphans.begin(), clique->children_);
+      orphans.insert(orphans.begin(), clique->children.begin(), clique->children.end());
+      clique->children.clear();
 
       bn.push_back(clique->conditional());
 
@@ -638,15 +636,16 @@ namespace gtsam {
 
     // Remove the first clique from its parents
     if(!subtree->isRoot())
-      subtree->parent()->children().remove(subtree);
+      subtree->parent()->children.erase(std::find(
+      subtree->parent()->children.begin(), subtree->parent()->children.end(), subtree));
     else
-      root_.reset();
+      roots_.erase(std::find(roots_.begin(), roots_.end(), subtree));
 
     // Add all subtree cliques and erase the children and parent of each
     for(typename Cliques::iterator clique = cliques.begin(); clique != cliques.end(); ++clique)
     {
       // Add children
-      BOOST_FOREACH(const sharedClique& child, (*clique)->children()) {
+      BOOST_FOREACH(const sharedClique& child, (*clique)->children) {
         cliques.push_back(child); }
 
       // Delete cached shortcuts
@@ -658,7 +657,7 @@ namespace gtsam {
 
       // Erase the parent and children pointers
       (*clique)->parent_.reset();
-      (*clique)->children_.clear();
+      (*clique)->children.clear();
     }
 
     return cliques;

@@ -60,7 +60,7 @@ namespace gtsam {
 
   public:
 
-    /// @name Standard Constructor
+    /// @name Standard Constructors
     /// @{
 
     /** Default constructor */

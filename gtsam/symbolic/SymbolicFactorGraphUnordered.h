@@ -24,9 +24,9 @@
 #include <gtsam/symbolic/SymbolicFactorUnordered.h>
 
 namespace gtsam { class SymbolicConditionalUnordered; }
-namespace gtsam { class SymbolicBayesNet; }
+namespace gtsam { class SymbolicBayesNetUnordered; }
 namespace gtsam { class SymbolicEliminationTreeUnordered; }
-namespace gtsam { class SymbolicBayesTree; }
+namespace gtsam { class SymbolicBayesTreeUnordered; }
 namespace gtsam { class SymbolicJunctionTreeUnordered; }
 
 namespace gtsam {
@@ -37,18 +37,16 @@ namespace gtsam {
   class GTSAM_EXPORT SymbolicFactorGraphUnordered:
     public FactorGraphUnordered<SymbolicFactorUnordered>,
     public EliminateableFactorGraph<
-    SymbolicFactorGraphUnordered, SymbolicFactorUnordered, SymbolicConditionalUnordered,
-    SymbolicBayesNet, SymbolicEliminationTreeUnordered, SymbolicBayesTree, SymbolicJunctionTreeUnordered>
+    SymbolicFactorUnordered, SymbolicFactorGraphUnordered, SymbolicConditionalUnordered, SymbolicBayesNetUnordered,
+    SymbolicEliminationTreeUnordered, SymbolicBayesTreeUnordered, SymbolicJunctionTreeUnordered>
   {
-
   public:
 
     typedef SymbolicFactorGraphUnordered This;
     typedef FactorGraphUnordered<SymbolicFactorUnordered> Base;
     typedef EliminateableFactorGraph<
-      SymbolicFactorGraphUnordered, SymbolicFactorUnordered, SymbolicConditionalUnordered,
-      SymbolicBayesNet, SymbolicEliminationTreeUnordered, SymbolicBayesTree, SymbolicJunctionTreeUnordered>
-      BaseEliminateable;
+      SymbolicFactorUnordered, SymbolicFactorGraphUnordered, SymbolicConditionalUnordered, SymbolicBayesNetUnordered,
+      SymbolicEliminationTreeUnordered, SymbolicBayesTreeUnordered, SymbolicJunctionTreeUnordered> BaseEliminateable;
     typedef BaseEliminateable::Eliminate Eliminate;
 
     /// @name Standard Constructors

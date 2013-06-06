@@ -47,6 +47,8 @@ namespace gtsam {
     typedef boost::shared_ptr<This> shared_ptr;
     typedef CLIQUE Clique; ///< The clique type, normally BayesTreeClique
     typedef boost::shared_ptr<Clique> sharedClique; ///< Shared pointer to a clique
+    typedef Clique Node; ///< Synonym for Clique (TODO: remove)
+    typedef sharedClique sharedNode; ///< Synonym for sharedClique (TODO: remove)
     typedef typename CLIQUE::ConditionalType ConditionalType;
     typedef boost::shared_ptr<ConditionalType> sharedConditional;
     typedef typename CLIQUE::BayesNetType BayesNetType;
@@ -128,12 +130,7 @@ namespace gtsam {
     /// @{
 
     /** number of cliques */
-    inline size_t size() const {
-      if(root_)
-        return root_->treeSize();
-      else
-        return 0;
-    }
+    size_t size() const;
 
     /** Check if there are any cliques in the tree */
     inline bool empty() const {
@@ -152,7 +149,7 @@ namespace gtsam {
       if(c == nodes_.end())
         throw std::out_of_range("Requested the BayesTree clique for a key that is not in the BayesTree");
       else
-        return *c;
+        return c->second;
     }
 
     /** Gather data on all cliques */
@@ -205,9 +202,7 @@ namespace gtsam {
     void clear();
 
     /** Clear all shortcut caches - use before timing on marginal calculation to avoid residual cache data */
-    void deleteCachedShortcuts() {
-      root_->deleteCachedShortcuts();
-    }
+    void deleteCachedShortcuts();
 
     /**
      * Remove path from clique to root and return that path as factors
@@ -226,14 +221,10 @@ namespace gtsam {
      * Remove the requested subtree. */
     Cliques removeSubtree(const sharedClique& subtree);
 
-    /**
-     * Hang a new subtree off of the existing tree.  This finds the appropriate
-     * parent clique for the subtree (which may be the root), and updates the
-     * nodes index with the new cliques in the subtree.  None of the frontal
-     * variables in the subtree may appear in the separators of the existing
-     * BayesTree.
-     */
-    void insert(const sharedClique& subtree);
+    /** Insert a new subtree with known parent clique.  This function does not check that the
+     * specified parent is the correct parent.  This function updates all of the internal data
+     * structures associated with adding a subtree, such as populating the nodes index. */
+    void insertRoot(const sharedClique& subtree);
 
     /**
      * Create a clone of this object as a shared pointer
@@ -254,9 +245,6 @@ namespace gtsam {
 
     /** remove a clique: warning, can result in a forest */
     void removeClique(sharedClique clique);
-
-    /** add a clique (top down) */
-    sharedClique addClique(const sharedConditional& conditional, const sharedClique& parent_clique = sharedClique());
 
     /** add a clique (top down) */
     void addClique(const sharedClique& clique, const sharedClique& parent_clique = sharedClique());

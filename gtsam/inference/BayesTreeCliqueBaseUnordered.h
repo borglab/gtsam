@@ -22,7 +22,7 @@
 #include <gtsam/inference/BayesNetUnordered.h>
 
 namespace gtsam {
-  template<class CONDITIONAL, class CLIQUE> class BayesTreeUnordered;
+  template<class CLIQUE> class BayesTreeUnordered;
 }
 
 namespace gtsam {
@@ -43,18 +43,21 @@ namespace gtsam {
   template<class DERIVED, class FACTORGRAPH, class BAYESNET>
   struct BayesTreeCliqueBaseUnordered {
 
-  public:
+  private:
     typedef BayesTreeCliqueBaseUnordered<DERIVED, FACTORGRAPH, BAYESNET> This;
     typedef DERIVED DerivedType;
-    typedef FACTORGRAPH FactorGraphType;
-    typedef BAYESNET BayesNetType;
-    typedef BayesNetType::ConditionalType ConditionalType;
-    typedef boost::shared_ptr<ConditionalType> sharedConditional;
     typedef boost::shared_ptr<This> shared_ptr;
     typedef boost::weak_ptr<This> weak_ptr;
     typedef boost::shared_ptr<DerivedType> derived_ptr;
     typedef boost::weak_ptr<DerivedType> derived_weak_ptr;
-    typedef FactorGraphType::FactorType FactorType;
+
+  public:
+    typedef FACTORGRAPH FactorGraphType;
+    typedef BAYESNET BayesNetType;
+    typedef typename BayesNetType::ConditionalType ConditionalType;
+    typedef boost::shared_ptr<ConditionalType> sharedConditional;
+    typedef typename FactorGraphType::FactorType FactorType;
+    typedef typename FactorGraphType::Eliminate Eliminate;
 
   protected:
 
@@ -87,8 +90,7 @@ namespace gtsam {
     }
 
     /** print this node */
-    void print(const std::string& s = "", const KeyFormatter& keyFormatter =
-        DefaultKeyFormatter) const;
+    void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
     /// @}
     /// @name Standard Interface
@@ -113,14 +115,14 @@ namespace gtsam {
     /// @name Advanced Interface
     /// @{
 
-    /** return the conditional P(S|Root) on the separator given the root */
-    BayesNetType shortcut(derived_ptr root, Eliminate function) const;
+    ///** return the conditional P(S|Root) on the separator given the root */
+    //BayesNetType shortcut(derived_ptr root, Eliminate function) const;
 
-    /** return the marginal P(S) on the separator */
-    FactorGraphType separatorMarginal(derived_ptr root, Eliminate function) const;
+    ///** return the marginal P(S) on the separator */
+    //FactorGraphType separatorMarginal(derived_ptr root, Eliminate function) const;
 
-    /** return the marginal P(C) of the clique, using marginal caching */
-    FactorGraphType marginal2(derived_ptr root, Eliminate function) const;
+    ///** return the marginal P(C) of the clique, using marginal caching */
+    //FactorGraphType marginal2(derived_ptr root, Eliminate function) const;
 
     /**
      * This deletes the cached shortcuts of all cliques (subtree) below this clique.
@@ -146,29 +148,12 @@ namespace gtsam {
      * The factor graph p_Cp_B has keys from the parent clique Cp and from B.
      * But we only keep the variables not in S union B.
      */
-    std::vector<Key> shortcut_indices(derived_ptr B,
-        const FactorGraph<FactorType>& p_Cp_B) const;
+    std::vector<Key> shortcut_indices(derived_ptr B, const FactorGraphType& p_Cp_B) const;
 
     /** Non-recursive delete cached shortcuts and marginals - internal only. */
     void deleteCachedShortcutsNonRecursive() { cachedSeparatorMarginal_ = boost::none; }
 
   private:
-
-    /**
-     * Cliques cannot be copied except by the clone() method, which does not
-     * copy the parent and child pointers.
-     */
-    BayesTreeCliqueBaseUnordered(const This& other) {
-      assert(false);
-    }
-
-    /** Cliques cannot be copied except by the clone() method, which does not
-     * copy the parent and child pointers.
-     */
-    This& operator=(const This& other) {
-      assert(false);
-      return *this;
-    }
 
     /** Serialization function */
     friend class boost::serialization::access;

@@ -27,6 +27,7 @@ class EliminationTreeUnorderedTester; // for unit tests, see testEliminationTree
 namespace gtsam {
 
   class VariableIndexUnordered;
+  class OrderingUnordered;
 
   /**
   * An elimination tree is a data structure used intermediately during
@@ -98,14 +99,14 @@ namespace gtsam {
     * @return The elimination tree
     */
     EliminationTreeUnordered(const FactorGraphType& factorGraph,
-      const VariableIndexUnordered& structure, const std::vector<Key>& order);
+      const VariableIndexUnordered& structure, const OrderingUnordered& order);
 
     /** Build the elimination tree of a factor graph.  Note that this has to compute the column
     * structure as a VariableIndex, so if you already have this precomputed, use the other
     * constructor instead.
     * @param factorGraph The factor graph for which to build the elimination tree
     */
-    EliminationTreeUnordered(const FactorGraphType& factorGraph, const std::vector<Key>& order);
+    EliminationTreeUnordered(const FactorGraphType& factorGraph, const OrderingUnordered& order);
 
     /** Copy constructor - makes a deep copy of the tree structure, but only pointers to factors are
      *  copied, factors are not cloned. */

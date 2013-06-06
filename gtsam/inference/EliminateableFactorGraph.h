@@ -121,6 +121,13 @@ namespace gtsam {
       eliminatePartialMultifrontal(const Eliminate& function, const std::vector<Key>& variables,
       const VariableIndexUnordered& variableIndex = VariableIndexUnordered(*this));
 
+  private:
+
+    // Access the derived factor graph class
+    const FACTORGRAPH& asDerived() const { return static_cast<const FACTORGRAPH&>(*this); }
+
+    // Access the derived factor graph class
+    FACTORGRAPH& asDerived() { return static_cast<FACTORGRAPH&>(*this); }
   };
 
 }

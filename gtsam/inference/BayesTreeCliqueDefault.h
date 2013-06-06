@@ -40,13 +40,13 @@ namespace gtsam {
     public BayesTreeCliqueBaseUnordered<BayesTreeCliqueDefaultUnordered<FACTORGRAPH,BAYESNET>, FACTORGRAPH, BAYESNET> {
   public:
     typedef typename BAYESNET::ConditionalType ConditionalType;
+    typedef typename FACTORGRAPH::FactorType FactorType;
     typedef BayesTreeCliqueDefaultUnordered<FACTORGRAPH,BAYESNET> This;
     typedef BayesTreeCliqueBaseUnordered<This, FACTORGRAPH, BAYESNET> Base;
     typedef boost::shared_ptr<This> shared_ptr;
     typedef boost::weak_ptr<This> weak_ptr;
     BayesTreeCliqueDefaultUnordered() {}
-    BayesTreeCliqueDefaultUnordered(const typename ConditionalType::shared_ptr& conditional) : Base(conditional) {}
-    BayesTreeCliqueDefaultUnordered(const std::pair<typename ConditionalType::shared_ptr, typename ConditionalType::FactorType::shared_ptr>& result) : Base(result) {}
+    BayesTreeCliqueDefaultUnordered(const boost::shared_ptr<ConditionalType>& conditional) : Base(conditional) {}
 
   private:
     /** Serialization function */

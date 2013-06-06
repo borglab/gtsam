@@ -20,10 +20,23 @@
 #include <vector>
 
 #include <gtsam/inference/Key.h>
+#include <gtsam/inference/VariableIndexUnordered.h>
+#include <gtsam/inference/FactorGraphUnordered.h>
 
 namespace gtsam {
-  class OrderingUnordered : std::vector<Key> {
+  class OrderingUnordered : public std::vector<Key> {
   public:
-    OrderingUnordered() {}
+    /// Create an empty ordering
+    GTSAM_EXPORT OrderingUnordered() {}
+
+    /// Compute an ordering using COLAMD directly from a factor graph - this internally builds a
+    /// VariableIndex so if you already have a VariableIndex, it is faster to use COLAMD(const
+    /// VariableIndexUnordered&)
+    template<class FACTOR>
+    static OrderingUnordered COLAMD(const FactorGraphUnordered<FACTOR>& graph) {
+      return COLAMD(VariableIndexUnordered(graph));
+    }
+
+    static GTSAM_EXPORT OrderingUnordered COLAMD(const VariableIndexUnordered& variableIndex);
   };
 }

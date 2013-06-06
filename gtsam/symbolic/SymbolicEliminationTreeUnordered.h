@@ -16,6 +16,8 @@
  * @author Richard Roberts
  */
 
+#pragma once
+
 #include <gtsam/symbolic/SymbolicBayesNetUnordered.h>
 #include <gtsam/symbolic/SymbolicFactorGraphUnordered.h>
 #include <gtsam/inference/EliminationTreeUnordered.h>
@@ -38,7 +40,7 @@ namespace gtsam {
     * @return The elimination tree
     */
     SymbolicEliminationTreeUnordered(const SymbolicFactorGraphUnordered& factorGraph,
-      const VariableIndexUnordered& structure, const std::vector<Key>& order) :
+      const VariableIndexUnordered& structure, const OrderingUnordered& order) :
     Base(factorGraph, structure, order) {}
 
     /** Build the elimination tree of a factor graph.  Note that this has to compute the column
@@ -46,7 +48,7 @@ namespace gtsam {
     * constructor instead.
     * @param factorGraph The factor graph for which to build the elimination tree
     */
-    SymbolicEliminationTreeUnordered(const SymbolicFactorGraphUnordered& factorGraph, const std::vector<Key>& order) :
+    SymbolicEliminationTreeUnordered(const SymbolicFactorGraphUnordered& factorGraph, const OrderingUnordered& order) :
       Base(factorGraph, order) {}
 
     /** Copy constructor - makes a deep copy of the tree structure, but only pointers to factors are

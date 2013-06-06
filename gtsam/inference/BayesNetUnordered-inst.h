@@ -19,7 +19,9 @@
 #pragma once
 
 #include <gtsam/inference/BayesNetUnordered.h>
-#include <gtsam/inference/FactorGraphUnordered-inst.h>
+
+#include <boost/foreach.hpp>
+#include <fstream>
 
 namespace gtsam {
 
@@ -32,17 +34,16 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class CONDITIONAL>
-  void BayesNetUnordered<CONDITIONAL>::saveGraph(
-    const std::string &s, const KeyFormatter& keyFormatter = DefaultKeyFormatter)
+  void BayesNetUnordered<CONDITIONAL>::saveGraph(const std::string &s, const KeyFormatter& keyFormatter) const
   {
     std::ofstream of(s.c_str());
     of << "digraph G{\n";
 
     BOOST_REVERSE_FOREACH(const sharedConditional& conditional, *this) {
       typename CONDITIONAL::Frontals frontals = conditional->frontals();
-      Index me = frontals.front();
+      Key me = frontals.front();
       typename CONDITIONAL::Parents parents = conditional->parents();
-      BOOST_FOREACH(Index p, parents)
+      BOOST_FOREACH(Key p, parents)
         of << p << "->" << me << std::endl;
     }
 

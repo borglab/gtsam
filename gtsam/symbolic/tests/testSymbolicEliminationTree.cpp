@@ -77,7 +77,7 @@ TEST(EliminationTree, Create)
   SymbolicEliminationTreeUnordered expected = EliminationTreeUnorderedTester::buildHardcodedTree(fg);
 
   // Build from factor graph
-  vector<size_t> order;
+  OrderingUnordered order;
   order += 0,1,2,3,4;
   SymbolicEliminationTreeUnordered actual(fg, order);
 
@@ -108,7 +108,7 @@ TEST_UNSAFE(EliminationTree, eliminate )
   fg.push_factor(3, 4);
 
   // eliminate
-  vector<size_t> order;
+  OrderingUnordered order;
   order += 0,1,2,3,4;
   SymbolicBayesNetUnordered actual = *SymbolicEliminationTreeUnordered(fg,order).eliminate(EliminateSymbolicUnordered).first;
 
@@ -131,7 +131,7 @@ TEST(EliminationTree, disconnected_graph) {
   expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(3,4));
   expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(4));
 
-  vector<size_t> order;
+  OrderingUnordered order;
   order += 0,1,2,3,4;
   SymbolicBayesNetUnordered actual = *SymbolicEliminationTreeUnordered(fg, order).eliminate(EliminateSymbolicUnordered).first;
   

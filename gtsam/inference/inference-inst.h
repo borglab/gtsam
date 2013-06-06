@@ -20,6 +20,7 @@
 #pragma once
 
 #include <boost/shared_ptr.hpp>
+#include <boost/bind.hpp>
 #include <utility>
 
 #include <gtsam/base/treeTraversal-inst.h>
@@ -49,11 +50,11 @@ namespace gtsam {
 
       /* ************************************************************************* */
       template<class TREE, class RESULT>
-      void eliminationPostOrderVisitor(const typename TREE::Node& const node, EliminationData<TREE>& myData,
+      void eliminationPostOrderVisitor(const typename TREE::sharedNode& node, EliminationData<TREE>& myData,
         RESULT& result, const typename TREE::Eliminate& eliminationFunction)
       {
         // Call eliminate on the node and add the result to the parent's gathered factors
-        myData.parentData->childFactors.push_back(node.eliminate(result, eliminationFunction, myData.childFactors));
+        myData.parentData->childFactors.push_back(node->eliminate(result, eliminationFunction, myData.childFactors));
       }
     }
 

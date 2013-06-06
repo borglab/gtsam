@@ -27,7 +27,7 @@ namespace gtsam {
   /** Symbolic Bayes Net
    *  \nosubgrouping
    */
-  class SymbolicBayesNetUnordered: public BayesNetUnordered<SymbolicConditionalUnordered> {
+  class GTSAM_EXPORT SymbolicBayesNetUnordered: public BayesNetUnordered<SymbolicConditionalUnordered> {
 
   public:
 

@@ -21,7 +21,7 @@
 
 namespace gtsam {
 
-  SymbolicJunctionTreeUnordered::SymbolicJunctionTreeUnordered() {
+  void SymbolicJunctionTreeUnordered::noop() const {
 
   }
 

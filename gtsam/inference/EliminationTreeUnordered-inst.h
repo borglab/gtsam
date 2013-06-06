@@ -26,6 +26,7 @@
 #include <gtsam/base/treeTraversal-inst.h>
 #include <gtsam/inference/EliminationTreeUnordered.h>
 #include <gtsam/inference/VariableIndexUnordered.h>
+#include <gtsam/inference/OrderingUnordered.h>
 #include <gtsam/inference/inference-inst.h>
 
 namespace gtsam {
@@ -64,8 +65,8 @@ namespace gtsam {
   void EliminationTreeUnordered<BAYESNET,GRAPH>::Node::print(
     const std::string& str, const KeyFormatter& keyFormatter) const
   {
-    std::cout << str << "(" << formatter(node->key) << ")\n";
-    BOOST_FOREACH(const typename ETREE::sharedFactor& factor, node->factors) {
+    std::cout << str << "(" << keyFormatter(key) << ")\n";
+    BOOST_FOREACH(const sharedFactor& factor, factors) {
       if(factor)
         factor->print(str + "| ");
       else
@@ -77,7 +78,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class BAYESNET, class GRAPH>
   EliminationTreeUnordered<BAYESNET,GRAPH>::EliminationTreeUnordered(const FactorGraphType& graph,
-    const VariableIndexUnordered& structure, const std::vector<Key>& order)
+    const VariableIndexUnordered& structure, const OrderingUnordered& order)
   {
     gttic(ET_Create1);
 
@@ -156,7 +157,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class BAYESNET, class GRAPH>
   EliminationTreeUnordered<BAYESNET,GRAPH>::EliminationTreeUnordered(
-    const FactorGraphType& factorGraph, const std::vector<Key>& order)
+    const FactorGraphType& factorGraph, const OrderingUnordered& order)
   {
     gttic(ET_Create2);
     // Build variable index first

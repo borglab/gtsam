@@ -16,6 +16,7 @@
  * @author Richard Roberts
  */
 
+#include <gtsam/inference/BayesNetUnordered-inst.h>
 #include <gtsam/symbolic/SymbolicBayesNetUnordered.h>
 
 namespace gtsam {

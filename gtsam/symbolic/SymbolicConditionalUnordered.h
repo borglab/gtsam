@@ -50,16 +50,16 @@ namespace gtsam {
     SymbolicConditionalUnordered() {}
 
     /** No parents */
-    SymbolicConditionalUnordered(Index j) : BaseFactor(j), BaseConditional(0) {}
+    SymbolicConditionalUnordered(Index j) : BaseFactor(j), BaseConditional(1) {}
 
     /** Single parent */
     SymbolicConditionalUnordered(Index j, Index parent) : BaseFactor(j, parent), BaseConditional(1) {}
 
     /** Two parents */
-    SymbolicConditionalUnordered(Index j, Index parent1, Index parent2) : BaseFactor(j, parent1, parent2), BaseConditional(2) {}
+    SymbolicConditionalUnordered(Index j, Index parent1, Index parent2) : BaseFactor(j, parent1, parent2), BaseConditional(1) {}
 
     /** Three parents */
-    SymbolicConditionalUnordered(Index j, Index parent1, Index parent2, Index parent3) : BaseFactor(j, parent1, parent2, parent3), BaseConditional(3) {}
+    SymbolicConditionalUnordered(Index j, Index parent1, Index parent2, Index parent3) : BaseFactor(j, parent1, parent2, parent3), BaseConditional(1) {}
 
     /** Named constructor from an arbitrary number of keys and frontals */
     template<typename ITERATOR>
@@ -74,6 +74,17 @@ namespace gtsam {
     template<class CONTAINER>
     static SymbolicConditionalUnordered FromKeys(const CONTAINER& keys, size_t nrFrontals) {
       return FromIterator(keys.begin(), keys.end(), nrFrontals); }
+
+    /// @}
+
+    /// @name Testable
+
+    /** Print with optional formatter */
+    void print(const std::string& str = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+      BaseConditional::print(str, keyFormatter); }
+
+    /** Check equality */
+    bool equals(const This& c, double tol = 1e-9) const { return BaseConditional::equals(c); }
 
     /// @}
 

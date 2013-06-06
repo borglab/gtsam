@@ -18,6 +18,10 @@
 
 #include <gtsam/base/FastList.h>
 
+#include <stack>
+#include <boost/foreach.hpp>
+#include <boost/bind.hpp>
+
 namespace gtsam {
 
   /** Internal functions used for traversing trees */
@@ -29,30 +33,15 @@ namespace gtsam {
       template<typename NODE, typename DATA>
       struct TraversalNode {
         bool expanded;
-        NODE& const treeNode;
+        const boost::shared_ptr<NODE>& treeNode;
         DATA data;
-        TraversalNode(NODE* _treeNode, const DATA& _data) :
+        TraversalNode(const boost::shared_ptr<NODE>& _treeNode, const DATA& _data) :
           expanded(false), treeNode(_treeNode), data(_data) {}
-      };
-
-      // Functional object to visit a node and then add it to the traversal stack
-      template<typename NODE, typename VISITOR, typename DATA, typename STACK>
-      struct PreOrderExpand {
-        VISITOR& visitor_;
-        DATA& parentData_;
-        STACK& stack_;
-        PreOrderExpand(VISITOR& visitor, DATA& parentData, STACK& stack) :
-          visitor_(visitor), parentData_(parentData), stack_(stack) {}
-        template<typename P>
-        void operator()(const P& nodePointer) {
-          // Add node
-          stack_.push(TraversalNode<NODE,DATA>(*nodePointer, visitor_(nodePointer, parentData_)));
-        }
       };
 
       /// Do nothing - default argument for post-visitor for tree traversal
       template<typename NODE, typename DATA>
-      void no_op(const NODE& node, const DATA& data) {}
+      void no_op(const boost::shared_ptr<NODE>& node, const DATA& data) {}
     }
 
     /** Traverse a forest depth-first with pre-order and post-order visits.
@@ -72,16 +61,19 @@ namespace gtsam {
     template<class FOREST, typename DATA, typename VISITOR_PRE, typename VISITOR_POST>
     void DepthFirstForest(FOREST& forest, DATA& rootData, VISITOR_PRE& visitorPre, VISITOR_POST& visitorPost)
     {
+      // Typedefs
+      typedef typename FOREST::Node Node;
+      typedef boost::shared_ptr<Node> sharedNode;
+
       // Depth first traversal stack
       typedef TraversalNode<typename FOREST::Node, DATA> TraversalNode;
       typedef std::stack<TraversalNode, FastList<TraversalNode> > Stack;
-      typedef PreOrderExpand<typename FOREST::Node, VISITOR_PRE, DATA, Stack> Expander;
       Stack stack;
 
       // Add roots to stack (use reverse iterators so children are processed in the order they
       // appear)
-      (void) std::for_each(forest.roots().rbegin(), forest.roots().rend(),
-        Expander(visitorPre, rootData, stack));
+      BOOST_REVERSE_FOREACH(const sharedNode& root, forest.roots())
+        stack.push(TraversalNode(root, visitorPre(root, rootData)));
 
       // Traverse
       while(!stack.empty())
@@ -97,8 +89,8 @@ namespace gtsam {
         } else {
           // If not already visited, visit the node and add its children (use reverse iterators so
           // children are processed in the order they appear)
-          (void) std::for_each(node.treeNode.children.rbegin(), node.treeNode.children.rend(),
-            Expander(visitorPre, node.data, stack));
+          BOOST_REVERSE_FOREACH(const sharedNode& child, node.treeNode->children)
+            stack.push(TraversalNode(child, visitorPre(child, node.data)));
           node.expanded = true;
         }
       }
@@ -118,8 +110,7 @@ namespace gtsam {
     template<class FOREST, typename DATA, typename VISITOR_PRE>
     void DepthFirstForest(FOREST& forest, DATA& rootData, VISITOR_PRE& visitorPre)
     {
-      DepthFirstForest<FOREST, DATA, VISITOR_PRE, void(&)(const typename FOREST::Node&, const DATA&)>(
-        forest, rootData, visitorPre, no_op<typename FOREST::Node, DATA>);
+      DepthFirstForest(forest, rootData, visitorPre, no_op<typename FOREST::Node, DATA>);
     }
     
 
@@ -127,10 +118,11 @@ namespace gtsam {
     /** Traversal function for CloneForest */
     namespace {
       template<typename NODE>
-      boost::shared_ptr<NODE> CloneForestVisitorPre(const NODE& node, const boost::shared_ptr<NODE>& parentPointer)
+      boost::shared_ptr<NODE>
+        CloneForestVisitorPre(const boost::shared_ptr<NODE>& node, const boost::shared_ptr<NODE>& parentPointer)
       {
         // Clone the current node and add it to its cloned parent
-        boost::shared_ptr<NODE> clone = boost::make_shared<NODE>(node);
+        boost::shared_ptr<NODE> clone = boost::make_shared<NODE>(*node);
         parentPointer->children.push_back(clone);
         return clone;
       }
@@ -155,10 +147,11 @@ namespace gtsam {
     /** Traversal function for PrintForest */
     namespace {
       template<typename NODE>
-      std::string PrintForestVisitorPre(const NODE& node, const std::string& parentString, const KeyFormatter& formatter)
+      std::string
+        PrintForestVisitorPre(const boost::shared_ptr<NODE>& node, const std::string& parentString, const KeyFormatter& formatter)
       {
         // Print the current node
-        node.print(parentString + "-", formatter);
+        node->print(parentString + "-", formatter);
         // Increment the indentation
         return parentString + "| ";
       }
@@ -169,7 +162,7 @@ namespace gtsam {
     template<class FOREST>
     void PrintForest(const FOREST& forest, const std::string& str, const KeyFormatter& keyFormatter) {
       typedef typename FOREST::Node Node;
-      DepthFirstForest(forest, str, boost::bind(PrintForestVisitorPre<Node>, _1, _2, formatter));
+      DepthFirstForest(forest, str, boost::bind(PrintForestVisitorPre<Node>, _1, _2, keyFormatter));
     }
   }
 

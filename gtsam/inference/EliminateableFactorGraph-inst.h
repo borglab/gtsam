@@ -35,11 +35,11 @@ namespace gtsam {
     std::pair<boost::shared_ptr<BAYESNET>, boost::shared_ptr<FACTORGRAPH> > result;
     if(ordering) {
       // Do elimination with given ordering
-      result = EliminationTreeType(*this, variableIndex, *ordering).eliminate(function);
+      result = ELIMINATIONTREE(asDerived(), variableIndex, *ordering).eliminate(function);
     } else {
       // Compute ordering
-      OrderingUnordered colamdOrdering = variableIndex.orderingCOLAMD();
-      result = EliminationTreeType(*this, variableIndex, colamdOrdering).eliminate(function);
+      OrderingUnordered colamdOrdering = OrderingUnordered::COLAMD(variableIndex);
+      result = ELIMINATIONTREE(asDerived(), variableIndex, colamdOrdering).eliminate(function);
     }
 
     // If any factors are remaining, the ordering was incomplete
@@ -62,11 +62,11 @@ namespace gtsam {
     std::pair<boost::shared_ptr<BAYESTREE>, boost::shared_ptr<FACTORGRAPH> > result;
     if(ordering) {
       // Do elimination with given ordering
-      result = JunctionTreeType(*this, variableIndex, *ordering).eliminate(function);
+      result = JUNCTIONTREE(ELIMINATIONTREE(asDerived(), variableIndex, *ordering)).eliminate(function);
     } else {
       // Compute ordering
-      OrderingUnordered colamdOrdering = variableIndex.orderingCOLAMD();
-      result = JunctionTreeType(*this, variableIndex, colamdOrdering).eliminate(function);
+      OrderingUnordered colamdOrdering = OrderingUnordered::COLAMD(variableIndex);
+      result = JUNCTIONTREE(ELIMINATIONTREE(asDerived(), variableIndex, colamdOrdering)).eliminate(function);
     }
 
     // If any factors are remaining, the ordering was incomplete
@@ -76,4 +76,5 @@ namespace gtsam {
     // Return the Bayes tree
     return result.first;
   }
+
 }

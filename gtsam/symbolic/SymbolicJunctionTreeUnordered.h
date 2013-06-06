@@ -39,7 +39,7 @@ namespace gtsam {
     * @return The elimination tree
     */
     SymbolicJunctionTreeUnordered(const SymbolicEliminationTreeUnordered& eliminationTree) :
-      Base(eliminationTree) {}
+      Base(Base::FromEliminationTree(eliminationTree)) {}
 
     /** Copy constructor - makes a deep copy of the tree structure, but only pointers to factors are
      *  copied, factors are not cloned. */
@@ -51,8 +51,8 @@ namespace gtsam {
 
   private:
 
-    /// Private default constructor
-    SymbolicJunctionTreeUnordered();
+    // Dummy method to export class type
+    void noop() const;
   };
 
 }
