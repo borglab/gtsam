@@ -895,6 +895,7 @@ class SymbolicFactorGraph {
   void print(string s) const;
   bool equals(const gtsam::SymbolicFactorGraph& rhs, double tol) const;
   size_t size() const;
+  bool exists(size_t i) const;
 
   // Standard interface
   // FIXME: Must wrap FastSet<Index> for this to work
@@ -1282,6 +1283,7 @@ class GaussianFactorGraph {
   bool equals(const gtsam::GaussianFactorGraph& lfgraph, double tol) const;
   size_t size() const;
   gtsam::GaussianFactor* at(size_t idx) const;
+  bool exists(size_t idx) const;
 
   // Inference
   pair<gtsam::GaussianConditional*, gtsam::GaussianFactorGraph> eliminateFrontals(size_t nFrontals) const;
@@ -1508,7 +1510,8 @@ class NonlinearFactorGraph {
   bool empty() const;
   void remove(size_t i);
   size_t nrFactors() const;
-  gtsam::NonlinearFactor* at(size_t i) const;
+  gtsam::NonlinearFactor* at(size_t idx) const;
+  bool exists(size_t idx) const;
   void push_back(const gtsam::NonlinearFactorGraph& factors);
 
   // NonlinearFactorGraph
