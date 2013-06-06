@@ -54,7 +54,9 @@ namespace gtsam {
         RESULT& result, const typename TREE::Eliminate& eliminationFunction)
       {
         // Call eliminate on the node and add the result to the parent's gathered factors
-        myData.parentData->childFactors.push_back(node->eliminate(result, eliminationFunction, myData.childFactors));
+        typename TREE::sharedFactor childFactor = node->eliminate(result, eliminationFunction, myData.childFactors);
+        if(!childFactor->empty())
+          myData.parentData->childFactors.push_back(childFactor);
       }
     }
 

@@ -62,7 +62,7 @@ namespace gtsam {
     // Post-order visitor function
     template<class BAYESTREE, class GRAPH, class ETREE_NODE>
     void ConstructorTraversalVisitorPost(
-      const boost::shared_ptr<ETREE_NODE>& node,
+      const boost::shared_ptr<ETREE_NODE>& ETreeNode,
       const ConstructorTraversalData<BAYESTREE,GRAPH>& myData)
     {
       // In this post-order visitor, we combine the symbolic elimination results from the
@@ -74,21 +74,20 @@ namespace gtsam {
 
       // Do symbolic elimination for this node
       std::vector<SymbolicFactorUnordered::shared_ptr> symbolicFactors;
-      symbolicFactors.reserve(node->factors.size() + myData.childSymbolicFactors.size());
+      symbolicFactors.reserve(ETreeNode->factors.size() + myData.childSymbolicFactors.size());
       // Add symbolic versions of the ETree node factors
-      BOOST_FOREACH(const typename GRAPH::sharedFactor& factor, node->factors) {
+      BOOST_FOREACH(const typename GRAPH::sharedFactor& factor, ETreeNode->factors) {
         symbolicFactors.push_back(boost::make_shared<SymbolicFactorUnordered>(
           SymbolicFactorUnordered::FromKeys(*factor))); }
       // Add symbolic factors passed up from children
       symbolicFactors.insert(symbolicFactors.end(), myData.childSymbolicFactors.begin(), myData.childSymbolicFactors.end());
-      std::vector<Key> keyAsVector(1); keyAsVector[0] = node->key;
+      std::vector<Key> keyAsVector(1); keyAsVector[0] = ETreeNode->key;
       std::pair<SymbolicConditionalUnordered::shared_ptr, SymbolicFactorUnordered::shared_ptr> symbolicElimResult =
         EliminateSymbolicUnordered(symbolicFactors, keyAsVector);
 
       // Store symbolic elimination results in the parent
       myData.parentData->childSymbolicConditionals.push_back(symbolicElimResult.first);
-      if(!symbolicElimResult.second->empty())
-        myData.parentData->childSymbolicFactors.push_back(symbolicElimResult.second);
+      myData.parentData->childSymbolicFactors.push_back(symbolicElimResult.second);
 
       // Merge our children if they are in our clique - if our conditional has exactly one fewer
       // parent than our child's conditional.
@@ -109,6 +108,8 @@ namespace gtsam {
           myData.myJTNode->children.insert(myData.myJTNode->children.end(), childToMerge.children.begin(), childToMerge.children.end());
           // Remove child from list.
           myData.myJTNode->children.erase(myData.myJTNode->children.begin() + child - nrMergedChildren);
+          // Increment number of merged children
+          ++ nrMergedChildren;
         }
       }
     }

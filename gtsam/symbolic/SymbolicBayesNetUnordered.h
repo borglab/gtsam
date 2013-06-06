@@ -41,6 +41,10 @@ namespace gtsam {
 
     /** Construct empty factor graph */
     SymbolicBayesNetUnordered() {}
+
+    /** Construct from iterator over conditionals */
+    template<typename ITERATOR>
+    SymbolicBayesNetUnordered(ITERATOR firstConditional, ITERATOR lastConditional) : Base(firstConditional, lastConditional) {}
     
     /// @}
     /// @name Standard Interface

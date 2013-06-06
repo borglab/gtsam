@@ -25,9 +25,16 @@
 
 namespace gtsam {
   class OrderingUnordered : public std::vector<Key> {
+  protected:
+    typedef std::vector<Key> Base;
+
   public:
     /// Create an empty ordering
     GTSAM_EXPORT OrderingUnordered() {}
+
+    /// Create an ordering using iterators over keys
+    template<typename ITERATOR>
+    OrderingUnordered(ITERATOR firstKey, ITERATOR lastKey) : Base(firstKey, lastKey) {}
 
     /// Compute an ordering using COLAMD directly from a factor graph - this internally builds a
     /// VariableIndex so if you already have a VariableIndex, it is faster to use COLAMD(const

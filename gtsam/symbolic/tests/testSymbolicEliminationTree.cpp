@@ -20,13 +20,16 @@
 
 #include <vector>
 #include <boost/assign/std/vector.hpp>
+#include <boost/assign/list_of.hpp>
 using namespace boost::assign;
 #include <boost/make_shared.hpp>
 
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/symbolic/SymbolicEliminationTreeUnordered.h>
+#include <gtsam/nonlinear/Symbol.h>
 
 using namespace gtsam;
+using namespace gtsam::symbol_shorthand;
 using namespace std;
 
 class EliminationTreeUnorderedTester {
@@ -64,6 +67,32 @@ public:
   }
 };
 
+/* ************************************************************************* */
+namespace {
+
+  /* ************************************************************************* */
+  // Conditionals for ASIA example from the tutorial with A and D evidence
+  const Key _X_=X(0), _T_=T(0), _S_=S(0), _E_=E(0), _L_=L(0), _B_=B(0);
+
+  // Bayes Tree for Asia example
+  SymbolicFactorGraphUnordered createAsiaGraph() {
+    SymbolicFactorGraphUnordered asiaGraph;
+    asiaGraph.push_factor(_T_);
+    asiaGraph.push_factor(_S_);
+    asiaGraph.push_factor(_T_, _E_, _L_);
+    asiaGraph.push_factor(_L_, _S_);
+    asiaGraph.push_factor(_S_, _B_);
+    asiaGraph.push_factor(_E_, _B_);
+    asiaGraph.push_factor(_E_, _X_);
+    return asiaGraph;
+  }
+  
+  /* ************************************************************************* */
+  OrderingUnordered asiaOrdering = list_of(_X_)(_T_)(_S_)(_E_)(_L_)(_B_);
+
+}
+
+/* ************************************************************************* */
 TEST(EliminationTree, Create)
 {
   // create example factor graph
@@ -113,6 +142,23 @@ TEST_UNSAFE(EliminationTree, eliminate )
   SymbolicBayesNetUnordered actual = *SymbolicEliminationTreeUnordered(fg,order).eliminate(EliminateSymbolicUnordered).first;
 
   EXPECT(assert_equal(expected,actual));
+}
+
+/* ************************************************************************* */
+TEST(EliminationTree, eliminateAsiaExample)
+{
+  SymbolicBayesNetUnordered expected = list_of
+    (boost::make_shared<SymbolicConditionalUnordered>(_T_, _E_, _L_))
+    (boost::make_shared<SymbolicConditionalUnordered>(_X_, _E_))
+    (boost::make_shared<SymbolicConditionalUnordered>(_E_, _B_, _L_))
+    (boost::make_shared<SymbolicConditionalUnordered>(_S_, _B_, _L_))
+    (boost::make_shared<SymbolicConditionalUnordered>(_L_, _B_))
+    (boost::make_shared<SymbolicConditionalUnordered>(_B_));
+
+  SymbolicBayesNetUnordered actual = *createAsiaGraph().eliminateSequential(
+    EliminateSymbolicUnordered, asiaOrdering);
+
+  EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */

@@ -33,21 +33,27 @@ namespace gtsam {
   template<class CONDITIONAL>
   class BayesNetUnordered : public FactorGraphUnordered<CONDITIONAL> {
 
-  public:
+  private:
 
     typedef FactorGraphUnordered<CONDITIONAL> Base;
-    typedef typename boost::shared_ptr<CONDITIONAL> sharedConditional; ///< A shared pointer to a conditional
 
   public:
+    typedef typename boost::shared_ptr<CONDITIONAL> sharedConditional; ///< A shared pointer to a conditional
 
+  protected:
     /// @name Standard Constructors
     /// @{
 
     /** Default constructor as an empty BayesNet */
     BayesNetUnordered() {};
 
+    /** Construct from iterator over conditionals */
+    template<typename ITERATOR>
+    BayesNetUnordered(ITERATOR firstConditional, ITERATOR lastConditional) : Base(firstConditional, lastConditional) {}
+
     /// @}
 
+  public:
     /// @name Testable
     /// @{
 
