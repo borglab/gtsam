@@ -1,0 +1,85 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file    SymbolicConditional.h
+ * @author  Richard Roberts
+ * @date    Oct 17, 2010
+ */
+
+#pragma once
+
+#include <gtsam/base/types.h>
+#include <gtsam/inference/SymbolicFactorUnordered.h>
+#include <gtsam/inference/ConditionalUnordered.h>
+
+namespace gtsam {
+
+  /**
+   * SymbolicConditionalUnordered is a conditional with keys but no probability
+   * data, produced by symbolic elimination of SymbolicFactorUnordered.
+   *
+   * It is also a SymbolicFactorUnordered, and thus derives from it.  It
+   * derives also from ConditionalUnordered<This>, which is a generic interface
+   * class for conditionals.
+   * \nosubgrouping
+   */
+  class SymbolicConditionalUnordered : public SymbolicFactorUnordered, public ConditionalUnordered<SymbolicFactorUnordered> {
+
+  public:
+
+    typedef SymbolicConditionalUnordered This; /// Typedef to this class
+    typedef SymbolicFactorUnordered BaseFactor; /// Typedef to the factor base class
+    typedef ConditionalUnordered<SymbolicFactorUnordered> BaseConditional; /// Typedef to the conditional base class
+    typedef boost::shared_ptr<This> shared_ptr; /// Boost shared_ptr to this class
+    typedef BaseFactor::iterator iterator; /// iterator to keys
+    typedef BaseFactor::const_iterator const_iterator; /// const_iterator to keys
+
+    /// @name Standard Constructors
+    /// @{
+
+    /** Empty Constructor to make serialization possible */
+    SymbolicConditionalUnordered() {}
+
+    /** No parents */
+    SymbolicConditionalUnordered(Index j) : BaseFactor(j), BaseConditional(0) {}
+
+    /** Single parent */
+    SymbolicConditionalUnordered(Index j, Index parent) : BaseFactor(j, parent), BaseConditional(1) {}
+
+    /** Two parents */
+    SymbolicConditionalUnordered(Index j, Index parent1, Index parent2) : BaseFactor(j, parent1, parent2), BaseConditional(2) {}
+
+    /** Three parents */
+    SymbolicConditionalUnordered(Index j, Index parent1, Index parent2, Index parent3) : BaseFactor(j, parent1, parent2, parent3), BaseConditional(3) {}
+
+    /** Named constructor from an arbitrary number of keys and frontals */
+    template<class ITERATOR>
+    static SymbolicConditionalUnordered FromIterator(ITERATOR firstKey, ITERATOR lastKey, size_t nrFrontals) :
+    {
+      SymbolicConditionalUnordered result;
+      result.keys_.assign(firstKey, lastKey);
+      result.nrFrontals_ = nrFrontals;
+      return result;
+    }
+
+    /// @}
+
+  private:
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version) {
+      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    }
+  };
+
+}
