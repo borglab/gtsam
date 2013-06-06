@@ -65,8 +65,8 @@ namespace gtsam {
       Eliminate; ///< Typedef for an eliminate subroutine
 
     struct Node {
-      typedef FastList<sharedFactor> Factors;
-      typedef FastList<boost::shared_ptr<Node> > Children;
+      typedef std::vector<sharedFactor> Factors;
+      typedef std::vector<boost::shared_ptr<Node> > Children;
 
       Key key; ///< key associated with root
       Factors factors; ///< factors associated with root
@@ -145,6 +145,9 @@ namespace gtsam {
     /// @{
     
     const FastList<sharedNode>& roots() const { return roots_; }
+
+    /** Swap the data of this tree with another one, this operation is very fast. */
+    void swap(This& other);
 
   protected:
     /// Protected default constructor

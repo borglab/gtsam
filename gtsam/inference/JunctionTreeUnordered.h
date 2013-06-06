@@ -21,50 +21,10 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Key.h>
+#include <gtsam/inference/FactorGraphUnordered.h>
+#include <gtsam/inference/EliminationTreeUnordered.h>
 
 namespace gtsam {
-
-  template<class BAYESTREE, class GRAPH>
-  class JunctionTreeUnordered {
-
-  public:
-
-    typedef GRAPH FactorGraphType; ///< The factor graph type
-    typedef typename GRAPH::FactorType FactorType; ///< The type of factors
-    typedef JunctionTreeUnordered<BAYESTREE, GRAPH> This; ///< This class
-    typedef boost::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
-    typedef typename boost::shared_ptr<FactorType> sharedFactor;  ///< Shared pointer to a factor
-    typedef BAYESTREE BayesTreeType; ///< The BayesNet corresponding to FACTOR
-    typedef typename BayesTreeType::ConditionalType ConditionalType; ///< The type of conditionals
-    typedef typename boost::shared_ptr<ConditionalType> sharedConditional; ///< Shared pointer to a conditional
-    typedef boost::function<std::pair<sharedConditional,sharedFactor>(std::vector<sharedFactor>, std::vector<Key>)>
-      Eliminate; ///< Typedef for an eliminate subroutine
-
-    struct Node {
-      typedef FastList<sharedFactor> Factors;
-      typedef FastList<boost::shared_ptr<Node> > Children;
-
-      Key key; ///< key associated with root
-      Factors factors; ///< factors associated with root
-      Children children; ///< sub-trees
-
-      sharedFactor eliminate(const boost::shared_ptr<BayesTreeType>& output,
-        const Eliminate& function, const std::vector<sharedFactor>& childrenFactors) const;
-    };
-
-    typedef boost::shared_ptr<Node> sharedNode; ///< Shared pointer to Node
-
-  private:
-
-    /** concept check */
-    GTSAM_CONCEPT_TESTABLE_TYPE(FactorType);
-
-    FastList<sharedNode> roots_;
-    std::vector<sharedFactor> remainingFactors_;
-
-  public:
-
-  };
 
   /**
    * A ClusterTree, i.e., a set of variable clusters with factors, arranged in a tree, with
@@ -87,86 +47,58 @@ namespace gtsam {
    * \addtogroup Multifrontal
    * \nosubgrouping
    */
-  template<class FG, class BTCLIQUE=typename BayesTree<typename FG::FactorType::ConditionalType>::Clique>
-  class JunctionTree: public ClusterTree<FG> {
+  template<class BAYESTREE, class GRAPH>
+  class JunctionTreeUnordered {
 
   public:
 
-    /// In a junction tree each cluster is associated with a clique
-    typedef typename ClusterTree<FG>::Cluster Clique;
-    typedef typename Clique::shared_ptr sharedClique; ///< Shared pointer to a clique
+    typedef GRAPH FactorGraphType; ///< The factor graph type
+    typedef typename GRAPH::FactorType FactorType; ///< The type of factors
+    typedef JunctionTreeUnordered<BAYESTREE, GRAPH> This; ///< This class
+    typedef boost::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
+    typedef typename boost::shared_ptr<FactorType> sharedFactor;  ///< Shared pointer to a factor
+    typedef BAYESTREE BayesTreeType; ///< The BayesTree type produced by elimination
+    typedef typename BayesTreeType::ConditionalType ConditionalType; ///< The type of conditionals
+    typedef typename boost::shared_ptr<ConditionalType> sharedConditional; ///< Shared pointer to a conditional
+    typedef boost::function<std::pair<sharedConditional,sharedFactor>(std::vector<sharedFactor>, std::vector<Key>)>
+      Eliminate; ///< Typedef for an eliminate subroutine
 
-    /// The BayesTree type produced by elimination
-    typedef BTCLIQUE BTClique;
+    struct Node {
+      typedef std::vector<Key> Keys;
+      typedef std::vector<sharedFactor> Factors;
+      typedef std::vector<boost::shared_ptr<Node> > Children;
 
-    /// Shared pointer to this class
-    typedef boost::shared_ptr<JunctionTree<FG> > shared_ptr;
+      Keys keys; ///< Frontal keys of this node
+      Factors factors; ///< Factors associated with this node
+      Children children; ///< sub-trees
 
-    /// We will frequently refer to a symbolic Bayes tree, used to find the clique structure
-    typedef gtsam::BayesTree<IndexConditional> SymbolicBayesTree;
+      sharedFactor eliminate(const boost::shared_ptr<BayesTreeType>& output,
+        const Eliminate& function, const std::vector<sharedFactor>& childrenFactors) const;
+    };
+
+    typedef boost::shared_ptr<Node> sharedNode; ///< Shared pointer to Node
 
   private:
 
-    /// @name Advanced Interface
-    /// @{
+    /** concept check */
+    GTSAM_CONCEPT_TESTABLE_TYPE(FactorType);
 
-    /// distribute the factors along the cluster tree
-    sharedClique distributeFactors(const FG& fg,
-        const SymbolicBayesTree::sharedClique& clique);
-
-    /// distribute the factors along the cluster tree
-    sharedClique distributeFactors(const FG& fg, const std::vector<FastList<size_t> >& targets,
-        const SymbolicBayesTree::sharedClique& clique);
-
-    /// recursive elimination function
-    std::pair<typename BTClique::shared_ptr, typename FG::sharedFactor>
-    eliminateOneClique(typename FG::Eliminate function,
-        const boost::shared_ptr<const Clique>& clique) const;
-
-    /// internal constructor
-    void construct(const FG& fg, const VariableIndex& variableIndex);
-
-    /// @}
+    FastList<sharedNode> roots_;
+    std::vector<sharedFactor> remainingFactors_;
 
   public:
 
     /// @name Standard Constructors
     /// @{
 
-    /** Default constructor */
-    JunctionTree() {}
-
-    /** Named constructor to build the junction tree of a factor graph.  Note
-     * that this has to compute the column structure as a VariableIndex, so if you
-     * already have this precomputed, use the JunctionTree(const FG&, const VariableIndex&)
-     * constructor instead.
-     * @param factorGraph The factor graph for which to build the elimination tree
-     */
-    JunctionTree(const FG& factorGraph);
-
-    /** Construct from a factor graph and pre-computed variable index.
-     * @param fg The factor graph for which to build the junction tree
-     * @param structure The set of factors involving each variable.  If this is not
-     * precomputed, you can call the JunctionTree(const FG&)
-     * constructor instead.
-     */
-    JunctionTree(const FG& fg, const VariableIndex& variableIndex);
-
-    /// @}
-    /// @name Standard Interface
-    /// @{
-
-    /** Eliminate the factors in the subgraphs to produce a BayesTree.
-     * @param function The function used to eliminate, see the namespace functions
-     * in GaussianFactorGraph.h
-     * @return The BayesTree resulting from elimination
-     */
-    typename BTClique::shared_ptr eliminate(typename FG::Eliminate function) const;
+    /** Build the junction tree from an elimination tree and a symbolic Bayes net. */
+    template<class ETREE, class SYMBOLIC_CONDITIONAL>
+    JunctionTreeUnordered(
+      const ETREE& eliminationTree,
+      const FactorGraphUnordered<SYMBOLIC_CONDITIONAL>& symbolicBayesNet);
 
     /// @}
 
-  }; // JunctionTree
+  };
 
-} // namespace gtsam
-
-#include <gtsam/inference/JunctionTree-inl.h>
+}

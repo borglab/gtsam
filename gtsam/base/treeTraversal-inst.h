@@ -28,7 +28,7 @@ namespace gtsam {
       template<typename NODE, typename DATA>
       struct TraversalNode {
         bool expanded;
-        NODE* const treeNode;
+        NODE& const treeNode;
         DATA data;
         TraversalNode(NODE* _treeNode, const DATA& _data) :
           expanded(false), treeNode(_treeNode), data(_data) {}
@@ -38,16 +38,14 @@ namespace gtsam {
       template<typename NODE, typename VISITOR, typename DATA, typename STACK>
       struct PreOrderExpand {
         VISITOR& visitor_;
-        DATA* parentData_;
+        DATA& parentData_;
         STACK& stack_;
-        PreOrderExpand(VISITOR& visitor, DATA* parentData, STACK& stack) :
+        PreOrderExpand(VISITOR& visitor, DATA& parentData, STACK& stack) :
           visitor_(visitor), parentData_(parentData), stack_(stack) {}
         template<typename P>
         void operator()(const P& nodePointer) {
-          // Get raw pointer (in case nodePointer is a shared_ptr)
-          NODE* rawNodePointer = &(*nodePointer);
           // Add node
-          stack_.push(TraversalNode<NODE,DATA>(rawNodePointer, visitor_(nodePointer, *parentData_)));
+          stack_.push(TraversalNode<NODE,DATA>(*nodePointer, visitor_(nodePointer, parentData_)));
         }
       };
 
@@ -82,7 +80,7 @@ namespace gtsam {
       // Add roots to stack (use reverse iterators so children are processed in the order they
       // appear)
       (void) std::for_each(forest.roots().rbegin(), forest.roots().rend(),
-        Expander(visitorPre, &rootData, stack));
+        Expander(visitorPre, rootData, stack));
 
       // Traverse
       while(!stack.empty())
@@ -93,13 +91,13 @@ namespace gtsam {
         if(node.expanded) {
           // If already expanded, then the data stored in the node is no longer needed, so visit
           // then delete it.
-          (void) visitorPost(*node.treeNode, node.data);
+          (void) visitorPost(node.treeNode, node.data);
           stack.pop();
         } else {
           // If not already visited, visit the node and add its children (use reverse iterators so
           // children are processed in the order they appear)
           (void) std::for_each(node.treeNode->children.rbegin(), node.treeNode->children.rend(),
-            Expander(visitorPre, &node.data, stack));
+            Expander(visitorPre, node.data, stack));
           node.expanded = true;
         }
       }

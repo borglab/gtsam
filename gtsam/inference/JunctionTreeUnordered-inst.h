@@ -28,6 +28,71 @@
 
 namespace gtsam {
 
+  namespace {
+  /* ************************************************************************* */
+  template<class BAYESTREE, class GRAPH>
+  struct ConstructorTraversalData {
+    const ConstructorTraversalData& parentData;
+    typename JunctionTreeUnordered<BAYESTREE,GRAPH>::sharedNode myJTNode;
+    ConstructorTraversalData(const ConstructorTraversalData& _parentData) : parentData(_parentData) {}
+  };
+
+  /* ************************************************************************* */
+  template<class BAYESTREE, class GRAPH, class ETREE_NODE>
+  ConstructorTraversalData<BAYESTREE,GRAPH> ConstructorTraversalVisitorPre(
+    const boost::shared_ptr<ETREE_NODE>& node,
+    const ConstructorTraversalData<BAYESTREE,GRAPH>& parentData)
+  {
+    // On the pre-order pass, before children have been visited, we just set up a traversal data
+    // structure with its own JT node, and create a child pointer in its parent.
+    ConstructorTraversalData<BAYESTREE,GRAPH> myData = ConstructorTraversalData<BAYESTREE,GRAPH>(parentData);
+    myData.myJTNode = boost::make_shared<typename JunctionTreeUnordered<BAYESREE,GRAPH>::Node>();
+    myData.myJTNode->keys.push_back(node->key);
+    myData.myJTNode->factors.insert(myData.myJTNode->factors.begin(), node->factors.begin(), node->factors.end());
+    parentData.myJTNode->children.push_back(myData.myJTNode);
+    return myData;
+  }
+
+  /* ************************************************************************* */
+  template<class BAYESTREE, class GRAPH, class ETREE_NODE, class SYMBOLIC_CONDITIONAL>
+  struct ConstructorTraversalVisitorPost
+  {
+    // Store and increment an iterator into the Bayes net during the post-order step
+    FactorGraphUnordered<SYMBOLIC_CONDITIONAL>::const_iterator symbolicBayesNetIterator;
+
+    // Constructor that starts at the beginning of the Bayes net
+    ConstructorTraversalVisitorPost(const FactorGraphUnordered<SYMBOLIC_CONDITIONAL>& symbolicBayesNet) :
+      symbolicBayesNetIterator(symbolicBayesNet.begin()) {}
+
+    // Post-order visitor function
+    void operator()(
+      const boost::shared_ptr<ETREE_NODE>& node,
+      const ConstructorTraversalData<BAYESTREE,GRAPH>& myData)
+    {
+      // In the post-order step, we check if we are in the same clique with our parent.  If so, we
+      // merge our JT nodes.
+      if()
+    }
+  };
+
+  }
+
+  /* ************************************************************************* */
+  template<class BAYESTREE, class GRAPH>
+  template<class ETREE, class SYMBOLIC_CONDITIONAL>
+  JunctionTreeUnordered(const ETREE& eliminationTree,
+    const FactorGraphUnordered<SYMBOLIC_CONDITIONAL>& symbolicBayesNet)
+  {
+    // Here we rely on the BayesNet having been produced by this elimination tree, such that the
+    // conditionals are arranged in DFS post-order.  We traverse the elimination tree, and inspect
+    // the symbolic conditional corresponding to each node.  The elimination tree node is added to
+    // the same clique with its parent if it has exactly one more Bayes net conditional parent than
+    // does its elimination tree parent.
+
+
+  }
+
+
   /* ************************************************************************* */
   template <class FG, class BTCLIQUE>
   void JunctionTree<FG,BTCLIQUE>::construct(const FG& fg, const VariableIndex& variableIndex) {

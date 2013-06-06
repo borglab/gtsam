@@ -37,6 +37,8 @@ namespace gtsam {
     const boost::shared_ptr<BayesNetType>& output,
     const Eliminate& function, const std::vector<sharedFactor>& childrenResults) const
   {
+    // This function eliminates one node (Node::eliminate) - see below eliminate for the whole tree.
+
     assert(childrenResults.size() == children.size());
 
     // Gather factors
@@ -146,8 +148,7 @@ namespace gtsam {
     // Build variable index first
     const VariableIndexUnordered variableIndex(factorGraph);
     This temp(factorGraph, variableIndex, order);
-    roots_.swap(temp.roots_); // Swap in the tree, and temp will be deleted
-    remainingFactors_.swap(temp.remainingFactors_);
+    this->swap(temp); // Swap in the tree, and temp will be deleted
   }
 
   /* ************************************************************************* */
@@ -294,5 +295,13 @@ namespace gtsam {
 
     return true;
   }
+
+  /* ************************************************************************* */
+  template<class BAYESNET, class GRAPH>
+  void EliminationTreeUnordered<BAYESNET,GRAPH>::swap(This& other) {
+    roots_.swap(other.roots_);
+    remainingFactors_.swap(other.remainingFactors_);
+  }
+
 
 }
