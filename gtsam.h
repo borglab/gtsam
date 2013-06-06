@@ -397,7 +397,7 @@ virtual class Rot3 : gtsam::Value {
   // Manifold
   static size_t Dim();
   size_t dim() const;
-  gtsam::Rot3 retractCayley(Vector v) const; // FIXME, does not exist in both Matrix and Quaternion options
+  //gtsam::Rot3 retractCayley(Vector v) const; // FIXME, does not exist in both Matrix and Quaternion options
   gtsam::Rot3 retract(Vector v) const;
   Vector localCoordinates(const gtsam::Rot3& p) const;
 
