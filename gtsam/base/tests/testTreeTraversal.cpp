@@ -16,6 +16,8 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/treeTraversal-inst.h>
 
 #include <vector>
 #include <list>
@@ -25,16 +27,19 @@
 
 using boost::assign::operator+=;
 using namespace std;
+using namespace gtsam;
 
 struct TestNode {
   typedef boost::shared_ptr<TestNode> shared_ptr;
   int data;
   vector<shared_ptr> children;
+  TestNode() : data(-1) {}
   TestNode(int data) : data(data) {}
 };
 
 struct TestForest {
-  typedef TestNode::shared_ptr sharedNode;
+  typedef TestNode Node;
+  typedef Node::shared_ptr sharedNode;
   vector<sharedNode> roots_;
   const vector<sharedNode>& roots() const { return roots_; }
 };
@@ -70,8 +75,9 @@ struct PreOrderVisitor {
       node->data == 1 ? -1 :
       node->data == 2 ? 0 :
       node->data == 3 ? 0 :
-      node->data == 4 ? 0 :
-      (throw std::runtime_error("Unexpected node index"), -1);
+      node->data == 4 ? 3 :
+      node->data == 10 ? 0 :
+      (parentsMatched = false, -1);
     if(expectedParentIndex != parentData)
       parentsMatched = false;
     return node->data;
@@ -88,16 +94,64 @@ struct PostOrderVisitor {
 };
 
 /* ************************************************************************* */
+std::list<int> getPreorder(const TestForest& forest) {
+  std::list<int> result;
+  PreOrderVisitor preVisitor;
+  int rootData = -1;
+  treeTraversal::DepthFirstForest(forest, rootData, preVisitor);
+  result = preVisitor.visited;
+  return result;
+}
+
+/* ************************************************************************* */
 TEST(treeTraversal, DepthFirst)
 {
   // Get test forest
   TestForest testForest = makeTestForest();
 
-  // Expected pre-order
+  // Expected visit order
   std::list<int> preOrderExpected;
   preOrderExpected += 0, 2, 3, 4, 1;
   std::list<int> postOrderExpected;
   postOrderExpected += 2, 4, 3, 0, 1;
+
+  // Actual visit order
+  PreOrderVisitor preVisitor;
+  PostOrderVisitor postVisitor;
+  int rootData = -1;
+  treeTraversal::DepthFirstForest(testForest, rootData, preVisitor, postVisitor);
+
+  EXPECT(preVisitor.parentsMatched);
+  EXPECT(assert_container_equality(preOrderExpected, preVisitor.visited));
+  EXPECT(assert_container_equality(postOrderExpected, postVisitor.visited));
+}
+
+/* ************************************************************************* */
+TEST(treeTraversal, CloneForest)
+{
+  // Get test forest
+  TestForest testForest1 = makeTestForest();
+  TestForest testForest2;
+  testForest2.roots_ = treeTraversal::CloneForest(testForest1);
+
+  // Check that the original and clone both are expected
+  std::list<int> preOrder1Expected;
+  preOrder1Expected += 0, 2, 3, 4, 1;
+  std::list<int> preOrder1Actual = getPreorder(testForest1);
+  std::list<int> preOrder2Actual = getPreorder(testForest2);
+  EXPECT(assert_container_equality(preOrder1Expected, preOrder1Actual));
+  EXPECT(assert_container_equality(preOrder1Expected, preOrder2Actual));
+
+  // Modify clone - should not modify original
+  testForest2.roots_[0]->children[1]->data = 10;
+  std::list<int> preOrderModifiedExpected;
+  preOrderModifiedExpected += 0, 2, 10, 4, 1;
+
+  // Check that original is the same and only the clone is modified
+  std::list<int> preOrder1ModActual = getPreorder(testForest1);
+  std::list<int> preOrder2ModActual = getPreorder(testForest2);
+  EXPECT(assert_container_equality(preOrder1Expected, preOrder1ModActual));
+  EXPECT(assert_container_equality(preOrderModifiedExpected, preOrder2ModActual));
 }
 
 /* ************************************************************************* */
