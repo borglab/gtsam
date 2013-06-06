@@ -156,27 +156,8 @@ namespace gtsam {
   EliminationTreeUnordered<BAYESNET,GRAPH>&
     EliminationTreeUnordered<BAYESNET,GRAPH>::operator=(const EliminationTreeUnordered<BAYESNET,GRAPH>& other)
   {
-    // Start by duplicating the roots.
-    roots_.clear();
-    std::stack<sharedNode, std::vector<sharedNode> > stack;
-    BOOST_FOREACH(const sharedNode& root, other.roots_) {
-      roots_.push_back(boost::make_shared<Node>(*root));
-      stack.push(roots_.back());
-    }
-
-    // Traverse the tree, duplicating each node's children and fixing the pointers as we go.  We do
-    // not clone any factors, only copy their pointers (this is a standard in GTSAM).
-    while(!stack.empty()) {
-      sharedNode node = stack.top();
-      stack.pop();
-      BOOST_FOREACH(sharedNode& child, node->children) {
-        // Important: since we are working with a *reference* to a shared pointer in this
-        // BOOST_FOREACH loop, the next statement modifies the pointer in the current node's child
-        // list - it replaces it with a pointer to a copy of the child.
-        child = boost::make_shared<Node>(*child);
-        stack.push(child);
-      }
-    }
+    // Start by duplicating the tree.
+    roots_ = treeTraversal::CloneForest(other);
 
     // Assign the remaining factors - these are pointers to factors in the original factor graph and
     // we do not clone them.
