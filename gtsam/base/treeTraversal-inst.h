@@ -56,7 +56,7 @@ namespace gtsam {
       void no_op(const NODE& node, const DATA& data) {}
     }
 
-    /** Traverse a forest depth-first.
+    /** Traverse a forest depth-first with pre-order and post-order visits.
      *  @param forest The forest of trees to traverse.  The method \c forest.roots() should exist
      *         and return a collection of (shared) pointers to \c FOREST::Node.
      *  @param visitorPre \c visitorPre(node, parentData) will be called at every node, before
@@ -70,9 +70,8 @@ namespace gtsam {
      *         call to \c visitorPre (the \c DATA object may be modified by visiting the children).  
      *  @param rootData The data to pass by reference to \c visitorPre when it is called on each
      *         root node. */
-    template<class FOREST, typename VISITOR_PRE, typename VISITOR_POST, typename DATA>
-    void DepthFirstForest(FOREST& forest, DATA& rootData,
-      VISITOR_PRE& visitorPre, VISITOR_POST& visitorPost = no_op<typename FOREST::Node, DATA>)
+    template<class FOREST, typename DATA, typename VISITOR_PRE, typename VISITOR_POST>
+    void DepthFirstForest(FOREST& forest, DATA& rootData, VISITOR_PRE& visitorPre, VISITOR_POST& visitorPost)
     {
       // Depth first traversal stack
       typedef TraversalNode<typename FOREST::Node, DATA> TraversalNode;
@@ -83,7 +82,7 @@ namespace gtsam {
       // Add roots to stack (use reverse iterators so children are processed in the order they
       // appear)
       (void) std::for_each(forest.roots().rbegin(), forest.roots().rend(),
-        Expander(visitor, &rootData, stack));
+        Expander(visitorPre, &rootData, stack));
 
       // Traverse
       while(!stack.empty())
@@ -105,6 +104,25 @@ namespace gtsam {
         }
       }
     }
+    
+    /** Traverse a forest depth-first, with a pre-order visit but no post-order visit.
+     *  @param forest The forest of trees to traverse.  The method \c forest.roots() should exist
+     *         and return a collection of (shared) pointers to \c FOREST::Node.
+     *  @param visitorPre \c visitorPre(node, parentData) will be called at every node, before
+     *         visiting its children, and will be passed, by reference, the \c DATA object returned
+     *         by the visit to its parent.  Likewise, \c visitorPre should return the \c DATA object
+     *         to pass to the children.  The returned \c DATA object will be copy-constructed only
+     *         upon returning to store internally, thus may be modified by visiting the children.
+     *         Regarding efficiency, this copy-on-return is usually optimized out by the compiler.
+     *  @param rootData The data to pass by reference to \c visitorPre when it is called on each
+     *         root node. */
+    template<class FOREST, typename DATA, typename VISITOR_PRE>
+    void DepthFirstForest(FOREST& forest, DATA& rootData, VISITOR_PRE& visitorPre)
+    {
+      DepthFirstForest<FOREST, DATA, VISITOR_PRE, void(&)(const typename FOREST::Node&, const DATA&)>(
+        forest, rootData, visitorPre, no_op<typename FOREST::Node, DATA>);
+    }
+
   }
 
 }
