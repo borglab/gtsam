@@ -180,8 +180,9 @@ namespace gtsam {
     // about the vector growing to be very large once and not being deallocated until this
     // function exits, because in the worst case we only store one pointer in this stack for each
     // variable in the system.
+    // TODO: Check whether this is faster as a vector (then use indices instead of parent pointers).
     typedef EliminationNode<This> EliminationNode;
-    std::stack<EliminationNode, std::vector<EliminationNode> > eliminationStack;
+    std::stack<EliminationNode, FastList<EliminationNode> > eliminationStack;
 
     // Create empty Bayes net and factor graph to hold result
     boost::shared_ptr<BayesNetType> bayesNet = boost::make_shared<BayesNetType>();
@@ -203,9 +204,6 @@ namespace gtsam {
       // expanded - we'll come back and eliminate it later after the children have been processed.
       EliminationNode& node = eliminationStack.top();
       if(node.expanded) {
-        // Remove from stack
-        eliminationStack.pop();
-
         // Do a dense elimination step
         std::vector<Key> keyAsVector(1); keyAsVector[0] = node.treeNode->key;
         std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> > eliminationResult =
@@ -219,6 +217,9 @@ namespace gtsam {
           node.parent->factors.push_back(eliminationResult.second);
         else
           remainingFactors->push_back(eliminationResult.second);
+
+        // Remove from stack
+        eliminationStack.pop();
       } else {
         // Expand children and mark as expanded
         node.expanded = true;
