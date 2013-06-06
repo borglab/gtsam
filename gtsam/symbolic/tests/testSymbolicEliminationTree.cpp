@@ -71,24 +71,21 @@ public:
 namespace {
 
   /* ************************************************************************* */
-  // Conditionals for ASIA example from the tutorial with A and D evidence
+  // Keys for ASIA example from the tutorial with A and D evidence
   const Key _X_=X(0), _T_=T(0), _S_=S(0), _E_=E(0), _L_=L(0), _B_=B(0);
 
-  // Bayes Tree for Asia example
-  SymbolicFactorGraphUnordered createAsiaGraph() {
-    SymbolicFactorGraphUnordered asiaGraph;
-    asiaGraph.push_factor(_T_);
-    asiaGraph.push_factor(_S_);
-    asiaGraph.push_factor(_T_, _E_, _L_);
-    asiaGraph.push_factor(_L_, _S_);
-    asiaGraph.push_factor(_S_, _B_);
-    asiaGraph.push_factor(_E_, _B_);
-    asiaGraph.push_factor(_E_, _X_);
-    return asiaGraph;
-  }
+  // Factor graph for Asia example
+  const SymbolicFactorGraphUnordered asiaGraph = list_of
+    (boost::make_shared<SymbolicFactorUnordered>(_T_))
+    (boost::make_shared<SymbolicFactorUnordered>(_S_))
+    (boost::make_shared<SymbolicFactorUnordered>(_T_, _E_, _L_))
+    (boost::make_shared<SymbolicFactorUnordered>(_L_, _S_))
+    (boost::make_shared<SymbolicFactorUnordered>(_S_, _B_))
+    (boost::make_shared<SymbolicFactorUnordered>(_E_, _B_))
+    (boost::make_shared<SymbolicFactorUnordered>(_E_, _X_));
   
   /* ************************************************************************* */
-  OrderingUnordered asiaOrdering = list_of(_X_)(_T_)(_S_)(_E_)(_L_)(_B_);
+  const OrderingUnordered asiaOrdering = list_of(_X_)(_T_)(_S_)(_E_)(_L_)(_B_);
 
 }
 
