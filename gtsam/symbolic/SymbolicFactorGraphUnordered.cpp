@@ -18,7 +18,10 @@
 #include <boost/make_shared.hpp>
 
 #include <gtsam/inference/FactorGraphUnordered-inst.h>
+#include <gtsam/inference/EliminateableFactorGraph-inst.h>
 #include <gtsam/symbolic/SymbolicFactorGraphUnordered.h>
+#include <gtsam/symbolic/SymbolicEliminationTreeUnordered.h>
+#include <gtsam/symbolic/SymbolicJunctionTreeUnordered.h>
 
 namespace gtsam {
 

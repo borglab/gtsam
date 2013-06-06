@@ -23,6 +23,7 @@ namespace gtsam {
   /** Internal functions used for traversing trees */
   namespace treeTraversal {
 
+    /* ************************************************************************* */
     namespace {
       // Internal node used in DFS preorder stack
       template<typename NODE, typename DATA>
@@ -96,7 +97,7 @@ namespace gtsam {
         } else {
           // If not already visited, visit the node and add its children (use reverse iterators so
           // children are processed in the order they appear)
-          (void) std::for_each(node.treeNode->children.rbegin(), node.treeNode->children.rend(),
+          (void) std::for_each(node.treeNode.children.rbegin(), node.treeNode.children.rend(),
             Expander(visitorPre, node.data, stack));
           node.expanded = true;
         }
@@ -121,6 +122,8 @@ namespace gtsam {
         forest, rootData, visitorPre, no_op<typename FOREST::Node, DATA>);
     }
     
+
+    /* ************************************************************************* */
     /** Traversal function for CloneForest */
     namespace {
       template<typename NODE>
@@ -147,6 +150,27 @@ namespace gtsam {
       return std::vector<boost::shared_ptr<Node> >(rootContainer->children.begin(), rootContainer->children.end());
     }
 
+
+    /* ************************************************************************* */
+    /** Traversal function for PrintForest */
+    namespace {
+      template<typename NODE>
+      std::string PrintForestVisitorPre(const NODE& node, const std::string& parentString, const KeyFormatter& formatter)
+      {
+        // Print the current node
+        node.print(parentString + "-", formatter);
+        // Increment the indentation
+        return parentString + "| ";
+      }
+    }
+
+    /** Print a tree, prefixing each line with \c str, and formatting keys using \c keyFormatter.
+     *  To print each node, this function calls the \c print function of the tree nodes. */
+    template<class FOREST>
+    void PrintForest(const FOREST& forest, const std::string& str, const KeyFormatter& keyFormatter) {
+      typedef typename FOREST::Node Node;
+      DepthFirstForest(forest, str, boost::bind(PrintForestVisitorPre<Node>, _1, _2, formatter));
+    }
   }
 
 }

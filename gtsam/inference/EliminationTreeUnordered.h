@@ -21,7 +21,6 @@
 #include <boost/shared_ptr.hpp>
 
 #include <gtsam/base/Testable.h>
-#include <gtsam/inference/Key.h>
 
 class EliminationTreeUnorderedTester; // for unit tests, see testEliminationTree
 
@@ -59,9 +58,7 @@ namespace gtsam {
     typedef BAYESNET BayesNetType; ///< The BayesNet corresponding to FACTOR
     typedef typename BayesNetType::ConditionalType ConditionalType; ///< The type of conditionals
     typedef typename boost::shared_ptr<ConditionalType> sharedConditional; ///< Shared pointer to a conditional
-    typedef boost::function<std::pair<sharedConditional,sharedFactor>(
-      std::vector<sharedFactor>, std::vector<Key>)>
-      Eliminate; ///< Typedef for an eliminate subroutine
+    typedef typename GRAPH::Eliminate Eliminate;
 
     struct Node {
       typedef std::vector<sharedFactor> Factors;
@@ -73,6 +70,8 @@ namespace gtsam {
 
       sharedFactor eliminate(const boost::shared_ptr<BayesNetType>& output,
         const Eliminate& function, const std::vector<sharedFactor>& childrenFactors) const;
+
+      void print(const std::string& str, const KeyFormatter& keyFormatter) const;
     };
 
     typedef boost::shared_ptr<Node> sharedNode; ///< Shared pointer to Node

@@ -57,12 +57,11 @@ namespace gtsam {
     typedef typename GRAPH::FactorType FactorType; ///< The type of factors
     typedef JunctionTreeUnordered<BAYESTREE, GRAPH> This; ///< This class
     typedef boost::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
-    typedef typename boost::shared_ptr<FactorType> sharedFactor;  ///< Shared pointer to a factor
+    typedef boost::shared_ptr<FactorType> sharedFactor;  ///< Shared pointer to a factor
     typedef BAYESTREE BayesTreeType; ///< The BayesTree type produced by elimination
     typedef typename BayesTreeType::ConditionalType ConditionalType; ///< The type of conditionals
-    typedef typename boost::shared_ptr<ConditionalType> sharedConditional; ///< Shared pointer to a conditional
-    typedef boost::function<std::pair<sharedConditional,sharedFactor>(std::vector<sharedFactor>, std::vector<Key>)>
-      Eliminate; ///< Typedef for an eliminate subroutine
+    typedef boost::shared_ptr<ConditionalType> sharedConditional; ///< Shared pointer to a conditional
+    typedef typename FactorGraphType::Eliminate Eliminate; ///< Typedef for an eliminate subroutine
 
     struct Node {
       typedef std::vector<Key> Keys;
@@ -92,7 +91,7 @@ namespace gtsam {
     /// @name Standard Constructors
     /// @{
 
-    /** Build the junction tree from an elimination tree and a symbolic Bayes net. */
+    /** Build the junction tree from an elimination tree. */
     template<class ETREE>
     JunctionTreeUnordered(const ETREE& eliminationTree);
     
@@ -114,8 +113,8 @@ namespace gtsam {
     * in GaussianFactorGraph.h
     * @return The Bayes net and factor graph resulting from elimination
     */
-    std::pair<boost::shared_ptr<BayesNetType>, boost::shared_ptr<FactorGraphType> >
-      eliminate(Eliminate function) const;
+    std::pair<boost::shared_ptr<BayesTreeType>, boost::shared_ptr<FactorGraphType> >
+      eliminate(const Eliminate& function) const;
 
     /// @}
 

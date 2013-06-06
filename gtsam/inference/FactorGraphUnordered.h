@@ -22,6 +22,8 @@
 #pragma once
 
 #include <boost/serialization/nvp.hpp>
+#include <boost/assign/list_inserter.hpp>
+#include <boost/make_shared.hpp>
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Key.h>
@@ -38,6 +40,7 @@ namespace gtsam {
 
   public:
 
+    typedef FactorGraphUnordered<FACTOR> This;
     typedef FACTOR FactorType;  ///< factor type
     typedef boost::shared_ptr<FACTOR> sharedFactor;  ///< Shared pointer to a factor
     typedef boost::shared_ptr<typename FACTOR::ConditionalType> sharedConditional;  ///< Shared pointer to a conditional
@@ -103,10 +106,16 @@ namespace gtsam {
 
     // TODO: are these needed?
 
-    /** Add a factor */
+    /** Add a factor directly using a shared_ptr */
     template<class DERIVEDFACTOR>
     void push_back(const boost::shared_ptr<DERIVEDFACTOR>& factor) {
       factors_.push_back(boost::shared_ptr<FACTOR>(factor));
+    }
+
+    /** Add a factor, will be copy-constructed into a shared_ptr (use push_back to avoid the copy). */
+    template<class DERIVEDFACTOR>
+    void add(const DERIVEDFACTOR& factor) {
+      factors_.push_back(boost::make_shared<DERIVEDFACTOR>(factor));
     }
 
     /** push back many factors */
@@ -119,6 +128,15 @@ namespace gtsam {
     void push_back(ITERATOR firstFactor, ITERATOR lastFactor) {
       factors_.insert(end(), firstFactor, lastFactor);
     }
+    
+    /** += syntax for push_back, e.g. graph += f1, f2, f3 */
+    boost::assign::list_inserter<boost::assign_detail::call_push_back<This>, sharedFactor>
+      operator+=(const sharedFactor& factor)
+    {
+      return boost::assign::make_list_inserter(
+        boost::assign_detail::call_push_back<This>(*this))(factor);
+    }
+
 
     /**
      * @brief Add a vector of derived factors

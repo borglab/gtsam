@@ -19,7 +19,7 @@
 #pragma once
 
 #include <gtsam/base/types.h>
-#include <gtsam/symbolic/SymbolicFactorGraphUnordered.h>
+#include <gtsam/inference/BayesNetUnordered.h>
 #include <gtsam/symbolic/SymbolicConditionalUnordered.h>
 
 namespace gtsam {
@@ -27,12 +27,14 @@ namespace gtsam {
   /** Symbolic Bayes Net
    *  \nosubgrouping
    */
-  class SymbolicBayesNetUnordered: public SymbolicFactorGraphUnordered {
+  class SymbolicBayesNetUnordered: public BayesNetUnordered<SymbolicConditionalUnordered> {
 
   public:
 
-    typedef SymbolicFactorGraphUnordered Base;
+    typedef BayesNetUnordered<SymbolicConditionalUnordered> Base;
+    typedef SymbolicBayesNetUnordered This;
     typedef SymbolicConditionalUnordered ConditionalType;
+    typedef boost::shared_ptr<This> shared_ptr; 
 
     /// @name Standard Constructors
     /// @{
@@ -43,6 +45,11 @@ namespace gtsam {
     /// @}
     /// @name Standard Interface
     /// @{
+    
+    /// @}
+
+  private:
+    void noop() const; // Function defined in cpp file so that compiler instantiates the base class
   };
 
 } // namespace gtsam

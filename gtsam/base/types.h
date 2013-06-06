@@ -40,6 +40,22 @@ namespace gtsam {
   /** The default IndexFormatter outputs the index */
   static const IndexFormatter DefaultIndexFormatter = &_defaultIndexFormatter;
 
+
+  /// Integer nonlinear key type
+  typedef size_t Key;
+
+  /// Typedef for a function to format a key, i.e. to convert it to a string
+  typedef boost::function<std::string(Key)> KeyFormatter;
+
+  // Helper function for DefaultKeyFormatter
+  GTSAM_EXPORT std::string _defaultKeyFormatter(Key key);
+
+  /// The default KeyFormatter, which is used if no KeyFormatter is passed to
+  /// a nonlinear 'print' function.  Automatically detects plain integer keys
+  /// and Symbol keys.
+  static const KeyFormatter DefaultKeyFormatter = &_defaultKeyFormatter;
+
+
   /**
    * Helper class that uses templates to select between two types based on
    * whether TEST_TYPE is const or not.

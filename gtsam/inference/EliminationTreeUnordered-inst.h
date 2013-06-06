@@ -59,6 +59,20 @@ namespace gtsam {
     return eliminationResult.second;
   }
 
+  /* ************************************************************************* */
+  template<class BAYESNET, class GRAPH>
+  void EliminationTreeUnordered<BAYESNET,GRAPH>::Node::print(
+    const std::string& str, const KeyFormatter& keyFormatter) const
+  {
+    std::cout << str << "(" << formatter(node->key) << ")\n";
+    BOOST_FOREACH(const typename ETREE::sharedFactor& factor, node->factors) {
+      if(factor)
+        factor->print(str + "| ");
+      else
+        std::cout << str << "| null factor\n";
+    }
+  }
+
 
   /* ************************************************************************* */
   template<class BAYESNET, class GRAPH>
@@ -187,25 +201,10 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  namespace {
-    template<class ETREE>
-    std::string printVisitor(const typename ETREE::sharedNode& node, const std::string& myString, const KeyFormatter& formatter) {
-      std::cout << myString << "-(" << formatter(node->key) << ")\n";
-      BOOST_FOREACH(const typename ETREE::sharedFactor& factor, node->factors) {
-        if(factor)
-          factor->print(myString + "| ");
-        else
-          std::cout << myString << "| null factor\n";
-      }
-      return myString + "| ";
-    }
-  }
-
-  /* ************************************************************************* */
   template<class BAYESNET, class GRAPH>
   void EliminationTreeUnordered<BAYESNET,GRAPH>::print(const std::string& name, const KeyFormatter& formatter) const
   {
-    treeTraversal::DepthFirstForest(*this, name, boost::bind(&printVisitor<This>, _1, _2, formatter));
+    treeTraversal::PrintForest(*this, name, formatter);
   }
 
   /* ************************************************************************* */

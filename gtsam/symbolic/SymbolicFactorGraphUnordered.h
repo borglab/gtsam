@@ -20,25 +20,46 @@
 
 #include <gtsam/base/types.h>
 #include <gtsam/inference/FactorGraphUnordered.h>
+#include <gtsam/inference/EliminateableFactorGraph.h>
 #include <gtsam/symbolic/SymbolicFactorUnordered.h>
+
+namespace gtsam { class SymbolicConditionalUnordered; }
+namespace gtsam { class SymbolicBayesNet; }
+namespace gtsam { class SymbolicEliminationTreeUnordered; }
+namespace gtsam { class SymbolicBayesTree; }
+namespace gtsam { class SymbolicJunctionTreeUnordered; }
 
 namespace gtsam {
 
   /** Symbolic Factor Graph
    *  \nosubgrouping
    */
-  class GTSAM_EXPORT SymbolicFactorGraphUnordered: public FactorGraphUnordered<SymbolicFactorUnordered> {
+  class GTSAM_EXPORT SymbolicFactorGraphUnordered:
+    public FactorGraphUnordered<SymbolicFactorUnordered>,
+    public EliminateableFactorGraph<
+    SymbolicFactorGraphUnordered, SymbolicFactorUnordered, SymbolicConditionalUnordered,
+    SymbolicBayesNet, SymbolicEliminationTreeUnordered, SymbolicBayesTree, SymbolicJunctionTreeUnordered>
+  {
 
   public:
 
     typedef SymbolicFactorGraphUnordered This;
     typedef FactorGraphUnordered<SymbolicFactorUnordered> Base;
+    typedef EliminateableFactorGraph<
+      SymbolicFactorGraphUnordered, SymbolicFactorUnordered, SymbolicConditionalUnordered,
+      SymbolicBayesNet, SymbolicEliminationTreeUnordered, SymbolicBayesTree, SymbolicJunctionTreeUnordered>
+      BaseEliminateable;
+    typedef BaseEliminateable::Eliminate Eliminate;
 
     /// @name Standard Constructors
     /// @{
 
     /** Construct empty factor graph */
     SymbolicFactorGraphUnordered() {}
+
+    /** Construct from any factor graph with factors derived from SymbolicFactor. */
+    template<class DERIVEDFACTOR>
+    SymbolicFactorGraphUnordered(const FactorGraphUnordered<DERIVEDFACTOR>& graph) : Base(graph.begin(), graph.end()) {}
 
     /** Constructor from iterator over factors */
     template<typename ITERATOR>

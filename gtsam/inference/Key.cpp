@@ -27,14 +27,6 @@
 
 namespace gtsam {
 
-/* ************************************************************************* */
-std::string _defaultKeyFormatter(Key key) {
-    const Symbol asSymbol(key);
-    if(asSymbol.chr() > 0)
-      return (std::string)asSymbol;
-    else
-      return boost::lexical_cast<std::string>(key);
-  }
 
 /* ************************************************************************* */
 std::string _multirobotKeyFormatter(gtsam::Key key) {

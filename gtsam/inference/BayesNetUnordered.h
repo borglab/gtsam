@@ -15,9 +15,12 @@
 * @author  Frank Dellaert
 * @author  Richard Roberts
 */
+
 #pragma once
 
 #include <boost/shared_ptr.hpp>
+
+#include <gtsam/inference/FactorGraphUnordered.h>
 
 namespace gtsam {
 
@@ -28,23 +31,12 @@ namespace gtsam {
   * \nosubgrouping
   */
   template<class CONDITIONAL>
-  class BayesNetUnordered {
+  class BayesNetUnordered : public FactorGraphUnordered<CONDITIONAL> {
 
   public:
 
+    typedef FactorGraphUnordered<CONDITIONAL> Base;
     typedef typename boost::shared_ptr<CONDITIONAL> sharedConditional; ///< A shared pointer to a conditional
-
-    /// Internal tree node that stores the conditional and the elimination parent
-    struct Node {
-      sharedConditional conditional;
-      boost::shared_ptr<Node> parent;
-    };
-
-    typedef boost::shared_ptr<Node> sharedNode; ///< A shared pointer to a node (used internally)
-
-  protected:
-
-    sharedNode roots_; ///< Tree roots
 
   public:
 
@@ -52,8 +44,23 @@ namespace gtsam {
     /// @{
 
     /** Default constructor as an empty BayesNet */
-    BayesNet() {};
+    BayesNetUnordered() {};
 
+    /// @}
+
+    /// @name Testable
+    /// @{
+
+    /** print out graph */
+    void print(const std::string& s = "BayesNet",
+      const KeyFormatter& formatter = DefaultKeyFormatter) const;
+
+    /// @}
+
+    /// @name Standard Interface
+    /// @{
+    
+    void saveGraph(const std::string &s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
   };
 
 }

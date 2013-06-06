@@ -24,13 +24,15 @@
 namespace gtsam {
 
   /* ************************************************************************* */
-  template<class DERIVED, class ELIMINATIONTREE, class JUNCTIONTREE>
-  boost::shared_ptr<typename ELIMINATIONTREE::BayesNetType>
-    EliminateableFactorGraph<DERIVED,ELIMINATIONTREE,JUNCTIONTREE>::eliminateSequential(
+  template<class FACTOR, class FACTORGRAPH, class CONDITIONAL,
+  class BAYESNET, class ELIMINATIONTREE, class BAYESTREE, class JUNCTIONTREE>
+  boost::shared_ptr<BAYESNET>
+    EliminateableFactorGraph<FACTOR, FACTORGRAPH, CONDITIONAL, BAYESNET, ELIMINATIONTREE, BAYESTREE, JUNCTIONTREE>::
+    eliminateSequential(
     const Eliminate& function, OptionalOrdering ordering, const VariableIndexUnordered& variableIndex) const
   {
     // Do elimination
-    std::pair<boost::shared_ptr<BayesNetType>, boost::shared_ptr<FactorGraphType> > result;
+    std::pair<boost::shared_ptr<BAYESNET>, boost::shared_ptr<FACTORGRAPH> > result;
     if(ordering) {
       // Do elimination with given ordering
       result = EliminationTreeType(*this, variableIndex, *ordering).eliminate(function);
@@ -49,13 +51,15 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  template<class DERIVED, class ELIMINATIONTREE, class JUNCTIONTREE>
-  boost::shared_ptr<typename JUNCTIONTREE::BayesTreeType>
-    EliminateableFactorGraph<DERIVED,ELIMINATIONTREE,JUNCTIONTREE>::eliminateMultifrontal(
+  template<class FACTOR, class FACTORGRAPH, class CONDITIONAL,
+  class BAYESNET, class ELIMINATIONTREE, class BAYESTREE, class JUNCTIONTREE>
+  boost::shared_ptr<BAYESTREE>
+    EliminateableFactorGraph<FACTOR, FACTORGRAPH, CONDITIONAL, BAYESNET, ELIMINATIONTREE, BAYESTREE, JUNCTIONTREE>::
+    eliminateMultifrontal(
     const Eliminate& function, OptionalOrdering ordering, const VariableIndexUnordered& variableIndex) const
   {
     // Do elimination
-    std::pair<boost::shared_ptr<BayesTreeType>, boost::shared_ptr<FactorGraphType> > result;
+    std::pair<boost::shared_ptr<BAYESTREE>, boost::shared_ptr<FACTORGRAPH> > result;
     if(ordering) {
       // Do elimination with given ordering
       result = JunctionTreeType(*this, variableIndex, *ordering).eliminate(function);

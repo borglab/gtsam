@@ -158,7 +158,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class BAYESTREE, class GRAPH>
-  JunctionTreeUnordered<BAYESTREE,GRAPH>& JunctionTreeUnordered<BAYESREE,GRAPH>::operator=(const This& other)
+  JunctionTreeUnordered<BAYESTREE,GRAPH>& JunctionTreeUnordered<BAYESTREE,GRAPH>::operator=(const This& other)
   {
     // Start by duplicating the tree.
     roots_ = treeTraversal::CloneForest(other);

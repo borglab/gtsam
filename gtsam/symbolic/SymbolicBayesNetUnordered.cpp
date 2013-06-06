@@ -10,20 +10,19 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    Ordering.h
- * @author  Richard Roberts
- * @date    Sep 2, 2010
+ * @file SymbolicBayesNet.cpp
+ * @date Oct 29, 2009
+ * @author Frank Dellaert
+ * @author Richard Roberts
  */
 
-#pragma once
-
-#include <vector>
-
-#include <gtsam/inference/Key.h>
+#include <gtsam/symbolic/SymbolicBayesNetUnordered.h>
 
 namespace gtsam {
-  class OrderingUnordered : std::vector<Key> {
-  public:
-    OrderingUnordered() {}
-  };
+
+  /* ************************************************************************* */
+  void SymbolicBayesNetUnordered::noop() const {
+  }
+
+
 }

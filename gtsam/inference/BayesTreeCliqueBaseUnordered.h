@@ -131,7 +131,7 @@ namespace gtsam {
     const boost::optional<FactorGraphType>& cachedSeparatorMarginal() const {
       return cachedSeparatorMarginal_; }
 
-    friend class BayesTreeUnordered<ConditionalType, DerivedType>;
+    friend class BayesTreeUnordered<DerivedType>;
 
   protected:
 
@@ -182,17 +182,5 @@ namespace gtsam {
     /// @}
 
   };
-  // \struct Clique
-
-  template<class DERIVED, class CONDITIONAL>
-  const DERIVED* asDerived(
-      const BayesTreeCliqueBase<DERIVED, CONDITIONAL>* base) {
-    return static_cast<const DERIVED*>(base);
-  }
-
-  template<class DERIVED, class CONDITIONAL>
-  DERIVED* asDerived(BayesTreeCliqueBase<DERIVED, CONDITIONAL>* base) {
-    return static_cast<DERIVED*>(base);
-  }
 
 }
