@@ -120,6 +120,18 @@ namespace gtsam {
       DepthFirstForest<FOREST, DATA, VISITOR_PRE, void(&)(const typename FOREST::Node&, const DATA&)>(
         forest, rootData, visitorPre, no_op<typename FOREST::Node, DATA>);
     }
+    
+    /** Traversal function for CloneForest */
+    namespace {
+      template<typename NODE>
+      boost::shared_ptr<NODE> CloneForestVisitorPre(const NODE& node, const boost::shared_ptr<NODE>& parentPointer)
+      {
+        // Clone the current node and add it to its cloned parent
+        boost::shared_ptr<NODE> clone = boost::make_shared<NODE>(node);
+        parentPointer->children.push_back(clone);
+        return clone;
+      }
+    }
 
     /** Clone a tree, copy-constructing new nodes (calling boost::make_shared) and setting up child
      *  pointers for a clone of the original tree.
@@ -129,7 +141,10 @@ namespace gtsam {
     template<class FOREST>
     std::vector<boost::shared_ptr<typename FOREST::Node> > CloneForest(const FOREST& forest)
     {
-
+      typedef typename FOREST::Node Node;
+      boost::shared_ptr<Node> rootContainer = boost::make_shared<Node>();
+      DepthFirstForest(forest, rootContainer, CloneForestVisitorPre<Node>);
+      return std::vector<boost::shared_ptr<Node> >(rootContainer->children.begin(), rootContainer->children.end());
     }
 
   }
