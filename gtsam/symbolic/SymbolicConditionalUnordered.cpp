@@ -15,6 +15,7 @@
  * @date    Oct 17, 2010
  */
 
+#include <gtsam/inference/ConditionalUnordered-inst.h>
 #include <gtsam/symbolic/SymbolicConditionalUnordered.h>
 
 namespace gtsam {

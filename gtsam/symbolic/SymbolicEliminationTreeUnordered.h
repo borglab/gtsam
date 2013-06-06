@@ -22,7 +22,7 @@
 
 namespace gtsam {
 
-  class SymbolicEliminationTreeUnordered :
+  class GTSAM_EXPORT SymbolicEliminationTreeUnordered :
     public EliminationTreeUnordered<SymbolicBayesNetUnordered, SymbolicFactorGraphUnordered> {
   public:
     typedef EliminationTreeUnordered<SymbolicBayesNetUnordered, SymbolicFactorGraphUnordered> Base; ///< Base class
@@ -60,10 +60,16 @@ namespace gtsam {
   private:
 
     /// Private default constructor
-    SymbolicEliminationTreeUnordered() {}
+    SymbolicEliminationTreeUnordered();
 
     friend class ::EliminationTreeUnorderedTester;
 
   };
+
+//#ifdef GTSAM_INSTANTIATE_SymbolicEliminationTreeUnordered
+//  template GTSAM_EXPORT class EliminationTreeUnordered<SymbolicBayesNetUnordered, SymbolicFactorGraphUnordered>;
+//#else
+//  extern template GTSAM_EXPORT class EliminationTreeUnordered<SymbolicBayesNetUnordered, SymbolicFactorGraphUnordered>;
+//#endif
 
 }

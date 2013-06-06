@@ -16,6 +16,16 @@
  * @date     Mar 9, 2013
  */
 
+// Macros for exporting DLL symbols on Windows
+// Usage example:
+// In header file:
+//   class GTSAM_EXPORT MyClass { ... };
+//   
+// Results in the following declarations:
+// When included while compiling the GTSAM library itself:
+//   class __declspec(dllexport) MyClass { ... };
+// When included while compiling other code against GTSAM:
+//   class __declspec(dllimport) MyClass { ... };
 #ifdef _WIN32
 #  ifdef GTSAM_EXPORTS
 #    define GTSAM_EXPORT __declspec(dllexport)
@@ -33,4 +43,3 @@
 #  define GTSAM_EXPORT
 #  define GTSAM_EXTERN_EXPORT extern
 #endif
-

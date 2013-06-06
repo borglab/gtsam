@@ -18,7 +18,10 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <vector>
 #include <boost/assign/std/vector.hpp>
+using namespace boost::assign;
+#include <boost/make_shared.hpp>
 
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/symbolic/SymbolicEliminationTreeUnordered.h>
@@ -39,12 +42,12 @@ public:
     SymbolicEliminationTreeUnordered::sharedNode node1(new SymbolicEliminationTreeUnordered::Node);
     node1->key = 1;
     node1->factors.push_back(fg[2]);
-    node1->subTrees.push_back(leaf0);
+    node1->children.push_back(leaf0);
 
     SymbolicEliminationTreeUnordered::sharedNode node2(new SymbolicEliminationTreeUnordered::Node);
     node2->key = 2;
     node2->factors.push_back(fg[3]);
-    node2->subTrees.push_back(node1);
+    node2->children.push_back(node1);
 
     SymbolicEliminationTreeUnordered::sharedNode leaf3(new SymbolicEliminationTreeUnordered::Node);
     leaf3->key = 3;
@@ -52,8 +55,8 @@ public:
 
     SymbolicEliminationTreeUnordered::sharedNode root(new SymbolicEliminationTreeUnordered::Node);
     root->key = 4;
-    root->subTrees.push_back(leaf3);
-    root->subTrees.push_back(node2);
+    root->children.push_back(leaf3);
+    root->children.push_back(node2);
 
     SymbolicEliminationTreeUnordered tree;
     tree.roots_.push_back(root);
@@ -131,7 +134,7 @@ TEST(EliminationTree, disconnected_graph) {
   vector<size_t> order;
   order += 0,1,2,3,4;
   SymbolicBayesNetUnordered actual = *SymbolicEliminationTreeUnordered(fg, order).eliminate(EliminateSymbolicUnordered).first;
-
+  
   EXPECT(assert_equal(expected,actual));
 }
 

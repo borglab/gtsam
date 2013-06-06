@@ -23,6 +23,7 @@
 #include <gtsam/base/FastSet.h>
 #include <gtsam/inference/BayesTree.h>
 #include <gtsam/inference/VariableIndex.h>
+#include <gtsam/inference/FactorGraphUnordered.h>
 
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>

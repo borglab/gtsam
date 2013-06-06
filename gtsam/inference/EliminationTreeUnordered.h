@@ -26,7 +26,6 @@
 #include <gtsam/inference/Key.h>
 
 class EliminationTreeUnorderedTester; // for unit tests, see testEliminationTree
-namespace { template<class ELIMINATIONTREE> struct EliminationNode; }
 
 namespace gtsam {
 
@@ -56,7 +55,7 @@ namespace gtsam {
 
     typedef GRAPH FactorGraphType; ///< The factor graph type
     typedef typename GRAPH::FactorType FactorType; ///< The type of factors
-    typedef EliminationTreeUnordered<BAYESNET,GRAPH> This; ///< This class
+    typedef EliminationTreeUnordered<BAYESNET, GRAPH> This; ///< This class
     typedef boost::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
     typedef typename boost::shared_ptr<FactorType> sharedFactor;  ///< Shared pointer to a factor
     typedef BAYESNET BayesNetType; ///< The BayesNet corresponding to FACTOR
@@ -65,19 +64,21 @@ namespace gtsam {
     typedef boost::function<std::pair<sharedConditional,sharedFactor>(std::vector<sharedFactor>, std::vector<Key>)>
       Eliminate; ///< Typedef for an eliminate subroutine
 
-  private:
-
-    class Node {
-    public:
+    struct Node {
       typedef FastList<sharedFactor> Factors;
-      typedef FastList<boost::shared_ptr<Node> > SubTrees;
+      typedef FastList<boost::shared_ptr<Node> > Children;
 
       Key key; ///< key associated with root
       Factors factors; ///< factors associated with root
-      SubTrees subTrees; ///< sub-trees
+      Children children; ///< sub-trees
+
+      sharedFactor eliminate(const boost::shared_ptr<BayesNetType>& output,
+        const Eliminate& function, const std::vector<sharedFactor>& childrenFactors) const;
     };
 
     typedef boost::shared_ptr<Node> sharedNode; ///< Shared pointer to Node
+
+  private:
 
     /** concept check */
     GTSAM_CONCEPT_TESTABLE_TYPE(FactorType);
@@ -140,6 +141,10 @@ namespace gtsam {
     bool equals(const This& other, double tol = 1e-9) const;
 
     /// @}
+    /// @name Advanced Interface
+    /// @{
+    
+    const FastList<sharedNode>& roots() const { return roots_; }
 
   protected:
     /// Protected default constructor
@@ -148,11 +153,6 @@ namespace gtsam {
   private:
     /// Allow access to constructor and add methods for testing purposes
     friend class ::EliminationTreeUnorderedTester;
-    
-    friend struct EliminationNode<This>;
-
   };
 
 }
-
-#include <gtsam/inference/EliminationTreeUnordered-inl.h>

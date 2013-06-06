@@ -17,6 +17,7 @@
 
 #include <boost/make_shared.hpp>
 
+#include <gtsam/inference/FactorGraphUnordered-inst.h>
 #include <gtsam/symbolic/SymbolicFactorGraphUnordered.h>
 
 namespace gtsam {

@@ -19,8 +19,6 @@
 #pragma once
 
 #include <boost/range.hpp>
-#include <boost/foreach.hpp>
-#include <iostream>
 
 #include <gtsam/inference/Key.h>
 
@@ -151,18 +149,5 @@ namespace gtsam {
     /// @}
 
   };
-
-  /* ************************************************************************* */
-  template<class FACTOR, class DERIVEDFACTOR>
-  void ConditionalUnordered<FACTOR,DERIVEDFACTOR>::print(const std::string& s, const KeyFormatter& formatter) const {
-    std::cout << s << " P(";
-    BOOST_FOREACH(Key key, frontals())
-      std::cout << " " << formatter(key);
-    if (nrParents() > 0)
-      std::cout << " |";
-    BOOST_FOREACH(Key parent, parents())
-      std::cout << " " << formatter(parent);
-    std::cout << ")" << std::endl;
-  }
 
 } // gtsam

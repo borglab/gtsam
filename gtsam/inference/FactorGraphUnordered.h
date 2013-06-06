@@ -228,5 +228,3 @@ namespace gtsam {
   }; // FactorGraph
 
 } // namespace gtsam
-
-#include <gtsam/inference/FactorGraphUnordered-inl.h>
