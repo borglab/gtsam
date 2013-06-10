@@ -1958,6 +1958,8 @@ class NonlinearISAM {
 template<T = {gtsam::LieScalar, gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera}>
 virtual class PriorFactor : gtsam::NonlinearFactor {
   PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
+  T prior() const;
+  gtsam::noiseModel::Base* get_noiseModel() const;
 };
 
 
@@ -1965,6 +1967,8 @@ virtual class PriorFactor : gtsam::NonlinearFactor {
 template<T = {gtsam::LieScalar, gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
 virtual class BetweenFactor : gtsam::NonlinearFactor {
   BetweenFactor(size_t key1, size_t key2, const T& relativePose, const gtsam::noiseModel::Base* noiseModel);
+  T measured() const;
+  gtsam::noiseModel::Base* get_noiseModel() const;
 };
 
 
@@ -1982,6 +1986,7 @@ virtual class NonlinearEquality : gtsam::NonlinearFactor {
 template<POSE, POINT>
 virtual class RangeFactor : gtsam::NonlinearFactor {
   RangeFactor(size_t key1, size_t key2, double measured, const gtsam::noiseModel::Base* noiseModel);
+  gtsam::noiseModel::Base* get_noiseModel() const;
 };
 
 typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Point2> RangeFactorPosePoint2;
@@ -1998,6 +2003,7 @@ typedef gtsam::RangeFactor<gtsam::SimpleCamera, gtsam::SimpleCamera> RangeFactor
 template<POSE, POINT, ROTATION>
 virtual class BearingFactor : gtsam::NonlinearFactor {
   BearingFactor(size_t key1, size_t key2, const ROTATION& measured, const gtsam::noiseModel::Base* noiseModel);
+  gtsam::noiseModel::Base* get_noiseModel() const;
 };
 
 typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2> BearingFactor2D;
@@ -2007,6 +2013,7 @@ typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2> BearingFa
 template<POSE, POINT, ROTATION>
 virtual class BearingRangeFactor : gtsam::NonlinearFactor {
   BearingRangeFactor(size_t poseKey, size_t pointKey, const ROTATION& measuredBearing, double measuredRange, const gtsam::noiseModel::Base* noiseModel);
+  gtsam::noiseModel::Base* get_noiseModel() const;
 };
 
 typedef gtsam::BearingRangeFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2> BearingRangeFactor2D;
@@ -2030,6 +2037,7 @@ virtual class GenericProjectionFactor : gtsam::NonlinearFactor {
   CALIBRATION* calibration() const;
   bool verboseCheirality() const;
   bool throwCheirality() const;
+  gtsam::noiseModel::Base* get_noiseModel() const;
 };
 typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> GenericProjectionFactorCal3_S2;
 typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> GenericProjectionFactorCal3DS2;
@@ -2058,6 +2066,7 @@ virtual class GenericStereoFactor : gtsam::NonlinearFactor {
     size_t poseKey, size_t landmarkKey, const gtsam::Cal3_S2Stereo* K);
   gtsam::StereoPoint2 measured() const;
   gtsam::Cal3_S2Stereo* calibration() const;
+  gtsam::noiseModel::Base* get_noiseModel() const;
 };
 typedef gtsam::GenericStereoFactor<gtsam::Pose3, gtsam::Point3> GenericStereoFactor3D;
 
@@ -2065,6 +2074,7 @@ typedef gtsam::GenericStereoFactor<gtsam::Pose3, gtsam::Point3> GenericStereoFac
 template<POSE>
 virtual class PoseTranslationPrior : gtsam::NonlinearFactor {
   PoseTranslationPrior(size_t key, const POSE& pose_z, const gtsam::noiseModel::Base* noiseModel);
+  gtsam::noiseModel::Base* get_noiseModel() const;
 };
 
 typedef gtsam::PoseTranslationPrior<gtsam::Pose2> PoseTranslationPrior2D;
@@ -2074,6 +2084,7 @@ typedef gtsam::PoseTranslationPrior<gtsam::Pose3> PoseTranslationPrior3D;
 template<POSE>
 virtual class PoseRotationPrior : gtsam::NonlinearFactor {
   PoseRotationPrior(size_t key, const POSE& pose_z, const gtsam::noiseModel::Base* noiseModel);
+  gtsam::noiseModel::Base* get_noiseModel() const;
 };
 
 typedef gtsam::PoseRotationPrior<gtsam::Pose2> PoseRotationPrior2D;
