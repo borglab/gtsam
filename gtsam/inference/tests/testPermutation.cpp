@@ -125,6 +125,7 @@ TEST(Reduction, CreateFromPartialPermutation) {
   expected.insert(make_pair(6,4));
 
   internal::Reduction actual = internal::Reduction::CreateFromPartialPermutation(selector, p);
+  EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
