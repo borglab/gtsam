@@ -1,15 +1,5 @@
-# Build a library of example domains, just for tests
-file(GLOB test_lib_srcs "*.cpp")
-file(GLOB test_srcs "test*.cpp")
-file(GLOB time_srcs "time*.cpp")
-list(REMOVE_ITEM test_lib_srcs ${test_srcs})
-list(REMOVE_ITEM test_lib_srcs ${time_srcs})
-add_library(test_lib STATIC ${test_lib_srcs})
-target_link_libraries(test_lib ${gtsam-default})
-
 # Assemble local libraries
 set(tests_local_libs
-   test_lib
    slam
    nonlinear
    linear
