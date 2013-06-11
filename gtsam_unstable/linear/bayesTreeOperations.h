@@ -67,13 +67,33 @@ GTSAM_UNSTABLE_EXPORT std::deque<GaussianBayesTree::sharedClique>
 findPathCliques(const GaussianBayesTree::sharedClique& initial);
 
 /**
- * Liquefies a GaussianBayesTree into a GaussianFactorGraph recursively, given either a
- * root clique or a full bayes tree.
+ * Liquefies a BayesTree into a GaussianFactorGraph recursively, given a
+ * root clique
  *
  * @param splitConditionals flag enables spliting multi-frontal conditionals into separate factors
  */
-GTSAM_UNSTABLE_EXPORT GaussianFactorGraph liquefy(const GaussianBayesTree::sharedClique& root, bool splitConditionals = false);
-GTSAM_UNSTABLE_EXPORT GaussianFactorGraph liquefy(const GaussianBayesTree& bayesTree, bool splitConditionals = false);
+template <class BAYESTREE>
+GaussianFactorGraph liquefy(const typename BAYESTREE::sharedClique& root, bool splitConditionals = false) {
+  GaussianFactorGraph result;
+  if (root && root->conditional()) {
+    GaussianConditional::shared_ptr conditional = root->conditional();
+    if (!splitConditionals)
+      result.push_back(conditional->toFactor());
+    else
+      result.push_back(splitFactor(conditional->toFactor()));
+  }
+  BOOST_FOREACH(const typename BAYESTREE::sharedClique& child, root->children())
+    result.push_back(liquefy<BAYESTREE>(child, splitConditionals));
+  return result;
+}
+
+/**
+ * Liquefies a BayesTree into a GaussianFactorGraph recursively, from a full bayes tree.
+ */
+template <class BAYESTREE>
+GaussianFactorGraph liquefy(const BAYESTREE& bayesTree, bool splitConditionals = false) {
+  return liquefy<BAYESTREE>(bayesTree.root(), splitConditionals);
+}
 
 } // \namespace gtsam
 

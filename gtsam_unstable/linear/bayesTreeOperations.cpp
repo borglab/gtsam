@@ -128,25 +128,5 @@ findPathCliques(const GaussianBayesTree::sharedClique& initial) {
 }
 
 /* ************************************************************************* */
-GaussianFactorGraph liquefy(const GaussianBayesTree::sharedClique& root, bool splitConditionals) {
-  GaussianFactorGraph result;
-  if (root && root->conditional()) {
-    GaussianConditional::shared_ptr conditional = root->conditional();
-    if (!splitConditionals)
-      result.push_back(conditional->toFactor());
-    else
-      result.push_back(splitFactor(conditional->toFactor()));
-  }
-  BOOST_FOREACH(const GaussianBayesTree::sharedClique& child, root->children())
-    result.push_back(liquefy(child, splitConditionals));
-  return result;
-}
-
-/* ************************************************************************* */
-GaussianFactorGraph liquefy(const GaussianBayesTree& bayesTree, bool splitConditionals) {
-  return liquefy(bayesTree.root(), splitConditionals);
-}
-
-/* ************************************************************************* */
 } // \namespace gtsam
 
