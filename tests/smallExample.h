@@ -212,7 +212,6 @@ Graph createNonlinearFactorGraph() {
 
 /* ************************************************************************* */
 Values createValues() {
-  using namespace impl;
   using symbol_shorthand::X;
   using symbol_shorthand::L;
   Values c;
@@ -225,8 +224,6 @@ Values createValues() {
 /* ************************************************************************* */
 VectorValues createVectorValues() {
   using namespace impl;
-  using symbol_shorthand::X;
-  using symbol_shorthand::L;
   VectorValues c(std::vector<size_t>(3, 2));
   c[_l1_] = Vector_(2, 0.0, -1.0);
   c[_x1_] = Vector_(2, 0.0, 0.0);
@@ -236,7 +233,6 @@ VectorValues createVectorValues() {
 
 /* ************************************************************************* */
 boost::shared_ptr<const Values> sharedNoisyValues() {
-  using namespace impl;
   using symbol_shorthand::X;
   using symbol_shorthand::L;
   boost::shared_ptr<Values> c(new Values);
@@ -253,7 +249,6 @@ Values createNoisyValues() {
 
 /* ************************************************************************* */
 VectorValues createCorrectDelta(const Ordering& ordering) {
-  using namespace impl;
   using symbol_shorthand::X;
   using symbol_shorthand::L;
   VectorValues c(std::vector<size_t>(3,2));
@@ -265,7 +260,6 @@ VectorValues createCorrectDelta(const Ordering& ordering) {
 
 /* ************************************************************************* */
 VectorValues createZeroDelta(const Ordering& ordering) {
-  using namespace impl;
   using symbol_shorthand::X;
   using symbol_shorthand::L;
   VectorValues c(std::vector<size_t>(3,2));
@@ -277,7 +271,6 @@ VectorValues createZeroDelta(const Ordering& ordering) {
 
 /* ************************************************************************* */
 GaussianFactorGraph createGaussianFactorGraph(const Ordering& ordering) {
-  using namespace impl;
   using symbol_shorthand::X;
   using symbol_shorthand::L;
   // Create empty graph
@@ -308,8 +301,6 @@ GaussianFactorGraph createGaussianFactorGraph(const Ordering& ordering) {
  */
 GaussianBayesNet createSmallGaussianBayesNet() {
   using namespace impl;
-  using symbol_shorthand::X;
-  using symbol_shorthand::L;
   Matrix R11 = Matrix_(1, 1, 1.0), S12 = Matrix_(1, 1, 1.0);
   Matrix R22 = Matrix_(1, 1, 1.0);
   Vector d1(1), d2(1);
@@ -362,7 +353,6 @@ struct UnaryFactor: public gtsam::NoiseModelFactor1<Point2> {
 
 /* ************************************************************************* */
 boost::shared_ptr<const Graph> sharedReallyNonlinearFactorGraph() {
-  using namespace impl;
   using symbol_shorthand::X;
   using symbol_shorthand::L;
   boost::shared_ptr<Graph> fg(new Graph);
@@ -425,8 +415,6 @@ std::pair<FactorGraph<GaussianFactor>, Ordering> createSmoother(int T, boost::op
 /* ************************************************************************* */
 GaussianFactorGraph createSimpleConstraintGraph() {
   using namespace impl;
-  using symbol_shorthand::X;
-  using symbol_shorthand::L;
   // create unary factor
   // prior on _x_, mean = [1,-1], sigma=0.1
   Matrix Ax = eye(2);
@@ -468,8 +456,6 @@ VectorValues createSimpleConstraintValues() {
 /* ************************************************************************* */
 GaussianFactorGraph createSingleConstraintGraph() {
   using namespace impl;
-  using symbol_shorthand::X;
-  using symbol_shorthand::L;
   // create unary factor
   // prior on _x_, mean = [1,-1], sigma=0.1
   Matrix Ax = eye(2);
@@ -504,8 +490,6 @@ GaussianFactorGraph createSingleConstraintGraph() {
 /* ************************************************************************* */
 VectorValues createSingleConstraintValues() {
   using namespace impl;
-  using symbol_shorthand::X;
-  using symbol_shorthand::L;
   VectorValues config(std::vector<size_t>(2,2));
   config[_x_] = Vector_(2, 1.0, -1.0);
   config[_y_] = Vector_(2, 0.2, 0.1);
@@ -515,8 +499,6 @@ VectorValues createSingleConstraintValues() {
 /* ************************************************************************* */
 GaussianFactorGraph createMultiConstraintGraph() {
   using namespace impl;
-  using symbol_shorthand::X;
-  using symbol_shorthand::L;
   // unary factor 1
   Matrix A = eye(2);
   Vector b = Vector_(2, -2.0, 2.0);
@@ -572,8 +554,6 @@ GaussianFactorGraph createMultiConstraintGraph() {
 /* ************************************************************************* */
 VectorValues createMultiConstraintValues() {
   using namespace impl;
-  using symbol_shorthand::X;
-  using symbol_shorthand::L;
   VectorValues config(std::vector<size_t>(3,2));
   config[_x_] = Vector_(2, -2.0, 2.0);
   config[_y_] = Vector_(2, -0.1, 0.4);
@@ -593,8 +573,6 @@ Symbol key(int x, int y) {
 /* ************************************************************************* */
 boost::tuple<GaussianFactorGraph, VectorValues> planarGraph(size_t N) {
   using namespace impl;
-  using symbol_shorthand::X;
-  using symbol_shorthand::L;
 
   // create empty graph
   NonlinearFactorGraph nlfg;
