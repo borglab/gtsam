@@ -89,6 +89,8 @@ GaussianFactorGraph liquefy(const typename BAYESTREE::sharedClique& root, bool s
 
 /**
  * Liquefies a BayesTree into a GaussianFactorGraph recursively, from a full bayes tree.
+ *
+ * @param splitConditionals flag enables spliting multi-frontal conditionals into separate factors
  */
 template <class BAYESTREE>
 GaussianFactorGraph liquefy(const BAYESTREE& bayesTree, bool splitConditionals = false) {
