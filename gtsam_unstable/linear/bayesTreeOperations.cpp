@@ -48,7 +48,7 @@ GaussianFactorGraph splitFactor(const GaussianFactor::shared_ptr& factor) {
   JacobianFactor::const_iterator rowIt, colIt;
   const size_t totalRows = jf->rows();
   size_t rowsRemaining = totalRows;
-  for (rowIt = jf->begin(); rowIt != jf->end(); ++rowIt) {
+  for (rowIt = jf->begin(); rowIt != jf->end() && rowsRemaining > 0; ++rowIt) {
     // get dim of current variable
     size_t varDim = jf->getDim(rowIt);
     size_t startRow = totalRows - rowsRemaining;

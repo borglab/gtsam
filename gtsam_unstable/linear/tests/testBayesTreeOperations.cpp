@@ -28,7 +28,7 @@ using symbol_shorthand::L;
 static const double tol = 1e-4;
 
 /* ************************************************************************* */
-TEST( testBayesTreeOperations, splitFactor ) {
+TEST( testBayesTreeOperations, splitFactor1 ) {
 
   // Build upper-triangular system
   JacobianFactor initFactor(
@@ -68,7 +68,7 @@ TEST( testBayesTreeOperations, splitFactor ) {
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE( testLinearTools, splitFactor2 ) {
+TEST( testBayesTreeOperations, splitFactor2 ) {
 
   // Build upper-triangular system
   JacobianFactor initFactor(
@@ -125,6 +125,57 @@ TEST_UNSAFE( testLinearTools, splitFactor2 ) {
            0.1, 3.2,
            0.0, 1.2),
        Vector_(2, 0.5, 0.6),
+       model2);
+
+  EXPECT(assert_equal(expSplit, actSplit));
+}
+
+/* ************************************************************************* */
+TEST( testBayesTreeOperations, splitFactor3 ) {
+
+  // Build upper-triangular system
+  JacobianFactor initFactor(
+       0,Matrix_(4, 2,
+           1.0, 2.0,
+           0.0, 3.0,
+           0.0, 0.0,
+           0.0, 0.0),
+       1,Matrix_(4, 2,
+           1.0, 2.0,
+           9.0, 3.0,
+           6.0, 8.0,
+           0.0, 7.0),
+       2,Matrix_(4, 2,
+           1.1, 2.2,
+           9.1, 3.2,
+           6.1, 8.2,
+           0.1, 7.2),
+       Vector_(4, 0.1, 0.2, 0.3, 0.4),
+       model4);
+
+  GaussianFactorGraph actSplit = splitFactor(initFactor.clone());
+  GaussianFactorGraph expSplit;
+
+  expSplit.add(
+       0,Matrix_(2, 2,
+           1.0, 2.0,
+           0.0, 3.0),
+       1,Matrix_(2, 2,
+           1.0, 2.0,
+           9.0, 3.0),
+       2,Matrix_(2, 2,
+           1.1, 2.2,
+           9.1, 3.2),
+       Vector_(2, 0.1, 0.2),
+       model2);
+  expSplit.add(
+       1,Matrix_(2, 2,
+           6.0, 8.0,
+           0.0, 7.0),
+       2,Matrix_(2, 2,
+           6.1, 8.2,
+           0.1, 7.2),
+       Vector_(2, 0.3, 0.4),
        model2);
 
   EXPECT(assert_equal(expSplit, actSplit));
@@ -222,12 +273,99 @@ TEST( testBayesTreeOperations, liquefy ) {
 
     expGraph.add(3, A43, 5, A45, zeros(2,1), unit2);
 
-    EXPECT(assert_equal(expGraph, actGraph));
-    LONGS_EQUAL(4, actGraph.size());
-    EXPECT(assert_equal(*expGraph.at(0), *actGraph.at(0)));
-    EXPECT(assert_equal(*expGraph.at(1), *actGraph.at(1)));
-    EXPECT(assert_equal(*expGraph.at(2), *actGraph.at(2)));
-    EXPECT(assert_equal(*expGraph.at(3), *actGraph.at(3)));
+    EXPECT(assert_equal(expGraph, actGraph, tol));
+  }
+
+  // Liquefy the tree back into a graph, splitting factors
+  {
+    GaussianFactorGraph actGraph = liquefy(bayesTree, true);
+    GaussianFactorGraph expGraph;
+
+    // Conditional 1
+    {
+      Matrix A12 = Matrix_(2, 2,
+          1.73205081,          0.0,
+                 0.0,   1.73205081);
+
+      Matrix A15 = Matrix_(2, 2,
+         -0.577350269,          0.0,
+                  0.0, -0.577350269);
+
+      Matrix A16 = Matrix_(2, 2,
+        -0.577350269,          0.0,
+                 0.0, -0.577350269);
+      expGraph.add(2, A12, 5, A15, 6, A16, zeros(2,1), unit2);
+    }
+
+    {
+      Matrix A15 = Matrix_(2, 2,
+           1.47196014,          0.0,
+                  0.0,   1.47196014);
+
+      Matrix A16 = Matrix_(2, 2,
+        -0.226455407,          0.0,
+                 0.0, -0.226455407);
+      expGraph.add(5, A15, 6, A16, zeros(2,1), unit2);
+    }
+
+    {
+      Matrix A16 = Matrix_(2, 2,
+          1.49357599,          0.0,
+                 0.0,   1.49357599);
+      expGraph.add(6, A16, zeros(2,1), unit2);
+    }
+
+    // Conditional 2
+    {
+      Matrix A21 = Matrix_(2, 2,
+          1.73205081,          0.0,
+                 0.0,   1.73205081);
+
+      Matrix A24 = Matrix_(2, 2,
+        -0.577350269,          0.0,
+                 0.0, -0.577350269);
+
+      Matrix A26 = Matrix_(2, 2,
+        -0.577350269,          0.0,
+                 0.0, -0.577350269);
+
+      expGraph.add(1, A21, 4, A24, 6, A26, zeros(2,1), unit2);
+    }
+
+    {
+      Matrix A24 = Matrix_(2, 2,
+          1.47196014,          0.0,
+                 0.0,   1.47196014);
+
+      Matrix A26 = Matrix_(2, 2,
+        -0.226455407,          0.0,
+                 0.0, -0.226455407);
+
+      expGraph.add(4, A24, 6, A26, zeros(2,1), unit2);
+    }
+
+    // Conditional 3
+    Matrix A30 = Matrix_(2, 2,
+        1.41421356,          0.0,
+               0.0,   1.41421356);
+
+    Matrix A34 = Matrix_(2, 2,
+      -0.707106781,          0.0,
+               0.0, -0.707106781);
+
+    expGraph.add(0, A30, 4, A34, zeros(2,1), unit2);
+
+    // Conditional 4
+    Matrix A43 = Matrix_(2, 2,
+        1.41421356,          0.0,
+               0.0,   1.41421356);
+    Matrix A45 = Matrix_(2, 2,
+      -0.707106781,          0.0,
+               0.0, -0.707106781);
+
+    expGraph.add(3, A43, 5, A45, zeros(2,1), unit2);
+
+    EXPECT(assert_equal(expGraph, actGraph, tol));
   }
 }
 
