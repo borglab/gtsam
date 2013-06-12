@@ -208,9 +208,9 @@ std::string gtsam::serializeGraph(const NonlinearFactorGraph& graph) {
 }
 
 /* ************************************************************************* */
-NonlinearFactorGraph gtsam::deserializeGraph(const std::string& serialized_graph) {
-  NonlinearFactorGraph result;
-  deserialize<NonlinearFactorGraph>(serialized_graph, result);
+NonlinearFactorGraph::shared_ptr gtsam::deserializeGraph(const std::string& serialized_graph) {
+  NonlinearFactorGraph::shared_ptr result(new NonlinearFactorGraph());
+  deserialize<NonlinearFactorGraph>(serialized_graph, *result);
   return result;
 }
 
@@ -220,10 +220,10 @@ std::string gtsam::serializeGraphXML(const NonlinearFactorGraph& graph, const st
 }
 
 /* ************************************************************************* */
-NonlinearFactorGraph gtsam::deserializeGraphXML(const std::string& serialized_graph,
+NonlinearFactorGraph::shared_ptr gtsam::deserializeGraphXML(const std::string& serialized_graph,
     const std::string& name) {
-  NonlinearFactorGraph result;
-  deserializeXML<NonlinearFactorGraph>(serialized_graph, result, name);
+  NonlinearFactorGraph::shared_ptr result(new NonlinearFactorGraph());
+  deserializeXML<NonlinearFactorGraph>(serialized_graph, *result, name);
   return result;
 }
 
@@ -233,9 +233,9 @@ std::string gtsam::serializeValues(const Values& values) {
 }
 
 /* ************************************************************************* */
-Values gtsam::deserializeValues(const std::string& serialized_values) {
-  Values result;
-  deserialize<Values>(serialized_values, result);
+Values::shared_ptr gtsam::deserializeValues(const std::string& serialized_values) {
+  Values::shared_ptr result(new Values());
+  deserialize<Values>(serialized_values, *result);
   return result;
 }
 
@@ -245,10 +245,10 @@ std::string gtsam::serializeValuesXML(const Values& values, const std::string& n
 }
 
 /* ************************************************************************* */
-Values gtsam::deserializeValuesXML(const std::string& serialized_values,
+Values::shared_ptr gtsam::deserializeValuesXML(const std::string& serialized_values,
     const std::string& name) {
-  Values result;
-  deserializeXML<Values>(serialized_values, result, name);
+  Values::shared_ptr result(new Values());
+  deserializeXML<Values>(serialized_values, *result, name);
   return result;
 }
 

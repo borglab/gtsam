@@ -42,7 +42,7 @@ NonlinearFactorGraph exampleGraph() {
 TEST( testSerialization, text_graph_serialization ) {
   NonlinearFactorGraph graph = exampleGraph();
   string serialized = serializeGraph(graph);
-  NonlinearFactorGraph actGraph = deserializeGraph(serialized);
+  NonlinearFactorGraph actGraph = *deserializeGraph(serialized);
   EXPECT(assert_equal(graph, actGraph));
 }
 
@@ -50,7 +50,7 @@ TEST( testSerialization, text_graph_serialization ) {
 TEST( testSerialization, xml_graph_serialization ) {
   NonlinearFactorGraph graph = exampleGraph();
   string serialized = serializeGraphXML(graph, "graph1");
-  NonlinearFactorGraph actGraph = deserializeGraphXML(serialized, "graph1");
+  NonlinearFactorGraph actGraph = *deserializeGraphXML(serialized, "graph1");
   EXPECT(assert_equal(graph, actGraph));
 }
 
@@ -58,7 +58,7 @@ TEST( testSerialization, xml_graph_serialization ) {
 TEST( testSerialization, text_values_serialization ) {
   Values values = exampleValues();
   string serialized = serializeValues(values);
-  Values actValues = deserializeValues(serialized);
+  Values actValues = *deserializeValues(serialized);
   EXPECT(assert_equal(values, actValues));
 }
 
@@ -66,7 +66,7 @@ TEST( testSerialization, text_values_serialization ) {
 TEST( testSerialization, xml_values_serialization ) {
   Values values = exampleValues();
   string serialized = serializeValuesXML(values, "values1");
-  Values actValues = deserializeValuesXML(serialized, "values1");
+  Values actValues = *deserializeValuesXML(serialized, "values1");
   EXPECT(assert_equal(values, actValues, 1e-5));
 }
 
