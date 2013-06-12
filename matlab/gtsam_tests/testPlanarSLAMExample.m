@@ -68,4 +68,12 @@ point_1 = result.at(symbol('l',1));
 marginals.marginalCovariance(symbol('l',1));
 CHECK('point_1.equals(Point2(2,2),1e-4)',point_1.equals(Point2(2,2),1e-4));
 
+%% Check that serialization works properly
+serialized_values = serializeValues(initialEstimate);
+deserializedValues = deserializeValues(serialized_values);
+CHECK('initialEstimate.equals(deserializedValues)',initialEstimate.equals(deserializedValues,1e-9));
 
+% FAILS: unregistered class? 
+% serialized_graph = serializeGraph(graph);
+% deserializedGraph = deserializeGraph(serialized_graph);
+% CHECK('graph.equals(deserializedGraph)',graph.equals(deserializedGraph,1e-9));

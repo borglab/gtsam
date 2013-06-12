@@ -2103,6 +2103,33 @@ pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D_robust(string filename
     gtsam::noiseModel::Base* model);
 
 //*************************************************************************
+// Serialization
+//*************************************************************************
+#include <gtsam/slam/serialization.h>
+
+// Serialize/Deserialize a NonlinearFactorGraph
+string serializeGraph(const gtsam::NonlinearFactorGraph& graph);
+
+gtsam::NonlinearFactorGraph* deserializeGraph(string serialized_graph);
+
+string serializeGraphXML(const gtsam::NonlinearFactorGraph& graph);
+string serializeGraphXML(const gtsam::NonlinearFactorGraph& graph, string name);
+
+gtsam::NonlinearFactorGraph* deserializeGraphXML(string serialized_graph);
+gtsam::NonlinearFactorGraph* deserializeGraphXML(string serialized_graph, string name);
+
+// Serialize/Deserialize a Values
+string serializeValues(const gtsam::Values& values);
+
+gtsam::Values* deserializeValues(string serialized_values);
+
+string serializeValuesXML(const gtsam::Values& values);
+string serializeValuesXML(const gtsam::Values& values, string name);
+
+gtsam::Values* deserializeValuesXML(string serialized_values);
+gtsam::Values* deserializeValuesXML(string serialized_values, string name);
+
+//*************************************************************************
 // Utilities
 //*************************************************************************
 
