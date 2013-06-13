@@ -62,7 +62,7 @@
  *       of using the copy constructor (which is used for non-virtual objects).
  *     - Signature of clone function - will be called virtually, so must appear at least at the top of the inheritance tree
  *           virtual boost::shared_ptr<CLASS_NAME> clone() const;
- *   Templates
+ *   Class Templates
  *     - Basic templates are supported either with an explicit list of types to instantiate,
  *       e.g. template<T = {gtsam::Pose2, gtsam::Rot2, gtsam::Point3}> class Class1 { ... };
  *       or with typedefs, e.g.
@@ -81,7 +81,12 @@
 /**
  * Status:
  *  - TODO: default values for arguments
+ *    - WORKAROUND: make multiple versions of the same function for different configurations of default arguments
  *  - TODO: Handle gtsam::Rot3M conversions to quaternions
+ *  - TODO: Parse return of const ref arguments
+ *  - TODO: Parse std::string variants and convert directly to special string
+ *  - TODO: Add enum support
+ *  - TODO: Add generalized serialization support via boost.serialization with hooks to matlab save/load
  */
 
 namespace std {
@@ -98,7 +103,7 @@ namespace std {
         bool empty() const;
         void reserve(size_t n);
 
-        //Element acces
+        //Element access
         T* at(size_t n);
         T* front();
         T* back();
@@ -2128,6 +2133,24 @@ string serializeValuesXML(const gtsam::Values& values, string name);
 
 gtsam::Values* deserializeValuesXML(string serialized_values);
 gtsam::Values* deserializeValuesXML(string serialized_values, string name);
+
+// Serialize
+bool serializeGraphToFile(const gtsam::NonlinearFactorGraph& graph, string fname);
+bool serializeGraphToXMLFile(const gtsam::NonlinearFactorGraph& graph, string fname);
+bool serializeGraphToXMLFile(const gtsam::NonlinearFactorGraph& graph, string fname, string name);
+
+bool serializeValuesToFile(const gtsam::Values& values, string fname);
+bool serializeValuesToXMLFile(const gtsam::Values& values, string fname);
+bool serializeValuesToXMLFile(const gtsam::Values& values, string fname, string name);
+
+// Deserialize
+gtsam::NonlinearFactorGraph* deserializeGraphToFile(string fname);
+gtsam::NonlinearFactorGraph* deserializeGraphToXMLFile(string fname);
+gtsam::NonlinearFactorGraph* deserializeGraphToXMLFile(string fname, string name);
+
+gtsam::Values* deserializeValuesToFile(string fname);
+gtsam::Values* deserializeValuesToXMLFile(string fname);
+gtsam::Values* deserializeValuesToXMLFile(string fname, string name);
 
 //*************************************************************************
 // Utilities
