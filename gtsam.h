@@ -985,7 +985,7 @@ virtual class Base {
 virtual class Gaussian : gtsam::noiseModel::Base {
   static gtsam::noiseModel::Gaussian* SqrtInformation(Matrix R);
   static gtsam::noiseModel::Gaussian* Covariance(Matrix R);
-  //Matrix R() const;    // FIXME: cannot parse!!!
+  Matrix R() const;
   bool equals(gtsam::noiseModel::Base& expected, double tol);
   void print(string s) const;
 };
@@ -994,7 +994,7 @@ virtual class Diagonal : gtsam::noiseModel::Gaussian {
   static gtsam::noiseModel::Diagonal* Sigmas(Vector sigmas);
   static gtsam::noiseModel::Diagonal* Variances(Vector variances);
   static gtsam::noiseModel::Diagonal* Precisions(Vector precisions);
-//  Matrix R() const;    // FIXME: cannot parse!!!
+  Matrix R() const;
   void print(string s) const;
 };
 
