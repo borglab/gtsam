@@ -35,6 +35,28 @@ std::string serializeValuesXML(const Values& values, const std::string& name = "
 Values::shared_ptr deserializeValuesXML(const std::string& serialized_values,
     const std::string& name = "values");
 
+// Serialize to/from files
+// serialize functions return true if successful
+// Filename arguments include path
+
+// Serialize
+bool serializeGraphToFile(const NonlinearFactorGraph& graph, const std::string& fname);
+bool serializeGraphToXMLFile(const NonlinearFactorGraph& graph,
+    const std::string& fname, const std::string& name = "graph");
+
+bool serializeValuesToFile(const Values& values, const std::string& fname);
+bool serializeValuesToXMLFile(const Values& values,
+    const std::string& fname, const std::string& name = "values");
+
+// Deserialize
+NonlinearFactorGraph::shared_ptr deserializeGraphToFile(const std::string& fname);
+NonlinearFactorGraph::shared_ptr deserializeGraphToXMLFile(const std::string& fname,
+    const std::string& name = "graph");
+
+Values::shared_ptr deserializeValuesToFile(const std::string& fname);
+Values::shared_ptr deserializeValuesToXMLFile(const std::string& fname,
+    const std::string& name = "values");
+
 } // \namespace gtsam
 
 

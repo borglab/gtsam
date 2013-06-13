@@ -16,9 +16,23 @@
 
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/slam/BearingRangeFactor.h>
+
+#include <stdlib.h>
+#include <fstream>
+#include <sstream>
+#include <boost/assign/std/vector.hpp>
+#include <boost/filesystem.hpp>
 
 using namespace std;
 using namespace gtsam;
+using namespace boost::assign;
+namespace fs = boost::filesystem;
+#ifdef TOPSRCDIR
+static string topdir = TOPSRCDIR;
+#else
+static string topdir = "TOPSRCDIR_NOT_CONFIGURED"; // If TOPSRCDIR is not defined, we error
+#endif
 
 Values exampleValues() {
   Values result;
@@ -35,6 +49,7 @@ NonlinearFactorGraph exampleGraph() {
   NonlinearFactorGraph graph;
   graph.add(PriorFactor<Pose2>(234, Pose2(1.0, 2.0, 0.3), noiseModel::Diagonal::Sigmas(ones(3))));
   graph.add(BetweenFactor<Pose2>(234, 567, Pose2(1.0, 2.0, 0.3), noiseModel::Diagonal::Sigmas(ones(3))));
+  graph.add(BearingRangeFactor<Pose2,Point2>(234, 567, Rot2::fromAngle(0.3), 2.0, noiseModel::Diagonal::Sigmas(ones(2))));
   return graph;
 }
 
@@ -68,6 +83,38 @@ TEST( testSerialization, xml_values_serialization ) {
   string serialized = serializeValuesXML(values, "values1");
   Values actValues = *deserializeValuesXML(serialized, "values1");
   EXPECT(assert_equal(values, actValues, 1e-5));
+}
+
+/* ************************************************************************* */
+TEST( testSerialization, serialization_file ) {
+  // Create files in folder in build folder
+  fs::remove_all("actual");
+  fs::create_directory("actual");
+  string path = "actual/";
+
+  NonlinearFactorGraph graph = exampleGraph();
+  Values values = exampleValues();
+
+  // Serialize objects using each configuration
+  EXPECT(serializeGraphToFile(graph, path + "graph.dat"));
+  EXPECT(serializeGraphToXMLFile(graph, path + "graph.xml", "graph1"));
+
+  EXPECT(serializeValuesToFile(values, path + "values.dat"));
+  EXPECT(serializeValuesToXMLFile(values, path + "values.xml", "values1"));
+
+  // Deserialize
+  NonlinearFactorGraph actGraph = *deserializeGraphToFile(path + "graph.dat");
+  NonlinearFactorGraph actGraphXML = *deserializeGraphToXMLFile(path + "graph.xml", "graph1");
+
+  Values actValues = *deserializeValuesToFile(path + "values.dat");
+  Values actValuesXML = *deserializeValuesToXMLFile(path + "values.xml", "values1");
+
+  // Verify
+  EXPECT(assert_equal(graph, actGraph));
+  EXPECT(assert_equal(graph, actGraphXML));
+
+  EXPECT(assert_equal(values, actValues));
+  EXPECT(assert_equal(values, actValuesXML));
 }
 
 /* ************************************************************************* */

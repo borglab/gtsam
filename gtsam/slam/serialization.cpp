@@ -253,5 +253,61 @@ Values::shared_ptr gtsam::deserializeValuesXML(const std::string& serialized_val
 }
 
 /* ************************************************************************* */
+bool gtsam::serializeGraphToFile(const NonlinearFactorGraph& graph, const std::string& fname) {
+  return serializeToFile<NonlinearFactorGraph>(graph, fname);
+}
+
+/* ************************************************************************* */
+bool gtsam::serializeGraphToXMLFile(const NonlinearFactorGraph& graph,
+    const std::string& fname, const std::string& name) {
+  return serializeToXMLFile<NonlinearFactorGraph>(graph, fname, name);
+}
+
+/* ************************************************************************* */
+bool gtsam::serializeValuesToFile(const Values& values, const std::string& fname) {
+  return serializeToFile<Values>(values, fname);
+}
+
+/* ************************************************************************* */
+bool gtsam::serializeValuesToXMLFile(const Values& values,
+    const std::string& fname, const std::string& name) {
+  return serializeToXMLFile<Values>(values, fname, name);
+}
+
+/* ************************************************************************* */
+NonlinearFactorGraph::shared_ptr gtsam::deserializeGraphToFile(const std::string& fname) {
+  NonlinearFactorGraph::shared_ptr result(new NonlinearFactorGraph());
+  if (!deserializeFromFile<NonlinearFactorGraph>(fname, *result))
+    throw std::invalid_argument("Failed to open file" + fname);
+  return result;
+}
+
+/* ************************************************************************* */
+NonlinearFactorGraph::shared_ptr gtsam::deserializeGraphToXMLFile(const std::string& fname,
+    const std::string& name) {
+  NonlinearFactorGraph::shared_ptr result(new NonlinearFactorGraph());
+  if (!deserializeFromXMLFile<NonlinearFactorGraph>(fname, *result, name))
+    throw std::invalid_argument("Failed to open file" + fname);
+  return result;
+}
+
+/* ************************************************************************* */
+Values::shared_ptr gtsam::deserializeValuesToFile(const std::string& fname) {
+  Values::shared_ptr result(new Values());
+  if (!deserializeFromFile<Values>(fname, *result))
+    throw std::invalid_argument("Failed to open file" + fname);
+  return result;
+}
+
+/* ************************************************************************* */
+Values::shared_ptr gtsam::deserializeValuesToXMLFile(const std::string& fname,
+    const std::string& name) {
+  Values::shared_ptr result(new Values());
+  if (!deserializeFromXMLFile<Values>(fname, *result, name))
+    throw std::invalid_argument("Failed to open file" + fname);
+  return result;
+}
+
+/* ************************************************************************* */
 
 
