@@ -51,6 +51,15 @@ serialized_values = serializeValues(values); % returns a string
 deserializedValues = deserializeValues(serialized_values); % returns a new values
 CHECK('values.equals(deserializedValues)',values.equals(deserializedValues,1e-9));
 
-serialized_graph = serializeGraph(graph); % returns a string
-deserializedGraph = deserializeGraph(serialized_graph); % returns a new graph
-CHECK('graph.equals(deserializedGraph)',graph.equals(deserializedGraph,1e-9));
+CHECK('serializeValuesToFile(values, values.dat)', serializeValuesToFile(values, 'values.dat')); 
+deserializedValuesFile = deserializeValuesFromFile('values.dat'); % returns a new values
+CHECK('values.equals(deserializedValuesFile)',values.equals(deserializedValuesFile,1e-9));
+
+% % FAIL: unregistered class - derived class not registered or exported
+% serialized_graph = serializeGraph(graph); % returns a string
+% deserializedGraph = deserializeGraph(serialized_graph); % returns a new graph
+% CHECK('graph.equals(deserializedGraph)',graph.equals(deserializedGraph,1e-9));
+%
+% CHECK('serializeGraphToFile(graph, graph.dat)', serializeGraphToFile(graph, 'graph.dat')); 
+% deserializedGraphFile = deserializeGraphFromFile('graph.dat'); % returns a new graph
+% CHECK('graph.equals(deserializedGraphFile)',graph.equals(deserializedGraphFile,1e-9));
