@@ -275,7 +275,7 @@ bool gtsam::serializeValuesToXMLFile(const Values& values,
 }
 
 /* ************************************************************************* */
-NonlinearFactorGraph::shared_ptr gtsam::deserializeGraphToFile(const std::string& fname) {
+NonlinearFactorGraph::shared_ptr gtsam::deserializeGraphFromFile(const std::string& fname) {
   NonlinearFactorGraph::shared_ptr result(new NonlinearFactorGraph());
   if (!deserializeFromFile<NonlinearFactorGraph>(fname, *result))
     throw std::invalid_argument("Failed to open file" + fname);
@@ -283,7 +283,7 @@ NonlinearFactorGraph::shared_ptr gtsam::deserializeGraphToFile(const std::string
 }
 
 /* ************************************************************************* */
-NonlinearFactorGraph::shared_ptr gtsam::deserializeGraphToXMLFile(const std::string& fname,
+NonlinearFactorGraph::shared_ptr gtsam::deserializeGraphFromXMLFile(const std::string& fname,
     const std::string& name) {
   NonlinearFactorGraph::shared_ptr result(new NonlinearFactorGraph());
   if (!deserializeFromXMLFile<NonlinearFactorGraph>(fname, *result, name))
@@ -292,7 +292,7 @@ NonlinearFactorGraph::shared_ptr gtsam::deserializeGraphToXMLFile(const std::str
 }
 
 /* ************************************************************************* */
-Values::shared_ptr gtsam::deserializeValuesToFile(const std::string& fname) {
+Values::shared_ptr gtsam::deserializeValuesFromFile(const std::string& fname) {
   Values::shared_ptr result(new Values());
   if (!deserializeFromFile<Values>(fname, *result))
     throw std::invalid_argument("Failed to open file" + fname);
@@ -300,7 +300,7 @@ Values::shared_ptr gtsam::deserializeValuesToFile(const std::string& fname) {
 }
 
 /* ************************************************************************* */
-Values::shared_ptr gtsam::deserializeValuesToXMLFile(const std::string& fname,
+Values::shared_ptr gtsam::deserializeValuesFromXMLFile(const std::string& fname,
     const std::string& name) {
   Values::shared_ptr result(new Values());
   if (!deserializeFromXMLFile<Values>(fname, *result, name))

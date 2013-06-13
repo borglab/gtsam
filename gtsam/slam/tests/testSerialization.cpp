@@ -103,11 +103,11 @@ TEST( testSerialization, serialization_file ) {
   EXPECT(serializeValuesToXMLFile(values, path + "values.xml", "values1"));
 
   // Deserialize
-  NonlinearFactorGraph actGraph = *deserializeGraphToFile(path + "graph.dat");
-  NonlinearFactorGraph actGraphXML = *deserializeGraphToXMLFile(path + "graph.xml", "graph1");
+  NonlinearFactorGraph actGraph = *deserializeGraphFromFile(path + "graph.dat");
+  NonlinearFactorGraph actGraphXML = *deserializeGraphFromXMLFile(path + "graph.xml", "graph1");
 
-  Values actValues = *deserializeValuesToFile(path + "values.dat");
-  Values actValuesXML = *deserializeValuesToXMLFile(path + "values.xml", "values1");
+  Values actValues = *deserializeValuesFromFile(path + "values.dat");
+  Values actValuesXML = *deserializeValuesFromXMLFile(path + "values.xml", "values1");
 
   // Verify
   EXPECT(assert_equal(graph, actGraph));

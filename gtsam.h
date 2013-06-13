@@ -2144,13 +2144,13 @@ bool serializeValuesToXMLFile(const gtsam::Values& values, string fname);
 bool serializeValuesToXMLFile(const gtsam::Values& values, string fname, string name);
 
 // Deserialize
-gtsam::NonlinearFactorGraph* deserializeGraphToFile(string fname);
-gtsam::NonlinearFactorGraph* deserializeGraphToXMLFile(string fname);
-gtsam::NonlinearFactorGraph* deserializeGraphToXMLFile(string fname, string name);
+gtsam::NonlinearFactorGraph* deserializeGraphFromFile(string fname);
+gtsam::NonlinearFactorGraph* deserializeGraphFromXMLFile(string fname);
+gtsam::NonlinearFactorGraph* deserializeGraphFromXMLFile(string fname, string name);
 
-gtsam::Values* deserializeValuesToFile(string fname);
-gtsam::Values* deserializeValuesToXMLFile(string fname);
-gtsam::Values* deserializeValuesToXMLFile(string fname, string name);
+gtsam::Values* deserializeValuesFromFile(string fname);
+gtsam::Values* deserializeValuesFromXMLFile(string fname);
+gtsam::Values* deserializeValuesFromXMLFile(string fname, string name);
 
 //*************************************************************************
 // Utilities

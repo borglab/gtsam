@@ -49,12 +49,12 @@ bool serializeValuesToXMLFile(const Values& values,
     const std::string& fname, const std::string& name = "values");
 
 // Deserialize
-NonlinearFactorGraph::shared_ptr deserializeGraphToFile(const std::string& fname);
-NonlinearFactorGraph::shared_ptr deserializeGraphToXMLFile(const std::string& fname,
+NonlinearFactorGraph::shared_ptr deserializeGraphFromFile(const std::string& fname);
+NonlinearFactorGraph::shared_ptr deserializeGraphFromXMLFile(const std::string& fname,
     const std::string& name = "graph");
 
-Values::shared_ptr deserializeValuesToFile(const std::string& fname);
-Values::shared_ptr deserializeValuesToXMLFile(const std::string& fname,
+Values::shared_ptr deserializeValuesFromFile(const std::string& fname);
+Values::shared_ptr deserializeValuesFromXMLFile(const std::string& fname,
     const std::string& name = "values");
 
 } // \namespace gtsam
