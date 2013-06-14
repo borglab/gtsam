@@ -43,13 +43,16 @@ public:
    * @param stationaryF initial interval of accelerator measurements, 3xn matrix
    * @param g_e if given, initializes gravity with correct value g_e
    */
-  AHRS(const Matrix& stationaryU, const Matrix& stationaryF, double g_e);
+  AHRS(const Matrix& stationaryU, const Matrix& stationaryF, double g_e, bool flat=false);
 
   std::pair<Mechanization_bRn2, KalmanFilter::State> initialize(double g_e);
 
   std::pair<Mechanization_bRn2, KalmanFilter::State> integrate(
       const Mechanization_bRn2& mech, KalmanFilter::State state,
       const Vector& u, double dt);
+
+  bool isAidingAvailable(const Mechanization_bRn2& mech,
+      const Vector& f, const Vector& u, double ge);
 
   std::pair<Mechanization_bRn2, KalmanFilter::State> aid(
       const Mechanization_bRn2& mech, KalmanFilter::State state,

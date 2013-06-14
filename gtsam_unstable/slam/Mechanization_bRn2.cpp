@@ -12,34 +12,42 @@ namespace gtsam {
 
 /* ************************************************************************* */
 Mechanization_bRn2 Mechanization_bRn2::initializeVector(const std::list<Vector>& U,
-    const std::list<Vector>& F, const double g_e) {
+    const std::list<Vector>& F, const double g_e, bool flat) {
   Matrix Umat = Matrix_(3,U.size(), concatVectors(U));
   Matrix Fmat = Matrix_(3,F.size(), concatVectors(F));
 
-  return initialize(Umat, Fmat, g_e);
+  return initialize(Umat, Fmat, g_e, flat);
 }
 
 
 /* ************************************************************************* */
 Mechanization_bRn2 Mechanization_bRn2::initialize(const Matrix& U,
-    const Matrix& F, const double g_e) {
+    const Matrix& F, const double g_e, bool flat) {
 
   // estimate gyro bias by averaging gyroscope readings (10.62)
   Vector x_g = U.rowwise().mean();
-  Vector meanF = -F.rowwise().mean();
+  Vector meanF = F.rowwise().mean();
 
-  Vector b_g, x_a;
+  // estimate gravity
+  Vector b_g;
   if(g_e == 0) {
-    // estimate gravity in body frame from accelerometer (10.13)
-    b_g = meanF;
-    // estimate accelerometer bias as zero (10.65)
-    x_a = zero(3);
-
+    if (flat)
+      // acceleration measured is  along the z-axis.
+      b_g = Vector_(3, 0.0, 0.0, norm_2(meanF));
+    else
+      // acceleration measured is the opposite of gravity (10.13)
+      b_g = -meanF;
   } else {
-    // normalize b_g and attribute remainder to biases
-    b_g = g_e * meanF/meanF.norm();
-    x_a = -(meanF - b_g);
+    if (flat)
+      // gravity is downward along the z-axis since we are flat on the ground
+      b_g = Vector_(3,0.0,0.0,g_e);
+    else
+      // normalize b_g and attribute remainder to biases
+      b_g = - g_e * meanF/meanF.norm();
   }
+
+  // estimate accelerometer bias
+  Vector x_a = meanF + b_g;
 
   // initialize roll, pitch (eqns. 10.14, 10.15)
   double g1=b_g(0);
