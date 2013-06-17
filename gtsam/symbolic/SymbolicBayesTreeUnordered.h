@@ -42,10 +42,23 @@ namespace gtsam {
   class GTSAM_EXPORT SymbolicBayesTreeUnordered :
     public BayesTreeUnordered<SymbolicBayesTreeCliqueUnordered>
   {
+  private:
+    typedef BayesTreeUnordered<SymbolicBayesTreeCliqueUnordered> Base;
 
   public:
+    typedef SymbolicBayesTreeUnordered This;
+    typedef boost::shared_ptr<This> shared_ptr;
+
     /** Insert a new conditional */
     //void insert(const sharedConditional& conditional);
+
+    /** check equality */
+    bool equals(const This& other, double tol = 1e-9) const { return Base::equals(other, tol); }
+
+    /** print */
+    void print(const std::string& s = "",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const { Base::print(s, keyFormatter); }
+
 
   protected:
     

@@ -50,13 +50,13 @@ namespace gtsam {
  */
 class GTSAM_EXPORT FactorUnordered {
 
-public:
-
+private:
   typedef FactorUnordered This; ///< This class
 
   /// A shared_ptr to this class, derived classes must redefine this.
   typedef boost::shared_ptr<FactorUnordered> shared_ptr;
 
+public:
   /// Iterator over keys
   typedef std::vector<Key>::iterator iterator;
 
@@ -67,8 +67,6 @@ protected:
 
   /// The keys involved in this factor
   std::vector<Key> keys_;
-
-public:
 
   /// @name Standard Constructors
   /// @{
@@ -118,7 +116,7 @@ public:
 
   /// @}
 
-
+public:
   /// @name Standard Interface
   /// @{
 

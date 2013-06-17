@@ -35,7 +35,6 @@ namespace gtsam {
   class GTSAM_EXPORT SymbolicConditionalUnordered : public SymbolicFactorUnordered, public ConditionalUnordered<SymbolicFactorUnordered,SymbolicConditionalUnordered> {
 
   public:
-
     typedef SymbolicConditionalUnordered This; /// Typedef to this class
     typedef SymbolicFactorUnordered BaseFactor; /// Typedef to the factor base class
     typedef ConditionalUnordered<SymbolicFactorUnordered,SymbolicConditionalUnordered> BaseConditional; /// Typedef to the conditional base class

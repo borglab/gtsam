@@ -104,9 +104,11 @@ namespace gtsam {
     /** Copy constructor */
     BayesTreeUnordered(const This& other);
 
+  protected:
     /** Assignment operator */
     This& operator=(const This& other);
 
+  public:
     /// @}
     /// @name Advanced Constructors
     /// @{
@@ -118,6 +120,7 @@ namespace gtsam {
     /// @name Testable
     /// @{
 
+  protected:
     /** check equality */
     bool equals(const This& other, double tol = 1e-9) const;
 
@@ -125,6 +128,7 @@ namespace gtsam {
     void print(const std::string& s = "",
         const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
+  public:
     /// @}
     /// @name Standard Interface
     /// @{

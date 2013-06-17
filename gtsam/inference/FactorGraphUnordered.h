@@ -39,19 +39,18 @@ namespace gtsam {
   class FactorGraphUnordered {
 
   public:
-
     typedef FactorGraphUnordered<FACTOR> This;
     typedef FACTOR FactorType;  ///< factor type
     typedef boost::shared_ptr<FACTOR> sharedFactor;  ///< Shared pointer to a factor
     typedef boost::shared_ptr<typename FACTOR::ConditionalType> sharedConditional;  ///< Shared pointer to a conditional
-
-    typedef FactorGraphUnordered<FACTOR> This;  ///< Typedef for this class
-    typedef boost::shared_ptr<This> shared_ptr;  ///< Shared pointer for this class
     typedef typename std::vector<sharedFactor>::iterator iterator;
     typedef typename std::vector<sharedFactor>::const_iterator const_iterator;
 
-  protected:
+  private:
+    typedef FactorGraphUnordered<FACTOR> This;  ///< Typedef for this class
+    typedef boost::shared_ptr<This> shared_ptr;  ///< Shared pointer for this class
 
+  protected:
     /** concept check, makes sure FACTOR defines print and equals */
     GTSAM_CONCEPT_TESTABLE_TYPE(FACTOR)
 
@@ -59,7 +58,6 @@ namespace gtsam {
     std::vector<sharedFactor> factors_;
 
   public:
-
     /// @name Standard Constructors
     /// @{
 

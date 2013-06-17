@@ -84,7 +84,7 @@ namespace gtsam {
     /// @{
 
     /** check equality */
-    bool equals(const This& other, double tol = 1e-9) const {
+    bool equals(const DERIVED& other, double tol = 1e-9) const {
       return (!conditional_ && !other.conditional())
           || conditional_->equals(*other.conditional(), tol);
     }

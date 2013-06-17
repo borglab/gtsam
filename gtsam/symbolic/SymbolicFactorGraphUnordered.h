@@ -22,6 +22,7 @@
 #include <gtsam/inference/FactorGraphUnordered.h>
 #include <gtsam/inference/EliminateableFactorGraph.h>
 #include <gtsam/symbolic/SymbolicFactorUnordered.h>
+// NOTE:  Additional headers included at end of file for user convenience
 
 namespace gtsam { class SymbolicConditionalUnordered; }
 namespace gtsam { class SymbolicBayesNetUnordered; }
@@ -47,6 +48,7 @@ namespace gtsam {
     typedef EliminateableFactorGraph<
       SymbolicFactorUnordered, SymbolicFactorGraphUnordered, SymbolicConditionalUnordered, SymbolicBayesNetUnordered,
       SymbolicEliminationTreeUnordered, SymbolicBayesTreeUnordered, SymbolicJunctionTreeUnordered> BaseEliminateable;
+    typedef boost::shared_ptr<This> shared_ptr;
     typedef BaseEliminateable::Eliminate Eliminate;
 
     /// @name Standard Constructors
@@ -83,3 +85,9 @@ namespace gtsam {
   };
 
 } // namespace gtsam
+
+// These are not needed for this file but are returned from EliminateableFactorGraph functions so
+// are included here for user convenience
+#include <gtsam/symbolic/SymbolicBayesNetUnordered.h>
+#include <gtsam/symbolic/SymbolicBayesTreeUnordered.h>
+
