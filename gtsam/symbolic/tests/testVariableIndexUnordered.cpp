@@ -47,8 +47,8 @@ TEST(VariableIndexUnordered, augment) {
   VariableIndexUnordered actual(fg1);
   actual.augment(fg2);
 
-  LONGS_EQUAL(16, actual.nEntries());
-  LONGS_EQUAL(8, actual.nFactors());
+  LONGS_EQUAL(16, (long)actual.nEntries());
+  LONGS_EQUAL(8, (long)actual.nFactors());
   EXPECT(assert_equal(expected, actual));
 }
 
