@@ -33,8 +33,8 @@ namespace gtsam {
   {
     if(ordering && variableIndex) {
       // Do elimination
-      std::pair<boost::shared_ptr<BAYESNET>, boost::shared_ptr<FACTORGRAPH> > result =
-        ELIMINATIONTREE(asDerived(), *variableIndex, *ordering).eliminate(function);
+      std::pair<boost::shared_ptr<BAYESNET>, boost::shared_ptr<FACTORGRAPH> > result
+        = ELIMINATIONTREE(asDerived(), *variableIndex, *ordering).eliminate(function);
       // If any factors are remaining, the ordering was incomplete
       if(!result.second->empty())
         throw InconsistentEliminationRequested();
@@ -58,16 +58,14 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class FACTOR, class FACTORGRAPH, class CONDITIONAL,
   class BAYESNET, class ELIMINATIONTREE, class BAYESTREE, class JUNCTIONTREE>
-  boost::shared_ptr<BAYESTREE>
-    EliminateableFactorGraph<FACTOR, FACTORGRAPH, CONDITIONAL, BAYESNET, ELIMINATIONTREE, BAYESTREE, JUNCTIONTREE>::
-    eliminateMultifrontal(
-    const Eliminate& function, OptionalOrdering ordering, OptionalVariableIndex variableIndex) const
+    boost::shared_ptr<BAYESTREE>
+    EliminateableFactorGraph<FACTOR, FACTORGRAPH, CONDITIONAL, BAYESNET, ELIMINATIONTREE, BAYESTREE, JUNCTIONTREE>
+    ::eliminateMultifrontal(const Eliminate& function, OptionalOrdering ordering, OptionalVariableIndex variableIndex) const
   {
     if(ordering && variableIndex) {
-      // Do elimination
-      std::pair<boost::shared_ptr<BAYESTREE>, boost::shared_ptr<FACTORGRAPH> > result;
       // Do elimination with given ordering
-      result = JUNCTIONTREE(ELIMINATIONTREE(asDerived(), *variableIndex, *ordering)).eliminate(function);
+      std::pair<boost::shared_ptr<BAYESTREE>, boost::shared_ptr<FACTORGRAPH> > result
+        = JUNCTIONTREE(ELIMINATIONTREE(asDerived(), *variableIndex, *ordering)).eliminate(function);
       // If any factors are remaining, the ordering was incomplete
       if(!result.second->empty())
         throw InconsistentEliminationRequested();
@@ -87,5 +85,40 @@ namespace gtsam {
       return eliminateMultifrontal(function, OrderingUnordered::COLAMD(*variableIndex));
     }
   }
+
+  /* ************************************************************************* */
+  template<class FACTOR, class FACTORGRAPH, class CONDITIONAL,
+  class BAYESNET, class ELIMINATIONTREE, class BAYESTREE, class JUNCTIONTREE>
+    std::pair<boost::shared_ptr<BAYESNET>, boost::shared_ptr<FACTORGRAPH> >
+    EliminateableFactorGraph<FACTOR, FACTORGRAPH, CONDITIONAL, BAYESNET, ELIMINATIONTREE, BAYESTREE, JUNCTIONTREE>
+    ::eliminatePartialSequential(const Eliminate& function, const OrderingUnordered& ordering,
+    OptionalVariableIndex variableIndex = boost::none) const
+  {
+    if(variableIndex) {
+      // Do elimination
+      return ELIMINATIONTREE(asDerived(), *variableIndex, ordering).eliminate(function);
+    } else {
+      // If no variable index is provided, compute one and call this function again
+      return eliminatePartialSequential(function, ordering, VariableIndexUnordered(asDerived()));
+    }
+  }
+
+  /* ************************************************************************* */
+  template<class FACTOR, class FACTORGRAPH, class CONDITIONAL,
+  class BAYESNET, class ELIMINATIONTREE, class BAYESTREE, class JUNCTIONTREE>
+    std::pair<boost::shared_ptr<BAYESTREE>, boost::shared_ptr<FACTORGRAPH> >
+    EliminateableFactorGraph<FACTOR, FACTORGRAPH, CONDITIONAL, BAYESNET, ELIMINATIONTREE, BAYESTREE, JUNCTIONTREE>
+    ::eliminatePartialMultifrontal(const Eliminate& function, const OrderingUnordered& ordering,
+    OptionalVariableIndex variableIndex = boost::none) const
+  {
+    if(variableIndex) {
+      // Do elimination
+      return JUNCTIONTREE(ELIMINATIONTREE(asDerived(), *variableIndex, ordering)).eliminate(function);
+    } else {
+      // If no variable index is provided, compute one and call this function again
+      return eliminatePartialMultifrontal(function, ordering, VariableIndexUnordered(asDerived()));
+    }
+  }
+
 
 }

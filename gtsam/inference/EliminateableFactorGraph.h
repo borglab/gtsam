@@ -96,7 +96,7 @@ namespace gtsam {
      *  B = X\backslash A \f$. */
     std::pair<boost::shared_ptr<BAYESNET>, boost::shared_ptr<FACTORGRAPH> >
       eliminatePartialSequential(const Eliminate& function, const OrderingUnordered& ordering,
-      OptionalVariableIndex variableIndex = boost::none);
+      OptionalVariableIndex variableIndex = boost::none) const;
 
     /** Do sequential elimination of the given \c variables in an ordering computed by COLAMD to
      *  produce a Bayes net and a remaining factor graph.  This computes the factorization \f$ p(X)
@@ -104,7 +104,7 @@ namespace gtsam {
      *  factor graph, and \f$ B = X\backslash A \f$. */
     std::pair<boost::shared_ptr<BAYESNET>, boost::shared_ptr<FACTORGRAPH> >
       eliminatePartialSequential(const Eliminate& function, const std::vector<Key>& variables,
-      OptionalVariableIndex variableIndex = boost::none);
+      OptionalVariableIndex variableIndex = boost::none) const;
 
     /** Do multifrontal elimination of the given \c variables in an ordering computed by COLAMD to
      *  produce a Bayes net and a remaining factor graph.  This computes the factorization \f$ p(X)
@@ -112,7 +112,7 @@ namespace gtsam {
      *  factor graph, and \f$ B = X\backslash A \f$. */
     std::pair<boost::shared_ptr<BAYESTREE>, boost::shared_ptr<FACTORGRAPH> >
       eliminatePartialMultifrontal(const Eliminate& function, const OrderingUnordered& ordering,
-      OptionalVariableIndex variableIndex = boost::none);
+      OptionalVariableIndex variableIndex = boost::none) const;
     
     /** Do multifrontal elimination of some variables in the given \c ordering to produce a Bayes
      *  tree and a remaining factor graph.  This computes the factorization \f$ p(X) = p(A|B) p(B)
@@ -120,7 +120,7 @@ namespace gtsam {
      *  \f$ B = X\backslash A \f$. */
     std::pair<boost::shared_ptr<BAYESTREE>, boost::shared_ptr<FACTORGRAPH> >
       eliminatePartialMultifrontal(const Eliminate& function, const std::vector<Key>& variables,
-      OptionalVariableIndex variableIndex = boost::none);
+      OptionalVariableIndex variableIndex = boost::none) const;
 
   private:
 
