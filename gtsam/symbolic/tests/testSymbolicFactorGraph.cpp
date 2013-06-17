@@ -19,38 +19,66 @@
 
 #include <gtsam/symbolic/SymbolicFactorGraphUnordered.h>
 #include <gtsam/symbolic/SymbolicBayesNetUnordered.h>
+#include <boost/assign/list_of.hpp>
 
 using namespace std;
 using namespace gtsam;
+using namespace boost::assign;
+
+namespace {
+  const SymbolicFactorGraphUnordered simpleTestGraph = list_of
+    (boost::make_shared<SymbolicFactorUnordered>(0,1))
+    (boost::make_shared<SymbolicFactorUnordered>(0,2))
+    (boost::make_shared<SymbolicFactorUnordered>(1,3))
+    (boost::make_shared<SymbolicFactorUnordered>(1,4))
+    (boost::make_shared<SymbolicFactorUnordered>(2,3))
+    (boost::make_shared<SymbolicFactorUnordered>(4,5));
+}
 
 /* ************************************************************************* */
-TEST(FactorGraph, eliminateFrontals) {
+TEST(SymbolicFactorGraph, eliminatePartialSequential)
+{
+  SymbolicBayesNetUnordered expectedBayesNet;
+  expectedBayesNet.add(SymbolicConditionalUnordered::FromKeys(list_of(0)(1)(2), 1));
+  expectedBayesNet.add(SymbolicConditionalUnordered::FromKeys(list_of(1)(2)(3)(4), 1));
 
-  SymbolicFactorGraph sfgOrig;
-  sfgOrig.push_factor(0,1);
-  sfgOrig.push_factor(0,2);
-  sfgOrig.push_factor(1,3);
-  sfgOrig.push_factor(1,4);
-  sfgOrig.push_factor(2,3);
-  sfgOrig.push_factor(4,5);
-
-  IndexConditional::shared_ptr actualCond;
-  SymbolicFactorGraph actualSfg;
-  boost::tie(actualCond, actualSfg) = sfgOrig.eliminateFrontals(2);
-
-  vector<Index> condIndices;
-  condIndices += 0,1,2,3,4;
-  IndexConditional expectedCond(condIndices, 2);
-
-  SymbolicFactorGraph expectedSfg;
+  SymbolicFactorGraphUnordered expectedSfg;
   expectedSfg.push_factor(2,3);
   expectedSfg.push_factor(4,5);
   expectedSfg.push_factor(2,3,4);
 
-  EXPECT(assert_equal(expectedSfg, actualSfg));
-  EXPECT(assert_equal(expectedCond, *actualCond));
+  SymbolicBayesNetUnordered::shared_ptr actualBayesNet;
+  SymbolicFactorGraphUnordered::shared_ptr actualSfg;
+  boost::tie(actualBayesNet, actualSfg) = simpleTestGraph.eliminatePartialSequential(
+    EliminateSymbolicUnordered, OrderingUnordered(list_of(0)(1)));
+
+  EXPECT(assert_equal(expectedSfg, *actualSfg));
+  EXPECT(assert_equal(expectedBayesNet, *actualBayesNet));
 }
 
+/* ************************************************************************* */
+TEST(SymbolicFactorGraph, eliminatePartialMultifrontal)
+{
+  SymbolicBayesTreeUnordered expectedBayesTree;
+  SymbolicConditionalUnordered::shared_ptr root = boost::make_shared<SymbolicConditionalUnordered>(
+    SymbolicConditionalUnordered::FromKeys(list_of(5)(4)(1), 2));
+  expectedBayesTree.insertRoot(boost::make_shared<SymbolicBayesTreeCliqueUnordered>(root));
+
+  SymbolicFactorGraphUnordered expectedFactorGraph;
+  expectedFactorGraph.push_factor(0,1);
+  expectedFactorGraph.push_factor(0,2);
+  expectedFactorGraph.push_factor(1,3);
+  expectedFactorGraph.push_factor(2,3);
+  expectedFactorGraph.push_factor(1);
+
+  SymbolicBayesTreeUnordered::shared_ptr actualBayesTree;
+  SymbolicFactorGraphUnordered::shared_ptr actualFactorGraph;
+  boost::tie(actualBayesTree, actualFactorGraph) = simpleTestGraph.eliminatePartialMultifrontal(
+    EliminateSymbolicUnordered, OrderingUnordered(list_of(4)(5)));
+
+  EXPECT(assert_equal(expectedFactorGraph, *actualFactorGraph));
+  EXPECT(assert_equal(expectedBayesTree, *actualBayesTree));
+}
 /* ************************************************************************* */
 //TEST(SymbolicFactorGraph, eliminateFrontals) {
 //

@@ -152,7 +152,7 @@ TEST(EliminationTree, eliminateAsiaExample)
     (boost::make_shared<SymbolicConditionalUnordered>(_L_, _B_))
     (boost::make_shared<SymbolicConditionalUnordered>(_B_));
 
-  SymbolicBayesNetUnordered actual = *createAsiaGraph().eliminateSequential(
+  SymbolicBayesNetUnordered actual = *asiaGraph.eliminateSequential(
     EliminateSymbolicUnordered, asiaOrdering);
 
   EXPECT(assert_equal(expected, actual));
@@ -176,7 +176,8 @@ TEST(EliminationTree, disconnected_graph) {
 
   OrderingUnordered order;
   order += 0,1,2,3,4;
-  SymbolicBayesNetUnordered actual = *SymbolicEliminationTreeUnordered(fg, order).eliminate(EliminateSymbolicUnordered).first;
+  SymbolicBayesNetUnordered actual = *SymbolicEliminationTreeUnordered(fg, order)
+    .eliminate(EliminateSymbolicUnordered).first;
   
   EXPECT(assert_equal(expected,actual));
 }
