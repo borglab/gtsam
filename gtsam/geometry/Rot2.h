@@ -116,11 +116,11 @@ namespace gtsam {
     }
 
     /** Compose - make a new rotation by adding angles */
-    inline Rot2 compose(const Rot2& R1, boost::optional<Matrix&> H1 =
+    inline Rot2 compose(const Rot2& R, boost::optional<Matrix&> H1 =
         boost::none, boost::optional<Matrix&> H2 = boost::none) const {
       if (H1) *H1 = eye(1);
       if (H2) *H2 = eye(1);
-      return *this * R1;
+      return fromCosSin(c_ * R.c_ - s_ * R.s_, s_ * R.c_ + c_ * R.s_);
     }
 
     /** Compose - make a new rotation by adding angles */
@@ -129,11 +129,11 @@ namespace gtsam {
     }
 
     /** Between using the default implementation */
-    inline Rot2 between(const Rot2& p2, boost::optional<Matrix&> H1 =
+    inline Rot2 between(const Rot2& R, boost::optional<Matrix&> H1 =
         boost::none, boost::optional<Matrix&> H2 = boost::none) const {
       if (H1) *H1 = -eye(1);
       if (H2) *H2 = eye(1);
-      return between_default(*this, p2);
+      return fromCosSin(c_ * R.c_ + s_ * R.s_, -s_ * R.c_ + c_ * R.s_);
     }
 
     /// @}

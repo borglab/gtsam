@@ -21,12 +21,13 @@
 
 #pragma once
 
-#include <cmath>
-#include <boost/serialization/nvp.hpp>
-
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/DerivedValue.h>
 #include <gtsam/base/Lie.h>
+
+#include <boost/serialization/nvp.hpp>
+
+#include <cmath>
 
 namespace gtsam {
 
@@ -153,8 +154,13 @@ namespace gtsam {
     Point3 operator / (double s) const;
 
     /** distance between two points */
-    double dist(const Point3& p2) const {
-      return std::sqrt(pow(x()-p2.x(),2.0) + pow(y()-p2.y(),2.0) + pow(z()-p2.z(),2.0));
+    inline double distance(const Point3& p2) const {
+      return (p2 - *this).norm();
+    }
+
+    /** @deprecated The following function has been deprecated, use distance above */
+    inline double dist(const Point3& p2) const {
+      return (p2 - *this).norm();
     }
 
     /** Distance of the point from the origin */
@@ -196,6 +202,9 @@ namespace gtsam {
           boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
 
     /// @}
+
+    /// Output stream operator
+    friend std::ostream &operator<<(std::ostream &os, const Point3& p);
 
   private:
 

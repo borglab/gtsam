@@ -62,7 +62,7 @@
  *       of using the copy constructor (which is used for non-virtual objects).
  *     - Signature of clone function - will be called virtually, so must appear at least at the top of the inheritance tree
  *           virtual boost::shared_ptr<CLASS_NAME> clone() const;
- *   Templates
+ *   Class Templates
  *     - Basic templates are supported either with an explicit list of types to instantiate,
  *       e.g. template<T = {gtsam::Pose2, gtsam::Rot2, gtsam::Point3}> class Class1 { ... };
  *       or with typedefs, e.g.
@@ -81,7 +81,12 @@
 /**
  * Status:
  *  - TODO: default values for arguments
+ *    - WORKAROUND: make multiple versions of the same function for different configurations of default arguments
  *  - TODO: Handle gtsam::Rot3M conversions to quaternions
+ *  - TODO: Parse return of const ref arguments
+ *  - TODO: Parse std::string variants and convert directly to special string
+ *  - TODO: Add enum support
+ *  - TODO: Add generalized serialization support via boost.serialization with hooks to matlab save/load
  */
 
 namespace std {
@@ -98,7 +103,7 @@ namespace std {
         bool empty() const;
         void reserve(size_t n);
 
-        //Element acces
+        //Element access
         T* at(size_t n);
         T* front();
         T* back();
@@ -397,7 +402,7 @@ virtual class Rot3 : gtsam::Value {
   // Manifold
   static size_t Dim();
   size_t dim() const;
-  gtsam::Rot3 retractCayley(Vector v) const; // FIXME, does not exist in both Matrix and Quaternion options
+  //gtsam::Rot3 retractCayley(Vector v) const; // FIXME, does not exist in both Matrix and Quaternion options
   gtsam::Rot3 retract(Vector v) const;
   Vector localCoordinates(const gtsam::Rot3& p) const;
 
@@ -811,6 +816,7 @@ virtual class BayesTree {
     //Standard Interface
   //size_t findParentClique(const gtsam::IndexVector& parents) const;
     size_t size();
+    size_t nrNodes() const;
     void saveGraph(string s) const;
     CLIQUE* root() const;
     void clear();
@@ -894,6 +900,7 @@ class SymbolicFactorGraph {
   void print(string s) const;
   bool equals(const gtsam::SymbolicFactorGraph& rhs, double tol) const;
   size_t size() const;
+  bool exists(size_t i) const;
 
   // Standard interface
   // FIXME: Must wrap FastSet<Index> for this to work
@@ -978,7 +985,7 @@ virtual class Base {
 virtual class Gaussian : gtsam::noiseModel::Base {
   static gtsam::noiseModel::Gaussian* SqrtInformation(Matrix R);
   static gtsam::noiseModel::Gaussian* Covariance(Matrix R);
-  //Matrix R() const;    // FIXME: cannot parse!!!
+  Matrix R() const;
   bool equals(gtsam::noiseModel::Base& expected, double tol);
   void print(string s) const;
 };
@@ -987,7 +994,7 @@ virtual class Diagonal : gtsam::noiseModel::Gaussian {
   static gtsam::noiseModel::Diagonal* Sigmas(Vector sigmas);
   static gtsam::noiseModel::Diagonal* Variances(Vector variances);
   static gtsam::noiseModel::Diagonal* Precisions(Vector precisions);
-//  Matrix R() const;    // FIXME: cannot parse!!!
+  Matrix R() const;
   void print(string s) const;
 };
 
@@ -1281,6 +1288,7 @@ class GaussianFactorGraph {
   bool equals(const gtsam::GaussianFactorGraph& lfgraph, double tol) const;
   size_t size() const;
   gtsam::GaussianFactor* at(size_t idx) const;
+  bool exists(size_t idx) const;
 
   // Inference
   pair<gtsam::GaussianConditional*, gtsam::GaussianFactorGraph> eliminateFrontals(size_t nFrontals) const;
@@ -1450,11 +1458,6 @@ size_t symbol(char chr, size_t index);
 char symbolChr(size_t key);
 size_t symbolIndex(size_t key);
 
-// Key utilities
-gtsam::KeySet keyIntersection(const gtsam::KeySet& keysA, const gtsam::KeySet& keysB);
-gtsam::KeySet keyDifference(const gtsam::KeySet& keysA, const gtsam::KeySet& keysB);
-bool hasKeyIntersection(const gtsam::KeySet& keysA, const gtsam::KeySet& keysB);
-
 // Default keyformatter
 void printKeySet(const gtsam::KeySet& keys);
 void printKeySet(const gtsam::KeySet& keys, string s);
@@ -1512,7 +1515,8 @@ class NonlinearFactorGraph {
   bool empty() const;
   void remove(size_t i);
   size_t nrFactors() const;
-  gtsam::NonlinearFactor* at(size_t i) const;
+  gtsam::NonlinearFactor* at(size_t idx) const;
+  bool exists(size_t idx) const;
   void push_back(const gtsam::NonlinearFactorGraph& factors);
 
   // NonlinearFactorGraph
@@ -1959,6 +1963,8 @@ class NonlinearISAM {
 template<T = {gtsam::LieScalar, gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera}>
 virtual class PriorFactor : gtsam::NonlinearFactor {
   PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
+  T prior() const;
+  gtsam::noiseModel::Base* get_noiseModel() const;
 };
 
 
@@ -1966,6 +1972,8 @@ virtual class PriorFactor : gtsam::NonlinearFactor {
 template<T = {gtsam::LieScalar, gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
 virtual class BetweenFactor : gtsam::NonlinearFactor {
   BetweenFactor(size_t key1, size_t key2, const T& relativePose, const gtsam::noiseModel::Base* noiseModel);
+  T measured() const;
+  gtsam::noiseModel::Base* get_noiseModel() const;
 };
 
 
@@ -1983,6 +1991,7 @@ virtual class NonlinearEquality : gtsam::NonlinearFactor {
 template<POSE, POINT>
 virtual class RangeFactor : gtsam::NonlinearFactor {
   RangeFactor(size_t key1, size_t key2, double measured, const gtsam::noiseModel::Base* noiseModel);
+  gtsam::noiseModel::Base* get_noiseModel() const;
 };
 
 typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Point2> RangeFactorPosePoint2;
@@ -1999,6 +2008,7 @@ typedef gtsam::RangeFactor<gtsam::SimpleCamera, gtsam::SimpleCamera> RangeFactor
 template<POSE, POINT, ROTATION>
 virtual class BearingFactor : gtsam::NonlinearFactor {
   BearingFactor(size_t key1, size_t key2, const ROTATION& measured, const gtsam::noiseModel::Base* noiseModel);
+  gtsam::noiseModel::Base* get_noiseModel() const;
 };
 
 typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2> BearingFactor2D;
@@ -2008,6 +2018,7 @@ typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2> BearingFa
 template<POSE, POINT, ROTATION>
 virtual class BearingRangeFactor : gtsam::NonlinearFactor {
   BearingRangeFactor(size_t poseKey, size_t pointKey, const ROTATION& measuredBearing, double measuredRange, const gtsam::noiseModel::Base* noiseModel);
+  gtsam::noiseModel::Base* get_noiseModel() const;
 };
 
 typedef gtsam::BearingRangeFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2> BearingRangeFactor2D;
@@ -2031,6 +2042,7 @@ virtual class GenericProjectionFactor : gtsam::NonlinearFactor {
   CALIBRATION* calibration() const;
   bool verboseCheirality() const;
   bool throwCheirality() const;
+  gtsam::noiseModel::Base* get_noiseModel() const;
 };
 typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> GenericProjectionFactorCal3_S2;
 typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> GenericProjectionFactorCal3DS2;
@@ -2059,6 +2071,7 @@ virtual class GenericStereoFactor : gtsam::NonlinearFactor {
     size_t poseKey, size_t landmarkKey, const gtsam::Cal3_S2Stereo* K);
   gtsam::StereoPoint2 measured() const;
   gtsam::Cal3_S2Stereo* calibration() const;
+  gtsam::noiseModel::Base* get_noiseModel() const;
 };
 typedef gtsam::GenericStereoFactor<gtsam::Pose3, gtsam::Point3> GenericStereoFactor3D;
 
@@ -2066,6 +2079,7 @@ typedef gtsam::GenericStereoFactor<gtsam::Pose3, gtsam::Point3> GenericStereoFac
 template<POSE>
 virtual class PoseTranslationPrior : gtsam::NonlinearFactor {
   PoseTranslationPrior(size_t key, const POSE& pose_z, const gtsam::noiseModel::Base* noiseModel);
+  gtsam::noiseModel::Base* get_noiseModel() const;
 };
 
 typedef gtsam::PoseTranslationPrior<gtsam::Pose2> PoseTranslationPrior2D;
@@ -2075,6 +2089,7 @@ typedef gtsam::PoseTranslationPrior<gtsam::Pose3> PoseTranslationPrior3D;
 template<POSE>
 virtual class PoseRotationPrior : gtsam::NonlinearFactor {
   PoseRotationPrior(size_t key, const POSE& pose_z, const gtsam::noiseModel::Base* noiseModel);
+  gtsam::noiseModel::Base* get_noiseModel() const;
 };
 
 typedef gtsam::PoseRotationPrior<gtsam::Pose2> PoseRotationPrior2D;
@@ -2091,6 +2106,51 @@ pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
     gtsam::noiseModel::Diagonal* model);
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D_robust(string filename,
     gtsam::noiseModel::Base* model);
+
+//*************************************************************************
+// Serialization
+//*************************************************************************
+#include <gtsam/slam/serialization.h>
+
+// Serialize/Deserialize a NonlinearFactorGraph
+string serializeGraph(const gtsam::NonlinearFactorGraph& graph);
+
+gtsam::NonlinearFactorGraph* deserializeGraph(string serialized_graph);
+
+string serializeGraphXML(const gtsam::NonlinearFactorGraph& graph);
+string serializeGraphXML(const gtsam::NonlinearFactorGraph& graph, string name);
+
+gtsam::NonlinearFactorGraph* deserializeGraphXML(string serialized_graph);
+gtsam::NonlinearFactorGraph* deserializeGraphXML(string serialized_graph, string name);
+
+// Serialize/Deserialize a Values
+string serializeValues(const gtsam::Values& values);
+
+gtsam::Values* deserializeValues(string serialized_values);
+
+string serializeValuesXML(const gtsam::Values& values);
+string serializeValuesXML(const gtsam::Values& values, string name);
+
+gtsam::Values* deserializeValuesXML(string serialized_values);
+gtsam::Values* deserializeValuesXML(string serialized_values, string name);
+
+// Serialize
+bool serializeGraphToFile(const gtsam::NonlinearFactorGraph& graph, string fname);
+bool serializeGraphToXMLFile(const gtsam::NonlinearFactorGraph& graph, string fname);
+bool serializeGraphToXMLFile(const gtsam::NonlinearFactorGraph& graph, string fname, string name);
+
+bool serializeValuesToFile(const gtsam::Values& values, string fname);
+bool serializeValuesToXMLFile(const gtsam::Values& values, string fname);
+bool serializeValuesToXMLFile(const gtsam::Values& values, string fname, string name);
+
+// Deserialize
+gtsam::NonlinearFactorGraph* deserializeGraphFromFile(string fname);
+gtsam::NonlinearFactorGraph* deserializeGraphFromXMLFile(string fname);
+gtsam::NonlinearFactorGraph* deserializeGraphFromXMLFile(string fname, string name);
+
+gtsam::Values* deserializeValuesFromFile(string fname);
+gtsam::Values* deserializeValuesFromXMLFile(string fname);
+gtsam::Values* deserializeValuesFromXMLFile(string fname, string name);
 
 //*************************************************************************
 // Utilities

@@ -29,6 +29,9 @@ typedef enum {
  * Summarization function to remove a subset of variables from a system with the
  * sequential solver. This does not require that the system be fully constrained.
  *
+ * Requirement: set of keys in the graph should match the set of keys in the
+ * values structure.
+ *
  * @param graph A full nonlinear graph
  * @param values The chosen linearization point
  * @param saved_keys is the set of keys for variables that should remain

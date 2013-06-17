@@ -151,6 +151,11 @@ public:
   Point2 unit() const { return *this/norm(); }
 
   /** distance between two points */
+  inline double distance(const Point2& p2) const {
+    return (p2 - *this).norm();
+  }
+
+  /** @deprecated The following function has been deprecated, use distance above */
   inline double dist(const Point2& p2) const {
     return (p2 - *this).norm();
   }
@@ -183,6 +188,9 @@ public:
   inline void operator += (const Point2& q) {x_+=q.x_;y_+=q.y_;}
   inline void operator *= (double s) {x_*=s;y_*=s;}
   /// @}
+
+  /// Streaming
+  friend std::ostream &operator<<(std::ostream &os, const Point2& p);
 
 private:
 

@@ -30,5 +30,8 @@ testStereoVOExample
 display 'Starting: testVisualISAMExample'
 testVisualISAMExample
 
+display 'Starting: testGraphValuesSerialization'
+testVisualISAMExample
+
 % end of tests
 display 'Tests complete!'

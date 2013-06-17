@@ -162,6 +162,9 @@ namespace gtsam {
         return 0;
     }
 
+    /** number of nodes */
+    inline size_t nrNodes() const { return nodes_.size(); }
+
     /** Check if there are any cliques in the tree */
     inline bool empty() const {
       return nodes_.empty();

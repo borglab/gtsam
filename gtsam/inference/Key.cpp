@@ -52,39 +52,6 @@ void printKeySet(const gtsam::KeySet& keys, const std::string& s, const KeyForma
     std::cout << std::endl;
   }
 }
-
-/* ************************************************************************* */
-gtsam::KeySet keyIntersection(const gtsam::KeySet& keysA, const gtsam::KeySet& keysB) {
-  gtsam::KeySet intersection;
-  if (keysA.empty() || keysB.empty())
-    return intersection;
-  BOOST_FOREACH(const gtsam::Key& key, keysA)
-    if (keysB.count(key))
-      intersection.insert(key);
-  return intersection;
-}
-
-/* ************************************************************************* */
-bool hasKeyIntersection(const gtsam::KeySet& keysA, const gtsam::KeySet& keysB) {
-  if (keysA.empty() || keysB.empty())
-    return false;
-  BOOST_FOREACH(const gtsam::Key& key, keysA)
-    if (keysB.count(key))
-      return true;
-  return false;
-}
-
-/* ************************************************************************* */
-gtsam::KeySet keyDifference(const gtsam::KeySet& keysA, const gtsam::KeySet& keysB) {
-  if (keysA.empty() || keysB.empty())
-    return keysA;
-
-  gtsam::KeySet difference;
-  BOOST_FOREACH(const gtsam::Key& key, keysA)
-    if (!keysB.count(key))
-      difference.insert(key);
-  return difference;
-}
 /* ************************************************************************* */
 
 } // \namespace gtsam

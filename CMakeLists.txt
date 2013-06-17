@@ -100,7 +100,7 @@ endif()
 # Find boost
 
 # If using Boost shared libs, set up auto linking for shared libs
-if(NOT Boost_USE_STATIC_LIBS)
+if(MSVC AND NOT Boost_USE_STATIC_LIBS)
 	add_definitions(-DBOOST_ALL_DYN_LINK)
 endif()
 

@@ -290,6 +290,9 @@ namespace gtsam {
      */
     static std::pair<size_t, size_t> rotationInterval() { return std::make_pair(0, 2); }
 
+    /// Output stream operator
+    friend std::ostream &operator<<(std::ostream &os, const Pose3& p);
+
   private:
     /** Serialization function */
     friend class boost::serialization::access;

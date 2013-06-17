@@ -27,7 +27,7 @@ INSTANTIATE_LIE(Point2);
 
 /* ************************************************************************* */
 void Point2::print(const string& s) const {
-  cout << s << "(" << x_ << ", " << y_ << ")" << endl;
+  cout << s << *this << endl;
 }
 
 /* ************************************************************************* */
@@ -38,6 +38,12 @@ bool Point2::equals(const Point2& q, double tol) const {
 /* ************************************************************************* */
 double Point2::norm() const {
   return sqrt(x_*x_ + y_*y_);
+}
+
+/* ************************************************************************* */
+ostream &operator<<(ostream &os, const Point2& p) {
+  os << '(' << p.x() << ", " << p.y() << ')';
+  return os;
 }
 
 } // namespace gtsam

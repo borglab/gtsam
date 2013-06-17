@@ -48,7 +48,7 @@ GaussianFactorGraph splitFactor(const GaussianFactor::shared_ptr& factor) {
   JacobianFactor::const_iterator rowIt, colIt;
   const size_t totalRows = jf->rows();
   size_t rowsRemaining = totalRows;
-  for (rowIt = jf->begin(); rowIt != jf->end(); ++rowIt) {
+  for (rowIt = jf->begin(); rowIt != jf->end() && rowsRemaining > 0; ++rowIt) {
     // get dim of current variable
     size_t varDim = jf->getDim(rowIt);
     size_t startRow = totalRows - rowsRemaining;
@@ -125,26 +125,6 @@ findPathCliques(const GaussianBayesTree::sharedClique& initial) {
   parents = findPathCliques(initial->parent());
   result.insert(result.end(), parents.begin(), parents.end());
   return result;
-}
-
-/* ************************************************************************* */
-GaussianFactorGraph liquefy(const GaussianBayesTree::sharedClique& root, bool splitConditionals) {
-  GaussianFactorGraph result;
-  if (root && root->conditional()) {
-    GaussianConditional::shared_ptr conditional = root->conditional();
-    if (!splitConditionals)
-      result.push_back(conditional->toFactor());
-    else
-      result.push_back(splitFactor(conditional->toFactor()));
-  }
-  BOOST_FOREACH(const GaussianBayesTree::sharedClique& child, root->children())
-    result.push_back(liquefy(child, splitConditionals));
-  return result;
-}
-
-/* ************************************************************************* */
-GaussianFactorGraph liquefy(const GaussianBayesTree& bayesTree, bool splitConditionals) {
-  return liquefy(bayesTree.root(), splitConditionals);
 }
 
 /* ************************************************************************* */

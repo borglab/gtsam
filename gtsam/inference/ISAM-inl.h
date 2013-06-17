@@ -36,8 +36,14 @@ namespace gtsam {
       const FG& newFactors, Cliques& orphans, typename FG::Eliminate function) {
 
     // Remove the contaminated part of the Bayes tree
+    // Throw exception if disconnected
     BayesNet<CONDITIONAL> bn;
-    this->removeTop(newFactors.keys(), bn, orphans);
+    if (!this->empty()) {
+      this->removeTop(newFactors.keys(), bn, orphans);
+      if (bn.empty())
+        throw std::runtime_error(
+            "ISAM::update_internal(): no variables in common between existing Bayes tree and incoming factors!");
+    }
     FG factors(bn);
 
     // add the factors themselves

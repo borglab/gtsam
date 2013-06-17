@@ -24,11 +24,12 @@ Matrix I3 = eye(3);
 Matrix Z3 = zeros(3, 3);
 
 /* ************************************************************************* */
-AHRS::AHRS(const Matrix& stationaryU, const Matrix& stationaryF, double g_e) :
+AHRS::AHRS(const Matrix& stationaryU, const Matrix& stationaryF, double g_e,
+		bool flat) :
     KF_(9) {
 
   // Initial state
-  mech0_ = Mechanization_bRn2::initialize(stationaryU, stationaryF, g_e);
+  mech0_ = Mechanization_bRn2::initialize(stationaryU, stationaryF, g_e, flat);
 
   size_t T = stationaryU.cols();
 
@@ -145,6 +146,18 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::integrate(
   return make_pair(newMech, newState);
 }
 
+/* ************************************************************************* */
+bool AHRS::isAidingAvailable(const Mechanization_bRn2& mech,
+    const gtsam::Vector& f, const gtsam::Vector& u, double ge) {
+
+  // Subtract the biases
+  Vector f_ = f - mech.x_a();
+  Vector u_ = u - mech.x_g();
+
+  double mu_f = f_.norm() - ge;
+  double mu_u = u_.norm();
+  return (fabs(mu_f)<0.5 && mu_u < 5.0 / 180.0 * 3.1415926);
+}
 
 /* ************************************************************************* */
 std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aid(
@@ -169,10 +182,14 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aid(
     // F(:,k) = mech.x_a + dx_a - bRn*n_g;
     // F(:,k) = mech.x_a + dx_a - bRn*(I+P)*n_g;
     // F(:,k) = mech.x_a + dx_a - b_g - bRn*(rho x n_g); // P = [rho]_x
-    // b_g - (mech.x_a - F(:,k)) = dx_a + bRn*(n_g x rho);
+	// Hence, the measurement z = b_g - (mech.x_a - F(:,k)) is predicted
+	// from the filter state (dx_a, rho) as  dx_a + bRn*(n_g x rho)
+    // z = b_g - (mech.x_a - F(:,k)) = dx_a + bRn*(n_g x rho)
     z = bRn * n_g_ - measured_b_g;
+    // Now the Jacobian H
     Matrix b_g = bRn * n_g_cross_;
     H = collect(3, &b_g, &Z3, &I3);
+    // And the measurement noise, TODO: should be created once where sigmas_v_a is given
     R = diag(emul(sigmas_v_a_, sigmas_v_a_));
   }
 
