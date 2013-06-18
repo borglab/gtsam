@@ -32,22 +32,21 @@ namespace gtsam {
    * This factor uses the mean-precision parameterization.
    *
    * Takes three template arguments:
-   * MKEY: key type to use for mean
-   * PKEY: key type to use for precision
-   * VALUES: Values type for optimization
+   * Key: key type to use for mean
+   * Key: key type to use for precision
+   * Values: Values type for optimization
    * \nosubgrouping
    */
-  template<class MKEY, class PKEY, class VALUES>
-  class WhiteNoiseFactor: public NonlinearFactor<VALUES> {
+  class WhiteNoiseFactor: public NonlinearFactor {
 
   private:
 
     double z_; ///< Measurement
 
-    MKEY meanKey_; ///< key by which to access mean variable
-    PKEY precisionKey_; ///< key by which to access precision variable
+    Key meanKey_; ///< key by which to access mean variable
+    Key precisionKey_; ///< key by which to access precision variable
 
-    typedef NonlinearFactor<VALUES> Base;
+    typedef NonlinearFactor Base;
 
   public:
 
@@ -93,7 +92,7 @@ namespace gtsam {
      * @param meanKey Key for mean variable
      * @param precisionKey Key for precision variable
      */
-    WhiteNoiseFactor(double z, const MKEY& meanKey, const PKEY& precisionKey) :
+    WhiteNoiseFactor(double z, Key meanKey, Key precisionKey) :
         Base(), z_(z), meanKey_(meanKey), precisionKey_(precisionKey) {
     }
 
@@ -110,8 +109,9 @@ namespace gtsam {
     /// @{
 
     /// Print
-    void print(const std::string& p = "WhiteNoiseFactor") const {
-      Base::print(p);
+    void print(const std::string& p = "WhiteNoiseFactor",
+        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+      Base::print(p, keyFormatter);
       std::cout << p + ".z: " << z_ << std::endl;
     }
 
@@ -125,8 +125,8 @@ namespace gtsam {
     }
 
     /// Calculate the error of the factor, typically equal to log-likelihood
-    inline double error(const VALUES& x) const {
-      return f(z_, x[meanKey_].value(), x[precisionKey_].value());
+    inline double error(const Values& x) const {
+      return f(z_, x.at<LieScalar>(meanKey_), x.at<LieScalar>(precisionKey_));
     }
 
     /**
@@ -136,7 +136,7 @@ namespace gtsam {
      * Here we shoehorn sqrt(2*error(p))
      * TODO: Where is this used? should disappear.
      */
-    virtual Vector unwhitenedError(const VALUES& x) const {
+    virtual Vector unwhitenedError(const Values& x) const {
       return Vector_(1, sqrt(2 * error(x)));
     }
 
@@ -154,19 +154,20 @@ namespace gtsam {
     /// @{
 
     /// linearize returns a Hessianfactor that is an approximation of error(p)
-    virtual boost::shared_ptr<GaussianFactor> linearize(const VALUES& x,
+    virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x,
         const Ordering& ordering) const {
-      double u = x[meanKey_].value();
-      double p = x[precisionKey_].value();
+      double u = x.at<LieScalar>(meanKey_);
+      double p = x.at<LieScalar>(precisionKey_);
       Index j1 = ordering[meanKey_];
       Index j2 = ordering[precisionKey_];
       return linearize(z_, u, p, j1, j2);
     }
 
-    /// @return a deep copy of this factor
-    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
-          gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
+    // TODO: Frank commented this out for now, can it go?
+    //    /// @return a deep copy of this factor
+    //    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+    //      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    //          gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
     /// @}
 
