@@ -2110,47 +2110,47 @@ pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D_robust(string filename
 //*************************************************************************
 // Serialization
 //*************************************************************************
-#include <gtsam/slam/serialization.h>
-
-// Serialize/Deserialize a NonlinearFactorGraph
-string serializeGraph(const gtsam::NonlinearFactorGraph& graph);
-
-gtsam::NonlinearFactorGraph* deserializeGraph(string serialized_graph);
-
-string serializeGraphXML(const gtsam::NonlinearFactorGraph& graph);
-string serializeGraphXML(const gtsam::NonlinearFactorGraph& graph, string name);
-
-gtsam::NonlinearFactorGraph* deserializeGraphXML(string serialized_graph);
-gtsam::NonlinearFactorGraph* deserializeGraphXML(string serialized_graph, string name);
-
-// Serialize/Deserialize a Values
-string serializeValues(const gtsam::Values& values);
-
-gtsam::Values* deserializeValues(string serialized_values);
-
-string serializeValuesXML(const gtsam::Values& values);
-string serializeValuesXML(const gtsam::Values& values, string name);
-
-gtsam::Values* deserializeValuesXML(string serialized_values);
-gtsam::Values* deserializeValuesXML(string serialized_values, string name);
-
-// Serialize
-bool serializeGraphToFile(const gtsam::NonlinearFactorGraph& graph, string fname);
-bool serializeGraphToXMLFile(const gtsam::NonlinearFactorGraph& graph, string fname);
-bool serializeGraphToXMLFile(const gtsam::NonlinearFactorGraph& graph, string fname, string name);
-
-bool serializeValuesToFile(const gtsam::Values& values, string fname);
-bool serializeValuesToXMLFile(const gtsam::Values& values, string fname);
-bool serializeValuesToXMLFile(const gtsam::Values& values, string fname, string name);
-
-// Deserialize
-gtsam::NonlinearFactorGraph* deserializeGraphFromFile(string fname);
-gtsam::NonlinearFactorGraph* deserializeGraphFromXMLFile(string fname);
-gtsam::NonlinearFactorGraph* deserializeGraphFromXMLFile(string fname, string name);
-
-gtsam::Values* deserializeValuesFromFile(string fname);
-gtsam::Values* deserializeValuesFromXMLFile(string fname);
-gtsam::Values* deserializeValuesFromXMLFile(string fname, string name);
+//#include <gtsam/slam/serialization.h>
+//
+//// Serialize/Deserialize a NonlinearFactorGraph
+//string serializeGraph(const gtsam::NonlinearFactorGraph& graph);
+//
+//gtsam::NonlinearFactorGraph* deserializeGraph(string serialized_graph);
+//
+//string serializeGraphXML(const gtsam::NonlinearFactorGraph& graph);
+//string serializeGraphXML(const gtsam::NonlinearFactorGraph& graph, string name);
+//
+//gtsam::NonlinearFactorGraph* deserializeGraphXML(string serialized_graph);
+//gtsam::NonlinearFactorGraph* deserializeGraphXML(string serialized_graph, string name);
+//
+//// Serialize/Deserialize a Values
+//string serializeValues(const gtsam::Values& values);
+//
+//gtsam::Values* deserializeValues(string serialized_values);
+//
+//string serializeValuesXML(const gtsam::Values& values);
+//string serializeValuesXML(const gtsam::Values& values, string name);
+//
+//gtsam::Values* deserializeValuesXML(string serialized_values);
+//gtsam::Values* deserializeValuesXML(string serialized_values, string name);
+//
+//// Serialize
+//bool serializeGraphToFile(const gtsam::NonlinearFactorGraph& graph, string fname);
+//bool serializeGraphToXMLFile(const gtsam::NonlinearFactorGraph& graph, string fname);
+//bool serializeGraphToXMLFile(const gtsam::NonlinearFactorGraph& graph, string fname, string name);
+//
+//bool serializeValuesToFile(const gtsam::Values& values, string fname);
+//bool serializeValuesToXMLFile(const gtsam::Values& values, string fname);
+//bool serializeValuesToXMLFile(const gtsam::Values& values, string fname, string name);
+//
+//// Deserialize
+//gtsam::NonlinearFactorGraph* deserializeGraphFromFile(string fname);
+//gtsam::NonlinearFactorGraph* deserializeGraphFromXMLFile(string fname);
+//gtsam::NonlinearFactorGraph* deserializeGraphFromXMLFile(string fname, string name);
+//
+//gtsam::Values* deserializeValuesFromFile(string fname);
+//gtsam::Values* deserializeValuesFromXMLFile(string fname);
+//gtsam::Values* deserializeValuesFromXMLFile(string fname, string name);
 
 //*************************************************************************
 // Utilities
