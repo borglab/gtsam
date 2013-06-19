@@ -403,7 +403,9 @@ void Class::comment_fragment(FileWriter& proxyFile) const {
 }
 /* ************************************************************************* */ 
 
-void Class::serialization_fragments(FileWriter& proxyFile, FileWriter& wrapperFile, std::vector<std::string>& functionNames) const {
+void Class::serialization_fragments(FileWriter& proxyFile,
+    FileWriter& file, std::vector<std::string>& functionNames) const {
+
 //void Point3_string_serialize_17(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 //{
 //  typedef boost::shared_ptr<Point3> Shared;
@@ -414,7 +416,39 @@ void Class::serialization_fragments(FileWriter& proxyFile, FileWriter& wrapperFi
 //  out_archive << *obj;
 //  out[0] = wrap< string >(out_archive_stream.str());
 //}
-//
+
+  int serialize_id = functionNames.size();
+  const string matlabQualName =
+      qualifiedName("."),
+      matlabUniqueName = qualifiedName(),
+      cppClassName = qualifiedName("::");
+  const string wrapFunctionNameSerialize = matlabUniqueName + "_string_serialize_" + boost::lexical_cast<string>(serialize_id);
+  functionNames.push_back(wrapFunctionNameSerialize);
+
+  // call
+  //void Point3_string_serialize_17(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+  file.oss << "void " << wrapFunctionNameSerialize << "(int nargout, mxArray *out[], int nargin, const mxArray *in[])\n";
+  file.oss << "{\n";
+  file.oss << "  typedef boost::shared_ptr<"  << cppClassName  << "> Shared;" << endl;
+
+  // check arguments - for serialize, no arguments
+  // example: checkArguments("string_serialize",nargout,nargin-1,0);
+  file.oss << "  checkArguments(\"string_serialize\",nargout,nargin-1,0);\n";
+
+  // get class pointer
+  // example: Shared obj = unwrap_shared_ptr<Point3>(in[0], "ptr_Point3");
+  file.oss << "  Shared obj = unwrap_shared_ptr<" << cppClassName << ">(in[0], \"ptr_" << matlabUniqueName << "\");" << endl;
+
+  // Serialization boilerplate
+  file.oss << "  std::ostringstream out_archive_stream;\n";
+  file.oss << "  boost::archive::text_oarchive out_archive(out_archive_stream);\n";
+  file.oss << "  out_archive << *obj;\n";
+  file.oss << "  out[0] = wrap< string >(out_archive_stream.str());\n";
+
+  // finish
+  file.oss << "}\n";
+
+
 //void Point3_string_deserialize_18(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 //{
 //  typedef boost::shared_ptr<Point3> Shared;
@@ -426,5 +460,24 @@ void Class::serialization_fragments(FileWriter& proxyFile, FileWriter& wrapperFi
 //  in_archive >> output;
 //  out[0] = wrap_shared_ptr(output,"Point3", false);
 //}
+  int deserialize_id = functionNames.size();
+  const string wrapFunctionNameDeserialize = matlabUniqueName + "_string_deserialize_" + boost::lexical_cast<string>(deserialize_id);
+  functionNames.push_back(wrapFunctionNameDeserialize);
 
+  // call
+  file.oss << "void " << wrapFunctionNameDeserialize << "(int nargout, mxArray *out[], int nargin, const mxArray *in[])\n";
+  file.oss << "{\n";
+  file.oss << "  typedef boost::shared_ptr<"  << cppClassName  << "> Shared;" << endl;
+
+  // check arguments - for deserialize, 1 string argument
+  file.oss << "  checkArguments(\"" << matlabUniqueName << ".string_deserialize\",nargout,nargin,1);\n";
+
+  // string argument with deserialization boilerplate
+  file.oss << "  string serialized = unwrap< string >(in[0]);\n";
+  file.oss << "  std::istringstream in_archive_stream(serialized);\n";
+  file.oss << "  boost::archive::text_iarchive in_archive(in_archive_stream);\n";
+  file.oss << "  Shared output(new " << cppClassName << "());\n";
+  file.oss << "  in_archive >> output;\n";
+  file.oss << "  out[0] = wrap_shared_ptr(output,\"" << matlabQualName << "\", false);\n";
+  file.oss << "}\n";
 }
