@@ -2,11 +2,13 @@
 #include <map>
 #include <boost/foreach.hpp>
 
+#include <boost/serialization/export.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
 
 #include <folder/path/to/Test.h>
 
+BOOST_CLASS_EXPORT_GUID(Point3, "Point3");
 
 typedef std::set<boost::shared_ptr<Point2>*> Collector_Point2;
 static Collector_Point2 collector_Point2;

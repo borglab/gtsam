@@ -530,4 +530,10 @@ void Class::deserialization_fragments(FileWriter& proxyFile, FileWriter& wrapper
     proxyFile.oss << "      end\n";
     proxyFile.oss << "    end\n\n";
 }
+
+/* ************************************************************************* */
+std::string Class::getSerializationExport() const {
+  //BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsamSharedDiagonal");
+  return "BOOST_CLASS_EXPORT_GUID(" + qualifiedName("::") + ", \"" + qualifiedName() + "\");";
+}
 /* ************************************************************************* */

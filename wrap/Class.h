@@ -66,6 +66,9 @@ struct Class {
   // The typedef line for this class, if this class is a typedef, otherwise returns an empty string.
   std::string getTypedef() const;
 
+  // Returns the string for an export flag
+  std::string getSerializationExport() const;
+
   // Creates a member function that performs serialization
   void serialization_fragments(FileWriter& proxyFile, FileWriter& wrapperFile,
       const std::string& wrapperName, std::vector<std::string>& functionNames) const;

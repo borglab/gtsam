@@ -492,11 +492,14 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
   wrapperFile.oss << "#include <boost/foreach.hpp>\n";
   wrapperFile.oss << "\n";
 
-  // Generate includes while avoiding redundant includes
+  // Include boost.serialization archive headers before other class headers
   if (hasSerialiable) {
+    wrapperFile.oss << "#include <boost/serialization/export.hpp>\n";
     wrapperFile.oss << "#include <boost/archive/text_iarchive.hpp>\n";
     wrapperFile.oss << "#include <boost/archive/text_oarchive.hpp>\n\n";
   }
+
+  // Generate includes while avoiding redundant includes
   generateIncludes(wrapperFile);
 
   // create typedef classes - we put this at the top of the wrap file so that collectors and method arguments can use these typedefs
@@ -505,6 +508,15 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
       wrapperFile.oss << cls.getTypedef() << "\n";
   }
   wrapperFile.oss << "\n";
+
+  // Generate boost.serialization export flags (needs typedefs from above)
+  if (hasSerialiable) {
+    BOOST_FOREACH(const Class& cls, expandedClasses) {
+      if(cls.isSerializable)
+        wrapperFile.oss << cls.getSerializationExport() << "\n";
+    }
+    wrapperFile.oss << "\n";
+  }
 
   // Generate collectors and cleanup function to be called from mexAtExit
   WriteCollectorsAndCleanupFcn(wrapperFile, name, expandedClasses);
