@@ -66,7 +66,11 @@ struct Class {
   // The typedef line for this class, if this class is a typedef, otherwise returns an empty string.
   std::string getTypedef() const;
 
+  // Creates a member function that performs serialization
   void serialization_fragments(FileWriter& proxyFile, FileWriter& wrapperFile, std::vector<std::string>& functionNames) const;
+
+  // Creates a static member function that performs deserialization
+  void deserialization_fragments(FileWriter& proxyFile, FileWriter& wrapperFile, std::vector<std::string>& functionNames) const;
 
 private:
   void pointer_constructor_fragments(FileWriter& proxyFile, FileWriter& wrapperFile, const std::string& wrapperName, std::vector<std::string>& functionNames) const;

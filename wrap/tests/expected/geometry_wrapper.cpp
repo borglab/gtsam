@@ -223,23 +223,7 @@ void Point3_norm_14(int nargout, mxArray *out[], int nargin, const mxArray *in[]
   out[0] = wrap< double >(obj->norm());
 }
 
-void Point3_StaticFunctionRet_15(int nargout, mxArray *out[], int nargin, const mxArray *in[])
-{
-  typedef boost::shared_ptr<Point3> SharedPoint3;
-  typedef boost::shared_ptr<Point3> Shared;
-  checkArguments("Point3.StaticFunctionRet",nargout,nargin,1);
-  double z = unwrap< double >(in[0]);
-  out[0] = wrap_shared_ptr(SharedPoint3(new Point3(Point3::StaticFunctionRet(z))),"Point3", false);
-}
-
-void Point3_staticFunction_16(int nargout, mxArray *out[], int nargin, const mxArray *in[])
-{
-  typedef boost::shared_ptr<Point3> Shared;
-  checkArguments("Point3.staticFunction",nargout,nargin,0);
-  out[0] = wrap< double >(Point3::staticFunction());
-}
-
-void Point3_string_serialize_17(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void Point3_string_serialize_15(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<Point3> Shared;
   checkArguments("string_serialize",nargout,nargin-1,0);
@@ -250,6 +234,22 @@ void Point3_string_serialize_17(int nargout, mxArray *out[], int nargin, const m
   out[0] = wrap< string >(out_archive_stream.str());
 }
 
+void Point3_StaticFunctionRet_16(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  typedef boost::shared_ptr<Point3> SharedPoint3;
+  typedef boost::shared_ptr<Point3> Shared;
+  checkArguments("Point3.StaticFunctionRet",nargout,nargin,1);
+  double z = unwrap< double >(in[0]);
+  out[0] = wrap_shared_ptr(SharedPoint3(new Point3(Point3::StaticFunctionRet(z))),"Point3", false);
+}
+
+void Point3_staticFunction_17(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  typedef boost::shared_ptr<Point3> Shared;
+  checkArguments("Point3.staticFunction",nargout,nargin,0);
+  out[0] = wrap< double >(Point3::staticFunction());
+}
+
 void Point3_string_deserialize_18(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<Point3> Shared;
@@ -258,7 +258,7 @@ void Point3_string_deserialize_18(int nargout, mxArray *out[], int nargin, const
   std::istringstream in_archive_stream(serialized);
   boost::archive::text_iarchive in_archive(in_archive_stream);
   Shared output(new Point3());
-  in_archive >> output;
+  in_archive >> *output;
   out[0] = wrap_shared_ptr(output,"Point3", false);
 }
 

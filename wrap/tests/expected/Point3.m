@@ -52,11 +52,11 @@ classdef Point3 < handle
       end
     end
     
-    function varargout string_serialize(this, varargin)
-    % string_serialize usage: string_serialize() : returns string
-    % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
+    function varargout = string_serialize(this, varargin)
+      % STRING_SERIALIZE usage: string_serialize() : returns string
+      % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       if length(varargin) == 0
-        varargout{1} = geometry_wrapper(14, this, varargin{:});
+        varargout{1} = geometry_wrapper(15, this, varargin{:});
       else
         error('Arguments do not match any overload of function Point3.string_serialize');
       end
@@ -71,7 +71,7 @@ classdef Point3 < handle
       % Usage
       % STATICFUNCTIONRET(double z)
       if length(varargin) == 1 && isa(varargin{1},'double')
-        varargout{1} = geometry_wrapper(15, varargin{:});
+        varargout{1} = geometry_wrapper(16, varargin{:});
       else
         error('Arguments do not match any overload of function Point3.StaticFunctionRet');
       end
@@ -84,19 +84,19 @@ classdef Point3 < handle
       % Usage
       % STATICFUNCTION()
       if length(varargin) == 0
-        varargout{1} = geometry_wrapper(16, varargin{:});
+        varargout{1} = geometry_wrapper(17, varargin{:});
       else
         error('Arguments do not match any overload of function Point3.StaticFunction');
       end
     end
     
     function varargout = string_deserialize(varargin)
-    % STATICFUNCTION usage: string_deserialize() : returns Point3
-    % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
+      % STRING_DESERIALIZE usage: string_deserialize() : returns Point3
+      % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       if length(varargin) == 0
-        varargout{1} = geometry_wrapper(16, varargin{:});
+        varargout{1} = geometry_wrapper(18, varargin{:});
       else
-        error('Arguments do not match any overload of function Point3.StaticFunction');
+        error('Arguments do not match any overload of function Point3.string_deserialize');
       end
     end
 
