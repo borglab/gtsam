@@ -37,14 +37,15 @@ struct Class {
   typedef std::map<std::string, StaticMethod> StaticMethods;
 
   /// Constructor creates an empty class
-  Class(bool verbose=true) : isVirtual(false), isSerializable(false), verbose_(verbose) {}
+  Class(bool verbose=true) : isVirtual(false), isSerializable(false), hasSerialization(false), verbose_(verbose) {}
 
   // Then the instance variables are set directly by the Module constructor
   std::string name;                         ///< Class name
   std::vector<std::string> templateArgs;    ///< Template arguments
   std::string typedefName;                  ///< The name to typedef *from*, if this class is actually a typedef, i.e. typedef [typedefName] [name]
   bool isVirtual;                           ///< Whether the class is part of a virtual inheritance chain
-  bool isSerializable;                      ///< Whether we can use boost.serialization to serialize the class
+  bool isSerializable;                      ///< Whether we can use boost.serialization to serialize the class - creates exports
+  bool hasSerialization;                    ///< Whether we should create the serialization functions
   std::vector<std::string> qualifiedParent; ///< The *single* parent - the last string is the parent class name, preceededing elements are a namespace stack
   Methods methods;                          ///< Class methods
   StaticMethods static_methods;             ///< Static methods

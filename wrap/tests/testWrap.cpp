@@ -219,6 +219,10 @@ TEST( wrap, parse_geometry ) {
 
     EXPECT_LONGS_EQUAL(0, cls.static_methods.size());
     EXPECT_LONGS_EQUAL(0, cls.namespaces.size());
+
+    // check serialization flag
+    EXPECT(cls.isSerializable);
+    EXPECT(!cls.hasSerialization);
   }
 
   // check second class, Point3
@@ -254,6 +258,7 @@ TEST( wrap, parse_geometry ) {
 
     // check serialization flag
     EXPECT(cls.isSerializable);
+    EXPECT(cls.hasSerialization);
   }
 
   // Test class is the third one

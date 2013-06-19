@@ -13,6 +13,8 @@ class Point2 {
  void argChar(char a) const;
  void argUChar(unsigned char a) const;
  VectorNotEigen vectorConfusion();
+
+ void serializable() const; // Sets flag and creates export, but does not make serialization functions
 };
 
 class Point3 {

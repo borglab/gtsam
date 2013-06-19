@@ -9,6 +9,7 @@
 #include <folder/path/to/Test.h>
 
 
+BOOST_CLASS_EXPORT_GUID(Point2, "Point2");
 BOOST_CLASS_EXPORT_GUID(Point3, "Point3");
 
 typedef std::set<boost::shared_ptr<Point2>*> Collector_Point2;

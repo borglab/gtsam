@@ -111,7 +111,7 @@ void Class::matlab_proxy(const string& toolboxPath, const string& wrapperName,
     proxyFile.oss << "\n"; 
     wrapperFile.oss << "\n"; 
   } 
-  if (isSerializable)
+  if (hasSerialization)
     serialization_fragments(proxyFile, wrapperFile, wrapperName, functionNames);
  
   proxyFile.oss << "  end\n"; 
@@ -125,7 +125,7 @@ void Class::matlab_proxy(const string& toolboxPath, const string& wrapperName,
     proxyFile.oss << "\n"; 
     wrapperFile.oss << "\n"; 
   } 
-  if (isSerializable)
+  if (hasSerialization)
     deserialization_fragments(proxyFile, wrapperFile, wrapperName, functionNames);
 
   proxyFile.oss << "  end\n";
@@ -393,7 +393,7 @@ void Class::comment_fragment(FileWriter& proxyFile) const {
     }
   }
 
-  if (isSerializable) {
+  if (hasSerialization) {
     proxyFile.oss << "%\n%-------Serialization Interface-------\n";
     proxyFile.oss << "%string_serialize() : returns string\n";
     proxyFile.oss << "%string_deserialize(string serialized) : returns " << this->name << "\n";

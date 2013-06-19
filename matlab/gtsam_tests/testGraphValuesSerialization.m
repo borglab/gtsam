@@ -57,13 +57,17 @@ graph.add(PriorFactorPose2(i1, priorMean, priorNoise)); % add directly to graph
 % odometryNoise = noiseModel.Diagonal.Sigmas([0.2; 0.2; 0.1]);
 % graph.add(BetweenFactorPose2(i1, i2, odometry, odometryNoise));
 % graph.add(BetweenFactorPose2(i2, i3, odometry, odometryNoise));
-% 
+ 
 % % BearingRange Factors - FAIL: unregistered class
 % degrees = pi/180;
 % brNoise = noiseModel.Diagonal.Sigmas([0.1; 0.2]);
 % graph.add(BearingRangeFactor2D(i1, j1, Rot2(45*degrees), sqrt(4+4), brNoise));
 % graph.add(BearingRangeFactor2D(i2, j1, Rot2(90*degrees), 2, brNoise));
 % graph.add(BearingRangeFactor2D(i3, j2, Rot2(90*degrees), 2, brNoise));
+
+serialized_graph = graph.string_serialize();
+graphds = NonlinearFactorGraph.string_deserialize(serialized_graph);
+CHECK('graphds.equals(graph, 1e-9)', graphds.equals(graph, 1e-9));
 
 %% Old interface
 
