@@ -26,6 +26,9 @@ protected:
   GaussianFactor::shared_ptr factor_;
   boost::optional<Values> linearizationPoint_;
 
+  /** Default constructor - necessary for serialization */
+  LinearContainerFactor() {}
+
   /** direct copy constructor */
   LinearContainerFactor(const GaussianFactor::shared_ptr& factor,
       const boost::optional<Values>& linearizationPoint);
@@ -147,6 +150,18 @@ public:
 protected:
   void rekeyFactor(const Ordering& ordering);
   void initializeLinearizationPoint(const Values& linearizationPoint);
+
+private:
+
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int version) {
+    ar & boost::serialization::make_nvp("NonlinearFactor",
+        boost::serialization::base_object<Base>(*this));
+    ar & BOOST_SERIALIZATION_NVP(factor_);
+    ar & BOOST_SERIALIZATION_NVP(linearizationPoint_);
+  }
 
 }; // \class LinearContainerFactor
 

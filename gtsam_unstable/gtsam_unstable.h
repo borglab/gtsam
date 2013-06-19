@@ -86,6 +86,8 @@ virtual class PoseRTV : gtsam::Value {
   Vector imuPrediction(const gtsam::PoseRTV& x2, double dt) const;
   gtsam::Point3 translationIntegration(const gtsam::PoseRTV& x2, double dt) const;
   Vector translationIntegrationVec(const gtsam::PoseRTV& x2, double dt) const;
+
+  void serializable() const; // enabling serialization functionality
 };
 
 #include <gtsam_unstable/geometry/Pose3Upright.h>
@@ -122,6 +124,8 @@ virtual class Pose3Upright : gtsam::Value {
 
   static gtsam::Pose3Upright Expmap(Vector xi);
   static Vector Logmap(const gtsam::Pose3Upright& p);
+
+  void serializable() const; // enabling serialization functionality
 }; // \class Pose3Upright
 
 #include <gtsam_unstable/geometry/BearingS2.h>
@@ -142,6 +146,8 @@ virtual class BearingS2 : gtsam::Value {
   size_t dim() const;
   gtsam::BearingS2 retract(Vector v) const;
   Vector localCoordinates(const gtsam::BearingS2& p2) const;
+
+  void serializable() const; // enabling serialization functionality
 };
 
 // std::vector<gtsam::Point2>
@@ -288,6 +294,8 @@ class SimPolygon2D {
 template<T = {gtsam::PoseRTV}>
 virtual class PriorFactor : gtsam::NonlinearFactor {
   PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
+
+  void serializable() const; // enabling serialization functionality
 };
 
 
@@ -295,6 +303,8 @@ virtual class PriorFactor : gtsam::NonlinearFactor {
 template<T = {gtsam::PoseRTV}>
 virtual class BetweenFactor : gtsam::NonlinearFactor {
   BetweenFactor(size_t key1, size_t key2, const T& relativePose, const gtsam::noiseModel::Base* noiseModel);
+
+  void serializable() const; // enabling serialization functionality
 };
 
 
@@ -302,6 +312,8 @@ virtual class BetweenFactor : gtsam::NonlinearFactor {
 template<POSE, POINT>
 virtual class RangeFactor : gtsam::NonlinearFactor {
   RangeFactor(size_t key1, size_t key2, double measured, const gtsam::noiseModel::Base* noiseModel);
+
+  void serializable() const; // enabling serialization functionality
 };
 
 typedef gtsam::RangeFactor<gtsam::PoseRTV, gtsam::PoseRTV> RangeFactorRTV;
@@ -314,6 +326,8 @@ virtual class NonlinearEquality : gtsam::NonlinearFactor {
   NonlinearEquality(size_t j, const T& feasible);
   // Constructor - allows inexact evaluation
   NonlinearEquality(size_t j, const T& feasible, double error_gain);
+
+  void serializable() const; // enabling serialization functionality
 };
 
 #include <gtsam_unstable/dynamics/IMUFactor.h>
