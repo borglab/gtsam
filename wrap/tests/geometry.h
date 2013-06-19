@@ -22,6 +22,9 @@ class Point3 {
   // static functions - use static keyword and uppercase
   static double staticFunction();
   static Point3 StaticFunctionRet(double z);
+
+  // enabling serialization functionality
+  void serialize() const; // Just triggers a flag internally and removes actual function
 };
 
 // another comment

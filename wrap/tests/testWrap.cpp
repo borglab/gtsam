@@ -251,6 +251,9 @@ TEST( wrap, parse_geometry ) {
     LONGS_EQUAL(1, m1.argLists.size());
     EXPECT_LONGS_EQUAL(0, m1.argLists.front().size());
     EXPECT(m1.is_const_);
+
+    // check serialization flag
+    EXPECT(cls.isSerializable);
   }
 
   // Test class is the third one

@@ -378,13 +378,21 @@ void Module::parseMarkup(const std::string& data) {
     throw ParseFailed((int)info.length);
   }
 
-  //Explicitly add methods to the classes from parents so it shows in documentation
+  // Post-process classes for serialization markers
+  BOOST_FOREACH(Class& cls, classes) {
+    Class::Methods::iterator serialize_it = cls.methods.find("serialize");
+    if (serialize_it != cls.methods.end()) {
+      cls.isSerializable = true;
+      cls.methods.erase(serialize_it);
+    }
+  }
+
+  // Explicitly add methods to the classes from parents so it shows in documentation
   BOOST_FOREACH(Class& cls, classes)
   {
     map<string, Method> inhereted = appendInheretedMethods(cls, classes);
     cls.methods.insert(inhereted.begin(), inhereted.end());
   }
-
 } 
  
 /* ************************************************************************* */ 
