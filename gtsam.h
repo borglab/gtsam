@@ -76,6 +76,18 @@
  *     - When forward-declaring template instantiations, use the generated/typedefed name, e.g.
  *       class gtsam::Class1Pose2;
  *       class gtsam::MyInstantiatedClass;
+ *   Boost.serialization within Matlab:
+ *     - you need to mark classes as being serializable in the markup file (see this file for an example).
+ *     - There are two options currently, depending on the class.  To "mark" a class as serializable,
+ *       add a function with a particular signature so that wrap will catch it.
+ *        - Add "void serialize()" to a class to create serialization functions for a class.
+ *          Adding this flag subsumes the serializable() flag below. Requirements:
+ *             - A default constructor must be publicly accessible
+ *             - Must not be an abstract base class
+ *             - The class must have an actual boost.serialization serialize() function.
+ *        - Add "void serializable()" to a class if you only want the class to be serialized as a
+ *          part of a container (such as noisemodel). This version does not require a publicly
+ *          accessible default constructor.
  */
 
 /**
