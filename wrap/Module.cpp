@@ -448,16 +448,6 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 
   fs::create_directories(toolboxPath);
 
-  // create the unified .cpp switch file
-  const string wrapperName = name + "_wrapper";
-  string wrapperFileName = toolboxPath + "/" + wrapperName + ".cpp";
-  FileWriter wrapperFile(wrapperFileName, verbose, "//");
-  vector<string> functionNames; // Function names stored by index for switch
-  wrapperFile.oss << "#include <wrap/matlab.h>\n";
-  wrapperFile.oss << "#include <map>\n";
-  wrapperFile.oss << "#include <boost/foreach.hpp>\n";
-  wrapperFile.oss << "\n";
-
   // Expand templates - This is done first so that template instantiations are
   // counted in the list of valid types, have their attributes and dependencies
   // checked, etc.
@@ -470,7 +460,9 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
   verifyArguments<GlobalFunction>(validTypes, global_functions);
   verifyReturnTypes<GlobalFunction>(validTypes, global_functions);
 
+  bool hasSerialiable = false;
   BOOST_FOREACH(const Class& cls, expandedClasses) {
+    hasSerialiable |= cls.isSerializable;
     // verify all of the function arguments
     //TODO:verifyArguments<ArgumentList>(validTypes, cls.constructor.args_list);
     verifyArguments<StaticMethod>(validTypes, cls.static_methods);
@@ -483,7 +475,6 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
     // verify parents
     if(!cls.qualifiedParent.empty() && std::find(validTypes.begin(), validTypes.end(), wrap::qualifiedName("::", cls.qualifiedParent)) == validTypes.end())
       throw DependencyMissing(wrap::qualifiedName("::", cls.qualifiedParent), cls.qualifiedName("::"));
-
   }
 
   // Create type attributes table and check validity
@@ -492,7 +483,20 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
   typeAttributes.addForwardDeclarations(forward_declarations);
   typeAttributes.checkValidity(expandedClasses);
 
+  // create the unified .cpp switch file
+  const string wrapperName = name + "_wrapper";
+  string wrapperFileName = toolboxPath + "/" + wrapperName + ".cpp";
+  FileWriter wrapperFile(wrapperFileName, verbose, "//");
+  wrapperFile.oss << "#include <wrap/matlab.h>\n";
+  wrapperFile.oss << "#include <map>\n";
+  wrapperFile.oss << "#include <boost/foreach.hpp>\n";
+  wrapperFile.oss << "\n";
+
   // Generate includes while avoiding redundant includes
+  if (hasSerialiable) {
+    wrapperFile.oss << "#include <boost/archive/text_iarchive.hpp>\n";
+    wrapperFile.oss << "#include <boost/archive/text_oarchive.hpp>\n\n";
+  }
   generateIncludes(wrapperFile);
 
   // create typedef classes - we put this at the top of the wrap file so that collectors and method arguments can use these typedefs
@@ -507,6 +511,8 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 
   // generate RTTI registry (for returning derived-most types)
   WriteRTTIRegistry(wrapperFile, name, expandedClasses);
+
+  vector<string> functionNames; // Function names stored by index for switch
 
   // create proxy class and wrapper code
   BOOST_FOREACH(const Class& cls, expandedClasses) {

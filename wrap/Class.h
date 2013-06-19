@@ -56,14 +56,17 @@ struct Class {
   // And finally MATLAB code is emitted, methods below called by Module::matlab_code
   void matlab_proxy(const std::string& toolboxPath, const std::string& wrapperName, const TypeAttributesTable& typeAttributes,
     FileWriter& wrapperFile, std::vector<std::string>& functionNames) const;          ///< emit proxy class
+
   std::string qualifiedName(const std::string& delim = "") const; ///< creates a namespace-qualified name, optional delimiter
 
   std::vector<Class> expandTemplate(const std::string& templateArg, const std::vector<std::vector<std::string> >& instantiations) const;
+
   Class expandTemplate(const std::string& templateArg, const std::vector<std::string>& instantiation, const std::vector<std::string>& expandedClassNamespace, const std::string& expandedClassName) const;
 
   // The typedef line for this class, if this class is a typedef, otherwise returns an empty string.
   std::string getTypedef() const;
 
+  void serialization_fragments(FileWriter& proxyFile, FileWriter& wrapperFile, std::vector<std::string>& functionNames) const;
 
 private:
   void pointer_constructor_fragments(FileWriter& proxyFile, FileWriter& wrapperFile, const std::string& wrapperName, std::vector<std::string>& functionNames) const;

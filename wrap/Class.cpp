@@ -124,6 +124,10 @@ void Class::matlab_proxy(const string& toolboxPath, const string& wrapperName,
     wrapperFile.oss << "\n"; 
   } 
  
+  // Add serialization if necessary
+  if (isSerializable)
+    serialization_fragments(proxyFile, wrapperFile, functionNames);
+
   proxyFile.oss << "  end\n";
   proxyFile.oss << "end\n";
  
@@ -278,6 +282,7 @@ Class expandClassTemplate(const Class& cls, const string& templateArg, const vec
   inst.templateArgs = cls.templateArgs; 
   inst.typedefName = cls.typedefName; 
   inst.isVirtual = cls.isVirtual; 
+  inst.isSerializable = cls.isSerializable;
   inst.qualifiedParent = cls.qualifiedParent; 
   inst.methods = expandMethodTemplate(cls.methods, templateArg, instName, expandedClassNamespace, expandedClassName); 
   inst.static_methods = expandMethodTemplate(cls.static_methods, templateArg, instName, expandedClassNamespace, expandedClassName); 
@@ -388,6 +393,38 @@ void Class::comment_fragment(FileWriter& proxyFile) const {
     }
   }
 
+  if (isSerializable) {
+    proxyFile.oss << "%\n%-------Serialization Interface-------\n";
+    proxyFile.oss << "%string_serialize() : returns string\n";
+    proxyFile.oss << "%string_deserialize(string serialized) : returns " << this->name << "\n";
+  }
+
   proxyFile.oss << "%\n";
 }
 /* ************************************************************************* */ 
+
+void Class::serialization_fragments(FileWriter& proxyFile, FileWriter& wrapperFile, std::vector<std::string>& functionNames) const {
+//void Point3_string_serialize_17(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+//{
+//  typedef boost::shared_ptr<Point3> Shared;
+//  checkArguments("string_serialize",nargout,nargin-1,0);
+//  Shared obj = unwrap_shared_ptr<Point3>(in[0], "ptr_Point3");
+//  std::ostringstream out_archive_stream;
+//  boost::archive::text_oarchive out_archive(out_archive_stream);
+//  out_archive << *obj;
+//  out[0] = wrap< string >(out_archive_stream.str());
+//}
+//
+//void Point3_string_deserialize_18(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+//{
+//  typedef boost::shared_ptr<Point3> Shared;
+//  checkArguments("Point3.string_deserialize",nargout,nargin,1);
+//  string serialized = unwrap< string >(in[0]);
+//  std::istringstream in_archive_stream(serialized);
+//  boost::archive::text_iarchive in_archive(in_archive_stream);
+//  Shared output(new Point3());
+//  in_archive >> output;
+//  out[0] = wrap_shared_ptr(output,"Point3", false);
+//}
+
+}

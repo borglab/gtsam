@@ -470,6 +470,9 @@ virtual class Pose2 : gtsam::Value {
   gtsam::Point2 translation() const;
   gtsam::Rot2 rotation() const;
   Matrix matrix() const;
+
+  // enabling serialization functionality
+  void serialize() const;
 };
 
 virtual class Pose3 : gtsam::Value {

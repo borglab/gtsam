@@ -2,6 +2,9 @@
 #include <map>
 #include <boost/foreach.hpp>
 
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+
 #include <folder/path/to/Test.h>
 
 
@@ -234,6 +237,29 @@ void Point3_staticFunction_16(int nargout, mxArray *out[], int nargin, const mxA
   typedef boost::shared_ptr<Point3> Shared;
   checkArguments("Point3.staticFunction",nargout,nargin,0);
   out[0] = wrap< double >(Point3::staticFunction());
+}
+
+void Point3_string_serialize_17(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  typedef boost::shared_ptr<Point3> Shared;
+  checkArguments("string_serialize",nargout,nargin-1,0);
+  Shared obj = unwrap_shared_ptr<Point3>(in[0], "ptr_Point3");
+  std::ostringstream out_archive_stream;
+  boost::archive::text_oarchive out_archive(out_archive_stream);
+  out_archive << *obj;
+  out[0] = wrap< string >(out_archive_stream.str());
+}
+
+void Point3_string_deserialize_18(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  typedef boost::shared_ptr<Point3> Shared;
+  checkArguments("Point3.string_deserialize",nargout,nargin,1);
+  string serialized = unwrap< string >(in[0]);
+  std::istringstream in_archive_stream(serialized);
+  boost::archive::text_iarchive in_archive(in_archive_stream);
+  Shared output(new Point3());
+  in_archive >> output;
+  out[0] = wrap_shared_ptr(output,"Point3", false);
 }
 
 void Test_collectorInsertAndMakeBase_17(int nargout, mxArray *out[], int nargin, const mxArray *in[])
