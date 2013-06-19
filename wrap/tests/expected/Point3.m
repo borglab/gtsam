@@ -93,7 +93,7 @@ classdef Point3 < handle
     function varargout = string_deserialize(varargin)
       % STRING_DESERIALIZE usage: string_deserialize() : returns Point3
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      if length(varargin) == 0
+      if length(varargin) == 1
         varargout{1} = geometry_wrapper(18, varargin{:});
       else
         error('Arguments do not match any overload of function Point3.string_deserialize');

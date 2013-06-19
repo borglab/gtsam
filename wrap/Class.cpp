@@ -112,7 +112,7 @@ void Class::matlab_proxy(const string& toolboxPath, const string& wrapperName,
     wrapperFile.oss << "\n"; 
   } 
   if (isSerializable)
-    serialization_fragments(proxyFile, wrapperFile, functionNames);
+    serialization_fragments(proxyFile, wrapperFile, wrapperName, functionNames);
  
   proxyFile.oss << "  end\n"; 
   proxyFile.oss << "\n"; 
@@ -126,7 +126,7 @@ void Class::matlab_proxy(const string& toolboxPath, const string& wrapperName,
     wrapperFile.oss << "\n"; 
   } 
   if (isSerializable)
-    deserialization_fragments(proxyFile, wrapperFile, functionNames);
+    deserialization_fragments(proxyFile, wrapperFile, wrapperName, functionNames);
 
   proxyFile.oss << "  end\n";
   proxyFile.oss << "end\n";
@@ -401,10 +401,10 @@ void Class::comment_fragment(FileWriter& proxyFile) const {
 
   proxyFile.oss << "%\n";
 }
-/* ************************************************************************* */ 
 
-void Class::serialization_fragments(FileWriter& proxyFile,
-    FileWriter& wrapperFile, std::vector<std::string>& functionNames) const {
+/* ************************************************************************* */ 
+void Class::serialization_fragments(FileWriter& proxyFile, FileWriter& wrapperFile,
+    const std::string& wrapperName, std::vector<std::string>& functionNames) const {
 
 //void Point3_string_serialize_17(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 //{
@@ -463,14 +463,16 @@ void Class::serialization_fragments(FileWriter& proxyFile,
   proxyFile.oss << "      % STRING_SERIALIZE usage: string_serialize() : returns string\n";
   proxyFile.oss << "      % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html\n";
   proxyFile.oss << "      if length(varargin) == 0\n";
-  proxyFile.oss << "        varargout{1} = geometry_wrapper(" << boost::lexical_cast<string>(serialize_id) << ", this, varargin{:});\n";
+  proxyFile.oss << "        varargout{1} = " << wrapperName << "(" << boost::lexical_cast<string>(serialize_id) << ", this, varargin{:});\n";
   proxyFile.oss << "      else\n";
   proxyFile.oss << "        error('Arguments do not match any overload of function " << matlabQualName << ".string_serialize');\n";
   proxyFile.oss << "      end\n";
   proxyFile.oss << "    end\n";
 }
 
-void Class::deserialization_fragments(FileWriter& proxyFile, FileWriter& wrapperFile, std::vector<std::string>& functionNames) const {
+/* ************************************************************************* */
+void Class::deserialization_fragments(FileWriter& proxyFile, FileWriter& wrapperFile,
+    const std::string& wrapperName, std::vector<std::string>& functionNames) const {
   //void Point3_string_deserialize_18(int nargout, mxArray *out[], int nargin, const mxArray *in[])
   //{
   //  typedef boost::shared_ptr<Point3> Shared;
@@ -511,7 +513,7 @@ void Class::deserialization_fragments(FileWriter& proxyFile, FileWriter& wrapper
 //    function varargout = string_deserialize(varargin)
 //    % STRING_DESERIALIZE usage: string_deserialize() : returns Point3
 //    % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-//      if length(varargin) == 0
+//      if length(varargin) == 1
 //        varargout{1} = geometry_wrapper(18, varargin{:});
 //      else
 //        error('Arguments do not match any overload of function Point3.string_deserialize');
@@ -521,10 +523,11 @@ void Class::deserialization_fragments(FileWriter& proxyFile, FileWriter& wrapper
     proxyFile.oss << "    function varargout = string_deserialize(varargin)\n";
     proxyFile.oss << "      % STRING_DESERIALIZE usage: string_deserialize() : returns " << matlabQualName << "\n";
     proxyFile.oss << "      % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html\n";
-    proxyFile.oss << "      if length(varargin) == 0\n";
-    proxyFile.oss << "        varargout{1} = geometry_wrapper(" << boost::lexical_cast<string>(deserialize_id) << ", varargin{:});\n";
+    proxyFile.oss << "      if length(varargin) == 1\n";
+    proxyFile.oss << "        varargout{1} = " << wrapperName << "(" << boost::lexical_cast<string>(deserialize_id) << ", varargin{:});\n";
     proxyFile.oss << "      else\n";
     proxyFile.oss << "        error('Arguments do not match any overload of function " << matlabQualName << ".string_deserialize');\n";
     proxyFile.oss << "      end\n";
     proxyFile.oss << "    end\n\n";
 }
+/* ************************************************************************* */
