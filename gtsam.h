@@ -267,6 +267,9 @@ virtual class Point2 : gtsam::Value {
   Vector vector() const;
   double dist(const gtsam::Point2& p2) const;
   double norm() const;
+
+  // enabling serialization functionality
+  void serialize() const;
 };
 
 virtual class StereoPoint2 : gtsam::Value {
@@ -1555,29 +1558,32 @@ class Values {
 
   size_t size() const;
   bool empty() const;
-    void clear();
-    size_t dim() const;
+  void clear();
+  size_t dim() const;
 
   void print(string s) const;
   bool equals(const gtsam::Values& other, double tol) const;
 
   void insert(size_t j, const gtsam::Value& value);
-    void insert(const gtsam::Values& values);
-    void update(size_t j, const gtsam::Value& val);
-    void update(const gtsam::Values& values);
-    void erase(size_t j);
-    void swap(gtsam::Values& values);
+  void insert(const gtsam::Values& values);
+  void update(size_t j, const gtsam::Value& val);
+  void update(const gtsam::Values& values);
+  void erase(size_t j);
+  void swap(gtsam::Values& values);
 
   bool exists(size_t j) const;
   gtsam::Value at(size_t j) const;
   gtsam::KeyList keys() const;
 
-    gtsam::VectorValues zeroVectors(const gtsam::Ordering& ordering) const;
-    gtsam::Ordering* orderingArbitrary(size_t firstVar) const;
+  gtsam::VectorValues zeroVectors(const gtsam::Ordering& ordering) const;
+  gtsam::Ordering* orderingArbitrary(size_t firstVar) const;
 
-    gtsam::Values retract(const gtsam::VectorValues& delta, const gtsam::Ordering& ordering) const;
-    gtsam::VectorValues localCoordinates(const gtsam::Values& cp, const gtsam::Ordering& ordering) const;
-    void localCoordinates(const gtsam::Values& cp, const gtsam::Ordering& ordering, gtsam::VectorValues& delta) const;
+  gtsam::Values retract(const gtsam::VectorValues& delta, const gtsam::Ordering& ordering) const;
+  gtsam::VectorValues localCoordinates(const gtsam::Values& cp, const gtsam::Ordering& ordering) const;
+  void localCoordinates(const gtsam::Values& cp, const gtsam::Ordering& ordering, gtsam::VectorValues& delta) const;
+
+  // enabling serialization functionality
+  void serialize() const;
 };
 
 // Actually a FastList<Key>
