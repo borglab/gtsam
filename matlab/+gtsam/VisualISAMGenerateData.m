@@ -2,8 +2,9 @@ function [data,truth] = VisualISAMGenerateData(options)
 % VisualISAMGenerateData creates data for viusalSLAM::iSAM examples
 % Authors: Duy Nguyen Ta and Frank Dellaert
 
-%% Generate simulated data
 import gtsam.*
+
+%% Generate simulated data
 if options.triangle % Create a triangle target, just 3 points on a plane
     nrPoints = 3;
     r = 10;
@@ -24,7 +25,6 @@ else % 3D landmarks as vertices of a cube
 end
 
 %% Create camera cameras on a circle around the triangle
-import gtsam.*
 height = 10; r = 40;
 truth.K = Cal3_S2(500,500,0,640/2,480/2);
 data.K = truth.K;
