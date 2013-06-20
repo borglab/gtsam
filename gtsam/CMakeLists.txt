@@ -139,6 +139,12 @@ set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/slam/dataset.cpp"
 	"SOURCE_TREE_DATASET_DIR=\"${CMAKE_SOURCE_DIR}/examples/Data\""
 	"INSTALLED_DATASET_DIR=\"${GTSAM_TOOLBOX_INSTALL_PATH}/gtsam_examples/Data\"")
 	
+# Special cases
+if(MSVC)
+	set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/slam/serialization.cpp"
+		APPEND PROPERTY COMPILE_FLAGS "/bigobj")
+endif()
+	
 # Generate and install config file
 configure_file(config.h.in config.h)
 install(FILES ${CMAKE_BINARY_DIR}/gtsam/config.h DESTINATION include/gtsam)
