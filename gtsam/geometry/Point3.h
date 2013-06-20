@@ -204,7 +204,7 @@ namespace gtsam {
     /// @}
 
     /// Output stream operator
-    friend std::ostream &operator<<(std::ostream &os, const Point3& p);
+    GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const Point3& p);
 
   private:
 

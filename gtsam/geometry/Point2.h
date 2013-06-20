@@ -190,7 +190,7 @@ public:
   /// @}
 
   /// Streaming
-  friend std::ostream &operator<<(std::ostream &os, const Point2& p);
+  GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const Point2& p);
 
 private:
 
