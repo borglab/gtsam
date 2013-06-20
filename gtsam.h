@@ -462,6 +462,7 @@ virtual class Rot3 : gtsam::Value {
 virtual class Pose2 : gtsam::Value {
   // Standard Constructor
   Pose2();
+  Pose2(const gtsam::Pose2& pose);
   Pose2(double x, double y, double theta);
   Pose2(double theta, const gtsam::Point2& t);
   Pose2(const gtsam::Rot2& r, const gtsam::Point2& t);
@@ -1270,6 +1271,15 @@ virtual class GaussianBayesTree : gtsam::GaussianBayesTreeBase {
   GaussianBayesTree();
   GaussianBayesTree(const gtsam::GaussianBayesNet& bn);
   GaussianBayesTree(const gtsam::GaussianBayesNet& other);
+  bool equals(const gtsam::GaussianBayesTree& other, double tol) const;
+  void print(string s);
+  size_t size() const;
+  size_t nrNodes() const;
+  bool empty() const;
+  gtsam::GaussianBayesTreeClique* root() const;
+  gtsam::GaussianBayesTreeClique* clique(size_t j) const;
+  size_t numCachedSeparatorMarginals() const;
+  void saveGraph(string s) const;
 };
 
 // namespace functions for GaussianBayesTree
@@ -1637,17 +1647,26 @@ class NonlinearFactorGraph {
 };
 
 virtual class NonlinearFactor {
+  // Factor base class
+  size_t size() const;
+  gtsam::KeyVector keys() const;
   void print(string s) const;
   void printKeys(string s) const;
+  // NonlinearFactor
   void equals(const gtsam::NonlinearFactor& other, double tol) const;
-  gtsam::KeyVector keys() const;
-  size_t size() const;
-  size_t dim() const;
   double error(const gtsam::Values& c) const;
+  size_t dim() const;
   bool active(const gtsam::Values& c) const;
   gtsam::GaussianFactor* linearize(const gtsam::Values& c, const gtsam::Ordering& ordering) const;
   gtsam::NonlinearFactor* clone() const;
   // gtsam::NonlinearFactor* rekey(const gtsam::KeyVector& newKeys) const; //FIXME: Conversion from KeyVector to std::vector does not happen
+};
+
+virtual class NoiseModelFactor: gtsam::NonlinearFactor {
+  void equals(const gtsam::NoiseModelFactor& other, double tol) const;
+  gtsam::noiseModel::Base* get_noiseModel() const;
+  Vector unwhitenedError(const gtsam::Values& x) const;
+  Vector whitenedError(const gtsam::Values& x) const;
 };
 
 #include <gtsam/nonlinear/Values.h>
@@ -2071,10 +2090,9 @@ class NonlinearISAM {
 
 #include <gtsam/slam/PriorFactor.h>
 template<T = {gtsam::LieScalar, gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera}>
-virtual class PriorFactor : gtsam::NonlinearFactor {
+virtual class PriorFactor : gtsam::NoiseModelFactor {
   PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
   T prior() const;
-  gtsam::noiseModel::Base* get_noiseModel() const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -2083,10 +2101,9 @@ virtual class PriorFactor : gtsam::NonlinearFactor {
 
 #include <gtsam/slam/BetweenFactor.h>
 template<T = {gtsam::LieScalar, gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
-virtual class BetweenFactor : gtsam::NonlinearFactor {
+virtual class BetweenFactor : gtsam::NoiseModelFactor {
   BetweenFactor(size_t key1, size_t key2, const T& relativePose, const gtsam::noiseModel::Base* noiseModel);
   T measured() const;
-  gtsam::noiseModel::Base* get_noiseModel() const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -2095,7 +2112,7 @@ virtual class BetweenFactor : gtsam::NonlinearFactor {
 
 #include <gtsam/nonlinear/NonlinearEquality.h>
 template<T = {gtsam::LieScalar, gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera}>
-virtual class NonlinearEquality : gtsam::NonlinearFactor {
+virtual class NonlinearEquality : gtsam::NoiseModelFactor {
   // Constructor - forces exact evaluation
   NonlinearEquality(size_t j, const T& feasible);
   // Constructor - allows inexact evaluation
@@ -2108,9 +2125,8 @@ virtual class NonlinearEquality : gtsam::NonlinearFactor {
 
 #include <gtsam/slam/RangeFactor.h>
 template<POSE, POINT>
-virtual class RangeFactor : gtsam::NonlinearFactor {
+virtual class RangeFactor : gtsam::NoiseModelFactor {
   RangeFactor(size_t key1, size_t key2, double measured, const gtsam::noiseModel::Base* noiseModel);
-  gtsam::noiseModel::Base* get_noiseModel() const;
 };
 
 typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Point2> RangeFactorPosePoint2;
@@ -2125,9 +2141,8 @@ typedef gtsam::RangeFactor<gtsam::SimpleCamera, gtsam::SimpleCamera> RangeFactor
 
 #include <gtsam/slam/BearingFactor.h>
 template<POSE, POINT, ROTATION>
-virtual class BearingFactor : gtsam::NonlinearFactor {
+virtual class BearingFactor : gtsam::NoiseModelFactor {
   BearingFactor(size_t key1, size_t key2, const ROTATION& measured, const gtsam::noiseModel::Base* noiseModel);
-  gtsam::noiseModel::Base* get_noiseModel() const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -2138,9 +2153,8 @@ typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2> BearingFa
 
 #include <gtsam/slam/BearingRangeFactor.h>
 template<POSE, POINT, ROTATION>
-virtual class BearingRangeFactor : gtsam::NonlinearFactor {
+virtual class BearingRangeFactor : gtsam::NoiseModelFactor {
   BearingRangeFactor(size_t poseKey, size_t pointKey, const ROTATION& measuredBearing, double measuredRange, const gtsam::noiseModel::Base* noiseModel);
-  gtsam::noiseModel::Base* get_noiseModel() const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -2151,7 +2165,7 @@ typedef gtsam::BearingRangeFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2> Bear
 
 #include <gtsam/slam/ProjectionFactor.h>
 template<POSE, LANDMARK, CALIBRATION>
-virtual class GenericProjectionFactor : gtsam::NonlinearFactor {
+virtual class GenericProjectionFactor : gtsam::NoiseModelFactor {
   GenericProjectionFactor(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
     size_t poseKey, size_t pointKey, const CALIBRATION* k);
   GenericProjectionFactor(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
@@ -2167,7 +2181,6 @@ virtual class GenericProjectionFactor : gtsam::NonlinearFactor {
   CALIBRATION* calibration() const;
   bool verboseCheirality() const;
   bool throwCheirality() const;
-  gtsam::noiseModel::Base* get_noiseModel() const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -2178,7 +2191,7 @@ typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3D
 
 #include <gtsam/slam/GeneralSFMFactor.h>
 template<CAMERA, LANDMARK>
-virtual class GeneralSFMFactor : gtsam::NonlinearFactor {
+virtual class GeneralSFMFactor : gtsam::NoiseModelFactor {
   GeneralSFMFactor(const gtsam::Point2& measured, const gtsam::noiseModel::Base* model, size_t cameraKey, size_t landmarkKey);
   gtsam::Point2 measured() const;
 };
@@ -2186,7 +2199,7 @@ typedef gtsam::GeneralSFMFactor<gtsam::SimpleCamera, gtsam::Point3> GeneralSFMFa
 typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3DS2, gtsam::Point3> GeneralSFMFactorCal3DS2;
 
 template<CALIBRATION = {gtsam::Cal3_S2}>
-virtual class GeneralSFMFactor2 : gtsam::NonlinearFactor {
+virtual class GeneralSFMFactor2 : gtsam::NoiseModelFactor {
   GeneralSFMFactor2(const gtsam::Point2& measured, const gtsam::noiseModel::Base* model, size_t poseKey, size_t landmarkKey, size_t calibKey);
   gtsam::Point2 measured() const;
 
@@ -2197,12 +2210,11 @@ virtual class GeneralSFMFactor2 : gtsam::NonlinearFactor {
 
 #include <gtsam/slam/StereoFactor.h>
 template<POSE, LANDMARK>
-virtual class GenericStereoFactor : gtsam::NonlinearFactor {
+virtual class GenericStereoFactor : gtsam::NoiseModelFactor {
   GenericStereoFactor(const gtsam::StereoPoint2& measured, const gtsam::noiseModel::Base* noiseModel,
     size_t poseKey, size_t landmarkKey, const gtsam::Cal3_S2Stereo* K);
   gtsam::StereoPoint2 measured() const;
   gtsam::Cal3_S2Stereo* calibration() const;
-  gtsam::noiseModel::Base* get_noiseModel() const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -2211,9 +2223,8 @@ typedef gtsam::GenericStereoFactor<gtsam::Pose3, gtsam::Point3> GenericStereoFac
 
 #include <gtsam/slam/PoseTranslationPrior.h>
 template<POSE>
-virtual class PoseTranslationPrior : gtsam::NonlinearFactor {
+virtual class PoseTranslationPrior : gtsam::NoiseModelFactor {
   PoseTranslationPrior(size_t key, const POSE& pose_z, const gtsam::noiseModel::Base* noiseModel);
-  gtsam::noiseModel::Base* get_noiseModel() const;
 };
 
 typedef gtsam::PoseTranslationPrior<gtsam::Pose2> PoseTranslationPrior2D;
@@ -2221,9 +2232,8 @@ typedef gtsam::PoseTranslationPrior<gtsam::Pose3> PoseTranslationPrior3D;
 
 #include <gtsam/slam/PoseRotationPrior.h>
 template<POSE>
-virtual class PoseRotationPrior : gtsam::NonlinearFactor {
+virtual class PoseRotationPrior : gtsam::NoiseModelFactor {
   PoseRotationPrior(size_t key, const POSE& pose_z, const gtsam::noiseModel::Base* noiseModel);
-  gtsam::noiseModel::Base* get_noiseModel() const;
 };
 
 typedef gtsam::PoseRotationPrior<gtsam::Pose2> PoseRotationPrior2D;
