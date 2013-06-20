@@ -33,7 +33,7 @@ if (GTSAM_BUILD_TESTS)
 
     # Build grouped tests
     gtsam_add_grouped_scripts("tests"               # Use subdirectory as group label
-    "test*.cpp" check "Test"                      # Standard for all tests
+    "test*.cpp;*.h" check "Test"                      # Standard for all tests
     "${tests_local_libs}" "${gtsam-default};CppUnitLite" "${tests_exclude}"  # Pass in linking and exclusion lists
     ${is_test})                                         # Set all as tests
 endif (GTSAM_BUILD_TESTS)
