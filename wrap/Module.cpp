@@ -507,6 +507,10 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
   }
 
   // Generate includes while avoiding redundant includes
+  if (hasSerialiable) {
+    wrapperFile.oss << "#include <boost/archive/text_iarchive.hpp>\n";
+    wrapperFile.oss << "#include <boost/archive/text_oarchive.hpp>\n\n";
+  }
   generateIncludes(wrapperFile);
 
   // create typedef classes - we put this at the top of the wrap file so that collectors and method arguments can use these typedefs
