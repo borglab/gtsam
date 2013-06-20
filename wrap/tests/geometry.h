@@ -13,6 +13,8 @@ class Point2 {
  void argChar(char a) const;
  void argUChar(unsigned char a) const;
  VectorNotEigen vectorConfusion();
+
+ void serializable() const; // Sets flag and creates export, but does not make serialization functions
 };
 
 class Point3 {
@@ -22,6 +24,9 @@ class Point3 {
   // static functions - use static keyword and uppercase
   static double staticFunction();
   static Point3 StaticFunctionRet(double z);
+
+  // enabling serialization functionality
+  void serialize() const; // Just triggers a flag internally and removes actual function
 };
 
 // another comment

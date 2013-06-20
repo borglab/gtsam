@@ -165,6 +165,9 @@ class VariableIndex;
     const sharedFactor operator[](size_t i) const { return at(i); }
     sharedFactor& operator[](size_t i) { return at(i); }
 
+    /** Checks whether a valid factor exists at the given index */
+    inline bool exists(size_t i) const { return i<factors_.size() && factors_[i]; }
+
     /** STL begin, so we can use BOOST_FOREACH */
     const_iterator begin() const { return factors_.begin();}
 

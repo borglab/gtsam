@@ -29,6 +29,11 @@
 %   GaussianBayesTreeClique           - class GaussianBayesTreeClique, see Doxygen page for details
 %   GaussianBayesTree                 - class GaussianBayesTree, see Doxygen page for details
 %   GaussianISAM                      - class GaussianISAM, see Doxygen page for details
+%   noiseModel.Gaussian               - class noiseModel.Gaussian, see Doxygen page for details
+%   noiseModel.Diagonal               - class noiseModel.Diagonal, see Doxygen page for details
+%   noiseModel.Constrained            - class noiseModel.Constrained, see Doxygen page for details
+%   noiseModel.Isotropic              - class noiseModel.Isotropic, see Doxygen page for details
+%   noiseModel.Unit                   - class noiseModel.Unit, see Doxygen page for details
 % 
 %% Linear Inference
 %   GaussianSequentialSolver          - class GaussianSequentialSolver, see Doxygen page for details

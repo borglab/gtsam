@@ -60,7 +60,7 @@ protected:
 /**
  * Normal test will wrap execution in a try/catch block to catch exceptions more effectively
  */
-#define TEST(testName, testGroup)\
+#define TEST(testGroup, testName)\
   class testGroup##testName##Test : public Test \
   { public: testGroup##testName##Test () : Test (#testName "Test", __FILE__, __LINE__, true) {} \
             virtual ~testGroup##testName##Test () {};\
@@ -72,7 +72,7 @@ protected:
  * For debugging only: use TEST_UNSAFE to allow debuggers to have access to exceptions, as this
  * will not wrap execution with a try/catch block
  */
-#define TEST_UNSAFE(testName, testGroup)\
+#define TEST_UNSAFE(testGroup, testName)\
   class testGroup##testName##Test : public Test \
   { public: testGroup##testName##Test () : Test (#testName "Test", __FILE__, __LINE__, false) {} \
             virtual ~testGroup##testName##Test () {};\

@@ -32,11 +32,13 @@ endif()
 # To exclude a source from the library build (in any subfolder)
 # Add the full name to this list, as in the following example
 # Sources to remove from builds
-set (excluded_sources "")
-#    "${CMAKE_CURRENT_SOURCE_DIR}/discrete/TypedDiscreteFactor.cpp" 
-#    "${CMAKE_CURRENT_SOURCE_DIR}/discrete/TypedDiscreteFactorGraph.cpp" 
-#    "${CMAKE_CURRENT_SOURCE_DIR}/discrete/parseUAI.cpp" 
-#    "${CMAKE_CURRENT_SOURCE_DIR}/discrete/PotentialTable.cpp")
+set (excluded_sources #"")
+    "${CMAKE_CURRENT_SOURCE_DIR}/slam/serialization.cpp"
+)
+
+set (excluded_headers #"")
+    "${CMAKE_CURRENT_SOURCE_DIR}/slam/serialization.h"
+)
     
 if(GTSAM_USE_QUATERNIONS)
     set(excluded_sources ${excluded_sources} "${CMAKE_CURRENT_SOURCE_DIR}/geometry/Rot3M.cpp")
@@ -53,9 +55,10 @@ foreach(subdir ${gtsam_subdirs})
     # Build convenience libraries
     file(GLOB subdir_cpp_srcs "${subdir}/*.cpp")
     file(GLOB subdir_headers "${subdir}/*.h")
+    list(REMOVE_ITEM subdir_cpp_srcs ${excluded_sources})
+    list(REMOVE_ITEM subdir_headers ${excluded_headers})
     set(subdir_srcs ${subdir_cpp_srcs} ${subdir_headers}) # Include header files so they show up in Visual Studio
     gtsam_assign_source_folders("${subdir_srcs}") # Create MSVC structure
-    list(REMOVE_ITEM subdir_srcs ${excluded_sources})
     set(${subdir}_srcs ${subdir_srcs})
     if (GTSAM_BUILD_CONVENIENCE_LIBRARIES AND (subdir_cpp_srcs)) # Only build convenience library if sources exist
         message(STATUS "Building Convenience Library: ${subdir}")
@@ -135,6 +138,12 @@ set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/slam/dataset.cpp"
     APPEND PROPERTY COMPILE_DEFINITIONS
 	"SOURCE_TREE_DATASET_DIR=\"${CMAKE_SOURCE_DIR}/examples/Data\""
 	"INSTALLED_DATASET_DIR=\"${GTSAM_TOOLBOX_INSTALL_PATH}/gtsam_examples/Data\"")
+	
+# Special cases
+if(MSVC)
+	set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/slam/serialization.cpp"
+		APPEND PROPERTY COMPILE_FLAGS "/bigobj")
+endif()
 	
 # Generate and install config file
 configure_file(config.h.in config.h)

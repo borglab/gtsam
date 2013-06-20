@@ -32,8 +32,6 @@
 #include <gtsam/base/LieVector.h>
 #include <gtsam/base/Matrix.h>
 
-
-
 namespace gtsam {
 
   /*
@@ -106,8 +104,8 @@ namespace gtsam {
     for (size_t j=0;j<n;j++) {
       d(j) +=   delta; Vector hxplus = hx.localCoordinates(h(x.retract(d)));
       d(j) -= 2*delta; Vector hxmin  = hx.localCoordinates(h(x.retract(d)));
-      d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
-      for (size_t i=0;i<m;i++) H(i,j) = dh(i);
+      d(j) +=   delta;
+      H.col(j) << (hxplus-hxmin)*factor;
     }
     return H;
   }
@@ -160,8 +158,8 @@ namespace gtsam {
     for (size_t j=0;j<n;j++) {
       d(j) +=   delta; Vector hxplus = hx.localCoordinates(h(x1.retract(d),x2));
       d(j) -= 2*delta; Vector hxmin  = hx.localCoordinates(h(x1.retract(d),x2));
-      d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
-      for (size_t i=0;i<m;i++) H(i,j) = dh(i);
+      d(j) +=   delta;
+      H.col(j) << (hxplus-hxmin)*factor;
     }
     return H;
   }
@@ -224,8 +222,8 @@ namespace gtsam {
     for (size_t j=0;j<n;j++) {
       d(j) +=   delta; Vector hxplus = hx.localCoordinates(h(x1,x2.retract(d)));
       d(j) -= 2*delta; Vector hxmin  = hx.localCoordinates(h(x1,x2.retract(d)));
-      d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
-      for (size_t i=0;i<m;i++) H(i,j) = dh(i);
+      d(j) +=   delta;
+      H.col(j) << (hxplus-hxmin)*factor;
     }
     return H;
   }
@@ -290,8 +288,8 @@ namespace gtsam {
     for (size_t j=0;j<n;j++) {
       d(j) +=   delta; Vector hxplus = hx.localCoordinates(h(x1.retract(d),x2,x3));
       d(j) -= 2*delta; Vector hxmin  = hx.localCoordinates(h(x1.retract(d),x2,x3));
-      d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
-      for (size_t i=0;i<m;i++) H(i,j) = dh(i);
+      d(j) +=   delta;
+      H.col(j) << (hxplus-hxmin)*factor;
     }
     return H;
   }
@@ -355,8 +353,8 @@ namespace gtsam {
     for (size_t j=0;j<n;j++) {
       d(j) +=   delta; Vector hxplus = hx.localCoordinates(h(x1, x2.retract(d),x3));
       d(j) -= 2*delta; Vector hxmin  = hx.localCoordinates(h(x1, x2.retract(d),x3));
-      d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
-      for (size_t i=0;i<m;i++) H(i,j) = dh(i);
+      d(j) +=   delta;
+      H.col(j) << (hxplus-hxmin)*factor;
     }
     return H;
   }
@@ -420,8 +418,8 @@ namespace gtsam {
     for (size_t j=0;j<n;j++) {
       d(j) +=   delta; Vector hxplus = hx.localCoordinates(h(x1, x2, x3.retract(d)));
       d(j) -= 2*delta; Vector hxmin  = hx.localCoordinates(h(x1, x2, x3.retract(d)));
-      d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
-      for (size_t i=0;i<m;i++) H(i,j) = dh(i);
+      d(j) +=   delta;
+      H.col(j) << (hxplus-hxmin)*factor;
     }
     return H;
   }

@@ -83,7 +83,7 @@ Point2 Cal3DS2::calibrate(const Point2& pi, const double tol) const {
   const int maxIterations = 10;
   int iteration;
   for ( iteration = 0 ; iteration < maxIterations ; ++iteration ) {
-    if ( uncalibrate(pn).dist(pi) <= tol ) break;
+    if ( uncalibrate(pn).distance(pi) <= tol ) break;
     const double x = pn.x(), y = pn.y(), xy = x*y, xx = x*x, yy = y*y ;
     const double rr = xx + yy ;
     const double g = (1+k1_*rr+k2_*rr*rr) ;

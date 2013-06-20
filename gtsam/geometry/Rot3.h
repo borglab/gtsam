@@ -355,6 +355,9 @@ namespace gtsam {
      */
     Vector quaternion() const;
 
+    /// Output stream operator
+    GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const Rot3& p);
+
   private:
     /** Serialization function */
     friend class boost::serialization::access;

@@ -1,5 +1,10 @@
 # Install headers
+set (slam_excluded_headers #"")
+    "${CMAKE_CURRENT_SOURCE_DIR}/serialization.h"
+)
+
 file(GLOB slam_headers "*.h")
+list(REMOVE_ITEM slam_headers ${slam_excluded_headers})
 install(FILES ${slam_headers} DESTINATION include/gtsam/slam)
 
 # Components to link tests in this subfolder against
@@ -15,8 +20,8 @@ set(slam_local_libs
 
 # Files to exclude from compilation of tests and timing scripts
 set(slam_excluded_files
-# "${CMAKE_CURRENT_SOURCE_DIR}/tests/testTypedDiscreteFactor.cpp" # Example of excluding a test     
-    ""  # Add to this list, with full path, to exclude
+ "${CMAKE_CURRENT_SOURCE_DIR}/tests/testSerialization.cpp"      
+#    ""  # Add to this list, with full path, to exclude
 )
 
 # Build tests

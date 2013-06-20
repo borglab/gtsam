@@ -14,11 +14,24 @@ set(GTSAM_UNSTABLE_BOOST_LIBRARIES ${GTSAM_BOOST_LIBRARIES} ${Boost_THREAD_LIBRA
 
 add_custom_target(check.unstable COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure)
 
+# To exclude a source from the library build (in any subfolder)
+# Add the full name to this list, as in the following example
+# Sources to remove from builds
+set (excluded_sources # "")
+    "${CMAKE_CURRENT_SOURCE_DIR}/slam/serialization.cpp"
+)
+
+set (excluded_headers # "")
+    "${CMAKE_CURRENT_SOURCE_DIR}/slam/serialization.h"
+)
+
 # assemble core libaries
 foreach(subdir ${gtsam_unstable_subdirs})
     # Build convenience libraries
     file(GLOB subdir_srcs "${subdir}/*.cpp")
 	file(GLOB subdir_headers "${subdir}/*.h")
+    list(REMOVE_ITEM subdir_srcs ${excluded_sources})
+    list(REMOVE_ITEM subdir_headers ${excluded_headers})
     set(${subdir}_srcs ${subdir_srcs} ${subdir_headers})
     gtsam_assign_source_folders("${${subdir}_srcs}") # Create MSVC structure
     if (subdir_srcs AND GTSAM_BUILD_CONVENIENCE_LIBRARIES)

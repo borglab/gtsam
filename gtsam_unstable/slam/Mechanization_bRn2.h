@@ -47,12 +47,15 @@ public:
    * Initialize the first Mechanization state
    * @param U a list of gyro measurement vectors
    * @param F a list of accelerometer measurement vectors
+   * @param g_e gravity magnitude
+   * @param flat flag saying whether this is a flat trim init
    */
   static Mechanization_bRn2 initializeVector(const std::list<Vector>& U,
-      const std::list<Vector>& F, const double g_e = 0);
+      const std::list<Vector>& F, const double g_e = 0, bool flat=false);
 
+  /// Matrix version of initialize
   static Mechanization_bRn2 initialize(const Matrix& U,
-      const Matrix& F, const double g_e = 0);
+      const Matrix& F, const double g_e = 0, bool flat=false);
 
   /**
    * Correct AHRS full state given error state dx

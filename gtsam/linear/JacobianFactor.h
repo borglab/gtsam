@@ -27,9 +27,9 @@
 #include <boost/tuple/tuple.hpp>
 
 // Forward declarations of friend unit tests
-class Combine2JacobianFactorTest;
-class eliminateFrontalsJacobianFactorTest;
-class constructor2JacobianFactorTest;
+class JacobianFactorCombine2Test;
+class JacobianFactoreliminateFrontalsTest;
+class JacobianFactorconstructor2Test;
 
 namespace gtsam {
 
@@ -316,9 +316,9 @@ namespace gtsam {
     friend class HessianFactor;
 
     // Friend unit tests (see also forward declarations above)
-    friend class ::Combine2JacobianFactorTest;
-    friend class ::eliminateFrontalsJacobianFactorTest;
-    friend class ::constructor2JacobianFactorTest;
+    friend class ::JacobianFactorCombine2Test;
+    friend class ::JacobianFactoreliminateFrontalsTest;
+    friend class ::JacobianFactorconstructor2Test;
 
     /** Serialization function */
     friend class boost::serialization::access;

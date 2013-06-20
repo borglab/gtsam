@@ -23,10 +23,10 @@
 #include <gtsam/linear/GaussianFactor.h>
 
 // Forward declarations for friend unit tests
-class ConversionConstructorHessianFactorTest;
-class Constructor1HessianFactorTest;
-class Constructor1bHessianFactorTest;
-class combineHessianFactorTest;
+class HessianFactorConversionConstructorTest;
+class HessianFactorConstructor1Test;
+class HessianFactorConstructor1bTest;
+class HessianFactorcombineTest;
 
 
 namespace gtsam {
@@ -325,10 +325,10 @@ namespace gtsam {
     virtual Matrix information() const;
 
     // Friend unit test classes
-    friend class ::ConversionConstructorHessianFactorTest;
-    friend class ::Constructor1HessianFactorTest;
-    friend class ::Constructor1bHessianFactorTest;
-    friend class ::combineHessianFactorTest;
+    friend class ::HessianFactorConversionConstructorTest;
+    friend class ::HessianFactorConstructor1Test;
+    friend class ::HessianFactorConstructor1bTest;
+    friend class ::HessianFactorcombineTest;
 
     // Friend JacobianFactor for conversion
     friend class JacobianFactor;

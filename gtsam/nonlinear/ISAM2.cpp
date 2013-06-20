@@ -125,7 +125,7 @@ ISAM2& ISAM2::operator=(const ISAM2& rhs) {
   linearFactors_ = GaussianFactorGraph();
   linearFactors_.reserve(rhs.linearFactors_.size());
   BOOST_FOREACH(const GaussianFactor::shared_ptr& linearFactor, rhs.linearFactors_) {
-    linearFactors_.push_back(linearFactor->clone()); }
+    linearFactors_.push_back(linearFactor ? linearFactor->clone() : GaussianFactor::shared_ptr()); }
 
   ordering_ = rhs.ordering_;
   params_ = rhs.params_;
@@ -1043,7 +1043,7 @@ VectorValues optimize(const ISAM2& isam) {
 
 /* ************************************************************************* */
 void optimizeInPlace(const ISAM2& isam, VectorValues& delta) {
-  // We may need to update the solution calcaulations
+  // We may need to update the solution calculations
   if(!isam.deltaDoglegUptodate_) {
     gttic(UpdateDoglegDeltas);
     double wildfireThreshold = 0.0;

@@ -232,7 +232,7 @@ double PoseRTV::range(const PoseRTV& other,
     boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
   if (H1) *H1 = numericalDerivative21(range_, *this, other, 1e-5);
   if (H2) *H2 = numericalDerivative22(range_, *this, other, 1e-5);
-  return t().dist(other.t());
+  return t().distance(other.t());
 }
 
 /* ************************************************************************* */
