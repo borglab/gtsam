@@ -21,10 +21,6 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang") # might not be best test - Rich
 	list (APPEND tests_exclude "${CMAKE_CURRENT_SOURCE_DIR}/testSerializationSLAM.cpp") 
 endif()
 
-if(MSVC)
-  add_definitions("/bigobj") # testSerializationSLAM needs this
-endif()
-
 # Build tests
 if (GTSAM_BUILD_TESTS)
     # Subdirectory target for tests
@@ -50,3 +46,8 @@ if (GTSAM_BUILD_TIMING)
     "${tests_local_libs}" "${gtsam-default};CppUnitLite" "${tests_exclude}"   # Pass in linking and exclusion lists
     ${is_test})
 endif (GTSAM_BUILD_TIMING)
+
+if(MSVC)
+	set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/testSerializationSLAM.cpp"
+		APPEND PROPERTY COMPILE_FLAGS "/bigobj")
+endif()
