@@ -28,6 +28,7 @@
 
 namespace gtsam {
 namespace example {
+  namespace {
 
 typedef NonlinearFactorGraph Graph;
 
@@ -150,13 +151,9 @@ Ordering planarOrdering(size_t N);
 std::pair<GaussianFactorGraph, GaussianFactorGraph > splitOffPlanarTree(
     size_t N, const GaussianFactorGraph& original);
 
-} // example
-} // gtsam
 
 
 // Implementations
-namespace gtsam {
-namespace example {
 
 //  using namespace gtsam::noiseModel;
 
@@ -649,5 +646,6 @@ std::pair<GaussianFactorGraph, GaussianFactorGraph > splitOffPlanarTree(size_t N
 
 /* ************************************************************************* */
 
+} // anonymous namespace
 } // \namespace example
 } // \namespace gtsam
