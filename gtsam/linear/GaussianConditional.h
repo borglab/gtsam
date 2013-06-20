@@ -27,12 +27,12 @@
 #include <gtsam/linear/VectorValues.h>
 
 // Forward declaration to friend unit tests
-class eliminate2JacobianFactorTest;
-class constructorGaussianConditionalTest;
-class eliminationGaussianFactorGraphTest;
-class complicatedMarginalGaussianJunctionTreeTest;
-class informationGaussianConditionalTest;
-class isGaussianFactorGaussianConditionalTest;
+class JacobianFactoreliminate2Test;
+class GaussianConditionalconstructorTest;
+class GaussianFactorGrapheliminationTest;
+class GaussianJunctionTreecomplicatedMarginalTest;
+class GaussianConditionalinformationTest;
+class GaussianConditionalisGaussianFactorTest;
 
 namespace gtsam {
 
@@ -223,12 +223,12 @@ private:
 
   // Friends
   friend class JacobianFactor;
-  friend class ::eliminate2JacobianFactorTest;
-  friend class ::constructorGaussianConditionalTest;
-  friend class ::eliminationGaussianFactorGraphTest;
-  friend class ::complicatedMarginalGaussianJunctionTreeTest;
-  friend class ::informationGaussianConditionalTest;
-  friend class ::isGaussianFactorGaussianConditionalTest;
+  friend class ::JacobianFactoreliminate2Test;
+  friend class ::GaussianConditionalconstructorTest;
+  friend class ::GaussianFactorGrapheliminationTest;
+  friend class ::GaussianJunctionTreecomplicatedMarginalTest;
+  friend class ::GaussianConditionalinformationTest;
+  friend class ::GaussianConditionalisGaussianFactorTest;
 
   /** Serialization function */
   friend class boost::serialization::access;
