@@ -79,7 +79,8 @@ struct Class {
       const std::string& wrapperName, std::vector<std::string>& functionNames) const;
 
   // Creates a static member function that performs deserialization
-  void deserialization_fragments(FileWriter& proxyFile, FileWriter& wrapperFile, std::vector<std::string>& functionNames) const;
+  void deserialization_fragments(FileWriter& proxyFile, FileWriter& wrapperFile,
+      const std::string& wrapperName, std::vector<std::string>& functionNames) const;
 
 private:
   void pointer_constructor_fragments(FileWriter& proxyFile, FileWriter& wrapperFile, const std::string& wrapperName, std::vector<std::string>& functionNames) const;
