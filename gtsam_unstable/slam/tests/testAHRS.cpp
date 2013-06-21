@@ -5,11 +5,12 @@
  * @author Chris Beall
  */
 
-#include <list>
+#include "../AHRS.h"
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/base/Vector.h>
-#include "../AHRS.h"
+#include <gtsam/base/Testable.h>
 #include <CppUnitLite/TestHarness.h>
+#include <list>
 
 using namespace std;
 using namespace gtsam;
@@ -65,6 +66,21 @@ TEST (AHRS, covF) {
 /* ************************************************************************* */
 TEST (AHRS, constructor) {
   AHRS ahrs = AHRS(stationaryU,stationaryF,g_e);
+}
+
+/* ************************************************************************* */
+// TODO make a testMechanization_bRn2
+TEST (AHRS, Mechanization_integrate) {
+  AHRS ahrs = AHRS(stationaryU,stationaryF,g_e);
+  Mechanization_bRn2 mech;
+  KalmanFilter::State state;
+//  boost::tie(mech,state) = ahrs.initialize(g_e);
+//  Vector u = Vector_(3,0.05,0.0,0.0);
+//  double dt = 2;
+//  Rot3 expected;
+//  Mechanization_bRn2 mech2 = mech.integrate(u,dt);
+//  Rot3 actual = mech2.bRn();
+//  EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
