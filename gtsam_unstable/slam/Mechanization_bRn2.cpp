@@ -83,14 +83,21 @@ Mechanization_bRn2 Mechanization_bRn2::integrate(const Vector& u,
     const double dt) const {
   // integrate rotation nRb based on gyro measurement u and bias x_g
 
+#ifndef MODEL_NAV_FRAME_ROTATION
   // get body to inertial (measured in b) from gyro, subtract bias
   Vector b_omega_ib = u - x_g_;
 
-  // assume nav to inertial through movement is unknown
+  // nav to inertial due to Earth's rotation and our movement on Earth surface
+  // TODO: figure out how to do this if we need it
   Vector b_omega_in = zero(3);
 
-  // get angular velocity on bRn measured in body frame
+  // calculate angular velocity on bRn measured in body frame
   Vector b_omega_bn = b_omega_in - b_omega_ib;
+#else
+  // Assume a non-rotating nav frame (probably an approximation)
+  // calculate angular velocity on bRn measured in body frame
+  Vector b_omega_bn = x_g_ - u;
+#endif
 
   // convert to navigation frame
   Rot3 nRb = bRn_.inverse();
