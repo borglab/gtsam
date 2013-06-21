@@ -180,7 +180,7 @@ public:
   double y() const {return y_;}
 
   /// return vectorized form (column-wise). TODO: why does this function exist?
-  Vector vector() const { return Vector_(2, x_, y_); }
+  Vector2 vector() const { return Vector2(x_, y_); }
 
   /// @}
   /// @name Deprecated (non-const, non-functional style. Do not use).
