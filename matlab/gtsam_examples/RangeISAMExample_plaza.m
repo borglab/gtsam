@@ -27,11 +27,18 @@ import gtsam.*
 %    Time (sec)	X_pose (m)	Y_pose (m)
 % TD
 %    Time (sec)	Sender / Antenna ID	Receiver Node ID	Range (m)
-datafile = findExampleDataFile('Plaza1_.mat');
+if true % switch between data files
+  datafile = findExampleDataFile('Plaza1_.mat');
+  headingOffset=0;
+  minK=200; % minimum number of range measurements to process initially
+else
+  datafile = findExampleDataFile('Plaza2_.mat');
+  headingOffset=pi;
+  minK=150; % needs less for init
+end
 load(datafile)
 M=size(DR,1);
 K=size(TD,1);
-minK=200; % minimum number of range measurements to process initially
 incK=5; % minimum number of range measurements to process after
 sigmaR = 100; % range standard deviation
 sigmaInitial = 1; % draw initial landmark guess from Gaussian
@@ -55,7 +62,7 @@ end
 isam = ISAM2;
 
 %% Add prior on first pose
-pose0 = Pose2(GT(1,2),GT(1,3),GT(1,4));
+pose0 = Pose2(GT(1,2),GT(1,3),headingOffset+GT(1,4));
 newFactors = NonlinearFactorGraph;
 if ~addRange | ~useGroundTruth
   newFactors.add(PriorFactorPose2(0,pose0,noiseModels.prior));
@@ -126,14 +133,14 @@ for i=1:M % M
     end
     k=k+1; countK=countK+1; update = true;
   end
-  
+
   % Check whether to update iSAM 2
   if update && k>minK && countK>incK
     if batchInitialization % Do a full optimize for first minK ranges
       tic
       batchOptimizer = LevenbergMarquardtOptimizer(newFactors, initial);
-      toc
       initial = batchOptimizer.optimize();
+      toc
       batchInitialization = false; % only once
     end
     isam.update(newFactors, initial);
