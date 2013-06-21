@@ -2070,7 +2070,7 @@ class NonlinearISAM {
 #include <gtsam/geometry/StereoPoint2.h>
 
 #include <gtsam/slam/PriorFactor.h>
-template<T = {gtsam::LieScalar, gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera}>
+template<T = {gtsam::LieScalar, gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::imuBias::ConstantBias}>
 virtual class PriorFactor : gtsam::NonlinearFactor {
   PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
   T prior() const;
@@ -2082,7 +2082,7 @@ virtual class PriorFactor : gtsam::NonlinearFactor {
 
 
 #include <gtsam/slam/BetweenFactor.h>
-template<T = {gtsam::LieScalar, gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
+template<T = {gtsam::LieScalar, gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::imuBias::ConstantBias}>
 virtual class BetweenFactor : gtsam::NonlinearFactor {
   BetweenFactor(size_t key1, size_t key2, const T& relativePose, const gtsam::noiseModel::Base* noiseModel);
   T measured() const;
@@ -2094,7 +2094,7 @@ virtual class BetweenFactor : gtsam::NonlinearFactor {
 
 
 #include <gtsam/nonlinear/NonlinearEquality.h>
-template<T = {gtsam::LieScalar, gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera}>
+template<T = {gtsam::LieScalar, gtsam::LieVector, gtsam::LieMatrix, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::imuBias::ConstantBias}>
 virtual class NonlinearEquality : gtsam::NonlinearFactor {
   // Constructor - forces exact evaluation
   NonlinearEquality(size_t j, const T& feasible);
