@@ -180,9 +180,7 @@ namespace gtsam {
     bool   operator ==(const Point3& q) const;
 
     /** return vectorized form (column-wise)*/
-    Vector3 vector() const {
-      return Vector3(x_,y_,z_);
-    }
+    Vector3 vector() const { return Vector3(x_,y_,z_); }
 
     /// get x
     inline double x() const {return x_;}
