@@ -604,4 +604,7 @@ namespace gtsam {
     }
   }; // \class ImuFactor
 
+  /// Typedef for Matlab interface
+  typedef ImuFactor::PreintegratedMeasurements ImuFactorPreintegratedMeasurements;
+
 } /// namespace gtsam

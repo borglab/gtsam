@@ -615,10 +615,11 @@ virtual class InvDepthFactorVariant3b : gtsam::NonlinearFactor {
   InvDepthFactorVariant3b(size_t poseKey1, size_t poseKey2, size_t landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::noiseModel::Base* model);
 };
 
-#include <gtsam_unstable/slam/ImuFactor.h>
+#include <gtsam_unstable/slam/ImuFactorv2.h>
 class ImuFactorPreintegratedMeasurements {
   // Standard Constructor
   ImuFactorPreintegratedMeasurements(const gtsam::imuBias::ConstantBias& bias, Matrix measuredAccCovariance, Matrix measuredOmegaCovariance, Matrix integrationErrorCovariance);
+  ImuFactorPreintegratedMeasurements(const ImuFactorPreintegratedMeasurements& rhs);
 
   // Testable
   void print(string s) const;
@@ -639,7 +640,7 @@ virtual class ImuFactor : gtsam::NonlinearFactor {
 
   // Standard Interface
   gtsam::ImuFactorPreintegratedMeasurements preintegratedMeasurements() const;
-  void predict(const gtsam::Pose3& pose_i, const gtsam::LieVector& vel_i, gtsam::Pose3& pose_j, gtsam::LieVector& vel_j, const gtsam::imuBias::ConstantBias& bias) const;
+  //void predict(const gtsam::Pose3& pose_i, const gtsam::LieVector& vel_i, gtsam::Pose3& pose_j, gtsam::LieVector& vel_j, const gtsam::imuBias::ConstantBias& bias) const;
 };
 
 #include <gtsam_unstable/slam/Mechanization_bRn2.h>
