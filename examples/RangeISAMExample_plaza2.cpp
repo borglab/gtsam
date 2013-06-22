@@ -108,8 +108,8 @@ int main (int argc, char** argv) {
   bool robust = true;
 
   // Set Noise parameters
-  Vector priorSigmas = Vector_(3, 1.0, 1.0, M_PI);
-  Vector odoSigmas = Vector_(3, 0.05, 0.01, 0.2);
+  Vector priorSigmas = Vector3(1,1,M_PI);
+  Vector odoSigmas = Vector3(0.05, 0.01, 0.2);
   double sigmaR = 100; // range standard deviation
   const NM::Base::shared_ptr // all same type
   priorNoise = NM::Diagonal::Sigmas(priorSigmas), //prior
@@ -129,13 +129,13 @@ int main (int argc, char** argv) {
   Values initial;
   initial.insert(0, pose0);
 
-  //  initialize points drawn from sigma=1 Gaussian in matlab version
+  //  initialize points
   if (groundTruth) { // from TL file
     initial.insert(symbol('L', 1), Point2(-68.9265, 18.3778));
     initial.insert(symbol('L', 6), Point2(-37.5805, 69.2278));
     initial.insert(symbol('L', 0), Point2(-33.6205, 26.9678));
     initial.insert(symbol('L', 5), Point2(1.7095, -5.8122));
-  } else {
+  } else { // drawn from sigma=1 Gaussian in matlab version
     initial.insert(symbol('L', 1), Point2(3.5784, 2.76944));
     initial.insert(symbol('L', 6), Point2(-1.34989, 3.03492));
     initial.insert(symbol('L', 0), Point2(0.725404, -0.0630549));
