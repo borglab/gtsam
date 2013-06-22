@@ -24,7 +24,7 @@
 
 namespace gtsam {
 
-  const double logSqrt2PI = log(sqrt(2.0 * M_PI)); ///< constant needed below
+  const double logSqrt2PI = log(std::sqrt(2.0 * M_PI)); ///< constant needed below
 
   /**
    * @brief Binary factor to estimate parameters of zero-mean Gaussian white noise
@@ -137,7 +137,7 @@ namespace gtsam {
      * TODO: Where is this used? should disappear.
      */
     virtual Vector unwhitenedError(const Values& x) const {
-      return Vector_(1, sqrt(2 * error(x)));
+      return Vector_(1, std::sqrt(2 * error(x)));
     }
 
     /**
