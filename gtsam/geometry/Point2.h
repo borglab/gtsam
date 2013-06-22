@@ -65,6 +65,24 @@ public:
     y_ = v(1);
   }
 
+  /**
+   * @brief Intersect Circle with radius R at origin, with circle of radius r at c
+   * @param R radius of circle at origin
+   * @param center center of second circle
+   * @param r radius of second circle
+   * @return list of solutions (0,1, or 2 points)
+   */
+  static std::list<Point2> CircleCircleIntersection(double R, Point2 c, double r);
+
+  /**
+   * @brief Intersect 2 circles
+   * @param c1 center of first circle
+   * @param r1 radius of first circle
+   * @param c2 center of second circle
+   * @param r2 radius of second circle
+   */
+  static std::list<Point2> CircleCircleIntersection(Point2 c1, double r1, Point2 c2, double r2);
+
   /// @}
   /// @name Testable
   /// @{

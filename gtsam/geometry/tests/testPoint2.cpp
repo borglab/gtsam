@@ -19,7 +19,6 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/lieProxies.h>
-
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
@@ -30,13 +29,13 @@ GTSAM_CONCEPT_LIE_INST(Point2)
 
 /* ************************************************************************* */
 TEST(Point2, constructor) {
-  Point2 p1(1,2), p2 = p1;
+  Point2 p1(1, 2), p2 = p1;
   EXPECT(assert_equal(p1, p2));
 }
 
 /* ************************************************************************* */
 TEST(Point2, Lie) {
-  Point2 p1(1,2), p2(4,5);
+  Point2 p1(1, 2), p2(4, 5);
   Matrix H1, H2;
 
   EXPECT(assert_equal(Point2(5,7), p1.compose(p2, H1, H2)));
@@ -52,8 +51,7 @@ TEST(Point2, Lie) {
 }
 
 /* ************************************************************************* */
-TEST( Point2, expmap)
-{
+TEST( Point2, expmap) {
   Vector d(2);
   d(0) = 1;
   d(1) = -1;
@@ -62,8 +60,7 @@ TEST( Point2, expmap)
 }
 
 /* ************************************************************************* */
-TEST( Point2, arithmetic)
-{
+TEST( Point2, arithmetic) {
   EXPECT(assert_equal( Point2(-5,-6), -Point2(5,6) ));
   EXPECT(assert_equal( Point2(5,6), Point2(4,5)+Point2(1,1)));
   EXPECT(assert_equal( Point2(3,4), Point2(4,5)-Point2(1,1) ));
@@ -73,9 +70,8 @@ TEST( Point2, arithmetic)
 }
 
 /* ************************************************************************* */
-TEST( Point2, unit)
-{
-  Point2 p0(10, 0), p1(0,-10), p2(10, 10);
+TEST( Point2, unit) {
+  Point2 p0(10, 0), p1(0, -10), p2(10, 10);
   EXPECT(assert_equal(Point2(1, 0), p0.unit(), 1e-6));
   EXPECT(assert_equal(Point2(0,-1), p1.unit(), 1e-6));
   EXPECT(assert_equal(Point2(sqrt(2.0)/2.0, sqrt(2.0)/2.0), p2.unit(), 1e-6));
@@ -90,25 +86,24 @@ Point2 l1(1, 0), l2(1, 1), l3(2, 2), l4(1, 3);
 LieVector norm_proxy(const Point2& point) {
   return LieVector(point.norm());
 }
-TEST( Point2, norm )
-{
+TEST( Point2, norm ) {
   Point2 p0(cos(5.0), sin(5.0));
-  DOUBLES_EQUAL(1,p0.norm(),1e-6);
+  DOUBLES_EQUAL(1, p0.norm(), 1e-6);
   Point2 p1(4, 5), p2(1, 1);
-  DOUBLES_EQUAL( 5,p1.distance(p2),1e-6);
-  DOUBLES_EQUAL( 5,(p2-p1).norm(),1e-6);
+  DOUBLES_EQUAL( 5, p1.distance(p2), 1e-6);
+  DOUBLES_EQUAL( 5, (p2-p1).norm(), 1e-6);
 
   Matrix expectedH, actualH;
-  double actual ;
+  double actual;
 
   // exception, for (0,0) derivative is [Inf,Inf] but we return [1,1]
   actual = x1.norm(actualH);
-  EXPECT_DOUBLES_EQUAL(0,actual,1e-9);
+  EXPECT_DOUBLES_EQUAL(0, actual, 1e-9);
   expectedH = Matrix_(1, 2, 1.0, 1.0);
   EXPECT(assert_equal(expectedH,actualH));
 
   actual = x2.norm(actualH);
-  EXPECT_DOUBLES_EQUAL(sqrt(2),actual,1e-9);
+  EXPECT_DOUBLES_EQUAL(sqrt(2), actual, 1e-9);
   expectedH = numericalDerivative11(norm_proxy, x2);
   EXPECT(assert_equal(expectedH,actualH));
 }
@@ -117,19 +112,18 @@ TEST( Point2, norm )
 LieVector distance_proxy(const Point2& location, const Point2& point) {
   return LieVector(location.distance(point));
 }
-TEST( Point2, distance )
-{
+TEST( Point2, distance ) {
   Matrix expectedH1, actualH1, expectedH2, actualH2;
 
   // establish distance is indeed zero
-  EXPECT_DOUBLES_EQUAL(1,x1.distance(l1),1e-9);
+  EXPECT_DOUBLES_EQUAL(1, x1.distance(l1), 1e-9);
 
   // establish distance is indeed 45 degrees
-  EXPECT_DOUBLES_EQUAL(sqrt(2.0),x1.distance(l2),1e-9);
+  EXPECT_DOUBLES_EQUAL(sqrt(2.0), x1.distance(l2), 1e-9);
 
   // Another pair
   double actual23 = x2.distance(l3, actualH1, actualH2);
-  EXPECT_DOUBLES_EQUAL(sqrt(2.0),actual23,1e-9);
+  EXPECT_DOUBLES_EQUAL(sqrt(2.0), actual23, 1e-9);
 
   // Check numerical derivatives
   expectedH1 = numericalDerivative21(distance_proxy, x2, l3);
@@ -139,7 +133,7 @@ TEST( Point2, distance )
 
   // Another test
   double actual34 = x3.distance(l4, actualH1, actualH2);
-  EXPECT_DOUBLES_EQUAL(2,actual34,1e-9);
+  EXPECT_DOUBLES_EQUAL(2, actual34, 1e-9);
 
   // Check numerical derivatives
   expectedH1 = numericalDerivative21(distance_proxy, x3, l4);
@@ -149,15 +143,65 @@ TEST( Point2, distance )
 }
 
 /* ************************************************************************* */
-TEST( Point2, stream)
-{
-  Point2 p(1,2);
+TEST( Point2, circleCircleIntersection) {
+
+  double offset = 0.994987;
+  // Test intersections of circle moving from inside to outside
+
+  list<Point2> inside = Point2::CircleCircleIntersection(5,Point2(0,0),1);
+  EXPECT_LONGS_EQUAL(0,inside.size());
+
+  list<Point2> touching1 = Point2::CircleCircleIntersection(5,Point2(4,0),1);
+  EXPECT_LONGS_EQUAL(1,touching1.size());
+  EXPECT(assert_equal(Point2(5,0), touching1.front()));
+
+  list<Point2> common = Point2::CircleCircleIntersection(5,Point2(5,0),1);
+  EXPECT_LONGS_EQUAL(2,common.size());
+  EXPECT(assert_equal(Point2(4.9,  offset), common.front(), 1e-6));
+  EXPECT(assert_equal(Point2(4.9, -offset), common.back(), 1e-6));
+
+  list<Point2> touching2 = Point2::CircleCircleIntersection(5,Point2(6,0),1);
+  EXPECT_LONGS_EQUAL(1,touching2.size());
+  EXPECT(assert_equal(Point2(5,0), touching2.front()));
+
+  // test rotated case
+  list<Point2> rotated = Point2::CircleCircleIntersection(5,Point2(0,5),1);
+  EXPECT_LONGS_EQUAL(2,rotated.size());
+  EXPECT(assert_equal(Point2(-offset, 4.9), rotated.front(), 1e-6));
+  EXPECT(assert_equal(Point2( offset, 4.9), rotated.back(), 1e-6));
+
+  // test r1<r2
+  list<Point2> smaller = Point2::CircleCircleIntersection(1,Point2(5,0),5);
+  EXPECT_LONGS_EQUAL(2,smaller.size());
+  EXPECT(assert_equal(Point2(0.1,  offset), smaller.front(), 1e-6));
+  EXPECT(assert_equal(Point2(0.1, -offset), smaller.back(), 1e-6));
+
+  // test offset case, r1>r2
+  list<Point2> offset1 = Point2::CircleCircleIntersection(Point2(1,1),5,Point2(6,1),1);
+  EXPECT_LONGS_EQUAL(2,offset1.size());
+  EXPECT(assert_equal(Point2(5.9, 1+offset), offset1.front(), 1e-6));
+  EXPECT(assert_equal(Point2(5.9, 1-offset), offset1.back(), 1e-6));
+
+  // test offset case, r1<r2
+  list<Point2> offset2 = Point2::CircleCircleIntersection(Point2(6,1),1,Point2(1,1),5);
+  EXPECT_LONGS_EQUAL(2,offset2.size());
+  EXPECT(assert_equal(Point2(5.9, 1-offset), offset2.front(), 1e-6));
+  EXPECT(assert_equal(Point2(5.9, 1+offset), offset2.back(), 1e-6));
+
+}
+
+/* ************************************************************************* */
+TEST( Point2, stream) {
+  Point2 p(1, 2);
   std::ostringstream os;
   os << p;
   EXPECT(os.str() == "(1, 2)");
 }
 
 /* ************************************************************************* */
-int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
+int main () {
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
+}
 /* ************************************************************************* */
 
