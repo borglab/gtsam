@@ -73,16 +73,6 @@ TEST( Point2, arithmetic)
 }
 
 /* ************************************************************************* */
-TEST( Point2, norm)
-{
-  Point2 p0(cos(5.0), sin(5.0));
-  DOUBLES_EQUAL(1,p0.norm(),1e-6);
-  Point2 p1(4, 5), p2(1, 1);
-  DOUBLES_EQUAL( 5,p1.distance(p2),1e-6);
-  DOUBLES_EQUAL( 5,(p2-p1).norm(),1e-6);
-}
-
-/* ************************************************************************* */
 TEST( Point2, unit)
 {
   Point2 p0(10, 0), p1(0,-10), p2(10, 10);
@@ -92,12 +82,35 @@ TEST( Point2, unit)
 }
 
 /* ************************************************************************* */
-TEST( Point2, stream)
+// some shared test values
+Point2 x1, x2(1, 1), x3(1, 1);
+Point2 l1(1, 0), l2(1, 1), l3(2, 2), l4(1, 3);
+
+/* ************************************************************************* */
+LieVector norm_proxy(const Point2& point) {
+  return LieVector(point.norm());
+}
+TEST( Point2, norm )
 {
-  Point2 p(1,2);
-  std::ostringstream os;
-  os << p;
-  EXPECT(os.str() == "(1, 2)");
+  Point2 p0(cos(5.0), sin(5.0));
+  DOUBLES_EQUAL(1,p0.norm(),1e-6);
+  Point2 p1(4, 5), p2(1, 1);
+  DOUBLES_EQUAL( 5,p1.distance(p2),1e-6);
+  DOUBLES_EQUAL( 5,(p2-p1).norm(),1e-6);
+
+  Matrix expectedH, actualH;
+  double actual ;
+
+  // exception, for (0,0) derivative is [Inf,Inf] but we return [1,1]
+  actual = x1.norm(actualH);
+  EXPECT_DOUBLES_EQUAL(0,actual,1e-9);
+  expectedH = Matrix_(1, 2, 1.0, 1.0);
+  EXPECT(assert_equal(expectedH,actualH));
+
+  actual = x2.norm(actualH);
+  EXPECT_DOUBLES_EQUAL(sqrt(2),actual,1e-9);
+  expectedH = numericalDerivative11(norm_proxy, x2);
+  EXPECT(assert_equal(expectedH,actualH));
 }
 
 /* ************************************************************************* */
@@ -106,8 +119,6 @@ LieVector distance_proxy(const Point2& location, const Point2& point) {
 }
 TEST( Point2, distance )
 {
-  Point2 x1, x2(1, 1), x3(1, 1);
-  Point2 l1(1, 0), l2(1, 1), l3(2, 2), l4(1, 3);
   Matrix expectedH1, actualH1, expectedH2, actualH2;
 
   // establish distance is indeed zero
@@ -135,6 +146,15 @@ TEST( Point2, distance )
   expectedH2 = numericalDerivative22(distance_proxy, x3, l4);
   EXPECT(assert_equal(expectedH1,actualH1));
   EXPECT(assert_equal(expectedH2,actualH2));
+}
+
+/* ************************************************************************* */
+TEST( Point2, stream)
+{
+  Point2 p(1,2);
+  std::ostringstream os;
+  os << p;
+  EXPECT(os.str() == "(1, 2)");
 }
 
 /* ************************************************************************* */

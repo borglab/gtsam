@@ -223,15 +223,10 @@ double Pose2::range(const Point2& point,
     boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
   if (!H1 && !H2)  return transform_to(point).norm();
   Point2 d = transform_to(point, H1, H2);
-  double x = d.x(), y = d.y(), d2 = x * x + y * y, r = sqrt(d2);
-  Matrix D_result_d;
-  if(std::abs(r) > 1e-10)
-    D_result_d = Matrix_(1, 2, x / r, y / r);
-  else {
-    D_result_d = Matrix_(1,2, 1.0, 1.0);
-  }
-  if (H1) *H1 = D_result_d * (*H1);
-  if (H2) *H2 = D_result_d * (*H2);
+  Matrix H;
+  double r = d.norm(H);
+  if (H1) *H1 = H * (*H1);
+  if (H2) *H2 = H * (*H2);
   return r;
 }
 

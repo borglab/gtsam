@@ -144,11 +144,11 @@ public:
   /// @name Vector Space
   /// @{
 
-  /** norm of point */
-  double norm() const;
-
   /** creates a unit vector */
   Point2 unit() const { return *this/norm(); }
+
+  /** norm of point */
+  double norm(boost::optional<Matrix&> H = boost::none) const;
 
   /** distance between two points */
   double distance(const Point2& p2, boost::optional<Matrix&> H1 = boost::none,
