@@ -15,9 +15,12 @@
  * @author Frank Dellaert
  **/
 
-#include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/Testable.h>
 #include <gtsam/geometry/Point2.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/base/lieProxies.h>
+
+#include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;
@@ -95,6 +98,43 @@ TEST( Point2, stream)
   std::ostringstream os;
   os << p;
   EXPECT(os.str() == "(1, 2)");
+}
+
+/* ************************************************************************* */
+LieVector distance_proxy(const Point2& location, const Point2& point) {
+  return LieVector(location.distance(point));
+}
+TEST( Point2, distance )
+{
+  Point2 x1, x2(1, 1), x3(1, 1);
+  Point2 l1(1, 0), l2(1, 1), l3(2, 2), l4(1, 3);
+  Matrix expectedH1, actualH1, expectedH2, actualH2;
+
+  // establish distance is indeed zero
+  EXPECT_DOUBLES_EQUAL(1,x1.distance(l1),1e-9);
+
+  // establish distance is indeed 45 degrees
+  EXPECT_DOUBLES_EQUAL(sqrt(2.0),x1.distance(l2),1e-9);
+
+  // Another pair
+  double actual23 = x2.distance(l3, actualH1, actualH2);
+  EXPECT_DOUBLES_EQUAL(sqrt(2.0),actual23,1e-9);
+
+  // Check numerical derivatives
+  expectedH1 = numericalDerivative21(distance_proxy, x2, l3);
+  expectedH2 = numericalDerivative22(distance_proxy, x2, l3);
+  EXPECT(assert_equal(expectedH1,actualH1));
+  EXPECT(assert_equal(expectedH2,actualH2));
+
+  // Another test
+  double actual34 = x3.distance(l4, actualH1, actualH2);
+  EXPECT_DOUBLES_EQUAL(2,actual34,1e-9);
+
+  // Check numerical derivatives
+  expectedH1 = numericalDerivative21(distance_proxy, x3, l4);
+  expectedH2 = numericalDerivative22(distance_proxy, x3, l4);
+  EXPECT(assert_equal(expectedH1,actualH1));
+  EXPECT(assert_equal(expectedH2,actualH2));
 }
 
 /* ************************************************************************* */

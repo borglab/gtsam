@@ -151,9 +151,8 @@ public:
   Point2 unit() const { return *this/norm(); }
 
   /** distance between two points */
-  inline double distance(const Point2& p2) const {
-    return (p2 - *this).norm();
-  }
+  double distance(const Point2& p2, boost::optional<Matrix&> H1 = boost::none,
+      boost::optional<Matrix&> H2 = boost::none) const;
 
   /** @deprecated The following function has been deprecated, use distance above */
   inline double dist(const Point2& p2) const {
