@@ -27,19 +27,20 @@ import gtsam.*
 %    Time (sec)	X_pose (m)	Y_pose (m)
 % TD
 %    Time (sec)	Sender / Antenna ID	Receiver Node ID	Range (m)
-if true % switch between data files
+if false % switch between data files
   datafile = findExampleDataFile('Plaza1_.mat');
   headingOffset=0;
   minK=200; % minimum number of range measurements to process initially
+  incK=5; % minimum number of range measurements to process after
 else
   datafile = findExampleDataFile('Plaza2_.mat');
   headingOffset=pi;
   minK=150; % needs less for init
+  incK=25; % minimum number of range measurements to process after
 end
 load(datafile)
 M=size(DR,1);
 K=size(TD,1);
-incK=5; % minimum number of range measurements to process after
 sigmaR = 100; % range standard deviation
 sigmaInitial = 1; % draw initial landmark guess from Gaussian
 useGroundTruth = false;

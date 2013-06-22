@@ -48,6 +48,7 @@
 
 using namespace std;
 using namespace gtsam;
+namespace NM = gtsam::noiseModel;
 
 // data available at http://www.frc.ri.cmu.edu/projects/emergencyresponse/RangeData/
 // Datafile format (from http://www.frc.ri.cmu.edu/projects/emergencyresponse/RangeData/log.html)
@@ -91,7 +92,7 @@ vector<RangeTriple> readTriples() {
 }
 
 // main
-int main(int argc, char** argv) {
+int main (int argc, char** argv) {
 
   // load Plaza2 data
   list<TimedOdometry> odometry = readOdometry();
@@ -102,14 +103,20 @@ int main(int argc, char** argv) {
 
   // parameters
   size_t minK = 150; // minimum number of range measurements to process initially
-  size_t incK = 5; // minimum number of range measurements to process after
-  double sigmaR = 100; // range standard deviation
-  bool batchInitialization = true;
+  size_t incK = 25; // minimum number of range measurements to process after
+  bool groundTruth = false;
+  bool robust = true;
 
   // Set Noise parameters
-  const noiseModel::Robust::shared_ptr rangeNoiseModel =
-      noiseModel::Robust::Create(noiseModel::mEstimator::Tukey::Create(15),
-          noiseModel::Isotropic::Sigma(1, sigmaR));
+  Vector priorSigmas = Vector_(3, 1.0, 1.0, M_PI);
+  Vector odoSigmas = Vector_(3, 0.05, 0.01, 0.2);
+  double sigmaR = 100; // range standard deviation
+  const NM::Base::shared_ptr // all same type
+  priorNoise = NM::Diagonal::Sigmas(priorSigmas), //prior
+  odoNoise = NM::Diagonal::Sigmas(odoSigmas), // odometry
+  gaussian = NM::Isotropic::Sigma(1, sigmaR), // non-robust
+  tukey = NM::Robust::Create(NM::mEstimator::Tukey::Create(15), gaussian), //robust
+  rangeNoise = robust ? tukey : gaussian;
 
   // Initialize iSAM
   ISAM2 isam;
@@ -118,34 +125,40 @@ int main(int argc, char** argv) {
   Pose2 pose0 = Pose2(-34.2086489999201, 45.3007639991120,
       M_PI - 2.02108900000000);
   NonlinearFactorGraph newFactors;
-  newFactors.add(
-      PriorFactor<Pose2>(0, pose0,
-          noiseModel::Diagonal::Sigmas(Vector_(3, 1.0, 1.0, M_PI))));
+  newFactors.add(PriorFactor<Pose2>(0, pose0, priorNoise));
   Values initial;
   initial.insert(0, pose0);
 
   //  initialize points drawn from sigma=1 Gaussian in matlab version
-  initial.insert(symbol('L', 1), Point2(3.5784, 2.76944));
-  initial.insert(symbol('L', 6), Point2(-1.34989, 3.03492));
-  initial.insert(symbol('L', 0), Point2(0.725404, -0.0630549));
-  initial.insert(symbol('L', 5), Point2(0.714743, -0.204966));
+  if (groundTruth) { // from TL file
+    initial.insert(symbol('L', 1), Point2(-68.9265, 18.3778));
+    initial.insert(symbol('L', 6), Point2(-37.5805, 69.2278));
+    initial.insert(symbol('L', 0), Point2(-33.6205, 26.9678));
+    initial.insert(symbol('L', 5), Point2(1.7095, -5.8122));
+  } else {
+    initial.insert(symbol('L', 1), Point2(3.5784, 2.76944));
+    initial.insert(symbol('L', 6), Point2(-1.34989, 3.03492));
+    initial.insert(symbol('L', 0), Point2(0.725404, -0.0630549));
+    initial.insert(symbol('L', 5), Point2(0.714743, -0.204966));
+  }
+
+  // set some loop variables
+  size_t i = 1; // step counter
+  size_t k = 0; // range measurement counter
+  bool initialized = false;
+  Pose2 lastPose = pose0;
+  size_t countK = 0;
 
   // Loop over odometry
   gttic_(iSAM);
-  size_t i = 1; // step counter
-  size_t k = 0; // range measurement counter
-  bool update = false;
-  Pose2 lastPose = pose0;
-  size_t countK = 0;
   BOOST_FOREACH(const TimedOdometry& timedOdometry, odometry) {
+    //--------------------------------- odometry loop -----------------------------------------
     double t;
     Pose2 odometry;
     boost::tie(t, odometry) = timedOdometry;
 
     // add odometry factor
-    newFactors.add(
-        BetweenFactor<Pose2>(i - 1, i, odometry,
-            noiseModel::Diagonal::Sigmas(Vector_(3, 0.05, 0.01, 0.2))));
+    newFactors.add(BetweenFactor<Pose2>(i-1, i, odometry,NM::Diagonal::Sigmas(odoSigmas)));
 
     // predict pose and add as initial estimate
     Pose2 predictedPose = lastPose.compose(odometry);
@@ -156,22 +169,19 @@ int main(int argc, char** argv) {
     while (k < K && t >= boost::get<0>(triples[k])) {
       size_t j = boost::get<1>(triples[k]);
       double range = boost::get<2>(triples[k]);
-      newFactors.add(
-          RangeFactor<Pose2, Point2>(i, symbol('L', j), range,
-              rangeNoiseModel));
+      newFactors.add(RangeFactor<Pose2, Point2>(i, symbol('L', j), range,rangeNoise));
       k = k + 1;
       countK = countK + 1;
-      update = true;
     }
 
     // Check whether to update iSAM 2
-    if (update && (k > minK) && (countK > incK)) {
-      if (batchInitialization) { // Do a full optimize for first minK ranges
+    if ((k > minK) && (countK > incK)) {
+      if (!initialized) { // Do a full optimize for first minK ranges
         gttic_(batchInitialization);
         LevenbergMarquardtOptimizer batchOptimizer(newFactors, initial);
         initial = batchOptimizer.optimize();
         gttoc_(batchInitialization);
-        batchInitialization = false; // only once
+        initialized = true;
       }
       gttic_(update);
       isam.update(newFactors, initial);
@@ -185,7 +195,8 @@ int main(int argc, char** argv) {
       countK = 0;
     }
     i += 1;
-  } // odometry loop
+    //--------------------------------- odometry loop -----------------------------------------
+  } // BOOST_FOREACH
   gttoc_(iSAM);
 
   // Print timings
