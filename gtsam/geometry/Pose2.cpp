@@ -221,27 +221,31 @@ Rot2 Pose2::bearing(const Pose2& point,
 /* ************************************************************************* */
 double Pose2::range(const Point2& point,
     boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
-  if (!H1 && !H2)  return transform_to(point).norm();
-  Point2 d = transform_to(point, H1, H2);
+  Point2 d = point - t_;
+  if (!H1 && !H2) return d.norm();
   Matrix H;
   double r = d.norm(H);
-  if (H1) *H1 = H * (*H1);
-  if (H2) *H2 = H * (*H2);
+  if (H1) *H1 = H * Matrix_(2, 3,
+      -r_.c(),  r_.s(),  0.0,
+      -r_.s(), -r_.c(),  0.0);
+  if (H2) *H2 = H;
   return r;
 }
 
 /* ************************************************************************* */
-double Pose2::range(const Pose2& point,
+double Pose2::range(const Pose2& pose2,
     boost::optional<Matrix&> H1,
     boost::optional<Matrix&> H2) const {
-  double r = range(point.t(), H1, H2);
-  if (H2) {
-    // NOTE: expmap changes the orientation of expmap direction,
-    // so we must rotate the jacobian
-    Matrix H2_ = *H2 * point.r().matrix();
-    *H2 = zeros(1, 3);
-    insertSub(*H2, H2_, 0, 0);
-  }
+  Point2 d = pose2.t() - t_;
+  if (!H1 && !H2) return d.norm();
+  Matrix H;
+  double r = d.norm(H);
+  if (H1) *H1 = H * Matrix_(2, 3,
+      -r_.c(),  r_.s(),  0.0,
+      -r_.s(), -r_.c(),  0.0);
+  if (H2) *H2 = H * Matrix_(2, 3,
+      pose2.r_.c(), -pose2.r_.s(),  0.0,
+      pose2.r_.s(),  pose2.r_.c(),  0.0);
   return r;
 }
 
