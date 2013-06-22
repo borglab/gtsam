@@ -374,7 +374,21 @@ namespace boost {
       ar >> make_nvp("data", make_array(v.data(), v.size()));
     }
 
+    // split version - copies into an STL vector for serialization
+    template<class Archive, int D>
+    void save(Archive & ar, const Eigen::Matrix<double,D,1> & v, unsigned int version) {
+      ar << make_nvp("data", make_array(v.data(), v.RowsAtCompileTime));
+    }
+
+    template<class Archive, int D>
+    void load(Archive & ar, Eigen::Matrix<double,D,1> & v, unsigned int version) {
+      ar >> make_nvp("data", make_array(v.data(), v.RowsAtCompileTime));
+    }
+
   } // namespace serialization
 } // namespace boost
 
 BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Vector)
+BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Vector2)
+BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Vector3)
+BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Vector6)

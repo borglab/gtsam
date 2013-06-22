@@ -85,12 +85,21 @@ TEST (Serialization, FastVector) {
 /* ************************************************************************* */
 TEST (Serialization, matrix_vector) {
   EXPECT(equality<Vector>(Vector_(4, 1.0, 2.0, 3.0, 4.0)));
+  EXPECT(equality<Vector2>(Vector2(1.0, 2.0)));
+  EXPECT(equality<Vector3>(Vector3(1.0, 2.0, 3.0)));
+  EXPECT(equality<Vector6>((Vector6() << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0).finished()));
   EXPECT(equality<Matrix>(Matrix_(2, 2, 1.0, 2.0, 3.0, 4.0)));
 
   EXPECT(equalityXML<Vector>(Vector_(4, 1.0, 2.0, 3.0, 4.0)));
+  EXPECT(equalityXML<Vector2>(Vector2(1.0, 2.0)));
+  EXPECT(equalityXML<Vector3>(Vector3(1.0, 2.0, 3.0)));
+  EXPECT(equalityXML<Vector6>((Vector6() << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0).finished()));
   EXPECT(equalityXML<Matrix>(Matrix_(2, 2, 1.0, 2.0, 3.0, 4.0)));
 
   EXPECT(equalityBinary<Vector>(Vector_(4, 1.0, 2.0, 3.0, 4.0)));
+  EXPECT(equalityBinary<Vector2>(Vector2(1.0, 2.0)));
+  EXPECT(equalityBinary<Vector3>(Vector3(1.0, 2.0, 3.0)));
+  EXPECT(equalityBinary<Vector6>((Vector6() << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0).finished()));
   EXPECT(equalityBinary<Matrix>(Matrix_(2, 2, 1.0, 2.0, 3.0, 4.0)));
 }
 
