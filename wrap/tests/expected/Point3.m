@@ -62,6 +62,10 @@ classdef Point3 < handle
         error('Arguments do not match any overload of function Point3.string_serialize');
       end
     end
+
+    function sobj = saveobj(obj)
+      % SAVEOBJ Saves the object to a matlab-readable format
+      sobj = obj.string_serialize();
   end
 
   methods(Static = true)
@@ -101,5 +105,9 @@ classdef Point3 < handle
       end
     end
 
+    function obj = loadobj(sobj)
+      % LOADOBJ Saves the object to a matlab-readable format
+      obj = Point3.string_deserialize(sobj);
+    end
   end
 end

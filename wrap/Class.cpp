@@ -467,7 +467,17 @@ void Class::serialization_fragments(FileWriter& proxyFile, FileWriter& wrapperFi
   proxyFile.oss << "      else\n";
   proxyFile.oss << "        error('Arguments do not match any overload of function " << matlabQualName << ".string_serialize');\n";
   proxyFile.oss << "      end\n";
-  proxyFile.oss << "    end\n";
+  proxyFile.oss << "    end\n\n";
+
+  // Generate code for matlab save function
+//  function sobj = saveobj(obj)
+//    % SAVEOBJ Saves the object to a matlab-readable format
+//    sobj = obj.string_serialize();
+//  end
+
+  proxyFile.oss << "    function sobj = saveobj(obj)\n";
+  proxyFile.oss << "      % SAVEOBJ Saves the object to a matlab-readable format\n";
+  proxyFile.oss << "      sobj = obj.string_serialize();\n";
 }
 
 /* ************************************************************************* */
@@ -529,6 +539,18 @@ void Class::deserialization_fragments(FileWriter& proxyFile, FileWriter& wrapper
     proxyFile.oss << "        error('Arguments do not match any overload of function " << matlabQualName << ".string_deserialize');\n";
     proxyFile.oss << "      end\n";
     proxyFile.oss << "    end\n\n";
+
+
+    // Generate matlab load function
+//    function obj = loadobj(sobj)
+//      % LOADOBJ Saves the object to a matlab-readable format
+//      obj = Point3.string_deserialize(sobj);
+//    end
+
+    proxyFile.oss << "    function obj = loadobj(sobj)\n";
+    proxyFile.oss << "      % LOADOBJ Saves the object to a matlab-readable format\n";
+    proxyFile.oss << "      obj = " << matlabQualName << ".string_deserialize(sobj);\n";
+    proxyFile.oss << "    end" << endl;
 }
 
 /* ************************************************************************* */
