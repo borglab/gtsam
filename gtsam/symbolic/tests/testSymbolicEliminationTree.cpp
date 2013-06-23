@@ -67,27 +67,6 @@ public:
   }
 };
 
-/* ************************************************************************* */
-namespace {
-
-  /* ************************************************************************* */
-  // Keys for ASIA example from the tutorial with A and D evidence
-  const Key _X_=X(0), _T_=T(0), _S_=S(0), _E_=E(0), _L_=L(0), _B_=B(0);
-
-  // Factor graph for Asia example
-  const SymbolicFactorGraphUnordered asiaGraph = list_of
-    (boost::make_shared<SymbolicFactorUnordered>(_T_))
-    (boost::make_shared<SymbolicFactorUnordered>(_S_))
-    (boost::make_shared<SymbolicFactorUnordered>(_T_, _E_, _L_))
-    (boost::make_shared<SymbolicFactorUnordered>(_L_, _S_))
-    (boost::make_shared<SymbolicFactorUnordered>(_S_, _B_))
-    (boost::make_shared<SymbolicFactorUnordered>(_E_, _B_))
-    (boost::make_shared<SymbolicFactorUnordered>(_E_, _X_));
-  
-  /* ************************************************************************* */
-  const OrderingUnordered asiaOrdering = list_of(_X_)(_T_)(_S_)(_E_)(_L_)(_B_);
-
-}
 
 /* ************************************************************************* */
 TEST(EliminationTree, Create)
@@ -108,78 +87,6 @@ TEST(EliminationTree, Create)
   SymbolicEliminationTreeUnordered actual(fg, order);
 
   CHECK(assert_equal(expected, actual));
-}
-
-/* ************************************************************************* */
-// Test to drive elimination tree development
-// graph: f(0,1) f(0,2) f(1,4) f(2,4) f(3,4)
-/* ************************************************************************* */
-
-TEST_UNSAFE(EliminationTree, eliminate )
-{
-  // create expected Chordal bayes Net
-  SymbolicBayesNetUnordered expected;
-  expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(0,1,2));
-  expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(1,2,4));
-  expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(2,4));
-  expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(3,4));
-  expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(4));
-
-  // Create factor graph
-  SymbolicFactorGraphUnordered fg;
-  fg.push_factor(0, 1);
-  fg.push_factor(0, 2);
-  fg.push_factor(1, 4);
-  fg.push_factor(2, 4);
-  fg.push_factor(3, 4);
-
-  // eliminate
-  OrderingUnordered order;
-  order += 0,1,2,3,4;
-  SymbolicBayesNetUnordered actual = *SymbolicEliminationTreeUnordered(fg,order).eliminate(EliminateSymbolicUnordered).first;
-
-  EXPECT(assert_equal(expected,actual));
-}
-
-/* ************************************************************************* */
-TEST(EliminationTree, eliminateAsiaExample)
-{
-  SymbolicBayesNetUnordered expected = list_of
-    (boost::make_shared<SymbolicConditionalUnordered>(_T_, _E_, _L_))
-    (boost::make_shared<SymbolicConditionalUnordered>(_X_, _E_))
-    (boost::make_shared<SymbolicConditionalUnordered>(_E_, _B_, _L_))
-    (boost::make_shared<SymbolicConditionalUnordered>(_S_, _B_, _L_))
-    (boost::make_shared<SymbolicConditionalUnordered>(_L_, _B_))
-    (boost::make_shared<SymbolicConditionalUnordered>(_B_));
-
-  SymbolicBayesNetUnordered actual = *asiaGraph.eliminateSequential(
-    EliminateSymbolicUnordered, asiaOrdering);
-
-  EXPECT(assert_equal(expected, actual));
-}
-
-/* ************************************************************************* */
-TEST(EliminationTree, disconnected_graph) {
-  SymbolicFactorGraphUnordered fg;
-  fg.push_factor(0, 1);
-  fg.push_factor(0, 2);
-  fg.push_factor(1, 2);
-  fg.push_factor(3, 4);
-
-  // create expected Chordal bayes Net
-  SymbolicBayesNetUnordered expected;
-  expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(0,1,2));
-  expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(1,2));
-  expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(2));
-  expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(3,4));
-  expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(4));
-
-  OrderingUnordered order;
-  order += 0,1,2,3,4;
-  SymbolicBayesNetUnordered actual = *SymbolicEliminationTreeUnordered(fg, order)
-    .eliminate(EliminateSymbolicUnordered).first;
-  
-  EXPECT(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */

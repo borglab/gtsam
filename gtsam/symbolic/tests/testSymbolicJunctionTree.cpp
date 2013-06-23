@@ -73,22 +73,6 @@ TEST( JunctionTree, constructor )
  ****************************************************************************/
 TEST( JunctionTree, eliminate)
 {
-  const Index x2=0, x1=1, x3=2, x4=3;
-  SymbolicFactorGraph fg;
-  fg.push_factor(x2,x1);
-  fg.push_factor(x2,x3);
-  fg.push_factor(x3,x4);
-
-  SymbolicJunctionTree jt(fg);
-  SymbolicBayesTree::sharedClique actual = jt.eliminate(&EliminateSymbolic);
-
-  BayesNet<IndexConditional> bn(*SymbolicSequentialSolver(fg).eliminate());
-  SymbolicBayesTree expected(bn);
-
-//  cout << "BT from JT:\n";
-//  actual->printTree("");
-
-  CHECK(assert_equal(*expected.root(), *actual));
 }
 
 /* ************************************************************************* */

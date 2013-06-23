@@ -19,6 +19,7 @@
 
 #include <gtsam/symbolic/SymbolicBayesTreeUnordered.h>
 #include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/symbolic/tests/symbolicExampleGraphs.h>
 
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/std/vector.hpp>
@@ -34,7 +35,6 @@ static bool debug = false;
 
 /* ************************************************************************* */
 // Conditionals for ASIA example from the tutorial with A and D evidence
-static const Key _X_=X(0), _T_=T(0), _S_=S(0), _E_=E(0), _L_=L(0), _B_=B(0);
 static SymbolicConditionalUnordered::shared_ptr
   B(new SymbolicConditionalUnordered(_B_)),
   L(new SymbolicConditionalUnordered(_L_, _B_)),
