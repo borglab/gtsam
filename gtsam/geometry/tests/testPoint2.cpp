@@ -148,30 +148,30 @@ TEST( Point2, circleCircleIntersection) {
   double offset = 0.994987;
   // Test intersections of circle moving from inside to outside
 
-  list<Point2> inside = Point2::CircleCircleIntersection(5,Point2(0,0),1);
+  list<Point2> inside = Point2::CircleCircleIntersection(Point2(0,0),5,Point2(0,0),1);
   EXPECT_LONGS_EQUAL(0,inside.size());
 
-  list<Point2> touching1 = Point2::CircleCircleIntersection(5,Point2(4,0),1);
+  list<Point2> touching1 = Point2::CircleCircleIntersection(Point2(0,0),5,Point2(4,0),1);
   EXPECT_LONGS_EQUAL(1,touching1.size());
   EXPECT(assert_equal(Point2(5,0), touching1.front()));
 
-  list<Point2> common = Point2::CircleCircleIntersection(5,Point2(5,0),1);
+  list<Point2> common = Point2::CircleCircleIntersection(Point2(0,0),5,Point2(5,0),1);
   EXPECT_LONGS_EQUAL(2,common.size());
   EXPECT(assert_equal(Point2(4.9,  offset), common.front(), 1e-6));
   EXPECT(assert_equal(Point2(4.9, -offset), common.back(), 1e-6));
 
-  list<Point2> touching2 = Point2::CircleCircleIntersection(5,Point2(6,0),1);
+  list<Point2> touching2 = Point2::CircleCircleIntersection(Point2(0,0),5,Point2(6,0),1);
   EXPECT_LONGS_EQUAL(1,touching2.size());
   EXPECT(assert_equal(Point2(5,0), touching2.front()));
 
   // test rotated case
-  list<Point2> rotated = Point2::CircleCircleIntersection(5,Point2(0,5),1);
+  list<Point2> rotated = Point2::CircleCircleIntersection(Point2(0,0),5,Point2(0,5),1);
   EXPECT_LONGS_EQUAL(2,rotated.size());
   EXPECT(assert_equal(Point2(-offset, 4.9), rotated.front(), 1e-6));
   EXPECT(assert_equal(Point2( offset, 4.9), rotated.back(), 1e-6));
 
   // test r1<r2
-  list<Point2> smaller = Point2::CircleCircleIntersection(1,Point2(5,0),5);
+  list<Point2> smaller = Point2::CircleCircleIntersection(Point2(0,0),1,Point2(5,0),5);
   EXPECT_LONGS_EQUAL(2,smaller.size());
   EXPECT(assert_equal(Point2(0.1,  offset), smaller.front(), 1e-6));
   EXPECT(assert_equal(Point2(0.1, -offset), smaller.back(), 1e-6));

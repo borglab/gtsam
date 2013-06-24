@@ -68,59 +68,54 @@ double Point2::distance(const Point2& point, boost::optional<Matrix&> H1,
     return d.norm();
 }
 
+/*
+ * Calculate f and h, respectively the parallel and perpendicular distance of
+ * the intersections of two circles along and from the line connecting the centers.
+ * Both are dimensionless fractions of the distance d between the circle centers.
+ * If the circles do not intersect or they are identical, returns boost::none.
+ * If one solution (touching circles, as determined by tol), h will be exactly zero.
+ * h is a good measure for how accurate the intersection will be, as when circles touch
+ * or nearly touch, the intersection is ill-defined with noisy radius measurements.
+ * @param R_d : R/d, ratio of radius of first circle to distance between centers
+ * @param r_d : r/d, ratio of radius of second circle to distance between centers
+ * @param tol: absolute tolerance below which we consider touching circles
+ */
 /* ************************************************************************* */
-// Calculate h, the distance of the intersections of two circles from the center line.
-// This is a dimensionless fraction of the distance d between the circle centers,
-// and also determines how "good" the intersection is. If the circles do not intersect
-// or they are identical, returns boost::none. If one solution, h -> 0.
-// @param R_d : R/d, ratio of radius of first circle to distance between centers
-// @param r_d : r/d, ratio of radius of second circle to distance between centers
-// @param tol: absolute tolerance below which we consider touching circles
 // Math inspired by http://paulbourke.net/geometry/circlesphere/
-static boost::optional<double> circleCircleQuality(double R_d, double r_d, double tol=1e-9) {
+boost::optional<Point2> Point2::CircleCircleIntersection(double R_d, double r_d,
+    double tol) {
 
   double R2_d2 = R_d*R_d; // Yes, RD-D2 !
   double f = 0.5 + 0.5*(R2_d2 - r_d*r_d);
-  double h2 = R2_d2 - f*f;
+  double h2 = R2_d2 - f*f; // just right triangle rule
 
   // h^2<0 is equivalent to (d > (R + r) || d < (R - r))
   // Hence, there are only solutions if >=0
   if (h2<-tol) return boost::none; // allow *slightly* negative
-  else if (h2<tol) return 0.0; // one solution
-  else return sqrt(h2); // two solutions
+  else if (h2<tol) return Point2(f,0.0); // one solution
+  else return Point2(f,sqrt(h2)); // two solutions
 }
 
 /* ************************************************************************* */
-// Math inspired by http://paulbourke.net/geometry/circlesphere/
-list<Point2> Point2::CircleCircleIntersection(double R, Point2 c, double r) {
+list<Point2> Point2::CircleCircleIntersection(Point2 c1, Point2 c2,
+    boost::optional<Point2> fh) {
 
   list<Point2> solutions;
+  // If fh==boost::none, there are no solutions, i.e., d > (R + r) || d < (R - r)
+  if (fh) {
+    // vector between circle centers
+    Point2 c12 = c2-c1;
 
-  // distance between circle centers.
-  double d2 = c.x() * c.x() + c.y() * c.y(), d = sqrt(d2);
-
-  // circles coincide, either no solution or infinite number of solutions.
-  if (d2<1e-9) return solutions;
-
-  // Calculate h, the distance of the intersections from the center line,
-  // as a dimensionless fraction of  the distance d.
-  // It is the solution of a quadratic, so it has either 2 solutions, is 0, or none
-  double _d = 1.0/d, R_d = R*_d, r_d=r*_d;
-  boost::optional<double> h = circleCircleQuality(R_d,r_d);
-
-  // If h== boost::none, there are no solutions, i.e., d > (R + r) || d < (R - r)
-  if (h) {
     // Determine p2, the point where the line through the circle
     // intersection points crosses the line between the circle centers.
-    double f = 0.5 + 0.5*(R_d*R_d - r_d*r_d);
-    Point2 p2 = f * c;
+    Point2 p2 = c1 + fh->x() * c12;
 
     // If h == 0, the circles are touching, so just return one point
-    if (h==0.0)
+    if (fh->y()==0.0)
       solutions.push_back(p2);
     else {
       // determine the offsets of the intersection points from p
-      Point2 offset = (*h) * Point2(-c.y(), c.x());
+      Point2 offset = fh->y() * Point2(-c12.y(), c12.x());
 
       // Determine the absolute intersection points.
       solutions.push_back(p2 + offset);
@@ -130,56 +125,22 @@ list<Point2> Point2::CircleCircleIntersection(double R, Point2 c, double r) {
   return solutions;
 }
 
-//list<Point2> Point2::CircleCircleIntersection(double R, Point2 c, double r) {
-//
-//  list<Point2> solutions;
-//
-//  // Math inspired by http://paulbourke.net/geometry/circlesphere/
-//  // Changed to avoid sqrt in case there are 0 or 1 intersections, and only one div
-//
-//  // squared distance between circle centers.
-//  double d2 = c.x() * c.x() + c.y() * c.y();
-//
-//  // A crucial quantity we compute is h, a the distance of the intersections
-//  // from the center line, as a dimensionless fraction of  the distance d.
-//  // It is the solution of a quadratic, so it has either 2 solutions, is 0, or none
-//  // We calculate it as sqrt(h^2*d^4)/d^2, but first check whether h^2*d^4>=0
-//  double R2 = R*R;
-//  double R2d2 = R2*d2; // yes, R2-D2!
-//  double b = R2 + d2 - r*r;
-//  double b2 = b*b;
-//  double h2d4 = R2d2 - 0.25*b2; // h^2*d^4
-//
-//  // h^2*d^4<0 is equivalent to (d > (R + r) || d < (R - r))
-//  // Hence, there are only solutions if >=0
-//  if (h2d4>=0) {
-//    // Determine p2, the point where the line through the circle
-//    // intersection points crosses the line between the circle centers.
-//    double i2 = 1.0/d2;
-//    double f = 0.5*b*i2;
-//    Point2 p2 = f * c;
-//
-//    // If h^2*d^4 == 0, the circles are touching, so just return one point
-//    if (h2d4 < 1e-9)
-//      solutions.push_back(p2);
-//    else {
-//      // determine the offsets of the intersection points from p
-//      double h = sqrt(h2d4)*i2; // h = sqrt(h^2*d^4)/d^2
-//      Point2 offset = h * Point2(-c.y(), c.x());
-//
-//      // Determine the absolute intersection points.
-//      solutions.push_back(p2 + offset);
-//      solutions.push_back(p2 - offset);
-//    }
-//  }
-//  return solutions;
-//}
-//
 /* ************************************************************************* */
-list<Point2> Point2::CircleCircleIntersection(Point2 c1, double r1, Point2 c2, double r2) {
-  list<Point2> solutions = Point2::CircleCircleIntersection(r1,c2-c1,r2);
-  BOOST_FOREACH(Point2& p, solutions) p+= c1;
-  return solutions;
+list<Point2> Point2::CircleCircleIntersection(Point2 c1, double r1, Point2 c2,
+    double r2, double tol) {
+
+  // distance between circle centers.
+  double d = c1.dist(c2);
+
+  // centers coincide, either no solution or infinite number of solutions.
+  if (d<1e-9) return list<Point2>();
+
+  // Calculate f and h given normalized radii
+  double _d = 1.0/d, R_d = r1*_d, r_d=r2*_d;
+  boost::optional<Point2> fh = CircleCircleIntersection(R_d,r_d);
+
+  // Call version that takes fh
+  return CircleCircleIntersection(c1, c2, fh);
 }
 
 /* ************************************************************************* */
