@@ -140,17 +140,26 @@ namespace gtsam {
     GaussianFactor(GetKeys(terms.size(), terms.begin(), terms.end())),
     model_(model), Ab_(matrix_)
   {
+    // get number of measurements and variables involved in this factor
+    size_t m = b.size(), n = terms.size();
 
-    if(model->dim() != (size_t) b.size())
+    if(model->dim() != (size_t) m)
       throw InvalidNoiseModel(b.size(), model->dim());
 
-    size_t* dims = (size_t*)alloca(sizeof(size_t)*(terms.size()+1)); // FIXME: alloca is bad, just ask Google.
-    for(size_t j=0; j<terms.size(); ++j)
+    // Get the dimensions of each variable and copy to "dims" array, add 1 for RHS
+    size_t* dims = (size_t*)alloca(sizeof(size_t)*(n+1)); // FIXME: alloca is bad, just ask Google.
+    for(size_t j=0; j<n; ++j)
       dims[j] = terms[j].second.cols();
-    dims[terms.size()] = 1;
+    dims[n] = 1;
+
+    // Frank is mystified why this is done this way, rather than just creating Ab_
     Ab_.copyStructureFrom(BlockAb(matrix_, dims, dims+terms.size()+1, b.size()));
-    for(size_t j=0; j<terms.size(); ++j)
+
+    // Now copy the Jacobian matrices from the terms matrix
+    for(size_t j=0; j<n; ++j) {
+      assert(terms[j].second.rows()==m);
       Ab_(j) = terms[j].second;
+    }
     getb() = b;
     assertInvariants();
   }
