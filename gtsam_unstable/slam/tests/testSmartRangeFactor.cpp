@@ -27,6 +27,12 @@ using namespace gtsam;
 
 static const double sigma = 2.0;
 
+// Test situation:
+static const Point2 p(0, 10);
+static const Pose2 pose1(0, 0, 0), pose2(5, 0, 0), pose3(5, 5, 0);
+static const double r1 = pose1.range(p), r2 = pose2.range(p), r3 = pose3.range(
+    p);
+
 /* ************************************************************************* */
 
 TEST( SmartRangeFactor, constructor ) {
@@ -35,7 +41,6 @@ TEST( SmartRangeFactor, constructor ) {
   SmartRangeFactor f2(sigma);
   LONGS_EQUAL(0, f2.size())
 }
-
 /* ************************************************************************* */
 
 TEST( SmartRangeFactor, addRange ) {
@@ -44,18 +49,16 @@ TEST( SmartRangeFactor, addRange ) {
   f.addRange(1, 12);
   LONGS_EQUAL(2, f.size())
 }
-
 /* ************************************************************************* */
 
-TEST( SmartRangeFactor, allAtOnce ) {
-  // Test situation:
-  Point2 p(0, 10);
-  Pose2 pose1(0, 0, 0), pose2(5, 0, 0), pose3(5, 5, 0);
-  double r1 = pose1.range(p), r2 = pose2.range(p), r3 = pose3.range(p);
+TEST( SmartRangeFactor, scenario ) {
   DOUBLES_EQUAL(10, r1, 1e-9);
   DOUBLES_EQUAL(sqrt(100+25), r2, 1e-9);
   DOUBLES_EQUAL(sqrt(50), r3, 1e-9);
+}
+/* ************************************************************************* */
 
+TEST( SmartRangeFactor, unwhitenedError ) {
   Values values; // all correct
   values.insert(1, pose1);
   values.insert(2, pose2);
@@ -86,28 +89,38 @@ TEST( SmartRangeFactor, allAtOnce ) {
   // Test clone
   NonlinearFactor::shared_ptr clone = f.clone();
   EXPECT_LONGS_EQUAL(3, clone->keys().size());
+}
+/* ************************************************************************* */
+
+TEST( SmartRangeFactor, optimization ) {
+  SmartRangeFactor f(sigma);
+  f.addRange(1, r1);
+  f.addRange(2, r2);
+  f.addRange(3, r3);
 
   // Create initial value for optimization
   Values initial;
-  initial.insert(1, Pose2(0, 0, 0));
-  initial.insert(2, Pose2(5, 0, 0));
-  initial.insert(3, Pose2(5, 6, 0));
+  initial.insert(1, pose1);
+  initial.insert(2, pose2);
+  initial.insert(3, Pose2(5, 6, 0)); // does not satisfy range measurement
   Vector actual5 = f.unwhitenedError(initial);
   EXPECT(assert_equal(Vector_(1,sqrt(25+16)-sqrt(50)), actual5));
 
-  // Try optimizing
+  // Create Factor graph
   NonlinearFactorGraph graph;
   graph.add(f);
   const noiseModel::Base::shared_ptr //
   priorNoise = noiseModel::Diagonal::Sigmas(Vector3(1, 1, M_PI));
   graph.add(PriorFactor<Pose2>(1, pose1, priorNoise));
   graph.add(PriorFactor<Pose2>(2, pose2, priorNoise));
+
+  // Try optimizing
   LevenbergMarquardtParams params;
   //  params.setVerbosity("ERROR");
-  Values result =
-      LevenbergMarquardtOptimizer(graph, initial, params).optimize();
-  EXPECT(assert_equal(values.at<Pose2>(1), result.at<Pose2>(1)));
-  EXPECT(assert_equal(values.at<Pose2>(2), result.at<Pose2>(2)));
+  LevenbergMarquardtOptimizer optimizer(graph, initial, params);
+  Values result = optimizer.optimize();
+  EXPECT(assert_equal(initial.at<Pose2>(1), result.at<Pose2>(1)));
+  EXPECT(assert_equal(initial.at<Pose2>(2), result.at<Pose2>(2)));
   // only the third pose will be changed, converges on following:
   EXPECT(assert_equal(Pose2(5.52159, 5.582727, 0), result.at<Pose2>(3),1e-5));
 }
