@@ -77,14 +77,16 @@ TEST( Point2, unit) {
   EXPECT(assert_equal(Point2(sqrt(2.0)/2.0, sqrt(2.0)/2.0), p2.unit(), 1e-6));
 }
 
-/* ************************************************************************* */
-// some shared test values
-Point2 x1, x2(1, 1), x3(1, 1);
-Point2 l1(1, 0), l2(1, 1), l3(2, 2), l4(1, 3);
+namespace {
+  /* ************************************************************************* */
+  // some shared test values
+  Point2 x1, x2(1, 1), x3(1, 1);
+  Point2 l1(1, 0), l2(1, 1), l3(2, 2), l4(1, 3);
 
-/* ************************************************************************* */
-LieVector norm_proxy(const Point2& point) {
-  return LieVector(point.norm());
+  /* ************************************************************************* */
+  LieVector norm_proxy(const Point2& point) {
+    return LieVector(point.norm());
+  }
 }
 TEST( Point2, norm ) {
   Point2 p0(cos(5.0), sin(5.0));
@@ -109,8 +111,10 @@ TEST( Point2, norm ) {
 }
 
 /* ************************************************************************* */
-LieVector distance_proxy(const Point2& location, const Point2& point) {
-  return LieVector(location.distance(point));
+namespace {
+  LieVector distance_proxy(const Point2& location, const Point2& point) {
+    return LieVector(location.distance(point));
+  }
 }
 TEST( Point2, distance ) {
   Matrix expectedH1, actualH1, expectedH2, actualH2;

@@ -22,7 +22,7 @@ namespace gtsam {
  * Smart factor for range SLAM
  * @addtogroup SLAM
  */
-class GTSAM_UNSTABLE_EXPORT SmartRangeFactor: public NoiseModelFactor {
+class SmartRangeFactor: public NoiseModelFactor {
 protected:
 
   struct Circle2 {
