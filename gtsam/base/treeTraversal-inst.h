@@ -17,8 +17,12 @@
 #pragma once
 
 #include <gtsam/base/FastList.h>
+#include <gtsam/inference/Key.h>
 
 #include <stack>
+#include <vector>
+#include <string>
+#include <boost/shared_ptr.hpp>
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
 
