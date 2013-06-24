@@ -86,21 +86,29 @@ public:
     Circle2 circle1 = circles.front();
     boost::optional<Point2> best_fh;
     boost::optional<Circle2> best_circle;
+
+    // loop over all circles
     BOOST_FOREACH(const Circle2& it, circles) {
       // distance between circle centers.
       double d = circle1.center.dist(it.center);
       if (d < 1e-9)
-        continue;
+        continue; // skip circles that are in the same location
+      // Find f and h, the intersection points in normalized circles
       boost::optional<Point2> fh = Point2::CircleCircleIntersection(
           circle1.radius / d, it.radius / d);
+      // Check if this pair is better by checking h = fh->y()
+      // if h is large, the intersections are well defined.
       if (fh && (!best_fh || fh->y() > best_fh->y())) {
         best_fh = fh;
         best_circle = it;
       }
     }
+
+    // use best fh to find actual intersection points
     std::list<Point2> solutions = Point2::CircleCircleIntersection(
         circle1.center, best_circle->center, best_fh);
-    // TODO, pick winner based on other measurement
+
+    // pick winner based on other measurement
     return solutions.front();
   }
 
@@ -110,30 +118,38 @@ public:
   virtual Vector unwhitenedError(const Values& x,
       boost::optional<std::vector<Matrix>&> H = boost::none) const {
     size_t n = size();
-    if (H)
-      assert(H->size()==n);
-    Vector errors = zero(1);
-    if (n >= 3) {
+    if (n < 3) {
+      if (H)
+        // set Jacobians to zero for n<3
+        for (size_t j = 0; j < n; j++)
+          (*H)[j] = zeros(3, 1);
+      return zero(1);
+    } else {
+      Vector error = zero(1);
+
       // create n circles corresponding to measured range around each pose
       std::list<Circle2> circles;
       for (size_t j = 0; j < n; j++) {
         const Pose2& pose = x.at<Pose2>(keys_[j]);
         circles.push_back(Circle2(pose.translation(), measurements_[j]));
       }
+
       // triangulate to get the optimized point
       // TODO: Should we have a (better?) variant that does this in relative coordinates ?
       Point2 optimizedPoint = triangulate(circles);
+
+      // TODO: triangulation should be followed by an optimization given poses
       // now evaluate the errors between predicted and measured range
       for (size_t j = 0; j < n; j++) {
         const Pose2& pose = x.at<Pose2>(keys_[j]);
         if (H)
           // also calculate 1*3 derivative for each of the n poses
-          errors[0] += pose.range(optimizedPoint, (*H)[j]) - measurements_[j];
+          error[0] += pose.range(optimizedPoint, (*H)[j]) - measurements_[j];
         else
-          errors[0] += pose.range(optimizedPoint) - measurements_[j];
+          error[0] += pose.range(optimizedPoint) - measurements_[j];
       }
+      return error;
     }
-    return errors;
   }
 
   /// @return a deep copy of this factor
