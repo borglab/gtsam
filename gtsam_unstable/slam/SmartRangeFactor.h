@@ -105,11 +105,17 @@ public:
     }
 
     // use best fh to find actual intersection points
-    std::list<Point2> solutions = Point2::CircleCircleIntersection(
+    std::list<Point2> intersections = Point2::CircleCircleIntersection(
         circle1.center, best_circle->center, best_fh);
 
-    // pick winner based on other measurement
-    return solutions.front();
+    // pick winner based on other measurements
+    double error1 = 0, error2 = 0;
+    Point2 p1 = intersections.front(), p2 = intersections.back();
+    BOOST_FOREACH(const Circle2& it, circles) {
+      error1 += it.center.dist(p1);
+      error2 += it.center.dist(p2);
+    }
+    return (error1 < error2) ? p1 : p2;
   }
 
   /**
