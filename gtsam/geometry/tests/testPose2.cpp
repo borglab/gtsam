@@ -345,19 +345,21 @@ TEST(Pose2, inverse )
   EXPECT(assert_equal(numericalH,actualDinverse));
 }
 
-/* ************************************************************************* */
-Vector homogeneous(const Point2& p) {
-  return Vector_(3, p.x(), p.y(), 1.0);
-}
+namespace {
+  /* ************************************************************************* */
+  Vector homogeneous(const Point2& p) {
+    return Vector_(3, p.x(), p.y(), 1.0);
+  }
 
-/* ************************************************************************* */
-Matrix matrix(const Pose2& gTl) {
-  Matrix gRl = gTl.r().matrix();
-  Point2 gt = gTl.t();
-  return Matrix_(3, 3,
+  /* ************************************************************************* */
+  Matrix matrix(const Pose2& gTl) {
+    Matrix gRl = gTl.r().matrix();
+    Point2 gt = gTl.t();
+    return Matrix_(3, 3,
       gRl(0, 0), gRl(0, 1), gt.x(),
       gRl(1, 0), gRl(1, 1), gt.y(),
-            0.0,       0.0,   1.0);
+      0.0,       0.0,   1.0);
+  }
 }
 
 /* ************************************************************************* */
@@ -487,14 +489,16 @@ TEST(Pose2, members)
   EXPECT(pose.dim() == 3);
 }
 
-/* ************************************************************************* */
-// some shared test values
-Pose2 x1, x2(1, 1, 0), x3(1, 1, M_PI/4.0);
-Point2 l1(1, 0), l2(1, 1), l3(2, 2), l4(1, 3);
+namespace {
+  /* ************************************************************************* */
+  // some shared test values
+  Pose2 x1, x2(1, 1, 0), x3(1, 1, M_PI/4.0);
+  Point2 l1(1, 0), l2(1, 1), l3(2, 2), l4(1, 3);
 
-/* ************************************************************************* */
-Rot2 bearing_proxy(const Pose2& pose, const Point2& pt) {
-  return pose.bearing(pt);
+  /* ************************************************************************* */
+  Rot2 bearing_proxy(const Pose2& pose, const Point2& pt) {
+    return pose.bearing(pt);
+  }
 }
 
 TEST( Pose2, bearing )
@@ -529,8 +533,10 @@ TEST( Pose2, bearing )
 }
 
 /* ************************************************************************* */
-Rot2 bearing_pose_proxy(const Pose2& pose, const Pose2& pt) {
-  return pose.bearing(pt);
+namespace {
+  Rot2 bearing_pose_proxy(const Pose2& pose, const Pose2& pt) {
+    return pose.bearing(pt);
+  }
 }
 
 TEST( Pose2, bearing_pose )
@@ -567,8 +573,10 @@ TEST( Pose2, bearing_pose )
 }
 
 /* ************************************************************************* */
-LieVector range_proxy(const Pose2& pose, const Point2& point) {
-  return LieVector(pose.range(point));
+namespace {
+  LieVector range_proxy(const Pose2& pose, const Point2& point) {
+    return LieVector(pose.range(point));
+  }
 }
 TEST( Pose2, range )
 {
@@ -602,8 +610,10 @@ TEST( Pose2, range )
 }
 
 /* ************************************************************************* */
-LieVector range_pose_proxy(const Pose2& pose, const Pose2& point) {
-  return LieVector(pose.range(point));
+namespace {
+  LieVector range_pose_proxy(const Pose2& pose, const Pose2& point) {
+    return LieVector(pose.range(point));
+  }
 }
 TEST( Pose2, range_pose )
 {
@@ -690,17 +700,19 @@ TEST(Pose2, align_3) {
   EXPECT(assert_equal(expected, *actual));
 }
 
-/* ************************************************************************* */
-// Prototype code to align two triangles using a rigid transform
-/* ************************************************************************* */
-struct Triangle { size_t i_,j_,k_;};
+namespace {
+  /* ************************************************************************* */
+  // Prototype code to align two triangles using a rigid transform
+  /* ************************************************************************* */
+  struct Triangle { size_t i_,j_,k_;};
 
-boost::optional<Pose2> align(const vector<Point2>& ps, const vector<Point2>& qs,
+  boost::optional<Pose2> align(const vector<Point2>& ps, const vector<Point2>& qs,
     const pair<Triangle, Triangle>& trianglePair) {
-  const Triangle& t1 = trianglePair.first, t2 = trianglePair.second;
-  vector<Point2Pair> correspondences;
-  correspondences += make_pair(ps[t1.i_],qs[t2.i_]), make_pair(ps[t1.j_],qs[t2.j_]), make_pair(ps[t1.k_],qs[t2.k_]);
-  return align(correspondences);
+      const Triangle& t1 = trianglePair.first, t2 = trianglePair.second;
+      vector<Point2Pair> correspondences;
+      correspondences += make_pair(ps[t1.i_],qs[t2.i_]), make_pair(ps[t1.j_],qs[t2.j_]), make_pair(ps[t1.k_],qs[t2.k_]);
+      return align(correspondences);
+  }
 }
 
 TEST(Pose2, align_4) {
