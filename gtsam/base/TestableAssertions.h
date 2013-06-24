@@ -91,7 +91,7 @@ bool assert_equal(const std::vector<V>& expected, const std::vector<V>& actual, 
   if(match) {
     size_t i = 0;
     BOOST_FOREACH(const V& a, expected) {
-      if (!assert_equal(a, expected[i++], tol)) {
+      if (!assert_equal(a, actual[i++], tol)) {
         match = false;
         break;
       }

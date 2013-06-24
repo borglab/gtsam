@@ -87,7 +87,7 @@ namespace gtsam {
     /// focal length x
     inline double fx() const { return fx_;}
 
-    /// focal length x
+    /// focal length y
     inline double fy() const { return fy_;}
 
     /// skew
