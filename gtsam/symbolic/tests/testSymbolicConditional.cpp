@@ -10,86 +10,84 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    testConditional.cpp
- * @brief   Unit tests for IndexConditional class
+ * @file    testSymbolicConditional.cpp
+ * @brief   Unit tests for SymbolicConditional class
  * @author  Frank Dellaert
  */
 
-#include <boost/assign/std/list.hpp> // for operator +=
-#include <boost/assign/std/vector.hpp> // for operator +=
+#include <boost/assign/list_of.hpp>
 using namespace boost::assign;
+#include <boost/make_shared.hpp>
 
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam/inference/IndexConditional.h>
-#include <gtsam/inference/IndexFactor.h>
+#include <gtsam/symbolic/SymbolicConditionalUnordered.h>
 
 using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
-TEST( IndexConditional, empty )
+TEST( SymbolicConditional, empty )
 {
-  IndexConditional c0;
+  SymbolicConditionalUnordered c0;
   LONGS_EQUAL(0,c0.nrFrontals())
   LONGS_EQUAL(0,c0.nrParents())
 }
 
 /* ************************************************************************* */
-TEST( IndexConditional, noParents )
+TEST( SymbolicConditional, noParents )
 {
-  IndexConditional c0(0);
+  SymbolicConditionalUnordered c0(0);
   LONGS_EQUAL(1,c0.nrFrontals())
   LONGS_EQUAL(0,c0.nrParents())
 }
 
 /* ************************************************************************* */
-TEST( IndexConditional, oneParents )
+TEST( SymbolicConditional, oneParents )
 {
-  IndexConditional c0(0,1);
+  SymbolicConditionalUnordered c0(0,1);
   LONGS_EQUAL(1,c0.nrFrontals())
   LONGS_EQUAL(1,c0.nrParents())
 }
 
 /* ************************************************************************* */
-TEST( IndexConditional, twoParents )
+TEST( SymbolicConditional, twoParents )
 {
-  IndexConditional c0(0,1,2);
+  SymbolicConditionalUnordered c0(0,1,2);
   LONGS_EQUAL(1,c0.nrFrontals())
   LONGS_EQUAL(2,c0.nrParents())
 }
 
 /* ************************************************************************* */
-TEST( IndexConditional, threeParents )
+TEST( SymbolicConditional, threeParents )
 {
-  IndexConditional c0(0,1,2,3);
+  SymbolicConditionalUnordered c0(0,1,2,3);
   LONGS_EQUAL(1,c0.nrFrontals())
   LONGS_EQUAL(3,c0.nrParents())
 }
 
 /* ************************************************************************* */
-TEST( IndexConditional, fourParents )
+TEST( SymbolicConditional, fourParents )
 {
-  vector<Index> parents;
-  parents += 1,2,3,4;
-  IndexConditional c0(0,parents);
+  SymbolicConditionalUnordered c0 = SymbolicConditionalUnordered::FromKeys(
+    list_of(0)(1)(2)(3)(4), 1);
   LONGS_EQUAL(1,c0.nrFrontals())
   LONGS_EQUAL(4,c0.nrParents())
 }
 
 /* ************************************************************************* */
-TEST( IndexConditional, FromRange )
+TEST( SymbolicConditional, FromRange )
 {
-  vector<Index> keys;
-  keys += 1,2,3,4,5;
-  IndexConditional::shared_ptr c0(new IndexConditional(keys,2));
+  SymbolicConditionalUnordered::shared_ptr c0 =
+    boost::make_shared<SymbolicConditionalUnordered>(
+    SymbolicConditionalUnordered::FromKeys(list_of(1)(2)(3)(4)(5), 2));
   LONGS_EQUAL(2,c0->nrFrontals())
   LONGS_EQUAL(3,c0->nrParents())
 }
 
 /* ************************************************************************* */
-TEST( IndexConditional, equals )
+TEST( SymbolicConditional, equals )
 {
-  IndexConditional c0(0, 1, 2), c1(0, 1, 2), c2(1, 2, 3), c3(3,4);
+  SymbolicConditionalUnordered c0(0, 1, 2), c1(0, 1, 2), c2(1, 2, 3), c3(3,4);
   CHECK(c0.equals(c1));
   CHECK(c1.equals(c0));
   CHECK(!c0.equals(c2));
