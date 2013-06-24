@@ -107,10 +107,12 @@ void Class::matlab_proxy(const string& toolboxPath, const string& wrapperName,
   // Methods 
   BOOST_FOREACH(const Methods::value_type& name_m, methods) { 
     const Method& m = name_m.second; 
-    m.proxy_wrapper_fragments(proxyFile, wrapperFile, cppName, matlabQualName, matlabUniqueName, wrapperName, typeAttributes, functionNames); 
+    m.proxy_wrapper_fragments(proxyFile, wrapperFile, cppName, matlabQualName, matlabUniqueName, wrapperName, typeAttributes, functionNames);
     proxyFile.oss << "\n"; 
     wrapperFile.oss << "\n"; 
   } 
+  if (hasSerialization)
+    serialization_fragments(proxyFile, wrapperFile, wrapperName, functionNames);
  
   proxyFile.oss << "  end\n"; 
   proxyFile.oss << "\n"; 
@@ -123,7 +125,9 @@ void Class::matlab_proxy(const string& toolboxPath, const string& wrapperName,
     proxyFile.oss << "\n"; 
     wrapperFile.oss << "\n"; 
   } 
- 
+  if (hasSerialization)
+    deserialization_fragments(proxyFile, wrapperFile, wrapperName, functionNames);
+
   proxyFile.oss << "  end\n";
   proxyFile.oss << "end\n";
  
@@ -278,6 +282,7 @@ Class expandClassTemplate(const Class& cls, const string& templateArg, const vec
   inst.templateArgs = cls.templateArgs; 
   inst.typedefName = cls.typedefName; 
   inst.isVirtual = cls.isVirtual; 
+  inst.isSerializable = cls.isSerializable;
   inst.qualifiedParent = cls.qualifiedParent; 
   inst.methods = expandMethodTemplate(cls.methods, templateArg, instName, expandedClassNamespace, expandedClassName); 
   inst.static_methods = expandMethodTemplate(cls.static_methods, templateArg, instName, expandedClassNamespace, expandedClassName); 
@@ -388,6 +393,169 @@ void Class::comment_fragment(FileWriter& proxyFile) const {
     }
   }
 
+  if (hasSerialization) {
+    proxyFile.oss << "%\n%-------Serialization Interface-------\n";
+    proxyFile.oss << "%string_serialize() : returns string\n";
+    proxyFile.oss << "%string_deserialize(string serialized) : returns " << this->name << "\n";
+  }
+
   proxyFile.oss << "%\n";
 }
+
 /* ************************************************************************* */ 
+void Class::serialization_fragments(FileWriter& proxyFile, FileWriter& wrapperFile,
+    const std::string& wrapperName, std::vector<std::string>& functionNames) const {
+
+//void Point3_string_serialize_17(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+//{
+//  typedef boost::shared_ptr<Point3> Shared;
+//  checkArguments("string_serialize",nargout,nargin-1,0);
+//  Shared obj = unwrap_shared_ptr<Point3>(in[0], "ptr_Point3");
+//  std::ostringstream out_archive_stream;
+//  boost::archive::text_oarchive out_archive(out_archive_stream);
+//  out_archive << *obj;
+//  out[0] = wrap< string >(out_archive_stream.str());
+//}
+
+  int serialize_id = functionNames.size();
+  const string
+    matlabQualName = qualifiedName("."),
+    matlabUniqueName = qualifiedName(),
+    cppClassName = qualifiedName("::");
+  const string wrapFunctionNameSerialize = matlabUniqueName + "_string_serialize_" + boost::lexical_cast<string>(serialize_id);
+  functionNames.push_back(wrapFunctionNameSerialize);
+
+  // call
+  //void Point3_string_serialize_17(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+  wrapperFile.oss << "void " << wrapFunctionNameSerialize << "(int nargout, mxArray *out[], int nargin, const mxArray *in[])\n";
+  wrapperFile.oss << "{\n";
+  wrapperFile.oss << "  typedef boost::shared_ptr<"  << cppClassName  << "> Shared;" << endl;
+
+  // check arguments - for serialize, no arguments
+  // example: checkArguments("string_serialize",nargout,nargin-1,0);
+  wrapperFile.oss << "  checkArguments(\"string_serialize\",nargout,nargin-1,0);\n";
+
+  // get class pointer
+  // example: Shared obj = unwrap_shared_ptr<Point3>(in[0], "ptr_Point3");
+  wrapperFile.oss << "  Shared obj = unwrap_shared_ptr<" << cppClassName << ">(in[0], \"ptr_" << matlabUniqueName << "\");" << endl;
+
+  // Serialization boilerplate
+  wrapperFile.oss << "  std::ostringstream out_archive_stream;\n";
+  wrapperFile.oss << "  boost::archive::text_oarchive out_archive(out_archive_stream);\n";
+  wrapperFile.oss << "  out_archive << *obj;\n";
+  wrapperFile.oss << "  out[0] = wrap< string >(out_archive_stream.str());\n";
+
+  // finish
+  wrapperFile.oss << "}\n";
+
+  // Generate code for matlab function
+//  function varargout string_serialize(this, varargin)
+//  % STRING_SERIALIZE usage: string_serialize() : returns string
+//  % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
+//    if length(varargin) == 0
+//      varargout{1} = geometry_wrapper(15, this, varargin{:});
+//    else
+//      error('Arguments do not match any overload of function Point3.string_serialize');
+//    end
+//  end
+
+  proxyFile.oss << "    function varargout = string_serialize(this, varargin)\n";
+  proxyFile.oss << "      % STRING_SERIALIZE usage: string_serialize() : returns string\n";
+  proxyFile.oss << "      % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html\n";
+  proxyFile.oss << "      if length(varargin) == 0\n";
+  proxyFile.oss << "        varargout{1} = " << wrapperName << "(" << boost::lexical_cast<string>(serialize_id) << ", this, varargin{:});\n";
+  proxyFile.oss << "      else\n";
+  proxyFile.oss << "        error('Arguments do not match any overload of function " << matlabQualName << ".string_serialize');\n";
+  proxyFile.oss << "      end\n";
+  proxyFile.oss << "    end\n\n";
+
+  // Generate code for matlab save function
+//  function sobj = saveobj(obj)
+//    % SAVEOBJ Saves the object to a matlab-readable format
+//    sobj = obj.string_serialize();
+//  end
+
+  proxyFile.oss << "    function sobj = saveobj(obj)\n";
+  proxyFile.oss << "      % SAVEOBJ Saves the object to a matlab-readable format\n";
+  proxyFile.oss << "      sobj = obj.string_serialize();\n";
+}
+
+/* ************************************************************************* */
+void Class::deserialization_fragments(FileWriter& proxyFile, FileWriter& wrapperFile,
+    const std::string& wrapperName, std::vector<std::string>& functionNames) const {
+  //void Point3_string_deserialize_18(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+  //{
+  //  typedef boost::shared_ptr<Point3> Shared;
+  //  checkArguments("Point3.string_deserialize",nargout,nargin,1);
+  //  string serialized = unwrap< string >(in[0]);
+  //  std::istringstream in_archive_stream(serialized);
+  //  boost::archive::text_iarchive in_archive(in_archive_stream);
+  //  Shared output(new Point3());
+  //  in_archive >> *output;
+  //  out[0] = wrap_shared_ptr(output,"Point3", false);
+  //}
+    int deserialize_id = functionNames.size();
+    const string
+      matlabQualName = qualifiedName("."),
+      matlabUniqueName = qualifiedName(),
+      cppClassName = qualifiedName("::");
+    const string wrapFunctionNameDeserialize = matlabUniqueName + "_string_deserialize_" + boost::lexical_cast<string>(deserialize_id);
+    functionNames.push_back(wrapFunctionNameDeserialize);
+
+    // call
+    wrapperFile.oss << "void " << wrapFunctionNameDeserialize << "(int nargout, mxArray *out[], int nargin, const mxArray *in[])\n";
+    wrapperFile.oss << "{\n";
+    wrapperFile.oss << "  typedef boost::shared_ptr<"  << cppClassName  << "> Shared;" << endl;
+
+    // check arguments - for deserialize, 1 string argument
+    wrapperFile.oss << "  checkArguments(\"" << matlabUniqueName << ".string_deserialize\",nargout,nargin,1);\n";
+
+    // string argument with deserialization boilerplate
+    wrapperFile.oss << "  string serialized = unwrap< string >(in[0]);\n";
+    wrapperFile.oss << "  std::istringstream in_archive_stream(serialized);\n";
+    wrapperFile.oss << "  boost::archive::text_iarchive in_archive(in_archive_stream);\n";
+    wrapperFile.oss << "  Shared output(new " << cppClassName << "());\n";
+    wrapperFile.oss << "  in_archive >> *output;\n";
+    wrapperFile.oss << "  out[0] = wrap_shared_ptr(output,\"" << matlabQualName << "\", false);\n";
+    wrapperFile.oss << "}\n";
+
+    // Generate matlab function
+//    function varargout = string_deserialize(varargin)
+//    % STRING_DESERIALIZE usage: string_deserialize() : returns Point3
+//    % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
+//      if length(varargin) == 1
+//        varargout{1} = geometry_wrapper(18, varargin{:});
+//      else
+//        error('Arguments do not match any overload of function Point3.string_deserialize');
+//      end
+//    end
+
+    proxyFile.oss << "    function varargout = string_deserialize(varargin)\n";
+    proxyFile.oss << "      % STRING_DESERIALIZE usage: string_deserialize() : returns " << matlabQualName << "\n";
+    proxyFile.oss << "      % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html\n";
+    proxyFile.oss << "      if length(varargin) == 1\n";
+    proxyFile.oss << "        varargout{1} = " << wrapperName << "(" << boost::lexical_cast<string>(deserialize_id) << ", varargin{:});\n";
+    proxyFile.oss << "      else\n";
+    proxyFile.oss << "        error('Arguments do not match any overload of function " << matlabQualName << ".string_deserialize');\n";
+    proxyFile.oss << "      end\n";
+    proxyFile.oss << "    end\n\n";
+
+
+    // Generate matlab load function
+//    function obj = loadobj(sobj)
+//      % LOADOBJ Saves the object to a matlab-readable format
+//      obj = Point3.string_deserialize(sobj);
+//    end
+
+    proxyFile.oss << "    function obj = loadobj(sobj)\n";
+    proxyFile.oss << "      % LOADOBJ Saves the object to a matlab-readable format\n";
+    proxyFile.oss << "      obj = " << matlabQualName << ".string_deserialize(sobj);\n";
+    proxyFile.oss << "    end" << endl;
+}
+
+/* ************************************************************************* */
+std::string Class::getSerializationExport() const {
+  //BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsamSharedDiagonal");
+  return "BOOST_CLASS_EXPORT_GUID(" + qualifiedName("::") + ", \"" + qualifiedName() + "\");";
+}
+/* ************************************************************************* */

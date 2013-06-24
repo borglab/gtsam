@@ -111,7 +111,7 @@ public:
 
 protected:
 
-  friend void synchronize(ConcurrentFilter& filter, ConcurrentSmoother& smoother);
+  GTSAM_UNSTABLE_EXPORT friend void synchronize(ConcurrentFilter& filter, ConcurrentSmoother& smoother);
 
   /** Default constructor */
   ConcurrentSmoother() {};

@@ -1043,7 +1043,7 @@ VectorValues optimize(const ISAM2& isam) {
 
 /* ************************************************************************* */
 void optimizeInPlace(const ISAM2& isam, VectorValues& delta) {
-  // We may need to update the solution calcaulations
+  // We may need to update the solution calculations
   if(!isam.deltaDoglegUptodate_) {
     gttic(UpdateDoglegDeltas);
     double wildfireThreshold = 0.0;

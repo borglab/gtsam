@@ -65,6 +65,43 @@ public:
     y_ = v(1);
   }
 
+  /*
+   * @brief Circle-circle intersection, given normalized radii.
+   * Calculate f and h, respectively the parallel and perpendicular distance of
+   * the intersections of two circles along and from the line connecting the centers.
+   * Both are dimensionless fractions of the distance d between the circle centers.
+   * If the circles do not intersect or they are identical, returns boost::none.
+   * If one solution (touching circles, as determined by tol), h will be exactly zero.
+   * h is a good measure for how accurate the intersection will be, as when circles touch
+   * or nearly touch, the intersection is ill-defined with noisy radius measurements.
+   * @param R_d : R/d, ratio of radius of first circle to distance between centers
+   * @param r_d : r/d, ratio of radius of second circle to distance between centers
+   * @param tol: absolute tolerance below which we consider touching circles
+   * @return optional Point2 with f and h, boost::none if no solution.
+   */
+  static boost::optional<Point2> CircleCircleIntersection(double R_d, double r_d,
+      double tol = 1e-9);
+
+  /*
+   * @brief Circle-circle intersection, from the normalized radii solution.
+   * @param c1 center of first circle
+   * @param c2 center of second circle
+   * @return list of solutions (0,1, or 2). Identical circles will return empty list, as well.
+   */
+  static std::list<Point2> CircleCircleIntersection(Point2 c1, Point2 c2, boost::optional<Point2>);
+
+  /**
+   * @brief Intersect 2 circles
+   * @param c1 center of first circle
+   * @param r1 radius of first circle
+   * @param c2 center of second circle
+   * @param r2 radius of second circle
+   * @param tol: absolute tolerance below which we consider touching circles
+   * @return list of solutions (0,1, or 2). Identical circles will return empty list, as well.
+   */
+  static std::list<Point2> CircleCircleIntersection(Point2 c1, double r1,
+      Point2 c2, double r2, double tol = 1e-9);
+
   /// @}
   /// @name Testable
   /// @{
@@ -144,16 +181,15 @@ public:
   /// @name Vector Space
   /// @{
 
-  /** norm of point */
-  double norm() const;
-
   /** creates a unit vector */
   Point2 unit() const { return *this/norm(); }
 
+  /** norm of point */
+  double norm(boost::optional<Matrix&> H = boost::none) const;
+
   /** distance between two points */
-  inline double distance(const Point2& p2) const {
-    return (p2 - *this).norm();
-  }
+  double distance(const Point2& p2, boost::optional<Matrix&> H1 = boost::none,
+      boost::optional<Matrix&> H2 = boost::none) const;
 
   /** @deprecated The following function has been deprecated, use distance above */
   inline double dist(const Point2& p2) const {
@@ -180,7 +216,7 @@ public:
   double y() const {return y_;}
 
   /// return vectorized form (column-wise). TODO: why does this function exist?
-  Vector vector() const { return Vector_(2, x_, y_); }
+  Vector2 vector() const { return Vector2(x_, y_); }
 
   /// @}
   /// @name Deprecated (non-const, non-functional style. Do not use).
@@ -190,7 +226,7 @@ public:
   /// @}
 
   /// Streaming
-  friend std::ostream &operator<<(std::ostream &os, const Point2& p);
+  GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const Point2& p);
 
 private:
 

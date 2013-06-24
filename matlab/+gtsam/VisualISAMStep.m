@@ -2,19 +2,18 @@ function [isam,result,nextPoseIndex] = VisualISAMStep(data,noiseModels,isam,resu
 % VisualISAMStep executes one update step of visualSLAM::iSAM object
 % Authors: Duy Nguyen Ta and Frank Dellaert
 
+import gtsam.*
+
 % iSAM expects us to give it a new set of factors 
 % along with initial estimates for any new variables introduced.
-import gtsam.*
 newFactors = NonlinearFactorGraph;
 initialEstimates = Values;
 
 %% Add odometry
-import gtsam.*
 odometry = data.odometry{nextPoseIndex-1};
 newFactors.add(BetweenFactorPose3(symbol('x',nextPoseIndex-1), symbol('x',nextPoseIndex), odometry, noiseModels.odometry));
 
 %% Add visual measurement factors and initializations as necessary
-import gtsam.*
 for k=1:length(data.Z{nextPoseIndex})
     zij = data.Z{nextPoseIndex}{k};
     j = data.J{nextPoseIndex}{k};
@@ -28,7 +27,6 @@ for k=1:length(data.Z{nextPoseIndex})
 end
 
 %% Initial estimates for the new pose.
-import gtsam.*
 prevPose = result.at(symbol('x',nextPoseIndex-1));
 initialEstimates.insert(symbol('x',nextPoseIndex), prevPose.compose(odometry));
 

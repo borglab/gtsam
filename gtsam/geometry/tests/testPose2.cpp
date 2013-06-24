@@ -14,22 +14,21 @@
  * @brief  Unit tests for Pose2 class
  */
 
-#include <cmath>
-#include <iostream>
-
-#include <boost/foreach.hpp>
-#include <boost/optional.hpp>
-#include <boost/assign/std/vector.hpp> // for operator +=
-using namespace boost::assign;
-
-#include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/numericalDerivative.h>
-#include <gtsam/base/lieProxies.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Rot2.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/base/lieProxies.h>
 
+#include <CppUnitLite/TestHarness.h>
+#include <boost/foreach.hpp>
+#include <boost/optional.hpp>
+#include <boost/assign/std/vector.hpp> // for operator +=
+#include <cmath>
+#include <iostream>
+
+using namespace boost::assign;
 using namespace gtsam;
 using namespace std;
 

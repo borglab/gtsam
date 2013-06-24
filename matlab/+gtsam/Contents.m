@@ -37,6 +37,7 @@
 % 
 %% Linear Inference
 %   GaussianSequentialSolver          - class GaussianSequentialSolver, see Doxygen page for details
+%   GaussianMultifrontalSolver        - class GaussianMultifrontalSolver, see Doxygen page for details
 %   IterativeOptimizationParameters   - class IterativeOptimizationParameters, see Doxygen page for details
 %   KalmanFilter                      - class KalmanFilter, see Doxygen page for details
 %   SubgraphSolver                    - class SubgraphSolver, see Doxygen page for details

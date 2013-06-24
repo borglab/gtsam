@@ -586,7 +586,7 @@ public:
   VALUE calculateEstimate(Key key) const;
 
   /// @name Public members for non-typical usage
-  //@{
+  /// @{
 
   /** Internal implementation functions */
   struct Impl;
@@ -619,7 +619,7 @@ public:
   /** prints out clique statistics */
   GTSAM_EXPORT void printStats() const { getCliqueData().getStats().print(); }
 
-  //@}
+  /// @}
 
 private:
 
