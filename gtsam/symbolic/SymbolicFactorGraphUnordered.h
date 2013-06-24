@@ -65,6 +65,10 @@ namespace gtsam {
     template<typename ITERATOR>
     SymbolicFactorGraphUnordered(ITERATOR firstFactor, ITERATOR lastFactor) : Base(firstFactor, lastFactor) {}
 
+    /** Constructor from a BayesTree */
+    SymbolicFactorGraphUnordered(const SymbolicBayesTreeUnordered& bayesTree) {
+      push_back_bayesTree(bayesTree); }
+
     /// @}
     /// @name Standard Interface
     /// @{
@@ -80,6 +84,9 @@ namespace gtsam {
 
     /** Push back 4-way factor */
     void push_factor(Key key1, Key key2, Key key3, Key key4);
+
+    /** push back a BayesTree as a collection of factors. */
+    void push_back_bayesTree(const SymbolicBayesTreeUnordered& bayesTree);
 
     /// @}
   };

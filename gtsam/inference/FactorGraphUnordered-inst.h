@@ -16,24 +16,21 @@
  * @author Frank Dellaert
  * @author Alireza Fathi
  * @author Michael Kaess
+ * @author Richard Roberts
  */
 
 #pragma once
 
 #include <gtsam/base/FastSet.h>
-#include <gtsam/inference/BayesTree.h>
+#include <gtsam/base/treeTraversal-inst.h>
 #include <gtsam/inference/VariableIndex.h>
 #include <gtsam/inference/FactorGraphUnordered.h>
 
 #include <boost/foreach.hpp>
-#include <boost/tuple/tuple.hpp>
-#include <boost/format.hpp>
-#include <boost/iterator/transform_iterator.hpp>
+#include <boost/bind.hpp>
 
 #include <stdio.h>
-#include <list>
 #include <sstream>
-#include <stdexcept>
 
 namespace gtsam {
 
@@ -65,6 +62,25 @@ namespace gtsam {
       if (!f1->equals(*f2, tol)) return false;
     }
     return true;
+  }
+
+  /* ************************************************************************* */
+  namespace {
+    template<class FACTOR, class CLIQUE>
+    int _pushClique(FactorGraphUnordered<FACTOR>* fg, const boost::shared_ptr<CLIQUE>& clique) {
+      fg->push_back(clique->conditional_);
+      return 0;
+    }
+  }
+
+  /* ************************************************************************* */
+  template<class FACTOR>
+  template<class CLIQUE>
+  void FactorGraphUnordered<FACTOR>::push_back_bayesTree(const BayesTreeUnordered<CLIQUE>& bayesTree)
+  {
+    // Traverse the BayesTree and add all conditionals to this graph
+    int data = 0; // Unused
+    treeTraversal::DepthFirstForest(bayesTree, data, boost::bind(&_pushClique<FACTOR,CLIQUE>, this, _1));
   }
 
   /* ************************************************************************* */

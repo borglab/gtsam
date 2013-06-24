@@ -15,6 +15,7 @@
  * @author  Carlos Nieto
  * @author  Christian Potthast
  * @author  Michael Kaess
+ * @author  Richard Roberts
  */
 
 // \callgraph
@@ -27,6 +28,7 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Key.h>
+#include <gtsam/inference/BayesTreeUnordered.h>
 
 namespace gtsam {
 
@@ -39,7 +41,6 @@ namespace gtsam {
   class FactorGraphUnordered {
 
   public:
-    typedef FactorGraphUnordered<FACTOR> This;
     typedef FACTOR FactorType;  ///< factor type
     typedef boost::shared_ptr<FACTOR> sharedFactor;  ///< Shared pointer to a factor
     typedef boost::shared_ptr<typename FACTOR::ConditionalType> sharedConditional;  ///< Shared pointer to a conditional
@@ -57,7 +58,6 @@ namespace gtsam {
     /** Collection of factors */
     std::vector<sharedFactor> factors_;
 
-  public:
     /// @name Standard Constructors
     /// @{
 
@@ -93,6 +93,8 @@ namespace gtsam {
     //}
 
     /// @}
+
+  public:
     /// @name Adding Factors
     /// @{
 
@@ -107,34 +109,37 @@ namespace gtsam {
     /** Add a factor directly using a shared_ptr */
     template<class DERIVEDFACTOR>
     void push_back(const boost::shared_ptr<DERIVEDFACTOR>& factor) {
-      factors_.push_back(boost::shared_ptr<FACTOR>(factor));
-    }
+      factors_.push_back(boost::shared_ptr<FACTOR>(factor)); }
 
     /** Add a factor, will be copy-constructed into a shared_ptr (use push_back to avoid the copy). */
     template<class DERIVEDFACTOR>
     void add(const DERIVEDFACTOR& factor) {
-      factors_.push_back(boost::make_shared<DERIVEDFACTOR>(factor));
-    }
+      factors_.push_back(boost::make_shared<DERIVEDFACTOR>(factor)); }
 
     /** push back many factors */
     void push_back(const This& factors) {
-      factors_.insert(end(), factors.begin(), factors.end());
-    }
+      factors_.insert(end(), factors.begin(), factors.end()); }
 
     /** push back many factors with an iterator */
     template<typename ITERATOR>
     void push_back(ITERATOR firstFactor, ITERATOR lastFactor) {
-      factors_.insert(end(), firstFactor, lastFactor);
-    }
-    
+      factors_.insert(end(), firstFactor, lastFactor); }
+
+  protected:
+    /** push back a BayesTree as a collection of factors.  NOTE: This should be hidden in derived
+     *  classes in favor of a type-specialized version that calls this templated function. */
+    template<class CLIQUE>
+    void push_back_bayesTree(const BayesTreeUnordered<CLIQUE>& bayesTree);
+
+  public:
     /** += syntax for push_back, e.g. graph += f1, f2, f3 */
-    boost::assign::list_inserter<boost::assign_detail::call_push_back<This>, sharedFactor>
-      operator+=(const sharedFactor& factor)
+    template<class T>
+    boost::assign::list_inserter<boost::assign_detail::call_push_back<This>, T>
+      operator+=(const T& factorOrContainer)
     {
       return boost::assign::make_list_inserter(
-        boost::assign_detail::call_push_back<This>(*this))(factor);
+        boost::assign_detail::call_push_back<This>(*this))(factorOrContainer);
     }
-
 
     /**
      * @brief Add a vector of derived factors
