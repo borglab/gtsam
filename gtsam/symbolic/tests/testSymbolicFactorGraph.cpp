@@ -68,14 +68,14 @@ TEST(SymbolicFactorGraph, eliminatePartialSequential)
 /* ************************************************************************* */
 TEST(SymbolicFactorGraph, eliminateFullMultifrontal)
 {
-  const Index x2=0, x1=1, x3=2, x4=3;
-  SymbolicFactorGraphUnordered fg;
-  fg.push_factor(x2,x1);
-  fg.push_factor(x2,x3);
-  fg.push_factor(x3,x4);
+  OrderingUnordered ordering; ordering += 0,1,2,3;
+  SymbolicBayesTreeUnordered actual1 =
+    *simpleChain.eliminateMultifrontal(EliminateSymbolicUnordered, ordering);
+  EXPECT(assert_equal(simpleChainBayesTree, actual1));
 
-  EXPECT(false);
-
+  SymbolicBayesTreeUnordered actual2 =
+    *asiaGraph.eliminateMultifrontal(EliminateSymbolicUnordered, asiaOrdering);
+  EXPECT(assert_equal(asiaBayesTree, actual2));
 }
 
 /* ************************************************************************* */
@@ -185,6 +185,21 @@ TEST( SymbolicFactorGraph, constructFromBayesNet )
 
   // create actual factor graph from a Bayes Net
   SymbolicFactorGraphUnordered actual(bayesNet);
+
+  CHECK(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST( SymbolicFactorGraph, constructFromBayesTree )
+{
+  // create expected factor graph
+  SymbolicFactorGraphUnordered expected;
+  expected.push_factor(_B_, _L_, _E_, _S_);
+  expected.push_factor(_T_, _E_, _L_);
+  expected.push_factor(_X_, _E_);
+
+  // create actual factor graph
+  SymbolicFactorGraphUnordered actual(asiaBayesTree);
 
   CHECK(assert_equal(expected, actual));
 }

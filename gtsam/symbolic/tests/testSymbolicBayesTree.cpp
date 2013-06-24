@@ -48,28 +48,13 @@ static SymbolicConditionalUnordered::shared_ptr ELB(
   boost::make_shared<SymbolicConditionalUnordered>(
   SymbolicConditionalUnordered::FromKeys(list_of(_E_)(_L_)(_B_), 3)));
 
-// Bayes Tree for Asia example
-static SymbolicBayesTreeUnordered createAsiaSymbolicBayesTree() {
-  SymbolicFactorGraphUnordered asiaGraph;
-  asiaGraph.push_factor(_T_);
-  asiaGraph.push_factor(_S_);
-  asiaGraph.push_factor(_T_, _E_, _L_);
-  asiaGraph.push_factor(_L_, _S_);
-  asiaGraph.push_factor(_S_, _B_);
-  asiaGraph.push_factor(_E_, _B_);
-  asiaGraph.push_factor(_E_, _X_);
-  OrderingUnordered asiaOrdering; asiaOrdering += _X_, _T_, _S_, _E_, _L_, _B_;
-  SymbolicBayesTreeUnordered bayesTree = *asiaGraph.eliminateMultifrontal(EliminateSymbolicUnordered, asiaOrdering);
-  return bayesTree;
-}
-
 /* ************************************************************************* */
 TEST_UNSAFE( BayesTree, constructor )
 {
   // Create using insert
-  SymbolicBayesTreeUnordered bayesTree = createAsiaSymbolicBayesTree();
+  //SymbolicBayesTreeUnordered bayesTree = createAsiaSymbolicBayesTree();
 
-  bayesTree.print("bayesTree: ");
+  //bayesTree.print("bayesTree: ");
 
   // Check Size
 //  LONGS_EQUAL(4, bayesTree.size());

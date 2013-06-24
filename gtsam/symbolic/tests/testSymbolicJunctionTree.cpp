@@ -24,55 +24,39 @@ using namespace boost::assign;
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
 
-#include <gtsam/inference/SymbolicFactorGraph.h>
-#include <gtsam/inference/JunctionTree.h>
-#include <gtsam/inference/ClusterTree.h>
-#include <gtsam/inference/JunctionTree.h>
-#include <gtsam/inference/IndexFactor.h>
-#include <gtsam/inference/SymbolicSequentialSolver.h>
+#include <gtsam/symbolic/SymbolicFactorGraphUnordered.h>
+#include <gtsam/symbolic/SymbolicEliminationTreeUnordered.h>
+#include <gtsam/symbolic/SymbolicJunctionTreeUnordered.h>
+
+#include "symbolicExampleGraphs.h"
 
 using namespace gtsam;
 using namespace std;
 
-typedef JunctionTree<SymbolicFactorGraph> SymbolicJunctionTree;
-
 /* ************************************************************************* *
- * x1 - x2 - x3 - x4
- * x3 x4
- *    x2 x1 : x3
+ * 1 - 0 - 2 - 3
+ * 2 3
+ *   0 1 : 2
  ****************************************************************************/
 TEST( JunctionTree, constructor )
 {
-  const Index x2=0, x1=1, x3=2, x4=3;
-  SymbolicFactorGraph fg;
-  fg.push_factor(x2,x1);
-  fg.push_factor(x2,x3);
-  fg.push_factor(x3,x4);
+  OrderingUnordered order; order += 0, 1, 2, 3;
 
-  SymbolicJunctionTree actual(fg);
+  SymbolicJunctionTreeUnordered actual(SymbolicEliminationTreeUnordered(simpleChain, order));
 
-  vector<Index> frontal1; frontal1 += x3, x4;
-  vector<Index> frontal2; frontal2 += x2, x1;
+  vector<Index> frontal1; frontal1 += 3, 2;
+  vector<Index> frontal2; frontal2 += 1, 0;
   vector<Index> sep1;
-  vector<Index> sep2; sep2 += x3;
-  CHECK(assert_equal(frontal1, actual.root()->frontal));
-  CHECK(assert_equal(sep1,     actual.root()->separator));
-  LONGS_EQUAL(1,               actual.root()->size());
-  CHECK(assert_equal(frontal2, actual.root()->children().front()->frontal));
-  CHECK(assert_equal(sep2,     actual.root()->children().front()->separator));
-  LONGS_EQUAL(2,               actual.root()->children().front()->size());
-  CHECK(assert_equal(*fg[2], *(*actual.root())[0]));
-  CHECK(assert_equal(*fg[0], *(*actual.root()->children().front())[0]));
-  CHECK(assert_equal(*fg[1], *(*actual.root()->children().front())[1]));
-}
-
-/* ************************************************************************* *
- * x1 - x2 - x3 - x4
- * x3 x4
- *    x2 x1 : x3
- ****************************************************************************/
-TEST( JunctionTree, eliminate)
-{
+  vector<Index> sep2; sep2 += 2;
+  EXPECT(assert_equal(frontal1, actual.roots().front()->keys));
+  //EXPECT(assert_equal(sep1,     actual.roots().front()->separator));
+  LONGS_EQUAL(1,                actual.roots().front()->factors.size());
+  EXPECT(assert_equal(frontal2, actual.roots().front()->children.front()->keys));
+  //EXPECT(assert_equal(sep2,     actual.roots().front()->children.front()->separator));
+  LONGS_EQUAL(2,                actual.roots().front()->children.front()->factors.size());
+  EXPECT(assert_equal(*simpleChain[2],   *actual.roots().front()->factors[0]));
+  EXPECT(assert_equal(*simpleChain[0],   *actual.roots().front()->children.front()->factors[0]));
+  EXPECT(assert_equal(*simpleChain[1],   *actual.roots().front()->children.front()->factors[1]));
 }
 
 /* ************************************************************************* */

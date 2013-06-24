@@ -28,6 +28,8 @@ using namespace boost::assign;
 #include <gtsam/symbolic/SymbolicEliminationTreeUnordered.h>
 #include <gtsam/nonlinear/Symbol.h>
 
+#include "symbolicExampleGraphs.h"
+
 using namespace gtsam;
 using namespace gtsam::symbol_shorthand;
 using namespace std;
@@ -71,20 +73,13 @@ public:
 /* ************************************************************************* */
 TEST(EliminationTree, Create)
 {
-  // create example factor graph
-  SymbolicFactorGraphUnordered fg;
-  fg.push_factor(0, 1);
-  fg.push_factor(0, 2);
-  fg.push_factor(1, 4);
-  fg.push_factor(2, 4);
-  fg.push_factor(3, 4);
-
-  SymbolicEliminationTreeUnordered expected = EliminationTreeUnorderedTester::buildHardcodedTree(fg);
+  SymbolicEliminationTreeUnordered expected =
+    EliminationTreeUnorderedTester::buildHardcodedTree(simpleTestGraph1);
 
   // Build from factor graph
   OrderingUnordered order;
   order += 0,1,2,3,4;
-  SymbolicEliminationTreeUnordered actual(fg, order);
+  SymbolicEliminationTreeUnordered actual(simpleTestGraph1, order);
 
   CHECK(assert_equal(expected, actual));
 }

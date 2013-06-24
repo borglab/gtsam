@@ -49,17 +49,26 @@ namespace gtsam {
       (boost::make_shared<SymbolicFactorUnordered>(2,3))
       (boost::make_shared<SymbolicFactorUnordered>(4,5));
 
-    /** 0 - 1 - 2 - 3 */
+    /** 1 - 0 - 2 - 3 */
     const SymbolicFactorGraphUnordered simpleChain = boost::assign::list_of
-      (boost::make_shared<SymbolicFactorUnordered>(0,1))
-      (boost::make_shared<SymbolicFactorUnordered>(1,2))
+      (boost::make_shared<SymbolicFactorUnordered>(1,0))
+      (boost::make_shared<SymbolicFactorUnordered>(0,2))
       (boost::make_shared<SymbolicFactorUnordered>(2,3));
 
+    /* ************************************************************************* *
+     * 2 3
+     *   0 1 : 2
+     ****************************************************************************/
     SymbolicBayesTreeUnordered __simpleChainBayesTree() {
       SymbolicBayesTreeUnordered result;
-      SymbolicBayesTreeCliqueUnordered::shared_ptr root =
-        boost::make_shared<SymbolicBayesTreeCliqueUnordered>(
-        boost::make_shared<SymbolicConditionalUnordered>(SymbolicConditionalUnordered::FromKeys(list_of(2)(3),2)));
+      result.insertRoot(boost::make_shared<SymbolicBayesTreeCliqueUnordered>(
+        boost::make_shared<SymbolicConditionalUnordered>(
+        SymbolicConditionalUnordered::FromKeys(boost::assign::list_of(3)(2), 2))));
+      result.addClique(boost::make_shared<SymbolicBayesTreeCliqueUnordered>(
+        boost::make_shared<SymbolicConditionalUnordered>(
+        SymbolicConditionalUnordered::FromKeys(boost::assign::list_of(1)(0)(2), 2))),
+        result.roots().front());
+      return result;
     }
 
     const SymbolicBayesTreeUnordered simpleChainBayesTree = __simpleChainBayesTree();
@@ -87,6 +96,24 @@ namespace gtsam {
       (boost::make_shared<SymbolicConditionalUnordered>(_S_, _B_, _L_))
       (boost::make_shared<SymbolicConditionalUnordered>(_L_, _B_))
       (boost::make_shared<SymbolicConditionalUnordered>(_B_));
+
+    SymbolicBayesTreeUnordered __asiaBayesTree() {
+      SymbolicBayesTreeUnordered result;
+      result.insertRoot(boost::make_shared<SymbolicBayesTreeCliqueUnordered>(
+        boost::make_shared<SymbolicConditionalUnordered>(
+        SymbolicConditionalUnordered::FromKeys(boost::assign::list_of(_B_)(_L_)(_E_)(_S_), 4))));
+      result.addClique(boost::make_shared<SymbolicBayesTreeCliqueUnordered>(
+        boost::make_shared<SymbolicConditionalUnordered>(
+        SymbolicConditionalUnordered::FromKeys(boost::assign::list_of(_T_)(_E_)(_L_), 1))),
+        result.roots().front());
+      result.addClique(boost::make_shared<SymbolicBayesTreeCliqueUnordered>(
+        boost::make_shared<SymbolicConditionalUnordered>(
+        SymbolicConditionalUnordered::FromKeys(boost::assign::list_of(_X_)(_E_), 1))),
+        result.roots().front());
+      return result;
+    }
+
+    const SymbolicBayesTreeUnordered asiaBayesTree = __asiaBayesTree();
 
     /* ************************************************************************* */
     const OrderingUnordered asiaOrdering = boost::assign::list_of(_X_)(_T_)(_S_)(_E_)(_L_)(_B_);
