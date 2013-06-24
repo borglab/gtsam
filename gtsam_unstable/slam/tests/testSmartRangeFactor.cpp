@@ -17,27 +17,28 @@
  */
 
 #include <gtsam_unstable/slam/SmartRangeFactor.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;
 
-const noiseModel::Base::shared_ptr gaussian = noiseModel::Isotropic::Sigma(1,
-    2.0);
+static const double sigma = 2.0;
 
 /* ************************************************************************* */
 
 TEST( SmartRangeFactor, constructor ) {
   SmartRangeFactor f1;
   LONGS_EQUAL(0, f1.size())
-  SmartRangeFactor f2(gaussian);
+  SmartRangeFactor f2(sigma);
   LONGS_EQUAL(0, f2.size())
 }
 
 /* ************************************************************************* */
 
 TEST( SmartRangeFactor, addRange ) {
-  SmartRangeFactor f(gaussian);
+  SmartRangeFactor f(sigma);
   f.addRange(1, 10);
   f.addRange(1, 12);
   LONGS_EQUAL(2, f.size())
@@ -45,7 +46,7 @@ TEST( SmartRangeFactor, addRange ) {
 
 /* ************************************************************************* */
 
-TEST( SmartRangeFactor, unwhitenedError ) {
+TEST( SmartRangeFactor, allAtOnce ) {
   // Test situation:
   Point2 p(0, 10);
   Pose2 pose1(0, 0, 0), pose2(5, 0, 0), pose3(5, 5, 0);
@@ -59,7 +60,7 @@ TEST( SmartRangeFactor, unwhitenedError ) {
   values.insert(2, pose2);
   values.insert(3, pose3);
 
-  SmartRangeFactor f(gaussian);
+  SmartRangeFactor f(sigma);
   f.addRange(1, r1);
 
   // Whenever there are two ranges or less, error should be zero
@@ -70,14 +71,39 @@ TEST( SmartRangeFactor, unwhitenedError ) {
   EXPECT(assert_equal(Vector2(0,0), actual2));
 
   f.addRange(3, r3);
-  vector<Matrix> H;
-  Vector actual3 = f.unwhitenedError(values,H);
+  vector<Matrix> H(3);
+  Vector actual3 = f.unwhitenedError(values);
+  EXPECT_LONGS_EQUAL(3,f.keys().size());
   EXPECT(assert_equal(Vector3(0,0,0), actual3));
 
   // Check keys and Jacobian
-  EXPECT_LONGS_EQUAL(3,f.keys().size());
-  EXPECT(assert_equal(Matrix_(1,3,0.0,-1.0,0.0), H.front()));
-  EXPECT(assert_equal(Matrix_(1,3,sqrt(2)/2,-sqrt(2)/2,0.0), H.back()));
+  Vector actual4 = f.unwhitenedError(values,H); // with H now !
+  EXPECT(assert_equal(Vector3(0,0,0), actual4));
+  CHECK(assert_equal(Matrix_(3,3, 0.0,-1.0,0.0, 0.0,0.0,0.0, 0.0,0.0,0.0), H.front()));
+  CHECK(assert_equal(Matrix_(3,3, 0.0,0.0,0.0, 0.0,0.0,0.0, sqrt(2)/2,-sqrt(2)/2,0.0), H.back()));
+
+  // Test clone
+  NonlinearFactor::shared_ptr clone = f.clone();
+  EXPECT_LONGS_EQUAL(3,clone->keys().size());
+
+  // Create initial value for optimization
+  Values initial;
+  initial.insert(1, Pose2(0, 0, 0));
+  initial.insert(2, Pose2(5, 0, 0));
+  initial.insert(3, Pose2(5, 6, 0));
+  Vector actual5 = f.unwhitenedError(initial);
+  EXPECT(assert_equal(Vector3(0,0,sqrt(25+16)-sqrt(50)), actual5));
+
+  // Try optimizing
+  NonlinearFactorGraph graph;
+  graph.add(f);
+  LevenbergMarquardtParams params;
+  //params.setVerbosity("ERROR");
+  Values result = LevenbergMarquardtOptimizer(graph, initial, params).optimize();
+  EXPECT(assert_equal(values.at<Pose2>(1), result.at<Pose2>(1)));
+  EXPECT(assert_equal(values.at<Pose2>(2), result.at<Pose2>(2)));
+  // only the third pose will be changed, converges on following:
+  EXPECT(assert_equal(Pose2(5.52157630366, 5.58273895707, 0), result.at<Pose2>(3)));
 }
 
 /* ************************************************************************* */

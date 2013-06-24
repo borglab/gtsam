@@ -33,8 +33,10 @@ protected:
     double radius;
   };
 
-  /// Range measurements
-  std::vector<double> measurements_;
+  typedef SmartRangeFactor This;
+
+  std::vector<double> measurements_; ///< Range measurements
+  double sigma_; ///< standard deviation on noise
 
 public:
 
@@ -43,7 +45,7 @@ public:
   }
 
   /** standard binary constructor */
-  SmartRangeFactor(const SharedNoiseModel& model) {
+  SmartRangeFactor(double sigma) : NoiseModelFactor(noiseModel::Isotropic::Sigma(1,sigma_)), sigma_(sigma) {
   }
 
   virtual ~SmartRangeFactor() {
@@ -53,6 +55,7 @@ public:
   void addRange(Key key, double measuredRange) {
     keys_.push_back(key);
     measurements_.push_back(measuredRange);
+    noiseModel_ = noiseModel::Isotropic::Sigma(keys_.size(),sigma_);
   }
 
   // Testable
@@ -100,29 +103,39 @@ public:
    */
   virtual Vector unwhitenedError(const Values& x,
       boost::optional<std::vector<Matrix>&> H = boost::none) const {
-    size_t K = size();
-    Vector errors = zero(K);
-    if (K >= 3) {
+    size_t n = size();
+    if (H) assert(H->size()==n);
+    Vector errors = zero(n);
+    if (n >= 3) {
+      // create n circles corresponding to measured range around each pose
       std::list<Circle2> circles;
-      for (size_t i = 0; i < K; i++) {
-        const Pose2& pose = x.at<Pose2>(keys_[i]);
-        circles.push_back(Circle2(pose.translation(), measurements_[i]));
+      for (size_t j = 0; j < n; j++) {
+        const Pose2& pose = x.at<Pose2>(keys_[j]);
+        circles.push_back(Circle2(pose.translation(), measurements_[j]));
       }
+      // triangulate to get the optimized point
       Point2 optimizedPoint = triangulate(circles);
-      if (H)
-        *H = std::vector<Matrix>();
-      for (size_t i = 0; i < K; i++) {
-        const Pose2& pose = x.at<Pose2>(keys_[i]);
+      // now evaluate the errors between predicted and measured range
+      for (size_t j = 0; j < n; j++) {
+        const Pose2& pose = x.at<Pose2>(keys_[j]);
         if (H) {
-          Matrix Hi;
-          errors[i] = pose.range(optimizedPoint, Hi) - measurements_[i];
-          H->push_back(Hi);
-        } else
-          errors[i] = pose.range(optimizedPoint) - measurements_[i];
+          // calculate n*3 derivative for each of the n poses
+          (*H)[j] = zeros(n,3);
+          Matrix Hj;
+          errors[j] = pose.range(optimizedPoint, Hj) - measurements_[j];
+          (*H)[j].row(j) = Hj;
+        }
+        else
+          errors[j] = pose.range(optimizedPoint) - measurements_[j];
       }
     }
     return errors;
   }
+
+  /// @return a deep copy of this factor
+  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
 };
 
