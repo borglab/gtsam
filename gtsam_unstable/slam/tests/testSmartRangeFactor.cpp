@@ -19,6 +19,7 @@
 #include <gtsam_unstable/slam/SmartRangeFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/slam/PriorFactor.h>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
@@ -68,23 +69,23 @@ TEST( SmartRangeFactor, allAtOnce ) {
   EXPECT(assert_equal(Vector_(1,0.0), actual1));
   f.addRange(2, r2);
   Vector actual2 = f.unwhitenedError(values);
-  EXPECT(assert_equal(Vector2(0,0), actual2));
+  EXPECT(assert_equal(Vector_(1,0.0), actual2));
 
   f.addRange(3, r3);
   vector<Matrix> H(3);
   Vector actual3 = f.unwhitenedError(values);
-  EXPECT_LONGS_EQUAL(3,f.keys().size());
-  EXPECT(assert_equal(Vector3(0,0,0), actual3));
+  EXPECT_LONGS_EQUAL(3, f.keys().size());
+  EXPECT(assert_equal(Vector_(1,0.0), actual3));
 
   // Check keys and Jacobian
-  Vector actual4 = f.unwhitenedError(values,H); // with H now !
-  EXPECT(assert_equal(Vector3(0,0,0), actual4));
-  CHECK(assert_equal(Matrix_(3,3, 0.0,-1.0,0.0, 0.0,0.0,0.0, 0.0,0.0,0.0), H.front()));
-  CHECK(assert_equal(Matrix_(3,3, 0.0,0.0,0.0, 0.0,0.0,0.0, sqrt(2)/2,-sqrt(2)/2,0.0), H.back()));
+  Vector actual4 = f.unwhitenedError(values, H); // with H now !
+  EXPECT(assert_equal(Vector_(1,0.0), actual4));
+  CHECK(assert_equal(Matrix_(1,3, 0.0,-1.0,0.0), H.front()));
+  CHECK(assert_equal(Matrix_(1,3, sqrt(2)/2,-sqrt(2)/2,0.0), H.back()));
 
   // Test clone
   NonlinearFactor::shared_ptr clone = f.clone();
-  EXPECT_LONGS_EQUAL(3,clone->keys().size());
+  EXPECT_LONGS_EQUAL(3, clone->keys().size());
 
   // Create initial value for optimization
   Values initial;
@@ -92,18 +93,23 @@ TEST( SmartRangeFactor, allAtOnce ) {
   initial.insert(2, Pose2(5, 0, 0));
   initial.insert(3, Pose2(5, 6, 0));
   Vector actual5 = f.unwhitenedError(initial);
-  EXPECT(assert_equal(Vector3(0,0,sqrt(25+16)-sqrt(50)), actual5));
+  EXPECT(assert_equal(Vector_(1,sqrt(25+16)-sqrt(50)), actual5));
 
   // Try optimizing
   NonlinearFactorGraph graph;
   graph.add(f);
+  const noiseModel::Base::shared_ptr //
+  priorNoise = noiseModel::Diagonal::Sigmas(Vector3(1, 1, M_PI));
+  graph.add(PriorFactor<Pose2>(1, pose1, priorNoise));
+  graph.add(PriorFactor<Pose2>(2, pose2, priorNoise));
   LevenbergMarquardtParams params;
-  //params.setVerbosity("ERROR");
-  Values result = LevenbergMarquardtOptimizer(graph, initial, params).optimize();
+  //  params.setVerbosity("ERROR");
+  Values result =
+      LevenbergMarquardtOptimizer(graph, initial, params).optimize();
   EXPECT(assert_equal(values.at<Pose2>(1), result.at<Pose2>(1)));
   EXPECT(assert_equal(values.at<Pose2>(2), result.at<Pose2>(2)));
   // only the third pose will be changed, converges on following:
-  EXPECT(assert_equal(Pose2(5.52157630366, 5.58273895707, 0), result.at<Pose2>(3)));
+  EXPECT(assert_equal(Pose2(5.52159, 5.582727, 0), result.at<Pose2>(3),1e-5));
 }
 
 /* ************************************************************************* */
