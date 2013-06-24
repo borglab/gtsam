@@ -25,14 +25,6 @@ namespace gtsam {
 class GTSAM_UNSTABLE_EXPORT SmartRangeFactor: public NoiseModelFactor {
 protected:
 
-  struct KeyedRange {
-    KeyedRange(Key k, double r) :
-        key(k), range(r) {
-    }
-    Key key;
-    double range;
-  };
-
   struct Circle2 {
     Circle2(const Point2& p, double r) :
         center(p), radius(r) {
@@ -42,7 +34,7 @@ protected:
   };
 
   /// Range measurements
-  std::list<KeyedRange> measurements_;
+  std::vector<double> measurements_;
 
 public:
 
@@ -59,16 +51,11 @@ public:
 
   /// Add a range measurement to a pose with given key.
   void addRange(Key key, double measuredRange) {
-    measurements_.push_back(KeyedRange(key, measuredRange));
     keys_.push_back(key);
+    measurements_.push_back(measuredRange);
   }
 
-  /// Number of measurements added
-  size_t nrMeasurements() const {
-    return measurements_.size();
-  }
-
-  // testable
+  // Testable
 
   /** print */
   virtual void print(const std::string& s = "",
@@ -86,17 +73,18 @@ public:
    * Triangulate a point from at least three pose-range pairs
    * Checks for best pair that includes first point
    */
-  static Point2 triangulate(
-      const std::list<Circle2>& circles) {
+  static Point2 triangulate(const std::list<Circle2>& circles) {
     Circle2 circle1 = circles.front();
     boost::optional<Point2> best_fh;
     boost::optional<Circle2> best_circle;
     BOOST_FOREACH(const Circle2& it, circles) {
       // distance between circle centers.
       double d = circle1.center.dist(it.center);
-      if (d<1e-9) continue;
-      boost::optional<Point2> fh = Point2::CircleCircleIntersection(circle1.radius/d,it.radius/d);
-      if (fh && (!best_fh || fh->y()>best_fh->y())) {
+      if (d < 1e-9)
+        continue;
+      boost::optional<Point2> fh = Point2::CircleCircleIntersection(
+          circle1.radius / d, it.radius / d);
+      if (fh && (!best_fh || fh->y() > best_fh->y())) {
         best_fh = fh;
         best_circle = it;
       }
@@ -112,25 +100,25 @@ public:
    */
   virtual Vector unwhitenedError(const Values& x,
       boost::optional<std::vector<Matrix>&> H = boost::none) const {
-    size_t K = nrMeasurements();
+    size_t K = size();
     Vector errors = zero(K);
     if (K >= 3) {
       std::list<Circle2> circles;
-      BOOST_FOREACH(const KeyedRange& it, measurements_) {
-        const Pose2& pose = x.at<Pose2>(it.key);
-        circles.push_back(Circle2(pose.translation(), it.range));
+      for (size_t i = 0; i < K; i++) {
+        const Pose2& pose = x.at<Pose2>(keys_[i]);
+        circles.push_back(Circle2(pose.translation(), measurements_[i]));
       }
       Point2 optimizedPoint = triangulate(circles);
-      size_t i = 0;
-      if (H) *H = std::vector<Matrix>();
-      BOOST_FOREACH(const KeyedRange& it, measurements_) {
-        const Pose2& pose = x.at<Pose2>(it.key);
+      if (H)
+        *H = std::vector<Matrix>();
+      for (size_t i = 0; i < K; i++) {
+        const Pose2& pose = x.at<Pose2>(keys_[i]);
         if (H) {
           Matrix Hi;
-          errors[i] = pose.range(optimizedPoint, Hi) - it.range;
+          errors[i] = pose.range(optimizedPoint, Hi) - measurements_[i];
           H->push_back(Hi);
         } else
-          i += 1;
+          errors[i] = pose.range(optimizedPoint) - measurements_[i];
       }
     }
     return errors;

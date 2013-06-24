@@ -29,9 +29,9 @@ const noiseModel::Base::shared_ptr gaussian = noiseModel::Isotropic::Sigma(1,
 
 TEST( SmartRangeFactor, constructor ) {
   SmartRangeFactor f1;
-  LONGS_EQUAL(0, f1.nrMeasurements())
+  LONGS_EQUAL(0, f1.size())
   SmartRangeFactor f2(gaussian);
-  LONGS_EQUAL(0, f2.nrMeasurements())
+  LONGS_EQUAL(0, f2.size())
 }
 
 /* ************************************************************************* */
@@ -40,7 +40,7 @@ TEST( SmartRangeFactor, addRange ) {
   SmartRangeFactor f(gaussian);
   f.addRange(1, 10);
   f.addRange(1, 12);
-  LONGS_EQUAL(2, f.nrMeasurements())
+  LONGS_EQUAL(2, f.size())
 }
 
 /* ************************************************************************* */
