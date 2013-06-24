@@ -19,7 +19,7 @@
 #pragma once
 
 #include <gtsam/inference/BayesTreeUnordered.h>
-#include <gtsam/inference/BayesTreeCliqueDefault.h>
+#include <gtsam/inference/BayesTreeCliqueBaseUnordered.h>
 #include <gtsam/symbolic/SymbolicFactorGraphUnordered.h>
 #include <gtsam/symbolic/SymbolicBayesNetUnordered.h>
 
