@@ -70,8 +70,14 @@ TEST( SmartRangeFactor, unwhitenedError ) {
   EXPECT(assert_equal(Vector2(0,0), actual2));
 
   f.addRange(3, r3);
-  Vector actual3 = f.unwhitenedError(values);
+  vector<Matrix> H;
+  Vector actual3 = f.unwhitenedError(values,H);
   EXPECT(assert_equal(Vector3(0,0,0), actual3));
+
+  // Check keys and Jacobian
+  EXPECT_LONGS_EQUAL(3,f.keys().size());
+  EXPECT(assert_equal(Matrix_(1,3,0.0,-1.0,0.0), H.front()));
+  EXPECT(assert_equal(Matrix_(1,3,sqrt(2)/2,-sqrt(2)/2,0.0), H.back()));
 }
 
 /* ************************************************************************* */

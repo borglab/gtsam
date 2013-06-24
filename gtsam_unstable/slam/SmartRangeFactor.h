@@ -60,6 +60,7 @@ public:
   /// Add a range measurement to a pose with given key.
   void addRange(Key key, double measuredRange) {
     measurements_.push_back(KeyedRange(key, measuredRange));
+    keys_.push_back(key);
   }
 
   /// Number of measurements added
@@ -102,8 +103,7 @@ public:
     }
     std::list<Point2> solutions = Point2::CircleCircleIntersection(
         circle1.center, best_circle->center, best_fh);
-    solutions.front().print("front");
-    solutions.back().print("back");
+    // TODO, pick winner based on other measurement
     return solutions.front();
   }
 
@@ -118,13 +118,19 @@ public:
       std::list<Circle2> circles;
       BOOST_FOREACH(const KeyedRange& it, measurements_) {
         const Pose2& pose = x.at<Pose2>(it.key);
-        circles.push_back(
-            Circle2(pose.translation(), it.range));
+        circles.push_back(Circle2(pose.translation(), it.range));
       }
       Point2 optimizedPoint = triangulate(circles);
       size_t i = 0;
-      BOOST_FOREACH(const Circle2& it, circles) {
-        errors[i++] = it.radius - it.center.distance(optimizedPoint);
+      if (H) *H = std::vector<Matrix>();
+      BOOST_FOREACH(const KeyedRange& it, measurements_) {
+        const Pose2& pose = x.at<Pose2>(it.key);
+        if (H) {
+          Matrix Hi;
+          errors[i] = pose.range(optimizedPoint, Hi) - it.range;
+          H->push_back(Hi);
+        } else
+          i += 1;
       }
     }
     return errors;
