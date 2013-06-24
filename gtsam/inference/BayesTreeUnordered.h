@@ -230,6 +230,9 @@ namespace gtsam {
      * structures associated with adding a subtree, such as populating the nodes index. */
     void insertRoot(const sharedClique& subtree);
 
+    /** add a clique (top down) */
+    void addClique(const sharedClique& clique, const sharedClique& parent_clique = sharedClique());
+
     /**
      * Create a clone of this object as a shared pointer
      * Necessary for inheritance in matlab interface
@@ -249,9 +252,6 @@ namespace gtsam {
 
     /** remove a clique: warning, can result in a forest */
     void removeClique(sharedClique clique);
-
-    /** add a clique (top down) */
-    void addClique(const sharedClique& clique, const sharedClique& parent_clique = sharedClique());
 
     /** add a clique (bottom up) */
     sharedClique addClique(const sharedConditional& conditional, std::list<sharedClique>& child_cliques);
