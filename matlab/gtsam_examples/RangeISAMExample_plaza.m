@@ -27,7 +27,7 @@ import gtsam.*
 %    Time (sec)	X_pose (m)	Y_pose (m)
 % TD
 %    Time (sec)	Sender / Antenna ID	Receiver Node ID	Range (m)
-if false % switch between data files
+if true % switch between data files
   datafile = findExampleDataFile('Plaza1_.mat');
   headingOffset=0;
   minK=200; % minimum number of range measurements to process initially
@@ -65,7 +65,7 @@ isam = ISAM2;
 %% Add prior on first pose
 pose0 = Pose2(GT(1,2),GT(1,3),headingOffset+GT(1,4));
 newFactors = NonlinearFactorGraph;
-if ~addRange | ~useGroundTruth
+if ~addRange || ~useGroundTruth
   newFactors.add(PriorFactorPose2(0,pose0,noiseModels.prior));
 end
 initial = Values;

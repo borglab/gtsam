@@ -27,7 +27,7 @@ import gtsam.*
 %    Time (sec)	X_pose (m)	Y_pose (m)
 % TD
 %    Time (sec)	Sender / Antenna ID	Receiver Node ID	Range (m)
-datafile = findExampleDataFile('Plaza1_.mat');
+datafile = findExampleDataFile('Plaza2_.mat');
 load(datafile)
 M=size(DR,1);
 K=size(TD,1);
@@ -42,7 +42,7 @@ base = noiseModel.mEstimator.Tukey(5);
 noiseModels.range = noiseModel.Robust(base,noiseModel.Isotropic.Sigma(1, sigmaR));
 
 %% Add prior on first pose
-pose0 = Pose2(GT(1,2),GT(1,3),GT(1,4));
+pose0 = Pose2(GT(1,2),GT(1,3),pi+GT(1,4));
 graph = NonlinearFactorGraph;
 graph.add(PriorFactorPose2(0,pose0,noiseModels.prior));
 initial = Values;
@@ -84,7 +84,7 @@ for i=1:M
 end
 toc
 
-%% GRaph was built, optimize !
+%% Graph was built, optimize !
 tic
 batchOptimizer = LevenbergMarquardtOptimizer(graph, initial);
 result = batchOptimizer.optimize();
