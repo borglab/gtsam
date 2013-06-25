@@ -478,6 +478,7 @@ void Class::serialization_fragments(FileWriter& proxyFile, FileWriter& wrapperFi
   proxyFile.oss << "    function sobj = saveobj(obj)\n";
   proxyFile.oss << "      % SAVEOBJ Saves the object to a matlab-readable format\n";
   proxyFile.oss << "      sobj = obj.string_serialize();\n";
+  proxyFile.oss << "    end\n";
 }
 
 /* ************************************************************************* */
