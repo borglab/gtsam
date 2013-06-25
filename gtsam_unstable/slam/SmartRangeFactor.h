@@ -84,7 +84,7 @@ public:
    * Triangulate a point from at least three pose-range pairs
    * Checks for best pair that includes first point
    */
-  Point2 triangulate(const const Values& x) const {
+  Point2 triangulate(const Values& x) const {
     gttic_(triangulate);
     // create n circles corresponding to measured range around each pose
     std::list<Circle2> circles;
