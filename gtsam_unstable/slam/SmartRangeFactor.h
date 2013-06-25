@@ -69,6 +69,8 @@ public:
   /** print */
   virtual void print(const std::string& s = "",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+    std::cout << s << "SmartRangeFactor with " << size() << " measurements\n";
+    NoiseModelFactor::print(s);
   }
 
   /** Check if two factors are equal */
@@ -82,7 +84,16 @@ public:
    * Triangulate a point from at least three pose-range pairs
    * Checks for best pair that includes first point
    */
-  static Point2 triangulate(const std::list<Circle2>& circles) {
+  Point2 triangulate(const const Values& x) const {
+    gttic_(triangulate);
+    // create n circles corresponding to measured range around each pose
+    std::list<Circle2> circles;
+    size_t n = size();
+    for (size_t j = 0; j < n; j++) {
+      const Pose2& pose = x.at<Pose2>(keys_[j]);
+      circles.push_back(Circle2(pose.translation(), measurements_[j]));
+    }
+
     Circle2 circle1 = circles.front();
     boost::optional<Point2> best_fh;
     boost::optional<Circle2> best_circle;
@@ -116,6 +127,7 @@ public:
       error2 += it.center.dist(p2);
     }
     return (error1 < error2) ? p1 : p2;
+    gttoc_(triangulate);
   }
 
   /**
@@ -133,16 +145,9 @@ public:
     } else {
       Vector error = zero(1);
 
-      // create n circles corresponding to measured range around each pose
-      std::list<Circle2> circles;
-      for (size_t j = 0; j < n; j++) {
-        const Pose2& pose = x.at<Pose2>(keys_[j]);
-        circles.push_back(Circle2(pose.translation(), measurements_[j]));
-      }
-
       // triangulate to get the optimized point
       // TODO: Should we have a (better?) variant that does this in relative coordinates ?
-      Point2 optimizedPoint = triangulate(circles);
+      Point2 optimizedPoint = triangulate(x);
 
       // TODO: triangulation should be followed by an optimization given poses
       // now evaluate the errors between predicted and measured range

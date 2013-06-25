@@ -40,6 +40,7 @@
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/RangeFactor.h>
+#include <gtsam_unstable/slam/SmartRangeFactor.h>
 
 // Standard headers, added last, so we know headers above work on their own
 #include <boost/foreach.hpp>
@@ -104,11 +105,14 @@ int main(int argc, char** argv) {
   size_t K = triples.size();
 
   // parameters
+  size_t start = 220, end=3000;
+  size_t minK = 100; // first batch of smart factors
   size_t incK = 50; // minimum number of range measurements to process after
-  bool robust = false;
+  bool robust = true;
+  bool smart = true;
 
   // Set Noise parameters
-  Vector priorSigmas = Vector3(0.01, 0.01, 0.01);
+  Vector priorSigmas = Vector3(1, 1, M_PI);
   Vector odoSigmas = Vector3(0.05, 0.01, 0.2);
   double sigmaR = 100; // range standard deviation
   const NM::Base::shared_ptr // all same type
@@ -122,24 +126,43 @@ int main(int argc, char** argv) {
   ISAM2 isam;
 
   // Add prior on first pose
-  Pose2 pose0 = Pose2(-34.2086489999201, 45.3007639991120, -2.02108900000000);
+  Pose2 pose0 = Pose2(-34.2086489999201, 45.3007639991120,
+      M_PI - 2.02108900000000);
   NonlinearFactorGraph newFactors;
   newFactors.add(PriorFactor<Pose2>(0, pose0, priorNoise));
 
+  ofstream os2(
+      "/Users/dellaert/borg/gtsam/gtsam_unstable/examples/rangeResultLM.txt");
+  ofstream os3(
+      "/Users/dellaert/borg/gtsam/gtsam_unstable/examples/rangeResultSR.txt");
+
   //  initialize points (Gaussian)
   Values initial;
-  initial.insert(symbol('L', 1), Point2(-68.9265, 18.3778));
-  initial.insert(symbol('L', 6), Point2(-37.5805, 69.2278));
-  initial.insert(symbol('L', 0), Point2(-33.6205, 26.9678));
-  initial.insert(symbol('L', 5), Point2(1.7095, -5.8122));
+  if (!smart) {
+    initial.insert(symbol('L', 1), Point2(-68.9265, 18.3778));
+    initial.insert(symbol('L', 6), Point2(-37.5805, 69.2278));
+    initial.insert(symbol('L', 0), Point2(-33.6205, 26.9678));
+    initial.insert(symbol('L', 5), Point2(1.7095, -5.8122));
+  }
   Values landmarkEstimates = initial; // copy landmarks
   initial.insert(0, pose0);
+
+  //  initialize smart range factors
+  size_t ids[] = { 1, 6, 0, 5 };
+  typedef boost::shared_ptr<SmartRangeFactor> SmartPtr;
+  map<size_t, SmartPtr> smartFactors;
+  if (smart) {
+    BOOST_FOREACH(size_t jj,ids) {
+      smartFactors[jj] = SmartPtr(new SmartRangeFactor(sigmaR));
+      newFactors.add(smartFactors[jj]);
+    }
+  }
 
   // set some loop variables
   size_t i = 1; // step counter
   size_t k = 0; // range measurement counter
   Pose2 lastPose = pose0;
-  size_t countK = 0;
+  size_t countK = 0, totalCount=0;
 
   // Loop over odometry
   gttic_(iSAM);
@@ -164,17 +187,27 @@ int main(int argc, char** argv) {
     while (k < K && t >= boost::get<0>(triples[k])) {
       size_t j = boost::get<1>(triples[k]);
       double range = boost::get<2>(triples[k]);
-      RangeFactor<Pose2, Point2> factor(i, symbol('L', j), range, rangeNoise);
-      // Throw out obvious outliers based on current landmark estimates
-      Vector error = factor.unwhitenedError(landmarkEstimates);
-      if (k <= 200 || fabs(error[0]) < 5)
-        newFactors.add(factor);
+      if (i > start) {
+        if (smart && totalCount < minK) {
+          smartFactors[j]->addRange(i, range);
+          printf("adding range %g for %d on %d",range,(int)j,(int)i);cout << endl;
+        }
+        else {
+          RangeFactor<Pose2, Point2> factor(i, symbol('L', j), range,
+              rangeNoise);
+          // Throw out obvious outliers based on current landmark estimates
+          Vector error = factor.unwhitenedError(landmarkEstimates);
+          if (k <= 200 || fabs(error[0]) < 5)
+            newFactors.add(factor);
+        }
+        totalCount += 1;
+      }
       k = k + 1;
       countK = countK + 1;
     }
 
     // Check whether to update iSAM 2
-    if (countK > incK) {
+    if (k >= minK && countK >= incK) {
       gttic_(update);
       isam.update(newFactors, initial);
       gttoc_(update);
@@ -182,17 +215,37 @@ int main(int argc, char** argv) {
       Values result = isam.calculateEstimate();
       gttoc_(calculateEstimate);
       lastPose = result.at<Pose2>(i);
-      // update landmark estimates
-      landmarkEstimates = Values();
-      landmarkEstimates.insert(symbol('L', 1), result.at(symbol('L', 1)));
-      landmarkEstimates.insert(symbol('L', 6), result.at(symbol('L', 6)));
-      landmarkEstimates.insert(symbol('L', 0), result.at(symbol('L', 0)));
-      landmarkEstimates.insert(symbol('L', 5), result.at(symbol('L', 5)));
+      bool hasLandmarks = result.exists(symbol('L', ids[0]));
+      if (hasLandmarks) {
+        // update landmark estimates
+        landmarkEstimates = Values();
+        BOOST_FOREACH(size_t jj,ids)
+          landmarkEstimates.insert(symbol('L', jj), result.at(symbol('L', jj)));
+      }
       newFactors = NonlinearFactorGraph();
       initial = Values();
+      if (smart && !hasLandmarks) {
+        cout << "initialize from smart landmarks" << endl;
+        BOOST_FOREACH(size_t jj,ids) {
+          Point2 landmark = smartFactors[jj]->triangulate(result);
+          initial.insert(symbol('L', jj), landmark);
+          landmarkEstimates.insert(symbol('L', jj), landmark);
+        }
+      }
       countK = 0;
+      BOOST_FOREACH(const Values::ConstFiltered<Point2>::KeyValuePair& it, result.filter<Point2>())
+        os2 << it.key << "\t" << it.value.x() << "\t" << it.value.y() << "\t1"
+            << endl;
+      if (smart) {
+        BOOST_FOREACH(size_t jj,ids) {
+          Point2 landmark = smartFactors[jj]->triangulate(result);
+          os3 << jj << "\t" << landmark.x() << "\t" << landmark.y() << "\t1"
+              << endl;
+        }
+      }
     }
     i += 1;
+    if (i>end) break;
     //--------------------------------- odometry loop -----------------------------------------
   } // BOOST_FOREACH
   gttoc_(iSAM);
@@ -202,11 +255,6 @@ int main(int argc, char** argv) {
 
   // Write result to file
   Values result = isam.calculateEstimate();
-  ofstream os2(
-      "/Users/dellaert/borg/gtsam/gtsam_unstable/examples/rangeResultLM.txt");
-  BOOST_FOREACH(const Values::ConstFiltered<Point2>::KeyValuePair& it, result.filter<Point2>())
-    os2 << it.key << "\t" << it.value.x() << "\t" << it.value.y() << "\t1"
-        << endl;
   ofstream os(
       "/Users/dellaert/borg/gtsam/gtsam_unstable/examples/rangeResult.txt");
   BOOST_FOREACH(const Values::ConstFiltered<Pose2>::KeyValuePair& it, result.filter<Pose2>())
