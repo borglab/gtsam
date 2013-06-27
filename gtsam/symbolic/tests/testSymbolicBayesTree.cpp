@@ -49,7 +49,7 @@ static SymbolicConditionalUnordered::shared_ptr ELB(
   SymbolicConditionalUnordered::FromKeys(list_of(_E_)(_L_)(_B_), 3)));
 
 /* ************************************************************************* */
-TEST_UNSAFE( BayesTree, constructor )
+TEST_UNSAFE( SymbolicBayesTree, constructor )
 {
   // Create using insert
   //SymbolicBayesTreeUnordered bayesTree = createAsiaSymbolicBayesTree();
@@ -91,18 +91,18 @@ TEST_UNSAFE( BayesTree, constructor )
 //  CHECK(assert_equal(_L_, bayesTree.findParentClique(parents3)));
 }
 
-///* ************************************************************************* */
-//TEST(BayesTree, clear)
-//{
-////  SymbolicBayesTreeUnordered bayesTree = createAsiaSymbolicBayesTree();
-////  bayesTree.clear();
-////
-////  SymbolicBayesTreeUnordered expected;
-////
-////  // Check whether cleared BayesTree is equal to a new BayesTree
-////  CHECK(assert_equal(expected, bayesTree));
-//}
-//
+/* ************************************************************************* */
+TEST(SymbolicBayesTree, clear)
+{
+  SymbolicBayesTreeUnordered bayesTree = asiaBayesTree;
+  bayesTree.clear();
+
+  SymbolicBayesTreeUnordered expected;
+
+  // Check whether cleared BayesTree is equal to a new BayesTree
+  CHECK(assert_equal(expected, bayesTree));
+}
+
 ///* ************************************************************************* *
 //Bayes Tree for testing conversion to a forest of orphans needed for incremental.
 //       A,B
