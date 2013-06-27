@@ -26,6 +26,21 @@
 
 namespace gtsam {
 
+  /// Traits class for eliminateable factor graphs, specifies the types that result from
+  /// elimination, etc.  This must be defined for each factor graph that inherits from
+  /// EliminateableFactorGraph.
+  template<class GRAPH>
+  class EliminationTraits
+  {
+    // Template for deriving:
+    // typedef MyFactor FactorType;                   // Type of factors in factor graph (e.g. GaussianFactor, SymbolicFactor)
+    // typedef MyBayesNet BayesNetType;               // Type of Bayes net from sequential elimination (e.g. GaussianBayesNet)
+    // typedef MyEliminationTree EliminationTreeType; // Type of elimination tree (e.g. GaussianEliminationTree)
+    // typedef MyBayesTree BayesTreeType;             // Type of Bayes tree (e.g. GaussianBayesTree)
+    // typedef MyJunctionTree JunctionTreeType;       // Type of Junction tree (e.g. GaussianJunctionTree)
+  };
+
+
   /** EliminateableFactorGraph is a base class for factor graphs that contains elimination
    *  algorithms.  Any factor graph holding eliminateable factors can derive from this class to
    *  expose functions for computing marginals, conditional marginals, doing multifrontal and

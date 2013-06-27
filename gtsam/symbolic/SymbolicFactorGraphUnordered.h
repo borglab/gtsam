@@ -32,6 +32,13 @@ namespace gtsam { class SymbolicJunctionTreeUnordered; }
 
 namespace gtsam {
 
+  class SymbolicFactorGraphUnordered;
+
+  template<> class EliminationTraits<SymbolicFactorGraphUnordered>
+  {
+
+  };
+
   /** Symbolic Factor Graph
    *  \nosubgrouping
    */
