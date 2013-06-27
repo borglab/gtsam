@@ -56,6 +56,10 @@ namespace gtsam {
   static const KeyFormatter DefaultKeyFormatter = &_defaultKeyFormatter;
 
 
+  /// The index type for Eigen objects
+  typedef ptrdiff_t DenseIndex;
+
+
   /**
    * Helper class that uses templates to select between two types based on
    * whether TEST_TYPE is const or not.

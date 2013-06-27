@@ -32,12 +32,14 @@ namespace gtsam {
    * class for conditionals.
    * \nosubgrouping
    */
-  class GTSAM_EXPORT SymbolicConditionalUnordered : public SymbolicFactorUnordered, public ConditionalUnordered<SymbolicFactorUnordered,SymbolicConditionalUnordered> {
+  class GTSAM_EXPORT SymbolicConditionalUnordered :
+    public SymbolicFactorUnordered,
+    public ConditionalUnordered<SymbolicFactorUnordered, SymbolicConditionalUnordered> {
 
   public:
     typedef SymbolicConditionalUnordered This; /// Typedef to this class
     typedef SymbolicFactorUnordered BaseFactor; /// Typedef to the factor base class
-    typedef ConditionalUnordered<SymbolicFactorUnordered,SymbolicConditionalUnordered> BaseConditional; /// Typedef to the conditional base class
+    typedef ConditionalUnordered<BaseFactor, This> BaseConditional; /// Typedef to the conditional base class
     typedef boost::shared_ptr<This> shared_ptr; /// Boost shared_ptr to this class
     typedef BaseFactor::iterator iterator; /// iterator to keys
     typedef BaseFactor::const_iterator const_iterator; /// const_iterator to keys

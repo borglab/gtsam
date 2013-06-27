@@ -43,10 +43,10 @@ namespace gtsam {
     size_t nrFrontals_;
 
     /** Iterator over keys */
-    typedef typename FACTOR::iterator iterator;
+    using typename FACTOR::iterator; // 'using' instead of typedef to avoid ambiguous symbol from multiple inheritance
 
     /** Const iterator over keys */
-    typedef typename FACTOR::const_iterator const_iterator;
+    using typename FACTOR::const_iterator; // 'using' instead of typedef to avoid ambiguous symbol from multiple inheritance
 
   public:
 

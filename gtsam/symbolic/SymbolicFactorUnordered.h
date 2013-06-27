@@ -19,6 +19,7 @@
 
 #include <utility>
 #include <boost/shared_ptr.hpp>
+#include <boost/assign/list_of.hpp>
 
 #include <gtsam/inference/FactorUnordered.h>
 #include <gtsam/inference/Key.h>
@@ -54,41 +55,47 @@ namespace gtsam {
     SymbolicFactorUnordered() {}
 
     /** Construct unary factor */
-    SymbolicFactorUnordered(Key j) : Base(j) {}
+    SymbolicFactorUnordered(Key j) :
+      Base(boost::assign::cref_list_of<1>(j)) {}
 
     /** Construct binary factor */
-    SymbolicFactorUnordered(Key j1, Key j2) : Base(j1, j2) {}
+    SymbolicFactorUnordered(Key j1, Key j2) :
+      Base(boost::assign::cref_list_of<2>(j1)(j2)) {}
 
     /** Construct ternary factor */
-    SymbolicFactorUnordered(Key j1, Key j2, Key j3) : Base(j1, j2, j3) {}
+    SymbolicFactorUnordered(Key j1, Key j2, Key j3) :
+      Base(boost::assign::cref_list_of<3>(j1)(j2)(j3)) {}
 
     /** Construct 4-way factor */
-    SymbolicFactorUnordered(Key j1, Key j2, Key j3, Key j4) : Base(j1, j2, j3, j4) {}
+    SymbolicFactorUnordered(Key j1, Key j2, Key j3, Key j4) :
+      Base(boost::assign::cref_list_of<4>(j1)(j2)(j3)(j4)) {}
 
     /** Construct 5-way factor */
-    SymbolicFactorUnordered(Key j1, Key j2, Key j3, Key j4, Key j5) : Base(j1, j2, j3, j4, j5) {}
+    SymbolicFactorUnordered(Key j1, Key j2, Key j3, Key j4, Key j5) :
+      Base(boost::assign::cref_list_of<5>(j1)(j2)(j3)(j4)(j5)) {}
 
     /** Construct 6-way factor */
-    SymbolicFactorUnordered(Key j1, Key j2, Key j3, Key j4, Key j5, Key j6) : Base(j1, j2, j3, j4, j5, j6) {}
+    SymbolicFactorUnordered(Key j1, Key j2, Key j3, Key j4, Key j5, Key j6) :
+      Base(boost::assign::cref_list_of<6>(j1)(j2)(j3)(j4)(j5)(j6)) {}
 
     /// @}
     
     /// @name Advanced Constructors
     /// @{
+  private:
+    explicit SymbolicFactorUnordered(const Base& base) :
+      Base(base) {}
 
+  public:
     /** Constructor from a collection of keys */
     template<typename KEYITERATOR>
     static SymbolicFactorUnordered FromIterator(KEYITERATOR beginKey, KEYITERATOR endKey) {
-      SymbolicFactorUnordered result;
-      (Base&)result = Base::FromIterator(beginKey, endKey);
-      return result; }
+      return SymbolicFactorUnordered(Base::FromIterators(beginKey, endKey)); }
 
     /** Constructor from a collection of keys */
     template<class CONTAINER>
     static SymbolicFactorUnordered FromKeys(const CONTAINER& keys) {
-      SymbolicFactorUnordered result;
-      (Base&)result = Base::FromKeys(keys);
-      return result; }
+      return SymbolicFactorUnordered(Base::FromKeys(keys)); }
 
     /// @}
 
