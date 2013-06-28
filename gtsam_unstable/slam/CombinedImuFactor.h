@@ -104,8 +104,7 @@ namespace gtsam {
           const Matrix3& integrationErrorCovariance, ///< Covariance matrix of measuredAcc
           const Matrix3& biasAccCovariance, ///< Covariance matrix of biasAcc
           const Matrix3& biasOmegaCovariance, ///< Covariance matrix of biasOmega
-          const Matrix3& biasAccInit, ///< Covariance of biasAcc when preintegrating measurements
-          const Matrix3& biasOmegaInit, ///< Covariance of biasOmega when preintegrating measurements
+          const Matrix& biasAccOmegaInit, ///< Covariance of biasAcc & biasOmega when preintegrating measurements
           const Vector3& initialRotationRate = Vector3::Zero() ///< initial rotation rate reading from the IMU (at time i)
       ) : biasHat(bias), measurementCovariance(21,21), deltaPij(Vector3::Zero()), deltaVij(Vector3::Zero()), deltaTij(0.0),
       delPdelBiasAcc(Matrix3::Zero()), delPdelBiasOmega(Matrix3::Zero()),
@@ -118,8 +117,9 @@ namespace gtsam {
                                        Matrix3::Zero(),   Matrix3::Zero(), measuredOmegaCovariance, Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(),  Matrix3::Zero(),
                                        Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), biasAccCovariance, Matrix3::Zero(),   Matrix3::Zero(), 		Matrix3::Zero(),
                                        Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), biasOmegaCovariance, Matrix3::Zero(), 		Matrix3::Zero(),
-                                       Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(),     biasAccInit,  			Matrix3::Zero(),
-                                       Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(),     Matrix3::Zero(), 		biasOmegaInit;
+                                       Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(),     biasAccOmegaInit.block(0,0,3,3),  	biasAccOmegaInit.block(0,3,3,3),
+                                       Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(),     biasAccOmegaInit.block(3,0,3,3), 		biasAccOmegaInit.block(3,3,3,3);
+
       }
 
       CombinedPreintegratedMeasurements() :
@@ -279,7 +279,7 @@ namespace gtsam {
 //				(1/deltaT) * G * measurementCovariance * G.transpose() - G_measCov_Gt << "];"<< std::endl;
 
 		// Optimized first order propagation: mathematically equivalente to
-		 PreintMeasCov = F * PreintMeasCov * F.transpose() + (1/deltaT) * G * measurementCovariance * G.transpose();
+		 PreintMeasCov = F * PreintMeasCov * F.transpose() +  G * measurementCovariance * G.transpose();
 //		PreintMeasCov = F * PreintMeasCov * F.transpose() + G_measCov_Gt;
 
 		 // Neglect correlation
@@ -367,7 +367,7 @@ namespace gtsam {
     typedef typename boost::shared_ptr<CombinedImuFactor> shared_ptr;
 
     /** Default constructor - only use for serialization */
-    CombinedImuFactor() : preintegratedMeasurements_(imuBias::ConstantBias(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero()) {}
+    CombinedImuFactor() : preintegratedMeasurements_(imuBias::ConstantBias(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix::Zero(6,6)) {}
 
     /** Constructor */
     CombinedImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias_i, Key bias_j,
