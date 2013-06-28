@@ -452,76 +452,79 @@ namespace gtsam {
 
       const Matrix3 Jtheta = -Jr_theta_bcc  * skewSymmetric(Rot_i.inverse().matrix() * omegaCoriolis_ * deltaTij);
 
-      if(H1) {
-        H1->resize(9,6);
-        (*H1) <<
-            // dfP/dRi
-            Rot_i.matrix() * skewSymmetric(preintegratedMeasurements_.deltaPij
-                + preintegratedMeasurements_.delPdelBiasOmega * biasOmegaIncr + preintegratedMeasurements_.delPdelBiasAcc * biasAccIncr),
-                // dfP/dPi
-                - Rot_i.matrix(),
-                // dfV/dRi
-                Rot_i.matrix() * skewSymmetric(preintegratedMeasurements_.deltaVij
-                    + preintegratedMeasurements_.delVdelBiasOmega * biasOmegaIncr + preintegratedMeasurements_.delVdelBiasAcc * biasAccIncr),
-                    // dfV/dPi
-                    Matrix3::Zero(),
-                    // dfR/dRi
-                    - Rot_j.between(Rot_i).matrix() - fRhat.inverse().matrix() * Jtheta,
-                    // dfR/dPi
-                    Matrix3::Zero();
-      }
-      if(H2) {
-        H2->resize(9,3);
-        (*H2) <<
-            // dfP/dVi
-            - Matrix3::Identity() * deltaTij
-            + skewSymmetric(omegaCoriolis_) * deltaTij * deltaTij,  // Coriolis term - we got rid of the 2 wrt ins paper
-            // dfV/dVi
-            - Matrix3::Identity()
-        + 2 * skewSymmetric(omegaCoriolis_) * deltaTij, // Coriolis term
-        // dfR/dVi
-        Matrix3::Zero();
+      // Log Jacobian
+            const Matrix3 Jrinv_fRhat = rightJacobianExpMapSO3inverse(Rot3::Logmap(fRhat));
 
-      }
-      if(H3) {
+            if(H1) {
+              H1->resize(9,6);
+              (*H1) <<
+                  // dfP/dRi
+                  Rot_i.matrix() * skewSymmetric(preintegratedMeasurements_.deltaPij
+                      + preintegratedMeasurements_.delPdelBiasOmega * biasOmegaIncr + preintegratedMeasurements_.delPdelBiasAcc * biasAccIncr),
+                      // dfP/dPi
+                      - Rot_i.matrix(),
+                      // dfV/dRi
+                      Rot_i.matrix() * skewSymmetric(preintegratedMeasurements_.deltaVij
+                          + preintegratedMeasurements_.delVdelBiasOmega * biasOmegaIncr + preintegratedMeasurements_.delVdelBiasAcc * biasAccIncr),
+                          // dfV/dPi
+                          Matrix3::Zero(),
+                          // dfR/dRi
+                          Jrinv_fRhat *  (- Rot_j.between(Rot_i).matrix() - fRhat.inverse().matrix() * Jtheta), // ASPN change Luca
+                          // dfR/dPi
+                          Matrix3::Zero();
+            }
+            if(H2) {
+              H2->resize(9,3);
+              (*H2) <<
+                  // dfP/dVi
+                  - Matrix3::Identity() * deltaTij
+                  + skewSymmetric(omegaCoriolis_) * deltaTij * deltaTij,  // Coriolis term - we got rid of the 2 wrt ins paper
+                  // dfV/dVi
+                  - Matrix3::Identity()
+              + 2 * skewSymmetric(omegaCoriolis_) * deltaTij, // Coriolis term
+              // dfR/dVi
+              Matrix3::Zero();
 
-        H3->resize(9,6);
-        (*H3) <<
-            // dfP/dPosej
-            Matrix3::Zero(), Rot_j.matrix(),
-            // dfV/dPosej
-            Matrix::Zero(3,6),
-            // dfR/dPosej
-            Matrix3::Identity() , Matrix3::Zero();
-      }
-      if(H4) {
-        H4->resize(9,3);
-        (*H4) <<
-            // dfP/dVj
-            Matrix3::Zero(),
-            // dfV/dVj
-            Matrix3::Identity(),
-            // dfR/dVj
-            Matrix3::Zero();
-      }
-      if(H5) {
+            }
+            if(H3) {
 
-        const Matrix3 Jrinv_theta_bc = rightJacobianExpMapSO3inverse(theta_biascorrected);
-        const Matrix3 Jr_JbiasOmegaIncr = rightJacobianExpMapSO3(preintegratedMeasurements_.delRdelBiasOmega * biasOmegaIncr);
-        const Matrix3 JbiasOmega = Jr_theta_bcc * Jrinv_theta_bc * Jr_JbiasOmegaIncr * preintegratedMeasurements_.delRdelBiasOmega;
+              H3->resize(9,6);
+              (*H3) <<
+                  // dfP/dPosej
+                  Matrix3::Zero(), Rot_j.matrix(),
+                  // dfV/dPosej
+                  Matrix::Zero(3,6),
+                  // dfR/dPosej
+                  Jrinv_fRhat *  ( Matrix3::Identity() ), Matrix3::Zero(); // ASPN change Luca
+            }
+            if(H4) {
+              H4->resize(9,3);
+              (*H4) <<
+                  // dfP/dVj
+                  Matrix3::Zero(),
+                  // dfV/dVj
+                  Matrix3::Identity(),
+                  // dfR/dVj
+                  Matrix3::Zero();
+            }
+            if(H5) {
 
-        H5->resize(9,6);
-        (*H5) <<
-            // dfP/dBias
-            - Rot_i.matrix() * preintegratedMeasurements_.delPdelBiasAcc,
-            - Rot_i.matrix() * preintegratedMeasurements_.delPdelBiasOmega,
-            // dfV/dBias
-            - Rot_i.matrix() * preintegratedMeasurements_.delVdelBiasAcc,
-            - Rot_i.matrix() * preintegratedMeasurements_.delVdelBiasOmega,
-            // dfR/dBias
-            Matrix::Zero(3,3),
-            - fRhat.inverse().matrix() * JbiasOmega;
-      }
+              const Matrix3 Jrinv_theta_bc = rightJacobianExpMapSO3inverse(theta_biascorrected);
+              const Matrix3 Jr_JbiasOmegaIncr = rightJacobianExpMapSO3(preintegratedMeasurements_.delRdelBiasOmega * biasOmegaIncr);
+              const Matrix3 JbiasOmega = Jr_theta_bcc * Jrinv_theta_bc * Jr_JbiasOmegaIncr * preintegratedMeasurements_.delRdelBiasOmega;
+
+              H5->resize(9,6);
+              (*H5) <<
+                  // dfP/dBias
+                  - Rot_i.matrix() * preintegratedMeasurements_.delPdelBiasAcc,
+                  - Rot_i.matrix() * preintegratedMeasurements_.delPdelBiasOmega,
+                  // dfV/dBias
+                  - Rot_i.matrix() * preintegratedMeasurements_.delVdelBiasAcc,
+                  - Rot_i.matrix() * preintegratedMeasurements_.delVdelBiasOmega,
+                  // dfR/dBias
+                  Matrix::Zero(3,3),
+                  Jrinv_fRhat * ( - fRhat.inverse().matrix() * JbiasOmega);// ASPN change Luca
+            }
 
       // Evaluate residual error
       /* ---------------------------------------------------------------------------------------------------- */
