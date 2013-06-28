@@ -134,7 +134,7 @@ namespace gtsam {
     GaussianConditionalUnordered::const_iterator it;
     for (it = beginParents(); it!= endParents(); it++) {
       const Index i = *it;
-      transposeMultiplyAdd(-1.0,getA(it),frontalVec,gy[i]);
+      gtsam::transposeMultiplyAdd(-1.0, getA(it), frontalVec, gy[i]);
     }
     internal::writeVectorValuesSlices(frontalVec, gy, beginFrontals(), endFrontals());
   }
@@ -142,7 +142,8 @@ namespace gtsam {
   /* ************************************************************************* */
   void GaussianConditionalUnordered::scaleFrontalsBySigma(VectorValuesUnordered& gy) const {
     Vector frontalVec = internal::extractVectorValuesSlices(gy, beginFrontals(), endFrontals());
-    frontalVec = emul(frontalVec, get_sigmas());
+    if(model_)
+      frontalVec.array() *= model_->sigmas().array();
     internal::writeVectorValuesSlices(frontalVec, gy, beginFrontals(), endFrontals());
   }
 

@@ -118,12 +118,25 @@ namespace gtsam {
      *         collection of keys and matrices making up the factor. */
     template<typename TERMS>
     JacobianFactorUnordered(const TERMS&terms, const Vector &b, const SharedDiagonal& model);
+
+    /** Constructor with arbitrary number keys, and where the augmented matrix is given all together
+     *  instead of in block terms.  Note that only the active view of the provided augmented matrix
+     *  is used, and that the matrix data is copied into a newly-allocated matrix in the constructed
+     *  factor. */
+    template<typename KEYS>
+    JacobianFactorUnordered(
+      const KEYS& keys, const VerticalBlockMatrix& augmentedMatrix, const SharedDiagonal& sigmas);
     
     /** Convert from a HessianFactor (does Cholesky) */
     //JacobianFactorUnordered(const HessianFactor& factor);
 
-    /** Build a dense joint factor from all the factors in a factor graph. */
-    explicit JacobianFactorUnordered(const GaussianFactorGraphUnordered& gfg);
+    /**
+     * Build a dense joint factor from all the factors in a factor graph.  If a VariableSlots
+     * structure computed for \c graph is already available, providing it will reduce the amount of
+     * computation performed. */
+    explicit JacobianFactorUnordered(
+      const GaussianFactorGraphUnordered& graph,
+      boost::optional<const VariableSlots&> variableSlots = boost::none);
 
     /** Virtual destructor */
     virtual ~JacobianFactorUnordered() {}

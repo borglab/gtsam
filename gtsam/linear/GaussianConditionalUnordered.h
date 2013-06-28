@@ -52,32 +52,36 @@ namespace gtsam {
     GaussianConditionalUnordered(Index key, const Vector& d, const Matrix& R, const SharedDiagonal& sigmas);
 
     /** constructor with only one parent
-    * |Rx+Sy-d|
-    */
+     * |Rx+Sy-d| */
     GaussianConditionalUnordered(Index key, const Vector& d, const Matrix& R,
       Index name1, const Matrix& S, const SharedDiagonal& sigmas);
 
     /** constructor with two parents
-    * |Rx+Sy+Tz-d|
-    */
+     * |Rx+Sy+Tz-d| */
     GaussianConditionalUnordered(Index key, const Vector& d, const Matrix& R,
       Index name1, const Matrix& S, Index name2, const Matrix& T, const SharedDiagonal& sigmas);
 
-    /**
-     * Constructor with number of arbitrary parents.  \f$ |Rx+sum(Ai*xi)-d| \f$
+    /** Constructor with number of arbitrary parents.  \f$ |Rx+sum(Ai*xi)-d| \f$
      * @tparam PARENTS A container whose value type is std::pair<Key, Matrix>, specifying the
      *         collection of parent keys and matrices. */
     template<typename PARENTS>
     GaussianConditionalUnordered(Index key, const Vector& d,
       const Matrix& R, const PARENTS& parents, const SharedDiagonal& sigmas);
 
-    /** 
-    *   Constructor with arbitrary number of frontals and parents.
+    /** Constructor with arbitrary number of frontals and parents.
     *   @tparam TERMS A container whose value type is std::pair<Key, Matrix>, specifying the
     *           collection of keys and matrices making up the conditional. */
     template<typename TERMS>
     GaussianConditionalUnordered(const TERMS& terms,
       size_t nrFrontals, const Vector& d, const SharedDiagonal& sigmas);
+
+    /** Constructor with arbitrary number keys, and where the augmented matrix is given all together
+     *  instead of in block terms.  Note that only the active view of the provided augmented matrix
+     *  is used, and that the matrix data is copied into a newly-allocated matrix in the constructed
+     *  factor. */
+    template<typename KEYS>
+    GaussianConditionalUnordered(
+      const KEYS& keys, size_t nrFrontals const VerticalBlockMatrix& augmentedMatrix, const SharedDiagonal& sigmas);
 
     /** Combine several GaussianConditional into a single dense GC.  The conditionals enumerated by
     *   \c first and \c last must be in increasing order, meaning that the parents of any
@@ -99,10 +103,9 @@ namespace gtsam {
     /** Return a view of the upper-triangular R block of the conditional */
     constABlock get_R() const { return Ab_.range(0, nrFrontals()); }
 
-    /** Get a view of the parent block corresponding to the variable pointed to by the given key iterator (non-const version) */
+    /** Get a view of the parent blocks. */
     constABlock get_S() const { return Ab_.range(nrFrontals(), size()); }
 
-  public:
     /**
     * Solves a conditional Gaussian and writes the solution into the entries of
     * \c x for each frontal variable of the conditional.  The parents are

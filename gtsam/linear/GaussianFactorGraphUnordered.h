@@ -24,138 +24,111 @@
 #include <gtsam/inference/FactorGraphUnordered.h>
 #include <gtsam/inference/EliminateableFactorGraph.h>
 #include <gtsam/linear/GaussianFactorUnordered.h>
+#include <gtsam/linear/JacobianFactorUnordered.h>
 
 namespace gtsam {
 
-  // Forward declaration to use as default argument, documented declaration below.
-  GTSAM_EXPORT FactorGraph<GaussianFactor>::EliminationResult
-    EliminateQR(const FactorGraph<GaussianFactor>& factors, size_t nrFrontals);
+  // Forward declarations
+  class GaussianFactorGraphUnordered;
+  class GaussianFactorUnordered;
+  class GaussianConditionalUnordered;
+  class GaussianBayesNetUnordered;
+  class GaussianEliminationTreeUnordered;
+  class GaussianBayesTreeUnordered;
+  class GaussianJunctionTreeUnordered;
 
+  // Forward declaration to use as default elimination function, documented declaration below.
+  GTSAM_EXPORT
+    std::pair<boost::shared_ptr<GaussianConditionalUnordered>, boost::shared_ptr<GaussianFactorUnordered> >
+    EliminateQRUnordered(
+    const std::vector<boost::shared_ptr<GaussianFactorUnordered> >& factors, const std::vector<Key>& keys);
+
+  /* ************************************************************************* */
+  template<> class EliminationTraits<GaussianFactorGraphUnordered>
+  {
+    typedef GaussianFactorUnordered FactorType;                   ///< Type of factors in factor graph
+    typedef GaussianConditionalUnordered ConditionalType;         ///< Type of conditionals from elimination
+    typedef GaussianBayesNetUnordered BayesNetType;               ///< Type of Bayes net from sequential elimination
+    typedef GaussianEliminationTreeUnordered EliminationTreeType; ///< Type of elimination tree
+    typedef GaussianBayesTreeUnordered BayesTreeType;             ///< Type of Bayes tree
+    typedef GaussianJunctionTreeUnordered JunctionTreeType;       ///< Type of Junction tree
+    /// The default dense elimination function
+    static std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> >
+      DefaultEliminate(const std::vector<boost::shared_ptr<FactorType> >& factors,
+      const std::vector<Key>& keys) { return EliminateQRUnordered(factors, keys); }
+  };
+
+  /* ************************************************************************* */
   /**
    * A Linear Factor Graph is a factor graph where all factors are Gaussian, i.e.
    *   Factor == GaussianFactor
    *   VectorValues = A values structure of vectors
    * Most of the time, linear factor graphs arise by linearizing a non-linear factor graph.
    */
-  class GaussianFactorGraph : public FactorGraph<GaussianFactor> {
+  class GTSAM_EXPORT GaussianFactorGraphUnordered :
+    public FactorGraphUnordered<GaussianFactorUnordered>,
+    public EliminateableFactorGraph<GaussianFactorGraphUnordered>
+  {
   public:
 
-    typedef boost::shared_ptr<GaussianFactorGraph> shared_ptr;
-    typedef FactorGraph<GaussianFactor> Base;
+    typedef GaussianFactorGraphUnordered This; ///< Typedef to this class
+    typedef FactorGraphUnordered<GaussianFactorUnordered> Base; ///< Typedef to base factor graph type
+    typedef EliminateableFactorGraph<This> BaseEliminateable; ///< Typedef to base elimination class
+    typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
-    /**
-     * Default constructor 
-     */
-    GaussianFactorGraph() {}
+    /** Default constructor */
+    GaussianFactorGraphUnordered() {}
 
-    /**
-     * Constructor that receives a Chordal Bayes Net and returns a GaussianFactorGraph
-     */
-    GTSAM_EXPORT GaussianFactorGraph(const GaussianBayesNet& CBN);
-
-    /**
-     * Constructor that receives a BayesTree and returns a GaussianFactorGraph
-     */
-    template<class CLIQUE>
-    GaussianFactorGraph(const BayesTree<GaussianConditional,CLIQUE>& gbt) : Base(gbt) {}
+    /** Constructor that receives a BayesTree and returns a GaussianFactorGraph */
+    GaussianFactorGraphUnordered(const GaussianBayesTreeUnordered& gbt) {
+      push_back_bayesTree(gbt); }
 
     /** Constructor from a factor graph of GaussianFactor or a derived type */
     template<class DERIVEDFACTOR>
-    GaussianFactorGraph(const FactorGraph<DERIVEDFACTOR>& fg) {
-      push_back(fg);
-    }
+    GaussianFactorGraphUnordered(const FactorGraphUnordered<DERIVEDFACTOR>& fg) : Base(fg.begin(), fg.end()) {}
 
     /** Add a factor by value - makes a copy */
-    void add(const GaussianFactor& factor) {
-      factors_.push_back(factor.clone());
-    }
+    void add(const GaussianFactorUnordered& factor) { factors_.push_back(factor.clone()); }
 
     /** Add a factor by pointer - stores pointer without copying the factor */
-    void add(const sharedFactor& factor) {
-      factors_.push_back(factor);
-    }
+    void add(const sharedFactor& factor) { factors_.push_back(factor); }
 
     /** Add a null factor */
     void add(const Vector& b) {
-      add(JacobianFactor(b));
-    }
+      add(JacobianFactorUnordered(b)); }
 
     /** Add a unary factor */
-    void add(Index key1, const Matrix& A1,
+    void add(Key key1, const Matrix& A1,
         const Vector& b, const SharedDiagonal& model) {
-      add(JacobianFactor(key1,A1,b,model));
-    }
+      add(JacobianFactorUnordered(key1,A1,b,model)); }
 
     /** Add a binary factor */
-    void add(Index key1, const Matrix& A1,
-        Index key2, const Matrix& A2,
+    void add(Key key1, const Matrix& A1,
+        Key key2, const Matrix& A2,
         const Vector& b, const SharedDiagonal& model) {
-      add(JacobianFactor(key1,A1,key2,A2,b,model));
-    }
+      add(JacobianFactorUnordered(key1,A1,key2,A2,b,model)); }
 
     /** Add a ternary factor */
-    void add(Index key1, const Matrix& A1,
-        Index key2, const Matrix& A2,
-        Index key3, const Matrix& A3,
+    void add(Key key1, const Matrix& A1,
+        Key key2, const Matrix& A2,
+        Key key3, const Matrix& A3,
         const Vector& b, const SharedDiagonal& model) {
-      add(JacobianFactor(key1,A1,key2,A2,key3,A3,b,model));
-    }
+      add(JacobianFactorUnordered(key1,A1,key2,A2,key3,A3,b,model)); }
 
     /** Add an n-ary factor */
-    void add(const std::vector<std::pair<Index, Matrix> > &terms,
-        const Vector &b, const SharedDiagonal& model) {
-      add(JacobianFactor(terms,b,model));
-    }
+    template<class TERMS>
+    void add(const TERMS& terms, const Vector &b, const SharedDiagonal& model) {
+      add(JacobianFactorUnordered(terms,b,model)); }
 
     /**
      * Return the set of variables involved in the factors (computes a set
      * union).
      */
-    typedef FastSet<Index> Keys;
-    GTSAM_EXPORT Keys keys() const;
-
-        
-    /** Eliminate the first \c n frontal variables, returning the resulting
-     * conditional and remaining factor graph - this is very inefficient for
-     * eliminating all variables, to do that use EliminationTree or
-     * JunctionTree.  Note that this version simply calls
-     * FactorGraph<GaussianFactor>::eliminateFrontals with EliminateQR as the
-     * eliminate function argument.
-     */
-    std::pair<sharedConditional, GaussianFactorGraph> eliminateFrontals(size_t nFrontals, const Eliminate& function = EliminateQR) const {
-      return Base::eliminateFrontals(nFrontals, function); }
-        
-    /** Factor the factor graph into a conditional and a remaining factor graph.
-     * Given the factor graph \f$ f(X) \f$, and \c variables to factorize out
-     * \f$ V \f$, this function factorizes into \f$ f(X) = f(V;Y)f(Y) \f$, where
-     * \f$ Y := X\V \f$ are the remaining variables.  If \f$ f(X) = p(X) \f$ is
-     * a probability density or likelihood, the factorization produces a
-     * conditional probability density and a marginal \f$ p(X) = p(V|Y)p(Y) \f$.
-     *
-     * For efficiency, this function treats the variables to eliminate
-     * \c variables as fully-connected, so produces a dense (fully-connected)
-     * conditional on all of the variables in \c variables, instead of a sparse
-     * BayesNet.  If the variables are not fully-connected, it is more efficient
-     * to sequentially factorize multiple times.
-     * Note that this version simply calls
-     * FactorGraph<GaussianFactor>::eliminate with EliminateQR as the eliminate
-     * function argument.
-     */
-    std::pair<sharedConditional, GaussianFactorGraph> eliminate(const std::vector<Index>& variables, const Eliminate& function = EliminateQR) const {
-      return Base::eliminate(variables, function); }
-
-    /** Eliminate a single variable, by calling GaussianFactorGraph::eliminate. */
-    std::pair<sharedConditional, GaussianFactorGraph> eliminateOne(Index variable, const Eliminate& function = EliminateQR) const {
-      return Base::eliminateOne(variable, function); }
-
-    /** Permute the variables in the factors */
-    GTSAM_EXPORT void permuteWithInverse(const Permutation& inversePermutation);
-
-    /** Apply a reduction, which is a remapping of variable indices. */
-    GTSAM_EXPORT void reduceWithInverse(const internal::Reduction& inverseReduction);
+    typedef FastSet<Key> Keys;
+    Keys keys() const;
 
     /** unnormalized error */
-    double error(const VectorValues& x) const {
+    double error(const VectorValuesUnordered& x) const {
       double total_error = 0.;
       BOOST_FOREACH(const sharedFactor& factor, *this)
         total_error += factor->error(x);
@@ -163,7 +136,7 @@ namespace gtsam {
     }
 
     /** Unnormalized probability. O(n) */
-    double probPrime(const VectorValues& c) const {
+    double probPrime(const VectorValuesUnordered& c) const {
       return exp(-0.5 * error(c));
     }
 
@@ -173,28 +146,21 @@ namespace gtsam {
      * @param lfg2 Linear factor graph
      * @return a new combined factor graph
      */
-    GTSAM_EXPORT static GaussianFactorGraph combine2(const GaussianFactorGraph& lfg1,
-        const GaussianFactorGraph& lfg2);
-
-    /**
-     * combine two factor graphs
-     * @param *lfg Linear factor graph
-     */
-    GTSAM_EXPORT void combine(const GaussianFactorGraph &lfg);
+    static This combine2(const This& lfg1, const This& lfg2);
 
     /**
      * Return vector of i, j, and s to generate an m-by-n sparse Jacobian matrix,
      * where i(k) and j(k) are the base 0 row and column indices, s(k) a double.
      * The standard deviations are baked into A and b
      */
-    GTSAM_EXPORT std::vector<boost::tuple<size_t, size_t, double> > sparseJacobian() const;
+    std::vector<boost::tuple<size_t, size_t, double> > sparseJacobian() const;
 
     /**
      * Matrix version of sparseJacobian: generates a 3*m matrix with [i,j,s] entries
      * such that S(i(k),j(k)) = s(k), which can be given to MATLAB's sparse.
      * The standard deviations are baked into A and b
      */
-    GTSAM_EXPORT Matrix sparseJacobian_() const;
+    Matrix sparseJacobian_() const;
 
     /**
      * Return a dense \f$ [ \;A\;b\; ] \in \mathbb{R}^{m \times n+1} \f$
@@ -203,7 +169,7 @@ namespace gtsam {
      * \f$ \frac{1}{2} \Vert Ax-b \Vert^2 \f$.  See also
      * GaussianFactorGraph::jacobian and GaussianFactorGraph::sparseJacobian.
      */
-    GTSAM_EXPORT Matrix augmentedJacobian() const;
+    Matrix augmentedJacobian() const;
 
     /**
      * Return the dense Jacobian \f$ A \f$ and right-hand-side \f$ b \f$,
@@ -212,7 +178,7 @@ namespace gtsam {
      * GaussianFactorGraph::augmentedJacobian and
      * GaussianFactorGraph::sparseJacobian.
      */
-    GTSAM_EXPORT std::pair<Matrix,Vector> jacobian() const;
+    std::pair<Matrix,Vector> jacobian() const;
 
     /**
      * Return a dense \f$ \Lambda \in \mathbb{R}^{n+1 \times n+1} \f$ Hessian
@@ -225,7 +191,7 @@ namespace gtsam {
      and the negative log-likelihood is
      \f$ \frac{1}{2} x^T \Lambda x + \eta^T x + c \f$.
      */
-    GTSAM_EXPORT Matrix augmentedHessian() const;
+    Matrix augmentedHessian() const;
 
     /**
      * Return the dense Hessian \f$ \Lambda \f$ and information vector
@@ -233,7 +199,7 @@ namespace gtsam {
      * is \frac{1}{2} x^T \Lambda x + \eta^T x + c.  See also
      * GaussianFactorGraph::augmentedHessian.
      */
-    GTSAM_EXPORT std::pair<Matrix,Vector> hessian() const;
+    std::pair<Matrix,Vector> hessian() const;
 
   private:
     /** Serialization function */

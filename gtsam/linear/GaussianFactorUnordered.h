@@ -55,7 +55,7 @@ namespace gtsam {
     virtual bool equals(const GaussianFactorUnordered& lf, double tol = 1e-9) const = 0;
 
     /** Print for testable */
-    virtual double error(const VectorValues& c) const = 0; /**  0.5*(A*x-b)'*D*(A*x-b) */
+    virtual double error(const VectorValuesUnordered& c) const = 0; /**  0.5*(A*x-b)'*D*(A*x-b) */
 
     /** Return the dimension of the variable pointed to by the given key iterator */
     virtual size_t getDim(const_iterator variable) const = 0;

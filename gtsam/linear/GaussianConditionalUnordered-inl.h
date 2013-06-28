@@ -38,9 +38,15 @@ namespace gtsam {
   BaseFactor(terms, d, sigmas), BaseConditional(nrFrontals) {}
 
   /* ************************************************************************* */
-  template<typename ITERATOR>
-  GaussianConditional::shared_ptr GaussianConditional::Combine(ITERATOR firstConditional, ITERATOR lastConditional) {
+  template<typename KEYS, class MATRIX>
+  GaussianConditionalUnordered::GaussianConditionalUnordered(
+    const KEYS& keys, size_t nrFrontals, const VerticalBlockMatrix& augmentedMatrix, const SharedDiagonal& sigmas) :
+  BaseFactor(keys, augmentedMatrix, sigmas), BaseConditional(nrFrontals) {}
 
+  /* ************************************************************************* */
+  template<typename ITERATOR>
+  GaussianConditional::shared_ptr GaussianConditional::Combine(ITERATOR firstConditional, ITERATOR lastConditional)
+  {
     // TODO:  check for being a clique
 
     // Get dimensions from first conditional

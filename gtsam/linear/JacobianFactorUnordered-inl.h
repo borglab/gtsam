@@ -33,6 +33,36 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  template<typename KEYS, class MATRIX>
+  JacobianFactorUnordered::JacobianFactorUnordered(
+    const KEYS& keys, const VerticalBlockMatrix& augmentedMatrix, const SharedDiagonal& sigmas) :
+  Base(keys)
+  {
+    // Check noise model dimension
+    if(noiseModel && model->dim() != augmentedMatrix.rows())
+      throw InvalidNoiseModel(augmentedMatrix.rows(), model->dim());
+
+    // Check number of variables
+    if(Base::keys_.size() != augmentedMatrix.nBlocks() - 1)
+      throw std::invalid_argument(
+      "Error in JacobianFactor constructor input.  Number of provided keys plus\n"
+      "one for the RHS vector must equal the number of provided matrix blocks.");
+
+    // Check RHS dimension
+    if(augmentedMatrix(augmentedMatrix.nBlocks() - 1).cols() != 1)
+      throw std::invalid_argument(
+      "Error in JacobianFactor constructor input.  The last provided matrix block\n"
+      "must be the RHS vector, but the last provided block had more than one column.");
+
+    // Allocate and copy matrix - only takes the active view of the provided augmented matrix
+    Ab_ = VerticalBlockMatrix::LikeActiveViewOf(augmentedMatrix);
+    Ab_.full() = augmentedMatrix.full();
+
+    // Take noise model
+    model_ = model;
+  }
+
+  /* ************************************************************************* */
   template<typename TERMS>
   void JacobianFactorUnordered::fillTerms(const TERMS& terms, const Vector& b, const SharedDiagonal& noiseModel)
   {

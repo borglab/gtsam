@@ -43,6 +43,7 @@
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif
+#include <boost/range/algorithm/copy.hpp>
 
 #include <cmath>
 #include <sstream>
@@ -123,21 +124,146 @@ namespace gtsam {
   //}
 
   /* ************************************************************************* */
-  JacobianFactorUnordered::JacobianFactorUnordered(const GaussianFactorGraphUnordered& gfg)
-  {
-    // Cast or convert to Jacobians
-    std::vector<JacobianFactorUnordered::shared_ptr> jacobians;
-    jacobians.reserve(gfg.size());
-    BOOST_FOREACH(const GaussianFactorUnordered::shared_ptr& factor, gfg) {
-      if(factor) {
-        if(JacobianFactorUnordered::shared_ptr jf = boost::dynamic_pointer_cast<JacobianFactorUnordered>(factor))
-          jacobians.push_back(jf);
-        else
-          jacobians.push_back(boost::make_shared<JacobianFactorUnordered>(*factor));
+  // Helper functions for combine constructor
+  namespace {
+    boost::tuple<vector<size_t>, size_t, size_t> _countDims(
+      const std::vector<JacobianFactorUnordered::shared_ptr>& factors, const VariableSlots& variableSlots)
+    {
+      gttic(countDims);
+#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
+      vector<size_t> varDims(variableSlots.size(), numeric_limits<size_t>::max());
+#else
+      vector<size_t> varDims(variableSlots.size());
+#endif
+      size_t m = 0;
+      size_t n = 0;
+      {
+        Index jointVarpos = 0;
+        BOOST_FOREACH(const VariableSlots::value_type& slots, variableSlots) {
+
+          assert(slots.second.size() == factors.size());
+
+          Index sourceFactorI = 0;
+          BOOST_FOREACH(const Index sourceVarpos, slots.second) {
+            if(sourceVarpos < numeric_limits<Index>::max()) {
+              const JacobianFactorUnordered& sourceFactor = *factors[sourceFactorI];
+              size_t vardim = sourceFactor.getDim(sourceFactor.begin() + sourceVarpos);
+#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
+              if(varDims[jointVarpos] == numeric_limits<size_t>::max()) {
+                varDims[jointVarpos] = vardim;
+                n += vardim;
+              } else
+                assert(varDims[jointVarpos] == vardim);
+#else
+              varDims[jointVarpos] = vardim;
+              n += vardim;
+              break;
+#endif
+            }
+            ++ sourceFactorI;
+          }
+          ++ jointVarpos;
+        }
+        BOOST_FOREACH(const JacobianFactorUnordered::shared_ptr& factor, factors) {
+          m += factor->rows();
+        }
       }
+      return boost::make_tuple(varDims, m, n);
     }
 
-    *this = *CombineJacobians(jacobians, VariableSlots(jacobians));
+    /* ************************************************************************* */
+    std::vector<JacobianFactorUnordered::shared_ptr>
+      _convertOrCastToJacobians(const GaussianFactorGraphUnordered& factors)
+    {
+      gttic(Convert_to_Jacobians);
+      std::vector<JacobianFactorUnordered::shared_ptr> jacobians;
+      jacobians.reserve(factors.size());
+      BOOST_FOREACH(const GaussianFactorUnordered::shared_ptr& factor, factors) {
+        if(factor) {
+          if(JacobianFactorUnordered::shared_ptr jf = boost::dynamic_pointer_cast<JacobianFactorUnordered>(factor))
+            jacobians.push_back(jf);
+          else
+            jacobians.push_back(boost::make_shared<JacobianFactorUnordered>(*factor));
+        }
+      }
+      return jacobians;
+    }
+  }
+
+  /* ************************************************************************* */
+  JacobianFactorUnordered::JacobianFactorUnordered(
+    const GaussianFactorGraphUnordered& factors, boost::optional<const VariableSlots&> variableSlots)
+  {
+    gttic(JacobianFactorUnordered_combine_constructor);
+
+    // Compute VariableSlots if one was not provided
+    gttic(Compute_VariableSlots);
+    boost::optional<VariableSlots> computedVariableSlots;
+    if(!variableSlots) {
+      computedVariableSlots = VariableSlots(factors);
+      variableSlots = computedVariableSlots; // Binds reference, does not copy VariableSlots
+    }
+    gttoc(Compute_VariableSlots);
+
+    // Cast or convert to Jacobians
+    std::vector<JacobianFactorUnordered::shared_ptr> jacobians = _convertOrCastToJacobians(factors);
+
+    // Count dimensions
+    vector<size_t> varDims;
+    size_t m, n;
+    boost::tie(varDims, m, n) = _countDims(jacobians, *variableSlots);
+
+    gttic(allocate);
+    Ab_ = VerticalBlockMatrix(boost::join(varDims, cref_list_of<1>(1)), m); // Allocate augmented matrix
+    Base::keys_.resize(variableSlots->size());
+    boost::range::copy(*variableSlots | boost::adaptors::map_keys, Base::keys_.begin()); // Get variable keys from VariableSlots
+    gttoc(allocate);
+
+    gttic(copy_blocks);
+    // Loop over slots in combined factor
+    Index combinedSlot = 0;
+    BOOST_FOREACH(const VariableSlots::value_type& varslot, variableSlots) {
+      JacobianFactorUnordered::ABlock destSlot(this->getA(this->begin()+combinedSlot));
+      // Loop over source jacobians
+      size_t nextRow = 0;
+      for(size_t factorI = 0; factorI < jacobians.size(); ++factorI) {
+        // Slot in source factor
+        const Index sourceSlot = varslot.second[factorI];
+        const size_t sourceRows = jacobians[factorI]->rows();
+        JacobianFactorUnordered::ABlock::RowsBlockXpr destBlock(destSlot.middleRows(nextRow, sourceRows));
+        // Copy if exists in source factor, otherwise set zero
+        if(sourceSlot != numeric_limits<Index>::max())
+          destBlock = jacobians[factorI]->getA(jacobians[factorI]->begin()+sourceSlot);
+        else
+          destBlock.setZero();
+        nextRow += sourceRows;
+      }
+      ++combinedSlot;
+    }
+    gttoc(copy_blocks);
+
+    gttic(copy_vectors);
+    bool anyConstrained = false;
+    boost::optional<Vector> sigmas;
+    // Loop over source jacobians
+    size_t nextRow = 0;
+    for(size_t factorI = 0; factorI < jacobians.size(); ++factorI) {
+      const size_t sourceRows = jacobians[factorI]->rows();
+      this->getb().segment(nextRow, sourceRows) = jacobians[factorI]->getb();
+      if(jacobians[factorI]->get_model()) {
+        // If the factor has a noise model and we haven't yet allocated sigmas, allocate it.
+        if(!sigmas)
+          sigmas = Vector::Constant(m, 1.0);
+        sigmas->segment(nextRow, sourceRows) = jacobians[factorI]->get_model()->sigmas();
+        if (jacobians[factorI]->isConstrained())
+          anyConstrained = true;
+      }
+      nextRow += sourceRows;
+    }
+    gttoc(copy_vectors);
+
+    if(sigmas)
+      this->setModel(anyConstrained, *sigmas);
   }
 
   /* ************************************************************************* */
@@ -300,52 +426,40 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  GaussianConditionalUnordered::shared_ptr JacobianFactorUnordered::splitConditional(size_t nrFrontals) {
-    assert(Ab_.rowStart() == 0 && Ab_.rowEnd() == (size_t) matrix_.rows() && Ab_.firstBlock() == 0);
-    assert(size() >= nrFrontals);
-    assertInvariants();
+  GaussianConditionalUnordered::shared_ptr JacobianFactorUnordered::splitConditional(size_t nrFrontals)
+  {
+    if(nrFrontals > size())
+      throw std::invalid_argument("Requesting to split more variables than exist using JacobianFactor::splitConditional");
 
-    const bool debug = ISDEBUG("JacobianFactor::splitConditional");
-
-    if(debug) cout << "Eliminating " << nrFrontals << " frontal variables" << endl;
-    if(debug) this->print("Splitting JacobianFactor: ");
-
-    size_t frontalDim = Ab_.range(0,nrFrontals).cols();
+    size_t frontalDim = Ab_.range(0, nrFrontals).cols();
 
     // Check for singular factor
     if(model_->dim() < frontalDim)
       throw IndeterminantLinearSystemException(this->keys().front());
 
-    // Extract conditional
+    // Restrict the matrix to be in the first nrFrontals variables and create the conditional
     gttic(cond_Rd);
-
-    // Restrict the matrix to be in the first nrFrontals variables
+    const DenseIndex originalRowEnd = Ab_.rowEnd();
     Ab_.rowEnd() = Ab_.rowStart() + frontalDim;
     const Eigen::VectorBlock<const Vector> sigmas = model_->sigmas().segment(Ab_.rowStart(), Ab_.rowEnd()-Ab_.rowStart());
-    GaussianConditional::shared_ptr conditional(new GaussianConditional(begin(), end(), nrFrontals, Ab_, sigmas));
-    if(debug) conditional->print("Extracted conditional: ");
+    GaussianConditionalUnordered::shared_ptr conditional(boost::make_shared<GaussianConditionalUnordered>(
+      Base::keys_, nrFrontals, Ab_, sigmas));
     Ab_.rowStart() += frontalDim;
     Ab_.firstBlock() += nrFrontals;
+    Ab_.rowEnd() = originalRowEnd;
     gttoc(cond_Rd);
 
-    if(debug) conditional->print("Extracted conditional: ");
-
-    gttic(remaining_factor);
     // Take lower-right block of Ab to get the new factor
-    Ab_.rowEnd() = model_->dim();
+    gttic(remaining_factor);
     keys_.erase(begin(), begin() + nrFrontals);
     // Set sigmas with the right model
-    if (model_->isConstrained())
-      model_ = noiseModel::Constrained::MixedSigmas(sub(model_->sigmas(), frontalDim, model_->dim()));
-    else
-      model_ = noiseModel::Diagonal::Sigmas(sub(model_->sigmas(), frontalDim, model_->dim()));
-    if(debug) this->print("Eliminated factor: ");
-    assert(Ab_.rows() <= Ab_.cols()-1);
+    if(model_) {
+      if (model_->isConstrained())
+        model_ = noiseModel::Constrained::MixedSigmas(model_->sigmas().tail(model_->sigmas().size() - frontalDim));
+      else
+        model_ = noiseModel::Diagonal::Sigmas(model_->sigmas().tail(model_->sigmas().size() - frontalDim));
+    }
     gttoc(remaining_factor);
-
-    if(debug) print("Eliminated factor: ");
-
-    assertInvariants();
 
     return conditional;
   }
@@ -353,8 +467,9 @@ namespace gtsam {
   /* ************************************************************************* */
   GaussianConditionalUnordered::shared_ptr JacobianFactorUnordered::eliminate(size_t nrFrontals) {
 
-    assert(Ab_.rowStart() == 0 && Ab_.rowEnd() == (size_t) matrix_.rows() && Ab_.firstBlock() == 0);
-    assert(size() >= nrFrontals);
+    if(Ab_.rowStart() != 0 || Ab_.rowEnd() != (size_t) Ab_.matrix().rows() && Ab_.firstBlock() == 0);
+    if(nrFrontals > size())
+      throw std::invalid_argument("Requesting to eliminate more variables than exist using JacobianFactor::splitConditional");
     assertInvariants();
 
     const bool debug = ISDEBUG("JacobianFactor::eliminate");

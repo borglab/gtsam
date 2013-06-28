@@ -193,50 +193,6 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  // Helper functions for Combine
-  static boost::tuple<vector<size_t>, size_t, size_t> countDims(const FactorGraph<JacobianFactor>& factors, const VariableSlots& variableSlots) {
-#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
-    vector<size_t> varDims(variableSlots.size(), numeric_limits<size_t>::max());
-#else
-    vector<size_t> varDims(variableSlots.size());
-#endif
-    size_t m = 0;
-    size_t n = 0;
-    {
-      Index jointVarpos = 0;
-      BOOST_FOREACH(const VariableSlots::value_type& slots, variableSlots) {
-
-        assert(slots.second.size() == factors.size());
-
-        Index sourceFactorI = 0;
-        BOOST_FOREACH(const Index sourceVarpos, slots.second) {
-          if(sourceVarpos < numeric_limits<Index>::max()) {
-            const JacobianFactor& sourceFactor = *factors[sourceFactorI];
-            size_t vardim = sourceFactor.getDim(sourceFactor.begin() + sourceVarpos);
-#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
-if(varDims[jointVarpos] == numeric_limits<size_t>::max()) {
-  varDims[jointVarpos] = vardim;
-  n += vardim;
-} else
-  assert(varDims[jointVarpos] == vardim);
-#else
-  varDims[jointVarpos] = vardim;
-n += vardim;
-break;
-#endif
-          }
-          ++ sourceFactorI;
-        }
-        ++ jointVarpos;
-      }
-      BOOST_FOREACH(const JacobianFactor::shared_ptr& factor, factors) {
-        m += factor->rows();
-      }
-    }
-    return boost::make_tuple(varDims, m, n);
-  }
-
-  /* ************************************************************************* */
   JacobianFactor::shared_ptr CombineJacobians(
       const FactorGraph<JacobianFactor>& factors,
       const VariableSlots& variableSlots) {
