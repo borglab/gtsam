@@ -114,6 +114,15 @@ namespace gtsam {
                                        Matrix3::Zero(),   Matrix3::Zero(), measuredOmegaCovariance;
       }
 
+      PreintegratedMeasurements() :
+      biasHat(imuBias::ConstantBias()), measurementCovariance(9,9), deltaPij(Vector3::Zero()), deltaVij(Vector3::Zero()), deltaTij(0.0),
+      delPdelBiasAcc(Matrix3::Zero()), delPdelBiasOmega(Matrix3::Zero()),
+      delVdelBiasAcc(Matrix3::Zero()), delVdelBiasOmega(Matrix3::Zero()),
+      delRdelBiasOmega(Matrix3::Zero()), PreintMeasCov(Matrix::Zero(9,9)),
+      initialRotationRate(Vector3::Zero()), finalRotationRate(Vector3::Zero())
+      {
+      }
+
       /** print */
       void print(const std::string& s = "Preintegrated Measurements:") const {
         std::cout << s << std::endl;
@@ -239,15 +248,28 @@ namespace gtsam {
 
         // FUTURE IMPROVEMENTS: include Jacobian G
         // overall Jacobian wrt raw measurements (df/du)
-//                        Matrix G(9,9);
-//                        G << I_3x3 * deltaT, Z_3x3,  Z_3x3,
-//                            Z_3x3, deltaRij.matrix() * deltaT, Z_3x3,
-//                            Z_3x3, Z_3x3, Jrinv_theta_j * Jr_theta_incr * deltaT;
+//				Matrix G(9,9);
+//				G << I_3x3 * deltaT, Z_3x3,  Z_3x3,
+//					Z_3x3, deltaRij.matrix() * deltaT, Z_3x3,
+//					Z_3x3, Z_3x3, Jrinv_theta_j * Jr_theta_incr * deltaT;
 //
-//                        PreintMeasCov = F * PreintMeasCov * F.transpose() + G * measurementCovariance * G.transpose();
+//				PreintMeasCov = F * PreintMeasCov * F.transpose() + G * measurementCovariance * G.transpose();
+//
+//		        		Matrix G(9,9);
+//		        		G << I_3x3, Z_3x3,  Z_3x3,
+//		        			Z_3x3, deltaRij.matrix(), Z_3x3,
+//		        			Z_3x3, Z_3x3, Jrinv_theta_j * Jr_theta_incr;
+//
+//		        		std::cout << "measurementCovariance MATRIX XXXXXXX = " << measurementCovariance  << std::endl;
+//		        		std::cout << "G MATRIX XXXXXXX = " << G << std::endl;
+//		        		std::cout << "G * measurementCovariance * G.transpose() MATRIX XXXXXXX = " << G * measurementCovariance * G.transpose() << std::endl;
+//
+//		        		PreintMeasCov = F * PreintMeasCov * F.transpose() + G * measurementCovariance * G.transpose();
+
 
         // first order uncertainty propagation
         PreintMeasCov = F * PreintMeasCov * F.transpose() + measurementCovariance * deltaT ;
+//        PreintMeasCov = F * PreintMeasCov * F.transpose() + measurementCovariance;
         // Update preintegrated measurements
         /* ----------------------------------------------------------------------------------------------------------------------- */
         deltaPij += deltaVij * deltaT;
@@ -452,6 +474,9 @@ namespace gtsam {
 
       const Matrix3 Jtheta = -Jr_theta_bcc  * skewSymmetric(Rot_i.inverse().matrix() * omegaCoriolis_ * deltaTij);
 
+      // ASPN change Luca
+      const Matrix3 Jrinv_fRhat = rightJacobianExpMapSO3inverse(Rot3::Logmap(fRhat));
+
       if(H1) {
         H1->resize(9,6);
         (*H1) <<
@@ -466,7 +491,7 @@ namespace gtsam {
                     // dfV/dPi
                     Matrix3::Zero(),
                     // dfR/dRi
-                    - Rot_j.between(Rot_i).matrix() - fRhat.inverse().matrix() * Jtheta,
+                    Jrinv_fRhat *  (- Rot_j.between(Rot_i).matrix() - fRhat.inverse().matrix() * Jtheta), // ASPN change Luca
                     // dfR/dPi
                     Matrix3::Zero();
       }
@@ -492,7 +517,7 @@ namespace gtsam {
             // dfV/dPosej
             Matrix::Zero(3,6),
             // dfR/dPosej
-            Matrix3::Identity() , Matrix3::Zero();
+            Jrinv_fRhat *  ( Matrix3::Identity() ), Matrix3::Zero(); // ASPN change Luca
       }
       if(H4) {
         H4->resize(9,3);
@@ -520,7 +545,7 @@ namespace gtsam {
             - Rot_i.matrix() * preintegratedMeasurements_.delVdelBiasOmega,
             // dfR/dBias
             Matrix::Zero(3,3),
-            - fRhat.inverse().matrix() * JbiasOmega;
+            Jrinv_fRhat * ( - fRhat.inverse().matrix() * JbiasOmega);// ASPN change Luca
       }
 
       // Evaluate residual error
