@@ -24,39 +24,45 @@
 #include <gtsam/symbolic/SymbolicFactorUnordered.h>
 // NOTE:  Additional headers included at end of file for user convenience
 
-namespace gtsam { class SymbolicConditionalUnordered; }
-namespace gtsam { class SymbolicBayesNetUnordered; }
-namespace gtsam { class SymbolicEliminationTreeUnordered; }
-namespace gtsam { class SymbolicBayesTreeUnordered; }
-namespace gtsam { class SymbolicJunctionTreeUnordered; }
 
 namespace gtsam {
 
   class SymbolicFactorGraphUnordered;
+  class SymbolicConditionalUnordered;
+  class SymbolicBayesNetUnordered;
+  class SymbolicEliminationTreeUnordered;
+  class SymbolicBayesTreeUnordered;
+  class SymbolicJunctionTreeUnordered;
 
+  /* ************************************************************************* */
   template<> class EliminationTraits<SymbolicFactorGraphUnordered>
   {
-
+    typedef SymbolicFactorUnordered FactorType;                   ///< Type of factors in factor graph
+    typedef SymbolicConditionalUnordered ConditionalType;         ///< Type of conditionals from elimination
+    typedef SymbolicBayesNetUnordered BayesNetType;               ///< Type of Bayes net from sequential elimination
+    typedef SymbolicEliminationTreeUnordered EliminationTreeType; ///< Type of elimination tree
+    typedef SymbolicBayesTreeUnordered BayesTreeType;             ///< Type of Bayes tree
+    typedef SymbolicJunctionTreeUnordered JunctionTreeType;       ///< Type of Junction tree
+    /// The default dense elimination function
+    static std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> >
+      DefaultEliminate(const std::vector<boost::shared_ptr<FactorType> >& factors,
+      const std::vector<Key>& keys) { return EliminateSymbolicUnordered(factors, keys); }
   };
 
+  /* ************************************************************************* */
   /** Symbolic Factor Graph
    *  \nosubgrouping
    */
-  class GTSAM_EXPORT SymbolicFactorGraphUnordered:
+  class GTSAM_EXPORT SymbolicFactorGraphUnordered :
     public FactorGraphUnordered<SymbolicFactorUnordered>,
-    public EliminateableFactorGraph<
-    SymbolicFactorUnordered, SymbolicFactorGraphUnordered, SymbolicConditionalUnordered, SymbolicBayesNetUnordered,
-    SymbolicEliminationTreeUnordered, SymbolicBayesTreeUnordered, SymbolicJunctionTreeUnordered>
+    public EliminateableFactorGraph<SymbolicFactorGraphUnordered>
   {
   public:
 
-    typedef SymbolicFactorGraphUnordered This;
-    typedef FactorGraphUnordered<SymbolicFactorUnordered> Base;
-    typedef EliminateableFactorGraph<
-      SymbolicFactorUnordered, SymbolicFactorGraphUnordered, SymbolicConditionalUnordered, SymbolicBayesNetUnordered,
-      SymbolicEliminationTreeUnordered, SymbolicBayesTreeUnordered, SymbolicJunctionTreeUnordered> BaseEliminateable;
-    typedef boost::shared_ptr<This> shared_ptr;
-    typedef BaseEliminateable::Eliminate Eliminate;
+    typedef SymbolicFactorGraphUnordered This; ///< Typedef to this class
+    typedef FactorGraphUnordered<SymbolicFactorUnordered> Base; ///< Typedef to base factor graph type
+    typedef EliminateableFactorGraph<This> BaseEliminateable; ///< Typedef to base elimination class
+    typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
     /// @name Standard Constructors
     /// @{

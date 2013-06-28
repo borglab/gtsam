@@ -24,11 +24,9 @@
 namespace gtsam {
 
   /* ************************************************************************* */
-  template<class FACTOR, class FACTORGRAPH, class CONDITIONAL,
-  class BAYESNET, class ELIMINATIONTREE, class BAYESTREE, class JUNCTIONTREE>
-  boost::shared_ptr<BAYESNET>
-    EliminateableFactorGraph<FACTOR, FACTORGRAPH, CONDITIONAL, BAYESNET, ELIMINATIONTREE, BAYESTREE, JUNCTIONTREE>::
-    eliminateSequential(
+  template<class FACTORGRAPH>
+  boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesNetType>
+    EliminateableFactorGraph<FACTORGRAPH>::eliminateSequential(
     const Eliminate& function, OptionalOrdering ordering, OptionalVariableIndex variableIndex) const
   {
     if(ordering && variableIndex) {
@@ -56,11 +54,10 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  template<class FACTOR, class FACTORGRAPH, class CONDITIONAL,
-  class BAYESNET, class ELIMINATIONTREE, class BAYESTREE, class JUNCTIONTREE>
-    boost::shared_ptr<BAYESTREE>
-    EliminateableFactorGraph<FACTOR, FACTORGRAPH, CONDITIONAL, BAYESNET, ELIMINATIONTREE, BAYESTREE, JUNCTIONTREE>
-    ::eliminateMultifrontal(const Eliminate& function, OptionalOrdering ordering, OptionalVariableIndex variableIndex) const
+  template<class FACTORGRAPH>
+  boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesTreeType>
+    EliminateableFactorGraph<FACTORGRAPH>::eliminateMultifrontal(
+    const Eliminate& function, OptionalOrdering ordering, OptionalVariableIndex variableIndex) const
   {
     if(ordering && variableIndex) {
       // Do elimination with given ordering
@@ -87,12 +84,10 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  template<class FACTOR, class FACTORGRAPH, class CONDITIONAL,
-  class BAYESNET, class ELIMINATIONTREE, class BAYESTREE, class JUNCTIONTREE>
-    std::pair<boost::shared_ptr<BAYESNET>, boost::shared_ptr<FACTORGRAPH> >
-    EliminateableFactorGraph<FACTOR, FACTORGRAPH, CONDITIONAL, BAYESNET, ELIMINATIONTREE, BAYESTREE, JUNCTIONTREE>
-    ::eliminatePartialSequential(const Eliminate& function, const OrderingUnordered& ordering,
-    OptionalVariableIndex variableIndex = boost::none) const
+  template<class FACTORGRAPH>
+  std::pair<boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesNetType>, boost::shared_ptr<FACTORGRAPH> >
+    EliminateableFactorGraph<FACTORGRAPH>::eliminatePartialSequential(
+    const Eliminate& function, const OrderingUnordered& ordering, OptionalVariableIndex variableIndex) const
   {
     if(variableIndex) {
       // Do elimination
@@ -104,12 +99,10 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  template<class FACTOR, class FACTORGRAPH, class CONDITIONAL,
-  class BAYESNET, class ELIMINATIONTREE, class BAYESTREE, class JUNCTIONTREE>
-    std::pair<boost::shared_ptr<BAYESTREE>, boost::shared_ptr<FACTORGRAPH> >
-    EliminateableFactorGraph<FACTOR, FACTORGRAPH, CONDITIONAL, BAYESNET, ELIMINATIONTREE, BAYESTREE, JUNCTIONTREE>
-    ::eliminatePartialMultifrontal(const Eliminate& function, const OrderingUnordered& ordering,
-    OptionalVariableIndex variableIndex = boost::none) const
+  template<class FACTORGRAPH>
+  std::pair<boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesTreeType>, boost::shared_ptr<FACTORGRAPH> >
+    EliminateableFactorGraph<FACTORGRAPH>::eliminatePartialMultifrontal(
+    const Eliminate& function, const OrderingUnordered& ordering, OptionalVariableIndex variableIndex) const
   {
     if(variableIndex) {
       // Do elimination
