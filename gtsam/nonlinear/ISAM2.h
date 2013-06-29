@@ -585,6 +585,9 @@ public:
   template<class VALUE>
   VALUE calculateEstimate(Key key) const;
 
+  /** Return marginal on any variable as a covariance matrix */
+  GTSAM_EXPORT Matrix marginalCovariance(Index key) const;
+
   /// @name Public members for non-typical usage
   /// @{
 
