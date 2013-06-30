@@ -163,7 +163,7 @@ namespace gtsam {
           const Vector3& measuredAcc, ///< Measured linear acceleration (in body frame)
           const Vector3& measuredOmega, ///< Measured angular velocity (in body frame)
           double deltaT, ///< Time step
-          boost::optional<Pose3> body_P_sensor = boost::none ///< Sensor frame
+          boost::optional<const Pose3&> body_P_sensor = boost::none ///< Sensor frame
       ) {
         // NOTE: order is important here because each update uses old values.
         // First we compensate the measurements for the bias
@@ -372,7 +372,7 @@ namespace gtsam {
     /** Constructor */
     CombinedImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias_i, Key bias_j,
         const CombinedPreintegratedMeasurements& preintegratedMeasurements, const Vector3& gravity, const Vector3& omegaCoriolis,
-        const SharedNoiseModel& model, boost::optional<Pose3> body_P_sensor = boost::none) :
+        const SharedNoiseModel& model, boost::optional<const Pose3&> body_P_sensor = boost::none) :
       Base(model, pose_i, vel_i, pose_j, vel_j, bias_i, bias_j),
       preintegratedMeasurements_(preintegratedMeasurements),
       gravity_(gravity),
@@ -609,8 +609,8 @@ namespace gtsam {
     /** vector of errors */
     static void Predict(const Pose3& pose_i, const LieVector& vel_i, Pose3& pose_j, LieVector& vel_j,
         const imuBias::ConstantBias& bias_i, imuBias::ConstantBias& bias_j,
-        const CombinedPreintegratedMeasurements preintegratedMeasurements,
-        const Vector3& gravity, const Vector3& omegaCoriolis, boost::optional<Pose3> body_P_sensor = boost::none)
+        const CombinedPreintegratedMeasurements& preintegratedMeasurements,
+        const Vector3& gravity, const Vector3& omegaCoriolis, boost::optional<const Pose3&> body_P_sensor = boost::none)
     {
 
       const double& deltaTij = preintegratedMeasurements.deltaTij;
@@ -664,5 +664,7 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
     }
   }; // \class CombinedImuFactor
+
+  typedef CombinedImuFactor::CombinedPreintegratedMeasurements CombinedImuFactorPreintegratedMeasurements;
 
 } /// namespace gtsam

@@ -585,6 +585,19 @@ public:
   template<class VALUE>
   VALUE calculateEstimate(Key key) const;
 
+
+  /** Return marginal on any variable as a covariance matrix */
+  GTSAM_EXPORT Matrix marginalCovariance(Index key) const;
+
+  /** Compute an estimate for a single variable using its incomplete linear delta computed
+   * during the last update.  This is faster than calling the no-argument version of
+   * calculateEstimate, which operates on all variables.  This is a non-templated version
+   * that returns a Value base class for use with the MATLAB wrapper.
+   * @param key
+   * @return
+   */
+  GTSAM_EXPORT const Value& calculateEstimate(Key key) const;
+
   /// @name Public members for non-typical usage
   /// @{
 

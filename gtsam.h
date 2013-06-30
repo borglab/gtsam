@@ -2047,6 +2047,7 @@ virtual class ISAM2  : gtsam::ISAM2BayesTree {
 
   gtsam::Values getLinearizationPoint() const;
   gtsam::Values calculateEstimate() const;
+  gtsam::Value calculateEstimate(size_t key) const;
   gtsam::Values calculateBestEstimate() const;
   gtsam::VectorValues getDelta() const;
   gtsam::NonlinearFactorGraph getFactorsUnsafe() const;
