@@ -28,6 +28,15 @@ using namespace std;
 namespace gtsam {
 
   /* ************************************************************************* */
+  FastMap<Key, size_t> OrderingUnordered::invert() const
+  {
+    FastMap<Key, size_t> inverted;
+    for(size_t pos = 0; pos < this->size(); ++pos)
+      inverted.insert(make_pair((*this)[pos], pos));
+    return inverted;
+  }
+
+  /* ************************************************************************* */
   OrderingUnordered OrderingUnordered::COLAMD(const VariableIndexUnordered& variableIndex)
   {
     gttic(OrderingUnordered_COLAMD);

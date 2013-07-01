@@ -32,9 +32,16 @@ namespace gtsam {
     /// Create an empty ordering
     GTSAM_EXPORT OrderingUnordered() {}
 
+    /// Create from a container
+    template<typename KEYS>
+    explicit OrderingUnordered(const KEYS& keys) : Base(keys.begin(), keys.end()) {}
+
     /// Create an ordering using iterators over keys
     template<typename ITERATOR>
     OrderingUnordered(ITERATOR firstKey, ITERATOR lastKey) : Base(firstKey, lastKey) {}
+
+    /// Invert (not reverse) the ordering - returns a map from key to order position
+    FastMap<Key, size_t> invert() const;
 
     /// Compute an ordering using COLAMD directly from a factor graph - this internally builds a
     /// VariableIndex so if you already have a VariableIndex, it is faster to use COLAMD(const
