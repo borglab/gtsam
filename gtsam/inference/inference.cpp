@@ -38,7 +38,7 @@ Permutation::shared_ptr PermutationCOLAMD_(const VariableIndex& variableIndex, s
   gttic(Prepare);
   size_t nEntries = variableIndex.nEntries(), nFactors = variableIndex.nFactors(), nVars = variableIndex.size();
   // Convert to compressed column major format colamd wants it in (== MATLAB format!)
-  int Alen = ccolamd_recommended((int)nEntries, (int)nFactors, (int)nVars); /* colamd arg 3: size of the array A */
+  size_t Alen = ccolamd_recommended((int)nEntries, (int)nFactors, (int)nVars); /* colamd arg 3: size of the array A */
   vector<int> A = vector<int>(Alen); /* colamd arg 4: row indices of A, of size Alen */
   vector<int> p = vector<int>(nVars + 1); /* colamd arg 5: column pointers of A, of size n_col+1 */
 
@@ -78,7 +78,7 @@ Permutation::shared_ptr PermutationCOLAMD_(const VariableIndex& variableIndex, s
   /* returns (1) if successful, (0) otherwise*/
   if(nVars > 0) {
     gttic(ccolamd);
-    int rv = ccolamd((int)nFactors, nVars, Alen, &A[0], &p[0], knobs, stats, &cmember[0]);
+    int rv = ccolamd((int)nFactors, (int)nVars, (int)Alen, &A[0], &p[0], knobs, stats, &cmember[0]);
     if(rv != 1)
       throw runtime_error((boost::format("ccolamd failed with return value %1%")%rv).str());
   }

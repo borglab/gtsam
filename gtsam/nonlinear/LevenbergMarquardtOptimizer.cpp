@@ -143,6 +143,7 @@ void LevenbergMarquardtOptimizer::iterate() {
         }
       }
     } catch(const IndeterminantLinearSystemException& e) {
+      (void) e; // Prevent unused variable warning
       if(lmVerbosity >= LevenbergMarquardtParams::LAMBDA)
         cout << "Negative matrix, increasing lambda" << endl;
       // Either we're not cautious, or the same lambda was worse than the current error.

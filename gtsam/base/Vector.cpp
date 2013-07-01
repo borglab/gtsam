@@ -387,7 +387,7 @@ double weightedPseudoinverse(const Vector& a, const Vector& weights,
 // Slow version with error checking
 pair<Vector, double>
 weightedPseudoinverse(const Vector& a, const Vector& weights) {
-  int m = weights.size();
+  DenseIndex m = weights.size();
   if (a.size() != m)
     throw invalid_argument("a and weights have different sizes!");
   Vector pseudo(m);
