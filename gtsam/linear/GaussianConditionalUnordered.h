@@ -49,23 +49,23 @@ namespace gtsam {
     /** constructor with no parents
     * |Rx-d|
     */
-    GaussianConditionalUnordered(Index key, const Vector& d, const Matrix& R, const SharedDiagonal& sigmas);
+    GaussianConditionalUnordered(Key key, const Vector& d, const Matrix& R, const SharedDiagonal& sigmas);
 
     /** constructor with only one parent
      * |Rx+Sy-d| */
-    GaussianConditionalUnordered(Index key, const Vector& d, const Matrix& R,
-      Index name1, const Matrix& S, const SharedDiagonal& sigmas);
+    GaussianConditionalUnordered(Key key, const Vector& d, const Matrix& R,
+      Key name1, const Matrix& S, const SharedDiagonal& sigmas);
 
     /** constructor with two parents
      * |Rx+Sy+Tz-d| */
-    GaussianConditionalUnordered(Index key, const Vector& d, const Matrix& R,
-      Index name1, const Matrix& S, Index name2, const Matrix& T, const SharedDiagonal& sigmas);
+    GaussianConditionalUnordered(Key key, const Vector& d, const Matrix& R,
+      Key name1, const Matrix& S, Key name2, const Matrix& T, const SharedDiagonal& sigmas);
 
     /** Constructor with number of arbitrary parents.  \f$ |Rx+sum(Ai*xi)-d| \f$
      * @tparam PARENTS A container whose value type is std::pair<Key, Matrix>, specifying the
      *         collection of parent keys and matrices. */
     template<typename PARENTS>
-    GaussianConditionalUnordered(Index key, const Vector& d,
+    GaussianConditionalUnordered(Key key, const Vector& d,
       const Matrix& R, const PARENTS& parents, const SharedDiagonal& sigmas);
 
     /** Constructor with arbitrary number of frontals and parents.
@@ -95,7 +95,7 @@ namespace gtsam {
 
     /** print */
     void print(const std::string& = "GaussianConditional",
-      const IndexFormatter& formatter = DefaultIndexFormatter) const;
+      const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
     /** equals function */
     bool equals(const GaussianConditionalUnordered&cg, double tol = 1e-9) const;

@@ -37,19 +37,19 @@ namespace gtsam {
 
   /* ************************************************************************* */
   GaussianConditionalUnordered::GaussianConditionalUnordered(
-    Index key, const Vector& d, const Matrix& R, const SharedDiagonal& sigmas) :
+    Key key, const Vector& d, const Matrix& R, const SharedDiagonal& sigmas) :
   BaseFactor(key, R, d, sigmas), BaseConditional(1) {}
 
   /* ************************************************************************* */
   GaussianConditionalUnordered::GaussianConditionalUnordered(
-    Index key, const Vector& d, const Matrix& R,
-    Index name1, const Matrix& S, const SharedDiagonal& sigmas) :
+    Key key, const Vector& d, const Matrix& R,
+    Key name1, const Matrix& S, const SharedDiagonal& sigmas) :
   BaseFactor(key, R, name1, S, d, sigmas) {}
 
   /* ************************************************************************* */
   GaussianConditionalUnordered::GaussianConditionalUnordered(
-    Index key, const Vector& d, const Matrix& R,
-    Index name1, const Matrix& S, Index name2, const Matrix& T, const SharedDiagonal& sigmas) :
+    Key key, const Vector& d, const Matrix& R,
+    Key name1, const Matrix& S, Key name2, const Matrix& T, const SharedDiagonal& sigmas) :
   BaseFactor(key, R, name1, S, name2, T, d, sigmas) {}
 
   /* ************************************************************************* */
@@ -133,7 +133,7 @@ namespace gtsam {
 
     GaussianConditionalUnordered::const_iterator it;
     for (it = beginParents(); it!= endParents(); it++) {
-      const Index i = *it;
+      const Key i = *it;
       gtsam::transposeMultiplyAdd(-1.0, getA(it), frontalVec, gy[i]);
     }
     internal::writeVectorValuesSlices(frontalVec, gy, beginFrontals(), endFrontals());

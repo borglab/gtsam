@@ -74,14 +74,14 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  JacobianFactorUnordered::JacobianFactorUnordered(Index i1, const Matrix& A1,
+  JacobianFactorUnordered::JacobianFactorUnordered(Key i1, const Matrix& A1,
     const Vector& b, const SharedDiagonal& model)
   {
     fillTerms(cref_list_of<1>(make_pair(i1,A1)), b, model);
   }
 
   /* ************************************************************************* */
-  JacobianFactorUnordered::JacobianFactorUnordered(Index i1, const Matrix& A1, Index i2, const Matrix& A2,
+  JacobianFactorUnordered::JacobianFactorUnordered(Key i1, const Matrix& A1, Key i2, const Matrix& A2,
     const Vector& b, const SharedDiagonal& model)
   {
     fillTerms(cref_list_of<2>
@@ -90,8 +90,8 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  JacobianFactorUnordered::JacobianFactorUnordered(Index i1, const Matrix& A1, Index i2, const Matrix& A2,
-      Index i3, const Matrix& A3, const Vector& b, const SharedDiagonal& model)
+  JacobianFactorUnordered::JacobianFactorUnordered(Key i1, const Matrix& A1, Key i2, const Matrix& A2,
+      Key i3, const Matrix& A3, const Vector& b, const SharedDiagonal& model)
   {
     fillTerms(cref_list_of<3>
       (make_pair(i1,A1))
@@ -138,14 +138,14 @@ namespace gtsam {
       size_t m = 0;
       size_t n = 0;
       {
-        Index jointVarpos = 0;
+        size_t jointVarpos = 0;
         BOOST_FOREACH(const VariableSlots::value_type& slots, variableSlots) {
 
           assert(slots.second.size() == factors.size());
 
-          Index sourceFactorI = 0;
-          BOOST_FOREACH(const Index sourceVarpos, slots.second) {
-            if(sourceVarpos < numeric_limits<Index>::max()) {
+          size_t sourceFactorI = 0;
+          BOOST_FOREACH(const size_t sourceVarpos, slots.second) {
+            if(sourceVarpos < numeric_limits<size_t>::max()) {
               const JacobianFactorUnordered& sourceFactor = *factors[sourceFactorI];
               size_t vardim = sourceFactor.getDim(sourceFactor.begin() + sourceVarpos);
 #ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
@@ -221,18 +221,18 @@ namespace gtsam {
 
     gttic(copy_blocks);
     // Loop over slots in combined factor
-    Index combinedSlot = 0;
+    size_t combinedSlot = 0;
     BOOST_FOREACH(const VariableSlots::value_type& varslot, variableSlots) {
       JacobianFactorUnordered::ABlock destSlot(this->getA(this->begin()+combinedSlot));
       // Loop over source jacobians
       size_t nextRow = 0;
       for(size_t factorI = 0; factorI < jacobians.size(); ++factorI) {
         // Slot in source factor
-        const Index sourceSlot = varslot.second[factorI];
+        const size_t sourceSlot = varslot.second[factorI];
         const size_t sourceRows = jacobians[factorI]->rows();
         JacobianFactorUnordered::ABlock::RowsBlockXpr destBlock(destSlot.middleRows(nextRow, sourceRows));
         // Copy if exists in source factor, otherwise set zero
-        if(sourceSlot != numeric_limits<Index>::max())
+        if(sourceSlot != numeric_limits<size_t>::max())
           destBlock = jacobians[factorI]->getA(jacobians[factorI]->begin()+sourceSlot);
         else
           destBlock.setZero();

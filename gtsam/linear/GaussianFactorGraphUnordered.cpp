@@ -30,7 +30,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   GaussianFactorGraphUnordered::Keys GaussianFactorGraphUnordered::keys() const {
-    FastSet<Index> keys;
+    FastSet<Key> keys;
     BOOST_FOREACH(const sharedFactor& factor, *this)
     if (factor)
       keys.insert(factor->begin(), factor->end());
@@ -371,7 +371,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   void residual(const GaussianFactorGraphUnordered& fg, const VectorValues &x, VectorValues &r) {
-    Index i = 0 ;
+    Key i = 0 ;
     BOOST_FOREACH(const GaussianFactorUnordered::shared_ptr& Ai_G, fg) {
       JacobianFactorUnordered::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
       r[i] = Ai->getb();
@@ -385,7 +385,7 @@ namespace gtsam {
   /* ************************************************************************* */
   void multiply(const GaussianFactorGraphUnordered& fg, const VectorValues &x, VectorValues &r) {
     r.setZero();
-    Index i = 0;
+    Key i = 0;
     BOOST_FOREACH(const GaussianFactorUnordered::shared_ptr& Ai_G, fg) {
       JacobianFactorUnordered::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
       Vector &y = r[i];
@@ -399,7 +399,7 @@ namespace gtsam {
   /* ************************************************************************* */
   void transposeMultiply(const GaussianFactorGraphUnordered& fg, const VectorValues &r, VectorValues &x) {
     x.setZero();
-    Index i = 0;
+    Key i = 0;
     BOOST_FOREACH(const GaussianFactorUnordered::shared_ptr& Ai_G, fg) {
       JacobianFactorUnordered::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
       for(JacobianFactorUnordered::const_iterator j = Ai->begin(); j != Ai->end(); ++j) {

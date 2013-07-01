@@ -100,17 +100,17 @@ namespace gtsam {
     explicit JacobianFactorUnordered(const Vector& b_in);
 
     /** Construct unary factor */
-    JacobianFactorUnordered(Index i1, const Matrix& A1,
+    JacobianFactorUnordered(Key i1, const Matrix& A1,
         const Vector& b, const SharedDiagonal& model);
 
     /** Construct binary factor */
-    JacobianFactorUnordered(Index i1, const Matrix& A1,
-        Index i2, const Matrix& A2,
+    JacobianFactorUnordered(Key i1, const Matrix& A1,
+        Key i2, const Matrix& A2,
         const Vector& b, const SharedDiagonal& model);
 
     /** Construct ternary factor */
-    JacobianFactorUnordered(Index i1, const Matrix& A1, Index i2,
-        const Matrix& A2, Index i3, const Matrix& A3,
+    JacobianFactorUnordered(Key i1, const Matrix& A1, Key i2,
+        const Matrix& A2, Key i3, const Matrix& A3,
         const Vector& b, const SharedDiagonal& model);
 
     /** Construct an n-ary factor

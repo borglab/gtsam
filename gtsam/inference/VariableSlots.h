@@ -51,11 +51,11 @@ namespace gtsam {
  * \nosubgrouping
  */
 
-class VariableSlots : public FastMap<Index, std::vector<Index> > {
+class VariableSlots : public FastMap<Index, std::vector<size_t> > {
 
 public:
 
-  typedef FastMap<Index, std::vector<Index> > Base;
+  typedef FastMap<Index, std::vector<size_t> > Base;
 
   /// @name Standard Constructors
   /// @{
@@ -69,6 +69,7 @@ public:
   VariableSlots(const FG& factorGraph);
 
   /// @}
+
   /// @name Testable
   /// @{
 
@@ -79,7 +80,6 @@ public:
   GTSAM_EXPORT bool equals(const VariableSlots& rhs, double tol = 0.0) const;
 
   /// @}
-
 };
 
 /* ************************************************************************* */
@@ -96,7 +96,7 @@ VariableSlots::VariableSlots(const FG& factorGraph) {
   size_t jointFactorPos = 0;
   BOOST_FOREACH(const typename FG::sharedFactor& factor, factorGraph) {
     assert(factor);
-    Index factorVarSlot = 0;
+    size_t factorVarSlot = 0;
     BOOST_FOREACH(const Index involvedVariable, *factor) {
       // Set the slot in this factor for this variable.  If the
       // variable was not already discovered, create an array for it
@@ -105,9 +105,9 @@ VariableSlots::VariableSlots(const FG& factorGraph) {
       // the array entry for each factor that will indicate the factor
       // does not involve the variable.
       iterator thisVarSlots; bool inserted;
-      boost::tie(thisVarSlots, inserted) = this->insert(make_pair(involvedVariable, std::vector<Index>()));
+      boost::tie(thisVarSlots, inserted) = this->insert(make_pair(involvedVariable, std::vector<size_t>()));
       if(inserted)
-        thisVarSlots->second.resize(factorGraph.size(), std::numeric_limits<Index>::max());
+        thisVarSlots->second.resize(factorGraph.size(), std::numeric_limits<size_t>::max());
       thisVarSlots->second[jointFactorPos] = factorVarSlot;
       if(debug) std::cout << "  var " << involvedVariable << " rowblock " << jointFactorPos << " comes from factor's slot " << factorVarSlot << std::endl;
       ++ factorVarSlot;
