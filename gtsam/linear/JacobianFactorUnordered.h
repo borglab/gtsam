@@ -33,6 +33,7 @@ namespace gtsam {
   class GaussianFactorGraphUnordered;
   class GaussianConditionalUnordered;
   class VectorValuesUnordered;
+  class OrderingUnordered;
 
   /**
    * A Gaussian factor in the squared-error form.
@@ -136,6 +137,7 @@ namespace gtsam {
      * computation performed. */
     explicit JacobianFactorUnordered(
       const GaussianFactorGraphUnordered& graph,
+      boost::optional<const OrderingUnordered&> ordering = boost::none,
       boost::optional<const VariableSlots&> variableSlots = boost::none);
 
     /** Virtual destructor */
@@ -260,42 +262,42 @@ namespace gtsam {
     std::vector<boost::tuple<size_t, size_t, double> >
     sparse(const std::vector<size_t>& columnIndices) const;
 
-    /**
-     * Return a whitened version of the factor, i.e. with unit diagonal noise
-     * model. */
+    /** Return a whitened version of the factor, i.e. with unit diagonal noise model. */
     JacobianFactorUnordered whiten() const;
 
-    /** Eliminate the first variable, modifying the factor in place to contain the remaining marginal. */
-    boost::shared_ptr<GaussianConditionalUnordered> eliminateFirst();
-
-    /** Eliminate the requested number of frontal variables, modifying the factor in place to contain the remaining marginal. */
-    boost::shared_ptr<GaussianConditionalUnordered> eliminate(size_t nrFrontals = 1);
-
-    /**
-     * splits a pre-factorized factor into a conditional, and changes the current
-     * factor to be the remaining component. Performs same operation as eliminate(),
-     * but without running QR.
-     */
-    boost::shared_ptr<GaussianConditionalUnordered> splitConditional(size_t nrFrontals = 1);
-
-    // following methods all used in CombineJacobians:
-    // Many imperative, perhaps all need to be combined in constructor
-
-    /** allocate space */
-    //void allocate(const VariableSlots& variableSlots,
-    //    std::vector<size_t>& varDims, size_t m);
+    /** Eliminate the requested variables. */
+    std::pair<boost::shared_ptr<GaussianConditionalUnordered>, boost::shared_ptr<JacobianFactorUnordered> >
+      eliminate(const OrderingUnordered& keys);
 
     /** set noiseModel correctly */
     void setModel(bool anyConstrained, const Vector& sigmas);
-
-    /** Assert invariants after elimination */
-    void assertInvariants() const;
+    
+  /**
+   * Densely partially eliminate with QR factorization, this is usually provided as an argument to
+   * one of the factor graph elimination functions (see EliminateableFactorGraph).  HessianFactors
+   * are first factored with Cholesky decomposition to produce JacobianFactors, by calling the
+   * conversion constructor JacobianFactor(const HessianFactor&). Variables are eliminated in the
+   * order specified in \c keys.
+   * @param factors Factors to combine and eliminate
+   * @param keys The variables to eliminate in the order as specified here in \c keys
+   * @return The conditional and remaining factor
+   *
+   * \addtogroup LinearSolving */
+    friend GTSAM_EXPORT std::pair<boost::shared_ptr<GaussianConditionalUnordered>, boost::shared_ptr<JacobianFactorUnordered> >
+      EliminateQRUnordered(const GaussianFactorGraphUnordered& factors, const OrderingUnordered& keys);
 
   private:
 
     /// Internal function to fill blocks and set dimensions
     template<typename TERMS>
     void fillTerms(const TERMS& terms, const Vector& b, const SharedDiagonal& noiseModel);
+    
+    /**
+     * splits a pre-factorized factor into a conditional, and changes the current
+     * factor to be the remaining component. Performs same operation as eliminate(),
+     * but without running QR.
+     */
+    boost::shared_ptr<GaussianConditionalUnordered> splitConditional(size_t nrFrontals = 1);
 
     /** Serialization function */
     friend class boost::serialization::access;

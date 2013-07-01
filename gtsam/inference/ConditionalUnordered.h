@@ -35,28 +35,22 @@ namespace gtsam {
    * \nosubgrouping
    */
   template<class FACTOR, class DERIVEDCONDITIONAL>
-  class ConditionalUnordered {
-
+  class ConditionalUnordered
+  {
   protected:
-
     /** The first nrFrontal variables are frontal and the rest are parents. */
     size_t nrFrontals_;
 
-    /** Iterator over keys */
-    using typename FACTOR::iterator; // 'using' instead of typedef to avoid ambiguous symbol from multiple inheritance
-
-    /** Const iterator over keys */
-    using typename FACTOR::const_iterator; // 'using' instead of typedef to avoid ambiguous symbol from multiple inheritance
-
-  public:
-
+  private:
+    /// Typedef to this class
     typedef ConditionalUnordered<FACTOR,DERIVEDCONDITIONAL> This;
 
+  public:
     /** View of the frontal keys (call frontals()) */
-    typedef boost::iterator_range<const_iterator> Frontals;
+    typedef boost::iterator_range<typename FACTOR::const_iterator> Frontals;
 
     /** View of the separator keys (call parents()) */
-    typedef boost::iterator_range<const_iterator> Parents;
+    typedef boost::iterator_range<typename FACTOR::const_iterator> Parents;
 
     /// @name Standard Constructors
     /// @{
@@ -103,34 +97,32 @@ namespace gtsam {
     Parents parents() const { return boost::make_iterator_range(beginParents(), endParents()); }
 
     /** Iterator pointing to first frontal key. */
-    const_iterator beginFrontals() const { return asFactor().begin(); }
+    typename FACTOR::const_iterator beginFrontals() const { return asFactor().begin(); }
     
     /** Iterator pointing past the last frontal key. */
-    const_iterator endFrontals() const { return asFactor().begin() + nrFrontals_; }
+    typename FACTOR::const_iterator endFrontals() const { return asFactor().begin() + nrFrontals_; }
     
     /** Iterator pointing to the first parent key. */
-    const_iterator beginParents() const { return endFrontals(); }
+    typename FACTOR::const_iterator beginParents() const { return endFrontals(); }
 
     /** Iterator pointing past the last parent key. */
-    const_iterator endParents() const { return asFactor().end(); }
+    typename FACTOR::const_iterator endParents() const { return asFactor().end(); }
 
     /// @}
     /// @name Advanced Interface
     /// @{
 
-    /** Mutable iterators and accessors */
-    iterator beginFrontals() {
-      return asFactor().begin();
-    } ///<TODO: comment
-    iterator endFrontals() {
-      return asFactor().begin() + nrFrontals_;
-    } ///<TODO: comment
-    iterator beginParents() {
-      return asFactor().begin() + nrFrontals_;
-    } ///<TODO: comment
-    iterator endParents() {
-      return asFactor().end();
-    } ///<TODO: comment
+    /** Mutable iterator pointing to first frontal key. */
+    typename FACTOR::iterator beginFrontals() { return asFactor().begin(); }
+
+    /** Mutable iterator pointing past the last frontal key. */
+    typename FACTOR::iterator endFrontals() { return asFactor().begin() + nrFrontals_; }
+
+    /** Mutable iterator pointing to the first parent key. */
+    typename FACTOR::iterator beginParents() { return asFactor().begin() + nrFrontals_; }
+
+    /** Mutable iterator pointing past the last parent key. */
+    typename FACTOR::iterator endParents() { return asFactor().end(); }
 
   private:
     // Cast to factor type (non-const) (casts down to derived conditional type, then up to factor type)

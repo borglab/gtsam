@@ -75,7 +75,7 @@ namespace gtsam {
       return false;
 
     // check if R_ and d_ are linear independent
-    for (size_t i=0; i<Ab_.rows(); i++) {
+    for (DenseIndex i=0; i<Ab_.rows(); i++) {
       list<Vector> rows1; rows1.push_back(Vector(get_R().row(i)));
       list<Vector> rows2; rows2.push_back(Vector(c.get_R().row(i)));
 

@@ -35,9 +35,10 @@ namespace gtsam {
   class SymbolicJunctionTreeUnordered;
 
   /* ************************************************************************* */
-  template<> class EliminationTraits<SymbolicFactorGraphUnordered>
+  template<> struct EliminationTraits<SymbolicFactorGraphUnordered>
   {
     typedef SymbolicFactorUnordered FactorType;                   ///< Type of factors in factor graph
+    typedef SymbolicFactorGraphUnordered FactorGraphType;         ///< Type of the factor graph (e.g. GaussianFactorGraph)
     typedef SymbolicConditionalUnordered ConditionalType;         ///< Type of conditionals from elimination
     typedef SymbolicBayesNetUnordered BayesNetType;               ///< Type of Bayes net from sequential elimination
     typedef SymbolicEliminationTreeUnordered EliminationTreeType; ///< Type of elimination tree
@@ -45,8 +46,8 @@ namespace gtsam {
     typedef SymbolicJunctionTreeUnordered JunctionTreeType;       ///< Type of Junction tree
     /// The default dense elimination function
     static std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> >
-      DefaultEliminate(const std::vector<boost::shared_ptr<FactorType> >& factors,
-      const std::vector<Key>& keys) { return EliminateSymbolicUnordered(factors, keys); }
+      DefaultEliminate(const FactorGraphType& factors, const OrderingUnordered& keys) {
+        return EliminateSymbolicUnordered(factors, keys); }
   };
 
   /* ************************************************************************* */

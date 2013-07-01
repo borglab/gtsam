@@ -181,7 +181,7 @@ namespace gtsam {
 
     /** Named constructor to create a VectorValues that matches the structure of
      * the specified VectorValues, but do not initialize the new values. */
-    static VectorValuesUnordered SameStructure(const VectorValues& other);
+    static VectorValuesUnordered SameStructure(const VectorValuesUnordered& other);
 
     /** Named constructor to create a VectorValues from a container of variable
      * dimensions that is filled with zeros.
@@ -318,7 +318,7 @@ namespace gtsam {
      * scale a vector by a scalar
      */
     friend VectorValuesUnordered operator*(const double a, const VectorValuesUnordered &v) {
-      VectorValues result = VectorValues::SameStructure(v);
+      VectorValuesUnordered result = VectorValuesUnordered::SameStructure(v);
       for(Index j = 0; j < v.size(); ++j)
         result.values_[j] = a * v.values_[j];
       return result;
@@ -415,7 +415,7 @@ namespace gtsam {
     // in the first and last iterators, and concatenates them in that order into the
     // output.
     template<typename ITERATOR>
-    const VectorValuesUnordered extractVectorValuesSlices(const VectorValuesUnordered& values, ITERATOR first, ITERATOR last, bool allowNonexistant = false) {
+    const Vector extractVectorValuesSlices(const VectorValuesUnordered& values, ITERATOR first, ITERATOR last, bool allowNonexistant = false) {
       // Find total dimensionality
       size_t dim = 0;
       for(ITERATOR j = first; j != last; ++j)

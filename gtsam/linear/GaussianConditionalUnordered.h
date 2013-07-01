@@ -81,7 +81,7 @@ namespace gtsam {
      *  factor. */
     template<typename KEYS>
     GaussianConditionalUnordered(
-      const KEYS& keys, size_t nrFrontals const VerticalBlockMatrix& augmentedMatrix, const SharedDiagonal& sigmas);
+      const KEYS& keys, size_t nrFrontals, const VerticalBlockMatrix& augmentedMatrix, const SharedDiagonal& sigmas);
 
     /** Combine several GaussianConditional into a single dense GC.  The conditionals enumerated by
     *   \c first and \c last must be in increasing order, meaning that the parents of any

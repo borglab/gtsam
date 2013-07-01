@@ -132,33 +132,6 @@ bool VectorValuesUnordered::hasSameStructure(const VectorValuesUnordered& other)
 }
 
 /* ************************************************************************* */
-void VectorValuesUnordered::permuteInPlace(const Permutation& permutation) {
-  // Allocate new values
-  Values newValues(this->size());
-
-  // Swap values from this VectorValues to the permuted VectorValues
-  for(size_t i = 0; i < this->size(); ++i)
-    newValues[i].swap(this->at(permutation[i]));
-
-  // Swap the values into this VectorValues
-  values_.swap(newValues);
-}
-
-/* ************************************************************************* */
-void VectorValues::permuteInPlace(const Permutation& selector, const Permutation& permutation) {
-  if(selector.size() != permutation.size())
-    throw invalid_argument("VariableIndex::permuteInPlace (partial permutation version) called with selector and permutation of different sizes.");
-  // Create new index the size of the permuted entries
-  Values reorderedEntries(selector.size());
-  // Permute the affected entries into the new index
-  for(size_t dstSlot = 0; dstSlot < selector.size(); ++dstSlot)
-    reorderedEntries[dstSlot].swap(values_[selector[permutation[dstSlot]]]);
-  // Put the affected entries back in the new order
-  for(size_t slot = 0; slot < selector.size(); ++slot)
-    values_[selector[slot]].swap(reorderedEntries[slot]);
-}
-
-/* ************************************************************************* */
 void VectorValuesUnordered::swap(VectorValuesUnordered& other) {
   this->values_.swap(other.values_);
 }

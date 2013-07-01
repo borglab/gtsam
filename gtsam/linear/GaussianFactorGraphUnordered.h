@@ -25,6 +25,7 @@
 #include <gtsam/inference/EliminateableFactorGraph.h>
 #include <gtsam/linear/GaussianFactorUnordered.h>
 #include <gtsam/linear/JacobianFactorUnordered.h>
+#include <gtsam/linear/Errors.h> // Included here instead of fw-declared so we can use Errors::iterator
 
 namespace gtsam {
 
@@ -37,16 +38,11 @@ namespace gtsam {
   class GaussianBayesTreeUnordered;
   class GaussianJunctionTreeUnordered;
 
-  // Forward declaration to use as default elimination function, documented declaration below.
-  GTSAM_EXPORT
-    std::pair<boost::shared_ptr<GaussianConditionalUnordered>, boost::shared_ptr<GaussianFactorUnordered> >
-    EliminateQRUnordered(
-    const std::vector<boost::shared_ptr<GaussianFactorUnordered> >& factors, const std::vector<Key>& keys);
-
   /* ************************************************************************* */
-  template<> class EliminationTraits<GaussianFactorGraphUnordered>
+  template<> struct EliminationTraits<GaussianFactorGraphUnordered>
   {
     typedef GaussianFactorUnordered FactorType;                   ///< Type of factors in factor graph
+    typedef GaussianFactorGraphUnordered FactorGraphType;         ///< Type of the factor graph (e.g. GaussianFactorGraph)
     typedef GaussianConditionalUnordered ConditionalType;         ///< Type of conditionals from elimination
     typedef GaussianBayesNetUnordered BayesNetType;               ///< Type of Bayes net from sequential elimination
     typedef GaussianEliminationTreeUnordered EliminationTreeType; ///< Type of elimination tree
@@ -54,8 +50,8 @@ namespace gtsam {
     typedef GaussianJunctionTreeUnordered JunctionTreeType;       ///< Type of Junction tree
     /// The default dense elimination function
     static std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> >
-      DefaultEliminate(const std::vector<boost::shared_ptr<FactorType> >& factors,
-      const std::vector<Key>& keys) { return EliminateQRUnordered(factors, keys); }
+      DefaultEliminate(const FactorGraphType& factors, const OrderingUnordered& keys) {
+        return EliminateQRUnordered(factors, keys); }
   };
 
   /* ************************************************************************* */
@@ -119,6 +115,9 @@ namespace gtsam {
     template<class TERMS>
     void add(const TERMS& terms, const Vector &b, const SharedDiagonal& model) {
       add(JacobianFactorUnordered(terms,b,model)); }
+
+    /** push back a BayesTree as a collection of factors. */
+    void push_back_bayesTree(const GaussianBayesTreeUnordered& bayesTree);
 
     /**
      * Return the set of variables involved in the factors (computes a set
@@ -191,7 +190,7 @@ namespace gtsam {
      and the negative log-likelihood is
      \f$ \frac{1}{2} x^T \Lambda x + \eta^T x + c \f$.
      */
-    Matrix augmentedHessian() const;
+    //Matrix augmentedHessian() const;
 
     /**
      * Return the dense Hessian \f$ \Lambda \f$ and information vector
@@ -199,7 +198,7 @@ namespace gtsam {
      * is \frac{1}{2} x^T \Lambda x + \eta^T x + c.  See also
      * GaussianFactorGraph::augmentedHessian.
      */
-    std::pair<Matrix,Vector> hessian() const;
+    //std::pair<Matrix,Vector> hessian() const;
 
   private:
     /** Serialization function */
@@ -212,47 +211,10 @@ namespace gtsam {
   };
 
   /**
-   * Combine and eliminate several factors.
-   * \addtogroup LinearSolving
-   */
-  GTSAM_EXPORT JacobianFactor::shared_ptr CombineJacobians(
-      const FactorGraph<JacobianFactor>& factors,
-      const VariableSlots& variableSlots);
-
-  /**
    * Evaluates whether linear factors have any constrained noise models
    * @return true if any factor is constrained.
    */
-  GTSAM_EXPORT bool hasConstraints(const FactorGraph<GaussianFactor>& factors);
-
-  /**
-   * Densely combine and partially eliminate JacobianFactors to produce a
-   * single conditional with nrFrontals frontal variables and a remaining
-   * factor.
-   * Variables are eliminated in the natural order of the variable indices of in the factors.
-   * @param factors Factors to combine and eliminate
-   * @param nrFrontals Number of frontal variables to eliminate.
-   * @return The conditional and remaining factor
-
-   * \addtogroup LinearSolving
-   */
-  GTSAM_EXPORT GaussianFactorGraph::EliminationResult EliminateJacobians(const FactorGraph<
-      JacobianFactor>& factors, size_t nrFrontals = 1);
-
-  /**
-   * Densely partially eliminate with QR factorization.  HessianFactors are
-   * first factored with Cholesky decomposition to produce JacobianFactors,
-   * by calling the conversion constructor JacobianFactor(const HessianFactor&).
-   * Variables are eliminated in the natural order of the variable indices of in
-   * the factors.
-   * @param factors Factors to combine and eliminate
-   * @param nrFrontals Number of frontal variables to eliminate.
-   * @return The conditional and remaining factor
-
-   * \addtogroup LinearSolving
-   */
-  GTSAM_EXPORT GaussianFactorGraph::EliminationResult EliminateQR(const FactorGraph<
-      GaussianFactor>& factors, size_t nrFrontals = 1);
+  GTSAM_EXPORT bool hasConstraints(const GaussianFactorGraphUnordered& factors);
 
   /**
    * Densely partially eliminate with Cholesky factorization.  JacobianFactors
@@ -273,8 +235,8 @@ namespace gtsam {
 
    * \addtogroup LinearSolving
    */
-  GTSAM_EXPORT GaussianFactorGraph::EliminationResult EliminatePreferCholesky(const FactorGraph<
-      GaussianFactor>& factors, size_t nrFrontals = 1);
+  //GTSAM_EXPORT GaussianFactorGraph::EliminationResult EliminatePreferCholesky(const FactorGraph<
+  //    GaussianFactor>& factors, size_t nrFrontals = 1);
 
   /**
    * Densely partially eliminate with Cholesky factorization.  JacobianFactors
@@ -294,22 +256,22 @@ namespace gtsam {
 
    * \addtogroup LinearSolving
    */
-  GTSAM_EXPORT GaussianFactorGraph::EliminationResult EliminateCholesky(const FactorGraph<
-      GaussianFactor>& factors, size_t nrFrontals = 1);
+  //GTSAM_EXPORT GaussianFactorGraph::EliminationResult EliminateCholesky(const FactorGraph<
+  //    GaussianFactor>& factors, size_t nrFrontals = 1);
 
   /****** Linear Algebra Opeations ******/
 
   /** return A*x */
-  GTSAM_EXPORT Errors operator*(const GaussianFactorGraph& fg, const VectorValues& x);
+  GTSAM_EXPORT Errors operator*(const GaussianFactorGraphUnordered& fg, const VectorValuesUnordered& x);
 
   /** In-place version e <- A*x that overwrites e. */
-  GTSAM_EXPORT void multiplyInPlace(const GaussianFactorGraph& fg, const VectorValues& x, Errors& e);
+  GTSAM_EXPORT void multiplyInPlace(const GaussianFactorGraphUnordered& fg, const VectorValuesUnordered& x, Errors& e);
 
   /** In-place version e <- A*x that takes an iterator. */
-  GTSAM_EXPORT void multiplyInPlace(const GaussianFactorGraph& fg, const VectorValues& x, const Errors::iterator& e);
+  GTSAM_EXPORT void multiplyInPlace(const GaussianFactorGraphUnordered& fg, const VectorValuesUnordered& x, const Errors::iterator& e);
 
   /** x += alpha*A'*e */
-  GTSAM_EXPORT void transposeMultiplyAdd(const GaussianFactorGraph& fg, double alpha, const Errors& e, VectorValues& x);
+  GTSAM_EXPORT void transposeMultiplyAdd(const GaussianFactorGraphUnordered& fg, double alpha, const Errors& e, VectorValuesUnordered& x);
 
   /**
    * Compute the gradient of the energy function,
@@ -318,9 +280,10 @@ namespace gtsam {
    * The gradient is \f$ A^T(Ax-b) \f$.
    * @param fg The Jacobian factor graph $(A,b)$
    * @param x0 The center about which to compute the gradient
-   * @return The gradient as a VectorValues
+   * @return The gradient as a VectorValuesUnordered
+
    */
-  GTSAM_EXPORT VectorValues gradient(const GaussianFactorGraph& fg, const VectorValues& x0);
+  GTSAM_EXPORT VectorValuesUnordered gradient(const GaussianFactorGraphUnordered& fg, const VectorValuesUnordered& x0);
 
   /**
    * Compute the gradient of the energy function,
@@ -328,23 +291,19 @@ namespace gtsam {
    * centered around zero.
    * The gradient is \f$ A^T(Ax-b) \f$.
    * @param fg The Jacobian factor graph $(A,b)$
-   * @param [output] g A VectorValues to store the gradient, which must be preallocated, see allocateVectorValues
-   * @return The gradient as a VectorValues
+   * @param [output] g A VectorValuesUnordered to store the gradient, which must be preallocated, see allocateVectorValues
+   * @return The gradient as a VectorValuesUnordered
+
    */
-  GTSAM_EXPORT void gradientAtZero(const GaussianFactorGraph& fg, VectorValues& g);
+  GTSAM_EXPORT void gradientAtZero(const GaussianFactorGraphUnordered& fg, VectorValuesUnordered& g);
 
   /* matrix-vector operations */
-  GTSAM_EXPORT void residual(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r);
-  GTSAM_EXPORT void multiply(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r);
-  GTSAM_EXPORT void transposeMultiply(const GaussianFactorGraph& fg, const VectorValues &r, VectorValues &x);
-
-  /** shared pointer version
-   * \todo Make this a member function - affects SubgraphPreconditioner */
-  GTSAM_EXPORT boost::shared_ptr<Errors> gaussianErrors_(const GaussianFactorGraph& fg, const VectorValues& x);
+  GTSAM_EXPORT void residual(const GaussianFactorGraphUnordered& fg, const VectorValuesUnordered &x, VectorValuesUnordered &r);
+  GTSAM_EXPORT void multiply(const GaussianFactorGraphUnordered& fg, const VectorValuesUnordered &x, VectorValuesUnordered &r);
+  GTSAM_EXPORT void transposeMultiply(const GaussianFactorGraphUnordered& fg, const VectorValuesUnordered &r, VectorValuesUnordered &x);
 
   /** return A*x-b
    * \todo Make this a member function - affects SubgraphPreconditioner */
-  inline Errors gaussianErrors(const GaussianFactorGraph& fg, const VectorValues& x) {
-    return *gaussianErrors_(fg, x); }
+  GTSAM_EXPORT Errors gaussianErrors(const GaussianFactorGraphUnordered& fg, const VectorValuesUnordered& x);
 
 } // namespace gtsam

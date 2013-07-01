@@ -22,6 +22,7 @@
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/join.hpp>
 #include <boost/assign/list_of.hpp>
+#include <boost/foreach.hpp>
 
 namespace gtsam {
 
@@ -33,13 +34,13 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  template<typename KEYS, class MATRIX>
+  template<typename KEYS>
   JacobianFactorUnordered::JacobianFactorUnordered(
-    const KEYS& keys, const VerticalBlockMatrix& augmentedMatrix, const SharedDiagonal& sigmas) :
+    const KEYS& keys, const VerticalBlockMatrix& augmentedMatrix, const SharedDiagonal& model) :
   Base(keys)
   {
     // Check noise model dimension
-    if(noiseModel && model->dim() != augmentedMatrix.rows())
+    if(model && model->dim() != augmentedMatrix.rows())
       throw InvalidNoiseModel(augmentedMatrix.rows(), model->dim());
 
     // Check number of variables
@@ -63,12 +64,19 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  namespace {
+    const Matrix& _getPairSecond(const std::pair<Key,Matrix>& p) {
+      return p.second;
+    }
+  }
+
+  /* ************************************************************************* */
   template<typename TERMS>
   void JacobianFactorUnordered::fillTerms(const TERMS& terms, const Vector& b, const SharedDiagonal& noiseModel)
   {
     // Check noise model dimension
-    if(noiseModel && model->dim() != b.size())
-      throw InvalidNoiseModel(b.size(), model->dim());
+    if(noiseModel && noiseModel->dim() != b.size())
+      throw InvalidNoiseModel(b.size(), noiseModel->dim());
 
     // Resize base class key vector
     Base::keys_.resize(terms.size());
@@ -79,10 +87,14 @@ namespace gtsam {
     using boost::adaptors::map_values;
     using boost::adaptors::transformed;
     using boost::join;
-    Ab_ = VerticalBlockMatrix(join(terms | map_values | transformed(Matrix::cols), cref_list_of<1>(1)), b.size());
+    Ab_ = VerticalBlockMatrix(join(
+      terms
+      | transformed(&_getPairSecond)
+      | transformed(boost::mem_fn(&Matrix::cols)),
+      cref_list_of<1>((DenseIndex)1)), b.size());
 
     // Check and add terms
-    typedef pair<Key, Matrix> Term;
+    typedef std::pair<Key, Matrix> Term;
     DenseIndex i = 0; // For block index
     BOOST_FOREACH(const Term& term, terms) {
       // Check block rows

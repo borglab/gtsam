@@ -26,7 +26,7 @@
 
 namespace gtsam {
 
-  // Forward declaration of SymbolicConditional
+  // Forward declarations
   class SymbolicConditionalUnordered;
 
   /**
@@ -114,11 +114,15 @@ namespace gtsam {
     }
   }; // IndexFactor
 
+  // Forward declarations
+  class SymbolicFactorGraphUnordered;
+  class OrderingUnordered;
+
   /** Dense elimination function for symbolic factors.  This is usually provided as an argument to
    *  one of the factor graph elimination functions (see EliminateableFactorGraph).  The factor
    *  graph elimination functions do sparse variable elimination, and use this function to eliminate
    *  single variables or variable cliques. */
   GTSAM_EXPORT std::pair<boost::shared_ptr<SymbolicConditionalUnordered>, boost::shared_ptr<SymbolicFactorUnordered> >
-    EliminateSymbolicUnordered(const std::vector<SymbolicFactorUnordered::shared_ptr>& factors, const std::vector<Key>& keys);
+    EliminateSymbolicUnordered(const SymbolicFactorGraphUnordered& factors, const OrderingUnordered& keys);
 
 }

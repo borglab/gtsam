@@ -141,13 +141,19 @@ on gtsam::IndeterminantLinearSystemException for more information.\n";
     const DenseIndex blockRows; ///< The dimensionality of the noise model
 
     InvalidMatrixBlock(DenseIndex factorRows, DenseIndex blockRows) :
-      factorRows(factorRows), blockRows(noiseModelDims) {}
+      factorRows(factorRows), blockRows(blockRows) {}
     virtual ~InvalidMatrixBlock() throw() {}
 
     virtual const char* what() const throw();
 
   private:
     mutable std::string description_;
+  };
+
+  /* ************************************************************************* */
+  class InvalidDenseElimination : public std::invalid_argument {
+  public:
+    InvalidDenseElimination(const char *message) : std::invalid_argument(message) {}
   };
 
  }

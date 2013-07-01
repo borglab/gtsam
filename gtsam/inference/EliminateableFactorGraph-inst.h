@@ -31,8 +31,8 @@ namespace gtsam {
   {
     if(ordering && variableIndex) {
       // Do elimination
-      std::pair<boost::shared_ptr<BAYESNET>, boost::shared_ptr<FACTORGRAPH> > result
-        = ELIMINATIONTREE(asDerived(), *variableIndex, *ordering).eliminate(function);
+      std::pair<boost::shared_ptr<BayesNetType>, boost::shared_ptr<FactorGraphType> > result
+        = EliminationTreeType(asDerived(), *variableIndex, *ordering).eliminate(function);
       // If any factors are remaining, the ordering was incomplete
       if(!result.second->empty())
         throw InconsistentEliminationRequested();
@@ -61,8 +61,8 @@ namespace gtsam {
   {
     if(ordering && variableIndex) {
       // Do elimination with given ordering
-      std::pair<boost::shared_ptr<BAYESTREE>, boost::shared_ptr<FACTORGRAPH> > result
-        = JUNCTIONTREE(ELIMINATIONTREE(asDerived(), *variableIndex, *ordering)).eliminate(function);
+      std::pair<boost::shared_ptr<BayesTreeType>, boost::shared_ptr<FactorGraphType> > result
+        = JunctionTreeType(EliminationTreeType(asDerived(), *variableIndex, *ordering)).eliminate(function);
       // If any factors are remaining, the ordering was incomplete
       if(!result.second->empty())
         throw InconsistentEliminationRequested();
@@ -87,14 +87,14 @@ namespace gtsam {
   template<class FACTORGRAPH>
   std::pair<boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesNetType>, boost::shared_ptr<FACTORGRAPH> >
     EliminateableFactorGraph<FACTORGRAPH>::eliminatePartialSequential(
-    const Eliminate& function, const OrderingUnordered& ordering, OptionalVariableIndex variableIndex) const
+    const OrderingUnordered& ordering, const Eliminate& function, OptionalVariableIndex variableIndex) const
   {
     if(variableIndex) {
       // Do elimination
-      return ELIMINATIONTREE(asDerived(), *variableIndex, ordering).eliminate(function);
+      return EliminationTreeType(asDerived(), *variableIndex, ordering).eliminate(function);
     } else {
       // If no variable index is provided, compute one and call this function again
-      return eliminatePartialSequential(function, ordering, VariableIndexUnordered(asDerived()));
+      return eliminatePartialSequential(ordering, function, VariableIndexUnordered(asDerived()));
     }
   }
 
@@ -102,14 +102,14 @@ namespace gtsam {
   template<class FACTORGRAPH>
   std::pair<boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesTreeType>, boost::shared_ptr<FACTORGRAPH> >
     EliminateableFactorGraph<FACTORGRAPH>::eliminatePartialMultifrontal(
-    const Eliminate& function, const OrderingUnordered& ordering, OptionalVariableIndex variableIndex) const
+    const OrderingUnordered& ordering, const Eliminate& function, OptionalVariableIndex variableIndex) const
   {
     if(variableIndex) {
       // Do elimination
-      return JUNCTIONTREE(ELIMINATIONTREE(asDerived(), *variableIndex, ordering)).eliminate(function);
+      return JunctionTreeType(EliminationTreeType(asDerived(), *variableIndex, ordering)).eliminate(function);
     } else {
       // If no variable index is provided, compute one and call this function again
-      return eliminatePartialMultifrontal(function, ordering, VariableIndexUnordered(asDerived()));
+      return eliminatePartialMultifrontal(ordering, function, VariableIndexUnordered(asDerived()));
     }
   }
 

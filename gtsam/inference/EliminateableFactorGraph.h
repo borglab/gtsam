@@ -30,10 +30,11 @@ namespace gtsam {
   /// elimination, etc.  This must be defined for each factor graph that inherits from
   /// EliminateableFactorGraph.
   template<class GRAPH>
-  class EliminationTraits
+  struct EliminationTraits
   {
     // Template for deriving:
     // typedef MyFactor FactorType;                   ///< Type of factors in factor graph (e.g. GaussianFactor)
+    // typedef MyFactorGraphType FactorGraphType;     ///< Type of the factor graph (e.g. GaussianFactorGraph)
     // typedef MyConditional ConditionalType;         ///< Type of conditionals from elimination (e.g. GaussianConditional)
     // typedef MyBayesNet BayesNetType;               ///< Type of Bayes net from sequential elimination (e.g. GaussianBayesNet)
     // typedef MyEliminationTree EliminationTreeType; ///< Type of elimination tree (e.g. GaussianEliminationTree)
@@ -41,8 +42,7 @@ namespace gtsam {
     // typedef MyJunctionTree JunctionTreeType;       ///< Type of Junction tree (e.g. GaussianJunctionTree)
     // static pair<shared_ptr<ConditionalType>, shared_ptr<FactorType>
     //   DefaultEliminate(
-    //   const std::vector<boost::shared_ptr<FactorType> >& factors,
-    //   const std::vector<Key>& keys); ///< The default dense elimination function
+    //   const MyFactorGraph& factors, const OrderingUnordered& keys); ///< The default dense elimination function
   };
 
 
@@ -55,12 +55,12 @@ namespace gtsam {
   {
   private:
     typedef EliminateableFactorGraph<FACTORGRAPH> This; ///< Typedef to this class.
-    typedef FACTORGRAPH FactorGraphType;
+    typedef FACTORGRAPH FactorGraphType; ///< Typedef to factor graph type
+    // Base factor type stored in this graph (private because derived classes will get this from
+    // their FactorGraph base class)
+    typedef typename EliminationTraits<FactorGraphType>::FactorType _FactorType;
 
   public:
-    /// Base factor type stored in this graph
-    typedef typename EliminationTraits<FactorGraphType>::FactorType FactorType;
-
     /// Conditional type stored in the Bayes net produced by elimination
     typedef typename EliminationTraits<FactorGraphType>::ConditionalType ConditionalType;
 
@@ -78,10 +78,10 @@ namespace gtsam {
 
     /// The pair of conditional and remaining factor produced by a single dense elimination step on
     /// a subgraph.
-    typedef std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> > EliminationResult;
+    typedef std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<_FactorType> > EliminationResult;
 
     /// The function type that does a single dense elimination step on a subgraph.
-    typedef boost::function<EliminationResult(std::vector<boost::shared_ptr<FactorType> >, std::vector<Key>)> Eliminate;
+    typedef boost::function<EliminationResult(std::vector<boost::shared_ptr<_FactorType> >, std::vector<Key>)> Eliminate;
 
     /// Typedef for an optional ordering as an argument to elimination functions
     typedef boost::optional<const OrderingUnordered&> OptionalOrdering;

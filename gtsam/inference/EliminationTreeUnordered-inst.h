@@ -137,6 +137,7 @@ namespace gtsam {
     } catch(std::invalid_argument& e) {
       // If this is thrown from structure[order[j]] above, it means that it was requested to
       // eliminate a variable not present in the graph, so throw a more informative error message.
+      (void)e; // Prevent unused variable warning
       throw std::invalid_argument("EliminationTree: given ordering contains variables that are not involved in the factor graph");
     } catch(...) {
       throw;

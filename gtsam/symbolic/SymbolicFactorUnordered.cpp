@@ -18,8 +18,10 @@
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
 
+#include <gtsam/inference/OrderingUnordered.h>
 #include <gtsam/symbolic/SymbolicFactorUnordered.h>
 #include <gtsam/symbolic/SymbolicConditionalUnordered.h>
+#include <gtsam/symbolic/SymbolicFactorGraphUnordered.h>
 
 using namespace std;
 
@@ -27,7 +29,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   std::pair<boost::shared_ptr<SymbolicConditionalUnordered>, boost::shared_ptr<SymbolicFactorUnordered> >
-    EliminateSymbolicUnordered(const vector<SymbolicFactorUnordered::shared_ptr>& factors, const vector<Key>& keys)
+    EliminateSymbolicUnordered(const SymbolicFactorGraphUnordered& factors, const OrderingUnordered& keys)
   {
     // Gather all keys
     FastSet<Key> allKeys;

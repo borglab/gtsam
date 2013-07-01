@@ -24,6 +24,7 @@
 #include <gtsam/linear/GaussianFactorGraphUnordered.h>
 #include <gtsam/linear/VectorValuesUnordered.h>
 #include <gtsam/inference/VariableSlots.h>
+#include <gtsam/inference/OrderingUnordered.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/base/Matrix.h>
@@ -44,6 +45,7 @@
 #pragma GCC diagnostic pop
 #endif
 #include <boost/range/algorithm/copy.hpp>
+#include <boost/range/adaptor/indirected.hpp>
 
 #include <cmath>
 #include <sstream>
@@ -63,7 +65,6 @@ namespace gtsam {
     //  *this = JacobianFactorUnordered(*rhs);
     else
       throw std::invalid_argument("In JacobianFactor(const GaussianFactor& rhs), rhs is neither a JacobianFactor nor a HessianFactor");
-    assertInvariants();
   }
 
   /* ************************************************************************* */
@@ -77,11 +78,11 @@ namespace gtsam {
   JacobianFactorUnordered::JacobianFactorUnordered(Key i1, const Matrix& A1,
     const Vector& b, const SharedDiagonal& model)
   {
-    fillTerms(cref_list_of<1>(make_pair(i1,A1)), b, model);
+    fillTerms(cref_list_of<1>(make_pair(i1, A1)), b, model);
   }
 
   /* ************************************************************************* */
-  JacobianFactorUnordered::JacobianFactorUnordered(Key i1, const Matrix& A1, Key i2, const Matrix& A2,
+  JacobianFactorUnordered::JacobianFactorUnordered(const Key i1, const Matrix& A1, Key i2, const Matrix& A2,
     const Vector& b, const SharedDiagonal& model)
   {
     fillTerms(cref_list_of<2>
@@ -90,7 +91,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  JacobianFactorUnordered::JacobianFactorUnordered(Key i1, const Matrix& A1, Key i2, const Matrix& A2,
+  JacobianFactorUnordered::JacobianFactorUnordered(const Key i1, const Matrix& A1, Key i2, const Matrix& A2,
       Key i3, const Matrix& A3, const Vector& b, const SharedDiagonal& model)
   {
     fillTerms(cref_list_of<3>
@@ -126,28 +127,28 @@ namespace gtsam {
   /* ************************************************************************* */
   // Helper functions for combine constructor
   namespace {
-    boost::tuple<vector<size_t>, size_t, size_t> _countDims(
-      const std::vector<JacobianFactorUnordered::shared_ptr>& factors, const VariableSlots& variableSlots)
+    boost::tuple<vector<DenseIndex>, DenseIndex, DenseIndex> _countDims(
+      const std::vector<JacobianFactorUnordered::shared_ptr>& factors, const vector<VariableSlots::const_iterator>& variableSlots)
     {
       gttic(countDims);
 #ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
-      vector<size_t> varDims(variableSlots.size(), numeric_limits<size_t>::max());
+      vector<DenseIndex> varDims(variableSlots.size(), numeric_limits<DenseIndex>::max());
 #else
-      vector<size_t> varDims(variableSlots.size());
+      vector<DenseIndex> varDims(variableSlots.size());
 #endif
-      size_t m = 0;
-      size_t n = 0;
+      DenseIndex m = 0;
+      DenseIndex n = 0;
       {
         size_t jointVarpos = 0;
-        BOOST_FOREACH(const VariableSlots::value_type& slots, variableSlots) {
-
-          assert(slots.second.size() == factors.size());
+        BOOST_FOREACH(VariableSlots::const_iterator slots, variableSlots)
+        {
+          assert(slots->second.size() == factors.size());
 
           size_t sourceFactorI = 0;
-          BOOST_FOREACH(const size_t sourceVarpos, slots.second) {
+          BOOST_FOREACH(const size_t sourceVarpos, slots->second) {
             if(sourceVarpos < numeric_limits<size_t>::max()) {
               const JacobianFactorUnordered& sourceFactor = *factors[sourceFactorI];
-              size_t vardim = sourceFactor.getDim(sourceFactor.begin() + sourceVarpos);
+              DenseIndex vardim = sourceFactor.getDim(sourceFactor.begin() + sourceVarpos);
 #ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
               if(varDims[jointVarpos] == numeric_limits<size_t>::max()) {
                 varDims[jointVarpos] = vardim;
@@ -192,7 +193,9 @@ namespace gtsam {
 
   /* ************************************************************************* */
   JacobianFactorUnordered::JacobianFactorUnordered(
-    const GaussianFactorGraphUnordered& factors, boost::optional<const VariableSlots&> variableSlots)
+    const GaussianFactorGraphUnordered& graph,
+    boost::optional<const OrderingUnordered&> ordering,
+    boost::optional<const VariableSlots&> variableSlots)
   {
     gttic(JacobianFactorUnordered_combine_constructor);
 
@@ -200,36 +203,70 @@ namespace gtsam {
     gttic(Compute_VariableSlots);
     boost::optional<VariableSlots> computedVariableSlots;
     if(!variableSlots) {
-      computedVariableSlots = VariableSlots(factors);
+      computedVariableSlots = VariableSlots(graph);
       variableSlots = computedVariableSlots; // Binds reference, does not copy VariableSlots
     }
     gttoc(Compute_VariableSlots);
 
     // Cast or convert to Jacobians
-    std::vector<JacobianFactorUnordered::shared_ptr> jacobians = _convertOrCastToJacobians(factors);
+    std::vector<JacobianFactorUnordered::shared_ptr> jacobians = _convertOrCastToJacobians(graph);
+
+    // Order variable slots
+    vector<VariableSlots::const_iterator> orderedSlots;
+    orderedSlots.reserve(variableSlots->size());
+    if(ordering) {
+      // If an ordering is provided, arrange the slots first that ordering
+      FastList<VariableSlots::const_iterator> unorderedSlots;
+      size_t nOrderingSlotsUsed = 0;
+      orderedSlots.resize(ordering->size());
+      FastMap<Key, size_t> inverseOrdering = ordering->invert();
+      for(VariableSlots::const_iterator item = variableSlots->begin(); item != variableSlots->end(); ++item) {
+        FastMap<Key, size_t>::const_iterator orderingPosition = inverseOrdering.find(item->first);
+        if(orderingPosition == inverseOrdering.end()) {
+          unorderedSlots.push_back(item);
+        } else {
+          orderedSlots[orderingPosition->second] = item;
+          ++ nOrderingSlotsUsed;
+        }
+      }
+      if(nOrderingSlotsUsed != ordering->size())
+        throw std::invalid_argument(
+        "The ordering provided to the JacobianFactor combine constructor\n"
+        "contained extra variables that did not appear in the factors to combine.");
+      // Add the remaining slots
+      BOOST_FOREACH(VariableSlots::const_iterator item, unorderedSlots) {
+        orderedSlots.push_back(item);
+      }
+    } else {
+      // If no ordering is provided, arrange the slots as they were, which will be sorted
+      // numerically since VariableSlots uses a map sorting on Key.
+      for(VariableSlots::const_iterator item = variableSlots->begin(); item != variableSlots->end(); ++item)
+        orderedSlots.push_back(item);
+    }
 
     // Count dimensions
-    vector<size_t> varDims;
-    size_t m, n;
-    boost::tie(varDims, m, n) = _countDims(jacobians, *variableSlots);
+    vector<DenseIndex> varDims;
+    DenseIndex m, n;
+    boost::tie(varDims, m, n) = _countDims(jacobians, orderedSlots);
 
+    // Allocate matrix and copy keys in order
     gttic(allocate);
-    Ab_ = VerticalBlockMatrix(boost::join(varDims, cref_list_of<1>(1)), m); // Allocate augmented matrix
-    Base::keys_.resize(variableSlots->size());
-    boost::range::copy(*variableSlots | boost::adaptors::map_keys, Base::keys_.begin()); // Get variable keys from VariableSlots
+    Ab_ = VerticalBlockMatrix(boost::join(varDims, cref_list_of<1>((DenseIndex)1)), m); // Allocate augmented matrix
+    Base::keys_.resize(orderedSlots.size());
+    boost::range::copy(orderedSlots | boost::adaptors::indirected | boost::adaptors::map_keys, Base::keys_.begin()); // Get variable keys
     gttoc(allocate);
 
+    // Loop over slots in combined factor and copy blocks from source factors
     gttic(copy_blocks);
-    // Loop over slots in combined factor
     size_t combinedSlot = 0;
-    BOOST_FOREACH(const VariableSlots::value_type& varslot, variableSlots) {
+    BOOST_FOREACH(VariableSlots::const_iterator varslot, orderedSlots) {
       JacobianFactorUnordered::ABlock destSlot(this->getA(this->begin()+combinedSlot));
       // Loop over source jacobians
-      size_t nextRow = 0;
+      DenseIndex nextRow = 0;
       for(size_t factorI = 0; factorI < jacobians.size(); ++factorI) {
         // Slot in source factor
-        const size_t sourceSlot = varslot.second[factorI];
-        const size_t sourceRows = jacobians[factorI]->rows();
+        const size_t sourceSlot = varslot->second[factorI];
+        const DenseIndex sourceRows = jacobians[factorI]->rows();
         JacobianFactorUnordered::ABlock::RowsBlockXpr destBlock(destSlot.middleRows(nextRow, sourceRows));
         // Copy if exists in source factor, otherwise set zero
         if(sourceSlot != numeric_limits<size_t>::max())
@@ -242,13 +279,14 @@ namespace gtsam {
     }
     gttoc(copy_blocks);
 
+    // Copy the RHS vectors and sigmas
     gttic(copy_vectors);
     bool anyConstrained = false;
     boost::optional<Vector> sigmas;
     // Loop over source jacobians
-    size_t nextRow = 0;
+    DenseIndex nextRow = 0;
     for(size_t factorI = 0; factorI < jacobians.size(); ++factorI) {
-      const size_t sourceRows = jacobians[factorI]->rows();
+      const DenseIndex sourceRows = jacobians[factorI]->rows();
       this->getb().segment(nextRow, sourceRows) = jacobians[factorI]->getb();
       if(jacobians[factorI]->get_model()) {
         // If the factor has a noise model and we haven't yet allocated sigmas, allocate it.
@@ -421,8 +459,53 @@ namespace gtsam {
   //}
 
   /* ************************************************************************* */
-  GaussianConditionalUnordered::shared_ptr JacobianFactorUnordered::eliminateFirst() {
-    return this->eliminate(1);
+  std::pair<boost::shared_ptr<GaussianConditionalUnordered>, boost::shared_ptr<JacobianFactorUnordered> >
+    JacobianFactorUnordered::eliminate(const OrderingUnordered& keys)
+  {
+    GaussianFactorGraphUnordered graph;
+    graph.add(*this);
+    return EliminateQRUnordered(graph, keys);
+  }
+
+  /* ************************************************************************* */
+  void JacobianFactorUnordered::setModel(bool anyConstrained, const Vector& sigmas) {
+    if((size_t) sigmas.size() != this->rows())
+      throw InvalidNoiseModel(this->rows(), sigmas.size());
+    if (anyConstrained)
+      model_ = noiseModel::Constrained::MixedSigmas(sigmas);
+    else
+      model_ = noiseModel::Diagonal::Sigmas(sigmas);
+  }
+
+  /* ************************************************************************* */
+  std::pair<boost::shared_ptr<GaussianConditionalUnordered>, boost::shared_ptr<JacobianFactorUnordered> >
+    EliminateQRUnordered(const GaussianFactorGraphUnordered& factors, const OrderingUnordered& keys)
+  {
+    // Combine and sort variable blocks in elimination order
+    JacobianFactorUnordered::shared_ptr jointFactor;
+    try {
+      jointFactor = boost::make_shared<JacobianFactorUnordered>(factors, keys);
+    } catch(std::invalid_argument& e) {
+      (void) e; // Avoid unused variable warning
+      throw InvalidDenseElimination(
+        "EliminateQRUnordered was called with a request to eliminate variables that are not\n"
+        "involved in the provided factors.");
+    }
+
+    // Do dense elimination
+    SharedDiagonal noiseModel;
+    if(jointFactor->model_)
+      jointFactor->model_ = jointFactor->model_->QR(jointFactor->Ab_.matrix());
+    else
+      inplace_QR(jointFactor->Ab_.matrix());
+
+    // Zero below the diagonal
+    jointFactor->Ab_.matrix().triangularView<Eigen::StrictlyLower>().setZero();
+
+    // Split elimination result into conditional and remaining factor
+    GaussianConditionalUnordered::shared_ptr conditional = jointFactor->splitConditional(keys.size());
+
+    return make_pair(conditional, jointFactor);
   }
 
   /* ************************************************************************* */
@@ -441,9 +524,12 @@ namespace gtsam {
     gttic(cond_Rd);
     const DenseIndex originalRowEnd = Ab_.rowEnd();
     Ab_.rowEnd() = Ab_.rowStart() + frontalDim;
-    const Eigen::VectorBlock<const Vector> sigmas = model_->sigmas().segment(Ab_.rowStart(), Ab_.rowEnd()-Ab_.rowStart());
-    GaussianConditionalUnordered::shared_ptr conditional(boost::make_shared<GaussianConditionalUnordered>(
-      Base::keys_, nrFrontals, Ab_, sigmas));
+    SharedDiagonal conditionalNoiseModel;
+    if(model_)
+      conditionalNoiseModel =
+      noiseModel::Diagonal::Sigmas(model_->sigmas().segment(Ab_.rowStart(), Ab_.rowEnd()-Ab_.rowStart()));
+    GaussianConditionalUnordered::shared_ptr conditional = boost::make_shared<GaussianConditionalUnordered>(
+      Base::keys_, nrFrontals, Ab_, conditionalNoiseModel);
     Ab_.rowStart() += frontalDim;
     Ab_.firstBlock() += nrFrontals;
     Ab_.rowEnd() = originalRowEnd;
@@ -462,65 +548,6 @@ namespace gtsam {
     gttoc(remaining_factor);
 
     return conditional;
-  }
-
-  /* ************************************************************************* */
-  GaussianConditionalUnordered::shared_ptr JacobianFactorUnordered::eliminate(size_t nrFrontals) {
-
-    if(Ab_.rowStart() != 0 || Ab_.rowEnd() != (size_t) Ab_.matrix().rows() && Ab_.firstBlock() == 0);
-    if(nrFrontals > size())
-      throw std::invalid_argument("Requesting to eliminate more variables than exist using JacobianFactor::splitConditional");
-    assertInvariants();
-
-    const bool debug = ISDEBUG("JacobianFactor::eliminate");
-
-    if(debug) cout << "Eliminating " << nrFrontals << " frontal variables" << endl;
-    if(debug) this->print("Eliminating JacobianFactor: ");
-    if(debug) gtsam::print(matrix_, "Augmented Ab: ");
-
-    size_t frontalDim = Ab_.range(0,nrFrontals).cols();
-
-    if(debug) cout << "frontalDim = " << frontalDim << endl;
-
-    // Use in-place QR dense Ab appropriate to NoiseModel
-    gttic(QR);
-    SharedDiagonal noiseModel = model_->QR(matrix_);
-    gttoc(QR);
-
-    // Zero the lower-left triangle.  todo: not all of these entries actually
-    // need to be zeroed if we are careful to start copying rows after the last
-    // structural zero.
-    if(matrix_.rows() > 0)
-      for(size_t j=0; j<(size_t) matrix_.cols(); ++j)
-        for(size_t i=j+1; i<noiseModel->dim(); ++i)
-          matrix_(i,j) = 0.0;
-
-    if(debug) gtsam::print(matrix_, "QR result: ");
-    if(debug) noiseModel->print("QR result noise model: ");
-
-    // Start of next part
-    model_ = noiseModel;
-    return splitConditional(nrFrontals);
-  }
-
-  /* ************************************************************************* */
-  //void JacobianFactorUnordered::allocate(const VariableSlots& variableSlots, vector<
-  //    size_t>& varDims, size_t m) {
-  //  keys_.resize(variableSlots.size());
-  //  std::transform(variableSlots.begin(), variableSlots.end(), begin(),
-  //      boost::bind(&VariableSlots::const_iterator::value_type::first, _1));
-  //  varDims.push_back(1);
-  //  Ab_.copyStructureFrom(BlockAb(matrix_, varDims.begin(), varDims.end(), m));
-  //}
-
-  /* ************************************************************************* */
-  void JacobianFactorUnordered::setModel(bool anyConstrained, const Vector& sigmas) {
-    if((size_t) sigmas.size() != this->rows())
-      throw InvalidNoiseModel(this->rows(), sigmas.size());
-    if (anyConstrained)
-      model_ = noiseModel::Constrained::MixedSigmas(sigmas);
-    else
-      model_ = noiseModel::Diagonal::Sigmas(sigmas);
   }
 
 }

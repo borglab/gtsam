@@ -29,6 +29,7 @@ namespace gtsam {
     result.matrix_.resize(rhs.rows(), result.variableColOffsets_.back());
     result.rowEnd_ = rhs.rows();
     result.assertInvariants();
+    return result;
   }
 
 }

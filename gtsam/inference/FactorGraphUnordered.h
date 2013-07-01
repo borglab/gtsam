@@ -43,7 +43,6 @@ namespace gtsam {
   public:
     typedef FACTOR FactorType;  ///< factor type
     typedef boost::shared_ptr<FACTOR> sharedFactor;  ///< Shared pointer to a factor
-    typedef boost::shared_ptr<typename FACTOR::ConditionalType> sharedConditional;  ///< Shared pointer to a conditional
     typedef typename std::vector<sharedFactor>::iterator iterator;
     typedef typename std::vector<sharedFactor>::const_iterator const_iterator;
 

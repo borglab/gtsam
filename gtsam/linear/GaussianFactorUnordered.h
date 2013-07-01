@@ -26,7 +26,7 @@
 namespace gtsam {
 
   // Forward declarations
-  class VectorValues;
+  class VectorValuesUnordered;
 
   /**
    * An abstract virtual base class for JacobianFactor and HessianFactor. A GaussianFactor has a

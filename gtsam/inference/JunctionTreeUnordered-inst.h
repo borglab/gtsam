@@ -73,17 +73,17 @@ namespace gtsam {
       // current node did not introduce any parents beyond those already in the child.
 
       // Do symbolic elimination for this node
-      std::vector<SymbolicFactorUnordered::shared_ptr> symbolicFactors;
+      SymbolicFactorGraphUnordered symbolicFactors;
       symbolicFactors.reserve(ETreeNode->factors.size() + myData.childSymbolicFactors.size());
       // Add symbolic versions of the ETree node factors
       BOOST_FOREACH(const typename GRAPH::sharedFactor& factor, ETreeNode->factors) {
         symbolicFactors.push_back(boost::make_shared<SymbolicFactorUnordered>(
           SymbolicFactorUnordered::FromKeys(*factor))); }
       // Add symbolic factors passed up from children
-      symbolicFactors.insert(symbolicFactors.end(), myData.childSymbolicFactors.begin(), myData.childSymbolicFactors.end());
-      std::vector<Key> keyAsVector(1); keyAsVector[0] = ETreeNode->key;
+      symbolicFactors.push_back(myData.childSymbolicFactors.begin(), myData.childSymbolicFactors.end());
+      OrderingUnordered keyAsOrdering; keyAsOrdering.push_back(ETreeNode->key);
       std::pair<SymbolicConditionalUnordered::shared_ptr, SymbolicFactorUnordered::shared_ptr> symbolicElimResult =
-        EliminateSymbolicUnordered(symbolicFactors, keyAsVector);
+        EliminateSymbolicUnordered(symbolicFactors, keyAsOrdering);
 
       // Store symbolic elimination results in the parent
       myData.parentData->childSymbolicConditionals.push_back(symbolicElimResult.first);
