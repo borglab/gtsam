@@ -66,6 +66,7 @@ classdef Point3 < handle
     function sobj = saveobj(obj)
       % SAVEOBJ Saves the object to a matlab-readable format
       sobj = obj.string_serialize();
+    end
   end
 
   methods(Static = true)
