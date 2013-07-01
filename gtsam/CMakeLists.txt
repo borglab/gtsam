@@ -70,8 +70,6 @@ foreach(subdir ${gtsam_subdirs})
     add_subdirectory(${subdir})
 endforeach(subdir)
  
-message(STATUS "navigation_srcs: [${navigation_srcs}]")
- 
 # To add additional sources to gtsam when building the full library (static or shared)
 # Add the subfolder with _srcs appended to the end to this list
 set(gtsam_srcs
