@@ -12,6 +12,10 @@ gtsam_assign_source_folders(${wrap_srcs} ${wrap_headers})
 add_executable(wrap wrap.cpp)
 target_link_libraries(wrap wrap_lib ${WRAP_BOOST_LIBRARIES})
 
+# Set folder in Visual Studio
+file(RELATIVE_PATH relative_path "${PROJECT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+set_target_properties(wrap_lib wrap PROPERTIES FOLDER "${relative_path}")
+
 # Install wrap binary and export target
 if (GTSAM_INSTALL_WRAP)
     install(TARGETS wrap EXPORT GTSAM-exports DESTINATION bin)
