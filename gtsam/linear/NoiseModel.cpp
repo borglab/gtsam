@@ -110,6 +110,8 @@ void Gaussian::WhitenInPlace(Matrix& H) const {
 // General QR, see also special version in Constrained
 SharedDiagonal Gaussian::QR(Matrix& Ab) const {
 
+  gttic(Gaussian_noise_model_QR);
+
   static const bool debug = false;
 
   // get size(A) and maxRank
@@ -129,7 +131,7 @@ SharedDiagonal Gaussian::QR(Matrix& Ab) const {
   // TODO: necessary to isolate last column?
 //  householder(Ab, maxRank);
 
-  return Unit::Create(maxRank);
+  return SharedDiagonal();
 }
 
 void Gaussian::WhitenSystem(vector<Matrix>& A, Vector& b) const {
