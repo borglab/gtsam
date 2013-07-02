@@ -93,8 +93,6 @@ namespace gtsam {
     /** Root cliques */
     std::vector<sharedClique> roots_;
 
-  public:
-
     /// @name Standard Constructors
     /// @{
 
@@ -104,32 +102,26 @@ namespace gtsam {
     /** Copy constructor */
     BayesTreeUnordered(const This& other);
 
-  protected:
-    /** Assignment operator */
-    This& operator=(const This& other);
-
-  public:
-    /// @}
-    /// @name Advanced Constructors
-    /// @{
-
     /** Destructor */
     virtual ~BayesTreeUnordered() {}
 
     /// @}
+
+    /** Assignment operator */
+    This& operator=(const This& other);
+
     /// @name Testable
     /// @{
 
-  protected:
     /** check equality */
     bool equals(const This& other, double tol = 1e-9) const;
 
+  public:
     /** print */
     void print(const std::string& s = "",
         const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
-
-  public:
     /// @}
+
     /// @name Standard Interface
     /// @{
 

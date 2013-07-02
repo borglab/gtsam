@@ -19,13 +19,16 @@
 #include <boost/foreach.hpp>
 
 #include <gtsam/symbolic/SymbolicBayesTreeUnordered.h>
+#include <gtsam/symbolic/SymbolicFactorGraphUnordered.h>
+#include <gtsam/symbolic/SymbolicBayesNetUnordered.h>
 #include <gtsam/inference/BayesTreeUnordered-inst.h>
 #include <gtsam/inference/BayesTreeCliqueBaseUnordered-inst.h>
 
 namespace gtsam {
 
-  void SymbolicBayesTreeUnordered::noop() const {
-
+  bool SymbolicBayesTreeUnordered::equals(const This& other, double tol /* = 1e-9 */) const
+  {
+    return Base::equals(other, tol);
   }
 
 //  /* ************************************************************************* */
