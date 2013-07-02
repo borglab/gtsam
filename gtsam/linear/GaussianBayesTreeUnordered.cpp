@@ -17,77 +17,111 @@
  * @author  Richard Roberts
  */
 
-#include <gtsam/linear/GaussianBayesTree.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/base/treeTraversal-inst.h>
+#include <gtsam/inference/BayesTreeUnordered-inst.h>
+#include <gtsam/inference/BayesTreeCliqueBaseUnordered-inst.h>
+#include <gtsam/linear/GaussianBayesTreeUnordered.h>
+#include <gtsam/linear/GaussianFactorGraphUnordered.h>
+#include <gtsam/linear/GaussianBayesNetUnordered.h>
+#include <gtsam/linear/VectorValuesUnordered.h>
 
 namespace gtsam {
 
-/* ************************************************************************* */
-VectorValues optimize(const GaussianBayesTree& bayesTree) {
-  VectorValues result = *allocateVectorValues(bayesTree);
-  optimizeInPlace(bayesTree, result);
-  return result;
-}
+  /* ************************************************************************* */
+  namespace internal
+  {
+    /* ************************************************************************* */
+    /** Pre-order visitor for back-substitution in a Bayes tree.  The visitor function operator()()
+     *  optimizes the clique given the solution for the parents, and returns the solution for the
+     *  clique's frontal variables.  In addition, it adds the solution to a global collected
+     *  solution that will finally be returned to the user.  The reason we pass the individual
+     *  clique solutions between nodes is to avoid log(n) lookups over all variables, they instead
+     *  then are only over a node's parent variables. */
+    struct OptimizeClique
+    {
+      VectorValuesUnordered collectedResult;
 
-/* ************************************************************************* */
-void optimizeInPlace(const GaussianBayesTree& bayesTree, VectorValues& result) {
-  internal::optimizeInPlace<GaussianBayesTree>(bayesTree.root(), result);
-}
+      VectorValuesUnordered operator()(
+        const GaussianBayesTreeCliqueUnordered::shared_ptr& clique,
+        const VectorValuesUnordered& parentSolution)
+      {
+        // parents are assumed to already be solved and available in result
+        VectorValuesUnordered cliqueSolution = clique->conditional()->solve(parentSolution);
+        collectedResult.insert(cliqueSolution);
+        return cliqueSolution;
+      }
+    };
 
-/* ************************************************************************* */
-VectorValues optimizeGradientSearch(const GaussianBayesTree& bayesTree) {
-  gttic(Allocate_VectorValues);
-  VectorValues grad = *allocateVectorValues(bayesTree);
-  gttoc(Allocate_VectorValues);
+    /* ************************************************************************* */
+    double logDeterminant(const GaussianBayesTreeCliqueUnordered::shared_ptr& clique, double& parentSum)
+    {
+      parentSum += clique->conditional()->get_R().diagonal().unaryExpr(std::ptr_fun<double,double>(log)).sum();
+    }
+  }
 
-  optimizeGradientSearchInPlace(bayesTree, grad);
+  /* ************************************************************************* */
+  VectorValuesUnordered GaussianBayesTreeUnordered::optimize() const {
+    internal::OptimizeClique visitor;
+    VectorValuesUnordered empty;
+    treeTraversal::DepthFirstForest(*this, empty, visitor);
+    return visitor.collectedResult;
+  }
 
-  return grad;
-}
+  /* ************************************************************************* */
+  VectorValuesUnordered GaussianBayesTreeUnordered::optimizeGradientSearch() const
+  {
+    gttic(Compute_Gradient);
+    // Compute gradient (call gradientAtZero function, which is defined for various linear systems)
+    VectorValuesUnordered grad;
+    bayesTree.gradientAtZeroInPlace(grad);
+    double gradientSqNorm = grad.dot(grad);
+    gttoc(Compute_Gradient);
 
-/* ************************************************************************* */
-void optimizeGradientSearchInPlace(const GaussianBayesTree& bayesTree, VectorValues& grad) {
-  gttic(Compute_Gradient);
-  // Compute gradient (call gradientAtZero function, which is defined for various linear systems)
-  gradientAtZero(bayesTree, grad);
-  double gradientSqNorm = grad.dot(grad);
-  gttoc(Compute_Gradient);
+    gttic(Compute_Rg);
+    // Compute R * g
+    Errors Rg = GaussianFactorGraphUnordered(*this) * grad;
+    gttoc(Compute_Rg);
 
-  gttic(Compute_Rg);
-  // Compute R * g
-  FactorGraph<JacobianFactor> Rd_jfg(bayesTree);
-  Errors Rg = Rd_jfg * grad;
-  gttoc(Compute_Rg);
+    gttic(Compute_minimizing_step_size);
+    // Compute minimizing step size
+    double step = -gradientSqNorm / dot(Rg, Rg);
+    gttoc(Compute_minimizing_step_size);
 
-  gttic(Compute_minimizing_step_size);
-  // Compute minimizing step size
-  double step = -gradientSqNorm / dot(Rg, Rg);
-  gttoc(Compute_minimizing_step_size);
+    gttic(Compute_point);
+    // Compute steepest descent point
+    scal(step, grad);
+    gttoc(Compute_point);
 
-  gttic(Compute_point);
-  // Compute steepest descent point
-  scal(step, grad);
-  gttoc(Compute_point);
-}
+    return grad;
+  }
 
-/* ************************************************************************* */
-VectorValues gradient(const GaussianBayesTree& bayesTree, const VectorValues& x0) {
-  return gradient(FactorGraph<JacobianFactor>(bayesTree), x0);
-}
+  /* ************************************************************************* */
+  VectorValuesUnordered GaussianBayesTreeUnordered::gradient(const VectorValuesUnordered& x0) const {
+    return gtsam::gradient(GaussianFactorGraphUnordered(*this), x0);
+  }
 
-/* ************************************************************************* */
-void gradientAtZero(const GaussianBayesTree& bayesTree, VectorValues& g) {
-  gradientAtZero(FactorGraph<JacobianFactor>(bayesTree), g);
-}
+  /* ************************************************************************* */
+  void GaussianBayesTreeUnordered::gradientAtZeroInPlace(VectorValuesUnordered& g) const {
+    gradientAtZero(GaussianFactorGraphUnordered(*this), g);
+  }
 
-/* ************************************************************************* */
-double determinant(const GaussianBayesTree& bayesTree) {
-  if (!bayesTree.root())
-    return 0.0;
+  /* ************************************************************************* */
+  double GaussianBayesTreeUnordered::logDeterminant() const
+  {
+    if(this->roots_.empty()) {
+      return 0.0;
+    } else {
+      double sum = 0.0;
+      treeTraversal::DepthFirstForest(*this, sum, internal::logDeterminant);
+      return sum;
+    }
+  }
 
-  return exp(internal::logDeterminant<GaussianBayesTree>(bayesTree.root()));
-}
-/* ************************************************************************* */
+  /* ************************************************************************* */
+  double GaussianBayesTreeUnordered::determinant() const
+  {
+    return exp(logDeterminant());
+  }
 
 } // \namespace gtsam
 
