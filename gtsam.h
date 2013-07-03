@@ -1545,7 +1545,6 @@ class KalmanFilter {
   // gtsam::GaussianDensity* init(Vector x0, const gtsam::SharedDiagonal& P0);
   gtsam::GaussianDensity* init(Vector x0, Matrix P0);
   void print(string s) const;
-  static size_t step(gtsam::GaussianDensity* p);
   gtsam::GaussianDensity* predict(gtsam::GaussianDensity* p, Matrix F,
       Matrix B, Vector u, const gtsam::noiseModel::Diagonal* modelQ);
   gtsam::GaussianDensity* predictQ(gtsam::GaussianDensity* p, Matrix F,
