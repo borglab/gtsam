@@ -59,7 +59,12 @@ namespace gtsam {
     factorGraph.push_back(GaussianFactor::shared_ptr(newFactor));
 
     // Eliminate graph in order x0, x1, to get Bayes net P(x0|x1)P(x1)
-    return solve(factorGraph, useQR);
+    GaussianDensity::shared_ptr result = solve(factorGraph, useQR);
+
+    // Change key in result to 0 to start back at variable index 0 and return
+    assert(result->nrFrontals() == 1);
+    result->frontals().front() = 0;
+    return result;
   }
 
   /* ************************************************************************* */
@@ -94,8 +99,7 @@ namespace gtsam {
 
     // The factor related to the motion model is defined as
     // f2(x_{t},x_{t+1}) = (F*x_{t} + B*u - x_{t+1}) * Q^-1 * (F*x_{t} + B*u - x_{t+1})^T
-    Index k = step(p);
-    return fuse(p, new JacobianFactor(k, -F, k + 1, I_, B * u, model), useQR());
+    return fuse(p, new JacobianFactor(0, -F, 1, I_, B * u, model), useQR());
   }
 
   /* ************************************************************************* */
@@ -119,8 +123,7 @@ namespace gtsam {
     Matrix G12 = -Ft * M, G11 = -G12 * F, G22 = M;
     Vector b = B * u, g2 = M * b, g1 = -Ft * g2;
     double f = dot(b, g2);
-    Index k = step(p);
-    return fuse(p, new HessianFactor(k, k + 1, G11, G12, g1, G22, g2, f),
+    return fuse(p, new HessianFactor(0, 1, G11, G12, g1, G22, g2, f),
         useQR());
   }
 
@@ -129,8 +132,7 @@ namespace gtsam {
       const Matrix& A1, const Vector& b, const SharedDiagonal& model) {
     // Nhe factor related to the motion model is defined as
     // f2(x_{t},x_{t+1}) = |A0*x_{t} + A1*x_{t+1} - b|^2
-    Index k = step(p);
-    return fuse(p, new JacobianFactor(k, A0, k + 1, A1, b, model), useQR());
+    return fuse(p, new JacobianFactor(0, A0, 1, A1, b, model), useQR());
   }
 
   /* ************************************************************************* */
@@ -139,19 +141,17 @@ namespace gtsam {
     // The factor related to the measurements would be defined as
     // f2 = (h(x_{t}) - z_{t}) * R^-1 * (h(x_{t}) - z_{t})^T
     //    = (x_{t} - z_{t}) * R^-1 * (x_{t} - z_{t})^T
-    Index k = step(p);
-    return fuse(p, new JacobianFactor(k, H, z, model), useQR());
+    return fuse(p, new JacobianFactor(0, H, z, model), useQR());
   }
 
   /* ************************************************************************* */
   KalmanFilter::State KalmanFilter::updateQ(const State& p, const Matrix& H, const Vector& z,
       const Matrix& Q) {
-    Index k = step(p);
     Matrix M = inverse(Q), Ht = trans(H);
     Matrix G = Ht * M * H;
     Vector g = Ht * M * z;
     double f = dot(z, M * z);
-    return fuse(p, new HessianFactor(k, G, g, f), useQR());
+    return fuse(p, new HessianFactor(0, G, g, f), useQR());
   }
 
 /* ************************************************************************* */
