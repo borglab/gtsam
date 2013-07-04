@@ -16,51 +16,22 @@
  * @author Alex Cunningham
  */
 
-#include <gtsam/base/FastVector.h>
 #include <gtsam/linear/VectorValuesUnordered.h>
 
-#include <boost/iterator/counting_iterator.hpp>
+#include <boost/range/combine.hpp>
+#include <boost/range/numeric.hpp>
+#include <boost/range/adaptor/map.hpp>
+#include <boost/range/adaptor/transformed.hpp>
 
 using namespace std;
 
 namespace gtsam {
 
 /* ************************************************************************* */
-VectorValuesUnordered VectorValuesUnordered::Zero(const VectorValuesUnordered& x) {
-  VectorValuesUnordered result;
-  result.values_.resize(x.size());
-  for(size_t j=0; j<x.size(); ++j)
-    result.values_[j] = Vector::Zero(x.values_[j].size());
-  return result;
-}
-
-/* ************************************************************************* */
-vector<size_t> VectorValuesUnordered::dims() const {
-  std::vector<size_t> result(this->size());
-  for(Index j = 0; j < this->size(); ++j)
-    result[j] = this->dim(j);
-  return result;
-}
-
-/* ************************************************************************* */
-void VectorValuesUnordered::insert(Index j, const Vector& value) {
-  // Make sure j does not already exist
-  if(exists(j))
-    throw invalid_argument("VectorValues: requested variable index to insert already exists.");
-
-  // If this adds variables at the end, insert zero-length entries up to j
-  if(j >= size())
-    values_.resize(j+1);
-
-  // Assign value
-  values_[j] = value;
-}
-
-/* ************************************************************************* */
-void VectorValuesUnordered::print(const std::string& str, const IndexFormatter& formatter) const {
+void VectorValuesUnordered::print(const std::string& str, const KeyFormatter& formatter) const {
   std::cout << str << ": " << size() << " elements\n";
-  for (Index var = 0; var < size(); ++var)
-    std::cout << "  " << formatter(var) << ": \n" << (*this)[var] << "\n";
+  BOOST_FOREACH(const value_type& key_value, *this)
+    std::cout << "  " << formatter(key_value.first) << ": \n" << key_value.second.transpose() << "\n";
   std::cout.flush();
 }
 
@@ -68,67 +39,55 @@ void VectorValuesUnordered::print(const std::string& str, const IndexFormatter& 
 bool VectorValuesUnordered::equals(const VectorValuesUnordered& x, double tol) const {
   if(this->size() != x.size())
     return false;
-  for(Index j=0; j < size(); ++j)
-    if(!equal_with_abs_tol(values_[j], x.values_[j], tol))
+  typedef boost::tuple<value_type, value_type> ValuePair;
+  BOOST_FOREACH(const ValuePair& values, boost::combine(*this, x)) {
+    if(values.get<0>.first != values.get<1>.first ||
+      !equal_with_abs_tol(values.get<0>.second, values.get<1>.second, tol))
       return false;
-  return true;
-}
-
-/* ************************************************************************* */
-void VectorValuesUnordered::resize(Index nVars, size_t varDim) {
-  values_.resize(nVars);
-  for(Index j = 0; j < nVars; ++j)
-    values_[j] = Vector(varDim);
-}
-
-/* ************************************************************************* */
-void VectorValuesUnordered::resizeLike(const VectorValuesUnordered& other) {
-  values_.resize(other.size());
-  for(Index j = 0; j < other.size(); ++j)
-    values_[j].resize(other.values_[j].size());
-}
-
-/* ************************************************************************* */
-VectorValuesUnordered VectorValuesUnordered::SameStructure(const VectorValuesUnordered& other) {
-  VectorValuesUnordered ret;
-  ret.resizeLike(other);
-  return ret;
-}
-
-/* ************************************************************************* */
-VectorValuesUnordered VectorValuesUnordered::Zero(Index nVars, size_t varDim) {
-  VectorValuesUnordered ret(nVars, varDim);
-  ret.setZero();
-  return ret;
-}
-
-/* ************************************************************************* */
-void VectorValuesUnordered::setZero() {
-  BOOST_FOREACH(Vector& v, *this) {
-    v.setZero();
   }
-}
-
-/* ************************************************************************* */
-const Vector VectorValuesUnordered::asVector() const {
-  return internal::extractVectorValuesSlices(*this,
-    boost::make_counting_iterator(size_t(0)), boost::make_counting_iterator(this->size()), true);
-}
-
-/* ************************************************************************* */
-const Vector VectorValuesUnordered::vector(const std::vector<Index>& indices) const {
-  return internal::extractVectorValuesSlices(*this, indices.begin(), indices.end());
-}
-
-/* ************************************************************************* */
-bool VectorValuesUnordered::hasSameStructure(const VectorValuesUnordered& other) const {
-  if(this->size() != other.size())
-    return false;
-  for(size_t j = 0; j < size(); ++j)
-    // Directly accessing maps instead of using VV::dim in case some values are empty
-    if(this->values_[j].rows() != other.values_[j].rows())
-      return false;
   return true;
+}
+
+/* ************************************************************************* */
+const Vector VectorValuesUnordered::asVector() const
+{
+  using boost::adaptors::map_values;
+  using boost::adaptors::transformed;
+
+  // Count dimensions
+  const DenseIndex totalDim = boost::accumulate(*this | map_values | transformed(&Vector::size), 0);
+
+  // Copy vectors
+  Vector result;
+  DenseIndex pos = 0;
+  BOOST_FOREACH(const Vector& v, *this | map_values) {
+    result.segment(pos, v.size()) = v;
+    pos += v.size();
+  }
+
+  return result;
+}
+
+/* ************************************************************************* */
+const Vector VectorValuesUnordered::vector(const std::vector<Key>& keys) const
+{
+  // Count dimensions and collect pointers to avoid double lookups
+  DenseIndex totalDim = 0;
+  std::vector<const Vector*> items(keys.size());
+  for(size_t i = 0; i < keys.size(); ++i) {
+    items[i] = &at(i);
+    totalDim += items[i]->size();
+  }
+
+  // Copy vectors
+  Vector result(totalDim);
+  DenseIndex pos = 0;
+  BOOST_FOREACH(const Vector *v, items) {
+    result.segment(pos, v->size()) = *v;
+    pos += v->size();
+  }
+
+  return result;
 }
 
 /* ************************************************************************* */
@@ -137,16 +96,20 @@ void VectorValuesUnordered::swap(VectorValuesUnordered& other) {
 }
 
 /* ************************************************************************* */
-double VectorValuesUnordered::dot(const VectorValuesUnordered& v) const {
-  double result = 0.0;
+double VectorValuesUnordered::dot(const VectorValuesUnordered& v) const
+{
   if(this->size() != v.size())
-    throw invalid_argument("VectorValues::dot called with different vector sizes");
-  for(Index j = 0; j < this->size(); ++j)
-    // Directly accessing maps instead of using VV::dim in case some values are empty
-    if(this->values_[j].size() == v.values_[j].size())
-      result += this->values_[j].dot(v.values_[j]);
-    else
-      throw invalid_argument("VectorValues::dot called with different vector sizes");
+    throw invalid_argument("VectorValues::dot called with a VectorValues of different structure");
+  double result = 0.0;
+  typedef boost::tuple<value_type, value_type> ValuePair;
+  using boost::adaptors::map_values;
+  BOOST_FOREACH(const ValuePair& values, boost::combine(*this, v)) {
+    assert_throw(values.get<0>().first == values.get<1>.first,
+      std::invalid_argument("VectorValues::dot called with a VectorValues of different structure"));
+    assert_throw(values.get<0>().second.size() == values.get<1>().second.size(),
+      std::invalid_argument("VectorValues::dot called with a VectorValues of different structure"));
+    result += values.get<0>().second.dot(values.get<1>().second);
+  }
   return result;
 }
 
@@ -158,9 +121,9 @@ double VectorValuesUnordered::norm() const {
 /* ************************************************************************* */
 double VectorValuesUnordered::squaredNorm() const {
   double sumSquares = 0.0;
-  for(Index j = 0; j < this->size(); ++j)
-    // Directly accessing maps instead of using VV::dim in case some values are empty
-    sumSquares += this->values_[j].squaredNorm();
+  using boost::adaptors::map_values;
+  BOOST_FOREACH(const Vector& v, *this | map_values)
+    sumSquares += v.squaredNorm();
   return sumSquares;
 }
 
