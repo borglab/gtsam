@@ -21,12 +21,7 @@
 #include <gtsam/base/FastMap.h>
 #include <gtsam/global_includes.h>
 
-#include <boost/format.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
-#include <numeric>
-#include <stdexcept>
 
 namespace gtsam {
 
@@ -91,6 +86,7 @@ namespace gtsam {
    */
   class GTSAM_EXPORT VectorValuesUnordered {
   protected:
+    typedef VectorValuesUnordered This;
     typedef FastMap<Key, Vector> Values; ///< Typedef for the collection of Vectors making up a VectorValues
     Values values_; ///< Collection of Vectors making up this VectorValues
 
@@ -227,7 +223,7 @@ namespace gtsam {
      * += operator does element-wise addition.  Both VectorValues must have the
      * same structure (checked when NDEBUG is not defined).
      */
-    void operator+=(const VectorValuesUnordered& c);
+    VectorValuesUnordered& operator+=(const VectorValuesUnordered& c);
 
     /// @}
 
@@ -235,63 +231,63 @@ namespace gtsam {
     /// @name Matlab syntactic sugar for linear algebra operations
     /// @{
 
-    inline VectorValuesUnordered add(const VectorValuesUnordered& c) const { return *this + c; }
-    inline VectorValuesUnordered scale(const double a, const VectorValuesUnordered& c) const { return a * (*this); }
+    //inline VectorValuesUnordered add(const VectorValuesUnordered& c) const { return *this + c; }
+    //inline VectorValuesUnordered scale(const double a, const VectorValuesUnordered& c) const { return a * (*this); }
 
     /// @}
 
     /**
      * scale a vector by a scalar
      */
-    friend VectorValuesUnordered operator*(const double a, const VectorValuesUnordered &v) {
-      VectorValuesUnordered result = VectorValuesUnordered::SameStructure(v);
-      for(Key j = 0; j < v.size(); ++j)
-        result.values_[j] = a * v.values_[j];
-      return result;
-    }
+    //friend VectorValuesUnordered operator*(const double a, const VectorValuesUnordered &v) {
+    //  VectorValuesUnordered result = VectorValuesUnordered::SameStructure(v);
+    //  for(Key j = 0; j < v.size(); ++j)
+    //    result.values_[j] = a * v.values_[j];
+    //  return result;
+    //}
 
-    /// TODO: linear algebra interface seems to have been added for SPCG.
-    friend void scal(double alpha, VectorValuesUnordered& x) {
-      for(Key j = 0; j < x.size(); ++j)
-        x.values_[j] *= alpha;
-    }
-    /// TODO: linear algebra interface seems to have been added for SPCG.
-    friend void axpy(double alpha, const VectorValuesUnordered& x, VectorValuesUnordered& y) {
-      if(x.size() != y.size())
-        throw std::invalid_argument("axpy(VectorValues) called with different vector sizes");
-      for(Key j = 0; j < x.size(); ++j)
-        if(x.values_[j].size() == y.values_[j].size())
-          y.values_[j] += alpha * x.values_[j];
-        else
-          throw std::invalid_argument("axpy(VectorValues) called with different vector sizes");
-    }
-    /// TODO: linear algebra interface seems to have been added for SPCG.
-    friend void sqrt(VectorValuesUnordered &x) {
-      for(Key j = 0; j < x.size(); ++j)
-        x.values_[j] = x.values_[j].cwiseSqrt();
-    }
+    ///// TODO: linear algebra interface seems to have been added for SPCG.
+    //friend void scal(double alpha, VectorValuesUnordered& x) {
+    //  for(Key j = 0; j < x.size(); ++j)
+    //    x.values_[j] *= alpha;
+    //}
+    ///// TODO: linear algebra interface seems to have been added for SPCG.
+    //friend void axpy(double alpha, const VectorValuesUnordered& x, VectorValuesUnordered& y) {
+    //  if(x.size() != y.size())
+    //    throw std::invalid_argument("axpy(VectorValues) called with different vector sizes");
+    //  for(Key j = 0; j < x.size(); ++j)
+    //    if(x.values_[j].size() == y.values_[j].size())
+    //      y.values_[j] += alpha * x.values_[j];
+    //    else
+    //      throw std::invalid_argument("axpy(VectorValues) called with different vector sizes");
+    //}
+    ///// TODO: linear algebra interface seems to have been added for SPCG.
+    //friend void sqrt(VectorValuesUnordered &x) {
+    //  for(Key j = 0; j < x.size(); ++j)
+    //    x.values_[j] = x.values_[j].cwiseSqrt();
+    //}
 
-    /// TODO: linear algebra interface seems to have been added for SPCG.
-    friend void ediv(const VectorValuesUnordered& numerator, const VectorValuesUnordered& denominator, VectorValuesUnordered &result) {
-      if(numerator.size() != denominator.size() || numerator.size() != result.size())
-        throw std::invalid_argument("ediv(VectorValues) called with different vector sizes");
-      for(Key j = 0; j < numerator.size(); ++j)
-        if(numerator.values_[j].size() == denominator.values_[j].size() && numerator.values_[j].size() == result.values_[j].size())
-          result.values_[j] = numerator.values_[j].cwiseQuotient(denominator.values_[j]);
-        else
-          throw std::invalid_argument("ediv(VectorValues) called with different vector sizes");
-    }
+    ///// TODO: linear algebra interface seems to have been added for SPCG.
+    //friend void ediv(const VectorValuesUnordered& numerator, const VectorValuesUnordered& denominator, VectorValuesUnordered &result) {
+    //  if(numerator.size() != denominator.size() || numerator.size() != result.size())
+    //    throw std::invalid_argument("ediv(VectorValues) called with different vector sizes");
+    //  for(Key j = 0; j < numerator.size(); ++j)
+    //    if(numerator.values_[j].size() == denominator.values_[j].size() && numerator.values_[j].size() == result.values_[j].size())
+    //      result.values_[j] = numerator.values_[j].cwiseQuotient(denominator.values_[j]);
+    //    else
+    //      throw std::invalid_argument("ediv(VectorValues) called with different vector sizes");
+    //}
 
-    /// TODO: linear algebra interface seems to have been added for SPCG.
-    friend void edivInPlace(VectorValuesUnordered& x, const VectorValuesUnordered& y) {
-      if(x.size() != y.size())
-        throw std::invalid_argument("edivInPlace(VectorValues) called with different vector sizes");
-      for(Key j = 0; j < x.size(); ++j)
-        if(x.values_[j].size() == y.values_[j].size())
-          x.values_[j].array() /= y.values_[j].array();
-        else
-          throw std::invalid_argument("edivInPlace(VectorValues) called with different vector sizes");
-    }
+    ///// TODO: linear algebra interface seems to have been added for SPCG.
+    //friend void edivInPlace(VectorValuesUnordered& x, const VectorValuesUnordered& y) {
+    //  if(x.size() != y.size())
+    //    throw std::invalid_argument("edivInPlace(VectorValues) called with different vector sizes");
+    //  for(Key j = 0; j < x.size(); ++j)
+    //    if(x.values_[j].size() == y.values_[j].size())
+    //      x.values_[j].array() /= y.values_[j].array();
+    //    else
+    //      throw std::invalid_argument("edivInPlace(VectorValues) called with different vector sizes");
+    //}
 
   private:
     /** Serialization function */

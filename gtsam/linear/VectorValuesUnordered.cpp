@@ -18,14 +18,34 @@
 
 #include <gtsam/linear/VectorValuesUnordered.h>
 
+#include <boost/foreach.hpp>
 #include <boost/range/combine.hpp>
 #include <boost/range/numeric.hpp>
-#include <boost/range/adaptor/map.hpp>
 #include <boost/range/adaptor/transformed.hpp>
+#include <boost/range/adaptor/map.hpp>
 
 using namespace std;
 
 namespace gtsam {
+
+  using boost::combine;
+  using boost::adaptors::transformed;
+  using boost::adaptors::map_values;
+  using boost::accumulate;
+
+  /* ************************************************************************* */
+namespace internal
+{
+  bool structureCompareOp(const boost::tuple<VectorValuesUnordered::value_type, VectorValuesUnordered::value_type>& vv)
+  {
+    return vv.get<0>().first == vv.get<1>().first && vv.get<0>().second.size() == vv.get<1>().second.size();
+  }
+
+  bool hasSameStructure(const VectorValuesUnordered& vv1, const VectorValuesUnordered& vv2)
+  {
+    return accumulate(combine(vv1, vv2) | transformed(structureCompareOp), true, std::logical_and<bool>());
+  }
+}
 
 /* ************************************************************************* */
 void VectorValuesUnordered::print(const std::string& str, const KeyFormatter& formatter) const {
@@ -41,8 +61,8 @@ bool VectorValuesUnordered::equals(const VectorValuesUnordered& x, double tol) c
     return false;
   typedef boost::tuple<value_type, value_type> ValuePair;
   BOOST_FOREACH(const ValuePair& values, boost::combine(*this, x)) {
-    if(values.get<0>.first != values.get<1>.first ||
-      !equal_with_abs_tol(values.get<0>.second, values.get<1>.second, tol))
+    if(values.get<0>().first != values.get<1>().first ||
+      !equal_with_abs_tol(values.get<0>().second, values.get<1>().second, tol))
       return false;
   }
   return true;
@@ -51,11 +71,10 @@ bool VectorValuesUnordered::equals(const VectorValuesUnordered& x, double tol) c
 /* ************************************************************************* */
 const Vector VectorValuesUnordered::asVector() const
 {
-  using boost::adaptors::map_values;
-  using boost::adaptors::transformed;
-
   // Count dimensions
-  const DenseIndex totalDim = boost::accumulate(*this | map_values | transformed(&Vector::size), 0);
+  DenseIndex totalDim = 0;
+  BOOST_FOREACH(const value_type& v, *this)
+    totalDim += v.second.size();
 
   // Copy vectors
   Vector result;
@@ -104,7 +123,7 @@ double VectorValuesUnordered::dot(const VectorValuesUnordered& v) const
   typedef boost::tuple<value_type, value_type> ValuePair;
   using boost::adaptors::map_values;
   BOOST_FOREACH(const ValuePair& values, boost::combine(*this, v)) {
-    assert_throw(values.get<0>().first == values.get<1>.first,
+    assert_throw(values.get<0>().first == values.get<1>().first,
       std::invalid_argument("VectorValues::dot called with a VectorValues of different structure"));
     assert_throw(values.get<0>().second.size() == values.get<1>().second.size(),
       std::invalid_argument("VectorValues::dot called with a VectorValues of different structure"));
@@ -128,43 +147,52 @@ double VectorValuesUnordered::squaredNorm() const {
 }
 
 /* ************************************************************************* */
-VectorValuesUnordered VectorValuesUnordered::operator+(const VectorValuesUnordered& c) const {
-  VectorValuesUnordered result = SameStructure(*this);
+VectorValuesUnordered VectorValuesUnordered::operator+(const VectorValuesUnordered& c) const
+{
   if(this->size() != c.size())
     throw invalid_argument("VectorValues::operator+ called with different vector sizes");
-  for(Index j = 0; j < this->size(); ++j)
-    // Directly accessing maps instead of using VV::dim in case some values are empty
-    if(this->values_[j].size() == c.values_[j].size())
-      result.values_[j] = this->values_[j] + c.values_[j];
-    else
-      throw invalid_argument("VectorValues::operator- called with different vector sizes");
+  assert_throw(internal::hasSameStructure(*this, c),
+    invalid_argument("VectorValues::operator+ called with different vector sizes"));
+
+  VectorValuesUnordered result;
+  // The result.end() hint here should result in constant-time inserts
+  for(const_iterator j1 = begin(), j2 = c.begin(); j1 != end(); ++j1, ++j2)
+    result.values_.insert(result.end(), make_pair(j1->first, j1->second + j2->second));
+
   return result;
 }
 
 /* ************************************************************************* */
-VectorValuesUnordered VectorValuesUnordered::operator-(const VectorValuesUnordered& c) const {
-  VectorValuesUnordered result = SameStructure(*this);
+VectorValuesUnordered VectorValuesUnordered::operator-(const VectorValuesUnordered& c) const
+{
   if(this->size() != c.size())
     throw invalid_argument("VectorValues::operator- called with different vector sizes");
-  for(Index j = 0; j < this->size(); ++j)
-    // Directly accessing maps instead of using VV::dim in case some values are empty
-    if(this->values_[j].size() == c.values_[j].size())
-      result.values_[j] = this->values_[j] - c.values_[j];
-    else
-      throw invalid_argument("VectorValues::operator- called with different vector sizes");
+  assert_throw(internal::hasSameStructure(*this, c),
+    invalid_argument("VectorValues::operator- called with different vector sizes"));
+
+  VectorValuesUnordered result;
+  // The result.end() hint here should result in constant-time inserts
+  for(const_iterator j1 = begin(), j2 = c.begin(); j1 != end(); ++j1, ++j2)
+    result.values_.insert(result.end(), make_pair(j1->first, j1->second - j2->second));
+
   return result;
 }
 
 /* ************************************************************************* */
-void VectorValuesUnordered::operator+=(const VectorValuesUnordered& c) {
+VectorValuesUnordered& VectorValuesUnordered::operator+=(const VectorValuesUnordered& c)
+{
   if(this->size() != c.size())
     throw invalid_argument("VectorValues::operator+= called with different vector sizes");
-  for(Index j = 0; j < this->size(); ++j)
-    // Directly accessing maps instead of using VV::dim in case some values are empty
-    if(this->values_[j].size() == c.values_[j].size())
-      this->values_[j] += c.values_[j];
-    else
-      throw invalid_argument("VectorValues::operator+= called with different vector sizes");
+  assert_throw(internal::hasSameStructure(*this, c),
+    invalid_argument("VectorValues::operator+= called with different vector sizes"));
+
+  iterator j1 = begin();
+  const_iterator j2 = begin();
+  // The result.end() hint here should result in constant-time inserts
+  for(; j1 != end(); ++j1, ++j2)
+    j1->second += j2->second;
+
+  return *this;
 }
 
 /* ************************************************************************* */
