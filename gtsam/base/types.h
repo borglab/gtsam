@@ -103,6 +103,17 @@ namespace gtsam {
     operator T() const { return value; }
   };
 
+  /** An assertion that throws an exception if NDEBUG is not defined and
+   * evaluates to an empty statement otherwise. */
+#ifdef NDEBUG
+#define assert_throw(CONDITION, EXCEPTION) ((void)0)
+#else
+#define assert_throw(CONDITION, EXCEPTION) \
+  if(!(CONDITION)) { \
+    throw (EXCEPTION); \
+  }
+#endif
+
 }
 
 #ifdef _MSC_VER
