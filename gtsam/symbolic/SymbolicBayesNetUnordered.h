@@ -18,9 +18,9 @@
 
 #pragma once
 
-#include <gtsam/base/types.h>
-#include <gtsam/inference/BayesNetUnordered.h>
 #include <gtsam/symbolic/SymbolicConditionalUnordered.h>
+#include <gtsam/inference/BayesNetUnordered.h>
+#include <gtsam/base/types.h>
 
 namespace gtsam {
 
@@ -47,13 +47,19 @@ namespace gtsam {
     SymbolicBayesNetUnordered(ITERATOR firstConditional, ITERATOR lastConditional) : Base(firstConditional, lastConditional) {}
     
     /// @}
+
+    /// @name Testable
+    /// @{
+    
+    /** Check equality */
+    bool equals(const This& bn, double tol = 1e-9) const;
+
+    /// @}
+    
     /// @name Standard Interface
     /// @{
     
     /// @}
-
-  private:
-    void noop() const; // Function defined in cpp file so that compiler instantiates the base class
   };
 
 } // namespace gtsam

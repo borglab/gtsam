@@ -22,7 +22,9 @@
 namespace gtsam {
 
   /* ************************************************************************* */
-  void SymbolicBayesNetUnordered::noop() const {
+  bool SymbolicBayesNetUnordered::equals(const This& bn, double tol = 1e-9) const
+  {
+    return Base::equals(bn, tol);
   }
 
 
