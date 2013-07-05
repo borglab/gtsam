@@ -24,6 +24,7 @@
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/KalmanFilter.h>
 #include <gtsam/linear/HessianFactor.h>
+#include <gtsam/inference/Permutation.h>
 #include <gtsam/base/Testable.h>
 
 #include <boost/make_shared.hpp>
@@ -33,16 +34,31 @@ namespace gtsam {
   using namespace std;
 
   /// Auxiliary function to solve factor graph and return pointer to root conditional
-  KalmanFilter::State solve(const GaussianFactorGraph& factorGraph,
-      bool useQR) {
+  KalmanFilter::State solve(const GaussianFactorGraph& factorGraph, bool useQR)
+  {
+    // Start indices at zero
+    Index nVars = 0;
+    internal::Reduction remapping;
+    BOOST_FOREACH(const GaussianFactorGraph::sharedFactor& factor, factorGraph)
+      BOOST_FOREACH(Index j, *factor)
+        if(remapping.insert(make_pair(j, nVars)).second)
+          ++ nVars;
+    Permutation inverseRemapping = remapping.inverse();
+    GaussianFactorGraph factorGraphOrdered(factorGraph); // NOTE this shares the factors with the original!!
+    factorGraphOrdered.reduceWithInverse(remapping);
 
     // Solve the factor graph
-    GaussianSequentialSolver solver(factorGraph, useQR);
+    GaussianSequentialSolver solver(factorGraphOrdered, useQR);
     GaussianBayesNet::shared_ptr bayesNet = solver.eliminate();
 
     // As this is a filter, all we need is the posterior P(x_t),
     // so we just keep the root of the Bayes net
     GaussianConditional::shared_ptr conditional = bayesNet->back();
+
+    // Undo the remapping
+    factorGraphOrdered.permuteWithInverse(inverseRemapping);
+    conditional->permuteWithInverse(inverseRemapping);
+
     // TODO: awful ! A copy constructor followed by ANOTHER copy constructor in make_shared?
     return boost::make_shared<GaussianDensity>(*conditional);
   }
@@ -59,12 +75,7 @@ namespace gtsam {
     factorGraph.push_back(GaussianFactor::shared_ptr(newFactor));
 
     // Eliminate graph in order x0, x1, to get Bayes net P(x0|x1)P(x1)
-    GaussianDensity::shared_ptr result = solve(factorGraph, useQR);
-
-    // Change key in result to 0 to start back at variable index 0 and return
-    assert(result->nrFrontals() == 1);
-    result->frontals().front() = 0;
-    return result;
+    return solve(factorGraph, useQR);
   }
 
   /* ************************************************************************* */
@@ -99,7 +110,8 @@ namespace gtsam {
 
     // The factor related to the motion model is defined as
     // f2(x_{t},x_{t+1}) = (F*x_{t} + B*u - x_{t+1}) * Q^-1 * (F*x_{t} + B*u - x_{t+1})^T
-    return fuse(p, new JacobianFactor(0, -F, 1, I_, B * u, model), useQR());
+    Index k = step(p);
+    return fuse(p, new JacobianFactor(k, -F, k + 1, I_, B * u, model), useQR());
   }
 
   /* ************************************************************************* */
@@ -123,7 +135,8 @@ namespace gtsam {
     Matrix G12 = -Ft * M, G11 = -G12 * F, G22 = M;
     Vector b = B * u, g2 = M * b, g1 = -Ft * g2;
     double f = dot(b, g2);
-    return fuse(p, new HessianFactor(0, 1, G11, G12, g1, G22, g2, f),
+    Index k = step(p);
+    return fuse(p, new HessianFactor(k, k + 1, G11, G12, g1, G22, g2, f),
         useQR());
   }
 
@@ -132,7 +145,8 @@ namespace gtsam {
       const Matrix& A1, const Vector& b, const SharedDiagonal& model) {
     // Nhe factor related to the motion model is defined as
     // f2(x_{t},x_{t+1}) = |A0*x_{t} + A1*x_{t+1} - b|^2
-    return fuse(p, new JacobianFactor(0, A0, 1, A1, b, model), useQR());
+    Index k = step(p);
+    return fuse(p, new JacobianFactor(k, A0, k + 1, A1, b, model), useQR());
   }
 
   /* ************************************************************************* */
@@ -141,17 +155,19 @@ namespace gtsam {
     // The factor related to the measurements would be defined as
     // f2 = (h(x_{t}) - z_{t}) * R^-1 * (h(x_{t}) - z_{t})^T
     //    = (x_{t} - z_{t}) * R^-1 * (x_{t} - z_{t})^T
-    return fuse(p, new JacobianFactor(0, H, z, model), useQR());
+    Index k = step(p);
+    return fuse(p, new JacobianFactor(k, H, z, model), useQR());
   }
 
   /* ************************************************************************* */
   KalmanFilter::State KalmanFilter::updateQ(const State& p, const Matrix& H, const Vector& z,
       const Matrix& Q) {
+    Index k = step(p);
     Matrix M = inverse(Q), Ht = trans(H);
     Matrix G = Ht * M * H;
     Vector g = Ht * M * z;
     double f = dot(z, M * z);
-    return fuse(p, new HessianFactor(0, G, g, f), useQR());
+    return fuse(p, new HessianFactor(k, G, g, f), useQR());
   }
 
 /* ************************************************************************* */

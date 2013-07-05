@@ -86,6 +86,11 @@ namespace gtsam {
     /// print
     void print(const std::string& s = "") const;
 
+    /** Return step index k, starts at 0, incremented at each predict. */
+    static Index step(const State& p) {
+      return p->firstFrontalKey();
+    }
+
     /**
      * Predict the state P(x_{t+1}|Z^t)
      *   In Kalman Filter notation, this is x_{t+1|t} and P_{t+1|t}
