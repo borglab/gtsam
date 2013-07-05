@@ -106,6 +106,9 @@ namespace gtsam {
      */
     VectorValuesUnordered() {}
 
+    /** Merge two VectorValues into one, this is more efficient than inserting elements one by one. */
+    VectorValuesUnordered(const VectorValuesUnordered& first, const VectorValuesUnordered& second);
+
     /// @}
     /// @name Standard Interface
     /// @{
@@ -154,6 +157,10 @@ namespace gtsam {
         throw std::invalid_argument(
         "Requested to insert variable '" + DefaultKeyFormatter(j) + "' already in this VectorValues.");
     }
+
+    /** Insert all values from \c values.  Throws an invalid_argument exception if any keys to be
+     *  inserted are already used. */
+    void insert(const VectorValuesUnordered& values);
 
     iterator begin()                      { return values_.begin(); }  ///< Iterator over variables
     const_iterator begin() const          { return values_.begin(); }  ///< Iterator over variables
