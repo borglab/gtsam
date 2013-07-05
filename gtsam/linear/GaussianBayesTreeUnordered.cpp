@@ -72,8 +72,7 @@ namespace gtsam {
   {
     gttic(Compute_Gradient);
     // Compute gradient (call gradientAtZero function, which is defined for various linear systems)
-    VectorValuesUnordered grad;
-    bayesTree.gradientAtZeroInPlace(grad);
+    VectorValuesUnordered grad = gradientAtZero();
     double gradientSqNorm = grad.dot(grad);
     gttoc(Compute_Gradient);
 

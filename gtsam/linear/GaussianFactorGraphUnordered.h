@@ -139,13 +139,8 @@ namespace gtsam {
       return exp(-0.5 * error(c));
     }
 
-    /**
-     * Static function that combines two factor graphs.
-     * @param lfg1 Linear factor graph
-     * @param lfg2 Linear factor graph
-     * @return a new combined factor graph
-     */
-    static This combine2(const This& lfg1, const This& lfg2);
+    ///@name Linear Algebra
+    ///@{
 
     /**
      * Return vector of i, j, and s to generate an m-by-n sparse Jacobian matrix,
@@ -199,6 +194,30 @@ namespace gtsam {
      * GaussianFactorGraph::augmentedHessian.
      */
     //std::pair<Matrix,Vector> hessian() const;
+
+    /**
+     * Compute the gradient of the energy function,
+     * \f$ \nabla_{x=x_0} \left\Vert \Sigma^{-1} A x - b \right\Vert^2 \f$,
+     * centered around \f$ x = x_0 \f$.
+     * The gradient is \f$ A^T(Ax-b) \f$.
+     * @param fg The Jacobian factor graph $(A,b)$
+     * @param x0 The center about which to compute the gradient
+     * @return The gradient as a VectorValuesUnordered
+     */
+    VectorValuesUnordered gradient(const VectorValuesUnordered& x0) const;
+
+    /**
+     * Compute the gradient of the energy function,
+     * \f$ \nabla_{x=0} \left\Vert \Sigma^{-1} A x - b \right\Vert^2 \f$,
+     * centered around zero.
+     * The gradient is \f$ A^T(Ax-b) \f$.
+     * @param fg The Jacobian factor graph $(A,b)$
+     * @param [output] g A VectorValuesUnordered to store the gradient, which must be preallocated, see allocateVectorValues
+     * @return The gradient as a VectorValuesUnordered
+     */
+    VectorValuesUnordered gradientAtZero() const;
+
+    /// @}
 
   private:
     /** Serialization function */
@@ -272,30 +291,6 @@ namespace gtsam {
 
   /** x += alpha*A'*e */
   GTSAM_EXPORT void transposeMultiplyAdd(const GaussianFactorGraphUnordered& fg, double alpha, const Errors& e, VectorValuesUnordered& x);
-
-  /**
-   * Compute the gradient of the energy function,
-   * \f$ \nabla_{x=x_0} \left\Vert \Sigma^{-1} A x - b \right\Vert^2 \f$,
-   * centered around \f$ x = x_0 \f$.
-   * The gradient is \f$ A^T(Ax-b) \f$.
-   * @param fg The Jacobian factor graph $(A,b)$
-   * @param x0 The center about which to compute the gradient
-   * @return The gradient as a VectorValuesUnordered
-
-   */
-  GTSAM_EXPORT VectorValuesUnordered gradient(const GaussianFactorGraphUnordered& fg, const VectorValuesUnordered& x0);
-
-  /**
-   * Compute the gradient of the energy function,
-   * \f$ \nabla_{x=0} \left\Vert \Sigma^{-1} A x - b \right\Vert^2 \f$,
-   * centered around zero.
-   * The gradient is \f$ A^T(Ax-b) \f$.
-   * @param fg The Jacobian factor graph $(A,b)$
-   * @param [output] g A VectorValuesUnordered to store the gradient, which must be preallocated, see allocateVectorValues
-   * @return The gradient as a VectorValuesUnordered
-
-   */
-  GTSAM_EXPORT void gradientAtZero(const GaussianFactorGraphUnordered& fg, VectorValuesUnordered& g);
 
   /* matrix-vector operations */
   GTSAM_EXPORT void residual(const GaussianFactorGraphUnordered& fg, const VectorValuesUnordered &x, VectorValuesUnordered &r);

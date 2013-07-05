@@ -104,47 +104,83 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  void GaussianConditionalUnordered::solveInPlace(VectorValuesUnordered& x) const {
-    static const bool debug = false;
-    if(debug) this->print("Solving conditional in place");
-    Vector xS = internal::extractVectorValuesSlices(x, this->beginParents(), this->endParents());
-    xS = this->getb() - this->get_S() * xS;
-    Vector soln = this->get_R().triangularView<Eigen::Upper>().solve(xS);
+  VectorValuesUnordered GaussianConditionalUnordered::solve(const VectorValuesUnordered& x) const
+  {
+    // Solve matrix
+    Vector xS = x.vector(vector<Key>(beginParents(), endParents()));
+    xS = getb() - get_S() * xS;
+    Vector soln = get_R().triangularView<Eigen::Upper>().solve(xS);
 
     // Check for indeterminant solution
     if(soln.unaryExpr(!boost::lambda::bind(ptr_fun(isfinite<double>), boost::lambda::_1)).any())
-      throw IndeterminantLinearSystemException(this->keys().front());
+      throw IndeterminantLinearSystemException(keys().front());
 
-    if(debug) {
-      gtsam::print(Matrix(this->get_R()), "Calling backSubstituteUpper on ");
-      gtsam::print(soln, "full back-substitution solution: ");
+    // Insert solution into a VectorValues
+    VectorValuesUnordered result;
+    DenseIndex vectorPosition = 0;
+    for(const_iterator frontal = beginFrontals(); frontal != endFrontals(); ++frontal) {
+      result.insert(*frontal, soln.segment(vectorPosition, getDim(frontal)));
+      vectorPosition += getDim(frontal);
     }
-    internal::writeVectorValuesSlices(soln, x, this->beginFrontals(), this->endFrontals());
+
+    return result;
   }
 
   /* ************************************************************************* */
-  void GaussianConditionalUnordered::solveTransposeInPlace(VectorValuesUnordered& gy) const {
-    Vector frontalVec = internal::extractVectorValuesSlices(gy, beginFrontals(), endFrontals());
-    frontalVec = gtsam::backSubstituteUpper(frontalVec,Matrix(get_R()));
+  VectorValuesUnordered GaussianConditionalUnordered::solveOtherRHS(
+    const VectorValuesUnordered& parents, const VectorValuesUnordered& rhs) const
+  {
+    Vector xS = parents.vector(vector<Key>(beginParents(), endParents()));
+    const Vector rhsR = rhs.vector(vector<Key>(beginFrontals(), endFrontals()));
+    xS = rhsR - get_S() * xS;
+    Vector soln = get_R().triangularView<Eigen::Upper>().solve(xS);
+
+    // Scale by sigmas
+    soln.array() *= model_->sigmas().array();
+
+    // Insert solution into a VectorValues
+    VectorValuesUnordered result;
+    DenseIndex vectorPosition = 0;
+    for(const_iterator frontal = beginFrontals(); frontal != endFrontals(); ++frontal) {
+      result.insert(*frontal, soln.segment(vectorPosition, getDim(frontal)));
+      vectorPosition += getDim(frontal);
+    }
+
+    return result;
+  }
+
+  /* ************************************************************************* */
+  void GaussianConditionalUnordered::solveTransposeInPlace(VectorValuesUnordered& gy) const
+  {
+    Vector frontalVec = gy.vector(vector<Key>(beginFrontals(), endFrontals()));
+    frontalVec = gtsam::backSubstituteUpper(frontalVec, Matrix(get_R()));
 
     // Check for indeterminant solution
     if(frontalVec.unaryExpr(!boost::lambda::bind(ptr_fun(isfinite<double>), boost::lambda::_1)).any())
       throw IndeterminantLinearSystemException(this->keys().front());
 
-    GaussianConditionalUnordered::const_iterator it;
-    for (it = beginParents(); it!= endParents(); it++) {
-      const Key i = *it;
-      gtsam::transposeMultiplyAdd(-1.0, getA(it), frontalVec, gy[i]);
+    for (const_iterator it = beginParents(); it!= endParents(); it++)
+      gtsam::transposeMultiplyAdd(-1.0, Matrix(getA(it)), frontalVec, gy[*it]);
+
+    // Scale by sigmas
+    frontalVec.array() *= model_->sigmas().array();
+
+    // Write frontal solution into a VectorValues
+    DenseIndex vectorPosition = 0;
+    for(const_iterator frontal = beginFrontals(); frontal != endFrontals(); ++frontal) {
+      gy[*frontal] = frontalVec.segment(vectorPosition, getDim(frontal));
+      vectorPosition += getDim(frontal);
     }
-    internal::writeVectorValuesSlices(frontalVec, gy, beginFrontals(), endFrontals());
   }
 
   /* ************************************************************************* */
-  void GaussianConditionalUnordered::scaleFrontalsBySigma(VectorValuesUnordered& gy) const {
-    Vector frontalVec = internal::extractVectorValuesSlices(gy, beginFrontals(), endFrontals());
-    if(model_)
-      frontalVec.array() *= model_->sigmas().array();
-    internal::writeVectorValuesSlices(frontalVec, gy, beginFrontals(), endFrontals());
+  void GaussianConditionalUnordered::scaleFrontalsBySigma(VectorValuesUnordered& gy) const
+  {
+    DenseIndex vectorPosition = 0;
+    for(const_iterator frontal = beginFrontals(); frontal != endFrontals(); ++frontal) {
+      gy[*frontal].array() *= model_->sigmas().segment(vectorPosition, getDim(frontal)).array();
+      vectorPosition += getDim(frontal);
+    }
   }
 
 }

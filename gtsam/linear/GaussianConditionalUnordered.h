@@ -117,17 +117,17 @@ namespace gtsam {
     * variables of this conditional, this solve function computes
     * \f$ x_f = R^{-1} (d - S x_s) \f$ using back-substitution.
     *
-    * @param x VectorValues structure with solved parents \f$ x_s \f$, and into which the
-    * solution \f$ x_f \f$ will be written.
+    * @param parents VectorValues containing solved parents \f$ x_s \f$.
     */
-    void solveInPlace(VectorValuesUnordered& x) const;
+    VectorValuesUnordered solve(const VectorValuesUnordered& parents) const;
 
-    // functions for transpose backsubstitution
+    VectorValuesUnordered solveOtherRHS(const VectorValuesUnordered& parents, const VectorValuesUnordered& rhs) const;
 
-    /**
-    * Performs backsubstition in place on values
-    */
+    /** Performs transpose backsubstition in place on values */
     void solveTransposeInPlace(VectorValuesUnordered& gy) const;
+
+    /** Scale the values in \c gy according to the sigmas for the frontal variables in this
+     *  conditional. */
     void scaleFrontalsBySigma(VectorValuesUnordered& gy) const;
 
   private:
