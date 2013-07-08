@@ -128,7 +128,7 @@ namespace gtsam {
 
     /** Scale the values in \c gy according to the sigmas for the frontal variables in this
      *  conditional. */
-    void scaleFrontalsBySigma(VectorValuesUnordered& gy) const;
+    __declspec(deprecated) void scaleFrontalsBySigma(VectorValuesUnordered& gy) const;
 
   private:
 
@@ -136,10 +136,8 @@ namespace gtsam {
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version) {
-      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(IndexConditional);
-      ar & BOOST_SERIALIZATION_NVP(matrix_);
-      ar & BOOST_SERIALIZATION_NVP(rsd_);
-      ar & BOOST_SERIALIZATION_NVP(sigmas_);
+      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseFactor);
+      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseConditional);
     }
   }; // GaussianConditionalUnordered
 

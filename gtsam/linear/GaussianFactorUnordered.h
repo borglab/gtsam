@@ -60,6 +60,24 @@ namespace gtsam {
     /** Return the dimension of the variable pointed to by the given key iterator */
     virtual size_t getDim(const_iterator variable) const = 0;
 
+    /**
+     * Return a dense \f$ [ \;A\;b\; ] \in \mathbb{R}^{m \times n+1} \f$
+     * Jacobian matrix, augmented with b with the noise models baked
+     * into A and b.  The negative log-likelihood is
+     * \f$ \frac{1}{2} \Vert Ax-b \Vert^2 \f$.  See also
+     * GaussianFactorGraph::jacobian and GaussianFactorGraph::sparseJacobian.
+     */
+    virtual Matrix augmentedJacobian() const = 0;
+
+    /**
+     * Return the dense Jacobian \f$ A \f$ and right-hand-side \f$ b \f$,
+     * with the noise models baked into A and b. The negative log-likelihood
+     * is \f$ \frac{1}{2} \Vert Ax-b \Vert^2 \f$.  See also
+     * GaussianFactorGraph::augmentedJacobian and
+     * GaussianFactorGraph::sparseJacobian.
+     */
+    virtual std::pair<Matrix,Vector> jacobian() const = 0;
+
     /** Return the augmented information matrix represented by this GaussianFactorUnordered.
      * The augmented information matrix contains the information matrix with an
      * additional column holding the information vector, and an additional row

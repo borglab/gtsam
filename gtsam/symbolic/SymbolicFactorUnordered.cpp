@@ -59,4 +59,11 @@ namespace gtsam {
       SymbolicFactorUnordered::FromIterator(orderedKeys.begin() + nFrontals, orderedKeys.end())));
   }
 
+  /* ************************************************************************* */
+  std::pair<boost::shared_ptr<SymbolicConditionalUnordered>, boost::shared_ptr<SymbolicFactorUnordered> >
+    SymbolicFactorUnordered::eliminate(const OrderingUnordered& keys) const
+  {
+
+  }
+
 } // gtsam

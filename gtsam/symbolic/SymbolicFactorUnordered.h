@@ -29,14 +29,9 @@ namespace gtsam {
   // Forward declarations
   class SymbolicConditionalUnordered;
 
-  /**
-   * SymbolicFactorUnordered serves two purposes.  It is the base class for all linear
-   * factors (GaussianFactor, JacobianFactor, HessianFactor), and also functions
-   * as a symbolic factor, used to do symbolic elimination by JunctionTree.
-   *
-   * It derives from Factor with a key type of Key, an unsigned integer.
-   * \nosubgrouping
-   */
+  /** SymbolicFactorUnordered represents a symbolic factor that specifies graph topology but is not
+   *  associated with any numerical function.
+   *  \nosubgrouping */
   class GTSAM_EXPORT SymbolicFactorUnordered: public FactorUnordered {
 
   public:
@@ -92,7 +87,8 @@ namespace gtsam {
     static SymbolicFactorUnordered FromIterator(KEYITERATOR beginKey, KEYITERATOR endKey) {
       return SymbolicFactorUnordered(Base::FromIterators(beginKey, endKey)); }
 
-    /** Constructor from a collection of keys */
+    /** Constructor from a collection of keys - compatible with boost::assign::list_of and
+     *  boost::assign::cref_list_of */
     template<class CONTAINER>
     static SymbolicFactorUnordered FromKeys(const CONTAINER& keys) {
       return SymbolicFactorUnordered(Base::FromKeys(keys)); }
@@ -104,6 +100,13 @@ namespace gtsam {
     
     /** Whether the factor is empty (involves zero variables). */
     bool empty() const { return keys_.empty(); }
+
+    /** Eliminate the variables in \c keys, in the order specified in \c keys, returning a
+     *  conditional and marginal. */
+    std::pair<boost::shared_ptr<SymbolicConditionalUnordered>, boost::shared_ptr<SymbolicFactorUnordered> >
+      eliminate(const OrderingUnordered& keys) const;
+
+    /// @}
 
   private:
     /** Serialization function */

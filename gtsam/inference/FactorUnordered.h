@@ -137,12 +137,13 @@ namespace gtsam {
     /// print only keys
     void printKeys(const std::string& s = "Factor", const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
+  protected:
     /// check equality
     bool equals(const This& other, double tol = 1e-9) const;
 
     /// @}
 
-
+  public:
     /// @name Advanced Interface
     /// @{
 
