@@ -10,7 +10,7 @@ set (gtsam_unstable_subdirs
     slam
 )
 
-set(GTSAM_UNSTABLE_BOOST_LIBRARIES ${GTSAM_BOOST_LIBRARIES} ${Boost_THREAD_LIBRARY})
+set(GTSAM_UNSTABLE_BOOST_LIBRARIES ${GTSAM_BOOST_LIBRARIES})
 
 add_custom_target(check.unstable COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure)
 
