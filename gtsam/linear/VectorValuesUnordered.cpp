@@ -56,6 +56,15 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  VectorValuesUnordered VectorValuesUnordered::Zero(const VectorValuesUnordered& other)
+  {
+    VectorValuesUnordered result;
+    BOOST_FOREACH(const KeyValuePair& v, other)
+      result.values_.insert(make_pair(v.first, Vector::Zero(v.second.size())));
+    return result;
+  }
+
+  /* ************************************************************************* */
   void VectorValuesUnordered::insert(const VectorValuesUnordered& values)
   {
     size_t originalSize = size();

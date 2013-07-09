@@ -110,6 +110,9 @@ namespace gtsam {
     /** Merge two VectorValues into one, this is more efficient than inserting elements one by one. */
     VectorValuesUnordered(const VectorValuesUnordered& first, const VectorValuesUnordered& second);
 
+    /** Create a VectorValues with the same structure as \c other, but filled with zeros. */
+    static VectorValuesUnordered Zero(const VectorValuesUnordered& other);
+
     /// @}
     /// @name Standard Interface
     /// @{
