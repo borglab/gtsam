@@ -189,7 +189,8 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class FG, class BTCLIQUE>
   typename BTCLIQUE::shared_ptr JunctionTree<FG,BTCLIQUE>::eliminate(
-      typename FG::Eliminate function) const {
+      typename FG::Eliminate function) const
+  {
     if (this->root()) {
       gttic(JT_eliminate);
       std::pair<typename BTClique::shared_ptr, typename FG::sharedFactor> ret =

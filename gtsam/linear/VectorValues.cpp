@@ -61,7 +61,7 @@ void VectorValues::insert(Index j, const Vector& value) {
 void VectorValues::print(const std::string& str, const IndexFormatter& formatter) const {
   std::cout << str << ": " << size() << " elements\n";
   for (Index var = 0; var < size(); ++var)
-    std::cout << "  " << formatter(var) << ": \n" << (*this)[var] << "\n";
+    std::cout << "  " << formatter(var) << ": " << (*this)[var].transpose() << "\n";
   std::cout.flush();
 }
 
