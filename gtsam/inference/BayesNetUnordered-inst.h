@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/inference/FactorGraphUnordered-inst.h>
 #include <gtsam/inference/BayesNetUnordered.h>
 
 #include <boost/foreach.hpp>

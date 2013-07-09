@@ -16,13 +16,35 @@
  * @author Richard Roberts
  */
 
-#include <gtsam/symbolic/SymbolicBayesTreeUnordered.h>
 #include <gtsam/symbolic/SymbolicFactorGraphUnordered.h>
-#include <gtsam/symbolic/SymbolicEliminationTreeUnordered.h>
+#include <gtsam/symbolic/SymbolicBayesTreeUnordered.h>
 #include <gtsam/inference/JunctionTreeUnordered.h>
 
 namespace gtsam {
 
+  // Forward declarations
+  class SymbolicEliminationTreeUnordered;
+
+  /**
+   * A ClusterTree, i.e., a set of variable clusters with factors, arranged in a tree, with
+   * the additional property that it represents the clique tree associated with a Bayes net.
+   *
+   * In GTSAM a junction tree is an intermediate data structure in multifrontal
+   * variable elimination.  Each node is a cluster of factors, along with a
+   * clique of variables that are eliminated all at once. In detail, every node k represents
+   * a clique (maximal fully connected subset) of an associated chordal graph, such as a
+   * chordal Bayes net resulting from elimination.
+   *
+   * The difference with the BayesTree is that a JunctionTree stores factors, whereas a
+   * BayesTree stores conditionals, that are the product of eliminating the factors in the
+   * corresponding JunctionTree cliques.
+   *
+   * The tree structure and elimination method are exactly analagous to the EliminationTree,
+   * except that in the JunctionTree, at each node multiple variables are eliminated at a time.
+   *
+   * \addtogroup Multifrontal
+   * \nosubgrouping
+   */
   class GTSAM_EXPORT SymbolicJunctionTreeUnordered :
     public JunctionTreeUnordered<SymbolicBayesTreeUnordered, SymbolicFactorGraphUnordered> {
   public:
@@ -38,21 +60,15 @@ namespace gtsam {
     * named constructor instead.
     * @return The elimination tree
     */
-    SymbolicJunctionTreeUnordered(const SymbolicEliminationTreeUnordered& eliminationTree) :
-      Base(Base::FromEliminationTree(eliminationTree)) {}
+    SymbolicJunctionTreeUnordered(const SymbolicEliminationTreeUnordered& eliminationTree);
 
     /** Copy constructor - makes a deep copy of the tree structure, but only pointers to factors are
      *  copied, factors are not cloned. */
-    SymbolicJunctionTreeUnordered(const This& other) : Base(other) {}
+    SymbolicJunctionTreeUnordered(const This& other);
 
     /** Assignment operator - makes a deep copy of the tree structure, but only pointers to factors are
      *  copied, factors are not cloned. */
-    This& operator=(const This& other) { (void) Base::operator=(other); return *this; }
-
-  private:
-
-    // Dummy method to export class type
-    void noop() const;
+    This& operator=(const This& other);
   };
 
 }

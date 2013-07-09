@@ -24,6 +24,7 @@
 #include <gtsam/base/treeTraversal-inst.h>
 #include <gtsam/inference/JunctionTreeUnordered.h>
 #include <gtsam/symbolic/SymbolicConditionalUnordered.h>
+#include <gtsam/symbolic/SymbolicFactorGraphUnordered.h>
 
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>

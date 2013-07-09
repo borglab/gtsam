@@ -97,6 +97,7 @@ namespace gtsam {
     typedef Values::const_reverse_iterator const_reverse_iterator; ///< Const reverse iterator over vector values
     typedef boost::shared_ptr<VectorValuesUnordered> shared_ptr; ///< shared_ptr to this class
     typedef Values::value_type value_type; ///< Typedef to pair<Key, Vector>, a key-value pair
+    typedef value_type KeyValuePair; ///< Typedef to pair<Key, Vector>, a key-value pair
 
     /// @name Standard Constructors
     /// @{

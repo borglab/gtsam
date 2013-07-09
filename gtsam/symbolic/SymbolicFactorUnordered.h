@@ -28,11 +28,12 @@ namespace gtsam {
 
   // Forward declarations
   class SymbolicConditionalUnordered;
+  class OrderingUnordered;
 
   /** SymbolicFactorUnordered represents a symbolic factor that specifies graph topology but is not
    *  associated with any numerical function.
    *  \nosubgrouping */
-  class GTSAM_EXPORT SymbolicFactorUnordered: public FactorUnordered {
+  class GTSAM_EXPORT SymbolicFactorUnordered : public FactorUnordered {
 
   public:
 
@@ -72,6 +73,15 @@ namespace gtsam {
     /** Construct 6-way factor */
     SymbolicFactorUnordered(Key j1, Key j2, Key j3, Key j4, Key j5, Key j6) :
       Base(boost::assign::cref_list_of<6>(j1)(j2)(j3)(j4)(j5)(j6)) {}
+
+    virtual ~SymbolicFactorUnordered() {}
+
+    /// @}
+
+    /// @name Testable
+    /// @{
+    
+    bool equals(const This& other, double tol = 1e-9) const;
 
     /// @}
     

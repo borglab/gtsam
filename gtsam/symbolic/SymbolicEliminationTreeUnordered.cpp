@@ -21,8 +21,33 @@
 
 namespace gtsam {
 
-  SymbolicEliminationTreeUnordered::SymbolicEliminationTreeUnordered() {
+  /* ************************************************************************* */
+  SymbolicEliminationTreeUnordered::SymbolicEliminationTreeUnordered(
+    const SymbolicFactorGraphUnordered& factorGraph, const VariableIndexUnordered& structure,
+    const OrderingUnordered& order) :
+  Base(factorGraph, structure, order) {}
 
+  /* ************************************************************************* */
+  SymbolicEliminationTreeUnordered::SymbolicEliminationTreeUnordered(
+    const SymbolicFactorGraphUnordered& factorGraph, const OrderingUnordered& order) :
+  Base(factorGraph, order) {}
+
+  /* ************************************************************************* */
+  SymbolicEliminationTreeUnordered::SymbolicEliminationTreeUnordered(
+    const This& other) :
+  Base(other) {}
+
+  /* ************************************************************************* */
+  SymbolicEliminationTreeUnordered& SymbolicEliminationTreeUnordered::operator=(const This& other)
+  {
+    (void) Base::operator=(other);
+    return *this;
+  }
+
+  /* ************************************************************************* */
+  bool SymbolicEliminationTreeUnordered::equals(const This& other, double tol) const
+  {
+    return Base::equals(other, tol);
   }
 
 }

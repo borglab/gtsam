@@ -21,7 +21,6 @@
 #include <gtsam/inference/BayesTreeUnordered-inst.h>
 #include <gtsam/inference/BayesTreeCliqueBaseUnordered-inst.h>
 #include <gtsam/linear/GaussianBayesTreeUnordered.h>
-#include <gtsam/linear/GaussianFactorGraphUnordered.h>
 #include <gtsam/linear/GaussianBayesNetUnordered.h>
 #include <gtsam/linear/VectorValuesUnordered.h>
 

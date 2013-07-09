@@ -95,7 +95,7 @@ namespace gtsam {
     explicit JacobianFactorUnordered(const GaussianFactorUnordered& gf);
 
     /** default constructor for I/O */
-    JacobianFactorUnordered();
+    JacobianFactorUnordered() {}
 
     /** Construct Null factor */
     explicit JacobianFactorUnordered(const Vector& b_in);
@@ -118,7 +118,7 @@ namespace gtsam {
      * @tparam TERMS A container whose value type is std::pair<Key, Matrix>, specifying the
      *         collection of keys and matrices making up the factor. */
     template<typename TERMS>
-    JacobianFactorUnordered(const TERMS&terms, const Vector &b, const SharedDiagonal& model);
+    JacobianFactorUnordered(const TERMS& terms, const Vector& b, const SharedDiagonal& model);
 
     /** Constructor with arbitrary number keys, and where the augmented matrix is given all together
      *  instead of in block terms.  Note that only the active view of the provided augmented matrix
@@ -172,6 +172,20 @@ namespace gtsam {
      * GaussianFactor.
      */
     virtual Matrix information() const;
+    
+    /**
+     * Return (dense) matrix associated with factor
+     * @param ordering of variables needed for matrix column order
+     * @param set weight to true to bake in the weights
+     */
+    virtual std::pair<Matrix, Vector> jacobian(bool weight = true) const;
+
+    /**
+     * Return (dense) matrix associated with factor
+     * The returned system is an augmented matrix: [A b]
+     * @param set weight to use whitening to bake in weights
+     */
+    virtual Matrix augmentedJacobian(bool weight = true) const;
 
     /**
      * Construct the corresponding anti-factor to negate information
@@ -184,7 +198,7 @@ namespace gtsam {
      * not necessarily mean that the factor involves no variables (to check for
      * involving no variables use keys().empty()).
      */
-    bool empty() const { return Ab_.rows() == 0;}
+    virtual bool empty() const { return size() == 0 /*|| rows() == 0*/; }
 
     /** is noise model constrained ? */
     bool isConstrained() const { return model_->isConstrained(); }
@@ -238,20 +252,6 @@ namespace gtsam {
 
     /** x += A'*e */
     void transposeMultiplyAdd(double alpha, const Vector& e, VectorValuesUnordered& x) const;
-
-    /**
-     * Return (dense) matrix associated with factor
-     * @param ordering of variables needed for matrix column order
-     * @param set weight to true to bake in the weights
-     */
-    std::pair<Matrix, Vector> matrix(bool weight = true) const;
-
-    /**
-     * Return (dense) matrix associated with factor
-     * The returned system is an augmented matrix: [A b]
-     * @param set weight to use whitening to bake in weights
-     */
-    Matrix matrix_augmented(bool weight = true) const;
 
     /**
      * Return vector of i, j, and s to generate an m-by-n sparse matrix

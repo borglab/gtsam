@@ -16,13 +16,14 @@
  * @author Richard Roberts
  */
 
-#include <gtsam/inference/BayesNetUnordered-inst.h>
+#include <gtsam/inference/FactorGraphUnordered-inst.h>
 #include <gtsam/symbolic/SymbolicBayesNetUnordered.h>
+#include <gtsam/symbolic/SymbolicConditionalUnordered.h>
 
 namespace gtsam {
 
   /* ************************************************************************* */
-  bool SymbolicBayesNetUnordered::equals(const This& bn, double tol = 1e-9) const
+  bool SymbolicBayesNetUnordered::equals(const This& bn, double tol) const
   {
     return Base::equals(bn, tol);
   }

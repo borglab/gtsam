@@ -402,7 +402,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  pair<Matrix,Vector> JacobianFactorUnordered::matrix(bool weight) const {
+  pair<Matrix,Vector> JacobianFactorUnordered::jacobian(bool weight) const {
     Matrix A(Ab_.range(0, size()));
     Vector b(getb());
     // divide in sigma so error is indeed 0.5*|Ax-b|
@@ -411,7 +411,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Matrix JacobianFactorUnordered::matrix_augmented(bool weight) const {
+  Matrix JacobianFactorUnordered::augmentedJacobian(bool weight) const {
     if (weight) { Matrix Ab(Ab_.range(0,Ab_.nBlocks())); model_->WhitenInPlace(Ab); return Ab; }
     else return Ab_.range(0, Ab_.nBlocks());
   }

@@ -39,12 +39,13 @@ namespace gtsam {
    * \nosubgrouping
    */
   template<class CLIQUE>
-  class BayesTreeUnordered {
-
-  public:
-
+  class BayesTreeUnordered
+  {
+  protected:
     typedef BayesTreeUnordered<CLIQUE> This;
     typedef boost::shared_ptr<This> shared_ptr;
+
+  public:
     typedef CLIQUE Clique; ///< The clique type, normally BayesTreeClique
     typedef boost::shared_ptr<Clique> sharedClique; ///< Shared pointer to a clique
     typedef Clique Node; ///< Synonym for Clique (TODO: remove)
@@ -101,9 +102,6 @@ namespace gtsam {
 
     /** Copy constructor */
     BayesTreeUnordered(const This& other);
-
-    /** Destructor */
-    virtual ~BayesTreeUnordered() {}
 
     /// @}
 
@@ -224,14 +222,6 @@ namespace gtsam {
 
     /** add a clique (top down) */
     void addClique(const sharedClique& clique, const sharedClique& parent_clique = sharedClique());
-
-    /**
-     * Create a clone of this object as a shared pointer
-     * Necessary for inheritance in matlab interface
-     */
-    virtual shared_ptr clone() const {
-      return shared_ptr(new This(*this));
-    }
 
   protected:
 

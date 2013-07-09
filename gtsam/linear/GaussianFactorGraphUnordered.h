@@ -195,6 +195,12 @@ namespace gtsam {
      */
     //std::pair<Matrix,Vector> hessian() const;
 
+    /** Solve the factor graph by performing multifrontal variable elimination in COLAMD order using
+     *  the dense elimination function specified in \c function (default EliminatePreferCholesky),
+     *  followed by back-substitution in the Bayes tree resulting from elimination.  Is equivalent
+     *  to calling graph.eliminateMultifrontal()->optimize(). */
+    VectorValuesUnordered optimize(const Eliminate& function = EliminationTraits::DefaultEliminate) const;
+
     /**
      * Compute the gradient of the energy function,
      * \f$ \nabla_{x=x_0} \left\Vert \Sigma^{-1} A x - b \right\Vert^2 \f$,

@@ -18,23 +18,26 @@
 
 #pragma once
 
-#include <gtsam/symbolic/SymbolicConditionalUnordered.h>
-#include <gtsam/inference/BayesNetUnordered.h>
+#include <gtsam/inference/FactorGraphUnordered.h>
 #include <gtsam/base/types.h>
 
 namespace gtsam {
 
+  // Forward declarations
+  class SymbolicConditionalUnordered;
+
   /** Symbolic Bayes Net
    *  \nosubgrouping
    */
-  class GTSAM_EXPORT SymbolicBayesNetUnordered: public BayesNetUnordered<SymbolicConditionalUnordered> {
+  class GTSAM_EXPORT SymbolicBayesNetUnordered : public FactorGraphUnordered<SymbolicConditionalUnordered> {
 
   public:
 
-    typedef BayesNetUnordered<SymbolicConditionalUnordered> Base;
+    typedef FactorGraphUnordered<SymbolicConditionalUnordered> Base;
     typedef SymbolicBayesNetUnordered This;
     typedef SymbolicConditionalUnordered ConditionalType;
     typedef boost::shared_ptr<This> shared_ptr; 
+    typedef boost::shared_ptr<ConditionalType> sharedConditional;
 
     /// @name Standard Constructors
     /// @{

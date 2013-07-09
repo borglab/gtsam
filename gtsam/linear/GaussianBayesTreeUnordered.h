@@ -19,14 +19,14 @@
 
 #pragma once
 
+#include <gtsam/linear/GaussianBayesNetUnordered.h>
+#include <gtsam/linear/GaussianFactorGraphUnordered.h>
 #include <gtsam/inference/BayesTreeUnordered.h>
 #include <gtsam/inference/BayesTreeCliqueBaseUnordered.h>
 
 namespace gtsam {
 
   // Forward declarations
-  class GaussianFactorGraphUnordered;
-  class GaussianBayesNetUnordered;
   class GaussianConditionalUnordered;
   class VectorValuesUnordered;
 
@@ -56,15 +56,22 @@ namespace gtsam {
     typedef GaussianBayesTreeUnordered This;
     typedef boost::shared_ptr<This> shared_ptr;
 
+    /** Default constructor, creates an empty Bayes tree */
+    GaussianBayesTreeUnordered() {}
+
+    /** Makes a deep copy of the tree structure, but only pointers to conditionals are
+     *  copied, the conditionals and their matrices are not cloned. */
+    GaussianBayesTreeUnordered(const GaussianBayesTreeUnordered& other);
+
+    /** Makes a deep copy of the tree structure, but only pointers to conditionals are
+     *  copied, the conditionals and their matrices are not cloned. */
+    GaussianBayesTreeUnordered& operator=(const GaussianBayesTreeUnordered& other);
+
     /** Check equality */
     bool equals(const This& other, double tol = 1e-9) const;
 
     /** Recursively optimize the BayesTree to produce a vector solution. */
     VectorValuesUnordered optimize() const;
-
-    /** Recursively optimize the BayesTree to produce a vector solution (same as optimize()), but
-     *  write the solution in place in \c result. */
-    //void optimizeInPlace(VectorValuesUnordered& result) const;
 
     /**
      * Optimize along the gradient direction, with a closed-form computation to perform the line

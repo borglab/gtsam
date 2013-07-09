@@ -67,7 +67,7 @@ namespace gtsam {
      * \f$ \frac{1}{2} \Vert Ax-b \Vert^2 \f$.  See also
      * GaussianFactorGraph::jacobian and GaussianFactorGraph::sparseJacobian.
      */
-    virtual Matrix augmentedJacobian() const = 0;
+    virtual Matrix augmentedJacobian(bool weight = true) const = 0;
 
     /**
      * Return the dense Jacobian \f$ A \f$ and right-hand-side \f$ b \f$,
@@ -76,7 +76,7 @@ namespace gtsam {
      * GaussianFactorGraph::augmentedJacobian and
      * GaussianFactorGraph::sparseJacobian.
      */
-    virtual std::pair<Matrix,Vector> jacobian() const = 0;
+    virtual std::pair<Matrix,Vector> jacobian(bool weight = true) const = 0;
 
     /** Return the augmented information matrix represented by this GaussianFactorUnordered.
      * The augmented information matrix contains the information matrix with an
@@ -95,6 +95,9 @@ namespace gtsam {
 
     /** Clone a factor (make a deep copy) */
     virtual GaussianFactorUnordered::shared_ptr clone() const = 0;
+
+    /** Test whether the factor is empty */
+    virtual bool empty() const = 0;
 
     /**
      * Construct the corresponding anti-factor to negate information

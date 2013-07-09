@@ -60,6 +60,12 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  bool SymbolicFactorUnordered::equals(const This& other, double tol) const
+  {
+    return Base::equals(other, tol);
+  }
+
+  /* ************************************************************************* */
   std::pair<boost::shared_ptr<SymbolicConditionalUnordered>, boost::shared_ptr<SymbolicFactorUnordered> >
     SymbolicFactorUnordered::eliminate(const OrderingUnordered& keys) const
   {

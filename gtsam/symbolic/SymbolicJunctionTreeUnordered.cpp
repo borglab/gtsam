@@ -18,11 +18,24 @@
 
 #include <gtsam/inference/JunctionTreeUnordered-inst.h>
 #include <gtsam/symbolic/SymbolicJunctionTreeUnordered.h>
+#include <gtsam/symbolic/SymbolicEliminationTreeUnordered.h>
 
 namespace gtsam {
 
-  void SymbolicJunctionTreeUnordered::noop() const {
+  /* ************************************************************************* */
+  SymbolicJunctionTreeUnordered::SymbolicJunctionTreeUnordered(
+    const SymbolicEliminationTreeUnordered& eliminationTree) :
+  Base(Base::FromEliminationTree(eliminationTree)) {}
 
+  /* ************************************************************************* */
+  SymbolicJunctionTreeUnordered::SymbolicJunctionTreeUnordered(const This& other) :
+    Base(other) {}
+
+  /* ************************************************************************* */
+  SymbolicJunctionTreeUnordered& SymbolicJunctionTreeUnordered::operator=(const This& other)
+  {
+    (void) Base::operator=(other);
+    return *this;
   }
 
 }

@@ -18,14 +18,14 @@
 
 #pragma once
 
+#include <gtsam/symbolic/SymbolicBayesNetUnordered.h>
+#include <gtsam/symbolic/SymbolicFactorGraphUnordered.h>
 #include <gtsam/inference/BayesTreeUnordered.h>
 #include <gtsam/inference/BayesTreeCliqueBaseUnordered.h>
 
 namespace gtsam {
 
   // Forward declarations
-  class SymbolicFactorGraphUnordered;
-  class SymbolicBayesNetUnordered;
   class SymbolicConditionalUnordered;
 
   /* ************************************************************************* */
@@ -54,6 +54,17 @@ namespace gtsam {
   public:
     typedef SymbolicBayesTreeUnordered This;
     typedef boost::shared_ptr<This> shared_ptr;
+
+    /** Default constructor, creates an empty Bayes tree */
+    SymbolicBayesTreeUnordered() {}
+
+    /** Makes a deep copy of the tree structure, but only pointers to conditionals are
+     *  copied, the conditionals and their matrices are not cloned. */
+    SymbolicBayesTreeUnordered(const SymbolicBayesTreeUnordered& other);
+
+    /** Makes a deep copy of the tree structure, but only pointers to conditionals are
+     *  copied, the conditionals and their matrices are not cloned. */
+    SymbolicBayesTreeUnordered& operator=(const SymbolicBayesTreeUnordered& other);
 
     /** check equality */
     bool equals(const This& other, double tol = 1e-9) const;

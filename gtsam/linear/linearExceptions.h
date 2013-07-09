@@ -117,7 +117,7 @@ on gtsam::IndeterminantLinearSystemException for more information.\n";
   /* ************************************************************************* */
   /** An exception indicating that the noise model dimension passed into a
    * JacobianFactor has a different dimensionality than the factor. */
-  class InvalidNoiseModel : public std::exception {
+  class GTSAM_EXPORT InvalidNoiseModel : public std::exception {
   public:
     const DenseIndex factorDims; ///< The dimensionality of the factor
     const DenseIndex noiseModelDims; ///< The dimensionality of the noise model
@@ -135,7 +135,7 @@ on gtsam::IndeterminantLinearSystemException for more information.\n";
   /* ************************************************************************* */
   /** An exception indicating that a matrix block passed into a
    * JacobianFactor has a different dimensionality than the factor. */
-  class InvalidMatrixBlock : public std::exception {
+  class GTSAM_EXPORT InvalidMatrixBlock : public std::exception {
   public:
     const DenseIndex factorRows; ///< The dimensionality of the factor
     const DenseIndex blockRows; ///< The dimensionality of the noise model

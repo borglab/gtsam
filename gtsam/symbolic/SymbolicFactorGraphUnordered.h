@@ -18,12 +18,10 @@
 
 #pragma once
 
-#include <gtsam/base/types.h>
+#include <gtsam/symbolic/SymbolicFactorUnordered.h>
 #include <gtsam/inference/FactorGraphUnordered.h>
 #include <gtsam/inference/EliminateableFactorGraph.h>
-#include <gtsam/symbolic/SymbolicFactorUnordered.h>
-// NOTE:  Additional headers included at end of file for user convenience
-
+#include <gtsam/base/types.h>
 
 namespace gtsam {
 
@@ -84,6 +82,14 @@ namespace gtsam {
       push_back_bayesTree(bayesTree); }
 
     /// @}
+    
+    /// @name Testable
+    /// @{
+    
+    bool equals(const This& fg, double tol = 1e-9) const;
+
+    /// @}
+
     /// @name Standard Interface
     /// @{
 
@@ -106,9 +112,3 @@ namespace gtsam {
   };
 
 } // namespace gtsam
-
-// These are not needed for this file but are returned from EliminateableFactorGraph functions so
-// are included here for user convenience
-#include <gtsam/symbolic/SymbolicBayesNetUnordered.h>
-#include <gtsam/symbolic/SymbolicBayesTreeUnordered.h>
-

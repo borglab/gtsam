@@ -61,20 +61,23 @@ namespace gtsam {
     typedef typename EliminationTraits<FactorGraphType>::FactorType _FactorType;
 
   public:
+    /// Typedef to the specific EliminationTraits for this graph
+    typedef EliminationTraits<FactorGraphType> EliminationTraits;
+
     /// Conditional type stored in the Bayes net produced by elimination
-    typedef typename EliminationTraits<FactorGraphType>::ConditionalType ConditionalType;
+    typedef typename EliminationTraits::ConditionalType ConditionalType;
 
     /// Bayes net type produced by sequential elimination
-    typedef typename EliminationTraits<FactorGraphType>::BayesNetType BayesNetType;
+    typedef typename EliminationTraits::BayesNetType BayesNetType;
 
     /// Elimination tree type that can do sequential elimination of this graph
-    typedef typename EliminationTraits<FactorGraphType>::EliminationTreeType EliminationTreeType;
+    typedef typename EliminationTraits::EliminationTreeType EliminationTreeType;
 
     /// Bayes tree type produced by multifrontal elimination
-    typedef typename EliminationTraits<FactorGraphType>::BayesTreeType BayesTreeType;
+    typedef typename EliminationTraits::BayesTreeType BayesTreeType;
 
     /// Junction tree type that can do multifrontal elimination of this graph
-    typedef typename EliminationTraits<FactorGraphType>::JunctionTreeType JunctionTreeType;
+    typedef typename EliminationTraits::JunctionTreeType JunctionTreeType;
 
     /// The pair of conditional and remaining factor produced by a single dense elimination step on
     /// a subgraph.

@@ -21,20 +21,21 @@
 #pragma once
 
 #include <gtsam/linear/GaussianConditionalUnordered.h>
-#include <gtsam/inference/BayesNetUnordered.h>
+#include <gtsam/inference/FactorGraphUnordered.h>
 #include <gtsam/global_includes.h>
 
 namespace gtsam {
 
   /** A Bayes net made from linear-Gaussian densities */
-  class GTSAM_EXPORT GaussianBayesNetUnordered: public BayesNetUnordered<GaussianConditionalUnordered> {
+  class GTSAM_EXPORT GaussianBayesNetUnordered: public FactorGraphUnordered<GaussianConditionalUnordered> {
 
   public:
 
-    typedef BayesNetUnordered<GaussianConditionalUnordered> Base;
+    typedef FactorGraphUnordered<GaussianConditionalUnordered> Base;
     typedef GaussianBayesNetUnordered This;
     typedef GaussianConditionalUnordered ConditionalType;
     typedef boost::shared_ptr<This> shared_ptr; 
+    typedef boost::shared_ptr<ConditionalType> sharedConditional;
 
     /// @name Standard Constructors
     /// @{
@@ -128,15 +129,21 @@ namespace gtsam {
     //VectorValuesUnordered gradientAtZero() const;
 
     /**
-     * Computes the determinant of a GassianBayesNet
-     * A GaussianBayesNet is an upper triangular matrix and for an upper triangular matrix
-     * determinant is the product of the diagonal elements. Instead of actually multiplying
-     * we add the logarithms of the diagonal elements and take the exponent at the end
-     * because this is more numerically stable.
+     * Computes the determinant of a GassianBayesNet. A GaussianBayesNet is an upper triangular
+     * matrix and for an upper triangular matrix determinant is the product of the diagonal
+     * elements. Instead of actually multiplying we add the logarithms of the diagonal elements and
+     * take the exponent at the end because this is more numerically stable.
      * @param bayesNet The input GaussianBayesNet
-     * @return The determinant
-     */
+     * @return The determinant */
     double determinant() const;
+
+    /**
+     * Computes the log of the determinant of a GassianBayesNet. A GaussianBayesNet is an upper
+     * triangular matrix and for an upper triangular matrix determinant is the product of the
+     * diagonal elements.
+     * @param bayesNet The input GaussianBayesNet
+     * @return The determinant */
+    double logDeterminant() const;
 
     /**
      * Backsubstitute with a different RHS vector than the one stored in this BayesNet.

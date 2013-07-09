@@ -21,6 +21,10 @@
 #include <gtsam/linear/GaussianFactorGraphUnordered.h>
 #include <gtsam/linear/VectorValuesUnordered.h>
 #include <gtsam/linear/GaussianBayesTreeUnordered.h>
+#include <gtsam/linear/GaussianEliminationTreeUnordered.h>
+#include <gtsam/linear/GaussianJunctionTreeUnordered.h>
+#include <gtsam/inference/FactorGraphUnordered-inst.h>
+#include <gtsam/inference/EliminateableFactorGraph-inst.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/base/cholesky.h>
@@ -43,16 +47,6 @@ namespace gtsam {
     if (factor)
       keys.insert(factor->begin(), factor->end());
     return keys;
-  }
-
-  /* ************************************************************************* */
-  GaussianFactorGraphUnordered GaussianFactorGraphUnordered::combine2(
-      const GaussianFactorGraphUnordered& lfg1, const GaussianFactorGraphUnordered& lfg2)
-  {
-    // Copy the first graph and add the second graph
-    GaussianFactorGraphUnordered fg = lfg1;
-    fg.push_back(lfg2);
-    return fg;
   }
 
   /* ************************************************************************* */
@@ -139,7 +133,7 @@ namespace gtsam {
   Matrix GaussianFactorGraphUnordered::augmentedJacobian() const {
     // combine all factors
     JacobianFactorUnordered combined(*this);
-    return combined.matrix_augmented();
+    return combined.augmentedJacobian();
   }
 
   /* ************************************************************************* */
@@ -200,6 +194,12 @@ namespace gtsam {
   //  combinedFactor->assertInvariants();
   //  return make_pair(conditional, combinedFactor);
   //}
+  
+  /* ************************************************************************* */
+  VectorValuesUnordered GaussianFactorGraphUnordered::optimize(const Eliminate& function) const
+  {
+    return BaseEliminateable::eliminateMultifrontal(function)->optimize();
+  }
 
   ///* ************************************************************************* */
   //VectorValuesUnordered GaussianFactorGraphUnordered::gradient(const VectorValuesUnordered& x0) const

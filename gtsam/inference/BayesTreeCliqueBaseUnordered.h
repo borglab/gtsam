@@ -18,8 +18,6 @@
 #pragma once
 
 #include <gtsam/base/types.h>
-#include <gtsam/inference/FactorGraphUnordered.h>
-#include <gtsam/inference/BayesNetUnordered.h>
 
 namespace gtsam {
   template<class CLIQUE> class BayesTreeUnordered;
@@ -41,8 +39,8 @@ namespace gtsam {
    * @tparam CONDITIONAL The conditional type.
    * \nosubgrouping */
   template<class DERIVED, class FACTORGRAPH, class BAYESNET>
-  struct BayesTreeCliqueBaseUnordered {
-
+  class BayesTreeCliqueBaseUnordered
+  {
   private:
     typedef BayesTreeCliqueBaseUnordered<DERIVED, FACTORGRAPH, BAYESNET> This;
     typedef DERIVED DerivedType;
@@ -84,10 +82,7 @@ namespace gtsam {
     /// @{
 
     /** check equality */
-    bool equals(const DERIVED& other, double tol = 1e-9) const {
-      return (!conditional_ && !other.conditional())
-          || conditional_->equals(*other.conditional(), tol);
-    }
+    bool equals(const DERIVED& other, double tol = 1e-9) const;
 
     /** print this node */
     void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;

@@ -76,6 +76,8 @@ namespace gtsam {
     static SymbolicConditionalUnordered FromKeys(const CONTAINER& keys, size_t nrFrontals) {
       return FromIterator(keys.begin(), keys.end(), nrFrontals); }
 
+    virtual ~SymbolicConditionalUnordered() {}
+
     /// @}
 
     /// @name Testable

@@ -68,7 +68,7 @@ namespace gtsam {
   void VectorValuesUnordered::print(const std::string& str, const KeyFormatter& formatter) const {
     std::cout << str << ": " << size() << " elements\n";
     BOOST_FOREACH(const value_type& key_value, *this)
-      std::cout << "  " << formatter(key_value.first) << ": \n" << key_value.second.transpose() << "\n";
+      std::cout << "  " << formatter(key_value.first) << ": " << key_value.second.transpose() << "\n";
     std::cout.flush();
   }
 

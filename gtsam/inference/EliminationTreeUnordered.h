@@ -47,14 +47,15 @@ namespace gtsam {
   * \nosubgrouping
   */
   template<class BAYESNET, class GRAPH>
-  class EliminationTreeUnordered {
-
-  public:
-
-    typedef GRAPH FactorGraphType; ///< The factor graph type
-    typedef typename GRAPH::FactorType FactorType; ///< The type of factors
+  class EliminationTreeUnordered
+  {
+  protected:
     typedef EliminationTreeUnordered<BAYESNET, GRAPH> This; ///< This class
     typedef boost::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
+
+  public:
+    typedef GRAPH FactorGraphType; ///< The factor graph type
+    typedef typename GRAPH::FactorType FactorType; ///< The type of factors
     typedef typename boost::shared_ptr<FactorType> sharedFactor;  ///< Shared pointer to a factor
     typedef BAYESNET BayesNetType; ///< The BayesNet corresponding to FACTOR
     typedef typename BayesNetType::ConditionalType ConditionalType; ///< The type of conditionals
@@ -77,15 +78,12 @@ namespace gtsam {
 
     typedef boost::shared_ptr<Node> sharedNode; ///< Shared pointer to Node
 
-  private:
-
+  protected:
     /** concept check */
     GTSAM_CONCEPT_TESTABLE_TYPE(FactorType);
 
     std::vector<sharedNode> roots_;
     std::vector<sharedFactor> remainingFactors_;
-
-  public:
 
     /// @name Standard Constructors
     /// @{
@@ -117,6 +115,8 @@ namespace gtsam {
     This& operator=(const This& other);
 
     /// @}
+    
+  public:
     /// @name Standard Interface
     /// @{
 
@@ -136,10 +136,13 @@ namespace gtsam {
     void print(const std::string& name = "EliminationTree: ",
       const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
+  protected:
     /** Test whether the tree is equal to another */
     bool equals(const This& other, double tol = 1e-9) const;
 
     /// @}
+    
+  public:
     /// @name Advanced Interface
     /// @{
     

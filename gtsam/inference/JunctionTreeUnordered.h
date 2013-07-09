@@ -22,8 +22,6 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Key.h>
-#include <gtsam/inference/FactorGraphUnordered.h>
-#include <gtsam/inference/EliminationTreeUnordered.h>
 
 namespace gtsam {
 
@@ -43,7 +41,6 @@ namespace gtsam {
    *
    * The tree structure and elimination method are exactly analagous to the EliminationTree,
    * except that in the JunctionTree, at each node multiple variables are eliminated at a time.
-   *
    *
    * \addtogroup Multifrontal
    * \nosubgrouping

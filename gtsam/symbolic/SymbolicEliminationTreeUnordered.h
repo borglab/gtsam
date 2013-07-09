@@ -25,7 +25,8 @@
 namespace gtsam {
 
   class GTSAM_EXPORT SymbolicEliminationTreeUnordered :
-    public EliminationTreeUnordered<SymbolicBayesNetUnordered, SymbolicFactorGraphUnordered> {
+    public EliminationTreeUnordered<SymbolicBayesNetUnordered, SymbolicFactorGraphUnordered>
+  {
   public:
     typedef EliminationTreeUnordered<SymbolicBayesNetUnordered, SymbolicFactorGraphUnordered> Base; ///< Base class
     typedef SymbolicEliminationTreeUnordered This; ///< This class
@@ -40,29 +41,28 @@ namespace gtsam {
     * @return The elimination tree
     */
     SymbolicEliminationTreeUnordered(const SymbolicFactorGraphUnordered& factorGraph,
-      const VariableIndexUnordered& structure, const OrderingUnordered& order) :
-    Base(factorGraph, structure, order) {}
+      const VariableIndexUnordered& structure, const OrderingUnordered& order);
 
     /** Build the elimination tree of a factor graph.  Note that this has to compute the column
     * structure as a VariableIndex, so if you already have this precomputed, use the other
     * constructor instead.
     * @param factorGraph The factor graph for which to build the elimination tree
     */
-    SymbolicEliminationTreeUnordered(const SymbolicFactorGraphUnordered& factorGraph, const OrderingUnordered& order) :
-      Base(factorGraph, order) {}
+    SymbolicEliminationTreeUnordered(const SymbolicFactorGraphUnordered& factorGraph,
+      const OrderingUnordered& order);
 
     /** Copy constructor - makes a deep copy of the tree structure, but only pointers to factors are
      *  copied, factors are not cloned. */
-    SymbolicEliminationTreeUnordered(const This& other) : Base(other) {}
+    SymbolicEliminationTreeUnordered(const This& other);
 
     /** Assignment operator - makes a deep copy of the tree structure, but only pointers to factors are
      *  copied, factors are not cloned. */
-    This& operator=(const This& other) { (void) Base::operator=(other); return *this; }
+    This& operator=(const This& other);
+
+    /** Test whether the tree is equal to another */
+    bool equals(const This& other, double tol = 1e-9) const;
 
   private:
-
-    /// Private default constructor
-    SymbolicEliminationTreeUnordered();
 
     friend class ::EliminationTreeUnorderedTester;
 

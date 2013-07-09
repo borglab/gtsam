@@ -22,10 +22,18 @@
 #include <gtsam/symbolic/SymbolicFactorGraphUnordered.h>
 #include <gtsam/symbolic/SymbolicEliminationTreeUnordered.h>
 #include <gtsam/symbolic/SymbolicJunctionTreeUnordered.h>
+#include <gtsam/symbolic/SymbolicBayesTreeUnordered.h>
+#include <gtsam/symbolic/SymbolicConditionalUnordered.h>
 
 namespace gtsam {
 
   using namespace std;
+
+  /* ************************************************************************* */
+  bool SymbolicFactorGraphUnordered::equals(const This& fg, double tol) const
+  {
+    return Base::equals(fg, tol);
+  }
 
   /* ************************************************************************* */
   void SymbolicFactorGraphUnordered::push_factor(Key key) {

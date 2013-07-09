@@ -38,4 +38,11 @@ namespace gtsam {
     std::cout << ")" << std::endl;
   }
 
+  /* ************************************************************************* */
+  template<class FACTOR, class DERIVEDFACTOR>
+  bool ConditionalUnordered<FACTOR,DERIVEDFACTOR>::equals(const This& c, double tol = 1e-9) const
+  {
+    return nrFrontals_ == c.nrFrontals_;
+  }
+
 }

@@ -17,6 +17,7 @@
 
 #include <gtsam/linear/GaussianBayesNetUnordered.h>
 #include <gtsam/linear/GaussianFactorGraphUnordered.h>
+#include <gtsam/inference/FactorGraphUnordered-inst.h>
 #include <gtsam/base/timing.h>
 
 #include <boost/foreach.hpp>
@@ -30,7 +31,7 @@ using namespace gtsam;
 namespace gtsam {
 
   /* ************************************************************************* */
-  bool GaussianBayesNetUnordered::equals(const This& bn, double tol = 1e-9) const
+  bool GaussianBayesNetUnordered::equals(const This& bn, double tol) const
   {
     return Base::equals(bn, tol);
   }
@@ -124,13 +125,18 @@ namespace gtsam {
   //}
 
   /* ************************************************************************* */
-  VectorValues gradient(const GaussianBayesNet& bayesNet, const VectorValues& x0) {
-    return gradient(GaussianFactorGraph(bayesNet), x0);
+  double GaussianBayesNetUnordered::determinant() const
+  {
+    return exp(logDeterminant());
   }
 
   /* ************************************************************************* */
-  void gradientAtZero(const GaussianBayesNet& bayesNet, VectorValues& g) {
-    gradientAtZero(GaussianFactorGraph(bayesNet), g);
+  double GaussianBayesNetUnordered::logDeterminant() const
+  {
+    double logDet = 0.0;
+    BOOST_FOREACH(const sharedConditional& cg, *this)
+      logDet += cg->get_R().diagonal().unaryExpr(ptr_fun<double,double>(log)).sum();
+    return logDet;
   }
 
   /* ************************************************************************* */

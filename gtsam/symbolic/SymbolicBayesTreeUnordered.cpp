@@ -21,87 +21,27 @@
 #include <gtsam/symbolic/SymbolicBayesTreeUnordered.h>
 #include <gtsam/symbolic/SymbolicFactorGraphUnordered.h>
 #include <gtsam/symbolic/SymbolicBayesNetUnordered.h>
+#include <gtsam/symbolic/SymbolicConditionalUnordered.h>
 #include <gtsam/inference/BayesTreeUnordered-inst.h>
 #include <gtsam/inference/BayesTreeCliqueBaseUnordered-inst.h>
 
 namespace gtsam {
 
+  /* ************************************************************************* */
+  SymbolicBayesTreeUnordered::SymbolicBayesTreeUnordered(const SymbolicBayesTreeUnordered& other) :
+    Base(other) {}
+
+  /* ************************************************************************* */
+  SymbolicBayesTreeUnordered& SymbolicBayesTreeUnordered::operator=(const SymbolicBayesTreeUnordered& other)
+  {
+    (void) Base::operator=(other);
+    return *this;
+  }
+
+  /* ************************************************************************* */\
   bool SymbolicBayesTreeUnordered::equals(const This& other, double tol /* = 1e-9 */) const
   {
     return Base::equals(other, tol);
   }
-
-//  /* ************************************************************************* */
-//  void SymbolicBayesTreeUnordered::insert(const sharedConditional& conditional)
-//  {
-//    static const bool debug = false;
-//
-//    // get indices and parents
-//    const SymbolicConditionalUnordered::Parents& parents = conditional->parents();
-//
-//    if(debug) conditional->print("Adding conditional ");
-//
-//    // if no parents, start a new root clique
-//    if (parents.empty()) {
-//      if(debug) std::cout << "No parents so making root" << std::endl;
-//      addClique(boost::make_shared<SymbolicBayesTreeCliqueUnordered>(conditional));
-//      return;
-//    }
-//
-//    // otherwise, find the parent clique by using the index data structure
-//    // to find the lowest-ordered parent
-//    Index parentRepresentative = findParentClique(parents);
-//    if(debug) std::cout << "First-eliminated parent is " << parentRepresentative << ", have " << bayesTree.nodes_.size() << " nodes." << std::endl;
-//    sharedClique parent_clique = bayesTree[parentRepresentative];
-//    if(debug) parent_clique->print("Parent clique is ");
-//
-//    // if the parents and parent clique have the same size, add to parent clique
-//    if ((*parent_clique)->size() == size_t(parents.size())) {
-//      if(debug) std::cout << "Adding to parent clique" << std::endl;
-//#ifndef NDEBUG
-//      // Debug check that the parent indices of the new conditional match the indices
-//      // currently in the clique.
-//      //      list<Index>::const_iterator parent = parents.begin();
-//      //      typename Clique::const_iterator cond = parent_clique->begin();
-//      //      while(parent != parents.end()) {
-//      //        assert(cond != parent_clique->end());
-//      //        assert(*parent == (*cond)->key());
-//      //        ++ parent;
-//      //        ++ cond;
-//      //      }
-//#endif
-//      addToCliqueFront(bayesTree, conditional, parent_clique);
-//    } else {
-//      if(debug) std::cout << "Starting new clique" << std::endl;
-//      // otherwise, start a new clique and add it to the tree
-//      bayesTree.addClique(conditional,parent_clique);
-//    }
-//  }
-//
-//  /* ************************************************************************* */
-//  void SymbolicBayesTreeUnordered::addToCliqueFront(const sharedConditional& conditional, const sharedClique& clique) {
-//    static const bool debug = false;
-//#ifndef NDEBUG
-//    // Debug check to make sure the conditional variable is ordered lower than
-//    // its parents and that all of its parents are present either in this
-//    // clique or its separator.
-//    BOOST_FOREACH(Key parent, conditional->parents()) {
-//      assert(parent > conditional->lastFrontalKey());
-//      const Clique& cliquer(*clique);
-//      assert(find(cliquer->begin(), cliquer->end(), parent) != cliquer->end());
-//    }
-//#endif
-//    if(debug) conditional->print("Adding conditional ");
-//    if(debug) clique->print("To clique ");
-//    Index j = conditional->lastFrontalKey();
-//    this->nodes_.resize(std::max(j+1, this->nodes_.size()));
-//    this->nodes_[j] = clique;
-//    FastVector<Index> newIndices(clique->conditional()->size() + 1);
-//    newIndices[0] = j;
-//    std::copy(clique->conditional()->begin(), clique->conditional()->end(), newIndices.begin()+1);
-//    clique->conditional_ = ConditionalType::FromKeys(newIndices, (*clique)->nrFrontals() + 1);
-//    if(debug) clique->print("Expanded clique is ");
-//    clique->assertInvariants();
-//  }
 
 }
