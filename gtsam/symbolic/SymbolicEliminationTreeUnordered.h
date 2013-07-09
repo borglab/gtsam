@@ -68,10 +68,4 @@ namespace gtsam {
 
   };
 
-//#ifdef GTSAM_INSTANTIATE_SymbolicEliminationTreeUnordered
-//  template GTSAM_EXPORT class EliminationTreeUnordered<SymbolicBayesNetUnordered, SymbolicFactorGraphUnordered>;
-//#else
-//  extern template GTSAM_EXPORT class EliminationTreeUnordered<SymbolicBayesNetUnordered, SymbolicFactorGraphUnordered>;
-//#endif
-
 }
