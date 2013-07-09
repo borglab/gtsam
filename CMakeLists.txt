@@ -114,13 +114,13 @@ endif()
 
 option(GTSAM_DISABLE_NEW_TIMERS "Disables using Boost.chrono for timing" OFF)
 # Allow for not using the timer libraries on boost < 1.48 (GTSAM timing code falls back to old timer library)
-set(GTSAM_BOOST_LIBRARIES ${Boost_SERIALIZATION_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY})
+set(GTSAM_BOOST_LIBRARIES ${Boost_SERIALIZATION_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} ${Boost_THREAD_LIBRARY} ${Boost_DATE_TIME_LIBRARY} ${Boost_REGEX_LIBRARY})
 if (GTSAM_DISABLE_NEW_TIMERS)
     message("WARNING:  GTSAM timing instrumentation manually disabled")
     add_definitions(-DGTSAM_DISABLE_NEW_TIMERS)
 else()
     if(Boost_TIMER_LIBRARY)
-      list(APPEND GTSAM_BOOST_LIBRARIES ${GTSAM_BOOST_LIBRARIES} ${Boost_TIMER_LIBRARY} ${Boost_CHRONO_LIBRARY})
+      list(APPEND GTSAM_BOOST_LIBRARIES ${Boost_TIMER_LIBRARY} ${Boost_CHRONO_LIBRARY})
     else()
       message("WARNING:  Boost older than 1.48 was found, GTSAM timing instrumentation will use the older, less accurate, Boost timer library.")
     endif()
@@ -158,15 +158,19 @@ install(FILES ${CMAKE_BINARY_DIR}/gtsam/3rdparty/gtsam_eigen_includes.h DESTINAT
 ###############################################################################
 # Global compile options
 
-# General build settings
+# Include boost - use 'BEFORE' so that a specific boost specified to CMake
+# takes precedence over a system-installed one.
+include_directories(BEFORE ${Boost_INCLUDE_DIR})
+
+# Add includes for source directories 'BEFORE' boost and any system include
+# paths so that the compiler uses GTSAM headers in our source directory instead
+# of any previously installed GTSAM headers.
 include_directories(BEFORE
   gtsam/3rdparty/UFconfig 
   gtsam/3rdparty/CCOLAMD/Include
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_BINARY_DIR} # So we can include generated config header files
-  CppUnitLite
-  ${Boost_INCLUDE_DIR})
-link_directories(${Boost_LIBRARY_DIRS})
+  CppUnitLite)
 
 if(MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
