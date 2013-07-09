@@ -67,42 +67,42 @@ namespace gtsam {
     return visitor.collectedResult;
   }
 
-  /* ************************************************************************* */
-  VectorValuesUnordered GaussianBayesTreeUnordered::optimizeGradientSearch() const
-  {
-    gttic(Compute_Gradient);
-    // Compute gradient (call gradientAtZero function, which is defined for various linear systems)
-    VectorValuesUnordered grad = gradientAtZero();
-    double gradientSqNorm = grad.dot(grad);
-    gttoc(Compute_Gradient);
+  ///* ************************************************************************* */
+  //VectorValuesUnordered GaussianBayesTreeUnordered::optimizeGradientSearch() const
+  //{
+  //  gttic(Compute_Gradient);
+  //  // Compute gradient (call gradientAtZero function, which is defined for various linear systems)
+  //  VectorValuesUnordered grad = gradientAtZero();
+  //  double gradientSqNorm = grad.dot(grad);
+  //  gttoc(Compute_Gradient);
 
-    gttic(Compute_Rg);
-    // Compute R * g
-    Errors Rg = GaussianFactorGraphUnordered(*this) * grad;
-    gttoc(Compute_Rg);
+  //  gttic(Compute_Rg);
+  //  // Compute R * g
+  //  Errors Rg = GaussianFactorGraphUnordered(*this) * grad;
+  //  gttoc(Compute_Rg);
 
-    gttic(Compute_minimizing_step_size);
-    // Compute minimizing step size
-    double step = -gradientSqNorm / dot(Rg, Rg);
-    gttoc(Compute_minimizing_step_size);
+  //  gttic(Compute_minimizing_step_size);
+  //  // Compute minimizing step size
+  //  double step = -gradientSqNorm / dot(Rg, Rg);
+  //  gttoc(Compute_minimizing_step_size);
 
-    gttic(Compute_point);
-    // Compute steepest descent point
-    scal(step, grad);
-    gttoc(Compute_point);
+  //  gttic(Compute_point);
+  //  // Compute steepest descent point
+  //  scal(step, grad);
+  //  gttoc(Compute_point);
 
-    return grad;
-  }
+  //  return grad;
+  //}
 
-  /* ************************************************************************* */
-  VectorValuesUnordered GaussianBayesTreeUnordered::gradient(const VectorValuesUnordered& x0) const {
-    return gtsam::gradient(GaussianFactorGraphUnordered(*this), x0);
-  }
+  ///* ************************************************************************* */
+  //VectorValuesUnordered GaussianBayesTreeUnordered::gradient(const VectorValuesUnordered& x0) const {
+  //  return GaussianFactorGraphUnordered(*this).gradient(x0);
+  //}
 
-  /* ************************************************************************* */
-  void GaussianBayesTreeUnordered::gradientAtZeroInPlace(VectorValuesUnordered& g) const {
-    gradientAtZero(GaussianFactorGraphUnordered(*this), g);
-  }
+  ///* ************************************************************************* */
+  //VectorValuesUnordered GaussianBayesTreeUnordered::gradientAtZero() const {
+  //  return GaussianFactorGraphUnordered(*this).gradientAtZero();
+  //}
 
   /* ************************************************************************* */
   double GaussianBayesTreeUnordered::logDeterminant() const

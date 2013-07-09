@@ -91,17 +91,14 @@ namespace gtsam {
      * \f$ G \f$, returning
      *
      * \f[ \delta x = \hat\alpha g = \frac{-g^T g}{(R g)^T(R g)} \f] */
-    VectorValuesUnordered optimizeGradientSearch() const;
-
-    /** In-place version of optimizeGradientSearch requiring pre-allocated VectorValues \c x */
-    void optimizeGradientSearchInPlace(VectorValuesUnordered& grad) const;
+    //VectorValuesUnordered optimizeGradientSearch() const;
 
     /** Compute the gradient of the energy function, \f$ \nabla_{x=x_0} \left\Vert \Sigma^{-1} R x -
      * d \right\Vert^2 \f$, centered around \f$ x = x_0 \f$. The gradient is \f$ R^T(Rx-d) \f$.
      * 
      * @param x0 The center about which to compute the gradient
      * @return The gradient as a VectorValues */
-    VectorValuesUnordered gradient(const VectorValuesUnordered& x0) const;
+    //VectorValuesUnordered gradient(const VectorValuesUnordered& x0) const;
 
     /** Compute the gradient of the energy function, \f$ \nabla_{x=0} \left\Vert \Sigma^{-1} R x - d
      * \right\Vert^2 \f$, centered around zero. The gradient about zero is \f$ -R^T d \f$.  See also
@@ -109,7 +106,7 @@ namespace gtsam {
      * 
      * @param [output] g A VectorValues to store the gradient, which must be preallocated, see
      *        allocateVectorValues */
-    void gradientAtZeroInPlace(VectorValuesUnordered& g) const;
+    //VectorValuesUnordered gradientAtZero() const;
 
     /** Computes the determinant of a GassianBayesTree, as if the Bayes tree is reorganized into a
      * matrix. A GassianBayesTree is equivalent to an upper triangular matrix, and for an upper

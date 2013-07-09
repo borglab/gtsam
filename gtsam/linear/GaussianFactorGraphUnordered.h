@@ -204,18 +204,42 @@ namespace gtsam {
      * @param x0 The center about which to compute the gradient
      * @return The gradient as a VectorValuesUnordered
      */
-    VectorValuesUnordered gradient(const VectorValuesUnordered& x0) const;
+    //VectorValuesUnordered gradient(const VectorValuesUnordered& x0) const;
 
     /**
-     * Compute the gradient of the energy function,
-     * \f$ \nabla_{x=0} \left\Vert \Sigma^{-1} A x - b \right\Vert^2 \f$,
-     * centered around zero.
-     * The gradient is \f$ A^T(Ax-b) \f$.
+     * Compute the gradient of the energy function, \f$ \nabla_{x=0} \left\Vert \Sigma^{-1} A x - b
+     * \right\Vert^2 \f$, centered around zero. The gradient is \f$ A^T(Ax-b) \f$.
      * @param fg The Jacobian factor graph $(A,b)$
-     * @param [output] g A VectorValuesUnordered to store the gradient, which must be preallocated, see allocateVectorValues
-     * @return The gradient as a VectorValuesUnordered
-     */
-    VectorValuesUnordered gradientAtZero() const;
+     * @param [output] g A VectorValuesUnordered to store the gradient, which must be preallocated,
+     *        see allocateVectorValues
+     * @return The gradient as a VectorValuesUnordered */
+    //VectorValuesUnordered gradientAtZero() const;
+
+    /** Optimize along the gradient direction, with a closed-form computation to perform the line
+     *  search.  The gradient is computed about \f$ \delta x=0 \f$.
+     *
+     *  This function returns \f$ \delta x \f$ that minimizes a reparametrized problem.  The error
+     *  function of a GaussianBayesNet is
+     *
+     *  \f[ f(\delta x) = \frac{1}{2} |R \delta x - d|^2 = \frac{1}{2}d^T d - d^T R \delta x +
+     *  \frac{1}{2} \delta x^T R^T R \delta x \f]
+     *
+     *  with gradient and Hessian
+     *
+     *  \f[ g(\delta x) = R^T(R\delta x - d), \qquad G(\delta x) = R^T R. \f]
+     *
+     *  This function performs the line search in the direction of the gradient evaluated at \f$ g =
+     *  g(\delta x = 0) \f$ with step size \f$ \alpha \f$ that minimizes \f$ f(\delta x = \alpha g)
+     *  \f$:
+     *
+     *  \f[ f(\alpha) = \frac{1}{2} d^T d + g^T \delta x + \frac{1}{2} \alpha^2 g^T G g \f]
+     *
+     *  Optimizing by setting the derivative to zero yields \f$ \hat \alpha = (-g^T g) / (g^T G g)
+     *  \f$.  For efficiency, this function evaluates the denominator without computing the Hessian
+     *  \f$ G \f$, returning
+     *
+     *  \f[ \delta x = \hat\alpha g = \frac{-g^T g}{(R g)^T(R g)} \f] */
+    //VectorValuesUnordered optimizeGradientSearch() const;
 
     /// @}
 
@@ -280,25 +304,25 @@ namespace gtsam {
 
   /****** Linear Algebra Opeations ******/
 
-  /** return A*x */
-  GTSAM_EXPORT Errors operator*(const GaussianFactorGraphUnordered& fg, const VectorValuesUnordered& x);
+  ///** return A*x */
+  //GTSAM_EXPORT Errors operator*(const GaussianFactorGraphUnordered& fg, const VectorValuesUnordered& x);
 
-  /** In-place version e <- A*x that overwrites e. */
-  GTSAM_EXPORT void multiplyInPlace(const GaussianFactorGraphUnordered& fg, const VectorValuesUnordered& x, Errors& e);
+  ///** In-place version e <- A*x that overwrites e. */
+  //GTSAM_EXPORT void multiplyInPlace(const GaussianFactorGraphUnordered& fg, const VectorValuesUnordered& x, Errors& e);
 
-  /** In-place version e <- A*x that takes an iterator. */
-  GTSAM_EXPORT void multiplyInPlace(const GaussianFactorGraphUnordered& fg, const VectorValuesUnordered& x, const Errors::iterator& e);
+  ///** In-place version e <- A*x that takes an iterator. */
+  //GTSAM_EXPORT void multiplyInPlace(const GaussianFactorGraphUnordered& fg, const VectorValuesUnordered& x, const Errors::iterator& e);
 
-  /** x += alpha*A'*e */
-  GTSAM_EXPORT void transposeMultiplyAdd(const GaussianFactorGraphUnordered& fg, double alpha, const Errors& e, VectorValuesUnordered& x);
+  ///** x += alpha*A'*e */
+  //GTSAM_EXPORT void transposeMultiplyAdd(const GaussianFactorGraphUnordered& fg, double alpha, const Errors& e, VectorValuesUnordered& x);
 
-  /* matrix-vector operations */
-  GTSAM_EXPORT void residual(const GaussianFactorGraphUnordered& fg, const VectorValuesUnordered &x, VectorValuesUnordered &r);
-  GTSAM_EXPORT void multiply(const GaussianFactorGraphUnordered& fg, const VectorValuesUnordered &x, VectorValuesUnordered &r);
-  GTSAM_EXPORT void transposeMultiply(const GaussianFactorGraphUnordered& fg, const VectorValuesUnordered &r, VectorValuesUnordered &x);
+  ///* matrix-vector operations */
+  //GTSAM_EXPORT void residual(const GaussianFactorGraphUnordered& fg, const VectorValuesUnordered &x, VectorValuesUnordered &r);
+  //GTSAM_EXPORT void multiply(const GaussianFactorGraphUnordered& fg, const VectorValuesUnordered &x, VectorValuesUnordered &r);
+  //GTSAM_EXPORT void transposeMultiply(const GaussianFactorGraphUnordered& fg, const VectorValuesUnordered &r, VectorValuesUnordered &x);
 
-  /** return A*x-b
-   * \todo Make this a member function - affects SubgraphPreconditioner */
-  GTSAM_EXPORT Errors gaussianErrors(const GaussianFactorGraphUnordered& fg, const VectorValuesUnordered& x);
+  ///** return A*x-b
+  // * \todo Make this a member function - affects SubgraphPreconditioner */
+  //GTSAM_EXPORT Errors gaussianErrors(const GaussianFactorGraphUnordered& fg, const VectorValuesUnordered& x);
 
 } // namespace gtsam

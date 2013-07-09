@@ -154,27 +154,27 @@ namespace gtsam {
     /** Collect number of cliques with cached separator marginals */
     size_t numCachedSeparatorMarginals() const;
 
-    /** return marginal on any variable */
-    sharedFactor marginalFactor(Key j, Eliminate function) const;
+    ///** return marginal on any variable */
+    //sharedFactor marginalFactor(Key j, Eliminate function) const;
 
-    /**
-     * return marginal on any variable, as a Bayes Net
-     * NOTE: this function calls marginal, and then eliminates it into a Bayes Net
-     * This is more expensive than the above function
-     */
-    sharedBayesNet marginalBayesNet(Key j, Eliminate function) const;
+    ///**
+    // * return marginal on any variable, as a Bayes Net
+    // * NOTE: this function calls marginal, and then eliminates it into a Bayes Net
+    // * This is more expensive than the above function
+    // */
+    //sharedBayesNet marginalBayesNet(Key j, Eliminate function) const;
 
-    /**
-     * return joint on two variables
-     * Limitation: can only calculate joint if cliques are disjoint or one of them is root
-     */
-    sharedFactorGraph joint(Index j1, Index j2, Eliminate function) const;
+    ///**
+    // * return joint on two variables
+    // * Limitation: can only calculate joint if cliques are disjoint or one of them is root
+    // */
+    //sharedFactorGraph joint(Index j1, Index j2, Eliminate function) const;
 
-    /**
-     * return joint on two variables as a BayesNet
-     * Limitation: can only calculate joint if cliques are disjoint or one of them is root
-     */
-    sharedBayesNet jointBayesNet(Index j1, Index j2, Eliminate function) const;
+    ///**
+    // * return joint on two variables as a BayesNet
+    // * Limitation: can only calculate joint if cliques are disjoint or one of them is root
+    // */
+    //sharedBayesNet jointBayesNet(Index j1, Index j2, Eliminate function) const;
 
     /**
      * Read only with side effects

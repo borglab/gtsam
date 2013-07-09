@@ -23,35 +23,44 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class DERIVED, class FACTORGRAPH, class BAYESNET>
-  std::vector<Key>
-    BayesTreeCliqueBaseUnordered<DERIVED, FACTORGRAPH, BAYESNET>::separator_setminus_B(derived_ptr B) const
+  bool BayesTreeCliqueBaseUnordered<DERIVED, FACTORGRAPH, BAYESNET>::equals(
+    const DERIVED& other, double tol = 1e-9) const
   {
-    FastSet<Key> p_F_S_parents(this->conditional()->beginParents(), this->conditional()->endParents());
-    FastSet<Key> indicesB(B->conditional()->begin(), B->conditional()->end());
-    std::vector<Key> S_setminus_B;
-    std::set_difference(p_F_S_parents.begin(), p_F_S_parents.end(),
-      indicesB.begin(), indicesB.end(), back_inserter(S_setminus_B));
-    return S_setminus_B;
+    return (!conditional_ && !other.conditional())
+      || conditional_->equals(*other.conditional(), tol);
   }
 
-  /* ************************************************************************* */
-  template<class DERIVED, class FACTORGRAPH, class BAYESNET>
-  std::vector<Key> BayesTreeCliqueBaseUnordered<DERIVED, FACTORGRAPH, BAYESNET>::shortcut_indices(
-    derived_ptr B, const FactorGraphType& p_Cp_B) const
-  {
-    gttic(shortcut_indices);
-    FastSet<Key> allKeys = p_Cp_B.keys();
-    FastSet<Key> indicesB(B->conditional()->begin(), B->conditional()->end());
-    std::vector<Key> S_setminus_B = separator_setminus_B(B);
-    std::vector<Key> keep;
-    // keep = S\B intersect allKeys (S_setminus_B is already sorted)
-    std::set_intersection(S_setminus_B.begin(), S_setminus_B.end(), //
-      allKeys.begin(), allKeys.end(), back_inserter(keep));
-    // keep += B intersect allKeys
-    std::set_intersection(indicesB.begin(), indicesB.end(), //
-      allKeys.begin(), allKeys.end(), back_inserter(keep));
-    return keep;
-  }
+  ///* ************************************************************************* */
+  //template<class DERIVED, class FACTORGRAPH, class BAYESNET>
+  //std::vector<Key>
+  //  BayesTreeCliqueBaseUnordered<DERIVED, FACTORGRAPH, BAYESNET>::separator_setminus_B(derived_ptr B) const
+  //{
+  //  FastSet<Key> p_F_S_parents(this->conditional()->beginParents(), this->conditional()->endParents());
+  //  FastSet<Key> indicesB(B->conditional()->begin(), B->conditional()->end());
+  //  std::vector<Key> S_setminus_B;
+  //  std::set_difference(p_F_S_parents.begin(), p_F_S_parents.end(),
+  //    indicesB.begin(), indicesB.end(), back_inserter(S_setminus_B));
+  //  return S_setminus_B;
+  //}
+
+  ///* ************************************************************************* */
+  //template<class DERIVED, class FACTORGRAPH, class BAYESNET>
+  //std::vector<Key> BayesTreeCliqueBaseUnordered<DERIVED, FACTORGRAPH, BAYESNET>::shortcut_indices(
+  //  derived_ptr B, const FactorGraphType& p_Cp_B) const
+  //{
+  //  gttic(shortcut_indices);
+  //  FastSet<Key> allKeys = p_Cp_B.keys();
+  //  FastSet<Key> indicesB(B->conditional()->begin(), B->conditional()->end());
+  //  std::vector<Key> S_setminus_B = separator_setminus_B(B);
+  //  std::vector<Key> keep;
+  //  // keep = S\B intersect allKeys (S_setminus_B is already sorted)
+  //  std::set_intersection(S_setminus_B.begin(), S_setminus_B.end(), //
+  //    allKeys.begin(), allKeys.end(), back_inserter(keep));
+  //  // keep += B intersect allKeys
+  //  std::set_intersection(indicesB.begin(), indicesB.end(), //
+  //    allKeys.begin(), allKeys.end(), back_inserter(keep));
+  //  return keep;
+  //}
 
   /* ************************************************************************* */
   template<class DERIVED, class FACTORGRAPH, class BAYESNET>

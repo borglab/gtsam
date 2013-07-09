@@ -20,7 +20,7 @@
 #include <gtsam/linear/linearExceptions.h>
 #include <gtsam/linear/GaussianConditionalUnordered.h>
 #include <gtsam/linear/JacobianFactorUnordered.h>
-#include <gtsam/linear/HessianFactorUnordered.h>
+//#include <gtsam/linear/HessianFactorUnordered.h>
 #include <gtsam/linear/GaussianFactorGraphUnordered.h>
 #include <gtsam/linear/VectorValuesUnordered.h>
 #include <gtsam/inference/VariableSlots.h>

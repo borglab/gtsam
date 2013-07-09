@@ -253,12 +253,10 @@ namespace gtsam {
     //  return result;
     //}
 
-    ///// TODO: linear algebra interface seems to have been added for SPCG.
-    //friend void scal(double alpha, VectorValuesUnordered& x) {
-    //  for(Key j = 0; j < x.size(); ++j)
-    //    x.values_[j] *= alpha;
-    //}
-    ///// TODO: linear algebra interface seems to have been added for SPCG.
+    // TODO: linear algebra interface seems to have been added for SPCG.
+    friend void scal(double alpha, VectorValuesUnordered& x);
+
+    //// TODO: linear algebra interface seems to have been added for SPCG.
     //friend void axpy(double alpha, const VectorValuesUnordered& x, VectorValuesUnordered& y) {
     //  if(x.size() != y.size())
     //    throw std::invalid_argument("axpy(VectorValues) called with different vector sizes");
@@ -268,13 +266,13 @@ namespace gtsam {
     //    else
     //      throw std::invalid_argument("axpy(VectorValues) called with different vector sizes");
     //}
-    ///// TODO: linear algebra interface seems to have been added for SPCG.
+    //// TODO: linear algebra interface seems to have been added for SPCG.
     //friend void sqrt(VectorValuesUnordered &x) {
     //  for(Key j = 0; j < x.size(); ++j)
     //    x.values_[j] = x.values_[j].cwiseSqrt();
     //}
 
-    ///// TODO: linear algebra interface seems to have been added for SPCG.
+    //// TODO: linear algebra interface seems to have been added for SPCG.
     //friend void ediv(const VectorValuesUnordered& numerator, const VectorValuesUnordered& denominator, VectorValuesUnordered &result) {
     //  if(numerator.size() != denominator.size() || numerator.size() != result.size())
     //    throw std::invalid_argument("ediv(VectorValues) called with different vector sizes");
@@ -285,7 +283,7 @@ namespace gtsam {
     //      throw std::invalid_argument("ediv(VectorValues) called with different vector sizes");
     //}
 
-    ///// TODO: linear algebra interface seems to have been added for SPCG.
+    //// TODO: linear algebra interface seems to have been added for SPCG.
     //friend void edivInPlace(VectorValuesUnordered& x, const VectorValuesUnordered& y) {
     //  if(x.size() != y.size())
     //    throw std::invalid_argument("edivInPlace(VectorValues) called with different vector sizes");

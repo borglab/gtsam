@@ -93,7 +93,7 @@ namespace gtsam {
      * @param bn The GaussianBayesNet on which to perform this computation
      * @return The resulting \f$ \delta x \f$ as described above
      */
-    VectorValuesUnordered optimizeGradientSearch() const;
+    //VectorValuesUnordered optimizeGradientSearch() const;
 
     ///@}
 
@@ -114,7 +114,7 @@ namespace gtsam {
      * @param x0 The center about which to compute the gradient
      * @return The gradient as a VectorValues
      */
-    VectorValuesUnordered gradient(const VectorValuesUnordered& x0) const;
+    //VectorValuesUnordered gradient(const VectorValuesUnordered& x0) const;
 
     /**
      * Compute the gradient of the energy function,
@@ -125,7 +125,7 @@ namespace gtsam {
      * @param [output] g A VectorValues to store the gradient, which must be preallocated, see allocateVectorValues
      * @return The gradient as a VectorValues
      */
-    VectorValuesUnordered gradientAtZero() const;
+    //VectorValuesUnordered gradientAtZero() const;
 
     /**
      * Computes the determinant of a GassianBayesNet

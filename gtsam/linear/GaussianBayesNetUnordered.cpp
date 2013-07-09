@@ -78,32 +78,32 @@ namespace gtsam {
     return gy;
   }
 
-  /* ************************************************************************* */
-  VectorValuesUnordered GaussianBayesNetUnordered::optimizeGradientSearch() const
-  {
-    gttic(Compute_Gradient);
-    // Compute gradient (call gradientAtZero function, which is defined for various linear systems)
-    VectorValuesUnordered grad = gradientAtZero();
-    double gradientSqNorm = grad.dot(grad);
-    gttoc(Compute_Gradient);
+  ///* ************************************************************************* */
+  //VectorValuesUnordered GaussianBayesNetUnordered::optimizeGradientSearch() const
+  //{
+  //  gttic(Compute_Gradient);
+  //  // Compute gradient (call gradientAtZero function, which is defined for various linear systems)
+  //  VectorValuesUnordered grad = gradientAtZero();
+  //  double gradientSqNorm = grad.dot(grad);
+  //  gttoc(Compute_Gradient);
 
-    gttic(Compute_Rg);
-    // Compute R * g
-    Errors Rg = GaussianFactorGraphUnordered(*this) * grad;
-    gttoc(Compute_Rg);
+  //  gttic(Compute_Rg);
+  //  // Compute R * g
+  //  Errors Rg = GaussianFactorGraphUnordered(*this) * grad;
+  //  gttoc(Compute_Rg);
 
-    gttic(Compute_minimizing_step_size);
-    // Compute minimizing step size
-    double step = -gradientSqNorm / dot(Rg, Rg);
-    gttoc(Compute_minimizing_step_size);
+  //  gttic(Compute_minimizing_step_size);
+  //  // Compute minimizing step size
+  //  double step = -gradientSqNorm / dot(Rg, Rg);
+  //  gttoc(Compute_minimizing_step_size);
 
-    gttic(Compute_point);
-    // Compute steepest descent point
-    scal(step, grad);
-    gttoc(Compute_point);
+  //  gttic(Compute_point);
+  //  // Compute steepest descent point
+  //  scal(step, grad);
+  //  gttoc(Compute_point);
 
-    return grad;
-  }
+  //  return grad;
+  //}
 
   /* ************************************************************************* */  
   pair<Matrix,Vector> GaussianBayesNetUnordered::matrix() const
@@ -111,16 +111,17 @@ namespace gtsam {
     return GaussianFactorGraphUnordered(*this).jacobian();
   }
 
-  /* ************************************************************************* */
-  double determinant(const GaussianBayesNet& bayesNet) {
-    double logDet = 0.0;
+  ///* ************************************************************************* */
+  //VectorValuesUnordered GaussianBayesNetUnordered::gradient(const VectorValuesUnordered& x0) const
+  //{
+  //  return GaussianFactorGraphUnordered(*this).gradient(x0);
+  //}
 
-    BOOST_FOREACH(boost::shared_ptr<const GaussianConditional> cg, bayesNet){
-      logDet += cg->get_R().diagonal().unaryExpr(ptr_fun<double,double>(log)).sum();
-    }
-
-    return exp(logDet);
-  }
+  ///* ************************************************************************* */
+  //VectorValuesUnordered GaussianBayesNetUnordered::gradientAtZero() const
+  //{
+  //  return GaussianFactorGraphUnordered(*this).gradientAtZero();
+  //}
 
   /* ************************************************************************* */
   VectorValues gradient(const GaussianBayesNet& bayesNet, const VectorValues& x0) {

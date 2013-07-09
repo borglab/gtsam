@@ -213,5 +213,12 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  void scal(double alpha, VectorValuesUnordered& x)
+  {
+    BOOST_FOREACH(Vector& v, x | map_values)
+      v *= alpha;
+  }
+
+  /* ************************************************************************* */
 
 } // \namespace gtsam
