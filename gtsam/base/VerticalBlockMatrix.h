@@ -71,10 +71,10 @@ namespace gtsam {
      * height is matrixNewHeight and its width fits the given block dimensions. */
     template<typename CONTAINER>
     VerticalBlockMatrix(const CONTAINER dimensions, DenseIndex height) :
-      matrix_(height, variableColOffsets_.back()),
       rowStart_(0), rowEnd_(height), blockStart_(0)
     {
       fillOffsets(dimensions.begin(), dimensions.end());
+      matrix_.resize(height, variableColOffsets_.back());
       assertInvariants();
     }
 
@@ -83,10 +83,10 @@ namespace gtsam {
      * height is matrixNewHeight and its width fits the given block dimensions. */
     template<typename ITERATOR>
     VerticalBlockMatrix(ITERATOR firstBlockDim, ITERATOR lastBlockDim, DenseIndex height) :
-      matrix_(height, variableColOffsets_.back()),
       rowStart_(0), rowEnd_(height), blockStart_(0)
     {
       fillOffsets(firstBlockDim, lastBlockDim);
+      matrix_.resize(height, variableColOffsets_.back());
       assertInvariants();
     }
 
@@ -112,7 +112,7 @@ namespace gtsam {
       Index actualEndBlock = endBlock + blockStart_;
       if(startBlock != 0 || endBlock != 0) {
         checkBlock(actualStartBlock);
-        checkBlock(actualEndBlock);
+        assert(actualEndBlock < (DenseIndex)variableColOffsets_.size());
       }
       const Index startCol = variableColOffsets_[actualStartBlock];
       const Index rangeCols = variableColOffsets_[actualEndBlock] - startCol;
@@ -125,7 +125,7 @@ namespace gtsam {
       Index actualEndBlock = endBlock + blockStart_;
       if(startBlock != 0 || endBlock != 0) {
         checkBlock(actualStartBlock);
-        checkBlock(actualEndBlock);
+        assert(actualEndBlock < (DenseIndex)variableColOffsets_.size());
       }
       const Index startCol = variableColOffsets_[actualStartBlock];
       const Index rangeCols = variableColOffsets_[actualEndBlock] - startCol;
@@ -190,7 +190,7 @@ namespace gtsam {
 
     void checkBlock(DenseIndex block) const {
       assert(matrix_.cols() == variableColOffsets_.back());
-      assert(block < (DenseIndex)variableColOffsets_.size()-1);
+      assert(block < (DenseIndex)variableColOffsets_.size() - 1);
       assert(variableColOffsets_[block] < matrix_.cols() && variableColOffsets_[block+1] <= matrix_.cols());
     }
 
