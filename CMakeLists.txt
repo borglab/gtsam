@@ -156,6 +156,22 @@ install(FILES ${CMAKE_BINARY_DIR}/gtsam/3rdparty/gtsam_eigen_includes.h DESTINAT
 
 
 ###############################################################################
+# Find TBB
+set(ENV{TBB_ARCH_PLATFORM} "intel64/vc11")
+set(ENV{TBB_BIN_DIR} "C:/Program Files/Intel/TBB/bin")
+set(ENV{TBB_TARGET_ARCH} intel64)
+set(ENV{TBB_TARGET_VS} vc11)
+find_package(TBB REQUIRED)
+set(TBB_LIBS "")
+foreach(lib ${TBB_LIBRARIES})
+	list(APPEND TBB_LIBS optimized "${lib}")
+endforeach()
+foreach(lib ${TBB_DEBUG_LIBRARIES})
+	list(APPEND TBB_LIBS debug "${lib}")
+endforeach()
+
+
+###############################################################################
 # Global compile options
 
 # General build settings
