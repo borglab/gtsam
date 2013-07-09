@@ -69,7 +69,9 @@ namespace gtsam {
   std::pair<boost::shared_ptr<SymbolicConditionalUnordered>, boost::shared_ptr<SymbolicFactorUnordered> >
     SymbolicFactorUnordered::eliminate(const OrderingUnordered& keys) const
   {
-
+    SymbolicFactorGraphUnordered graph;
+    graph.add(*this);
+    return EliminateSymbolicUnordered(graph, keys);
   }
 
 } // gtsam
