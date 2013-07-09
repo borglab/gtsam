@@ -181,6 +181,7 @@ include_directories(BEFORE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_BINARY_DIR} # So we can include generated config header files
   CppUnitLite
+  ${TBB_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIR})
 link_directories(${Boost_LIBRARY_DIRS})
 
