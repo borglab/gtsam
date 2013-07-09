@@ -84,7 +84,7 @@ namespace gtsam {
     typedef std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<_FactorType> > EliminationResult;
 
     /// The function type that does a single dense elimination step on a subgraph.
-    typedef boost::function<EliminationResult(std::vector<boost::shared_ptr<_FactorType> >, std::vector<Key>)> Eliminate;
+    typedef boost::function<EliminationResult(const FactorGraphType&, const OrderingUnordered&)> Eliminate;
 
     /// Typedef for an optional ordering as an argument to elimination functions
     typedef boost::optional<const OrderingUnordered&> OptionalOrdering;

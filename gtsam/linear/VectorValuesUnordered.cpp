@@ -19,6 +19,7 @@
 #include <gtsam/linear/VectorValuesUnordered.h>
 
 #include <boost/foreach.hpp>
+#include <boost/bind.hpp>
 #include <boost/range/combine.hpp>
 #include <boost/range/numeric.hpp>
 #include <boost/range/adaptor/transformed.hpp>
@@ -50,7 +51,9 @@ namespace gtsam {
   /* ************************************************************************* */
   VectorValuesUnordered::VectorValuesUnordered(const VectorValuesUnordered& first, const VectorValuesUnordered& second)
   {
-    std::merge(first.begin(), first.end(), second.begin(), second.end(), std::inserter(values_, values_.end()));
+    // Merge using predicate for comparing first of pair
+    std::merge(first.begin(), first.end(), second.begin(), second.end(), std::inserter(values_, values_.end()),
+      boost::bind(&std::less<Key>::operator(), std::less<Key>(), boost::bind(&KeyValuePair::first, _1), boost::bind(&KeyValuePair::first, _2)));
     if(size() != first.size() + second.size())
       throw std::invalid_argument("Requested to merge two VectorValues that have one or more variables in common.");
   }
@@ -120,7 +123,7 @@ namespace gtsam {
     DenseIndex totalDim = 0;
     std::vector<const Vector*> items(keys.size());
     for(size_t i = 0; i < keys.size(); ++i) {
-      items[i] = &at(i);
+      items[i] = &at(keys[i]);
       totalDim += items[i]->size();
     }
 

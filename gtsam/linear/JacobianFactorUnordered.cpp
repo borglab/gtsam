@@ -517,8 +517,9 @@ namespace gtsam {
     size_t frontalDim = Ab_.range(0, nrFrontals).cols();
 
     // Check for singular factor
-    if(model_->dim() < frontalDim)
-      throw IndeterminantLinearSystemException(this->keys().front());
+    // TODO: fix this check
+    //if(model_->dim() < frontalDim)
+    //  throw IndeterminantLinearSystemException(this->keys().front());
 
     // Restrict the matrix to be in the first nrFrontals variables and create the conditional
     gttic(cond_Rd);
@@ -531,8 +532,8 @@ namespace gtsam {
     GaussianConditionalUnordered::shared_ptr conditional = boost::make_shared<GaussianConditionalUnordered>(
       Base::keys_, nrFrontals, Ab_, conditionalNoiseModel);
     Ab_.rowStart() += frontalDim;
+    Ab_.rowEnd() = std::min(Ab_.cols() - 1, originalRowEnd);
     Ab_.firstBlock() += nrFrontals;
-    Ab_.rowEnd() = originalRowEnd;
     gttoc(cond_Rd);
 
     // Take lower-right block of Ab to get the new factor

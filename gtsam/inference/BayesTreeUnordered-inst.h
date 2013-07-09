@@ -596,7 +596,7 @@ namespace gtsam {
       orphans.insert(orphans.begin(), clique->children.begin(), clique->children.end());
       clique->children.clear();
 
-      bn.push_back(clique->conditional());
+      bn.push_back(clique->conditional_);
 
     }
   }

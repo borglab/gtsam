@@ -18,6 +18,7 @@
  */
 #pragma once
 
+#include <gtsam/linear/linearExceptions.h>
 #include <boost/range/adaptor/map.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/join.hpp>
@@ -91,7 +92,7 @@ namespace gtsam {
       terms
       | transformed(&_getPairSecond)
       | transformed(boost::mem_fn(&Matrix::cols)),
-      cref_list_of<1>((DenseIndex)1)), b.size());
+      boost::assign::cref_list_of<1>((DenseIndex)1)), b.size());
 
     // Check and add terms
     typedef std::pair<Key, Matrix> Term;

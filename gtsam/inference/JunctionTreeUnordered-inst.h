@@ -122,17 +122,24 @@ namespace gtsam {
     template<class JUNCTIONTREE>
     struct EliminationData {
       EliminationData* const parentData;
+      size_t myIndexInParent;
       std::vector<typename JUNCTIONTREE::sharedFactor> childFactors;
       boost::shared_ptr<typename JUNCTIONTREE::BayesTreeType::Node> bayesTreeNode;
       EliminationData(EliminationData* _parentData, size_t nChildren) :
         parentData(_parentData),
-        bayesTreeNode(boost::make_shared<typename JUNCTIONTREE::BayesTreeType::Node>()) {
-          childFactors.reserve(nChildren);
-          // Set up BayesTree parent and child pointers
-          if(parentData) {
-            bayesTreeNode->parent_ = parentData->bayesTreeNode;
-            parentData->bayesTreeNode->children.push_back(bayesTreeNode);
-          }
+        bayesTreeNode(boost::make_shared<typename JUNCTIONTREE::BayesTreeType::Node>())
+      {
+        if(parentData) {
+          myIndexInParent = parentData->childFactors.size();
+          parentData->childFactors.push_back(typename JUNCTIONTREE::sharedFactor());
+        } else {
+          myIndexInParent = 0;
+        }
+        // Set up BayesTree parent and child pointers
+        if(parentData) {
+          bayesTreeNode->parent_ = parentData->bayesTreeNode;
+          parentData->bayesTreeNode->children.push_back(bayesTreeNode);
+        }
       }
     };
 
@@ -158,26 +165,26 @@ namespace gtsam {
       // Typedefs
       typedef typename JUNCTIONTREE::sharedFactor sharedFactor;
       typedef typename JUNCTIONTREE::FactorType FactorType;
+      typedef typename JUNCTIONTREE::FactorGraphType FactorGraphType;
       typedef typename JUNCTIONTREE::ConditionalType ConditionalType;
       typedef typename JUNCTIONTREE::BayesTreeType::Node BTNode;
 
       // Gather factors
-      assert(node->children.size() == myData.childFactors.size());
-      std::vector<sharedFactor> gatheredFactors;
+      FactorGraphType gatheredFactors;
       gatheredFactors.reserve(node->factors.size() + node->children.size());
-      gatheredFactors.insert(gatheredFactors.end(), node->factors.begin(), node->factors.end());
-      gatheredFactors.insert(gatheredFactors.end(), myData.childFactors.begin(), myData.childFactors.end());
+      gatheredFactors.push_back(node->factors.begin(), node->factors.end());
+      gatheredFactors.push_back(myData.childFactors.begin(), myData.childFactors.end());
 
       // Do dense elimination step
       std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> > eliminationResult =
-        eliminationFunction(gatheredFactors, node->keys);
+        eliminationFunction(gatheredFactors, OrderingUnordered(node->keys));
 
       // Store conditional in BayesTree clique
       myData.bayesTreeNode->conditional_ = eliminationResult.first;
 
       // Store remaining factor in parent's gathered factors
       if(!eliminationResult.second->empty())
-        myData.parentData->childFactors.push_back(eliminationResult.second);
+        myData.parentData->childFactors[myData.myIndexInParent] = eliminationResult.second;
     }
   }
 
@@ -244,8 +251,11 @@ namespace gtsam {
 
     // Add remaining factors that were not involved with eliminated variables
     boost::shared_ptr<FactorGraphType> allRemainingFactors = boost::make_shared<FactorGraphType>();
+    allRemainingFactors->reserve(remainingFactors_.size() + rootsContainer.childFactors.size());
     allRemainingFactors->push_back(remainingFactors_.begin(), remainingFactors_.end());
-    allRemainingFactors->push_back(rootsContainer.childFactors.begin(), rootsContainer.childFactors.end());
+    BOOST_FOREACH(const sharedFactor& factor, rootsContainer.childFactors)
+      if(factor)
+        allRemainingFactors->push_back(factor);
 
     // Return result
     return std::make_pair(result, allRemainingFactors);

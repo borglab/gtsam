@@ -43,15 +43,15 @@ namespace gtsam {
     assert(childrenResults.size() == children.size());
 
     // Gather factors
-    std::vector<sharedFactor> gatheredFactors;
+    FactorGraphType gatheredFactors;
     gatheredFactors.reserve(factors.size() + children.size());
-    gatheredFactors.insert(gatheredFactors.end(), factors.begin(), factors.end());
-    gatheredFactors.insert(gatheredFactors.end(), childrenResults.begin(), childrenResults.end());
+    gatheredFactors.push_back(factors.begin(), factors.end());
+    gatheredFactors.push_back(childrenResults.begin(), childrenResults.end());
 
     // Do dense elimination step
     std::vector<Key> keyAsVector(1); keyAsVector[0] = key;
     std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> > eliminationResult =
-      function(gatheredFactors, keyAsVector);
+      function(gatheredFactors, OrderingUnordered(keyAsVector));
 
     // Add conditional to BayesNet
     output->push_back(eliminationResult.first);
