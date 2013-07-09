@@ -190,7 +190,7 @@ include_directories(BEFORE
 
 if(MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
-	add_definitions(/wd4251 /wd4275 /wd4251 /wd4661 /wd4344) # Disable non-DLL-exported base class and other warnings
+	add_definitions(/wd4251 /wd4275 /wd4251 /wd4661) # Disable non-DLL-exported base class and other warnings
 endif()
 
 if(GTSAM_ENABLE_CONSISTENCY_CHECKS)
