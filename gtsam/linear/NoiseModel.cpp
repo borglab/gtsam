@@ -131,7 +131,7 @@ SharedDiagonal Gaussian::QR(Matrix& Ab) const {
   // TODO: necessary to isolate last column?
 //  householder(Ab, maxRank);
 
-  return SharedDiagonal();
+  return Unit::Create(maxRank);
 }
 
 void Gaussian::WhitenSystem(vector<Matrix>& A, Vector& b) const {
