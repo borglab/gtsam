@@ -95,7 +95,7 @@ namespace gtsam {
     explicit JacobianFactorUnordered(const GaussianFactorUnordered& gf);
 
     /** default constructor for I/O */
-    JacobianFactorUnordered() {}
+    JacobianFactorUnordered();
 
     /** Construct Null factor */
     explicit JacobianFactorUnordered(const Vector& b_in);

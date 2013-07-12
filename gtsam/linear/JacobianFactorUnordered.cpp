@@ -57,6 +57,11 @@ using namespace boost::assign;
 namespace gtsam {
 
   /* ************************************************************************* */
+  JacobianFactorUnordered::JacobianFactorUnordered() :
+    Ab_(cref_list_of<1>(1), 0)
+  {}
+
+  /* ************************************************************************* */
   JacobianFactorUnordered::JacobianFactorUnordered(const GaussianFactorUnordered& gf) {
     // Copy the matrix data depending on what type of factor we're copying from
     if(const JacobianFactorUnordered* rhs = dynamic_cast<const JacobianFactorUnordered*>(&gf))
@@ -82,7 +87,8 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  JacobianFactorUnordered::JacobianFactorUnordered(const Key i1, const Matrix& A1, Key i2, const Matrix& A2,
+  JacobianFactorUnordered::JacobianFactorUnordered(
+    const Key i1, const Matrix& A1, Key i2, const Matrix& A2,
     const Vector& b, const SharedDiagonal& model)
   {
     fillTerms(cref_list_of<2>
@@ -91,7 +97,8 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  JacobianFactorUnordered::JacobianFactorUnordered(const Key i1, const Matrix& A1, Key i2, const Matrix& A2,
+  JacobianFactorUnordered::JacobianFactorUnordered(
+    const Key i1, const Matrix& A1, Key i2, const Matrix& A2,
       Key i3, const Matrix& A3, const Vector& b, const SharedDiagonal& model)
   {
     fillTerms(cref_list_of<3>
