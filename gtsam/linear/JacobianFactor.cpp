@@ -476,6 +476,11 @@ namespace gtsam {
     // Use in-place QR dense Ab appropriate to NoiseModel
     gttic(QR);
     SharedDiagonal noiseModel = model_->QR(matrix_);
+    // In the new unordered code, empty noise model indicates unit noise model, and I already
+    // modified QR to return an empty noise model.  This just creates a unit noise model in that
+    // case because this old code does not handle empty noise models.
+    if(!noiseModel)
+      noiseModel = noiseModel::Unit::Create(std::min(matrix_.rows(), matrix_.cols() - 1));
     gttoc(QR);
 
     // Zero the lower-left triangle.  todo: not all of these entries actually
