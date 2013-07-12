@@ -38,7 +38,7 @@ namespace gtsam {
    * (i.e. one after the last true row index).
    *
    * @addtogroup base */
-  class VerticalBlockMatrix {
+  class GTSAM_EXPORT VerticalBlockMatrix {
   public:
     typedef VerticalBlockMatrix This;
     typedef Matrix::Index Index;
