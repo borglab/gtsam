@@ -230,8 +230,7 @@ TEST( NoiseModel, QR )
 
   // Call Gaussian version
   SharedDiagonal actual1 = exampleQR::diagonal->QR(Ab1);
-  SharedDiagonal expected = noiseModel::Unit::Create(4);
-  EXPECT(assert_equal(*expected,*actual1));
+  EXPECT(!actual1);
   EXPECT(linear_dependent(exampleQR::Rd,Ab1,1e-4)); // Ab was modified in place !!!
 
   // Call Constrained version
