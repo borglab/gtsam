@@ -67,7 +67,9 @@ namespace gtsam {
     // Allocate combined conditional, has same keys as firstConditional
     Matrix tempCombined;
     VerticalBlockView<Matrix> tempBlockView(tempCombined, dims.begin(), dims.end(), 0);
-    GaussianConditional::shared_ptr combinedConditional(new GaussianConditional((*firstConditional)->begin(), (*firstConditional)->end(), nFrontals, tempBlockView, zero(nRows)));
+    GaussianConditional::shared_ptr combinedConditional =
+      boost::make_shared<GaussianConditional>(
+      (*firstConditional)->begin(), (*firstConditional)->end(), nFrontals, tempBlockView, Vector::Zero(nRows));
 
     // Resize to correct number of rows
     combinedConditional->matrix_.resize(nRows, combinedConditional->matrix_.cols());
