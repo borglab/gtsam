@@ -102,23 +102,23 @@ namespace gtsam {
 
     /** Construct unary factor */
     JacobianFactorUnordered(Key i1, const Matrix& A1,
-        const Vector& b, const SharedDiagonal& model);
+        const Vector& b, const SharedDiagonal& model = SharedDiagonal());
 
     /** Construct binary factor */
     JacobianFactorUnordered(Key i1, const Matrix& A1,
         Key i2, const Matrix& A2,
-        const Vector& b, const SharedDiagonal& model);
+        const Vector& b, const SharedDiagonal& model = SharedDiagonal());
 
     /** Construct ternary factor */
     JacobianFactorUnordered(Key i1, const Matrix& A1, Key i2,
         const Matrix& A2, Key i3, const Matrix& A3,
-        const Vector& b, const SharedDiagonal& model);
+        const Vector& b, const SharedDiagonal& model = SharedDiagonal());
 
     /** Construct an n-ary factor
      * @tparam TERMS A container whose value type is std::pair<Key, Matrix>, specifying the
      *         collection of keys and matrices making up the factor. */
     template<typename TERMS>
-    JacobianFactorUnordered(const TERMS& terms, const Vector& b, const SharedDiagonal& model);
+    JacobianFactorUnordered(const TERMS& terms, const Vector& b, const SharedDiagonal& model = SharedDiagonal());
 
     /** Constructor with arbitrary number keys, and where the augmented matrix is given all together
      *  instead of in block terms.  Note that only the active view of the provided augmented matrix
@@ -126,7 +126,7 @@ namespace gtsam {
      *  factor. */
     template<typename KEYS>
     JacobianFactorUnordered(
-      const KEYS& keys, const VerticalBlockMatrix& augmentedMatrix, const SharedDiagonal& sigmas);
+      const KEYS& keys, const VerticalBlockMatrix& augmentedMatrix, const SharedDiagonal& sigmas = SharedDiagonal());
     
     /** Convert from a HessianFactor (does Cholesky) */
     //JacobianFactorUnordered(const HessianFactor& factor);
