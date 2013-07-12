@@ -23,6 +23,7 @@
 
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
+#include <boost/tokenizer.hpp>
 
 #include <cstdarg>
 #include <cstring>
@@ -727,6 +728,44 @@ Matrix Cayley(const Matrix& A) {
   // inlined to let Eigen do more optimization
   return (Matrix::Identity(n, n) - A)*(Matrix::Identity(n, n) + A).inverse();
 }
+
 /* ************************************************************************* */
+std::string formatMatrixIndented(const std::string& label, const Matrix& matrix, bool makeVectorHorizontal)
+{
+  stringstream ss;
+  const string firstline = label;
+  ss << firstline;
+  const string padding(firstline.size(), ' ');
+  const bool transposeMatrix = makeVectorHorizontal && matrix.cols() == 1 && matrix.rows() > 1;
+  const DenseIndex effectiveRows = transposeMatrix ? matrix.cols() : matrix.rows();
+
+  if(matrix.rows() > 0 && matrix.cols() > 0)
+  {
+    stringstream matrixPrinted;
+    if(transposeMatrix)
+      matrixPrinted << matrix.transpose();
+    else
+      matrixPrinted << matrix;
+    const std::string matrixStr = matrixPrinted.str();
+    boost::tokenizer<boost::char_separator<char> > tok(matrixStr, boost::char_separator<char>("\n"));
+
+    DenseIndex row = 0;
+    BOOST_FOREACH(const std::string& line, tok)
+    {
+      assert(row < effectiveRows);
+      if(row > 0)
+        ss << padding;
+      ss << "[ " << line << " ]";
+      if(row < effectiveRows - 1)
+        ss << "\n";
+      ++ row;
+    }
+  } else {
+    ss << "Empty (" << matrix.rows() << "x" << matrix.cols() << ")";
+  }
+  return ss.str();
+}
+
+
 
 } // namespace gtsam
