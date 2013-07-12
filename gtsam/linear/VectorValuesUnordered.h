@@ -95,7 +95,7 @@ namespace gtsam {
     typedef Values::const_iterator const_iterator; ///< Const iterator over vector values
     typedef Values::reverse_iterator reverse_iterator; ///< Reverse iterator over vector values
     typedef Values::const_reverse_iterator const_reverse_iterator; ///< Const reverse iterator over vector values
-    typedef boost::shared_ptr<VectorValuesUnordered> shared_ptr; ///< shared_ptr to this class
+    typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
     typedef Values::value_type value_type; ///< Typedef to pair<Key, Vector>, a key-value pair
     typedef value_type KeyValuePair; ///< Typedef to pair<Key, Vector>, a key-value pair
 
@@ -193,15 +193,16 @@ namespace gtsam {
     /// @{
 
     /** Retrieve the entire solution as a single vector */
-    const Vector asVector() const;
+    const Vector vector() const;
 
     /** Access a vector that is a subset of relevant keys. */
     const Vector vector(const std::vector<Key>& keys) const;
 
-    /**
-     * Swap the data in this VectorValues with another.
-     */
+    /** Swap the data in this VectorValues with another. */
     void swap(VectorValuesUnordered& other);
+
+    /** Check if this VectorValues has the same structure (keys and dimensions) as another */
+    bool hasSameStructure(const VectorValuesUnordered other) const;
 
     /// @}
     /// @name Linear algebra operations
@@ -218,23 +219,35 @@ namespace gtsam {
     /** Squared vector L2 norm */
     double squaredNorm() const;
 
-    /**
-     * + operator does element-wise addition.  Both VectorValues must have the
-     * same structure (checked when NDEBUG is not defined).
-     */
+    /** Element-wise addition, synonym for add().  Both VectorValues must have the same structure
+     *  (checked when NDEBUG is not defined). */
     VectorValuesUnordered operator+(const VectorValuesUnordered& c) const;
 
-    /**
-     * + operator does element-wise subtraction.  Both VectorValues must have the
-     * same structure (checked when NDEBUG is not defined).
-     */
+    /** Element-wise addition, synonym for operator+().  Both VectorValues must have the same
+     *  structure (checked when NDEBUG is not defined). */
+    VectorValuesUnordered add(const VectorValuesUnordered& c) const;
+
+    /** Element-wise addition in-place, synonym for operator+=().  Both VectorValues must have the
+     * same structure (checked when NDEBUG is not defined). */
+    VectorValuesUnordered& operator+=(const VectorValuesUnordered& c);
+
+    /** Element-wise addition in-place, synonym for operator+=().  Both VectorValues must have the
+     * same structure (checked when NDEBUG is not defined). */
+    VectorValuesUnordered& addInPlace(const VectorValuesUnordered& c);
+
+    /** Element-wise subtraction, synonym for subtract().  Both VectorValues must have the same
+     *  structure (checked when NDEBUG is not defined). */
     VectorValuesUnordered operator-(const VectorValuesUnordered& c) const;
 
-    /**
-     * += operator does element-wise addition.  Both VectorValues must have the
-     * same structure (checked when NDEBUG is not defined).
-     */
-    VectorValuesUnordered& operator+=(const VectorValuesUnordered& c);
+    /** Element-wise subtraction, synonym for operator-().  Both VectorValues must have the same
+     *  structure (checked when NDEBUG is not defined). */
+    VectorValuesUnordered subtract(const VectorValuesUnordered& c) const;
+
+    /** Element-wise scaling by a constant in-place. */
+    VectorValuesUnordered& operator*=(double alpha);
+
+    /** Element-wise scaling by a constant in-place. */
+    VectorValuesUnordered& scaleInPlace(double alpha);
 
     /// @}
 
@@ -242,7 +255,6 @@ namespace gtsam {
     /// @name Matlab syntactic sugar for linear algebra operations
     /// @{
 
-    //inline VectorValuesUnordered add(const VectorValuesUnordered& c) const { return *this + c; }
     //inline VectorValuesUnordered scale(const double a, const VectorValuesUnordered& c) const { return a * (*this); }
 
     /// @}
@@ -256,9 +268,6 @@ namespace gtsam {
     //    result.values_[j] = a * v.values_[j];
     //  return result;
     //}
-
-    // TODO: linear algebra interface seems to have been added for SPCG.
-    friend void scal(double alpha, VectorValuesUnordered& x);
 
     //// TODO: linear algebra interface seems to have been added for SPCG.
     //friend void axpy(double alpha, const VectorValuesUnordered& x, VectorValuesUnordered& y) {

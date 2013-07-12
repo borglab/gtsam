@@ -35,20 +35,6 @@ namespace gtsam {
   using boost::accumulate;
 
   /* ************************************************************************* */
-  namespace internal
-  {
-    bool structureCompareOp(const boost::tuple<VectorValuesUnordered::value_type, VectorValuesUnordered::value_type>& vv)
-    {
-      return vv.get<0>().first == vv.get<1>().first && vv.get<0>().second.size() == vv.get<1>().second.size();
-    }
-
-    bool hasSameStructure(const VectorValuesUnordered& vv1, const VectorValuesUnordered& vv2)
-    {
-      return accumulate(combine(vv1, vv2) | transformed(structureCompareOp), true, std::logical_and<bool>());
-    }
-  }
-
-  /* ************************************************************************* */
   VectorValuesUnordered::VectorValuesUnordered(const VectorValuesUnordered& first, const VectorValuesUnordered& second)
   {
     // Merge using predicate for comparing first of pair
@@ -98,7 +84,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  const Vector VectorValuesUnordered::asVector() const
+  const Vector VectorValuesUnordered::vector() const
   {
     // Count dimensions
     DenseIndex totalDim = 0;
@@ -144,6 +130,24 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  namespace internal
+  {
+    bool structureCompareOp(const boost::tuple<VectorValuesUnordered::value_type,
+      VectorValuesUnordered::value_type>& vv)
+    {
+      return vv.get<0>().first == vv.get<1>().first
+        && vv.get<0>().second.size() == vv.get<1>().second.size();
+    }
+  }
+
+  /* ************************************************************************* */
+  bool VectorValuesUnordered::hasSameStructure(const VectorValuesUnordered other) const
+  {
+    return accumulate(combine(*this, other)
+      | transformed(internal::structureCompareOp), true, std::logical_and<bool>());
+  }
+
+  /* ************************************************************************* */
   double VectorValuesUnordered::dot(const VectorValuesUnordered& v) const
   {
     if(this->size() != v.size())
@@ -180,7 +184,7 @@ namespace gtsam {
   {
     if(this->size() != c.size())
       throw invalid_argument("VectorValues::operator+ called with different vector sizes");
-    assert_throw(internal::hasSameStructure(*this, c),
+    assert_throw(hasSameStructure(c),
       invalid_argument("VectorValues::operator+ called with different vector sizes"));
 
     VectorValuesUnordered result;
@@ -192,11 +196,40 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  VectorValuesUnordered VectorValuesUnordered::add(const VectorValuesUnordered& c) const
+  {
+    return *this + c;
+  }
+
+  /* ************************************************************************* */
+  VectorValuesUnordered& VectorValuesUnordered::operator+=(const VectorValuesUnordered& c)
+  {
+    if(this->size() != c.size())
+      throw invalid_argument("VectorValues::operator+= called with different vector sizes");
+    assert_throw(hasSameStructure(c),
+      invalid_argument("VectorValues::operator+= called with different vector sizes"));
+
+    iterator j1 = begin();
+    const_iterator j2 = c.begin();
+    // The result.end() hint here should result in constant-time inserts
+    for(; j1 != end(); ++j1, ++j2)
+      j1->second += j2->second;
+
+    return *this;
+  }
+
+  /* ************************************************************************* */
+  VectorValuesUnordered& VectorValuesUnordered::addInPlace(const VectorValuesUnordered& c)
+  {
+    return *this += c;
+  }
+
+  /* ************************************************************************* */
   VectorValuesUnordered VectorValuesUnordered::operator-(const VectorValuesUnordered& c) const
   {
     if(this->size() != c.size())
       throw invalid_argument("VectorValues::operator- called with different vector sizes");
-    assert_throw(internal::hasSameStructure(*this, c),
+    assert_throw(hasSameStructure(c),
       invalid_argument("VectorValues::operator- called with different vector sizes"));
 
     VectorValuesUnordered result;
@@ -208,27 +241,23 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  VectorValuesUnordered& VectorValuesUnordered::operator+=(const VectorValuesUnordered& c)
+  VectorValuesUnordered VectorValuesUnordered::subtract(const VectorValuesUnordered& c) const
   {
-    if(this->size() != c.size())
-      throw invalid_argument("VectorValues::operator+= called with different vector sizes");
-    assert_throw(internal::hasSameStructure(*this, c),
-      invalid_argument("VectorValues::operator+= called with different vector sizes"));
+    return *this - c;
+  }
 
-    iterator j1 = begin();
-    const_iterator j2 = begin();
-    // The result.end() hint here should result in constant-time inserts
-    for(; j1 != end(); ++j1, ++j2)
-      j1->second += j2->second;
-
+  /* ************************************************************************* */
+  VectorValuesUnordered& VectorValuesUnordered::operator*=(double alpha)
+  {
+    BOOST_FOREACH(Vector& v, *this | map_values)
+      v *= alpha;
     return *this;
   }
 
   /* ************************************************************************* */
-  void scal(double alpha, VectorValuesUnordered& x)
+  VectorValuesUnordered& VectorValuesUnordered::scaleInPlace(double alpha)
   {
-    BOOST_FOREACH(Vector& v, x | map_values)
-      v *= alpha;
+    return *this *= alpha;
   }
 
   /* ************************************************************************* */
