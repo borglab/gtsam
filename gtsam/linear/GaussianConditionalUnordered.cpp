@@ -44,13 +44,13 @@ namespace gtsam {
   GaussianConditionalUnordered::GaussianConditionalUnordered(
     Key key, const Vector& d, const Matrix& R,
     Key name1, const Matrix& S, const SharedDiagonal& sigmas) :
-  BaseFactor(key, R, name1, S, d, sigmas) {}
+  BaseFactor(key, R, name1, S, d, sigmas), BaseConditional(1) {}
 
   /* ************************************************************************* */
   GaussianConditionalUnordered::GaussianConditionalUnordered(
     Key key, const Vector& d, const Matrix& R,
     Key name1, const Matrix& S, Key name2, const Matrix& T, const SharedDiagonal& sigmas) :
-  BaseFactor(key, R, name1, S, name2, T, d, sigmas) {}
+  BaseFactor(key, R, name1, S, name2, T, d, sigmas), BaseConditional(1) {}
 
   /* ************************************************************************* */
   void GaussianConditionalUnordered::print(const string &s, const IndexFormatter& formatter) const
@@ -97,7 +97,7 @@ namespace gtsam {
 
     // check if sigmas are equal
     if ((model_ && !c.model_) || (!model_ && c.model_)
-      || !model_->equals(*c.model_, tol))
+      || (model_ && c.model_ && !model_->equals(*c.model_, tol)))
       return false;
 
     return true;

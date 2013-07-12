@@ -49,31 +49,35 @@ namespace gtsam {
     /** constructor with no parents
     * |Rx-d|
     */
-    GaussianConditionalUnordered(Key key, const Vector& d, const Matrix& R, const SharedDiagonal& sigmas);
+    GaussianConditionalUnordered(Key key, const Vector& d, const Matrix& R,
+      const SharedDiagonal& sigmas = SharedDiagonal());
 
     /** constructor with only one parent
      * |Rx+Sy-d| */
     GaussianConditionalUnordered(Key key, const Vector& d, const Matrix& R,
-      Key name1, const Matrix& S, const SharedDiagonal& sigmas);
+      Key name1, const Matrix& S, const SharedDiagonal& sigmas = SharedDiagonal());
 
     /** constructor with two parents
      * |Rx+Sy+Tz-d| */
     GaussianConditionalUnordered(Key key, const Vector& d, const Matrix& R,
-      Key name1, const Matrix& S, Key name2, const Matrix& T, const SharedDiagonal& sigmas);
+      Key name1, const Matrix& S, Key name2, const Matrix& T,
+      const SharedDiagonal& sigmas = SharedDiagonal());
 
     /** Constructor with number of arbitrary parents.  \f$ |Rx+sum(Ai*xi)-d| \f$
      * @tparam PARENTS A container whose value type is std::pair<Key, Matrix>, specifying the
      *         collection of parent keys and matrices. */
     template<typename PARENTS>
     GaussianConditionalUnordered(Key key, const Vector& d,
-      const Matrix& R, const PARENTS& parents, const SharedDiagonal& sigmas);
+      const Matrix& R, const PARENTS& parents,
+      const SharedDiagonal& sigmas = SharedDiagonal());
 
     /** Constructor with arbitrary number of frontals and parents.
     *   @tparam TERMS A container whose value type is std::pair<Key, Matrix>, specifying the
     *           collection of keys and matrices making up the conditional. */
     template<typename TERMS>
     GaussianConditionalUnordered(const TERMS& terms,
-      size_t nrFrontals, const Vector& d, const SharedDiagonal& sigmas);
+      size_t nrFrontals, const Vector& d,
+      const SharedDiagonal& sigmas = SharedDiagonal());
 
     /** Constructor with arbitrary number keys, and where the augmented matrix is given all together
      *  instead of in block terms.  Note that only the active view of the provided augmented matrix
@@ -81,7 +85,8 @@ namespace gtsam {
      *  factor. */
     template<typename KEYS>
     GaussianConditionalUnordered(
-      const KEYS& keys, size_t nrFrontals, const VerticalBlockMatrix& augmentedMatrix, const SharedDiagonal& sigmas);
+      const KEYS& keys, size_t nrFrontals, const VerticalBlockMatrix& augmentedMatrix,
+      const SharedDiagonal& sigmas = SharedDiagonal());
 
     /** Combine several GaussianConditional into a single dense GC.  The conditionals enumerated by
     *   \c first and \c last must be in increasing order, meaning that the parents of any
