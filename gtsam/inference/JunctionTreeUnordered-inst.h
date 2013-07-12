@@ -237,11 +237,12 @@ namespace gtsam {
   std::pair<boost::shared_ptr<BAYESTREE>, boost::shared_ptr<GRAPH> >
     JunctionTreeUnordered<BAYESTREE,GRAPH>::eliminate(const Eliminate& function) const
   {
+    gttic(JunctionTreeUnordered_eliminate);
     // Do elimination (depth-first traversal).  The rootsContainer stores a 'dummy' BayesTree node
     // that contains all of the roots as its children.  rootsContainer also stores the remaining
     // uneliminated factors passed up from the roots.
     EliminationData<This> rootsContainer(0, roots_.size());
-    treeTraversal::DepthFirstForestParallel(*this, rootsContainer, eliminationPreOrderVisitor<This>,
+    treeTraversal::DepthFirstForest(*this, rootsContainer, eliminationPreOrderVisitor<This>,
       boost::bind(eliminationPostOrderVisitor<This>, _1, _2, function));
 
     // Create BayesTree from roots stored in the dummy BayesTree node.
