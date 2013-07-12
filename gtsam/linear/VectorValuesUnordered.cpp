@@ -106,7 +106,7 @@ namespace gtsam {
       totalDim += v.second.size();
 
     // Copy vectors
-    Vector result;
+    Vector result(totalDim);
     DenseIndex pos = 0;
     BOOST_FOREACH(const Vector& v, *this | map_values) {
       result.segment(pos, v.size()) = v;
