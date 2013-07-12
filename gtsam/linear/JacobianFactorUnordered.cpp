@@ -218,7 +218,9 @@ namespace gtsam {
     // Cast or convert to Jacobians
     std::vector<JacobianFactorUnordered::shared_ptr> jacobians = _convertOrCastToJacobians(graph);
 
-    // Order variable slots
+    // Order variable slots - we maintain the vector of ordered slots, as well as keep a list
+    // 'unorderedSlots' of any variables discovered that are not in the ordering.  Those will then
+    // be added after all of the ordered variables.
     vector<VariableSlots::const_iterator> orderedSlots;
     orderedSlots.reserve(variableSlots->size());
     if(ordering) {
@@ -258,9 +260,10 @@ namespace gtsam {
 
     // Allocate matrix and copy keys in order
     gttic(allocate);
-    Ab_ = VerticalBlockMatrix(boost::join(varDims, cref_list_of<1>((DenseIndex)1)), m); // Allocate augmented matrix
+    Ab_ = VerticalBlockMatrix(boost::join(varDims, cref_list_of<1,DenseIndex>(1)), m); // Allocate augmented matrix
     Base::keys_.resize(orderedSlots.size());
-    boost::range::copy(orderedSlots | boost::adaptors::indirected | boost::adaptors::map_keys, Base::keys_.begin()); // Get variable keys
+    boost::range::copy(    // Get variable keys
+      orderedSlots | boost::adaptors::indirected | boost::adaptors::map_keys, Base::keys_.begin());
     gttoc(allocate);
 
     // Loop over slots in combined factor and copy blocks from source factors
@@ -354,7 +357,6 @@ namespace gtsam {
   /* ************************************************************************* */
   Vector JacobianFactorUnordered::unweighted_error(const VectorValuesUnordered& c) const {
     Vector e = -getb();
-    if (empty()) return e;
     for(size_t pos=0; pos<size(); ++pos)
       e += Ab_(pos) * c[keys_[pos]];
     return e;
@@ -421,34 +423,6 @@ namespace gtsam {
   Matrix JacobianFactorUnordered::augmentedJacobian(bool weight) const {
     if (weight) { Matrix Ab(Ab_.range(0,Ab_.nBlocks())); model_->WhitenInPlace(Ab); return Ab; }
     else return Ab_.range(0, Ab_.nBlocks());
-  }
-
-  /* ************************************************************************* */
-  std::vector<boost::tuple<size_t, size_t, double> >
-  JacobianFactorUnordered::sparse(const std::vector<size_t>& columnIndices) const {
-
-    std::vector<boost::tuple<size_t, size_t, double> > entries;
-
-    // iterate over all variables in the factor
-    for(const_iterator var=begin(); var<end(); ++var) {
-      Matrix whitenedA(model_->Whiten(getA(var)));
-      // find first column index for this key
-      size_t column_start = columnIndices[*var];
-      for (size_t i = 0; i < (size_t) whitenedA.rows(); i++)
-        for (size_t j = 0; j < (size_t) whitenedA.cols(); j++) {
-          double s = whitenedA(i,j);
-          if (std::abs(s) > 1e-12) entries.push_back(
-              boost::make_tuple(i, column_start + j, s));
-        }
-    }
-
-    Vector whitenedb(model_->whiten(getb()));
-    size_t bcolumn = columnIndices.back();
-    for (size_t i = 0; i < (size_t) whitenedb.size(); i++)
-      entries.push_back(boost::make_tuple(i, bcolumn, whitenedb(i)));
-
-    // return the result
-    return entries;
   }
 
   /* ************************************************************************* */

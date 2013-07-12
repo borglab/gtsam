@@ -253,15 +253,6 @@ namespace gtsam {
     /** x += A'*e */
     void transposeMultiplyAdd(double alpha, const Vector& e, VectorValuesUnordered& x) const;
 
-    /**
-     * Return vector of i, j, and s to generate an m-by-n sparse matrix
-     * such that S(i(k),j(k)) = s(k), which can be given to MATLAB's sparse.
-     * As above, the standard deviations are baked into A and b
-     * @param columnIndices First column index for each variable.
-     */
-    std::vector<boost::tuple<size_t, size_t, double> >
-    sparse(const std::vector<size_t>& columnIndices) const;
-
     /** Return a whitened version of the factor, i.e. with unit diagonal noise model. */
     JacobianFactorUnordered whiten() const;
 
@@ -272,17 +263,17 @@ namespace gtsam {
     /** set noiseModel correctly */
     void setModel(bool anyConstrained, const Vector& sigmas);
     
-  /**
-   * Densely partially eliminate with QR factorization, this is usually provided as an argument to
-   * one of the factor graph elimination functions (see EliminateableFactorGraph).  HessianFactors
-   * are first factored with Cholesky decomposition to produce JacobianFactors, by calling the
-   * conversion constructor JacobianFactor(const HessianFactor&). Variables are eliminated in the
-   * order specified in \c keys.
-   * @param factors Factors to combine and eliminate
-   * @param keys The variables to eliminate in the order as specified here in \c keys
-   * @return The conditional and remaining factor
-   *
-   * \addtogroup LinearSolving */
+    /**
+     * Densely partially eliminate with QR factorization, this is usually provided as an argument to
+     * one of the factor graph elimination functions (see EliminateableFactorGraph).  HessianFactors
+     * are first factored with Cholesky decomposition to produce JacobianFactors, by calling the
+     * conversion constructor JacobianFactor(const HessianFactor&). Variables are eliminated in the
+     * order specified in \c keys.
+     * @param factors Factors to combine and eliminate
+     * @param keys The variables to eliminate in the order as specified here in \c keys
+     * @return The conditional and remaining factor
+     *
+     * \addtogroup LinearSolving */
     friend GTSAM_EXPORT std::pair<boost::shared_ptr<GaussianConditionalUnordered>, boost::shared_ptr<JacobianFactorUnordered> >
       EliminateQRUnordered(const GaussianFactorGraphUnordered& factors, const OrderingUnordered& keys);
 

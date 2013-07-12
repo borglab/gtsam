@@ -92,7 +92,7 @@ namespace gtsam {
       terms
       | transformed(&_getPairSecond)
       | transformed(boost::mem_fn(&Matrix::cols)),
-      boost::assign::cref_list_of<1>((DenseIndex)1)), b.size());
+      boost::assign::cref_list_of<1,DenseIndex>(1)), b.size());
 
     // Check and add terms
     typedef std::pair<Key, Matrix> Term;
