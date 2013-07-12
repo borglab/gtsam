@@ -315,34 +315,46 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  void JacobianFactorUnordered::print(const string& s, const KeyFormatter& formatter) const {
-    cout << s << "\n";
-    if (empty()) {
-      cout << " empty, keys: ";
-      BOOST_FOREACH(const Key& key, keys()) { cout << formatter(key) << " "; }
-      cout << endl;
-    } else {
-      for(const_iterator key=begin(); key!=end(); ++key)
-        cout << boost::format("A[%1%]=\n")%formatter(*key) << getA(key) << endl;
-      cout << "b=" << getb() << endl;
-      model_->print("model");
+  void JacobianFactorUnordered::print(const string& s, const KeyFormatter& formatter) const
+  {
+    if(!s.empty())
+      cout << s << "\n";
+    for(const_iterator key = begin(); key != end(); ++key) {
+      cout <<
+        formatMatrixIndented((boost::format("  A[%1%] = ") % formatter(*key)).str(), getA(key))
+        << endl;
     }
+    cout << formatMatrixIndented("  b = ", getb(), true) << "\n";
+    if(model_)
+      model_->print("  Noise model: ");
+    else
+      cout << "  No noise model" << endl;
   }
 
   /* ************************************************************************* */
   // Check if two linear factors are equal
-  bool JacobianFactorUnordered::equals(const GaussianFactorUnordered& f_, double tol) const {
+  bool JacobianFactorUnordered::equals(const GaussianFactorUnordered& f_, double tol) const
+  {
     if(!dynamic_cast<const JacobianFactorUnordered*>(&f_))
       return false;
     else {
       const JacobianFactorUnordered& f(static_cast<const JacobianFactorUnordered&>(f_));
-      if (empty()) return (f.empty());
-      if(keys()!=f.keys() /*|| !model_->equals(lf->model_, tol)*/)
+
+      // Check keys
+      if(keys() != f.keys())
         return false;
 
+      // Check noise model
+      if(model_ && !f.model_ || !model_ && f.model_)
+        return false;
+      if(model_ && f.model_ && !model_->equals(*f.model_, tol))
+        return false;
+
+      // Check matrix sizes
       if (!(Ab_.rows() == f.Ab_.rows() && Ab_.cols() == f.Ab_.cols()))
         return false;
 
+      // Check matrix contents
       constABlock Ab1(Ab_.range(0, Ab_.nBlocks()));
       constABlock Ab2(f.Ab_.range(0, f.Ab_.nBlocks()));
       for(size_t row=0; row< (size_t) Ab1.rows(); ++row)

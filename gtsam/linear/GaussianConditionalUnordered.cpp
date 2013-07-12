@@ -55,17 +55,21 @@ namespace gtsam {
   /* ************************************************************************* */
   void GaussianConditionalUnordered::print(const string &s, const IndexFormatter& formatter) const
   {
-    cout << s << ": density on ";
+    cout << s << "  Conditional density ";
     for(const_iterator it = beginFrontals(); it != endFrontals(); ++it) {
       cout << (boost::format("[%1%]")%(formatter(*it))).str() << " ";
     }
     cout << endl;
-    gtsam::print(Matrix(get_R()),"R");
+    cout << formatMatrixIndented("  R = ", get_R()) << endl;
     for(const_iterator it = beginParents() ; it != endParents() ; ++it ) {
-      gtsam::print(Matrix(getA(it)), (boost::format("S[%1%]")%(formatter(*it))).str());
+      cout << formatMatrixIndented((boost::format("  S[%1%] = ")%(formatter(*it))).str(), getA(it))
+        << endl;
     }
-    gtsam::print(Vector(getb()),"d");
-    model_->print("sigmas");
+    cout << formatMatrixIndented("  d = ", getb(), true) << "\n";
+    if(model_)
+      model_->print("  Noise model: ");
+    else
+      cout << "  No noise model" << endl;
   }    
 
   /* ************************************************************************* */
