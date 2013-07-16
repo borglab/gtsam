@@ -389,16 +389,24 @@ namespace gtsam {
 
   /* ************************************************************************* */
   Matrix JacobianFactorUnordered::augmentedInformation() const {
-    Matrix AbWhitened = Ab_.full();
-    model_->WhitenInPlace(AbWhitened);
-    return AbWhitened.transpose() * AbWhitened;
+    if(model_) {
+      Matrix AbWhitened = Ab_.full();
+      model_->WhitenInPlace(AbWhitened);
+      return AbWhitened.transpose() * AbWhitened;
+    } else {
+      return Ab_.full().transpose() * Ab_.full();
+    }
   }
 
   /* ************************************************************************* */
   Matrix JacobianFactorUnordered::information() const {
-    Matrix AWhitened = this->getA();
-    model_->WhitenInPlace(AWhitened);
-    return AWhitened.transpose() * AWhitened;
+    if(model_) {
+      Matrix AWhitened = this->getA();
+      model_->WhitenInPlace(AWhitened);
+      return AWhitened.transpose() * AWhitened;
+    } else {
+      return this->getA().transpose() * this->getA();
+    }
   }
 
   /* ************************************************************************* */

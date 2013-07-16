@@ -167,7 +167,8 @@ namespace gtsam {
       gtsam::transposeMultiplyAdd(-1.0, Matrix(getA(it)), frontalVec, gy[*it]);
 
     // Scale by sigmas
-    frontalVec.array() *= model_->sigmas().array();
+    if(model_)
+      frontalVec.array() *= model_->sigmas().array();
 
     // Write frontal solution into a VectorValues
     DenseIndex vectorPosition = 0;

@@ -187,8 +187,8 @@ TEST( GaussianConditionalUnordered, solve_simple )
     (1, Vector_(4, -3.1,-3.4,-11.9,-13.2));
 
   // verify indices/size
-  EXPECT_LONGS_EQUAL(2, cg.size());
-  EXPECT_LONGS_EQUAL(4, cg.rows());
+  EXPECT_LONGS_EQUAL(2, (long)cg.size());
+  EXPECT_LONGS_EQUAL(4, (long)cg.rows());
 
   // solve and verify
   actual.insert(cg.solve(actual));
@@ -224,8 +224,8 @@ TEST( GaussianConditionalUnordered, solve_multifrontal )
     (10, sl1);
 
   // verify indices/size
-  EXPECT_LONGS_EQUAL(3, cg.size());
-  EXPECT_LONGS_EQUAL(4, cg.rows());
+  EXPECT_LONGS_EQUAL(3, (long)cg.size());
+  EXPECT_LONGS_EQUAL(4, (long)cg.rows());
 
   // solve and verify
   actual.insert(cg.solve(actual));
@@ -272,7 +272,7 @@ TEST( GaussianConditionalUnordered, solveTranspose ) {
 TEST( GaussianConditionalUnordered, information ) {
 
   // Create R matrix
-  Matrix R; R <<
+  Matrix R(4,4); R <<
       1, 2, 3, 4,
       0, 5, 6, 7,
       0, 0, 8, 9,
@@ -293,7 +293,7 @@ TEST( GaussianConditionalUnordered, information ) {
 TEST( GaussianConditionalUnordered, isGaussianFactor ) {
 
   // Create R matrix
-  Matrix R; R <<
+  Matrix R(4,4); R <<
       1, 2, 3, 4,
       0, 5, 6, 7,
       0, 0, 8, 9,
