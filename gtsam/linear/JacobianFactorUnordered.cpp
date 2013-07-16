@@ -442,21 +442,29 @@ namespace gtsam {
     Matrix A(Ab_.range(0, size()));
     Vector b(getb());
     // divide in sigma so error is indeed 0.5*|Ax-b|
-    if (weight) model_->WhitenSystem(A,b);
+    if (weight && model_)
+      model_->WhitenSystem(A,b);
     return make_pair(A, b);
   }
 
   /* ************************************************************************* */
   Matrix JacobianFactorUnordered::augmentedJacobian(bool weight) const {
-    if (weight) { Matrix Ab(Ab_.range(0,Ab_.nBlocks())); model_->WhitenInPlace(Ab); return Ab; }
-    else return Ab_.range(0, Ab_.nBlocks());
+    if (weight && model_) {
+      Matrix Ab(Ab_.range(0,Ab_.nBlocks()));
+      model_->WhitenInPlace(Ab);
+      return Ab;
+    } else {
+      return Ab_.range(0, Ab_.nBlocks());
+    }
   }
 
   /* ************************************************************************* */
   JacobianFactorUnordered JacobianFactorUnordered::whiten() const {
     JacobianFactorUnordered result(*this);
-    result.model_->WhitenInPlace(result.Ab_.matrix());
-    result.model_ = noiseModel::Unit::Create(result.model_->dim());
+    if(model_) {
+      result.model_->WhitenInPlace(result.Ab_.matrix());
+      result.model_ = noiseModel::Unit::Create(result.model_->dim());
+    }
     return result;
   }
 

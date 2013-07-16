@@ -140,7 +140,8 @@ namespace gtsam {
     Vector soln = get_R().triangularView<Eigen::Upper>().solve(xS);
 
     // Scale by sigmas
-    soln.array() *= model_->sigmas().array();
+    if(model_)
+      soln.array() *= model_->sigmas().array();
 
     // Insert solution into a VectorValues
     VectorValuesUnordered result;
