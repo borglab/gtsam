@@ -75,13 +75,21 @@ namespace gtsam {
     /** Default constructor */
     GaussianFactorGraphUnordered() {}
 
-    /** Constructor that receives a BayesTree and returns a GaussianFactorGraph */
+    /** Constructor that receives a BayesTree */
     GaussianFactorGraphUnordered(const GaussianBayesTreeUnordered& gbt) {
       push_back_bayesTree(gbt); }
 
-    /** Constructor from a factor graph of GaussianFactor or a derived type */
+    /** Construct from iterator over factors */
+    template<typename ITERATOR>
+    GaussianFactorGraphUnordered(ITERATOR firstFactor, ITERATOR lastFactor) : Base(firstFactor, lastFactor) {}
+
+    /** Construct from container of factors (shared_ptr or plain objects) */
+    template<class CONTAINER>
+    GaussianFactorGraphUnordered(const CONTAINER& factors) : Base(factors) {}
+
+    /** Implicit copy/downcast constructor to override explicit template container constructor */
     template<class DERIVEDFACTOR>
-    GaussianFactorGraphUnordered(const FactorGraphUnordered<DERIVEDFACTOR>& fg) : Base(fg.begin(), fg.end()) {}
+    GaussianFactorGraphUnordered(const FactorGraphUnordered<DERIVEDFACTOR>& graph) : Base(graph) {}
 
     /** Add a factor by value - makes a copy */
     void add(const GaussianFactorUnordered& factor) { factors_.push_back(factor.clone()); }

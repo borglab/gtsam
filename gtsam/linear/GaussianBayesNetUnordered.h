@@ -27,8 +27,8 @@
 namespace gtsam {
 
   /** A Bayes net made from linear-Gaussian densities */
-  class GTSAM_EXPORT GaussianBayesNetUnordered: public FactorGraphUnordered<GaussianConditionalUnordered> {
-
+  class GTSAM_EXPORT GaussianBayesNetUnordered: public FactorGraphUnordered<GaussianConditionalUnordered>
+  {
   public:
 
     typedef FactorGraphUnordered<GaussianConditionalUnordered> Base;
@@ -46,6 +46,16 @@ namespace gtsam {
     /** Construct from iterator over conditionals */
     template<typename ITERATOR>
     GaussianBayesNetUnordered(ITERATOR firstConditional, ITERATOR lastConditional) : Base(firstConditional, lastConditional) {}
+
+    /** Construct from container of factors (shared_ptr or plain objects) */
+    template<class CONTAINER>
+    explicit GaussianBayesNetUnordered(const CONTAINER& conditionals) : Base(conditionals) {}
+
+    /** Implicit copy/downcast constructor to override explicit template container constructor */
+    template<class DERIVEDCONDITIONAL>
+    GaussianBayesNetUnordered(const FactorGraphUnordered<DERIVEDCONDITIONAL>& graph) : Base(graph) {}
+
+    /** 
 
     /// @}
 

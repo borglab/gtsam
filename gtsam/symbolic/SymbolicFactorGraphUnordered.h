@@ -69,17 +69,21 @@ namespace gtsam {
     /** Construct empty factor graph */
     SymbolicFactorGraphUnordered() {}
 
-    /** Construct from any factor graph with factors derived from SymbolicFactor. */
-    template<class DERIVEDFACTOR>
-    SymbolicFactorGraphUnordered(const FactorGraphUnordered<DERIVEDFACTOR>& graph) : Base(graph.begin(), graph.end()) {}
-
-    /** Constructor from iterator over factors */
-    template<typename ITERATOR>
-    SymbolicFactorGraphUnordered(ITERATOR firstFactor, ITERATOR lastFactor) : Base(firstFactor, lastFactor) {}
-
     /** Constructor from a BayesTree */
     SymbolicFactorGraphUnordered(const SymbolicBayesTreeUnordered& bayesTree) {
       push_back_bayesTree(bayesTree); }
+
+    /** Construct from iterator over factors */
+    template<typename ITERATOR>
+    SymbolicFactorGraphUnordered(ITERATOR firstFactor, ITERATOR lastFactor) : Base(firstFactor, lastFactor) {}
+
+    /** Construct from container of factors (shared_ptr or plain objects) */
+    template<class CONTAINER>
+    SymbolicFactorGraphUnordered(const CONTAINER& factors) : Base(factors) {}
+
+    /** Implicit copy/downcast constructor to override explicit template container constructor */
+    template<class DERIVEDFACTOR>
+    SymbolicFactorGraphUnordered(const FactorGraphUnordered<DERIVEDFACTOR>& graph) : Base(graph) {}
 
     /// @}
     

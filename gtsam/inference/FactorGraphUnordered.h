@@ -63,9 +63,13 @@ namespace gtsam {
     /** Default constructor */
     FactorGraphUnordered() {}
 
-    /** Constructor from iterator over factors */
+    /** Constructor from iterator over factors (shared_ptr or plain objects) */
     template<typename ITERATOR>
     FactorGraphUnordered(ITERATOR firstFactor, ITERATOR lastFactor) { push_back(firstFactor, lastFactor); }
+
+    /** Construct from container of factors (shared_ptr or plain objects) */
+    template<class CONTAINER>
+    explicit FactorGraphUnordered(const CONTAINER& factors) { push_back(factors.begin(), factors.end()); }
 
     /// @}
     /// @name Advanced Constructors

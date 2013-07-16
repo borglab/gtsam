@@ -44,7 +44,7 @@ static Matrix R = Matrix_(2,2,
           0.,   4.6904);
 
 /* ************************************************************************* */
-TEST(GaussianConditional, constructor)
+TEST(GaussianConditionalUnordered, constructor)
 {
   Matrix S1 = Matrix_(2,2,
       -5.2786,  -8.6603,
@@ -59,11 +59,10 @@ TEST(GaussianConditional, constructor)
   Vector d = Vector_(2, 1.0, 2.0);
   SharedDiagonal s = noiseModel::Diagonal::Sigmas(Vector_(2, 3.0, 4.0));
 
-  list<pair<Key, Matrix> > terms;
-  terms +=
-      make_pair(3, S1),
-      make_pair(5, S2),
-      make_pair(7, S3);
+  vector<pair<Key, Matrix> > terms = pair_list_of
+      (3, S1)
+      (5, S2)
+      (7, S3);
 
   GaussianConditionalUnordered actual(1, d, R, terms, s);
 
@@ -99,7 +98,7 @@ TEST(GaussianConditional, constructor)
 }
 
 /* ************************************************************************* */
-TEST( GaussianConditional, equals )
+TEST( GaussianConditionalUnordered, equals )
 {
   // create a conditional gaussian node
   Matrix A1(2,2);
@@ -114,13 +113,9 @@ TEST( GaussianConditional, equals )
   R(0,0) = 0.1 ; R(1,0) = 0.3;
   R(0,1) = 0.0 ; R(1,1) = 0.34;
 
-  Vector tau(2);
-  tau(0) = 1.0;
-  tau(1) = 0.34;
-  SharedDiagonal model = noiseModel::Diagonal::Sigmas(tau);
+  SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector_(2, 1.0, 0.34));
 
-  Vector d(2);
-  d(0) = 0.2; d(1) = 0.5;
+  Vector d = Vector_(2, 0.2, 0.5);
 
   GaussianConditionalUnordered
     expected(1, d, R, 2, A1, 10, A2, model),
@@ -130,7 +125,7 @@ TEST( GaussianConditional, equals )
 }
 
 /* ************************************************************************* */
-TEST( GaussianConditional, solve )
+TEST( GaussianConditionalUnordered, solve )
 {
   //expected solution
   Vector expectedX(2);
@@ -146,16 +141,12 @@ TEST( GaussianConditional, solve )
   Matrix A2 = Matrix_(2,2,  5., 6.,
                             7., 8.);
 
-  Vector d(2);
-  d(0) = 20.0; d(1) = 40.0;
+  Vector d(2); d << 20.0, 40.0;
 
   GaussianConditionalUnordered cg(1, d, R, 2, A1, 10, A2);
 
-  Vector sx1(2);
-  sx1(0) = 1.0; sx1(1) = 1.0;
-
-  Vector sl1(2);
-  sl1(0) = 1.0; sl1(1) = 1.0;
+  Vector sx1(2); sx1 << 1.0, 1.0;
+  Vector sl1(2); sl1 << 1.0, 1.0;
 
   VectorValuesUnordered expected = map_list_of
     (1, expectedX)
@@ -171,7 +162,7 @@ TEST( GaussianConditional, solve )
 }
 
 /* ************************************************************************* */
-TEST( GaussianConditional, solve_simple )
+TEST( GaussianConditionalUnordered, solve_simple )
 {
   // 2 variables, frontal has dim=4
   VerticalBlockMatrix blockMatrix(list_of(4)(2)(1), 4);
@@ -205,7 +196,7 @@ TEST( GaussianConditional, solve_simple )
 }
 
 /* ************************************************************************* */
-TEST( GaussianConditional, solve_multifrontal )
+TEST( GaussianConditionalUnordered, solve_multifrontal )
 {
   // create full system, 3 variables, 2 frontals, all 2 dim
   VerticalBlockMatrix blockMatrix(list_of(2)(2)(2)(1), 4);
@@ -243,7 +234,7 @@ TEST( GaussianConditional, solve_multifrontal )
 }
 
 /* ************************************************************************* */
-TEST( GaussianConditional, solveTranspose ) {
+TEST( GaussianConditionalUnordered, solveTranspose ) {
   /** create small Chordal Bayes Net x <- y
    * x y d
    * 1 1 9
@@ -278,7 +269,7 @@ TEST( GaussianConditional, solveTranspose ) {
 }
 
 /* ************************************************************************* */
-TEST( GaussianConditional, information ) {
+TEST( GaussianConditionalUnordered, information ) {
 
   // Create R matrix
   Matrix R; R <<
@@ -299,7 +290,7 @@ TEST( GaussianConditional, information ) {
 }
 
 /* ************************************************************************* */
-TEST( GaussianConditional, isGaussianFactor ) {
+TEST( GaussianConditionalUnordered, isGaussianFactor ) {
 
   // Create R matrix
   Matrix R; R <<
