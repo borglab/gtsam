@@ -144,7 +144,7 @@ namespace gtsam {
     }
 
     // Find roots
-    assert(parents.back() == none); // We expect the last-eliminated node to be a root no matter what
+    assert(parents.empty() || parents.back() == none); // We expect the last-eliminated node to be a root no matter what
     for(size_t j = 0; j < n; ++j)
       if(parents[j] == none)
         roots_.push_back(nodes[j]);
