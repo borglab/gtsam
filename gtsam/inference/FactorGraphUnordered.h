@@ -25,6 +25,7 @@
 #include <boost/serialization/nvp.hpp>
 #include <boost/assign/list_inserter.hpp>
 #include <boost/make_shared.hpp>
+#include <type_traits>
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Key.h>
@@ -123,10 +124,11 @@ namespace gtsam {
     void push_back(const This& factors) {
       factors_.insert(end(), factors.begin(), factors.end()); }
 
-    /** push back many factors with an iterator */
+    /** push back many factors with an iterator over shared_ptr (factors are not copied) */
     template<typename ITERATOR>
-    void push_back(ITERATOR firstFactor, ITERATOR lastFactor) {
-      factors_.insert(end(), firstFactor, lastFactor); }
+    typename std::enable_if<std::is_base_of<FactorType, typename ITERATOR::value_type::element_type>::value>::type
+      push_back(ITERATOR firstFactor, ITERATOR lastFactor) {
+        factors_.insert(end(), firstFactor, lastFactor); }
 
   protected:
     /** push back a BayesTree as a collection of factors.  NOTE: This should be hidden in derived
@@ -137,6 +139,14 @@ namespace gtsam {
     template<class DERIVEDFACTOR>
     void push_back(const DERIVEDFACTOR& factor) {
       add(factor); }
+
+    /** push back many factors with an iterator over plain factors (factors are copied) */
+    template<typename ITERATOR>
+    typename std::enable_if<std::is_base_of<FactorType, typename ITERATOR::value_type>::value>::type
+      push_back(ITERATOR firstFactor, ITERATOR lastFactor) {
+        for(ITERATOR f = firstFactor; f != lastFactor; ++f)
+          add(*f);
+    }
 
   public:
     /** += syntax for push_back, e.g. graph += f1, f2, f3 */

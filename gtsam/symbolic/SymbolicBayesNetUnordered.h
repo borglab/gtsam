@@ -48,6 +48,14 @@ namespace gtsam {
     /** Construct from iterator over conditionals */
     template<typename ITERATOR>
     SymbolicBayesNetUnordered(ITERATOR firstConditional, ITERATOR lastConditional) : Base(firstConditional, lastConditional) {}
+
+    /** Construct from container of factors (shared_ptr or plain objects) */
+    template<class CONTAINER>
+    explicit SymbolicBayesNetUnordered(const CONTAINER& conditionals) : Base(conditionals) {}
+
+    /** Implicit copy/downcast constructor to override explicit template container constructor */
+    template<class DERIVEDCONDITIONAL>
+    SymbolicBayesNetUnordered(const FactorGraphUnordered<DERIVEDCONDITIONAL>& graph) : Base(graph) {}
     
     /// @}
 
