@@ -188,6 +188,13 @@ namespace gtsam {
      *  inserted are already used. */
     void insert(const VectorValuesUnordered& values);
 
+    /** insert that mimics the STL map insert - if the value already exists, the map is not modified
+     *  and an iterator to the existing value is returned, along with 'false'.  If the value did not
+     *  exist, it is inserted and an iterator pointing to the new element, along with 'true', is
+     *  returned. */
+    std::pair<iterator, bool> tryInsert(Key j, const Vector& value) {
+      return values_.insert(std::make_pair(j, value)); }
+
     iterator begin()                      { return values_.begin(); }  ///< Iterator over variables
     const_iterator begin() const          { return values_.begin(); }  ///< Iterator over variables
     iterator end()                         { return values_.end(); }    ///< Iterator over variables
