@@ -66,15 +66,25 @@ namespace gtsam {
       variableColOffsets_.push_back(0);
     }
 
-    /**
-     * Construct from a container of the sizes of each vertical block, resize the matrix so that its
-     * height is matrixNewHeight and its width fits the given block dimensions. */
+    /** Construct from a container of the sizes of each vertical block, resize the matrix so that
+     *  its height is matrixNewHeight and its width fits the given block dimensions. */
     template<typename CONTAINER>
     VerticalBlockMatrix(const CONTAINER dimensions, DenseIndex height) :
       rowStart_(0), rowEnd_(height), blockStart_(0)
     {
       fillOffsets(dimensions.begin(), dimensions.end());
       matrix_.resize(height, variableColOffsets_.back());
+      assertInvariants();
+    }
+
+    /** Construct from a container of the sizes of each vertical block and a pre-prepared matrix. */
+    template<typename CONTAINER>
+    VerticalBlockMatrix(const CONTAINER dimensions, const Matrix& matrix) :
+      matrix_(matrix), rowStart_(0), rowEnd_(matrix.rows()), blockStart_(0)
+    {
+      fillOffsets(dimensions.begin(), dimensions.end());
+      if(variableColOffsets_.back() != matrix_.cols())
+        throw std::invalid_argument("Requested to create a VerticalBlockMatrix with dimensions that do not sum to the total columns of the provided matrix.");
       assertInvariants();
     }
 
