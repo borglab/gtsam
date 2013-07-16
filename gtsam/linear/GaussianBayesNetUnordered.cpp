@@ -134,8 +134,15 @@ namespace gtsam {
   double GaussianBayesNetUnordered::logDeterminant() const
   {
     double logDet = 0.0;
-    BOOST_FOREACH(const sharedConditional& cg, *this)
-      logDet += cg->get_R().diagonal().unaryExpr(ptr_fun<double,double>(log)).sum();
+    BOOST_FOREACH(const sharedConditional& cg, *this) {
+      if(cg->get_model()) {
+        Vector diag = cg->get_R().diagonal();
+        cg->get_model()->whitenInPlace(diag);
+        logDet += diag.unaryExpr(ptr_fun<double,double>(log)).sum();
+      } else {
+        logDet += cg->get_R().diagonal().unaryExpr(ptr_fun<double,double>(log)).sum();
+      }
+    }
     return logDet;
   }
 
