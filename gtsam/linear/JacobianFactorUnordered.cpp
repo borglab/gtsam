@@ -423,11 +423,18 @@ namespace gtsam {
 
   /* ************************************************************************* */
   void JacobianFactorUnordered::transposeMultiplyAdd(double alpha, const Vector& e,
-      VectorValuesUnordered& x) const {
+      VectorValuesUnordered& x) const
+  {
     Vector E = alpha * model_->whiten(e);
     // Just iterate over all A matrices and insert Ai^e into VectorValues
     for(size_t pos=0; pos<size(); ++pos)
-      gtsam::transposeMultiplyAdd(1.0, Ab_(pos), E, x[keys_[pos]]);
+    {
+      // Create the value as a zero vector if it does not exist.
+      pair<VectorValuesUnordered::iterator, bool> xi = x.tryInsert(keys_[pos], Vector());
+      if(xi.second)
+        xi.first->second = Vector::Zero(getDim(begin() + pos));
+      gtsam::transposeMultiplyAdd(1.0, Ab_(pos), E, xi.first->second);
+    }
   }
 
   /* ************************************************************************* */

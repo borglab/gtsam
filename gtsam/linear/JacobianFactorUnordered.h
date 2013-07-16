@@ -245,7 +245,8 @@ namespace gtsam {
     /** Return A*x */
     Vector operator*(const VectorValuesUnordered& x) const;
 
-    /** x += A'*e */
+    /** x += A'*e.  If x is initially missing any values, they are created and assumed to start as
+     *  zero vectors. */
     void transposeMultiplyAdd(double alpha, const Vector& e, VectorValuesUnordered& x) const;
 
     /** Return a whitened version of the factor, i.e. with unit diagonal noise model. */
