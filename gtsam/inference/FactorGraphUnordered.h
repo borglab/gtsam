@@ -130,6 +130,10 @@ namespace gtsam {
     template<class CLIQUE>
     void push_back_bayesTree(const BayesTreeUnordered<CLIQUE>& bayesTree);
 
+    template<class DERIVEDFACTOR>
+    void push_back(const DERIVEDFACTOR& factor) {
+      add(factor); }
+
   public:
     /** += syntax for push_back, e.g. graph += f1, f2, f3 */
     template<class T>

@@ -110,6 +110,17 @@ namespace gtsam {
     /** Merge two VectorValues into one, this is more efficient than inserting elements one by one. */
     VectorValuesUnordered(const VectorValuesUnordered& first, const VectorValuesUnordered& second);
 
+    /** Create from another container holding pair<Key,Vector>. */
+    template<class CONTAINER>
+    explicit VectorValuesUnordered(const CONTAINER& c) : values_(c.begin(), c.end()) {}
+
+    /** Implicit copy constructor to specialize the explicit constructor from any container. */
+    VectorValuesUnordered(const VectorValuesUnordered& c) : values_(c.values_) {}
+
+    /** Create from a pair of iterators over pair<Key,Vector>. */
+    template<typename ITERATOR>
+    VectorValuesUnordered(ITERATOR first, ITERATOR last) : values_(first, last) {}
+
     /** Create a VectorValues with the same structure as \c other, but filled with zeros. */
     static VectorValuesUnordered Zero(const VectorValuesUnordered& other);
 
@@ -157,9 +168,20 @@ namespace gtsam {
      * @param j The index with which the value will be associated.
      */
     void insert(Key j, const Vector& value) {
-      if(!values_.insert(std::make_pair(j, value)).second)
+      insert(std::pair<Key, const Vector&>(j, value)); // Note only passing a reference to the Vector
+    }
+
+    /** Insert a vector \c value with key \c j.  Throws an invalid_argument exception if the key \c j is already used.
+     * @param value The vector to be inserted.
+     * @param j The index with which the value will be associated.
+     */
+    void insert(std::pair<Key, const Vector&> key_value) {
+      // Note that here we accept a pair with a reference to the Vector, but the Vector is copied as
+      // it is inserted into the values_ map.
+      if(!values_.insert(key_value).second)
         throw std::invalid_argument(
-        "Requested to insert variable '" + DefaultKeyFormatter(j) + "' already in this VectorValues.");
+        "Requested to insert variable '" + DefaultKeyFormatter(key_value.first)
+        + "' already in this VectorValues.");
     }
 
     /** Insert all values from \c values.  Throws an invalid_argument exception if any keys to be

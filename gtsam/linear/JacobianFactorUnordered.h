@@ -214,11 +214,6 @@ namespace gtsam {
     size_t rows() const { return Ab_.rows(); }
 
     /**
-     * return the number of rows in the corresponding linear system
-     */
-    size_t numberOfRows() const { return rows(); }
-
-    /**
      * return the number of columns in the corresponding linear system
      */
     size_t cols() const { return Ab_.cols(); }

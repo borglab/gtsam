@@ -46,26 +46,22 @@ namespace gtsam {
     /** default constructor needed for serialization */
     GaussianConditionalUnordered() {}
 
-    /** constructor with no parents
-    * |Rx-d|
-    */
+    /** constructor with no parents |Rx-d| */
     GaussianConditionalUnordered(Key key, const Vector& d, const Matrix& R,
       const SharedDiagonal& sigmas = SharedDiagonal());
 
-    /** constructor with only one parent
-     * |Rx+Sy-d| */
+    /** constructor with only one parent |Rx+Sy-d| */
     GaussianConditionalUnordered(Key key, const Vector& d, const Matrix& R,
       Key name1, const Matrix& S, const SharedDiagonal& sigmas = SharedDiagonal());
 
-    /** constructor with two parents
-     * |Rx+Sy+Tz-d| */
+    /** constructor with two parents |Rx+Sy+Tz-d| */
     GaussianConditionalUnordered(Key key, const Vector& d, const Matrix& R,
       Key name1, const Matrix& S, Key name2, const Matrix& T,
       const SharedDiagonal& sigmas = SharedDiagonal());
 
     /** Constructor with number of arbitrary parents.  \f$ |Rx+sum(Ai*xi)-d| \f$
-     * @tparam PARENTS A container whose value type is std::pair<Key, Matrix>, specifying the
-     *         collection of parent keys and matrices. */
+     *  @tparam PARENTS A container whose value type is std::pair<Key, Matrix>, specifying the
+     *          collection of parent keys and matrices. */
     template<typename PARENTS>
     GaussianConditionalUnordered(Key key, const Vector& d,
       const Matrix& R, const PARENTS& parents,
@@ -110,6 +106,12 @@ namespace gtsam {
 
     /** Get a view of the parent blocks. */
     constABlock get_S() const { return Ab_.range(nrFrontals(), size()); }
+
+    /** Get a view of the S matrix for the variable pointed to by the given key iterator */
+    constABlock get_S(const_iterator variable) const { return BaseFactor::getA(variable); }
+
+    /** Get a view of the r.h.s. vector d */
+    const constBVector get_d() const { return BaseFactor::getb(); }
 
     /**
     * Solves a conditional Gaussian and writes the solution into the entries of
