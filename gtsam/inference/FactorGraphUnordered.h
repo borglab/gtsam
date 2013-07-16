@@ -115,7 +115,8 @@ namespace gtsam {
     void push_back(const boost::shared_ptr<DERIVEDFACTOR>& factor) {
       factors_.push_back(boost::shared_ptr<FACTOR>(factor)); }
 
-    /** Add a factor, will be copy-constructed into a shared_ptr (use push_back to avoid the copy). */
+    /** Add a factor by value, will be copy-constructed (use push_back with a shared_ptr to avoid
+     *  the copy). */
     template<class DERIVEDFACTOR>
     void add(const DERIVEDFACTOR& factor) {
       factors_.push_back(boost::make_shared<DERIVEDFACTOR>(factor)); }
@@ -130,16 +131,6 @@ namespace gtsam {
       push_back(ITERATOR firstFactor, ITERATOR lastFactor) {
         factors_.insert(end(), firstFactor, lastFactor); }
 
-  protected:
-    /** push back a BayesTree as a collection of factors.  NOTE: This should be hidden in derived
-     *  classes in favor of a type-specialized version that calls this templated function. */
-    template<class CLIQUE>
-    void push_back_bayesTree(const BayesTreeUnordered<CLIQUE>& bayesTree);
-
-    template<class DERIVEDFACTOR>
-    void push_back(const DERIVEDFACTOR& factor) {
-      add(factor); }
-
     /** push back many factors with an iterator over plain factors (factors are copied) */
     template<typename ITERATOR>
     typename std::enable_if<std::is_base_of<FactorType, typename ITERATOR::value_type>::value>::type
@@ -147,6 +138,17 @@ namespace gtsam {
         for(ITERATOR f = firstFactor; f != lastFactor; ++f)
           add(*f);
     }
+
+    /** Add a factor by value, will be copy-constructed (pass a shared_ptr to avoid the copy). */
+    template<class DERIVEDFACTOR>
+    void push_back(const DERIVEDFACTOR& factor) {
+      add(factor); }
+
+  protected:
+    /** push back a BayesTree as a collection of factors.  NOTE: This should be hidden in derived
+     *  classes in favor of a type-specialized version that calls this templated function. */
+    template<class CLIQUE>
+    void push_back_bayesTree(const BayesTreeUnordered<CLIQUE>& bayesTree);
 
   public:
     /** += syntax for push_back, e.g. graph += f1, f2, f3 */
