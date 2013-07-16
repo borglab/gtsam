@@ -35,6 +35,12 @@ using namespace gtsam;
 namespace gtsam {
 
   /* ************************************************************************* */
+  bool GaussianFactorGraphUnordered::equals(const This& fg, double tol) const
+  {
+    return Base::equals(fg, tol);
+  }
+
+  /* ************************************************************************* */
   void GaussianFactorGraphUnordered::push_back_bayesTree(const GaussianBayesTreeUnordered& bayesTree)
   {
     Base::push_back_bayesTree(bayesTree);
@@ -201,14 +207,14 @@ namespace gtsam {
     return BaseEliminateable::eliminateMultifrontal(function)->optimize();
   }
 
-  ///* ************************************************************************* */
-  //VectorValuesUnordered GaussianFactorGraphUnordered::gradient(const VectorValuesUnordered& x0) const
-  //{
-  //  VectorValuesUnordered g = VectorValuesUnordered::Zero(x0);
-  //  Errors e = gaussianErrors(*this, x0);
-  //  transposeMultiplyAdd(*this, 1.0, e, g);
-  //  return g;
-  //}
+  /* ************************************************************************* */
+  VectorValuesUnordered GaussianFactorGraphUnordered::gradient(const VectorValuesUnordered& x0) const
+  {
+    VectorValuesUnordered g = VectorValuesUnordered::Zero(x0);
+    Errors e = gaussianErrors(x0);
+    transposeMultiplyAdd(1.0, e, g);
+    return g;
+  }
 
   /* ************************************************************************* */
   namespace {
@@ -221,20 +227,19 @@ namespace gtsam {
     }
   }
 
-  ///* ************************************************************************* */
-  //VectorValuesUnordered GaussianFactorGraphUnordered::gradientAtZero() const
-  //{
-  //  assert(false);
-  //  // Zero-out the gradient
-  //  VectorValuesUnordered g;
-  //  Errors e;
-  //  BOOST_FOREACH(const sharedFactor& Ai_G, *this) {
-  //    JacobianFactorUnordered::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
-  //    e.push_back(-Ai->getb());
-  //  }
-  //  transposeMultiplyAdd(*this, 1.0, e, g);
-  //  return g;
-  //}
+  /* ************************************************************************* */
+  VectorValuesUnordered GaussianFactorGraphUnordered::gradientAtZero() const
+  {
+    // Zero-out the gradient
+    VectorValuesUnordered g;
+    Errors e;
+    BOOST_FOREACH(const sharedFactor& Ai_G, *this) {
+      JacobianFactorUnordered::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
+      e.push_back(-Ai->getb());
+    }
+    transposeMultiplyAdd(1.0, e, g);
+    return g;
+  }
 
   /* ************************************************************************* */
   bool hasConstraints(const GaussianFactorGraphUnordered& factors) {
@@ -295,16 +300,17 @@ namespace gtsam {
   //  }
   //}
 
-  ///* ************************************************************************* */
-  //// x += alpha*A'*e
-  //void transposeMultiplyAdd(const GaussianFactorGraphUnordered& fg, double alpha, const Errors& e, VectorValuesUnordered& x) {
-  //  // For each factor add the gradient contribution
-  //  Errors::const_iterator ei = e.begin();
-  //  BOOST_FOREACH(const GaussianFactorUnordered::shared_ptr& Ai_G, fg) {
-  //    JacobianFactorUnordered::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
-  //    Ai->transposeMultiplyAdd(alpha,*(ei++),x);
-  //  }
-  //}
+  /* ************************************************************************* */
+  // x += alpha*A'*e
+  void GaussianFactorGraphUnordered::transposeMultiplyAdd(double alpha, const Errors& e, VectorValuesUnordered& x) const
+  {
+    // For each factor add the gradient contribution
+    Errors::const_iterator ei = e.begin();
+    BOOST_FOREACH(const sharedFactor& Ai_G, *this) {
+      JacobianFactorUnordered::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
+      Ai->transposeMultiplyAdd(alpha, *(ei++), x);
+    }
+  }
 
   ///* ************************************************************************* */
   //void residual(const GaussianFactorGraphUnordered& fg, const VectorValuesUnordered &x, VectorValuesUnordered &r) {
@@ -333,27 +339,34 @@ namespace gtsam {
   //  }
   //}
 
-  ///* ************************************************************************* */
-  //void transposeMultiply(const GaussianFactorGraphUnordered& fg, const VectorValuesUnordered &r, VectorValuesUnordered &x) {
-  //  x.setZero();
-  //  Key i = 0;
-  //  BOOST_FOREACH(const GaussianFactorUnordered::shared_ptr& Ai_G, fg) {
-  //    JacobianFactorUnordered::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
-  //    for(JacobianFactorUnordered::const_iterator j = Ai->begin(); j != Ai->end(); ++j) {
-  //      x[*j] += Ai->getA(j).transpose() * r[i];
-  //    }
-  //    ++i;
-  //  }
-  //}
+  /* ************************************************************************* */
+  VectorValuesUnordered GaussianFactorGraphUnordered::transposeMultiply(const Errors& e) const
+  {
+    VectorValuesUnordered x;
+    Errors::const_iterator ei = e.begin();
+    BOOST_FOREACH(const sharedFactor& Ai_G, *this) {
+      JacobianFactorUnordered::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
+      for(JacobianFactorUnordered::const_iterator j = Ai->begin(); j != Ai->end(); ++j) {
+        // Create the value as a zero vector if it does not exist.
+        pair<VectorValuesUnordered::iterator, bool> xi = x.tryInsert(*j, Vector());
+        if(xi.second)
+          xi.first->second = Vector::Zero(Ai->getDim(j));
+        xi.first->second += Ai->getA(j).transpose() * *ei;
+      }
+      ++ ei;
+    }
+    return x;
+  }
 
-  ///* ************************************************************************* */
-  //Errors gaussianErrors(const GaussianFactorGraphUnordered& fg, const VectorValuesUnordered& x) {
-  //  Errors e;
-  //  BOOST_FOREACH(const GaussianFactorUnordered::shared_ptr& Ai_G, fg) {
-  //    JacobianFactorUnordered::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
-  //    e.push_back(Ai->error_vector(x));
-  //  }
-  //  return e;
-  //}
+  /* ************************************************************************* */
+  Errors GaussianFactorGraphUnordered::gaussianErrors(const VectorValuesUnordered& x) const
+  {
+    Errors e;
+    BOOST_FOREACH(const sharedFactor& Ai_G, *this) {
+      JacobianFactorUnordered::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
+      e.push_back(Ai->error_vector(x));
+    }
+    return e;
+  }
 
 } // namespace gtsam
