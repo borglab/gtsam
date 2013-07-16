@@ -156,15 +156,15 @@ TEST( JacobianFactorUnordered, construct_from_graph)
   factors.add(JacobianFactorUnordered(10, A11, b1, noiseModel::Isotropic::Sigma(2, sigma1)));
 
   double sigma2 = 0.5;
-  Matrix A21 = -10 * Matrix::Identity(2,2);
-  Matrix A22 = 10 * Matrix::Identity(2,2);
+  Matrix A21 = -2 * Matrix::Identity(2,2);
+  Matrix A22 = 3 * Matrix::Identity(2,2);
   Vector b2(2); b2 << 4, -5;
   factors.add(JacobianFactorUnordered(10, A21, 8, A22, b2, noiseModel::Isotropic::Sigma(2, sigma2)));
 
   double sigma3 = 1.0;
-  Matrix A32 = -10 * Matrix::Identity(2,2);
-  Matrix A33 = 10 * Matrix::Identity(2,2);
-  Vector b3(2); b3 << 4, -5;
+  Matrix A32 = -4 * Matrix::Identity(2,2);
+  Matrix A33 = 5 * Matrix::Identity(2,2);
+  Vector b3(2); b3 << 3, -6;
   factors.add(JacobianFactorUnordered(8, A32, 12, A33, b3, noiseModel::Isotropic::Sigma(2, sigma3)));
 
   Matrix A1(6,2); A1 << A11, A21, Matrix::Zero(2,2);
@@ -277,6 +277,58 @@ TEST(JacobianFactorUnordered, empty )
 }
 
 /* ************************************************************************* */
+TEST(JacobianFactorUnordered, eliminate)
+{
+  Matrix A01 = Matrix_(3,3,
+    1.0, 0.0, 0.0,
+    0.0, 1.0, 0.0,
+    0.0, 0.0, 1.0);
+  Vector b0 = Vector_(3, 1.5, 1.5, 1.5);
+  Vector s0 = Vector_(3, 1.6, 1.6, 1.6);
+
+  Matrix A10 = Matrix_(3,3,
+    2.0, 0.0, 0.0,
+    0.0, 2.0, 0.0,
+    0.0, 0.0, 2.0);
+  Matrix A11 = Matrix_(3,3,
+    -2.0, 0.0, 0.0,
+    0.0, -2.0, 0.0,
+    0.0, 0.0, -2.0);
+  Vector b1 = Vector_(3, 2.5, 2.5, 2.5);
+  Vector s1 = Vector_(3, 2.6, 2.6, 2.6);
+
+  Matrix A21 = Matrix_(3,3,
+    3.0, 0.0, 0.0,
+    0.0, 3.0, 0.0,
+    0.0, 0.0, 3.0);
+  Vector b2 = Vector_(3, 3.5, 3.5, 3.5);
+  Vector s2 = Vector_(3, 3.6, 3.6, 3.6);
+
+  GaussianFactorGraphUnordered gfg;
+  gfg.add(1, A01, b0, noiseModel::Diagonal::Sigmas(s0, true));
+  gfg.add(0, A10, 1, A11, b1, noiseModel::Diagonal::Sigmas(s1, true));
+  gfg.add(1, A21, b2, noiseModel::Diagonal::Sigmas(s2, true));
+
+  Matrix zero3x3 = zeros(3,3);
+  Matrix A0 = gtsam::stack(3, &A10, &zero3x3, &zero3x3);
+  Matrix A1 = gtsam::stack(3, &A11, &A01, &A21);
+  Vector b = gtsam::concatVectors(3, &b1, &b0, &b2);
+  Vector sigmas = gtsam::concatVectors(3, &s1, &s0, &s2);
+
+  JacobianFactorUnordered combinedFactor(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
+  GaussianFactorGraphUnordered::EliminationResult expected = combinedFactor.eliminate(list_of(0));
+  JacobianFactorUnordered::shared_ptr expectedJacobian = boost::dynamic_pointer_cast<
+    JacobianFactorUnordered>(expected.second);
+
+  GaussianFactorGraphUnordered::EliminationResult actual = EliminateQRUnordered(gfg, list_of(0));
+  JacobianFactorUnordered::shared_ptr actualJacobian = boost::dynamic_pointer_cast<
+    JacobianFactorUnordered>(actual.second);
+
+  EXPECT(assert_equal(*expected.first, *actual.first));
+  EXPECT(assert_equal(*expectedJacobian, *actualJacobian));
+}
+
+/* ************************************************************************* */
 TEST(JacobianFactorUnordered, eliminate2 )
 {
   // sigmas
@@ -342,6 +394,82 @@ TEST(JacobianFactorUnordered, eliminate2 )
   Vector b1 = Vector_(2, 0.0, 0.894427);
   JacobianFactorUnordered expectedLF(11, Bl1x1, b1);
   EXPECT(assert_equal(expectedLF, *actual.second,1e-3));
+}
+
+/* ************************************************************************* */
+TEST(JacobianFactorUnordered, EliminateQR)
+{
+  // Augmented Ab test case for whole factor graph
+  Matrix Ab = Matrix_(14,11,
+    4.,     0.,     1.,     4.,     1.,     0.,     3.,     6.,     8.,     8.,     1.,
+    9.,     2.,     0.,     1.,     6.,     3.,     9.,     6.,     6.,     9.,     4.,
+    5.,     3.,     7.,     9.,     5.,     5.,     9.,     1.,     3.,     7.,     0.,
+    5.,     6.,     5.,     7.,     9.,     4.,     0.,     1.,     1.,     3.,     5.,
+    0.,     0.,     4.,     5.,     6.,     6.,     7.,     9.,     4.,     5.,     4.,
+    0.,     0.,     9.,     4.,     8.,     6.,     2.,     1.,     4.,     1.,     6.,
+    0.,     0.,     6.,     0.,     4.,     2.,     4.,     0.,     1.,     9.,     6.,
+    0.,     0.,     6.,     6.,     4.,     4.,     5.,     5.,     5.,     8.,     6.,
+    0.,     0.,     0.,     0.,     8.,     0.,     9.,     8.,     2.,     8.,     0.,
+    0.,     0.,     0.,     0.,     0.,     9.,     4.,     6.,     3.,     2.,     0.,
+    0.,     0.,     0.,     0.,     1.,     1.,     9.,     1.,     5.,     5.,     3.,
+    0.,     0.,     0.,     0.,     1.,     1.,     3.,     3.,     2.,     0.,     5.,
+    0.,     0.,     0.,     0.,     0.,     0.,     0.,     0.,     2.,     4.,     6.,
+    0.,     0.,     0.,     0.,     0.,     0.,     0.,     0.,     6.,     3.,     4.);
+
+  // Create factor graph
+  const SharedDiagonal sig_4D = noiseModel::Isotropic::Sigma(4, 0.5);
+  const SharedDiagonal sig_2D = noiseModel::Isotropic::Sigma(2, 0.5);
+  GaussianFactorGraphUnordered factors = list_of
+    (JacobianFactorUnordered(list_of(3)(5)(7)(9)(11), VerticalBlockMatrix(list_of(2)(2)(2)(2)(2)(1), Ab.block(0, 0, 4, 11)), sig_4D))
+    (JacobianFactorUnordered(list_of(5)(7)(9)(11), VerticalBlockMatrix(list_of(2)(2)(2)(2)(1), Ab.block(4, 2, 4, 9)), sig_4D))
+    (JacobianFactorUnordered(list_of(7)(9)(11), VerticalBlockMatrix(list_of(2)(2)(2)(1), Ab.block(8, 4, 4, 7)), sig_4D))
+    (JacobianFactorUnordered(list_of(11), VerticalBlockMatrix(list_of(2)(1), Ab.block(12, 8, 2, 3)), sig_2D));
+
+  // extract the dense matrix for the graph
+  Matrix actualDense = factors.augmentedJacobian();
+  EXPECT(assert_equal(2.0 * Ab, actualDense));
+
+  // Expected augmented matrix, both GaussianConditional (first 6 rows) and remaining factor (next 4 rows)
+  Matrix R = 2.0*Matrix_(11,11,
+    -12.1244,  -5.1962,  -5.2786,  -8.6603, -10.5573,  -5.9385, -11.3820,  -7.2581,  -8.7427, -13.4440,  -5.3611,
+    0.,   4.6904,   5.0254,   5.5432,   5.5737,   3.0153,  -3.0153,  -3.5635,  -3.9290,  -2.7412,   2.1625,
+    0.,       0., -13.8160,  -8.7166, -10.2245,  -8.8666,  -8.7632,  -5.2544,  -6.9192, -10.5537,  -9.3250,
+    0.,       0.,       0.,   6.5033,  -1.1453,   1.3179,   2.5768,   5.5503,   3.6524,   1.3491,  -2.5676,
+    0.,       0.,       0.,       0.,  -9.6242,  -2.1148,  -9.3509, -10.5846,  -3.5366,  -6.8561,  -3.2277,
+    0.,       0.,       0.,       0.,       0.,   9.7887,   4.3551,   5.7572,   2.7876,   0.1611,   1.1769,
+    0.,       0.,       0.,       0.,       0.,       0., -11.1139,  -0.6521,  -2.1943,  -7.5529,  -0.9081,
+    0.,       0.,       0.,       0.,       0.,       0.,       0.,  -4.6479,  -1.9367,  -6.5170,  -3.7685,
+    0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,   8.2503,   3.3757,   6.8476,
+    0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,  -5.7095,  -0.0090,
+    0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,  -7.1635);
+
+  GaussianConditionalUnordered expectedFragment(
+    list_of(3)(5)(7)(9)(11), 3, VerticalBlockMatrix(list_of(2)(2)(2)(2)(2)(1), R));
+
+  // Eliminate (3 frontal variables, 6 scalar columns) using QR !!!!
+  GaussianFactorGraphUnordered::EliminationResult actual = EliminateQRUnordered(factors, list_of(3)(5)(7));
+  const JacobianFactorUnordered &actualJF = dynamic_cast<const JacobianFactorUnordered&>(*actual.second);
+
+  EXPECT(assert_equal(expectedFragment, *actual.first, 0.001));
+  EXPECT(assert_equal(size_t(2), actualJF.keys().size()));
+  EXPECT(assert_equal(Key(9), actualJF.keys()[0]));
+  EXPECT(assert_equal(Key(11), actualJF.keys()[1]));
+  EXPECT(assert_equal(Matrix(R.block(6, 6, 4, 2)), actualJF.getA(actualJF.begin()), 0.001));
+  EXPECT(assert_equal(Matrix(R.block(6, 8, 4, 2)), actualJF.getA(actualJF.begin()+1), 0.001));
+  EXPECT(assert_equal(Vector(R.col(10).segment(6, 4)), actualJF.getb(), 0.001));
+  EXPECT(!actualJF.get_model());
+
+  // Eliminate (3 frontal variables, 6 scalar columns) using Cholesky !!!!
+  // TODO: HessianFactor
+  //GaussianBayesNet actualFragment_Chol = *actualFactor_Chol.eliminate(3, JacobianFactor::SOLVE_CHOLESKY);
+  //EXPECT(assert_equal(expectedFragment, actualFragment_Chol, 0.001));
+  //EXPECT(assert_equal(size_t(2), actualFactor_Chol.keys().size()));
+  //EXPECT(assert_equal(Index(9), actualFactor_Chol.keys()[0]));
+  //EXPECT(assert_equal(Index(11), actualFactor_Chol.keys()[1]));
+  //EXPECT(assert_equal(Ae1, actualFactor_Chol.getA(actualFactor_Chol.begin()), 0.001)); ////
+  //EXPECT(linear_dependent(Ae2, actualFactor_Chol.getA(actualFactor_Chol.begin()+1), 0.001));
+  //EXPECT(assert_equal(be, actualFactor_Chol.getb(), 0.001)); ////
+  //EXPECT(assert_equal(ones(4), actualFactor_Chol.get_sigmas(), 0.001));
 }
 
 /* ************************************************************************* */
