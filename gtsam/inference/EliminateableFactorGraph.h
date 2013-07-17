@@ -113,8 +113,8 @@ namespace gtsam {
      *  \endcode
      *  */
     boost::shared_ptr<BayesNetType> eliminateSequential(
-      const Eliminate& function = EliminationTraits::DefaultEliminate,
       OptionalOrdering ordering = boost::none,
+      const Eliminate& function = EliminationTraits::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none) const;
 
     /** Do multifrontal elimination of all variables to produce a Bayes tree.  If an ordering is not
@@ -138,8 +138,8 @@ namespace gtsam {
      *  \endcode
      *  */
     boost::shared_ptr<BayesTreeType> eliminateMultifrontal(
-      const Eliminate& function = EliminationTraits::DefaultEliminate,
       OptionalOrdering ordering = boost::none,
+      const Eliminate& function = EliminationTraits::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none) const;
 
     /** Do sequential elimination of some variables in the given \c ordering to produce a Bayes net

@@ -204,7 +204,7 @@ namespace gtsam {
   /* ************************************************************************* */
   VectorValuesUnordered GaussianFactorGraphUnordered::optimize(const Eliminate& function) const
   {
-    return BaseEliminateable::eliminateMultifrontal(function)->optimize();
+    return BaseEliminateable::eliminateMultifrontal(boost::none, function)->optimize();
   }
 
   /* ************************************************************************* */

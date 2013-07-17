@@ -19,6 +19,8 @@
 
 #include <gtsam/symbolic/SymbolicFactorGraphUnordered.h>
 #include <gtsam/symbolic/SymbolicBayesNetUnordered.h>
+#include <gtsam/symbolic/SymbolicBayesTreeUnordered.h>
+#include <gtsam/symbolic/SymbolicConditionalUnordered.h>
 #include <gtsam/symbolic/tests/symbolicExampleGraphs.h>
 #include <boost/assign/std/vector.hpp>
 
@@ -32,12 +34,11 @@ TEST(SymbolicFactorGraph, eliminateFullSequential)
   // Test with simpleTestGraph1
   OrderingUnordered order;
   order += 0,1,2,3,4;
-  SymbolicBayesNetUnordered actual1 = *simpleTestGraph1.eliminateSequential(EliminateSymbolicUnordered, order);
+  SymbolicBayesNetUnordered actual1 = *simpleTestGraph1.eliminateSequential(order);
   EXPECT(assert_equal(simpleTestGraph1BayesNet, actual1));
 
   // Test with Asia graph
-  SymbolicBayesNetUnordered actual2 = *asiaGraph.eliminateSequential(
-    EliminateSymbolicUnordered, asiaOrdering);
+  SymbolicBayesNetUnordered actual2 = *asiaGraph.eliminateSequential(asiaOrdering);
   EXPECT(assert_equal(asiaBayesNet, actual2));
 }
 
@@ -58,8 +59,8 @@ TEST(SymbolicFactorGraph, eliminatePartialSequential)
 
   SymbolicBayesNetUnordered::shared_ptr actualBayesNet;
   SymbolicFactorGraphUnordered::shared_ptr actualSfg;
-  boost::tie(actualBayesNet, actualSfg) = simpleTestGraph2.eliminatePartialSequential(
-    EliminateSymbolicUnordered, OrderingUnordered(list_of(0)(1)));
+  boost::tie(actualBayesNet, actualSfg) =
+    simpleTestGraph2.eliminatePartialSequential(OrderingUnordered(list_of(0)(1)));
 
   EXPECT(assert_equal(expectedSfg, *actualSfg));
   EXPECT(assert_equal(expectedBayesNet, *actualBayesNet));
@@ -70,11 +71,11 @@ TEST(SymbolicFactorGraph, eliminateFullMultifrontal)
 {
   OrderingUnordered ordering; ordering += 0,1,2,3;
   SymbolicBayesTreeUnordered actual1 =
-    *simpleChain.eliminateMultifrontal(EliminateSymbolicUnordered, ordering);
+    *simpleChain.eliminateMultifrontal(ordering);
   EXPECT(assert_equal(simpleChainBayesTree, actual1));
 
   SymbolicBayesTreeUnordered actual2 =
-    *asiaGraph.eliminateMultifrontal(EliminateSymbolicUnordered, asiaOrdering);
+    *asiaGraph.eliminateMultifrontal(asiaOrdering);
   EXPECT(assert_equal(asiaBayesTree, actual2));
 }
 
@@ -95,8 +96,8 @@ TEST(SymbolicFactorGraph, eliminatePartialMultifrontal)
 
   SymbolicBayesTreeUnordered::shared_ptr actualBayesTree;
   SymbolicFactorGraphUnordered::shared_ptr actualFactorGraph;
-  boost::tie(actualBayesTree, actualFactorGraph) = simpleTestGraph2.eliminatePartialMultifrontal(
-    EliminateSymbolicUnordered, OrderingUnordered(list_of(4)(5)));
+  boost::tie(actualBayesTree, actualFactorGraph) =
+    simpleTestGraph2.eliminatePartialMultifrontal(OrderingUnordered(list_of(4)(5)));
 
   EXPECT(assert_equal(expectedFactorGraph, *actualFactorGraph));
   EXPECT(assert_equal(expectedBayesTree, *actualBayesTree));
@@ -120,52 +121,91 @@ TEST(SymbolicFactorGraph, eliminate_disconnected_graph) {
 
   OrderingUnordered order;
   order += 0,1,2,3,4;
-  SymbolicBayesNetUnordered actual = *fg.eliminateSequential(EliminateSymbolicUnordered, order);
+  SymbolicBayesNetUnordered actual = *fg.eliminateSequential(order);
 
   EXPECT(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
-//TEST(SymbolicFactorGraph, eliminateFrontals) {
-//
-//  SymbolicFactorGraph sfgOrig;
-//  sfgOrig.push_factor(0,1);
-//  sfgOrig.push_factor(0,2);
-//  sfgOrig.push_factor(1,3);
-//  sfgOrig.push_factor(1,4);
-//  sfgOrig.push_factor(2,3);
-//  sfgOrig.push_factor(4,5);
-//
-//  SymbolicConditionalUnordered::shared_ptr actualCond;
-//  SymbolicFactorGraph::shared_ptr actualSfg;
-//  boost::tie(actualCond, actualSfg) = sfgOrig.eliminateFrontals(2);
-//
-//  vector<Index> condIndices;
-//  condIndices += 0,1,2,3,4;
-//  IndexConditional expectedCond(condIndices, 2);
-//
-//  SymbolicFactorGraph expectedSfg;
-//  expectedSfg.push_factor(2,3);
-//  expectedSfg.push_factor(4,5);
-//  expectedSfg.push_factor(2,3,4);
-//
-//  EXPECT(assert_equal(expectedSfg, actualSfg));
-//  EXPECT(assert_equal(expectedCond, *actualCond));
-//}
-
-///* ************************************************************************* */
-//TEST( SymbolicFactorGraph, EliminateOne )
+//TEST(SymbolicFactorGraph, marginals)
 //{
-//  // create a test graph
+//  // Create factor graph
 //  SymbolicFactorGraph fg;
-//  fg.push_factor(vx2, vx1);
+//  fg.push_factor(0, 1);
+//  fg.push_factor(0, 2);
+//  fg.push_factor(1, 4);
+//  fg.push_factor(2, 4);
+//  fg.push_factor(3, 4);
 //
-//  SymbolicSequentialSolver::EliminateUntil(fg, vx2+1);
-//  SymbolicFactorGraph expected;
-//  expected.push_back(boost::shared_ptr<IndexFactor>());
-//  expected.push_factor(vx1);
+//  // eliminate
+//  SymbolicSequentialSolver solver(fg);
+//  SymbolicBayesNet::shared_ptr actual = solver.eliminate();
+//  SymbolicBayesNet expected;
+//  expected.push_front(boost::make_shared<IndexConditional>(4));
+//  expected.push_front(boost::make_shared<IndexConditional>(3, 4));
+//  expected.push_front(boost::make_shared<IndexConditional>(2, 4));
+//  expected.push_front(boost::make_shared<IndexConditional>(1, 2, 4));
+//  expected.push_front(boost::make_shared<IndexConditional>(0, 1, 2));
+//  EXPECT(assert_equal(expected,*actual));
 //
-//  CHECK(assert_equal(expected, fg));
+//  {
+//    // jointBayesNet
+//    vector<Index> js;
+//    js.push_back(0);
+//    js.push_back(4);
+//    js.push_back(3);
+//    SymbolicBayesNet::shared_ptr actualBN = solver.jointBayesNet(js);
+//    SymbolicBayesNet expectedBN;
+//    expectedBN.push_front(boost::make_shared<IndexConditional>(3));
+//    expectedBN.push_front(boost::make_shared<IndexConditional>(4, 3));
+//    expectedBN.push_front(boost::make_shared<IndexConditional>(0, 4));
+//    EXPECT( assert_equal(expectedBN,*actualBN));
+//
+//    // jointFactorGraph
+//    SymbolicFactorGraph::shared_ptr actualFG = solver.jointFactorGraph(js);
+//    SymbolicFactorGraph expectedFG;
+//    expectedFG.push_factor(0, 4);
+//    expectedFG.push_factor(4, 3);
+//    expectedFG.push_factor(3);
+//    EXPECT( assert_equal(expectedFG,(SymbolicFactorGraph)(*actualFG)));
+//  }
+//
+//  {
+//    // jointBayesNet
+//    vector<Index> js;
+//    js.push_back(0);
+//    js.push_back(2);
+//    js.push_back(3);
+//    SymbolicBayesNet::shared_ptr actualBN = solver.jointBayesNet(js);
+//    SymbolicBayesNet expectedBN;
+//    expectedBN.push_front(boost::make_shared<IndexConditional>(2));
+//    expectedBN.push_front(boost::make_shared<IndexConditional>(3, 2));
+//    expectedBN.push_front(boost::make_shared<IndexConditional>(0, 3, 2));
+//    EXPECT( assert_equal(expectedBN,*actualBN));
+//
+//    // jointFactorGraph
+//    SymbolicFactorGraph::shared_ptr actualFG = solver.jointFactorGraph(js);
+//    SymbolicFactorGraph expectedFG;
+//    expectedFG.push_factor(0, 3, 2);
+//    expectedFG.push_factor(3, 2);
+//    expectedFG.push_factor(2);
+//    EXPECT( assert_equal(expectedFG,(SymbolicFactorGraph)(*actualFG)));
+//  }
+//
+//  {
+//    // conditionalBayesNet
+//    vector<Index> js;
+//    js.push_back(0);
+//    js.push_back(2);
+//    js.push_back(3);
+//    size_t nrFrontals = 2;
+//    SymbolicBayesNet::shared_ptr actualBN = //
+//      solver.conditionalBayesNet(js, nrFrontals);
+//    SymbolicBayesNet expectedBN;
+//    expectedBN.push_front(boost::make_shared<IndexConditional>(2, 3));
+//    expectedBN.push_front(boost::make_shared<IndexConditional>(0, 2, 3));
+//    EXPECT( assert_equal(expectedBN,*actualBN));
+//  }
 //}
 
 /* ************************************************************************* */

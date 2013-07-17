@@ -27,7 +27,7 @@ namespace gtsam {
   template<class FACTORGRAPH>
   boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesNetType>
     EliminateableFactorGraph<FACTORGRAPH>::eliminateSequential(
-    const Eliminate& function, OptionalOrdering ordering, OptionalVariableIndex variableIndex) const
+    OptionalOrdering ordering, const Eliminate& function, OptionalVariableIndex variableIndex) const
   {
     if(ordering && variableIndex) {
       // Do elimination
@@ -43,13 +43,13 @@ namespace gtsam {
       // If no VariableIndex provided, compute one and call this function again IMPORTANT: we check
       // for no variable index first so that it's always computed if we need to call COLAMD because
       // no Ordering is provided.
-      return eliminateSequential(function, ordering, VariableIndexUnordered(asDerived()));
+      return eliminateSequential(ordering, function, VariableIndexUnordered(asDerived()));
     }
     else /*if(!ordering)*/ {
       // If no Ordering provided, compute one and call this function again.  We are guaranteed to
       // have a VariableIndex already here because we computed one if needed in the previous 'else'
       // block.
-      return eliminateSequential(function, OrderingUnordered::COLAMD(*variableIndex));
+      return eliminateSequential(OrderingUnordered::COLAMD(*variableIndex), function);
     }
   }
 
@@ -57,7 +57,7 @@ namespace gtsam {
   template<class FACTORGRAPH>
   boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesTreeType>
     EliminateableFactorGraph<FACTORGRAPH>::eliminateMultifrontal(
-    const Eliminate& function, OptionalOrdering ordering, OptionalVariableIndex variableIndex) const
+    OptionalOrdering ordering, const Eliminate& function, OptionalVariableIndex variableIndex) const
   {
     if(ordering && variableIndex) {
       // Do elimination with given ordering
@@ -73,13 +73,13 @@ namespace gtsam {
       // If no VariableIndex provided, compute one and call this function again IMPORTANT: we check
       // for no variable index first so that it's always computed if we need to call COLAMD because
       // no Ordering is provided.
-      return eliminateMultifrontal(function, ordering, VariableIndexUnordered(asDerived()));
+      return eliminateMultifrontal(ordering, function, VariableIndexUnordered(asDerived()));
     }
     else /*if(!ordering)*/ {
       // If no Ordering provided, compute one and call this function again.  We are guaranteed to
       // have a VariableIndex already here because we computed one if needed in the previous 'else'
       // block.
-      return eliminateMultifrontal(function, OrderingUnordered::COLAMD(*variableIndex));
+      return eliminateMultifrontal(OrderingUnordered::COLAMD(*variableIndex), function);
     }
   }
 
