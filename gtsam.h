@@ -637,6 +637,7 @@ class Cal3_S2Stereo {
   // Standard Constructors
   Cal3_S2Stereo();
   Cal3_S2Stereo(double fx, double fy, double s, double u0, double v0, double b);
+  Cal3_S2Stereo(Vector v);
 
   // Testable
   void print(string s) const;
