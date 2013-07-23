@@ -56,6 +56,7 @@ protected:
 public:
   typedef KeyMap::const_iterator const_iterator;
   typedef KeyMap::const_iterator iterator;
+  typedef KeyMap::value_type value_type;
 
 public:
 
