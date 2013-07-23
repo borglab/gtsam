@@ -109,6 +109,7 @@ namespace gtsam {
   /* ************************************************************************* */
   VectorValuesUnordered GaussianBayesTreeUnordered::optimize() const
   {
+    gttic(GaussianBayesTree_optimize);
     internal::OptimizeData rootData; // Will hold final solution
     treeTraversal::DepthFirstForest(*this, rootData, internal::OptimizePreVisitor, internal::OptimizePostVisitor);
     return rootData.results;

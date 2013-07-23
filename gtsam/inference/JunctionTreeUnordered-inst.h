@@ -195,6 +195,7 @@ namespace gtsam {
   JunctionTreeUnordered<BAYESTREE,GRAPH>
     JunctionTreeUnordered<BAYESTREE,GRAPH>::FromEliminationTree(const ETREE& eliminationTree)
   {
+    gttic(JunctionTree_FromEliminationTree);
     // Here we rely on the BayesNet having been produced by this elimination tree, such that the
     // conditionals are arranged in DFS post-order.  We traverse the elimination tree, and inspect
     // the symbolic conditional corresponding to each node.  The elimination tree node is added to
@@ -238,7 +239,7 @@ namespace gtsam {
   std::pair<boost::shared_ptr<BAYESTREE>, boost::shared_ptr<GRAPH> >
     JunctionTreeUnordered<BAYESTREE,GRAPH>::eliminate(const Eliminate& function) const
   {
-    gttic(JunctionTreeUnordered_eliminate);
+    gttic(JunctionTree_eliminate);
     // Do elimination (depth-first traversal).  The rootsContainer stores a 'dummy' BayesTree node
     // that contains all of the roots as its children.  rootsContainer also stores the remaining
     // uneliminated factors passed up from the roots.

@@ -218,6 +218,7 @@ namespace gtsam {
     // Cast or convert to Jacobians
     std::vector<JacobianFactorUnordered::shared_ptr> jacobians = _convertOrCastToJacobians(graph);
 
+    gttic(Order_slots);
     // Order variable slots - we maintain the vector of ordered slots, as well as keep a list
     // 'unorderedSlots' of any variables discovered that are not in the ordering.  Those will then
     // be added after all of the ordered variables.
@@ -252,6 +253,7 @@ namespace gtsam {
       for(VariableSlots::const_iterator item = variableSlots->begin(); item != variableSlots->end(); ++item)
         orderedSlots.push_back(item);
     }
+    gttoc(Order_slots);
 
     // Count dimensions
     vector<DenseIndex> varDims;
@@ -497,6 +499,7 @@ namespace gtsam {
   std::pair<boost::shared_ptr<GaussianConditionalUnordered>, boost::shared_ptr<JacobianFactorUnordered> >
     EliminateQRUnordered(const GaussianFactorGraphUnordered& factors, const OrderingUnordered& keys)
   {
+    gttic(EliminateQRUnordered);
     // Combine and sort variable blocks in elimination order
     JacobianFactorUnordered::shared_ptr jointFactor;
     try {

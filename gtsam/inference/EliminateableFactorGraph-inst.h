@@ -30,6 +30,7 @@ namespace gtsam {
     OptionalOrdering ordering, const Eliminate& function, OptionalVariableIndex variableIndex) const
   {
     if(ordering && variableIndex) {
+      gttic(eliminateSequential);
       // Do elimination
       std::pair<boost::shared_ptr<BayesNetType>, boost::shared_ptr<FactorGraphType> > result
         = EliminationTreeType(asDerived(), *variableIndex, *ordering).eliminate(function);
@@ -60,6 +61,7 @@ namespace gtsam {
     OptionalOrdering ordering, const Eliminate& function, OptionalVariableIndex variableIndex) const
   {
     if(ordering && variableIndex) {
+      gttic(eliminateMultifrontal);
       // Do elimination with given ordering
       std::pair<boost::shared_ptr<BayesTreeType>, boost::shared_ptr<FactorGraphType> > result
         = JunctionTreeType(EliminationTreeType(asDerived(), *variableIndex, *ordering)).eliminate(function);
@@ -90,6 +92,7 @@ namespace gtsam {
     const OrderingUnordered& ordering, const Eliminate& function, OptionalVariableIndex variableIndex) const
   {
     if(variableIndex) {
+      gttic(eliminatePartialSequential);
       // Do elimination
       return EliminationTreeType(asDerived(), *variableIndex, ordering).eliminate(function);
     } else {
@@ -105,6 +108,7 @@ namespace gtsam {
     const OrderingUnordered& ordering, const Eliminate& function, OptionalVariableIndex variableIndex) const
   {
     if(variableIndex) {
+      gttic(eliminatePartialMultifrontal);
       // Do elimination
       return JunctionTreeType(EliminationTreeType(asDerived(), *variableIndex, ordering)).eliminate(function);
     } else {
@@ -126,6 +130,7 @@ namespace gtsam {
     {
       if(marginalizedVariableOrdering)
       {
+        gttic(marginalMultifrontalBayesNet);
         // An ordering was provided for the marginalized variables, so we can first eliminate them
         // in the order requested.
         std::pair<boost::shared_ptr<BayesTreeType>, boost::shared_ptr<FactorGraphType> > eliminated =

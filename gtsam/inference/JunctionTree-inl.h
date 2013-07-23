@@ -31,6 +31,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template <class FG, class BTCLIQUE>
   void JunctionTree<FG,BTCLIQUE>::construct(const FG& fg, const VariableIndex& variableIndex) {
+    gttic(JT_construct);
     gttic(JT_symbolic_ET);
     const typename EliminationTree<IndexFactor>::shared_ptr symETree =
         EliminationTree<IndexFactor>::Create(fg, variableIndex);

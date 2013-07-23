@@ -80,7 +80,7 @@ namespace gtsam {
   EliminationTreeUnordered<BAYESNET,GRAPH>::EliminationTreeUnordered(const FactorGraphType& graph,
     const VariableIndexUnordered& structure, const OrderingUnordered& order)
   {
-    gttic(ET_Create1);
+    gttic(EliminationTree_Contructor);
 
     // Number of factors and variables - NOTE in the case of partial elimination, n here may
     // be fewer variables than are actually present in the graph.
@@ -187,6 +187,7 @@ namespace gtsam {
   std::pair<boost::shared_ptr<BAYESNET>, boost::shared_ptr<GRAPH> >
     EliminationTreeUnordered<BAYESNET,GRAPH>::eliminate(Eliminate function) const
   {
+    gttic(EliminationTree_eliminate);
     // Allocate result
     boost::shared_ptr<BayesNetType> result = boost::make_shared<BayesNetType>();
 

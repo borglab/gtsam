@@ -84,7 +84,9 @@ public:
 
 /* ************************************************************************* */
 template<class FG>
-VariableSlots::VariableSlots(const FG& factorGraph) {
+VariableSlots::VariableSlots(const FG& factorGraph)
+{
+  gttic(VariableSlots_constructor);
   static const bool debug = false;
 
   // Compute a mapping (called variableSlots) *from* each involved
