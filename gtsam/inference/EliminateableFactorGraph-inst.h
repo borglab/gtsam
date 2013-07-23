@@ -148,12 +148,15 @@ namespace gtsam {
         // No ordering was provided for the marginalized variables, so order them using constrained
         // COLAMD.
         bool unmarginalizedAreOrdered = (boost::get<const OrderingUnordered&>(&variables) != 0);
+        const std::vector<Key>* variablesOrOrdering =
+          unmarginalizedAreOrdered ?
+          boost::get<const OrderingUnordered&>(&variables) : boost::get<const std::vector<Key>&>(&variables);
+
         OrderingUnordered totalOrdering =
-          OrderingUnordered::COLAMDConstrainedLast(*variableIndex,
-          boost::get<const std::vector<Key>&>(variables), unmarginalizedAreOrdered);
+          OrderingUnordered::COLAMDConstrainedLast(*variableIndex, *variablesOrOrdering, unmarginalizedAreOrdered);
 
         // Split up ordering
-        const size_t nVars = boost::get<const std::vector<Key>&>(variables).size(); // Works because OrderingUnordered derives from std::vector<Key>
+        const size_t nVars = variablesOrOrdering->size();
         OrderingUnordered marginalizationOrdering(totalOrdering.begin(), totalOrdering.end() - nVars);
         OrderingUnordered marginalVarsOrdering(totalOrdering.end() - nVars, totalOrdering.end());
 

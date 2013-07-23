@@ -137,7 +137,8 @@ namespace gtsam {
         }
         // Set up BayesTree parent and child pointers
         if(parentData) {
-          bayesTreeNode->parent_ = parentData->bayesTreeNode;
+          if(parentData->parentData) // If our parent is not the dummy node
+            bayesTreeNode->parent_ = parentData->bayesTreeNode;
           parentData->bayesTreeNode->children.push_back(bayesTreeNode);
         }
       }

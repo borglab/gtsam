@@ -192,13 +192,13 @@ namespace gtsam {
     typename std::enable_if<std::is_base_of<FactorType, DERIVEDFACTOR>::value,
       boost::assign::list_inserter<RefCallPushBack<This> > >::type
       operator+=(boost::shared_ptr<DERIVEDFACTOR>& factor) {
-        return boost::assign::make_list_inserter(RefCallPushBack<This>(*this));
+        return boost::assign::make_list_inserter(RefCallPushBack<This>(*this))(factor);
     }
 
     template<class FACTOR_OR_CONTAINER>
     boost::assign::list_inserter<CRefCallPushBack<This> >
       operator+=(const FACTOR_OR_CONTAINER& factorOrContainer) {
-        return boost::assign::make_list_inserter(CRefCallPushBack<This>(*this));
+        return boost::assign::make_list_inserter(CRefCallPushBack<This>(*this))(factorOrContainer);
     }
 
     ///** Add a factor directly using a shared_ptr */

@@ -125,13 +125,11 @@ namespace gtsam {
 
     // If at least some variables are not constrained to be last, constrain the
     // ones that should be constrained.
-    if(constrainLast.size() < n) {
-      int group = 1;
-      BOOST_FOREACH(Key key, constrainLast) {
-        cmember[keyIndices.at(key)] = group;
-        if(forceOrder)
-          ++ group;
-      }
+    int group = (constrainLast.size() != n ? 1 : 0);
+    BOOST_FOREACH(Key key, constrainLast) {
+      cmember[keyIndices.at(key)] = group;
+      if(forceOrder)
+        ++ group;
     }
 
     return OrderingUnordered::COLAMDConstrained(variableIndex, cmember);

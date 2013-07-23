@@ -325,12 +325,30 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  namespace {
+    template<typename NODE>
+    boost::shared_ptr<NODE>
+      BayesTreeCloneForestVisitorPre(const boost::shared_ptr<NODE>& node, const boost::shared_ptr<NODE>& parentPointer)
+    {
+      // Clone the current node and add it to its cloned parent
+      boost::shared_ptr<NODE> clone = boost::make_shared<NODE>(*node);
+      clone->children.clear();
+      clone->parent_ = parentPointer;
+      parentPointer->children.push_back(clone);
+      return clone;
+    }
+  }
+
+  /* ************************************************************************* */
   template<class CLIQUE>
   BayesTreeUnordered<CLIQUE>& BayesTreeUnordered<CLIQUE>::operator=(const This& other) {
     this->clear();
-    std::vector<sharedClique> clonedRoots = treeTraversal::CloneForest(other);
-    BOOST_FOREACH(const sharedClique& root, clonedRoots)
+    boost::shared_ptr<Clique> rootContainer = boost::make_shared<Clique>();
+    treeTraversal::DepthFirstForest(other, rootContainer, BayesTreeCloneForestVisitorPre<Clique>);
+    BOOST_FOREACH(const sharedClique& root, rootContainer->children) {
+      root->parent_ = Clique::weak_ptr(); // Reset the parent since it's set to the dummy clique
       insertRoot(root);
+    }
     return *this;
   }
 
