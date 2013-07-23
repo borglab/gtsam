@@ -52,5 +52,14 @@ namespace gtsam {
     }
 
     static GTSAM_EXPORT OrderingUnordered COLAMD(const VariableIndexUnordered& variableIndex);
+
+    static GTSAM_EXPORT OrderingUnordered COLAMDConstrainedLast(
+      const VariableIndexUnordered& variableIndex, const std::vector<Key>& constrainLast, bool forceOrder = false);
+
+  private:
+    static GTSAM_EXPORT OrderingUnordered COLAMDConstrained(
+      const VariableIndexUnordered& variableIndex,
+      std::vector<int>& cmember);
   };
 }
+

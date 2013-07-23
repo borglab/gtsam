@@ -39,7 +39,15 @@ namespace gtsam {
   /* ************************************************************************* */
   OrderingUnordered OrderingUnordered::COLAMD(const VariableIndexUnordered& variableIndex)
   {
-    gttic(OrderingUnordered_COLAMD);
+    // Call constrained version with all groups set to zero
+    return OrderingUnordered::COLAMDConstrained(variableIndex, vector<int>(variableIndex.size(), 0));
+  }
+
+  /* ************************************************************************* */
+  OrderingUnordered OrderingUnordered::COLAMDConstrained(
+    const VariableIndexUnordered& variableIndex, std::vector<int>& cmember)
+  {
+    gttic(OrderingUnordered_COLAMDConstrained);
 
     gttic(Prepare);
     size_t nEntries = variableIndex.nEntries(), nFactors = variableIndex.nFactors(), nVars = variableIndex.size();
@@ -47,14 +55,13 @@ namespace gtsam {
     size_t Alen = ccolamd_recommended((int)nEntries, (int)nFactors, (int)nVars); /* colamd arg 3: size of the array A */
     vector<int> A = vector<int>(Alen); /* colamd arg 4: row indices of A, of size Alen */
     vector<int> p = vector<int>(nVars + 1); /* colamd arg 5: column pointers of A, of size n_col+1 */
-    vector<int> cmember(nVars, 0); // For now, no constraints
 
     // Fill in input data for COLAMD
     p[0] = 0;
     int count = 0;
     vector<Key> keys(nVars); // Array to store the keys in the order we add them so we can retrieve them in permuted order
     size_t index = 0;
-    BOOST_FOREACH(const VariableIndexUnordered::const_iterator::value_type key_factors, variableIndex) {
+    BOOST_FOREACH(const VariableIndexUnordered::value_type key_factors, variableIndex) {
       // Arrange factor indices into COLAMD format
       const VariableIndexUnordered::Factors& column = key_factors.second;
       size_t lastFactorId = numeric_limits<size_t>::max();
@@ -99,6 +106,35 @@ namespace gtsam {
     gttoc(Fill_Ordering);
 
     return result;
+  }
+
+  /* ************************************************************************* */
+  OrderingUnordered OrderingUnordered::COLAMDConstrainedLast(
+    const VariableIndexUnordered& variableIndex, const std::vector<Key>& constrainLast, bool forceOrder)
+  {
+    gttic(OrderingUnordered_COLAMDConstrainedLast);
+
+    size_t n = variableIndex.size();
+    std::vector<int> cmember(n, 0);
+
+    // Build a mapping to look up sorted Key indices by Key
+    FastMap<Key, size_t> keyIndices;
+    size_t j = 0;
+    BOOST_FOREACH(const VariableIndexUnordered::value_type key_factors, variableIndex)
+      keyIndices.insert(keyIndices.end(), make_pair(key_factors.first, j++));
+
+    // If at least some variables are not constrained to be last, constrain the
+    // ones that should be constrained.
+    if(constrainLast.size() < n) {
+      int group = 1;
+      BOOST_FOREACH(Key key, constrainLast) {
+        cmember[keyIndices.at(key)] = group;
+        if(forceOrder)
+          ++ group;
+      }
+    }
+
+    return OrderingUnordered::COLAMDConstrained(variableIndex, cmember);
   }
 
 }
