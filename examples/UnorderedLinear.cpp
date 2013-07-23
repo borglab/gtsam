@@ -4,6 +4,7 @@
 #include <gtsam/linear/GaussianFactorGraphUnordered.h>
 #include <gtsam/linear/VectorValuesUnordered.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
+#include <gtsam/linear/GaussianBayesTreeUnordered.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/Symbol.h>
@@ -11,9 +12,27 @@
 #include <string>
 
 #include <boost/timer/timer.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/serialization/export.hpp>
 
 using namespace gtsam;
 using namespace std;
+
+BOOST_CLASS_EXPORT(Value);
+BOOST_CLASS_EXPORT(Pose2);
+BOOST_CLASS_EXPORT(NonlinearFactor);
+BOOST_CLASS_EXPORT(NoiseModelFactor);
+BOOST_CLASS_EXPORT(NoiseModelFactor1<Pose2>);
+typedef NoiseModelFactor2<Pose2,Pose2> NMF2;
+BOOST_CLASS_EXPORT(NMF2);
+BOOST_CLASS_EXPORT(BetweenFactor<Pose2>);
+BOOST_CLASS_EXPORT(PriorFactor<Pose2>);
+BOOST_CLASS_EXPORT(noiseModel::Base);
+BOOST_CLASS_EXPORT(noiseModel::Isotropic);
+BOOST_CLASS_EXPORT(noiseModel::Gaussian);
+BOOST_CLASS_EXPORT(noiseModel::Diagonal);
+BOOST_CLASS_EXPORT(noiseModel::Unit);
 
 double chi2_red(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& config) {
   // Compute degrees of freedom (observations - variables)
@@ -22,9 +41,9 @@ double chi2_red(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& c
   //  double dof = graph.size() - config.size();
   int graph_dim = 0;
   BOOST_FOREACH(const boost::shared_ptr<gtsam::NonlinearFactor>& nlf, graph) {
-    graph_dim += nlf->dim();
+    graph_dim += (int)nlf->dim();
   }
-  double dof = graph_dim - config.dim(); // kaess: changed to dim
+  double dof = double(graph_dim - config.dim()); // kaess: changed to dim
   return 2. * graph.error(config) / dof; // kaess: added factor 2, graph.error returns half of actual error
 }
 
@@ -34,7 +53,7 @@ ISAM2 solveWithOldISAM2(const NonlinearFactorGraph& measurements)
   ISAM2 isam2;
 
   size_t nextMeasurement = 0;
-  for(size_t step=1; nextMeasurement < measurements.size(); ++step) {
+  for(size_t step=1; nextMeasurement < measurements.size() && nextMeasurement < 2000; ++step) {
 
     Values newVariables;
     NonlinearFactorGraph newFactors;
@@ -161,23 +180,59 @@ int main(int argc, char *argv[])
   // Solve with old ISAM2 to get initial estimate
   cout << "Solving with old ISAM2 to obtain initial estimate" << endl;
   gttic_(Old_ISAM2);
-  ISAM2 isam = solveWithOldISAM2(measurements);
-  Values isamsoln = isam.calculateEstimate();
+
+  //try {
+  //  ISAM2 isam = solveWithOldISAM2(measurements);
+  //  {
+  //    std::ofstream writerStream("incremental_init2000", ios::binary);
+  //    boost::archive::binary_oarchive writer(writerStream);
+  //    writer << isam.calculateEstimate();
+  //    writerStream.close();
+  //  }
+  //  {
+  //    std::ofstream writerStream("incremental_graph2000", ios::binary);
+  //    boost::archive::binary_oarchive writer(writerStream);
+  //    writer << isam.getFactorsUnsafe();
+  //    writerStream.close();
+  //  }
+  //} catch(std::exception& e) {
+  //  cout << e.what() << endl;
+  //}
+
+  Values isamsoln;
+  NonlinearFactorGraph nlfg;
+
+  {
+    std::ifstream readerStream("incremental_init", ios::binary);
+    boost::archive::binary_iarchive reader(readerStream);
+    reader >> isamsoln;
+  }
+  {
+    std::ifstream readerStream("incremental_graph", ios::binary);
+    boost::archive::binary_iarchive reader(readerStream);
+    reader >> nlfg;
+  }
+
   gttoc_(Old_ISAM2);
 
   // Get linear graph
   cout << "Converting to unordered linear graph" << endl;
-  Ordering ordering = *isam.getFactorsUnsafe().orderingCOLAMD(isamsoln);
-  GaussianFactorGraph gfg = *isam.getFactorsUnsafe().linearize(isamsoln, ordering);
+  Ordering ordering = *nlfg.orderingCOLAMD(isamsoln);
+  GaussianFactorGraph gfg = *nlfg.linearize(isamsoln, ordering);
   GaussianFactorGraphUnordered gfgu = convertToUnordered(gfg, ordering);
+
+  OrderingUnordered orderingUnordered;
+  for(Index j = 0; j < ordering.size(); ++j)
+    orderingUnordered.push_back(ordering.key(j));
 
   // Solve linear graph
   cout << "Optimizing unordered graph" << endl;
   {
     boost::timer::cpu_timer timer;
     gttic_(Solve_unordered);
-    for(size_t i = 0; i < 20; ++i)
-      VectorValuesUnordered unorderedSoln = gfgu.optimize();
+    for(size_t i = 0; i < 10; ++i) {
+      VectorValuesUnordered unorderedSoln = gfgu.eliminateMultifrontal(orderingUnordered)->optimize();
+    }
     gttoc_(Solve_unordered);
     timer.stop();
     boost::timer::cpu_times times = timer.elapsed();
@@ -190,7 +245,7 @@ int main(int argc, char *argv[])
   {
     boost::timer::cpu_timer timer;
     gttic_(Solve_ordered);
-    for(size_t i = 0; i < 20; ++i)
+    for(size_t i = 0; i < 10; ++i)
       VectorValues orderedSoln = *GaussianMultifrontalSolver(gfg, true).optimize();
     gttoc_(Solve_ordered);
     timer.stop();
