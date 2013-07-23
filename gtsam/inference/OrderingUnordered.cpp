@@ -102,7 +102,9 @@ namespace gtsam {
     gttic(Fill_Ordering);
     // Convert elimination ordering in p to an ordering
     OrderingUnordered result;
-    result.assign(p.begin(), p.end() - 1);
+    result.resize(nVars);
+    for(size_t j = 0; j < nVars; ++j)
+      result[j] = keys[p[j]];
     gttoc(Fill_Ordering);
 
     return result;

@@ -230,7 +230,7 @@ void getAllCliques(const SymbolicBayesTreeUnordered::sharedClique& subtree, Symb
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE( BayesTree, shortcutCheck )
+TEST( BayesTree, shortcutCheck )
 {
   const Key _A_=6, _B_=5, _C_=4, _D_=3, _E_=2, _F_=1, _G_=0;
   SymbolicFactorGraphUnordered chain = list_of
@@ -244,7 +244,7 @@ TEST_UNSAFE( BayesTree, shortcutCheck )
   SymbolicBayesTreeUnordered bayesTree = *chain.eliminateMultifrontal(
     OrderingUnordered(list_of(_G_)(_F_)(_E_)(_D_)(_C_)(_B_)(_A_)));
 
-  //bayesTree.print("BayesTree");
+  bayesTree.print("BayesTree");
   //bayesTree.saveGraph("BT1.dot");
 
   SymbolicBayesTreeUnordered::sharedClique rootClique = bayesTree.roots().front();
