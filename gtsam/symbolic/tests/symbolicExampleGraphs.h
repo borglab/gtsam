@@ -21,6 +21,10 @@
 #pragma once
 
 #include <gtsam/symbolic/SymbolicFactorGraphUnordered.h>
+#include <gtsam/symbolic/SymbolicFactorUnordered.h>
+#include <gtsam/symbolic/SymbolicConditionalUnordered.h>
+#include <gtsam/symbolic/SymbolicBayesTreeUnordered.h>
+#include <gtsam/inference/OrderingUnordered.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <boost/assign/list_of.hpp>
 

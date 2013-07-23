@@ -31,11 +31,11 @@ namespace gtsam {
   /* ************************************************************************* */
   /// A clique in a SymbolicBayesTree
   class GTSAM_EXPORT SymbolicBayesTreeCliqueUnordered :
-    public BayesTreeCliqueBaseUnordered<SymbolicBayesTreeCliqueUnordered, SymbolicFactorGraphUnordered, SymbolicBayesNetUnordered>
+    public BayesTreeCliqueBaseUnordered<SymbolicBayesTreeCliqueUnordered, SymbolicFactorGraphUnordered>
   {
   public:
     typedef SymbolicBayesTreeCliqueUnordered This;
-    typedef BayesTreeCliqueBaseUnordered<SymbolicBayesTreeCliqueUnordered, SymbolicFactorGraphUnordered, SymbolicBayesNetUnordered> Base;
+    typedef BayesTreeCliqueBaseUnordered<SymbolicBayesTreeCliqueUnordered, SymbolicFactorGraphUnordered> Base;
     typedef boost::shared_ptr<This> shared_ptr;
     typedef boost::weak_ptr<This> weak_ptr;
     SymbolicBayesTreeCliqueUnordered() {}

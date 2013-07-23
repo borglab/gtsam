@@ -22,4 +22,16 @@ namespace gtsam {
 
   using namespace std;
 
+  /* ************************************************************************* */
+  void SymbolicConditionalUnordered::print(const std::string& str, const KeyFormatter& keyFormatter) const
+  {
+    BaseConditional::print(str, keyFormatter);
+  }
+
+  /* ************************************************************************* */
+  bool SymbolicConditionalUnordered::equals(const This& c, double tol) const
+  {
+    return BaseFactor::equals(c) && BaseConditional::equals(c);
+  }
+
 }

@@ -75,17 +75,13 @@ namespace gtsam {
     /** Default constructor */
     GaussianFactorGraphUnordered() {}
 
-    /** Constructor that receives a BayesTree */
-    GaussianFactorGraphUnordered(const GaussianBayesTreeUnordered& gbt) {
-      push_back_bayesTree(gbt); }
-
     /** Construct from iterator over factors */
     template<typename ITERATOR>
     GaussianFactorGraphUnordered(ITERATOR firstFactor, ITERATOR lastFactor) : Base(firstFactor, lastFactor) {}
 
     /** Construct from container of factors (shared_ptr or plain objects) */
     template<class CONTAINER>
-    GaussianFactorGraphUnordered(const CONTAINER& factors) : Base(factors) {}
+    explicit GaussianFactorGraphUnordered(const CONTAINER& factors) : Base(factors) {}
 
     /** Implicit copy/downcast constructor to override explicit template container constructor */
     template<class DERIVEDFACTOR>
@@ -130,9 +126,6 @@ namespace gtsam {
     template<class TERMS>
     void add(const TERMS& terms, const Vector &b, const SharedDiagonal& model) {
       add(JacobianFactorUnordered(terms,b,model)); }
-
-    /** push back a BayesTree as a collection of factors. */
-    void push_back_bayesTree(const GaussianBayesTreeUnordered& bayesTree);
 
     /**
      * Return the set of variables involved in the factors (computes a set

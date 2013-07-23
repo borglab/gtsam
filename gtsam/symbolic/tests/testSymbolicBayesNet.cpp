@@ -21,6 +21,7 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/symbolic/SymbolicBayesNetUnordered.h>
+#include <gtsam/symbolic/SymbolicConditionalUnordered.h>
 
 using namespace std;
 using namespace gtsam;
@@ -80,13 +81,13 @@ TEST( SymbolicBayesNet, combine )
 /* ************************************************************************* */
 TEST(SymbolicBayesNet, saveGraph) {
   SymbolicBayesNetUnordered bn;
-  bn.add(SymbolicConditionalUnordered(_A_, _B_));
+  bn += SymbolicConditionalUnordered(_A_, _B_);
   std::vector<Index> keys;
   keys.push_back(_B_);
   keys.push_back(_C_);
   keys.push_back(_D_);
-  bn.add(SymbolicConditionalUnordered::FromKeys(keys,2));
-  bn.add(SymbolicConditionalUnordered(_D_));
+  bn += SymbolicConditionalUnordered::FromKeys(keys,2);
+  bn += SymbolicConditionalUnordered(_D_);
 
   bn.saveGraph("SymbolicBayesNet.dot");
 }

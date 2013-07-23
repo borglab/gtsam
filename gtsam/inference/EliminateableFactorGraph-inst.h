@@ -113,5 +113,57 @@ namespace gtsam {
     }
   }
 
+  /* ************************************************************************* */
+  template<class FACTORGRAPH>
+  boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesNetType>
+    EliminateableFactorGraph<FACTORGRAPH>::marginalMultifrontalBayesNet(
+    boost::variant<const OrderingUnordered&, const std::vector<Key>&> variables,
+    OptionalOrdering marginalizedVariableOrdering,
+    const Eliminate& function = EliminationTraits::DefaultEliminate,
+    OptionalVariableIndex variableIndex = boost::none) const
+  {
+    if(variableIndex)
+    {
+      if(marginalizedVariableOrdering)
+      {
+        // An ordering was provided for the marginalized variables, so we can first eliminate them
+        // in the order requested.
+        std::pair<boost::shared_ptr<BayesTreeType>, boost::shared_ptr<FactorGraphType> > eliminated =
+          eliminatePartialMultifrontal(*marginalizedVariableOrdering, function, *variableIndex);
+
+        if(const OrderingUnordered* varsAsOrdering = boost::get<const OrderingUnordered&>(&variables))
+        {
+          // An ordering was also provided for the unmarginalized variables, so we can also
+          // eliminate them in the order requested.
+          return eliminateSequential(*varsAsOrdering, function, *variableIndex);
+        }
+        else
+        {
+          // No ordering was provided for the unmarginalized variables, so order them with COLAMD.
+          return eliminateSequential(boost::none, function, *variableIndex);
+        }
+      }
+      else
+      {
+        // No ordering was provided for the marginalized variables, so order them using constrained
+        // COLAMD.
+        bool unmarginalizedAreOrdered = (boost::get<const OrderingUnordered&>(&variables) != 0);
+        OrderingUnordered totalOrdering =
+          OrderingUnordered::COLAMDConstrainedLast(*variableIndex,
+          boost::get<const std::vector<Key>&>(variables), unmarginalizedAreOrdered);
+
+        // Split up ordering
+        const size_t nVars = boost::get<const std::vector<Key>&>(variables).size(); // Works because OrderingUnordered derives from std::vector<Key>
+        OrderingUnordered marginalizationOrdering(totalOrdering.begin(), totalOrdering.end() - nVars);
+        OrderingUnordered marginalVarsOrdering(totalOrdering.end() - nVars, totalOrdering.end());
+
+        // Call this function again with the computed orderings
+        return marginalMultifrontalBayesNet(marginalVarsOrdering, marginalizationOrdering, function, *variableIndex);
+      }
+    } else {
+      // If no variable index is provided, compute one and call this function again
+      return marginalMultifrontalBayesNet(variables, marginalizedVariableOrdering, function, VariableIndexUnordered(asDerived()));
+    }
+  }
 
 }

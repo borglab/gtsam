@@ -64,17 +64,17 @@ namespace gtsam {
 
     /** Named constructor from an arbitrary number of keys and frontals */
     template<typename ITERATOR>
-    static SymbolicConditionalUnordered FromIterator(ITERATOR firstKey, ITERATOR lastKey, size_t nrFrontals)
+    static SymbolicConditionalUnordered FromIterators(ITERATOR firstKey, ITERATOR lastKey, size_t nrFrontals)
     {
       SymbolicConditionalUnordered result;
-      (BaseFactor&)result = BaseFactor::FromIterator(firstKey, lastKey);
+      (BaseFactor&)result = BaseFactor::FromIterators(firstKey, lastKey);
       result.nrFrontals_ = nrFrontals;
       return result; }
 
     /** Named constructor from an arbitrary number of keys and frontals */
     template<class CONTAINER>
     static SymbolicConditionalUnordered FromKeys(const CONTAINER& keys, size_t nrFrontals) {
-      return FromIterator(keys.begin(), keys.end(), nrFrontals); }
+      return FromIterators(keys.begin(), keys.end(), nrFrontals); }
 
     virtual ~SymbolicConditionalUnordered() {}
 
@@ -83,11 +83,10 @@ namespace gtsam {
     /// @name Testable
 
     /** Print with optional formatter */
-    void print(const std::string& str = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-      BaseConditional::print(str, keyFormatter); }
+    void print(const std::string& str = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
     /** Check equality */
-    bool equals(const This& c, double tol = 1e-9) const { return BaseConditional::equals(c); }
+    bool equals(const This& c, double tol = 1e-9) const;
 
     /// @}
 

@@ -56,7 +56,7 @@ namespace gtsam {
       boost::make_shared<SymbolicConditionalUnordered>(
       SymbolicConditionalUnordered::FromKeys(orderedKeys, nFrontals)),
       boost::make_shared<SymbolicFactorUnordered>(
-      SymbolicFactorUnordered::FromIterator(orderedKeys.begin() + nFrontals, orderedKeys.end())));
+      SymbolicFactorUnordered::FromIterators(orderedKeys.begin() + nFrontals, orderedKeys.end())));
   }
 
   /* ************************************************************************* */
@@ -70,7 +70,7 @@ namespace gtsam {
     SymbolicFactorUnordered::eliminate(const OrderingUnordered& keys) const
   {
     SymbolicFactorGraphUnordered graph;
-    graph.add(*this);
+    graph += *this; // TODO: Is there a way to avoid copying this factor?
     return EliminateSymbolicUnordered(graph, keys);
   }
 

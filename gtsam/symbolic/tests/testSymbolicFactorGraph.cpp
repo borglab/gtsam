@@ -49,13 +49,13 @@ TEST(SymbolicFactorGraph, eliminatePartialSequential)
   const OrderingUnordered order = list_of(0)(1);
 
   const SymbolicBayesNetUnordered expectedBayesNet = list_of
-    (boost::make_shared<SymbolicConditionalUnordered>(0,1,2))
-    (boost::make_shared<SymbolicConditionalUnordered>(1,2,3,4));
+    (SymbolicConditionalUnordered(0,1,2))
+    (SymbolicConditionalUnordered(1,2,3,4));
 
   const SymbolicFactorGraphUnordered expectedSfg = list_of
-    (boost::make_shared<SymbolicFactorUnordered>(2,3))
-    (boost::make_shared<SymbolicFactorUnordered>(4,5))
-    (boost::make_shared<SymbolicFactorUnordered>(2,3,4));
+    (SymbolicFactorUnordered(2,3))
+    (SymbolicFactorUnordered(4,5))
+    (SymbolicFactorUnordered(2,3,4));
 
   SymbolicBayesNetUnordered::shared_ptr actualBayesNet;
   SymbolicFactorGraphUnordered::shared_ptr actualSfg;
@@ -88,11 +88,11 @@ TEST(SymbolicFactorGraph, eliminatePartialMultifrontal)
   expectedBayesTree.insertRoot(boost::make_shared<SymbolicBayesTreeCliqueUnordered>(root));
 
   SymbolicFactorGraphUnordered expectedFactorGraph = list_of
-    (boost::make_shared<SymbolicFactorUnordered>(0,1))
-    (boost::make_shared<SymbolicFactorUnordered>(0,2))
-    (boost::make_shared<SymbolicFactorUnordered>(1,3))
-    (boost::make_shared<SymbolicFactorUnordered>(2,3))
-    (boost::make_shared<SymbolicFactorUnordered>(1));
+    (SymbolicFactorUnordered(0,1))
+    (SymbolicFactorUnordered(0,2))
+    (SymbolicFactorUnordered(1,3))
+    (SymbolicFactorUnordered(2,3))
+    (SymbolicFactorUnordered(1));
 
   SymbolicBayesTreeUnordered::shared_ptr actualBayesTree;
   SymbolicFactorGraphUnordered::shared_ptr actualFactorGraph;
@@ -101,6 +101,20 @@ TEST(SymbolicFactorGraph, eliminatePartialMultifrontal)
 
   EXPECT(assert_equal(expectedFactorGraph, *actualFactorGraph));
   EXPECT(assert_equal(expectedBayesTree, *actualBayesTree));
+}
+
+/* ************************************************************************* */
+TEST(SymbolicFactorGraph, marginalMultifrontalBayesNet)
+{
+  SymbolicBayesNetUnordered expectedBayesNet = list_of
+    (SymbolicConditionalUnordered(0, 1, 2))
+    (SymbolicConditionalUnordered(1, 2, 3))
+    (SymbolicConditionalUnordered(2, 3))
+    (SymbolicConditionalUnordered(3));
+
+  SymbolicBayesNetUnordered actual1 = *simpleTestGraph2.marginalMultifrontalBayesNet(
+    OrderingUnordered(list_of(0)(1)(2)(3)));
+  EXPECT(assert_equal(expectedBayesNet, actual1));
 }
 
 /* ************************************************************************* */
@@ -219,9 +233,9 @@ TEST( SymbolicFactorGraph, constructFromBayesNet )
 
   // create Bayes Net
   SymbolicBayesNetUnordered bayesNet;
-  bayesNet.add(SymbolicConditionalUnordered(0, 1, 2));
-  bayesNet.add(SymbolicConditionalUnordered(1, 2));
-  bayesNet.add(SymbolicConditionalUnordered(1));
+  bayesNet += SymbolicConditionalUnordered(0, 1, 2);
+  bayesNet += SymbolicConditionalUnordered(1, 2);
+  bayesNet += SymbolicConditionalUnordered(1);
 
   // create actual factor graph from a Bayes Net
   SymbolicFactorGraphUnordered actual(bayesNet);

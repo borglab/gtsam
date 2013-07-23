@@ -20,10 +20,10 @@
 #include <gtsam/base/types.h>
 
 namespace gtsam {
-  template<class CLIQUE> class BayesTreeUnordered;
-}
 
-namespace gtsam {
+  // Forward declarations
+  template<class CLIQUE> class BayesTreeUnordered;
+  template<class GRAPH> struct EliminationTraits;
 
   /**
    * This is the base class for BayesTree cliques.  The default and standard derived type is
@@ -38,12 +38,13 @@ namespace gtsam {
    * @tparam DERIVED The derived clique type.
    * @tparam CONDITIONAL The conditional type.
    * \nosubgrouping */
-  template<class DERIVED, class FACTORGRAPH, class BAYESNET>
+  template<class DERIVED, class FACTORGRAPH>
   class BayesTreeCliqueBaseUnordered
   {
   private:
-    typedef BayesTreeCliqueBaseUnordered<DERIVED, FACTORGRAPH, BAYESNET> This;
+    typedef BayesTreeCliqueBaseUnordered<DERIVED, FACTORGRAPH> This;
     typedef DERIVED DerivedType;
+    typedef EliminationTraits<FACTORGRAPH> EliminationTraits;
     typedef boost::shared_ptr<This> shared_ptr;
     typedef boost::weak_ptr<This> weak_ptr;
     typedef boost::shared_ptr<DerivedType> derived_ptr;
@@ -51,7 +52,7 @@ namespace gtsam {
 
   public:
     typedef FACTORGRAPH FactorGraphType;
-    typedef BAYESNET BayesNetType;
+    typedef typename EliminationTraits::BayesNetType BayesNetType;
     typedef typename BayesNetType::ConditionalType ConditionalType;
     typedef boost::shared_ptr<ConditionalType> sharedConditional;
     typedef typename FactorGraphType::FactorType FactorType;
@@ -110,14 +111,14 @@ namespace gtsam {
     /// @name Advanced Interface
     /// @{
 
-    ///** return the conditional P(S|Root) on the separator given the root */
-    //BayesNetType shortcut(derived_ptr root, Eliminate function) const;
+    /** return the conditional P(S|Root) on the separator given the root */
+    BayesNetType shortcut(const derived_ptr& root, Eliminate function = EliminationTraits::DefaultEliminate) const;
 
-    ///** return the marginal P(S) on the separator */
-    //FactorGraphType separatorMarginal(derived_ptr root, Eliminate function) const;
+    /** return the marginal P(S) on the separator */
+    FactorGraphType separatorMarginal(Eliminate function = EliminationTraits::DefaultEliminate) const;
 
-    ///** return the marginal P(C) of the clique, using marginal caching */
-    //FactorGraphType marginal2(derived_ptr root, Eliminate function) const;
+    /** return the marginal P(C) of the clique, using marginal caching */
+    FactorGraphType marginal2(Eliminate function = EliminationTraits::DefaultEliminate) const;
 
     /**
      * This deletes the cached shortcuts of all cliques (subtree) below this clique.
@@ -132,18 +133,13 @@ namespace gtsam {
 
   protected:
 
-    ///// Calculate set \f$ S \setminus B \f$ for shortcut calculations
-    //std::vector<Key> separator_setminus_B(derived_ptr B) const;
+    /// Calculate set \f$ S \setminus B \f$ for shortcut calculations
+    std::vector<Key> separator_setminus_B(const derived_ptr& B) const;
 
-    ///// Calculate set \f$ S_p \cap B \f$ for shortcut calculations
-    //std::vector<Key> parent_separator_intersection_B(derived_ptr B) const;
-
-    ///**
-    // * Determine variable indices to keep in recursive separator shortcut calculation
-    // * The factor graph p_Cp_B has keys from the parent clique Cp and from B.
-    // * But we only keep the variables not in S union B.
-    // */
-    //std::vector<Key> shortcut_indices(derived_ptr B, const FactorGraphType& p_Cp_B) const;
+    /** Determine variable indices to keep in recursive separator shortcut calculation The factor
+     *  graph p_Cp_B has keys from the parent clique Cp and from B. But we only keep the variables
+     *  not in S union B. */
+    std::vector<Key> shortcut_indices(const derived_ptr& B, const FactorGraphType& p_Cp_B) const;
 
     /** Non-recursive delete cached shortcuts and marginals - internal only. */
     void deleteCachedShortcutsNonRecursive() { cachedSeparatorMarginal_ = boost::none; }

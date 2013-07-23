@@ -69,17 +69,13 @@ namespace gtsam {
     /** Construct empty factor graph */
     SymbolicFactorGraphUnordered() {}
 
-    /** Constructor from a BayesTree */
-    SymbolicFactorGraphUnordered(const SymbolicBayesTreeUnordered& bayesTree) {
-      push_back_bayesTree(bayesTree); }
-
     /** Construct from iterator over factors */
     template<typename ITERATOR>
     SymbolicFactorGraphUnordered(ITERATOR firstFactor, ITERATOR lastFactor) : Base(firstFactor, lastFactor) {}
 
     /** Construct from container of factors (shared_ptr or plain objects) */
     template<class CONTAINER>
-    SymbolicFactorGraphUnordered(const CONTAINER& factors) : Base(factors) {}
+    explicit SymbolicFactorGraphUnordered(const CONTAINER& factors) : Base(factors) {}
 
     /** Implicit copy/downcast constructor to override explicit template container constructor */
     template<class DERIVEDFACTOR>
@@ -108,9 +104,6 @@ namespace gtsam {
 
     /** Push back 4-way factor */
     void push_factor(Key key1, Key key2, Key key3, Key key4);
-
-    /** push back a BayesTree as a collection of factors. */
-    void push_back_bayesTree(const SymbolicBayesTreeUnordered& bayesTree);
 
     /// @}
   };

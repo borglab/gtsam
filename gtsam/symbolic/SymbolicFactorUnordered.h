@@ -94,7 +94,7 @@ namespace gtsam {
   public:
     /** Constructor from a collection of keys */
     template<typename KEYITERATOR>
-    static SymbolicFactorUnordered FromIterator(KEYITERATOR beginKey, KEYITERATOR endKey) {
+    static SymbolicFactorUnordered FromIterators(KEYITERATOR beginKey, KEYITERATOR endKey) {
       return SymbolicFactorUnordered(Base::FromIterators(beginKey, endKey)); }
 
     /** Constructor from a collection of keys - compatible with boost::assign::list_of and

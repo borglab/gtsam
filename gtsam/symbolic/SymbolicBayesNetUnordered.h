@@ -18,13 +18,11 @@
 
 #pragma once
 
+#include <gtsam/symbolic/SymbolicConditionalUnordered.h>
 #include <gtsam/inference/FactorGraphUnordered.h>
 #include <gtsam/base/types.h>
 
 namespace gtsam {
-
-  // Forward declarations
-  class SymbolicConditionalUnordered;
 
   /** Symbolic Bayes Net
    *  \nosubgrouping
@@ -69,6 +67,8 @@ namespace gtsam {
     
     /// @name Standard Interface
     /// @{
+    
+    void saveGraph(const std::string &s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
     
     /// @}
   };

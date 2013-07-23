@@ -19,6 +19,7 @@
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/symbolic/SymbolicFactorUnordered.h>
 #include <gtsam/symbolic/SymbolicConditionalUnordered.h>
+#include <gtsam/symbolic/SymbolicFactorGraphUnordered.h>
 
 #include <boost/assign/std/vector.hpp>
 #include <boost/assign/list_of.hpp>
@@ -52,10 +53,10 @@ TEST(SymbolicFactor, eliminate) {
 /* ************************************************************************* */
 TEST(SymbolicFactor, EliminateSymbolic)
 {
-  const vector<SymbolicFactorUnordered::shared_ptr> factors = list_of
-    (boost::make_shared<SymbolicFactorUnordered>(2,4,6))
-    (boost::make_shared<SymbolicFactorUnordered>(1,2,5))
-    (boost::make_shared<SymbolicFactorUnordered>(0,3));
+  const SymbolicFactorGraphUnordered factors = list_of
+    (SymbolicFactorUnordered(2,4,6))
+    (SymbolicFactorUnordered(1,2,5))
+    (SymbolicFactorUnordered(0,3));
 
   const SymbolicFactorUnordered expectedFactor(4,5,6);
   const SymbolicConditionalUnordered expectedConditional =

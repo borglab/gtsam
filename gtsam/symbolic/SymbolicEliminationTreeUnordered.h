@@ -32,22 +32,18 @@ namespace gtsam {
     typedef SymbolicEliminationTreeUnordered This; ///< This class
     typedef boost::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
     
-    /**
-    * Build the elimination tree of a factor graph using pre-computed column structure.
-    * @param factorGraph The factor graph for which to build the elimination tree
-    * @param structure The set of factors involving each variable.  If this is not
-    * precomputed, you can call the Create(const FactorGraph<DERIVEDFACTOR>&)
-    * named constructor instead.
-    * @return The elimination tree
-    */
+    /** Build the elimination tree of a factor graph using pre-computed column structure.
+     *  @param factorGraph The factor graph for which to build the elimination tree
+     *  @param structure The set of factors involving each variable.  If this is not precomputed,
+     *         you can call the Create(const FactorGraph<DERIVEDFACTOR>&) named constructor instead.
+     *  @return The elimination tree */
     SymbolicEliminationTreeUnordered(const SymbolicFactorGraphUnordered& factorGraph,
       const VariableIndexUnordered& structure, const OrderingUnordered& order);
 
     /** Build the elimination tree of a factor graph.  Note that this has to compute the column
-    * structure as a VariableIndex, so if you already have this precomputed, use the other
-    * constructor instead.
-    * @param factorGraph The factor graph for which to build the elimination tree
-    */
+     *  structure as a VariableIndex, so if you already have this precomputed, use the other
+     *  constructor instead.
+     *  @param factorGraph The factor graph for which to build the elimination tree */
     SymbolicEliminationTreeUnordered(const SymbolicFactorGraphUnordered& factorGraph,
       const OrderingUnordered& order);
 
@@ -63,6 +59,9 @@ namespace gtsam {
     bool equals(const This& other, double tol = 1e-9) const;
 
   private:
+
+    /** Private default constructor for testing */
+    SymbolicEliminationTreeUnordered() {}
 
     friend class ::EliminationTreeUnorderedTester;
 

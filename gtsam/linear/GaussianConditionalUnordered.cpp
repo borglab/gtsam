@@ -73,7 +73,8 @@ namespace gtsam {
   }    
 
   /* ************************************************************************* */
-  bool GaussianConditionalUnordered::equals(const GaussianConditionalUnordered &c, double tol) const {
+  bool GaussianConditionalUnordered::equals(const GaussianConditionalUnordered &c, double tol) const
+  {
     // check if the size of the parents_ map is the same
     if (parents().size() != c.parents().size())
       return false;

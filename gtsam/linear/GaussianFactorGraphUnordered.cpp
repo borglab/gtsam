@@ -41,12 +41,6 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  void GaussianFactorGraphUnordered::push_back_bayesTree(const GaussianBayesTreeUnordered& bayesTree)
-  {
-    Base::push_back_bayesTree(bayesTree);
-  }
-
-  /* ************************************************************************* */
   GaussianFactorGraphUnordered::Keys GaussianFactorGraphUnordered::keys() const {
     FastSet<Key> keys;
     BOOST_FOREACH(const sharedFactor& factor, *this)

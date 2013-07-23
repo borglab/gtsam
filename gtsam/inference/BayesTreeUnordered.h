@@ -28,6 +28,9 @@
 
 namespace gtsam {
 
+  // Forward declarations
+  template<class FACTOR> class FactorGraphUnordered;
+
   /**
    * Bayes tree
    * @tparam CONDITIONAL The type of the conditional densities, i.e. the type of node in the underlying Bayes chain,
@@ -59,6 +62,7 @@ namespace gtsam {
     typedef typename CLIQUE::FactorGraphType FactorGraphType;
     typedef boost::shared_ptr<FactorGraphType> sharedFactorGraph;
     typedef typename FactorGraphType::Eliminate Eliminate;
+    typedef typename CLIQUE::EliminationTraits EliminationTraits;
 
     /** A convenience class for a list of shared cliques */
     struct Cliques : public FastList<sharedClique> {
@@ -135,7 +139,7 @@ namespace gtsam {
     const Nodes& nodes() const { return nodes_; }
 
     /** Access node by variable */
-    const Node::shared_ptr operator[](Key j) const { return nodes_.at(j); }
+    const sharedNode operator[](Key j) const { return nodes_.at(j); }
 
     /** return root cliques */
     const std::vector<sharedClique>& roots() const { return roots_;  }
@@ -155,27 +159,24 @@ namespace gtsam {
     /** Collect number of cliques with cached separator marginals */
     size_t numCachedSeparatorMarginals() const;
 
-    ///** return marginal on any variable */
-    //sharedFactor marginalFactor(Key j, Eliminate function) const;
+    /** Return marginal on any variable.  Note that this actually returns a conditional, for which a
+     *  solution may be directly obtained by calling .solve() on the returned object.
+     *  Alternatively, it may be directly used as its factor base class.  For example, for Gaussian
+     *  systems, this returns a GaussianConditional, which inherits from JacobianFactor and
+     *  GaussianFactor. */
+    sharedConditional marginalFactor(Key j, const Eliminate& function = EliminationTraits::DefaultEliminate) const;
 
-    ///**
-    // * return marginal on any variable, as a Bayes Net
-    // * NOTE: this function calls marginal, and then eliminates it into a Bayes Net
-    // * This is more expensive than the above function
-    // */
-    //sharedBayesNet marginalBayesNet(Key j, Eliminate function) const;
+    /**
+     * return joint on two variables
+     * Limitation: can only calculate joint if cliques are disjoint or one of them is root
+     */
+    sharedFactorGraph joint(Index j1, Index j2, const Eliminate& function = EliminationTraits::DefaultEliminate) const;
 
-    ///**
-    // * return joint on two variables
-    // * Limitation: can only calculate joint if cliques are disjoint or one of them is root
-    // */
-    //sharedFactorGraph joint(Index j1, Index j2, Eliminate function) const;
-
-    ///**
-    // * return joint on two variables as a BayesNet
-    // * Limitation: can only calculate joint if cliques are disjoint or one of them is root
-    // */
-    //sharedBayesNet jointBayesNet(Index j1, Index j2, Eliminate function) const;
+    /**
+     * return joint on two variables as a BayesNet
+     * Limitation: can only calculate joint if cliques are disjoint or one of them is root
+     */
+    sharedBayesNet jointBayesNet(Index j1, Index j2, const Eliminate& function = EliminationTraits::DefaultEliminate) const;
 
     /**
      * Read only with side effects
@@ -225,6 +226,9 @@ namespace gtsam {
 
     /** add a clique (top down) */
     void addClique(const sharedClique& clique, const sharedClique& parent_clique = sharedClique());
+
+    /** Add all cliques in this BayesTree to the specified factor graph */
+    void addFactorsToGraph(FactorGraphUnordered<FactorType>& graph) const;
 
   protected:
 
