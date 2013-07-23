@@ -134,6 +134,9 @@ namespace gtsam {
     /** return nodes */
     const Nodes& nodes() const { return nodes_; }
 
+    /** Access node by variable */
+    const Node::shared_ptr operator[](Key j) const { return nodes_.at(j); }
+
     /** return root cliques */
     const std::vector<sharedClique>& roots() const { return roots_;  }
 
