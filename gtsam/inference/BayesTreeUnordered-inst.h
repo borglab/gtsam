@@ -212,7 +212,7 @@ namespace gtsam {
   {
     // Traverse the BayesTree and add all conditionals to this graph
     int data = 0; // Unused
-    treeTraversal::DepthFirstForest(*this, data, boost::bind(&_pushClique<FactorType,CLIQUE>, graph, _1));
+    treeTraversal::DepthFirstForest(*this, data, boost::bind(&_pushClique<FactorType,CLIQUE>, boost::ref(graph), _1));
   }
 
   /* ************************************************************************* */
@@ -474,6 +474,8 @@ namespace gtsam {
         ++p2;
       }
     }
+    if(!B)
+      throw std::invalid_argument("BayesTree::jointBayesNet does not yet work for joints across a forest");
     gttoc(Lowest_common_ancestor);
 
     // Compute marginal on lowest common ancestor clique

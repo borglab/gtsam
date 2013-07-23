@@ -62,7 +62,7 @@ namespace {
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE( SymbolicBayesTree, constructor )
+TEST( SymbolicBayesTree, constructor )
 {
   // Create using insert
   //SymbolicBayesTreeUnordered bayesTree = createAsiaSymbolicBayesTree();
@@ -244,7 +244,6 @@ TEST( BayesTree, shortcutCheck )
   SymbolicBayesTreeUnordered bayesTree = *chain.eliminateMultifrontal(
     OrderingUnordered(list_of(_G_)(_F_)(_E_)(_D_)(_C_)(_B_)(_A_)));
 
-  bayesTree.print("BayesTree");
   //bayesTree.saveGraph("BT1.dot");
 
   SymbolicBayesTreeUnordered::sharedClique rootClique = bayesTree.roots().front();
@@ -458,6 +457,8 @@ TEST( SymbolicBayesTreeUnordered, thinTree ) {
   bayesNet.push_back(boost::make_shared<SymbolicConditionalUnordered>(1, 8, 12));
   bayesNet.push_back(boost::make_shared<SymbolicConditionalUnordered>(0, 8, 12));
 
+  bayesNet.print("bayesNet: ");
+
   if (debug) {
     GTSAM_PRINT(bayesNet);
     bayesNet.saveGraph("/tmp/symbolicBayesNet.dot");
@@ -486,8 +487,7 @@ TEST( SymbolicBayesTreeUnordered, thinTree ) {
     // check shortcut P(S8||R) to root
     SymbolicBayesTreeUnordered::Clique::shared_ptr c = bayesTree[8];
     SymbolicBayesNetUnordered shortcut = c->shortcut(R);
-    SymbolicBayesNetUnordered expected;
-    expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(12, 14));
+    SymbolicBayesNetUnordered expected = list_of(SymbolicConditionalUnordered(12, 14));
     EXPECT(assert_equal(expected, shortcut));
   }
 
@@ -544,8 +544,8 @@ TEST( SymbolicBayesTreeUnordered, thinTree ) {
   if (true) {
     actualJoint = bayesTree.jointBayesNet(2, 6);
     SymbolicBayesNetUnordered expected;
-    expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(6));
     expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(2, 6));
+    expected.push_back(boost::make_shared<SymbolicConditionalUnordered>(6));
     EXPECT(assert_equal(expected, *actualJoint));
   }
 
@@ -562,20 +562,20 @@ TEST( SymbolicBayesTreeUnordered, thinTree ) {
 /* ************************************************************************* */
 TEST(SymbolicBayesTreeUnordered, forest_joint)
 {
-  //// Create forest
-  //SymbolicBayesTreeCliqueUnordered::shared_ptr root1 = MakeClique(list_of(1), 1);
-  //SymbolicBayesTreeCliqueUnordered::shared_ptr root2 = MakeClique(list_of(2), 1);
-  //SymbolicBayesTreeUnordered bayesTree;
-  //bayesTree.insertRoot(root1);
-  //bayesTree.insertRoot(root2);
+  // Create forest
+  SymbolicBayesTreeCliqueUnordered::shared_ptr root1 = MakeClique(list_of(1), 1);
+  SymbolicBayesTreeCliqueUnordered::shared_ptr root2 = MakeClique(list_of(2), 1);
+  SymbolicBayesTreeUnordered bayesTree;
+  bayesTree.insertRoot(root1);
+  bayesTree.insertRoot(root2);
 
-  //// Check joint
-  //SymbolicBayesNetUnordered expected = list_of
-  //  (SymbolicConditionalUnordered(1))
-  //  (SymbolicConditionalUnordered(2));
-  //SymbolicBayesNetUnordered actual = *bayesTree.jointBayesNet(1, 2);
+  // Check joint
+  SymbolicBayesNetUnordered expected = list_of
+    (SymbolicConditionalUnordered(1))
+    (SymbolicConditionalUnordered(2));
+  SymbolicBayesNetUnordered actual = *bayesTree.jointBayesNet(1, 2);
 
-  //EXPECT(assert_equal(expected, actual));
+  EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* *
@@ -588,7 +588,7 @@ TEST(SymbolicBayesTreeUnordered, forest_joint)
  C6           0 : 1
  **************************************************************************** */
 
-TEST_UNSAFE( SymbolicBayesTreeUnordered, linear_smoother_shortcuts ) {
+TEST( SymbolicBayesTreeUnordered, linear_smoother_shortcuts ) {
   // Create smoother with 7 nodes
   SymbolicFactorGraphUnordered smoother;
   smoother.push_factor(0);
@@ -651,25 +651,22 @@ TEST(SymbolicBayesTreeUnordered, complicatedMarginal)
   SymbolicBayesTreeCliqueUnordered::shared_ptr root = MakeClique(list_of(11)(12), 2);
   cur = root;
   
-  cur->children += MakeClique(list_of(9)(10)(11)(12), 2);
-  cur->children.front()->parent_ = cur;
-  cur = root->children.front();
+  root->children += MakeClique(list_of(9)(10)(11)(12), 2);
+  root->children.back()->parent_ = root;
 
-  cur->children += MakeClique(list_of(7)(8)(11), 2);
-  cur->children.front()->parent_ = cur;
-  cur = root->children.front();
+  root->children += MakeClique(list_of(7)(8)(11), 2);
+  root->children.back()->parent_ = root;
+  cur = root->children.back();
 
   cur->children += MakeClique(list_of(5)(6)(7)(8), 2);
-  cur->children.front()->parent_ = cur;
-  cur = root->children.front();
+  cur->children.back()->parent_ = cur;
+  cur = cur->children.back();
 
   cur->children += MakeClique(list_of(3)(4)(6), 2);
-  cur->children.front()->parent_ = cur;
-  cur = root->children.front();
+  cur->children.back()->parent_ = cur;
 
   cur->children += MakeClique(list_of(1)(2)(5), 2);
-  cur->children.front()->parent_ = cur;
-  cur = root->children.front();
+  cur->children.back()->parent_ = cur;
 
   // Create Bayes Tree
   SymbolicBayesTreeUnordered bt;
@@ -678,6 +675,8 @@ TEST(SymbolicBayesTreeUnordered, complicatedMarginal)
     GTSAM_PRINT(bt);
     bt.saveGraph("/tmp/SymbolicBayesTreeUnordered.dot");
   }
+
+  bt.print("bt: ");
 
   // Shortcut on 9
   {
@@ -698,8 +697,8 @@ TEST(SymbolicBayesTreeUnordered, complicatedMarginal)
     SymbolicBayesTreeUnordered::Clique::shared_ptr c = bt[5];
     SymbolicBayesNetUnordered shortcut = c->shortcut(root);
     SymbolicBayesNetUnordered expected = list_of
-      (SymbolicConditionalUnordered(8, 11))
-      (SymbolicConditionalUnordered(7, 8, 11));
+      (SymbolicConditionalUnordered(7, 8, 11))
+      (SymbolicConditionalUnordered(8, 11));
     EXPECT(assert_equal(expected, shortcut));
   }
 

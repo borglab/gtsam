@@ -135,12 +135,12 @@ namespace gtsam {
         {
           // An ordering was also provided for the unmarginalized variables, so we can also
           // eliminate them in the order requested.
-          return eliminateSequential(*varsAsOrdering, function, *variableIndex);
+          return eliminated.second->eliminateSequential(*varsAsOrdering, function);
         }
         else
         {
           // No ordering was provided for the unmarginalized variables, so order them with COLAMD.
-          return eliminateSequential(boost::none, function, *variableIndex);
+          return eliminated.second->eliminateSequential(boost::none, function);
         }
       }
       else
