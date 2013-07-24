@@ -33,7 +33,13 @@ namespace gtsam {
   /**
    * 
    * @addtogroup SLAM
+   *    * REFERENCES:
+   * [1] G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
+   * [2] T. Lupton and S.Sukkarieh, "Visual-Inertial-Aided Navigation for High-Dynamic Motion in Built
+   * Environments Without Initial Conditions", TRO, 28(1):61-76, 2012.
+   * [3] L. Carlone, S. Williams, R. Roberts, "Preintegrated IMU factor: Computation of the Jacobian Matrices", Tech. Report, 2013.
    */
+
   class ImuFactor: public NoiseModelFactor5<Pose3,LieVector,Pose3,LieVector,imuBias::ConstantBias> {
 
   public:
@@ -41,7 +47,7 @@ namespace gtsam {
     /** Struct to store results of preintegrating IMU measurements.  Can be build
      * incrementally so as to avoid costly integration at time of factor construction. */
 
-    /** Right Jacobian for SO(3) */
+    /** Right Jacobian for Exponential map in SO(3) - equation (10.86) and following equations in [1] */
     static Matrix3 rightJacobianExpMapSO3(const Vector3& x)    {
       // x is the axis-angle representation (exponential coordinates) for a rotation
       double normx = norm_2(x); // rotation angle
@@ -57,7 +63,7 @@ namespace gtsam {
       return Jr;
     }
 
-    /** Inverse of the Right Jacobian for SO(3) */
+    /** Right Jacobian for Log map in SO(3) - equation (10.86) and following equations in [1] */
     static Matrix3 rightJacobianExpMapSO3inverse(const Vector3& x)    {
       // x is the axis-angle representation (exponential coordinates) for a rotation
       double normx = norm_2(x); // rotation angle
@@ -74,13 +80,14 @@ namespace gtsam {
       return Jrinv;
     }
 
-
+    /** CombinedPreintegratedMeasurements accumulates (integrates) the IMU measurements (rotation rates and accelerations)
+         * and the corresponding covariance matrix. The measurements are then used to build the Preintegrated IMU factor*/
     class PreintegratedMeasurements {
     public:
       imuBias::ConstantBias biasHat; ///< Acceleration and angular rate bias values used during preintegration
       Matrix measurementCovariance; ///< (Raw measurements uncertainty) Covariance of the vector [integrationError measuredAcc measuredOmega] in R^(9X9)
 
-      Vector3 deltaPij; ///< Preintegrated relative position (does not take into account velocity at time i, see deltap+, in Lupton's paper) (in frame i)
+      Vector3 deltaPij; ///< Preintegrated relative position (does not take into account velocity at time i, see deltap+, , in [2]) (in frame i)
       Vector3 deltaVij; ///< Preintegrated relative velocity (in global frame)
       Rot3 deltaRij; ///< Preintegrated relative orientation (in frame i)
       double deltaTij; ///< Time interval from i to j
@@ -233,7 +240,8 @@ namespace gtsam {
         const Vector3 theta_j = Rot3::Logmap(Rot_j); // parametrization of so(3)
         const Matrix3 Jrinv_theta_j = rightJacobianExpMapSO3inverse(theta_j);
 
-        // Single Jacobians to propagate covariance
+        // Update preintegrated measurements covariance: as in [2] we consider a first order propagation that
+        // can be seen as a prediction phase in an EKF framework
         Matrix H_pos_pos    = I_3x3;
         Matrix H_pos_vel    = I_3x3 * deltaT;
         Matrix H_pos_angles = Z_3x3;
@@ -258,28 +266,29 @@ namespace gtsam {
 
         // FUTURE IMPROVEMENTS: include Jacobian G
         // overall Jacobian wrt raw measurements (df/du)
-//				Matrix G(9,9);
-//				G << I_3x3 * deltaT, Z_3x3,  Z_3x3,
-//					Z_3x3, deltaRij.matrix() * deltaT, Z_3x3,
-//					Z_3x3, Z_3x3, Jrinv_theta_j * Jr_theta_incr * deltaT;
+//              Matrix G(9,9);
+//              G << I_3x3 * deltaT, Z_3x3,  Z_3x3,
+//                  Z_3x3, deltaRij.matrix() * deltaT, Z_3x3,
+//                  Z_3x3, Z_3x3, Jrinv_theta_j * Jr_theta_incr * deltaT;
 //
-//				PreintMeasCov = F * PreintMeasCov * F.transpose() + G * measurementCovariance * G.transpose();
+//              PreintMeasCov = F * PreintMeasCov * F.transpose() + G * measurementCovariance * G.transpose();
 //
-//		        		Matrix G(9,9);
-//		        		G << I_3x3, Z_3x3,  Z_3x3,
-//		        			Z_3x3, deltaRij.matrix(), Z_3x3,
-//		        			Z_3x3, Z_3x3, Jrinv_theta_j * Jr_theta_incr;
+//                      Matrix G(9,9);
+//                      G << I_3x3, Z_3x3,  Z_3x3,
+//                          Z_3x3, deltaRij.matrix(), Z_3x3,
+//                          Z_3x3, Z_3x3, Jrinv_theta_j * Jr_theta_incr;
 //
-//		        		std::cout << "measurementCovariance MATRIX XXXXXXX = " << measurementCovariance  << std::endl;
-//		        		std::cout << "G MATRIX XXXXXXX = " << G << std::endl;
-//		        		std::cout << "G * measurementCovariance * G.transpose() MATRIX XXXXXXX = " << G * measurementCovariance * G.transpose() << std::endl;
+//                      std::cout << "measurementCovariance MATRIX XXXXXXX = " << measurementCovariance  << std::endl;
+//                      std::cout << "G MATRIX XXXXXXX = " << G << std::endl;
+//                      std::cout << "G * measurementCovariance * G.transpose() MATRIX XXXXXXX = " << G * measurementCovariance * G.transpose() << std::endl;
 //
-//		        		PreintMeasCov = F * PreintMeasCov * F.transpose() + G * measurementCovariance * G.transpose();
+//                      PreintMeasCov = F * PreintMeasCov * F.transpose() + G * measurementCovariance * G.transpose();
 
 
         // first order uncertainty propagation
+        // the deltaT allows to pass from continuous time noise to discrete time noise
         PreintMeasCov = F * PreintMeasCov * F.transpose() + measurementCovariance * deltaT ;
-//        PreintMeasCov = F * PreintMeasCov * F.transpose() + measurementCovariance;
+
         // Update preintegrated measurements
         /* ----------------------------------------------------------------------------------------------------------------------- */
         deltaPij += deltaVij * deltaT;
@@ -484,7 +493,6 @@ namespace gtsam {
 
       const Matrix3 Jtheta = -Jr_theta_bcc  * skewSymmetric(Rot_i.inverse().matrix() * omegaCoriolis_ * deltaTij);
 
-      // ASPN change Luca
       const Matrix3 Jrinv_fRhat = rightJacobianExpMapSO3inverse(Rot3::Logmap(fRhat));
 
       if(H1) {
@@ -501,7 +509,7 @@ namespace gtsam {
                     // dfV/dPi
                     Matrix3::Zero(),
                     // dfR/dRi
-                    Jrinv_fRhat *  (- Rot_j.between(Rot_i).matrix() - fRhat.inverse().matrix() * Jtheta), // ASPN change Luca
+                    Jrinv_fRhat *  (- Rot_j.between(Rot_i).matrix() - fRhat.inverse().matrix() * Jtheta),
                     // dfR/dPi
                     Matrix3::Zero();
       }
@@ -527,7 +535,7 @@ namespace gtsam {
             // dfV/dPosej
             Matrix::Zero(3,6),
             // dfR/dPosej
-            Jrinv_fRhat *  ( Matrix3::Identity() ), Matrix3::Zero(); // ASPN change Luca
+            Jrinv_fRhat *  ( Matrix3::Identity() ), Matrix3::Zero();
       }
       if(H4) {
         H4->resize(9,3);
@@ -555,10 +563,10 @@ namespace gtsam {
             - Rot_i.matrix() * preintegratedMeasurements_.delVdelBiasOmega,
             // dfR/dBias
             Matrix::Zero(3,3),
-            Jrinv_fRhat * ( - fRhat.inverse().matrix() * JbiasOmega);// ASPN change Luca
+            Jrinv_fRhat * ( - fRhat.inverse().matrix() * JbiasOmega);
       }
 
-      // Evaluate residual error
+      // Evaluate residual error, according to [3]
       /* ---------------------------------------------------------------------------------------------------- */
       const Vector3 fp =
           pos_j - pos_i
@@ -583,7 +591,7 @@ namespace gtsam {
     }
 
 
-    /** vector of errors */
+    /** predicted states from IMU */
     static void Predict(const Pose3& pose_i, const LieVector& vel_i, Pose3& pose_j, LieVector& vel_j,
         const imuBias::ConstantBias& bias, const PreintegratedMeasurements preintegratedMeasurements,
         const Vector3& gravity, const Vector3& omegaCoriolis, boost::optional<const Pose3&> body_P_sensor = boost::none)

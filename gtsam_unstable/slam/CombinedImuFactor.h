@@ -33,7 +33,14 @@ namespace gtsam {
   /**
    * 
    * @addtogroup SLAM
+   *
+   * REFERENCES:
+   * [1] G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
+   * [2] T. Lupton and S.Sukkarieh, "Visual-Inertial-Aided Navigation for High-Dynamic Motion in Built
+   * Environments Without Initial Conditions", TRO, 28(1):61-76, 2012.
+   * [3] L. Carlone, S. Williams, R. Roberts, "Preintegrated IMU factor: Computation of the Jacobian Matrices", Tech. Report, 2013.
    */
+
   class CombinedImuFactor: public NoiseModelFactor6<Pose3,LieVector,Pose3,LieVector,imuBias::ConstantBias,imuBias::ConstantBias> {
 
   public:
@@ -41,7 +48,7 @@ namespace gtsam {
     /** Struct to store results of preintegrating IMU measurements.  Can be build
      * incrementally so as to avoid costly integration at time of factor construction. */
 
-    /** Right Jacobian for SO(3) */
+    /** Right Jacobian for Exponential map in SO(3) - equation (10.86) and following equations in [1] */
     static Matrix3 rightJacobianExpMapSO3(const Vector3& x)    {
       // x is the axis-angle representation (exponential coordinates) for a rotation
       double normx = norm_2(x); // rotation angle
@@ -57,7 +64,7 @@ namespace gtsam {
       return Jr;
     }
 
-    /** Inverse of the Right Jacobian for SO(3) */
+    /** Right Jacobian for Log map in SO(3) - equation (10.86) and following equations in [1] */
     static Matrix3 rightJacobianExpMapSO3inverse(const Vector3& x)    {
       // x is the axis-angle representation (exponential coordinates) for a rotation
       double normx = norm_2(x); // rotation angle
@@ -74,13 +81,15 @@ namespace gtsam {
       return Jrinv;
     }
 
-
+    /** CombinedPreintegratedMeasurements accumulates (integrates) the IMU measurements (rotation rates and accelerations)
+     * and the corresponding covariance matrix. The measurements are then used to build the Preintegrated IMU factor*/
     class CombinedPreintegratedMeasurements {
     public:
       imuBias::ConstantBias biasHat; ///< Acceleration and angular rate bias values used during preintegration
-      Matrix measurementCovariance; ///< (Raw measurements uncertainty) Covariance of the vector [integrationError measuredAcc measuredOmega] in R^(9X9)
+      Matrix measurementCovariance; ///< (Raw measurements uncertainty) Covariance of the vector
+      ///< [integrationError measuredAcc measuredOmega biasAccRandomWalk biasOmegaRandomWalk biasAccInit biasOmegaInit] in R^(21 x 21)
 
-      Vector3 deltaPij; ///< Preintegrated relative position (does not take into account velocity at time i, see deltap+, in Lupton's paper) (in frame i)
+      Vector3 deltaPij; ///< Preintegrated relative position (does not take into account velocity at time i, see deltap+, in [2]) (in frame i)
       Vector3 deltaVij; ///< Preintegrated relative velocity (in global frame)
       Rot3 deltaRij; ///< Preintegrated relative orientation (in frame i)
       double deltaTij; ///< Time interval from i to j
@@ -92,33 +101,31 @@ namespace gtsam {
       Matrix3 delRdelBiasOmega; ///< Jacobian of preintegrated rotation w.r.t. angular rate bias
 
       Matrix PreintMeasCov; ///< Covariance matrix of the preintegrated measurements (first-order propagation from *measurementCovariance*)
-
-      Vector3 initialRotationRate; ///< initial rotation rate reading from the IMU (at time i)
-      Vector3 finalRotationRate; ///< final rotation rate reading from the IMU (at time j)
-
+      ///< In the combined factor is also includes the biases and keeps the correlation between the preintegrated measurements and the biases
+      ///< COVARIANCE OF: [PreintPOSITION PreintVELOCITY PreintROTATION BiasAcc BiasOmega]
       /** Default constructor, initialize with no IMU measurements */
       CombinedPreintegratedMeasurements(
           const imuBias::ConstantBias& bias, ///< Current estimate of acceleration and rotation rate biases
           const Matrix3& measuredAccCovariance, ///< Covariance matrix of measuredAcc
           const Matrix3& measuredOmegaCovariance, ///< Covariance matrix of measuredAcc
           const Matrix3& integrationErrorCovariance, ///< Covariance matrix of measuredAcc
-          const Matrix3& biasAccCovariance, ///< Covariance matrix of biasAcc
-          const Matrix3& biasOmegaCovariance, ///< Covariance matrix of biasOmega
-          const Matrix& biasAccOmegaInit, ///< Covariance of biasAcc & biasOmega when preintegrating measurements
-          const Vector3& initialRotationRate = Vector3::Zero() ///< initial rotation rate reading from the IMU (at time i)
+          const Matrix3& biasAccCovariance, ///< Covariance matrix of biasAcc (random walk describing BIAS evolution)
+          const Matrix3& biasOmegaCovariance, ///< Covariance matrix of biasOmega (random walk describing BIAS evolution)
+          const Matrix& biasAccOmegaInit ///< Covariance of biasAcc & biasOmega when preintegrating measurements
+          ///< (this allows to consider the uncertainty of the BIAS choice when integrating the measurements)
       ) : biasHat(bias), measurementCovariance(21,21), deltaPij(Vector3::Zero()), deltaVij(Vector3::Zero()), deltaTij(0.0),
       delPdelBiasAcc(Matrix3::Zero()), delPdelBiasOmega(Matrix3::Zero()),
       delVdelBiasAcc(Matrix3::Zero()), delVdelBiasOmega(Matrix3::Zero()),
-      delRdelBiasOmega(Matrix3::Zero()), PreintMeasCov(Matrix::Zero(15,15)),
-      initialRotationRate(initialRotationRate), finalRotationRate(initialRotationRate)
+      delRdelBiasOmega(Matrix3::Zero()), PreintMeasCov(Matrix::Zero(15,15))
       {
-        measurementCovariance << integrationErrorCovariance , Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), 		Matrix3::Zero(),
-                                       Matrix3::Zero(), measuredAccCovariance,  Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), 	Matrix3::Zero(),
+          // COVARIANCE OF: [Integration AccMeasurement OmegaMeasurement BiasAccRandomWalk BiasOmegaRandomWalk (BiasAccInit BiasOmegaInit)] SIZE (21x21)
+        measurementCovariance << integrationErrorCovariance , Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(),      Matrix3::Zero(),
+                                       Matrix3::Zero(), measuredAccCovariance,  Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(),     Matrix3::Zero(),
                                        Matrix3::Zero(),   Matrix3::Zero(), measuredOmegaCovariance, Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(),  Matrix3::Zero(),
-                                       Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), biasAccCovariance, Matrix3::Zero(),   Matrix3::Zero(), 		Matrix3::Zero(),
-                                       Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), biasOmegaCovariance, Matrix3::Zero(), 		Matrix3::Zero(),
-                                       Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(),     biasAccOmegaInit.block(0,0,3,3),  	biasAccOmegaInit.block(0,3,3,3),
-                                       Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(),     biasAccOmegaInit.block(3,0,3,3), 		biasAccOmegaInit.block(3,3,3,3);
+                                       Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), biasAccCovariance, Matrix3::Zero(),   Matrix3::Zero(),        Matrix3::Zero(),
+                                       Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), biasOmegaCovariance, Matrix3::Zero(),        Matrix3::Zero(),
+                                       Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(),     biasAccOmegaInit.block(0,0,3,3),    biasAccOmegaInit.block(0,3,3,3),
+                                       Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(),     biasAccOmegaInit.block(3,0,3,3),        biasAccOmegaInit.block(3,3,3,3);
 
       }
 
@@ -126,8 +133,7 @@ namespace gtsam {
       biasHat(imuBias::ConstantBias()), measurementCovariance(21,21), deltaPij(Vector3::Zero()), deltaVij(Vector3::Zero()), deltaTij(0.0),
       delPdelBiasAcc(Matrix3::Zero()), delPdelBiasOmega(Matrix3::Zero()),
       delVdelBiasAcc(Matrix3::Zero()), delVdelBiasOmega(Matrix3::Zero()),
-      delRdelBiasOmega(Matrix3::Zero()), PreintMeasCov(Matrix::Zero(15,15)),
-      initialRotationRate(Vector3::Zero()), finalRotationRate(Vector3::Zero())
+      delRdelBiasOmega(Matrix3::Zero()), PreintMeasCov(Matrix::Zero(15,15))
       {
       }
 
@@ -165,11 +171,10 @@ namespace gtsam {
           double deltaT, ///< Time step
           boost::optional<const Pose3&> body_P_sensor = boost::none ///< Sensor frame
       ) {
-        // NOTE: order is important here because each update uses old values.
-        // First we compensate the measurements for the bias
+        // NOTE: order is important here because each update uses old values, e.g., velocity and position updates are based on previous rotation estimate.
+        // First we compensate the measurements for the bias: since we have only an estimate of the bias, the covariance includes the corresponding uncertainty
         Vector3 correctedAcc = biasHat.correctAccelerometer(measuredAcc);
         Vector3 correctedOmega = biasHat.correctGyroscope(measuredOmega);
-        finalRotationRate = correctedOmega;
 
         // Then compensate for sensor-body displacement: we express the quantities (originally in the IMU frame) into the body frame
         if(body_P_sensor){
@@ -182,7 +187,6 @@ namespace gtsam {
 
         const Vector3 theta_incr = correctedOmega * deltaT; // rotation vector describing rotation increment computed from the current rotation rate measurement
         const Rot3 Rincr = Rot3::Expmap(theta_incr); // rotation increment computed from the current rotation rate measurement
-
         const Matrix3 Jr_theta_incr = rightJacobianExpMapSO3(theta_incr); // Right jacobian computed at theta_incr
 
         // Update Jacobians
@@ -193,7 +197,9 @@ namespace gtsam {
         delVdelBiasOmega += -deltaRij.matrix() * skewSymmetric(correctedAcc) * deltaT * delRdelBiasOmega;
         delRdelBiasOmega = Rincr.inverse().matrix() * delRdelBiasOmega - Jr_theta_incr  * deltaT;
 
-        // Update preintegrated mesurements covariance
+        // Update preintegrated measurements covariance: as in [2] we consider a first order propagation that
+        // can be seen as a prediction phase in an EKF framework. In this implementation, contrarily to [2] we
+        // consider the uncertainty of the bias selection and we keep correlation between biases and preintegrated measurements
         /* ----------------------------------------------------------------------------------------------------------------------- */
         Matrix3 Z_3x3 = Matrix3::Zero();
         Matrix3 I_3x3 = Matrix3::Identity();
@@ -225,67 +231,80 @@ namespace gtsam {
 
         // overall Jacobian wrt preintegrated measurements (df/dx)
         Matrix F(15,15);
-        F << H_pos_pos,    H_pos_vel,     H_pos_angles,      Z_3x3,                         Z_3x3,
-            H_vel_pos,     H_vel_vel,     H_vel_angles,      H_vel_biasacc,  				Z_3x3,
-            H_angles_pos,  H_angles_vel,  H_angles_angles,   Z_3x3,                         H_angles_biasomega,
-            Z_3x3,         Z_3x3,         Z_3x3,             I_3x3,                         Z_3x3,
-            Z_3x3,         Z_3x3,         Z_3x3,             Z_3x3,                         I_3x3;
-
-        // overall Jacobian wrt raw measurements (df/du)
-        Matrix3 H_vel_initbiasacc =  H_vel_biasacc;
-        Matrix3 H_angles_initbiasomega =   H_angles_biasomega;
-
-		Matrix G(15,21);
-		G << I_3x3 * deltaT, Z_3x3,  			Z_3x3, 					Z_3x3, 				Z_3x3,				Z_3x3, 					Z_3x3,
-			Z_3x3,  		 - H_vel_biasacc, 	Z_3x3, 					H_vel_biasacc, 		Z_3x3,				H_vel_initbiasacc, 		Z_3x3,
-			Z_3x3, 			 Z_3x3, 			- H_angles_biasomega,  	Z_3x3, 				H_angles_biasomega, Z_3x3, 					H_angles_initbiasomega,
-			Z_3x3, 			 Z_3x3, 			Z_3x3,					I_3x3 * deltaT, 	Z_3x3,				Z_3x3, 					Z_3x3,
-			Z_3x3, 			 Z_3x3, 			Z_3x3, 					Z_3x3, 				I_3x3 * deltaT, 	Z_3x3, 					Z_3x3;
+        F << H_pos_pos,    H_pos_vel,     H_pos_angles,          Z_3x3,                     Z_3x3,
+                H_vel_pos,     H_vel_vel,     H_vel_angles,      H_vel_biasacc,                         Z_3x3,
+                H_angles_pos,  H_angles_vel,  H_angles_angles,   Z_3x3,                         H_angles_biasomega,
+                Z_3x3,         Z_3x3,         Z_3x3,             I_3x3,                         Z_3x3,
+                Z_3x3,         Z_3x3,         Z_3x3,             Z_3x3,                         I_3x3;
 
 
-		// first order uncertainty propagation
-//
-		// Optimized matrix multiplication   (1/deltaT) * G * measurementCovariance * G.transpose()
+        // first order uncertainty propagation
+        // Optimized matrix multiplication   (1/deltaT) * G * measurementCovariance * G.transpose()
+
+        Matrix G_measCov_Gt = Matrix::Zero(15,15);
+        // BLOCK DIAGONAL TERMS
+        G_measCov_Gt.block(0,0,3,3) = deltaT * measurementCovariance.block(0,0,3,3);
+
+//        G_measCov_Gt.block(3,3,3,3) = (H_vel_biasacc) * (1/deltaT) * measurementCovariance.block(3,3,3,3) * (H_vel_biasacc.transpose()) +
+//            (H_vel_biasacc) * (1/deltaT) *
+//            (  measurementCovariance.block(9,9,3,3) +  measurementCovariance.block(15,15,3,3) ) *
+//            (H_vel_biasacc.transpose());
+
+        G_measCov_Gt.block(3,3,3,3) = (1/deltaT) * (H_vel_biasacc)  *
+            (measurementCovariance.block(3,3,3,3) +  measurementCovariance.block(9,9,3,3) +  measurementCovariance.block(15,15,3,3) ) *
+                                                   (H_vel_biasacc.transpose());
+
+        G_measCov_Gt.block(6,6,3,3) = (1/deltaT) *  (H_angles_biasomega) *
+            (measurementCovariance.block(6,6,3,3) + measurementCovariance.block(12,12,3,3) +  measurementCovariance.block(18,18,3,3) ) *
+                                                    (H_angles_biasomega.transpose());
+
+        G_measCov_Gt.block(9,9,3,3) = deltaT * measurementCovariance.block(9,9,3,3);
+
+        G_measCov_Gt.block(12,12,3,3) = deltaT * measurementCovariance.block(12,12,3,3);
+
+        // OFF BLOCK DIAGONAL TERMS
+        Matrix3 block24 = H_vel_biasacc * measurementCovariance.block(9,9,3,3);
+        G_measCov_Gt.block(3,9,3,3) = block24;
+        G_measCov_Gt.block(9,3,3,3) = block24.transpose();
+
+        Matrix3 block35 = H_angles_biasomega * measurementCovariance.block(12,12,3,3);
+        G_measCov_Gt.block(6,12,3,3) = block35;
+        G_measCov_Gt.block(12,6,3,3) = block35.transpose();
+
         /*
-		Matrix G_measCov_Gt = Matrix::Zero(15,15);
-		// BLOCK DIAGONAL TERMS
-		G_measCov_Gt.block(0,0,3,3) = deltaT * measurementCovariance.block(0,0,3,3);
+        // overall Jacobian wrt raw measurements (df/du)
+                Matrix3 H_vel_initbiasacc =  H_vel_biasacc;
+                Matrix3 H_angles_initbiasomega =   H_angles_biasomega;
 
-		G_measCov_Gt.block(3,3,3,3) = (H_vel_biasacc) * (1/deltaT) * measurementCovariance.block(3,3,3,3) * (H_vel_biasacc.transpose()) +
-				(H_vel_biasacc) * (1/deltaT) *
-				(  measurementCovariance.block(9,9,3,3) +  measurementCovariance.block(15,15,3,3) ) *
-				(H_vel_biasacc.transpose());
+                // COMBINED IMU FACTOR, preserves correlation with bias evolution and considers initial uncertainty on biases
+                Matrix G(15,21);
+                G << I_3x3 * deltaT,     Z_3x3,       Z_3x3,          Z_3x3,        Z_3x3,        Z_3x3,          Z_3x3,
+                    Z_3x3,       - H_vel_biasacc,   Z_3x3,          H_vel_biasacc,    Z_3x3,        H_vel_initbiasacc,    Z_3x3,
+                    Z_3x3,       Z_3x3,       - H_angles_biasomega,   Z_3x3,        H_angles_biasomega, Z_3x3,          H_angles_initbiasomega,
+                    Z_3x3,       Z_3x3,       Z_3x3,          I_3x3 * deltaT,   Z_3x3,        Z_3x3,          Z_3x3,
+                    Z_3x3,       Z_3x3,       Z_3x3,          Z_3x3,        I_3x3 * deltaT,   Z_3x3,          Z_3x3;
 
-		G_measCov_Gt.block(6,6,3,3) = (H_angles_biasomega) * (1/deltaT) * measurementCovariance.block(6,6,3,3) * (H_angles_biasomega.transpose()) +
-				(H_angles_biasomega) * (1/deltaT) *
-				(measurementCovariance.block(12,12,3,3) +  measurementCovariance.block(18,18,3,3) ) *
-				(H_angles_biasomega.transpose());
+        Matrix ErrorMatrix = (1/deltaT) * G * measurementCovariance * G.transpose() - G_measCov_Gt;
+        std::cout  << "---- matrix multiplication error = [" << ErrorMatrix << "];"<< std::endl;
+        double max_err=0;
+        for(int i=0;i<15;i++)
+        {
+          for(int j=0;j<15;j++)
+          {
+            if(fabs(ErrorMatrix(i,j))>max_err)
+              max_err = fabs(ErrorMatrix(i,j));
+          }
+        }
+        std::cout  << "---- max matrix multiplication error = [" << max_err << "];"<< std::endl;
 
-		G_measCov_Gt.block(9,9,3,3) = deltaT * measurementCovariance.block(9,9,3,3);
+        if(max_err>10e-15)
+        std::cout  << "---- max matrix multiplication error *large* = [" << max_err << "];"<< std::endl;
 
-		G_measCov_Gt.block(12,12,3,3) = deltaT * measurementCovariance.block(12,12,3,3);
+        PreintMeasCov = F * PreintMeasCov * F.transpose() + (1/deltaT) * G * measurementCovariance * G.transpose();
+        */
 
-		// OFF BLOCK DIAGONAL TERMS
-		Matrix3 block24 = H_vel_biasacc * measurementCovariance.block(9,9,3,3);
-		G_measCov_Gt.block(3,9,3,3) = block24;
-		G_measCov_Gt.block(9,3,3,3) = block24.transpose();
+        PreintMeasCov = F * PreintMeasCov * F.transpose() + G_measCov_Gt;
 
-		Matrix3 block35 = H_angles_biasomega * measurementCovariance.block(12,12,3,3);
-		G_measCov_Gt.block(6,12,3,3) = block35;
-		G_measCov_Gt.block(12,6,3,3) = block35.transpose();
-		*/
-
-//		std::cout  << "---- matrix multiplication error = [" <<
-//				(1/deltaT) * G * measurementCovariance * G.transpose() - G_measCov_Gt << "];"<< std::endl;
-
-		// Optimized first order propagation: mathematically equivalente to
-		 PreintMeasCov = F * PreintMeasCov * F.transpose() +  G * measurementCovariance * G.transpose();
-//		PreintMeasCov = F * PreintMeasCov * F.transpose() + G_measCov_Gt;
-
-		 // Neglect correlation
-//		 std::cout << "CombinedImuFactor: Neglecting correlation \n" << std::endl;
-//		 PreintMeasCov.block(0,9,9,6) = Matrix::Zero(9,6);
-//		 PreintMeasCov.block(9,0,6,9) = Matrix::Zero(6,9);
         // Update preintegrated measurements
         /* ----------------------------------------------------------------------------------------------------------------------- */
         deltaPij += deltaVij * deltaT;
@@ -322,15 +341,6 @@ namespace gtsam {
           return Rot3::Logmap(R_t_to_t0);
       }
       /* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-
-      /** Calculate the covariance of the preintegrated measurements */
-      Matrix preintegratedMeasurementsCovariance() {
-        Matrix Jpreintegrated = Matrix::Zero(15,15);
-        std::cout << "ERROR: You are using preintegratedMeasurementsCovariance, which is not implemented in the CombinedImuFactor" << std::endl;
-
-        return Jpreintegrated * measurementCovariance * Jpreintegrated.transpose();
-      }
-
 
     private:
       /** Serialization function */
@@ -443,7 +453,7 @@ namespace gtsam {
       const Vector3 pos_i = pose_i.translation().vector();
       const Vector3 pos_j = pose_j.translation().vector();
 
-      // We compute factor's Jacobians
+      // We compute factor's Jacobians, according to [3]
       /* ---------------------------------------------------------------------------------------------------- */
       const Rot3 deltaRij_biascorrected = preintegratedMeasurements_.deltaRij.retract(preintegratedMeasurements_.delRdelBiasOmega * biasOmegaIncr, Rot3::EXPMAP);
       // deltaRij_biascorrected is expmap(deltaRij) * expmap(delRdelBiasOmega * biasOmegaIncr)
@@ -462,7 +472,6 @@ namespace gtsam {
 
       const Matrix3 Jtheta = -Jr_theta_bcc  * skewSymmetric(Rot_i.inverse().matrix() * omegaCoriolis_ * deltaTij);
 
-      // ASPN change Luca
       const Matrix3 Jrinv_fRhat = rightJacobianExpMapSO3inverse(Rot3::Logmap(fRhat));
 
       if(H1) {
@@ -479,7 +488,7 @@ namespace gtsam {
                     // dfV/dPi
                     Matrix3::Zero(),
                     // dfR/dRi
-                    Jrinv_fRhat *  (- Rot_j.between(Rot_i).matrix() - fRhat.inverse().matrix() * Jtheta), // ASPN change Luca
+                    Jrinv_fRhat *  (- Rot_j.between(Rot_i).matrix() - fRhat.inverse().matrix() * Jtheta),
                     // dfR/dPi
                     Matrix3::Zero(),
                     //dBiasAcc/dPi
@@ -561,22 +570,22 @@ namespace gtsam {
 
       if(H6) {
 
-    	  H6->resize(15,6);
-    	  (*H6) <<
-    			  // dfP/dBias_j
-    			  Matrix3::Zero(), Matrix3::Zero(),
-    			  // dfV/dBias_j
-    			  Matrix3::Zero(), Matrix3::Zero(),
-    			  // dfR/dBias_j
-    			  Matrix3::Zero(), Matrix3::Zero(),
-    			  //dBiasAcc/dBias_j
-    			  Matrix3::Identity(), Matrix3::Zero(),
-    			  //dBiasOmega/dBias_j
-    			  Matrix3::Zero(), Matrix3::Identity();
+          H6->resize(15,6);
+          (*H6) <<
+                  // dfP/dBias_j
+                  Matrix3::Zero(), Matrix3::Zero(),
+                  // dfV/dBias_j
+                  Matrix3::Zero(), Matrix3::Zero(),
+                  // dfR/dBias_j
+                  Matrix3::Zero(), Matrix3::Zero(),
+                  //dBiasAcc/dBias_j
+                  Matrix3::Identity(), Matrix3::Zero(),
+                  //dBiasOmega/dBias_j
+                  Matrix3::Zero(), Matrix3::Identity();
       }
 
 
-      // Evaluate residual error
+      // Evaluate residual error, according to [3]
       /* ---------------------------------------------------------------------------------------------------- */
       const Vector3 fp =
           pos_j - pos_i
@@ -600,13 +609,13 @@ namespace gtsam {
 
       const Vector3 fbiasOmega = bias_j.gyroscope() - bias_i.gyroscope();
 
-      Vector r(15); r << fp, fv, fR, fbiasAcc, fbiasOmega;
+      Vector r(15); r << fp, fv, fR, fbiasAcc, fbiasOmega; // vector of size 15
 
       return r;
     }
 
 
-    /** vector of errors */
+    /** predicted states from IMU */
     static void Predict(const Pose3& pose_i, const LieVector& vel_i, Pose3& pose_j, LieVector& vel_j,
         const imuBias::ConstantBias& bias_i, imuBias::ConstantBias& bias_j,
         const CombinedPreintegratedMeasurements& preintegratedMeasurements,
