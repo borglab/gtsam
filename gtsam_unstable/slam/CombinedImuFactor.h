@@ -191,8 +191,12 @@ namespace gtsam {
 
         // Update Jacobians
         /* ----------------------------------------------------------------------------------------------------------------------- */
-        delPdelBiasAcc += delVdelBiasAcc * deltaT;
-        delPdelBiasOmega += delVdelBiasOmega * deltaT;
+        //        delPdelBiasAcc += delVdelBiasAcc * deltaT;
+        //        delPdelBiasOmega += delVdelBiasOmega * deltaT;
+        delPdelBiasAcc += delVdelBiasAcc * deltaT - 0.5 * deltaRij.matrix() * deltaT*deltaT;
+        delPdelBiasOmega += delVdelBiasOmega * deltaT - 0.5 * deltaRij.matrix()
+                                    * skewSymmetric(biasHat.correctAccelerometer(measuredAcc)) * deltaT*deltaT * delRdelBiasOmega;
+
         delVdelBiasAcc += -deltaRij.matrix() * deltaT;
         delVdelBiasOmega += -deltaRij.matrix() * skewSymmetric(correctedAcc) * deltaT * delRdelBiasOmega;
         delRdelBiasOmega = Rincr.inverse().matrix() * delRdelBiasOmega - Jr_theta_incr  * deltaT;
@@ -245,11 +249,6 @@ namespace gtsam {
         // BLOCK DIAGONAL TERMS
         G_measCov_Gt.block(0,0,3,3) = deltaT * measurementCovariance.block(0,0,3,3);
 
-//        G_measCov_Gt.block(3,3,3,3) = (H_vel_biasacc) * (1/deltaT) * measurementCovariance.block(3,3,3,3) * (H_vel_biasacc.transpose()) +
-//            (H_vel_biasacc) * (1/deltaT) *
-//            (  measurementCovariance.block(9,9,3,3) +  measurementCovariance.block(15,15,3,3) ) *
-//            (H_vel_biasacc.transpose());
-
         G_measCov_Gt.block(3,3,3,3) = (1/deltaT) * (H_vel_biasacc)  *
             (measurementCovariance.block(3,3,3,3) +  measurementCovariance.block(9,9,3,3) +  measurementCovariance.block(15,15,3,3) ) *
                                                    (H_vel_biasacc.transpose());
@@ -271,43 +270,11 @@ namespace gtsam {
         G_measCov_Gt.block(6,12,3,3) = block35;
         G_measCov_Gt.block(12,6,3,3) = block35.transpose();
 
-        /*
-        // overall Jacobian wrt raw measurements (df/du)
-                Matrix3 H_vel_initbiasacc =  H_vel_biasacc;
-                Matrix3 H_angles_initbiasomega =   H_angles_biasomega;
-
-                // COMBINED IMU FACTOR, preserves correlation with bias evolution and considers initial uncertainty on biases
-                Matrix G(15,21);
-                G << I_3x3 * deltaT,     Z_3x3,       Z_3x3,          Z_3x3,        Z_3x3,        Z_3x3,          Z_3x3,
-                    Z_3x3,       - H_vel_biasacc,   Z_3x3,          H_vel_biasacc,    Z_3x3,        H_vel_initbiasacc,    Z_3x3,
-                    Z_3x3,       Z_3x3,       - H_angles_biasomega,   Z_3x3,        H_angles_biasomega, Z_3x3,          H_angles_initbiasomega,
-                    Z_3x3,       Z_3x3,       Z_3x3,          I_3x3 * deltaT,   Z_3x3,        Z_3x3,          Z_3x3,
-                    Z_3x3,       Z_3x3,       Z_3x3,          Z_3x3,        I_3x3 * deltaT,   Z_3x3,          Z_3x3;
-
-        Matrix ErrorMatrix = (1/deltaT) * G * measurementCovariance * G.transpose() - G_measCov_Gt;
-        std::cout  << "---- matrix multiplication error = [" << ErrorMatrix << "];"<< std::endl;
-        double max_err=0;
-        for(int i=0;i<15;i++)
-        {
-          for(int j=0;j<15;j++)
-          {
-            if(fabs(ErrorMatrix(i,j))>max_err)
-              max_err = fabs(ErrorMatrix(i,j));
-          }
-        }
-        std::cout  << "---- max matrix multiplication error = [" << max_err << "];"<< std::endl;
-
-        if(max_err>10e-15)
-        std::cout  << "---- max matrix multiplication error *large* = [" << max_err << "];"<< std::endl;
-
-        PreintMeasCov = F * PreintMeasCov * F.transpose() + (1/deltaT) * G * measurementCovariance * G.transpose();
-        */
-
         PreintMeasCov = F * PreintMeasCov * F.transpose() + G_measCov_Gt;
 
         // Update preintegrated measurements
         /* ----------------------------------------------------------------------------------------------------------------------- */
-        deltaPij += deltaVij * deltaT;
+        deltaPij += deltaVij * deltaT + 0.5 * deltaRij.matrix() * biasHat.correctAccelerometer(measuredAcc) * deltaT*deltaT;
         deltaVij += deltaRij.matrix() * correctedAcc * deltaT;
         deltaRij = deltaRij * Rincr;
         deltaTij += deltaT;

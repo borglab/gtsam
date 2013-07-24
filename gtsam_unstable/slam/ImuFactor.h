@@ -100,21 +100,16 @@ namespace gtsam {
 
       Matrix PreintMeasCov; ///< Covariance matrix of the preintegrated measurements (first-order propagation from *measurementCovariance*)
 
-      Vector3 initialRotationRate; ///< initial rotation rate reading from the IMU (at time i)
-      Vector3 finalRotationRate; ///< final rotation rate reading from the IMU (at time j)
-
       /** Default constructor, initialize with no IMU measurements */
       PreintegratedMeasurements(
           const imuBias::ConstantBias& bias, ///< Current estimate of acceleration and rotation rate biases
           const Matrix3& measuredAccCovariance, ///< Covariance matrix of measuredAcc
           const Matrix3& measuredOmegaCovariance, ///< Covariance matrix of measuredAcc
-          const Matrix3& integrationErrorCovariance, ///< Covariance matrix of measuredAcc
-          const Vector3& initialRotationRate = Vector3::Zero() ///< initial rotation rate reading from the IMU (at time i)
+          const Matrix3& integrationErrorCovariance ///< Covariance matrix of measuredAcc
       ) : biasHat(bias), measurementCovariance(9,9), deltaPij(Vector3::Zero()), deltaVij(Vector3::Zero()), deltaTij(0.0),
       delPdelBiasAcc(Matrix3::Zero()), delPdelBiasOmega(Matrix3::Zero()),
       delVdelBiasAcc(Matrix3::Zero()), delVdelBiasOmega(Matrix3::Zero()),
-      delRdelBiasOmega(Matrix3::Zero()), PreintMeasCov(9,9),
-      initialRotationRate(initialRotationRate), finalRotationRate(initialRotationRate)
+      delRdelBiasOmega(Matrix3::Zero()), PreintMeasCov(9,9)
       {
         measurementCovariance << integrationErrorCovariance , Matrix3::Zero(), Matrix3::Zero(),
                                        Matrix3::Zero(), measuredAccCovariance,  Matrix3::Zero(),
@@ -126,8 +121,7 @@ namespace gtsam {
       biasHat(imuBias::ConstantBias()), measurementCovariance(9,9), deltaPij(Vector3::Zero()), deltaVij(Vector3::Zero()), deltaTij(0.0),
       delPdelBiasAcc(Matrix3::Zero()), delPdelBiasOmega(Matrix3::Zero()),
       delVdelBiasAcc(Matrix3::Zero()), delVdelBiasOmega(Matrix3::Zero()),
-      delRdelBiasOmega(Matrix3::Zero()), PreintMeasCov(9,9),
-      initialRotationRate(Vector3::Zero()), finalRotationRate(Vector3::Zero())
+      delRdelBiasOmega(Matrix3::Zero()), PreintMeasCov(9,9)
       {
           measurementCovariance =  Matrix::Zero(9,9);
           PreintMeasCov = Matrix::Zero(9,9);
@@ -160,35 +154,6 @@ namespace gtsam {
             && equal_with_abs_tol(delRdelBiasOmega, expected.delRdelBiasOmega, tol);
       }
 
-      // FUTURE IMPROVEMENTS: SECOND ORDER TERM IN THE POSITION
-      //      /** Add a single IMU measurement to the preintegration. */
-      //      void integrateMeasurement(
-      //          const Vector3& measuredAcc, ///< Measured linear acceleration (in body frame)
-      //          const Vector3& measuredOmega, ///< Measured angular velocity (in body frame)
-      //          double deltaT ///< Time step
-      //      ) {
-      //        // NOTE: order is important here because each update uses old values.
-      //        finalRotationRate = measuredOmega;
-      //        const Rot3 Rincr = Rot3::Expmap((biasHat.correctGyroscope(measuredOmega)) * deltaT);
-      //
-      //        // Update Jacobians
-      //        delPdelBiasAcc += delVdelBiasAcc * deltaT - 0.5 * deltaRij.matrix() * deltaT*deltaT;
-      //        delPdelBiasOmega += delVdelBiasOmega * deltaT - 0.5 * deltaRij.matrix()
-      //          * skewSymmetric(biasHat.correctAccelerometer(measuredAcc)) * deltaT*deltaT * delRdelBiasOmega;
-      //        delVdelBiasAcc += -deltaRij.matrix() * deltaT;
-      //        delVdelBiasOmega += -deltaRij.matrix() * skewSymmetric(biasHat.correctAccelerometer(measuredAcc)) * deltaT * delRdelBiasOmega;
-      //
-      //        const Vector3 x = biasHat.correctGyroscope(measuredOmega) * deltaT; // parametrization of so(3)
-      //        const Matrix3 Jr = rightJacobianExpMapSO3(x);
-      //        delRdelBiasOmega = Rincr.inverse().matrix() * delRdelBiasOmega - Jr  * deltaT;
-      //
-      //        // Update preintegrated measurements
-      //        deltaPij += deltaVij * deltaT + 0.5 * deltaRij.matrix() * biasHat.correctAccelerometer(measuredAcc) * deltaT*deltaT;
-      //        deltaVij += deltaRij.matrix() * biasHat.correctAccelerometer(measuredAcc) * deltaT;
-      //        deltaRij = deltaRij * Rincr;
-      //        deltaTij += deltaT;
-      //      }
-
       /** Add a single IMU measurement to the preintegration. */
       void integrateMeasurement(
           const Vector3& measuredAcc, ///< Measured linear acceleration (in body frame)
@@ -201,8 +166,6 @@ namespace gtsam {
         // First we compensate the measurements for the bias
         Vector3 correctedAcc = biasHat.correctAccelerometer(measuredAcc);
         Vector3 correctedOmega = biasHat.correctGyroscope(measuredOmega);
-
-        finalRotationRate = correctedOmega;
 
         // Then compensate for sensor-body displacement: we express the quantities (originally in the IMU frame) into the body frame
         if(body_P_sensor){
@@ -223,8 +186,11 @@ namespace gtsam {
 
         // Update Jacobians
         /* ----------------------------------------------------------------------------------------------------------------------- */
-        delPdelBiasAcc += delVdelBiasAcc * deltaT;
-        delPdelBiasOmega += delVdelBiasOmega * deltaT;
+        //        delPdelBiasAcc += delVdelBiasAcc * deltaT;
+        //        delPdelBiasOmega += delVdelBiasOmega * deltaT;
+        delPdelBiasAcc += delVdelBiasAcc * deltaT - 0.5 * deltaRij.matrix() * deltaT*deltaT;
+        delPdelBiasOmega += delVdelBiasOmega * deltaT - 0.5 * deltaRij.matrix()
+                            * skewSymmetric(biasHat.correctAccelerometer(measuredAcc)) * deltaT*deltaT * delRdelBiasOmega;
         delVdelBiasAcc += -deltaRij.matrix() * deltaT;
         delVdelBiasOmega += -deltaRij.matrix() * skewSymmetric(correctedAcc) * deltaT * delRdelBiasOmega;
         delRdelBiasOmega = Rincr.inverse().matrix() * delRdelBiasOmega - Jr_theta_incr  * deltaT;
@@ -264,26 +230,6 @@ namespace gtsam {
             H_vel_pos, H_vel_vel, H_vel_angles,
             H_angles_pos, H_angles_vel, H_angles_angles;
 
-        // FUTURE IMPROVEMENTS: include Jacobian G
-        // overall Jacobian wrt raw measurements (df/du)
-//              Matrix G(9,9);
-//              G << I_3x3 * deltaT, Z_3x3,  Z_3x3,
-//                  Z_3x3, deltaRij.matrix() * deltaT, Z_3x3,
-//                  Z_3x3, Z_3x3, Jrinv_theta_j * Jr_theta_incr * deltaT;
-//
-//              PreintMeasCov = F * PreintMeasCov * F.transpose() + G * measurementCovariance * G.transpose();
-//
-//                      Matrix G(9,9);
-//                      G << I_3x3, Z_3x3,  Z_3x3,
-//                          Z_3x3, deltaRij.matrix(), Z_3x3,
-//                          Z_3x3, Z_3x3, Jrinv_theta_j * Jr_theta_incr;
-//
-//                      std::cout << "measurementCovariance MATRIX XXXXXXX = " << measurementCovariance  << std::endl;
-//                      std::cout << "G MATRIX XXXXXXX = " << G << std::endl;
-//                      std::cout << "G * measurementCovariance * G.transpose() MATRIX XXXXXXX = " << G * measurementCovariance * G.transpose() << std::endl;
-//
-//                      PreintMeasCov = F * PreintMeasCov * F.transpose() + G * measurementCovariance * G.transpose();
-
 
         // first order uncertainty propagation
         // the deltaT allows to pass from continuous time noise to discrete time noise
@@ -291,7 +237,7 @@ namespace gtsam {
 
         // Update preintegrated measurements
         /* ----------------------------------------------------------------------------------------------------------------------- */
-        deltaPij += deltaVij * deltaT;
+        deltaPij += deltaVij * deltaT + 0.5 * deltaRij.matrix() * biasHat.correctAccelerometer(measuredAcc) * deltaT*deltaT;
         deltaVij += deltaRij.matrix() * correctedAcc * deltaT;
         deltaRij = deltaRij * Rincr;
         deltaTij += deltaT;
@@ -325,45 +271,6 @@ namespace gtsam {
           return Rot3::Logmap(R_t_to_t0);
       }
       /* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-
-      /** Calculate the covariance of the preintegrated measurements */
-      Matrix preintegratedMeasurementsCovariance() {
-        Matrix Jpreintegrated(9,9);
-        Jpreintegrated <<
-            //deltaP VS (intError measuredAcc   measuredOmega)
-            - delPdelBiasAcc, - delPdelBiasAcc,  - delPdelBiasOmega,
-            //deltaV VS (measuredAcc   measuredOmega   intError)
-            Matrix3::Zero(), - delVdelBiasAcc,  - delVdelBiasOmega,
-            //deltaR VS (measuredAcc   measuredOmega   intError)
-            Matrix3::Zero(), Matrix3::Zero(), - delRdelBiasOmega;
-
-        return Jpreintegrated * measurementCovariance * Jpreintegrated.transpose();
-
-        // FUTURE IMPROVEMENTS: in Lupton's paper the biases are included in the noise propagation
-        // Noise related to bias evolution
-        //        Matrix Jbias(9,6);
-        //        Jbias <<
-        //            //deltaP VS (biasAcc   biasOmega)
-        //            delPdelBiasAcc,  delPdelBiasOmega,
-        //            //deltaV VS (biasAcc   biasOmega)
-        //            delVdelBiasAcc,  delVdelBiasOmega,
-        //            //deltaR VS (biasAcc   biasOmega)
-        //            Matrix3::Zero(), delRdelBiasOmega;
-        //
-        //        Matrix biasPropagationCovariance = Matrix::Zero(6,6);
-        //        double AccelerometerBiasSigma = 1.67e-4;
-        //        double GyroscopeBiasSigma = 2.91e-6;
-        //
-        //        biasPropagationCovariance.block(0,0,3,3) = AccelerometerBiasSigma *  AccelerometerBiasSigma * gtsam::Matrix3::Identity();
-        //        biasPropagationCovariance.block(3,3,3,3) = GyroscopeBiasSigma * GyroscopeBiasSigma * gtsam::Matrix3::Identity();
-        //
-        //        Matrix PreIntMeasurementsCovariance(9,9);
-        //
-        //        PreIntMeasurementsCovariance = Jpreintegrated * measurementCovariance * Jpreintegrated.transpose();
-        //        // +   Jbias * biasPropagationCovariance * Jbias.transpose();
-        //        return PreIntMeasurementsCovariance;
-      }
-
 
     private:
       /** Serialization function */

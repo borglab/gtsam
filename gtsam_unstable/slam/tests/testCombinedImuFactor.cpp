@@ -39,134 +39,93 @@ using symbol_shorthand::V;
 using symbol_shorthand::B;
 
 /* ************************************************************************* */
-//namespace {
-//
-//Vector callEvaluateError(const ImuFactor& factor,
-//    const Pose3& pose_i, const LieVector& vel_i, const Pose3& pose_j, const LieVector& vel_j,
-//    const imuBias::ConstantBias& bias)
-//{
-//  return factor.evaluateError(pose_i, vel_i, pose_j, vel_j, bias);
-//}
-//
-//Rot3 evaluateRotationError(const ImuFactor& factor,
-//    const Pose3& pose_i, const LieVector& vel_i, const Pose3& pose_j, const LieVector& vel_j,
-//    const imuBias::ConstantBias& bias)
-//{
-//  return Rot3::Expmap(factor.evaluateError(pose_i, vel_i, pose_j, vel_j, bias).tail(3) ) ;
-//}
-//
-//ImuFactor::PreintegratedMeasurements evaluatePreintegratedMeasurements(
-//    const imuBias::ConstantBias& bias,
-//    const list<Vector3>& measuredAccs,
-//    const list<Vector3>& measuredOmegas,
-//    const list<double>& deltaTs,
-//    const Vector3& initialRotationRate = Vector3(0.0,0.0,0.0)
-//    )
-//{
-//  ImuFactor::PreintegratedMeasurements result(bias, Matrix3::Identity(),
-//      Matrix3::Identity(), Matrix3::Identity(), initialRotationRate);
-//
-//  list<Vector3>::const_iterator itAcc = measuredAccs.begin();
-//  list<Vector3>::const_iterator itOmega = measuredOmegas.begin();
-//  list<double>::const_iterator itDeltaT = deltaTs.begin();
-//  for( ; itAcc != measuredAccs.end(); ++itAcc, ++itOmega, ++itDeltaT) {
-//    result.integrateMeasurement(*itAcc, *itOmega, *itDeltaT);
-//  }
-//
-//  return result;
-//}
-//
-//Vector3 evaluatePreintegratedMeasurementsPosition(
-//    const imuBias::ConstantBias& bias,
-//    const list<Vector3>& measuredAccs,
-//    const list<Vector3>& measuredOmegas,
-//    const list<double>& deltaTs,
-//    const Vector3& initialRotationRate = Vector3(0.0,0.0,0.0) )
-//{
-//  return evaluatePreintegratedMeasurements(bias,
-//      measuredAccs, measuredOmegas, deltaTs, initialRotationRate).deltaPij;
-//}
-//
-//Vector3 evaluatePreintegratedMeasurementsVelocity(
-//    const imuBias::ConstantBias& bias,
-//    const list<Vector3>& measuredAccs,
-//    const list<Vector3>& measuredOmegas,
-//    const list<double>& deltaTs,
-//    const Vector3& initialRotationRate = Vector3(0.0,0.0,0.0) )
-//{
-//  return evaluatePreintegratedMeasurements(bias,
-//      measuredAccs, measuredOmegas, deltaTs, initialRotationRate).deltaVij;
-//}
-//
-//Rot3 evaluatePreintegratedMeasurementsRotation(
-//    const imuBias::ConstantBias& bias,
-//    const list<Vector3>& measuredAccs,
-//    const list<Vector3>& measuredOmegas,
-//    const list<double>& deltaTs,
-//    const Vector3& initialRotationRate = Vector3(0.0,0.0,0.0) )
-//{
-//  return evaluatePreintegratedMeasurements(bias,
-//      measuredAccs, measuredOmegas, deltaTs, initialRotationRate).deltaRij;
-//}
-//
-//Rot3 evaluateRotation(const Vector3 measuredOmega, const Vector3 biasOmega, const double deltaT)
-//{
-//  return Rot3::Expmap((measuredOmega - biasOmega) * deltaT);
-//}
-//
-//
-//Vector3 evaluateLogRotation(const Vector3 thetahat, const Vector3 deltatheta)
-//{
-//  return Rot3::Logmap( Rot3::Expmap(thetahat).compose( Rot3::Expmap(deltatheta) ) );
-//}
-//
-//}
+namespace {
 
-/* ************************************************************************* */
-//TEST( ImuFactor, PreintegratedMeasurements )
-//{
-//  // Linearization point
-//  imuBias::ConstantBias bias(Vector3(0,0,0), Vector3(0,0,0)); ///< Current estimate of acceleration and angular rate biases
-//
-//  // Measurements
-//  Vector3 measuredAcc(0.1, 0.0, 0.0);
-//  Vector3 measuredOmega(M_PI/100.0, 0.0, 0.0);
-//  double deltaT = 0.5;
-//
-//  // Expected preintegrated values
-//  Vector3 expectedDeltaP1; expectedDeltaP1 << 0.5*0.1*0.5*0.5, 0, 0;
-//  Vector3 expectedDeltaV1(0.05, 0.0, 0.0);
-//  Rot3 expectedDeltaR1 = Rot3::RzRyRx(0.5 * M_PI/100.0, 0.0, 0.0);
-//  double expectedDeltaT1(0.5);
-//
-//  // Actual preintegrated values
-//  ImuFactor::PreintegratedMeasurements actual1(bias, Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero());
-//  actual1.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
-//
-//  EXPECT(assert_equal(Vector(expectedDeltaP1), Vector(actual1.deltaPij), 1e-6));
-//  EXPECT(assert_equal(Vector(expectedDeltaV1), Vector(actual1.deltaVij), 1e-6));
-//  EXPECT(assert_equal(expectedDeltaR1, actual1.deltaRij, 1e-6));
-//  DOUBLES_EQUAL(expectedDeltaT1, actual1.deltaTij, 1e-6);
-//
-//  // Integrate again
-//  Vector3 expectedDeltaP2; expectedDeltaP2 << 0.025 + expectedDeltaP1(0) + 0.5*0.1*0.5*0.5, 0, 0;
-//  Vector3 expectedDeltaV2 = Vector3(0.05, 0.0, 0.0) + expectedDeltaR1.matrix() * measuredAcc * 0.5;
-//  Rot3 expectedDeltaR2 = Rot3::RzRyRx(2.0 * 0.5 * M_PI/100.0, 0.0, 0.0);
-//  double expectedDeltaT2(1);
-//
-//  // Actual preintegrated values
-//  ImuFactor::PreintegratedMeasurements actual2 = actual1;
-//  actual2.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
-//
-//  EXPECT(assert_equal(Vector(expectedDeltaP2), Vector(actual2.deltaPij), 1e-6));
-//  EXPECT(assert_equal(Vector(expectedDeltaV2), Vector(actual2.deltaVij), 1e-6));
-//  EXPECT(assert_equal(expectedDeltaR2, actual2.deltaRij, 1e-6));
-//  DOUBLES_EQUAL(expectedDeltaT2, actual2.deltaTij, 1e-6);
-//}
-
-/* ************************************************************************* */
-TEST( ImuFactor, PreintegratedMeasurements )
+Vector callEvaluateError(const ImuFactor& factor,
+    const Pose3& pose_i, const LieVector& vel_i, const Pose3& pose_j, const LieVector& vel_j,
+    const imuBias::ConstantBias& bias)
 {
+  return factor.evaluateError(pose_i, vel_i, pose_j, vel_j, bias);
+}
+
+Rot3 evaluateRotationError(const ImuFactor& factor,
+    const Pose3& pose_i, const LieVector& vel_i, const Pose3& pose_j, const LieVector& vel_j,
+    const imuBias::ConstantBias& bias)
+{
+  return Rot3::Expmap(factor.evaluateError(pose_i, vel_i, pose_j, vel_j, bias).tail(3) ) ;
+}
+
+ImuFactor::PreintegratedMeasurements evaluatePreintegratedMeasurements(
+    const imuBias::ConstantBias& bias,
+    const list<Vector3>& measuredAccs,
+    const list<Vector3>& measuredOmegas,
+    const list<double>& deltaTs,
+    const Vector3& initialRotationRate = Vector3(0.0,0.0,0.0)
+    )
+{
+  ImuFactor::PreintegratedMeasurements result(bias, Matrix3::Identity(),
+      Matrix3::Identity(), Matrix3::Identity());
+
+  list<Vector3>::const_iterator itAcc = measuredAccs.begin();
+  list<Vector3>::const_iterator itOmega = measuredOmegas.begin();
+  list<double>::const_iterator itDeltaT = deltaTs.begin();
+  for( ; itAcc != measuredAccs.end(); ++itAcc, ++itOmega, ++itDeltaT) {
+    result.integrateMeasurement(*itAcc, *itOmega, *itDeltaT);
+  }
+
+  return result;
+}
+
+Vector3 evaluatePreintegratedMeasurementsPosition(
+    const imuBias::ConstantBias& bias,
+    const list<Vector3>& measuredAccs,
+    const list<Vector3>& measuredOmegas,
+    const list<double>& deltaTs,
+    const Vector3& initialRotationRate = Vector3(0.0,0.0,0.0) )
+{
+  return evaluatePreintegratedMeasurements(bias,
+      measuredAccs, measuredOmegas, deltaTs, initialRotationRate).deltaPij;
+}
+
+Vector3 evaluatePreintegratedMeasurementsVelocity(
+    const imuBias::ConstantBias& bias,
+    const list<Vector3>& measuredAccs,
+    const list<Vector3>& measuredOmegas,
+    const list<double>& deltaTs,
+    const Vector3& initialRotationRate = Vector3(0.0,0.0,0.0) )
+{
+  return evaluatePreintegratedMeasurements(bias,
+      measuredAccs, measuredOmegas, deltaTs).deltaVij;
+}
+
+Rot3 evaluatePreintegratedMeasurementsRotation(
+    const imuBias::ConstantBias& bias,
+    const list<Vector3>& measuredAccs,
+    const list<Vector3>& measuredOmegas,
+    const list<double>& deltaTs,
+    const Vector3& initialRotationRate = Vector3(0.0,0.0,0.0) )
+{
+  return evaluatePreintegratedMeasurements(bias,
+      measuredAccs, measuredOmegas, deltaTs).deltaRij;
+}
+
+Rot3 evaluateRotation(const Vector3 measuredOmega, const Vector3 biasOmega, const double deltaT)
+{
+  return Rot3::Expmap((measuredOmega - biasOmega) * deltaT);
+}
+
+
+Vector3 evaluateLogRotation(const Vector3 thetahat, const Vector3 deltatheta)
+{
+  return Rot3::Logmap( Rot3::Expmap(thetahat).compose( Rot3::Expmap(deltatheta) ) );
+}
+
+}
+
+/* ************************************************************************* */
+TEST( CombinedImuFactor, PreintegratedMeasurements )
+{
+  cout << "++++++++++++++++++++++++++++++ PreintegratedMeasurements +++++++++++++++++++++++++++++++++++++++ " << endl;
   // Linearization point
   imuBias::ConstantBias bias(Vector3(0,0,0), Vector3(0,0,0)); ///< Current estimate of acceleration and angular rate biases
 
@@ -183,26 +142,29 @@ TEST( ImuFactor, PreintegratedMeasurements )
 
   CombinedImuFactor::CombinedPreintegratedMeasurements actual1(bias,
 		  Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(),
-		  Matrix3::Zero(), Matrix3::Zero());
+		  Matrix3::Zero(), Matrix3::Zero(), Matrix::Zero(6,6));
+
+//           const imuBias::ConstantBias& bias, ///< Current estimate of acceleration and rotation rate biases
+//           const Matrix3& measuredAccCovariance, ///< Covariance matrix of measuredAcc
+//           const Matrix3& measuredOmegaCovariance, ///< Covariance matrix of measuredAcc
+//           const Matrix3& integrationErrorCovariance, ///< Covariance matrix of measuredAcc
+//           const Matrix3& biasAccCovariance, ///< Covariance matrix of biasAcc (random walk describing BIAS evolution)
+//           const Matrix3& biasOmegaCovariance, ///< Covariance matrix of biasOmega (random walk describing BIAS evolution)
+//           const Matrix& biasAccOmegaInit ///< Covariance of biasAcc & biasOmega when preintegrating measurements
+
   actual1.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   EXPECT(assert_equal(Vector(expected1.deltaPij), Vector(actual1.deltaPij), tol));
   EXPECT(assert_equal(Vector(expected1.deltaVij), Vector(actual1.deltaVij), tol));
   EXPECT(assert_equal(expected1.deltaRij, actual1.deltaRij, tol));
   DOUBLES_EQUAL(expected1.deltaTij, actual1.deltaTij, tol);
-
-//  EXPECT(assert_equal(expected1.delPdelBiasAcc, actual1.delPdelBiasAcc, tol));
-//  EXPECT(assert_equal(expected1.delPdelBiasAcc, actual1.delPdelBiasAcc, tol));
-//  EXPECT(assert_equal(expected1.delPdelBiasOmega, actual1.delPdelBiasOmega, tol));
-//  EXPECT(assert_equal(expected1.delVdelBiasAcc, actual1.delVdelBiasAcc, tol));
-//  EXPECT(assert_equal(expected1.delVdelBiasOmega, actual1.delVdelBiasOmega, tol));
-//  EXPECT(assert_equal(expected1.delRdelBiasOmega, actual1.delRdelBiasOmega, tol));
 }
 
 
 /* ************************************************************************* */
-TEST( ImuFactor, ErrorWithBiases )
+TEST( CombinedImuFactor, ErrorWithBiases )
 {
+  cout << "++++++++++++++++++++++++++++++ ErrorWithBiases +++++++++++++++++++++++++++++++++++++++ " << endl;
 
   imuBias::ConstantBias bias(Vector3(0.2, 0, 0), Vector3(0, 0, 0.3)); // Biases (acc, rot)
   imuBias::ConstantBias bias2(Vector3(0.2, 0.2, 0), Vector3(1, 0, 0.3)); // Biases (acc, rot)
@@ -219,13 +181,27 @@ TEST( ImuFactor, ErrorWithBiases )
   double deltaT = 1.0;
   double tol = 1e-6;
 
+  //           const imuBias::ConstantBias& bias, ///< Current estimate of acceleration and rotation rate biases
+  //           const Matrix3& measuredAccCovariance, ///< Covariance matrix of measuredAcc
+  //           const Matrix3& measuredOmegaCovariance, ///< Covariance matrix of measuredAcc
+  //           const Matrix3& integrationErrorCovariance, ///< Covariance matrix of measuredAcc
+  //           const Matrix3& biasAccCovariance, ///< Covariance matrix of biasAcc (random walk describing BIAS evolution)
+  //           const Matrix3& biasOmegaCovariance, ///< Covariance matrix of biasOmega (random walk describing BIAS evolution)
+  //           const Matrix& biasAccOmegaInit ///< Covariance of biasAcc & biasOmega when preintegrating measurements
+
+  Matrix I6x6(6,6);
+  I6x6 = Matrix::Identity(6,6);
+
+
   ImuFactor::PreintegratedMeasurements pre_int_data(imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)),
-		  Matrix3::Identity(), Matrix3::Identity(), Matrix3::Identity(),  Matrix3::Identity(), Matrix3::Identity());
+		  Matrix3::Identity(), Matrix3::Identity(), Matrix3::Identity());
+
     pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
    CombinedImuFactor::CombinedPreintegratedMeasurements Combined_pre_int_data(
 		   imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0),  Vector3(0.0, 0.0, 0.0)),
-  		  Matrix3::Identity(), Matrix3::Identity(), Matrix3::Identity(), Matrix3::Identity(), 2 * Matrix3::Identity());
+  		  Matrix3::Identity(), Matrix3::Identity(), Matrix3::Identity(), Matrix3::Identity(), 2 * Matrix3::Identity(),	I6x6 );
+
    Combined_pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
 
@@ -244,8 +220,6 @@ TEST( ImuFactor, ErrorWithBiases )
 
     EXPECT(assert_equal(errorExpected, errorActual.head(9), tol));
 
-//    std::cout << "errorActual" << errorActual.transpose() << std::endl;
-
     // Expected Jacobians
     Matrix H1e, H2e, H3e, H4e, H5e;
     (void) factor.evaluateError(x1, v1, x2, v2, bias, H1e, H2e, H3e, H4e, H5e);
@@ -260,227 +234,64 @@ TEST( ImuFactor, ErrorWithBiases )
 	EXPECT(assert_equal(H3e, H3a.topRows(9)));
 	EXPECT(assert_equal(H4e, H4a.topRows(9)));
 	EXPECT(assert_equal(H5e, H5a.topRows(9)));
-
-	std::cout << "H6a" << H6a << std::endl;
-
-	Matrix CovIe = pre_int_data.PreintMeasCov;
-	Matrix CovIa = Combined_pre_int_data.PreintMeasCov.block(0,0,9,9);
-	EXPECT(assert_equal(CovIe, CovIa));
-
-	std::cout << "Combined_pre_int_data.PreintMeasCov" << Combined_pre_int_data.PreintMeasCov << std::endl;
-
 }
 
-
-
 /* ************************************************************************* */
-//TEST( ImuFactor, FirstOrderPreIntegratedMeasurements )
-//{
-//  // Linearization point
-//  imuBias::ConstantBias bias; ///< Current estimate of acceleration and rotation rate biases
-//
-//  Pose3 body_P_sensor(Rot3::Expmap(Vector3(0,0.1,0.1)), Point3(1, 0, 1));
-//
-//  // Measurements
-//  list<Vector3> measuredAccs, measuredOmegas;
-//  list<double> deltaTs;
-//  measuredAccs.push_back(Vector3(0.1, 0.0, 0.0));
-//  measuredOmegas.push_back(Vector3(M_PI/100.0, 0.0, 0.0));
-//  deltaTs.push_back(0.01);
-//  measuredAccs.push_back(Vector3(0.1, 0.0, 0.0));
-//  measuredOmegas.push_back(Vector3(M_PI/100.0, 0.0, 0.0));
-//  deltaTs.push_back(0.01);
-//  for(int i=1;i<100;i++)
-//  {
-//    measuredAccs.push_back(Vector3(0.05, 0.09, 0.01));
-//    measuredOmegas.push_back(Vector3(M_PI/100.0, M_PI/300.0, 2*M_PI/100.0));
-//    deltaTs.push_back(0.01);
-//  }
-//
-//  // Actual preintegrated values
-//  ImuFactor::PreintegratedMeasurements preintegrated =
-//      evaluatePreintegratedMeasurements(bias, measuredAccs, measuredOmegas, deltaTs, Vector3(M_PI/100.0, 0.0, 0.0));
-//
-//  // Compute numerical derivatives
-//  Matrix expectedDelPdelBias = numericalDerivative11<imuBias::ConstantBias>(
-//      boost::bind(&evaluatePreintegratedMeasurementsPosition, _1, measuredAccs, measuredOmegas, deltaTs, Vector3(M_PI/100.0, 0.0, 0.0)), bias);
-//  Matrix expectedDelPdelBiasAcc   = expectedDelPdelBias.leftCols(3);
-//  Matrix expectedDelPdelBiasOmega = expectedDelPdelBias.rightCols(3);
-//
-//  Matrix expectedDelVdelBias = numericalDerivative11<imuBias::ConstantBias>(
-//      boost::bind(&evaluatePreintegratedMeasurementsVelocity, _1, measuredAccs, measuredOmegas, deltaTs, Vector3(M_PI/100.0, 0.0, 0.0)), bias);
-//  Matrix expectedDelVdelBiasAcc   = expectedDelVdelBias.leftCols(3);
-//  Matrix expectedDelVdelBiasOmega = expectedDelVdelBias.rightCols(3);
-//
-//  Matrix expectedDelRdelBias = numericalDerivative11<Rot3,imuBias::ConstantBias>(
-//      boost::bind(&evaluatePreintegratedMeasurementsRotation, _1, measuredAccs, measuredOmegas, deltaTs, Vector3(M_PI/100.0, 0.0, 0.0)), bias);
-//  Matrix expectedDelRdelBiasAcc   = expectedDelRdelBias.leftCols(3);
-//  Matrix expectedDelRdelBiasOmega = expectedDelRdelBias.rightCols(3);
-//
-//  // Compare Jacobians
-//  EXPECT(assert_equal(expectedDelPdelBiasAcc, preintegrated.delPdelBiasAcc));
-//  EXPECT(assert_equal(expectedDelPdelBiasOmega, preintegrated.delPdelBiasOmega));
-//  EXPECT(assert_equal(expectedDelVdelBiasAcc, preintegrated.delVdelBiasAcc));
-//  EXPECT(assert_equal(expectedDelVdelBiasOmega, preintegrated.delVdelBiasOmega));
-//  EXPECT(assert_equal(expectedDelRdelBiasAcc, Matrix::Zero(3,3)));
-//  EXPECT(assert_equal(expectedDelRdelBiasOmega, preintegrated.delRdelBiasOmega));
-//}
+TEST( CombinedImuFactor, FirstOrderPreIntegratedMeasurements )
+{
+  cout << "++++++++++++++++++++++++++++++ FirstOrderPreIntegratedMeasurements +++++++++++++++++++++++++++++++++++++++ " << endl;
+  // Linearization point
+  imuBias::ConstantBias bias; ///< Current estimate of acceleration and rotation rate biases
 
-/* ************************************************************************* */
-//TEST( ImuFactor, MeasurementCovarianceEstimation )
-//{
-//  // Linearization point
-//  imuBias::ConstantBias bias; ///< Current estimate of acceleration and rotation rate biases
-//  Pose3 body_P_sensor(Rot3::Expmap(Vector3(0,0.1,0.1)), Point3(1, 0, 1));
-//
-//  // Measurements
-//  Vector3 measuredOmega = Vector3(0.1, 0.0, 0.0);
-//
-//  list<Vector3> measuredAccs, measuredOmegas;
-//  list<double> deltaTs;
-//  measuredAccs.push_back(Vector3(0.1, 0.0, 0.0));
-//  measuredOmegas.push_back(Vector3(M_PI/100.0, 0.0, 0.0));
-//  deltaTs.push_back(0.01);
-//  measuredAccs.push_back(Vector3(0.1, 0.0, 0.0));
-//  measuredOmegas.push_back(Vector3(M_PI/100.0, 0.0, 0.0));
-//  deltaTs.push_back(0.01);
-//  for(int i=1;i<100;i++)
-//  {
-//  measuredAccs.push_back(Vector3(0.05, 0.09, 0.01));
-//  measuredOmegas.push_back(Vector3(M_PI/100.0, M_PI/300.0, 2*M_PI/100.0));
-//  deltaTs.push_back(0.01);
-//  }
-//
-//  // Actual preintegrated values
-//  ImuFactor::PreintegratedMeasurements preintegrated =
-//      evaluatePreintegratedMeasurements(bias, measuredAccs, measuredOmegas, deltaTs, measuredOmega);
-//
-//  // Compute numerical derivatives
-//  Matrix expectedDelPdelBias = numericalDerivative11<imuBias::ConstantBias>(
-//      boost::bind(&evaluatePreintegratedMeasurementsPosition, _1, measuredAccs, measuredOmegas, deltaTs, measuredOmega), bias);
-//  Matrix expectedDelPdelBiasAcc   = expectedDelPdelBias.leftCols(3);
-//  Matrix expectedDelPdelBiasOmega = expectedDelPdelBias.rightCols(3);
-//
-//  Matrix expectedDelVdelBias = numericalDerivative11<imuBias::ConstantBias>(
-//      boost::bind(&evaluatePreintegratedMeasurementsVelocity, _1, measuredAccs, measuredOmegas, deltaTs, measuredOmega), bias);
-//  Matrix expectedDelVdelBiasAcc   = expectedDelVdelBias.leftCols(3);
-//  Matrix expectedDelVdelBiasOmega = expectedDelVdelBias.rightCols(3);
-//
-//  Matrix expectedDelRdelBias = numericalDerivative11<Rot3,imuBias::ConstantBias>(
-//      boost::bind(&evaluatePreintegratedMeasurementsRotation, _1, measuredAccs, measuredOmegas, deltaTs, measuredOmega), bias);
-//  Matrix expectedDelRdelBiasAcc   = expectedDelRdelBias.leftCols(3);
-//  Matrix expectedDelRdelBiasOmega = expectedDelRdelBias.rightCols(3);
-//
-//  Matrix Jexpected(9,9);
-//  Jexpected <<        //deltaP VS (measuredAcc   measuredOmega   intError)
-//                      - expectedDelPdelBiasAcc,  - expectedDelPdelBiasOmega, - expectedDelPdelBiasAcc,
-//                          //deltaV VS (measuredAcc   measuredOmega   intError)
-//                      - expectedDelVdelBiasAcc,  - expectedDelVdelBiasOmega, Matrix3::Zero(),
-//                           //deltaR VS (measuredAcc   measuredOmega   intError)
-//                      expectedDelRdelBiasAcc, -expectedDelRdelBiasOmega, Matrix3::Zero();
-//
-//  Matrix MeasurementCovarianceexpected(9,9);
-//  MeasurementCovarianceexpected = Jexpected  * preintegrated.measurementCovariance * Jexpected.transpose();
-//
-////  std::cout << "preintegratedMeasurementsCovariance inverse" << preintegrated.preintegratedMeasurementsCovariance.inverse() << std::endl;
-//
-//
-//  // Compare Jacobians
-//  EXPECT(assert_equal(MeasurementCovarianceexpected, preintegrated.preintegratedMeasurementsCovariance(), 2e-5));
-//}
+  Pose3 body_P_sensor(Rot3::Expmap(Vector3(0,0.1,0.1)), Point3(1, 0, 1));
+
+  // Measurements
+  list<Vector3> measuredAccs, measuredOmegas;
+  list<double> deltaTs;
+  measuredAccs.push_back(Vector3(0.1, 0.0, 0.0));
+  measuredOmegas.push_back(Vector3(M_PI/100.0, 0.0, 0.0));
+  deltaTs.push_back(0.01);
+  measuredAccs.push_back(Vector3(0.1, 0.0, 0.0));
+  measuredOmegas.push_back(Vector3(M_PI/100.0, 0.0, 0.0));
+  deltaTs.push_back(0.01);
+  for(int i=1;i<100;i++)
+  {
+    measuredAccs.push_back(Vector3(0.05, 0.09, 0.01));
+    measuredOmegas.push_back(Vector3(M_PI/100.0, M_PI/300.0, 2*M_PI/100.0));
+    deltaTs.push_back(0.01);
+  }
+
+  // Actual preintegrated values
+  ImuFactor::PreintegratedMeasurements preintegrated =
+      evaluatePreintegratedMeasurements(bias, measuredAccs, measuredOmegas, deltaTs, Vector3(M_PI/100.0, 0.0, 0.0));
+
+  // Compute numerical derivatives
+  Matrix expectedDelPdelBias = numericalDerivative11<imuBias::ConstantBias>(
+      boost::bind(&evaluatePreintegratedMeasurementsPosition, _1, measuredAccs, measuredOmegas, deltaTs, Vector3(M_PI/100.0, 0.0, 0.0)), bias);
+  Matrix expectedDelPdelBiasAcc   = expectedDelPdelBias.leftCols(3);
+  Matrix expectedDelPdelBiasOmega = expectedDelPdelBias.rightCols(3);
+
+  Matrix expectedDelVdelBias = numericalDerivative11<imuBias::ConstantBias>(
+      boost::bind(&evaluatePreintegratedMeasurementsVelocity, _1, measuredAccs, measuredOmegas, deltaTs, Vector3(M_PI/100.0, 0.0, 0.0)), bias);
+  Matrix expectedDelVdelBiasAcc   = expectedDelVdelBias.leftCols(3);
+  Matrix expectedDelVdelBiasOmega = expectedDelVdelBias.rightCols(3);
+
+  Matrix expectedDelRdelBias = numericalDerivative11<Rot3,imuBias::ConstantBias>(
+      boost::bind(&evaluatePreintegratedMeasurementsRotation, _1, measuredAccs, measuredOmegas, deltaTs, Vector3(M_PI/100.0, 0.0, 0.0)), bias);
+  Matrix expectedDelRdelBiasAcc   = expectedDelRdelBias.leftCols(3);
+  Matrix expectedDelRdelBiasOmega = expectedDelRdelBias.rightCols(3);
+
+  // Compare Jacobians
+  EXPECT(assert_equal(expectedDelPdelBiasAcc, preintegrated.delPdelBiasAcc));
+  EXPECT(assert_equal(expectedDelPdelBiasOmega, preintegrated.delPdelBiasOmega));
+  EXPECT(assert_equal(expectedDelVdelBiasAcc, preintegrated.delVdelBiasAcc));
+  EXPECT(assert_equal(expectedDelVdelBiasOmega, preintegrated.delVdelBiasOmega));
+  EXPECT(assert_equal(expectedDelRdelBiasAcc, Matrix::Zero(3,3)));
+  EXPECT(assert_equal(expectedDelRdelBiasOmega, preintegrated.delRdelBiasOmega));
+}
 
 #include <gtsam/linear/GaussianFactorGraph.h>
 
-
-
-/* ************************************************************************* */
-//TEST( ImuFactor, OldVSNewIMUfactor )
-//{
-//  imuBias::ConstantBias bias(Vector3(0.2, 0, 0), Vector3(0, 0, 0.3)); // Biases (acc, rot)
-//  Pose3 x1(Rot3::Expmap(Vector3(0, 0, M_PI/4.0)), Point3(5.0, 1.0, -50.0));
-//  LieVector v1(3, 0.5, 0.0, 0.0);
-//  Pose3 x2(Rot3::Expmap(Vector3(0, 0, M_PI/4.0 + M_PI/10.0)), Point3(5.5, 1.0, -50.0));
-//  LieVector v2(3, 0.5, 0.0, 0.0);
-//
-//  // Measurements
-//  Vector3 gravity; gravity << 0, 0, 9.81;
-//  Vector3 omegaCoriolis; omegaCoriolis << 0, 0.1, 0.1;
-//  Vector3 measuredOmega; measuredOmega << 0, 0, M_PI/10.0+0.3;
-//  Vector3 measuredAcc = x1.rotation().unrotate(-Point3(gravity)).vector() + Vector3(0.2,0.0,0.0);
-//  double deltaT = 1.0;
-//
-//  const Pose3 body_P_sensor(Rot3::Expmap(Vector3(0,0.10,0.10)), Point3(1,0,0));
-//
-//  //  ImuFactor::PreintegratedMeasurements pre_int_data(imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0),
-//  //        Vector3(0.0, 0.0, 0.0)), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), measuredOmega);
-//
-//
-//  ImuFactor::PreintegratedMeasurements pre_int_data(imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0),
-//      Vector3(0.0, 0.0, 0.0)), Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero());
-//
-//
-//
-//  pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
-//
-//  // Create factor
-//  noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Sigmas(Vector_(9, 0.15, 0.15, 0.15, 1.5, 1.5, 1.5, 0.5, 0.5, 0.5));
-//  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pre_int_data, gravity, omegaCoriolis, model);
-//
-//  Vector errorActual = factor.evaluateError(x1, v1, x2, v2, bias);
-//
-//  // Expected error
-//  Vector errorExpected(9); errorExpected << 0, 0, 0, 0, 0, 0, 0, 0, 0;
-//  EXPECT(assert_equal(errorExpected, errorActual, 1e-6));
-//
-//  // Expected Jacobians
-//  Matrix H1e = numericalDerivative11<Pose3>(
-//      boost::bind(&callEvaluateError, factor, _1, v1, x2, v2, bias), x1);
-//  Matrix H2e = numericalDerivative11<LieVector>(
-//      boost::bind(&callEvaluateError, factor, x1, _1, x2, v2, bias), v1);
-//  Matrix H3e = numericalDerivative11<Pose3>(
-//      boost::bind(&callEvaluateError, factor, x1, v1, _1, v2, bias), x2);
-//  Matrix H4e = numericalDerivative11<LieVector>(
-//      boost::bind(&callEvaluateError, factor, x1, v1, x2, _1, bias), v2);
-//  Matrix H5e = numericalDerivative11<imuBias::ConstantBias>(
-//      boost::bind(&callEvaluateError, factor, x1, v1, x2, v2, _1), bias);
-//
-//  // Check rotation Jacobians
-//  Matrix RH1e = numericalDerivative11<Rot3,Pose3>(
-//      boost::bind(&evaluateRotationError, factor, _1, v1, x2, v2, bias), x1);
-//  Matrix RH3e = numericalDerivative11<Rot3,Pose3>(
-//      boost::bind(&evaluateRotationError, factor, x1, v1, _1, v2, bias), x2);
-//  Matrix RH5e = numericalDerivative11<Rot3,imuBias::ConstantBias>(
-//      boost::bind(&evaluateRotationError, factor, x1, v1, x2, v2, _1), bias);
-//
-//  // Actual Jacobians
-//  Matrix H1a, H2a, H3a, H4a, H5a;
-//  (void) factor.evaluateError(x1, v1, x2, v2, bias, H1a, H2a, H3a, H4a, H5a);
-//
-//  // positions and velocities
-//  Matrix H1etop6 =  H1e.topRows(6);
-//  Matrix H1atop6 =  H1a.topRows(6);
-//  EXPECT(assert_equal(H1etop6, H1atop6));
-//  // rotations
-//  EXPECT(assert_equal(RH1e, H1a.bottomRows(3)));  // evaluate only the rotation residue
-//
-//  EXPECT(assert_equal(H2e, H2a));
-//
-//  // positions and velocities
-//  Matrix H3etop6 =  H3e.topRows(6);
-//  Matrix H3atop6 =  H3a.topRows(6);
-//  EXPECT(assert_equal(H3etop6, H3atop6));
-//  // rotations
-//  EXPECT(assert_equal(RH3e, H3a.bottomRows(3)));  // evaluate only the rotation residue
-//
-//  EXPECT(assert_equal(H4e, H4a));
-//
-//  // positions and velocities
-//  Matrix H5etop6 =  H5e.topRows(6);
-//  Matrix H5atop6 =  H5a.topRows(6);
-//  EXPECT(assert_equal(H5etop6, H5atop6));
-//  // rotations
-//  EXPECT(assert_equal(RH5e, H5a.bottomRows(3)));  // evaluate only the rotation residue
-//}
 
 /* ************************************************************************* */
   int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
