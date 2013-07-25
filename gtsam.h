@@ -317,6 +317,9 @@ virtual class StereoPoint2 : gtsam::Value {
 
   // Standard Interface
   Vector vector() const;
+  double uL() const;
+  double uR() const;
+  double v() const;
 
   // enabling serialization functionality
   void serialize() const;
