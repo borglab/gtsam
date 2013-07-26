@@ -149,20 +149,6 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class CLIQUE>
-  void BayesTreeUnordered<CLIQUE>::Cliques::print(const std::string& s, const KeyFormatter& keyFormatter) const {
-    std::cout << s << ":\n";
-    BOOST_FOREACH(sharedClique clique, *this) {
-      clique->printTree("", keyFormatter); }
-  }
-
-  /* ************************************************************************* */
-  template<class CLIQUE>
-  bool BayesTreeUnordered<CLIQUE>::Cliques::equals(const Cliques& other, double tol) const {
-    return other == *this;
-  }
-
-  /* ************************************************************************* */
-  template<class CLIQUE>
   size_t BayesTreeUnordered<CLIQUE>::size() const {
     size_t size = 0;
     BOOST_FOREACH(const sharedClique& clique, roots_)

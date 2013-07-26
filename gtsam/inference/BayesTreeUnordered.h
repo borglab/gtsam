@@ -65,11 +65,7 @@ namespace gtsam {
     typedef typename CLIQUE::EliminationTraits EliminationTraits;
 
     /** A convenience class for a list of shared cliques */
-    struct Cliques : public FastList<sharedClique> {
-      void print(const std::string& s = "Cliques",
-          const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
-      bool equals(const Cliques& other, double tol = 1e-9) const;
-    };
+    typedef FastList<sharedClique> Cliques;
 
     /** clique statistics */
     struct CliqueStats {
@@ -220,8 +216,8 @@ namespace gtsam {
     Cliques removeSubtree(const sharedClique& subtree);
 
     /** Insert a new subtree with known parent clique.  This function does not check that the
-     * specified parent is the correct parent.  This function updates all of the internal data
-     * structures associated with adding a subtree, such as populating the nodes index. */
+     *  specified parent is the correct parent.  This function updates all of the internal data
+     *  structures associated with adding a subtree, such as populating the nodes index. */
     void insertRoot(const sharedClique& subtree);
 
     /** add a clique (top down) */
@@ -247,13 +243,6 @@ namespace gtsam {
 
     /** Fill the nodes index for a subtree */
     void fillNodesIndex(const sharedClique& subtree);
-
-    /** Helper function to build a non-symbolic tree (e.g. Gaussian) using a
-     * symbolic tree, used in the BT(BN) constructor.
-     */
-    //void recursiveTreeBuild(const boost::shared_ptr<BayesTreeClique<IndexConditional> >& symbolic,
-    //      const std::vector<boost::shared_ptr<CONDITIONAL> >& conditionals,
-    //      const typename BayesTree<CONDITIONAL,CLIQUE>::sharedClique& parent);
 
   private:
     /** Serialization function */
