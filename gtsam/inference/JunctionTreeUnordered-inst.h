@@ -191,6 +191,25 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class BAYESTREE, class GRAPH>
+  void JunctionTreeUnordered<BAYESTREE,GRAPH>::Node::print(
+    const std::string& s, const KeyFormatter& keyFormatter) const
+  {
+    std::cout << s;
+    BOOST_FOREACH(Key j, keys)
+      std::cout << j << "  ";
+    std::cout << "problemSize = " << problemSize_ << std::endl;
+  }
+
+  /* ************************************************************************* */
+  template<class BAYESTREE, class GRAPH>
+  void JunctionTreeUnordered<BAYESTREE,GRAPH>::print(
+    const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const
+  {
+    treeTraversal::PrintForest(*this, s, keyFormatter);
+  }
+
+  /* ************************************************************************* */
+  template<class BAYESTREE, class GRAPH>
   template<class ETREE>
   JunctionTreeUnordered<BAYESTREE,GRAPH>
     JunctionTreeUnordered<BAYESTREE,GRAPH>::FromEliminationTree(const ETREE& eliminationTree)

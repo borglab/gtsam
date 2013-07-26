@@ -68,6 +68,9 @@ namespace gtsam {
       Keys keys; ///< Frontal keys of this node
       Factors factors; ///< Factors associated with this node
       Children children; ///< sub-trees
+
+      /** print this node */
+      void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
     };
 
     typedef boost::shared_ptr<Node> sharedNode; ///< Shared pointer to Node
@@ -111,6 +114,9 @@ namespace gtsam {
     */
     std::pair<boost::shared_ptr<BayesTreeType>, boost::shared_ptr<FactorGraphType> >
       eliminate(const Eliminate& function) const;
+
+    /** Print the junction tree */
+    void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
     /// @}
 

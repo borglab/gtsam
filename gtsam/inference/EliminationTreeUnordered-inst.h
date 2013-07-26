@@ -68,9 +68,9 @@ namespace gtsam {
     std::cout << str << "(" << keyFormatter(key) << ")\n";
     BOOST_FOREACH(const sharedFactor& factor, factors) {
       if(factor)
-        factor->print(str + "| ");
+        factor->print(str);
       else
-        std::cout << str << "| null factor\n";
+        std::cout << str << "null factor\n";
     }
   }
 
