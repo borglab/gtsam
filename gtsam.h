@@ -317,6 +317,9 @@ virtual class StereoPoint2 : gtsam::Value {
 
   // Standard Interface
   Vector vector() const;
+  double uL() const;
+  double uR() const;
+  double v() const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -637,10 +640,11 @@ class Cal3_S2Stereo {
   // Standard Constructors
   Cal3_S2Stereo();
   Cal3_S2Stereo(double fx, double fy, double s, double u0, double v0, double b);
+  Cal3_S2Stereo(Vector v);
 
   // Testable
   void print(string s) const;
-  bool equals(const gtsam::Cal3_S2Stereo& pose, double tol) const;
+  bool equals(const gtsam::Cal3_S2Stereo& K, double tol) const;
 
   // Standard Interface
   double fx() const;
@@ -757,6 +761,34 @@ virtual class PinholeCamera : gtsam::Value {
   gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
   double range(const gtsam::Point3& point);
   double range(const gtsam::Pose3& point);
+
+  // enabling serialization functionality
+  void serialize() const;
+};
+
+virtual class StereoCamera : gtsam::Value {
+  // Standard Constructors and Named Constructors
+  StereoCamera();
+  StereoCamera(const gtsam::Pose3& pose, const gtsam::Cal3_S2Stereo* K);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::StereoCamera& camera, double tol) const;
+
+  // Standard Interface
+  gtsam::Pose3 pose() const;
+  double baseline() const;
+  gtsam::Cal3_S2Stereo* calibration() const;
+
+  // Manifold
+  gtsam::StereoCamera retract(const Vector& d) const;
+  Vector localCoordinates(const gtsam::StereoCamera& T2) const;
+  size_t dim() const;
+  static size_t Dim();
+
+  // Transformations and measurement functions
+  gtsam::StereoPoint2 project(const gtsam::Point3& point);
+  gtsam::Point3 backproject(const gtsam::StereoPoint2& p) const;
 
   // enabling serialization functionality
   void serialize() const;

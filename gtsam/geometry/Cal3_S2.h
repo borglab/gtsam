@@ -52,6 +52,7 @@ namespace gtsam {
       fx_(fx), fy_(fy), s_(s), u0_(u0), v0_(v0) {
     }
 
+    /// constructor from vector
     Cal3_S2(const Vector &d): fx_(d(0)), fy_(d(1)), s_(d(2)), u0_(d(3)), v0_(d(4)){}
 
 

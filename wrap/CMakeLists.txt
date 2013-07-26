@@ -1,6 +1,6 @@
 # Build/install Wrap
 
-set(WRAP_BOOST_LIBRARIES ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} ${Boost_THREAD_LIBRARY})
+set(WRAP_BOOST_LIBRARIES ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} ${Boost_THREAD_LIBRARY} ${Boost_REGEX_LIBRARY})
 
 # Build the executable itself
 file(GLOB wrap_srcs "*.cpp")
