@@ -1,10 +1,13 @@
 
 #include <gtsam/slam/dataset.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/inference/VariableIndex.h>
 #include <gtsam/linear/GaussianFactorGraphUnordered.h>
 #include <gtsam/linear/VectorValuesUnordered.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
 #include <gtsam/linear/GaussianBayesTreeUnordered.h>
+#include <gtsam/linear/GaussianJunctionTreeUnordered.h>
+#include <gtsam/linear/GaussianEliminationTreeUnordered.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/Symbol.h>
@@ -53,7 +56,7 @@ ISAM2 solveWithOldISAM2(const NonlinearFactorGraph& measurements)
   ISAM2 isam2;
 
   size_t nextMeasurement = 0;
-  for(size_t step=1; nextMeasurement < measurements.size() && nextMeasurement < 2000; ++step) {
+  for(size_t step=1; nextMeasurement < measurements.size() && nextMeasurement < 1000; ++step) {
 
     Values newVariables;
     NonlinearFactorGraph newFactors;
@@ -168,29 +171,28 @@ void compareSolutions(const VectorValues& orderedSoln, const Ordering& ordering,
 /* ************************************************************************* */
 int main(int argc, char *argv[])
 {
-  // Load graph
-  gttic_(Find_datafile);
-  string datasetFile = findExampleDataFile("w10000-odom");
-  std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> data = load2D(datasetFile);
-  gttoc_(Find_datafile);
-
-  NonlinearFactorGraph measurements = *data.first;
-  Values initial = *data.second;
-
-  // Solve with old ISAM2 to get initial estimate
-  cout << "Solving with old ISAM2 to obtain initial estimate" << endl;
-  gttic_(Old_ISAM2);
 
   //try {
+    //// Load graph
+    //gttic_(Find_datafile);
+    //string datasetFile = findExampleDataFile("w10000-odom");
+    //std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> data = load2D(datasetFile);
+    //gttoc_(Find_datafile);
+
+    //NonlinearFactorGraph measurements = *data.first;
+    //Values initial = *data.second;
+
+    //// Solve with old ISAM2 to get initial estimate
+    //cout << "Solving with old ISAM2 to obtain initial estimate" << endl;
   //  ISAM2 isam = solveWithOldISAM2(measurements);
   //  {
-  //    std::ofstream writerStream("incremental_init2000", ios::binary);
+  //    std::ofstream writerStream("incremental_init1000", ios::binary);
   //    boost::archive::binary_oarchive writer(writerStream);
   //    writer << isam.calculateEstimate();
   //    writerStream.close();
   //  }
   //  {
-  //    std::ofstream writerStream("incremental_graph2000", ios::binary);
+  //    std::ofstream writerStream("incremental_graph1000", ios::binary);
   //    boost::archive::binary_oarchive writer(writerStream);
   //    writer << isam.getFactorsUnsafe();
   //    writerStream.close();
@@ -213,11 +215,9 @@ int main(int argc, char *argv[])
     reader >> nlfg;
   }
 
-  gttoc_(Old_ISAM2);
-
   // Get linear graph
   cout << "Converting to unordered linear graph" << endl;
-  Ordering ordering = *nlfg.orderingCOLAMD(isamsoln);
+  Ordering ordering = *isamsoln.orderingArbitrary();
   GaussianFactorGraph gfg = *nlfg.linearize(isamsoln, ordering);
   GaussianFactorGraphUnordered gfgu = convertToUnordered(gfg, ordering);
 
@@ -227,35 +227,51 @@ int main(int argc, char *argv[])
 
   // Solve linear graph
   cout << "Optimizing unordered graph" << endl;
+  VectorValuesUnordered unorderedSolnFinal;
   {
     boost::timer::cpu_timer timer;
     gttic_(Solve_unordered);
-    for(size_t i = 0; i < 10; ++i) {
-      VectorValuesUnordered unorderedSoln = gfgu.eliminateMultifrontal(orderingUnordered)->optimize();
+    VectorValuesUnordered unorderedSoln;
+    for(size_t i = 0; i < 1; ++i) {
+      unorderedSoln = gfgu.optimize();
     }
     gttoc_(Solve_unordered);
     timer.stop();
     boost::timer::cpu_times times = timer.elapsed();
     std::cout << "Total CPU time: " << double(times.system + times.user) / 1e9
       << ", wall time: " << double(times.wall) / 1e9 << std::endl;
+    unorderedSolnFinal = unorderedSoln;
   }
 
   // Solve linear graph with old code
   cout << "Optimizing using old ordered code" << endl;
+  VectorValues orderedSolnFinal;
   {
+    Ordering orderingToUse = ordering;
+    GaussianFactorGraph orderedGraph = *nlfg.linearize(isamsoln, *nlfg.orderingCOLAMD(isamsoln));
     boost::timer::cpu_timer timer;
     gttic_(Solve_ordered);
-    for(size_t i = 0; i < 10; ++i)
-      VectorValues orderedSoln = *GaussianMultifrontalSolver(gfg, true).optimize();
+    VectorValues orderedSoln;
+    for(size_t i = 0; i < 1; ++i) {
+      VariableIndex vi(nlfg);
+      boost::shared_ptr<Permutation> permutation = inference::PermutationCOLAMD(vi);
+      orderingToUse.permuteInPlace(*permutation);
+      orderedSoln = *GaussianMultifrontalSolver(orderedGraph, true).optimize();
+    }
     gttoc_(Solve_ordered);
     timer.stop();
     boost::timer::cpu_times times = timer.elapsed();
     std::cout << "Total CPU time: " << double(times.system + times.user) / 1e9
       << ", wall time: " << double(times.wall) / 1e9 << std::endl;
+    orderedSolnFinal = orderedSoln;
   }
 
   // Compare results
-  //compareSolutions(orderedSoln, ordering, unorderedSoln);
+  compareSolutions(orderedSolnFinal, ordering, unorderedSolnFinal);
+
+  //GaussianEliminationTreeUnordered(gfgu, orderingUnordered).print("ETree: ");
+  //GaussianJunctionTreeUnordered(GaussianEliminationTreeUnordered(gfgu, orderingUnordered)).print("JTree: ");
+  //gfgu.eliminateMultifrontal(orderingUnordered)->print("BayesTree: ");
 
   tictoc_print_();
 
