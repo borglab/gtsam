@@ -231,8 +231,6 @@ bool assert_container_equal(const std::vector<std::pair<V1,V2> >& expected,
 template<class V>
 bool assert_container_equal(const V& expected, const V& actual, double tol = 1e-9) {
   bool match = true;
-  if (expected.size() != actual.size())
-    match = false;
   typename V::const_iterator
     itExp = expected.begin(),
     itAct = actual.begin();
@@ -243,6 +241,8 @@ bool assert_container_equal(const V& expected, const V& actual, double tol = 1e-
         break;
       }
     }
+    if(itExp != expected.end() || itAct != actual.end())
+      match = false;
   }
   if(!match) {
     std::cout << "expected: " << std::endl;
