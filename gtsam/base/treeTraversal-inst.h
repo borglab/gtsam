@@ -70,65 +70,50 @@ namespace gtsam {
         VISITOR_PRE& visitorPre;
         VISITOR_POST& visitorPost;
         int problemSizeThreshold;
+        bool makeNewTasks;
         PreOrderTask(const boost::shared_ptr<NODE>& treeNode, const DATA& myData,
-          VISITOR_PRE& visitorPre, VISITOR_POST& visitorPost, int problemSizeThreshold) :
+          VISITOR_PRE& visitorPre, VISITOR_POST& visitorPost, int problemSizeThreshold,
+          bool makeNewTasks = true) :
           treeNode(treeNode), myData(myData), visitorPre(visitorPre), visitorPost(visitorPost),
-          problemSizeThreshold(problemSizeThreshold) {}
+          problemSizeThreshold(problemSizeThreshold), makeNewTasks(makeNewTasks) {}
 
         typedef ParallelTraversalNode<NODE, DATA> ParallelTraversalNode;
 
         tbb::task* execute()
         {
-          // Shared data
-          int problemSize = 0;
-
-          //std::cout << "New task: " << std::endl;
-          //BOOST_FOREACH(Key j, treeNode->keys)
-          //  std::cout << j << "  ";
-          //std::cout << std::endl;
-
           // Process this node and its children
-          processNode(treeNode, myData, problemSize);
+          processNode(treeNode, myData);
 
           // Return NULL
           return NULL;
         }
 
-        void processNode(const boost::shared_ptr<NODE>& node, DATA& myData, int& problemSize)
+        void processNode(const boost::shared_ptr<NODE>& node, DATA& myData)
         {
-          tbb::task_list childTasks;
-          int nChildTasks = 0;
-
-          // Increment problem size for this node
-          problemSize += node->problemSize();
-
-          // Visit children until problem size exceeds a threshold, then spawn a new task
-          BOOST_FOREACH(const boost::shared_ptr<NODE>& child, node->children)
+          if(makeNewTasks)
           {
-            if(problemSize < problemSizeThreshold)
-            {
-              //std::cout << "problemSize = " << problemSize << std::endl;
-              //BOOST_FOREACH(Key j, child->keys)
-              //  std::cout << j << "  ";
-              //std::cout << std::endl;
-              // Process child sequentially (recursive call will increase problem size for children
-              DATA childData = visitorPre(child, myData);
-              processNode(child, childData, problemSize);
-            }
-            else
+            bool overThreshold = (node->problemSize() >= problemSizeThreshold);
+
+            tbb::task_list childTasks;
+            BOOST_FOREACH(const boost::shared_ptr<NODE>& child, node->children)
             {
               // Process child in a subtask
               childTasks.push_back(*new(allocate_child())
-                PreOrderTask(child, visitorPre(child, myData), visitorPre, visitorPost, problemSizeThreshold));
-              ++ nChildTasks;
+                PreOrderTask(child, visitorPre(child, myData), visitorPre, visitorPost,
+                problemSizeThreshold, overThreshold));
             }
-          }
 
-          // If we have child tasks, start subtasks and wait for them to complete
-          if(nChildTasks > 0) {
-            set_ref_count(1 + nChildTasks);
+            // If we have child tasks, start subtasks and wait for them to complete
+            set_ref_count(1 + node->children.size());
             spawn(childTasks);
             wait_for_all();
+          }
+          else
+          {
+            BOOST_FOREACH(const boost::shared_ptr<NODE>& child, node->children)
+            {
+              processNode(child, visitorPre(child, myData));
+            }
           }
 
           // Run the post-order visitor
