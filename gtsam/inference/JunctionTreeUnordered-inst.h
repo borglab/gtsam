@@ -96,6 +96,7 @@ namespace gtsam {
       size_t nrMergedChildren = 0;
       assert(myData.myJTNode->children.size() == myData.childSymbolicConditionals.size());
       // Loop over children
+      int combinedProblemSize = symbolicElimResult.first->size();
       for(size_t child = 0; child < myData.childSymbolicConditionals.size(); ++child) {
         // Check if we should merge the child
         if(myNrParents + 1 == myData.childSymbolicConditionals[child]->nrParents()) {
@@ -111,8 +112,11 @@ namespace gtsam {
           myData.myJTNode->children.erase(myData.myJTNode->children.begin() + child - nrMergedChildren);
           // Increment number of merged children
           ++ nrMergedChildren;
+          // Increment problem size
+          combinedProblemSize = std::max(combinedProblemSize, childToMerge.problemSize_);
         }
       }
+      myData.myJTNode->problemSize_ = combinedProblemSize;
     }
 
     /* ************************************************************************* */
@@ -263,8 +267,9 @@ namespace gtsam {
     // that contains all of the roots as its children.  rootsContainer also stores the remaining
     // uneliminated factors passed up from the roots.
     EliminationData<This> rootsContainer(0, roots_.size());
-    treeTraversal::DepthFirstForest(*this, rootsContainer, eliminationPreOrderVisitor<This>,
-      boost::bind(eliminationPostOrderVisitor<This>, _1, _2, function));
+    //tbb::task_scheduler_init init(1);
+    treeTraversal::DepthFirstForestParallel(*this, rootsContainer, eliminationPreOrderVisitor<This>,
+      boost::bind(eliminationPostOrderVisitor<This>, _1, _2, function), -10000);
 
     // Create BayesTree from roots stored in the dummy BayesTree node.
     boost::shared_ptr<BayesTreeType> result = boost::make_shared<BayesTreeType>();

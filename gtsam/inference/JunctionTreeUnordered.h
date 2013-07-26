@@ -68,6 +68,9 @@ namespace gtsam {
       Keys keys; ///< Frontal keys of this node
       Factors factors; ///< Factors associated with this node
       Children children; ///< sub-trees
+      int problemSize_;
+
+      int problemSize() const { return problemSize_; }
 
       /** print this node */
       void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
