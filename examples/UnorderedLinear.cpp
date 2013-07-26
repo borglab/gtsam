@@ -218,28 +218,35 @@ int main(int argc, char *argv[])
   // Get linear graph
   cout << "Converting to unordered linear graph" << endl;
   Ordering ordering = *isamsoln.orderingArbitrary();
+  Ordering orderingCOLAMD = *nlfg.orderingCOLAMD(isamsoln);
   GaussianFactorGraph gfg = *nlfg.linearize(isamsoln, ordering);
   GaussianFactorGraphUnordered gfgu = convertToUnordered(gfg, ordering);
 
-  OrderingUnordered orderingUnordered;
-  for(Index j = 0; j < ordering.size(); ++j)
-    orderingUnordered.push_back(ordering.key(j));
+  //OrderingUnordered orderingUnordered;
+  //for(Index j = 0; j < ordering.size(); ++j)
+  //  orderingUnordered.push_back(ordering.key(j));
 
   // Solve linear graph
   cout << "Optimizing unordered graph" << endl;
   VectorValuesUnordered unorderedSolnFinal;
   {
-    boost::timer::cpu_timer timer;
     gttic_(Solve_unordered);
     VectorValuesUnordered unorderedSoln;
     for(size_t i = 0; i < 1; ++i) {
-      unorderedSoln = gfgu.optimize();
+      gttic_(VariableIndex);
+      VariableIndexUnordered vi(gfgu);
+      gttoc_(VariableIndex);
+      gttic_(COLAMD);
+      OrderingUnordered orderingUnordered = OrderingUnordered::COLAMD(vi);
+      gttoc_(COLAMD);
+      gttic_(eliminate);
+      GaussianBayesTreeUnordered::shared_ptr bt = gfgu.eliminateMultifrontal(orderingUnordered);
+      gttoc_(eliminate);
+      gttic_(optimize);
+      unorderedSoln = bt->optimize();
+      gttoc_(optimize);
     }
     gttoc_(Solve_unordered);
-    timer.stop();
-    boost::timer::cpu_times times = timer.elapsed();
-    std::cout << "Total CPU time: " << double(times.system + times.user) / 1e9
-      << ", wall time: " << double(times.wall) / 1e9 << std::endl;
     unorderedSolnFinal = unorderedSoln;
   }
 
@@ -248,26 +255,30 @@ int main(int argc, char *argv[])
   VectorValues orderedSolnFinal;
   {
     Ordering orderingToUse = ordering;
-    GaussianFactorGraph orderedGraph = *nlfg.linearize(isamsoln, *nlfg.orderingCOLAMD(isamsoln));
-    boost::timer::cpu_timer timer;
+    GaussianFactorGraph::shared_ptr orderedGraph = nlfg.linearize(isamsoln, *nlfg.orderingCOLAMD(isamsoln));
     gttic_(Solve_ordered);
     VectorValues orderedSoln;
     for(size_t i = 0; i < 1; ++i) {
-      VariableIndex vi(nlfg);
-      boost::shared_ptr<Permutation> permutation = inference::PermutationCOLAMD(vi);
+      gttic_(VariableIndex);
+      boost::shared_ptr<VariableIndex> vi = boost::make_shared<VariableIndex>(gfg);
+      gttoc_(VariableIndex);
+      gttic_(COLAMD);
+      boost::shared_ptr<Permutation> permutation = inference::PermutationCOLAMD(*vi);
       orderingToUse.permuteInPlace(*permutation);
-      orderedSoln = *GaussianMultifrontalSolver(orderedGraph, true).optimize();
+      gttoc_(COLAMD);
+      gttic_(eliminate);
+      boost::shared_ptr<GaussianBayesTree> bt = GaussianMultifrontalSolver(*orderedGraph, true).eliminate();
+      gttoc_(eliminate);
+      gttic_(optimize);
+      orderedSoln = optimize(*bt);
+      gttoc_(optimize);
     }
     gttoc_(Solve_ordered);
-    timer.stop();
-    boost::timer::cpu_times times = timer.elapsed();
-    std::cout << "Total CPU time: " << double(times.system + times.user) / 1e9
-      << ", wall time: " << double(times.wall) / 1e9 << std::endl;
     orderedSolnFinal = orderedSoln;
   }
 
   // Compare results
-  compareSolutions(orderedSolnFinal, ordering, unorderedSolnFinal);
+  compareSolutions(orderedSolnFinal, orderingCOLAMD, unorderedSolnFinal);
 
   //GaussianEliminationTreeUnordered(gfgu, orderingUnordered).print("ETree: ");
   //GaussianJunctionTreeUnordered(GaussianEliminationTreeUnordered(gfgu, orderingUnordered)).print("JTree: ");
