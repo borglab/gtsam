@@ -295,25 +295,19 @@ TEST( BayesTree, removeTop )
 {
   SymbolicBayesTreeUnordered bayesTree = asiaBayesTree;
 
-  bayesTree.print("asiaBayesTree: ");
-
   // create a new factor to be inserted
   //boost::shared_ptr<IndexFactor> newFactor(new IndexFactor(_S_,_B_));
 
   // Remove the contaminated part of the Bayes tree
   SymbolicBayesNetUnordered bn;
   SymbolicBayesTreeUnordered::Cliques orphans;
-  list<Key> keys; keys += _B_,_S_;
-  bayesTree.removeTop(keys, bn, orphans);
-  SymbolicFactorGraphUnordered factors(bn);
+  bayesTree.removeTop(list_of(_B_)(_S_), bn, orphans);
 
   // Check expected outcome
-  SymbolicFactorGraphUnordered expected;
-  expected.push_factor(_E_,_L_,_B_);
-//  expected.push_factor(_L_,_B_);
-//  expected.push_factor(_B_);
-  expected.push_factor(_S_,_L_,_B_);
-  CHECK(assert_equal(expected, factors));
+  SymbolicBayesNetUnordered expected;
+  expected += SymbolicConditionalUnordered::FromKeys(list_of(_B_)(_L_)(_E_)(_S_), 4);
+  CHECK(assert_equal(expected, bn));
+
   SymbolicBayesTreeUnordered::Cliques expectedOrphans;
   expectedOrphans += bayesTree[_T_], bayesTree[_X_];
   CHECK(assert_container_equal(expectedOrphans|indirected, orphans|indirected));
@@ -322,8 +316,7 @@ TEST( BayesTree, removeTop )
   //boost::shared_ptr<IndexFactor> newFactor2(new IndexFactor(_B_));
   SymbolicBayesNetUnordered bn2;
   SymbolicBayesTreeUnordered::Cliques orphans2;
-  keys.clear(); keys += _B_;
-  bayesTree.removeTop(keys, bn2, orphans2);
+  bayesTree.removeTop(list_of(_B_), bn2, orphans2);
   SymbolicFactorGraphUnordered factors2(bn2);
   SymbolicFactorGraphUnordered expected2;
   CHECK(assert_equal(expected2, factors2));
@@ -344,50 +337,65 @@ TEST( BayesTree, removeTop2 )
   // Remove the contaminated part of the Bayes tree
   SymbolicBayesNetUnordered bn;
   SymbolicBayesTreeUnordered::Cliques orphans;
-  list<Key> keys; keys += _B_,_S_;
-  bayesTree.removeTop(keys, bn, orphans);
-  SymbolicFactorGraphUnordered factors(bn);
+  bayesTree.removeTop(list_of(_T_), bn, orphans);
 
   // Check expected outcome
-  SymbolicFactorGraphUnordered expected;
-  expected.push_factor(_E_,_L_,_B_);
-//  expected.push_factor(_L_,_B_);
-//  expected.push_factor(_B_);
-  expected.push_factor(_S_,_L_,_B_);
-  CHECK(assert_equal(expected, factors));
+  SymbolicBayesNetUnordered expected = list_of
+    (SymbolicConditionalUnordered::FromKeys(list_of(_B_)(_L_)(_E_)(_S_), 4))
+    (SymbolicConditionalUnordered::FromKeys(list_of(_T_)(_E_)(_L_), 1));
+  CHECK(assert_equal(expected, bn));
+
   SymbolicBayesTreeUnordered::Cliques expectedOrphans;
-  expectedOrphans += bayesTree[_T_], bayesTree[_X_];
+  expectedOrphans += bayesTree[_X_];
   CHECK(assert_container_equal(expectedOrphans|indirected, orphans|indirected));
 }
 
 /* ************************************************************************* */
 TEST( BayesTree, removeTop3 )
 {
-  const Key _x4_=5, _l5_=6;
-  // simple test case that failed after COLAMD was fixed/activated
-  SymbolicConditionalUnordered::shared_ptr
-  X(new SymbolicConditionalUnordered(_l5_)),
-  A(new SymbolicConditionalUnordered(_x4_, _l5_)),
-  B(new SymbolicConditionalUnordered(_x2_, _x4_)),
-  C(new SymbolicConditionalUnordered(_x3_, _x2_));
-
-//  Ordering newOrdering;
-//  newOrdering += _x3_, _x2_, _x1_, _l2_, _l1_, _x4_, _l5_;
-  SymbolicBayesTreeUnordered bayesTree;
-  SymbolicBayesTreeUnordered::insert(bayesTree, X);
-  SymbolicBayesTreeUnordered::insert(bayesTree, A);
-  SymbolicBayesTreeUnordered::insert(bayesTree, B);
-  SymbolicBayesTreeUnordered::insert(bayesTree, C);
+  SymbolicFactorGraphUnordered graph = list_of
+    (SymbolicFactorUnordered(L(5)))
+    (SymbolicFactorUnordered(X(4), L(5)))
+    (SymbolicFactorUnordered(X(2), X(4)))
+    (SymbolicFactorUnordered(X(3), X(2)));
+  SymbolicBayesTreeUnordered bayesTree = *graph.eliminateMultifrontal(
+    OrderingUnordered(list_of (X(3)) (X(2)) (X(4)) (L(5)) ));
 
   // remove all
-  list<Index> keys;
-  keys += _l5_, _x2_, _x3_, _x4_;
-  BayesNet<SymbolicConditionalUnordered> bn;
+  SymbolicBayesNetUnordered bn;
   SymbolicBayesTreeUnordered::Cliques orphans;
-  bayesTree.removeTop(keys, bn, orphans);
-  SymbolicFactorGraph factors(bn);
+  bayesTree.removeTop(list_of(L(5))(X(4))(X(2))(X(3)), bn, orphans);
 
-  CHECK(orphans.size() == 0);
+  SymbolicBayesNetUnordered expectedBn = list_of
+    (SymbolicConditionalUnordered::FromKeys(list_of(L(5))(X(4)), 2))
+    (SymbolicConditionalUnordered(X(2), X(4)))
+    (SymbolicConditionalUnordered(X(3), X(2)));
+  EXPECT(assert_equal(expectedBn, bn));
+  EXPECT(orphans.empty());
+}
+
+/* ************************************************************************* */
+TEST( BayesTree, removeTop4 )
+{
+  SymbolicFactorGraphUnordered graph = list_of
+    (SymbolicFactorUnordered(L(5)))
+    (SymbolicFactorUnordered(X(4), L(5)))
+    (SymbolicFactorUnordered(X(2), X(4)))
+    (SymbolicFactorUnordered(X(3), X(2)));
+  SymbolicBayesTreeUnordered bayesTree = *graph.eliminateMultifrontal(
+    OrderingUnordered(list_of (X(3)) (X(2)) (X(4)) (L(5)) ));
+
+  // remove all
+  SymbolicBayesNetUnordered bn;
+  SymbolicBayesTreeUnordered::Cliques orphans;
+  bayesTree.removeTop(list_of(X(2))(L(5))(X(4))(X(3)), bn, orphans);
+
+  SymbolicBayesNetUnordered expectedBn = list_of
+    (SymbolicConditionalUnordered::FromKeys(list_of(L(5))(X(4)), 2))
+    (SymbolicConditionalUnordered(X(2), X(4)))
+    (SymbolicConditionalUnordered(X(3), X(2)));
+  EXPECT(assert_equal(expectedBn, bn));
+  EXPECT(orphans.empty());
 }
 
 /////* ************************************************************************* */

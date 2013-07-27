@@ -202,28 +202,6 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  template<class CLIQUE>
-  void BayesTreeUnordered<CLIQUE>::removeClique(sharedClique clique)
-  {
-    if (clique->isRoot())
-      roots_.erase(std::find(roots_.begin(), roots_.end(), clique));
-    else { // detach clique from parent
-      sharedClique parent = clique->parent_.lock();
-      typename std::vector<sharedClique>::iterator child = std::find(parent->children.begin(), parent->children.end(), clique);
-      assert(child != parent->children.end());
-      parent->children.erase(child);
-    }
-
-    // orphan my children
-    BOOST_FOREACH(sharedClique child, clique->children)
-      child->parent_ = typename Clique::weak_ptr();
-
-    BOOST_FOREACH(Key j, clique->conditional()->frontals()) {
-      nodes_.erase(j);
-    }
-  }
-
-  /* ************************************************************************* */
   //template<class CLIQUE>
   //void BayesTreeUnordered<CLIQUE>::recursiveTreeBuild(const boost::shared_ptr<BayesTreeClique<IndexConditional> >& symbolic,
   //    const std::vector<boost::shared_ptr<CONDITIONAL> >& conditionals,
@@ -537,6 +515,30 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class CLIQUE>
+  void BayesTreeUnordered<CLIQUE>::removeClique(sharedClique clique)
+  {
+    if (clique->isRoot()) {
+      std::vector<sharedClique>::iterator root = std::find(roots_.begin(), roots_.end(), clique);
+      if(root != roots_.end())
+        roots_.erase(root);
+    } else { // detach clique from parent
+      sharedClique parent = clique->parent_.lock();
+      typename std::vector<sharedClique>::iterator child = std::find(parent->children.begin(), parent->children.end(), clique);
+      assert(child != parent->children.end());
+      parent->children.erase(child);
+    }
+
+    // orphan my children
+    BOOST_FOREACH(sharedClique child, clique->children)
+      child->parent_ = typename Clique::weak_ptr();
+
+    BOOST_FOREACH(Key j, clique->conditional()->frontals()) {
+      nodes_.erase(j);
+    }
+  }
+
+  /* ************************************************************************* */
+  template<class CLIQUE>
   void BayesTreeUnordered<CLIQUE>::removePath(sharedClique clique, BayesNetType& bn, Cliques& orphans)
   {
     // base case is NULL, if so we do nothing and return empties above
@@ -562,19 +564,17 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class CLIQUE>
-  template<class CONTAINER>
-  void BayesTreeUnordered<CLIQUE>::removeTop(const CONTAINER& keys, BayesNetType& bn, Cliques& orphans)
+  void BayesTreeUnordered<CLIQUE>::removeTop(const std::vector<Key>& keys, BayesNetType& bn, Cliques& orphans)
   {
     // process each key of the new factor
-    BOOST_FOREACH(const Key& j, keys) {
-
+    BOOST_FOREACH(const Key& j, keys)
+    {
       // get the clique
-      if(j < nodes_.size()) {
-        const sharedClique& clique(nodes_[j]);
-        if(clique) {
-          // remove path from clique to root
-          this->removePath(clique, bn, orphans);
-        }
+      // TODO: Nodes will be searched again in removeClique
+      Nodes::const_iterator node = nodes_.find(j);
+      if(node != nodes_.end()) {
+        // remove path from clique to root
+        this->removePath(node->second, bn, orphans);
       }
     }
 
