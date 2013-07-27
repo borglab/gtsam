@@ -281,7 +281,7 @@ int main(int argc, char *argv[])
   compareSolutions(orderedSolnFinal, orderingCOLAMD, unorderedSolnFinal);
 
   //GaussianEliminationTreeUnordered(gfgu, orderingUnordered).print("ETree: ");
-  //GaussianJunctionTreeUnordered(GaussianEliminationTreeUnordered(gfgu, orderingUnordered)).print("JTree: ");
+  //GaussianJunctionTreeUnordered(GaussianEliminationTreeUnordered(gfgu, OrderingUnordered::COLAMD(gfgu))).print("JTree: ");
   //gfgu.eliminateMultifrontal(orderingUnordered)->print("BayesTree: ");
 
   tictoc_print_();

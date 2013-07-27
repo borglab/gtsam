@@ -267,7 +267,7 @@ namespace gtsam {
      *         root node. */
     template<class FOREST, typename DATA, typename VISITOR_PRE, typename VISITOR_POST>
     void DepthFirstForestParallel(FOREST& forest, DATA& rootData, VISITOR_PRE& visitorPre, VISITOR_POST& visitorPost,
-      int problemSizeThreshold = 50)
+      int problemSizeThreshold = 10)
     {
       // Typedefs
       typedef typename FOREST::Node Node;
