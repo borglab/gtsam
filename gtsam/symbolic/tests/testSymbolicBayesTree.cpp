@@ -39,20 +39,6 @@ using namespace gtsam::symbol_shorthand;
 static bool debug = false;
 
 namespace {
-  /* ************************************************************************* */
-  //// Conditionals for ASIA example from the tutorial with A and D evidence
-  //SymbolicConditionalUnordered::shared_ptr
-  //  B(new SymbolicConditionalUnordered(_B_)),
-  //  L(new SymbolicConditionalUnordered(_L_, _B_)),
-  //  E(new SymbolicConditionalUnordered(_E_, _L_, _B_)),
-  //  S(new SymbolicConditionalUnordered(_S_, _L_, _B_)),
-  //  T(new SymbolicConditionalUnordered(_T_, _E_, _L_)),
-  //  X(new SymbolicConditionalUnordered(_X_, _E_));
-
-  //// Cliques
-  //SymbolicConditionalUnordered::shared_ptr ELB(
-  //  boost::make_shared<SymbolicConditionalUnordered>(
-  //  SymbolicConditionalUnordered::FromKeys(list_of(_E_)(_L_)(_B_), 3)));
 
   /* ************************************************************************* */
   // Helper functions for below
@@ -78,49 +64,6 @@ namespace {
     return clique;
   }
 
-}
-
-/* ************************************************************************* */
-TEST( SymbolicBayesTree, constructor )
-{
-  // Create using insert
-  //SymbolicBayesTreeUnordered bayesTree = createAsiaSymbolicBayesTree();
-
-  //bayesTree.print("bayesTree: ");
-
-  // Check Size
-//  LONGS_EQUAL(4, bayesTree.size());
-//  EXPECT(!bayesTree.empty());
-//
-//  // Check root
-//  boost::shared_ptr<SymbolicConditionalUnordered> actual_root = bayesTree.root()->conditional();
-//  CHECK(assert_equal(*ELB,*actual_root));
-//
-//  // Create from symbolic Bayes chain in which we want to discover cliques
-//  BayesNet<SymbolicConditionalUnordered> ASIA;
-//  ASIA.push_back(X);
-//  ASIA.push_back(T);
-//  ASIA.push_back(S);
-//  ASIA.push_back(E);
-//  ASIA.push_back(L);
-//  ASIA.push_back(B);
-//  SymbolicBayesTreeUnordered bayesTree2(ASIA);
-//
-//  // Check whether the same
-//  CHECK(assert_equal(bayesTree,bayesTree2));
-//
-//  // CHECK findParentClique, should *not depend on order of parents*
-////  Ordering ordering; ordering += _X_, _T_, _S_, _E_, _L_, _B_;
-////  IndexTable<Symbol> index(ordering);
-//
-//  list<Index> parents1; parents1 += _E_, _L_;
-//  CHECK(assert_equal(_E_, bayesTree.findParentClique(parents1)));
-//
-//  list<Index> parents2; parents2 += _L_, _E_;
-//  CHECK(assert_equal(_E_, bayesTree.findParentClique(parents2)));
-//
-//  list<Index> parents3; parents3 += _L_, _B_;
-//  CHECK(assert_equal(_L_, bayesTree.findParentClique(parents3)));
 }
 
 /* ************************************************************************* */
@@ -397,62 +340,6 @@ TEST( BayesTree, removeTop4 )
   EXPECT(assert_equal(expectedBn, bn));
   EXPECT(orphans.empty());
 }
-
-/////* ************************************************************************* */
-/////**
-//// *  x2 - x3 - x4 - x5
-//// *   |  /       \   |
-//// *  x1 /         \ x6
-//// */
-////TEST( BayesTree, insert )
-////{
-////  // construct bayes tree by split the graph along the separator x3 - x4
-////  const Index _x1_=0, _x2_=1, _x6_=2, _x5_=3, _x3_=4, _x4_=5;
-////  SymbolicFactorGraph fg1, fg2, fg3;
-////  fg1.push_factor(_x3_, _x4_);
-////  fg2.push_factor(_x1_, _x2_);
-////  fg2.push_factor(_x2_, _x3_);
-////  fg2.push_factor(_x1_, _x3_);
-////  fg3.push_factor(_x5_, _x4_);
-////  fg3.push_factor(_x6_, _x5_);
-////  fg3.push_factor(_x6_, _x4_);
-////
-//////  Ordering ordering1; ordering1 += _x3_, _x4_;
-//////  Ordering ordering2; ordering2 += _x1_, _x2_;
-//////  Ordering ordering3; ordering3 += _x6_, _x5_;
-////
-////  BayesNet<SymbolicConditionalUnordered> bn1, bn2, bn3;
-////  bn1 = *SymbolicSequentialSolver::EliminateUntil(fg1, _x4_+1);
-////  bn2 = *SymbolicSequentialSolver::EliminateUntil(fg2, _x2_+1);
-////  bn3 = *SymbolicSequentialSolver::EliminateUntil(fg3, _x5_+1);
-////
-////  // insert child cliques
-////  SymbolicBayesTreeUnordered actual;
-////  list<SymbolicBayesTreeUnordered::sharedClique> children;
-////  SymbolicBayesTreeUnordered::sharedClique r1 = actual.insert(bn2, children);
-////  SymbolicBayesTreeUnordered::sharedClique r2 = actual.insert(bn3, children);
-////
-////  // insert root clique
-////  children.push_back(r1);
-////  children.push_back(r2);
-////  actual.insert(bn1, children, true);
-////
-////  // traditional way
-////  SymbolicFactorGraph fg;
-////  fg.push_factor(_x3_, _x4_);
-////  fg.push_factor(_x1_, _x2_);
-////  fg.push_factor(_x2_, _x3_);
-////  fg.push_factor(_x1_, _x3_);
-////  fg.push_factor(_x5_, _x4_);
-////  fg.push_factor(_x6_, _x5_);
-////  fg.push_factor(_x6_, _x4_);
-////
-//////  Ordering ordering;  ordering += _x1_, _x2_, _x6_, _x5_, _x3_, _x4_;
-////  BayesNet<SymbolicConditionalUnordered> bn(*SymbolicSequentialSolver(fg).eliminate());
-////  SymbolicBayesTreeUnordered expected(bn);
-////  CHECK(assert_equal(expected, actual));
-////
-////}
 
 /* ************************************************************************* */
 TEST( SymbolicBayesTreeUnordered, thinTree ) {
